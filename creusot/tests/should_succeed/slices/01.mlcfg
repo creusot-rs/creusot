@@ -185,6 +185,33 @@ module CreusotContracts_Model_Impl3_ShallowModel
     ensures { result = shallow_model self }
     
 end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub
+  type t
+  type s
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic_Interface
+  type t
+  type s
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic
+  type t
+  type s
+  use prelude.Int
+  use seq.Seq
+  use seq.Seq
+  clone CreusotContracts_Model_ShallowModel_ShallowModel_Stub as ShallowModel0 with
+    type self = s,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t =
+    Seq.get (ShallowModel0.shallow_model self) ix
+  val index_logic [@inline:trivial] (self : s) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
+end
 module CreusotContracts_Resolve_Impl1_Resolve_Stub
   type t
   use prelude.Borrow
@@ -211,18 +238,16 @@ module C01_IndexMutSlice_Interface
   use prelude.Slice
   use prelude.Seq
   use prelude.Int
-  clone Core_Num_Impl11_Max_Stub as Max0
   use seq.Seq
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel1 with
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
     type t = uint32,
-    val Max0.mAX' = Max0.mAX',
-    axiom .
+    type s = seq uint32
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
     type t = seq uint32,
     type ShallowModelTy0.shallowModelTy = Seq.seq uint32
   val index_mut_slice [#"../01.rs" 12 0 12 37] (a : borrowed (seq uint32)) : ()
     requires {[#"../01.rs" 10 11 10 24] Seq.length (ShallowModel0.shallow_model a) = 5}
-    ensures { [#"../01.rs" 11 10 11 24] UInt32.to_int (Seq.get (ShallowModel1.shallow_model ( ^ a)) 2) = 3 }
+    ensures { [#"../01.rs" 11 10 11 23] UInt32.to_int (IndexLogic0.index_logic ( ^ a) 2) = 3 }
     
 end
 module C01_IndexMutSlice
@@ -234,20 +259,24 @@ module C01_IndexMutSlice
   use prelude.UIntSize
   use seq.Seq
   clone Core_Num_Impl11_Max as Max0
-  use seq.Seq
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = seq uint32
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel as ShallowModel1 with
     type t = uint32,
     val Max0.mAX' = Max0.mAX',
     axiom .
+  use seq.Seq
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = seq uint32
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic0 with
+    type t = uint32,
+    type s = seq uint32,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel0 with
     type t = seq uint32,
     type ShallowModelTy0.shallowModelTy = Seq.seq uint32,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   let rec cfg index_mut_slice [#"../01.rs" 12 0 12 37] [@cfg:stackify] [@cfg:subregion_analysis] (a : borrowed (seq uint32)) : ()
     requires {[#"../01.rs" 10 11 10 24] Seq.length (ShallowModel0.shallow_model a) = 5}
-    ensures { [#"../01.rs" 11 10 11 24] UInt32.to_int (Seq.get (ShallowModel1.shallow_model ( ^ a)) 2) = 3 }
+    ensures { [#"../01.rs" 11 10 11 23] UInt32.to_int (IndexLogic0.index_logic ( ^ a) 2) = 3 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -321,10 +350,13 @@ module C01_SliceFirst_Interface
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = seq t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type s = seq t
   use Core_Option_Option_Type as Core_Option_Option_Type
   val slice_first [#"../01.rs" 20 0 20 44] (a : seq t) : Core_Option_Option_Type.t_option t
     ensures { [#"../01.rs" 16 10 19 1] match (result) with
-      | Core_Option_Option_Type.C_Some v -> v = Seq.get (ShallowModel0.shallow_model a) 0
+      | Core_Option_Option_Type.C_Some v -> v = IndexLogic0.index_logic a 0
       | Core_Option_Option_Type.C_None -> Seq.length (ShallowModel0.shallow_model a) = 0
       end }
     
@@ -354,10 +386,14 @@ module C01_SliceFirst
   clone Core_Slice_Impl0_Len_Interface as Len0 with
     type t = t,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic0 with
+    type t = t,
+    type s = seq t,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   use Core_Option_Option_Type as Core_Option_Option_Type
   let rec cfg slice_first [#"../01.rs" 20 0 20 44] [@cfg:stackify] [@cfg:subregion_analysis] (a : seq t) : Core_Option_Option_Type.t_option t
     ensures { [#"../01.rs" 16 10 19 1] match (result) with
-      | Core_Option_Option_Type.C_Some v -> v = Seq.get (ShallowModel0.shallow_model a) 0
+      | Core_Option_Option_Type.C_Some v -> v = IndexLogic0.index_logic a 0
       | Core_Option_Option_Type.C_None -> Seq.length (ShallowModel0.shallow_model a) = 0
       end }
     

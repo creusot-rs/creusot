@@ -104,6 +104,33 @@ module CreusotContracts_Model_ShallowModel_ShallowModel
     ensures { result = shallow_model self }
     
 end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub
+  type t
+  type s
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic_Interface
+  type t
+  type s
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic
+  type t
+  type s
+  use prelude.Int
+  use seq.Seq
+  use seq.Seq
+  clone CreusotContracts_Model_ShallowModel_ShallowModel_Stub as ShallowModel0 with
+    type self = s,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t =
+    Seq.get (ShallowModel0.shallow_model self) ix
+  val index_logic [@inline:trivial] (self : s) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
+end
 module CreusotContracts_Model_Impl3_ShallowModel_Stub
   type t
   use prelude.Borrow
@@ -838,13 +865,16 @@ module C01_AllZero_Interface
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel1 with
     type t = Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq uint32
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = uint32,
+    type s = Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = uint32,
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max0.mAX',
     axiom .
   val all_zero [#"../01.rs" 7 0 7 33] (v : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) : ()
-    ensures { [#"../01.rs" 5 0 5 74] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model ( ^ v)) -> Seq.get (ShallowModel0.shallow_model ( ^ v)) i = (0 : uint32) }
+    ensures { [#"../01.rs" 5 0 5 73] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model ( ^ v)) -> IndexLogic0.index_logic ( ^ v) i = (0 : uint32) }
     ensures { [#"../01.rs" 6 10 6 33] Seq.length (ShallowModel1.shallow_model v) = Seq.length (ShallowModel0.shallow_model ( ^ v)) }
     
 end
@@ -935,6 +965,10 @@ module C01_AllZero
     type Item0.item = usize,
     predicate Completed0.completed = Completed0.completed,
     predicate Produces0.produces = Produces0.produces
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic1 with
+    type t = uint32,
+    type s = borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)),
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone CreusotContracts_Ghost_Impl1_ShallowModel as ShallowModel2 with
     type t = borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)),
     type ShallowModelTy0.shallowModelTy = Seq.seq uint32,
@@ -948,8 +982,12 @@ module C01_AllZero
     type t = uint32,
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic0 with
+    type t = uint32,
+    type s = Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global),
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   let rec cfg all_zero [#"../01.rs" 7 0 7 33] [@cfg:stackify] [@cfg:subregion_analysis] (v : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) : ()
-    ensures { [#"../01.rs" 5 0 5 74] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model ( ^ v)) -> Seq.get (ShallowModel0.shallow_model ( ^ v)) i = (0 : uint32) }
+    ensures { [#"../01.rs" 5 0 5 73] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model ( ^ v)) -> IndexLogic0.index_logic ( ^ v) i = (0 : uint32) }
     ensures { [#"../01.rs" 6 10 6 33] Seq.length (ShallowModel1.shallow_model v) = Seq.length (ShallowModel0.shallow_model ( ^ v)) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -1014,7 +1052,7 @@ module C01_AllZero
     invariant type_invariant { [#"../01.rs" 11 4 11 53] Invariant0.invariant' iter_7 };
     invariant structural { [#"../01.rs" 11 4 11 53] Produces0.produces (Ghost.inner iter_old_11) (Ghost.inner produced_14) iter_7 };
     invariant in_bounds { [#"../01.rs" 11 27 11 51] Seq.length (ShallowModel1.shallow_model v_1) = Seq.length (ShallowModel2.shallow_model old_v_4) };
-    invariant all_zero { [#"../01.rs" 11 4 11 53] forall j : int . 0 <= j /\ j < Seq.length (Ghost.inner produced_14) -> Seq.get (ShallowModel1.shallow_model v_1) j = (0 : uint32) };
+    invariant all_zero { [#"../01.rs" 11 4 11 53] forall j : int . 0 <= j /\ j < Seq.length (Ghost.inner produced_14) -> IndexLogic1.index_logic v_1 j = (0 : uint32) };
     _25 <- borrow_mut iter_7;
     iter_7 <-  ^ _25;
     _24 <- borrow_mut ( * _25);
