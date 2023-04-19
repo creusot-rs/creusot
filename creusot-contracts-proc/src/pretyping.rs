@@ -107,11 +107,14 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             Ok(quote_spanned! {sp=> if #cond { #(#then_branch)* } #else_branch })
         }
         RT::Index(TermIndex { expr, index, .. }) => {
+            let expr =
+                if let RT::Paren(TermParen { expr, .. }) = &**expr { &**expr } else { &*expr };
+
             let expr = encode_term(expr)?;
             let index = encode_term(index)?;
 
             Ok(quote! {
-                #expr [#index]
+                ::creusot_contracts::logic::IndexLogic::index_logic(#expr, #index)
             })
         }
         RT::Let(_) => Err(EncodeError::Unsupported(term.span(), "Let".into())),
