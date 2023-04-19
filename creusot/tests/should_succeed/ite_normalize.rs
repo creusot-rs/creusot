@@ -24,7 +24,7 @@ impl<K: DeepModel, V> BTreeMap<K, V> {
     }
 
     #[trusted]
-    #[ensures(forall<i: K::DeepModelTy> (@^self).get(i) == (if i == key.deep_model() { Some(value) } else { self@.get(i) }))]
+    #[ensures(forall<i: K::DeepModelTy> ((^self)@).get(i) == (if i == key.deep_model() { Some(value) } else { self@.get(i) }))]
     fn insert(&mut self, key: K, value: V) -> Option<V>
     where
         K: Ord,

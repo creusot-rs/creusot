@@ -7,12 +7,12 @@ use creusot_contracts::{
     *,
 };
 
-#[ensures((@^str).len() >= len@ && (@^str).len() >= str@.len())]
-#[ensures((@^str).len() == len@ || (@^str).len() == str@.len())]
-#[ensures(len@ <= str@.len() ==> (@^str).len() == str@.len())]
-#[ensures(len@ > str@.len() ==> (@^str).len() == len@)]
-#[ensures(forall<i: Int> 0 <= i && i < str@.len() ==> (@^str)[i] == str@[i])]
-#[ensures(forall<i: Int> str@.len() <= i && i < len@ ==> (@^str)[i] == pad)]
+#[ensures(((^str)@).len() >= len@ && ((^str)@).len() >= str@.len())]
+#[ensures(((^str)@).len() == len@ || ((^str)@).len() == str@.len())]
+#[ensures(len@ <= str@.len() ==> ((^str)@).len() == str@.len())]
+#[ensures(len@ > str@.len() ==> ((^str)@).len() == len@)]
+#[ensures(forall<i: Int> 0 <= i && i < str@.len() ==> ((^str)@)[i] == str@[i])]
+#[ensures(forall<i: Int> str@.len() <= i && i < len@ ==> ((^str)@)[i] == pad)]
 fn right_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     let old_str = ghost! { str };
 
@@ -26,10 +26,10 @@ fn right_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     }
 }
 
-#[ensures((@^str).len() >= len@ && (@^str).len() >= str@.len())]
-#[ensures((@^str).len() == len@ || (@^str).len() == str@.len())]
-#[ensures(forall<i: Int> 0 <= i && i < ((@^str).len() - str@.len()) ==> (@^str)[i] == pad)]
-#[ensures(forall<i: Int> 0 <= i && i < str@.len() ==> (@^str)[i + ((@^str).len() - str@.len())] == str@[i])]
+#[ensures(((^str)@).len() >= len@ && ((^str)@).len() >= str@.len())]
+#[ensures(((^str)@).len() == len@ || ((^str)@).len() == str@.len())]
+#[ensures(forall<i: Int> 0 <= i && i < (((^str)@).len() - str@.len()) ==> ((^str)@)[i] == pad)]
+#[ensures(forall<i: Int> 0 <= i && i < str@.len() ==> ((^str)@)[i + (((^str)@).len() - str@.len())] == str@[i])]
 fn left_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     let old_str = ghost! { str };
     let mut c: Ghost<usize> = ghost! { 0 };
@@ -82,7 +82,7 @@ fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
 
     #[invariant(not_elem, forall<j: Int> 0 <= j && j < produced.len() ==> produced[j].deep_model() != elem.deep_model())]
     for e in vec.iter() {
-        proof_assert! { *e == (@*vec)[produced.len()-1] };
+        proof_assert! { *e == ((*vec)@)[produced.len()-1] };
         if e == &elem {
             proof_assert! { contains(vec.deep_model(), elem.deep_model()) };
             return;

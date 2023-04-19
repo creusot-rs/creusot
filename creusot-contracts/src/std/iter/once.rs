@@ -15,7 +15,7 @@ impl<T> Invariant for Once<T> {}
 impl<T> Iterator for Once<T> {
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { @*self == None && self.resolve() }
+        pearlite! { (*self)@ == None && self.resolve() }
     }
 
     #[predicate]

@@ -12,5 +12,5 @@ impl<T> ShallowModel for Vec<T> {
     }
 }
 
-#[ensures(x@ == @*x)]
+#[ensures(x@ == (*x)@)]
 pub fn test<T>(x: &mut Vec<T>) {}

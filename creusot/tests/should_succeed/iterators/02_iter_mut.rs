@@ -62,14 +62,14 @@ impl<'a, T> IterMut<'a, T> {
 }
 
 #[ensures(@result.inner == v@)]
-#[ensures(@^result.inner == @^v)]
-#[ensures((@^v).len() == v@.len())]
+#[ensures(@^result.inner == (^v)@)]
+#[ensures(((^v)@).len() == v@.len())]
 fn iter_mut<'a, T>(v: &'a mut Vec<T>) -> IterMut<'a, T> {
     IterMut { inner: &mut v[..] }
 }
 
-#[ensures((@^v).len() == v@.len())]
-#[ensures(forall<i : _> 0 <= i && i < v@.len() ==> @(@^v)[i] == 0)]
+#[ensures(((^v)@).len() == v@.len())]
+#[ensures(forall<i : _> 0 <= i && i < v@.len() ==> @((^v)@)[i] == 0)]
 pub fn all_zero(v: &mut Vec<usize>) {
     let mut it = iter_mut(v).into_iter();
     let iter_old = ghost! { it };

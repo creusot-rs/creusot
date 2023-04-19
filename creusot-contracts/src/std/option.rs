@@ -122,7 +122,7 @@ impl<T> Invariant for IntoIter<T> {}
 impl<T> Iterator for IntoIter<T> {
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { @*self == None && self.resolve() }
+        pearlite! { (*self)@ == None && self.resolve() }
     }
 
     #[predicate]
@@ -171,7 +171,7 @@ impl<'a, T> Invariant for Iter<'a, T> {}
 impl<'a, T> Iterator for Iter<'a, T> {
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { @*self == None && self.resolve() }
+        pearlite! { (*self)@ == None && self.resolve() }
     }
 
     #[predicate]
@@ -223,7 +223,7 @@ impl<'a, T> Invariant for IterMut<'a, T> {}
 impl<'a, T> Iterator for IterMut<'a, T> {
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { @*self == None && self.resolve() }
+        pearlite! { (*self)@ == None && self.resolve() }
     }
 
     #[predicate]

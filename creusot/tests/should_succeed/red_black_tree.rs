@@ -617,7 +617,7 @@ where
 
     #[requires((*self).invariant())]
     #[ensures((^self).invariant())]
-    #[ensures(@^self == self@.set(key.deep_model(), Some(val)))]
+    #[ensures((^self)@ == self@.set(key.deep_model(), Some(val)))]
     pub fn insert(&mut self, key: K, val: V) {
         self.insert_rec(key, val);
         self.node.as_mut().unwrap().color = Black;
@@ -657,8 +657,8 @@ where
     #[ensures(match result {
         Some((k, v)) => self@.get(k.deep_model()) == Some(v) &&
             (forall<k2: K::DeepModelTy> self@.get(k2) == None || k2 <= k.deep_model()) &&
-            @^self == self@.set(k.deep_model(), None),
-        None => @^self == self@ && self@ == Mapping::cst(None)})]
+            (^self)@ == self@.set(k.deep_model(), None),
+        None => (^self)@ == self@ && self@ == Mapping::cst(None)})]
     pub fn delete_max(&mut self) -> Option<(K, V)> {
         let old_self = ghost! { self };
         if let Some(node) = &mut self.node {
@@ -708,8 +708,8 @@ where
         Some((k, v)) =>
             self@.get(k.deep_model()) == Some(v) &&
             (forall<k2: K::DeepModelTy> self@.get(k2) == None || k.deep_model() <= k2) &&
-            @^self == self@.set(k.deep_model(), None),
-        None => @^self == self@ && self@ == Mapping::cst(None)
+            (^self)@ == self@.set(k.deep_model(), None),
+        None => (^self)@ == self@ && self@ == Mapping::cst(None)
     })]
     pub fn delete_min(&mut self) -> Option<(K, V)> {
         ghost! { Self::has_mapping_model };
@@ -791,7 +791,7 @@ where
             k.deep_model() == key.deep_model() && self@.get(key.deep_model()) == Some(v),
         None => self@.get(key.deep_model()) == None
     })]
-    #[ensures(@^self == self@.set(key.deep_model(), None))]
+    #[ensures((^self)@ == self@.set(key.deep_model(), None))]
     pub fn delete(&mut self, key: &K) -> Option<(K, V)> {
         ghost! { Self::has_mapping_model };
 
@@ -833,8 +833,8 @@ where
     #[requires((*self).invariant())]
     #[ensures((^self).invariant())]
     #[ensures(match result {
-        Some(v) => self@.get(key.deep_model()) == Some(*v) && @^self == self@.set(key.deep_model(), Some(^v)),
-        None => self@.get(key.deep_model()) == None && @^self == @self
+        Some(v) => self@.get(key.deep_model()) == Some(*v) && (^self)@ == self@.set(key.deep_model(), Some(^v)),
+        None => self@.get(key.deep_model()) == None && (^self)@ == @self
     })]
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
         ghost! { Self::has_mapping_model };

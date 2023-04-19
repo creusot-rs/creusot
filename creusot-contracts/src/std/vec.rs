@@ -62,51 +62,51 @@ extern_spec! {
                 #[ensures(result@ == self@.len())]
                 fn len(&self) -> usize;
 
-                #[ensures(@^self == self@.push(v))]
+                #[ensures((^self)@ == self@.push(v))]
                 fn push(&mut self, v: T);
 
                 #[ensures(match result {
                     Some(t) =>
-                        @^self == self@.subsequence(0, self@.len() - 1) &&
-                        self@ == (@^self).push(t),
+                        (^self)@ == self@.subsequence(0, self@.len() - 1) &&
+                        self@ == ((^self)@).push(t),
                     None => *self == ^self && self@.len() == 0
                 })]
                 fn pop(&mut self) -> Option<T>;
 
                 #[requires(ix@ < self@.len())]
                 #[ensures(result == self@[ix@])]
-                #[ensures(@^self == self@.subsequence(0, ix@).concat(self@.subsequence(ix@ + 1, self@.len())))]
-                #[ensures((@^self).len() == self@.len() - 1)]
+                #[ensures((^self)@ == self@.subsequence(0, ix@).concat(self@.subsequence(ix@ + 1, self@.len())))]
+                #[ensures(((^self)@).len() == self@.len() - 1)]
                 fn remove(&mut self, ix: usize) -> T;
 
-                #[ensures((@^self).len() == self@.len() + 1)]
-                #[ensures(forall<i: Int> 0 <= i && i < index@ ==> (@^self)[i] == self@[i])]
-                #[ensures((@^self)[index@] == element)]
-                #[ensures(forall<i: Int> index@ < i && i < (@^self).len() ==> (@^self)[i] == self@[i - 1])]
+                #[ensures(((^self)@).len() == self@.len() + 1)]
+                #[ensures(forall<i: Int> 0 <= i && i < index@ ==> ((^self)@)[i] == self@[i])]
+                #[ensures(((^self)@)[index@] == element)]
+                #[ensures(forall<i: Int> index@ < i && i < ((^self)@).len() ==> ((^self)@)[i] == self@[i - 1])]
                 fn insert(&mut self, index: usize, element: T);
 
                 #[ensures(result@ >= self@.len())]
                 fn capacity(&self) -> usize;
 
-                #[ensures(@^self == self@)]
+                #[ensures((^self)@ == self@)]
                 fn reserve(&mut self, additional: usize);
 
-                #[ensures(@^self == self@)]
+                #[ensures((^self)@ == self@)]
                 fn reserve_exact(&mut self, additional: usize);
 
-                #[ensures(@^self == self@)]
+                #[ensures((^self)@ == self@)]
                 fn shrink_to_fit(&mut self);
 
-                #[ensures(@^self == self@)]
+                #[ensures((^self)@ == self@)]
                 fn shrink_to(&mut self, min_capacity: usize);
 
-                #[ensures((@^self).len() == 0)]
+                #[ensures(((^self)@).len() == 0)]
                 fn clear(&mut self);
             }
 
             impl<T, A : Allocator> Extend<T> for Vec<T, A> {
                 #[ensures(exists<done_ : &mut I, prod: Seq<I::Item>>
-                    done_.completed() && iter.produces(prod, *done_) && @^self == self@.concat(prod)
+                    done_.completed() && iter.produces(prod, *done_) && (^self)@ == self@.concat(prod)
                 )]
                 fn extend<I>(&mut self, iter: I)
                 where
@@ -117,9 +117,9 @@ extern_spec! {
             impl<T, I : SliceIndex<[T]>, A : Allocator> IndexMut<I> for Vec<T, A> {
                 #[requires(ix.in_bounds(self@))]
                 #[ensures(ix.has_value(self@, *result))]
-                #[ensures(ix.has_value(@^self, ^result))]
-                #[ensures(ix.resolve_elswhere(self@, @^self))]
-                #[ensures((@^self).len() == self@.len())]
+                #[ensures(ix.has_value((^self)@, ^result))]
+                #[ensures(ix.resolve_elswhere(self@, (^self)@))]
+                #[ensures(((^self)@).len() == self@.len())]
                 fn index_mut(&mut self, ix: I) -> &mut <Vec<T, A> as Index<I>>::Output;
             }
 
@@ -136,7 +136,7 @@ extern_spec! {
 
             impl<T, A : Allocator> DerefMut for Vec<T, A> {
                 #[ensures(result@ == self@)]
-                #[ensures(@^result == @^self)]
+                #[ensures((^result)@ == (^self)@)]
                 fn deref_mut(&mut self) -> &mut [T];
             }
 

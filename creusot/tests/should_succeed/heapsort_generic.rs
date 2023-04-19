@@ -32,9 +32,9 @@ fn heap_frag_max<T: OrdLogic>(s: Seq<T>, i: Int, end: Int) {
 #[requires(start@ < end@)]
 #[requires(end@ <= v@.len())]
 #[ensures(heap_frag((^v).deep_model(), start@, end@))]
-#[ensures((@^v).permutation_of(v@))]
+#[ensures(((^v)@).permutation_of(v@))]
 #[ensures(forall<i: Int> 0 <= i && i < start@ || end@ <= i && i < v@.len()
-                      ==> v@[i] == (@^v)[i])]
+                      ==> v@[i] == ((^v)@)[i])]
 #[ensures(forall<m: T::DeepModelTy>
           (forall<j: Int> start@ <= j && j < end@ ==> v.deep_model()[j] <= m) ==>
           forall<j: Int> start@ <= j && j < end@ ==> (^v).deep_model()[j] <= m)]
@@ -89,7 +89,7 @@ fn sorted<T: OrdLogic>(s: Seq<T>) -> bool {
 
 #[requires(v@.len() < @std::usize::MAX/2)]
 #[ensures(sorted((^v).deep_model()))]
-#[ensures((@^v).permutation_of(v@))]
+#[ensures(((^v)@).permutation_of(v@))]
 pub fn heap_sort<T: Ord + DeepModel>(v: &mut Vec<T>)
 where
     T::DeepModelTy: OrdLogic,

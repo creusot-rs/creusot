@@ -21,7 +21,7 @@ use creusot_contracts::{
 // Here we prove the specific instance of `extend` for `Vec<T>`.
 #[ensures(
   exists<done_ : &mut I, prod: Seq<_>>
-    done_.completed() && iter.produces(prod, *done_) && @^vec == vec@.concat(prod)
+    done_.completed() && iter.produces(prod, *done_) && (^vec)@ == vec@.concat(prod)
 )]
 pub fn extend<T, I: Iterator<Item = T> + Invariant>(vec: &mut Vec<T>, iter: I) {
     let old_vec = ghost! { vec };
