@@ -30,8 +30,8 @@ impl Board {
     fn wf(self) -> bool {
         pearlite! {
             self.size@ <= 1_000 &&
-            (self.field@).len() == self.size@ &&
-            forall<i : Int> 0 <= i && i < self.size@ ==> ((self.field@)[i]@).len() == self.size@
+            self.field@.len() == self.size@ &&
+            forall<i : Int> 0 <= i && i < self.size@ ==> (self.field@[i]@).len() == self.size@
         }
     }
     #[requires(size@ <= 1000)]

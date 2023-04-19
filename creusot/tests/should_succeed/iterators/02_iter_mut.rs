@@ -27,7 +27,7 @@ impl<'a, T> Iterator for IterMut<'a, T> {
 
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && (self.inner@).ext_eq(Seq::EMPTY) }
+        pearlite! { self.resolve() && self.inner@.ext_eq(Seq::EMPTY) }
     }
 
     #[predicate]
