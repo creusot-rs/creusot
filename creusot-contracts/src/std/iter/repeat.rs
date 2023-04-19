@@ -22,7 +22,7 @@ impl<T: Clone> Iterator for Repeat<T> {
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self == o &&
-            forall<i: Int> 0 <= i && i < visited.len() ==> visited[i] == @self
+            forall<i: Int> 0 <= i && i < visited.len() ==> visited[i] == self@
         }
     }
 

@@ -834,7 +834,7 @@ where
     #[ensures((^self).invariant())]
     #[ensures(match result {
         Some(v) => self@.get(key.deep_model()) == Some(*v) && (^self)@ == self@.set(key.deep_model(), Some(^v)),
-        None => self@.get(key.deep_model()) == None && (^self)@ == @self
+        None => self@.get(key.deep_model()) == None && (^self)@ == self@
     })]
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
         ghost! { Self::has_mapping_model };
