@@ -81,7 +81,7 @@ fn test_model() {
 
 #[test]
 fn test_model_post() {
-    snapshot!(quote!(a.@) as Term, @r###"
+    snapshot!(quote!(a@) as Term, @r###"
     TermModelPost {
         term: TermPath {
             inner: ExprPath {
@@ -100,7 +100,6 @@ fn test_model_post() {
                 },
             },
         },
-        dot_token: Dot,
         at_token: At,
     }"###);
 }

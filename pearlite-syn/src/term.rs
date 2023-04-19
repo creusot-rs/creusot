@@ -109,7 +109,7 @@ ast_enum_of_structs! {
         /// The model of a term: `@x`
         Model(TermModel),
 
-        /// The model of a term: `x.@`
+        /// The model of a term: `x@`
         ModelPost(TermModelPost),
 
         /// Tokens in term position not interpreted by Syn.
@@ -433,7 +433,6 @@ ast_struct! {
 ast_struct! {
     pub struct TermModelPost {
         pub term: Box<Term>,
-        pub dot_token: Token![.],
         pub at_token: Token![@],
     }
 }
@@ -1029,11 +1028,6 @@ pub(crate) mod parsing {
                     }
                 }
 
-                if let Some(at_token) = input.parse::<Option<Token![@]>>()? {
-                    e = Term::ModelPost(TermModelPost { term: Box::new(e), dot_token, at_token });
-                    continue;
-                }
-
                 let member: Member = input.parse()?;
                 let turbofish = if matches!(member, Member::Named(_)) && input.peek(Token![::]) {
                     Some(TermMethodTurbofish {
@@ -1084,6 +1078,8 @@ pub(crate) mod parsing {
                     bracket_token: bracketed!(content in input),
                     index: content.parse()?,
                 });
+            } else if input.peek(Token![@]) {
+                e = Term::ModelPost(TermModelPost { term: Box::new(e), at_token: input.parse()? });
             } else {
                 break;
             }
@@ -1867,7 +1863,6 @@ pub(crate) mod printing {
     impl ToTokens for TermModelPost {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             self.term.to_tokens(tokens);
-            self.dot_token.to_tokens(tokens);
             self.at_token.to_tokens(tokens);
         }
     }
