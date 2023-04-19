@@ -27,7 +27,7 @@ impl<T: DeepModel> DeepModel for [T] {
     #[logic]
     #[trusted]
     #[ensures(self@.len() == result.len())]
-    #[ensures(forall<i: Int> 0 <= i && i < result.len() ==> result[i] == self@[i].deep_model())]
+    #[ensures(forall<i: Int> 0 <= i && i < result.len() ==> result[i] == self[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { absurd }
     }
@@ -66,8 +66,8 @@ impl<T> SliceExt<T> for [T] {
     #[logic]
     #[trusted]
     #[ensures(result.len() == self@.len())]
-    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> *result[i] == self@[i])]
-    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> ^result[i] == (^self)@[i])]
+    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> *result[i] == self[i])]
+    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> ^result[i] == (^self)[i])]
     fn to_mut_seq(&mut self) -> Seq<&mut T> {
         pearlite! { absurd }
     }
@@ -75,7 +75,7 @@ impl<T> SliceExt<T> for [T] {
     #[logic]
     #[trusted]
     #[ensures(result.len() == self@.len())]
-    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> *result[i] == self@[i])]
+    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> *result[i] == self[i])]
     fn to_ref_seq(&self) -> Seq<&T> {
         pearlite! { absurd }
     }
@@ -233,7 +233,7 @@ extern_spec! {
         #[ensures(result == None ==> self@.len() == 0 && ^self == *self && self@ == Seq::EMPTY)]
         #[ensures(forall<first: &mut T, tail: &mut [T]>
                   result == Some((first, tail))
-                && *first == self@[0] && ^first == (^self)@[0]
+                && *first == self[0] && ^first == (^self)[0]
                 && self@.len() > 0 && (^self)@.len() > 0
                 && tail@ == self@.tail()
                 && (^tail)@ == (^self)@.tail())]
@@ -241,8 +241,8 @@ extern_spec! {
 
         #[ensures(match result {
             Some(r) => {
-                * r == (**self)@[0] &&
-                ^ r == (^*self)@[0] &&
+                * r == (**self)[0] &&
+                ^ r == (^*self)[0] &&
                 (**self)@.len() > 0 && // ^*s.len == **s.len ? (i dont think so)
                 (^*self)@.len() > 0 &&
                 (*^self)@.ext_eq((**self)@.tail()) && (^^self)@.ext_eq((^*self)@.tail())
@@ -259,11 +259,11 @@ extern_spec! {
         fn iter_mut(&mut self) -> IterMut<'_, T>;
 
         #[ensures(result == None ==> self@.len() == 0)]
-        #[ensures(forall<x : _> result == Some(x) ==> self@[self@.len() - 1] == *x)]
+        #[ensures(forall<x : _> result == Some(x) ==> self[self@.len() - 1] == *x)]
         fn last(&self) -> Option<&T>;
 
         #[ensures(result == None ==> self@.len() == 0)]
-        #[ensures(forall<x : _> result == Some(x) ==> self@[0] == *x)]
+        #[ensures(forall<x : _> result == Some(x) ==> self[0] == *x)]
         fn first(&self) -> Option<&T>;
 
 

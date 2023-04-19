@@ -705,6 +705,33 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel
     
   axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
 end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub
+  type t
+  type s
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic_Interface
+  type t
+  type s
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic
+  type t
+  type s
+  use prelude.Int
+  use seq.Seq
+  use seq.Seq
+  clone CreusotContracts_Model_ShallowModel_ShallowModel_Stub as ShallowModel0 with
+    type self = s,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t =
+    Seq.get (ShallowModel0.shallow_model self) ix
+  val index_logic [@inline:trivial] (self : s) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
+end
 module CreusotContracts_Std1_Vec_Impl1_DeepModel_Stub
   type t
   type a
@@ -717,6 +744,9 @@ module CreusotContracts_Std1_Vec_Impl1_DeepModel_Stub
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type s = Alloc_Vec_Vec_Type.t_vec t a
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = a,
@@ -736,13 +766,16 @@ module CreusotContracts_Std1_Vec_Impl1_DeepModel_Interface
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type s = Alloc_Vec_Vec_Type.t_vec t a
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = a,
     val Max0.mAX' = Max0.mAX',
     axiom .
   function deep_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq DeepModelTy0.deepModelTy
-  axiom deep_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . (forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get (deep_model self) i = DeepModel0.deep_model (Seq.get (ShallowModel0.shallow_model self) i)) && Seq.length (ShallowModel0.shallow_model self) = Seq.length (deep_model self)
+  axiom deep_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . (forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get (deep_model self) i = DeepModel0.deep_model (IndexLogic0.index_logic self i)) && Seq.length (ShallowModel0.shallow_model self) = Seq.length (deep_model self)
 end
 module CreusotContracts_Std1_Vec_Impl1_DeepModel
   type t
@@ -756,6 +789,9 @@ module CreusotContracts_Std1_Vec_Impl1_DeepModel
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type s = Alloc_Vec_Vec_Type.t_vec t a
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = a,
@@ -765,7 +801,7 @@ module CreusotContracts_Std1_Vec_Impl1_DeepModel
   val deep_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq DeepModelTy0.deepModelTy
     ensures { result = deep_model self }
     
-  axiom deep_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . (forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get (deep_model self) i = DeepModel0.deep_model (Seq.get (ShallowModel0.shallow_model self) i)) && Seq.length (ShallowModel0.shallow_model self) = Seq.length (deep_model self)
+  axiom deep_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . (forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get (deep_model self) i = DeepModel0.deep_model (IndexLogic0.index_logic self i)) && Seq.length (ShallowModel0.shallow_model self) = Seq.length (deep_model self)
 end
 module CreusotContracts_Logic_Seq_Impl0_PermutationOf_Stub
   type t
@@ -1194,6 +1230,12 @@ module HeapsortGeneric_SiftDown_Interface
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Stub as LeLog0 with
     type self = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic1 with
+    type t = t,
+    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type s = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
   clone CreusotContracts_Logic_Seq_Impl0_PermutationOf_Stub as PermutationOf0 with
     type t = t
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel1 with
@@ -1205,6 +1247,7 @@ module HeapsortGeneric_SiftDown_Interface
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function IndexLogic0.index_logic = IndexLogic1.index_logic,
     function DeepModel0.deep_model = DeepModel2.deep_model,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     val Max0.mAX' = Max0.mAX',
@@ -1223,7 +1266,7 @@ module HeapsortGeneric_SiftDown_Interface
     requires {[#"../heapsort_generic.rs" 33 11 33 27] UIntSize.to_int end' <= Seq.length (ShallowModel0.shallow_model v)}
     ensures { [#"../heapsort_generic.rs" 34 10 34 52] HeapFrag0.heap_frag (DeepModel1.deep_model ( ^ v)) (UIntSize.to_int start) (UIntSize.to_int end') }
     ensures { [#"../heapsort_generic.rs" 35 0 35 36] PermutationOf0.permutation_of (ShallowModel1.shallow_model ( ^ v)) (ShallowModel0.shallow_model v) }
-    ensures { [#"../heapsort_generic.rs" 36 0 37 45] forall i : int . 0 <= i /\ i < UIntSize.to_int start \/ UIntSize.to_int end' <= i /\ i < Seq.length (ShallowModel0.shallow_model v) -> Seq.get (ShallowModel0.shallow_model v) i = Seq.get (ShallowModel1.shallow_model ( ^ v)) i }
+    ensures { [#"../heapsort_generic.rs" 36 0 37 43] forall i : int . 0 <= i /\ i < UIntSize.to_int start \/ UIntSize.to_int end' <= i /\ i < Seq.length (ShallowModel0.shallow_model v) -> IndexLogic0.index_logic v i = IndexLogic1.index_logic ( ^ v) i }
     ensures { [#"../heapsort_generic.rs" 38 0 40 80] forall m : DeepModelTy0.deepModelTy . (forall j : int . UIntSize.to_int start <= j /\ j < UIntSize.to_int end' -> LeLog0.le_log (Seq.get (DeepModel0.deep_model v) j) m) -> (forall j : int . UIntSize.to_int start <= j /\ j < UIntSize.to_int end' -> LeLog0.le_log (Seq.get (DeepModel1.deep_model ( ^ v)) j) m) }
     
 end
@@ -1279,6 +1322,7 @@ module HeapsortGeneric_SiftDown
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+  use prelude.Ghost
   clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
@@ -1375,12 +1419,25 @@ module HeapsortGeneric_SiftDown
     type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic2 with
+    type t = t,
+    type s = Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))),
+    function ShallowModel0.shallow_model = ShallowModel2.shallow_model
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic1 with
+    type t = t,
+    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic0 with
+    type t = t,
+    type s = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone CreusotContracts_Logic_Seq_Impl0_PermutationOf as PermutationOf0 with
     type t = t
   clone CreusotContracts_Std1_Vec_Impl1_DeepModel as DeepModel1 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function IndexLogic0.index_logic = IndexLogic1.index_logic,
     function DeepModel0.deep_model = DeepModel2.deep_model,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     val Max0.mAX' = Max0.mAX',
@@ -1399,7 +1456,7 @@ module HeapsortGeneric_SiftDown
     requires {[#"../heapsort_generic.rs" 33 11 33 27] UIntSize.to_int end' <= Seq.length (ShallowModel0.shallow_model v)}
     ensures { [#"../heapsort_generic.rs" 34 10 34 52] HeapFrag0.heap_frag (DeepModel1.deep_model ( ^ v)) (UIntSize.to_int start) (UIntSize.to_int end') }
     ensures { [#"../heapsort_generic.rs" 35 0 35 36] PermutationOf0.permutation_of (ShallowModel1.shallow_model ( ^ v)) (ShallowModel0.shallow_model v) }
-    ensures { [#"../heapsort_generic.rs" 36 0 37 45] forall i : int . 0 <= i /\ i < UIntSize.to_int start \/ UIntSize.to_int end' <= i /\ i < Seq.length (ShallowModel0.shallow_model v) -> Seq.get (ShallowModel0.shallow_model v) i = Seq.get (ShallowModel1.shallow_model ( ^ v)) i }
+    ensures { [#"../heapsort_generic.rs" 36 0 37 43] forall i : int . 0 <= i /\ i < UIntSize.to_int start \/ UIntSize.to_int end' <= i /\ i < Seq.length (ShallowModel0.shallow_model v) -> IndexLogic0.index_logic v i = IndexLogic1.index_logic ( ^ v) i }
     ensures { [#"../heapsort_generic.rs" 38 0 40 80] forall m : DeepModelTy0.deepModelTy . (forall j : int . UIntSize.to_int start <= j /\ j < UIntSize.to_int end' -> LeLog0.le_log (Seq.get (DeepModel0.deep_model v) j) m) -> (forall j : int . UIntSize.to_int start <= j /\ j < UIntSize.to_int end' -> LeLog0.le_log (Seq.get (DeepModel1.deep_model ( ^ v)) j) m) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -1474,7 +1531,7 @@ module HeapsortGeneric_SiftDown
   BB2 {
     invariant permutation { [#"../heapsort_generic.rs" 48 4 48 56] PermutationOf0.permutation_of (ShallowModel0.shallow_model v_1) (ShallowModel2.shallow_model old_v_11) };
     invariant i_bounds { [#"../heapsort_generic.rs" 49 26 49 51] UIntSize.to_int start_2 <= UIntSize.to_int i_14 /\ UIntSize.to_int i_14 < UIntSize.to_int end'_3 };
-    invariant unchanged { [#"../heapsort_generic.rs" 48 4 48 56] forall j : int . 0 <= j /\ j < UIntSize.to_int start_2 \/ UIntSize.to_int end'_3 <= j /\ j < Seq.length (ShallowModel0.shallow_model v_1) -> Seq.get (ShallowModel2.shallow_model old_v_11) j = Seq.get (ShallowModel0.shallow_model v_1) j };
+    invariant unchanged { [#"../heapsort_generic.rs" 48 4 48 56] forall j : int . 0 <= j /\ j < UIntSize.to_int start_2 \/ UIntSize.to_int end'_3 <= j /\ j < Seq.length (ShallowModel0.shallow_model v_1) -> IndexLogic2.index_logic old_v_11 j = IndexLogic0.index_logic v_1 j };
     invariant keep_bound { [#"../heapsort_generic.rs" 48 4 48 56] forall m : DeepModelTy0.deepModelTy . (forall j : int . UIntSize.to_int start_2 <= j /\ j < UIntSize.to_int end'_3 -> LeLog0.le_log (Seq.get (DeepModel0.deep_model (Ghost.inner old_v_11)) j) m) -> (forall j : int . UIntSize.to_int start_2 <= j /\ j < UIntSize.to_int end'_3 -> LeLog0.le_log (Seq.get (DeepModel0.deep_model v_1) j) m) };
     invariant heap { [#"../heapsort_generic.rs" 48 4 48 56] forall j : int . UIntSize.to_int start_2 <= Parent0.parent j /\ j < UIntSize.to_int end'_3 /\ UIntSize.to_int i_14 <> Parent0.parent j -> LeLog0.le_log (Seq.get (DeepModel0.deep_model v_1) j) (Seq.get (DeepModel0.deep_model v_1) (Parent0.parent j)) };
     invariant hole_left { [#"../heapsort_generic.rs" 48 4 48 56] let c = 2 * UIntSize.to_int i_14 + 1 in c < UIntSize.to_int end'_3 /\ UIntSize.to_int start_2 <= Parent0.parent (UIntSize.to_int i_14) -> LeLog0.le_log (Seq.get (DeepModel0.deep_model v_1) c) (Seq.get (DeepModel0.deep_model v_1) (Parent0.parent (Parent0.parent c))) };
@@ -1700,9 +1757,12 @@ module HeapsortGeneric_HeapSort_Interface
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel1 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
-  use seq.Seq
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+  use seq.Seq
   clone CreusotContracts_Logic_Seq_Impl0_PermutationOf_Stub as PermutationOf0 with
     type t = t
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel1 with
@@ -1716,6 +1776,7 @@ module HeapsortGeneric_HeapSort_Interface
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
     function DeepModel0.deep_model = DeepModel1.deep_model,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     val Max0.mAX' = Max1.mAX',
@@ -1802,7 +1863,6 @@ module HeapsortGeneric_HeapSort
     predicate LeLog0.le_log = LeLog0.le_log,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
-  clone HeapsortGeneric_Parent as Parent0
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel1 with
@@ -1814,6 +1874,11 @@ module HeapsortGeneric_HeapSort
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic1 with
+    type t = t,
+    type s = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  clone HeapsortGeneric_Parent as Parent0
   clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel4 with
     type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
@@ -1825,6 +1890,10 @@ module HeapsortGeneric_HeapSort
   clone CreusotContracts_Model_DeepModel_DeepModel_Interface as DeepModel2 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic0 with
+    type t = t,
+    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   clone HeapsortGeneric_HeapFrag as HeapFrag0 with
@@ -1861,6 +1930,7 @@ module HeapsortGeneric_HeapSort
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
     function DeepModel0.deep_model = DeepModel2.deep_model,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     val Max0.mAX' = Max1.mAX',
@@ -1877,6 +1947,8 @@ module HeapsortGeneric_HeapSort
     function DeepModel1.deep_model = DeepModel0.deep_model,
     function ShallowModel1.shallow_model = ShallowModel1.shallow_model,
     predicate PermutationOf0.permutation_of = PermutationOf0.permutation_of,
+    function IndexLogic0.index_logic = IndexLogic1.index_logic,
+    function IndexLogic1.index_logic = IndexLogic0.index_logic,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     predicate LeLog0.le_log = LeLog0.le_log,
     function DeepModel2.deep_model = DeepModel2.deep_model,

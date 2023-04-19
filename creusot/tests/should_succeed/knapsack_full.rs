@@ -75,7 +75,7 @@ fn m<Name>(items: Seq<Item<Name>>, i: Int, w: Int) -> Int {
 
 #[requires(items@.len() < 10000000)]
 #[requires(max_weight@ < 10000000)]
-#[requires(forall<i: Int> 0 <= i && i < items@.len() ==> items@[i].value@ <= 10000000)]
+#[requires(forall<i: Int> 0 <= i && i < items@.len() ==> items[i].value@ <= 10000000)]
 #[ensures(sum_weights(result@, result@.len()) <= max_weight@)]
 #[ensures(subseq_rev(result@, 0, items@, items@.len()))]
 #[ensures(forall<s: Seq<&Item<Name>>> subseq_rev(s, 0, items@, items@.len()) && sum_weights(s, s.len()) <= max_weight@ ==>
@@ -86,24 +86,24 @@ pub fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&
 
     #[invariant(items_len, items@.len() + 1 == best_value@.len())]
     #[invariant(weight_len, forall<i: Int> 0 <= i && i < best_value@.len() ==>
-                  max_weight@ + 1 == (best_value@[i]@).len())]
+                  max_weight@ + 1 == (best_value[i]@).len())]
     #[invariant(best_value, forall<ii: Int, ww: Int> 0 <= ii && ii <= produced.len() && 0 <= ww && ww <= max_weight@ ==>
-                  (best_value@[ii]@)[ww]@ == m(items@, ii, ww))]
+                  (best_value[ii]@)[ww]@ == m(items@, ii, ww))]
     #[invariant(best_value_bounds, forall<ii: Int, ww: Int> 0 <= ii && ii <= items@.len() && 0 <= ww && ww <= max_weight@ ==>
-                  (best_value@[ii]@)[ww]@ <= 10000000 * ii)]
+                  (best_value[ii]@)[ww]@ <= 10000000 * ii)]
     for i in 0..items.len() {
         let it = &items[i];
 
         #[invariant(items_len2, items@.len() + 1 == best_value@.len())]
         #[invariant(weight_len2, forall<i: Int> 0 <= i && i < best_value@.len() ==>
-                      max_weight@ + 1 == (best_value@[i]@).len())]
+                      max_weight@ + 1 == (best_value[i]@).len())]
         #[invariant(best_value2, forall<ii: Int, ww: Int>
                       0 <= ii && ii <= i@ && 0 <= ww && ww <= max_weight@ ==>
-                      (best_value@[ii]@)[ww]@ == m(items@, ii, ww))]
+                      (best_value[ii]@)[ww]@ == m(items@, ii, ww))]
         #[invariant(best_value2, forall<ww: Int> 0 <= ww && ww <= produced.len() - 1 ==>
-                      (best_value@[i@+1]@)[ww]@ == m(items@, i@+1, ww))]
+                      (best_value[i@+1]@)[ww]@ == m(items@, i@+1, ww))]
         #[invariant(best_value_bounds, forall<ii: Int, ww: Int> 0 <= ii && ii <= items@.len() && 0 <= ww && ww <= max_weight@ ==>
-                  (best_value@[ii]@)[ww]@ <= 10000000 * ii)]
+                  (best_value[ii]@)[ww]@ <= 10000000 * ii)]
         // Change compared to Rosetta Code: we start at w = 0.
         // This makes it possible to allow 0-weight items, and makes the proof simpler.
         for w in 0..=max_weight {
@@ -123,17 +123,17 @@ pub fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&
     #[invariant(left_weight_le_max, left_weight@ <= max_weight@)]
     #[invariant(result_weight, forall<r: Seq<&Item<Name>>>
                 result@.len() <= r.len() &&
-                (forall<i: Int> 0 <= i && i < result@.len() ==> result@[i] == r[i]) &&
+                (forall<i: Int> 0 <= i && i < result@.len() ==> result[i] == r[i]) &&
                 sum_weights(r, result@.len()) <= left_weight@ ==>
                 sum_weights(r, 0) <= max_weight@)]
     #[invariant(result_value, forall<r: Seq<&Item<Name>>>
                 result@.len() <= r.len() &&
-                (forall<i: Int> 0 <= i && i < result@.len() ==> result@[i] == r[i]) &&
+                (forall<i: Int> 0 <= i && i < result@.len() ==> result[i] == r[i]) &&
                 sum_values(r, result@.len()) == m(items@, j@, left_weight@) ==>
                 sum_values(r, 0) == m(items@, items@.len(), max_weight@))]
     #[invariant(result_subseq, forall<r: Seq<&Item<Name>>>
                 result@.len() <= r.len() &&
-                (forall<i: Int> 0 <= i && i < result@.len() ==> result@[i] == r[i]) &&
+                (forall<i: Int> 0 <= i && i < result@.len() ==> result[i] == r[i]) &&
                 subseq_rev(r, result@.len(), items@, j@) ==>
                 subseq_rev(r, 0, items@, items@.len()))]
     while 0 < j {

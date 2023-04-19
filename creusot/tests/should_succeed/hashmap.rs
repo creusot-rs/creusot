@@ -79,7 +79,7 @@ impl<K: Hash, V> ShallowModel for MyHashMap<K, V> {
 impl<K: Hash, V> MyHashMap<K, V> {
     #[logic]
     fn bucket(self, k: K::DeepModelTy) -> List<(K, V)> {
-        pearlite! { self.buckets@[self.bucket_ix(k)] }
+        pearlite! { self.buckets[self.bucket_ix(k)] }
     }
 
     #[logic]
@@ -166,7 +166,7 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
             i@ <=   old_self.bucket_ix(k) &&
                     old_self.bucket_ix(k) <= old_self.buckets@.len() ==> new@.get(k) == None
         )]
-        #[invariant(rest, forall<j : Int> i@ <= j && j < old_self.buckets@.len() ==> self.buckets@[j] == old_self.buckets@[j])]
+        #[invariant(rest, forall<j : Int> i@ <= j && j < old_self.buckets@.len() ==> self.buckets[j] == old_self.buckets[j])]
         #[invariant(a, new.hashmap_inv())]
         #[invariant(p, ^old_self.inner() == ^self)]
         #[invariant(l, old_self.buckets@.len() == self.buckets@.len())]
@@ -207,7 +207,7 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
     fn hashmap_inv(&self) -> bool {
         pearlite! {
             0 < self.buckets@.len() &&
-            forall<i : _> 0 <= i && i < self.buckets@.len() ==> self.good_bucket(self.buckets@[i], i) && self.buckets@[i].no_double_binding()
+            forall<i : _> 0 <= i && i < self.buckets@.len() ==> self.good_bucket(self.buckets[i], i) && self.buckets[i].no_double_binding()
         }
     }
 }

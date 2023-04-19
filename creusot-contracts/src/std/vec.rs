@@ -27,7 +27,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
     #[trusted]
     #[ensures(self.shallow_model().len() == result.len())]
     #[ensures(forall<i: Int> 0 <= i && i < self.shallow_model().len()
-              ==> result[i] == self@[i].deep_model())]
+              ==> result[i] == self[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { absurd }
     }
@@ -44,7 +44,7 @@ impl<T> Default for Vec<T> {
 impl<T> Resolve for Vec<T> {
     #[predicate]
     fn resolve(self) -> bool {
-        pearlite! { forall<i : Int> 0 <= i && i < self@.len() ==> self@[i].resolve() }
+        pearlite! { forall<i : Int> 0 <= i && i < self@.len() ==> self[i].resolve() }
     }
 }
 
@@ -74,15 +74,15 @@ extern_spec! {
                 fn pop(&mut self) -> Option<T>;
 
                 #[requires(ix@ < self@.len())]
-                #[ensures(result == self@[ix@])]
+                #[ensures(result == self[ix@])]
                 #[ensures((^self)@ == self@.subsequence(0, ix@).concat(self@.subsequence(ix@ + 1, self@.len())))]
                 #[ensures((^self)@.len() == self@.len() - 1)]
                 fn remove(&mut self, ix: usize) -> T;
 
                 #[ensures((^self)@.len() == self@.len() + 1)]
-                #[ensures(forall<i: Int> 0 <= i && i < index@ ==> (^self)@[i] == self@[i])]
-                #[ensures((^self)@[index@] == element)]
-                #[ensures(forall<i: Int> index@ < i && i < (^self)@.len() ==> (^self)@[i] == self@[i - 1])]
+                #[ensures(forall<i: Int> 0 <= i && i < index@ ==> (^self)[i] == self[i])]
+                #[ensures((^self)[index@] == element)]
+                #[ensures(forall<i: Int> index@ < i && i < (^self)@.len() ==> (^self)[i] == self[i - 1])]
                 fn insert(&mut self, index: usize, element: T);
 
                 #[ensures(result@ >= self@.len())]
@@ -141,7 +141,7 @@ extern_spec! {
             }
 
             #[ensures(result@.len() == n@)]
-            #[ensures(forall<i : Int> 0 <= i && i < n@ ==> result@[i] == elem)]
+            #[ensures(forall<i : Int> 0 <= i && i < n@ ==> result[i] == elem)]
             fn from_elem<T : Clone>(elem : T, n : usize) -> Vec<T>;
         }
     }
@@ -197,7 +197,7 @@ impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
 impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
     #[predicate]
     fn resolve(self) -> bool {
-        pearlite! { forall<i: Int> 0 <= i && i < self@.len() ==> self@[i].resolve() }
+        pearlite! { forall<i: Int> 0 <= i && i < self@.len() ==> self[i].resolve() }
     }
 }
 

@@ -186,6 +186,33 @@ module C02IterMut_Impl1_Completed
     ensures { result = completed self }
     
 end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub
+  type t
+  type s
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic_Interface
+  type t
+  type s
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic
+  type t
+  type s
+  use prelude.Int
+  use seq.Seq
+  use seq.Seq
+  clone CreusotContracts_Model_ShallowModel_ShallowModel_Stub as ShallowModel0 with
+    type self = s,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t =
+    Seq.get (ShallowModel0.shallow_model self) ix
+  val index_logic [@inline:trivial] (self : s) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
+end
 module CreusotContracts_Std1_Slice_Impl4_ToMutSeq_Stub
   type t
   use seq.Seq
@@ -193,12 +220,13 @@ module CreusotContracts_Std1_Slice_Impl4_ToMutSeq_Stub
   use prelude.Borrow
   use prelude.Slice
   use prelude.Seq
-  clone Core_Num_Impl11_Max_Stub as Max0
   use seq.Seq
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel1 with
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic1 with
     type t = t,
-    val Max0.mAX' = Max0.mAX',
-    axiom .
+    type s = seq t
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type s = borrowed (seq t)
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
     type t = seq t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
@@ -211,17 +239,18 @@ module CreusotContracts_Std1_Slice_Impl4_ToMutSeq_Interface
   use prelude.Borrow
   use prelude.Slice
   use prelude.Seq
-  clone Core_Num_Impl11_Max_Stub as Max0
   use seq.Seq
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel1 with
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic1 with
     type t = t,
-    val Max0.mAX' = Max0.mAX',
-    axiom .
+    type s = seq t
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type s = borrowed (seq t)
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
     type t = seq t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
   function to_mut_seq (self : borrowed (seq t)) : Seq.seq (borrowed t)
-  axiom to_mut_seq_spec : forall self : borrowed (seq t) . (forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq self) ->  ^ Seq.get (to_mut_seq self) i = Seq.get (ShallowModel1.shallow_model ( ^ self)) i) && (forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq self) ->  * Seq.get (to_mut_seq self) i = Seq.get (ShallowModel0.shallow_model self) i) && Seq.length (to_mut_seq self) = Seq.length (ShallowModel0.shallow_model self)
+  axiom to_mut_seq_spec : forall self : borrowed (seq t) . (forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq self) ->  ^ Seq.get (to_mut_seq self) i = IndexLogic1.index_logic ( ^ self) i) && (forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq self) ->  * Seq.get (to_mut_seq self) i = IndexLogic0.index_logic self i) && Seq.length (to_mut_seq self) = Seq.length (ShallowModel0.shallow_model self)
 end
 module CreusotContracts_Std1_Slice_Impl4_ToMutSeq
   type t
@@ -230,12 +259,13 @@ module CreusotContracts_Std1_Slice_Impl4_ToMutSeq
   use prelude.Borrow
   use prelude.Slice
   use prelude.Seq
-  clone Core_Num_Impl11_Max_Stub as Max0
   use seq.Seq
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel1 with
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic1 with
     type t = t,
-    val Max0.mAX' = Max0.mAX',
-    axiom .
+    type s = seq t
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type s = borrowed (seq t)
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
     type t = seq t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
@@ -243,7 +273,7 @@ module CreusotContracts_Std1_Slice_Impl4_ToMutSeq
   val to_mut_seq (self : borrowed (seq t)) : Seq.seq (borrowed t)
     ensures { result = to_mut_seq self }
     
-  axiom to_mut_seq_spec : forall self : borrowed (seq t) . (forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq self) ->  ^ Seq.get (to_mut_seq self) i = Seq.get (ShallowModel1.shallow_model ( ^ self)) i) && (forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq self) ->  * Seq.get (to_mut_seq self) i = Seq.get (ShallowModel0.shallow_model self) i) && Seq.length (to_mut_seq self) = Seq.length (ShallowModel0.shallow_model self)
+  axiom to_mut_seq_spec : forall self : borrowed (seq t) . (forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq self) ->  ^ Seq.get (to_mut_seq self) i = IndexLogic1.index_logic ( ^ self) i) && (forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq self) ->  * Seq.get (to_mut_seq self) i = IndexLogic0.index_logic self i) && Seq.length (to_mut_seq self) = Seq.length (ShallowModel0.shallow_model self)
 end
 module C02IterMut_Impl1_Produces_Stub
   type t
@@ -267,20 +297,21 @@ module C02IterMut_Impl1_Produces
   use prelude.Borrow
   use prelude.Slice
   use prelude.Seq
-  clone Core_Num_Impl11_Max_Stub as Max0
   use seq.Seq
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel1 with
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic1 with
     type t = t,
-    val Max0.mAX' = Max0.mAX',
-    axiom .
+    type s = seq t
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type s = borrowed (seq t)
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
     type t = seq t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
   clone CreusotContracts_Std1_Slice_Impl4_ToMutSeq_Stub as ToMutSeq0 with
     type t = t,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
-    function ShallowModel1.shallow_model = ShallowModel1.shallow_model,
-    val Max0.mAX' = Max0.mAX',
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
+    function IndexLogic1.index_logic = IndexLogic1.index_logic,
     axiom .
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
   predicate produces [#"../02_iter_mut.rs" 34 4 34 65] (self : C02IterMut_IterMut_Type.t_itermut t) (visited : Seq.seq (borrowed t)) (tl : C02IterMut_IterMut_Type.t_itermut t)
@@ -333,29 +364,38 @@ module C02IterMut_Impl1_ProducesRefl_Impl
   use seq.Seq
   use prelude.Slice
   use prelude.Seq
+  use prelude.Borrow
   use seq.Seq
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel as ShallowModel0 with
     type t = t,
     val Max0.mAX' = Max0.mAX',
     axiom .
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic1 with
+    type t = t,
+    type s = seq t,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel1 with
     type t = seq t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic0 with
+    type t = t,
+    type s = borrowed (seq t),
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone CreusotContracts_Std1_Slice_Impl4_ToMutSeq as ToMutSeq0 with
     type t = t,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
-    function ShallowModel1.shallow_model = ShallowModel0.shallow_model,
-    val Max0.mAX' = Max0.mAX',
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
+    function IndexLogic1.index_logic = IndexLogic1.index_logic,
     axiom .
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
   clone C02IterMut_Impl1_Produces as Produces0 with
     type t = t,
     function ToMutSeq0.to_mut_seq = ToMutSeq0.to_mut_seq,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
-    function ShallowModel1.shallow_model = ShallowModel0.shallow_model,
-    val Max0.mAX' = Max0.mAX'
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
+    function IndexLogic1.index_logic = IndexLogic1.index_logic
   clone C02IterMut_Impl0_Invariant as Invariant0 with
     type t = t,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
@@ -422,20 +462,28 @@ module C02IterMut_Impl1_ProducesTrans_Impl
   use prelude.Slice
   use prelude.Seq
   clone Core_Num_Impl11_Max as Max0
-  use seq.Seq
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel as ShallowModel1 with
     type t = t,
     val Max0.mAX' = Max0.mAX',
     axiom .
+  use seq.Seq
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic1 with
+    type t = t,
+    type s = seq t,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel0 with
     type t = seq t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic0 with
+    type t = t,
+    type s = borrowed (seq t),
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone CreusotContracts_Std1_Slice_Impl4_ToMutSeq as ToMutSeq0 with
     type t = t,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
-    function ShallowModel1.shallow_model = ShallowModel1.shallow_model,
-    val Max0.mAX' = Max0.mAX',
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
+    function IndexLogic1.index_logic = IndexLogic1.index_logic,
     axiom .
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
   clone C02IterMut_Impl0_Invariant as Invariant0 with
@@ -446,8 +494,8 @@ module C02IterMut_Impl1_ProducesTrans_Impl
     type t = t,
     function ToMutSeq0.to_mut_seq = ToMutSeq0.to_mut_seq,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
-    function ShallowModel1.shallow_model = ShallowModel1.shallow_model,
-    val Max0.mAX' = Max0.mAX'
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
+    function IndexLogic1.index_logic = IndexLogic1.index_logic
   let rec ghost function produces_trans [#"../02_iter_mut.rs" 46 4 46 90] (a : C02IterMut_IterMut_Type.t_itermut t) (ab : Seq.seq (borrowed t)) (b : C02IterMut_IterMut_Type.t_itermut t) (bc : Seq.seq (borrowed t)) (c : C02IterMut_IterMut_Type.t_itermut t) : ()
     requires {[#"../02_iter_mut.rs" 43 15 43 32] Produces0.produces a ab b}
     requires {[#"../02_iter_mut.rs" 44 15 44 32] Produces0.produces b bc c}
@@ -541,10 +589,13 @@ module Core_Slice_Impl0_TakeFirstMut_Interface
     type t = t,
     val Max0.mAX' = Max0.mAX',
     axiom .
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type s = seq t
   use Core_Option_Option_Type as Core_Option_Option_Type
   val take_first_mut (self : borrowed (borrowed (seq t))) : Core_Option_Option_Type.t_option (borrowed t)
     ensures { match (result) with
-      | Core_Option_Option_Type.C_Some r ->  * r = Seq.get (ShallowModel0.shallow_model ( *  * self)) 0 /\  ^ r = Seq.get (ShallowModel0.shallow_model ( ^  * self)) 0 /\ Seq.length (ShallowModel0.shallow_model ( *  * self)) > 0 /\ Seq.length (ShallowModel0.shallow_model ( ^  * self)) > 0 /\ Seq.(==) (ShallowModel0.shallow_model ( *  ^ self)) (Tail0.tail (ShallowModel0.shallow_model ( *  * self))) /\ Seq.(==) (ShallowModel0.shallow_model ( ^  ^ self)) (Tail0.tail (ShallowModel0.shallow_model ( ^  * self)))
+      | Core_Option_Option_Type.C_Some r ->  * r = IndexLogic0.index_logic ( *  * self) 0 /\  ^ r = IndexLogic0.index_logic ( ^  * self) 0 /\ Seq.length (ShallowModel0.shallow_model ( *  * self)) > 0 /\ Seq.length (ShallowModel0.shallow_model ( ^  * self)) > 0 /\ Seq.(==) (ShallowModel0.shallow_model ( *  ^ self)) (Tail0.tail (ShallowModel0.shallow_model ( *  * self))) /\ Seq.(==) (ShallowModel0.shallow_model ( ^  ^ self)) (Tail0.tail (ShallowModel0.shallow_model ( ^  * self)))
       | Core_Option_Option_Type.C_None ->  ^ self =  * self /\ Seq.length (ShallowModel0.shallow_model ( *  * self)) = 0
       end }
     
@@ -586,19 +637,28 @@ module C02IterMut_Impl1_Next
     val Max0.mAX' = Max0.mAX',
     axiom .
   use seq.Seq
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic1 with
+    type t = t,
+    type s = seq t,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel0 with
     type t = seq t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic0 with
+    type t = t,
+    type s = borrowed (seq t),
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone CreusotContracts_Std1_Slice_Impl4_ToMutSeq as ToMutSeq0 with
     type t = t,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
-    function ShallowModel1.shallow_model = ShallowModel1.shallow_model,
-    val Max0.mAX' = Max0.mAX',
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
+    function IndexLogic1.index_logic = IndexLogic1.index_logic,
     axiom .
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Slice_Impl0_TakeFirstMut_Interface as TakeFirstMut0 with
     type t = t,
+    function IndexLogic0.index_logic = IndexLogic1.index_logic,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
     function Tail0.tail = Tail0.tail,
     val Max0.mAX' = Max0.mAX'
@@ -613,8 +673,8 @@ module C02IterMut_Impl1_Next
     type t = t,
     function ToMutSeq0.to_mut_seq = ToMutSeq0.to_mut_seq,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
-    function ShallowModel1.shallow_model = ShallowModel1.shallow_model,
-    val Max0.mAX' = Max0.mAX'
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
+    function IndexLogic1.index_logic = IndexLogic1.index_logic
   clone C02IterMut_Impl1_Completed as Completed0 with
     type t = t,
     predicate Resolve0.resolve = Resolve0.resolve,
@@ -1136,6 +1196,9 @@ module C02IterMut_AllZero_Interface
   clone Core_Num_Impl11_Max_Stub as Max0
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = usize,
+    type s = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel1 with
     type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq usize
@@ -1146,7 +1209,7 @@ module C02IterMut_AllZero_Interface
     axiom .
   val all_zero [#"../02_iter_mut.rs" 73 0 73 35] (v : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : ()
     ensures { [#"../02_iter_mut.rs" 71 10 71 33] Seq.length (ShallowModel0.shallow_model ( ^ v)) = Seq.length (ShallowModel1.shallow_model v) }
-    ensures { [#"../02_iter_mut.rs" 72 0 72 67] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel1.shallow_model v) -> UIntSize.to_int (Seq.get (ShallowModel0.shallow_model ( ^ v)) i) = 0 }
+    ensures { [#"../02_iter_mut.rs" 72 0 72 66] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel1.shallow_model v) -> UIntSize.to_int (IndexLogic0.index_logic ( ^ v) i) = 0 }
     
 end
 module C02IterMut_AllZero
@@ -1182,18 +1245,26 @@ module C02IterMut_AllZero
   clone CreusotContracts_Invariant_Impl1_Invariant as Invariant1 with
     type t = C02IterMut_IterMut_Type.t_itermut usize,
     predicate Invariant0.invariant' = Invariant0.invariant'
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic2 with
+    type t = usize,
+    type s = seq usize,
+    function ShallowModel0.shallow_model = ShallowModel3.shallow_model
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic1 with
+    type t = usize,
+    type s = borrowed (seq usize),
+    function ShallowModel0.shallow_model = ShallowModel2.shallow_model
   clone CreusotContracts_Std1_Slice_Impl4_ToMutSeq as ToMutSeq0 with
     type t = usize,
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model,
-    function ShallowModel1.shallow_model = ShallowModel3.shallow_model,
-    val Max0.mAX' = Max0.mAX',
+    function IndexLogic0.index_logic = IndexLogic1.index_logic,
+    function IndexLogic1.index_logic = IndexLogic2.index_logic,
     axiom .
   clone C02IterMut_Impl1_Produces as Produces0 with
     type t = usize,
     function ToMutSeq0.to_mut_seq = ToMutSeq0.to_mut_seq,
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model,
-    function ShallowModel1.shallow_model = ShallowModel3.shallow_model,
-    val Max0.mAX' = Max0.mAX'
+    function IndexLogic0.index_logic = IndexLogic1.index_logic,
+    function IndexLogic1.index_logic = IndexLogic2.index_logic
   clone C02IterMut_Impl1_ProducesTrans as ProducesTrans0 with
     type t = usize,
     predicate Produces0.produces = Produces0.produces,
@@ -1237,9 +1308,13 @@ module C02IterMut_AllZero
     val Max0.mAX' = Max0.mAX'
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic0 with
+    type t = usize,
+    type s = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   let rec cfg all_zero [#"../02_iter_mut.rs" 73 0 73 35] [@cfg:stackify] [@cfg:subregion_analysis] (v : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : ()
     ensures { [#"../02_iter_mut.rs" 71 10 71 33] Seq.length (ShallowModel0.shallow_model ( ^ v)) = Seq.length (ShallowModel1.shallow_model v) }
-    ensures { [#"../02_iter_mut.rs" 72 0 72 67] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel1.shallow_model v) -> UIntSize.to_int (Seq.get (ShallowModel0.shallow_model ( ^ v)) i) = 0 }
+    ensures { [#"../02_iter_mut.rs" 72 0 72 66] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel1.shallow_model v) -> UIntSize.to_int (IndexLogic0.index_logic ( ^ v) i) = 0 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -1290,7 +1365,7 @@ module C02IterMut_AllZero
   BB5 {
     invariant type_invariant { [#"../02_iter_mut.rs" 77 32 77 46] Invariant0.invariant' it_4 };
     invariant structural { [#"../02_iter_mut.rs" 78 28 78 67] Produces0.produces (Ghost.inner iter_old_7) (Ghost.inner produced_10) it_4 };
-    invariant user { [#"../02_iter_mut.rs" 77 4 77 48] forall i : int . 0 <= i /\ i < Seq.length (Ghost.inner produced_10) -> UIntSize.to_int ( ^ Seq.get (Ghost.inner produced_10) i) = 0 };
+    invariant user { [#"../02_iter_mut.rs" 77 4 77 48] forall i : int . 0 <= i /\ i < Seq.length (Ghost.inner produced_10) -> UIntSize.to_int ( ^ Seq.get produced_10 i) = 0 };
     _19 <- borrow_mut it_4;
     it_4 <-  ^ _19;
     _18 <- ([#"../02_iter_mut.rs" 81 14 81 23] Next0.next _19);
@@ -1349,15 +1424,23 @@ module C02IterMut_Impl1
     type t = t,
     val Max0.mAX' = Max0.mAX',
     axiom .
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic1 with
+    type t = t,
+    type s = seq t,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel1 with
     type t = seq t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic0 with
+    type t = t,
+    type s = borrowed (seq t),
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone CreusotContracts_Std1_Slice_Impl4_ToMutSeq as ToMutSeq0 with
     type t = t,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
-    function ShallowModel1.shallow_model = ShallowModel0.shallow_model,
-    val Max0.mAX' = Max0.mAX',
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
+    function IndexLogic1.index_logic = IndexLogic1.index_logic,
     axiom .
   clone C02IterMut_Common_Iterator_Item_Type as Item0 with
     type self = C02IterMut_IterMut_Type.t_itermut t
@@ -1377,8 +1460,8 @@ module C02IterMut_Impl1
     type t = t,
     function ToMutSeq0.to_mut_seq = ToMutSeq0.to_mut_seq,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
-    function ShallowModel1.shallow_model = ShallowModel0.shallow_model,
-    val Max0.mAX' = Max0.mAX'
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
+    function IndexLogic1.index_logic = IndexLogic1.index_logic
   goal produces_trans_refn : [#"../02_iter_mut.rs" 46 4 46 90] forall a : C02IterMut_IterMut_Type.t_itermut t . forall ab : Seq.seq (borrowed t) . forall b : C02IterMut_IterMut_Type.t_itermut t . forall bc : Seq.seq (borrowed t) . forall c : C02IterMut_IterMut_Type.t_itermut t . Invariant0.invariant' c /\ Invariant0.invariant' b /\ Invariant0.invariant' a /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Invariant0.invariant' c /\ Invariant0.invariant' b /\ Invariant0.invariant' a /\ Produces0.produces b bc c /\ Produces0.produces a ab b /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
   goal produces_refl_refn : [#"../02_iter_mut.rs" 40 4 40 29] forall a : C02IterMut_IterMut_Type.t_itermut t . Invariant0.invariant' a -> Invariant0.invariant' a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
   goal next_refn : [#"../02_iter_mut.rs" 52 4 52 44] forall self : borrowed (C02IterMut_IterMut_Type.t_itermut t) . Invariant1.invariant' self -> Invariant1.invariant' self /\ (forall result : Core_Option_Option_Type.t_option (borrowed t) . Invariant0.invariant' ( ^ self) /\ match (result) with

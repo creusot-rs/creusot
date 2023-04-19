@@ -242,6 +242,58 @@ module CreusotContracts_Resolve_Impl1_Resolve
     ensures { result = resolve self }
     
 end
+module CreusotContracts_Model_ShallowModel_ShallowModelTy_Type
+  type self
+  type shallowModelTy
+end
+module CreusotContracts_Model_ShallowModel_ShallowModel_Stub
+  type self
+  clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
+    type self = self
+  function shallow_model (self : self) : ShallowModelTy0.shallowModelTy
+end
+module CreusotContracts_Model_ShallowModel_ShallowModel_Interface
+  type self
+  clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
+    type self = self
+  function shallow_model (self : self) : ShallowModelTy0.shallowModelTy
+end
+module CreusotContracts_Model_ShallowModel_ShallowModel
+  type self
+  clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
+    type self = self
+  function shallow_model (self : self) : ShallowModelTy0.shallowModelTy
+  val shallow_model (self : self) : ShallowModelTy0.shallowModelTy
+    ensures { result = shallow_model self }
+    
+end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub
+  type t
+  type s
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic_Interface
+  type t
+  type s
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic
+  type t
+  type s
+  use prelude.Int
+  use seq.Seq
+  use seq.Seq
+  clone CreusotContracts_Model_ShallowModel_ShallowModel_Stub as ShallowModel0 with
+    type self = s,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t =
+    Seq.get (ShallowModel0.shallow_model self) ix
+  val index_logic [@inline:trivial] (self : s) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
+end
 module CreusotContracts_Resolve_Resolve_Resolve_Stub
   type self
   predicate resolve (self : self)
@@ -276,42 +328,20 @@ module CreusotContracts_Std1_Vec_Impl10_Resolve
   clone Core_Num_Impl11_Max_Stub as Max0
   clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
     type self = t
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max0.mAX',
     axiom .
   predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
-    forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Resolve0.resolve (Seq.get (ShallowModel0.shallow_model self) i)
+    forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Resolve0.resolve (IndexLogic0.index_logic self i)
   val resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve self }
-    
-end
-module CreusotContracts_Model_ShallowModel_ShallowModelTy_Type
-  type self
-  type shallowModelTy
-end
-module CreusotContracts_Model_ShallowModel_ShallowModel_Stub
-  type self
-  clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
-    type self = self
-  function shallow_model (self : self) : ShallowModelTy0.shallowModelTy
-end
-module CreusotContracts_Model_ShallowModel_ShallowModel_Interface
-  type self
-  clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
-    type self = self
-  function shallow_model (self : self) : ShallowModelTy0.shallowModelTy
-end
-module CreusotContracts_Model_ShallowModel_ShallowModel
-  type self
-  clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
-    type self = self
-  function shallow_model (self : self) : ShallowModelTy0.shallowModelTy
-  val shallow_model (self : self) : ShallowModelTy0.shallowModelTy
-    ensures { result = shallow_model self }
     
 end
 module CreusotContracts_Model_Impl1_ShallowModel_Stub
@@ -458,6 +488,9 @@ module Alloc_Vec_FromElem_Interface
   clone Core_Num_Impl11_Max_Stub as Max0
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -465,7 +498,7 @@ module Alloc_Vec_FromElem_Interface
     axiom .
   val from_elem (elem : t) (n : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { Seq.length (ShallowModel0.shallow_model result) = UIntSize.to_int n }
-    ensures { forall i : int . 0 <= i /\ i < UIntSize.to_int n -> Seq.get (ShallowModel0.shallow_model result) i = elem }
+    ensures { forall i : int . 0 <= i /\ i < UIntSize.to_int n -> IndexLogic0.index_logic result i = elem }
     
 end
 module CreusotContracts_Model_Impl3_ShallowModel_Stub
@@ -688,6 +721,10 @@ module FilterPositive_M
     type t = Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq int32,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic0 with
+    type t = int32,
+    type s = Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global),
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone CreusotContracts_Std1_Slice_Impl5_HasValue as HasValue0 with
     type t = int32
   clone CreusotContracts_Std1_Slice_Impl5_InBounds as InBounds0 with
@@ -699,6 +736,7 @@ module FilterPositive_M
   clone CreusotContracts_Std1_Vec_Impl10_Resolve as Resolve1 with
     type t = int32,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
     predicate Resolve0.resolve = Resolve2.resolve,
     val Max0.mAX' = Max0.mAX'
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
@@ -725,6 +763,7 @@ module FilterPositive_M
   clone Alloc_Vec_FromElem_Interface as FromElem0 with
     type t = int32,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
     val Max0.mAX' = Max0.mAX'
   clone Alloc_Vec_Impl13_Index_Interface as Index0 with
     type t = int32,

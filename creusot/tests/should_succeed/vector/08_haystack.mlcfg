@@ -91,6 +91,33 @@ module CreusotContracts_Model_Impl1_ShallowModel
     ensures { result = shallow_model self }
     
 end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub
+  type t
+  type s
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic_Interface
+  type t
+  type s
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic
+  type t
+  type s
+  use prelude.Int
+  use seq.Seq
+  use seq.Seq
+  clone CreusotContracts_Model_ShallowModel_ShallowModel_Stub as ShallowModel0 with
+    type self = s,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t =
+    Seq.get (ShallowModel0.shallow_model self) ix
+  val index_logic [@inline:trivial] (self : s) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
+end
 module C08Haystack_MatchAt_Stub
   use prelude.Borrow
   use prelude.Int
@@ -117,13 +144,16 @@ module C08Haystack_MatchAt
   use seq.Seq
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = uint8,
+    type s = Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq uint8
   predicate match_at [#"../08_haystack.rs" 7 0 7 77] (needle : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (haystack : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (pos : int) (len : int)
     
    =
-    [#"../08_haystack.rs" 8 4 12 5] len <= Seq.length (ShallowModel0.shallow_model needle) /\ pos <= Seq.length (ShallowModel0.shallow_model haystack) - len /\ (forall i : int . 0 <= i /\ i < len -> Seq.get (ShallowModel0.shallow_model needle) i = Seq.get (ShallowModel0.shallow_model haystack) (pos + i))
+    [#"../08_haystack.rs" 8 4 12 5] len <= Seq.length (ShallowModel0.shallow_model needle) /\ pos <= Seq.length (ShallowModel0.shallow_model haystack) - len /\ (forall i : int . 0 <= i /\ i < len -> IndexLogic0.index_logic needle i = IndexLogic0.index_logic haystack (pos + i))
   val match_at [#"../08_haystack.rs" 7 0 7 77] (needle : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (haystack : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (pos : int) (len : int) : bool
     ensures { result = match_at needle haystack pos len }
     
@@ -1302,6 +1332,7 @@ module C08Haystack_Search
   clone CreusotContracts_Std1_Iter_Impl0_IntoIterPre as IntoIterPre0 with
     type i = Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize,
     predicate Invariant0.invariant' = Invariant0.invariant'
+  use seq.Seq
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel1 with
@@ -1309,11 +1340,14 @@ module C08Haystack_Search
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  use seq.Seq
   clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq uint8,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic0 with
+    type t = uint8,
+    type s = Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global),
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone Alloc_Vec_Impl13_Index_Interface as Index0 with
     type t = uint8,
     type i = usize,
@@ -1358,7 +1392,8 @@ module C08Haystack_Search
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone C08Haystack_MatchAt as MatchAt0 with
-    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    function IndexLogic0.index_logic = IndexLogic0.index_logic
   let rec cfg search [#"../08_haystack.rs" 21 0 21 60] [@cfg:stackify] [@cfg:subregion_analysis] (needle : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (haystack : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) : usize
     requires {[#"../08_haystack.rs" 15 11 15 65] Seq.length (ShallowModel0.shallow_model needle) >= 1 /\ Seq.length (ShallowModel0.shallow_model needle) <= Seq.length (ShallowModel0.shallow_model haystack)}
     ensures { [#"../08_haystack.rs" 16 10 16 85] UIntSize.to_int result = Seq.length (ShallowModel0.shallow_model haystack) \/ UIntSize.to_int result < Seq.length (ShallowModel0.shallow_model haystack) - Seq.length (ShallowModel0.shallow_model needle) + 1 }

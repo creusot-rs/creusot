@@ -11,16 +11,16 @@ use creusot_contracts::{
 #[ensures((^str)@.len() == len@ || (^str)@.len() == str@.len())]
 #[ensures(len@ <= str@.len() ==> (^str)@.len() == str@.len())]
 #[ensures(len@ > str@.len() ==> (^str)@.len() == len@)]
-#[ensures(forall<i: Int> 0 <= i && i < str@.len() ==> (^str)@[i] == str@[i])]
-#[ensures(forall<i: Int> str@.len() <= i && i < len@ ==> (^str)@[i] == pad)]
+#[ensures(forall<i: Int> 0 <= i && i < str@.len() ==> (^str)[i] == str[i])]
+#[ensures(forall<i: Int> str@.len() <= i && i < len@ ==> (^str)[i] == pad)]
 fn right_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     let old_str = ghost! { str };
 
     #[invariant(old_str_bound, old_str@.len() <= str@.len())]
     #[invariant(len_bound, old_str@.len() < len@ ==> str@.len() <= len@)]
     #[invariant(len_bound, str@.len() > len@ ==> str@.len() == old_str@.len())]
-    #[invariant(old_elem, forall<i: Int> 0 <= i && i < old_str@.len() ==> str@[i] == old_str@[i])]
-    #[invariant(pad_elem, forall<i: Int> old_str@.len() <= i && i < str@.len() ==> str@[i] == pad)]
+    #[invariant(old_elem, forall<i: Int> 0 <= i && i < old_str@.len() ==> str[i] == old_str[i])]
+    #[invariant(pad_elem, forall<i: Int> old_str@.len() <= i && i < str@.len() ==> str[i] == pad)]
     while str.len() < len {
         str.push(pad);
     }
@@ -28,8 +28,8 @@ fn right_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
 
 #[ensures((^str)@.len() >= len@ && (^str)@.len() >= str@.len())]
 #[ensures((^str)@.len() == len@ || (^str)@.len() == str@.len())]
-#[ensures(forall<i: Int> 0 <= i && i < ((^str)@.len() - str@.len()) ==> (^str)@[i] == pad)]
-#[ensures(forall<i: Int> 0 <= i && i < str@.len() ==> (^str)@[i + ((^str)@.len() - str@.len())] == str@[i])]
+#[ensures(forall<i: Int> 0 <= i && i < ((^str)@.len() - str@.len()) ==> (^str)[i] == pad)]
+#[ensures(forall<i: Int> 0 <= i && i < str@.len() ==> (^str)[i + ((^str)@.len() - str@.len())] == str[i])]
 fn left_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     let old_str = ghost! { str };
     let mut c: Ghost<usize> = ghost! { 0 };
@@ -38,8 +38,8 @@ fn left_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     #[invariant(len_bound, old_str@.len() < len@ ==> str@.len() <= len@)]
     #[invariant(len_bound, str@.len() > len@ ==> str@.len() == old_str@.len())]
     #[invariant(count, c@ == str@.len() - old_str@.len())]
-    #[invariant(old_elem, forall<i: Int> c@ <= i && i < str@.len() ==> str@[i] == old_str@[i - c@])]
-    #[invariant(pad_elem, forall<i: Int> 0 <= i && i < c@ ==> str@[i] == pad)]
+    #[invariant(old_elem, forall<i: Int> c@ <= i && i < str@.len() ==> str[i] == old_str[i - c@])]
+    #[invariant(pad_elem, forall<i: Int> 0 <= i && i < c@ ==> str[i] == pad)]
     while str.len() < len {
         str.insert(0, pad);
         c = ghost! { 1 + c.inner() };
@@ -82,7 +82,7 @@ fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
 
     #[invariant(not_elem, forall<j: Int> 0 <= j && j < produced.len() ==> produced[j].deep_model() != elem.deep_model())]
     for e in vec.iter() {
-        proof_assert! { *e == (*vec)@[produced.len()-1] };
+        proof_assert! { *e == (*vec)[produced.len()-1] };
         if e == &elem {
             proof_assert! { contains(vec.deep_model(), elem.deep_model()) };
             return;

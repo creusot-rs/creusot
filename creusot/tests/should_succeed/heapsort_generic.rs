@@ -34,7 +34,7 @@ fn heap_frag_max<T: OrdLogic>(s: Seq<T>, i: Int, end: Int) {
 #[ensures(heap_frag((^v).deep_model(), start@, end@))]
 #[ensures((^v)@.permutation_of(v@))]
 #[ensures(forall<i: Int> 0 <= i && i < start@ || end@ <= i && i < v@.len()
-                      ==> v@[i] == (^v)@[i])]
+                      ==> v[i] == (^v)[i])]
 #[ensures(forall<m: T::DeepModelTy>
           (forall<j: Int> start@ <= j && j < end@ ==> v.deep_model()[j] <= m) ==>
           forall<j: Int> start@ <= j && j < end@ ==> (^v).deep_model()[j] <= m)]
@@ -48,7 +48,7 @@ where
     #[invariant(permutation, v@.permutation_of(old_v@))]
     #[invariant(i_bounds, start@ <= i@ && i@ < end@)]
     #[invariant(unchanged, forall<j: Int> 0 <= j && j < start@ || end@ <= j && j < v@.len()
-                              ==> old_v@[j] == v@[j])]
+                              ==> old_v[j] == v[j])]
     #[invariant(keep_bound, forall<m: T::DeepModelTy>
           (forall<j: Int> start@ <= j && j < end@ ==> old_v.deep_model()[j] <= m) ==>
           forall<j: Int> start@ <= j && j < end@ ==> v.deep_model()[j] <= m)]

@@ -23,6 +23,83 @@ module Core_Num_Impl11_Max
   let constant mAX'  : usize = [@vc:do_not_keep_trace] [@vc:sp]
     (18446744073709551615 : usize)
 end
+module CreusotContracts_Model_ShallowModel_ShallowModelTy_Type
+  type self
+  type shallowModelTy
+end
+module CreusotContracts_Model_ShallowModel_ShallowModel_Stub
+  type self
+  clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
+    type self = self
+  function shallow_model (self : self) : ShallowModelTy0.shallowModelTy
+end
+module CreusotContracts_Model_ShallowModel_ShallowModel_Interface
+  type self
+  clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
+    type self = self
+  function shallow_model (self : self) : ShallowModelTy0.shallowModelTy
+end
+module CreusotContracts_Model_ShallowModel_ShallowModel
+  type self
+  clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
+    type self = self
+  function shallow_model (self : self) : ShallowModelTy0.shallowModelTy
+  val shallow_model (self : self) : ShallowModelTy0.shallowModelTy
+    ensures { result = shallow_model self }
+    
+end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub
+  type t
+  type s
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic_Interface
+  type t
+  type s
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic
+  type t
+  type s
+  use prelude.Int
+  use seq.Seq
+  use seq.Seq
+  clone CreusotContracts_Model_ShallowModel_ShallowModel_Stub as ShallowModel0 with
+    type self = s,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t =
+    Seq.get (ShallowModel0.shallow_model self) ix
+  val index_logic [@inline:trivial] (self : s) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
+end
+module CreusotContracts_Model_Impl6_ShallowModel_Stub
+  type t
+  use prelude.Slice
+  use prelude.Seq
+  use seq.Seq
+  function shallow_model (self : array t) : Seq.seq t
+end
+module CreusotContracts_Model_Impl6_ShallowModel_Interface
+  type t
+  use prelude.Slice
+  use prelude.Seq
+  use seq.Seq
+  function shallow_model (self : array t) : Seq.seq t
+end
+module CreusotContracts_Model_Impl6_ShallowModel
+  type t
+  use prelude.Slice
+  use prelude.Seq
+  use seq.Seq
+  function shallow_model (self : array t) : Seq.seq t =
+    Slice.id self
+  val shallow_model (self : array t) : Seq.seq t
+    ensures { result = shallow_model self }
+    
+end
 module C11ArrayTypes_Omg_Interface
   use prelude.Slice
   use seq.Seq
@@ -40,6 +117,14 @@ module C11ArrayTypes_Omg
   use prelude.Slice
   use seq.Seq
   use prelude.Int64
+  use prelude.Seq
+  use seq.Seq
+  clone CreusotContracts_Model_Impl6_ShallowModel as ShallowModel0 with
+    type t = int64
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic0 with
+    type t = int64,
+    type s = array int64,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone Core_Num_Impl11_Max as Max0
   use C11ArrayTypes_UsesArray_Type as C11ArrayTypes_UsesArray_Type
   let rec cfg omg [#"../11_array_types.rs" 8 0 8 28] [@cfg:stackify] [@cfg:subregion_analysis] (x : C11ArrayTypes_UsesArray_Type.t_usesarray) : ()
@@ -65,7 +150,7 @@ module C11ArrayTypes_Omg
   }
   BB1 {
     x_1 <- (let C11ArrayTypes_UsesArray_Type.C_UsesArray a = x_1 in C11ArrayTypes_UsesArray_Type.C_UsesArray (Seq.set (C11ArrayTypes_UsesArray_Type.usesarray_0 x_1) (UIntSize.to_int _3) ([#"../11_array_types.rs" 9 13 9 14] (5 : int64))));
-    assert { [#"../11_array_types.rs" 11 20 11 33] Int64.to_int (Seq.get (Slice.id (C11ArrayTypes_UsesArray_Type.usesarray_0 x_1)) 0) = 5 };
+    assert { [#"../11_array_types.rs" 11 20 11 32] Int64.to_int (IndexLogic0.index_logic (C11ArrayTypes_UsesArray_Type.usesarray_0 x_1) 0) = 5 };
     _6 <- ();
     _0 <- ();
     return _0

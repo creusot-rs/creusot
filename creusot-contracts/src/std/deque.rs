@@ -19,7 +19,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
     #[trusted]
     #[ensures(self.shallow_model().len() == result.len())]
     #[ensures(forall<i: Int> 0 <= i && i < self.shallow_model().len()
-              ==> result[i] == self@[i].deep_model())]
+              ==> result[i] == self[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { absurd }
     }

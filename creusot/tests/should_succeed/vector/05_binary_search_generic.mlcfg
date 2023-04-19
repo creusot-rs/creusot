@@ -479,6 +479,33 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel
     
   axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
 end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub
+  type t
+  type s
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic_Interface
+  type t
+  type s
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl1_IndexLogic
+  type t
+  type s
+  use prelude.Int
+  use seq.Seq
+  use seq.Seq
+  clone CreusotContracts_Model_ShallowModel_ShallowModel_Stub as ShallowModel0 with
+    type self = s,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t =
+    Seq.get (ShallowModel0.shallow_model self) ix
+  val index_logic [@inline:trivial] (self : s) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
+end
 module CreusotContracts_Std1_Vec_Impl1_DeepModel_Stub
   type t
   type a
@@ -491,6 +518,9 @@ module CreusotContracts_Std1_Vec_Impl1_DeepModel_Stub
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type s = Alloc_Vec_Vec_Type.t_vec t a
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = a,
@@ -510,13 +540,16 @@ module CreusotContracts_Std1_Vec_Impl1_DeepModel_Interface
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type s = Alloc_Vec_Vec_Type.t_vec t a
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = a,
     val Max0.mAX' = Max0.mAX',
     axiom .
   function deep_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq DeepModelTy0.deepModelTy
-  axiom deep_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . (forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get (deep_model self) i = DeepModel0.deep_model (Seq.get (ShallowModel0.shallow_model self) i)) && Seq.length (ShallowModel0.shallow_model self) = Seq.length (deep_model self)
+  axiom deep_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . (forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get (deep_model self) i = DeepModel0.deep_model (IndexLogic0.index_logic self i)) && Seq.length (ShallowModel0.shallow_model self) = Seq.length (deep_model self)
 end
 module CreusotContracts_Std1_Vec_Impl1_DeepModel
   type t
@@ -530,6 +563,9 @@ module CreusotContracts_Std1_Vec_Impl1_DeepModel
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type s = Alloc_Vec_Vec_Type.t_vec t a
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = a,
@@ -539,7 +575,7 @@ module CreusotContracts_Std1_Vec_Impl1_DeepModel
   val deep_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq DeepModelTy0.deepModelTy
     ensures { result = deep_model self }
     
-  axiom deep_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . (forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get (deep_model self) i = DeepModel0.deep_model (Seq.get (ShallowModel0.shallow_model self) i)) && Seq.length (ShallowModel0.shallow_model self) = Seq.length (deep_model self)
+  axiom deep_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . (forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get (deep_model self) i = DeepModel0.deep_model (IndexLogic0.index_logic self i)) && Seq.length (ShallowModel0.shallow_model self) = Seq.length (deep_model self)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog_Stub
   type self
@@ -919,6 +955,19 @@ module C05BinarySearchGeneric_BinarySearch
     type self = t
   clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface as GeLog0 with
     type self = DeepModelTy0.deepModelTy
+  use seq.Seq
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone Core_Num_Impl11_Max as Max0
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel1 with
+    type t = t,
+    type a = Alloc_Alloc_Global_Type.t_global,
+    val Max0.mAX' = Max0.mAX',
+    axiom .
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic0 with
+    type t = t,
+    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with
     type self = DeepModelTy0.deepModelTy
@@ -982,23 +1031,15 @@ module C05BinarySearchGeneric_BinarySearch
   clone C05BinarySearchGeneric_SortedRange as SortedRange0 with
     type t = DeepModelTy0.deepModelTy,
     predicate LeLog0.le_log = LeLog0.le_log
-  clone Core_Num_Impl11_Max as Max0
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel1 with
-    type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global,
-    val Max0.mAX' = Max0.mAX',
-    axiom .
   clone CreusotContracts_Std1_Vec_Impl1_DeepModel as DeepModel2 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
     function DeepModel0.deep_model = DeepModel1.deep_model,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  use seq.Seq
   clone Core_Cmp_Ord_Cmp_Interface as Cmp0 with
     type self = t,
     function DeepModel0.deep_model = DeepModel1.deep_model,
