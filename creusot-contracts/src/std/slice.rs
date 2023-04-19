@@ -14,7 +14,7 @@ impl<T> ShallowModel for [T] {
     // We define this as trusted because builtins and ensures are incompatible
     #[logic]
     #[trusted]
-    #[ensures(result.len() <= @usize::MAX)]
+    #[ensures(result.len() <= usize::MAX@)]
     #[ensures(result == slice_model(self))]
     fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! { absurd }

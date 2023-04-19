@@ -16,7 +16,7 @@ fn sorted(s: Seq<u32>) -> bool {
     sorted_range(s, 0, s.len())
 }
 
-#[requires(arr@.len() <= @usize::MAX)]
+#[requires(arr@.len() <= usize::MAX@)]
 #[requires(sorted(arr@))]
 #[ensures(forall<x:usize> result == Ok(x) ==> arr@[x@] == elem)]
 #[ensures(forall<x:usize> result == Err(x) ==>

@@ -17,7 +17,7 @@ macro_rules! spec_type {
             impl $type {
                 #[allow(dead_code)]
                 // Returns `None` iff the divisor is zero or the division overflows
-                #[ensures((result == None) == (rhs@ == 0 || (self@ == @$type::MIN && rhs@ == -1)))]
+                #[ensures((result == None) == (rhs@ == 0 || (self@ == $type::MIN@ && rhs@ == -1)))]
                 // Else, returns the result of the division
                 #[ensures(forall<r: $type> result == Some(r) ==> r@ == self@ / rhs@)]
                 fn checked_div(self, rhs: $type) -> Option<$type>;
@@ -26,29 +26,29 @@ macro_rules! spec_type {
                 // Panics if the divisor is zero
                 #[requires(rhs@ != 0)]
                 // Returns `self` if the division overflows
-                #[ensures((self@ == @$type::MIN && rhs@ == -1) ==> result@ == self@)]
+                #[ensures((self@ == $type::MIN@ && rhs@ == -1) ==> result@ == self@)]
                 // Else, returns the result of the division
-                #[ensures((self@ == @$type::MIN && rhs@ == -1) || result@ == self@ / rhs@)]
+                #[ensures((self@ == $type::MIN@ && rhs@ == -1) || result@ == self@ / rhs@)]
                 fn wrapping_div(self, rhs: $type) -> $type;
 
                 #[allow(dead_code)]
                 // Panics if the divisor is zero
                 #[requires(rhs@ != 0)]
                 // Returns `$type::MIN` if the division overflows
-                #[ensures((self@ == @$type::MIN && rhs@ == -1) ==> result@ == @$type::MIN)]
+                #[ensures((self@ == $type::MIN@ && rhs@ == -1) ==> result@ == $type::MIN@)]
                 // Else, returns the result of the division
-                #[ensures((self@ == @$type::MIN && rhs@ == -1) || result@ == self@ / rhs@)]
+                #[ensures((self@ == $type::MIN@ && rhs@ == -1) || result@ == self@ / rhs@)]
                 fn saturating_div(self, rhs: $type) -> $type;
 
                 #[allow(dead_code)]
                 // Panics if the divisor is zero
                 #[requires(rhs@ != 0)]
                 // Returns `self` if the division overflows
-                #[ensures((self@ == @$type::MIN && rhs@ == -1) ==> result.0@ == self@)]
+                #[ensures((self@ == $type::MIN@ && rhs@ == -1) ==> result.0@ == self@)]
                 // Else, returns the result of the division
-                #[ensures((self@ == @$type::MIN && rhs@ == -1) || result.0@ == self@ / rhs@)]
+                #[ensures((self@ == $type::MIN@ && rhs@ == -1) || result.0@ == self@ / rhs@)]
                 // Overflow only occurs when computing `$type::MIN / -1`
-                #[ensures(result.1 == (self@ == @$type::MIN && rhs@ == -1))]
+                #[ensures(result.1 == (self@ == $type::MIN@ && rhs@ == -1))]
                 fn overflowing_div(self, rhs: $type) -> ($type, bool);
             }
         }
@@ -76,7 +76,7 @@ macro_rules! spec_op_common {
                 // Returns `None` iff the result is out of range
                 #[ensures(
                     (result == None)
-                    == ((self@ $op rhs@) < @$type::MIN || (self@ $op rhs@) > @$type::MAX)
+                    == ((self@ $op rhs@) < $type::MIN@ || (self@ $op rhs@) > $type::MAX@)
                 )]
                 // Returns `Some(result)` if the result is in range
                 #[ensures(forall<r: $type> result == Some(r) ==> r@ == (self@ $op rhs@))]
@@ -86,25 +86,25 @@ macro_rules! spec_op_common {
                 #[allow(dead_code)]
                 // Returns result converted to `$type`
                 #[ensures(
-                    result@ == (self@ $op rhs@).rem_euclid(2.pow(@$type::BITS)) + @$type::MIN
+                    result@ == (self@ $op rhs@).rem_euclid(2.pow($type::BITS@)) + $type::MIN@
                 )]
                 // Returns the result if it is in range
                 #[ensures(
-                    (self@ $op rhs@) >= @$type::MIN && (self@ $op rhs@) <= @$type::MAX
+                    (self@ $op rhs@) >= $type::MIN@ && (self@ $op rhs@) <= $type::MAX@
                     ==> result@ == (self@ $op rhs@)
                 )]
                 // Returns the result shifted by a multiple of the type's range if it is out of
                 // range. For addition and subtraction, `k` (qualified over below) will always be 1
                 // or -1, but the verifier is able to deduce that.
                 #[ensures(
-                    (self@ $op rhs@) < @$type::MIN
+                    (self@ $op rhs@) < $type::MIN@
                     ==> exists<k: Int> k > 0
-                        && result@ == (self@ $op rhs@) + k * (@$type::MAX - @$type::MIN + 1)
+                        && result@ == (self@ $op rhs@) + k * ($type::MAX@ - $type::MIN@ + 1)
                 )]
                 #[ensures(
-                    (self@ $op rhs@) > @$type::MAX
+                    (self@ $op rhs@) > $type::MAX@
                     ==> exists<k: Int> k > 0
-                        && result@ == (self@ $op rhs@) - k * (@$type::MAX - @$type::MIN + 1)
+                        && result@ == (self@ $op rhs@) - k * ($type::MAX@ - $type::MIN@ + 1)
                 )]
                 fn $wrapping(self, rhs: $type) -> $type;
 
@@ -113,12 +113,12 @@ macro_rules! spec_op_common {
                 #[allow(dead_code)]
                 // Returns the result if it is in range
                 #[ensures(
-                    (self@ $op rhs@) >= @$type::MIN && (self@ $op rhs@) <= @$type::MAX
+                    (self@ $op rhs@) >= $type::MIN@ && (self@ $op rhs@) <= $type::MAX@
                     ==> result@ == (self@ $op rhs@)
                 )]
                 // Returns the nearest bound if the result is out of range
-                #[ensures((self@ $op rhs@) < @$type::MIN ==> result@ == @$type::MIN)]
-                #[ensures((self@ $op rhs@) > @$type::MAX ==> result@ == @$type::MAX)]
+                #[ensures((self@ $op rhs@) < $type::MIN@ ==> result@ == $type::MIN@)]
+                #[ensures((self@ $op rhs@) > $type::MAX@ ==> result@ == $type::MAX@)]
                 fn $saturating(self, rhs: $type) -> $type;
 
                 // Overflowing: performs the operation on `Int` and converts back to `$type`, and
@@ -126,29 +126,29 @@ macro_rules! spec_op_common {
                 #[allow(dead_code)]
                 // Returns result converted to `$type`
                 #[ensures(
-                    result.0@ == (self@ $op rhs@).rem_euclid(2.pow(@$type::BITS)) + @$type::MIN
+                    result.0@ == (self@ $op rhs@).rem_euclid(2.pow($type::BITS@)) + $type::MIN@
                 )]
                 // Returns the result if it is in range
                 #[ensures(
-                    (self@ $op rhs@) >= @$type::MIN && (self@ $op rhs@) <= @$type::MAX
+                    (self@ $op rhs@) >= $type::MIN@ && (self@ $op rhs@) <= $type::MAX@
                     ==> result.0@ == (self@ $op rhs@)
                 )]
                 // Returns the result shifted by a multiple of the type's range if it is out of
                 // range. For addition and subtraction, `k` (qualified over below) will always be 1
                 // or -1, but the verifier is able to deduce that.
                 #[ensures(
-                    (self@ $op rhs@) < @$type::MIN
+                    (self@ $op rhs@) < $type::MIN@
                     ==> exists<k: Int> k > 0
-                        && result.0@ == (self@ $op rhs@) + k * (@$type::MAX - @$type::MIN + 1)
+                        && result.0@ == (self@ $op rhs@) + k * ($type::MAX@ - $type::MIN@ + 1)
                 )]
                 #[ensures(
-                    (self@ $op rhs@) > @$type::MAX
+                    (self@ $op rhs@) > $type::MAX@
                     ==> exists<k: Int> k > 0
-                        && result.0@ == (self@ $op rhs@) - k * (@$type::MAX - @$type::MIN + 1)
+                        && result.0@ == (self@ $op rhs@) - k * ($type::MAX@ - $type::MIN@ + 1)
                 )]
                 // Overflow occurred iff the result is out of range
                 #[ensures(
-                    result.1 == ((self@ $op rhs@) < @$type::MIN || (self@ $op rhs@) > @$type::MAX)
+                    result.1 == ((self@ $op rhs@) < $type::MIN@ || (self@ $op rhs@) > $type::MAX@)
                 )]
                 fn $overflowing(self, rhs: $type) -> ($type, bool);
             }

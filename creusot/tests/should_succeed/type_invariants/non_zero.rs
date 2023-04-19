@@ -26,7 +26,7 @@ impl NonZeroU32 {
         Self(n)
     }
 
-    #[requires(self.0@ + rhs.0@ <= @u32::MAX)]
+    #[requires(self.0@ + rhs.0@ <= u32::MAX@)]
     pub fn add(self, rhs: Self) -> Self {
         Self(self.0 + rhs.0)
     }

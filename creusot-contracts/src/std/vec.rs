@@ -14,7 +14,7 @@ impl<T, A: Allocator> ShallowModel for Vec<T, A> {
 
     #[logic]
     #[trusted]
-    #[ensures(result.len() <= @usize::MAX)]
+    #[ensures(result.len() <= usize::MAX@)]
     fn shallow_model(self) -> Seq<T> {
         pearlite! { absurd }
     }

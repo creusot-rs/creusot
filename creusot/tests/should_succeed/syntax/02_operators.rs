@@ -34,7 +34,7 @@ fn modulus_int(x: Int, y: Int) -> Int {
     x % y
 }
 
-#[requires(x@ * y@ <= @usize::MAX)]
+#[requires(x@ * y@ <= usize::MAX@)]
 fn multiply(x: usize, y: usize) -> usize {
     x * y
 }
@@ -44,7 +44,7 @@ fn multiply_int(x: Int, y: Int) -> Int {
     x * y
 }
 
-#[requires(x@ + y@ <= @usize::MAX)]
+#[requires(x@ + y@ <= usize::MAX@)]
 fn add(x: usize, y: usize) -> usize {
     x + y
 }
@@ -72,7 +72,7 @@ fn sub_int(x: Int, y: Int) -> Int {
 // Precedence
 
 #[requires(y@ > 0)]
-#[requires(x@ / y@ * z@ <= @usize::MAX)]
+#[requires(x@ / y@ * z@ <= usize::MAX@)]
 #[ensures(result)]
 fn expression(x: usize, y: usize, z: usize) -> bool {
     x / y * z == (x / y) * z

@@ -6,7 +6,7 @@ impl<T, A: Allocator> ShallowModel for VecDeque<T, A> {
 
     #[logic]
     #[trusted]
-    #[ensures(result.len() <= @usize::MAX)]
+    #[ensures(result.len() <= usize::MAX@)]
     fn shallow_model(self) -> Seq<T> {
         pearlite! { absurd }
     }

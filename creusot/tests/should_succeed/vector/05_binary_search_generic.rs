@@ -17,7 +17,7 @@ fn sorted<T: OrdLogic>(s: Seq<T>) -> bool {
     sorted_range(s, 0, s.len())
 }
 
-#[requires(arr@.len() <= @usize::MAX)]
+#[requires(arr@.len() <= usize::MAX@)]
 #[requires(sorted(arr.deep_model()))]
 #[ensures(forall<x:usize> result == Ok(x) ==> arr.deep_model()[x@] == elem.deep_model())]
 #[ensures(forall<x:usize> result == Err(x) ==>

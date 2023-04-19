@@ -87,7 +87,7 @@ fn sorted<T: OrdLogic>(s: Seq<T>) -> bool {
     }
 }
 
-#[requires(v@.len() < @std::usize::MAX/2)]
+#[requires(v@.len() < std::usize::MAX@/2)]
 #[ensures(sorted((^v).deep_model()))]
 #[ensures((^v)@.permutation_of(v@))]
 pub fn heap_sort<T: Ord + DeepModel>(v: &mut Vec<T>)

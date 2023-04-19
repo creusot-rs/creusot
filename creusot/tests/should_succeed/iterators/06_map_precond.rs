@@ -201,7 +201,7 @@ pub fn increment<I: Iterator<Item = u32>>(iter: I) {
 
 #[requires(iter.invariant())]
 #[requires(forall<done_ : &mut I> done_.completed() ==> (^done_).invariant() ==> forall<next : I, steps: Seq<_>> (^done_).produces(steps, next) ==> steps == Seq::EMPTY && ^done_ == next)]
-#[requires(forall<prod : _, fin: I> fin.invariant() ==> iter.produces(prod, fin) ==> prod.len() <= @usize::MAX)]
+#[requires(forall<prod : _, fin: I> fin.invariant() ==> iter.produces(prod, fin) ==> prod.len() <= usize::MAX@)]
 pub fn counter<I: Iterator<Item = u32>>(iter: I) {
     let mut cnt = 0;
     map(

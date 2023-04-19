@@ -9,7 +9,7 @@ impl ShallowModel for Duration {
 
     #[logic]
     #[trusted]
-    #[ensures(result >= 0 && result <= secs_to_nanos(@u64::MAX) + 999_999_999)]
+    #[ensures(result >= 0 && result <= secs_to_nanos(u64::MAX@) + 999_999_999)]
     fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! { absurd }
     }
@@ -20,7 +20,7 @@ impl DeepModel for Duration {
 
     #[logic]
     #[trusted]
-    #[ensures(result >= 0 && result <= secs_to_nanos(@u64::MAX) + 999_999_999)]
+    #[ensures(result >= 0 && result <= secs_to_nanos(u64::MAX@) + 999_999_999)]
     #[ensures(result == self.shallow_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { absurd }
@@ -73,7 +73,7 @@ extern_spec! {
     mod std {
         mod time {
             impl Duration {
-                #[requires(secs@ + nanos_to_secs(nanos@) <= @u64::MAX)]
+                #[requires(secs@ + nanos_to_secs(nanos@) <= u64::MAX@)]
                 #[ensures(result@ == secs_to_nanos(secs@) + nanos@ )]
                 fn new(secs: u64, nanos: u32) -> Duration;
 
@@ -115,19 +115,19 @@ extern_spec! {
                 fn as_micros(&self) -> u128;
 
                 #[ensures(result@ == self@)]
-                #[ensures(result@ <= secs_to_nanos(@u64::MAX) + 999_999_999)]
+                #[ensures(result@ <= secs_to_nanos(u64::MAX@) + 999_999_999)]
                 fn as_nanos(&self) -> u128;
 
-                #[ensures(nanos_to_secs(self@ + rhs@) > @u64::MAX ==> result == None)]
-                #[ensures(nanos_to_secs(self@ + rhs@) <= @u64::MAX ==> result.deep_model() == Some(self@ + rhs@))]
+                #[ensures(nanos_to_secs(self@ + rhs@) > u64::MAX@ ==> result == None)]
+                #[ensures(nanos_to_secs(self@ + rhs@) <= u64::MAX@ ==> result.deep_model() == Some(self@ + rhs@))]
                 fn checked_add(self, rhs: Duration) -> Option<Duration>;
 
                 #[ensures(self@ - rhs@ < 0 ==> result == None)]
                 #[ensures(self@ - rhs@ >= 0 ==> result.deep_model() == Some(self@ - rhs@))]
                 fn checked_sub(self, rhs: Duration) -> Option<Duration>;
 
-                #[ensures(nanos_to_secs(self@ * rhs@) > @u64::MAX ==> result == None)]
-                #[ensures(nanos_to_secs(self@ * rhs@) <= @u64::MAX ==> result.deep_model() == Some(self@ * rhs@))]
+                #[ensures(nanos_to_secs(self@ * rhs@) > u64::MAX@ ==> result == None)]
+                #[ensures(nanos_to_secs(self@ * rhs@) <= u64::MAX@ ==> result.deep_model() == Some(self@ * rhs@))]
                 fn checked_mul(self, rhs: u32) -> Option<Duration>;
 
                 #[ensures(rhs == 0u32 ==> result == None)]
@@ -168,7 +168,7 @@ extern_spec! {
 
 extern_spec! {
     impl Add<Duration> for Duration {
-        #[requires(self@ + rhs@ <= secs_to_nanos(@u64::MAX) + 999_999_999)]
+        #[requires(self@ + rhs@ <= secs_to_nanos(u64::MAX@) + 999_999_999)]
         #[ensures(self@ + rhs@ == result@)]
         fn add(self, rhs: Duration) -> Duration;
     }
