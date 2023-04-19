@@ -146,7 +146,7 @@ module SparseArray_Impl1_IsElt
     axiom .
   use SparseArray_Sparse_Type as SparseArray_Sparse_Type
   predicate is_elt [#"../sparse_array.rs" 55 4 55 36] (self : SparseArray_Sparse_Type.t_sparse t) (i : int) =
-    [#"../sparse_array.rs" 56 20 58 58] 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ UIntSize.to_int (Seq.get (ShallowModel0.shallow_model (SparseArray_Sparse_Type.sparse_idx self)) i) < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) /\ UIntSize.to_int (Seq.get (ShallowModel0.shallow_model (SparseArray_Sparse_Type.sparse_back self)) (UIntSize.to_int (Seq.get (ShallowModel0.shallow_model (SparseArray_Sparse_Type.sparse_idx self)) i))) = i
+    [#"../sparse_array.rs" 56 20 58 54] 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ UIntSize.to_int (Seq.get (ShallowModel0.shallow_model (SparseArray_Sparse_Type.sparse_idx self)) i) < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) /\ UIntSize.to_int (Seq.get (ShallowModel0.shallow_model (SparseArray_Sparse_Type.sparse_back self)) (UIntSize.to_int (Seq.get (ShallowModel0.shallow_model (SparseArray_Sparse_Type.sparse_idx self)) i))) = i
   val is_elt [#"../sparse_array.rs" 55 4 55 36] (self : SparseArray_Sparse_Type.t_sparse t) (i : int) : bool
     ensures { result = is_elt self i }
     
@@ -501,7 +501,7 @@ module SparseArray_Impl1_Get_Interface
     type t = t
   val get [#"../sparse_array.rs" 92 4 92 45] (self : SparseArray_Sparse_Type.t_sparse t) (i : usize) : Core_Option_Option_Type.t_option t
     requires {[#"../sparse_array.rs" 82 15 82 32] SparseInv0.sparse_inv self}
-    requires {[#"../sparse_array.rs" 83 15 83 33] UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model self)}
+    requires {[#"../sparse_array.rs" 83 15 83 31] UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model self)}
     ensures { [#"../sparse_array.rs" 84 14 87 5] match (result) with
       | Core_Option_Option_Type.C_None -> Seq.get (ShallowModel0.shallow_model self) (UIntSize.to_int i) = Core_Option_Option_Type.C_None
       | Core_Option_Option_Type.C_Some x -> Seq.get (ShallowModel0.shallow_model self) (UIntSize.to_int i) = Core_Option_Option_Type.C_Some x
@@ -592,7 +592,7 @@ module SparseArray_Impl1_Get
     val Max0.mAX' = Max0.mAX'
   let rec cfg get [#"../sparse_array.rs" 92 4 92 45] [@cfg:stackify] [@cfg:subregion_analysis] (self : SparseArray_Sparse_Type.t_sparse t) (i : usize) : Core_Option_Option_Type.t_option t
     requires {[#"../sparse_array.rs" 82 15 82 32] SparseInv0.sparse_inv self}
-    requires {[#"../sparse_array.rs" 83 15 83 33] UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model self)}
+    requires {[#"../sparse_array.rs" 83 15 83 31] UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model self)}
     ensures { [#"../sparse_array.rs" 84 14 87 5] match (result) with
       | Core_Option_Option_Type.C_None -> Seq.get (ShallowModel0.shallow_model self) (UIntSize.to_int i) = Core_Option_Option_Type.C_None
       | Core_Option_Option_Type.C_Some x -> Seq.get (ShallowModel0.shallow_model self) (UIntSize.to_int i) = Core_Option_Option_Type.C_Some x
@@ -965,10 +965,10 @@ module SparseArray_Impl1_Set_Interface
     type t = t
   val set [#"../sparse_array.rs" 118 4 118 41] (self : borrowed (SparseArray_Sparse_Type.t_sparse t)) (i : usize) (v : t) : ()
     requires {[#"../sparse_array.rs" 112 15 112 35] SparseInv0.sparse_inv ( * self)}
-    requires {[#"../sparse_array.rs" 113 15 113 33] UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model self)}
+    requires {[#"../sparse_array.rs" 113 15 113 31] UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model self)}
     ensures { [#"../sparse_array.rs" 114 14 114 34] SparseInv0.sparse_inv ( ^ self) }
-    ensures { [#"../sparse_array.rs" 115 14 115 45] Seq.length (ShallowModel1.shallow_model ( ^ self)) = Seq.length (ShallowModel0.shallow_model self) }
-    ensures { [#"../sparse_array.rs" 116 4 116 68] forall j : int . j <> UIntSize.to_int i -> Seq.get (ShallowModel1.shallow_model ( ^ self)) j = Seq.get (ShallowModel0.shallow_model self) j }
+    ensures { [#"../sparse_array.rs" 115 14 115 43] Seq.length (ShallowModel1.shallow_model ( ^ self)) = Seq.length (ShallowModel0.shallow_model self) }
+    ensures { [#"../sparse_array.rs" 116 4 116 66] forall j : int . j <> UIntSize.to_int i -> Seq.get (ShallowModel1.shallow_model ( ^ self)) j = Seq.get (ShallowModel0.shallow_model self) j }
     ensures { [#"../sparse_array.rs" 117 14 117 37] Seq.get (ShallowModel1.shallow_model ( ^ self)) (UIntSize.to_int i) = Core_Option_Option_Type.C_Some v }
     
 end
@@ -1088,10 +1088,10 @@ module SparseArray_Impl1_Set
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   let rec cfg set [#"../sparse_array.rs" 118 4 118 41] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (SparseArray_Sparse_Type.t_sparse t)) (i : usize) (v : t) : ()
     requires {[#"../sparse_array.rs" 112 15 112 35] SparseInv0.sparse_inv ( * self)}
-    requires {[#"../sparse_array.rs" 113 15 113 33] UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model self)}
+    requires {[#"../sparse_array.rs" 113 15 113 31] UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model self)}
     ensures { [#"../sparse_array.rs" 114 14 114 34] SparseInv0.sparse_inv ( ^ self) }
-    ensures { [#"../sparse_array.rs" 115 14 115 45] Seq.length (ShallowModel1.shallow_model ( ^ self)) = Seq.length (ShallowModel0.shallow_model self) }
-    ensures { [#"../sparse_array.rs" 116 4 116 68] forall j : int . j <> UIntSize.to_int i -> Seq.get (ShallowModel1.shallow_model ( ^ self)) j = Seq.get (ShallowModel0.shallow_model self) j }
+    ensures { [#"../sparse_array.rs" 115 14 115 43] Seq.length (ShallowModel1.shallow_model ( ^ self)) = Seq.length (ShallowModel0.shallow_model self) }
+    ensures { [#"../sparse_array.rs" 116 4 116 66] forall j : int . j <> UIntSize.to_int i -> Seq.get (ShallowModel1.shallow_model ( ^ self)) j = Seq.get (ShallowModel0.shallow_model self) j }
     ensures { [#"../sparse_array.rs" 117 14 117 37] Seq.get (ShallowModel1.shallow_model ( ^ self)) (UIntSize.to_int i) = Core_Option_Option_Type.C_Some v }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -1293,7 +1293,7 @@ module SparseArray_Create_Interface
   val create [#"../sparse_array.rs" 141 0 141 64] (sz : usize) (dummy : t) : SparseArray_Sparse_Type.t_sparse t
     ensures { [#"../sparse_array.rs" 138 10 138 29] SparseInv0.sparse_inv result }
     ensures { [#"../sparse_array.rs" 139 10 139 27] SparseArray_Sparse_Type.sparse_size result = sz }
-    ensures { [#"../sparse_array.rs" 140 0 140 47] forall i : int . Seq.get (ShallowModel0.shallow_model result) i = Core_Option_Option_Type.C_None }
+    ensures { [#"../sparse_array.rs" 140 0 140 45] forall i : int . Seq.get (ShallowModel0.shallow_model result) i = Core_Option_Option_Type.C_None }
     
 end
 module SparseArray_Create
@@ -1350,7 +1350,7 @@ module SparseArray_Create
   let rec cfg create [#"../sparse_array.rs" 141 0 141 64] [@cfg:stackify] [@cfg:subregion_analysis] (sz : usize) (dummy : t) : SparseArray_Sparse_Type.t_sparse t
     ensures { [#"../sparse_array.rs" 138 10 138 29] SparseInv0.sparse_inv result }
     ensures { [#"../sparse_array.rs" 139 10 139 27] SparseArray_Sparse_Type.sparse_size result = sz }
-    ensures { [#"../sparse_array.rs" 140 0 140 47] forall i : int . Seq.get (ShallowModel0.shallow_model result) i = Core_Option_Option_Type.C_None }
+    ensures { [#"../sparse_array.rs" 140 0 140 45] forall i : int . Seq.get (ShallowModel0.shallow_model result) i = Core_Option_Option_Type.C_None }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : SparseArray_Sparse_Type.t_sparse t;

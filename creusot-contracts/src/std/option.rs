@@ -122,14 +122,14 @@ impl<T> Invariant for IntoIter<T> {}
 impl<T> Iterator for IntoIter<T> {
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { @*self == None && self.resolve() }
+        pearlite! { (*self)@ == None && self.resolve() }
     }
 
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::EMPTY && self == o ||
-            exists<e: Self::Item> @self == Some(e) && visited == Seq::singleton(e) && @o == None
+            exists<e: Self::Item> self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
         }
     }
 
@@ -152,7 +152,7 @@ impl<T> IntoIterator for Option<T> {
 
     #[predicate]
     fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { self == @res }
+        pearlite! { self == res@ }
     }
 }
 
@@ -171,14 +171,14 @@ impl<'a, T> Invariant for Iter<'a, T> {}
 impl<'a, T> Iterator for Iter<'a, T> {
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { @*self == None && self.resolve() }
+        pearlite! { (*self)@ == None && self.resolve() }
     }
 
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::EMPTY && self == o ||
-            exists<e: Self::Item> @self == Some(e) && visited == Seq::singleton(e) && @o == None
+            exists<e: Self::Item> self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
         }
     }
 
@@ -202,8 +202,8 @@ impl<'a, T> IntoIterator for &'a Option<T> {
     #[predicate]
     fn into_iter_post(self, res: Self::IntoIter) -> bool {
         pearlite! {
-            (*self == None ==> @res == None) &&
-            (*self == None || exists<r: &T> @res == Some(r) && *self == Some(*r))
+            (*self == None ==> res@ == None) &&
+            (*self == None || exists<r: &T> res@ == Some(r) && *self == Some(*r))
         }
     }
 }
@@ -223,14 +223,14 @@ impl<'a, T> Invariant for IterMut<'a, T> {}
 impl<'a, T> Iterator for IterMut<'a, T> {
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { @*self == None && self.resolve() }
+        pearlite! { (*self)@ == None && self.resolve() }
     }
 
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::EMPTY && self == o ||
-            exists<e: Self::Item> @self == Some(e) && visited == Seq::singleton(e) && @o == None
+            exists<e: Self::Item> self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
         }
     }
 
@@ -254,8 +254,8 @@ impl<'a, T> IntoIterator for &'a mut Option<T> {
     #[predicate]
     fn into_iter_post(self, res: Self::IntoIter) -> bool {
         pearlite! {
-            (*self == None ==> @res == None && ^self == None) &&
-            (*self == None || exists<r: &mut T> @res == Some(r) && *self == Some(*r) && ^self == Some(^r))
+            (*self == None ==> res@ == None && ^self == None) &&
+            (*self == None || exists<r: &mut T> res@ == Some(r) && *self == Some(*r) && ^self == Some(^r))
         }
     }
 }

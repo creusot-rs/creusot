@@ -191,6 +191,10 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             })
         }
         RT::Model(TermModel { term, .. }) => {
+            let term = match &**term {
+                RT::Paren(TermParen { expr, .. }) => &expr,
+                _ => &*term,
+            };
             let term = encode_term(term)?;
             Ok(quote! {
                 ::creusot_contracts::model::ShallowModel::shallow_model(#term)

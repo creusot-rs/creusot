@@ -21,7 +21,7 @@ impl Tree {
     fn sum(self) -> Int {
         pearlite! {
             match self {
-                Node(tl, a, tr) => tl.sum() + @a + tr.sum(),
+                Node(tl, a, tr) => tl.sum() + a@ + tr.sum(),
                 Leaf => 0,
             }
         }
@@ -41,7 +41,7 @@ impl Tree {
     }
 
     #[requires(self.sum() <= 1_000_000)]
-    #[ensures(@result == self.sum())]
+    #[ensures(result@ == self.sum())]
     fn sum_x(&self) -> u32 {
         match self {
             Node(tl, a, tr) => {
@@ -56,8 +56,8 @@ impl Tree {
         }
     }
 
-    #[ensures((^self).sum() - self.sum() == @^result - @result)]
-    #[ensures(@result <= self.sum())]
+    #[ensures((^self).sum() - self.sum() == (^result)@ - result@)]
+    #[ensures(result@ <= self.sum())]
     fn take_some(&mut self) -> &mut u32 {
         match self {
             Node(mtl, ma, mtr) => {
@@ -79,7 +79,7 @@ impl Tree {
     }
 }
 
-#[requires(t.sum() + @k <= 1_000_000)]
+#[requires(t.sum() + k@ <= 1_000_000)]
 pub fn inc_some_tree(mut t: Tree, k: u32) {
     let sum0 = t.sum_x();
     let ma = t.take_some();

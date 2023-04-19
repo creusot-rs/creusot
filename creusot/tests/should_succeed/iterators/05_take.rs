@@ -20,15 +20,15 @@ where
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! {
-            @(*self).n == 0 && self.resolve() ||
-            @(*self).n > 0 && @(*self).n == @(^self).n + 1 && self.iter.completed()
+            (*self).n@ == 0 && self.resolve() ||
+            (*self).n@ > 0 && (*self).n@ == (^self).n@ + 1 && self.iter.completed()
         }
     }
 
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            @self.n == @o.n + visited.len() && self.iter.produces(visited, o.iter)
+            self.n@ == o.n@ + visited.len() && self.iter.produces(visited, o.iter)
         }
     }
 

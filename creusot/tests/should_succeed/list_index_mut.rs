@@ -35,22 +35,22 @@ fn get(l: List, ix: Int) -> Option<u32> {
     }
 }
 
-#[requires(@param_ix < len(*param_l))]
-#[ensures(Some(*result) == get(*param_l, @param_ix))]
-#[ensures(Some(^result) == get(^param_l, @param_ix))]
+#[requires(param_ix@ < len(*param_l))]
+#[ensures(Some(*result) == get(*param_l, param_ix@))]
+#[ensures(Some(^result) == get(^param_l, param_ix@))]
 #[ensures(len(^param_l) == len(*param_l))]
-#[ensures(forall<i:Int> 0 <= i && i < len(*param_l) && i != (@param_ix) ==> get(*param_l, i) == get(^param_l, i))]
+#[ensures(forall<i:Int> 0 <= i && i < len(*param_l) && i != param_ix@ ==> get(*param_l, i) == get(^param_l, i))]
 pub fn index_mut(param_l: &mut List, param_ix: usize) -> &mut u32 {
     let old_l = ghost! { param_l };
     let mut l = param_l;
     let mut ix = param_ix;
-    #[invariant(valid_ix, 0usize <= ix && @ix < len (*l))]
-    #[invariant(get_target_now, get(*l, @ix) == get(**old_l, @param_ix))]
-    #[invariant(get_target_fin, get(^l, @ix) == get(^*old_l, @param_ix))]
+    #[invariant(valid_ix, 0usize <= ix && ix@ < len (*l))]
+    #[invariant(get_target_now, get(*l, ix@) == get(**old_l, param_ix@))]
+    #[invariant(get_target_fin, get(^l, ix@) == get(^*old_l, param_ix@))]
     #[invariant(len, len(^l) == len(*l) ==> len(^*old_l) == len(**old_l))]
     #[invariant(untouched,
-        (forall<i:Int> 0 <= i && i < len (*l) && i != @ix ==> get(^l, i) == get(*l, i)) ==>
-        forall<i:Int> 0 <= i && i < len (**old_l) && i != @param_ix ==>
+        (forall<i:Int> 0 <= i && i < len (*l) && i != ix@ ==> get(^l, i) == get(*l, i)) ==>
+        forall<i:Int> 0 <= i && i < len (**old_l) && i != param_ix@ ==>
             get (^*old_l, i) == get (**old_l, i)
     )]
     while ix > 0 {
@@ -67,10 +67,10 @@ pub fn index_mut(param_l: &mut List, param_ix: usize) -> &mut u32 {
 }
 
 // Ensure that this performs a set on the list
-#[requires(@ix < len(*l))]
-#[ensures(Some(v) == get(^l, @ix))]
+#[requires(ix@ < len(*l))]
+#[ensures(Some(v) == get(^l, ix@))]
 #[ensures(len(^l) == len(*l))]
-#[ensures(forall<i:Int> 0 <= i && i < len(*l) && i != @ix ==> get(*l, i) == get(^l, i))]
+#[ensures(forall<i:Int> 0 <= i && i < len(*l) && i != ix@ ==> get(*l, i) == get(^l, i))]
 pub fn write(l: &mut List, ix: usize, v: u32) {
     *index_mut(l, ix) = v;
 }

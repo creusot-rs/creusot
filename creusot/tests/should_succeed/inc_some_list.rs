@@ -21,7 +21,7 @@ impl List {
     fn sum(self) -> Int {
         pearlite! {
             match self {
-                Cons(a, l) => @a + l.sum(),
+                Cons(a, l) => a@ + l.sum(),
                 Nil => 0,
             }
         }
@@ -38,7 +38,7 @@ impl List {
     }
 
     #[requires(self.sum() <= 1_000_000)]
-    #[ensures(@result == self.sum())]
+    #[ensures(result@ == self.sum())]
     fn sum_x(&self) -> u32 {
         match self {
             Cons(a, l) => *a + l.sum_x(),
@@ -46,8 +46,8 @@ impl List {
         }
     }
 
-    #[ensures((^self).sum() - self.sum() == @^result - @result)]
-    #[ensures(@result <= self.sum())]
+    #[ensures((^self).sum() - self.sum() == (^result)@ - result@)]
+    #[ensures(result@ <= self.sum())]
     fn take_some(&mut self) -> &mut u32 {
         match self {
             Cons(ma, ml) => {
@@ -63,7 +63,7 @@ impl List {
     }
 }
 
-#[requires(l.sum() + @k <= 1_000_000)]
+#[requires(l.sum() + k@ <= 1_000_000)]
 pub fn inc_some_list(mut l: List, k: u32) {
     let sum0 = l.sum_x();
     let ma = l.take_some();

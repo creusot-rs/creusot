@@ -14,8 +14,8 @@ impl<K: DeepModel, V> BTreeMap<K, V> {
     }
 
     #[trusted]
-    #[ensures(result == None ==> (@self).get(key.deep_model()) == None)]
-    #[ensures(forall<v: &V> result == Some(v) ==> (@self).get(key.deep_model()) == Some(*v))]
+    #[ensures(result == None ==> self@.get(key.deep_model()) == None)]
+    #[ensures(forall<v: &V> result == Some(v) ==> self@.get(key.deep_model()) == Some(*v))]
     fn get<'a>(&'a self, key: &'a K) -> Option<&'a V>
     where
         K: Ord,
@@ -24,7 +24,7 @@ impl<K: DeepModel, V> BTreeMap<K, V> {
     }
 
     #[trusted]
-    #[ensures(forall<i: K::DeepModelTy> (@^self).get(i) == (if i == key.deep_model() { Some(value) } else { (@self).get(i) }))]
+    #[ensures(forall<i: K::DeepModelTy> (^self)@.get(i) == (if i == key.deep_model() { Some(value) } else { self@.get(i) }))]
     fn insert(&mut self, key: K, value: V) -> Option<V>
     where
         K: Ord,
@@ -182,7 +182,7 @@ impl Expr {
     }
 
     #[requires(self.is_normalized())]
-    #[ensures(forall<i: usize> (exists<v: bool> (@state).get(@i) == Some(v)) ==> result.does_not_contain(i))]
+    #[ensures(forall<i: usize> (exists<v: bool> state@.get(i@) == Some(v)) ==> result.does_not_contain(i))]
     #[ensures(result.is_simplified())]
     #[variant(self)]
     fn simplify_helper(self, state: BTreeMap<usize, bool>) -> Self {

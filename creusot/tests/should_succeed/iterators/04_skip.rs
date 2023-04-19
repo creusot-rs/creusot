@@ -30,9 +30,9 @@ where
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! {
-            @(^self).n == 0 &&
+            (^self).n@ == 0 &&
             exists<s: Seq<Self::Item>, i: &mut I>
-                s.len() <= @self.n &&
+                s.len() <= self.n@ &&
                 self.iter.produces(s, *i) &&
                 (forall<i: Int> 0 <= i && i < s.len() ==> s[i].resolve()) &&
                 i.completed() &&
@@ -44,9 +44,9 @@ where
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::EMPTY && self == o ||
-            @o.n == 0 && visited.len() > 0 &&
+            o.n@ == 0 && visited.len() > 0 &&
             exists<s: Seq<Self::Item>>
-                s.len() == @self.n &&
+                s.len() == self.n@ &&
                 self.iter.produces(s.concat(visited), o.iter) &&
                 forall<i: Int> 0 <= i && i < s.len() ==> s[i].resolve()
         }
@@ -70,10 +70,10 @@ where
         let old_self = ghost! { self };
         let mut n = std::mem::take(&mut self.n);
         let mut skipped = ghost! { Seq::EMPTY };
-        #[invariant(skipped_len, skipped.len() + @n == @old_self.n)]
+        #[invariant(skipped_len, skipped.len() + n@ == old_self.n@)]
         #[invariant(produces, old_self.iter.produces(skipped.inner(), self.iter))]
         #[invariant(skipped_resolve, forall<i: Int> 0 <= i && i < skipped.len() ==> skipped[i].resolve())]
-        #[invariant(n_0, @(*self).n == 0)]
+        #[invariant(n_0, (*self).n@ == 0)]
         #[invariant(inv, self.invariant())]
         loop {
             let r = self.iter.next();

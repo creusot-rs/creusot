@@ -31,14 +31,14 @@ fn sum_of_odd_is_sqr(x: Int) {
     pearlite! { if x > 0 { sum_of_odd_is_sqr(x-1) } else { () } }
 }
 
-#[requires(@x < 0x10000)]
-#[ensures(@result == sum_of_odd(@x))]
+#[requires(x@ < 0x10000)]
+#[ensures(result@ == sum_of_odd(x@))]
 fn compute_sum_of_odd(x: u32) -> u32 {
     let mut s: u32 = 0;
-    #[invariant(s_is_sum, @s == sum_of_odd(produced.len()))]
+    #[invariant(s_is_sum, s@ == sum_of_odd(produced.len()))]
     for i in 0..x {
         proof_assert! {
-            sum_of_odd_is_sqr(@i);
+            sum_of_odd_is_sqr(i@);
             true
         };
         s += 2 * i + 1;
@@ -46,11 +46,11 @@ fn compute_sum_of_odd(x: u32) -> u32 {
     return s;
 }
 
-#[requires(@x < 0x10000)]
+#[requires(x@ < 0x10000)]
 pub fn test(x: u32) {
     let y = compute_sum_of_odd(x);
     proof_assert! {
-        sum_of_odd_is_sqr(@x);
-        is_square(@y)
+        sum_of_odd_is_sqr(x@);
+        is_square(y@)
     }
 }

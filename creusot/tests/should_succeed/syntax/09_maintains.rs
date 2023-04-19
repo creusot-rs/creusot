@@ -33,7 +33,7 @@ pub fn test_2(a: &mut A, b: bool, c: u64) {}
 #[maintains((mut a).invariant(mut b, c))]
 pub fn test_3(a: &mut A, b: &mut bool, c: u64) {}
 
-#[maintains(a.inv2(@b + 0))]
+#[maintains(a.inv2(b@ + 0))]
 pub fn test_5(a: A, b: usize) {}
 
 #[maintains(other_inv(a, b))]

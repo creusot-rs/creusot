@@ -1,6 +1,14 @@
 extern crate creusot_contracts;
 use creusot_contracts::{logic::Mapping, *};
 
+// Test postfix model operator
+
+#[predicate]
+#[requires(v@.len() == 3)]
+pub fn has_len_3(v: &[u32]) -> bool {
+    pearlite! { v@.len() == 3 }
+}
+
 // Tests that we can use field access syntax in pearlite.
 
 pub struct A {
@@ -29,7 +37,7 @@ pub fn field1_is_true(x: B) -> bool {
         use crate::B; // verify that imports work properly
         match x {
             B { field1: true, .. } => true,
-            B { field2, field1: _f } => @field2 == 0,
+            B { field2, field1: _f } => field2@ == 0,
             _ => false
         }
     }

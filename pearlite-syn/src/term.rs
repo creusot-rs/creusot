@@ -106,7 +106,7 @@ ast_enum_of_structs! {
         /// The final value of a borrow: `^x`
         Final(TermFinal),
 
-        /// The model of a borrow: `@x`
+        /// The model of a term: `x@`
         Model(TermModel),
 
         /// Tokens in term position not interpreted by Syn.
@@ -422,8 +422,8 @@ ast_struct! {
 
 ast_struct! {
     pub struct TermModel {
+        pub term: Box<Term>,
         pub at_token: Token![@],
-        pub term: Box<Term>
     }
 }
 
@@ -976,12 +976,6 @@ pub(crate) mod parsing {
                 final_token: input.parse()?,
                 term: Box::new(unary_term(input, allow_struct)?),
             }))
-        } else if input.peek(Token![@]) {
-            // @ <trailer>
-            Ok(Term::Model(TermModel {
-                at_token: input.parse()?,
-                term: Box::new(unary_term(input, allow_struct)?),
-            }))
         } else {
             trailer_term(input, allow_struct)
         }
@@ -1068,6 +1062,8 @@ pub(crate) mod parsing {
                     bracket_token: bracketed!(content in input),
                     index: content.parse()?,
                 });
+            } else if input.peek(Token![@]) {
+                e = Term::Model(TermModel { term: Box::new(e), at_token: input.parse()? });
             } else {
                 break;
             }
@@ -1843,8 +1839,8 @@ pub(crate) mod printing {
 
     impl ToTokens for TermModel {
         fn to_tokens(&self, tokens: &mut TokenStream) {
-            self.at_token.to_tokens(tokens);
             self.term.to_tokens(tokens);
+            self.at_token.to_tokens(tokens);
         }
     }
 

@@ -34,9 +34,9 @@ impl<T> ShallowModel for Sparse<T> {
 
     #[logic]
     #[trusted]
-    #[ensures(result.len() == @self.size)]
+    #[ensures(result.len() == self.size@)]
     #[ensures(forall<i:Int>
-              result[i] == (if self.is_elt(i) { Some((@self.values)[i]) } else { None })
+              result[i] == (if self.is_elt(i) { Some(self.values@[i]) } else { None })
     )]
     fn shallow_model(self) -> Self::ShallowModelTy {
         // we miss a way to define the sequence, we need
@@ -53,9 +53,9 @@ impl<T> Sparse<T> {
      */
     #[predicate]
     fn is_elt(&self, i: Int) -> bool {
-        pearlite! { 0 <= i && i < @self.size
-                    && @(@self.idx)[i] < @self.n
-                    && @(@self.back)[@(@self.idx)[i]] == i
+        pearlite! { 0 <= i && i < self.size@
+                    && self.idx@[i]@ < self.n@
+                    && self.back@[self.idx@[i]@]@ == i
         }
     }
 
@@ -64,15 +64,15 @@ impl<T> Sparse<T> {
     #[predicate]
     fn sparse_inv(&self) -> bool {
         pearlite! {
-            @self.n <= @self.size
-                && (@self).len() == @self.size
-                && (@self.values).len() == @self.size
-                && (@self.idx).len() == @self.size
-                && (@self.back).len() == @self.size
-                && forall<i: Int> 0 <= i && i < @self.n ==>
-                match (@self.back)[i] {
-                    j => 0 <= @j && @j < @self.size
-                        && @(@self.idx)[@j] == i
+            self.n@ <= self.size@
+                && self@.len() == self.size@
+                && self.values@.len() == self.size@
+                && self.idx@.len() == self.size@
+                && self.back@.len() == self.size@
+                && forall<i: Int> 0 <= i && i < self.n@ ==>
+                match self.back@[i] {
+                    j => 0 <= j@ && j@ < self.size@
+                        && self.idx@[j@]@ == i
                 }
         }
     }
@@ -80,12 +80,12 @@ impl<T> Sparse<T> {
     /* The method for accessing
      */
     #[requires(self.sparse_inv())]
-    #[requires(@i < (@self).len())]
+    #[requires(i@ < self@.len())]
     #[ensures(match result {
-        None => (@self)[@i] == None,
-        Some(x) => (@self)[@i] == Some(*x)
+        None => self@[i@] == None,
+        Some(x) => self@[i@] == Some(*x)
     })]
-    #[ensures(match (@self)[@i] {
+    #[ensures(match self@[i@] {
         None => result == None,
         Some(_) => true // result == Some(x) need 'asref'
     })]
@@ -103,25 +103,25 @@ impl<T> Sparse<T> {
     #[logic]
     #[requires(self.sparse_inv())]
     #[requires(self.n == self.size)]
-    #[requires(0 <= i && i < @self.size)]
+    #[requires(0 <= i && i < self.size@)]
     #[ensures(self.is_elt(i))]
     fn lemma_permutation(self, i: Int) {}
 
     /* The method for modifying
      */
     #[requires((*self).sparse_inv())]
-    #[requires(@i < (@self).len())]
+    #[requires(i@ < self@.len())]
     #[ensures((^self).sparse_inv())]
-    #[ensures((@^self).len() == (@self).len())]
-    #[ensures(forall<j: Int> j != @i ==> (@^self)[j] == (@self)[j])]
-    #[ensures((@^self)[@i] == Some(v))]
+    #[ensures((^self)@.len() == self@.len())]
+    #[ensures(forall<j: Int> j != i@ ==> (^self)@[j] == self@[j])]
+    #[ensures((^self)@[i@] == Some(v))]
     pub fn set(&mut self, i: usize, v: T) {
         self.values[i] = v;
         let index = self.idx[i];
         if !(index < self.n && self.back[index] == i) {
             // the hard assertion!
             ghost!(Self::lemma_permutation);
-            proof_assert!(@self.n < @self.size);
+            proof_assert!(self.n@ < self.size@);
             // assert!(self.n < self.size);
             self.idx[i] = self.n;
             self.back[self.n] = i;
@@ -137,7 +137,7 @@ impl<T> Sparse<T> {
  */
 #[ensures(result.sparse_inv())]
 #[ensures(result.size == sz)]
-#[ensures(forall<i: Int> (@result)[i] == None)]
+#[ensures(forall<i: Int> result@[i] == None)]
 pub fn create<T: Clone + Copy>(sz: usize, dummy: T) -> Sparse<T> {
     Sparse { size: sz, n: 0, values: vec![dummy; sz], idx: vec![0; sz], back: vec![0; sz] }
 }
@@ -158,11 +158,11 @@ pub fn f() {
     y = b.get(7);
     proof_assert!(match x {
         None => false,
-        Some(z) => @z == 1
+        Some(z) => z@ == 1
     });
     proof_assert!(match y {
         None => false,
-        Some(z) => @z == 2
+        Some(z) => z@ == 2
     });
     // assert!(x == Some(1) && y == Some(2));
     x = a.get(7);

@@ -17,11 +17,11 @@ use creusot_contracts::{vec, *};
 
 pub fn f() {
     let mut door_open: Vec<bool> = vec![false; 100];
-    #[invariant(door_size, (@door_open).len() == 100)]
+    #[invariant(door_size, door_open@.len() == 100)]
     for pass in 1..101 {
         let mut door: usize = pass;
-        #[invariant(loop_bounds,1 <= @door && @door <= 100 + @pass)]
-        #[invariant(door_size, (@door_open).len() == 100)]
+        #[invariant(loop_bounds,1 <= door@ && door@ <= 100 + pass@)]
+        #[invariant(door_size, door_open@.len() == 100)]
         while door <= 100 {
             door_open[door - 1] = !door_open[door - 1];
             door += pass;

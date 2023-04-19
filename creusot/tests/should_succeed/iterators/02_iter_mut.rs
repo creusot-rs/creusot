@@ -18,7 +18,7 @@ impl<'a, T> Invariant for IterMut<'a, T> {
     #[predicate]
     fn invariant(self) -> bool {
         // Property that is always true but we must carry around..
-        pearlite! { (@^self.inner).len() == (@*self.inner).len() }
+        pearlite! { (^self.inner)@.len() == (*self.inner)@.len() }
     }
 }
 
@@ -27,7 +27,7 @@ impl<'a, T> Iterator for IterMut<'a, T> {
 
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && (@self.inner).ext_eq(Seq::EMPTY) }
+        pearlite! { self.resolve() && self.inner@.ext_eq(Seq::EMPTY) }
     }
 
     #[predicate]
@@ -61,22 +61,22 @@ impl<'a, T> IterMut<'a, T> {
     }
 }
 
-#[ensures(@result.inner == @v)]
-#[ensures(@^result.inner == @^v)]
-#[ensures((@^v).len() == (@v).len())]
+#[ensures(result.inner@ == v@)]
+#[ensures((^result.inner)@ == (^v)@)]
+#[ensures((^v)@.len() == v@.len())]
 fn iter_mut<'a, T>(v: &'a mut Vec<T>) -> IterMut<'a, T> {
     IterMut { inner: &mut v[..] }
 }
 
-#[ensures((@^v).len() == (@v).len())]
-#[ensures(forall<i : _> 0 <= i && i < (@v).len() ==> @(@^v)[i] == 0)]
+#[ensures((^v)@.len() == v@.len())]
+#[ensures(forall<i : _> 0 <= i && i < v@.len() ==> (^v)@[i]@ == 0)]
 pub fn all_zero(v: &mut Vec<usize>) {
     let mut it = iter_mut(v).into_iter();
     let iter_old = ghost! { it };
     let mut produced = ghost! { Seq::EMPTY };
     #[invariant(type_invariant, it.invariant())]
     #[invariant(structural, iter_old.produces(produced.inner(), it))]
-    #[invariant(user, forall<i : Int> 0 <= i && i < produced.len() ==> @^produced[i] == 0)]
+    #[invariant(user, forall<i : Int> 0 <= i && i < produced.len() ==> (^produced[i])@ == 0)]
     loop {
         match it.next() {
             Some(x) => {

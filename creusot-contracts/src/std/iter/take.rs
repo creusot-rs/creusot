@@ -27,7 +27,7 @@ impl<I> TakeExt<I> for Take<I> {
 
     #[logic]
     #[trusted]
-    #[ensures(result >= 0 && result <= @usize::MAX)]
+    #[ensures(result >= 0 && result <= usize::MAX@)]
     fn n(self) -> Int {
         pearlite! { absurd }
     }

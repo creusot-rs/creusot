@@ -25,10 +25,10 @@ where
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            visited.len() == @o.count - @self.count
+            visited.len() == o.count@ - self.count@
             && exists<s: Seq<I::Item>> self.iter.produces(s, o.iter)
                 && visited.len() == s.len()
-                && forall<i: Int> 0 <= i && i < s.len() ==> @visited[i].0 == @self.count + i && visited[i].1 == s[i]
+                && forall<i: Int> 0 <= i && i < s.len() ==> visited[i].0@ == self.count@ + i && visited[i].1 == s[i]
         }
     }
 
@@ -66,14 +66,14 @@ where
     fn invariant(self) -> bool {
         pearlite! {
             self.iter.invariant()
-            && (forall<s: Seq<I::Item>, i: I> self.iter.produces(s, i) ==> @self.count + s.len() < @std::usize::MAX)
+            && (forall<s: Seq<I::Item>, i: I> self.iter.produces(s, i) ==> self.count@ + s.len() < std::usize::MAX@)
             && (forall<i: &mut I> i.completed() ==> i.produces(Seq::EMPTY, ^i))
         }
     }
 }
 
 #[requires(forall<i: &mut I> i.completed() ==> i.produces(Seq::EMPTY, ^i))]
-#[requires(forall<s: Seq<I::Item>, i: I> iter.produces(s, i) ==> s.len() < @std::usize::MAX)]
+#[requires(forall<s: Seq<I::Item>, i: I> iter.produces(s, i) ==> s.len() < std::usize::MAX@)]
 pub fn enumerate<I: Iterator>(iter: I) -> Enumerate<I> {
     Enumerate { iter, count: 0 }
 }

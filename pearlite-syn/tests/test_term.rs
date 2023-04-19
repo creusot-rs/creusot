@@ -56,9 +56,8 @@ fn test_final() {
 
 #[test]
 fn test_model() {
-    snapshot!(quote!(@a) as Term, @r###"
+    snapshot!(quote!(a@) as Term, @r###"
     TermModel {
-        at_token: At,
         term: TermPath {
             inner: ExprPath {
                 attrs: [],
@@ -76,6 +75,7 @@ fn test_model() {
                 },
             },
         },
+        at_token: At,
     }"###);
 }
 

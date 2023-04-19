@@ -37,7 +37,7 @@ impl<I: Invariant + Iterator> Invariant for Enumerate<I> {
     fn invariant(self) -> bool {
         pearlite! {
             self.iter().invariant()
-            && (forall<s: Seq<I::Item>, i: I> self.iter().produces(s, i) ==> self.n() + s.len() < @std::usize::MAX)
+            && (forall<s: Seq<I::Item>, i: I> self.iter().produces(s, i) ==> self.n() + s.len() < std::usize::MAX@)
             && (forall<i: &mut I> i.completed() ==> i.produces(Seq::EMPTY, ^i))
         }
     }
@@ -58,7 +58,7 @@ where
             visited.len() == o.n() - self.n()
             && exists<s: Seq<I::Item>> self.iter().produces(s, o.iter())
                 && visited.len() == s.len()
-                && forall<i: Int> 0 <= i && i < s.len() ==> @visited[i].0 == self.n() + i && visited[i].1 == s[i]
+                && forall<i: Int> 0 <= i && i < s.len() ==> visited[i].0@ == self.n() + i && visited[i].1 == s[i]
         }
     }
 

@@ -17,7 +17,7 @@ where
     x >= y
 }
 
-#[ensures(result == (@x <= @y))]
+#[ensures(result == (x@ <= y@))]
 pub fn gt_or_le_int(x: usize, y: usize) -> bool {
     x <= y
 }

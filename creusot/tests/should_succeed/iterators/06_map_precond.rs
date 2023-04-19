@@ -188,8 +188,8 @@ pub fn identity<I: Iterator>(iter: I) {
 pub fn increment<I: Iterator<Item = u32>>(iter: I) {
     let i = map(
         iter,
-        #[requires(@x <= 15)]
-        #[ensures(@result == @x+1)]
+        #[requires(x@ <= 15)]
+        #[ensures(result@ == x@+1)]
         |x: u32, _| x + 1,
     );
 
@@ -201,13 +201,13 @@ pub fn increment<I: Iterator<Item = u32>>(iter: I) {
 
 #[requires(iter.invariant())]
 #[requires(forall<done_ : &mut I> done_.completed() ==> (^done_).invariant() ==> forall<next : I, steps: Seq<_>> (^done_).produces(steps, next) ==> steps == Seq::EMPTY && ^done_ == next)]
-#[requires(forall<prod : _, fin: I> fin.invariant() ==> iter.produces(prod, fin) ==> prod.len() <= @usize::MAX)]
+#[requires(forall<prod : _, fin: I> fin.invariant() ==> iter.produces(prod, fin) ==> prod.len() <= usize::MAX@)]
 pub fn counter<I: Iterator<Item = u32>>(iter: I) {
     let mut cnt = 0;
     map(
         iter,
-        #[requires(@cnt == (*_prod).len() && cnt < usize::MAX)]
-        #[ensures(@cnt == @old(cnt) + 1)]
+        #[requires(cnt@ == (*_prod).len() && cnt < usize::MAX)]
+        #[ensures(cnt@ == old(cnt)@ + 1)]
         |x, _prod: Ghost<Seq<_>>| {
             cnt += 1;
             x

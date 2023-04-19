@@ -37,7 +37,7 @@ use creusot_contracts::{
 fn num_of_pos(i: Int, j: Int, t: Seq<i32>) -> Int {
     pearlite! {
         if i >= j { 0 } else {
-            if @t[j-1] > 0 {
+            if t[j-1]@ > 0 {
                 num_of_pos(i,j-1,t) + 1
             } else {
                 num_of_pos(i,j-1,t)
@@ -74,7 +74,7 @@ fn lemma_num_of_pos_increasing(i: Int, j: Int, k: Int, t: Seq<i32>) {
 // is met
 #[logic]
 #[requires(0 <= i && i < t.len())]
-#[requires(@t[i] > 0)]
+#[requires(t[i]@ > 0)]
 #[ensures(num_of_pos(0,i,t) < num_of_pos(0,i+1,t))]
 fn lemma_num_of_pos_strictly_increasing(i: Int, t: Seq<i32>) {}
 
@@ -82,10 +82,10 @@ fn lemma_num_of_pos_strictly_increasing(i: Int, t: Seq<i32>) {}
 pub fn m(t: Vec<i32>) -> Vec<i32> {
     let mut count: usize = 0;
     let mut i: usize = 0;
-    #[invariant(loop_bound, @i <= (@t).len())]
-    #[invariant(count_bound, @count <= @i)]
-    #[invariant(num, @count == num_of_pos(0,@i,@t))]
-    //#[variant((@t).len() - @i)]
+    #[invariant(loop_bound, i@ <= t@.len())]
+    #[invariant(count_bound, count@ <= i@)]
+    #[invariant(num, count@ == num_of_pos(0,i@,t@))]
+    //#[variant(t@.len() - i@)]
     while i < t.len() {
         if t[i] > 0 {
             count += 1
@@ -96,19 +96,19 @@ pub fn m(t: Vec<i32>) -> Vec<i32> {
     count = 0;
 
     i = 0;
-    #[invariant(num, @count == num_of_pos(0,@i,@t))]
-    #[invariant(ulength, (@u).len() == num_of_pos(0,(@t).len(),@t))]
-    //#[variant((@t).len() - @i)]
+    #[invariant(num, count@ == num_of_pos(0,i@,t@))]
+    #[invariant(ulength, u@.len() == num_of_pos(0,t@.len(),t@))]
+    //#[variant(t@.len() - i@)]
     while i < t.len() {
         if t[i] > 0 {
             // the tricky assertions, that needs lemmas
             proof_assert! {
-                lemma_num_of_pos_strictly_increasing(@i,@u);
-                num_of_pos(0,@i,@t) < num_of_pos(0,@i+1,@t)
+                lemma_num_of_pos_strictly_increasing(i@,u@);
+                num_of_pos(0,i@,t@) < num_of_pos(0,i@+1,t@)
             };
             proof_assert! {
-                lemma_num_of_pos_increasing(0,@i+1,(@t).len(),@t);
-                @count < (@u).len()
+                lemma_num_of_pos_increasing(0,i@+1,t@.len(),t@);
+                count@ < u@.len()
             };
             u[count] = t[i];
             count += 1;
