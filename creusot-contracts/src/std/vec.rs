@@ -167,7 +167,7 @@ impl<T, A: Allocator> IntoIterator for &Vec<T, A> {
 
     #[predicate]
     fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { self@ == @res@ }
+        pearlite! { self@ == res@@ }
     }
 }
 
@@ -179,7 +179,7 @@ impl<T, A: Allocator> IntoIterator for &mut Vec<T, A> {
 
     #[predicate]
     fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { self@ == @res@ }
+        pearlite! { self@ == res@@ }
     }
 }
 

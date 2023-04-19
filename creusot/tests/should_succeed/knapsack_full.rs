@@ -26,7 +26,7 @@ fn max(a: usize, b: usize) -> usize {
 fn sum_weights<Name>(s: Seq<&Item<Name>>, i: Int) -> Int {
     pearlite! {
         if i == s.len() { 0 }
-        else { @s[i].weight + sum_weights(s, i+1) }
+        else { s[i].weight@ + sum_weights(s, i+1) }
     }
 }
 
@@ -36,7 +36,7 @@ fn sum_weights<Name>(s: Seq<&Item<Name>>, i: Int) -> Int {
 fn sum_values<Name>(s: Seq<&Item<Name>>, i: Int) -> Int {
     pearlite! {
         if i == s.len() { 0 }
-        else { @s[i].value + sum_values(s, i+1) }
+        else { s[i].value@ + sum_values(s, i+1) }
     }
 }
 
@@ -65,17 +65,17 @@ fn subseq_rev<T>(s1: Seq<&T>, i1: Int, s2: Seq<T>, i2: Int) -> bool {
 fn m<Name>(items: Seq<Item<Name>>, i: Int, w: Int) -> Int {
     pearlite! {
         if i == 0 { 0 }
-        else if @items[i-1].weight > w {
+        else if items[i-1].weight@ > w {
             m(items, i-1, w)
         } else {
-            m(items, i-1, w).max(m(items, i-1, w - @items[i-1].weight) + @items[i-1].value)
+            m(items, i-1, w).max(m(items, i-1, w - items[i-1].weight@) + items[i-1].value@)
         }
     }
 }
 
 #[requires(items@.len() < 10000000)]
 #[requires(max_weight@ < 10000000)]
-#[requires(forall<i: Int> 0 <= i && i < items@.len() ==> @items@[i].value <= 10000000)]
+#[requires(forall<i: Int> 0 <= i && i < items@.len() ==> items@[i].value@ <= 10000000)]
 #[ensures(sum_weights(result@, result@.len()) <= max_weight@)]
 #[ensures(subseq_rev(result@, 0, items@, items@.len()))]
 #[ensures(forall<s: Seq<&Item<Name>>> subseq_rev(s, 0, items@, items@.len()) && sum_weights(s, s.len()) <= max_weight@ ==>
@@ -86,24 +86,24 @@ pub fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&
 
     #[invariant(items_len, items@.len() + 1 == best_value@.len())]
     #[invariant(weight_len, forall<i: Int> 0 <= i && i < best_value@.len() ==>
-                  max_weight@ + 1 == (@best_value@[i]).len())]
+                  max_weight@ + 1 == (best_value@[i]@).len())]
     #[invariant(best_value, forall<ii: Int, ww: Int> 0 <= ii && ii <= produced.len() && 0 <= ww && ww <= max_weight@ ==>
-                  @(@best_value@[ii])[ww] == m(items@, ii, ww))]
+                  @(best_value@[ii]@)[ww] == m(items@, ii, ww))]
     #[invariant(best_value_bounds, forall<ii: Int, ww: Int> 0 <= ii && ii <= items@.len() && 0 <= ww && ww <= max_weight@ ==>
-                  @(@best_value@[ii])[ww] <= 10000000 * ii)]
+                  @(best_value@[ii]@)[ww] <= 10000000 * ii)]
     for i in 0..items.len() {
         let it = &items[i];
 
         #[invariant(items_len2, items@.len() + 1 == best_value@.len())]
         #[invariant(weight_len2, forall<i: Int> 0 <= i && i < best_value@.len() ==>
-                      max_weight@ + 1 == (@best_value@[i]).len())]
+                      max_weight@ + 1 == (best_value@[i]@).len())]
         #[invariant(best_value2, forall<ii: Int, ww: Int>
                       0 <= ii && ii <= i@ && 0 <= ww && ww <= max_weight@ ==>
-                      @(@best_value@[ii])[ww] == m(items@, ii, ww))]
+                      @(best_value@[ii]@)[ww] == m(items@, ii, ww))]
         #[invariant(best_value2, forall<ww: Int> 0 <= ww && ww <= produced.len() - 1 ==>
-                      @(@best_value@[i@+1])[ww] == m(items@, i@+1, ww))]
+                      @(best_value@[i@+1]@)[ww] == m(items@, i@+1, ww))]
         #[invariant(best_value_bounds, forall<ii: Int, ww: Int> 0 <= ii && ii <= items@.len() && 0 <= ww && ww <= max_weight@ ==>
-                  @(@best_value@[ii])[ww] <= 10000000 * ii)]
+                  @(best_value@[ii]@)[ww] <= 10000000 * ii)]
         // Change compared to Rosetta Code: we start at w = 0.
         // This makes it possible to allow 0-weight items, and makes the proof simpler.
         for w in 0..=max_weight {

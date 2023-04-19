@@ -67,7 +67,7 @@ impl Inv<Option<usize>> for Fib {
         pearlite! {
             match v {
                 None => true,
-                Some(i) => i@ == fib(@self.ix)
+                Some(i) => i@ == fib(self.ix@)
             }
         }
     }
@@ -78,7 +78,7 @@ pub type FibCache = Vec<Cell<Option<usize>, Fib>>;
 #[predicate]
 fn fib_cell(v: FibCache) -> bool {
     pearlite! {
-        forall<i : Int> @v@[i].ghost_inv.ix == i
+        forall<i : Int> v@[i].ghost_inv.ix@ == i
     }
 }
 

@@ -37,7 +37,7 @@ use creusot_contracts::{
 fn num_of_pos(i: Int, j: Int, t: Seq<i32>) -> Int {
     pearlite! {
         if i >= j { 0 } else {
-            if @t[j-1] > 0 {
+            if t[j-1]@ > 0 {
                 num_of_pos(i,j-1,t) + 1
             } else {
                 num_of_pos(i,j-1,t)
@@ -74,7 +74,7 @@ fn lemma_num_of_pos_increasing(i: Int, j: Int, k: Int, t: Seq<i32>) {
 // is met
 #[logic]
 #[requires(0 <= i && i < t.len())]
-#[requires(@t[i] > 0)]
+#[requires(t[i]@ > 0)]
 #[ensures(num_of_pos(0,i,t) < num_of_pos(0,i+1,t))]
 fn lemma_num_of_pos_strictly_increasing(i: Int, t: Seq<i32>) {}
 

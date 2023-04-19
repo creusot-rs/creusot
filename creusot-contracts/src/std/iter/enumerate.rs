@@ -58,7 +58,7 @@ where
             visited.len() == o.n() - self.n()
             && exists<s: Seq<I::Item>> self.iter().produces(s, o.iter())
                 && visited.len() == s.len()
-                && forall<i: Int> 0 <= i && i < s.len() ==> @visited[i].0 == self.n() + i && visited[i].1 == s[i]
+                && forall<i: Int> 0 <= i && i < s.len() ==> visited[i].0@ == self.n() + i && visited[i].1 == s[i]
         }
     }
 

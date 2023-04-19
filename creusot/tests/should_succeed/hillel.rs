@@ -120,7 +120,7 @@ fn unique<T: Eq + DeepModel + Copy>(str: &[T]) -> Vec<T> {
 #[ensures(result >= 0)]
 fn sum_range(seq: Seq<u32>, from: Int, to: Int) -> Int {
     if to - from > 0 {
-        pearlite! { @seq[from] + sum_range(seq, from + 1, to) }
+        pearlite! { seq[from]@ + sum_range(seq, from + 1, to) }
     } else {
         0
     }

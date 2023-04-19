@@ -17,7 +17,7 @@ impl ShallowModel for T {
     #[trusted]
     #[ensures(
         forall<i:Int>
-            result.get(i) == (if 0 <= i && i < @self.a { 1 } else { 0 }))]
+            result.get(i) == (if 0 <= i && i < self.a@ { 1 } else { 0 }))]
     fn shallow_model(self) -> Self::ShallowModelTy {
         absurd
     }
@@ -31,7 +31,7 @@ fn incr(t: &mut T) {
     (*t).a += 1;
     // proving the post-consition via extensional equality of mappings
     // (notice `==` versus `==`)
-    proof_assert!( (^t)@ == old_t@.set(@old_t.a,1) );
+    proof_assert!( (^t)@ == old_t@.set(old_t.a@,1) );
 }
 
 pub fn f() {

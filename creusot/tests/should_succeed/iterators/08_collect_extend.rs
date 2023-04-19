@@ -60,9 +60,9 @@ pub fn extend_index(mut v1: Vec<u32>, v2: Vec<u32>) {
     proof_assert! { v1@.ext_eq(oldv1@.concat(oldv2@)) };
 }
 
-#[requires(forall<prod : Seq<u32>, fin: I> iter.produces(prod, fin) ==> forall<i : _> 0 <= i && i < prod.len() ==> @prod[i] == i)]
+#[requires(forall<prod : Seq<u32>, fin: I> iter.produces(prod, fin) ==> forall<i : _> 0 <= i && i < prod.len() ==> prod[i]@ == i)]
 pub fn collect_example<I: Iterator<Item = u32>>(iter: I) {
     let v: Vec<u32> = collect(iter);
 
-    proof_assert! { forall<i : Int> 0 <= i && i < v@.len() ==> @v@[i] == i };
+    proof_assert! { forall<i : Int> 0 <= i && i < v@.len() ==> v@[i]@ == i };
 }

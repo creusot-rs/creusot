@@ -57,8 +57,8 @@ impl Tree {
     }
 
     #[ensures((^self).sum() - self.sum() ==
-        @^result.0 + (^result.1).sum() - @result.0 - (*result.1).sum())]
-    #[ensures(@result.0 <= self.sum())]
+        @^result.0 + (^result.1).sum() - result.0@ - (*result.1).sum())]
+    #[ensures(result.0@ <= self.sum())]
     #[ensures(result.1.sum() <= self.sum())]
     fn take_some_rest(&mut self) -> (&mut u32, &mut Tree) {
         match self {

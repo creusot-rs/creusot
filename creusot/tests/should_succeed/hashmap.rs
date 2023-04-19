@@ -79,12 +79,12 @@ impl<K: Hash, V> ShallowModel for MyHashMap<K, V> {
 impl<K: Hash, V> MyHashMap<K, V> {
     #[logic]
     fn bucket(self, k: K::DeepModelTy) -> List<(K, V)> {
-        pearlite! { (@self.buckets)[self.bucket_ix(k)] }
+        pearlite! { (self.buckets@)[self.bucket_ix(k)] }
     }
 
     #[logic]
     fn bucket_ix(self, k: K::DeepModelTy) -> Int {
-        pearlite! { K::hash_log(k).rem_euclid((@self.buckets).len()) }
+        pearlite! { K::hash_log(k).rem_euclid((self.buckets@).len()) }
     }
 }
 
@@ -151,7 +151,7 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
     }
 
     // TODO: Cleanup.
-    #[requires((@self.buckets).len() < 1000)]
+    #[requires((self.buckets@).len() < 1000)]
     #[requires((*self).hashmap_inv())]
     #[ensures((^self).hashmap_inv())]
     #[ensures(forall<k : K::DeepModelTy> (^self)@.get(k) == self@.get(k))] // lets prove the extensional version for now
@@ -164,20 +164,20 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
         #[invariant(seen, forall<k : K::DeepModelTy> old_self.bucket_ix(k) < i@ ==> old_self@.get(k) == new@.get(k))]
         #[invariant(unseen, forall<k : K::DeepModelTy>
             i@ <=   old_self.bucket_ix(k) &&
-                    old_self.bucket_ix(k) <= (@old_self.buckets).len() ==> new@.get(k) == None
+                    old_self.bucket_ix(k) <= (old_self.buckets@).len() ==> new@.get(k) == None
         )]
-        #[invariant(rest, forall<j : Int> i@ <= j && j < (@old_self.buckets).len() ==> (@self.buckets)[j] == (@old_self.buckets)[j])]
+        #[invariant(rest, forall<j : Int> i@ <= j && j < (old_self.buckets@).len() ==> (self.buckets@)[j] == (old_self.buckets@)[j])]
         #[invariant(a, new.hashmap_inv())]
         #[invariant(p, ^old_self.inner() == ^self)]
-        #[invariant(l, (@old_self.buckets).len() == (@self.buckets).len())]
-        #[invariant(z, i@ <= (@self.buckets).len())]
+        #[invariant(l, (old_self.buckets@).len() == (self.buckets@).len())]
+        #[invariant(z, i@ <= (self.buckets@).len())]
         while i < self.buckets.len() {
             let mut l: List<_> = std::mem::replace(&mut self.buckets[i], List::Nil);
 
             #[invariant(a, new.hashmap_inv())]
             #[invariant(x, forall<k : K::DeepModelTy> old_self.bucket_ix(k) < i@ ==> old_self@.get(k) == new@.get(k))]
             #[invariant(x, forall<k : K::DeepModelTy>
-                i@ < old_self.bucket_ix(k) && old_self.bucket_ix(k) <= (@old_self.buckets).len()  ==> new@.get(k) == None
+                i@ < old_self.bucket_ix(k) && old_self.bucket_ix(k) <= (old_self.buckets@).len()  ==> new@.get(k) == None
             )]
             #[invariant(zzz, forall<k : K::DeepModelTy> old_self.bucket_ix(k) == i@ ==>
                         old_self@.get(k) == match l.get(k) { None => new@.get(k), Some(v) => Some(v) })]
@@ -206,8 +206,8 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
     #[predicate]
     fn hashmap_inv(&self) -> bool {
         pearlite! {
-            0 < (@self.buckets).len() &&
-            forall<i : _> 0 <= i && i < (@self.buckets).len() ==> self.good_bucket((@self.buckets)[i], i) && (@self.buckets)[i].no_double_binding()
+            0 < (self.buckets@).len() &&
+            forall<i : _> 0 <= i && i < (self.buckets@).len() ==> self.good_bucket((self.buckets@)[i], i) && (self.buckets@)[i].no_double_binding()
         }
     }
 }

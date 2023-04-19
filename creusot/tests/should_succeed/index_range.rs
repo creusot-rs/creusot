@@ -5,11 +5,11 @@ use creusot_contracts::*;
 /// Creates a test array, vector of `[0, 1, 2, 3, 4]`
 #[ensures(
     result@.len() == 5
-    && @result@[0] == 0
-    && @result@[1] == 1
-    && @result@[2] == 2
-    && @result@[3] == 3
-    && @result@[4] == 4
+    && result@[0]@ == 0
+    && result@[1]@ == 1
+    && result@[2]@ == 2
+    && result@[3]@ == 3
+    && result@[4]@ == 4
 )]
 fn create_arr() -> Vec<i32> {
     let mut arr = Vec::new();

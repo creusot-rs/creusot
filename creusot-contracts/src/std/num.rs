@@ -44,9 +44,9 @@ macro_rules! spec_type {
                 // Panics if the divisor is zero
                 #[requires(rhs@ != 0)]
                 // Returns `self` if the division overflows
-                #[ensures((self@ == @$type::MIN && rhs@ == -1) ==> @result.0 == self@)]
+                #[ensures((self@ == @$type::MIN && rhs@ == -1) ==> result.0@ == self@)]
                 // Else, returns the result of the division
-                #[ensures((self@ == @$type::MIN && rhs@ == -1) || @result.0 == self@ / rhs@)]
+                #[ensures((self@ == @$type::MIN && rhs@ == -1) || result.0@ == self@ / rhs@)]
                 // Overflow only occurs when computing `$type::MIN / -1`
                 #[ensures(result.1 == (self@ == @$type::MIN && rhs@ == -1))]
                 fn overflowing_div(self, rhs: $type) -> ($type, bool);
@@ -126,12 +126,12 @@ macro_rules! spec_op_common {
                 #[allow(dead_code)]
                 // Returns result converted to `$type`
                 #[ensures(
-                    @result.0 == (self@ $op rhs@).rem_euclid(2.pow(@$type::BITS)) + @$type::MIN
+                    result.0@ == (self@ $op rhs@).rem_euclid(2.pow(@$type::BITS)) + @$type::MIN
                 )]
                 // Returns the result if it is in range
                 #[ensures(
                     (self@ $op rhs@) >= @$type::MIN && (self@ $op rhs@) <= @$type::MAX
-                    ==> @result.0 == (self@ $op rhs@)
+                    ==> result.0@ == (self@ $op rhs@)
                 )]
                 // Returns the result shifted by a multiple of the type's range if it is out of
                 // range. For addition and subtraction, `k` (qualified over below) will always be 1
@@ -139,12 +139,12 @@ macro_rules! spec_op_common {
                 #[ensures(
                     (self@ $op rhs@) < @$type::MIN
                     ==> exists<k: Int> k > 0
-                        && @result.0 == (self@ $op rhs@) + k * (@$type::MAX - @$type::MIN + 1)
+                        && result.0@ == (self@ $op rhs@) + k * (@$type::MAX - @$type::MIN + 1)
                 )]
                 #[ensures(
                     (self@ $op rhs@) > @$type::MAX
                     ==> exists<k: Int> k > 0
-                        && @result.0 == (self@ $op rhs@) - k * (@$type::MAX - @$type::MIN + 1)
+                        && result.0@ == (self@ $op rhs@) - k * (@$type::MAX - @$type::MIN + 1)
                 )]
                 // Overflow occurred iff the result is out of range
                 #[ensures(
