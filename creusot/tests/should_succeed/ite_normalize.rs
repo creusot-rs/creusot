@@ -182,7 +182,7 @@ impl Expr {
     }
 
     #[requires(self.is_normalized())]
-    #[ensures(forall<i: usize> (exists<v: bool> state@.get(@i) == Some(v)) ==> result.does_not_contain(i))]
+    #[ensures(forall<i: usize> (exists<v: bool> state@.get(i@) == Some(v)) ==> result.does_not_contain(i))]
     #[ensures(result.is_simplified())]
     #[variant(self)]
     fn simplify_helper(self, state: BTreeMap<usize, bool>) -> Self {

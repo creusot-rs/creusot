@@ -5,7 +5,7 @@ use creusot_contracts::*;
 // This program exhibited a bug where we resolve the borrow of `push`, causing
 // us to prove an invalid loop invariant
 // This program should not prove.
-#[ensures(result@.len() == @n)]
+#[ensures(result@.len() == n@)]
 pub fn make_vec_of_size(n: usize) -> Vec<bool> {
     let mut out: Vec<bool> = Vec::new();
     let mut i = 0;

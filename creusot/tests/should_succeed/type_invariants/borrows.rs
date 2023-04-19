@@ -11,7 +11,7 @@ impl Invariant for NonZeroU32 {
 }
 
 impl NonZeroU32 {
-    #[requires(@n > 0)]
+    #[requires(n@ > 0)]
     #[ensures(result.0 == n)]
     pub fn new(n: u32) -> Self {
         Self(n)

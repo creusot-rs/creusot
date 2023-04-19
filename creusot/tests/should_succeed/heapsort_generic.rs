@@ -28,16 +28,16 @@ fn heap_frag_max<T: OrdLogic>(s: Seq<T>, i: Int, end: Int) {
     }
 }
 
-#[requires(heap_frag(v.deep_model(), @start + 1, @end))]
-#[requires(@start < @end)]
-#[requires(@end <= v@.len())]
-#[ensures(heap_frag((^v).deep_model(), @start, @end))]
-#[ensures((@^v).permutation_of(@v))]
-#[ensures(forall<i: Int> 0 <= i && i < @start || @end <= i && i < v@.len()
+#[requires(heap_frag(v.deep_model(), start@ + 1, end@))]
+#[requires(start@ < end@)]
+#[requires(end@ <= v@.len())]
+#[ensures(heap_frag((^v).deep_model(), start@, end@))]
+#[ensures((@^v).permutation_of(v@))]
+#[ensures(forall<i: Int> 0 <= i && i < start@ || end@ <= i && i < v@.len()
                       ==> v@[i] == (@^v)[i])]
 #[ensures(forall<m: T::DeepModelTy>
-          (forall<j: Int> @start <= j && j < @end ==> v.deep_model()[j] <= m) ==>
-          forall<j: Int> @start <= j && j < @end ==> (^v).deep_model()[j] <= m)]
+          (forall<j: Int> start@ <= j && j < end@ ==> v.deep_model()[j] <= m) ==>
+          forall<j: Int> start@ <= j && j < end@ ==> (^v).deep_model()[j] <= m)]
 fn sift_down<T: Ord + DeepModel>(v: &mut Vec<T>, start: usize, end: usize)
 where
     T::DeepModelTy: OrdLogic,
@@ -45,17 +45,17 @@ where
     let old_v = ghost! { v };
     let mut i = start;
 
-    #[invariant(permutation, v@.permutation_of(@old_v))]
-    #[invariant(i_bounds, @start <= @i && @i < @end)]
-    #[invariant(unchanged, forall<j: Int> 0 <= j && j < @start || @end <= j && j < v@.len()
+    #[invariant(permutation, v@.permutation_of(old_v@))]
+    #[invariant(i_bounds, start@ <= i@ && i@ < end@)]
+    #[invariant(unchanged, forall<j: Int> 0 <= j && j < start@ || end@ <= j && j < v@.len()
                               ==> old_v@[j] == v@[j])]
     #[invariant(keep_bound, forall<m: T::DeepModelTy>
-          (forall<j: Int> @start <= j && j < @end ==> old_v.deep_model()[j] <= m) ==>
-          forall<j: Int> @start <= j && j < @end ==> v.deep_model()[j] <= m)]
-    #[invariant(heap, forall<j: Int> @start <= parent(j) && j < @end && @i != parent(j) ==>
+          (forall<j: Int> start@ <= j && j < end@ ==> old_v.deep_model()[j] <= m) ==>
+          forall<j: Int> start@ <= j && j < end@ ==> v.deep_model()[j] <= m)]
+    #[invariant(heap, forall<j: Int> start@ <= parent(j) && j < end@ && i@ != parent(j) ==>
             v.deep_model()[j] <= v.deep_model()[parent(j)])]
-    #[invariant(hole_left,  {let c = 2*@i+1; c < @end && @start <= parent(@i) ==> v.deep_model()[c] <= v.deep_model()[parent(parent(c))]})]
-    #[invariant(hole_right, {let c = 2*@i+2; c < @end && @start <= parent(@i) ==> v.deep_model()[c] <= v.deep_model()[parent(parent(c))]})]
+    #[invariant(hole_left,  {let c = 2*i@+1; c < end@ && start@ <= parent(i@) ==> v.deep_model()[c] <= v.deep_model()[parent(parent(c))]})]
+    #[invariant(hole_right, {let c = 2*i@+2; c < end@ && start@ <= parent(i@) ==> v.deep_model()[c] <= v.deep_model()[parent(parent(c))]})]
     loop {
         if i >= end / 2 {
             return;
@@ -89,7 +89,7 @@ fn sorted<T: OrdLogic>(s: Seq<T>) -> bool {
 
 #[requires(v@.len() < @std::usize::MAX/2)]
 #[ensures(sorted((^v).deep_model()))]
-#[ensures((@^v).permutation_of(@v))]
+#[ensures((@^v).permutation_of(v@))]
 pub fn heap_sort<T: Ord + DeepModel>(v: &mut Vec<T>)
 where
     T::DeepModelTy: OrdLogic,
@@ -97,27 +97,27 @@ where
     let old_v = ghost! { v };
 
     let mut start = v.len() / 2;
-    #[invariant(permutation, v@.permutation_of(@old_v))]
-    #[invariant(heap, heap_frag(v.deep_model(), @start, v@.len()))]
-    #[invariant(start_bound, @start <= v@.len()/2)]
+    #[invariant(permutation, v@.permutation_of(old_v@))]
+    #[invariant(heap, heap_frag(v.deep_model(), start@, v@.len()))]
+    #[invariant(start_bound, start@ <= v@.len()/2)]
     while start > 0 {
         start -= 1;
         sift_down(v, start, v.len());
     }
 
     let mut end = v.len();
-    #[invariant(end_bound, @end <= v@.len())]
-    #[invariant(permutation, v@.permutation_of(@old_v))]
-    #[invariant(heap, heap_frag(v.deep_model(), 0, @end))]
-    #[invariant(sorted, sorted_range(v.deep_model(), @end, v@.len()))]
-    #[invariant(heap_le, forall<i : Int, j : Int> 0 <= i && i < @end && @end <= j && j < v@.len() ==>
+    #[invariant(end_bound, end@ <= v@.len())]
+    #[invariant(permutation, v@.permutation_of(old_v@))]
+    #[invariant(heap, heap_frag(v.deep_model(), 0, end@))]
+    #[invariant(sorted, sorted_range(v.deep_model(), end@, v@.len()))]
+    #[invariant(heap_le, forall<i : Int, j : Int> 0 <= i && i < end@ && end@ <= j && j < v@.len() ==>
                             v.deep_model()[i] <= v.deep_model()[j])]
     while end > 1 {
         end -= 1;
         v.swap(0, end);
         proof_assert! {
-            heap_frag_max(v.deep_model(), 0/*dummy*/, @end);
-            forall<i : Int, j : Int> 0 <= i && i < @end && @end <= j && j < v@.len() ==>
+            heap_frag_max(v.deep_model(), 0/*dummy*/, end@);
+            forall<i : Int, j : Int> 0 <= i && i < end@ && end@ <= j && j < v@.len() ==>
                         v.deep_model()[i] <= v.deep_model()[j]
         };
         sift_down(v, 0, end);

@@ -55,7 +55,7 @@ pub fn lemma_fib_bound(i: Int) {
 
 #[trusted]
 #[logic]
-#[ensures(2.pow(63) < @0xffff_ffff_ffff_ffffusize)]
+#[ensures(2.pow(63) < 0xffff_ffff_ffff_ffffusize@)]
 pub fn lemma_max_int() {}
 
 pub struct Fib {
@@ -67,7 +67,7 @@ impl Inv<Option<usize>> for Fib {
         pearlite! {
             match v {
                 None => true,
-                Some(i) => @i == fib(@self.ix)
+                Some(i) => i@ == fib(@self.ix)
             }
         }
     }
@@ -83,9 +83,9 @@ fn fib_cell(v: FibCache) -> bool {
 }
 
 #[requires(fib_cell(*mem))]
-#[requires(@i < mem@.len())]
-#[ensures(@result == fib(@i))]
-#[requires(@i <= 63)]
+#[requires(i@ < mem@.len())]
+#[ensures(result@ == fib(i@))]
+#[requires(i@ <= 63)]
 pub fn fib_memo(mem: &FibCache, i: usize) -> usize {
     match mem[i].get() {
         Some(v) => v,
@@ -99,7 +99,7 @@ pub fn fib_memo(mem: &FibCache, i: usize) -> usize {
                 ghost! { lemma_fib_bound };
                 fib_memo(mem, i - 1) + fib_memo(mem, i - 2)
             };
-            proof_assert! { @fib_i == fib(@i)};
+            proof_assert! { fib_i@ == fib(i@)};
             mem[i].set(Some(fib_i));
             fib_i
         }

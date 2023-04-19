@@ -37,7 +37,7 @@ extern_spec! {
             }
 
             impl<T, A: Allocator> VecDeque<T, A> {
-                #[ensures(@result == self@.len())]
+                #[ensures(result@ == self@.len())]
                 fn len(&self) -> usize;
 
                 #[ensures(result == (self@.len() == 0))]
@@ -49,7 +49,7 @@ extern_spec! {
                 #[ensures(match result {
                     Some(t) =>
                         @^self == self@.subsequence(1, self@.len()) &&
-                        @self == Seq::singleton(t).concat(@^self),
+                        self@ == Seq::singleton(t).concat(@^self),
                     None => *self == ^self && self@.len() == 0
                 })]
                 fn pop_front(&mut self) -> Option<T>;
@@ -57,13 +57,13 @@ extern_spec! {
                 #[ensures(match result {
                     Some(t) =>
                         @^self == self@.subsequence(0, self@.len() - 1) &&
-                        @self == (@^self).push(t),
+                        self@ == (@^self).push(t),
                     None => *self == ^self && self@.len() == 0
                 })]
                 fn pop_back(&mut self) -> Option<T>;
 
                 #[ensures((@^self).len() == self@.len() + 1)]
-                #[ensures((@^self) == Seq::singleton(value).concat(@self))]
+                #[ensures((@^self) == Seq::singleton(value).concat(self@))]
                 fn push_front(&mut self, value: T);
 
                 #[ensures(@^self == self@.push(value))]

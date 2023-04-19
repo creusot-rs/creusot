@@ -578,7 +578,7 @@ impl<K: DeepModel + Ord, V> Tree<K, V>
 where
     K::DeepModelTy: OrdLogic,
 {
-    #[ensures(@result == Mapping::cst(None))]
+    #[ensures(result@ == Mapping::cst(None))]
     #[ensures(result.invariant())]
     pub fn new() -> Tree<K, V> {
         Tree { node: None }
@@ -658,7 +658,7 @@ where
         Some((k, v)) => self@.get(k.deep_model()) == Some(v) &&
             (forall<k2: K::DeepModelTy> self@.get(k2) == None || k2 <= k.deep_model()) &&
             @^self == self@.set(k.deep_model(), None),
-        None => @^self == @self && @self == Mapping::cst(None)})]
+        None => @^self == self@ && self@ == Mapping::cst(None)})]
     pub fn delete_max(&mut self) -> Option<(K, V)> {
         let old_self = ghost! { self };
         if let Some(node) = &mut self.node {
@@ -709,7 +709,7 @@ where
             self@.get(k.deep_model()) == Some(v) &&
             (forall<k2: K::DeepModelTy> self@.get(k2) == None || k.deep_model() <= k2) &&
             @^self == self@.set(k.deep_model(), None),
-        None => @^self == @self && @self == Mapping::cst(None)
+        None => @^self == self@ && self@ == Mapping::cst(None)
     })]
     pub fn delete_min(&mut self) -> Option<(K, V)> {
         ghost! { Self::has_mapping_model };

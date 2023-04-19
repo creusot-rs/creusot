@@ -1,11 +1,11 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-#[requires(@x == 100_000)]
+#[requires(x@ == 100_000)]
 pub fn test_fnmut(mut x: u32) {
     let mut c = {
-        #[requires(@x < 1_000_000)]
-        #[ensures(@x == @old(x) + 1)]
+        #[requires(x@ < 1_000_000)]
+        #[ensures(x@ == @old(x) + 1)]
         || {
             x += 1;
             5
@@ -14,5 +14,5 @@ pub fn test_fnmut(mut x: u32) {
     c();
     c();
 
-    proof_assert! { @x == 100_002};
+    proof_assert! { x@ == 100_002};
 }

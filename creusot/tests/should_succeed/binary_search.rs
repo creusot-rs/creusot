@@ -40,14 +40,14 @@ impl<T> List<T> {
         }
     }
 
-    #[requires(@ix < self.len_logic())]
-    #[ensures(Some(*result) == self.get(@ix))]
+    #[requires(ix@ < self.len_logic())]
+    #[ensures(Some(*result) == self.get(ix@))]
     fn index(&self, mut ix: usize) -> &T {
         let orig_ix = ix;
         let mut l = self;
 
-        #[invariant(ix_valid, @ix < l.len_logic())]
-        #[invariant(res_get, self.get(@orig_ix) == l.get(@ix))]
+        #[invariant(ix_valid, ix@ < l.len_logic())]
+        #[invariant(res_get, self.get(orig_ix@) == l.get(ix@))]
         while let Cons(t, ls) = l {
             if ix > 0 {
                 l = &*ls;
@@ -62,11 +62,11 @@ impl<T> List<T> {
     // Temporary until support for usize::MAX is added
     #[requires(self.len_logic() <= 1_000_000)]
     #[ensures(result >= 0usize)]
-    #[ensures(@result == self.len_logic())]
+    #[ensures(result@ == self.len_logic())]
     fn len(&self) -> usize {
         let mut len: usize = 0;
         let mut l = self;
-        #[invariant(len_valid, @len + l.len_logic() == self.len_logic())]
+        #[invariant(len_valid, len@ + l.len_logic() == self.len_logic())]
         while let Cons(_, ls) = l {
             len += 1;
             l = ls;
@@ -101,11 +101,11 @@ impl List<u32> {
 
 #[requires(arr.len_logic() <= 1_000_000)]
 #[requires(arr.is_sorted())]
-#[ensures(forall<x:usize> result == Ok(x) ==> arr.get(@x) == Some(elem))]
+#[ensures(forall<x:usize> result == Ok(x) ==> arr.get(x@) == Some(elem))]
 #[ensures(forall<x:usize> result == Err(x) ==>
-    forall<i:usize> 0 <= @i && @i < @x ==> arr.get_default(@i, 0u32) <= elem)]
+    forall<i:usize> 0 <= i@ && i@ < x@ ==> arr.get_default(i@, 0u32) <= elem)]
 #[ensures(forall<x:usize> result == Err(x) ==>
-    forall<i:usize> @x < @i && @i < arr.len_logic() ==> elem < arr.get_default(@i, 0u32))]
+    forall<i:usize> x@ < i@ && i@ < arr.len_logic() ==> elem < arr.get_default(i@, 0u32))]
 pub fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize> {
     if arr.len() == 0 {
         return Err(0);
@@ -113,9 +113,9 @@ pub fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize> {
     let mut size = arr.len();
     let mut base = 0;
 
-    #[invariant(size_valid, 0 < @size && @size + @base <= (arr).len_logic())]
-    #[invariant(lower_b, forall<i : usize> i < base ==> (arr).get_default(@i, 0u32) <= elem)]
-    #[invariant(lower_b, forall<i : usize> @base + @size < @i && @i < (arr).len_logic() ==> elem < (arr).get_default(@i, 0u32))]
+    #[invariant(size_valid, 0 < size@ && size@ + base@ <= (arr).len_logic())]
+    #[invariant(lower_b, forall<i : usize> i < base ==> (arr).get_default(i@, 0u32) <= elem)]
+    #[invariant(lower_b, forall<i : usize> base@ + size@ < i@ && i@ < (arr).len_logic() ==> elem < (arr).get_default(i@, 0u32))]
     while size > 1 {
         let half = size / 2;
         let mid = base + half;

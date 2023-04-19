@@ -70,7 +70,7 @@ impl Range {
     }
 }
 
-#[requires(@n >= 0)]
+#[requires(n@ >= 0)]
 #[ensures(result == n)]
 pub fn sum_range(n: isize) -> isize {
     let mut i = 0;
@@ -79,7 +79,7 @@ pub fn sum_range(n: isize) -> isize {
     let mut produced = ghost! { Seq::EMPTY };
     #[invariant(type_invariant, it.invariant())]
     #[invariant(structural, iter_old.produces(produced.inner(), it))]
-    #[invariant(user, @i == produced.len() && i <= n)]
+    #[invariant(user, i@ == produced.len() && i <= n)]
     loop {
         match it.next() {
             Some(x) => {

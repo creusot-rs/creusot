@@ -61,7 +61,7 @@ impl<'a, T> IterMut<'a, T> {
     }
 }
 
-#[ensures(@result.inner == @v)]
+#[ensures(@result.inner == v@)]
 #[ensures(@^result.inner == @^v)]
 #[ensures((@^v).len() == v@.len())]
 fn iter_mut<'a, T>(v: &'a mut Vec<T>) -> IterMut<'a, T> {

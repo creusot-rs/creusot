@@ -6,22 +6,22 @@ use std::time::Duration;
 
 pub fn test_duration() {
     let zero = Duration::new(0, 0);
-    proof_assert!(@zero == 0);
+    proof_assert!(zero@ == 0);
     assert!(zero.as_nanos() == 0);
 
     let max = Duration::new(u64::MAX, 999_999_999);
 
     let d_secs = Duration::from_secs(1);
-    proof_assert!(@d_secs == 1_000_000_000);
+    proof_assert!(d_secs@ == 1_000_000_000);
 
     let d_millis = Duration::from_millis(1);
-    proof_assert!(@d_millis == 1_000_000);
+    proof_assert!(d_millis@ == 1_000_000);
 
     let d_micros = Duration::from_micros(1);
-    proof_assert!(@d_micros == 1_000);
+    proof_assert!(d_micros@ == 1_000);
 
     let d_nanos = Duration::from_nanos(1);
-    proof_assert!(@d_nanos == 1);
+    proof_assert!(d_nanos@ == 1);
 
     assert!(zero.is_zero());
     assert!(!d_secs.is_zero());
@@ -49,6 +49,6 @@ pub fn test_duration() {
 
     let sum = d_millis + d_micros;
     let difference = d_millis - d_micros;
-    proof_assert!(@sum == 1_001_000);
-    proof_assert!(@difference == 999000);
+    proof_assert!(sum@ == 1_001_000);
+    proof_assert!(difference@ == 999000);
 }

@@ -68,7 +68,7 @@ macro_rules! mach_int {
             type DeepModelTy = Int;
             #[logic]
             fn deep_model(self) -> Self::DeepModelTy {
-                pearlite! { @self }
+                pearlite! { self@ }
             }
         }
     };

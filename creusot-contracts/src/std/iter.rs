@@ -88,10 +88,10 @@ extern_spec! {
                 })]
                 fn next(&mut self) -> Option<Self::Item>;
 
-                #[ensures(result.iter() == self && result.n() == @n)]
+                #[ensures(result.iter() == self && result.n() == n@)]
                 fn skip(self, n: usize) -> Skip<Self>;
 
-                #[ensures(result.iter() == self && result.n() == @n)]
+                #[ensures(result.iter() == self && result.n() == n@)]
                 fn take(self, n: usize) -> Take<Self>;
 
                 #[ensures(result.iter() == self)]
@@ -137,10 +137,10 @@ extern_spec! {
 
             fn empty<T>() -> Empty<T>;
 
-            #[ensures(@result == Some(value))]
+            #[ensures(result@ == Some(value))]
             fn once<T>(value: T) -> Once<T>;
 
-            #[ensures(@result == elt)]
+            #[ensures(result@ == elt)]
             fn repeat<T: Clone>(elt: T) -> Repeat<T>;
         }
     }

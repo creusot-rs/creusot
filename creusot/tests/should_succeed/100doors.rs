@@ -20,7 +20,7 @@ pub fn f() {
     #[invariant(door_size, door_open@.len() == 100)]
     for pass in 1..101 {
         let mut door: usize = pass;
-        #[invariant(loop_bounds,1 <= @door && @door <= 100 + @pass)]
+        #[invariant(loop_bounds,1 <= door@ && door@ <= 100 + pass@)]
         #[invariant(door_size, door_open@.len() == 100)]
         while door <= 100 {
             door_open[door - 1] = !door_open[door - 1];

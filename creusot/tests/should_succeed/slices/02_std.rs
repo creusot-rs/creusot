@@ -8,6 +8,6 @@ use creusot_contracts::*;
 pub fn binary_search(s: &[u32]) -> usize {
     let ix = s.binary_search(&2).unwrap();
 
-    proof_assert! { @ix < 5 };
+    proof_assert! { ix@ < 5 };
     ix
 }

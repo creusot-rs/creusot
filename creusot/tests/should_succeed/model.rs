@@ -14,7 +14,7 @@ impl ShallowModel for Seven {
 }
 
 #[trusted]
-#[ensures(@result == 7)]
+#[ensures(result@ == 7)]
 pub fn seven() -> Seven {
     Seven()
 }
@@ -32,7 +32,7 @@ impl<T, U> ShallowModel for Pair<T, U> {
 }
 
 #[trusted]
-#[ensures(@result == (a, b))]
+#[ensures(result@ == (a, b))]
 pub fn pair<T, U>(a: T, b: U) -> Pair<T, U> {
     Pair(a, b)
 }

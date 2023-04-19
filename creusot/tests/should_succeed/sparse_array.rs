@@ -71,8 +71,8 @@ impl<T> Sparse<T> {
                 && (@self.back).len() == @self.size
                 && forall<i: Int> 0 <= i && i < @self.n ==>
                 match (@self.back)[i] {
-                    j => 0 <= @j && @j < @self.size
-                        && @(@self.idx)[@j] == i
+                    j => 0 <= j@ && j@ < @self.size
+                        && @(@self.idx)[j@] == i
                 }
         }
     }
@@ -80,12 +80,12 @@ impl<T> Sparse<T> {
     /* The method for accessing
      */
     #[requires(self.sparse_inv())]
-    #[requires(@i < self@.len())]
+    #[requires(i@ < self@.len())]
     #[ensures(match result {
-        None => self@[@i] == None,
-        Some(x) => self@[@i] == Some(*x)
+        None => self@[i@] == None,
+        Some(x) => self@[i@] == Some(*x)
     })]
-    #[ensures(match self@[@i] {
+    #[ensures(match self@[i@] {
         None => result == None,
         Some(_) => true // result == Some(x) need 'asref'
     })]
@@ -110,11 +110,11 @@ impl<T> Sparse<T> {
     /* The method for modifying
      */
     #[requires((*self).sparse_inv())]
-    #[requires(@i < self@.len())]
+    #[requires(i@ < self@.len())]
     #[ensures((^self).sparse_inv())]
     #[ensures((@^self).len() == self@.len())]
-    #[ensures(forall<j: Int> j != @i ==> (@^self)[j] == self@[j])]
-    #[ensures((@^self)[@i] == Some(v))]
+    #[ensures(forall<j: Int> j != i@ ==> (@^self)[j] == self@[j])]
+    #[ensures((@^self)[i@] == Some(v))]
     pub fn set(&mut self, i: usize, v: T) {
         self.values[i] = v;
         let index = self.idx[i];
@@ -158,11 +158,11 @@ pub fn f() {
     y = b.get(7);
     proof_assert!(match x {
         None => false,
-        Some(z) => @z == 1
+        Some(z) => z@ == 1
     });
     proof_assert!(match y {
         None => false,
-        Some(z) => @z == 2
+        Some(z) => z@ == 2
     });
     // assert!(x == Some(1) && y == Some(2));
     x = a.get(7);

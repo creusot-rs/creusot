@@ -37,7 +37,7 @@ pub fn field1_is_true(x: B) -> bool {
         use crate::B; // verify that imports work properly
         match x {
             B { field1: true, .. } => true,
-            B { field2, field1: _f } => @field2 == 0,
+            B { field2, field1: _f } => field2@ == 0,
             _ => false
         }
     }

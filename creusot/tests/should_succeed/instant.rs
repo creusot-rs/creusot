@@ -13,14 +13,14 @@ pub fn test_instant() {
     assert!(instant + zero_dur == instant);
     let three_seconds = Duration::from_secs(3);
     let greater_instant = instant + three_seconds;
-    proof_assert!(@instant < @greater_instant);
+    proof_assert!(instant@ < greater_instant@);
     let even_greater_instant = greater_instant + three_seconds;
-    proof_assert!(@instant < @even_greater_instant);
+    proof_assert!(instant@ < even_greater_instant@);
 
     assert!(instant.checked_sub(zero_dur).unwrap() == instant);
     assert!(instant - zero_dur == instant);
     let lesser_instant = instant - three_seconds;
-    proof_assert!(@instant > @lesser_instant);
+    proof_assert!(instant@ > lesser_instant@);
     assert!(instant - instant == zero_dur);
     assert!(instant - greater_instant == zero_dur);
     assert!(greater_instant - instant > zero_dur);

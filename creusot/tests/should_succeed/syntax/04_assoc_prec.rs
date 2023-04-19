@@ -9,5 +9,5 @@ use creusot_contracts::*;
 #[ensures(x.0 == x.1)]
 pub fn respect_prec(x: (u32, u32)) {}
 
-#[ensures(@0u32 + @1u32 == 0)]
+#[ensures(0u32@ + 1u32@ == 0)]
 pub fn respect_assoc() {}

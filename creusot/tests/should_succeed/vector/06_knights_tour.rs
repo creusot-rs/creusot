@@ -34,13 +34,13 @@ impl Board {
             forall<i : Int> 0 <= i && i < @self.size ==> (@(@self.field)[i]).len() == @self.size
         }
     }
-    #[requires(@size <= 1000)]
+    #[requires(size@ <= 1000)]
     #[ensures(result.size == size)]
     #[ensures(result.wf())]
     fn new(size: usize) -> Self {
         let rows = (0..size)
             .map_inv(
-                #[ensures(result@.len() == @size)]
+                #[ensures(result@.len() == size@)]
                 |_, _| vec![0; size],
             )
             .collect();
@@ -70,7 +70,7 @@ impl Board {
     fn count_degree(&self, p: Point) -> usize {
         let mut count = 0;
 
-        #[invariant(count, @count <= produced.len())]
+        #[invariant(count, count@ <= produced.len())]
         for m in moves() {
             let next = p.mov(&m);
             if self.available(next) {
@@ -126,11 +126,11 @@ fn min(v: &Vec<(usize, Point)>) -> Option<&(usize, Point)> {
 }
 
 #[logic]
-#[requires(@a <= 1_000)]
-#[ensures(@a * @a <= 1_000_000)]
+#[requires(a@ <= 1_000)]
+#[ensures(a@ * a@ <= 1_000_000)]
 fn dumb_nonlinear_arith(a: usize) {}
 
-#[requires(0 < @size && @size <= 1000)]
+#[requires(0 < size@ && size@ <= 1000)]
 #[requires(x < size)]
 #[requires(y < size)]
 pub fn knights_tour(size: usize, x: usize, y: usize) -> Option<Board> {
