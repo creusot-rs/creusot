@@ -8,7 +8,7 @@ fn match_at(needle: &Vec<u8>, haystack: &Vec<u8>, pos: Int, len: Int) -> bool {
     pearlite! { len <= needle@.len()
       && pos <= haystack@.len() - len
       && forall<i: Int>
-          0 <= i && i < len ==> needle@[i] == haystack@[pos + i]
+          0 <= i && i < len ==> needle[i] == haystack[pos + i]
     }
 }
 

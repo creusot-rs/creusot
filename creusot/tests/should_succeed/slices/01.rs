@@ -8,13 +8,13 @@ pub fn index_slice(a: &[u32]) -> u32 {
 }
 
 #[requires(a@.len() == 5)]
-#[ensures((^a)@[2]@ == 3)]
+#[ensures((^a)[2]@ == 3)]
 pub fn index_mut_slice(a: &mut [u32]) {
     a[2] = 3;
 }
 
 #[ensures(match result {
-    Some(v) => *v == a@[0],
+    Some(v) => *v == a[0],
     None => a@.len() == 0
 })]
 pub fn slice_first<T>(a: &[T]) -> Option<&T> {

@@ -64,5 +64,5 @@ pub fn extend_index(mut v1: Vec<u32>, v2: Vec<u32>) {
 pub fn collect_example<I: Iterator<Item = u32>>(iter: I) {
     let v: Vec<u32> = collect(iter);
 
-    proof_assert! { forall<i : Int> 0 <= i && i < v@.len() ==> v@[i]@ == i };
+    proof_assert! { forall<i : Int> 0 <= i && i < v@.len() ==> v[i]@ == i };
 }
