@@ -18,7 +18,7 @@ fn sorted<T: OrdLogic>(s: Seq<T>) -> bool {
 }
 
 #[ensures(sorted((^v).deep_model()))]
-#[ensures(((^v)@).permutation_of(v@))]
+#[ensures((^v)@.permutation_of(v@))]
 pub fn gnome_sort<T: Ord + DeepModel>(v: &mut Vec<T>)
 where
     T::DeepModelTy: OrdLogic,

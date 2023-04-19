@@ -68,7 +68,7 @@ extern_spec! {
                 #[ensures(match result {
                     Some(t) =>
                         (^self)@ == self@.subsequence(0, self@.len() - 1) &&
-                        self@ == ((^self)@).push(t),
+                        self@ == (^self)@.push(t),
                     None => *self == ^self && self@.len() == 0
                 })]
                 fn pop(&mut self) -> Option<T>;
@@ -76,13 +76,13 @@ extern_spec! {
                 #[requires(ix@ < self@.len())]
                 #[ensures(result == self@[ix@])]
                 #[ensures((^self)@ == self@.subsequence(0, ix@).concat(self@.subsequence(ix@ + 1, self@.len())))]
-                #[ensures(((^self)@).len() == self@.len() - 1)]
+                #[ensures((^self)@.len() == self@.len() - 1)]
                 fn remove(&mut self, ix: usize) -> T;
 
-                #[ensures(((^self)@).len() == self@.len() + 1)]
-                #[ensures(forall<i: Int> 0 <= i && i < index@ ==> ((^self)@)[i] == self@[i])]
-                #[ensures(((^self)@)[index@] == element)]
-                #[ensures(forall<i: Int> index@ < i && i < ((^self)@).len() ==> ((^self)@)[i] == self@[i - 1])]
+                #[ensures((^self)@.len() == self@.len() + 1)]
+                #[ensures(forall<i: Int> 0 <= i && i < index@ ==> (^self)@[i] == self@[i])]
+                #[ensures((^self)@[index@] == element)]
+                #[ensures(forall<i: Int> index@ < i && i < (^self)@.len() ==> (^self)@[i] == self@[i - 1])]
                 fn insert(&mut self, index: usize, element: T);
 
                 #[ensures(result@ >= self@.len())]
@@ -100,7 +100,7 @@ extern_spec! {
                 #[ensures((^self)@ == self@)]
                 fn shrink_to(&mut self, min_capacity: usize);
 
-                #[ensures(((^self)@).len() == 0)]
+                #[ensures((^self)@.len() == 0)]
                 fn clear(&mut self);
             }
 
@@ -119,7 +119,7 @@ extern_spec! {
                 #[ensures(ix.has_value(self@, *result))]
                 #[ensures(ix.has_value((^self)@, ^result))]
                 #[ensures(ix.resolve_elswhere(self@, (^self)@))]
-                #[ensures(((^self)@).len() == self@.len())]
+                #[ensures((^self)@.len() == self@.len())]
                 fn index_mut(&mut self, ix: I) -> &mut <Vec<T, A> as Index<I>>::Output;
             }
 

@@ -112,9 +112,9 @@ impl<T> Sparse<T> {
     #[requires((*self).sparse_inv())]
     #[requires(i@ < self@.len())]
     #[ensures((^self).sparse_inv())]
-    #[ensures(((^self)@).len() == self@.len())]
-    #[ensures(forall<j: Int> j != i@ ==> ((^self)@)[j] == self@[j])]
-    #[ensures(((^self)@)[i@] == Some(v))]
+    #[ensures((^self)@.len() == self@.len())]
+    #[ensures(forall<j: Int> j != i@ ==> (^self)@[j] == self@[j])]
+    #[ensures((^self)@[i@] == Some(v))]
     pub fn set(&mut self, i: usize, v: T) {
         self.values[i] = v;
         let index = self.idx[i];

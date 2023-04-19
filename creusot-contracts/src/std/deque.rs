@@ -43,7 +43,7 @@ extern_spec! {
                 #[ensures(result == (self@.len() == 0))]
                 fn is_empty(&self) -> bool;
 
-                #[ensures(((^self)@).len() == 0)]
+                #[ensures((^self)@.len() == 0)]
                 fn clear(&mut self);
 
                 #[ensures(match result {
@@ -57,13 +57,13 @@ extern_spec! {
                 #[ensures(match result {
                     Some(t) =>
                         (^self)@ == self@.subsequence(0, self@.len() - 1) &&
-                        self@ == ((^self)@).push(t),
+                        self@ == (^self)@.push(t),
                     None => *self == ^self && self@.len() == 0
                 })]
                 fn pop_back(&mut self) -> Option<T>;
 
-                #[ensures(((^self)@).len() == self@.len() + 1)]
-                #[ensures(((^self)@) == Seq::singleton(value).concat(self@))]
+                #[ensures((^self)@.len() == self@.len() + 1)]
+                #[ensures((^self)@ == Seq::singleton(value).concat(self@))]
                 fn push_front(&mut self, value: T);
 
                 #[ensures((^self)@ == self@.push(value))]

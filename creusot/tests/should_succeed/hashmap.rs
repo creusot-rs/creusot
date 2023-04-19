@@ -99,7 +99,7 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
 
     #[requires((*self).hashmap_inv())]
     #[ensures((^self).hashmap_inv())]
-    #[ensures(forall<i: K::DeepModelTy> ((^self)@).get(i) == (if i == key.deep_model() { Some(val) } else { self@.get(i) } ))]
+    #[ensures(forall<i: K::DeepModelTy> (^self)@.get(i) == (if i == key.deep_model() { Some(val) } else { self@.get(i) } ))]
     pub fn add(&mut self, key: K, val: V) {
         use List::*;
         let old_self = ghost! { self };
@@ -154,7 +154,7 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
     #[requires((@self.buckets).len() < 1000)]
     #[requires((*self).hashmap_inv())]
     #[ensures((^self).hashmap_inv())]
-    #[ensures(forall<k : K::DeepModelTy> ((^self)@).get(k) == self@.get(k))] // lets prove the extensional version for now
+    #[ensures(forall<k : K::DeepModelTy> (^self)@.get(k) == self@.get(k))] // lets prove the extensional version for now
     #[allow(dead_code)]
     fn resize(&mut self) {
         let old_self = ghost! { self };

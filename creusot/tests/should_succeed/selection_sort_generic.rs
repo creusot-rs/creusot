@@ -26,7 +26,7 @@ fn partition<T: OrdLogic>(v: Seq<T>, i: Int) -> bool {
 }
 
 #[ensures(sorted((^v).deep_model()))]
-#[ensures(((^v)@).permutation_of(v@))]
+#[ensures((^v)@.permutation_of(v@))]
 pub fn selection_sort<T: Ord + DeepModel>(v: &mut Vec<T>)
 where
     T::DeepModelTy: OrdLogic,

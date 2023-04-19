@@ -67,7 +67,7 @@ impl<T> SliceExt<T> for [T] {
     #[trusted]
     #[ensures(result.len() == self@.len())]
     #[ensures(forall<i : _> 0 <= i && i < result.len() ==> *result[i] == self@[i])]
-    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> ^result[i] == ((^self)@)[i])]
+    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> ^result[i] == (^self)@[i])]
     fn to_mut_seq(&mut self) -> Seq<&mut T> {
         pearlite! { absurd }
     }
@@ -212,7 +212,7 @@ extern_spec! {
 
         #[requires(i@ < self@.len())]
         #[requires(j@ < self@.len())]
-        #[ensures(((^self)@).exchange(self@, i@, j@))]
+        #[ensures((^self)@.exchange(self@, i@, j@))]
         fn swap(&mut self, i: usize, j: usize);
 
         #[ensures(ix.in_bounds(self@) ==> exists<r: _> result == Some(r) && ix.has_value(self_@, *r))]
@@ -222,21 +222,21 @@ extern_spec! {
         #[requires(mid@ <= self@.len())]
         #[ensures({
             let (l,r) = result;  let sl = self@.len();
-            (((^self)@).len() == sl) &&
+            ((^self)@.len() == sl) &&
             self@.subsequence(0, mid@).ext_eq(l@) &&
             self@.subsequence(mid@, sl).ext_eq(r@) &&
-            ((^self)@).subsequence(0, mid@).ext_eq((^l)@) &&
-            ((^self)@).subsequence(mid@, sl).ext_eq((^r)@)
+            (^self)@.subsequence(0, mid@).ext_eq((^l)@) &&
+            (^self)@.subsequence(mid@, sl).ext_eq((^r)@)
         })]
         fn split_at_mut(&mut self, mid: usize) -> (&mut [T], &mut [T]);
 
         #[ensures(result == None ==> self@.len() == 0 && ^self == *self && self@ == Seq::EMPTY)]
         #[ensures(forall<first: &mut T, tail: &mut [T]>
                   result == Some((first, tail))
-                && *first == self@[0] && ^first == ((^self)@)[0]
-                && self@.len() > 0 && ((^self)@).len() > 0
+                && *first == self@[0] && ^first == (^self)@[0]
+                && self@.len() > 0 && (^self)@.len() > 0
                 && tail@ == self@.tail()
-                && (^tail)@ == ((^self)@).tail())]
+                && (^tail)@ == (^self)@.tail())]
         fn split_first_mut(&mut self) -> Option<(&mut T, &mut [T])>;
 
         #[ensures(match result {
@@ -288,7 +288,7 @@ extern_spec! {
        #[ensures(ix.has_value(self@, *result))]
        #[ensures(ix.has_value((^self)@, ^result))]
        #[ensures(ix.resolve_elswhere(self@, (^self)@))]
-       #[ensures(((^self)@).len() == self@.len())]
+       #[ensures((^self)@.len() == self@.len())]
         fn index_mut(&mut self, ix: I) -> &mut <[T] as Index<I>>::Output;
     }
 
@@ -365,7 +365,7 @@ impl<'a, T> ShallowModel for IterMut<'a, T> {
 
     #[logic]
     #[trusted]
-    #[ensures(((^result)@).len() == ((*result)@).len())]
+    #[ensures((^result)@.len() == (*result)@.len())]
     fn shallow_model(self) -> Self::ShallowModelTy {
         absurd
     }
