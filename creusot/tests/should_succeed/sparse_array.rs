@@ -65,7 +65,7 @@ impl<T> Sparse<T> {
     fn sparse_inv(&self) -> bool {
         pearlite! {
             @self.n <= @self.size
-                && (@self).len() == @self.size
+                && self@.len() == @self.size
                 && (@self.values).len() == @self.size
                 && (@self.idx).len() == @self.size
                 && (@self.back).len() == @self.size
@@ -80,12 +80,12 @@ impl<T> Sparse<T> {
     /* The method for accessing
      */
     #[requires(self.sparse_inv())]
-    #[requires(@i < (@self).len())]
+    #[requires(@i < self@.len())]
     #[ensures(match result {
-        None => (@self)[@i] == None,
-        Some(x) => (@self)[@i] == Some(*x)
+        None => self@[@i] == None,
+        Some(x) => self@[@i] == Some(*x)
     })]
-    #[ensures(match (@self)[@i] {
+    #[ensures(match self@[@i] {
         None => result == None,
         Some(_) => true // result == Some(x) need 'asref'
     })]
@@ -110,10 +110,10 @@ impl<T> Sparse<T> {
     /* The method for modifying
      */
     #[requires((*self).sparse_inv())]
-    #[requires(@i < (@self).len())]
+    #[requires(@i < self@.len())]
     #[ensures((^self).sparse_inv())]
-    #[ensures((@^self).len() == (@self).len())]
-    #[ensures(forall<j: Int> j != @i ==> (@^self)[j] == (@self)[j])]
+    #[ensures((@^self).len() == self@.len())]
+    #[ensures(forall<j: Int> j != @i ==> (@^self)[j] == self@[j])]
     #[ensures((@^self)[@i] == Some(v))]
     pub fn set(&mut self, i: usize, v: T) {
         self.values[i] = v;
@@ -137,7 +137,7 @@ impl<T> Sparse<T> {
  */
 #[ensures(result.sparse_inv())]
 #[ensures(result.size == sz)]
-#[ensures(forall<i: Int> (@result)[i] == None)]
+#[ensures(forall<i: Int> result@[i] == None)]
 pub fn create<T: Clone + Copy>(sz: usize, dummy: T) -> Sparse<T> {
     Sparse { size: sz, n: 0, values: vec![dummy; sz], idx: vec![0; sz], back: vec![0; sz] }
 }

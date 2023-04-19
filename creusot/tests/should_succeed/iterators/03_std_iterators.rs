@@ -1,8 +1,8 @@
 extern crate creusot_contracts;
 use creusot_contracts::{logic::Int, std::iter::*, *};
 
-#[requires((@slice).len() < 1000)]
-#[ensures(@result == (@slice).len())]
+#[requires(slice@.len() < 1000)]
+#[ensures(@result == slice@.len())]
 pub fn slice_iter<T>(slice: &[T]) -> usize {
     let mut i = 0;
     #[invariant(dummy, @i == produced.len())]
@@ -12,8 +12,8 @@ pub fn slice_iter<T>(slice: &[T]) -> usize {
     i
 }
 
-#[requires((@vec).len() < 1000)]
-#[ensures(@result == (@vec).len())]
+#[requires(vec@.len() < 1000)]
+#[ensures(@result == vec@.len())]
 pub fn vec_iter<T>(vec: &Vec<T>) -> usize {
     let mut i = 0;
     #[invariant(dummy, @i == produced.len())]
@@ -23,8 +23,8 @@ pub fn vec_iter<T>(vec: &Vec<T>) -> usize {
     i
 }
 
-#[ensures((@^v).len() == (@v).len())]
-#[ensures(forall<i : _> 0 <= i && i < (@v).len() ==> @(@^v)[i] == 0)]
+#[ensures((@^v).len() == v@.len())]
+#[ensures(forall<i : _> 0 <= i && i < v@.len() ==> @(@^v)[i] == 0)]
 pub fn all_zero(v: &mut Vec<usize>) {
     #[invariant(user, forall<i : Int> 0 <= i && i < produced.len() ==> @^produced[i] == 0)]
     for x in v.iter_mut() {
@@ -53,9 +53,9 @@ pub fn counter(v: Vec<u32>) {
         )
         .collect();
 
-    proof_assert! { (@x).len() == (@v).len() };
-    proof_assert! { (@x).ext_eq(@v) };
-    proof_assert! { @cnt == (@x).len() };
+    proof_assert! { x@.len() == v@.len() };
+    proof_assert! { x@.ext_eq(@v) };
+    proof_assert! { @cnt == x@.len() };
 }
 
 #[requires(@n >= 0)]

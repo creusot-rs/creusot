@@ -19,7 +19,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
     #[trusted]
     #[ensures(self.shallow_model().len() == result.len())]
     #[ensures(forall<i: Int> 0 <= i && i < self.shallow_model().len()
-              ==> result[i] == (@self)[i].deep_model())]
+              ==> result[i] == self@[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { absurd }
     }
@@ -29,18 +29,18 @@ extern_spec! {
     mod std {
         mod collections {
             impl<T> VecDeque<T> {
-                #[ensures((@result).len() == 0)]
+                #[ensures(result@.len() == 0)]
                 fn new() -> Self;
 
-                #[ensures((@result).len() == 0)]
+                #[ensures(result@.len() == 0)]
                 fn with_capacity(capacity: usize) -> Self;
             }
 
             impl<T, A: Allocator> VecDeque<T, A> {
-                #[ensures(@result == (@self).len())]
+                #[ensures(@result == self@.len())]
                 fn len(&self) -> usize;
 
-                #[ensures(result == ((@self).len() == 0))]
+                #[ensures(result == (self@.len() == 0))]
                 fn is_empty(&self) -> bool;
 
                 #[ensures((@^self).len() == 0)]
@@ -48,25 +48,25 @@ extern_spec! {
 
                 #[ensures(match result {
                     Some(t) =>
-                        @^self == (@self).subsequence(1, (@self).len()) &&
+                        @^self == self@.subsequence(1, self@.len()) &&
                         @self == Seq::singleton(t).concat(@^self),
-                    None => *self == ^self && (@self).len() == 0
+                    None => *self == ^self && self@.len() == 0
                 })]
                 fn pop_front(&mut self) -> Option<T>;
 
                 #[ensures(match result {
                     Some(t) =>
-                        @^self == (@self).subsequence(0, (@self).len() - 1) &&
+                        @^self == self@.subsequence(0, self@.len() - 1) &&
                         @self == (@^self).push(t),
-                    None => *self == ^self && (@self).len() == 0
+                    None => *self == ^self && self@.len() == 0
                 })]
                 fn pop_back(&mut self) -> Option<T>;
 
-                #[ensures((@^self).len() == (@self).len() + 1)]
+                #[ensures((@^self).len() == self@.len() + 1)]
                 #[ensures((@^self) == Seq::singleton(value).concat(@self))]
                 fn push_front(&mut self, value: T);
 
-                #[ensures(@^self == (@self).push(value))]
+                #[ensures(@^self == self@.push(value))]
                 fn push_back(&mut self, value: T);
             }
         }

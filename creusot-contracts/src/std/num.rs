@@ -163,13 +163,13 @@ macro_rules! spec_abs_diff {
         extern_spec! {
             impl $unsigned {
                 #[allow(dead_code)]
-                #[ensures(@result == (@self).abs_diff(@other))]
+                #[ensures(@result == self@.abs_diff(@other))]
                 fn abs_diff(self, other: $unsigned) -> $unsigned;
             }
 
             impl $signed {
                 #[allow(dead_code)]
-                #[ensures(@result == (@self).abs_diff(@other))]
+                #[ensures(@result == self@.abs_diff(@other))]
                 fn abs_diff(self, other: $signed) -> $unsigned;
             }
         }

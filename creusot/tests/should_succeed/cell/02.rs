@@ -78,12 +78,12 @@ pub type FibCache = Vec<Cell<Option<usize>, Fib>>;
 #[predicate]
 fn fib_cell(v: FibCache) -> bool {
     pearlite! {
-        forall<i : Int> @(@v)[i].ghost_inv.ix == i
+        forall<i : Int> @v@[i].ghost_inv.ix == i
     }
 }
 
 #[requires(fib_cell(*mem))]
-#[requires(@i < (@mem).len())]
+#[requires(@i < mem@.len())]
 #[ensures(@result == fib(@i))]
 #[requires(@i <= 63)]
 pub fn fib_memo(mem: &FibCache, i: usize) -> usize {

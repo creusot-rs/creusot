@@ -32,7 +32,7 @@ where
     T::DeepModelTy: OrdLogic,
 {
     let old_v = ghost! { v };
-    #[invariant(permutation, (@v).permutation_of(@old_v))]
+    #[invariant(permutation, v@.permutation_of(@old_v))]
     #[invariant(sorted, sorted_range(v.deep_model(), 0, produced.len()))]
     #[invariant(partition, partition(v.deep_model(), produced.len()))]
     for i in 0..v.len() {

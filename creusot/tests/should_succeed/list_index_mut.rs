@@ -39,7 +39,7 @@ fn get(l: List, ix: Int) -> Option<u32> {
 #[ensures(Some(*result) == get(*param_l, @param_ix))]
 #[ensures(Some(^result) == get(^param_l, @param_ix))]
 #[ensures(len(^param_l) == len(*param_l))]
-#[ensures(forall<i:Int> 0 <= i && i < len(*param_l) && i != (@param_ix) ==> get(*param_l, i) == get(^param_l, i))]
+#[ensures(forall<i:Int> 0 <= i && i < len(*param_l) && i != param_ix@ ==> get(*param_l, i) == get(^param_l, i))]
 pub fn index_mut(param_l: &mut List, param_ix: usize) -> &mut u32 {
     let old_l = ghost! { param_l };
     let mut l = param_l;

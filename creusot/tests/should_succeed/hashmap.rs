@@ -91,7 +91,7 @@ impl<K: Hash, V> MyHashMap<K, V> {
 impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
     #[requires(0 < @size)]
     #[ensures(result.hashmap_inv())]
-    #[ensures(forall<i: K::DeepModelTy> (@result).get(i) == None)]
+    #[ensures(forall<i: K::DeepModelTy> result@.get(i) == None)]
     pub fn new(size: usize) -> MyHashMap<K, V> {
         let res = MyHashMap { buckets: vec![List::Nil; size] };
         res
@@ -99,7 +99,7 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
 
     #[requires((*self).hashmap_inv())]
     #[ensures((^self).hashmap_inv())]
-    #[ensures(forall<i: K::DeepModelTy> (@^self).get(i) == (if i == key.deep_model() { Some(val) } else { (@self).get(i) } ))]
+    #[ensures(forall<i: K::DeepModelTy> (@^self).get(i) == (if i == key.deep_model() { Some(val) } else { self@.get(i) } ))]
     pub fn add(&mut self, key: K, val: V) {
         use List::*;
         let old_self = ghost! { self };
@@ -133,8 +133,8 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
 
     #[requires(self.hashmap_inv())]
     #[ensures(match result {
-        Some(v) => (@self).get(key.deep_model()) == Some(*v),
-        None => (@self).get(key.deep_model()) == None,
+        Some(v) => self@.get(key.deep_model()) == Some(*v),
+        None => self@.get(key.deep_model()) == None,
     })]
     pub fn get(&self, key: K) -> Option<&V> {
         let index: usize = key.hash() as usize % self.buckets.len();
@@ -154,17 +154,17 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
     #[requires((@self.buckets).len() < 1000)]
     #[requires((*self).hashmap_inv())]
     #[ensures((^self).hashmap_inv())]
-    #[ensures(forall<k : K::DeepModelTy> (@^self).get(k) == (@self).get(k))] // lets prove the extensional version for now
+    #[ensures(forall<k : K::DeepModelTy> (@^self).get(k) == self@.get(k))] // lets prove the extensional version for now
     #[allow(dead_code)]
     fn resize(&mut self) {
         let old_self = ghost! { self };
         let mut new = Self::new(self.buckets.len() * 2);
 
         let mut i: usize = 0;
-        #[invariant(seen, forall<k : K::DeepModelTy> old_self.bucket_ix(k) < @i ==> (@old_self).get(k) == (@new).get(k))]
+        #[invariant(seen, forall<k : K::DeepModelTy> old_self.bucket_ix(k) < @i ==> old_self@.get(k) == new@.get(k))]
         #[invariant(unseen, forall<k : K::DeepModelTy>
             @i <=   old_self.bucket_ix(k) &&
-                    old_self.bucket_ix(k) <= (@old_self.buckets).len() ==> (@new).get(k) == None
+                    old_self.bucket_ix(k) <= (@old_self.buckets).len() ==> new@.get(k) == None
         )]
         #[invariant(rest, forall<j : Int> @i <= j && j < (@old_self.buckets).len() ==> (@self.buckets)[j] == (@old_self.buckets)[j])]
         #[invariant(a, new.hashmap_inv())]
@@ -175,19 +175,19 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
             let mut l: List<_> = std::mem::replace(&mut self.buckets[i], List::Nil);
 
             #[invariant(a, new.hashmap_inv())]
-            #[invariant(x, forall<k : K::DeepModelTy> old_self.bucket_ix(k) < @i ==> (@old_self).get(k) == (@new).get(k))]
+            #[invariant(x, forall<k : K::DeepModelTy> old_self.bucket_ix(k) < @i ==> old_self@.get(k) == new@.get(k))]
             #[invariant(x, forall<k : K::DeepModelTy>
-                @i < old_self.bucket_ix(k) && old_self.bucket_ix(k) <= (@old_self.buckets).len()  ==> (@new).get(k) == None
+                @i < old_self.bucket_ix(k) && old_self.bucket_ix(k) <= (@old_self.buckets).len()  ==> new@.get(k) == None
             )]
             #[invariant(zzz, forall<k : K::DeepModelTy> old_self.bucket_ix(k) == @i ==>
-                        (@old_self).get(k) == match l.get(k) { None => (@new).get(k), Some(v) => Some(v) })]
+                        old_self@.get(k) == match l.get(k) { None => new@.get(k), Some(v) => Some(v) })]
             #[invariant(l_no_double_binding, l.no_double_binding())]
             #[invariant(x, old_self.good_bucket(l, @i))]
             while let List::Cons((k, v), tl) = l {
                 new.add(k, v);
                 l = *tl;
             }
-            proof_assert! { forall<k : K::DeepModelTy> old_self.bucket_ix(k) == @i  ==> (@old_self).get(k) == (@new).get(k) };
+            proof_assert! { forall<k : K::DeepModelTy> old_self.bucket_ix(k) == @i  ==> old_self@.get(k) == new@.get(k) };
             i += 1;
         }
 
