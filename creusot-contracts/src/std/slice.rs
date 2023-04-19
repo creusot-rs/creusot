@@ -241,13 +241,13 @@ extern_spec! {
 
         #[ensures(match result {
             Some(r) => {
-                * r == (@**self)[0] &&
-                ^ r == (@^*self)[0] &&
-                (@**self).len() > 0 && // ^*s.len == **s.len ? (i dont think so)
-                (@^*self).len() > 0 &&
-                (@*^self).ext_eq((@**self).tail()) && (@^^self).ext_eq((@^*self).tail())
+                * r == (**self)@[0] &&
+                ^ r == (^*self)@[0] &&
+                (**self)@.len() > 0 && // ^*s.len == **s.len ? (i dont think so)
+                (^*self)@.len() > 0 &&
+                (*^self)@.ext_eq((**self)@.tail()) && (^^self)@.ext_eq((^*self)@.tail())
             }
-            None => ^self == * self && (@**self).len() == 0
+            None => ^self == * self && (**self)@.len() == 0
         })]
         fn take_first_mut<'a>(self_: &mut &'a mut [T]) -> Option<&'a mut T>;
 
@@ -339,7 +339,7 @@ impl<'a, T> Invariant for Iter<'a, T> {}
 impl<'a, T> Iterator for Iter<'a, T> {
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && @*self@ == Seq::EMPTY }
+        pearlite! { self.resolve() && (*self@)@ == Seq::EMPTY }
     }
 
     #[predicate]
@@ -384,14 +384,14 @@ impl<'a, T> Invariant for IterMut<'a, T> {
     #[creusot::ignore_type_invariant]
     fn invariant(self) -> bool {
         // Property that is always true but we must carry around..
-        pearlite! { (@^self@).len() == (@*self@).len() }
+        pearlite! { (^self@)@.len() == (*self@)@.len() }
     }
 }
 
 impl<'a, T> Iterator for IterMut<'a, T> {
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && @*self@ == Seq::EMPTY }
+        pearlite! { self.resolve() && (*self@)@ == Seq::EMPTY }
     }
 
     #[predicate]

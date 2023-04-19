@@ -3,7 +3,7 @@ use creusot_contracts::*;
 
 pub struct HasMutRef<'a, T>(&'a mut T);
 
-#[ensures(@^x.0 == 5)]
+#[ensures((^x.0)@ == 5)]
 pub fn test(x: HasMutRef<'_, u32>) {
     *x.0 = 5
 }
