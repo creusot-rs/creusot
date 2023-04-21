@@ -130,17 +130,13 @@ pub(crate) fn create_assign_inner<'tcx>(
             },
             Downcast(_, _) => {}
             Index(ix) => {
-                let set = Exp::impure_qvar(QName::from_string("Seq.set").unwrap());
+                let set = Exp::impure_qvar(QName::from_string("Slice.set").unwrap());
                 let conv_func = uint_to_int(&UintTy::Usize);
                 let ix_exp = Exp::impure_var(translate_local(body, ix).ident());
 
                 inner = Call(
                     Box::new(set),
-                    vec![
-                        translate_rplace_inner(ctx, names, body, lhs.local, stump),
-                        conv_func.app_to(ix_exp),
-                        inner,
-                    ],
+                    vec![translate_rplace_inner(ctx, names, body, lhs.local, stump), ix_exp, inner],
                 )
             }
             ConstantIndex { .. } => unimplemented!("ConstantIndex"),
@@ -211,8 +207,8 @@ pub(crate) fn translate_rplace_inner<'tcx>(
                 let ix_exp = Exp::impure_var(translate_local(body, *ix).ident());
                 let conv_func = uint_to_int(&UintTy::Usize);
                 inner = Call(
-                    Box::new(Exp::impure_qvar(QName::from_string("Seq.get").unwrap())),
-                    vec![inner, conv_func.app_to(ix_exp)],
+                    Box::new(Exp::impure_qvar(QName::from_string("Slice.get").unwrap())),
+                    vec![inner, ix_exp],
                 )
             }
             ConstantIndex { .. } => unimplemented!("constant index projection"),

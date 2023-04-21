@@ -427,21 +427,17 @@ impl<'tcx> Expr<'tcx> {
                 from_int.app_to(to_int.app_to(e.to_why(ctx, names, body)))
             }
             Expr::Len(pl) => {
-                let int_conversion = uint_from_int(&UintTy::Usize);
-                let len_call = Exp::impure_qvar(QName::from_string("Seq.length").unwrap())
+                let len_call = Exp::impure_qvar(QName::from_string("Slice.length").unwrap())
                     .app_to(pl.to_why(ctx, names, body));
-                int_conversion.app_to(len_call)
+                len_call
             }
-            Expr::Array(fields) => Exp::impure_qvar(QName::from_string("Seq.create").unwrap())
+            Expr::Array(fields) => Exp::impure_qvar(QName::from_string("Slice.create").unwrap())
                 .app_to(Exp::Const(Constant::Int(fields.len() as i128, None)))
                 .app_to(Exp::Sequence(
                     fields.into_iter().map(|f| f.to_why(ctx, names, body)).collect(),
                 )),
-            Expr::Repeat(e, len) => Exp::impure_qvar(QName::from_string("Seq.create").unwrap())
-                .app_to(
-                    Exp::impure_qvar(QName::from_string("UIntSize.to_int").unwrap())
-                        .app_to(len.to_why(ctx, names, body)),
-                )
+            Expr::Repeat(e, len) => Exp::impure_qvar(QName::from_string("Slice.create").unwrap())
+                .app_to(len.to_why(ctx, names, body))
                 .app_to(Exp::FnLit(Box::new(e.to_why(ctx, names, body)))),
         }
     }

@@ -49,11 +49,6 @@ module Borrow
   val borrow_mut (a : 'a) : borrowed 'a
   ensures { *result = a }
 end
-module Slice
-  use seq.Seq
-  type array 'a = seq 'a
-  function id (s : seq 'a) : seq 'a = s
-end
 
 (* Signed Integer *)
 
@@ -215,4 +210,34 @@ module Ghost
   type ghost_ty 't = 't
   let function new (x : 't) : ghost_ty 't = x
   let function inner (x : ghost_ty 't) : 't = x
+end
+
+module Slice
+  use seq.Seq
+  use UIntSize
+  use int.Int
+
+  type slice 'a =
+    { elts : seq 'a }
+    invariant { Seq.length elts <= max_uint64 }
+
+  type array 'a = slice 'a
+
+  let create (len : uint64) (f : int -> 'a) : slice 'a =
+    { elts = Seq.create (to_int len) f}
+
+  let length (s : slice 'a) : uint64 = of_int (Seq.length s.elts)
+
+  let get (s : slice 'a) (ix : uint64) : 'a =
+    requires { ix < Seq.length s.elts }
+    Seq.get s.elts (to_int ix)
+
+  let set (s : slice 'a) (ix : uint64) (v : 'a) : slice 'a =
+    requires { 0 <= ix < Seq.length s.elts }
+    ensures { Seq.length result.elts = Seq.length s.elts }
+    ensures { result.elts[ix] = v }
+    ensures { forall j. 0 <= j < Seq.length s.elts /\ j <> ix -> result.elts[j] = s.elts[j] }
+    { elts = Seq.set s.elts (to_int ix) v }
+
+  function id (s : slice 'a) : seq 'a = s.elts
 end
