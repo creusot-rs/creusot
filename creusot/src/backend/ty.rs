@@ -127,17 +127,13 @@ fn translate_ty_inner<'tcx>(
         }
         Slice(ty) => {
             names.import_prelude_module(PreludeModule::Slice);
-            names.import_prelude_module(PreludeModule::Seq);
-            // names.import_prelude_module(PreludeModule:);
             MlT::TApp(
-                Box::new(MlT::TConstructor("seq".into())),
+                Box::new(MlT::TConstructor("slice".into())),
                 vec![translate_ty_inner(trans, ctx, names, span, *ty)],
             )
         }
         Array(ty, _) => {
             names.import_prelude_module(PreludeModule::Slice);
-            names.import_prelude_module(PreludeModule::Seq);
-
             MlT::TApp(
                 Box::new(MlT::TConstructor("array".into())),
                 vec![translate_ty_inner(trans, ctx, names, span, *ty)],
