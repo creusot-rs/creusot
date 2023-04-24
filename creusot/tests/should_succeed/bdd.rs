@@ -69,7 +69,6 @@ mod hashmap {
         }
     }
 
-
     impl<U: Hash, V: Hash> Hash for (U, V) {
         #[ensures(result@ == Self::hash_log(self.deep_model()))]
         fn hash(&self) -> u64 {
@@ -89,11 +88,7 @@ mod hashmap {
 enum Node<'arena> {
     False,
     True,
-    If {
-        v: u64,
-        childt: Bdd<'arena>,
-        childf: Bdd<'arena>,
-    },
+    If { v: u64, childt: Bdd<'arena>, childf: Bdd<'arena> },
 }
 use self::Node::*;
 
@@ -119,9 +114,9 @@ impl<'arena> hashmap::Hash for Node<'arena> {
         match self {
             False => 1,
             True => 2,
-            If { v, childt, childf } => v
-                .wrapping_add(childt.1.wrapping_mul(5))
-                .wrapping_add(childf.1.wrapping_mul(7)),
+            If { v, childt, childf } => {
+                v.wrapping_add(childt.1.wrapping_mul(5)).wrapping_add(childf.1.wrapping_mul(7))
+            }
         }
     }
 
@@ -455,11 +450,7 @@ impl<'arena> Context<'arena> {
         if childt == childf {
             return childt;
         }
-        self.hashcons(If {
-            v: x,
-            childt,
-            childf,
-        })
+        self.hashcons(If { v: x, childt, childf })
     }
 
     #[requires(self.invariant())]
@@ -536,16 +527,8 @@ impl<'arena> Context<'arena> {
             (_, True) => a,
             (False, _) | (_, False) => self.false_(),
             (
-                If {
-                    v: va,
-                    childt: childta,
-                    childf: childfa,
-                },
-                If {
-                    v: vb,
-                    childt: childtb,
-                    childf: childfb,
-                },
+                If { v: va, childt: childta, childf: childfa },
+                If { v: vb, childt: childtb, childf: childfb },
             ) => {
                 let (v, childt, childf);
                 match va.cmp(&vb) {
