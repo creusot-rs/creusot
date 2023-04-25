@@ -1,7 +1,7 @@
-use crate::{backend::program::uint_to_int, ctx::CloneMap, translation::LocalIdent};
+use crate::{ctx::CloneMap, translation::LocalIdent};
 use rustc_middle::{
     mir::{Body, Local, Place},
-    ty::{TyKind, UintTy},
+    ty::TyKind,
 };
 use why3::{
     exp::{
@@ -131,7 +131,6 @@ pub(crate) fn create_assign_inner<'tcx>(
             Downcast(_, _) => {}
             Index(ix) => {
                 let set = Exp::impure_qvar(QName::from_string("Slice.set").unwrap());
-                let conv_func = uint_to_int(&UintTy::Usize);
                 let ix_exp = Exp::impure_var(translate_local(body, ix).ident());
 
                 inner = Call(
@@ -205,7 +204,6 @@ pub(crate) fn translate_rplace_inner<'tcx>(
             Index(ix) => {
                 // TODO: Use [_] syntax
                 let ix_exp = Exp::impure_var(translate_local(body, *ix).ident());
-                let conv_func = uint_to_int(&UintTy::Usize);
                 inner = Call(
                     Box::new(Exp::impure_qvar(QName::from_string("Slice.get").unwrap())),
                     vec![inner, ix_exp],
