@@ -146,7 +146,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         Expr::Constructor(variant, subst, fields)
                     }
                     Closure(def_id, subst) => {
-                        if util::is_invariant(self.tcx, *def_id) {
+                        if util::is_invariant(self.tcx, *def_id)
+                            || util::is_variant(self.tcx, *def_id)
+                        {
                             return;
                         } else if util::is_assertion(self.tcx, *def_id) {
                             let assertion = self

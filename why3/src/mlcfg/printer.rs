@@ -823,6 +823,12 @@ impl Print for Statement {
                     );
                 doc
             }
+            Statement::Variant(e) => {
+                let doc = alloc.text("variant ").append(
+                    alloc.space().append(e.pretty(alloc, env)).append(alloc.space()).braces(),
+                );
+                doc
+            }
             Statement::Assume(assump) => {
                 let doc = alloc.text("assume ").append(
                     alloc.space().append(assump.pretty(alloc, env)).append(alloc.space()).braces(),

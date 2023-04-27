@@ -47,6 +47,7 @@ impl Terminator {
 pub enum Statement {
     Assign { lhs: Ident, rhs: Exp },
     Invariant(Ident, Exp),
+    Variant(Exp),
     Assume(Exp),
     Assert(Exp),
 }
