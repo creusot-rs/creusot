@@ -7,7 +7,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned, ToTokens, TokenStreamExt};
 use std::iter;
 use syn::{
-    parse::{Parse, Result},
+    parse::{discouraged::Speculative, Parse, Result},
     spanned::Spanned,
     token::Brace,
     *,
@@ -181,7 +181,7 @@ fn spec_attrs(tag: &Ident) -> TokenStream {
     quote! {
          #[creusot::no_translate]
          #[creusot::item=#name_tag]
-         #[creusot::decl::spec]
+         #[creusot::spec]
     }
 }
 
@@ -227,7 +227,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
             let requires_tokens = sig_spec_item(req_name, fn_or_meth.sig.clone(), term);
             TS1::from(quote! {
               #requires_tokens
-              #[creusot::spec::requires=#name_tag]
+              #[creusot::clause::requires=#name_tag]
               #fn_or_meth
             })
         }
@@ -236,7 +236,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
             f.body.as_mut().map(|b| b.stmts.insert(0, Stmt::Item(Item::Verbatim(requires_tokens))));
             TS1::from(quote! {
-              #[creusot::spec::requires=#name_tag]
+              #[creusot::clause::requires=#name_tag]
               #f
             })
         }
@@ -245,7 +245,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
             let body = &clos.body;
             *clos.body = parse_quote!({let res = #body; #requires_tokens res});
             TS1::from(quote! {
-              #[creusot::spec::requires=#name_tag]
+              #[creusot::clause::requires=#name_tag]
               #clos
             })
         }
@@ -273,7 +273,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
             let ensures_tokens = sig_spec_item(ens_name, sig, term);
             TS1::from(quote! {
               #ensures_tokens
-              #[creusot::spec::ensures=#name_tag]
+              #[creusot::clause::ensures=#name_tag]
               #s
             })
         }
@@ -286,7 +286,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
 
             f.body.as_mut().map(|b| b.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens))));
             TS1::from(quote! {
-                #[creusot::spec::ensures=#name_tag]
+                #[creusot::clause::ensures=#name_tag]
                 #f
             })
         }
@@ -303,9 +303,28 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
                 ;
                 res});
             TS1::from(quote! {
-              #[creusot::spec::ensures=#name_tag]
+              #[creusot::clause::ensures=#name_tag]
               #clos
             })
+        }
+    }
+}
+
+enum VariantAnnotation {
+    Fn(ItemFn),
+    WhileLoop(ExprWhile),
+}
+
+impl syn::parse::Parse for VariantAnnotation {
+    fn parse(input: parse::ParseStream) -> Result<Self> {
+        let fork = input.fork();
+        if let Ok(f) = fork.parse() {
+            input.advance_to(&fork);
+            Ok(VariantAnnotation::Fn(f))
+        } else if let Ok(w) = input.parse() {
+            Ok(VariantAnnotation::WhileLoop(w))
+        } else {
+            Err(Error::new(Span::call_site(), "TEST?"))
         }
     }
 }
@@ -321,34 +340,42 @@ pub fn variant(attr: TS1, tokens: TS1) -> TS1 {
 fn variant_inner(attr: TS1, tokens: TS1) -> Result<TS1> {
     let p: pearlite_syn::Term = parse(attr)?;
 
-    let mut f: ItemFn = parse(tokens)?;
+    let tgt: VariantAnnotation = parse(tokens)?;
 
-    let var_name = generate_unique_ident(&f.sig.ident.to_string());
-    let mut var_sig = f.sig.clone();
-    var_sig.ident = var_name.clone();
-    // var_sig.output = parse_quote! { -> impl creusot_contracts::well_founded::WellFounded };
+    let var_name = generate_unique_ident("variant");
+
     let var_body = pretyping::encode_term(&p).unwrap_or_else(|e| {
         return e.into_tokens();
     });
     let name_tag = format!("{}", quote! { #var_name });
 
+    let variant_attr = match tgt {
+        VariantAnnotation::Fn(_) => quote! { #[creusot::spec::variant] },
+        VariantAnnotation::WhileLoop(_) => quote! { #[creusot::spec::variant::loop_] },
+    };
     let variant_tokens = quote! {
         #[allow(unused_must_use)]
         let _ =
             #[creusot::no_translate]
             #[creusot::item=#name_tag]
-            #[creusot::decl::spec]
+            #variant_attr
+            #[creusot::spec]
             ||{ ::creusot_contracts::__stubs::variant_check(#var_body) }
         ;
     };
 
-    f.block.stmts.insert(0, Stmt::Item(Item::Verbatim(variant_tokens)));
-
-    // TODO: Parse and pass down all the function's arguments.
-    Ok(TS1::from(quote! {
-      #[creusot::spec::variant=#name_tag]
-      #f
-    }))
+    match tgt {
+        VariantAnnotation::Fn(mut f) => {
+            f.block.stmts.insert(0, Stmt::Item(Item::Verbatim(variant_tokens)));
+            Ok(TS1::from(quote! {
+              #[creusot::clause::variant=#name_tag]
+              #f
+            }))
+        }
+        VariantAnnotation::WhileLoop(w) => Ok(TS1::from(quote! {
+          { #variant_tokens; #w }
+        })),
+    }
 }
 
 struct Assertion(TBlock);
@@ -371,7 +398,7 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
             #[allow(unused_must_use)]
             let _ = {
                 #[creusot::no_translate]
-                #[creusot::decl::spec]
+                #[creusot::spec]
                 #[creusot::spec::assert]
                 || -> bool { #assert_body }
             };
@@ -386,7 +413,7 @@ pub fn ghost(assertion: TS1) -> TS1 {
         {
             (
                 #[creusot::no_translate]
-                #[creusot::decl::spec]
+                #[creusot::spec]
                 #[creusot::spec::ghost]
                 || { ::creusot_contracts::ghost::Ghost::new(#assertion) }
             )()

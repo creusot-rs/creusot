@@ -14,11 +14,17 @@ use rustc_middle::{
 };
 use rustc_span::Symbol;
 
+#[derive(Debug, Clone, Copy)]
+pub enum LoopSpecKind {
+    Invariant(Symbol),
+    Variant,
+}
+
 pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
     body: &Body<'tcx>,
-) -> (IndexMap<BasicBlock, Vec<(Symbol, Term<'tcx>)>>, IndexMap<DefId, Term<'tcx>>) {
+) -> (IndexMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>, IndexMap<DefId, Term<'tcx>>) {
     let mut visitor = InvariantClosures::new(ctx.tcx, def_id);
     visitor.visit_body(&body);
 
@@ -29,15 +35,15 @@ pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
     for clos in visitor.closures.into_iter() {
         if let Some(name) = util::invariant_name(ctx.tcx, clos) {
             let term = ctx.term(clos).unwrap().clone();
-
-            invariants.insert(clos, (name, term));
+            invariants.insert(clos, (LoopSpecKind::Invariant(name), term));
+        } else if util::is_loop_variant(ctx.tcx, clos) {
+            let term = ctx.term(clos).unwrap().clone();
+            invariants.insert(clos, (LoopSpecKind::Variant, term));
         } else if util::is_assertion(ctx.tcx, clos) {
             let term = ctx.term(clos).unwrap().clone();
-
             assertions.insert(clos, term);
         } else if util::is_ghost(ctx.tcx, clos) {
             let term = ctx.term(clos).unwrap().clone();
-
             // A hack should probably be separately tracked
             assertions.insert(clos, term);
         }
@@ -48,7 +54,7 @@ pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
     let correct_inv = locations
         .into_iter()
         .map(|(loc, invs)| {
-            let inv_exps: Vec<_> = invs
+            let inv_exps: Vec<(LoopSpecKind, _)> = invs
                 .into_iter()
                 .map(|id| {
                     let mut inv = invariants.remove(&id.1).unwrap();
@@ -141,7 +147,7 @@ struct InvariantLocations<'tcx> {
 impl<'tcx> Visitor<'tcx> for InvariantLocations<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         if let Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
-            if util::is_invariant(self.tcx, *id) {
+            if util::is_invariant(self.tcx, *id) || util::is_loop_variant(self.tcx, *id) {
                 self.invariants.insert(loc, *id);
             }
         }

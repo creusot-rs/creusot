@@ -214,7 +214,7 @@ pub(crate) fn contract_clauses_of(
     // attributes to make sure requires/ensures clauses appear in the same
     // order in WhyML code as they appear in Rust code.
     for attr in attrs.iter().rev() {
-        if !util::is_attr(attr, "spec") {
+        if !util::is_attr(attr, "clause") {
             continue;
         }
 

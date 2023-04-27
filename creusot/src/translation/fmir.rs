@@ -17,6 +17,7 @@ pub enum Statement<'tcx> {
     Resolve(DefId, SubstsRef<'tcx>, Place<'tcx>),
     Assertion(Term<'tcx>),
     Invariant(Symbol, Term<'tcx>),
+    Variant(Term<'tcx>),
 }
 
 // Re-organize this completely

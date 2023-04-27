@@ -48,7 +48,7 @@ impl ToTokens for Invariant {
             #[allow(unused_must_use)]
             let _ = {
                 #[creusot::no_translate]
-                #[creusot::decl::spec]
+                #[creusot::spec]
                 #[creusot::spec::invariant=#invariant_name]
                 ||{ #inv_body }
             };
