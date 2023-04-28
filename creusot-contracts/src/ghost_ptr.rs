@@ -1,5 +1,5 @@
 // Inspired by https://plv.mpi-sws.org/rustbelt/ghostcell/ https://rust-unofficial.github.io/too-many-lists/fifth.html
-use crate::{logic::FMap, util::MakeSized, *};
+use crate::{logic::FMap, *};
 use ::std::marker::PhantomData;
 
 /// Models a fragment of the heap that maps the [`GhostPtr`]s it has permission to their value.
@@ -53,6 +53,7 @@ impl<T: ?Sized> GhostPtrExt<T> for GhostPtr<T> {
     #[trusted]
     #[logic]
     #[ensures(forall<t: GhostPtrToken<T>> !t@.contains(result))]
+    // #[ensures(result.addr_logic() == 0@)]
     #[ensures(forall<ptr: GhostPtr<T>> ptr.addr_logic() == result.addr_logic() ==> ptr == result)]
     fn null_logic() -> Self {
         absurd
@@ -79,7 +80,7 @@ extern_spec! {
         #[ensures(result@ == self.addr_logic())]
         fn addr(self) -> usize;
 
-        /// Check if `self` was created with [`GhostPtr::null`]
+        /// Check if `self` was created with ptr::null()
         #[trusted]
         #[ensures(result == (self == GhostPtr::<T>::null_logic()))]
         fn is_null(self) -> bool;
@@ -87,7 +88,7 @@ extern_spec! {
 
     mod std {
         mod ptr {
-            /// Creates a null [`GhostPtr`] that no GhostToken has permission to
+            /// Creates a null pointer that no GhostToken has permission to
             // Safety even though this pointer is dangling no GhostToken has permission to it so it's okay
             #[trusted]
             #[ensures(result == GhostPtr::<T>::null_logic())]
@@ -98,18 +99,20 @@ extern_spec! {
     }
 }
 
-// Coverts `val` into a [`GhostPtr`] and gives `t` permission to it
+/// Casts `val` into a raw pointer and gives `t` permission to it
 // Safety this pointer was owned by a box so no other GhostToken could have permission to it
 #[trusted]
 #[ensures(!(*t)@.contains(result))]
+// Since we had full permission to `val` and all of the entries in `t` simultaneously,
+// it couldn't have already been contained in `t`
 #[ensures((^t)@ == (*t)@.insert(result, *val))]
 pub fn ptr_from_box<T>(val: Box<T>, t: &mut GhostPtrToken<T>) -> *const T {
     Box::into_raw(val)
 }
 
-/// Immutably borrows `self`
-// Safety no other token has permission to `self`
-// `t` cannot be used to mutably borrow `self` as long as the shared lifetime lasts
+/// Immutably borrows `ptr`
+// Safety no other token has permission to `ptr`
+// `t` cannot be used to mutably borrow `ptr` as long as the shared lifetime lasts
 #[trusted]
 #[requires(t@.contains(ptr))]
 #[ensures(*result == t@.lookup(ptr))]
@@ -122,7 +125,7 @@ pub fn ptr_as_ref<T>(ptr: *const T, t: &GhostPtrToken<T>) -> &T {
 #[ensures((*result)@ == *new_model)]
 pub fn shrink_token_ref<T>(
     t: &GhostPtrToken<T>,
-    new_model: Ghost<<GhostPtrToken<T> as ShallowModel>::ShallowModelTy>,
+    new_model: Ghost<FMap<*const T, T>>,
 ) -> &GhostPtrToken<T> {
     t
 }
@@ -134,13 +137,14 @@ pub fn shrink_token_ref<T>(
 #[requires((**t)@.contains(ptr))]
 #[ensures(*result == (**t)@.lookup(ptr))]
 #[ensures((*^t)@ == (**t)@.remove(ptr))]
-#[ensures((^*t)@.remove(ptr) == (^^t)@)]
-#[ensures((^*t)@.get(ptr) == Some((^result).make_sized()))]
-#[ensures(!(^^t)@.contains(ptr))]
+#[ensures((^*t)@ == (^^t)@.insert(ptr, ^result))]
+// #[ensures(!(^^t)@.contains(ptr))]
+// ^~ It shouldn't have been possible to add pointer to `t` while we were holding a mutable reference to the pointer
 pub fn ptr_as_mut2<'o, 'i, T>(ptr: *const T, t: &'o mut &'i mut GhostPtrToken<T>) -> &'i mut T {
     unsafe { &mut *(ptr as *mut _) }
 }
 
+/// Mutably borrows `ptr`
 #[requires(t@.contains(ptr))]
 #[ensures(*result == (*t)@.lookup(ptr))]
 #[ensures((^t)@ == (*t)@.insert(ptr, ^result))]
@@ -149,7 +153,7 @@ pub fn ptr_as_mut<T>(ptr: *const T, t: &mut GhostPtrToken<T>) -> &mut T {
     ptr_as_mut2(ptr, &mut t)
 }
 
-// Deallocates `ptr` back into a `Box`
+/// Transfers ownership of `ptr` back into a `Box`
 // Safety `ptr` is now dangling but since `t` doesn't have permission anymore no token does so this is okay
 #[trusted]
 #[requires((*t)@.contains(ptr))]
@@ -161,5 +165,7 @@ pub fn ptr_to_box<T>(ptr: *const T, t: &mut GhostPtrToken<T>) -> Box<T> {
 
 #[trusted]
 #[ensures((*t)@.disjoint(other@))]
+// Since we had full permission to and all of the entries in `t` and `other` simultaneously,
+// no pointer could have been in both
 #[ensures((^t)@ == (*t)@.union(other@))]
 pub fn merge<T>(t: &mut GhostPtrToken<T>, other: GhostPtrToken<T>) {}
