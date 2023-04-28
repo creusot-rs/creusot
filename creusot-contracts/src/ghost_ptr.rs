@@ -122,6 +122,7 @@ pub fn ptr_as_ref<T>(ptr: *const T, t: &GhostPtrToken<T>) -> &T {
     unsafe { &*ptr }
 }
 
+/// Shrinks the view of the `t` so that it's model is now new-model
 #[trusted]
 #[requires(new_model.subset((*t)@))]
 #[ensures((*result)@ == *new_model)]
