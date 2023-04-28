@@ -5,7 +5,7 @@ pub fn f() {
     let mut a = Some(10);
     let b = &mut a;
 
-    #[invariant(dummy, true)]
+    #[invariant(true)]
     while let Some(_) = b {
         *b = None;
     }

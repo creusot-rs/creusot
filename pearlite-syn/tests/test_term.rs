@@ -9,20 +9,16 @@ fn test_impl() {
     snapshot!(quote!(false ==> true) as Term, @r###"
     TermImpl {
         hyp: TermLit {
-            lit: Bool(
-                LitBool {
-                    value: false,
-                },
-            ),
+            lit: Lit::Bool {
+                value: false,
+            },
         },
         eqeq_token: EqEq,
         gt_token: Gt,
         cons: TermLit {
-            lit: Bool(
-                LitBool {
-                    value: true,
-                },
-            ),
+            lit: Lit::Bool {
+                value: true,
+            },
         },
     }
     "###);
@@ -44,7 +40,7 @@ fn test_final() {
                             ident: Ident(
                                 a,
                             ),
-                            arguments: None,
+                            arguments: PathArguments::None,
                         },
                     ],
                 },
@@ -69,7 +65,7 @@ fn test_model() {
                             ident: Ident(
                                 a,
                             ),
-                            arguments: None,
+                            arguments: PathArguments::None,
                         },
                     ],
                 },
@@ -91,31 +87,27 @@ fn test_forall() {
                     x,
                 ),
                 colon_token: Colon,
-                ty: Path(
-                    TypePath {
-                        qself: None,
-                        path: Path {
-                            leading_colon: None,
-                            segments: [
-                                PathSegment {
-                                    ident: Ident(
-                                        u32,
-                                    ),
-                                    arguments: None,
-                                },
-                            ],
-                        },
+                ty: Type::Path {
+                    qself: None,
+                    path: Path {
+                        leading_colon: None,
+                        segments: [
+                            PathSegment {
+                                ident: Ident(
+                                    u32,
+                                ),
+                                arguments: PathArguments::None,
+                            },
+                        ],
                     },
-                ),
+                },
             },
         ],
         gt_token: Gt,
         term: TermLit {
-            lit: Bool(
-                LitBool {
-                    value: true,
-                },
-            ),
+            lit: Lit::Bool {
+                value: true,
+            },
         },
     }
     "###);
@@ -133,31 +125,27 @@ fn test_exists() {
                     x,
                 ),
                 colon_token: Colon,
-                ty: Path(
-                    TypePath {
-                        qself: None,
-                        path: Path {
-                            leading_colon: None,
-                            segments: [
-                                PathSegment {
-                                    ident: Ident(
-                                        u32,
-                                    ),
-                                    arguments: None,
-                                },
-                            ],
-                        },
+                ty: Type::Path {
+                    qself: None,
+                    path: Path {
+                        leading_colon: None,
+                        segments: [
+                            PathSegment {
+                                ident: Ident(
+                                    u32,
+                                ),
+                                arguments: PathArguments::None,
+                            },
+                        ],
                     },
-                ),
+                },
             },
         ],
         gt_token: Gt,
         term: TermLit {
-            lit: Bool(
-                LitBool {
-                    value: true,
-                },
-            ),
+            lit: Lit::Bool {
+                value: true,
+            },
         },
     }
     "###);
@@ -177,7 +165,7 @@ fn test_pearlite() {
     snapshot!(quote!(pearlite!{ x }) as Term, @r###"
     TermPearlite {
         pearlite_token: Keyword [pearlite],
-        bang_token: Bang,
+        bang_token: Not,
         block: TBlock {
             brace_token: Brace,
             stmts: [
@@ -193,7 +181,7 @@ fn test_pearlite() {
                                         ident: Ident(
                                             x,
                                         ),
-                                        arguments: None,
+                                        arguments: PathArguments::None,
                                     },
                                 ],
                             },
@@ -225,7 +213,7 @@ fn test_match() {
                             ident: Ident(
                                 x,
                             ),
-                            arguments: None,
+                            arguments: PathArguments::None,
                         },
                     ],
                 },
@@ -234,72 +222,60 @@ fn test_match() {
         brace_token: Brace,
         arms: [
             TermArm {
-                pat: TupleStruct(
-                    PatTupleStruct {
-                        attrs: [],
-                        path: Path {
-                            leading_colon: None,
-                            segments: [
-                                PathSegment {
-                                    ident: Ident(
-                                        Some,
-                                    ),
-                                    arguments: None,
-                                },
-                            ],
-                        },
-                        pat: PatTuple {
-                            attrs: [],
-                            paren_token: Paren,
-                            elems: [
-                                Ident(
-                                    PatIdent {
-                                        attrs: [],
-                                        by_ref: None,
-                                        mutability: None,
-                                        ident: Ident(
-                                            x,
-                                        ),
-                                        subpat: None,
-                                    },
+                pat: Pat::TupleStruct {
+                    attrs: [],
+                    qself: None,
+                    path: Path {
+                        leading_colon: None,
+                        segments: [
+                            PathSegment {
+                                ident: Ident(
+                                    Some,
                                 ),
-                            ],
-                        },
+                                arguments: PathArguments::None,
+                            },
+                        ],
                     },
-                ),
+                    paren_token: Paren,
+                    elems: [
+                        Pat::Ident {
+                            attrs: [],
+                            by_ref: None,
+                            mutability: None,
+                            ident: Ident(
+                                x,
+                            ),
+                            subpat: None,
+                        },
+                    ],
+                },
                 guard: None,
                 fat_arrow_token: FatArrow,
                 body: TermLit {
-                    lit: Bool(
-                        LitBool {
-                            value: true,
-                        },
-                    ),
+                    lit: Lit::Bool {
+                        value: true,
+                    },
                 },
                 comma: Some(
                     Comma,
                 ),
             },
             TermArm {
-                pat: Ident(
-                    PatIdent {
-                        attrs: [],
-                        by_ref: None,
-                        mutability: None,
-                        ident: Ident(
-                            None,
-                        ),
-                        subpat: None,
-                    },
-                ),
+                pat: Pat::Ident {
+                    attrs: [],
+                    by_ref: None,
+                    mutability: None,
+                    ident: Ident(
+                        None,
+                    ),
+                    subpat: None,
+                },
                 guard: None,
                 fat_arrow_token: FatArrow,
                 body: TermLit {
-                    lit: Bool(
-                        LitBool {
-                            value: false,
-                        },
-                    ),
+                    lit: Lit::Bool {
+                        value: false,
+                    },
                 },
                 comma: None,
             },

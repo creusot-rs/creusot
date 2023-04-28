@@ -9,7 +9,7 @@ use creusot_contracts::*;
 pub fn make_vec_of_size(n: usize) -> Vec<bool> {
     let mut out: Vec<bool> = Vec::new();
     let mut i = 0;
-    #[invariant(loop_invariant, 0usize <= i && i <= n)]
+    #[invariant(0usize <= i && i <= n)]
     while i <= n {
         out.push(false);
         i += 1

@@ -12,11 +12,10 @@ use rustc_middle::{
     mir::{visit::Visitor, AggregateKind, BasicBlock, Body, Location, Operand, Rvalue},
     ty::{TyCtxt, TyKind},
 };
-use rustc_span::Symbol;
 
 #[derive(Debug, Clone, Copy)]
 pub enum LoopSpecKind {
-    Invariant(Symbol),
+    Invariant,
     Variant,
 }
 
@@ -33,9 +32,9 @@ pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
     let mut invariants: IndexMap<_, _> = Default::default();
 
     for clos in visitor.closures.into_iter() {
-        if let Some(name) = util::invariant_name(ctx.tcx, clos) {
+        if util::is_invariant(ctx.tcx, clos) {
             let term = ctx.term(clos).unwrap().clone();
-            invariants.insert(clos, (LoopSpecKind::Invariant(name), term));
+            invariants.insert(clos, (LoopSpecKind::Invariant, term));
         } else if util::is_loop_variant(ctx.tcx, clos) {
             let term = ctx.term(clos).unwrap().clone();
             invariants.insert(clos, (LoopSpecKind::Variant, term));

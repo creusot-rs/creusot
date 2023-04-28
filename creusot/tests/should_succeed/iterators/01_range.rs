@@ -77,9 +77,9 @@ pub fn sum_range(n: isize) -> isize {
     let mut it = Range { start: 0, end: n }.into_iter();
     let iter_old = ghost! { it };
     let mut produced = ghost! { Seq::EMPTY };
-    #[invariant(type_invariant, it.invariant())]
-    #[invariant(structural, iter_old.produces(produced.inner(), it))]
-    #[invariant(user, i@ == produced.len() && i <= n)]
+    #[invariant(it.invariant())]
+    #[invariant(iter_old.produces(produced.inner(), it))]
+    #[invariant(i@ == produced.len() && i <= n)]
     loop {
         match it.next() {
             Some(x) => {

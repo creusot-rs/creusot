@@ -34,9 +34,9 @@ where
     let mut size: usize = arr.len();
     let mut base: usize = 0;
 
-    #[invariant(size_valid, 0 < size@ && size@ + base@ <= arr@.len())]
-    #[invariant(lower_b, forall<i : usize> i < base ==> arr.deep_model()[i@] <= elem.deep_model())]
-    #[invariant(lower_b, forall<i : usize> base@ + size@ <= i@ && i@ < arr@.len() ==> elem.deep_model() < arr.deep_model()[i@])]
+    #[invariant(0 < size@ && size@ + base@ <= arr@.len())]
+    #[invariant(forall<i : usize> i < base ==> arr.deep_model()[i@] <= elem.deep_model())]
+    #[invariant(forall<i : usize> base@ + size@ <= i@ && i@ < arr@.len() ==> elem.deep_model() < arr.deep_model()[i@])]
     while size > 1 {
         let half = size / 2;
         let mid = base + half;
