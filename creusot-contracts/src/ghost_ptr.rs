@@ -5,6 +5,7 @@ use ::std::marker::PhantomData;
 /// Models a fragment of the heap that maps the [`GhostPtr`]s it has permission to their value.
 /// At most one [`GhostToken`] has permission to each [`GhostPtr`]
 /// No [`GhostToken`] has permission to a dangling [`GhostPtr`]
+#[trusted]
 pub struct GhostPtrToken<T: ?Sized>(Ghost<FMap<GhostPtr<T>, T>>, PhantomData<T>);
 
 /// Thin wrapper over a raw pointer managed by a [`GhostPtr`]
@@ -13,9 +14,10 @@ pub type GhostPtr<T> = *const T;
 impl<T: ?Sized> ShallowModel for GhostPtrToken<T> {
     type ShallowModelTy = FMap<GhostPtr<T>, T>;
 
+    #[trusted]
     #[logic]
     fn shallow_model(self) -> Self::ShallowModelTy {
-        *self.0
+        absurd
     }
 }
 
