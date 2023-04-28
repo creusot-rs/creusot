@@ -55,11 +55,12 @@ impl<K, V: ?Sized> FMap<K, V> {
     }
 
     #[logic]
+    #[why3::attr = "inline:trivial"]
     pub fn lookup(self, k: K) -> V
     where
         V: Sized,
     {
-        *unwrap(self.get(k))
+        *self.lookup_unsized(k)
     }
 
     #[logic]

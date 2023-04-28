@@ -46,6 +46,75 @@ impl<T: ?Sized> GhostPtrToken<T> {
         ptr1.addr() == ptr2.addr()
     }
 
+    /// Casts `val` into a raw pointer and gives `self` permission to it
+    // Safety this pointer was owned by a box so no other GhostToken could have permission to it
+    #[trusted]
+    #[ensures(!(*self)@.contains(result))]
+    // Since we had full permission to `val` and all of the entries in `self` simultaneously,
+    // it couldn't have already been contained in `self`
+    #[ensures((^self)@ == (*self)@.insert(result, *val))]
+    pub fn ptr_from_box(&mut self, val: Box<T>) -> *const T {
+        Box::into_raw(val)
+    }
+
+    /// Immutably borrows `ptr`
+    // Safety no other token has permission to `ptr`
+    // `t` cannot be used to mutably borrow `ptr` as long as the shared lifetime lasts
+    #[trusted]
+    #[requires(self@.contains(ptr))]
+    #[ensures(*result == *self@.lookup_unsized(ptr))]
+    pub fn ptr_as_ref(&self, ptr: *const T) -> &T {
+        unsafe { &*ptr }
+    }
+
+    /// Shrinks the view of the `self` so that it's model is now new-model
+    #[trusted]
+    #[requires(new_model.subset(self@))]
+    #[ensures(result@ == *new_model)]
+    pub fn shrink_token_ref(&self, new_model: Ghost<FMap<*const T, T>>) -> &GhostPtrToken<T> {
+        self
+    }
+
+    /// Mutably borrows `ptr` and shrinks `t` so that it can no longer be used to access `ptr`
+    // Safety no other token has permission to `self`
+    // `t` can no longer be used to access `ptr`
+    #[trusted]
+    #[requires((**self)@.contains(ptr))]
+    #[ensures(*result == *(**self)@.lookup_unsized(ptr))]
+    #[ensures((*^self)@ == (**self)@.remove(ptr))]
+    #[ensures((^*self)@ == (^^self)@.insert(ptr, ^result))]
+    // #[ensures(!(^^t)@.contains(ptr))]
+    // ^~ It shouldn't have been possible to add pointer to `t` while we were holding a mutable reference to the pointer
+    pub fn take_mut<'o, 'i>(self: &'o mut &'i mut GhostPtrToken<T>, ptr: *const T) -> &'i mut T {
+        unsafe { &mut *(ptr as *mut _) }
+    }
+
+    /// Mutably borrows `ptr`
+    #[requires(self@.contains(ptr))]
+    #[ensures(*result == *(*self)@.lookup_unsized(ptr))]
+    #[ensures((^self)@ == (*self)@.insert(ptr, ^result))]
+    pub fn ptr_as_mut(&mut self, ptr: *const T) -> &mut T {
+        let mut t = self;
+        t.take_mut(ptr)
+    }
+
+    /// Transfers ownership of `ptr` back into a `Box`
+    // Safety `ptr` is now dangling but since `self` doesn't have permission anymore no token does so this is okay
+    #[trusted]
+    #[requires((*self)@.contains(ptr))]
+    #[ensures(*result == *(*self)@.lookup_unsized(ptr))]
+    #[ensures((^self)@ == (*self)@.remove(ptr))]
+    pub fn ptr_to_box(&mut self, ptr: *const T) -> Box<T> {
+        unsafe { Box::from_raw(ptr as *mut _) }
+    }
+
+    #[trusted]
+    #[ensures((*self)@.disjoint(other@))]
+    // Since we had full permission to and all of the entries in `self` and `other` simultaneously,
+    // no pointer could have been in both
+    #[ensures((^self)@ == (*self)@.union(other@))]
+    pub fn merge(&mut self, other: GhostPtrToken<T>) {}
+
     /// Leaks memory iff the precondition fails
     #[requires(self@.is_empty())]
     pub fn drop(self) {}
@@ -100,75 +169,3 @@ extern_spec! {
         }
     }
 }
-
-/// Casts `val` into a raw pointer and gives `t` permission to it
-// Safety this pointer was owned by a box so no other GhostToken could have permission to it
-#[trusted]
-#[ensures(!(*t)@.contains(result))]
-// Since we had full permission to `val` and all of the entries in `t` simultaneously,
-// it couldn't have already been contained in `t`
-#[ensures((^t)@ == (*t)@.insert(result, *val))]
-pub fn ptr_from_box<T>(val: Box<T>, t: &mut GhostPtrToken<T>) -> *const T {
-    Box::into_raw(val)
-}
-
-/// Immutably borrows `ptr`
-// Safety no other token has permission to `ptr`
-// `t` cannot be used to mutably borrow `ptr` as long as the shared lifetime lasts
-#[trusted]
-#[requires(t@.contains(ptr))]
-#[ensures(*result == t@.lookup(ptr))]
-pub fn ptr_as_ref<T>(ptr: *const T, t: &GhostPtrToken<T>) -> &T {
-    unsafe { &*ptr }
-}
-
-/// Shrinks the view of the `t` so that it's model is now new-model
-#[trusted]
-#[requires(new_model.subset((*t)@))]
-#[ensures((*result)@ == *new_model)]
-pub fn shrink_token_ref<T>(
-    t: &GhostPtrToken<T>,
-    new_model: Ghost<FMap<*const T, T>>,
-) -> &GhostPtrToken<T> {
-    t
-}
-
-/// Mutably borrows `ptr` and shrinks `t` so that it can no longer be used to access `ptr`
-// Safety no other token has permission to `self`
-// `t` can no longer be used to access `ptr`
-#[trusted]
-#[requires((**t)@.contains(ptr))]
-#[ensures(*result == (**t)@.lookup(ptr))]
-#[ensures((*^t)@ == (**t)@.remove(ptr))]
-#[ensures((^*t)@ == (^^t)@.insert(ptr, ^result))]
-// #[ensures(!(^^t)@.contains(ptr))]
-// ^~ It shouldn't have been possible to add pointer to `t` while we were holding a mutable reference to the pointer
-pub fn ptr_as_mut2<'o, 'i, T>(ptr: *const T, t: &'o mut &'i mut GhostPtrToken<T>) -> &'i mut T {
-    unsafe { &mut *(ptr as *mut _) }
-}
-
-/// Mutably borrows `ptr`
-#[requires(t@.contains(ptr))]
-#[ensures(*result == (*t)@.lookup(ptr))]
-#[ensures((^t)@ == (*t)@.insert(ptr, ^result))]
-pub fn ptr_as_mut<T>(ptr: *const T, t: &mut GhostPtrToken<T>) -> &mut T {
-    let mut t = t;
-    ptr_as_mut2(ptr, &mut t)
-}
-
-/// Transfers ownership of `ptr` back into a `Box`
-// Safety `ptr` is now dangling but since `t` doesn't have permission anymore no token does so this is okay
-#[trusted]
-#[requires((*t)@.contains(ptr))]
-#[ensures(*result == (*t)@.lookup(ptr))]
-#[ensures((^t)@ == (*t)@.remove(ptr))]
-pub fn ptr_to_box<T>(ptr: *const T, t: &mut GhostPtrToken<T>) -> Box<T> {
-    unsafe { Box::from_raw(ptr as *mut _) }
-}
-
-#[trusted]
-#[ensures((*t)@.disjoint(other@))]
-// Since we had full permission to and all of the entries in `t` and `other` simultaneously,
-// no pointer could have been in both
-#[ensures((^t)@ == (*t)@.union(other@))]
-pub fn merge<T>(t: &mut GhostPtrToken<T>, other: GhostPtrToken<T>) {}
