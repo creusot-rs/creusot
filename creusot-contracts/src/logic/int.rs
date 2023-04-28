@@ -52,42 +52,6 @@ impl Int {
     }
 }
 
-macro_rules! mach_int {
-    ($t:ty, $ty_nm:expr) => {
-        impl ShallowModel for $t {
-            type ShallowModelTy = Int;
-            #[logic]
-            #[trusted]
-            #[creusot::builtins = concat!($ty_nm, ".to_int")]
-            fn shallow_model(self) -> Self::ShallowModelTy {
-                pearlite! { absurd }
-            }
-        }
-
-        impl DeepModel for $t {
-            type DeepModelTy = Int;
-            #[logic]
-            fn deep_model(self) -> Self::DeepModelTy {
-                pearlite! { self@ }
-            }
-        }
-    };
-}
-
-mach_int!(u8, "prelude.UInt8");
-mach_int!(u16, "prelude.UInt16");
-mach_int!(u32, "prelude.UInt32");
-mach_int!(u64, "prelude.UInt64");
-mach_int!(u128, "prelude.UInt128");
-mach_int!(usize, "prelude.UIntSize");
-
-mach_int!(i8, "prelude.Int8");
-mach_int!(i16, "prelude.Int16");
-mach_int!(i32, "prelude.Int32");
-mach_int!(i64, "prelude.Int64");
-mach_int!(i128, "prelude.Int128");
-mach_int!(isize, "prelude.IntSize");
-
 #[cfg(creusot)]
 impl Add<Int> for Int {
     type Output = Int;

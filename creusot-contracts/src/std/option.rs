@@ -1,6 +1,18 @@
 use crate::{invariant::Invariant, *};
 pub use ::std::option::*;
 
+impl<T: DeepModel> DeepModel for Option<T> {
+    type DeepModelTy = Option<T::DeepModelTy>;
+
+    #[logic]
+    fn deep_model(self) -> Self::DeepModelTy {
+        match self {
+            Some(t) => Some(t.deep_model()),
+            None => None,
+        }
+    }
+}
+
 extern_spec! {
     mod std {
         mod option {

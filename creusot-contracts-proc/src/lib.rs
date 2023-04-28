@@ -1,4 +1,4 @@
-#![feature(box_patterns, drain_filter, proc_macro_def_site)]
+#![feature(box_patterns, drain_filter, extend_one, proc_macro_def_site)]
 extern crate proc_macro;
 use extern_spec::ExternSpecs;
 use pearlite_syn::*;
@@ -9,7 +9,6 @@ use std::iter;
 use syn::{
     parse::{discouraged::Speculative, Parse, Result},
     spanned::Spanned,
-    token::Brace,
     *,
 };
 
@@ -378,12 +377,12 @@ fn variant_inner(attr: TS1, tokens: TS1) -> Result<TS1> {
     }
 }
 
-struct Assertion(TBlock);
+struct Assertion(Vec<TermStmt>);
 
 impl Parse for Assertion {
     fn parse(input: parse::ParseStream) -> Result<Self> {
         let stmts = input.call(TBlock::parse_within)?;
-        Ok(Assertion(TBlock { brace_token: Brace { span: Span::call_site() }, stmts }))
+        Ok(Assertion(stmts))
     }
 }
 
@@ -491,7 +490,7 @@ fn logic_item(log: LogicItem) -> TS1 {
     let def = log.defaultness;
     let sig = log.sig;
     let attrs = log.attrs;
-    let req_body = pretyping::encode_block(&term).unwrap();
+    let req_body = pretyping::encode_block(&term.stmts).unwrap();
 
     TS1::from(quote_spanned! {span=>
         #[creusot::decl::logic]
@@ -538,7 +537,7 @@ fn predicate_item(log: LogicItem) -> TS1 {
     let sig = log.sig;
     let attrs = log.attrs;
 
-    let req_body = pretyping::encode_block(&term).unwrap();
+    let req_body = pretyping::encode_block(&term.stmts).unwrap();
 
     TS1::from(quote_spanned! {span=>
         #[creusot::decl::predicate]
@@ -610,7 +609,6 @@ pub fn invariant(invariant: TS1, loopb: TS1) -> TS1 {
         Ok(l) => l,
         Err(e) => return e.to_compile_error().into(),
     };
-
     invariant::lower(loop_).into()
 }
 
