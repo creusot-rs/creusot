@@ -818,8 +818,8 @@ where
         ghost! { Self::has_mapping_model };
 
         let mut tree = self;
-        #[invariant(bst_inv, (*tree).bst_invariant())]
-        #[invariant(has_mapping, forall<v: V> (*self).has_mapping(key.deep_model(), v) == (*tree).has_mapping(key.deep_model(), v))]
+        #[invariant((*tree).bst_invariant())]
+        #[invariant(forall<v: V> (*self).has_mapping(key.deep_model(), v) == (*tree).has_mapping(key.deep_model(), v))]
         while let Some(node) = &tree.node {
             match key.cmp(&node.key) {
                 Less => tree = &node.left,
@@ -842,19 +842,17 @@ where
         let old_self = ghost! { self };
         let mut tree = self;
 
-        #[invariant(bst_inv, (*tree).bst_invariant())]
-        #[invariant(height_inv, (*tree).height_invariant())]
-        #[invariant(color_inv, (*tree).color_invariant())]
-        #[invariant(mapping_prof_key, forall<v: V> (^tree).has_mapping(key.deep_model(), v) == (^*old_self).has_mapping(key.deep_model(), v))]
-        #[invariant(mapping_cur_key, forall<v: V> (*tree).has_mapping(key.deep_model(), v) == (**old_self).has_mapping(key.deep_model(), v))]
-        #[invariant(bst_inv_proph, (forall<k: K::DeepModelTy, v: V> k == key.deep_model() || (*tree).has_mapping(k, v) == (^tree).has_mapping(k, v))
+        #[invariant((*tree).bst_invariant())]
+        #[invariant((*tree).height_invariant())]
+        #[invariant((*tree).color_invariant())]
+        #[invariant(forall<v: V> (^tree).has_mapping(key.deep_model(), v) == (^*old_self).has_mapping(key.deep_model(), v))]
+        #[invariant(forall<v: V> (*tree).has_mapping(key.deep_model(), v) == (**old_self).has_mapping(key.deep_model(), v))]
+        #[invariant((forall<k: K::DeepModelTy, v: V> k == key.deep_model() || (*tree).has_mapping(k, v) == (^tree).has_mapping(k, v))
                     ==> (^tree).bst_invariant() ==> (^*old_self).bst_invariant())]
-        #[invariant(height_inv_proph,
-                    (*tree).height() == (^tree).height() && (^tree).height_invariant() ==>
+        #[invariant((*tree).height() == (^tree).height() && (^tree).height_invariant() ==>
                     (^*old_self).height_invariant())]
-        #[invariant(color_inv_proph, CPL((*tree).color()).match_t(^tree) ==> CPL(Black).match_t(^*old_self))]
-        #[invariant(mapping_proph,
-                    forall<k: K::DeepModelTy, v: V> (*tree).has_mapping(k, v) == (^tree).has_mapping(k, v) ==>
+        #[invariant(CPL((*tree).color()).match_t(^tree) ==> CPL(Black).match_t(^*old_self))]
+        #[invariant(forall<k: K::DeepModelTy, v: V> (*tree).has_mapping(k, v) == (^tree).has_mapping(k, v) ==>
                     (**old_self).has_mapping(k, v) == (^*old_self).has_mapping(k, v))]
         while let Some(node) = &mut tree.node {
             match key.cmp(&node.key) {

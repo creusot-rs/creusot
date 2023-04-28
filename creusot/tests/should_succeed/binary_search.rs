@@ -46,8 +46,8 @@ impl<T> List<T> {
         let orig_ix = ix;
         let mut l = self;
 
-        #[invariant(ix_valid, ix@ < l.len_logic())]
-        #[invariant(res_get, self.get(orig_ix@) == l.get(ix@))]
+        #[invariant(ix@ < l.len_logic())]
+        #[invariant(self.get(orig_ix@) == l.get(ix@))]
         while let Cons(t, ls) = l {
             if ix > 0 {
                 l = &*ls;
@@ -66,7 +66,7 @@ impl<T> List<T> {
     fn len(&self) -> usize {
         let mut len: usize = 0;
         let mut l = self;
-        #[invariant(len_valid, len@ + l.len_logic() == self.len_logic())]
+        #[invariant(len@ + l.len_logic() == self.len_logic())]
         while let Cons(_, ls) = l {
             len += 1;
             l = ls;
@@ -113,9 +113,9 @@ pub fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize> {
     let mut size = arr.len();
     let mut base = 0;
 
-    #[invariant(size_valid, 0 < size@ && size@ + base@ <= (arr).len_logic())]
-    #[invariant(lower_b, forall<i : usize> i < base ==> (arr).get_default(i@, 0u32) <= elem)]
-    #[invariant(lower_b, forall<i : usize> base@ + size@ < i@ && i@ < (arr).len_logic() ==> elem < (arr).get_default(i@, 0u32))]
+    #[invariant(0 < size@ && size@ + base@ <= (arr).len_logic())]
+    #[invariant(forall<i : usize> i < base ==> (arr).get_default(i@, 0u32) <= elem)]
+    #[invariant(forall<i : usize> base@ + size@ < i@ && i@ < (arr).len_logic() ==> elem < (arr).get_default(i@, 0u32))]
     while size > 1 {
         let half = size / 2;
         let mid = base + half;

@@ -70,7 +70,7 @@ impl Board {
     fn count_degree(&self, p: Point) -> usize {
         let mut count = 0;
 
-        #[invariant(count, count@ <= produced.len())]
+        #[invariant(count@ <= produced.len())]
         for m in moves() {
             let next = p.mov(&m);
             if self.available(next) {
@@ -110,7 +110,7 @@ fn moves() -> Vec<(isize, isize)> {
           exists<i:Int> 0 <= i && i < v@.len() && v[i] == *r)]
 fn min(v: &Vec<(usize, Point)>) -> Option<&(usize, Point)> {
     let mut min = None;
-    #[invariant(post, forall<r: &(usize, Point)> min == Some(r) ==>
+    #[invariant(forall<r: &(usize, Point)> min == Some(r) ==>
                       exists<i:Int> 0 <= i && i < v@.len() && v[i] == *r)]
     for x in v {
         match min {
@@ -139,13 +139,13 @@ pub fn knights_tour(size: usize, x: usize, y: usize) -> Option<Board> {
     board.set(p, 1);
 
     ghost! { dumb_nonlinear_arith(size) };
-    #[invariant(b, board.size == size)]
-    #[invariant(b, board.wf())]
-    #[invariant(p, board.in_bounds(p))]
+    #[invariant(board.size == size)]
+    #[invariant(board.wf())]
+    #[invariant(board.in_bounds(p))]
     for step in 2..(size * size) {
         // choose next square by Warnsdorf's rule
         let mut candidates: Vec<(usize, Point)> = Vec::new();
-        #[invariant(c, forall<i: Int> 0 <= i && i < candidates@.len() ==>
+        #[invariant(forall<i: Int> 0 <= i && i < candidates@.len() ==>
                     board.in_bounds(candidates[i].1))]
         for m in moves() {
             let adj = p.mov(&m);

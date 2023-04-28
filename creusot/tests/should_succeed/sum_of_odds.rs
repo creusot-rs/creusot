@@ -35,7 +35,7 @@ fn sum_of_odd_is_sqr(x: Int) {
 #[ensures(result@ == sum_of_odd(x@))]
 fn compute_sum_of_odd(x: u32) -> u32 {
     let mut s: u32 = 0;
-    #[invariant(s_is_sum, s@ == sum_of_odd(produced.len()))]
+    #[invariant(s@ == sum_of_odd(produced.len()))]
     for i in 0..x {
         proof_assert! {
             sum_of_odd_is_sqr(i@);

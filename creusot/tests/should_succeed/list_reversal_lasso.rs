@@ -62,9 +62,9 @@ impl Memory {
     pub fn list_reversal_safe(&mut self, mut l: Ptr) -> Ptr {
         let mut r = NULL;
 
-        #[invariant(inv_r, r == NULL || self.nonnull_ptr(r))]
-        #[invariant(inv_l, l == NULL || self.nonnull_ptr(l))]
-        #[invariant(inv_wf, self.mem_is_well_formed())]
+        #[invariant(r == NULL || self.nonnull_ptr(r))]
+        #[invariant(l == NULL || self.nonnull_ptr(l))]
+        #[invariant(self.mem_is_well_formed())]
         while l != NULL {
             let tmp = l;
             l = self[l];
@@ -96,9 +96,9 @@ impl Memory {
         let mut r = NULL;
         let mut n = ghost! { pearlite! { 0 } };
 
-        #[invariant(n_bounds, 0 <= *n && *n <= s.len())]
-        #[invariant(inv_lst_l, self.list_seg(l, *s, NULL, *n, s.len()))]
-        #[invariant(inv_lst_r, self.list_seg(r, s.reverse(), NULL, s.len()-*n, s.len()))]
+        #[invariant(0 <= *n && *n <= s.len())]
+        #[invariant(self.list_seg(l, *s, NULL, *n, s.len()))]
+        #[invariant(self.list_seg(r, s.reverse(), NULL, s.len()-*n, s.len()))]
         // #[variant(s.len() - *n)]
         while l != NULL {
             l = std::mem::replace(&mut self[l], std::mem::replace(&mut r, l));
@@ -121,13 +121,13 @@ impl Memory {
         let mut r = NULL;
         let mut n = ghost! { pearlite! { 0 } };
 
-        #[invariant(n_bounds, 0 <= *n && *n <= s.len() + 1)]
-        #[invariant(inv_last, *n == s.len() + 1 ==>
+        #[invariant(0 <= *n && *n <= s.len() + 1)]
+        #[invariant(*n == s.len() + 1 ==>
             l == NULL && r == s[0] && self.nonnull_ptr(r) &&
             (*self)[r] == s[s.len()-1] &&
             self.list_seg(s[s.len()-1], s.reverse(), s[0], 0, s.len()-1))]
-        #[invariant(inv_lst_l, *n <= s.len() ==> self.list_seg(l, *s, s[0], *n, s.len()))]
-        #[invariant(inv_lst_r, *n <= s.len() ==> self.list_seg(r, s.reverse(), NULL, s.len()-*n, s.len()))]
+        #[invariant(*n <= s.len() ==> self.list_seg(l, *s, s[0], *n, s.len()))]
+        #[invariant(*n <= s.len() ==> self.list_seg(r, s.reverse(), NULL, s.len()-*n, s.len()))]
         // #[variant(s.len() + 1 - *n)]
         while l != NULL {
             proof_assert! { *n == s.len() ==> l == s.reverse()[s.len() - 1] }
@@ -163,18 +163,18 @@ impl Memory {
         let mut r = NULL;
         let mut n = ghost! { pearlite! { 0 } };
 
-        #[invariant(n_bounds, 0 <= *n && *n <= 2*s1.len() + s2.len())]
-        #[invariant(inv_0, {
+        #[invariant(0 <= *n && *n <= 2*s1.len() + s2.len())]
+        #[invariant({
             let mid = if s2.len() == 0 { s1[s1.len()-1] } else { s2[0] };
             *n <= s1.len() ==>
             self.list_seg(l, *s1, mid, *n, s1.len()) &&
             self.list_seg(mid, *s2, s1[s1.len()-1], 0, s2.len()) &&
             self.list_seg(r, s1.reverse(), NULL, s1.len()-*n, s1.len())})]
-        #[invariant(inv_1, s1.len() < *n && *n <= s1.len() + s2.len() ==>
+        #[invariant(s1.len() < *n && *n <= s1.len() + s2.len() ==>
             self.list_seg(l, *s2, s1[s1.len()-1], *n-s1.len(), s2.len()) &&
             self.list_seg(r, s2.reverse(), s1[s1.len()-1], s1.len()+s2.len()-*n, s2.len()) &&
             self.list_seg(s1[s1.len()-1], s1.reverse(), NULL, 0, s1.len()))]
-        #[invariant(inv_2, {
+        #[invariant({
             let mid = if s2.len() == 0 { s1[s1.len()-1] } else { s2[s2.len()-1] };
             s1.len() + s2.len() < *n ==>
             self.list_seg(l, s1.reverse(), NULL, *n-s1.len()-s2.len(), s1.len()) &&

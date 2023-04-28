@@ -158,8 +158,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             for (kind, body) in self.invariants.remove(&bb).unwrap_or_else(Vec::new) {
                 match kind {
                     LoopSpecKind::Variant => self.emit_statement(fmir::Statement::Variant(body)),
-                    LoopSpecKind::Invariant(name) => {
-                        self.emit_statement(fmir::Statement::Invariant(name, body))
+                    LoopSpecKind::Invariant => {
+                        self.emit_statement(fmir::Statement::Invariant(body))
                     }
                 }
             }

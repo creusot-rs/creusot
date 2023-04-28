@@ -82,10 +82,10 @@ fn lemma_num_of_pos_strictly_increasing(i: Int, t: Seq<i32>) {}
 pub fn m(t: Vec<i32>) -> Vec<i32> {
     let mut count: usize = 0;
     let mut i: usize = 0;
-    #[invariant(loop_bound, i@ <= t@.len())]
-    #[invariant(count_bound, count@ <= i@)]
-    #[invariant(num, count@ == num_of_pos(0,i@,t@))]
-    //#[variant(t@.len() - i@)]
+    #[invariant(i@ <= t@.len())]
+    #[invariant(count@ <= i@)]
+    #[invariant(count@ == num_of_pos(0,i@,t@))]
+    // #[variant(t@.len() - i@)]
     while i < t.len() {
         if t[i] > 0 {
             count += 1
@@ -96,9 +96,9 @@ pub fn m(t: Vec<i32>) -> Vec<i32> {
     count = 0;
 
     i = 0;
-    #[invariant(num, count@ == num_of_pos(0,i@,t@))]
-    #[invariant(ulength, u@.len() == num_of_pos(0,t@.len(),t@))]
-    //#[variant(t@.len() - i@)]
+    #[invariant(count@ == num_of_pos(0,i@,t@))]
+    #[invariant(u@.len() == num_of_pos(0,t@.len(),t@))]
+    // #[variant(t@.len() - i@)]
     while i < t.len() {
         if t[i] > 0 {
             // the tricky assertions, that needs lemmas

@@ -46,7 +46,7 @@ impl Terminator {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Statement {
     Assign { lhs: Ident, rhs: Exp },
-    Invariant(Ident, Exp),
+    Invariant(Exp),
     Variant(Exp),
     Assume(Exp),
     Assert(Exp),

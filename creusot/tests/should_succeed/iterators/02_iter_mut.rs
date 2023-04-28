@@ -74,9 +74,9 @@ pub fn all_zero(v: &mut Vec<usize>) {
     let mut it = iter_mut(v).into_iter();
     let iter_old = ghost! { it };
     let mut produced = ghost! { Seq::EMPTY };
-    #[invariant(type_invariant, it.invariant())]
-    #[invariant(structural, iter_old.produces(produced.inner(), it))]
-    #[invariant(user, forall<i : Int> 0 <= i && i < produced.len() ==> (^produced[i])@ == 0)]
+    #[invariant(it.invariant())]
+    #[invariant(iter_old.produces(produced.inner(), it))]
+    #[invariant(forall<i : Int> 0 <= i && i < produced.len() ==> (^produced[i])@ == 0)]
     loop {
         match it.next() {
             Some(x) => {

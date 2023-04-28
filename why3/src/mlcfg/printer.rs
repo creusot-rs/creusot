@@ -816,11 +816,10 @@ impl Print for Statement {
                 .pretty(alloc, env)
                 .append(" <- ")
                 .append(parens!(alloc, env, Precedence::Impl, rhs)),
-            Statement::Invariant(nm, e) => {
-                let doc =
-                    alloc.text("invariant ").append(alloc.text(nm)).append(alloc.space()).append(
-                        alloc.space().append(e.pretty(alloc, env)).append(alloc.space()).braces(),
-                    );
+            Statement::Invariant(e) => {
+                let doc = alloc.text("invariant ").append(
+                    alloc.space().append(e.pretty(alloc, env)).append(alloc.space()).braces(),
+                );
                 doc
             }
             Statement::Variant(e) => {

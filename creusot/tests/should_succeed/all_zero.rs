@@ -36,10 +36,10 @@ pub fn all_zero(l: &mut List) {
     let old_l = ghost! { l };
     let mut loop_l = l;
 
-    #[invariant(zeroed,
+    #[invariant(
         (forall<i:Int> 0 <= i && i < loop_l.len() ==> (^loop_l).get(i) == Some(0u32)) ==>
             forall<i:Int> 0 <= i && i < old_l.len() ==> (^*old_l).get(i) == Some(0u32))]
-    #[invariant(in_len, (^loop_l).len() == loop_l.len() ==> (^*old_l).len() == old_l.len())]
+    #[invariant((^loop_l).len() == loop_l.len() ==> (^*old_l).len() == old_l.len())]
     while let Cons(value, next) = loop_l {
         *value = 0;
         loop_l = next;

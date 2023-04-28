@@ -3,12 +3,11 @@ use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned, ToTokens};
 use syn::{
     parse_quote, spanned::Spanned, AttrStyle, Attribute, Error, Expr, ExprForLoop, ExprLoop,
-    ExprWhile, Ident, Meta, Result, Token,
+    ExprWhile, Ident, Meta, Result,
 };
 
 #[derive(Debug)]
 struct Invariant {
-    name: syn::Ident,
     span: Span,
     invariant: pearlite_syn::Term,
 }
@@ -16,11 +15,9 @@ struct Invariant {
 impl syn::parse::Parse for Invariant {
     fn parse(tokens: syn::parse::ParseStream) -> Result<Self> {
         let span = tokens.span();
-        let name = tokens.parse()?;
-        let _: Token![,] = tokens.parse()?;
         let invariant = tokens.parse()?;
 
-        Ok(Invariant { name, span, invariant })
+        Ok(Invariant { span, invariant })
     }
 }
 
@@ -32,15 +29,13 @@ impl ToTokens for Invariant {
         let s = self.span;
         let inv_body = pretyping::encode_term(term).unwrap();
         let inv_body = quote_spanned! {s=> #inv_body};
-        let invariant_name = &self.name;
-        let invariant_name = format!("{}", quote! { #invariant_name });
 
         tokens.extend(quote_spanned! {s=>
             #[allow(unused_must_use)]
             let _ = {
                 #[creusot::no_translate]
                 #[creusot::spec]
-                #[creusot::spec::invariant=#invariant_name]
+                #[creusot::spec::invariant]
                 ||{ #inv_body }
             };
         })
@@ -132,7 +127,6 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
     invariants.insert(
         0,
         Invariant {
-            name: Ident::new("structural", Span::call_site()),
             span: Span::call_site(),
             invariant: parse_quote! { ::creusot_contracts::std::iter::Iterator::produces(#iter_old.inner(), #produced.inner(), #it) },
         },
@@ -141,7 +135,6 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
     invariants.insert(
         0,
         Invariant {
-            name: Ident::new("type_invariant", Span::call_site()),
             span: Span::call_site(),
             invariant: parse_quote! { ::creusot_contracts::invariant::Invariant::invariant(#it) },
         },
