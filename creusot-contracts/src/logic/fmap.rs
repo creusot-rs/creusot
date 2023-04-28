@@ -1,20 +1,9 @@
 use crate::{logic::Mapping, util::*, *};
 
-pub struct FMap<K, V: ?Sized>(pub Mapping<K, Option<SizedW<V>>>);
+type PMap<K, V> = Mapping<K, Option<SizedW<V>>>;
 
-#[trusted]
-#[logic]
-#[ensures((forall<k: K> m.0.get(k) == None) ==> m.len() == 0)]
-fn len_def0<K, V: ?Sized>(m: FMap<K, V>) -> bool {
-    true
-}
-
-#[trusted]
-#[logic]
-#[ensures(m.0.get(k) != None ==> m.len() == FMap(m.0.set(k, None)).len() + 1)]
-fn len_def1<K, V: ?Sized>(m: FMap<K, V>, k: K) -> bool {
-    true
-}
+#[trusted] //opauqe
+pub struct FMap<K, V: ?Sized>(PMap<K, V>);
 
 impl<K, V: ?Sized> FMap<K, V> {
     #[trusted]
@@ -24,30 +13,45 @@ impl<K, V: ?Sized> FMap<K, V> {
         absurd
     }
 
+    #[trusted]
     #[logic]
+    pub fn mk(_m: PMap<K, V>) -> Self {
+        absurd
+    }
+
+    #[trusted]
+    #[logic]
+    #[ensures(Self::mk(result) == self)] // injectivity
+    pub fn view(self) -> PMap<K, V> {
+        absurd
+    }
+
+    #[trusted]
+    #[logic]
+    #[ensures(result.view() == self.view().set(k, Some(v.make_sized())))]
     #[ensures(self.contains(k) ==> result.len() == self.len())]
     #[ensures(!self.contains(k) ==> result.len() == self.len() + 1)]
     pub fn insert(self, k: K, v: V) -> Self {
-        FMap(self.0.set(k, Some(v.make_sized()))).remove(k).ext_eq(self.remove(k));
-        FMap(self.0.set(k, Some(v.make_sized())))
+        absurd
     }
 
+    #[trusted]
     #[logic]
+    #[ensures(result.view() == self.view().set(k, None))]
     #[ensures(result.len() == if self.contains(k) {self.len() - 1} else {self.len()})]
     pub fn remove(self, k: K) -> Self {
-        len_def1(self, k);
-        FMap(self.0.set(k, None))
+        absurd
     }
 
     #[logic]
     #[why3::attr = "inline:trivial"]
     pub fn get(self, k: K) -> Option<SizedW<V>> {
-        self.0.get(k)
+        self.view().get(k)
     }
 
     #[logic]
     pub fn lookup_unsized(self, k: K) -> SizedW<V> {
-        unwrap(self.0.get(k))
+        unwrap(self.get(k))
     }
 
     #[logic]
@@ -55,19 +59,20 @@ impl<K, V: ?Sized> FMap<K, V> {
     where
         V: Sized,
     {
-        *unwrap(self.0.get(k))
+        *unwrap(self.get(k))
     }
 
     #[logic]
     pub fn contains(self, k: K) -> bool {
-        self.0.get(k) != None
+        self.get(k) != None
     }
 
+    #[trusted]
     #[logic]
     #[ensures(result.len() == 0)]
+    #[ensures(result.view() == Mapping::cst(None))]
     pub fn empty() -> Self {
-        len_def0(FMap::<K, V>(Mapping::cst(None)));
-        FMap(Mapping::cst(None))
+        absurd
     }
 
     #[logic]
@@ -117,8 +122,8 @@ impl<K, V: ?Sized> FMap<K, V> {
 
     #[logic]
     #[ensures(result ==> self == other)]
-    #[ensures((forall<k: K> self.0.get(k) == other.0.get(k)) ==> result)]
+    #[ensures((forall<k: K> self.get(k) == other.get(k)) ==> result)]
     pub fn ext_eq(self, other: Self) -> bool {
-        self.0 == other.0
+        self.view() == other.view()
     }
 }
