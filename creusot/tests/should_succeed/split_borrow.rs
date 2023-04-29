@@ -19,3 +19,14 @@ pub fn f() {
     // Keep the borrow alive until after the if statement
     (y.0).0;
 }
+
+pub fn g() {
+    let mut a = (MyInt(1), MyInt(2));
+    let x = &mut a;
+
+    let _z = &mut x.1;
+
+    (*x).0 = MyInt(3);
+
+    let _ = (a.0).0 == 3;
+}

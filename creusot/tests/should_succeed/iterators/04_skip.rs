@@ -70,11 +70,11 @@ where
         let old_self = ghost! { self };
         let mut n = std::mem::take(&mut self.n);
         let mut skipped = ghost! { Seq::EMPTY };
-        #[invariant(skipped_len, skipped.len() + n@ == old_self.n@)]
-        #[invariant(produces, old_self.iter.produces(skipped.inner(), self.iter))]
-        #[invariant(skipped_resolve, forall<i: Int> 0 <= i && i < skipped.len() ==> skipped[i].resolve())]
-        #[invariant(n_0, (*self).n@ == 0)]
-        #[invariant(inv, self.invariant())]
+        #[invariant(skipped.len() + n@ == old_self.n@)]
+        #[invariant(old_self.iter.produces(skipped.inner(), self.iter))]
+        #[invariant(forall<i: Int> 0 <= i && i < skipped.len() ==> skipped[i].resolve())]
+        #[invariant((*self).n@ == 0)]
+        #[invariant(self.invariant())]
         loop {
             let r = self.iter.next();
             if n == 0 {

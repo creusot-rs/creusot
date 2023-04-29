@@ -30,9 +30,9 @@ pub fn binary_search(arr: &Vec<u32>, elem: u32) -> Result<usize, usize> {
     let mut size = arr.len();
     let mut base = 0;
 
-    #[invariant(size_valid, 0 < size@ && size@ + base@ <= arr@.len())]
-    #[invariant(lower_b, forall<i : usize> i < base ==> arr[i@] <= elem)]
-    #[invariant(lower_b, forall<i : usize> base@ + size@ < i@ && i@ < arr@.len() ==> elem < arr[i@])]
+    #[invariant(0 < size@ && size@ + base@ <= arr@.len())]
+    #[invariant(forall<i : usize> i < base ==> arr[i@] <= elem)]
+    #[invariant(forall<i : usize> base@ + size@ < i@ && i@ < arr@.len() ==> elem < arr[i@])]
     while size > 1 {
         let half = size / 2;
         let mid = base + half;

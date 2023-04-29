@@ -1,4 +1,4 @@
-use crate::{std::ops::Index, *};
+use crate::{logic::ops::IndexLogic, *};
 
 #[cfg_attr(creusot, creusot::builtins = "seq.Seq.seq")]
 pub struct Seq<T: ?Sized>(std::marker::PhantomData<T>);
@@ -17,7 +17,7 @@ impl<T> Seq<T> {
     #[logic]
     pub fn get(self, ix: Int) -> Option<T> {
         if ix < self.len() {
-            Some(*self.index(ix))
+            Some(self.index_logic(ix))
         } else {
             None
         }
@@ -77,6 +77,13 @@ impl<T> Seq<T> {
         absurd
     }
 
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "seq.Reverse.reverse"]
+    pub fn reverse(self) -> Self {
+        absurd
+    }
+
     #[predicate]
     pub fn permutation_of(self, o: Self) -> bool {
         self.permut(o, 0, self.len())
@@ -120,18 +127,13 @@ impl<T> Seq<T> {
     }
 }
 
-// A hack which allows us to use [..] notation for sequences.
-// Relies on the fact we don't enforce that implementations of traits are of
-// the same function type as the trait signature.. When this is addressed
-// the following instance will error.
-#[cfg(creusot)]
-impl<T> std::ops::Index<Int> for Seq<T> {
-    type Output = T;
+impl<T> IndexLogic<Int> for Seq<T> {
+    type Item = T;
 
-    #[trusted]
     #[logic]
+    #[trusted]
     #[creusot::builtins = "seq.Seq.get"]
-    fn index(&self, _: Int) -> &T {
+    fn index_logic(self, _: Int) -> Self::Item {
         absurd
     }
 }

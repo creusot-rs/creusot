@@ -44,20 +44,19 @@ pub(crate) fn is_no_translate(tcx: TyCtxt, def_id: DefId) -> bool {
 }
 
 pub(crate) fn is_spec(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "spec"]).is_some()
-}
-
-pub(crate) fn invariant_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "invariant"]).and_then(|a| {
-        match &a.args {
-            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l.symbol),
-            _ => None,
-        }
-    })
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec"]).is_some()
 }
 
 pub(crate) fn is_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
-    invariant_name(tcx, def_id).is_some()
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "invariant"]).is_some()
+}
+
+pub(crate) fn is_loop_variant(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "variant", "loop_"]).is_some()
+}
+
+pub(crate) fn is_variant(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "variant"]).is_some()
 }
 
 pub(crate) fn is_assertion(tcx: TyCtxt, def_id: DefId) -> bool {

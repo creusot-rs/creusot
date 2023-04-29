@@ -44,11 +44,11 @@ pub fn index_mut(param_l: &mut List, param_ix: usize) -> &mut u32 {
     let old_l = ghost! { param_l };
     let mut l = param_l;
     let mut ix = param_ix;
-    #[invariant(valid_ix, 0usize <= ix && ix@ < len (*l))]
-    #[invariant(get_target_now, get(*l, ix@) == get(**old_l, param_ix@))]
-    #[invariant(get_target_fin, get(^l, ix@) == get(^*old_l, param_ix@))]
-    #[invariant(len, len(^l) == len(*l) ==> len(^*old_l) == len(**old_l))]
-    #[invariant(untouched,
+    #[invariant(0usize <= ix && ix@ < len (*l))]
+    #[invariant(get(*l, ix@) == get(**old_l, param_ix@))]
+    #[invariant(get(^l, ix@) == get(^*old_l, param_ix@))]
+    #[invariant(len(^l) == len(*l) ==> len(^*old_l) == len(**old_l))]
+    #[invariant(
         (forall<i:Int> 0 <= i && i < len (*l) && i != ix@ ==> get(^l, i) == get(*l, i)) ==>
         forall<i:Int> 0 <= i && i < len (**old_l) && i != param_ix@ ==>
             get (^*old_l, i) == get (**old_l, i)

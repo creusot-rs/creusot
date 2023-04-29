@@ -6,7 +6,7 @@ use crate::{
     backend::place::translate_local,
     ctx::*,
     fmir::{self, Expr},
-    gather_spec_closures::corrected_invariant_names_and_locations,
+    gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind},
     resolve::EagerResolver,
     rustc_extensions::renumber,
     translation::{
@@ -82,7 +82,7 @@ pub struct BodyTranslator<'body, 'tcx> {
     // Fresh BlockId
     fresh_id: usize,
 
-    invariants: IndexMap<BasicBlock, Vec<(Symbol, Term<'tcx>)>>,
+    invariants: IndexMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>,
 
     assertions: IndexMap<DefId, Term<'tcx>>,
 
@@ -155,8 +155,13 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 continue;
             }
 
-            for (name, body) in self.invariants.remove(&bb).unwrap_or_else(Vec::new) {
-                self.emit_statement(fmir::Statement::Invariant(name, body));
+            for (kind, body) in self.invariants.remove(&bb).unwrap_or_else(Vec::new) {
+                match kind {
+                    LoopSpecKind::Variant => self.emit_statement(fmir::Statement::Variant(body)),
+                    LoopSpecKind::Invariant => {
+                        self.emit_statement(fmir::Statement::Invariant(body))
+                    }
+                }
             }
 
             self.freeze_locals_between_blocks(bb);

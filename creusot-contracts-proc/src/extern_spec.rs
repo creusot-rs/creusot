@@ -5,7 +5,7 @@ use syn::{
     parse::Parse,
     punctuated::{Pair, Punctuated},
     spanned::Spanned,
-    token::{Add, Brace, Colon, Comma, For, Impl, Paren, Semi, Trait, Unsafe},
+    token::{Brace, Colon, Comma, For, Impl, Paren, Plus, Semi, Trait, Unsafe},
     visit_mut::VisitMut,
     *,
 };
@@ -36,7 +36,7 @@ pub struct ExternTrait {
     pub ident: Ident,
     pub generics: Generics,
     pub colon_token: Option<Colon>,
-    pub supertraits: Punctuated<TypeParamBound, Add>,
+    pub supertraits: Punctuated<TypeParamBound, Plus>,
     pub brace_token: Brace,
     pub items: Vec<ExternMethod>,
 }
@@ -217,7 +217,7 @@ impl FlatSpec {
             sig,
             block: Box::new(Block {
                 brace_token: Brace::default(),
-                stmts: vec![Stmt::Expr(Expr::Call(call))],
+                stmts: vec![Stmt::Expr(Expr::Call(call), None)],
             }),
         };
 
@@ -252,12 +252,17 @@ impl syn::visit_mut::VisitMut for SelfEscape {
 
 fn escape_self_in_contracts(attrs: &mut Vec<Attribute>) -> Result<()> {
     for attr in attrs {
-        if let Some(id) = attr.path.get_ident() {
+        if let Some(id) = attr.path().get_ident() {
             if id == "ensures" || id == "requires" {
-                let tokens = std::mem::take(&mut attr.tokens);
-                let mut term: Term = syn::parse2(tokens)?;
-                escape_self_in_term(&mut term);
-                attr.tokens = term.into_token_stream();
+                match &mut attr.meta {
+                    Meta::List(l) => {
+                        let tokens = std::mem::take(&mut l.tokens);
+                        let mut term: Term = syn::parse2(tokens)?;
+                        escape_self_in_term(&mut term);
+                        l.tokens = term.into_token_stream();
+                    }
+                    _ => (),
+                }
             }
         }
     }
@@ -443,7 +448,7 @@ fn flatten(
 
                 prefix.path.segments.push(segment);
             } else {
-                return Err(Error::new(impl_.brace_token.span, "unsupported form of impl"));
+                return Err(Error::new(impl_.brace_token.span.join(), "unsupported form of impl"));
             }
 
             for item in impl_.items {

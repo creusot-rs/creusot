@@ -16,11 +16,11 @@ use creusot_contracts::{
 fn right_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     let old_str = ghost! { str };
 
-    #[invariant(old_str_bound, old_str@.len() <= str@.len())]
-    #[invariant(len_bound, old_str@.len() < len@ ==> str@.len() <= len@)]
-    #[invariant(len_bound, str@.len() > len@ ==> str@.len() == old_str@.len())]
-    #[invariant(old_elem, forall<i: Int> 0 <= i && i < old_str@.len() ==> str[i] == old_str[i])]
-    #[invariant(pad_elem, forall<i: Int> old_str@.len() <= i && i < str@.len() ==> str[i] == pad)]
+    #[invariant(old_str@.len() <= str@.len())]
+    #[invariant(old_str@.len() < len@ ==> str@.len() <= len@)]
+    #[invariant(str@.len() > len@ ==> str@.len() == old_str@.len())]
+    #[invariant(forall<i: Int> 0 <= i && i < old_str@.len() ==> str[i] == old_str[i])]
+    #[invariant(forall<i: Int> old_str@.len() <= i && i < str@.len() ==> str[i] == pad)]
     while str.len() < len {
         str.push(pad);
     }
@@ -34,12 +34,12 @@ fn left_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     let old_str = ghost! { str };
     let mut c: Ghost<usize> = ghost! { 0 };
 
-    #[invariant(old_str_bound, old_str@.len() <= str@.len())]
-    #[invariant(len_bound, old_str@.len() < len@ ==> str@.len() <= len@)]
-    #[invariant(len_bound, str@.len() > len@ ==> str@.len() == old_str@.len())]
-    #[invariant(count, c@ == str@.len() - old_str@.len())]
-    #[invariant(old_elem, forall<i: Int> c@ <= i && i < str@.len() ==> str[i] == old_str[i - c@])]
-    #[invariant(pad_elem, forall<i: Int> 0 <= i && i < c@ ==> str[i] == pad)]
+    #[invariant(old_str@.len() <= str@.len())]
+    #[invariant(old_str@.len() < len@ ==> str@.len() <= len@)]
+    #[invariant(str@.len() > len@ ==> str@.len() == old_str@.len())]
+    #[invariant(c@ == str@.len() - old_str@.len())]
+    #[invariant(forall<i: Int> c@ <= i && i < str@.len() ==> str[i] == old_str[i - c@])]
+    #[invariant(forall<i: Int> 0 <= i && i < c@ ==> str[i] == pad)]
     while str.len() < len {
         str.insert(0, pad);
         c = ghost! { 1 + c.inner() };
@@ -80,7 +80,7 @@ fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
     ghost! { subset_push::<T::DeepModelTy> };
     proof_assert! { is_subset(vec.deep_model(), vec.deep_model().push(elem.deep_model())) };
 
-    #[invariant(not_elem, forall<j: Int> 0 <= j && j < produced.len() ==> produced[j].deep_model() != elem.deep_model())]
+    #[invariant(forall<j: Int> 0 <= j && j < produced.len() ==> produced[j].deep_model() != elem.deep_model())]
     for e in vec.iter() {
         proof_assert! { *e == (*vec)[produced.len()-1] };
         if e == &elem {
@@ -100,9 +100,9 @@ fn unique<T: Eq + DeepModel + Copy>(str: &[T]) -> Vec<T> {
     let mut unique = Vec::new();
     let mut sub_str: Ghost<Seq<T>> = ghost! { Seq::new() };
 
-    #[invariant(unique, is_unique(unique.deep_model()))]
-    #[invariant(unique_subset, is_subset(unique.deep_model(), str.deep_model()))]
-    #[invariant(unique_subset, is_subset(str.deep_model().subsequence(0, produced.len()), unique.deep_model()))]
+    #[invariant(is_unique(unique.deep_model()))]
+    #[invariant(is_subset(unique.deep_model(), str.deep_model()))]
+    #[invariant(is_subset(str.deep_model().subsequence(0, produced.len()), unique.deep_model()))]
     for i in 0..str.len() {
         let elem: T = str[i];
         insert_unique(&mut unique, elem);
@@ -155,8 +155,8 @@ fn score(seq: Seq<u32>, i: Int) -> Int {
 fn fulcrum(s: &[u32]) -> usize {
     let mut total: u32 = 0;
 
-    #[invariant(total, total@ == sum_range(s@, 0, produced.len()))]
-    #[invariant(total_bound, total@ <= sum_range(s@, 0, s@.len()))]
+    #[invariant(total@ == sum_range(s@, 0, produced.len()))]
+    #[invariant(total@ <= sum_range(s@, 0, s@.len()))]
     for &x in s {
         total += x;
     }
@@ -167,11 +167,11 @@ fn fulcrum(s: &[u32]) -> usize {
     let mut min_dist: u32 = total;
 
     let mut sum: u32 = 0;
-    #[invariant(sum, sum@ == sum_range(s@, 0, produced.len()))]
-    #[invariant(sum_bound, sum@ <= total@)]
-    #[invariant(min_i_bound, min_i@ <= produced.len() && min_i@ < s@.len())]
-    #[invariant(min_dist, min_dist@ == score(s@, min_i@))]
-    #[invariant(min_i_min, forall<j: Int> 0 <= j && j < produced.len() ==> score(s@, min_i@) <= score(s@, j))]
+    #[invariant(sum@ == sum_range(s@, 0, produced.len()))]
+    #[invariant(sum@ <= total@)]
+    #[invariant(min_i@ <= produced.len() && min_i@ < s@.len())]
+    #[invariant(min_dist@ == score(s@, min_i@))]
+    #[invariant(forall<j: Int> 0 <= j && j < produced.len() ==> score(s@, min_i@) <= score(s@, j))]
     for i in 0..s.len() {
         let dist = sum.abs_diff(total - sum);
         if dist < min_dist {

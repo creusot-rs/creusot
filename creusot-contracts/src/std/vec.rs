@@ -197,7 +197,7 @@ impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
 impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
     #[predicate]
     fn resolve(self) -> bool {
-        pearlite! { forall<i: Int> 0 <= i && i < self@.len() ==> self[i].resolve() }
+        pearlite! { forall<i: Int> 0 <= i && i < self@.len() ==> self@[i].resolve() }
     }
 }
 

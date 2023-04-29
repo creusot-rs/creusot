@@ -16,7 +16,8 @@ pub enum Statement<'tcx> {
     // The reason I have not done this yet is that it would require transforming a `Place` to a `Term`.
     Resolve(DefId, SubstsRef<'tcx>, Place<'tcx>),
     Assertion(Term<'tcx>),
-    Invariant(Symbol, Term<'tcx>),
+    Invariant(Term<'tcx>),
+    Variant(Term<'tcx>),
 }
 
 // Re-organize this completely

@@ -232,8 +232,9 @@ fn lower_promoted<'tcx>(
                     body: Box::new(acc),
                 },
                 why3::mlcfg::Statement::Assume(_) => acc,
-                why3::mlcfg::Statement::Invariant(_, _) => todo!(),
-                why3::mlcfg::Statement::Assert(_) => {
+                why3::mlcfg::Statement::Invariant(_)
+                | why3::mlcfg::Statement::Variant(_)
+                | why3::mlcfg::Statement::Assert(_) => {
                     ctx.crash_and_error(ctx.def_span(def_id), "unsupported promoted constant")
                 }
             });
@@ -662,10 +663,10 @@ impl<'tcx> Statement<'tcx> {
                 vec![mlcfg::Statement::Assert(lower_pure(ctx, names, a))]
             }
 
-            Statement::Invariant(nm, inv) => vec![mlcfg::Statement::Invariant(
-                nm.to_string().into(),
-                lower_pure(ctx, names, inv),
-            )],
+            Statement::Invariant(inv) => {
+                vec![mlcfg::Statement::Invariant(lower_pure(ctx, names, inv))]
+            }
+            Statement::Variant(var) => vec![mlcfg::Statement::Variant(lower_pure(ctx, names, var))],
         }
     }
 }
