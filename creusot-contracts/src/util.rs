@@ -27,10 +27,6 @@ pub fn unreachable<T>() -> T {
 }
 
 #[logic]
-#[requires(b)]
-pub fn assert(b: bool) {}
-
-#[logic]
 #[requires(op != None)]
 #[ensures(Some(result) == op)]
 pub fn unwrap<T>(op: Option<T>) -> T {
