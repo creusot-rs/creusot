@@ -6,7 +6,7 @@
     feature(print_internals, fmt_internals, fmt_helpers_for_derive)
 )]
 #![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns))]
-#![feature(step_trait, allocator_api, unboxed_closures, tuple_trait)]
+#![feature(step_trait, allocator_api, unboxed_closures, tuple_trait, strict_provenance)]
 #![cfg_attr(not(creusot), feature(rustc_attrs))]
 
 extern crate self as creusot_contracts;
@@ -165,9 +165,11 @@ pub mod ghost {
     }
 }
 
+pub mod ghost_ptr;
 pub mod invariant;
 pub mod model;
 pub mod resolve;
+pub mod util;
 pub mod well_founded;
 
 // We add some common things at the root of the creusot-contracts library
