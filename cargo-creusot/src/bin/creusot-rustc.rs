@@ -17,6 +17,7 @@ use rustc_interface::interface::try_print_query_stack;
 use std::{env, panic, panic::PanicInfo, process::Command};
 
 const BUG_REPORT_URL: &'static str = &"https://github.com/xldenis/creusot/issues/new";
+const WHY3_VERSION: &'static str = &"1.6.0+git";
 
 lazy_static::lazy_static! {
     static ref ICE_HOOK: Box<dyn Fn(&panic::PanicInfo<'_>) + Sync + Send + 'static> = {
@@ -82,6 +83,16 @@ fn setup_plugin() {
         args.remove(1);
     }
 
+    if let Some(why3_vers) = why3_version() {
+        if why3_vers != WHY3_VERSION {
+            emit_warning(format!(
+                "the recommended version of why3 is {WHY3_VERSION} (installed: {why3_vers})"
+            ));
+        }
+    } else {
+        emit_warning("could not determine installed why3 version".to_string());
+    }
+
     let creusot: CreusotArgs = if is_wrapper {
         serde_json::from_str(&std::env::var("CREUSOT_ARGS").unwrap()).unwrap()
     } else {
@@ -137,4 +148,35 @@ fn sysroot_path() -> String {
         .unwrap();
 
     String::from_utf8(output.stdout).unwrap().trim().to_owned()
+}
+
+fn why3_version() -> Option<String> {
+    let output = Command::new("why3").arg("--version").output().ok()?;
+
+    let version = String::from_utf8(output.stdout).ok()?;
+    if version.trim().starts_with("Why3 platform, version ") {
+        Some(version.trim()[23..].to_owned())
+    } else {
+        None
+    }
+}
+
+fn emit_warning(text: String) {
+    let fallback_bundle =
+        rustc_errors::fallback_fluent_bundle(DEFAULT_LOCALE_RESOURCES.to_vec(), false);
+
+    let emitter = Box::new(EmitterWriter::stderr(
+        rustc_errors::ColorConfig::Auto,
+        None,
+        None,
+        fallback_bundle,
+        false,
+        false,
+        None,
+        false,
+        false,
+        TerminalUrl::Auto,
+    ));
+    let handler = rustc_errors::Handler::with_emitter(true, None, emitter);
+    handler.warn(text);
 }
