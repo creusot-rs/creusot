@@ -1,10 +1,81 @@
-use rustc_hir::def::DefKind;
+use rustc_hir::{def::DefKind, def_id::DefId};
+use rustc_middle::ty::Visibility;
+use rustc_span::Span;
 
 use crate::{
-    ctx::TranslationCtx,
-    translation::specification::is_overloaded_item,
+    ctx::{parent_module, TranslationCtx},
+    translation::{
+        pearlite::{super_visit_term, TermKind, TermVisitor},
+        specification::is_overloaded_item,
+    },
     util::{self, is_law},
 };
+
+pub(crate) fn validate_opacity(ctx: &mut TranslationCtx, item: DefId) -> Option<()> {
+    struct OpacityVisitor<'a, 'tcx> {
+        ctx: &'a TranslationCtx<'tcx>,
+        opacity: Option<DefId>,
+        source_item: DefId,
+    }
+
+    impl<'a, 'tcx> OpacityVisitor<'a, 'tcx> {
+        fn is_visible_enough(&self, id: DefId) -> bool {
+            match self.opacity {
+                None => self.ctx.visibility(id) == Visibility::Public,
+                Some(opa) => self.ctx.visibility(id).is_accessible_from(opa, self.ctx.tcx),
+            }
+        }
+
+        fn error(&self, id: DefId, span: Span) -> () {
+            self.ctx.error(
+                span,
+                &format!(
+                    "Cannot make `{:?}` transparent in `{:?}` as it would call a less-visible item.",
+                    self.ctx.def_path_str(id), self.ctx.def_path_str(self.source_item)
+                ),
+            )
+        }
+    }
+
+    impl<'a, 'tcx> TermVisitor<'tcx> for OpacityVisitor<'a, 'tcx> {
+        fn visit_term(&mut self, term: &crate::translation::pearlite::Term<'tcx>) {
+            match &term.kind {
+                TermKind::Item(id, _) => {
+                    if !self.is_visible_enough(*id) {
+                        self.error(*id, term.span)
+                    }
+                }
+                TermKind::Call { id, .. } => {
+                    if !self.is_visible_enough(*id) {
+                        self.error(*id, term.span)
+                    }
+                }
+                TermKind::Constructor { typ, .. } => {
+                    if !self.is_visible_enough(*typ) {
+                        self.error(*typ, term.span)
+                    }
+                }
+                _ => super_visit_term(term, self),
+            }
+        }
+    }
+    if util::is_spec(ctx.tcx, item) {
+        return Some(());
+    }
+
+    // UGLY clone...
+    let term = ctx.term(item)?.clone();
+
+    if ctx.visibility(item) != Visibility::Restricted(parent_module(ctx.tcx, item))
+        && util::opacity_witness_name(ctx.tcx, item).is_none()
+    {
+        ctx.error(ctx.def_span(item), "Non private definitions must have an explicit transparency. Please add #[open(..)] to your definition", );
+    }
+
+    let opacity = ctx.opacity(item).scope();
+    OpacityVisitor { opacity, ctx, source_item: item }.visit_term(&term);
+    Some(())
+}
 
 // Validate that laws have no additional generic parameters.
 //  TODO(xavier): Why was this necessary?

@@ -6,6 +6,7 @@ pub trait CopiedExt<I> {
 }
 
 impl<I> CopiedExt<I> for Copied<I> {
+    #[open]
     #[logic]
     #[trusted]
     fn iter(self) -> I {
@@ -15,6 +16,7 @@ impl<I> CopiedExt<I> for Copied<I> {
 
 #[trusted]
 impl<I> Resolve for Copied<I> {
+    #[open]
     #[predicate]
     fn resolve(self) -> bool {
         pearlite! {
@@ -24,6 +26,7 @@ impl<I> Resolve for Copied<I> {
 }
 
 impl<I: Invariant> Invariant for Copied<I> {
+    #[open(self)]
     #[predicate]
     fn invariant(self) -> bool {
         self.iter().invariant()
@@ -35,11 +38,13 @@ where
     I: Iterator<Item = &'a T>,
     T: Copy,
 {
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! { exists<inner : &mut _> *inner == self.iter() && ^inner == (^self).iter() && inner.completed() }
     }
 
+    #[open]
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
@@ -50,10 +55,12 @@ where
     }
 
     #[law]
+    #[open(self)]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

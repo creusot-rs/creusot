@@ -9,6 +9,7 @@ pub struct A(Vec<usize>);
 fn u2(a: A) {}
 
 #[logic]
+#[open(self)]
 pub fn u(a: A) {
     pearlite! {
         u2(a)

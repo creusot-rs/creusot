@@ -14,6 +14,7 @@ impl ShallowModel for T {
     type ShallowModelTy = Mapping<Int, Int>;
 
     #[logic]
+    #[open(self)]
     #[trusted]
     #[ensures(
         forall<i:Int>

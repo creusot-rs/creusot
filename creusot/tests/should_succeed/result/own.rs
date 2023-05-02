@@ -10,6 +10,7 @@ pub enum OwnResult<T, E> {
 
 #[trusted]
 impl<T, E> Resolve for OwnResult<T, E> {
+    #[open]
     #[predicate]
     fn resolve(self) -> bool {
         match self {

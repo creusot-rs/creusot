@@ -9,6 +9,7 @@ pub struct MapInv<I, B, F> {
 impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
     for MapInv<I, I::Item, F>
 {
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! {
@@ -18,15 +19,18 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
     }
 
     #[law]
+    #[open(self)]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
+    #[open]
     #[predicate]
     #[why3::attr = "inline:trivial"]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
@@ -48,6 +52,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
 
 #[trusted]
 impl<I, B, F> Resolve for MapInv<I, B, F> {
+    #[open]
     #[predicate]
     fn resolve(self) -> bool {
         self.iter.resolve() && self.func.resolve()
@@ -58,6 +63,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Invariant
     for MapInv<I, I::Item, F>
 {
     // Should not quantify over self or the `invariant` cannot be made into a type invariant
+    #[open(self)]
     #[predicate]
     #[creusot::ignore_type_invariant]
     fn invariant(self) -> bool {
@@ -100,6 +106,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> ::std::iter::I
 }
 
 impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::Item, F> {
+    #[open]
     #[predicate]
     pub fn next_precondition(self) -> bool {
         pearlite! {
@@ -109,6 +116,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::I
         }
     }
 
+    #[open]
     #[predicate]
     pub fn reinitialize() -> bool {
         pearlite! {
@@ -120,6 +128,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::I
         }
     }
 
+    #[open(self)]
     #[predicate]
     #[ensures(self.produced.inner() == Seq::EMPTY ==> result == Self::preservation(self.iter, self.func))]
     pub fn preservation_inv(self) -> bool {
@@ -133,6 +142,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::I
         }
     }
 
+    #[open]
     #[predicate]
     pub fn preservation(iter: I, func: F) -> bool {
         pearlite! {
@@ -146,11 +156,13 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::I
     }
 
     #[logic]
+    #[open(self)]
     #[requires(self.produces_one(e, other))]
     #[requires(other.iter.invariant())]
     #[ensures(other.invariant())]
     fn produces_one_invariant(self, e: B, other: Self) {}
 
+    #[open]
     #[predicate]
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
     pub fn produces_one(self, visited: B, succ: Self) -> bool {

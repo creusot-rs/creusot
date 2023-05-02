@@ -29,6 +29,15 @@ impl<'tcx> Dependency<'tcx> {
             ItemType::AssocTy => Dependency::Type(tcx.mk_projection(dep.0, dep.1)),
             _ => Dependency::Item(dep),
         }
+
+        // if matches!(
+        //     tcx.def_kind(id_substs.0),
+        //     DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::Closure
+        // ) {
+        //     Dependency::Type(tcx.type_of(id_substs.0).subst(tcx, id_substs.1))
+        // } else {
+        //     Dependency::Item(id_substs)
+        // }
     }
 
     pub(crate) fn resolve(
@@ -80,7 +89,7 @@ fn resolve_item<'tcx>(
     };
     let resolved = closure_hack(tcx, resolved.0, resolved.1);
     let normed = tcx.try_normalize_erasing_regions(param_env, resolved).unwrap();
-    Some(Dependency::Item(normed))
+    Some(Dependency::new(tcx, normed))
 }
 
 pub(crate) fn closure_hack<'tcx>(

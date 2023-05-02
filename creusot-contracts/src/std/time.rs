@@ -8,6 +8,7 @@ impl ShallowModel for Duration {
     type ShallowModelTy = Int;
 
     #[logic]
+    #[open(self)]
     #[trusted]
     #[ensures(result >= 0 && result <= secs_to_nanos(u64::MAX@) + 999_999_999)]
     fn shallow_model(self) -> Self::ShallowModelTy {
@@ -19,6 +20,7 @@ impl DeepModel for Duration {
     type DeepModelTy = Int;
 
     #[logic]
+    #[open(self)]
     #[trusted]
     #[ensures(result >= 0 && result <= secs_to_nanos(u64::MAX@) + 999_999_999)]
     #[ensures(result == self.shallow_model())]
@@ -50,6 +52,7 @@ impl ShallowModel for Instant {
     type ShallowModelTy = Int;
 
     #[logic]
+    #[open(self)]
     #[trusted]
     #[ensures(result >= 0)]
     fn shallow_model(self) -> Self::ShallowModelTy {
@@ -61,6 +64,7 @@ impl DeepModel for Instant {
     type DeepModelTy = Int;
 
     #[logic]
+    #[open(self)]
     #[trusted]
     #[ensures(result >= 0)]
     #[ensures(result == self.shallow_model())]

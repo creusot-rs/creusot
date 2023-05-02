@@ -27,6 +27,7 @@ impl<T: Copy, I: Inv<T>> Cell<T, I> {
 }
 
 #[logic]
+#[open]
 #[variant(i)]
 pub fn fib(i: Int) -> Int {
     if i <= 0 {
@@ -38,6 +39,7 @@ pub fn fib(i: Int) -> Int {
     }
 }
 
+#[open]
 #[logic]
 #[requires(0 <= i)]
 #[ensures(fib(i) <= 2.pow(i))]
@@ -54,6 +56,7 @@ pub fn lemma_fib_bound(i: Int) {
 }
 
 #[trusted]
+#[open]
 #[logic]
 #[ensures(2.pow(63) < 0xffff_ffff_ffff_ffffusize@)]
 pub fn lemma_max_int() {}
@@ -62,6 +65,7 @@ pub struct Fib {
     ix: usize,
 }
 impl Inv<Option<usize>> for Fib {
+    #[open]
     #[predicate]
     fn inv(&self, v: Option<usize>) -> bool {
         pearlite! {
@@ -75,6 +79,7 @@ impl Inv<Option<usize>> for Fib {
 
 pub type FibCache = Vec<Cell<Option<usize>, Fib>>;
 
+#[open]
 #[predicate]
 fn fib_cell(v: FibCache) -> bool {
     pearlite! {
@@ -82,6 +87,7 @@ fn fib_cell(v: FibCache) -> bool {
     }
 }
 
+#[open]
 #[requires(fib_cell(*mem))]
 #[requires(i@ < mem@.len())]
 #[ensures(result@ == fib(i@))]

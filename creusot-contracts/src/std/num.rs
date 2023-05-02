@@ -6,6 +6,7 @@ macro_rules! mach_int {
         impl ShallowModel for $t {
             type ShallowModelTy = Int;
             #[logic]
+            #[open]
             #[trusted]
             #[creusot::builtins = concat!($ty_nm, ".to_int")]
             fn shallow_model(self) -> Self::ShallowModelTy {
@@ -16,6 +17,7 @@ macro_rules! mach_int {
         impl DeepModel for $t {
             type DeepModelTy = Int;
             #[logic]
+            #[open]
             fn deep_model(self) -> Self::DeepModelTy {
                 pearlite! { self@ }
             }
@@ -23,6 +25,7 @@ macro_rules! mach_int {
 
         impl Default for $t {
             #[predicate]
+            #[open]
             fn is_default(self) -> bool {
                 pearlite! { self == $zero }
             }

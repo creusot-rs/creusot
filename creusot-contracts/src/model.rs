@@ -26,6 +26,7 @@ pub trait DeepModel {
 impl<T: DeepModel + ?Sized> DeepModel for &T {
     type DeepModelTy = T::DeepModelTy;
     #[logic]
+    #[open]
     fn deep_model(self) -> Self::DeepModelTy {
         (*self).deep_model()
     }
@@ -34,6 +35,7 @@ impl<T: DeepModel + ?Sized> DeepModel for &T {
 impl<T: ShallowModel + ?Sized> ShallowModel for &T {
     type ShallowModelTy = T::ShallowModelTy;
     #[logic]
+    #[open]
     fn shallow_model(self) -> Self::ShallowModelTy {
         (*self).shallow_model()
     }
@@ -42,6 +44,7 @@ impl<T: ShallowModel + ?Sized> ShallowModel for &T {
 impl<T: DeepModel + ?Sized> DeepModel for &mut T {
     type DeepModelTy = T::DeepModelTy;
     #[logic]
+    #[open]
     fn deep_model(self) -> Self::DeepModelTy {
         (*self).deep_model()
     }
@@ -50,6 +53,7 @@ impl<T: DeepModel + ?Sized> DeepModel for &mut T {
 impl<T: ShallowModel + ?Sized> ShallowModel for &mut T {
     type ShallowModelTy = T::ShallowModelTy;
     #[logic]
+    #[open]
     fn shallow_model(self) -> Self::ShallowModelTy {
         (*self).shallow_model()
     }
@@ -59,6 +63,7 @@ impl DeepModel for bool {
     type DeepModelTy = bool;
 
     #[logic]
+    #[open]
     fn deep_model(self) -> Self::DeepModelTy {
         self
     }

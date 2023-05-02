@@ -5,6 +5,7 @@ pub use ::std::boxed::*;
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
     type DeepModelTy = T::DeepModelTy;
     #[logic]
+    #[open]
     fn deep_model(self) -> Self::DeepModelTy {
         (*self).deep_model()
     }
@@ -14,6 +15,7 @@ impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
 impl<T: ShallowModel + ?Sized, A: Allocator> ShallowModel for Box<T, A> {
     type ShallowModelTy = T::ShallowModelTy;
     #[logic]
+    #[open]
     fn shallow_model(self) -> Self::ShallowModelTy {
         (*self).shallow_model()
     }

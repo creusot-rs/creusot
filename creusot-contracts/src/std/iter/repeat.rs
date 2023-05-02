@@ -5,6 +5,7 @@ impl<T> ShallowModel for Repeat<T> {
 
     #[logic]
     #[trusted]
+    #[open(self)]
     fn shallow_model(self) -> T {
         pearlite! { absurd }
     }
@@ -13,11 +14,13 @@ impl<T> ShallowModel for Repeat<T> {
 impl<T> Invariant for Repeat<T> {}
 
 impl<T: Clone> Iterator for Repeat<T> {
+    #[open(self)]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! { false }
     }
 
+    #[open(self)]
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
@@ -27,10 +30,12 @@ impl<T: Clone> Iterator for Repeat<T> {
     }
 
     #[law]
+    #[open(self)]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

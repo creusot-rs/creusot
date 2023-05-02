@@ -5,6 +5,7 @@ impl<T> ShallowModel for Once<T> {
 
     #[logic]
     #[trusted]
+    #[open(self)]
     fn shallow_model(self) -> Option<T> {
         pearlite! { absurd }
     }
@@ -13,11 +14,13 @@ impl<T> ShallowModel for Once<T> {
 impl<T> Invariant for Once<T> {}
 
 impl<T> Iterator for Once<T> {
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && self.resolve() }
     }
 
+    #[open]
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
@@ -27,10 +30,12 @@ impl<T> Iterator for Once<T> {
     }
 
     #[law]
+    #[open(self)]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

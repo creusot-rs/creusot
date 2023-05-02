@@ -23,11 +23,13 @@ impl<I> Fuse<I> {
 impl<I: Iterator> Iterator for Fuse<I> {
     type Item = I::Item;
 
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! { exists<x :_> (^self).iter == Err(x) }
     }
 
+    #[open]
     #[predicate]
     fn produces(self, prod: Seq<Self::Item>, other: Self) -> bool {
         match self.iter {
@@ -54,10 +56,12 @@ impl<I: Iterator> Iterator for Fuse<I> {
     }
 
     #[law]
+    #[open]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -65,6 +69,7 @@ impl<I: Iterator> Iterator for Fuse<I> {
 }
 
 impl<I: Iterator> Invariant for Fuse<I> {
+    #[open]
     #[predicate]
     fn invariant(self) -> bool {
         match self.iter {
@@ -86,6 +91,7 @@ pub trait FusedIterator: Iterator {
 
 impl<I: Iterator> FusedIterator for Fuse<I> {
     #[law]
+    #[open]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
     #[ensures(steps == Seq::EMPTY && ^self == next)]

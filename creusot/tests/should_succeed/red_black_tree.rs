@@ -156,6 +156,7 @@ impl<K: DeepModel, V> ShallowModel for Node<K, V> {
     type ShallowModelTy = Mapping<K::DeepModelTy, Option<V>>;
 
     #[logic]
+    #[open(self)]
     fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! {
             self.right.model_acc(self.left.shallow_model().set(self.key.deep_model(), Some(self.val)))
@@ -167,6 +168,7 @@ impl<K: DeepModel, V> ShallowModel for Tree<K, V> {
     type ShallowModelTy = Mapping<K::DeepModelTy, Option<V>>;
 
     #[logic]
+    #[open(self)]
     fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! { self.model_acc(Mapping::cst(None)) }
     }
@@ -349,6 +351,7 @@ impl<K: DeepModel, V> Tree<K, V>
 where
     K::DeepModelTy: OrdLogic,
 {
+    #[open(self)]
     #[predicate]
     pub fn internal_invariant(self) -> bool {
         pearlite! {
@@ -356,6 +359,7 @@ where
         }
     }
 
+    #[open(self)]
     #[predicate]
     pub fn invariant(self) -> bool {
         pearlite! {
@@ -368,6 +372,7 @@ impl<K: DeepModel, V> Node<K, V>
 where
     K::DeepModelTy: OrdLogic,
 {
+    #[open(self)]
     #[predicate]
     pub fn internal_invariant(self) -> bool {
         pearlite! {

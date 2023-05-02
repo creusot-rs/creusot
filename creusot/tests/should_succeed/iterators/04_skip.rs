@@ -15,6 +15,7 @@ impl<I> Invariant for Skip<I>
 where
     I: Iterator,
 {
+    #[open]
     #[predicate]
     fn invariant(self) -> bool {
         self.iter.invariant()
@@ -27,6 +28,7 @@ where
 {
     type Item = I::Item;
 
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! {
@@ -40,6 +42,7 @@ where
         }
     }
 
+    #[open]
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
@@ -53,10 +56,12 @@ where
     }
 
     #[law]
+    #[open]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

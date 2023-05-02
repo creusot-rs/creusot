@@ -40,6 +40,7 @@ pub trait Iterator: ::std::iter::Iterator + Invariant {
     #[requires(MapInv::<Self, _, F>::reinitialize())]
     #[requires(MapInv::<Self, Self::Item, F>::preservation(self, func))]
     #[ensures(result == MapInv { iter: self, func, produced: Ghost::new(Seq::EMPTY) })]
+    #[ensures(result.invariant())]
     fn map_inv<B, F>(self, func: F) -> MapInv<Self, Self::Item, F>
     where
         Self: Sized,
@@ -51,6 +52,7 @@ pub trait Iterator: ::std::iter::Iterator + Invariant {
 
 pub trait IntoIterator: ::std::iter::IntoIterator {
     #[predicate]
+    #[open]
     fn into_iter_pre(self) -> bool {
         pearlite! { true }
     }
@@ -61,11 +63,13 @@ pub trait IntoIterator: ::std::iter::IntoIterator {
 
 impl<I: Iterator> IntoIterator for I {
     #[predicate]
+    #[open]
     fn into_iter_pre(self) -> bool {
         self.invariant()
     }
 
     #[predicate]
+    #[open]
     fn into_iter_post(self, res: Self) -> bool {
         self == res
     }

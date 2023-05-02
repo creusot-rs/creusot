@@ -21,14 +21,17 @@ use crate::{
 use indexmap::{IndexMap, IndexSet};
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
 use rustc_errors::{DiagnosticBuilder, DiagnosticId};
-use rustc_hir::def_id::{DefId, LocalDefId};
+use rustc_hir::{
+    def::DefKind,
+    def_id::{DefId, LocalDefId},
+};
 use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
     mir::{Body, Promoted},
     thir,
     ty::{
         subst::{GenericArgKind, InternalSubsts},
-        GenericArg, ParamEnv, SubstsRef, Ty, TyCtxt,
+        GenericArg, ParamEnv, SubstsRef, Ty, TyCtxt, Visibility,
     },
 };
 use rustc_span::{RealFileName, Span, Symbol, DUMMY_SP};
@@ -93,6 +96,19 @@ pub struct TranslationCtx<'tcx> {
     trait_impl: HashMap<DefId, TraitImpl<'tcx>>,
     sig: HashMap<DefId, PreSignature<'tcx>>,
     bodies: HashMap<LocalDefId, BodyWithBorrowckFacts<'tcx>>,
+    opacity: HashMap<DefId, Opacity>,
+}
+
+#[derive(Copy, Clone)]
+pub(crate) struct Opacity(Visibility<DefId>);
+
+impl Opacity {
+    pub(crate) fn scope(self) -> Option<DefId> {
+        match self.0 {
+            Visibility::Public => None,
+            Visibility::Restricted(modl) => Some(modl),
+        }
+    }
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -122,6 +138,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             trait_impl: Default::default(),
             sig: Default::default(),
             bodies: Default::default(),
+            opacity: Default::default(),
         }
     }
 
@@ -307,6 +324,34 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         self.opts.should_output
     }
 
+    /// We encodes the opacity of functions using 'witnesses', funcitons that have the target opacity
+    /// set as their *visibility*.
+    pub(crate) fn opacity(&mut self, item: DefId) -> &Opacity {
+        if self.opacity.get(&item).is_none() {
+            self.opacity.insert(item, self.mk_opacity(item));
+        };
+
+        &self.opacity[&item]
+    }
+
+    fn mk_opacity(&self, item: DefId) -> Opacity {
+        if !matches!(util::item_type(self.tcx, item), ItemType::Predicate | ItemType::Logic) {
+            return Opacity(Visibility::Public);
+        };
+
+        let witness = util::opacity_witness_name(self.tcx, item)
+            .and_then(|nm| self.creusot_item(nm))
+            .map(|id| self.visibility(id))
+            .unwrap_or_else(|| Visibility::Restricted(parent_module(self.tcx, item)));
+        Opacity(witness)
+    }
+
+    /// Checks if `item` is transparent in the scope of `modl`.
+    /// This will determine whether the solvers are allowed to unfold the body's definition.
+    pub(crate) fn is_transparent_from(&mut self, item: DefId, modl: DefId) -> bool {
+        self.opacity(item).0.is_accessible_from(modl, self.tcx)
+    }
+
     pub(crate) fn metadata(&self) -> BinaryMetadata<'tcx> {
         BinaryMetadata::from_parts(&self.terms, &self.creusot_items, &self.extern_specs)
     }
@@ -481,4 +526,12 @@ pub(crate) fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
     }
 
     Ok(())
+}
+
+pub(crate) fn parent_module(tcx: TyCtxt, mut id: DefId) -> DefId {
+    while tcx.def_kind(id) != DefKind::Mod {
+        id = tcx.parent(id);
+    }
+
+    id
 }

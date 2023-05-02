@@ -1,7 +1,7 @@
 use super::{clone_map::CloneMap, CloneSummary, Why3Generator};
 use crate::{
     backend::{
-        logic::spec_axiom,
+        logic::{spec_axiom, val_decl},
         program::{closure_aux_defs, closure_type_use},
         signature::signature_of,
     },
@@ -48,7 +48,7 @@ pub(crate) fn interface_for<'tcx>(
             sig.retty = None;
             sig.contract = Contract::new();
             decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
-
+            decls.push(val_decl(ctx, &mut names, def_id));
             let has_axioms = !sig_contract.contract.ensures.is_empty();
             if has_axioms {
                 decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
@@ -58,6 +58,7 @@ pub(crate) fn interface_for<'tcx>(
             let sig_contract = sig.clone();
             sig.contract = Contract::new();
             decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
+            decls.push(val_decl(ctx, &mut names, def_id));
 
             let has_axioms = !sig_contract.contract.ensures.is_empty();
             if has_axioms {

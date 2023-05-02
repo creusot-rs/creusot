@@ -11,6 +11,7 @@ impl<T, S: ShallowModel<ShallowModelTy = Seq<T>> + ?Sized> IndexLogic<Int> for S
     type Item = T;
 
     #[logic]
+    #[open]
     #[why3::attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { self@[ix] }
@@ -21,6 +22,7 @@ impl<T, S: ShallowModel<ShallowModelTy = Seq<T>> + ?Sized> IndexLogic<usize> for
     type Item = T;
 
     #[logic]
+    #[open]
     #[why3::attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
         pearlite! { self@[ix@] }
@@ -32,6 +34,7 @@ impl<T> IndexLogic<Int> for Ghost<Seq<T>> {
 
     #[logic]
     #[trusted]
+    #[open(self)]
     #[creusot::builtins = "seq.Seq.get"]
     fn index_logic(self, _: Int) -> Self::Item {
         absurd

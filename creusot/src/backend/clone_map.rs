@@ -352,7 +352,7 @@ impl<'tcx> CloneMap<'tcx> {
     }
 
     pub(crate) fn import_prelude_module(&mut self, module: PreludeModule) {
-        self.prelude.entry(module.qname()).or_insert(false);
+        self.import_builtin_module(module.qname());
     }
 
     pub(crate) fn import_builtin_module(&mut self, module: QName) {
@@ -378,7 +378,10 @@ impl<'tcx> CloneMap<'tcx> {
             trace!("{:?} is public={:?}", key, self.names[&key].public);
 
             if key != self.self_key() {
-                self.add_graph_edge(DepNode::Item(self.self_key()), DepNode::new(ctx.tcx, key));
+                self.add_graph_edge(
+                    DepNode::new(self.tcx, self.self_key()),
+                    DepNode::new(self.tcx, key),
+                );
             }
 
             if self.names[&key].kind == Kind::Hidden {
@@ -386,6 +389,10 @@ impl<'tcx> CloneMap<'tcx> {
             }
 
             if traits::still_specializable(self.tcx, param_env, key.0, key.1) {
+                self.names[&key].opaque();
+            }
+
+            if !ctx.is_transparent_from(key.0, self.self_id) {
                 self.names[&key].opaque();
             }
 
@@ -410,10 +417,12 @@ impl<'tcx> CloneMap<'tcx> {
                 GenericArgKind::Type(ty) => ty,
                 _ => continue,
             };
+
             match ty.kind() {
                 TyKind::Closure(id, subst) => {
                     self.insert(*id, subst);
                     // Sketchy... shouldn't we need to do something to subst?
+                    // eprintln!("{:?}", DepNode::new(ctx.tcx, key));
                     self.add_graph_edge(key_dep, DepNode::new(ctx.tcx, (*id, subst)));
                 }
                 TyKind::Adt(def, subst) => {
@@ -452,7 +461,6 @@ impl<'tcx> CloneMap<'tcx> {
 
             if let Some((defid, subst)) = dep.cloneable_id() {
                 trace!("inserting dependency {:?} {:?}", key, dep);
-
                 self.insert(defid, subst).public |= key_public && info.public;
             }
 
@@ -497,11 +505,7 @@ impl<'tcx> CloneMap<'tcx> {
     ) -> DepNode<'tcx> {
         let param_env = ctx.param_env(self.self_id);
 
-        let dep = match util::item_type(self.tcx, dep.0) {
-            ItemType::Type => Dependency::Type(ctx.mk_adt(ctx.adt_def(dep.0), dep.1)),
-            ItemType::AssocTy => Dependency::Type(ctx.mk_projection(dep.0, dep.1)),
-            _ => Dependency::Item(dep),
-        };
+        let dep = DepNode::new(self.tcx, dep);
         dep.resolve(ctx, param_env).unwrap_or(dep)
     }
 
@@ -557,13 +561,13 @@ impl<'tcx> CloneMap<'tcx> {
 
         let mut clone_subst = base_subst(ctx, self, ctx.param_env(self.self_id), def_id, subst);
 
-        let outbound: Vec<_> =
-            self.clone_graph.neighbors_directed(DepNode::Item(node), Outgoing).collect();
+        let dep_node = DepNode::new(ctx.tcx, node);
+        let outbound: Vec<_> = self.clone_graph.neighbors_directed(dep_node, Outgoing).collect();
 
         // Grab definitions from all of our dependencies
         for dep in outbound {
-            let syms = &self.clone_graph[(DepNode::Item(node), dep)];
-            trace!("s={:?} t={:?} e={:?}", dep, node, syms);
+            let syms = &self.clone_graph[(dep_node, dep)];
+            trace!("dependency={:?} of={:?} syms={:?}", dep, node, syms);
 
             match dep {
                 DepNode::Type(ty) => {
@@ -629,7 +633,8 @@ impl<'tcx> CloneMap<'tcx> {
         // Broken because of closures which share a defid for the type *and* function
         // debug_assert!(!is_cyclic_directed(&self.clone_graph), "clone graph for {:?} is cyclic", self.self_id );
 
-        let mut topo = DfsPostOrder::new(&self.clone_graph, DepNode::Item(self.self_key()));
+        let mut topo =
+            DfsPostOrder::new(&self.clone_graph, DepNode::new(self.tcx, self.self_key()));
         while let Some(node) = topo.walk_next(&self.clone_graph) {
             let Some(item) = node.cloneable_id() else { continue };
             trace!("processing node {:?}", self.names[&item].kind);
@@ -660,6 +665,43 @@ impl<'tcx> CloneMap<'tcx> {
             .chain(decls.into_iter())
             .collect();
         (clones, self.summary())
+    }
+
+    // For debugging the clone graph
+    #[allow(dead_code)]
+    fn to_dot(&self, ctx: &TranslationCtx<'tcx>) {
+        use petgraph::dot::{Config, Dot};
+        use std::io::Write;
+        let mut f = std::fs::File::create(format!("graphs/{}.dot", ctx.def_path_str(self.self_id)))
+            .unwrap();
+        let g = self.clone_graph.clone();
+        // g.remove_node(DepNode::new(self.tcx, self.self_key()));
+
+        write!(
+            f,
+            "{:?}",
+            Dot::with_attr_getters(
+                &g,
+                &[Config::NodeNoLabel, Config::EdgeNoLabel],
+                &|_, _| { String::new() },
+                &|_, n| {
+                    let s = match n {
+                        (Dependency::Type(ty), Dependency::Type(_)) => format!("{:?}", ty),
+                        (Dependency::Item((i, sub)), Dependency::Item(_)) => {
+                            format!(
+                                "({}, {sub:?})",
+                                ctx.opt_item_name(i)
+                                    .map(|n| n.as_str().to_string())
+                                    .unwrap_or(ctx.def_path_str(i))
+                            )
+                        }
+                        _ => panic!(),
+                    };
+                    format!("label = {s:?}, shape=\"rect\", style=\"rounded\"")
+                },
+            )
+        )
+        .unwrap();
     }
 }
 
