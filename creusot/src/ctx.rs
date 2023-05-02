@@ -20,7 +20,9 @@ use crate::{
 use indexmap::{IndexMap, IndexSet};
 use rustc_errors::{DiagnosticBuilder, DiagnosticId};
 use rustc_hir::def_id::{DefId, LocalDefId};
-use rustc_infer::traits::{Obligation, ObligationCause};
+use rustc_infer::{
+    traits::{Obligation, ObligationCause},
+};
 use rustc_middle::{
     thir,
     ty::{
@@ -35,6 +37,29 @@ use why3::exp::Exp;
 
 pub(crate) use crate::translated_item::*;
 
+macro_rules! queryish {
+    ($name:ident, $res:ty, $builder:ident) => {
+        pub(crate) fn $name(&mut self, item: DefId) -> $res {
+            if self.$name.get(&item).is_none() {
+                let res = self.$builder(item);
+                self.$name.insert(item, res);
+            };
+
+            &self.$name[&item]
+        }
+    };
+    ($name:ident, $res:ty, $builder:expr) => {
+        pub(crate) fn $name(&mut self, item: DefId) -> $res {
+            if self.$name.get(&item).is_none() {
+                let res = ($builder)(self, item);
+                self.$name.insert(item, res);
+            };
+
+            &self.$name[&item]
+        }
+    };
+}
+
 // TODO: The state in here should be as opaque as possible...
 pub struct TranslationCtx<'tcx> {
     pub tcx: TyCtxt<'tcx>,
@@ -48,8 +73,8 @@ pub struct TranslationCtx<'tcx> {
     creusot_items: CreusotItems,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
-    impl_data: HashMap<DefId, TraitImpl<'tcx>>,
-    sigs: HashMap<DefId, PreSignature<'tcx>>,
+    trait_impl: HashMap<DefId, TraitImpl<'tcx>>,
+    sig: HashMap<DefId, PreSignature<'tcx>>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -76,8 +101,8 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             extern_specs: Default::default(),
             extern_spec_items: Default::default(),
             fmir_body: Default::default(),
-            impl_data: Default::default(),
-            sigs: Default::default(),
+            trait_impl: Default::default(),
+            sig: Default::default(),
         }
     }
 
@@ -85,14 +110,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         self.externs.load(self.tcx, &self.opts.extern_paths);
     }
 
-    pub(crate) fn trait_impl(&mut self, def_id: DefId) -> &TraitImpl<'tcx> {
-        if !self.impl_data.contains_key(&def_id) {
-            let trait_impl = self.translate_impl(def_id);
-            self.impl_data.insert(def_id, trait_impl);
-        }
-
-        &self.impl_data[&def_id]
-    }
+    queryish!(trait_impl, &TraitImpl<'tcx>, translate_impl);
 
     pub(crate) fn fmir_body(&mut self, def_id: DefId) -> Option<&fmir::Body<'tcx>> {
         if util::has_body(self, def_id) && def_id.is_local() {
@@ -125,15 +143,11 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         }
     }
 
-    pub(crate) fn sig(&mut self, def_id: DefId) -> &PreSignature<'tcx> {
-        if !self.sigs.contains_key(&def_id) {
-            let mut term = pre_sig_of(self, def_id);
-            term = term.normalize(self.tcx, self.param_env(def_id));
-
-            self.sigs.insert(def_id, term);
-        };
-        self.sigs.get(&def_id).unwrap()
-    }
+    queryish!(sig, &PreSignature<'tcx>, |ctx: &mut Self, key| {
+        let mut term = pre_sig_of(&mut *ctx, key);
+        term = term.normalize(ctx.tcx, ctx.param_env(key));
+        term
+    });
 
     pub(crate) fn type_invariant(
         &self,
@@ -240,13 +254,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         *self.representative_type.get(&def_id).unwrap_or_else(|| panic!("no key for {:?}", def_id))
     }
 
-    pub(crate) fn laws(&mut self, trait_or_impl: DefId) -> &[DefId] {
-        if self.laws.get(&trait_or_impl).is_none() {
-            self.laws.insert(trait_or_impl, self.laws_inner(trait_or_impl));
-        };
-
-        &self.laws[&trait_or_impl]
-    }
+    queryish!(laws, &[DefId], laws_inner);
 
     // TODO Make private
     pub(crate) fn extern_spec(&self, def_id: DefId) -> Option<&ExternSpec<'tcx>> {

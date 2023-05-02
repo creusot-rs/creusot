@@ -71,7 +71,7 @@ impl<T: ?Sized> GhostPtrToken<T> {
     #[trusted]
     #[requires(new_model.subset(self@))]
     #[ensures(result@ == *new_model)]
-    pub fn shrink_token_ref(&self, new_model: Ghost<FMap<*const T, T>>) -> &GhostPtrToken<T> {
+    pub fn shrink_token_ref(&self, _new_model: Ghost<FMap<*const T, T>>) -> &GhostPtrToken<T> {
         self
     }
 
@@ -113,7 +113,7 @@ impl<T: ?Sized> GhostPtrToken<T> {
     // Since we had full permission to and all of the entries in `self` and `other` simultaneously,
     // no pointer could have been in both
     #[ensures((^self)@ == (*self)@.union(other@))]
-    pub fn merge(&mut self, other: GhostPtrToken<T>) {}
+    pub fn merge(&mut self, _other: GhostPtrToken<T>) {}
 
     /// Leaks memory iff the precondition fails
     #[requires(self@.is_empty())]
