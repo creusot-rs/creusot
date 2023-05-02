@@ -58,7 +58,7 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
         Then you can try hacking Why3 to make it consider your `z3` be of an older version (e.g., 4.8.10), by updating the relevant field of `~/.why3.conf`.
 2. Clone the [creusot](https://github.com/xldenis/creusot/) repo at any directory you like
 3. Build **Creusot**
-    - Enter the cloned directory and run `$ cargo install --path creusot`, this will build the `cargo-creusot` and `creusot-rustc` executables and place them in `~/.cargo/bin`.
+    - Enter the cloned directory and run `$ cargo install --path cargo-creusot`, this will build the `cargo-creusot` and `creusot-rustc` executables and place them in `~/.cargo/bin`.
 
 
 # Verifying with Creusot and Why3

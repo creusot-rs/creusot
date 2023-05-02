@@ -1,5 +1,5 @@
+use cargo_creusot::options::Args;
 use clap::*;
-use creusot::options::Args;
 use std::{
     env,
     process::{exit, Command},

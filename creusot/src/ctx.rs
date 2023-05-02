@@ -20,9 +20,7 @@ use crate::{
 use indexmap::{IndexMap, IndexSet};
 use rustc_errors::{DiagnosticBuilder, DiagnosticId};
 use rustc_hir::def_id::{DefId, LocalDefId};
-use rustc_infer::{
-    traits::{Obligation, ObligationCause},
-};
+use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
     thir,
     ty::{
