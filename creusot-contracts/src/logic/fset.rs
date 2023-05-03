@@ -57,6 +57,18 @@ impl<T: ?Sized> FSet<T> {
         pearlite! { absurd }
     }
 
+    #[predicate]
+    #[creusot::builtins = "set.Fset.subset"]
+    pub fn is_subset(self, _: Self) -> bool {
+        pearlite! { absurd }
+    }
+
+    #[predicate]
+    #[why3::attr = "inline:trivial"]
+    pub fn is_superset(self, other: Self) -> bool {
+        Self::is_subset(other, self)
+    }
+
     #[logic]
     #[creusot::builtins = "set.Fset.cardinal"]
     pub fn len(self) -> Int {
