@@ -83,4 +83,15 @@ impl<T: ?Sized> FSet<T> {
     {
         pearlite! { absurd }
     }
+
+    #[predicate]
+    #[ensures(result ==> self == other)]
+    pub fn ext_eq(self, other: Self) -> bool
+    where
+        T: Sized,
+    {
+        pearlite! {
+            forall <e: T> self.contains(e) == other.contains(e)
+        }
+    }
 }
