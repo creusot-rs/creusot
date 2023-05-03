@@ -3,7 +3,6 @@ use super::{
     pearlite::{normalize, Term},
 };
 use crate::{
-    backend::place::translate_local,
     ctx::*,
     fmir::{self, Expr},
     gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind},
@@ -42,7 +41,8 @@ mod statement;
 pub(crate) mod terminator;
 
 pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> fmir::Body<'tcx> {
-    let body = ctx.body(def_id).body.clone();
+    let body_id = BodyId::new(def_id.expect_local(), None);
+    let body = ctx.body(body_id).clone();
 
     // crate::debug::debug(ctx.tcx, ctx.tcx.optimized_mir(def_id));
     // crate::debug::debug(ctx.tcx, &body);
@@ -308,8 +308,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         }
     }
 
-    fn translate_local(&self, loc: Local) -> LocalIdent {
-        translate_local(&self.body, loc)
+    fn translate_local(&mut self, loc: Local) -> LocalIdent {
+        let body_id = BodyId::new(self.def_id.expect_local(), None);
+        self.ctx.translate_local(body_id, loc)
     }
 }
 

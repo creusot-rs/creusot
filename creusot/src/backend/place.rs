@@ -1,6 +1,6 @@
-use crate::{ctx::CloneMap, translation::LocalIdent};
+use crate::{ctx::{CloneMap, BodyId, TranslationCtx}, translation::LocalIdent};
 use rustc_middle::{
-    mir::{Body, Local, Place},
+    mir::{Local, Place, tcx::PlaceTy, PlaceRef, HasLocalDecls},
     ty::TyKind,
 };
 use why3::{
@@ -17,6 +17,35 @@ use why3::{
 
 use super::Why3Generator;
 
+impl<'tcx> Why3Generator<'tcx> {
+    pub(crate) fn place_ty(&mut self, body_id: BodyId, pl: PlaceRef<'tcx>) -> PlaceTy<'tcx> {
+        let local_decls = self.body(body_id).local_decls().clone();
+        pl.ty(&local_decls, self.tcx)
+    }
+}
+
+impl<'tcx> TranslationCtx<'tcx> {
+    pub(crate) fn translate_local(&mut self, body_id: BodyId, loc: Local) -> LocalIdent {
+        let body = self.body(body_id);
+    
+        use rustc_middle::mir::VarDebugInfoContents::Place;
+        let debug_info: Vec<_> = body
+            .var_debug_info
+            .iter()
+            .filter(|var_info| match var_info.value {
+                Place(p) => p.as_local().map(|l| l == loc).unwrap_or(false),
+                _ => false,
+            })
+            .collect();
+    
+        assert!(debug_info.len() <= 1, "expected at most one debug entry for local {:?}", loc);
+        match debug_info.get(0) {
+            Some(info) => LocalIdent::dbg(loc, *info),
+            None => LocalIdent::anon(loc),
+        }
+    }
+}
+
 /// Correctly translate an assignment from one place to another. The challenge here is correctly
 /// construction the expression that assigns deep inside a structure.
 /// (_1 as Some) = P      ---> let _1 = P ??
@@ -31,7 +60,7 @@ use super::Why3Generator;
 pub(crate) fn create_assign_inner<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
-    body: &Body<'tcx>,
+    body_id: BodyId,
     lhs: &Place<'tcx>,
     rhs: Exp,
 ) -> mlcfg::Statement {
@@ -50,7 +79,7 @@ pub(crate) fn create_assign_inner<'tcx>(
     for (proj, elem) in lhs.iter_projections().rev() {
         // twisted stuff
         stump = &stump[0..stump.len() - 1];
-        let place_ty = proj.ty(body, ctx.tcx);
+        let place_ty = ctx.place_ty(body_id, proj);
 
         match elem {
             Deref => {
@@ -60,7 +89,7 @@ pub(crate) fn create_assign_inner<'tcx>(
                 if mutability == Mut {
                     inner = RecUp {
                         record: Box::new(translate_rplace_inner(
-                            ctx, names, body, lhs.local, stump,
+                            ctx, names, body_id, lhs.local, stump,
                         )),
                         label: "current".into(),
                         val: Box::new(inner),
@@ -85,7 +114,7 @@ pub(crate) fn create_assign_inner<'tcx>(
                     let ctor = names.constructor(variant.def_id, subst);
                     inner = Let {
                         pattern: ConsP(ctor.clone(), field_pats),
-                        arg: Box::new(translate_rplace_inner(ctx, names, body, lhs.local, stump)),
+                        arg: Box::new(translate_rplace_inner(ctx, names, body_id, lhs.local, stump)),
                         body: Box::new(Constructor { ctor, args: varexps }),
                     }
                 }
@@ -103,7 +132,7 @@ pub(crate) fn create_assign_inner<'tcx>(
 
                     inner = Let {
                         pattern: TupleP(field_pats),
-                        arg: Box::new(translate_rplace_inner(ctx, names, body, lhs.local, stump)),
+                        arg: Box::new(translate_rplace_inner(ctx, names, body_id, lhs.local, stump)),
                         body: Box::new(Tuple(varexps)),
                     }
                 }
@@ -122,7 +151,7 @@ pub(crate) fn create_assign_inner<'tcx>(
 
                     inner = Let {
                         pattern: ConsP(cons.clone(), field_pats),
-                        arg: Box::new(translate_rplace_inner(ctx, names, body, lhs.local, stump)),
+                        arg: Box::new(translate_rplace_inner(ctx, names, body_id, lhs.local, stump)),
                         body: Box::new(Exp::Constructor { ctor: cons, args: varexps }),
                     }
                 }
@@ -131,11 +160,11 @@ pub(crate) fn create_assign_inner<'tcx>(
             Downcast(_, _) => {}
             Index(ix) => {
                 let set = Exp::impure_qvar(QName::from_string("Slice.set").unwrap());
-                let ix_exp = Exp::impure_var(translate_local(body, ix).ident());
+                let ix_exp = Exp::impure_var(ctx.translate_local(body_id, ix).ident());
 
                 inner = Call(
                     Box::new(set),
-                    vec![translate_rplace_inner(ctx, names, body, lhs.local, stump), ix_exp, inner],
+                    vec![translate_rplace_inner(ctx, names, body_id, lhs.local, stump), ix_exp, inner],
                 )
             }
             ConstantIndex { .. } => unimplemented!("ConstantIndex"),
@@ -144,7 +173,7 @@ pub(crate) fn create_assign_inner<'tcx>(
         }
     }
 
-    let ident = translate_local(body, lhs.local);
+    let ident = ctx.translate_local(body_id, lhs.local);
     Assign { lhs: ident.ident(), rhs: inner }
 }
 
@@ -154,13 +183,13 @@ pub(crate) fn create_assign_inner<'tcx>(
 pub(crate) fn translate_rplace_inner<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
-    body: &Body<'tcx>,
+    body_id: BodyId,
     loc: Local,
     proj: &[rustc_middle::mir::PlaceElem<'tcx>],
 ) -> Exp {
-    let mut inner = Exp::impure_var(translate_local(body, loc).ident());
+    let mut inner = Exp::impure_var(ctx.translate_local(body_id, loc).ident());
     use rustc_middle::mir::ProjectionElem::*;
-    let mut place_ty = Place::ty_from(loc, &[], body, ctx.tcx);
+    let mut place_ty = ctx.place_ty(body_id, Place::from(loc).as_ref());
 
     for elem in proj {
         match elem {
@@ -203,7 +232,7 @@ pub(crate) fn translate_rplace_inner<'tcx>(
             Downcast(_, _) => {}
             Index(ix) => {
                 // TODO: Use [_] syntax
-                let ix_exp = Exp::impure_var(translate_local(body, *ix).ident());
+                let ix_exp = Exp::impure_var(ctx.translate_local(body_id, *ix).ident());
                 inner = Call(
                     Box::new(Exp::impure_qvar(QName::from_string("Slice.get").unwrap())),
                     vec![inner, ix_exp],
@@ -217,22 +246,4 @@ pub(crate) fn translate_rplace_inner<'tcx>(
     }
 
     inner
-}
-
-pub(crate) fn translate_local(body: &Body, loc: Local) -> LocalIdent {
-    use rustc_middle::mir::VarDebugInfoContents::Place;
-    let debug_info: Vec<_> = body
-        .var_debug_info
-        .iter()
-        .filter(|var_info| match var_info.value {
-            Place(p) => p.as_local().map(|l| l == loc).unwrap_or(false),
-            _ => false,
-        })
-        .collect();
-
-    assert!(debug_info.len() <= 1, "expected at most one debug entry for local {:?}", loc);
-    match debug_info.get(0) {
-        Some(info) => LocalIdent::dbg(loc, *info),
-        None => LocalIdent::anon(loc),
-    }
 }

@@ -23,7 +23,7 @@ use rustc_errors::{DiagnosticBuilder, DiagnosticId};
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
-    mir::MirPass,
+    mir::{MirPass, Promoted, Body},
     thir,
     ty::{
         subst::{GenericArgKind, InternalSubsts},
@@ -37,6 +37,20 @@ pub(crate) use util::{module_name, ItemType};
 use why3::exp::Exp;
 
 pub(crate) use crate::translated_item::*;
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct BodyId {
+    def_id: LocalDefId,
+    promoted: Option<Promoted>,
+}
+
+impl BodyId {
+    pub(crate) fn new(def_id: LocalDefId, promoted: Option<Promoted>) -> Self {
+        BodyId {
+            def_id, promoted
+        }
+    }
+}
 
 // TODO: The state in here should be as opaque as possible...
 pub struct TranslationCtx<'tcx> {
@@ -53,7 +67,7 @@ pub struct TranslationCtx<'tcx> {
     extern_spec_items: HashMap<LocalDefId, DefId>,
     impl_data: HashMap<DefId, TraitImpl<'tcx>>,
     sigs: HashMap<DefId, PreSignature<'tcx>>,
-    bodies: HashMap<DefId, BodyAndPromoteds<'tcx>>,
+    bodies: HashMap<LocalDefId, BodyAndPromoteds<'tcx>>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -140,9 +154,17 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         self.sigs.get(&def_id).unwrap()
     }
 
-    pub(crate) fn body(&mut self, def_id: DefId) -> &BodyAndPromoteds<'tcx> {
+    pub(crate) fn body(&mut self, body_id: BodyId) -> &Body<'tcx> {
+        let body = self.body_and_promoted(body_id.def_id);
+        match body_id.promoted {
+            None => &body.body,
+            Some(promoted) => &body.promoted.get(promoted).unwrap(),
+        }
+    }
+
+    pub(crate) fn body_and_promoted(&mut self, def_id: LocalDefId) -> &BodyAndPromoteds<'tcx> {
         if !self.bodies.contains_key(&def_id) {
-            let mut body = callbacks::get_body(self.tcx, def_id.expect_local()).unwrap();
+            let mut body = callbacks::get_body(self.tcx, def_id).unwrap();
 
             // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
             // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
@@ -151,6 +173,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
             self.bodies.insert(def_id, body);
         };
+
         self.bodies.get(&def_id).unwrap()
     }
 
