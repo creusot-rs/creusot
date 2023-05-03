@@ -40,14 +40,13 @@ pub(crate) mod promoted;
 mod statement;
 pub(crate) mod terminator;
 
-pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> fmir::Body<'tcx> {
-    let body_id = BodyId::new(def_id.expect_local(), None);
+pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, body_id: BodyId) -> fmir::Body<'tcx> {
     let body = ctx.body(body_id).clone();
 
     // crate::debug::debug(ctx.tcx, ctx.tcx.optimized_mir(def_id));
     // crate::debug::debug(ctx.tcx, &body);
 
-    let func_translator = BodyTranslator::build_context(ctx.tcx, ctx, &body, def_id);
+    let func_translator = BodyTranslator::build_context(ctx.tcx, ctx, &body, body_id);
     func_translator.translate()
 }
 
@@ -55,7 +54,7 @@ pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> fmir:
 pub struct BodyTranslator<'body, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
 
-    def_id: DefId,
+    body_id: BodyId,
 
     body: &'body Body<'tcx>,
 
@@ -88,9 +87,10 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         ctx: &'body mut TranslationCtx<'tcx>,
         body: &'body Body<'tcx>,
         // names: &'body mut CloneMap<'tcx>,
-        def_id: DefId,
+        body_id: BodyId,
     ) -> Self {
-        let (invariants, assertions) = corrected_invariant_names_and_locations(ctx, def_id, &body);
+        let (invariants, assertions) =
+            corrected_invariant_names_and_locations(ctx, body_id.def_id(), &body);
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
@@ -106,8 +106,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let infcx = tcx.infer_ctxt().build();
         renumber::renumber_mir(&infcx, &mut clean_body, &mut Default::default());
 
-        let (_, move_paths) = MoveData::gather_moves(&clean_body, tcx, tcx.param_env(def_id))
-            .unwrap_or_else(|_| ctx.crash_and_error(ctx.def_span(def_id), "illegal move"));
+        let (_, move_paths) =
+            MoveData::gather_moves(&clean_body, tcx, tcx.param_env(body_id.def_id()))
+                .unwrap_or_else(|_| {
+                    ctx.crash_and_error(ctx.def_span(body_id.def_id()), "illegal move")
+                });
         let borrows = BorrowSet::build(tcx, &clean_body, true, &move_paths);
         let borrows = Rc::new(borrows);
         let resolver = EagerResolver::new(tcx, body);
@@ -116,7 +119,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         BodyTranslator {
             tcx,
             body,
-            def_id,
+            body_id,
             resolver,
             erased_locals,
             current_block: (Vec::new(), None),
@@ -194,7 +197,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn param_env(&self) -> ParamEnv<'tcx> {
-        self.ctx.param_env(self.def_id)
+        self.ctx.param_env(self.body_id.def_id())
     }
 
     fn emit_statement(&mut self, s: fmir::Statement<'tcx>) {
@@ -309,8 +312,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn translate_local(&mut self, loc: Local) -> LocalIdent {
-        let body_id = BodyId::new(self.def_id.expect_local(), None);
-        self.ctx.translate_local(body_id, loc)
+        self.ctx.translate_local(self.body_id, loc)
     }
 }
 

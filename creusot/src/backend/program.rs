@@ -10,19 +10,18 @@ use crate::{
         place::translate_rplace_inner,
         ty::{self, closure_accessors, translate_closure_ty, translate_ty},
     },
-    ctx::{CloneMap, BodyId},
+    ctx::{BodyId, CloneMap, TranslationCtx},
     translation::{
         binop_to_binop,
         fmir::{self, Block, Branches, Expr, RValue, Statement, Terminator},
         function::{closure_contract, closure_generic_decls, promoted, ClosureContract},
         unop_to_unop,
     },
-    util::{self, is_ghost_closure, module_name, ItemType},
+    util::{self, module_name, ItemType},
 };
 use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
-use rustc_index::vec::IndexVec;
 use rustc_middle::{
-    mir::{self, BasicBlock, BinOp, Place},
+    mir::{BasicBlock, BinOp, Place},
     ty::TyKind,
 };
 use rustc_span::DUMMY_SP;
@@ -155,9 +154,8 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     let tcx = ctx.tcx;
     let mut names = CloneMap::new(tcx, def_id, CloneLevel::Body);
 
-    let body = to_why(ctx, &mut names, def_id)?;
-
-    let promoted = ctx.body_and_promoted(def_id.expect_local()).promoted.clone();
+    let body_ids = collect_body_ids(ctx, def_id)?;
+    let body = to_why(ctx, &mut names, body_ids[0]);
 
     let closure_defs = if ctx.tcx.is_closure(def_id) {
         closure_aux_defs(ctx, &mut names, def_id)
@@ -165,7 +163,10 @@ pub(crate) fn translate_function<'tcx, 'sess>(
         Vec::new()
     };
 
-    let promoteds = lower_promoted(ctx, &mut names, def_id, &promoted);
+    let promoteds = body_ids[1..]
+        .iter()
+        .map(|body_id| lower_promoted(ctx, &mut names, *body_id))
+        .collect::<Vec<_>>();
 
     let (clones, _) = names.to_clones(ctx);
 
@@ -181,6 +182,33 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     Some(Module { name, decls })
 }
 
+fn collect_body_ids<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Option<Vec<BodyId>> {
+    let mut ids = Vec::new();
+
+    if def_id.is_local() && util::has_body(ctx, def_id) && !util::is_trusted(ctx.tcx, def_id) {
+        ids.push(BodyId::new(def_id.expect_local(), None))
+    } else {
+        return None;
+    }
+
+    let promoted = ctx
+        .body_and_promoted(def_id.expect_local())
+        .promoted
+        .iter_enumerated()
+        .map(|(p, p_body)| (p, p_body.return_ty()))
+        .collect::<Vec<_>>();
+
+    ids.extend(promoted.iter().filter_map(|(p, p_ty)| {
+        if util::is_ghost_closure(ctx.tcx, *p_ty).is_none() {
+            Some(BodyId::new(def_id.expect_local(), Some(*p)))
+        } else {
+            None
+        }
+    }));
+
+    Some(ids)
+}
+
 // According to @oli-obk, promoted bodies are:
 // > it's completely linear, not even conditions or asserts inside. we should probably document all that with validation
 // On this supposition we can simplify the translation *dramatically* and produce why3 constants
@@ -190,79 +218,54 @@ pub(crate) fn translate_function<'tcx, 'sess>(
 fn lower_promoted<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
-    def_id: DefId,
-    promoted: &IndexVec<mir::Promoted, mir::Body<'tcx>>,
-) -> Vec<Decl> {
-    let mut decls = Vec::new();
-    for p in promoted.iter_enumerated() {
-        if is_ghost_closure(ctx.tcx, p.1.return_ty()).is_some() {
-            continue;
-        }
+    body_id: BodyId,
+) -> Decl {
+    let promoted = promoted::translate_promoted(ctx, body_id);
+    let (sig, fmir) = promoted.unwrap_or_else(|e| e.emit(ctx.tcx.sess));
 
-        let promoted = promoted::translate_promoted(ctx, p.1, def_id);
-        let (sig, fmir) = promoted.unwrap_or_else(|e| e.emit(ctx.tcx.sess));
+    let mut sig = sig_to_why3(ctx, names, sig, body_id.def_id());
+    sig.name = format!("promoted{:?}", body_id.promoted.unwrap().as_usize()).into();
 
-        let mut sig = sig_to_why3(ctx, names, sig, def_id);
-        sig.name = format!("promoted{:?}", p.0.as_usize()).into();
+    let mut previous_block = None;
+    let mut exp = Exp::impure_var("_0".into());
+    for (id, bbd) in fmir.blocks.into_iter().rev() {
+        // Safety check
+        match bbd.terminator {
+            fmir::Terminator::Goto(prev) => {
+                assert!(previous_block == Some(prev))
+            }
+            fmir::Terminator::Return => {
+                assert!(previous_block == None);
+            }
+            _ => {}
+        };
 
-        let mut previous_block = None;
-        let mut exp = Exp::impure_var("_0".into());
-        for (id, bbd) in fmir.blocks.into_iter().rev() {
-            // Safety check
-            match bbd.terminator {
-                fmir::Terminator::Goto(prev) => {
-                    assert!(previous_block == Some(prev))
-                }
-                fmir::Terminator::Return => {
-                    assert!(previous_block == None);
-                }
-                _ => {}
-            };
+        previous_block = Some(id);
 
-            previous_block = Some(id);
-
-            let body_id = BodyId::new(def_id.expect_local(), Some(p.0));
-
-            let exps: Vec<_> =
-                bbd.stmts.into_iter().map(|s| s.to_why(ctx, names, body_id)).flatten().collect();
-            exp = exps.into_iter().rfold(exp, |acc, asgn| match asgn {
-                why3::mlcfg::Statement::Assign { lhs, rhs } => Exp::Let {
-                    pattern: Pattern::VarP(lhs),
-                    arg: Box::new(rhs),
-                    body: Box::new(acc),
-                },
-                why3::mlcfg::Statement::Assume(_) => acc,
-                why3::mlcfg::Statement::Invariant(_)
-                | why3::mlcfg::Statement::Variant(_)
-                | why3::mlcfg::Statement::Assert(_) => {
-                    ctx.crash_and_error(ctx.def_span(def_id), "unsupported promoted constant")
-                }
-            });
-        }
-
-        let promoted = Decl::Let(LetDecl {
-            sig,
-            rec: false,
-            kind: Some(LetKind::Constant),
-            body: exp,
-            ghost: false,
+        let exps: Vec<_> =
+            bbd.stmts.into_iter().map(|s| s.to_why(ctx, names, body_id)).flatten().collect();
+        exp = exps.into_iter().rfold(exp, |acc, asgn| match asgn {
+            why3::mlcfg::Statement::Assign { lhs, rhs } => {
+                Exp::Let { pattern: Pattern::VarP(lhs), arg: Box::new(rhs), body: Box::new(acc) }
+            }
+            why3::mlcfg::Statement::Assume(_) => acc,
+            why3::mlcfg::Statement::Invariant(_)
+            | why3::mlcfg::Statement::Variant(_)
+            | why3::mlcfg::Statement::Assert(_) => {
+                ctx.crash_and_error(ctx.def_span(body_id.def_id()), "unsupported promoted constant")
+            }
         });
-        decls.push(promoted);
     }
 
-    decls
+    Decl::Let(LetDecl { sig, rec: false, kind: Some(LetKind::Constant), body: exp, ghost: false })
 }
 
 pub fn to_why<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
-    def_id: DefId,
-) -> Option<Decl> {
-    if !def_id.is_local() || !util::has_body(ctx, def_id) || util::is_trusted(ctx.tcx, def_id) {
-        return None;
-    }
-
-    let body = ctx.fmir_body(def_id).unwrap().clone();
+    body_id: BodyId,
+) -> Decl {
+    let body = ctx.fmir_body(body_id).unwrap().clone();
 
     let vars: Vec<_> = body
         .locals
@@ -274,7 +277,7 @@ pub fn to_why<'tcx>(
         statements: vars
             .iter()
             .skip(1)
-            .zip(ctx.sig(def_id).inputs.iter().map(|(s, _, _)| s))
+            .zip(ctx.sig(body_id.def_id()).inputs.iter().map(|(s, _, _)| s))
             .take(body.arg_count)
             .map(|((_, id, _), arg)| {
                 let rhs = arg.to_string().into();
@@ -284,14 +287,13 @@ pub fn to_why<'tcx>(
         terminator: mlcfg::Terminator::Goto(BlockId(0)),
     };
 
-    let mut sig = signature_of(ctx, names, def_id);
-    if matches!(util::item_type(ctx.tcx, def_id), ItemType::Program | ItemType::Closure) {
+    let mut sig = signature_of(ctx, names, body_id.def_id());
+    if matches!(util::item_type(ctx.tcx, body_id.def_id()), ItemType::Program | ItemType::Closure) {
         sig.attrs.push(declaration::Attribute::Attr("cfg:stackify".into()));
         sig.attrs.push(declaration::Attribute::Attr("cfg:subregion_analysis".into()));
     };
 
-    let body_id = BodyId::new(def_id.expect_local(), None);
-    let func = Decl::CfgDecl(CfgFunction {
+    Decl::CfgDecl(CfgFunction {
         sig,
         rec: true,
         constant: false,
@@ -302,8 +304,7 @@ pub fn to_why<'tcx>(
             .into_iter()
             .map(|(bb, bbd)| (BlockId(bb.into()), bbd.to_why(ctx, names, body_id)))
             .collect(),
-    });
-    Some(func)
+    })
 }
 
 impl<'tcx> Expr<'tcx> {
@@ -602,7 +603,11 @@ impl<'tcx> Block<'tcx> {
         body_id: BodyId,
     ) -> why3::mlcfg::Block {
         mlcfg::Block {
-            statements: self.stmts.into_iter().flat_map(|s| s.to_why(ctx, names, body_id)).collect(),
+            statements: self
+                .stmts
+                .into_iter()
+                .flat_map(|s| s.to_why(ctx, names, body_id))
+                .collect(),
             terminator: self.terminator.to_why(ctx, names, Some(body_id)),
         }
     }

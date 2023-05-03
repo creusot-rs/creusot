@@ -1,6 +1,9 @@
-use crate::{ctx::{CloneMap, BodyId, TranslationCtx}, translation::LocalIdent};
+use crate::{
+    ctx::{BodyId, CloneMap, TranslationCtx},
+    translation::LocalIdent,
+};
 use rustc_middle::{
-    mir::{Local, Place, tcx::PlaceTy, PlaceRef, HasLocalDecls},
+    mir::{tcx::PlaceTy, HasLocalDecls, Local, Place, PlaceRef},
     ty::TyKind,
 };
 use why3::{
@@ -27,7 +30,7 @@ impl<'tcx> Why3Generator<'tcx> {
 impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn translate_local(&mut self, body_id: BodyId, loc: Local) -> LocalIdent {
         let body = self.body(body_id);
-    
+
         use rustc_middle::mir::VarDebugInfoContents::Place;
         let debug_info: Vec<_> = body
             .var_debug_info
@@ -37,7 +40,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 _ => false,
             })
             .collect();
-    
+
         assert!(debug_info.len() <= 1, "expected at most one debug entry for local {:?}", loc);
         match debug_info.get(0) {
             Some(info) => LocalIdent::dbg(loc, *info),
@@ -114,7 +117,9 @@ pub(crate) fn create_assign_inner<'tcx>(
                     let ctor = names.constructor(variant.def_id, subst);
                     inner = Let {
                         pattern: ConsP(ctor.clone(), field_pats),
-                        arg: Box::new(translate_rplace_inner(ctx, names, body_id, lhs.local, stump)),
+                        arg: Box::new(translate_rplace_inner(
+                            ctx, names, body_id, lhs.local, stump,
+                        )),
                         body: Box::new(Constructor { ctor, args: varexps }),
                     }
                 }
@@ -132,7 +137,9 @@ pub(crate) fn create_assign_inner<'tcx>(
 
                     inner = Let {
                         pattern: TupleP(field_pats),
-                        arg: Box::new(translate_rplace_inner(ctx, names, body_id, lhs.local, stump)),
+                        arg: Box::new(translate_rplace_inner(
+                            ctx, names, body_id, lhs.local, stump,
+                        )),
                         body: Box::new(Tuple(varexps)),
                     }
                 }
@@ -151,7 +158,9 @@ pub(crate) fn create_assign_inner<'tcx>(
 
                     inner = Let {
                         pattern: ConsP(cons.clone(), field_pats),
-                        arg: Box::new(translate_rplace_inner(ctx, names, body_id, lhs.local, stump)),
+                        arg: Box::new(translate_rplace_inner(
+                            ctx, names, body_id, lhs.local, stump,
+                        )),
                         body: Box::new(Exp::Constructor { ctor: cons, args: varexps }),
                     }
                 }
@@ -164,7 +173,11 @@ pub(crate) fn create_assign_inner<'tcx>(
 
                 inner = Call(
                     Box::new(set),
-                    vec![translate_rplace_inner(ctx, names, body_id, lhs.local, stump), ix_exp, inner],
+                    vec![
+                        translate_rplace_inner(ctx, names, body_id, lhs.local, stump),
+                        ix_exp,
+                        inner,
+                    ],
                 )
             }
             ConstantIndex { .. } => unimplemented!("ConstantIndex"),
