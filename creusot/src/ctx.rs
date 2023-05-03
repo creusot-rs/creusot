@@ -3,6 +3,7 @@ use std::{collections::HashMap, ops::Deref};
 pub(crate) use crate::backend::clone_map::*;
 use crate::{
     backend::ty::ty_binding_group,
+    callbacks::{self, BodyAndPromoteds},
     creusot_items::{self, CreusotItems},
     error::{CrErr, CreusotResult, Error},
     metadata::{BinaryMetadata, Metadata},
@@ -22,12 +23,14 @@ use rustc_errors::{DiagnosticBuilder, DiagnosticId};
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
+    mir::MirPass,
     thir,
     ty::{
         subst::{GenericArgKind, InternalSubsts},
         GenericArg, ParamEnv, SubstsRef, Ty, TyCtxt, WithOptConstParam,
     },
 };
+use rustc_mir_transform::{cleanup_post_borrowck::CleanupPostBorrowck, simplify::SimplifyCfg};
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::SelectionContext;
 pub(crate) use util::{module_name, ItemType};
@@ -50,6 +53,7 @@ pub struct TranslationCtx<'tcx> {
     extern_spec_items: HashMap<LocalDefId, DefId>,
     impl_data: HashMap<DefId, TraitImpl<'tcx>>,
     sigs: HashMap<DefId, PreSignature<'tcx>>,
+    bodies: HashMap<DefId, BodyAndPromoteds<'tcx>>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -78,6 +82,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             fmir_body: Default::default(),
             impl_data: Default::default(),
             sigs: Default::default(),
+            bodies: Default::default(),
         }
     }
 
@@ -133,6 +138,20 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             self.sigs.insert(def_id, term);
         };
         self.sigs.get(&def_id).unwrap()
+    }
+
+    pub(crate) fn body(&mut self, def_id: DefId) -> &BodyAndPromoteds<'tcx> {
+        if !self.bodies.contains_key(&def_id) {
+            let mut body = callbacks::get_body(self.tcx, def_id.expect_local()).unwrap();
+
+            // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
+            // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
+            CleanupPostBorrowck.run_pass(self.tcx, &mut body.body);
+            SimplifyCfg::new("verify").run_pass(self.tcx, &mut body.body);
+
+            self.bodies.insert(def_id, body);
+        };
+        self.bodies.get(&def_id).unwrap()
     }
 
     pub(crate) fn type_invariant(

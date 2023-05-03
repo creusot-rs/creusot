@@ -22,18 +22,17 @@ use rustc_index::bit_set::BitSet;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
     mir::{
-        traversal::reverse_postorder, BasicBlock, Body, Local, Location, MirPass, Operand, Place,
+        traversal::reverse_postorder, BasicBlock, Body, Local, Location, Operand, Place,
         VarDebugInfo,
     },
     ty::{
         subst::{GenericArg, SubstsRef},
         ClosureKind::*,
         EarlyBinder, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt, TyKind,
-        UpvarCapture, WithOptConstParam,
+        UpvarCapture,
     },
 };
 use rustc_mir_dataflow::move_paths::MoveData;
-use rustc_mir_transform::{cleanup_post_borrowck::CleanupPostBorrowck, simplify::*};
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use std::rc::Rc;
 use why3::declaration::*;
@@ -43,16 +42,10 @@ mod statement;
 pub(crate) mod terminator;
 
 pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> fmir::Body<'tcx> {
-    // We use `mir_promoted` as it is the MIR required by borrowck which we will have run by this point
-    let (body, _) = ctx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
-    let mut body = body.borrow().clone();
+    let body = ctx.body(def_id).body.clone();
 
     // crate::debug::debug(ctx.tcx, ctx.tcx.optimized_mir(def_id));
     // crate::debug::debug(ctx.tcx, &body);
-    // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
-    // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
-    CleanupPostBorrowck.run_pass(ctx.tcx, &mut body);
-    SimplifyCfg::new("verify").run_pass(ctx.tcx, &mut body);
 
     let func_translator = BodyTranslator::build_context(ctx.tcx, ctx, &body, def_id);
     func_translator.translate()

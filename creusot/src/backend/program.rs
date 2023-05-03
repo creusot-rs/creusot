@@ -22,10 +22,9 @@ use crate::{
 use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
 use rustc_index::vec::IndexVec;
 use rustc_middle::{
-    mir::{self, BasicBlock, BinOp, MirPass, Place},
-    ty::{TyKind, WithOptConstParam},
+    mir::{self, BasicBlock, BinOp, Place},
+    ty::TyKind,
 };
-use rustc_mir_transform::{cleanup_post_borrowck::CleanupPostBorrowck, simplify::SimplifyCfg};
 use rustc_span::DUMMY_SP;
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
@@ -158,8 +157,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
 
     let body = to_why(ctx, &mut names, def_id)?;
 
-    // We use `mir_promoted` as it is the MIR required by borrowck which we will have run by this point
-    let (_, promoted) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
+    let promoted = ctx.body(def_id).promoted.clone();
 
     let closure_defs = if ctx.tcx.is_closure(def_id) {
         closure_aux_defs(ctx, &mut names, def_id)
@@ -167,7 +165,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
         Vec::new()
     };
 
-    let promoteds = lower_promoted(ctx, &mut names, def_id, &*promoted.borrow());
+    let promoteds = lower_promoted(ctx, &mut names, def_id, &promoted);
 
     let (clones, _) = names.to_clones(ctx);
 
@@ -262,10 +260,7 @@ pub fn to_why<'tcx>(
         return None;
     }
 
-    let (mir, _) = ctx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
-    let mut mir = mir.borrow().clone();
-    CleanupPostBorrowck.run_pass(ctx.tcx, &mut mir);
-    SimplifyCfg::new("verify").run_pass(ctx.tcx, &mut mir);
+    let mir = ctx.body(def_id).body.clone();
 
     let body = ctx.fmir_body(def_id).unwrap().clone();
 
