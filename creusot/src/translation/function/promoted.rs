@@ -1,9 +1,8 @@
 use crate::{
-    ctx::TranslationCtx,
+    ctx::{BodyId, TranslationCtx},
     translation::{fmir, function::LocalIdent, specification::PreContract},
     util::PreSignature,
 };
-use rustc_hir::def_id::DefId;
 use rustc_middle::mir::Body;
 
 use crate::error::CreusotResult;
@@ -24,13 +23,13 @@ pub(crate) fn promoted_signature<'tcx>(body: &Body<'tcx>) -> PreSignature<'tcx> 
 
 pub(crate) fn translate_promoted<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    body: &Body<'tcx>,
-    parent: DefId,
+    body_id: BodyId,
 ) -> CreusotResult<(PreSignature<'tcx>, fmir::Body<'tcx>)> {
-    let func_translator = BodyTranslator::build_context(ctx.tcx, ctx, &body, parent);
+    let body = ctx.body(body_id).clone();
+    let func_translator = BodyTranslator::build_context(ctx.tcx, ctx, &body, body_id);
     let fmir = func_translator.translate();
 
-    let sig = promoted_signature(body);
+    let sig = promoted_signature(&body);
 
     Ok((sig, fmir))
 }

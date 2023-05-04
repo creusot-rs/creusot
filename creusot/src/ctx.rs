@@ -3,6 +3,7 @@ use std::{collections::HashMap, ops::Deref};
 pub(crate) use crate::backend::clone_map::*;
 use crate::{
     backend::ty::ty_binding_group,
+    callbacks::{self, BodyAndPromoteds},
     creusot_items::{self, CreusotItems},
     error::{CrErr, CreusotResult, Error},
     metadata::{BinaryMetadata, Metadata},
@@ -22,12 +23,14 @@ use rustc_errors::{DiagnosticBuilder, DiagnosticId};
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
+    mir::{Body, MirPass, Promoted},
     thir,
     ty::{
         subst::{GenericArgKind, InternalSubsts},
         GenericArg, ParamEnv, SubstsRef, Ty, TyCtxt, WithOptConstParam,
     },
 };
+use rustc_mir_transform::{cleanup_post_borrowck::CleanupPostBorrowck, simplify::SimplifyCfg};
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::SelectionContext;
 pub(crate) use util::{module_name, ItemType};
@@ -35,13 +38,29 @@ use why3::exp::Exp;
 
 pub(crate) use crate::translated_item::*;
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct BodyId {
+    def_id: LocalDefId,
+    pub promoted: Option<Promoted>,
+}
+
+impl BodyId {
+    pub fn new(def_id: LocalDefId, promoted: Option<Promoted>) -> Self {
+        BodyId { def_id, promoted }
+    }
+
+    pub fn def_id(self) -> DefId {
+        self.def_id.to_def_id()
+    }
+}
+
 // TODO: The state in here should be as opaque as possible...
 pub struct TranslationCtx<'tcx> {
     pub tcx: TyCtxt<'tcx>,
     representative_type: HashMap<DefId, DefId>, // maps type ids to their 'representative type'
     ty_binding_groups: HashMap<DefId, IndexSet<DefId>>,
     laws: IndexMap<DefId, Vec<DefId>>,
-    fmir_body: IndexMap<DefId, fmir::Body<'tcx>>,
+    fmir_body: IndexMap<BodyId, fmir::Body<'tcx>>,
     terms: IndexMap<DefId, Term<'tcx>>,
     pub externs: Metadata<'tcx>,
     pub(crate) opts: Options,
@@ -50,6 +69,7 @@ pub struct TranslationCtx<'tcx> {
     extern_spec_items: HashMap<LocalDefId, DefId>,
     impl_data: HashMap<DefId, TraitImpl<'tcx>>,
     sigs: HashMap<DefId, PreSignature<'tcx>>,
+    bodies: HashMap<LocalDefId, BodyAndPromoteds<'tcx>>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -78,6 +98,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             fmir_body: Default::default(),
             impl_data: Default::default(),
             sigs: Default::default(),
+            bodies: Default::default(),
         }
     }
 
@@ -94,16 +115,12 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         &self.impl_data[&def_id]
     }
 
-    pub(crate) fn fmir_body(&mut self, def_id: DefId) -> Option<&fmir::Body<'tcx>> {
-        if util::has_body(self, def_id) && def_id.is_local() {
-            if !self.fmir_body.contains_key(&def_id) {
-                let fmir = translation::function::fmir(self, def_id);
-                self.fmir_body.insert(def_id, fmir);
-            }
-            self.fmir_body.get(&def_id)
-        } else {
-            None
+    pub(crate) fn fmir_body(&mut self, body_id: BodyId) -> Option<&fmir::Body<'tcx>> {
+        if !self.fmir_body.contains_key(&body_id) {
+            let fmir = translation::function::fmir(self, body_id);
+            self.fmir_body.insert(body_id, fmir);
         }
+        self.fmir_body.get(&body_id)
     }
 
     pub(crate) fn term(&mut self, def_id: DefId) -> Option<&Term<'tcx>> {
@@ -133,6 +150,29 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             self.sigs.insert(def_id, term);
         };
         self.sigs.get(&def_id).unwrap()
+    }
+
+    pub(crate) fn body(&mut self, body_id: BodyId) -> &Body<'tcx> {
+        let body = self.body_and_promoted(body_id.def_id);
+        match body_id.promoted {
+            None => &body.body,
+            Some(promoted) => &body.promoted.get(promoted).unwrap(),
+        }
+    }
+
+    pub(crate) fn body_and_promoted(&mut self, def_id: LocalDefId) -> &BodyAndPromoteds<'tcx> {
+        if !self.bodies.contains_key(&def_id) {
+            let mut body = callbacks::get_body(self.tcx, def_id).unwrap();
+
+            // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
+            // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
+            CleanupPostBorrowck.run_pass(self.tcx, &mut body.body);
+            SimplifyCfg::new("verify").run_pass(self.tcx, &mut body.body);
+
+            self.bodies.insert(def_id, body);
+        };
+
+        self.bodies.get(&def_id).unwrap()
     }
 
     pub(crate) fn type_invariant(
