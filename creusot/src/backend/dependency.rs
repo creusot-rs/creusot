@@ -3,7 +3,11 @@ use rustc_middle::ty::{ParamEnv, SubstsRef, Ty, TyCtxt, TyKind};
 use rustc_span::Symbol;
 use rustc_type_ir::AliasKind;
 
-use crate::{ctx::TranslationCtx, translation::traits};
+use crate::{
+    ctx::TranslationCtx,
+    translation::traits,
+    util::{self, ItemType},
+};
 
 /// Dependencies between items and the resolution logic to find the 'monomorphic' forms accounting
 /// for various Creusot hacks like the handling of closures.
@@ -18,6 +22,15 @@ pub(crate) enum Dependency<'tcx> {
 }
 
 impl<'tcx> Dependency<'tcx> {
+    pub(crate) fn new(tcx: TyCtxt<'tcx>, dep: (DefId, SubstsRef<'tcx>)) -> Self {
+        match util::item_type(tcx, dep.0) {
+            ItemType::Type => Dependency::Type(tcx.mk_adt(tcx.adt_def(dep.0), dep.1)),
+            // ItemType::Closure => Dependency::Type(tcx.type_of(dep.0).subst(tcx, dep.1)),
+            ItemType::AssocTy => Dependency::Type(tcx.mk_projection(dep.0, dep.1)),
+            _ => Dependency::Item(dep),
+        }
+    }
+
     pub(crate) fn resolve(
         self,
         ctx: &TranslationCtx<'tcx>,
