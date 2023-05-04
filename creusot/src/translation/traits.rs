@@ -85,7 +85,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 .map(|p| p.predicates_for(self.tcx, refn_subst))
                 .unwrap_or_else(Vec::new);
 
-            let infcx = self.tcx.infer_ctxt().build();
+            let infcx = self.tcx.infer_ctxt().ignoring_regions().build();
 
             let res = evaluate_additional_predicates(
                 &infcx,
