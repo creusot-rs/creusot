@@ -13,6 +13,25 @@ use similar::{ChangeTag, TextDiff};
 use termcolor::*;
 
 fn main() {
+    // Build `creusot-rustc` and `cargo-creusot`
+
+    let creusot_rustc = escargot::CargoBuild::new()
+        .bin("creusot-rustc")
+        .current_release()
+        .manifest_path("../cargo-creusot/Cargo.toml")
+        .current_target()
+        .run()
+        .unwrap();
+
+    let cargo_creusot = escargot::CargoBuild::new()
+        .bin("cargo-creusot")
+        .current_release()
+        .manifest_path("../cargo-creusot/Cargo.toml")
+        .current_target()
+        .run()
+        .unwrap()
+        .command();
+
     let mut base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     base_path.pop();
 
@@ -21,7 +40,7 @@ fn main() {
     temp_file.push("debug");
     temp_file.push("libcreusot_contracts.cmeta");
 
-    let mut metadata_file = Command::cargo_bin("cargo-creusot").unwrap();
+    let mut metadata_file = cargo_creusot;
     metadata_file.current_dir(base_path);
     metadata_file
         .arg("creusot")
@@ -38,19 +57,25 @@ fn main() {
         std::process::exit(1);
     }
 
-    should_fail("tests/should_fail/**/*.rs", |p| run_creusot(p, &temp_file.to_string_lossy()));
+    should_fail("tests/should_fail/**/*.rs", |p| {
+        run_creusot(creusot_rustc.path(), p, &temp_file.to_string_lossy())
+    });
     should_succeed("tests/should_succeed/**/*.rs", |p| {
-        run_creusot(p, &temp_file.to_string_lossy())
+        run_creusot(creusot_rustc.path(), p, &temp_file.to_string_lossy())
     });
 }
 
-fn run_creusot(file: &Path, contracts: &str) -> Option<std::process::Command> {
+fn run_creusot(
+    creusot_rustc: &Path,
+    file: &Path,
+    contracts: &str,
+) -> Option<std::process::Command> {
     let header_line = BufReader::new(File::open(&file).unwrap()).lines().nth(0).unwrap().unwrap();
     if header_line.contains("UISKIP") {
         return None;
     }
 
-    let mut cmd = Command::cargo_bin("creusot-rustc").unwrap();
+    let mut cmd = Command::new(creusot_rustc);
     cmd.current_dir(file.parent().unwrap());
     let mut base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     base_path.pop();

@@ -8,11 +8,9 @@ extern crate rustc_interface;
 #[macro_use]
 extern crate log;
 
+use cargo_creusot::options::{Args, CreusotArgs};
 use clap::*;
-use creusot::{
-    callbacks::*,
-    options::{Args, CreusotArgs, Options},
-};
+use creusot::callbacks::*;
 use rustc_driver::{RunCompiler, DEFAULT_LOCALE_RESOURCES};
 use rustc_errors::{emitter::EmitterWriter, TerminalUrl};
 use rustc_interface::interface::try_print_query_stack;
@@ -118,7 +116,7 @@ fn setup_plugin() {
         args.extend(["--cfg", "creusot"].into_iter().map(str::to_owned));
         debug!("creusot args={:?}", args);
 
-        let opts = Options::from_args(creusot);
+        let opts = CreusotArgs::to_options(creusot);
         let mut callbacks = ToWhy::new(opts);
 
         RunCompiler::new(&args, &mut callbacks).run().unwrap();
