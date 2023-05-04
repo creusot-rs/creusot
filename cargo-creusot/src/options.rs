@@ -21,7 +21,7 @@ pub struct CreusotArgs {
     /// Location that Creusot metadata for this crate should be emitted to.
     metadata_path: Option<String>,
     /// Tell creusot to disable metadata exports.
-    #[clap(long, default_value_t = true)]
+    #[arg(long, default_value_t = true, action = clap::ArgAction::Set)]
     export_metadata: bool,
     /// Print to stdout.
     #[clap(group = "output", long)]
