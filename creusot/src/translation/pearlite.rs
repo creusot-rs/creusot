@@ -507,11 +507,38 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let t = self.logical_reborrow(arg)?;
                 Ok(Term { ty, span, kind: t })
             }
-            ExprKind::Adt(box AdtExpr { adt_def, variant_index, ref fields, .. }) => {
+            ExprKind::Adt(box AdtExpr {
+                adt_def,
+                variant_index,
+                ref fields,
+                ref base,
+                substs,
+                ..
+            }) => {
                 let mut fields: Vec<_> = fields
                     .iter()
                     .map(|f| Ok((f.name, self.expr_term(f.expr)?)))
                     .collect::<Result<_, Error>>()?;
+
+                if let Some(base) = base {
+                    let variant = &adt_def.variant(variant_index);
+
+                    let base = self.expr_term(base.base)?;
+                    let missing: Vec<_> = (0..variant.fields.len())
+                        .filter(|i| !fields.iter().any(|(f, _)| i == &f.as_usize()))
+                        .collect();
+
+                    for missing_field in missing {
+                        fields.push((
+                            missing_field.into(),
+                            Term {
+                                ty: variant.fields[missing_field].ty(self.ctx.tcx, substs),
+                                span: DUMMY_SP,
+                                kind: self.mk_projection(base.clone(), missing_field.into())?,
+                            },
+                        ));
+                    }
+                }
 
                 fields.sort_by_key(|f| f.0);
 
