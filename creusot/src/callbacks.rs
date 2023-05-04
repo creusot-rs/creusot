@@ -95,6 +95,9 @@ impl Callbacks for ToWhy {
     }
 }
 
+/// Trys to retrieve the promoted MIR for a body from a thread local cache.
+/// The cache is populated when rustc runs the `mir_borrowck` query.
+/// After a body was retrieved, calling this function again for the same `def_id` will return `None`.
 pub fn get_body<'tcx>(tcx: TyCtxt<'tcx>, def_id: LocalDefId) -> Option<BodyAndPromoteds<'tcx>> {
     // trigger borrow checking
     let _ = tcx.mir_borrowck(def_id);
