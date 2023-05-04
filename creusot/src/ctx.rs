@@ -3,7 +3,7 @@ use std::{collections::HashMap, ops::Deref};
 pub(crate) use crate::backend::clone_map::*;
 use crate::{
     backend::ty::ty_binding_group,
-    callbacks::{self, BodyAndPromoteds},
+    callbacks,
     creusot_items::{self, CreusotItems},
     error::{CrErr, CreusotResult, Error},
     metadata::{BinaryMetadata, Metadata},
@@ -18,19 +18,19 @@ use crate::{
     },
     util::{self, pre_sig_of, PreSignature},
 };
+use borrowck::BodyWithBorrowckFacts;
 use indexmap::{IndexMap, IndexSet};
 use rustc_errors::{DiagnosticBuilder, DiagnosticId};
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
-    mir::{Body, MirPass, Promoted},
+    mir::{Body, Promoted},
     thir,
     ty::{
         subst::{GenericArgKind, InternalSubsts},
         GenericArg, ParamEnv, SubstsRef, Ty, TyCtxt, WithOptConstParam,
     },
 };
-use rustc_mir_transform::{cleanup_post_borrowck::CleanupPostBorrowck, simplify::SimplifyCfg};
 use rustc_span::{RealFileName, Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::SelectionContext;
 pub(crate) use util::{module_name, ItemType};
@@ -63,7 +63,7 @@ macro_rules! queryish {
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct BodyId {
-    def_id: LocalDefId,
+    pub def_id: LocalDefId,
     pub promoted: Option<Promoted>,
 }
 
@@ -92,7 +92,7 @@ pub struct TranslationCtx<'tcx> {
     extern_spec_items: HashMap<LocalDefId, DefId>,
     trait_impl: HashMap<DefId, TraitImpl<'tcx>>,
     sig: HashMap<DefId, PreSignature<'tcx>>,
-    bodies: HashMap<LocalDefId, BodyAndPromoteds<'tcx>>,
+    bodies: HashMap<LocalDefId, BodyWithBorrowckFacts<'tcx>>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -165,21 +165,21 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     });
 
     pub(crate) fn body(&mut self, body_id: BodyId) -> &Body<'tcx> {
-        let body = self.body_and_promoted(body_id.def_id);
+        let body = self.body_with_facts(body_id.def_id);
         match body_id.promoted {
             None => &body.body,
             Some(promoted) => &body.promoted.get(promoted).unwrap(),
         }
     }
 
-    pub(crate) fn body_and_promoted(&mut self, def_id: LocalDefId) -> &BodyAndPromoteds<'tcx> {
+    pub(crate) fn body_with_facts(&mut self, def_id: LocalDefId) -> &BodyWithBorrowckFacts<'tcx> {
         if !self.bodies.contains_key(&def_id) {
-            let mut body = callbacks::get_body(self.tcx, def_id).unwrap();
+            let body = callbacks::get_body(self.tcx, def_id).unwrap();
 
             // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
             // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
-            CleanupPostBorrowck.run_pass(self.tcx, &mut body.body);
-            SimplifyCfg::new("verify").run_pass(self.tcx, &mut body.body);
+            // CleanupPostBorrowck.run_pass(self.tcx, &mut body.body);
+            // SimplifyCfg::new("verify").run_pass(self.tcx, &mut body.body);
 
             self.bodies.insert(def_id, body);
         };

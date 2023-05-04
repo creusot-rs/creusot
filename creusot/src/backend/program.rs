@@ -192,7 +192,7 @@ fn collect_body_ids<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Opti
     }
 
     let promoted = ctx
-        .body_and_promoted(def_id.expect_local())
+        .body_with_facts(def_id.expect_local())
         .promoted
         .iter_enumerated()
         .map(|(p, p_body)| (p, p_body.return_ty()))

@@ -7,7 +7,6 @@ use crate::{
     fmir::{self, Expr},
     gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind},
     resolve::EagerResolver,
-    rustc_extensions::renumber,
     translation::{
         pearlite::{self, TermKind, TermVisitorMut},
         specification::{contract_of, PreContract},
@@ -15,11 +14,11 @@ use crate::{
     },
     util::{self, ident_of, PreSignature},
 };
+use borrowck::borrow_set::BorrowSet;
 use indexmap::IndexMap;
-use rustc_borrowck::borrow_set::BorrowSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
-use rustc_infer::infer::TyCtxtInferExt;
+
 use rustc_middle::{
     mir::{traversal::reverse_postorder, BasicBlock, Body, Local, Operand, Place, VarDebugInfo},
     ty::{
@@ -29,7 +28,6 @@ use rustc_middle::{
         UpvarCapture,
     },
 };
-use rustc_mir_dataflow::move_paths::MoveData;
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use std::{iter, rc::Rc};
 use why3::declaration::*;
@@ -101,22 +99,14 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             }
         });
 
-        let mut clean_body = body.clone();
-
-        let infcx = tcx.infer_ctxt().build();
-        renumber::renumber_mir(&infcx, &mut clean_body, &mut Default::default());
-
-        let (_, move_paths) =
-            MoveData::gather_moves(&clean_body, tcx, tcx.param_env(body_id.def_id()))
-                .unwrap_or_else(|_| {
-                    ctx.crash_and_error(ctx.def_span(body_id.def_id()), "illegal move")
-                });
-        let borrows = BorrowSet::build(tcx, &clean_body, true, &move_paths);
-        let borrows = Rc::new(borrows);
         let resolver = EagerResolver::new(tcx, body);
 
         // eprintln!("body of {}", tcx.def_path_str(body_id.def_id()));
         // resolver.debug();
+
+        // do we need borrowck info for promoteds?
+        let borrows = ctx.body_with_facts(body_id.def_id).borrow_set.clone();
+
         BodyTranslator {
             tcx,
             body,

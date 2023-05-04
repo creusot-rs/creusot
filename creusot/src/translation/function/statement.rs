@@ -1,4 +1,4 @@
-use rustc_borrowck::borrow_set::TwoPhaseActivation;
+use borrowck::borrow_set::TwoPhaseActivation;
 use rustc_middle::{
     mir::{
         BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
