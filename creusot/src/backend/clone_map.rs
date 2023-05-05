@@ -404,7 +404,7 @@ impl<'tcx> CloneMap<'tcx> {
             trace!("{:?} is public={:?}", key, self.names[&key].public);
 
             if key != self.self_key() {
-                self.add_graph_edge(DepNode::Item(self.self_key()), DepNode::Item(key));
+                self.add_graph_edge(DepNode::Item(self.self_key()), DepNode::new(ctx.tcx, key));
             }
 
             if self.names[&key].kind == Kind::Hidden {
@@ -429,6 +429,7 @@ impl<'tcx> CloneMap<'tcx> {
     }
 
     fn clone_dependencies(&mut self, ctx: &mut Why3Generator<'tcx>, key: (DefId, SubstsRef<'tcx>)) {
+        let key_dep = DepNode::new(ctx.tcx, key);
         // Check the substitution for dependencies on closures
         for ty in key.1.types().flat_map(|t| t.walk()) {
             let ty = match ty.unpack() {
@@ -439,26 +440,27 @@ impl<'tcx> CloneMap<'tcx> {
                 TyKind::Closure(id, subst) => {
                     self.insert(*id, subst);
                     // Sketchy... shouldn't we need to do something to subst?
-                    self.add_graph_edge(DepNode::Item(key), DepNode::Item((*id, subst)));
+                    self.add_graph_edge(key_dep, DepNode::new(ctx.tcx, (*id, subst)));
                 }
                 TyKind::Adt(def, subst) => {
                     self.insert(def.did(), subst);
-                    self.add_graph_edge(DepNode::Item(key), DepNode::Item((def.did(), subst)));
+                    self.add_graph_edge(key_dep, DepNode::new(ctx.tcx, (def.did(), subst)));
                 }
                 _ => {}
             }
         }
+
+        let key_public = self.names[&key].public;
+
         walk_projections(key.1, |pty: &AliasTy<'tcx>| {
             let dep = self.resolve_dep(ctx, (pty.def_id, pty.substs));
 
             if let Some((defid, subst)) = dep.cloneable_id() {
-                self.insert(defid, subst);
+                self.insert(defid, subst).public |= key_public;
             }
 
-            self.add_graph_edge(DepNode::Item(key), dep);
+            self.add_graph_edge(key_dep, dep);
         });
-
-        let key_public = self.names[&key].public;
 
         let opaque_clone = !matches!(self.clone_level, CloneLevel::Body)
             || self.names[&key].opaque == CloneOpacity::Opaque;
@@ -467,6 +469,7 @@ impl<'tcx> CloneMap<'tcx> {
             if opaque_clone && !info.public {
                 continue;
             }
+
             trace!("adding dependency {:?} {:?}", dep, info.public);
 
             let orig = dep;
@@ -480,11 +483,11 @@ impl<'tcx> CloneMap<'tcx> {
             }
 
             // Skip reflexive edges
-            if dep == DepNode::Item(key) {
+            if dep == key_dep {
                 continue;
             }
 
-            let edge_set = self.add_graph_edge(DepNode::Item(key), dep);
+            let edge_set = self.add_graph_edge(key_dep, dep);
             if let Some(sym) = refineable_symbol(ctx.tcx, orig.0) {
                 edge_set.insert((info.kind, sym));
             }
