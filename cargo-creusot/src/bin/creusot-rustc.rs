@@ -83,16 +83,6 @@ fn setup_plugin() {
         args.remove(1);
     }
 
-    if let Some(why3_vers) = why3_version() {
-        if why3_vers != WHY3_VERSION {
-            emit_warning(format!(
-                "the recommended version of why3 is {WHY3_VERSION} (installed: {why3_vers})"
-            ));
-        }
-    } else {
-        emit_warning("could not determine installed why3 version".to_string());
-    }
-
     let creusot: CreusotArgs = if is_wrapper {
         serde_json::from_str(&std::env::var("CREUSOT_ARGS").unwrap()).unwrap()
     } else {
@@ -100,6 +90,18 @@ fn setup_plugin() {
         args = all_args.rust_flags;
         all_args.creusot
     };
+
+    if creusot.check_why3 {
+        if let Some(why3_vers) = why3_version() {
+            if why3_vers != WHY3_VERSION {
+                emit_warning(format!(
+                    "the recommended version of why3 is {WHY3_VERSION} (installed: {why3_vers})"
+                ));
+            }
+        } else {
+            emit_warning("could not determine installed why3 version".to_string());
+        }
+    }
 
     let sysroot = sysroot_path();
     args.push(format!("--sysroot={}", sysroot));

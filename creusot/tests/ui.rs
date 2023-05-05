@@ -87,7 +87,12 @@ fn run_creusot(
         creusot_contract_path.to_str().expect("invalid utf-8 in contract path");
     let creusot_contract_path = normalize_file_path(creusot_contract_path);
 
-    cmd.args(&["--stdout", "--export-metadata=false", "--span-mode=relative"]);
+    cmd.args(&[
+        "--stdout",
+        "--export-metadata=false",
+        "--span-mode=relative",
+        "--check-why3=false",
+    ]);
     cmd.args(&[
         "--creusot-extern",
         &format!("creusot_contracts={}", normalize_file_path(contracts)),
