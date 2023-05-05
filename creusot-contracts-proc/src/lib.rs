@@ -515,6 +515,25 @@ pub fn law(_: TS1, tokens: TS1) -> TS1 {
 pub fn predicate(_: TS1, tokens: TS1) -> TS1 {
     let pred = parse_macro_input!(tokens as LogicInput);
 
+    let sig = match &pred {
+        LogicInput::Item(LogicItem { sig, .. }) => sig,
+        LogicInput::Sig(TraitItemSignature { sig, .. }) => sig,
+    };
+
+    let is_bool = match &sig.output {
+        ReturnType::Default => false,
+        ReturnType::Type(_, ty) => *ty == parse_quote! { bool },
+    };
+
+    if !is_bool {
+        let sp = match sig.output {
+            ReturnType::Default => sig.span(),
+            ReturnType::Type(_, _) => sig.output.span(),
+        };
+        return quote_spanned! {sp=> compile_error!("Predicates must have boolean return types"); }
+            .into();
+    };
+
     match pred {
         LogicInput::Item(log) => predicate_item(log),
         LogicInput::Sig(sig) => predicate_sig(sig),
