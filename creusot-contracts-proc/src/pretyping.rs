@@ -59,16 +59,16 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                     Ok(quote_spanned! {sp=> ::creusot_contracts::__stubs::neq(#left, #right) })
                 }
                 Lt(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_contracts::logic::OrdLogic::lt_log(#left, #right) },
+                    quote_spanned! {sp=> ::creusot_contracts::logic::PartialOrdLogic::lt_log(#left, #right) },
                 ),
                 Le(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_contracts::logic::OrdLogic::le_log(#left, #right) },
+                    quote_spanned! {sp=> ::creusot_contracts::logic::PartialOrdLogic::le_log(#left, #right) },
                 ),
                 Ge(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_contracts::logic::OrdLogic::ge_log(#left, #right) },
+                    quote_spanned! {sp=> ::creusot_contracts::logic::PartialOrdLogic::ge_log(#left, #right) },
                 ),
                 Gt(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_contracts::logic::OrdLogic::gt_log(#left, #right) },
+                    quote_spanned! {sp=> ::creusot_contracts::logic::PartialOrdLogic::gt_log(#left, #right) },
                 ),
                 _ => Ok(quote_spanned! {sp=> #left #op #right }),
             }

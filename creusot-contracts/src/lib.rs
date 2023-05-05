@@ -175,7 +175,7 @@ pub mod well_founded;
 // We add some common things at the root of the creusot-contracts library
 pub use crate::{
     ghost::Ghost,
-    logic::{Int, OrdLogic, Seq},
+    logic::{Int, PartialOrdLogic, OrdLogic, Seq},
     macros::*,
     model::{DeepModel, ShallowModel},
     resolve::Resolve,
