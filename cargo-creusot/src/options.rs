@@ -32,6 +32,9 @@ pub struct CreusotArgs {
     /// Specify locations of metadata for external crates. The format is the same as rustc's `--extern` flag.
     #[clap(long = "creusot-extern", value_parser= parse_key_val::<String, String>, required=false)]
     extern_paths: Vec<(String, String)>,
+    /// Check the installed why3 version.
+    #[clap(long, default_value_t = true, action = clap::ArgAction::Set)]
+    pub check_why3: bool,
 }
 
 /// Parse a single key-value pair
