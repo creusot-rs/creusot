@@ -23,6 +23,7 @@ pub struct NeverLive(BitSet<Local>);
 /// We use this to account for function arguments which are never live when calculating
 /// when to drop them.
 impl NeverLive {
+    #[allow(dead_code)]
     pub(crate) fn for_body(body: &mir::Body) -> BitSet<Local> {
         let mut ever_live = NeverLive(BitSet::new_filled(body.local_decls.len()));
         ever_live.visit_body(body);
