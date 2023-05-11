@@ -11,6 +11,7 @@ use rustc_middle::{
 };
 use rustc_serialize::opaque;
 pub use rustc_serialize::{Decodable, Decoder};
+use rustc_span::{BytePos, FileName, Span, SyntaxContext};
 use std::{fs::File, io::Read, path::Path};
 
 // copied from rustc
@@ -76,6 +77,31 @@ impl<'a, 'tcx> Decodable<MetadataDecoder<'a, 'tcx>> for CrateNum {
     fn decode(d: &mut MetadataDecoder<'a, 'tcx>) -> CrateNum {
         let stable_id = StableCrateId::decode(d);
         d.tcx.stable_crate_id_to_crate_num(stable_id)
+    }
+}
+
+impl<'a, 'tcx> Decodable<MetadataDecoder<'a, 'tcx>> for Span {
+    fn decode(d: &mut MetadataDecoder<'a, 'tcx>) -> Span {
+        // let ctxt = SyntaxContext::decode(d);
+        let lo = BytePos::decode(d);
+        let len = BytePos::decode(d);
+        let hi = lo + len;
+
+        use rustc_span::RealFileName;
+        let name = <Option<RealFileName>>::decode(d);
+
+        let source_map = d.tcx.sess.source_map();
+
+        let start_pos = match name {
+            Some(rname) => source_map.load_file(rname.local_path_if_available()).unwrap().start_pos,
+            None => BytePos(0),
+        };
+
+        let lo = lo + start_pos;
+        let hi = hi + start_pos;
+
+        // Do not try to decode parent for foreign spans.
+        Span::new(lo, hi, SyntaxContext::root(), None)
     }
 }
 
