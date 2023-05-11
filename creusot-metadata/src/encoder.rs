@@ -8,7 +8,7 @@ pub use rustc_serialize::{Encodable, Encoder};
 use rustc_data_structures::fx::{FxHashMap, FxIndexSet};
 use rustc_hir::def_id::{CrateNum, DefId, DefIndex};
 use rustc_middle::ty::TyCtxt;
-use rustc_span::{Span, SyntaxContext};
+use rustc_span::Span;
 
 pub struct MetadataEncoder<'tcx> {
     tcx: TyCtxt<'tcx>,
@@ -84,13 +84,9 @@ impl<'tcx> Encodable<MetadataEncoder<'tcx>> for CrateNum {
     }
 }
 
-// impl<'a, 'tcx> Encodable<MetadataEncoder<'tcx>> for SyntaxContext {
-//     fn encode(&self, s: &mut MetadataEncoder<'tcx>) {
-//         rustc_span::hygiene::raw_encode_syntax_context(*self, &s.hygiene_ctxt, s);
-//     }
-// }
-
 impl<'tcx> Encodable<MetadataEncoder<'tcx>> for Span {
+    // KNOWN ISSUE: Currently we make no attempt to encode the `SyntaxContext`
+    // this may lead to issues?
     fn encode(&self, s: &mut MetadataEncoder<'tcx>) {
         let span = self.data();
         // span.ctxt.encode(s);
@@ -116,7 +112,7 @@ impl<'tcx> Encodable<MetadataEncoder<'tcx>> for Span {
             }
             _ => None,
         };
-        // source_map.path_mapping().to_embeddable_absolute_path();
+
         path.encode(s);
     }
 }

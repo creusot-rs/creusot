@@ -11,7 +11,7 @@ use rustc_middle::{
 };
 use rustc_serialize::opaque;
 pub use rustc_serialize::{Decodable, Decoder};
-use rustc_span::{BytePos, FileName, Span, SyntaxContext};
+use rustc_span::{BytePos, Span, SyntaxContext};
 use std::{fs::File, io::Read, path::Path};
 
 // copied from rustc
@@ -81,8 +81,9 @@ impl<'a, 'tcx> Decodable<MetadataDecoder<'a, 'tcx>> for CrateNum {
 }
 
 impl<'a, 'tcx> Decodable<MetadataDecoder<'a, 'tcx>> for Span {
+    // KNOWN ISSUE: Currently we make no attempt to encode the `SyntaxContext`
+    // this may lead to issues?
     fn decode(d: &mut MetadataDecoder<'a, 'tcx>) -> Span {
-        // let ctxt = SyntaxContext::decode(d);
         let lo = BytePos::decode(d);
         let len = BytePos::decode(d);
         let hi = lo + len;
