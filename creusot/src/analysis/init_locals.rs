@@ -93,6 +93,9 @@ where
                 | MutatingUseContext::Yield,
             ) => {}
 
+            // Ignore drops
+            PlaceContext::MutatingUse(MutatingUseContext::Drop) => {}
+
             // If it's deinitialized, it's no longer init
             PlaceContext::MutatingUse(MutatingUseContext::Deinit) => self.trans.kill(local),
 

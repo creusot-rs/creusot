@@ -90,6 +90,9 @@ where
             // These are handled specially in `call_return_effect` and `yield_resume_effect`.
             PlaceContext::MutatingUse(MutatingUseContext::Call | MutatingUseContext::Yield) => {}
 
+            // Ignore drops
+            PlaceContext::MutatingUse(MutatingUseContext::Drop) => {}
+
             // Otherwise, when a place is mutated, we must consider it possibly initialized.
             PlaceContext::MutatingUse(_) => self.trans.kill(local),
 
