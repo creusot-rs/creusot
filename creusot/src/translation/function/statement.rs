@@ -219,7 +219,19 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             ),
         };
 
-        self.emit_assignment(place, RValue::Expr(rval));
+        // if the lhs place is resolved during computation of the rhs
+        // split the assignment and resolve the local inbetween
+        let lhs_ty = place.ty(self.body, self.tcx).ty;
+        let live_before = self.resolver.live_locals_before(loc);
+        if !place.is_indirect() && live_before.contains(place.local)
+            && let Some((id, subst)) = fmir::resolve_predicate_of2(self.ctx, self.param_env(), lhs_ty) {
+            let tmp_local: Place = self.fresh_local(lhs_ty).into();
+            self.emit_assignment(&tmp_local, RValue::Expr(rval));
+            self.emit_statement(fmir::Statement::Resolve(id, subst, *place));
+            self.emit_assignment(place, RValue::Expr(Expr::Place(tmp_local)));
+        } else {
+            self.emit_assignment(place, RValue::Expr(rval));
+        }
 
         // Check if the local is a zombie:
         // if lhs local is dead after the assignment, emit resolve

@@ -114,6 +114,13 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         self.dead_locals()
     }
 
+    pub fn live_locals_before(&mut self, loc: Location) -> BitSet<Local> {
+        ExtendedLocation::Start(loc).seek_to(&mut self.local_live);
+        let mut live: BitSet<_> = BitSet::new_empty(self.body.local_decls.len());
+        live.union(self.local_live.get());
+        live
+    }
+
     pub fn resolved_locals_between_blocks(
         &mut self,
         from: BasicBlock,
