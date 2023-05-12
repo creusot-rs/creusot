@@ -126,10 +126,9 @@ You can attach as many `ensures` and `requires` clauses as you would like, in an
 
 Inside a function, you can attach `invariant` clauses to loops, these are attached on *top* of the loop rather than inside, like:
 ```rust
-#[invariant(invariant_name, ... loop invariant ...)]
+#[invariant(... loop invariant ...)]
 while ... { ... }
 ```
-Invariants must have names (for now).
 
 A `variant` clause can be attached either to a function like `ensures`, or `requires` or to a loop like `invariant`, it should contain a strictly decreasing expression which can prove the termination of the item it is attached to.
 
