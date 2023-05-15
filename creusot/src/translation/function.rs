@@ -99,7 +99,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             }
         });
 
-        let resolver = EagerResolver::new(tcx, body);
+        // do we need borrowck info for promoteds?
+        let with_facts = ctx.body_with_facts(body_id.def_id);
+        let borrows = with_facts.borrow_set.clone();
+        let borrows_out_of_scope = with_facts.borrows_out_of_scope_at_location.clone();
+        let resolver = EagerResolver::new(tcx, body, borrows.clone(), borrows_out_of_scope);
 
         // eprintln!("body of {}", tcx.def_path_str(body_id.def_id()));
         // resolver.debug();
@@ -162,6 +166,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             }
 
             self.translate_terminator(bbd.terminator(), loc);
+
+            if bbd.terminator().successors().next().is_none() {
+                let resolved = self.resolver.resolved_locals_at_end(loc);
+                self.resolve_locals(resolved);
+            }
 
             let block = fmir::Block {
                 stmts: std::mem::take(&mut self.current_block.0),

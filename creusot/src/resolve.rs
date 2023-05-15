@@ -1,4 +1,10 @@
-use crate::analysis::{MaybeInitializedLocals, MaybeLiveExceptDrop, MaybeUninitializedLocals};
+use std::rc::Rc;
+
+use crate::analysis::{
+    MaybeFrozenLocals, MaybeInitializedLocals, MaybeLiveExceptDrop, MaybeUninitializedLocals,
+};
+use borrowck::{borrow_set::BorrowSet, dataflow::BorrowIndex};
+use rustc_data_structures::fx::FxIndexMap;
 use rustc_index::bit_set::BitSet;
 use rustc_middle::{
     mir::{traversal, BasicBlock, Body, Local, Location},
@@ -16,11 +22,18 @@ pub struct EagerResolver<'body, 'tcx> {
 
     local_uninit: ResultsCursor<'body, 'tcx, MaybeUninitializedLocals>,
 
+    local_frozen: ResultsCursor<'body, 'tcx, MaybeFrozenLocals<'tcx>>,
+
     body: &'body Body<'tcx>,
 }
 
 impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
-    pub(crate) fn new(tcx: TyCtxt<'tcx>, body: &'body Body<'tcx>) -> Self {
+    pub(crate) fn new(
+        tcx: TyCtxt<'tcx>,
+        body: &'body Body<'tcx>,
+        borrow_set: Rc<BorrowSet<'tcx>>,
+        borrows_out_of_scope: FxIndexMap<Location, Vec<BorrowIndex>>,
+    ) -> Self {
         let local_init = MaybeInitializedLocals
             .into_engine(tcx, body)
             .iterate_to_fixpoint()
@@ -38,7 +51,11 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
             .iterate_to_fixpoint()
             .into_results_cursor(body);
 
-        EagerResolver { local_live, local_init, local_uninit, body }
+        let local_frozen = MaybeFrozenLocals::new(borrow_set, borrows_out_of_scope);
+        let local_frozen =
+            local_frozen.into_engine(tcx, body).iterate_to_fixpoint().into_results_cursor(body);
+
+        EagerResolver { local_live, local_init, local_uninit, local_frozen, body }
     }
 
     fn seek_to(&mut self, loc: ExtendedLocation) {
@@ -71,8 +88,11 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         def_init.subtract(&uninit);
         trace!("def_init: {def_init:?}");
 
+        let frozen = self.local_frozen.get();
+
         let mut resolved = dead;
         resolved.intersect(&def_init);
+        resolved.subtract(frozen);
 
         resolved
     }
@@ -129,6 +149,13 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         let term = self.body.terminator_loc(from);
         let start = to.start_location();
         self.resolved_locals_in_range(ExtendedLocation::Start(term), ExtendedLocation::Start(start))
+    }
+
+    pub fn resolved_locals_at_end(&mut self, loc: Location) -> BitSet<Local> {
+        let start = ExtendedLocation::Start(loc);
+        start.seek_to(&mut self.local_frozen);
+        let frozen_at_start = self.local_frozen.get().clone();
+        frozen_at_start
     }
 
     #[allow(dead_code)]
