@@ -1,5 +1,5 @@
 use super::{
-    fmir::{resolve_predicate_of2, RValue},
+    fmir::RValue,
     pearlite::{normalize, Term},
 };
 use crate::{
@@ -11,6 +11,7 @@ use crate::{
     translation::{
         pearlite::{self, TermKind, TermVisitorMut},
         specification::{contract_of, PreContract},
+        traits,
     },
     util::{self, ident_of, PreSignature},
 };
@@ -211,7 +212,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     fn emit_resolve(&mut self, pl: Place<'tcx>) {
         if let Some((id, subst)) =
-            resolve_predicate_of2(self.ctx, self.param_env(), pl.ty(self.body, self.ctx.tcx).ty)
+            resolve_predicate_of(self.ctx, self.param_env(), pl.ty(self.body, self.ctx.tcx).ty)
         {
             // self.emit_statement(fmir::Statement::Assume(
             //     Term { kind: TermKind::Call { id: id, subst: subst, fun: (), args: () }}
@@ -562,7 +563,7 @@ fn closure_resolve<'tcx>(
             span: DUMMY_SP,
         };
 
-        if let Some((id, subst)) = resolve_predicate_of2(ctx, param_env, ty) {
+        if let Some((id, subst)) = resolve_predicate_of(ctx, param_env, ty) {
             resolve = Term {
                 ty: ctx.types.bool,
                 kind: TermKind::Call {
@@ -674,4 +675,24 @@ fn generic_decls<'tcx, I: Iterator<Item = &'tcx GenericParamDef> + 'tcx>(
             None
         }
     })
+}
+
+pub(crate) fn resolve_predicate_of<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    ty: Ty<'tcx>,
+) -> Option<(DefId, SubstsRef<'tcx>)> {
+    let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method"))?;
+    let subst = ctx.mk_substs(&[GenericArg::from(ty)]);
+
+    let resolve_impl = traits::resolve_opt(ctx.tcx, param_env, trait_meth_id, subst)?;
+    use rustc_middle::ty::TypeVisitableExt;
+    if !ty.still_further_specializable()
+        && ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), resolve_impl.0)
+        && !resolve_impl.1.type_at(0).is_closure()
+    {
+        return None;
+    }
+
+    Some(resolve_impl)
 }

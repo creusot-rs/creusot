@@ -224,7 +224,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         let lhs_ty = place.ty(self.body, self.tcx).ty;
         let live_before = self.resolver.live_locals_before(loc);
         if !place.is_indirect() && live_before.contains(place.local)
-            && let Some((id, subst)) = fmir::resolve_predicate_of2(self.ctx, self.param_env(), lhs_ty) {
+            && let Some((id, subst)) = super::resolve_predicate_of(self.ctx, self.param_env(), lhs_ty) {
             let tmp_local: Place = self.fresh_local(lhs_ty).into();
             self.emit_assignment(&tmp_local, RValue::Expr(rval));
             self.emit_statement(fmir::Statement::Resolve(id, subst, *place));
