@@ -8,6 +8,7 @@ pub use rustc_serialize::{Encodable, Encoder};
 use rustc_data_structures::fx::{FxHashMap, FxIndexSet};
 use rustc_hir::def_id::{CrateNum, DefId, DefIndex};
 use rustc_middle::ty::TyCtxt;
+use rustc_span::Span;
 
 pub struct MetadataEncoder<'tcx> {
     tcx: TyCtxt<'tcx>,
@@ -80,6 +81,39 @@ impl<'a, 'tcx> Encodable<MetadataEncoder<'tcx>> for DefIndex {
 impl<'tcx> Encodable<MetadataEncoder<'tcx>> for CrateNum {
     fn encode(&self, s: &mut MetadataEncoder<'tcx>) {
         s.tcx.stable_crate_id(*self).encode(s)
+    }
+}
+
+impl<'tcx> Encodable<MetadataEncoder<'tcx>> for Span {
+    // KNOWN ISSUE: Currently we make no attempt to encode the `SyntaxContext`
+    // this may lead to issues?
+    fn encode(&self, s: &mut MetadataEncoder<'tcx>) {
+        let span = self.data();
+        // span.ctxt.encode(s);
+
+        let source_map = s.tcx.sess.source_map();
+
+        let source_file = source_map.lookup_source_file(span.lo);
+
+        let lo = span.lo - source_file.start_pos;
+        let len = span.hi - span.lo;
+
+        lo.encode(s);
+        len.encode(s);
+
+        let working_directory = &s.tcx.sess.opts.working_dir;
+        use rustc_span::FileName;
+
+        let path = match source_map.span_to_filename(*self) {
+            FileName::Real(r) => {
+                let fname =
+                    source_map.path_mapping().to_embeddable_absolute_path(r, working_directory);
+                Some(fname)
+            }
+            _ => None,
+        };
+
+        path.encode(s);
     }
 }
 
