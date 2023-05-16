@@ -1,10 +1,7 @@
 use crate::{
     creusot_items::CreusotItems, ctx::*, external::ExternSpec, translation::pearlite::Term,
 };
-use creusot_metadata::{
-    decoder::{Decodable, MetadataBlob, MetadataDecoder},
-    encoder::{Encodable, MetadataEncoder},
-};
+use creusot_metadata::{decode_metadata, encode_metadata};
 use indexmap::IndexMap;
 use rustc_hir::def_id::{CrateNum, DefId, LOCAL_CRATE};
 use rustc_macros::{TyDecodable, TyEncodable};
@@ -13,7 +10,7 @@ use rustc_span::Symbol;
 use std::{
     collections::HashMap,
     fs::File,
-    io::Write,
+    io::{Read, Write},
     path::{Path, PathBuf},
 };
 
@@ -166,10 +163,9 @@ fn dump_binary_metadata<'tcx>(
     path: &Path,
     dep_info: BinaryMetadata<'tcx>,
 ) -> Result<(), std::io::Error> {
-    let mut encoder = MetadataEncoder::new(tcx);
-    dep_info.encode(&mut encoder);
+    let blob = encode_metadata(tcx, dep_info);
 
-    File::create(path).and_then(|mut file| file.write(&encoder.finish())).map_err(|err| {
+    File::create(path).and_then(|mut file| file.write(&blob)).map_err(|err| {
         warn!("could not encode metadata for crate `{:?}`, error: {:?}", "LOCAL_CRATE", err);
         err
     })?;
@@ -181,18 +177,16 @@ fn load_binary_metadata<'tcx>(
     cnum: CrateNum,
     path: &Path,
 ) -> Option<BinaryMetadata<'tcx>> {
-    let metadata = MetadataBlob::from_file(&path).and_then(|blob| {
-        let mut decoder = MetadataDecoder::new(tcx, &blob);
-        Ok(BinaryMetadata::decode(&mut decoder))
-    });
-
-    match metadata {
-        Ok(b) => Some(b),
+    let mut blob = Vec::new();
+    match File::open(path).and_then(|mut file| file.read_to_end(&mut blob)) {
+        Ok(_) => (),
         Err(e) => {
             warn!("could not read metadata for crate `{:?}`: {:?}", tcx.crate_name(cnum), e);
             return None;
         }
     }
+
+    Some(decode_metadata(tcx, &blob))
 }
 
 fn creusot_metadata_base_path(

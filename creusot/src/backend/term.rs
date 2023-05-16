@@ -21,11 +21,7 @@ pub(crate) fn lower_pure<'tcx>(
     let span = term.span;
     let mut term = Lower { ctx, names, pure: Purity::Logic }.lower_term(term);
     term.reassociate();
-    if !ctx.sess.source_map().is_imported(span) {
-        term = ctx.attach_span(span, term);
-    }
-
-    term
+    ctx.attach_span(span, term)
 }
 
 pub(crate) fn lower_impure<'tcx>(
@@ -36,11 +32,7 @@ pub(crate) fn lower_impure<'tcx>(
     let span = term.span;
     let mut term = Lower { ctx, names, pure: Purity::Program }.lower_term(term);
     term.reassociate();
-
-    if !ctx.sess.source_map().is_imported(span) {
-        term = ctx.attach_span(span, term);
-    }
-    term
+    ctx.attach_span(span, term)
 }
 
 pub(super) struct Lower<'a, 'tcx> {
