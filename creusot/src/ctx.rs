@@ -360,14 +360,10 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
         let rustc_span::FileName::Real(path) = &lo.file.name else { return None };
 
-        let mut remapped = false;
-        // If we ask for relative paths and the paths comes from the standard library, then we
-        // prefer to use virtual paths, which are independant from the location of stdlib and thus stable.
+        // If we ask for relative paths and the paths comes from the standard library, then we prefer returning
+        // None, since the relative path of the stdlib is not stable.
         let path = match (&self.opts.span_mode, path) {
-            (SpanMode::Relative, RealFileName::Remapped { virtual_name, .. }) => {
-                remapped = true;
-                virtual_name
-            }
+            (SpanMode::Relative, RealFileName::Remapped { .. }) => return None,
             _ => path.local_path_if_available(),
         };
 
@@ -383,12 +379,8 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         let filename = match self.opts.span_mode {
             SpanMode::Absolute => path.to_string_lossy().into_owned(),
             SpanMode::Relative => {
-                if remapped {
-                    format!("{}", path.to_string_lossy())
-                } else {
-                    // Why3 treats the spans as relative to the session not the source file??
-                    format!("{}", self.opts.relative_to_output(&path).to_string_lossy())
-                }
+                // Why3 treats the spans as relative to the session not the source file??
+                format!("{}", self.opts.relative_to_output(&path).to_string_lossy())
             }
             _ => return None,
         };
@@ -403,10 +395,10 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn attach_span(&self, span: Span, exp: Exp) -> Exp {
-        if let SpanMode::Off = self.opts.span_mode {
-            exp
+        if let Some(attr) = self.span_attr(span) {
+            Exp::Attr(attr, Box::new(exp))
         } else {
-            Exp::Attr(self.span_attr(span).unwrap(), Box::new(exp))
+            exp
         }
     }
 
