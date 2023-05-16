@@ -31,7 +31,7 @@ use rustc_middle::{
     },
 };
 use rustc_mir_transform::{cleanup_post_borrowck::CleanupPostBorrowck, simplify::SimplifyCfg};
-use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_span::{RealFileName, Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::SelectionContext;
 pub(crate) use util::{module_name, ItemType};
 use why3::exp::Exp;
@@ -360,7 +360,17 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
         let rustc_span::FileName::Real(path) = &lo.file.name else { return None };
 
-        let path = path.local_path_if_available();
+        let mut remapped = false;
+        // If we ask for relative paths and the paths comes from the standard library, then we
+        // prefer to use virtual paths, which are independant from the location of stdlib and thus stable.
+        let path = match (&self.opts.span_mode, path) {
+            (SpanMode::Relative, RealFileName::Remapped { virtual_name, .. }) => {
+                remapped = true;
+                virtual_name
+            }
+            _ => path.local_path_if_available(),
+        };
+
         let mut buf;
         let path = if path.is_relative() {
             buf = std::env::current_dir().unwrap();
@@ -373,8 +383,12 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         let filename = match self.opts.span_mode {
             SpanMode::Absolute => path.to_string_lossy().into_owned(),
             SpanMode::Relative => {
-                // Why3 treats the spans as relative to the session not the source file??
-                format!("{}", self.opts.relative_to_output(&path).to_string_lossy())
+                if remapped {
+                    format!("{}", path.to_string_lossy())
+                } else {
+                    // Why3 treats the spans as relative to the session not the source file??
+                    format!("{}", self.opts.relative_to_output(&path).to_string_lossy())
+                }
             }
             _ => return None,
         };
