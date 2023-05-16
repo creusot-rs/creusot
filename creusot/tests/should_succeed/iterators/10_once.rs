@@ -42,9 +42,4 @@ impl<T> Iterator for Once<T> {
     }
 }
 
-impl<T> Invariant for Once<T> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        true
-    }
-}
+impl<T> Invariant for Once<T> {}
