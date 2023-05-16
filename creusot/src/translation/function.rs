@@ -1,5 +1,5 @@
 use super::{
-    fmir::{resolve_predicate_of2, RValue},
+    fmir::RValue,
     pearlite::{normalize, Term},
 };
 use crate::{
@@ -11,6 +11,7 @@ use crate::{
     translation::{
         pearlite::{self, TermKind, TermVisitorMut},
         specification::{contract_of, PreContract},
+        traits,
     },
     util::{self, ident_of, PreSignature},
 };
@@ -20,10 +21,7 @@ use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
-    mir::{
-        traversal::reverse_postorder, BasicBlock, Body, Local, Location, Operand, Place,
-        VarDebugInfo,
-    },
+    mir::{traversal::reverse_postorder, BasicBlock, Body, Local, Operand, Place, VarDebugInfo},
     ty::{
         subst::{GenericArg, SubstsRef},
         ClosureKind::*,
@@ -33,7 +31,7 @@ use rustc_middle::{
 };
 use rustc_mir_dataflow::move_paths::MoveData;
 use rustc_span::{Span, Symbol, DUMMY_SP};
-use std::rc::Rc;
+use std::{iter, rc::Rc};
 use why3::declaration::*;
 
 pub(crate) mod promoted;
@@ -79,6 +77,8 @@ pub struct BodyTranslator<'body, 'tcx> {
     assertions: IndexMap<DefId, Term<'tcx>>,
 
     borrows: Rc<BorrowSet<'tcx>>,
+
+    synthetic_locals: Vec<(Local, Ty<'tcx>)>,
 }
 
 impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
@@ -115,7 +115,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let borrows = Rc::new(borrows);
         let resolver = EagerResolver::new(tcx, body);
 
-        // crate::debug::debug(tcx, body);
+        // eprintln!("body of {}", tcx.def_path_str(body_id.def_id()));
+        // resolver.debug();
         BodyTranslator {
             tcx,
             body,
@@ -129,6 +130,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             invariants,
             assertions,
             borrows,
+            synthetic_locals: Vec::new(),
         }
     }
 
@@ -160,13 +162,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 }
             }
 
-            self.freeze_locals_between_blocks(bb);
+            self.resolve_locals_between_blocks(bb);
 
             let mut loc = bb.start_location();
 
             for statement in &bbd.statements {
                 self.translate_statement(statement, loc);
-                self.freeze_borrows_dying_at(loc);
                 loc = loc.successor_within_block();
             }
 
@@ -182,7 +183,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn translate_vars(&mut self) -> Vec<(LocalIdent, Span, Ty<'tcx>)> {
-        let mut vars = Vec::with_capacity(self.body.local_decls.len());
+        let mut vars =
+            Vec::with_capacity(self.body.local_decls.len() + self.synthetic_locals.len());
 
         for (loc, decl) in self.body.local_decls.iter_enumerated() {
             if self.erased_locals.contains(loc) {
@@ -191,6 +193,10 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             let ident = self.translate_local(loc);
 
             vars.push((ident, decl.source_info.span, decl.ty))
+        }
+
+        for (loc, ty) in self.synthetic_locals.iter() {
+            vars.push((LocalIdent::anon(*loc), DUMMY_SP, *ty));
         }
 
         vars
@@ -206,7 +212,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     fn emit_resolve(&mut self, pl: Place<'tcx>) {
         if let Some((id, subst)) =
-            resolve_predicate_of2(self.ctx, self.param_env(), pl.ty(self.body, self.ctx.tcx).ty)
+            resolve_predicate_of(self.ctx, self.param_env(), pl.ty(self.body, self.ctx.tcx).ty)
         {
             // self.emit_statement(fmir::Statement::Assume(
             //     Term { kind: TermKind::Call { id: id, subst: subst, fun: (), args: () }}
@@ -233,52 +239,41 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         self.emit_statement(fmir::Statement::Assignment(*lhs, rhs));
     }
 
-    // Inserts drop statements for variables which died over the course of a goto or switch
-    fn freeze_locals_between_blocks(&mut self, bb: BasicBlock) {
+    // Inserts resolves for locals which died over the course of a goto or switch
+    fn resolve_locals_between_blocks(&mut self, bb: BasicBlock) {
         let pred_blocks = &self.body.basic_blocks.predecessors()[bb];
 
         if pred_blocks.is_empty() {
             return;
         }
 
-        let dying_in_first = self.resolver.locals_resolved_between_blocks(pred_blocks[0], bb);
-        let mut same_deaths = true;
-        // If we have multiple predecessors (join point) but all of them agree on the deaths, then don't introduce a dedicated block.
-        for pred in pred_blocks {
-            let dying = self.resolver.locals_resolved_between_blocks(*pred, bb);
-            same_deaths = same_deaths && dying_in_first == dying
-        }
+        let resolved_between = pred_blocks
+            .iter()
+            .map(|pred| self.resolver.resolved_locals_between_blocks(*pred, bb))
+            .collect::<Vec<_>>();
 
-        if same_deaths {
-            let dying = self.resolver.locals_resolved_between_blocks(pred_blocks[0], bb);
-            self.freeze_locals(dying);
+        // If we have multiple predecessors (join point) but all of them agree on the deaths, then don't introduce a dedicated block.
+        if resolved_between.windows(2).all(|r| r[0] == r[1]) {
+            self.resolve_locals(resolved_between.into_iter().next().unwrap());
             return;
         }
 
-        for pred in pred_blocks {
-            let dying = self.resolver.locals_resolved_between_blocks(*pred, bb);
-
-            // If no deaths occured in block transition then skip entirely
-            if dying.count() == 0 {
+        for (pred, resolved) in iter::zip(pred_blocks, resolved_between) {
+            // If no resolves occured in block transition then skip entirely
+            if resolved.count() == 0 {
                 continue;
             };
 
-            self.freeze_locals(dying);
-            let deaths = std::mem::take(&mut self.current_block.0);
-            // let deaths = deaths
-            //     .into_iter()
-            //     .flat_map(|d| d.to_why(self.ctx, self.names, self.body, self.param_env()))
-            //     .collect();
+            // Otherwise, we emit the resolves and move them to a stand-alone block.
+            self.resolve_locals(resolved);
+            let resolve_block = fmir::Block {
+                stmts: std::mem::take(&mut self.current_block.0),
+                terminator: fmir::Terminator::Goto(bb),
+            };
 
-            let drop_block = self.fresh_block_id();
-            let pred_id = pred;
-
-            // Otherwise, we emit the deaths and move them to a stand-alone block.
-            self.past_blocks.get_mut(pred_id).unwrap().terminator.retarget(bb, drop_block);
-            self.past_blocks.insert(
-                drop_block,
-                fmir::Block { stmts: deaths, terminator: fmir::Terminator::Goto(bb) },
-            );
+            let resolve_block_id = self.fresh_block_id();
+            self.past_blocks.insert(resolve_block_id, resolve_block);
+            self.past_blocks.get_mut(pred).unwrap().terminator.retarget(bb, resolve_block_id);
         }
     }
 
@@ -288,15 +283,17 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         id
     }
 
-    fn freeze_borrows_dying_at(&mut self, loc: Location) {
-        let dying = self.resolver.locals_resolved_at_loc(loc);
-        self.freeze_locals(dying);
+    fn fresh_local(&mut self, ty: Ty<'tcx>) -> Local {
+        let id = self.body.local_decls.len() + self.synthetic_locals.len();
+        let local = Local::from_usize(id);
+        self.synthetic_locals.push((local, ty));
+        local
     }
 
-    fn freeze_locals(&mut self, mut dying: BitSet<Local>) {
-        dying.subtract(&self.erased_locals.to_hybrid());
+    fn resolve_locals(&mut self, mut locals: BitSet<Local>) {
+        locals.subtract(&self.erased_locals.to_hybrid());
 
-        for local in dying.iter() {
+        for local in locals.iter() {
             self.emit_resolve(local.into());
         }
     }
@@ -566,7 +563,7 @@ fn closure_resolve<'tcx>(
             span: DUMMY_SP,
         };
 
-        if let Some((id, subst)) = resolve_predicate_of2(ctx, param_env, ty) {
+        if let Some((id, subst)) = resolve_predicate_of(ctx, param_env, ty) {
             resolve = Term {
                 ty: ctx.types.bool,
                 kind: TermKind::Call {
@@ -678,4 +675,24 @@ fn generic_decls<'tcx, I: Iterator<Item = &'tcx GenericParamDef> + 'tcx>(
             None
         }
     })
+}
+
+pub(crate) fn resolve_predicate_of<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    ty: Ty<'tcx>,
+) -> Option<(DefId, SubstsRef<'tcx>)> {
+    let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method"))?;
+    let subst = ctx.mk_substs(&[GenericArg::from(ty)]);
+
+    let resolve_impl = traits::resolve_opt(ctx.tcx, param_env, trait_meth_id, subst)?;
+    use rustc_middle::ty::TypeVisitableExt;
+    if !ty.still_further_specializable()
+        && ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), resolve_impl.0)
+        && !resolve_impl.1.type_at(0).is_closure()
+    {
+        return None;
+    }
+
+    Some(resolve_impl)
 }

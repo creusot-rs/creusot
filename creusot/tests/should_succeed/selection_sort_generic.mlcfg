@@ -417,6 +417,21 @@ module Core_Option_Option_Type
       | C_Some a -> a
       end
 end
+module CreusotContracts_Resolve_Resolve_Resolve_Stub
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Resolve_Resolve_Resolve_Interface
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Resolve_Resolve_Resolve
+  type self
+  predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
+end
 module CreusotContracts_Invariant_Invariant_Invariant_Stub
   type self
   predicate invariant' (self : self)
@@ -564,21 +579,6 @@ module CreusotContracts_Resolve_Impl1_Resolve
   predicate resolve (self : borrowed t) =
     [#"../../../../creusot-contracts/src/resolve.rs" 23 20 23 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Resolve_Resolve_Stub
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Resolve_Resolve_Resolve_Interface
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Resolve_Resolve_Resolve
-  type self
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
     ensures { result = resolve self }
     
 end
@@ -1611,11 +1611,11 @@ module SelectionSortGeneric_SelectionSort
   use prelude.Int
   clone CreusotContracts_Std1_Num_Impl16_DeepModel as DeepModel3
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = Core_Ops_Range_Range_Type.t_range usize
   clone CreusotContracts_Std1_Iter_Range_Impl0_Completed as Completed0 with
     type idx = usize,
-    predicate Resolve0.resolve = Resolve0.resolve,
+    predicate Resolve0.resolve = Resolve1.resolve,
     function DeepModel0.deep_model = DeepModel3.deep_model
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
@@ -1658,6 +1658,7 @@ module SelectionSortGeneric_SelectionSort
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  use prelude.Ghost
   clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic0 with
     type t = t,
     type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
@@ -1667,7 +1668,7 @@ module SelectionSortGeneric_SelectionSort
     function ShallowModel0.shallow_model = ShallowModel5.shallow_model,
     function ShallowModel1.shallow_model = ShallowModel6.shallow_model,
     val Max0.mAX' = Max0.mAX'
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve3 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve4 with
     type t = slice t
   clone Alloc_Vec_Impl10_DerefMut_Interface as DerefMut0 with
     type t = t,
@@ -1684,7 +1685,7 @@ module SelectionSortGeneric_SelectionSort
     function DeepModel1.deep_model = DeepModel4.deep_model,
     predicate LtLog0.lt_log = LtLog0.lt_log,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve3 with
     type self = t
   clone Alloc_Vec_Impl13_Index_Interface as Index0 with
     type t = t,
@@ -1694,7 +1695,7 @@ module SelectionSortGeneric_SelectionSort
     predicate InBounds0.in_bounds = InBounds0.in_bounds,
     predicate HasValue0.has_value = HasValue0.has_value,
     type Output0.output = t
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Iter_Range_Impl3_Next_Interface as Next0 with
@@ -1734,6 +1735,8 @@ module SelectionSortGeneric_SelectionSort
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
   clone CreusotContracts_Logic_Seq_Impl0_PermutationOf as PermutationOf0 with
     type t = t
   clone SelectionSortGeneric_Sorted as Sorted0 with
@@ -1813,6 +1816,7 @@ module SelectionSortGeneric_SelectionSort
     goto BB1
   }
   BB1 {
+    assume { Resolve0.resolve old_v_4 };
     _10 <-  * v_1;
     _9 <- ([#"../selection_sort_generic.rs" 38 16 38 23] Len0.len _10);
     goto BB2
@@ -1845,7 +1849,7 @@ module SelectionSortGeneric_SelectionSort
     iter_7 <-  ^ _26;
     _25 <- borrow_mut ( * _26);
     _26 <- { _26 with current = ( ^ _25) };
-    assume { Resolve0.resolve _26 };
+    assume { Resolve1.resolve _26 };
     _24 <- ([#"../selection_sort_generic.rs" 35 4 35 43] Next0.next _25);
     goto BB7
   }
@@ -1856,12 +1860,12 @@ module SelectionSortGeneric_SelectionSort
       end
   }
   BB8 {
-    assume { Resolve1.resolve v_1 };
+    assume { Resolve2.resolve v_1 };
     _0 <- ();
     return _0
   }
   BB9 {
-    assume { Resolve1.resolve v_1 };
+    assume { Resolve2.resolve v_1 };
     absurd
   }
   BB10 {
@@ -1908,7 +1912,7 @@ module SelectionSortGeneric_SelectionSort
     iter_35 <-  ^ _54;
     _53 <- borrow_mut ( * _54);
     _54 <- { _54 with current = ( ^ _53) };
-    assume { Resolve0.resolve _54 };
+    assume { Resolve1.resolve _54 };
     _52 <- ([#"../selection_sort_generic.rs" 40 8 40 121] Next0.next _53);
     goto BB17
   }
@@ -1926,7 +1930,7 @@ module SelectionSortGeneric_SelectionSort
     goto BB28
   }
   BB19 {
-    assume { Resolve1.resolve v_1 };
+    assume { Resolve2.resolve v_1 };
     absurd
   }
   BB20 {
@@ -1946,7 +1950,7 @@ module SelectionSortGeneric_SelectionSort
   }
   BB22 {
     _62 <- _63;
-    assume { Resolve2.resolve _63 };
+    assume { Resolve3.resolve _63 };
     _68 <-  * v_1;
     _69 <- min_33;
     _67 <- ([#"../selection_sort_generic.rs" 43 22 43 28] Index0.index _68 _69);
@@ -1954,7 +1958,7 @@ module SelectionSortGeneric_SelectionSort
   }
   BB23 {
     _66 <- _67;
-    assume { Resolve2.resolve _67 };
+    assume { Resolve3.resolve _67 };
     _61 <- ([#"../selection_sort_generic.rs" 43 15 43 28] Lt0.lt _62 _66);
     goto BB24
   }
@@ -1981,7 +1985,7 @@ module SelectionSortGeneric_SelectionSort
   BB28 {
     _73 <- borrow_mut ( * _74);
     _74 <- { _74 with current = ( ^ _73) };
-    assume { Resolve3.resolve _74 };
+    assume { Resolve4.resolve _74 };
     _76 <- i_32;
     _77 <- min_33;
     _72 <- ([#"../selection_sort_generic.rs" 47 8 47 22] Swap0.swap _73 _76 _77);

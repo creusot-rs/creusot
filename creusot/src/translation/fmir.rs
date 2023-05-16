@@ -1,12 +1,12 @@
-use super::{function::LocalIdent, traits};
-use crate::{ctx::TranslationCtx, pearlite::Term};
+use super::function::LocalIdent;
+use crate::pearlite::Term;
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{BasicBlock, BinOp, Place, UnOp},
-    ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty},
+    ty::{subst::SubstsRef, AdtDef, Ty},
 };
-use rustc_span::{Span, Symbol};
+use rustc_span::Span;
 use rustc_target::abi::VariantIdx;
 
 #[derive(Clone)]
@@ -77,24 +77,4 @@ pub struct Body<'tcx> {
     pub(crate) locals: Vec<(LocalIdent, Span, Ty<'tcx>)>,
     pub(crate) arg_count: usize,
     pub(crate) blocks: IndexMap<BasicBlock, Block<'tcx>>,
-}
-
-pub(crate) fn resolve_predicate_of2<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    param_env: ParamEnv<'tcx>,
-    ty: Ty<'tcx>,
-) -> Option<(DefId, SubstsRef<'tcx>)> {
-    let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method"))?;
-    let subst = ctx.mk_substs(&[GenericArg::from(ty)]);
-
-    let resolve_impl = traits::resolve_opt(ctx.tcx, param_env, trait_meth_id, subst)?;
-    use rustc_middle::ty::TypeVisitableExt;
-    if !ty.still_further_specializable()
-        && ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), resolve_impl.0)
-        && !resolve_impl.1.type_at(0).is_closure()
-    {
-        return None;
-    }
-
-    Some(resolve_impl)
 }

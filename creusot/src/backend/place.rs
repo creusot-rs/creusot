@@ -22,8 +22,10 @@ use super::Why3Generator;
 
 impl<'tcx> Why3Generator<'tcx> {
     pub(crate) fn place_ty(&mut self, body_id: BodyId, pl: PlaceRef<'tcx>) -> PlaceTy<'tcx> {
-        let local_decls = self.body(body_id).local_decls().clone();
-        pl.ty(&local_decls, self.tcx)
+        let local_ty = self.body(body_id).local_decls()[pl.local].ty;
+        pl.projection.iter().fold(PlaceTy::from_ty(local_ty), |place_ty, &elem| {
+            place_ty.projection_ty(self.tcx, elem)
+        })
     }
 }
 
@@ -201,6 +203,10 @@ pub(crate) fn translate_rplace_inner<'tcx>(
     proj: &[rustc_middle::mir::PlaceElem<'tcx>],
 ) -> Exp {
     let mut inner = Exp::impure_var(ctx.translate_local(body_id, loc).ident());
+    if proj.is_empty() {
+        return inner;
+    }
+
     use rustc_middle::mir::ProjectionElem::*;
     let mut place_ty = ctx.place_ty(body_id, Place::from(loc).as_ref());
 

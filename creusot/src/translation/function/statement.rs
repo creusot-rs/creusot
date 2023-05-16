@@ -15,10 +15,18 @@ use crate::{
 
 impl<'tcx> BodyTranslator<'_, 'tcx> {
     pub(crate) fn translate_statement(&mut self, statement: &'_ Statement<'tcx>, loc: Location) {
+        let mut resolved_during = self.resolver.resolved_locals_during(loc);
+
         use StatementKind::*;
         match statement.kind {
             Assign(box (ref pl, ref rv)) => {
-                self.translate_assign(statement.source_info, pl, rv, loc)
+                self.translate_assign(statement.source_info, pl, rv, loc);
+
+                // if the lhs local becomes resolved during the assignment,
+                // we cannot resolve it afterwards.
+                if !pl.is_indirect() {
+                    resolved_during.remove(pl.local);
+                }
             }
             SetDiscriminant { .. } => {
                 // TODO: implement support for set discriminant
@@ -40,6 +48,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             //     .ctx
             //     .crash_and_error(statement.source_info.span, "inline assembly is not supported"),
         }
+
+        self.resolve_locals(resolved_during);
     }
 
     fn translate_assign(
@@ -51,14 +61,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
     ) {
         let rval: Expr<'tcx> = match rvalue {
             Rvalue::Use(rval) => match rval {
-                Move(pl) => {
-                    self.emit_resolve(*place);
-                    Expr::Move(*pl)
-                }
-                Copy(pl) => {
-                    self.emit_resolve(*place);
-                    Expr::Copy(*pl)
-                }
+                Move(pl) => Expr::Move(*pl),
+                Copy(pl) => Expr::Copy(*pl),
                 Constant(box c) => {
                     if is_ghost_closure(self.tcx, c.literal.ty()).is_some() {
                         return;
@@ -214,6 +218,26 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 &format!("MIR code used an unsupported Rvalue {:?}", rvalue),
             ),
         };
-        self.emit_assignment(place, RValue::Expr(rval));
+
+        // if the lhs place is resolved during computation of the rhs
+        // split the assignment and resolve the local inbetween
+        let lhs_ty = place.ty(self.body, self.tcx).ty;
+        let live_before = self.resolver.live_locals_before(loc);
+        if !place.is_indirect() && live_before.contains(place.local)
+            && let Some((id, subst)) = super::resolve_predicate_of(self.ctx, self.param_env(), lhs_ty) {
+            let tmp_local: Place = self.fresh_local(lhs_ty).into();
+            self.emit_assignment(&tmp_local, RValue::Expr(rval));
+            self.emit_statement(fmir::Statement::Resolve(id, subst, *place));
+            self.emit_assignment(place, RValue::Expr(Expr::Place(tmp_local)));
+        } else {
+            self.emit_assignment(place, RValue::Expr(rval));
+        }
+
+        // Check if the local is a zombie:
+        // if lhs local is dead after the assignment, emit resolve
+        let dead_after = self.resolver.dead_locals_after(loc);
+        if dead_after.contains(place.local) {
+            self.emit_resolve(*place);
+        }
     }
 }
