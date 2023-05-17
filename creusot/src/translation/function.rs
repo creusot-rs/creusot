@@ -102,11 +102,10 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         // do we need borrowck info for promoteds?
         let with_facts = ctx.body_with_facts(body_id.def_id);
         let borrows = with_facts.borrow_set.clone();
-        let borrows_out_of_scope = with_facts.borrows_out_of_scope_at_location.clone();
-        let resolver = EagerResolver::new(tcx, body, borrows.clone(), borrows_out_of_scope);
+        let resolver = EagerResolver::new(tcx, body, borrows.clone(), with_facts.regioncx.clone());
 
         // eprintln!("body of {}", tcx.def_path_str(body_id.def_id()));
-        // resolver.debug();
+        // resolver.debug(with_facts.regioncx.clone());
 
         // do we need borrowck info for promoteds?
         let borrows = ctx.body_with_facts(body_id.def_id).borrow_set.clone();
