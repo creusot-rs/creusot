@@ -674,7 +674,10 @@ module ListReversalLasso_Impl2_IndexMut
     type t = usize,
     type s = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  use ListReversalLasso_Memory_Type as ListReversalLasso_Memory_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
+    type t = ListReversalLasso_Memory_Type.t_memory
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = usize
   clone Alloc_Vec_Impl14_IndexMut_Interface as IndexMut0 with
     type t = usize,
@@ -687,9 +690,6 @@ module ListReversalLasso_Impl2_IndexMut
     predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere,
     type Output0.output = usize,
     val Max0.mAX' = Max0.mAX'
-  use ListReversalLasso_Memory_Type as ListReversalLasso_Memory_Type
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = ListReversalLasso_Memory_Type.t_memory
   clone ListReversalLasso_Impl0_IndexLogic as IndexLogic0 with
     function IndexLogic0.index_logic = IndexLogic1.index_logic
   clone ListReversalLasso_Impl3_NonnullPtr as NonnullPtr0 with
@@ -719,7 +719,6 @@ module ListReversalLasso_Impl2_IndexMut
   BB0 {
     _11 <- borrow_mut (ListReversalLasso_Memory_Type.memory_0 ( * self_1));
     self_1 <- { self_1 with current = (let ListReversalLasso_Memory_Type.C_Memory a =  * self_1 in ListReversalLasso_Memory_Type.C_Memory ( ^ _11)) };
-    assume { Resolve0.resolve self_1 };
     _12 <- i_2;
     _10 <- ([#"../list_reversal_lasso.rs" 41 13 41 22] IndexMut0.index_mut _11 _12);
     goto BB1
@@ -727,13 +726,14 @@ module ListReversalLasso_Impl2_IndexMut
   BB1 {
     _9 <- borrow_mut ( * _10);
     _10 <- { _10 with current = ( ^ _9) };
-    assume { Resolve1.resolve _10 };
     _3 <- borrow_mut ( * _9);
     _9 <- { _9 with current = ( ^ _3) };
-    assume { Resolve1.resolve _9 };
     _0 <- borrow_mut ( * _3);
     _3 <- { _3 with current = ( ^ _0) };
-    assume { Resolve1.resolve _3 };
+    assume { Resolve0.resolve _10 };
+    assume { Resolve0.resolve _9 };
+    assume { Resolve0.resolve _3 };
+    assume { Resolve1.resolve self_1 };
     return _0
   }
   
@@ -853,21 +853,24 @@ module ListReversalLasso_Impl4_ListReversalSafe
     invariant { [#"../list_reversal_lasso.rs" 65 20 65 52] r_6 = Null0.nULL' \/ NonnullPtr0.nonnull_ptr ( * self_1) r_6 };
     invariant { [#"../list_reversal_lasso.rs" 66 20 66 52] l_2 = Null0.nULL' \/ NonnullPtr0.nonnull_ptr ( * self_1) l_2 };
     invariant { [#"../list_reversal_lasso.rs" 67 20 67 45] MemIsWellFormed0.mem_is_well_formed ( * self_1) };
+    goto BB2
+  }
+  BB2 {
     _13 <- l_2;
     _12 <- ([#"../list_reversal_lasso.rs" 68 14 68 23] _13 <> ([#"../list_reversal_lasso.rs" 68 19 68 23] (18446744073709551615 : usize)));
     switch (_12)
-      | False -> goto BB5
-      | True -> goto BB2
+      | False -> goto BB6
+      | True -> goto BB3
       end
   }
-  BB2 {
+  BB3 {
     tmp_14 <- l_2;
     _17 <-  * self_1;
     _18 <- l_2;
     _16 <- ([#"../list_reversal_lasso.rs" 70 16 70 23] Index0.index _17 _18);
-    goto BB3
+    goto BB4
   }
-  BB3 {
+  BB4 {
     _15 <- _16;
     l_2 <- _15;
     _15 <- any usize;
@@ -876,9 +879,9 @@ module ListReversalLasso_Impl4_ListReversalSafe
     self_1 <- { self_1 with current = ( ^ _21) };
     _22 <- tmp_14;
     _20 <- ([#"../list_reversal_lasso.rs" 71 12 71 21] IndexMut0.index_mut _21 _22);
-    goto BB4
+    goto BB5
   }
-  BB4 {
+  BB5 {
     _20 <- { _20 with current = _19 };
     _19 <- any usize;
     assume { Resolve0.resolve _20 };
@@ -888,7 +891,7 @@ module ListReversalLasso_Impl4_ListReversalSafe
     _11 <- ();
     goto BB1
   }
-  BB5 {
+  BB6 {
     assume { Resolve1.resolve self_1 };
     _7 <- ();
     _0 <- r_6;
@@ -1016,9 +1019,9 @@ module ListReversalLasso_Impl4_ListReversalList
     val Max0.mAX' = Max0.mAX'
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = ListReversalLasso_Memory_Type.t_memory
-  clone Core_Mem_Replace_Interface as Replace0 with
-    type t = usize
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = usize
+  clone Core_Mem_Replace_Interface as Replace0 with
     type t = usize
   clone ListReversalLasso_Impl2_IndexMut_Interface as IndexMut0 with
     predicate NonnullPtr0.nonnull_ptr = NonnullPtr0.nonnull_ptr,
@@ -1083,54 +1086,57 @@ module ListReversalLasso_Impl4_ListReversalList
     invariant { [#"../list_reversal_lasso.rs" 99 20 99 44] 0 <= Ghost.inner n_8 /\ Ghost.inner n_8 <= Seq.length (Ghost.inner s_3) };
     invariant { [#"../list_reversal_lasso.rs" 100 20 100 59] ListSeg0.list_seg ( * self_1) l_2 (Ghost.inner s_3) Null0.nULL' (Ghost.inner n_8) (Seq.length (Ghost.inner s_3)) };
     invariant { [#"../list_reversal_lasso.rs" 101 20 101 76] ListSeg0.list_seg ( * self_1) r_7 (Reverse.reverse (Ghost.inner s_3)) Null0.nULL' (Seq.length (Ghost.inner s_3) - Ghost.inner n_8) (Seq.length (Ghost.inner s_3)) };
+    goto BB3
+  }
+  BB3 {
     _18 <- l_2;
     _17 <- ([#"../list_reversal_lasso.rs" 103 14 103 23] _18 <> ([#"../list_reversal_lasso.rs" 103 19 103 23] (18446744073709551615 : usize)));
     switch (_17)
-      | False -> goto BB8
-      | True -> goto BB3
+      | False -> goto BB9
+      | True -> goto BB4
       end
   }
-  BB3 {
+  BB4 {
     _23 <- borrow_mut ( * self_1);
     self_1 <- { self_1 with current = ( ^ _23) };
     _24 <- l_2;
     _22 <- ([#"../list_reversal_lasso.rs" 104 39 104 46] IndexMut0.index_mut _23 _24);
-    goto BB4
+    goto BB5
   }
-  BB4 {
+  BB5 {
     _21 <- borrow_mut ( * _22);
     _22 <- { _22 with current = ( ^ _21) };
-    assume { Resolve0.resolve _22 };
     _20 <- borrow_mut ( * _21);
     _21 <- { _21 with current = ( ^ _20) };
-    assume { Resolve0.resolve _21 };
     _27 <- borrow_mut r_7;
     r_7 <-  ^ _27;
     _26 <- borrow_mut ( * _27);
     _27 <- { _27 with current = ( ^ _26) };
-    assume { Resolve0.resolve _27 };
     _28 <- l_2;
     _25 <- ([#"../list_reversal_lasso.rs" 104 48 104 76] Replace0.replace _26 _28);
-    goto BB5
-  }
-  BB5 {
-    _19 <- ([#"../list_reversal_lasso.rs" 104 16 104 77] Replace0.replace _20 _25);
     goto BB6
   }
   BB6 {
+    assume { Resolve0.resolve _27 };
+    _19 <- ([#"../list_reversal_lasso.rs" 104 16 104 77] Replace0.replace _20 _25);
+    goto BB7
+  }
+  BB7 {
+    assume { Resolve0.resolve _21 };
+    assume { Resolve0.resolve _22 };
     l_2 <- _19;
     _19 <- any usize;
     _32 <- ();
     _29 <- ([#"../list_reversal_lasso.rs" 105 16 105 47] Ghost.new (Ghost.inner n_8 + 1));
-    goto BB7
+    goto BB8
   }
-  BB7 {
+  BB8 {
     n_8 <- _29;
     _29 <- any Ghost.ghost_ty int;
     _16 <- ();
     goto BB2
   }
-  BB8 {
+  BB9 {
     assume { Resolve1.resolve self_1 };
     _12 <- ();
     _0 <- r_7;
@@ -1208,9 +1214,9 @@ module ListReversalLasso_Impl4_ListReversalLoop
   use ListReversalLasso_Memory_Type as ListReversalLasso_Memory_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = ListReversalLasso_Memory_Type.t_memory
-  clone Core_Mem_Replace_Interface as Replace0 with
-    type t = usize
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = usize
+  clone Core_Mem_Replace_Interface as Replace0 with
     type t = usize
   clone ListReversalLasso_Impl0_IndexLogic as IndexLogic0 with
     function IndexLogic0.index_logic = IndexLogic1.index_logic
@@ -1283,56 +1289,59 @@ module ListReversalLasso_Impl4_ListReversalLoop
     invariant { [#"../list_reversal_lasso.rs" 124 8 124 50] Ghost.inner n_9 = Seq.length (Ghost.inner s_3) + 1 -> l_2 = Null0.nULL' /\ r_8 = Seq.get s_3 0 /\ NonnullPtr0.nonnull_ptr ( * self_1) r_8 /\ IndexLogic0.index_logic ( * self_1) r_8 = Seq.get s_3 (Seq.length (Ghost.inner s_3) - 1) /\ ListSeg0.list_seg ( * self_1) (Seq.get s_3 (Seq.length (Ghost.inner s_3) - 1)) (Reverse.reverse (Ghost.inner s_3)) (Seq.get s_3 0) 0 (Seq.length (Ghost.inner s_3) - 1) };
     invariant { [#"../list_reversal_lasso.rs" 124 8 124 50] Ghost.inner n_9 <= Seq.length (Ghost.inner s_3) -> ListSeg0.list_seg ( * self_1) l_2 (Ghost.inner s_3) (Seq.get s_3 0) (Ghost.inner n_9) (Seq.length (Ghost.inner s_3)) };
     invariant { [#"../list_reversal_lasso.rs" 124 8 124 50] Ghost.inner n_9 <= Seq.length (Ghost.inner s_3) -> ListSeg0.list_seg ( * self_1) r_8 (Reverse.reverse (Ghost.inner s_3)) Null0.nULL' (Seq.length (Ghost.inner s_3) - Ghost.inner n_9) (Seq.length (Ghost.inner s_3)) };
+    goto BB3
+  }
+  BB3 {
     _20 <- l_2;
     _19 <- ([#"../list_reversal_lasso.rs" 132 14 132 23] _20 <> ([#"../list_reversal_lasso.rs" 132 19 132 23] (18446744073709551615 : usize)));
     switch (_19)
-      | False -> goto BB8
-      | True -> goto BB3
+      | False -> goto BB9
+      | True -> goto BB4
       end
   }
-  BB3 {
+  BB4 {
     assert { [#"../list_reversal_lasso.rs" 133 12 133 77] Ghost.inner n_9 = Seq.length (Ghost.inner s_3) -> l_2 = Seq.get (Reverse.reverse (Ghost.inner s_3)) (Seq.length (Ghost.inner s_3) - 1) };
     _21 <- ();
     _27 <- borrow_mut ( * self_1);
     self_1 <- { self_1 with current = ( ^ _27) };
     _28 <- l_2;
     _26 <- ([#"../list_reversal_lasso.rs" 134 39 134 46] IndexMut0.index_mut _27 _28);
-    goto BB4
+    goto BB5
   }
-  BB4 {
+  BB5 {
     _25 <- borrow_mut ( * _26);
     _26 <- { _26 with current = ( ^ _25) };
-    assume { Resolve0.resolve _26 };
     _24 <- borrow_mut ( * _25);
     _25 <- { _25 with current = ( ^ _24) };
-    assume { Resolve0.resolve _25 };
     _31 <- borrow_mut r_8;
     r_8 <-  ^ _31;
     _30 <- borrow_mut ( * _31);
     _31 <- { _31 with current = ( ^ _30) };
-    assume { Resolve0.resolve _31 };
     _32 <- l_2;
     _29 <- ([#"../list_reversal_lasso.rs" 134 48 134 76] Replace0.replace _30 _32);
-    goto BB5
-  }
-  BB5 {
-    _23 <- ([#"../list_reversal_lasso.rs" 134 16 134 77] Replace0.replace _24 _29);
     goto BB6
   }
   BB6 {
+    assume { Resolve0.resolve _31 };
+    _23 <- ([#"../list_reversal_lasso.rs" 134 16 134 77] Replace0.replace _24 _29);
+    goto BB7
+  }
+  BB7 {
+    assume { Resolve0.resolve _25 };
+    assume { Resolve0.resolve _26 };
     l_2 <- _23;
     _23 <- any usize;
     _36 <- ();
     _33 <- ([#"../list_reversal_lasso.rs" 135 16 135 47] Ghost.new (Ghost.inner n_9 + 1));
-    goto BB7
+    goto BB8
   }
-  BB7 {
+  BB8 {
     n_9 <- _33;
     _33 <- any Ghost.ghost_ty int;
     _18 <- ();
     goto BB2
   }
-  BB8 {
+  BB9 {
     assume { Resolve1.resolve self_1 };
     _13 <- ();
     assert { [#"../list_reversal_lasso.rs" 138 8 140 54] forall i : int . 0 <= i /\ i < Seq.length (Ghost.inner s_3) -> Seq.get (Seq.(++) (Seq.singleton (Seq.get s_3 0)) (Reverse.reverse (SeqExt.subsequence (Ghost.inner s_3) 1 (Seq.length (Ghost.inner s_3))))) i = (if i = 0 then
@@ -1422,9 +1431,9 @@ module ListReversalLasso_Impl4_ListReversalLasso
     val Max0.mAX' = Max0.mAX'
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = ListReversalLasso_Memory_Type.t_memory
-  clone Core_Mem_Replace_Interface as Replace0 with
-    type t = usize
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = usize
+  clone Core_Mem_Replace_Interface as Replace0 with
     type t = usize
   clone ListReversalLasso_Impl2_IndexMut_Interface as IndexMut0 with
     predicate NonnullPtr0.nonnull_ptr = NonnullPtr0.nonnull_ptr,
@@ -1499,54 +1508,57 @@ module ListReversalLasso_Impl4_ListReversalLasso
     else
       Seq.get s2_4 (Seq.length (Ghost.inner s2_4) - 1)
      in Seq.length (Ghost.inner s1_3) + Seq.length (Ghost.inner s2_4) < Ghost.inner n_9 -> ListSeg0.list_seg ( * self_1) l_2 (Reverse.reverse (Ghost.inner s1_3)) Null0.nULL' (Ghost.inner n_9 - Seq.length (Ghost.inner s1_3) - Seq.length (Ghost.inner s2_4)) (Seq.length (Ghost.inner s1_3)) /\ ListSeg0.list_seg ( * self_1) r_8 (Ghost.inner s1_3) mid (2 * Seq.length (Ghost.inner s1_3) + Seq.length (Ghost.inner s2_4) - Ghost.inner n_9) (Seq.length (Ghost.inner s1_3)) /\ ListSeg0.list_seg ( * self_1) mid (Reverse.reverse (Ghost.inner s2_4)) (Seq.get s1_3 (Seq.length (Ghost.inner s1_3) - 1)) 0 (Seq.length (Ghost.inner s2_4)) };
+    goto BB3
+  }
+  BB3 {
     _20 <- l_2;
     _19 <- ([#"../list_reversal_lasso.rs" 184 14 184 23] _20 <> ([#"../list_reversal_lasso.rs" 184 19 184 23] (18446744073709551615 : usize)));
     switch (_19)
-      | False -> goto BB8
-      | True -> goto BB3
+      | False -> goto BB9
+      | True -> goto BB4
       end
   }
-  BB3 {
+  BB4 {
     _25 <- borrow_mut ( * self_1);
     self_1 <- { self_1 with current = ( ^ _25) };
     _26 <- l_2;
     _24 <- ([#"../list_reversal_lasso.rs" 185 39 185 46] IndexMut0.index_mut _25 _26);
-    goto BB4
+    goto BB5
   }
-  BB4 {
+  BB5 {
     _23 <- borrow_mut ( * _24);
     _24 <- { _24 with current = ( ^ _23) };
-    assume { Resolve0.resolve _24 };
     _22 <- borrow_mut ( * _23);
     _23 <- { _23 with current = ( ^ _22) };
-    assume { Resolve0.resolve _23 };
     _29 <- borrow_mut r_8;
     r_8 <-  ^ _29;
     _28 <- borrow_mut ( * _29);
     _29 <- { _29 with current = ( ^ _28) };
-    assume { Resolve0.resolve _29 };
     _30 <- l_2;
     _27 <- ([#"../list_reversal_lasso.rs" 185 48 185 76] Replace0.replace _28 _30);
-    goto BB5
-  }
-  BB5 {
-    _21 <- ([#"../list_reversal_lasso.rs" 185 16 185 77] Replace0.replace _22 _27);
     goto BB6
   }
   BB6 {
+    assume { Resolve0.resolve _29 };
+    _21 <- ([#"../list_reversal_lasso.rs" 185 16 185 77] Replace0.replace _22 _27);
+    goto BB7
+  }
+  BB7 {
+    assume { Resolve0.resolve _23 };
+    assume { Resolve0.resolve _24 };
     l_2 <- _21;
     _21 <- any usize;
     _34 <- ();
     _31 <- ([#"../list_reversal_lasso.rs" 186 16 186 47] Ghost.new (Ghost.inner n_9 + 1));
-    goto BB7
+    goto BB8
   }
-  BB7 {
+  BB8 {
     n_9 <- _31;
     _31 <- any Ghost.ghost_ty int;
     _18 <- ();
     goto BB2
   }
-  BB8 {
+  BB9 {
     assume { Resolve1.resolve self_1 };
     _13 <- ();
     _0 <- r_8;

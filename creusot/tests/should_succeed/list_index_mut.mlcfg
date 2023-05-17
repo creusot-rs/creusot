@@ -204,6 +204,7 @@ module ListIndexMut_IndexMut
   var _29 : ();
   var _30 : ();
   var _31 : borrowed uint32;
+  var _32 : borrowed (ListIndexMut_List_Type.t_list);
   {
     param_l_1 <- param_l;
     param_ix_2 <- param_ix;
@@ -226,51 +227,58 @@ module ListIndexMut_IndexMut
     invariant { [#"../list_index_mut.rs" 49 16 49 55] Get0.get ( ^ l_12) (UIntSize.to_int ix_13) = Get0.get ( ^ Ghost.inner old_l_9) (UIntSize.to_int param_ix_2) };
     invariant { [#"../list_index_mut.rs" 47 4 47 48] Len0.len ( ^ l_12) = Len0.len ( * l_12) -> Len0.len ( ^ Ghost.inner old_l_9) = Len0.len ( * Ghost.inner old_l_9) };
     invariant { [#"../list_index_mut.rs" 47 4 47 48] (forall i : int . 0 <= i /\ i < Len0.len ( * l_12) /\ i <> UIntSize.to_int ix_13 -> Get0.get ( ^ l_12) i = Get0.get ( * l_12) i) -> (forall i : int . 0 <= i /\ i < Len0.len ( * Ghost.inner old_l_9) /\ i <> UIntSize.to_int param_ix_2 -> Get0.get ( ^ Ghost.inner old_l_9) i = Get0.get ( * Ghost.inner old_l_9) i) };
+    goto BB3
+  }
+  BB3 {
     _22 <- ix_13;
     _21 <- ([#"../list_index_mut.rs" 56 10 56 16] _22 > ([#"../list_index_mut.rs" 56 15 56 16] (0 : usize)));
     switch (_21)
-      | False -> goto BB7
-      | True -> goto BB3
-      end
-  }
-  BB3 {
-    switch (ListIndexMut_List_Type.list_1 ( * l_12))
-      | ListIndexMut_Option_Type.C_None -> goto BB4
-      | ListIndexMut_Option_Type.C_Some _ -> goto BB6
+      | False -> goto BB9
+      | True -> goto BB4
       end
   }
   BB4 {
-    assume { Resolve0.resolve l_12 };
-    absurd
+    switch (ListIndexMut_List_Type.list_1 ( * l_12))
+      | ListIndexMut_Option_Type.C_None -> goto BB5
+      | ListIndexMut_Option_Type.C_Some _ -> goto BB6
+      end
   }
   BB5 {
     assume { Resolve0.resolve l_12 };
     absurd
   }
   BB6 {
+    goto BB8
+  }
+  BB7 {
+    assume { Resolve0.resolve l_12 };
+    absurd
+  }
+  BB8 {
     n_25 <- borrow_mut (ListIndexMut_Option_Type.some_0 (ListIndexMut_List_Type.list_1 ( * l_12)));
     l_12 <- { l_12 with current = (let ListIndexMut_List_Type.C_List a b =  * l_12 in ListIndexMut_List_Type.C_List a (let ListIndexMut_Option_Type.C_Some a = ListIndexMut_List_Type.list_1 ( * l_12) in ListIndexMut_Option_Type.C_Some ( ^ n_25))) };
-    assume { Resolve0.resolve l_12 };
     _26 <- borrow_mut ( * n_25);
     n_25 <- { n_25 with current = ( ^ _26) };
-    assume { Resolve1.resolve n_25 };
-    l_12 <- _26;
+    _32 <- _26;
     _26 <- any borrowed (ListIndexMut_List_Type.t_list);
+    assume { Resolve0.resolve l_12 };
+    l_12 <- _32;
     _23 <- ();
+    assume { Resolve1.resolve n_25 };
     ix_13 <- ([#"../list_index_mut.rs" 63 8 63 15] ix_13 - ([#"../list_index_mut.rs" 63 14 63 15] (1 : usize)));
     _20 <- ();
     goto BB2
   }
-  BB7 {
+  BB9 {
     _14 <- ();
     _31 <- borrow_mut (ListIndexMut_List_Type.list_0 ( * l_12));
     l_12 <- { l_12 with current = (let ListIndexMut_List_Type.C_List a b =  * l_12 in ListIndexMut_List_Type.C_List ( ^ _31) b) };
-    assume { Resolve0.resolve l_12 };
     _3 <- borrow_mut ( * _31);
     _31 <- { _31 with current = ( ^ _3) };
-    assume { Resolve2.resolve _31 };
+    assume { Resolve0.resolve l_12 };
     _0 <- borrow_mut ( * _3);
     _3 <- { _3 with current = ( ^ _0) };
+    assume { Resolve2.resolve _31 };
     assume { Resolve2.resolve _3 };
     return _0
   }
@@ -302,14 +310,14 @@ module ListIndexMut_Write
   use Alloc_Boxed_Box_Type as Alloc_Boxed_Box_Type
   use ListIndexMut_Option_Type as ListIndexMut_Option_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
+    type t = ListIndexMut_List_Type.t_list
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = uint32
   clone ListIndexMut_Get as Get0
   clone ListIndexMut_Len as Len0
   clone ListIndexMut_IndexMut_Interface as IndexMut0 with
     function Len0.len = Len0.len,
     function Get0.get = Get0.get
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = ListIndexMut_List_Type.t_list
   let rec cfg write [#"../list_index_mut.rs" 74 0 74 45] [@cfg:stackify] [@cfg:subregion_analysis] (l : borrowed (ListIndexMut_List_Type.t_list)) (ix : usize) (v : uint32) : ()
     requires {[#"../list_index_mut.rs" 70 11 70 24] UIntSize.to_int ix < Len0.len ( * l)}
     ensures { [#"../list_index_mut.rs" 71 10 71 33] ListIndexMut_Option_Type.C_Some v = Get0.get ( ^ l) (UIntSize.to_int ix) }
@@ -335,7 +343,6 @@ module ListIndexMut_Write
     _8 <- v_3;
     _10 <- borrow_mut ( * l_1);
     l_1 <- { l_1 with current = ( ^ _10) };
-    assume { Resolve0.resolve l_1 };
     _11 <- ix_2;
     _9 <- ([#"../list_index_mut.rs" 75 5 75 21] IndexMut0.index_mut _10 _11);
     goto BB1
@@ -343,7 +350,8 @@ module ListIndexMut_Write
   BB1 {
     _9 <- { _9 with current = _8 };
     _8 <- any uint32;
-    assume { Resolve1.resolve _9 };
+    assume { Resolve0.resolve _9 };
+    assume { Resolve1.resolve l_1 };
     _0 <- ();
     return _0
   }
@@ -363,11 +371,11 @@ module ListIndexMut_F
   use ListIndexMut_Option_Type as ListIndexMut_Option_Type
   clone ListIndexMut_Get as Get0
   clone ListIndexMut_Len as Len0
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = ListIndexMut_List_Type.t_list
   clone ListIndexMut_Write_Interface as Write0 with
     function Len0.len = Len0.len,
     function Get0.get = Get0.get
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = ListIndexMut_List_Type.t_list
   let rec cfg f [#"../list_index_mut.rs" 78 0 78 10] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -404,11 +412,11 @@ module ListIndexMut_F
     l_1 <-  ^ _8;
     _7 <- borrow_mut ( * _8);
     _8 <- { _8 with current = ( ^ _7) };
-    assume { Resolve0.resolve _8 };
     _6 <- ([#"../list_index_mut.rs" 80 4 80 23] Write0.write _7 ([#"../list_index_mut.rs" 80 18 80 19] (0 : usize)) ([#"../list_index_mut.rs" 80 21 80 22] (2 : uint32)));
     goto BB5
   }
   BB5 {
+    assume { Resolve0.resolve _8 };
     _0 <- ();
     goto BB6
   }

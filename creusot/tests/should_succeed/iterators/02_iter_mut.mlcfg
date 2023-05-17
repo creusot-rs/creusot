@@ -642,6 +642,9 @@ module C02IterMut_Impl1_Next
     function IndexLogic0.index_logic = IndexLogic0.index_logic,
     function IndexLogic1.index_logic = IndexLogic1.index_logic,
     axiom .
+  use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = C02IterMut_IterMut_Type.t_itermut t
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Slice_Impl0_TakeFirstMut_Interface as TakeFirstMut0 with
     type t = t,
@@ -649,9 +652,6 @@ module C02IterMut_Impl1_Next
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
     function Tail0.tail = Tail0.tail,
     val Max0.mAX' = Max0.mAX'
-  use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = C02IterMut_IterMut_Type.t_itermut t
   clone C02IterMut_Impl0_Invariant as Invariant1 with
     type t = t,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
@@ -688,11 +688,11 @@ module C02IterMut_Impl1_Next
   BB0 {
     _3 <- borrow_mut (C02IterMut_IterMut_Type.itermut_inner ( * self_1));
     self_1 <- { self_1 with current = (let C02IterMut_IterMut_Type.C_IterMut a =  * self_1 in C02IterMut_IterMut_Type.C_IterMut ( ^ _3)) };
-    assume { Resolve0.resolve self_1 };
     _0 <- ([#"../02_iter_mut.rs" 53 8 53 37] TakeFirstMut0.take_first_mut _3);
     goto BB1
   }
   BB1 {
+    assume { Resolve0.resolve self_1 };
     return _0
   }
   
@@ -1077,10 +1077,12 @@ module C02IterMut_IterMut
   clone CreusotContracts_Std1_Slice_Impl9_InBounds as InBounds0 with
     type t = t
   use seq.Seq
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
-    type t = slice t
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
+    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = slice t
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel3 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -1101,8 +1103,6 @@ module C02IterMut_IterMut
     predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere,
     type Output0.output = slice t,
     val Max0.mAX' = Max0.mAX'
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
   clone C02IterMut_Impl0_Invariant as Invariant0 with
     type t = t,
@@ -1133,7 +1133,6 @@ module C02IterMut_IterMut
   BB0 {
     _8 <- borrow_mut ( * v_1);
     v_1 <- { v_1 with current = ( ^ _8) };
-    assume { Resolve0.resolve v_1 };
     _9 <- Core_Ops_Range_RangeFull_Type.C_RangeFull;
     _7 <- ([#"../02_iter_mut.rs" 68 26 68 31] IndexMut0.index_mut _8 _9);
     goto BB1
@@ -1141,11 +1140,12 @@ module C02IterMut_IterMut
   BB1 {
     _6 <- borrow_mut ( * _7);
     _7 <- { _7 with current = ( ^ _6) };
-    assume { Resolve1.resolve _7 };
     _5 <- borrow_mut ( * _6);
     _6 <- { _6 with current = ( ^ _5) };
-    assume { Resolve1.resolve _6 };
     _0 <- C02IterMut_IterMut_Type.C_IterMut _5;
+    assume { Resolve0.resolve _7 };
+    assume { Resolve0.resolve _6 };
+    assume { Resolve1.resolve v_1 };
     return _0
   }
   
@@ -1239,6 +1239,10 @@ module C02IterMut_AllZero
     axiom .
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = usize
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone C02IterMut_Impl1_Next_Interface as Next0 with
     type t = usize,
@@ -1249,8 +1253,6 @@ module C02IterMut_AllZero
   clone C02IterMut_Impl2_IntoIter_Interface as IntoIter0 with
     type t = usize,
     predicate Invariant0.invariant' = Invariant0.invariant'
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel0 with
     type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -1268,8 +1270,6 @@ module C02IterMut_AllZero
     function ShallowModel3.shallow_model = ShallowModel0.shallow_model,
     predicate Invariant0.invariant' = Invariant0.invariant',
     val Max0.mAX' = Max0.mAX'
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
   clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic0 with
     type t = usize,
     type s = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
@@ -1303,7 +1303,6 @@ module C02IterMut_AllZero
   BB0 {
     _6 <- borrow_mut ( * v_1);
     v_1 <- { v_1 with current = ( ^ _6) };
-    assume { Resolve0.resolve v_1 };
     _5 <- ([#"../02_iter_mut.rs" 74 17 74 28] IterMut1.iter_mut _6);
     goto BB1
   }
@@ -1328,32 +1327,40 @@ module C02IterMut_AllZero
     invariant { [#"../02_iter_mut.rs" 77 16 77 30] Invariant0.invariant' it_4 };
     invariant { [#"../02_iter_mut.rs" 78 16 78 55] Produces0.produces (Ghost.inner iter_old_7) (Ghost.inner produced_10) it_4 };
     invariant { [#"../02_iter_mut.rs" 77 4 77 32] forall i : int . 0 <= i /\ i < Seq.length (Ghost.inner produced_10) -> UIntSize.to_int ( ^ Seq.get produced_10 i) = 0 };
-    _19 <- borrow_mut it_4;
-    it_4 <-  ^ _19;
-    _18 <- ([#"../02_iter_mut.rs" 81 14 81 23] Next0.next _19);
     goto BB6
   }
   BB6 {
+    _19 <- borrow_mut it_4;
+    it_4 <-  ^ _19;
+    _18 <- ([#"../02_iter_mut.rs" 81 14 81 23] Next0.next _19);
+    goto BB7
+  }
+  BB7 {
     switch (_18)
-      | Core_Option_Option_Type.C_None -> goto BB7
+      | Core_Option_Option_Type.C_None -> goto BB8
       | Core_Option_Option_Type.C_Some _ -> goto BB9
       end
   }
-  BB7 {
+  BB8 {
     _0 <- ();
+    assume { Resolve0.resolve v_1 };
     return _0
   }
-  BB8 {
+  BB9 {
+    goto BB11
+  }
+  BB10 {
+    assume { Resolve0.resolve v_1 };
     absurd
   }
-  BB9 {
+  BB11 {
     x_21 <- Core_Option_Option_Type.some_0 _18;
     _18 <- (let Core_Option_Option_Type.C_Some a = _18 in Core_Option_Option_Type.C_Some (any borrowed usize));
     _25 <- ();
     _22 <- ([#"../02_iter_mut.rs" 83 27 83 72] Ghost.new (Seq.(++) (Ghost.inner produced_10) (Seq.singleton x_21)));
-    goto BB10
+    goto BB12
   }
-  BB10 {
+  BB12 {
     produced_10 <- _22;
     _22 <- any Ghost.ghost_ty (Seq.seq (borrowed usize));
     x_21 <- { x_21 with current = ([#"../02_iter_mut.rs" 84 21 84 22] (0 : usize)) };
