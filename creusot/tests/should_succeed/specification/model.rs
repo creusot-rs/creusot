@@ -53,3 +53,15 @@ enum U {
     C { b: i32 },
     D,
 }
+
+#[derive(DeepModel)]
+#[DeepModelTy = "SortModel"]
+pub enum Sort {
+    Boolean,
+    Rational,
+}
+
+pub enum SortModel {
+    Boolean,
+    Rational,
+}
