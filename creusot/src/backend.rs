@@ -1,6 +1,5 @@
 use indexmap::{IndexMap, IndexSet};
 use rustc_hir::{def::DefKind, def_id::DefId};
-use why3::declaration::Module;
 
 use crate::{
     ctx::{TranslatedItem, TranslationCtx},
@@ -106,7 +105,21 @@ impl<'tcx> Why3Generator<'tcx> {
                 self.functions.insert(def_id, constant);
             }
             ItemType::Type => {
-                ty::translate_tydecl(self, def_id);
+                let bg = self.binding_group(def_id).clone();
+
+                self.start_group(bg.clone());
+
+                let modl = ty::translate_tydecl(self, &bg);
+
+                for d in &bg {
+                    self.finish(*d);
+                }
+
+                let repr = self.representative_type(def_id);
+                if let Some(modl) = modl {
+                    self.functions
+                        .insert(repr, TranslatedItem::Type { modl, accessors: Default::default() });
+                }
             }
             ItemType::Unsupported(dk) => self.crash_and_error(
                 self.tcx.def_span(def_id),
@@ -178,11 +191,6 @@ impl<'tcx> Why3Generator<'tcx> {
             accessors.entry(variant_did).or_default().insert(field_id, accessor);
         };
         // self.types[&repr_id].accessors;
-    }
-
-    pub(crate) fn add_type(&mut self, def_id: DefId, modl: Vec<Module>) {
-        let repr = self.representative_type(def_id);
-        self.functions.insert(repr, TranslatedItem::Type { modl, accessors: Default::default() });
     }
 
     pub(crate) fn item(&self, def_id: DefId) -> Option<&TranslatedItem> {
