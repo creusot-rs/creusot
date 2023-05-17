@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 extern crate creusot_contracts;
 use creusot_contracts::{logic::Int, *};
 
@@ -35,4 +36,20 @@ impl<T, U> ShallowModel for Pair<T, U> {
 #[ensures(result@ == (a, b))]
 pub fn pair<T, U>(a: T, b: U) -> Pair<T, U> {
     Pair(a, b)
+}
+
+// Deep Model should be derivable on monomorphic types
+
+#[derive(DeepModel)]
+struct T {
+    b: bool,
+    i: i32,
+}
+
+#[derive(DeepModel)]
+enum U {
+    A,
+    B { b: bool },
+    C { b: i32 },
+    D,
 }

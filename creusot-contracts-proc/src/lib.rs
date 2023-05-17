@@ -646,3 +646,8 @@ pub fn derive_clone(tokens: TS1) -> TS1 {
 pub fn derive_invariant(tokens: TS1) -> TS1 {
     derive::derive_invariant(tokens)
 }
+
+#[proc_macro_derive(DeepModel)]
+pub fn derive_deep_model(tokens: TS1) -> TS1 {
+    derive::derive_deep_model(tokens)
+}
