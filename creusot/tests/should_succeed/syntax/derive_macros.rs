@@ -10,6 +10,11 @@ pub struct Product<A, B> {
     b: B,
 }
 
+#[derive(Clone, Copy)]
+pub struct X<'a, A> {
+    field: &'a A,
+}
+
 impl<A, B> DeepModel for Product<A, B>
 where
     A: DeepModel,
