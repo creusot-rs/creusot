@@ -10,6 +10,9 @@ pub trait ShallowModel {
     fn shallow_model(self) -> Self::ShallowModelTy;
 }
 
+#[cfg(creusot)]
+pub use creusot_contracts_proc::DeepModel;
+
 /// The deep model corresponds to the model used for specifying
 /// operations such as equality, hash function or ordering, which are
 /// computed deeply in a data structure.
