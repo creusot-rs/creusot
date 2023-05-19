@@ -167,7 +167,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             self.translate_terminator(bbd.terminator(), loc);
 
             if bbd.terminator().successors().next().is_none() {
-                let resolved = self.resolver.resolved_locals_at_end(loc);
+                let resolved = self.resolver.frozen_locals_before(loc);
                 self.resolve_locals(resolved);
             }
 

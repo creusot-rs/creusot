@@ -221,8 +221,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
         // if the lhs place is resolved during computation of the rhs
         // split the assignment and resolve the local inbetween
+        let mut live_before = self.resolver.live_locals_before(loc);
+        live_before.union(&self.resolver.frozen_locals_before(loc));
+
         let lhs_ty = place.ty(self.body, self.tcx).ty;
-        let live_before = self.resolver.live_locals_before(loc);
         if !place.is_indirect() && live_before.contains(place.local)
             && let Some((id, subst)) = super::resolve_predicate_of(self.ctx, self.param_env(), lhs_ty) {
             let tmp_local: Place = self.fresh_local(lhs_ty).into();

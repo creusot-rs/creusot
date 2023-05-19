@@ -154,10 +154,8 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
 
     pub fn live_locals_before(&mut self, loc: Location) -> BitSet<Local> {
         ExtendedLocation::Start(loc).seek_to(&mut self.local_live);
-        ExtendedLocation::Start(loc).seek_to(&mut self.borrows);
         let mut live: BitSet<_> = BitSet::new_empty(self.body.local_decls.len());
         live.union(self.local_live.get());
-        live.union(&self.frozen_locals());
         live
     }
 
@@ -171,11 +169,9 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         self.resolved_locals_in_range(ExtendedLocation::Start(term), ExtendedLocation::Start(start))
     }
 
-    pub fn resolved_locals_at_end(&mut self, loc: Location) -> BitSet<Local> {
-        let start = ExtendedLocation::Start(loc);
-        start.seek_to(&mut self.borrows);
-        let frozen_at_start = self.frozen_locals();
-        frozen_at_start
+    pub fn frozen_locals_before(&mut self, loc: Location) -> BitSet<Local> {
+        ExtendedLocation::Start(loc).seek_to(&mut self.borrows);
+        self.frozen_locals()
     }
 
     #[allow(dead_code)]
@@ -203,11 +199,9 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
                 let resolved2 = self.resolved_locals();
 
                 eprintln!("  {statement:?} {resolved1:?} -> {resolved2:?}");
-                if true || resolved1 != resolved2 {
-                    eprintln!(
-                        "    live={live1:?} -> {live2:?} frozen={frozen1:?} -> {frozen2:?} init={init1:?} -> {init2:?} uninit={uninit1:?} -> {uninit2:?}",
-                    );
-                }
+                eprintln!(
+                    "    live={live1:?} -> {live2:?} frozen={frozen1:?} -> {frozen2:?} init={init1:?} -> {init2:?} uninit={uninit1:?} -> {uninit2:?}",
+                );
                 if let Some(borrow) = self.borrow_set.location_map.get(&loc) {
                     eprintln!(
                         "    region={:?} value={:?}",
@@ -234,11 +228,9 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
             let resolved2 = self.resolved_locals();
 
             eprintln!("  {:?} {resolved1:?} -> {resolved2:?}", bbd.terminator().kind);
-            if true || resolved1 != resolved2 {
-                eprintln!(
-                    "    live={live1:?} -> {live2:?} frozen={frozen1:?} -> {frozen2:?} init={init1:?} -> {init2:?} uninit={uninit1:?} -> {uninit2:?}",
-                );
-            }
+            eprintln!(
+                "    live={live1:?} -> {live2:?} frozen={frozen1:?} -> {frozen2:?} init={init1:?} -> {init2:?} uninit={uninit1:?} -> {uninit2:?}",
+            );
         }
         eprintln!();
     }
