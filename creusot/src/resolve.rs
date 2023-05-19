@@ -21,9 +21,9 @@ pub struct EagerResolver<'body, 'tcx> {
 
     local_uninit: ResultsCursor<'body, 'tcx, MaybeUninitializedLocals>,
 
-    borrows: ResultsCursor<'body, 'tcx, Borrows<'body, 'tcx>>,
+    borrows: Option<ResultsCursor<'body, 'tcx, Borrows<'body, 'tcx>>>,
 
-    borrow_set: Rc<BorrowSet<'tcx>>,
+    borrow_set: Option<Rc<BorrowSet<'tcx>>>,
 
     body: &'body Body<'tcx>,
 }
@@ -35,6 +35,25 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         borrow_set: Rc<BorrowSet<'tcx>>,
         regioncx: Rc<RegionInferenceContext<'tcx>>,
     ) -> Self {
+        let borrows_out_of_scope = borrowck::dataflow::calculate_borrows_out_of_scope_at_location(
+            body,
+            &regioncx,
+            &borrow_set,
+        );
+
+        let borrows = Borrows::new(tcx, body, borrow_set.clone(), borrows_out_of_scope.clone())
+            .into_engine(tcx, body)
+            .iterate_to_fixpoint()
+            .into_results_cursor(body);
+
+        EagerResolver {
+            borrows: Some(borrows),
+            borrow_set: Some(borrow_set),
+            ..Self::new_without_borrows(tcx, body)
+        }
+    }
+
+    pub(crate) fn new_without_borrows(tcx: TyCtxt<'tcx>, body: &'body Body<'tcx>) -> Self {
         let local_init = MaybeInitializedLocals
             .into_engine(tcx, body)
             .iterate_to_fixpoint()
@@ -52,25 +71,23 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
             .iterate_to_fixpoint()
             .into_results_cursor(body);
 
-        let borrows_out_of_scope = borrowck::dataflow::calculate_borrows_out_of_scope_at_location(
+        EagerResolver {
+            local_live,
+            local_init,
+            local_uninit,
+            borrows: None,
+            borrow_set: None,
             body,
-            &regioncx,
-            &borrow_set,
-        );
-
-        let borrows = Borrows::new(tcx, body, borrow_set.clone(), borrows_out_of_scope.clone());
-
-        let borrows =
-            borrows.into_engine(tcx, body).iterate_to_fixpoint().into_results_cursor(body);
-
-        EagerResolver { local_live, local_init, local_uninit, borrows, borrow_set, body }
+        }
     }
 
     fn seek_to(&mut self, loc: ExtendedLocation) {
         loc.seek_to(&mut self.local_live);
         loc.seek_to(&mut self.local_init);
         loc.seek_to(&mut self.local_uninit);
-        loc.seek_to(&mut self.borrows);
+        if let Some(borrows) = &mut self.borrows {
+            loc.seek_to(borrows);
+        }
     }
 
     fn dead_locals(&self) -> BitSet<Local> {
@@ -84,10 +101,14 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
 
     fn frozen_locals(&self) -> BitSet<Local> {
         let mut frozen: BitSet<_> = BitSet::new_empty(self.body.local_decls.len());
-        for bi in self.borrows.get().iter() {
-            let l = self.borrow_set[bi].borrowed_place.local;
-            frozen.insert(l);
+
+        if let (Some(borrows), Some(borrow_set)) = (&self.borrows, &self.borrow_set) {
+            for bi in borrows.get().iter() {
+                let l = borrow_set[bi].borrowed_place.local;
+                frozen.insert(l);
+            }
         }
+
         frozen
     }
 
@@ -170,7 +191,9 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
     }
 
     pub fn frozen_locals_before(&mut self, loc: Location) -> BitSet<Local> {
-        ExtendedLocation::Start(loc).seek_to(&mut self.borrows);
+        if let Some(borrows) = &mut self.borrows {
+            ExtendedLocation::Start(loc).seek_to(borrows);
+        }
         self.frozen_locals()
     }
 
@@ -202,7 +225,7 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
                 eprintln!(
                     "    live={live1:?} -> {live2:?} frozen={frozen1:?} -> {frozen2:?} init={init1:?} -> {init2:?} uninit={uninit1:?} -> {uninit2:?}",
                 );
-                if let Some(borrow) = self.borrow_set.location_map.get(&loc) {
+                if let Some(borrow_set) = &self.borrow_set && let Some(borrow) = borrow_set.location_map.get(&loc) {
                     eprintln!(
                         "    region={:?} value={:?}",
                         borrow.region,

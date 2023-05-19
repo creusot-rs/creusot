@@ -74,7 +74,7 @@ pub struct BodyTranslator<'body, 'tcx> {
 
     assertions: IndexMap<DefId, Term<'tcx>>,
 
-    borrows: Rc<BorrowSet<'tcx>>,
+    borrows: Option<Rc<BorrowSet<'tcx>>>,
 
     synthetic_locals: Vec<(Local, Ty<'tcx>)>,
 }
@@ -100,15 +100,20 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         });
 
         // do we need borrowck info for promoteds?
-        let with_facts = ctx.body_with_facts(body_id.def_id);
-        let borrows = with_facts.borrow_set.clone();
-        let resolver = EagerResolver::new(tcx, body, borrows.clone(), with_facts.regioncx.clone());
+
+        let (resolver, borrows) = if body_id.promoted.is_none() {
+            let with_facts = ctx.body_with_facts(body_id.def_id);
+            let borrows = with_facts.borrow_set.clone();
+            let resolver =
+                EagerResolver::new(tcx, body, borrows.clone(), with_facts.regioncx.clone());
+            (resolver, Some(borrows))
+        } else {
+            let resolver = EagerResolver::new_without_borrows(tcx, body);
+            (resolver, None)
+        };
 
         // eprintln!("body of {}", tcx.def_path_str(body_id.def_id()));
         // resolver.debug(with_facts.regioncx.clone());
-
-        // do we need borrowck info for promoteds?
-        let borrows = ctx.body_with_facts(body_id.def_id).borrow_set.clone();
 
         BodyTranslator {
             tcx,

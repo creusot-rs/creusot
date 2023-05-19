@@ -76,41 +76,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         return;
                     }
 
-                    let dom = self.body.basic_blocks.dominators();
-                    let two_phase = self
-                        .borrows
-                        .local_map
-                        .get(&pl.local)
-                        .iter()
-                        .flat_map(|is| is.iter())
-                        .filter(|i| {
-                            let res_loc = self.borrows[**i].reserve_location;
-                            if res_loc.block == loc.block {
-                                res_loc.statement_index <= loc.statement_index
-                            } else {
-                                dom.dominates(res_loc.block, loc.block)
-                            }
-                        })
-                        .filter(|i| {
-                            if let TwoPhaseActivation::ActivatedAt(act_loc) =
-                                self.borrows[**i].activation_location
-                            {
-                                if act_loc.block == loc.block {
-                                    loc.statement_index < act_loc.statement_index
-                                } else {
-                                    dom.dominates(loc.block, act_loc.block)
-                                }
-                            } else {
-                                false
-                            }
-                        })
-                        .nth(0);
-                    if let Some(two_phase) = two_phase {
-                        let place = self.borrows[*two_phase].assigned_place.clone();
-                        Expr::Place(self.ctx.mk_place_deref(place))
-                    } else {
-                        Expr::Place(*pl)
-                    }
+                    Expr::Place(self.compute_ref_place(*pl, loc))
                 }
                 Mut { .. } => {
                     if self.erased_locals.contains(pl.local) {
@@ -240,6 +206,44 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         let dead_after = self.resolver.dead_locals_after(loc);
         if dead_after.contains(place.local) {
             self.emit_resolve(*place);
+        }
+    }
+
+    fn compute_ref_place(&self, pl: Place<'tcx>, loc: Location) -> Place<'tcx> {
+        let Some(borrows) = &self.borrows else { return pl };
+
+        let dom = self.body.basic_blocks.dominators();
+        let two_phase = borrows
+            .local_map
+            .get(&pl.local)
+            .iter()
+            .flat_map(|is| is.iter())
+            .filter(|i| {
+                let res_loc = borrows[**i].reserve_location;
+                if res_loc.block == loc.block {
+                    res_loc.statement_index <= loc.statement_index
+                } else {
+                    dom.dominates(res_loc.block, loc.block)
+                }
+            })
+            .filter(|i| {
+                if let TwoPhaseActivation::ActivatedAt(act_loc) = borrows[**i].activation_location {
+                    if act_loc.block == loc.block {
+                        loc.statement_index < act_loc.statement_index
+                    } else {
+                        dom.dominates(loc.block, act_loc.block)
+                    }
+                } else {
+                    false
+                }
+            })
+            .nth(0);
+
+        if let Some(two_phase) = two_phase {
+            let place = borrows[*two_phase].assigned_place.clone();
+            self.ctx.mk_place_deref(place)
+        } else {
+            pl
         }
     }
 }
