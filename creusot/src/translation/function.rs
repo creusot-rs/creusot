@@ -99,21 +99,20 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             }
         });
 
-        // do we need borrowck info for promoteds?
-
         let (resolver, borrows) = if body_id.promoted.is_none() {
             let with_facts = ctx.body_with_facts(body_id.def_id);
             let borrows = with_facts.borrow_set.clone();
             let resolver =
                 EagerResolver::new(tcx, body, borrows.clone(), with_facts.regioncx.clone());
+
+            // eprintln!("body of {}", tcx.def_path_str(body_id.def_id()));
+            // resolver.debug(with_facts.regioncx.clone());
+
             (resolver, Some(borrows))
         } else {
             let resolver = EagerResolver::new_without_borrows(tcx, body);
             (resolver, None)
         };
-
-        // eprintln!("body of {}", tcx.def_path_str(body_id.def_id()));
-        // resolver.debug(with_facts.regioncx.clone());
 
         BodyTranslator {
             tcx,
@@ -214,9 +213,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn emit_resolve(&mut self, pl: Place<'tcx>) {
-        if let Some((id, subst)) =
-            resolve_predicate_of(self.ctx, self.param_env(), pl.ty(self.body, self.ctx.tcx).ty)
-        {
+        let place_ty = pl.ty(self.body, self.ctx.tcx).ty;
+        if let Some((id, subst)) = resolve_predicate_of(self.ctx, self.param_env(), place_ty) {
+            if let Some((id, substs)) = self.ctx.type_invariant(self.body_id.def_id(), place_ty) {
+                self.emit_statement(fmir::Statement::AssertTyInv(id, substs, pl));
+            }
+
             // self.emit_statement(fmir::Statement::Assume(
             //     Term { kind: TermKind::Call { id: id, subst: subst, fun: (), args: () }}
             // ));
@@ -232,6 +234,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     fn emit_borrow(&mut self, lhs: &Place<'tcx>, rhs: &Place<'tcx>) {
         self.emit_assignment(lhs, fmir::RValue::Borrow(*rhs));
+
+        let rhs_ty = rhs.ty(self.body, self.ctx.tcx).ty;
+        if let Some((id, substs)) = self.ctx.type_invariant(self.body_id.def_id(), rhs_ty) {
+            self.emit_statement(fmir::Statement::AssumeTyInv(id, substs, *lhs));
+        }
     }
 
     fn emit_ghost_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>) {
@@ -296,7 +303,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     fn resolve_locals(&mut self, mut locals: BitSet<Local>) {
         locals.subtract(&self.erased_locals.to_hybrid());
 
-        for local in locals.iter() {
+        let locals = locals.iter().collect::<Vec<_>>();
+        for local in locals.into_iter().rev() {
             self.emit_resolve(local.into());
         }
     }

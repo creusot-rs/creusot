@@ -18,6 +18,8 @@ pub enum Statement<'tcx> {
     Assertion(Term<'tcx>),
     Invariant(Term<'tcx>),
     Variant(Term<'tcx>),
+    AssumeTyInv(DefId, SubstsRef<'tcx>, Place<'tcx>),
+    AssertTyInv(DefId, SubstsRef<'tcx>, Place<'tcx>),
 }
 
 // Re-organize this completely

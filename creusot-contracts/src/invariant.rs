@@ -31,7 +31,7 @@ impl<'a, T: Invariant + ?Sized> Invariant for &'a mut T {
     #[predicate]
     #[creusot::ignore_type_invariant = "maybe"]
     fn invariant(self) -> bool {
-        pearlite! { (*self).invariant() }
+        pearlite! { (*self).invariant() && (^self).invariant() }
     }
 }
 
