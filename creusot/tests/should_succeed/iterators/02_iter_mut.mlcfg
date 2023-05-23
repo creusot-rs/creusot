@@ -528,7 +528,7 @@ module CreusotContracts_Invariant_Impl1_Invariant
   clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
     type self = t
   predicate invariant' (self : borrowed t) =
-    [#"../../../../../creusot-contracts/src/invariant.rs" 34 20 34 39] Invariant0.invariant' ( * self)
+    [#"../../../../../creusot-contracts/src/invariant.rs" 34 20 34 62] Invariant0.invariant' ( * self) /\ Invariant0.invariant' ( ^ self)
   val invariant' (self : borrowed t) : bool
     ensures { result = invariant' self }
     
@@ -593,8 +593,6 @@ module C02IterMut_Impl1_Next_Interface
   use prelude.Borrow
   use seq.Seq
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
-  clone C02IterMut_Impl0_Invariant_Stub as Invariant1 with
-    type t = t
   clone C02IterMut_Impl1_Produces_Stub as Produces0 with
     type t = t
   clone C02IterMut_Impl1_Completed_Stub as Completed0 with
@@ -608,7 +606,6 @@ module C02IterMut_Impl1_Next_Interface
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
-    ensures { [#"../02_iter_mut.rs" 52 17 52 21] Invariant1.invariant' ( ^ self) }
     
 end
 module C02IterMut_Impl1_Next
@@ -616,9 +613,9 @@ module C02IterMut_Impl1_Next
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
+  clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Logic_Seq_Impl0_Tail as Tail0 with
     type t = t
-  clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel as ShallowModel1 with
     type t = t,
     val Max0.mAX' = Max0.mAX',
@@ -643,6 +640,10 @@ module C02IterMut_Impl1_Next
     function IndexLogic1.index_logic = IndexLogic1.index_logic,
     axiom .
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
+  clone C02IterMut_Impl0_Invariant as Invariant1 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    val Max0.mAX' = Max0.mAX'
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = C02IterMut_IterMut_Type.t_itermut t
   use Core_Option_Option_Type as Core_Option_Option_Type
@@ -651,10 +652,6 @@ module C02IterMut_Impl1_Next
     function IndexLogic0.index_logic = IndexLogic1.index_logic,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
     function Tail0.tail = Tail0.tail,
-    val Max0.mAX' = Max0.mAX'
-  clone C02IterMut_Impl0_Invariant as Invariant1 with
-    type t = t,
-    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
     val Max0.mAX' = Max0.mAX'
   clone C02IterMut_Impl1_Produces as Produces0 with
     type t = t,
@@ -675,7 +672,6 @@ module C02IterMut_Impl1_Next
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
-    ensures { [#"../02_iter_mut.rs" 52 17 52 21] Invariant1.invariant' ( ^ self) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Option_Option_Type.t_option (borrowed t);
@@ -692,6 +688,7 @@ module C02IterMut_Impl1_Next
     goto BB1
   }
   BB1 {
+    assert { Invariant0.invariant' self_1 };
     assume { Resolve0.resolve self_1 };
     return _0
   }
@@ -1248,8 +1245,7 @@ module C02IterMut_AllZero
     type t = usize,
     predicate Invariant0.invariant' = Invariant1.invariant',
     predicate Completed0.completed = Completed0.completed,
-    predicate Produces0.produces = Produces0.produces,
-    predicate Invariant1.invariant' = Invariant0.invariant'
+    predicate Produces0.produces = Produces0.produces
   clone C02IterMut_Impl2_IntoIter_Interface as IntoIter0 with
     type t = usize,
     predicate Invariant0.invariant' = Invariant0.invariant'
@@ -1332,6 +1328,7 @@ module C02IterMut_AllZero
   BB6 {
     _19 <- borrow_mut it_4;
     it_4 <-  ^ _19;
+    assume { Invariant0.invariant' ( ^ _19) };
     _18 <- ([#"../02_iter_mut.rs" 81 14 81 23] Next0.next _19);
     goto BB7
   }
@@ -1431,10 +1428,10 @@ module C02IterMut_Impl1
     function IndexLogic1.index_logic = IndexLogic1.index_logic
   goal produces_trans_refn : [#"../02_iter_mut.rs" 46 4 46 90] forall a : C02IterMut_IterMut_Type.t_itermut t . forall ab : Seq.seq (borrowed t) . forall b : C02IterMut_IterMut_Type.t_itermut t . forall bc : Seq.seq (borrowed t) . forall c : C02IterMut_IterMut_Type.t_itermut t . Invariant0.invariant' c /\ Invariant0.invariant' b /\ Invariant0.invariant' a /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Invariant0.invariant' c /\ Invariant0.invariant' b /\ Invariant0.invariant' a /\ Produces0.produces b bc c /\ Produces0.produces a ab b /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
   goal produces_refl_refn : [#"../02_iter_mut.rs" 40 4 40 29] forall a : C02IterMut_IterMut_Type.t_itermut t . Invariant0.invariant' a -> Invariant0.invariant' a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
-  goal next_refn : [#"../02_iter_mut.rs" 52 4 52 44] forall self : borrowed (C02IterMut_IterMut_Type.t_itermut t) . Invariant1.invariant' self -> Invariant1.invariant' self /\ (forall result : Core_Option_Option_Type.t_option (borrowed t) . Invariant0.invariant' ( ^ self) /\ match (result) with
+  goal next_refn : [#"../02_iter_mut.rs" 52 4 52 44] forall self : borrowed (C02IterMut_IterMut_Type.t_itermut t) . Invariant1.invariant' self -> Invariant1.invariant' self /\ (forall result : Core_Option_Option_Type.t_option (borrowed t) . match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
-    end -> Invariant0.invariant' ( ^ self) /\ match (result) with
+    end -> match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
     end)

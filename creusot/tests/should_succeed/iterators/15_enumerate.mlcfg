@@ -272,7 +272,7 @@ module CreusotContracts_Invariant_Impl1_Invariant
   clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
     type self = t
   predicate invariant' (self : borrowed t) =
-    [#"../../../../../creusot-contracts/src/invariant.rs" 34 20 34 39] Invariant0.invariant' ( * self)
+    [#"../../../../../creusot-contracts/src/invariant.rs" 34 20 34 62] Invariant0.invariant' ( * self) /\ Invariant0.invariant' ( ^ self)
   val invariant' (self : borrowed t) : bool
     ensures { result = invariant' self }
     
@@ -550,6 +550,21 @@ module Core_Option_Option_Type
       | C_Some a -> a
       end
 end
+module CreusotContracts_Resolve_Resolve_Resolve_Stub
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Resolve_Resolve_Resolve_Interface
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Resolve_Resolve_Resolve
+  type self
+  predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
+end
 module CreusotContracts_Resolve_Impl1_Resolve_Stub
   type t
   use prelude.Borrow
@@ -569,27 +584,10 @@ module CreusotContracts_Resolve_Impl1_Resolve
     ensures { result = resolve self }
     
 end
-module CreusotContracts_Resolve_Resolve_Resolve_Stub
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Resolve_Resolve_Resolve_Interface
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Resolve_Resolve_Resolve
-  type self
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
-    ensures { result = resolve self }
-    
-end
 module C15Enumerate_Common_Iterator_Next_Interface
   type self
   use prelude.Borrow
   use seq.Seq
-  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant1 with
-    type self = self
   clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
     type self = self
   clone C15Enumerate_Common_Iterator_Produces_Stub as Produces0 with
@@ -606,7 +604,6 @@ module C15Enumerate_Common_Iterator_Next_Interface
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
-    ensures { [#"../common.rs" 27 17 27 21] Invariant1.invariant' ( ^ self) }
     
 end
 module C15Enumerate_Impl0_Next_Interface
@@ -616,8 +613,6 @@ module C15Enumerate_Impl0_Next_Interface
   use prelude.Borrow
   use seq.Seq
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
-  clone C15Enumerate_Impl1_Invariant_Stub as Invariant1 with
-    type i = i
   clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
     type self = i
   clone C15Enumerate_Impl0_Produces_Stub as Produces0 with
@@ -634,7 +629,6 @@ module C15Enumerate_Impl0_Next_Interface
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
-    ensures { [#"../15_enumerate.rs" 49 17 49 21] Invariant1.invariant' ( ^ self) }
     
 end
 module C15Enumerate_Impl0_Next
@@ -644,16 +638,16 @@ module C15Enumerate_Impl0_Next
   use prelude.Borrow
   use prelude.IntSize
   use seq.Seq
-  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant2 with
+  clone Core_Usize_Max as Max0
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant1 with
     type self = i
-  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited0 with
-    type self = i,
-    predicate Invariant0.invariant' = Invariant2.invariant',
-    axiom .
   clone CreusotContracts_Invariant_Impl1_Invariant as Invariant3 with
     type t = i,
-    predicate Invariant0.invariant' = Invariant2.invariant'
-  clone Core_Usize_Max as Max0
+    predicate Invariant0.invariant' = Invariant1.invariant'
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited0 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    axiom .
   clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
     type self = i
   clone C15Enumerate_Common_Iterator_Produces_Interface as Produces1 with
@@ -661,39 +655,38 @@ module C15Enumerate_Impl0_Next
     type Item0.item = Item0.item
   clone C15Enumerate_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
-  clone C15Enumerate_Common_Iterator_ProducesTrans_Interface as ProducesTrans0 with
-    type self = i,
-    predicate Produces0.produces = Produces1.produces,
-    predicate Invariant0.invariant' = Invariant2.invariant',
-    type Item0.item = Item0.item,
-    axiom .
-  clone C15Enumerate_Common_Iterator_ProducesRefl_Interface as ProducesRefl0 with
-    type self = i,
-    predicate Invariant0.invariant' = Invariant2.invariant',
-    predicate Produces0.produces = Produces1.produces,
-    type Item0.item = Item0.item,
-    axiom .
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
-    type self = Core_Option_Option_Type.t_option Item0.item
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = C15Enumerate_Enumerate_Type.t_enumerate i
-  clone C15Enumerate_Common_Iterator_Next_Interface as Next0 with
-    type self = i,
-    predicate Invariant0.invariant' = Invariant3.invariant',
-    type Item0.item = Item0.item,
-    predicate Completed0.completed = Completed1.completed,
-    predicate Produces0.produces = Produces1.produces,
-    predicate Invariant1.invariant' = Invariant2.invariant'
-  clone C15Enumerate_Impl1_Invariant as Invariant1 with
+  clone C15Enumerate_Impl1_Invariant as Invariant2 with
     type i = i,
-    predicate Invariant0.invariant' = Invariant2.invariant',
+    predicate Invariant0.invariant' = Invariant1.invariant',
     type Item0.item = Item0.item,
     predicate Produces0.produces = Produces1.produces,
     val Max0.mAX' = Max0.mAX',
     predicate Invariant1.invariant' = Invariant3.invariant',
     predicate Completed0.completed = Completed1.completed
+  clone C15Enumerate_Common_Iterator_ProducesTrans_Interface as ProducesTrans0 with
+    type self = i,
+    predicate Produces0.produces = Produces1.produces,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
+    axiom .
+  clone C15Enumerate_Common_Iterator_ProducesRefl_Interface as ProducesRefl0 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Produces0.produces = Produces1.produces,
+    type Item0.item = Item0.item,
+    axiom .
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
+    type t = C15Enumerate_Enumerate_Type.t_enumerate i
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = Core_Option_Option_Type.t_option Item0.item
+  clone C15Enumerate_Common_Iterator_Next_Interface as Next0 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant3.invariant',
+    type Item0.item = Item0.item,
+    predicate Completed0.completed = Completed1.completed,
+    predicate Produces0.produces = Produces1.produces
   clone C15Enumerate_Impl0_Produces as Produces0 with
     type i = i,
     type Item0.item = Item0.item,
@@ -703,14 +696,13 @@ module C15Enumerate_Impl0_Next
     predicate Completed0.completed = Completed1.completed
   clone CreusotContracts_Invariant_Impl1_Invariant as Invariant0 with
     type t = C15Enumerate_Enumerate_Type.t_enumerate i,
-    predicate Invariant0.invariant' = Invariant1.invariant'
+    predicate Invariant0.invariant' = Invariant2.invariant'
   let rec cfg next [#"../15_enumerate.rs" 49 4 49 44] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) : Core_Option_Option_Type.t_option (usize, Item0.item)
     requires {[#"../15_enumerate.rs" 49 17 49 21] Invariant0.invariant' self}
     ensures { [#"../15_enumerate.rs" 45 14 48 5] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
-    ensures { [#"../15_enumerate.rs" 49 17 49 21] Invariant1.invariant' ( ^ self) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Option_Option_Type.t_option (usize, Item0.item);
@@ -730,6 +722,7 @@ module C15Enumerate_Impl0_Next
   BB0 {
     _4 <- borrow_mut (C15Enumerate_Enumerate_Type.enumerate_iter ( * self_1));
     self_1 <- { self_1 with current = (let C15Enumerate_Enumerate_Type.C_Enumerate a b =  * self_1 in C15Enumerate_Enumerate_Type.C_Enumerate ( ^ _4) b) };
+    assume { Invariant1.invariant' ( ^ _4) };
     _3 <- ([#"../15_enumerate.rs" 50 14 50 30] Next0.next _4);
     goto BB1
   }
@@ -745,10 +738,11 @@ module C15Enumerate_Impl0_Next
   BB3 {
     x_6 <- Core_Option_Option_Type.some_0 _3;
     _3 <- (let Core_Option_Option_Type.C_Some a = _3 in Core_Option_Option_Type.C_Some (any Item0.item));
-    assume { Resolve1.resolve _3 };
+    assume { Resolve0.resolve _3 };
     n_7 <- C15Enumerate_Enumerate_Type.enumerate_count ( * self_1);
     self_1 <- { self_1 with current = (let C15Enumerate_Enumerate_Type.C_Enumerate a b =  * self_1 in C15Enumerate_Enumerate_Type.C_Enumerate a ([#"../15_enumerate.rs" 54 16 54 31] C15Enumerate_Enumerate_Type.enumerate_count ( * self_1) + ([#"../15_enumerate.rs" 54 30 54 31] (1 : usize)))) };
-    assume { Resolve0.resolve self_1 };
+    assert { Invariant0.invariant' self_1 };
+    assume { Resolve1.resolve self_1 };
     _9 <- n_7;
     _10 <- x_6;
     x_6 <- any Item0.item;
@@ -756,13 +750,15 @@ module C15Enumerate_Impl0_Next
     goto BB6
   }
   BB4 {
-    assume { Resolve0.resolve self_1 };
-    assume { Resolve1.resolve _3 };
+    assume { Resolve0.resolve _3 };
+    assert { Invariant0.invariant' self_1 };
+    assume { Resolve1.resolve self_1 };
     absurd
   }
   BB5 {
-    assume { Resolve0.resolve self_1 };
-    assume { Resolve1.resolve _3 };
+    assume { Resolve0.resolve _3 };
+    assert { Invariant0.invariant' self_1 };
+    assume { Resolve1.resolve self_1 };
     _0 <- Core_Option_Option_Type.C_None;
     goto BB9
   }
@@ -930,10 +926,10 @@ module C15Enumerate_Impl0
     predicate Produces0.produces = Produces1.produces
   goal produces_trans_refn : [#"../15_enumerate.rs" 43 4 43 90] forall a : C15Enumerate_Enumerate_Type.t_enumerate i . forall ab : Seq.seq (usize, Item0.item) . forall b : C15Enumerate_Enumerate_Type.t_enumerate i . forall bc : Seq.seq (usize, Item0.item) . forall c : C15Enumerate_Enumerate_Type.t_enumerate i . Invariant0.invariant' c /\ Invariant0.invariant' b /\ Invariant0.invariant' a /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Invariant0.invariant' c /\ Invariant0.invariant' b /\ Invariant0.invariant' a /\ Produces0.produces b bc c /\ Produces0.produces a ab b /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
   goal produces_refl_refn : [#"../15_enumerate.rs" 37 4 37 29] forall a : C15Enumerate_Enumerate_Type.t_enumerate i . Invariant0.invariant' a -> Invariant0.invariant' a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
-  goal next_refn : [#"../15_enumerate.rs" 49 4 49 44] forall self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i) . Invariant1.invariant' self -> Invariant1.invariant' self /\ (forall result : Core_Option_Option_Type.t_option (usize, Item0.item) . Invariant0.invariant' ( ^ self) /\ match (result) with
+  goal next_refn : [#"../15_enumerate.rs" 49 4 49 44] forall self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i) . Invariant1.invariant' self -> Invariant1.invariant' self /\ (forall result : Core_Option_Option_Type.t_option (usize, Item0.item) . match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
-    end -> Invariant0.invariant' ( ^ self) /\ match (result) with
+    end -> match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
     end)

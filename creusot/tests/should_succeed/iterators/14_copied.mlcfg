@@ -474,7 +474,7 @@ module CreusotContracts_Invariant_Impl1_Invariant
   clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
     type self = t
   predicate invariant' (self : borrowed t) =
-    [#"../../../../../creusot-contracts/src/invariant.rs" 34 20 34 39] Invariant0.invariant' ( * self)
+    [#"../../../../../creusot-contracts/src/invariant.rs" 34 20 34 62] Invariant0.invariant' ( * self) /\ Invariant0.invariant' ( ^ self)
   val invariant' (self : borrowed t) : bool
     ensures { result = invariant' self }
     
@@ -508,8 +508,6 @@ module C14Copied_Common_Iterator_Next_Interface
   type self
   use prelude.Borrow
   use seq.Seq
-  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant1 with
-    type self = self
   clone C14Copied_Common_Iterator_Item_Type as Item0 with
     type self = self
   clone C14Copied_Common_Iterator_Produces_Stub as Produces0 with
@@ -526,7 +524,6 @@ module C14Copied_Common_Iterator_Next_Interface
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
-    ensures { [#"../common.rs" 27 17 27 21] Invariant1.invariant' ( ^ self) }
     
 end
 module Core_Option_Impl2_Copied_Interface
@@ -544,9 +541,6 @@ module C14Copied_Impl0_Next_Interface
   use prelude.Borrow
   use seq.Seq
   use C14Copied_Copied_Type as C14Copied_Copied_Type
-  clone C14Copied_Impl1_Invariant_Stub as Invariant1 with
-    type i = i,
-    type t = t
   clone C14Copied_Impl0_Produces_Stub as Produces0 with
     type i = i,
     type t = t
@@ -562,7 +556,6 @@ module C14Copied_Impl0_Next_Interface
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
-    ensures { [#"../14_copied.rs" 48 17 48 21] Invariant1.invariant' ( ^ self) }
     
 end
 module C14Copied_Impl0_Next
@@ -570,36 +563,40 @@ module C14Copied_Impl0_Next
   type t
   use prelude.Borrow
   use seq.Seq
-  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant2 with
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant1 with
     type self = i
-  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited0 with
-    type self = i,
-    predicate Invariant0.invariant' = Invariant2.invariant',
-    axiom .
   clone CreusotContracts_Invariant_Impl1_Invariant as Invariant3 with
     type t = i,
-    predicate Invariant0.invariant' = Invariant2.invariant'
+    predicate Invariant0.invariant' = Invariant1.invariant'
   clone C14Copied_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
     type Item0.item = t
   clone C14Copied_Common_Iterator_ProducesTrans_Interface as ProducesTrans0 with
     type self = i,
     predicate Produces0.produces = Produces1.produces,
-    predicate Invariant0.invariant' = Invariant2.invariant',
+    predicate Invariant0.invariant' = Invariant1.invariant',
     type Item0.item = t,
     axiom .
   clone C14Copied_Common_Iterator_ProducesRefl_Interface as ProducesRefl0 with
     type self = i,
-    predicate Invariant0.invariant' = Invariant2.invariant',
+    predicate Invariant0.invariant' = Invariant1.invariant',
     predicate Produces0.produces = Produces1.produces,
     type Item0.item = t,
     axiom .
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited0 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    axiom .
   clone C14Copied_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
+  use C14Copied_Copied_Type as C14Copied_Copied_Type
+  clone C14Copied_Impl1_Invariant as Invariant2 with
+    type i = i,
+    type t = t,
+    predicate Invariant0.invariant' = Invariant1.invariant'
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl2_Copied_Interface as Copied1 with
     type t = t
-  use C14Copied_Copied_Type as C14Copied_Copied_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = C14Copied_Copied_Type.t_copied i
   clone C14Copied_Common_Iterator_Next_Interface as Next0 with
@@ -607,12 +604,7 @@ module C14Copied_Impl0_Next
     predicate Invariant0.invariant' = Invariant3.invariant',
     type Item0.item = t,
     predicate Completed0.completed = Completed1.completed,
-    predicate Produces0.produces = Produces1.produces,
-    predicate Invariant1.invariant' = Invariant2.invariant'
-  clone C14Copied_Impl1_Invariant as Invariant1 with
-    type i = i,
-    type t = t,
-    predicate Invariant0.invariant' = Invariant2.invariant'
+    predicate Produces0.produces = Produces1.produces
   clone C14Copied_Impl0_Produces as Produces0 with
     type i = i,
     type t = t,
@@ -623,14 +615,13 @@ module C14Copied_Impl0_Next
     predicate Completed0.completed = Completed1.completed
   clone CreusotContracts_Invariant_Impl1_Invariant as Invariant0 with
     type t = C14Copied_Copied_Type.t_copied i,
-    predicate Invariant0.invariant' = Invariant1.invariant'
+    predicate Invariant0.invariant' = Invariant2.invariant'
   let rec cfg next [#"../14_copied.rs" 48 4 48 35] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (C14Copied_Copied_Type.t_copied i)) : Core_Option_Option_Type.t_option t
     requires {[#"../14_copied.rs" 48 17 48 21] Invariant0.invariant' self}
     ensures { [#"../14_copied.rs" 44 14 47 5] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
-    ensures { [#"../14_copied.rs" 48 17 48 21] Invariant1.invariant' ( ^ self) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Option_Option_Type.t_option t;
@@ -644,10 +635,12 @@ module C14Copied_Impl0_Next
   BB0 {
     _4 <- borrow_mut (C14Copied_Copied_Type.copied_iter ( * self_1));
     self_1 <- { self_1 with current = (let C14Copied_Copied_Type.C_Copied a =  * self_1 in C14Copied_Copied_Type.C_Copied ( ^ _4)) };
+    assume { Invariant1.invariant' ( ^ _4) };
     _3 <- ([#"../14_copied.rs" 49 8 49 24] Next0.next _4);
     goto BB1
   }
   BB1 {
+    assert { Invariant0.invariant' self_1 };
     assume { Resolve0.resolve self_1 };
     _0 <- ([#"../14_copied.rs" 49 8 49 33] Copied1.copied _3);
     goto BB2
@@ -690,10 +683,10 @@ module C14Copied_Impl0
     predicate Produces0.produces = Produces1.produces
   goal produces_refl_refn : [#"../14_copied.rs" 36 4 36 29] forall a : C14Copied_Copied_Type.t_copied i . Invariant0.invariant' a -> Invariant0.invariant' a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
   goal produces_trans_refn : [#"../14_copied.rs" 42 4 42 90] forall a : C14Copied_Copied_Type.t_copied i . forall ab : Seq.seq t . forall b : C14Copied_Copied_Type.t_copied i . forall bc : Seq.seq t . forall c : C14Copied_Copied_Type.t_copied i . Invariant0.invariant' c /\ Invariant0.invariant' b /\ Invariant0.invariant' a /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Invariant0.invariant' c /\ Invariant0.invariant' b /\ Invariant0.invariant' a /\ Produces0.produces b bc c /\ Produces0.produces a ab b /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
-  goal next_refn : [#"../14_copied.rs" 48 4 48 35] forall self : borrowed (C14Copied_Copied_Type.t_copied i) . Invariant1.invariant' self -> Invariant1.invariant' self /\ (forall result : Core_Option_Option_Type.t_option t . Invariant0.invariant' ( ^ self) /\ match (result) with
+  goal next_refn : [#"../14_copied.rs" 48 4 48 35] forall self : borrowed (C14Copied_Copied_Type.t_copied i) . Invariant1.invariant' self -> Invariant1.invariant' self /\ (forall result : Core_Option_Option_Type.t_option t . match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
-    end -> Invariant0.invariant' ( ^ self) /\ match (result) with
+    end -> match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
     end)

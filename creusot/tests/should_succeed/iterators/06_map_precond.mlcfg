@@ -1648,7 +1648,7 @@ module CreusotContracts_Invariant_Impl1_Invariant
   clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
     type self = t
   predicate invariant' (self : borrowed t) =
-    [#"../../../../../creusot-contracts/src/invariant.rs" 34 20 34 39] Invariant0.invariant' ( * self)
+    [#"../../../../../creusot-contracts/src/invariant.rs" 34 20 34 62] Invariant0.invariant' ( * self) /\ Invariant0.invariant' ( ^ self)
   val invariant' (self : borrowed t) : bool
     ensures { result = invariant' self }
     
@@ -1657,8 +1657,6 @@ module C06MapPrecond_Common_Iterator_Next_Interface
   type self
   use prelude.Borrow
   use seq.Seq
-  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant1 with
-    type self = self
   clone C06MapPrecond_Common_Iterator_Item_Type as Item0 with
     type self = self
   clone C06MapPrecond_Common_Iterator_Produces_Stub as Produces0 with
@@ -1675,7 +1673,6 @@ module C06MapPrecond_Common_Iterator_Next_Interface
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
-    ensures { [#"../common.rs" 27 17 27 21] Invariant1.invariant' ( ^ self) }
     
 end
 module C06MapPrecond_Impl1_ProducesOneInvariant_Stub
@@ -2091,13 +2088,13 @@ module C06MapPrecond_Impl0_Next
     axiom .
   clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant1 with
     type self = i
+  clone CreusotContracts_Invariant_Impl1_Invariant as Invariant2 with
+    type t = i,
+    predicate Invariant0.invariant' = Invariant1.invariant'
   clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited0 with
     type self = i,
     predicate Invariant0.invariant' = Invariant1.invariant',
     axiom .
-  clone CreusotContracts_Invariant_Impl1_Invariant as Invariant2 with
-    type t = i,
-    predicate Invariant0.invariant' = Invariant1.invariant'
   clone C06MapPrecond_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
     type Item0.item = Item0.item
@@ -2213,18 +2210,17 @@ module C06MapPrecond_Impl0_Next
     type Item0.item = Item0.item,
     predicate Produces0.produces = Produces0.produces,
     axiom .
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
-    type self = Core_Option_Option_Type.t_option Item0.item
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = C06MapPrecond_Map_Type.t_map i Item0.item f
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = Core_Option_Option_Type.t_option Item0.item
   clone C06MapPrecond_Common_Iterator_Next_Interface as Next0 with
     type self = i,
     predicate Invariant0.invariant' = Invariant2.invariant',
     type Item0.item = Item0.item,
     predicate Completed0.completed = Completed1.completed,
-    predicate Produces0.produces = Produces1.produces,
-    predicate Invariant1.invariant' = Invariant1.invariant'
+    predicate Produces0.produces = Produces1.produces
   let rec cfg next [#"../06_map_precond.rs" 63 4 63 44] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (C06MapPrecond_Map_Type.t_map i Item0.item f)) : Core_Option_Option_Type.t_option b
     requires {[#"../06_map_precond.rs" 62 4 62 40] Invariant0.invariant' ( * self)}
     ensures { [#"../06_map_precond.rs" 58 14 61 5] match (result) with
@@ -2262,6 +2258,7 @@ module C06MapPrecond_Impl0_Next
   BB0 {
     _6 <- borrow_mut (C06MapPrecond_Map_Type.map_iter ( * self_1));
     self_1 <- { self_1 with current = (let C06MapPrecond_Map_Type.C_Map a b c =  * self_1 in C06MapPrecond_Map_Type.C_Map ( ^ _6) b c) };
+    assume { Invariant1.invariant' ( ^ _6) };
     _5 <- ([#"../06_map_precond.rs" 64 14 64 30] Next0.next _6);
     goto BB1
   }
@@ -2272,7 +2269,7 @@ module C06MapPrecond_Impl0_Next
       end
   }
   BB2 {
-    assume { Resolve1.resolve _5 };
+    assume { Resolve0.resolve _5 };
     _30 <- ();
     _27 <- ([#"../06_map_precond.rs" 74 32 74 53] Ghost.new (Seq.empty ));
     goto BB15
@@ -2281,14 +2278,14 @@ module C06MapPrecond_Impl0_Next
     goto BB5
   }
   BB4 {
-    assume { Resolve0.resolve self_1 };
-    assume { Resolve1.resolve _5 };
+    assume { Resolve0.resolve _5 };
+    assume { Resolve1.resolve self_1 };
     absurd
   }
   BB5 {
     v_8 <- Core_Option_Option_Type.some_0 _5;
     _5 <- (let Core_Option_Option_Type.C_Some a = _5 in Core_Option_Option_Type.C_Some (any Item0.item));
-    assume { Resolve1.resolve _5 };
+    assume { Resolve0.resolve _5 };
     assert { [#"../06_map_precond.rs" 66 16 66 76] Precondition0.precondition (C06MapPrecond_Map_Type.map_func ( * self_1)) (v_8, C06MapPrecond_Map_Type.map_produced ( * self_1)) };
     goto BB6
   }
@@ -2331,7 +2328,7 @@ module C06MapPrecond_Impl0_Next
     self_1 <- { self_1 with current = (let C06MapPrecond_Map_Type.C_Map a b c =  * self_1 in C06MapPrecond_Map_Type.C_Map a b _26) };
     _26 <- any Ghost.ghost_ty (Seq.seq Item0.item);
     assume { Resolve3.resolve (C06MapPrecond_Map_Type.map_produced ( * self_1)) };
-    assume { Resolve0.resolve self_1 };
+    assume { Resolve1.resolve self_1 };
     _0 <- r_18;
     r_18 <- any Core_Option_Option_Type.t_option b;
     goto BB13
@@ -2346,7 +2343,7 @@ module C06MapPrecond_Impl0_Next
     self_1 <- { self_1 with current = (let C06MapPrecond_Map_Type.C_Map a b c =  * self_1 in C06MapPrecond_Map_Type.C_Map a b _27) };
     _27 <- any Ghost.ghost_ty (Seq.seq Item0.item);
     assume { Resolve3.resolve (C06MapPrecond_Map_Type.map_produced ( * self_1)) };
-    assume { Resolve0.resolve self_1 };
+    assume { Resolve1.resolve self_1 };
     _0 <- Core_Option_Option_Type.C_None;
     goto BB16
   }
@@ -2682,10 +2679,10 @@ module C06MapPrecond_Identity_Closure0
     predicate Produces0.produces = Produces0.produces,
     type Item0.item = Item0.item,
     axiom .
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
-    type self = Ghost.ghost_ty (Seq.seq Item0.item)
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = c06mapprecond_identity_closure0 i
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = Ghost.ghost_ty (Seq.seq Item0.item)
   predicate resolve [#"../06_map_precond.rs" 180 14 180 20] (_1' : c06mapprecond_identity_closure0 i) =
     [#"../06_map_precond.rs" 1 0 1 0] true
   predicate unnest [#"../06_map_precond.rs" 180 14 180 20] (self : c06mapprecond_identity_closure0 i) (_2' : c06mapprecond_identity_closure0 i)
@@ -2720,8 +2717,8 @@ module C06MapPrecond_Identity_Closure0
   BB0 {
     _0 <- x_2;
     x_2 <- any Item0.item;
-    assume { Resolve0.resolve _1 };
-    assume { Resolve1.resolve _3 };
+    assume { Resolve0.resolve _3 };
+    assume { Resolve1.resolve _1 };
     goto BB1
   }
   BB1 {
@@ -3638,7 +3635,7 @@ module C06MapPrecond_Impl0
   goal next_refn : [#"../06_map_precond.rs" 63 4 63 44] forall self : borrowed (C06MapPrecond_Map_Type.t_map i Item0.item f) . Invariant1.invariant' self -> Invariant0.invariant' ( * self) /\ (forall result : Core_Option_Option_Type.t_option b . Invariant0.invariant' ( ^ self) /\ match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> ProducesOne0.produces_one ( * self) v ( ^ self)
-    end -> Invariant0.invariant' ( ^ self) /\ match (result) with
+    end -> match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
     end)
