@@ -5,7 +5,6 @@
 #[macro_use]
 extern crate log;
 extern crate rustc_ast;
-extern crate rustc_borrowck;
 extern crate rustc_data_structures;
 extern crate rustc_driver;
 extern crate rustc_errors;
@@ -42,8 +41,6 @@ mod extended_location;
 mod gather_spec_closures;
 pub mod options;
 mod resolve;
-// #[allow(dead_code)]
-mod rustc_extensions;
 mod translation;
 pub(crate) mod util;
 use translation::*;

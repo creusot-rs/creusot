@@ -1,11 +1,8 @@
+use borrowck::consumers::BodyWithBorrowckFacts;
 use rustc_driver::{Callbacks, Compilation};
 use rustc_hir::def_id::LocalDefId;
-use rustc_index::vec::IndexVec;
 use rustc_interface::{interface::Compiler, Config, Queries};
-use rustc_middle::{
-    mir::{Body, Promoted},
-    ty::{self, TyCtxt},
-};
+use rustc_middle::ty::{self, TyCtxt};
 
 use std::{cell::RefCell, collections::HashMap, thread_local};
 
@@ -22,15 +19,9 @@ impl ToWhy {
 }
 use crate::{ctx, lints};
 
-#[derive(Clone)]
-pub struct BodyAndPromoteds<'tcx> {
-    pub(crate) body: Body<'tcx>,
-    pub(crate) promoted: IndexVec<Promoted, Body<'tcx>>,
-}
-
 thread_local! {
     pub static MIR_BODIES:
-        RefCell<HashMap<LocalDefId, BodyAndPromoteds<'static>>> =
+        RefCell<HashMap<LocalDefId, BodyWithBorrowckFacts<'static>>> =
         RefCell::new(HashMap::new());
 }
 
@@ -45,20 +36,18 @@ impl Callbacks for ToWhy {
             };
 
             providers.mir_borrowck = |tcx, def_id| {
-                // We use `mir_promoted` as it is the MIR required by borrowck
-                let (body, promoted) = tcx.mir_promoted(ty::WithOptConstParam::unknown(def_id));
-                let body_and_proms = BodyAndPromoteds {
-                    body: body.borrow().clone(),
-                    promoted: promoted.borrow().clone(),
-                };
+                let body_with_facts = borrowck::consumers::get_body_with_borrowck_facts(
+                    tcx,
+                    ty::WithOptConstParam::unknown(def_id),
+                );
 
                 // SAFETY: The reader casts the 'static lifetime to 'tcx before using it.
-                let body_and_proms: BodyAndPromoteds<'static> =
-                    unsafe { std::mem::transmute(body_and_proms) };
+                let body_with_facts: BodyWithBorrowckFacts<'static> =
+                    unsafe { std::mem::transmute(body_with_facts) };
 
                 MIR_BODIES.with(|state| {
                     let mut map = state.borrow_mut();
-                    assert!(map.insert(def_id, body_and_proms).is_none());
+                    assert!(map.insert(def_id, body_with_facts).is_none());
                 });
 
                 (rustc_interface::DEFAULT_QUERY_PROVIDERS.mir_borrowck)(tcx, def_id)
@@ -98,7 +87,10 @@ impl Callbacks for ToWhy {
 /// Trys to retrieve the promoted MIR for a body from a thread local cache.
 /// The cache is populated when rustc runs the `mir_borrowck` query.
 /// After a body was retrieved, calling this function again for the same `def_id` will return `None`.
-pub fn get_body<'tcx>(tcx: TyCtxt<'tcx>, def_id: LocalDefId) -> Option<BodyAndPromoteds<'tcx>> {
+pub fn get_body<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: LocalDefId,
+) -> Option<BodyWithBorrowckFacts<'tcx>> {
     // trigger borrow checking
     let _ = tcx.mir_borrowck(def_id);
 

@@ -763,14 +763,14 @@ module Sum_SumFirstN
   clone CreusotContracts_Std1_Iter_Impl0_IntoIterPre as IntoIterPre0 with
     type i = Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive uint32,
     predicate Invariant0.invariant' = Invariant0.invariant'
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive uint32
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Iter_Range_Impl12_Next_Interface as Next0 with
     type a = uint32,
     type Item0.item = uint32,
     predicate Completed0.completed = Completed0.completed,
     predicate Produces0.produces = Produces0.produces
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive uint32
   clone Core_Iter_Traits_Collect_Impl0_IntoIter_Interface as IntoIter0 with
     type i = Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive uint32,
     predicate IntoIterPre0.into_iter_pre = IntoIterPre0.into_iter_pre,
@@ -842,35 +842,41 @@ module Sum_SumFirstN
     invariant { [#"../sum.rs" 8 4 8 67] Invariant0.invariant' iter_6 };
     invariant { [#"../sum.rs" 8 4 8 67] Produces0.produces (Ghost.inner iter_old_9) (Ghost.inner produced_12) iter_6 };
     invariant { [#"../sum.rs" 8 16 8 65] UInt32.to_int sum_4 = div (Seq.length (Ghost.inner produced_12) * (Seq.length (Ghost.inner produced_12) - 1)) 2 };
+    goto BB6
+  }
+  BB6 {
     _22 <- borrow_mut iter_6;
     iter_6 <-  ^ _22;
     _21 <- borrow_mut ( * _22);
     _22 <- { _22 with current = ( ^ _21) };
-    assume { Resolve0.resolve _22 };
     _20 <- ([#"../sum.rs" 8 4 8 67] Next0.next _21);
-    goto BB6
+    goto BB7
   }
-  BB6 {
+  BB7 {
+    assume { Resolve0.resolve _22 };
     switch (_20)
-      | Core_Option_Option_Type.C_None -> goto BB7
+      | Core_Option_Option_Type.C_None -> goto BB8
       | Core_Option_Option_Type.C_Some _ -> goto BB9
       end
   }
-  BB7 {
+  BB8 {
     _5 <- ();
     _0 <- sum_4;
     return _0
   }
-  BB8 {
+  BB9 {
+    goto BB11
+  }
+  BB10 {
     absurd
   }
-  BB9 {
+  BB11 {
     __creusot_proc_iter_elem_24 <- Core_Option_Option_Type.some_0 _20;
     _27 <- ();
     _25 <- ([#"../sum.rs" 8 4 8 67] Ghost.new (Seq.(++) (Ghost.inner produced_12) (Seq.singleton __creusot_proc_iter_elem_24)));
-    goto BB10
+    goto BB12
   }
-  BB10 {
+  BB12 {
     produced_12 <- _25;
     _25 <- any Ghost.ghost_ty (Seq.seq uint32);
     i_28 <- __creusot_proc_iter_elem_24;

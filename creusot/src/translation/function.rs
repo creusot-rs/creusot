@@ -7,7 +7,6 @@ use crate::{
     fmir::{self, Expr},
     gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind},
     resolve::EagerResolver,
-    rustc_extensions::renumber,
     translation::{
         pearlite::{self, TermKind, TermVisitorMut},
         specification::{contract_of, PreContract},
@@ -15,11 +14,11 @@ use crate::{
     },
     util::{self, ident_of, PreSignature},
 };
+use borrowck::borrow_set::BorrowSet;
 use indexmap::IndexMap;
-use rustc_borrowck::borrow_set::BorrowSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
-use rustc_infer::infer::TyCtxtInferExt;
+
 use rustc_middle::{
     mir::{traversal::reverse_postorder, BasicBlock, Body, Local, Operand, Place, VarDebugInfo},
     ty::{
@@ -29,7 +28,6 @@ use rustc_middle::{
         UpvarCapture,
     },
 };
-use rustc_mir_dataflow::move_paths::MoveData;
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use std::{iter, rc::Rc};
 use why3::declaration::*;
@@ -76,7 +74,7 @@ pub struct BodyTranslator<'body, 'tcx> {
 
     assertions: IndexMap<DefId, Term<'tcx>>,
 
-    borrows: Rc<BorrowSet<'tcx>>,
+    borrows: Option<Rc<BorrowSet<'tcx>>>,
 
     synthetic_locals: Vec<(Local, Ty<'tcx>)>,
 }
@@ -101,22 +99,22 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             }
         });
 
-        let mut clean_body = body.clone();
+        // do we need borrowck info for promoteds?
 
-        let infcx = tcx.infer_ctxt().build();
-        renumber::renumber_mir(&infcx, &mut clean_body, &mut Default::default());
-
-        let (_, move_paths) =
-            MoveData::gather_moves(&clean_body, tcx, tcx.param_env(body_id.def_id()))
-                .unwrap_or_else(|_| {
-                    ctx.crash_and_error(ctx.def_span(body_id.def_id()), "illegal move")
-                });
-        let borrows = BorrowSet::build(tcx, &clean_body, true, &move_paths);
-        let borrows = Rc::new(borrows);
-        let resolver = EagerResolver::new(tcx, body);
+        let (resolver, borrows) = if body_id.promoted.is_none() {
+            let with_facts = ctx.body_with_facts(body_id.def_id);
+            let borrows = with_facts.borrow_set.clone();
+            let resolver =
+                EagerResolver::new(tcx, body, borrows.clone(), with_facts.regioncx.clone());
+            (resolver, Some(borrows))
+        } else {
+            let resolver = EagerResolver::new_without_borrows(tcx, body);
+            (resolver, None)
+        };
 
         // eprintln!("body of {}", tcx.def_path_str(body_id.def_id()));
-        // resolver.debug();
+        // resolver.debug(with_facts.regioncx.clone());
+
         BodyTranslator {
             tcx,
             body,
@@ -172,6 +170,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             }
 
             self.translate_terminator(bbd.terminator(), loc);
+
+            if bbd.terminator().successors().next().is_none() {
+                let resolved = self.resolver.frozen_locals_before(loc);
+                self.resolve_locals(resolved);
+            }
 
             let block = fmir::Block {
                 stmts: std::mem::take(&mut self.current_block.0),

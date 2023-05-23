@@ -89,7 +89,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     .map(|p| p.predicates_for(self.tcx, subst))
                     .unwrap_or_else(Vec::new);
 
-                let infcx = self.tcx.infer_ctxt().build();
+                let infcx = self.tcx.infer_ctxt().ignoring_regions().build();
                 let res =
                     evaluate_additional_predicates(&infcx, predicates, self.param_env(), span);
                 if let Err(errs) = res {
@@ -217,6 +217,7 @@ pub(crate) fn evaluate_additional_predicates<'tcx>(
 ) -> Result<(), Vec<FulfillmentError<'tcx>>> {
     let mut fulfill_cx = <dyn TraitEngine<'tcx>>::new(infcx.tcx);
     for predicate in p {
+        let predicate = infcx.tcx.erase_regions(predicate);
         let cause = ObligationCause::dummy_with_span(sp);
         let obligation = Obligation { cause, param_env, recursion_depth: 0, predicate };
         // holds &= infcx.predicate_may_hold(&obligation);

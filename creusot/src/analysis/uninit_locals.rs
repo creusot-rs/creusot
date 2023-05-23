@@ -98,8 +98,8 @@ where
 
             // If the local is moved out of, or if it gets marked `StorageDead`, consider it no
             // longer initialized.
-            PlaceContext::NonUse(NonUseContext::StorageDead)
-            | PlaceContext::NonMutatingUse(NonMutatingUseContext::Move) => self.trans.gen(local),
+            PlaceContext::NonUse(NonUseContext::StorageDead) => {}
+            PlaceContext::NonMutatingUse(NonMutatingUseContext::Move) => self.trans.gen(local),
 
             // All other uses do not affect this analysis.
             PlaceContext::NonUse(

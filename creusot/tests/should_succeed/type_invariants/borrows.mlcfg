@@ -193,13 +193,13 @@ module Borrows_Dec
   clone CreusotContracts_Invariant_Impl1_Invariant as Invariant1 with
     type t = Borrows_NonZeroU32_Type.t_nonzerou32,
     predicate Invariant0.invariant' = Invariant0.invariant'
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = Borrows_NonZeroU32_Type.t_nonzerou32
   clone Borrows_Impl1_SubMut_Interface as SubMut0 with
     predicate Invariant0.invariant' = Invariant1.invariant',
     predicate Invariant1.invariant' = Invariant0.invariant'
   clone Borrows_Impl1_New_Interface as New0 with
     predicate Invariant0.invariant' = Invariant0.invariant'
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = Borrows_NonZeroU32_Type.t_nonzerou32
   let rec cfg dec [#"../borrows.rs" 28 0 28 43] [@cfg:stackify] [@cfg:subregion_analysis] (n : Borrows_NonZeroU32_Type.t_nonzerou32) : Borrows_NonZeroU32_Type.t_nonzerou32
     requires {[#"../borrows.rs" 27 11 27 19] UInt32.to_int (Borrows_NonZeroU32_Type.nonzerou32_0 n) > 1}
     requires {[#"../borrows.rs" 28 15 28 16] Invariant0.invariant' n}
@@ -221,7 +221,6 @@ module Borrows_Dec
     n_1 <-  ^ borrowed_3;
     _5 <- borrow_mut ( * borrowed_3);
     borrowed_3 <- { borrowed_3 with current = ( ^ _5) };
-    assume { Resolve0.resolve borrowed_3 };
     _6 <- ([#"../borrows.rs" 30 21 30 39] New0.new ([#"../borrows.rs" 30 37 30 38] (1 : uint32)));
     goto BB1
   }
@@ -230,6 +229,7 @@ module Borrows_Dec
     goto BB2
   }
   BB2 {
+    assume { Resolve0.resolve borrowed_3 };
     _0 <- n_1;
     n_1 <- any Borrows_NonZeroU32_Type.t_nonzerou32;
     return _0
