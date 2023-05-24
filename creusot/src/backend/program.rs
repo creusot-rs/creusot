@@ -27,7 +27,7 @@ use rustc_middle::{
 use rustc_span::DUMMY_SP;
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
-    declaration::{self, CfgFunction, Decl, LetDecl, LetKind, Module, Predicate, Use},
+    declaration::{self, Attribute, CfgFunction, Decl, LetDecl, LetKind, Module, Predicate, Use},
     exp::{Constant, Exp, Pattern},
     mlcfg,
     mlcfg::BlockId,
@@ -657,8 +657,11 @@ impl<'tcx> Statement<'tcx> {
                 let assume = rp.app_to(Expr::Place(pl).to_why(ctx, names, Some(body_id)));
                 vec![mlcfg::Statement::Assume(assume)]
             }
-            Statement::Assertion(a) => {
-                vec![mlcfg::Statement::Assert(lower_pure(ctx, names, a))]
+            Statement::Assertion { cond, msg } => {
+                vec![mlcfg::Statement::Assert(Exp::Attr(
+                    Attribute::Attr(format!("expl:{msg}")),
+                    Box::new(lower_pure(ctx, names, cond)),
+                ))]
             }
 
             Statement::Invariant(inv) => {

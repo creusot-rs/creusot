@@ -16,7 +16,7 @@ use rustc_infer::{
 };
 use rustc_middle::{
     mir::{
-        self, BasicBlock, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo,
+        self, AssertKind, BasicBlock, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo,
         StatementKind, SwitchTargets, TerminatorKind, TerminatorKind::*,
     },
     ty::{
@@ -124,8 +124,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 self.emit_assignment(&loc, RValue::Expr(call_exp));
                 self.emit_terminator(Terminator::Goto(bb));
             }
-            Assert { cond, expected, msg: _, target, cleanup: _ } => {
-                let mut ass = match cond {
+            Assert { cond, expected, msg, target, cleanup: _ } => {
+                let msg = self.get_explanation(msg);
+
+                let mut cond = match cond {
                     Operand::Copy(pl) | Operand::Move(pl) => {
                         if let Some(locl) = pl.as_local() {
                             Term {
@@ -140,13 +142,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     Operand::Constant(_) => todo!(),
                 };
                 if !expected {
-                    ass = Term {
-                        ty: ass.ty,
-                        span: ass.span,
-                        kind: TermKind::Unary { op: UnOp::Not, arg: Box::new(ass) },
+                    cond = Term {
+                        ty: cond.ty,
+                        span: cond.span,
+                        kind: TermKind::Unary { op: UnOp::Not, arg: Box::new(cond) },
                     };
                 }
-                self.emit_statement(fmir::Statement::Assertion(ass));
+                self.emit_statement(fmir::Statement::Assertion { cond, msg });
                 self.emit_terminator(mk_goto(*target))
             }
 
@@ -165,6 +167,17 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
     fn is_box_new(&self, def_id: DefId) -> bool {
         self.tcx.def_path_str(def_id) == "std::boxed::Box::<T>::new"
+    }
+
+    fn get_explanation(&mut self, msg: &mir::AssertKind<Operand<'tcx>>) -> String {
+        match msg {
+            AssertKind::BoundsCheck { len: _, index: _ } => format!("index in bounds"),
+            AssertKind::Overflow(op, _a, _b) => format!("{op:?} overflow"),
+            AssertKind::OverflowNeg(_op) => format!("negation overflow"),
+            AssertKind::DivisionByZero(_) => format!("division by zero"),
+            AssertKind::RemainderByZero(_) => format!("remainder by zero"),
+            _ => unreachable!("Resume assertions"),
+        }
     }
 }
 
