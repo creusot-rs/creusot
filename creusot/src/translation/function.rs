@@ -54,7 +54,7 @@ pub struct BodyTranslator<'body, 'tcx> {
 
     body: &'body Body<'tcx>,
 
-    resolver: EagerResolver<'body, 'tcx>,
+    resolver: Option<EagerResolver<'body, 'tcx>>,
 
     // Spec / Ghost variables
     erased_locals: BitSet<Local>,
@@ -99,21 +99,20 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             }
         });
 
-        // do we need borrowck info for promoteds?
+        let (resolver, borrows) = match body_id.promoted {
+            None => {
+                let with_facts = ctx.body_with_facts(body_id.def_id);
+                let borrows = with_facts.borrow_set.clone();
+                let resolver =
+                    EagerResolver::new(tcx, body, borrows.clone(), with_facts.regioncx.clone());
 
-        let (resolver, borrows) = if body_id.promoted.is_none() {
-            let with_facts = ctx.body_with_facts(body_id.def_id);
-            let borrows = with_facts.borrow_set.clone();
-            let resolver =
-                EagerResolver::new(tcx, body, borrows.clone(), with_facts.regioncx.clone());
-            (resolver, Some(borrows))
-        } else {
-            let resolver = EagerResolver::new_without_borrows(tcx, body);
-            (resolver, None)
+                // eprintln!("body of {}", tcx.def_path_str(body_id.def_id()));
+                // resolver.debug(with_facts.regioncx.clone());
+
+                (Some(resolver), Some(borrows))
+            }
+            Some(_) => (None, None),
         };
-
-        // eprintln!("body of {}", tcx.def_path_str(body_id.def_id()));
-        // resolver.debug(with_facts.regioncx.clone());
 
         BodyTranslator {
             tcx,
@@ -171,8 +170,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
             self.translate_terminator(bbd.terminator(), loc);
 
-            if bbd.terminator().successors().next().is_none() {
-                let resolved = self.resolver.frozen_locals_before(loc);
+            if let Some(resolver) = &mut self.resolver && bbd.terminator().successors().next().is_none() {
+                let mut resolved = resolver.need_resolve_locals_before(loc);
+                resolved.remove(Local::from_usize(0)); // do not resolve return local
                 self.resolve_locals(resolved);
             }
 
@@ -244,6 +244,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     // Inserts resolves for locals which died over the course of a goto or switch
     fn resolve_locals_between_blocks(&mut self, bb: BasicBlock) {
+        let Some(resolver) = &mut self.resolver else { return; };
         let pred_blocks = &self.body.basic_blocks.predecessors()[bb];
 
         if pred_blocks.is_empty() {
@@ -252,7 +253,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         let resolved_between = pred_blocks
             .iter()
-            .map(|pred| self.resolver.resolved_locals_between_blocks(*pred, bb))
+            .map(|pred| resolver.resolved_locals_between_blocks(*pred, bb))
             .collect::<Vec<_>>();
 
         // If we have multiple predecessors (join point) but all of them agree on the deaths, then don't introduce a dedicated block.
