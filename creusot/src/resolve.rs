@@ -105,6 +105,8 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         frozen
     }
 
+    /// Locals that need to be resolved eventually
+    /// = (live ∪ frozen) ∩ initialized
     fn need_resolve_locals(&self) -> BitSet<Local> {
         let mut should_resolve = self.live_locals();
         should_resolve.union(&self.frozen_locals());
@@ -112,6 +114,8 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         should_resolve
     }
 
+    /// Locals that have already been resolved
+    /// = dead ∩ not frozen ∩ initialized
     fn resolved_locals(&self) -> BitSet<Local> {
         let mut resolved = self.dead_locals();
         resolved.subtract(&self.frozen_locals());
@@ -163,7 +167,25 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
     ) -> BitSet<Local> {
         let term = self.body.terminator_loc(from);
         let start = to.start_location();
-        self.resolved_locals_in_range(ExtendedLocation::Start(term), ExtendedLocation::Start(start))
+
+        let mut resolved = self.resolved_locals_in_range(
+            ExtendedLocation::Start(term),
+            ExtendedLocation::Start(start),
+        );
+
+        // if some locals still need to be resolved at the end of the current block
+        // but not at the start of the next block, we also need to resolve them now
+        // see the init_join function in the resolve_uninit test
+        self.seek_to(ExtendedLocation::Mid(term));
+        let need_resolve_at_end = self.need_resolve_locals();
+        self.seek_to(ExtendedLocation::Start(start));
+        let need_resolve_at_start = self.need_resolve_locals();
+
+        let mut need_resolve = need_resolve_at_end;
+        need_resolve.subtract(&need_resolve_at_start);
+        resolved.union(&need_resolve);
+
+        resolved
     }
 
     pub fn need_resolve_locals_before(&mut self, loc: Location) -> BitSet<Local> {
