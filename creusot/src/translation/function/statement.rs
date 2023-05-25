@@ -127,7 +127,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 .assertions
                                 .remove(def_id)
                                 .expect("Could not find body of assertion");
-                            self.emit_statement(fmir::Statement::Assertion(assertion));
+                            self.emit_statement(fmir::Statement::Assertion {
+                                cond: assertion,
+                                msg: "assertion".to_owned(),
+                            });
                             return;
                         } else if util::is_ghost(self.tcx, *def_id) {
                             return;

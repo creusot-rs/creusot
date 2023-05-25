@@ -15,7 +15,7 @@ pub enum Statement<'tcx> {
     // TODO: Remove `Resolve` and replace it with `Assume`.
     // The reason I have not done this yet is that it would require transforming a `Place` to a `Term`.
     Resolve(DefId, SubstsRef<'tcx>, Place<'tcx>),
-    Assertion(Term<'tcx>),
+    Assertion { cond: Term<'tcx>, msg: String },
     Invariant(Term<'tcx>),
     Variant(Term<'tcx>),
 }
