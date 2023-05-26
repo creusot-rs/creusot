@@ -344,7 +344,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
 
                         self.tcx.sess.span_err_with_code(
                             self.thir[fun].span,
-                            &format!("{} {:?}", msg, self.tcx.def_path_str(func_did)),
+                            format!("{} {:?}", msg, self.tcx.def_path_str(func_did)),
                             rustc_errors::DiagnosticId::Error(String::from("creusot")),
                         );
                     }

@@ -18,8 +18,8 @@ use crate::{
     },
     util::{self, pre_sig_of, PreSignature},
 };
-use borrowck::BodyWithBorrowckFacts;
 use indexmap::{IndexMap, IndexSet};
+use rustc_borrowck::consumers::BodyWithBorrowckFacts;
 use rustc_errors::{DiagnosticBuilder, DiagnosticId};
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_infer::traits::{Obligation, ObligationCause};
@@ -28,7 +28,7 @@ use rustc_middle::{
     thir,
     ty::{
         subst::{GenericArgKind, InternalSubsts},
-        GenericArg, ParamEnv, SubstsRef, Ty, TyCtxt, WithOptConstParam,
+        GenericArg, ParamEnv, SubstsRef, Ty, TyCtxt,
     },
 };
 use rustc_span::{RealFileName, Span, Symbol, DUMMY_SP};
@@ -403,10 +403,8 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn check_purity(&mut self, def_id: LocalDefId) {
-        let (thir, expr) = self
-            .tcx
-            .thir_body(WithOptConstParam::unknown(def_id))
-            .unwrap_or_else(|_| Error::from(CrErr).emit(self.tcx.sess));
+        let (thir, expr) =
+            self.tcx.thir_body(def_id).unwrap_or_else(|_| Error::from(CrErr).emit(self.tcx.sess));
         let thir = thir.borrow();
         if thir.exprs.is_empty() {
             Error::new(self.tcx.def_span(def_id), "type checking failed").emit(self.tcx.sess);

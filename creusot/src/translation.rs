@@ -51,10 +51,10 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
 
 use std::time::Instant;
 // TODO: Move the main loop out of `translation.rs`
-pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Error>> {
-    for tr in ctx.tcx.traits_in_crate(LOCAL_CRATE) {
-        ctx.translate_trait(*tr);
-    }
+pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> {
+    // for tr in ctx.tcx.traits_in_crate(LOCAL_CRATE) {
+    //     ctx.translate_trait(*tr);
+    // }
 
     let mut why3 = Why3Generator::new(ctx);
 

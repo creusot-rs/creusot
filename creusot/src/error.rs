@@ -17,11 +17,7 @@ impl Error {
     }
 
     pub(crate) fn emit(self, sess: &Session) -> ! {
-        sess.span_fatal_with_code(
-            self.span,
-            &self.msg,
-            DiagnosticId::Error(String::from("creusot")),
-        )
+        sess.span_fatal_with_code(self.span, self.msg, DiagnosticId::Error(String::from("creusot")))
     }
 }
 

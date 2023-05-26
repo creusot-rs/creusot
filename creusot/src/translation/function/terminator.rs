@@ -60,7 +60,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
                 self.emit_terminator(switch);
             }
-            Abort => self.emit_terminator(Terminator::Abort),
+            Terminate => self.emit_terminator(Terminator::Abort),
             Return => self.emit_terminator(Terminator::Return),
             Unreachable => self.emit_terminator(Terminator::Abort),
             Call { func, args, destination, target, .. } => {
@@ -124,7 +124,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 self.emit_assignment(&loc, RValue::Expr(call_exp));
                 self.emit_terminator(Terminator::Goto(bb));
             }
-            Assert { cond, expected, msg, target, cleanup: _ } => {
+            Assert { cond, expected, msg, target, unwind: _ } => {
                 let msg = self.get_explanation(msg);
 
                 let mut cond = match cond {

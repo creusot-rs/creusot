@@ -9,18 +9,18 @@ use rustc_middle::{
     ty::{self, codec::TyEncoder, PredicateKind, Ty, TyCtxt},
 };
 use rustc_serialize::{
-    opaque::{IntEncodedWithFixedSize, MemEncoder},
+    opaque::{FileEncoder, IntEncodedWithFixedSize},
     Encodable, Encoder,
 };
 use rustc_span::{
     hygiene::{raw_encode_syntax_context, HygieneEncodeContext},
     ExpnId, SourceFile, Span, Symbol, SyntaxContext,
 };
-use std::collections::hash_map::Entry;
+use std::{collections::hash_map::Entry, io::Error, path::Path};
 
 pub struct MetadataEncoder<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
-    pub opaque: MemEncoder,
+    pub opaque: FileEncoder,
     type_shorthands: FxHashMap<Ty<'tcx>, usize>,
     predicate_shorthands: FxHashMap<PredicateKind<'tcx>, usize>,
     file_to_file_index: FxHashMap<*const SourceFile, SourceFileIndex>,
@@ -29,7 +29,7 @@ pub struct MetadataEncoder<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> MetadataEncoder<'a, 'tcx> {
-    pub fn finish(self) -> Vec<u8> {
+    pub fn finish(self) -> Result<usize, Error> {
         self.opaque.finish()
     }
 
@@ -62,8 +62,6 @@ impl<'a, 'tcx> Encoder for MetadataEncoder<'a, 'tcx> {
         emit_i8(i8);
 
         emit_bool(bool);
-        emit_f64(f64);
-        emit_f32(f32);
         emit_char(char);
         emit_str(&str);
         emit_raw_bytes(&[u8]);
@@ -179,8 +177,9 @@ impl<'a, 'tcx> TyEncoder for MetadataEncoder<'a, 'tcx> {
 
 pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
     tcx: TyCtxt<'tcx>,
+    path: &Path,
     x: T,
-) -> Vec<u8> {
+) -> Result<(), Error> {
     let (file_to_file_index, file_index_to_stable_id) = {
         let files = tcx.sess.source_map().files();
         let mut file_to_file_index =
@@ -203,7 +202,7 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
 
     let mut encoder = MetadataEncoder {
         tcx,
-        opaque: MemEncoder::new(),
+        opaque: FileEncoder::new(path)?,
         type_shorthands: Default::default(),
         predicate_shorthands: Default::default(),
         hygiene_context: &hygiene_context,
@@ -245,5 +244,6 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
     // DO NOT WRITE ANYTHING TO THE ENCODER AFTER THIS POINT! The address
     // of the footer must be the last thing in the data stream.
 
-    encoder.finish()
+    encoder.finish()?;
+    Ok(())
 }

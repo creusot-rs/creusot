@@ -21,7 +21,7 @@ use rustc_hir::{
     HirId, OwnerId,
 };
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
-pub(crate) use rustc_middle::{mir::Field, thir};
+pub(crate) use rustc_middle::thir;
 use rustc_middle::{
     mir::{BorrowKind, Mutability::*},
     thir::{
@@ -29,12 +29,13 @@ use rustc_middle::{
         StmtKind, Thir,
     },
     ty::{
-        int_ty, subst::SubstsRef, uint_ty, AdtDef, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitable,
-        UpvarSubsts, WithOptConstParam,
+        int_ty, subst::SubstsRef, uint_ty, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitable,
+        UpvarSubsts,
     },
 };
+use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use rustc_span::{Span, Symbol, DUMMY_SP};
-use rustc_target::abi::VariantIdx;
+use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
 
 mod normalize;
@@ -101,7 +102,7 @@ pub enum TermKind<'tcx> {
         args: Vec<Term<'tcx>>,
     },
     Constructor {
-        adt: AdtDef<'tcx>,
+        typ: DefId,
         variant: VariantIdx,
         fields: Vec<Term<'tcx>>,
     },
@@ -134,7 +135,7 @@ pub enum TermKind<'tcx> {
     /// It corresponds strictly to the syntactic projection f.x
     Projection {
         lhs: Box<Term<'tcx>>,
-        name: Field,
+        name: FieldIdx,
     },
     Old {
         term: Box<Term<'tcx>>,
@@ -167,6 +168,27 @@ impl<'tcx, I: Interner> TypeVisitable<I> for Literal<'tcx> {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct Float(pub f64);
+
+impl<E: Encoder> Encodable<E> for Float {
+    fn encode(&self, s: &mut E) {
+        s.emit_u64(self.0.to_bits())
+    }
+}
+
+impl<E: Decoder> Decodable<E> for Float {
+    fn decode(s: &mut E) -> Float {
+        Float(f64::from_bits(s.read_u64()))
+    }
+}
+
+impl From<f64> for Float {
+    fn from(value: f64) -> Self {
+        Float(value)
+    }
+}
+
 // FIXME: Clean up this type: clarify use of ZST, Function, Integer types
 #[derive(Clone, Debug, TyDecodable, TyEncodable)]
 pub enum Literal<'tcx> {
@@ -175,7 +197,7 @@ pub enum Literal<'tcx> {
     Integer(i128),
     MachSigned(i128, IntTy),
     MachUnsigned(u128, UintTy),
-    Float(f64, FloatTy),
+    Float(Float, FloatTy),
     String(String),
     ZST,
     Function(DefId, SubstsRef<'tcx>),
@@ -199,7 +221,7 @@ pub(crate) fn pearlite<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
 ) -> CreusotResult<Term<'tcx>> {
-    let (thir, expr) = ctx.thir_body(WithOptConstParam::unknown(id)).map_err(|_| CrErr)?;
+    let (thir, expr) = ctx.thir_body(id).map_err(|_| CrErr)?;
     let thir = thir.borrow();
     if thir.exprs.is_empty() {
         return Err(Error::new(ctx.def_span(id), "type checking failed"));
@@ -227,8 +249,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     fn body_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
         let body = self.expr_term(expr)?;
         let owner_id = util::param_def_id(self.ctx.tcx, self.item_id.into());
-        let id_wcp = WithOptConstParam::unknown(owner_id);
-        let (thir, _) = self.ctx.thir_body(id_wcp).map_err(|_| CrErr)?;
+        let (thir, _) = self.ctx.thir_body(owner_id).map_err(|_| CrErr)?;
         let thir: &Thir = &thir.borrow();
         let res = thir
             .params
@@ -532,7 +553,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         fields.push((
                             missing_field.into(),
                             Term {
-                                ty: variant.fields[missing_field].ty(self.ctx.tcx, substs),
+                                ty: variant.fields[missing_field.into()].ty(self.ctx.tcx, substs),
                                 span: DUMMY_SP,
                                 kind: self.mk_projection(base.clone(), missing_field.into())?,
                             },
@@ -546,7 +567,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 Ok(Term {
                     ty,
                     span,
-                    kind: TermKind::Constructor { adt: adt_def, variant: variant_index, fields },
+                    kind: TermKind::Constructor {
+                        typ: adt_def.did(),
+                        variant: variant_index,
+                        fields,
+                    },
                 })
             }
             // TODO: If we deref a shared borrow this should be erased?
@@ -659,7 +684,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let defaults = (0usize..field_count).map(|i| (i.into(), Pattern::Wildcard));
 
                 let fields = defaults
-                    .merge_join_by(fields, |i: &(Field, _), j: &(Field, _)| i.0.cmp(&j.0))
+                    .merge_join_by(fields, |i: &(FieldIdx, _), j: &(FieldIdx, _)| i.0.cmp(&j.0))
                     .map(|el| el.reduce(|_, a| a).1)
                     .collect();
 
@@ -691,7 +716,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     let defaults = (0..field_count).map(|i| (i.into(), Pattern::Wildcard));
 
                     let fields = defaults
-                        .merge_join_by(fields, |i: &(Field, _), j: &(Field, _)| i.0.cmp(&j.0))
+                        .merge_join_by(fields, |i: &(FieldIdx, _), j: &(FieldIdx, _)| i.0.cmp(&j.0))
                         .map(|el| el.reduce(|_, a| a).1)
                         .collect();
                     Ok(Pattern::Constructor {
@@ -852,7 +877,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         }
     }
 
-    fn mk_projection(&self, lhs: Term<'tcx>, name: Field) -> Result<TermKind<'tcx>, Error> {
+    fn mk_projection(&self, lhs: Term<'tcx>, name: FieldIdx) -> Result<TermKind<'tcx>, Error> {
         let pat = field_pattern(lhs.ty, name).expect("mk_projection: no term for field");
 
         match &lhs.ty.kind() {
@@ -970,7 +995,7 @@ pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stu
     }
 }
 
-fn field_pattern(ty: Ty, field: Field) -> Option<Pattern> {
+fn field_pattern(ty: Ty, field: FieldIdx) -> Option<Pattern> {
     match ty.kind() {
         TyKind::Tuple(fields) => {
             let mut fields: Vec<_> = (0..fields.len()).map(|_| Pattern::Wildcard).collect();
@@ -1078,7 +1103,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
             visitor.visit_term(&*fun);
             args.iter().for_each(|a| visitor.visit_term(&*a))
         }
-        TermKind::Constructor { adt: _, variant: _, fields } => {
+        TermKind::Constructor { typ: _, variant: _, fields } => {
             fields.iter().for_each(|a| visitor.visit_term(&*a))
         }
         TermKind::Tuple { fields } => fields.iter().for_each(|a| visitor.visit_term(&*a)),
@@ -1130,7 +1155,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
             visitor.visit_mut_term(&mut *fun);
             args.iter_mut().for_each(|a| visitor.visit_mut_term(&mut *a))
         }
-        TermKind::Constructor { adt: _, variant: _, fields } => {
+        TermKind::Constructor { typ: _, variant: _, fields } => {
             fields.iter_mut().for_each(|a| visitor.visit_mut_term(&mut *a))
         }
         TermKind::Tuple { fields } => {

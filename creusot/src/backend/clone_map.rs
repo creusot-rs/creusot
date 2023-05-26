@@ -14,6 +14,7 @@ use rustc_middle::ty::{
     TypeSuperVisitable, TypeVisitor,
 };
 use rustc_span::{Symbol, DUMMY_SP};
+use rustc_target::abi::FieldIdx;
 
 use why3::{
     declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
@@ -315,12 +316,12 @@ impl<'tcx> CloneMap<'tcx> {
         def_id: DefId,
         subst: SubstsRef<'tcx>,
         variant: usize,
-        ix: usize,
+        ix: FieldIdx,
     ) -> QName {
         let tcx = self.tcx;
         let clone = self.insert(def_id, subst);
         let name: Ident = match util::item_type(tcx, def_id) {
-            ItemType::Closure => format!("field_{}", ix).into(),
+            ItemType::Closure => format!("field_{}", ix.as_usize()).into(),
             ItemType::Type => {
                 let variant_def = &tcx.adt_def(def_id).variants()[variant.into()];
                 let variant = variant_def;

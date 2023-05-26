@@ -51,7 +51,7 @@ fn report_panic(info: &PanicInfo) {
 
     let mut diagnostic = handler.struct_note_without_error("Creusot has panic-ed!");
     diagnostic.note("Oops, that shouldn't have happened, sorry about that.");
-    diagnostic.note(&format!("Please report this bug over here: {}", BUG_REPORT_URL));
+    diagnostic.note(format!("Please report this bug over here: {}", BUG_REPORT_URL));
 
     diagnostic.emit();
 

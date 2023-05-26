@@ -81,8 +81,8 @@ pub(crate) fn from_ty_const<'tcx>(
     // Check if a constant is builtin and thus should not be evaluated further
     // Builtin constants are given a body which panics
     if let ConstKind::Unevaluated(u) = c.kind() &&
-       let Some(_) = get_builtin(ctx.tcx, u.def.did) {
-            return Expr::Constant(Term { kind: TermKind::Lit(Literal::Function(u.def.did, u.substs)), ty: c.ty(), span})
+       let Some(_) = get_builtin(ctx.tcx, u.def) {
+            return Expr::Constant(Term { kind: TermKind::Lit(Literal::Function(u.def, u.substs)), ty: c.ty(), span})
     };
 
     if let ConstKind::Param(_) = c.kind() {
@@ -138,7 +138,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
             if float.is_nan() {
                 ctx.crash_and_error(span, "NaN is not yet supported")
             } else {
-                Literal::Float(float as f64, FloatTy::F32)
+                Literal::Float((float as f64).into(), FloatTy::F32)
             }
         }
         Float(FloatTy::F64) => {
@@ -147,7 +147,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
             if float.is_nan() {
                 ctx.crash_and_error(span, "NaN is not yet supported")
             } else {
-                Literal::Float(float, FloatTy::F32)
+                Literal::Float(float.into(), FloatTy::F32)
             }
         }
         _ if ty.is_unit() => Literal::ZST,

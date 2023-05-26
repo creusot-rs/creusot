@@ -14,8 +14,8 @@ use crate::{
     },
     util::{self, ident_of, PreSignature},
 };
-use borrowck::borrow_set::BorrowSet;
 use indexmap::IndexMap;
+use rustc_borrowck::borrow_set::BorrowSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
 
@@ -103,8 +103,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             None => {
                 let with_facts = ctx.body_with_facts(body_id.def_id);
                 let borrows = with_facts.borrow_set.clone();
-                let resolver =
-                    EagerResolver::new(tcx, body, borrows.clone(), with_facts.regioncx.clone());
+                let resolver = EagerResolver::new(
+                    tcx,
+                    body,
+                    borrows.clone(),
+                    with_facts.region_inference_context.clone(),
+                );
 
                 // eprintln!("body of {}", tcx.def_path_str(body_id.def_id()));
                 // resolver.debug(with_facts.regioncx.clone());
