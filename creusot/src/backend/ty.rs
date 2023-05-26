@@ -185,6 +185,7 @@ fn translate_ty_inner<'tcx>(
             names.import_prelude_module(PreludeModule::Opaque);
             MlT::TConstructor(QName::from_string("foreign").unwrap())
         }
+        Error(_) => MlT::UNIT,
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
     }
 }

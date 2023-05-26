@@ -25,6 +25,6 @@ mod a {
 }
 
 fn main() {
-    let v: Vec<bool> = Vec::new();
+    let _: Vec<bool> = Vec::new();
     omg();
 }
