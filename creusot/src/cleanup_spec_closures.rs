@@ -77,13 +77,13 @@ impl<'tcx> MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &mut Rvalue<'tcx>, l: Location) {
         match rvalue {
             Rvalue::Aggregate(box AggregateKind::Closure(def_id, _), substs) => {
-                if util::is_no_translate(self.tcx, *def_id) || util::is_ghost(self.tcx, *def_id) {
+                if util::is_ghost(self.tcx, *def_id) || util::is_no_translate(self.tcx, *def_id) {
                     substs.iter_mut().for_each(|p| {
                         if p.is_move() {
                             self.unused.insert(p.place().unwrap().as_local().unwrap());
                         }
                     });
-                    *substs = IndexVec::new();
+                    substs.truncate(0);
                 }
             }
             _ => self.super_rvalue(rvalue, l),

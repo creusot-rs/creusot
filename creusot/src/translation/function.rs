@@ -20,10 +20,7 @@ use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
 
 use rustc_middle::{
-    mir::{
-        dump_mir, pretty::write_mir_fn, traversal::reverse_postorder, write_mir_pretty, BasicBlock,
-        Body, Local, Operand, Place, VarDebugInfo,
-    },
+    mir::{traversal::reverse_postorder, BasicBlock, Body, Local, Operand, Place, VarDebugInfo},
     ty::{
         subst::{GenericArg, SubstsRef},
         ClosureKind::*,
@@ -151,12 +148,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn translate_body(&mut self) {
-        let mut w = std::io::stderr();
-        write_mir_fn(self.tcx, self.body, &mut |_, _| Ok(()), &mut w);
-        for body in self.tcx.promoted_mir(self.body_id.def_id) {
-            // writeln!(w)?;
-            write_mir_fn(self.tcx, body, &mut |_, _| Ok(()), &mut w);
-        }
         for (bb, bbd) in reverse_postorder(self.body) {
             self.current_block = (vec![], None);
             if bbd.is_cleanup {

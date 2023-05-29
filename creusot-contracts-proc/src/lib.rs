@@ -410,12 +410,12 @@ pub fn ghost(assertion: TS1) -> TS1 {
     let assertion = TokenStream::from(assertion);
     TS1::from(quote! {
         {
-            (
-                #[creusot::no_translate]
-                #[creusot::spec]
-                #[creusot::spec::ghost]
-                || { ::creusot_contracts::ghost::Ghost::new(#assertion) }
-            )()
+            let mut a =
+            (#[creusot::no_translate]
+            #[creusot::spec]
+            #[creusot::spec::ghost]
+            || { ::creusot_contracts::ghost::Ghost::new(#assertion) });
+            a()
         }
     })
 }

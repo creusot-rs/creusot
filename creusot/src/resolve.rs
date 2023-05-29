@@ -221,13 +221,6 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
                 eprintln!(
                     "    live={live1:?} -> {live2:?} frozen={frozen1:?} -> {frozen2:?} init={init1:?} -> {init2:?} uninit={uninit1:?} -> {uninit2:?}",
                 );
-                if let Some(_borrow) = self.borrow_set.location_map.get(&loc) {
-                    // eprintln!(
-                    //     "    region={:?} value={:?}",
-                    //     borrow.region,
-                    //     regioncx.region_value_str(borrow.region),
-                    // );
-                }
 
                 loc = loc.successor_within_block();
             }

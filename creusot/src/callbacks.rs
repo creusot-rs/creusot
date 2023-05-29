@@ -36,7 +36,7 @@ impl Callbacks for ToWhy {
             };
 
             providers.mir_borrowck = |tcx, def_id| {
-                let opts = ConsumerOptions::PoloniusInputFacts;
+                let opts = ConsumerOptions::RegionInferenceContext;
 
                 let body_with_facts =
                     rustc_borrowck::consumers::get_body_with_borrowck_facts(tcx, def_id, opts);

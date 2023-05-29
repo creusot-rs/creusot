@@ -202,6 +202,11 @@ pub use crate::std::{
     slice::SliceExt as _,
 };
 
+#[logic]
+pub fn not_const() {
+    ()
+}
+
 // The std vec macro uses special magic to construct the array argument
 // to Box::new directly on the heap. Because the generated MIR is hard
 // to translate, we provide a custom vec macro which does not do this.
