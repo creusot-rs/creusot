@@ -53,8 +53,8 @@ pub fn collect<I: Iterator>(iter: I) -> Vec<I::Item> {
 }
 
 pub fn extend_index(mut v1: Vec<u32>, v2: Vec<u32>) {
-    let oldv1 = ghost! { *v1 };
-    let oldv2 = ghost! { *v2 };
+    let oldv1 = ghost! { v1 };
+    let oldv2 = ghost! { v2 };
     extend(&mut v1, v2.into_iter());
 
     proof_assert! { v1@.ext_eq(oldv1@.concat(oldv2@)) };

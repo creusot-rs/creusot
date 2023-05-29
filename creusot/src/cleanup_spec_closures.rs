@@ -43,7 +43,10 @@ fn cleanup_statements<'tcx>(body: &mut Body<'tcx>, unused: &IndexSet<Local>) {
             StatementKind::StorageLive(local) | StatementKind::StorageDead(local) => {
                 !unused.contains(local)
             }
-            StatementKind::Assign(box (place, _)) => !unused.contains(&place.local),
+            StatementKind::PlaceMention(place) => !unused.contains(&place.local),
+            StatementKind::Assign(box (place, _)) | StatementKind::FakeRead(box (_, place)) => {
+                !unused.contains(&place.local)
+            }
             _ => true,
         })
     }
@@ -77,13 +80,13 @@ impl<'tcx> MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &mut Rvalue<'tcx>, l: Location) {
         match rvalue {
             Rvalue::Aggregate(box AggregateKind::Closure(def_id, _), substs) => {
-                if util::is_ghost(self.tcx, *def_id) || util::is_no_translate(self.tcx, *def_id) {
+                if util::is_no_translate(self.tcx, *def_id) || util::is_ghost(self.tcx, *def_id) {
                     substs.iter_mut().for_each(|p| {
                         if p.is_move() {
                             self.unused.insert(p.place().unwrap().as_local().unwrap());
                         }
                     });
-                    substs.truncate(0);
+                    *substs = IndexVec::new();
                 }
             }
             _ => self.super_rvalue(rvalue, l),

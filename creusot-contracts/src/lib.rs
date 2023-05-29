@@ -162,6 +162,10 @@ pub mod ghost {
         pub fn new() -> Ghost<T> {
             Ghost(std::marker::PhantomData)
         }
+
+        pub fn from_fn<F: Fn() -> Ghost<T>>(_: F) -> Ghost<T> {
+            Ghost(std::marker::PhantomData)
+        }
     }
 }
 

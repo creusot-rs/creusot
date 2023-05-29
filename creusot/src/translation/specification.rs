@@ -307,6 +307,7 @@ pub(crate) fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
         || def_path.ends_with("::boxed::Box::<T>::new")
         || def_path.ends_with("::ops::Deref::deref")
         || def_path.ends_with("::clone::Clone::clone")
+        || def_path.ends_with("Ghost::<T>::from_fn")
 }
 
 pub(crate) struct PurityVisitor<'a, 'tcx> {

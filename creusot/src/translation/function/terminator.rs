@@ -71,8 +71,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
 
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
-
-                if let Some(param) = subst.get(0) &&
+                if let Some(param) = subst.get(1) &&
                     let GenericArgKind::Type(ty) = param.unpack() &&
                     let Some(def_id) = is_ghost_closure(self.tcx, ty) {
                     let assertion = self.assertions.remove(&def_id).unwrap();

@@ -154,7 +154,7 @@ impl Kind {
 
 use rustc_macros::{TyDecodable, TyEncodable};
 
-use super::Why3Generator;
+use super::{dependency::closure_hack, Why3Generator};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable)]
 enum CloneOpacity {
@@ -256,7 +256,7 @@ impl<'tcx> CloneMap<'tcx> {
     pub(crate) fn insert(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo {
         let subst = self.tcx.erase_regions(subst);
 
-        let (def_id, subst) = self.closure_hack(def_id, subst);
+        let (def_id, subst) = closure_hack(self.tcx, def_id, subst);
 
         self.names.entry((def_id, subst)).or_insert_with(|| {
             let base_sym = match util::item_type(self.tcx, def_id) {
@@ -357,33 +357,6 @@ impl<'tcx> CloneMap<'tcx> {
 
     pub(crate) fn import_builtin_module(&mut self, module: QName) {
         self.prelude.entry(module).or_insert(false);
-    }
-
-    fn closure_hack(&self, def_id: DefId, subst: SubstsRef<'tcx>) -> (DefId, SubstsRef<'tcx>) {
-        if self.tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_precond"), def_id)
-            || self.tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_postcond"), def_id)
-            || self.tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_postcond"), def_id)
-            || self.tcx.is_diagnostic_item(Symbol::intern("fn_impl_postcond"), def_id)
-            || self.tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_unnest"), def_id)
-            || self.tcx.is_diagnostic_item(Symbol::intern("fn_impl_resolve"), def_id)
-        {
-            trace!("closure_hack: {:?} {:?}", self.self_id, def_id);
-            let self_ty = subst.types().nth(1).unwrap();
-            if let TyKind::Closure(id, csubst) = self_ty.kind() {
-                return (*id, csubst);
-            }
-        };
-
-        if self.tcx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), def_id)
-            || self.tcx.is_diagnostic_item(Symbol::intern("creusot_resolve_method"), def_id)
-        {
-            let self_ty = subst.types().nth(0).unwrap();
-            if let TyKind::Closure(id, csubst) = self_ty.kind() {
-                return (*id, csubst);
-            }
-        }
-
-        (def_id, subst)
     }
 
     // Update the clone graph with new entries
