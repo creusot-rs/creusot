@@ -559,8 +559,8 @@ pub(crate) fn is_attr(attr: &Attribute, str: &str) -> bool {
     }
 }
 
-use rustc_middle::mir::Field;
 use rustc_span::def_id::LocalDefId;
+use rustc_target::abi::FieldIdx;
 
 // Responsible for replacing occurences of captured variables with projections from the closure environment.
 // Must also account for the *kind* of capture and the *kind* of closure involved each time.
@@ -568,7 +568,7 @@ pub(crate) struct ClosureSubst<'tcx> {
     self_: Term<'tcx>,
     kind: Option<ClosureKind>,
 
-    map: IndexMap<Symbol, (UpvarCapture, Ty<'tcx>, Field)>,
+    map: IndexMap<Symbol, (UpvarCapture, Ty<'tcx>, FieldIdx)>,
     bound: HashSet<Symbol>,
 }
 

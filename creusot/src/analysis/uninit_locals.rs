@@ -104,9 +104,8 @@ where
             // All other uses do not affect this analysis.
             PlaceContext::NonUse(
                 NonUseContext::StorageLive
-                | NonUseContext::AscribeUserTy
                 | NonUseContext::VarDebugInfo
-                | NonUseContext::PlaceMention,
+                | NonUseContext::AscribeUserTy(_),
             )
             | PlaceContext::NonMutatingUse(
                 NonMutatingUseContext::Inspect
@@ -115,6 +114,7 @@ where
                 | NonMutatingUseContext::ShallowBorrow
                 | NonMutatingUseContext::UniqueBorrow
                 | NonMutatingUseContext::AddressOf
+                | NonMutatingUseContext::PlaceMention
                 | NonMutatingUseContext::Projection,
             ) => {}
         }

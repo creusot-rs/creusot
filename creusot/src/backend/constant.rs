@@ -21,7 +21,7 @@ impl<'tcx> Why3Generator<'tcx> {
         def_id: DefId,
     ) -> (TranslatedItem, CloneSummary<'tcx>) {
         let subst = InternalSubsts::identity_for_item(self.tcx, def_id);
-        let uneval = ty::UnevaluatedConst::new(ty::WithOptConstParam::unknown(def_id), subst);
+        let uneval = ty::UnevaluatedConst::new(def_id, subst);
         let constant = self
             .mk_const(ty::ConstKind::Unevaluated(uneval), self.type_of(def_id).subst_identity());
 

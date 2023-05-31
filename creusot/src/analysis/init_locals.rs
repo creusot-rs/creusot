@@ -104,16 +104,11 @@ where
 
             // If the local is moved out of, or if it gets marked `StorageDead`, consider it no
             // longer initialized.
-            PlaceContext::NonUse(NonUseContext::StorageDead) => {}
+            PlaceContext::NonUse(NonUseContext::StorageDead | NonUseContext::AscribeUserTy(_)) => {}
             PlaceContext::NonMutatingUse(NonMutatingUseContext::Move) => self.trans.kill(local),
 
             // All other uses do not affect this analysis.
-            PlaceContext::NonUse(
-                NonUseContext::StorageLive
-                | NonUseContext::AscribeUserTy
-                | NonUseContext::VarDebugInfo
-                | NonUseContext::PlaceMention,
-            )
+            PlaceContext::NonUse(NonUseContext::StorageLive | NonUseContext::VarDebugInfo)
             | PlaceContext::NonMutatingUse(
                 NonMutatingUseContext::Inspect
                 | NonMutatingUseContext::Copy
@@ -121,6 +116,7 @@ where
                 | NonMutatingUseContext::ShallowBorrow
                 | NonMutatingUseContext::UniqueBorrow
                 | NonMutatingUseContext::AddressOf
+                | NonMutatingUseContext::PlaceMention
                 | NonMutatingUseContext::Projection,
             ) => {}
         }

@@ -112,13 +112,12 @@ pub(crate) fn categorize(context: PlaceContext) -> Option<DefUse> {
         PlaceContext::NonMutatingUse(NonMutatingUseContext::SharedBorrow) |
         PlaceContext::NonMutatingUse(NonMutatingUseContext::ShallowBorrow) |
         PlaceContext::NonMutatingUse(NonMutatingUseContext::UniqueBorrow) |
-
+        PlaceContext::NonMutatingUse(NonMutatingUseContext::PlaceMention) |
         PlaceContext::MutatingUse(MutatingUseContext::AddressOf) |
         PlaceContext::NonMutatingUse(NonMutatingUseContext::AddressOf) |
         PlaceContext::NonMutatingUse(NonMutatingUseContext::Inspect) |
         PlaceContext::NonMutatingUse(NonMutatingUseContext::Copy) |
         PlaceContext::NonMutatingUse(NonMutatingUseContext::Move) |
-        PlaceContext::NonUse(NonUseContext::AscribeUserTy) |
         PlaceContext::MutatingUse(MutatingUseContext::Retag) =>
             Some(DefUse::Use),
 
@@ -134,11 +133,10 @@ pub(crate) fn categorize(context: PlaceContext) -> Option<DefUse> {
             Some(DefUse::Drop),
 
         // Debug info is neither def nor use.
-        PlaceContext::NonUse(NonUseContext::VarDebugInfo) => None,
+        PlaceContext::NonUse(NonUseContext::VarDebugInfo | NonUseContext::AscribeUserTy(_)) => None,
 
         PlaceContext::MutatingUse(MutatingUseContext::Deinit | MutatingUseContext::SetDiscriminant) => {
             unreachable!("These statements are not allowed in this MIR phase")
         },
-        PlaceContext::NonUse(NonUseContext::PlaceMention) => None,
     }
 }

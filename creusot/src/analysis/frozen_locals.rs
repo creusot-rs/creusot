@@ -1,7 +1,10 @@
 use std::{fmt, rc::Rc};
 
-use borrowck::{borrow_set::BorrowSet, dataflow::BorrowIndex, PlaceConflictBias, PlaceExt};
 use dataflow::fmt::DebugWithContext;
+use rustc_borrowck::{
+    borrow_set::BorrowSet,
+    consumers::{BorrowIndex, PlaceConflictBias, PlaceExt},
+};
 use rustc_data_structures::fx::FxIndexMap;
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -85,7 +88,7 @@ impl<'body, 'tcx> Borrows<'body, 'tcx> {
         // will be assured that two places being compared definitely denotes the same sets of
         // locations.
         let definitely_conflicting_borrows = other_borrows_of_local.filter(|&i| {
-            borrowck::places_conflict(
+            rustc_borrowck::consumers::places_conflict(
                 self.tcx,
                 self.body,
                 self.borrow_set[i].borrowed_place,

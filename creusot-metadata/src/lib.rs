@@ -26,7 +26,10 @@ mod encoder;
 
 pub use decoder::decode_metadata;
 pub use encoder::encode_metadata;
-use rustc_data_structures::{fx::FxHashMap, stable_hasher::StableHasher};
+use rustc_data_structures::{
+    fx::FxHashMap,
+    stable_hasher::{Hash64, StableHasher},
+};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::{
     def_id::{StableCrateId, LOCAL_CRATE},
@@ -58,7 +61,7 @@ impl AbsoluteBytePos {
 /// is the only thing available when decoding the [Footer].
 #[derive(Encodable, Decodable, Clone, Debug)]
 struct EncodedSourceFileId {
-    file_name_hash: u64,
+    file_name_hash: Hash64,
     stable_crate_id: StableCrateId,
 }
 
@@ -81,7 +84,7 @@ impl EncodedSourceFileId {
                     let file_name_hash = {
                         let mut hasher = StableHasher::new();
                         FileName::Real(adapted_file_name).hash(&mut hasher);
-                        hasher.finish::<u64>()
+                        hasher.finish::<_>()
                     };
                     return EncodedSourceFileId {
                         file_name_hash,

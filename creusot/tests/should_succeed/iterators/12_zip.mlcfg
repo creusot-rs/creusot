@@ -936,12 +936,8 @@ end
 module C12Zip_Impl0
   type i
   type j
-  use seq.Seq
   use prelude.Borrow
-  clone C12Zip_Common_Iterator_Completed_Interface as Completed2 with
-    type self = j
-  clone C12Zip_Common_Iterator_Completed_Interface as Completed1 with
-    type self = i
+  use seq.Seq
   clone C12Zip_Common_Iterator_Item_Type as Item1 with
     type self = j
   clone C12Zip_Common_Iterator_Produces_Interface as Produces2 with
@@ -952,6 +948,10 @@ module C12Zip_Impl0
   clone C12Zip_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
     type Item0.item = Item0.item
+  clone C12Zip_Common_Iterator_Completed_Interface as Completed2 with
+    type self = j
+  clone C12Zip_Common_Iterator_Completed_Interface as Completed1 with
+    type self = i
   clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant3 with
     type self = j
   clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant2 with
@@ -960,19 +960,6 @@ module C12Zip_Impl0
   clone C12Zip_Common_Iterator_Item_Type as Item2 with
     type self = C12Zip_Zip_Type.t_zip i j
   use Core_Option_Option_Type as Core_Option_Option_Type
-  clone C12Zip_Impl0_Completed as Completed0 with
-    type i = i,
-    type j = j,
-    predicate Completed0.completed = Completed1.completed,
-    predicate Completed1.completed = Completed2.completed
-  clone C12Zip_Impl1_Invariant as Invariant0 with
-    type i = i,
-    type j = j,
-    predicate Invariant0.invariant' = Invariant2.invariant',
-    predicate Invariant1.invariant' = Invariant3.invariant'
-  clone CreusotContracts_Invariant_Impl1_Invariant as Invariant1 with
-    type t = C12Zip_Zip_Type.t_zip i j,
-    predicate Invariant0.invariant' = Invariant0.invariant'
   clone C12Zip_Impl0_Produces as Produces0 with
     type i = i,
     type j = j,
@@ -980,15 +967,28 @@ module C12Zip_Impl0
     type Item1.item = Item1.item,
     predicate Produces0.produces = Produces1.produces,
     predicate Produces1.produces = Produces2.produces
-  goal produces_trans_refn : [#"../12_zip.rs" 40 4 40 90] forall a : C12Zip_Zip_Type.t_zip i j . forall ab : Seq.seq (Item0.item, Item1.item) . forall b : C12Zip_Zip_Type.t_zip i j . forall bc : Seq.seq (Item0.item, Item1.item) . forall c : C12Zip_Zip_Type.t_zip i j . Invariant0.invariant' c /\ Invariant0.invariant' b /\ Invariant0.invariant' a /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Invariant0.invariant' c /\ Invariant0.invariant' b /\ Invariant0.invariant' a /\ Produces0.produces b bc c /\ Produces0.produces a ab b /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
-  goal produces_refl_refn : [#"../12_zip.rs" 34 4 34 29] forall a : C12Zip_Zip_Type.t_zip i j . Invariant0.invariant' a -> Invariant0.invariant' a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
-  goal next_refn : [#"../12_zip.rs" 46 4 46 44] forall self : borrowed (C12Zip_Zip_Type.t_zip i j) . Invariant1.invariant' self -> Invariant1.invariant' self /\ (forall result : Core_Option_Option_Type.t_option (Item0.item, Item1.item) . Invariant0.invariant' ( ^ self) /\ match (result) with
+  clone C12Zip_Impl0_Completed as Completed0 with
+    type i = i,
+    type j = j,
+    predicate Completed0.completed = Completed1.completed,
+    predicate Completed1.completed = Completed2.completed
+  clone C12Zip_Impl1_Invariant as Invariant1 with
+    type i = i,
+    type j = j,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    predicate Invariant1.invariant' = Invariant3.invariant'
+  clone CreusotContracts_Invariant_Impl1_Invariant as Invariant0 with
+    type t = C12Zip_Zip_Type.t_zip i j,
+    predicate Invariant0.invariant' = Invariant1.invariant'
+  goal next_refn : [#"../12_zip.rs" 46 4 46 44] forall self : borrowed (C12Zip_Zip_Type.t_zip i j) . Invariant0.invariant' self -> Invariant0.invariant' self /\ (forall result : Core_Option_Option_Type.t_option (Item0.item, Item1.item) . Invariant1.invariant' ( ^ self) /\ match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
-    end -> Invariant0.invariant' ( ^ self) /\ match (result) with
+    end -> Invariant1.invariant' ( ^ self) /\ match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
     end)
+  goal produces_trans_refn : [#"../12_zip.rs" 40 4 40 90] forall a : C12Zip_Zip_Type.t_zip i j . forall ab : Seq.seq (Item0.item, Item1.item) . forall b : C12Zip_Zip_Type.t_zip i j . forall bc : Seq.seq (Item0.item, Item1.item) . forall c : C12Zip_Zip_Type.t_zip i j . Invariant1.invariant' c /\ Invariant1.invariant' b /\ Invariant1.invariant' a /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Invariant1.invariant' c /\ Invariant1.invariant' b /\ Invariant1.invariant' a /\ Produces0.produces b bc c /\ Produces0.produces a ab b /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
+  goal produces_refl_refn : [#"../12_zip.rs" 34 4 34 29] forall a : C12Zip_Zip_Type.t_zip i j . Invariant1.invariant' a -> Invariant1.invariant' a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
 end
 module C12Zip_Impl1
   type i

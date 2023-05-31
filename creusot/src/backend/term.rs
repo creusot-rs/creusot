@@ -167,12 +167,13 @@ impl<'tcx> Lower<'_, 'tcx> {
                     )
                 })
             }
-            TermKind::Constructor { adt, variant, fields } => {
-                self.ctx.translate(adt.did());
+            TermKind::Constructor { typ, variant, fields } => {
+                self.ctx.translate(typ);
                 let TyKind::Adt(_, subst) = term.ty.kind() else { unreachable!() };
                 let args = fields.into_iter().map(|f| self.lower_term(f)).collect();
 
-                let ctor = self.names.constructor(adt.variants()[variant].def_id, subst);
+                let ctor =
+                    self.names.constructor(self.ctx.adt_def(typ).variants()[variant].def_id, subst);
                 Exp::Constructor { ctor, args }
             }
             TermKind::Cur { box term } => {
@@ -226,14 +227,10 @@ impl<'tcx> Lower<'_, 'tcx> {
                 let lhs = self.lower_term(lhs);
 
                 let accessor = match base_ty.kind() {
-                    TyKind::Closure(did, substs) => {
-                        self.names.accessor(*did, substs, 0, name.as_usize())
-                    }
+                    TyKind::Closure(did, substs) => self.names.accessor(*did, substs, 0, name),
                     TyKind::Adt(def, substs) => {
-                        self.ctx.translate_accessor(
-                            def.variants()[0u32.into()].fields[name.as_usize()].did,
-                        );
-                        self.names.accessor(def.did(), substs, 0, name.as_usize())
+                        self.ctx.translate_accessor(def.variants()[0u32.into()].fields[name].did);
+                        self.names.accessor(def.did(), substs, 0, name)
                     }
                     k => unreachable!("Projection from {k:?}"),
                 };
@@ -388,7 +385,7 @@ pub(crate) fn lower_literal<'tcx>(
         }
         Literal::Float(f, fty) => {
             let _why_ty = floatty_to_ty(names, &fty);
-            Constant::Float(f).into()
+            Constant::Float(f.0).into()
         }
         Literal::ZST => Exp::Tuple(Vec::new()),
         Literal::String(string) => Constant::String(string).into(),

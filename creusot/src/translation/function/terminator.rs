@@ -60,7 +60,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
                 self.emit_terminator(switch);
             }
-            Abort => self.emit_terminator(Terminator::Abort),
+            Terminate => self.emit_terminator(Terminator::Abort),
             Return => self.emit_terminator(Terminator::Return),
             Unreachable => self.emit_terminator(Terminator::Abort),
             Call { func, args, destination, target, .. } => {
@@ -71,8 +71,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
 
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
-
-                if let Some(param) = subst.get(0) &&
+                if let Some(param) = subst.get(1) &&
                     let GenericArgKind::Type(ty) = param.unpack() &&
                     let Some(def_id) = is_ghost_closure(self.tcx, ty) {
                     let assertion = self.assertions.remove(&def_id).unwrap();
@@ -124,7 +123,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 self.emit_assignment(&loc, RValue::Expr(call_exp));
                 self.emit_terminator(Terminator::Goto(bb));
             }
-            Assert { cond, expected, msg, target, cleanup: _ } => {
+            Assert { cond, expected, msg, target, unwind: _ } => {
                 let msg = self.get_explanation(msg);
 
                 let mut cond = match cond {

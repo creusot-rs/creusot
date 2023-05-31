@@ -135,16 +135,12 @@ impl<'a, 'tcx> Decodable<MetadataDecoder<'a, 'tcx>> for Symbol {
             SYMBOL_OFFSET => {
                 // read str offset
                 let pos = d.read_usize();
-                let old_pos = d.opaque.position();
 
                 // move to str ofset and read
-                d.opaque.set_position(pos);
-                let s = d.read_str();
-                let sym = Symbol::intern(s);
-
-                // restore position
-                d.opaque.set_position(old_pos);
-
+                let sym = d.opaque.with_position(pos, |d| {
+                    let s = d.read_str();
+                    Symbol::intern(s)
+                });
                 sym
             }
             SYMBOL_PREINTERNED => {
@@ -168,16 +164,6 @@ impl<'a, 'tcx> TyDecoder for MetadataDecoder<'a, 'tcx> {
         self.tcx
     }
 
-    #[inline]
-    fn peek_byte(&self) -> u8 {
-        self.opaque.data[self.opaque.position()]
-    }
-
-    #[inline]
-    fn position(&self) -> usize {
-        self.opaque.position()
-    }
-
     fn cached_ty_for_shorthand<F>(&mut self, shorthand: usize, or_insert_with: F) -> Ty<'tcx>
     where
         F: FnOnce(&mut Self) -> Ty<'tcx>,
@@ -195,7 +181,7 @@ impl<'a, 'tcx> TyDecoder for MetadataDecoder<'a, 'tcx> {
     where
         F: FnOnce(&mut Self) -> R,
     {
-        let new_decoder = MemDecoder::new(self.opaque.data, pos);
+        let new_decoder = MemDecoder::new(self.opaque.data(), pos);
         let old_decoder = std::mem::replace(&mut self.opaque, new_decoder);
         let r = f(self);
         self.opaque = old_decoder;
@@ -213,10 +199,11 @@ pub fn decode_metadata<'tcx, T: for<'a> Decodable<MetadataDecoder<'a, 'tcx>>>(
 ) -> T {
     let footer = {
         let mut decoder = MemDecoder::new(blob, 0);
-        decoder.set_position(blob.len() - IntEncodedWithFixedSize::ENCODED_SIZE);
-        let footer_pos = IntEncodedWithFixedSize::decode(&mut decoder).0 as usize;
-        decoder.set_position(footer_pos);
-        Footer::decode(&mut decoder)
+        let footer_pos = decoder
+            .with_position(blob.len() - IntEncodedWithFixedSize::ENCODED_SIZE, |d| {
+                IntEncodedWithFixedSize::decode(d).0 as usize
+            });
+        decoder.with_position(footer_pos, |d| Footer::decode(d))
     };
 
     let mut decoder = MetadataDecoder {

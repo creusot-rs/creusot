@@ -162,6 +162,10 @@ pub mod ghost {
         pub fn new() -> Ghost<T> {
             Ghost(std::marker::PhantomData)
         }
+
+        pub fn from_fn<F: Fn() -> Ghost<T>>(_: F) -> Ghost<T> {
+            Ghost(std::marker::PhantomData)
+        }
     }
 }
 
@@ -201,6 +205,11 @@ pub use crate::std::{
     ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
     slice::SliceExt as _,
 };
+
+#[logic]
+pub fn not_const() {
+    ()
+}
 
 // The std vec macro uses special magic to construct the array argument
 // to Box::new directly on the heap. Because the generated MIR is hard

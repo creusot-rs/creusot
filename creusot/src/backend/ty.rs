@@ -185,6 +185,7 @@ fn translate_ty_inner<'tcx>(
             names.import_prelude_module(PreludeModule::Opaque);
             MlT::TConstructor(QName::from_string("foreign").unwrap())
         }
+        Error(_) => MlT::UNIT,
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
     }
 }
@@ -435,7 +436,7 @@ pub(crate) fn translate_accessor(
     let variant_ix = adt_def.variant_index_with_id(variant_did);
     let variant = &adt_def.variants()[variant_ix];
     let ix = variant.fields.iter().position(|f| f.did == field_id).unwrap();
-    let field = &variant.fields[ix];
+    let field = &variant.fields[ix.into()];
 
     let substs = InternalSubsts::identity_for_item(ctx.tcx, adt_did);
     let repr = ctx.representative_type(adt_did);
@@ -464,7 +465,7 @@ pub(crate) fn translate_accessor(
     let acc_name = format!("{}_{}", variant.name.as_str().to_ascii_lowercase(), field.name);
 
     let param_env = ctx.param_env(adt_did);
-    let target_ty = field_ty(ctx, &mut names, param_env, &variant.fields[ix], substs);
+    let target_ty = field_ty(ctx, &mut names, param_env, &variant.fields[ix.into()], substs);
 
     let variant_arities: Vec<_> = adt_def
         .variants()

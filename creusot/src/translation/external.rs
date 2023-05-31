@@ -10,7 +10,7 @@ use rustc_middle::{
     thir::{self, visit::Visitor, Expr, ExprKind, Thir},
     ty::{
         subst::{GenericArgKind, InternalSubsts, SubstsRef},
-        EarlyBinder, Predicate, TyCtxt, TyKind, WithOptConstParam,
+        EarlyBinder, Predicate, TyCtxt, TyKind,
     },
 };
 use rustc_span::Symbol;
@@ -41,7 +41,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     def_id: LocalDefId,
 ) -> CreusotResult<(DefId, ExternSpec<'tcx>)> {
     // Handle error gracefully
-    let (thir, expr) = ctx.tcx.thir_body(WithOptConstParam::unknown(def_id)).map_err(|_| CrErr)?;
+    let (thir, expr) = ctx.tcx.thir_body(def_id).map_err(|_| CrErr)?;
     let thir = thir.borrow();
 
     let mut visit = ExtractExternItems::new(&thir);
@@ -99,7 +99,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
                 }
                 _ => {
                     let mut err = ctx.fatal_error(span, "mismatched parameters in `extern_spec!`");
-                    err.warn(&format!("expected parameter `{:?}` to be called `{:?}`", t2, t1));
+                    err.warn(format!("expected parameter `{:?}` to be called `{:?}`", t2, t1));
                     errors.push(err);
                 }
             },
@@ -108,7 +108,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
                     subst.push(inner_subst[i + extra_parameters]);
                 } else {
                     let mut err = ctx.fatal_error(span, "mismatched parameters in `extern_spec!`");
-                    err.warn(&format!("expected parameter `{:?}` to be called `{:?}`", c2, c1));
+                    err.warn(format!("expected parameter `{:?}` to be called `{:?}`", c2, c1));
                     errors.push(err);
                 }
             }
@@ -117,7 +117,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
                     subst.push(inner_subst[i + extra_parameters]);
                 } else {
                     let mut err = ctx.fatal_error(span, "mismatched parameters in `extern_spec!`");
-                    err.warn(&format!("expected parameter `{:?}` to be called `{:?}`", l2, l1));
+                    err.warn(format!("expected parameter `{:?}` to be called `{:?}`", l2, l1));
                     errors.push(err);
                 }
             }

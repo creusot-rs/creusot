@@ -191,11 +191,11 @@ pub(crate) fn resolve_impl_source_opt<'tcx>(
     let trait_ref = if let Some(assoc) = tcx.opt_associated_item(def_id) {
         match assoc.container {
             ImplContainer => tcx.impl_trait_ref(assoc.container_id(tcx))?.subst(tcx, substs),
-            TraitContainer => tcx.mk_trait_ref(assoc.container_id(tcx), substs),
+            TraitContainer => TraitRef::new(tcx, assoc.container_id(tcx), substs),
         }
     } else {
         if tcx.is_trait(def_id) {
-            tcx.mk_trait_ref(def_id, substs)
+            TraitRef::new(tcx, def_id, substs)
         } else {
             return None;
         }

@@ -224,10 +224,9 @@ pub(crate) fn translate_rplace_inner<'tcx>(
                     let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
                     let _variant = &def.variants()[variant_id];
 
-                    ctx.translate_accessor(def.variants()[variant_id].fields[ix.as_usize()].did);
+                    ctx.translate_accessor(def.variants()[variant_id].fields[*ix].did);
 
-                    let acc =
-                        names.accessor(def.did(), subst, variant_id.as_usize(), ix.as_usize());
+                    let acc = names.accessor(def.did(), subst, variant_id.as_usize(), *ix);
                     inner = Call(Box::new(Exp::impure_qvar(acc)), vec![inner]);
                 }
                 TyKind::Tuple(fields) => {
@@ -242,7 +241,7 @@ pub(crate) fn translate_rplace_inner<'tcx>(
                 }
                 TyKind::Closure(id, subst) => {
                     inner = Call(
-                        Box::new(Exp::impure_qvar(names.accessor(*id, subst, 0, ix.as_usize()))),
+                        Box::new(Exp::impure_qvar(names.accessor(*id, subst, 0, *ix))),
                         vec![inner],
                     );
                 }

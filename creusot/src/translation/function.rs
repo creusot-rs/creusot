@@ -14,8 +14,8 @@ use crate::{
     },
     util::{self, ident_of, PreSignature},
 };
-use borrowck::borrow_set::BorrowSet;
 use indexmap::IndexMap;
+use rustc_borrowck::borrow_set::BorrowSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
 
@@ -93,7 +93,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if crate::util::is_spec(tcx, *def_id) {
+                if crate::util::is_spec(tcx, *def_id) || util::is_ghost(tcx, *def_id) {
                     erased_locals.insert(local);
                 }
             }
@@ -103,8 +103,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             None => {
                 let with_facts = ctx.body_with_facts(body_id.def_id);
                 let borrows = with_facts.borrow_set.clone();
-                let resolver =
-                    EagerResolver::new(tcx, body, borrows.clone(), with_facts.regioncx.clone());
+                let resolver = EagerResolver::new(
+                    tcx,
+                    body,
+                    borrows.clone(),
+                    with_facts.region_inference_context.clone(),
+                );
 
                 // eprintln!("body of {}", tcx.def_path_str(body_id.def_id()));
                 // resolver.debug(with_facts.regioncx.clone());

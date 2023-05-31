@@ -1,6 +1,6 @@
 use indexmap::IndexSet;
 use rustc_hir::def_id::DefId;
-use rustc_index::vec::IndexVec;
+use rustc_index::{Idx, IndexVec};
 use rustc_middle::{
     mir::{
         visit::MutVisitor, AggregateKind, BasicBlock, BasicBlockData, Body, Local, Location,
@@ -43,7 +43,10 @@ fn cleanup_statements<'tcx>(body: &mut Body<'tcx>, unused: &IndexSet<Local>) {
             StatementKind::StorageLive(local) | StatementKind::StorageDead(local) => {
                 !unused.contains(local)
             }
-            StatementKind::Assign(box (place, _)) => !unused.contains(&place.local),
+            StatementKind::PlaceMention(place) => !unused.contains(&place.local),
+            StatementKind::Assign(box (place, _)) | StatementKind::FakeRead(box (_, place)) => {
+                !unused.contains(&place.local)
+            }
             _ => true,
         })
     }
@@ -83,15 +86,13 @@ impl<'tcx> MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
                             self.unused.insert(p.place().unwrap().as_local().unwrap());
                         }
                     });
-                    *substs = Vec::new();
+                    *substs = IndexVec::new();
                 }
             }
             _ => self.super_rvalue(rvalue, l),
         }
     }
 }
-
-use rustc_index::vec::Idx;
 
 pub(crate) fn map_locals<V>(
     local_decls: &mut IndexVec<Local, V>,

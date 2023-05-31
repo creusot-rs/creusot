@@ -1,8 +1,8 @@
-use borrowck::consumers::BodyWithBorrowckFacts;
+use rustc_borrowck::consumers::{BodyWithBorrowckFacts, ConsumerOptions};
 use rustc_driver::{Callbacks, Compilation};
 use rustc_hir::def_id::LocalDefId;
 use rustc_interface::{interface::Compiler, Config, Queries};
-use rustc_middle::ty::{self, TyCtxt};
+use rustc_middle::ty::TyCtxt;
 
 use std::{cell::RefCell, collections::HashMap, thread_local};
 
@@ -31,15 +31,15 @@ impl Callbacks for ToWhy {
             providers.mir_built = |tcx, def_id| {
                 let mir = (rustc_interface::DEFAULT_QUERY_PROVIDERS.mir_built)(tcx, def_id);
                 let mut mir = mir.steal();
-                cleanup_spec_closures(tcx, def_id.def_id_for_type_of(), &mut mir);
+                cleanup_spec_closures(tcx, def_id.to_def_id(), &mut mir);
                 tcx.alloc_steal_mir(mir)
             };
 
             providers.mir_borrowck = |tcx, def_id| {
-                let body_with_facts = borrowck::consumers::get_body_with_borrowck_facts(
-                    tcx,
-                    ty::WithOptConstParam::unknown(def_id),
-                );
+                let opts = ConsumerOptions::RegionInferenceContext;
+
+                let body_with_facts =
+                    rustc_borrowck::consumers::get_body_with_borrowck_facts(tcx, def_id, opts);
 
                 // SAFETY: The reader casts the 'static lifetime to 'tcx before using it.
                 let body_with_facts: BodyWithBorrowckFacts<'static> =

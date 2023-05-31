@@ -83,7 +83,7 @@ fn resolve_item<'tcx>(
     Some(Dependency::Item(normed))
 }
 
-fn closure_hack<'tcx>(
+pub(crate) fn closure_hack<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
     subst: SubstsRef<'tcx>,

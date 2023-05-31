@@ -3,7 +3,10 @@ use std::rc::Rc;
 use crate::analysis::{
     Borrows, MaybeInitializedLocals, MaybeLiveExceptDrop, MaybeUninitializedLocals,
 };
-use borrowck::{borrow_set::BorrowSet, RegionInferenceContext};
+use rustc_borrowck::{
+    borrow_set::BorrowSet,
+    consumers::{calculate_borrows_out_of_scope_at_location, RegionInferenceContext},
+};
 use rustc_index::bit_set::BitSet;
 use rustc_middle::{
     mir::{traversal, BasicBlock, Body, Local, Location},
@@ -52,11 +55,8 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
             .iterate_to_fixpoint()
             .into_results_cursor(body);
 
-        let borrows_out_of_scope = borrowck::dataflow::calculate_borrows_out_of_scope_at_location(
-            body,
-            &regioncx,
-            &borrow_set,
-        );
+        let borrows_out_of_scope =
+            calculate_borrows_out_of_scope_at_location(body, &regioncx, &borrow_set);
 
         let borrows = Borrows::new(tcx, body, borrow_set.clone(), borrows_out_of_scope.clone())
             .into_engine(tcx, body)
@@ -194,7 +194,7 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
     }
 
     #[allow(dead_code)]
-    pub(crate) fn debug(&mut self, regioncx: Rc<RegionInferenceContext<'tcx>>) {
+    pub(crate) fn debug(&mut self, _regioncx: Rc<RegionInferenceContext<'tcx>>) {
         let body = self.body.clone();
         for (bb, bbd) in traversal::preorder(&body) {
             if bbd.is_cleanup {
@@ -221,13 +221,6 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
                 eprintln!(
                     "    live={live1:?} -> {live2:?} frozen={frozen1:?} -> {frozen2:?} init={init1:?} -> {init2:?} uninit={uninit1:?} -> {uninit2:?}",
                 );
-                if let Some(borrow) = self.borrow_set.location_map.get(&loc) {
-                    eprintln!(
-                        "    region={:?} value={:?}",
-                        borrow.region,
-                        regioncx.region_value_str(borrow.region),
-                    );
-                }
 
                 loc = loc.successor_within_block();
             }

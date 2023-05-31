@@ -1,4 +1,4 @@
-use borrowck::borrow_set::TwoPhaseActivation;
+use rustc_borrowck::borrow_set::TwoPhaseActivation;
 use rustc_middle::{
     mir::{
         BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
@@ -173,7 +173,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 | CastKind::IntToFloat
                 | CastKind::FloatToInt
                 | CastKind::FnPtrToPtr
-                | CastKind::FloatToFloat,
+                | CastKind::FloatToFloat
+                | CastKind::Transmute,
                 _,
                 _,
             ) => self.ctx.crash_and_error(

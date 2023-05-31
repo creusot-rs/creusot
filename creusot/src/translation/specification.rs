@@ -307,6 +307,7 @@ pub(crate) fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
         || def_path.ends_with("::boxed::Box::<T>::new")
         || def_path.ends_with("::ops::Deref::deref")
         || def_path.ends_with("::clone::Clone::clone")
+        || def_path.ends_with("Ghost::<T>::from_fn")
 }
 
 pub(crate) struct PurityVisitor<'a, 'tcx> {
@@ -344,7 +345,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
 
                         self.tcx.sess.span_err_with_code(
                             self.thir[fun].span,
-                            &format!("{} {:?}", msg, self.tcx.def_path_str(func_did)),
+                            format!("{} {:?}", msg, self.tcx.def_path_str(func_did)),
                             rustc_errors::DiagnosticId::Error(String::from("creusot")),
                         );
                     }

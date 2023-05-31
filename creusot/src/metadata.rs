@@ -10,7 +10,7 @@ use rustc_span::Symbol;
 use std::{
     collections::HashMap,
     fs::File,
-    io::{Read, Write},
+    io::Read,
     path::{Path, PathBuf},
 };
 
@@ -163,13 +163,7 @@ fn dump_binary_metadata<'tcx>(
     path: &Path,
     dep_info: BinaryMetadata<'tcx>,
 ) -> Result<(), std::io::Error> {
-    let blob = encode_metadata(tcx, dep_info);
-
-    File::create(path).and_then(|mut file| file.write(&blob)).map_err(|err| {
-        warn!("could not encode metadata for crate `{:?}`, error: {:?}", "LOCAL_CRATE", err);
-        err
-    })?;
-    Ok(())
+    encode_metadata(tcx, path, dep_info)
 }
 
 fn load_binary_metadata<'tcx>(
