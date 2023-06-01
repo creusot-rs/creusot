@@ -1,157 +1,144 @@
-use crate::{std::cmp::Ordering, *};
+use crate::{std::cmp::Ordering, util::*, *};
 
 #[allow(unused)]
-pub trait OrdLogic {
+pub trait PartialOrdLogic {
+    #[predicate]
+    fn lt_log(self, _: Self) -> bool;
+
+    #[law]
+    #[ensures(!self.lt_log(self))]
+    fn lt_log_irrefl(self);
+
+    #[law]
+    #[requires(x.lt_log(y))]
+    #[ensures(!y.lt_log(x))]
+    fn lt_log_asymm(x: Self, y: Self);
+
+    #[law]
+    #[requires(x.lt_log(y))]
+    #[requires(y.lt_log(z))]
+    #[ensures(x.lt_log(z))]
+    fn lt_log_trans(x: Self, y: Self, z: Self);
+
+    #[predicate]
+    #[ensures(result == other.lt_log(self))]
+    fn gt_log(self, other: Self) -> bool {
+        other.lt_log(self)
+    }
+
+    #[predicate]
+    #[ensures(result == (self.lt_log(other) || self == other))]
+    fn le_log(self, other: Self) -> bool {
+        self.lt_log(other) || self == other
+    }
+
+    #[law]
+    #[ensures(self.le_log(self))]
+    fn le_log_refl(self) {}
+
+    #[law]
+    #[requires(x.le_log(y))]
+    #[requires(y.le_log(x))]
+    #[ensures(x == y)]
+    fn le_log_anti(x: Self, y: Self) {
+        Self::lt_log_asymm(x, y)
+    }
+
+    #[law]
+    #[requires(x.le_log(y))]
+    #[requires(y.le_log(z))]
+    #[ensures(x.le_log(z))]
+    fn le_log_trans(x: Self, y: Self, z: Self) {
+        Self::lt_log_trans(x, y, z);
+    }
+
+    #[predicate]
+    #[ensures(result == other.le_log(self))]
+    fn ge_log(self, other: Self) -> bool {
+        other.le_log(self)
+    }
+
     #[logic]
-    fn cmp_log(self, _: Self) -> Ordering;
+    #[ensures((result == Some(Ordering::Less)) == self.lt_log(other))]
+    #[ensures((result == Some(Ordering::Equal)) == (self == other))]
+    #[ensures((result == Some(Ordering::Greater)) == self.gt_log(other))]
+    fn partial_cmp_log(self, other: Self) -> Option<Ordering> {
+        Self::lt_log_asymm(self, other);
 
-    #[predicate]
-    fn le_log(self, o: Self) -> bool {
-        pearlite! { self.cmp_log(o) != Ordering::Greater }
+        if self.lt_log(other) {
+            Some(Ordering::Less)
+        } else if self == other {
+            Some(Ordering::Equal)
+        } else if other.lt_log(self) {
+            Some(Ordering::Greater)
+        } else {
+            None
+        }
+    }
+}
+
+#[allow(unused)]
+pub trait OrdLogic: PartialOrdLogic {
+    #[logic]
+    #[ensures(self.partial_cmp_log(other) == Some(result))]
+    fn cmp_log(self, other: Self) -> Ordering {
+        Self::trichotomy(self, other);
+
+        unwrap(self.partial_cmp_log(other))
     }
 
     #[law]
-    #[ensures(x.le_log(y) == (x.cmp_log(y) != Ordering::Greater))]
-    fn cmp_le_log(x: Self, y: Self);
-
-    #[predicate]
-    fn lt_log(self, o: Self) -> bool {
-        pearlite! { self.cmp_log(o) == Ordering::Less }
-    }
-
-    #[law]
-    #[ensures(x.lt_log(y) == (x.cmp_log(y) == Ordering::Less))]
-    fn cmp_lt_log(x: Self, y: Self);
-
-    #[predicate]
-    fn ge_log(self, o: Self) -> bool {
-        pearlite! { self.cmp_log(o) != Ordering::Less }
-    }
-
-    #[law]
-    #[ensures(x.ge_log(y) == (x.cmp_log(y) != Ordering::Less))]
-    fn cmp_ge_log(x: Self, y: Self);
-
-    #[predicate]
-    fn gt_log(self, o: Self) -> bool {
-        pearlite! { self.cmp_log(o) == Ordering::Greater }
-    }
-
-    #[law]
-    #[ensures(x.gt_log(y) == (x.cmp_log(y) == Ordering::Greater))]
-    fn cmp_gt_log(x: Self, y: Self);
-
-    #[law]
-    #[ensures(x.cmp_log(x) == Ordering::Equal)]
-    fn refl(x: Self);
-
-    #[law]
-    #[requires(x.cmp_log(y) == o)]
-    #[requires(y.cmp_log(z) == o)]
-    #[ensures(x.cmp_log(z) == o)]
-    fn trans(x: Self, y: Self, z: Self, o: Ordering);
-
-    #[law]
-    #[requires(x.cmp_log(y) == Ordering::Less)]
-    #[ensures(y.cmp_log(x) == Ordering::Greater)]
-    fn antisym1(x: Self, y: Self);
-
-    #[law]
-    #[requires(x.cmp_log(y) == Ordering::Greater)]
-    #[ensures(y.cmp_log(x) == Ordering::Less)]
-    fn antisym2(x: Self, y: Self);
-
-    #[law]
-    #[ensures((x == y) == (x.cmp_log(y) == Ordering::Equal))]
-    fn eq_cmp(x: Self, y: Self);
+    #[ensures(x.lt_log(y) || x == y || y.lt_log(x))]
+    fn trichotomy(x: Self, y: Self);
 }
 
 macro_rules! ord_logic_impl {
     ($t:ty) => {
-        impl OrdLogic for $t {
-            #[logic]
-            fn cmp_log(self, o: Self) -> Ordering {
-                if self < o {
-                    Ordering::Less
-                } else if self == o {
-                    Ordering::Equal
-                } else {
-                    Ordering::Greater
-                }
-            }
-
-            #[trusted]
-            #[predicate]
-            #[creusot::builtins = "int.Int.(<=)"]
-            fn le_log(self, _: Self) -> bool {
-                true
-            }
-
-            #[trusted]
+        impl PartialOrdLogic for $t {
             #[predicate]
             #[creusot::builtins = "int.Int.(<)"]
             fn lt_log(self, _: Self) -> bool {
-                true
+                pearlite! { absurd }
             }
 
-            #[trusted]
             #[predicate]
-            #[creusot::builtins = "int.Int.(>=)"]
-            fn ge_log(self, _: Self) -> bool {
-                true
+            #[creusot::builtins = "int.Int.(<=)"]
+            fn le_log(self, _: Self) -> bool {
+                pearlite! { absurd }
             }
 
-            #[trusted]
             #[predicate]
             #[creusot::builtins = "int.Int.(>)"]
             fn gt_log(self, _: Self) -> bool {
-                true
+                pearlite! { absurd }
             }
 
-            #[logic]
-            fn cmp_le_log(_: Self, _: Self) {
-                ()
+            #[predicate]
+            #[creusot::builtins = "int.Int.(>=)"]
+            fn ge_log(self, _: Self) -> bool {
+                pearlite! { absurd }
             }
 
-            #[logic]
-            fn cmp_lt_log(_: Self, _: Self) {
-                ()
-            }
+            #[law]
+            #[ensures(!self.lt_log(self))]
+            fn lt_log_irrefl(self) {}
 
-            #[logic]
-            fn cmp_ge_log(_: Self, _: Self) {
-                ()
-            }
+            #[law]
+            #[requires(x.lt_log(y))]
+            #[ensures(!y.lt_log(x))]
+            fn lt_log_asymm(x: Self, y: Self) {}
 
-            #[logic]
-            fn cmp_gt_log(_: Self, _: Self) {
-                ()
-            }
+            #[law]
+            #[requires(x.lt_log(y))]
+            #[requires(y.lt_log(z))]
+            #[ensures(x.lt_log(z))]
+            fn lt_log_trans(x: Self, y: Self, z: Self) {}
+        }
 
-            #[logic]
-            fn refl(_: Self) {
-                ()
-            }
-
-            #[logic]
-            fn trans(_: Self, _: Self, _: Self, _: Ordering) {
-                ()
-            }
-
-            #[logic]
-            fn antisym1(_: Self, _: Self) {
-                ()
-            }
-
-            #[logic]
-            fn antisym2(_: Self, _: Self) {
-                ()
-            }
-
-            #[logic]
-            fn eq_cmp(_: Self, _: Self) {
-                ()
-            }
+        impl OrdLogic for $t {
+            #[law]
+            #[ensures(x.lt_log(y) || x == y || y.lt_log(x))]
+            fn trichotomy(x: Self, y: Self) {}
         }
     };
 }
@@ -172,115 +159,71 @@ ord_logic_impl!(i64);
 ord_logic_impl!(i128);
 ord_logic_impl!(isize);
 
-impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
-    #[logic]
-    fn cmp_log(self, o: Self) -> Ordering {
-        pearlite! { {
-            let r = self.0.cmp_log(o.0);
-            if r == Ordering::Equal {
-                self.1.cmp_log(o.1)
-            } else {
-                r
-            }
-        } }
-    }
-
+impl<A: PartialOrdLogic, B: PartialOrdLogic> PartialOrdLogic for (A, B) {
     #[predicate]
-    fn le_log(self, o: Self) -> bool {
-        pearlite! { (self.0 == o.0 && self.1 <= o.1) || self.0 <= o.0 }
+    fn lt_log(self, other: Self) -> bool {
+        self.0.lt_log(other.0) || (self.0 == other.0 && self.1.lt_log(other.1))
     }
 
-    #[logic]
-    fn cmp_le_log(_: Self, _: Self) {}
+    #[law]
+    #[ensures(!self.lt_log(self))]
+    fn lt_log_irrefl(self) {}
 
-    #[predicate]
-    fn lt_log(self, o: Self) -> bool {
-        pearlite! { (self.0 == o.0 && self.1 < o.1) || self.0 < o.0 }
-    }
+    #[law]
+    #[requires(x.lt_log(y))]
+    #[ensures(!y.lt_log(x))]
+    fn lt_log_asymm(x: Self, y: Self) {}
 
-    #[logic]
-    fn cmp_lt_log(_: Self, _: Self) {}
-
-    #[predicate]
-    fn ge_log(self, o: Self) -> bool {
-        pearlite! { (self.0 == o.0 && self.1 >= o.1) || self.0 >= o.0 }
-    }
-
-    #[logic]
-    fn cmp_ge_log(_: Self, _: Self) {}
-
-    #[predicate]
-    fn gt_log(self, o: Self) -> bool {
-        pearlite! { (self.0 == o.0 && self.1 > o.1) || self.0 > o.0 }
-    }
-
-    #[logic]
-    fn cmp_gt_log(_: Self, _: Self) {}
-
-    #[logic]
-    fn refl(_: Self) {}
-
-    #[logic]
-    fn trans(_: Self, _: Self, _: Self, _: Ordering) {}
-
-    #[logic]
-    fn antisym1(_: Self, _: Self) {}
-
-    #[logic]
-    fn antisym2(_: Self, _: Self) {}
-
-    #[logic]
-    fn eq_cmp(_: Self, _: Self) {}
+    #[law]
+    #[requires(x.lt_log(y))]
+    #[requires(y.lt_log(z))]
+    #[ensures(x.lt_log(z))]
+    fn lt_log_trans(x: Self, y: Self, z: Self) {}
 }
 
-impl<T: OrdLogic> OrdLogic for Option<T> {
-    #[logic]
-    fn cmp_log(self, o: Self) -> Ordering {
-        match (self, o) {
-            (None, None) => Ordering::Equal,
-            (None, Some(_)) => Ordering::Less,
-            (Some(_), None) => Ordering::Greater,
-            (Some(x), Some(y)) => x.cmp_log(y),
+impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
+    #[law]
+    #[ensures(x.lt_log(y) || x == y || y.lt_log(x))]
+    fn trichotomy(x: Self, y: Self) {
+        A::trichotomy(x.0, y.0);
+        B::trichotomy(x.1, y.1);
+    }
+}
+
+impl<T: PartialOrdLogic> PartialOrdLogic for Option<T> {
+    #[predicate]
+    fn lt_log(self, other: Self) -> bool {
+        match (self, other) {
+            (None, Some(_)) => true,
+            (Some(x), Some(y)) => x.lt_log(y),
+            _ => false,
         }
     }
 
     #[law]
-    #[ensures(x.le_log(y) == (x.cmp_log(y) != Ordering::Greater))]
-    fn cmp_le_log(x: Self, y: Self) {}
+    #[ensures(!self.lt_log(self))]
+    fn lt_log_irrefl(self) {}
 
     #[law]
-    #[ensures(x.lt_log(y) == (x.cmp_log(y) == Ordering::Less))]
-    fn cmp_lt_log(x: Self, y: Self) {}
+    #[requires(x.lt_log(y))]
+    #[ensures(!y.lt_log(x))]
+    fn lt_log_asymm(x: Self, y: Self) {}
 
     #[law]
-    #[ensures(x.ge_log(y) == (x.cmp_log(y) != Ordering::Less))]
-    fn cmp_ge_log(x: Self, y: Self) {}
-
-    #[law]
-    #[ensures(x.gt_log(y) == (x.cmp_log(y) == Ordering::Greater))]
-    fn cmp_gt_log(x: Self, y: Self) {}
-
-    #[law]
-    #[ensures(x.cmp_log(x) == Ordering::Equal)]
-    fn refl(x: Self) {}
-
-    #[law]
-    #[requires(x.cmp_log(y) == o)]
-    #[requires(y.cmp_log(z) == o)]
-    #[ensures(x.cmp_log(z) == o)]
-    fn trans(x: Self, y: Self, z: Self, o: Ordering) {}
-
-    #[law]
-    #[requires(x.cmp_log(y) == Ordering::Less)]
-    #[ensures(y.cmp_log(x) == Ordering::Greater)]
-    fn antisym1(x: Self, y: Self) {}
-
-    #[law]
-    #[requires(x.cmp_log(y) == Ordering::Greater)]
-    #[ensures(y.cmp_log(x) == Ordering::Less)]
-    fn antisym2(x: Self, y: Self) {}
-
-    #[law]
-    #[ensures((x == y) == (x.cmp_log(y) == Ordering::Equal))]
-    fn eq_cmp(x: Self, y: Self) {}
+    #[requires(x.lt_log(y))]
+    #[requires(y.lt_log(z))]
+    #[ensures(x.lt_log(z))]
+    fn lt_log_trans(x: Self, y: Self, z: Self) {}
 }
+
+impl<T: OrdLogic> OrdLogic for Option<T> {
+    #[law]
+    #[ensures(x.lt_log(y) || x == y || y.lt_log(x))]
+    fn trichotomy(x: Self, y: Self) {
+        match (x, y) {
+            (Some(x), Some(y)) => T::trichotomy(x, y),
+            _ => (),
+        }
+    }
+}
+
