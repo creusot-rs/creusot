@@ -471,7 +471,17 @@ fn elaborate_type_invariants<'tcx>(
     }
 
     let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
-    for (name, span, ty) in pre_sig.inputs.iter() {
+
+    let param_attrs = def_id
+        .as_local()
+        .and_then(|def_id| get_param_attrs(ctx.tcx, def_id))
+        .filter(|attrs| attrs.len() == pre_sig.inputs.len());
+
+    for (i, (name, span, ty)) in pre_sig.inputs.iter().enumerate() {
+        if let Some(attrs) = &param_attrs && get_attr(attrs[i], &["creusot", "open_inv"]).is_some() {
+            continue;
+        }
+
         if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
             let term = EarlyBinder(term).subst(ctx.tcx, subst);
 
@@ -566,6 +576,16 @@ pub(crate) fn is_attr(attr: &Attribute, str: &str) -> bool {
                 && segments[1].ident.as_str() == str
         }
     }
+}
+
+/// Returns `None` if the `def_id` does not refer to a body owner.
+pub(crate) fn get_param_attrs<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: LocalDefId,
+) -> Option<Vec<&'tcx [Attribute]>> {
+    let body_id = tcx.hir().maybe_body_owned_by(def_id)?;
+    let params = tcx.hir().body(body_id).params;
+    Some(params.iter().map(|p| tcx.hir().attrs(p.hir_id)).collect())
 }
 
 use rustc_span::def_id::LocalDefId;
