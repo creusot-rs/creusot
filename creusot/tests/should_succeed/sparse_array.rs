@@ -33,6 +33,7 @@ impl<T> ShallowModel for Sparse<T> {
     type ShallowModelTy = Seq<Option<T>>;
 
     #[logic]
+    #[open(self)]
     #[trusted]
     #[ensures(result.len() == self.size@)]
     #[ensures(forall<i:Int>

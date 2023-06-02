@@ -11,12 +11,14 @@ pub trait EnumerateExt<I> {
 impl<I> EnumerateExt<I> for Enumerate<I> {
     #[trusted]
     #[logic]
+    #[open(self)]
     fn iter(self) -> I {
         absurd
     }
 
     #[trusted]
     #[logic]
+    #[open(self)]
     fn n(self) -> Int {
         absurd
     }
@@ -24,6 +26,7 @@ impl<I> EnumerateExt<I> for Enumerate<I> {
 
 #[trusted]
 impl<I> Resolve for Enumerate<I> {
+    #[open]
     #[predicate]
     fn resolve(self) -> bool {
         pearlite! {
@@ -33,6 +36,7 @@ impl<I> Resolve for Enumerate<I> {
 }
 
 impl<I: Invariant + Iterator> Invariant for Enumerate<I> {
+    #[open(self)]
     #[predicate]
     fn invariant(self) -> bool {
         pearlite! {
@@ -47,11 +51,13 @@ impl<I> Iterator for Enumerate<I>
 where
     I: Iterator,
 {
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! { exists<inner : &mut _> *inner == self.iter() && ^inner == (^self).iter() && inner.completed() }
     }
 
+    #[open]
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
@@ -63,10 +69,12 @@ where
     }
 
     #[law]
+    #[open(self)]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

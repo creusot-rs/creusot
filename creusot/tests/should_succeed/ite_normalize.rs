@@ -45,6 +45,7 @@ impl<K: DeepModel, V> ShallowModel for BTreeMap<K, V> {
     type ShallowModelTy = creusot_contracts::logic::Mapping<K::DeepModelTy, Option<V>>;
 
     #[logic]
+    #[open(self)]
     #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! { absurd }

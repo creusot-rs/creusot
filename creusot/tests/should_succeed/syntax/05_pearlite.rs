@@ -3,6 +3,7 @@ use creusot_contracts::{logic::Mapping, *};
 
 // Test postfix model operator
 
+#[open]
 #[predicate]
 #[requires(v@.len() == 3)]
 pub fn has_len_3(v: &[u32]) -> bool {
@@ -30,6 +31,7 @@ pub struct B {
 #[ensures(x == B { field2: 0u32, field1: false })]
 pub fn struct_order(x: B) {}
 
+#[open]
 #[predicate]
 #[allow(unreachable_patterns)]
 pub fn field1_is_true(x: B) -> bool {
@@ -58,17 +60,20 @@ pub fn caller() {
 pub struct S {}
 
 impl S {
+    #[open]
     #[logic]
     pub fn x(&mut self) -> bool {
         true
     }
 }
 
+#[open]
 #[logic]
 pub fn proj(x: &mut (S, S)) -> bool {
     x.0.x()
 }
 
+#[open]
 #[logic]
 pub fn proj2(x: &mut &mut (S, S)) -> bool {
     x.0.x()

@@ -17,11 +17,13 @@ where
 {
     type Item = T;
 
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! { self.iter.completed() }
     }
 
+    #[open]
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
@@ -32,10 +34,12 @@ where
     }
 
     #[law]
+    #[open]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -55,6 +59,7 @@ where
     I: Iterator<Item = &'a T>,
     T: Copy,
 {
+    #[open]
     #[predicate]
     fn invariant(self) -> bool {
         pearlite! {

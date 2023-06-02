@@ -4,6 +4,7 @@ use creusot_contracts::{invariant::Invariant, *};
 pub struct NonZeroU32(u32);
 
 impl Invariant for NonZeroU32 {
+    #[open]
     #[predicate]
     fn invariant(self) -> bool {
         pearlite! { self.0@ > 0 }

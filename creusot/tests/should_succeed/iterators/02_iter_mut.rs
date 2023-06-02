@@ -15,6 +15,7 @@ struct IterMut<'a, T> {
 }
 
 impl<'a, T> Invariant for IterMut<'a, T> {
+    #[open]
     #[predicate]
     fn invariant(self) -> bool {
         // Property that is always true but we must carry around..
@@ -25,21 +26,25 @@ impl<'a, T> Invariant for IterMut<'a, T> {
 impl<'a, T> Iterator for IterMut<'a, T> {
     type Item = &'a mut T;
 
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && self.inner@.ext_eq(Seq::EMPTY) }
     }
 
+    #[open]
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         self.inner.to_mut_seq().ext_eq(visited.concat(tl.inner.to_mut_seq()))
     }
 
     #[law]
+    #[open]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

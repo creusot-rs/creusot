@@ -5,6 +5,7 @@ impl<T, const N: usize> ShallowModel for [T; N] {
 
     #[logic]
     #[trusted]
+    #[open]
     #[creusot::builtins = "prelude.Slice.id"]
     // TODO:
     // #[ensures(result.len() == N@)]
@@ -19,6 +20,7 @@ impl<T: DeepModel, const N: usize> DeepModel for [T; N] {
 
     #[logic]
     #[trusted]
+    #[open(self)]
     // TODO
     // #[ensures(result.len() == N@)]
     #[ensures(self.shallow_model().len() == result.len())]

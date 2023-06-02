@@ -80,6 +80,11 @@ module KnapsackFull_SumWeights_Interface
   use KnapsackFull_Item_Type as KnapsackFull_Item_Type
   function sum_weights [#"../knapsack_full.rs" 26 0 26 56] (s : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) : int
     
+  val sum_weights [#"../knapsack_full.rs" 26 0 26 56] (s : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) : int
+    requires {[#"../knapsack_full.rs" 24 11 24 33] 0 <= i /\ i <= Seq.length s}
+    ensures { [#"../knapsack_full.rs" 25 10 25 21] result >= 0 }
+    ensures { result = sum_weights s i }
+    
   axiom sum_weights_spec : forall s : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int . ([#"../knapsack_full.rs" 24 11 24 33] 0 <= i /\ i <= Seq.length s) -> ([#"../knapsack_full.rs" 25 10 25 21] sum_weights s i >= 0)
 end
 module KnapsackFull_SumWeights
@@ -93,6 +98,7 @@ module KnapsackFull_SumWeights
     
   val sum_weights [#"../knapsack_full.rs" 26 0 26 56] (s : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) : int
     requires {[#"../knapsack_full.rs" 24 11 24 33] 0 <= i /\ i <= Seq.length s}
+    ensures { [#"../knapsack_full.rs" 25 10 25 21] result >= 0 }
     ensures { result = sum_weights s i }
     
   axiom def : forall s : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int . sum_weights s i = ([#"../knapsack_full.rs" 27 4 30 5] if i = Seq.length s then
@@ -137,6 +143,10 @@ module KnapsackFull_SumValues_Interface
   use prelude.Borrow
   use KnapsackFull_Item_Type as KnapsackFull_Item_Type
   function sum_values [#"../knapsack_full.rs" 36 0 36 55] (s : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) : int
+    
+  val sum_values [#"../knapsack_full.rs" 36 0 36 55] (s : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) : int
+    requires {[#"../knapsack_full.rs" 35 11 35 33] i >= 0 /\ i <= Seq.length s}
+    ensures { result = sum_values s i }
     
 end
 module KnapsackFull_SumValues
@@ -189,6 +199,11 @@ module KnapsackFull_SubseqRev_Interface
   use seq.Seq
   use prelude.Borrow
   predicate subseq_rev [#"../knapsack_full.rs" 47 0 47 67] (s1 : Seq.seq t) (i1 : int) (s2 : Seq.seq t) (i2 : int)
+  val subseq_rev [#"../knapsack_full.rs" 47 0 47 67] (s1 : Seq.seq t) (i1 : int) (s2 : Seq.seq t) (i2 : int) : bool
+    requires {[#"../knapsack_full.rs" 45 11 45 36] 0 <= i1 /\ i1 <= Seq.length s1}
+    requires {[#"../knapsack_full.rs" 46 11 46 36] 0 <= i2 /\ i2 <= Seq.length s2}
+    ensures { result = subseq_rev s1 i1 s2 i2 }
+    
 end
 module KnapsackFull_SubseqRev
   type t
@@ -259,6 +274,13 @@ module KnapsackFull_M_Interface
     axiom .
   function m [#"../knapsack_full.rs" 65 0 65 57] (items : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) (w : int) : int
     
+  val m [#"../knapsack_full.rs" 65 0 65 57] (items : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) (w : int) : int
+    requires {[#"../knapsack_full.rs" 59 11 59 37] 0 <= i /\ i <= Seq.length items}
+    requires {[#"../knapsack_full.rs" 60 11 60 17] 0 <= w}
+    ensures { [#"../knapsack_full.rs" 61 10 61 21] result >= 0 }
+    ensures { [#"../knapsack_full.rs" 62 0 64 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . 0 <= j /\ j <= Seq.length s /\ SubseqRev0.subseq_rev s j items i /\ SumWeights0.sum_weights s j <= w -> SumValues0.sum_values s j <= result }
+    ensures { result = m items i w }
+    
   axiom m_spec : forall items : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int, w : int . ([#"../knapsack_full.rs" 59 11 59 37] 0 <= i /\ i <= Seq.length items) -> ([#"../knapsack_full.rs" 60 11 60 17] 0 <= w) -> ([#"../knapsack_full.rs" 62 0 64 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . 0 <= j /\ j <= Seq.length s /\ SubseqRev0.subseq_rev s j items i /\ SumWeights0.sum_weights s j <= w -> SumValues0.sum_values s j <= m items i w) && ([#"../knapsack_full.rs" 61 10 61 21] m items i w >= 0)
 end
 module KnapsackFull_M
@@ -283,6 +305,8 @@ module KnapsackFull_M
   val m [#"../knapsack_full.rs" 65 0 65 57] (items : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) (w : int) : int
     requires {[#"../knapsack_full.rs" 59 11 59 37] 0 <= i /\ i <= Seq.length items}
     requires {[#"../knapsack_full.rs" 60 11 60 17] 0 <= w}
+    ensures { [#"../knapsack_full.rs" 61 10 61 21] result >= 0 }
+    ensures { [#"../knapsack_full.rs" 62 0 64 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . 0 <= j /\ j <= Seq.length s /\ SubseqRev0.subseq_rev s j items i /\ SumWeights0.sum_weights s j <= w -> SumValues0.sum_values s j <= result }
     ensures { result = m items i w }
     
   axiom def : forall items : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int, w : int . m items i w = ([#"../knapsack_full.rs" 66 4 73 5] if i = 0 then
@@ -346,6 +370,9 @@ module CreusotContracts_Model_ShallowModel_ShallowModel_Interface
   clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
     type self = self
   function shallow_model (self : self) : ShallowModelTy0.shallowModelTy
+  val shallow_model (self : self) : ShallowModelTy0.shallowModelTy
+    ensures { result = shallow_model self }
+    
 end
 module CreusotContracts_Model_ShallowModel_ShallowModel
   type self
@@ -369,6 +396,9 @@ module CreusotContracts_Model_Impl1_ShallowModel_Interface
   clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
     type self = t
   function shallow_model (self : t) : ShallowModelTy0.shallowModelTy
+  val shallow_model (self : t) : ShallowModelTy0.shallowModelTy
+    ensures { result = shallow_model self }
+    
 end
 module CreusotContracts_Model_Impl1_ShallowModel
   type t
@@ -379,7 +409,7 @@ module CreusotContracts_Model_Impl1_ShallowModel
     type self = t,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
   function shallow_model (self : t) : ShallowModelTy0.shallowModelTy =
-    [#"../../../../creusot-contracts/src/model.rs" 38 8 38 31] ShallowModel0.shallow_model self
+    [#"../../../../creusot-contracts/src/model.rs" 40 8 40 31] ShallowModel0.shallow_model self
   val shallow_model (self : t) : ShallowModelTy0.shallowModelTy
     ensures { result = shallow_model self }
     
@@ -395,6 +425,9 @@ module CreusotContracts_Logic_Ops_Impl0_IndexLogic_Interface
   type s
   use prelude.Int
   function index_logic [@inline:trivial] (self : s) (ix : int) : t
+  val index_logic [@inline:trivial] (self : s) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
 end
 module CreusotContracts_Logic_Ops_Impl0_IndexLogic
   type t
@@ -406,7 +439,7 @@ module CreusotContracts_Logic_Ops_Impl0_IndexLogic
     type self = s,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
   function index_logic [@inline:trivial] (self : s) (ix : int) : t =
-    [#"../../../../creusot-contracts/src/logic/ops.rs" 16 8 16 31] Seq.get (ShallowModel0.shallow_model self) ix
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 17 8 17 31] Seq.get (ShallowModel0.shallow_model self) ix
   val index_logic [@inline:trivial] (self : s) (ix : int) : t
     ensures { result = index_logic self ix }
     
@@ -475,7 +508,11 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Core_Num_Impl11_Max_Stub as Max0
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . [#"../../../../creusot-contracts/src/std/vec.rs" 17 14 17 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
+  val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { result = shallow_model self }
+    
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . [#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
 end
 module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   type t
@@ -487,9 +524,10 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   clone Core_Num_Impl11_Max_Stub as Max0
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
   val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . [#"../../../../creusot-contracts/src/std/vec.rs" 17 14 17 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . [#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
 end
 module Alloc_Alloc_Global_Type
   type t_global  =
@@ -532,11 +570,14 @@ end
 module CreusotContracts_Invariant_Invariant_Invariant_Interface
   type self
   predicate invariant' (self : self)
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
 end
 module CreusotContracts_Invariant_Invariant_Invariant
   type self
   predicate invariant' (self : self) =
-    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+    [#"../../../../creusot-contracts/src/invariant.rs" 9 8 9 12] true
   val invariant' (self : self) : bool
     ensures { result = invariant' self }
     
@@ -556,6 +597,9 @@ module CreusotContracts_Model_DeepModel_DeepModel_Interface
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = self
   function deep_model (self : self) : DeepModelTy0.deepModelTy
+  val deep_model (self : self) : DeepModelTy0.deepModelTy
+    ensures { result = deep_model self }
+    
 end
 module CreusotContracts_Model_DeepModel_DeepModel
   type self
@@ -579,6 +623,9 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Produces_Interface
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   predicate produces (self : Core_Ops_Range_Range_Type.t_range idx) (visited : Seq.seq idx) (o : Core_Ops_Range_Range_Type.t_range idx)
     
+  val produces (self : Core_Ops_Range_Range_Type.t_range idx) (visited : Seq.seq idx) (o : Core_Ops_Range_Range_Type.t_range idx) : bool
+    ensures { result = produces self visited o }
+    
 end
 module CreusotContracts_Std1_Iter_Range_Impl0_Produces
   type idx
@@ -592,7 +639,7 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Produces
   predicate produces (self : Core_Ops_Range_Range_Type.t_range idx) (visited : Seq.seq idx) (o : Core_Ops_Range_Range_Type.t_range idx)
     
    =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 19 8 25 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self) <= DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0 -> DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o) <= DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o) - DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> DeepModel0.deep_model (Seq.get visited i) = DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self) + i)
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self) <= DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0 -> DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o) <= DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o) - DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> DeepModel0.deep_model (Seq.get visited i) = DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self) + i)
   val produces (self : Core_Ops_Range_Range_Type.t_range idx) (visited : Seq.seq idx) (o : Core_Ops_Range_Range_Type.t_range idx) : bool
     ensures { result = produces self visited o }
     
@@ -606,12 +653,15 @@ module CreusotContracts_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
   predicate resolve (self : borrowed t)
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
   predicate resolve (self : borrowed t) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 23 20 23 34]  ^ self =  * self
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
     ensures { result = resolve self }
     
@@ -623,6 +673,9 @@ end
 module CreusotContracts_Resolve_Resolve_Resolve_Interface
   type self
   predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Resolve_Resolve_Resolve
   type self
@@ -640,6 +693,9 @@ module CreusotContracts_Std1_Ops_Impl5_StartLog_Interface
   type idx
   use Core_Ops_Range_RangeInclusive_Type as Core_Ops_Range_RangeInclusive_Type
   function start_log (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : idx
+  val start_log (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : idx
+    ensures { result = start_log self }
+    
 end
 module CreusotContracts_Std1_Ops_Impl5_StartLog
   type idx
@@ -658,6 +714,9 @@ module CreusotContracts_Std1_Ops_Impl5_EndLog_Interface
   type idx
   use Core_Ops_Range_RangeInclusive_Type as Core_Ops_Range_RangeInclusive_Type
   function end_log (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : idx
+  val end_log (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : idx
+    ensures { result = end_log self }
+    
 end
 module CreusotContracts_Std1_Ops_Impl5_EndLog
   type idx
@@ -683,6 +742,9 @@ module CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   function cmp_log (self : self) (_2' : self) : Core_Cmp_Ordering_Type.t_ordering
+  val cmp_log (self : self) (_2' : self) : Core_Cmp_Ordering_Type.t_ordering
+    ensures { result = cmp_log self _2' }
+    
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLog
   type self
@@ -699,6 +761,9 @@ end
 module CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface
   type self
   predicate le_log (self : self) (o : self)
+  val le_log (self : self) (o : self) : bool
+    ensures { result = le_log self o }
+    
 end
 module CreusotContracts_Logic_Ord_OrdLogic_LeLog
   type self
@@ -706,7 +771,7 @@ module CreusotContracts_Logic_Ord_OrdLogic_LeLog
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
   predicate le_log (self : self) (o : self) =
-    [#"../../../../creusot-contracts/src/logic/ord.rs" 10 20 10 56] CmpLog0.cmp_log self o <> Core_Cmp_Ordering_Type.C_Greater
+    [#"../../../../creusot-contracts/src/logic/ord.rs" 11 20 11 56] CmpLog0.cmp_log self o <> Core_Cmp_Ordering_Type.C_Greater
   val le_log (self : self) (o : self) : bool
     ensures { result = le_log self o }
     
@@ -742,7 +807,11 @@ module CreusotContracts_Std1_Ops_Impl5_IsEmptyLog_Interface
   clone CreusotContracts_Std1_Ops_Impl5_StartLog_Stub as StartLog0 with
     type idx = idx
   predicate is_empty_log (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx)
-  axiom is_empty_log_spec : forall self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx . [#"../../../../creusot-contracts/src/std/ops.rs" 196 4 196 88] not is_empty_log self -> LeLog0.le_log (DeepModel0.deep_model (StartLog0.start_log self)) (DeepModel0.deep_model (EndLog0.end_log self))
+  val is_empty_log (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : bool
+    ensures { [#"../../../../creusot-contracts/src/std/ops.rs" 210 4 210 88] not result -> LeLog0.le_log (DeepModel0.deep_model (StartLog0.start_log self)) (DeepModel0.deep_model (EndLog0.end_log self)) }
+    ensures { result = is_empty_log self }
+    
+  axiom is_empty_log_spec : forall self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx . [#"../../../../creusot-contracts/src/std/ops.rs" 210 4 210 88] not is_empty_log self -> LeLog0.le_log (DeepModel0.deep_model (StartLog0.start_log self)) (DeepModel0.deep_model (EndLog0.end_log self))
 end
 module CreusotContracts_Std1_Ops_Impl5_IsEmptyLog
   type idx
@@ -760,9 +829,10 @@ module CreusotContracts_Std1_Ops_Impl5_IsEmptyLog
     type idx = idx
   predicate is_empty_log (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx)
   val is_empty_log (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : bool
+    ensures { [#"../../../../creusot-contracts/src/std/ops.rs" 210 4 210 88] not result -> LeLog0.le_log (DeepModel0.deep_model (StartLog0.start_log self)) (DeepModel0.deep_model (EndLog0.end_log self)) }
     ensures { result = is_empty_log self }
     
-  axiom is_empty_log_spec : forall self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx . [#"../../../../creusot-contracts/src/std/ops.rs" 196 4 196 88] not is_empty_log self -> LeLog0.le_log (DeepModel0.deep_model (StartLog0.start_log self)) (DeepModel0.deep_model (EndLog0.end_log self))
+  axiom is_empty_log_spec : forall self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx . [#"../../../../creusot-contracts/src/std/ops.rs" 210 4 210 88] not is_empty_log self -> LeLog0.le_log (DeepModel0.deep_model (StartLog0.start_log self)) (DeepModel0.deep_model (EndLog0.end_log self))
 end
 module CreusotContracts_Logic_Ord_Impl2_LeLog_Stub
   use prelude.Int
@@ -771,6 +841,9 @@ end
 module CreusotContracts_Logic_Ord_Impl2_LeLog_Interface
   use prelude.Int
   predicate le_log (self : int) (_2' : int)
+  val le_log (self : int) (_2' : int) : bool
+    ensures { result = le_log self _2' }
+    
 end
 module CreusotContracts_Logic_Ord_Impl2_LeLog
   use prelude.Int
@@ -826,7 +899,11 @@ module CreusotContracts_Std1_Iter_Range_RangeInclusiveLen_Interface
     type DeepModelTy0.deepModelTy = int,
     axiom .
   function range_inclusive_len (r : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : int
-  axiom range_inclusive_len_spec : forall r : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx . [#"../../../../creusot-contracts/src/std/iter/range.rs" 40 10 40 43] IsEmptyLog0.is_empty_log r = (range_inclusive_len r = 0)
+  val range_inclusive_len (r : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : int
+    ensures { [#"../../../../creusot-contracts/src/std/iter/range.rs" 45 10 45 43] IsEmptyLog0.is_empty_log r = (result = 0) }
+    ensures { result = range_inclusive_len r }
+    
+  axiom range_inclusive_len_spec : forall r : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx . [#"../../../../creusot-contracts/src/std/iter/range.rs" 45 10 45 43] IsEmptyLog0.is_empty_log r = (range_inclusive_len r = 0)
 end
 module CreusotContracts_Std1_Iter_Range_RangeInclusiveLen
   type idx
@@ -850,15 +927,16 @@ module CreusotContracts_Std1_Iter_Range_RangeInclusiveLen
     type DeepModelTy0.deepModelTy = int,
     axiom .
   function range_inclusive_len (r : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : int =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 42 4 45 5] if IsEmptyLog0.is_empty_log r then
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 47 4 50 5] if IsEmptyLog0.is_empty_log r then
       0
     else
       DeepModel0.deep_model (EndLog0.end_log r) - DeepModel0.deep_model (StartLog0.start_log r) + 1
     
   val range_inclusive_len (r : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : int
+    ensures { [#"../../../../creusot-contracts/src/std/iter/range.rs" 45 10 45 43] IsEmptyLog0.is_empty_log r = (result = 0) }
     ensures { result = range_inclusive_len r }
     
-  axiom range_inclusive_len_spec : forall r : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx . [#"../../../../creusot-contracts/src/std/iter/range.rs" 40 10 40 43] IsEmptyLog0.is_empty_log r = (range_inclusive_len r = 0)
+  axiom range_inclusive_len_spec : forall r : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx . [#"../../../../creusot-contracts/src/std/iter/range.rs" 45 10 45 43] IsEmptyLog0.is_empty_log r = (range_inclusive_len r = 0)
 end
 module CreusotContracts_Std1_Iter_Range_Impl1_Produces_Stub
   type idx
@@ -872,6 +950,9 @@ module CreusotContracts_Std1_Iter_Range_Impl1_Produces_Interface
   use seq.Seq
   use Core_Ops_Range_RangeInclusive_Type as Core_Ops_Range_RangeInclusive_Type
   predicate produces (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) (visited : Seq.seq idx) (o : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx)
+    
+  val produces (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) (visited : Seq.seq idx) (o : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : bool
+    ensures { result = produces self visited o }
     
 end
 module CreusotContracts_Std1_Iter_Range_Impl1_Produces
@@ -907,7 +988,7 @@ module CreusotContracts_Std1_Iter_Range_Impl1_Produces
   predicate produces (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) (visited : Seq.seq idx) (o : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx)
     
    =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 58 8 64 9] Seq.length visited = RangeInclusiveLen0.range_inclusive_len self - RangeInclusiveLen0.range_inclusive_len o /\ (IsEmptyLog0.is_empty_log self -> IsEmptyLog0.is_empty_log o) /\ (IsEmptyLog0.is_empty_log o \/ EndLog0.end_log self = EndLog0.end_log o) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> DeepModel0.deep_model (Seq.get visited i) = DeepModel0.deep_model (StartLog0.start_log self) + i)
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 65 8 71 9] Seq.length visited = RangeInclusiveLen0.range_inclusive_len self - RangeInclusiveLen0.range_inclusive_len o /\ (IsEmptyLog0.is_empty_log self -> IsEmptyLog0.is_empty_log o) /\ (IsEmptyLog0.is_empty_log o \/ EndLog0.end_log self = EndLog0.end_log o) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> DeepModel0.deep_model (Seq.get visited i) = DeepModel0.deep_model (StartLog0.start_log self) + i)
   val produces (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) (visited : Seq.seq idx) (o : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : bool
     ensures { result = produces self visited o }
     
@@ -923,6 +1004,9 @@ module CreusotContracts_Std1_Vec_Impl10_Resolve_Interface
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  val resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Std1_Vec_Impl10_Resolve
   type t
@@ -942,7 +1026,7 @@ module CreusotContracts_Std1_Vec_Impl10_Resolve
     val Max0.mAX' = Max0.mAX',
     axiom .
   predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../creusot-contracts/src/std/vec.rs" 47 8 47 85] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Resolve0.resolve (IndexLogic0.index_logic self i)
+    [#"../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Resolve0.resolve (IndexLogic0.index_logic self i)
   val resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve self }
     
@@ -964,8 +1048,8 @@ module Alloc_Vec_FromElem_Interface
     val Max0.mAX' = Max0.mAX',
     axiom .
   val from_elem (elem : t) (n : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 143 22 143 41] Seq.length (ShallowModel0.shallow_model result) = UIntSize.to_int n }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 144 12 144 78] forall i : int . 0 <= i /\ i < UIntSize.to_int n -> IndexLogic0.index_logic result i = elem }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 147 22 147 41] Seq.length (ShallowModel0.shallow_model result) = UIntSize.to_int n }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 148 12 148 78] forall i : int . 0 <= i /\ i < UIntSize.to_int n -> IndexLogic0.index_logic result i = elem }
     
 end
 module Alloc_Vec_Impl1_Len_Interface
@@ -981,7 +1065,7 @@ module Alloc_Vec_Impl1_Len_Interface
     type t = Alloc_Vec_Vec_Type.t_vec t a,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
   val len (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 62 26 62 48] UIntSize.to_int result = Seq.length (ShallowModel0.shallow_model self) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 66 26 66 48] UIntSize.to_int result = Seq.length (ShallowModel0.shallow_model self) }
     
 end
 module CreusotContracts_Std1_Iter_IntoIterator_IntoIterPre_Stub
@@ -991,11 +1075,14 @@ end
 module CreusotContracts_Std1_Iter_IntoIterator_IntoIterPre_Interface
   type self
   predicate into_iter_pre (self : self)
+  val into_iter_pre (self : self) : bool
+    ensures { result = into_iter_pre self }
+    
 end
 module CreusotContracts_Std1_Iter_IntoIterator_IntoIterPre
   type self
   predicate into_iter_pre (self : self) =
-    [#"../../../../creusot-contracts/src/std/iter.rs" 55 20 55 24] true
+    [#"../../../../creusot-contracts/src/std/iter.rs" 57 20 57 24] true
   val into_iter_pre (self : self) : bool
     ensures { result = into_iter_pre self }
     
@@ -1015,6 +1102,9 @@ module CreusotContracts_Std1_Iter_IntoIterator_IntoIterPost_Interface
   clone Core_Iter_Traits_Collect_IntoIterator_IntoIter_Type as IntoIter0 with
     type self = self
   predicate into_iter_post (self : self) (res : IntoIter0.intoIter)
+  val into_iter_post (self : self) (res : IntoIter0.intoIter) : bool
+    ensures { result = into_iter_post self res }
+    
 end
 module CreusotContracts_Std1_Iter_IntoIterator_IntoIterPost
   type self
@@ -1035,9 +1125,9 @@ module Core_Iter_Traits_Collect_Impl0_IntoIter_Interface
   clone CreusotContracts_Std1_Iter_IntoIterator_IntoIterPre_Stub as IntoIterPre0 with
     type self = i
   val into_iter (self : i) : i
-    requires {[#"../../../../creusot-contracts/src/std/iter.rs" 79 0 147 1] IntoIterPre0.into_iter_pre self}
+    requires {[#"../../../../creusot-contracts/src/std/iter.rs" 83 0 151 1] IntoIterPre0.into_iter_pre self}
     requires {Invariant0.invariant' self}
-    ensures { [#"../../../../creusot-contracts/src/std/iter.rs" 79 0 147 1] IntoIterPost0.into_iter_post self result }
+    ensures { [#"../../../../creusot-contracts/src/std/iter.rs" 83 0 151 1] IntoIterPost0.into_iter_post self result }
     ensures { Invariant0.invariant' result }
     
 end
@@ -1050,6 +1140,9 @@ module CreusotContracts_Std1_Iter_Iterator_Completed_Interface
   type self
   use prelude.Borrow
   predicate completed (self : borrowed self)
+  val completed (self : borrowed self) : bool
+    ensures { result = completed self }
+    
 end
 module CreusotContracts_Std1_Iter_Iterator_Completed
   type self
@@ -1076,6 +1169,9 @@ module CreusotContracts_Std1_Iter_Iterator_Produces_Interface
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = self
   predicate produces (self : self) (visited : Seq.seq Item0.item) (_o : self)
+  val produces (self : self) (visited : Seq.seq Item0.item) (_o : self) : bool
+    ensures { result = produces self visited _o }
+    
 end
 module CreusotContracts_Std1_Iter_Iterator_Produces
   type self
@@ -1101,7 +1197,7 @@ module Core_Iter_Range_Impl3_Next_Interface
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = Core_Ops_Range_Range_Type.t_range a
   val next (self : borrowed (Core_Ops_Range_Range_Type.t_range a)) : Core_Option_Option_Type.t_option a
-    ensures { [#"../../../../creusot-contracts/src/std/iter.rs" 85 26 88 17] match (result) with
+    ensures { [#"../../../../creusot-contracts/src/std/iter.rs" 89 26 92 17] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
@@ -1120,6 +1216,9 @@ module CreusotContracts_Std1_Slice_SliceIndex_InBounds_Interface
   clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
     type self = t
   predicate in_bounds (self : self) (seq : ShallowModelTy0.shallowModelTy)
+  val in_bounds (self : self) (seq : ShallowModelTy0.shallowModelTy) : bool
+    ensures { result = in_bounds self seq }
+    
 end
 module CreusotContracts_Std1_Slice_SliceIndex_InBounds
   type self
@@ -1155,6 +1254,9 @@ module CreusotContracts_Std1_Slice_SliceIndex_HasValue_Interface
   clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
     type self = t
   predicate has_value (self : self) (seq : ShallowModelTy0.shallowModelTy) (out : Output0.output)
+  val has_value (self : self) (seq : ShallowModelTy0.shallowModelTy) (out : Output0.output) : bool
+    ensures { result = has_value self seq out }
+    
 end
 module CreusotContracts_Std1_Slice_SliceIndex_HasValue
   type self
@@ -1194,8 +1296,8 @@ module Alloc_Vec_Impl13_Index_Interface
     type t = Alloc_Vec_Vec_Type.t_vec t a,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
   val index (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
-    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 127 27 127 46] InBounds0.in_bounds index (ShallowModel0.shallow_model self)}
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 128 26 128 54] HasValue0.has_value index (ShallowModel0.shallow_model self) result }
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 131 27 131 46] InBounds0.in_bounds index (ShallowModel0.shallow_model self)}
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 132 26 132 54] HasValue0.has_value index (ShallowModel0.shallow_model self) result }
     
 end
 module Core_Ops_Range_Impl7_New_Interface
@@ -1221,9 +1323,9 @@ module Core_Ops_Range_Impl7_New_Interface
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     axiom .
   val new (start : idx) (end' : idx) : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx
-    ensures { [#"../../../../creusot-contracts/src/std/ops.rs" 210 26 210 53] StartLog0.start_log result = start }
-    ensures { [#"../../../../creusot-contracts/src/std/ops.rs" 211 26 211 49] EndLog0.end_log result = end' }
-    ensures { [#"../../../../creusot-contracts/src/std/ops.rs" 212 16 212 93] LeLog0.le_log (DeepModel0.deep_model start) (DeepModel0.deep_model end') -> not IsEmptyLog0.is_empty_log result }
+    ensures { [#"../../../../creusot-contracts/src/std/ops.rs" 224 26 224 53] StartLog0.start_log result = start }
+    ensures { [#"../../../../creusot-contracts/src/std/ops.rs" 225 26 225 49] EndLog0.end_log result = end' }
+    ensures { [#"../../../../creusot-contracts/src/std/ops.rs" 226 16 226 93] LeLog0.le_log (DeepModel0.deep_model start) (DeepModel0.deep_model end') -> not IsEmptyLog0.is_empty_log result }
     
 end
 module Core_Iter_Range_Impl12_Next_Interface
@@ -1240,7 +1342,7 @@ module Core_Iter_Range_Impl12_Next_Interface
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive a
   val next (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive a)) : Core_Option_Option_Type.t_option a
-    ensures { [#"../../../../creusot-contracts/src/std/iter.rs" 85 26 88 17] match (result) with
+    ensures { [#"../../../../creusot-contracts/src/std/iter.rs" 89 26 92 17] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
@@ -1259,6 +1361,9 @@ module CreusotContracts_Model_Impl3_ShallowModel_Interface
   clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
     type self = t
   function shallow_model (self : borrowed t) : ShallowModelTy0.shallowModelTy
+  val shallow_model (self : borrowed t) : ShallowModelTy0.shallowModelTy
+    ensures { result = shallow_model self }
+    
 end
 module CreusotContracts_Model_Impl3_ShallowModel
   type t
@@ -1269,7 +1374,7 @@ module CreusotContracts_Model_Impl3_ShallowModel
     type self = t,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
   function shallow_model (self : borrowed t) : ShallowModelTy0.shallowModelTy =
-    [#"../../../../creusot-contracts/src/model.rs" 54 8 54 31] ShallowModel0.shallow_model ( * self)
+    [#"../../../../creusot-contracts/src/model.rs" 58 8 58 31] ShallowModel0.shallow_model ( * self)
   val shallow_model (self : borrowed t) : ShallowModelTy0.shallowModelTy
     ensures { result = shallow_model self }
     
@@ -1288,6 +1393,9 @@ module CreusotContracts_Std1_Slice_SliceIndex_ResolveElswhere_Interface
   clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
     type self = t
   predicate resolve_elswhere (self : self) (old' : ShallowModelTy0.shallowModelTy) (fin : ShallowModelTy0.shallowModelTy)
+    
+  val resolve_elswhere (self : self) (old' : ShallowModelTy0.shallowModelTy) (fin : ShallowModelTy0.shallowModelTy) : bool
+    ensures { result = resolve_elswhere self old' fin }
     
 end
 module CreusotContracts_Std1_Slice_SliceIndex_ResolveElswhere
@@ -1336,11 +1444,11 @@ module Alloc_Vec_Impl14_IndexMut_Interface
     type t = Alloc_Vec_Vec_Type.t_vec t a,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
   val index_mut (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : i) : borrowed Output0.output
-    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 118 27 118 46] InBounds0.in_bounds index (ShallowModel0.shallow_model self)}
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 119 26 119 54] HasValue0.has_value index (ShallowModel0.shallow_model self) ( * result) }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 120 26 120 57] HasValue0.has_value index (ShallowModel1.shallow_model ( ^ self)) ( ^ result) }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 121 26 121 62] ResolveElswhere0.resolve_elswhere index (ShallowModel0.shallow_model self) (ShallowModel1.shallow_model ( ^ self)) }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 122 26 122 55] Seq.length (ShallowModel1.shallow_model ( ^ self)) = Seq.length (ShallowModel0.shallow_model self) }
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 122 27 122 46] InBounds0.in_bounds index (ShallowModel0.shallow_model self)}
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 123 26 123 54] HasValue0.has_value index (ShallowModel0.shallow_model self) ( * result) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 124 26 124 57] HasValue0.has_value index (ShallowModel1.shallow_model ( ^ self)) ( ^ result) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 125 26 125 62] ResolveElswhere0.resolve_elswhere index (ShallowModel0.shallow_model self) (ShallowModel1.shallow_model ( ^ self)) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 126 26 126 55] Seq.length (ShallowModel1.shallow_model ( ^ self)) = Seq.length (ShallowModel0.shallow_model self) }
     
 end
 module Alloc_Vec_Impl0_WithCapacity_Interface
@@ -1357,7 +1465,7 @@ module Alloc_Vec_Impl0_WithCapacity_Interface
     val Max0.mAX' = Max0.mAX',
     axiom .
   val with_capacity (capacity : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 58 26 58 44] Seq.length (ShallowModel0.shallow_model result) = 0 }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 62 26 62 44] Seq.length (ShallowModel0.shallow_model result) = 0 }
     
 end
 module Alloc_Vec_Impl1_Push_Interface
@@ -1377,7 +1485,7 @@ module Alloc_Vec_Impl1_Push_Interface
     val Max0.mAX' = Max0.mAX',
     axiom .
   val push (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (value : t) : ()
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 65 26 65 51] ShallowModel0.shallow_model ( ^ self) = Seq.snoc (ShallowModel1.shallow_model self) value }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 69 26 69 51] ShallowModel0.shallow_model ( ^ self) = Seq.snoc (ShallowModel1.shallow_model self) value }
     
 end
 module CreusotContracts_Std1_Iter_Impl0_IntoIterPre_Stub
@@ -1387,13 +1495,16 @@ end
 module CreusotContracts_Std1_Iter_Impl0_IntoIterPre_Interface
   type i
   predicate into_iter_pre (self : i)
+  val into_iter_pre (self : i) : bool
+    ensures { result = into_iter_pre self }
+    
 end
 module CreusotContracts_Std1_Iter_Impl0_IntoIterPre
   type i
   clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
     type self = i
   predicate into_iter_pre (self : i) =
-    [#"../../../../creusot-contracts/src/std/iter.rs" 65 8 65 24] Invariant0.invariant' self
+    [#"../../../../creusot-contracts/src/std/iter.rs" 68 8 68 24] Invariant0.invariant' self
   val into_iter_pre (self : i) : bool
     ensures { result = into_iter_pre self }
     
@@ -1405,11 +1516,14 @@ end
 module CreusotContracts_Std1_Iter_Impl0_IntoIterPost_Interface
   type i
   predicate into_iter_post (self : i) (res : i)
+  val into_iter_post (self : i) (res : i) : bool
+    ensures { result = into_iter_post self res }
+    
 end
 module CreusotContracts_Std1_Iter_Impl0_IntoIterPost
   type i
   predicate into_iter_post (self : i) (res : i) =
-    [#"../../../../creusot-contracts/src/std/iter.rs" 70 8 70 19] self = res
+    [#"../../../../creusot-contracts/src/std/iter.rs" 74 8 74 19] self = res
   val into_iter_post (self : i) (res : i) : bool
     ensures { result = into_iter_post self res }
     
@@ -1425,18 +1539,25 @@ module CreusotContracts_Invariant_Invariant_IsInhabited_Interface
   clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
     type self = self
   function is_inhabited (_1' : ()) : bool
-  axiom is_inhabited_spec : forall _1' : () . ([#"../../../../creusot-contracts/src/invariant.rs" 13 14 13 20] is_inhabited _1') && ([#"../../../../creusot-contracts/src/invariant.rs" 12 4 12 45] exists x : self . Invariant0.invariant' x /\ Invariant0.invariant' x)
+  val is_inhabited (_1' : ()) : bool
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 14 4 14 45] exists x : self . Invariant0.invariant' x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 15 14 15 20] result }
+    ensures { result = is_inhabited _1' }
+    
+  axiom is_inhabited_spec : forall _1' : () . ([#"../../../../creusot-contracts/src/invariant.rs" 15 14 15 20] is_inhabited _1') && ([#"../../../../creusot-contracts/src/invariant.rs" 14 4 14 45] exists x : self . Invariant0.invariant' x /\ Invariant0.invariant' x)
 end
 module CreusotContracts_Invariant_Invariant_IsInhabited
   type self
   clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
     type self = self
   function is_inhabited (_1' : ()) : bool =
-    [#"../../../../creusot-contracts/src/invariant.rs" 18 8 18 12] true
+    [#"../../../../creusot-contracts/src/invariant.rs" 20 8 20 12] true
   val is_inhabited (_1' : ()) : bool
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 14 4 14 45] exists x : self . Invariant0.invariant' x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 15 14 15 20] result }
     ensures { result = is_inhabited _1' }
     
-  axiom is_inhabited_spec : forall _1' : () . ([#"../../../../creusot-contracts/src/invariant.rs" 13 14 13 20] is_inhabited _1') && ([#"../../../../creusot-contracts/src/invariant.rs" 12 4 12 45] exists x : self . Invariant0.invariant' x /\ Invariant0.invariant' x)
+  axiom is_inhabited_spec : forall _1' : () . ([#"../../../../creusot-contracts/src/invariant.rs" 15 14 15 20] is_inhabited _1') && ([#"../../../../creusot-contracts/src/invariant.rs" 14 4 14 45] exists x : self . Invariant0.invariant' x /\ Invariant0.invariant' x)
 end
 module CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl_Stub
   type idx
@@ -1453,7 +1574,11 @@ module CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl_Interface
   clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
     type idx = idx
   function produces_refl (a : Core_Ops_Range_Range_Type.t_range idx) : ()
-  axiom produces_refl_spec : forall a : Core_Ops_Range_Range_Type.t_range idx . [#"../../../../creusot-contracts/src/std/iter/range.rs" 29 14 29 39] Produces0.produces a (Seq.empty ) a
+  val produces_refl (a : Core_Ops_Range_Range_Type.t_range idx) : ()
+    ensures { [#"../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 39] Produces0.produces a (Seq.empty ) a }
+    ensures { result = produces_refl a }
+    
+  axiom produces_refl_spec : forall a : Core_Ops_Range_Range_Type.t_range idx . [#"../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 39] Produces0.produces a (Seq.empty ) a
 end
 module CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl
   type idx
@@ -1462,11 +1587,12 @@ module CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl
   clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
     type idx = idx
   function produces_refl (a : Core_Ops_Range_Range_Type.t_range idx) : () =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 28 4 28 10] ()
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 30 4 30 10] ()
   val produces_refl (a : Core_Ops_Range_Range_Type.t_range idx) : ()
+    ensures { [#"../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 39] Produces0.produces a (Seq.empty ) a }
     ensures { result = produces_refl a }
     
-  axiom produces_refl_spec : forall a : Core_Ops_Range_Range_Type.t_range idx . [#"../../../../creusot-contracts/src/std/iter/range.rs" 29 14 29 39] Produces0.produces a (Seq.empty ) a
+  axiom produces_refl_spec : forall a : Core_Ops_Range_Range_Type.t_range idx . [#"../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 39] Produces0.produces a (Seq.empty ) a
 end
 module CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans_Stub
   type idx
@@ -1485,7 +1611,13 @@ module CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans_Interface
     type idx = idx
   function produces_trans (a : Core_Ops_Range_Range_Type.t_range idx) (ab : Seq.seq idx) (b : Core_Ops_Range_Range_Type.t_range idx) (bc : Seq.seq idx) (c : Core_Ops_Range_Range_Type.t_range idx) : ()
     
-  axiom produces_trans_spec : forall a : Core_Ops_Range_Range_Type.t_range idx, ab : Seq.seq idx, b : Core_Ops_Range_Range_Type.t_range idx, bc : Seq.seq idx, c : Core_Ops_Range_Range_Type.t_range idx . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 33 15 33 32] Produces0.produces a ab b) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 34 15 34 32] Produces0.produces b bc c) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 35 14 35 42] Produces0.produces a (Seq.(++) ab bc) c)
+  val produces_trans (a : Core_Ops_Range_Range_Type.t_range idx) (ab : Seq.seq idx) (b : Core_Ops_Range_Range_Type.t_range idx) (bc : Seq.seq idx) (c : Core_Ops_Range_Range_Type.t_range idx) : ()
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] Produces0.produces a ab b}
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] Produces0.produces b bc c}
+    ensures { [#"../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] Produces0.produces a (Seq.(++) ab bc) c }
+    ensures { result = produces_trans a ab b bc c }
+    
+  axiom produces_trans_spec : forall a : Core_Ops_Range_Range_Type.t_range idx, ab : Seq.seq idx, b : Core_Ops_Range_Range_Type.t_range idx, bc : Seq.seq idx, c : Core_Ops_Range_Range_Type.t_range idx . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] Produces0.produces a ab b) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] Produces0.produces b bc c) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans
   type idx
@@ -1496,13 +1628,14 @@ module CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans
   function produces_trans (a : Core_Ops_Range_Range_Type.t_range idx) (ab : Seq.seq idx) (b : Core_Ops_Range_Range_Type.t_range idx) (bc : Seq.seq idx) (c : Core_Ops_Range_Range_Type.t_range idx) : ()
     
    =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 32 4 32 10] ()
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 35 4 35 10] ()
   val produces_trans (a : Core_Ops_Range_Range_Type.t_range idx) (ab : Seq.seq idx) (b : Core_Ops_Range_Range_Type.t_range idx) (bc : Seq.seq idx) (c : Core_Ops_Range_Range_Type.t_range idx) : ()
-    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 33 15 33 32] Produces0.produces a ab b}
-    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 34 15 34 32] Produces0.produces b bc c}
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] Produces0.produces a ab b}
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] Produces0.produces b bc c}
+    ensures { [#"../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] Produces0.produces a (Seq.(++) ab bc) c }
     ensures { result = produces_trans a ab b bc c }
     
-  axiom produces_trans_spec : forall a : Core_Ops_Range_Range_Type.t_range idx, ab : Seq.seq idx, b : Core_Ops_Range_Range_Type.t_range idx, bc : Seq.seq idx, c : Core_Ops_Range_Range_Type.t_range idx . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 33 15 33 32] Produces0.produces a ab b) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 34 15 34 32] Produces0.produces b bc c) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 35 14 35 42] Produces0.produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : Core_Ops_Range_Range_Type.t_range idx, ab : Seq.seq idx, b : Core_Ops_Range_Range_Type.t_range idx, bc : Seq.seq idx, c : Core_Ops_Range_Range_Type.t_range idx . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] Produces0.produces a ab b) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] Produces0.produces b bc c) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module CreusotContracts_Std1_Num_Impl16_DeepModel_Stub
   use prelude.Int
@@ -1513,12 +1646,15 @@ module CreusotContracts_Std1_Num_Impl16_DeepModel_Interface
   use prelude.Int
   use prelude.UIntSize
   function deep_model (self : usize) : int
+  val deep_model (self : usize) : int
+    ensures { result = deep_model self }
+    
 end
 module CreusotContracts_Std1_Num_Impl16_DeepModel
   use prelude.Int
   use prelude.UIntSize
   function deep_model (self : usize) : int =
-    [#"../../../../creusot-contracts/src/std/num.rs" 20 16 20 35] UIntSize.to_int self
+    [#"../../../../creusot-contracts/src/std/num.rs" 22 16 22 35] UIntSize.to_int self
   val deep_model (self : usize) : int
     ensures { result = deep_model self }
     
@@ -1534,6 +1670,9 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Completed_Interface
   use prelude.Borrow
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   predicate completed (self : borrowed (Core_Ops_Range_Range_Type.t_range idx))
+  val completed (self : borrowed (Core_Ops_Range_Range_Type.t_range idx)) : bool
+    ensures { result = completed self }
+    
 end
 module CreusotContracts_Std1_Iter_Range_Impl0_Completed
   type idx
@@ -1547,7 +1686,7 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Completed
   clone CreusotContracts_Resolve_Impl1_Resolve_Stub as Resolve0 with
     type t = Core_Ops_Range_Range_Type.t_range idx
   predicate completed (self : borrowed (Core_Ops_Range_Range_Type.t_range idx)) =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 13 12 13 78] Resolve0.resolve self /\ DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start ( * self)) >= DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_end ( * self))
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] Resolve0.resolve self /\ DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start ( * self)) >= DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_end ( * self))
   val completed (self : borrowed (Core_Ops_Range_Range_Type.t_range idx)) : bool
     ensures { result = completed self }
     
@@ -1565,6 +1704,9 @@ module CreusotContracts_Std1_Slice_Impl5_InBounds_Interface
   use prelude.UIntSize
   use seq.Seq
   predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t)
+  val in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) : bool
+    ensures { result = in_bounds self seq }
+    
 end
 module CreusotContracts_Std1_Slice_Impl5_InBounds
   type t
@@ -1572,7 +1714,7 @@ module CreusotContracts_Std1_Slice_Impl5_InBounds
   use prelude.UIntSize
   use seq.Seq
   predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) =
-    [#"../../../../creusot-contracts/src/std/slice.rs" 102 20 102 37] UIntSize.to_int self < Seq.length seq
+    [#"../../../../creusot-contracts/src/std/slice.rs" 109 20 109 37] UIntSize.to_int self < Seq.length seq
   val in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) : bool
     ensures { result = in_bounds self seq }
     
@@ -1590,6 +1732,9 @@ module CreusotContracts_Std1_Slice_Impl5_HasValue_Interface
   use prelude.UIntSize
   use seq.Seq
   predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t)
+  val has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) : bool
+    ensures { result = has_value self seq out }
+    
 end
 module CreusotContracts_Std1_Slice_Impl5_HasValue
   type t
@@ -1597,7 +1742,7 @@ module CreusotContracts_Std1_Slice_Impl5_HasValue
   use prelude.UIntSize
   use seq.Seq
   predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
-    [#"../../../../creusot-contracts/src/std/slice.rs" 108 20 108 37] Seq.get seq (UIntSize.to_int self) = out
+    [#"../../../../creusot-contracts/src/std/slice.rs" 116 20 116 37] Seq.get seq (UIntSize.to_int self) = out
   val has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) : bool
     ensures { result = has_value self seq out }
     
@@ -1617,7 +1762,11 @@ module CreusotContracts_Std1_Iter_Range_Impl1_ProducesRefl_Interface
   clone CreusotContracts_Std1_Iter_Range_Impl1_Produces_Stub as Produces0 with
     type idx = idx
   function produces_refl (a : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : ()
-  axiom produces_refl_spec : forall a : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx . [#"../../../../creusot-contracts/src/std/iter/range.rs" 68 14 68 39] Produces0.produces a (Seq.empty ) a
+  val produces_refl (a : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : ()
+    ensures { [#"../../../../creusot-contracts/src/std/iter/range.rs" 76 14 76 39] Produces0.produces a (Seq.empty ) a }
+    ensures { result = produces_refl a }
+    
+  axiom produces_refl_spec : forall a : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx . [#"../../../../creusot-contracts/src/std/iter/range.rs" 76 14 76 39] Produces0.produces a (Seq.empty ) a
 end
 module CreusotContracts_Std1_Iter_Range_Impl1_ProducesRefl
   type idx
@@ -1626,11 +1775,12 @@ module CreusotContracts_Std1_Iter_Range_Impl1_ProducesRefl
   clone CreusotContracts_Std1_Iter_Range_Impl1_Produces_Stub as Produces0 with
     type idx = idx
   function produces_refl (a : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : () =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 67 4 67 10] ()
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 74 4 74 10] ()
   val produces_refl (a : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : ()
+    ensures { [#"../../../../creusot-contracts/src/std/iter/range.rs" 76 14 76 39] Produces0.produces a (Seq.empty ) a }
     ensures { result = produces_refl a }
     
-  axiom produces_refl_spec : forall a : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx . [#"../../../../creusot-contracts/src/std/iter/range.rs" 68 14 68 39] Produces0.produces a (Seq.empty ) a
+  axiom produces_refl_spec : forall a : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx . [#"../../../../creusot-contracts/src/std/iter/range.rs" 76 14 76 39] Produces0.produces a (Seq.empty ) a
 end
 module CreusotContracts_Std1_Iter_Range_Impl1_ProducesTrans_Stub
   type idx
@@ -1649,7 +1799,13 @@ module CreusotContracts_Std1_Iter_Range_Impl1_ProducesTrans_Interface
     type idx = idx
   function produces_trans (a : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) (ab : Seq.seq idx) (b : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) (bc : Seq.seq idx) (c : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : ()
     
-  axiom produces_trans_spec : forall a : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx, ab : Seq.seq idx, b : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx, bc : Seq.seq idx, c : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 72 15 72 32] Produces0.produces a ab b) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 73 15 73 32] Produces0.produces b bc c) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 74 14 74 42] Produces0.produces a (Seq.(++) ab bc) c)
+  val produces_trans (a : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) (ab : Seq.seq idx) (b : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) (bc : Seq.seq idx) (c : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : ()
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 81 15 81 32] Produces0.produces a ab b}
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 82 15 82 32] Produces0.produces b bc c}
+    ensures { [#"../../../../creusot-contracts/src/std/iter/range.rs" 83 14 83 42] Produces0.produces a (Seq.(++) ab bc) c }
+    ensures { result = produces_trans a ab b bc c }
+    
+  axiom produces_trans_spec : forall a : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx, ab : Seq.seq idx, b : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx, bc : Seq.seq idx, c : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 81 15 81 32] Produces0.produces a ab b) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 82 15 82 32] Produces0.produces b bc c) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 83 14 83 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module CreusotContracts_Std1_Iter_Range_Impl1_ProducesTrans
   type idx
@@ -1660,13 +1816,14 @@ module CreusotContracts_Std1_Iter_Range_Impl1_ProducesTrans
   function produces_trans (a : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) (ab : Seq.seq idx) (b : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) (bc : Seq.seq idx) (c : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : ()
     
    =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 71 4 71 10] ()
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 79 4 79 10] ()
   val produces_trans (a : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) (ab : Seq.seq idx) (b : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) (bc : Seq.seq idx) (c : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : ()
-    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 72 15 72 32] Produces0.produces a ab b}
-    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 73 15 73 32] Produces0.produces b bc c}
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 81 15 81 32] Produces0.produces a ab b}
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 82 15 82 32] Produces0.produces b bc c}
+    ensures { [#"../../../../creusot-contracts/src/std/iter/range.rs" 83 14 83 42] Produces0.produces a (Seq.(++) ab bc) c }
     ensures { result = produces_trans a ab b bc c }
     
-  axiom produces_trans_spec : forall a : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx, ab : Seq.seq idx, b : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx, bc : Seq.seq idx, c : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 72 15 72 32] Produces0.produces a ab b) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 73 15 73 32] Produces0.produces b bc c) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 74 14 74 42] Produces0.produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx, ab : Seq.seq idx, b : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx, bc : Seq.seq idx, c : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 81 15 81 32] Produces0.produces a ab b) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 82 15 82 32] Produces0.produces b bc c) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 83 14 83 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module CreusotContracts_Std1_Iter_Range_Impl1_Completed_Stub
   type idx
@@ -1679,6 +1836,9 @@ module CreusotContracts_Std1_Iter_Range_Impl1_Completed_Interface
   use prelude.Borrow
   use Core_Ops_Range_RangeInclusive_Type as Core_Ops_Range_RangeInclusive_Type
   predicate completed (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx))
+  val completed (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx)) : bool
+    ensures { result = completed self }
+    
 end
 module CreusotContracts_Std1_Iter_Range_Impl1_Completed
   type idx
@@ -1703,7 +1863,7 @@ module CreusotContracts_Std1_Iter_Range_Impl1_Completed
     type DeepModelTy0.deepModelTy = int,
     axiom .
   predicate completed (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx)) =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 52 12 52 57] IsEmptyLog0.is_empty_log ( * self) /\ IsEmptyLog0.is_empty_log ( ^ self)
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 58 12 58 57] IsEmptyLog0.is_empty_log ( * self) /\ IsEmptyLog0.is_empty_log ( ^ self)
   val completed (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx)) : bool
     ensures { result = completed self }
     
@@ -1721,6 +1881,9 @@ module CreusotContracts_Std1_Slice_Impl5_ResolveElswhere_Interface
   use prelude.UIntSize
   use seq.Seq
   predicate resolve_elswhere [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t)
+  val resolve_elswhere [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t) : bool
+    ensures { result = resolve_elswhere self old' fin }
+    
 end
 module CreusotContracts_Std1_Slice_Impl5_ResolveElswhere
   type t
@@ -1728,7 +1891,7 @@ module CreusotContracts_Std1_Slice_Impl5_ResolveElswhere
   use prelude.UIntSize
   use seq.Seq
   predicate resolve_elswhere [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t) =
-    [#"../../../../creusot-contracts/src/std/slice.rs" 114 8 114 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+    [#"../../../../creusot-contracts/src/std/slice.rs" 123 8 123 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
   val resolve_elswhere [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t) : bool
     ensures { result = resolve_elswhere self old' fin }
     
@@ -1740,11 +1903,14 @@ end
 module CreusotContracts_Resolve_Impl2_Resolve_Interface
   type t
   predicate resolve (self : t)
+  val resolve (self : t) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Resolve_Impl2_Resolve
   type t
   predicate resolve (self : t) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 33 8 33 12] true
+    [#"../../../../creusot-contracts/src/resolve.rs" 36 8 36 12] true
   val resolve (self : t) : bool
     ensures { result = resolve self }
     
@@ -1803,7 +1969,7 @@ module KnapsackFull_Knapsack01Dyn
   use KnapsackFull_Item_Type as KnapsackFull_Item_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Core_Num_Impl11_Max as Max1
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel1 with
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel1 with
     type t = KnapsackFull_Item_Type.t_item name,
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max1.mAX',
@@ -1815,7 +1981,7 @@ module KnapsackFull_Knapsack01Dyn
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone CreusotContracts_Std1_Slice_Impl5_ResolveElswhere as ResolveElswhere1 with
     type t = usize
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel3 with
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel3 with
     type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max1.mAX',
@@ -1826,7 +1992,7 @@ module KnapsackFull_Knapsack01Dyn
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model
   clone CreusotContracts_Std1_Slice_Impl5_ResolveElswhere as ResolveElswhere0 with
     type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel2 with
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel2 with
     type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max1.mAX',
@@ -1864,12 +2030,12 @@ module KnapsackFull_Knapsack01Dyn
   use prelude.Int
   clone CreusotContracts_Logic_Ord_Impl2_LeLog as LeLog0
   use Core_Ops_Range_RangeInclusive_Type as Core_Ops_Range_RangeInclusive_Type
-  clone CreusotContracts_Std1_Ops_Impl5_EndLog as EndLog0 with
+  clone CreusotContracts_Std1_Ops_Impl5_EndLog_Interface as EndLog0 with
     type idx = usize
   clone CreusotContracts_Std1_Num_Impl16_DeepModel as DeepModel0
-  clone CreusotContracts_Std1_Ops_Impl5_StartLog as StartLog0 with
+  clone CreusotContracts_Std1_Ops_Impl5_StartLog_Interface as StartLog0 with
     type idx = usize
-  clone CreusotContracts_Std1_Ops_Impl5_IsEmptyLog as IsEmptyLog0 with
+  clone CreusotContracts_Std1_Ops_Impl5_IsEmptyLog_Interface as IsEmptyLog0 with
     type idx = usize,
     function StartLog0.start_log = StartLog0.start_log,
     function DeepModel0.deep_model = DeepModel0.deep_model,
@@ -1933,11 +2099,11 @@ module KnapsackFull_Knapsack01Dyn
   clone CreusotContracts_Std1_Iter_Range_Impl0_Produces as Produces0 with
     type idx = usize,
     function DeepModel0.deep_model = DeepModel0.deep_model
-  clone CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans as ProducesTrans0 with
+  clone CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans_Interface as ProducesTrans0 with
     type idx = usize,
     predicate Produces0.produces = Produces0.produces,
     axiom .
-  clone CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl as ProducesRefl0 with
+  clone CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl_Interface as ProducesRefl0 with
     type idx = usize,
     predicate Produces0.produces = Produces0.produces,
     axiom .
@@ -1952,7 +2118,7 @@ module KnapsackFull_Knapsack01Dyn
   clone CreusotContracts_Std1_Iter_Impl0_IntoIterPre as IntoIterPre0 with
     type i = Core_Ops_Range_Range_Type.t_range usize,
     predicate Invariant0.invariant' = Invariant0.invariant'
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel4 with
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel4 with
     type t = KnapsackFull_Item_Type.t_item name,
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max1.mAX',

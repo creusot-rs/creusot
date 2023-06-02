@@ -14,7 +14,7 @@ use crate::{
     error::CrErr,
     metadata,
     options::OutputFile,
-    validate::{validate_impls, validate_traits},
+    validate::{validate_impls, validate_opacity, validate_traits},
 };
 use ctx::TranslationCtx;
 pub(crate) use function::LocalIdent;
@@ -38,6 +38,7 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
             || crate::util::is_predicate(ctx.tcx, def_id)
         {
             let _ = ctx.term(def_id);
+            validate_opacity(ctx, def_id);
         }
     }
 

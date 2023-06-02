@@ -12,6 +12,7 @@ pub use ::std::vec::*;
 impl<T, A: Allocator> ShallowModel for Vec<T, A> {
     type ShallowModelTy = Seq<T>;
 
+    #[open(self)]
     #[logic]
     #[trusted]
     #[ensures(result.len() <= usize::MAX@)]
@@ -24,6 +25,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
     #[logic]
+    #[open(self)]
     #[trusted]
     #[ensures(self.shallow_model().len() == result.len())]
     #[ensures(forall<i: Int> 0 <= i && i < self.shallow_model().len()
@@ -35,6 +37,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
 
 impl<T> Default for Vec<T> {
     #[predicate]
+    #[open]
     fn is_default(self) -> bool {
         pearlite! { self.shallow_model().len() == 0 }
     }
@@ -43,6 +46,7 @@ impl<T> Default for Vec<T> {
 #[trusted]
 impl<T> Resolve for Vec<T> {
     #[predicate]
+    #[open]
     fn resolve(self) -> bool {
         pearlite! { forall<i : Int> 0 <= i && i < self@.len() ==> self[i].resolve() }
     }
@@ -149,11 +153,13 @@ extern_spec! {
 
 impl<T, A: Allocator> IntoIterator for Vec<T, A> {
     #[predicate]
+    #[open]
     fn into_iter_pre(self) -> bool {
         pearlite! { true }
     }
 
     #[predicate]
+    #[open]
     fn into_iter_post(self, res: Self::IntoIter) -> bool {
         pearlite! { self@ == res@ }
     }
@@ -161,11 +167,13 @@ impl<T, A: Allocator> IntoIterator for Vec<T, A> {
 
 impl<T, A: Allocator> IntoIterator for &Vec<T, A> {
     #[predicate]
+    #[open]
     fn into_iter_pre(self) -> bool {
         pearlite! { true }
     }
 
     #[predicate]
+    #[open]
     fn into_iter_post(self, res: Self::IntoIter) -> bool {
         pearlite! { self@ == res@@ }
     }
@@ -173,11 +181,13 @@ impl<T, A: Allocator> IntoIterator for &Vec<T, A> {
 
 impl<T, A: Allocator> IntoIterator for &mut Vec<T, A> {
     #[predicate]
+    #[open]
     fn into_iter_pre(self) -> bool {
         pearlite! { true }
     }
 
     #[predicate]
+    #[open]
     fn into_iter_post(self, res: Self::IntoIter) -> bool {
         pearlite! { self@ == res@@ }
     }
@@ -186,6 +196,7 @@ impl<T, A: Allocator> IntoIterator for &mut Vec<T, A> {
 impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
     type ShallowModelTy = Seq<T>;
 
+    #[open(self)]
     #[logic]
     #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
@@ -196,6 +207,7 @@ impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
 #[trusted]
 impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
     #[predicate]
+    #[open]
     fn resolve(self) -> bool {
         pearlite! { forall<i: Int> 0 <= i && i < self@.len() ==> self@[i].resolve() }
     }
@@ -205,11 +217,13 @@ impl<T, A: Allocator> Invariant for std::vec::IntoIter<T, A> {}
 
 impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     #[predicate]
+    #[open]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && self@ == Seq::EMPTY }
     }
 
     #[predicate]
+    #[open]
     fn produces(self, visited: Seq<T>, rhs: Self) -> bool {
         pearlite! {
             self@ == visited.concat(rhs@)
@@ -217,10 +231,12 @@ impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     }
 
     #[law]
+    #[open]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -229,6 +245,7 @@ impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
 
 impl<T> FromIterator<T> for Vec<T> {
     #[predicate]
+    #[open]
     fn from_iter_post(prod: Seq<T>, res: Self) -> bool {
         pearlite! { prod == res@ }
     }

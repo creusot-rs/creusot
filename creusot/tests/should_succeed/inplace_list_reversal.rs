@@ -12,6 +12,7 @@ use List::*;
 type Node<T> = Box<(T, List<T>)>;
 
 #[logic]
+#[open(self)]
 pub fn rev_append<T>(n: List<T>, o: List<T>) -> List<T> {
     match n {
         Nil => o,

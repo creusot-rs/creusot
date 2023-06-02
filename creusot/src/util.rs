@@ -105,6 +105,15 @@ pub(crate) fn is_type_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
         .unwrap_or(false)
 }
 
+pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "clause", "open"]).and_then(|item| {
+        match &item.args {
+            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l.symbol),
+            _ => None,
+        }
+    })
+}
+
 pub(crate) enum TypeInvariantAttr {
     None,
     MaybeIgnore,

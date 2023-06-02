@@ -12,11 +12,13 @@ pub struct Repeat<A> {
 impl<A: Clone> Iterator for Repeat<A> {
     type Item = A;
 
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! { false }
     }
 
+    #[open]
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
@@ -26,10 +28,12 @@ impl<A: Clone> Iterator for Repeat<A> {
     }
 
     #[law]
+    #[open]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

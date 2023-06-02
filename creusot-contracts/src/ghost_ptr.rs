@@ -16,6 +16,7 @@ impl<T: ?Sized> ShallowModel for GhostPtrToken<T> {
 
     #[trusted]
     #[logic]
+    #[open(self)]
     fn shallow_model(self) -> Self::ShallowModelTy {
         absurd
     }
@@ -122,6 +123,7 @@ impl<T: ?Sized> GhostPtrToken<T> {
 
 impl<T: ?Sized> GhostPtrExt<T> for GhostPtr<T> {
     #[trusted]
+    #[open(self)]
     #[logic]
     #[ensures(forall<t: GhostPtrToken<T>> !t@.contains(result))]
     // #[ensures(result.addr_logic() == 0@)]
@@ -132,6 +134,7 @@ impl<T: ?Sized> GhostPtrExt<T> for GhostPtr<T> {
 
     #[trusted]
     #[logic]
+    #[open(self)]
     fn addr_logic(self) -> Int {
         absurd
     }

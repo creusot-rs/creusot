@@ -10,6 +10,7 @@ pub trait Symmetric {
     fn reflexive(a: Self, b: Self);
 }
 
+#[open]
 #[logic]
 #[ensures(result == true)]
 pub fn uses_op<T: Symmetric>(x: T, y: T) -> bool {
@@ -17,16 +18,19 @@ pub fn uses_op<T: Symmetric>(x: T, y: T) -> bool {
 }
 
 impl Symmetric for () {
+    #[open]
     #[logic]
     fn op(self, _: Self) -> Self {
         ()
     }
 
     #[law]
+    #[open]
     #[ensures(a.op(b) == b.op(a))]
     fn reflexive(a: Self, b: Self) {}
 }
 
+#[open]
 #[logic]
 #[ensures(result == true)]
 pub fn impl_laws() -> bool {

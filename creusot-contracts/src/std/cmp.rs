@@ -59,6 +59,7 @@ impl<T: DeepModel> DeepModel for Reverse<T> {
     type DeepModelTy = Reverse<T::DeepModelTy>;
 
     #[logic]
+    #[open]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { Reverse(self.0.deep_model()) }
     }
@@ -66,6 +67,7 @@ impl<T: DeepModel> DeepModel for Reverse<T> {
 
 impl<T: OrdLogic> OrdLogic for Reverse<T> {
     #[logic]
+    #[open]
     fn cmp_log(self, o: Self) -> Ordering {
         match self.0.cmp_log(o.0) {
             Ordering::Equal => Ordering::Equal,
@@ -75,42 +77,51 @@ impl<T: OrdLogic> OrdLogic for Reverse<T> {
     }
 
     #[law]
+    #[open]
     #[ensures(x.le_log(y) == (x.cmp_log(y) != Ordering::Greater))]
     fn cmp_le_log(x: Self, y: Self) {}
 
     #[law]
+    #[open]
     #[ensures(x.lt_log(y) == (x.cmp_log(y) == Ordering::Less))]
     fn cmp_lt_log(x: Self, y: Self) {}
 
     #[law]
+    #[open]
     #[ensures(x.ge_log(y) == (x.cmp_log(y) != Ordering::Less))]
     fn cmp_ge_log(x: Self, y: Self) {}
 
     #[law]
+    #[open]
     #[ensures(x.gt_log(y) == (x.cmp_log(y) == Ordering::Greater))]
     fn cmp_gt_log(x: Self, y: Self) {}
 
     #[law]
+    #[open]
     #[ensures(x.cmp_log(x) == Ordering::Equal)]
     fn refl(x: Self) {}
 
     #[law]
+    #[open]
     #[requires(x.cmp_log(y) == o)]
     #[requires(y.cmp_log(z) == o)]
     #[ensures(x.cmp_log(z) == o)]
     fn trans(x: Self, y: Self, z: Self, o: Ordering) {}
 
     #[law]
+    #[open]
     #[requires(x.cmp_log(y) == Ordering::Less)]
     #[ensures(y.cmp_log(x) == Ordering::Greater)]
     fn antisym1(x: Self, y: Self) {}
 
     #[law]
+    #[open]
     #[requires(x.cmp_log(y) == Ordering::Greater)]
     #[ensures(y.cmp_log(x) == Ordering::Less)]
     fn antisym2(x: Self, y: Self) {}
 
     #[law]
+    #[open]
     #[ensures((x == y) == (x.cmp_log(y) == Ordering::Equal))]
     fn eq_cmp(x: Self, y: Self) {}
 }

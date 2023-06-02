@@ -10,6 +10,7 @@ pub fn ghost_vec() {
     let mut _s: Ghost<Vec<_>> = ghost! { x };
 }
 
+#[open]
 #[logic]
 pub fn omg() {}
 

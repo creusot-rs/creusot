@@ -22,11 +22,13 @@ pub mod nested {
     use creusot_contracts::*;
 
     #[logic]
+    #[open]
     pub fn nested() -> bool {
         true
     }
 }
 
+#[open]
 #[logic]
 pub fn arith(n: Int, b: bool) -> Int {
     if !b {
@@ -36,6 +38,7 @@ pub fn arith(n: Int, b: bool) -> Int {
     }
 }
 
+#[open]
 #[logic]
 pub fn deref_pat<'a>(o: &'a Option<Int>) -> Int {
     match o {

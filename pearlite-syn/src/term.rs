@@ -700,11 +700,49 @@ pub(crate) mod parsing {
         }
     }
 
+    pub(crate) fn replace_attrs(item: &mut Item, new: Vec<Attribute>) -> Vec<Attribute> {
+        match item {
+            Item::Const(ItemConst { attrs, .. })
+            | Item::Enum(ItemEnum { attrs, .. })
+            | Item::ExternCrate(ItemExternCrate { attrs, .. })
+            | Item::Fn(ItemFn { attrs, .. })
+            | Item::ForeignMod(ItemForeignMod { attrs, .. })
+            | Item::Impl(ItemImpl { attrs, .. })
+            | Item::Macro(ItemMacro { attrs, .. })
+            | Item::Mod(ItemMod { attrs, .. })
+            | Item::Static(ItemStatic { attrs, .. })
+            | Item::Struct(ItemStruct { attrs, .. })
+            | Item::Trait(ItemTrait { attrs, .. })
+            | Item::TraitAlias(ItemTraitAlias { attrs, .. })
+            | Item::Type(ItemType { attrs, .. })
+            | Item::Union(ItemUnion { attrs, .. })
+            | Item::Use(ItemUse { attrs, .. }) => mem::replace(attrs, new),
+            Item::Verbatim(_) | _ => Vec::new(),
+        }
+    }
+
     fn parse_stmt(input: ParseStream, allow_nosemi: bool) -> Result<TermStmt> {
+        let mut attrs = input.call(Attribute::parse_outer)?;
         if input.peek(Token![let]) {
             stmt_local(input).map(TermStmt::Local)
         } else if input.peek(Token![use]) {
             let item: Item = input.parse()?;
+            Ok(TermStmt::Item(item))
+        } else if input.peek(Token![pub])
+            || input.peek(Token![crate]) && !input.peek2(Token![::])
+            || input.peek(Token![use])
+            || input.peek(Token![fn])
+            || input.peek(Token![mod])
+            || input.peek(Token![type])
+            || input.peek(Token![struct])
+            || input.peek(Token![enum])
+            || input.peek(Token![union]) && input.peek2(Ident)
+            || input.peek(Token![trait])
+            || input.peek(Token![impl])
+        {
+            let mut item: Item = input.parse()?;
+            attrs.extend(replace_attrs(&mut item, Vec::new()));
+            replace_attrs(&mut item, attrs);
             Ok(TermStmt::Item(item))
         } else {
             stmt_expr(input, allow_nosemi)

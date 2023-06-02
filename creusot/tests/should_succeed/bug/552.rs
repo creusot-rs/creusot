@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{maintains, predicate, requires};
+use creusot_contracts::{maintains, open, predicate, requires};
 
 pub struct Transition;
 pub struct Machine;
@@ -13,6 +13,7 @@ pub trait MachineTrait {
 }
 
 impl MachineTrait for Machine {
+    #[open]
     #[predicate]
     fn invariants(self) -> bool {
         true

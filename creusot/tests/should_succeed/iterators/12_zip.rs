@@ -13,11 +13,13 @@ struct Zip<I, J> {
 impl<I: Iterator, J: Iterator> Iterator for Zip<I, J> {
     type Item = (I::Item, J::Item);
 
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
         self.iter1.completed() || self.iter2.completed()
     }
 
+    #[open]
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
@@ -30,10 +32,12 @@ impl<I: Iterator, J: Iterator> Iterator for Zip<I, J> {
     }
 
     #[law]
+    #[open]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -52,6 +56,7 @@ impl<I: Iterator, J: Iterator> Iterator for Zip<I, J> {
 }
 
 impl<I: Iterator, J: Iterator> Invariant for Zip<I, J> {
+    #[open]
     #[predicate]
     fn invariant(self) -> bool {
         self.iter1.invariant() && self.iter2.invariant()

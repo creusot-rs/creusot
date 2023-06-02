@@ -19,6 +19,7 @@ extern_spec! {
 
 impl Default for bool {
     #[predicate]
+    #[open]
     fn is_default(self) -> bool {
         pearlite! { self == false }
     }

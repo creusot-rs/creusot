@@ -10,6 +10,7 @@ pub mod nested {
 
     #[trusted]
     impl Resolve for Nested {
+        #[open]
         #[predicate]
         fn resolve(self) -> bool {
             true

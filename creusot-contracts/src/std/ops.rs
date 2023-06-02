@@ -66,6 +66,7 @@ pub trait FnExt<Args: Tuple>: Fn<Args> + FnMutExt<Args> {
 impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
     #[predicate]
     #[trusted]
+    #[open(self)]
     #[rustc_diagnostic_item = "fn_once_impl_precond"]
     fn precondition(self, _: Args) -> bool {
         absurd
@@ -73,6 +74,7 @@ impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
 
     #[predicate]
     #[trusted]
+    #[open(self)]
     #[rustc_diagnostic_item = "fn_once_impl_postcond"]
     fn postcondition_once(self, _: Args, _: Self::Output) -> bool {
         absurd
@@ -82,6 +84,7 @@ impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
 impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
     #[predicate]
     #[trusted]
+    #[open(self)]
     #[rustc_diagnostic_item = "fn_mut_impl_postcond"]
     fn postcondition_mut(&mut self, _: Args, _: Self::Output) -> bool {
         absurd
@@ -89,21 +92,25 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
 
     #[predicate]
     #[trusted]
+    #[open(self)]
     #[rustc_diagnostic_item = "fn_mut_impl_unnest"]
     fn unnest(self, _: Self) -> bool {
         absurd
     }
 
     #[law]
+    #[open(self)]
     #[requires(self.postcondition_mut(args, res))]
     #[ensures((*self).unnest(^self))]
     fn postcondition_mut_unnest(&mut self, args: Args, res: Self::Output) {}
 
     #[law]
+    #[open(self)]
     #[ensures(self.unnest(self))]
     fn unnest_refl(self) {}
 
     #[law]
+    #[open(self)]
     #[requires(self.unnest(b))]
     #[requires(b.unnest(c))]
     #[ensures(self.unnest(c))]
@@ -111,6 +118,7 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
 
     #[law]
     #[trusted]
+    #[open(self)]
     #[ensures(self.postcondition_once(args, res) == exists<s: &mut Self> *s == self && s.postcondition_mut(args, res) && (^s).resolve())]
     fn fn_mut_once(self, args: Args, res: Self::Output) {}
 }
@@ -118,17 +126,20 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
 impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
     #[predicate]
     #[trusted]
+    #[open(self)]
     #[rustc_diagnostic_item = "fn_impl_postcond"]
     fn postcondition(&self, _: Args, _: Self::Output) -> bool {
         absurd
     }
 
     #[law]
+    #[open(self)]
     #[trusted]
     #[ensures(self.postcondition_mut(args, res) == (self.resolve() && self.postcondition(args, res)))]
     fn fn_mut(&mut self, args: Args, res: Self::Output) {}
 
     #[law]
+    #[open(self)]
     #[trusted]
     #[ensures(self.postcondition_once(args, res) == (self.resolve() && self.postcondition(args, res)))]
     fn fn_once(self, args: Args, res: Self::Output) {}
@@ -179,18 +190,21 @@ pub trait RangeInclusiveExt<Idx> {
 }
 
 impl<Idx> RangeInclusiveExt<Idx> for RangeInclusive<Idx> {
+    #[open(self)]
     #[logic]
     #[trusted]
     fn start_log(self) -> Idx {
         pearlite! { absurd }
     }
 
+    #[open(self)]
     #[logic]
     #[trusted]
     fn end_log(self) -> Idx {
         pearlite! { absurd }
     }
 
+    #[open(self)]
     #[predicate]
     #[trusted]
     #[ensures(!result ==> self.start_log().deep_model() <= self.end_log().deep_model())]

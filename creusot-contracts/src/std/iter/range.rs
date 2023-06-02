@@ -8,6 +8,7 @@ use crate::{
 
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
     #[predicate]
+    #[open]
     fn completed(&mut self) -> bool {
         pearlite! {
             self.resolve() && self.start.deep_model() >= self.end.deep_model()
@@ -15,6 +16,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
     }
 
     #[predicate]
+    #[open]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.end == o.end && self.start.deep_model() <= o.start.deep_model()
@@ -26,10 +28,12 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
     }
 
     #[law]
+    #[open(self)]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -37,8 +41,9 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
 }
 
 #[logic]
+#[open]
 #[ensures(r.is_empty_log() == (result == 0))]
-fn range_inclusive_len<Idx: DeepModel<DeepModelTy = Int>>(r: RangeInclusive<Idx>) -> Int {
+pub fn range_inclusive_len<Idx: DeepModel<DeepModelTy = Int>>(r: RangeInclusive<Idx>) -> Int {
     pearlite! {
         if r.is_empty_log() { 0 }
         else { r.end_log().deep_model() - r.start_log().deep_model() + 1 }
@@ -47,6 +52,7 @@ fn range_inclusive_len<Idx: DeepModel<DeepModelTy = Int>>(r: RangeInclusive<Idx>
 
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> {
     #[predicate]
+    #[open]
     fn completed(&mut self) -> bool {
         pearlite! {
             self.is_empty_log() && (^self).is_empty_log()
@@ -54,6 +60,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> 
     }
 
     #[predicate]
+    #[open]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited.len() == range_inclusive_len(self) - range_inclusive_len(o) &&
@@ -65,10 +72,12 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> 
     }
 
     #[law]
+    #[open]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

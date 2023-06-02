@@ -20,6 +20,7 @@ impl Invariant for Range {}
 impl Iterator for Range {
     type Item = isize;
 
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! {
@@ -27,6 +28,7 @@ impl Iterator for Range {
         }
     }
 
+    #[open]
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
@@ -39,10 +41,12 @@ impl Iterator for Range {
     }
 
     #[law]
+    #[open]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

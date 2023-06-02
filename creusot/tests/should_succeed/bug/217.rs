@@ -5,6 +5,7 @@ use creusot_contracts::{
     *,
 };
 
+#[open]
 #[logic]
 #[variant(c.len())]
 pub fn ex(c: Seq<Int>, a: Int) -> Int {

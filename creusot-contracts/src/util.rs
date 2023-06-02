@@ -11,6 +11,7 @@ pub trait MakeSized {
 impl<T: ?Sized> MakeSized for T {
     #[trusted]
     #[logic]
+    #[open(self)]
     #[ensures(*result == self)]
     fn make_sized(self) -> SizedW<Self> {
         absurd
@@ -19,6 +20,7 @@ impl<T: ?Sized> MakeSized for T {
 
 #[allow(unconditional_recursion)]
 #[logic]
+#[open(self)]
 #[requires(false)]
 #[ensures(false)]
 #[variant(0)]
@@ -27,6 +29,7 @@ pub fn unreachable<T>() -> T {
 }
 
 #[logic]
+#[open(self)]
 #[requires(op != None)]
 #[ensures(Some(result) == op)]
 pub fn unwrap<T>(op: Option<T>) -> T {

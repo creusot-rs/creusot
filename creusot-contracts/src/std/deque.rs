@@ -6,6 +6,7 @@ impl<T, A: Allocator> ShallowModel for VecDeque<T, A> {
 
     #[logic]
     #[trusted]
+    #[open(self)]
     #[ensures(result.len() <= usize::MAX@)]
     fn shallow_model(self) -> Seq<T> {
         pearlite! { absurd }
@@ -17,6 +18,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
 
     #[logic]
     #[trusted]
+    #[open(self)]
     #[ensures(self.shallow_model().len() == result.len())]
     #[ensures(forall<i: Int> 0 <= i && i < self.shallow_model().len()
               ==> result[i] == self[i].deep_model())]

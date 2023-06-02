@@ -23,7 +23,8 @@ impl<T: Clone> Clone for List<T> {
 
 impl<K: DeepModel, V> List<(K, V)> {
     #[logic]
-    fn get(self, index: K::DeepModelTy) -> Option<V> {
+    #[open]
+    pub fn get(self, index: K::DeepModelTy) -> Option<V> {
         pearlite! {
             match self {
                 List::Nil => None,
@@ -71,6 +72,7 @@ struct MyHashMap<K, V> {
 impl<K: Hash, V> ShallowModel for MyHashMap<K, V> {
     type ShallowModelTy = Mapping<K::DeepModelTy, Option<V>>;
 
+    #[open(self)]
     #[logic]
     fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! { |k| self.bucket(k).get(k) }

@@ -4,6 +4,7 @@ use creusot_contracts::{
     *,
 };
 
+#[open]
 #[logic]
 #[variant(seq.len())]
 pub fn sum(seq: Seq<Int>) -> Int {
@@ -15,6 +16,7 @@ pub fn sum(seq: Seq<Int>) -> Int {
     }
 }
 
+#[open]
 #[predicate]
 #[variant(seq.len())]
 pub fn all_zero(seq: Seq<Int>) -> bool {
@@ -26,6 +28,7 @@ pub fn all_zero(seq: Seq<Int>) -> bool {
     }
 }
 
+#[open]
 #[predicate]
 #[variant(i)]
 pub fn stupid<T>(x: T, i: Int) -> bool {

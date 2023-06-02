@@ -4,6 +4,7 @@ use creusot_contracts::{invariant::Invariant, *};
 pub struct WithInvariant;
 
 impl Invariant for WithInvariant {
+    #[open]
     #[predicate]
     fn invariant(self) -> bool {
         true

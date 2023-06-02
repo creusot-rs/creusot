@@ -4,6 +4,7 @@ impl DeepModel for () {
     type DeepModelTy = ();
 
     #[logic]
+    #[open]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { () }
     }
@@ -11,6 +12,7 @@ impl DeepModel for () {
 
 impl Default for () {
     #[predicate]
+    #[open]
     fn is_default(self) -> bool {
         pearlite! { true }
     }
@@ -22,6 +24,7 @@ macro_rules! tuple_impls {
             type DeepModelTy = ($($name::DeepModelTy,)+);
 
             #[logic]
+            #[open]
             fn deep_model(self) -> Self::DeepModelTy {
                 pearlite! { ($(self.$idx.deep_model(),)+) }
             }
@@ -29,6 +32,7 @@ macro_rules! tuple_impls {
 
         impl<$($name: Default),+> Default for ($($name,)+) {
             #[predicate]
+            #[open]
             fn is_default(self) -> bool {
                 pearlite! { $(self.$idx.is_default())&&+ }
             }

@@ -10,11 +10,6 @@ pub struct Product<A, B> {
     b: B,
 }
 
-#[derive(Clone, Copy)]
-pub struct X<'a, A> {
-    field: &'a A,
-}
-
 impl<A, B> DeepModel for Product<A, B>
 where
     A: DeepModel,
@@ -22,6 +17,7 @@ where
 {
     type DeepModelTy = Product<A::DeepModelTy, B::DeepModelTy>;
 
+    #[open]
     #[logic]
     fn deep_model(self) -> Self::DeepModelTy {
         Product { a: self.a.deep_model(), b: self.b.deep_model() }
@@ -37,6 +33,7 @@ pub enum Sum<A, B> {
 impl<A: DeepModel, B: DeepModel> DeepModel for Sum<A, B> {
     type DeepModelTy = Sum<A::DeepModelTy, B::DeepModelTy>;
 
+    #[open]
     #[logic]
     fn deep_model(self) -> Self::DeepModelTy {
         match self {

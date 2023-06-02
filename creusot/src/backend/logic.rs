@@ -114,6 +114,24 @@ fn builtin_body<'tcx>(
     (Module { name, decls }, summary)
 }
 
+// Create the program symbol with the same name that has a contract agreeing with the logical symbol.
+pub(crate) fn val_decl<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    def_id: DefId,
+) -> Decl {
+    let mut sig = signature_of(ctx, names, def_id);
+    sig.contract.variant = Vec::new();
+
+    let (val_args, val_binders) = binders_to_args(ctx, sig.args);
+    sig.contract
+        .ensures
+        // = vec!(Exp::pure_var("result".into()).eq(Exp::pure_var(sig.name.clone()).app(val_args)));
+        .push(Exp::pure_var("result".into()).eq(Exp::pure_var(sig.name.clone()).app(val_args)));
+    sig.args = val_binders;
+    Decl::ValDecl(ValDecl { sig, ghost: false, val: true, kind: None })
+}
+
 fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
     let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
 
@@ -137,7 +155,7 @@ fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, C
     if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
         let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
         decls.push(Decl::ValDecl(val));
-        decls.push(Decl::ValDecl(ValDecl { sig: val_sig, ghost: false, val: true, kind: None }));
+        decls.push(val_decl(ctx, &mut names, def_id));
     } else {
         let term = ctx.term(def_id).unwrap().clone();
         let body = lower_pure(ctx, &mut names, term);
@@ -149,32 +167,17 @@ fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, C
                 _ => unreachable!(),
             };
             decls.push(decl);
-            decls.push(Decl::ValDecl(ValDecl {
-                sig: val_sig,
-                ghost: false,
-                val: true,
-                kind: None,
-            }));
+            decls.push(val_decl(ctx, &mut names, def_id));
         } else if body.is_pure() {
             let def_sig = sig.clone();
             let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
             decls.push(Decl::ValDecl(val));
-            decls.push(Decl::ValDecl(ValDecl {
-                sig: val_sig,
-                ghost: false,
-                val: true,
-                kind: None,
-            }));
+            decls.push(val_decl(ctx, &mut names, def_id));
             decls.push(Decl::Axiom(definition_axiom(&def_sig, body)));
         } else {
             let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
             decls.push(Decl::ValDecl(val));
-            decls.push(Decl::ValDecl(ValDecl {
-                sig: val_sig,
-                ghost: false,
-                val: true,
-                kind: None,
-            }));
+            decls.push(val_decl(ctx, &mut names, def_id));
         }
     }
 

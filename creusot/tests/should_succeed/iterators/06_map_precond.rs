@@ -15,6 +15,7 @@ pub struct Map<I, A, F> {
 impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator for Map<I, I::Item, F> {
     type Item = B;
 
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! {
@@ -24,11 +25,13 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator for M
     }
 
     #[law]
+    #[open]
     #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open]
     #[requires(a.invariant())]
     #[requires(b.invariant())]
     #[requires(c.invariant())]
@@ -37,6 +40,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator for M
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
+    #[open]
     #[predicate]
     #[why3::attr = "inline:trivial"]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
@@ -150,8 +154,10 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item
 
 impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Invariant for Map<I, I::Item, F> {
     // Should not quantify over self or the `invariant` cannot be made into a type invariant
+    #[open]
     #[predicate]
     #[creusot::ignore_type_invariant]
+    #[open(self)]
     fn invariant(self) -> bool {
         pearlite! {
             Self::reinitialize() &&

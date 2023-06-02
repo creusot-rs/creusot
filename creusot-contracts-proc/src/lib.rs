@@ -630,6 +630,51 @@ pub fn invariant(invariant: TS1, loopb: TS1) -> TS1 {
     invariant::lower(loop_).into()
 }
 
+#[proc_macro_attribute]
+pub fn open(attr: TS1, body: TS1) -> TS1 {
+    let item = parse_macro_input!(body as ContractSubject);
+
+    let open_name = generate_unique_ident(&item.name());
+    let name_tag = format!("{}", quote! { #open_name });
+    let vis = if attr.is_empty() {
+        Visibility::Public(Default::default())
+    } else {
+        Visibility::Restricted(VisRestricted {
+            pub_token: Default::default(),
+            paren_token: Default::default(),
+            in_token: Default::default(),
+            path: parse_macro_input!(attr),
+        })
+    };
+
+    let open_tokens = quote! {
+        #[creusot::no_translate]
+        #[creusot::item=#name_tag]
+        #vis fn #open_name() {}
+    };
+
+    match item {
+        ContractSubject::FnOrMethod(fn_or_meth) if fn_or_meth.is_trait_signature() => {
+            return TS1::from(
+                Error::new(Span::call_site(), "Cannot mark trait item signature as open")
+                    .to_compile_error(),
+            )
+        }
+        ContractSubject::FnOrMethod(mut f) => {
+            f.body.as_mut().map(|b| b.stmts.insert(0, Stmt::Item(Item::Verbatim(open_tokens))));
+            TS1::from(quote! {
+              #[creusot::clause::open=#name_tag]
+              #f
+            })
+        }
+        ContractSubject::Closure(_) => {
+            return TS1::from(
+                Error::new(Span::call_site(), "Cannot mark closure as open").to_compile_error(),
+            )
+        }
+    }
+}
+
 // Derive Macros
 #[proc_macro_derive(PartialEq)]
 pub fn derive_partial_eq(tokens: TS1) -> TS1 {
