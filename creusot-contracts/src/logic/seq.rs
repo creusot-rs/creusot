@@ -16,7 +16,7 @@ impl<T> Seq<T> {
 
     #[logic]
     pub fn get(self, ix: Int) -> Option<T> {
-        if ix < self.len() {
+        if 0 <= ix && ix < self.len() {
             Some(self.index_logic(ix))
         } else {
             None
