@@ -380,7 +380,7 @@ pub(crate) fn lower_literal<'tcx>(
         }
         Literal::Function(id, subst) => {
             #[allow(deprecated)]
-            names.insert(id, subst);
+            names.insert((id, subst).into());
             Exp::Tuple(Vec::new())
         }
         Literal::Float(f, fty) => {

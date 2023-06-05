@@ -10,8 +10,8 @@ use rustc_hir::{
 use rustc_middle::ty::{
     self,
     subst::{GenericArgKind, InternalSubsts, SubstsRef},
-    AliasKind, AliasTy, EarlyBinder, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable,
-    TypeSuperVisitable, TypeVisitor,
+    AliasKind, AliasTy, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable,
+    TypeVisitor,
 };
 use rustc_span::{Symbol, DUMMY_SP};
 use rustc_target::abi::FieldIdx;
@@ -22,7 +22,12 @@ use why3::{
 };
 
 use crate::{
-    backend::{self, dependency::Dependency, interface, ty::translate_ty_param},
+    backend::{
+        self,
+        dependency::{Dependency, Key},
+        interface,
+        ty::translate_ty_param,
+    },
     ctx::*,
     translation::traits,
     util::{self, get_builtin, ident_of, ident_of_ty, item_name, module_name},
@@ -87,8 +92,8 @@ impl PreludeModule {
     }
 }
 
-type CloneNode<'tcx> = (DefId, SubstsRef<'tcx>);
-pub(super) type CloneSummary<'tcx> = IndexMap<(DefId, SubstsRef<'tcx>), CloneInfo>;
+type CloneNode<'tcx> = Key<'tcx>;
+pub(super) type CloneSummary<'tcx> = IndexMap<Key<'tcx>, CloneInfo>;
 
 #[derive(Clone)]
 pub struct CloneMap<'tcx> {
@@ -154,7 +159,7 @@ impl Kind {
 
 use rustc_macros::{TyDecodable, TyEncodable};
 
-use super::{dependency::closure_hack, Why3Generator};
+use super::Why3Generator;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable)]
 enum CloneOpacity {
@@ -247,33 +252,31 @@ impl<'tcx> CloneMap<'tcx> {
     /// Internal: only meant for mutually recursive type declaration
     pub(crate) fn insert_hidden(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) {
         let subst = self.tcx.erase_regions(subst);
-        self.names.insert((def_id, subst), CloneInfo::hidden());
+        self.names.insert((def_id, subst).into(), CloneInfo::hidden());
     }
 
     #[deprecated(
         note = "Avoid using this method in favor of one of the more semantic alternatives: `value`, `accessor`, `ty`"
     )]
-    pub(crate) fn insert(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo {
-        let subst = self.tcx.erase_regions(subst);
+    pub(crate) fn insert(&mut self, key: Key<'tcx>) -> &mut CloneInfo {
+        let key = key.erase_regions(self.tcx).closure_hack(self.tcx);
 
-        let (def_id, subst) = closure_hack(self.tcx, def_id, subst);
-
-        self.names.entry((def_id, subst)).or_insert_with(|| {
-            let base_sym = match util::item_type(self.tcx, def_id) {
-                ItemType::Impl => self.tcx.item_name(self.tcx.trait_id_of_impl(def_id).unwrap()),
+        self.names.entry(key).or_insert_with(|| {
+            let base_sym = match util::item_type(self.tcx, key.did) {
+                ItemType::Impl => self.tcx.item_name(self.tcx.trait_id_of_impl(key.did).unwrap()),
                 ItemType::Closure => Symbol::intern(&format!(
                     "closure{}",
-                    self.tcx.def_path(def_id).data.last().unwrap().disambiguator
+                    self.tcx.def_path(key.did).data.last().unwrap().disambiguator
                 )),
-                _ => self.tcx.item_name(def_id),
+                _ => self.tcx.item_name(key.did),
             };
 
             let base = Symbol::intern(&base_sym.as_str().to_upper_camel_case());
             let count: usize = *self.name_counts.entry(base).and_modify(|c| *c += 1).or_insert(0);
-            trace!("inserting {:?} {:?} as {}{}", def_id, subst, base, count);
+            trace!("inserting {:?} as {}{}", key, base, count);
 
-            let name = if util::item_type(self.tcx, def_id) == ItemType::Type {
-                Symbol::intern(&*module_name(self.tcx, def_id))
+            let name = if util::item_type(self.tcx, key.did) == ItemType::Type {
+                Symbol::intern(&*module_name(self.tcx, key.did))
             } else {
                 Symbol::intern(&format!("{}{}", base, count))
             };
@@ -285,12 +288,12 @@ impl<'tcx> CloneMap<'tcx> {
 
     pub(crate) fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
         let name = item_name(self.tcx, def_id, Namespace::ValueNS);
-        self.insert(def_id, subst).qname_ident(name.into())
+        self.insert((def_id, subst).into()).qname_ident(name.into())
     }
 
     pub(crate) fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
         let name = item_name(self.tcx, def_id, Namespace::TypeNS);
-        self.insert(def_id, subst).qname_ident(name.into())
+        self.insert((def_id, subst).into()).qname_ident(name.into())
     }
 
     pub(crate) fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
@@ -301,7 +304,7 @@ impl<'tcx> CloneMap<'tcx> {
         };
         let mut name = item_name(self.tcx, def_id, Namespace::ValueNS);
         name.capitalize();
-        self.insert(type_id, subst).qname_ident(name.into())
+        self.insert((type_id, subst).into()).qname_ident(name.into())
     }
 
     /// Creates a name for a type or closure projection ie: x.field1
@@ -319,7 +322,7 @@ impl<'tcx> CloneMap<'tcx> {
         ix: FieldIdx,
     ) -> QName {
         let tcx = self.tcx;
-        let clone = self.insert(def_id, subst);
+        let clone = self.insert((def_id, subst).into());
         let name: Ident = match util::item_type(tcx, def_id) {
             ItemType::Closure => format!("field_{}", ix.as_usize()).into(),
             ItemType::Type => {
@@ -338,7 +341,7 @@ impl<'tcx> CloneMap<'tcx> {
         clone.qname_ident(name.into())
     }
 
-    fn self_key(&self) -> (DefId, SubstsRef<'tcx>) {
+    fn self_key(&self) -> Key<'tcx> {
         let subst = match self.tcx.def_kind(self.self_id) {
             DefKind::Closure => match self.tcx.type_of(self.self_id).subst_identity().kind() {
                 TyKind::Closure(_, subst) => subst,
@@ -348,7 +351,7 @@ impl<'tcx> CloneMap<'tcx> {
         };
 
         let subst = self.tcx.erase_regions(subst);
-        (self.self_id, subst)
+        (self.self_id, subst).into()
     }
 
     pub(crate) fn import_prelude_module(&mut self, module: PreludeModule) {
@@ -388,31 +391,31 @@ impl<'tcx> CloneMap<'tcx> {
                 continue;
             }
 
-            if traits::still_specializable(self.tcx, param_env, key.0, key.1) {
+            if traits::still_specializable(self.tcx, param_env, key.did, key.subst) {
                 self.names[&key].opaque();
             }
 
-            if !ctx.is_transparent_from(key.0, self.self_id) {
+            if !ctx.is_transparent_from(key.did, self.self_id) {
                 self.names[&key].opaque();
             }
 
-            ctx.translate(key.0);
+            ctx.translate(key.did);
 
             trace!(
                 "{:?} {:?} has {:?} dependencies",
                 self.names[&key].kind,
                 key,
-                ctx.dependencies(key.0).map(|d| d.len())
+                ctx.dependencies(key.did).map(|d| d.len())
             );
             self.clone_laws(ctx, key);
             self.clone_dependencies(ctx, key);
         }
     }
 
-    fn clone_dependencies(&mut self, ctx: &mut Why3Generator<'tcx>, key: (DefId, SubstsRef<'tcx>)) {
+    fn clone_dependencies(&mut self, ctx: &mut Why3Generator<'tcx>, key: Key<'tcx>) {
         let key_dep = DepNode::new(ctx.tcx, key);
         // Check the substitution for dependencies on closures
-        for ty in key.1.types().flat_map(|t| t.walk()) {
+        for ty in key.subst.types().flat_map(|t| t.walk()) {
             let ty = match ty.unpack() {
                 GenericArgKind::Type(ty) => ty,
                 _ => continue,
@@ -420,14 +423,16 @@ impl<'tcx> CloneMap<'tcx> {
 
             match ty.kind() {
                 TyKind::Closure(id, subst) => {
-                    self.insert(*id, subst);
+                    let key = (*id, *subst).into();
+                    self.insert(key);
                     // Sketchy... shouldn't we need to do something to subst?
                     // eprintln!("{:?}", DepNode::new(ctx.tcx, key));
-                    self.add_graph_edge(key_dep, DepNode::new(ctx.tcx, (*id, subst)));
+                    self.add_graph_edge(key_dep, DepNode::new(ctx.tcx, key));
                 }
                 TyKind::Adt(def, subst) => {
-                    self.insert(def.did(), subst);
-                    self.add_graph_edge(key_dep, DepNode::new(ctx.tcx, (def.did(), subst)));
+                    let key = (def.did(), *subst).into();
+                    self.insert(key);
+                    self.add_graph_edge(key_dep, DepNode::new(ctx.tcx, key));
                 }
                 _ => {}
             }
@@ -435,11 +440,11 @@ impl<'tcx> CloneMap<'tcx> {
 
         let key_public = self.names[&key].public;
 
-        walk_projections(key.1, |pty: &AliasTy<'tcx>| {
-            let dep = self.resolve_dep(ctx, (pty.def_id, pty.substs));
+        walk_projections(key.subst, |pty: &AliasTy<'tcx>| {
+            let dep = self.resolve_dep(ctx, (pty.def_id, pty.substs).into());
 
-            if let Some((defid, subst)) = dep.cloneable_id() {
-                self.insert(defid, subst).public |= key_public;
+            if let Some(dep_key) = dep.cloneable_id() {
+                self.insert(dep_key).public |= key_public;
             }
 
             self.add_graph_edge(key_dep, dep);
@@ -448,7 +453,7 @@ impl<'tcx> CloneMap<'tcx> {
         let opaque_clone = !matches!(self.clone_level, CloneLevel::Body)
             || self.names[&key].opaque == CloneOpacity::Opaque;
 
-        for (dep, info) in ctx.dependencies(key.0).iter().flat_map(|i| i.iter()) {
+        for (dep, info) in ctx.dependencies(key.did).iter().flat_map(|i| i.iter()) {
             if opaque_clone && !info.public {
                 continue;
             }
@@ -457,11 +462,11 @@ impl<'tcx> CloneMap<'tcx> {
 
             let orig = dep;
 
-            let dep = self.resolve_dep(ctx, (dep.0, EarlyBinder(dep.1).subst(self.tcx, key.1)));
+            let dep = self.resolve_dep(ctx, dep.subst(self.tcx, key.subst));
 
-            if let Some((defid, subst)) = dep.cloneable_id() {
+            if let Some(dep_key) = dep.cloneable_id() {
                 trace!("inserting dependency {:?} {:?}", key, dep);
-                self.insert(defid, subst).public |= key_public && info.public;
+                self.insert(dep_key).public |= key_public && info.public;
             }
 
             // Skip reflexive edges
@@ -470,7 +475,7 @@ impl<'tcx> CloneMap<'tcx> {
             }
 
             let edge_set = self.add_graph_edge(key_dep, dep);
-            if let Some(sym) = refineable_symbol(ctx.tcx, orig.0) {
+            if let Some(sym) = refineable_symbol(ctx.tcx, orig.did) {
                 edge_set.insert((info.kind, sym));
             }
         }
@@ -498,19 +503,15 @@ impl<'tcx> CloneMap<'tcx> {
     // Given an initial substitution, find out the substituted and resolved version of the dependency `dep`.
     // This will attempt to normalize traits and associated types if the substitution provides enough
     // information.
-    fn resolve_dep(
-        &self,
-        ctx: &TranslationCtx<'tcx>,
-        dep: (DefId, SubstsRef<'tcx>),
-    ) -> DepNode<'tcx> {
+    fn resolve_dep(&self, ctx: &TranslationCtx<'tcx>, dep: Key<'tcx>) -> DepNode<'tcx> {
         let param_env = ctx.param_env(self.self_id);
 
         let dep = DepNode::new(self.tcx, dep);
         dep.resolve(ctx, param_env).unwrap_or(dep)
     }
 
-    fn clone_laws(&mut self, ctx: &mut TranslationCtx<'tcx>, key: (DefId, SubstsRef<'tcx>)) {
-        let Some(item) = ctx.tcx.opt_associated_item(key.0) else { return };
+    fn clone_laws(&mut self, ctx: &mut TranslationCtx<'tcx>, key: Key<'tcx>) {
+        let Some(item) = ctx.tcx.opt_associated_item(key.did) else { return };
 
         // Dont clone laws into the trait / impl which defines them.
         if let Some(self_trait) = ctx.tcx.opt_associated_item(self.self_id) {
@@ -535,13 +536,13 @@ impl<'tcx> CloneMap<'tcx> {
             trace!("adding law {:?} in {:?}", *law, self.self_id);
 
             // No way the substitution is correct...
-            let law = self.insert(*law, key.1);
+            let law = self.insert((*law, key.subst).into());
             law.public = false;
         }
     }
 
     fn build_clone(&mut self, ctx: &mut Why3Generator<'tcx>, item: DepNode<'tcx>) -> Option<Decl> {
-        let node @ (def_id, subst) = item.cloneable_id()?;
+        let node @ Key { did: def_id, subst } = item.cloneable_id()?;
 
         // Types can't be cloned, but are used (for now).
         if util::item_type(ctx.tcx, def_id) == ItemType::Type {
@@ -687,12 +688,13 @@ impl<'tcx> CloneMap<'tcx> {
                 &|_, n| {
                     let s = match n {
                         (Dependency::Type(ty), Dependency::Type(_)) => format!("{:?}", ty),
-                        (Dependency::Item((i, sub)), Dependency::Item(_)) => {
+                        (Dependency::Item(k), Dependency::Item(_)) => {
                             format!(
-                                "({}, {sub:?})",
-                                ctx.opt_item_name(i)
+                                "({}, {:?})",
+                                ctx.opt_item_name(k.did)
                                     .map(|n| n.as_str().to_string())
-                                    .unwrap_or(ctx.def_path_str(i))
+                                    .unwrap_or(ctx.def_path_str(k.did)),
+                                k.subst,
                             )
                         }
                         _ => panic!(),
