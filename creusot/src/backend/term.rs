@@ -5,7 +5,6 @@ use crate::{
     util,
     util::get_builtin,
 };
-use rustc_hir::Unsafety;
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
@@ -237,39 +236,19 @@ impl<'tcx> Lower<'_, 'tcx> {
 
                 Exp::pure_qvar(accessor).app(vec![lhs])
             }
-            TermKind::Closure { args, body } => {
-                let mut fresh_vars = 0;
-
-                let substs = match term.ty.kind() {
-                    TyKind::Closure(_, subst) => subst,
+            TermKind::Closure { body } => {
+                let id = match term.ty.kind() {
+                    TyKind::Closure(id, _) => id,
                     _ => unreachable!("closure has non closure type!"),
                 };
-                let arg_tys = self
-                    .ctx
-                    .signature_unclosure(substs.as_closure().sig(), Unsafety::Normal)
-                    .inputs();
 
-                let mut body = self.lower_term(*body);
+                let body = self.lower_term(*body);
 
                 let mut binders = Vec::new();
-
-                for (arg, ty) in args.into_iter().zip(arg_tys.skip_binder().into_iter()) {
-                    match arg {
-                        Pattern::Binder(a) => {
-                            binders.push(Binder::typed(a.to_string().into(), self.lower_ty(*ty)))
-                        }
-                        _ => {
-                            let id = Ident::build(&format!("clos'{fresh_vars}"));
-                            fresh_vars += 1;
-
-                            body = Exp::Let {
-                                pattern: self.lower_pat(arg),
-                                arg: Box::new(Exp::pure_var(id.clone())),
-                                body: Box::new(body),
-                            };
-                            binders.push(Binder::typed(id, self.lower_ty(*ty)))
-                        }
-                    }
+                let sig = self.ctx.sig(*id).clone();
+                for arg in sig.inputs.iter().skip(1) {
+                    binders
+                        .push(Binder::typed(Ident::build(&arg.0.to_string()), self.lower_ty(arg.2)))
                 }
 
                 Exp::Abs(binders, Box::new(body))

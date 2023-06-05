@@ -679,12 +679,8 @@ impl<'tcx> TermVisitorMut<'tcx> for ClosureSubst<'tcx> {
                 super_visit_mut_term(term, self);
                 std::mem::swap(&mut self.bound, &mut bound);
             }
-            TermKind::Closure { args, .. } => {
-                let mut bound = self.bound.clone();
-                args.iter().for_each(|a| a.binds(&mut bound));
-                std::mem::swap(&mut self.bound, &mut bound);
+            TermKind::Closure { .. } => {
                 super_visit_mut_term(term, self);
-                std::mem::swap(&mut self.bound, &mut bound);
             }
             _ => super_visit_mut_term(term, self),
         }
