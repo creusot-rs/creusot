@@ -5,6 +5,7 @@ use crate::{
     declaration::*,
     exp::{AssocDir, BinOp, Binder, Constant, Precedence, UnOp},
 };
+use num::{Float, Zero};
 use pretty::*;
 
 #[derive(Default)]
@@ -1030,7 +1031,31 @@ impl Print for Constant {
             }
             Constant::String(s) => alloc.text(format!("{s:?}")),
             Constant::Uint(i, None) => alloc.as_string(i),
-            Constant::Float(f) => alloc.text(format!("{f:.64}")),
+            Constant::Float(f) => {
+                assert!(f.is_finite());
+                let mut doc = if f.fract() != 0.0 {
+                    let (mantissa, exp, _) = f.integer_decode();
+                    let leading = if f.is_subnormal() { "0" } else { "1" };
+
+                    alloc.text(format!(
+                        "{}0x{}.{:012x}p{}",
+                        if f.is_sign_negative() { "-" } else { "" },
+                        leading,
+                        mantissa & !(1 << 52),
+                        exp + 52
+                    ))
+                } else {
+                    alloc.text(format!(
+                        "{}{f}.0",
+                        if f.is_sign_negative() && f.is_zero() { "-" } else { "" }
+                    ))
+                };
+
+                if f.is_sign_negative() {
+                    doc = doc.parens();
+                }
+                doc
+            }
         }
     }
 }
