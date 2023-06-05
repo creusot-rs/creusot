@@ -16,7 +16,6 @@ use itertools::Itertools;
 use log::*;
 use rustc_ast::{LitIntType, LitKind};
 use rustc_hir::{
-    self as hir,
     def_id::{DefId, LocalDefId},
     HirId, OwnerId,
 };
@@ -141,7 +140,6 @@ pub enum TermKind<'tcx> {
         term: Box<Term<'tcx>>,
     },
     Closure {
-        args: Vec<Pattern<'tcx>>,
         body: Box<Term<'tcx>>,
     },
     Reborrow {
@@ -647,9 +645,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             },
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
                 let term = pearlite(self.ctx, closure_id)?;
-                let pats = closure_pattern(self.ctx.tcx, closure_id)?;
 
-                Ok(Term { ty, span, kind: TermKind::Closure { args: pats, body: Box::new(term) } })
+                Ok(Term { ty, span, kind: TermKind::Closure { body: Box::new(term) } })
             }
             ref ek => todo!("lower_expr: {:?}", ek),
         }
@@ -1045,27 +1042,7 @@ fn not_spec_expr(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: ExprId) -> bool {
     }
 }
 
-fn closure_pattern<'tcx>(tcx: TyCtxt<'tcx>, id: LocalDefId) -> CreusotResult<Vec<Pattern<'tcx>>> {
-    let body_id = tcx.hir().body_owned_by(id);
-    let body = tcx.hir().body(body_id);
-
-    body.params.iter().map(|p| lower_hir_pat(tcx, p.pat)).collect()
-}
 use rustc_hir;
-
-fn lower_hir_pat<'tcx>(tcx: TyCtxt<'tcx>, pat: &hir::Pat<'tcx>) -> CreusotResult<Pattern<'tcx>> {
-    use rustc_hir::PatKind;
-    match pat.kind {
-        PatKind::Tuple(pats, _) => {
-            let pats =
-                pats.into_iter().map(|p| lower_hir_pat(tcx, p)).collect::<Result<Vec<_>, _>>()?;
-            Ok(Pattern::Tuple(pats))
-        }
-        PatKind::Binding(_, _, id, _) => Ok(Pattern::Binder(id.name)),
-        PatKind::Wild => Ok(Pattern::Wildcard),
-        _ => Err(Error::new(pat.span, "unsupported pattern for Pearlite closure")),
-    }
-}
 
 impl<'tcx> Pattern<'tcx> {
     pub(crate) fn binds(&self, binders: &mut HashSet<Symbol>) {
@@ -1123,7 +1100,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         }
         TermKind::Projection { lhs, name: _ } => visitor.visit_term(&*lhs),
         TermKind::Old { term } => visitor.visit_term(&*term),
-        TermKind::Closure { args: _, body } => visitor.visit_term(&*body),
+        TermKind::Closure { body } => visitor.visit_term(&*body),
         TermKind::Absurd => {}
         TermKind::Reborrow { cur, fin } => {
             visitor.visit_term(&*cur);
@@ -1177,7 +1154,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         }
         TermKind::Projection { lhs, name: _ } => visitor.visit_mut_term(&mut *lhs),
         TermKind::Old { term } => visitor.visit_mut_term(&mut *term),
-        TermKind::Closure { args: _, body } => visitor.visit_mut_term(&mut *body),
+        TermKind::Closure { body } => visitor.visit_mut_term(&mut *body),
         TermKind::Absurd => {}
         TermKind::Reborrow { cur, fin } => {
             visitor.visit_mut_term(&mut *cur);
@@ -1328,9 +1305,7 @@ impl<'tcx> Term<'tcx> {
             }
             TermKind::Projection { lhs, .. } => lhs.subst_inner(bound, inv_subst),
             TermKind::Old { term } => term.subst_inner(bound, inv_subst),
-            TermKind::Closure { args, body } => {
-                let mut bound = bound.clone();
-                args.iter().for_each(|a| a.binds(&mut bound));
+            TermKind::Closure { body } => {
                 body.subst_inner(&bound, inv_subst);
             }
             TermKind::Absurd => {}
