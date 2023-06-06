@@ -1,5 +1,5 @@
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{ParamEnv, SubstsRef, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{EarlyBinder, ParamEnv, SubstsRef, Ty, TyCtxt, TyKind};
 use rustc_span::Symbol;
 use rustc_type_ir::AliasKind;
 
@@ -16,17 +16,49 @@ use crate::{
 ///
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash, PartialOrd, Ord)]
+pub struct Key<'tcx> {
+    pub(crate) did: DefId,
+    pub(crate) subst: SubstsRef<'tcx>,
+}
+
+impl<'tcx> From<(DefId, SubstsRef<'tcx>)> for Key<'tcx> {
+    #[inline]
+    fn from(value: (DefId, SubstsRef<'tcx>)) -> Self {
+        Key { did: value.0, subst: value.1 }
+    }
+}
+
+impl<'tcx> Key<'tcx> {
+    #[inline]
+    pub(crate) fn erase_regions(mut self, tcx: TyCtxt<'tcx>) -> Self {
+        self.subst = tcx.erase_regions(self.subst);
+        self
+    }
+
+    #[inline]
+    pub(crate) fn subst(mut self, tcx: TyCtxt<'tcx>, substs: SubstsRef<'tcx>) -> Self {
+        self.subst = EarlyBinder(self.subst).subst(tcx, substs);
+        self
+    }
+
+    #[inline]
+    pub(crate) fn closure_hack(self, tcx: TyCtxt<'tcx>) -> Self {
+        closure_hack(tcx, self.did, self.subst).into()
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash, PartialOrd, Ord)]
 pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
-    Item((DefId, SubstsRef<'tcx>)),
+    Item(Key<'tcx>),
 }
 
 impl<'tcx> Dependency<'tcx> {
-    pub(crate) fn new(tcx: TyCtxt<'tcx>, dep: (DefId, SubstsRef<'tcx>)) -> Self {
-        match util::item_type(tcx, dep.0) {
-            ItemType::Type => Dependency::Type(tcx.mk_adt(tcx.adt_def(dep.0), dep.1)),
+    pub(crate) fn new(tcx: TyCtxt<'tcx>, dep: Key<'tcx>) -> Self {
+        match util::item_type(tcx, dep.did) {
+            ItemType::Type => Dependency::Type(tcx.mk_adt(tcx.adt_def(dep.did), dep.subst)),
             // ItemType::Closure => Dependency::Type(tcx.type_of(dep.0).subst(tcx, dep.1)),
-            ItemType::AssocTy => Dependency::Type(tcx.mk_projection(dep.0, dep.1)),
+            ItemType::AssocTy => Dependency::Type(tcx.mk_projection(dep.did, dep.subst)),
             _ => Dependency::Item(dep),
         }
 
@@ -47,17 +79,21 @@ impl<'tcx> Dependency<'tcx> {
     ) -> Option<Self> {
         match self {
             Dependency::Type(ty) => resolve_type(ty, ctx.tcx, param_env),
-            Dependency::Item((item, substs)) => resolve_item(item, substs, ctx.tcx, param_env),
+            Dependency::Item(Key { did: item, subst: substs }) => {
+                resolve_item(item, substs, ctx.tcx, param_env)
+            }
         }
     }
 
-    pub(crate) fn cloneable_id(self) -> Option<(DefId, SubstsRef<'tcx>)> {
+    pub(crate) fn cloneable_id(self) -> Option<Key<'tcx>> {
         match self {
             Dependency::Item(i) => Some(i),
             Dependency::Type(t) => match t.kind() {
-                TyKind::Adt(def, substs) => Some((def.did(), substs)),
-                TyKind::Closure(id, substs) => Some((*id, substs)),
-                TyKind::Alias(AliasKind::Projection, aty) => Some((aty.def_id, aty.substs)),
+                TyKind::Adt(def, substs) => Some(Key { did: def.did(), subst: substs }),
+                TyKind::Closure(id, substs) => Some(Key { did: *id, subst: substs }),
+                TyKind::Alias(AliasKind::Projection, aty) => {
+                    Some(Key { did: aty.def_id, subst: aty.substs })
+                }
                 _ => None,
             },
         }
@@ -89,7 +125,7 @@ fn resolve_item<'tcx>(
     };
     let resolved = closure_hack(tcx, resolved.0, resolved.1);
     let normed = tcx.try_normalize_erasing_regions(param_env, resolved).unwrap();
-    Some(Dependency::new(tcx, normed))
+    Some(Dependency::new(tcx, normed.into()))
 }
 
 pub(crate) fn closure_hack<'tcx>(
