@@ -405,7 +405,7 @@ impl<'tcx> CloneMap<'tcx> {
                 "{:?} {:?} has {:?} dependencies",
                 self.names[&key].kind,
                 key,
-                ctx.dependencies(key.did).map(|d| d.len())
+                ctx.dependencies(key).map(|d| d.len())
             );
             self.clone_laws(ctx, key);
             self.clone_dependencies(ctx, key);
@@ -453,7 +453,7 @@ impl<'tcx> CloneMap<'tcx> {
         let opaque_clone = !matches!(self.clone_level, CloneLevel::Body)
             || self.names[&key].opaque == CloneOpacity::Opaque;
 
-        for (dep, info) in ctx.dependencies(key.did).iter().flat_map(|i| i.iter()) {
+        for (dep, info) in ctx.dependencies(key).iter().flat_map(|i| i.iter()) {
             if opaque_clone && !info.public {
                 continue;
             }
