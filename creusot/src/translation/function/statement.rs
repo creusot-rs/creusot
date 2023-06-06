@@ -200,10 +200,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             let lhs_ty = place.ty(self.body, self.tcx).ty;
             if !place.is_indirect() && need_resolve_before.contains(place.local)
                 && let Some((id, subst)) = super::resolve_predicate_of(self.ctx, self.param_env(), lhs_ty) {
-                let tmp_local: Place = self.fresh_local(lhs_ty).into();
-                self.emit_assignment(&tmp_local, RValue::Expr(rval));
                 self.emit_statement(fmir::Statement::Resolve(id, subst, *place));
-                self.emit_assignment(place, RValue::Expr(Expr::Place(tmp_local)));
+                self.emit_assignment(place, RValue::Expr(rval));
             } else {
                 self.emit_assignment(place, RValue::Expr(rval));
             }
