@@ -13,7 +13,7 @@ use crate::{
     ctx::{BodyId, CloneMap, TranslationCtx},
     translation::{
         binop_to_binop,
-        fmir::{self, Block, Branches, Expr, RValue, Statement, Terminator},
+        fmir::{self, Block, Branches, Expr, LocalDecls, RValue, Statement, Terminator},
         function::{closure_contract, closure_generic_decls, promoted, ClosureContract},
         unop_to_unop,
     },
@@ -242,8 +242,9 @@ fn lower_promoted<'tcx>(
 
         previous_block = Some(id);
 
+        // FIXME
         let exps: Vec<_> =
-            bbd.stmts.into_iter().map(|s| s.to_why(ctx, names, body_id)).flatten().collect();
+            bbd.stmts.into_iter().map(|s| s.to_why(ctx, names, &fmir.locals)).flatten().collect();
         exp = exps.into_iter().rfold(exp, |acc, asgn| match asgn {
             why3::mlcfg::Statement::Assign { lhs, rhs } => {
                 Exp::Let { pattern: Pattern::VarP(lhs), arg: Box::new(rhs), body: Box::new(acc) }
@@ -267,25 +268,27 @@ pub fn to_why<'tcx>(
 ) -> Decl {
     let body = ctx.fmir_body(body_id).unwrap().clone();
 
+    let blocks = body
+        .blocks
+        .into_iter()
+        .map(|(bb, bbd)| (BlockId(bb.into()), bbd.to_why(ctx, names, &body.locals)))
+        .collect();
+
     let vars: Vec<_> = body
         .locals
         .into_iter()
-        .map(|(id, sp, ty)| (false, id, ty::translate_ty(ctx, names, sp, ty)))
+        .map(|(loc, (id, sp, ty))| {
+            let init = if 0 < loc.index() && loc.index() <= body.arg_count {
+                Some(Exp::impure_var(id.ident()))
+            } else {
+                None
+            };
+            (false, id.ident(), ty::translate_ty(ctx, names, sp, ty), init)
+        })
         .collect();
 
-    let entry = mlcfg::Block {
-        statements: vars
-            .iter()
-            .skip(1)
-            .zip(ctx.sig(body_id.def_id()).inputs.iter().map(|(s, _, _)| s))
-            .take(body.arg_count)
-            .map(|((_, id, _), arg)| {
-                let rhs = arg.to_string().into();
-                mlcfg::Statement::Assign { lhs: id.ident(), rhs: Exp::impure_var(rhs) }
-            })
-            .collect(),
-        terminator: mlcfg::Terminator::Goto(BlockId(0)),
-    };
+    let entry =
+        mlcfg::Block { statements: Vec::new(), terminator: mlcfg::Terminator::Goto(BlockId(0)) };
 
     let mut sig = signature_of(ctx, names, body_id.def_id());
     if matches!(util::item_type(ctx.tcx, body_id.def_id()), ItemType::Program | ItemType::Closure) {
@@ -293,18 +296,7 @@ pub fn to_why<'tcx>(
         sig.attrs.push(declaration::Attribute::Attr("cfg:subregion_analysis".into()));
     };
 
-    Decl::CfgDecl(CfgFunction {
-        sig,
-        rec: true,
-        constant: false,
-        vars: vars.into_iter().map(|i| (i.0, i.1.ident(), i.2)).collect(),
-        entry,
-        blocks: body
-            .blocks
-            .into_iter()
-            .map(|(bb, bbd)| (BlockId(bb.into()), bbd.to_why(ctx, names, body_id)))
-            .collect(),
-    })
+    Decl::CfgDecl(CfgFunction { sig, rec: true, constant: false, entry, blocks, vars })
 }
 
 impl<'tcx> Expr<'tcx> {
@@ -312,42 +304,38 @@ impl<'tcx> Expr<'tcx> {
         self,
         ctx: &mut Why3Generator<'tcx>,
         names: &mut CloneMap<'tcx>,
-        body_id: Option<BodyId>,
+        locals: &LocalDecls<'tcx>,
     ) -> Exp {
         match self {
-            Expr::Place(pl) => {
-                translate_rplace_inner(ctx, names, body_id.unwrap(), pl.local, pl.projection)
-            }
+            Expr::Place(pl) => translate_rplace_inner(ctx, names, locals, pl.local, pl.projection),
             Expr::Move(pl) => {
                 // TODO invalidate original place
-                translate_rplace_inner(ctx, names, body_id.unwrap(), pl.local, pl.projection)
+                translate_rplace_inner(ctx, names, locals, pl.local, pl.projection)
             }
-            Expr::Copy(pl) => {
-                translate_rplace_inner(ctx, names, body_id.unwrap(), pl.local, pl.projection)
-            }
+            Expr::Copy(pl) => translate_rplace_inner(ctx, names, locals, pl.local, pl.projection),
             Expr::BinOp(BinOp::BitAnd, ty, l, r) if ty.is_bool() => {
-                l.to_why(ctx, names, body_id).lazy_and(r.to_why(ctx, names, body_id))
+                l.to_why(ctx, names, locals).lazy_and(r.to_why(ctx, names, locals))
             }
             Expr::BinOp(BinOp::Eq, ty, l, r) if ty.is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
                 Exp::impure_qvar(QName::from_string("Bool.eqb").unwrap())
-                    .app(vec![l.to_why(ctx, names, body_id), r.to_why(ctx, names, body_id)])
+                    .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
             Expr::BinOp(BinOp::Ne, ty, l, r) if ty.is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
                 Exp::impure_qvar(QName::from_string("Bool.neqb").unwrap())
-                    .app(vec![l.to_why(ctx, names, body_id), r.to_why(ctx, names, body_id)])
+                    .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
             Expr::BinOp(op, ty, l, r) => Exp::BinaryOp(
                 binop_to_binop(ctx, ty, op),
-                Box::new(l.to_why(ctx, names, body_id)),
-                Box::new(r.to_why(ctx, names, body_id)),
+                Box::new(l.to_why(ctx, names, locals)),
+                Box::new(r.to_why(ctx, names, locals)),
             ),
             Expr::UnaryOp(op, ty, arg) => {
-                Exp::UnaryOp(unop_to_unop(ty, op), Box::new(arg.to_why(ctx, names, body_id)))
+                Exp::UnaryOp(unop_to_unop(ty, op), Box::new(arg.to_why(ctx, names, locals)))
             }
             Expr::Constructor(id, subst, args) => {
-                let args = args.into_iter().map(|a| a.to_why(ctx, names, body_id)).collect();
+                let args = args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
 
                 match ctx.def_kind(id) {
                     DefKind::Closure => {
@@ -362,7 +350,7 @@ impl<'tcx> Expr<'tcx> {
             }
             Expr::Call(id, subst, args) => {
                 let mut args: Vec<_> =
-                    args.into_iter().map(|a| a.to_why(ctx, names, body_id)).collect();
+                    args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
                 let fname = names.value(id, subst);
 
                 let exp = if ctx.is_closure(id) {
@@ -392,10 +380,10 @@ impl<'tcx> Expr<'tcx> {
             }
             Expr::Constant(c) => lower_impure(ctx, names, c),
             Expr::Tuple(f) => {
-                Exp::Tuple(f.into_iter().map(|f| f.to_why(ctx, names, body_id)).collect())
+                Exp::Tuple(f.into_iter().map(|f| f.to_why(ctx, names, locals)).collect())
             }
             Expr::Span(sp, e) => {
-                let e = e.to_why(ctx, names, body_id);
+                let e = e.to_why(ctx, names, locals);
                 ctx.attach_span(sp, e)
             } // Expr::Cast(_, _) => todo!(),
             Expr::Cast(e, source, target) => {
@@ -421,21 +409,21 @@ impl<'tcx> Expr<'tcx> {
                         .crash_and_error(DUMMY_SP, "Non integral casts are currently unsupported"),
                 };
 
-                from_int.app_to(to_int.app_to(e.to_why(ctx, names, body_id)))
+                from_int.app_to(to_int.app_to(e.to_why(ctx, names, locals)))
             }
             Expr::Len(pl) => {
                 let len_call = Exp::impure_qvar(QName::from_string("Slice.length").unwrap())
-                    .app_to(pl.to_why(ctx, names, body_id));
+                    .app_to(pl.to_why(ctx, names, locals));
                 len_call
             }
             Expr::Array(fields) => Exp::impure_qvar(QName::from_string("Slice.create").unwrap())
                 .app_to(Exp::Const(Constant::Int(fields.len() as i128, None)))
                 .app_to(Exp::Sequence(
-                    fields.into_iter().map(|f| f.to_why(ctx, names, body_id)).collect(),
+                    fields.into_iter().map(|f| f.to_why(ctx, names, locals)).collect(),
                 )),
             Expr::Repeat(e, len) => Exp::impure_qvar(QName::from_string("Slice.create").unwrap())
-                .app_to(len.to_why(ctx, names, body_id))
-                .app_to(Exp::FnLit(Box::new(e.to_why(ctx, names, body_id)))),
+                .app_to(len.to_why(ctx, names, locals))
+                .app_to(Exp::FnLit(Box::new(e.to_why(ctx, names, locals)))),
         }
     }
 
@@ -522,13 +510,13 @@ impl<'tcx> Terminator<'tcx> {
         self,
         ctx: &mut Why3Generator<'tcx>,
         names: &mut CloneMap<'tcx>,
-        body_id: Option<BodyId>,
+        locals: &LocalDecls<'tcx>,
     ) -> why3::mlcfg::Terminator {
         use why3::mlcfg::Terminator::*;
         match self {
             Terminator::Goto(bb) => Goto(BlockId(bb.into())),
             Terminator::Switch(switch, branches) => {
-                let discr = switch.to_why(ctx, names, body_id);
+                let discr = switch.to_why(ctx, names, locals);
                 branches.to_why(ctx, names, discr)
             }
             Terminator::Return => Return,
@@ -600,15 +588,11 @@ impl<'tcx> Block<'tcx> {
         self,
         ctx: &mut Why3Generator<'tcx>,
         names: &mut CloneMap<'tcx>,
-        body_id: BodyId,
+        locals: &LocalDecls<'tcx>,
     ) -> why3::mlcfg::Block {
         mlcfg::Block {
-            statements: self
-                .stmts
-                .into_iter()
-                .flat_map(|s| s.to_why(ctx, names, body_id))
-                .collect(),
-            terminator: self.terminator.to_why(ctx, names, Some(body_id)),
+            statements: self.stmts.into_iter().flat_map(|s| s.to_why(ctx, names, locals)).collect(),
+            terminator: self.terminator.to_why(ctx, names, locals),
         }
     }
 }
@@ -618,34 +602,32 @@ impl<'tcx> Statement<'tcx> {
         self,
         ctx: &mut Why3Generator<'tcx>,
         names: &mut CloneMap<'tcx>,
-        body_id: BodyId,
+        locals: &LocalDecls<'tcx>,
     ) -> Vec<mlcfg::Statement> {
         match self {
             Statement::Assignment(lhs, RValue::Borrow(rhs)) => {
-                let borrow =
-                    Exp::BorrowMut(Box::new(Expr::Place(rhs).to_why(ctx, names, Some(body_id))));
-                let reassign =
-                    Exp::Final(Box::new(Expr::Place(lhs).to_why(ctx, names, Some(body_id))));
+                let borrow = Exp::BorrowMut(Box::new(Expr::Place(rhs).to_why(ctx, names, locals)));
+                let reassign = Exp::Final(Box::new(Expr::Place(lhs).to_why(ctx, names, locals)));
 
                 vec![
-                    place::create_assign_inner(ctx, names, body_id, &lhs, borrow),
-                    place::create_assign_inner(ctx, names, body_id, &rhs, reassign),
+                    place::create_assign_inner(ctx, names, locals, &lhs, borrow),
+                    place::create_assign_inner(ctx, names, locals, &rhs, reassign),
                 ]
             }
             Statement::Assignment(lhs, RValue::Ghost(rhs)) => {
                 let ghost = lower_pure(ctx, names, rhs);
 
-                vec![place::create_assign_inner(ctx, names, body_id, &lhs, ghost)]
+                vec![place::create_assign_inner(ctx, names, locals, &lhs, ghost)]
             }
             Statement::Assignment(lhs, RValue::Expr(rhs)) => {
                 let mut invalid = Vec::new();
                 rhs.invalidated_places(&mut invalid);
-                let rhs = rhs.to_why(ctx, names, Some(body_id));
-                let mut exps = vec![place::create_assign_inner(ctx, names, body_id, &lhs, rhs)];
+                let rhs = rhs.to_why(ctx, names, locals);
+                let mut exps = vec![place::create_assign_inner(ctx, names, locals, &lhs, rhs)];
                 for pl in invalid {
-                    let ty = ctx.place_ty(body_id, pl.as_ref()).ty;
+                    let ty = ctx.place_ty(locals, pl.as_ref()).ty;
                     let ty = translate_ty(ctx, names, DUMMY_SP, ty);
-                    exps.push(place::create_assign_inner(ctx, names, body_id, &pl, Exp::Any(ty)));
+                    exps.push(place::create_assign_inner(ctx, names, locals, &pl, Exp::Any(ty)));
                 }
                 exps
             }
@@ -654,7 +636,7 @@ impl<'tcx> Statement<'tcx> {
 
                 let rp = Exp::impure_qvar(names.value(id, subst));
 
-                let assume = rp.app_to(Expr::Place(pl).to_why(ctx, names, Some(body_id)));
+                let assume = rp.app_to(Expr::Place(pl).to_why(ctx, names, locals));
                 vec![mlcfg::Statement::Assume(assume)]
             }
             Statement::Assertion { cond, msg } => {

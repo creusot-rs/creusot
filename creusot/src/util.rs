@@ -410,7 +410,7 @@ pub(crate) fn pre_sig_of<'tcx>(
     }
 
     if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).subst_identity().kind() {
-        let self_ = Symbol::intern("_1'");
+        let self_ = Symbol::intern("_1");
         let mut pre_subst = closure_capture_subst(ctx.tcx, def_id, subst, None, self_);
 
         let mut s = HashMap::new();
@@ -726,7 +726,7 @@ pub(crate) struct AnonymousParamName(pub(crate) usize);
 
 impl Display for AnonymousParamName {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "_{}'", self.0 + 1)
+        write!(f, "_{}", self.0 + 1)
     }
 }
 

@@ -220,25 +220,25 @@ module MappingTest_Incr_Interface
     
 end
 module MappingTest_Incr
-  use prelude.Borrow
   use prelude.Ghost
-  use prelude.Int32
   use prelude.Int
+  use prelude.Int32
+  use prelude.Borrow
   use map.Map
   use prelude.Int
   use MappingTest_T_Type as MappingTest_T_Type
   clone MappingTest_Impl0_ShallowModel as ShallowModel0 with
     axiom .
   use map.Map
-  clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel1 with
+  clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel2 with
     type t = MappingTest_T_Type.t_t,
     type ShallowModelTy0.shallowModelTy = Map.map int int,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel3 with
     type t = borrowed (MappingTest_T_Type.t_t),
     type ShallowModelTy0.shallowModelTy = Map.map int int,
-    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
-  clone CreusotContracts_Ghost_Impl1_ShallowModel as ShallowModel2 with
+    function ShallowModel0.shallow_model = ShallowModel2.shallow_model
+  clone CreusotContracts_Ghost_Impl1_ShallowModel as ShallowModel1 with
     type t = borrowed (MappingTest_T_Type.t_t),
     type ShallowModelTy0.shallowModelTy = Map.map int int,
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model
@@ -247,25 +247,24 @@ module MappingTest_Incr
   let rec cfg incr [#"../mapping_test.rs" 30 0 30 18] [@cfg:stackify] [@cfg:subregion_analysis] (t : borrowed (MappingTest_T_Type.t_t)) : ()
     requires {[#"../mapping_test.rs" 27 12 27 24] 0 <= Int32.to_int (MappingTest_T_Type.t_a ( * t))}
     requires {[#"../mapping_test.rs" 28 12 28 26] Int32.to_int (MappingTest_T_Type.t_a ( * t)) < 1000}
-    ensures { [#"../mapping_test.rs" 29 11 29 37] ShallowModel0.shallow_model ( ^ t) = Map.set (ShallowModel1.shallow_model t) (Int32.to_int (MappingTest_T_Type.t_a ( * t))) 1 }
+    ensures { [#"../mapping_test.rs" 29 11 29 37] ShallowModel0.shallow_model ( ^ t) = Map.set (ShallowModel2.shallow_model t) (Int32.to_int (MappingTest_T_Type.t_a ( * t))) 1 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var t_1 : borrowed (MappingTest_T_Type.t_t);
-  var old_t_5 : Ghost.ghost_ty (borrowed (MappingTest_T_Type.t_t));
+  var t : borrowed (MappingTest_T_Type.t_t) = t;
+  var old_t : Ghost.ghost_ty (borrowed (MappingTest_T_Type.t_t));
   var _7 : ();
   {
-    t_1 <- t;
     goto BB0
   }
   BB0 {
-    old_t_5 <- ([#"../mapping_test.rs" 31 16 31 28] Ghost.new t_1);
+    old_t <- ([#"../mapping_test.rs" 31 16 31 28] Ghost.new t);
     goto BB1
   }
   BB1 {
-    t_1 <- { t_1 with current = (let MappingTest_T_Type.C_T a =  * t_1 in MappingTest_T_Type.C_T ([#"../mapping_test.rs" 32 4 32 15] MappingTest_T_Type.t_a ( * t_1) + ([#"../mapping_test.rs" 32 14 32 15] (1 : int32)))) };
-    assume { Resolve0.resolve t_1 };
-    assert { [@expl:assertion] [#"../mapping_test.rs" 35 19 35 50] ShallowModel0.shallow_model ( ^ t_1) = Map.set (ShallowModel2.shallow_model old_t_5) (Int32.to_int (MappingTest_T_Type.t_a ( * Ghost.inner old_t_5))) 1 };
+    t <- { t with current = (let MappingTest_T_Type.C_T a =  * t in MappingTest_T_Type.C_T ([#"../mapping_test.rs" 32 4 32 15] MappingTest_T_Type.t_a ( * t) + ([#"../mapping_test.rs" 32 14 32 15] (1 : int32)))) };
+    assume { Resolve0.resolve t };
+    assert { [@expl:assertion] [#"../mapping_test.rs" 35 19 35 50] ShallowModel0.shallow_model ( ^ t) = Map.set (ShallowModel1.shallow_model old_t) (Int32.to_int (MappingTest_T_Type.t_a ( * Ghost.inner old_t))) 1 };
     _7 <- ();
     _0 <- ();
     return _0
@@ -273,13 +272,13 @@ module MappingTest_Incr
   
 end
 module MappingTest_F_Interface
-  val f [#"../mapping_test.rs" 38 0 38 10] (_1' : ()) : ()
+  val f [#"../mapping_test.rs" 38 0 38 10] (_1 : ()) : ()
 end
 module MappingTest_F
-  use prelude.Borrow
   use prelude.Int
   use prelude.Int32
   use map.Map
+  use prelude.Borrow
   use prelude.Int
   use map.Map
   use MappingTest_T_Type as MappingTest_T_Type
@@ -294,10 +293,10 @@ module MappingTest_F
   clone MappingTest_Incr_Interface as Incr0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     function ShallowModel1.shallow_model = ShallowModel1.shallow_model
-  let rec cfg f [#"../mapping_test.rs" 38 0 38 10] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : ()
+  let rec cfg f [#"../mapping_test.rs" 38 0 38 10] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var x_1 : MappingTest_T_Type.t_t;
+  var x : MappingTest_T_Type.t_t;
   var _2 : ();
   var _4 : ();
   var _6 : ();
@@ -309,13 +308,13 @@ module MappingTest_F
     goto BB0
   }
   BB0 {
-    x_1 <- MappingTest_T_Type.C_T ([#"../mapping_test.rs" 39 23 39 25] (42 : int32));
-    assert { [@expl:assertion] [#"../mapping_test.rs" 40 19 40 34] Map.get (ShallowModel0.shallow_model x_1) 13 = 1 };
+    x <- MappingTest_T_Type.C_T ([#"../mapping_test.rs" 39 23 39 25] (42 : int32));
+    assert { [@expl:assertion] [#"../mapping_test.rs" 40 19 40 34] Map.get (ShallowModel0.shallow_model x) 13 = 1 };
     _2 <- ();
-    assert { [@expl:assertion] [#"../mapping_test.rs" 41 19 41 34] Map.get (ShallowModel0.shallow_model x_1) 42 = 0 };
+    assert { [@expl:assertion] [#"../mapping_test.rs" 41 19 41 34] Map.get (ShallowModel0.shallow_model x) 42 = 0 };
     _4 <- ();
-    _8 <- borrow_mut x_1;
-    x_1 <-  ^ _8;
+    _8 <- borrow_mut x;
+    x <-  ^ _8;
     _7 <- borrow_mut ( * _8);
     _8 <- { _8 with current = ( ^ _7) };
     _6 <- ([#"../mapping_test.rs" 42 4 42 16] Incr0.incr _7);
@@ -323,9 +322,9 @@ module MappingTest_F
   }
   BB1 {
     assume { Resolve0.resolve _8 };
-    assert { [@expl:assertion] [#"../mapping_test.rs" 43 19 43 34] Map.get (ShallowModel0.shallow_model x_1) 13 = 1 };
+    assert { [@expl:assertion] [#"../mapping_test.rs" 43 19 43 34] Map.get (ShallowModel0.shallow_model x) 13 = 1 };
     _9 <- ();
-    assert { [@expl:assertion] [#"../mapping_test.rs" 44 19 44 34] Map.get (ShallowModel0.shallow_model x_1) 42 = 1 };
+    assert { [@expl:assertion] [#"../mapping_test.rs" 44 19 44 34] Map.get (ShallowModel0.shallow_model x) 42 = 1 };
     _11 <- ();
     _0 <- ();
     return _0

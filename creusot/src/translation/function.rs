@@ -1,6 +1,7 @@
 use super::{
-    fmir::RValue,
+    fmir::{LocalDecls, LocalIdent, RValue},
     pearlite::{normalize, Term},
+    specification::inv_subst,
 };
 use crate::{
     ctx::*,
@@ -12,7 +13,7 @@ use crate::{
         specification::{contract_of, PreContract},
         traits,
     },
-    util::{self, ident_of, PreSignature},
+    util::{self, PreSignature},
 };
 use indexmap::IndexMap;
 use rustc_borrowck::borrow_set::BorrowSet;
@@ -20,7 +21,7 @@ use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
 
 use rustc_middle::{
-    mir::{traversal::reverse_postorder, BasicBlock, Body, Local, Operand, Place, VarDebugInfo},
+    mir::{self, traversal::reverse_postorder, BasicBlock, Body, Local, Operand, Place},
     ty::{
         subst::{GenericArg, SubstsRef},
         ClosureKind::*,
@@ -28,8 +29,8 @@ use rustc_middle::{
         UpvarCapture,
     },
 };
-use rustc_span::{Span, Symbol, DUMMY_SP};
-use std::{iter, rc::Rc};
+use rustc_span::{Symbol, DUMMY_SP};
+use std::{collections::HashMap, iter, rc::Rc};
 use why3::declaration::*;
 
 pub(crate) mod promoted;
@@ -75,6 +76,9 @@ pub struct BodyTranslator<'body, 'tcx> {
     assertions: IndexMap<DefId, Term<'tcx>>,
 
     borrows: Option<Rc<BorrowSet<'tcx>>>,
+
+    // Translated locals
+    locals: LocalDecls<'tcx>,
 }
 
 impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
@@ -121,6 +125,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             body,
             body_id,
             resolver,
+            locals: translate_vars(&body, &erased_locals),
             erased_locals,
             current_block: (Vec::new(), None),
             past_blocks: Default::default(),
@@ -136,12 +141,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         self.translate_body();
 
         let arg_count = self.body.arg_count;
-        let vars = self.translate_vars();
 
         assert!(self.assertions.is_empty(), "unused assertions");
         assert!(self.invariants.is_empty(), "unused invariants");
 
-        fmir::Body { locals: vars, arg_count, blocks: self.past_blocks }
+        fmir::Body { locals: self.locals, arg_count, blocks: self.past_blocks }
     }
 
     fn translate_body(&mut self) {
@@ -151,7 +155,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 continue;
             }
 
-            for (kind, body) in self.invariants.remove(&bb).unwrap_or_else(Vec::new) {
+            for (kind, mut body) in self.invariants.remove(&bb).unwrap_or_else(Vec::new) {
+                body.subst(&inv_subst(
+                    self.body,
+                    &self.locals,
+                    *self.body.source_info(bb.start_location()),
+                ));
                 match kind {
                     LoopSpecKind::Variant => self.emit_statement(fmir::Statement::Variant(body)),
                     LoopSpecKind::Invariant => {
@@ -184,21 +193,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
             self.past_blocks.insert(bb, block);
         }
-    }
-
-    fn translate_vars(&mut self) -> Vec<(LocalIdent, Span, Ty<'tcx>)> {
-        let mut vars = Vec::with_capacity(self.body.local_decls.len());
-
-        for (loc, decl) in self.body.local_decls.iter_enumerated() {
-            if self.erased_locals.contains(loc) {
-                continue;
-            }
-            let ident = self.translate_local(loc);
-
-            vars.push((ident, decl.source_info.span, decl.ty))
-        }
-
-        vars
     }
 
     fn param_env(&self) -> ParamEnv<'tcx> {
@@ -300,42 +294,45 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             }
         }
     }
-
-    fn translate_local(&mut self, loc: Local) -> LocalIdent {
-        self.ctx.translate_local(self.body_id, loc)
-    }
 }
 
-/// A MIR local along with an optional human-readable name
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct LocalIdent(Local, Option<Symbol>);
+fn translate_vars<'tcx>(body: &Body<'tcx>, erased_locals: &BitSet<Local>) -> LocalDecls<'tcx> {
+    let mut vars = LocalDecls::with_capacity(body.local_decls.len());
 
-impl LocalIdent {
-    pub(crate) fn anon(loc: Local) -> Self {
-        LocalIdent(loc, None)
-    }
+    use mir::VarDebugInfoContents::Place;
 
-    pub(crate) fn dbg_raw(loc: Local, name: Symbol) -> Self {
-        LocalIdent(loc, Some(name))
-    }
-
-    pub(crate) fn dbg(loc: Local, dbg: &VarDebugInfo) -> Self {
-        LocalIdent(loc, Some(dbg.name))
-    }
-
-    pub(crate) fn symbol(&self) -> Symbol {
-        match &self.1 {
-            Some(id) => Symbol::intern(&format!("{}_{}", &*ident_of(*id), self.0.index())),
-            None => Symbol::intern(&format!("_{}", self.0.index())),
+    let mut names = HashMap::new();
+    for (loc, d) in body.local_decls.iter_enumerated() {
+        if erased_locals.contains(loc) {
+            continue;
         }
-    }
+        let sym = if !d.is_user_variable() {
+            LocalIdent::anon(loc)
+        } else {
+            let x = body.var_debug_info.iter().find(|var_info| match var_info.value {
+                Place(p) => p.as_local().map(|l| l == loc).unwrap_or(false),
+                _ => false,
+            });
 
-    pub(crate) fn ident(&self) -> why3::Ident {
-        match &self.1 {
-            Some(id) => format!("{}_{}", &*ident_of(*id), self.0.index()).into(),
-            None => format!("_{}", self.0.index()).into(),
-        }
+            let debug_info = x.expect("expected user variable to have name");
+
+            let cnt = names.entry(debug_info.name).or_insert(0);
+
+            let sym = if *cnt == 0 {
+                debug_info.name
+            } else {
+                Symbol::intern(&format!("{}{}", debug_info.name, cnt))
+            };
+
+            let sym = LocalIdent::dbg_raw(loc, sym);
+
+            *cnt += 1;
+            sym
+        };
+
+        vars.insert(loc, (sym, d.source_info.span, d.ty));
     }
+    vars
 }
 
 pub(crate) struct ClosureContract<'tcx> {
@@ -546,7 +543,7 @@ fn closure_resolve<'tcx>(
 ) -> (PreSignature<'tcx>, Term<'tcx>) {
     let mut resolve = Term::mk_true(ctx.tcx);
 
-    let self_ = Term::var(Symbol::intern("_1'"), ctx.type_of(def_id).subst_identity());
+    let self_ = Term::var(Symbol::intern("_1"), ctx.type_of(def_id).subst_identity());
     let csubst = subst.as_closure();
     let param_env = ctx.param_env(def_id);
     for (ix, ty) in csubst.upvar_tys().enumerate() {
@@ -573,7 +570,7 @@ fn closure_resolve<'tcx>(
 
     let sig = PreSignature {
         inputs: vec![(
-            Symbol::intern("_1'"),
+            Symbol::intern("_1"),
             ctx.def_span(def_id),
             ctx.type_of(def_id).subst_identity(),
         )],
@@ -609,7 +606,7 @@ pub(crate) fn closure_unnest<'tcx>(
                     span: DUMMY_SP,
                 };
                 let cur = self_.clone();
-                let fin = Term::var(Symbol::intern("_2'"), env_ty);
+                let fin = Term::var(Symbol::intern("_2"), env_ty);
 
                 use rustc_middle::ty::BorrowKind;
 

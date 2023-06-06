@@ -4,7 +4,7 @@ use why3::declaration::{Decl, LetDecl, LetKind, Module, ValDecl};
 
 use crate::{
     ctx::TranslatedItem,
-    translation::{constant::from_ty_const, function::closure_generic_decls},
+    translation::{constant::from_ty_const, fmir::LocalDecls, function::closure_generic_decls},
     util::{self, module_name},
 };
 
@@ -29,7 +29,7 @@ impl<'tcx> Why3Generator<'tcx> {
         let span = self.def_span(def_id);
         let res = from_ty_const(&mut self.ctx, constant, param_env, span);
         let mut names = CloneMap::new(self.tcx, def_id, CloneLevel::Body);
-        let res = res.to_why(self, &mut names, None);
+        let res = res.to_why(self, &mut names, &LocalDecls::new());
         let sig = signature_of(self, &mut names, def_id);
         let mut decls: Vec<_> = closure_generic_decls(self.tcx, def_id).collect();
         let (clones, summary) = names.to_clones(self);

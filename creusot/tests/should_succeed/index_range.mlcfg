@@ -158,7 +158,7 @@ module Alloc_Vec_Impl0_New_Interface
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  val new (_1' : ()) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+  val new (_1 : ()) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 59 26 59 44] Seq.length (ShallowModel0.shallow_model result) = 0 }
     
 end
@@ -228,7 +228,7 @@ module IndexRange_CreateArr_Interface
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  val create_arr [#"../index_range.rs" 14 0 14 27] (_1' : ()) : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)
+  val create_arr [#"../index_range.rs" 14 0 14 27] (_1 : ()) : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)
     ensures { [#"../index_range.rs" 7 4 12 22] Seq.length (ShallowModel0.shallow_model result) = 5 /\ Int32.to_int (IndexLogic0.index_logic result 0) = 0 /\ Int32.to_int (IndexLogic0.index_logic result 1) = 1 /\ Int32.to_int (IndexLogic0.index_logic result 2) = 2 /\ Int32.to_int (IndexLogic0.index_logic result 3) = 3 /\ Int32.to_int (IndexLogic0.index_logic result 4) = 4 }
     
 end
@@ -236,6 +236,7 @@ module IndexRange_CreateArr
   use prelude.Int
   use prelude.Int32
   use prelude.Borrow
+  use seq.Seq
   use seq.Seq
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
@@ -245,10 +246,13 @@ module IndexRange_CreateArr
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  use seq.Seq
   clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel1 with
     type t = Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq int32,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic0 with
+    type t = int32,
+    type s = Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global),
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone Alloc_Vec_Impl1_Push_Interface as Push0 with
     type t = int32,
@@ -260,16 +264,12 @@ module IndexRange_CreateArr
     type t = int32,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Max0.mAX' = Max0.mAX'
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic0 with
-    type t = int32,
-    type s = Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global),
-    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
-  let rec cfg create_arr [#"../index_range.rs" 14 0 14 27] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)
+  let rec cfg create_arr [#"../index_range.rs" 14 0 14 27] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)
     ensures { [#"../index_range.rs" 7 4 12 22] Seq.length (ShallowModel0.shallow_model result) = 5 /\ Int32.to_int (IndexLogic0.index_logic result 0) = 0 /\ Int32.to_int (IndexLogic0.index_logic result 1) = 1 /\ Int32.to_int (IndexLogic0.index_logic result 2) = 2 /\ Int32.to_int (IndexLogic0.index_logic result 3) = 3 /\ Int32.to_int (IndexLogic0.index_logic result 4) = 4 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
-  var arr_2 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var arr : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _3 : ();
   var _4 : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
   var _5 : ();
@@ -284,67 +284,48 @@ module IndexRange_CreateArr
     goto BB0
   }
   BB0 {
-    arr_2 <- ([#"../index_range.rs" 15 18 15 28] New0.new ());
+    arr <- ([#"../index_range.rs" 15 18 15 28] New0.new ());
     goto BB1
   }
   BB1 {
-    _4 <- borrow_mut arr_2;
-    arr_2 <-  ^ _4;
+    _4 <- borrow_mut arr;
+    arr <-  ^ _4;
     _3 <- ([#"../index_range.rs" 17 4 17 15] Push0.push _4 ([#"../index_range.rs" 17 13 17 14] (0 : int32)));
     goto BB2
   }
   BB2 {
-    _6 <- borrow_mut arr_2;
-    arr_2 <-  ^ _6;
+    _6 <- borrow_mut arr;
+    arr <-  ^ _6;
     _5 <- ([#"../index_range.rs" 18 4 18 15] Push0.push _6 ([#"../index_range.rs" 18 13 18 14] (1 : int32)));
     goto BB3
   }
   BB3 {
-    _8 <- borrow_mut arr_2;
-    arr_2 <-  ^ _8;
+    _8 <- borrow_mut arr;
+    arr <-  ^ _8;
     _7 <- ([#"../index_range.rs" 19 4 19 15] Push0.push _8 ([#"../index_range.rs" 19 13 19 14] (2 : int32)));
     goto BB4
   }
   BB4 {
-    _10 <- borrow_mut arr_2;
-    arr_2 <-  ^ _10;
+    _10 <- borrow_mut arr;
+    arr <-  ^ _10;
     _9 <- ([#"../index_range.rs" 20 4 20 15] Push0.push _10 ([#"../index_range.rs" 20 13 20 14] (3 : int32)));
     goto BB5
   }
   BB5 {
-    _12 <- borrow_mut arr_2;
-    arr_2 <-  ^ _12;
+    _12 <- borrow_mut arr;
+    arr <-  ^ _12;
     _11 <- ([#"../index_range.rs" 21 4 21 15] Push0.push _12 ([#"../index_range.rs" 21 13 21 14] (4 : int32)));
     goto BB6
   }
   BB6 {
-    _0 <- arr_2;
-    arr_2 <- any Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+    _0 <- arr;
+    arr <- any Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
     goto BB7
   }
   BB7 {
     return _0
   }
   
-end
-module Core_Ops_Range_Range_Type
-  type t_range 'idx =
-    | C_Range 'idx 'idx
-    
-  let function range_start (self : t_range 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_Range a _ -> a
-      end
-  let function range_end (self : t_range 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_Range _ a -> a
-      end
-end
-module Core_Option_Option_Type
-  type t_option 't =
-    | C_None
-    | C_Some 't
-    
 end
 module CreusotContracts_Resolve_Resolve_Resolve_Stub
   type self
@@ -422,6 +403,25 @@ module CreusotContracts_Resolve_Impl1_Resolve
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
     ensures { result = resolve self }
+    
+end
+module Core_Ops_Range_Range_Type
+  type t_range 'idx =
+    | C_Range 'idx 'idx
+    
+  let function range_start (self : t_range 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Range a _ -> a
+      end
+  let function range_end (self : t_range 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Range _ a -> a
+      end
+end
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
     
 end
 module CreusotContracts_Model_Impl1_ShallowModel_Stub
@@ -926,14 +926,14 @@ module CreusotContracts_Std1_Slice_Impl5_HasValue
     
 end
 module IndexRange_TestRange_Interface
-  val test_range [#"../index_range.rs" 27 0 27 19] (_1' : ()) : ()
+  val test_range [#"../index_range.rs" 27 0 27 19] (_1 : ()) : ()
 end
 module IndexRange_TestRange
   use prelude.Int
+  use prelude.UIntSize
   use prelude.Int32
   use prelude.Borrow
   use prelude.Slice
-  use prelude.UIntSize
   use seq.Seq
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface as ShallowModel4 with
@@ -979,6 +979,7 @@ module IndexRange_TestRange
     type t = int32,
     type s = Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global),
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Alloc_Vec_Impl13_Index_Interface as Index1 with
     type t = int32,
     type i = usize,
@@ -1004,7 +1005,6 @@ module IndexRange_TestRange
     predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere,
     type Output0.output = slice int32,
     val Max0.mAX' = Max0.mAX'
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
     type t = slice int32
   clone Core_Slice_Impl0_Get_Interface as Get0 with
@@ -1040,11 +1040,11 @@ module IndexRange_TestRange
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     function IndexLogic0.index_logic = IndexLogic0.index_logic,
     val Max0.mAX' = Max0.mAX'
-  let rec cfg test_range [#"../index_range.rs" 27 0 27 19] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : ()
+  let rec cfg test_range [#"../index_range.rs" 27 0 27 19] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var arr_1 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
-  var s_2 : slice int32;
+  var arr : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var s : slice int32;
   var _3 : slice int32;
   var _4 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _5 : Core_Ops_Range_Range_Type.t_range usize;
@@ -1066,7 +1066,7 @@ module IndexRange_TestRange
   var _21 : usize;
   var _22 : bool;
   var _23 : ();
-  var s_24 : slice int32;
+  var s1 : slice int32;
   var _25 : slice int32;
   var _26 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _27 : Core_Ops_Range_Range_Type.t_range usize;
@@ -1146,7 +1146,7 @@ module IndexRange_TestRange
   var _101 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _102 : Core_Ops_Range_Range_Type.t_range usize;
   var _103 : ();
-  var s_104 : borrowed (slice int32);
+  var s2 : borrowed (slice int32);
   var _105 : borrowed (slice int32);
   var _106 : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
   var _107 : Core_Ops_Range_Range_Type.t_range usize;
@@ -1215,18 +1215,18 @@ module IndexRange_TestRange
     goto BB0
   }
   BB0 {
-    arr_1 <- ([#"../index_range.rs" 29 18 29 30] CreateArr0.create_arr ());
+    arr <- ([#"../index_range.rs" 29 18 29 30] CreateArr0.create_arr ());
     goto BB1
   }
   BB1 {
-    _4 <- arr_1;
+    _4 <- arr;
     _5 <- Core_Ops_Range_Range_Type.C_Range ([#"../index_range.rs" 34 17 34 18] (0 : usize)) ([#"../index_range.rs" 34 20 34 21] (2 : usize));
     _3 <- ([#"../index_range.rs" 34 13 34 22] Index0.index _4 _5);
     goto BB2
   }
   BB2 {
-    s_2 <- _3;
-    _12 <- s_2;
+    s <- _3;
+    _12 <- s;
     _11 <- ([#"../index_range.rs" 35 12 35 19] Len0.len _12);
     goto BB9
   }
@@ -1236,7 +1236,7 @@ module IndexRange_TestRange
   }
   BB4 {
     _20 <- ([#"../index_range.rs" 35 43 35 44] (1 : usize));
-    _21 <- Slice.length s_2;
+    _21 <- Slice.length s;
     _22 <- ([#"../index_range.rs" 35 41 35 45] _20 < _21);
     assert { [@expl:index in bounds] [#"../index_range.rs" 35 41 35 45] _22 };
     goto BB11
@@ -1254,7 +1254,7 @@ module IndexRange_TestRange
   }
   BB7 {
     _15 <- ([#"../index_range.rs" 35 30 35 31] (0 : usize));
-    _16 <- Slice.length s_2;
+    _16 <- Slice.length s;
     _17 <- ([#"../index_range.rs" 35 28 35 32] _15 < _16);
     assert { [@expl:index in bounds] [#"../index_range.rs" 35 28 35 32] _17 };
     goto BB10
@@ -1273,33 +1273,33 @@ module IndexRange_TestRange
       end
   }
   BB10 {
-    _14 <- Slice.get s_2 _15;
+    _14 <- Slice.get s _15;
     _13 <- ([#"../index_range.rs" 35 28 35 37] _14 = ([#"../index_range.rs" 35 36 35 37] (0 : int32)));
     _9 <- _13;
     _13 <- any bool;
     goto BB8
   }
   BB11 {
-    _19 <- Slice.get s_2 _20;
+    _19 <- Slice.get s _20;
     _18 <- ([#"../index_range.rs" 35 41 35 50] _19 = ([#"../index_range.rs" 35 49 35 50] (1 : int32)));
     _8 <- _18;
     _18 <- any bool;
     goto BB5
   }
   BB12 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB13 {
     _6 <- ();
-    _26 <- arr_1;
+    _26 <- arr;
     _27 <- Core_Ops_Range_Range_Type.C_Range ([#"../index_range.rs" 37 17 37 18] (3 : usize)) ([#"../index_range.rs" 37 20 37 21] (5 : usize));
     _25 <- ([#"../index_range.rs" 37 13 37 22] Index0.index _26 _27);
     goto BB14
   }
   BB14 {
-    s_24 <- _25;
-    _34 <- s_24;
+    s1 <- _25;
+    _34 <- s1;
     _33 <- ([#"../index_range.rs" 38 12 38 19] Len0.len _34);
     goto BB21
   }
@@ -1309,7 +1309,7 @@ module IndexRange_TestRange
   }
   BB16 {
     _42 <- ([#"../index_range.rs" 38 43 38 44] (1 : usize));
-    _43 <- Slice.length s_24;
+    _43 <- Slice.length s1;
     _44 <- ([#"../index_range.rs" 38 41 38 45] _42 < _43);
     assert { [@expl:index in bounds] [#"../index_range.rs" 38 41 38 45] _44 };
     goto BB23
@@ -1327,7 +1327,7 @@ module IndexRange_TestRange
   }
   BB19 {
     _37 <- ([#"../index_range.rs" 38 30 38 31] (0 : usize));
-    _38 <- Slice.length s_24;
+    _38 <- Slice.length s1;
     _39 <- ([#"../index_range.rs" 38 28 38 32] _37 < _38);
     assert { [@expl:index in bounds] [#"../index_range.rs" 38 28 38 32] _39 };
     goto BB22
@@ -1346,26 +1346,26 @@ module IndexRange_TestRange
       end
   }
   BB22 {
-    _36 <- Slice.get s_24 _37;
+    _36 <- Slice.get s1 _37;
     _35 <- ([#"../index_range.rs" 38 28 38 37] _36 = ([#"../index_range.rs" 38 36 38 37] (3 : int32)));
     _31 <- _35;
     _35 <- any bool;
     goto BB20
   }
   BB23 {
-    _41 <- Slice.get s_24 _42;
+    _41 <- Slice.get s1 _42;
     _40 <- ([#"../index_range.rs" 38 41 38 50] _41 = ([#"../index_range.rs" 38 49 38 50] (4 : int32)));
     _30 <- _40;
     _40 <- any bool;
     goto BB17
   }
   BB24 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB25 {
     _28 <- ();
-    _52 <- arr_1;
+    _52 <- arr;
     _53 <- Core_Ops_Range_Range_Type.C_Range ([#"../index_range.rs" 43 16 43 17] (2 : usize)) ([#"../index_range.rs" 43 19 43 20] (2 : usize));
     _51 <- ([#"../index_range.rs" 43 12 43 21] Index0.index _52 _53);
     goto BB26
@@ -1384,12 +1384,12 @@ module IndexRange_TestRange
       end
   }
   BB28 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB29 {
     _46 <- ();
-    _61 <- arr_1;
+    _61 <- arr;
     _62 <- Core_Ops_Range_Range_Type.C_Range ([#"../index_range.rs" 45 16 45 17] (5 : usize)) ([#"../index_range.rs" 45 19 45 20] (5 : usize));
     _60 <- ([#"../index_range.rs" 45 12 45 21] Index0.index _61 _62);
     goto BB30
@@ -1408,12 +1408,12 @@ module IndexRange_TestRange
       end
   }
   BB32 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB33 {
     _55 <- ();
-    _71 <- arr_1;
+    _71 <- arr;
     _70 <- ([#"../index_range.rs" 50 12 50 25] Deref0.deref _71);
     goto BB34
   }
@@ -1436,12 +1436,12 @@ module IndexRange_TestRange
       end
   }
   BB37 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB38 {
     _64 <- ();
-    _81 <- arr_1;
+    _81 <- arr;
     _80 <- ([#"../index_range.rs" 52 12 52 25] Deref0.deref _81);
     goto BB39
   }
@@ -1464,12 +1464,12 @@ module IndexRange_TestRange
       end
   }
   BB42 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB43 {
     _74 <- ();
-    _91 <- arr_1;
+    _91 <- arr;
     _90 <- ([#"../index_range.rs" 54 12 54 25] Deref0.deref _91);
     goto BB44
   }
@@ -1492,12 +1492,12 @@ module IndexRange_TestRange
       end
   }
   BB47 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB48 {
     _84 <- ();
-    _101 <- arr_1;
+    _101 <- arr;
     _100 <- ([#"../index_range.rs" 56 12 56 27] Deref0.deref _101);
     goto BB49
   }
@@ -1520,21 +1520,21 @@ module IndexRange_TestRange
       end
   }
   BB52 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB53 {
     _94 <- ();
-    _106 <- borrow_mut arr_1;
-    arr_1 <-  ^ _106;
+    _106 <- borrow_mut arr;
+    arr <-  ^ _106;
     _107 <- Core_Ops_Range_Range_Type.C_Range ([#"../index_range.rs" 59 21 59 22] (1 : usize)) ([#"../index_range.rs" 59 24 59 25] (4 : usize));
     _105 <- ([#"../index_range.rs" 59 17 59 26] IndexMut0.index_mut _106 _107);
     goto BB54
   }
   BB54 {
-    s_104 <- borrow_mut ( * _105);
-    _105 <- { _105 with current = ( ^ s_104) };
-    _112 <-  * s_104;
+    s2 <- borrow_mut ( * _105);
+    _105 <- { _105 with current = ( ^ s2) };
+    _112 <-  * s2;
     _111 <- ([#"../index_range.rs" 60 12 60 19] Len0.len _112);
     goto BB55
   }
@@ -1547,38 +1547,38 @@ module IndexRange_TestRange
       end
   }
   BB56 {
-    assume { Resolve1.resolve s_104 };
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve1.resolve s2 };
+    assume { Resolve0.resolve arr };
     assume { Resolve1.resolve _105 };
     absurd
   }
   BB57 {
     _108 <- ();
     _114 <- ([#"../index_range.rs" 61 6 61 7] (0 : usize));
-    _115 <- Slice.length ( * s_104);
+    _115 <- Slice.length ( * s2);
     _116 <- ([#"../index_range.rs" 61 4 61 8] _114 < _115);
     assert { [@expl:index in bounds] [#"../index_range.rs" 61 4 61 8] _116 };
     goto BB58
   }
   BB58 {
-    s_104 <- { s_104 with current = Slice.set ( * s_104) _114 ([#"../index_range.rs" 61 11 61 13] (-1 : int32)) };
+    s2 <- { s2 with current = Slice.set ( * s2) _114 ([#"../index_range.rs" 61 11 61 13] (-1 : int32)) };
     _117 <- ([#"../index_range.rs" 62 6 62 7] (1 : usize));
-    _118 <- Slice.length ( * s_104);
+    _118 <- Slice.length ( * s2);
     _119 <- ([#"../index_range.rs" 62 4 62 8] _117 < _118);
     assert { [@expl:index in bounds] [#"../index_range.rs" 62 4 62 8] _119 };
     goto BB59
   }
   BB59 {
-    s_104 <- { s_104 with current = Slice.set ( * s_104) _117 ([#"../index_range.rs" 62 11 62 13] (-1 : int32)) };
+    s2 <- { s2 with current = Slice.set ( * s2) _117 ([#"../index_range.rs" 62 11 62 13] (-1 : int32)) };
     _124 <- ([#"../index_range.rs" 67 14 67 15] (2 : usize));
-    _125 <- Slice.length ( * s_104);
+    _125 <- Slice.length ( * s2);
     _126 <- ([#"../index_range.rs" 67 12 67 16] _124 < _125);
     assert { [@expl:index in bounds] [#"../index_range.rs" 67 12 67 16] _126 };
     goto BB60
   }
   BB60 {
-    _123 <- Slice.get ( * s_104) _124;
-    assume { Resolve1.resolve s_104 };
+    _123 <- Slice.get ( * s2) _124;
+    assume { Resolve1.resolve s2 };
     _122 <- ([#"../index_range.rs" 67 12 67 21] _123 = ([#"../index_range.rs" 67 20 67 21] (3 : int32)));
     assume { Resolve1.resolve _105 };
     _121 <- not _122;
@@ -1588,12 +1588,12 @@ module IndexRange_TestRange
       end
   }
   BB61 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB62 {
     _120 <- ();
-    _132 <- arr_1;
+    _132 <- arr;
     _131 <- ([#"../index_range.rs" 69 12 69 21] Len1.len _132);
     goto BB63
   }
@@ -1606,12 +1606,12 @@ module IndexRange_TestRange
       end
   }
   BB64 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB65 {
     _128 <- ();
-    _139 <- arr_1;
+    _139 <- arr;
     _138 <- ([#"../index_range.rs" 70 12 70 18] Index1.index _139 ([#"../index_range.rs" 70 16 70 17] (0 : usize)));
     goto BB66
   }
@@ -1625,12 +1625,12 @@ module IndexRange_TestRange
       end
   }
   BB67 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB68 {
     _134 <- ();
-    _146 <- arr_1;
+    _146 <- arr;
     _145 <- ([#"../index_range.rs" 71 12 71 18] Index1.index _146 ([#"../index_range.rs" 71 16 71 17] (1 : usize)));
     goto BB69
   }
@@ -1644,12 +1644,12 @@ module IndexRange_TestRange
       end
   }
   BB70 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB71 {
     _141 <- ();
-    _153 <- arr_1;
+    _153 <- arr;
     _152 <- ([#"../index_range.rs" 72 12 72 18] Index1.index _153 ([#"../index_range.rs" 72 16 72 17] (2 : usize)));
     goto BB72
   }
@@ -1663,12 +1663,12 @@ module IndexRange_TestRange
       end
   }
   BB73 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB74 {
     _148 <- ();
-    _160 <- arr_1;
+    _160 <- arr;
     _159 <- ([#"../index_range.rs" 73 12 73 18] Index1.index _160 ([#"../index_range.rs" 73 16 73 17] (3 : usize)));
     goto BB75
   }
@@ -1682,18 +1682,18 @@ module IndexRange_TestRange
       end
   }
   BB76 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB77 {
     _155 <- ();
-    _167 <- arr_1;
+    _167 <- arr;
     _166 <- ([#"../index_range.rs" 74 12 74 18] Index1.index _167 ([#"../index_range.rs" 74 16 74 17] (4 : usize)));
     goto BB78
   }
   BB78 {
     _165 <- _166;
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     _164 <- ([#"../index_range.rs" 74 12 74 23] _165 = ([#"../index_range.rs" 74 22 74 23] (4 : int32)));
     _163 <- not _164;
     switch (_163)
@@ -1826,14 +1826,14 @@ module CreusotContracts_Std1_Slice_Impl7_ResolveElswhere
     
 end
 module IndexRange_TestRangeTo_Interface
-  val test_range_to [#"../index_range.rs" 78 0 78 22] (_1' : ()) : ()
+  val test_range_to [#"../index_range.rs" 78 0 78 22] (_1 : ()) : ()
 end
 module IndexRange_TestRangeTo
   use prelude.Int
+  use prelude.UIntSize
   use prelude.Int32
   use prelude.Borrow
   use prelude.Slice
-  use prelude.UIntSize
   use seq.Seq
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface as ShallowModel4 with
@@ -1879,6 +1879,7 @@ module IndexRange_TestRangeTo
     type t = int32,
     type s = Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global),
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Alloc_Vec_Impl13_Index_Interface as Index1 with
     type t = int32,
     type i = usize,
@@ -1904,7 +1905,6 @@ module IndexRange_TestRangeTo
     predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere,
     type Output0.output = slice int32,
     val Max0.mAX' = Max0.mAX'
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
     type t = slice int32
   clone Core_Slice_Impl0_Get_Interface as Get0 with
@@ -1940,11 +1940,11 @@ module IndexRange_TestRangeTo
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     function IndexLogic0.index_logic = IndexLogic0.index_logic,
     val Max0.mAX' = Max0.mAX'
-  let rec cfg test_range_to [#"../index_range.rs" 78 0 78 22] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : ()
+  let rec cfg test_range_to [#"../index_range.rs" 78 0 78 22] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var arr_1 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
-  var s_2 : slice int32;
+  var arr : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var s : slice int32;
   var _3 : slice int32;
   var _4 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _5 : Core_Ops_Range_RangeTo_Type.t_rangeto usize;
@@ -1985,7 +1985,7 @@ module IndexRange_TestRangeTo
   var _40 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _41 : Core_Ops_Range_RangeTo_Type.t_rangeto usize;
   var _42 : ();
-  var s_43 : borrowed (slice int32);
+  var s1 : borrowed (slice int32);
   var _44 : borrowed (slice int32);
   var _45 : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
   var _46 : Core_Ops_Range_RangeTo_Type.t_rangeto usize;
@@ -2054,18 +2054,18 @@ module IndexRange_TestRangeTo
     goto BB0
   }
   BB0 {
-    arr_1 <- ([#"../index_range.rs" 80 18 80 30] CreateArr0.create_arr ());
+    arr <- ([#"../index_range.rs" 80 18 80 30] CreateArr0.create_arr ());
     goto BB1
   }
   BB1 {
-    _4 <- arr_1;
+    _4 <- arr;
     _5 <- Core_Ops_Range_RangeTo_Type.C_RangeTo ([#"../index_range.rs" 85 19 85 20] (2 : usize));
     _3 <- ([#"../index_range.rs" 85 13 85 21] Index0.index _4 _5);
     goto BB2
   }
   BB2 {
-    s_2 <- _3;
-    _12 <- s_2;
+    s <- _3;
+    _12 <- s;
     _11 <- ([#"../index_range.rs" 86 12 86 19] Len0.len _12);
     goto BB9
   }
@@ -2075,7 +2075,7 @@ module IndexRange_TestRangeTo
   }
   BB4 {
     _20 <- ([#"../index_range.rs" 86 43 86 44] (1 : usize));
-    _21 <- Slice.length s_2;
+    _21 <- Slice.length s;
     _22 <- ([#"../index_range.rs" 86 41 86 45] _20 < _21);
     assert { [@expl:index in bounds] [#"../index_range.rs" 86 41 86 45] _22 };
     goto BB11
@@ -2093,7 +2093,7 @@ module IndexRange_TestRangeTo
   }
   BB7 {
     _15 <- ([#"../index_range.rs" 86 30 86 31] (0 : usize));
-    _16 <- Slice.length s_2;
+    _16 <- Slice.length s;
     _17 <- ([#"../index_range.rs" 86 28 86 32] _15 < _16);
     assert { [@expl:index in bounds] [#"../index_range.rs" 86 28 86 32] _17 };
     goto BB10
@@ -2112,26 +2112,26 @@ module IndexRange_TestRangeTo
       end
   }
   BB10 {
-    _14 <- Slice.get s_2 _15;
+    _14 <- Slice.get s _15;
     _13 <- ([#"../index_range.rs" 86 28 86 37] _14 = ([#"../index_range.rs" 86 36 86 37] (0 : int32)));
     _9 <- _13;
     _13 <- any bool;
     goto BB8
   }
   BB11 {
-    _19 <- Slice.get s_2 _20;
+    _19 <- Slice.get s _20;
     _18 <- ([#"../index_range.rs" 86 41 86 50] _19 = ([#"../index_range.rs" 86 49 86 50] (1 : int32)));
     _8 <- _18;
     _18 <- any bool;
     goto BB5
   }
   BB12 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB13 {
     _6 <- ();
-    _30 <- arr_1;
+    _30 <- arr;
     _31 <- Core_Ops_Range_RangeTo_Type.C_RangeTo ([#"../index_range.rs" 91 18 91 19] (0 : usize));
     _29 <- ([#"../index_range.rs" 91 12 91 20] Index0.index _30 _31);
     goto BB14
@@ -2150,12 +2150,12 @@ module IndexRange_TestRangeTo
       end
   }
   BB16 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB17 {
     _24 <- ();
-    _40 <- arr_1;
+    _40 <- arr;
     _39 <- ([#"../index_range.rs" 96 12 96 24] Deref0.deref _40);
     goto BB18
   }
@@ -2178,21 +2178,21 @@ module IndexRange_TestRangeTo
       end
   }
   BB21 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB22 {
     _33 <- ();
-    _45 <- borrow_mut arr_1;
-    arr_1 <-  ^ _45;
+    _45 <- borrow_mut arr;
+    arr <-  ^ _45;
     _46 <- Core_Ops_Range_RangeTo_Type.C_RangeTo ([#"../index_range.rs" 99 23 99 24] (3 : usize));
     _44 <- ([#"../index_range.rs" 99 17 99 25] IndexMut0.index_mut _45 _46);
     goto BB23
   }
   BB23 {
-    s_43 <- borrow_mut ( * _44);
-    _44 <- { _44 with current = ( ^ s_43) };
-    _51 <-  * s_43;
+    s1 <- borrow_mut ( * _44);
+    _44 <- { _44 with current = ( ^ s1) };
+    _51 <-  * s1;
     _50 <- ([#"../index_range.rs" 100 12 100 19] Len0.len _51);
     goto BB24
   }
@@ -2205,38 +2205,38 @@ module IndexRange_TestRangeTo
       end
   }
   BB25 {
-    assume { Resolve1.resolve s_43 };
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve1.resolve s1 };
+    assume { Resolve0.resolve arr };
     assume { Resolve1.resolve _44 };
     absurd
   }
   BB26 {
     _47 <- ();
     _53 <- ([#"../index_range.rs" 101 6 101 7] (0 : usize));
-    _54 <- Slice.length ( * s_43);
+    _54 <- Slice.length ( * s1);
     _55 <- ([#"../index_range.rs" 101 4 101 8] _53 < _54);
     assert { [@expl:index in bounds] [#"../index_range.rs" 101 4 101 8] _55 };
     goto BB27
   }
   BB27 {
-    s_43 <- { s_43 with current = Slice.set ( * s_43) _53 ([#"../index_range.rs" 101 11 101 13] (-1 : int32)) };
+    s1 <- { s1 with current = Slice.set ( * s1) _53 ([#"../index_range.rs" 101 11 101 13] (-1 : int32)) };
     _56 <- ([#"../index_range.rs" 102 6 102 7] (2 : usize));
-    _57 <- Slice.length ( * s_43);
+    _57 <- Slice.length ( * s1);
     _58 <- ([#"../index_range.rs" 102 4 102 8] _56 < _57);
     assert { [@expl:index in bounds] [#"../index_range.rs" 102 4 102 8] _58 };
     goto BB28
   }
   BB28 {
-    s_43 <- { s_43 with current = Slice.set ( * s_43) _56 ([#"../index_range.rs" 102 11 102 13] (-1 : int32)) };
+    s1 <- { s1 with current = Slice.set ( * s1) _56 ([#"../index_range.rs" 102 11 102 13] (-1 : int32)) };
     _63 <- ([#"../index_range.rs" 104 14 104 15] (1 : usize));
-    _64 <- Slice.length ( * s_43);
+    _64 <- Slice.length ( * s1);
     _65 <- ([#"../index_range.rs" 104 12 104 16] _63 < _64);
     assert { [@expl:index in bounds] [#"../index_range.rs" 104 12 104 16] _65 };
     goto BB29
   }
   BB29 {
-    _62 <- Slice.get ( * s_43) _63;
-    assume { Resolve1.resolve s_43 };
+    _62 <- Slice.get ( * s1) _63;
+    assume { Resolve1.resolve s1 };
     _61 <- ([#"../index_range.rs" 104 12 104 21] _62 = ([#"../index_range.rs" 104 20 104 21] (1 : int32)));
     assume { Resolve1.resolve _44 };
     _60 <- not _61;
@@ -2246,12 +2246,12 @@ module IndexRange_TestRangeTo
       end
   }
   BB30 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB31 {
     _59 <- ();
-    _71 <- arr_1;
+    _71 <- arr;
     _70 <- ([#"../index_range.rs" 106 12 106 21] Len1.len _71);
     goto BB32
   }
@@ -2264,12 +2264,12 @@ module IndexRange_TestRangeTo
       end
   }
   BB33 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB34 {
     _67 <- ();
-    _78 <- arr_1;
+    _78 <- arr;
     _77 <- ([#"../index_range.rs" 107 12 107 18] Index1.index _78 ([#"../index_range.rs" 107 16 107 17] (0 : usize)));
     goto BB35
   }
@@ -2283,12 +2283,12 @@ module IndexRange_TestRangeTo
       end
   }
   BB36 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB37 {
     _73 <- ();
-    _85 <- arr_1;
+    _85 <- arr;
     _84 <- ([#"../index_range.rs" 108 12 108 18] Index1.index _85 ([#"../index_range.rs" 108 16 108 17] (1 : usize)));
     goto BB38
   }
@@ -2302,12 +2302,12 @@ module IndexRange_TestRangeTo
       end
   }
   BB39 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB40 {
     _80 <- ();
-    _92 <- arr_1;
+    _92 <- arr;
     _91 <- ([#"../index_range.rs" 109 12 109 18] Index1.index _92 ([#"../index_range.rs" 109 16 109 17] (2 : usize)));
     goto BB41
   }
@@ -2321,12 +2321,12 @@ module IndexRange_TestRangeTo
       end
   }
   BB42 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB43 {
     _87 <- ();
-    _99 <- arr_1;
+    _99 <- arr;
     _98 <- ([#"../index_range.rs" 110 12 110 18] Index1.index _99 ([#"../index_range.rs" 110 16 110 17] (3 : usize)));
     goto BB44
   }
@@ -2340,18 +2340,18 @@ module IndexRange_TestRangeTo
       end
   }
   BB45 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB46 {
     _94 <- ();
-    _106 <- arr_1;
+    _106 <- arr;
     _105 <- ([#"../index_range.rs" 111 12 111 18] Index1.index _106 ([#"../index_range.rs" 111 16 111 17] (4 : usize)));
     goto BB47
   }
   BB47 {
     _104 <- _105;
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     _103 <- ([#"../index_range.rs" 111 12 111 23] _104 = ([#"../index_range.rs" 111 22 111 23] (4 : int32)));
     _102 <- not _103;
     switch (_102)
@@ -2488,14 +2488,14 @@ module CreusotContracts_Std1_Slice_Impl8_ResolveElswhere
     
 end
 module IndexRange_TestRangeFrom_Interface
-  val test_range_from [#"../index_range.rs" 115 0 115 24] (_1' : ()) : ()
+  val test_range_from [#"../index_range.rs" 115 0 115 24] (_1 : ()) : ()
 end
 module IndexRange_TestRangeFrom
   use prelude.Int
+  use prelude.UIntSize
   use prelude.Int32
   use prelude.Borrow
   use prelude.Slice
-  use prelude.UIntSize
   use seq.Seq
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface as ShallowModel4 with
@@ -2541,6 +2541,7 @@ module IndexRange_TestRangeFrom
     type t = int32,
     type s = Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global),
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Alloc_Vec_Impl13_Index_Interface as Index1 with
     type t = int32,
     type i = usize,
@@ -2566,7 +2567,6 @@ module IndexRange_TestRangeFrom
     predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere,
     type Output0.output = slice int32,
     val Max0.mAX' = Max0.mAX'
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
     type t = slice int32
   clone Core_Slice_Impl0_Get_Interface as Get0 with
@@ -2602,12 +2602,12 @@ module IndexRange_TestRangeFrom
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     function IndexLogic0.index_logic = IndexLogic0.index_logic,
     val Max0.mAX' = Max0.mAX'
-  let rec cfg test_range_from [#"../index_range.rs" 115 0 115 24] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : ()
+  let rec cfg test_range_from [#"../index_range.rs" 115 0 115 24] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var arr_1 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
-  var s_2 : slice int32;
+  var arr : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var s : slice int32;
   var _3 : slice int32;
   var _4 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _5 : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize;
@@ -2658,7 +2658,7 @@ module IndexRange_TestRangeFrom
   var _50 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _51 : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize;
   var _52 : ();
-  var s_53 : borrowed (slice int32);
+  var s1 : borrowed (slice int32);
   var _54 : borrowed (slice int32);
   var _55 : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
   var _56 : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize;
@@ -2727,18 +2727,18 @@ module IndexRange_TestRangeFrom
     goto BB0
   }
   BB0 {
-    arr_1 <- ([#"../index_range.rs" 117 18 117 30] CreateArr0.create_arr ());
+    arr <- ([#"../index_range.rs" 117 18 117 30] CreateArr0.create_arr ());
     goto BB1
   }
   BB1 {
-    _4 <- arr_1;
+    _4 <- arr;
     _5 <- Core_Ops_Range_RangeFrom_Type.C_RangeFrom ([#"../index_range.rs" 122 17 122 18] (3 : usize));
     _3 <- ([#"../index_range.rs" 122 13 122 21] Index0.index _4 _5);
     goto BB2
   }
   BB2 {
-    s_2 <- _3;
-    _12 <- s_2;
+    s <- _3;
+    _12 <- s;
     _11 <- ([#"../index_range.rs" 123 12 123 19] Len0.len _12);
     goto BB9
   }
@@ -2748,7 +2748,7 @@ module IndexRange_TestRangeFrom
   }
   BB4 {
     _20 <- ([#"../index_range.rs" 123 43 123 44] (1 : usize));
-    _21 <- Slice.length s_2;
+    _21 <- Slice.length s;
     _22 <- ([#"../index_range.rs" 123 41 123 45] _20 < _21);
     assert { [@expl:index in bounds] [#"../index_range.rs" 123 41 123 45] _22 };
     goto BB11
@@ -2766,7 +2766,7 @@ module IndexRange_TestRangeFrom
   }
   BB7 {
     _15 <- ([#"../index_range.rs" 123 30 123 31] (0 : usize));
-    _16 <- Slice.length s_2;
+    _16 <- Slice.length s;
     _17 <- ([#"../index_range.rs" 123 28 123 32] _15 < _16);
     assert { [@expl:index in bounds] [#"../index_range.rs" 123 28 123 32] _17 };
     goto BB10
@@ -2785,26 +2785,26 @@ module IndexRange_TestRangeFrom
       end
   }
   BB10 {
-    _14 <- Slice.get s_2 _15;
+    _14 <- Slice.get s _15;
     _13 <- ([#"../index_range.rs" 123 28 123 37] _14 = ([#"../index_range.rs" 123 36 123 37] (3 : int32)));
     _9 <- _13;
     _13 <- any bool;
     goto BB8
   }
   BB11 {
-    _19 <- Slice.get s_2 _20;
+    _19 <- Slice.get s _20;
     _18 <- ([#"../index_range.rs" 123 41 123 50] _19 = ([#"../index_range.rs" 123 49 123 50] (4 : int32)));
     _8 <- _18;
     _18 <- any bool;
     goto BB5
   }
   BB12 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB13 {
     _6 <- ();
-    _30 <- arr_1;
+    _30 <- arr;
     _31 <- Core_Ops_Range_RangeFrom_Type.C_RangeFrom ([#"../index_range.rs" 128 16 128 17] (5 : usize));
     _29 <- ([#"../index_range.rs" 128 12 128 20] Index0.index _30 _31);
     goto BB14
@@ -2823,12 +2823,12 @@ module IndexRange_TestRangeFrom
       end
   }
   BB16 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB17 {
     _24 <- ();
-    _40 <- arr_1;
+    _40 <- arr;
     _39 <- ([#"../index_range.rs" 133 12 133 24] Deref0.deref _40);
     goto BB18
   }
@@ -2851,12 +2851,12 @@ module IndexRange_TestRangeFrom
       end
   }
   BB21 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB22 {
     _33 <- ();
-    _50 <- arr_1;
+    _50 <- arr;
     _49 <- ([#"../index_range.rs" 135 12 135 25] Deref0.deref _50);
     goto BB23
   }
@@ -2879,21 +2879,21 @@ module IndexRange_TestRangeFrom
       end
   }
   BB26 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB27 {
     _43 <- ();
-    _55 <- borrow_mut arr_1;
-    arr_1 <-  ^ _55;
+    _55 <- borrow_mut arr;
+    arr <-  ^ _55;
     _56 <- Core_Ops_Range_RangeFrom_Type.C_RangeFrom ([#"../index_range.rs" 138 21 138 22] (2 : usize));
     _54 <- ([#"../index_range.rs" 138 17 138 25] IndexMut0.index_mut _55 _56);
     goto BB28
   }
   BB28 {
-    s_53 <- borrow_mut ( * _54);
-    _54 <- { _54 with current = ( ^ s_53) };
-    _61 <-  * s_53;
+    s1 <- borrow_mut ( * _54);
+    _54 <- { _54 with current = ( ^ s1) };
+    _61 <-  * s1;
     _60 <- ([#"../index_range.rs" 139 12 139 19] Len0.len _61);
     goto BB29
   }
@@ -2906,38 +2906,38 @@ module IndexRange_TestRangeFrom
       end
   }
   BB30 {
-    assume { Resolve1.resolve s_53 };
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve1.resolve s1 };
+    assume { Resolve0.resolve arr };
     assume { Resolve1.resolve _54 };
     absurd
   }
   BB31 {
     _57 <- ();
     _63 <- ([#"../index_range.rs" 140 6 140 7] (0 : usize));
-    _64 <- Slice.length ( * s_53);
+    _64 <- Slice.length ( * s1);
     _65 <- ([#"../index_range.rs" 140 4 140 8] _63 < _64);
     assert { [@expl:index in bounds] [#"../index_range.rs" 140 4 140 8] _65 };
     goto BB32
   }
   BB32 {
-    s_53 <- { s_53 with current = Slice.set ( * s_53) _63 ([#"../index_range.rs" 140 11 140 13] (-1 : int32)) };
+    s1 <- { s1 with current = Slice.set ( * s1) _63 ([#"../index_range.rs" 140 11 140 13] (-1 : int32)) };
     _66 <- ([#"../index_range.rs" 141 6 141 7] (1 : usize));
-    _67 <- Slice.length ( * s_53);
+    _67 <- Slice.length ( * s1);
     _68 <- ([#"../index_range.rs" 141 4 141 8] _66 < _67);
     assert { [@expl:index in bounds] [#"../index_range.rs" 141 4 141 8] _68 };
     goto BB33
   }
   BB33 {
-    s_53 <- { s_53 with current = Slice.set ( * s_53) _66 ([#"../index_range.rs" 141 11 141 13] (-1 : int32)) };
+    s1 <- { s1 with current = Slice.set ( * s1) _66 ([#"../index_range.rs" 141 11 141 13] (-1 : int32)) };
     _73 <- ([#"../index_range.rs" 143 14 143 15] (2 : usize));
-    _74 <- Slice.length ( * s_53);
+    _74 <- Slice.length ( * s1);
     _75 <- ([#"../index_range.rs" 143 12 143 16] _73 < _74);
     assert { [@expl:index in bounds] [#"../index_range.rs" 143 12 143 16] _75 };
     goto BB34
   }
   BB34 {
-    _72 <- Slice.get ( * s_53) _73;
-    assume { Resolve1.resolve s_53 };
+    _72 <- Slice.get ( * s1) _73;
+    assume { Resolve1.resolve s1 };
     _71 <- ([#"../index_range.rs" 143 12 143 21] _72 = ([#"../index_range.rs" 143 20 143 21] (4 : int32)));
     assume { Resolve1.resolve _54 };
     _70 <- not _71;
@@ -2947,12 +2947,12 @@ module IndexRange_TestRangeFrom
       end
   }
   BB35 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB36 {
     _69 <- ();
-    _81 <- arr_1;
+    _81 <- arr;
     _80 <- ([#"../index_range.rs" 145 12 145 21] Len1.len _81);
     goto BB37
   }
@@ -2965,12 +2965,12 @@ module IndexRange_TestRangeFrom
       end
   }
   BB38 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB39 {
     _77 <- ();
-    _88 <- arr_1;
+    _88 <- arr;
     _87 <- ([#"../index_range.rs" 146 12 146 18] Index1.index _88 ([#"../index_range.rs" 146 16 146 17] (0 : usize)));
     goto BB40
   }
@@ -2984,12 +2984,12 @@ module IndexRange_TestRangeFrom
       end
   }
   BB41 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB42 {
     _83 <- ();
-    _95 <- arr_1;
+    _95 <- arr;
     _94 <- ([#"../index_range.rs" 147 12 147 18] Index1.index _95 ([#"../index_range.rs" 147 16 147 17] (1 : usize)));
     goto BB43
   }
@@ -3003,12 +3003,12 @@ module IndexRange_TestRangeFrom
       end
   }
   BB44 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB45 {
     _90 <- ();
-    _102 <- arr_1;
+    _102 <- arr;
     _101 <- ([#"../index_range.rs" 148 12 148 18] Index1.index _102 ([#"../index_range.rs" 148 16 148 17] (2 : usize)));
     goto BB46
   }
@@ -3022,12 +3022,12 @@ module IndexRange_TestRangeFrom
       end
   }
   BB47 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB48 {
     _97 <- ();
-    _109 <- arr_1;
+    _109 <- arr;
     _108 <- ([#"../index_range.rs" 149 12 149 18] Index1.index _109 ([#"../index_range.rs" 149 16 149 17] (3 : usize)));
     goto BB49
   }
@@ -3041,18 +3041,18 @@ module IndexRange_TestRangeFrom
       end
   }
   BB50 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB51 {
     _104 <- ();
-    _116 <- arr_1;
+    _116 <- arr;
     _115 <- ([#"../index_range.rs" 150 12 150 18] Index1.index _116 ([#"../index_range.rs" 150 16 150 17] (4 : usize)));
     goto BB52
   }
   BB52 {
     _114 <- _115;
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     _113 <- ([#"../index_range.rs" 150 12 150 23] _114 = ([#"../index_range.rs" 150 22 150 23] (4 : int32)));
     _112 <- not _113;
     switch (_112)
@@ -3162,14 +3162,14 @@ module CreusotContracts_Std1_Slice_Impl9_ResolveElswhere
     
 end
 module IndexRange_TestRangeFull_Interface
-  val test_range_full [#"../index_range.rs" 154 0 154 24] (_1' : ()) : ()
+  val test_range_full [#"../index_range.rs" 154 0 154 24] (_1 : ()) : ()
 end
 module IndexRange_TestRangeFull
   use prelude.Int
+  use prelude.UIntSize
   use prelude.Int32
   use prelude.Borrow
   use prelude.Slice
-  use prelude.UIntSize
   use seq.Seq
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface as ShallowModel4 with
@@ -3261,12 +3261,12 @@ module IndexRange_TestRangeFull
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     function IndexLogic0.index_logic = IndexLogic0.index_logic,
     val Max0.mAX' = Max0.mAX'
-  let rec cfg test_range_full [#"../index_range.rs" 154 0 154 24] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : ()
+  let rec cfg test_range_full [#"../index_range.rs" 154 0 154 24] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var arr_1 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
-  var s_2 : slice int32;
+  var arr : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var s : slice int32;
   var _3 : slice int32;
   var _4 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _5 : Core_Ops_Range_RangeFull_Type.t_rangefull;
@@ -3306,7 +3306,7 @@ module IndexRange_TestRangeFull
   var _39 : usize;
   var _40 : bool;
   var _41 : ();
-  var s_42 : borrowed (slice int32);
+  var s1 : borrowed (slice int32);
   var _43 : borrowed (slice int32);
   var _44 : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
   var _45 : Core_Ops_Range_RangeFull_Type.t_rangefull;
@@ -3367,18 +3367,18 @@ module IndexRange_TestRangeFull
     goto BB0
   }
   BB0 {
-    arr_1 <- ([#"../index_range.rs" 156 18 156 30] CreateArr0.create_arr ());
+    arr <- ([#"../index_range.rs" 156 18 156 30] CreateArr0.create_arr ());
     goto BB1
   }
   BB1 {
-    _4 <- arr_1;
+    _4 <- arr;
     _5 <- Core_Ops_Range_RangeFull_Type.C_RangeFull;
     _3 <- ([#"../index_range.rs" 161 13 161 20] Index0.index _4 _5);
     goto BB2
   }
   BB2 {
-    s_2 <- _3;
-    _15 <- s_2;
+    s <- _3;
+    _15 <- s;
     _14 <- ([#"../index_range.rs" 162 12 162 19] Len0.len _15);
     goto BB18
   }
@@ -3388,7 +3388,7 @@ module IndexRange_TestRangeFull
   }
   BB4 {
     _38 <- ([#"../index_range.rs" 162 82 162 83] (4 : usize));
-    _39 <- Slice.length s_2;
+    _39 <- Slice.length s;
     _40 <- ([#"../index_range.rs" 162 80 162 84] _38 < _39);
     assert { [@expl:index in bounds] [#"../index_range.rs" 162 80 162 84] _40 };
     goto BB23
@@ -3406,7 +3406,7 @@ module IndexRange_TestRangeFull
   }
   BB7 {
     _33 <- ([#"../index_range.rs" 162 69 162 70] (3 : usize));
-    _34 <- Slice.length s_2;
+    _34 <- Slice.length s;
     _35 <- ([#"../index_range.rs" 162 67 162 71] _33 < _34);
     assert { [@expl:index in bounds] [#"../index_range.rs" 162 67 162 71] _35 };
     goto BB22
@@ -3423,7 +3423,7 @@ module IndexRange_TestRangeFull
   }
   BB10 {
     _28 <- ([#"../index_range.rs" 162 56 162 57] (2 : usize));
-    _29 <- Slice.length s_2;
+    _29 <- Slice.length s;
     _30 <- ([#"../index_range.rs" 162 54 162 58] _28 < _29);
     assert { [@expl:index in bounds] [#"../index_range.rs" 162 54 162 58] _30 };
     goto BB21
@@ -3440,7 +3440,7 @@ module IndexRange_TestRangeFull
   }
   BB13 {
     _23 <- ([#"../index_range.rs" 162 43 162 44] (1 : usize));
-    _24 <- Slice.length s_2;
+    _24 <- Slice.length s;
     _25 <- ([#"../index_range.rs" 162 41 162 45] _23 < _24);
     assert { [@expl:index in bounds] [#"../index_range.rs" 162 41 162 45] _25 };
     goto BB20
@@ -3457,7 +3457,7 @@ module IndexRange_TestRangeFull
   }
   BB16 {
     _18 <- ([#"../index_range.rs" 162 30 162 31] (0 : usize));
-    _19 <- Slice.length s_2;
+    _19 <- Slice.length s;
     _20 <- ([#"../index_range.rs" 162 28 162 32] _18 < _19);
     assert { [@expl:index in bounds] [#"../index_range.rs" 162 28 162 32] _20 };
     goto BB19
@@ -3476,56 +3476,56 @@ module IndexRange_TestRangeFull
       end
   }
   BB19 {
-    _17 <- Slice.get s_2 _18;
+    _17 <- Slice.get s _18;
     _16 <- ([#"../index_range.rs" 162 28 162 37] _17 = ([#"../index_range.rs" 162 36 162 37] (0 : int32)));
     _12 <- _16;
     _16 <- any bool;
     goto BB17
   }
   BB20 {
-    _22 <- Slice.get s_2 _23;
+    _22 <- Slice.get s _23;
     _21 <- ([#"../index_range.rs" 162 41 162 50] _22 = ([#"../index_range.rs" 162 49 162 50] (1 : int32)));
     _11 <- _21;
     _21 <- any bool;
     goto BB14
   }
   BB21 {
-    _27 <- Slice.get s_2 _28;
+    _27 <- Slice.get s _28;
     _26 <- ([#"../index_range.rs" 162 54 162 63] _27 = ([#"../index_range.rs" 162 62 162 63] (2 : int32)));
     _10 <- _26;
     _26 <- any bool;
     goto BB11
   }
   BB22 {
-    _32 <- Slice.get s_2 _33;
+    _32 <- Slice.get s _33;
     _31 <- ([#"../index_range.rs" 162 67 162 76] _32 = ([#"../index_range.rs" 162 75 162 76] (3 : int32)));
     _9 <- _31;
     _31 <- any bool;
     goto BB8
   }
   BB23 {
-    _37 <- Slice.get s_2 _38;
+    _37 <- Slice.get s _38;
     _36 <- ([#"../index_range.rs" 162 80 162 89] _37 = ([#"../index_range.rs" 162 88 162 89] (4 : int32)));
     _8 <- _36;
     _36 <- any bool;
     goto BB5
   }
   BB24 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB25 {
     _6 <- ();
-    _44 <- borrow_mut arr_1;
-    arr_1 <-  ^ _44;
+    _44 <- borrow_mut arr;
+    arr <-  ^ _44;
     _45 <- Core_Ops_Range_RangeFull_Type.C_RangeFull;
     _43 <- ([#"../index_range.rs" 165 17 165 24] IndexMut0.index_mut _44 _45);
     goto BB26
   }
   BB26 {
-    s_42 <- borrow_mut ( * _43);
-    _43 <- { _43 with current = ( ^ s_42) };
-    _50 <-  * s_42;
+    s1 <- borrow_mut ( * _43);
+    _43 <- { _43 with current = ( ^ s1) };
+    _50 <-  * s1;
     _49 <- ([#"../index_range.rs" 166 12 166 19] Len0.len _50);
     goto BB27
   }
@@ -3538,32 +3538,32 @@ module IndexRange_TestRangeFull
       end
   }
   BB28 {
-    assume { Resolve1.resolve s_42 };
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve1.resolve s1 };
+    assume { Resolve0.resolve arr };
     assume { Resolve1.resolve _43 };
     absurd
   }
   BB29 {
     _46 <- ();
     _52 <- ([#"../index_range.rs" 167 6 167 7] (1 : usize));
-    _53 <- Slice.length ( * s_42);
+    _53 <- Slice.length ( * s1);
     _54 <- ([#"../index_range.rs" 167 4 167 8] _52 < _53);
     assert { [@expl:index in bounds] [#"../index_range.rs" 167 4 167 8] _54 };
     goto BB30
   }
   BB30 {
-    s_42 <- { s_42 with current = Slice.set ( * s_42) _52 ([#"../index_range.rs" 167 11 167 13] (-1 : int32)) };
+    s1 <- { s1 with current = Slice.set ( * s1) _52 ([#"../index_range.rs" 167 11 167 13] (-1 : int32)) };
     _55 <- ([#"../index_range.rs" 168 6 168 7] (3 : usize));
-    _56 <- Slice.length ( * s_42);
+    _56 <- Slice.length ( * s1);
     _57 <- ([#"../index_range.rs" 168 4 168 8] _55 < _56);
     assert { [@expl:index in bounds] [#"../index_range.rs" 168 4 168 8] _57 };
     goto BB31
   }
   BB31 {
-    s_42 <- { s_42 with current = Slice.set ( * s_42) _55 ([#"../index_range.rs" 168 11 168 13] (-1 : int32)) };
-    assume { Resolve1.resolve s_42 };
+    s1 <- { s1 with current = Slice.set ( * s1) _55 ([#"../index_range.rs" 168 11 168 13] (-1 : int32)) };
+    assume { Resolve1.resolve s1 };
     assume { Resolve1.resolve _43 };
-    _62 <- arr_1;
+    _62 <- arr;
     _61 <- ([#"../index_range.rs" 170 12 170 21] Len1.len _62);
     goto BB32
   }
@@ -3576,12 +3576,12 @@ module IndexRange_TestRangeFull
       end
   }
   BB33 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB34 {
     _58 <- ();
-    _69 <- arr_1;
+    _69 <- arr;
     _68 <- ([#"../index_range.rs" 171 12 171 18] Index1.index _69 ([#"../index_range.rs" 171 16 171 17] (0 : usize)));
     goto BB35
   }
@@ -3595,12 +3595,12 @@ module IndexRange_TestRangeFull
       end
   }
   BB36 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB37 {
     _64 <- ();
-    _76 <- arr_1;
+    _76 <- arr;
     _75 <- ([#"../index_range.rs" 172 12 172 18] Index1.index _76 ([#"../index_range.rs" 172 16 172 17] (1 : usize)));
     goto BB38
   }
@@ -3614,12 +3614,12 @@ module IndexRange_TestRangeFull
       end
   }
   BB39 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB40 {
     _71 <- ();
-    _83 <- arr_1;
+    _83 <- arr;
     _82 <- ([#"../index_range.rs" 173 12 173 18] Index1.index _83 ([#"../index_range.rs" 173 16 173 17] (2 : usize)));
     goto BB41
   }
@@ -3633,12 +3633,12 @@ module IndexRange_TestRangeFull
       end
   }
   BB42 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB43 {
     _78 <- ();
-    _90 <- arr_1;
+    _90 <- arr;
     _89 <- ([#"../index_range.rs" 174 12 174 18] Index1.index _90 ([#"../index_range.rs" 174 16 174 17] (3 : usize)));
     goto BB44
   }
@@ -3652,18 +3652,18 @@ module IndexRange_TestRangeFull
       end
   }
   BB45 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB46 {
     _85 <- ();
-    _97 <- arr_1;
+    _97 <- arr;
     _96 <- ([#"../index_range.rs" 175 12 175 18] Index1.index _97 ([#"../index_range.rs" 175 16 175 17] (4 : usize)));
     goto BB47
   }
   BB47 {
     _95 <- _96;
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     _94 <- ([#"../index_range.rs" 175 12 175 23] _95 = ([#"../index_range.rs" 175 22 175 23] (4 : int32)));
     _93 <- not _94;
     switch (_93)
@@ -3804,14 +3804,14 @@ module CreusotContracts_Std1_Slice_Impl10_ResolveElswhere
     
 end
 module IndexRange_TestRangeToInclusive_Interface
-  val test_range_to_inclusive [#"../index_range.rs" 179 0 179 32] (_1' : ()) : ()
+  val test_range_to_inclusive [#"../index_range.rs" 179 0 179 32] (_1 : ()) : ()
 end
 module IndexRange_TestRangeToInclusive
   use prelude.Int
+  use prelude.UIntSize
   use prelude.Int32
   use prelude.Borrow
   use prelude.Slice
-  use prelude.UIntSize
   use seq.Seq
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface as ShallowModel4 with
@@ -3857,6 +3857,7 @@ module IndexRange_TestRangeToInclusive
     type t = int32,
     type s = Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global),
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Alloc_Vec_Impl13_Index_Interface as Index1 with
     type t = int32,
     type i = usize,
@@ -3882,7 +3883,6 @@ module IndexRange_TestRangeToInclusive
     predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere,
     type Output0.output = slice int32,
     val Max0.mAX' = Max0.mAX'
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
     type t = slice int32
   clone Core_Slice_Impl0_Get_Interface as Get0 with
@@ -3918,12 +3918,12 @@ module IndexRange_TestRangeToInclusive
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     function IndexLogic0.index_logic = IndexLogic0.index_logic,
     val Max0.mAX' = Max0.mAX'
-  let rec cfg test_range_to_inclusive [#"../index_range.rs" 179 0 179 32] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : ()
+  let rec cfg test_range_to_inclusive [#"../index_range.rs" 179 0 179 32] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var arr_1 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
-  var s_2 : slice int32;
+  var arr : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var s : slice int32;
   var _3 : slice int32;
   var _4 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _5 : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize;
@@ -3955,7 +3955,7 @@ module IndexRange_TestRangeToInclusive
   var _31 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _32 : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize;
   var _33 : ();
-  var s_34 : borrowed (slice int32);
+  var s1 : borrowed (slice int32);
   var _35 : borrowed (slice int32);
   var _36 : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
   var _37 : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize;
@@ -4024,18 +4024,18 @@ module IndexRange_TestRangeToInclusive
     goto BB0
   }
   BB0 {
-    arr_1 <- ([#"../index_range.rs" 181 18 181 30] CreateArr0.create_arr ());
+    arr <- ([#"../index_range.rs" 181 18 181 30] CreateArr0.create_arr ());
     goto BB1
   }
   BB1 {
-    _4 <- arr_1;
+    _4 <- arr;
     _5 <- Core_Ops_Range_RangeToInclusive_Type.C_RangeToInclusive ([#"../index_range.rs" 186 20 186 21] (1 : usize));
     _3 <- ([#"../index_range.rs" 186 13 186 22] Index0.index _4 _5);
     goto BB2
   }
   BB2 {
-    s_2 <- _3;
-    _12 <- s_2;
+    s <- _3;
+    _12 <- s;
     _11 <- ([#"../index_range.rs" 187 12 187 19] Len0.len _12);
     goto BB9
   }
@@ -4045,7 +4045,7 @@ module IndexRange_TestRangeToInclusive
   }
   BB4 {
     _20 <- ([#"../index_range.rs" 187 43 187 44] (1 : usize));
-    _21 <- Slice.length s_2;
+    _21 <- Slice.length s;
     _22 <- ([#"../index_range.rs" 187 41 187 45] _20 < _21);
     assert { [@expl:index in bounds] [#"../index_range.rs" 187 41 187 45] _22 };
     goto BB11
@@ -4063,7 +4063,7 @@ module IndexRange_TestRangeToInclusive
   }
   BB7 {
     _15 <- ([#"../index_range.rs" 187 30 187 31] (0 : usize));
-    _16 <- Slice.length s_2;
+    _16 <- Slice.length s;
     _17 <- ([#"../index_range.rs" 187 28 187 32] _15 < _16);
     assert { [@expl:index in bounds] [#"../index_range.rs" 187 28 187 32] _17 };
     goto BB10
@@ -4082,26 +4082,26 @@ module IndexRange_TestRangeToInclusive
       end
   }
   BB10 {
-    _14 <- Slice.get s_2 _15;
+    _14 <- Slice.get s _15;
     _13 <- ([#"../index_range.rs" 187 28 187 37] _14 = ([#"../index_range.rs" 187 36 187 37] (0 : int32)));
     _9 <- _13;
     _13 <- any bool;
     goto BB8
   }
   BB11 {
-    _19 <- Slice.get s_2 _20;
+    _19 <- Slice.get s _20;
     _18 <- ([#"../index_range.rs" 187 41 187 50] _19 = ([#"../index_range.rs" 187 49 187 50] (1 : int32)));
     _8 <- _18;
     _18 <- any bool;
     goto BB5
   }
   BB12 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB13 {
     _6 <- ();
-    _31 <- arr_1;
+    _31 <- arr;
     _30 <- ([#"../index_range.rs" 192 12 192 25] Deref0.deref _31);
     goto BB14
   }
@@ -4124,21 +4124,21 @@ module IndexRange_TestRangeToInclusive
       end
   }
   BB17 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB18 {
     _24 <- ();
-    _36 <- borrow_mut arr_1;
-    arr_1 <-  ^ _36;
+    _36 <- borrow_mut arr;
+    arr <-  ^ _36;
     _37 <- Core_Ops_Range_RangeToInclusive_Type.C_RangeToInclusive ([#"../index_range.rs" 195 24 195 25] (2 : usize));
     _35 <- ([#"../index_range.rs" 195 17 195 26] IndexMut0.index_mut _36 _37);
     goto BB19
   }
   BB19 {
-    s_34 <- borrow_mut ( * _35);
-    _35 <- { _35 with current = ( ^ s_34) };
-    _42 <-  * s_34;
+    s1 <- borrow_mut ( * _35);
+    _35 <- { _35 with current = ( ^ s1) };
+    _42 <-  * s1;
     _41 <- ([#"../index_range.rs" 196 12 196 19] Len0.len _42);
     goto BB20
   }
@@ -4151,38 +4151,38 @@ module IndexRange_TestRangeToInclusive
       end
   }
   BB21 {
-    assume { Resolve1.resolve s_34 };
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve1.resolve s1 };
+    assume { Resolve0.resolve arr };
     assume { Resolve1.resolve _35 };
     absurd
   }
   BB22 {
     _38 <- ();
     _44 <- ([#"../index_range.rs" 197 6 197 7] (0 : usize));
-    _45 <- Slice.length ( * s_34);
+    _45 <- Slice.length ( * s1);
     _46 <- ([#"../index_range.rs" 197 4 197 8] _44 < _45);
     assert { [@expl:index in bounds] [#"../index_range.rs" 197 4 197 8] _46 };
     goto BB23
   }
   BB23 {
-    s_34 <- { s_34 with current = Slice.set ( * s_34) _44 ([#"../index_range.rs" 197 11 197 13] (-1 : int32)) };
+    s1 <- { s1 with current = Slice.set ( * s1) _44 ([#"../index_range.rs" 197 11 197 13] (-1 : int32)) };
     _47 <- ([#"../index_range.rs" 198 6 198 7] (2 : usize));
-    _48 <- Slice.length ( * s_34);
+    _48 <- Slice.length ( * s1);
     _49 <- ([#"../index_range.rs" 198 4 198 8] _47 < _48);
     assert { [@expl:index in bounds] [#"../index_range.rs" 198 4 198 8] _49 };
     goto BB24
   }
   BB24 {
-    s_34 <- { s_34 with current = Slice.set ( * s_34) _47 ([#"../index_range.rs" 198 11 198 13] (-1 : int32)) };
+    s1 <- { s1 with current = Slice.set ( * s1) _47 ([#"../index_range.rs" 198 11 198 13] (-1 : int32)) };
     _54 <- ([#"../index_range.rs" 200 14 200 15] (1 : usize));
-    _55 <- Slice.length ( * s_34);
+    _55 <- Slice.length ( * s1);
     _56 <- ([#"../index_range.rs" 200 12 200 16] _54 < _55);
     assert { [@expl:index in bounds] [#"../index_range.rs" 200 12 200 16] _56 };
     goto BB25
   }
   BB25 {
-    _53 <- Slice.get ( * s_34) _54;
-    assume { Resolve1.resolve s_34 };
+    _53 <- Slice.get ( * s1) _54;
+    assume { Resolve1.resolve s1 };
     _52 <- ([#"../index_range.rs" 200 12 200 21] _53 = ([#"../index_range.rs" 200 20 200 21] (1 : int32)));
     assume { Resolve1.resolve _35 };
     _51 <- not _52;
@@ -4192,12 +4192,12 @@ module IndexRange_TestRangeToInclusive
       end
   }
   BB26 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB27 {
     _50 <- ();
-    _62 <- arr_1;
+    _62 <- arr;
     _61 <- ([#"../index_range.rs" 202 12 202 21] Len1.len _62);
     goto BB28
   }
@@ -4210,12 +4210,12 @@ module IndexRange_TestRangeToInclusive
       end
   }
   BB29 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB30 {
     _58 <- ();
-    _69 <- arr_1;
+    _69 <- arr;
     _68 <- ([#"../index_range.rs" 203 12 203 18] Index1.index _69 ([#"../index_range.rs" 203 16 203 17] (0 : usize)));
     goto BB31
   }
@@ -4229,12 +4229,12 @@ module IndexRange_TestRangeToInclusive
       end
   }
   BB32 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB33 {
     _64 <- ();
-    _76 <- arr_1;
+    _76 <- arr;
     _75 <- ([#"../index_range.rs" 204 12 204 18] Index1.index _76 ([#"../index_range.rs" 204 16 204 17] (1 : usize)));
     goto BB34
   }
@@ -4248,12 +4248,12 @@ module IndexRange_TestRangeToInclusive
       end
   }
   BB35 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB36 {
     _71 <- ();
-    _83 <- arr_1;
+    _83 <- arr;
     _82 <- ([#"../index_range.rs" 205 12 205 18] Index1.index _83 ([#"../index_range.rs" 205 16 205 17] (2 : usize)));
     goto BB37
   }
@@ -4267,12 +4267,12 @@ module IndexRange_TestRangeToInclusive
       end
   }
   BB38 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB39 {
     _78 <- ();
-    _90 <- arr_1;
+    _90 <- arr;
     _89 <- ([#"../index_range.rs" 206 12 206 18] Index1.index _90 ([#"../index_range.rs" 206 16 206 17] (3 : usize)));
     goto BB40
   }
@@ -4286,18 +4286,18 @@ module IndexRange_TestRangeToInclusive
       end
   }
   BB41 {
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     absurd
   }
   BB42 {
     _85 <- ();
-    _97 <- arr_1;
+    _97 <- arr;
     _96 <- ([#"../index_range.rs" 207 12 207 18] Index1.index _97 ([#"../index_range.rs" 207 16 207 17] (4 : usize)));
     goto BB43
   }
   BB43 {
     _95 <- _96;
-    assume { Resolve0.resolve arr_1 };
+    assume { Resolve0.resolve arr };
     _94 <- ([#"../index_range.rs" 207 12 207 23] _95 = ([#"../index_range.rs" 207 22 207 23] (4 : int32)));
     _93 <- not _94;
     switch (_93)

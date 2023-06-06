@@ -316,16 +316,14 @@ module C09Capacity_ChangeCapacity_Interface
 end
 module C09Capacity_ChangeCapacity
   type t
-  use prelude.Borrow
-  use seq.Seq
   use prelude.Int
   use prelude.UIntSize
+  use prelude.Borrow
+  use seq.Seq
   use seq.Seq
   clone Core_Num_Impl11_Max as Max0
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -335,6 +333,16 @@ module C09Capacity_ChangeCapacity
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic1 with
+    type t = t,
+    type s = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic0 with
+    type t = t,
+    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   clone Alloc_Vec_Impl1_ShrinkTo_Interface as ShrinkTo0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -359,21 +367,13 @@ module C09Capacity_ChangeCapacity
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     function ShallowModel1.shallow_model = ShallowModel1.shallow_model,
     val Max0.mAX' = Max0.mAX'
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic1 with
-    type t = t,
-    type s = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
-    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic0 with
-    type t = t,
-    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
-    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   let rec cfg change_capacity [#"../09_capacity.rs" 6 0 6 41] [@cfg:stackify] [@cfg:subregion_analysis] (v : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : ()
     ensures { [#"../09_capacity.rs" 4 10 4 33] Seq.length (ShallowModel0.shallow_model ( ^ v)) = Seq.length (ShallowModel1.shallow_model v) }
     ensures { [#"../09_capacity.rs" 5 0 5 69] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel1.shallow_model v) -> IndexLogic0.index_logic ( ^ v) i = IndexLogic1.index_logic v i }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var v_1 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
+  var v : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) = v;
   var _4 : ();
   var _5 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var _6 : ();
@@ -383,35 +383,34 @@ module C09Capacity_ChangeCapacity
   var _10 : ();
   var _11 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   {
-    v_1 <- v;
     goto BB0
   }
   BB0 {
-    _5 <- borrow_mut ( * v_1);
-    v_1 <- { v_1 with current = ( ^ _5) };
+    _5 <- borrow_mut ( * v);
+    v <- { v with current = ( ^ _5) };
     _4 <- ([#"../09_capacity.rs" 7 4 7 18] Reserve0.reserve _5 ([#"../09_capacity.rs" 7 14 7 17] (100 : usize)));
     goto BB1
   }
   BB1 {
-    _7 <- borrow_mut ( * v_1);
-    v_1 <- { v_1 with current = ( ^ _7) };
+    _7 <- borrow_mut ( * v);
+    v <- { v with current = ( ^ _7) };
     _6 <- ([#"../09_capacity.rs" 8 4 8 24] ReserveExact0.reserve_exact _7 ([#"../09_capacity.rs" 8 20 8 23] (200 : usize)));
     goto BB2
   }
   BB2 {
-    _9 <- borrow_mut ( * v_1);
-    v_1 <- { v_1 with current = ( ^ _9) };
+    _9 <- borrow_mut ( * v);
+    v <- { v with current = ( ^ _9) };
     _8 <- ([#"../09_capacity.rs" 9 4 9 21] ShrinkToFit0.shrink_to_fit _9);
     goto BB3
   }
   BB3 {
-    _11 <- borrow_mut ( * v_1);
-    v_1 <- { v_1 with current = ( ^ _11) };
+    _11 <- borrow_mut ( * v);
+    v <- { v with current = ( ^ _11) };
     _10 <- ([#"../09_capacity.rs" 10 4 10 18] ShrinkTo0.shrink_to _11 ([#"../09_capacity.rs" 10 16 10 17] (1 : usize)));
     goto BB4
   }
   BB4 {
-    assume { Resolve0.resolve v_1 };
+    assume { Resolve0.resolve v };
     _0 <- ();
     return _0
   }
@@ -456,13 +455,13 @@ module C09Capacity_ClearVec
   clone Core_Num_Impl11_Max as Max0
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max0.mAX',
     axiom .
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   clone Alloc_Vec_Impl1_Clear_Interface as Clear0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -473,21 +472,20 @@ module C09Capacity_ClearVec
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var v_1 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
+  var v : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) = v;
   var _3 : ();
   var _4 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   {
-    v_1 <- v;
     goto BB0
   }
   BB0 {
-    _4 <- borrow_mut ( * v_1);
-    v_1 <- { v_1 with current = ( ^ _4) };
+    _4 <- borrow_mut ( * v);
+    v <- { v with current = ( ^ _4) };
     _3 <- ([#"../09_capacity.rs" 15 4 15 13] Clear0.clear _4);
     goto BB1
   }
   BB1 {
-    assume { Resolve0.resolve v_1 };
+    assume { Resolve0.resolve v };
     _0 <- ();
     return _0
   }

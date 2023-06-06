@@ -230,17 +230,17 @@ module C10Once_Impl0_Next
   type t
   use prelude.Borrow
   use seq.Seq
-  use C10Once_Once_Type as C10Once_Once_Type
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = C10Once_Once_Type.t_once t
   use Core_Option_Option_Type as Core_Option_Option_Type
-  clone Core_Option_Impl0_Take_Interface as Take0 with
-    type t = t
+  use C10Once_Once_Type as C10Once_Once_Type
   clone C10Once_Impl0_Produces as Produces0 with
     type t = t
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = C10Once_Once_Type.t_once t
   clone C10Once_Impl0_Completed as Completed0 with
     type t = t,
     predicate Resolve0.resolve = Resolve0.resolve
+  clone Core_Option_Impl0_Take_Interface as Take0 with
+    type t = t
   let rec cfg next [#"../10_once.rs" 44 4 44 35] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (C10Once_Once_Type.t_once t)) : Core_Option_Option_Type.t_option t
     ensures { [#"../10_once.rs" 40 14 43 5] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
@@ -249,20 +249,19 @@ module C10Once_Impl0_Next
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Option_Option_Type.t_option t;
-  var self_1 : borrowed (C10Once_Once_Type.t_once t);
+  var self : borrowed (C10Once_Once_Type.t_once t) = self;
   var _3 : borrowed (Core_Option_Option_Type.t_option t);
   {
-    self_1 <- self;
     goto BB0
   }
   BB0 {
-    _3 <- borrow_mut (C10Once_Once_Type.once_0 ( * self_1));
-    self_1 <- { self_1 with current = (let C10Once_Once_Type.C_Once a =  * self_1 in C10Once_Once_Type.C_Once ( ^ _3)) };
+    _3 <- borrow_mut (C10Once_Once_Type.once_0 ( * self));
+    self <- { self with current = (let C10Once_Once_Type.C_Once a =  * self in C10Once_Once_Type.C_Once ( ^ _3)) };
     _0 <- ([#"../10_once.rs" 45 8 45 21] Take0.take _3);
     goto BB1
   }
   BB1 {
-    assume { Resolve0.resolve self_1 };
+    assume { Resolve0.resolve self };
     return _0
   }
   

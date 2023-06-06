@@ -32,9 +32,9 @@ module C492_ReborrowTuple_Interface
 end
 module C492_ReborrowTuple
   type t
-  use prelude.Borrow
   use prelude.Int
   use prelude.UInt32
+  use prelude.Borrow
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = t
   let rec cfg reborrow_tuple [#"../492.rs" 5 0 5 52] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed t) : (borrowed t, uint32)
@@ -42,17 +42,16 @@ module C492_ReborrowTuple
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : (borrowed t, uint32);
-  var x_1 : borrowed t;
+  var x : borrowed t = x;
   var _3 : borrowed t;
   {
-    x_1 <- x;
     goto BB0
   }
   BB0 {
-    _3 <- borrow_mut ( * x_1);
-    x_1 <- { x_1 with current = ( ^ _3) };
+    _3 <- borrow_mut ( * x);
+    x <- { x with current = ( ^ _3) };
     _0 <- (_3, [#"../492.rs" 6 8 6 10] (32 : uint32));
-    assume { Resolve0.resolve x_1 };
+    assume { Resolve0.resolve x };
     return _0
   }
   
@@ -121,7 +120,7 @@ module CreusotContracts_Resolve_Impl2_Resolve
     
 end
 module C492_Test_Interface
-  val test [#"../492.rs" 10 0 10 13] (_1' : ()) : ()
+  val test [#"../492.rs" 10 0 10 13] (_1 : ()) : ()
     ensures { [#"../492.rs" 9 10 9 15] false }
     
 end
@@ -141,13 +140,13 @@ module C492_Test
     predicate Resolve1.resolve = Resolve2.resolve
   clone C492_ReborrowTuple_Interface as ReborrowTuple0 with
     type t = int32
-  let rec cfg test [#"../492.rs" 10 0 10 13] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : ()
+  let rec cfg test [#"../492.rs" 10 0 10 13] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
     ensures { [#"../492.rs" 9 10 9 15] false }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var x_2 : int32;
-  var res_3 : borrowed int32;
+  var x : int32;
+  var res : borrowed int32;
   var _4 : (borrowed int32, uint32);
   var _5 : borrowed int32;
   var _6 : borrowed int32;
@@ -156,23 +155,23 @@ module C492_Test
     goto BB0
   }
   BB0 {
-    x_2 <- ([#"../492.rs" 11 16 11 17] (5 : int32));
-    _6 <- borrow_mut x_2;
-    x_2 <-  ^ _6;
+    x <- ([#"../492.rs" 11 16 11 17] (5 : int32));
+    _6 <- borrow_mut x;
+    x <-  ^ _6;
     _5 <- borrow_mut ( * _6);
     _6 <- { _6 with current = ( ^ _5) };
     _4 <- ([#"../492.rs" 12 19 12 41] ReborrowTuple0.reborrow_tuple _5);
     goto BB1
   }
   BB1 {
-    res_3 <- (let (a, _) = _4 in a);
+    res <- (let (a, _) = _4 in a);
     _4 <- (let (a, b) = _4 in (any borrowed int32, b));
     assume { Resolve0.resolve _4 };
     assume { Resolve1.resolve _6 };
-    assert { [@expl:assertion] [#"../492.rs" 13 18 13 30]  ^ res_3 = (5 : int32) };
+    assert { [@expl:assertion] [#"../492.rs" 13 18 13 30]  ^ res = (5 : int32) };
     _7 <- ();
-    res_3 <- { res_3 with current = ([#"../492.rs" 14 11 14 13] (10 : int32)) };
-    assume { Resolve1.resolve res_3 };
+    res <- { res with current = ([#"../492.rs" 14 11 14 13] (10 : int32)) };
+    assume { Resolve1.resolve res };
     _0 <- ();
     return _0
   }

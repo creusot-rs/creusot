@@ -162,7 +162,7 @@ pub struct CfgFunction {
     pub sig: Signature,
     pub rec: bool,
     pub constant: bool,
-    pub vars: Vec<(bool, Ident, Type)>,
+    pub vars: Vec<(bool, Ident, Type, Option<Exp>)>,
     pub entry: Block,
     pub blocks: BTreeMap<BlockId, Block>,
 }
