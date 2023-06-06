@@ -15,20 +15,31 @@ use crate::{
 /// These should be used both to power the cloning system and to order the overall translation of items in Creusot.
 ///
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash, PartialOrd, Ord)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Key<'tcx> {
     pub(crate) did: DefId,
     pub(crate) subst: SubstsRef<'tcx>,
+    pub(crate) inv: bool,
+}
+
+impl<'tcx> std::fmt::Debug for Key<'tcx> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:}{:?}{:?}", if self.inv { "Inv:" } else { "" }, &self.did, &self.subst)
+    }
 }
 
 impl<'tcx> From<(DefId, SubstsRef<'tcx>)> for Key<'tcx> {
     #[inline]
     fn from(value: (DefId, SubstsRef<'tcx>)) -> Self {
-        Key { did: value.0, subst: value.1 }
+        Key { did: value.0, subst: value.1, inv: false }
     }
 }
 
 impl<'tcx> Key<'tcx> {
+    pub(crate) fn new(did: DefId, subst: SubstsRef<'tcx>, inv: bool) -> Self {
+        Key { did, subst, inv }
+    }
+
     #[inline]
     pub(crate) fn erase_regions(mut self, tcx: TyCtxt<'tcx>) -> Self {
         self.subst = tcx.erase_regions(self.subst);
@@ -43,7 +54,8 @@ impl<'tcx> Key<'tcx> {
 
     #[inline]
     pub(crate) fn closure_hack(self, tcx: TyCtxt<'tcx>) -> Self {
-        closure_hack(tcx, self.did, self.subst).into()
+        let (did, subst) = closure_hack(tcx, self.did, self.subst);
+        Key { did, subst, ..self }
     }
 }
 
@@ -51,11 +63,13 @@ impl<'tcx> Key<'tcx> {
 pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
     Item(Key<'tcx>),
+    TyInv(Key<'tcx>),
 }
 
 impl<'tcx> Dependency<'tcx> {
     pub(crate) fn new(tcx: TyCtxt<'tcx>, dep: Key<'tcx>) -> Self {
         match util::item_type(tcx, dep.did) {
+            ItemType::Type if dep.inv => Dependency::TyInv(dep),
             ItemType::Type => Dependency::Type(tcx.mk_adt(tcx.adt_def(dep.did), dep.subst)),
             // ItemType::Closure => Dependency::Type(tcx.type_of(dep.0).subst(tcx, dep.1)),
             ItemType::AssocTy => Dependency::Type(tcx.mk_projection(dep.did, dep.subst)),
@@ -79,9 +93,10 @@ impl<'tcx> Dependency<'tcx> {
     ) -> Option<Self> {
         match self {
             Dependency::Type(ty) => resolve_type(ty, ctx.tcx, param_env),
-            Dependency::Item(Key { did: item, subst: substs }) => {
+            Dependency::Item(Key { did: item, subst: substs, .. }) => {
                 resolve_item(item, substs, ctx.tcx, param_env)
             }
+            dep @ Dependency::TyInv(_) => Some(dep),
         }
     }
 
@@ -89,13 +104,14 @@ impl<'tcx> Dependency<'tcx> {
         match self {
             Dependency::Item(i) => Some(i),
             Dependency::Type(t) => match t.kind() {
-                TyKind::Adt(def, substs) => Some(Key { did: def.did(), subst: substs }),
-                TyKind::Closure(id, substs) => Some(Key { did: *id, subst: substs }),
+                TyKind::Adt(def, substs) => Some(Key { did: def.did(), subst: substs, inv: false }),
+                TyKind::Closure(id, substs) => Some(Key { did: *id, subst: substs, inv: false }),
                 TyKind::Alias(AliasKind::Projection, aty) => {
-                    Some(Key { did: aty.def_id, subst: aty.substs })
+                    Some(Key { did: aty.def_id, subst: aty.substs, inv: false })
                 }
                 _ => None,
             },
+            Dependency::TyInv(i) => Some(i),
         }
     }
 }

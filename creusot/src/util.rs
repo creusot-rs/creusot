@@ -218,6 +218,10 @@ pub(crate) fn ident_of_ty(sym: Symbol) -> Ident {
     Ident::build(&id)
 }
 
+pub(crate) fn inv_module_name(tcx: TyCtxt, def_id: DefId) -> Ident {
+    format!("{}_Inv", &*ident_path(tcx, def_id)).into()
+}
+
 pub(crate) fn module_name(tcx: TyCtxt, def_id: DefId) -> Ident {
     let kind = tcx.def_kind(def_id);
     use rustc_hir::def::DefKind::*;

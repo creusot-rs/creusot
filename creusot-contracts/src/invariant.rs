@@ -21,6 +21,13 @@ pub trait Invariant {
     }
 }
 
+#[predicate]
+#[open(self)]
+#[rustc_diagnostic_item = "creusot_invariant_internal"]
+pub fn inv<T>(_x: T) -> bool {
+    true
+}
+
 impl<'a, T: Invariant + ?Sized> Invariant for &'a T {
     #[predicate]
     #[open]

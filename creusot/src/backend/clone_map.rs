@@ -30,7 +30,7 @@ use crate::{
     },
     ctx::*,
     translation::traits,
-    util::{self, get_builtin, ident_of, ident_of_ty, item_name, module_name},
+    util::{self, get_builtin, ident_of, ident_of_ty, inv_module_name, item_name, module_name},
 };
 
 // Prelude modules
@@ -112,6 +112,7 @@ pub struct CloneMap<'tcx> {
 
     // DefId of the item which is cloning. Used for trait resolution
     self_id: DefId,
+    pub(crate) self_inv: bool,
     // TODO: Push the graph into an opaque type with tight api boundary
     // Graph which is used to calculate the full clone set
     clone_graph: DiGraphMap<DepNode<'tcx>, IndexSet<(Kind, SymbolKind)>>,
@@ -211,10 +212,20 @@ impl<'tcx> CloneInfo {
 
 impl<'tcx> CloneMap<'tcx> {
     pub(crate) fn new(tcx: TyCtxt<'tcx>, self_id: DefId, clone_level: CloneLevel) -> Self {
+        Self::new_inv(tcx, self_id, clone_level, false)
+    }
+
+    pub(crate) fn new_inv(
+        tcx: TyCtxt<'tcx>,
+        self_id: DefId,
+        clone_level: CloneLevel,
+        inv: bool,
+    ) -> Self {
         let names = IndexMap::new();
         let mut c = CloneMap {
             tcx,
             self_id,
+            self_inv: inv,
             names,
             name_counts: Default::default(),
             prelude: IndexMap::new(),
@@ -275,7 +286,9 @@ impl<'tcx> CloneMap<'tcx> {
             let count: usize = *self.name_counts.entry(base).and_modify(|c| *c += 1).or_insert(0);
             trace!("inserting {:?} as {}{}", key, base, count);
 
-            let name = if util::item_type(self.tcx, key.did) == ItemType::Type {
+            let name = if key.inv {
+                Symbol::intern(&*inv_module_name(self.tcx, key.did))
+            } else if util::item_type(self.tcx, key.did) == ItemType::Type {
                 Symbol::intern(&*module_name(self.tcx, key.did))
             } else {
                 Symbol::intern(&format!("{}{}", base, count))
@@ -341,6 +354,13 @@ impl<'tcx> CloneMap<'tcx> {
         clone.qname_ident(name.into())
     }
 
+    pub(crate) fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName {
+        let def_id =
+            self.tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
+        let subst = self.tcx.mk_substs(&[ty::GenericArg::from(ty)]);
+        self.value(def_id, subst)
+    }
+
     fn self_key(&self) -> Key<'tcx> {
         let subst = match self.tcx.def_kind(self.self_id) {
             DefKind::Closure => match self.tcx.type_of(self.self_id).subst_identity().kind() {
@@ -351,7 +371,7 @@ impl<'tcx> CloneMap<'tcx> {
         };
 
         let subst = self.tcx.erase_regions(subst);
-        (self.self_id, subst).into()
+        Key::new(self.self_id, subst, self.self_inv)
     }
 
     pub(crate) fn import_prelude_module(&mut self, module: PreludeModule) {
@@ -378,7 +398,7 @@ impl<'tcx> CloneMap<'tcx> {
             let key = *self.names.get_index(i).unwrap().0;
 
             i += 1;
-            trace!("{:?} is public={:?}", key, self.names[&key].public);
+            trace!("update graph with {:?} (public={:?})", key, self.names[&key].public);
 
             if key != self.self_key() {
                 self.add_graph_edge(
@@ -401,12 +421,15 @@ impl<'tcx> CloneMap<'tcx> {
 
             ctx.translate(key.did);
 
-            trace!(
-                "{:?} {:?} has {:?} dependencies",
-                self.names[&key].kind,
-                key,
-                ctx.dependencies(key).map(|d| d.len())
-            );
+            if key.did == self.tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap()
+                && let TyKind::Adt(adt_def, adt_subst) = key.subst.type_at(0).kind()
+                && !adt_def.is_box()
+                && adt_def.did() != self.self_id {
+                trace!("resolve tyinv {key:?} as {adt_def:?} {adt_subst:?}");
+                ctx.translate_tyinv(adt_def.did());
+                self.insert(Key::new(adt_def.did(), *adt_subst, true));
+            }
+
             self.clone_laws(ctx, key);
             self.clone_dependencies(ctx, key);
         }
@@ -453,8 +476,14 @@ impl<'tcx> CloneMap<'tcx> {
         let opaque_clone = !matches!(self.clone_level, CloneLevel::Body)
             || self.names[&key].opaque == CloneOpacity::Opaque;
 
+        trace!(
+            "cloning dependencies of {:?} {:?}, len={:?}, opaque={opaque_clone}",
+            self.names[&key].kind,
+            key,
+            ctx.dependencies(key).map(|d| d.len())
+        );
         for (dep, info) in ctx.dependencies(key).iter().flat_map(|i| i.iter()) {
-            if opaque_clone && !info.public {
+            if opaque_clone && !info.public && !key.inv {
                 continue;
             }
 
@@ -491,7 +520,7 @@ impl<'tcx> CloneMap<'tcx> {
             if let Some(d1) = user.cloneable_id() { Some(&self.names[&d1].kind) } else { None };
         let k2 =
             if let Some(d2) = prov.cloneable_id() { Some(&self.names[&d2].kind) } else { None };
-        trace!("{k1:?} = {:?} --> {k2:?} = {:?}", user, prov);
+        trace!("edge {k1:?} = {:?} --> {k2:?} = {:?}", user, prov);
 
         if let None = self.clone_graph.edge_weight_mut(user, prov) {
             self.clone_graph.add_edge(user, prov, IndexSet::new());
@@ -542,17 +571,17 @@ impl<'tcx> CloneMap<'tcx> {
     }
 
     fn build_clone(&mut self, ctx: &mut Why3Generator<'tcx>, item: DepNode<'tcx>) -> Option<Decl> {
-        let node @ Key { did: def_id, subst } = item.cloneable_id()?;
+        let node @ Key { did: def_id, subst, inv } = item.cloneable_id()?;
 
         // Types can't be cloned, but are used (for now).
-        if util::item_type(ctx.tcx, def_id) == ItemType::Type {
+        if util::item_type(ctx.tcx, def_id) == ItemType::Type && !inv {
             if self.used_types.insert(def_id) {
                 let name = if let Some(builtin) = get_builtin(ctx.tcx, def_id) {
                     let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
 
                     Decl::UseDecl(Use { name: name.clone(), as_: None, export: false })
                 } else {
-                    let name = cloneable_name(ctx, def_id, CloneLevel::Body);
+                    let name = cloneable_name(ctx, def_id, CloneLevel::Body, false);
                     Decl::UseDecl(Use { name: name.clone(), as_: Some(name), export: false })
                 };
                 return Some(name);
@@ -578,7 +607,7 @@ impl<'tcx> CloneMap<'tcx> {
                         clone_subst.push(CloneSubst::Type(ty_name, ty))
                     }
                 }
-                DepNode::Item(dep) => {
+                DepNode::Item(dep) | DepNode::TyInv(dep) => {
                     for (nm, sym) in syms {
                         let elem = sym.to_subst(*nm, self.names[&dep].kind);
                         clone_subst.push(elem);
@@ -587,7 +616,7 @@ impl<'tcx> CloneMap<'tcx> {
             }
         }
 
-        let use_axioms = ctx.item(def_id).map(|i| i.has_axioms()).unwrap_or(false);
+        let use_axioms = inv || ctx.item(def_id).map(|i| i.has_axioms()).unwrap_or(false);
         if use_axioms {
             clone_subst.push(CloneSubst::Axiom(None))
         }
@@ -599,12 +628,12 @@ impl<'tcx> CloneMap<'tcx> {
 
         trace!(
             "emit clone node={node:?} name={:?} as={:?}",
-            cloneable_name(ctx, def_id, interface),
+            cloneable_name(ctx, def_id, interface, inv),
             self.names[&node].kind.clone()
         );
 
         Some(Decl::Clone(DeclClone {
-            name: cloneable_name(ctx, def_id, interface),
+            name: cloneable_name(ctx, def_id, interface, inv),
             subst: clone_subst,
             kind: self.names[&node].kind.clone().into(),
         }))
@@ -638,7 +667,7 @@ impl<'tcx> CloneMap<'tcx> {
             DfsPostOrder::new(&self.clone_graph, DepNode::new(self.tcx, self.self_key()));
         while let Some(node) = topo.walk_next(&self.clone_graph) {
             let Some(item) = node.cloneable_id() else { continue };
-            trace!("processing node {:?}", self.names[&item].kind);
+            trace!("processing node {:?} (inv={})", self.names[&item].kind, item.inv,);
 
             if std::mem::replace(&mut self.names[&item].cloned, true) {
                 continue;
@@ -752,7 +781,7 @@ pub enum CloneLevel {
     Body,
 }
 
-fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: CloneLevel) -> QName {
+fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: CloneLevel, inv: bool) -> QName {
     use util::ItemType::*;
 
     // TODO: Refactor.
@@ -777,6 +806,7 @@ fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: CloneLevel) ->
         Program | Closure => {
             QName { module: Vec::new(), name: interface::interface_name(ctx, def_id) }
         }
+        Type if inv => inv_module_name(ctx.tcx, def_id).into(),
         Trait | Type | AssocTy => module_name(ctx.tcx, def_id).into(),
         Unsupported(_) => unreachable!(),
     }

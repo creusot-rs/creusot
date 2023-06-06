@@ -333,23 +333,18 @@ pub(crate) fn translate_tydecl(
         }
     }
 
-    let mut tys = Vec::new();
-    for did in bg.iter() {
-        tys.push(build_ty_decl(ctx, &mut names, *did));
-    }
+    let ty_decl =
+        TyDecl::Adt { tys: bg.iter().map(|did| build_ty_decl(ctx, &mut names, *did)).collect() };
 
     let (mut decls, _) = names.to_clones(ctx);
-    decls.push(Decl::TyDecl(TyDecl::Adt { tys: tys.clone() }));
+    decls.push(Decl::TyDecl(ty_decl));
+
     let mut modls = vec![Module { name: name.clone(), decls }];
-    for did in bg {
-        if *did == repr {
-            continue;
-        };
-        modls.push(Module {
-            name: module_name(ctx.tcx, *did),
-            decls: vec![Decl::UseDecl(Use { name: name.clone().into(), as_: None, export: true })],
-        });
-    }
+
+    modls.extend(bg.iter().filter(|did| **did != repr).map(|did| Module {
+        name: module_name(ctx.tcx, *did),
+        decls: vec![Decl::UseDecl(Use { name: name.clone().into(), as_: None, export: true })],
+    }));
 
     Some(modls)
 }

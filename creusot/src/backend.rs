@@ -21,15 +21,17 @@ pub(crate) mod signature;
 pub(crate) mod term;
 pub(crate) mod traits;
 pub(crate) mod ty;
+pub(crate) mod ty_inv;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 struct TransId {
     def_id: DefId,
+    inv: bool,
 }
 
 impl From<DefId> for TransId {
     fn from(def_id: DefId) -> Self {
-        TransId { def_id }
+        TransId { def_id, inv: false }
     }
 }
 
@@ -206,6 +208,18 @@ impl<'tcx> Why3Generator<'tcx> {
         // self.types[&repr_id].accessors;
     }
 
+    pub(crate) fn translate_tyinv(&mut self, adt_did: DefId) {
+        let tid = TransId { def_id: adt_did, inv: true };
+        if self.dependencies.contains_key(&tid) {
+            return;
+        }
+
+        self.translate(adt_did);
+        let (modl, deps) = ty_inv::build_inv_module(self, adt_did);
+        self.dependencies.insert(tid, deps);
+        self.functions.insert(tid, TranslatedItem::TyInv { modl });
+    }
+
     pub(crate) fn item(&self, def_id: DefId) -> Option<&TranslatedItem> {
         let tid: TransId = if matches!(util::item_type(***self, def_id), ItemType::Type) {
             self.representative_type(def_id)
@@ -259,7 +273,7 @@ impl<'tcx> Why3Generator<'tcx> {
     }
 
     pub(crate) fn dependencies(&self, key: dependency::Key<'tcx>) -> Option<&CloneSummary<'tcx>> {
-        let tid = TransId { def_id: key.did };
+        let tid = TransId { def_id: key.did, inv: key.inv };
         self.dependencies.get(&tid)
     }
 }

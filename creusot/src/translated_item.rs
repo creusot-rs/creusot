@@ -39,6 +39,9 @@ pub enum TranslatedItem {
         modl: Vec<Module>,
         accessors: IndexMap<DefId, IndexMap<DefId, Decl>>,
     },
+    TyInv {
+        modl: Module,
+    },
 }
 
 impl<'a> TranslatedItem {
@@ -75,6 +78,7 @@ impl<'a> TranslatedItem {
                 Box::new(modl.into_iter())
             }
             Closure { interface, modl } => Box::new(interface.into_iter().chain(modl.into_iter())),
+            TyInv { modl } => Box::new(iter::once(modl)),
         }
     }
 
@@ -94,6 +98,7 @@ impl<'a> TranslatedItem {
             }
             TranslatedItem::Type { .. } => self.modules(),
             TranslatedItem::Closure { interface, modl: _ } => Box::new(interface.into_iter()),
+            TranslatedItem::TyInv { modl } => Box::new(std::iter::once(modl)),
         }
     }
 }
