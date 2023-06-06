@@ -1,15 +1,16 @@
 
 module C09_Test_Interface
   type t
-  use mach.int.Int
-  use mach.int.UInt32
-  val test [@cfg:stackify] [#"../09.rs" 7 0 7 43] (t : uint32) : uint32
+  use prelude.Int
+  use prelude.UInt32
+  val test [#"../09.rs" 7 0 7 43] (t : uint32) : uint32
 end
 module C09_Test
   type t
-  use mach.int.Int
-  use mach.int.UInt32
-  let rec cfg test [@cfg:stackify] [#"../09.rs" 7 0 7 43] (t : uint32) : uint32 = [@vc:do_not_keep_trace] [@vc:sp]
+  use prelude.Int
+  use prelude.UInt32
+  let rec cfg test [#"../09.rs" 7 0 7 43] [@cfg:stackify] [@cfg:subregion_analysis] (t : uint32) : uint32
+   = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : uint32;
   var t_1 : uint32;
   var _2 : uint32;
@@ -28,36 +29,20 @@ module C09_Tr_X_Type
   type self
   type x
 end
-module CreusotContracts_Resolve_Resolve_Resolve_Stub
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Resolve_Resolve_Resolve_Interface
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Resolve_Resolve_Resolve
-  type self
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
-    ensures { result = resolve self }
-    
-end
 module C09_Test2_Interface
   type t
   type u
   clone C09_Tr_X_Type as X0 with
     type self = t
-  val test2 [@cfg:stackify] [#"../09.rs" 11 0 11 53] (t : X0.x) : X0.x
+  val test2 [#"../09.rs" 11 0 11 53] (t : X0.x) : X0.x
 end
 module C09_Test2
   type t
   type u
   clone C09_Tr_X_Type as X0 with
     type self = t
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
-    type self = X0.x
-  let rec cfg test2 [@cfg:stackify] [#"../09.rs" 11 0 11 53] (t : X0.x) : X0.x = [@vc:do_not_keep_trace] [@vc:sp]
+  let rec cfg test2 [#"../09.rs" 11 0 11 53] [@cfg:stackify] [@cfg:subregion_analysis] (t : X0.x) : X0.x
+   = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : X0.x;
   var t_1 : X0.x;
   {
@@ -65,7 +50,6 @@ module C09_Test2
     goto BB0
   }
   BB0 {
-    assume { Resolve0.resolve _0 };
     _0 <- t_1;
     t_1 <- any X0.x;
     goto BB1

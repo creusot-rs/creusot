@@ -2,6 +2,7 @@
 extern crate creusot_contracts;
 
 use creusot_contracts::{
+    invariant::Invariant,
     logic::{Int, Seq},
     *,
 };
@@ -14,9 +15,12 @@ struct Range {
     end: isize,
 }
 
+impl Invariant for Range {}
+
 impl Iterator for Range {
     type Item = isize;
 
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! {
@@ -24,22 +28,25 @@ impl Iterator for Range {
         }
     }
 
+    #[open]
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.end == o.end && self.start <= o.start
             && (visited.len() > 0 ==> o.start <= o.end)
-            && visited.len() == @o.start - @self.start
+            && visited.len() == o.start@ - self.start@
             && forall<i : Int> 0 <= i && i < visited.len() ==>
-                @visited[i] == @self.start + i
+                visited[i]@ == self.start@ + i
         }
     }
 
     #[law]
+    #[open]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -67,16 +74,16 @@ impl Range {
     }
 }
 
-#[requires(@n >= 0)]
+#[requires(n@ >= 0)]
 #[ensures(result == n)]
 pub fn sum_range(n: isize) -> isize {
     let mut i = 0;
     let mut it = Range { start: 0, end: n }.into_iter();
     let iter_old = ghost! { it };
     let mut produced = ghost! { Seq::EMPTY };
-    #[invariant(type_invariant, it.invariant())]
-    #[invariant(structural, iter_old.produces(produced.inner(), it))]
-    #[invariant(user, @i == produced.len() && i <= n)]
+    #[invariant(it.invariant())]
+    #[invariant(iter_old.produces(produced.inner(), it))]
+    #[invariant(i@ == produced.len() && i <= n)]
     loop {
         match it.next() {
             Some(x) => {

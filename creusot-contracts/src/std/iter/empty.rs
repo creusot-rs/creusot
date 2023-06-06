@@ -1,32 +1,27 @@
 use crate::{invariant::Invariant, std::iter::Empty, *};
 
-impl<T> Invariant for Empty<T> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! { true }
-    }
-}
+impl<T> Invariant for Empty<T> {}
 
 impl<T> Iterator for Empty<T> {
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() }
     }
 
+    #[open]
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! { visited == Seq::EMPTY && self == o }
     }
 
     #[law]
-    #[requires(a.invariant())]
+    #[open(self)]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
+    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

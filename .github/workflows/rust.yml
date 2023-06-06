@@ -55,8 +55,20 @@ jobs:
     - name: Fetch target branch
       if: github.base_ref
       run: git fetch --no-tags --prune --depth=1 origin +refs/heads/${{github.base_ref}}:refs/remotes/origin/${{github.base_ref}}
+    - name: Install CVC4
+      run: sudo apt-get install -y cvc4=1.8-2
+    - name: Install CVC5
+      run: |
+        wget https://github.com/cvc5/cvc5/releases/download/cvc5-1.0.5/cvc5-Linux
+        sudo cp cvc5-Linux /usr/local/bin/cvc5
+        sudo chmod +x /usr/local/bin/cvc5
     - name: Install Z3
-      run: sudo apt-get install -y z3=4.8.12-1 cvc4=1.8-2
+      run: |
+        wget https://github.com/Z3Prover/z3/releases/download/z3-4.12.1/z3-4.12.1-x64-glibc-2.35.zip
+        unzip z3-4.12.1-x64-glibc-2.35.zip
+        sudo cp -rn z3-4.12.1-x64-glibc-2.35/bin /usr/local
+        sudo cp -rn z3-4.12.1-x64-glibc-2.35/include /usr/local
+        sudo chmod +x /usr/local/bin/z3
     - uses: actions/cache@v2
       with:
         path: |

@@ -47,8 +47,13 @@ fn main() {
 
     let mut success = true;
     let mut obsolete = false;
-    for file in glob::glob("../creusot/tests/should_succeed/**/*.rs").unwrap() {
-        let mut file = file.unwrap();
+    for file in glob::glob("../creusot/tests/**/*.mlcfg").unwrap() {
+        // Check for early abort
+        if args.fail_early && (!success || obsolete) {
+            break;
+        }
+
+        let file = file.unwrap();
 
         if let Some(ref filter) = args.filter {
             if !file.to_str().map(|file| file.contains(filter)).unwrap_or(false) {
@@ -57,18 +62,15 @@ fn main() {
         }
 
         if let Some(changed_list) = &changed {
-            let mut file = file.strip_prefix("../").unwrap().to_owned();
-            file.set_extension("mlcfg");
-
-            if !changed_list.contains(&file) {
+            let file = file.strip_prefix("../").unwrap();
+            if !changed_list.iter().any(|p| p == file) {
                 continue;
             }
         }
 
-        let header_line =
-            BufReader::new(File::open(&file).unwrap()).lines().nth(0).unwrap().unwrap();
-
-        file.set_extension("mlcfg");
+        let rs_file = File::open(&file.with_extension("rs"))
+            .unwrap_or_else(|_| panic!("no rust file for {:?}", file));
+        let header_line = BufReader::new(rs_file).lines().nth(0).unwrap().unwrap();
 
         write!(&mut out, "Testing {} ... ", file.display()).unwrap();
         out.flush().unwrap();
@@ -82,6 +84,8 @@ fn main() {
             continue;
         }
 
+        let should_fail = file.to_str().map(|file| file.contains("should_fail")).unwrap_or(false);
+
         let mut sessiondir = file.clone();
         sessiondir.set_file_name(file.file_stem().unwrap());
 
@@ -90,9 +94,36 @@ fn main() {
 
         let output;
         let mut command = Command::new(why3_path.clone());
-        command.arg("--debug=ignore_unused_vars");
+        command.arg("--warn-off=unused_variable");
+        command.arg("--warn-off=clone_not_abstract");
 
         if sessionfile.is_file() {
+            let proved = BufReader::new(File::open(&sessionfile).unwrap())
+                .lines()
+                .find_map(|l| match l.unwrap().as_str() {
+                    "<file format=\"mlcfg\">" => Some(false),
+                    "<file format=\"mlcfg\" proved=\"true\">" => Some(true),
+                    _ => None,
+                })
+                .unwrap();
+
+            if !proved {
+                let color = if should_fail { Color::Green } else { orange };
+                out.set_color(ColorSpec::new().set_fg(Some(color))).unwrap();
+                writeln!(&mut out, "not proved").unwrap();
+                out.reset().unwrap();
+
+                success &= should_fail;
+                continue;
+            } else if should_fail {
+                out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
+                writeln!(&mut out, "proof exists").unwrap();
+                out.reset().unwrap();
+
+                success = false;
+                continue;
+            }
+
             // There is a session directory. Try to replay the session.
             command.arg("replay");
             command.args(&["-L", "../prelude"]);
@@ -163,11 +194,6 @@ fn main() {
             writeln!(&mut out, "************************").unwrap();
 
             success = false;
-        }
-
-        // Check for early abort
-        if args.fail_early && (!success || obsolete) {
-            break;
         }
     }
 

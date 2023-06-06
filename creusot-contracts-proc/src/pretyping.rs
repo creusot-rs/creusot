@@ -1,5 +1,5 @@
 use pearlite_syn::Term as RT;
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
 use syn::{spanned::Spanned, Pat};
 
 use pearlite_syn::term::*;
@@ -73,7 +73,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                 _ => Ok(quote_spanned! {sp=> #left #op #right }),
             }
         }
-        RT::Block(TermBlock { block, .. }) => encode_block(block),
+        RT::Block(TermBlock { block, .. }) => encode_block(&block.stmts),
         RT::Call(TermCall { func, args, .. }) => {
             let args: Vec<_> = args.into_iter().map(encode_term).collect::<Result<_, _>>()?;
             if let RT::Path(p) = &**func {
@@ -92,7 +92,12 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             let base = encode_term(base)?;
             Ok(quote!({ #base . #member }))
         }
-        RT::Group(_) => Err(EncodeError::Unsupported(term.span(), "Group".into())),
+        RT::Group(TermGroup { expr, .. }) => {
+            let term = encode_term(expr)?;
+            let mut res = TokenStream::new();
+            res.extend_one(TokenTree::Group(Group::new(Delimiter::None, term)));
+            Ok(res)
+        }
         RT::If(TermIf { cond, then_branch, else_branch, .. }) => {
             let cond = encode_term(cond)?;
             let then_branch: Vec<_> =
@@ -107,11 +112,14 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             Ok(quote_spanned! {sp=> if #cond { #(#then_branch)* } #else_branch })
         }
         RT::Index(TermIndex { expr, index, .. }) => {
+            let expr =
+                if let RT::Paren(TermParen { expr, .. }) = &**expr { &**expr } else { &*expr };
+
             let expr = encode_term(expr)?;
             let index = encode_term(index)?;
 
             Ok(quote! {
-                #expr [#index]
+                ::creusot_contracts::logic::IndexLogic::index_logic(#expr, #index)
             })
         }
         RT::Let(_) => Err(EncodeError::Unsupported(term.span(), "Let".into())),
@@ -191,6 +199,10 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             })
         }
         RT::Model(TermModel { term, .. }) => {
+            let term = match &**term {
+                RT::Paren(TermParen { expr, .. }) => &expr,
+                _ => &*term,
+            };
             let term = encode_term(term)?;
             Ok(quote! {
                 ::creusot_contracts::model::ShallowModel::shallow_model(#term)
@@ -258,8 +270,8 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
     }
 }
 
-pub fn encode_block(block: &TBlock) -> Result<TokenStream, EncodeError> {
-    let stmts: Vec<_> = block.stmts.iter().map(encode_stmt).collect::<Result<_, _>>()?;
+pub fn encode_block(block: &Vec<TermStmt>) -> Result<TokenStream, EncodeError> {
+    let stmts: Vec<_> = block.iter().map(encode_stmt).collect::<Result<_, _>>()?;
     Ok(quote! { { #(#stmts)* } })
 }
 

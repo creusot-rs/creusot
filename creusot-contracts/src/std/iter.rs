@@ -1,7 +1,10 @@
 use crate::{invariant::Invariant, *};
 pub use ::std::iter::*;
 
+mod cloned;
+mod copied;
 mod empty;
+mod enumerate;
 mod map_inv;
 mod once;
 mod range;
@@ -9,37 +12,35 @@ mod repeat;
 mod skip;
 mod take;
 
+pub use cloned::ClonedExt;
+pub use copied::CopiedExt;
+pub use enumerate::EnumerateExt;
 pub use map_inv::MapInv;
 pub use skip::SkipExt;
 pub use take::TakeExt;
 
 pub trait Iterator: ::std::iter::Iterator + Invariant {
     #[predicate]
-    fn produces(self, visited: Seq<Self::Item>, _: Self) -> bool;
+    fn produces(self, visited: Seq<Self::Item>, _o: Self) -> bool;
 
     #[predicate]
     fn completed(&mut self) -> bool;
 
     #[law]
-    #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self);
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
 
-    #[requires(forall<e : Self::Item, i2 : Self> i2.invariant() ==> self.produces(Seq::singleton(e), i2) ==> func.precondition((e, Ghost::new(Seq::EMPTY))))]
+    #[requires(forall<e : Self::Item, i2 : Self> self.produces(Seq::singleton(e), i2) ==> func.precondition((e, Ghost::new(Seq::EMPTY))))]
     #[requires(MapInv::<Self, _, F>::reinitialize())]
     #[requires(MapInv::<Self, Self::Item, F>::preservation(self, func))]
-    #[requires(self.invariant())]
-    #[ensures(result.invariant())]
     #[ensures(result == MapInv { iter: self, func, produced: Ghost::new(Seq::EMPTY) })]
+    #[ensures(result.invariant())]
     fn map_inv<B, F>(self, func: F) -> MapInv<Self, Self::Item, F>
     where
         Self: Sized,
@@ -51,6 +52,7 @@ pub trait Iterator: ::std::iter::Iterator + Invariant {
 
 pub trait IntoIterator: ::std::iter::IntoIterator {
     #[predicate]
+    #[open]
     fn into_iter_pre(self) -> bool {
         pearlite! { true }
     }
@@ -61,11 +63,13 @@ pub trait IntoIterator: ::std::iter::IntoIterator {
 
 impl<I: Iterator> IntoIterator for I {
     #[predicate]
+    #[open]
     fn into_iter_pre(self) -> bool {
         self.invariant()
     }
 
     #[predicate]
+    #[open]
     fn into_iter_post(self, res: Self) -> bool {
         self == res
     }
@@ -82,25 +86,31 @@ extern_spec! {
             trait Iterator
                 where Self : Iterator + Invariant {
 
-                #[requires((*self).invariant())]
-                #[ensures((^self).invariant())]
                 #[ensures(match result {
                     None => self.completed(),
                     Some(v) => (*self).produces(Seq::singleton(v), ^self)
                 })]
                 fn next(&mut self) -> Option<Self::Item>;
 
-                #[requires(self.invariant())]
-                #[ensures(result.invariant())]
-                #[ensures(result.iter() == self && result.n() == @n)]
+                #[ensures(result.iter() == self && result.n() == n@)]
                 fn skip(self, n: usize) -> Skip<Self>;
 
-                #[requires(self.invariant())]
-                #[ensures(result.invariant())]
-                #[ensures(result.iter() == self && result.n() == @n)]
+                #[ensures(result.iter() == self && result.n() == n@)]
                 fn take(self, n: usize) -> Take<Self>;
 
-                #[requires(self.invariant())]
+                #[ensures(result.iter() == self)]
+                fn cloned<'a, T>(self) -> Cloned<Self>
+                    where T : 'a + Clone,
+                        Self: Sized + Iterator<Item = &'a T>;
+
+                #[ensures(result.iter() == self)]
+                fn copied<'a, T>(self) -> Copied<Self>
+                    where T : 'a + Copy,
+                        Self: Sized + Iterator<Item = &'a T>;
+
+                #[ensures(result.iter() == self && result.n() == 0)]
+                fn enumerate(self) -> Enumerate<Self>;
+
                 // TODO: Investigate why Self_ needed
                 #[ensures(exists<done_ : &mut Self_, prod: Seq<_>> (^done_).resolve() && done_.completed() &&
                     self.produces(prod, *done_) && B::from_iter_post(prod, result))]
@@ -113,7 +123,6 @@ extern_spec! {
 
                 #[requires(self.into_iter_pre())]
                 #[ensures(self.into_iter_post(result))]
-                #[ensures(result.invariant())]
                 fn into_iter(self) -> Self::IntoIter
                     where Self::IntoIter: Iterator + Invariant;
             }
@@ -130,15 +139,12 @@ extern_spec! {
                     where T: IntoIterator<Item = A>, T::IntoIter: Iterator;
             }
 
-            #[ensures(result.invariant())]
             fn empty<T>() -> Empty<T>;
 
-            #[ensures(@result == Some(value))]
-            #[ensures(result.invariant())]
+            #[ensures(result@ == Some(value))]
             fn once<T>(value: T) -> Once<T>;
 
-            #[ensures(@result == elt)]
-            #[ensures(result.invariant())]
+            #[ensures(result@ == elt)]
             fn repeat<T: Clone>(elt: T) -> Repeat<T>;
         }
     }

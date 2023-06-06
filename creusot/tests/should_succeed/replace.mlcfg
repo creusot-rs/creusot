@@ -35,8 +35,8 @@ module Alloc_Alloc_Global_Type
     
 end
 module Replace_Something_Type
-  use mach.int.Int
-  use mach.int.UInt32
+  use prelude.Int
+  use prelude.UInt32
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Boxed_Box_Type as Alloc_Boxed_Box_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
@@ -46,12 +46,12 @@ module Replace_Something_Type
 end
 module Replace_Test_Interface
   use Replace_Something_Type as Replace_Something_Type
-  val test [@cfg:stackify] [#"../replace.rs" 8 0 8 44] (_a : Replace_Something_Type.t_something) (b : Replace_Something_Type.t_something) : ()
+  val test [#"../replace.rs" 8 0 8 44] (_a : Replace_Something_Type.t_something) (b : Replace_Something_Type.t_something) : ()
     
 end
 module Replace_Test
   use Replace_Something_Type as Replace_Something_Type
-  let rec cfg test [@cfg:stackify] [#"../replace.rs" 8 0 8 44] (_a : Replace_Something_Type.t_something) (b : Replace_Something_Type.t_something) : ()
+  let rec cfg test [#"../replace.rs" 8 0 8 44] [@cfg:stackify] [@cfg:subregion_analysis] (_a : Replace_Something_Type.t_something) (b : Replace_Something_Type.t_something) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -66,20 +66,21 @@ module Replace_Test
   BB0 {
     _3 <- b_2;
     b_2 <- any Replace_Something_Type.t_something;
-    _a_1 <- _3;
     goto BB1
   }
   BB1 {
-    goto BB2
-  }
-  BB2 {
-    _0 <- ();
+    _a_1 <- _3;
+    _3 <- any Replace_Something_Type.t_something;
     goto BB3
   }
   BB3 {
+    _0 <- ();
     goto BB4
   }
   BB4 {
+    goto BB5
+  }
+  BB5 {
     return _0
   }
   

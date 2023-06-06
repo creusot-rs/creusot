@@ -8,27 +8,25 @@ use crate::{
     },
     util::is_ghost_closure,
 };
-use creusot_rustc::{
-    hir::def_id::DefId,
-    infer::{
-        infer::{InferCtxt, TyCtxtInferExt},
-        traits::{FulfillmentError, Obligation, ObligationCause, TraitEngine},
-    },
-    middle::{
-        mir::{self, SwitchTargets, TerminatorKind, TerminatorKind::*},
-        ty::{
-            self,
-            subst::{GenericArgKind, SubstsRef},
-            ParamEnv, Predicate, Ty, TyKind,
-        },
-    },
-    smir::mir::{
-        BasicBlock, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo, StatementKind,
-    },
-    span::Span,
-    trait_selection::traits::FulfillmentContext,
-};
 use itertools::Itertools;
+use rustc_hir::def_id::DefId;
+use rustc_infer::{
+    infer::{InferCtxt, TyCtxtInferExt},
+    traits::{FulfillmentError, Obligation, ObligationCause, TraitEngine},
+};
+use rustc_middle::{
+    mir::{
+        self, AssertKind, BasicBlock, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo,
+        StatementKind, SwitchTargets, TerminatorKind, TerminatorKind::*,
+    },
+    ty::{
+        self,
+        subst::{GenericArgKind, SubstsRef},
+        ParamEnv, Predicate, Ty, TyKind,
+    },
+};
+use rustc_span::Span;
+use rustc_trait_selection::traits::{error_reporting::TypeErrCtxtExt, TraitEngineExt};
 use std::collections::HashMap;
 
 // Translate the terminator of a basic block.
@@ -62,7 +60,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
                 self.emit_terminator(switch);
             }
-            Abort => self.emit_terminator(Terminator::Abort),
+            Terminate => self.emit_terminator(Terminator::Abort),
             Return => self.emit_terminator(Terminator::Return),
             Unreachable => self.emit_terminator(Terminator::Abort),
             Call { func, args, destination, target, .. } => {
@@ -73,8 +71,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
 
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
-
-                if let Some(param) = subst.get(0) &&
+                if let Some(param) = subst.get(1) &&
                     let GenericArgKind::Type(ty) = param.unpack() &&
                     let Some(def_id) = is_ghost_closure(self.tcx, ty) {
                     let assertion = self.assertions.remove(&def_id).unwrap();
@@ -91,15 +88,12 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     .map(|p| p.predicates_for(self.tcx, subst))
                     .unwrap_or_else(Vec::new);
 
-                use creusot_rustc::trait_selection::traits::error_reporting::InferCtxtExt;
-                self.tcx.infer_ctxt().enter(|infcx| {
-                    let res =
-                        evaluate_additional_predicates(&infcx, predicates, self.param_env(), span);
-                    if let Err(errs) = res {
-                        let body_id = self.tcx.hir().body_owned_by(self.def_id.expect_local());
-                        infcx.report_fulfillment_errors(&errs, Some(body_id), false);
-                    }
-                });
+                let infcx = self.tcx.infer_ctxt().ignoring_regions().build();
+                let res =
+                    evaluate_additional_predicates(&infcx, predicates, self.param_env(), span);
+                if let Err(errs) = res {
+                    infcx.err_ctxt().report_fulfillment_errors(&errs);
+                }
 
                 let mut func_args: Vec<_> =
                     args.iter().map(|arg| self.translate_operand(arg)).collect();
@@ -122,15 +116,17 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
                     let exp = Expr::Call(fun_def_id, subst, func_args);
                     let span = span.source_callsite();
-                    Expr::Span(span, box exp)
+                    Expr::Span(span, Box::new(exp))
                 };
 
                 let (loc, bb) = (destination, target.unwrap());
                 self.emit_assignment(&loc, RValue::Expr(call_exp));
                 self.emit_terminator(Terminator::Goto(bb));
             }
-            Assert { cond, expected, msg: _, target, cleanup: _ } => {
-                let mut ass = match cond {
+            Assert { cond, expected, msg, target, unwind: _ } => {
+                let msg = self.get_explanation(msg);
+
+                let mut cond = match cond {
                     Operand::Copy(pl) | Operand::Move(pl) => {
                         if let Some(locl) = pl.as_local() {
                             Term {
@@ -145,13 +141,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     Operand::Constant(_) => todo!(),
                 };
                 if !expected {
-                    ass = Term {
-                        ty: ass.ty,
-                        span: ass.span,
-                        kind: TermKind::Unary { op: UnOp::Not, arg: box ass },
+                    cond = Term {
+                        ty: cond.ty,
+                        span: cond.span,
+                        kind: TermKind::Unary { op: UnOp::Not, arg: Box::new(cond) },
                     };
                 }
-                self.emit_statement(fmir::Statement::Assertion(ass));
+                self.emit_statement(fmir::Statement::Assertion { cond, msg });
                 self.emit_terminator(mk_goto(*target))
             }
 
@@ -162,17 +158,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             FalseUnwind { real_target, .. } => {
                 self.emit_terminator(mk_goto(*real_target));
             }
-            DropAndReplace { target, place, value, .. } => {
-                // Resolve
-                self.emit_resolve(*place);
-
-                // Assign
-                let rhs = self.translate_operand(value);
-
-                self.emit_assignment(place, RValue::Expr(rhs));
-
-                self.emit_terminator(mk_goto(*target))
-            }
             Yield { .. } | GeneratorDrop | InlineAsm { .. } | Resume => {
                 unreachable!("{:?}", terminator.kind)
             }
@@ -181,6 +166,17 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
     fn is_box_new(&self, def_id: DefId) -> bool {
         self.tcx.def_path_str(def_id) == "std::boxed::Box::<T>::new"
+    }
+
+    fn get_explanation(&mut self, msg: &mir::AssertKind<Operand<'tcx>>) -> String {
+        match msg {
+            AssertKind::BoundsCheck { len: _, index: _ } => format!("index in bounds"),
+            AssertKind::Overflow(op, _a, _b) => format!("{op:?} overflow"),
+            AssertKind::OverflowNeg(_op) => format!("negation overflow"),
+            AssertKind::DivisionByZero(_) => format!("division by zero"),
+            AssertKind::RemainderByZero(_) => format!("remainder by zero"),
+            _ => unreachable!("Resume assertions"),
+        }
     }
 }
 
@@ -196,14 +192,7 @@ pub(crate) fn resolve_function<'tcx>(
             let method = traits::resolve_assoc_item_opt(ctx.tcx, param_env, def_id, subst)
                 .expect("could not find instance");
 
-            ctx.translate(it.container_id(ctx.tcx));
-            ctx.translate(method.0);
-
-            if !method.0.is_local()
-                && !ctx.externs.verified(method.0)
-                && ctx.extern_spec(method.0).is_none()
-                && ctx.extern_spec(def_id).is_none()
-            {
+            if !method.0.is_local() && ctx.sig(method.0).contract.is_false() {
                 ctx.warn(sp, "calling an external function with no contract will yield an impossible precondition");
             }
 
@@ -211,13 +200,13 @@ pub(crate) fn resolve_function<'tcx>(
         }
     }
 
-    if !def_id.is_local() && !(ctx.extern_spec(def_id).is_some() || ctx.externs.verified(def_id)) {
+    if !def_id.is_local() && ctx.sig(def_id).contract.is_false() {
         ctx.warn(
             sp,
             "calling an external function with no contract will yield an impossible precondition",
         );
     }
-    ctx.translate(def_id);
+    // ctx.translate(def_id);
 
     (def_id, subst)
 }
@@ -233,18 +222,20 @@ fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<(DefId, SubstsRef<'tcx>)> {
 }
 
 pub(crate) fn evaluate_additional_predicates<'tcx>(
-    infcx: &InferCtxt<'_, 'tcx>,
+    infcx: &InferCtxt<'tcx>,
     p: Vec<Predicate<'tcx>>,
     param_env: ParamEnv<'tcx>,
     sp: Span,
 ) -> Result<(), Vec<FulfillmentError<'tcx>>> {
-    let mut fulfill_cx = FulfillmentContext::new();
+    let mut fulfill_cx = <dyn TraitEngine<'tcx>>::new(infcx.tcx);
     for predicate in p {
+        let predicate = infcx.tcx.erase_regions(predicate);
         let cause = ObligationCause::dummy_with_span(sp);
         let obligation = Obligation { cause, param_env, recursion_depth: 0, predicate };
         // holds &= infcx.predicate_may_hold(&obligation);
         fulfill_cx.register_predicate_obligation(&infcx, obligation);
     }
+    use rustc_infer::traits::TraitEngineExt;
     let errors = fulfill_cx.select_all_or_error(&infcx);
     if !errors.is_empty() {
         return Err(errors);

@@ -1,28 +1,35 @@
-use std::collections::HashMap;
-
-use creusot_rustc::{
-    hir::def_id::DefId,
-    middle::ty::{
-        subst::SubstsRef, AssocItemContainer::*, EarlyBinder, ParamEnv, TraitRef, TyCtxt,
-    },
-    resolve::Namespace,
-    trait_selection::traits::ImplSource,
-};
-
-use why3::{
-    declaration::{Decl, Goal, Module, TyDecl},
-    exp::Exp,
-};
-
-use crate::{
-    rustc_extensions, translation::function::terminator::evaluate_additional_predicates, util,
-};
-
+use super::pearlite::{Term, TermKind};
 use crate::{
     ctx::*,
-    translation::ty::{self, translate_ty},
-    util::{ident_of, inputs_and_output, is_law, is_spec, item_type},
+    translation::function::terminator::evaluate_additional_predicates,
+    util::{is_law, is_spec},
 };
+use rustc_hir::def_id::DefId;
+use rustc_infer::infer::TyCtxtInferExt;
+use rustc_middle::ty::{
+    subst::{InternalSubsts, SubstsRef},
+    AssocItem, AssocItemContainer,
+    AssocItemContainer::*,
+    Binder, EarlyBinder, ParamEnv, TraitRef, TyCtxt, TypeVisitableExt,
+};
+use rustc_span::Symbol;
+use rustc_trait_selection::traits::ImplSource;
+use std::collections::HashMap;
+
+#[derive(Clone)]
+pub(crate) struct Refinement<'tcx> {
+    #[allow(dead_code)]
+    pub(crate) trait_: (DefId, SubstsRef<'tcx>),
+    pub(crate) impl_: (DefId, SubstsRef<'tcx>),
+    pub(crate) refn: Term<'tcx>,
+}
+
+#[allow(dead_code)]
+#[derive(Clone)]
+pub(crate) struct TraitImpl<'tcx> {
+    pub(crate) laws: Vec<DefId>,
+    pub(crate) refinements: Vec<Refinement<'tcx>>,
+}
 
 impl<'tcx> TranslationCtx<'tcx> {
     // Translate a trait declaration
@@ -41,18 +48,16 @@ impl<'tcx> TranslationCtx<'tcx> {
         laws
     }
 
-    pub(crate) fn translate_impl(&mut self, impl_id: DefId) -> TranslatedItem {
+    pub(crate) fn translate_impl(&mut self, impl_id: DefId) -> TraitImpl<'tcx> {
+        assert!(self.trait_id_of_impl(impl_id).is_some(), "{impl_id:?} is not a trait impl");
         let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
-        self.translate_trait(trait_ref.def_id);
 
-        // Impl Refinement module
-        let mut decls: Vec<_> = own_generic_decls_for(self.tcx, impl_id).collect();
-        let mut names = CloneMap::new(self.tcx, impl_id, CloneLevel::Body);
-
-        // names.param_env(param_env);
         let mut laws = Vec::new();
         let implementor_map = self.tcx.impl_item_implementor_ids(impl_id);
 
+        let mut refinements = Vec::new();
+        let implementor_map =
+            self.with_stable_hashing_context(|hcx| implementor_map.to_sorted(&hcx, true));
         for (&trait_item, &impl_item) in implementor_map {
             if is_law(self.tcx, trait_item) {
                 laws.push(impl_item);
@@ -74,14 +79,12 @@ impl<'tcx> TranslationCtx<'tcx> {
             }
 
             // If there is no contract to refine, skip this item
-            if contract_of(self, trait_item).is_empty() {
+            if !self.tcx.def_kind(trait_item).is_fn_like()
+                || self.sig(trait_item).contract.is_empty()
+            {
                 continue;
             }
             self.translate(impl_item);
-
-            names.insert(impl_item, subst);
-
-            decls.extend(own_generic_decls_for(self.tcx, impl_item));
 
             // TODO: Clean up and abstract
             let predicates = self
@@ -89,181 +92,129 @@ impl<'tcx> TranslationCtx<'tcx> {
                 .map(|p| p.predicates_for(self.tcx, refn_subst))
                 .unwrap_or_else(Vec::new);
 
-            use creusot_rustc::{
-                infer::infer::TyCtxtInferExt,
-                trait_selection::traits::error_reporting::InferCtxtExt,
-            };
-            self.tcx.infer_ctxt().enter(|infcx| {
-                let res = evaluate_additional_predicates(
-                    &infcx,
-                    predicates,
-                    self.param_env(impl_item),
-                    self.def_span(impl_item),
-                );
-                if let Err(errs) = res {
-                    let body_id = self.tcx.hir().body_owned_by(impl_item.expect_local());
-                    infcx.report_fulfillment_errors(&errs, Some(body_id), false);
-                    self.crash_and_error(creusot_rustc::span::DUMMY_SP, "error above");
-                }
-            });
+            let infcx = self.tcx.infer_ctxt().ignoring_regions().build();
 
-            let refinement = names.insert(trait_item, refn_subst);
-
-            refinement.add_dep(self.tcx, self.tcx.item_name(impl_item), (impl_item, subst));
-            refinement.opaque();
-
-            // Since we don't have contracts of logic functions in the interface and we can't substitute the definition in
-            // the implementation module, we must recreate the spec axiom by hand here.
-            if matches!(item_type(self.tcx, trait_item), ItemType::Logic | ItemType::Predicate) {
-                let contract = contract_of(self, trait_item);
-
-                if !contract.is_empty() {
-                    let axiom =
-                        logic_refinement(self, &mut names, impl_item, trait_item, refn_subst);
-                    decls.extend(names.to_clones(self));
-                    decls.push(Decl::Goal(axiom));
-                }
+            let res = evaluate_additional_predicates(
+                &infcx,
+                predicates,
+                self.param_env(impl_item),
+                self.def_span(impl_item),
+            );
+            use rustc_trait_selection::traits::error_reporting::TypeErrCtxtExt;
+            if let Err(errs) = res {
+                infcx.err_ctxt().report_fulfillment_errors(&errs);
+                self.crash_and_error(rustc_span::DUMMY_SP, "error above");
             }
+
+            let axiom = logic_refinement_term(self, impl_item, trait_item, refn_subst);
+            refinements.push(Refinement {
+                trait_: (trait_item, refn_subst),
+                impl_: (impl_item, subst),
+                refn: axiom,
+            });
         }
 
-        decls.extend(names.to_clones(self));
-        TranslatedItem::Impl { modl: Module { name: module_name(self, impl_id), decls } }
-    }
-
-    pub(crate) fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
-        assert_eq!(util::item_type(self.tcx, def_id), ItemType::AssocTy);
-
-        let mut names = CloneMap::new(self.tcx, def_id, CloneLevel::Interface);
-
-        let mut decls: Vec<_> = all_generic_decls_for(self.tcx, def_id).collect();
-        let name = item_name(self.tcx, def_id, Namespace::TypeNS);
-
-        let ty_decl = match self.tcx.associated_item(def_id).container {
-            creusot_rustc::middle::ty::ImplContainer => names.with_public_clones(|names| {
-                let assoc_ty = self.tcx.type_of(def_id);
-                TyDecl::Alias {
-                    ty_name: name.clone(),
-                    ty_params: vec![],
-                    alias: ty::translate_ty(self, names, creusot_rustc::span::DUMMY_SP, assoc_ty),
-                }
-            }),
-            creusot_rustc::middle::ty::TraitContainer => {
-                TyDecl::Opaque { ty_name: name.clone(), ty_params: vec![] }
-            }
-        };
-
-        decls.extend(names.to_clones(self));
-        decls.push(Decl::TyDecl(ty_decl));
-
-        (Module { name: module_name(self, def_id), decls }, names.summary())
+        TraitImpl { laws, refinements }
     }
 }
 
-fn logic_refinement<'tcx>(
+fn logic_refinement_term<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
     impl_item_id: DefId,
     trait_item_id: DefId,
     refn_subst: SubstsRef<'tcx>,
-) -> Goal {
+) -> Term<'tcx> {
     // Get the contract of the trait version
-    let trait_contract = names.with_public_clones(|names| {
-        let pre_contract = crate::specification::contract_of(ctx, trait_item_id);
+    let trait_sig = {
+        let pre_sig = ctx.sig(trait_item_id).clone();
         let param_env = ctx.param_env(impl_item_id);
-        EarlyBinder(pre_contract)
-            .subst(ctx.tcx, refn_subst)
-            .normalize(ctx.tcx, param_env)
-            .to_exp(ctx, names)
-    });
+        EarlyBinder(pre_sig).subst(ctx.tcx, refn_subst).normalize(ctx.tcx, param_env)
+    };
 
-    let impl_contract = names.with_public_clones(|names| {
-        let pre_contract = crate::specification::contract_of(ctx, impl_item_id);
-        pre_contract.to_exp(ctx, names)
-    });
-
-    let (trait_inps, _) = inputs_and_output(ctx.tcx, trait_item_id);
-    let (impl_inps, output) = inputs_and_output(ctx.tcx, impl_item_id);
+    let impl_sig = ctx.sig(impl_item_id).clone();
 
     let span = ctx.tcx.def_span(impl_item_id);
     let mut args = Vec::new();
     let mut subst = HashMap::new();
-    names.with_public_clones(|names| {
-        for (ix, ((id, _), (id2, ty))) in trait_inps.zip(impl_inps).enumerate() {
-            let ty = translate_ty(ctx, names, span, ty);
-            let id =
-                if id.name.is_empty() { format!("_{}'", ix + 1).into() } else { ident_of(id.name) };
-            let id2 = if id2.name.is_empty() {
-                format!("_{}'", ix + 1).into()
-            } else {
-                ident_of(id2.name)
-            };
-            args.push((id.clone(), ty));
-            subst.insert(id2, Exp::pure_var(id));
-        }
-    });
+    for (ix, ((id, _, _), (id2, _, ty))) in
+        trait_sig.inputs.iter().zip(impl_sig.inputs.iter()).enumerate()
+    {
+        let id = if id.is_empty() { Symbol::intern(&format!("_{}'", ix + 1)) } else { *id };
+        let id2 = if id2.is_empty() { Symbol::intern(&format!("_{}'", ix + 1)) } else { *id2 };
+        args.push((id.clone(), *ty));
+        subst.insert(id2, Term { ty: *ty, kind: TermKind::Var(id), span });
+    }
 
-    let mut impl_precond = impl_contract.requires_conj();
+    let mut impl_precond = impl_sig.contract.requires_conj(ctx.tcx);
     impl_precond.subst(&subst);
-    let trait_precond = trait_contract.requires_conj();
+    let trait_precond = trait_sig.contract.requires_conj(ctx.tcx);
 
-    let mut impl_postcond = impl_contract.ensures_conj();
+    let mut impl_postcond = impl_sig.contract.ensures_conj(ctx.tcx);
     impl_postcond.subst(&subst);
-    let trait_postcond = trait_contract.ensures_conj();
+    let trait_postcond = trait_sig.contract.ensures_conj(ctx.tcx);
 
-    let retty = names.with_public_clones(|names| translate_ty(ctx, names, span, output));
-    let post_refn =
-        Exp::Forall(vec![("result".into(), retty)], box impl_postcond.implies(trait_postcond));
+    let retty = impl_sig.output;
+    let post_refn = Term {
+        kind: TermKind::Forall {
+            binder: (Symbol::intern("result"), retty),
+            body: Box::new(impl_postcond.implies(trait_postcond)),
+        },
+        ty: ctx.tcx.types.bool,
+        span,
+    };
 
-    let mut refn = trait_precond.implies(impl_precond).log_and(post_refn);
-    refn = if args.is_empty() { refn } else { Exp::Forall(args, box refn) };
+    let mut refn = trait_precond.implies(impl_precond.conj(post_refn));
+    refn = if args.is_empty() {
+        refn
+    } else {
+        args.into_iter().rfold(refn, |acc, r| Term {
+            kind: TermKind::Forall { binder: r, body: Box::new(acc) },
+            ty: ctx.tcx.types.bool,
+            span,
+        })
+    };
 
-    // Don't use `item_name` here
-    let name = item_name(ctx.tcx, impl_item_id, Namespace::ValueNS);
+    refn
+    // // Don't use `item_name` here
+    // let name = item_name(ctx.tcx, impl_item_id, Namespace::ValueNS);
 
-    Goal { name: format!("{}_spec", &*name).into(), goal: refn }
+    // Goal { name: format!("{}_spec", &*name).into(), goal: refn }
 }
-
 pub(crate) fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = &AssocItem> {
     tcx.associated_items(def_id)
         .in_definition_order()
         .filter(move |item| !is_spec(tcx, item.def_id))
 }
 
-use crate::function::{all_generic_decls_for, own_generic_decls_for};
-use creusot_rustc::middle::ty::{subst::InternalSubsts, AssocItem, Binder};
-
 pub(crate) fn resolve_impl_source_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
     substs: SubstsRef<'tcx>,
-) -> Option<ImplSource<'tcx, ()>> {
+) -> Option<&'tcx ImplSource<'tcx, ()>> {
     trace!("resolve_impl_source_opt={def_id:?} {substs:?}");
     let substs = tcx.normalize_erasing_regions(param_env, substs);
 
     let trait_ref = if let Some(assoc) = tcx.opt_associated_item(def_id) {
         match assoc.container {
-            ImplContainer => {
-                EarlyBinder(tcx.impl_trait_ref(assoc.container_id(tcx))?).subst(tcx, substs)
-            }
-            TraitContainer => TraitRef { def_id: assoc.container_id(tcx), substs },
+            ImplContainer => tcx.impl_trait_ref(assoc.container_id(tcx))?.subst(tcx, substs),
+            TraitContainer => TraitRef::new(tcx, assoc.container_id(tcx), substs),
         }
     } else {
         if tcx.is_trait(def_id) {
-            TraitRef { def_id, substs }
+            TraitRef::new(tcx, def_id, substs)
         } else {
             return None;
         }
     };
 
     let trait_ref = Binder::dummy(trait_ref);
-    let source = rustc_extensions::codegen::codegen_fulfill_obligation(tcx, (param_env, trait_ref));
+    let source = tcx.codegen_select_candidate((param_env, trait_ref));
 
     match source {
         Ok(src) => Some(src),
-        Err(err) => {
+        Err(_) => {
             trace!("resolve_impl_source_opt error");
-            err.cancel();
 
             return None;
         }
@@ -304,10 +255,6 @@ pub(crate) fn resolve_trait_opt<'tcx>(
     }
 }
 
-use creusot_rustc::middle::ty::AssocItemContainer;
-
-use super::specification::contract_of;
-
 pub(crate) fn resolve_assoc_item_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
@@ -326,7 +273,7 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
     }
 
     let trait_ref = TraitRef::from_method(tcx, tcx.trait_of_item(def_id).unwrap(), substs);
-    use creusot_rustc::middle::ty::TypeVisitable;
+
     let source = resolve_impl_source_opt(tcx, param_env, def_id, substs)?;
     trace!("resolve_assoc_item_opt {source:?}",);
 
@@ -343,29 +290,62 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
                 .unwrap_or_else(|| {
                     panic!("{:?} not found in {:?}", assoc, impl_data.impl_def_id);
                 });
-            use creusot_rustc::trait_selection::infer::TyCtxtInferExt;
 
             if !leaf_def.is_final() && trait_ref.still_further_specializable() {
                 return Some((def_id, substs));
             }
+
             // Translate the original substitution into one on the selected impl method
-            let leaf_substs = tcx.infer_ctxt().enter(|infcx| {
-                let param_env = param_env.with_reveal_all_normalized(tcx);
-                let substs = substs.rebase_onto(tcx, trait_def_id, impl_data.substs);
-                let substs = creusot_rustc::trait_selection::traits::translate_substs(
-                    &infcx,
-                    param_env,
-                    impl_data.impl_def_id,
-                    substs,
-                    leaf_def.defining_node,
-                );
-                infcx.tcx.erase_regions(substs)
-            });
+            let infcx = tcx.infer_ctxt().build();
+
+            let param_env = param_env.with_reveal_all_normalized(tcx);
+            let substs = substs.rebase_onto(tcx, trait_def_id, impl_data.substs);
+            let substs = rustc_trait_selection::traits::translate_substs(
+                &infcx,
+                param_env,
+                impl_data.impl_def_id,
+                substs,
+                leaf_def.defining_node,
+            );
+            let leaf_substs = infcx.tcx.erase_regions(substs);
 
             Some((leaf_def.item.def_id, leaf_substs))
         }
         ImplSource::Param(_, _) => Some((def_id, substs)),
         ImplSource::Closure(impl_data) => Some((impl_data.closure_def_id, impl_data.substs)),
         _ => unimplemented!(),
+    }
+}
+
+// | Final | Still Spec (Ty)| Res |
+// | T | _ | F |
+// | F | T | T |
+// | F | F | F |
+
+// We consider an item to be further specializable if it is provided by a parameter bound (ie: `I : Iterator`).
+pub(crate) fn still_specializable<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    def_id: DefId,
+    substs: SubstsRef<'tcx>,
+) -> bool {
+    if let Some(trait_id) = tcx.trait_of_item(def_id) {
+        let is_final = if let Some(ImplSource::UserDefined(ud)) = resolve_impl_source_opt(tcx, param_env, def_id, substs) {
+            let trait_def =  tcx.trait_def(trait_id);
+            let leaf = trait_def.ancestors(tcx, ud.impl_def_id).unwrap().leaf_def(tcx, def_id).unwrap();
+
+            leaf.is_final()
+        } else {
+            false
+        };
+
+        let trait_generics = substs.truncate_to(tcx, tcx.generics_of(trait_id));
+        !is_final && trait_generics.still_further_specializable()
+    } else if let Some(impl_id) = tcx.impl_of_method(def_id) && tcx.trait_id_of_impl(impl_id).is_some() {
+        let is_final = tcx.impl_defaultness(def_id).is_final();
+        let trait_ref = tcx.impl_trait_ref(impl_id).unwrap();
+        !is_final && trait_ref.subst(tcx, substs).still_further_specializable()
+    } else {
+        false
     }
 }

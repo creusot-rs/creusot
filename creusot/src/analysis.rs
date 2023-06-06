@@ -1,12 +1,23 @@
-use creusot_rustc::{
-    index::bit_set::BitSet,
-    middle::mir::visit::{
-        MutatingUseContext, NonMutatingUseContext, NonUseContext, PlaceContext, Visitor,
-    },
-    smir::mir::{self, Local, Location},
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+//
+use rustc_index::bit_set::BitSet;
+use rustc_middle::mir::{
+    self,
+    visit::{MutatingUseContext, NonMutatingUseContext, NonUseContext, PlaceContext, Visitor},
+    Local, Location,
 };
 
-pub(crate) mod uninit_locals;
+mod frozen_locals;
+mod init_locals;
+mod liveness_no_drop;
+mod uninit_locals;
+
+pub use frozen_locals::*;
+pub use init_locals::*;
+pub use liveness_no_drop::*;
+pub use uninit_locals::*;
 
 pub struct NeverLive(BitSet<Local>);
 
@@ -14,6 +25,7 @@ pub struct NeverLive(BitSet<Local>);
 /// We use this to account for function arguments which are never live when calculating
 /// when to drop them.
 impl NeverLive {
+    #[allow(dead_code)]
     pub(crate) fn for_body(body: &mir::Body) -> BitSet<Local> {
         let mut ever_live = NeverLive(BitSet::new_filled(body.local_decls.len()));
         ever_live.visit_body(body);
@@ -51,10 +63,6 @@ impl<'tcx> Visitor<'tcx> for NeverLive {
         }
     }
 }
-
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum DefUse {
@@ -104,13 +112,12 @@ pub(crate) fn categorize(context: PlaceContext) -> Option<DefUse> {
         PlaceContext::NonMutatingUse(NonMutatingUseContext::SharedBorrow) |
         PlaceContext::NonMutatingUse(NonMutatingUseContext::ShallowBorrow) |
         PlaceContext::NonMutatingUse(NonMutatingUseContext::UniqueBorrow) |
-
+        PlaceContext::NonMutatingUse(NonMutatingUseContext::PlaceMention) |
         PlaceContext::MutatingUse(MutatingUseContext::AddressOf) |
         PlaceContext::NonMutatingUse(NonMutatingUseContext::AddressOf) |
         PlaceContext::NonMutatingUse(NonMutatingUseContext::Inspect) |
         PlaceContext::NonMutatingUse(NonMutatingUseContext::Copy) |
         PlaceContext::NonMutatingUse(NonMutatingUseContext::Move) |
-        PlaceContext::NonUse(NonUseContext::AscribeUserTy) |
         PlaceContext::MutatingUse(MutatingUseContext::Retag) =>
             Some(DefUse::Use),
 
@@ -126,10 +133,10 @@ pub(crate) fn categorize(context: PlaceContext) -> Option<DefUse> {
             Some(DefUse::Drop),
 
         // Debug info is neither def nor use.
-        PlaceContext::NonUse(NonUseContext::VarDebugInfo) => None,
+        PlaceContext::NonUse(NonUseContext::VarDebugInfo | NonUseContext::AscribeUserTy(_)) => None,
 
         PlaceContext::MutatingUse(MutatingUseContext::Deinit | MutatingUseContext::SetDiscriminant) => {
             unreachable!("These statements are not allowed in this MIR phase")
-        }
+        },
     }
 }

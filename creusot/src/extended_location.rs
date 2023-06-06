@@ -1,7 +1,5 @@
-use creusot_rustc::{
-    dataflow::{self, Analysis, Results, ResultsCursor},
-    smir::mir::Location,
-};
+use rustc_middle::mir::Location;
+use rustc_mir_dataflow::{self as dataflow, Analysis, Results, ResultsCursor};
 use std::borrow::Borrow;
 
 // Dataflow locations
@@ -35,17 +33,6 @@ impl ExtendedLocation {
         } else {
             false
         }
-    }
-
-    pub(crate) fn loc(&self) -> &Location {
-        match self {
-            Self::Start(l) => l,
-            Self::Mid(l) => l,
-        }
-    }
-
-    pub(crate) fn same_block(&self, other: Self) -> bool {
-        self.loc().block == other.loc().block
     }
 
     pub(crate) fn seek_to<'tcx, A, R, D>(self, cursor: &mut ResultsCursor<'_, 'tcx, A, R>)

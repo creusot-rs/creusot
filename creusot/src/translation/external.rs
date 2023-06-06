@@ -1,86 +1,19 @@
 use crate::{
-    backend::logic::translate_logic_or_predicate,
     ctx::*,
     error::{CrErr, CreusotResult},
-    function::all_generic_decls_for,
-    translation::{
-        pearlite::{Term, TermKind},
-        specification::ContractClauses,
-        traits,
-    },
-    util::{self, item_type},
-};
-use creusot_rustc::{
-    hir::def_id::{DefId, LocalDefId},
-    macros::{TyDecodable, TyEncodable},
-    middle::{
-        thir::{self, visit::Visitor, Expr, ExprKind, Thir},
-        ty::{
-            subst::{GenericArgKind, InternalSubsts, SubstsRef},
-            EarlyBinder, Predicate, TyCtxt, TyKind, WithOptConstParam,
-        },
-    },
-    span::{Symbol, DUMMY_SP},
+    translation::{pearlite::Term, specification::ContractClauses, traits},
 };
 use indexmap::IndexSet;
-use why3::declaration::{Decl, Module};
-
-pub(crate) fn default_decl<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> (Module, CloneSummary<'tcx>) {
-    info!("generating default declaration for def_id={:?}", def_id);
-    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Interface);
-
-    let mut decls: Vec<_> = Vec::new();
-    decls.extend(all_generic_decls_for(ctx.tcx, def_id));
-
-    let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
-    let name = module_name(ctx, def_id);
-
-    decls.extend(names.to_clones(ctx));
-    match item_type(ctx.tcx, def_id) {
-        ItemType::Logic => {}
-        ItemType::Predicate => {
-            sig.retty = None;
-        }
-        ItemType::Program => {
-            if !ctx.externs.verified(def_id) && sig.contract.is_empty() {
-                sig.contract.requires.push(why3::exp::Exp::mk_false());
-            }
-        }
-        _ => unreachable!("default_decl: Expected function"),
-    };
-    decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
-
-    (Module { name, decls }, names.summary())
-}
-
-pub(crate) fn extern_module<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> (
-    Module,
-    Option<CloneSummary<'tcx>>, // None is used to refer to dependencies that should be fetched from metadata
-) {
-    match ctx.externs.term(def_id) {
-        Some(_) => {
-            match item_type(ctx.tcx, def_id) {
-                // the dependencies should be what was already stored in the metadata...
-                ItemType::Logic | ItemType::Predicate => {
-                    (translate_logic_or_predicate(ctx, def_id).0, None)
-                }
-                _ => unreachable!("extern_module: unexpected term for {:?}", def_id),
-            }
-        }
-        None => {
-            let (modl, deps) = default_decl(ctx, def_id);
-            // Why do we ever want to return `Err` shouldn't `deps` already be correct?
-            let deps = if ctx.externs.dependencies(def_id).is_some() { None } else { Some(deps) };
-            (modl, deps)
-        }
-    }
-}
+use rustc_hir::def_id::{DefId, LocalDefId};
+use rustc_macros::{TyDecodable, TyEncodable};
+use rustc_middle::{
+    thir::{self, visit::Visitor, Expr, ExprKind, Thir},
+    ty::{
+        subst::{GenericArgKind, InternalSubsts, SubstsRef},
+        EarlyBinder, Predicate, TyCtxt, TyKind,
+    },
+};
+use rustc_span::Symbol;
 
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub(crate) struct ExternSpec<'tcx> {
@@ -108,7 +41,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     def_id: LocalDefId,
 ) -> CreusotResult<(DefId, ExternSpec<'tcx>)> {
     // Handle error gracefully
-    let (thir, expr) = ctx.tcx.thir_body(WithOptConstParam::unknown(def_id)).map_err(|_| CrErr)?;
+    let (thir, expr) = ctx.tcx.thir_body(def_id).map_err(|_| CrErr)?;
     let thir = thir.borrow();
 
     let mut visit = ExtractExternItems::new(&thir);
@@ -134,10 +67,24 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         (id, subst)
     };
 
-    let inner_subst = InternalSubsts::identity_for_item(ctx.tcx, id);
+    let mut inner_subst = InternalSubsts::identity_for_item(ctx.tcx, id).to_vec();
     let outer_subst = InternalSubsts::identity_for_item(ctx.tcx, def_id.to_def_id());
 
     let extra_parameters = inner_subst.len() - outer_subst.len();
+
+    // Move Self_ to the front of the list like rustc does for real trait impls (not expressible in surface rust).
+    // This only matters when we also have lifetime parameters.
+    let self_pos = outer_subst.iter().position(|e| {
+        if
+        let GenericArgKind::Type(t) = e.unpack() &&
+        let TyKind::Param(t) = t.kind() &&
+        t.name.as_str().starts_with("Self") { true } else { false }
+    });
+
+    if let Some(ix) = self_pos {
+        let self_ = inner_subst.remove(ix + extra_parameters);
+        inner_subst.insert(0, self_);
+    };
 
     let mut subst = Vec::new();
     let mut errors = Vec::new();
@@ -152,7 +99,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
                 }
                 _ => {
                     let mut err = ctx.fatal_error(span, "mismatched parameters in `extern_spec!`");
-                    err.warn(&format!("expected parameter `{:?}` to be called `{:?}`", t2, t1));
+                    err.warn(format!("expected parameter `{:?}` to be called `{:?}`", t2, t1));
                     errors.push(err);
                 }
             },
@@ -161,7 +108,16 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
                     subst.push(inner_subst[i + extra_parameters]);
                 } else {
                     let mut err = ctx.fatal_error(span, "mismatched parameters in `extern_spec!`");
-                    err.warn(&format!("expected parameter `{:?}` to be called `{:?}`", c2, c1));
+                    err.warn(format!("expected parameter `{:?}` to be called `{:?}`", c2, c1));
+                    errors.push(err);
+                }
+            }
+            (GenericArgKind::Lifetime(l1), GenericArgKind::Lifetime(l2)) => {
+                if l1.get_name() == l2.get_name() {
+                    subst.push(inner_subst[i + extra_parameters]);
+                } else {
+                    let mut err = ctx.fatal_error(span, "mismatched parameters in `extern_spec!`");
+                    err.warn(format!("expected parameter `{:?}` to be called `{:?}`", l2, l1));
                     errors.push(err);
                 }
             }
@@ -171,21 +127,18 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 
     errors.into_iter().for_each(|mut e| e.emit());
 
-    let subst = ctx.mk_substs(subst.into_iter());
+    let subst = ctx.mk_substs(&subst);
 
     let contract = crate::specification::contract_clauses_of(ctx, def_id.to_def_id()).unwrap();
 
     let additional_predicates =
-        ctx.tcx.predicates_of(def_id).instantiate(ctx.tcx, subst).predicates.into_iter().collect();
+        ctx.predicates_of(def_id).instantiate(ctx.tcx, subst).predicates.into_iter().collect();
 
     let arg_subst = ctx
-        .tcx
         .fn_arg_names(def_id)
         .iter()
-        .zip(ctx.tcx.fn_arg_names(id).iter().zip(ctx.fn_sig(id).skip_binder().inputs()))
-        .map(|(i, (i2, ty))| {
-            (i.name, Term { ty: *ty, kind: TermKind::Var(i2.name), span: DUMMY_SP })
-        })
+        .zip(ctx.fn_arg_names(id).iter().zip(ctx.fn_sig(id).skip_binder().inputs().skip_binder()))
+        .map(|(i, (i2, ty))| (i.name, Term::var(i2.name, *ty)))
         .collect();
     Ok((id, ExternSpec { contract, additional_predicates, subst, arg_subst }))
 }

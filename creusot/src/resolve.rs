@@ -1,44 +1,42 @@
 use std::rc::Rc;
 
-use crate::analysis::uninit_locals::MaybeUninitializedLocals;
-use creusot_rustc::{
-    borrowck::borrow_set::{BorrowSet, TwoPhaseActivation},
-    index::bit_set::BitSet,
+use crate::analysis::{
+    Borrows, MaybeInitializedLocals, MaybeLiveExceptDrop, MaybeUninitializedLocals,
 };
-use rustc_smir::{
-    mir::{BasicBlock, Body, Local, Location},
-    very_unstable::{
-        dataflow::{
-            impls::{MaybeInitializedLocals, MaybeLiveLocals},
-            Analysis, ResultsCursor,
-        },
-        middle::ty::TyCtxt,
-    },
+use rustc_borrowck::{
+    borrow_set::BorrowSet,
+    consumers::{calculate_borrows_out_of_scope_at_location, RegionInferenceContext},
 };
+use rustc_index::bit_set::BitSet;
+use rustc_middle::{
+    mir::{traversal, BasicBlock, Body, Local, Location},
+    ty::TyCtxt,
+};
+use rustc_mir_dataflow::{Analysis, ResultsCursor};
 
 use crate::extended_location::ExtendedLocation;
 
 pub struct EagerResolver<'body, 'tcx> {
-    local_live: ResultsCursor<'body, 'tcx, MaybeLiveLocals>,
+    local_live: ResultsCursor<'body, 'tcx, MaybeLiveExceptDrop>,
 
     // Whether a local is initialized or not at a location
     local_init: ResultsCursor<'body, 'tcx, MaybeInitializedLocals>,
 
     local_uninit: ResultsCursor<'body, 'tcx, MaybeUninitializedLocals>,
 
-    // Locals that are never read
-    never_live: BitSet<Local>,
+    borrows: ResultsCursor<'body, 'tcx, Borrows<'body, 'tcx>>,
+
+    borrow_set: Rc<BorrowSet<'tcx>>,
 
     body: &'body Body<'tcx>,
-
-    borrows: Rc<BorrowSet<'tcx>>,
 }
 
 impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
     pub(crate) fn new(
         tcx: TyCtxt<'tcx>,
         body: &'body Body<'tcx>,
-        borrows: Rc<BorrowSet<'tcx>>,
+        borrow_set: Rc<BorrowSet<'tcx>>,
+        regioncx: Rc<RegionInferenceContext<'tcx>>,
     ) -> Self {
         let local_init = MaybeInitializedLocals
             .into_engine(tcx, body)
@@ -50,58 +48,119 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
             .iterate_to_fixpoint()
             .into_results_cursor(body);
 
-        // This is called MaybeLiveLocals because pointers don't keep their referees alive.
-        // TODO: Defensive check.
-        let local_live =
-            MaybeLiveLocals.into_engine(tcx, body).iterate_to_fixpoint().into_results_cursor(body);
-        let never_live = crate::analysis::NeverLive::for_body(body);
-        EagerResolver { local_live, local_init, local_uninit, never_live, body, borrows }
+        // MaybeLiveExceptDrop ignores `drop` for the purpose of resolve liveness... unclear that this can
+        // be sound.
+        let local_live = MaybeLiveExceptDrop
+            .into_engine(tcx, body)
+            .iterate_to_fixpoint()
+            .into_results_cursor(body);
+
+        let borrows_out_of_scope =
+            calculate_borrows_out_of_scope_at_location(body, &regioncx, &borrow_set);
+
+        let borrows = Borrows::new(tcx, body, borrow_set.clone(), borrows_out_of_scope.clone())
+            .into_engine(tcx, body)
+            .iterate_to_fixpoint()
+            .into_results_cursor(body);
+
+        EagerResolver { local_live, local_init, local_uninit, borrows, borrow_set, body }
     }
 
-    fn unactivated_borrows(&self, loc: Location) -> BitSet<Local> {
-        let dom = self.body.basic_blocks.dominators();
-
-        let mut bits = BitSet::new_empty(self.body.local_decls.len());
-
-        self.borrows
-            .location_map
-            .iter()
-            .filter(|(_, bd)| {
-                let res_loc = bd.reserve_location;
-                if res_loc.block == loc.block {
-                    res_loc.statement_index <= loc.statement_index
-                } else {
-                    dom.is_dominated_by(loc.block, res_loc.block)
-                }
-            })
-            .filter(|(_, bd)| {
-                if let TwoPhaseActivation::ActivatedAt(act_loc) = bd.activation_location {
-                    if act_loc.block == loc.block {
-                        loc.statement_index <= act_loc.statement_index
-                    } else {
-                        dom.is_dominated_by(act_loc.block, loc.block)
-                    }
-                } else {
-                    false
-                }
-            })
-            .for_each(|(_, bd)| {
-                bits.insert(bd.borrowed_place.local);
-            });
-
-        bits
+    fn seek_to(&mut self, loc: ExtendedLocation) {
+        loc.seek_to(&mut self.local_live);
+        loc.seek_to(&mut self.local_init);
+        loc.seek_to(&mut self.local_uninit);
+        loc.seek_to(&mut self.borrows);
     }
 
-    pub(crate) fn locals_resolved_at_loc(&mut self, loc: Location) -> BitSet<Local> {
-        self.locals_resolved_between(
-            ExtendedLocation::Start(loc),
-            ExtendedLocation::Mid(loc),
-            loc,
-            loc.successor_within_block(),
-        )
+    fn def_init_locals(&self) -> BitSet<Local> {
+        let init = self.local_init.get().clone();
+        let mut uninit: BitSet<_> = BitSet::new_empty(self.body.local_decls.len());
+        uninit.union(self.local_uninit.get());
+
+        let mut def_init = init;
+        def_init.subtract(&uninit);
+        def_init
     }
 
-    pub(crate) fn locals_resolved_between_blocks(
+    fn live_locals(&self) -> BitSet<Local> {
+        let mut live: BitSet<_> = BitSet::new_empty(self.body.local_decls.len());
+        live.union(self.local_live.get());
+        live
+    }
+
+    fn dead_locals(&self) -> BitSet<Local> {
+        let live = self.live_locals();
+        let mut dead: BitSet<_> = BitSet::new_filled(live.domain_size());
+        dead.subtract(&live);
+        dead
+    }
+
+    fn frozen_locals(&self) -> BitSet<Local> {
+        let mut frozen: BitSet<_> = BitSet::new_empty(self.body.local_decls.len());
+        for bi in self.borrows.get().iter() {
+            let l = self.borrow_set[bi].borrowed_place.local;
+            frozen.insert(l);
+        }
+        frozen
+    }
+
+    /// Locals that need to be resolved eventually
+    /// = (live ∪ frozen) ∩ initialized
+    fn need_resolve_locals(&self) -> BitSet<Local> {
+        let mut should_resolve = self.live_locals();
+        should_resolve.union(&self.frozen_locals());
+        should_resolve.intersect(&self.def_init_locals());
+        should_resolve
+    }
+
+    /// Locals that have already been resolved
+    /// = dead ∩ not frozen ∩ initialized
+    fn resolved_locals(&self) -> BitSet<Local> {
+        let mut resolved = self.dead_locals();
+        resolved.subtract(&self.frozen_locals());
+        resolved.intersect(&self.def_init_locals());
+        resolved
+    }
+
+    fn resolved_locals_at(&mut self, loc: ExtendedLocation) -> BitSet<Local> {
+        trace!("location: {loc:?}");
+
+        if loc.is_entry_loc() {
+            // At function entry, no locals are resolved
+            // Thus, never live, initialized locals are resolved at mid of the entry location
+            return BitSet::new_empty(self.body.local_decls.len());
+        }
+
+        self.seek_to(loc);
+        self.resolved_locals()
+    }
+
+    fn resolved_locals_in_range(
+        &mut self,
+        start: ExtendedLocation,
+        end: ExtendedLocation,
+    ) -> BitSet<Local> {
+        let resolved_at_start = self.resolved_locals_at(start);
+        let resolved_at_end = self.resolved_locals_at(end);
+
+        let mut resolved = resolved_at_end;
+        resolved.subtract(&resolved_at_start);
+        resolved
+    }
+
+    pub fn resolved_locals_during(&mut self, loc: Location) -> BitSet<Local> {
+        self.resolved_locals_in_range(ExtendedLocation::Start(loc), ExtendedLocation::Mid(loc))
+    }
+
+    /// Only valid if loc is not a terminator.
+    pub fn dead_locals_after(&mut self, loc: Location) -> BitSet<Local> {
+        let next_loc = loc.successor_within_block();
+        ExtendedLocation::Start(next_loc).seek_to(&mut self.local_live);
+        self.dead_locals()
+    }
+
+    pub fn resolved_locals_between_blocks(
         &mut self,
         from: BasicBlock,
         to: BasicBlock,
@@ -109,106 +168,82 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         let term = self.body.terminator_loc(from);
         let start = to.start_location();
 
-        self.locals_resolved_between(
+        let mut resolved = self.resolved_locals_in_range(
             ExtendedLocation::Start(term),
             ExtendedLocation::Start(start),
-            term,
-            start,
-        )
+        );
+
+        // if some locals still need to be resolved at the end of the current block
+        // but not at the start of the next block, we also need to resolve them now
+        // see the init_join function in the resolve_uninit test
+        self.seek_to(ExtendedLocation::Mid(term));
+        let need_resolve_at_end = self.need_resolve_locals();
+        self.seek_to(ExtendedLocation::Start(start));
+        let need_resolve_at_start = self.need_resolve_locals();
+
+        let mut need_resolve = need_resolve_at_end;
+        need_resolve.subtract(&need_resolve_at_start);
+        resolved.union(&need_resolve);
+
+        resolved
     }
 
-    fn locals_resolved_between(
-        &mut self,
-        start: ExtendedLocation,
-        end: ExtendedLocation,
-        two_phase_start: Location,
-        two_phase_end: Location,
-    ) -> BitSet<Local> {
-        start.seek_to(&mut self.local_live);
-        let mut live_at_start: BitSet<_> = BitSet::new_empty(self.local_live.get().domain_size());
-        live_at_start.union(self.local_live.get());
-        if start.is_entry_loc() {
-            // Count arguments that were never live as live here
-            live_at_start.union(&self.never_live.to_hybrid());
+    pub fn need_resolve_locals_before(&mut self, loc: Location) -> BitSet<Local> {
+        self.seek_to(ExtendedLocation::Start(loc));
+        self.need_resolve_locals()
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn debug(&mut self, _regioncx: Rc<RegionInferenceContext<'tcx>>) {
+        let body = self.body.clone();
+        for (bb, bbd) in traversal::preorder(&body) {
+            if bbd.is_cleanup {
+                continue;
+            }
+            eprintln!("{:?}", bb);
+            let mut loc = bb.start_location();
+            for statement in &bbd.statements {
+                self.seek_to(ExtendedLocation::Start(loc));
+                let live1 = self.local_live.get().iter().collect::<Vec<_>>();
+                let init1 = self.local_init.get().clone();
+                let uninit1 = self.local_uninit.get().iter().collect::<Vec<_>>();
+                let frozen1 = self.frozen_locals();
+                let resolved1 = self.resolved_locals();
+
+                self.seek_to(ExtendedLocation::Mid(loc));
+                let live2 = self.local_live.get().iter().collect::<Vec<_>>();
+                let init2 = self.local_init.get().clone();
+                let uninit2 = self.local_uninit.get().iter().collect::<Vec<_>>();
+                let frozen2 = self.frozen_locals();
+                let resolved2 = self.resolved_locals();
+
+                eprintln!("  {statement:?} {resolved1:?} -> {resolved2:?}");
+                eprintln!(
+                    "    live={live1:?} -> {live2:?} frozen={frozen1:?} -> {frozen2:?} init={init1:?} -> {init2:?} uninit={uninit1:?} -> {uninit2:?}",
+                );
+
+                loc = loc.successor_within_block();
+            }
+
+            self.seek_to(ExtendedLocation::Start(loc));
+            let live1 = self.local_live.get().iter().collect::<Vec<_>>();
+            let init1 = self.local_init.get().clone();
+            let uninit1 = self.local_uninit.get().iter().collect::<Vec<_>>();
+            let frozen1 = self.frozen_locals();
+            let resolved1 = self.resolved_locals();
+
+            self.seek_to(ExtendedLocation::Mid(loc));
+            let live2 = self.local_live.get().iter().collect::<Vec<_>>();
+            let init2 = self.local_init.get().clone();
+            let uninit2 = self.local_uninit.get().iter().collect::<Vec<_>>();
+            let frozen2 = self.frozen_locals();
+            let resolved2 = self.resolved_locals();
+
+            eprintln!("  {:?} {resolved1:?} -> {resolved2:?}", bbd.terminator().kind);
+            eprintln!(
+                "    live={live1:?} -> {live2:?} frozen={frozen1:?} -> {frozen2:?} init={init1:?} -> {init2:?} uninit={uninit1:?} -> {uninit2:?}",
+            );
         }
-
-        live_at_start.union(&self.unactivated_borrows(two_phase_start).to_hybrid());
-
-        end.seek_to(&mut self.local_live);
-        let mut live_at_end: BitSet<_> = BitSet::new_empty(self.local_live.get().domain_size());
-        live_at_end.union(self.local_live.get());
-        live_at_end.union(&self.unactivated_borrows(two_phase_end).to_hybrid());
-
-        start.seek_to(&mut self.local_init);
-        let init_at_start = self.local_init.get().clone();
-
-        end.seek_to(&mut self.local_init);
-        let init_at_end = self.local_init.get().clone();
-
-        start.seek_to(&mut self.local_uninit);
-        let mut uninit_at_start: BitSet<_> =
-            BitSet::new_empty(self.local_uninit.get().domain_size());
-        uninit_at_start.union(self.local_uninit.get());
-
-        end.seek_to(&mut self.local_uninit);
-        let mut uninit_at_end: BitSet<_> = BitSet::new_empty(self.local_uninit.get().domain_size());
-        uninit_at_end.union(self.local_uninit.get());
-
-        trace!("location: {:?}-{:?}", start, end);
-        trace!("live_at_start: {:?}", live_at_start);
-        trace!("live_at_end: {:?}", live_at_end);
-        trace!("init_at_start: {:?}", init_at_start);
-        trace!("init_at_end: {:?}", init_at_end);
-        trace!("uninit_at_start: {:?}", uninit_at_start);
-        trace!("uninit_at_end: {:?}", uninit_at_end);
-
-        let mut def_init_at_start = init_at_start;
-        def_init_at_start.subtract(&uninit_at_start);
-        trace!("def_init_at_start: {:?}", def_init_at_start);
-
-        let mut def_init_at_end: BitSet<_> = init_at_end.clone();
-        def_init_at_end.subtract(&uninit_at_end);
-        trace!("def_init_at_end: {:?}", def_init_at_end);
-        // Locals that were just now initialized
-        let mut just_init = init_at_end.clone();
-        just_init.subtract(&uninit_at_end);
-
-        just_init.subtract(&def_init_at_start);
-        trace!("just_init: {:?}", just_init);
-
-        // Locals that have just become live
-        let mut born = live_at_end.clone();
-        born.subtract(&live_at_start);
-        trace!("born: {:?}", born);
-
-        // Locals that were initialized but never live
-        let mut zombies = just_init.clone();
-        zombies.subtract(&live_at_end);
-        trace!("zombies: {:?}", zombies);
-
-        let mut dying = live_at_start;
-
-        // Variables that died in the span
-        dying.subtract(&live_at_end);
-        // And were initialized
-        let mut init = def_init_at_start;
-        init.intersect(&def_init_at_end);
-        dying.intersect(&init.to_hybrid());
-
-        // dying.subtract(&unactivated);
-
-        let same_point = start.same_block(end);
-        trace!("same_block: {:?}", same_point);
-        // But if we created a new value or brought one back to life
-        if (!just_init.is_empty() && same_point) || !born.count() == 0 {
-            // Exclude values that were moved
-            dying.intersect(&init_at_end.to_hybrid());
-            // And include the values that never made it past their creation
-            dying.union(&zombies.to_hybrid());
-        }
-
-        trace!("dying: {:?}", dying);
-
-        dying
+        eprintln!();
     }
 }

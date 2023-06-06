@@ -41,13 +41,9 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
 
 # Installing Creusot as a user
 
-0. Clone the [creusot](https://github.com/xldenis/creusot/) repo at any directory you like
-    - Below, we write `REPO` for the (relative or absolute) path to the directory of the repo
-1. Set up **Rust**
+. Set up **Rust**
     - [Install `rustup`](https://www.rust-lang.org/tools/install), to get the suitable Rust toolchain
-2. Build **Creusot**
-    - Run `$ cargo install --path creusot`, this will build the `cargo-creusot` and `creusot-rustc` executables and place them in `~/.cargo/bin`.
-3. Set up **Why3**
+1. Set up **Why3**
     - [Get `opam`](https://opam.ocaml.org/doc/Install.html), the package manager for OCaml
     - Pin `why3` to `master` : 
     ```
@@ -60,6 +56,10 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
       * Troubleshoot:
         When your `z3` is a bit too new (e.g., Why3 supports up to ver. 4.8.10 but yours is 4.8.12), Why3 refuses `z3`.
         Then you can try hacking Why3 to make it consider your `z3` be of an older version (e.g., 4.8.10), by updating the relevant field of `~/.why3.conf`.
+2. Clone the [creusot](https://github.com/xldenis/creusot/) repo at any directory you like
+3. Build **Creusot**
+    - Enter the cloned directory and run `$ cargo install --path cargo-creusot`, this will build the `cargo-creusot` and `creusot-rustc` executables and place them in `~/.cargo/bin`.
+
 
 # Verifying with Creusot and Why3
 
@@ -68,18 +68,27 @@ All you need to do is enter your project and run `cargo creusot`!
 This will generate MLCFG files in `target/debug/` which can then be loaded into Why3.
 
 This may only work if you're using the same rust toolchain that was used to build `creusot`:
-you can copy the [`rust-toolchain`](./rust-toolchain) file into the root of your project to
+you can copy the [`rust-toolchain`](./ci/rust-toolchain) file into the root of your project to
 make sure the correct toolchain is selected.
 
-To add contracts to your programs you will need to use the `creusot-contracts` crate, and enable the `contracts` feature.
-When that feature is enabled `rustc` cannot successfully compile your programs, so we recommend adding a feature to your program which conditionally enables the `contracts` feature like so:
-
+To add contracts to your programs you will need to use the `creusot-contracts` crate by adding it as a dependency:
 ```toml
 # Cargo.toml
 
-[features]
-contracts = ["creusot-contracts/contracts"]
+[dependencies]
+creusot-contracts = { path = "/path/to/creusot/creusot-contracts" }
 ```
+
+Adding this dependency will make the contract macros available in your code. These macros will erase themselves when compiled with `rustc`.
+To add Creusot-only trait implementations or code, you can use `cfg(creusot)` to toggle.
+
+You must also explicitly use the `creusot_contracts` crate in your code (which should be the case once you actually prove things, but not necessarily when you initially set up a project), such as with the line:
+
+```rust
+use creusot_contracts::*;
+```
+
+or you will get a compilation error complaining that the `creusot_contracts` crate is not loaded.
 
 ## Proving in Why3
 
@@ -117,10 +126,9 @@ You can attach as many `ensures` and `requires` clauses as you would like, in an
 
 Inside a function, you can attach `invariant` clauses to loops, these are attached on *top* of the loop rather than inside, like:
 ```rust
-#[invariant(invariant_name, ... loop invariant ...)]
+#[invariant(... loop invariant ...)]
 while ... { ... }
 ```
-Invariants must have names (for now).
 
 A `variant` clause can be attached either to a function like `ensures`, or `requires` or to a loop like `invariant`, it should contain a strictly decreasing expression which can prove the termination of the item it is attached to.
 

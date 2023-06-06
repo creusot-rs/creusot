@@ -2,44 +2,23 @@
 module C01_A_FromB_Interface
   type self
   type b
-  val from_b [@cfg:stackify] [#"../01.rs" 5 4 5 31] (x : self) : b
-end
-module C01_A_FromB
-  type self
-  type b
-  val from_b [@cfg:stackify] [#"../01.rs" 5 4 5 31] (x : self) : b
-end
-module CreusotContracts_Resolve_Resolve_Resolve_Stub
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Resolve_Resolve_Resolve_Interface
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Resolve_Resolve_Resolve
-  type self
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
-    ensures { result = resolve self }
-    
+  val from_b [#"../01.rs" 5 4 5 31] (x : self) : b
 end
 module C01_UsesGeneric_Interface
   type t
-  use mach.int.Int
-  use mach.int.UInt32
-  val uses_generic [@cfg:stackify] [#"../01.rs" 8 0 8 38] (b : t) : uint32
+  use prelude.Int
+  use prelude.UInt32
+  val uses_generic [#"../01.rs" 8 0 8 38] (b : t) : uint32
 end
 module C01_UsesGeneric
   type t
-  use mach.int.Int
-  use mach.int.UInt32
+  use prelude.Int
+  use prelude.UInt32
   clone C01_A_FromB_Interface as FromB0 with
     type self = t,
     type b = uint32
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
-    type self = t
-  let rec cfg uses_generic [@cfg:stackify] [#"../01.rs" 8 0 8 38] (b : t) : uint32 = [@vc:do_not_keep_trace] [@vc:sp]
+  let rec cfg uses_generic [#"../01.rs" 8 0 8 38] [@cfg:stackify] [@cfg:subregion_analysis] (b : t) : uint32
+   = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : uint32;
   var b_1 : t;
   var _2 : t;
@@ -48,7 +27,6 @@ module C01_UsesGeneric
     goto BB0
   }
   BB0 {
-    assume { Resolve0.resolve _2 };
     _2 <- b_1;
     b_1 <- any t;
     _0 <- ([#"../01.rs" 9 4 9 16] FromB0.from_b _2);

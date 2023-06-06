@@ -19,7 +19,7 @@ pub fn test_u8_add_example() {
 }
 
 /// Tests addition of `u8`s in a general overflowing case
-#[requires(@a != 0)]
+#[requires(a@ != 0)]
 pub fn test_u8_add_overflow(a: u8) {
     assert!(255u8.checked_add(a).is_none());
     assert!(255u8.wrapping_add(a) == a - 1);
@@ -30,7 +30,7 @@ pub fn test_u8_add_overflow(a: u8) {
 
 /// Tests that the verifier is able to deduce a stricter postcondition for wrapping addition of
 /// `u8`s
-#[ensures(@result == @a + @b || @result == @a + @b - 256)]
+#[ensures(result@ == a@ + b@ || result@ == a@ + b@ - 256)]
 pub fn test_u8_wrapping_add(a: u8, b: u8) -> u8 {
     a.wrapping_add(b)
 }
@@ -59,7 +59,7 @@ pub fn test_u8_sub_example() {
 }
 
 /// Tests subtraction of `u8`s in a general overflowing case
-#[requires(@a != 0)]
+#[requires(a@ != 0)]
 pub fn test_u8_sub_overflow(a: u8) {
     assert!(0u8.checked_sub(a).is_none());
     assert!(0u8.wrapping_sub(a) == 255 - a + 1);
@@ -70,7 +70,7 @@ pub fn test_u8_sub_overflow(a: u8) {
 
 /// Tests that the verifier is able to deduce a stricter postcondition for wrapping subtraction of
 /// `u8`s
-#[ensures(@result == @a - @b || @result == @a - @b + 256)]
+#[ensures(result@ == a@ - b@ || result@ == a@ - b@ + 256)]
 pub fn test_u8_wrapping_sub(a: u8, b: u8) -> u8 {
     a.wrapping_sub(b)
 }
@@ -124,7 +124,7 @@ pub fn test_u8_div_example() {
 }
 
 /// Tests that division of `u8`s never overflows
-#[requires(@b != 0)]
+#[requires(b@ != 0)]
 pub fn test_u8_div_no_overflow(a: u8, b: u8) {
     assert!(a.checked_div(b).unwrap() == a / b);
     assert!(a.wrapping_div(b) == a / b);
@@ -161,7 +161,7 @@ pub fn test_i8_add_example() {
 }
 
 /// Tests addition of `i8`s in a general overflowing case, for positive `a`
-#[requires(@a > 0)]
+#[requires(a@ > 0)]
 pub fn test_i8_add_overflow_pos(a: i8) {
     assert!(127i8.checked_add(a).is_none());
     assert!(127i8.wrapping_add(a) == a - 127 - 2);
@@ -171,7 +171,7 @@ pub fn test_i8_add_overflow_pos(a: i8) {
 }
 
 /// Tests addition of `i8`s in a general overflowing case, for negative `a`
-#[requires(@a < 0)]
+#[requires(a@ < 0)]
 pub fn test_i8_add_overflow_neg(a: i8) {
     assert!((-128i8).checked_add(a).is_none());
     assert!((-128i8).wrapping_add(a) == a + 127 + 1);
@@ -182,7 +182,7 @@ pub fn test_i8_add_overflow_neg(a: i8) {
 
 /// Tests that the verifier is able to deduce a stricter postcondition for wrapping addition of
 /// `i8`s
-#[ensures(@result == @a + @b || @result == @a + @b - 256 || @result == @a + @b + 256)]
+#[ensures(result@ == a@ + b@ || result@ == a@ + b@ - 256 || result@ == a@ + b@ + 256)]
 pub fn test_i8_wrapping_add(a: i8, b: i8) -> i8 {
     a.wrapping_add(b)
 }
@@ -216,7 +216,7 @@ pub fn test_i8_sub_example() {
 }
 
 /// Tests subtraction of `i8`s in a general overflowing case, for positive `a`
-#[requires(@a > 0)]
+#[requires(a@ > 0)]
 pub fn test_i8_sub_overflow_pos(a: i8) {
     assert!((-128i8).checked_sub(a).is_none());
     assert!((-128i8).wrapping_sub(a) == 127 - a + 1);
@@ -226,7 +226,7 @@ pub fn test_i8_sub_overflow_pos(a: i8) {
 }
 
 /// Tests subtraction of `i8`s in a general overflowing case, for negative `a`
-#[requires(@a < 0)]
+#[requires(a@ < 0)]
 pub fn test_i8_sub_overflow_neg(a: i8) {
     assert!(127i8.checked_sub(a).is_none());
     assert!(127i8.wrapping_sub(a) == -(2 + a) - 127);
@@ -237,7 +237,7 @@ pub fn test_i8_sub_overflow_neg(a: i8) {
 
 /// Tests that the verifier is able to deduce a stricter postcondition for wrapping subtraction of
 /// `i8`s
-#[ensures(@result == @a - @b || @result == @a - @b + 256 || @result == @a - @b - 256)]
+#[ensures(result@ == a@ - b@ || result@ == a@ - b@ + 256 || result@ == a@ - b@ - 256)]
 pub fn test_i8_wrapping_sub(a: i8, b: i8) -> i8 {
     a.wrapping_sub(b)
 }
@@ -309,7 +309,7 @@ pub fn test_i8_div_example() {
 }
 
 /// Tests that division of `i8`s never overflows, except for the one special case
-#[requires(@b != 0 && (@a != -128 || @b != -1))]
+#[requires(b@ != 0 && (a@ != -128 || b@ != -1))]
 pub fn test_i8_div_no_overflow(a: i8, b: i8) {
     assert!(a.checked_div(b).unwrap() == a / b);
     assert!(a.wrapping_div(b) == a / b);

@@ -1,0 +1,193 @@
+
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.Opaque
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+    
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+    
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use prelude.Int
+  use prelude.UIntSize
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
+    
+end
+module Alloc_Vec_Vec_Type
+  use prelude.Int
+  use prelude.UIntSize
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
+    
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+    
+end
+module Specialize_Impl0_X_Interface
+  type u
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  val x [#"../specialize.rs" 12 4 12 22] (self : Alloc_Vec_Vec_Type.t_vec u (Alloc_Alloc_Global_Type.t_global)) : ()
+    ensures { [#"../specialize.rs" 11 14 11 19] false }
+    
+end
+module Specialize_Impl1_X_Interface
+  use prelude.Int
+  use prelude.UInt32
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  val x [#"../specialize.rs" 18 4 18 14] (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : ()
+    ensures { [#"../specialize.rs" 17 14 17 18] true }
+    
+end
+module Specialize_F_Interface
+  use prelude.Int
+  use prelude.UInt32
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  val f [#"../specialize.rs" 21 0 21 17] (v : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : ()
+end
+module Specialize_F
+  use prelude.Int
+  use prelude.UInt32
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone Specialize_Impl1_X_Interface as X0
+  let rec cfg f [#"../specialize.rs" 21 0 21 17] [@cfg:stackify] [@cfg:subregion_analysis] (v : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : ()
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var v_1 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global);
+  var _2 : ();
+  var _3 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global);
+  var _4 : ();
+  {
+    v_1 <- v;
+    goto BB0
+  }
+  BB0 {
+    _3 <- v_1;
+    v_1 <- any Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global);
+    _2 <- ([#"../specialize.rs" 22 4 22 9] X0.x _3);
+    goto BB1
+  }
+  BB1 {
+    assert { [@expl:assertion] [#"../specialize.rs" 24 20 24 25] false };
+    _4 <- ();
+    _0 <- ();
+    goto BB2
+  }
+  BB2 {
+    return _0
+  }
+  
+end
+module Specialize_T_X_Interface
+  type self
+  val x [#"../specialize.rs" 6 4 6 15] (self : self) : ()
+end
+module Specialize_G_Interface
+  type t
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  val g [#"../specialize.rs" 27 0 27 18] (v : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : ()
+end
+module Specialize_G
+  type t
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone Specialize_T_X_Interface as X0 with
+    type self = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+  let rec cfg g [#"../specialize.rs" 27 0 27 18] [@cfg:stackify] [@cfg:subregion_analysis] (v : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : ()
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var v_1 : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
+  var _2 : ();
+  var _3 : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
+  var _4 : ();
+  {
+    v_1 <- v;
+    goto BB0
+  }
+  BB0 {
+    _3 <- v_1;
+    v_1 <- any Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
+    _2 <- ([#"../specialize.rs" 28 4 28 9] X0.x _3);
+    goto BB1
+  }
+  BB1 {
+    assert { [@expl:assertion] [#"../specialize.rs" 31 20 31 25] false };
+    _4 <- ();
+    _0 <- ();
+    goto BB2
+  }
+  BB2 {
+    return _0
+  }
+  
+end
+module Specialize_H_Interface
+  use prelude.Int
+  use prelude.Int32
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  val h [#"../specialize.rs" 34 0 34 17] (v : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) : ()
+end
+module Specialize_H
+  use prelude.Int
+  use prelude.Int32
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone Specialize_Impl0_X_Interface as X0 with
+    type u = int32
+  let rec cfg h [#"../specialize.rs" 34 0 34 17] [@cfg:stackify] [@cfg:subregion_analysis] (v : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) : ()
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var v_1 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _2 : ();
+  var _3 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _4 : ();
+  {
+    v_1 <- v;
+    goto BB0
+  }
+  BB0 {
+    _3 <- v_1;
+    v_1 <- any Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+    _2 <- ([#"../specialize.rs" 35 4 35 9] X0.x _3);
+    goto BB1
+  }
+  BB1 {
+    assert { [@expl:assertion] [#"../specialize.rs" 37 20 37 25] false };
+    _4 <- ();
+    _0 <- ();
+    goto BB2
+  }
+  BB2 {
+    return _0
+  }
+  
+end
+module Specialize_Impl0
+  type u
+end
+module Specialize_Impl1
+  
+end

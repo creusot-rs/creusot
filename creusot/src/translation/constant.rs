@@ -1,69 +1,26 @@
 use crate::{
-    backend::logic::stub_module,
-    clone_map::CloneMap,
-    ctx::{module_name, CloneSummary, TranslatedItem, TranslationCtx},
-    traits::resolve_assoc_item_opt,
-    translation::pearlite::Literal,
-    util::{get_builtin, signature_of},
+    ctx::TranslationCtx, traits::resolve_assoc_item_opt, translation::pearlite::Literal,
+    util::get_builtin,
 };
-use creusot_rustc::{
-    hir::def_id::DefId,
-    middle::{
-        mir::{
-            interpret::{AllocRange, ConstValue},
-            UnevaluatedConst,
-        },
-        ty,
-        ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt},
+use rustc_middle::{
+    mir::{
+        interpret::{AllocRange, ConstValue},
+        ConstantKind, UnevaluatedConst,
     },
-    smir::mir::ConstantKind,
-    span::{Span, Symbol},
-    target::abi::Size,
+    ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt},
 };
-use rustc_middle::ty::subst::InternalSubsts;
-use why3::declaration::{Decl, LetDecl, LetKind, Module};
+use rustc_span::{Span, Symbol};
+use rustc_target::abi::Size;
 
 use super::{
     fmir::Expr,
     pearlite::{Term, TermKind},
 };
 
-impl<'tcx> TranslationCtx<'tcx> {
-    pub(crate) fn translate_constant(
-        &mut self,
-        def_id: DefId,
-    ) -> (TranslatedItem, CloneSummary<'tcx>) {
-        let subst = InternalSubsts::identity_for_item(self.tcx, def_id);
-        let uneval = ty::UnevaluatedConst::new(ty::WithOptConstParam::unknown(def_id), subst);
-        let constant = self.mk_const(ty::ConstS {
-            kind: ty::ConstKind::Unevaluated(uneval),
-            ty: self.type_of(def_id),
-        });
-
-        let res = from_ty_const(self, constant, self.param_env(def_id), self.def_span(def_id));
-        let mut names = CloneMap::new(self.tcx, def_id, crate::clone_map::CloneLevel::Body);
-        let res = res.to_why(self, &mut names, None);
-        let sig = signature_of(self, &mut names, def_id);
-        let mut decls = names.to_clones(self);
-        decls.push(Decl::Let(LetDecl {
-            kind: Some(LetKind::Constant),
-            sig: sig.clone(),
-            rec: false,
-            ghost: false,
-            body: res,
-        }));
-
-        let stub = stub_module(self, def_id);
-
-        let modl = Module { name: module_name(self, def_id), decls };
-        (TranslatedItem::Constant { stub, modl }, CloneSummary::new())
-    }
-}
-
 pub(crate) fn from_mir_constant<'tcx>(
     env: ParamEnv<'tcx>,
     ctx: &mut TranslationCtx<'tcx>,
-    c: &creusot_rustc::smir::mir::Constant<'tcx>,
+    c: &rustc_middle::mir::Constant<'tcx>,
 ) -> Expr<'tcx> {
     from_mir_constant_kind(ctx, c.literal, env, c.span)
 }
@@ -124,8 +81,8 @@ pub(crate) fn from_ty_const<'tcx>(
     // Check if a constant is builtin and thus should not be evaluated further
     // Builtin constants are given a body which panics
     if let ConstKind::Unevaluated(u) = c.kind() &&
-       let Some(_) = get_builtin(ctx.tcx, u.def.did) {
-            return Expr::Constant(Term { kind: TermKind::Lit(Literal::Function(u.def.did, u.substs)), ty: c.ty(), span})
+       let Some(_) = get_builtin(ctx.tcx, u.def) {
+            return Expr::Constant(Term { kind: TermKind::Lit(Literal::Function(u.def, u.substs)), ty: c.ty(), span})
     };
 
     if let ConstKind::Param(_) = c.kind() {
@@ -181,7 +138,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
             if float.is_nan() {
                 ctx.crash_and_error(span, "NaN is not yet supported")
             } else {
-                Literal::Float(float as f64)
+                Literal::Float((float as f64).into(), FloatTy::F32)
             }
         }
         Float(FloatTy::F64) => {
@@ -190,7 +147,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
             if float.is_nan() {
                 ctx.crash_and_error(span, "NaN is not yet supported")
             } else {
-                Literal::Float(float)
+                Literal::Float(float.into(), FloatTy::F32)
             }
         }
         _ if ty.is_unit() => Literal::ZST,

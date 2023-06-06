@@ -6,6 +6,9 @@ end
 module C03_Omg_Interface
   type t
   function omg [#"../03.rs" 6 0 6 24] (_x : t) : bool
+  val omg [#"../03.rs" 6 0 6 24] (_x : t) : bool
+    ensures { result = omg _x }
+    
 end
 module C03_Omg
   type t
@@ -22,6 +25,9 @@ end
 module CreusotContracts_Resolve_Resolve_Resolve_Interface
   type self
   predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Resolve_Resolve_Resolve
   type self
@@ -34,7 +40,7 @@ module C03_Prog_Interface
   type t
   clone C03_Omg_Stub as Omg0 with
     type t = t
-  val prog [@cfg:stackify] [#"../03.rs" 11 0 11 16] (x : t) : ()
+  val prog [#"../03.rs" 11 0 11 16] (x : t) : ()
     ensures { [#"../03.rs" 10 10 10 16] Omg0.omg x }
     
 end
@@ -44,7 +50,7 @@ module C03_Prog
     type self = t
   clone C03_Omg as Omg0 with
     type t = t
-  let rec cfg prog [@cfg:stackify] [#"../03.rs" 11 0 11 16] (x : t) : ()
+  let rec cfg prog [#"../03.rs" 11 0 11 16] [@cfg:stackify] [@cfg:subregion_analysis] (x : t) : ()
     ensures { [#"../03.rs" 10 10 10 16] Omg0.omg x }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -55,6 +61,7 @@ module C03_Prog
     goto BB0
   }
   BB0 {
+    assume { Resolve0.resolve x_1 };
     goto BB1
   }
   BB1 {
@@ -62,32 +69,31 @@ module C03_Prog
     goto BB2
   }
   BB2 {
-    assume { Resolve0.resolve x_1 };
     return _0
   }
   
 end
 module C03_Prog2_Interface
-  use mach.int.Int
-  use mach.int.Int
+  use prelude.Int
+  use prelude.Int
   clone C03_Omg_Stub as Omg0 with
     type t = int
-  val prog2 [@cfg:stackify] [#"../03.rs" 14 0 14 14] (_1' : ()) : ()
+  val prog2 [#"../03.rs" 14 0 14 14] (_1' : ()) : ()
     ensures { [#"../03.rs" 13 10 13 16] Omg0.omg 0 }
     
 end
 module C03_Prog2
-  use mach.int.Int
-  use mach.int.Int32
+  use prelude.Int
+  use prelude.Int32
   clone C03_Omg as Omg1 with
     type t = int32
-  use mach.int.Int
+  use prelude.Int
   clone C03_Prog_Interface as Prog0 with
     type t = int32,
     function Omg0.omg = Omg1.omg
   clone C03_Omg as Omg0 with
     type t = int
-  let rec cfg prog2 [@cfg:stackify] [#"../03.rs" 14 0 14 14] (_1' : ()) : ()
+  let rec cfg prog2 [#"../03.rs" 14 0 14 14] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : ()
     ensures { [#"../03.rs" 13 10 13 16] Omg0.omg 0 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -107,20 +113,20 @@ module C03_Prog2
   
 end
 module C03_Prog3_Interface
-  use mach.int.Int
-  use mach.int.Int
+  use prelude.Int
+  use prelude.Int
   clone C03_Omg_Stub as Omg0 with
     type t = (int, int)
-  val prog3 [@cfg:stackify] [#"../03.rs" 19 0 19 14] (_1' : ()) : ()
+  val prog3 [#"../03.rs" 19 0 19 14] (_1' : ()) : ()
     ensures { [#"../03.rs" 18 10 18 21] Omg0.omg (0, 0) }
     
 end
 module C03_Prog3
-  use mach.int.Int
-  use mach.int.Int
+  use prelude.Int
+  use prelude.Int
   clone C03_Omg as Omg0 with
     type t = (int, int)
-  let rec cfg prog3 [@cfg:stackify] [#"../03.rs" 19 0 19 14] (_1' : ()) : ()
+  let rec cfg prog3 [#"../03.rs" 19 0 19 14] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : ()
     ensures { [#"../03.rs" 18 10 18 21] Omg0.omg (0, 0) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]

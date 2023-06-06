@@ -7,5 +7,5 @@ trait BadLaw {
 }
 
 impl BadLaw for () {
-    fn my_law<T>(x: T) {}
+    fn my_law<T>(_: T) {}
 }

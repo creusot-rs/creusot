@@ -5,41 +5,37 @@ impl<T> ShallowModel for Repeat<T> {
 
     #[logic]
     #[trusted]
+    #[open(self)]
     fn shallow_model(self) -> T {
         pearlite! { absurd }
     }
 }
 
-impl<T> Invariant for Repeat<T> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! { true }
-    }
-}
+impl<T> Invariant for Repeat<T> {}
 
 impl<T: Clone> Iterator for Repeat<T> {
+    #[open(self)]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! { false }
     }
 
+    #[open(self)]
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self == o &&
-            forall<i: Int> 0 <= i && i < visited.len() ==> visited[i] == @self
+            forall<i: Int> 0 <= i && i < visited.len() ==> visited[i] == self@
         }
     }
 
     #[law]
-    #[requires(a.invariant())]
+    #[open(self)]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
+    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

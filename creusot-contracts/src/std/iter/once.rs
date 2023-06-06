@@ -5,41 +5,37 @@ impl<T> ShallowModel for Once<T> {
 
     #[logic]
     #[trusted]
+    #[open(self)]
     fn shallow_model(self) -> Option<T> {
         pearlite! { absurd }
     }
 }
 
-impl<T> Invariant for Once<T> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! { true }
-    }
-}
+impl<T> Invariant for Once<T> {}
 
 impl<T> Iterator for Once<T> {
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { @*self == None && self.resolve() }
+        pearlite! { (*self)@ == None && self.resolve() }
     }
 
+    #[open]
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::EMPTY && self == o ||
-            exists<e: Self::Item> @self == Some(e) && visited == Seq::singleton(e) && @o == None
+            exists<e: Self::Item> self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
         }
     }
 
     #[law]
-    #[requires(a.invariant())]
+    #[open(self)]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
+    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

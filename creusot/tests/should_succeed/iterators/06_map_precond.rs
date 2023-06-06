@@ -1,7 +1,7 @@
 #![feature(unboxed_closures)]
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::{invariant::Invariant, *};
 
 mod common;
 use common::Iterator;
@@ -15,6 +15,7 @@ pub struct Map<I, A, F> {
 impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator for Map<I, I::Item, F> {
     type Item = B;
 
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! {
@@ -24,11 +25,13 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator for M
     }
 
     #[law]
+    #[open]
     #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open]
     #[requires(a.invariant())]
     #[requires(b.invariant())]
     #[requires(c.invariant())]
@@ -37,6 +40,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator for M
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
+    #[open]
     #[predicate]
     #[why3::attr = "inline:trivial"]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
@@ -52,17 +56,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator for M
                  self.func.unnest(*fs[i])
                  && (*fs[i]).precondition((s[i], Ghost::new(self.produced.concat(s.subsequence(0, i)))))
                  && fs[i].postcondition_mut((s[i], Ghost::new(self.produced.concat(s.subsequence(0, i)))), visited[i])
-        }
-    }
-
-    // Should not quantify over self or the `invariant` cannot be made into a type invariant
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! {
-            Self::reinitialize() &&
-            self.preservation_inv() &&
-            self.iter.invariant() &&
-            self.next_precondition()
         }
     }
 
@@ -104,6 +97,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item
     fn reinitialize() -> bool {
         pearlite! {
             forall<reset : &mut Map<I, _, F>>
+                (*reset).iter.invariant() ==>
                 reset.completed() ==>
                 (^reset).iter.invariant() ==>
                 (^reset).next_precondition() &&
@@ -158,6 +152,22 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item
     }
 }
 
+impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Invariant for Map<I, I::Item, F> {
+    // Should not quantify over self or the `invariant` cannot be made into a type invariant
+    #[open]
+    #[predicate]
+    #[creusot::ignore_type_invariant]
+    #[open(self)]
+    fn invariant(self) -> bool {
+        pearlite! {
+            Self::reinitialize() &&
+            self.preservation_inv() &&
+            self.iter.invariant() &&
+            self.next_precondition()
+        }
+    }
+}
+
 #[requires(forall<e : I::Item, i2 : I> i2.invariant() ==> iter.produces(Seq::singleton(e), i2) ==> func.precondition((e, Ghost::new(Seq::EMPTY))))]
 #[requires(Map::<I, _, F>::reinitialize())]
 #[requires(iter.invariant())]
@@ -184,8 +194,8 @@ pub fn identity<I: Iterator>(iter: I) {
 pub fn increment<I: Iterator<Item = u32>>(iter: I) {
     let i = map(
         iter,
-        #[requires(@x <= 15)]
-        #[ensures(@result == @x+1)]
+        #[requires(x@ <= 15)]
+        #[ensures(result@ == x@+1)]
         |x: u32, _| x + 1,
     );
 
@@ -197,13 +207,13 @@ pub fn increment<I: Iterator<Item = u32>>(iter: I) {
 
 #[requires(iter.invariant())]
 #[requires(forall<done_ : &mut I> done_.completed() ==> (^done_).invariant() ==> forall<next : I, steps: Seq<_>> (^done_).produces(steps, next) ==> steps == Seq::EMPTY && ^done_ == next)]
-#[requires(forall<prod : _, fin: I> fin.invariant() ==> iter.produces(prod, fin) ==> prod.len() <= @usize::MAX)]
+#[requires(forall<prod : _, fin: I> fin.invariant() ==> iter.produces(prod, fin) ==> prod.len() <= usize::MAX@)]
 pub fn counter<I: Iterator<Item = u32>>(iter: I) {
     let mut cnt = 0;
     map(
         iter,
-        #[requires(@cnt == (*_prod).len() && cnt < usize::MAX)]
-        #[ensures(@cnt == @old(cnt) + 1)]
+        #[requires(cnt@ == (*_prod).len() && cnt < usize::MAX)]
+        #[ensures(cnt@ == old(cnt)@ + 1)]
         |x, _prod: Ghost<Seq<_>>| {
             cnt += 1;
             x

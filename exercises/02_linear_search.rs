@@ -8,7 +8,7 @@ fn search<T: Ord>(v: &Vec<T>, tgt: &T) -> Option<usize> {
     let mut i = 0;
 
     while i < v.len() {
-        if v[i] == t {
+        if v[i] == tgt {
             return Some(i);
         }
 

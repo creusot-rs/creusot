@@ -1,6 +1,26 @@
 use crate::{std::alloc::Allocator, *};
 pub use ::std::boxed::*;
 
+#[cfg(creusot)]
+impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
+    type DeepModelTy = T::DeepModelTy;
+    #[logic]
+    #[open]
+    fn deep_model(self) -> Self::DeepModelTy {
+        (*self).deep_model()
+    }
+}
+
+#[cfg(creusot)]
+impl<T: ShallowModel + ?Sized, A: Allocator> ShallowModel for Box<T, A> {
+    type ShallowModelTy = T::ShallowModelTy;
+    #[logic]
+    #[open]
+    fn shallow_model(self) -> Self::ShallowModelTy {
+        (*self).shallow_model()
+    }
+}
+
 extern_spec! {
     mod std {
         mod boxed {

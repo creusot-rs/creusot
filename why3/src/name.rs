@@ -90,7 +90,7 @@ impl QName {
     }
 
     pub fn module_qname(mut self) -> QName {
-        assert!(self.module.len() > 0, "ident has no module {:?}", self);
+        assert!(!self.module.is_empty(), "ident has no module {:?}", self);
         let id = self.module.pop().unwrap();
         self.name = id;
         self
@@ -160,9 +160,11 @@ const RESERVED: &[&str] = &[
     "ensures",
     "epsilon",
     "exception",
+    "exists",
     "export",
     "false",
     "for",
+    "forall",
     "fun",
     "function",
     "ghost",
@@ -175,6 +177,7 @@ const RESERVED: &[&str] = &[
     "lemma",
     "let",
     "match",
+    "meta",
     "module",
     "mutable",
     "not",
@@ -194,6 +197,7 @@ const RESERVED: &[&str] = &[
     "type",
     "use",
     "val",
+    "var",
     "variant",
     "while",
     "with",

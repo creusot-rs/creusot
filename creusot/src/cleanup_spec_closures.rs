@@ -1,16 +1,13 @@
-use creusot_rustc::{
-    hir::def_id::DefId,
-    index::vec::IndexVec,
-    middle::{
-        mir::{Terminator, TerminatorKind},
-        ty::TyCtxt,
-    },
-    smir::mir::{
-        AggregateKind, BasicBlock, BasicBlockData, Body, Local, Location, MutVisitor, Rvalue,
-        SourceInfo,
-    },
-};
 use indexmap::IndexSet;
+use rustc_hir::def_id::DefId;
+use rustc_index::{Idx, IndexVec};
+use rustc_middle::{
+    mir::{
+        visit::MutVisitor, AggregateKind, BasicBlock, BasicBlockData, Body, Local, Location,
+        Rvalue, SourceInfo, Terminator, TerminatorKind,
+    },
+    ty::TyCtxt,
+};
 
 use crate::util;
 
@@ -39,14 +36,17 @@ pub(crate) fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body
 }
 
 fn cleanup_statements<'tcx>(body: &mut Body<'tcx>, unused: &IndexSet<Local>) {
-    use creusot_rustc::smir::mir::StatementKind;
+    use rustc_middle::mir::StatementKind;
 
     for data in body.basic_blocks_mut() {
         data.statements.retain(|statement| match &statement.kind {
             StatementKind::StorageLive(local) | StatementKind::StorageDead(local) => {
                 !unused.contains(local)
             }
-            StatementKind::Assign(box (place, _)) => !unused.contains(&place.local),
+            StatementKind::PlaceMention(place) => !unused.contains(&place.local),
+            StatementKind::Assign(box (place, _)) | StatementKind::FakeRead(box (_, place)) => {
+                !unused.contains(&place.local)
+            }
             _ => true,
         })
     }
@@ -55,7 +55,7 @@ fn cleanup_statements<'tcx>(body: &mut Body<'tcx>, unused: &IndexSet<Local>) {
 pub(crate) fn make_loop(_: TyCtxt) -> IndexVec<BasicBlock, BasicBlockData> {
     let mut body = IndexVec::new();
     body.push(BasicBlockData::new(Some(Terminator {
-        source_info: SourceInfo::outermost(creusot_rustc::span::DUMMY_SP),
+        source_info: SourceInfo::outermost(rustc_span::DUMMY_SP),
         kind: TerminatorKind::Return,
     })));
     body
@@ -80,23 +80,19 @@ impl<'tcx> MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &mut Rvalue<'tcx>, l: Location) {
         match rvalue {
             Rvalue::Aggregate(box AggregateKind::Closure(def_id, _), substs) => {
-                if util::is_no_translate(self.tcx, def_id.to_def_id())
-                    || util::is_ghost(self.tcx, def_id.to_def_id())
-                {
+                if util::is_no_translate(self.tcx, *def_id) || util::is_ghost(self.tcx, *def_id) {
                     substs.iter_mut().for_each(|p| {
                         if p.is_move() {
                             self.unused.insert(p.place().unwrap().as_local().unwrap());
                         }
                     });
-                    *substs = Vec::new();
+                    *substs = IndexVec::new();
                 }
             }
             _ => self.super_rvalue(rvalue, l),
         }
     }
 }
-
-use creusot_rustc::index::vec::Idx;
 
 pub(crate) fn map_locals<V>(
     local_decls: &mut IndexVec<Local, V>,
@@ -120,7 +116,7 @@ pub(crate) fn map_locals<V>(
     map
 }
 
-use creusot_rustc::middle::mir::visit::PlaceContext;
+use rustc_middle::mir::visit::PlaceContext;
 
 pub struct LocalUpdater<'tcx> {
     pub map: IndexVec<Local, Option<Local>>,

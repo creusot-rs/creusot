@@ -25,9 +25,13 @@ pub enum BinOp {
     Eq,
     FloatEq,
     Lt,
+    FloatLt,
     Le,
+    FloatLe,
     Gt,
+    FloatGt,
     Ge,
+    FloatGe,
     Ne,
 }
 
@@ -55,6 +59,10 @@ impl BinOp {
             BinOp::FloatMul => Infix4,
             BinOp::FloatDiv => Infix4,
             BinOp::FloatEq => Infix4,
+            BinOp::FloatLt => Infix4,
+            BinOp::FloatLe => Infix4,
+            BinOp::FloatGt => Infix4,
+            BinOp::FloatGe => Infix4,
         }
     }
 
@@ -76,6 +84,7 @@ impl BinOp {
 pub enum UnOp {
     Not,
     Neg,
+    FloatNeg,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -119,6 +128,8 @@ pub enum Exp {
     Impl(Box<Exp>, Box<Exp>),
     Forall(Vec<(Ident, Type)>, Box<Exp>),
     Exists(Vec<(Ident, Type)>, Box<Exp>),
+    Sequence(Vec<Exp>),
+    FnLit(Box<Exp>),
 }
 
 #[derive(Debug, Clone)]
@@ -189,6 +200,8 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
         Exp::Attr(_, e) => f.visit_mut(e),
         Exp::Ghost(e) => f.visit_mut(e),
         Exp::Record { fields } => fields.iter_mut().for_each(|(_, e)| f.visit_mut(e)),
+        Exp::Sequence(fields) => fields.iter_mut().for_each(|e| f.visit_mut(e)),
+        Exp::FnLit(e) => f.visit_mut(e),
     }
 }
 
@@ -251,6 +264,8 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
         Exp::Attr(_, e) => f.visit(e),
         Exp::Ghost(e) => f.visit(e),
         Exp::Record { fields } => fields.iter().for_each(|(_, e)| f.visit(e)),
+        Exp::Sequence(fields) => fields.iter().for_each(|e| f.visit(e)),
+        Exp::FnLit(e) => f.visit(e),
     }
 }
 
@@ -276,18 +291,26 @@ impl Exp {
     }
 
     pub fn eq(self, rhs: Self) -> Self {
-        Exp::BinaryOp(BinOp::Eq, box self, box rhs)
+        Exp::BinaryOp(BinOp::Eq, Box::new(self), Box::new(rhs))
     }
 
     pub fn neq(self, rhs: Self) -> Self {
-        Exp::BinaryOp(BinOp::Ne, box self, box rhs)
+        Exp::BinaryOp(BinOp::Ne, Box::new(self), Box::new(rhs))
+    }
+
+    pub fn app(mut self, arg: Vec<Self>) -> Self {
+        match self {
+            Exp::Call(_, ref mut args) => args.extend(arg),
+            _ => self = Exp::Call(Box::new(self), arg),
+        }
+        self
     }
 
     // Construct an application from this expression and an argument
     pub fn app_to(mut self, arg: Self) -> Self {
         match self {
             Exp::Call(_, ref mut args) => args.push(arg),
-            _ => self = Exp::Call(box self, vec![arg]),
+            _ => self = Exp::Call(Box::new(self), vec![arg]),
         }
         self
     }
@@ -298,7 +321,7 @@ impl Exp {
         } else if let Exp::Const(Constant::Bool(true)) = other {
             self
         } else {
-            Exp::BinaryOp(BinOp::LazyAnd, box self, box other)
+            Exp::BinaryOp(BinOp::LazyAnd, Box::new(self), Box::new(other))
         }
     }
 
@@ -308,15 +331,17 @@ impl Exp {
         } else if let Exp::Const(Constant::Bool(true)) = other {
             self
         } else {
-            Exp::BinaryOp(BinOp::LogAnd, box self, box other)
+            Exp::BinaryOp(BinOp::LogAnd, Box::new(self), Box::new(other))
         }
     }
 
     pub fn implies(self, other: Self) -> Self {
         if self.is_true() {
             other
+        } else if other.is_true() {
+            other
         } else {
-            Exp::Impl(box self, box other)
+            Exp::Impl(Box::new(self), Box::new(other))
         }
     }
 
@@ -510,7 +535,7 @@ impl Exp {
             Exp::IfThenElse(_, _, _) => IfLet,
             Exp::BorrowMut(_) => App,
             Exp::Const(_) => Atom,
-            Exp::UnaryOp(UnOp::Neg, _) => Prefix,
+            Exp::UnaryOp(UnOp::Neg | UnOp::FloatNeg, _) => Prefix,
             Exp::UnaryOp(UnOp::Not, _) => Not,
             Exp::BinaryOp(op, _, _) => op.precedence(),
             Exp::Call(_, _) => App,
@@ -527,6 +552,8 @@ impl Exp {
             Exp::Attr(_, _) => Attr,
             Exp::Ghost(_) => App,
             Exp::Record { fields: _ } => Atom,
+            Exp::Sequence(_) => Atom,
+            Exp::FnLit(_) => Atom,
             // _ => unimplemented!("{:?}", self),
         }
     }
@@ -688,7 +715,7 @@ impl Binder {
             Binder::Wild => Vec::new(),
             Binder::UnNamed(_) => Vec::new(),
             Binder::Named(id) => vec![id.clone()],
-            Binder::Typed(_, ids, _) => ids.into_iter().fold(Vec::new(), |mut acc, id| {
+            Binder::Typed(_, ids, _) => ids.iter().fold(Vec::new(), |mut acc, id| {
                 acc.extend(id.fvs());
                 acc
             }),
@@ -739,9 +766,9 @@ pub enum Constant {
     Bool(bool),
 }
 
-impl Into<Exp> for Constant {
-    fn into(self) -> Exp {
-        Exp::Const(self)
+impl From<Constant> for Exp {
+    fn from(val: Constant) -> Self {
+        Exp::Const(val)
     }
 }
 

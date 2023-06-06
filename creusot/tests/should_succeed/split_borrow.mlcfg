@@ -1,9 +1,10 @@
 
 module SplitBorrow_Z_Interface
-  val z [@cfg:stackify] [#"../split_borrow.rs" 5 0 5 14] (_1' : ()) : bool
+  val z [#"../split_borrow.rs" 5 0 5 14] (_1' : ()) : bool
 end
 module SplitBorrow_Z
-  let rec cfg z [@cfg:stackify] [#"../split_borrow.rs" 5 0 5 14] (_1' : ()) : bool = [@vc:do_not_keep_trace] [@vc:sp]
+  let rec cfg z [#"../split_borrow.rs" 5 0 5 14] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : bool
+   = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : bool;
   {
     goto BB0
@@ -15,7 +16,7 @@ module SplitBorrow_Z
   
 end
 module SplitBorrow_MyInt_Type
-  use mach.int.Int
+  use prelude.Int
   use prelude.UIntSize
   type t_myint  =
     | C_MyInt usize
@@ -25,6 +26,28 @@ module SplitBorrow_MyInt_Type
       | C_MyInt a -> a
       end
 end
+module CreusotContracts_Resolve_Impl1_Resolve_Stub
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Resolve_Impl1_Resolve_Interface
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
+end
+module CreusotContracts_Resolve_Impl1_Resolve
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
+end
 module CreusotContracts_Resolve_Resolve_Resolve_Stub
   type self
   predicate resolve (self : self)
@@ -32,6 +55,9 @@ end
 module CreusotContracts_Resolve_Resolve_Resolve_Interface
   type self
   predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Resolve_Resolve_Resolve
   type self
@@ -49,6 +75,9 @@ module CreusotContracts_Resolve_Impl0_Resolve_Interface
   type t1
   type t2
   predicate resolve (self : (t1, t2))
+  val resolve (self : (t1, t2)) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Resolve_Impl0_Resolve
   type t1
@@ -58,27 +87,8 @@ module CreusotContracts_Resolve_Impl0_Resolve
   clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
     type self = t1
   predicate resolve (self : (t1, t2)) =
-    Resolve0.resolve (let (a, _) = self in a) /\ Resolve1.resolve (let (_, a) = self in a)
+    [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] Resolve0.resolve (let (a, _) = self in a) /\ Resolve1.resolve (let (_, a) = self in a)
   val resolve (self : (t1, t2)) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl1_Resolve_Stub
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-end
-module CreusotContracts_Resolve_Impl1_Resolve_Interface
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-end
-module CreusotContracts_Resolve_Impl1_Resolve
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-     ^ self =  * self
-  val resolve (self : borrowed t) : bool
     ensures { result = resolve self }
     
 end
@@ -89,34 +99,38 @@ end
 module CreusotContracts_Resolve_Impl2_Resolve_Interface
   type t
   predicate resolve (self : t)
+  val resolve (self : t) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Resolve_Impl2_Resolve
   type t
   predicate resolve (self : t) =
-    true
+    [#"../../../../creusot-contracts/src/resolve.rs" 36 8 36 12] true
   val resolve (self : t) : bool
     ensures { result = resolve self }
     
 end
 module SplitBorrow_F_Interface
-  val f [@cfg:stackify] [#"../split_borrow.rs" 9 0 9 10] (_1' : ()) : ()
+  val f [#"../split_borrow.rs" 9 0 9 10] (_1' : ()) : ()
 end
 module SplitBorrow_F
   use prelude.Borrow
-  use mach.int.Int
+  use prelude.Int
   use prelude.UIntSize
   use SplitBorrow_MyInt_Type as SplitBorrow_MyInt_Type
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = SplitBorrow_MyInt_Type.t_myint
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
-    type t = (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint)
-  clone SplitBorrow_Z_Interface as Z0
-  clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
+  clone CreusotContracts_Resolve_Impl0_Resolve as Resolve1 with
     type t1 = SplitBorrow_MyInt_Type.t_myint,
     type t2 = SplitBorrow_MyInt_Type.t_myint,
     predicate Resolve0.resolve = Resolve2.resolve,
     predicate Resolve1.resolve = Resolve2.resolve
-  let rec cfg f [@cfg:stackify] [#"../split_borrow.rs" 9 0 9 10] (_1' : ()) : () = [@vc:do_not_keep_trace] [@vc:sp]
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint)
+  clone SplitBorrow_Z_Interface as Z0
+  let rec cfg f [#"../split_borrow.rs" 9 0 9 10] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : ()
+   = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var x_1 : (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint);
   var _2 : SplitBorrow_MyInt_Type.t_myint;
@@ -136,7 +150,6 @@ module SplitBorrow_F
     x_1 <- (_2, _3);
     y_4 <- borrow_mut x_1;
     x_1 <-  ^ y_4;
-    assume { Resolve0.resolve x_1 };
     _6 <- ([#"../split_borrow.rs" 13 7 13 10] Z0.z ());
     goto BB1
   }
@@ -162,7 +175,62 @@ module SplitBorrow_F
   }
   BB4 {
     _9 <- SplitBorrow_MyInt_Type.myint_0 (let (a, _) =  * y_4 in a);
-    assume { Resolve1.resolve y_4 };
+    assume { Resolve0.resolve y_4 };
+    assume { Resolve1.resolve x_1 };
+    _0 <- ();
+    return _0
+  }
+  
+end
+module SplitBorrow_G_Interface
+  val g [#"../split_borrow.rs" 23 0 23 10] (_1' : ()) : ()
+end
+module SplitBorrow_G
+  use prelude.Borrow
+  use prelude.Int
+  use prelude.UIntSize
+  use SplitBorrow_MyInt_Type as SplitBorrow_MyInt_Type
+  clone CreusotContracts_Resolve_Impl2_Resolve as Resolve3 with
+    type t = SplitBorrow_MyInt_Type.t_myint
+  clone CreusotContracts_Resolve_Impl0_Resolve as Resolve2 with
+    type t1 = SplitBorrow_MyInt_Type.t_myint,
+    type t2 = SplitBorrow_MyInt_Type.t_myint,
+    predicate Resolve0.resolve = Resolve3.resolve,
+    predicate Resolve1.resolve = Resolve3.resolve
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
+    type t = (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint)
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = SplitBorrow_MyInt_Type.t_myint
+  let rec cfg g [#"../split_borrow.rs" 23 0 23 10] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : ()
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var a_1 : (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint);
+  var _2 : SplitBorrow_MyInt_Type.t_myint;
+  var _3 : SplitBorrow_MyInt_Type.t_myint;
+  var x_4 : borrowed (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint);
+  var _z_5 : borrowed (SplitBorrow_MyInt_Type.t_myint);
+  var _6 : SplitBorrow_MyInt_Type.t_myint;
+  var _7 : bool;
+  var _8 : usize;
+  {
+    goto BB0
+  }
+  BB0 {
+    _2 <- SplitBorrow_MyInt_Type.C_MyInt ([#"../split_borrow.rs" 24 23 24 24] (1 : usize));
+    _3 <- SplitBorrow_MyInt_Type.C_MyInt ([#"../split_borrow.rs" 24 33 24 34] (2 : usize));
+    a_1 <- (_2, _3);
+    x_4 <- borrow_mut a_1;
+    a_1 <-  ^ x_4;
+    _z_5 <- borrow_mut (let (_, a) =  * x_4 in a);
+    x_4 <- { x_4 with current = (let (a, b) =  * x_4 in (a,  ^ _z_5)) };
+    assume { Resolve0.resolve _z_5 };
+    _6 <- SplitBorrow_MyInt_Type.C_MyInt ([#"../split_borrow.rs" 29 19 29 20] (3 : usize));
+    x_4 <- { x_4 with current = (let (a, b) =  * x_4 in (_6, b)) };
+    _6 <- any SplitBorrow_MyInt_Type.t_myint;
+    assume { Resolve1.resolve x_4 };
+    _8 <- SplitBorrow_MyInt_Type.myint_0 (let (a, _) = a_1 in a);
+    assume { Resolve2.resolve a_1 };
+    _7 <- ([#"../split_borrow.rs" 31 12 31 24] _8 = ([#"../split_borrow.rs" 31 23 31 24] (3 : usize)));
     _0 <- ();
     return _0
   }

@@ -282,6 +282,7 @@ pub struct ValDecl {
 pub struct Use {
     pub name: QName,
     pub as_: Option<QName>,
+    pub export: bool,
 }
 
 #[derive(Debug, Clone)]

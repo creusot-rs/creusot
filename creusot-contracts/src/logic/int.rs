@@ -3,16 +3,13 @@ use crate::{
     *,
 };
 
-#[cfg_attr(
-    feature = "contracts",
-    rustc_diagnostic_item = "creusot_int",
-    creusot::builtins = "mach.int.Int.int"
-)]
+#[cfg_attr(creusot, rustc_diagnostic_item = "creusot_int", creusot::builtins = "prelude.Int.int")]
 pub struct Int(*mut ());
 
 impl Int {
     #[trusted]
     #[logic]
+    #[open(self)]
     #[creusot::builtins = "int.Power.power"]
     pub fn pow(self, _: Int) -> Int {
         absurd
@@ -20,6 +17,7 @@ impl Int {
 
     #[trusted]
     #[logic]
+    #[open(self)]
     #[creusot::builtins = "int.MinMax.max"]
     pub fn max(self, _: Int) -> Int {
         absurd
@@ -27,6 +25,7 @@ impl Int {
 
     #[trusted]
     #[logic]
+    #[open(self)]
     #[creusot::builtins = "int.MinMax.min"]
     pub fn min(self, _: Int) -> Int {
         absurd
@@ -34,6 +33,7 @@ impl Int {
 
     #[trusted]
     #[logic]
+    #[open(self)]
     #[creusot::builtins = "int.EuclideanDivision.div"]
     pub fn div_euclid(self, _: Int) -> Int {
         absurd
@@ -41,12 +41,14 @@ impl Int {
 
     #[trusted]
     #[logic]
+    #[open(self)]
     #[creusot::builtins = "int.EuclideanDivision.mod"]
     pub fn rem_euclid(self, _: Int) -> Int {
         absurd
     }
 
     #[logic]
+    #[open]
     pub fn abs_diff(self, other: Int) -> Int {
         if self < other {
             other - self
@@ -56,43 +58,7 @@ impl Int {
     }
 }
 
-macro_rules! mach_int {
-    ($t:ty, $ty_nm:expr) => {
-        impl ShallowModel for $t {
-            type ShallowModelTy = Int;
-            #[logic]
-            #[trusted]
-            #[creusot::builtins = concat!($ty_nm, ".to_int")]
-            fn shallow_model(self) -> Self::ShallowModelTy {
-                pearlite! { absurd }
-            }
-        }
-
-        impl DeepModel for $t {
-            type DeepModelTy = Int;
-            #[logic]
-            fn deep_model(self) -> Self::DeepModelTy {
-                pearlite! { @self }
-            }
-        }
-    };
-}
-
-mach_int!(u8, "prelude.UInt8");
-mach_int!(u16, "prelude.UInt16");
-mach_int!(u32, "mach.int.UInt32");
-mach_int!(u64, "mach.int.UInt64");
-mach_int!(u128, "prelude.UInt128");
-mach_int!(usize, "mach.int.UInt64");
-
-mach_int!(i8, "prelude.Int8");
-mach_int!(i16, "prelude.Int16");
-mach_int!(i32, "mach.int.Int32");
-mach_int!(i64, "mach.int.Int64");
-mach_int!(i128, "prelude.Int128");
-mach_int!(isize, "mach.int.Int64");
-
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 impl Add<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
@@ -102,7 +68,7 @@ impl Add<Int> for Int {
     }
 }
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 impl Sub<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
@@ -112,7 +78,7 @@ impl Sub<Int> for Int {
     }
 }
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 impl Mul<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
@@ -122,7 +88,7 @@ impl Mul<Int> for Int {
     }
 }
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 impl Div<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
@@ -132,7 +98,7 @@ impl Div<Int> for Int {
     }
 }
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 impl Rem<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
@@ -142,7 +108,7 @@ impl Rem<Int> for Int {
     }
 }
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 impl Neg for Int {
     type Output = Int;
     #[creusot::no_translate]

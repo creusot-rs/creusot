@@ -18,6 +18,7 @@ pub struct AssocStruct;
 pub struct Struct;
 
 impl AssocTrait for AssocStruct {
+    #[open]
     #[predicate]
     fn invariant(self) -> bool {
         true
@@ -27,6 +28,7 @@ impl AssocTrait for AssocStruct {
 impl Trait for Struct {
     type Assoc = AssocStruct;
 
+    #[open]
     #[predicate]
     #[ensures(result ==> assoc.invariant())]
     fn invariant(self, assoc: AssocStruct) -> bool {

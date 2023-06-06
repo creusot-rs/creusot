@@ -8,12 +8,15 @@ module CreusotContracts_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
   predicate resolve (self : borrowed t)
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
   predicate resolve (self : borrowed t) =
-     ^ self =  * self
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
     ensures { result = resolve self }
     
@@ -21,7 +24,7 @@ end
 module ProjectionToggle_ProjToggle_Interface
   type t
   use prelude.Borrow
-  val proj_toggle [@cfg:stackify] [#"../projection_toggle.rs" 5 0 5 87] (toggle : bool) (a : borrowed t) (b : borrowed t) : borrowed t
+  val proj_toggle [#"../projection_toggle.rs" 5 0 5 87] (toggle : bool) (a : borrowed t) (b : borrowed t) : borrowed t
     ensures { [#"../projection_toggle.rs" 4 0 4 82] if toggle then
       result = a /\  ^ b =  * b
     else
@@ -34,7 +37,7 @@ module ProjectionToggle_ProjToggle
   use prelude.Borrow
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = t
-  let rec cfg proj_toggle [@cfg:stackify] [#"../projection_toggle.rs" 5 0 5 87] (toggle : bool) (a : borrowed t) (b : borrowed t) : borrowed t
+  let rec cfg proj_toggle [#"../projection_toggle.rs" 5 0 5 87] [@cfg:stackify] [@cfg:subregion_analysis] (toggle : bool) (a : borrowed t) (b : borrowed t) : borrowed t
     ensures { [#"../projection_toggle.rs" 4 0 4 82] if toggle then
       result = a /\  ^ b =  * b
     else
@@ -67,7 +70,6 @@ module ProjectionToggle_ProjToggle
     assume { Resolve0.resolve b_3 };
     _8 <- borrow_mut ( * a_2);
     a_2 <- { a_2 with current = ( ^ _8) };
-    assume { Resolve0.resolve a_2 };
     _6 <- borrow_mut ( * _8);
     _8 <- { _8 with current = ( ^ _6) };
     assume { Resolve0.resolve _8 };
@@ -77,32 +79,33 @@ module ProjectionToggle_ProjToggle
     assume { Resolve0.resolve a_2 };
     _6 <- borrow_mut ( * b_3);
     b_3 <- { b_3 with current = ( ^ _6) };
-    assume { Resolve0.resolve b_3 };
     goto BB3
   }
   BB3 {
     _4 <- borrow_mut ( * _6);
     _6 <- { _6 with current = ( ^ _4) };
-    assume { Resolve0.resolve _6 };
     _0 <- borrow_mut ( * _4);
     _4 <- { _4 with current = ( ^ _0) };
+    assume { Resolve0.resolve _6 };
     assume { Resolve0.resolve _4 };
+    assume { Resolve0.resolve a_2 };
+    assume { Resolve0.resolve b_3 };
     return _0
   }
   
 end
 module ProjectionToggle_F_Interface
-  val f [@cfg:stackify] [#"../projection_toggle.rs" 13 0 13 10] (_1' : ()) : ()
+  val f [#"../projection_toggle.rs" 13 0 13 10] (_1' : ()) : ()
 end
 module ProjectionToggle_F
-  use mach.int.Int
-  use mach.int.Int32
+  use prelude.Int
+  use prelude.Int32
   use prelude.Borrow
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = int32
   clone ProjectionToggle_ProjToggle_Interface as ProjToggle0 with
     type t = int32
-  let rec cfg f [@cfg:stackify] [#"../projection_toggle.rs" 13 0 13 10] (_1' : ()) : ()
+  let rec cfg f [#"../projection_toggle.rs" 13 0 13 10] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var a_1 : int32;
@@ -135,8 +138,8 @@ module ProjectionToggle_F
     goto BB1
   }
   BB1 {
-    assume { Resolve0.resolve _5 };
     assume { Resolve0.resolve _7 };
+    assume { Resolve0.resolve _5 };
     x_3 <- { x_3 with current = ([#"../projection_toggle.rs" 19 4 19 11]  * x_3 + ([#"../projection_toggle.rs" 19 10 19 11] (5 : int32))) };
     assume { Resolve0.resolve x_3 };
     _11 <- a_1;

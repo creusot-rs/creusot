@@ -1,7 +1,7 @@
 #![feature(unboxed_closures)]
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::{invariant::Invariant, *};
 
 mod common;
 use common::Iterator;
@@ -16,17 +16,20 @@ pub struct Map<I, F> {
 impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
     type Item = B;
 
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! { self.iter.completed() && self.func == (^self).func }
     }
 
     #[law]
+    #[open]
     #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[open]
     #[requires(a.invariant())]
     #[requires(b.invariant())]
     #[requires(c.invariant())]
@@ -35,6 +38,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
+    #[open]
     #[predicate]
     #[why3::attr = "inline:trivial"]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
@@ -49,17 +53,6 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
                  self.func.unnest(*fs[i])
                  && (*fs[i]).precondition((s[i],))
                  && fs[i].postcondition_mut((s[i],), visited[i])
-        }
-    }
-
-    // Should not quantify over self or the `invariant` cannot be made into a type invariant
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! {
-            Self::reinitialize() &&
-            self.preservation_inv() &&
-            self.iter.invariant() &&
-            self.next_precondition()
         }
     }
 
@@ -140,6 +133,21 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
             && { exists<e : I::Item> self.iter.produces(Seq::singleton(e), succ.iter)
                  && (*f).precondition((e,))
                  && f.postcondition_mut((e,), visited) }
+        }
+    }
+}
+
+impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, F> {
+    // Should not quantify over self or the `invariant` cannot be made into a type invariant
+    #[predicate]
+    #[creusot::ignore_type_invariant]
+    #[open(self)]
+    fn invariant(self) -> bool {
+        pearlite! {
+            Self::reinitialize() &&
+            self.preservation_inv() &&
+            self.iter.invariant() &&
+            self.next_precondition()
         }
     }
 }

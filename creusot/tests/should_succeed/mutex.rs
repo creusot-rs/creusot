@@ -61,6 +61,7 @@ impl<'a, T, I: Inv<T>> MutexGuard<'a, T, I> {
 struct Even;
 
 impl Inv<u32> for Even {
+    #[open(self)]
     #[predicate]
     fn inv(&self, x: u32) -> bool {
         x % 2u32 == 0u32
@@ -144,6 +145,7 @@ struct SpawnPostCond<F> {
 }
 
 impl<F: FakeFnOnce> Inv<F::Return> for SpawnPostCond<F> {
+    #[open(self)]
     #[predicate]
     fn inv(&self, v: F::Return) -> bool {
         self.f.postcondition(v)

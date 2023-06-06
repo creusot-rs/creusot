@@ -6,22 +6,24 @@ use crate::{
     translation::specification::inv_subst,
     util::{self, is_ghost_closure},
 };
-use creusot_rustc::{
-    data_structures::graph::WithSuccessors,
-    hir::def_id::DefId,
-    middle::{
-        mir::visit::Visitor,
-        ty::{TyCtxt, TyKind},
-    },
-    smir::mir::{AggregateKind, BasicBlock, Body, Location, Operand, Rvalue},
-    span::Symbol,
+use rustc_data_structures::graph::WithSuccessors;
+use rustc_hir::def_id::DefId;
+use rustc_middle::{
+    mir::{visit::Visitor, AggregateKind, BasicBlock, Body, Location, Operand, Rvalue},
+    ty::{TyCtxt, TyKind},
 };
+
+#[derive(Debug, Clone, Copy)]
+pub enum LoopSpecKind {
+    Invariant,
+    Variant,
+}
 
 pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
     body: &Body<'tcx>,
-) -> (IndexMap<BasicBlock, Vec<(Symbol, Term<'tcx>)>>, IndexMap<DefId, Term<'tcx>>) {
+) -> (IndexMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>, IndexMap<DefId, Term<'tcx>>) {
     let mut visitor = InvariantClosures::new(ctx.tcx, def_id);
     visitor.visit_body(&body);
 
@@ -30,17 +32,17 @@ pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
     let mut invariants: IndexMap<_, _> = Default::default();
 
     for clos in visitor.closures.into_iter() {
-        if let Some(name) = util::invariant_name(ctx.tcx, clos) {
+        if util::is_invariant(ctx.tcx, clos) {
             let term = ctx.term(clos).unwrap().clone();
-
-            invariants.insert(clos, (name, term));
+            invariants.insert(clos, (LoopSpecKind::Invariant, term));
+        } else if util::is_loop_variant(ctx.tcx, clos) {
+            let term = ctx.term(clos).unwrap().clone();
+            invariants.insert(clos, (LoopSpecKind::Variant, term));
         } else if util::is_assertion(ctx.tcx, clos) {
             let term = ctx.term(clos).unwrap().clone();
-
             assertions.insert(clos, term);
         } else if util::is_ghost(ctx.tcx, clos) {
             let term = ctx.term(clos).unwrap().clone();
-
             // A hack should probably be separately tracked
             assertions.insert(clos, term);
         }
@@ -51,7 +53,7 @@ pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
     let correct_inv = locations
         .into_iter()
         .map(|(loc, invs)| {
-            let inv_exps: Vec<_> = invs
+            let inv_exps: Vec<(LoopSpecKind, _)> = invs
                 .into_iter()
                 .map(|id| {
                     let mut inv = invariants.remove(&id.1).unwrap();
@@ -101,7 +103,7 @@ impl<'tcx> Visitor<'tcx> for InvariantClosures<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         match rvalue {
             Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) => {
-                self.closures.insert(id.to_def_id());
+                self.closures.insert(*id);
             }
             Rvalue::Use(Operand::Constant(box ck)) => {
                 if let Some(def_id) = is_ghost_closure(self.tcx, ck.literal.ty()) {
@@ -122,7 +124,7 @@ impl<'tcx> Visitor<'tcx> for ClosureLocations {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         match rvalue {
             Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) => {
-                self.locations.insert(id.to_def_id(), loc);
+                self.locations.insert(*id, loc);
             }
             Rvalue::Use(Operand::Constant(box ck)) => {
                 if let TyKind::Closure(def_id, _) = ck.literal.ty().peel_refs().kind() {
@@ -144,8 +146,8 @@ struct InvariantLocations<'tcx> {
 impl<'tcx> Visitor<'tcx> for InvariantLocations<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         if let Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
-            if util::is_invariant(self.tcx, id.to_def_id()) {
-                self.invariants.insert(loc, id.to_def_id());
+            if util::is_invariant(self.tcx, *id) || util::is_loop_variant(self.tcx, *id) {
+                self.invariants.insert(loc, *id);
             }
         }
         self.super_rvalue(rvalue, loc);
@@ -175,7 +177,7 @@ fn invariant_locations<'tcx>(
             if let Some(preds) = body.basic_blocks.predecessors().get(target) {
                 let is_loop_header = preds
                     .iter()
-                    .any(|pred| body.basic_blocks.dominators().is_dominated_by(*pred, target));
+                    .any(|pred| body.basic_blocks.dominators().dominates(target, *pred));
 
                 if is_loop_header {
                     break;

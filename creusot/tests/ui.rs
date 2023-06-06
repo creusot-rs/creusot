@@ -13,6 +13,25 @@ use similar::{ChangeTag, TextDiff};
 use termcolor::*;
 
 fn main() {
+    // Build `creusot-rustc` and `cargo-creusot`
+
+    let creusot_rustc = escargot::CargoBuild::new()
+        .bin("creusot-rustc")
+        .current_release()
+        .manifest_path("../cargo-creusot/Cargo.toml")
+        .current_target()
+        .run()
+        .unwrap();
+
+    let cargo_creusot = escargot::CargoBuild::new()
+        .bin("cargo-creusot")
+        .current_release()
+        .manifest_path("../cargo-creusot/Cargo.toml")
+        .current_target()
+        .run()
+        .unwrap()
+        .command();
+
     let mut base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     base_path.pop();
 
@@ -21,7 +40,7 @@ fn main() {
     temp_file.push("debug");
     temp_file.push("libcreusot_contracts.cmeta");
 
-    let mut metadata_file = Command::cargo_bin("cargo-creusot").unwrap();
+    let mut metadata_file = cargo_creusot;
     metadata_file.current_dir(base_path);
     metadata_file
         .arg("creusot")
@@ -30,8 +49,7 @@ fn main() {
             temp_file.as_os_str(),
             "--output-file=/dev/null".as_ref(),
         ])
-        .args(&["--", "--package", "creusot-contracts", "--features=contracts"])
-        .env("RUST_BACKTRACE", "1")
+        .args(&["--", "--package", "creusot-contracts"])
         .env("CREUSOT_CONTINUE", "true");
 
     if !metadata_file.status().expect("could not dump metadata for `creusot_contracts`").success() {
@@ -39,9 +57,11 @@ fn main() {
         std::process::exit(1);
     }
 
-    let (sfc, sff) = should_fail("tests/should_fail/**/*.rs", |p| run_creusot(p, &temp_file.to_string_lossy()));
+    let (sfc, sff) = should_fail("tests/should_fail/**/*.rs", |p| {
+        run_creusot(creusot_rustc.path(), p, &temp_file.to_string_lossy())
+    });
     let (ssc, ssf) = should_succeed("tests/should_succeed/**/*.rs", |p| {
-        run_creusot(p, &temp_file.to_string_lossy())
+        run_creusot(creusot_rustc.path(), p, &temp_file.to_string_lossy())
     });
     let test_count = sfc + ssc;
     let test_failures = sff + ssf;
@@ -54,13 +74,17 @@ fn main() {
     }
 }
 
-fn run_creusot(file: &Path, contracts: &str) -> Option<std::process::Command> {
+fn run_creusot(
+    creusot_rustc: &Path,
+    file: &Path,
+    contracts: &str,
+) -> Option<std::process::Command> {
     let header_line = BufReader::new(File::open(&file).unwrap()).lines().nth(0).unwrap().unwrap();
     if header_line.contains("UISKIP") {
         return None;
     }
 
-    let mut cmd = Command::cargo_bin("creusot-rustc").unwrap();
+    let mut cmd = Command::new(creusot_rustc);
     cmd.current_dir(file.parent().unwrap());
     let mut base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     base_path.pop();
@@ -72,7 +96,12 @@ fn run_creusot(file: &Path, contracts: &str) -> Option<std::process::Command> {
         creusot_contract_path.to_str().expect("invalid utf-8 in contract path");
     let creusot_contract_path = normalize_file_path(creusot_contract_path);
 
-    cmd.args(&["--stdout", "--export-metadata=false", "--span-mode=relative"]);
+    cmd.args(&[
+        "--stdout",
+        "--export-metadata=false",
+        "--span-mode=relative",
+        "--check-why3=false",
+    ]);
     cmd.args(&[
         "--creusot-extern",
         &format!("creusot_contracts={}", normalize_file_path(contracts)),
@@ -92,20 +121,19 @@ fn should_succeed<B>(s: &str, b: B) -> (u32, u32)
 where
     B: Fn(&Path) -> Option<std::process::Command>,
 {
-    glob_runner(s, b, should_succeed_case)
+    glob_runner(s, b, true)
 }
 
 fn should_fail<B>(s: &str, b: B) -> (u32, u32)
 where
     B: Fn(&Path) -> Option<std::process::Command>,
 {
-    glob_runner(s, b, should_fail_case)
+    glob_runner(s, b, false)
 }
 
-fn glob_runner<B, C>(s: &str, command_builder: B, differ: C) -> (u32, u32)
+fn glob_runner<B>(s: &str, command_builder: B, should_succeed: bool) -> (u32, u32)
 where
     B: Fn(&Path) -> Option<std::process::Command>,
-    C: Fn(std::process::Output, &Path, &Path) -> Result<(bool, Buffer), Box<dyn Error>>,
 {
     let mut out = StandardStream::stdout(ColorChoice::Always);
 
@@ -136,7 +164,7 @@ where
             out.set_color(ColorSpec::new().set_fg(Some(Color::Blue))).unwrap();
             writeln!(&mut out, "blessed").unwrap();
             out.reset().unwrap();
-            let (success, _) = differ(output.clone(), &stdout, &stderr).unwrap();
+            let (success, _) = differ(output.clone(), &stdout, &stderr, should_succeed).unwrap();
 
             if !success {
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
@@ -156,7 +184,8 @@ where
                 std::fs::write(stderr, &output.stderr).unwrap();
             }
         } else {
-            let (success, mut buf) = differ(output.clone(), &stdout, &stderr).unwrap();
+            let (success, mut buf) =
+                differ(output.clone(), &stdout, &stderr, should_succeed).unwrap();
 
             if success {
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
@@ -218,10 +247,11 @@ fn normalize_file_path(input: impl Into<String>) -> String {
     input
 }
 
-fn should_succeed_case(
+fn differ(
     output: std::process::Output,
     stdout: &Path,
     stderr: &Path,
+    should_succeed: bool,
 ) -> Result<(bool, Buffer), Box<dyn Error>> {
     let mut buf = Buffer::ansi();
     use std::str::from_utf8;
@@ -237,26 +267,13 @@ fn should_succeed_case(
 
             Ok((success_out && success_err, buf))
         }
-        Err(err) => {
+        Err(err) if should_succeed => {
             let output = err.as_output().unwrap();
 
             write!(buf, "{}", from_utf8(&output.stderr)?)?;
             // let success = compare_str(&mut buf, from_utf8(&output.stderr)?, from_utf8(expect_err)?);
             Ok((false, buf))
         }
-    }
-}
-
-fn should_fail_case(
-    output: std::process::Output,
-    _stdout: &Path,
-    stderr: &Path,
-) -> Result<(bool, Buffer), Box<dyn Error>> {
-    let mut buf = Buffer::ansi();
-    use std::str::from_utf8;
-
-    match output.clone().ok() {
-        Ok(_) => Ok((false, buf)),
         Err(err) => {
             let expect_err = &std::fs::read(stderr).unwrap_or_else(|_| Vec::new());
 

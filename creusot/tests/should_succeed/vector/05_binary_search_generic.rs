@@ -17,13 +17,13 @@ fn sorted<T: OrdLogic>(s: Seq<T>) -> bool {
     sorted_range(s, 0, s.len())
 }
 
-#[requires((@arr).len() <= @usize::MAX)]
+#[requires(arr@.len() <= usize::MAX@)]
 #[requires(sorted(arr.deep_model()))]
-#[ensures(forall<x:usize> result == Ok(x) ==> arr.deep_model()[@x] == elem.deep_model())]
+#[ensures(forall<x:usize> result == Ok(x) ==> arr.deep_model()[x@] == elem.deep_model())]
 #[ensures(forall<x:usize> result == Err(x) ==>
-    forall<i:usize>  i < x ==> arr.deep_model()[@i] <= elem.deep_model())]
+    forall<i:usize>  i < x ==> arr.deep_model()[i@] <= elem.deep_model())]
 #[ensures(forall<x:usize> result == Err(x) ==>
-    forall<i:usize> x <= i && @i < (@arr).len() ==> elem.deep_model() < arr.deep_model()[@i])]
+    forall<i:usize> x <= i && i@ < arr@.len() ==> elem.deep_model() < arr.deep_model()[i@])]
 pub fn binary_search<T: Ord + DeepModel>(arr: &Vec<T>, elem: T) -> Result<usize, usize>
 where
     T::DeepModelTy: OrdLogic,
@@ -34,9 +34,9 @@ where
     let mut size: usize = arr.len();
     let mut base: usize = 0;
 
-    #[invariant(size_valid, 0 < @size && @size + @base <= (@arr).len())]
-    #[invariant(lower_b, forall<i : usize> i < base ==> arr.deep_model()[@i] <= elem.deep_model())]
-    #[invariant(lower_b, forall<i : usize> @base + @size <= @i && @i < (@arr).len() ==> elem.deep_model() < arr.deep_model()[@i])]
+    #[invariant(0 < size@ && size@ + base@ <= arr@.len())]
+    #[invariant(forall<i : usize> i < base ==> arr.deep_model()[i@] <= elem.deep_model())]
+    #[invariant(forall<i : usize> base@ + size@ <= i@ && i@ < arr@.len() ==> elem.deep_model() < arr.deep_model()[i@])]
     while size > 1 {
         let half = size / 2;
         let mid = base + half;

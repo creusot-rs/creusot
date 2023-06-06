@@ -31,6 +31,9 @@ module C02_Inv_Inv_Interface
   type t
   use prelude.Borrow
   predicate inv [#"../02.rs" 6 4 6 32] (self : self) (x : t)
+  val inv [#"../02.rs" 6 4 6 32] (self : self) (x : t) : bool
+    ensures { result = inv self x }
+    
 end
 module C02_Inv_Inv
   type self
@@ -49,19 +52,7 @@ module C02_Impl0_Get_Interface
     type self = i,
     type t = t
   use C02_Cell_Type as C02_Cell_Type
-  val get [@cfg:stackify] [#"../02.rs" 18 4 18 26] (self : C02_Cell_Type.t_cell t i) : t
-    ensures { [#"../02.rs" 17 4 17 42] Inv0.inv (C02_Cell_Type.cell_ghost_inv self) result }
-    
-end
-module C02_Impl0_Get
-  type t
-  type i
-  use prelude.Borrow
-  clone C02_Inv_Inv_Interface as Inv0 with
-    type self = i,
-    type t = t
-  use C02_Cell_Type as C02_Cell_Type
-  val get [@cfg:stackify] [#"../02.rs" 18 4 18 26] (self : C02_Cell_Type.t_cell t i) : t
+  val get [#"../02.rs" 18 4 18 26] (self : C02_Cell_Type.t_cell t i) : t
     ensures { [#"../02.rs" 17 4 17 42] Inv0.inv (C02_Cell_Type.cell_ghost_inv self) result }
     
 end
@@ -73,34 +64,25 @@ module C02_Impl0_Set_Interface
     type self = i,
     type t = t
   use C02_Cell_Type as C02_Cell_Type
-  val set [@cfg:stackify] [#"../02.rs" 24 4 24 27] (self : C02_Cell_Type.t_cell t i) (v : t) : ()
-    requires {[#"../02.rs" 23 4 23 38] Inv0.inv (C02_Cell_Type.cell_ghost_inv self) v}
-    
-end
-module C02_Impl0_Set
-  type t
-  type i
-  use prelude.Borrow
-  clone C02_Inv_Inv_Interface as Inv0 with
-    type self = i,
-    type t = t
-  use C02_Cell_Type as C02_Cell_Type
-  val set [@cfg:stackify] [#"../02.rs" 24 4 24 27] (self : C02_Cell_Type.t_cell t i) (v : t) : ()
+  val set [#"../02.rs" 24 4 24 27] (self : C02_Cell_Type.t_cell t i) (v : t) : ()
     requires {[#"../02.rs" 23 4 23 38] Inv0.inv (C02_Cell_Type.cell_ghost_inv self) v}
     
 end
 module C02_Fib_Stub
-  use mach.int.Int
-  function fib [#"../02.rs" 31 0 31 25] (i : int) : int
+  use prelude.Int
+  function fib [#"../02.rs" 32 0 32 25] (i : int) : int
 end
 module C02_Fib_Interface
-  use mach.int.Int
-  function fib [#"../02.rs" 31 0 31 25] (i : int) : int
+  use prelude.Int
+  function fib [#"../02.rs" 32 0 32 25] (i : int) : int
+  val fib [#"../02.rs" 32 0 32 25] (i : int) : int
+    ensures { result = fib i }
+    
 end
 module C02_Fib
-  use mach.int.Int
-  function fib [#"../02.rs" 31 0 31 25] (i : int) : int
-  val fib [#"../02.rs" 31 0 31 25] (i : int) : int
+  use prelude.Int
+  function fib [#"../02.rs" 32 0 32 25] (i : int) : int
+  val fib [#"../02.rs" 32 0 32 25] (i : int) : int
     ensures { result = fib i }
     
   axiom def : forall i : int . fib i = ([#"../02.rs" 29 0 29 8] if i <= 0 then
@@ -108,60 +90,65 @@ module C02_Fib
   else
     if i = 1 then 1 else fib (i - 1) + fib (i - 2)
   )
-  axiom fib_spec : forall i : int . true
 end
 module C02_Fib_Impl
-  use mach.int.Int
-  let rec ghost function fib [#"../02.rs" 31 0 31 25] (i : int) : int
-    variant {[#"../02.rs" 30 10 30 11] i}
+  use prelude.Int
+  let rec ghost function fib [#"../02.rs" 32 0 32 25] (i : int) : int
+    variant {[#"../02.rs" 31 10 31 11] i}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../02.rs" 29 0 29 8] if i <= 0 then 0 else if pure {i = 1} then 1 else fib (i - 1) + fib (i - 2)
+    [#"../02.rs" 29 0 29 8] if pure {i <= 0} then 0 else if pure {i = 1} then 1 else fib (i - 1) + fib (i - 2)
 end
 module C02_LemmaFibBound_Stub
-  use mach.int.Int
+  use prelude.Int
   use int.Power
   clone C02_Fib_Stub as Fib0 with
     axiom .
-  function lemma_fib_bound [#"../02.rs" 45 0 45 30] (i : int) : ()
+  function lemma_fib_bound [#"../02.rs" 47 0 47 30] (i : int) : ()
 end
 module C02_LemmaFibBound_Interface
-  use mach.int.Int
+  use prelude.Int
   use int.Power
   clone C02_Fib_Stub as Fib0 with
     axiom .
-  function lemma_fib_bound [#"../02.rs" 45 0 45 30] (i : int) : ()
-  axiom lemma_fib_bound_spec : forall i : int . ([#"../02.rs" 42 11 42 17] 0 <= i) -> ([#"../02.rs" 43 10 43 28] Fib0.fib i <= Power.power 2 i)
-end
-module C02_LemmaFibBound
-  use mach.int.Int
-  use int.Power
-  clone C02_Fib_Stub as Fib0 with
-    axiom .
-  function lemma_fib_bound [#"../02.rs" 45 0 45 30] (i : int) : ()
-  val lemma_fib_bound [#"../02.rs" 45 0 45 30] (i : int) : ()
-    requires {[#"../02.rs" 42 11 42 17] 0 <= i}
+  function lemma_fib_bound [#"../02.rs" 47 0 47 30] (i : int) : ()
+  val lemma_fib_bound [#"../02.rs" 47 0 47 30] (i : int) : ()
+    requires {[#"../02.rs" 44 11 44 17] 0 <= i}
+    ensures { [#"../02.rs" 45 10 45 28] Fib0.fib i <= Power.power 2 i }
     ensures { result = lemma_fib_bound i }
     
-  axiom def : forall i : int . lemma_fib_bound i = ([#"../02.rs" 41 0 41 8] if i = 0 then
+  axiom lemma_fib_bound_spec : forall i : int . ([#"../02.rs" 44 11 44 17] 0 <= i) -> ([#"../02.rs" 45 10 45 28] Fib0.fib i <= Power.power 2 i)
+end
+module C02_LemmaFibBound
+  use prelude.Int
+  use int.Power
+  clone C02_Fib_Stub as Fib0 with
+    axiom .
+  function lemma_fib_bound [#"../02.rs" 47 0 47 30] (i : int) : ()
+  val lemma_fib_bound [#"../02.rs" 47 0 47 30] (i : int) : ()
+    requires {[#"../02.rs" 44 11 44 17] 0 <= i}
+    ensures { [#"../02.rs" 45 10 45 28] Fib0.fib i <= Power.power 2 i }
+    ensures { result = lemma_fib_bound i }
+    
+  axiom def : forall i : int . lemma_fib_bound i = ([#"../02.rs" 43 0 43 8] if i = 0 then
     ()
   else
     if i = 1 then () else let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
   )
-  axiom lemma_fib_bound_spec : forall i : int . ([#"../02.rs" 42 11 42 17] 0 <= i) -> ([#"../02.rs" 43 10 43 28] Fib0.fib i <= Power.power 2 i)
+  axiom lemma_fib_bound_spec : forall i : int . ([#"../02.rs" 44 11 44 17] 0 <= i) -> ([#"../02.rs" 45 10 45 28] Fib0.fib i <= Power.power 2 i)
 end
 module C02_LemmaFibBound_Impl
-  use mach.int.Int
+  use prelude.Int
   use int.Power
   clone C02_Fib as Fib0 with
     axiom .
-  let rec ghost function lemma_fib_bound [#"../02.rs" 45 0 45 30] (i : int) : ()
-    requires {[#"../02.rs" 42 11 42 17] 0 <= i}
-    ensures { [#"../02.rs" 43 10 43 28] Fib0.fib i <= Power.power 2 i }
-    variant {[#"../02.rs" 44 10 44 11] i}
+  let rec ghost function lemma_fib_bound [#"../02.rs" 47 0 47 30] (i : int) : ()
+    requires {[#"../02.rs" 44 11 44 17] 0 <= i}
+    ensures { [#"../02.rs" 45 10 45 28] Fib0.fib i <= Power.power 2 i }
+    variant {[#"../02.rs" 46 10 46 11] i}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../02.rs" 41 0 41 8] if pure {i = 0} then
+    [#"../02.rs" 43 0 43 8] if pure {i = 0} then
       ()
     else
       if pure {i = 1} then () else let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
@@ -169,26 +156,34 @@ module C02_LemmaFibBound_Impl
 end
 module C02_LemmaMaxInt_Stub
   use int.Power
-  use mach.int.Int
-  function lemma_max_int [#"../02.rs" 59 0 59 22] (_1' : ()) : ()
+  use prelude.Int
+  use prelude.UIntSize
+  function lemma_max_int [#"../02.rs" 62 0 62 22] (_1' : ()) : ()
 end
 module C02_LemmaMaxInt_Interface
   use int.Power
-  use mach.int.Int
-  function lemma_max_int [#"../02.rs" 59 0 59 22] (_1' : ()) : ()
-  axiom lemma_max_int_spec : forall _1' : () . [#"../02.rs" 58 10 58 49] Power.power 2 63 < 18446744073709551615
+  use prelude.Int
+  use prelude.UIntSize
+  function lemma_max_int [#"../02.rs" 62 0 62 22] (_1' : ()) : ()
+  val lemma_max_int [#"../02.rs" 62 0 62 22] (_1' : ()) : ()
+    ensures { [#"../02.rs" 61 10 61 49] Power.power 2 63 < UIntSize.to_int (18446744073709551615 : usize) }
+    ensures { result = lemma_max_int _1' }
+    
+  axiom lemma_max_int_spec : forall _1' : () . [#"../02.rs" 61 10 61 49] Power.power 2 63 < UIntSize.to_int (18446744073709551615 : usize)
 end
 module C02_LemmaMaxInt
   use int.Power
-  use mach.int.Int
-  function lemma_max_int [#"../02.rs" 59 0 59 22] (_1' : ()) : ()
-  val lemma_max_int [#"../02.rs" 59 0 59 22] (_1' : ()) : ()
+  use prelude.Int
+  use prelude.UIntSize
+  function lemma_max_int [#"../02.rs" 62 0 62 22] (_1' : ()) : ()
+  val lemma_max_int [#"../02.rs" 62 0 62 22] (_1' : ()) : ()
+    ensures { [#"../02.rs" 61 10 61 49] Power.power 2 63 < UIntSize.to_int (18446744073709551615 : usize) }
     ensures { result = lemma_max_int _1' }
     
-  axiom lemma_max_int_spec : forall _1' : () . [#"../02.rs" 58 10 58 49] Power.power 2 63 < 18446744073709551615
+  axiom lemma_max_int_spec : forall _1' : () . [#"../02.rs" 61 10 61 49] Power.power 2 63 < UIntSize.to_int (18446744073709551615 : usize)
 end
 module C02_Fib_Type
-  use mach.int.Int
+  use prelude.Int
   use prelude.UIntSize
   type t_fib  =
     | C_Fib usize
@@ -211,35 +206,37 @@ module Core_Option_Option_Type
 end
 module C02_Impl1_Inv_Stub
   use prelude.Borrow
-  use mach.int.Int
+  use prelude.Int
   use prelude.UIntSize
   use Core_Option_Option_Type as Core_Option_Option_Type
   use C02_Fib_Type as C02_Fib_Type
-  predicate inv [#"../02.rs" 66 4 66 43] (self : C02_Fib_Type.t_fib) (v : Core_Option_Option_Type.t_option usize)
+  predicate inv [#"../02.rs" 70 4 70 43] (self : C02_Fib_Type.t_fib) (v : Core_Option_Option_Type.t_option usize)
 end
 module C02_Impl1_Inv_Interface
   use prelude.Borrow
-  use mach.int.Int
+  use prelude.Int
   use prelude.UIntSize
   use Core_Option_Option_Type as Core_Option_Option_Type
   use C02_Fib_Type as C02_Fib_Type
-  predicate inv [#"../02.rs" 66 4 66 43] (self : C02_Fib_Type.t_fib) (v : Core_Option_Option_Type.t_option usize)
+  predicate inv [#"../02.rs" 70 4 70 43] (self : C02_Fib_Type.t_fib) (v : Core_Option_Option_Type.t_option usize)
+  val inv [#"../02.rs" 70 4 70 43] (self : C02_Fib_Type.t_fib) (v : Core_Option_Option_Type.t_option usize) : bool
+    ensures { result = inv self v }
+    
 end
 module C02_Impl1_Inv
   use prelude.Borrow
-  use mach.int.Int
+  use prelude.Int
   use prelude.UIntSize
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  use C02_Fib_Type as C02_Fib_Type
-  use mach.int.UInt64
   clone C02_Fib_Stub as Fib1 with
     axiom .
-  predicate inv [#"../02.rs" 66 4 66 43] (self : C02_Fib_Type.t_fib) (v : Core_Option_Option_Type.t_option usize) =
-    [#"../02.rs" 68 12 71 13] match (v) with
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use C02_Fib_Type as C02_Fib_Type
+  predicate inv [#"../02.rs" 70 4 70 43] (self : C02_Fib_Type.t_fib) (v : Core_Option_Option_Type.t_option usize) =
+    [#"../02.rs" 72 12 75 13] match (v) with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some i -> UInt64.to_int i = Fib1.fib (UInt64.to_int (C02_Fib_Type.fib_ix self))
+      | Core_Option_Option_Type.C_Some i -> UIntSize.to_int i = Fib1.fib (UIntSize.to_int (C02_Fib_Type.fib_ix self))
       end
-  val inv [#"../02.rs" 66 4 66 43] (self : C02_Fib_Type.t_fib) (v : Core_Option_Option_Type.t_option usize) : bool
+  val inv [#"../02.rs" 70 4 70 43] (self : C02_Fib_Type.t_fib) (v : Core_Option_Option_Type.t_option usize) : bool
     ensures { result = inv self v }
     
 end
@@ -262,7 +259,7 @@ module Core_Ptr_Unique_Unique_Type
     
 end
 module Alloc_RawVec_RawVec_Type
-  use mach.int.Int
+  use prelude.Int
   use prelude.UIntSize
   use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
   type t_rawvec 't 'a =
@@ -270,7 +267,7 @@ module Alloc_RawVec_RawVec_Type
     
 end
 module Alloc_Vec_Vec_Type
-  use mach.int.Int
+  use prelude.Int
   use prelude.UIntSize
   use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
   type t_vec 't 'a =
@@ -280,98 +277,6 @@ end
 module Alloc_Alloc_Global_Type
   type t_global  =
     | C_Global
-    
-end
-module Core_Num_Impl12_Max_Stub
-  use mach.int.Int
-  use prelude.UIntSize
-  val constant mAX'  : usize
-end
-module Core_Num_Impl12_Max
-  use mach.int.Int
-  use prelude.UIntSize
-  let constant mAX'  : usize = [@vc:do_not_keep_trace] [@vc:sp]
-    (18446744073709551615 : usize)
-end
-module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub
-  type t
-  type a
-  use seq.Seq
-  use mach.int.UInt64
-  use mach.int.Int
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone Core_Num_Impl12_Max_Stub as Max0
-  function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
-end
-module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface
-  type t
-  type a
-  use seq.Seq
-  use mach.int.UInt64
-  use mach.int.Int
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone Core_Num_Impl12_Max_Stub as Max0
-  function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (shallow_model self) <= UInt64.to_int Max0.mAX'
-end
-module CreusotContracts_Std1_Vec_Impl0_ShallowModel
-  type t
-  type a
-  use seq.Seq
-  use mach.int.UInt64
-  use mach.int.Int
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone Core_Num_Impl12_Max_Stub as Max0
-  function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
-  val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
-    ensures { result = shallow_model self }
-    
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (shallow_model self) <= UInt64.to_int Max0.mAX'
-end
-module C02_FibCell_Stub
-  use mach.int.Int
-  use prelude.UIntSize
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use C02_Fib_Type as C02_Fib_Type
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  use C02_Cell_Type as C02_Cell_Type
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  predicate fib_cell [#"../02.rs" 79 0 79 32] (v : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global))
-    
-end
-module C02_FibCell_Interface
-  use mach.int.Int
-  use prelude.UIntSize
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use C02_Fib_Type as C02_Fib_Type
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  use C02_Cell_Type as C02_Cell_Type
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  predicate fib_cell [#"../02.rs" 79 0 79 32] (v : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global))
-    
-end
-module C02_FibCell
-  use mach.int.Int
-  use prelude.UIntSize
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use C02_Fib_Type as C02_Fib_Type
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  use C02_Cell_Type as C02_Cell_Type
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  use seq.Seq
-  use mach.int.UInt64
-  clone Core_Num_Impl12_Max_Stub as Max0
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
-    type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib),
-    type a = Alloc_Alloc_Global_Type.t_global,
-    val Max0.mAX' = Max0.mAX',
-    axiom .
-  predicate fib_cell [#"../02.rs" 79 0 79 32] (v : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global))
-    
-   =
-    [#"../02.rs" 80 4 82 5] forall i : int . UInt64.to_int (C02_Fib_Type.fib_ix (C02_Cell_Type.cell_ghost_inv (Seq.get (ShallowModel0.shallow_model v) i))) = i
-  val fib_cell [#"../02.rs" 79 0 79 32] (v : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) : bool
-    ensures { result = fib_cell v }
     
 end
 module CreusotContracts_Model_ShallowModel_ShallowModelTy_Type
@@ -389,6 +294,9 @@ module CreusotContracts_Model_ShallowModel_ShallowModel_Interface
   clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
     type self = self
   function shallow_model (self : self) : ShallowModelTy0.shallowModelTy
+  val shallow_model (self : self) : ShallowModelTy0.shallowModelTy
+    ensures { result = shallow_model self }
+    
 end
 module CreusotContracts_Model_ShallowModel_ShallowModel
   type self
@@ -397,6 +305,80 @@ module CreusotContracts_Model_ShallowModel_ShallowModel
   function shallow_model (self : self) : ShallowModelTy0.shallowModelTy
   val shallow_model (self : self) : ShallowModelTy0.shallowModelTy
     ensures { result = shallow_model self }
+    
+end
+module CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub
+  type t
+  type s
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl0_IndexLogic_Interface
+  type t
+  type s
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+  val index_logic [@inline:trivial] (self : s) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
+end
+module CreusotContracts_Logic_Ops_Impl0_IndexLogic
+  type t
+  type s
+  use prelude.Int
+  use seq.Seq
+  use seq.Seq
+  clone CreusotContracts_Model_ShallowModel_ShallowModel_Stub as ShallowModel0 with
+    type self = s,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  function index_logic [@inline:trivial] (self : s) (ix : int) : t =
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 17 8 17 31] Seq.get (ShallowModel0.shallow_model self) ix
+  val index_logic [@inline:trivial] (self : s) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
+end
+module C02_FibCell_Stub
+  use prelude.Int
+  use prelude.UIntSize
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use C02_Fib_Type as C02_Fib_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use C02_Cell_Type as C02_Cell_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate fib_cell [#"../02.rs" 84 0 84 32] (v : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global))
+    
+end
+module C02_FibCell_Interface
+  use prelude.Int
+  use prelude.UIntSize
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use C02_Fib_Type as C02_Fib_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use C02_Cell_Type as C02_Cell_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate fib_cell [#"../02.rs" 84 0 84 32] (v : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global))
+    
+  val fib_cell [#"../02.rs" 84 0 84 32] (v : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = fib_cell v }
+    
+end
+module C02_FibCell
+  use prelude.Int
+  use prelude.UIntSize
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use C02_Fib_Type as C02_Fib_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use C02_Cell_Type as C02_Cell_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
+    type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib),
+    type s = Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)
+  predicate fib_cell [#"../02.rs" 84 0 84 32] (v : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global))
+    
+   =
+    [#"../02.rs" 85 4 87 5] forall i : int . UIntSize.to_int (C02_Fib_Type.fib_ix (C02_Cell_Type.cell_ghost_inv (IndexLogic0.index_logic v i))) = i
+  val fib_cell [#"../02.rs" 84 0 84 32] (v : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = fib_cell v }
     
 end
 module CreusotContracts_Model_Impl1_ShallowModel_Stub
@@ -412,6 +394,9 @@ module CreusotContracts_Model_Impl1_ShallowModel_Interface
   clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
     type self = t
   function shallow_model (self : t) : ShallowModelTy0.shallowModelTy
+  val shallow_model (self : t) : ShallowModelTy0.shallowModelTy
+    ensures { result = shallow_model self }
+    
 end
 module CreusotContracts_Model_Impl1_ShallowModel
   type t
@@ -422,17 +407,10 @@ module CreusotContracts_Model_Impl1_ShallowModel
     type self = t,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
   function shallow_model (self : t) : ShallowModelTy0.shallowModelTy =
-    ShallowModel0.shallow_model self
+    [#"../../../../../creusot-contracts/src/model.rs" 40 8 40 31] ShallowModel0.shallow_model self
   val shallow_model (self : t) : ShallowModelTy0.shallowModelTy
     ensures { result = shallow_model self }
     
-end
-module CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type
-  type t
-  type a
-  use seq.Seq
-  type shallowModelTy  =
-    Seq.seq t
 end
 module CreusotContracts_Std1_Slice_SliceIndex_InBounds_Stub
   type self
@@ -447,6 +425,9 @@ module CreusotContracts_Std1_Slice_SliceIndex_InBounds_Interface
   clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
     type self = t
   predicate in_bounds (self : self) (seq : ShallowModelTy0.shallowModelTy)
+  val in_bounds (self : self) (seq : ShallowModelTy0.shallowModelTy) : bool
+    ensures { result = in_bounds self seq }
+    
 end
 module CreusotContracts_Std1_Slice_SliceIndex_InBounds
   type self
@@ -482,6 +463,9 @@ module CreusotContracts_Std1_Slice_SliceIndex_HasValue_Interface
   clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
     type self = t
   predicate has_value (self : self) (seq : ShallowModelTy0.shallowModelTy) (out : Output0.output)
+  val has_value (self : self) (seq : ShallowModelTy0.shallowModelTy) (out : Output0.output) : bool
+    ensures { result = has_value self seq out }
+    
 end
 module CreusotContracts_Std1_Slice_SliceIndex_HasValue
   type self
@@ -496,170 +480,174 @@ module CreusotContracts_Std1_Slice_SliceIndex_HasValue
     ensures { result = has_value self seq out }
     
 end
-module CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type
-  type t
-  use seq.Seq
-  type shallowModelTy  =
-    Seq.seq t
-end
-module Alloc_Vec_Impl16_Index_Interface
+module Alloc_Vec_Impl13_Index_Interface
   type t
   type i
   type a
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy1 with
-    type t = t
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = t,
-    type a = a
+  use seq.Seq
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with
     type self = i,
-    type t = seq t
+    type t = slice t
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndex_HasValue_Stub as HasValue0 with
     type self = i,
-    type t = seq t,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy,
+    type t = slice t,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t,
     type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndex_InBounds_Stub as InBounds0 with
     type self = i,
-    type t = seq t,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy
+    type t = slice t,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
-    requires {InBounds0.in_bounds index (ShallowModel0.shallow_model self)}
-    ensures { HasValue0.has_value index (ShallowModel0.shallow_model self) result }
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  val index (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
+    requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 131 27 131 46] InBounds0.in_bounds index (ShallowModel0.shallow_model self)}
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 132 26 132 54] HasValue0.has_value index (ShallowModel0.shallow_model self) result }
     
 end
-module Alloc_Vec_Impl16_Index
+module Core_Num_Impl11_Max_Stub
+  use prelude.Int
+  use prelude.UIntSize
+  val constant mAX'  : usize
+end
+module Core_Num_Impl11_Max
+  use prelude.Int
+  use prelude.UIntSize
+  let constant mAX'  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+end
+module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub
   type t
-  type i
   type a
-  use prelude.Borrow
-  use prelude.Slice
   use seq.Seq
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy1 with
-    type t = t
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = t,
-    type a = a
-  clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with
-    type self = i,
-    type t = seq t
+  use prelude.UIntSize
+  use prelude.Int
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Slice_SliceIndex_HasValue_Interface as HasValue0 with
-    type self = i,
-    type t = seq t,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy,
-    type Output0.output = Output0.output
-  clone CreusotContracts_Std1_Slice_SliceIndex_InBounds_Interface as InBounds0 with
-    type self = i,
-    type t = seq t,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy
-  clone CreusotContracts_Model_Impl1_ShallowModel_Interface as ShallowModel0 with
-    type t = Alloc_Vec_Vec_Type.t_vec t a,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
-    requires {InBounds0.in_bounds index (ShallowModel0.shallow_model self)}
-    ensures { HasValue0.has_value index (ShallowModel0.shallow_model self) result }
+  clone Core_Num_Impl11_Max_Stub as Max0
+  function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+end
+module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface
+  type t
+  type a
+  use seq.Seq
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone Core_Num_Impl11_Max_Stub as Max0
+  function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { result = shallow_model self }
     
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
+end
+module CreusotContracts_Std1_Vec_Impl0_ShallowModel
+  type t
+  type a
+  use seq.Seq
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone Core_Num_Impl11_Max_Stub as Max0
+  function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { result = shallow_model self }
+    
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
 end
 module CreusotContracts_Std1_Slice_Impl5_InBounds_Stub
   type t
-  use mach.int.Int
+  use prelude.Int
   use prelude.UIntSize
   use seq.Seq
   predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl5_InBounds_Interface
   type t
-  use mach.int.Int
+  use prelude.Int
   use prelude.UIntSize
   use seq.Seq
   predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t)
+  val in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) : bool
+    ensures { result = in_bounds self seq }
+    
 end
 module CreusotContracts_Std1_Slice_Impl5_InBounds
   type t
-  use mach.int.Int
+  use prelude.Int
   use prelude.UIntSize
   use seq.Seq
-  use mach.int.UInt64
   predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) =
-    UInt64.to_int self < Seq.length seq
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 109 20 109 37] UIntSize.to_int self < Seq.length seq
   val in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) : bool
     ensures { result = in_bounds self seq }
     
 end
 module CreusotContracts_Std1_Slice_Impl5_HasValue_Stub
   type t
-  use mach.int.Int
+  use prelude.Int
   use prelude.UIntSize
   use seq.Seq
   predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t)
 end
 module CreusotContracts_Std1_Slice_Impl5_HasValue_Interface
   type t
-  use mach.int.Int
+  use prelude.Int
   use prelude.UIntSize
   use seq.Seq
   predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t)
-end
-module CreusotContracts_Std1_Slice_Impl5_HasValue
-  type t
-  use mach.int.Int
-  use prelude.UIntSize
-  use seq.Seq
-  use mach.int.UInt64
-  predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
-    Seq.get seq (UInt64.to_int self) = out
   val has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) : bool
     ensures { result = has_value self seq out }
     
 end
-module Core_Slice_Index_Impl2_Output_Type
+module CreusotContracts_Std1_Slice_Impl5_HasValue
   type t
-  type output  =
-    t
+  use prelude.Int
+  use prelude.UIntSize
+  use seq.Seq
+  predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 116 20 116 37] Seq.get seq (UIntSize.to_int self) = out
+  val has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) : bool
+    ensures { result = has_value self seq out }
+    
 end
 module C02_FibMemo_Interface
-  use mach.int.UInt64
-  use seq.Seq
-  use mach.int.Int
-  use prelude.Borrow
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use seq.Seq
+  use prelude.Int
+  use prelude.Borrow
   use C02_Fib_Type as C02_Fib_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
   use C02_Cell_Type as C02_Cell_Type
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib),
-    type a = Alloc_Alloc_Global_Type.t_global
+  use seq.Seq
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone C02_Fib_Stub as Fib0 with
     axiom .
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global),
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+    type ShallowModelTy0.shallowModelTy = Seq.seq (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib))
   clone C02_FibCell_Stub as FibCell0
-  val fib_memo [@cfg:stackify] [#"../02.rs" 89 0 89 50] (mem : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) (i : usize) : usize
-    requires {[#"../02.rs" 85 11 85 25] FibCell0.fib_cell mem}
-    requires {[#"../02.rs" 86 11 86 28] UInt64.to_int i < Seq.length (ShallowModel0.shallow_model mem)}
-    requires {[#"../02.rs" 88 11 88 19] UInt64.to_int i <= 63}
-    ensures { [#"../02.rs" 87 10 87 28] UInt64.to_int result = Fib0.fib (UInt64.to_int i) }
+  val fib_memo [#"../02.rs" 95 0 95 50] (mem : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) (i : usize) : usize
+    requires {[#"../02.rs" 91 11 91 25] FibCell0.fib_cell mem}
+    requires {[#"../02.rs" 92 11 92 26] UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model mem)}
+    requires {[#"../02.rs" 94 11 94 19] UIntSize.to_int i <= 63}
+    ensures { [#"../02.rs" 93 10 93 28] UIntSize.to_int result = Fib0.fib (UIntSize.to_int i) }
     
 end
 module C02_FibMemo
-  use mach.int.Int
+  use prelude.Int
   use prelude.UIntSize
   use prelude.Borrow
   use prelude.IntSize
   use prelude.Ghost
-  use mach.int.UInt64
   use seq.Seq
+  clone Core_Num_Impl11_Max as Max0
   clone C02_Fib as Fib1 with
     axiom .
   use Core_Option_Option_Type as Core_Option_Option_Type
@@ -667,25 +655,22 @@ module C02_FibMemo
   clone C02_Impl1_Inv as Inv0 with
     function Fib1.fib = Fib1.fib
   use C02_Cell_Type as C02_Cell_Type
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy1 with
-    type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)
-  clone Core_Slice_Index_Impl2_Output_Type as Output0 with
-    type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)
   clone CreusotContracts_Std1_Slice_Impl5_HasValue as HasValue0 with
     type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)
   clone CreusotContracts_Std1_Slice_Impl5_InBounds as InBounds0 with
     type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib),
-    type a = Alloc_Alloc_Global_Type.t_global
-  clone Core_Num_Impl12_Max as Max0
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel1 with
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel1 with
     type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib),
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max0.mAX',
     axiom .
+  use seq.Seq
+  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic0 with
+    type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib),
+    type s = Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global),
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone C02_Impl0_Set_Interface as Set0 with
     type t = Core_Option_Option_Type.t_option usize,
     type i = C02_Fib_Type.t_fib,
@@ -701,24 +686,23 @@ module C02_FibMemo
     predicate Inv0.inv = Inv0.inv
   clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global),
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
+    type ShallowModelTy0.shallowModelTy = Seq.seq (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)),
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
-  clone Alloc_Vec_Impl16_Index_Interface as Index0 with
+  clone Alloc_Vec_Impl13_Index_Interface as Index0 with
     type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib),
     type i = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
+    type Output0.output = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib),
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     predicate InBounds0.in_bounds = InBounds0.in_bounds,
-    predicate HasValue0.has_value = HasValue0.has_value,
-    type Output0.output = Output0.output
+    predicate HasValue0.has_value = HasValue0.has_value
   clone C02_FibCell as FibCell0 with
-    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
-    val Max0.mAX' = Max0.mAX'
-  let rec cfg fib_memo [@cfg:stackify] [#"../02.rs" 89 0 89 50] (mem : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) (i : usize) : usize
-    requires {[#"../02.rs" 85 11 85 25] FibCell0.fib_cell mem}
-    requires {[#"../02.rs" 86 11 86 28] UInt64.to_int i < Seq.length (ShallowModel0.shallow_model mem)}
-    requires {[#"../02.rs" 88 11 88 19] UInt64.to_int i <= 63}
-    ensures { [#"../02.rs" 87 10 87 28] UInt64.to_int result = Fib1.fib (UInt64.to_int i) }
+    function IndexLogic0.index_logic = IndexLogic0.index_logic
+  let rec cfg fib_memo [#"../02.rs" 95 0 95 50] [@cfg:stackify] [@cfg:subregion_analysis] (mem : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) (i : usize) : usize
+    requires {[#"../02.rs" 91 11 91 25] FibCell0.fib_cell mem}
+    requires {[#"../02.rs" 92 11 92 26] UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model mem)}
+    requires {[#"../02.rs" 94 11 94 19] UIntSize.to_int i <= 63}
+    ensures { [#"../02.rs" 93 10 93 28] UIntSize.to_int result = Fib1.fib (UIntSize.to_int i) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : usize;
@@ -737,25 +721,23 @@ module C02_FibMemo
   var _17 : bool;
   var _18 : usize;
   var _19 : Ghost.ghost_ty ();
-  var _22 : ();
-  var _23 : Ghost.ghost_ty ();
-  var _26 : ();
+  var _21 : Ghost.ghost_ty ();
+  var _23 : usize;
+  var _24 : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global);
+  var _25 : usize;
+  var _26 : usize;
   var _27 : usize;
   var _28 : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global);
   var _29 : usize;
   var _30 : usize;
-  var _31 : usize;
-  var _32 : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global);
-  var _33 : usize;
-  var _34 : usize;
-  var _35 : ();
-  var _37 : ();
-  var _38 : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib);
-  var _39 : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib);
-  var _40 : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global);
-  var _41 : usize;
-  var _42 : Core_Option_Option_Type.t_option usize;
-  var _43 : usize;
+  var _31 : ();
+  var _33 : ();
+  var _34 : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib);
+  var _35 : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib);
+  var _36 : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global);
+  var _37 : usize;
+  var _38 : Core_Option_Option_Type.t_option usize;
+  var _39 : usize;
   {
     mem_1 <- mem;
     i_2 <- i;
@@ -764,103 +746,104 @@ module C02_FibMemo
   BB0 {
     _10 <- mem_1;
     _11 <- i_2;
-    _9 <- ([#"../02.rs" 90 10 90 16] Index0.index _10 _11);
+    _9 <- ([#"../02.rs" 96 10 96 16] Index0.index _10 _11);
     goto BB1
   }
   BB1 {
     _8 <- _9;
-    _7 <- ([#"../02.rs" 90 10 90 22] Get0.get _8);
+    _7 <- ([#"../02.rs" 96 10 96 22] Get0.get _8);
     goto BB2
   }
   BB2 {
     switch (_7)
       | Core_Option_Option_Type.C_None -> goto BB3
-      | Core_Option_Option_Type.C_Some _ -> goto BB5
+      | Core_Option_Option_Type.C_Some _ -> goto BB4
       end
   }
   BB3 {
     _16 <- i_2;
-    _15 <- ([#"../02.rs" 93 27 93 33] _16 = ([#"../02.rs" 93 32 93 33] (0 : usize)));
+    _15 <- ([#"../02.rs" 99 27 99 33] _16 = ([#"../02.rs" 99 32 99 33] (0 : usize)));
     switch (_15)
-      | False -> goto BB7
-      | True -> goto BB6
+      | False -> goto BB8
+      | True -> goto BB7
       end
   }
   BB4 {
-    absurd
+    goto BB6
   }
   BB5 {
-    v_13 <- Core_Option_Option_Type.some_0 _7;
-    _0 <- v_13;
-    goto BB18
+    absurd
   }
   BB6 {
-    fib_i_14 <- ([#"../02.rs" 94 16 94 17] (0 : usize));
-    goto BB15
+    v_13 <- Core_Option_Option_Type.some_0 _7;
+    _0 <- v_13;
+    goto BB19
   }
   BB7 {
-    _18 <- i_2;
-    _17 <- ([#"../02.rs" 95 22 95 28] _18 = ([#"../02.rs" 95 27 95 28] (1 : usize)));
-    switch (_17)
-      | False -> goto BB9
-      | True -> goto BB8
-      end
+    fib_i_14 <- ([#"../02.rs" 100 16 100 17] (0 : usize));
+    goto BB16
   }
   BB8 {
-    fib_i_14 <- ([#"../02.rs" 96 16 96 17] (1 : usize));
-    goto BB14
+    _18 <- i_2;
+    _17 <- ([#"../02.rs" 101 22 101 28] _18 = ([#"../02.rs" 101 27 101 28] (1 : usize)));
+    switch (_17)
+      | False -> goto BB10
+      | True -> goto BB9
+      end
   }
   BB9 {
-    _22 <- ();
-    _19 <- ([#"../02.rs" 98 16 98 40] Ghost.new ());
-    goto BB10
+    fib_i_14 <- ([#"../02.rs" 102 16 102 17] (1 : usize));
+    goto BB15
   }
   BB10 {
-    _26 <- ();
-    _23 <- ([#"../02.rs" 99 16 99 42] Ghost.new ());
+    _19 <- ([#"../02.rs" 104 16 104 40] Ghost.new ());
     goto BB11
   }
   BB11 {
-    _28 <- mem_1;
-    _30 <- i_2;
-    _29 <- ([#"../02.rs" 100 30 100 35] _30 - ([#"../02.rs" 100 34 100 35] (1 : usize)));
-    _27 <- ([#"../02.rs" 100 16 100 36] fib_memo _28 _29);
+    _21 <- ([#"../02.rs" 105 16 105 42] Ghost.new ());
     goto BB12
   }
   BB12 {
-    _32 <- mem_1;
-    _34 <- i_2;
-    _33 <- ([#"../02.rs" 100 53 100 58] _34 - ([#"../02.rs" 100 57 100 58] (2 : usize)));
-    _31 <- ([#"../02.rs" 100 39 100 59] fib_memo _32 _33);
+    _24 <- mem_1;
+    _26 <- i_2;
+    _25 <- ([#"../02.rs" 106 30 106 35] _26 - ([#"../02.rs" 106 34 106 35] (1 : usize)));
+    _23 <- ([#"../02.rs" 106 16 106 36] fib_memo _24 _25);
     goto BB13
   }
   BB13 {
-    fib_i_14 <- ([#"../02.rs" 100 16 100 59] _27 + _31);
+    _28 <- mem_1;
+    _30 <- i_2;
+    _29 <- ([#"../02.rs" 106 53 106 58] _30 - ([#"../02.rs" 106 57 106 58] (2 : usize)));
+    _27 <- ([#"../02.rs" 106 39 106 59] fib_memo _28 _29);
     goto BB14
   }
   BB14 {
+    fib_i_14 <- ([#"../02.rs" 106 16 106 59] _23 + _27);
     goto BB15
   }
   BB15 {
-    assert { [#"../02.rs" 102 28 102 45] UInt64.to_int fib_i_14 = Fib1.fib (UInt64.to_int i_2) };
-    _35 <- ();
-    _40 <- mem_1;
-    _41 <- i_2;
-    _39 <- ([#"../02.rs" 103 12 103 18] Index0.index _40 _41);
     goto BB16
   }
   BB16 {
-    _38 <- _39;
-    _43 <- fib_i_14;
-    _42 <- Core_Option_Option_Type.C_Some _43;
-    _37 <- ([#"../02.rs" 103 12 103 35] Set0.set _38 _42);
+    assert { [@expl:assertion] [#"../02.rs" 108 28 108 45] UIntSize.to_int fib_i_14 = Fib1.fib (UIntSize.to_int i_2) };
+    _31 <- ();
+    _36 <- mem_1;
+    _37 <- i_2;
+    _35 <- ([#"../02.rs" 109 12 109 18] Index0.index _36 _37);
     goto BB17
   }
   BB17 {
-    _0 <- fib_i_14;
+    _34 <- _35;
+    _39 <- fib_i_14;
+    _38 <- Core_Option_Option_Type.C_Some _39;
+    _33 <- ([#"../02.rs" 109 12 109 35] Set0.set _34 _38);
     goto BB18
   }
   BB18 {
+    _0 <- fib_i_14;
+    goto BB19
+  }
+  BB19 {
     return _0
   }
   

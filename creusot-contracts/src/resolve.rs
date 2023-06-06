@@ -1,6 +1,6 @@
 use crate::*;
 
-#[cfg_attr(feature = "contracts", rustc_diagnostic_item = "creusot_resolve")]
+#[cfg_attr(creusot, rustc_diagnostic_item = "creusot_resolve")]
 #[trusted]
 pub trait Resolve {
     #[predicate]
@@ -11,6 +11,7 @@ pub trait Resolve {
 #[trusted]
 impl<T1, T2> Resolve for (T1, T2) {
     #[predicate]
+    #[open]
     fn resolve(self) -> bool {
         Resolve::resolve(self.0) && Resolve::resolve(self.1)
     }
@@ -19,15 +20,17 @@ impl<T1, T2> Resolve for (T1, T2) {
 #[trusted]
 impl<T: ?Sized> Resolve for &mut T {
     #[predicate]
+    #[open]
     fn resolve(self) -> bool {
         pearlite! { ^self == *self }
     }
 }
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 #[trusted]
 impl<T> Resolve for T {
     #[predicate]
+    #[open]
     #[rustc_diagnostic_item = "creusot_resolve_default"]
     default fn resolve(self) -> bool {
         true

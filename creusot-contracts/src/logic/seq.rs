@@ -1,106 +1,109 @@
-use crate::{std::ops::Index, *};
-use crate::prusti_prelude::logic as prusti_logic;
+use crate::{logic::ops::IndexLogic, *};
 
-#[cfg_attr(feature = "contracts", creusot::builtins = "seq.Seq.seq")]
+#[cfg_attr(creusot, creusot::builtins = "seq.Seq.seq")]
 pub struct Seq<T: ?Sized>(std::marker::PhantomData<T>);
 
 impl<T> Seq<T> {
-    #[cfg(feature = "contracts")]
+    #[cfg(creusot)]
     #[trusted]
     #[creusot::builtins = "seq.Seq.empty"]
     pub const EMPTY: Self = { Seq(std::marker::PhantomData) };
 
-    #[prusti_logic(() -> '_)]
+    #[logic]
+    #[open]
     pub fn new() -> Self {
         Self::EMPTY
     }
 
     #[logic]
-    #[creusot::prusti::home_sig="('x, '_) -> '_"] // Hack while we don't support constructors
+    #[open]
     pub fn get(self, ix: Int) -> Option<T> {
-        if ix < self.len() {
-            Some(*self.index(ix))
+        if 0 <= ix && ix < self.len() {
+            Some(self.index_logic(ix))
         } else {
             None
         }
     }
 
     #[trusted]
-    #[prusti_logic(('x, '_, '_) -> 'x)]
+    #[logic]
+    #[open(self)]
     #[creusot::builtins = "seq_ext.SeqExt.subsequence"]
     pub fn subsequence(self, _: Int, _: Int) -> Self {
         absurd
     }
 
     #[trusted]
-    #[prusti_logic(('x) -> 'x)]
+    #[logic]
+    #[open(self)]
     #[creusot::builtins = "seq.Seq.singleton"]
     pub fn singleton(_: T) -> Self {
         absurd
     }
 
-    #[prusti_logic(('x) -> 'x)]
+    #[logic]
+    #[open]
     pub fn tail(self) -> Self {
         self.subsequence(1, self.len())
     }
 
-    #[prusti_logic(('x) -> 'x)]
-    pub fn upto_last(self) -> Seq<T> {
-        self.subsequence(0, self.len() - 1)
-    }
-
-    #[prusti_logic(('x) -> 'x)]
-    pub fn last(self) -> T {
-        self[self.len() - 1]
-    }
-
-    #[prusti_logic(('x) -> 'x)]
-    pub fn head(self) -> T {
-        self[0]
-    }
-
     #[trusted]
-    #[prusti_logic(('_) -> '_)]
+    #[logic]
+    #[open(self)]
     #[creusot::builtins = "seq.Seq.length"]
     pub fn len(self) -> Int {
         absurd
     }
 
     #[trusted]
-    #[prusti_logic(('x, '_, 'x) -> 'x)]
+    #[logic]
+    #[open(self)]
     #[creusot::builtins = "seq.Seq.set"]
     pub fn set(self, _: Int, _: T) -> Self {
         absurd
     }
 
     #[trusted]
-    #[prusti_logic(('_, '_) -> '_)]
+    #[predicate]
+    #[open(self)]
     #[creusot::builtins = "seq.Seq.(==)"]
     pub fn ext_eq(self, _: Self) -> bool {
         absurd
     }
 
     #[trusted]
-    #[prusti_logic(('x, 'x) -> 'x)]
+    #[logic]
+    #[open(self)]
     #[creusot::builtins = "seq.Seq.snoc"]
     pub fn push(self, _: T) -> Self {
         absurd
     }
 
     #[trusted]
-    #[prusti_logic(('x, 'x) -> 'x)]
+    #[logic]
+    #[open(self)]
     #[creusot::builtins = "seq.Seq.(++)"]
     pub fn concat(self, _: Self) -> Self {
         absurd
     }
 
+    #[trusted]
+    #[logic]
+    #[open(self)]
+    #[creusot::builtins = "seq.Reverse.reverse"]
+    pub fn reverse(self) -> Self {
+        absurd
+    }
+
     #[predicate]
+    #[open]
     pub fn permutation_of(self, o: Self) -> bool {
         self.permut(o, 0, self.len())
     }
 
     #[trusted]
     #[predicate]
+    #[open(self)]
     #[creusot::builtins = "seq.Permut.permut"]
     pub fn permut(self, _: Self, _: Int, _: Int) -> bool {
         absurd
@@ -108,34 +111,47 @@ impl<T> Seq<T> {
 
     #[trusted]
     #[predicate]
+    #[open(self)]
     #[creusot::builtins = "seq.Permut.exchange"]
     pub fn exchange(self, _: Self, _: Int, _: Int) -> bool {
         absurd
     }
 
+    #[open]
     #[predicate]
     pub fn contains(self, e: T) -> bool {
         pearlite! { exists<i : Int> 0 <= i &&  i <self.len() && self[i] == e }
     }
 
-    // A hack to trigger loading the `seq.FreeMonoid` module which is quite useful
-    #[logic]
-    #[creusot::builtins = "seq.FreeMonoid.left_neutral"]
-    pub fn left_neutral(self) {}
+    #[open]
+    #[predicate]
+    pub fn sorted_range(self, l: Int, u: Int) -> bool
+    where
+        T: OrdLogic,
+    {
+        pearlite! {
+            forall<i : Int, j : Int> l <= i && i <= j && j < u ==> self[i] <= self[j]
+        }
+    }
+
+    #[open]
+    #[predicate]
+    pub fn sorted(self) -> bool
+    where
+        T: OrdLogic,
+    {
+        self.sorted_range(0, self.len())
+    }
 }
 
-// A hack which allows us to use [..] notation for sequences.
-// Relies on the fact we don't enforce that implementations of traits are of
-// the same function type as the trait signature.. When this is addressed
-// the following instance will error.
-#[cfg(feature = "contracts")]
-impl<T> std::ops::Index<Int> for Seq<T> {
-    type Output = T;
+impl<T> IndexLogic<Int> for Seq<T> {
+    type Item = T;
 
+    #[logic]
     #[trusted]
-    #[prusti_logic((r'x, '_) -> r'x)]
+    #[open(self)]
     #[creusot::builtins = "seq.Seq.get"]
-    fn index(&self, _: Int) -> &T {
+    fn index_logic(self, _: Int) -> Self::Item {
         absurd
     }
 }

@@ -3,24 +3,23 @@ pub(crate) mod external;
 #[allow(dead_code)]
 pub(crate) mod fmir;
 pub(crate) mod function;
-pub(crate) mod interface;
 pub(crate) mod pearlite;
 pub(crate) mod specification;
 pub(crate) mod traits;
-pub(crate) mod ty;
 
 use crate::{
+    backend::Why3Generator,
     ctx,
     ctx::load_extern_specs,
     error::CrErr,
     metadata,
     options::OutputFile,
-    validate::{validate_impls, validate_traits},
+    validate::{validate_impls, validate_opacity, validate_traits},
 };
-use creusot_rustc::hir::{def::DefKind, def_id::LOCAL_CRATE};
 use ctx::TranslationCtx;
-pub(crate) use function::{translate_function, LocalIdent};
+pub(crate) use function::LocalIdent;
 use heck::ToUpperCamelCase;
+use rustc_hir::{def::DefKind, def_id::LOCAL_CRATE};
 use rustc_middle::ty::Ty;
 use std::{error::Error, io::Write};
 use why3::{declaration::Module, mlcfg, Print};
@@ -31,12 +30,15 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
     load_extern_specs(ctx).map_err(|_| Box::new(CrErr))?;
 
     for def_id in ctx.tcx.hir().body_owners() {
+        ctx.check_purity(def_id);
+
         let def_id = def_id.to_def_id();
         if crate::util::is_spec(ctx.tcx, def_id)
             || crate::util::is_logic(ctx.tcx, def_id)
             || crate::util::is_predicate(ctx.tcx, def_id)
         {
             let _ = ctx.term(def_id);
+            validate_opacity(ctx, def_id);
         }
     }
 
@@ -50,58 +52,56 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
 
 use std::time::Instant;
 // TODO: Move the main loop out of `translation.rs`
-pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Error>> {
-    for tr in ctx.tcx.traits_in_crate(LOCAL_CRATE) {
-        ctx.translate_trait(*tr);
-    }
+pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> {
+    let mut why3 = Why3Generator::new(ctx);
 
     let start = Instant::now();
-    for def_id in ctx.tcx.hir().body_owners() {
+    for def_id in why3.hir().body_owners() {
         let def_id = def_id.to_def_id();
 
-        if !crate::util::should_translate(ctx.tcx, def_id) {
+        if !crate::util::should_translate(why3.tcx, def_id) {
             info!("Skipping {:?}", def_id);
             continue;
         }
 
-        if ctx.def_kind(def_id) == DefKind::AnonConst {
+        if why3.def_kind(def_id) == DefKind::AnonConst {
             continue;
         }
 
         info!("Translating body {:?}", def_id);
-        ctx.translate(def_id);
+        why3.translate(def_id);
     }
 
-    for impls in ctx.tcx.all_local_trait_impls(()).values() {
+    for impls in why3.all_local_trait_impls(()).values() {
         for impl_id in impls {
-            ctx.translate(impl_id.to_def_id());
+            why3.translate(impl_id.to_def_id());
         }
     }
 
     debug!("after_analysis_translate: {:?}", start.elapsed());
     let start = Instant::now();
 
-    if ctx.tcx.sess.has_errors().is_some() {
+    if why3.sess.has_errors().is_some() {
         return Err(Box::new(CrErr));
     }
 
-    if ctx.should_export() {
-        metadata::dump_exports(&ctx, &ctx.opts.metadata_path);
+    if why3.should_export() {
+        metadata::dump_exports(&why3, &why3.opts.metadata_path);
     }
 
-    if ctx.should_compile() {
+    if why3.should_compile() {
         use std::fs::File;
-        let mut out: Box<dyn Write> = match ctx.opts.output_file {
+        let mut out: Box<dyn Write> = match why3.opts.output_file {
             Some(OutputFile::File(ref f)) => Box::new(std::io::BufWriter::new(File::create(f)?)),
             Some(OutputFile::Stdout) => Box::new(std::io::stdout()),
             None => {
-                let outputs = ctx.tcx.output_filenames(());
-                let crate_name = ctx.tcx.crate_name(LOCAL_CRATE);
+                let outputs = why3.output_filenames(());
+                let crate_name = why3.crate_name(LOCAL_CRATE);
 
                 let libname =
-                    format!("{}-{}.mlcfg", crate_name.as_str(), ctx.sess.crate_types()[0]);
+                    format!("{}-{}.mlcfg", crate_name.as_str(), why3.sess.crate_types()[0]);
 
-                let directory = if ctx.opts.in_cargo {
+                let directory = if why3.opts.in_cargo {
                     let mut dir = outputs.out_directory.clone();
                     dir.pop();
                     dir
@@ -113,10 +113,10 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
             }
         };
 
-        let matcher = ctx.opts.match_str.clone();
+        let matcher = why3.opts.match_str.clone();
         let matcher: &str = matcher.as_ref().map(|s| &s[..]).unwrap_or("");
-        let tcx = ctx.tcx;
-        let modules = ctx.modules().flat_map(|(id, item)| {
+        let tcx = why3.tcx;
+        let modules = why3.modules().flat_map(|(id, item)| {
             if tcx.def_path_str(id).contains(matcher) {
                 item.modules()
             } else {
@@ -131,7 +131,7 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
 
     Ok(())
 }
-use creusot_rustc::smir::mir;
+use rustc_middle::mir;
 
 pub(crate) fn binop_to_binop(ctx: &mut TranslationCtx, ty: Ty, op: mir::BinOp) -> why3::exp::BinOp {
     use why3::exp::BinOp;
@@ -171,23 +171,53 @@ pub(crate) fn binop_to_binop(ctx: &mut TranslationCtx, ty: Ty, op: mir::BinOp) -
                 BinOp::Eq
             }
         }
-        mir::BinOp::Lt => BinOp::Lt,
-        mir::BinOp::Le => BinOp::Le,
-        mir::BinOp::Gt => BinOp::Gt,
-        mir::BinOp::Ge => BinOp::Ge,
+        mir::BinOp::Lt => {
+            if ty.is_floating_point() {
+                BinOp::FloatLt
+            } else {
+                BinOp::Lt
+            }
+        }
+        mir::BinOp::Le => {
+            if ty.is_floating_point() {
+                BinOp::FloatLe
+            } else {
+                BinOp::Le
+            }
+        }
+        mir::BinOp::Gt => {
+            if ty.is_floating_point() {
+                BinOp::FloatGt
+            } else {
+                BinOp::Gt
+            }
+        }
+        mir::BinOp::Ge => {
+            if ty.is_floating_point() {
+                BinOp::FloatGe
+            } else {
+                BinOp::Ge
+            }
+        }
         mir::BinOp::Ne => BinOp::Ne,
         mir::BinOp::Rem => BinOp::Mod,
         _ => ctx.crash_and_error(
-            creusot_rustc::span::DUMMY_SP,
+            rustc_span::DUMMY_SP,
             &format!("unsupported binary operation: {:?}", op),
         ),
     }
 }
 
-fn unop_to_unop(op: creusot_rustc::middle::mir::UnOp) -> why3::exp::UnOp {
+pub(crate) fn unop_to_unop(ty: Ty, op: rustc_middle::mir::UnOp) -> why3::exp::UnOp {
     match op {
-        creusot_rustc::middle::mir::UnOp::Not => why3::exp::UnOp::Not,
-        creusot_rustc::middle::mir::UnOp::Neg => why3::exp::UnOp::Neg,
+        rustc_middle::mir::UnOp::Not => why3::exp::UnOp::Not,
+        rustc_middle::mir::UnOp::Neg => {
+            if ty.is_floating_point() {
+                why3::exp::UnOp::FloatNeg
+            } else {
+                why3::exp::UnOp::Neg
+            }
+        }
     }
 }
 

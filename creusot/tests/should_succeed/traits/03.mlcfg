@@ -1,15 +1,16 @@
 
 module C03_Impl0_F_Interface
   use prelude.Borrow
-  use mach.int.Int
-  use mach.int.Int32
-  val f [@cfg:stackify] [#"../03.rs" 9 4 9 23] (self : int32) : int32
+  use prelude.Int
+  use prelude.Int32
+  val f [#"../03.rs" 9 4 9 23] (self : int32) : int32
 end
 module C03_Impl0_F
-  use mach.int.Int
-  use mach.int.Int32
+  use prelude.Int
+  use prelude.Int32
   use prelude.Borrow
-  let rec cfg f [@cfg:stackify] [#"../03.rs" 9 4 9 23] (self : int32) : int32 = [@vc:do_not_keep_trace] [@vc:sp]
+  let rec cfg f [#"../03.rs" 9 4 9 23] [@cfg:stackify] [@cfg:subregion_analysis] (self : int32) : int32
+   = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : int32;
   var self_1 : int32;
   {
@@ -24,15 +25,16 @@ module C03_Impl0_F
 end
 module C03_Impl1_G_Interface
   use prelude.Borrow
-  use mach.int.Int
-  use mach.int.UInt32
-  val g [@cfg:stackify] [#"../03.rs" 20 4 20 23] (self : uint32) : uint32
+  use prelude.Int
+  use prelude.UInt32
+  val g [#"../03.rs" 20 4 20 23] (self : uint32) : uint32
 end
 module C03_Impl1_G
-  use mach.int.Int
-  use mach.int.UInt32
+  use prelude.Int
+  use prelude.UInt32
   use prelude.Borrow
-  let rec cfg g [@cfg:stackify] [#"../03.rs" 20 4 20 23] (self : uint32) : uint32 = [@vc:do_not_keep_trace] [@vc:sp]
+  let rec cfg g [#"../03.rs" 20 4 20 23] [@cfg:stackify] [@cfg:subregion_analysis] (self : uint32) : uint32
+   = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : uint32;
   var self_1 : uint32;
   {
@@ -52,6 +54,9 @@ end
 module CreusotContracts_Resolve_Resolve_Resolve_Interface
   type self
   predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Resolve_Resolve_Resolve
   type self
@@ -63,14 +68,15 @@ end
 module C03_Impl2_H_Interface
   type g
   use prelude.Borrow
-  val h [@cfg:stackify] [#"../03.rs" 30 4 30 24] (y : g) : g
+  val h [#"../03.rs" 30 4 30 24] (y : g) : g
 end
 module C03_Impl2_H
   type g
   use prelude.Borrow
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = g
-  let rec cfg h [@cfg:stackify] [#"../03.rs" 30 4 30 24] (y : g) : g = [@vc:do_not_keep_trace] [@vc:sp]
+  let rec cfg h [#"../03.rs" 30 4 30 24] [@cfg:stackify] [@cfg:subregion_analysis] (y : g) : g
+   = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : g;
   var y_1 : g;
   {
@@ -78,7 +84,6 @@ module C03_Impl2_H
     goto BB0
   }
   BB0 {
-    assume { Resolve0.resolve _0 };
     _0 <- y_1;
     assume { Resolve0.resolve y_1 };
     return _0
@@ -88,27 +93,11 @@ end
 module C03_Impl0
   
 end
-module C03_B_G_Interface
-  type self
-  use prelude.Borrow
-  val g [@cfg:stackify] [#"../03.rs" 16 4 16 24] (self : self) : self
-    ensures { [#"../03.rs" 15 14 15 30] result = result }
-    
-end
-module C03_B_G
-  type self
-  use prelude.Borrow
-  val g [@cfg:stackify] [#"../03.rs" 16 4 16 24] (self : self) : self
-    ensures { [#"../03.rs" 15 14 15 30] result = result }
-    
-end
 module C03_Impl1
-  use mach.int.Int
-  use mach.int.UInt32
-  clone C03_Impl1_G_Interface as G0
-  clone C03_B_G_Interface as G1 with
-    type self = uint32,
-    val g = G0.g
+  use prelude.Borrow
+  use prelude.Int
+  use prelude.UInt32
+  goal g_refn : [#"../03.rs" 20 4 20 23] forall self : uint32 . forall result : uint32 . result = result
 end
 module C03_Impl2
   

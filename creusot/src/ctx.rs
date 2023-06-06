@@ -1,56 +1,114 @@
 use std::{collections::HashMap, ops::Deref};
 
-pub(crate) use crate::clone_map::*;
+pub(crate) use crate::backend::clone_map::*;
 use crate::{
+    backend::ty::ty_binding_group,
+    callbacks,
     creusot_items::{self, CreusotItems},
-    error::CreusotResult,
+    error::{CrErr, CreusotResult, Error},
     metadata::{BinaryMetadata, Metadata},
     options::{Options, SpanMode},
     translation::{
-        external,
+        self,
         external::{extract_extern_specs_from_item, ExternSpec},
-        interface::interface_for,
+        fmir,
         pearlite::{self, Term},
-        specification::ContractClauses,
-        ty,
-        ty::translate_tydecl,
+        specification::{ContractClauses, PurityVisitor},
+        traits::{self, TraitImpl},
     },
-    util,
-    util::item_type,
-};
-use creusot_rustc::{
-    data_structures::captures::Captures,
-    errors::{DiagnosticBuilder, DiagnosticId},
-    hir::{
-        def::DefKind,
-        def_id::{DefId, LocalDefId},
-    },
-    infer::traits::{Obligation, ObligationCause},
-    middle::ty::{subst::InternalSubsts, ParamEnv, TyCtxt},
-    span::{Span, Symbol, DUMMY_SP},
-    trait_selection::traits::SelectionContext,
+    util::{self, pre_sig_of, PreSignature},
 };
 use indexmap::{IndexMap, IndexSet};
-pub(crate) use util::{item_name, module_name, ItemType};
-use why3::{declaration::Module, exp::Exp};
+use rustc_borrowck::consumers::BodyWithBorrowckFacts;
+use rustc_errors::{DiagnosticBuilder, DiagnosticId};
+use rustc_hir::{
+    def::DefKind,
+    def_id::{DefId, LocalDefId},
+};
+use rustc_infer::traits::{Obligation, ObligationCause};
+use rustc_middle::{
+    mir::{Body, Promoted},
+    thir,
+    ty::{
+        subst::{GenericArgKind, InternalSubsts},
+        GenericArg, ParamEnv, SubstsRef, Ty, TyCtxt, Visibility,
+    },
+};
+use rustc_span::{RealFileName, Span, Symbol, DUMMY_SP};
+use rustc_trait_selection::traits::SelectionContext;
+pub(crate) use util::{module_name, ItemType};
+use why3::exp::Exp;
 
 pub(crate) use crate::translated_item::*;
+
+macro_rules! queryish {
+    ($name:ident, $res:ty, $builder:ident) => {
+        pub(crate) fn $name(&mut self, item: DefId) -> $res {
+            if self.$name.get(&item).is_none() {
+                let res = self.$builder(item);
+                self.$name.insert(item, res);
+            };
+
+            &self.$name[&item]
+        }
+    };
+    ($name:ident, $res:ty, $builder:expr) => {
+        pub(crate) fn $name(&mut self, item: DefId) -> $res {
+            if self.$name.get(&item).is_none() {
+                let res = ($builder)(self, item);
+                self.$name.insert(item, res);
+            };
+
+            &self.$name[&item]
+        }
+    };
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct BodyId {
+    pub def_id: LocalDefId,
+    pub promoted: Option<Promoted>,
+}
+
+impl BodyId {
+    pub fn new(def_id: LocalDefId, promoted: Option<Promoted>) -> Self {
+        BodyId { def_id, promoted }
+    }
+
+    pub fn def_id(self) -> DefId {
+        self.def_id.to_def_id()
+    }
+}
 
 // TODO: The state in here should be as opaque as possible...
 pub struct TranslationCtx<'tcx> {
     pub tcx: TyCtxt<'tcx>,
-    translated_items: IndexSet<DefId>,
-    in_translation: Vec<IndexSet<DefId>>,
-    ty_binding_groups: HashMap<DefId, DefId>, // maps type ids to their 'representative type'
-    functions: IndexMap<DefId, TranslatedItem>,
-    dependencies: IndexMap<DefId, CloneSummary<'tcx>>,
+    representative_type: HashMap<DefId, DefId>, // maps type ids to their 'representative type'
+    ty_binding_groups: HashMap<DefId, IndexSet<DefId>>,
     laws: IndexMap<DefId, Vec<DefId>>,
+    fmir_body: IndexMap<BodyId, fmir::Body<'tcx>>,
     terms: IndexMap<DefId, Term<'tcx>>,
     pub externs: Metadata<'tcx>,
     pub(crate) opts: Options,
     creusot_items: CreusotItems,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
+    trait_impl: HashMap<DefId, TraitImpl<'tcx>>,
+    sig: HashMap<DefId, PreSignature<'tcx>>,
+    bodies: HashMap<LocalDefId, BodyWithBorrowckFacts<'tcx>>,
+    opacity: HashMap<DefId, Opacity>,
+}
+
+#[derive(Copy, Clone)]
+pub(crate) struct Opacity(Visibility<DefId>);
+
+impl Opacity {
+    pub(crate) fn scope(self) -> Option<DefId> {
+        match self.0 {
+            Visibility::Public => None,
+            Visibility::Restricted(modl) => Some(modl),
+        }
+    }
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -68,185 +126,34 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         Self {
             tcx,
             laws: Default::default(),
-            translated_items: Default::default(),
-            in_translation: Default::default(),
-            functions: Default::default(),
-            dependencies: Default::default(),
-            externs: Metadata::new(tcx),
+            externs: Default::default(),
             terms: Default::default(),
             creusot_items,
             opts,
+            representative_type: Default::default(),
             ty_binding_groups: Default::default(),
             extern_specs: Default::default(),
             extern_spec_items: Default::default(),
+            fmir_body: Default::default(),
+            trait_impl: Default::default(),
+            sig: Default::default(),
+            bodies: Default::default(),
+            opacity: Default::default(),
         }
     }
 
     pub(crate) fn load_metadata(&mut self) {
-        self.externs.load(&self.opts.extern_paths);
+        self.externs.load(self.tcx, &self.opts.extern_paths);
     }
 
-    pub(crate) fn translate(&mut self, def_id: DefId) {
-        if self.translated_items.contains(&def_id) || self.safe_cycle(def_id) {
-            return;
+    queryish!(trait_impl, &TraitImpl<'tcx>, translate_impl);
+
+    pub(crate) fn fmir_body(&mut self, body_id: BodyId) -> Option<&fmir::Body<'tcx>> {
+        if !self.fmir_body.contains_key(&body_id) {
+            let fmir = translation::function::fmir(self, body_id);
+            self.fmir_body.insert(body_id, fmir);
         }
-        debug!("translating {:?}", def_id);
-
-        // eprintln!("{:?}", self.param_env(def_id));
-
-        match item_type(self.tcx, def_id) {
-            ItemType::Trait => {
-                self.start(def_id);
-                let tr = self.translate_trait(def_id);
-                self.dependencies.insert(def_id, CloneSummary::new());
-                self.functions.insert(def_id, tr);
-                self.finish(def_id);
-            }
-            ItemType::Impl => {
-                if self.tcx.impl_trait_ref(def_id).is_some() {
-                    self.start(def_id);
-                    let impl_ = self.translate_impl(def_id);
-
-                    self.dependencies.insert(def_id, CloneSummary::new());
-                    self.functions.insert(def_id, impl_);
-                    self.finish(def_id);
-                }
-            }
-
-            ItemType::Logic | ItemType::Predicate | ItemType::Program | ItemType::Closure => {
-                self.start(def_id);
-                self.translate_function(def_id);
-                self.finish(def_id);
-            }
-            ItemType::AssocTy => {
-                self.start(def_id);
-                let (modl, dependencies) = self.translate_assoc_ty(def_id);
-                self.finish(def_id);
-                self.dependencies.insert(def_id, dependencies);
-                self.functions.insert(def_id, TranslatedItem::AssocTy { modl });
-            }
-            ItemType::Constant => {
-                self.start(def_id);
-                let (constant, dependencies) = self.translate_constant(def_id);
-                self.finish(def_id);
-                self.dependencies.insert(def_id, dependencies);
-                self.functions.insert(def_id, constant);
-            }
-            ItemType::Type => {
-                translate_tydecl(self, def_id);
-            }
-            ItemType::Unsupported(dk) => self.crash_and_error(
-                self.tcx.def_span(def_id),
-                &format!("unsupported definition kind {:?} {:?}", def_id, dk),
-            ),
-        }
-    }
-
-    // Checks if we are allowed to recurse into
-    fn safe_cycle(&self, def_id: DefId) -> bool {
-        self.in_translation.last().map(|l| l.contains(&def_id)).unwrap_or_default()
-    }
-
-    pub(crate) fn start_group(&mut self, ids: IndexSet<DefId>) {
-        assert!(!ids.is_empty());
-        if self.in_translation.iter().rev().any(|s| !s.is_disjoint(&ids)) {
-            let span = self.def_span(ids.first().unwrap());
-            self.in_translation.push(ids);
-
-            self.crash_and_error(
-                span,
-                &format!("encountered a cycle during translation: {:?}", self.in_translation),
-            );
-        }
-
-        self.in_translation.push(ids);
-    }
-
-    // Mark an id as in translation.
-    pub(crate) fn start(&mut self, def_id: DefId) {
-        self.start_group(IndexSet::from_iter([def_id]));
-    }
-
-    // Indicate we have finished translating a given id
-    pub(crate) fn finish(&mut self, def_id: DefId) {
-        if !self.in_translation.last_mut().unwrap().remove(&def_id) {
-            self.crash_and_error(
-                self.def_span(def_id),
-                &format!("{:?} is not in translation", def_id),
-            );
-        }
-
-        if self.in_translation.last().unwrap().is_empty() {
-            self.in_translation.pop();
-        }
-
-        self.translated_items.insert(def_id);
-    }
-
-    // Generic entry point for function translation
-    fn translate_function(&mut self, def_id: DefId) {
-        assert!(matches!(
-            self.tcx.def_kind(def_id),
-            DefKind::Fn | DefKind::Closure | DefKind::AssocFn
-        ));
-
-        if !crate::util::should_translate(self.tcx, def_id) || util::is_spec(self.tcx, def_id) {
-            debug!("Skipping {:?}", def_id);
-            return;
-        }
-
-        let (interface, deps) = interface_for(self, def_id);
-
-        let translated = if util::is_logic(self.tcx, def_id) || util::is_predicate(self.tcx, def_id)
-        {
-            debug!("translating {:?} as logical", def_id);
-            let (stub, modl, proof_modl, has_axioms, deps) =
-                crate::backend::logic::translate_logic_or_predicate(self, def_id);
-            self.dependencies.insert(def_id, deps);
-            TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
-        } else if !def_id.is_local() {
-            debug!("translating {:?} as extern", def_id);
-
-            let (body, extern_deps) = external::extern_module(self, def_id);
-
-            if let Some(deps) = extern_deps {
-                self.dependencies.insert(def_id, deps);
-            }
-            TranslatedItem::Extern { interface, body }
-        } else {
-            debug!("translating {def_id:?} as program");
-
-            self.dependencies.insert(def_id, deps.summary());
-            let modl = crate::translation::translate_function(self, def_id);
-            TranslatedItem::Program { interface, modl, has_axioms: self.tcx.is_closure(def_id) }
-        };
-
-        self.functions.insert(def_id, translated);
-    }
-
-    pub(crate) fn translate_accessor(&mut self, field_id: DefId) {
-        use creusot_rustc::middle::ty::DefIdTree;
-
-        if !self.translated_items.insert(field_id) {
-            return;
-        }
-
-        let parent = self.tcx.parent(field_id);
-        let (adt_did, variant_did) = match self.tcx.def_kind(parent) {
-            DefKind::Variant => (self.tcx.parent(parent), parent),
-            DefKind::Struct | DefKind::Enum | DefKind::Union => {
-                (parent, self.tcx.adt_def(parent).variants()[0u32.into()].def_id)
-            }
-            _ => unreachable!(),
-        };
-        self.translate(adt_did);
-
-        let accessor = ty::translate_accessor(self, adt_did, variant_did, field_id);
-        let repr_id = self.ty_binding_groups[&adt_did];
-        if let TranslatedItem::Type { ref mut accessors, .. } = &mut self.functions[&repr_id] {
-            accessors.entry(variant_did).or_default().insert(field_id, accessor);
-        }
-        // self.types[&repr_id].accessors;
+        self.fmir_body.get(&body_id)
     }
 
     pub(crate) fn term(&mut self, def_id: DefId) -> Option<&Term<'tcx>> {
@@ -256,7 +163,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
         if util::has_body(self, def_id) {
             if !self.terms.contains_key(&def_id) {
-                let mut term = pearlite::pearlite(self.tcx, def_id.expect_local())
+                let mut term = pearlite::pearlite(self, def_id.expect_local())
                     .unwrap_or_else(|e| e.emit(self.tcx.sess));
                 pearlite::normalize(self.tcx, self.param_env(def_id), &mut term);
 
@@ -266,6 +173,89 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         } else {
             None
         }
+    }
+
+    queryish!(sig, &PreSignature<'tcx>, |ctx: &mut Self, key| {
+        let mut term = pre_sig_of(&mut *ctx, key);
+        term = term.normalize(ctx.tcx, ctx.param_env(key));
+        term
+    });
+
+    pub(crate) fn body(&mut self, body_id: BodyId) -> &Body<'tcx> {
+        let body = self.body_with_facts(body_id.def_id);
+        match body_id.promoted {
+            None => &body.body,
+            Some(promoted) => &body.promoted.get(promoted).unwrap(),
+        }
+    }
+
+    pub(crate) fn body_with_facts(&mut self, def_id: LocalDefId) -> &BodyWithBorrowckFacts<'tcx> {
+        if !self.bodies.contains_key(&def_id) {
+            let body = callbacks::get_body(self.tcx, def_id).unwrap();
+
+            // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
+            // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
+            // CleanupPostBorrowck.run_pass(self.tcx, &mut body.body);
+            // SimplifyCfg::new("verify").run_pass(self.tcx, &mut body.body);
+
+            self.bodies.insert(def_id, body);
+        };
+
+        self.bodies.get(&def_id).unwrap()
+    }
+
+    pub(crate) fn type_invariant(
+        &self,
+        def_id: DefId,
+        ty: Ty<'tcx>,
+    ) -> Option<(DefId, SubstsRef<'tcx>)> {
+        debug!("resolving type invariant of {ty:?} in {def_id:?}");
+        let param_env = self.param_env(def_id);
+        let trait_did = self.get_diagnostic_item(Symbol::intern("creusot_invariant_method"))?;
+
+        let substs = self.mk_substs(&[GenericArg::from(ty)]);
+        let inv = traits::resolve_opt(self.tcx, param_env, trait_did, substs)?;
+
+        // if inv resolved to the default impl and is not specializable, ignore
+        if inv.0 == trait_did && !traits::still_specializable(self.tcx, param_env, inv.0, inv.1) {
+            return None;
+        }
+
+        match util::ignore_type_invariant(self.tcx, inv.0) {
+            util::TypeInvariantAttr::None => return Some(inv),
+            util::TypeInvariantAttr::AlwaysIgnore => return None,
+            util::TypeInvariantAttr::MaybeIgnore => {}
+        }
+
+        let mut walker = ty.walk();
+        walker.next(); // skip root type
+        while let Some(arg) = walker.next() {
+            if !matches!(arg.unpack(), GenericArgKind::Type(_)) {
+                walker.skip_current_subtree();
+                continue;
+            }
+
+            let substs = self.mk_substs(&[arg]);
+            let Some(arg_inv) = traits::resolve_opt(self.tcx, param_env, trait_did, substs) else {
+                walker.skip_current_subtree();
+                continue;
+            };
+
+            if arg_inv.0 == trait_did
+                && !traits::still_specializable(self.tcx, param_env, arg_inv.0, arg_inv.1)
+            {
+                walker.skip_current_subtree();
+                continue;
+            }
+
+            match util::ignore_type_invariant(self.tcx, arg_inv.0) {
+                util::TypeInvariantAttr::None => return Some(inv),
+                util::TypeInvariantAttr::AlwaysIgnore => walker.skip_current_subtree(),
+                util::TypeInvariantAttr::MaybeIgnore => {}
+            }
+        }
+
+        None
     }
 
     pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {
@@ -296,42 +286,30 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         )
     }
 
-    pub(crate) fn add_binding_group(&mut self, def_ids: &IndexSet<DefId>) {
+    fn add_binding_group(&mut self, def_ids: &IndexSet<DefId>) {
         let repr = *def_ids.first().unwrap();
         for i in def_ids {
-            self.ty_binding_groups.insert(*i, repr);
+            self.representative_type.insert(*i, repr);
         }
     }
 
-    pub(crate) fn add_type(&mut self, def_id: DefId, modl: Module) {
-        let repr = self.representative_type(def_id);
-        self.functions.insert(repr, TranslatedItem::Type { modl, accessors: Default::default() });
-    }
+    pub(crate) fn binding_group(&mut self, def_id: DefId) -> &IndexSet<DefId> {
+        if !self.representative_type.contains_key(&def_id) {
+            let bg = ty_binding_group(self.tcx, def_id);
+            self.add_binding_group(&bg);
+            self.ty_binding_groups.insert(self.representative_type(def_id), bg);
+        }
 
-    pub(crate) fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
-        self.dependencies.get(&def_id).or_else(|| {
-            self.item(def_id).and_then(|f| f.external_dependencies(&self.externs, def_id))
-        })
-    }
-
-    pub(crate) fn item(&self, def_id: DefId) -> Option<&TranslatedItem> {
-        let def_id = self.ty_binding_groups.get(&def_id).unwrap_or(&def_id);
-        self.functions.get(def_id)
+        &self.ty_binding_groups[&self.representative_type(def_id)]
     }
 
     // Get the id of the type which represents a binding groups
     // Panics a type hasn't yet been translated
     pub(crate) fn representative_type(&self, def_id: DefId) -> DefId {
-        *self.ty_binding_groups.get(&def_id).unwrap_or_else(|| panic!("no key for {:?}", def_id))
+        *self.representative_type.get(&def_id).unwrap_or_else(|| panic!("no key for {:?}", def_id))
     }
 
-    pub(crate) fn laws(&mut self, trait_or_impl: DefId) -> &[DefId] {
-        if self.laws.get(&trait_or_impl).is_none() {
-            self.laws.insert(trait_or_impl, self.laws_inner(trait_or_impl));
-        };
-
-        &self.laws[&trait_or_impl]
-    }
+    queryish!(laws, &[DefId], laws_inner);
 
     // TODO Make private
     pub(crate) fn extern_spec(&self, def_id: DefId) -> Option<&ExternSpec<'tcx>> {
@@ -346,19 +324,36 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         self.opts.should_output
     }
 
-    pub(crate) fn modules(self) -> impl Iterator<Item = (DefId, TranslatedItem)> + Captures<'tcx> {
-        self.functions.into_iter()
+    /// We encodes the opacity of functions using 'witnesses', funcitons that have the target opacity
+    /// set as their *visibility*.
+    pub(crate) fn opacity(&mut self, item: DefId) -> &Opacity {
+        if self.opacity.get(&item).is_none() {
+            self.opacity.insert(item, self.mk_opacity(item));
+        };
+
+        &self.opacity[&item]
+    }
+
+    fn mk_opacity(&self, item: DefId) -> Opacity {
+        if !matches!(util::item_type(self.tcx, item), ItemType::Predicate | ItemType::Logic) {
+            return Opacity(Visibility::Public);
+        };
+
+        let witness = util::opacity_witness_name(self.tcx, item)
+            .and_then(|nm| self.creusot_item(nm))
+            .map(|id| self.visibility(id))
+            .unwrap_or_else(|| Visibility::Restricted(parent_module(self.tcx, item)));
+        Opacity(witness)
+    }
+
+    /// Checks if `item` is transparent in the scope of `modl`.
+    /// This will determine whether the solvers are allowed to unfold the body's definition.
+    pub(crate) fn is_transparent_from(&mut self, item: DefId, modl: DefId) -> bool {
+        self.opacity(item).0.is_accessible_from(modl, self.tcx)
     }
 
     pub(crate) fn metadata(&self) -> BinaryMetadata<'tcx> {
-        BinaryMetadata::from_parts(
-            self.tcx,
-            &self.functions,
-            &self.dependencies,
-            &self.terms,
-            &self.creusot_items,
-            &self.extern_specs,
-        )
+        BinaryMetadata::from_parts(&self.terms, &self.creusot_items, &self.extern_specs)
     }
 
     pub(crate) fn creusot_item(&self, name: Symbol) -> Option<DefId> {
@@ -378,29 +373,26 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             let base_env = self.tcx.param_env(def_id);
             {
                 // Only add predicates which don't already hold
-                use creusot_rustc::infer::infer::TyCtxtInferExt;
-                self.tcx.infer_ctxt().enter(|infcx| {
-                    let mut selcx = SelectionContext::new(&infcx);
-                    let param_env = self.tcx.param_env(def_id);
-                    for pred in es.predicates_for(self.tcx, subst) {
-                        let obligation_cause = ObligationCause::dummy();
-                        let obligation = Obligation::new(obligation_cause, param_env, pred);
-                        if !selcx.predicate_may_hold_fatal(&obligation) {
-                            additional_predicates.push(
-                                self.tcx
-                                    .try_normalize_erasing_regions(base_env, pred)
-                                    .unwrap_or(pred),
-                            )
-                        }
+                use rustc_infer::infer::TyCtxtInferExt;
+                let infcx = self.tcx.infer_ctxt().build();
+                let mut selcx = SelectionContext::new(&infcx);
+                let param_env = self.tcx.param_env(def_id);
+                for pred in es.predicates_for(self.tcx, subst) {
+                    let obligation_cause = ObligationCause::dummy();
+                    let obligation = Obligation::new(self.tcx, obligation_cause, param_env, pred);
+                    if !selcx.predicate_may_hold_fatal(&obligation) {
+                        additional_predicates.push(
+                            self.tcx.try_normalize_erasing_regions(base_env, pred).unwrap_or(pred),
+                        )
                     }
-                });
+                }
             }
 
             additional_predicates.extend(base_env.caller_bounds());
             ParamEnv::new(
-                self.mk_predicates(additional_predicates.into_iter()),
-                creusot_rustc::infer::traits::Reveal::UserFacing,
-                creusot_rustc::hir::Constness::NotConst,
+                self.mk_predicates(&additional_predicates),
+                rustc_infer::traits::Reveal::UserFacing,
+                rustc_hir::Constness::NotConst,
             )
         } else {
             self.tcx.param_env(def_id)
@@ -411,27 +403,29 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         let lo = self.sess.source_map().lookup_char_pos(span.lo());
         let hi = self.sess.source_map().lookup_char_pos(span.hi());
 
-        let filename = match self.opts.span_mode {
-            SpanMode::Absolute if lo.file.name.is_real() => {
-                if let creusot_rustc::span::FileName::Real(path) = &lo.file.name {
-                    let path = path.local_path_if_available();
-                    let mut buf;
-                    let path = if path.is_relative() {
-                        buf = std::env::current_dir().unwrap();
-                        buf.push(path);
-                        buf.as_path()
-                    } else {
-                        path
-                    };
+        let rustc_span::FileName::Real(path) = &lo.file.name else { return None };
 
-                    path.to_string_lossy().into_owned()
-                } else {
-                    return None;
-                }
-            }
+        // If we ask for relative paths and the paths comes from the standard library, then we prefer returning
+        // None, since the relative path of the stdlib is not stable.
+        let path = match (&self.opts.span_mode, path) {
+            (SpanMode::Relative, RealFileName::Remapped { .. }) => return None,
+            _ => path.local_path_if_available(),
+        };
+
+        let mut buf;
+        let path = if path.is_relative() {
+            buf = std::env::current_dir().unwrap();
+            buf.push(path);
+            buf.as_path()
+        } else {
+            path
+        };
+
+        let filename = match self.opts.span_mode {
+            SpanMode::Absolute => path.to_string_lossy().into_owned(),
             SpanMode::Relative => {
-                // Should really be relative to the source file the location is in
-                format!("../{}", self.sess.source_map().filename_for_diagnostics(&lo.file.name))
+                // Why3 treats the spans as relative to the session not the source file??
+                format!("{}", self.opts.relative_to_output(&path).to_string_lossy())
             }
             _ => return None,
         };
@@ -446,11 +440,34 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn attach_span(&self, span: Span, exp: Exp) -> Exp {
-        if let SpanMode::Off = self.opts.span_mode {
-            exp
+        if let Some(attr) = self.span_attr(span) {
+            Exp::Attr(attr, Box::new(exp))
         } else {
-            Exp::Attr(self.span_attr(span).unwrap(), box exp)
+            exp
         }
+    }
+
+    pub(crate) fn check_purity(&mut self, def_id: LocalDefId) {
+        let (thir, expr) =
+            self.tcx.thir_body(def_id).unwrap_or_else(|_| Error::from(CrErr).emit(self.tcx.sess));
+        let thir = thir.borrow();
+        if thir.exprs.is_empty() {
+            Error::new(self.tcx.def_span(def_id), "type checking failed").emit(self.tcx.sess);
+        }
+
+        let def_id = def_id.to_def_id();
+        let in_pure_ctx = crate::util::is_spec(self.tcx, def_id)
+            || crate::util::is_logic(self.tcx, def_id)
+            || crate::util::is_predicate(self.tcx, def_id);
+
+        if !in_pure_ctx && crate::util::is_no_translate(self.tcx, def_id) {
+            return;
+        }
+
+        thir::visit::walk_expr(
+            &mut PurityVisitor { tcx: self.tcx, thir: &thir, in_pure_ctx },
+            &thir[expr],
+        );
     }
 }
 
@@ -495,7 +512,7 @@ pub(crate) fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
                 .extend(ctx.extern_spec(item.def_id).unwrap().additional_predicates.clone());
         }
         // let additional_predicates = ctx.arena.alloc_slice(&additional_predicates);
-        // let additional_predicates = creusot_rustc::middle::ty::GenericPredicates { parent: None, predicates: additional_predicates };
+        // let additional_predicates = rustc_middle::ty::GenericPredicates { parent: None, predicates: additional_predicates };
 
         ctx.extern_specs.insert(
             def_id,
@@ -509,4 +526,12 @@ pub(crate) fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
     }
 
     Ok(())
+}
+
+pub(crate) fn parent_module(tcx: TyCtxt, mut id: DefId) -> DefId {
+    while tcx.def_kind(id) != DefKind::Mod {
+        id = tcx.parent(id);
+    }
+
+    id
 }

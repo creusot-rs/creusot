@@ -1,6 +1,19 @@
 use crate::{invariant::Invariant, *};
 pub use ::std::option::*;
 
+impl<T: DeepModel> DeepModel for Option<T> {
+    type DeepModelTy = Option<T::DeepModelTy>;
+
+    #[logic]
+    #[open]
+    fn deep_model(self) -> Self::DeepModelTy {
+        match self {
+            Some(t) => Some(t.deep_model()),
+            None => None,
+        }
+    }
+}
+
 extern_spec! {
     mod std {
         mod option {
@@ -101,6 +114,7 @@ extern_spec! {
 }
 
 impl<T> Default for Option<T> {
+    #[open]
     #[predicate]
     fn is_default(self) -> bool {
         pearlite! { self == None }
@@ -110,6 +124,7 @@ impl<T> Default for Option<T> {
 impl<T> ShallowModel for IntoIter<T> {
     type ShallowModelTy = Option<T>;
 
+    #[open(self)]
     #[logic]
     #[trusted]
     fn shallow_model(self) -> Option<T> {
@@ -117,36 +132,31 @@ impl<T> ShallowModel for IntoIter<T> {
     }
 }
 
-impl<T> Invariant for IntoIter<T> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! { true }
-    }
-}
+impl<T> Invariant for IntoIter<T> {}
 
 impl<T> Iterator for IntoIter<T> {
     #[predicate]
+    #[open]
     fn completed(&mut self) -> bool {
-        pearlite! { @*self == None && self.resolve() }
+        pearlite! { (*self)@ == None && self.resolve() }
     }
 
     #[predicate]
+    #[open]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::EMPTY && self == o ||
-            exists<e: Self::Item> @self == Some(e) && visited == Seq::singleton(e) && @o == None
+            exists<e: Self::Item> self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
         }
     }
 
     #[law]
-    #[requires(a.invariant())]
+    #[open(self)]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
+    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -155,19 +165,22 @@ impl<T> Iterator for IntoIter<T> {
 
 impl<T> IntoIterator for Option<T> {
     #[predicate]
+    #[open]
     fn into_iter_pre(self) -> bool {
         pearlite! { true }
     }
 
     #[predicate]
+    #[open]
     fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { self == @res }
+        pearlite! { self == res@ }
     }
 }
 
 impl<'a, T> ShallowModel for Iter<'a, T> {
     type ShallowModelTy = Option<&'a T>;
 
+    #[open(self)]
     #[logic]
     #[trusted]
     fn shallow_model(self) -> Option<&'a T> {
@@ -175,36 +188,31 @@ impl<'a, T> ShallowModel for Iter<'a, T> {
     }
 }
 
-impl<'a, T> Invariant for Iter<'a, T> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! { true }
-    }
-}
+impl<'a, T> Invariant for Iter<'a, T> {}
 
 impl<'a, T> Iterator for Iter<'a, T> {
     #[predicate]
+    #[open]
     fn completed(&mut self) -> bool {
-        pearlite! { @*self == None && self.resolve() }
+        pearlite! { (*self)@ == None && self.resolve() }
     }
 
     #[predicate]
+    #[open]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::EMPTY && self == o ||
-            exists<e: Self::Item> @self == Some(e) && visited == Seq::singleton(e) && @o == None
+            exists<e: Self::Item> self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
         }
     }
 
     #[law]
-    #[requires(a.invariant())]
+    #[open(self)]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
+    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -213,15 +221,17 @@ impl<'a, T> Iterator for Iter<'a, T> {
 
 impl<'a, T> IntoIterator for &'a Option<T> {
     #[predicate]
+    #[open]
     fn into_iter_pre(self) -> bool {
         pearlite! { true }
     }
 
     #[predicate]
+    #[open]
     fn into_iter_post(self, res: Self::IntoIter) -> bool {
         pearlite! {
-            (*self == None ==> @res == None) &&
-            (*self == None || exists<r: &T> @res == Some(r) && *self == Some(*r))
+            (*self == None ==> res@ == None) &&
+            (*self == None || exists<r: &T> res@ == Some(r) && *self == Some(*r))
         }
     }
 }
@@ -230,42 +240,38 @@ impl<'a, T> ShallowModel for IterMut<'a, T> {
     type ShallowModelTy = Option<&'a mut T>;
 
     #[logic]
+    #[open(self)]
     #[trusted]
     fn shallow_model(self) -> Option<&'a mut T> {
         pearlite! { absurd }
     }
 }
 
-impl<'a, T> Invariant for IterMut<'a, T> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! { true }
-    }
-}
+impl<'a, T> Invariant for IterMut<'a, T> {}
 
 impl<'a, T> Iterator for IterMut<'a, T> {
     #[predicate]
+    #[open]
     fn completed(&mut self) -> bool {
-        pearlite! { @*self == None && self.resolve() }
+        pearlite! { (*self)@ == None && self.resolve() }
     }
 
     #[predicate]
+    #[open]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::EMPTY && self == o ||
-            exists<e: Self::Item> @self == Some(e) && visited == Seq::singleton(e) && @o == None
+            exists<e: Self::Item> self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
         }
     }
 
     #[law]
-    #[requires(a.invariant())]
+    #[open(self)]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
+    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -274,15 +280,17 @@ impl<'a, T> Iterator for IterMut<'a, T> {
 
 impl<'a, T> IntoIterator for &'a mut Option<T> {
     #[predicate]
+    #[open]
     fn into_iter_pre(self) -> bool {
         pearlite! { true }
     }
 
     #[predicate]
+    #[open]
     fn into_iter_post(self, res: Self::IntoIter) -> bool {
         pearlite! {
-            (*self == None ==> @res == None && ^self == None) &&
-            (*self == None || exists<r: &mut T> @res == Some(r) && *self == Some(*r) && ^self == Some(^r))
+            (*self == None ==> res@ == None && ^self == None) &&
+            (*self == None || exists<r: &mut T> res@ == Some(r) && *self == Some(*r) && ^self == Some(^r))
         }
     }
 }

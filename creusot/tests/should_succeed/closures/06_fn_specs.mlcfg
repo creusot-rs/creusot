@@ -8,6 +8,9 @@ module CreusotContracts_Std1_Ops_FnOnceExt_Precondition_Interface
   type self
   type args
   predicate precondition (self : self) (a : args)
+  val precondition (self : self) (a : args) : bool
+    ensures { result = precondition self a }
+    
 end
 module CreusotContracts_Std1_Ops_FnOnceExt_Precondition
   type self
@@ -39,6 +42,9 @@ module CreusotContracts_Std1_Ops_FnExt_Postcondition_Interface
     type self = self,
     type args = args
   predicate postcondition (self : self) (_2' : args) (_3' : Output0.output)
+  val postcondition (self : self) (_2' : args) (_3' : Output0.output) : bool
+    ensures { result = postcondition self _2' _3' }
+    
 end
 module CreusotContracts_Std1_Ops_FnExt_Postcondition
   type self
@@ -69,6 +75,9 @@ module CreusotContracts_Std1_Ops_FnMutExt_PostconditionMut_Interface
     type self = self,
     type args = args
   predicate postcondition_mut (self : borrowed self) (_2' : args) (_3' : Output0.output)
+  val postcondition_mut (self : borrowed self) (_2' : args) (_3' : Output0.output) : bool
+    ensures { result = postcondition_mut self _2' _3' }
+    
 end
 module CreusotContracts_Std1_Ops_FnMutExt_PostconditionMut
   type self
@@ -89,6 +98,9 @@ end
 module CreusotContracts_Resolve_Resolve_Resolve_Interface
   type self
   predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Resolve_Resolve_Resolve
   type self
@@ -112,6 +124,9 @@ module CreusotContracts_Std1_Ops_FnOnceExt_PostconditionOnce_Interface
     type self = self,
     type args = args
   predicate postcondition_once (self : self) (a : args) (res : Output0.output)
+  val postcondition_once (self : self) (a : args) (res : Output0.output) : bool
+    ensures { result = postcondition_once self a res }
+    
 end
 module CreusotContracts_Std1_Ops_FnOnceExt_PostconditionOnce
   type self
@@ -137,27 +152,9 @@ module Core_Ops_Function_FnOnce_CallOnce_Interface
   clone CreusotContracts_Std1_Ops_FnOnceExt_Precondition_Stub as Precondition0 with
     type self = self,
     type args = args
-  val call_once [@cfg:stackify] (self : self) (args : args) : Output0.output
-    requires {Precondition0.precondition self args}
-    ensures { PostconditionOnce0.postcondition_once self args result }
-    
-end
-module Core_Ops_Function_FnOnce_CallOnce
-  type self
-  type args
-  clone Core_Ops_Function_FnOnce_Output_Type as Output0 with
-    type self = self,
-    type args = args
-  clone CreusotContracts_Std1_Ops_FnOnceExt_PostconditionOnce_Interface as PostconditionOnce0 with
-    type self = self,
-    type args = args,
-    type Output0.output = Output0.output
-  clone CreusotContracts_Std1_Ops_FnOnceExt_Precondition_Interface as Precondition0 with
-    type self = self,
-    type args = args
-  val call_once [@cfg:stackify] (self : self) (args : args) : Output0.output
-    requires {Precondition0.precondition self args}
-    ensures { PostconditionOnce0.postcondition_once self args result }
+  val call_once (self : self) (args : args) : Output0.output
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 148 0 172 1] Precondition0.precondition self args}
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 148 0 172 1] PostconditionOnce0.postcondition_once self args result }
     
 end
 module C06FnSpecs_Weaken3_Interface
@@ -173,9 +170,9 @@ module C06FnSpecs_Weaken3_Interface
   clone CreusotContracts_Std1_Ops_FnOnceExt_Precondition_Stub as Precondition0 with
     type self = f,
     type args = a
-  val weaken_3 [@cfg:stackify] [#"../06_fn_specs.rs" 31 0 31 66] (f : f) (a : a) : Output0.output
-    requires {[#"../06_fn_specs.rs" 29 11 29 28] Precondition0.precondition f a}
-    ensures { [#"../06_fn_specs.rs" 30 10 30 41] PostconditionOnce0.postcondition_once f a result }
+  val weaken_3 [#"../06_fn_specs.rs" 32 0 32 73] (f : f) (a : a) : Output0.output
+    requires {[#"../06_fn_specs.rs" 30 11 30 28] Precondition0.precondition f a}
+    ensures { [#"../06_fn_specs.rs" 31 10 31 41] PostconditionOnce0.postcondition_once f a result }
     
 end
 module C06FnSpecs_Weaken3
@@ -197,13 +194,9 @@ module C06FnSpecs_Weaken3
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
     type Output0.output = Output0.output
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
-    type self = a
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
-    type self = f
-  let rec cfg weaken_3 [@cfg:stackify] [#"../06_fn_specs.rs" 31 0 31 66] (f : f) (a : a) : Output0.output
-    requires {[#"../06_fn_specs.rs" 29 11 29 28] Precondition0.precondition f a}
-    ensures { [#"../06_fn_specs.rs" 30 10 30 41] PostconditionOnce0.postcondition_once f a result }
+  let rec cfg weaken_3 [#"../06_fn_specs.rs" 32 0 32 73] [@cfg:stackify] [@cfg:subregion_analysis] (f : f) (a : a) : Output0.output
+    requires {[#"../06_fn_specs.rs" 30 11 30 28] Precondition0.precondition f a}
+    ensures { [#"../06_fn_specs.rs" 31 10 31 41] PostconditionOnce0.postcondition_once f a result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Output0.output;
@@ -223,13 +216,11 @@ module C06FnSpecs_Weaken3
     goto BB2
   }
   BB2 {
-    assume { Resolve0.resolve _5 };
     _5 <- f_1;
     f_1 <- any f;
-    assume { Resolve1.resolve _6 };
     _6 <- a_2;
     a_2 <- any a;
-    _0 <- ([#"../06_fn_specs.rs" 32 4 32 27] CallOnce0.call_once _5 _6);
+    _0 <- ([#"../06_fn_specs.rs" 33 4 33 27] CallOnce0.call_once _5 _6);
     goto BB3
   }
   BB3 {
@@ -252,6 +243,9 @@ module CreusotContracts_Std1_Ops_FnMutExt_Unnest_Interface
   type self
   type args
   predicate unnest (self : self) (_2' : self)
+  val unnest (self : self) (_2' : self) : bool
+    ensures { result = unnest self _2' }
+    
 end
 module CreusotContracts_Std1_Ops_FnMutExt_Unnest
   type self
@@ -292,7 +286,12 @@ module CreusotContracts_Std1_Ops_FnMutExt_PostconditionMutUnnest_Interface
     type args = args,
     type Output0.output = Output0.output
   function postcondition_mut_unnest (self : borrowed self) (args : args) (res : Output0.output) : ()
-  axiom postcondition_mut_unnest_spec : forall self : borrowed self, args : args, res : Output0.output . PostconditionMut0.postcondition_mut self args res -> Unnest0.unnest ( * self) ( ^ self)
+  val postcondition_mut_unnest (self : borrowed self) (args : args) (res : Output0.output) : ()
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 27 15 27 48] PostconditionMut0.postcondition_mut self args res}
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 28 14 28 35] Unnest0.unnest ( * self) ( ^ self) }
+    ensures { result = postcondition_mut_unnest self args res }
+    
+  axiom postcondition_mut_unnest_spec : forall self : borrowed self, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 27 15 27 48] PostconditionMut0.postcondition_mut self args res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 28 14 28 35] Unnest0.unnest ( * self) ( ^ self))
 end
 module CreusotContracts_Std1_Ops_FnMutExt_PostconditionMutUnnest
   type self
@@ -310,10 +309,11 @@ module CreusotContracts_Std1_Ops_FnMutExt_PostconditionMutUnnest
     type Output0.output = Output0.output
   function postcondition_mut_unnest (self : borrowed self) (args : args) (res : Output0.output) : ()
   val postcondition_mut_unnest (self : borrowed self) (args : args) (res : Output0.output) : ()
-    requires {PostconditionMut0.postcondition_mut self args res}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 27 15 27 48] PostconditionMut0.postcondition_mut self args res}
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 28 14 28 35] Unnest0.unnest ( * self) ( ^ self) }
     ensures { result = postcondition_mut_unnest self args res }
     
-  axiom postcondition_mut_unnest_spec : forall self : borrowed self, args : args, res : Output0.output . PostconditionMut0.postcondition_mut self args res -> Unnest0.unnest ( * self) ( ^ self)
+  axiom postcondition_mut_unnest_spec : forall self : borrowed self, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 27 15 27 48] PostconditionMut0.postcondition_mut self args res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 28 14 28 35] Unnest0.unnest ( * self) ( ^ self))
 end
 module CreusotContracts_Std1_Ops_FnMutExt_UnnestRefl_Stub
   type self
@@ -330,7 +330,11 @@ module CreusotContracts_Std1_Ops_FnMutExt_UnnestRefl_Interface
     type self = self,
     type args = args
   function unnest_refl (self : self) : ()
-  axiom unnest_refl_spec : forall self : self . Unnest0.unnest self self
+  val unnest_refl (self : self) : ()
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 32 14 32 31] Unnest0.unnest self self }
+    ensures { result = unnest_refl self }
+    
+  axiom unnest_refl_spec : forall self : self . [#"../../../../../creusot-contracts/src/std/ops.rs" 32 14 32 31] Unnest0.unnest self self
 end
 module CreusotContracts_Std1_Ops_FnMutExt_UnnestRefl
   type self
@@ -340,9 +344,10 @@ module CreusotContracts_Std1_Ops_FnMutExt_UnnestRefl
     type args = args
   function unnest_refl (self : self) : ()
   val unnest_refl (self : self) : ()
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 32 14 32 31] Unnest0.unnest self self }
     ensures { result = unnest_refl self }
     
-  axiom unnest_refl_spec : forall self : self . Unnest0.unnest self self
+  axiom unnest_refl_spec : forall self : self . [#"../../../../../creusot-contracts/src/std/ops.rs" 32 14 32 31] Unnest0.unnest self self
 end
 module CreusotContracts_Std1_Ops_FnMutExt_UnnestTrans_Stub
   type self
@@ -359,7 +364,13 @@ module CreusotContracts_Std1_Ops_FnMutExt_UnnestTrans_Interface
     type self = self,
     type args = args
   function unnest_trans (self : self) (b : self) (c : self) : ()
-  axiom unnest_trans_spec : forall self : self, b : self, c : self . Unnest0.unnest self b -> Unnest0.unnest b c -> Unnest0.unnest self c
+  val unnest_trans (self : self) (b : self) (c : self) : ()
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 36 15 36 29] Unnest0.unnest self b}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 37 15 37 26] Unnest0.unnest b c}
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 38 14 38 28] Unnest0.unnest self c }
+    ensures { result = unnest_trans self b c }
+    
+  axiom unnest_trans_spec : forall self : self, b : self, c : self . ([#"../../../../../creusot-contracts/src/std/ops.rs" 36 15 36 29] Unnest0.unnest self b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 37 15 37 26] Unnest0.unnest b c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 38 14 38 28] Unnest0.unnest self c)
 end
 module CreusotContracts_Std1_Ops_FnMutExt_UnnestTrans
   type self
@@ -369,11 +380,12 @@ module CreusotContracts_Std1_Ops_FnMutExt_UnnestTrans
     type args = args
   function unnest_trans (self : self) (b : self) (c : self) : ()
   val unnest_trans (self : self) (b : self) (c : self) : ()
-    requires {Unnest0.unnest self b}
-    requires {Unnest0.unnest b c}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 36 15 36 29] Unnest0.unnest self b}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 37 15 37 26] Unnest0.unnest b c}
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 38 14 38 28] Unnest0.unnest self c }
     ensures { result = unnest_trans self b c }
     
-  axiom unnest_trans_spec : forall self : self, b : self, c : self . Unnest0.unnest self b -> Unnest0.unnest b c -> Unnest0.unnest self c
+  axiom unnest_trans_spec : forall self : self, b : self, c : self . ([#"../../../../../creusot-contracts/src/std/ops.rs" 36 15 36 29] Unnest0.unnest self b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 37 15 37 26] Unnest0.unnest b c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 38 14 38 28] Unnest0.unnest self c)
 end
 module CreusotContracts_Std1_Ops_FnMutExt_FnMutOnce_Stub
   type self
@@ -412,7 +424,11 @@ module CreusotContracts_Std1_Ops_FnMutExt_FnMutOnce_Interface
     type args = args,
     type Output0.output = Output0.output
   function fn_mut_once (self : self) (args : args) (res : Output0.output) : ()
-  axiom fn_mut_once_spec : forall self : self, args : args, res : Output0.output . PostconditionOnce0.postcondition_once self args res = (exists s : borrowed self .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s))
+  val fn_mut_once (self : self) (args : args) (res : Output0.output) : ()
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 42 14 42 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed self .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s)) }
+    ensures { result = fn_mut_once self args res }
+    
+  axiom fn_mut_once_spec : forall self : self, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 42 14 42 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed self .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s))
 end
 module CreusotContracts_Std1_Ops_FnMutExt_FnMutOnce
   type self
@@ -433,9 +449,10 @@ module CreusotContracts_Std1_Ops_FnMutExt_FnMutOnce
     type Output0.output = Output0.output
   function fn_mut_once (self : self) (args : args) (res : Output0.output) : ()
   val fn_mut_once (self : self) (args : args) (res : Output0.output) : ()
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 42 14 42 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed self .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s)) }
     ensures { result = fn_mut_once self args res }
     
-  axiom fn_mut_once_spec : forall self : self, args : args, res : Output0.output . PostconditionOnce0.postcondition_once self args res = (exists s : borrowed self .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s))
+  axiom fn_mut_once_spec : forall self : self, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 42 14 42 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed self .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s))
 end
 module C06FnSpecs_Weaken2_Interface
   type a
@@ -453,9 +470,9 @@ module C06FnSpecs_Weaken2_Interface
   clone CreusotContracts_Std1_Ops_FnOnceExt_Precondition_Stub as Precondition0 with
     type self = f,
     type args = a
-  val weaken_2 [@cfg:stackify] [#"../06_fn_specs.rs" 19 0 19 55] (f : f) (a : a) : Output0.output
-    requires {[#"../06_fn_specs.rs" 17 11 17 28] Precondition0.precondition f a}
-    ensures { [#"../06_fn_specs.rs" 18 0 18 93] exists f2 : borrowed f .  * f2 = f /\ PostconditionMut0.postcondition_mut f2 a result /\ Resolve0.resolve ( ^ f2) }
+  val weaken_2 [#"../06_fn_specs.rs" 20 0 20 62] (f : f) (a : a) : Output0.output
+    requires {[#"../06_fn_specs.rs" 18 11 18 28] Precondition0.precondition f a}
+    ensures { [#"../06_fn_specs.rs" 19 0 19 93] exists f2 : borrowed f .  * f2 = f /\ PostconditionMut0.postcondition_mut f2 a result /\ Resolve0.resolve ( ^ f2) }
     
 end
 module C06FnSpecs_Weaken2
@@ -512,11 +529,9 @@ module C06FnSpecs_Weaken2
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
     type Output0.output = Output0.output
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
-    type self = a
-  let rec cfg weaken_2 [@cfg:stackify] [#"../06_fn_specs.rs" 19 0 19 55] (f : f) (a : a) : Output0.output
-    requires {[#"../06_fn_specs.rs" 17 11 17 28] Precondition0.precondition f a}
-    ensures { [#"../06_fn_specs.rs" 18 0 18 93] exists f2 : borrowed f .  * f2 = f /\ PostconditionMut0.postcondition_mut f2 a result /\ Resolve0.resolve ( ^ f2) }
+  let rec cfg weaken_2 [#"../06_fn_specs.rs" 20 0 20 62] [@cfg:stackify] [@cfg:subregion_analysis] (f : f) (a : a) : Output0.output
+    requires {[#"../06_fn_specs.rs" 18 11 18 28] Precondition0.precondition f a}
+    ensures { [#"../06_fn_specs.rs" 19 0 19 93] exists f2 : borrowed f .  * f2 = f /\ PostconditionMut0.postcondition_mut f2 a result /\ Resolve0.resolve ( ^ f2) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Output0.output;
@@ -536,13 +551,11 @@ module C06FnSpecs_Weaken2
     goto BB2
   }
   BB2 {
-    assume { Resolve0.resolve _5 };
     _5 <- f_1;
     f_1 <- any f;
-    assume { Resolve1.resolve _6 };
     _6 <- a_2;
     a_2 <- any a;
-    _0 <- ([#"../06_fn_specs.rs" 20 4 20 18] Weaken30.weaken_3 _5 _6);
+    _0 <- ([#"../06_fn_specs.rs" 21 4 21 18] Weaken30.weaken_3 _5 _6);
     goto BB3
   }
   BB3 {
@@ -565,12 +578,15 @@ module CreusotContracts_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
   predicate resolve (self : borrowed t)
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
   predicate resolve (self : borrowed t) =
-     ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
     ensures { result = resolve self }
     
@@ -612,7 +628,11 @@ module CreusotContracts_Std1_Ops_FnExt_FnMut_Interface
     type args = args,
     type Output0.output = Output0.output
   function fn_mut (self : borrowed self) (args : args) (res : Output0.output) : ()
-  axiom fn_mut_spec : forall self : borrowed self, args : args, res : Output0.output . PostconditionMut0.postcondition_mut self args res = Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res
+  val fn_mut (self : borrowed self) (args : args) (res : Output0.output) : ()
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 56 14 56 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res) }
+    ensures { result = fn_mut self args res }
+    
+  axiom fn_mut_spec : forall self : borrowed self, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 56 14 56 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res)
 end
 module CreusotContracts_Std1_Ops_FnExt_FnMut
   type self
@@ -633,9 +653,10 @@ module CreusotContracts_Std1_Ops_FnExt_FnMut
     type Output0.output = Output0.output
   function fn_mut (self : borrowed self) (args : args) (res : Output0.output) : ()
   val fn_mut (self : borrowed self) (args : args) (res : Output0.output) : ()
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 56 14 56 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res) }
     ensures { result = fn_mut self args res }
     
-  axiom fn_mut_spec : forall self : borrowed self, args : args, res : Output0.output . PostconditionMut0.postcondition_mut self args res = Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res
+  axiom fn_mut_spec : forall self : borrowed self, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 56 14 56 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res)
 end
 module CreusotContracts_Std1_Ops_FnExt_FnOnce_Stub
   type self
@@ -672,7 +693,11 @@ module CreusotContracts_Std1_Ops_FnExt_FnOnce_Interface
     type args = args,
     type Output0.output = Output0.output
   function fn_once (self : self) (args : args) (res : Output0.output) : ()
-  axiom fn_once_spec : forall self : self, args : args, res : Output0.output . PostconditionOnce0.postcondition_once self args res = Resolve0.resolve self /\ Postcondition0.postcondition self args res
+  val fn_once (self : self) (args : args) (res : Output0.output) : ()
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 60 14 60 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res) }
+    ensures { result = fn_once self args res }
+    
+  axiom fn_once_spec : forall self : self, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 60 14 60 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res)
 end
 module CreusotContracts_Std1_Ops_FnExt_FnOnce
   type self
@@ -692,9 +717,10 @@ module CreusotContracts_Std1_Ops_FnExt_FnOnce
     type Output0.output = Output0.output
   function fn_once (self : self) (args : args) (res : Output0.output) : ()
   val fn_once (self : self) (args : args) (res : Output0.output) : ()
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 60 14 60 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res) }
     ensures { result = fn_once self args res }
     
-  axiom fn_once_spec : forall self : self, args : args, res : Output0.output . PostconditionOnce0.postcondition_once self args res = Resolve0.resolve self /\ Postcondition0.postcondition self args res
+  axiom fn_once_spec : forall self : self, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 60 14 60 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res)
 end
 module C06FnSpecs_Weaken_Interface
   type a
@@ -709,9 +735,9 @@ module C06FnSpecs_Weaken_Interface
   clone CreusotContracts_Std1_Ops_FnOnceExt_Precondition_Stub as Precondition0 with
     type self = f,
     type args = a
-  val weaken [@cfg:stackify] [#"../06_fn_specs.rs" 7 0 7 64] (f : f) (a : a) : Output0.output
-    requires {[#"../06_fn_specs.rs" 5 11 5 28] Precondition0.precondition f a}
-    ensures { [#"../06_fn_specs.rs" 6 10 6 36] Postcondition0.postcondition f a result }
+  val weaken [#"../06_fn_specs.rs" 8 0 8 71] (f : f) (a : a) : Output0.output
+    requires {[#"../06_fn_specs.rs" 6 11 6 28] Precondition0.precondition f a}
+    ensures { [#"../06_fn_specs.rs" 7 10 7 36] Postcondition0.postcondition f a result }
     
 end
 module C06FnSpecs_Weaken
@@ -758,7 +784,7 @@ module C06FnSpecs_Weaken
     predicate Unnest0.unnest = Unnest0.unnest,
     type Output0.output = Output0.output,
     axiom .
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = f
   clone CreusotContracts_Std1_Ops_FnExt_Postcondition_Interface as Postcondition0 with
     type self = f,
@@ -776,7 +802,7 @@ module C06FnSpecs_Weaken
     type self = f,
     type args = a,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
-    predicate Resolve0.resolve = Resolve2.resolve,
+    predicate Resolve0.resolve = Resolve1.resolve,
     predicate Postcondition0.postcondition = Postcondition0.postcondition,
     type Output0.output = Output0.output,
     axiom .
@@ -790,11 +816,9 @@ module C06FnSpecs_Weaken
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     predicate Resolve0.resolve = Resolve0.resolve,
     type Output0.output = Output0.output
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
-    type self = a
-  let rec cfg weaken [@cfg:stackify] [#"../06_fn_specs.rs" 7 0 7 64] (f : f) (a : a) : Output0.output
-    requires {[#"../06_fn_specs.rs" 5 11 5 28] Precondition0.precondition f a}
-    ensures { [#"../06_fn_specs.rs" 6 10 6 36] Postcondition0.postcondition f a result }
+  let rec cfg weaken [#"../06_fn_specs.rs" 8 0 8 71] [@cfg:stackify] [@cfg:subregion_analysis] (f : f) (a : a) : Output0.output
+    requires {[#"../06_fn_specs.rs" 6 11 6 28] Precondition0.precondition f a}
+    ensures { [#"../06_fn_specs.rs" 7 10 7 36] Postcondition0.postcondition f a result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Output0.output;
@@ -814,13 +838,11 @@ module C06FnSpecs_Weaken
     goto BB2
   }
   BB2 {
-    assume { Resolve0.resolve _5 };
     _5 <- f_1;
     f_1 <- any f;
-    assume { Resolve1.resolve _6 };
     _6 <- a_2;
     a_2 <- any a;
-    _0 <- ([#"../06_fn_specs.rs" 8 4 8 18] Weaken20.weaken_2 _5 _6);
+    _0 <- ([#"../06_fn_specs.rs" 9 4 9 18] Weaken20.weaken_2 _5 _6);
     goto BB3
   }
   BB3 {
@@ -843,6 +865,9 @@ module CreusotContracts_Std1_Ops_Impl0_Precondition_Interface
   type args
   type f
   predicate precondition (self : f) (_2' : args)
+  val precondition (self : f) (_2' : args) : bool
+    ensures { result = precondition self _2' }
+    
 end
 module CreusotContracts_Std1_Ops_Impl0_Precondition
   type args
@@ -869,6 +894,9 @@ module CreusotContracts_Std1_Ops_Impl2_Postcondition_Interface
     type self = f,
     type args = args
   predicate postcondition (self : f) (_2' : args) (_3' : Output0.output)
+  val postcondition (self : f) (_2' : args) (_3' : Output0.output) : bool
+    ensures { result = postcondition self _2' _3' }
+    
 end
 module CreusotContracts_Std1_Ops_Impl2_Postcondition
   type args
@@ -899,6 +927,9 @@ module CreusotContracts_Std1_Ops_Impl1_PostconditionMut_Interface
     type self = f,
     type args = args
   predicate postcondition_mut (self : borrowed f) (_2' : args) (_3' : Output0.output)
+  val postcondition_mut (self : borrowed f) (_2' : args) (_3' : Output0.output) : bool
+    ensures { result = postcondition_mut self _2' _3' }
+    
 end
 module CreusotContracts_Std1_Ops_Impl1_PostconditionMut
   type args
@@ -927,6 +958,9 @@ module CreusotContracts_Std1_Ops_Impl0_PostconditionOnce_Interface
     type self = f,
     type args = args
   predicate postcondition_once (self : f) (_2' : args) (_3' : Output0.output)
+  val postcondition_once (self : f) (_2' : args) (_3' : Output0.output) : bool
+    ensures { result = postcondition_once self _2' _3' }
+    
 end
 module CreusotContracts_Std1_Ops_Impl0_PostconditionOnce
   type args
@@ -952,9 +986,9 @@ module C06FnSpecs_Weaken3Std_Interface
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Stub as Precondition0 with
     type args = a,
     type f = f
-  val weaken_3_std [@cfg:stackify] [#"../06_fn_specs.rs" 37 0 37 57] (f : f) (a : a) : Output0.output
-    requires {[#"../06_fn_specs.rs" 35 11 35 28] Precondition0.precondition f a}
-    ensures { [#"../06_fn_specs.rs" 36 10 36 41] PostconditionOnce0.postcondition_once f a result }
+  val weaken_3_std [#"../06_fn_specs.rs" 38 0 38 64] (f : f) (a : a) : Output0.output
+    requires {[#"../06_fn_specs.rs" 36 11 36 28] Precondition0.precondition f a}
+    ensures { [#"../06_fn_specs.rs" 37 10 37 41] PostconditionOnce0.postcondition_once f a result }
     
 end
 module C06FnSpecs_Weaken3Std
@@ -963,11 +997,11 @@ module C06FnSpecs_Weaken3Std
   clone Core_Ops_Function_FnOnce_Output_Type as Output0 with
     type self = f,
     type args = a
-  clone CreusotContracts_Std1_Ops_Impl0_PostconditionOnce as PostconditionOnce0 with
+  clone CreusotContracts_Std1_Ops_Impl0_PostconditionOnce_Interface as PostconditionOnce0 with
     type args = a,
     type f = f,
     type Output0.output = Output0.output
-  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
+  clone CreusotContracts_Std1_Ops_Impl0_Precondition_Interface as Precondition0 with
     type args = a,
     type f = f
   clone Core_Ops_Function_FnOnce_CallOnce_Interface as CallOnce0 with
@@ -976,13 +1010,9 @@ module C06FnSpecs_Weaken3Std
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
     type Output0.output = Output0.output
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
-    type self = a
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
-    type self = f
-  let rec cfg weaken_3_std [@cfg:stackify] [#"../06_fn_specs.rs" 37 0 37 57] (f : f) (a : a) : Output0.output
-    requires {[#"../06_fn_specs.rs" 35 11 35 28] Precondition0.precondition f a}
-    ensures { [#"../06_fn_specs.rs" 36 10 36 41] PostconditionOnce0.postcondition_once f a result }
+  let rec cfg weaken_3_std [#"../06_fn_specs.rs" 38 0 38 64] [@cfg:stackify] [@cfg:subregion_analysis] (f : f) (a : a) : Output0.output
+    requires {[#"../06_fn_specs.rs" 36 11 36 28] Precondition0.precondition f a}
+    ensures { [#"../06_fn_specs.rs" 37 10 37 41] PostconditionOnce0.postcondition_once f a result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Output0.output;
@@ -1002,13 +1032,11 @@ module C06FnSpecs_Weaken3Std
     goto BB2
   }
   BB2 {
-    assume { Resolve0.resolve _5 };
     _5 <- f_1;
     f_1 <- any f;
-    assume { Resolve1.resolve _6 };
     _6 <- a_2;
     a_2 <- any a;
-    _0 <- ([#"../06_fn_specs.rs" 38 4 38 27] CallOnce0.call_once _5 _6);
+    _0 <- ([#"../06_fn_specs.rs" 39 4 39 27] CallOnce0.call_once _5 _6);
     goto BB3
   }
   BB3 {
@@ -1031,6 +1059,9 @@ module CreusotContracts_Std1_Ops_Impl1_Unnest_Interface
   type args
   type f
   predicate unnest (self : f) (_2' : f)
+  val unnest (self : f) (_2' : f) : bool
+    ensures { result = unnest self _2' }
+    
 end
 module CreusotContracts_Std1_Ops_Impl1_Unnest
   type args
@@ -1071,7 +1102,12 @@ module CreusotContracts_Std1_Ops_Impl1_PostconditionMutUnnest_Interface
     type f = f,
     type Output0.output = Output0.output
   function postcondition_mut_unnest (self : borrowed f) (args : args) (res : Output0.output) : ()
-  axiom postcondition_mut_unnest_spec : forall self : borrowed f, args : args, res : Output0.output . PostconditionMut0.postcondition_mut self args res -> Unnest0.unnest ( * self) ( ^ self)
+  val postcondition_mut_unnest (self : borrowed f) (args : args) (res : Output0.output) : ()
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 103 15 103 48] PostconditionMut0.postcondition_mut self args res}
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 104 14 104 35] Unnest0.unnest ( * self) ( ^ self) }
+    ensures { result = postcondition_mut_unnest self args res }
+    
+  axiom postcondition_mut_unnest_spec : forall self : borrowed f, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 103 15 103 48] PostconditionMut0.postcondition_mut self args res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 104 14 104 35] Unnest0.unnest ( * self) ( ^ self))
 end
 module CreusotContracts_Std1_Ops_Impl1_PostconditionMutUnnest
   type args
@@ -1088,12 +1124,13 @@ module CreusotContracts_Std1_Ops_Impl1_PostconditionMutUnnest
     type f = f,
     type Output0.output = Output0.output
   function postcondition_mut_unnest (self : borrowed f) (args : args) (res : Output0.output) : () =
-    ()
+    [#"../../../../../creusot-contracts/src/std/ops.rs" 101 4 101 10] ()
   val postcondition_mut_unnest (self : borrowed f) (args : args) (res : Output0.output) : ()
-    requires {PostconditionMut0.postcondition_mut self args res}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 103 15 103 48] PostconditionMut0.postcondition_mut self args res}
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 104 14 104 35] Unnest0.unnest ( * self) ( ^ self) }
     ensures { result = postcondition_mut_unnest self args res }
     
-  axiom postcondition_mut_unnest_spec : forall self : borrowed f, args : args, res : Output0.output . PostconditionMut0.postcondition_mut self args res -> Unnest0.unnest ( * self) ( ^ self)
+  axiom postcondition_mut_unnest_spec : forall self : borrowed f, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 103 15 103 48] PostconditionMut0.postcondition_mut self args res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 104 14 104 35] Unnest0.unnest ( * self) ( ^ self))
 end
 module CreusotContracts_Std1_Ops_Impl1_UnnestRefl_Stub
   type args
@@ -1110,7 +1147,11 @@ module CreusotContracts_Std1_Ops_Impl1_UnnestRefl_Interface
     type args = args,
     type f = f
   function unnest_refl (self : f) : ()
-  axiom unnest_refl_spec : forall self : f . Unnest0.unnest self self
+  val unnest_refl (self : f) : ()
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 109 14 109 31] Unnest0.unnest self self }
+    ensures { result = unnest_refl self }
+    
+  axiom unnest_refl_spec : forall self : f . [#"../../../../../creusot-contracts/src/std/ops.rs" 109 14 109 31] Unnest0.unnest self self
 end
 module CreusotContracts_Std1_Ops_Impl1_UnnestRefl
   type args
@@ -1119,11 +1160,12 @@ module CreusotContracts_Std1_Ops_Impl1_UnnestRefl
     type args = args,
     type f = f
   function unnest_refl (self : f) : () =
-    ()
+    [#"../../../../../creusot-contracts/src/std/ops.rs" 107 4 107 10] ()
   val unnest_refl (self : f) : ()
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 109 14 109 31] Unnest0.unnest self self }
     ensures { result = unnest_refl self }
     
-  axiom unnest_refl_spec : forall self : f . Unnest0.unnest self self
+  axiom unnest_refl_spec : forall self : f . [#"../../../../../creusot-contracts/src/std/ops.rs" 109 14 109 31] Unnest0.unnest self self
 end
 module CreusotContracts_Std1_Ops_Impl1_UnnestTrans_Stub
   type args
@@ -1140,7 +1182,13 @@ module CreusotContracts_Std1_Ops_Impl1_UnnestTrans_Interface
     type args = args,
     type f = f
   function unnest_trans (self : f) (b : f) (c : f) : ()
-  axiom unnest_trans_spec : forall self : f, b : f, c : f . Unnest0.unnest self b -> Unnest0.unnest b c -> Unnest0.unnest self c
+  val unnest_trans (self : f) (b : f) (c : f) : ()
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 114 15 114 29] Unnest0.unnest self b}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 115 15 115 26] Unnest0.unnest b c}
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 116 14 116 28] Unnest0.unnest self c }
+    ensures { result = unnest_trans self b c }
+    
+  axiom unnest_trans_spec : forall self : f, b : f, c : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 114 15 114 29] Unnest0.unnest self b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 115 15 115 26] Unnest0.unnest b c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 116 14 116 28] Unnest0.unnest self c)
 end
 module CreusotContracts_Std1_Ops_Impl1_UnnestTrans
   type args
@@ -1149,13 +1197,14 @@ module CreusotContracts_Std1_Ops_Impl1_UnnestTrans
     type args = args,
     type f = f
   function unnest_trans (self : f) (b : f) (c : f) : () =
-    ()
+    [#"../../../../../creusot-contracts/src/std/ops.rs" 112 4 112 10] ()
   val unnest_trans (self : f) (b : f) (c : f) : ()
-    requires {Unnest0.unnest self b}
-    requires {Unnest0.unnest b c}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 114 15 114 29] Unnest0.unnest self b}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 115 15 115 26] Unnest0.unnest b c}
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 116 14 116 28] Unnest0.unnest self c }
     ensures { result = unnest_trans self b c }
     
-  axiom unnest_trans_spec : forall self : f, b : f, c : f . Unnest0.unnest self b -> Unnest0.unnest b c -> Unnest0.unnest self c
+  axiom unnest_trans_spec : forall self : f, b : f, c : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 114 15 114 29] Unnest0.unnest self b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 115 15 115 26] Unnest0.unnest b c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 116 14 116 28] Unnest0.unnest self c)
 end
 module CreusotContracts_Std1_Ops_Impl1_FnMutOnce_Stub
   type args
@@ -1194,7 +1243,11 @@ module CreusotContracts_Std1_Ops_Impl1_FnMutOnce_Interface
     type f = f,
     type Output0.output = Output0.output
   function fn_mut_once (self : f) (args : args) (res : Output0.output) : ()
-  axiom fn_mut_once_spec : forall self : f, args : args, res : Output0.output . PostconditionOnce0.postcondition_once self args res = (exists s : borrowed f .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s))
+  val fn_mut_once (self : f) (args : args) (res : Output0.output) : ()
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed f .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s)) }
+    ensures { result = fn_mut_once self args res }
+    
+  axiom fn_mut_once_spec : forall self : f, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed f .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s))
 end
 module CreusotContracts_Std1_Ops_Impl1_FnMutOnce
   type args
@@ -1215,9 +1268,10 @@ module CreusotContracts_Std1_Ops_Impl1_FnMutOnce
     type Output0.output = Output0.output
   function fn_mut_once (self : f) (args : args) (res : Output0.output) : ()
   val fn_mut_once (self : f) (args : args) (res : Output0.output) : ()
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed f .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s)) }
     ensures { result = fn_mut_once self args res }
     
-  axiom fn_mut_once_spec : forall self : f, args : args, res : Output0.output . PostconditionOnce0.postcondition_once self args res = (exists s : borrowed f .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s))
+  axiom fn_mut_once_spec : forall self : f, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed f .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s))
 end
 module C06FnSpecs_Weaken2Std_Interface
   type a
@@ -1235,32 +1289,32 @@ module C06FnSpecs_Weaken2Std_Interface
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Stub as Precondition0 with
     type args = a,
     type f = f
-  val weaken_2_std [@cfg:stackify] [#"../06_fn_specs.rs" 25 0 25 66] (f : f) (a : a) : Output0.output
-    requires {[#"../06_fn_specs.rs" 23 11 23 28] Precondition0.precondition f a}
-    ensures { [#"../06_fn_specs.rs" 24 0 24 93] exists f2 : borrowed f .  * f2 = f /\ PostconditionMut0.postcondition_mut f2 a result /\ Resolve0.resolve ( ^ f2) }
+  val weaken_2_std [#"../06_fn_specs.rs" 26 0 26 73] (f : f) (a : a) : Output0.output
+    requires {[#"../06_fn_specs.rs" 24 11 24 28] Precondition0.precondition f a}
+    ensures { [#"../06_fn_specs.rs" 25 0 25 93] exists f2 : borrowed f .  * f2 = f /\ PostconditionMut0.postcondition_mut f2 a result /\ Resolve0.resolve ( ^ f2) }
     
 end
 module C06FnSpecs_Weaken2Std
   type a
   type f
   use prelude.Borrow
-  clone CreusotContracts_Std1_Ops_Impl1_Unnest as Unnest0 with
+  clone CreusotContracts_Std1_Ops_Impl1_Unnest_Interface as Unnest0 with
     type args = a,
     type f = f
   clone Core_Ops_Function_FnOnce_Output_Type as Output0 with
     type self = f,
     type args = a
-  clone CreusotContracts_Std1_Ops_Impl0_PostconditionOnce as PostconditionOnce0 with
+  clone CreusotContracts_Std1_Ops_Impl0_PostconditionOnce_Interface as PostconditionOnce0 with
     type args = a,
     type f = f,
     type Output0.output = Output0.output
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = f
-  clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut as PostconditionMut0 with
+  clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut_Interface as PostconditionMut0 with
     type args = a,
     type f = f,
     type Output0.output = Output0.output
-  clone CreusotContracts_Std1_Ops_Impl1_FnMutOnce as FnMutOnce0 with
+  clone CreusotContracts_Std1_Ops_Impl1_FnMutOnce_Interface as FnMutOnce0 with
     type args = a,
     type f = f,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
@@ -1268,24 +1322,24 @@ module C06FnSpecs_Weaken2Std
     predicate Resolve0.resolve = Resolve0.resolve,
     type Output0.output = Output0.output,
     axiom .
-  clone CreusotContracts_Std1_Ops_Impl1_UnnestTrans as UnnestTrans0 with
+  clone CreusotContracts_Std1_Ops_Impl1_UnnestTrans_Interface as UnnestTrans0 with
     type args = a,
     type f = f,
     predicate Unnest0.unnest = Unnest0.unnest,
     axiom .
-  clone CreusotContracts_Std1_Ops_Impl1_UnnestRefl as UnnestRefl0 with
+  clone CreusotContracts_Std1_Ops_Impl1_UnnestRefl_Interface as UnnestRefl0 with
     type args = a,
     type f = f,
     predicate Unnest0.unnest = Unnest0.unnest,
     axiom .
-  clone CreusotContracts_Std1_Ops_Impl1_PostconditionMutUnnest as PostconditionMutUnnest0 with
+  clone CreusotContracts_Std1_Ops_Impl1_PostconditionMutUnnest_Interface as PostconditionMutUnnest0 with
     type args = a,
     type f = f,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     predicate Unnest0.unnest = Unnest0.unnest,
     type Output0.output = Output0.output,
     axiom .
-  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
+  clone CreusotContracts_Std1_Ops_Impl0_Precondition_Interface as Precondition0 with
     type args = a,
     type f = f
   clone C06FnSpecs_Weaken3Std_Interface as Weaken3Std0 with
@@ -1294,11 +1348,9 @@ module C06FnSpecs_Weaken2Std
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
     type Output0.output = Output0.output
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
-    type self = a
-  let rec cfg weaken_2_std [@cfg:stackify] [#"../06_fn_specs.rs" 25 0 25 66] (f : f) (a : a) : Output0.output
-    requires {[#"../06_fn_specs.rs" 23 11 23 28] Precondition0.precondition f a}
-    ensures { [#"../06_fn_specs.rs" 24 0 24 93] exists f2 : borrowed f .  * f2 = f /\ PostconditionMut0.postcondition_mut f2 a result /\ Resolve0.resolve ( ^ f2) }
+  let rec cfg weaken_2_std [#"../06_fn_specs.rs" 26 0 26 73] [@cfg:stackify] [@cfg:subregion_analysis] (f : f) (a : a) : Output0.output
+    requires {[#"../06_fn_specs.rs" 24 11 24 28] Precondition0.precondition f a}
+    ensures { [#"../06_fn_specs.rs" 25 0 25 93] exists f2 : borrowed f .  * f2 = f /\ PostconditionMut0.postcondition_mut f2 a result /\ Resolve0.resolve ( ^ f2) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Output0.output;
@@ -1318,13 +1370,11 @@ module C06FnSpecs_Weaken2Std
     goto BB2
   }
   BB2 {
-    assume { Resolve0.resolve _5 };
     _5 <- f_1;
     f_1 <- any f;
-    assume { Resolve1.resolve _6 };
     _6 <- a_2;
     a_2 <- any a;
-    _0 <- ([#"../06_fn_specs.rs" 26 4 26 22] Weaken3Std0.weaken_3_std _5 _6);
+    _0 <- ([#"../06_fn_specs.rs" 27 4 27 22] Weaken3Std0.weaken_3_std _5 _6);
     goto BB3
   }
   BB3 {
@@ -1375,7 +1425,11 @@ module CreusotContracts_Std1_Ops_Impl2_FnMut_Interface
     type f = f,
     type Output0.output = Output0.output
   function fn_mut (self : borrowed f) (args : args) (res : Output0.output) : ()
-  axiom fn_mut_spec : forall self : borrowed f, args : args, res : Output0.output . PostconditionMut0.postcondition_mut self args res = Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res
+  val fn_mut (self : borrowed f) (args : args) (res : Output0.output) : ()
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 138 14 138 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res) }
+    ensures { result = fn_mut self args res }
+    
+  axiom fn_mut_spec : forall self : borrowed f, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 138 14 138 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res)
 end
 module CreusotContracts_Std1_Ops_Impl2_FnMut
   type args
@@ -1396,9 +1450,10 @@ module CreusotContracts_Std1_Ops_Impl2_FnMut
     type Output0.output = Output0.output
   function fn_mut (self : borrowed f) (args : args) (res : Output0.output) : ()
   val fn_mut (self : borrowed f) (args : args) (res : Output0.output) : ()
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 138 14 138 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res) }
     ensures { result = fn_mut self args res }
     
-  axiom fn_mut_spec : forall self : borrowed f, args : args, res : Output0.output . PostconditionMut0.postcondition_mut self args res = Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res
+  axiom fn_mut_spec : forall self : borrowed f, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 138 14 138 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res)
 end
 module CreusotContracts_Std1_Ops_Impl2_FnOnce_Stub
   type args
@@ -1435,7 +1490,11 @@ module CreusotContracts_Std1_Ops_Impl2_FnOnce_Interface
     type f = f,
     type Output0.output = Output0.output
   function fn_once (self : f) (args : args) (res : Output0.output) : ()
-  axiom fn_once_spec : forall self : f, args : args, res : Output0.output . PostconditionOnce0.postcondition_once self args res = Resolve0.resolve self /\ Postcondition0.postcondition self args res
+  val fn_once (self : f) (args : args) (res : Output0.output) : ()
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 144 14 144 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res) }
+    ensures { result = fn_once self args res }
+    
+  axiom fn_once_spec : forall self : f, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 144 14 144 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res)
 end
 module CreusotContracts_Std1_Ops_Impl2_FnOnce
   type args
@@ -1455,9 +1514,10 @@ module CreusotContracts_Std1_Ops_Impl2_FnOnce
     type Output0.output = Output0.output
   function fn_once (self : f) (args : args) (res : Output0.output) : ()
   val fn_once (self : f) (args : args) (res : Output0.output) : ()
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 144 14 144 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res) }
     ensures { result = fn_once self args res }
     
-  axiom fn_once_spec : forall self : f, args : args, res : Output0.output . PostconditionOnce0.postcondition_once self args res = Resolve0.resolve self /\ Postcondition0.postcondition self args res
+  axiom fn_once_spec : forall self : f, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 144 14 144 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res)
 end
 module C06FnSpecs_WeakenStd_Interface
   type a
@@ -1472,15 +1532,15 @@ module C06FnSpecs_WeakenStd_Interface
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Stub as Precondition0 with
     type args = a,
     type f = f
-  val weaken_std [@cfg:stackify] [#"../06_fn_specs.rs" 13 0 13 55] (f : f) (a : a) : Output0.output
-    requires {[#"../06_fn_specs.rs" 11 11 11 28] Precondition0.precondition f a}
-    ensures { [#"../06_fn_specs.rs" 12 10 12 36] Postcondition0.postcondition f a result }
+  val weaken_std [#"../06_fn_specs.rs" 14 0 14 62] (f : f) (a : a) : Output0.output
+    requires {[#"../06_fn_specs.rs" 12 11 12 28] Precondition0.precondition f a}
+    ensures { [#"../06_fn_specs.rs" 13 10 13 36] Postcondition0.postcondition f a result }
     
 end
 module C06FnSpecs_WeakenStd
   type a
   type f
-  clone CreusotContracts_Std1_Ops_Impl1_Unnest as Unnest0 with
+  clone CreusotContracts_Std1_Ops_Impl1_Unnest_Interface as Unnest0 with
     type args = a,
     type f = f
   clone Core_Ops_Function_FnOnce_Output_Type as Output0 with
@@ -1488,15 +1548,15 @@ module C06FnSpecs_WeakenStd
     type args = a
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = f
-  clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut as PostconditionMut0 with
+  clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut_Interface as PostconditionMut0 with
     type args = a,
     type f = f,
     type Output0.output = Output0.output
-  clone CreusotContracts_Std1_Ops_Impl0_PostconditionOnce as PostconditionOnce0 with
+  clone CreusotContracts_Std1_Ops_Impl0_PostconditionOnce_Interface as PostconditionOnce0 with
     type args = a,
     type f = f,
     type Output0.output = Output0.output
-  clone CreusotContracts_Std1_Ops_Impl1_FnMutOnce as FnMutOnce0 with
+  clone CreusotContracts_Std1_Ops_Impl1_FnMutOnce_Interface as FnMutOnce0 with
     type args = a,
     type f = f,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
@@ -1504,30 +1564,30 @@ module C06FnSpecs_WeakenStd
     predicate Resolve0.resolve = Resolve0.resolve,
     type Output0.output = Output0.output,
     axiom .
-  clone CreusotContracts_Std1_Ops_Impl1_UnnestTrans as UnnestTrans0 with
+  clone CreusotContracts_Std1_Ops_Impl1_UnnestTrans_Interface as UnnestTrans0 with
     type args = a,
     type f = f,
     predicate Unnest0.unnest = Unnest0.unnest,
     axiom .
-  clone CreusotContracts_Std1_Ops_Impl1_UnnestRefl as UnnestRefl0 with
+  clone CreusotContracts_Std1_Ops_Impl1_UnnestRefl_Interface as UnnestRefl0 with
     type args = a,
     type f = f,
     predicate Unnest0.unnest = Unnest0.unnest,
     axiom .
-  clone CreusotContracts_Std1_Ops_Impl1_PostconditionMutUnnest as PostconditionMutUnnest0 with
+  clone CreusotContracts_Std1_Ops_Impl1_PostconditionMutUnnest_Interface as PostconditionMutUnnest0 with
     type args = a,
     type f = f,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     predicate Unnest0.unnest = Unnest0.unnest,
     type Output0.output = Output0.output,
     axiom .
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = f
-  clone CreusotContracts_Std1_Ops_Impl2_Postcondition as Postcondition0 with
+  clone CreusotContracts_Std1_Ops_Impl2_Postcondition_Interface as Postcondition0 with
     type args = a,
     type f = f,
     type Output0.output = Output0.output
-  clone CreusotContracts_Std1_Ops_Impl2_FnOnce as FnOnce0 with
+  clone CreusotContracts_Std1_Ops_Impl2_FnOnce_Interface as FnOnce0 with
     type args = a,
     type f = f,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
@@ -1535,15 +1595,15 @@ module C06FnSpecs_WeakenStd
     predicate Postcondition0.postcondition = Postcondition0.postcondition,
     type Output0.output = Output0.output,
     axiom .
-  clone CreusotContracts_Std1_Ops_Impl2_FnMut as FnMut0 with
+  clone CreusotContracts_Std1_Ops_Impl2_FnMut_Interface as FnMut0 with
     type args = a,
     type f = f,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
-    predicate Resolve0.resolve = Resolve2.resolve,
+    predicate Resolve0.resolve = Resolve1.resolve,
     predicate Postcondition0.postcondition = Postcondition0.postcondition,
     type Output0.output = Output0.output,
     axiom .
-  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
+  clone CreusotContracts_Std1_Ops_Impl0_Precondition_Interface as Precondition0 with
     type args = a,
     type f = f
   clone C06FnSpecs_Weaken2Std_Interface as Weaken2Std0 with
@@ -1553,11 +1613,9 @@ module C06FnSpecs_WeakenStd
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     predicate Resolve0.resolve = Resolve0.resolve,
     type Output0.output = Output0.output
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
-    type self = a
-  let rec cfg weaken_std [@cfg:stackify] [#"../06_fn_specs.rs" 13 0 13 55] (f : f) (a : a) : Output0.output
-    requires {[#"../06_fn_specs.rs" 11 11 11 28] Precondition0.precondition f a}
-    ensures { [#"../06_fn_specs.rs" 12 10 12 36] Postcondition0.postcondition f a result }
+  let rec cfg weaken_std [#"../06_fn_specs.rs" 14 0 14 62] [@cfg:stackify] [@cfg:subregion_analysis] (f : f) (a : a) : Output0.output
+    requires {[#"../06_fn_specs.rs" 12 11 12 28] Precondition0.precondition f a}
+    ensures { [#"../06_fn_specs.rs" 13 10 13 36] Postcondition0.postcondition f a result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Output0.output;
@@ -1577,13 +1635,11 @@ module C06FnSpecs_WeakenStd
     goto BB2
   }
   BB2 {
-    assume { Resolve0.resolve _5 };
     _5 <- f_1;
     f_1 <- any f;
-    assume { Resolve1.resolve _6 };
     _6 <- a_2;
     a_2 <- any a;
-    _0 <- ([#"../06_fn_specs.rs" 14 4 14 22] Weaken2Std0.weaken_2_std _5 _6);
+    _0 <- ([#"../06_fn_specs.rs" 15 4 15 22] Weaken2Std0.weaken_2_std _5 _6);
     goto BB3
   }
   BB3 {
@@ -1599,24 +1655,24 @@ module C06FnSpecs_WeakenStd
 end
 module C06FnSpecs_FnOnceUser_Interface
   type f
-  use mach.int.Int
+  use prelude.Int
   use prelude.UIntSize
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Stub as Precondition0 with
     type args = usize,
     type f = f
-  val fn_once_user [@cfg:stackify] [#"../06_fn_specs.rs" 43 0 43 43] (f : f) : ()
-    requires {[#"../06_fn_specs.rs" 42 11 42 36] Precondition0.precondition f ((0 : usize))}
+  val fn_once_user [#"../06_fn_specs.rs" 44 0 44 43] (f : f) : ()
+    requires {[#"../06_fn_specs.rs" 43 11 43 36] Precondition0.precondition f ((0 : usize))}
     
 end
 module C06FnSpecs_FnOnceUser
   type f
-  use mach.int.Int
+  use prelude.Int
   use prelude.UIntSize
-  clone CreusotContracts_Std1_Ops_Impl0_PostconditionOnce as PostconditionOnce0 with
+  clone CreusotContracts_Std1_Ops_Impl0_PostconditionOnce_Interface as PostconditionOnce0 with
     type args = usize,
     type f = f,
     type Output0.output = ()
-  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
+  clone CreusotContracts_Std1_Ops_Impl0_Precondition_Interface as Precondition0 with
     type args = usize,
     type f = f
   clone Core_Ops_Function_FnOnce_CallOnce_Interface as CallOnce0 with
@@ -1625,10 +1681,8 @@ module C06FnSpecs_FnOnceUser
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
     type Output0.output = ()
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
-    type self = f
-  let rec cfg fn_once_user [@cfg:stackify] [#"../06_fn_specs.rs" 43 0 43 43] (f : f) : ()
-    requires {[#"../06_fn_specs.rs" 42 11 42 36] Precondition0.precondition f ((0 : usize))}
+  let rec cfg fn_once_user [#"../06_fn_specs.rs" 44 0 44 43] [@cfg:stackify] [@cfg:subregion_analysis] (f : f) : ()
+    requires {[#"../06_fn_specs.rs" 43 11 43 36] Precondition0.precondition f ((0 : usize))}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -1643,11 +1697,10 @@ module C06FnSpecs_FnOnceUser
     goto BB1
   }
   BB1 {
-    assume { Resolve0.resolve _3 };
     _3 <- f_1;
     f_1 <- any f;
-    _4 <- ([#"../06_fn_specs.rs" 44 6 44 7] (0 : usize));
-    _0 <- ([#"../06_fn_specs.rs" 44 4 44 8] CallOnce0.call_once _3 _4);
+    _4 <- ([#"../06_fn_specs.rs" 45 6 45 7] (0 : usize));
+    _0 <- ([#"../06_fn_specs.rs" 45 4 45 8] CallOnce0.call_once _3 _4);
     goto BB2
   }
   BB2 {
@@ -1665,51 +1718,51 @@ end
 module CreusotContracts_Resolve_Impl2_Resolve_Interface
   type t
   predicate resolve (self : t)
-end
-module CreusotContracts_Resolve_Impl2_Resolve
-  type t
-  predicate resolve (self : t) =
-    true
   val resolve (self : t) : bool
     ensures { result = resolve self }
     
 end
-module C06FnSpecs_Caller_Closure0_Interface
-  use mach.int.Int
-  use prelude.UIntSize
+module CreusotContracts_Resolve_Impl2_Resolve
+  type t
+  predicate resolve (self : t) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 36 8 36 12] true
+  val resolve (self : t) : bool
+    ensures { result = resolve self }
+    
+end
+module C06FnSpecs_Caller_Closure0_Type
   type c06fnspecs_caller_closure0  =
     | C06FnSpecs_Caller_Closure0
     
-  predicate precondition [@cfg:stackify] [#"../06_fn_specs.rs" 48 17 48 20] (self : c06fnspecs_caller_closure0) (args : usize)
+end
+module C06FnSpecs_Caller_Closure0_Interface
+  use export C06FnSpecs_Caller_Closure0_Type
+  use prelude.Int
+  use prelude.UIntSize
+  predicate resolve [#"../06_fn_specs.rs" 49 17 49 20] (_1' : c06fnspecs_caller_closure0) =
+    [#"../06_fn_specs.rs" 1 0 1 0] true
+  predicate precondition [#"../06_fn_specs.rs" 49 17 49 20] (self : c06fnspecs_caller_closure0) (args : usize) =
+    [#"../06_fn_specs.rs" 1 0 1 0] let (_2') = args in true
+  predicate postcondition_once [#"../06_fn_specs.rs" 49 17 49 20] (self : c06fnspecs_caller_closure0) (args : usize) (result : ())
     
    =
     [#"../06_fn_specs.rs" 1 0 1 0] let (_2') = args in true
-  predicate postcondition_once [@cfg:stackify] [#"../06_fn_specs.rs" 48 17 48 20] (self : c06fnspecs_caller_closure0) (args : usize) (result : ())
-    
-   =
-    [#"../06_fn_specs.rs" 1 0 1 0] let (_2') = args in true
-  predicate resolve (_1' : c06fnspecs_caller_closure0) =
-    true
-  val c06FnSpecs_Caller_Closure0 [@cfg:stackify] [#"../06_fn_specs.rs" 48 17 48 20] (_1' : c06fnspecs_caller_closure0) (_2' : usize) : ()
+  val c06FnSpecs_Caller_Closure0 [#"../06_fn_specs.rs" 49 17 49 20] (_1' : c06fnspecs_caller_closure0) (_2' : usize) : ()
     
 end
 module C06FnSpecs_Caller_Closure0
-  type c06fnspecs_caller_closure0  =
-    | C06FnSpecs_Caller_Closure0
-    
-  use mach.int.Int
+  use export C06FnSpecs_Caller_Closure0_Type
+  use prelude.Int
   use prelude.UIntSize
-  predicate precondition [@cfg:stackify] [#"../06_fn_specs.rs" 48 17 48 20] (self : c06fnspecs_caller_closure0) (args : usize)
+  predicate resolve [#"../06_fn_specs.rs" 49 17 49 20] (_1' : c06fnspecs_caller_closure0) =
+    [#"../06_fn_specs.rs" 1 0 1 0] true
+  predicate precondition [#"../06_fn_specs.rs" 49 17 49 20] (self : c06fnspecs_caller_closure0) (args : usize) =
+    [#"../06_fn_specs.rs" 1 0 1 0] let (_2') = args in true
+  predicate postcondition_once [#"../06_fn_specs.rs" 49 17 49 20] (self : c06fnspecs_caller_closure0) (args : usize) (result : ())
     
    =
     [#"../06_fn_specs.rs" 1 0 1 0] let (_2') = args in true
-  predicate postcondition_once [@cfg:stackify] [#"../06_fn_specs.rs" 48 17 48 20] (self : c06fnspecs_caller_closure0) (args : usize) (result : ())
-    
-   =
-    [#"../06_fn_specs.rs" 1 0 1 0] let (_2') = args in true
-  predicate resolve (_1' : c06fnspecs_caller_closure0) =
-    true
-  let rec cfg c06FnSpecs_Caller_Closure0 [@cfg:stackify] [#"../06_fn_specs.rs" 48 17 48 20] (_1' : c06fnspecs_caller_closure0) (_2' : usize) : ()
+  let rec cfg c06FnSpecs_Caller_Closure0 [#"../06_fn_specs.rs" 49 17 49 20] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : c06fnspecs_caller_closure0) (_2' : usize) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -1728,15 +1781,14 @@ module C06FnSpecs_Caller_Closure0
   
 end
 module C06FnSpecs_Caller_Interface
-  val caller [@cfg:stackify] [#"../06_fn_specs.rs" 47 0 47 15] (_1' : ()) : ()
+  val caller [#"../06_fn_specs.rs" 48 0 48 15] (_1' : ()) : ()
 end
 module C06FnSpecs_Caller
-  clone C06FnSpecs_Caller_Closure0_Interface as Closure00 with
-    axiom .
+  clone C06FnSpecs_Caller_Closure0_Interface as Closure00
   clone C06FnSpecs_FnOnceUser_Interface as FnOnceUser0 with
     type f = Closure00.c06fnspecs_caller_closure0,
     predicate Precondition0.precondition = Closure00.precondition
-  let rec cfg caller [@cfg:stackify] [#"../06_fn_specs.rs" 47 0 47 15] (_1' : ()) : ()
+  let rec cfg caller [#"../06_fn_specs.rs" 48 0 48 15] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var _1 : Closure00.c06fnspecs_caller_closure0;
@@ -1745,7 +1797,7 @@ module C06FnSpecs_Caller
   }
   BB0 {
     _1 <- Closure00.C06FnSpecs_Caller_Closure0;
-    _0 <- ([#"../06_fn_specs.rs" 48 4 48 24] FnOnceUser0.fn_once_user _1);
+    _0 <- ([#"../06_fn_specs.rs" 49 4 49 24] FnOnceUser0.fn_once_user _1);
     goto BB1
   }
   BB1 {

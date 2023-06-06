@@ -10,6 +10,7 @@ pub fn ghost_vec() {
     let mut _s: Ghost<Vec<_>> = ghost! { x };
 }
 
+#[open]
 #[logic]
 pub fn omg() {}
 
@@ -38,7 +39,7 @@ pub struct MyStruct {
     g: Ghost<u32>,
 }
 
-#[requires(@x.g == 0)]
+#[requires(x.g@ == 0)]
 pub fn takes_struct(mut x: MyStruct) {
     x.g = ghost! { x.f };
 }

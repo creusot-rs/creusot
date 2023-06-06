@@ -1,4 +1,4 @@
-#![feature(box_syntax, box_patterns)]
+#![feature(box_patterns)]
 pub mod declaration;
 pub mod exp;
 pub mod mlcfg;

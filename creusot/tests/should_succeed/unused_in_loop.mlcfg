@@ -1,15 +1,15 @@
 
 module UnusedInLoop_UnusedInLoop_Interface
-  use mach.int.Int
-  use mach.int.UInt32
-  val unused_in_loop [@cfg:stackify] [#"../unused_in_loop.rs" 5 0 5 37] (b : bool) : uint32
+  use prelude.Int
+  use prelude.UInt32
+  val unused_in_loop [#"../unused_in_loop.rs" 5 0 5 37] (b : bool) : uint32
     ensures { [#"../unused_in_loop.rs" 4 10 4 25] result = (10 : uint32) }
     
 end
 module UnusedInLoop_UnusedInLoop
-  use mach.int.Int
-  use mach.int.UInt32
-  let rec cfg unused_in_loop [@cfg:stackify] [#"../unused_in_loop.rs" 5 0 5 37] (b : bool) : uint32
+  use prelude.Int
+  use prelude.UInt32
+  let rec cfg unused_in_loop [#"../unused_in_loop.rs" 5 0 5 37] [@cfg:stackify] [@cfg:subregion_analysis] (b : bool) : uint32
     ensures { [#"../unused_in_loop.rs" 4 10 4 25] result = (10 : uint32) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -29,19 +29,22 @@ module UnusedInLoop_UnusedInLoop
     goto BB1
   }
   BB1 {
-    invariant x { [#"../unused_in_loop.rs" 7 19 7 23] true };
-    _7 <- b_1;
-    switch (_7)
-      | False -> goto BB3
-      | True -> goto BB2
-      end
+    invariant { [#"../unused_in_loop.rs" 7 16 7 20] true };
+    goto BB2
   }
   BB2 {
+    _7 <- b_1;
+    switch (_7)
+      | False -> goto BB4
+      | True -> goto BB3
+      end
+  }
+  BB3 {
     _4 <- ();
     _0 <- x_3;
     return _0
   }
-  BB3 {
+  BB4 {
     _6 <- ();
     goto BB1
   }

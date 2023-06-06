@@ -40,8 +40,8 @@ module Alloc_Alloc_Global_Type
     
 end
 module C387_Node_Type
-  use mach.int.Int
-  use mach.int.UInt32
+  use prelude.Int
+  use prelude.UInt32
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Boxed_Box_Type as Alloc_Boxed_Box_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
@@ -63,18 +63,22 @@ module C387_Node_Type
       | C_Node _ _ a -> a
       end
 end
+module C387_Tree_Type
+  use export C387_Node_Type
+end
 module C387_UseTree_Interface
   use prelude.Borrow
-  use C387_Node_Type as C387_Node_Type
-  val use_tree [@cfg:stackify] [#"../387.rs" 13 0 13 25] (_1' : C387_Node_Type.t_tree) : ()
+  use C387_Tree_Type as C387_Tree_Type
+  val use_tree [#"../387.rs" 13 0 13 25] (_1' : C387_Tree_Type.t_tree) : ()
 end
 module C387_UseTree
   use prelude.Borrow
-  use C387_Node_Type as C387_Node_Type
-  let rec cfg use_tree [@cfg:stackify] [#"../387.rs" 13 0 13 25] (_1' : C387_Node_Type.t_tree) : ()
+  use C387_Tree_Type as C387_Tree_Type
+  let rec cfg use_tree [#"../387.rs" 13 0 13 25] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : C387_Tree_Type.t_tree) : ()
+    
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var _1 : C387_Node_Type.t_tree;
+  var _1 : C387_Tree_Type.t_tree;
   {
     _1 <- _1';
     goto BB0
@@ -100,6 +104,9 @@ module CreusotContracts_Model_DeepModel_DeepModel_Interface
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = self
   function deep_model (self : self) : DeepModelTy0.deepModelTy
+  val deep_model (self : self) : DeepModelTy0.deepModelTy
+    ensures { result = deep_model self }
+    
 end
 module CreusotContracts_Model_DeepModel_DeepModel
   type self
@@ -126,6 +133,9 @@ module CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   function cmp_log (self : self) (_2' : self) : Core_Cmp_Ordering_Type.t_ordering
+  val cmp_log (self : self) (_2' : self) : Core_Cmp_Ordering_Type.t_ordering
+    ensures { result = cmp_log self _2' }
+    
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLog
   type self
@@ -142,6 +152,9 @@ end
 module CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface
   type self
   predicate ge_log (self : self) (o : self)
+  val ge_log (self : self) (o : self) : bool
+    ensures { result = ge_log self o }
+    
 end
 module CreusotContracts_Logic_Ord_OrdLogic_GeLog
   type self
@@ -149,7 +162,7 @@ module CreusotContracts_Logic_Ord_OrdLogic_GeLog
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
   predicate ge_log (self : self) (o : self) =
-    CmpLog0.cmp_log self o <> Core_Cmp_Ordering_Type.C_Less
+    [#"../../../../../creusot-contracts/src/logic/ord.rs" 31 20 31 53] CmpLog0.cmp_log self o <> Core_Cmp_Ordering_Type.C_Less
   val ge_log (self : self) (o : self) : bool
     ensures { result = ge_log self o }
     
@@ -161,6 +174,9 @@ end
 module CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface
   type self
   predicate le_log (self : self) (o : self)
+  val le_log (self : self) (o : self) : bool
+    ensures { result = le_log self o }
+    
 end
 module CreusotContracts_Logic_Ord_OrdLogic_LeLog
   type self
@@ -168,7 +184,7 @@ module CreusotContracts_Logic_Ord_OrdLogic_LeLog
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
   predicate le_log (self : self) (o : self) =
-    CmpLog0.cmp_log self o <> Core_Cmp_Ordering_Type.C_Greater
+    [#"../../../../../creusot-contracts/src/logic/ord.rs" 11 20 11 56] CmpLog0.cmp_log self o <> Core_Cmp_Ordering_Type.C_Greater
   val le_log (self : self) (o : self) : bool
     ensures { result = le_log self o }
     
@@ -180,6 +196,9 @@ end
 module CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface
   type self
   predicate lt_log (self : self) (o : self)
+  val lt_log (self : self) (o : self) : bool
+    ensures { result = lt_log self o }
+    
 end
 module CreusotContracts_Logic_Ord_OrdLogic_LtLog
   type self
@@ -187,7 +206,7 @@ module CreusotContracts_Logic_Ord_OrdLogic_LtLog
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
   predicate lt_log (self : self) (o : self) =
-    CmpLog0.cmp_log self o = Core_Cmp_Ordering_Type.C_Less
+    [#"../../../../../creusot-contracts/src/logic/ord.rs" 21 20 21 53] CmpLog0.cmp_log self o = Core_Cmp_Ordering_Type.C_Less
   val lt_log (self : self) (o : self) : bool
     ensures { result = lt_log self o }
     
@@ -205,64 +224,49 @@ module Core_Cmp_Ord_Max_Interface
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = self,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
-  val max [@cfg:stackify] (self : self) (other : self) : self
-    ensures { GeLog0.ge_log (DeepModel0.deep_model result) (DeepModel0.deep_model self) }
-    ensures { GeLog0.ge_log (DeepModel0.deep_model result) (DeepModel0.deep_model other) }
-    ensures { result = self \/ result = other }
-    ensures { LeLog0.le_log (DeepModel0.deep_model self) (DeepModel0.deep_model other) -> result = other }
-    ensures { LtLog0.lt_log (DeepModel0.deep_model other) (DeepModel0.deep_model self) -> result = self }
+  val max (self : self) (other : self) : self
+    ensures { [#"../../../../../creusot-contracts/src/std/cmp.rs" 47 26 47 66] GeLog0.ge_log (DeepModel0.deep_model result) (DeepModel0.deep_model self) }
+    ensures { [#"../../../../../creusot-contracts/src/std/cmp.rs" 48 26 48 63] GeLog0.ge_log (DeepModel0.deep_model result) (DeepModel0.deep_model other) }
+    ensures { [#"../../../../../creusot-contracts/src/std/cmp.rs" 7 0 56 1] result = self \/ result = other }
+    ensures { [#"../../../../../creusot-contracts/src/std/cmp.rs" 50 16 50 79] LeLog0.le_log (DeepModel0.deep_model self) (DeepModel0.deep_model other) -> result = other }
+    ensures { [#"../../../../../creusot-contracts/src/std/cmp.rs" 51 16 51 81] LtLog0.lt_log (DeepModel0.deep_model other) (DeepModel0.deep_model self) -> result = self }
     
 end
-module Core_Cmp_Ord_Max
-  type self
-  clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
-    type self = self
-  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog0 with
-    type self = DeepModelTy0.deepModelTy
-  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with
-    type self = DeepModelTy0.deepModelTy
-  clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface as GeLog0 with
-    type self = DeepModelTy0.deepModelTy
-  clone CreusotContracts_Model_DeepModel_DeepModel_Interface as DeepModel0 with
-    type self = self,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
-  val max [@cfg:stackify] (self : self) (other : self) : self
-    ensures { GeLog0.ge_log (DeepModel0.deep_model result) (DeepModel0.deep_model self) }
-    ensures { GeLog0.ge_log (DeepModel0.deep_model result) (DeepModel0.deep_model other) }
-    ensures { result = self \/ result = other }
-    ensures { LeLog0.le_log (DeepModel0.deep_model self) (DeepModel0.deep_model other) -> result = other }
-    ensures { LtLog0.lt_log (DeepModel0.deep_model other) (DeepModel0.deep_model self) -> result = self }
-    
-end
-module CreusotContracts_Logic_Int_Impl14_DeepModel_Stub
-  use mach.int.Int
-  use mach.int.UInt64
+module CreusotContracts_Std1_Num_Impl10_DeepModel_Stub
+  use prelude.Int
+  use prelude.UInt64
   function deep_model (self : uint64) : int
 end
-module CreusotContracts_Logic_Int_Impl14_DeepModel_Interface
-  use mach.int.Int
-  use mach.int.UInt64
+module CreusotContracts_Std1_Num_Impl10_DeepModel_Interface
+  use prelude.Int
+  use prelude.UInt64
   function deep_model (self : uint64) : int
-end
-module CreusotContracts_Logic_Int_Impl14_DeepModel
-  use mach.int.Int
-  use mach.int.UInt64
-  function deep_model (self : uint64) : int =
-    UInt64.to_int self
   val deep_model (self : uint64) : int
     ensures { result = deep_model self }
     
 end
-module CreusotContracts_Logic_Ord_Impl1_GeLog_Stub
-  use mach.int.Int
+module CreusotContracts_Std1_Num_Impl10_DeepModel
+  use prelude.Int
+  use prelude.UInt64
+  function deep_model (self : uint64) : int =
+    [#"../../../../../creusot-contracts/src/std/num.rs" 22 16 22 35] UInt64.to_int self
+  val deep_model (self : uint64) : int
+    ensures { result = deep_model self }
+    
+end
+module CreusotContracts_Logic_Ord_Impl2_GeLog_Stub
+  use prelude.Int
   predicate ge_log (self : int) (_2' : int)
 end
-module CreusotContracts_Logic_Ord_Impl1_GeLog_Interface
-  use mach.int.Int
+module CreusotContracts_Logic_Ord_Impl2_GeLog_Interface
+  use prelude.Int
   predicate ge_log (self : int) (_2' : int)
+  val ge_log (self : int) (_2' : int) : bool
+    ensures { result = ge_log self _2' }
+    
 end
-module CreusotContracts_Logic_Ord_Impl1_GeLog
-  use mach.int.Int
+module CreusotContracts_Logic_Ord_Impl2_GeLog
+  use prelude.Int
   use int.Int
   predicate ge_log (self : int) (_2' : int) =
     Int.(>=) self _2'
@@ -270,16 +274,19 @@ module CreusotContracts_Logic_Ord_Impl1_GeLog
     ensures { result = ge_log self _2' }
     
 end
-module CreusotContracts_Logic_Ord_Impl1_LeLog_Stub
-  use mach.int.Int
+module CreusotContracts_Logic_Ord_Impl2_LeLog_Stub
+  use prelude.Int
   predicate le_log (self : int) (_2' : int)
 end
-module CreusotContracts_Logic_Ord_Impl1_LeLog_Interface
-  use mach.int.Int
+module CreusotContracts_Logic_Ord_Impl2_LeLog_Interface
+  use prelude.Int
   predicate le_log (self : int) (_2' : int)
+  val le_log (self : int) (_2' : int) : bool
+    ensures { result = le_log self _2' }
+    
 end
-module CreusotContracts_Logic_Ord_Impl1_LeLog
-  use mach.int.Int
+module CreusotContracts_Logic_Ord_Impl2_LeLog
+  use prelude.Int
   use int.Int
   predicate le_log (self : int) (_2' : int) =
     Int.(<=) self _2'
@@ -287,16 +294,19 @@ module CreusotContracts_Logic_Ord_Impl1_LeLog
     ensures { result = le_log self _2' }
     
 end
-module CreusotContracts_Logic_Ord_Impl1_LtLog_Stub
-  use mach.int.Int
+module CreusotContracts_Logic_Ord_Impl2_LtLog_Stub
+  use prelude.Int
   predicate lt_log (self : int) (_2' : int)
 end
-module CreusotContracts_Logic_Ord_Impl1_LtLog_Interface
-  use mach.int.Int
+module CreusotContracts_Logic_Ord_Impl2_LtLog_Interface
+  use prelude.Int
   predicate lt_log (self : int) (_2' : int)
+  val lt_log (self : int) (_2' : int) : bool
+    ensures { result = lt_log self _2' }
+    
 end
-module CreusotContracts_Logic_Ord_Impl1_LtLog
-  use mach.int.Int
+module CreusotContracts_Logic_Ord_Impl2_LtLog
+  use prelude.Int
   use int.Int
   predicate lt_log (self : int) (_2' : int) =
     Int.(<) self _2'
@@ -304,28 +314,23 @@ module CreusotContracts_Logic_Ord_Impl1_LtLog
     ensures { result = lt_log self _2' }
     
 end
-module CreusotContracts_Logic_Int_Impl14_DeepModelTy_Type
-  use mach.int.Int
-  type deepModelTy  =
-    int
-end
 module C387_Impl0_Height_Interface
   use prelude.Borrow
-  use mach.int.Int
-  use mach.int.UInt64
-  use C387_Node_Type as C387_Node_Type
-  val height [@cfg:stackify] [#"../387.rs" 16 4 16 31] (self : C387_Node_Type.t_tree) : uint64
+  use prelude.Int
+  use prelude.UInt64
+  use C387_Tree_Type as C387_Tree_Type
+  val height [#"../387.rs" 16 4 16 31] (self : C387_Tree_Type.t_tree) : uint64
 end
 module C387_Impl0_Height
-  use mach.int.Int
-  use mach.int.UInt64
+  use prelude.Int
+  use prelude.UInt64
   use prelude.Borrow
   use prelude.IntSize
-  clone CreusotContracts_Logic_Int_Impl14_DeepModelTy_Type as DeepModelTy0
-  clone CreusotContracts_Logic_Ord_Impl1_LtLog as LtLog0
-  clone CreusotContracts_Logic_Ord_Impl1_LeLog as LeLog0
-  clone CreusotContracts_Logic_Ord_Impl1_GeLog as GeLog0
-  clone CreusotContracts_Logic_Int_Impl14_DeepModel as DeepModel0
+  use prelude.Int
+  clone CreusotContracts_Logic_Ord_Impl2_LtLog as LtLog0
+  clone CreusotContracts_Logic_Ord_Impl2_LeLog as LeLog0
+  clone CreusotContracts_Logic_Ord_Impl2_GeLog as GeLog0
+  clone CreusotContracts_Std1_Num_Impl10_DeepModel as DeepModel0
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use C387_Node_Type as C387_Node_Type
   use Alloc_Boxed_Box_Type as Alloc_Boxed_Box_Type
@@ -335,56 +340,61 @@ module C387_Impl0_Height
     predicate GeLog0.ge_log = GeLog0.ge_log,
     predicate LeLog0.le_log = LeLog0.le_log,
     predicate LtLog0.lt_log = LtLog0.lt_log,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+    type DeepModelTy0.deepModelTy = int
   use Core_Option_Option_Type as Core_Option_Option_Type
-  let rec cfg height [@cfg:stackify] [#"../387.rs" 16 4 16 31] (self : C387_Node_Type.t_tree) : uint64
+  use C387_Tree_Type as C387_Tree_Type
+  let rec cfg height [#"../387.rs" 16 4 16 31] [@cfg:stackify] [@cfg:subregion_analysis] (self : C387_Tree_Type.t_tree) : uint64
+    
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : uint64;
-  var self_1 : C387_Node_Type.t_tree;
+  var self_1 : C387_Tree_Type.t_tree;
   var _2 : isize;
   var n_3 : C387_Node_Type.t_node;
   var _4 : uint64;
   var _5 : uint64;
-  var _6 : C387_Node_Type.t_tree;
+  var _6 : C387_Tree_Type.t_tree;
   var _7 : uint64;
-  var _8 : C387_Node_Type.t_tree;
+  var _8 : C387_Tree_Type.t_tree;
   {
     self_1 <- self;
     goto BB0
   }
   BB0 {
-    switch (C387_Node_Type.tree_0 self_1)
-      | Core_Option_Option_Type.C_None -> goto BB3
-      | Core_Option_Option_Type.C_Some _ -> goto BB1
+    switch (C387_Tree_Type.tree_0 self_1)
+      | Core_Option_Option_Type.C_None -> goto BB1
+      | Core_Option_Option_Type.C_Some _ -> goto BB2
       end
   }
   BB1 {
-    n_3 <- Core_Option_Option_Type.some_0 (C387_Node_Type.tree_0 self_1);
-    _6 <- C387_Node_Type.node_left n_3;
-    _5 <- ([#"../387.rs" 19 29 19 44] height _6);
     goto BB4
   }
   BB2 {
-    absurd
-  }
-  BB3 {
-    _0 <- ([#"../387.rs" 18 26 18 27] (0 : uint64));
-    goto BB7
-  }
-  BB4 {
-    _8 <- C387_Node_Type.node_right n_3;
-    _7 <- ([#"../387.rs" 19 49 19 65] height _8);
+    n_3 <- Core_Option_Option_Type.some_0 (C387_Tree_Type.tree_0 self_1);
+    _6 <- C387_Node_Type.node_left n_3;
+    _5 <- ([#"../387.rs" 19 29 19 44] height _6);
     goto BB5
   }
+  BB3 {
+    absurd
+  }
+  BB4 {
+    _0 <- ([#"../387.rs" 18 26 18 27] (0 : uint64));
+    goto BB8
+  }
   BB5 {
-    _4 <- ([#"../387.rs" 19 29 19 66] Max0.max _5 _7);
+    _8 <- C387_Node_Type.node_right n_3;
+    _7 <- ([#"../387.rs" 19 49 19 65] height _8);
     goto BB6
   }
   BB6 {
-    _0 <- ([#"../387.rs" 19 29 19 70] _4 + ([#"../387.rs" 19 69 19 70] (1 : uint64)));
+    _4 <- ([#"../387.rs" 19 29 19 66] Max0.max _5 _7);
     goto BB7
   }
   BB7 {
+    _0 <- ([#"../387.rs" 19 29 19 70] _4 + ([#"../387.rs" 19 69 19 70] (1 : uint64)));
+    goto BB8
+  }
+  BB8 {
     return _0
   }
   

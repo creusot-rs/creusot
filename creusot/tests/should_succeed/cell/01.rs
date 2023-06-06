@@ -30,6 +30,7 @@ impl<T: Copy, I: Inv<T>> Cell<T, I> {
 pub struct Even;
 
 impl Inv<u32> for Even {
+    #[open]
     #[predicate]
     fn inv(x: u32) -> bool {
         x % 2u32 == 0u32

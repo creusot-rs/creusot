@@ -1,28 +1,22 @@
 use super::{
-    pearlite::{normalize, pearlite_stub, Term, TermKind},
+    pearlite::{normalize, pearlite_stub, Literal, Term, TermKind},
     LocalIdent,
 };
 use crate::{ctx::*, util};
-use creusot_rustc::{
-    hir::def_id::DefId,
-    macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
-    middle::{
-        mir::OUTERMOST_SOURCE_SCOPE,
-        thir::{self, ExprKind, Thir},
-        ty::{
-            self,
-            subst::{InternalSubsts, SubstsRef},
-            EarlyBinder, TyCtxt,
-        },
+use rustc_ast::ast::{AttrArgs, AttrArgsEq};
+use rustc_hir::def_id::DefId;
+use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
+use rustc_middle::{
+    mir::{Body, Local, Location, SourceScope, OUTERMOST_SOURCE_SCOPE},
+    thir::{self, ExprKind, Thir},
+    ty::{
+        self,
+        subst::{InternalSubsts, SubstsRef},
+        EarlyBinder, ParamEnv, TyCtxt,
     },
-    smir::mir::{Body, Local, Location, SourceScope},
-    span::Symbol,
 };
-use rustc_middle::ty::ParamEnv;
+use rustc_span::Symbol;
 use std::collections::{HashMap, HashSet};
-use why3::declaration::Contract;
-
-pub(crate) use crate::backend::term::*;
 
 #[derive(Clone, Debug, Default, TypeFoldable, TypeVisitable)]
 pub struct PreContract<'tcx> {
@@ -45,24 +39,10 @@ impl<'tcx> PreContract<'tcx> {
         self
     }
 
-    pub(crate) fn to_exp(
-        self,
-        ctx: &mut TranslationCtx<'tcx>,
-        names: &mut CloneMap<'tcx>,
-    ) -> Contract {
-        let mut out = Contract::new();
-        for term in self.requires {
-            out.requires.push(lower_pure(ctx, names, term));
-        }
-        for term in self.ensures {
-            out.ensures.push(lower_pure(ctx, names, term));
-        }
-
-        if let Some(term) = self.variant {
-            out.variant = vec![lower_pure(ctx, names, term)];
-        }
-
-        out
+    // A bit of a hack used to see if an external function has no contract
+    pub(crate) fn is_false(&self) -> bool {
+        self.requires.len() == 1
+            && matches!(self.requires[0].kind, TermKind::Lit(Literal::Bool(false)))
     }
 
     pub(crate) fn is_empty(&self) -> bool {
@@ -139,7 +119,7 @@ struct ScopeTree(HashMap<SourceScope, (HashSet<(Symbol, Local)>, Option<SourceSc
 
 impl ScopeTree {
     fn build<'tcx>(body: &Body<'tcx>) -> Self {
-        use creusot_rustc::smir::mir::VarDebugInfoContents::Place;
+        use rustc_middle::mir::VarDebugInfoContents::Place;
         let mut scope_tree: HashMap<SourceScope, (HashSet<_>, Option<_>)> = Default::default();
 
         for var_info in &body.var_debug_info {
@@ -234,18 +214,17 @@ pub(crate) fn contract_clauses_of(
     // attributes to make sure requires/ensures clauses appear in the same
     // order in WhyML code as they appear in Rust code.
     for attr in attrs.iter().rev() {
-        if !util::is_attr(attr, "spec") {
+        if !util::is_attr(attr, "clause") {
             continue;
         }
 
         let attr = attr.get_normal_item();
-        use creusot_rustc::ast::ast::{MacArgs, MacArgsEq};
 
         // Stop using diagnostic item.
         // Use a custom HIR visitor which walks the attributes
         let get_creusot_item = || {
             let predicate_name = match &attr.args {
-                MacArgs::Eq(_, MacArgsEq::Hir(l)) => l.token_lit.symbol,
+                AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => l.symbol,
                 _ => return Err(InvalidTokens { id: def_id }),
             };
             ctx.creusot_item(predicate_name).ok_or(InvalidTerm { id: def_id })
@@ -279,7 +258,7 @@ pub(crate) fn inherited_extern_spec<'tcx>(
         if ctx.extern_spec(id).is_none() {
             return None;
         }
-        (id, EarlyBinder(trait_ref.substs).subst(ctx.tcx, subst))
+        (id, trait_ref.subst(ctx.tcx, subst).substs)
     }
 }
 
@@ -291,16 +270,24 @@ pub(crate) fn contract_of<'tcx>(
         let mut contract = extern_spec.contract.get_pre(ctx).subst(ctx.tcx, extern_spec.subst);
         contract.subst(&extern_spec.arg_subst.iter().cloned().collect());
         contract.normalize(ctx.tcx, ctx.param_env(def_id))
+    } else if let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id) {
+        let spec = ctx.extern_spec(parent_id).cloned().unwrap();
+        let mut contract = spec.contract.get_pre(ctx).subst(ctx.tcx, subst);
+        contract.subst(&spec.arg_subst.iter().cloned().collect());
+        contract.normalize(ctx.tcx, ctx.param_env(def_id))
     } else {
-        if let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id) {
-            let spec = ctx.extern_spec(parent_id).cloned().unwrap();
-            let mut contract = spec.contract.get_pre(ctx).subst(ctx.tcx, subst);
-            contract.subst(&spec.arg_subst.iter().cloned().collect());
-            contract.normalize(ctx.tcx, ctx.param_env(def_id))
-        } else {
-            let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
-            contract_clauses_of(ctx, def_id).unwrap().get_pre(ctx).subst(ctx.tcx, subst)
+        let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
+        let mut contract =
+            contract_clauses_of(ctx, def_id).unwrap().get_pre(ctx).subst(ctx.tcx, subst);
+
+        if contract.is_empty()
+            && ctx.externs.get(def_id.krate).is_some()
+            && util::item_type(ctx.tcx, def_id) == ItemType::Program
+        {
+            contract.requires.push(Term::mk_false(ctx.tcx));
         }
+
+        contract
     }
 }
 
@@ -308,23 +295,34 @@ pub(crate) fn contract_of<'tcx>(
 pub(crate) fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
     let def_path = tcx.def_path_str(def_id);
 
-    def_path == "std::ops::Index::index"
-        || def_path == "std::convert::Into::into"
-        || def_path == "std::convert::From::from"
-        || def_path == "std::ops::Mul::mul"
-        || def_path == "std::ops::Add::add"
-        || def_path == "std::ops::Sub::sub"
-        || def_path == "std::ops::Div::div"
-        || def_path == "std::ops::Rem::rem"
-        || def_path == "std::ops::Neg::neg"
-        || def_path == "std::boxed::Box::<T>::new"
-        || def_path == "std::ops::Deref::deref"
-        || def_path == "std::clone::Clone::clone"
+    def_path.ends_with("::ops::Index::index")
+        || def_path.ends_with("::convert::Into::into")
+        || def_path.ends_with("::convert::From::from")
+        || def_path.ends_with("::ops::Mul::mul")
+        || def_path.ends_with("::ops::Add::add")
+        || def_path.ends_with("::ops::Sub::sub")
+        || def_path.ends_with("::ops::Div::div")
+        || def_path.ends_with("::ops::Rem::rem")
+        || def_path.ends_with("::ops::Neg::neg")
+        || def_path.ends_with("::boxed::Box::<T>::new")
+        || def_path.ends_with("::ops::Deref::deref")
+        || def_path.ends_with("::clone::Clone::clone")
+        || def_path.ends_with("Ghost::<T>::from_fn")
 }
 
 pub(crate) struct PurityVisitor<'a, 'tcx> {
     pub(crate) tcx: TyCtxt<'tcx>,
     pub(crate) thir: &'a Thir<'tcx>,
+    pub(crate) in_pure_ctx: bool,
+}
+
+impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
+    fn is_pure(&self, fun: thir::ExprId, func_did: DefId) -> bool {
+        util::is_predicate(self.tcx, func_did)
+            || util::is_logic(self.tcx, func_did)
+            || util::get_builtin(self.tcx, func_did).is_some()
+            || pearlite_stub(self.tcx, self.thir[fun].ty).is_some()
+    }
 }
 
 impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
@@ -336,26 +334,26 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
         match expr.kind {
             ExprKind::Call { fun, .. } => {
                 if let &ty::FnDef(func_did, _) = self.thir[fun].ty.kind() {
-                    if !util::is_predicate(self.tcx, func_did)
-                        && !util::is_logic(self.tcx, func_did)
-                        && !util::get_builtin(self.tcx, func_did).is_some()
-                        && !pearlite_stub(self.tcx, self.thir[fun].ty).is_some()
+                    if (self.in_pure_ctx != self.is_pure(fun, func_did))
                         && !is_overloaded_item(self.tcx, func_did)
                     {
+                        let msg = if self.in_pure_ctx {
+                            "called impure program function in logical context"
+                        } else {
+                            "called logical function in impure context"
+                        };
+
                         self.tcx.sess.span_err_with_code(
                             self.thir[fun].span,
-                            &format!(
-                                "called impure program function in logical context {:?}",
-                                self.tcx.def_path_str(func_did)
-                            ),
-                            creusot_rustc::errors::DiagnosticId::Error(String::from("creusot")),
+                            format!("{} {:?}", msg, self.tcx.def_path_str(func_did)),
+                            rustc_errors::DiagnosticId::Error(String::from("creusot")),
                         );
                     }
-                } else {
+                } else if self.in_pure_ctx {
                     self.tcx.sess.span_fatal_with_code(
                         expr.span,
                         "non function call in logical context",
-                        creusot_rustc::errors::DiagnosticId::Error(String::from("creusot")),
+                        rustc_errors::DiagnosticId::Error(String::from("creusot")),
                     )
                 }
             }

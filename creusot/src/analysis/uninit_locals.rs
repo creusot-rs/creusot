@@ -1,12 +1,14 @@
-use creusot_rustc::{
-    dataflow::{self, AnalysisDomain, GenKill, GenKillAnalysis},
-    index::bit_set::ChunkedBitSet,
-    middle::mir::{
-        visit::{PlaceContext, Visitor},
-        Terminator,
-    },
-    smir::mir::{self, BasicBlock, Local, Location},
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+//
+use rustc_index::bit_set::ChunkedBitSet;
+use rustc_middle::mir::{
+    self,
+    visit::{PlaceContext, Visitor},
+    BasicBlock, Local, Location, Terminator,
 };
+use rustc_mir_dataflow::{self as dataflow, AnalysisDomain, GenKill, GenKillAnalysis};
 
 pub struct MaybeUninitializedLocals;
 
@@ -83,26 +85,27 @@ where
     T: GenKill<Local>,
 {
     fn visit_local(&mut self, local: Local, context: PlaceContext, _: Location) {
-        use creusot_rustc::middle::mir::visit::{
-            MutatingUseContext, NonMutatingUseContext, NonUseContext,
-        };
+        use rustc_middle::mir::visit::{MutatingUseContext, NonMutatingUseContext, NonUseContext};
         match context {
             // These are handled specially in `call_return_effect` and `yield_resume_effect`.
             PlaceContext::MutatingUse(MutatingUseContext::Call | MutatingUseContext::Yield) => {}
+
+            // Ignore drops
+            PlaceContext::MutatingUse(MutatingUseContext::Drop) => {}
 
             // Otherwise, when a place is mutated, we must consider it possibly initialized.
             PlaceContext::MutatingUse(_) => self.trans.kill(local),
 
             // If the local is moved out of, or if it gets marked `StorageDead`, consider it no
             // longer initialized.
-            PlaceContext::NonUse(NonUseContext::StorageDead)
-            | PlaceContext::NonMutatingUse(NonMutatingUseContext::Move) => self.trans.gen(local),
+            PlaceContext::NonUse(NonUseContext::StorageDead) => {}
+            PlaceContext::NonMutatingUse(NonMutatingUseContext::Move) => self.trans.gen(local),
 
             // All other uses do not affect this analysis.
             PlaceContext::NonUse(
                 NonUseContext::StorageLive
-                | NonUseContext::AscribeUserTy
-                | NonUseContext::VarDebugInfo,
+                | NonUseContext::VarDebugInfo
+                | NonUseContext::AscribeUserTy(_),
             )
             | PlaceContext::NonMutatingUse(
                 NonMutatingUseContext::Inspect
@@ -111,6 +114,7 @@ where
                 | NonMutatingUseContext::ShallowBorrow
                 | NonMutatingUseContext::UniqueBorrow
                 | NonMutatingUseContext::AddressOf
+                | NonMutatingUseContext::PlaceMention
                 | NonMutatingUseContext::Projection,
             ) => {}
         }

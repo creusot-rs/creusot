@@ -2,10 +2,15 @@
 
 pushd $(dirname $1) > /dev/null
 INPUTPATH=$(pwd)/$(basename $1)
+OUTDIR=$(pwd)
 popd > /dev/null
 SCRIPTPATH=$(dirname "$BASH_SOURCE")
 pushd $SCRIPTPATH > /dev/null
-cargo run --bin creusot-rustc --  -- -Zno-codegen \
+cargo run --bin creusot-rustc --  \
+  --output-file="${INPUTPATH%.*}.mlcfg" \
+  --span-mode=absolute \
+  -- -Zno-codegen \
+  -Zmacro-backtrace \
   --extern creusot_contracts=./target/debug/libcreusot_contracts.rlib \
   -Ldependency=./target/debug/deps/ \
   --crate-type=lib \

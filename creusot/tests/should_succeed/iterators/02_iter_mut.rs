@@ -2,6 +2,7 @@
 extern crate creusot_contracts;
 
 use creusot_contracts::{
+    invariant::Invariant,
     logic::{Int, Seq},
     *,
 };
@@ -13,40 +14,42 @@ struct IterMut<'a, T> {
     inner: &'a mut [T],
 }
 
+impl<'a, T> Invariant for IterMut<'a, T> {
+    #[open]
+    #[predicate]
+    fn invariant(self) -> bool {
+        // Property that is always true but we must carry around..
+        pearlite! { (^self.inner)@.len() == (*self.inner)@.len() }
+    }
+}
+
 impl<'a, T> Iterator for IterMut<'a, T> {
     type Item = &'a mut T;
 
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && (@self.inner).ext_eq(Seq::EMPTY) }
+        pearlite! { self.resolve() && self.inner@.ext_eq(Seq::EMPTY) }
     }
 
+    #[open]
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         self.inner.to_mut_seq().ext_eq(visited.concat(tl.inner.to_mut_seq()))
     }
 
-    #[predicate]
-    fn invariant(self) -> bool {
-        // Property that is always true but we must carry around..
-        pearlite! { (@^self.inner).len() == (@*self.inner).len() }
-    }
-
     #[law]
-    #[requires(a.invariant())]
+    #[open]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
+    #[open]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
-    #[maintains((mut self).invariant())]
     #[ensures(match result {
       None => self.completed(),
       Some(v) => (*self).produces(Seq::singleton(v), ^self)
@@ -63,23 +66,22 @@ impl<'a, T> IterMut<'a, T> {
     }
 }
 
-#[ensures(@result.inner == @v)]
-#[ensures(@^result.inner == @^v)]
-#[ensures((@^v).len() == (@v).len())]
-#[ensures(result.invariant())]
+#[ensures(result.inner@ == v@)]
+#[ensures((^result.inner)@ == (^v)@)]
+#[ensures((^v)@.len() == v@.len())]
 fn iter_mut<'a, T>(v: &'a mut Vec<T>) -> IterMut<'a, T> {
     IterMut { inner: &mut v[..] }
 }
 
-#[ensures((@^v).len() == (@v).len())]
-#[ensures(forall<i : _> 0 <= i && i < (@v).len() ==> @(@^v)[i] == 0)]
+#[ensures((^v)@.len() == v@.len())]
+#[ensures(forall<i : _> 0 <= i && i < v@.len() ==> (^v)[i]@ == 0)]
 pub fn all_zero(v: &mut Vec<usize>) {
     let mut it = iter_mut(v).into_iter();
     let iter_old = ghost! { it };
     let mut produced = ghost! { Seq::EMPTY };
-    #[invariant(type_invariant, it.invariant())]
-    #[invariant(structural, iter_old.produces(produced.inner(), it))]
-    #[invariant(user, forall<i : Int> 0 <= i && i < produced.len() ==> @^produced[i] == 0)]
+    #[invariant(it.invariant())]
+    #[invariant(iter_old.produces(produced.inner(), it))]
+    #[invariant(forall<i : Int> 0 <= i && i < produced.len() ==> (^produced[i])@ == 0)]
     loop {
         match it.next() {
             Some(x) => {

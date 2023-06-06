@@ -1,7 +1,7 @@
-use syn::{punctuated::Punctuated, *};
+use syn::{parse::discouraged::AnyDelimiter, punctuated::Punctuated, *};
 // use crate::macros::*;
 
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::{Delimiter, Span, TokenStream};
 
 use syn::Pat;
 
@@ -106,7 +106,7 @@ ast_enum_of_structs! {
         /// The final value of a borrow: `^x`
         Final(TermFinal),
 
-        /// The model of a borrow: `@x`
+        /// The model of a term: `x@`
         Model(TermModel),
 
         /// Tokens in term position not interpreted by Syn.
@@ -422,8 +422,8 @@ ast_struct! {
 
 ast_struct! {
     pub struct TermModel {
+        pub term: Box<Term>,
         pub at_token: Token![@],
-        pub term: Box<Term>
     }
 }
 
@@ -645,16 +645,17 @@ pub(crate) mod parsing {
                 | BinOp::Ne(_)
                 | BinOp::Ge(_)
                 | BinOp::Gt(_) => Precedence::Compare,
-                BinOp::AddEq(_)
-                | BinOp::SubEq(_)
-                | BinOp::MulEq(_)
-                | BinOp::DivEq(_)
-                | BinOp::RemEq(_)
-                | BinOp::BitXorEq(_)
-                | BinOp::BitAndEq(_)
-                | BinOp::BitOrEq(_)
-                | BinOp::ShlEq(_)
-                | BinOp::ShrEq(_) => Precedence::Assign,
+                BinOp::AddAssign(_)
+                | BinOp::SubAssign(_)
+                | BinOp::MulAssign(_)
+                | BinOp::DivAssign(_)
+                | BinOp::RemAssign(_)
+                | BinOp::BitXorAssign(_)
+                | BinOp::BitAndAssign(_)
+                | BinOp::BitOrAssign(_)
+                | BinOp::ShlAssign(_)
+                | BinOp::ShrAssign(_) => Precedence::Assign,
+                _ => unimplemented!(),
             }
         }
     }
@@ -699,11 +700,49 @@ pub(crate) mod parsing {
         }
     }
 
+    pub(crate) fn replace_attrs(item: &mut Item, new: Vec<Attribute>) -> Vec<Attribute> {
+        match item {
+            Item::Const(ItemConst { attrs, .. })
+            | Item::Enum(ItemEnum { attrs, .. })
+            | Item::ExternCrate(ItemExternCrate { attrs, .. })
+            | Item::Fn(ItemFn { attrs, .. })
+            | Item::ForeignMod(ItemForeignMod { attrs, .. })
+            | Item::Impl(ItemImpl { attrs, .. })
+            | Item::Macro(ItemMacro { attrs, .. })
+            | Item::Mod(ItemMod { attrs, .. })
+            | Item::Static(ItemStatic { attrs, .. })
+            | Item::Struct(ItemStruct { attrs, .. })
+            | Item::Trait(ItemTrait { attrs, .. })
+            | Item::TraitAlias(ItemTraitAlias { attrs, .. })
+            | Item::Type(ItemType { attrs, .. })
+            | Item::Union(ItemUnion { attrs, .. })
+            | Item::Use(ItemUse { attrs, .. }) => mem::replace(attrs, new),
+            Item::Verbatim(_) | _ => Vec::new(),
+        }
+    }
+
     fn parse_stmt(input: ParseStream, allow_nosemi: bool) -> Result<TermStmt> {
+        let mut attrs = input.call(Attribute::parse_outer)?;
         if input.peek(Token![let]) {
             stmt_local(input).map(TermStmt::Local)
         } else if input.peek(Token![use]) {
             let item: Item = input.parse()?;
+            Ok(TermStmt::Item(item))
+        } else if input.peek(Token![pub])
+            || input.peek(Token![crate]) && !input.peek2(Token![::])
+            || input.peek(Token![use])
+            || input.peek(Token![fn])
+            || input.peek(Token![mod])
+            || input.peek(Token![type])
+            || input.peek(Token![struct])
+            || input.peek(Token![enum])
+            || input.peek(Token![union]) && input.peek2(Ident)
+            || input.peek(Token![trait])
+            || input.peek(Token![impl])
+        {
+            let mut item: Item = input.parse()?;
+            attrs.extend(replace_attrs(&mut item, Vec::new()));
+            replace_attrs(&mut item, attrs);
             Ok(TermStmt::Item(item))
         } else {
             stmt_expr(input, allow_nosemi)
@@ -715,7 +754,7 @@ pub(crate) mod parsing {
             let_token: input.parse()?,
             pat: {
                 // let mut pat: Pat = pat::parsing::multi_pat_with_leading_vert(input)?;
-                let mut pat: Pat = input.parse()?;
+                let mut pat = Pat::parse_single(input)?;
                 if input.peek(Token![:]) {
                     let colon_token: Token![:] = input.parse()?;
                     let ty: Type = input.parse()?;
@@ -892,7 +931,7 @@ pub(crate) mod parsing {
                 let mut rhs = unary_term(input, allow_struct)?;
                 loop {
                     let next = peek_precedence(input);
-                    if next > precedence || next == precedence {
+                    if next >= precedence {
                         rhs = parse_term(input, rhs, allow_struct, next)?;
                     } else {
                         break;
@@ -976,12 +1015,6 @@ pub(crate) mod parsing {
                 final_token: input.parse()?,
                 term: Box::new(unary_term(input, allow_struct)?),
             }))
-        } else if input.peek(Token![@]) {
-            // @ <trailer>
-            Ok(Term::Model(TermModel {
-                at_token: input.parse()?,
-                term: Box::new(unary_term(input, allow_struct)?),
-            }))
         } else {
             trailer_term(input, allow_struct)
         }
@@ -1006,7 +1039,7 @@ pub(crate) mod parsing {
                 e = Term::Call(TermCall {
                     func: Box::new(e),
                     paren_token: parenthesized!(content in input),
-                    args: content.parse_terminated(Term::parse)?,
+                    args: content.parse_terminated(Term::parse, Token![,])?,
                 });
             } else if input.peek(Token![.]) && !input.peek(Token![..]) {
                 let mut dot_token: Token![.] = input.parse()?;
@@ -1054,7 +1087,7 @@ pub(crate) mod parsing {
                             method,
                             turbofish,
                             paren_token: parenthesized!(content in input),
-                            args: content.parse_terminated(Term::parse)?,
+                            args: content.parse_terminated(Term::parse, Token![,])?,
                         });
                         continue;
                     }
@@ -1068,6 +1101,8 @@ pub(crate) mod parsing {
                     bracket_token: bracketed!(content in input),
                     index: content.parse()?,
                 });
+            } else if input.peek(Token![@]) {
+                e = Term::Model(TermModel { term: Box::new(e), at_token: input.parse()? });
             } else {
                 break;
             }
@@ -1259,13 +1294,11 @@ pub(crate) mod parsing {
         }
     }
 
-    fn term_group(_: ParseStream) -> Result<TermGroup> {
-        unimplemented!("Group")
-        // let group = crate::group::parse_group(input)?;
-        // Ok(TermGroup {
-        //     group_token: group.token,
-        //     expr: group.content.parse()?,
-        // })
+    fn term_group<'a>(input: ParseStream) -> Result<TermGroup> {
+        input.parse_any_delimiter().and_then(|(delim, span, content)| {
+            assert_eq!(delim, Delimiter::None);
+            Ok(TermGroup { group_token: token::Group(span.join()), expr: content.parse()? })
+        })
     }
 
     fn generic_method_argument(input: ParseStream) -> Result<TermGenericMethodArgument> {
@@ -1285,7 +1318,7 @@ pub(crate) mod parsing {
     fn term_let(input: ParseStream) -> Result<TermLet> {
         Ok(TermLet {
             let_token: input.parse()?,
-            pat: input.parse()?,
+            pat: Pat::parse_single(input)?,
             // pat: pat::parsing::multi_pat_with_leading_vert(input)?,
             eq_token: input.parse()?,
             expr: Box::new(input.call(Term::parse_without_eager_brace)?),
@@ -1554,7 +1587,7 @@ pub(crate) mod parsing {
             let requires_comma;
             Ok(TermArm {
                 // pat: todo!("Arm"),
-                pat: input.parse()?,
+                pat: Pat::parse_single(input)?,
                 // pat: pat::parsing::multi_pat_with_leading_vert(input)?,
                 guard: {
                     if input.peek(Token![if]) {
@@ -1661,7 +1694,7 @@ pub(crate) mod parsing {
 
     fn closure_arg(input: ParseStream) -> Result<Pat> {
         let attrs = input.call(Attribute::parse_outer)?;
-        let mut pat: Pat = input.parse()?;
+        let mut pat = Pat::parse_single(input)?;
 
         if input.peek(Token![:]) {
             Ok(Pat::Type(PatType {
@@ -1672,11 +1705,12 @@ pub(crate) mod parsing {
             }))
         } else {
             match &mut pat {
-                Pat::Box(pat) => pat.attrs = attrs,
+                Pat::Const(pat) => pat.attrs = attrs,
                 Pat::Ident(pat) => pat.attrs = attrs,
                 Pat::Lit(pat) => pat.attrs = attrs,
                 Pat::Macro(pat) => pat.attrs = attrs,
                 Pat::Or(pat) => pat.attrs = attrs,
+                Pat::Paren(pat) => pat.attrs = attrs,
                 Pat::Path(pat) => pat.attrs = attrs,
                 Pat::Range(pat) => pat.attrs = attrs,
                 Pat::Reference(pat) => pat.attrs = attrs,
@@ -1688,7 +1722,7 @@ pub(crate) mod parsing {
                 Pat::Type(_) => unreachable!(),
                 Pat::Verbatim(_) => {}
                 Pat::Wild(pat) => pat.attrs = attrs,
-                _ => unreachable!(),
+                _ => unimplemented!(),
             }
             Ok(pat)
         }
@@ -1843,8 +1877,8 @@ pub(crate) mod printing {
 
     impl ToTokens for TermModel {
         fn to_tokens(&self, tokens: &mut TokenStream) {
-            self.at_token.to_tokens(tokens);
             self.term.to_tokens(tokens);
+            self.at_token.to_tokens(tokens);
         }
     }
 

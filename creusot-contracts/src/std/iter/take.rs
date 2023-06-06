@@ -14,12 +14,14 @@ pub trait TakeExt<I> {
 impl<I> TakeExt<I> for Take<I> {
     #[logic]
     #[trusted]
+    #[open(self)]
     fn iter(self) -> I {
         pearlite! { absurd }
     }
 
     #[logic]
     #[trusted]
+    #[open(self)]
     #[ensures((*self).iter() == *result && (^self).iter() == ^result)]
     fn iter_mut(&mut self) -> &mut I {
         pearlite! { absurd }
@@ -27,7 +29,8 @@ impl<I> TakeExt<I> for Take<I> {
 
     #[logic]
     #[trusted]
-    #[ensures(result >= 0 && result <= @usize::MAX)]
+    #[open(self)]
+    #[ensures(result >= 0 && result <= usize::MAX@)]
     fn n(self) -> Int {
         pearlite! { absurd }
     }
@@ -35,6 +38,7 @@ impl<I> TakeExt<I> for Take<I> {
 
 #[trusted]
 impl<I> Resolve for Take<I> {
+    #[open]
     #[predicate]
     fn resolve(self) -> bool {
         pearlite! {
@@ -44,6 +48,7 @@ impl<I> Resolve for Take<I> {
 }
 
 impl<I: Invariant> Invariant for Take<I> {
+    #[open]
     #[predicate]
     fn invariant(self) -> bool {
         self.iter().invariant()
@@ -51,6 +56,7 @@ impl<I: Invariant> Invariant for Take<I> {
 }
 
 impl<I: Iterator> Iterator for Take<I> {
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! {
@@ -59,6 +65,7 @@ impl<I: Iterator> Iterator for Take<I> {
         }
     }
 
+    #[open]
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
@@ -67,14 +74,12 @@ impl<I: Iterator> Iterator for Take<I> {
     }
 
     #[law]
-    #[requires(a.invariant())]
+    #[open(self)]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
+    #[open(self)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

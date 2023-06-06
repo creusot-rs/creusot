@@ -22,7 +22,21 @@ impl Type {
     pub const UNIT: Self = Self::Tuple(Vec::new());
 
     pub fn predicate(ty: Self) -> Self {
-        Self::TFun(box ty, box Self::Bool)
+        Self::TFun(Box::new(ty), Box::new(Self::Bool))
+    }
+
+    pub fn tapp(mut self, args: Vec<Self>) -> Self {
+        if args.is_empty() {
+            self
+        } else {
+            match self {
+                Self::TApp(_, ref mut args1) => {
+                    args1.extend(args);
+                    self
+                }
+                _ => Self::TApp(Box::new(self), args),
+            }
+        }
     }
 
     pub(crate) fn complex(&self) -> bool {

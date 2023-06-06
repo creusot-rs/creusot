@@ -1,19 +1,20 @@
 #![cfg_attr(
-    feature = "contracts",
+    creusot,
     feature(unsized_locals, fn_traits, min_specialization),
     allow(incomplete_features),
-    feature(slice_take)
+    feature(slice_take),
+    feature(print_internals, fmt_internals, fmt_helpers_for_derive)
 )]
-#![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns, box_syntax))]
-#![feature(step_trait, allocator_api, unboxed_closures)]
-#![cfg_attr(not(feature = "contracts"), feature(rustc_attrs))]
+#![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns))]
+#![feature(step_trait, allocator_api, unboxed_closures, tuple_trait, strict_provenance)]
+#![cfg_attr(not(creusot), feature(rustc_attrs))]
 
 extern crate self as creusot_contracts;
 
-#[cfg(feature = "contracts")]
+#[cfg(contracts)]
 extern crate creusot_contracts_proc as base_macros;
 
-#[cfg(not(feature = "contracts"))]
+#[cfg(not(contracts))]
 extern crate creusot_contracts_dummy as base_macros;
 
 mod macros {
@@ -71,21 +72,29 @@ mod macros {
     /// Generates a `requires` and `ensures` clause in the shape of the input expression, with
     /// `mut` replaced by `*` in the `requires` and `^` in the ensures.
     pub use base_macros::maintains;
+
+    /// Allows the body of a logical definition to be made visible to provers. An optional visibility modifier can be
+    /// provided to restrict the context in whcih the obdy is opened.
+    /// By default bodies are *opaque*: they are only visible to definitions in the same module (like `pub(self)` for visibility).
+    ///
+    /// A body can only be visible in contexts where all the symbols used in the body are also visible.
+    /// This means you cannot `#[open]` a body which refers to a `pub(crate)` symbol.
+    pub use base_macros::open;
 }
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 #[path = "stubs.rs"]
 pub mod __stubs;
 
 pub mod logic;
 
-#[cfg_attr(not(feature = "contracts"), allow(unused))]
+#[cfg_attr(not(creusot), allow(unused))]
 pub mod std;
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 pub mod ghost;
 
-#[cfg(not(feature = "contracts"))]
+#[cfg(not(creusot))]
 pub mod ghost {
     pub struct Ghost<T>(std::marker::PhantomData<T>)
     where
@@ -95,12 +104,18 @@ pub mod ghost {
         pub fn new() -> Ghost<T> {
             Ghost(std::marker::PhantomData)
         }
+
+        pub fn from_fn<F: Fn() -> Ghost<T>>(_: F) -> Ghost<T> {
+            Ghost(std::marker::PhantomData)
+        }
     }
 }
 
+pub mod ghost_ptr;
 pub mod invariant;
 pub mod model;
 pub mod resolve;
+pub mod util;
 pub mod well_founded;
 
 // We add some common things at the root of the creusot-contracts library
@@ -154,3 +169,20 @@ pub mod prusti_prelude {
 }
 
 pub use prelude::*;
+
+// The std vec macro uses special magic to construct the array argument
+// to Box::new directly on the heap. Because the generated MIR is hard
+// to translate, we provide a custom vec macro which does not do this.
+#[macro_export]
+macro_rules! vec {
+    () => (
+        ::std::vec::Vec::new()
+    );
+    ($elem:expr; $n:expr) => (
+        ::std::vec::from_elem($elem, $n)
+    );
+    ($($x:expr),*) => (
+        <[_]>::into_vec(::std::boxed::Box::new([$($x),*]))
+    );
+    ($($x:expr,)*) => (vec![$($x),*])
+}

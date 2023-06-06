@@ -1,8 +1,6 @@
-use creusot_rustc::{
-    errors::DiagnosticId,
-    session::Session,
-    span::{Span, DUMMY_SP},
-};
+use rustc_errors::DiagnosticId;
+use rustc_session::Session;
+use rustc_span::{Span, DUMMY_SP};
 
 pub type CreusotResult<T> = Result<T, Error>;
 
@@ -19,11 +17,7 @@ impl Error {
     }
 
     pub(crate) fn emit(self, sess: &Session) -> ! {
-        sess.span_fatal_with_code(
-            self.span,
-            &self.msg,
-            DiagnosticId::Error(String::from("creusot")),
-        )
+        sess.span_fatal_with_code(self.span, self.msg, DiagnosticId::Error(String::from("creusot")))
     }
 }
 

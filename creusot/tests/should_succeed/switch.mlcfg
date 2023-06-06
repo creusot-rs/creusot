@@ -11,17 +11,18 @@ module Switch_Option_Type
       end
 end
 module Switch_Test_Interface
-  use mach.int.Int
-  use mach.int.UInt32
+  use prelude.Int
+  use prelude.UInt32
   use Switch_Option_Type as Switch_Option_Type
-  val test [@cfg:stackify] [#"../switch.rs" 9 0 9 35] (o : Switch_Option_Type.t_option uint32) : bool
+  val test [#"../switch.rs" 9 0 9 35] (o : Switch_Option_Type.t_option uint32) : bool
 end
 module Switch_Test
-  use mach.int.Int
-  use mach.int.UInt32
+  use prelude.Int
+  use prelude.UInt32
   use prelude.IntSize
   use Switch_Option_Type as Switch_Option_Type
-  let rec cfg test [@cfg:stackify] [#"../switch.rs" 9 0 9 35] (o : Switch_Option_Type.t_option uint32) : bool
+  let rec cfg test [#"../switch.rs" 9 0 9 35] [@cfg:stackify] [@cfg:subregion_analysis] (o : Switch_Option_Type.t_option uint32) : bool
+    
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : bool;
   var o_1 : Switch_Option_Type.t_option uint32;
@@ -34,24 +35,27 @@ module Switch_Test
   }
   BB0 {
     switch (o_1)
-      | Switch_Option_Type.C_Some _ -> goto BB3
-      | Switch_Option_Type.C_None -> goto BB1
+      | Switch_Option_Type.C_Some _ -> goto BB1
+      | Switch_Option_Type.C_None -> goto BB2
       end
   }
   BB1 {
-    _0 <- ([#"../switch.rs" 12 16 12 21] false);
     goto BB4
   }
   BB2 {
-    absurd
+    _0 <- ([#"../switch.rs" 12 16 12 21] false);
+    goto BB5
   }
   BB3 {
+    absurd
+  }
+  BB4 {
     x_3 <- Switch_Option_Type.some_0 o_1;
     _4 <- x_3;
     _0 <- ([#"../switch.rs" 11 19 11 24] _4 > ([#"../switch.rs" 11 23 11 24] (0 : uint32)));
-    goto BB4
+    goto BB5
   }
-  BB4 {
+  BB5 {
     return _0
   }
   
@@ -63,6 +67,9 @@ end
 module CreusotContracts_Resolve_Resolve_Resolve_Interface
   type self
   predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Resolve_Resolve_Resolve
   type self
@@ -80,6 +87,9 @@ module CreusotContracts_Resolve_Impl0_Resolve_Interface
   type t1
   type t2
   predicate resolve (self : (t1, t2))
+  val resolve (self : (t1, t2)) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Resolve_Impl0_Resolve
   type t1
@@ -89,7 +99,7 @@ module CreusotContracts_Resolve_Impl0_Resolve
   clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
     type self = t1
   predicate resolve (self : (t1, t2)) =
-    Resolve0.resolve (let (a, _) = self in a) /\ Resolve1.resolve (let (_, a) = self in a)
+    [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] Resolve0.resolve (let (a, _) = self in a) /\ Resolve1.resolve (let (_, a) = self in a)
   val resolve (self : (t1, t2)) : bool
     ensures { result = resolve self }
     
@@ -101,24 +111,27 @@ end
 module CreusotContracts_Resolve_Impl2_Resolve_Interface
   type t
   predicate resolve (self : t)
+  val resolve (self : t) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Resolve_Impl2_Resolve
   type t
   predicate resolve (self : t) =
-    true
+    [#"../../../../creusot-contracts/src/resolve.rs" 36 8 36 12] true
   val resolve (self : t) : bool
     ensures { result = resolve self }
     
 end
 module Switch_Test2_Interface
-  use mach.int.Int
-  use mach.int.UInt32
+  use prelude.Int
+  use prelude.UInt32
   use Switch_Option_Type as Switch_Option_Type
-  val test2 [@cfg:stackify] [#"../switch.rs" 16 0 16 42] (o : (Switch_Option_Type.t_option uint32, uint32)) : uint32
+  val test2 [#"../switch.rs" 16 0 16 42] (o : (Switch_Option_Type.t_option uint32, uint32)) : uint32
 end
 module Switch_Test2
-  use mach.int.Int
-  use mach.int.UInt32
+  use prelude.Int
+  use prelude.UInt32
   use prelude.IntSize
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = uint32
@@ -130,7 +143,7 @@ module Switch_Test2
     type t2 = uint32,
     predicate Resolve0.resolve = Resolve1.resolve,
     predicate Resolve1.resolve = Resolve2.resolve
-  let rec cfg test2 [@cfg:stackify] [#"../switch.rs" 16 0 16 42] (o : (Switch_Option_Type.t_option uint32, uint32)) : uint32
+  let rec cfg test2 [#"../switch.rs" 16 0 16 42] [@cfg:stackify] [@cfg:subregion_analysis] (o : (Switch_Option_Type.t_option uint32, uint32)) : uint32
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : uint32;
@@ -143,26 +156,29 @@ module Switch_Test2
   }
   BB0 {
     switch (let (a, _) = o_1 in a)
-      | Switch_Option_Type.C_Some _ -> goto BB3
-      | Switch_Option_Type.C_None -> goto BB1
+      | Switch_Option_Type.C_Some _ -> goto BB1
+      | Switch_Option_Type.C_None -> goto BB2
       end
   }
   BB1 {
-    _0 <- (let (_, a) = o_1 in a);
-    assume { Resolve0.resolve o_1 };
     goto BB4
   }
   BB2 {
+    _0 <- (let (_, a) = o_1 in a);
+    assume { Resolve0.resolve o_1 };
+    goto BB5
+  }
+  BB3 {
     assume { Resolve0.resolve o_1 };
     absurd
   }
-  BB3 {
+  BB4 {
     x_3 <- Switch_Option_Type.some_0 (let (a, _) = o_1 in a);
     assume { Resolve0.resolve o_1 };
     _0 <- x_3;
-    goto BB4
+    goto BB5
   }
-  BB4 {
+  BB5 {
     return _0
   }
   

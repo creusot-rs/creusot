@@ -1,18 +1,4 @@
 
-module C02_A_IsTrue_Interface
-  type self
-  use prelude.Borrow
-  val is_true [@cfg:stackify] [#"../02.rs" 7 4 7 30] (self : self) : bool
-    ensures { [#"../02.rs" 6 14 6 28] result = true }
-    
-end
-module C02_A_IsTrue
-  type self
-  use prelude.Borrow
-  val is_true [@cfg:stackify] [#"../02.rs" 7 4 7 30] (self : self) : bool
-    ensures { [#"../02.rs" 6 14 6 28] result = true }
-    
-end
 module CreusotContracts_Resolve_Resolve_Resolve_Stub
   type self
   predicate resolve (self : self)
@@ -20,6 +6,9 @@ end
 module CreusotContracts_Resolve_Resolve_Resolve_Interface
   type self
   predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Resolve_Resolve_Resolve
   type self
@@ -28,9 +17,16 @@ module CreusotContracts_Resolve_Resolve_Resolve
     ensures { result = resolve self }
     
 end
+module C02_A_IsTrue_Interface
+  type self
+  use prelude.Borrow
+  val is_true [#"../02.rs" 7 4 7 30] (self : self) : bool
+    ensures { [#"../02.rs" 6 14 6 28] result = true }
+    
+end
 module C02_Omg_Interface
   type t
-  val omg [@cfg:stackify] [#"../02.rs" 11 0 11 30] (a : t) : bool
+  val omg [#"../02.rs" 11 0 11 30] (a : t) : bool
     ensures { [#"../02.rs" 10 10 10 24] result = true }
     
 end
@@ -41,7 +37,7 @@ module C02_Omg
     type self = t
   clone C02_A_IsTrue_Interface as IsTrue0 with
     type self = t
-  let rec cfg omg [@cfg:stackify] [#"../02.rs" 11 0 11 30] (a : t) : bool
+  let rec cfg omg [#"../02.rs" 11 0 11 30] [@cfg:stackify] [@cfg:subregion_analysis] (a : t) : bool
     ensures { [#"../02.rs" 10 10 10 24] result = true }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -58,10 +54,10 @@ module C02_Omg
     goto BB1
   }
   BB1 {
+    assume { Resolve0.resolve a_1 };
     goto BB2
   }
   BB2 {
-    assume { Resolve0.resolve a_1 };
     return _0
   }
   

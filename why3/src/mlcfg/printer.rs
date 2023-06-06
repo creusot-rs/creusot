@@ -5,6 +5,7 @@ use crate::{
     declaration::*,
     exp::{AssocDir, BinOp, Binder, Constant, Precedence, UnOp},
 };
+use num::{Float, Zero};
 use pretty::*;
 
 #[derive(Default)]
@@ -428,13 +429,15 @@ impl Print for Use {
     where
         A::Doc: Clone,
     {
-        alloc.text("use ").append(self.name.pretty(alloc, env)).append(
-            if let Some(as_) = &self.as_ {
+        alloc
+            .text("use ")
+            .append(if self.export { alloc.text("export ") } else { alloc.nil() })
+            .append(self.name.pretty(alloc, env))
+            .append(if let Some(as_) = &self.as_ {
                 alloc.text(" as ").append(as_.pretty(alloc, env))
             } else {
                 alloc.nil()
-            },
-        )
+            })
     }
 }
 
@@ -599,9 +602,9 @@ impl Print for Type {
                 }
             }
             Tuple(tys) if tys.len() == 1 => tys[0].pretty(alloc, env),
-            Tuple(tys) => alloc
-                .intersperse(tys.iter().map(|ty| ty.pretty(alloc, env)), alloc.text(", "))
-                .parens(),
+            Tuple(tys) => {
+                alloc.intersperse(tys.iter().map(|ty| ty.pretty(alloc, env)), ", ").parens()
+            }
         }
     }
 }
@@ -666,6 +669,7 @@ impl Print for Exp {
             }
 
             Exp::UnaryOp(UnOp::Neg, box op) => alloc.text("- ").append(op.pretty(alloc, env)),
+            Exp::UnaryOp(UnOp::FloatNeg, box op) => alloc.text(".- ").append(op.pretty(alloc, env)),
             Exp::BinaryOp(op, box l, box r) => match self.associativity() {
                 Some(AssocDir::Left) => parens!(alloc, env, self, l),
                 Some(AssocDir::Right) | None => parens!(alloc, env, self.precedence().next(), l),
@@ -688,16 +692,13 @@ impl Print for Exp {
             Exp::Attr(attr, e) => {
                 attr.pretty(alloc, env).append(alloc.space()).append(e.pretty(alloc, env))
             }
-            Exp::Abs(binders, box body) => {
-                alloc
-                    .text("fun ")
-                    .append(alloc.intersperse(
-                        binders.into_iter().map(|b| b.pretty(alloc, env)),
-                        alloc.space(),
-                    ))
-                    .append(" -> ")
-                    .append(body.pretty(alloc, env))
-            }
+            Exp::Abs(binders, box body) => alloc
+                .text("fun ")
+                .append(
+                    alloc.intersperse(binders.iter().map(|b| b.pretty(alloc, env)), alloc.space()),
+                )
+                .append(" -> ")
+                .append(body.pretty(alloc, env)),
 
             Exp::Match(box scrut, brs) => alloc
                 .text("match ")
@@ -733,7 +734,7 @@ impl Print for Exp {
                     binders.iter().map(|(b, t)| {
                         b.pretty(alloc, env).append(" : ").append(t.pretty(alloc, env))
                     }),
-                    alloc.text(", "),
+                    ", ",
                 ))
                 .append(" . ")
                 .append(exp.pretty(alloc, env)),
@@ -743,7 +744,7 @@ impl Print for Exp {
                     binders.iter().map(|(b, t)| {
                         b.pretty(alloc, env).append(" : ").append(t.pretty(alloc, env))
                     }),
-                    alloc.text(", "),
+                    ", ",
                 ))
                 .append(" . ")
                 .append(exp.pretty(alloc, env)),
@@ -767,6 +768,10 @@ impl Print for Exp {
                     "; ",
                 )
                 .braces(),
+            Exp::Sequence(fields) => alloc
+                .intersperse(fields.iter().map(|f| f.pretty(alloc, env)), "; ")
+                .enclose("[|", "|]"),
+            Exp::FnLit(e) => alloc.text("fun _ -> ").append(e.pretty(alloc, env)).parens(),
         }
     }
 }
@@ -788,10 +793,7 @@ impl Print for Binder {
                 (if *ghost { alloc.text("ghost ") } else { alloc.nil() })
                     .append(
                         alloc
-                            .intersperse(
-                                ids.into_iter().map(|id| id.pretty(alloc, env)),
-                                alloc.space(),
-                            )
+                            .intersperse(ids.iter().map(|id| id.pretty(alloc, env)), alloc.space())
                             .append(" : ")
                             .append(ty.pretty(alloc, env)),
                     )
@@ -815,11 +817,16 @@ impl Print for Statement {
                 .pretty(alloc, env)
                 .append(" <- ")
                 .append(parens!(alloc, env, Precedence::Impl, rhs)),
-            Statement::Invariant(nm, e) => {
-                let doc =
-                    alloc.text("invariant ").append(alloc.text(nm)).append(alloc.space()).append(
-                        alloc.space().append(e.pretty(alloc, env)).append(alloc.space()).braces(),
-                    );
+            Statement::Invariant(e) => {
+                let doc = alloc.text("invariant ").append(
+                    alloc.space().append(e.pretty(alloc, env)).append(alloc.space()).braces(),
+                );
+                doc
+            }
+            Statement::Variant(e) => {
+                let doc = alloc.text("variant ").append(
+                    alloc.space().append(e.pretty(alloc, env)).append(alloc.space()).braces(),
+                );
                 doc
             }
             Statement::Assume(assump) => {
@@ -887,9 +894,9 @@ impl Print for Pattern {
         match self {
             Pattern::Wildcard => alloc.text("_"),
             Pattern::VarP(v) => v.pretty(alloc, env),
-            Pattern::TupleP(pats) => alloc
-                .intersperse(pats.iter().map(|p| p.pretty(alloc, env)), alloc.text(", "))
-                .parens(),
+            Pattern::TupleP(pats) => {
+                alloc.intersperse(pats.iter().map(|p| p.pretty(alloc, env)), ", ").parens()
+            }
             Pattern::ConsP(c, pats) => {
                 let mut doc = c.pretty(alloc, env);
 
@@ -902,7 +909,7 @@ impl Print for Pattern {
                                 p.pretty(alloc, env)
                             }
                         }),
-                        alloc.text(" "),
+                        " ",
                     ))
                 }
                 doc
@@ -990,6 +997,10 @@ fn bin_op_to_string(op: &BinOp) -> &str {
         FloatMul => ".*",
         FloatDiv => "./",
         FloatEq => ".=",
+        FloatLt => ".<",
+        FloatLe => ".<=",
+        FloatGt => ".>",
+        FloatGe => ".>=",
     }
 }
 
@@ -1018,9 +1029,33 @@ impl Print for Constant {
             Constant::Uint(i, Some(t)) => {
                 alloc.as_string(i).append(" : ").append(t.pretty(alloc, env)).parens()
             }
-            Constant::String(s) => alloc.text(s).double_quotes(),
+            Constant::String(s) => alloc.text(format!("{s:?}")),
             Constant::Uint(i, None) => alloc.as_string(i),
-            Constant::Float(f) => alloc.text(format!("{f:.64}")),
+            Constant::Float(f) => {
+                assert!(f.is_finite());
+                let mut doc = if f.fract() != 0.0 {
+                    let (mantissa, exp, _) = f.integer_decode();
+                    let leading = if f.is_subnormal() { "0" } else { "1" };
+
+                    alloc.text(format!(
+                        "{}0x{}.{:012x}p{}",
+                        if f.is_sign_negative() { "-" } else { "" },
+                        leading,
+                        mantissa & !(1 << 52),
+                        exp + 52
+                    ))
+                } else {
+                    alloc.text(format!(
+                        "{}{f}.0",
+                        if f.is_sign_negative() && f.is_zero() { "-" } else { "" }
+                    ))
+                };
+
+                if f.is_sign_negative() {
+                    doc = doc.parens();
+                }
+                doc
+            }
         }
     }
 }
@@ -1118,10 +1153,9 @@ impl Print for ConstructorDecl {
         let mut cons_doc = self.name.pretty(alloc, env);
 
         if !self.fields.is_empty() {
-            cons_doc = cons_doc.append(alloc.space()).append(alloc.intersperse(
-                self.fields.iter().map(|ty_arg| ty_arg.pretty(alloc, env)),
-                alloc.text(" "),
-            ));
+            cons_doc = cons_doc.append(alloc.space()).append(
+                alloc.intersperse(self.fields.iter().map(|ty_arg| ty_arg.pretty(alloc, env)), " "),
+            );
         }
 
         cons_doc
@@ -1188,9 +1222,6 @@ impl Print for QName {
             // TODO investigate if this clone can be removed :/
             .map(|t| alloc.text(t.0.clone()));
 
-        alloc.intersperse(
-            module_path.chain(std::iter::once(alloc.text(self.name().0))),
-            alloc.text("."),
-        )
+        alloc.intersperse(module_path.chain(std::iter::once(alloc.text(self.name().0))), ".")
     }
 }
