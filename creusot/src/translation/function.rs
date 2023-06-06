@@ -75,8 +75,6 @@ pub struct BodyTranslator<'body, 'tcx> {
     assertions: IndexMap<DefId, Term<'tcx>>,
 
     borrows: Option<Rc<BorrowSet<'tcx>>>,
-
-    synthetic_locals: Vec<(Local, Ty<'tcx>)>,
 }
 
 impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
@@ -131,7 +129,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             invariants,
             assertions,
             borrows,
-            synthetic_locals: Vec::new(),
         }
     }
 
@@ -190,8 +187,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn translate_vars(&mut self) -> Vec<(LocalIdent, Span, Ty<'tcx>)> {
-        let mut vars =
-            Vec::with_capacity(self.body.local_decls.len() + self.synthetic_locals.len());
+        let mut vars = Vec::with_capacity(self.body.local_decls.len());
 
         for (loc, decl) in self.body.local_decls.iter_enumerated() {
             if self.erased_locals.contains(loc) {
@@ -200,10 +196,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             let ident = self.translate_local(loc);
 
             vars.push((ident, decl.source_info.span, decl.ty))
-        }
-
-        for (loc, ty) in self.synthetic_locals.iter() {
-            vars.push((LocalIdent::anon(*loc), DUMMY_SP, *ty));
         }
 
         vars
@@ -289,13 +281,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let id = BasicBlock::from_usize(self.fresh_id);
         self.fresh_id += 1;
         id
-    }
-
-    fn fresh_local(&mut self, ty: Ty<'tcx>) -> Local {
-        let id = self.body.local_decls.len() + self.synthetic_locals.len();
-        let local = Local::from_usize(id);
-        self.synthetic_locals.push((local, ty));
-        local
     }
 
     fn resolve_locals(&mut self, mut locals: BitSet<Local>) {
