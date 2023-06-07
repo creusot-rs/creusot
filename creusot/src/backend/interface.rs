@@ -35,8 +35,8 @@ pub(crate) fn interface_for<'tcx>(
             if subst.as_closure().kind() == ClosureKind::FnMut {
                 sig.contract.ensures.push(
                     Exp::pure_var("unnest".into())
-                        .app_to(Exp::Current(Box::new(Exp::pure_var("_1'".into()))))
-                        .app_to(Exp::Final(Box::new(Exp::pure_var("_1'".into())))),
+                        .app_to(Exp::Current(Box::new(Exp::pure_var("_1".into()))))
+                        .app_to(Exp::Final(Box::new(Exp::pure_var("_1".into())))),
                 )
             }
         }

@@ -3,7 +3,6 @@ use indexmap::{IndexMap, IndexSet};
 use crate::{
     ctx::TranslationCtx,
     pearlite::Term,
-    translation::specification::inv_subst,
     util::{self, is_ghost_closure},
 };
 use rustc_data_structures::graph::WithSuccessors;
@@ -28,7 +27,6 @@ pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
     visitor.visit_body(&body);
 
     let mut assertions: IndexMap<_, _> = Default::default();
-    // let mut ghosts: IndexMap<_, _> = Default::default();
     let mut invariants: IndexMap<_, _> = Default::default();
 
     for clos in visitor.closures.into_iter() {
@@ -53,15 +51,8 @@ pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
     let correct_inv = locations
         .into_iter()
         .map(|(loc, invs)| {
-            let inv_exps: Vec<(LoopSpecKind, _)> = invs
-                .into_iter()
-                .map(|id| {
-                    let mut inv = invariants.remove(&id.1).unwrap();
-                    let inv_subst = inv_subst(body, id.0);
-                    inv.1.subst(&inv_subst);
-                    inv
-                })
-                .collect();
+            let inv_exps: Vec<(LoopSpecKind, _)> =
+                invs.into_iter().map(|id| invariants.remove(&id.1).unwrap()).collect();
 
             (loc, inv_exps)
         })
@@ -69,17 +60,6 @@ pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
 
     let mut ass_loc = ClosureLocations { locations: IndexMap::new() };
     ass_loc.visit_body(body);
-    let locations = ass_loc.locations;
-
-    let assertions = assertions
-        .into_iter()
-        .map(|mut ass| {
-            let inv_subst = inv_subst(body, locations[&ass.0]);
-
-            ass.1.subst(&inv_subst);
-            ass
-        })
-        .collect();
 
     assert!(invariants.is_empty());
     (correct_inv, assertions)

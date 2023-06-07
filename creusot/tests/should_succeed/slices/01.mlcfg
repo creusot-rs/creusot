@@ -124,10 +124,10 @@ module C01_IndexSlice_Interface
 end
 module C01_IndexSlice
   use prelude.Int
+  use prelude.UIntSize
   use prelude.UInt32
   use prelude.Borrow
   use prelude.Slice
-  use prelude.UIntSize
   use seq.Seq
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface as ShallowModel1 with
@@ -144,23 +144,22 @@ module C01_IndexSlice
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : uint32;
-  var a_1 : slice uint32;
+  var a : slice uint32 = a;
   var _3 : usize;
   var _4 : usize;
   var _5 : bool;
   {
-    a_1 <- a;
     goto BB0
   }
   BB0 {
     _3 <- ([#"../01.rs" 7 6 7 8] (10 : usize));
-    _4 <- Slice.length a_1;
+    _4 <- Slice.length a;
     _5 <- ([#"../01.rs" 7 4 7 9] _3 < _4);
     assert { [@expl:index in bounds] [#"../01.rs" 7 4 7 9] _5 };
     goto BB1
   }
   BB1 {
-    _0 <- Slice.get a_1 _3;
+    _0 <- Slice.get a _3;
     return _0
   }
   
@@ -267,11 +266,11 @@ module C01_IndexMutSlice_Interface
     
 end
 module C01_IndexMutSlice
+  use prelude.Int
+  use prelude.UIntSize
+  use prelude.UInt32
   use prelude.Borrow
   use prelude.Slice
-  use prelude.Int
-  use prelude.UInt32
-  use prelude.UIntSize
   use seq.Seq
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface as ShallowModel1 with
@@ -279,8 +278,6 @@ module C01_IndexMutSlice
     val Max0.mAX' = Max0.mAX',
     axiom .
   use seq.Seq
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = slice uint32
   clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic0 with
     type t = uint32,
     type s = slice uint32,
@@ -289,30 +286,31 @@ module C01_IndexMutSlice
     type t = slice uint32,
     type ShallowModelTy0.shallowModelTy = Seq.seq uint32,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = slice uint32
   let rec cfg index_mut_slice [#"../01.rs" 12 0 12 37] [@cfg:stackify] [@cfg:subregion_analysis] (a : borrowed (slice uint32)) : ()
     requires {[#"../01.rs" 10 11 10 24] Seq.length (ShallowModel0.shallow_model a) = 5}
     ensures { [#"../01.rs" 11 10 11 23] UInt32.to_int (IndexLogic0.index_logic ( ^ a) 2) = 3 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var a_1 : borrowed (slice uint32);
+  var a : borrowed (slice uint32) = a;
   var _4 : usize;
   var _5 : usize;
   var _6 : bool;
   {
-    a_1 <- a;
     goto BB0
   }
   BB0 {
     _4 <- ([#"../01.rs" 13 6 13 7] (2 : usize));
-    _5 <- Slice.length ( * a_1);
+    _5 <- Slice.length ( * a);
     _6 <- ([#"../01.rs" 13 4 13 8] _4 < _5);
     assert { [@expl:index in bounds] [#"../01.rs" 13 4 13 8] _6 };
     goto BB1
   }
   BB1 {
-    a_1 <- { a_1 with current = Slice.set ( * a_1) _4 ([#"../01.rs" 13 11 13 12] (3 : uint32)) };
-    assume { Resolve0.resolve a_1 };
+    a <- { a with current = Slice.set ( * a) _4 ([#"../01.rs" 13 11 13 12] (3 : uint32)) };
+    assume { Resolve0.resolve a };
     _0 <- ();
     return _0
   }
@@ -379,10 +377,10 @@ module C01_SliceFirst_Interface
 end
 module C01_SliceFirst
   type t
-  use prelude.Borrow
-  use prelude.Slice
   use prelude.Int
   use prelude.UIntSize
+  use prelude.Borrow
+  use prelude.Slice
   use seq.Seq
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface as ShallowModel1 with
@@ -390,22 +388,22 @@ module C01_SliceFirst
     val Max0.mAX' = Max0.mAX',
     axiom .
   use seq.Seq
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
-    type self = t
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
-    type self = slice t
   clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel0 with
     type t = slice t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
-  clone Core_Slice_Impl0_Len_Interface as Len0 with
-    type t = t,
-    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic0 with
     type t = t,
     type s = slice t,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
+    type self = t
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = slice t
+  clone Core_Slice_Impl0_Len_Interface as Len0 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   let rec cfg slice_first [#"../01.rs" 20 0 20 44] [@cfg:stackify] [@cfg:subregion_analysis] (a : slice t) : Core_Option_Option_Type.t_option t
     ensures { [#"../01.rs" 16 10 19 1] match (result) with
       | Core_Option_Option_Type.C_Some v -> v = IndexLogic0.index_logic a 0
@@ -414,7 +412,7 @@ module C01_SliceFirst
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Option_Option_Type.t_option t;
-  var a_1 : slice t;
+  var a : slice t = a;
   var _3 : bool;
   var _4 : usize;
   var _5 : slice t;
@@ -424,11 +422,10 @@ module C01_SliceFirst
   var _9 : usize;
   var _10 : bool;
   {
-    a_1 <- a;
     goto BB0
   }
   BB0 {
-    _5 <- a_1;
+    _5 <- a;
     _4 <- ([#"../01.rs" 21 7 21 14] Len0.len _5);
     goto BB1
   }
@@ -441,21 +438,21 @@ module C01_SliceFirst
   }
   BB2 {
     _8 <- ([#"../01.rs" 22 16 22 17] (0 : usize));
-    _9 <- Slice.length a_1;
+    _9 <- Slice.length a;
     _10 <- ([#"../01.rs" 22 14 22 18] _8 < _9);
     assert { [@expl:index in bounds] [#"../01.rs" 22 14 22 18] _10 };
     goto BB3
   }
   BB3 {
-    _7 <- Slice.get a_1 _8;
-    assume { Resolve0.resolve a_1 };
+    _7 <- Slice.get a _8;
+    assume { Resolve0.resolve a };
     _6 <- _7;
     assume { Resolve1.resolve _7 };
     _0 <- Core_Option_Option_Type.C_Some _6;
     goto BB5
   }
   BB4 {
-    assume { Resolve0.resolve a_1 };
+    assume { Resolve0.resolve a };
     _0 <- Core_Option_Option_Type.C_None;
     goto BB5
   }

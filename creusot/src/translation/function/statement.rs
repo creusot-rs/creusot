@@ -9,7 +9,10 @@ use rustc_middle::{
 
 use super::BodyTranslator;
 use crate::{
-    translation::fmir::{self, Expr, RValue},
+    translation::{
+        fmir::{self, Expr, RValue},
+        specification::inv_subst,
+    },
     util::{self, is_ghost_closure},
 };
 
@@ -123,10 +126,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         {
                             return;
                         } else if util::is_assertion(self.tcx, *def_id) {
-                            let assertion = self
+                            let mut assertion = self
                                 .assertions
                                 .remove(def_id)
                                 .expect("Could not find body of assertion");
+                            assertion.subst(&inv_subst(&self.body, &self.locals, si));
                             self.emit_statement(fmir::Statement::Assertion {
                                 cond: assertion,
                                 msg: "assertion".to_owned(),

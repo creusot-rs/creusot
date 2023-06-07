@@ -540,11 +540,16 @@ impl Print for CfgFunction {
             .append(alloc.line())
             .append(sep_end_by(
                 alloc,
-                self.vars.iter().map(|(ghost, var, ty)| {
+                self.vars.iter().map(|(ghost, var, ty, init)| {
                     if *ghost { alloc.text("ghost var ") } else { alloc.text("var ") }
                         .append(alloc.as_string(&var.0))
                         .append(" : ")
                         .append(ty.pretty(alloc, env))
+                        .append(if let Some(init) = init {
+                            alloc.text(" = ").append(init.pretty(alloc, env))
+                        } else {
+                            alloc.nil()
+                        })
                         .append(";")
                 }),
                 alloc.hardline(),

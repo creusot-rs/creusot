@@ -1,15 +1,4 @@
 
-module OneSideUpdate_MyInt_Type
-  use prelude.Int
-  use prelude.UIntSize
-  type t_myint  =
-    | C_MyInt usize
-    
-  let function myint_0 (self : t_myint) : usize = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_MyInt a -> a
-      end
-end
 module CreusotContracts_Resolve_Impl1_Resolve_Stub
   type t
   use prelude.Borrow
@@ -32,21 +21,32 @@ module CreusotContracts_Resolve_Impl1_Resolve
     ensures { result = resolve self }
     
 end
-module OneSideUpdate_F_Interface
-  val f [#"../one_side_update.rs" 5 0 5 10] (_1' : ()) : ()
-end
-module OneSideUpdate_F
-  use prelude.Borrow
+module OneSideUpdate_MyInt_Type
   use prelude.Int
   use prelude.UIntSize
+  type t_myint  =
+    | C_MyInt usize
+    
+  let function myint_0 (self : t_myint) : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_MyInt a -> a
+      end
+end
+module OneSideUpdate_F_Interface
+  val f [#"../one_side_update.rs" 5 0 5 10] (_1 : ()) : ()
+end
+module OneSideUpdate_F
+  use prelude.Int
+  use prelude.UIntSize
+  use prelude.Borrow
   use OneSideUpdate_MyInt_Type as OneSideUpdate_MyInt_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = OneSideUpdate_MyInt_Type.t_myint
-  let rec cfg f [#"../one_side_update.rs" 5 0 5 10] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : ()
+  let rec cfg f [#"../one_side_update.rs" 5 0 5 10] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var a_1 : OneSideUpdate_MyInt_Type.t_myint;
-  var b_2 : borrowed (OneSideUpdate_MyInt_Type.t_myint);
+  var a : OneSideUpdate_MyInt_Type.t_myint;
+  var b : borrowed (OneSideUpdate_MyInt_Type.t_myint);
   var _3 : bool;
   var _4 : bool;
   var _5 : usize;
@@ -55,9 +55,9 @@ module OneSideUpdate_F
     goto BB0
   }
   BB0 {
-    a_1 <- OneSideUpdate_MyInt_Type.C_MyInt ([#"../one_side_update.rs" 6 22 6 24] (10 : usize));
-    b_2 <- borrow_mut a_1;
-    a_1 <-  ^ b_2;
+    a <- OneSideUpdate_MyInt_Type.C_MyInt ([#"../one_side_update.rs" 6 22 6 24] (10 : usize));
+    b <- borrow_mut a;
+    a <-  ^ b;
     _3 <- ([#"../one_side_update.rs" 8 7 8 11] true);
     switch (_3)
       | False -> goto BB2
@@ -65,17 +65,17 @@ module OneSideUpdate_F
       end
   }
   BB1 {
-    assume { Resolve0.resolve b_2 };
-    _5 <- OneSideUpdate_MyInt_Type.myint_0 a_1;
+    assume { Resolve0.resolve b };
+    _5 <- OneSideUpdate_MyInt_Type.myint_0 a;
     _4 <- ([#"../one_side_update.rs" 9 16 9 25] _5 = ([#"../one_side_update.rs" 9 23 9 25] (10 : usize)));
     _0 <- ();
     goto BB3
   }
   BB2 {
     _6 <- OneSideUpdate_MyInt_Type.C_MyInt ([#"../one_side_update.rs" 11 19 11 20] (5 : usize));
-    b_2 <- { b_2 with current = _6 };
+    b <- { b with current = _6 };
     _6 <- any OneSideUpdate_MyInt_Type.t_myint;
-    assume { Resolve0.resolve b_2 };
+    assume { Resolve0.resolve b };
     _0 <- ();
     goto BB3
   }

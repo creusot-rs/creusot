@@ -4,6 +4,7 @@ use crate::{
     translation::{
         fmir::{self, Branches, Expr, RValue, Terminator},
         pearlite::{Term, TermKind, UnOp},
+        specification::inv_subst,
         traits,
     },
     util::is_ghost_closure,
@@ -74,7 +75,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 if let Some(param) = subst.get(1) &&
                     let GenericArgKind::Type(ty) = param.unpack() &&
                     let Some(def_id) = is_ghost_closure(self.tcx, ty) {
-                    let assertion = self.assertions.remove(&def_id).unwrap();
+                    let mut assertion = self.assertions.remove(&def_id).unwrap();
+                    assertion.subst(&inv_subst(self.body, &self.locals, terminator.source_info));
                     let (loc, bb) = (destination, target.unwrap());
 
                     self.emit_ghost_assign(*loc, assertion);
@@ -130,7 +132,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     Operand::Copy(pl) | Operand::Move(pl) => {
                         if let Some(locl) = pl.as_local() {
                             Term {
-                                kind: TermKind::Var(self.translate_local(locl).symbol()),
+                                // hack
+                                kind: TermKind::Var(self.locals[&locl].0.symbol()),
                                 span,
                                 ty: cond.ty(self.body, self.tcx),
                             }
