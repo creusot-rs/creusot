@@ -230,10 +230,10 @@ module Hashmap_Impl2_Hash_Interface
     
 end
 module Hashmap_Impl2_Hash
+  use prelude.UIntSize
   use prelude.Int
   use prelude.UInt64
   use prelude.Borrow
-  use prelude.UIntSize
   clone CreusotContracts_Std1_Num_Impl16_DeepModel as DeepModel1
   use prelude.Int
   clone Hashmap_Impl2_HashLog as HashLog0
@@ -247,13 +247,11 @@ module Hashmap_Impl2_Hash
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : uint64;
   var self : usize = self;
-  var _3 : usize;
   {
     goto BB0
   }
   BB0 {
-    _3 <- self;
-    _0 <- UInt64.of_int (UIntSize.to_int _3);
+    _0 <- UInt64.of_int (UIntSize.to_int self);
     return _0
   }
   
@@ -824,15 +822,11 @@ module Hashmap_Impl5_New
   var size : usize = size;
   var res : Hashmap_MyHashMap_Type.t_myhashmap k v;
   var _6 : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global);
-  var _7 : Hashmap_List_Type.t_list (k, v);
-  var _8 : usize;
   {
     goto BB0
   }
   BB0 {
-    _7 <- Hashmap_List_Type.C_Nil;
-    _8 <- size;
-    _6 <- ([#"../hashmap.rs" 98 39 98 60] FromElem0.from_elem _7 _8);
+    _6 <- ([#"../hashmap.rs" 98 39 98 60] FromElem0.from_elem (Hashmap_List_Type.C_Nil) size);
     goto BB1
   }
   BB1 {
@@ -1269,9 +1263,8 @@ module Hashmap_Impl5_Add
   use prelude.Ghost
   use prelude.Int
   use prelude.UIntSize
-  use prelude.Borrow
   use prelude.UInt64
-  use prelude.IntSize
+  use prelude.Borrow
   use map.Map
   use seq.Seq
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
@@ -1429,44 +1422,26 @@ module Hashmap_Impl5_Add
   var val' : v = val';
   var old_self : Ghost.ghost_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v));
   var length : usize;
-  var _10 : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global);
   var index : usize;
-  var _12 : usize;
   var _13 : uint64;
-  var _14 : k;
   var _15 : usize;
   var _16 : bool;
   var l : borrowed (Hashmap_List_Type.t_list (k, v));
   var _18 : borrowed (Hashmap_List_Type.t_list (k, v));
   var _19 : borrowed (Hashmap_List_Type.t_list (k, v));
   var _20 : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global));
-  var _21 : usize;
   var old_l : Ghost.ghost_ty (borrowed (Hashmap_List_Type.t_list (k, v)));
   var _24 : ();
   var _32 : ();
-  var _33 : isize;
   var k : borrowed k;
   var v : borrowed v;
   var tl : borrowed (Hashmap_List_Type.t_list (k, v));
   var tl1 : borrowed (Hashmap_List_Type.t_list (k, v));
   var _38 : ();
   var _39 : bool;
-  var _40 : k;
-  var _41 : k;
-  var _42 : ();
-  var _43 : v;
   var _44 : ();
   var _46 : borrowed (Hashmap_List_Type.t_list (k, v));
   var _47 : borrowed (Hashmap_List_Type.t_list (k, v));
-  var _48 : ();
-  var _49 : ();
-  var _50 : ();
-  var _51 : Hashmap_List_Type.t_list (k, v);
-  var _52 : (k, v);
-  var _53 : k;
-  var _54 : v;
-  var _55 : Hashmap_List_Type.t_list (k, v);
-  var _56 : Hashmap_List_Type.t_list (k, v);
   var _57 : ();
   {
     goto BB0
@@ -1477,28 +1452,24 @@ module Hashmap_Impl5_Add
   }
   BB1 {
     assume { Resolve0.resolve old_self };
-    _10 <- Hashmap_MyHashMap_Type.myhashmap_buckets ( * self);
-    length <- ([#"../hashmap.rs" 108 21 108 39] Len0.len _10);
+    length <- ([#"../hashmap.rs" 108 21 108 39] Len0.len (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)));
     goto BB2
   }
   BB2 {
-    _14 <- key;
-    _13 <- ([#"../hashmap.rs" 109 27 109 37] Hash0.hash _14);
+    _13 <- ([#"../hashmap.rs" 109 27 109 37] Hash0.hash key);
     goto BB3
   }
   BB3 {
-    _12 <- UIntSize.of_int (UInt64.to_int _13);
     _15 <- length;
     _16 <- ([#"../hashmap.rs" 109 27 109 55] _15 = ([#"../hashmap.rs" 109 27 109 55] (0 : usize)));
     assert { [@expl:remainder by zero] [#"../hashmap.rs" 109 27 109 55] not _16 };
     goto BB4
   }
   BB4 {
-    index <- ([#"../hashmap.rs" 109 27 109 55] _12 % _15);
+    index <- ([#"../hashmap.rs" 109 27 109 55] UIntSize.of_int (UInt64.to_int _13) % _15);
     _20 <- borrow_mut (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self));
     self <- { self with current = (let Hashmap_MyHashMap_Type.C_MyHashMap a =  * self in Hashmap_MyHashMap_Type.C_MyHashMap ( ^ _20)) };
-    _21 <- index;
-    _19 <- ([#"../hashmap.rs" 110 39 110 58] IndexMut0.index_mut _20 _21);
+    _19 <- ([#"../hashmap.rs" 110 39 110 58] IndexMut0.index_mut _20 index);
     goto BB5
   }
   BB5 {
@@ -1542,9 +1513,7 @@ module Hashmap_Impl5_Add
     l <- { l with current = (let Hashmap_List_Type.C_Cons a b =  * l in Hashmap_List_Type.C_Cons a ( ^ tl)) };
     tl1 <- tl;
     tl <- any borrowed (Hashmap_List_Type.t_list (k, v));
-    _40 <-  * k;
-    _41 <- key;
-    _39 <- ([#"../hashmap.rs" 123 15 123 24] Eq0.eq _40 _41);
+    _39 <- ([#"../hashmap.rs" 123 15 123 24] Eq0.eq ( * k) key);
     goto BB11
   }
   BB11 {
@@ -1557,10 +1526,8 @@ module Hashmap_Impl5_Add
   BB12 {
     assume { Resolve3.resolve key };
     assume { Resolve8.resolve tl1 };
-    _43 <- val';
     assume { Resolve4.resolve val' };
-    v <- { v with current = _43 };
-    _43 <- any v;
+    v <- { v with current = val' };
     assume { Resolve4.resolve ( * v) };
     assume { Resolve9.resolve v };
     assume { Resolve6.resolve self };
@@ -1588,25 +1555,18 @@ module Hashmap_Impl5_Add
   }
   BB14 {
     _24 <- ();
-    _53 <- key;
     assume { Resolve3.resolve key };
-    _54 <- val';
     assume { Resolve4.resolve val' };
-    _52 <- (_53, _54);
-    _56 <- Hashmap_List_Type.C_Nil;
-    _55 <- _56;
     goto BB15
   }
   BB15 {
-    _51 <- Hashmap_List_Type.C_Cons _52 _55;
     goto BB16
   }
   BB16 {
     goto BB17
   }
   BB17 {
-    l <- { l with current = _51 };
-    _51 <- any Hashmap_List_Type.t_list (k, v);
+    l <- { l with current = Hashmap_List_Type.C_Cons (key, val') (Hashmap_List_Type.C_Nil) };
     assume { Resolve5.resolve ( * l) };
     assume { Resolve1.resolve l };
     goto BB19
@@ -1685,9 +1645,8 @@ module Hashmap_Impl5_Get
   type v
   use prelude.Int
   use prelude.UIntSize
-  use prelude.Borrow
   use prelude.UInt64
-  use prelude.IntSize
+  use prelude.Borrow
   use map.Map
   use seq.Seq
   use Hashmap_List_Type as Hashmap_List_Type
@@ -1822,47 +1781,29 @@ module Hashmap_Impl5_Get
   var _0 : Core_Option_Option_Type.t_option v;
   var self : Hashmap_MyHashMap_Type.t_myhashmap k v = self;
   var key : k = key;
-  var _3 : ();
   var index : usize;
-  var _7 : usize;
   var _8 : uint64;
-  var _9 : k;
   var _10 : usize;
-  var _11 : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global);
   var _12 : bool;
   var l : Hashmap_List_Type.t_list (k, v);
   var _14 : Hashmap_List_Type.t_list (k, v);
-  var _15 : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global);
-  var _16 : usize;
   var _17 : ();
   var _19 : ();
-  var _20 : isize;
   var k : k;
   var v : v;
   var tl : Hashmap_List_Type.t_list (k, v);
   var _24 : ();
   var _25 : bool;
-  var _26 : k;
-  var _27 : k;
-  var _28 : ();
-  var _29 : v;
-  var _30 : Hashmap_List_Type.t_list (k, v);
   var _31 : Hashmap_List_Type.t_list (k, v);
-  var _32 : ();
-  var _33 : ();
-  var _34 : ();
   {
     goto BB0
   }
   BB0 {
-    _9 <- key;
-    _8 <- ([#"../hashmap.rs" 142 27 142 37] Hash0.hash _9);
+    _8 <- ([#"../hashmap.rs" 142 27 142 37] Hash0.hash key);
     goto BB1
   }
   BB1 {
-    _7 <- UIntSize.of_int (UInt64.to_int _8);
-    _11 <- Hashmap_MyHashMap_Type.myhashmap_buckets self;
-    _10 <- ([#"../hashmap.rs" 142 49 142 67] Len0.len _11);
+    _10 <- ([#"../hashmap.rs" 142 49 142 67] Len0.len (Hashmap_MyHashMap_Type.myhashmap_buckets self));
     goto BB2
   }
   BB2 {
@@ -1871,11 +1812,9 @@ module Hashmap_Impl5_Get
     goto BB3
   }
   BB3 {
-    index <- ([#"../hashmap.rs" 142 27 142 67] _7 % _10);
-    _15 <- Hashmap_MyHashMap_Type.myhashmap_buckets self;
+    index <- ([#"../hashmap.rs" 142 27 142 67] UIntSize.of_int (UInt64.to_int _8) % _10);
     assume { Resolve0.resolve self };
-    _16 <- index;
-    _14 <- ([#"../hashmap.rs" 143 21 143 40] Index0.index _15 _16);
+    _14 <- ([#"../hashmap.rs" 143 21 143 40] Index0.index (Hashmap_MyHashMap_Type.myhashmap_buckets self) index);
     goto BB4
   }
   BB4 {
@@ -1901,10 +1840,8 @@ module Hashmap_Impl5_Get
     v <- (let (_, a) = Hashmap_List_Type.cons_0 l in a);
     tl <- Hashmap_List_Type.cons_1 l;
     assume { Resolve1.resolve l };
-    _26 <- k;
     assume { Resolve3.resolve k };
-    _27 <- key;
-    _25 <- ([#"../hashmap.rs" 147 15 147 24] Eq0.eq _26 _27);
+    _25 <- ([#"../hashmap.rs" 147 15 147 24] Eq0.eq k key);
     goto BB9
   }
   BB9 {
@@ -1916,9 +1853,8 @@ module Hashmap_Impl5_Get
   BB10 {
     assume { Resolve2.resolve key };
     assume { Resolve4.resolve tl };
-    _29 <- v;
     assume { Resolve5.resolve v };
-    _0 <- Core_Option_Option_Type.C_Some _29;
+    _0 <- Core_Option_Option_Type.C_Some v;
     goto BB13
   }
   BB11 {
@@ -1926,10 +1862,8 @@ module Hashmap_Impl5_Get
     _24 <- ();
     _31 <- tl;
     assume { Resolve4.resolve tl };
-    _30 <- _31;
     assume { Resolve1.resolve _31 };
-    l <- _30;
-    _30 <- any Hashmap_List_Type.t_list (k, v);
+    l <- _31;
     _19 <- ();
     goto BB5
   }
@@ -2031,7 +1965,6 @@ module Hashmap_Impl5_Resize
   use prelude.Borrow
   use map.Map
   use seq.Seq
-  use prelude.IntSize
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Hashmap_List_Type as Hashmap_List_Type
   use Alloc_Boxed_Box_Type as Alloc_Boxed_Box_Type
@@ -2187,41 +2120,23 @@ module Hashmap_Impl5_Resize
   var self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v) = self;
   var old_self : Ghost.ghost_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v));
   var new : Hashmap_MyHashMap_Type.t_myhashmap k v;
-  var _9 : usize;
   var _10 : usize;
-  var _11 : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global);
   var i : usize;
   var _13 : ();
   var _21 : ();
-  var _22 : bool;
-  var _23 : usize;
   var _24 : usize;
-  var _25 : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global);
   var l : Hashmap_List_Type.t_list (k, v);
   var _27 : borrowed (Hashmap_List_Type.t_list (k, v));
   var _28 : borrowed (Hashmap_List_Type.t_list (k, v));
   var _29 : borrowed (Hashmap_List_Type.t_list (k, v));
   var _30 : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global));
-  var _31 : usize;
-  var _32 : Hashmap_List_Type.t_list (k, v);
   var _33 : ();
-  var _40 : isize;
   var k : k;
   var v : v;
   var tl : Hashmap_List_Type.t_list (k, v);
   var _44 : ();
   var _45 : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v);
-  var _46 : k;
-  var _47 : v;
-  var _48 : Hashmap_List_Type.t_list (k, v);
-  var _49 : ();
-  var _50 : ();
-  var _51 : ();
   var _52 : ();
-  var _54 : ();
-  var _55 : ();
-  var _56 : ();
-  var _57 : Hashmap_MyHashMap_Type.t_myhashmap k v;
   {
     goto BB0
   }
@@ -2231,13 +2146,11 @@ module Hashmap_Impl5_Resize
   }
   BB1 {
     assume { Resolve0.resolve old_self };
-    _11 <- Hashmap_MyHashMap_Type.myhashmap_buckets ( * self);
-    _10 <- ([#"../hashmap.rs" 163 32 163 50] Len0.len _11);
+    _10 <- ([#"../hashmap.rs" 163 32 163 50] Len0.len (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)));
     goto BB2
   }
   BB2 {
-    _9 <- ([#"../hashmap.rs" 163 32 163 54] _10 * ([#"../hashmap.rs" 163 53 163 54] (2 : usize)));
-    new <- ([#"../hashmap.rs" 163 22 163 55] New0.new _9);
+    new <- ([#"../hashmap.rs" 163 22 163 55] New0.new ([#"../hashmap.rs" 163 32 163 54] _10 * ([#"../hashmap.rs" 163 53 163 54] (2 : usize))));
     goto BB3
   }
   BB3 {
@@ -2261,14 +2174,11 @@ module Hashmap_Impl5_Resize
     goto BB7
   }
   BB7 {
-    _23 <- i;
-    _25 <- Hashmap_MyHashMap_Type.myhashmap_buckets ( * self);
-    _24 <- ([#"../hashmap.rs" 176 18 176 36] Len0.len _25);
+    _24 <- ([#"../hashmap.rs" 176 18 176 36] Len0.len (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)));
     goto BB8
   }
   BB8 {
-    _22 <- ([#"../hashmap.rs" 176 14 176 36] _23 < _24);
-    switch (_22)
+    switch ([#"../hashmap.rs" 176 14 176 36] i < _24)
       | False -> goto BB29
       | True -> goto BB9
       end
@@ -2276,8 +2186,7 @@ module Hashmap_Impl5_Resize
   BB9 {
     _30 <- borrow_mut (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self));
     self <- { self with current = (let Hashmap_MyHashMap_Type.C_MyHashMap a =  * self in Hashmap_MyHashMap_Type.C_MyHashMap ( ^ _30)) };
-    _31 <- i;
-    _29 <- ([#"../hashmap.rs" 177 56 177 71] IndexMut0.index_mut _30 _31);
+    _29 <- ([#"../hashmap.rs" 177 56 177 71] IndexMut0.index_mut _30 i);
     goto BB10
   }
   BB10 {
@@ -2285,8 +2194,7 @@ module Hashmap_Impl5_Resize
     _29 <- { _29 with current = ( ^ _28) };
     _27 <- borrow_mut ( * _28);
     _28 <- { _28 with current = ( ^ _27) };
-    _32 <- Hashmap_List_Type.C_Nil;
-    l <- ([#"../hashmap.rs" 177 33 177 83] Replace0.replace _27 _32);
+    l <- ([#"../hashmap.rs" 177 33 177 83] Replace0.replace _27 (Hashmap_List_Type.C_Nil));
     goto BB11
   }
   BB11 {
@@ -2338,22 +2246,18 @@ module Hashmap_Impl5_Resize
     assume { Resolve2.resolve l };
     _45 <- borrow_mut new;
     new <-  ^ _45;
-    _46 <- k;
     assume { Resolve3.resolve k };
-    _47 <- v;
     assume { Resolve4.resolve v };
-    _44 <- ([#"../hashmap.rs" 189 16 189 29] Add0.add _45 _46 _47);
+    _44 <- ([#"../hashmap.rs" 189 16 189 29] Add0.add _45 k v);
     goto BB21
   }
   BB21 {
-    _48 <- tl;
-    tl <- any Hashmap_List_Type.t_list (k, v);
     assume { Resolve5.resolve tl };
     goto BB22
   }
   BB22 {
-    l <- _48;
-    _48 <- any Hashmap_List_Type.t_list (k, v);
+    l <- tl;
+    tl <- any Hashmap_List_Type.t_list (k, v);
     goto BB24
   }
   BB24 {
@@ -2380,13 +2284,11 @@ module Hashmap_Impl5_Resize
   }
   BB29 {
     _13 <- ();
-    _57 <- new;
-    new <- any Hashmap_MyHashMap_Type.t_myhashmap k v;
     goto BB30
   }
   BB30 {
-    self <- { self with current = _57 };
-    _57 <- any Hashmap_MyHashMap_Type.t_myhashmap k v;
+    self <- { self with current = new };
+    new <- any Hashmap_MyHashMap_Type.t_myhashmap k v;
     assume { Resolve6.resolve ( * self) };
     assume { Resolve7.resolve self };
     goto BB32
@@ -2508,33 +2410,21 @@ module Hashmap_Main
   var h1 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
   var h2 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
   var _x : Core_Option_Option_Type.t_option isize;
-  var _4 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
   var _y : Core_Option_Option_Type.t_option isize;
-  var _6 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
   var _z : Core_Option_Option_Type.t_option isize;
-  var _8 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
   var _t : Core_Option_Option_Type.t_option isize;
-  var _10 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
   var _11 : ();
   var _12 : borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize);
   var _13 : Core_Option_Option_Type.t_option isize;
-  var _14 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
   var _15 : Core_Option_Option_Type.t_option isize;
-  var _16 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
   var _17 : Core_Option_Option_Type.t_option isize;
-  var _18 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
   var _19 : Core_Option_Option_Type.t_option isize;
-  var _20 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
   var _21 : ();
   var _22 : borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize);
   var _23 : Core_Option_Option_Type.t_option isize;
-  var _24 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
   var _25 : Core_Option_Option_Type.t_option isize;
-  var _26 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
   var _27 : Core_Option_Option_Type.t_option isize;
-  var _28 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
   var _29 : Core_Option_Option_Type.t_option isize;
-  var _30 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
   {
     goto BB0
   }
@@ -2547,23 +2437,19 @@ module Hashmap_Main
     goto BB2
   }
   BB2 {
-    _4 <- h1;
-    _x <- ([#"../hashmap.rs" 226 17 226 26] Get0.get _4 ([#"../hashmap.rs" 226 24 226 25] (1 : usize)));
+    _x <- ([#"../hashmap.rs" 226 17 226 26] Get0.get h1 ([#"../hashmap.rs" 226 24 226 25] (1 : usize)));
     goto BB3
   }
   BB3 {
-    _6 <- h1;
-    _y <- ([#"../hashmap.rs" 227 17 227 26] Get0.get _6 ([#"../hashmap.rs" 227 24 227 25] (2 : usize)));
+    _y <- ([#"../hashmap.rs" 227 17 227 26] Get0.get h1 ([#"../hashmap.rs" 227 24 227 25] (2 : usize)));
     goto BB4
   }
   BB4 {
-    _8 <- h2;
-    _z <- ([#"../hashmap.rs" 228 17 228 26] Get0.get _8 ([#"../hashmap.rs" 228 24 228 25] (1 : usize)));
+    _z <- ([#"../hashmap.rs" 228 17 228 26] Get0.get h2 ([#"../hashmap.rs" 228 24 228 25] (1 : usize)));
     goto BB5
   }
   BB5 {
-    _10 <- h2;
-    _t <- ([#"../hashmap.rs" 229 17 229 26] Get0.get _10 ([#"../hashmap.rs" 229 24 229 25] (2 : usize)));
+    _t <- ([#"../hashmap.rs" 229 17 229 26] Get0.get h2 ([#"../hashmap.rs" 229 24 229 25] (2 : usize)));
     goto BB6
   }
   BB6 {
@@ -2573,29 +2459,25 @@ module Hashmap_Main
     goto BB7
   }
   BB7 {
-    _14 <- h1;
-    _13 <- ([#"../hashmap.rs" 234 9 234 18] Get0.get _14 ([#"../hashmap.rs" 234 16 234 17] (1 : usize)));
+    _13 <- ([#"../hashmap.rs" 234 9 234 18] Get0.get h1 ([#"../hashmap.rs" 234 16 234 17] (1 : usize)));
     goto BB8
   }
   BB8 {
     _x <- _13;
     _13 <- any Core_Option_Option_Type.t_option isize;
-    _16 <- h1;
-    _15 <- ([#"../hashmap.rs" 235 9 235 18] Get0.get _16 ([#"../hashmap.rs" 235 16 235 17] (2 : usize)));
+    _15 <- ([#"../hashmap.rs" 235 9 235 18] Get0.get h1 ([#"../hashmap.rs" 235 16 235 17] (2 : usize)));
     goto BB9
   }
   BB9 {
     _y <- _15;
     _15 <- any Core_Option_Option_Type.t_option isize;
-    _18 <- h2;
-    _17 <- ([#"../hashmap.rs" 236 9 236 18] Get0.get _18 ([#"../hashmap.rs" 236 16 236 17] (1 : usize)));
+    _17 <- ([#"../hashmap.rs" 236 9 236 18] Get0.get h2 ([#"../hashmap.rs" 236 16 236 17] (1 : usize)));
     goto BB10
   }
   BB10 {
     _z <- _17;
     _17 <- any Core_Option_Option_Type.t_option isize;
-    _20 <- h2;
-    _19 <- ([#"../hashmap.rs" 237 9 237 18] Get0.get _20 ([#"../hashmap.rs" 237 16 237 17] (2 : usize)));
+    _19 <- ([#"../hashmap.rs" 237 9 237 18] Get0.get h2 ([#"../hashmap.rs" 237 16 237 17] (2 : usize)));
     goto BB11
   }
   BB11 {
@@ -2607,29 +2489,25 @@ module Hashmap_Main
     goto BB12
   }
   BB12 {
-    _24 <- h1;
-    _23 <- ([#"../hashmap.rs" 241 9 241 18] Get0.get _24 ([#"../hashmap.rs" 241 16 241 17] (1 : usize)));
+    _23 <- ([#"../hashmap.rs" 241 9 241 18] Get0.get h1 ([#"../hashmap.rs" 241 16 241 17] (1 : usize)));
     goto BB13
   }
   BB13 {
     _x <- _23;
     _23 <- any Core_Option_Option_Type.t_option isize;
-    _26 <- h1;
-    _25 <- ([#"../hashmap.rs" 242 9 242 18] Get0.get _26 ([#"../hashmap.rs" 242 16 242 17] (2 : usize)));
+    _25 <- ([#"../hashmap.rs" 242 9 242 18] Get0.get h1 ([#"../hashmap.rs" 242 16 242 17] (2 : usize)));
     goto BB14
   }
   BB14 {
     _y <- _25;
     _25 <- any Core_Option_Option_Type.t_option isize;
-    _28 <- h2;
-    _27 <- ([#"../hashmap.rs" 243 9 243 18] Get0.get _28 ([#"../hashmap.rs" 243 16 243 17] (1 : usize)));
+    _27 <- ([#"../hashmap.rs" 243 9 243 18] Get0.get h2 ([#"../hashmap.rs" 243 16 243 17] (1 : usize)));
     goto BB15
   }
   BB15 {
     _z <- _27;
     _27 <- any Core_Option_Option_Type.t_option isize;
-    _30 <- h2;
-    _29 <- ([#"../hashmap.rs" 244 9 244 18] Get0.get _30 ([#"../hashmap.rs" 244 16 244 17] (2 : usize)));
+    _29 <- ([#"../hashmap.rs" 244 9 244 18] Get0.get h2 ([#"../hashmap.rs" 244 16 244 17] (2 : usize)));
     goto BB16
   }
   BB16 {

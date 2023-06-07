@@ -28,7 +28,7 @@ pub enum RValue<'tcx> {
     Expr(Expr<'tcx>),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Expr<'tcx> {
     Place(Place<'tcx>),
     Move(Place<'tcx>),
@@ -45,6 +45,27 @@ pub enum Expr<'tcx> {
     Len(Box<Expr<'tcx>>),
     Array(Vec<Expr<'tcx>>),
     Repeat(Box<Expr<'tcx>>, Box<Expr<'tcx>>),
+}
+
+impl<'tcx> Expr<'tcx> {
+    pub fn is_call(&self) -> bool {
+        match self {
+            Expr::Place(_) => false,
+            Expr::Move(_) => false,
+            Expr::Copy(_) => false,
+            Expr::BinOp(_, _, _, _) => false,
+            Expr::UnaryOp(_, _, _) => false,
+            Expr::Constructor(_, _, _) => false,
+            Expr::Call(_, _, _) => true,
+            Expr::Constant(_) => false,
+            Expr::Cast(_, _, _) => false,
+            Expr::Tuple(_) => false,
+            Expr::Span(_, e) => e.is_call(),
+            Expr::Len(_) => false,
+            Expr::Array(_) => false,
+            Expr::Repeat(_, _) => false,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -94,6 +115,10 @@ impl LocalIdent {
 
     pub(crate) fn ident(&self) -> why3::Ident {
         self.symbol().to_string().into()
+    }
+
+    pub(crate) fn is_anon(&self) -> bool {
+        matches!(self, LocalIdent::Anon(_))
     }
 }
 

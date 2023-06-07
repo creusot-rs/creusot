@@ -363,8 +363,8 @@ pub(crate) fn lower_literal<'tcx>(
             Exp::Tuple(Vec::new())
         }
         Literal::Float(f, fty) => {
-            let _why_ty = floatty_to_ty(names, &fty);
-            Constant::Float(f.0).into()
+            let why_ty = floatty_to_ty(names, &fty);
+            Constant::Float(f.0, Some(why_ty)).into()
         }
         Literal::ZST => Exp::Tuple(Vec::new()),
         Literal::String(string) => Constant::String(string).into(),

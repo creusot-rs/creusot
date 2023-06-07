@@ -760,7 +760,7 @@ impl Binder {
 pub enum Constant {
     Int(i128, Option<Type>),
     Uint(u128, Option<Type>),
-    Float(f64),
+    Float(f64, Option<Type>),
     String(String),
     Other(String),
     Bool(bool),

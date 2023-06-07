@@ -6,7 +6,7 @@ use super::{
 };
 use crate::{
     backend::{
-        place,
+        optimization, place,
         place::translate_rplace_inner,
         ty::{self, closure_accessors, translate_closure_ty, translate_ty},
     },
@@ -266,7 +266,10 @@ pub fn to_why<'tcx>(
     names: &mut CloneMap<'tcx>,
     body_id: BodyId,
 ) -> Decl {
-    let body = ctx.fmir_body(body_id).unwrap().clone();
+    let mut body = ctx.fmir_body(body_id).unwrap().clone();
+
+    let usage = optimization::gather_usage(&body);
+    optimization::simplify_fmir(usage, &mut body);
 
     let blocks = body
         .blocks
@@ -326,11 +329,16 @@ impl<'tcx> Expr<'tcx> {
                 Exp::impure_qvar(QName::from_string("Bool.neqb").unwrap())
                     .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
-            Expr::BinOp(op, ty, l, r) => Exp::BinaryOp(
-                binop_to_binop(ctx, ty, op),
-                Box::new(l.to_why(ctx, names, locals)),
-                Box::new(r.to_why(ctx, names, locals)),
-            ),
+            Expr::BinOp(op, ty, l, r) => {
+                // Hack
+                translate_ty(ctx, names, DUMMY_SP, ty);
+
+                Exp::BinaryOp(
+                    binop_to_binop(ctx, ty, op),
+                    Box::new(l.to_why(ctx, names, locals)),
+                    Box::new(r.to_why(ctx, names, locals)),
+                )
+            }
             Expr::UnaryOp(op, ty, arg) => {
                 Exp::UnaryOp(unop_to_unop(ty, op), Box::new(arg.to_why(ctx, names, locals)))
             }
@@ -388,8 +396,14 @@ impl<'tcx> Expr<'tcx> {
             } // Expr::Cast(_, _) => todo!(),
             Expr::Cast(e, source, target) => {
                 let to_int = match source.kind() {
-                    TyKind::Int(ity) => int_to_int(ity),
-                    TyKind::Uint(uty) => uint_to_int(uty),
+                    TyKind::Int(ity) => {
+                        names.import_prelude_module(int_to_prelude(*ity));
+                        int_to_int(ity)
+                    }
+                    TyKind::Uint(uty) => {
+                        names.import_prelude_module(uint_to_prelude(*uty));
+                        uint_to_int(uty)
+                    }
                     TyKind::Bool => {
                         names.import_prelude_module(PreludeModule::Bool);
                         Exp::impure_qvar(QName::from_string("Bool.to_int").unwrap())
@@ -651,6 +665,28 @@ impl<'tcx> Statement<'tcx> {
             }
             Statement::Variant(var) => vec![mlcfg::Statement::Variant(lower_pure(ctx, names, var))],
         }
+    }
+}
+
+fn int_to_prelude(ity: IntTy) -> PreludeModule {
+    match ity {
+        IntTy::Isize => PreludeModule::Isize,
+        IntTy::I8 => PreludeModule::Int8,
+        IntTy::I16 => PreludeModule::Int16,
+        IntTy::I32 => PreludeModule::Int32,
+        IntTy::I64 => PreludeModule::Int64,
+        IntTy::I128 => PreludeModule::Int128,
+    }
+}
+
+fn uint_to_prelude(ity: UintTy) -> PreludeModule {
+    match ity {
+        UintTy::Usize => PreludeModule::Usize,
+        UintTy::U8 => PreludeModule::UInt8,
+        UintTy::U16 => PreludeModule::UInt16,
+        UintTy::U32 => PreludeModule::UInt32,
+        UintTy::U64 => PreludeModule::UInt64,
+        UintTy::U128 => PreludeModule::UInt128,
     }
 }
 
