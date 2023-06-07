@@ -28,6 +28,30 @@ pub fn inv<T>(_x: T) -> bool {
     true
 }
 
+pub trait UserInv {
+    #[predicate]
+    #[rustc_diagnostic_item = "creusot_invariant_user"]
+    fn user_inv(self) -> bool;
+}
+
+#[cfg(creusot)]
+impl<T> UserInv for T {
+    #[predicate]
+    #[open]
+    #[rustc_diagnostic_item = "creusot_invariant_user_default"]
+    default fn user_inv(self) -> bool {
+        true
+    }
+}
+
+impl UserInv for i32 {
+    #[predicate]
+    #[open]
+    fn user_inv(self) -> bool {
+        pearlite! { self@ > 0 }
+    }
+}
+
 impl<'a, T: Invariant + ?Sized> Invariant for &'a T {
     #[predicate]
     #[open]

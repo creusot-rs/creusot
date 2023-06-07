@@ -1,8 +1,12 @@
 use super::{ty::translate_ty, CloneMap, CloneSummary, Why3Generator};
-use crate::{ctx::*, translation::function, util};
+use crate::{
+    ctx::*,
+    translation::{function, traits},
+    util,
+};
 use rustc_hir::{def::Namespace, def_id::DefId};
-use rustc_middle::ty::{self, subst::SubstsRef, Ty, TyKind};
-use rustc_span::DUMMY_SP;
+use rustc_middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyKind};
+use rustc_span::{Symbol, DUMMY_SP};
 use why3::{
     declaration::{Axiom, Decl, Module},
     exp::{Exp, Pattern},
@@ -35,8 +39,10 @@ fn build_inv_axiom<'tcx>(
     name: Ident,
 ) -> Axiom {
     let ty = ctx.type_of(did).subst_identity();
+    let param_env = ctx.param_env(did);
     let lhs: Exp = Exp::impure_qvar(names.ty_inv(ty)).app_to(Exp::pure_var("self".into()));
-    let rhs = build_inv_exp(ctx, names, "self".into(), ty, true).unwrap_or_else(|| Exp::mk_true());
+    let rhs = build_inv_exp(ctx, names, "self".into(), ty, param_env, true)
+        .unwrap_or_else(|| Exp::mk_true());
 
     let axiom = Exp::Forall(
         vec![("self".into(), translate_ty(ctx, names, DUMMY_SP, ty))],
@@ -50,6 +56,35 @@ fn build_inv_exp<'tcx>(
     names: &mut CloneMap<'tcx>,
     ident: Ident,
     ty: Ty<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    destruct_adt: bool,
+) -> Option<Exp> {
+    let ty = ctx.normalize_erasing_regions(param_env, ty);
+
+    let user_inv = if destruct_adt {
+        resolve_user_inv(ctx, ty, param_env).map(|(uinv_did, uinv_subst)| {
+            let inv_name = names.value(uinv_did, uinv_subst);
+            Exp::impure_qvar(inv_name).app(vec![Exp::pure_var(ident.clone())])
+        })
+    } else {
+        None
+    };
+
+    let struct_inv = build_inv_exp_struct(ctx, names, ident, ty, param_env, destruct_adt);
+
+    match (user_inv, struct_inv) {
+        (None, None) => None,
+        (Some(inv), None) | (None, Some(inv)) => Some(inv),
+        (Some(user_inv), Some(struct_inv)) => Some(user_inv.log_and(struct_inv)),
+    }
+}
+
+fn build_inv_exp_struct<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    ident: Ident,
+    ty: Ty<'tcx>,
+    param_env: ParamEnv<'tcx>,
     destruct_adt: bool,
 ) -> Option<Exp> {
     match ty.kind() {
@@ -60,17 +95,19 @@ fn build_inv_exp<'tcx>(
             let body = tys
                 .iter()
                 .enumerate()
-                .flat_map(|(i, t)| build_inv_exp(ctx, names, fields[i].clone(), t, destruct_adt))
+                .flat_map(|(i, t)| {
+                    build_inv_exp(ctx, names, fields[i].clone(), t, param_env, destruct_adt)
+                })
                 .reduce(|e1, e2| e1.log_and(e2))?;
 
             let pattern = Pattern::TupleP(fields.into_iter().map(Pattern::VarP).collect());
             Some(Exp::Let { pattern, arg: Box::new(Exp::pure_var(ident)), body: Box::new(body) })
         }
         TyKind::Adt(adt_def, adt_subst) if adt_def.is_box() => {
-            build_inv_exp(ctx, names, ident, adt_subst[0].expect_ty(), destruct_adt)
+            build_inv_exp(ctx, names, ident, adt_subst[0].expect_ty(), param_env, destruct_adt)
         }
         TyKind::Adt(adt_def, subst) if destruct_adt => {
-            build_inv_exp_adt(ctx, names, ident, *adt_def, subst)
+            build_inv_exp_adt(ctx, names, ident, param_env, *adt_def, subst)
         }
         TyKind::Adt(_, _) | TyKind::Param(_) => {
             let inv_fun = Exp::impure_qvar(names.ty_inv(ty));
@@ -84,7 +121,8 @@ fn build_inv_exp_adt<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     ident: Ident,
-    adt_def: ty::AdtDef,
+    param_env: ParamEnv<'tcx>,
+    adt_def: AdtDef,
     subst: SubstsRef<'tcx>,
 ) -> Option<Exp> {
     let mut branches = vec![];
@@ -103,7 +141,8 @@ fn build_inv_exp_adt<'tcx>(
             };
 
             let field_ty = field_def.ty(ctx.tcx, subst);
-            if let Some(field_inv) = build_inv_exp(ctx, names, field_name.clone(), field_ty, false)
+            if let Some(field_inv) =
+                build_inv_exp(ctx, names, field_name.clone(), field_ty, param_env, false)
             {
                 pats.push(Pattern::VarP(field_name));
                 exp = exp.log_and(field_inv);
@@ -118,4 +157,30 @@ fn build_inv_exp_adt<'tcx>(
     }
 
     (!trivial).then(|| Exp::Match(Box::new(Exp::pure_var(ident)), branches))
+}
+
+fn resolve_user_inv<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    ty: Ty<'tcx>,
+    param_env: ParamEnv<'tcx>,
+) -> Option<(DefId, SubstsRef<'tcx>)> {
+    let trait_did = ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap();
+    let default_did =
+        ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_user_default")).unwrap();
+
+    let (impl_did, subst) = traits::resolve_assoc_item_opt(
+        ctx.tcx,
+        param_env,
+        trait_did,
+        ctx.mk_substs(&[GenericArg::from(ty)]),
+    )?;
+    let subst = ctx.try_normalize_erasing_regions(param_env, subst).unwrap_or(subst);
+
+    // if inv resolved to the default impl and is not specializable, ignore
+    if impl_did == default_did && !traits::still_specializable(ctx.tcx, param_env, impl_did, subst)
+    {
+        None
+    } else {
+        Some((impl_did, subst))
+    }
 }
