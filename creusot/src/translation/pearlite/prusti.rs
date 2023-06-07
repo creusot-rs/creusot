@@ -3,18 +3,16 @@ use crate::{
     pearlite::{Pattern, Term, TermKind, ThirTerm},
     util,
 };
-use creusot_rustc::{
-    ast::Lit,
-    data_structures::fx::FxHashMap,
-    hir::def_id::DefId,
-    middle::{
-        mir::Mutability::{Mut, Not},
-        ty::{self, Binder, FnSig, FreeRegion, InternalSubsts, Region, RegionKind},
-    },
-    span::{
-        symbol::{Ident, Symbol},
-        DUMMY_SP,
-    },
+use rustc_ast::MetaItemLit as Lit;
+use rustc_data_structures::fx::FxHashMap;
+use rustc_span::def_id::DefId;
+use rustc_middle::{
+    mir::Mutability::{Mut, Not},
+    ty::{self, Binder, FnSig, InternalSubsts, Region},
+};
+use rustc_span::{
+    symbol::{Ident, Symbol},
+    DUMMY_SP,
 };
 use internal_iterator::*;
 use itertools::Either;
@@ -123,7 +121,7 @@ fn make_time_slice<'tcx>(
 ) -> CreusotResult<TimeSlice<'tcx>> {
     let mut bad_curr = false;
     let mut regions = regions.inspect(|&r| bad_curr = bad_curr || ctx.check_ok_in_program(r));
-    let sym = l.token_lit.symbol;
+    let sym = l.as_token_lit().symbol;
     let res = match sym.as_str() {
         "old" => Ok(ctx.old_region),
         "curr" => Ok(ctx.curr_region),
@@ -159,7 +157,7 @@ fn make_time_slice_logic<'tcx>(
     map: &FxHashMap<Symbol, Region<'tcx>>,
     ctx: &Ctx<'tcx>,
 ) -> CreusotResult<TimeSlice<'tcx>> {
-    let sym = l.token_lit.symbol;
+    let sym = l.as_token_lit().symbol;
     match sym.as_str() {
         "old" => Ok(ctx.curr_region), //hack requires clauses to use same time slice as return
         "curr" => Ok(ctx.curr_region),
@@ -217,7 +215,7 @@ pub(super) fn prusti_to_creusot<'tcx>(
     ctx: &ThirTerm<'_, 'tcx>,
     mut term: Term<'tcx>,
 ) -> CreusotResult<Term<'tcx>> {
-    let tcx = ctx.tcx;
+    let tcx = ctx.ctx.tcx;
     let item_id = ctx.item_id;
     let owner_id = util::param_def_id(tcx, item_id).to_def_id();
 
@@ -255,13 +253,10 @@ fn full_signature<'a, 'tcx>(
     Ty<'tcx>,
 )> {
     let tcx = ctx.tcx;
-    let sig: Binder<FnSig> = tcx.fn_sig(owner_id);
+    let sig: Binder<FnSig> = tcx.fn_sig(owner_id).subst_identity();
     let bound_vars = sig.bound_vars();
     let lifetimes1 = bound_vars.iter().map(|bvk| {
-        tcx.mk_region(RegionKind::ReFree(FreeRegion {
-            scope: owner_id,
-            bound_region: bvk.expect_region(),
-        }))
+        tcx.mk_re_free(owner_id, bvk.expect_region())
     });
     let lifetimes2 = InternalSubsts::identity_for_item(tcx, owner_id).regions();
     let lifetimes = lifetimes1.chain(lifetimes2);
@@ -302,7 +297,7 @@ where
             ty.as_tuple().zip(fields).try_for_each(|(ty, pat)| iterate_bindings(pat, ty, ctx, f))
         }
         Pattern::Binder(sym) => f((*sym, ty)),
-        _ => ControlFlow::CONTINUE,
+        _ => ControlFlow::Continue(()),
     }
 }
 

@@ -2,26 +2,24 @@ use crate::{
     error::{CreusotResult, Error},
     pearlite::prusti::parsing::Home,
 };
-use creusot_rustc::{
-    data_structures::fx::{FxHashMap, FxHashSet},
-    macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
-    middle::{
-        mir::Mutability,
-        ty,
-        ty::{
-            AdtDef, BoundRegionKind, FreeRegion, List, ParamEnv, Region, RegionKind, TyCtxt,
-            TyKind, TypeFoldable, TypeFolder,
-        },
+
+use rustc_data_structures::fx::{FxHashMap, FxHashSet};
+use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
+use rustc_middle::{
+    mir::Mutability,
+    ty,
+    ty::{
+        AdtDef, BoundRegionKind, List, ParamEnv, Region, RegionKind, TyCtxt,
+        TyKind, TypeFoldable, TypeFolder,
     },
-    span::{def_id::DefId, Symbol},
-    target::abi::VariantIdx,
 };
+use rustc_span::{def_id::DefId, Symbol, Span};
+use rustc_target::abi::VariantIdx;
 use itertools::Either;
 use std::{
     fmt::{Display, Formatter},
     iter,
 };
-use creusot_rustc::span::Span;
 
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 /// Since we use a different subtyping for this analysis
@@ -105,8 +103,8 @@ pub(super) struct RegionReplacer<'tcx, F: Fn(Region<'tcx>) -> Region<'tcx>> {
     pub f: F,
 }
 
-impl<'tcx, F: Fn(Region<'tcx>) -> Region<'tcx>> TypeFolder<'tcx> for RegionReplacer<'tcx, F> {
-    fn tcx<'a>(&'a self) -> TyCtxt<'tcx> {
+impl<'tcx, F: Fn(Region<'tcx>) -> Region<'tcx>> TypeFolder<TyCtxt<'tcx>> for RegionReplacer<'tcx, F> {
+    fn interner(&self) -> TyCtxt<'tcx> {
         self.tcx
     }
 
@@ -126,10 +124,7 @@ pub(super) struct Ctx<'tcx> {
 }
 
 fn dummy_region(def_id: DefId, tcx: TyCtxt<'_>, sym: Symbol) -> Region<'_> {
-    tcx.mk_region(RegionKind::ReFree(FreeRegion {
-        scope: def_id,
-        bound_region: BoundRegionKind::BrNamed(def_id, sym),
-    }))
+    tcx.mk_re_free(def_id, BoundRegionKind::BrNamed(def_id, sym))
 }
 
 impl<'tcx> Ctx<'tcx> {

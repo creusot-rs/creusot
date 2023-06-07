@@ -1,5 +1,6 @@
 use crate::error::{CreusotResult, Error};
-use creusot_rustc::{ast::Lit, span::Symbol};
+use rustc_ast::MetaItemLit as Lit;
+use rustc_span::Symbol;
 
 fn skip_space(rest: &mut &str) {
     let idx = rest.find(|c: char| c != ' ').unwrap_or(rest.len());
@@ -79,7 +80,8 @@ fn parse_home_sig(rest: &mut &str) -> Option<HomeSig> {
 }
 
 pub(super) fn parse_home_sig_lit(sig: &Lit) -> CreusotResult<(Vec<Home>, Home)> {
-    let mut s = sig.token_lit.symbol.as_str();
+    let s = sig.as_token_lit().symbol;
+    let mut s = s.as_str();
     parse_home_sig(&mut s)
         .ok_or_else(|| Error::new(sig.span, format!("invalid home signature, reached \"{s}\"")))
 }

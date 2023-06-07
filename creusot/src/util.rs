@@ -5,22 +5,11 @@ use crate::{
         specification::PreContract,
     },
 };
-use creusot_rustc::{
-    ast::{
-        ast::{MacArgs, MacArgsEq},
-        AttrItem, AttrKind, Attribute, Lit,
-    },
-    hir::{def::DefKind, def_id::DefId, Unsafety},
-    macros::{TypeFoldable, TypeVisitable},
-    middle::ty::{self, subst::SubstsRef, DefIdTree, ReErased, Ty, TyCtxt, TyKind, VariantDef},
-    resolve::Namespace,
-    span::{symbol, symbol::kw, Span, Symbol, DUMMY_SP},
-};
 use indexmap::IndexMap;
 use itertools::izip;
 use rustc_ast::{
     ast::{AttrArgs, AttrArgsEq},
-    AttrItem, AttrKind, Attribute,
+    AttrItem, AttrKind, Attribute, MetaItemLit,
 };
 use rustc_hir::{
     def::{DefKind, Namespace},
@@ -543,9 +532,9 @@ pub(crate) fn get_attr_lit<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
     path: &[&str],
-) -> Option<&'tcx Lit> {
+) -> Option<&'tcx MetaItemLit> {
     match &get_attr(tcx.get_attrs_unchecked(def_id), path)?.args {
-        MacArgs::Eq(_, MacArgsEq::Hir(l)) => Some(l),
+        AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l),
         _ => unreachable!(),
     }
 }

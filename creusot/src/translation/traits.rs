@@ -50,7 +50,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     pub(crate) fn translate_impl(&mut self, impl_id: DefId) -> TraitImpl<'tcx> {
         assert!(self.trait_id_of_impl(impl_id).is_some(), "{impl_id:?} is not a trait impl");
-        let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
+        let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap().subst_identity();
 
         let mut laws = Vec::new();
         let implementor_map = self.tcx.impl_item_implementor_ids(impl_id);
@@ -84,7 +84,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             {
                 continue;
             }
-            self.translate(impl_item);
+            self.translate_impl(impl_item);
 
             // TODO: Clean up and abstract
             let predicates = self

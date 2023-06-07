@@ -6,26 +6,28 @@ use crate::{
     error::{CreusotResult, Error},
     util,
 };
-use creusot_rustc::{
-    data_structures::fx::FxHashMap,
+
+use rustc_data_structures::fx::FxHashMap;
+use rustc_infer::{
     infer::{
-        infer::{
-            outlives::env::OutlivesEnvironment, region_constraints::Constraint, InferCtxt,
-            RegionVariableOrigin, SubregionOrigin, TyCtxtInferExt,
-        },
-        traits::ObligationCause,
+        outlives::env::OutlivesEnvironment, region_constraints::Constraint, InferCtxt,
+        RegionVariableOrigin, SubregionOrigin, TyCtxtInferExt,
     },
-    middle::{
-        ty,
-        ty::{
-            EarlyBinder, Instance, InternalSubsts, ParamEnv, PolyFnSig, PredicateKind, Region,
-            RegionKind, RegionVid, SubstsRef, TyCtxt, TyKind, TypeFoldable,
-        },
-    },
-    smir::very_unstable::trait_selection::traits::query::normalize::AtExt,
-    span::{def_id::DefId, Span, Symbol, DUMMY_SP},
+    traits::ObligationCause,
 };
+use rustc_middle::{
+    ty,
+    ty::{
+        EarlyBinder, Instance, InternalSubsts, ParamEnv, PolyFnSig, Region,
+        RegionKind, RegionVid, SubstsRef, TyCtxt, TyKind, TypeFoldable,
+    },
+};
+// use rustc_trait_selection::traits::query::normalize::AtExt;
+use rustc_span::{def_id::DefId, Span, Symbol, DUMMY_SP};
+
 use std::{collections::hash_map::Entry, iter};
+use rustc_infer::infer::DefineOpaqueTypes::No as DefOpaque;
+use rustc_trait_selection::traits::NormalizeExt;
 
 fn home_sig(ctx: &Ctx<'_>, def_id: DefId) -> CreusotResult<Option<HomeSig>> {
     let home_sig = util::get_attr_lit(ctx.tcx, def_id, &["creusot", "prusti", "home_sig"]);
@@ -62,7 +64,7 @@ impl<'tcx> SubstMap<'tcx> {
         &mut self,
         home: Home,
         ty_gen: ty::Ty<'tcx>,
-        infcx: &InferCtxt<'_, 'tcx>,
+        infcx: &InferCtxt<'tcx>,
     ) -> Ty<'tcx> {
         let origin = RegionVariableOrigin::MiscVariable(DUMMY_SP);
         let ty_gen = if home.is_ref { ty_gen.peel_refs() } else { ty_gen };
@@ -120,7 +122,7 @@ impl<'tcx> RegionInfo<'tcx> {
 }
 
 fn sup_tys<'tcx>(
-    infcx: &InferCtxt<'_, 'tcx>,
+    infcx: &InferCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     span: Span,
     ty_gen: Ty<'tcx>,
@@ -131,9 +133,8 @@ fn sup_tys<'tcx>(
     }
     let oc = ObligationCause::dummy_with_span(span);
     let normalize = |ty| {
-        let n_ty = infcx.at(&oc, param_env).normalize(ty).unwrap();
+        let n_ty = infcx.at(&oc, param_env).normalize(ty);
         let trivial = n_ty.obligations.iter().all(|ob| match ob.predicate.kind().skip_binder() {
-            PredicateKind::RegionOutlives(r) if r.0 == r.1 => true,
             _ => false,
         });
         if !trivial {
@@ -146,11 +147,11 @@ fn sup_tys<'tcx>(
     };
     let Ty { ty: ty_gen, home: home_gen } = normalize(ty_gen);
     let Ty { ty, home } = normalize(ty);
-    let infer_ok = infcx.at(&oc, param_env).sup(home_gen, home).unwrap();
+    let infer_ok = infcx.at(&oc, param_env).sup(DefOpaque,home_gen, home).unwrap();
     debug_assert!(infer_ok.obligations.is_empty());
-    let infer_ok = match infcx.at(&oc, param_env).sub(ty_gen, ty) {
+    let infer_ok = match infcx.at(&oc, param_env).sub(DefOpaque, ty_gen, ty) {
         Ok(x) => x,
-        Err(err) => return Err(Error::new(span, err.to_string())),
+        Err(err) => return Err(Error::new(span, err.to_string(infcx.tcx))),
     };
     debug_assert!(infer_ok.obligations.is_empty());
     Ok(())
@@ -173,57 +174,56 @@ pub(super) fn check_call<'tcx>(
         Some(x) => x,
         None => return Ok(None),
     };
-    tcx.infer_ctxt().enter(|infcx: InferCtxt| {
-        let subst_ref: SubstsRef = subst_ref.fold_with(&mut RegionReplacer {
-            tcx,
-            f: |_| infcx.next_region_var(RegionVariableOrigin::MiscVariable(DUMMY_SP)),
-        });
-        let param_env = ctx.param_env();
-        let (fn_ty_gen, iter) = super::variance::generalize_fn_def(tcx, def_id, &infcx, subst_ref);
+    let infcx = tcx.infer_ctxt().build();
+    let subst_ref: SubstsRef = subst_ref.fold_with(&mut RegionReplacer {
+        tcx,
+        f: |_| infcx.next_region_var(RegionVariableOrigin::MiscVariable(DUMMY_SP)),
+    });
+    let param_env = ctx.param_env();
+    let (fn_ty_gen, iter) = super::variance::generalize_fn_def(tcx, def_id, &infcx, subst_ref);
 
-        let mut subst_map: SubstMap = iter.collect();
+    let mut subst_map: SubstMap = iter.collect();
 
-        let (args_gen, res_ty_gen) = match fn_ty_gen.kind() {
-            TyKind::FnPtr(bind) => {
-                let bind: &PolyFnSig = bind;
-                let sig = bind.no_bound_vars().unwrap();
-                (sig.inputs(), sig.output())
-            }
-            _ => unreachable!(),
-        };
-        args.zip(args_gen).zip(home_sig_args).try_for_each(|((arg, &ty_gen), home_sig_arg)| {
-            let (ty, span) = arg;
+    let (args_gen, res_ty_gen) = match fn_ty_gen.kind() {
+        TyKind::FnPtr(bind) => {
+            let bind: &PolyFnSig = bind;
+            let sig = bind.no_bound_vars().unwrap();
+            (sig.inputs(), sig.output())
+        }
+        _ => unreachable!(),
+    };
+    args.zip(args_gen).zip(home_sig_args).try_for_each(|((arg, &ty_gen), home_sig_arg)| {
+        let (ty, span) = arg;
 
-            let ty_gen = subst_map.convert_sig_pair(home_sig_arg, ty_gen, &infcx);
-            sup_tys(&infcx, param_env, span, ty_gen, ty)
-        })?;
-        let res_ty_gen = subst_map.convert_sig_pair(home_sig_res, res_ty_gen, &infcx);
+        let ty_gen = subst_map.convert_sig_pair(home_sig_arg, ty_gen, &infcx);
+        sup_tys(&infcx, param_env, span, ty_gen, ty)
+    })?;
+    let res_ty_gen = subst_map.convert_sig_pair(home_sig_res, res_ty_gen, &infcx);
 
-        let outlives = OutlivesEnvironment::new(param_env);
-        infcx.process_registered_region_obligations(outlives.region_bound_pairs(), param_env);
-        let constraints = infcx.take_and_reset_region_constraints();
-        let iter = constraints.constraints.into_iter();
-        let curr_vid = subst_map.get_vid(ctx.curr_sym);
-        let mut curr_ok = Ok(());
-        let iter = iter.inspect(|(c, origin)| match (*c, curr_vid) {
-            (Constraint::RegSubVar(reg, var), Some(vid))
-                if var == vid && curr_ok.is_ok() && !sub_ts(reg, ts) =>
-            {
-                let reg = DisplayRegion(reg);
-                curr_ok = Err(Error::new(
-                    origin.span(),
-                    format!("`{reg}` must match the current time slice"),
-                ))
-            }
-            _ => {}
-        });
-        let var_info = RegionInfo::new(iter, tcx);
-        curr_ok?;
+    let outlives = OutlivesEnvironment::new(param_env);
+    infcx.process_registered_region_obligations(&outlives);
+    let constraints = infcx.take_and_reset_region_constraints();
+    let iter = constraints.constraints.into_iter();
+    let curr_vid = subst_map.get_vid(ctx.curr_sym);
+    let mut curr_ok = Ok(());
+    let iter = iter.inspect(|(c, origin)| match (*c, curr_vid) {
+        (Constraint::RegSubVar(reg, var), Some(vid))
+            if var == vid && curr_ok.is_ok() && !sub_ts(reg, ts) =>
+        {
+            let reg = DisplayRegion(reg);
+            curr_ok = Err(Error::new(
+                origin.span(),
+                format!("`{reg}` must match the current time slice"),
+            ))
+        }
+        _ => {}
+    });
+    let var_info = RegionInfo::new(iter, tcx);
+    curr_ok?;
 
-        let res =
-            res_ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| var_info.get_region(r, tcx) });
-        Ok(Some(res))
-    })
+    let res =
+        res_ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| var_info.get_region(r, tcx) });
+    Ok(Some(res))
 }
 
 pub(super) fn union<'tcx>(
@@ -235,19 +235,18 @@ pub(super) fn union<'tcx>(
     let mut elts = elts.collect::<CreusotResult<Vec<_>>>()?.into_iter();
     let tcx = ctx.tcx;
     let param_env = ctx.param_env();
-    tcx.infer_ctxt().enter(|infcx| {
-        let ty_gen = target.fold_with(&mut RegionReplacer {
-            tcx,
-            f: |_| infcx.next_region_var(RegionVariableOrigin::MiscVariable(DUMMY_SP)),
-        });
-        let home_gen = infcx.next_region_var(RegionVariableOrigin::MiscVariable(DUMMY_SP));
-        let ty_gen = Ty { ty: ty_gen, home: home_gen };
-        elts.try_for_each(|ty| sup_tys(&infcx, param_env, DUMMY_SP, ty_gen, ty))?;
-        let constraints = infcx.take_and_reset_region_constraints();
-        let var_info = RegionInfo::new(constraints.constraints.into_iter(), tcx);
-        let res = ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| var_info.get_region(r, tcx) });
-        Ok(res)
-    })
+    let infcx = tcx.infer_ctxt().build();
+    let ty_gen = target.fold_with(&mut RegionReplacer {
+        tcx,
+        f: |_| infcx.next_region_var(RegionVariableOrigin::MiscVariable(DUMMY_SP)),
+    });
+    let home_gen = infcx.next_region_var(RegionVariableOrigin::MiscVariable(DUMMY_SP));
+    let ty_gen = Ty { ty: ty_gen, home: home_gen };
+    elts.try_for_each(|ty| sup_tys(&infcx, param_env, DUMMY_SP, ty_gen, ty))?;
+    let constraints = infcx.take_and_reset_region_constraints();
+    let var_info = RegionInfo::new(constraints.constraints.into_iter(), tcx);
+    let res = ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| var_info.get_region(r, tcx) });
+    Ok(res)
 }
 
 pub(super) fn check_sup<'tcx>(
@@ -258,20 +257,19 @@ pub(super) fn check_sup<'tcx>(
 ) -> CreusotResult<()> {
     let tcx = ctx.tcx;
     let param_env = ctx.param_env();
-    tcx.infer_ctxt().enter(|infcx| {
-        sup_tys(&infcx, param_env, span, expected, actual)?;
-        let constraints = infcx.take_and_reset_region_constraints();
-        constraints.constraints.into_iter().try_for_each(|(c, origin)| match c {
-            Constraint::RegSubReg(reg1, reg2) => {
-                if sub_ts(reg1, reg2) {
-                    Ok(())
-                } else {
-                    let (reg1, reg2) = (DisplayRegion(reg1), DisplayRegion(reg2));
-                    Err(Error::new(origin.span(),format!("function was supposed to return data with home/lifetime `{reg2}` but it is returning data with home/lifetime `{reg1}`")))
-                }
+    let infcx = tcx.infer_ctxt().build();
+    sup_tys(&infcx, param_env, span, expected, actual)?;
+    let constraints = infcx.take_and_reset_region_constraints();
+    constraints.constraints.into_iter().try_for_each(|(c, origin)| match c {
+        Constraint::RegSubReg(reg1, reg2) => {
+            if sub_ts(reg1, reg2) {
+                Ok(())
+            } else {
+                let (reg1, reg2) = (DisplayRegion(reg1), DisplayRegion(reg2));
+                Err(Error::new(origin.span(),format!("function was supposed to return data with home/lifetime `{reg2}` but it is returning data with home/lifetime `{reg1}`")))
             }
-            _ => unreachable!(),
-        })
+        }
+        _ => unreachable!(),
     })
 }
 
@@ -292,7 +290,7 @@ pub(crate) fn check_signature_agreement<'tcx>(
     trait_id: DefId,
     refn_subst: SubstsRef<'tcx>,
 ) -> CreusotResult<()> {
-    use creusot_rustc::ast::{token, Lit};
+    use rustc_ast::{token, MetaItemLit as Lit};
     let trait_home_sig = util::get_attr_lit(tcx, trait_id, &["creusot", "prusti", "home_sig"]);
     if trait_home_sig.is_none() {
         return Ok(()); // We're not specializing a home signature
