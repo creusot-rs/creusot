@@ -65,7 +65,10 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
     fn visit_terminator(&mut self, t: &fmir::Terminator<'tcx>) {
         match t {
             fmir::Terminator::Switch(e, _) => self.visit_expr(e),
-            // fmir::Terminator::Return => {self.read(0u32.into(), true); self.read(0u32.into(), true);}
+            fmir::Terminator::Return => {
+                self.read(Symbol::intern("_0"), true);
+                self.read(Symbol::intern("_0"), true);
+            }
             _ => {}
         }
     }
@@ -210,6 +213,9 @@ impl<'tcx> SimplePropagator<'tcx> {
                       self.prop.insert(l.local, r);
                       self.dead.insert(l.local);
                     }
+                fmir::Statement::Assignment(ref l, fmir::RValue::Expr(ref r)) if self.should_erase(l.local)  && !r.is_call()  => {
+                      self.dead.insert(l.local);
+                }
                 fmir::Statement::Resolve(_,_, ref p) => {
                   if let Some(l) = p.as_symbol() && self.dead.contains(&l) {
                   } else {
@@ -296,6 +302,15 @@ impl<'tcx> SimplePropagator<'tcx> {
                 u.read == ZeroOneMany::One(Whole::Whole)
                     && u.write == ZeroOneMany::One(Whole::Whole)
                     && u.temp_var
+            })
+            .unwrap_or(false)
+    }
+
+    fn should_erase(&self, l: Symbol) -> bool {
+        self.usage
+            .get(&l)
+            .map(|u| {
+                u.read == ZeroOneMany::Zero && matches!(u.write, ZeroOneMany::One(_)) && u.temp_var
             })
             .unwrap_or(false)
     }

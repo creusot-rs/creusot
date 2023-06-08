@@ -15,17 +15,6 @@ module SplitBorrow_Z
   }
   
 end
-module SplitBorrow_MyInt_Type
-  use prelude.Int
-  use prelude.UIntSize
-  type t_myint  =
-    | C_MyInt usize
-    
-  let function myint_0 (self : t_myint) : usize = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_MyInt a -> a
-      end
-end
 module CreusotContracts_Resolve_Impl1_Resolve_Stub
   type t
   use prelude.Borrow
@@ -92,6 +81,13 @@ module CreusotContracts_Resolve_Impl0_Resolve
     ensures { result = resolve self }
     
 end
+module SplitBorrow_MyInt_Type
+  use prelude.Int
+  use prelude.UIntSize
+  type t_myint  =
+    | C_MyInt usize
+    
+end
 module CreusotContracts_Resolve_Impl2_Resolve_Stub
   type t
   predicate resolve (self : t)
@@ -136,7 +132,6 @@ module SplitBorrow_F
   var y : borrowed (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint);
   var _5 : ();
   var _6 : bool;
-  var _9 : usize;
   {
     goto BB0
   }
@@ -164,7 +159,6 @@ module SplitBorrow_F
     goto BB4
   }
   BB4 {
-    _9 <- SplitBorrow_MyInt_Type.myint_0 (let (a, _) =  * y in a);
     assume { Resolve0.resolve y };
     assume { Resolve1.resolve x };
     _0 <- ();
@@ -197,7 +191,6 @@ module SplitBorrow_G
   var a : (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint);
   var x : borrowed (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint);
   var _z : borrowed (SplitBorrow_MyInt_Type.t_myint);
-  var _7 : bool;
   {
     goto BB0
   }
@@ -211,7 +204,6 @@ module SplitBorrow_G
     x <- { x with current = (let (a, b) =  * x in (SplitBorrow_MyInt_Type.C_MyInt ([#"../split_borrow.rs" 29 19 29 20] (3 : usize)), b)) };
     assume { Resolve1.resolve x };
     assume { Resolve2.resolve a };
-    _7 <- ([#"../split_borrow.rs" 31 12 31 24] SplitBorrow_MyInt_Type.myint_0 (let (a, _) = a in a) = ([#"../split_borrow.rs" 31 23 31 24] (3 : usize)));
     _0 <- ();
     return _0
   }
