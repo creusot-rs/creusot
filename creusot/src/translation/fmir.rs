@@ -1,12 +1,38 @@
-use crate::{pearlite::Term, util::ident_of};
+use crate::{backend::place::projection_ty, pearlite::Term, util::ident_of};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{BasicBlock, BinOp, Local, Place, UnOp},
-    ty::{subst::SubstsRef, AdtDef, Ty},
+    mir::{tcx::PlaceTy, BasicBlock, BinOp, Local, ProjectionElem, UnOp},
+    ty::{subst::SubstsRef, AdtDef, Ty, TyCtxt},
 };
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::VariantIdx;
+
+#[derive(Clone, Debug)]
+pub struct Place<'tcx> {
+    pub(crate) local: Symbol,
+    pub(crate) projection: Vec<ProjectionElem<Symbol, Ty<'tcx>>>,
+}
+
+impl<'tcx> Place<'tcx> {
+    pub(crate) fn ty(&self, tcx: TyCtxt<'tcx>, locals: &LocalDecls<'tcx>) -> Ty<'tcx> {
+        let mut ty = PlaceTy::from_ty(locals[&self.local].ty);
+
+        for p in &self.projection {
+            ty = projection_ty(ty, tcx, *p);
+        }
+
+        ty.ty
+    }
+
+    pub(crate) fn as_symbol(&self) -> Option<Symbol> {
+        if self.projection.is_empty() {
+            Some(self.local)
+        } else {
+            None
+        }
+    }
+}
 
 #[derive(Clone)]
 pub enum Statement<'tcx> {
@@ -120,7 +146,19 @@ impl LocalIdent {
     }
 }
 
-pub type LocalDecls<'tcx> = IndexMap<Local, (LocalIdent, Span, Ty<'tcx>)>;
+pub type LocalDecls<'tcx> = IndexMap<Symbol, LocalDecl<'tcx>>;
+
+#[derive(Clone, Debug)]
+pub struct LocalDecl<'tcx> {
+    // Original MIR local
+    pub(crate) mir_local: Local,
+    pub(crate) span: Span,
+    pub(crate) ty: Ty<'tcx>,
+    // Is this a MIR temporary?
+    pub(crate) temp: bool,
+    // Is this declaration a function argument or return place?
+    pub(crate) arg: bool,
+}
 
 #[derive(Clone)]
 pub struct Body<'tcx> {

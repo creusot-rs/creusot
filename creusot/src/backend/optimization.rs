@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use rustc_middle::mir::{self, Local};
+use rustc_middle::mir::{self};
+use rustc_span::Symbol;
 use std::collections::HashSet;
 
 use crate::translation::{
@@ -10,7 +11,7 @@ use crate::translation::{
 
 pub(crate) struct LocalUsage<'a, 'tcx> {
     locals: &'a fmir::LocalDecls<'tcx>,
-    pub(crate) usages: HashMap<Local, Usage>,
+    pub(crate) usages: HashMap<Symbol, Usage>,
 }
 
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
@@ -44,7 +45,7 @@ pub(crate) struct Usage {
     temp_var: bool,
 }
 
-pub(crate) fn gather_usage(b: &fmir::Body) -> HashMap<Local, Usage> {
+pub(crate) fn gather_usage(b: &fmir::Body) -> HashMap<Symbol, Usage> {
     let mut usage = LocalUsage { locals: &b.locals, usages: HashMap::new() };
 
     usage.visit_body(b);
@@ -126,40 +127,42 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
         }
     }
 
-    fn read_place(&mut self, p: &mir::Place<'tcx>) {
+    fn read_place(&mut self, p: &fmir::Place<'tcx>) {
         self.read(p.local, p.projection.is_empty());
         p.projection.iter().for_each(|p| match p {
-            mir::ProjectionElem::Index(l) => self.read(l, true),
+            mir::ProjectionElem::Index(l) => self.read(*l, true),
             _ => {}
         })
     }
 
-    fn write_place(&mut self, p: &mir::Place<'tcx>) {
+    fn write_place(&mut self, p: &fmir::Place<'tcx>) {
         self.write(p.local, p.projection.is_empty());
         p.projection.iter().for_each(|p| match p {
-            mir::ProjectionElem::Index(l) => self.read(l, true),
+            mir::ProjectionElem::Index(l) => self.read(*l, true),
             _ => {}
         })
     }
 
-    fn read(&mut self, local: Local, whole: bool) {
+    fn read(&mut self, local: Symbol, whole: bool) {
+        if !self.locals.contains_key(&local) {
+            return;
+        }
+
         self.usages
             .entry(local)
-            .or_insert_with(|| Usage {
-                temp_var: self.locals[&local].0.is_anon(),
-                ..Default::default()
-            })
+            .or_insert_with(|| Usage { temp_var: self.locals[&local].temp, ..Default::default() })
             .read
             .inc(if whole { Whole::Whole } else { Whole::Part })
     }
 
-    fn write(&mut self, local: Local, whole: bool) {
+    fn write(&mut self, local: Symbol, whole: bool) {
+        if !self.locals.contains_key(&local) {
+            return;
+        }
+
         self.usages
             .entry(local)
-            .or_insert_with(|| Usage {
-                temp_var: self.locals[&local].0.is_anon(),
-                ..Default::default()
-            })
+            .or_insert_with(|| Usage { temp_var: self.locals[&local].temp, ..Default::default() })
             .write
             .inc(if whole { Whole::Whole } else { Whole::Part })
     }
@@ -169,8 +172,7 @@ impl<'a, 'tcx> TermVisitor<'tcx> for LocalUsage<'a, 'tcx> {
     fn visit_term(&mut self, term: &Term<'tcx>) {
         match term.kind {
             TermKind::Var(v) => {
-                let l = self.locals.iter().find(|(_, a)| a.0.symbol() == v);
-                l.map(|(l, _)| self.read(*l, true));
+                self.read(v, true);
             }
             _ => super_visit_term(term, self),
         }
@@ -178,12 +180,12 @@ impl<'a, 'tcx> TermVisitor<'tcx> for LocalUsage<'a, 'tcx> {
 }
 
 struct SimplePropagator<'tcx> {
-    usage: HashMap<Local, Usage>,
-    prop: HashMap<Local, fmir::Expr<'tcx>>,
-    dead: HashSet<Local>,
+    usage: HashMap<Symbol, Usage>,
+    prop: HashMap<Symbol, fmir::Expr<'tcx>>,
+    dead: HashSet<Symbol>,
 }
 
-pub(crate) fn simplify_fmir<'tcx>(usage: HashMap<Local, Usage>, body: &mut fmir::Body) {
+pub(crate) fn simplify_fmir<'tcx>(usage: HashMap<Symbol, Usage>, body: &mut fmir::Body) {
     SimplePropagator { usage, prop: HashMap::new(), dead: HashSet::new() }.visit_body(body);
 }
 impl<'tcx> SimplePropagator<'tcx> {
@@ -208,8 +210,8 @@ impl<'tcx> SimplePropagator<'tcx> {
                       self.prop.insert(l.local, r);
                       self.dead.insert(l.local);
                     }
-                fmir::Statement::Resolve(_,_, p) => {
-                  if let Some(l) = p.as_local() && self.dead.contains(&l) {
+                fmir::Statement::Resolve(_,_, ref p) => {
+                  if let Some(l) = p.as_symbol() && self.dead.contains(&l) {
                   } else {
                     out_stmts.push(s)
                   }
@@ -231,7 +233,7 @@ impl<'tcx> SimplePropagator<'tcx> {
         match s {
             fmir::Statement::Assignment(_, r) => self.visit_rvalue(r),
             fmir::Statement::Resolve(_, _, p) => {
-              if let Some(l) = p.as_local() && self.dead.contains(&l) {
+              if let Some(l) = p.as_symbol() && self.dead.contains(&l) {
 
               }
             }
@@ -254,7 +256,7 @@ impl<'tcx> SimplePropagator<'tcx> {
     fn visit_expr(&mut self, e: &mut fmir::Expr<'tcx>) {
         match e {
             fmir::Expr::Move(p) | fmir::Expr::Copy(p) => {
-              if let Some(l) = p.as_local() && let Some(v) = self.prop.remove(&l) {
+              if let Some(l) = p.as_symbol() && let Some(v) = self.prop.remove(&l) {
                 *e = v;
               }
             },
@@ -287,7 +289,7 @@ impl<'tcx> SimplePropagator<'tcx> {
         //   })
     }
 
-    fn should_propagate(&self, l: Local) -> bool {
+    fn should_propagate(&self, l: Symbol) -> bool {
         self.usage
             .get(&l)
             .map(|u| {

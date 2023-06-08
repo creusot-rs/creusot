@@ -1,7 +1,4 @@
-use super::{
-    fmir::LocalDecls,
-    pearlite::{normalize, pearlite_stub, Literal, Term, TermKind},
-};
+use super::pearlite::{normalize, pearlite_stub, Literal, Term, TermKind};
 use crate::{ctx::*, util};
 use rustc_ast::ast::{AttrArgs, AttrArgsEq};
 use rustc_hir::def_id::DefId;
@@ -177,7 +174,7 @@ impl ScopeTree {
 // Turn a typing context into a substition.
 pub(crate) fn inv_subst<'tcx>(
     body: &Body<'tcx>,
-    locals: &LocalDecls<'tcx>,
+    locals: &HashMap<Local, Symbol>,
     info: SourceInfo,
 ) -> HashMap<Symbol, Term<'tcx>> {
     // let local_map = real_locals(tcx, body);
@@ -189,7 +186,7 @@ pub(crate) fn inv_subst<'tcx>(
         let loc = v;
         let ty = body.local_decls[loc].ty;
         let span = body.local_decls[loc].source_info.span;
-        args.insert(k, Term { ty, span, kind: TermKind::Var(locals[&loc].0.symbol()) });
+        args.insert(k, Term { ty, span, kind: TermKind::Var(locals[&loc]) });
     }
 
     return args;

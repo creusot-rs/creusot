@@ -7,7 +7,7 @@ use super::{
 use crate::{
     backend::{
         optimization, place,
-        place::translate_rplace_inner,
+        place::translate_rplace,
         ty::{self, closure_accessors, translate_closure_ty, translate_ty},
     },
     ctx::{BodyId, CloneMap, TranslationCtx},
@@ -21,7 +21,7 @@ use crate::{
 };
 use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
 use rustc_middle::{
-    mir::{BasicBlock, BinOp, Place},
+    mir::{BasicBlock, BinOp},
     ty::TyKind,
 };
 use rustc_span::DUMMY_SP;
@@ -280,13 +280,15 @@ pub fn to_why<'tcx>(
     let vars: Vec<_> = body
         .locals
         .into_iter()
-        .map(|(loc, (id, sp, ty))| {
-            let init = if 0 < loc.index() && loc.index() <= body.arg_count {
-                Some(Exp::impure_var(id.ident()))
-            } else {
-                None
-            };
-            (false, id.ident(), ty::translate_ty(ctx, names, sp, ty), init)
+        .map(|(id, decl)| {
+            let init =
+                if decl.arg { Some(Exp::impure_var(Ident::build(id.as_str()))) } else { None };
+            (
+                false,
+                Ident::build(id.as_str()),
+                ty::translate_ty(ctx, names, decl.span, decl.ty),
+                init,
+            )
         })
         .collect();
 
@@ -312,9 +314,9 @@ impl<'tcx> Expr<'tcx> {
         match self {
             Expr::Move(pl) => {
                 // TODO invalidate original place
-                translate_rplace_inner(ctx, names, locals, pl.local, pl.projection)
+                translate_rplace(ctx, names, locals, pl.local, &pl.projection)
             }
-            Expr::Copy(pl) => translate_rplace_inner(ctx, names, locals, pl.local, pl.projection),
+            Expr::Copy(pl) => translate_rplace(ctx, names, locals, pl.local, &pl.projection),
             Expr::BinOp(BinOp::BitAnd, ty, l, r) if ty.is_bool() => {
                 l.to_why(ctx, names, locals).lazy_and(r.to_why(ctx, names, locals))
             }
@@ -440,9 +442,9 @@ impl<'tcx> Expr<'tcx> {
         }
     }
 
-    fn invalidated_places(&self, places: &mut Vec<Place<'tcx>>) {
+    fn invalidated_places(&self, places: &mut Vec<fmir::Place<'tcx>>) {
         match self {
-            Expr::Move(p) => places.push(*p),
+            Expr::Move(p) => places.push(p.clone()),
             Expr::Copy(_) => {}
             Expr::BinOp(_, _, l, r) => {
                 l.invalidated_places(places);
@@ -618,19 +620,19 @@ impl<'tcx> Statement<'tcx> {
     ) -> Vec<mlcfg::Statement> {
         match self {
             Statement::Assignment(lhs, RValue::Borrow(rhs)) => {
-                let borrow = Exp::BorrowMut(Box::new(translate_rplace_inner(
+                let borrow = Exp::BorrowMut(Box::new(translate_rplace(
                     ctx,
                     names,
                     locals,
                     rhs.local,
-                    rhs.projection,
+                    &rhs.projection,
                 )));
-                let reassign = Exp::Final(Box::new(translate_rplace_inner(
+                let reassign = Exp::Final(Box::new(translate_rplace(
                     ctx,
                     names,
                     locals,
                     lhs.local,
-                    lhs.projection,
+                    &lhs.projection,
                 )));
 
                 vec![
@@ -649,7 +651,7 @@ impl<'tcx> Statement<'tcx> {
                 let rhs = rhs.to_why(ctx, names, locals);
                 let mut exps = vec![place::create_assign_inner(ctx, names, locals, &lhs, rhs)];
                 for pl in invalid {
-                    let ty = ctx.place_ty(locals, pl.as_ref()).ty;
+                    let ty = pl.ty(ctx.tcx, locals);
                     let ty = translate_ty(ctx, names, DUMMY_SP, ty);
                     exps.push(place::create_assign_inner(ctx, names, locals, &pl, Exp::Any(ty)));
                 }
@@ -661,7 +663,7 @@ impl<'tcx> Statement<'tcx> {
                 let rp = Exp::impure_qvar(names.value(id, subst));
 
                 let assume =
-                    rp.app_to(translate_rplace_inner(ctx, names, locals, pl.local, pl.projection));
+                    rp.app_to(translate_rplace(ctx, names, locals, pl.local, &pl.projection));
                 vec![mlcfg::Statement::Assume(assume)]
             }
             Statement::Assertion { cond, msg } => {
