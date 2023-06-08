@@ -1,5 +1,6 @@
 use indexmap::{IndexMap, IndexSet};
 use rustc_hir::{def::DefKind, def_id::DefId};
+use rustc_span::DUMMY_SP;
 
 use crate::{
     ctx::{TranslatedItem, TranslationCtx},
@@ -8,6 +9,8 @@ use crate::{
 use std::ops::{Deref, DerefMut};
 
 pub(crate) use clone_map::*;
+
+use self::{dependency::Dependency, ty_inv::TyInvKind};
 
 pub(crate) mod clone_map;
 pub(crate) mod constant;
@@ -24,14 +27,14 @@ pub(crate) mod ty;
 pub(crate) mod ty_inv;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-struct TransId {
-    def_id: DefId,
-    inv: bool,
+pub(crate) enum TransId {
+    Item(DefId),
+    TyInv(TyInvKind),
 }
 
 impl From<DefId> for TransId {
     fn from(def_id: DefId) -> Self {
-        TransId { def_id, inv: false }
+        TransId::Item(def_id)
     }
 }
 
@@ -208,14 +211,17 @@ impl<'tcx> Why3Generator<'tcx> {
         // self.types[&repr_id].accessors;
     }
 
-    pub(crate) fn translate_tyinv(&mut self, adt_did: DefId) {
-        let tid = TransId { def_id: adt_did, inv: true };
+    pub(crate) fn translate_tyinv(&mut self, inv_kind: TyInvKind) {
+        let tid = TransId::TyInv(inv_kind);
         if self.dependencies.contains_key(&tid) {
             return;
         }
 
-        self.translate(adt_did);
-        let (modl, deps) = ty_inv::build_inv_module(self, adt_did);
+        if let TyInvKind::Adt(adt_did) = inv_kind {
+            self.translate(adt_did);
+        }
+
+        let (modl, deps) = ty_inv::build_inv_module(self, inv_kind);
         self.dependencies.insert(tid, deps);
         self.functions.insert(tid, TranslatedItem::TyInv { modl });
     }
@@ -230,15 +236,20 @@ impl<'tcx> Why3Generator<'tcx> {
         self.functions.get(&tid)
     }
 
-    pub(crate) fn modules(self) -> impl Iterator<Item = (DefId, TranslatedItem)> + 'tcx {
-        self.functions.into_iter().map(|(tid, item)| (tid.def_id, item))
+    pub(crate) fn modules(self) -> impl Iterator<Item = (TransId, TranslatedItem)> + 'tcx {
+        self.functions.into_iter()
     }
 
     pub(crate) fn start_group(&mut self, ids: IndexSet<DefId>) {
         assert!(!ids.is_empty());
         let ids = ids.into_iter().map(Into::into).collect();
         if self.in_translation.iter().rev().any(|s| !s.is_disjoint(&ids)) {
-            let span = self.def_span(ids.first().unwrap().def_id);
+            let span = if let TransId::Item(def_id) = ids.first().unwrap() {
+                self.def_span(def_id)
+            } else {
+                DUMMY_SP
+            };
+
             self.in_translation.push(ids);
 
             self.crash_and_error(
@@ -272,8 +283,11 @@ impl<'tcx> Why3Generator<'tcx> {
         self.translated_items.insert(tid);
     }
 
-    pub(crate) fn dependencies(&self, key: dependency::Key<'tcx>) -> Option<&CloneSummary<'tcx>> {
-        let tid = TransId { def_id: key.did, inv: key.inv };
+    pub(crate) fn dependencies(&self, key: Dependency<'tcx>) -> Option<&CloneSummary<'tcx>> {
+        let tid = match key {
+            Dependency::TyInv(ty) => TransId::TyInv(TyInvKind::from_ty(ty)),
+            _ => key.did().map(|(def_id, _)| TransId::Item(def_id))?,
+        };
         self.dependencies.get(&tid)
     }
 }

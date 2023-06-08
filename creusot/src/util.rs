@@ -1,4 +1,5 @@
 use crate::{
+    backend::ty_inv::TyInvKind,
     ctx::*,
     translation::{
         pearlite::{self, super_visit_mut_term, Literal, Term, TermKind, TermVisitorMut},
@@ -107,6 +108,10 @@ pub(crate) fn is_type_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
     tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_method"))
         .map(|inv_did| inv_did == trait_item_did)
         .unwrap_or(false)
+}
+
+pub(crate) fn is_inv_internal(tcx: TyCtxt, def_id: DefId) -> bool {
+    def_id == tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap()
 }
 
 pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
@@ -218,8 +223,12 @@ pub(crate) fn ident_of_ty(sym: Symbol) -> Ident {
     Ident::build(&id)
 }
 
-pub(crate) fn inv_module_name(tcx: TyCtxt, def_id: DefId) -> Ident {
-    format!("{}_Inv", &*ident_path(tcx, def_id)).into()
+pub(crate) fn inv_module_name(tcx: TyCtxt, kind: TyInvKind) -> Ident {
+    match kind {
+        TyInvKind::Trivial => "TyInv_Trivial".into(),
+        TyInvKind::Adt(adt_did) => format!("{}_Inv", &*ident_path(tcx, adt_did)).into(),
+        TyInvKind::Tuple(arity) => format!("TyInv_Tuple{arity}").into(),
+    }
 }
 
 pub(crate) fn module_name(tcx: TyCtxt, def_id: DefId) -> Ident {

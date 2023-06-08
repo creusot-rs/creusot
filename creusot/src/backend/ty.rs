@@ -400,13 +400,10 @@ pub(crate) fn ty_param_names(
     }
 
     let gens = tcx.generics_of(def_id);
-    gens.params
-        .iter()
-        .filter_map(|param| match param.kind {
-            ty::GenericParamDefKind::Type { .. } => Some(translate_ty_param(param.name)),
-            _ => None,
-        })
-        .map(Ident::from)
+    (0..gens.count()).map(move |i| gens.param_at(i, tcx)).filter_map(|param| match param.kind {
+        ty::GenericParamDefKind::Type { .. } => Some(translate_ty_param(param.name)),
+        _ => None,
+    })
 }
 
 fn field_ty<'tcx>(

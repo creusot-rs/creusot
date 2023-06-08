@@ -8,7 +8,7 @@ pub(crate) mod specification;
 pub(crate) mod traits;
 
 use crate::{
-    backend::Why3Generator,
+    backend::{TransId, Why3Generator},
     ctx,
     ctx::load_extern_specs,
     error::CrErr,
@@ -116,7 +116,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
         let matcher: &str = matcher.as_ref().map(|s| &s[..]).unwrap_or("");
         let tcx = why3.tcx;
         let modules = why3.modules().flat_map(|(id, item)| {
-            if tcx.def_path_str(id).contains(matcher) {
+            if let TransId::Item(did) = id && tcx.def_path_str(did).contains(matcher) {
                 item.modules()
             } else {
                 item.interface()

@@ -1,48 +1,114 @@
-use super::{ty::translate_ty, CloneMap, CloneSummary, Why3Generator};
-use crate::{
-    ctx::*,
-    translation::{function, traits},
-    util,
+use super::{
+    ty::{translate_ty, ty_param_names},
+    CloneMap, CloneSummary, TransId, Why3Generator,
 };
+use crate::{ctx::*, translation::traits, util};
 use rustc_hir::{def::Namespace, def_id::DefId};
-use rustc_middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyKind};
+use rustc_middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
 use why3::{
-    declaration::{Axiom, Decl, Module},
+    declaration::{Axiom, Decl, Module, TyDecl},
     exp::{Exp, Pattern},
     Ident,
 };
 
+#[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+pub(crate) enum TyInvKind {
+    Trivial,
+    Adt(DefId),
+    Tuple(usize),
+}
+
+impl TyInvKind {
+    pub(crate) fn from_ty(ty: Ty) -> Self {
+        match ty.kind() {
+            TyKind::Bool | TyKind::Char | TyKind::Int(_) | TyKind::Uint(_) | TyKind::Float(_) => {
+                TyInvKind::Trivial
+            }
+            TyKind::Adt(adt_def, _) => TyInvKind::Adt(adt_def.did()),
+            TyKind::Tuple(tys) => TyInvKind::Tuple(tys.len()),
+            _ => TyInvKind::Trivial, // TODO
+        }
+    }
+
+    pub(crate) fn to_ty<'tcx>(self, tcx: TyCtxt<'tcx>) -> Ty<'tcx> {
+        match self {
+            TyInvKind::Trivial => tcx.mk_ty_param(0, Symbol::intern("T")),
+            TyInvKind::Adt(did) => tcx.type_of(did).subst_identity(),
+            TyInvKind::Tuple(arity) => tcx.mk_tup_from_iter(
+                (0..arity).map(|i| tcx.mk_ty_param(i as _, Symbol::intern(&format!("T{i}")))),
+            ),
+        }
+    }
+
+    pub(crate) fn generics(self, tcx: TyCtxt) -> Vec<Ident> {
+        match self {
+            TyInvKind::Trivial => vec!["t".into()],
+            TyInvKind::Adt(def_id) => ty_param_names(tcx, def_id).collect(),
+            TyInvKind::Tuple(arity) => (0..arity).map(|i| format!["t{i}"].into()).collect(),
+        }
+    }
+}
+
+pub(crate) fn tyinv_substs<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> SubstsRef<'tcx> {
+    match ty.kind() {
+        TyKind::Bool | TyKind::Char | TyKind::Int(_) | TyKind::Uint(_) | TyKind::Float(_) => {
+            tcx.mk_substs(&[GenericArg::from(ty)])
+        }
+        TyKind::Adt(_, adt_substs) => adt_substs,
+        TyKind::Tuple(tys) => tcx.mk_substs_from_iter(tys.iter().map(GenericArg::from)),
+        _ => tcx.mk_substs(&[]),
+    }
+}
+
 pub(crate) fn build_inv_module<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    did: DefId,
+    inv_kind: TyInvKind,
 ) -> (Module, CloneSummary<'tcx>) {
-    let mut names = CloneMap::new_inv(ctx.tcx, did, CloneLevel::Stub, true);
+    let mut names = CloneMap::new_with_tid(ctx.tcx, TransId::TyInv(inv_kind), CloneLevel::Stub);
+    let generics = inv_kind.generics(ctx.tcx);
+    let inv_axiom = build_inv_axiom(ctx, &mut names, inv_kind);
 
-    let ty_name = util::item_name(ctx.tcx, did, Namespace::TypeNS);
-    let axiom_name = Ident::from(format!("inv_{}", &*ty_name));
-    let inv_axiom = build_inv_axiom(ctx, &mut names, did, axiom_name);
+    let mut decls = vec![];
+    decls.extend(
+        generics
+            .into_iter()
+            .map(|ty_name| Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: vec![] })),
+    );
 
     let (clones, summary) = names.to_clones(ctx);
-
-    let mut decls = function::own_generic_decls_for(ctx.tcx, did).collect::<Vec<_>>();
     decls.extend(clones);
+
     decls.push(Decl::Axiom(inv_axiom));
 
-    (Module { name: util::inv_module_name(ctx.tcx, did), decls }, summary)
+    (Module { name: util::inv_module_name(ctx.tcx, inv_kind), decls }, summary)
 }
 
 fn build_inv_axiom<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
-    did: DefId,
-    name: Ident,
+    inv_kind: TyInvKind,
 ) -> Axiom {
-    let ty = ctx.type_of(did).subst_identity();
-    let param_env = ctx.param_env(did);
+    let name = match inv_kind {
+        TyInvKind::Trivial => "inv_trivial".into(),
+        TyInvKind::Adt(did) => {
+            let ty_name = util::item_name(ctx.tcx, did, Namespace::TypeNS);
+            format!("inv_{}", &*ty_name).into()
+        }
+        TyInvKind::Tuple(arity) => format!("inv_tuple{arity}").into(),
+    };
+
+    let param_env =
+        if let TyInvKind::Adt(did) = inv_kind { ctx.param_env(did) } else { ParamEnv::empty() };
+
+    let ty = inv_kind.to_ty(ctx.tcx);
     let lhs: Exp = Exp::impure_qvar(names.ty_inv(ty)).app_to(Exp::pure_var("self".into()));
-    let rhs = build_inv_exp(ctx, names, "self".into(), ty, param_env, true)
-        .unwrap_or_else(|| Exp::mk_true());
+    let rhs = if TyInvKind::Trivial == inv_kind {
+        Exp::mk_true()
+    } else {
+        build_inv_exp(ctx, names, "self".into(), ty, param_env, true)
+            .unwrap_or_else(|| Exp::mk_true())
+    };
 
     let axiom = Exp::Forall(
         vec![("self".into(), translate_ty(ctx, names, DUMMY_SP, ty))],
