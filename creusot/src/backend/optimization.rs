@@ -43,6 +43,8 @@ pub(crate) struct Usage {
     write: ZeroOneMany,
     read: ZeroOneMany,
     temp_var: bool,
+    // Is this local used in a place where we need a `Term`?
+    used_in_pure_ctx: bool,
 }
 
 pub(crate) fn gather_usage(b: &fmir::Body) -> HashMap<Symbol, Usage> {
@@ -147,27 +149,33 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
     }
 
     fn read(&mut self, local: Symbol, whole: bool) {
-        if !self.locals.contains_key(&local) {
-            return;
-        }
-
-        self.usages
-            .entry(local)
-            .or_insert_with(|| Usage { temp_var: self.locals[&local].temp, ..Default::default() })
-            .read
-            .inc(if whole { Whole::Whole } else { Whole::Part })
+        if let Some(usage) = self.get(local) {
+            usage.read.inc(if whole { Whole::Whole } else { Whole::Part })
+        };
     }
 
-    fn write(&mut self, local: Symbol, whole: bool) {
+    fn get(&mut self, local: Symbol) -> Option<&mut Usage> {
         if !self.locals.contains_key(&local) {
-            return;
+            return None;
         }
 
-        self.usages
-            .entry(local)
-            .or_insert_with(|| Usage { temp_var: self.locals[&local].temp, ..Default::default() })
-            .write
-            .inc(if whole { Whole::Whole } else { Whole::Part })
+        Some(
+            self.usages.entry(local).or_insert_with(|| Usage {
+                temp_var: self.locals[&local].temp,
+                ..Default::default()
+            }),
+        )
+    }
+    fn write(&mut self, local: Symbol, whole: bool) {
+        if let Some(usage) = self.get(local) {
+            usage.write.inc(if whole { Whole::Whole } else { Whole::Part })
+        };
+    }
+
+    fn pure(&mut self, local: Symbol) {
+        if let Some(usage) = self.get(local) {
+            usage.used_in_pure_ctx = true
+        };
     }
 }
 
@@ -175,6 +183,7 @@ impl<'a, 'tcx> TermVisitor<'tcx> for LocalUsage<'a, 'tcx> {
     fn visit_term(&mut self, term: &Term<'tcx>) {
         match term.kind {
             TermKind::Var(v) => {
+                self.pure(v);
                 self.read(v, true);
             }
             _ => super_visit_term(term, self),
@@ -209,7 +218,7 @@ impl<'tcx> SimplePropagator<'tcx> {
             self.visit_statement(&mut s);
             match s {
                 fmir::Statement::Assignment(l, fmir::RValue::Expr(r))
-                    if self.should_propagate(l.local) && !r.is_call() => {
+                    if self.should_propagate(l.local) && !self.usage[&l.local].used_in_pure_ctx => {
                       self.prop.insert(l.local, r);
                       self.dead.insert(l.local);
                     }
