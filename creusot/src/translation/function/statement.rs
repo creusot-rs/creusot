@@ -81,7 +81,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         return;
                     }
 
-                    Expr::Place(self.compute_ref_place(*pl, loc))
+                    Expr::Copy(self.compute_ref_place(*pl, loc))
                 }
                 Mut { .. } => {
                     if self.erased_locals.contains(pl.local) {
@@ -151,7 +151,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     ),
                 }
             }
-            Rvalue::Len(pl) => Expr::Len(Box::new(Expr::Place(*pl))),
+            Rvalue::Len(pl) => Expr::Len(Box::new(Expr::Copy(*pl))),
             Rvalue::Cast(CastKind::IntToInt | CastKind::PtrToPtr, op, ty) => {
                 let op_ty = op.ty(self.body, self.tcx);
                 Expr::Cast(Box::new(self.translate_operand(op)), op_ty, *ty)

@@ -92,7 +92,10 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
     fn visit_rvalue(&mut self, r: &fmir::RValue<'tcx>) {
         match r {
             fmir::RValue::Ghost(t) => self.visit_term(t),
-            fmir::RValue::Borrow(p) => {self.read_place(p); self.read_place(p)},
+            fmir::RValue::Borrow(p) => {
+                self.read_place(p);
+                self.read_place(p)
+            }
             fmir::RValue::Expr(e) => self.visit_expr(e),
         }
     }
@@ -101,7 +104,6 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
 
     fn visit_expr(&mut self, e: &fmir::Expr<'tcx>) {
         match e {
-            fmir::Expr::Place(p) => self.read_place(p),
             fmir::Expr::Move(p) => self.read_place(p),
             fmir::Expr::Copy(p) => self.read_place(p),
             fmir::Expr::BinOp(_, _, l, r) => {
@@ -251,7 +253,7 @@ impl<'tcx> SimplePropagator<'tcx> {
 
     fn visit_expr(&mut self, e: &mut fmir::Expr<'tcx>) {
         match e {
-            fmir::Expr::Place(p) | fmir::Expr::Move(p) | fmir::Expr::Copy(p) => {
+            fmir::Expr::Move(p) | fmir::Expr::Copy(p) => {
               if let Some(l) = p.as_local() && let Some(v) = self.prop.remove(&l) {
                 *e = v;
               }

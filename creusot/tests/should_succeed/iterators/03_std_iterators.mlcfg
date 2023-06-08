@@ -76,25 +76,6 @@ module CreusotContracts_Resolve_Resolve_Resolve
     ensures { result = resolve self }
     
 end
-module CreusotContracts_Invariant_Invariant_Invariant_Stub
-  type self
-  predicate invariant' (self : self)
-end
-module CreusotContracts_Invariant_Invariant_Invariant_Interface
-  type self
-  predicate invariant' (self : self)
-  val invariant' (self : self) : bool
-    ensures { result = invariant' self }
-    
-end
-module CreusotContracts_Invariant_Invariant_Invariant
-  type self
-  predicate invariant' (self : self) =
-    [#"../../../../../creusot-contracts/src/invariant.rs" 9 8 9 12] true
-  val invariant' (self : self) : bool
-    ensures { result = invariant' self }
-    
-end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
   type t_nonnull 't =
@@ -113,6 +94,25 @@ module Core_Slice_Iter_Iter_Type
   use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
   type t_iter 't =
     | C_Iter (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) opaque_ptr (Core_Marker_PhantomData_Type.t_phantomdata 't)
+    
+end
+module CreusotContracts_Invariant_Invariant_Invariant_Stub
+  type self
+  predicate invariant' (self : self)
+end
+module CreusotContracts_Invariant_Invariant_Invariant_Interface
+  type self
+  predicate invariant' (self : self)
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
+module CreusotContracts_Invariant_Invariant_Invariant
+  type self
+  predicate invariant' (self : self) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 9 8 9 12] true
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
     
 end
 module CreusotContracts_Std1_Slice_Impl13_ShallowModel_Stub
@@ -816,6 +816,7 @@ module C03StdIterators_SliceIter
   }
   BB1 {
     iter <- ([#"../03_std_iterators.rs" 8 4 8 38] IntoIter0.into_iter _7);
+    _7 <- any Core_Slice_Iter_Iter_Type.t_iter t;
     goto BB2
   }
   BB2 {
@@ -843,6 +844,7 @@ module C03StdIterators_SliceIter
     _18 <- borrow_mut ( * _19);
     _19 <- { _19 with current = ( ^ _18) };
     _17 <- ([#"../03_std_iterators.rs" 8 4 8 38] Next0.next _18);
+    _18 <- any borrowed (Core_Slice_Iter_Iter_Type.t_iter t);
     goto BB7
   }
   BB7 {
@@ -1218,6 +1220,7 @@ module C03StdIterators_VecIter
     _17 <- borrow_mut ( * _18);
     _18 <- { _18 with current = ( ^ _17) };
     _16 <- ([#"../03_std_iterators.rs" 19 4 19 38] Next0.next _17);
+    _17 <- any borrowed (Core_Slice_Iter_Iter_Type.t_iter t);
     goto BB6
   }
   BB6 {
@@ -1725,12 +1728,12 @@ module C03StdIterators_AllZero_Interface
     
 end
 module C03StdIterators_AllZero
-  use prelude.Ghost
-  use seq.Seq
-  use prelude.Int
   use prelude.Borrow
+  use prelude.Int
   use prelude.UIntSize
   use prelude.Slice
+  use prelude.Ghost
+  use seq.Seq
   clone Core_Num_Impl11_Max as Max0
   use Core_Slice_Iter_IterMut_Type as Core_Slice_Iter_IterMut_Type
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface as ShallowModel3 with
@@ -1879,16 +1882,19 @@ module C03StdIterators_AllZero
     _8 <- borrow_mut ( * v);
     v <- { v with current = ( ^ _8) };
     _7 <- ([#"../03_std_iterators.rs" 30 13 30 25] DerefMut0.deref_mut _8);
+    _8 <- any borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
     goto BB1
   }
   BB1 {
     _6 <- borrow_mut ( * _7);
     _7 <- { _7 with current = ( ^ _6) };
     _5 <- ([#"../03_std_iterators.rs" 30 13 30 25] IterMut0.iter_mut _6);
+    _6 <- any borrowed (slice usize);
     goto BB2
   }
   BB2 {
     iter <- ([#"../03_std_iterators.rs" 29 4 29 87] IntoIter0.into_iter _5);
+    _5 <- any Core_Slice_Iter_IterMut_Type.t_itermut usize;
     goto BB3
   }
   BB3 {
@@ -1915,6 +1921,7 @@ module C03StdIterators_AllZero
     _18 <- borrow_mut ( * _19);
     _19 <- { _19 with current = ( ^ _18) };
     _17 <- ([#"../03_std_iterators.rs" 29 4 29 87] Next0.next _18);
+    _18 <- any borrowed (Core_Slice_Iter_IterMut_Type.t_itermut usize);
     goto BB8
   }
   BB8 {
@@ -1955,6 +1962,13 @@ module C03StdIterators_AllZero
     goto BB6
   }
   
+end
+module Core_Iter_Adapters_Take_Take_Type
+  use prelude.Int
+  use prelude.UIntSize
+  type t_take 'i =
+    | C_Take 'i usize
+    
 end
 module Core_Iter_Adapters_Skip_Skip_Type
   use prelude.Int
@@ -2008,13 +2022,6 @@ module CreusotContracts_Std1_Iter_Skip_Impl3_Resolve
     [#"../../../../../creusot-contracts/src/std/iter/skip.rs" 34 12 34 33] Resolve0.resolve (Iter0.iter self)
   val resolve (self : Core_Iter_Adapters_Skip_Skip_Type.t_skip i) : bool
     ensures { result = resolve self }
-    
-end
-module Core_Iter_Adapters_Take_Take_Type
-  use prelude.Int
-  use prelude.UIntSize
-  type t_take 'i =
-    | C_Take 'i usize
     
 end
 module CreusotContracts_Std1_Iter_Take_Impl0_Iter_Stub
@@ -2890,9 +2897,9 @@ module C03StdIterators_SkipTake_Interface
 end
 module C03StdIterators_SkipTake
   type i
+  use prelude.Borrow
   use prelude.Int
   use prelude.UIntSize
-  use prelude.Borrow
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = i
   clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant0 with
@@ -3069,12 +3076,14 @@ module C03StdIterators_SkipTake
   }
   BB1 {
     _5 <- ([#"../03_std_iterators.rs" 36 14 36 34] Skip0.skip _6 n);
+    _6 <- any Core_Iter_Adapters_Take_Take_Type.t_take i;
     goto BB2
   }
   BB2 {
     _4 <- borrow_mut _5;
     _5 <-  ^ _4;
     res <- ([#"../03_std_iterators.rs" 36 14 36 41] Next0.next _4);
+    _4 <- any borrowed (Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i));
     goto BB3
   }
   BB3 {
@@ -3098,44 +3107,6 @@ module C03StdIterators_SkipTake
     return _0
   }
   
-end
-module CreusotContracts_Std1_Vec_Impl10_Resolve_Stub
-  type t
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
-end
-module CreusotContracts_Std1_Vec_Impl10_Resolve_Interface
-  type t
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
-  val resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Std1_Vec_Impl10_Resolve
-  type t
-  use prelude.Int
-  use seq.Seq
-  clone Core_Num_Impl11_Max_Stub as Max0
-  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
-    type self = t
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
-    type t = t,
-    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
-    type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global,
-    val Max0.mAX' = Max0.mAX',
-    axiom .
-  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Resolve0.resolve (IndexLogic0.index_logic self i)
-  val resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
-    ensures { result = resolve self }
-    
 end
 module CreusotContracts_Std1_Iter_MapInv_MapInv_Type
   use prelude.Ghost
@@ -3284,6 +3255,44 @@ module C03StdIterators_Counter_Closure0
     return _0
   }
   
+end
+module CreusotContracts_Std1_Vec_Impl10_Resolve_Stub
+  type t
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+end
+module CreusotContracts_Std1_Vec_Impl10_Resolve_Interface
+  type t
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  val resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = resolve self }
+    
+end
+module CreusotContracts_Std1_Vec_Impl10_Resolve
+  type t
+  use prelude.Int
+  use seq.Seq
+  clone Core_Num_Impl11_Max_Stub as Max0
+  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
+    type self = t
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
+    type t = t,
+    type a = Alloc_Alloc_Global_Type.t_global,
+    val Max0.mAX' = Max0.mAX',
+    axiom .
+  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Resolve0.resolve (IndexLogic0.index_logic self i)
+  val resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = resolve self }
+    
 end
 module Alloc_Vec_Impl9_Deref_Interface
   type t
@@ -4042,9 +4051,9 @@ end
 module C03StdIterators_Counter
   use prelude.Int
   use prelude.UIntSize
-  use seq.Seq
   use prelude.UInt32
   use prelude.Borrow
+  use seq.Seq
   use prelude.Slice
   use Core_Slice_Iter_Iter_Type as Core_Slice_Iter_Iter_Type
   clone CreusotContracts_Std1_Slice_Impl13_ShallowModel_Interface as ShallowModel3 with
@@ -4277,10 +4286,13 @@ module C03StdIterators_Counter
     _10 <- borrow_mut cnt;
     cnt <-  ^ _10;
     _4 <- ([#"../03_std_iterators.rs" 44 22 53 9] MapInv0.map_inv _5 (Closure00.C03StdIterators_Counter_Closure0 _10));
+    _5 <- any Core_Slice_Iter_Iter_Type.t_iter uint32;
+    _10 <- any borrowed usize;
     goto BB3
   }
   BB3 {
     x <- ([#"../03_std_iterators.rs" 44 22 54 18] Collect0.collect _4);
+    _4 <- any CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 Closure00.c03stditerators_counter_closure0;
     goto BB4
   }
   BB4 {
@@ -4644,6 +4656,7 @@ module C03StdIterators_SumRange
     _18 <- borrow_mut ( * _19);
     _19 <- { _19 with current = ( ^ _18) };
     _17 <- ([#"../03_std_iterators.rs" 65 4 65 48] Next0.next _18);
+    _18 <- any borrowed (Core_Ops_Range_Range_Type.t_range isize);
     goto BB6
   }
   BB6 {
@@ -5242,6 +5255,7 @@ module C03StdIterators_EnumerateRange
   }
   BB1 {
     iter <- ([#"../03_std_iterators.rs" 73 4 73 96] IntoIter0.into_iter _2);
+    _2 <- any Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize);
     goto BB2
   }
   BB2 {
@@ -5267,6 +5281,7 @@ module C03StdIterators_EnumerateRange
     _13 <- borrow_mut ( * _14);
     _14 <- { _14 with current = ( ^ _13) };
     _12 <- ([#"../03_std_iterators.rs" 73 4 73 96] Next0.next _13);
+    _13 <- any borrowed (Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize));
     goto BB7
   }
   BB7 {

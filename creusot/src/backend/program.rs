@@ -310,7 +310,6 @@ impl<'tcx> Expr<'tcx> {
         locals: &LocalDecls<'tcx>,
     ) -> Exp {
         match self {
-            Expr::Place(pl) => translate_rplace_inner(ctx, names, locals, pl.local, pl.projection),
             Expr::Move(pl) => {
                 // TODO invalidate original place
                 translate_rplace_inner(ctx, names, locals, pl.local, pl.projection)
@@ -443,7 +442,6 @@ impl<'tcx> Expr<'tcx> {
 
     fn invalidated_places(&self, places: &mut Vec<Place<'tcx>>) {
         match self {
-            Expr::Place(_) => {}
             Expr::Move(p) => places.push(*p),
             Expr::Copy(_) => {}
             Expr::BinOp(_, _, l, r) => {
@@ -620,8 +618,20 @@ impl<'tcx> Statement<'tcx> {
     ) -> Vec<mlcfg::Statement> {
         match self {
             Statement::Assignment(lhs, RValue::Borrow(rhs)) => {
-                let borrow = Exp::BorrowMut(Box::new(Expr::Place(rhs).to_why(ctx, names, locals)));
-                let reassign = Exp::Final(Box::new(Expr::Place(lhs).to_why(ctx, names, locals)));
+                let borrow = Exp::BorrowMut(Box::new(translate_rplace_inner(
+                    ctx,
+                    names,
+                    locals,
+                    rhs.local,
+                    rhs.projection,
+                )));
+                let reassign = Exp::Final(Box::new(translate_rplace_inner(
+                    ctx,
+                    names,
+                    locals,
+                    lhs.local,
+                    lhs.projection,
+                )));
 
                 vec![
                     place::create_assign_inner(ctx, names, locals, &lhs, borrow),
@@ -650,7 +660,8 @@ impl<'tcx> Statement<'tcx> {
 
                 let rp = Exp::impure_qvar(names.value(id, subst));
 
-                let assume = rp.app_to(Expr::Place(pl).to_why(ctx, names, locals));
+                let assume =
+                    rp.app_to(translate_rplace_inner(ctx, names, locals, pl.local, pl.projection));
                 vec![mlcfg::Statement::Assume(assume)]
             }
             Statement::Assertion { cond, msg } => {

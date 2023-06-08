@@ -30,7 +30,6 @@ pub enum RValue<'tcx> {
 
 #[derive(Clone, Debug)]
 pub enum Expr<'tcx> {
-    Place(Place<'tcx>),
     Move(Place<'tcx>),
     Copy(Place<'tcx>),
     BinOp(BinOp, Ty<'tcx>, Box<Expr<'tcx>>, Box<Expr<'tcx>>),
@@ -50,7 +49,6 @@ pub enum Expr<'tcx> {
 impl<'tcx> Expr<'tcx> {
     pub fn is_call(&self) -> bool {
         match self {
-            Expr::Place(_) => false,
             Expr::Move(_) => false,
             Expr::Copy(_) => false,
             Expr::BinOp(_, _, _, _) => false,

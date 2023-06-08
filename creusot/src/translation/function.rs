@@ -288,7 +288,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     // Useful helper to translate an operand
     pub(crate) fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Expr<'tcx> {
         match operand {
-            Operand::Copy(pl) | Operand::Move(pl) => Expr::Place(*pl),
+            Operand::Copy(pl) => Expr::Copy(*pl),
+            Operand::Move(pl) => Expr::Move(*pl),
             Operand::Constant(c) => {
                 crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
             }
