@@ -34,7 +34,7 @@ impl<'tcx> Place<'tcx> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Statement<'tcx> {
     Assignment(Place<'tcx>, RValue<'tcx>),
     // TODO: Remove `Resolve` and replace it with `Assume`.
@@ -47,7 +47,7 @@ pub enum Statement<'tcx> {
 
 // Re-organize this completely
 // Get rid of Expr and reimpose a more traditional statement-rvalue-operand setup
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum RValue<'tcx> {
     Ghost(Term<'tcx>),
     Borrow(Place<'tcx>),

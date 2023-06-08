@@ -13,7 +13,7 @@ use crate::{
     ctx::{BodyId, CloneMap, TranslationCtx},
     translation::{
         binop_to_binop,
-        fmir::{self, Block, Branches, Expr, LocalDecls, RValue, Statement, Terminator},
+        fmir::{self, Block, Branches, Expr, LocalDecls, Place, RValue, Statement, Terminator},
         function::{closure_contract, closure_generic_decls, promoted, ClosureContract},
         unop_to_unop,
     },
@@ -314,9 +314,9 @@ impl<'tcx> Expr<'tcx> {
         match self {
             Expr::Move(pl) => {
                 // TODO invalidate original place
-                translate_rplace(ctx, names, locals, pl.local, &pl.projection)
+                pl.as_rplace(ctx, names, locals)
             }
-            Expr::Copy(pl) => translate_rplace(ctx, names, locals, pl.local, &pl.projection),
+            Expr::Copy(pl) => pl.as_rplace(ctx, names, locals),
             Expr::BinOp(BinOp::BitAnd, ty, l, r) if ty.is_bool() => {
                 l.to_why(ctx, names, locals).lazy_and(r.to_why(ctx, names, locals))
             }
@@ -611,6 +611,17 @@ impl<'tcx> Block<'tcx> {
     }
 }
 
+impl<'tcx> Place<'tcx> {
+    pub(crate) fn as_rplace(
+        &self,
+        ctx: &mut Why3Generator<'tcx>,
+        names: &mut CloneMap<'tcx>,
+        locals: &LocalDecls<'tcx>,
+    ) -> why3::Exp {
+        translate_rplace(ctx, names, locals, self.local, &self.projection)
+    }
+}
+
 impl<'tcx> Statement<'tcx> {
     pub(crate) fn to_why(
         self,
@@ -620,20 +631,8 @@ impl<'tcx> Statement<'tcx> {
     ) -> Vec<mlcfg::Statement> {
         match self {
             Statement::Assignment(lhs, RValue::Borrow(rhs)) => {
-                let borrow = Exp::BorrowMut(Box::new(translate_rplace(
-                    ctx,
-                    names,
-                    locals,
-                    rhs.local,
-                    &rhs.projection,
-                )));
-                let reassign = Exp::Final(Box::new(translate_rplace(
-                    ctx,
-                    names,
-                    locals,
-                    lhs.local,
-                    &lhs.projection,
-                )));
+                let borrow = Exp::BorrowMut(Box::new(rhs.as_rplace(ctx, names, locals)));
+                let reassign = Exp::Final(Box::new(lhs.as_rplace(ctx, names, locals)));
 
                 vec![
                     place::create_assign_inner(ctx, names, locals, &lhs, borrow),
@@ -662,8 +661,7 @@ impl<'tcx> Statement<'tcx> {
 
                 let rp = Exp::impure_qvar(names.value(id, subst));
 
-                let assume =
-                    rp.app_to(translate_rplace(ctx, names, locals, pl.local, &pl.projection));
+                let assume = rp.app_to(pl.as_rplace(ctx, names, locals));
                 vec![mlcfg::Statement::Assume(assume)]
             }
             Statement::Assertion { cond, msg } => {
