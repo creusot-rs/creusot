@@ -1,7 +1,7 @@
 
 module ReborrowStash_Test_Type
-  use mach.int.Int
-  use mach.int.UInt32
+  use prelude.Int
+  use prelude.UInt32
   type t_test  =
     | C_Test uint32
     
@@ -19,22 +19,25 @@ module CreusotContracts_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
   predicate resolve (self : borrowed t)
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
   predicate resolve (self : borrowed t) =
-     ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
     ensures { result = resolve self }
     
 end
 module ReborrowStash_Impl0_Test_Interface
   use prelude.Borrow
-  use mach.int.Int
-  use mach.int.UInt32
+  use prelude.Int
+  use prelude.UInt32
   use ReborrowStash_Test_Type as ReborrowStash_Test_Type
-  val test [@cfg:stackify] [#"../reborrow_stash.rs" 11 4 11 51] (self : borrowed (ReborrowStash_Test_Type.t_test)) (stash : borrowed uint32) : borrowed uint32
+  val test [#"../reborrow_stash.rs" 11 4 11 51] (self : borrowed (ReborrowStash_Test_Type.t_test)) (stash : borrowed uint32) : borrowed uint32
     ensures { [#"../reborrow_stash.rs" 8 14 8 35]  ^ stash = old(ReborrowStash_Test_Type.test_x ( * self)) }
     ensures { [#"../reborrow_stash.rs" 9 14 9 36]  * result = old(ReborrowStash_Test_Type.test_x ( * self)) }
     ensures { [#"../reborrow_stash.rs" 10 19 10 36] ReborrowStash_Test_Type.test_x ( ^ self) =  ^ result }
@@ -42,14 +45,14 @@ module ReborrowStash_Impl0_Test_Interface
 end
 module ReborrowStash_Impl0_Test
   use prelude.Borrow
-  use mach.int.Int
-  use mach.int.UInt32
+  use prelude.Int
+  use prelude.UInt32
   use ReborrowStash_Test_Type as ReborrowStash_Test_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = ReborrowStash_Test_Type.t_test
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = uint32
-  let rec cfg test [@cfg:stackify] [#"../reborrow_stash.rs" 11 4 11 51] (self : borrowed (ReborrowStash_Test_Type.t_test)) (stash : borrowed uint32) : borrowed uint32
+  let rec cfg test [#"../reborrow_stash.rs" 11 4 11 51] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (ReborrowStash_Test_Type.t_test)) (stash : borrowed uint32) : borrowed uint32
     ensures { [#"../reborrow_stash.rs" 8 14 8 35]  ^ stash = old(ReborrowStash_Test_Type.test_x ( * self)) }
     ensures { [#"../reborrow_stash.rs" 9 14 9 36]  * result = old(ReborrowStash_Test_Type.test_x ( * self)) }
     ensures { [#"../reborrow_stash.rs" 10 19 10 36] ReborrowStash_Test_Type.test_x ( ^ self) =  ^ result }
@@ -73,13 +76,13 @@ module ReborrowStash_Impl0_Test
     assume { Resolve0.resolve stash_2 };
     _8 <- borrow_mut (ReborrowStash_Test_Type.test_x ( * self_1));
     self_1 <- { self_1 with current = (let ReborrowStash_Test_Type.C_Test a =  * self_1 in ReborrowStash_Test_Type.C_Test ( ^ _8)) };
-    assume { Resolve1.resolve self_1 };
     _3 <- borrow_mut ( * _8);
     _8 <- { _8 with current = ( ^ _3) };
-    assume { Resolve0.resolve _8 };
     _0 <- borrow_mut ( * _3);
     _3 <- { _3 with current = ( ^ _0) };
+    assume { Resolve0.resolve _8 };
     assume { Resolve0.resolve _3 };
+    assume { Resolve1.resolve self_1 };
     return _0
   }
   

@@ -50,7 +50,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     pub(crate) fn translate_impl(&mut self, impl_id: DefId) -> TraitImpl<'tcx> {
         assert!(self.trait_id_of_impl(impl_id).is_some(), "{impl_id:?} is not a trait impl");
-        let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap().subst_identity();
+        let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
 
         let mut laws = Vec::new();
         let implementor_map = self.tcx.impl_item_implementor_ids(impl_id);
@@ -70,7 +70,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
             let subst = InternalSubsts::identity_for_item(self.tcx, impl_item);
 
-            let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.substs);
+            let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.0.substs);
 
             use crate::translation::pearlite::prusti::check_signature_agreement;
             match check_signature_agreement(self.tcx, impl_item, trait_item, refn_subst) {
@@ -84,7 +84,6 @@ impl<'tcx> TranslationCtx<'tcx> {
             {
                 continue;
             }
-            self.translate_impl(impl_item);
 
             // TODO: Clean up and abstract
             let predicates = self
@@ -137,7 +136,7 @@ fn logic_refinement_term<'tcx>(
     let mut args = Vec::new();
     let mut subst = HashMap::new();
     for (ix, ((id, _, _), (id2, _, ty))) in
-        trait_sig.inputs.iter().zip(impl_sig.inputs.iter()).enumerate()
+    trait_sig.inputs.iter().zip(impl_sig.inputs.iter()).enumerate()
     {
         let id = if id.is_empty() { Symbol::intern(&format!("_{}'", ix + 1)) } else { *id };
         let id2 = if id2.is_empty() { Symbol::intern(&format!("_{}'", ix + 1)) } else { *id2 };

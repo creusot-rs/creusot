@@ -11,10 +11,10 @@
 
 extern crate self as creusot_contracts;
 
-#[cfg(contracts)]
+#[cfg(creusot)]
 extern crate creusot_contracts_proc as base_macros;
 
-#[cfg(not(contracts))]
+#[cfg(not(creusot))]
 extern crate creusot_contracts_dummy as base_macros;
 
 mod macros {
@@ -153,10 +153,10 @@ pub mod prusti_macros {
     pub use base_macros::{
         ghost, invariant, pearlite, proof_assert, prusti_ensures as ensures,
         prusti_ensures_expiry as after_expiry, prusti_law as law, prusti_logic as logic,
-        prusti_predicate as predicate, prusti_requires as requires, trusted, variant,
+        prusti_predicate as predicate, prusti_requires as requires, trusted, variant, open,
     };
 
-    #[cfg(feature = "contracts")]
+    #[cfg(creusot)]
     pub use crate::__stubs::{at_expiry, curr};
 }
 

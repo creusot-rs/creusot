@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::prusti_prelude::*;
 
-pub trait MyModel<X> {
+trait MyModel<X> {
     #[logic(('x) -> 'x)]
     fn model(self) -> X;
 }

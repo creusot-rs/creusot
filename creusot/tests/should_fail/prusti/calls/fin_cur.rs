@@ -3,12 +3,12 @@ use creusot_contracts::prusti_prelude::*;
 
 #[logic(('curr) -> 'curr)]
 #[ensures(result == *x)]
-pub fn cur<'a, X>(x: &'a mut X) -> X {
+fn cur<'a, X>(x: &'a mut X) -> X {
     fin(x)
 }
 
 #[logic(('x) -> 'curr)]
 #[ensures(result == *x)]
-pub fn fin<'curr, X>(x: &'curr mut X) -> X {
+fn fin<'curr, X>(x: &'curr mut X) -> X {
     *x
 }

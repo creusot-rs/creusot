@@ -22,12 +22,10 @@ use rustc_middle::{
         RegionKind, RegionVid, SubstsRef, TyCtxt, TyKind, TypeFoldable,
     },
 };
-// use rustc_trait_selection::traits::query::normalize::AtExt;
 use rustc_span::{def_id::DefId, Span, Symbol, DUMMY_SP};
 
 use std::{collections::hash_map::Entry, iter};
-use rustc_infer::infer::DefineOpaqueTypes::No as DefOpaque;
-use rustc_trait_selection::traits::NormalizeExt;
+use rustc_trait_selection::traits::ObligationCtxt;
 
 fn home_sig(ctx: &Ctx<'_>, def_id: DefId) -> CreusotResult<Option<HomeSig>> {
     let home_sig = util::get_attr_lit(ctx.tcx, def_id, &["creusot", "prusti", "home_sig"]);
@@ -122,7 +120,7 @@ impl<'tcx> RegionInfo<'tcx> {
 }
 
 fn sup_tys<'tcx>(
-    infcx: &InferCtxt<'tcx>,
+    ocx: &ObligationCtxt<'_, 'tcx>,
     param_env: ParamEnv<'tcx>,
     span: Span,
     ty_gen: Ty<'tcx>,
@@ -132,28 +130,14 @@ fn sup_tys<'tcx>(
         return Ok(()); // Don't generate constraints for the never type
     }
     let oc = ObligationCause::dummy_with_span(span);
-    let normalize = |ty| {
-        let n_ty = infcx.at(&oc, param_env).normalize(ty);
-        let trivial = n_ty.obligations.iter().all(|ob| match ob.predicate.kind().skip_binder() {
-            _ => false,
-        });
-        if !trivial {
-            dbg!(ty);
-            dbg!(n_ty.value);
-            dbg!(n_ty.obligations);
-            panic!();
-        }
-        n_ty.value
-    };
+    let normalize = |ty| ocx.normalize(&oc, param_env, ty);
     let Ty { ty: ty_gen, home: home_gen } = normalize(ty_gen);
     let Ty { ty, home } = normalize(ty);
-    let infer_ok = infcx.at(&oc, param_env).sup(DefOpaque,home_gen, home).unwrap();
-    debug_assert!(infer_ok.obligations.is_empty());
-    let infer_ok = match infcx.at(&oc, param_env).sub(DefOpaque, ty_gen, ty) {
+    ocx.sub(&oc, param_env,home_gen, home).unwrap();
+    match ocx.sub(&oc, param_env, ty_gen, ty) {
         Ok(x) => x,
-        Err(err) => return Err(Error::new(span, err.to_string(infcx.tcx))),
+        Err(err) => return Err(Error::new(span, err.to_string(ocx.infcx.tcx))),
     };
-    debug_assert!(infer_ok.obligations.is_empty());
     Ok(())
 }
 
@@ -175,6 +159,7 @@ pub(super) fn check_call<'tcx>(
         None => return Ok(None),
     };
     let infcx = tcx.infer_ctxt().build();
+    let ocx = ObligationCtxt::new(&infcx);
     let subst_ref: SubstsRef = subst_ref.fold_with(&mut RegionReplacer {
         tcx,
         f: |_| infcx.next_region_var(RegionVariableOrigin::MiscVariable(DUMMY_SP)),
@@ -196,7 +181,7 @@ pub(super) fn check_call<'tcx>(
         let (ty, span) = arg;
 
         let ty_gen = subst_map.convert_sig_pair(home_sig_arg, ty_gen, &infcx);
-        sup_tys(&infcx, param_env, span, ty_gen, ty)
+        sup_tys(&ocx, param_env, span, ty_gen, ty)
     })?;
     let res_ty_gen = subst_map.convert_sig_pair(home_sig_res, res_ty_gen, &infcx);
 
@@ -236,13 +221,14 @@ pub(super) fn union<'tcx>(
     let tcx = ctx.tcx;
     let param_env = ctx.param_env();
     let infcx = tcx.infer_ctxt().build();
+    let ocx = ObligationCtxt::new(&infcx);
     let ty_gen = target.fold_with(&mut RegionReplacer {
         tcx,
         f: |_| infcx.next_region_var(RegionVariableOrigin::MiscVariable(DUMMY_SP)),
     });
     let home_gen = infcx.next_region_var(RegionVariableOrigin::MiscVariable(DUMMY_SP));
     let ty_gen = Ty { ty: ty_gen, home: home_gen };
-    elts.try_for_each(|ty| sup_tys(&infcx, param_env, DUMMY_SP, ty_gen, ty))?;
+    elts.try_for_each(|ty| sup_tys(&ocx, param_env, DUMMY_SP, ty_gen, ty))?;
     let constraints = infcx.take_and_reset_region_constraints();
     let var_info = RegionInfo::new(constraints.constraints.into_iter(), tcx);
     let res = ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| var_info.get_region(r, tcx) });
@@ -258,7 +244,8 @@ pub(super) fn check_sup<'tcx>(
     let tcx = ctx.tcx;
     let param_env = ctx.param_env();
     let infcx = tcx.infer_ctxt().build();
-    sup_tys(&infcx, param_env, span, expected, actual)?;
+    let ocx = ObligationCtxt::new(&infcx);
+    sup_tys(&ocx, param_env, span, expected, actual)?;
     let constraints = infcx.take_and_reset_region_constraints();
     constraints.constraints.into_iter().try_for_each(|(c, origin)| match c {
         Constraint::RegSubReg(reg1, reg2) => {
@@ -269,7 +256,7 @@ pub(super) fn check_sup<'tcx>(
                 Err(Error::new(origin.span(),format!("function was supposed to return data with home/lifetime `{reg2}` but it is returning data with home/lifetime `{reg1}`")))
             }
         }
-        _ => unreachable!(),
+        _ => Ok(()),
     })
 }
 

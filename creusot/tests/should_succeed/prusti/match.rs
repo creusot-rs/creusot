@@ -1,6 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::prusti_prelude::*;
 
+#[open]
 #[logic(('x) -> 'x)]
 pub fn test1<'a, X>(x: Result<&'a mut X, &'a mut X>) -> &'a mut X {
     match x {
@@ -9,6 +10,7 @@ pub fn test1<'a, X>(x: Result<&'a mut X, &'a mut X>) -> &'a mut X {
     }
 }
 
+#[open]
 #[logic(('curr) -> 'curr)]
 pub fn test_cur<'a, X>(x: Result<&'a mut X, &mut X>) -> X {
     let r = match x {
@@ -29,11 +31,13 @@ pub fn test_proc_cur<'a, 'b>(x: &'a mut u32, y: &'b mut u32, b: bool) {
     *r = 5;
 }
 
+#[open]
 #[logic(('x) -> 'x)]
 pub fn id<'a, X>(x: &'a mut X) -> &'a mut X {
     x
 }
 
+#[open]
 #[logic(('x) -> 'x)]
 #[requires(x != None)]
 pub fn unwrap<'a, 'b>(x: Option<&'a mut u32>) -> &'a mut u32 {

@@ -10,7 +10,7 @@ use rustc_span::{
     def_id::{DefId, LocalDefId},
     DUMMY_SP,
 };
-use rustc_infer::infer::DefineOpaqueTypes::No as DefOpaque;
+use rustc_infer::infer::resolve::fully_resolve;
 use rustc_trait_selection::traits::ObligationCtxt;
 use rustc_trait_selection::traits::outlives_bounds::InferCtxtExt;
 
@@ -35,9 +35,7 @@ pub(crate) fn empty_regions(
 
     // subtyping constraints
     let ocx = ObligationCtxt::new(&infcx);
-    let infer_ok =
-        infcx.at(&ObligationCause::dummy(), param_env).sub( DefOpaque,fn_ty_gen, fn_ty).unwrap();
-    ocx.register_infer_ok_obligations(infer_ok);
+    ocx.sub(&ObligationCause::dummy(), param_env, fn_ty_gen, fn_ty).unwrap();
     let mk_obligation =
         |predicate| Obligation::new(tcx, ObligationCause::dummy(), param_env, predicate);
 
@@ -59,9 +57,9 @@ pub(crate) fn empty_regions(
     ocx.resolve_regions_and_report_errors(def_id, &outlives).
         expect("region error when checking variance");
 
-        // resolve each region variable to see if it can be blocked
+    // resolve each region variable to see if it can be blocked
     let res =
-        iter.filter_map(move |(reg, reg_gen)| match infcx.fully_resolve(reg_gen).unwrap().kind() {
+        iter.filter_map(move |(reg, reg_gen)| match fully_resolve(&infcx, reg_gen).unwrap().kind() {
             RegionKind::ReVar(_) => Some(reg),
             _ => None,
         });

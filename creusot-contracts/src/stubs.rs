@@ -1,5 +1,5 @@
 use crate as creusot_contracts;
-use creusot_contracts::logic;
+use creusot_contracts::{logic, open};
 
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "fin"]
@@ -66,6 +66,7 @@ pub fn variant_check<R: crate::well_founded::WellFounded>(r: R) -> R {
 pub fn closure_result<R>(_: R, _: R) {}
 
 #[logic] // avoid triggering error since this is prusti specific
+#[open]
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "prusti_curr"]
 pub fn curr<T>(_: T) -> T {
@@ -73,6 +74,7 @@ pub fn curr<T>(_: T) -> T {
 }
 
 #[logic] // avoid triggering error since this is prusti specific
+#[open]
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "prusti_expiry"]
 pub fn at_expiry<'a: 'a, T>(_: T) -> T {

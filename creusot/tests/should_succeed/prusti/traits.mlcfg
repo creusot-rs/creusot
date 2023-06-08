@@ -8,6 +8,9 @@ module Traits_MyModel_Model_Interface
   type self
   type t
   function model [#"../traits.rs" 6 4 6 24] (self : self) : t
+  val model [#"../traits.rs" 6 4 6 24] (self : self) : t
+    ensures { result = model self }
+    
 end
 module Traits_MyModel_Model
   type self
@@ -28,6 +31,9 @@ module Traits_Impl0_Model_Interface
   type y
   use prelude.Borrow
   function model [#"../traits.rs" 11 4 11 23] (self : borrowed x) : y
+  val model [#"../traits.rs" 11 4 11 23] (self : borrowed x) : y
+    ensures { result = model self }
+    
 end
 module Traits_Impl0_Model
   type x
@@ -47,6 +53,9 @@ module Traits_Impl1_Model_Stub
 end
 module Traits_Impl1_Model_Interface
   function model [#"../traits.rs" 18 4 18 26] (self : bool) : bool
+  val model [#"../traits.rs" 18 4 18 26] (self : bool) : bool
+    ensures { result = model self }
+    
 end
 module Traits_Impl1_Model
   function model [#"../traits.rs" 18 4 18 26] (self : bool) : bool =
@@ -64,12 +73,15 @@ module CreusotContracts_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
   predicate resolve (self : borrowed t)
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
   predicate resolve (self : borrowed t) =
-     ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
     ensures { result = resolve self }
     
@@ -80,7 +92,7 @@ module Traits_Test_Interface
     type x = bool,
     type y = bool
   clone Traits_Impl1_Model_Stub as Model0
-  val test [@cfg:stackify] [#"../traits.rs" 24 0 24 33] (x : borrowed bool) : bool
+  val test [#"../traits.rs" 24 0 24 33] (x : borrowed bool) : bool
     ensures { [#"../traits.rs" 23 10 23 42] Model0.model result = old(Model1.model x) }
     
 end
@@ -93,7 +105,7 @@ module Traits_Test
     type x = bool,
     type y = bool,
     function Model0.model = Model0.model
-  let rec cfg test [@cfg:stackify] [#"../traits.rs" 24 0 24 33] (x : borrowed bool) : bool
+  let rec cfg test [#"../traits.rs" 24 0 24 33] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed bool) : bool
     ensures { [#"../traits.rs" 23 10 23 42] Model0.model result = old(Model1.model x) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -133,6 +145,9 @@ module Traits_Impl2_Model_Interface
   type t
   use Traits_Wrapper_Type as Traits_Wrapper_Type
   function model [#"../traits.rs" 34 4 34 23] (self : Traits_Wrapper_Type.t_wrapper t) : t
+  val model [#"../traits.rs" 34 4 34 23] (self : Traits_Wrapper_Type.t_wrapper t) : t
+    ensures { result = model self }
+    
 end
 module Traits_Impl2_Model
   type t
@@ -145,26 +160,26 @@ module Traits_Impl2_Model
 end
 module Traits_Test2_Interface
   use prelude.Borrow
-  use mach.int.Int
-  use mach.int.UInt32
+  use prelude.Int
+  use prelude.UInt32
   use Traits_Wrapper_Type as Traits_Wrapper_Type
   clone Traits_Impl2_Model_Stub as Model0 with
     type t = borrowed uint32
-  val test2 [@cfg:stackify] [#"../traits.rs" 41 0 41 46] (x : Traits_Wrapper_Type.t_wrapper (borrowed uint32)) : borrowed uint32
+  val test2 [#"../traits.rs" 41 0 41 46] (x : Traits_Wrapper_Type.t_wrapper (borrowed uint32)) : borrowed uint32
     ensures { [#"../traits.rs" 39 10 39 34] result = old(Model0.model x) }
     ensures { [#"../traits.rs" 40 15 40 34] Model0.model x = result }
     
 end
 module Traits_Test2
   use prelude.Borrow
-  use mach.int.Int
-  use mach.int.UInt32
+  use prelude.Int
+  use prelude.UInt32
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = uint32
   use Traits_Wrapper_Type as Traits_Wrapper_Type
   clone Traits_Impl2_Model as Model0 with
     type t = borrowed uint32
-  let rec cfg test2 [@cfg:stackify] [#"../traits.rs" 41 0 41 46] (x : Traits_Wrapper_Type.t_wrapper (borrowed uint32)) : borrowed uint32
+  let rec cfg test2 [#"../traits.rs" 41 0 41 46] [@cfg:stackify] [@cfg:subregion_analysis] (x : Traits_Wrapper_Type.t_wrapper (borrowed uint32)) : borrowed uint32
     ensures { [#"../traits.rs" 39 10 39 34] result = old(Model0.model x) }
     ensures { [#"../traits.rs" 40 15 40 34] Model0.model x = result }
     

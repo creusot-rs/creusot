@@ -1,6 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::prusti_prelude::*;
 
+#[open]
 #[logic(('_) -> '_)]
 pub fn check_bool(_: bool) -> bool {
     true
