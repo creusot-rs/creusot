@@ -222,7 +222,7 @@ impl<'tcx> SimplePropagator<'tcx> {
                       self.prop.insert(l.local, r);
                       self.dead.insert(l.local);
                     }
-                fmir::Statement::Assignment(ref l, fmir::RValue::Expr(ref r)) if self.should_erase(l.local)  && !r.is_call()  => {
+                fmir::Statement::Assignment(ref l, fmir::RValue::Expr(ref r)) if self.should_erase(l.local)  && !r.is_call() && r.is_pure() => {
                       self.dead.insert(l.local);
                 }
                 fmir::Statement::Resolve(_,_, ref p) => {

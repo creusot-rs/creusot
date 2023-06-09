@@ -90,6 +90,31 @@ impl<'tcx> Expr<'tcx> {
             Expr::Repeat(_, _) => false,
         }
     }
+
+    pub fn is_pure(&self) -> bool {
+        match self {
+            Expr::Move(_) => true,
+            Expr::Copy(_) => true,
+            Expr::BinOp(
+                BinOp::Add | BinOp::Mul | BinOp::Rem | BinOp::Div | BinOp::Sub,
+                _,
+                _,
+                _,
+            ) => false,
+            Expr::BinOp(_, _, _, _) => true,
+            Expr::UnaryOp(UnOp::Neg, _, _) => false,
+            Expr::UnaryOp(_, _, _) => true,
+            Expr::Constructor(_, _, es) => es.iter().all(|e| e.is_pure()),
+            Expr::Call(_, _, es) => es.iter().all(|e| e.is_pure()),
+            Expr::Constant(_) => true,
+            Expr::Cast(e, _, _) => false,
+            Expr::Tuple(es) => es.iter().all(|e| e.is_pure()),
+            Expr::Span(_, e) => e.is_pure(),
+            Expr::Len(e) => e.is_pure(),
+            Expr::Array(es) => es.iter().all(|e| e.is_pure()),
+            Expr::Repeat(l, r) => l.is_pure() && r.is_pure(),
+        }
+    }
 }
 
 #[derive(Clone)]
