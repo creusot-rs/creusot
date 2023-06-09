@@ -31,7 +31,8 @@ use std::iter;
 use itertools::Either;
 use rustc_target::abi::VariantIdx;
 use rustc_infer::infer::at::ToTrace;
-use rustc_middle::ty::error::TypeError;
+use rustc_infer::infer::ValuePairs;
+use rustc_middle::ty::error::{ExpectedFound, TypeError};
 
 fn home_sig(ctx: &Ctx<'_>, def_id: DefId) -> CreusotResult<Option<HomeSig>> {
     let home_sig = util::get_attr_lit(ctx.tcx, def_id, &["creusot", "prusti", "home_sig"]);
@@ -170,6 +171,17 @@ fn generalize<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(t: T, infcx: &InferCtxt<'tcx>
     })
 }
 
+fn origin_types<'tcx>(origin: &SubregionOrigin<'tcx>) -> Option<ExpectedFound<ty::Ty<'tcx>>> {
+    match origin {
+        SubregionOrigin::Subtype(t) => match t.values {
+            ValuePairs::Regions(_) => None,
+            ValuePairs::Terms(t) => Some(ExpectedFound{found: t.found.ty().unwrap(), expected: t.expected.ty().unwrap()}),
+            _ => unreachable!()
+        },
+        _ => unreachable!()
+    }
+}
+
 pub(crate) fn check_call<'tcx>(
     ctx: &Ctx<'tcx>,
     ts: Region<'tcx>,
@@ -219,11 +231,20 @@ pub(crate) fn check_call<'tcx>(
             if var == vid && curr_ok.is_ok() && !sub_ts(reg, ts) =>
         {
             let reg = DisplayRegion(reg, ctx);
-            let ts = DisplayRegion(ts, ctx);
-            curr_ok = Err(Error::new(
-                origin.span(),
-                format!("`{reg}` must match the current time slice `{ts}`"),
-            ))
+            let dts = DisplayRegion(ts, ctx);
+            let msg = match origin_types(origin) {
+                None => format!("the expression's home `{reg}` must match the current time slice `{dts}`"),
+                Some(x) => {
+                    let found = prepare_display(x.found, ctx);
+                    let replacer = |r: Region<'tcx>| match r.kind() {
+                        RegionKind::ReVar(vid2) if vid2 == vid => prepare_display(ts, ctx),
+                        _ => r
+                    };
+                    let expected = x.expected.fold_with(&mut RegionReplacer{f: replacer, tcx});
+                    format!("the expression's lifetime `{reg}` must match the current time slice `{dts}` (found `{found}`, expected `{expected}`)")
+                }
+            };
+            curr_ok = Err(Error::new(origin.span(), msg))
         }
         _ => {}
     });
@@ -298,7 +319,16 @@ pub(crate) fn check_sup<'tcx>(
                 Ok(())
             } else {
                 let (reg1, reg2) = (DisplayRegion(reg1, ctx), DisplayRegion(reg2, ctx));
-                Err(Error::new(origin.span(),format!("function was supposed to return data with home/lifetime `{reg2}` but it is returning data with home/lifetime `{reg1}`")))
+                let msg = match origin_types(&origin) {
+                    None => format!("function was supposed to return data with home `{reg2}` but it is returning data with home `{reg1}`"),
+                    Some(t) => {
+                        let expected = prepare_display(t.expected, ctx);
+                        let found = prepare_display(t.found, ctx);
+                        format!("function was supposed to return data with type `{expected}` but it is returning data with type `{found}`\n\
+                            expected `{reg2}` found `{reg1}`")
+                    }
+                };
+                Err(Error::new(origin.span(), msg))
             }
         }
         _ => Ok(()),

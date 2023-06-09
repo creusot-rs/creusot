@@ -17,6 +17,7 @@ use std::{
     iter,
 };
 use itertools::Either;
+use rustc_span::def_id::CRATE_DEF_ID;
 
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 /// Since we use a different subtyping for this analysis
@@ -148,7 +149,8 @@ impl<'tcx> Debug for Ctx<'tcx> {
     }
 }
 
-fn dummy_region(def_id: DefId, tcx: TyCtxt<'_>, sym: Symbol) -> Region<'_> {
+fn dummy_region(tcx: TyCtxt<'_>, sym: Symbol) -> Region<'_> {
+    let def_id = CRATE_DEF_ID.to_def_id();
     tcx.mk_re_free(def_id, BoundRegionKind::BrNamed(def_id, sym))
 }
 
@@ -160,8 +162,8 @@ impl<'tcx> Ctx<'tcx> {
             super::variance::empty_regions(tcx, owner_id.expect_local()).collect()
         };
         let curr_sym = Symbol::intern("'curr");
-        let curr_region = dummy_region(owner_id, tcx, curr_sym);
-        let old_region = dummy_region(owner_id, tcx, Symbol::intern("'old"));
+        let curr_region = dummy_region(tcx, curr_sym);
+        let old_region = dummy_region(tcx, Symbol::intern("'old"));
         let base_regions = vec![old_region, curr_region];
         Ctx { tcx, non_blocked, base_regions, curr_sym, owner_id }
     }
@@ -195,7 +197,7 @@ impl<'tcx> Ctx<'tcx> {
             }
         }
         let idx = self.base_regions.len();
-        self.base_regions.push(dummy_region(self.owner_id, self.tcx, s));
+        self.base_regions.push(dummy_region(self.tcx, s));
         RegionSet::singleton(idx as u32).into_region(self.tcx)
     }
 
@@ -251,4 +253,14 @@ impl<'a, 'tcx> Display for DisplayRegion<'a, 'tcx> {
             }
         }
     }
+}
+
+pub(super) fn prepare_display<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(t: T, ctx: &Ctx<'tcx>) -> T {
+    let tcx = ctx.tcx;
+    let to_display = |r: Region<'tcx>| {
+        let dr = DisplayRegion(r, ctx);
+        let sym = Symbol::intern(&format!("{dr}",));
+        dummy_region(tcx, sym)
+    };
+    t.fold_with(&mut RegionReplacer{f: to_display, tcx})
 }
