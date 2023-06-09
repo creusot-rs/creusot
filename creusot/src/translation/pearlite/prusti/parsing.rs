@@ -10,7 +10,7 @@ fn skip_space(rest: &mut &str) {
 #[derive(Copy, Clone, Debug)]
 pub(super) struct Home<T = Symbol> {
     pub data: T,
-    pub is_ref: bool
+    pub is_ref: bool,
 }
 
 pub(super) type HomeSig = (Vec<Home>, Home);
@@ -33,7 +33,7 @@ fn parse_home(rest: &mut &str, counter: &mut u32) -> Option<Home> {
         }
         other => Symbol::intern(other),
     };
-    let home = Home{data: home, is_ref: has_r};
+    let home = Home { data: home, is_ref: has_r };
     *rest = &rest[idx..];
     Some(home)
 }

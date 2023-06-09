@@ -1,18 +1,22 @@
-use rustc_infer::infer::{InferCtxt, RegionVariableOrigin, TyCtxtInferExt};
-use rustc_infer::infer::outlives::env::OutlivesEnvironment;
-use rustc_infer::traits::Obligation;
-use rustc_middle::traits::ObligationCause;
-use rustc_middle::ty::{
-    SubstsRef, Ty, Binder, GenericParamDefKind, GenericPredicates, InternalSubsts, ParamEnv,
-    PredicateKind, Region, RegionKind, TyCtxt,
+use rustc_infer::{
+    infer::{
+        outlives::env::OutlivesEnvironment, resolve::fully_resolve, InferCtxt,
+        RegionVariableOrigin, TyCtxtInferExt,
+    },
+    traits::Obligation,
+};
+use rustc_middle::{
+    traits::ObligationCause,
+    ty::{
+        Binder, GenericParamDefKind, GenericPredicates, InternalSubsts, ParamEnv, PredicateKind,
+        Region, RegionKind, SubstsRef, Ty, TyCtxt,
+    },
 };
 use rustc_span::{
     def_id::{DefId, LocalDefId},
     DUMMY_SP,
 };
-use rustc_infer::infer::resolve::fully_resolve;
-use rustc_trait_selection::traits::ObligationCtxt;
-use rustc_trait_selection::traits::outlives_bounds::InferCtxtExt;
+use rustc_trait_selection::traits::{outlives_bounds::InferCtxtExt, ObligationCtxt};
 
 pub(crate) fn empty_regions(
     tcx: TyCtxt<'_>,
@@ -54,15 +58,16 @@ pub(crate) fn empty_regions(
 
     let implied_bounds = infcx.implied_bounds_tys(param_env, def_id, wf_tys);
     let outlives = OutlivesEnvironment::with_bounds(param_env, implied_bounds);
-    ocx.resolve_regions_and_report_errors(def_id, &outlives).
-        expect("region error when checking variance");
+    ocx.resolve_regions_and_report_errors(def_id, &outlives)
+        .expect("region error when checking variance");
 
     // resolve each region variable to see if it can be blocked
-    let res =
-        iter.filter_map(move |(reg, reg_gen)| match fully_resolve(&infcx, reg_gen).unwrap().kind() {
+    let res = iter.filter_map(move |(reg, reg_gen)| {
+        match fully_resolve(&infcx, reg_gen).unwrap().kind() {
             RegionKind::ReVar(_) => Some(reg),
             _ => None,
-        });
+        }
+    });
     res
 }
 

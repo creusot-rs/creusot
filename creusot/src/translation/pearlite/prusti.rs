@@ -3,19 +3,19 @@ use crate::{
     pearlite::{Pattern, Term, TermKind, ThirTerm},
     util,
 };
+use internal_iterator::*;
+use itertools::Either;
 use rustc_ast::MetaItemLit as Lit;
 use rustc_data_structures::fx::FxHashMap;
-use rustc_span::def_id::DefId;
 use rustc_middle::{
     mir::Mutability::{Mut, Not},
     ty::{self, Binder, FnSig, InternalSubsts, Region},
 };
 use rustc_span::{
+    def_id::DefId,
     symbol::{Ident, Symbol},
     DUMMY_SP,
 };
-use internal_iterator::*;
-use itertools::Either;
 use std::{
     hash::Hash,
     iter,
@@ -25,12 +25,14 @@ use std::{
 mod parsing;
 mod typeck;
 pub(crate) use typeck::check_signature_agreement;
+mod region_set;
 mod types;
 use crate::pearlite::prusti::parsing::Home;
 use types::*;
 
 mod variance;
 
+#[derive(Debug)]
 struct SemiPersistent<T>(T);
 
 impl<T> Deref for SemiPersistent<T> {
@@ -117,26 +119,31 @@ type TimeSlice<'tcx> = Region<'tcx>;
 fn make_time_slice<'tcx>(
     l: &Lit,
     regions: impl Iterator<Item = Region<'tcx>>,
-    ctx: &Ctx<'tcx>,
+    ctx: &mut Ctx<'tcx>,
 ) -> CreusotResult<TimeSlice<'tcx>> {
     let mut bad_curr = false;
-    let mut regions = regions.inspect(|&r| bad_curr = bad_curr || ctx.check_ok_in_program(r));
+    let old_region = ctx.old_region();
+    let curr_region = ctx.curr_region();
+    let mut regions = regions.map(|r| {
+        bad_curr = bad_curr || ctx.check_ok_in_program(r);
+        (r.get_name(), ctx.fix_region(r))
+    });
     let sym = l.as_token_lit().symbol;
     let res = match sym.as_str() {
-        "old" => Ok(ctx.old_region),
-        "curr" => Ok(ctx.curr_region),
+        "old" => Ok(old_region),
+        "curr" => Ok(curr_region),
         "'_" => {
-            let mut candiates = (&mut regions).filter(|r| r.get_name() == None && !ctx.is_curr(*r));
+            let mut candiates = (&mut regions).filter(|(r, fix)| *r == None && *fix != curr_region);
             match (candiates.next(), candiates.next()) {
                 (None, _) => Err(Error::new(l.span, "function has no blocked anonymous regions")),
                 (Some(_), Some(_)) => {
                     Err(Error::new(l.span, "function has multiple blocked anonymous regions"))
                 }
-                (Some(c), None) => Ok(c),
+                (Some((_, r)), None) => Ok(r),
             }
         }
         _ => {
-            if let Some(r) = regions.find(|r| r.get_name() == Some(sym)) {
+            if let Some((_, r)) = regions.find(|(r, _)| *r == Some(sym)) {
                 Ok(r)
             } else {
                 Err(Error::new(l.span, format!("use of undeclared lifetime name {sym}")))
@@ -152,49 +159,45 @@ fn make_time_slice<'tcx>(
 }
 
 /// Returns region corresponding to `l` in a logical context
-fn make_time_slice_logic<'tcx>(
-    l: &Lit,
-    map: &FxHashMap<Symbol, Region<'tcx>>,
-    ctx: &Ctx<'tcx>,
-) -> CreusotResult<TimeSlice<'tcx>> {
+fn make_time_slice_logic<'tcx>(l: &Lit, ctx: &mut Ctx<'tcx>) -> CreusotResult<TimeSlice<'tcx>> {
     let sym = l.as_token_lit().symbol;
     match sym.as_str() {
-        "old" => Ok(ctx.curr_region), //hack requires clauses to use same time slice as return
-        "curr" => Ok(ctx.curr_region),
+        "old" => Ok(ctx.curr_region()), //hack requires clauses to use same time slice as return
+        "curr" => Ok(ctx.curr_region()),
         "'_" => Err(Error::new(
             l.span,
             "expiry contract on logic function must use a concrete lifetime/home",
         )),
-        _ => Ok(ctx.parsed_home_to_region(sym, map)),
+        _ => Ok(ctx.home_to_region(sym)),
     }
 }
 
 fn add_homes_to_sig<'a, 'tcx>(
-    ctx: &'a Ctx<'tcx>,
+    ctx: &'a mut Ctx<'tcx>,
     sig: FnSig<'tcx>,
-    home_sig: Option<(&Lit, FxHashMap<Symbol, Region<'tcx>>)>,
+    home_sig: Option<&Lit>,
 ) -> CreusotResult<(impl Iterator<Item = (Symbol, CreusotResult<Ty<'tcx>>)> + 'a, Ty<'tcx>)> {
     let args: &[Ident] = ctx.tcx.fn_arg_names(ctx.owner_id);
     let (arg_homes, ret_home, span) = match home_sig {
-        Some((lit, map)) => {
+        Some(lit) => {
             let (arg_homes, ret_home) = parsing::parse_home_sig_lit(lit)?;
             if arg_homes.len() != args.len() {
                 return Err(Error::new(lit.span, "number of args doesn't match signature"));
             }
-            let home = ctx.map_parsed_home(ret_home, &map);
+            let home = ctx.map_parsed_home(ret_home);
             (
-                Either::Left(arg_homes.into_iter().map(move |h| ctx.map_parsed_home(h, &map))),
+                Either::Left(arg_homes.into_iter().map(move |h| ctx.map_parsed_home(h))),
                 home,
                 lit.span,
             )
         }
         None => {
-            let arg_homes = iter::repeat(Home { data: ctx.old_region, is_ref: false });
-            (Either::Right(arg_homes), Home { data: ctx.curr_region, is_ref: false }, DUMMY_SP)
+            let arg_homes = iter::repeat(Home { data: ctx.old_region(), is_ref: false });
+            (Either::Right(arg_homes), Home { data: ctx.curr_region(), is_ref: false }, DUMMY_SP)
         }
     };
     let types =
-        sig.inputs().iter().zip(arg_homes).map(move |(&ty, home)| ctx.fix_homes(ty, home, span));
+        sig.inputs().iter().zip(arg_homes).map(move |(&ty, home)| Ty::try_new(ty, home, span));
 
     let args = args
         .iter()
@@ -208,7 +211,37 @@ fn add_homes_to_sig<'a, 'tcx>(
             }
         })
         .zip(types);
-    Ok((args, ctx.fix_homes(sig.output(), ret_home, span)?))
+    Ok((args, Ty::try_new(sig.output(), ret_home, span)?))
+}
+
+fn full_signature<'a, 'tcx>(
+    home_sig: Option<&Lit>,
+    sig: Binder<'tcx, FnSig<'tcx>>,
+    ts: &Lit,
+    owner_id: DefId,
+    ctx: &'a mut Ctx<'tcx>,
+) -> CreusotResult<(
+    Region<'tcx>,
+    impl Iterator<Item = (Symbol, CreusotResult<Ty<'tcx>>)> + 'a,
+    Ty<'tcx>,
+)> {
+    let tcx = ctx.tcx;
+    let bound_vars = sig.bound_vars();
+    let lifetimes1 = bound_vars.iter().map(|bvk| tcx.mk_re_free(owner_id, bvk.expect_region()));
+    let lifetimes2 = InternalSubsts::identity_for_item(tcx, owner_id).regions();
+    let lifetimes = lifetimes1.chain(lifetimes2);
+
+    let sig = tcx.liberate_late_bound_regions(owner_id, sig);
+    let sig = ctx.fix_regions(sig);
+
+    let (ts, home_sig) = match home_sig {
+        Some(lit) => (make_time_slice_logic(ts, ctx)?, Some(lit)),
+        None => (make_time_slice(ts, lifetimes, ctx)?, None),
+    };
+    //dbg!(&non_blocked);
+    //eprintln!("{:?}", sig);
+    let (arg_tys, res_ty) = add_homes_to_sig(ctx, sig, home_sig)?;
+    Ok((ts, arg_tys, res_ty))
 }
 
 pub(super) fn prusti_to_creusot<'tcx>(
@@ -229,9 +262,10 @@ pub(super) fn prusti_to_creusot<'tcx>(
     }
 
     let home_sig = util::get_attr_lit(tcx, owner_id, &["creusot", "prusti", "home_sig"]);
-    let ctx = Ctx::new(tcx, owner_id, home_sig.is_some());
+    let sig: Binder<FnSig> = tcx.fn_sig(owner_id).subst_identity();
+    let mut ctx = Ctx::new(tcx, owner_id, home_sig.is_some());
 
-    let (ts, arg_tys, res_ty) = full_signature(home_sig, ts, owner_id, &ctx)?;
+    let (ts, arg_tys, res_ty) = full_signature(home_sig, sig, ts, owner_id, &mut ctx)?;
     let res_kv = (Symbol::intern("result"), Ok(res_ty));
     let arg_tys = arg_tys.chain(iter::once(res_kv)).map(|(k, v)| v.map(|v| (k, v)));
     let mut tenv = Tenv::new(arg_tys.collect::<CreusotResult<_>>()?);
@@ -240,42 +274,6 @@ pub(super) fn prusti_to_creusot<'tcx>(
         typeck::check_sup(&ctx, res_ty, final_type, term.span)?
     }
     Ok(term)
-}
-
-fn full_signature<'a, 'tcx>(
-    home_sig: Option<&Lit>,
-    ts: &Lit,
-    owner_id: DefId,
-    ctx: &'a Ctx<'tcx>,
-) -> CreusotResult<(
-    Region<'tcx>,
-    impl Iterator<Item = (Symbol, CreusotResult<Ty<'tcx>>)> + 'a,
-    Ty<'tcx>,
-)> {
-    let tcx = ctx.tcx;
-    let sig: Binder<FnSig> = tcx.fn_sig(owner_id).subst_identity();
-    let bound_vars = sig.bound_vars();
-    let lifetimes1 = bound_vars.iter().map(|bvk| {
-        tcx.mk_re_free(owner_id, bvk.expect_region())
-    });
-    let lifetimes2 = InternalSubsts::identity_for_item(tcx, owner_id).regions();
-    let lifetimes = lifetimes1.chain(lifetimes2);
-
-    let sig = tcx.liberate_late_bound_regions(owner_id, sig);
-
-    let (ts, home_sig) = match home_sig {
-        Some(lit) => {
-            let map: FxHashMap<_, _> =
-                lifetimes.filter_map(|r| Some((r.get_name()?, ctx.fix_region(r)))).collect();
-            (make_time_slice_logic(ts, &map, &ctx)?, Some((lit, map)))
-        }
-        None => (make_time_slice(ts, lifetimes, &ctx)?, None),
-    };
-    let ts = ctx.fix_region(ts);
-    //dbg!(&non_blocked);
-    //eprintln!("{:?}", sig);
-    let (arg_tys, res_ty) = add_homes_to_sig(&ctx, sig, home_sig)?;
-    Ok((ts, arg_tys, res_ty))
 }
 
 fn iterate_bindings<'tcx, R, F>(
@@ -373,12 +371,12 @@ fn convert<'tcx>(
         }
         TermKind::Forall { binder, body } | TermKind::Exists { binder, body } => {
             let ty = binder.1.tuple_fields()[0];
-            let ty = ctx.fix_regions(ty, ts); // TODO handle lifetimes annotations in ty
+            let ty = Ty::all_at_ts(ty, ctx.tcx, ts); // TODO handle lifetimes annotations in ty
             convert(&mut *body, &mut tenv.insert(binder.0, ty), ts, ctx)?
         }
         TermKind::Call { args, fun, id, subst } => {
             let new_reg = if tcx.is_diagnostic_item(Symbol::intern("prusti_curr"), *id) {
-                Some(ctx.curr_region)
+                Some(ctx.curr_region())
             } else if tcx.is_diagnostic_item(Symbol::intern("prusti_expiry"), *id) {
                 Some(subst.regions().next().unwrap())
             } else {
@@ -415,7 +413,12 @@ fn convert<'tcx>(
             let res = match ts {
                 ts if ty.has_home_at_ts(ts) => TermKind::Cur { term },
                 ts if sub_ts(end, ts) => TermKind::Fin { term },
-                _ => return Err(Error::new(term.span, format!("invalid dereference of expression with home `{}` and lifetime `{end}` at time-slice `{ts}`", ty.home))),
+                _ => {
+                    let home = DisplayRegion(ty.home, &ctx);
+                    let end = DisplayRegion(end, &ctx);
+                    let ts = DisplayRegion(ts, &ctx);
+                    return Err(Error::new(term.span, format!("invalid dereference of expression with home `{home}` and lifetime `{end}` at time-slice `{ts}`")));
+                }
             };
             *curr = res;
             inner_ty
@@ -439,7 +442,7 @@ fn convert<'tcx>(
             let res = ty.as_adt_variant(0u32.into(), tcx).nth(name.as_usize());
             res.unwrap()
         }
-        TermKind::Old { term } => convert(&mut *term, tenv, ctx.old_region, ctx)?,
+        TermKind::Old { term } => convert(&mut *term, tenv, ctx.old_region(), ctx)?,
         TermKind::Closure { .. } => todo!(),
         TermKind::Absurd => Ty::never(ctx.tcx),
         _ => return Err(Error::new(term.span, "this operation is not supported in Prusti specs")),

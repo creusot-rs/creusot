@@ -7,7 +7,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned, ToTokens, TokenStreamExt};
 use std::iter;
 use syn::{
-    parse::{discouraged::Speculative, Parse, Parser, ParseStream, Result},
+    parse::{discouraged::Speculative, Parse, ParseStream, Parser, Result},
     spanned::Spanned,
     *,
 };
@@ -742,7 +742,7 @@ pub fn prusti_ensures_expiry(attr: TS1, tokens: TS1) -> TS1 {
             let lifetime_string = format!("{}", lifetime);
             let lifetime = LitStr::new(&lifetime_string, lifetime.span());
             quote!(#[creusot::prusti::ts=#lifetime])
-        },
+        }
         None => quote!(#[creusot::prusti::ts="'_"]),
     };
     ensures_helper(rest.into(), tokens, prusti_info)

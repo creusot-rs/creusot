@@ -3,29 +3,28 @@ use crate::{
     pearlite::prusti::parsing::Home,
 };
 
-use rustc_data_structures::fx::{FxHashMap, FxHashSet};
+use crate::translation::pearlite::prusti::region_set::RegionSet;
+use itertools::Either;
+use rustc_data_structures::fx::FxHashSet;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::Mutability,
     ty,
     ty::{
-        AdtDef, BoundRegionKind, List, ParamEnv, Region, RegionKind, TyCtxt,
-        TyKind, TypeFoldable, TypeFolder,
+        AdtDef, BoundRegionKind, List, ParamEnv, Region, TyCtxt, TyKind, TypeFoldable, TypeFolder,
     },
 };
-use rustc_span::{def_id::DefId, Symbol, Span};
+use rustc_span::{def_id::DefId, Span, Symbol};
 use rustc_target::abi::VariantIdx;
-use itertools::Either;
 use std::{
-    fmt::{Display, Formatter},
+    fmt::{Debug, Display, Formatter},
     iter,
 };
 
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 /// Since we use a different subtyping for this analysis
-/// 'static liftimes are represented as ReFree
-/// ReStatic is used to represent the global supertype
-/// ReErased is used to represent the global subtype
+/// All regions are represented as early bound regions
+/// The index is used as a bitset of possible source regions that could have flowed into this region
 pub(super) struct Ty<'tcx> {
     pub ty: ty::Ty<'tcx>,
     pub home: Region<'tcx>,
@@ -78,11 +77,16 @@ impl<'tcx> Ty<'tcx> {
     }
 
     pub(super) fn never(tcx: TyCtxt<'tcx>) -> Self {
-        Ty { ty: tcx.types.never, home: tcx.lifetimes.re_static }
+        Ty { ty: tcx.types.never, home: RegionSet::EMPTY.into_region(tcx) }
+    }
+
+    pub(super) fn all_at_ts(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>, ts: Region<'tcx>) -> Self {
+        Ty { ty: ty.fold_with(&mut RegionReplacer { tcx, f: |_| ts }), home: ts }
     }
 
     pub(super) fn unknown_regions(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
-        Ty { ty: tcx.erase_regions(ty), home: tcx.lifetimes.re_erased }
+        let region = RegionSet::UNIVERSE.into_region(tcx);
+        Self::all_at_ts(ty, tcx, region)
     }
 
     pub(super) fn is_never(self) -> bool {
@@ -92,18 +96,35 @@ impl<'tcx> Ty<'tcx> {
     pub(super) fn has_home_at_ts(self, ts: Region<'tcx>) -> bool {
         sub_ts(self.home, ts)
     }
+
+    pub(super) fn try_new(
+        ty: ty::Ty<'tcx>,
+        home: Home<Region<'tcx>>,
+        span: Span,
+    ) -> CreusotResult<Self> {
+        let mut ty = ty;
+        if home.is_ref {
+            if ty.ref_mutability() != Some(Mutability::Not) {
+                return Err(Error::new(span, format!("{ty} isn't a shared reference")));
+            }
+            ty = ty.peel_refs()
+        }
+        Ok(Ty { ty, home: home.data })
+    }
 }
 
 pub(super) fn sub_ts<'tcx>(ts1: Region<'tcx>, ts2: Region<'tcx>) -> bool {
-    ts1 == ts2 || ts1.is_static() || ts2.is_erased()
+    RegionSet::from(ts1).subset(RegionSet::from(ts2))
 }
 
-pub(super) struct RegionReplacer<'tcx, F: Fn(Region<'tcx>) -> Region<'tcx>> {
+pub(super) struct RegionReplacer<'tcx, F: FnMut(Region<'tcx>) -> Region<'tcx>> {
     pub tcx: TyCtxt<'tcx>,
     pub f: F,
 }
 
-impl<'tcx, F: Fn(Region<'tcx>) -> Region<'tcx>> TypeFolder<TyCtxt<'tcx>> for RegionReplacer<'tcx, F> {
+impl<'tcx, F: FnMut(Region<'tcx>) -> Region<'tcx>> TypeFolder<TyCtxt<'tcx>>
+    for RegionReplacer<'tcx, F>
+{
     fn interner(&self) -> TyCtxt<'tcx> {
         self.tcx
     }
@@ -113,14 +134,27 @@ impl<'tcx, F: Fn(Region<'tcx>) -> Region<'tcx>> TypeFolder<TyCtxt<'tcx>> for Reg
     }
 }
 
+const OLD_IDX: u32 = 0;
+const CURR_IDX: u32 = 1;
+const OLD_REG_SET: RegionSet = RegionSet::singleton(OLD_IDX);
+const CURR_REG_SET: RegionSet = RegionSet::singleton(CURR_IDX);
+
 pub(super) struct Ctx<'tcx> {
     pub tcx: TyCtxt<'tcx>,
     non_blocked: FxHashSet<Region<'tcx>>,
+    base_regions: Vec<Region<'tcx>>,
     pub curr_sym: Symbol,
-    pub curr_region: Region<'tcx>,
-    pub old_region: Region<'tcx>,
-    static_region: Region<'tcx>,
     pub owner_id: DefId,
+}
+
+impl<'tcx> Debug for Ctx<'tcx> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Ctx")
+            .field("non_blocked", &self.non_blocked)
+            .field("base_regions", &self.base_regions)
+            .field("owner_id", &self.owner_id)
+            .finish_non_exhaustive()
+    }
 }
 
 fn dummy_region(def_id: DefId, tcx: TyCtxt<'_>, sym: Symbol) -> Region<'_> {
@@ -136,13 +170,21 @@ impl<'tcx> Ctx<'tcx> {
         };
         let curr_sym = Symbol::intern("'curr");
         let curr_region = dummy_region(owner_id, tcx, curr_sym);
-        let old_region = dummy_region(owner_id, tcx, Symbol::intern("old"));
-        let static_region = dummy_region(owner_id, tcx, Symbol::intern("'static"));
-        Ctx { tcx, non_blocked, curr_sym, curr_region, old_region, static_region, owner_id }
+        let old_region = dummy_region(owner_id, tcx, Symbol::intern("'old"));
+        let base_regions = vec![old_region, curr_region];
+        Ctx { tcx, non_blocked, base_regions, curr_sym, owner_id }
     }
 
     pub(super) fn absurd_home(&self) -> Region<'tcx> {
-        self.tcx.lifetimes.re_static
+        RegionSet::EMPTY.into_region(self.tcx)
+    }
+
+    pub(super) fn old_region(&self) -> Region<'tcx> {
+        OLD_REG_SET.into_region(self.tcx)
+    }
+
+    pub(super) fn curr_region(&self) -> Region<'tcx> {
+        CURR_REG_SET.into_region(self.tcx)
     }
 
     /// Checks if a region is legal in a program function
@@ -151,58 +193,43 @@ impl<'tcx> Ctx<'tcx> {
         r.get_name() == Some(self.curr_sym) && !self.non_blocked.contains(&r)
     }
 
-    pub(super) fn is_curr(&self, r: Region<'tcx>) -> bool {
-        r.get_name() == Some(self.curr_sym) || self.non_blocked.contains(&r)
+    fn region_index_to_name(&self, idx: u32) -> Symbol {
+        self.base_regions[idx as usize].get_name().unwrap_or(Symbol::intern("'_"))
     }
 
-    /// Fixes an external region by canonizing 'curr
-    /// and converting 'static to a ReFree to avoid influencing subtyping rules
-    pub(super) fn fix_region(&self, r: Region<'tcx>) -> Region<'tcx> {
-        if r.is_static() {
-            self.static_region
-        } else if r.get_name() == Some(self.old_region.get_name().unwrap()) {
-            self.old_region
-        } else if self.is_curr(r) {
-            self.curr_region
-        } else {
-            r
-        }
-    }
-
-    pub(super) fn fix_regions(&self, t: ty::Ty<'tcx>, home: Region<'tcx>) -> Ty<'tcx> {
-        let tcx = self.tcx;
-        let fixed = t.fold_with(&mut RegionReplacer { tcx, f: |r| self.fix_region(r) });
-        Ty { ty: fixed, home }
-    }
-
-    pub fn fix_homes(&self, t: ty::Ty<'tcx>, home: Home<Region<'tcx>>, span: Span) -> CreusotResult<Ty<'tcx>> {
-        let mut t = t;
-        if home.is_ref {
-            if t.ref_mutability() != Some(Mutability::Not) {
-                return Err(Error::new(
-                    span,
-                    format!("{t} isn't a shared reference"),
-                ));
+    pub(super) fn home_to_region(&mut self, s: Symbol) -> Region<'tcx> {
+        for (idx, reg) in self.base_regions.iter().enumerate() {
+            if Some(s) == reg.get_name() {
+                return RegionSet::singleton(idx as u32).into_region(self.tcx);
             }
-            t = t.peel_refs()
         }
-        Ok(self.fix_regions(t, home.data))
+        let idx = self.base_regions.len();
+        self.base_regions.push(dummy_region(self.owner_id, self.tcx, s));
+        RegionSet::singleton(idx as u32).into_region(self.tcx)
     }
 
-    pub(super) fn parsed_home_to_region(
-        &self,
-        home: Symbol,
-        lifetimes: &FxHashMap<Symbol, Region<'tcx>>,
-    ) -> Region<'tcx> {
-        lifetimes.get(&home).copied().unwrap_or_else(|| dummy_region(self.owner_id, self.tcx, home))
+    /// Fixes an external region by converting it into a singleton set
+    pub(super) fn fix_region(&mut self, r: Region<'tcx>) -> Region<'tcx> {
+        if self.non_blocked.contains(&r) || r.get_name() == Some(self.curr_sym) {
+            return self.curr_region();
+        }
+        for (idx, reg) in self.base_regions.iter().enumerate() {
+            if r == *reg {
+                return RegionSet::singleton(idx as u32).into_region(self.tcx);
+            }
+        }
+        let idx = self.base_regions.len();
+        self.base_regions.push(r);
+        RegionSet::singleton(idx as u32).into_region(self.tcx)
     }
 
-    pub(super) fn map_parsed_home(
-        &self,
-        home: Home,
-        lifetimes: &FxHashMap<Symbol, Region<'tcx>>,
-    ) -> Home<Region<'tcx>> {
-        Home { data: self.parsed_home_to_region(home.data, lifetimes), is_ref: home.is_ref }
+    pub(super) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&mut self, t: T) -> T {
+        let tcx = self.tcx;
+        t.fold_with(&mut RegionReplacer { tcx, f: |r| self.fix_region(r) })
+    }
+
+    pub(super) fn map_parsed_home(&mut self, home: Home) -> Home<Region<'tcx>> {
+        Home { data: self.home_to_region(home.data), is_ref: home.is_ref }
     }
 
     pub(super) fn param_env(&self) -> ParamEnv<'tcx> {
@@ -212,14 +239,28 @@ impl<'tcx> Ctx<'tcx> {
     }
 }
 
-pub(super) struct DisplayRegion<'tcx>(pub Region<'tcx>);
+pub(super) struct DisplayRegion<'a, 'tcx>(pub Region<'tcx>, pub &'a Ctx<'tcx>);
 
-impl<'tcx> Display for DisplayRegion<'tcx> {
+impl<'a, 'tcx> Display for DisplayRegion<'a, 'tcx> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self.0.kind() {
-            RegionKind::ReStatic => write!(f, "'!"),
-            RegionKind::ReErased => write!(f, "'?"),
-            _ => write!(f, "{}", self.0),
+        let reg_set = RegionSet::from(self.0);
+        // write!(f, "({reg_set:?})")?;
+        if reg_set == RegionSet::UNIVERSE {
+            return write!(f, "'?");
+        }
+        let mut reg_set_h = reg_set;
+        match (reg_set_h.next(), reg_set_h.next()) {
+            (None, _) => write!(f, "'!"),
+            (Some(x), None) => write!(f, "{}", self.1.region_index_to_name(x)),
+            _ => {
+                write!(f, "{{")?;
+                let mut iter = reg_set.map(|x| self.1.region_index_to_name(x));
+                write!(f, "{}", iter.next().unwrap())?;
+                for x in iter {
+                    write!(f, "|{x}")?;
+                }
+                write!(f, "}}")
+            }
         }
     }
 }

@@ -10,22 +10,23 @@ use crate::{
 use rustc_data_structures::fx::FxHashMap;
 use rustc_infer::{
     infer::{
-        outlives::env::OutlivesEnvironment, region_constraints::Constraint, InferCtxt,
-        RegionVariableOrigin, SubregionOrigin, TyCtxtInferExt,
+        region_constraints::Constraint, InferCtxt, RegionVariableOrigin, SubregionOrigin,
+        TyCtxtInferExt,
     },
     traits::ObligationCause,
 };
 use rustc_middle::{
     ty,
     ty::{
-        EarlyBinder, Instance, InternalSubsts, ParamEnv, PolyFnSig, Region,
-        RegionKind, RegionVid, SubstsRef, TyCtxt, TyKind, TypeFoldable,
+        Instance, InternalSubsts, ParamEnv, PolyFnSig, Region, RegionKind, RegionVid, SubstsRef,
+        TyCtxt, TyKind, TypeFoldable,
     },
 };
 use rustc_span::{def_id::DefId, Span, Symbol, DUMMY_SP};
 
-use std::{collections::hash_map::Entry, iter};
+use crate::translation::pearlite::prusti::region_set::RegionSet;
 use rustc_trait_selection::traits::ObligationCtxt;
+use std::iter;
 
 fn home_sig(ctx: &Ctx<'_>, def_id: DefId) -> CreusotResult<Option<HomeSig>> {
     let home_sig = util::get_attr_lit(ctx.tcx, def_id, &["creusot", "prusti", "home_sig"]);
@@ -79,41 +80,32 @@ impl<'tcx> SubstMap<'tcx> {
 }
 
 /// Maps region variables to there lower bounds
-struct RegionInfo<'tcx>(FxHashMap<RegionVid, Region<'tcx>>);
+struct RegionInfo(FxHashMap<RegionVid, RegionSet>);
 
-impl<'tcx> RegionInfo<'tcx> {
-    fn new(
+impl RegionInfo {
+    fn new<'tcx>(
         constraints: impl Iterator<Item = (Constraint<'tcx>, SubregionOrigin<'tcx>)>,
-        tcx: TyCtxt<'tcx>,
     ) -> Self {
         let mut res = RegionInfo(FxHashMap::default());
         constraints.for_each(|(c, _)| match c {
-            Constraint::RegSubVar(reg, gen) => res.add_bound(gen, reg, tcx),
+            Constraint::RegSubVar(reg, gen) => res.add_bound(gen, reg),
             Constraint::VarSubReg(_, _) => {} // This comes from invariance which we ignore
             _ => unreachable!(),
         });
         res
     }
 
-    fn add_bound(&mut self, key: RegionVid, val: Region<'tcx>, tcx: TyCtxt<'tcx>) {
-        match self.0.entry(key) {
-            Entry::Occupied(mut occ) if !sub_ts(val, *occ.get()) => {
-                occ.insert(tcx.lifetimes.re_erased);
-            }
-            Entry::Vacant(vac) if !sub_ts(val, tcx.lifetimes.re_static) => {
-                vac.insert(val);
-            }
-            _ => {}
-        }
+    fn add_bound(&mut self, key: RegionVid, val: Region<'_>) {
+        let reg = self.0.entry(key).or_insert(RegionSet::EMPTY);
+        *reg = reg.union(val.into())
     }
 
-    fn get_region(&self, key: Region<'tcx>, tcx: TyCtxt<'tcx>) -> Region<'tcx> {
+    fn get_region<'tcx>(&self, key: Region<'tcx>, tcx: TyCtxt<'tcx>) -> Region<'tcx> {
         match key.kind() {
-            RegionKind::ReStatic | RegionKind::ReErased => key,
-            RegionKind::ReVar(vid) => match self.0.get(&vid) {
-                None => tcx.lifetimes.re_static,
-                Some(r) => *r,
-            },
+            RegionKind::ReVar(vid) => {
+                let reg = *self.0.get(&vid).unwrap_or(&RegionSet::EMPTY);
+                reg.into_region(tcx)
+            }
             _ => unreachable!(),
         }
     }
@@ -133,7 +125,7 @@ fn sup_tys<'tcx>(
     let normalize = |ty| ocx.normalize(&oc, param_env, ty);
     let Ty { ty: ty_gen, home: home_gen } = normalize(ty_gen);
     let Ty { ty, home } = normalize(ty);
-    ocx.sub(&oc, param_env,home_gen, home).unwrap();
+    ocx.sub(&oc, param_env, home_gen, home).unwrap();
     match ocx.sub(&oc, param_env, ty_gen, ty) {
         Ok(x) => x,
         Err(err) => return Err(Error::new(span, err.to_string(ocx.infcx.tcx))),
@@ -184,9 +176,8 @@ pub(super) fn check_call<'tcx>(
         sup_tys(&ocx, param_env, span, ty_gen, ty)
     })?;
     let res_ty_gen = subst_map.convert_sig_pair(home_sig_res, res_ty_gen, &infcx);
-
-    let outlives = OutlivesEnvironment::new(param_env);
-    infcx.process_registered_region_obligations(&outlives);
+    // let outlives = OutlivesEnvironment::new(param_env);
+    // infcx.process_registered_region_obligations(&outlives);
     let constraints = infcx.take_and_reset_region_constraints();
     let iter = constraints.constraints.into_iter();
     let curr_vid = subst_map.get_vid(ctx.curr_sym);
@@ -195,19 +186,19 @@ pub(super) fn check_call<'tcx>(
         (Constraint::RegSubVar(reg, var), Some(vid))
             if var == vid && curr_ok.is_ok() && !sub_ts(reg, ts) =>
         {
-            let reg = DisplayRegion(reg);
+            let reg = DisplayRegion(reg, ctx);
+            let ts = DisplayRegion(ts, ctx);
             curr_ok = Err(Error::new(
                 origin.span(),
-                format!("`{reg}` must match the current time slice"),
+                format!("`{reg}` must match the current time slice `{ts}`"),
             ))
         }
         _ => {}
     });
-    let var_info = RegionInfo::new(iter, tcx);
+    let var_info = RegionInfo::new(iter);
     curr_ok?;
 
-    let res =
-        res_ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| var_info.get_region(r, tcx) });
+    let res = res_ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| var_info.get_region(r, tcx) });
     Ok(Some(res))
 }
 
@@ -230,7 +221,7 @@ pub(super) fn union<'tcx>(
     let ty_gen = Ty { ty: ty_gen, home: home_gen };
     elts.try_for_each(|ty| sup_tys(&ocx, param_env, DUMMY_SP, ty_gen, ty))?;
     let constraints = infcx.take_and_reset_region_constraints();
-    let var_info = RegionInfo::new(constraints.constraints.into_iter(), tcx);
+    let var_info = RegionInfo::new(constraints.constraints.into_iter());
     let res = ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| var_info.get_region(r, tcx) });
     Ok(res)
 }
@@ -252,7 +243,7 @@ pub(super) fn check_sup<'tcx>(
             if sub_ts(reg1, reg2) {
                 Ok(())
             } else {
-                let (reg1, reg2) = (DisplayRegion(reg1), DisplayRegion(reg2));
+                let (reg1, reg2) = (DisplayRegion(reg1, ctx), DisplayRegion(reg2, ctx));
                 Err(Error::new(origin.span(),format!("function was supposed to return data with home/lifetime `{reg2}` but it is returning data with home/lifetime `{reg1}`")))
             }
         }
@@ -282,7 +273,7 @@ pub(crate) fn check_signature_agreement<'tcx>(
     if trait_home_sig.is_none() {
         return Ok(()); // We're not specializing a home signature
     }
-    let ctx = Ctx::new(tcx, impl_id, true);
+    let mut ctx = Ctx::new(tcx, impl_id, true);
     let impl_id_subst = InternalSubsts::identity_for_item(tcx, impl_id);
     let impl_span: Span = tcx.def_span(impl_id);
     let ts = Lit::from_token_lit(
@@ -290,13 +281,17 @@ pub(crate) fn check_signature_agreement<'tcx>(
         impl_span,
     );
     let ts = ts.ok().unwrap();
-    let subst = |ty| EarlyBinder(ty).subst(tcx, refn_subst);
-    let (ts, arg_tys, expect_res_ty) = super::full_signature(trait_home_sig, &ts, trait_id, &ctx)?;
+    // let subst = |ty| EarlyBinder(ty).subst(tcx, refn_subst);
+
+    let sig = tcx.fn_sig(trait_id).subst(tcx, refn_subst);
+    let (ts, arg_tys, expect_res_ty) =
+        super::full_signature(trait_home_sig, sig, &ts, trait_id, &mut ctx)?;
     let args = arg_tys
-        .map(|(_, ty)| ty.map(subst))
+        // .map(|(_, ty)| ty.map(subst))
         .zip(iter::repeat(impl_span))
-        .map(|(ty, sp)| ty.map(|ty| (ty, sp)));
-    let expect_res_ty = subst(expect_res_ty);
+        .map(|((_, ty), sp)| ty.map(|ty| (ty, sp)));
+    // let expect_res_ty = subst(expect_res_ty);
+    let args = args.collect::<Vec<_>>().into_iter();
     let actual_res_ty = check_call(&ctx, ts, impl_id, impl_id_subst, args)?;
     let actual_res_ty = match actual_res_ty {
         Some(ty) => ty,

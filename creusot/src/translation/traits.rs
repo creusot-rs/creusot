@@ -136,7 +136,7 @@ fn logic_refinement_term<'tcx>(
     let mut args = Vec::new();
     let mut subst = HashMap::new();
     for (ix, ((id, _, _), (id2, _, ty))) in
-    trait_sig.inputs.iter().zip(impl_sig.inputs.iter()).enumerate()
+        trait_sig.inputs.iter().zip(impl_sig.inputs.iter()).enumerate()
     {
         let id = if id.is_empty() { Symbol::intern(&format!("_{}'", ix + 1)) } else { *id };
         let id2 = if id2.is_empty() { Symbol::intern(&format!("_{}'", ix + 1)) } else { *id2 };
