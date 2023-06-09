@@ -1,9 +1,6 @@
-use crate::{
-    error::{CreusotResult, Error},
-    pearlite::prusti::parsing::Home,
-};
+use crate::error::{CreusotResult, Error};
 
-use crate::translation::pearlite::prusti::region_set::RegionSet;
+use super::{parsing::Home, region_set::RegionSet};
 use itertools::Either;
 use rustc_data_structures::fx::FxHashSet;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
@@ -25,13 +22,13 @@ use std::{
 /// Since we use a different subtyping for this analysis
 /// All regions are represented as early bound regions
 /// The index is used as a bitset of possible source regions that could have flowed into this region
-pub(super) struct Ty<'tcx> {
-    pub ty: ty::Ty<'tcx>,
-    pub home: Region<'tcx>,
+pub(crate) struct Ty<'tcx> {
+    pub(crate) ty: ty::Ty<'tcx>,
+    pub(super) home: Region<'tcx>,
 }
 
 impl<'tcx> Ty<'tcx> {
-    pub(super) fn as_tuple(self) -> impl Iterator<Item = Ty<'tcx>> {
+    pub(crate) fn as_tuple(self) -> impl Iterator<Item = Ty<'tcx>> {
         let tys = match self.ty.kind() {
             TyKind::Tuple(tup) => {
                 let tup: &List<ty::Ty> = tup;
@@ -43,7 +40,7 @@ impl<'tcx> Ty<'tcx> {
         tys.zip(iter::repeat(self.home)).map(|(ty, home)| Ty { ty, home })
     }
 
-    pub(super) fn as_adt_variant(
+    pub(crate) fn as_adt_variant(
         self,
         variant: VariantIdx,
         tcx: TyCtxt<'tcx>,
@@ -60,14 +57,14 @@ impl<'tcx> Ty<'tcx> {
         tys.zip(iter::repeat(self.home)).map(|(ty, home)| Ty { ty, home })
     }
 
-    pub(super) fn as_ref(self, ts: Region<'tcx>) -> Option<(Region<'tcx>, Self, Mutability)> {
+    pub(crate) fn as_ref(self, ts: Region<'tcx>) -> Option<(Region<'tcx>, Self, Mutability)> {
         match self.ty.kind() {
             &TyKind::Ref(region, ty, m) => Some((region, Ty { ty, home: ts }, m)),
             _ => None,
         }
     }
 
-    pub(super) fn try_unbox(self) -> Option<Self> {
+    pub(crate) fn try_unbox(self) -> Option<Self> {
         match self.ty.kind() {
             &TyKind::Adt(adt, subst) if adt.is_box() => {
                 Some(Ty { ty: subst.types().next().unwrap(), home: self.home })
@@ -76,20 +73,24 @@ impl<'tcx> Ty<'tcx> {
         }
     }
 
-    pub(super) fn never(tcx: TyCtxt<'tcx>) -> Self {
+    pub(crate) fn never(tcx: TyCtxt<'tcx>) -> Self {
         Ty { ty: tcx.types.never, home: RegionSet::EMPTY.into_region(tcx) }
     }
 
-    pub(super) fn all_at_ts(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>, ts: Region<'tcx>) -> Self {
+    pub(crate) fn all_at_ts(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>, ts: Region<'tcx>) -> Self {
         Ty { ty: ty.fold_with(&mut RegionReplacer { tcx, f: |_| ts }), home: ts }
     }
 
-    pub(super) fn unknown_regions(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
+    pub(crate) fn unknown_regions(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
         let region = RegionSet::UNIVERSE.into_region(tcx);
         Self::all_at_ts(ty, tcx, region)
     }
 
-    pub(super) fn is_never(self) -> bool {
+    pub(crate) fn with_absurd_home(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
+        Ty { ty, home: RegionSet::EMPTY.into_region(tcx) }
+    }
+
+    pub(crate) fn is_never(self) -> bool {
         self.ty.is_never()
     }
 
@@ -139,7 +140,7 @@ const CURR_IDX: u32 = 1;
 const OLD_REG_SET: RegionSet = RegionSet::singleton(OLD_IDX);
 const CURR_REG_SET: RegionSet = RegionSet::singleton(CURR_IDX);
 
-pub(super) struct Ctx<'tcx> {
+pub(crate) struct Ctx<'tcx> {
     pub tcx: TyCtxt<'tcx>,
     non_blocked: FxHashSet<Region<'tcx>>,
     base_regions: Vec<Region<'tcx>>,
@@ -162,7 +163,7 @@ fn dummy_region(def_id: DefId, tcx: TyCtxt<'_>, sym: Symbol) -> Region<'_> {
 }
 
 impl<'tcx> Ctx<'tcx> {
-    pub(super) fn new(tcx: TyCtxt<'tcx>, owner_id: DefId, is_logic: bool) -> Self {
+    pub(crate) fn new(tcx: TyCtxt<'tcx>, owner_id: DefId, is_logic: bool) -> Self {
         let non_blocked = if is_logic {
             iter::empty().collect()
         } else {
@@ -175,15 +176,11 @@ impl<'tcx> Ctx<'tcx> {
         Ctx { tcx, non_blocked, base_regions, curr_sym, owner_id }
     }
 
-    pub(super) fn absurd_home(&self) -> Region<'tcx> {
-        RegionSet::EMPTY.into_region(self.tcx)
-    }
-
-    pub(super) fn old_region(&self) -> Region<'tcx> {
+    pub(crate) fn old_region(&self) -> Region<'tcx> {
         OLD_REG_SET.into_region(self.tcx)
     }
 
-    pub(super) fn curr_region(&self) -> Region<'tcx> {
+    pub(crate) fn curr_region(&self) -> Region<'tcx> {
         CURR_REG_SET.into_region(self.tcx)
     }
 

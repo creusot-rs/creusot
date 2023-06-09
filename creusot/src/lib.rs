@@ -48,5 +48,6 @@ use translation::*;
 mod error;
 pub(crate) mod lints;
 pub(crate) mod metadata;
+mod prusti;
 mod translated_item;
 mod validate;

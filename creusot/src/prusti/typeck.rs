@@ -1,5 +1,7 @@
 use super::{
+    full_signature,
     parsing::{parse_home_sig_lit, Home, HomeSig},
+    region_set::RegionSet,
     types::*,
 };
 use crate::{
@@ -7,6 +9,7 @@ use crate::{
     util,
 };
 
+use crate::prusti::typeck::MutDerefType::{Cur, Fin};
 use rustc_data_structures::fx::FxHashMap;
 use rustc_infer::{
     infer::{
@@ -23,8 +26,6 @@ use rustc_middle::{
     },
 };
 use rustc_span::{def_id::DefId, Span, Symbol, DUMMY_SP};
-
-use crate::translation::pearlite::prusti::region_set::RegionSet;
 use rustc_trait_selection::traits::ObligationCtxt;
 use std::iter;
 
@@ -136,7 +137,7 @@ fn sup_tys<'tcx>(
 /// Returns Ok(Some(ty)) if fn_ty has a "home signature" and the call can be type checked to ty
 /// Ok(None) if fn_ty doesn't have a "home signature" or
 /// Err(err) if there is an error while type checking or one is propagated from an argument
-pub(super) fn check_call<'tcx>(
+pub(crate) fn check_call<'tcx>(
     ctx: &Ctx<'tcx>,
     ts: Region<'tcx>,
     def_id: DefId,
@@ -202,7 +203,7 @@ pub(super) fn check_call<'tcx>(
     Ok(Some(res))
 }
 
-pub(super) fn union<'tcx>(
+pub(crate) fn union<'tcx>(
     ctx: &Ctx<'tcx>,
     target: ty::Ty<'tcx>,
     elts: impl Iterator<Item = CreusotResult<Ty<'tcx>>>,
@@ -226,7 +227,7 @@ pub(super) fn union<'tcx>(
     Ok(res)
 }
 
-pub(super) fn check_sup<'tcx>(
+pub(crate) fn check_sup<'tcx>(
     ctx: &Ctx<'tcx>,
     expected: Ty<'tcx>,
     actual: Ty<'tcx>,
@@ -251,7 +252,7 @@ pub(super) fn check_sup<'tcx>(
     })
 }
 
-pub(super) fn try_resolve<'tcx>(
+pub(crate) fn try_resolve<'tcx>(
     ctx: &Ctx<'tcx>,
     def_id: DefId,
     subst: SubstsRef<'tcx>,
@@ -259,6 +260,30 @@ pub(super) fn try_resolve<'tcx>(
     match Instance::resolve(ctx.tcx, ctx.param_env(), def_id, subst) {
         Err(_) | Ok(None) => return (def_id, subst), // Can't specialize
         Ok(Some(inst)) => (inst.def.def_id(), inst.substs),
+    }
+}
+
+pub(crate) enum MutDerefType {
+    Cur,
+    Fin,
+}
+
+pub(crate) fn check_mut_deref<'tcx>(
+    ts: Region<'tcx>,
+    ctx: &Ctx<'tcx>,
+    ty: Ty<'tcx>,
+    end: Region<'tcx>,
+    span: Span,
+) -> CreusotResult<MutDerefType> {
+    match ts {
+        ts if ty.has_home_at_ts(ts) => Ok(Cur),
+        ts if sub_ts(end, ts) => Ok(Fin),
+        _ => {
+            let home = DisplayRegion(ty.home, &ctx);
+            let end = DisplayRegion(end, &ctx);
+            let ts = DisplayRegion(ts, &ctx);
+            return Err(Error::new(span, format!("invalid dereference of expression with home `{home}` and lifetime `{end}` at time-slice `{ts}`")));
+        }
     }
 }
 
@@ -285,7 +310,7 @@ pub(crate) fn check_signature_agreement<'tcx>(
 
     let sig = tcx.fn_sig(trait_id).subst(tcx, refn_subst);
     let (ts, arg_tys, expect_res_ty) =
-        super::full_signature(trait_home_sig, sig, &ts, trait_id, &mut ctx)?;
+        full_signature(trait_home_sig, sig, &ts, trait_id, &mut ctx)?;
     let args = arg_tys
         // .map(|(_, ty)| ty.map(subst))
         .zip(iter::repeat(impl_span))

@@ -72,8 +72,9 @@ impl<'tcx> TranslationCtx<'tcx> {
 
             let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.0.substs);
 
-            use crate::translation::pearlite::prusti::check_signature_agreement;
-            match check_signature_agreement(self.tcx, impl_item, trait_item, refn_subst) {
+            match crate::prusti::check_signature_agreement(
+                self.tcx, impl_item, trait_item, refn_subst,
+            ) {
                 Ok(()) => {}
                 Err(e) => e.emit(self.tcx.sess),
             }
