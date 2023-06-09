@@ -1,7 +1,6 @@
 use crate::error::{CreusotResult, Error};
 
 use super::{parsing::Home, region_set::RegionSet};
-use itertools::Either;
 use rustc_data_structures::fx::FxHashSet;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
@@ -17,6 +16,7 @@ use std::{
     fmt::{Debug, Display, Formatter},
     iter,
 };
+use itertools::Either;
 
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 /// Since we use a different subtyping for this analysis
@@ -28,18 +28,6 @@ pub(crate) struct Ty<'tcx> {
 }
 
 impl<'tcx> Ty<'tcx> {
-    pub(crate) fn as_tuple(self) -> impl Iterator<Item = Ty<'tcx>> {
-        let tys = match self.ty.kind() {
-            TyKind::Tuple(tup) => {
-                let tup: &List<ty::Ty> = tup;
-                Either::Left(tup.iter())
-            }
-            TyKind::Never => Either::Right(iter::repeat(self.ty)),
-            _ => unreachable!(),
-        };
-        tys.zip(iter::repeat(self.home)).map(|(ty, home)| Ty { ty, home })
-    }
-
     pub(crate) fn as_adt_variant(
         self,
         variant: VariantIdx,
@@ -51,7 +39,10 @@ impl<'tcx> Ty<'tcx> {
                 let field_defs = &adt.variants()[variant].fields;
                 Either::Left(field_defs.iter().map(move |def| def.ty(tcx, *subst_ref)))
             }
-            TyKind::Never => Either::Right(iter::repeat(self.ty)),
+            TyKind::Tuple(tup) => {
+                let tup: &List<ty::Ty> = tup;
+                Either::Right(tup.iter())
+            }
             _ => unreachable!(),
         };
         tys.zip(iter::repeat(self.home)).map(|(ty, home)| Ty { ty, home })
@@ -82,8 +73,11 @@ impl<'tcx> Ty<'tcx> {
     }
 
     pub(crate) fn unknown_regions(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
-        let region = RegionSet::UNIVERSE.into_region(tcx);
-        Self::all_at_ts(ty, tcx, region)
+        Self::all_at_ts(ty, tcx, RegionSet::UNIVERSE.into_region(tcx))
+    }
+
+    pub(crate) fn absurd_regions(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
+        Self::all_at_ts(ty, tcx,RegionSet::EMPTY.into_region(tcx))
     }
 
     pub(crate) fn with_absurd_home(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Self {

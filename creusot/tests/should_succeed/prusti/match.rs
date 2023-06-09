@@ -1,3 +1,4 @@
+#![feature(never_type)]
 extern crate creusot_contracts;
 use creusot_contracts::prusti_prelude::*;
 
@@ -46,3 +47,7 @@ pub fn unwrap<'a, 'b>(x: Option<&'a mut u32>) -> &'a mut u32 {
         None => id(absurd),
     }
 }
+
+#[requires({let x = match x {Ok(x) => x, Err(x) => x}; *(x.0) == 0u32})]
+#[ensures({let (a, b) = match x {Ok(x) => x, Err(x) => x}; *a == *b})]
+pub fn test_never(x: Result<(&mut u32, &mut u32), !>)  {}

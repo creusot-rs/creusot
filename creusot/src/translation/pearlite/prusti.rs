@@ -148,7 +148,7 @@ where
             .zip(fields)
             .try_for_each(|(ty, pat)| iterate_bindings(pat, ty, ctx, f)),
         Pattern::Tuple(fields) => {
-            ty.as_tuple().zip(fields).try_for_each(|(ty, pat)| iterate_bindings(pat, ty, ctx, f))
+            ty.as_adt_variant(0u32.into(), tcx).zip(fields).try_for_each(|(ty, pat)| iterate_bindings(pat, ty, ctx, f))
         }
         Pattern::Binder(sym) => f((*sym, ty)),
         _ => ControlFlow::Continue(()),
@@ -249,9 +249,13 @@ fn convert<'tcx>(
                     .unwrap_or(Ty::unknown_regions(term.ty, tcx))
             }
         }
-        TermKind::Constructor { fields, .. } | TermKind::Tuple { fields } => {
-            fields.iter_mut().try_for_each(|arg| convert(arg, tenv, ts, ctx).map(drop))?;
-            Ty::unknown_regions(term.ty, tcx)
+        TermKind::Constructor { fields, variant, .. } => {
+            let fields = fields.iter_mut().map(|arg| Ok((convert(arg, tenv, ts, ctx)?, arg.span)));
+            typeck::check_constructor(ctx, fields, term.ty, *variant)?
+        }
+        TermKind::Tuple { fields, .. } => {
+            let fields = fields.iter_mut().map(|arg| Ok((convert(arg, tenv, ts, ctx)?, arg.span)));
+            typeck::check_constructor(ctx, fields, term.ty, 0u32.into())?
         }
         curr @ TermKind::Cur { .. } => {
             let curr_owned = std::mem::replace(curr, TermKind::Absurd);
@@ -293,7 +297,7 @@ fn convert<'tcx>(
         }
         TermKind::Old { term } => convert(&mut *term, tenv, ctx.old_region(), ctx)?,
         TermKind::Closure { .. } => todo!(),
-        TermKind::Absurd => Ty::never(ctx.tcx),
+        TermKind::Absurd => Ty::absurd_regions(term.ty, ctx.tcx),
         _ => return Err(Error::new(term.span, "this operation is not supported in Prusti specs")),
     };
     Ok(strip_derefs(res, ts, term.ty))

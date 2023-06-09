@@ -28,6 +28,9 @@ use rustc_middle::{
 use rustc_span::{def_id::DefId, Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::ObligationCtxt;
 use std::iter;
+use rustc_target::abi::VariantIdx;
+use rustc_infer::infer::at::ToTrace;
+use rustc_middle::ty::error::TypeError;
 
 fn home_sig(ctx: &Ctx<'_>, def_id: DefId) -> CreusotResult<Option<HomeSig>> {
     let home_sig = util::get_attr_lit(ctx.tcx, def_id, &["creusot", "prusti", "home_sig"]);
@@ -112,9 +115,36 @@ impl RegionInfo {
     }
 }
 
-fn sup_tys<'tcx>(
-    ocx: &ObligationCtxt<'_, 'tcx>,
+struct SimpleCtxt<'a, 'tcx> {
+    ocx: ObligationCtxt<'a, 'tcx>,
     param_env: ParamEnv<'tcx>,
+}
+
+impl<'a, 'tcx> SimpleCtxt<'a, 'tcx> {
+    fn new(infcx: &'a InferCtxt<'tcx>, param_env: ParamEnv<'tcx>) -> Self {
+        SimpleCtxt{ocx: ObligationCtxt::new(infcx), param_env}
+    }
+
+    fn sub<T: ToTrace<'tcx>>(&self, span: Span, expected: T, actual: T) -> Result<(), TypeError<'tcx>> {
+        self.ocx.sub(&ObligationCause::dummy_with_span(span), self.param_env, expected, actual)
+    }
+
+    fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T) -> T {
+        self.ocx.normalize(&ObligationCause::dummy(), self.param_env, t)
+    }
+
+    fn infcx(&self) -> &'a InferCtxt<'tcx> {
+        self.ocx.infcx
+    }
+
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.infcx().tcx
+    }
+}
+
+
+fn sup_tys<'tcx>(
+    ctx: &SimpleCtxt<'_, 'tcx>,
     span: Span,
     ty_gen: Ty<'tcx>,
     ty: Ty<'tcx>,
@@ -122,16 +152,21 @@ fn sup_tys<'tcx>(
     if ty.is_never() {
         return Ok(()); // Don't generate constraints for the never type
     }
-    let oc = ObligationCause::dummy_with_span(span);
-    let normalize = |ty| ocx.normalize(&oc, param_env, ty);
-    let Ty { ty: ty_gen, home: home_gen } = normalize(ty_gen);
-    let Ty { ty, home } = normalize(ty);
-    ocx.sub(&oc, param_env, home_gen, home).unwrap();
-    match ocx.sub(&oc, param_env, ty_gen, ty) {
+    let Ty { ty: ty_gen, home: home_gen } = ctx.normalize(ty_gen);
+    let Ty { ty, home } = ctx.normalize(ty);
+    ctx.sub(span, home_gen, home).unwrap();
+    match ctx.sub(span, ty_gen, ty) {
         Ok(x) => x,
-        Err(err) => return Err(Error::new(span, err.to_string(ocx.infcx.tcx))),
+        Err(err) => return Err(Error::new(span, err.to_string(ctx.tcx()))),
     };
     Ok(())
+}
+
+fn generalize<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(t: T, infcx: &InferCtxt<'tcx>) -> T {
+    t.fold_with(&mut RegionReplacer {
+        tcx: infcx.tcx,
+        f: |_| infcx.next_region_var(RegionVariableOrigin::MiscVariable(DUMMY_SP)),
+    })
 }
 
 /// Returns Ok(Some(ty)) if fn_ty has a "home signature" and the call can be type checked to ty
@@ -152,12 +187,8 @@ pub(crate) fn check_call<'tcx>(
         None => return Ok(None),
     };
     let infcx = tcx.infer_ctxt().build();
-    let ocx = ObligationCtxt::new(&infcx);
-    let subst_ref: SubstsRef = subst_ref.fold_with(&mut RegionReplacer {
-        tcx,
-        f: |_| infcx.next_region_var(RegionVariableOrigin::MiscVariable(DUMMY_SP)),
-    });
-    let param_env = ctx.param_env();
+    let ocx = SimpleCtxt::new(&infcx, ctx.param_env());
+    let subst_ref = generalize(subst_ref, &infcx);
     let (fn_ty_gen, iter) = super::variance::generalize_fn_def(tcx, def_id, &infcx, subst_ref);
 
     let mut subst_map: SubstMap = iter.collect();
@@ -174,7 +205,7 @@ pub(crate) fn check_call<'tcx>(
         let (ty, span) = arg;
 
         let ty_gen = subst_map.convert_sig_pair(home_sig_arg, ty_gen, &infcx);
-        sup_tys(&ocx, param_env, span, ty_gen, ty)
+        sup_tys(&ocx, span, ty_gen, ty)
     })?;
     let res_ty_gen = subst_map.convert_sig_pair(home_sig_res, res_ty_gen, &infcx);
     // let outlives = OutlivesEnvironment::new(param_env);
@@ -203,6 +234,30 @@ pub(crate) fn check_call<'tcx>(
     Ok(Some(res))
 }
 
+pub(crate) fn check_constructor<'tcx>(
+    ctx: &Ctx<'tcx>,
+    fields: impl Iterator<Item = CreusotResult<(Ty<'tcx>, Span)>>,
+    target_ty: ty::Ty<'tcx>,
+    variant: VariantIdx
+) -> CreusotResult<Ty<'tcx>> {
+    let tcx = ctx.tcx;
+    // Eagerly evaluate args to avoid running multiple inference contexts at the same time
+    let fields = fields.collect::<CreusotResult<Vec<_>>>()?.into_iter();
+    let infcx = tcx.infer_ctxt().build();
+    let ocx = SimpleCtxt::new(&infcx, ctx.param_env());
+
+    let ty_gen = generalize(Ty::with_absurd_home(target_ty, tcx), &infcx);
+    let fields_gen = ty_gen.as_adt_variant(variant, tcx);
+
+    fields.zip(fields_gen).try_for_each(|((ty, span), ty_gen)| {
+        sup_tys(&ocx, span, ty_gen, ty)
+    })?;
+
+    let constraints = infcx.take_and_reset_region_constraints();
+    let var_info = RegionInfo::new(constraints.constraints.into_iter());
+    Ok(ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| var_info.get_region(r, tcx) }))
+}
+
 pub(crate) fn union<'tcx>(
     ctx: &Ctx<'tcx>,
     target: ty::Ty<'tcx>,
@@ -211,16 +266,15 @@ pub(crate) fn union<'tcx>(
     // Eagerly evaluate args to avoid running multiple inference contexts at the same time
     let mut elts = elts.collect::<CreusotResult<Vec<_>>>()?.into_iter();
     let tcx = ctx.tcx;
-    let param_env = ctx.param_env();
     let infcx = tcx.infer_ctxt().build();
-    let ocx = ObligationCtxt::new(&infcx);
+    let ocx = SimpleCtxt::new(&infcx, ctx.param_env());
     let ty_gen = target.fold_with(&mut RegionReplacer {
         tcx,
         f: |_| infcx.next_region_var(RegionVariableOrigin::MiscVariable(DUMMY_SP)),
     });
     let home_gen = infcx.next_region_var(RegionVariableOrigin::MiscVariable(DUMMY_SP));
     let ty_gen = Ty { ty: ty_gen, home: home_gen };
-    elts.try_for_each(|ty| sup_tys(&ocx, param_env, DUMMY_SP, ty_gen, ty))?;
+    elts.try_for_each(|ty| sup_tys(&ocx, DUMMY_SP, ty_gen, ty))?;
     let constraints = infcx.take_and_reset_region_constraints();
     let var_info = RegionInfo::new(constraints.constraints.into_iter());
     let res = ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| var_info.get_region(r, tcx) });
@@ -234,10 +288,9 @@ pub(crate) fn check_sup<'tcx>(
     span: Span,
 ) -> CreusotResult<()> {
     let tcx = ctx.tcx;
-    let param_env = ctx.param_env();
     let infcx = tcx.infer_ctxt().build();
-    let ocx = ObligationCtxt::new(&infcx);
-    sup_tys(&ocx, param_env, span, expected, actual)?;
+    let ocx = SimpleCtxt::new(&infcx, ctx.param_env());
+    sup_tys(&ocx, span, expected, actual)?;
     let constraints = infcx.take_and_reset_region_constraints();
     constraints.constraints.into_iter().try_for_each(|(c, origin)| match c {
         Constraint::RegSubReg(reg1, reg2) => {
@@ -306,16 +359,13 @@ pub(crate) fn check_signature_agreement<'tcx>(
         impl_span,
     );
     let ts = ts.ok().unwrap();
-    // let subst = |ty| EarlyBinder(ty).subst(tcx, refn_subst);
 
     let sig = tcx.fn_sig(trait_id).subst(tcx, refn_subst);
     let (ts, arg_tys, expect_res_ty) =
         full_signature(trait_home_sig, sig, &ts, trait_id, &mut ctx)?;
     let args = arg_tys
-        // .map(|(_, ty)| ty.map(subst))
         .zip(iter::repeat(impl_span))
         .map(|((_, ty), sp)| ty.map(|ty| (ty, sp)));
-    // let expect_res_ty = subst(expect_res_ty);
     let args = args.collect::<Vec<_>>().into_iter();
     let actual_res_ty = check_call(&ctx, ts, impl_id, impl_id_subst, args)?;
     let actual_res_ty = match actual_res_ty {
