@@ -246,7 +246,6 @@ fn convert<'tcx>(
                 let args = args.iter_mut().map(|arg| Ok((convert(arg, tenv, ts, ctx)?, arg.span)));
                 let (id, subst) = typeck::try_resolve(&ctx, *id, *subst);
                 typeck::check_call(ctx, ts, id, subst, args)?
-                    .unwrap_or(Ty::unknown_regions(term.ty, tcx))
             }
         }
         TermKind::Constructor { fields, variant, .. } => {

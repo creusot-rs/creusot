@@ -72,10 +72,6 @@ impl<'tcx> Ty<'tcx> {
         Ty { ty: ty.fold_with(&mut RegionReplacer { tcx, f: |_| ts }), home: ts }
     }
 
-    pub(crate) fn unknown_regions(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
-        Self::all_at_ts(ty, tcx, RegionSet::UNIVERSE.into_region(tcx))
-    }
-
     pub(crate) fn absurd_regions(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
         Self::all_at_ts(ty, tcx,RegionSet::EMPTY.into_region(tcx))
     }
@@ -178,6 +174,10 @@ impl<'tcx> Ctx<'tcx> {
         CURR_REG_SET.into_region(self.tcx)
     }
 
+    pub(super) fn curr_home(&self) -> Home {
+        Home{ data: self.curr_sym, is_ref: false }
+    }
+
     /// Checks if a region is legal in a program function
     /// If it's named 'curr it should not be blocked
     pub(super) fn check_ok_in_program(&self, r: Region<'tcx>) -> bool {
@@ -236,9 +236,6 @@ impl<'a, 'tcx> Display for DisplayRegion<'a, 'tcx> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let reg_set = RegionSet::from(self.0);
         // write!(f, "({reg_set:?})")?;
-        if reg_set == RegionSet::UNIVERSE {
-            return write!(f, "'?");
-        }
         let mut reg_set_h = reg_set;
         match (reg_set_h.next(), reg_set_h.next()) {
             (None, _) => write!(f, "'!"),

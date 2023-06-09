@@ -28,6 +28,7 @@ use rustc_middle::{
 use rustc_span::{def_id::DefId, Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::ObligationCtxt;
 use std::iter;
+use itertools::Either;
 use rustc_target::abi::VariantIdx;
 use rustc_infer::infer::at::ToTrace;
 use rustc_middle::ty::error::TypeError;
@@ -169,22 +170,21 @@ fn generalize<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(t: T, infcx: &InferCtxt<'tcx>
     })
 }
 
-/// Returns Ok(Some(ty)) if fn_ty has a "home signature" and the call can be type checked to ty
-/// Ok(None) if fn_ty doesn't have a "home signature" or
-/// Err(err) if there is an error while type checking or one is propagated from an argument
 pub(crate) fn check_call<'tcx>(
     ctx: &Ctx<'tcx>,
     ts: Region<'tcx>,
     def_id: DefId,
     subst_ref: SubstsRef<'tcx>,
     args: impl Iterator<Item = CreusotResult<(Ty<'tcx>, Span)>>,
-) -> CreusotResult<Option<Ty<'tcx>>> {
+) -> CreusotResult<Ty<'tcx>> {
     let tcx = ctx.tcx;
     // Eagerly evaluate args to avoid running multiple inference contexts at the same time
     let args = args.collect::<CreusotResult<Vec<_>>>()?.into_iter();
     let (home_sig_args, home_sig_res) = match home_sig(ctx, def_id)? {
-        Some(x) => x,
-        None => return Ok(None),
+        Some((args, res)) => (Either::Left(args.into_iter()), res),
+        None => {
+            (Either::Right(iter::repeat(ctx.curr_home())), ctx.curr_home())
+        },
     };
     let infcx = tcx.infer_ctxt().build();
     let ocx = SimpleCtxt::new(&infcx, ctx.param_env());
@@ -231,7 +231,7 @@ pub(crate) fn check_call<'tcx>(
     curr_ok?;
 
     let res = res_ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| var_info.get_region(r, tcx) });
-    Ok(Some(res))
+    Ok(res)
 }
 
 pub(crate) fn check_constructor<'tcx>(
@@ -368,17 +368,5 @@ pub(crate) fn check_signature_agreement<'tcx>(
         .map(|((_, ty), sp)| ty.map(|ty| (ty, sp)));
     let args = args.collect::<Vec<_>>().into_iter();
     let actual_res_ty = check_call(&ctx, ts, impl_id, impl_id_subst, args)?;
-    let actual_res_ty = match actual_res_ty {
-        Some(ty) => ty,
-        None => {
-            return Err(Error::new(
-                impl_span,
-                format!(
-                    "Expected `{}` to have a home signature as specified by the trait declaration",
-                    tcx.item_name(impl_id)
-                ),
-            ))
-        }
-    };
     check_sup(&ctx, expect_res_ty, actual_res_ty, impl_span)
 }
