@@ -107,7 +107,7 @@ impl<'tcx> Expr<'tcx> {
             Expr::Constructor(_, _, es) => es.iter().all(|e| e.is_pure()),
             Expr::Call(_, _, es) => es.iter().all(|e| e.is_pure()),
             Expr::Constant(_) => true,
-            Expr::Cast(e, _, _) => false,
+            Expr::Cast(_, _, _) => false,
             Expr::Tuple(es) => es.iter().all(|e| e.is_pure()),
             Expr::Span(_, e) => e.is_pure(),
             Expr::Len(e) => e.is_pure(),
