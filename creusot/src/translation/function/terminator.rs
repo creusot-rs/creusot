@@ -133,7 +133,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         if let Some(locl) = pl.as_local() {
                             Term {
                                 // hack
-                                kind: TermKind::Var(self.locals[&locl].0.symbol()),
+                                kind: TermKind::Var(self.locals[&locl]),
                                 span,
                                 ty: cond.ty(self.body, self.tcx),
                             }

@@ -1,4 +1,4 @@
-#![feature(type_ascription)]
+// UNSTABLE
 extern crate creusot_contracts;
 
 use creusot_contracts::{
@@ -37,6 +37,7 @@ where
     #[invariant(partition(v.deep_model(), produced.len()))]
     for i in 0..v.len() {
         let mut min = i;
+
         #[invariant(forall<k: Int> i@ <= k && k < produced.len() + i@ + 1 ==> v.deep_model()[min@] <= v.deep_model()[k])]
         #[invariant(i@ <= min@ && min@ < produced.len() + i@ + 1)]
         for j in (i + 1)..v.len() {
@@ -45,5 +46,7 @@ where
             }
         }
         v.swap(i, min);
+        proof_assert! { let i = produced.len(); forall<k1 : Int, k2: Int> 0 <= k1 && k1 < i && i <= k2 && k2 < v.deep_model
+        ().len() ==> v.deep_model()[k1] <= v.deep_model()[k2] };
     }
 }

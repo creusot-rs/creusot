@@ -65,9 +65,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         loc: Location,
     ) {
         let rval: Expr<'tcx> = match rvalue {
-            Rvalue::Use(rval) => match rval {
-                Move(pl) => Expr::Move(*pl),
-                Copy(pl) => Expr::Copy(*pl),
+            Rvalue::Use(op) => match op {
+                Move(_pl) | Copy(_pl) => self.translate_operand(op),
                 Constant(box c) => {
                     if is_ghost_closure(self.tcx, c.literal.ty()).is_some() {
                         return;
@@ -81,7 +80,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         return;
                     }
 
-                    Expr::Place(self.compute_ref_place(*pl, loc))
+                    Expr::Copy(self.translate_place(self.compute_ref_place(*pl, loc)))
                 }
                 Mut { .. } => {
                     if self.erased_locals.contains(pl.local) {
@@ -151,7 +150,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     ),
                 }
             }
-            Rvalue::Len(pl) => Expr::Len(Box::new(Expr::Place(*pl))),
+            Rvalue::Len(pl) => Expr::Len(Box::new(Expr::Copy(self.translate_place(*pl)))),
             Rvalue::Cast(CastKind::IntToInt | CastKind::PtrToPtr, op, ty) => {
                 let op_ty = op.ty(self.body, self.tcx);
                 Expr::Cast(Box::new(self.translate_operand(op)), op_ty, *ty)
@@ -204,7 +203,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             let lhs_ty = place.ty(self.body, self.tcx).ty;
             if !place.is_indirect() && need_resolve_before.contains(place.local)
                 && let Some((id, subst)) = super::resolve_predicate_of(self.ctx, self.param_env(), lhs_ty) {
-                self.emit_statement(fmir::Statement::Resolve(id, subst, *place));
+                self.emit_statement(fmir::Statement::Resolve(id, subst, self.translate_place(*place)));
                 self.emit_assignment(place, RValue::Expr(rval));
             } else {
                 self.emit_assignment(place, RValue::Expr(rval));

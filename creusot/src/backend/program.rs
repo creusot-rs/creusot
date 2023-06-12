@@ -6,14 +6,14 @@ use super::{
 };
 use crate::{
     backend::{
-        place,
-        place::translate_rplace_inner,
+        optimization, place,
+        place::translate_rplace,
         ty::{self, closure_accessors, translate_closure_ty, translate_ty},
     },
     ctx::{BodyId, CloneMap, TranslationCtx},
     translation::{
         binop_to_binop,
-        fmir::{self, Block, Branches, Expr, LocalDecls, RValue, Statement, Terminator},
+        fmir::{self, Block, Branches, Expr, LocalDecls, Place, RValue, Statement, Terminator},
         function::{closure_contract, closure_generic_decls, promoted, ClosureContract},
         unop_to_unop,
     },
@@ -21,7 +21,7 @@ use crate::{
 };
 use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
 use rustc_middle::{
-    mir::{BasicBlock, BinOp, Place},
+    mir::{BasicBlock, BinOp},
     ty::TyKind,
 };
 use rustc_span::DUMMY_SP;
@@ -266,7 +266,10 @@ pub fn to_why<'tcx>(
     names: &mut CloneMap<'tcx>,
     body_id: BodyId,
 ) -> Decl {
-    let body = ctx.fmir_body(body_id).unwrap().clone();
+    let mut body = ctx.fmir_body(body_id).unwrap().clone();
+
+    let usage = optimization::gather_usage(&body);
+    optimization::simplify_fmir(usage, &mut body);
 
     let blocks = body
         .blocks
@@ -277,13 +280,15 @@ pub fn to_why<'tcx>(
     let vars: Vec<_> = body
         .locals
         .into_iter()
-        .map(|(loc, (id, sp, ty))| {
-            let init = if 0 < loc.index() && loc.index() <= body.arg_count {
-                Some(Exp::impure_var(id.ident()))
-            } else {
-                None
-            };
-            (false, id.ident(), ty::translate_ty(ctx, names, sp, ty), init)
+        .map(|(id, decl)| {
+            let init =
+                if decl.arg { Some(Exp::impure_var(Ident::build(id.as_str()))) } else { None };
+            (
+                false,
+                Ident::build(id.as_str()),
+                ty::translate_ty(ctx, names, decl.span, decl.ty),
+                init,
+            )
         })
         .collect();
 
@@ -307,12 +312,11 @@ impl<'tcx> Expr<'tcx> {
         locals: &LocalDecls<'tcx>,
     ) -> Exp {
         match self {
-            Expr::Place(pl) => translate_rplace_inner(ctx, names, locals, pl.local, pl.projection),
             Expr::Move(pl) => {
                 // TODO invalidate original place
-                translate_rplace_inner(ctx, names, locals, pl.local, pl.projection)
+                pl.as_rplace(ctx, names, locals)
             }
-            Expr::Copy(pl) => translate_rplace_inner(ctx, names, locals, pl.local, pl.projection),
+            Expr::Copy(pl) => pl.as_rplace(ctx, names, locals),
             Expr::BinOp(BinOp::BitAnd, ty, l, r) if ty.is_bool() => {
                 l.to_why(ctx, names, locals).lazy_and(r.to_why(ctx, names, locals))
             }
@@ -326,11 +330,16 @@ impl<'tcx> Expr<'tcx> {
                 Exp::impure_qvar(QName::from_string("Bool.neqb").unwrap())
                     .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
-            Expr::BinOp(op, ty, l, r) => Exp::BinaryOp(
-                binop_to_binop(ctx, ty, op),
-                Box::new(l.to_why(ctx, names, locals)),
-                Box::new(r.to_why(ctx, names, locals)),
-            ),
+            Expr::BinOp(op, ty, l, r) => {
+                // Hack
+                translate_ty(ctx, names, DUMMY_SP, ty);
+
+                Exp::BinaryOp(
+                    binop_to_binop(ctx, ty, op),
+                    Box::new(l.to_why(ctx, names, locals)),
+                    Box::new(r.to_why(ctx, names, locals)),
+                )
+            }
             Expr::UnaryOp(op, ty, arg) => {
                 Exp::UnaryOp(unop_to_unop(ty, op), Box::new(arg.to_why(ctx, names, locals)))
             }
@@ -388,8 +397,14 @@ impl<'tcx> Expr<'tcx> {
             } // Expr::Cast(_, _) => todo!(),
             Expr::Cast(e, source, target) => {
                 let to_int = match source.kind() {
-                    TyKind::Int(ity) => int_to_int(ity),
-                    TyKind::Uint(uty) => uint_to_int(uty),
+                    TyKind::Int(ity) => {
+                        names.import_prelude_module(int_to_prelude(*ity));
+                        int_to_int(ity)
+                    }
+                    TyKind::Uint(uty) => {
+                        names.import_prelude_module(uint_to_prelude(*uty));
+                        uint_to_int(uty)
+                    }
                     TyKind::Bool => {
                         names.import_prelude_module(PreludeModule::Bool);
                         Exp::impure_qvar(QName::from_string("Bool.to_int").unwrap())
@@ -427,10 +442,9 @@ impl<'tcx> Expr<'tcx> {
         }
     }
 
-    fn invalidated_places(&self, places: &mut Vec<Place<'tcx>>) {
+    fn invalidated_places(&self, places: &mut Vec<fmir::Place<'tcx>>) {
         match self {
-            Expr::Place(_) => {}
-            Expr::Move(p) => places.push(*p),
+            Expr::Move(p) => places.push(p.clone()),
             Expr::Copy(_) => {}
             Expr::BinOp(_, _, l, r) => {
                 l.invalidated_places(places);
@@ -597,6 +611,17 @@ impl<'tcx> Block<'tcx> {
     }
 }
 
+impl<'tcx> Place<'tcx> {
+    pub(crate) fn as_rplace(
+        &self,
+        ctx: &mut Why3Generator<'tcx>,
+        names: &mut CloneMap<'tcx>,
+        locals: &LocalDecls<'tcx>,
+    ) -> why3::Exp {
+        translate_rplace(ctx, names, locals, self.local, &self.projection)
+    }
+}
+
 impl<'tcx> Statement<'tcx> {
     pub(crate) fn to_why(
         self,
@@ -606,8 +631,8 @@ impl<'tcx> Statement<'tcx> {
     ) -> Vec<mlcfg::Statement> {
         match self {
             Statement::Assignment(lhs, RValue::Borrow(rhs)) => {
-                let borrow = Exp::BorrowMut(Box::new(Expr::Place(rhs).to_why(ctx, names, locals)));
-                let reassign = Exp::Final(Box::new(Expr::Place(lhs).to_why(ctx, names, locals)));
+                let borrow = Exp::BorrowMut(Box::new(rhs.as_rplace(ctx, names, locals)));
+                let reassign = Exp::Final(Box::new(lhs.as_rplace(ctx, names, locals)));
 
                 vec![
                     place::create_assign_inner(ctx, names, locals, &lhs, borrow),
@@ -625,7 +650,7 @@ impl<'tcx> Statement<'tcx> {
                 let rhs = rhs.to_why(ctx, names, locals);
                 let mut exps = vec![place::create_assign_inner(ctx, names, locals, &lhs, rhs)];
                 for pl in invalid {
-                    let ty = ctx.place_ty(locals, pl.as_ref()).ty;
+                    let ty = pl.ty(ctx.tcx, locals);
                     let ty = translate_ty(ctx, names, DUMMY_SP, ty);
                     exps.push(place::create_assign_inner(ctx, names, locals, &pl, Exp::Any(ty)));
                 }
@@ -636,7 +661,7 @@ impl<'tcx> Statement<'tcx> {
 
                 let rp = Exp::impure_qvar(names.value(id, subst));
 
-                let assume = rp.app_to(Expr::Place(pl).to_why(ctx, names, locals));
+                let assume = rp.app_to(pl.as_rplace(ctx, names, locals));
                 vec![mlcfg::Statement::Assume(assume)]
             }
             Statement::Assertion { cond, msg } => {
@@ -651,6 +676,28 @@ impl<'tcx> Statement<'tcx> {
             }
             Statement::Variant(var) => vec![mlcfg::Statement::Variant(lower_pure(ctx, names, var))],
         }
+    }
+}
+
+fn int_to_prelude(ity: IntTy) -> PreludeModule {
+    match ity {
+        IntTy::Isize => PreludeModule::Isize,
+        IntTy::I8 => PreludeModule::Int8,
+        IntTy::I16 => PreludeModule::Int16,
+        IntTy::I32 => PreludeModule::Int32,
+        IntTy::I64 => PreludeModule::Int64,
+        IntTy::I128 => PreludeModule::Int128,
+    }
+}
+
+fn uint_to_prelude(ity: UintTy) -> PreludeModule {
+    match ity {
+        UintTy::Usize => PreludeModule::Usize,
+        UintTy::U8 => PreludeModule::UInt8,
+        UintTy::U16 => PreludeModule::UInt16,
+        UintTy::U32 => PreludeModule::UInt32,
+        UintTy::U64 => PreludeModule::UInt64,
+        UintTy::U128 => PreludeModule::UInt128,
     }
 }
 

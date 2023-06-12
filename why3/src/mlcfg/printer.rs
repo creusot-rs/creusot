@@ -673,7 +673,9 @@ impl Print for Exp {
                 alloc.text("not ").append(parens!(alloc, env, self, op))
             }
 
-            Exp::UnaryOp(UnOp::Neg, box op) => alloc.text("- ").append(op.pretty(alloc, env)),
+            Exp::UnaryOp(UnOp::Neg, box op) => {
+                alloc.text("- ").append(parens!(alloc, env, self, op))
+            }
             Exp::UnaryOp(UnOp::FloatNeg, box op) => alloc.text(".- ").append(op.pretty(alloc, env)),
             Exp::BinaryOp(op, box l, box r) => match self.associativity() {
                 Some(AssocDir::Left) => parens!(alloc, env, self, l),
@@ -1036,32 +1038,37 @@ impl Print for Constant {
             }
             Constant::String(s) => alloc.text(format!("{s:?}")),
             Constant::Uint(i, None) => alloc.as_string(i),
-            Constant::Float(f) => {
+            Constant::Float(f, None) => {
                 assert!(f.is_finite());
-                let mut doc = if f.fract() != 0.0 {
-                    let (mantissa, exp, _) = f.integer_decode();
-                    let leading = if f.is_subnormal() { "0" } else { "1" };
-
-                    alloc.text(format!(
-                        "{}0x{}.{:012x}p{}",
-                        if f.is_sign_negative() { "-" } else { "" },
-                        leading,
-                        mantissa & !(1 << 52),
-                        exp + 52
-                    ))
-                } else {
-                    alloc.text(format!(
-                        "{}{f}.0",
-                        if f.is_sign_negative() && f.is_zero() { "-" } else { "" }
-                    ))
-                };
-
+                let mut doc = alloc.text(print_float(*f));
                 if f.is_sign_negative() {
                     doc = doc.parens();
                 }
                 doc
             }
+            Constant::Float(f, Some(t)) => {
+                assert!(f.is_finite());
+                let f_str = print_float(*f);
+                alloc.text(f_str).append(" : ").append(t.pretty(alloc, env)).parens()
+            }
         }
+    }
+}
+
+fn print_float(f: f64) -> String {
+    if f.fract() != 0.0 {
+        let (mantissa, exp, _) = f.integer_decode();
+        let leading = if f.is_subnormal() { "0" } else { "1" };
+
+        format!(
+            "{}0x{}.{:012x}p{}",
+            if f.is_sign_negative() { "-" } else { "" },
+            leading,
+            mantissa & !(1 << 52),
+            exp + 52
+        )
+    } else {
+        format!("{}{f}.0", if f.is_sign_negative() && f.is_zero() { "-" } else { "" })
     }
 }
 

@@ -3,9 +3,10 @@ use crate::{
     translation::fmir::{self, LocalDecls},
 };
 use rustc_middle::{
-    mir::{tcx::PlaceTy, Local, Place, PlaceRef},
-    ty::TyKind,
+    mir::{self, tcx::PlaceTy, ProjectionElem},
+    ty::{self, Ty, TyCtxt, TyKind},
 };
+use rustc_span::Symbol;
 use why3::{
     exp::{
         Exp::{self, *},
@@ -15,23 +16,10 @@ use why3::{
         Statement::*,
         {self},
     },
-    QName,
+    Ident, QName,
 };
 
 use super::Why3Generator;
-
-impl<'tcx> Why3Generator<'tcx> {
-    pub(crate) fn place_ty(
-        &mut self,
-        locals: &fmir::LocalDecls<'tcx>,
-        pl: PlaceRef<'tcx>,
-    ) -> PlaceTy<'tcx> {
-        let local_ty = locals[&pl.local].2;
-        pl.projection.iter().fold(PlaceTy::from_ty(local_ty), |place_ty, &elem| {
-            place_ty.projection_ty(self.tcx, elem)
-        })
-    }
-}
 
 /// Correctly translate an assignment from one place to another. The challenge here is correctly
 /// construction the expression that assigns deep inside a structure.
@@ -48,149 +36,150 @@ pub(crate) fn create_assign_inner<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     locals: &LocalDecls<'tcx>,
-    lhs: &Place<'tcx>,
+    lhs: &fmir::Place<'tcx>,
     rhs: Exp,
 ) -> mlcfg::Statement {
-    // Translation happens inside to outside, which means we scan projection elements in reverse
-    // building up the inner expression. We start with the RHS expression which is at the deepest
-    // level.
+    let inner = create_assign_rec(
+        ctx,
+        names,
+        locals,
+        PlaceTy::from_ty(locals[&lhs.local].ty),
+        lhs.local,
+        &lhs.projection,
+        0,
+        rhs,
+    );
 
-    let mut inner = rhs;
+    Assign { lhs: Ident::build(lhs.local.as_str()), rhs: inner }
+}
 
-    // Each level of the translation needs access to the _previous_ value at this nesting level
-    // So we track the path from the root as we traverse, which we call the stump.
-    let mut stump: &[_] = lhs.projection;
+fn create_assign_rec<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    locals: &LocalDecls<'tcx>,
+    place_ty: PlaceTy<'tcx>,
+    base: Symbol,
+    proj: &[ProjectionElem<Symbol, Ty<'tcx>>],
+    proj_ix: usize,
+    rhs: Exp,
+) -> Exp {
+    if proj_ix >= proj.len() {
+        return rhs;
+    }
 
-    use rustc_middle::mir::ProjectionElem::*;
+    let inner = create_assign_rec(
+        ctx,
+        names,
+        locals,
+        projection_ty(place_ty, ctx.tcx, proj[proj_ix]),
+        base,
+        proj,
+        proj_ix + 1,
+        rhs,
+    );
+    use ProjectionElem::*;
+    match &proj[proj_ix] {
+        Deref => {
+            use rustc_hir::Mutability::*;
 
-    for (proj, elem) in lhs.iter_projections().rev() {
-        // twisted stuff
-        stump = &stump[0..stump.len() - 1];
-        let place_ty = ctx.place_ty(locals, proj);
-
-        match elem {
-            Deref => {
-                use rustc_hir::Mutability::*;
-
-                let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
-                if mutability == Mut {
-                    inner = RecUp {
-                        record: Box::new(translate_rplace_inner(
-                            ctx, names, locals, lhs.local, stump,
-                        )),
-                        label: "current".into(),
-                        val: Box::new(inner),
-                    }
+            let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
+            if mutability == Mut {
+                RecUp {
+                    record: Box::new(translate_rplace(ctx, names, locals, base, &proj[..proj_ix])),
+                    label: "current".into(),
+                    val: Box::new(inner),
                 }
+            } else {
+                inner
             }
-            Field(ix, _) => match place_ty.ty.kind() {
-                TyKind::Adt(def, subst) => {
-                    let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
-                    let variant = &def.variants()[variant_id];
-                    let var_size = variant.fields.len();
-
-                    let field_pats =
-                        ('a'..).map(|c| VarP(c.to_string().into())).take(var_size).collect();
-                    let mut varexps: Vec<Exp> = ('a'..)
-                        .map(|c| Exp::impure_var(c.to_string().into()))
-                        .take(var_size)
-                        .collect();
-
-                    varexps[ix.as_usize()] = inner;
-
-                    let ctor = names.constructor(variant.def_id, subst);
-                    inner = Let {
-                        pattern: ConsP(ctor.clone(), field_pats),
-                        arg: Box::new(translate_rplace_inner(ctx, names, locals, lhs.local, stump)),
-                        body: Box::new(Constructor { ctor, args: varexps }),
-                    }
-                }
-                TyKind::Tuple(fields) => {
-                    let var_size = fields.len();
-
-                    let field_pats =
-                        ('a'..).map(|c| VarP(c.to_string().into())).take(var_size).collect();
-                    let mut varexps: Vec<Exp> = ('a'..)
-                        .map(|c| Exp::impure_var(c.to_string().into()))
-                        .take(var_size)
-                        .collect();
-
-                    varexps[ix.as_usize()] = inner;
-
-                    inner = Let {
-                        pattern: TupleP(field_pats),
-                        arg: Box::new(translate_rplace_inner(ctx, names, locals, lhs.local, stump)),
-                        body: Box::new(Tuple(varexps)),
-                    }
-                }
-                TyKind::Closure(id, subst) => {
-                    let count = subst.as_closure().upvar_tys().count();
-                    let field_pats =
-                        ('a'..).map(|c| VarP(c.to_string().into())).take(count).collect();
-
-                    let mut varexps: Vec<Exp> = ('a'..)
-                        .map(|c| Exp::impure_var(c.to_string().into()))
-                        .take(count)
-                        .collect();
-
-                    varexps[ix.as_usize()] = inner;
-                    let cons = names.constructor(*id, subst);
-
-                    inner = Let {
-                        pattern: ConsP(cons.clone(), field_pats),
-                        arg: Box::new(translate_rplace_inner(ctx, names, locals, lhs.local, stump)),
-                        body: Box::new(Exp::Constructor { ctor: cons, args: varexps }),
-                    }
-                }
-                _ => unreachable!(),
-            },
-            Downcast(_, _) => {}
-            Index(ix) => {
-                let set = Exp::impure_qvar(QName::from_string("Slice.set").unwrap());
-                let ix_exp = Exp::impure_var(locals[&ix].0.ident());
-
-                inner = Call(
-                    Box::new(set),
-                    vec![
-                        translate_rplace_inner(ctx, names, locals, lhs.local, stump),
-                        ix_exp,
-                        inner,
-                    ],
-                )
-            }
-            ConstantIndex { .. } => unimplemented!("ConstantIndex"),
-            Subslice { .. } => unimplemented!("Subslice"),
-            OpaqueCast(_) => unimplemented!("OpaqueCast"),
         }
-    }
+        Field(ix, _) => match place_ty.ty.kind() {
+            TyKind::Adt(def, subst) => {
+                let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
+                let variant = &def.variants()[variant_id];
+                let var_size = variant.fields.len();
 
-    if locals.get(&lhs.local).is_none() {
-        eprintln!("{lhs:?} {locals:?}");
+                let field_pats =
+                    ('a'..).map(|c| VarP(c.to_string().into())).take(var_size).collect();
+                let mut varexps: Vec<Exp> =
+                    ('a'..).map(|c| Exp::impure_var(c.to_string().into())).take(var_size).collect();
+
+                varexps[ix.as_usize()] = inner;
+
+                let ctor = names.constructor(variant.def_id, subst);
+                Let {
+                    pattern: ConsP(ctor.clone(), field_pats),
+                    arg: Box::new(translate_rplace(ctx, names, locals, base, &proj[..proj_ix])),
+                    body: Box::new(Constructor { ctor, args: varexps }),
+                }
+            }
+            TyKind::Tuple(fields) => {
+                let var_size = fields.len();
+
+                let field_pats =
+                    ('a'..).map(|c| VarP(c.to_string().into())).take(var_size).collect();
+                let mut varexps: Vec<Exp> =
+                    ('a'..).map(|c| Exp::impure_var(c.to_string().into())).take(var_size).collect();
+
+                varexps[ix.as_usize()] = inner;
+
+                Let {
+                    pattern: TupleP(field_pats),
+                    arg: Box::new(translate_rplace(ctx, names, locals, base, &proj[..proj_ix])),
+                    body: Box::new(Tuple(varexps)),
+                }
+            }
+            TyKind::Closure(id, subst) => {
+                let count = subst.as_closure().upvar_tys().count();
+                let field_pats = ('a'..).map(|c| VarP(c.to_string().into())).take(count).collect();
+
+                let mut varexps: Vec<Exp> =
+                    ('a'..).map(|c| Exp::impure_var(c.to_string().into())).take(count).collect();
+
+                varexps[ix.as_usize()] = inner;
+                let cons = names.constructor(*id, subst);
+
+                Let {
+                    pattern: ConsP(cons.clone(), field_pats),
+                    arg: Box::new(translate_rplace(ctx, names, locals, base, &proj[..proj_ix])),
+                    body: Box::new(Exp::Constructor { ctor: cons, args: varexps }),
+                }
+            }
+            _ => unreachable!(),
+        },
+        Downcast(_, _) => inner,
+        Index(ix) => {
+            let set = Exp::impure_qvar(QName::from_string("Slice.set").unwrap());
+            let ix_exp = Exp::impure_var(Ident::build(ix.as_str()));
+
+            Call(
+                Box::new(set),
+                vec![translate_rplace(ctx, names, locals, base, &proj[..proj_ix]), ix_exp, inner],
+            )
+        }
+        ConstantIndex { .. } => unimplemented!("ConstantIndex"),
+        Subslice { .. } => unimplemented!("Subslice"),
+        OpaqueCast(_) => unimplemented!("OpaqueCast"),
     }
-    let ident = locals[&lhs.local].0.clone();
-    Assign { lhs: ident.ident(), rhs: inner }
 }
 
 // [(P as Some)]   ---> [_1]
 // [(P as Some).0] ---> let Some(a) = [_1] in a
 // [(* P)] ---> * [P]
-pub(crate) fn translate_rplace_inner<'tcx>(
+pub(crate) fn translate_rplace<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     locals: &LocalDecls<'tcx>,
-    loc: Local,
-    proj: &[rustc_middle::mir::PlaceElem<'tcx>],
+    loc: Symbol,
+    proj: &[mir::ProjectionElem<Symbol, Ty<'tcx>>],
 ) -> Exp {
-    if locals.get(&loc).is_none() {
-        eprintln!("{locals:?} {loc:?}")
-    };
-    let mut inner = Exp::impure_var(locals[&loc].0.ident());
+    let mut inner = Exp::impure_var(Ident::build(loc.as_str()));
     if proj.is_empty() {
         return inner;
     }
 
     use rustc_middle::mir::ProjectionElem::*;
-    let mut place_ty = ctx.place_ty(locals, Place::from(loc).as_ref());
+    let mut place_ty = PlaceTy::from_ty(locals[&loc].ty);
 
     for elem in proj {
         match elem {
@@ -232,7 +221,7 @@ pub(crate) fn translate_rplace_inner<'tcx>(
             Downcast(_, _) => {}
             Index(ix) => {
                 // TODO: Use [_] syntax
-                let ix_exp = Exp::impure_var(locals[ix].0.ident());
+                let ix_exp = Exp::impure_var(Ident::build(ix.as_str()));
                 inner = Call(
                     Box::new(Exp::impure_qvar(QName::from_string("Slice.get").unwrap())),
                     vec![inner, ix_exp],
@@ -242,8 +231,16 @@ pub(crate) fn translate_rplace_inner<'tcx>(
             Subslice { .. } => unimplemented!("subslice projection"),
             OpaqueCast(_) => unimplemented!("opaque cast projection"),
         }
-        place_ty = place_ty.projection_ty(ctx.tcx, *elem);
+        place_ty = projection_ty(place_ty, ctx.tcx, *elem);
     }
 
     inner
+}
+
+pub fn projection_ty<'tcx>(
+    pty: PlaceTy<'tcx>,
+    tcx: TyCtxt<'tcx>,
+    elem: ProjectionElem<Symbol, Ty<'tcx>>,
+) -> PlaceTy<'tcx> {
+    pty.projection_ty_core(tcx, ty::ParamEnv::empty(), &elem, |_, _, ty| ty, |_, ty| ty)
 }

@@ -9,6 +9,7 @@ use crate::{
     gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind},
     resolve::EagerResolver,
     translation::{
+        fmir::LocalDecl,
         pearlite::{self, TermKind, TermVisitorMut},
         specification::{contract_of, PreContract},
         traits,
@@ -78,7 +79,9 @@ pub struct BodyTranslator<'body, 'tcx> {
     borrows: Option<Rc<BorrowSet<'tcx>>>,
 
     // Translated locals
-    locals: LocalDecls<'tcx>,
+    locals: HashMap<Local, Symbol>,
+
+    vars: LocalDecls<'tcx>,
 }
 
 impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
@@ -120,12 +123,15 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             Some(_) => (None, None),
         };
 
+        let (vars, locals) = translate_vars(&body, &erased_locals);
+
         BodyTranslator {
             tcx,
             body,
             body_id,
             resolver,
-            locals: translate_vars(&body, &erased_locals),
+            locals,
+            vars,
             erased_locals,
             current_block: (Vec::new(), None),
             past_blocks: Default::default(),
@@ -145,7 +151,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         assert!(self.assertions.is_empty(), "unused assertions");
         assert!(self.invariants.is_empty(), "unused invariants");
 
-        fmir::Body { locals: self.locals, arg_count, blocks: self.past_blocks }
+        fmir::Body { locals: self.vars, arg_count, blocks: self.past_blocks }
     }
 
     fn translate_body(&mut self) {
@@ -207,10 +213,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         if let Some((id, subst)) =
             resolve_predicate_of(self.ctx, self.param_env(), pl.ty(self.body, self.ctx.tcx).ty)
         {
-            // self.emit_statement(fmir::Statement::Assume(
-            //     Term { kind: TermKind::Call { id: id, subst: subst, fun: (), args: () }}
-            // ));
-            self.emit_statement(fmir::Statement::Resolve(id, subst, pl));
+            let p = self.translate_place(pl);
+            self.emit_statement(fmir::Statement::Resolve(id, subst, p));
         }
     }
 
@@ -221,7 +225,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn emit_borrow(&mut self, lhs: &Place<'tcx>, rhs: &Place<'tcx>) {
-        self.emit_assignment(lhs, fmir::RValue::Borrow(*rhs));
+        let p = self.translate_place(*rhs);
+        self.emit_assignment(lhs, fmir::RValue::Borrow(p));
     }
 
     fn emit_ghost_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>) {
@@ -229,7 +234,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: RValue<'tcx>) {
-        self.emit_statement(fmir::Statement::Assignment(*lhs, rhs));
+        let p = self.translate_place(*lhs);
+        self.emit_statement(fmir::Statement::Assignment(p, rhs));
     }
 
     // Inserts resolves for locals which died over the course of a goto or switch
@@ -288,16 +294,42 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     // Useful helper to translate an operand
     pub(crate) fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Expr<'tcx> {
         match operand {
-            Operand::Copy(pl) | Operand::Move(pl) => Expr::Place(*pl),
+            Operand::Copy(pl) => Expr::Copy(self.translate_place(*pl)),
+            Operand::Move(pl) => Expr::Move(self.translate_place(*pl)),
             Operand::Constant(c) => {
                 crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
             }
         }
     }
+
+    fn translate_place(&self, _pl: mir::Place<'tcx>) -> fmir::Place<'tcx> {
+        let projection = _pl
+            .projection
+            .into_iter()
+            .map(|p| match p {
+                mir::ProjectionElem::Deref => mir::ProjectionElem::Deref,
+                mir::ProjectionElem::Field(ix, ty) => mir::ProjectionElem::Field(ix, ty),
+                mir::ProjectionElem::Index(l) => mir::ProjectionElem::Index(self.locals[&l]),
+                mir::ProjectionElem::ConstantIndex { offset, min_length, from_end } => {
+                    mir::ProjectionElem::ConstantIndex { offset, min_length, from_end }
+                }
+                mir::ProjectionElem::Subslice { from, to, from_end } => {
+                    mir::ProjectionElem::Subslice { from, to, from_end }
+                }
+                mir::ProjectionElem::Downcast(s, ix) => mir::ProjectionElem::Downcast(s, ix),
+                mir::ProjectionElem::OpaqueCast(ty) => mir::ProjectionElem::OpaqueCast(ty),
+            })
+            .collect();
+        fmir::Place { local: self.locals[&_pl.local], projection }
+    }
 }
 
-fn translate_vars<'tcx>(body: &Body<'tcx>, erased_locals: &BitSet<Local>) -> LocalDecls<'tcx> {
+fn translate_vars<'tcx>(
+    body: &Body<'tcx>,
+    erased_locals: &BitSet<Local>,
+) -> (LocalDecls<'tcx>, HashMap<Local, Symbol>) {
     let mut vars = LocalDecls::with_capacity(body.local_decls.len());
+    let mut locals = HashMap::new();
 
     use mir::VarDebugInfoContents::Place;
 
@@ -330,9 +362,19 @@ fn translate_vars<'tcx>(body: &Body<'tcx>, erased_locals: &BitSet<Local>) -> Loc
             sym
         };
 
-        vars.insert(loc, (sym, d.source_info.span, d.ty));
+        locals.insert(loc, sym.symbol());
+        vars.insert(
+            sym.symbol(),
+            LocalDecl {
+                mir_local: loc,
+                span: d.source_info.span,
+                ty: d.ty,
+                temp: !d.is_user_variable(),
+                arg: 0 < loc.index() && loc.index() <= body.arg_count,
+            },
+        );
     }
-    vars
+    (vars, locals)
 }
 
 pub(crate) struct ClosureContract<'tcx> {
