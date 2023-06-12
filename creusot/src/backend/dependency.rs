@@ -9,7 +9,7 @@ use crate::{
     util::{self, ItemType},
 };
 
-use super::ty_inv::tyinv_substs;
+use super::ty_inv;
 
 /// Dependencies between items and the resolution logic to find the 'monomorphic' forms accounting
 /// for various Creusot hacks like the handling of closures.
@@ -73,7 +73,7 @@ impl<'tcx> Dependency<'tcx> {
     #[inline]
     pub(crate) fn subst(mut self, tcx: TyCtxt<'tcx>, other: Dependency<'tcx>) -> Self {
         let substs = if let Dependency::TyInv(ty) = other {
-            tyinv_substs(tcx, ty)
+            ty_inv::tyinv_substs(tcx, ty)
         } else if let Some((_, substs)) = other.did() {
             substs
         } else {

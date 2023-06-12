@@ -286,37 +286,34 @@ impl<'tcx> CloneMap<'tcx> {
         let key = key.erase_regions(self.tcx).closure_hack(self.tcx);
 
         self.names.entry(key).or_insert_with(|| {
-            let name = match key {
-                CloneNode::Item(did, _) => {
-                    let base_sym = match util::item_type(self.tcx, did) {
-                        ItemType::Impl => {
-                            self.tcx.item_name(self.tcx.trait_id_of_impl(did).unwrap())
-                        }
-                        ItemType::Closure => Symbol::intern(&format!(
-                            "closure{}",
-                            self.tcx.def_path(did).data.last().unwrap().disambiguator
-                        )),
-                        _ => self.tcx.item_name(did),
-                    };
+            if let CloneNode::Type(ty) = key && !matches!(ty.kind(), TyKind::Alias(_, _)) {
+                return if let Some((did, _)) = key.did() {
+                    let name = Symbol::intern(&*module_name(self.tcx, did));
+                    CloneInfo::from_name(name, self.public)
+                } else {
+                    CloneInfo::hidden()
+                };
+            }
 
-                    let base = Symbol::intern(&base_sym.as_str().to_upper_camel_case());
-                    let count: usize =
-                        *self.name_counts.entry(base).and_modify(|c| *c += 1).or_insert(0);
-                    trace!("inserting {:?} as {}{}", key, base, count);
-                    Symbol::intern(&format!("{}{}", base, count))
-                }
-                CloneNode::Type(_) => {
-                    let (did, _) = key.did().unwrap();
-                    Symbol::intern(&*module_name(self.tcx, did))
-                }
-                CloneNode::TyInv(ty) => {
-                    let inv_kind = TyInvKind::from_ty(ty);
-                    Symbol::intern(&*inv_module_name(self.tcx, inv_kind))
-                }
+            let base = if let CloneNode::TyInv(ty) = key {
+                let inv_kind = TyInvKind::from_ty(ty);
+                Symbol::intern(&*inv_module_name(self.tcx, inv_kind))
+            } else {
+                let did = key.did().unwrap().0;
+                let base = match util::item_type(self.tcx, did) {
+                    ItemType::Impl => self.tcx.item_name(self.tcx.trait_id_of_impl(did).unwrap()),
+                    ItemType::Closure => Symbol::intern(&format!(
+                        "closure{}",
+                        self.tcx.def_path(did).data.last().unwrap().disambiguator
+                    )),
+                    _ => self.tcx.item_name(did),
+                };
+                Symbol::intern(&base.as_str().to_upper_camel_case())
             };
 
-            let info = CloneInfo::from_name(name, self.public);
-            info
+            let count: usize = *self.name_counts.entry(base).and_modify(|c| *c += 1).or_insert(0);
+            trace!("inserting {key:?} as {base}{count}");
+            CloneInfo::from_name(Symbol::intern(&format!("{base}{count}")), self.public)
         })
     }
 
@@ -593,15 +590,19 @@ impl<'tcx> CloneMap<'tcx> {
         // Types can't be cloned, but are used (for now).
         if let DepNode::Type(_) = item {
             let (def_id, _) = item.did()?;
-            return self.used_types.insert(def_id).then(|| {
-                if let Some(builtin) = get_builtin(ctx.tcx, def_id) {
-                    let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
-                    Decl::UseDecl(Use { name: name, as_: None, export: false })
-                } else {
-                    let name = cloneable_name(ctx, item, CloneLevel::Body);
-                    Decl::UseDecl(Use { name: name.clone(), as_: Some(name), export: false })
-                }
-            });
+            // check if type is not an assoc type
+            if util::item_type(ctx.tcx, def_id) == ItemType::Type {
+                let use_decl = self.used_types.insert(def_id).then(|| {
+                    if let Some(builtin) = get_builtin(ctx.tcx, def_id) {
+                        let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
+                        Use { name: name, as_: None, export: false }
+                    } else {
+                        let name = cloneable_name(ctx, item, CloneLevel::Body);
+                        Use { name: name.clone(), as_: Some(name), export: false }
+                    }
+                });
+                return use_decl.map(Decl::UseDecl);
+            }
         }
 
         let mut clone_subst = base_subst(ctx, self, item);

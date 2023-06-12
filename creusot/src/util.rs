@@ -111,7 +111,8 @@ pub(crate) fn is_type_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
 }
 
 pub(crate) fn is_inv_internal(tcx: TyCtxt, def_id: DefId) -> bool {
-    def_id == tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap()
+    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal"))
+        .is_some_and(|did| did == def_id)
 }
 
 pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
@@ -226,7 +227,7 @@ pub(crate) fn ident_of_ty(sym: Symbol) -> Ident {
 pub(crate) fn inv_module_name(tcx: TyCtxt, kind: TyInvKind) -> Ident {
     match kind {
         TyInvKind::Trivial => "TyInv_Trivial".into(),
-        TyInvKind::Borrow => "TyInv_Borrows".into(),
+        TyInvKind::Borrow => "TyInv_Borrow".into(),
         TyInvKind::Adt(adt_did) => format!("{}_Inv", &*ident_path(tcx, adt_did)).into(),
         TyInvKind::Tuple(arity) => format!("TyInv_Tuple{arity}").into(),
     }

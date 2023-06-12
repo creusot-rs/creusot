@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{*, invariant};
+use creusot_contracts::{invariant, *};
 
 pub struct List<T>(T, Option<Box<List<T>>>);
 
