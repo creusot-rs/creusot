@@ -226,6 +226,7 @@ pub(crate) fn ident_of_ty(sym: Symbol) -> Ident {
 pub(crate) fn inv_module_name(tcx: TyCtxt, kind: TyInvKind) -> Ident {
     match kind {
         TyInvKind::Trivial => "TyInv_Trivial".into(),
+        TyInvKind::Borrow => "TyInv_Borrows".into(),
         TyInvKind::Adt(adt_did) => format!("{}_Inv", &*ident_path(tcx, adt_did)).into(),
         TyInvKind::Tuple(arity) => format!("TyInv_Tuple{arity}").into(),
     }

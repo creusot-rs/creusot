@@ -3,6 +3,7 @@ use super::{
     CloneMap, CloneSummary, TransId, Why3Generator,
 };
 use crate::{ctx::*, translation::traits, util};
+use rustc_ast::Mutability;
 use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
@@ -15,6 +16,7 @@ use why3::{
 #[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 pub(crate) enum TyInvKind {
     Trivial,
+    Borrow,
     Adt(DefId),
     Tuple(usize),
 }
@@ -25,6 +27,11 @@ impl TyInvKind {
             TyKind::Bool | TyKind::Char | TyKind::Int(_) | TyKind::Uint(_) | TyKind::Float(_) => {
                 TyInvKind::Trivial
             }
+            TyKind::Ref(_, ty, Mutability::Not) => TyInvKind::from_ty(*ty),
+            TyKind::Ref(_, _, Mutability::Mut) => TyInvKind::Borrow,
+            TyKind::Adt(adt_def, adt_substs) if adt_def.is_box() => {
+                TyInvKind::from_ty(adt_substs.type_at(0))
+            }
             TyKind::Adt(adt_def, _) => TyInvKind::Adt(adt_def.did()),
             TyKind::Tuple(tys) => TyInvKind::Tuple(tys.len()),
             _ => TyInvKind::Trivial, // TODO
@@ -34,6 +41,11 @@ impl TyInvKind {
     pub(crate) fn to_ty<'tcx>(self, tcx: TyCtxt<'tcx>) -> Ty<'tcx> {
         match self {
             TyInvKind::Trivial => tcx.mk_ty_param(0, Symbol::intern("T")),
+            TyInvKind::Borrow => {
+                let re = tcx.lifetimes.re_erased;
+                let ty = tcx.mk_ty_param(0, Symbol::intern("T"));
+                tcx.mk_mut_ref(re, ty)
+            }
             TyInvKind::Adt(did) => tcx.type_of(did).subst_identity(),
             TyInvKind::Tuple(arity) => tcx.mk_tup_from_iter(
                 (0..arity).map(|i| tcx.mk_ty_param(i as _, Symbol::intern(&format!("T{i}")))),
@@ -43,7 +55,7 @@ impl TyInvKind {
 
     pub(crate) fn generics(self, tcx: TyCtxt) -> Vec<Ident> {
         match self {
-            TyInvKind::Trivial => vec!["t".into()],
+            TyInvKind::Trivial | TyInvKind::Borrow => vec!["t".into()],
             TyInvKind::Adt(def_id) => ty_param_names(tcx, def_id).collect(),
             TyInvKind::Tuple(arity) => (0..arity).map(|i| format!["t{i}"].into()).collect(),
         }
@@ -55,10 +67,28 @@ pub(crate) fn tyinv_substs<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> SubstsRef<'
         TyKind::Bool | TyKind::Char | TyKind::Int(_) | TyKind::Uint(_) | TyKind::Float(_) => {
             tcx.mk_substs(&[GenericArg::from(ty)])
         }
+        TyKind::Ref(_, ty, Mutability::Not) => tyinv_substs(tcx, *ty),
+        TyKind::Ref(_, ty, Mutability::Mut) => tcx.mk_substs(&[GenericArg::from(*ty)]),
+        TyKind::Adt(adt_def, adt_substs) if adt_def.is_box() => {
+            tyinv_substs(tcx, adt_substs.type_at(0))
+        }
         TyKind::Adt(_, adt_substs) => adt_substs,
         TyKind::Tuple(tys) => tcx.mk_substs_from_iter(tys.iter().map(GenericArg::from)),
-        _ => tcx.mk_substs(&[]),
+        _ => tcx.mk_substs(&[GenericArg::from(ty)]),
     }
+}
+
+pub(crate) fn is_tyinv_trivial<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    def_id: DefId,
+    ty: Ty<'tcx>,
+) -> bool {
+    // TODO ADT fields
+    let param_env = ctx.param_env(def_id);
+    let non_trivial = ty.walk().any(|ty| {
+        ty.as_type().is_some_and(|ty| resolve_user_inv(ctx.tcx, ty, param_env).is_some())
+    });
+    !non_trivial
 }
 
 pub(crate) fn build_inv_module<'tcx>(
@@ -91,6 +121,7 @@ fn build_inv_axiom<'tcx>(
 ) -> Axiom {
     let name = match inv_kind {
         TyInvKind::Trivial => "inv_trivial".into(),
+        TyInvKind::Borrow => "inv_borrow".into(),
         TyInvKind::Adt(did) => {
             let ty_name = util::item_name(ctx.tcx, did, Namespace::TypeNS);
             format!("inv_{}", &*ty_name).into()
@@ -128,7 +159,7 @@ fn build_inv_exp<'tcx>(
     let ty = ctx.normalize_erasing_regions(param_env, ty);
 
     let user_inv = if destruct_adt {
-        resolve_user_inv(ctx, ty, param_env).map(|(uinv_did, uinv_subst)| {
+        resolve_user_inv(ctx.tcx, ty, param_env).map(|(uinv_did, uinv_subst)| {
             let inv_name = names.value(uinv_did, uinv_subst);
             Exp::impure_qvar(inv_name).app(vec![Exp::pure_var(ident.clone())])
         })
@@ -154,6 +185,14 @@ fn build_inv_exp_struct<'tcx>(
     destruct_adt: bool,
 ) -> Option<Exp> {
     match ty.kind() {
+        TyKind::Ref(_, ty, Mutability::Not) => {
+            build_inv_exp(ctx, names, ident, *ty, param_env, destruct_adt)
+        }
+        TyKind::Ref(_, ty, Mutability::Mut) => {
+            let e = build_inv_exp(ctx, names, ident, *ty, param_env, destruct_adt)?;
+            // TODO include final value
+            Some(Exp::Current(Box::new(e)))
+        }
         TyKind::Tuple(tys) => {
             let fields: Vec<Ident> =
                 tys.iter().enumerate().map(|(i, _)| format!("a_{i}").into()).collect();
@@ -226,25 +265,23 @@ fn build_inv_exp_adt<'tcx>(
 }
 
 fn resolve_user_inv<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
+    tcx: TyCtxt<'tcx>,
     ty: Ty<'tcx>,
     param_env: ParamEnv<'tcx>,
 ) -> Option<(DefId, SubstsRef<'tcx>)> {
-    let trait_did = ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap();
-    let default_did =
-        ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_user_default")).unwrap();
+    let trait_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user"))?;
+    let default_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user_default"))?;
 
     let (impl_did, subst) = traits::resolve_assoc_item_opt(
-        ctx.tcx,
+        tcx,
         param_env,
         trait_did,
-        ctx.mk_substs(&[GenericArg::from(ty)]),
+        tcx.mk_substs(&[GenericArg::from(ty)]),
     )?;
-    let subst = ctx.try_normalize_erasing_regions(param_env, subst).unwrap_or(subst);
+    let subst = tcx.try_normalize_erasing_regions(param_env, subst).unwrap_or(subst);
 
     // if inv resolved to the default impl and is not specializable, ignore
-    if impl_did == default_did && !traits::still_specializable(ctx.tcx, param_env, impl_did, subst)
-    {
+    if impl_did == default_did && !traits::still_specializable(tcx, param_env, impl_did, subst) {
         None
     } else {
         Some((impl_did, subst))
