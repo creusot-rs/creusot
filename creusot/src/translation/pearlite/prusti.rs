@@ -1,7 +1,7 @@
 use crate::{
     error::{CreusotResult, Error},
     pearlite::{Pattern, Term, TermKind, ThirTerm},
-    prusti::{full_signature, typeck, types::*},
+    prusti::{full_signature, full_signature_logic, typeck, types::*},
     util,
 };
 use internal_iterator::*;
@@ -13,7 +13,6 @@ use rustc_middle::{
 use rustc_span::symbol::Symbol;
 use std::{
     hash::Hash,
-    iter,
     ops::{ControlFlow, Deref, DerefMut},
 };
 
@@ -119,13 +118,24 @@ pub(super) fn prusti_to_creusot<'tcx>(
 
     let home_sig = util::get_attr_lit(tcx, owner_id, &["creusot", "prusti", "home_sig"]);
     let sig: Binder<FnSig> = tcx.fn_sig(owner_id).subst_identity();
-    let mut ctx = Ctx::new(tcx, owner_id, home_sig.is_some());
 
-    let (ts, arg_tys, res_ty) = full_signature(home_sig, sig, ts, owner_id, &mut ctx)?;
-    let res_kv = (Symbol::intern("result"), Ok(res_ty));
-    let arg_tys = arg_tys.chain(iter::once(res_kv)).map(|(k, v)| v.map(|v| (k, v)));
-    let mut tenv = Tenv::new(arg_tys.collect::<CreusotResult<_>>()?);
-    let final_type = convert(&mut term, &mut tenv, ts, &ctx)?;
+    let (ctx,ts, mut tenv, res_ty) = match home_sig {
+        None => {
+            let (ctx, ts, arg_tys, res_ty) = full_signature(tcx, sig, ts, owner_id)?;
+            let tenv = arg_tys.map(|(k, v)| v.map(|v| (k, v))).collect::<CreusotResult<FxHashMap<_, _>>>()?;
+            (ctx, ts, tenv, res_ty)
+        }
+        Some(home_sig) => {
+            let (ctx, ts, tenv, res_ty) = full_signature_logic(tcx, home_sig, sig, ts, owner_id)?;
+            (ctx, ts, tenv, res_ty)
+        }
+    };
+
+    if item_id != owner_id.expect_local() {
+        tenv.insert(Symbol::intern("result"), res_ty);
+    }
+
+    let final_type = convert(&mut term, &mut Tenv::new(tenv), ts, &ctx)?;
     if item_id == owner_id.expect_local() {
         typeck::check_sup(&ctx, res_ty, final_type, term.span)?
     }

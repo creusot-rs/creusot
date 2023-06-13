@@ -1,6 +1,7 @@
 #![feature(rustc_private, register_tool)]
 #![feature(box_patterns, control_flow_enum, drain_filter)]
 #![feature(let_chains, never_type, try_blocks)]
+#![feature(type_changing_struct_update)]
 
 #[macro_use]
 extern crate log;

@@ -5,4 +5,6 @@ mod region_set;
 mod sig;
 pub(crate) mod types;
 mod variance;
-pub(crate) use sig::full_signature;
+mod util;
+
+pub(crate) use sig::{full_signature, full_signature_logic};

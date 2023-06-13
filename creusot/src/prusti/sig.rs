@@ -7,11 +7,11 @@ use crate::{
     },
     util,
 };
-use itertools::Either;
 use rustc_ast::MetaItemLit as Lit;
-use rustc_middle::ty::{Binder, FnSig, InternalSubsts, Region};
-use rustc_span::{def_id::DefId, symbol::Ident, Symbol, DUMMY_SP};
+use rustc_middle::ty::{Binder, FnSig, Region, TyCtxt};
+use rustc_span::{def_id::DefId, symbol::Ident, Symbol, DUMMY_SP, Span};
 use std::iter;
+use crate::prusti::types::PreCtx;
 
 type TimeSlice<'tcx> = Region<'tcx>;
 
@@ -19,18 +19,15 @@ type TimeSlice<'tcx> = Region<'tcx>;
 /// Also checks that 'curr is not blocked
 fn make_time_slice<'tcx>(
     l: &Lit,
-    regions: impl Iterator<Item = Region<'tcx>>,
-    ctx: &mut Ctx<'tcx>,
+    ctx: &Ctx<'tcx>,
 ) -> CreusotResult<TimeSlice<'tcx>> {
-    let mut bad_curr = false;
     let old_region = ctx.old_region();
     let curr_region = ctx.curr_region();
-    let mut regions = regions.map(|r| {
-        bad_curr = bad_curr || ctx.check_ok_in_program(r);
+    let mut regions = ctx.base_regions().map(|r| {
         (r.get_name(), ctx.fix_region(r))
     });
     let sym = l.as_token_lit().symbol;
-    let res = match sym.as_str() {
+    match sym.as_str() {
         "old" => Ok(old_region),
         "curr" => Ok(curr_region),
         "'_" => {
@@ -50,17 +47,11 @@ fn make_time_slice<'tcx>(
                 Err(Error::new(l.span, format!("use of undeclared lifetime name {sym}")))
             }
         }
-    };
-    regions.for_each(drop);
-    if bad_curr {
-        Err(Error::new(l.span, "'curr region must not be blocked"))
-    } else {
-        res
     }
 }
 
 /// Returns region corresponding to `l` in a logical context
-fn make_time_slice_logic<'tcx>(l: &Lit, ctx: &mut Ctx<'tcx>) -> CreusotResult<TimeSlice<'tcx>> {
+fn make_time_slice_logic<'tcx>(l: &Lit, ctx: &mut PreCtx<'tcx>) -> CreusotResult<TimeSlice<'tcx>> {
     let sym = l.as_token_lit().symbol;
     match sym.as_str() {
         "old" => Ok(ctx.curr_region()), //hack requires clauses to use same time slice as return
@@ -74,29 +65,12 @@ fn make_time_slice_logic<'tcx>(l: &Lit, ctx: &mut Ctx<'tcx>) -> CreusotResult<Ti
 }
 
 fn add_homes_to_sig<'a, 'tcx>(
-    ctx: &'a mut Ctx<'tcx>,
+    args: &'tcx [Ident],
     sig: FnSig<'tcx>,
-    home_sig: Option<&Lit>,
-) -> CreusotResult<(impl Iterator<Item = (Symbol, CreusotResult<Ty<'tcx>>)> + 'a, Ty<'tcx>)> {
-    let args: &[Ident] = ctx.tcx.fn_arg_names(ctx.owner_id);
-    let (arg_homes, ret_home, span) = match home_sig {
-        Some(lit) => {
-            let (arg_homes, ret_home) = parsing::parse_home_sig_lit(lit)?;
-            if arg_homes.len() != args.len() {
-                return Err(Error::new(lit.span, "number of args doesn't match signature"));
-            }
-            let home = ctx.map_parsed_home(ret_home);
-            (
-                Either::Left(arg_homes.into_iter().map(move |h| ctx.map_parsed_home(h))),
-                home,
-                lit.span,
-            )
-        }
-        None => {
-            let arg_homes = iter::repeat(Home { data: ctx.old_region(), is_ref: false });
-            (Either::Right(arg_homes), Home { data: ctx.curr_region(), is_ref: false }, DUMMY_SP)
-        }
-    };
+    arg_homes: impl Iterator<Item=Home<Region<'tcx>>>,
+    ret_home: Home<Region<'tcx>>,
+    span: Span,
+) -> CreusotResult<(impl Iterator<Item = (Symbol, CreusotResult<Ty<'tcx>>)>, Ty<'tcx>)> {
     let types =
         sig.inputs().iter().zip(arg_homes).map(move |(&ty, home)| Ty::try_new(ty, home, span));
 
@@ -116,31 +90,55 @@ fn add_homes_to_sig<'a, 'tcx>(
 }
 
 pub(crate) fn full_signature<'a, 'tcx>(
-    home_sig: Option<&Lit>,
+    tcx: TyCtxt<'tcx>,
     sig: Binder<'tcx, FnSig<'tcx>>,
     ts: &Lit,
     owner_id: DefId,
-    ctx: &'a mut Ctx<'tcx>,
 ) -> CreusotResult<(
+    Ctx<'tcx>,
     Region<'tcx>,
-    impl Iterator<Item = (Symbol, CreusotResult<Ty<'tcx>>)> + 'a,
+    impl Iterator<Item = (Symbol, CreusotResult<Ty<'tcx>>)>,
     Ty<'tcx>,
 )> {
-    let tcx = ctx.tcx;
-    let bound_vars = sig.bound_vars();
-    let lifetimes1 = bound_vars.iter().map(|bvk| tcx.mk_re_free(owner_id, bvk.expect_region()));
-    let lifetimes2 = InternalSubsts::identity_for_item(tcx, owner_id).regions();
-    let lifetimes = lifetimes1.chain(lifetimes2);
-
+    let ctx = Ctx::new_for_spec(tcx, owner_id)?;
     let sig = tcx.liberate_late_bound_regions(owner_id, sig);
     let sig = ctx.fix_regions(sig);
 
-    let (ts, home_sig) = match home_sig {
-        Some(lit) => (make_time_slice_logic(ts, ctx)?, Some(lit)),
-        None => (make_time_slice(ts, lifetimes, ctx)?, None),
-    };
-    //dbg!(&non_blocked);
-    //eprintln!("{:?}", sig);
-    let (arg_tys, res_ty) = add_homes_to_sig(ctx, sig, home_sig)?;
-    Ok((ts, arg_tys, res_ty))
+    let ts = make_time_slice(ts, &ctx)?;
+    let arg_homes = iter::repeat(ctx.old_region().into());
+    let ret_home = ctx.curr_region().into();
+    let args = ctx.tcx.fn_arg_names(ctx.owner_id);
+    let (arg_tys, res_ty) = add_homes_to_sig(args, sig, arg_homes, ret_home, DUMMY_SP)?;
+    Ok((ctx, ts, arg_tys, res_ty))
+}
+
+pub(crate) fn full_signature_logic<'a, 'tcx, T: FromIterator<(Symbol, Ty<'tcx>)>>(
+    tcx: TyCtxt<'tcx>,
+    home_sig: &Lit,
+    sig: Binder<'tcx, FnSig<'tcx>>,
+    ts: &Lit,
+    owner_id: DefId,
+) -> CreusotResult<(
+    Ctx<'tcx>,
+    Region<'tcx>,
+    T,
+    Ty<'tcx>,
+)> {
+    let mut ctx = PreCtx::new(tcx, owner_id);
+    let sig = tcx.liberate_late_bound_regions(owner_id, sig);
+    let sig = ctx.fix_regions(sig);
+
+    let ts = make_time_slice_logic(ts, &mut ctx)?;
+
+    let (arg_homes, ret_home) = parsing::parse_home_sig_lit(home_sig)?;
+    if arg_homes.len() != sig.inputs().len() {
+        return Err(Error::new(home_sig.span, "number of args doesn't match signature"));
+    }
+    let ret_home = ctx.map_parsed_home(ret_home);
+    let args = ctx.tcx.fn_arg_names(ctx.owner_id);
+    let arg_homes = arg_homes.into_iter().map(|h| ctx.map_parsed_home(h));
+
+    let (arg_tys, res_ty) = add_homes_to_sig(args, sig, arg_homes, ret_home, home_sig.span)?;
+    let arg_tys = arg_tys.map(|(k, v)| v.map(|v| (k, v))).collect::<CreusotResult<T>>()?;
+    Ok((ctx.finish_for_logic(), ts, arg_tys, res_ty))
 }

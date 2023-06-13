@@ -1,15 +1,17 @@
+use std::iter;
+use itertools::Either;
 use super::{
-    full_signature,
+    full_signature_logic,
     parsing::{parse_home_sig_lit, Home, HomeSig},
     region_set::RegionSet,
     types::*,
+    typeck::MutDerefType::{Cur, Fin},
+    util::{generalize, RegionReplacer}
 };
 use crate::{
     error::{CreusotResult, Error},
     util,
 };
-
-use crate::prusti::typeck::MutDerefType::{Cur, Fin};
 use rustc_data_structures::fx::FxHashMap;
 use rustc_infer::{
     infer::{
@@ -27,8 +29,6 @@ use rustc_middle::{
 };
 use rustc_span::{def_id::DefId, Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::ObligationCtxt;
-use std::iter;
-use itertools::Either;
 use rustc_target::abi::VariantIdx;
 use rustc_infer::infer::at::ToTrace;
 use rustc_infer::infer::ValuePairs;
@@ -162,13 +162,6 @@ fn sup_tys<'tcx>(
         Err(err) => return Err(Error::new(span, err.to_string(ctx.tcx()))),
     };
     Ok(())
-}
-
-fn generalize<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(t: T, infcx: &InferCtxt<'tcx>) -> T {
-    t.fold_with(&mut RegionReplacer {
-        tcx: infcx.tcx,
-        f: |_| infcx.next_region_var(RegionVariableOrigin::MiscVariable(DUMMY_SP)),
-    })
 }
 
 fn origin_types<'tcx>(origin: &SubregionOrigin<'tcx>) -> Option<ExpectedFound<ty::Ty<'tcx>>> {
@@ -378,10 +371,9 @@ pub(crate) fn check_signature_agreement<'tcx>(
 ) -> CreusotResult<()> {
     use rustc_ast::{token, MetaItemLit as Lit};
     let trait_home_sig = util::get_attr_lit(tcx, trait_id, &["creusot", "prusti", "home_sig"]);
-    if trait_home_sig.is_none() {
+    let Some(trait_home_sig) = trait_home_sig else {
         return Ok(()); // We're not specializing a home signature
-    }
-    let mut ctx = Ctx::new(tcx, impl_id, true);
+    };
     let impl_id_subst = InternalSubsts::identity_for_item(tcx, impl_id);
     let impl_span: Span = tcx.def_span(impl_id);
     let ts = Lit::from_token_lit(
@@ -391,12 +383,9 @@ pub(crate) fn check_signature_agreement<'tcx>(
     let ts = ts.ok().unwrap();
 
     let sig = tcx.fn_sig(trait_id).subst(tcx, refn_subst);
-    let (ts, arg_tys, expect_res_ty) =
-        full_signature(trait_home_sig, sig, &ts, trait_id, &mut ctx)?;
-    let args = arg_tys
-        .zip(iter::repeat(impl_span))
-        .map(|((_, ty), sp)| ty.map(|ty| (ty, sp)));
-    let args = args.collect::<Vec<_>>().into_iter();
+    let (ctx, ts, arg_tys, expect_res_ty) =
+        full_signature_logic::<Vec<_>>(tcx, trait_home_sig, sig, &ts, trait_id)?;
+    let args = arg_tys.into_iter().map(|(_, ty)| Ok((ty, impl_span)));
     let actual_res_ty = check_call(&ctx, ts, impl_id, impl_id_subst, args)?;
     check_sup(&ctx, expect_res_ty, actual_res_ty, impl_span)
 }

@@ -85,3 +85,9 @@ pub(super) fn parse_home_sig_lit(sig: &Lit) -> CreusotResult<(Vec<Home>, Home)> 
     parse_home_sig(&mut s)
         .ok_or_else(|| Error::new(sig.span, format!("invalid home signature, reached \"{s}\"")))
 }
+
+impl<T> From<T> for Home<T> {
+    fn from(data: T) -> Self {
+        Home{data, is_ref: false}
+    }
+}

@@ -1,75 +1,82 @@
+use super::util::generalize;
 use rustc_infer::{
     infer::{
-        outlives::env::OutlivesEnvironment, resolve::fully_resolve, InferCtxt,
+        outlives::env::OutlivesEnvironment, InferCtxt,
         RegionVariableOrigin, TyCtxtInferExt,
     },
     traits::Obligation,
 };
+use rustc_infer::infer::region_constraints::Constraint;
 use rustc_middle::{
     traits::ObligationCause,
     ty::{
-        Binder, GenericParamDefKind, GenericPredicates, InternalSubsts, ParamEnv, PredicateKind,
-        Region, RegionKind, SubstsRef, Ty, TyCtxt,
+        Binder, GenericPredicates, InternalSubsts, ParamEnv, PredicateKind,
+        Region, SubstsRef, Ty, TyCtxt,
     },
 };
+use rustc_middle::ty::{BoundVariableKind, EarlyBinder, FnSig};
 use rustc_span::{
     def_id::{DefId, LocalDefId},
     DUMMY_SP,
 };
-use rustc_trait_selection::traits::{outlives_bounds::InferCtxtExt, ObligationCtxt};
+use rustc_trait_selection::traits::ObligationCtxt;
 
-pub(crate) fn empty_regions(
-    tcx: TyCtxt<'_>,
+
+/// Returns a set of all regions in a function and an iterator over there constraints
+/// RegSubReg constrains relate the regions from the functions definition
+/// VarSubReg/RegSubVar constrains indicate additional constraints imposed by subtyping when instantiating the function
+pub(crate) fn constraints_of_fn<'tcx>(
+    tcx: TyCtxt<'tcx>,
     def_id: LocalDefId,
-) -> impl Iterator<Item = Region<'_>> {
+) -> (impl Iterator<Item = Region<'tcx>>, impl Iterator<Item=Constraint<'tcx>>) {
     let infcx = tcx.infer_ctxt().build();
-    let param_env: ParamEnv = tcx.param_env(def_id);
+
     // identitity fn ty and sig
-    let fn_sig = tcx.fn_sig(def_id).subst_identity();
+    let fn_sig: EarlyBinder<Binder<FnSig>> = tcx.fn_sig(def_id);
+    let fn_sig = fn_sig.subst_identity();
+
+    let eb_regions = InternalSubsts::identity_for_item(tcx, def_id).regions();
+    let lb_regions = fn_sig.bound_vars().iter().filter_map(move |x| match x {
+        BoundVariableKind::Region(r) => Some(tcx.mk_re_free(def_id.to_def_id(), r)),
+        _ => None,
+    });
+    let regions = eb_regions.chain(lb_regions);
     let fn_sig = tcx.liberate_late_bound_regions(def_id.to_def_id(), fn_sig);
     let fn_ty = tcx.mk_fn_ptr(Binder::dummy(fn_sig));
-    // generalized fn ty and sig
-    let subst_ref =
-        InternalSubsts::for_item(infcx.tcx, def_id.to_def_id(), |param, _| match param.kind {
-            GenericParamDefKind::Lifetime => infcx.var_for_def(DUMMY_SP, param),
-            // Needed to handle case where a function has an unused type parameter
-            _ => tcx.mk_param_from_def(param),
-        });
-    let (fn_ty_gen, iter) = generalize_fn_def(tcx, def_id.to_def_id(), &infcx, subst_ref);
+
+    // Try to call this function in a hypothetical context with the same types but where all the regions are generalized
+
+    // generalize function type and param_env
+    let fn_ty_gen = generalize(fn_ty, &infcx);
+    let param_env: ParamEnv = generalize(tcx.param_env(def_id), &infcx);
 
     // subtyping constraints
     let ocx = ObligationCtxt::new(&infcx);
-    ocx.sub(&ObligationCause::dummy(), param_env, fn_ty_gen, fn_ty).unwrap();
+    ocx.sub(&ObligationCause::dummy(), param_env, fn_ty, fn_ty_gen).unwrap();
+
     let mk_obligation =
         |predicate| Obligation::new(tcx, ObligationCause::dummy(), param_env, predicate);
 
     // predicate constraints
     let predicates: GenericPredicates = tcx.predicates_of(def_id);
-    let predicates = predicates.instantiate(tcx, subst_ref).predicates;
+    let predicates = predicates.instantiate_identity(tcx).predicates;
     let obligations = predicates.into_iter().map(mk_obligation);
     ocx.register_obligations(obligations);
 
     // well formedness constraints
     ocx.register_obligation(mk_obligation(
-        tcx.mk_predicate(Binder::dummy(PredicateKind::WellFormed(fn_ty_gen.into()))),
+        tcx.mk_predicate(Binder::dummy(PredicateKind::WellFormed(fn_ty.into()))),
     ));
-    let wf_tys = ocx.assumed_wf_types(param_env, DUMMY_SP, def_id);
+
     assert!(ocx.select_all_or_error().is_empty());
+    let outlives = OutlivesEnvironment::new(param_env);
+    infcx.process_registered_region_obligations(&outlives);
 
-    let implied_bounds = infcx.implied_bounds_tys(param_env, def_id, wf_tys);
-    let outlives = OutlivesEnvironment::with_bounds(param_env, implied_bounds);
-    ocx.resolve_regions_and_report_errors(def_id, &outlives)
-        .expect("region error when checking variance");
-
-    // resolve each region variable to see if it can be blocked
-    let res = iter.filter_map(move |(reg, reg_gen)| {
-        match fully_resolve(&infcx, reg_gen).unwrap().kind() {
-            RegionKind::ReVar(_) => Some(reg),
-            _ => None,
-        }
-    });
-    res
+    let constraints = infcx.take_and_reset_region_constraints();
+    let constraints = constraints.constraints.into_iter().map(move |(x, _)| x);
+    (regions, constraints)
 }
+
 
 pub(crate) fn generalize_fn_def<'tcx>(
     tcx: TyCtxt<'tcx>,
