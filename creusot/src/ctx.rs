@@ -209,6 +209,10 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         def_id: DefId,
         ty: Ty<'tcx>,
     ) -> Option<(DefId, SubstsRef<'tcx>)> {
+        if util::is_open_ty_inv(self.tcx, def_id) {
+            return None;
+        }
+
         debug!("resolving type invariant of {ty:?} in {def_id:?}");
         let param_env = self.param_env(def_id);
         let trait_did = self.get_diagnostic_item(Symbol::intern("creusot_invariant_method"))?;

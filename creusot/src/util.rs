@@ -93,6 +93,10 @@ pub(crate) fn is_extern_spec(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "extern_spec"]).is_some()
 }
 
+pub(crate) fn is_open_ty_inv(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "open_inv"]).is_some()
+}
+
 pub(crate) fn is_type_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
     let Some(assoc_item) = tcx.opt_associated_item(def_id) else { return false };
     let Some(trait_item_did) = (match assoc_item.container {
