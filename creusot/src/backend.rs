@@ -1,7 +1,7 @@
 use indexmap::{IndexMap, IndexSet};
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_span::DUMMY_SP;
 use rustc_middle::ty::{GenericParamDef, GenericParamDefKind, TyCtxt};
+use rustc_span::DUMMY_SP;
 use why3::declaration::{Decl, TyDecl};
 
 use crate::{
