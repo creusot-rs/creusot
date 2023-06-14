@@ -24,7 +24,6 @@ pub trait Invariant {
 impl<'a, T: Invariant + ?Sized> Invariant for &'a T {
     #[predicate]
     #[open]
-    #[creusot::ignore_type_invariant = "maybe"]
     fn invariant(self) -> bool {
         pearlite! { (*self).invariant() }
     }
@@ -33,7 +32,6 @@ impl<'a, T: Invariant + ?Sized> Invariant for &'a T {
 impl<'a, T: Invariant + ?Sized> Invariant for &'a mut T {
     #[predicate]
     #[open]
-    #[creusot::ignore_type_invariant = "maybe"]
     fn invariant(self) -> bool {
         pearlite! { (*self).invariant() }
     }
@@ -42,7 +40,6 @@ impl<'a, T: Invariant + ?Sized> Invariant for &'a mut T {
 impl<T: Invariant + ?Sized> Invariant for Box<T> {
     #[predicate]
     #[open]
-    #[creusot::ignore_type_invariant = "maybe"]
     fn invariant(self) -> bool {
         pearlite! { (*self).invariant() }
     }
@@ -51,7 +48,6 @@ impl<T: Invariant + ?Sized> Invariant for Box<T> {
 impl<T: Invariant, U: Invariant> Invariant for (T, U) {
     #[predicate]
     #[open]
-    #[creusot::ignore_type_invariant = "maybe"]
     fn invariant(self) -> bool {
         pearlite! { self.0.invariant() && self.1.invariant() }
     }
@@ -60,7 +56,6 @@ impl<T: Invariant, U: Invariant> Invariant for (T, U) {
 impl<T: Invariant> Invariant for Option<T> {
     #[predicate]
     #[open]
-    #[creusot::ignore_type_invariant = "maybe"]
     fn invariant(self) -> bool {
         pearlite! {
             match self {

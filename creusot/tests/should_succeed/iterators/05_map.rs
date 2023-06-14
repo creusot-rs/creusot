@@ -24,15 +24,11 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
 
     #[law]
     #[open]
-    #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
     #[open]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -76,14 +72,14 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
 
 impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
     #[predicate]
-    fn next_precondition(self) -> bool {
+    fn next_precondition(#[creusot::open_inv] self) -> bool {
         pearlite! {
-            forall<e: I::Item, i: I> i.invariant() ==>
-                self.iter.produces(Seq::singleton(e), i) ==> self.func.precondition((e,))
+            forall<e: I::Item, i: I> self.iter.produces(Seq::singleton(e), i) ==> self.func.precondition((e,))
         }
     }
 
     #[predicate]
+    #[creusot::open_inv]
     fn reinitialize() -> bool {
         pearlite! {
             forall<reset : &mut Map<I, F>> (^reset).iter.invariant() ==>
@@ -93,10 +89,9 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
 
     #[predicate]
     #[ensures(result == Self::preservation(self.iter, self.func))]
-    fn preservation_inv(self) -> bool {
+    fn preservation_inv(#[creusot::open_inv] self) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
-                i.invariant() ==>
                 self.func.unnest(*f) ==>
                 self.iter.produces(s.push(e1).push(e2), i) ==>
                 (*f).precondition((e1,)) ==>
@@ -109,7 +104,6 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
     fn preservation(iter: I, func: F) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
-                i.invariant() ==>
                 func.unnest(*f) ==>
                 iter.produces(s.push(e1).push(e2), i) ==>
                 (*f).precondition((e1,)) ==>
@@ -119,15 +113,18 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
     }
 
     #[logic]
-    #[requires(self.invariant())]
     #[requires(self.produces_one(e, other))]
     #[requires(other.iter.invariant())]
     #[ensures(other.invariant())]
-    fn produces_one_invariant(self, e: B, other: Self) {}
+    fn produces_one_invariant(self, e: B, #[creusot::open_inv] other: Self) {}
 
     #[predicate]
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
-    fn produces_one(self, visited: B, succ: Self) -> bool {
+    fn produces_one(
+        #[creusot::open_inv] self,
+        visited: B,
+        #[creusot::open_inv] succ: Self,
+    ) -> bool {
         pearlite! {
             exists<f: &mut F> *f == self.func && ^f == succ.func
             && { exists<e : I::Item> self.iter.produces(Seq::singleton(e), succ.iter)
@@ -140,7 +137,6 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
 impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, F> {
     // Should not quantify over self or the `invariant` cannot be made into a type invariant
     #[predicate]
-    #[creusot::ignore_type_invariant]
     #[open(self)]
     fn invariant(self) -> bool {
         pearlite! {
@@ -152,11 +148,9 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, F> {
     }
 }
 
-#[requires(forall<e : I::Item, i2 : I> i2.invariant() ==> iter.produces(Seq::singleton(e), i2) ==> func.precondition((e,)))]
+#[requires(forall<e : I::Item, i2 : I> iter.produces(Seq::singleton(e), i2) ==> func.precondition((e,)))]
 #[requires(Map::<I, F>::reinitialize())]
-#[requires(iter.invariant())]
 #[requires(Map::<I, F>::preservation(iter, func))]
-#[ensures(result.invariant())]
 #[ensures(result == Map { iter, func })]
 pub fn map<I: Iterator, B, F: FnMut(I::Item) -> B>(iter: I, func: F) -> Map<I, F> {
     Map { iter, func }

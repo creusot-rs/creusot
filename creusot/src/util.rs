@@ -118,24 +118,6 @@ pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol>
     })
 }
 
-pub(crate) enum TypeInvariantAttr {
-    None,
-    MaybeIgnore,
-    AlwaysIgnore,
-}
-
-pub(crate) fn ignore_type_invariant(tcx: TyCtxt, def_id: DefId) -> TypeInvariantAttr {
-    match get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "ignore_type_invariant"]) {
-        None => TypeInvariantAttr::None,
-        Some(AttrItem { args: AttrArgs::Eq(_, AttrArgsEq::Hir(v)), .. })
-            if v.symbol.as_str() == "maybe" =>
-        {
-            TypeInvariantAttr::MaybeIgnore
-        }
-        _ => TypeInvariantAttr::AlwaysIgnore,
-    }
-}
-
 pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::Attribute> {
     let matches = get_attrs(tcx.get_attrs_unchecked(def_id), &["why3", "attr"]);
     matches
@@ -494,8 +476,9 @@ fn elaborate_type_invariants<'tcx>(
                 let arg = Term { ty: *ty, span: *span, kind: TermKind::Var(*name) };
                 let arg =
                     Term { ty: inner, span: *span, kind: TermKind::Fin { term: Box::new(arg) } };
-                let term =
-                    pearlite::type_invariant_term_with_arg(ctx, def_id, arg, *span, inner).unwrap();
+                // FIXME: why can this be none?
+                let Some(term) =
+                    pearlite::type_invariant_term_with_arg(ctx, def_id, arg, *span, inner) else {continue; };
                 pre_sig.contract.ensures.push(term);
             }
 

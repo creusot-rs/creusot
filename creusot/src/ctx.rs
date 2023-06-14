@@ -29,10 +29,7 @@ use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
     mir::{Body, Promoted},
     thir,
-    ty::{
-        subst::{GenericArgKind, InternalSubsts},
-        GenericArg, ParamEnv, SubstsRef, Ty, TyCtxt, Visibility,
-    },
+    ty::{subst::InternalSubsts, GenericArg, ParamEnv, SubstsRef, Ty, TyCtxt, Visibility},
 };
 use rustc_span::{RealFileName, Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::SelectionContext;
@@ -225,41 +222,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             return None;
         }
 
-        match util::ignore_type_invariant(self.tcx, inv.0) {
-            util::TypeInvariantAttr::None => return Some(inv),
-            util::TypeInvariantAttr::AlwaysIgnore => return None,
-            util::TypeInvariantAttr::MaybeIgnore => {}
-        }
-
-        let mut walker = ty.walk();
-        walker.next(); // skip root type
-        while let Some(arg) = walker.next() {
-            if !matches!(arg.unpack(), GenericArgKind::Type(_)) {
-                walker.skip_current_subtree();
-                continue;
-            }
-
-            let substs = self.mk_substs(&[arg]);
-            let Some(arg_inv) = traits::resolve_opt(self.tcx, param_env, trait_did, substs) else {
-                walker.skip_current_subtree();
-                continue;
-            };
-
-            if arg_inv.0 == trait_did
-                && !traits::still_specializable(self.tcx, param_env, arg_inv.0, arg_inv.1)
-            {
-                walker.skip_current_subtree();
-                continue;
-            }
-
-            match util::ignore_type_invariant(self.tcx, arg_inv.0) {
-                util::TypeInvariantAttr::None => return Some(inv),
-                util::TypeInvariantAttr::AlwaysIgnore => walker.skip_current_subtree(),
-                util::TypeInvariantAttr::MaybeIgnore => {}
-            }
-        }
-
-        None
+        Some(inv)
     }
 
     pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {

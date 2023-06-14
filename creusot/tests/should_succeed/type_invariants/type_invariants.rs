@@ -14,7 +14,3 @@ impl Invariant for WithInvariant {
 pub fn id(x: WithInvariant) -> WithInvariant {
     x
 }
-
-pub fn open(#[creusot::open_inv] x: WithInvariant) -> WithInvariant {
-    x
-}
