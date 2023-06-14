@@ -38,7 +38,7 @@ impl TyInvKind {
         }
     }
 
-    pub(crate) fn to_ty<'tcx>(self, tcx: TyCtxt<'tcx>) -> Ty<'tcx> {
+    pub(crate) fn to_skeleton_ty<'tcx>(self, tcx: TyCtxt<'tcx>) -> Ty<'tcx> {
         match self {
             TyInvKind::Trivial => tcx.mk_ty_param(0, Symbol::intern("T")),
             TyInvKind::Borrow => {
@@ -82,7 +82,7 @@ pub(crate) fn build_inv_module<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     inv_kind: TyInvKind,
 ) -> (Module, CloneSummary<'tcx>) {
-    let mut names = CloneMap::new_with_tid(ctx.tcx, TransId::TyInv(inv_kind), CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, TransId::TyInv(inv_kind), CloneLevel::Stub);
     let generics = inv_kind.generics(ctx.tcx);
     let inv_axiom = build_inv_axiom(ctx, &mut names, inv_kind);
 
@@ -119,7 +119,7 @@ fn build_inv_axiom<'tcx>(
     let param_env =
         if let TyInvKind::Adt(did) = inv_kind { ctx.param_env(did) } else { ParamEnv::empty() };
 
-    let ty = inv_kind.to_ty(ctx.tcx);
+    let ty = inv_kind.to_skeleton_ty(ctx.tcx);
     let lhs: Exp = Exp::impure_qvar(names.ty_inv(ty)).app_to(Exp::pure_var("self".into()));
     let rhs = if TyInvKind::Trivial == inv_kind {
         Exp::mk_true()

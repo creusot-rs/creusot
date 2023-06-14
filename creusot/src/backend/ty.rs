@@ -291,7 +291,7 @@ pub(crate) fn translate_tydecl(
         return None;
     }
 
-    let mut names = CloneMap::new(ctx.tcx, repr, CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, repr.into(), CloneLevel::Stub);
 
     let name = module_name(ctx.tcx, repr);
     let span = ctx.def_span(repr);
@@ -432,7 +432,7 @@ pub(crate) fn translate_accessor(
 
     let substs = InternalSubsts::identity_for_item(ctx.tcx, adt_did);
     let repr = ctx.representative_type(adt_did);
-    let mut names = CloneMap::new(ctx.tcx, repr, CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, repr.into(), CloneLevel::Stub);
 
     // UGLY hack to ensure that we don't explicitly use/clone the members of a binding group
     let bg = ctx.binding_group(repr).clone();

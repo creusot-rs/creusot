@@ -210,15 +210,7 @@ impl<'tcx> CloneInfo {
 }
 
 impl<'tcx> CloneMap<'tcx> {
-    pub(crate) fn new(tcx: TyCtxt<'tcx>, self_id: DefId, clone_level: CloneLevel) -> Self {
-        Self::new_with_tid(tcx, TransId::Item(self_id), clone_level)
-    }
-
-    pub(crate) fn new_with_tid(
-        tcx: TyCtxt<'tcx>,
-        self_id: TransId,
-        clone_level: CloneLevel,
-    ) -> Self {
+    pub(crate) fn new(tcx: TyCtxt<'tcx>, self_id: TransId, clone_level: CloneLevel) -> Self {
         let mut names = IndexMap::new();
 
         let self_id = match self_id {
@@ -233,7 +225,7 @@ impl<'tcx> CloneMap<'tcx> {
 
                 CloneNode::new(tcx, (self_id, subst)).erase_regions(tcx)
             }
-            TransId::TyInv(inv_kind) => CloneNode::TyInv(inv_kind.to_ty(tcx)),
+            TransId::TyInv(inv_kind) => CloneNode::TyInv(inv_kind.to_skeleton_ty(tcx)),
         };
 
         debug!("cloning self: {:?}", self_id);
@@ -295,8 +287,7 @@ impl<'tcx> CloneMap<'tcx> {
                 };
             }
 
-            let base = if let CloneNode::TyInv(ty) = key {
-                let inv_kind = TyInvKind::from_ty(ty);
+            let base = if let Some(inv_kind) = key.ty_inv_kind() {
                 Symbol::intern(&*inv_module_name(self.tcx, inv_kind))
             } else {
                 let did = key.did().unwrap().0;
@@ -457,7 +448,7 @@ impl<'tcx> CloneMap<'tcx> {
         }
 
         let inv_kind = TyInvKind::from_ty(ty);
-        if let CloneNode::TyInv(self_ty) = self.self_id && TyInvKind::from_ty(self_ty) == inv_kind {
+        if self.self_id.ty_inv_kind().is_some_and(|self_kind| self_kind == inv_kind) {
             return;
         }
 

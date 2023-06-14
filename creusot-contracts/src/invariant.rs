@@ -44,14 +44,6 @@ impl<T> UserInv for T {
     }
 }
 
-impl UserInv for i32 {
-    #[predicate]
-    #[open]
-    fn user_inv(self) -> bool {
-        pearlite! { self@ > 0 }
-    }
-}
-
 impl<'a, T: Invariant + ?Sized> Invariant for &'a T {
     #[predicate]
     #[open]

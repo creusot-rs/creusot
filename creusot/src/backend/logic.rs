@@ -65,7 +65,7 @@ fn builtin_body<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
 ) -> (Module, CloneSummary<'tcx>) {
-    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Stub);
     let mut sig = signature_of(ctx, &mut names, def_id);
     let (val_args, val_binders) = binders_to_args(ctx, sig.args);
     sig.args = val_binders;
@@ -133,7 +133,7 @@ pub(crate) fn val_decl<'tcx>(
 }
 
 fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
-    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Stub);
 
     let mut sig = signature_of(ctx, &mut names, def_id);
     let mut val_sig = sig.clone();
@@ -198,7 +198,7 @@ fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, C
 }
 
 pub(crate) fn stub_module(ctx: &mut Why3Generator, def_id: DefId) -> Module {
-    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Stub);
     let mut sig = signature_of(ctx, &mut names, def_id);
 
     if util::is_predicate(ctx.tcx, def_id) {
@@ -225,7 +225,7 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
         return None;
     }
 
-    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Body);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Body);
 
     let mut sig = signature_of(ctx, &mut names, def_id);
 

@@ -28,7 +28,7 @@ impl<'tcx> Why3Generator<'tcx> {
         let param_env = self.param_env(def_id);
         let span = self.def_span(def_id);
         let res = from_ty_const(&mut self.ctx, constant, param_env, span);
-        let mut names = CloneMap::new(self.tcx, def_id, CloneLevel::Body);
+        let mut names = CloneMap::new(self.tcx, def_id.into(), CloneLevel::Body);
         let res = res.to_why(self, &mut names, &LocalDecls::new());
         let sig = signature_of(self, &mut names, def_id);
         let mut decls: Vec<_> = closure_generic_decls(self.tcx, def_id).collect();

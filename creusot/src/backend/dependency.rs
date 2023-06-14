@@ -9,7 +9,7 @@ use crate::{
     util::{self, ItemType},
 };
 
-use super::ty_inv;
+use super::ty_inv::{self, TyInvKind};
 
 /// Dependencies between items and the resolution logic to find the 'monomorphic' forms accounting
 /// for various Creusot hacks like the handling of closures.
@@ -54,6 +54,14 @@ impl<'tcx> Dependency<'tcx> {
                 TyKind::Alias(AliasKind::Projection, aty) => Some((aty.def_id, aty.substs)),
                 _ => None,
             },
+        }
+    }
+
+    pub(crate) fn ty_inv_kind(self) -> Option<TyInvKind> {
+        if let Dependency::TyInv(ty) = self {
+            Some(TyInvKind::from_ty(ty))
+        } else {
+            None
         }
     }
 
