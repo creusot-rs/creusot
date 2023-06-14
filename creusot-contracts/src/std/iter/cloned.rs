@@ -25,7 +25,7 @@ impl<I> Resolve for Cloned<I> {
     }
 }
 
-impl<I: Invariant> Invariant for Cloned<I> {
+impl<I> Invariant for Cloned<I> {
     #[open(self)]
     #[predicate]
     fn invariant(self) -> bool {

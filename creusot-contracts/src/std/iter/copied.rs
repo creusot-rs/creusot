@@ -25,7 +25,7 @@ impl<I> Resolve for Copied<I> {
     }
 }
 
-impl<I: Invariant> Invariant for Copied<I> {
+impl<I> Invariant for Copied<I> {
     #[open(self)]
     #[predicate]
     fn invariant(self) -> bool {

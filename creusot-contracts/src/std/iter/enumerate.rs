@@ -35,7 +35,7 @@ impl<I> Resolve for Enumerate<I> {
     }
 }
 
-impl<I: Invariant + Iterator> Invariant for Enumerate<I> {
+impl<I: Iterator> Invariant for Enumerate<I> {
     #[open(self)]
     #[predicate]
     fn invariant(self) -> bool {

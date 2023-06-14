@@ -78,6 +78,19 @@ pub(crate) fn tyinv_substs<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> SubstsRef<'
     }
 }
 
+pub(crate) fn is_tyinv_trivial<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    def_id: DefId,
+    ty: Ty<'tcx>,
+) -> bool {
+    // TODO ADT fields
+    let param_env = ctx.param_env(def_id);
+    let non_trivial = ty.walk().any(|ty| {
+        ty.as_type().is_some_and(|ty| resolve_user_inv(ctx.tcx, ty, param_env).is_some())
+    });
+    !non_trivial
+}
+
 pub(crate) fn build_inv_module<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     inv_kind: TyInvKind,

@@ -47,7 +47,7 @@ impl<I> Resolve for Take<I> {
     }
 }
 
-impl<I: Invariant> Invariant for Take<I> {
+impl<I> Invariant for Take<I> {
     #[open]
     #[predicate]
     fn invariant(self) -> bool {

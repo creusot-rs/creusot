@@ -362,8 +362,6 @@ impl<'a, T> ShallowModel for Iter<'a, T> {
     }
 }
 
-impl<'a, T> Invariant for Iter<'a, T> {}
-
 impl<'a, T> Iterator for Iter<'a, T> {
     #[predicate]
     #[open]

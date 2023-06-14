@@ -1,4 +1,4 @@
-use crate::{invariant::Invariant, std::iter::Repeat, *};
+use crate::{std::iter::Repeat, *};
 
 impl<T> ShallowModel for Repeat<T> {
     type ShallowModelTy = T;
@@ -10,8 +10,6 @@ impl<T> ShallowModel for Repeat<T> {
         pearlite! { absurd }
     }
 }
-
-impl<T> Invariant for Repeat<T> {}
 
 impl<T: Clone> Iterator for Repeat<T> {
     #[open(self)]
