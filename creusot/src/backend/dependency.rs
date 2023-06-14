@@ -1,5 +1,5 @@
-use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{EarlyBinder, ParamEnv, SubstsRef, Ty, TyCtxt, TyKind};
+use rustc_hir::{def::DefKind, def_id::DefId};
+use rustc_middle::ty::{EarlyBinder, InternalSubsts, ParamEnv, SubstsRef, Ty, TyCtxt, TyKind};
 use rustc_span::Symbol;
 use rustc_type_ir::AliasKind;
 
@@ -9,7 +9,10 @@ use crate::{
     util::{self, ItemType},
 };
 
-use super::ty_inv::{self, TyInvKind};
+use super::{
+    ty_inv::{self, TyInvKind},
+    TransId,
+};
 
 /// Dependencies between items and the resolution logic to find the 'monomorphic' forms accounting
 /// for various Creusot hacks like the handling of closures.
@@ -30,6 +33,23 @@ impl<'tcx> Dependency<'tcx> {
             ItemType::Type => Dependency::Type(tcx.mk_adt(tcx.adt_def(did), subst)),
             ItemType::AssocTy => Dependency::Type(tcx.mk_projection(did, subst)),
             _ => Dependency::Item(did, subst),
+        }
+    }
+
+    pub(crate) fn from_trans_id(tcx: TyCtxt<'tcx>, trans_id: TransId) -> Self {
+        match trans_id {
+            TransId::Item(self_id) => {
+                let subst = match tcx.def_kind(self_id) {
+                    DefKind::Closure => match tcx.type_of(self_id).subst_identity().kind() {
+                        TyKind::Closure(_, subst) => subst,
+                        _ => unreachable!(),
+                    },
+                    _ => InternalSubsts::identity_for_item(tcx, self_id),
+                };
+
+                Dependency::new(tcx, (self_id, subst)).erase_regions(tcx)
+            }
+            TransId::TyInv(inv_kind) => Dependency::TyInv(inv_kind.to_skeleton_ty(tcx)),
         }
     }
 

@@ -10,9 +10,8 @@ use rustc_hir::{
     def_id::DefId,
 };
 use rustc_middle::ty::{
-    self,
-    subst::{InternalSubsts, SubstsRef},
-    AliasKind, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable, TypeVisitor,
+    self, subst::SubstsRef, AliasKind, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable,
+    TypeSuperVisitable, TypeVisitor,
 };
 use rustc_span::{Symbol, DUMMY_SP};
 use rustc_target::abi::FieldIdx;
@@ -108,8 +107,8 @@ pub struct CloneMap<'tcx> {
     // - Body: Will directly use the full body of dependencies, except for program functions
     clone_level: CloneLevel,
 
-    // DefId of the item which is cloning. Used for trait resolution
-    self_id: CloneNode<'tcx>, // TODO should this be a TransId?
+    // TransId of the item which is cloning. Used for trait resolution
+    self_id: TransId,
     // TODO: Push the graph into an opaque type with tight api boundary
     // Graph which is used to calculate the full clone set
     clone_graph: DiGraphMap<DepNode<'tcx>, IndexSet<(Kind, SymbolKind)>>,
@@ -213,23 +212,8 @@ impl<'tcx> CloneMap<'tcx> {
     pub(crate) fn new(tcx: TyCtxt<'tcx>, self_id: TransId, clone_level: CloneLevel) -> Self {
         let mut names = IndexMap::new();
 
-        let self_id = match self_id {
-            TransId::Item(self_id) => {
-                let subst = match tcx.def_kind(self_id) {
-                    DefKind::Closure => match tcx.type_of(self_id).subst_identity().kind() {
-                        TyKind::Closure(_, subst) => subst,
-                        _ => unreachable!(),
-                    },
-                    _ => InternalSubsts::identity_for_item(tcx, self_id),
-                };
-
-                CloneNode::new(tcx, (self_id, subst)).erase_regions(tcx)
-            }
-            TransId::TyInv(inv_kind) => CloneNode::TyInv(inv_kind.to_skeleton_ty(tcx)),
-        };
-
         debug!("cloning self: {:?}", self_id);
-        names.insert(self_id, CloneInfo::hidden());
+        names.insert(CloneNode::from_trans_id(tcx, self_id), CloneInfo::hidden());
 
         CloneMap {
             tcx,
@@ -374,8 +358,15 @@ impl<'tcx> CloneMap<'tcx> {
         self.value(def_id, subst)
     }
 
+    fn self_key(&self) -> CloneNode<'tcx> {
+        CloneNode::from_trans_id(self.tcx, self.self_id)
+    }
+
     fn self_did(&self) -> Option<DefId> {
-        self.self_id.did().map(|(self_did, _)| self_did)
+        match self.self_id {
+            TransId::Item(did) | TransId::TyInv(TyInvKind::Adt(did)) => Some(did),
+            _ => None,
+        }
     }
 
     fn param_env(&self, ctx: &TranslationCtx<'tcx>) -> ParamEnv<'tcx> {
@@ -412,8 +403,9 @@ impl<'tcx> CloneMap<'tcx> {
             i += 1;
             trace!("update graph with {:?} (public={:?})", key, self.names[&key].public);
 
-            if key != self.self_id {
-                self.add_graph_edge(self.self_id, key);
+            let self_key = self.self_key();
+            if key != self_key {
+                self.add_graph_edge(self_key, key);
             }
 
             if self.names[&key].kind == Kind::Hidden {
@@ -448,7 +440,7 @@ impl<'tcx> CloneMap<'tcx> {
         }
 
         let inv_kind = TyInvKind::from_ty(ty);
-        if self.self_id.ty_inv_kind().is_some_and(|self_kind| self_kind == inv_kind) {
+        if let TransId::TyInv(self_kind) = self.self_id && self_kind == inv_kind {
             return;
         }
 
@@ -674,7 +666,7 @@ impl<'tcx> CloneMap<'tcx> {
         // Broken because of closures which share a defid for the type *and* function
         // debug_assert!(!is_cyclic_directed(&self.clone_graph), "clone graph for {:?} is cyclic", self.self_id );
 
-        let mut topo = DfsPostOrder::new(&self.clone_graph, self.self_id);
+        let mut topo = DfsPostOrder::new(&self.clone_graph, self.self_key());
         while let Some(node) = topo.walk_next(&self.clone_graph) {
             trace!("processing node {:?}", self.names[&node].kind);
 
