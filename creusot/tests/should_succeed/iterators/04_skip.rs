@@ -6,20 +6,9 @@ use creusot_contracts::{invariant::Invariant, *};
 mod common;
 use common::Iterator;
 
-pub struct Skip<I> {
+pub struct Skip<I: Iterator> {
     iter: I,
     n: usize,
-}
-
-impl<I> Invariant for Skip<I>
-where
-    I: Iterator,
-{
-    #[open]
-    #[predicate]
-    fn invariant(self) -> bool {
-        self.iter.invariant()
-    }
 }
 
 impl<I> Iterator for Skip<I>

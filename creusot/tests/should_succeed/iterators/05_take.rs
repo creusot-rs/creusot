@@ -1,12 +1,12 @@
 #![feature(slice_take)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{invariant::Invariant, *};
+use creusot_contracts::*;
 
 mod common;
 use common::Iterator;
 
-pub struct Take<I> {
+pub struct Take<I: Iterator> {
     iter: I,
     n: usize,
 }
@@ -56,19 +56,6 @@ where
             self.iter.next()
         } else {
             None
-        }
-    }
-}
-
-impl<I> Invariant for Take<I>
-where
-    I: Iterator,
-{
-    #[open]
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! {
-            self.iter.invariant()
         }
     }
 }

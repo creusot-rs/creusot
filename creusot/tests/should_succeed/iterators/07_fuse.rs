@@ -1,16 +1,16 @@
 extern crate creusot_contracts;
-use creusot_contracts::{invariant::Invariant, logic::Seq, *};
+use creusot_contracts::{logic::Seq, *};
 
 mod common;
 use common::Iterator;
 
-pub struct Fuse<I> {
+pub struct Fuse<I: Iterator> {
     // Either it's an actual iterator or
     // it's the ghost of the last iterator *spooky*
     iter: Result<I, Ghost<I>>,
 }
 
-impl<I> Fuse<I> {
+impl<I: Iterator> Fuse<I> {
     #[logic]
     fn inner(self) -> I {
         match self.iter {
@@ -66,17 +66,6 @@ impl<I: Iterator> Iterator for Fuse<I> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
-}
-
-impl<I: Iterator> Invariant for Fuse<I> {
-    #[open]
-    #[predicate]
-    fn invariant(self) -> bool {
-        match self.iter {
-            Ok(i) => i.invariant(),
-            Err(gi) => gi.invariant(),
-        }
-    }
 }
 
 // Not a subtrait of `FusedIterator` here for type inference reasons.

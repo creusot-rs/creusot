@@ -1,4 +1,6 @@
 #![feature(unboxed_closures)]
+#![allow(incomplete_features)]
+#![feature(specialization)]
 extern crate creusot_contracts;
 
 use creusot_contracts::{invariant::Invariant, *};
@@ -6,7 +8,7 @@ use creusot_contracts::{invariant::Invariant, *};
 mod common;
 use common::Iterator;
 
-pub struct Map<I, F> {
+pub struct Map<I: Iterator, F> {
     // The inner iterator
     iter: I,
     // The mapper
@@ -142,7 +144,6 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, F> {
         pearlite! {
             Self::reinitialize() &&
             self.preservation_inv() &&
-            self.iter.invariant() &&
             self.next_precondition()
         }
     }

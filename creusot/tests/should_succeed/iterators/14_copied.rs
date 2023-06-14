@@ -1,12 +1,12 @@
 #![feature(slice_take)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{invariant::Invariant, *};
+use creusot_contracts::*;
 
 mod common;
 use common::Iterator;
 
-pub struct Copied<I> {
+pub struct Copied<I: Iterator> {
     iter: I,
 }
 
@@ -51,19 +51,5 @@ where
     })]
     fn next(&mut self) -> Option<T> {
         self.iter.next().copied()
-    }
-}
-
-impl<'a, I, T: 'a> Invariant for Copied<I>
-where
-    I: Iterator<Item = &'a T>,
-    T: Copy,
-{
-    #[open]
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! {
-            self.iter.invariant()
-        }
     }
 }

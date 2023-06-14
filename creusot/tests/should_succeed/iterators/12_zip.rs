@@ -1,11 +1,11 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::{invariant::Invariant, logic::Seq, *};
+use creusot_contracts::{logic::Seq, *};
 
 mod common;
 use common::Iterator;
 
-struct Zip<I, J> {
+struct Zip<I: Iterator, J: Iterator> {
     iter1: I,
     iter2: J,
 }
@@ -52,13 +52,5 @@ impl<I: Iterator, J: Iterator> Iterator for Zip<I, J> {
             (Some(i1), Some(i2)) => Some((i1, i2)),
             _ => None,
         }
-    }
-}
-
-impl<I: Iterator, J: Iterator> Invariant for Zip<I, J> {
-    #[open]
-    #[predicate]
-    fn invariant(self) -> bool {
-        self.iter1.invariant() && self.iter2.invariant()
     }
 }

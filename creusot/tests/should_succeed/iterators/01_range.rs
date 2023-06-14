@@ -15,8 +15,6 @@ struct Range {
     end: isize,
 }
 
-impl Invariant for Range {}
-
 impl Iterator for Range {
     type Item = isize;
 

@@ -1,4 +1,6 @@
 #![feature(slice_take)]
+#![allow(incomplete_features)]
+#![feature(specialization)]
 extern crate creusot_contracts;
 
 use creusot_contracts::{invariant::Invariant, *};
@@ -70,8 +72,7 @@ where
     #[predicate]
     fn invariant(self) -> bool {
         pearlite! {
-            self.iter.invariant()
-            && (forall<s: Seq<I::Item>, i: I> self.iter.produces(s, i) ==> self.count@ + s.len() < std::usize::MAX@)
+            (forall<s: Seq<I::Item>, i: I> self.iter.produces(s, i) ==> self.count@ + s.len() < std::usize::MAX@)
             && (forall<i: &mut I> i.completed() ==> i.produces(Seq::EMPTY, ^i))
         }
     }
