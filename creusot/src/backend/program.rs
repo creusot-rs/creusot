@@ -37,7 +37,7 @@ use why3::{
 use super::signature::sig_to_why3;
 
 fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
-    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Body);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Body);
     let mut decls = Vec::new();
 
     let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).subst_identity().kind() else { unreachable!() };
@@ -152,7 +152,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     def_id: DefId,
 ) -> Option<Module> {
     let tcx = ctx.tcx;
-    let mut names = CloneMap::new(tcx, def_id, CloneLevel::Body);
+    let mut names = CloneMap::new(tcx, def_id.into(), CloneLevel::Body);
 
     let body_ids = collect_body_ids(ctx, def_id)?;
     let body = to_why(ctx, &mut names, body_ids[0]);

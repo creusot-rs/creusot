@@ -1,5 +1,6 @@
 use indexmap::{IndexMap, IndexSet};
 use rustc_hir::{def::DefKind, def_id::DefId};
+use rustc_span::DUMMY_SP;
 
 use crate::{
     ctx::{TranslatedItem, TranslationCtx},
@@ -8,6 +9,8 @@ use crate::{
 use std::ops::{Deref, DerefMut};
 
 pub(crate) use clone_map::*;
+
+use self::{dependency::Dependency, ty_inv::TyInvKind};
 
 pub(crate) mod clone_map;
 pub(crate) mod constant;
@@ -21,13 +24,26 @@ pub(crate) mod signature;
 pub(crate) mod term;
 pub(crate) mod traits;
 pub(crate) mod ty;
+pub(crate) mod ty_inv;
+
+#[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+pub(crate) enum TransId {
+    Item(DefId),
+    TyInv(TyInvKind),
+}
+
+impl From<DefId> for TransId {
+    fn from(def_id: DefId) -> Self {
+        TransId::Item(def_id)
+    }
+}
 
 pub struct Why3Generator<'tcx> {
     ctx: TranslationCtx<'tcx>,
-    dependencies: IndexMap<DefId, CloneSummary<'tcx>>,
-    functions: IndexMap<DefId, TranslatedItem>,
-    translated_items: IndexSet<DefId>,
-    in_translation: Vec<IndexSet<DefId>>,
+    dependencies: IndexMap<TransId, CloneSummary<'tcx>>,
+    functions: IndexMap<TransId, TranslatedItem>,
+    translated_items: IndexSet<TransId>,
+    in_translation: Vec<IndexSet<TransId>>,
 }
 
 impl<'tcx> Deref for Why3Generator<'tcx> {
@@ -56,12 +72,13 @@ impl<'tcx> Why3Generator<'tcx> {
     }
 
     // Checks if we are allowed to recurse into
-    fn safe_cycle(&self, def_id: DefId) -> bool {
-        self.in_translation.last().map(|l| l.contains(&def_id)).unwrap_or_default()
+    fn safe_cycle(&self, trans_id: TransId) -> bool {
+        self.in_translation.last().map(|l| l.contains(&trans_id)).unwrap_or_default()
     }
 
     pub(crate) fn translate(&mut self, def_id: DefId) {
-        if self.translated_items.contains(&def_id) || self.safe_cycle(def_id) {
+        let tid = def_id.into();
+        if self.translated_items.contains(&tid) || self.safe_cycle(tid) {
             return;
         }
         debug!("translating {:?}", def_id);
@@ -72,8 +89,8 @@ impl<'tcx> Why3Generator<'tcx> {
             ItemType::Trait => {
                 self.start(def_id);
                 let tr = self.translate_trait(def_id);
-                self.dependencies.insert(def_id, CloneSummary::new());
-                self.functions.insert(def_id, tr);
+                self.dependencies.insert(tid, CloneSummary::new());
+                self.functions.insert(tid, tr);
                 self.finish(def_id);
             }
             ItemType::Impl => {
@@ -81,8 +98,8 @@ impl<'tcx> Why3Generator<'tcx> {
                     self.start(def_id);
                     let impl_ = traits::lower_impl(self, def_id);
 
-                    self.dependencies.insert(def_id, CloneSummary::new());
-                    self.functions.insert(def_id, TranslatedItem::Impl { modl: impl_ });
+                    self.dependencies.insert(tid, CloneSummary::new());
+                    self.functions.insert(tid, TranslatedItem::Impl { modl: impl_ });
                     self.finish(def_id);
                 }
             }
@@ -95,15 +112,15 @@ impl<'tcx> Why3Generator<'tcx> {
                 self.start(def_id);
                 let (modl, dependencies) = self.translate_assoc_ty(def_id);
                 self.finish(def_id);
-                self.dependencies.insert(def_id, dependencies);
-                self.functions.insert(def_id, TranslatedItem::AssocTy { modl });
+                self.dependencies.insert(tid, dependencies);
+                self.functions.insert(tid, TranslatedItem::AssocTy { modl });
             }
             ItemType::Constant => {
                 self.start(def_id);
                 let (constant, dependencies) = self.translate_constant(def_id);
                 self.finish(def_id);
-                self.dependencies.insert(def_id, dependencies);
-                self.functions.insert(def_id, constant);
+                self.dependencies.insert(tid, dependencies);
+                self.functions.insert(tid, constant);
             }
             ItemType::Type => {
                 let bg = self.binding_group(def_id).clone();
@@ -116,7 +133,7 @@ impl<'tcx> Why3Generator<'tcx> {
                     self.finish(*d);
                 }
 
-                let repr = self.representative_type(def_id);
+                let repr = self.representative_type(def_id).into();
                 if let Some(modl) = modl {
                     self.functions
                         .insert(repr, TranslatedItem::Type { modl, accessors: Default::default() });
@@ -148,31 +165,31 @@ impl<'tcx> Why3Generator<'tcx> {
                 debug!("translating {:?} as logical", def_id);
                 let (stub, modl, proof_modl, has_axioms, deps) =
                     crate::backend::logic::translate_logic_or_predicate(self, def_id);
-                self.dependencies.insert(def_id, deps);
+                self.dependencies.insert(def_id.into(), deps);
 
                 TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
             }
             ItemType::Closure => {
                 let (ty_modl, modl) = program::translate_closure(self, def_id);
-                self.dependencies.insert(def_id, deps);
+                self.dependencies.insert(def_id.into(), deps);
 
                 TranslatedItem::Closure { interface: vec![ty_modl, interface], modl }
             }
             ItemType::Program => {
                 debug!("translating {def_id:?} as program");
 
-                self.dependencies.insert(def_id, deps);
+                self.dependencies.insert(def_id.into(), deps);
                 let modl = program::translate_function(self, def_id);
                 TranslatedItem::Program { interface, modl }
             }
             _ => unreachable!(),
         };
 
-        self.functions.insert(def_id, translated);
+        self.functions.insert(def_id.into(), translated);
     }
 
     pub(crate) fn translate_accessor(&mut self, field_id: DefId) {
-        if !self.translated_items.insert(field_id) {
+        if !self.translated_items.insert(field_id.into()) {
             return;
         }
 
@@ -187,30 +204,52 @@ impl<'tcx> Why3Generator<'tcx> {
         self.translate(adt_did);
 
         let accessor = ty::translate_accessor(self, adt_did, variant_did, field_id);
-        let repr_id = self.representative_type(adt_did);
+        let repr_id: TransId = self.representative_type(adt_did).into();
         if let TranslatedItem::Type { ref mut accessors, .. } = &mut self.functions[&repr_id] {
             accessors.entry(variant_did).or_default().insert(field_id, accessor);
         };
         // self.types[&repr_id].accessors;
     }
 
+    pub(crate) fn translate_tyinv(&mut self, inv_kind: TyInvKind) {
+        let tid = TransId::TyInv(inv_kind);
+        if self.dependencies.contains_key(&tid) {
+            return;
+        }
+
+        if let TyInvKind::Adt(adt_did) = inv_kind {
+            self.translate(adt_did);
+        }
+
+        let (modl, deps) = ty_inv::build_inv_module(self, inv_kind);
+        self.dependencies.insert(tid, deps);
+        self.functions.insert(tid, TranslatedItem::TyInv { modl });
+    }
+
     pub(crate) fn item(&self, def_id: DefId) -> Option<&TranslatedItem> {
-        let def_id = if matches!(util::item_type(***self, def_id), ItemType::Type) {
+        let tid: TransId = if matches!(util::item_type(***self, def_id), ItemType::Type) {
             self.representative_type(def_id)
         } else {
             def_id
-        };
-        self.functions.get(&def_id)
+        }
+        .into();
+        self.functions.get(&tid)
     }
 
-    pub(crate) fn modules(self) -> impl Iterator<Item = (DefId, TranslatedItem)> + 'tcx {
+    pub(crate) fn modules(self) -> impl Iterator<Item = (TransId, TranslatedItem)> + 'tcx {
         self.functions.into_iter()
     }
 
     pub(crate) fn start_group(&mut self, ids: IndexSet<DefId>) {
         assert!(!ids.is_empty());
+        let ids = ids.into_iter().map(Into::into).collect();
         if self.in_translation.iter().rev().any(|s| !s.is_disjoint(&ids)) {
-            let span = self.def_span(ids.first().unwrap());
+            let span = if let TransId::Item(def_id) = ids.first().unwrap() {
+                self.def_span(def_id)
+            } else {
+                DUMMY_SP
+            };
+
             self.in_translation.push(ids);
 
             self.crash_and_error(
@@ -229,7 +268,8 @@ impl<'tcx> Why3Generator<'tcx> {
 
     // Indicate we have finished translating a given id
     pub(crate) fn finish(&mut self, def_id: DefId) {
-        if !self.in_translation.last_mut().unwrap().remove(&def_id) {
+        let tid = def_id.into();
+        if !self.in_translation.last_mut().unwrap().remove(&tid) {
             self.crash_and_error(
                 self.def_span(def_id),
                 &format!("{:?} is not in translation", def_id),
@@ -240,10 +280,14 @@ impl<'tcx> Why3Generator<'tcx> {
             self.in_translation.pop();
         }
 
-        self.translated_items.insert(def_id);
+        self.translated_items.insert(tid);
     }
 
-    pub(crate) fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
-        self.dependencies.get(&def_id)
+    pub(crate) fn dependencies(&self, key: Dependency<'tcx>) -> Option<&CloneSummary<'tcx>> {
+        let tid = match key {
+            Dependency::TyInv(ty) => TransId::TyInv(TyInvKind::from_ty(ty)),
+            _ => key.did().map(|(def_id, _)| TransId::Item(def_id))?,
+        };
+        self.dependencies.get(&tid)
     }
 }

@@ -21,6 +21,29 @@ pub trait Invariant {
     }
 }
 
+#[predicate]
+#[open(self)]
+#[rustc_diagnostic_item = "creusot_invariant_internal"]
+pub fn inv<T>(_x: T) -> bool {
+    true
+}
+
+pub trait UserInv {
+    #[predicate]
+    #[rustc_diagnostic_item = "creusot_invariant_user"]
+    fn user_inv(self) -> bool;
+}
+
+#[cfg(creusot)]
+impl<T> UserInv for T {
+    #[predicate]
+    #[open]
+    #[rustc_diagnostic_item = "creusot_invariant_user_default"]
+    default fn user_inv(self) -> bool {
+        true
+    }
+}
+
 impl<'a, T: Invariant + ?Sized> Invariant for &'a T {
     #[predicate]
     #[open]
