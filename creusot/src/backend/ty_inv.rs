@@ -175,10 +175,18 @@ fn build_inv_exp_struct<'tcx>(
         TyKind::Ref(_, ty, Mutability::Not) => {
             build_inv_exp(ctx, names, ident, *ty, param_env, destruct_adt)
         }
-        TyKind::Ref(_, ty, Mutability::Mut) => {
-            let e = build_inv_exp(ctx, names, ident, *ty, param_env, destruct_adt)?;
+        TyKind::Ref(_, ty, Mutability::Mut) if destruct_adt => {
+            // cannot inline in ADTs, or else we might be missing
+            // `use prelude.Borrow`
+
             // TODO include final value
-            Some(Exp::Current(Box::new(e)))
+            let deref = Exp::Current(Box::new(Exp::pure_var(ident)));
+            let body = build_inv_exp(ctx, names, "a".into(), *ty, param_env, destruct_adt)?;
+            Some(Exp::Let {
+                pattern: Pattern::VarP("a".into()),
+                arg: Box::new(deref),
+                body: Box::new(body),
+            })
         }
         TyKind::Tuple(tys) => {
             let fields: Vec<Ident> =
@@ -201,7 +209,7 @@ fn build_inv_exp_struct<'tcx>(
         TyKind::Adt(adt_def, subst) if destruct_adt => {
             build_inv_exp_adt(ctx, names, ident, param_env, *adt_def, subst)
         }
-        TyKind::Adt(_, _) | TyKind::Param(_) => {
+        TyKind::Ref(_, _, _) | TyKind::Adt(_, _) | TyKind::Param(_) => {
             let inv_fun = Exp::impure_qvar(names.ty_inv(ty));
             Some(inv_fun.app_to(Exp::pure_var(ident)))
         }
