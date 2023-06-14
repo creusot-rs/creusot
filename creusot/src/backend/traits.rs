@@ -5,8 +5,8 @@ use super::{
 };
 use crate::{
     backend,
+    backend::{all_generic_decls_for, own_generic_decls_for},
     ctx::ItemType,
-    translation::function::{all_generic_decls_for, own_generic_decls_for},
     util::{self, item_name, module_name},
 };
 use rustc_hir::{def::Namespace, def_id::DefId};
