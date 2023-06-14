@@ -65,7 +65,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Invariant
     // Should not quantify over self or the `invariant` cannot be made into a type invariant
     #[open(self)]
     #[predicate]
-    #[creusot::ignore_type_invariant]
     fn invariant(self) -> bool {
         pearlite! {
             Self::reinitialize() &&
@@ -108,6 +107,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> ::std::iter::I
 impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::Item, F> {
     #[open]
     #[predicate]
+    #[creusot::open_inv]
     pub fn next_precondition(self) -> bool {
         pearlite! {
             forall<e: I::Item, i: I>
@@ -131,6 +131,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::I
     #[open(self)]
     #[predicate]
     #[ensures(self.produced.inner() == Seq::EMPTY ==> result == Self::preservation(self.iter, self.func))]
+    #[creusot::open_inv]
     pub fn preservation_inv(self) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
