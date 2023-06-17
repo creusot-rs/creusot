@@ -13,7 +13,7 @@ use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_middle::ty::{
     self,
     subst::{InternalSubsts, SubstsRef},
-    AliasKind, AliasTy, FieldDef, GenericArgKind, ParamEnv, Ty, TyCtxt, TyKind,
+    AliasKind, AliasTy, EarlyBinder, FieldDef, GenericArgKind, ParamEnv, Ty, TyCtxt, TyKind,
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_type_ir::sty::TyKind::*;
@@ -42,7 +42,7 @@ use why3::{
 /// tyvars with us. Do this if we change the tyvars again.
 #[derive(Copy, Clone, PartialEq, Eq)]
 enum TyTranslation {
-    Declaration,
+    Declaration(DefId),
     Usage,
 }
 
@@ -92,8 +92,15 @@ fn translate_ty_inner<'tcx>(
                 MlT::TConstructor(names.ty(def.did(), s))
             };
 
-            let args = s.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
+            let mut args: Vec<_> =
+                s.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
 
+            let adt_projs: Vec<_> = ctx.projections_in_ty(def.did()).to_owned();
+            let tcx = ctx.tcx;
+            args.extend(adt_projs.iter().map(|t| {
+                let ty = EarlyBinder::bind(t.to_ty(tcx)).subst(tcx, s);
+                translate_ty_inner(trans, ctx, names, span, ty)
+            }));
             MlT::TApp(Box::new(cons), args)
         }
         Tuple(ref args) => {
@@ -102,19 +109,13 @@ fn translate_ty_inner<'tcx>(
             MlT::Tuple(tys)
         }
         Param(p) => {
-            if let TyTranslation::Declaration = trans {
+            if let TyTranslation::Declaration(_) = trans {
                 MlT::TVar(translate_ty_param(p.name))
             } else {
                 MlT::TConstructor(QName::from_string(&p.to_string().to_lowercase()).unwrap())
             }
         }
-        Alias(AliasKind::Projection, pty) => {
-            if matches!(trans, TyTranslation::Declaration) {
-                ctx.crash_and_error(span, "associated types are unsupported in type declarations")
-            } else {
-                translate_projection_ty(ctx, names, pty)
-            }
-        }
+        Alias(AliasKind::Projection, pty) => translate_projection_ty(trans, ctx, names, pty),
         Ref(_, ty, borkind) => {
             use rustc_ast::Mutability::*;
             names.import_prelude_module(PreludeModule::Borrow);
@@ -190,14 +191,23 @@ fn translate_ty_inner<'tcx>(
     }
 }
 
-pub(crate) fn translate_projection_ty<'tcx>(
-    _ctx: &mut Why3Generator<'tcx>,
+fn translate_projection_ty<'tcx>(
+    mode: TyTranslation,
+    ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     pty: &AliasTy<'tcx>,
 ) -> MlT {
-    // ctx.translate(pty.trait_def_id(ctx.tcx));
-    let name = names.ty(pty.def_id, pty.substs);
+    if let TyTranslation::Declaration(id) = mode {
+        let ix = ctx.projections_in_ty(id).iter().position(|t| t == pty);
+        if let Some(ix) = ix {
+            return MlT::TVar(Ident::build(&format!("proj{ix}")));
+        }
+    };
+
+    // eprintln!("{:?}", pty);
+    let name = names.projection(ctx, *pty);
     MlT::TConstructor(name)
+    // MlT::UNIT
 }
 
 pub(crate) fn translate_closure_ty<'tcx>(
@@ -211,7 +221,7 @@ pub(crate) fn translate_closure_ty<'tcx>(
     let fields: Vec<_> = closure_subst
         .upvar_tys()
         .map(|uv| Field {
-            ty: translate_ty_inner(TyTranslation::Declaration, ctx, names, DUMMY_SP, uv),
+            ty: translate_ty_inner(TyTranslation::Declaration(did), ctx, names, DUMMY_SP, uv),
             ghost: false,
         })
         .collect();
@@ -263,6 +273,35 @@ pub(crate) fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> IndexSe
     assert!(group.contains(&ty_id));
 
     group
+}
+
+impl<'tcx> Why3Generator<'tcx> {
+    pub(super) fn get_projections_in_ty(&mut self, def_id: DefId) -> Vec<AliasTy<'tcx>> {
+        let mut v = Vec::new();
+        let param_env = self.param_env(def_id);
+
+        let subst = InternalSubsts::identity_for_item(self.tcx, def_id);
+        for f in self.adt_def(def_id).all_fields() {
+            let ty = f.ty(self.tcx, subst);
+            let ty = self.try_normalize_erasing_regions(param_env, ty).unwrap_or(ty);
+            match ty.kind() {
+                TyKind::Alias(AliasKind::Projection, aty) => v.push(*aty),
+                TyKind::Adt(adt, substs) => {
+                    let tcx = self.tcx;
+                    for proj in self.projections_in_ty(adt.did()) {
+                        let proj = EarlyBinder::bind(proj.to_ty(tcx)).subst(tcx, substs);
+                        if let TyKind::Alias(AliasKind::Projection, aty) = proj.kind() {
+                            v.push(*aty)
+                        }
+                    }
+
+                    // v.extend(self.projections_in_ty(adt.did()))
+                }
+                _ => {}
+            }
+        }
+        v
+    }
 }
 
 fn translate_ty_name(ctx: &Why3Generator<'_>, did: DefId) -> QName {
@@ -360,7 +399,14 @@ fn build_ty_decl<'tcx>(
     let ty_name = translate_ty_name(ctx, did).name;
 
     // Collect type variables of declaration
-    let ty_args: Vec<_> = ty_param_names(ctx.tcx, did).collect();
+    let ty_args: Vec<_> = ty_param_names(ctx.tcx, did)
+        .chain(
+            ctx.projections_in_ty(did)
+                .iter()
+                .enumerate()
+                .map(|(i, _)| Ident::build(&format!("proj{i}"))),
+        )
+        .collect();
 
     let param_env = ctx.param_env(did);
     let kind = {
@@ -410,18 +456,18 @@ fn field_ty<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     param_env: ParamEnv<'tcx>,
-    adt_did: DefId,
+    did: DefId,
     field: &FieldDef,
     substs: SubstsRef<'tcx>,
 ) -> MlT {
     let ty = field.ty(ctx.tcx, substs);
     let ty = ctx.try_normalize_erasing_regions(param_env, ty).unwrap_or(ty);
 
-    if !validate_field_ty(ctx, adt_did, ty) {
+    if !validate_field_ty(ctx, did, ty) {
         ctx.crash_and_error(ctx.def_span(field.did), "Illegal use of the Ghost type")
     }
 
-    translate_ty_inner(TyTranslation::Declaration, ctx, names, ctx.def_span(field.did), ty)
+    translate_ty_inner(TyTranslation::Declaration(did), ctx, names, ctx.def_span(field.did), ty)
 }
 
 fn validate_field_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, adt_did: DefId, ty: Ty<'tcx>) -> bool {

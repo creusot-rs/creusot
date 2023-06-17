@@ -10,7 +10,7 @@ use rustc_hir::{
     def_id::DefId,
 };
 use rustc_middle::ty::{
-    self, subst::SubstsRef, AliasKind, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable,
+    self, subst::SubstsRef, AliasKind, AliasTy, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable,
     TypeSuperVisitable, TypeVisitor,
 };
 use rustc_span::{Symbol, DUMMY_SP};
@@ -296,6 +296,15 @@ impl<'tcx> CloneMap<'tcx> {
         let name = item_name(self.tcx, def_id, Namespace::ValueNS);
         let node = CloneNode::new(self.tcx, (def_id, subst));
         self.insert(node).qname_ident(name.into())
+    }
+
+    pub(crate) fn projection(
+        &mut self,
+        ctx: &mut TranslationCtx<'tcx>,
+        alias: AliasTy<'tcx>,
+    ) -> QName {
+        let alias = ctx.try_normalize_erasing_regions(self.param_env(ctx), alias).unwrap_or(alias);
+        self.ty(alias.def_id, alias.substs)
     }
 
     pub(crate) fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
@@ -886,7 +895,7 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, dep: DepNode<'tcx>) -> Option<Symb
 }
 
 // Walk all the types in a substitution so we can add dependencies on them
-fn walk_types<'tcx, T: TypeFoldable<TyCtxt<'tcx>>, F: FnMut(Ty<'tcx>)>(s: T, f: F) {
+pub(crate) fn walk_types<'tcx, T: TypeFoldable<TyCtxt<'tcx>>, F: FnMut(Ty<'tcx>)>(s: T, f: F) {
     s.visit_with(&mut TyVisitor { f, p: std::marker::PhantomData });
 }
 
