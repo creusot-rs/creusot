@@ -3,6 +3,7 @@ use super::{
     CloneMap, CloneSummary, TransId, Why3Generator,
 };
 use crate::{ctx::*, translation::traits, util};
+use indexmap::IndexSet;
 use rustc_ast::Mutability;
 use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyCtxt, TyKind};
@@ -32,6 +33,7 @@ impl TyInvKind {
             TyKind::Adt(adt_def, adt_substs) if adt_def.is_box() => {
                 TyInvKind::from_ty(adt_substs.type_at(0))
             }
+            // TODO: if ADT inv is trivial, return TyInvKind::Trivial (optimization)
             TyKind::Adt(adt_def, _) => TyInvKind::Adt(adt_def.did()),
             TyKind::Tuple(tys) => TyInvKind::Tuple(tys.len()),
             _ => TyInvKind::Trivial, // TODO
@@ -76,6 +78,45 @@ pub(crate) fn tyinv_substs<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> SubstsRef<'
         TyKind::Tuple(tys) => tcx.mk_substs_from_iter(tys.iter().map(GenericArg::from)),
         _ => tcx.mk_substs(&[GenericArg::from(ty)]),
     }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+enum Mode {
+    Field,
+    Axiom,
+}
+
+pub(crate) fn is_tyinv_trivial<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    ty: Ty<'tcx>,
+) -> bool {
+    if ty.is_closure() {
+        return true;
+    }
+
+    // we cannot use a TypeWalker as it does not visit ADT field types
+    let mut visited_adts = IndexSet::new();
+    let mut stack = vec![ty];
+    while let Some(ty) = stack.pop() {
+        if resolve_user_inv(tcx, ty, param_env).is_some() {
+            return false;
+        }
+
+        match ty.kind() {
+            TyKind::Ref(_, ty, _) => stack.push(*ty),
+            TyKind::Tuple(tys) => stack.extend(*tys),
+            TyKind::Adt(def, substs) if def.is_box() => stack.push(substs.type_at(0)),
+            TyKind::Adt(def, substs) => {
+                let did = def.did();
+                if util::get_builtin(tcx, did).is_none() && visited_adts.insert(did) {
+                    stack.extend(def.all_fields().map(|f| f.ty(tcx, substs)))
+                }
+            }
+            _ => {}
+        }
+    }
+    true
 }
 
 pub(crate) fn build_inv_module<'tcx>(
@@ -124,7 +165,7 @@ fn build_inv_axiom<'tcx>(
     let rhs = if TyInvKind::Trivial == inv_kind {
         Exp::mk_true()
     } else {
-        build_inv_exp(ctx, names, "self".into(), ty, param_env, true)
+        build_inv_exp(ctx.tcx, names, "self".into(), ty, param_env, Mode::Axiom)
             .unwrap_or_else(|| Exp::mk_true())
     };
 
@@ -136,17 +177,21 @@ fn build_inv_axiom<'tcx>(
 }
 
 fn build_inv_exp<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
+    tcx: TyCtxt<'tcx>,
     names: &mut CloneMap<'tcx>,
     ident: Ident,
     ty: Ty<'tcx>,
     param_env: ParamEnv<'tcx>,
-    destruct_adt: bool,
+    mode: Mode,
 ) -> Option<Exp> {
-    let ty = ctx.normalize_erasing_regions(param_env, ty);
+    let ty = tcx.normalize_erasing_regions(param_env, ty);
 
-    let user_inv = if destruct_adt {
-        resolve_user_inv(ctx.tcx, ty, param_env).map(|(uinv_did, uinv_subst)| {
+    if mode == Mode::Field && is_tyinv_trivial(tcx, param_env, ty) {
+        return None;
+    }
+
+    let user_inv = if mode == Mode::Axiom {
+        resolve_user_inv(tcx, ty, param_env).map(|(uinv_did, uinv_subst)| {
             let inv_name = names.value(uinv_did, uinv_subst);
             Exp::impure_qvar(inv_name).app(vec![Exp::pure_var(ident.clone())])
         })
@@ -154,7 +199,7 @@ fn build_inv_exp<'tcx>(
         None
     };
 
-    let struct_inv = build_inv_exp_struct(ctx, names, ident, ty, param_env, destruct_adt);
+    let struct_inv = build_inv_exp_struct(tcx, names, ident, ty, param_env, mode);
 
     match (user_inv, struct_inv) {
         (None, None) => None,
@@ -164,29 +209,26 @@ fn build_inv_exp<'tcx>(
 }
 
 fn build_inv_exp_struct<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
+    tcx: TyCtxt<'tcx>,
     names: &mut CloneMap<'tcx>,
     ident: Ident,
     ty: Ty<'tcx>,
     param_env: ParamEnv<'tcx>,
-    destruct_adt: bool,
+    mode: Mode,
 ) -> Option<Exp> {
     match ty.kind() {
         TyKind::Ref(_, ty, Mutability::Not) => {
-            build_inv_exp(ctx, names, ident, *ty, param_env, destruct_adt)
+            build_inv_exp(tcx, names, ident, *ty, param_env, mode)
         }
-        TyKind::Ref(_, ty, Mutability::Mut) if destruct_adt => {
-            // cannot inline in ADTs, or else we might be missing
-            // `use prelude.Borrow`
+        TyKind::Ref(_, ty, Mutability::Mut) => {
+            let mut body = build_inv_exp(tcx, names, "a".into(), *ty, param_env, mode)?;
 
             // TODO include final value
+            names.import_prelude_module(PreludeModule::Borrow);
             let deref = Exp::Current(Box::new(Exp::pure_var(ident)));
-            let body = build_inv_exp(ctx, names, "a".into(), *ty, param_env, destruct_adt)?;
-            Some(Exp::Let {
-                pattern: Pattern::VarP("a".into()),
-                arg: Box::new(deref),
-                body: Box::new(body),
-            })
+
+            body.subst(&[("a".into(), deref)].into());
+            Some(body)
         }
         TyKind::Tuple(tys) => {
             let fields: Vec<Ident> =
@@ -195,21 +237,20 @@ fn build_inv_exp_struct<'tcx>(
             let body = tys
                 .iter()
                 .enumerate()
-                .flat_map(|(i, t)| {
-                    build_inv_exp(ctx, names, fields[i].clone(), t, param_env, destruct_adt)
-                })
+                .flat_map(|(i, t)| build_inv_exp(tcx, names, fields[i].clone(), t, param_env, mode))
                 .reduce(|e1, e2| e1.log_and(e2))?;
 
             let pattern = Pattern::TupleP(fields.into_iter().map(Pattern::VarP).collect());
             Some(Exp::Let { pattern, arg: Box::new(Exp::pure_var(ident)), body: Box::new(body) })
         }
         TyKind::Adt(adt_def, adt_subst) if adt_def.is_box() => {
-            build_inv_exp(ctx, names, ident, adt_subst[0].expect_ty(), param_env, destruct_adt)
+            build_inv_exp(tcx, names, ident, adt_subst[0].expect_ty(), param_env, mode)
         }
-        TyKind::Adt(adt_def, subst) if destruct_adt => {
-            build_inv_exp_adt(ctx, names, ident, param_env, *adt_def, subst)
+        TyKind::Adt(adt_def, _) if util::get_builtin(tcx, adt_def.did()).is_some() => None,
+        TyKind::Adt(adt_def, subst) if mode == Mode::Axiom => {
+            build_inv_exp_adt(tcx, names, ident, param_env, *adt_def, subst)
         }
-        TyKind::Ref(_, _, _) | TyKind::Adt(_, _) | TyKind::Param(_) => {
+        TyKind::Adt(_, _) | TyKind::Param(_) => {
             let inv_fun = Exp::impure_qvar(names.ty_inv(ty));
             Some(inv_fun.app_to(Exp::pure_var(ident)))
         }
@@ -218,7 +259,7 @@ fn build_inv_exp_struct<'tcx>(
 }
 
 fn build_inv_exp_adt<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
+    tcx: TyCtxt<'tcx>,
     names: &mut CloneMap<'tcx>,
     ident: Ident,
     param_env: ParamEnv<'tcx>,
@@ -240,9 +281,9 @@ fn build_inv_exp_adt<'tcx>(
                 field_def.name.as_str().into()
             };
 
-            let field_ty = field_def.ty(ctx.tcx, subst);
+            let field_ty = field_def.ty(tcx, subst);
             if let Some(field_inv) =
-                build_inv_exp(ctx, names, field_name.clone(), field_ty, param_env, false)
+                build_inv_exp(tcx, names, field_name.clone(), field_ty, param_env, Mode::Field)
             {
                 pats.push(Pattern::VarP(field_name));
                 exp = exp.log_and(field_inv);
