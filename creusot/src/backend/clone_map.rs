@@ -424,7 +424,9 @@ impl<'tcx> CloneMap<'tcx> {
                 ctx.translate(did);
 
                 if util::is_inv_internal(self.tcx, did) && self.clone_level == CloneLevel::Body {
-                    self.clone_tyinv(ctx, subst.type_at(0));
+                    let ty = subst.type_at(0);
+                    let ty = ctx.try_normalize_erasing_regions(param_env, ty).unwrap_or(ty);
+                    self.clone_tyinv(ctx, ty);
                 }
 
                 self.clone_laws(ctx, did, subst);
@@ -742,13 +744,13 @@ pub(crate) fn base_subst<'tcx>(
     names: &mut CloneMap<'tcx>,
     dep: DepNode<'tcx>,
 ) -> Vec<CloneSubst> {
-    let (generics, substs) = if let Some((def_id, subst)) = dep.did() {
-        let generics = ty_param_names(ctx.tcx, def_id).collect();
-        (generics, subst)
-    } else if let DepNode::TyInv(ty) = dep {
+    let (generics, substs) = if let DepNode::TyInv(ty) = dep {
         let generics = TyInvKind::from_ty(ty).generics(ctx.tcx);
         let substs = tyinv_substs(ctx.tcx, ty);
         (generics, substs)
+    } else if let Some((def_id, subst)) = dep.did() {
+        let generics = ty_param_names(ctx.tcx, def_id).collect();
+        (generics, subst)
     } else {
         return vec![];
     };
