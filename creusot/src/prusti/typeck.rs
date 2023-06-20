@@ -25,13 +25,13 @@ use rustc_middle::{
     ty::{
         error::{ExpectedFound, TypeError},
         Instance, InternalSubsts, ParamEnv, PolyFnSig, Region, RegionKind, RegionVid, SubstsRef,
-        TyCtxt, TyKind, TypeFoldable,
+        TyCtxt, TyKind, TypeFoldable, TypeVisitable, TypeVisitor,
     },
 };
 use rustc_span::{def_id::DefId, Span, Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
 use rustc_trait_selection::traits::ObligationCtxt;
-use std::iter;
+use std::{iter, ops::ControlFlow};
 
 fn home_sig(ctx: &Ctx<'_>, def_id: DefId) -> CreusotResult<Option<HomeSig>> {
     let home_sig = util::get_attr_lit(ctx.tcx, def_id, &["creusot", "prusti", "home_sig"]);
@@ -341,6 +341,47 @@ pub(crate) fn try_resolve<'tcx>(
     }
 }
 
+struct AllRegionsOutliveCheck<'a, 'tcx> {
+    ctx: &'a Ctx<'tcx>,
+    ts: RegionSet,
+}
+
+impl<'a, 'tcx> TypeVisitor<TyCtxt<'tcx>> for AllRegionsOutliveCheck<'a, 'tcx> {
+    type BreakTy = Region<'tcx>;
+
+    fn visit_region(&mut self, r: Region<'tcx>) -> ControlFlow<Self::BreakTy> {
+        if self.ctx.relation.outlived_by(self.ts, r.into()) {
+            ControlFlow::Continue(())
+        } else {
+            ControlFlow::Break(r)
+        }
+    }
+}
+
+fn check_move_ts<'tcx>(
+    ts: Region<'tcx>,
+    ctx: &Ctx<'tcx>,
+    ty: Ty<'tcx>,
+    span: Span,
+) -> CreusotResult<()> {
+    if ty.has_home_at_ts(ts) {
+        Ok(())
+    } else if !ty.ty.is_copy_modulo_regions(ctx.tcx, ctx.param_env()) {
+        let ty = prepare_display(ty, ctx);
+        let ts = prepare_display(ts, ctx);
+        Err(Error::new(span, format!("{ty} cannot be moved to {ts} since it isn't copy")))
+    } else if let ControlFlow::Break(r) =
+        ty.ty.visit_with(&mut AllRegionsOutliveCheck { ctx, ts: ts.into() })
+    {
+        let ty = prepare_display(ty, ctx);
+        let ts = prepare_display(ts, ctx);
+        let r = prepare_display(r, ctx);
+        Err(Error::new(span, format!("{ty} cannot be moved to {ts} since it doesn't live long enough\n{r} doesn't outlive {ts}")))
+    } else {
+        Ok(())
+    }
+}
+
 pub(crate) enum MutDerefType {
     Cur,
     Fin,
@@ -413,18 +454,8 @@ pub(crate) fn mk_ref<'tcx>(
     ty: Ty<'tcx>,
     span: Span,
 ) -> CreusotResult<Ty<'tcx>> {
-    if ty.has_home_at_ts(ts) {
-        Ok(Ty::make_ref(lft, ty, ctx.tcx))
-    } else {
-        let home = DisplayRegion(ty.home, &ctx);
-        let ts = DisplayRegion(ts, &ctx);
-        Err(Error::new(
-            span,
-            format!(
-                "invalid reference creation of expression with home `{home}` at time-slice `{ts}`"
-            ),
-        ))
-    }
+    check_move_ts(ts, ctx, ty, span).map_err(|x| x)?;
+    Ok(Ty::make_ref(lft, ty, ctx.tcx))
 }
 
 pub(crate) fn check_signature_agreement<'tcx>(
