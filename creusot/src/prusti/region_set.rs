@@ -1,7 +1,7 @@
+use itertools::Itertools;
 use rustc_middle::ty::{EarlyBoundRegion, Region, RegionKind, TyCtxt};
 use rustc_span::{def_id::CRATE_DEF_ID, symbol::kw};
 use std::fmt::{Debug, Formatter};
-use itertools::Itertools;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub(crate) struct RegionSet(u32);
@@ -72,13 +72,13 @@ impl RegionRelation {
     /// Returns the empty reflexive relation for n regions
     fn with_capacity(n: usize) -> RegionRelation {
         assert!(n <= 32);
-        let mut res = RegionRelation(vec![RegionSet::EMPTY; n*2].into_boxed_slice());
+        let mut res = RegionRelation(vec![RegionSet::EMPTY; n * 2].into_boxed_slice());
         (0..n).into_iter().for_each(|i| res.set_outlives(i, i));
         res
     }
 
     fn size(&self) -> usize {
-        self.0.len()/2
+        self.0.len() / 2
     }
 
     fn outlive_sets(&self) -> &[RegionSet] {
@@ -119,14 +119,14 @@ impl RegionRelation {
     pub(super) fn idx_outlives(&self, idx: u32, r2: RegionSet) -> bool {
         match self.outlive_sets().get(idx as usize) {
             Some(s) => r2.subset(*s),
-            None => RegionSet::singleton(idx) == r2
+            None => RegionSet::singleton(idx) == r2,
         }
     }
 
     pub fn idx_outlived_by(&self, idx: u32, r2: RegionSet) -> bool {
         match self.outlived_by_sets().get(idx as usize) {
             Some(s) => r2.subset(*s),
-            None => RegionSet::singleton(idx) == r2
+            None => RegionSet::singleton(idx) == r2,
         }
     }
 
@@ -139,16 +139,14 @@ impl RegionRelation {
         r1.into_iter().all(|r1| self.idx_outlived_by(r1, r2))
     }
 
-
     /// Requires all the elements of relation to be less that n
-    pub fn new(n: usize, relation: impl Iterator<Item=(usize,usize)>) -> RegionRelation {
+    pub fn new(n: usize, relation: impl Iterator<Item = (usize, usize)>) -> RegionRelation {
         let mut res = Self::with_capacity(n);
         relation.for_each(|(i, j)| res.set_outlives(i, j));
         res.transitive_closure();
         res
     }
 }
-
 
 impl Debug for RegionRelation {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

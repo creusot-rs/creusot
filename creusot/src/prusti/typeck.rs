@@ -1,38 +1,36 @@
-use std::iter;
-use itertools::Either;
 use super::{
     full_signature_logic,
     parsing::{parse_home_sig_lit, Home, HomeSig},
     region_set::RegionSet,
-    types::*,
     typeck::MutDerefType::{Cur, Fin},
-    util::{generalize, RegionReplacer}
+    types::*,
+    util::{generalize, RegionReplacer},
 };
 use crate::{
     error::{CreusotResult, Error},
     util,
 };
+use itertools::Either;
 use rustc_data_structures::fx::FxHashMap;
 use rustc_infer::{
     infer::{
-        region_constraints::Constraint, InferCtxt, RegionVariableOrigin, SubregionOrigin,
-        TyCtxtInferExt,
+        at::ToTrace, region_constraints::Constraint, InferCtxt, RegionVariableOrigin,
+        SubregionOrigin, TyCtxtInferExt, ValuePairs,
     },
     traits::ObligationCause,
 };
 use rustc_middle::{
     ty,
     ty::{
+        error::{ExpectedFound, TypeError},
         Instance, InternalSubsts, ParamEnv, PolyFnSig, Region, RegionKind, RegionVid, SubstsRef,
         TyCtxt, TyKind, TypeFoldable,
     },
 };
 use rustc_span::{def_id::DefId, Span, Symbol, DUMMY_SP};
-use rustc_trait_selection::traits::ObligationCtxt;
 use rustc_target::abi::VariantIdx;
-use rustc_infer::infer::at::ToTrace;
-use rustc_infer::infer::ValuePairs;
-use rustc_middle::ty::error::{ExpectedFound, TypeError};
+use rustc_trait_selection::traits::ObligationCtxt;
+use std::iter;
 
 fn home_sig(ctx: &Ctx<'_>, def_id: DefId) -> CreusotResult<Option<HomeSig>> {
     let home_sig = util::get_attr_lit(ctx.tcx, def_id, &["creusot", "prusti", "home_sig"]);
@@ -124,10 +122,15 @@ struct SimpleCtxt<'a, 'tcx> {
 
 impl<'a, 'tcx> SimpleCtxt<'a, 'tcx> {
     fn new(infcx: &'a InferCtxt<'tcx>, param_env: ParamEnv<'tcx>) -> Self {
-        SimpleCtxt{ocx: ObligationCtxt::new(infcx), param_env}
+        SimpleCtxt { ocx: ObligationCtxt::new(infcx), param_env }
     }
 
-    fn sub<T: ToTrace<'tcx>>(&self, span: Span, expected: T, actual: T) -> Result<(), TypeError<'tcx>> {
+    fn sub<T: ToTrace<'tcx>>(
+        &self,
+        span: Span,
+        expected: T,
+        actual: T,
+    ) -> Result<(), TypeError<'tcx>> {
         self.ocx.sub(&ObligationCause::dummy_with_span(span), self.param_env, expected, actual)
     }
 
@@ -143,7 +146,6 @@ impl<'a, 'tcx> SimpleCtxt<'a, 'tcx> {
         self.infcx().tcx
     }
 }
-
 
 fn sup_tys<'tcx>(
     ctx: &SimpleCtxt<'_, 'tcx>,
@@ -168,10 +170,13 @@ fn origin_types<'tcx>(origin: &SubregionOrigin<'tcx>) -> Option<ExpectedFound<ty
     match origin {
         SubregionOrigin::Subtype(t) => match t.values {
             ValuePairs::Regions(_) => None,
-            ValuePairs::Terms(t) => Some(ExpectedFound{found: t.found.ty().unwrap(), expected: t.expected.ty().unwrap()}),
-            _ => unreachable!()
+            ValuePairs::Terms(t) => Some(ExpectedFound {
+                found: t.found.ty().unwrap(),
+                expected: t.expected.ty().unwrap(),
+            }),
+            _ => unreachable!(),
         },
-        _ => unreachable!()
+        _ => unreachable!(),
     }
 }
 
@@ -187,9 +192,7 @@ pub(crate) fn check_call<'tcx>(
     let args = args.collect::<CreusotResult<Vec<_>>>()?.into_iter();
     let (home_sig_args, home_sig_res) = match home_sig(ctx, def_id)? {
         Some((args, res)) => (Either::Left(args.into_iter()), res),
-        None => {
-            (Either::Right(iter::repeat(ctx.curr_home())), ctx.curr_home())
-        },
+        None => (Either::Right(iter::repeat(ctx.curr_home())), ctx.curr_home()),
     };
     let infcx = tcx.infer_ctxt().build();
     let ocx = SimpleCtxt::new(&infcx, ctx.param_env());
@@ -252,7 +255,7 @@ pub(crate) fn check_constructor<'tcx>(
     ctx: &Ctx<'tcx>,
     fields: impl Iterator<Item = CreusotResult<(Ty<'tcx>, Span)>>,
     target_ty: ty::Ty<'tcx>,
-    variant: VariantIdx
+    variant: VariantIdx,
 ) -> CreusotResult<Ty<'tcx>> {
     let tcx = ctx.tcx;
     // Eagerly evaluate args to avoid running multiple inference contexts at the same time
@@ -263,9 +266,7 @@ pub(crate) fn check_constructor<'tcx>(
     let ty_gen = generalize(Ty::with_absurd_home(target_ty, tcx), &infcx);
     let fields_gen = ty_gen.as_adt_variant(variant, tcx);
 
-    fields.zip(fields_gen).try_for_each(|((ty, span), ty_gen)| {
-        sup_tys(&ocx, span, ty_gen, ty)
-    })?;
+    fields.zip(fields_gen).try_for_each(|((ty, span), ty_gen)| sup_tys(&ocx, span, ty_gen, ty))?;
 
     let constraints = infcx.take_and_reset_region_constraints();
     let var_info = RegionInfo::new(constraints.constraints.into_iter());
@@ -358,8 +359,49 @@ pub(crate) fn check_mut_deref<'tcx>(
             let home = DisplayRegion(ty.home, &ctx);
             let end = DisplayRegion(end, &ctx);
             let ts = DisplayRegion(ts, &ctx);
-            return Err(Error::new(span, format!("invalid dereference of expression with home `{home}` and lifetime `{end}` at time-slice `{ts}`")));
+            return Err(Error::new(span, format!("invalid mut dereference of expression with home `{home}` and lifetime `{end}` at time-slice `{ts}`")));
         }
+    }
+}
+
+pub(crate) fn check_shr_deref<'tcx>(
+    ts: Region<'tcx>,
+    ctx: &Ctx<'tcx>,
+    ty: Ty<'tcx>,
+    end: Region<'tcx>,
+    span: Span,
+) -> CreusotResult<()> {
+    // if ts has it's home in the current state we should know it's lifetime is longer than it's home
+    if ts == ty.home
+        || (ctx.relation.outlives(ts.into(), ty.home.into())
+            && ctx.relation.outlived_by(ts.into(), end.into()))
+    {
+        Ok(())
+    } else {
+        let home = DisplayRegion(ty.home, &ctx);
+        let end = DisplayRegion(end, &ctx);
+        let ts = DisplayRegion(ts, &ctx);
+        return Err(Error::new(span, format!("invalid shr dereference of expression with home `{home}` and lifetime `{end}` at time-slice `{ts}`")));
+    }
+}
+
+pub(crate) fn check_box_deref<'tcx>(
+    ts: Region<'tcx>,
+    ctx: &Ctx<'tcx>,
+    ty: Ty<'tcx>,
+    span: Span,
+) -> CreusotResult<()> {
+    if ty.has_home_at_ts(ts) {
+        Ok(())
+    } else {
+        let home = DisplayRegion(ty.home, &ctx);
+        let ts = DisplayRegion(ts, &ctx);
+        return Err(Error::new(
+            span,
+            format!(
+                "invalid box dereference of expression with home `{home}` at time-slice `{ts}`"
+            ),
+        ));
     }
 }
 

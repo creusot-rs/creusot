@@ -88,6 +88,6 @@ pub(super) fn parse_home_sig_lit(sig: &Lit) -> CreusotResult<(Vec<Home>, Home)> 
 
 impl<T> From<T> for Home<T> {
     fn from(data: T) -> Self {
-        Home{data, is_ref: false}
+        Home { data, is_ref: false }
     }
 }

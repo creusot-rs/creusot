@@ -276,7 +276,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         let ty = self.thir[expr].ty;
         let thir_term = &self.thir[expr];
         let span = self.thir[expr].span;
-        match thir_term.kind {
+        let res = match thir_term.kind {
             ExprKind::Scope { value, .. } => self.expr_term(value),
             ExprKind::Block { block } => {
                 let Block { ref stmts, expr, .. } = self.thir[block];
@@ -651,7 +651,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 Ok(Term { ty, span, kind: TermKind::Closure { body: Box::new(term) } })
             }
             ref ek => todo!("lower_expr: {:?}", ek),
-        }
+        };
+        Ok(Term { ty, ..res? })
     }
 
     fn arm_term(&self, arm: ArmId) -> CreusotResult<(Pattern<'tcx>, Term<'tcx>)> {

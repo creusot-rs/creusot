@@ -15,7 +15,7 @@ pub(super) struct RegionReplacer<'tcx, F: FnMut(Region<'tcx>) -> Region<'tcx>> {
 }
 
 impl<'tcx, F: FnMut(Region<'tcx>) -> Region<'tcx>> TypeFolder<TyCtxt<'tcx>>
-for RegionReplacer<'tcx, F>
+    for RegionReplacer<'tcx, F>
 {
     fn interner(&self) -> TyCtxt<'tcx> {
         self.tcx

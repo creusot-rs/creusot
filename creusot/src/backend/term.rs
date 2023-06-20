@@ -168,7 +168,7 @@ impl<'tcx> Lower<'_, 'tcx> {
             }
             TermKind::Constructor { typ, variant, fields } => {
                 self.ctx.translate(typ);
-                let TyKind::Adt(_, subst) = term.ty.kind() else { unreachable!() };
+                let TyKind::Adt(_, subst) = strip_all_refs(term.ty).kind() else { unreachable!() };
                 let args = fields.into_iter().map(|f| self.lower_term(f)).collect();
 
                 let ctor =
@@ -176,7 +176,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                 Exp::Constructor { ctor, args }
             }
             TermKind::Cur { box term } => {
-                if term.ty.is_mutable_ptr() {
+                if strip_all_refs(term.ty).is_mutable_ptr() {
                     self.names.import_prelude_module(PreludeModule::Borrow);
                     Exp::Current(Box::new(self.lower_term(term)))
                 } else {
@@ -237,7 +237,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                 Exp::pure_qvar(accessor).app(vec![lhs])
             }
             TermKind::Closure { body } => {
-                let id = match term.ty.kind() {
+                let id = match strip_all_refs(term.ty).kind() {
                     TyKind::Closure(id, _) => id,
                     _ => unreachable!("closure has non closure type!"),
                 };
@@ -329,6 +329,7 @@ impl<'tcx> Lower<'_, 'tcx> {
     }
 }
 
+use crate::translation::pearlite::prusti::strip_all_refs;
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
 

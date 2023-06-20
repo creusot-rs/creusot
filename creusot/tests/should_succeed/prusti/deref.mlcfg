@@ -61,3 +61,214 @@ module Deref_Deref3
     ensures { result = deref3 _1' }
     
 end
+module Deref_MkRef_MkRef_Stub
+  type self
+  use prelude.Borrow
+  function mk_ref [#"../deref.rs" 27 4 27 29] (self : self) : self
+end
+module Deref_MkRef_MkRef_Interface
+  type self
+  use prelude.Borrow
+  function mk_ref [#"../deref.rs" 27 4 27 29] (self : self) : self
+  val mk_ref [#"../deref.rs" 27 4 27 29] (self : self) : self
+    ensures { result = mk_ref self }
+    
+end
+module Deref_MkRef_MkRef
+  type self
+  use prelude.Borrow
+  function mk_ref [#"../deref.rs" 27 4 27 29] (self : self) : self =
+    [#"../deref.rs" 28 8 28 12] self
+  val mk_ref [#"../deref.rs" 27 4 27 29] (self : self) : self
+    ensures { result = mk_ref self }
+    
+end
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.Opaque
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+    
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+    
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
+    
+end
+module Alloc_Boxed_Box_Type
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_box 't 'a =
+    | C_Box (Core_Ptr_Unique_Unique_Type.t_unique 't) 'a
+    
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+    
+end
+module Deref_Deref4_Stub
+  type t
+  use prelude.Borrow
+  function deref4 [#"../deref.rs" 36 0 36 57] (x : t) : t
+end
+module Deref_Deref4_Interface
+  type t
+  use prelude.Borrow
+  function deref4 [#"../deref.rs" 36 0 36 57] (x : t) : t
+  val deref4 [#"../deref.rs" 36 0 36 57] (x : t) : t
+    ensures { result = deref4 x }
+    
+end
+module Deref_Deref4
+  type t
+  use prelude.Borrow
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Boxed_Box_Type as Alloc_Boxed_Box_Type
+  clone Deref_MkRef_MkRef_Stub as MkRef0 with
+    type self = t
+  function deref4 [#"../deref.rs" 36 0 36 57] (x : t) : t =
+    [#"../deref.rs" 37 4 37 19] MkRef0.mk_ref x
+  val deref4 [#"../deref.rs" 36 0 36 57] (x : t) : t
+    ensures { result = deref4 x }
+    
+end
+module Deref_X_Type
+  use prelude.Int
+  use prelude.UInt32
+  type t_x  =
+    | C_X uint32 uint32
+    
+  let function x_0 (self : t_x) : uint32 = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_X a _ -> a
+      end
+end
+module Deref_ProjectRef_Interface
+  use prelude.Borrow
+  use prelude.Int
+  use prelude.UInt32
+  clone Deref_MkRef_MkRef_Stub as MkRef0 with
+    type self = uint32
+  use Deref_X_Type as Deref_X_Type
+  val project_ref [#"../deref.rs" 43 0 43 39] (x : Deref_X_Type.t_x) : uint32
+    ensures { [#"../deref.rs" 42 10 42 38] result = old(MkRef0.mk_ref (Deref_X_Type.x_0 x)) }
+    
+end
+module Deref_ProjectRef
+  use prelude.Int
+  use prelude.UInt32
+  use prelude.Borrow
+  clone Deref_MkRef_MkRef as MkRef0 with
+    type self = uint32
+  use Deref_X_Type as Deref_X_Type
+  let rec cfg project_ref [#"../deref.rs" 43 0 43 39] [@cfg:stackify] [@cfg:subregion_analysis] (x : Deref_X_Type.t_x) : uint32
+    ensures { [#"../deref.rs" 42 10 42 38] result = old(MkRef0.mk_ref (Deref_X_Type.x_0 x)) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : uint32;
+  var x_1 : Deref_X_Type.t_x;
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    _0 <- Deref_X_Type.x_0 x_1;
+    return _0
+  }
+  
+end
+module Deref_ProjectTupleRef_Interface
+  use prelude.Borrow
+  use prelude.Int
+  use prelude.UInt32
+  clone Deref_MkRef_MkRef_Stub as MkRef0 with
+    type self = uint32
+  val project_tuple_ref [#"../deref.rs" 48 0 48 54] (x : (uint32, uint32)) : uint32
+    ensures { [#"../deref.rs" 47 10 47 38] result = old(MkRef0.mk_ref (let (a, _) = x in a)) }
+    
+end
+module Deref_ProjectTupleRef
+  use prelude.Int
+  use prelude.UInt32
+  use prelude.Borrow
+  clone Deref_MkRef_MkRef as MkRef0 with
+    type self = uint32
+  let rec cfg project_tuple_ref [#"../deref.rs" 48 0 48 54] [@cfg:stackify] [@cfg:subregion_analysis] (x : (uint32, uint32)) : uint32
+    ensures { [#"../deref.rs" 47 10 47 38] result = old(MkRef0.mk_ref (let (a, _) = x in a)) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : uint32;
+  var x_1 : (uint32, uint32);
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    _0 <- (let (a, _) = x_1 in a);
+    return _0
+  }
+  
+end
+module Deref_ProjectTupleBox_Interface
+  use prelude.Int
+  use prelude.UInt32
+  val project_tuple_box [#"../deref.rs" 53 0 53 55] (x : (uint32, uint32)) : uint32
+    ensures { [#"../deref.rs" 52 10 52 28] result = old(let (a, _) = x in a) }
+    
+end
+module Deref_ProjectTupleBox
+  use prelude.Int
+  use prelude.UInt32
+  let rec cfg project_tuple_box [#"../deref.rs" 53 0 53 55] [@cfg:stackify] [@cfg:subregion_analysis] (x : (uint32, uint32)) : uint32
+    ensures { [#"../deref.rs" 52 10 52 28] result = old(let (a, _) = x in a) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : uint32;
+  var x_1 : (uint32, uint32);
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    _0 <- (let (a, _) = x_1 in a);
+    goto BB1
+  }
+  BB1 {
+    return _0
+  }
+  
+end
+module Deref_LetRef_Stub
+  use prelude.Borrow
+  use prelude.Int
+  use prelude.UInt32
+  function let_ref [#"../deref.rs" 59 0 59 48] (x : (uint32, uint32)) : uint32
+end
+module Deref_LetRef_Interface
+  use prelude.Borrow
+  use prelude.Int
+  use prelude.UInt32
+  function let_ref [#"../deref.rs" 59 0 59 48] (x : (uint32, uint32)) : uint32
+  val let_ref [#"../deref.rs" 59 0 59 48] (x : (uint32, uint32)) : uint32
+    ensures { result = let_ref x }
+    
+end
+module Deref_LetRef
+  use prelude.Borrow
+  use prelude.Int
+  use prelude.UInt32
+  function let_ref [#"../deref.rs" 59 0 59 48] (x : (uint32, uint32)) : uint32 =
+    [#"../deref.rs" 58 0 58 20] let (x, _) = x in x
+  val let_ref [#"../deref.rs" 59 0 59 48] (x : (uint32, uint32)) : uint32
+    ensures { result = let_ref x }
+    
+end
+module Deref_Impl0
+  type t
+end

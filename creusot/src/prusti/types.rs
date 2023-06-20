@@ -1,23 +1,23 @@
 use crate::error::{CreusotResult, Error};
 
 use super::{parsing::Home, region_set::*, util::RegionReplacer};
+use itertools::Either;
+use rustc_infer::infer::region_constraints::Constraint;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::Mutability,
     ty,
-    ty::{
-        AdtDef, BoundRegionKind, List, ParamEnv, Region, TyCtxt, TyKind, TypeFoldable,
-    },
+    ty::{AdtDef, BoundRegionKind, List, ParamEnv, Region, TyCtxt, TyKind, TypeFoldable},
 };
-use rustc_span::{def_id::DefId, Span, Symbol};
+use rustc_span::{
+    def_id::{DefId, CRATE_DEF_ID},
+    Span, Symbol,
+};
 use rustc_target::abi::VariantIdx;
 use std::{
     fmt::{Debug, Display, Formatter},
     iter,
 };
-use itertools::Either;
-use rustc_infer::infer::region_constraints::Constraint;
-use rustc_span::def_id::CRATE_DEF_ID;
 
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 /// Since we use a different subtyping for this analysis
@@ -28,8 +28,29 @@ pub(crate) struct Ty<'tcx> {
     pub(super) home: Region<'tcx>,
 }
 
+impl<'tcx> Display for Ty<'tcx> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}@{}", self.ty, self.home)
+    }
+}
+
 impl<'tcx> Ty<'tcx> {
     pub(crate) fn as_adt_variant(
+        self,
+        variant: VariantIdx,
+        tcx: TyCtxt<'tcx>,
+    ) -> impl Iterator<Item = Ty<'tcx>> {
+        match self.as_ref(tcx.lifetimes.re_erased.into()) {
+            None => Either::Left(self.as_adt_variant_h(variant, tcx)),
+            Some((lft, ty, Mutability::Not)) => Either::Right(
+                ty.as_adt_variant_h(variant, tcx)
+                    .map(move |ty| Ty { ty: tcx.mk_imm_ref(lft, ty.ty), home: self.home }),
+            ),
+            _ => unreachable!(),
+        }
+    }
+
+    fn as_adt_variant_h(
         self,
         variant: VariantIdx,
         tcx: TyCtxt<'tcx>,
@@ -56,6 +77,10 @@ impl<'tcx> Ty<'tcx> {
         }
     }
 
+    pub(crate) fn make_ref(ts: Region<'tcx>, ty: Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
+        Ty { ty: tcx.mk_imm_ref(ts, ty.ty), home: ty.home }
+    }
+
     pub(crate) fn try_unbox(self) -> Option<Self> {
         match self.ty.kind() {
             &TyKind::Adt(adt, subst) if adt.is_box() => {
@@ -74,7 +99,7 @@ impl<'tcx> Ty<'tcx> {
     }
 
     pub(crate) fn absurd_regions(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
-        Self::all_at_ts(ty, tcx,RegionSet::EMPTY.into_region(tcx))
+        Self::all_at_ts(ty, tcx, RegionSet::EMPTY.into_region(tcx))
     }
 
     pub(crate) fn with_absurd_home(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
@@ -114,7 +139,7 @@ const CURR_IDX: u8 = 1;
 const OLD_REG_SET: RegionSet = RegionSet::singleton(OLD_IDX as u32);
 const CURR_REG_SET: RegionSet = RegionSet::singleton(CURR_IDX as u32);
 
-pub(crate) struct Ctx<'tcx, R=RegionRelation> {
+pub(crate) struct Ctx<'tcx, R = RegionRelation> {
     pub tcx: TyCtxt<'tcx>,
     base_regions: Vec<Region<'tcx>>,
     pub(super) relation: R,
@@ -128,11 +153,7 @@ pub(crate) type PreCtx<'tcx> = Ctx<'tcx, ()>;
 
 impl<'tcx, X: Debug> Debug for Ctx<'tcx, X> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let name = if std::mem::size_of::<X>() == 0 {
-            "PreCtx"
-        } else {
-            "Ctx"
-        };
+        let name = if std::mem::size_of::<X>() == 0 { "PreCtx" } else { "Ctx" };
         f.debug_struct(name)
             .field("base_regions", &self.base_regions)
             .field("relation", &self.relation)
@@ -155,7 +176,7 @@ fn index_of<T: Eq + Debug>(s: &[T], x: &T) -> usize {
 }
 
 impl<'tcx, X> Ctx<'tcx, X> {
-    pub(crate) fn base_regions(&self) -> impl Iterator<Item=Region<'tcx>> + '_ {
+    pub(crate) fn base_regions(&self) -> impl Iterator<Item = Region<'tcx>> + '_ {
         self.base_regions.iter().copied()
     }
 
@@ -174,7 +195,6 @@ impl<'tcx, X> Ctx<'tcx, X> {
     }
 }
 
-
 impl<'tcx> PreCtx<'tcx> {
     pub(crate) fn new(tcx: TyCtxt<'tcx>, owner_id: DefId) -> Self {
         let curr_sym = Symbol::intern("'curr");
@@ -186,7 +206,7 @@ impl<'tcx> PreCtx<'tcx> {
 
     pub(super) fn home_to_region(&mut self, s: Symbol) -> Region<'tcx> {
         if s == self.curr_sym {
-            return self.curr_region()
+            return self.curr_region();
         }
         for (idx, reg) in self.base_regions.iter().enumerate() {
             if Some(s) == reg.get_name() {
@@ -206,7 +226,7 @@ impl<'tcx> PreCtx<'tcx> {
     /// Fixes an external region by converting it into a singleton set
     pub(super) fn fix_region(&mut self, r: Region<'tcx>) -> Region<'tcx> {
         if r.get_name() == Some(self.curr_sym) {
-            return self.curr_region()
+            return self.curr_region();
         }
         let idx = match try_index_of(&self.base_regions, &r) {
             Some(idx) => idx,
@@ -226,7 +246,7 @@ impl<'tcx> PreCtx<'tcx> {
 
     pub(super) fn finish_for_logic(self) -> Ctx<'tcx> {
         let relation = RegionRelation::new(self.base_regions.len(), iter::empty());
-        Ctx { relation, ..self}
+        Ctx { relation, ..self }
     }
 }
 
@@ -237,11 +257,13 @@ impl<'tcx> Ctx<'tcx> {
         let mut cur_region = None;
 
         // Add all regions (if any of them are 'curr replace the curr_region instead
-        res.base_regions.extend(rs.filter_map(|x| if x.get_name() == Some(res.curr_sym) {
-            cur_region = Some(x);
-            None
-        } else {
-            Some(x)
+        res.base_regions.extend(rs.filter_map(|x| {
+            if x.get_name() == Some(res.curr_sym) {
+                cur_region = Some(x);
+                None
+            } else {
+                Some(x)
+            }
         }));
         if let Some(cur_region) = cur_region {
             res.base_regions[usize::from(CURR_IDX)] = cur_region
@@ -255,23 +277,29 @@ impl<'tcx> Ctx<'tcx> {
             };
             r
         };
-        let constraints = constraints.map(|c| match c {
-            Constraint::VarSubReg(_, r1) => (reg_to_idx(assert_not_curr(r1)), CURR_IDX as usize),
-            Constraint::RegSubReg(r2, r1) => (reg_to_idx(assert_not_curr(r1)), reg_to_idx(r2)),
-            _ => (CURR_IDX.into(), CURR_IDX.into())
-        }).chain(iter::once((CURR_IDX.into(), OLD_IDX.into())));
+        let constraints = constraints
+            .map(|c| match c {
+                Constraint::VarSubReg(_, r1) => {
+                    (reg_to_idx(assert_not_curr(r1)), CURR_IDX as usize)
+                }
+                Constraint::RegSubReg(r2, r1) => (reg_to_idx(assert_not_curr(r1)), reg_to_idx(r2)),
+                _ => (CURR_IDX.into(), CURR_IDX.into()),
+            })
+            .chain(iter::once((CURR_IDX.into(), OLD_IDX.into())));
         let relation = RegionRelation::new(res.base_regions.len(), constraints);
         if failed {
-            return Err(Error::new(tcx.def_ident_span(owner_id).unwrap(), "'curr region must not be blocked"))
+            return Err(Error::new(
+                tcx.def_ident_span(owner_id).unwrap(),
+                "'curr region must not be blocked",
+            ));
         }
 
-        Ok(Ctx { relation, ..res})
+        Ok(Ctx { relation, ..res })
     }
 
     pub(super) fn curr_home(&self) -> Home {
-        Home{ data: self.curr_sym, is_ref: false }
+        Home { data: self.curr_sym, is_ref: false }
     }
-
 
     fn region_index_to_name(&self, idx: u32) -> Symbol {
         self.base_regions[idx as usize].get_name().unwrap_or(Symbol::intern("'_"))
@@ -317,12 +345,12 @@ impl<'a, 'tcx> Display for DisplayRegion<'a, 'tcx> {
     }
 }
 
-pub(super) fn prepare_display<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(t: T, ctx: &Ctx<'tcx>) -> T {
+pub(crate) fn prepare_display<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(t: T, ctx: &Ctx<'tcx>) -> T {
     let tcx = ctx.tcx;
     let to_display = |r: Region<'tcx>| {
         let dr = DisplayRegion(r, ctx);
         let sym = Symbol::intern(&format!("{dr}",));
         dummy_region(tcx, sym)
     };
-    t.fold_with(&mut RegionReplacer{f: to_display, tcx})
+    t.fold_with(&mut RegionReplacer { f: to_display, tcx })
 }

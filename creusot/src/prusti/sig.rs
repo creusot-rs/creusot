@@ -3,29 +3,23 @@ use crate::{
     prusti::{
         parsing,
         parsing::Home,
-        types::{Ctx, Ty},
+        types::{Ctx, PreCtx, Ty},
     },
     util,
 };
 use rustc_ast::MetaItemLit as Lit;
 use rustc_middle::ty::{Binder, FnSig, Region, TyCtxt};
-use rustc_span::{def_id::DefId, symbol::Ident, Symbol, DUMMY_SP, Span};
+use rustc_span::{def_id::DefId, symbol::Ident, Span, Symbol, DUMMY_SP};
 use std::iter;
-use crate::prusti::types::PreCtx;
 
 type TimeSlice<'tcx> = Region<'tcx>;
 
 /// Returns region corresponding to `l`
 /// Also checks that 'curr is not blocked
-fn make_time_slice<'tcx>(
-    l: &Lit,
-    ctx: &Ctx<'tcx>,
-) -> CreusotResult<TimeSlice<'tcx>> {
+fn make_time_slice<'tcx>(l: &Lit, ctx: &Ctx<'tcx>) -> CreusotResult<TimeSlice<'tcx>> {
     let old_region = ctx.old_region();
     let curr_region = ctx.curr_region();
-    let mut regions = ctx.base_regions().map(|r| {
-        (r.get_name(), ctx.fix_region(r))
-    });
+    let mut regions = ctx.base_regions().map(|r| (r.get_name(), ctx.fix_region(r)));
     let sym = l.as_token_lit().symbol;
     match sym.as_str() {
         "old" => Ok(old_region),
@@ -67,7 +61,7 @@ fn make_time_slice_logic<'tcx>(l: &Lit, ctx: &mut PreCtx<'tcx>) -> CreusotResult
 fn add_homes_to_sig<'a, 'tcx>(
     args: &'tcx [Ident],
     sig: FnSig<'tcx>,
-    arg_homes: impl Iterator<Item=Home<Region<'tcx>>>,
+    arg_homes: impl Iterator<Item = Home<Region<'tcx>>>,
     ret_home: Home<Region<'tcx>>,
     span: Span,
 ) -> CreusotResult<(impl Iterator<Item = (Symbol, CreusotResult<Ty<'tcx>>)>, Ty<'tcx>)> {
@@ -118,12 +112,7 @@ pub(crate) fn full_signature_logic<'a, 'tcx, T: FromIterator<(Symbol, Ty<'tcx>)>
     sig: Binder<'tcx, FnSig<'tcx>>,
     ts: &Lit,
     owner_id: DefId,
-) -> CreusotResult<(
-    Ctx<'tcx>,
-    Region<'tcx>,
-    T,
-    Ty<'tcx>,
-)> {
+) -> CreusotResult<(Ctx<'tcx>, Region<'tcx>, T, Ty<'tcx>)> {
     let mut ctx = PreCtx::new(tcx, owner_id);
     let sig = tcx.liberate_late_bound_regions(owner_id, sig);
     let sig = ctx.fix_regions(sig);

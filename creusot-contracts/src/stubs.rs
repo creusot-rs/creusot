@@ -80,3 +80,11 @@ pub fn curr<T>(_: T) -> T {
 pub fn at_expiry<'a: 'a, T>(_: T) -> T {
     absurd
 }
+
+#[logic] // avoid triggering error since this is prusti specific
+#[open]
+#[creusot::no_translate]
+#[rustc_diagnostic_item = "prusti_dbg_ty"]
+pub fn __dbg_ty<T>(_: T) -> T {
+    absurd
+}

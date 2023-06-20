@@ -10,7 +10,8 @@ use rustc_middle::{
     mir::Mutability::{Mut, Not},
     ty::{self, Binder, FnSig, Region},
 };
-use rustc_span::symbol::Symbol;
+use rustc_span::{symbol::Symbol, Span};
+use smallvec::SmallVec;
 use std::{
     hash::Hash,
     ops::{ControlFlow, Deref, DerefMut},
@@ -119,10 +120,12 @@ pub(super) fn prusti_to_creusot<'tcx>(
     let home_sig = util::get_attr_lit(tcx, owner_id, &["creusot", "prusti", "home_sig"]);
     let sig: Binder<FnSig> = tcx.fn_sig(owner_id).subst_identity();
 
-    let (ctx,ts, mut tenv, res_ty) = match home_sig {
+    let (ctx, ts, mut tenv, res_ty) = match home_sig {
         None => {
             let (ctx, ts, arg_tys, res_ty) = full_signature(tcx, sig, ts, owner_id)?;
-            let tenv = arg_tys.map(|(k, v)| v.map(|v| (k, v))).collect::<CreusotResult<FxHashMap<_, _>>>()?;
+            let tenv = arg_tys
+                .map(|(k, v)| v.map(|v| (k, v)))
+                .collect::<CreusotResult<FxHashMap<_, _>>>()?;
             (ctx, ts, tenv, res_ty)
         }
         Some(home_sig) => {
@@ -136,6 +139,7 @@ pub(super) fn prusti_to_creusot<'tcx>(
     }
 
     let final_type = convert(&mut term, &mut Tenv::new(tenv), ts, &ctx)?;
+    let final_type = strip_derefs_target(&ctx, term.span, ts, final_type, res_ty.ty)?;
     if item_id == owner_id.expect_local() {
         typeck::check_sup(&ctx, res_ty, final_type, term.span)?
     }
@@ -157,9 +161,10 @@ where
             .as_adt_variant(*variant, tcx)
             .zip(fields)
             .try_for_each(|(ty, pat)| iterate_bindings(pat, ty, ctx, f)),
-        Pattern::Tuple(fields) => {
-            ty.as_adt_variant(0u32.into(), tcx).zip(fields).try_for_each(|(ty, pat)| iterate_bindings(pat, ty, ctx, f))
-        }
+        Pattern::Tuple(fields) => ty
+            .as_adt_variant(0u32.into(), tcx)
+            .zip(fields)
+            .try_for_each(|(ty, pat)| iterate_bindings(pat, ty, ctx, f)),
         Pattern::Binder(sym) => f((*sym, ty)),
         _ => ControlFlow::Continue(()),
     }
@@ -182,40 +187,72 @@ impl<'a, 'tcx> InternalIterator for PatternIter<'a, 'tcx> {
     }
 }
 
-fn strip_derefs<'tcx>(ty: Ty<'tcx>, ts: TimeSlice<'tcx>, target: ty::Ty<'tcx>) -> Ty<'tcx> {
-    let (depth, target_depth) = (deref_depth(ty.ty), deref_depth(target));
-    if depth >= target_depth {
-        strip_derefs_h(ty, ts, depth - target_depth)
-    } else {
-        ty
+fn strip_derefs_target<'tcx>(
+    ctx: &Ctx<'tcx>,
+    span: Span,
+    ts: TimeSlice<'tcx>,
+    ty: Ty<'tcx>,
+    target: ty::Ty<'tcx>,
+) -> CreusotResult<Ty<'tcx>> {
+    let (mut depth, mut target_depth) = (deref_depth(ty.ty), deref_depth(target));
+    loop {
+        if let (Some(x), Some(y)) = (depth.last(), target_depth.last()) && x == y {
+            depth.pop();
+            target_depth.pop();
+        } else {
+            break
+        }
     }
+    let mut ty = ty;
+    let mut add_lft = ts;
+    // strip off indirections that aren't in the target type
+    for _ in depth {
+        if let Some((lft, nty, Not)) = ty.as_ref(ts) {
+            typeck::check_shr_deref(ts, ctx, ty, lft, span)?;
+            ty = nty;
+            add_lft = lft;
+        } else if let Some(nty) = ty.try_unbox() {
+            typeck::check_box_deref(ts, ctx, ty, span)?;
+            ty = nty;
+        } else {
+            unreachable!()
+        }
+    }
+    for ind in target_depth {
+        // add indirections that aren't in current type
+        assert!(matches!(ind, Indirect::Ref));
+        ty = Ty::make_ref(add_lft, ty, ctx.tcx);
+        add_lft = ts;
+    }
+    // eprintln!("sd {:?} had type {} (THIR type {})", span, prepare_display(ty, ctx), target);
+    Ok(ty)
 }
 
-fn deref_depth(ty: ty::Ty<'_>) -> u32 {
+#[derive(PartialEq, Eq)]
+enum Indirect {
+    Box,
+    Ref,
+}
+
+fn deref_depth(ty: ty::Ty<'_>) -> SmallVec<[Indirect; 8]> {
     let mut ty = ty;
-    let mut res = 0;
+    let mut res = SmallVec::new();
     loop {
-        ty = match ty.kind() {
-            ty::TyKind::Ref(_, ty, Not) => *ty,
-            ty::TyKind::Adt(adt, _) if adt.is_box() => ty.boxed_ty(),
+        let (nty, ind) = match ty.kind() {
+            ty::TyKind::Ref(_, ty, Not) => (*ty, Indirect::Ref),
+            ty::TyKind::Adt(adt, _) if adt.is_box() => (ty.boxed_ty(), Indirect::Box),
             _ => return res,
         };
-        res += 1;
+        ty = nty;
+        res.push(ind)
     }
 }
 
-fn strip_derefs_h<'tcx>(ty: Ty<'tcx>, ts: TimeSlice<'tcx>, max_depth: u32) -> Ty<'tcx> {
-    if max_depth == 0 {
-        ty
-    } else if let Some((_, ty, Not)) = ty.as_ref(ts) {
-        strip_derefs_h(ty, ts, max_depth - 1)
-    } else if let Some(ty) = ty.try_unbox() {
-        strip_derefs_h(ty, ts, max_depth - 1)
-    } else {
-        unreachable!()
-    }
-}
-
+// Preforms the conversion and return the type of `term`
+// Note: since pearlite doesn't have & and * terms this type may have the wrong number of &'s on the outside
+// Recursive calls should generally instead use convert_sdt fix the return type to match the expected type from THIR
+// When handling operators that can work over places (currently projection) convert_sdb1
+// this leaves behind one layer of reference which is used track the lifetime of the projection
 fn convert<'tcx>(
     term: &mut Term<'tcx>,
     tenv: &mut Tenv<'tcx>,
@@ -223,47 +260,63 @@ fn convert<'tcx>(
     ctx: &Ctx<'tcx>,
 ) -> CreusotResult<Ty<'tcx>> {
     let tcx = ctx.tcx;
-    let res = match &mut term.kind {
+    let ty = match &mut term.kind {
         TermKind::Var(v) => *tenv.get(v).unwrap(),
         TermKind::Lit(_) | TermKind::Item(_, _) => Ty::with_absurd_home(term.ty, tcx), // Can't return mutable reference
         TermKind::Binary { lhs, rhs, .. } | TermKind::Impl { lhs, rhs } => {
-            convert(&mut *lhs, tenv, ts, ctx)?;
-            convert(&mut *rhs, tenv, ts, ctx)?;
+            convert_sdt(&mut *lhs, tenv, ts, ctx)?;
+            convert_sdt(&mut *rhs, tenv, ts, ctx)?;
             Ty::with_absurd_home(term.ty, tcx)
         }
         TermKind::Unary { arg, .. } => {
-            convert(&mut *arg, tenv, ts, ctx)?;
+            convert_sdt(&mut *arg, tenv, ts, ctx)?;
             Ty::with_absurd_home(term.ty, tcx)
         }
         TermKind::Forall { binder, body } | TermKind::Exists { binder, body } => {
             let ty = binder.1.tuple_fields()[0];
             let ty = Ty::all_at_ts(ty, ctx.tcx, ts); // TODO handle lifetimes annotations in ty
-            convert(&mut *body, &mut tenv.insert(binder.0, ty), ts, ctx)?
+            convert_sdt(&mut *body, &mut tenv.insert(binder.0, ty), ts, ctx)?
         }
         TermKind::Call { args, fun, id, subst } => {
             let new_reg = if tcx.is_diagnostic_item(Symbol::intern("prusti_curr"), *id) {
                 Some(ctx.curr_region())
             } else if tcx.is_diagnostic_item(Symbol::intern("prusti_expiry"), *id) {
                 Some(subst.regions().next().unwrap())
+            } else if tcx.is_diagnostic_item(Symbol::intern("prusti_dbg_ty"), *id) {
+                let mut arg = args.pop().unwrap();
+                let res = convert_sdt(&mut arg, tenv, ts, ctx)?;
+                eprintln!(
+                    "{:?} had type {} (THIR type {})",
+                    term.span,
+                    prepare_display(res, ctx),
+                    term.ty
+                );
+                term.kind = arg.kind;
+                return Ok(res);
             } else {
-                None // just a regular function
+                None
             };
             if let Some(reg) = new_reg {
-                *term = args.pop().unwrap();
-                convert(term, tenv, reg, &ctx)?
+                let mut arg = args.pop().unwrap();
+                let res = convert_sdt(&mut arg, tenv, reg, &ctx)?;
+                term.kind = arg.kind;
+                res
             } else {
-                let _ = convert(fun, tenv, ts, ctx)?;
-                let args = args.iter_mut().map(|arg| Ok((convert(arg, tenv, ts, ctx)?, arg.span)));
+                let _ = convert_sdt(fun, tenv, ts, ctx)?;
+                let args =
+                    args.iter_mut().map(|arg| Ok((convert_sdt(arg, tenv, ts, ctx)?, arg.span)));
                 let (id, subst) = typeck::try_resolve(&ctx, *id, *subst);
                 typeck::check_call(ctx, ts, id, subst, args)?
             }
         }
         TermKind::Constructor { fields, variant, .. } => {
-            let fields = fields.iter_mut().map(|arg| Ok((convert(arg, tenv, ts, ctx)?, arg.span)));
+            let fields =
+                fields.iter_mut().map(|arg| Ok((convert_sdt(arg, tenv, ts, ctx)?, arg.span)));
             typeck::check_constructor(ctx, fields, term.ty, *variant)?
         }
         TermKind::Tuple { fields, .. } => {
-            let fields = fields.iter_mut().map(|arg| Ok((convert(arg, tenv, ts, ctx)?, arg.span)));
+            let fields =
+                fields.iter_mut().map(|arg| Ok((convert_sdt(arg, tenv, ts, ctx)?, arg.span)));
             typeck::check_constructor(ctx, fields, term.ty, 0u32.into())?
         }
         curr @ TermKind::Cur { .. } => {
@@ -272,7 +325,7 @@ fn convert<'tcx>(
                 TermKind::Cur { term } => term,
                 _ => unreachable!(),
             };
-            let ty = convert(&mut term, tenv, ts, ctx)?;
+            let ty = convert_sdt(&mut term, tenv, ts, ctx)?;
             if ty.is_never() {
                 return Ok(Ty::never(ctx.tcx));
             }
@@ -286,28 +339,78 @@ fn convert<'tcx>(
             inner_ty
         }
         TermKind::Match { scrutinee, arms } => {
-            let ty = convert(&mut *scrutinee, tenv, ts, ctx)?;
+            let ty = convert_sdt(&mut *scrutinee, tenv, ts, ctx)?;
+            if let Some((lft, _, _)) = ty.as_ref(ts) {
+                // We would need to deref the reference to check which variant it has
+                typeck::check_shr_deref(ts, ctx, ty, lft, term.span)?;
+            }
             let iter = arms.iter_mut().map(|(pat, body)| {
                 let iter = PatternIter { pat, ty, ctx };
-                convert(&mut *body, &mut *tenv.insert_many(iter), ts, ctx)
+                convert_sdt(&mut *body, &mut *tenv.insert_many(iter), ts, ctx)
             });
             typeck::union(ctx, term.ty, iter)?
         }
         TermKind::Let { pattern, arg, body } => {
-            let ty = convert(&mut *arg, tenv, ts, ctx)?;
-            let iter = PatternIter { pat: pattern, ty, ctx };
-            let x = convert(&mut *body, &mut *tenv.insert_many(iter), ts, ctx)?;
-            x
+            if matches!(pattern, Pattern::Tuple(..))
+                && matches!(&body.kind, TermKind::Var(..))
+                && arg.ty == body.ty
+            {
+                // This was generated by a tuple projection so it should be handled like a projection instead
+                let ty = convert_sdb1(&mut *arg, tenv, ts, ctx)?;
+                let iter = PatternIter { pat: pattern, ty, ctx };
+                convert(&mut *body, &mut *tenv.insert_many(iter), ts, ctx)?
+            } else {
+                let ty = convert_sdt(&mut *arg, tenv, ts, ctx)?;
+                let iter = PatternIter { pat: pattern, ty, ctx };
+                convert_sdt(&mut *body, &mut *tenv.insert_many(iter), ts, ctx)?
+            }
         }
         TermKind::Projection { lhs, name, .. } => {
-            let ty = convert(&mut *lhs, tenv, ts, ctx)?;
+            let ty = convert_sdb1(&mut *lhs, tenv, ts, ctx)?;
             let res = ty.as_adt_variant(0u32.into(), tcx).nth(name.as_usize());
             res.unwrap()
         }
-        TermKind::Old { term } => convert(&mut *term, tenv, ctx.old_region(), ctx)?,
+        TermKind::Old { term } => convert_sdt(&mut *term, tenv, ctx.old_region(), ctx)?,
         TermKind::Closure { .. } => todo!(),
         TermKind::Absurd => Ty::absurd_regions(term.ty, ctx.tcx),
         _ => return Err(Error::new(term.span, "this operation is not supported in Prusti specs")),
     };
-    Ok(strip_derefs(res, ts, term.ty))
+    Ok(ty)
+}
+
+fn convert_sdb1<'tcx>(
+    term: &mut Term<'tcx>,
+    tenv: &mut Tenv<'tcx>,
+    ts: TimeSlice<'tcx>,
+    ctx: &Ctx<'tcx>,
+) -> CreusotResult<Ty<'tcx>> {
+    let ty = convert(term, tenv, ts, ctx)?;
+    let target = if ty.as_ref(ctx.tcx.lifetimes.re_erased).is_some() {
+        ctx.tcx.mk_imm_ref(ctx.tcx.lifetimes.re_erased, term.ty)
+    } else {
+        term.ty
+    };
+    strip_derefs_target(ctx, term.span, ts, ty, target)
+}
+
+fn convert_sdt<'tcx>(
+    term: &mut Term<'tcx>,
+    tenv: &mut Tenv<'tcx>,
+    ts: TimeSlice<'tcx>,
+    ctx: &Ctx<'tcx>,
+) -> CreusotResult<Ty<'tcx>> {
+    strip_derefs_target(ctx, term.span, ts, convert(term, tenv, ts, ctx)?, term.ty)
+}
+
+impl<'tcx> Term<'tcx> {}
+
+pub(crate) fn strip_all_refs(ty: ty::Ty) -> ty::Ty {
+    let mut ty = ty;
+    loop {
+        if ty.ref_mutability() == Some(Not) || ty.is_box() {
+            ty = ty.builtin_deref(true).unwrap().ty;
+        } else {
+            return ty;
+        }
+    }
 }
