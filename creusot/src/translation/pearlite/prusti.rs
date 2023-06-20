@@ -7,7 +7,7 @@ use crate::{
 use internal_iterator::*;
 use rustc_data_structures::fx::FxHashMap;
 use rustc_middle::{
-    mir::Mutability::{Mut, Not},
+    mir::Mutability::Not,
     ty::{self, Binder, FnSig, Region},
 };
 use rustc_span::{symbol::Symbol, Span};
@@ -206,22 +206,21 @@ fn strip_derefs_target<'tcx>(
     let mut ty = ty;
     let mut add_lft = ts;
     // strip off indirections that aren't in the target type
-    for _ in depth {
-        if let Some((lft, nty, Not)) = ty.as_ref(ts) {
-            typeck::check_shr_deref(ts, ctx, ty, lft, span)?;
-            ty = nty;
-            add_lft = lft;
-        } else if let Some(nty) = ty.try_unbox() {
-            typeck::check_box_deref(ts, ctx, ty, span)?;
-            ty = nty;
-        } else {
-            unreachable!()
+    for ind in depth {
+        match ind {
+            Indirect::Box => {
+                ty = typeck::box_deref(ts, ctx, ty, span)?;
+            }
+            Indirect::Ref => {
+                add_lft = ty.ref_lft();
+                ty = typeck::shr_deref(ts, ctx, ty, span)?;
+            }
         }
     }
     for ind in target_depth {
         // add indirections that aren't in current type
         assert!(matches!(ind, Indirect::Ref));
-        ty = Ty::make_ref(add_lft, ty, ctx.tcx);
+        ty = typeck::mk_ref(ts, add_lft, ctx, ty, span)?;
         add_lft = ts;
     }
     // eprintln!("sd {:?} had type {} (THIR type {})", span, prepare_display(ty, ctx), target);
@@ -329,10 +328,8 @@ fn convert<'tcx>(
             if ty.is_never() {
                 return Ok(Ty::never(ctx.tcx));
             }
-            let (end, inner_ty, m) = ty.as_ref(ts).unwrap();
-            assert!(matches!(m, Mut));
-            //eprintln!("start: {start:?}, end: {end:?}");
-            *curr = match typeck::check_mut_deref(ts, &ctx, ty, end, term.span)? {
+            let (deref_type, inner_ty) = typeck::mut_deref(ts, &ctx, ty, term.span)?;
+            *curr = match deref_type {
                 typeck::MutDerefType::Cur => TermKind::Cur { term },
                 typeck::MutDerefType::Fin => TermKind::Fin { term },
             };
@@ -340,9 +337,9 @@ fn convert<'tcx>(
         }
         TermKind::Match { scrutinee, arms } => {
             let ty = convert_sdt(&mut *scrutinee, tenv, ts, ctx)?;
-            if let Some((lft, _, _)) = ty.as_ref(ts) {
+            if ty.ty.is_ref() {
                 // We would need to deref the reference to check which variant it has
-                typeck::check_shr_deref(ts, ctx, ty, lft, term.span)?;
+                typeck::shr_deref(ts, ctx, ty, term.span)?;
             }
             let iter = arms.iter_mut().map(|(pat, body)| {
                 let iter = PatternIter { pat, ty, ctx };
@@ -385,7 +382,7 @@ fn convert_sdb1<'tcx>(
     ctx: &Ctx<'tcx>,
 ) -> CreusotResult<Ty<'tcx>> {
     let ty = convert(term, tenv, ts, ctx)?;
-    let target = if ty.as_ref(ctx.tcx.lifetimes.re_erased).is_some() {
+    let target = if ty.ty.ref_mutability() == Some(Not) {
         ctx.tcx.mk_imm_ref(ctx.tcx.lifetimes.re_erased, term.ty)
     } else {
         term.ty

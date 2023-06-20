@@ -70,18 +70,25 @@ impl<'tcx> Ty<'tcx> {
         tys.zip(iter::repeat(self.home)).map(|(ty, home)| Ty { ty, home })
     }
 
-    pub(crate) fn as_ref(self, ts: Region<'tcx>) -> Option<(Region<'tcx>, Self, Mutability)> {
+    pub(super) fn as_ref(self, ts: Region<'tcx>) -> Option<(Region<'tcx>, Self, Mutability)> {
         match self.ty.kind() {
             &TyKind::Ref(region, ty, m) => Some((region, Ty { ty, home: ts }, m)),
             _ => None,
         }
     }
 
-    pub(crate) fn make_ref(ts: Region<'tcx>, ty: Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
+    pub(crate) fn ref_lft(self) -> Region<'tcx> {
+        match self.ty.kind() {
+            &TyKind::Ref(region, _, _) => region,
+            _ => unreachable!(),
+        }
+    }
+
+    pub(super) fn make_ref(ts: Region<'tcx>, ty: Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
         Ty { ty: tcx.mk_imm_ref(ts, ty.ty), home: ty.home }
     }
 
-    pub(crate) fn try_unbox(self) -> Option<Self> {
+    pub(super) fn try_unbox(self) -> Option<Self> {
         match self.ty.kind() {
             &TyKind::Adt(adt, subst) if adt.is_box() => {
                 Some(Ty { ty: subst.types().next().unwrap(), home: self.home })

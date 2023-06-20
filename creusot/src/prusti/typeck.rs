@@ -11,6 +11,7 @@ use crate::{
     util,
 };
 use itertools::Either;
+use rustc_ast::Mutability;
 use rustc_data_structures::fx::FxHashMap;
 use rustc_infer::{
     infer::{
@@ -345,16 +346,16 @@ pub(crate) enum MutDerefType {
     Fin,
 }
 
-pub(crate) fn check_mut_deref<'tcx>(
+pub(crate) fn mut_deref<'tcx>(
     ts: Region<'tcx>,
     ctx: &Ctx<'tcx>,
     ty: Ty<'tcx>,
-    end: Region<'tcx>,
     span: Span,
-) -> CreusotResult<MutDerefType> {
+) -> CreusotResult<(MutDerefType, Ty<'tcx>)> {
+    let Some((end, nty, Mutability::Mut)) = ty.as_ref(ts) else {unreachable!()};
     match ts {
-        ts if ty.has_home_at_ts(ts) => Ok(Cur),
-        ts if sub_ts(end, ts) => Ok(Fin),
+        ts if ty.has_home_at_ts(ts) => Ok((Cur, nty)),
+        ts if sub_ts(end, ts) => Ok((Fin, nty)),
         _ => {
             let home = DisplayRegion(ty.home, &ctx);
             let end = DisplayRegion(end, &ctx);
@@ -364,19 +365,19 @@ pub(crate) fn check_mut_deref<'tcx>(
     }
 }
 
-pub(crate) fn check_shr_deref<'tcx>(
+pub(crate) fn shr_deref<'tcx>(
     ts: Region<'tcx>,
     ctx: &Ctx<'tcx>,
     ty: Ty<'tcx>,
-    end: Region<'tcx>,
     span: Span,
-) -> CreusotResult<()> {
+) -> CreusotResult<Ty<'tcx>> {
+    let Some((end, nty, Mutability::Not)) = ty.as_ref(ts) else {unreachable!()};
     // if ts has it's home in the current state we should know it's lifetime is longer than it's home
     if ts == ty.home
         || (ctx.relation.outlives(ts.into(), ty.home.into())
             && ctx.relation.outlived_by(ts.into(), end.into()))
     {
-        Ok(())
+        Ok(nty)
     } else {
         let home = DisplayRegion(ty.home, &ctx);
         let end = DisplayRegion(end, &ctx);
@@ -385,23 +386,44 @@ pub(crate) fn check_shr_deref<'tcx>(
     }
 }
 
-pub(crate) fn check_box_deref<'tcx>(
+pub(crate) fn box_deref<'tcx>(
     ts: Region<'tcx>,
     ctx: &Ctx<'tcx>,
     ty: Ty<'tcx>,
     span: Span,
-) -> CreusotResult<()> {
+) -> CreusotResult<Ty<'tcx>> {
     if ty.has_home_at_ts(ts) {
-        Ok(())
+        Ok(ty.try_unbox().unwrap())
     } else {
         let home = DisplayRegion(ty.home, &ctx);
         let ts = DisplayRegion(ts, &ctx);
-        return Err(Error::new(
+        Err(Error::new(
             span,
             format!(
                 "invalid box dereference of expression with home `{home}` at time-slice `{ts}`"
             ),
-        ));
+        ))
+    }
+}
+
+pub(crate) fn mk_ref<'tcx>(
+    ts: Region<'tcx>,
+    lft: Region<'tcx>,
+    ctx: &Ctx<'tcx>,
+    ty: Ty<'tcx>,
+    span: Span,
+) -> CreusotResult<Ty<'tcx>> {
+    if ty.has_home_at_ts(ts) {
+        Ok(Ty::make_ref(lft, ty, ctx.tcx))
+    } else {
+        let home = DisplayRegion(ty.home, &ctx);
+        let ts = DisplayRegion(ts, &ctx);
+        Err(Error::new(
+            span,
+            format!(
+                "invalid reference creation of expression with home `{home}` at time-slice `{ts}`"
+            ),
+        ))
     }
 }
 
