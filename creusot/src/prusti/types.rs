@@ -19,6 +19,9 @@ use std::{
     iter,
 };
 
+const CURR_STR: &str = "'curr";
+const OLD_STR: &str = "'old";
+
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 /// Since we use a different subtyping for this analysis
 /// All regions are represented as early bound regions
@@ -197,9 +200,9 @@ impl<'tcx, X> Ctx<'tcx, X> {
 
 impl<'tcx> PreCtx<'tcx> {
     pub(crate) fn new(tcx: TyCtxt<'tcx>, owner_id: DefId) -> Self {
-        let curr_sym = Symbol::intern("'curr");
+        let curr_sym = Symbol::intern(CURR_STR);
         let curr_region = dummy_region(tcx, curr_sym);
-        let old_region = dummy_region(tcx, Symbol::intern("'old"));
+        let old_region = dummy_region(tcx, Symbol::intern(OLD_STR));
         let base_regions = vec![old_region, curr_region];
         Ctx { tcx, relation: (), base_regions, curr_sym, owner_id }
     }
@@ -290,7 +293,7 @@ impl<'tcx> Ctx<'tcx> {
         if failed {
             return Err(Error::new(
                 tcx.def_ident_span(owner_id).unwrap(),
-                "'curr region must not be blocked",
+                format!("{CURR_STR} region must not be blocked"),
             ));
         }
 
