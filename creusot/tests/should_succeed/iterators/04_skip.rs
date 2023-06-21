@@ -1,10 +1,7 @@
 #![feature(slice_take)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{
-    invariant::{inv, Invariant},
-    *,
-};
+use creusot_contracts::{invariant::inv, *};
 
 mod common;
 use common::Iterator;
@@ -13,8 +10,6 @@ pub struct Skip<I: Iterator> {
     iter: I,
     n: usize,
 }
-
-impl<I: Iterator> Invariant for Skip<I> {}
 
 impl<I> Iterator for Skip<I>
 where

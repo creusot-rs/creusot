@@ -1,4 +1,6 @@
 #![feature(unboxed_closures)]
+#![allow(incomplete_features)]
+#![feature(specialization)]
 extern crate creusot_contracts;
 
 use creusot_contracts::{
@@ -9,16 +11,13 @@ use creusot_contracts::{
 mod common;
 use common::Iterator;
 
-// FIXME: make it Map<I, A, F> again
-pub struct Map<A, I: Iterator<Item = A>, B, F: FnMut(I::Item, Ghost<Seq<A>>) -> B> {
+pub struct Map<I: Iterator, A, F> {
     iter: I,
     func: F,
     produced: Ghost<Seq<A>>,
 }
 
-impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
-    for Map<I::Item, I, B, F>
-{
+impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator for Map<I, I::Item, F> {
     type Item = B;
 
     #[open]
@@ -84,7 +83,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
     }
 }
 
-impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I::Item, I, B, F> {
+impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item, F> {
     #[predicate]
     fn next_precondition(#[creusot::open_inv] self) -> bool {
         pearlite! {
@@ -98,7 +97,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I::Item, I
     #[creusot::open_inv]
     fn reinitialize() -> bool {
         pearlite! {
-            forall<reset : &mut Map<I::Item, I, B, F>>
+            forall<reset : &mut Map<I, _, F>>
                 inv((*reset).iter) ==>
                 reset.completed() ==>
                 inv((^reset).iter) ==>
@@ -155,9 +154,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I::Item, I
     }
 }
 
-impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Invariant
-    for Map<I::Item, I, B, F>
-{
+impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Invariant for Map<I, I::Item, F> {
     // Should not quantify over self or the `invariant` cannot be made into a type invariant
     #[predicate]
     #[open(self)]
@@ -171,13 +168,13 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Invariant
 }
 
 #[requires(forall<e : I::Item, i2 : I> iter.produces(Seq::singleton(e), i2) ==> func.precondition((e, Ghost::new(Seq::EMPTY))))]
-#[requires(Map::<I::Item, I, B, F>::reinitialize())]
-#[requires(Map::<I::Item, I, B, F>::preservation(iter, func))]
+#[requires(Map::<I, I::Item, F>::reinitialize())]
+#[requires(Map::<I, I::Item, F>::preservation(iter, func))]
 #[ensures(result == Map { iter, func, produced: Ghost::new(Seq::EMPTY) })]
 pub fn map<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B>(
     iter: I,
     func: F,
-) -> Map<I::Item, I, B, F> {
+) -> Map<I, I::Item, F> {
     Map { iter, func, produced: ghost! {Seq::EMPTY} }
 }
 
@@ -198,7 +195,7 @@ pub fn increment<I: Iterator<Item = u32>>(iter: I) {
     );
 
     proof_assert! {
-        forall<prod : _, fin: Map<_, _, _, _>> i.produces(prod, fin) ==>
+        forall<prod : _, fin: Map<_, _, _>> i.produces(prod, fin) ==>
             forall<x : _> 0 <= x && x < prod.len() ==> prod[x] <= 11u32
     };
 }

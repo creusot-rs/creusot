@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::{invariant::Invariant, *};
+use creusot_contracts::*;
 
 mod common;
 use common::Iterator;
@@ -47,5 +47,3 @@ impl<A: Clone> Iterator for Repeat<A> {
         Some(self.element.clone())
     }
 }
-
-impl<A: Clone> Invariant for Repeat<A> {}

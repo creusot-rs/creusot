@@ -1,4 +1,6 @@
 #![feature(unboxed_closures)]
+#![allow(incomplete_features)]
+#![feature(specialization)]
 extern crate creusot_contracts;
 
 use creusot_contracts::{
@@ -9,15 +11,14 @@ use creusot_contracts::{
 mod common;
 use common::Iterator;
 
-// FIXME: make it Map<I, F> again
-pub struct Map<I: Iterator, B, F: FnMut(I::Item) -> B> {
+pub struct Map<I: Iterator, F> {
     // The inner iterator
     iter: I,
     // The mapper
     func: F,
 }
 
-impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, B, F> {
+impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
     type Item = B;
 
     #[open]
@@ -74,7 +75,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, B, F> {
     }
 }
 
-impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
+impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
     #[predicate]
     fn next_precondition(#[creusot::open_inv] self) -> bool {
         pearlite! {
@@ -86,7 +87,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
     #[creusot::open_inv]
     fn reinitialize() -> bool {
         pearlite! {
-            forall<reset : &mut Map<I, B, F>> inv((^reset).iter) ==>
+            forall<reset : &mut Map<I, F>> inv((^reset).iter) ==>
                 reset.completed() ==> (^reset).next_precondition() && Self::preservation((^reset).iter, (^reset).func)
         }
     }
@@ -138,7 +139,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
     }
 }
 
-impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, B, F> {
+impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, F> {
     // Should not quantify over self or the `invariant` cannot be made into a type invariant
     #[predicate]
     #[open(self)]
@@ -152,9 +153,9 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, B, F> {
 }
 
 #[requires(forall<e : I::Item, i2 : I> iter.produces(Seq::singleton(e), i2) ==> func.precondition((e,)))]
-#[requires(Map::<I, B, F>::reinitialize())]
-#[requires(Map::<I, B, F>::preservation(iter, func))]
+#[requires(Map::<I, F>::reinitialize())]
+#[requires(Map::<I, F>::preservation(iter, func))]
 #[ensures(result == Map { iter, func })]
-pub fn map<I: Iterator, B, F: FnMut(I::Item) -> B>(iter: I, func: F) -> Map<I, B, F> {
+pub fn map<I: Iterator, B, F: FnMut(I::Item) -> B>(iter: I, func: F) -> Map<I, F> {
     Map { iter, func }
 }

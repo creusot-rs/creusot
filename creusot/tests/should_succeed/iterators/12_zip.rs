@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::{invariant::Invariant, logic::Seq, *};
+use creusot_contracts::{logic::Seq, *};
 
 mod common;
 use common::Iterator;
@@ -54,5 +54,3 @@ impl<I: Iterator, J: Iterator> Iterator for Zip<I, J> {
         }
     }
 }
-
-impl<I: Iterator, J: Iterator> Invariant for Zip<I, J> {}
