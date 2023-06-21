@@ -124,15 +124,8 @@ impl<'tcx> Ty<'tcx> {
     pub(super) fn try_new(
         ty: ty::Ty<'tcx>,
         home: Home<Region<'tcx>>,
-        span: Span,
+        _span: Span,
     ) -> CreusotResult<Self> {
-        let mut ty = ty;
-        if home.is_ref {
-            if ty.ref_mutability() != Some(Mutability::Not) {
-                return Err(Error::new(span, format!("{ty} isn't a shared reference")));
-            }
-            ty = ty.peel_refs()
-        }
         Ok(Ty { ty, home: home.data })
     }
 }
@@ -227,7 +220,7 @@ impl<'tcx> PreCtx<'tcx> {
     }
 
     pub(super) fn map_parsed_home(&mut self, home: Home) -> Home<Region<'tcx>> {
-        Home { data: self.home_to_region(home.data), is_ref: home.is_ref }
+        Home { data: self.home_to_region(home.data) }
     }
 
     /// Fixes an external region by converting it into a singleton set
@@ -305,7 +298,7 @@ impl<'tcx> Ctx<'tcx> {
     }
 
     pub(super) fn curr_home(&self) -> Home {
-        Home { data: self.curr_sym, is_ref: false }
+        self.curr_sym.into()
     }
 
     fn region_index_to_name(&self, idx: u32) -> Symbol {

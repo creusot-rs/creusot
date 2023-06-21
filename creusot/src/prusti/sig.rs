@@ -7,6 +7,7 @@ use crate::{
     },
     util,
 };
+use itertools::Either;
 use rustc_ast::MetaItemLit as Lit;
 use rustc_middle::ty::{Binder, FnSig, Region, TyCtxt};
 use rustc_span::{def_id::DefId, symbol::Ident, Span, Symbol, DUMMY_SP};
@@ -118,14 +119,18 @@ pub(crate) fn full_signature_logic<'a, 'tcx, T: FromIterator<(Symbol, Ty<'tcx>)>
     let sig = ctx.fix_regions(sig);
 
     let ts = make_time_slice_logic(ts, &mut ctx)?;
-
-    let (arg_homes, ret_home) = parsing::parse_home_sig_lit(home_sig)?;
-    if arg_homes.len() != sig.inputs().len() {
-        return Err(Error::new(home_sig.span, "number of args doesn't match signature"));
-    }
-    let ret_home = ctx.map_parsed_home(ret_home);
     let args = ctx.tcx.fn_arg_names(ctx.owner_id);
-    let arg_homes = arg_homes.into_iter().map(|h| ctx.map_parsed_home(h));
+    let (arg_homes, ret_home) = match parsing::parse_home_sig_lit(home_sig)? {
+        Some((arg_homes, _)) if arg_homes.len() != sig.inputs().len() => {
+            return Err(Error::new(home_sig.span, "number of args doesn't match signature"));
+        }
+        Some((arg_homes, ret_home)) => {
+            let ret_home = ctx.map_parsed_home(ret_home);
+            let arg_homes = arg_homes.into_iter().map(|h| ctx.map_parsed_home(h));
+            (Either::Left(arg_homes), ret_home)
+        }
+        None => (Either::Right(iter::repeat(ctx.curr_region().into())), ctx.curr_region().into()),
+    };
 
     let (arg_tys, res_ty) = add_homes_to_sig(args, sig, arg_homes, ret_home, home_sig.span)?;
     let arg_tys = arg_tys.map(|(k, v)| v.map(|v| (k, v))).collect::<CreusotResult<T>>()?;

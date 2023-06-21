@@ -10,15 +10,11 @@ fn skip_space(rest: &mut &str) {
 #[derive(Copy, Clone, Debug)]
 pub(super) struct Home<T = Symbol> {
     pub data: T,
-    pub is_ref: bool,
 }
 
 pub(super) type HomeSig = (Vec<Home>, Home);
 
 fn parse_home(rest: &mut &str, counter: &mut u32) -> Option<Home> {
-    let has_r = rest.strip_prefix("r");
-    *rest = has_r.unwrap_or(*rest);
-    let has_r = has_r.is_some();
     skip_space(rest);
     let after = rest.strip_prefix("'")?;
     let idx = after
@@ -33,7 +29,7 @@ fn parse_home(rest: &mut &str, counter: &mut u32) -> Option<Home> {
         }
         other => Symbol::intern(other),
     };
-    let home = Home { data: home, is_ref: has_r };
+    let home = Home { data: home };
     *rest = &rest[idx..];
     Some(home)
 }
@@ -79,15 +75,20 @@ fn parse_home_sig(rest: &mut &str) -> Option<HomeSig> {
     }
 }
 
-pub(super) fn parse_home_sig_lit(sig: &Lit) -> CreusotResult<(Vec<Home>, Home)> {
+pub(super) fn parse_home_sig_lit(sig: &Lit) -> CreusotResult<Option<(Vec<Home>, Home)>> {
     let s = sig.as_token_lit().symbol;
     let mut s = s.as_str();
-    parse_home_sig(&mut s)
-        .ok_or_else(|| Error::new(sig.span, format!("invalid home signature, reached \"{s}\"")))
+    if s.is_empty() {
+        return Ok(None);
+    }
+    match parse_home_sig(&mut s) {
+        None => Err(Error::new(sig.span, format!("invalid home signature, reached \"{s}\""))),
+        Some(h) => Ok(Some(h)),
+    }
 }
 
 impl<T> From<T> for Home<T> {
     fn from(data: T) -> Self {
-        Home { data, is_ref: false }
+        Home { data }
     }
 }

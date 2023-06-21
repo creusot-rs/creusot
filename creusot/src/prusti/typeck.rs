@@ -36,7 +36,7 @@ use std::{iter, ops::ControlFlow};
 fn home_sig(ctx: &Ctx<'_>, def_id: DefId) -> CreusotResult<Option<HomeSig>> {
     let home_sig = util::get_attr_lit(ctx.tcx, def_id, &["creusot", "prusti", "home_sig"]);
     match home_sig {
-        Some(home_sig) => Ok(Some(parse_home_sig_lit(home_sig)?)),
+        Some(home_sig) => Ok(parse_home_sig_lit(home_sig)?),
         None => Ok(None),
     }
 }
@@ -71,7 +71,6 @@ impl<'tcx> SubstMap<'tcx> {
         infcx: &InferCtxt<'tcx>,
     ) -> Ty<'tcx> {
         let origin = RegionVariableOrigin::MiscVariable(DUMMY_SP);
-        let ty_gen = if home.is_ref { ty_gen.peel_refs() } else { ty_gen };
         let home_gen = *self.0.entry(home.data).or_insert_with(|| infcx.next_region_var(origin));
         Ty { home: home_gen, ty: ty_gen }
     }
