@@ -278,7 +278,7 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
 
     let axiom = if args.is_empty() { condition } else { Exp::Forall(args, Box::new(condition)) };
 
-    Axiom { name: format!("{}_spec", &*sig.name).into(), axiom }
+    Axiom { name: format!("{}_spec", &*sig.name).into(), rewrite: false, axiom }
 }
 
 fn function_call(sig: &Signature) -> Exp {
@@ -309,7 +309,7 @@ fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {
 
     let axiom = if args.is_empty() { condition } else { Exp::Forall(args, Box::new(condition)) };
 
-    Axiom { name: "def".into(), axiom }
+    Axiom { name: "def".into(), rewrite: false, axiom }
 }
 
 pub(crate) fn impl_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {

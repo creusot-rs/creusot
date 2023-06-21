@@ -289,6 +289,7 @@ pub struct Use {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Axiom {
     pub name: Ident,
+    pub rewrite: bool,
     pub axiom: Exp,
 }
 
