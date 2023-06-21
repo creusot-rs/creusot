@@ -11,7 +11,7 @@ use rustc_span::{Symbol, DUMMY_SP};
 use why3::{
     declaration::{Axiom, Decl, Module, TyDecl},
     exp::{Exp, Pattern},
-    Ident,
+    Ident, QName,
 };
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
@@ -245,9 +245,27 @@ fn build_inv_exp_struct<'tcx>(
             Some(Exp::Let { pattern, arg: Box::new(Exp::pure_var(ident)), body: Box::new(body) })
         }
         TyKind::Adt(adt_def, adt_subst) if adt_def.is_box() => {
-            build_inv_exp(ctx, names, ident, adt_subst[0].expect_ty(), param_env, mode)
+            build_inv_exp(ctx, names, ident, adt_subst.type_at(0), param_env, mode)
         }
-        TyKind::Adt(adt_def, _) if util::get_builtin(ctx.tcx, adt_def.did()).is_some() => None,
+        TyKind::Adt(adt_def, adt_subst) if util::get_builtin(ctx.tcx, adt_def.did()).is_some() => {
+            match util::get_builtin(ctx.tcx, adt_def.did()).unwrap().as_str() {
+                "prelude.Ghost.ghost_ty" => {
+                    let mut inv = build_inv_exp(
+                        ctx,
+                        names,
+                        "a".into(),
+                        adt_subst.type_at(0),
+                        param_env,
+                        mode,
+                    )?;
+                    let inner = Exp::pure_qvar(QName::from_string("Ghost.inner").unwrap())
+                        .app_to(Exp::pure_var(ident));
+                    inv.subst(&[("a".into(), inner)].into());
+                    Some(inv)
+                }
+                _ => None,
+            }
+        }
         TyKind::Adt(adt_def, subst) if mode == Mode::Axiom => {
             build_inv_exp_adt(ctx, names, ident, param_env, *adt_def, subst)
         }
