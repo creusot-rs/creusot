@@ -1,19 +1,23 @@
 #![feature(unboxed_closures)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{invariant::Invariant, *};
+use creusot_contracts::{
+    invariant::{inv, Invariant},
+    *,
+};
 
 mod common;
 use common::Iterator;
 
-pub struct Map<I, F> {
+// FIXME: make it Map<I, F> again
+pub struct Map<I: Iterator, B, F: FnMut(I::Item) -> B> {
     // The inner iterator
     iter: I,
     // The mapper
     func: F,
 }
 
-impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
+impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, B, F> {
     type Item = B;
 
     #[open]
@@ -56,7 +60,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
       None => self.completed(),
       Some(v) => (*self).produces_one(v, ^self)
     })]
-    #[maintains((mut self).invariant())]
+    #[maintains(inv(mut self))]
     fn next(&mut self) -> Option<Self::Item> {
         match self.iter.next() {
             Some(v) => {
@@ -70,7 +74,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
     }
 }
 
-impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
+impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
     #[predicate]
     fn next_precondition(#[creusot::open_inv] self) -> bool {
         pearlite! {
@@ -82,7 +86,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
     #[creusot::open_inv]
     fn reinitialize() -> bool {
         pearlite! {
-            forall<reset : &mut Map<I, F>> (^reset).iter.invariant() ==>
+            forall<reset : &mut Map<I, B, F>> inv((^reset).iter) ==>
                 reset.completed() ==> (^reset).next_precondition() && Self::preservation((^reset).iter, (^reset).func)
         }
     }
@@ -114,8 +118,8 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
 
     #[logic]
     #[requires(self.produces_one(e, other))]
-    #[requires(other.iter.invariant())]
-    #[ensures(other.invariant())]
+    #[requires(inv(other.iter))]
+    #[ensures(inv(other))]
     fn produces_one_invariant(self, e: B, #[creusot::open_inv] other: Self) {}
 
     #[predicate]
@@ -134,7 +138,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
     }
 }
 
-impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, F> {
+impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, B, F> {
     // Should not quantify over self or the `invariant` cannot be made into a type invariant
     #[predicate]
     #[open(self)]
@@ -142,16 +146,15 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, F> {
         pearlite! {
             Self::reinitialize() &&
             self.preservation_inv() &&
-            self.iter.invariant() &&
             self.next_precondition()
         }
     }
 }
 
 #[requires(forall<e : I::Item, i2 : I> iter.produces(Seq::singleton(e), i2) ==> func.precondition((e,)))]
-#[requires(Map::<I, F>::reinitialize())]
-#[requires(Map::<I, F>::preservation(iter, func))]
+#[requires(Map::<I, B, F>::reinitialize())]
+#[requires(Map::<I, B, F>::preservation(iter, func))]
 #[ensures(result == Map { iter, func })]
-pub fn map<I: Iterator, B, F: FnMut(I::Item) -> B>(iter: I, func: F) -> Map<I, F> {
+pub fn map<I: Iterator, B, F: FnMut(I::Item) -> B>(iter: I, func: F) -> Map<I, B, F> {
     Map { iter, func }
 }

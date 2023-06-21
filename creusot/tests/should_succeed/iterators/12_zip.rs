@@ -5,7 +5,7 @@ use creusot_contracts::{invariant::Invariant, logic::Seq, *};
 mod common;
 use common::Iterator;
 
-struct Zip<I, J> {
+struct Zip<I: Iterator, J: Iterator> {
     iter1: I,
     iter2: J,
 }
@@ -55,10 +55,4 @@ impl<I: Iterator, J: Iterator> Iterator for Zip<I, J> {
     }
 }
 
-impl<I: Iterator, J: Iterator> Invariant for Zip<I, J> {
-    #[open]
-    #[predicate]
-    fn invariant(self) -> bool {
-        self.iter1.invariant() && self.iter2.invariant()
-    }
-}
+impl<I: Iterator, J: Iterator> Invariant for Zip<I, J> {}
