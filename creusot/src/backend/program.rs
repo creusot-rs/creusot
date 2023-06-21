@@ -675,6 +675,18 @@ impl<'tcx> Statement<'tcx> {
                 vec![mlcfg::Statement::Invariant(lower_pure(ctx, names, inv))]
             }
             Statement::Variant(var) => vec![mlcfg::Statement::Variant(lower_pure(ctx, names, var))],
+            Statement::AssumeTyInv(ty, pl) => {
+                let inv_fun = Exp::impure_qvar(names.ty_inv(ty));
+                let arg = Exp::Final(Box::new(pl.as_rplace(ctx, names, locals)));
+
+                vec![mlcfg::Statement::Assume(inv_fun.app_to(arg))]
+            }
+            Statement::AssertTyInv(ty, pl) => {
+                let inv_fun = Exp::impure_qvar(names.ty_inv(ty));
+                let arg = pl.as_rplace(ctx, names, locals);
+
+                vec![mlcfg::Statement::Assert(inv_fun.app_to(arg))]
+            }
         }
     }
 }

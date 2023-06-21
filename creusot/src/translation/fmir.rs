@@ -43,6 +43,8 @@ pub enum Statement<'tcx> {
     Assertion { cond: Term<'tcx>, msg: String },
     Invariant(Term<'tcx>),
     Variant(Term<'tcx>),
+    AssumeTyInv(Ty<'tcx>, Place<'tcx>),
+    AssertTyInv(Ty<'tcx>, Place<'tcx>),
 }
 
 // Re-organize this completely

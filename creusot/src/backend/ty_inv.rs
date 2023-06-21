@@ -229,14 +229,18 @@ fn build_inv_exp_struct<'tcx>(
             build_inv_exp(ctx, names, ident, *ty, param_env, mode)
         }
         TyKind::Ref(_, ty, Mutability::Mut) => {
-            let mut body = build_inv_exp(ctx, names, "a".into(), *ty, param_env, mode)?;
-
-            // TODO include final value
+            let inv = build_inv_exp(ctx, names, "a".into(), *ty, param_env, mode)?;
             names.import_prelude_module(PreludeModule::Borrow);
-            let deref = Exp::Current(Box::new(Exp::pure_var(ident)));
 
-            body.subst(&[("a".into(), deref)].into());
-            Some(body)
+            let mut inv_cur = inv.clone();
+            let cur = Exp::Current(Box::new(Exp::pure_var(ident.clone())));
+            inv_cur.subst(&[("a".into(), cur)].into());
+
+            let mut inv_fin = inv;
+            let fin = Exp::Final(Box::new(Exp::pure_var(ident)));
+            inv_fin.subst(&[("a".into(), fin)].into());
+
+            Some(inv_cur.log_and(inv_fin))
         }
         TyKind::Tuple(tys) => {
             let fields: Vec<Ident> =
