@@ -1,12 +1,14 @@
 #![cfg_attr(
     creusot,
-    feature(unsized_locals, fn_traits, min_specialization),
+    feature(unsized_locals, fn_traits),
     allow(incomplete_features),
     feature(slice_take),
     feature(print_internals, fmt_internals, fmt_helpers_for_derive)
 )]
 #![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns))]
 #![feature(step_trait, allocator_api, unboxed_closures, tuple_trait, strict_provenance)]
+#![allow(incomplete_features)]
+#![feature(specialization)]
 #![cfg_attr(not(creusot), feature(rustc_attrs))]
 
 extern crate self as creusot_contracts;

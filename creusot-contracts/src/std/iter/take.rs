@@ -1,4 +1,4 @@
-use crate::{invariant::Invariant, std::iter::Take, *};
+use crate::{std::iter::Take, *};
 
 pub trait TakeExt<I> {
     #[logic]
@@ -46,8 +46,6 @@ impl<I> Resolve for Take<I> {
         }
     }
 }
-
-impl<I> Invariant for Take<I> {}
 
 impl<I: Iterator> Iterator for Take<I> {
     #[open]

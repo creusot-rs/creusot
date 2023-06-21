@@ -213,8 +213,6 @@ impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
     }
 }
 
-impl<T, A: Allocator> Invariant for std::vec::IntoIter<T, A> {}
-
 impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     #[predicate]
     #[open]

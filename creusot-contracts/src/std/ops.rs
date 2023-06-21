@@ -1,4 +1,4 @@
-use crate::{invariant::Invariant, *};
+use crate::*;
 use ::std::marker::Tuple;
 pub use ::std::ops::*;
 
@@ -170,10 +170,6 @@ extern_spec! {
         }
     }
 }
-
-impl<Idx> Invariant for Range<Idx> {}
-
-impl<Idx> Invariant for RangeInclusive<Idx> {}
 
 pub trait RangeInclusiveExt<Idx> {
     #[logic]

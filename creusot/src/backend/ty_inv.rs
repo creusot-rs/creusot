@@ -336,6 +336,7 @@ fn resolve_user_inv<'tcx>(
     param_env: ParamEnv<'tcx>,
 ) -> Option<(DefId, SubstsRef<'tcx>)> {
     let trait_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user"))?;
+    let default_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user_default"))?;
 
     let (impl_did, subst) = traits::resolve_assoc_item_opt(
         tcx,
@@ -346,7 +347,7 @@ fn resolve_user_inv<'tcx>(
     let subst = tcx.try_normalize_erasing_regions(param_env, subst).unwrap_or(subst);
 
     // if inv resolved to the default impl and is not specializable, ignore
-    if impl_did == trait_did && !traits::still_specializable(tcx, param_env, impl_did, subst) {
+    if impl_did == default_did && !traits::still_specializable(tcx, param_env, impl_did, subst) {
         None
     } else {
         Some((impl_did, subst))

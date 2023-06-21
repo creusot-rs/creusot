@@ -1,4 +1,4 @@
-use crate::{invariant::Invariant, std::iter::Once, *};
+use crate::{std::iter::Once, *};
 
 impl<T> ShallowModel for Once<T> {
     type ShallowModelTy = Option<T>;
@@ -10,8 +10,6 @@ impl<T> ShallowModel for Once<T> {
         pearlite! { absurd }
     }
 }
-
-impl<T> Invariant for Once<T> {}
 
 impl<T> Iterator for Once<T> {
     #[open]

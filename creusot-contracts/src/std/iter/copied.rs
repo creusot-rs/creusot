@@ -1,4 +1,4 @@
-use crate::{invariant::Invariant, std::iter::Copied, *};
+use crate::{std::iter::Copied, *};
 
 pub trait CopiedExt<I> {
     #[logic]
@@ -24,8 +24,6 @@ impl<I> Resolve for Copied<I> {
         }
     }
 }
-
-impl<I: Iterator> Invariant for Copied<I> {}
 
 impl<'a, I, T: 'a> Iterator for Copied<I>
 where
