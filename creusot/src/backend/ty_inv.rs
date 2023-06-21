@@ -168,12 +168,13 @@ fn build_inv_axiom<'tcx>(
         build_inv_exp(ctx.tcx, names, "self".into(), ty, param_env, Mode::Axiom)
             .unwrap_or_else(|| Exp::mk_true())
     };
+    let trivial = rhs.is_true();
 
     let axiom = Exp::Forall(
         vec![("self".into(), translate_ty(ctx, names, DUMMY_SP, ty))],
         Box::new(lhs.eq(rhs)),
     );
-    Axiom { name, axiom }
+    Axiom { name, rewrite: !trivial, axiom }
 }
 
 fn build_inv_exp<'tcx>(
