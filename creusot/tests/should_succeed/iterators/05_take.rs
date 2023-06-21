@@ -6,7 +6,7 @@ use creusot_contracts::{invariant::Invariant, *};
 mod common;
 use common::Iterator;
 
-pub struct Take<I> {
+pub struct Take<I: Iterator> {
     iter: I,
     n: usize,
 }
@@ -60,15 +60,4 @@ where
     }
 }
 
-impl<I> Invariant for Take<I>
-where
-    I: Iterator,
-{
-    #[open]
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! {
-            self.iter.invariant()
-        }
-    }
-}
+impl<I: Iterator> Invariant for Take<I> {}
