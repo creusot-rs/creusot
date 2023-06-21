@@ -14,25 +14,25 @@ module Generated_Sum10_Type
       | C_Sum10 _ a -> a
       end
 end
-module Generated_Impl0_UserInv_Stub
+module Generated_Impl0_Invariant_Stub
   use Generated_Sum10_Type as Generated_Sum10_Type
-  predicate user_inv [#"../generated.rs" 11 4 11 29] (self : Generated_Sum10_Type.t_sum10)
+  predicate invariant' [#"../generated.rs" 12 4 12 30] (self : Generated_Sum10_Type.t_sum10)
 end
-module Generated_Impl0_UserInv_Interface
+module Generated_Impl0_Invariant_Interface
   use Generated_Sum10_Type as Generated_Sum10_Type
-  predicate user_inv [#"../generated.rs" 11 4 11 29] (self : Generated_Sum10_Type.t_sum10)
-  val user_inv [#"../generated.rs" 11 4 11 29] (self : Generated_Sum10_Type.t_sum10) : bool
-    ensures { result = user_inv self }
+  predicate invariant' [#"../generated.rs" 12 4 12 30] (self : Generated_Sum10_Type.t_sum10)
+  val invariant' [#"../generated.rs" 12 4 12 30] (self : Generated_Sum10_Type.t_sum10) : bool
+    ensures { result = invariant' self }
     
 end
-module Generated_Impl0_UserInv
+module Generated_Impl0_Invariant
   use prelude.Int32
   use prelude.Int
   use Generated_Sum10_Type as Generated_Sum10_Type
-  predicate user_inv [#"../generated.rs" 11 4 11 29] (self : Generated_Sum10_Type.t_sum10) =
-    [#"../generated.rs" 12 20 12 43] Int32.to_int (Generated_Sum10_Type.sum10_0 self) + Int32.to_int (Generated_Sum10_Type.sum10_1 self) = 10
-  val user_inv [#"../generated.rs" 11 4 11 29] (self : Generated_Sum10_Type.t_sum10) : bool
-    ensures { result = user_inv self }
+  predicate invariant' [#"../generated.rs" 12 4 12 30] (self : Generated_Sum10_Type.t_sum10) =
+    [#"../generated.rs" 13 20 13 43] Int32.to_int (Generated_Sum10_Type.sum10_0 self) + Int32.to_int (Generated_Sum10_Type.sum10_1 self) = 10
+  val invariant' [#"../generated.rs" 12 4 12 30] (self : Generated_Sum10_Type.t_sum10) : bool
+    ensures { result = invariant' self }
     
 end
 module CreusotContracts_Invariant_Inv_Stub
@@ -49,7 +49,7 @@ end
 module CreusotContracts_Invariant_Inv
   type t
   predicate inv (_x : t) =
-    [#"../../../../../creusot-contracts/src/invariant.rs" 28 4 28 8] true
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
   val inv (_x : t) : bool
     ensures { result = inv _x }
     
@@ -63,96 +63,32 @@ module Generated_Foo_Type
     | C_A (borrowed (Generated_Sum10_Type.t_sum10)) usize
     | C_B 't
     
-end
-module CreusotContracts_Invariant_UserInv_UserInv_Stub
-  type self
-  predicate user_inv (self : self)
-end
-module CreusotContracts_Invariant_UserInv_UserInv_Interface
-  type self
-  predicate user_inv (self : self)
-  val user_inv (self : self) : bool
-    ensures { result = user_inv self }
-    
-end
-module CreusotContracts_Invariant_UserInv_UserInv
-  type self
-  predicate user_inv (self : self)
-  val user_inv (self : self) : bool
-    ensures { result = user_inv self }
-    
+  let function a_f1 (self : t_foo 't) : borrowed (Generated_Sum10_Type.t_sum10) = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_A a _ -> a
+      | C_B _ -> any borrowed (Generated_Sum10_Type.t_sum10)
+      end
 end
 module Generated_Foo_Type_Inv
   type t
   use prelude.Borrow
   use Generated_Sum10_Type as Generated_Sum10_Type
-  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
-    type t = t
   use Generated_Foo_Type as Generated_Foo_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = borrowed (Generated_Sum10_Type.t_sum10)
-  clone CreusotContracts_Invariant_UserInv_UserInv_Stub as UserInv0 with
-    type self = Generated_Foo_Type.t_foo t
+    type t = Generated_Sum10_Type.t_sum10
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = Generated_Foo_Type.t_foo t
-  axiom inv_t_foo : forall self : Generated_Foo_Type.t_foo t . Inv0.inv self = (UserInv0.user_inv self /\ match (self) with
-    | Generated_Foo_Type.C_A f1 _ -> Inv1.inv f1
-    | Generated_Foo_Type.C_B a_0 -> Inv2.inv a_0
-    end)
-end
-module CreusotContracts_Invariant_Impl0_UserInv_Stub
-  type t
-  predicate user_inv (self : t)
-end
-module CreusotContracts_Invariant_Impl0_UserInv_Interface
-  type t
-  predicate user_inv (self : t)
-  val user_inv (self : t) : bool
-    ensures { result = user_inv self }
-    
-end
-module CreusotContracts_Invariant_Impl0_UserInv
-  type t
-  predicate user_inv (self : t) =
-    [#"../../../../../creusot-contracts/src/invariant.rs" 43 8 43 12] true
-  val user_inv (self : t) : bool
-    ensures { result = user_inv self }
-    
-end
-module TyInv_Borrow
-  type t
-  use prelude.Borrow
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = t
-  clone CreusotContracts_Invariant_UserInv_UserInv_Stub as UserInv0 with
-    type self = borrowed t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = borrowed t
-  axiom inv_borrow : forall self : borrowed t . Inv0.inv self = (UserInv0.user_inv self /\ (let a =  * self in Inv1.inv a))
-end
-module TyInv_Tuple2
-  type t0
-  type t1
-  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
-    type t = t1
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = t0
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = (t0, t1)
-  axiom inv_tuple2 : forall self : (t0, t1) . Inv0.inv self = (let (a_0, a_1) = self in Inv1.inv a_0 /\ Inv2.inv a_1)
+  axiom inv_t_foo [@rewrite] : forall self : Generated_Foo_Type.t_foo t . Inv0.inv self = match (self) with
+    | Generated_Foo_Type.C_A f1 _ -> Inv1.inv ( * Generated_Foo_Type.a_f1 self)
+    | Generated_Foo_Type.C_B _ -> true
+    end
 end
 module Generated_Sum10_Type_Inv
   use Generated_Sum10_Type as Generated_Sum10_Type
-  clone Generated_Impl0_UserInv_Stub as UserInv0
+  clone Generated_Impl0_Invariant_Stub as Invariant0
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = Generated_Sum10_Type.t_sum10
-  axiom inv_t_sum10 : forall self : Generated_Sum10_Type.t_sum10 . Inv0.inv self = UserInv0.user_inv self
-end
-module TyInv_Trivial
-  type t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = t
-  axiom inv_trivial : forall self : t . Inv0.inv self = true
+  axiom inv_t_sum10 [@rewrite] : forall self : Generated_Sum10_Type.t_sum10 . Inv0.inv self = Invariant0.invariant' self
 end
 module Generated_UseFoo_Interface
   use prelude.Int
@@ -162,72 +98,34 @@ module Generated_UseFoo_Interface
   use Generated_Foo_Type as Generated_Foo_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = Generated_Foo_Type.t_foo (Generated_Foo_Type.t_foo uint32, borrowed (Generated_Sum10_Type.t_sum10))
-  val use_foo [#"../generated.rs" 22 0 22 61] (x : Generated_Foo_Type.t_foo (Generated_Foo_Type.t_foo uint32, borrowed (Generated_Sum10_Type.t_sum10))) : ()
-    requires {[#"../generated.rs" 21 11 21 28] Inv0.inv x}
+  val use_foo [#"../generated.rs" 23 0 23 61] (x : Generated_Foo_Type.t_foo (Generated_Foo_Type.t_foo uint32, borrowed (Generated_Sum10_Type.t_sum10))) : ()
+    requires {[#"../generated.rs" 22 11 22 28] Inv0.inv x}
+    requires {[#"../generated.rs" 23 19 23 20] Inv0.inv x}
     
 end
 module Generated_UseFoo
   use prelude.Int
   use prelude.UInt32
   use prelude.Borrow
-  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
-    type t = uint32
-  clone TyInv_Trivial as TyInv_Trivial0 with
-    type t = uint32,
-    predicate Inv0.inv = Inv5.inv,
-    axiom .
-  use Generated_Foo_Type as Generated_Foo_Type
-  clone CreusotContracts_Invariant_Impl0_UserInv as UserInv3 with
-    type t = Generated_Foo_Type.t_foo uint32
   use Generated_Sum10_Type as Generated_Sum10_Type
-  clone Generated_Impl0_UserInv as UserInv2
+  clone Generated_Impl0_Invariant as Invariant0
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
-    type t = borrowed (Generated_Sum10_Type.t_sum10)
-  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
-    type t = Generated_Foo_Type.t_foo uint32
-  clone Generated_Foo_Type_Inv as Generated_Foo_Type_Inv1 with
-    type t = uint32,
-    predicate Inv0.inv = Inv4.inv,
-    predicate UserInv0.user_inv = UserInv3.user_inv,
-    predicate Inv1.inv = Inv1.inv,
-    predicate Inv2.inv = Inv5.inv,
-    axiom .
-  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
     type t = Generated_Sum10_Type.t_sum10
   clone Generated_Sum10_Type_Inv as Generated_Sum10_Type_Inv0 with
-    predicate Inv0.inv = Inv3.inv,
-    predicate UserInv0.user_inv = UserInv2.user_inv,
-    axiom .
-  clone CreusotContracts_Invariant_Impl0_UserInv as UserInv1 with
-    type t = borrowed (Generated_Sum10_Type.t_sum10)
-  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
-    type t = (Generated_Foo_Type.t_foo uint32, borrowed (Generated_Sum10_Type.t_sum10))
-  clone TyInv_Tuple2 as TyInv_Tuple20 with
-    type t0 = Generated_Foo_Type.t_foo uint32,
-    type t1 = borrowed (Generated_Sum10_Type.t_sum10),
-    predicate Inv0.inv = Inv2.inv,
-    predicate Inv1.inv = Inv4.inv,
-    predicate Inv2.inv = Inv1.inv,
-    axiom .
-  clone TyInv_Borrow as TyInv_Borrow0 with
-    type t = Generated_Sum10_Type.t_sum10,
     predicate Inv0.inv = Inv1.inv,
-    predicate UserInv0.user_inv = UserInv1.user_inv,
-    predicate Inv1.inv = Inv3.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
     axiom .
-  clone CreusotContracts_Invariant_Impl0_UserInv as UserInv0 with
-    type t = Generated_Foo_Type.t_foo (Generated_Foo_Type.t_foo uint32, borrowed (Generated_Sum10_Type.t_sum10))
+  use Generated_Foo_Type as Generated_Foo_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = Generated_Foo_Type.t_foo (Generated_Foo_Type.t_foo uint32, borrowed (Generated_Sum10_Type.t_sum10))
   clone Generated_Foo_Type_Inv as Generated_Foo_Type_Inv0 with
     type t = (Generated_Foo_Type.t_foo uint32, borrowed (Generated_Sum10_Type.t_sum10)),
     predicate Inv0.inv = Inv0.inv,
-    predicate UserInv0.user_inv = UserInv0.user_inv,
     predicate Inv1.inv = Inv1.inv,
-    predicate Inv2.inv = Inv2.inv,
     axiom .
-  let rec cfg use_foo [#"../generated.rs" 22 0 22 61] [@cfg:stackify] [@cfg:subregion_analysis] (x : Generated_Foo_Type.t_foo (Generated_Foo_Type.t_foo uint32, borrowed (Generated_Sum10_Type.t_sum10))) : ()
-    requires {[#"../generated.rs" 21 11 21 28] Inv0.inv x}
+  let rec cfg use_foo [#"../generated.rs" 23 0 23 61] [@cfg:stackify] [@cfg:subregion_analysis] (x : Generated_Foo_Type.t_foo (Generated_Foo_Type.t_foo uint32, borrowed (Generated_Sum10_Type.t_sum10))) : ()
+    requires {[#"../generated.rs" 22 11 22 28] Inv0.inv x}
+    requires {[#"../generated.rs" 23 19 23 20] Inv0.inv x}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -236,7 +134,7 @@ module Generated_UseFoo
     goto BB0
   }
   BB0 {
-    assert { [@expl:assertion] [#"../generated.rs" 23 18 23 35] Inv0.inv x };
+    assert { [@expl:assertion] [#"../generated.rs" 24 18 24 35] Inv0.inv x };
     _0 <- ();
     return _0
   }
