@@ -352,12 +352,29 @@ impl<'a, 'tcx> Display for DisplayRegion<'a, 'tcx> {
     }
 }
 
-pub(crate) fn prepare_display<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(t: T, ctx: &Ctx<'tcx>) -> T {
-    let tcx = ctx.tcx;
-    let to_display = |r: Region<'tcx>| {
-        let dr = DisplayRegion(r, ctx);
-        let sym = Symbol::intern(&format!("{dr}",));
-        dummy_region(tcx, sym)
-    };
-    t.fold_with(&mut RegionReplacer { f: to_display, tcx })
+pub(super) fn make_region_for_display<'tcx>(r: Region<'tcx>, ctx: &Ctx<'tcx>) -> Region<'tcx> {
+    let dr = DisplayRegion(r, ctx);
+    let sym = Symbol::intern(&format!("{dr}",));
+    dummy_region(ctx.tcx, sym)
+}
+
+pub(crate) struct DisplayFoldable<'a, 'tcx, T>(T, pub &'a Ctx<'tcx>);
+
+impl<'a, 'tcx, T: Copy + TypeFoldable<TyCtxt<'tcx>> + Display> Display
+    for DisplayFoldable<'a, 'tcx, T>
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let tcx = self.1.tcx;
+        let res = self
+            .0
+            .fold_with(&mut RegionReplacer { f: |r| make_region_for_display(r, self.1), tcx });
+        Display::fmt(&res, f)
+    }
+}
+
+pub(crate) fn prepare_display<'a, 'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
+    t: T,
+    ctx: &'a Ctx<'tcx>,
+) -> DisplayFoldable<'a, 'tcx, T> {
+    DisplayFoldable(t, ctx)
 }

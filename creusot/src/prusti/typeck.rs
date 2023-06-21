@@ -236,12 +236,12 @@ pub(crate) fn check_call<'tcx>(
                     let ty = span_map[&span];
                     assert_eq!(ty.home, reg);
                     check_move_ts(ts, ctx, ty, span).map_err(|e|
-                        e.add_msg(format_args!("\ncaused by function call")))
+                        e.add_msg(format_args!("\nrequired by function call")))
                 },
                 Some(x) => {
                     let found = prepare_display(x.found, ctx);
                     let replacer = |r: Region<'tcx>| match r.kind() {
-                        RegionKind::ReVar(vid2) if vid2 == vid => prepare_display(ts, ctx),
+                        RegionKind::ReVar(vid2) if vid2 == vid => make_region_for_display(ts, ctx),
                         _ => r
                     };
                     let reg = DisplayRegion(reg, ctx);
@@ -324,7 +324,7 @@ pub(crate) fn check_sup<'tcx>(
             } else {
                 match origin_types(&origin) {
                     None => check_move_ts(reg2, ctx, actual, span).map_err(|e|
-                    e.add_msg(format_args!("\ncaused by return type mismatch"))),
+                    e.add_msg(format_args!("\nrequired by return type"))),
                     Some(t) => {
                         let (reg1, reg2) = (DisplayRegion(reg1, ctx), DisplayRegion(reg2, ctx));
                         let expected = prepare_display(t.expected, ctx);
@@ -374,19 +374,22 @@ fn check_move_ts<'tcx>(
     ty: Ty<'tcx>,
     span: Span,
 ) -> CreusotResult<()> {
+    let dty = prepare_display(ty, ctx);
+    let dts = prepare_display(ts, ctx);
     if ty.has_home_at_ts(ts) {
         Ok(())
     } else if !ty.ty.is_copy_modulo_regions(ctx.tcx, ctx.param_env()) {
-        let ty = prepare_display(ty, ctx);
-        let ts = prepare_display(ts, ctx);
-        Err(Error::new(span, format!("{ty} cannot be moved to {ts} since it isn't copy")))
+        Err(Error::new(span, format!("{dty} cannot be moved to {dts} since it isn't copy")))
     } else if let ControlFlow::Break(r) =
         ty.ty.visit_with(&mut AllRegionsOutliveCheck { ctx, ts: ts.into() })
     {
-        let ty = prepare_display(ty, ctx);
-        let ts = prepare_display(ts, ctx);
         let r = prepare_display(r, ctx);
-        Err(Error::new(span, format!("{ty} cannot be moved to {ts} since it doesn't live long enough\n{r} doesn't outlive {ts}")))
+        Err(Error::new(span, format!("{dty} cannot be moved to {dts} since it doesn't live long enough\n{r} doesn't outlive {dts}")))
+    } else if !ctx.relation.outlives(ts.into(), ty.home.into()) {
+        Err(Error::new(
+            span,
+            format!("{dty} cannot be moved to {dts} since it didn't exist at that point"),
+        ))
     } else {
         Ok(())
     }
@@ -465,7 +468,7 @@ pub(crate) fn mk_ref<'tcx>(
     span: Span,
 ) -> CreusotResult<Ty<'tcx>> {
     check_move_ts(ts, ctx, ty, span)
-        .map_err(|e| e.add_msg(format_args!("\ncaused by creating reference")))?;
+        .map_err(|e| e.add_msg(format_args!("\nrequired by creating reference")))?;
     Ok(Ty::make_ref(lft, ty, ctx.tcx))
 }
 
