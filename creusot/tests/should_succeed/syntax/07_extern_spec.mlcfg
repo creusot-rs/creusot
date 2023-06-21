@@ -18,6 +18,41 @@ module C07ExternSpec_Impl0_Func
   }
   
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 40 4 40 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module TyInv_Tuple0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = ()
+  axiom inv_tuple0 : forall self : () . Inv0.inv self = true
+end
 module C07ExternSpec_Impl0
-  
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = ()
+  clone TyInv_Tuple0 as TyInv_Tuple01 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone TyInv_Tuple0 as TyInv_Tuple00 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = ()
+  goal func_refn : [#"../07_extern_spec.rs" 11 4 11 34] forall self : () . forall rhs : () . Inv0.inv rhs /\ Inv0.inv self -> (forall result : bool . true)
 end

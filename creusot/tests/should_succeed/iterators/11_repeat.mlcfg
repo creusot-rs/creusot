@@ -63,12 +63,98 @@ module C11Repeat_Impl0_Produces
     ensures { result = produces self visited o }
     
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 40 4 40 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Invariant_Invariant_Stub
+  type self
+  predicate invariant' (self : self)
+end
+module CreusotContracts_Invariant_Invariant_Invariant_Interface
+  type self
+  predicate invariant' (self : self)
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
+module CreusotContracts_Invariant_Invariant_Invariant
+  type self
+  predicate invariant' (self : self)
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
+module C11Repeat_Repeat_Type_Inv
+  type a
+  use C11Repeat_Repeat_Type as C11Repeat_Repeat_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = a
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = C11Repeat_Repeat_Type.t_repeat a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = C11Repeat_Repeat_Type.t_repeat a
+  axiom inv_t_repeat [@rewrite] : forall self : C11Repeat_Repeat_Type.t_repeat a . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv (C11Repeat_Repeat_Type.repeat_element self))
+end
+module CreusotContracts_Invariant_Invariant_IsInhabited_Stub
+  type self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
+  function is_inhabited (_1 : ()) : bool
+end
+module CreusotContracts_Invariant_Invariant_IsInhabited_Interface
+  type self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
+  function is_inhabited (_1 : ()) : bool
+  val is_inhabited (_1 : ()) : bool
+    ensures { [#"../../../../../creusot-contracts/src/invariant.rs" 9 4 9 45] exists x : self . Inv0.inv x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../../creusot-contracts/src/invariant.rs" 10 14 10 20] result }
+    ensures { result = is_inhabited _1 }
+    
+  axiom is_inhabited_spec : forall _1 : () . ([#"../../../../../creusot-contracts/src/invariant.rs" 10 14 10 20] is_inhabited _1) && ([#"../../../../../creusot-contracts/src/invariant.rs" 9 4 9 45] exists x : self . Inv0.inv x /\ Invariant0.invariant' x)
+end
+module CreusotContracts_Invariant_Invariant_IsInhabited
+  type self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
+  function is_inhabited (_1 : ()) : bool
+  val is_inhabited (_1 : ()) : bool
+    ensures { [#"../../../../../creusot-contracts/src/invariant.rs" 9 4 9 45] exists x : self . Inv0.inv x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../../creusot-contracts/src/invariant.rs" 10 14 10 20] result }
+    ensures { result = is_inhabited _1 }
+    
+  axiom is_inhabited_spec : forall _1 : () . ([#"../../../../../creusot-contracts/src/invariant.rs" 10 14 10 20] is_inhabited _1) && ([#"../../../../../creusot-contracts/src/invariant.rs" 9 4 9 45] exists x : self . Inv0.inv x /\ Invariant0.invariant' x)
+end
 module C11Repeat_Impl0_ProducesRefl_Stub
   type a
   use seq.Seq
   use C11Repeat_Repeat_Type as C11Repeat_Repeat_Type
   clone C11Repeat_Impl0_Produces_Stub as Produces0 with
     type a = a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = C11Repeat_Repeat_Type.t_repeat a
   function produces_refl [#"../11_repeat.rs" 33 4 33 29] (a : C11Repeat_Repeat_Type.t_repeat a) : ()
 end
 module C11Repeat_Impl0_ProducesRefl_Interface
@@ -77,12 +163,15 @@ module C11Repeat_Impl0_ProducesRefl_Interface
   use C11Repeat_Repeat_Type as C11Repeat_Repeat_Type
   clone C11Repeat_Impl0_Produces_Stub as Produces0 with
     type a = a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = C11Repeat_Repeat_Type.t_repeat a
   function produces_refl [#"../11_repeat.rs" 33 4 33 29] (a : C11Repeat_Repeat_Type.t_repeat a) : ()
   val produces_refl [#"../11_repeat.rs" 33 4 33 29] (a : C11Repeat_Repeat_Type.t_repeat a) : ()
+    requires {[#"../11_repeat.rs" 33 21 33 22] Inv0.inv a}
     ensures { [#"../11_repeat.rs" 32 14 32 39] Produces0.produces a (Seq.empty ) a }
     ensures { result = produces_refl a }
     
-  axiom produces_refl_spec : forall a : C11Repeat_Repeat_Type.t_repeat a . [#"../11_repeat.rs" 32 14 32 39] Produces0.produces a (Seq.empty ) a
+  axiom produces_refl_spec : forall a : C11Repeat_Repeat_Type.t_repeat a . ([#"../11_repeat.rs" 33 21 33 22] Inv0.inv a) -> ([#"../11_repeat.rs" 32 14 32 39] Produces0.produces a (Seq.empty ) a)
 end
 module C11Repeat_Impl0_ProducesRefl
   type a
@@ -90,30 +179,66 @@ module C11Repeat_Impl0_ProducesRefl
   use C11Repeat_Repeat_Type as C11Repeat_Repeat_Type
   clone C11Repeat_Impl0_Produces_Stub as Produces0 with
     type a = a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = C11Repeat_Repeat_Type.t_repeat a
   function produces_refl [#"../11_repeat.rs" 33 4 33 29] (a : C11Repeat_Repeat_Type.t_repeat a) : () =
     [#"../11_repeat.rs" 30 4 30 10] ()
   val produces_refl [#"../11_repeat.rs" 33 4 33 29] (a : C11Repeat_Repeat_Type.t_repeat a) : ()
+    requires {[#"../11_repeat.rs" 33 21 33 22] Inv0.inv a}
     ensures { [#"../11_repeat.rs" 32 14 32 39] Produces0.produces a (Seq.empty ) a }
     ensures { result = produces_refl a }
     
-  axiom produces_refl_spec : forall a : C11Repeat_Repeat_Type.t_repeat a . [#"../11_repeat.rs" 32 14 32 39] Produces0.produces a (Seq.empty ) a
+  axiom produces_refl_spec : forall a : C11Repeat_Repeat_Type.t_repeat a . ([#"../11_repeat.rs" 33 21 33 22] Inv0.inv a) -> ([#"../11_repeat.rs" 32 14 32 39] Produces0.produces a (Seq.empty ) a)
 end
 module C11Repeat_Impl0_ProducesRefl_Impl
   type a
   use seq.Seq
   use C11Repeat_Repeat_Type as C11Repeat_Repeat_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant0 with
+    type self = C11Repeat_Repeat_Type.t_repeat a
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = C11Repeat_Repeat_Type.t_repeat a
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited0 with
+    type self = C11Repeat_Repeat_Type.t_repeat a,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = a
+  clone C11Repeat_Repeat_Type_Inv as C11Repeat_Repeat_Type_Inv0 with
+    type a = a,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Inv1.inv = Inv1.inv,
+    axiom .
   clone C11Repeat_Impl0_Produces as Produces0 with
     type a = a
   let rec ghost function produces_refl [#"../11_repeat.rs" 33 4 33 29] (a : C11Repeat_Repeat_Type.t_repeat a) : ()
+    requires {[#"../11_repeat.rs" 33 21 33 22] Inv0.inv a}
     ensures { [#"../11_repeat.rs" 32 14 32 39] Produces0.produces a (Seq.empty ) a }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../11_repeat.rs" 30 4 30 10] ()
 end
+module CreusotContracts_Logic_Seq_Seq_Type_Inv
+  type t
+  use seq.Seq
+  use seq.Seq
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Seq.seq t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Seq.seq t
+  axiom inv_t_seq [@rewrite] : forall self : Seq.seq t . Inv0.inv self = Invariant0.invariant' self
+end
 module C11Repeat_Impl0_ProducesTrans_Stub
   type a
   use seq.Seq
+  use seq.Seq
   use C11Repeat_Repeat_Type as C11Repeat_Repeat_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = C11Repeat_Repeat_Type.t_repeat a
   clone C11Repeat_Impl0_Produces_Stub as Produces0 with
     type a = a
   function produces_trans [#"../11_repeat.rs" 40 4 40 90] (a : C11Repeat_Repeat_Type.t_repeat a) (ab : Seq.seq a) (b : C11Repeat_Repeat_Type.t_repeat a) (bc : Seq.seq a) (c : C11Repeat_Repeat_Type.t_repeat a) : ()
@@ -122,7 +247,12 @@ end
 module C11Repeat_Impl0_ProducesTrans_Interface
   type a
   use seq.Seq
+  use seq.Seq
   use C11Repeat_Repeat_Type as C11Repeat_Repeat_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = C11Repeat_Repeat_Type.t_repeat a
   clone C11Repeat_Impl0_Produces_Stub as Produces0 with
     type a = a
   function produces_trans [#"../11_repeat.rs" 40 4 40 90] (a : C11Repeat_Repeat_Type.t_repeat a) (ab : Seq.seq a) (b : C11Repeat_Repeat_Type.t_repeat a) (bc : Seq.seq a) (c : C11Repeat_Repeat_Type.t_repeat a) : ()
@@ -130,15 +260,25 @@ module C11Repeat_Impl0_ProducesTrans_Interface
   val produces_trans [#"../11_repeat.rs" 40 4 40 90] (a : C11Repeat_Repeat_Type.t_repeat a) (ab : Seq.seq a) (b : C11Repeat_Repeat_Type.t_repeat a) (bc : Seq.seq a) (c : C11Repeat_Repeat_Type.t_repeat a) : ()
     requires {[#"../11_repeat.rs" 37 15 37 32] Produces0.produces a ab b}
     requires {[#"../11_repeat.rs" 38 15 38 32] Produces0.produces b bc c}
+    requires {[#"../11_repeat.rs" 40 22 40 23] Inv0.inv a}
+    requires {[#"../11_repeat.rs" 40 31 40 33] Inv1.inv ab}
+    requires {[#"../11_repeat.rs" 40 52 40 53] Inv0.inv b}
+    requires {[#"../11_repeat.rs" 40 61 40 63] Inv1.inv bc}
+    requires {[#"../11_repeat.rs" 40 82 40 83] Inv0.inv c}
     ensures { [#"../11_repeat.rs" 39 14 39 42] Produces0.produces a (Seq.(++) ab bc) c }
     ensures { result = produces_trans a ab b bc c }
     
-  axiom produces_trans_spec : forall a : C11Repeat_Repeat_Type.t_repeat a, ab : Seq.seq a, b : C11Repeat_Repeat_Type.t_repeat a, bc : Seq.seq a, c : C11Repeat_Repeat_Type.t_repeat a . ([#"../11_repeat.rs" 37 15 37 32] Produces0.produces a ab b) -> ([#"../11_repeat.rs" 38 15 38 32] Produces0.produces b bc c) -> ([#"../11_repeat.rs" 39 14 39 42] Produces0.produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : C11Repeat_Repeat_Type.t_repeat a, ab : Seq.seq a, b : C11Repeat_Repeat_Type.t_repeat a, bc : Seq.seq a, c : C11Repeat_Repeat_Type.t_repeat a . ([#"../11_repeat.rs" 37 15 37 32] Produces0.produces a ab b) -> ([#"../11_repeat.rs" 38 15 38 32] Produces0.produces b bc c) -> ([#"../11_repeat.rs" 40 22 40 23] Inv0.inv a) -> ([#"../11_repeat.rs" 40 31 40 33] Inv1.inv ab) -> ([#"../11_repeat.rs" 40 52 40 53] Inv0.inv b) -> ([#"../11_repeat.rs" 40 61 40 63] Inv1.inv bc) -> ([#"../11_repeat.rs" 40 82 40 83] Inv0.inv c) -> ([#"../11_repeat.rs" 39 14 39 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module C11Repeat_Impl0_ProducesTrans
   type a
   use seq.Seq
+  use seq.Seq
   use C11Repeat_Repeat_Type as C11Repeat_Repeat_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = C11Repeat_Repeat_Type.t_repeat a
   clone C11Repeat_Impl0_Produces_Stub as Produces0 with
     type a = a
   function produces_trans [#"../11_repeat.rs" 40 4 40 90] (a : C11Repeat_Repeat_Type.t_repeat a) (ab : Seq.seq a) (b : C11Repeat_Repeat_Type.t_repeat a) (bc : Seq.seq a) (c : C11Repeat_Repeat_Type.t_repeat a) : ()
@@ -148,20 +288,62 @@ module C11Repeat_Impl0_ProducesTrans
   val produces_trans [#"../11_repeat.rs" 40 4 40 90] (a : C11Repeat_Repeat_Type.t_repeat a) (ab : Seq.seq a) (b : C11Repeat_Repeat_Type.t_repeat a) (bc : Seq.seq a) (c : C11Repeat_Repeat_Type.t_repeat a) : ()
     requires {[#"../11_repeat.rs" 37 15 37 32] Produces0.produces a ab b}
     requires {[#"../11_repeat.rs" 38 15 38 32] Produces0.produces b bc c}
+    requires {[#"../11_repeat.rs" 40 22 40 23] Inv0.inv a}
+    requires {[#"../11_repeat.rs" 40 31 40 33] Inv1.inv ab}
+    requires {[#"../11_repeat.rs" 40 52 40 53] Inv0.inv b}
+    requires {[#"../11_repeat.rs" 40 61 40 63] Inv1.inv bc}
+    requires {[#"../11_repeat.rs" 40 82 40 83] Inv0.inv c}
     ensures { [#"../11_repeat.rs" 39 14 39 42] Produces0.produces a (Seq.(++) ab bc) c }
     ensures { result = produces_trans a ab b bc c }
     
-  axiom produces_trans_spec : forall a : C11Repeat_Repeat_Type.t_repeat a, ab : Seq.seq a, b : C11Repeat_Repeat_Type.t_repeat a, bc : Seq.seq a, c : C11Repeat_Repeat_Type.t_repeat a . ([#"../11_repeat.rs" 37 15 37 32] Produces0.produces a ab b) -> ([#"../11_repeat.rs" 38 15 38 32] Produces0.produces b bc c) -> ([#"../11_repeat.rs" 39 14 39 42] Produces0.produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : C11Repeat_Repeat_Type.t_repeat a, ab : Seq.seq a, b : C11Repeat_Repeat_Type.t_repeat a, bc : Seq.seq a, c : C11Repeat_Repeat_Type.t_repeat a . ([#"../11_repeat.rs" 37 15 37 32] Produces0.produces a ab b) -> ([#"../11_repeat.rs" 38 15 38 32] Produces0.produces b bc c) -> ([#"../11_repeat.rs" 40 22 40 23] Inv0.inv a) -> ([#"../11_repeat.rs" 40 31 40 33] Inv1.inv ab) -> ([#"../11_repeat.rs" 40 52 40 53] Inv0.inv b) -> ([#"../11_repeat.rs" 40 61 40 63] Inv1.inv bc) -> ([#"../11_repeat.rs" 40 82 40 83] Inv0.inv c) -> ([#"../11_repeat.rs" 39 14 39 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module C11Repeat_Impl0_ProducesTrans_Impl
   type a
   use seq.Seq
+  use seq.Seq
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant1 with
+    type self = Seq.seq a
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Seq.seq a
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited1 with
+    type self = Seq.seq a,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    axiom .
   use C11Repeat_Repeat_Type as C11Repeat_Repeat_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant0 with
+    type self = C11Repeat_Repeat_Type.t_repeat a
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = C11Repeat_Repeat_Type.t_repeat a
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited0 with
+    type self = C11Repeat_Repeat_Type.t_repeat a,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = a
+  clone CreusotContracts_Logic_Seq_Seq_Type_Inv as CreusotContracts_Logic_Seq_Seq_Type_Inv0 with
+    type t = a,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    axiom .
+  clone C11Repeat_Repeat_Type_Inv as C11Repeat_Repeat_Type_Inv0 with
+    type a = a,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Inv1.inv = Inv2.inv,
+    axiom .
   clone C11Repeat_Impl0_Produces as Produces0 with
     type a = a
   let rec ghost function produces_trans [#"../11_repeat.rs" 40 4 40 90] (a : C11Repeat_Repeat_Type.t_repeat a) (ab : Seq.seq a) (b : C11Repeat_Repeat_Type.t_repeat a) (bc : Seq.seq a) (c : C11Repeat_Repeat_Type.t_repeat a) : ()
     requires {[#"../11_repeat.rs" 37 15 37 32] Produces0.produces a ab b}
     requires {[#"../11_repeat.rs" 38 15 38 32] Produces0.produces b bc c}
+    requires {[#"../11_repeat.rs" 40 22 40 23] Inv0.inv a}
+    requires {[#"../11_repeat.rs" 40 31 40 33] Inv1.inv ab}
+    requires {[#"../11_repeat.rs" 40 52 40 53] Inv0.inv b}
+    requires {[#"../11_repeat.rs" 40 61 40 63] Inv1.inv bc}
+    requires {[#"../11_repeat.rs" 40 82 40 83] Inv0.inv c}
     ensures { [#"../11_repeat.rs" 39 14 39 42] Produces0.produces a (Seq.(++) ab bc) c }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -172,6 +354,11 @@ module Core_Option_Option_Type
     | C_None
     | C_Some 't
     
+  let function some_0 (self : t_option 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_None -> any 't
+      | C_Some a -> a
+      end
 end
 module CreusotContracts_Resolve_Impl1_Resolve_Stub
   type t
@@ -198,46 +385,150 @@ end
 module Core_Clone_Clone_Clone_Interface
   type self
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   val clone' (self : self) : self
+    requires {Inv0.inv self}
     ensures { [#"../../../../../creusot-contracts/src/std/clone.rs" 7 0 20 1] result = self }
+    ensures { Inv1.inv result }
     
+end
+module TyInv_Borrow
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = borrowed t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed t
+  axiom inv_borrow [@rewrite] : forall self : borrowed t . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv ( * self))
+end
+module Core_Option_Option_Type_Inv
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
+  axiom inv_t_option [@rewrite] : forall self : Core_Option_Option_Type.t_option t . Inv0.inv self = (Invariant0.invariant' self /\ match (self) with
+    | Core_Option_Option_Type.C_None -> true
+    | Core_Option_Option_Type.C_Some a_0 -> Inv1.inv (Core_Option_Option_Type.some_0 self)
+    end)
+end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
 end
 module C11Repeat_Impl0_Next_Interface
   type a
   use prelude.Borrow
   use seq.Seq
   use C11Repeat_Repeat_Type as C11Repeat_Repeat_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Core_Option_Option_Type.t_option a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = C11Repeat_Repeat_Type.t_repeat a
   clone C11Repeat_Impl0_Produces_Stub as Produces0 with
     type a = a
   clone C11Repeat_Impl0_Completed_Stub as Completed0 with
     type a = a
-  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed (C11Repeat_Repeat_Type.t_repeat a)
   val next [#"../11_repeat.rs" 46 4 46 35] (self : borrowed (C11Repeat_Repeat_Type.t_repeat a)) : Core_Option_Option_Type.t_option a
+    requires {[#"../11_repeat.rs" 46 17 46 21] Inv0.inv self}
     ensures { [#"../11_repeat.rs" 42 14 45 5] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
+    ensures { [#"../11_repeat.rs" 46 17 46 21] Inv1.inv ( ^ self) }
+    ensures { [#"../11_repeat.rs" 46 26 46 35] Inv2.inv result }
     
 end
 module C11Repeat_Impl0_Next
   type a
   use prelude.Borrow
   use seq.Seq
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant2 with
+    type self = Core_Option_Option_Type.t_option a
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option a
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited2 with
+    type self = Core_Option_Option_Type.t_option a,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    axiom .
   use C11Repeat_Repeat_Type as C11Repeat_Repeat_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant1 with
+    type self = C11Repeat_Repeat_Type.t_repeat a
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = C11Repeat_Repeat_Type.t_repeat a
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited1 with
+    type self = C11Repeat_Repeat_Type.t_repeat a,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant0 with
+    type self = borrowed (C11Repeat_Repeat_Type.t_repeat a)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = borrowed (C11Repeat_Repeat_Type.t_repeat a)
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited0 with
+    type self = borrowed (C11Repeat_Repeat_Type.t_repeat a),
+    predicate Inv0.inv = Inv0.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+    type t = a
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = a,
+    predicate Inv0.inv = Inv4.inv,
+    axiom .
+  clone Core_Option_Option_Type_Inv as Core_Option_Option_Type_Inv0 with
+    type t = a,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    predicate Inv1.inv = Inv4.inv,
+    axiom .
+  clone C11Repeat_Repeat_Type_Inv as C11Repeat_Repeat_Type_Inv0 with
+    type a = a,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Inv1.inv = Inv4.inv,
+    axiom .
+  clone TyInv_Borrow as TyInv_Borrow0 with
+    type t = C11Repeat_Repeat_Type.t_repeat a,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Inv1.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = a
   clone C11Repeat_Impl0_Produces as Produces0 with
     type a = a
   clone C11Repeat_Impl0_Completed as Completed0 with
     type a = a
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Clone_Clone_Clone_Interface as Clone0 with
-    type self = a
+    type self = a,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Inv1.inv = Inv4.inv
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = C11Repeat_Repeat_Type.t_repeat a
   let rec cfg next [#"../11_repeat.rs" 46 4 46 35] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (C11Repeat_Repeat_Type.t_repeat a)) : Core_Option_Option_Type.t_option a
+    requires {[#"../11_repeat.rs" 46 17 46 21] Inv0.inv self}
     ensures { [#"../11_repeat.rs" 42 14 45 5] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
+    ensures { [#"../11_repeat.rs" 46 17 46 21] Inv1.inv ( ^ self) }
+    ensures { [#"../11_repeat.rs" 46 26 46 35] Inv2.inv result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Option_Option_Type.t_option a;
@@ -258,41 +549,6 @@ module C11Repeat_Impl0_Next
   }
   
 end
-module CreusotContracts_Invariant_Inv_Stub
-  type t
-  predicate inv (_x : t)
-end
-module CreusotContracts_Invariant_Inv_Interface
-  type t
-  predicate inv (_x : t)
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
-module CreusotContracts_Invariant_Inv
-  type t
-  predicate inv (_x : t) =
-    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
-module C11Repeat_Repeat_Type_Inv
-  type a
-  use C11Repeat_Repeat_Type as C11Repeat_Repeat_Type
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = C11Repeat_Repeat_Type.t_repeat a
-  axiom inv_t_repeat : forall self : C11Repeat_Repeat_Type.t_repeat a . Inv0.inv self = true
-end
-module TyInv_Borrow
-  type t
-  use prelude.Borrow
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = borrowed t
-  axiom inv_borrow [@rewrite] : forall self : borrowed t . Inv0.inv self = Inv1.inv ( * self)
-end
 module C11Repeat_Common_Iterator_Item_Type
   type self
   type item
@@ -301,37 +557,67 @@ module C11Repeat_Impl0
   type a
   use seq.Seq
   use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant3 with
+    type self = Core_Option_Option_Type.t_option a
   use C11Repeat_Repeat_Type as C11Repeat_Repeat_Type
-  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
-    type t = C11Repeat_Repeat_Type.t_repeat a
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant2 with
+    type self = borrowed (C11Repeat_Repeat_Type.t_repeat a)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
+    type t = a
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant1 with
+    type self = C11Repeat_Repeat_Type.t_repeat a
+  use seq.Seq
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant0 with
+    type self = Seq.seq a
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+    type t = Core_Option_Option_Type.t_option a
+  clone Core_Option_Option_Type_Inv as Core_Option_Option_Type_Inv0 with
+    type t = a,
+    predicate Inv0.inv = Inv4.inv,
+    predicate Invariant0.invariant' = Invariant3.invariant',
+    predicate Inv1.inv = Inv6.inv,
+    axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = C11Repeat_Repeat_Type.t_repeat a
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
     type t = borrowed (C11Repeat_Repeat_Type.t_repeat a)
   clone TyInv_Borrow as TyInv_Borrow0 with
     type t = C11Repeat_Repeat_Type.t_repeat a,
-    predicate Inv0.inv = Inv1.inv,
-    predicate Inv1.inv = Inv0.inv,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    predicate Inv1.inv = Inv1.inv,
     axiom .
   clone C11Repeat_Repeat_Type_Inv as C11Repeat_Repeat_Type_Inv0 with
     type a = a,
-    predicate Inv0.inv = Inv0.inv,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Inv1.inv = Inv6.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Seq.seq a
+  clone CreusotContracts_Logic_Seq_Seq_Type_Inv as CreusotContracts_Logic_Seq_Seq_Type_Inv0 with
+    type t = a,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
     axiom .
   clone C11Repeat_Common_Iterator_Item_Type as Item0 with
     type self = C11Repeat_Repeat_Type.t_repeat a
-  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+    type t = Core_Option_Option_Type.t_option a
   clone C11Repeat_Impl0_Completed as Completed0 with
     type a = a
   clone C11Repeat_Impl0_Produces as Produces0 with
     type a = a
-  goal produces_trans_refn : [#"../11_repeat.rs" 40 4 40 90] forall a : C11Repeat_Repeat_Type.t_repeat a . forall ab : Seq.seq a . forall b : C11Repeat_Repeat_Type.t_repeat a . forall bc : Seq.seq a . forall c : C11Repeat_Repeat_Type.t_repeat a . Inv0.inv c /\ Inv0.inv b /\ Inv0.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Produces0.produces b bc c /\ Produces0.produces a ab b /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
-  goal produces_refl_refn : [#"../11_repeat.rs" 33 4 33 29] forall a : C11Repeat_Repeat_Type.t_repeat a . Inv0.inv a -> (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
-  goal next_refn : [#"../11_repeat.rs" 46 4 46 35] forall self : borrowed (C11Repeat_Repeat_Type.t_repeat a) . Inv1.inv self -> (forall result : Core_Option_Option_Type.t_option a . match (result) with
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Seq.seq a
+  goal produces_trans_refn : [#"../11_repeat.rs" 40 4 40 90] forall a : C11Repeat_Repeat_Type.t_repeat a . forall ab : Seq.seq a . forall b : C11Repeat_Repeat_Type.t_repeat a . forall bc : Seq.seq a . forall c : C11Repeat_Repeat_Type.t_repeat a . Inv0.inv bc /\ Inv0.inv ab /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Inv1.inv c /\ Inv2.inv bc /\ Inv1.inv b /\ Inv2.inv ab /\ Inv1.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
+  goal produces_refl_refn : [#"../11_repeat.rs" 33 4 33 29] forall a : C11Repeat_Repeat_Type.t_repeat a . Inv1.inv a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
+  goal next_refn : [#"../11_repeat.rs" 46 4 46 35] forall self : borrowed (C11Repeat_Repeat_Type.t_repeat a) . Inv3.inv self /\ (forall result : Core_Option_Option_Type.t_option a . Inv4.inv result /\ Inv1.inv ( ^ self) /\ match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
-    end -> Inv0.inv ( ^ self) /\ match (result) with
+    end -> Inv5.inv result /\ match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
     end)
-end
-module C11Repeat_Impl1
-  type a
 end

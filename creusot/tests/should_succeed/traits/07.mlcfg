@@ -76,6 +76,58 @@ module C07_Test2
   }
   
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 40 4 40 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
+module TyInv_Tuple0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = ()
+  axiom inv_tuple0 : forall self : () . Inv0.inv self = true
+end
 module C07_Impl0
-  
+  use prelude.Borrow
+  use prelude.Int
+  use prelude.Int32
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = int32
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = int32,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = ()
+  clone TyInv_Tuple0 as TyInv_Tuple00 with
+    predicate Inv0.inv = Inv3.inv,
+    axiom .
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = int32,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = ()
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = int32
+  goal ix_refn : [#"../07.rs" 11 4 11 36] forall self : int32 . Inv0.inv self -> (forall result : () . Inv1.inv result)
 end

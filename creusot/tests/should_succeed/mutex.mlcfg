@@ -23,8 +23,32 @@ module Mutex_Inv_Inv
     ensures { result = inv self x }
     
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 40 4 40 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module Mutex_MutexInner_Type
   type t_mutexinner 't
+  let function mutexinner_0 (self : t_mutexinner 't) : Std_Sync_Mutex_Mutex_Type.t_mutex 't
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_MutexInner a -> a
+      end
 end
 module Mutex_Mutex_Type
   use Mutex_MutexInner_Type as Mutex_MutexInner_Type
@@ -35,44 +59,79 @@ module Mutex_Mutex_Type
     match (self) with
       | C_Mutex _ a -> a
       end
+  let function mutex_0 (self : t_mutex 't 'i) : Mutex_MutexInner_Type.t_mutexinner 't = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Mutex a _ -> a
+      end
 end
 module Mutex_Impl0_New_Interface
   type t
   type i
   use Mutex_Mutex_Type as Mutex_Mutex_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = Mutex_Mutex_Type.t_mutex t i
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = i
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
   clone Mutex_Inv_Inv_Stub as Inv0 with
     type self = i,
     type t = t
   val new [#"../mutex.rs" 18 4 18 36] (val' : t) (i : i) : Mutex_Mutex_Type.t_mutex t i
     requires {[#"../mutex.rs" 17 15 17 25] Inv0.inv i val'}
+    requires {[#"../mutex.rs" 18 15 18 18] Inv1.inv val'}
+    requires {[#"../mutex.rs" 18 23 18 24] Inv2.inv i}
+    ensures { [#"../mutex.rs" 18 32 18 36] Inv3.inv result }
     
 end
 module Mutex_Impl0_IntoInner_Interface
   type t
   type i
-  clone Mutex_Inv_Inv_Stub as Inv0 with
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = t
+  clone Mutex_Inv_Inv_Stub as Inv1 with
     type self = i,
     type t = t
   use Mutex_Mutex_Type as Mutex_Mutex_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Mutex_Mutex_Type.t_mutex t i
   val into_inner [#"../mutex.rs" 24 4 24 32] (self : Mutex_Mutex_Type.t_mutex t i) : t
-    ensures { [#"../mutex.rs" 23 4 23 34] Inv0.inv (Mutex_Mutex_Type.mutex_1 self) result }
+    requires {[#"../mutex.rs" 24 22 24 26] Inv0.inv self}
+    ensures { [#"../mutex.rs" 23 4 23 34] Inv1.inv (Mutex_Mutex_Type.mutex_1 self) result }
+    ensures { [#"../mutex.rs" 24 31 24 32] Inv2.inv result }
     
 end
 module Mutex_Impl0_GetMut_Interface
   type t
   type i
   use prelude.Borrow
-  clone Mutex_Inv_Inv_Stub as Inv0 with
+  clone CreusotContracts_Invariant_Inv_Stub as Inv4 with
+    type t = borrowed t
+  use Mutex_Mutex_Type as Mutex_Mutex_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = Mutex_Mutex_Type.t_mutex t i
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = t
+  clone Mutex_Inv_Inv_Stub as Inv1 with
     type self = i,
     type t = t
-  use Mutex_Mutex_Type as Mutex_Mutex_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed (Mutex_Mutex_Type.t_mutex t i)
   val get_mut [#"../mutex.rs" 31 4 31 39] (self : borrowed (Mutex_Mutex_Type.t_mutex t i)) : borrowed t
-    ensures { [#"../mutex.rs" 29 4 29 38] Inv0.inv (Mutex_Mutex_Type.mutex_1 ( * self)) ( * result) }
-    ensures { [#"../mutex.rs" 30 4 30 53] forall v : t . Inv0.inv (Mutex_Mutex_Type.mutex_1 ( ^ self)) v = true }
+    requires {[#"../mutex.rs" 31 24 31 28] Inv0.inv self}
+    ensures { [#"../mutex.rs" 29 4 29 38] Inv1.inv (Mutex_Mutex_Type.mutex_1 ( * self)) ( * result) }
+    ensures { [#"../mutex.rs" 30 4 30 53] forall v : t . Inv2.inv v -> Inv1.inv (Mutex_Mutex_Type.mutex_1 ( ^ self)) v = true }
+    ensures { [#"../mutex.rs" 31 24 31 28] Inv3.inv ( ^ self) }
+    ensures { [#"../mutex.rs" 31 33 31 39] Inv4.inv result }
     
 end
 module Mutex_GuardInner_Type
   type t_guardinner 't
+  let function guardinner_0 (self : t_guardinner 't) : Std_Sync_Mutex_MutexGuard_Type.t_mutexguard 't
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_GuardInner a -> a
+      end
 end
 module Mutex_MutexGuard_Type
   use prelude.Ghost
@@ -84,6 +143,11 @@ module Mutex_MutexGuard_Type
     match (self) with
       | C_MutexGuard _ a -> a
       end
+  let function mutexguard_0 (self : t_mutexguard 't 'i) : Mutex_GuardInner_Type.t_guardinner 't
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_MutexGuard a _ -> a
+      end
 end
 module Mutex_Impl0_Lock_Interface
   type t
@@ -91,9 +155,15 @@ module Mutex_Impl0_Lock_Interface
   use prelude.Ghost
   use prelude.Borrow
   use Mutex_MutexGuard_Type as Mutex_MutexGuard_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Mutex_MutexGuard_Type.t_mutexguard t i
   use Mutex_Mutex_Type as Mutex_Mutex_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Mutex_Mutex_Type.t_mutex t i
   val lock [#"../mutex.rs" 37 4 37 46] (self : Mutex_Mutex_Type.t_mutex t i) : Mutex_MutexGuard_Type.t_mutexguard t i
+    requires {[#"../mutex.rs" 37 17 37 21] Inv0.inv self}
     ensures { [#"../mutex.rs" 36 14 36 33] Mutex_Mutex_Type.mutex_1 self = Ghost.inner (Mutex_MutexGuard_Type.mutexguard_1 result) }
+    ensures { [#"../mutex.rs" 37 26 37 46] Inv1.inv result }
     
 end
 module Mutex_Impl1_Deref_Interface
@@ -101,12 +171,18 @@ module Mutex_Impl1_Deref_Interface
   type i
   use prelude.Ghost
   use prelude.Borrow
-  clone Mutex_Inv_Inv_Stub as Inv0 with
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = t
+  clone Mutex_Inv_Inv_Stub as Inv1 with
     type self = i,
     type t = t
   use Mutex_MutexGuard_Type as Mutex_MutexGuard_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Mutex_MutexGuard_Type.t_mutexguard t i
   val deref [#"../mutex.rs" 50 4 50 25] (self : Mutex_MutexGuard_Type.t_mutexguard t i) : t
-    ensures { [#"../mutex.rs" 49 4 49 35] Inv0.inv (Ghost.inner (Mutex_MutexGuard_Type.mutexguard_1 self)) result }
+    requires {[#"../mutex.rs" 50 14 50 18] Inv0.inv self}
+    ensures { [#"../mutex.rs" 49 4 49 35] Inv1.inv (Ghost.inner (Mutex_MutexGuard_Type.mutexguard_1 self)) result }
+    ensures { [#"../mutex.rs" 50 23 50 25] Inv2.inv result }
     
 end
 module Mutex_Impl1_Set_Interface
@@ -114,12 +190,21 @@ module Mutex_Impl1_Set_Interface
   type i
   use prelude.Borrow
   use prelude.Ghost
+  use Mutex_MutexGuard_Type as Mutex_MutexGuard_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = Mutex_MutexGuard_Type.t_mutexguard t i
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = borrowed (Mutex_MutexGuard_Type.t_mutexguard t i)
   clone Mutex_Inv_Inv_Stub as Inv0 with
     type self = i,
     type t = t
-  use Mutex_MutexGuard_Type as Mutex_MutexGuard_Type
   val set [#"../mutex.rs" 56 4 56 27] (self : borrowed (Mutex_MutexGuard_Type.t_mutexguard t i)) (v : t) : ()
     requires {[#"../mutex.rs" 55 4 55 30] Inv0.inv (Ghost.inner (Mutex_MutexGuard_Type.mutexguard_1 ( * self))) v}
+    requires {[#"../mutex.rs" 56 16 56 20] Inv1.inv self}
+    requires {[#"../mutex.rs" 56 22 56 23] Inv2.inv v}
+    ensures { [#"../mutex.rs" 56 16 56 20] Inv3.inv ( ^ self) }
     
 end
 module Mutex_Even_Type
@@ -208,6 +293,225 @@ module Mutex_Impl3_Postcondition
     ensures { result = postcondition self _2 }
     
 end
+module CreusotContracts_Invariant_Invariant_Invariant_Stub
+  type self
+  predicate invariant' (self : self)
+end
+module CreusotContracts_Invariant_Invariant_Invariant_Interface
+  type self
+  predicate invariant' (self : self)
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
+module CreusotContracts_Invariant_Invariant_Invariant
+  type self
+  predicate invariant' (self : self)
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
+module Mutex_Mutex_Type_Inv
+  type t
+  type i
+  use Mutex_MutexInner_Type as Mutex_MutexInner_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = i
+  use Mutex_Mutex_Type as Mutex_Mutex_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Mutex_MutexInner_Type.t_mutexinner t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Mutex_Mutex_Type.t_mutex t i
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Mutex_Mutex_Type.t_mutex t i
+  axiom inv_t_mutex [@rewrite] : forall self : Mutex_Mutex_Type.t_mutex t i . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv (Mutex_Mutex_Type.mutex_0 self) /\ Inv2.inv (Mutex_Mutex_Type.mutex_1 self))
+end
+module Mutex_MutexGuard_Type_Inv
+  type t
+  type i
+  use Mutex_GuardInner_Type as Mutex_GuardInner_Type
+  use Mutex_MutexGuard_Type as Mutex_MutexGuard_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Mutex_GuardInner_Type.t_guardinner t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Mutex_MutexGuard_Type.t_mutexguard t i
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Mutex_MutexGuard_Type.t_mutexguard t i
+  axiom inv_t_mutexguard [@rewrite] : forall self : Mutex_MutexGuard_Type.t_mutexguard t i . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv (Mutex_MutexGuard_Type.mutexguard_0 self))
+end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
+module TyInv_Borrow
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = borrowed t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed t
+  axiom inv_borrow [@rewrite] : forall self : borrowed t . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv ( * self))
+end
+module CreusotContracts_Invariant_Impl0_Invariant_Stub
+  type t
+  predicate invariant' (self : t)
+end
+module CreusotContracts_Invariant_Impl0_Invariant_Interface
+  type t
+  predicate invariant' (self : t)
+  val invariant' (self : t) : bool
+    ensures { result = invariant' self }
+    
+end
+module CreusotContracts_Invariant_Impl0_Invariant
+  type t
+  predicate invariant' (self : t) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 21 8 21 12] true
+  val invariant' (self : t) : bool
+    ensures { result = invariant' self }
+    
+end
+module Core_Cell_UnsafeCell_Type
+  type t_unsafecell 't =
+    | C_UnsafeCell 't
+    
+end
+module Core_Sync_Atomic_AtomicU32_Type
+  use prelude.Int
+  use prelude.UInt32
+  use Core_Cell_UnsafeCell_Type as Core_Cell_UnsafeCell_Type
+  type t_atomicu32  =
+    | C_AtomicU32 (Core_Cell_UnsafeCell_Type.t_unsafecell uint32)
+    
+end
+module Std_Sys_Unix_Locks_FutexMutex_Mutex_Type
+  use Core_Sync_Atomic_AtomicU32_Type as Core_Sync_Atomic_AtomicU32_Type
+  type t_mutex  =
+    | C_Mutex (Core_Sync_Atomic_AtomicU32_Type.t_atomicu32)
+    
+end
+module Core_Sync_Atomic_AtomicBool_Type
+  use prelude.Int
+  use prelude.UInt8
+  use Core_Cell_UnsafeCell_Type as Core_Cell_UnsafeCell_Type
+  type t_atomicbool  =
+    | C_AtomicBool (Core_Cell_UnsafeCell_Type.t_unsafecell uint8)
+    
+end
+module Std_Sync_Poison_Flag_Type
+  use Core_Sync_Atomic_AtomicBool_Type as Core_Sync_Atomic_AtomicBool_Type
+  type t_flag  =
+    | C_Flag (Core_Sync_Atomic_AtomicBool_Type.t_atomicbool)
+    
+end
+module Std_Sync_Mutex_Mutex_Type
+  use Core_Cell_UnsafeCell_Type as Core_Cell_UnsafeCell_Type
+  use Std_Sync_Poison_Flag_Type as Std_Sync_Poison_Flag_Type
+  use Std_Sys_Unix_Locks_FutexMutex_Mutex_Type as Std_Sys_Unix_Locks_FutexMutex_Mutex_Type
+  type t_mutex 't =
+    | C_Mutex (Std_Sys_Unix_Locks_FutexMutex_Mutex_Type.t_mutex) (Std_Sync_Poison_Flag_Type.t_flag) (Core_Cell_UnsafeCell_Type.t_unsafecell 't)
+    
+end
+module Mutex_MutexInner_Type_Inv
+  type t
+  use Std_Sync_Mutex_Mutex_Type as Std_Sync_Mutex_Mutex_Type
+  use Mutex_MutexInner_Type as Mutex_MutexInner_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Std_Sync_Mutex_Mutex_Type.t_mutex t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Mutex_MutexInner_Type.t_mutexinner t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Mutex_MutexInner_Type.t_mutexinner t
+  axiom inv_t_mutexinner [@rewrite] : forall self : Mutex_MutexInner_Type.t_mutexinner t . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv (Mutex_MutexInner_Type.mutexinner_0 self))
+end
+module Mutex_Even_Type_Inv
+  use Mutex_Even_Type as Mutex_Even_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Mutex_Even_Type.t_even
+  axiom inv_t_even : forall self : Mutex_Even_Type.t_even . Inv0.inv self = true
+end
+module Std_Sync_Poison_Guard_Type
+  type t_guard  =
+    | C_Guard bool
+    
+end
+module Std_Sync_Mutex_MutexGuard_Type
+  use prelude.Borrow
+  use Std_Sync_Poison_Guard_Type as Std_Sync_Poison_Guard_Type
+  use Std_Sync_Mutex_Mutex_Type as Std_Sync_Mutex_Mutex_Type
+  type t_mutexguard 't =
+    | C_MutexGuard (Std_Sync_Mutex_Mutex_Type.t_mutex 't) (Std_Sync_Poison_Guard_Type.t_guard)
+    
+end
+module Mutex_GuardInner_Type_Inv
+  type t
+  use Std_Sync_Mutex_MutexGuard_Type as Std_Sync_Mutex_MutexGuard_Type
+  use Mutex_GuardInner_Type as Mutex_GuardInner_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Std_Sync_Mutex_MutexGuard_Type.t_mutexguard t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Mutex_GuardInner_Type.t_guardinner t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Mutex_GuardInner_Type.t_guardinner t
+  axiom inv_t_guardinner [@rewrite] : forall self : Mutex_GuardInner_Type.t_guardinner t . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv (Mutex_GuardInner_Type.guardinner_0 self))
+end
+module CreusotContracts_Invariant_Impl0_IsInhabited_Stub
+  type t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  function is_inhabited (_1 : ()) : bool
+end
+module CreusotContracts_Invariant_Impl0_IsInhabited_Interface
+  type t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  function is_inhabited (_1 : ()) : bool
+  val is_inhabited (_1 : ()) : bool
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] result }
+    ensures { result = is_inhabited _1 }
+    
+  axiom is_inhabited_spec : forall _1 : () . ([#"../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] is_inhabited _1) && ([#"../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x)
+end
+module CreusotContracts_Invariant_Impl0_IsInhabited
+  type t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  function is_inhabited (_1 : ()) : bool =
+    [#"../../../../creusot-contracts/src/invariant.rs" 32 8 32 12] true
+  val is_inhabited (_1 : ()) : bool
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] result }
+    ensures { result = is_inhabited _1 }
+    
+  axiom is_inhabited_spec : forall _1 : () . ([#"../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] is_inhabited _1) && ([#"../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x)
+end
+module Std_Sync_Mutex_Mutex_Type_Inv
+  type t
+  use Std_Sync_Mutex_Mutex_Type as Std_Sync_Mutex_Mutex_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Std_Sync_Mutex_Mutex_Type.t_mutex t
+  axiom inv_t_mutex : forall self : Std_Sync_Mutex_Mutex_Type.t_mutex t . Inv0.inv self = true
+end
+module Std_Sync_Mutex_MutexGuard_Type_Inv
+  type t
+  use Std_Sync_Mutex_MutexGuard_Type as Std_Sync_Mutex_MutexGuard_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Std_Sync_Mutex_MutexGuard_Type.t_mutexguard t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Std_Sync_Mutex_MutexGuard_Type.t_mutexguard t
+  axiom inv_t_mutexguard [@rewrite] : forall self : Std_Sync_Mutex_MutexGuard_Type.t_mutexguard t . Inv0.inv self = Invariant0.invariant' self
+end
 module Mutex_Impl3_Call_Interface
   use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
   val call [#"../mutex.rs" 100 4 100 23] (self : Mutex_AddsTwo_Type.t_addstwo) : ()
@@ -216,21 +520,166 @@ module Mutex_Impl3_Call
   use prelude.Int
   use prelude.UInt32
   use prelude.Borrow
+  use Std_Sync_Mutex_MutexGuard_Type as Std_Sync_Mutex_MutexGuard_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant5 with
+    type t = Std_Sync_Mutex_MutexGuard_Type.t_mutexguard uint32
+  clone CreusotContracts_Invariant_Inv_Interface as Inv12 with
+    type t = Std_Sync_Mutex_MutexGuard_Type.t_mutexguard uint32
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited5 with
+    type t = Std_Sync_Mutex_MutexGuard_Type.t_mutexguard uint32,
+    predicate Inv0.inv = Inv12.inv,
+    predicate Invariant0.invariant' = Invariant5.invariant',
+    axiom .
+  clone Std_Sync_Mutex_MutexGuard_Type_Inv as Std_Sync_Mutex_MutexGuard_Type_Inv0 with
+    type t = uint32,
+    predicate Inv0.inv = Inv12.inv,
+    predicate Invariant0.invariant' = Invariant5.invariant',
+    axiom .
+  use Mutex_GuardInner_Type as Mutex_GuardInner_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant4 with
+    type t = Mutex_GuardInner_Type.t_guardinner uint32
+  clone CreusotContracts_Invariant_Inv_Interface as Inv10 with
+    type t = Mutex_GuardInner_Type.t_guardinner uint32
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited4 with
+    type t = Mutex_GuardInner_Type.t_guardinner uint32,
+    predicate Inv0.inv = Inv10.inv,
+    predicate Invariant0.invariant' = Invariant4.invariant',
+    axiom .
+  use Std_Sync_Mutex_Mutex_Type as Std_Sync_Mutex_Mutex_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv11 with
+    type t = Std_Sync_Mutex_Mutex_Type.t_mutex uint32
+  clone Std_Sync_Mutex_Mutex_Type_Inv as Std_Sync_Mutex_Mutex_Type_Inv0 with
+    type t = uint32,
+    predicate Inv0.inv = Inv11.inv,
+    axiom .
+  use Mutex_MutexInner_Type as Mutex_MutexInner_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant3 with
+    type t = Mutex_MutexInner_Type.t_mutexinner uint32
+  clone CreusotContracts_Invariant_Inv_Interface as Inv8 with
+    type t = Mutex_MutexInner_Type.t_mutexinner uint32
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited3 with
+    type t = Mutex_MutexInner_Type.t_mutexinner uint32,
+    predicate Inv0.inv = Inv8.inv,
+    predicate Invariant0.invariant' = Invariant3.invariant',
+    axiom .
   use Mutex_Even_Type as Mutex_Even_Type
-  clone Mutex_Impl2_Inv as Inv0
-  use Mutex_Mutex_Type as Mutex_Mutex_Type
   use Mutex_MutexGuard_Type as Mutex_MutexGuard_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant2 with
+    type t = borrowed (Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even))
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+    type t = borrowed (Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even))
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited2 with
+    type t = borrowed (Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even)),
+    predicate Inv0.inv = Inv5.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    axiom .
+  clone Mutex_GuardInner_Type_Inv as Mutex_GuardInner_Type_Inv0 with
+    type t = uint32,
+    predicate Inv0.inv = Inv10.inv,
+    predicate Invariant0.invariant' = Invariant4.invariant',
+    predicate Inv1.inv = Inv12.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant1 with
+    type t = Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited1 with
+    type t = Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even),
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv9 with
+    type t = Mutex_Even_Type.t_even
+  clone Mutex_Even_Type_Inv as Mutex_Even_Type_Inv0 with
+    predicate Inv0.inv = Inv9.inv,
+    axiom .
+  clone Mutex_MutexInner_Type_Inv as Mutex_MutexInner_Type_Inv0 with
+    type t = uint32,
+    predicate Inv0.inv = Inv8.inv,
+    predicate Invariant0.invariant' = Invariant3.invariant',
+    predicate Inv1.inv = Inv11.inv,
+    axiom .
+  use Mutex_Mutex_Type as Mutex_Mutex_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant0 with
+    type t = Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv7 with
+    type t = Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited0 with
+    type t = Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even),
+    predicate Inv0.inv = Inv7.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  clone Mutex_Mutex_Type_Inv as Mutex_Mutex_Type_Inv1 with
+    type t = uint32,
+    type i = Mutex_Even_Type.t_even,
+    predicate Inv0.inv = Inv7.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Inv1.inv = Inv8.inv,
+    predicate Inv2.inv = Inv9.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
+    type t = uint32
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = uint32,
+    predicate Inv0.inv = Inv6.inv,
+    axiom .
+  clone TyInv_Borrow as TyInv_Borrow0 with
+    type t = Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even),
+    predicate Inv0.inv = Inv5.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    predicate Inv1.inv = Inv1.inv,
+    axiom .
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = uint32,
+    predicate Inv0.inv = Inv6.inv,
+    axiom .
+  clone Mutex_MutexGuard_Type_Inv as Mutex_MutexGuard_Type_Inv1 with
+    type t = uint32,
+    type i = Mutex_Even_Type.t_even,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Inv1.inv = Inv10.inv,
+    axiom .
+  clone Mutex_MutexGuard_Type_Inv as Mutex_MutexGuard_Type_Inv0 with
+    type t = uint32,
+    type i = Mutex_Even_Type.t_even,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Inv1.inv = Inv10.inv,
+    axiom .
+  clone Mutex_Mutex_Type_Inv as Mutex_Mutex_Type_Inv0 with
+    type t = uint32,
+    type i = Mutex_Even_Type.t_even,
+    predicate Inv0.inv = Inv7.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Inv1.inv = Inv8.inv,
+    predicate Inv2.inv = Inv9.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+    type t = uint32
+  clone Mutex_Impl2_Inv as Inv3
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even)
   clone Mutex_Impl1_Set_Interface as Set0 with
     type t = uint32,
     type i = Mutex_Even_Type.t_even,
-    predicate Inv0.inv = Inv0.inv
+    predicate Inv0.inv = Inv3.inv,
+    predicate Inv1.inv = Inv5.inv,
+    predicate Inv2.inv = Inv6.inv,
+    predicate Inv3.inv = Inv1.inv
   clone Mutex_Impl1_Deref_Interface as Deref0 with
     type t = uint32,
     type i = Mutex_Even_Type.t_even,
-    predicate Inv0.inv = Inv0.inv
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv3.inv,
+    predicate Inv2.inv = Inv4.inv
   clone Mutex_Impl0_Lock_Interface as Lock0 with
     type t = uint32,
-    type i = Mutex_Even_Type.t_even
+    type i = Mutex_Even_Type.t_even,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
   let rec cfg call [#"../mutex.rs" 100 4 100 23] [@cfg:stackify] [@cfg:subregion_analysis] (self : Mutex_AddsTwo_Type.t_addstwo) : ()
     
@@ -297,9 +746,24 @@ module Core_Result_Result_Type
     | C_Ok 't
     | C_Err 'e
     
+  let function ok_0 (self : t_result 't 'e) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Ok a -> a
+      | C_Err _ -> any 't
+      end
+  let function err_0 (self : t_result 't 'e) : 'e = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Ok _ -> any 'e
+      | C_Err a -> a
+      end
 end
 module Mutex_JoinHandleInner_Type
   type t_joinhandleinner 't
+  let function joinhandleinner_0 (self : t_joinhandleinner 't) : Std_Thread_JoinHandle_Type.t_joinhandle 't
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_JoinHandleInner a -> a
+      end
 end
 module Mutex_JoinHandle_Type
   use prelude.Ghost
@@ -311,21 +775,32 @@ module Mutex_JoinHandle_Type
     match (self) with
       | C_JoinHandle _ a -> a
       end
+  let function joinhandle_0 (self : t_joinhandle 't 'i) : Mutex_JoinHandleInner_Type.t_joinhandleinner 't
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_JoinHandle a _ -> a
+      end
 end
 module Mutex_Impl4_Join_Interface
   type t
   type i
   use prelude.Ghost
-  clone Mutex_Inv_Inv_Stub as Inv0 with
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Core_Result_Result_Type.t_result t ()
+  clone Mutex_Inv_Inv_Stub as Inv1 with
     type self = i,
     type t = t
   use Mutex_JoinHandle_Type as Mutex_JoinHandle_Type
-  use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Mutex_JoinHandle_Type.t_joinhandle t i
   val join [#"../mutex.rs" 121 4 121 34] (self : Mutex_JoinHandle_Type.t_joinhandle t i) : Core_Result_Result_Type.t_result t ()
+    requires {[#"../mutex.rs" 121 12 121 16] Inv0.inv self}
     ensures { [#"../mutex.rs" 117 14 120 5] match (result) with
-      | Core_Result_Result_Type.C_Ok v -> Inv0.inv (Ghost.inner (Mutex_JoinHandle_Type.joinhandle_1 self)) v
+      | Core_Result_Result_Type.C_Ok v -> Inv1.inv (Ghost.inner (Mutex_JoinHandle_Type.joinhandle_1 self)) v
       | _ -> true
       end }
+    ensures { [#"../mutex.rs" 121 21 121 34] Inv2.inv result }
     
 end
 module Mutex_FakeFnOnce_Precondition_Stub
@@ -360,10 +835,16 @@ module Mutex_Spawn_Interface
   type f
   use Mutex_SpawnPostCond_Type as Mutex_SpawnPostCond_Type
   use Mutex_JoinHandle_Type as Mutex_JoinHandle_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Mutex_JoinHandle_Type.t_joinhandle t (Mutex_SpawnPostCond_Type.t_spawnpostcond f)
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   clone Mutex_FakeFnOnce_Precondition_Stub as Precondition0 with
     type self = f
   val spawn [#"../mutex.rs" 131 0 133 36] (f : f) : Mutex_JoinHandle_Type.t_joinhandle t (Mutex_SpawnPostCond_Type.t_spawnpostcond f)
     requires {[#"../mutex.rs" 130 11 130 27] Precondition0.precondition f}
+    requires {[#"../mutex.rs" 132 4 132 5] Inv0.inv f}
+    ensures { [#"../mutex.rs" 133 5 133 36] Inv1.inv result }
     
 end
 module Mutex_FakeFnOnce_Return_Type
@@ -432,8 +913,14 @@ end
 module Mutex_Leak_Interface
   type t
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = borrowed t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
   val leak [#"../mutex.rs" 159 0 159 42] (b : t) : borrowed t
+    requires {[#"../mutex.rs" 159 19 159 20] Inv0.inv b}
     ensures { [#"../mutex.rs" 158 10 158 23]  * result = b }
+    ensures { [#"../mutex.rs" 159 33 159 42] Inv1.inv result }
     
 end
 module CreusotContracts_Resolve_Impl1_Resolve_Stub
@@ -458,6 +945,271 @@ module CreusotContracts_Resolve_Impl1_Resolve
     ensures { result = resolve self }
     
 end
+module Mutex_AddsTwo_Type_Inv
+  use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Mutex_AddsTwo_Type.t_addstwo
+  axiom inv_t_addstwo : forall self : Mutex_AddsTwo_Type.t_addstwo . Inv0.inv self = true
+end
+module Mutex_JoinHandle_Type_Inv
+  type t
+  type i
+  use Mutex_JoinHandleInner_Type as Mutex_JoinHandleInner_Type
+  use Mutex_JoinHandle_Type as Mutex_JoinHandle_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Mutex_JoinHandleInner_Type.t_joinhandleinner t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Mutex_JoinHandle_Type.t_joinhandle t i
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Mutex_JoinHandle_Type.t_joinhandle t i
+  axiom inv_t_joinhandle [@rewrite] : forall self : Mutex_JoinHandle_Type.t_joinhandle t i . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv (Mutex_JoinHandle_Type.joinhandle_0 self))
+end
+module Core_Result_Result_Type_Inv
+  type t
+  type e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = e
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Result_Result_Type.t_result t e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Result_Result_Type.t_result t e
+  axiom inv_t_result [@rewrite] : forall self : Core_Result_Result_Type.t_result t e . Inv0.inv self = (Invariant0.invariant' self /\ match (self) with
+    | Core_Result_Result_Type.C_Ok a_0 -> Inv1.inv (Core_Result_Result_Type.ok_0 self)
+    | Core_Result_Result_Type.C_Err a_0 -> Inv2.inv (Core_Result_Result_Type.err_0 self)
+    end)
+end
+module Std_Sys_Unix_Thread_Thread_Type
+  use prelude.Int
+  use prelude.UInt64
+  type t_thread  =
+    | C_Thread uint64
+    
+end
+module Core_Pin_Pin_Type
+  type t_pin 'p =
+    | C_Pin 'p
+    
+end
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.Opaque
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+    
+end
+module Core_Sync_Atomic_AtomicUsize_Type
+  use prelude.Int
+  use prelude.UIntSize
+  use Core_Cell_UnsafeCell_Type as Core_Cell_UnsafeCell_Type
+  type t_atomicusize  =
+    | C_AtomicUsize (Core_Cell_UnsafeCell_Type.t_unsafecell usize)
+    
+end
+module Alloc_Sync_ArcInner_Type
+  use Core_Sync_Atomic_AtomicUsize_Type as Core_Sync_Atomic_AtomicUsize_Type
+  type t_arcinner 't =
+    | C_ArcInner (Core_Sync_Atomic_AtomicUsize_Type.t_atomicusize) (Core_Sync_Atomic_AtomicUsize_Type.t_atomicusize) 't
+    
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+    
+end
+module Alloc_Sync_Arc_Type
+  use Alloc_Sync_ArcInner_Type as Alloc_Sync_ArcInner_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_arc 't =
+    | C_Arc (Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Sync_ArcInner_Type.t_arcinner 't)) (Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Sync_ArcInner_Type.t_arcinner 't))
+    
+  let function arc_ptr (self : t_arc 't) : Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Sync_ArcInner_Type.t_arcinner 't)
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Arc a _ -> a
+      end
+  let function arc_phantom (self : t_arc 't) : Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Sync_ArcInner_Type.t_arcinner 't)
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Arc _ a -> a
+      end
+end
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
+    
+end
+module Alloc_Ffi_CStr_CString_Type
+  use prelude.Slice
+  use prelude.Int
+  use prelude.UInt8
+  type t_cstring  =
+    | C_CString (slice uint8)
+    
+end
+module Core_Num_Nonzero_NonZeroU64_Type
+  use prelude.Int
+  use prelude.UInt64
+  type t_nonzerou64  =
+    | C_NonZeroU64 uint64
+    
+end
+module Std_Thread_ThreadId_Type
+  use Core_Num_Nonzero_NonZeroU64_Type as Core_Num_Nonzero_NonZeroU64_Type
+  type t_threadid  =
+    | C_ThreadId (Core_Num_Nonzero_NonZeroU64_Type.t_nonzerou64)
+    
+end
+module Std_SysCommon_ThreadParking_Futex_Parker_Type
+  use Core_Sync_Atomic_AtomicU32_Type as Core_Sync_Atomic_AtomicU32_Type
+  type t_parker  =
+    | C_Parker (Core_Sync_Atomic_AtomicU32_Type.t_atomicu32)
+    
+end
+module Std_Thread_Inner_Type
+  use Std_SysCommon_ThreadParking_Futex_Parker_Type as Std_SysCommon_ThreadParking_Futex_Parker_Type
+  use Std_Thread_ThreadId_Type as Std_Thread_ThreadId_Type
+  use Alloc_Ffi_CStr_CString_Type as Alloc_Ffi_CStr_CString_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  type t_inner  =
+    | C_Inner (Core_Option_Option_Type.t_option (Alloc_Ffi_CStr_CString_Type.t_cstring)) (Std_Thread_ThreadId_Type.t_threadid) (Std_SysCommon_ThreadParking_Futex_Parker_Type.t_parker)
+    
+end
+module Std_Thread_Thread_Type
+  use Std_Thread_Inner_Type as Std_Thread_Inner_Type
+  use Alloc_Sync_Arc_Type as Alloc_Sync_Arc_Type
+  use Core_Pin_Pin_Type as Core_Pin_Pin_Type
+  type t_thread  =
+    | C_Thread (Core_Pin_Pin_Type.t_pin (Alloc_Sync_Arc_Type.t_arc (Std_Thread_Inner_Type.t_inner)))
+    
+end
+module Std_Thread_Scoped_ScopeData_Type
+  use Std_Thread_Thread_Type as Std_Thread_Thread_Type
+  use Core_Sync_Atomic_AtomicBool_Type as Core_Sync_Atomic_AtomicBool_Type
+  use Core_Sync_Atomic_AtomicUsize_Type as Core_Sync_Atomic_AtomicUsize_Type
+  type t_scopedata  =
+    | C_ScopeData (Core_Sync_Atomic_AtomicUsize_Type.t_atomicusize) (Core_Sync_Atomic_AtomicBool_Type.t_atomicbool) (Std_Thread_Thread_Type.t_thread)
+    
+end
+module Std_Thread_Packet_Type
+  use prelude.Opaque
+  use prelude.Borrow
+  use Std_Thread_Scoped_ScopeData_Type as Std_Thread_Scoped_ScopeData_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  use Core_Cell_UnsafeCell_Type as Core_Cell_UnsafeCell_Type
+  use Alloc_Sync_Arc_Type as Alloc_Sync_Arc_Type
+  type t_packet 't =
+    | C_Packet (Core_Option_Option_Type.t_option (Alloc_Sync_Arc_Type.t_arc (Std_Thread_Scoped_ScopeData_Type.t_scopedata))) (Core_Cell_UnsafeCell_Type.t_unsafecell (Core_Option_Option_Type.t_option (Core_Result_Result_Type.t_result 't dyn))) (Core_Marker_PhantomData_Type.t_phantomdata (Core_Option_Option_Type.t_option (Std_Thread_Scoped_ScopeData_Type.t_scopedata)))
+    
+end
+module Std_Thread_JoinInner_Type
+  use Std_Thread_Packet_Type as Std_Thread_Packet_Type
+  use Alloc_Sync_Arc_Type as Alloc_Sync_Arc_Type
+  use Std_Thread_Thread_Type as Std_Thread_Thread_Type
+  use Std_Sys_Unix_Thread_Thread_Type as Std_Sys_Unix_Thread_Thread_Type
+  type t_joininner 't =
+    | C_JoinInner (Std_Sys_Unix_Thread_Thread_Type.t_thread) (Std_Thread_Thread_Type.t_thread) (Alloc_Sync_Arc_Type.t_arc (Std_Thread_Packet_Type.t_packet 't))
+    
+  let function joininner_packet (self : t_joininner 't) : Alloc_Sync_Arc_Type.t_arc (Std_Thread_Packet_Type.t_packet 't)
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_JoinInner _ _ a -> a
+      end
+end
+module Std_Thread_JoinHandle_Type
+  use Std_Thread_JoinInner_Type as Std_Thread_JoinInner_Type
+  type t_joinhandle 't =
+    | C_JoinHandle (Std_Thread_JoinInner_Type.t_joininner 't)
+    
+  let function joinhandle_0 (self : t_joinhandle 't) : Std_Thread_JoinInner_Type.t_joininner 't
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_JoinHandle a -> a
+      end
+end
+module Mutex_JoinHandleInner_Type_Inv
+  type t
+  use Std_Thread_JoinHandle_Type as Std_Thread_JoinHandle_Type
+  use Mutex_JoinHandleInner_Type as Mutex_JoinHandleInner_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Std_Thread_JoinHandle_Type.t_joinhandle t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Mutex_JoinHandleInner_Type.t_joinhandleinner t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Mutex_JoinHandleInner_Type.t_joinhandleinner t
+  axiom inv_t_joinhandleinner [@rewrite] : forall self : Mutex_JoinHandleInner_Type.t_joinhandleinner t . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv (Mutex_JoinHandleInner_Type.joinhandleinner_0 self))
+end
+module TyInv_Tuple0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = ()
+  axiom inv_tuple0 : forall self : () . Inv0.inv self = true
+end
+module Std_Thread_JoinHandle_Type_Inv
+  type t
+  use Std_Thread_JoinInner_Type as Std_Thread_JoinInner_Type
+  use Std_Thread_JoinHandle_Type as Std_Thread_JoinHandle_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Std_Thread_JoinInner_Type.t_joininner t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Std_Thread_JoinHandle_Type.t_joinhandle t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Std_Thread_JoinHandle_Type.t_joinhandle t
+  axiom inv_t_joinhandle [@rewrite] : forall self : Std_Thread_JoinHandle_Type.t_joinhandle t . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv (Std_Thread_JoinHandle_Type.joinhandle_0 self))
+end
+module Std_Thread_JoinInner_Type_Inv
+  type t
+  use Std_Thread_Packet_Type as Std_Thread_Packet_Type
+  use Alloc_Sync_Arc_Type as Alloc_Sync_Arc_Type
+  use Std_Thread_JoinInner_Type as Std_Thread_JoinInner_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Alloc_Sync_Arc_Type.t_arc (Std_Thread_Packet_Type.t_packet t)
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Std_Thread_JoinInner_Type.t_joininner t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Std_Thread_JoinInner_Type.t_joininner t
+  axiom inv_t_joininner [@rewrite] : forall self : Std_Thread_JoinInner_Type.t_joininner t . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv (Std_Thread_JoinInner_Type.joininner_packet self))
+end
+module Alloc_Sync_Arc_Type_Inv
+  type t
+  use Alloc_Sync_ArcInner_Type as Alloc_Sync_ArcInner_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Sync_ArcInner_Type.t_arcinner t)
+  use Alloc_Sync_Arc_Type as Alloc_Sync_Arc_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Sync_ArcInner_Type.t_arcinner t)
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Alloc_Sync_Arc_Type.t_arc t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Sync_Arc_Type.t_arc t
+  axiom inv_t_arc [@rewrite] : forall self : Alloc_Sync_Arc_Type.t_arc t . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv (Alloc_Sync_Arc_Type.arc_ptr self) /\ Inv2.inv (Alloc_Sync_Arc_Type.arc_phantom self))
+end
+module Core_Ptr_NonNull_NonNull_Type_Inv
+  type t
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Ptr_NonNull_NonNull_Type.t_nonnull t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Ptr_NonNull_NonNull_Type.t_nonnull t
+  axiom inv_t_nonnull [@rewrite] : forall self : Core_Ptr_NonNull_NonNull_Type.t_nonnull t . Inv0.inv self = Invariant0.invariant' self
+end
+module Core_Marker_PhantomData_Type_Inv
+  type t
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Marker_PhantomData_Type.t_phantomdata t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata t
+  axiom inv_t_phantomdata [@rewrite] : forall self : Core_Marker_PhantomData_Type.t_phantomdata t . Inv0.inv self = Invariant0.invariant' self
+end
 module Mutex_Concurrent_Interface
   val concurrent [#"../mutex.rs" 163 0 163 19] (_1 : ()) : ()
 end
@@ -465,35 +1217,252 @@ module Mutex_Concurrent
   use prelude.Int
   use prelude.UInt32
   use prelude.Borrow
+  use Std_Thread_Packet_Type as Std_Thread_Packet_Type
+  use Alloc_Sync_ArcInner_Type as Alloc_Sync_ArcInner_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant10 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Sync_ArcInner_Type.t_arcinner (Std_Thread_Packet_Type.t_packet ()))
+  clone CreusotContracts_Invariant_Inv_Interface as Inv18 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Sync_ArcInner_Type.t_arcinner (Std_Thread_Packet_Type.t_packet ()))
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited10 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Sync_ArcInner_Type.t_arcinner (Std_Thread_Packet_Type.t_packet ())),
+    predicate Inv0.inv = Inv18.inv,
+    predicate Invariant0.invariant' = Invariant10.invariant',
+    axiom .
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant9 with
+    type t = Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Sync_ArcInner_Type.t_arcinner (Std_Thread_Packet_Type.t_packet ()))
+  clone CreusotContracts_Invariant_Inv_Interface as Inv17 with
+    type t = Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Sync_ArcInner_Type.t_arcinner (Std_Thread_Packet_Type.t_packet ()))
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited9 with
+    type t = Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Sync_ArcInner_Type.t_arcinner (Std_Thread_Packet_Type.t_packet ())),
+    predicate Inv0.inv = Inv17.inv,
+    predicate Invariant0.invariant' = Invariant9.invariant',
+    axiom .
+  clone Core_Marker_PhantomData_Type_Inv as Core_Marker_PhantomData_Type_Inv0 with
+    type t = Alloc_Sync_ArcInner_Type.t_arcinner (Std_Thread_Packet_Type.t_packet ()),
+    predicate Inv0.inv = Inv18.inv,
+    predicate Invariant0.invariant' = Invariant10.invariant',
+    axiom .
+  clone Core_Ptr_NonNull_NonNull_Type_Inv as Core_Ptr_NonNull_NonNull_Type_Inv0 with
+    type t = Alloc_Sync_ArcInner_Type.t_arcinner (Std_Thread_Packet_Type.t_packet ()),
+    predicate Inv0.inv = Inv17.inv,
+    predicate Invariant0.invariant' = Invariant9.invariant',
+    axiom .
+  use Alloc_Sync_Arc_Type as Alloc_Sync_Arc_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant8 with
+    type t = Alloc_Sync_Arc_Type.t_arc (Std_Thread_Packet_Type.t_packet ())
+  clone CreusotContracts_Invariant_Inv_Interface as Inv16 with
+    type t = Alloc_Sync_Arc_Type.t_arc (Std_Thread_Packet_Type.t_packet ())
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited8 with
+    type t = Alloc_Sync_Arc_Type.t_arc (Std_Thread_Packet_Type.t_packet ()),
+    predicate Inv0.inv = Inv16.inv,
+    predicate Invariant0.invariant' = Invariant8.invariant',
+    axiom .
+  clone Alloc_Sync_Arc_Type_Inv as Alloc_Sync_Arc_Type_Inv0 with
+    type t = Std_Thread_Packet_Type.t_packet (),
+    predicate Inv0.inv = Inv16.inv,
+    predicate Invariant0.invariant' = Invariant8.invariant',
+    predicate Inv1.inv = Inv17.inv,
+    predicate Inv2.inv = Inv18.inv,
+    axiom .
+  use Std_Thread_JoinInner_Type as Std_Thread_JoinInner_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant7 with
+    type t = Std_Thread_JoinInner_Type.t_joininner ()
+  clone CreusotContracts_Invariant_Inv_Interface as Inv15 with
+    type t = Std_Thread_JoinInner_Type.t_joininner ()
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited7 with
+    type t = Std_Thread_JoinInner_Type.t_joininner (),
+    predicate Inv0.inv = Inv15.inv,
+    predicate Invariant0.invariant' = Invariant7.invariant',
+    axiom .
+  clone Std_Thread_JoinInner_Type_Inv as Std_Thread_JoinInner_Type_Inv0 with
+    type t = (),
+    predicate Inv0.inv = Inv15.inv,
+    predicate Invariant0.invariant' = Invariant7.invariant',
+    predicate Inv1.inv = Inv16.inv,
+    axiom .
+  use Std_Thread_JoinHandle_Type as Std_Thread_JoinHandle_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant6 with
+    type t = Std_Thread_JoinHandle_Type.t_joinhandle ()
+  clone CreusotContracts_Invariant_Inv_Interface as Inv14 with
+    type t = Std_Thread_JoinHandle_Type.t_joinhandle ()
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited6 with
+    type t = Std_Thread_JoinHandle_Type.t_joinhandle (),
+    predicate Inv0.inv = Inv14.inv,
+    predicate Invariant0.invariant' = Invariant6.invariant',
+    axiom .
+  clone Std_Thread_JoinHandle_Type_Inv as Std_Thread_JoinHandle_Type_Inv0 with
+    type t = (),
+    predicate Inv0.inv = Inv14.inv,
+    predicate Invariant0.invariant' = Invariant6.invariant',
+    predicate Inv1.inv = Inv15.inv,
+    axiom .
+  use Mutex_JoinHandleInner_Type as Mutex_JoinHandleInner_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant5 with
+    type t = Mutex_JoinHandleInner_Type.t_joinhandleinner ()
+  clone CreusotContracts_Invariant_Inv_Interface as Inv11 with
+    type t = Mutex_JoinHandleInner_Type.t_joinhandleinner ()
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited5 with
+    type t = Mutex_JoinHandleInner_Type.t_joinhandleinner (),
+    predicate Inv0.inv = Inv11.inv,
+    predicate Invariant0.invariant' = Invariant5.invariant',
+    axiom .
+  use Std_Sync_Mutex_Mutex_Type as Std_Sync_Mutex_Mutex_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv13 with
+    type t = Std_Sync_Mutex_Mutex_Type.t_mutex uint32
+  clone Std_Sync_Mutex_Mutex_Type_Inv as Std_Sync_Mutex_Mutex_Type_Inv0 with
+    type t = uint32,
+    predicate Inv0.inv = Inv13.inv,
+    axiom .
+  use Mutex_MutexInner_Type as Mutex_MutexInner_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant4 with
+    type t = Mutex_MutexInner_Type.t_mutexinner uint32
+  clone CreusotContracts_Invariant_Inv_Interface as Inv10 with
+    type t = Mutex_MutexInner_Type.t_mutexinner uint32
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited4 with
+    type t = Mutex_MutexInner_Type.t_mutexinner uint32,
+    predicate Inv0.inv = Inv10.inv,
+    predicate Invariant0.invariant' = Invariant4.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv12 with
+    type t = ()
+  clone TyInv_Tuple0 as TyInv_Tuple00 with
+    predicate Inv0.inv = Inv12.inv,
+    axiom .
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant3 with
+    type t = Core_Result_Result_Type.t_result () ()
+  clone CreusotContracts_Invariant_Inv_Interface as Inv9 with
+    type t = Core_Result_Result_Type.t_result () ()
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited3 with
+    type t = Core_Result_Result_Type.t_result () (),
+    predicate Inv0.inv = Inv9.inv,
+    predicate Invariant0.invariant' = Invariant3.invariant',
+    axiom .
+  clone Mutex_JoinHandleInner_Type_Inv as Mutex_JoinHandleInner_Type_Inv0 with
+    type t = (),
+    predicate Inv0.inv = Inv11.inv,
+    predicate Invariant0.invariant' = Invariant5.invariant',
+    predicate Inv1.inv = Inv14.inv,
+    axiom .
   use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
-  clone Mutex_Impl3_Postcondition as Postcondition0
   use Mutex_SpawnPostCond_Type as Mutex_SpawnPostCond_Type
-  clone Mutex_Impl5_Inv as Inv1 with
+  use Mutex_JoinHandle_Type as Mutex_JoinHandle_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant2 with
+    type t = Mutex_JoinHandle_Type.t_joinhandle () (Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo))
+  clone CreusotContracts_Invariant_Inv_Interface as Inv7 with
+    type t = Mutex_JoinHandle_Type.t_joinhandle () (Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo))
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited2 with
+    type t = Mutex_JoinHandle_Type.t_joinhandle () (Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo)),
+    predicate Inv0.inv = Inv7.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    axiom .
+  use Mutex_Even_Type as Mutex_Even_Type
+  use Mutex_Mutex_Type as Mutex_Mutex_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant1 with
+    type t = borrowed (Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even))
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+    type t = borrowed (Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even))
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited1 with
+    type t = borrowed (Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even)),
+    predicate Inv0.inv = Inv5.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    axiom .
+  clone Mutex_MutexInner_Type_Inv as Mutex_MutexInner_Type_Inv0 with
+    type t = uint32,
+    predicate Inv0.inv = Inv10.inv,
+    predicate Invariant0.invariant' = Invariant4.invariant',
+    predicate Inv1.inv = Inv13.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant0 with
+    type t = Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited0 with
+    type t = Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even),
+    predicate Inv0.inv = Inv3.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  clone Core_Result_Result_Type_Inv as Core_Result_Result_Type_Inv0 with
+    type t = (),
+    type e = (),
+    predicate Inv0.inv = Inv9.inv,
+    predicate Invariant0.invariant' = Invariant3.invariant',
+    predicate Inv1.inv = Inv12.inv,
+    predicate Inv2.inv = Inv12.inv,
+    axiom .
+  clone Mutex_Impl3_Postcondition as Postcondition0
+  clone Mutex_JoinHandle_Type_Inv as Mutex_JoinHandle_Type_Inv0 with
+    type t = (),
+    type i = Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo),
+    predicate Inv0.inv = Inv7.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    predicate Inv1.inv = Inv11.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
+    type t = Mutex_AddsTwo_Type.t_addstwo
+  clone Mutex_AddsTwo_Type_Inv as Mutex_AddsTwo_Type_Inv0 with
+    predicate Inv0.inv = Inv6.inv,
+    axiom .
+  clone TyInv_Borrow as TyInv_Borrow0 with
+    type t = Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even),
+    predicate Inv0.inv = Inv5.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Inv1.inv = Inv3.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Mutex_Even_Type.t_even
+  clone Mutex_Mutex_Type_Inv as Mutex_Mutex_Type_Inv0 with
+    type t = uint32,
+    type i = Mutex_Even_Type.t_even,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Inv1.inv = Inv10.inv,
+    predicate Inv2.inv = Inv2.inv,
+    axiom .
+  clone Mutex_Even_Type_Inv as Mutex_Even_Type_Inv0 with
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = uint32
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = uint32,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone Mutex_Impl5_Inv as Inv8 with
     type f = Mutex_AddsTwo_Type.t_addstwo,
     type Return0.return' = (),
     predicate Postcondition0.postcondition = Postcondition0.postcondition
   clone Mutex_Impl3_Precondition as Precondition0
-  use Mutex_Even_Type as Mutex_Even_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+    type t = Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even)
   clone Mutex_Impl2_Inv as Inv0
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  use Mutex_Mutex_Type as Mutex_Mutex_Type
-  use Mutex_JoinHandle_Type as Mutex_JoinHandle_Type
   clone Mutex_Impl4_Join_Interface as Join0 with
     type t = (),
     type i = Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo),
-    predicate Inv0.inv = Inv1.inv
+    predicate Inv0.inv = Inv7.inv,
+    predicate Inv1.inv = Inv8.inv,
+    predicate Inv2.inv = Inv9.inv
   clone Mutex_Spawn_Interface as Spawn0 with
     type t = (),
     type f = Mutex_AddsTwo_Type.t_addstwo,
-    predicate Precondition0.precondition = Precondition0.precondition
+    predicate Precondition0.precondition = Precondition0.precondition,
+    predicate Inv0.inv = Inv6.inv,
+    predicate Inv1.inv = Inv7.inv
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even)
   clone Mutex_Leak_Interface as Leak0 with
-    type t = Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even)
+    type t = Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even),
+    predicate Inv0.inv = Inv4.inv,
+    predicate Inv1.inv = Inv5.inv
   clone Mutex_Impl0_New_Interface as New0 with
     type t = uint32,
     type i = Mutex_Even_Type.t_even,
-    predicate Inv0.inv = Inv0.inv
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
+    predicate Inv2.inv = Inv2.inv,
+    predicate Inv3.inv = Inv3.inv
   let rec cfg concurrent [#"../mutex.rs" 163 0 163 19] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -565,8 +1534,15 @@ module Mutex_Impl5
   type f
 end
 module Mutex_Impl3
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = ()
+  clone TyInv_Tuple0 as TyInv_Tuple00 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
   use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
   clone Mutex_Impl3_Postcondition as Postcondition0
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = ()
   clone Mutex_Impl3_Precondition as Precondition0
-  goal call_refn : [#"../mutex.rs" 100 4 100 23] forall self : Mutex_AddsTwo_Type.t_addstwo . Precondition0.precondition self -> (forall result : () . Postcondition0.postcondition self result)
+  goal call_refn : [#"../mutex.rs" 100 4 100 23] forall self : Mutex_AddsTwo_Type.t_addstwo . Precondition0.precondition self -> (forall result : () . Inv0.inv result /\ Postcondition0.postcondition self result)
 end

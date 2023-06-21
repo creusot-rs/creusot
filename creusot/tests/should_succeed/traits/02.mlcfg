@@ -1,4 +1,23 @@
 
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 40 4 40 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module CreusotContracts_Resolve_Resolve_Resolve_Stub
   type self
   predicate resolve (self : self)
@@ -20,23 +39,46 @@ end
 module C02_A_IsTrue_Interface
   type self
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   val is_true [#"../02.rs" 7 4 7 30] (self : self) : bool
+    requires {[#"../02.rs" 7 16 7 20] Inv0.inv self}
     ensures { [#"../02.rs" 6 14 6 28] result = true }
     
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module C02_Omg_Interface
   type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
   val omg [#"../02.rs" 11 0 11 30] (a : t) : bool
+    requires {[#"../02.rs" 11 17 11 18] Inv0.inv a}
     ensures { [#"../02.rs" 10 10 10 24] result = true }
     
 end
 module C02_Omg
   type t
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = t
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = t,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = t
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = t
   clone C02_A_IsTrue_Interface as IsTrue0 with
-    type self = t
+    type self = t,
+    predicate Inv0.inv = Inv1.inv
   let rec cfg omg [#"../02.rs" 11 0 11 30] [@cfg:stackify] [@cfg:subregion_analysis] (a : t) : bool
+    requires {[#"../02.rs" 11 17 11 18] Inv0.inv a}
     ensures { [#"../02.rs" 10 10 10 24] result = true }
     
    = [@vc:do_not_keep_trace] [@vc:sp]

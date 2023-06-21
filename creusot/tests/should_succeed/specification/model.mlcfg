@@ -61,15 +61,43 @@ module Model_Impl1_ShallowModel
     ensures { result = shallow_model self }
     
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 40 4 40 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module Model_Pair_Interface
   type t
   type u
   use Model_Pair_Type as Model_Pair_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Model_Pair_Type.t_pair t u
   clone Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type u = u
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = u
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
   val pair [#"../model.rs" 38 0 38 43] (a : t) (b : u) : Model_Pair_Type.t_pair t u
+    requires {[#"../model.rs" 38 18 38 19] Inv0.inv a}
+    requires {[#"../model.rs" 38 24 38 25] Inv1.inv b}
     ensures { [#"../model.rs" 37 10 37 27] ShallowModel0.shallow_model result = (a, b) }
+    ensures { [#"../model.rs" 38 33 38 43] Inv2.inv result }
     
 end
 module Model_Impl0

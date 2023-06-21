@@ -1,4 +1,23 @@
 
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 40 4 40 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module CreusotContracts_Resolve_Impl1_Resolve_Stub
   type t
   use prelude.Borrow
@@ -21,13 +40,104 @@ module CreusotContracts_Resolve_Impl1_Resolve
     ensures { result = resolve self }
     
 end
+module CreusotContracts_Invariant_Invariant_Invariant_Stub
+  type self
+  predicate invariant' (self : self)
+end
+module CreusotContracts_Invariant_Invariant_Invariant_Interface
+  type self
+  predicate invariant' (self : self)
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
+module CreusotContracts_Invariant_Invariant_Invariant
+  type self
+  predicate invariant' (self : self)
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
+module TyInv_Borrow
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = borrowed t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed t
+  axiom inv_borrow [@rewrite] : forall self : borrowed t . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv ( * self))
+end
+module TyInv_Tuple2
+  type t0
+  type t1
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = t1
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = (t0, t1)
+  axiom inv_tuple2 [@rewrite] : forall self : (t0, t1) . Inv0.inv self = (let (a_0, a_1) = self in Inv1.inv a_0 /\ Inv2.inv a_1)
+end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
+module CreusotContracts_Invariant_Invariant_IsInhabited_Stub
+  type self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
+  function is_inhabited (_1 : ()) : bool
+end
+module CreusotContracts_Invariant_Invariant_IsInhabited_Interface
+  type self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
+  function is_inhabited (_1 : ()) : bool
+  val is_inhabited (_1 : ()) : bool
+    ensures { [#"../../../../../creusot-contracts/src/invariant.rs" 9 4 9 45] exists x : self . Inv0.inv x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../../creusot-contracts/src/invariant.rs" 10 14 10 20] result }
+    ensures { result = is_inhabited _1 }
+    
+  axiom is_inhabited_spec : forall _1 : () . ([#"../../../../../creusot-contracts/src/invariant.rs" 10 14 10 20] is_inhabited _1) && ([#"../../../../../creusot-contracts/src/invariant.rs" 9 4 9 45] exists x : self . Inv0.inv x /\ Invariant0.invariant' x)
+end
+module CreusotContracts_Invariant_Invariant_IsInhabited
+  type self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
+  function is_inhabited (_1 : ()) : bool
+  val is_inhabited (_1 : ()) : bool
+    ensures { [#"../../../../../creusot-contracts/src/invariant.rs" 9 4 9 45] exists x : self . Inv0.inv x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../../creusot-contracts/src/invariant.rs" 10 14 10 20] result }
+    ensures { result = is_inhabited _1 }
+    
+  axiom is_inhabited_spec : forall _1 : () . ([#"../../../../../creusot-contracts/src/invariant.rs" 10 14 10 20] is_inhabited _1) && ([#"../../../../../creusot-contracts/src/invariant.rs" 9 4 9 45] exists x : self . Inv0.inv x /\ Invariant0.invariant' x)
+end
 module C492_ReborrowTuple_Interface
   type t
   use prelude.Borrow
   use prelude.Int
   use prelude.UInt32
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = (borrowed t, uint32)
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed t
   val reborrow_tuple [#"../492.rs" 5 0 5 52] (x : borrowed t) : (borrowed t, uint32)
+    requires {[#"../492.rs" 5 25 5 26] Inv0.inv x}
     ensures { [#"../492.rs" 4 10 4 27]  * (let (a, _) = result in a) =  * x }
+    ensures { [#"../492.rs" 5 25 5 26] Inv1.inv ( ^ x) }
+    ensures { [#"../492.rs" 5 39 5 52] Inv2.inv result }
     
 end
 module C492_ReborrowTuple
@@ -35,10 +145,45 @@ module C492_ReborrowTuple
   use prelude.Int
   use prelude.UInt32
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = uint32
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = uint32,
+    predicate Inv0.inv = Inv3.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant0 with
+    type self = borrowed t
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = borrowed t
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited0 with
+    type self = borrowed t,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = (borrowed t, uint32)
+  clone TyInv_Tuple2 as TyInv_Tuple20 with
+    type t0 = borrowed t,
+    type t1 = uint32,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv0.inv,
+    predicate Inv2.inv = Inv3.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = t
+  clone TyInv_Borrow as TyInv_Borrow0 with
+    type t = t,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Inv1.inv = Inv1.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = t
   let rec cfg reborrow_tuple [#"../492.rs" 5 0 5 52] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed t) : (borrowed t, uint32)
+    requires {[#"../492.rs" 5 25 5 26] Inv0.inv x}
     ensures { [#"../492.rs" 4 10 4 27]  * (let (a, _) = result in a) =  * x }
+    ensures { [#"../492.rs" 5 25 5 26] Inv1.inv ( ^ x) }
+    ensures { [#"../492.rs" 5 39 5 52] Inv2.inv result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : (borrowed t, uint32);
@@ -120,6 +265,62 @@ module CreusotContracts_Resolve_Impl2_Resolve
     ensures { result = resolve self }
     
 end
+module CreusotContracts_Invariant_Impl0_Invariant_Stub
+  type t
+  predicate invariant' (self : t)
+end
+module CreusotContracts_Invariant_Impl0_Invariant_Interface
+  type t
+  predicate invariant' (self : t)
+  val invariant' (self : t) : bool
+    ensures { result = invariant' self }
+    
+end
+module CreusotContracts_Invariant_Impl0_Invariant
+  type t
+  predicate invariant' (self : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 21 8 21 12] true
+  val invariant' (self : t) : bool
+    ensures { result = invariant' self }
+    
+end
+module CreusotContracts_Invariant_Impl0_IsInhabited_Stub
+  type t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  function is_inhabited (_1 : ()) : bool
+end
+module CreusotContracts_Invariant_Impl0_IsInhabited_Interface
+  type t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  function is_inhabited (_1 : ()) : bool
+  val is_inhabited (_1 : ()) : bool
+    ensures { [#"../../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] result }
+    ensures { result = is_inhabited _1 }
+    
+  axiom is_inhabited_spec : forall _1 : () . ([#"../../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] is_inhabited _1) && ([#"../../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x)
+end
+module CreusotContracts_Invariant_Impl0_IsInhabited
+  type t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  function is_inhabited (_1 : ()) : bool =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 32 8 32 12] true
+  val is_inhabited (_1 : ()) : bool
+    ensures { [#"../../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] result }
+    ensures { result = is_inhabited _1 }
+    
+  axiom is_inhabited_spec : forall _1 : () . ([#"../../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] is_inhabited _1) && ([#"../../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x)
+end
 module C492_Test_Interface
   val test [#"../492.rs" 10 0 10 13] (_1 : ()) : ()
     ensures { [#"../492.rs" 9 10 9 15] false }
@@ -130,6 +331,42 @@ module C492_Test
   use prelude.Int32
   use prelude.Borrow
   use prelude.UInt32
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = uint32
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = uint32,
+    predicate Inv0.inv = Inv3.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant0 with
+    type t = borrowed int32
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = borrowed int32
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited0 with
+    type t = borrowed int32,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = (borrowed int32, uint32)
+  clone TyInv_Tuple2 as TyInv_Tuple20 with
+    type t0 = borrowed int32,
+    type t1 = uint32,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv0.inv,
+    predicate Inv2.inv = Inv3.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = int32
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = int32,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone TyInv_Borrow as TyInv_Borrow0 with
+    type t = int32,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Inv1.inv = Inv1.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = uint32
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
@@ -140,7 +377,10 @@ module C492_Test
     predicate Resolve0.resolve = Resolve1.resolve,
     predicate Resolve1.resolve = Resolve2.resolve
   clone C492_ReborrowTuple_Interface as ReborrowTuple0 with
-    type t = int32
+    type t = int32,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
+    predicate Inv2.inv = Inv2.inv
   let rec cfg test [#"../492.rs" 10 0 10 13] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
     ensures { [#"../492.rs" 9 10 9 15] false }
     

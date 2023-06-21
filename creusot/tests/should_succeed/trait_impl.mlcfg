@@ -1,4 +1,23 @@
 
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 40 4 40 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module CreusotContracts_Resolve_Resolve_Resolve_Stub
   type self
   predicate resolve (self : self)
@@ -43,16 +62,44 @@ module CreusotContracts_Resolve_Impl0_Resolve
     ensures { result = resolve self }
     
 end
+module TyInv_Tuple2
+  type t0
+  type t1
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = t1
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = (t0, t1)
+  axiom inv_tuple2 [@rewrite] : forall self : (t0, t1) . Inv0.inv self = (let (a_0, a_1) = self in Inv1.inv a_0 /\ Inv2.inv a_1)
+end
 module TraitImpl_Impl0_X_Interface
   type b
   type t2
   type t1
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = (t1, t2)
   val x [#"../trait_impl.rs" 25 4 25 14] (self : (t1, t2)) : ()
+    requires {[#"../trait_impl.rs" 25 9 25 13] Inv0.inv self}
+    
 end
 module TraitImpl_Impl0_X
   type b
   type t2
   type t1
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = t2
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = t1
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = (t1, t2)
+  clone TyInv_Tuple2 as TyInv_Tuple20 with
+    type t0 = t1,
+    type t1 = t2,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
+    predicate Inv2.inv = Inv2.inv,
+    axiom .
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
     type self = t2
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
@@ -63,6 +110,8 @@ module TraitImpl_Impl0_X
     predicate Resolve0.resolve = Resolve1.resolve,
     predicate Resolve1.resolve = Resolve2.resolve
   let rec cfg x [#"../trait_impl.rs" 25 4 25 14] [@cfg:stackify] [@cfg:subregion_analysis] (self : (t1, t2)) : ()
+    requires {[#"../trait_impl.rs" 25 9 25 13] Inv0.inv self}
+    
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var self : (t1, t2) = self;

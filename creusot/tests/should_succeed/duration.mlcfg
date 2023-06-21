@@ -388,6 +388,11 @@ module Core_Option_Option_Type
     | C_None
     | C_Some 't
     
+  let function some_0 (self : t_option 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_None -> any 't
+      | C_Some a -> a
+      end
 end
 module CreusotContracts_Model_DeepModel_DeepModelTy_Type
   type self
@@ -476,11 +481,33 @@ module Core_Time_Impl1_CheckedAdd_Interface
     ensures { [#"../../../../creusot-contracts/src/std/time.rs" 126 16 126 114] NanosToSecs0.nanos_to_secs (ShallowModel0.shallow_model self + ShallowModel0.shallow_model rhs) <= UInt64.to_int Max0.mAX' -> DeepModel0.deep_model result = Core_Option_Option_Type.C_Some (ShallowModel0.shallow_model self + ShallowModel0.shallow_model rhs) }
     
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 40 4 40 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module Core_Option_Impl0_IsNone_Interface
   type t
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val is_none (self : Core_Option_Option_Type.t_option t) : bool
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 24 26 24 51] result = (self = Core_Option_Option_Type.C_None) }
     
 end
@@ -488,7 +515,10 @@ module Core_Option_Impl0_IsSome_Interface
   type t
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val is_some (self : Core_Option_Option_Type.t_option t) : bool
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 21 26 21 51] result = (self <> Core_Option_Option_Type.C_None) }
     
 end
@@ -582,6 +612,38 @@ module Core_Time_Impl4_Sub_Interface
     ensures { [#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] ShallowModel0.shallow_model self - ShallowModel0.shallow_model rhs = ShallowModel0.shallow_model result }
     
 end
+module CreusotContracts_Invariant_Invariant_Invariant_Stub
+  type self
+  predicate invariant' (self : self)
+end
+module CreusotContracts_Invariant_Invariant_Invariant_Interface
+  type self
+  predicate invariant' (self : self)
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
+module CreusotContracts_Invariant_Invariant_Invariant
+  type self
+  predicate invariant' (self : self)
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
+module Core_Option_Option_Type_Inv
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
+  axiom inv_t_option [@rewrite] : forall self : Core_Option_Option_Type.t_option t . Inv0.inv self = (Invariant0.invariant' self /\ match (self) with
+    | Core_Option_Option_Type.C_None -> true
+    | Core_Option_Option_Type.C_Some a_0 -> Inv1.inv (Core_Option_Option_Type.some_0 self)
+    end)
+end
 module CreusotContracts_Std1_Time_Impl1_DeepModel_Stub
   use prelude.Int
   use prelude.UInt64
@@ -630,6 +692,68 @@ module CreusotContracts_Std1_Time_Impl1_DeepModel
     
   axiom deep_model_spec : forall self : Core_Time_Duration_Type.t_duration . ([#"../../../../creusot-contracts/src/std/time.rs" 26 14 26 44] deep_model self = ShallowModel0.shallow_model self) && ([#"../../../../creusot-contracts/src/std/time.rs" 25 14 25 77] deep_model self >= 0 /\ deep_model self <= SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX') + 999999999)
 end
+module CreusotContracts_Invariant_Impl0_Invariant_Stub
+  type t
+  predicate invariant' (self : t)
+end
+module CreusotContracts_Invariant_Impl0_Invariant_Interface
+  type t
+  predicate invariant' (self : t)
+  val invariant' (self : t) : bool
+    ensures { result = invariant' self }
+    
+end
+module CreusotContracts_Invariant_Impl0_Invariant
+  type t
+  predicate invariant' (self : t) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 21 8 21 12] true
+  val invariant' (self : t) : bool
+    ensures { result = invariant' self }
+    
+end
+module Core_Time_Duration_Type_Inv
+  use Core_Time_Duration_Type as Core_Time_Duration_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Time_Duration_Type.t_duration
+  axiom inv_t_duration : forall self : Core_Time_Duration_Type.t_duration . Inv0.inv self = true
+end
+module CreusotContracts_Invariant_Impl0_IsInhabited_Stub
+  type t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  function is_inhabited (_1 : ()) : bool
+end
+module CreusotContracts_Invariant_Impl0_IsInhabited_Interface
+  type t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  function is_inhabited (_1 : ()) : bool
+  val is_inhabited (_1 : ()) : bool
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] result }
+    ensures { result = is_inhabited _1 }
+    
+  axiom is_inhabited_spec : forall _1 : () . ([#"../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] is_inhabited _1) && ([#"../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x)
+end
+module CreusotContracts_Invariant_Impl0_IsInhabited
+  type t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  function is_inhabited (_1 : ()) : bool =
+    [#"../../../../creusot-contracts/src/invariant.rs" 32 8 32 12] true
+  val is_inhabited (_1 : ()) : bool
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] result }
+    ensures { result = is_inhabited _1 }
+    
+  axiom is_inhabited_spec : forall _1 : () . ([#"../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] is_inhabited _1) && ([#"../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x)
+end
 module Duration_TestDuration_Interface
   val test_duration [#"../duration.rs" 7 0 7 22] (_1 : ()) : ()
 end
@@ -638,7 +762,35 @@ module Duration_TestDuration
   use prelude.UInt64
   use prelude.UInt32
   use prelude.UInt128
+  use prelude.Borrow
   use Core_Time_Duration_Type as Core_Time_Duration_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Time_Duration_Type.t_duration
+  clone Core_Time_Duration_Type_Inv as Core_Time_Duration_Type_Inv0 with
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant0 with
+    type t = Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited0 with
+    type t = Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration),
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  clone Core_Option_Option_Type_Inv as Core_Option_Option_Type_Inv1 with
+    type t = Core_Time_Duration_Type.t_duration,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Inv1.inv = Inv2.inv,
+    axiom .
+  clone Core_Option_Option_Type_Inv as Core_Option_Option_Type_Inv0 with
+    type t = Core_Time_Duration_Type.t_duration,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Inv1.inv = Inv2.inv,
+    axiom .
   clone CreusotContracts_Std1_Time_SecsToNanos_Interface as SecsToNanos0
   clone Core_Num_Impl9_Max as Max0
   clone CreusotContracts_Std1_Time_Impl0_ShallowModel_Interface as ShallowModel0 with
@@ -650,8 +802,9 @@ module Duration_TestDuration
     function SecsToNanos0.secs_to_nanos = SecsToNanos0.secs_to_nanos,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)
   use prelude.Int
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Std1_Option_Impl0_DeepModel as DeepModel0 with
     type t = Core_Time_Duration_Type.t_duration,
     type DeepModelTy0.deepModelTy = int,
@@ -688,9 +841,11 @@ module Duration_TestDuration
     val Max0.mAX' = Max0.mAX',
     function SecsToNanos0.secs_to_nanos = SecsToNanos0.secs_to_nanos
   clone Core_Option_Impl0_IsSome_Interface as IsSome0 with
-    type t = Core_Time_Duration_Type.t_duration
+    type t = Core_Time_Duration_Type.t_duration,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = Core_Time_Duration_Type.t_duration
+    type t = Core_Time_Duration_Type.t_duration,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Time_Impl1_CheckedAdd_Interface as CheckedAdd0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     function NanosToSecs0.nanos_to_secs = NanosToSecs0.nanos_to_secs,

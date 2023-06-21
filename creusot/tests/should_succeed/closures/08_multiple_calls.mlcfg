@@ -1,4 +1,23 @@
 
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 40 4 40 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module CreusotContracts_Resolve_Resolve_Resolve_Stub
   type self
   predicate resolve (self : self)
@@ -38,6 +57,12 @@ module CreusotContracts_Std1_Ops_Impl1_Unnest
     ensures { result = unnest self _2 }
     
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module C08MultipleCalls_MultiUse_Closure0_Type
   use prelude.Borrow
   type c08multiplecalls_multiuse_closure0 't =
@@ -52,6 +77,8 @@ module C08MultipleCalls_MultiUse_Closure0_Interface
   use prelude.UInt32
   clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
     type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = c08multiplecalls_multiuse_closure0 t
   let function field_0 [#"../08_multiple_calls.rs" 5 12 5 31] (self : c08multiplecalls_multiuse_closure0 t) : t
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../08_multiple_calls.rs" 1 0 1 0] let C08MultipleCalls_MultiUse_Closure0 a = self in a
@@ -77,6 +104,7 @@ module C08MultipleCalls_MultiUse_Closure0_Interface
     [#"../08_multiple_calls.rs" 1 0 1 0] true
   val c08MultipleCalls_MultiUse_Closure0 [#"../08_multiple_calls.rs" 5 12 5 31] (_1 : c08multiplecalls_multiuse_closure0 t) : uint32
     requires {[#"../08_multiple_calls.rs" 5 23 5 29] field_0 _1 = field_0 _1}
+    requires {[#"../08_multiple_calls.rs" 1 0 1 0] Inv0.inv _1}
     
 end
 module C08MultipleCalls_MultiUse_Closure0
@@ -85,8 +113,20 @@ module C08MultipleCalls_MultiUse_Closure0
   use prelude.Int
   use prelude.UInt32
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = c08multiplecalls_multiuse_closure0 t
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = c08multiplecalls_multiuse_closure0 t,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = c08multiplecalls_multiuse_closure0 t,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
     type self = t
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = c08multiplecalls_multiuse_closure0 t
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = c08multiplecalls_multiuse_closure0 t
   let function field_0 [#"../08_multiple_calls.rs" 5 12 5 31] (self : c08multiplecalls_multiuse_closure0 t) : t
@@ -114,6 +154,7 @@ module C08MultipleCalls_MultiUse_Closure0
     [#"../08_multiple_calls.rs" 1 0 1 0] true
   let rec cfg c08MultipleCalls_MultiUse_Closure0 [#"../08_multiple_calls.rs" 5 12 5 31] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : c08multiplecalls_multiuse_closure0 t) : uint32
     requires {[#"../08_multiple_calls.rs" 5 23 5 29] field_0 _1 = field_0 _1}
+    requires {[#"../08_multiple_calls.rs" 1 0 1 0] Inv0.inv _1}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : uint32;
@@ -198,34 +239,68 @@ module C08MultipleCalls_UsesFn_Interface
     type args = (),
     type f = f,
     type Output0.output = uint32
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = f
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Stub as Precondition0 with
     type args = (),
     type f = f
   val uses_fn [#"../08_multiple_calls.rs" 19 0 19 32] (f : f) : ()
     requires {[#"../08_multiple_calls.rs" 17 11 17 29] Precondition0.precondition f ()}
-    ensures { [#"../08_multiple_calls.rs" 18 0 18 70] exists r : uint32 . exists f2 : f . f2 = f /\ Postcondition0.postcondition f2 () r }
+    requires {[#"../08_multiple_calls.rs" 19 27 19 28] Inv0.inv f}
+    ensures { [#"../08_multiple_calls.rs" 18 0 18 70] exists r : uint32 . exists f2 : f . Inv1.inv f2 /\ f2 = f /\ Postcondition0.postcondition f2 () r }
     
 end
 module C08MultipleCalls_MultiUse_Interface
   type t
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
   val multi_use [#"../08_multiple_calls.rs" 4 0 4 26] (x : t) : ()
+    requires {[#"../08_multiple_calls.rs" 4 20 4 21] Inv0.inv x}
+    
 end
 module C08MultipleCalls_MultiUse
   type t
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = t
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
     type self = t
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
-    type self = t
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Closure00.c08multiplecalls_multiuse_closure0 t
   clone C08MultipleCalls_MultiUse_Closure0_Interface as Closure00 with
     type t = t,
+    predicate Inv0.inv = Inv1.inv,
     predicate Resolve0.resolve = Resolve1.resolve
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Closure00.c08multiplecalls_multiuse_closure0 t
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = Closure00.c08multiplecalls_multiuse_closure0 t,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Closure00.c08multiplecalls_multiuse_closure0 t,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = t,
+    predicate Inv0.inv = Inv3.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = t
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = t
   clone C08MultipleCalls_UsesFn_Interface as UsesFn0 with
     type f = Closure00.c08multiplecalls_multiuse_closure0 t,
     predicate Precondition0.precondition = Closure00.precondition,
-    predicate Postcondition0.postcondition = Closure00.postcondition
+    predicate Postcondition0.postcondition = Closure00.postcondition,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv1.inv
   let rec cfg multi_use [#"../08_multiple_calls.rs" 4 0 4 26] [@cfg:stackify] [@cfg:subregion_analysis] (x : t) : ()
+    requires {[#"../08_multiple_calls.rs" 4 20 4 21] Inv0.inv x}
+    
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var x : t = x;

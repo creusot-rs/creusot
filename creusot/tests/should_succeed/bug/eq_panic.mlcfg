@@ -1,4 +1,23 @@
 
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 40 4 40 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module CreusotContracts_Resolve_Resolve_Resolve_Stub
   type self
   predicate resolve (self : self)
@@ -88,14 +107,31 @@ module Core_Cmp_Impls_Impl9_Eq_Interface
   clone CreusotContracts_Model_Impl0_DeepModel_Stub as DeepModel0 with
     type t = a,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = b
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = a
   val eq (self : a) (other : b) : bool
+    requires {Inv0.inv self}
+    requires {Inv1.inv other}
     ensures { [#"../../../../../creusot-contracts/src/std/cmp.rs" 11 26 11 75] result = (DeepModel0.deep_model self = DeepModel1.deep_model other) }
     
+end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
 end
 module EqPanic_Omg_Interface
   type t
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
   val omg [#"../eq_panic.rs" 6 0 6 51] (x : t) (y : t) : bool
+    requires {[#"../eq_panic.rs" 6 30 6 31] Inv0.inv x}
+    requires {[#"../eq_panic.rs" 6 37 6 38] Inv0.inv y}
+    
 end
 module EqPanic_Omg
   type t
@@ -105,23 +141,42 @@ module EqPanic_Omg
   clone CreusotContracts_Model_DeepModel_DeepModel_Interface as DeepModel2 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = t
   clone CreusotContracts_Model_Impl0_DeepModel as DeepModel1 with
     type t = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     function DeepModel0.deep_model = DeepModel2.deep_model
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = t,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = t,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
   clone CreusotContracts_Model_Impl0_DeepModel as DeepModel0 with
     type t = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     function DeepModel0.deep_model = DeepModel1.deep_model
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = t
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = t
   clone Core_Cmp_Impls_Impl9_Eq_Interface as Eq0 with
     type a = t,
     type b = t,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv1.inv,
     function DeepModel0.deep_model = DeepModel0.deep_model,
     function DeepModel1.deep_model = DeepModel0.deep_model,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
   let rec cfg omg [#"../eq_panic.rs" 6 0 6 51] [@cfg:stackify] [@cfg:subregion_analysis] (x : t) (y : t) : bool
+    requires {[#"../eq_panic.rs" 6 30 6 31] Inv0.inv x}
+    requires {[#"../eq_panic.rs" 6 37 6 38] Inv0.inv y}
+    
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : bool;
   var x : t = x;

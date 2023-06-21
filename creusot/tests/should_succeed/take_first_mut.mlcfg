@@ -1,4 +1,23 @@
 
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 40 4 40 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module Core_Option_Option_Type
   type t_option 't =
     | C_None
@@ -27,6 +46,9 @@ module CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub
   use prelude.UIntSize
   use prelude.Int
   use prelude.Slice
+  use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Seq.seq t
   clone Core_Num_Impl11_Max_Stub as Max0
   function shallow_model (self : slice t) : Seq.seq t
 end
@@ -36,14 +58,18 @@ module CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface
   use prelude.UIntSize
   use prelude.Int
   use prelude.Slice
+  use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Seq.seq t
   clone Core_Num_Impl11_Max_Stub as Max0
   function shallow_model (self : slice t) : Seq.seq t
   val shallow_model (self : slice t) : Seq.seq t
     ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
     ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] result = Slice.id self }
+    ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 20 4 20 50] Inv0.inv result }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] shallow_model self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
+  axiom shallow_model_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 20 4 20 50] Inv0.inv (shallow_model self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] shallow_model self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
 end
 module CreusotContracts_Std1_Slice_Impl0_ShallowModel
   type t
@@ -51,14 +77,18 @@ module CreusotContracts_Std1_Slice_Impl0_ShallowModel
   use prelude.UIntSize
   use prelude.Int
   use prelude.Slice
+  use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Seq.seq t
   clone Core_Num_Impl11_Max_Stub as Max0
   function shallow_model (self : slice t) : Seq.seq t
   val shallow_model (self : slice t) : Seq.seq t
     ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
     ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] result = Slice.id self }
+    ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 20 4 20 50] Inv0.inv result }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] shallow_model self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
+  axiom shallow_model_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 20 4 20 50] Inv0.inv (shallow_model self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] shallow_model self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
 end
 module CreusotContracts_Model_ShallowModel_ShallowModelTy_Type
   type self
@@ -202,11 +232,18 @@ end
 module Core_Mem_Take_Interface
   type t
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
   clone CreusotContracts_Std1_Default_Default_IsDefault_Stub as IsDefault0 with
     type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed t
   val take (dest : borrowed t) : t
+    requires {Inv0.inv dest}
     ensures { [#"../../../../creusot-contracts/src/std/mem.rs" 15 22 15 37] result =  * dest }
     ensures { [#"../../../../creusot-contracts/src/std/mem.rs" 16 22 16 42] IsDefault0.is_default ( ^ dest) }
+    ensures { Inv1.inv ( ^ dest) }
+    ensures { Inv1.inv result }
     
 end
 module CreusotContracts_Model_Impl3_ShallowModel_Stub
@@ -246,13 +283,19 @@ module Core_Slice_Impl0_SplitFirstMut_Interface
   use prelude.Borrow
   use prelude.Slice
   use prelude.Int
-  clone Core_Num_Impl11_Max_Stub as Max0
   use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = Seq.seq t
+  clone Core_Num_Impl11_Max_Stub as Max0
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Core_Option_Option_Type.t_option (borrowed t, borrowed (slice t))
   clone CreusotContracts_Logic_Seq_Impl0_Tail_Stub as Tail0 with
     type t = t
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel1 with
     type t = t,
     val Max0.mAX' = Max0.mAX',
+    predicate Inv0.inv = Inv3.inv,
     axiom .
   clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic1 with
     type t = t,
@@ -260,14 +303,61 @@ module Core_Slice_Impl0_SplitFirstMut_Interface
   clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
     type t = t,
     type s = borrowed (slice t)
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = borrowed t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed (slice t)
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
     type t = slice t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
-  use Core_Option_Option_Type as Core_Option_Option_Type
   val split_first_mut (self : borrowed (slice t)) : Core_Option_Option_Type.t_option (borrowed t, borrowed (slice t))
     ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 257 8 257 96] result = Core_Option_Option_Type.C_None -> Seq.length (ShallowModel0.shallow_model self) = 0 /\  ^ self =  * self /\ ShallowModel0.shallow_model self = Seq.empty  }
-    ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 258 8 263 48] forall tail : borrowed (slice t) . forall first : borrowed t . result = Core_Option_Option_Type.C_Some (first, tail) /\  * first = IndexLogic0.index_logic self 0 /\  ^ first = IndexLogic1.index_logic ( ^ self) 0 /\ Seq.length (ShallowModel0.shallow_model self) > 0 /\ Seq.length (ShallowModel1.shallow_model ( ^ self)) > 0 /\ ShallowModel0.shallow_model tail = Tail0.tail (ShallowModel0.shallow_model self) /\ ShallowModel1.shallow_model ( ^ tail) = Tail0.tail (ShallowModel1.shallow_model ( ^ self)) }
+    ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 258 8 263 48] forall tail : borrowed (slice t) . Inv0.inv tail -> (forall first : borrowed t . Inv1.inv first -> result = Core_Option_Option_Type.C_Some (first, tail) /\  * first = IndexLogic0.index_logic self 0 /\  ^ first = IndexLogic1.index_logic ( ^ self) 0 /\ Seq.length (ShallowModel0.shallow_model self) > 0 /\ Seq.length (ShallowModel1.shallow_model ( ^ self)) > 0 /\ ShallowModel0.shallow_model tail = Tail0.tail (ShallowModel0.shallow_model self) /\ ShallowModel1.shallow_model ( ^ tail) = Tail0.tail (ShallowModel1.shallow_model ( ^ self))) }
+    ensures { Inv2.inv result }
     
+end
+module CreusotContracts_Invariant_Invariant_Invariant_Stub
+  type self
+  predicate invariant' (self : self)
+end
+module CreusotContracts_Invariant_Invariant_Invariant_Interface
+  type self
+  predicate invariant' (self : self)
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
+module CreusotContracts_Invariant_Invariant_Invariant
+  type self
+  predicate invariant' (self : self)
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
+module TyInv_Borrow
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = borrowed t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed t
+  axiom inv_borrow [@rewrite] : forall self : borrowed t . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv ( * self))
+end
+module Core_Option_Option_Type_Inv
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
+  axiom inv_t_option [@rewrite] : forall self : Core_Option_Option_Type.t_option t . Inv0.inv self = (Invariant0.invariant' self /\ match (self) with
+    | Core_Option_Option_Type.C_None -> true
+    | Core_Option_Option_Type.C_Some a_0 -> Inv1.inv (Core_Option_Option_Type.some_0 self)
+    end)
 end
 module CreusotContracts_Std1_Slice_Impl2_IsDefault_Stub
   type t
@@ -289,11 +379,14 @@ module CreusotContracts_Std1_Slice_Impl2_IsDefault
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  clone Core_Num_Impl11_Max_Stub as Max0
   use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Seq.seq t
+  clone Core_Num_Impl11_Max_Stub as Max0
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel1 with
     type t = t,
     val Max0.mAX' = Max0.mAX',
+    predicate Inv0.inv = Inv0.inv,
     axiom .
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
     type t = slice t,
@@ -304,13 +397,84 @@ module CreusotContracts_Std1_Slice_Impl2_IsDefault
     ensures { result = is_default self }
     
 end
+module CreusotContracts_Logic_Seq_Seq_Type_Inv
+  type t
+  use seq.Seq
+  use seq.Seq
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Seq.seq t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Seq.seq t
+  axiom inv_t_seq [@rewrite] : forall self : Seq.seq t . Inv0.inv self = Invariant0.invariant' self
+end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
+module TyInv_Tuple2
+  type t0
+  type t1
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = t1
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = (t0, t1)
+  axiom inv_tuple2 [@rewrite] : forall self : (t0, t1) . Inv0.inv self = (let (a_0, a_1) = self in Inv1.inv a_0 /\ Inv2.inv a_1)
+end
+module CreusotContracts_Invariant_Invariant_IsInhabited_Stub
+  type self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
+  function is_inhabited (_1 : ()) : bool
+end
+module CreusotContracts_Invariant_Invariant_IsInhabited_Interface
+  type self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
+  function is_inhabited (_1 : ()) : bool
+  val is_inhabited (_1 : ()) : bool
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 9 4 9 45] exists x : self . Inv0.inv x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 10 14 10 20] result }
+    ensures { result = is_inhabited _1 }
+    
+  axiom is_inhabited_spec : forall _1 : () . ([#"../../../../creusot-contracts/src/invariant.rs" 10 14 10 20] is_inhabited _1) && ([#"../../../../creusot-contracts/src/invariant.rs" 9 4 9 45] exists x : self . Inv0.inv x /\ Invariant0.invariant' x)
+end
+module CreusotContracts_Invariant_Invariant_IsInhabited
+  type self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
+  function is_inhabited (_1 : ()) : bool
+  val is_inhabited (_1 : ()) : bool
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 9 4 9 45] exists x : self . Inv0.inv x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 10 14 10 20] result }
+    ensures { result = is_inhabited _1 }
+    
+  axiom is_inhabited_spec : forall _1 : () . ([#"../../../../creusot-contracts/src/invariant.rs" 10 14 10 20] is_inhabited _1) && ([#"../../../../creusot-contracts/src/invariant.rs" 9 4 9 45] exists x : self . Inv0.inv x /\ Invariant0.invariant' x)
+end
 module TakeFirstMut_TakeFirstMut_Interface
   type t
   use prelude.Borrow
   use seq.Seq
   use prelude.Int
   use prelude.Slice
+  use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = Seq.seq t
   clone Core_Num_Impl11_Max_Stub as Max0
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Core_Option_Option_Type.t_option (borrowed t)
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = borrowed (slice t)
   clone CreusotContracts_Logic_Seq_Impl0_Tail_Stub as Tail0 with
     type t = t
   clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
@@ -319,13 +483,18 @@ module TakeFirstMut_TakeFirstMut_Interface
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     val Max0.mAX' = Max0.mAX',
+    predicate Inv0.inv = Inv3.inv,
     axiom .
-  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed (borrowed (slice t))
   val take_first_mut [#"../take_first_mut.rs" 16 0 16 74] (self_ : borrowed (borrowed (slice t))) : Core_Option_Option_Type.t_option (borrowed t)
+    requires {[#"../take_first_mut.rs" 16 29 16 34] Inv0.inv self_}
     ensures { [#"../take_first_mut.rs" 6 10 15 1] match (result) with
       | Core_Option_Option_Type.C_Some r ->  * r = Seq.get (ShallowModel0.shallow_model ( *  * self_)) 0 /\  ^ r = IndexLogic0.index_logic ( ^  * self_) 0 /\ Seq.length (ShallowModel0.shallow_model ( *  * self_)) > 0 /\ Seq.length (ShallowModel0.shallow_model ( ^  * self_)) > 0 /\ ShallowModel0.shallow_model ( *  ^ self_) = Tail0.tail (ShallowModel0.shallow_model ( *  * self_)) /\ ShallowModel0.shallow_model ( ^  ^ self_) = Tail0.tail (ShallowModel0.shallow_model ( ^  * self_))
       | Core_Option_Option_Type.C_None ->  ^ self_ =  * self_ /\ Seq.length (ShallowModel0.shallow_model ( *  * self_)) = 0
       end }
+    ensures { [#"../take_first_mut.rs" 16 29 16 34] Inv1.inv ( ^ self_) }
+    ensures { [#"../take_first_mut.rs" 16 57 16 74] Inv2.inv result }
     
 end
 module TakeFirstMut_TakeFirstMut
@@ -334,11 +503,119 @@ module TakeFirstMut_TakeFirstMut
   use prelude.Slice
   use seq.Seq
   use prelude.Int
-  clone Core_Num_Impl11_Max as Max0
   use seq.Seq
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant5 with
+    type self = Seq.seq t
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+    type t = Seq.seq t
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited5 with
+    type self = Seq.seq t,
+    predicate Inv0.inv = Inv5.inv,
+    predicate Invariant0.invariant' = Invariant5.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = borrowed (slice t)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = borrowed t
+  clone CreusotContracts_Invariant_Inv_Interface as Inv8 with
+    type t = (borrowed t, borrowed (slice t))
+  clone TyInv_Tuple2 as TyInv_Tuple20 with
+    type t0 = borrowed t,
+    type t1 = borrowed (slice t),
+    predicate Inv0.inv = Inv8.inv,
+    predicate Inv1.inv = Inv3.inv,
+    predicate Inv2.inv = Inv1.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant4 with
+    type self = Core_Option_Option_Type.t_option (borrowed t, borrowed (slice t))
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+    type t = Core_Option_Option_Type.t_option (borrowed t, borrowed (slice t))
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited4 with
+    type self = Core_Option_Option_Type.t_option (borrowed t, borrowed (slice t)),
+    predicate Inv0.inv = Inv4.inv,
+    predicate Invariant0.invariant' = Invariant4.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant3 with
+    type self = borrowed t
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited3 with
+    type self = borrowed t,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Invariant0.invariant' = Invariant3.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant2 with
+    type self = Core_Option_Option_Type.t_option (borrowed t)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option (borrowed t)
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited2 with
+    type self = Core_Option_Option_Type.t_option (borrowed t),
+    predicate Inv0.inv = Inv2.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
+    type t = slice t
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = slice t,
+    predicate Inv0.inv = Inv6.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant1 with
+    type self = borrowed (slice t)
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited1 with
+    type self = borrowed (slice t),
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant0 with
+    type self = borrowed (borrowed (slice t))
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = borrowed (borrowed (slice t))
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited0 with
+    type self = borrowed (borrowed (slice t)),
+    predicate Inv0.inv = Inv0.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv7 with
+    type t = t
+  clone CreusotContracts_Logic_Seq_Seq_Type_Inv as CreusotContracts_Logic_Seq_Seq_Type_Inv0 with
+    type t = t,
+    predicate Inv0.inv = Inv5.inv,
+    predicate Invariant0.invariant' = Invariant5.invariant',
+    axiom .
+  clone Core_Option_Option_Type_Inv as Core_Option_Option_Type_Inv1 with
+    type t = (borrowed t, borrowed (slice t)),
+    predicate Inv0.inv = Inv4.inv,
+    predicate Invariant0.invariant' = Invariant4.invariant',
+    predicate Inv1.inv = Inv8.inv,
+    axiom .
+  clone TyInv_Borrow as TyInv_Borrow2 with
+    type t = t,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Invariant0.invariant' = Invariant3.invariant',
+    predicate Inv1.inv = Inv7.inv,
+    axiom .
+  clone Core_Option_Option_Type_Inv as Core_Option_Option_Type_Inv0 with
+    type t = borrowed t,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    predicate Inv1.inv = Inv3.inv,
+    axiom .
+  clone TyInv_Borrow as TyInv_Borrow1 with
+    type t = slice t,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Inv1.inv = Inv6.inv,
+    axiom .
+  clone TyInv_Borrow as TyInv_Borrow0 with
+    type t = borrowed (slice t),
+    predicate Inv0.inv = Inv0.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Inv1.inv = Inv1.inv,
+    axiom .
+  clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface as ShallowModel0 with
     type t = t,
     val Max0.mAX' = Max0.mAX',
+    predicate Inv0.inv = Inv5.inv,
     axiom .
   clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel1 with
     type t = slice t,
@@ -352,7 +629,8 @@ module TakeFirstMut_TakeFirstMut
     type t = t,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
     function ShallowModel1.shallow_model = ShallowModel0.shallow_model,
-    val Max0.mAX' = Max0.mAX'
+    val Max0.mAX' = Max0.mAX',
+    predicate Inv0.inv = Inv5.inv
   clone CreusotContracts_Logic_Seq_Impl0_Tail as Tail0 with
     type t = t
   clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic0 with
@@ -361,7 +639,6 @@ module TakeFirstMut_TakeFirstMut
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve3 with
     type t = t
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
     type t = slice t
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
@@ -371,19 +648,28 @@ module TakeFirstMut_TakeFirstMut
   clone Core_Slice_Impl0_SplitFirstMut_Interface as SplitFirstMut0 with
     type t = t,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv3.inv,
     function IndexLogic0.index_logic = IndexLogic1.index_logic,
     function IndexLogic1.index_logic = IndexLogic0.index_logic,
     function ShallowModel1.shallow_model = ShallowModel0.shallow_model,
     function Tail0.tail = Tail0.tail,
-    val Max0.mAX' = Max0.mAX'
+    predicate Inv2.inv = Inv4.inv,
+    val Max0.mAX' = Max0.mAX',
+    predicate Inv3.inv = Inv5.inv
   clone Core_Mem_Take_Interface as Take0 with
     type t = borrowed (slice t),
-    predicate IsDefault0.is_default = IsDefault0.is_default
+    predicate Inv0.inv = Inv0.inv,
+    predicate IsDefault0.is_default = IsDefault0.is_default,
+    predicate Inv1.inv = Inv1.inv
   let rec cfg take_first_mut [#"../take_first_mut.rs" 16 0 16 74] [@cfg:stackify] [@cfg:subregion_analysis] (self_ : borrowed (borrowed (slice t))) : Core_Option_Option_Type.t_option (borrowed t)
+    requires {[#"../take_first_mut.rs" 16 29 16 34] Inv0.inv self_}
     ensures { [#"../take_first_mut.rs" 6 10 15 1] match (result) with
       | Core_Option_Option_Type.C_Some r ->  * r = Seq.get (ShallowModel0.shallow_model ( *  * self_)) 0 /\  ^ r = IndexLogic0.index_logic ( ^  * self_) 0 /\ Seq.length (ShallowModel0.shallow_model ( *  * self_)) > 0 /\ Seq.length (ShallowModel0.shallow_model ( ^  * self_)) > 0 /\ ShallowModel0.shallow_model ( *  ^ self_) = Tail0.tail (ShallowModel0.shallow_model ( *  * self_)) /\ ShallowModel0.shallow_model ( ^  ^ self_) = Tail0.tail (ShallowModel0.shallow_model ( ^  * self_))
       | Core_Option_Option_Type.C_None ->  ^ self_ =  * self_ /\ Seq.length (ShallowModel0.shallow_model ( *  * self_)) = 0
       end }
+    ensures { [#"../take_first_mut.rs" 16 29 16 34] Inv1.inv ( ^ self_) }
+    ensures { [#"../take_first_mut.rs" 16 57 16 74] Inv2.inv result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Option_Option_Type.t_option (borrowed t);

@@ -43,6 +43,25 @@ module C03_Impl1_G
   }
   
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 40 4 40 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module CreusotContracts_Resolve_Resolve_Resolve_Stub
   type self
   predicate resolve (self : self)
@@ -61,17 +80,39 @@ module CreusotContracts_Resolve_Resolve_Resolve
     ensures { result = resolve self }
     
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module C03_Impl2_H_Interface
   type g
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = g
   val h [#"../03.rs" 30 4 30 24] (y : g) : g
+    requires {[#"../03.rs" 30 12 30 13] Inv0.inv y}
+    ensures { [#"../03.rs" 30 22 30 24] Inv0.inv result }
+    
 end
 module C03_Impl2_H
   type g
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = g
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = g,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = g
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = g
   let rec cfg h [#"../03.rs" 30 4 30 24] [@cfg:stackify] [@cfg:subregion_analysis] (y : g) : g
+    requires {[#"../03.rs" 30 12 30 13] Inv0.inv y}
+    ensures { [#"../03.rs" 30 22 30 24] Inv0.inv result }
+    
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : g;
   var y : g = y;
@@ -86,14 +127,51 @@ module C03_Impl2_H
   
 end
 module C03_Impl0
-  
+  use prelude.Borrow
+  use prelude.Int
+  use prelude.Int32
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = int32
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = int32,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = int32,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = int32
+  goal f_refn : [#"../03.rs" 9 4 9 23] forall self : int32 . Inv0.inv self -> (forall result : int32 . true)
 end
 module C03_Impl1
   use prelude.Borrow
   use prelude.Int
   use prelude.UInt32
-  goal g_refn : [#"../03.rs" 20 4 20 23] forall self : uint32 . forall result : uint32 . result = result
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = uint32
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = uint32,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = uint32,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = uint32
+  goal g_refn : [#"../03.rs" 20 4 20 23] forall self : uint32 . Inv0.inv self -> (forall result : uint32 . Inv1.inv result /\ result = result)
 end
 module C03_Impl2
-  
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = g
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = g,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = g
+  type g
+  goal h_refn : [#"../03.rs" 30 4 30 24] forall x : g . Inv0.inv x -> Inv0.inv x /\ (forall result : g . Inv0.inv result -> Inv0.inv result)
 end

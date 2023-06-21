@@ -127,6 +127,25 @@ module SelectionSortGeneric_Partition
     ensures { result = partition v i }
     
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 40 4 40 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
   type t_nonnull 't =
@@ -144,6 +163,16 @@ module Core_Ptr_Unique_Unique_Type
   type t_unique 't =
     | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
+  let function unique_pointer (self : t_unique 't) : Core_Ptr_NonNull_NonNull_Type.t_nonnull 't
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Unique a _ -> a
+      end
+  let function unique__marker (self : t_unique 't) : Core_Marker_PhantomData_Type.t_phantomdata 't
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Unique _ a -> a
+      end
 end
 module Alloc_RawVec_RawVec_Type
   use prelude.Int
@@ -152,6 +181,15 @@ module Alloc_RawVec_RawVec_Type
   type t_rawvec 't 'a =
     | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
     
+  let function rawvec_ptr (self : t_rawvec 't 'a) : Core_Ptr_Unique_Unique_Type.t_unique 't
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_RawVec a _ _ -> a
+      end
+  let function rawvec_alloc (self : t_rawvec 't 'a) : 'a = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_RawVec _ _ a -> a
+      end
 end
 module Alloc_Vec_Vec_Type
   use prelude.Int
@@ -160,6 +198,10 @@ module Alloc_Vec_Vec_Type
   type t_vec 't 'a =
     | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
+  let function vec_buf (self : t_vec 't 'a) : Alloc_RawVec_RawVec_Type.t_rawvec 't 'a = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Vec a _ -> a
+      end
 end
 module Core_Num_Impl11_Max_Stub
   use prelude.Int
@@ -178,8 +220,13 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub
   use seq.Seq
   use prelude.UIntSize
   use prelude.Int
+  use seq.Seq
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq t
   clone Core_Num_Impl11_Max_Stub as Max0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
 end
 module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface
@@ -188,14 +235,21 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface
   use seq.Seq
   use prelude.UIntSize
   use prelude.Int
+  use seq.Seq
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq t
   clone Core_Num_Impl11_Max_Stub as Max0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
   val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv result }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . [#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
 end
 module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   type t
@@ -203,14 +257,21 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   use seq.Seq
   use prelude.UIntSize
   use prelude.Int
+  use seq.Seq
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq t
   clone Core_Num_Impl11_Max_Stub as Max0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
   val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv result }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . [#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
 end
 module CreusotContracts_Model_ShallowModel_ShallowModelTy_Type
   type self
@@ -303,20 +364,29 @@ module CreusotContracts_Std1_Vec_Impl1_DeepModel_Stub
   type a
   use seq.Seq
   use prelude.Int
-  clone Core_Num_Impl11_Max_Stub as Max0
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = t
+  use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Seq.seq t
+  clone Core_Num_Impl11_Max_Stub as Max0
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq DeepModelTy0.deepModelTy
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
   clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
     type t = t,
     type s = Alloc_Vec_Vec_Type.t_vec t a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = a,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX',
+    predicate Inv1.inv = Inv2.inv,
     axiom .
   function deep_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq DeepModelTy0.deepModelTy
 end
@@ -325,56 +395,78 @@ module CreusotContracts_Std1_Vec_Impl1_DeepModel_Interface
   type a
   use seq.Seq
   use prelude.Int
-  clone Core_Num_Impl11_Max_Stub as Max0
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = t
+  use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Seq.seq t
+  clone Core_Num_Impl11_Max_Stub as Max0
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq DeepModelTy0.deepModelTy
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
   clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
     type t = t,
     type s = Alloc_Vec_Vec_Type.t_vec t a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = a,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX',
+    predicate Inv1.inv = Inv2.inv,
     axiom .
   function deep_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq DeepModelTy0.deepModelTy
   val deep_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq DeepModelTy0.deepModelTy
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 33 18 33 22] Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56] Seq.length (ShallowModel0.shallow_model self) = Seq.length result }
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get result i = DeepModel0.deep_model (IndexLogic0.index_logic self i) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 33 4 33 44] Inv1.inv result }
     ensures { result = deep_model self }
     
-  axiom deep_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get (deep_model self) i = DeepModel0.deep_model (IndexLogic0.index_logic self i)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56] Seq.length (ShallowModel0.shallow_model self) = Seq.length (deep_model self))
+  axiom deep_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../creusot-contracts/src/std/vec.rs" 33 18 33 22] Inv0.inv self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 33 4 33 44] Inv1.inv (deep_model self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get (deep_model self) i = DeepModel0.deep_model (IndexLogic0.index_logic self i)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56] Seq.length (ShallowModel0.shallow_model self) = Seq.length (deep_model self))
 end
 module CreusotContracts_Std1_Vec_Impl1_DeepModel
   type t
   type a
   use seq.Seq
   use prelude.Int
-  clone Core_Num_Impl11_Max_Stub as Max0
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = t
+  use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Seq.seq t
+  clone Core_Num_Impl11_Max_Stub as Max0
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq DeepModelTy0.deepModelTy
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
   clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
     type t = t,
     type s = Alloc_Vec_Vec_Type.t_vec t a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = a,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX',
+    predicate Inv1.inv = Inv2.inv,
     axiom .
   function deep_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq DeepModelTy0.deepModelTy
   val deep_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq DeepModelTy0.deepModelTy
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 33 18 33 22] Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56] Seq.length (ShallowModel0.shallow_model self) = Seq.length result }
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get result i = DeepModel0.deep_model (IndexLogic0.index_logic self i) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 33 4 33 44] Inv1.inv result }
     ensures { result = deep_model self }
     
-  axiom deep_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get (deep_model self) i = DeepModel0.deep_model (IndexLogic0.index_logic self i)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56] Seq.length (ShallowModel0.shallow_model self) = Seq.length (deep_model self))
+  axiom deep_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../creusot-contracts/src/std/vec.rs" 33 18 33 22] Inv0.inv self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 33 4 33 44] Inv1.inv (deep_model self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get (deep_model self) i = DeepModel0.deep_model (IndexLogic0.index_logic self i)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56] Seq.length (ShallowModel0.shallow_model self) = Seq.length (deep_model self))
 end
 module CreusotContracts_Model_Impl3_ShallowModel_Stub
   type t
@@ -451,25 +543,6 @@ module CreusotContracts_Resolve_Resolve_Resolve
   predicate resolve (self : self)
   val resolve (self : self) : bool
     ensures { result = resolve self }
-    
-end
-module CreusotContracts_Invariant_Inv_Stub
-  type t
-  predicate inv (_x : t)
-end
-module CreusotContracts_Invariant_Inv_Interface
-  type t
-  predicate inv (_x : t)
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
-module CreusotContracts_Invariant_Inv
-  type t
-  predicate inv (_x : t) =
-    [#"../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
     
 end
 module Core_Ops_Range_Range_Type
@@ -657,7 +730,10 @@ module Alloc_Vec_Impl1_Len_Interface
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a
   val len (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 66 26 66 48] UIntSize.to_int result = Seq.length (ShallowModel0.shallow_model self) }
     
 end
@@ -724,12 +800,34 @@ module Core_Iter_Traits_Collect_Impl0_IntoIter_Interface
     ensures { Inv0.inv result }
     
 end
+module CreusotContracts_Invariant_Invariant_Invariant_Stub
+  type self
+  predicate invariant' (self : self)
+end
+module CreusotContracts_Invariant_Invariant_Invariant_Interface
+  type self
+  predicate invariant' (self : self)
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
+module CreusotContracts_Invariant_Invariant_Invariant
+  type self
+  predicate invariant' (self : self)
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
 module Core_Ops_Range_Range_Type_Inv
   type idx
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = idx
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Ops_Range_Range_Type.t_range idx
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = Core_Ops_Range_Range_Type.t_range idx
-  axiom inv_t_range : forall self : Core_Ops_Range_Range_Type.t_range idx . Inv0.inv self = true
+  axiom inv_t_range [@rewrite] : forall self : Core_Ops_Range_Range_Type.t_range idx . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv (Core_Ops_Range_Range_Type.range_start self) /\ Inv1.inv (Core_Ops_Range_Range_Type.range_end self))
 end
 module CreusotContracts_Std1_Iter_Iterator_Completed_Stub
   type self
@@ -789,6 +887,10 @@ module Core_Iter_Range_Impl3_Next_Interface
   use seq.Seq
   use Core_Option_Option_Type as Core_Option_Option_Type
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Core_Option_Option_Type.t_option a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Ops_Range_Range_Type.t_range a
   clone CreusotContracts_Std1_Iter_Iterator_Produces_Stub as Produces0 with
     type self = Core_Ops_Range_Range_Type.t_range a,
     type Item0.item = a
@@ -796,11 +898,16 @@ module Core_Iter_Range_Impl3_Next_Interface
     type self = Core_Ops_Range_Range_Type.t_range a
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = Core_Ops_Range_Range_Type.t_range a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed (Core_Ops_Range_Range_Type.t_range a)
   val next (self : borrowed (Core_Ops_Range_Range_Type.t_range a)) : Core_Option_Option_Type.t_option a
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/iter.rs" 92 26 95 17] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
+    ensures { Inv1.inv ( ^ self) }
+    ensures { Inv2.inv result }
     
 end
 module CreusotContracts_Std1_Slice_SliceIndex_InBounds_Stub
@@ -883,11 +990,17 @@ module Alloc_Vec_Impl13_Index_Interface
     type self = i,
     type t = slice t
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndex_HasValue_Stub as HasValue0 with
     type self = i,
     type t = slice t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = i
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a
   clone CreusotContracts_Std1_Slice_SliceIndex_InBounds_Stub as InBounds0 with
     type self = i,
     type t = slice t,
@@ -897,7 +1010,10 @@ module Alloc_Vec_Impl13_Index_Interface
     type ShallowModelTy0.shallowModelTy = Seq.seq t
   val index (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {[#"../../../../creusot-contracts/src/std/vec.rs" 131 27 131 46] InBounds0.in_bounds index (ShallowModel0.shallow_model self)}
+    requires {Inv0.inv self}
+    requires {Inv1.inv index}
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 132 26 132 54] HasValue0.has_value index (ShallowModel0.shallow_model self) result }
+    ensures { Inv2.inv result }
     
 end
 module CreusotContracts_Model_Impl0_DeepModel_Stub
@@ -967,7 +1083,13 @@ module Core_Cmp_PartialOrd_Lt_Interface
   clone CreusotContracts_Model_Impl0_DeepModel_Stub as DeepModel0 with
     type t = self,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = rhs
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   val lt (self : self) (other : rhs) : bool
+    requires {Inv0.inv self}
+    requires {Inv1.inv other}
     ensures { [#"../../../../creusot-contracts/src/std/cmp.rs" 27 26 27 76] result = LtLog0.lt_log (DeepModel0.deep_model self) (DeepModel1.deep_model other) }
     
 end
@@ -977,6 +1099,9 @@ module CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub
   use prelude.UIntSize
   use prelude.Int
   use prelude.Slice
+  use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Seq.seq t
   clone Core_Num_Impl11_Max_Stub as Max0
   function shallow_model (self : slice t) : Seq.seq t
 end
@@ -986,14 +1111,18 @@ module CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface
   use prelude.UIntSize
   use prelude.Int
   use prelude.Slice
+  use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Seq.seq t
   clone Core_Num_Impl11_Max_Stub as Max0
   function shallow_model (self : slice t) : Seq.seq t
   val shallow_model (self : slice t) : Seq.seq t
     ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
     ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] result = Slice.id self }
+    ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 20 4 20 50] Inv0.inv result }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] shallow_model self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
+  axiom shallow_model_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 20 4 20 50] Inv0.inv (shallow_model self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] shallow_model self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
 end
 module CreusotContracts_Std1_Slice_Impl0_ShallowModel
   type t
@@ -1001,14 +1130,18 @@ module CreusotContracts_Std1_Slice_Impl0_ShallowModel
   use prelude.UIntSize
   use prelude.Int
   use prelude.Slice
+  use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Seq.seq t
   clone Core_Num_Impl11_Max_Stub as Max0
   function shallow_model (self : slice t) : Seq.seq t
   val shallow_model (self : slice t) : Seq.seq t
     ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
     ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] result = Slice.id self }
+    ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 20 4 20 50] Inv0.inv result }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] shallow_model self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
+  axiom shallow_model_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 20 4 20 50] Inv0.inv (shallow_model self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] shallow_model self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
 end
 module Alloc_Vec_Impl10_DerefMut_Interface
   type t
@@ -1016,17 +1149,26 @@ module Alloc_Vec_Impl10_DerefMut_Interface
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  clone Core_Num_Impl11_Max_Stub as Max0
   use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = Seq.seq t
+  clone Core_Num_Impl11_Max_Stub as Max0
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = borrowed (slice t)
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel3 with
     type t = t,
     type a = a,
+    predicate Inv0.inv = Inv1.inv,
     val Max0.mAX' = Max0.mAX',
+    predicate Inv1.inv = Inv3.inv,
     axiom .
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel2 with
     type t = t,
     val Max0.mAX' = Max0.mAX',
+    predicate Inv0.inv = Inv3.inv,
     axiom .
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel1 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
@@ -1034,9 +1176,14 @@ module Alloc_Vec_Impl10_DerefMut_Interface
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
     type t = slice t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed (Alloc_Vec_Vec_Type.t_vec t a)
   val deref_mut (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) : borrowed (slice t)
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 142 26 142 42] ShallowModel0.shallow_model result = ShallowModel1.shallow_model self }
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 143 26 143 48] ShallowModel2.shallow_model ( ^ result) = ShallowModel3.shallow_model ( ^ self) }
+    ensures { Inv1.inv ( ^ self) }
+    ensures { Inv2.inv result }
     
 end
 module Core_Slice_Impl0_Swap_Interface
@@ -1047,11 +1194,14 @@ module Core_Slice_Impl0_Swap_Interface
   use prelude.Borrow
   use seq.Permut
   use prelude.Slice
-  clone Core_Num_Impl11_Max_Stub as Max0
   use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Seq.seq t
+  clone Core_Num_Impl11_Max_Stub as Max0
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel1 with
     type t = t,
     val Max0.mAX' = Max0.mAX',
+    predicate Inv0.inv = Inv0.inv,
     axiom .
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
     type t = slice t,
@@ -1061,6 +1211,30 @@ module Core_Slice_Impl0_Swap_Interface
     requires {[#"../../../../creusot-contracts/src/std/slice.rs" 238 19 238 35] UIntSize.to_int b < Seq.length (ShallowModel0.shallow_model self)}
     ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 239 8 239 52] Permut.exchange (ShallowModel1.shallow_model ( ^ self)) (ShallowModel0.shallow_model self) (UIntSize.to_int a) (UIntSize.to_int b) }
     
+end
+module TyInv_Borrow
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = borrowed t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed t
+  axiom inv_borrow [@rewrite] : forall self : borrowed t . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv ( * self))
+end
+module Alloc_Vec_Vec_Type_Inv
+  type t
+  type a
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Alloc_RawVec_RawVec_Type.t_rawvec t a
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Alloc_Vec_Vec_Type.t_vec t a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a
+  axiom inv_t_vec [@rewrite] : forall self : Alloc_Vec_Vec_Type.t_vec t a . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv (Alloc_Vec_Vec_Type.vec_buf self))
 end
 module CreusotContracts_Std1_Iter_Impl0_IntoIterPre_Stub
   type i
@@ -1106,6 +1280,8 @@ module CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl_Stub
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
     type idx = idx
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Ops_Range_Range_Type.t_range idx
   function produces_refl (a : Core_Ops_Range_Range_Type.t_range idx) : ()
 end
 module CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl_Interface
@@ -1114,12 +1290,15 @@ module CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl_Interface
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
     type idx = idx
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Ops_Range_Range_Type.t_range idx
   function produces_refl (a : Core_Ops_Range_Range_Type.t_range idx) : ()
   val produces_refl (a : Core_Ops_Range_Range_Type.t_range idx) : ()
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 22] Inv0.inv a}
     ensures { [#"../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 39] Produces0.produces a (Seq.empty ) a }
     ensures { result = produces_refl a }
     
-  axiom produces_refl_spec : forall a : Core_Ops_Range_Range_Type.t_range idx . [#"../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 39] Produces0.produces a (Seq.empty ) a
+  axiom produces_refl_spec : forall a : Core_Ops_Range_Range_Type.t_range idx . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 22] Inv0.inv a) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 39] Produces0.produces a (Seq.empty ) a)
 end
 module CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl
   type idx
@@ -1127,18 +1306,26 @@ module CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
     type idx = idx
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Ops_Range_Range_Type.t_range idx
   function produces_refl (a : Core_Ops_Range_Range_Type.t_range idx) : () =
     [#"../../../../creusot-contracts/src/std/iter/range.rs" 30 4 30 10] ()
   val produces_refl (a : Core_Ops_Range_Range_Type.t_range idx) : ()
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 22] Inv0.inv a}
     ensures { [#"../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 39] Produces0.produces a (Seq.empty ) a }
     ensures { result = produces_refl a }
     
-  axiom produces_refl_spec : forall a : Core_Ops_Range_Range_Type.t_range idx . [#"../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 39] Produces0.produces a (Seq.empty ) a
+  axiom produces_refl_spec : forall a : Core_Ops_Range_Range_Type.t_range idx . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 22] Inv0.inv a) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 39] Produces0.produces a (Seq.empty ) a)
 end
 module CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans_Stub
   type idx
   use seq.Seq
+  use seq.Seq
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq idx
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Ops_Range_Range_Type.t_range idx
   clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
     type idx = idx
   function produces_trans (a : Core_Ops_Range_Range_Type.t_range idx) (ab : Seq.seq idx) (b : Core_Ops_Range_Range_Type.t_range idx) (bc : Seq.seq idx) (c : Core_Ops_Range_Range_Type.t_range idx) : ()
@@ -1147,7 +1334,12 @@ end
 module CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans_Interface
   type idx
   use seq.Seq
+  use seq.Seq
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq idx
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Ops_Range_Range_Type.t_range idx
   clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
     type idx = idx
   function produces_trans (a : Core_Ops_Range_Range_Type.t_range idx) (ab : Seq.seq idx) (b : Core_Ops_Range_Range_Type.t_range idx) (bc : Seq.seq idx) (c : Core_Ops_Range_Range_Type.t_range idx) : ()
@@ -1155,15 +1347,25 @@ module CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans_Interface
   val produces_trans (a : Core_Ops_Range_Range_Type.t_range idx) (ab : Seq.seq idx) (b : Core_Ops_Range_Range_Type.t_range idx) (bc : Seq.seq idx) (c : Core_Ops_Range_Range_Type.t_range idx) : ()
     requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] Produces0.produces a ab b}
     requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] Produces0.produces b bc c}
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] Inv0.inv a}
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] Inv1.inv ab}
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] Inv0.inv b}
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] Inv1.inv bc}
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] Inv0.inv c}
     ensures { [#"../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] Produces0.produces a (Seq.(++) ab bc) c }
     ensures { result = produces_trans a ab b bc c }
     
-  axiom produces_trans_spec : forall a : Core_Ops_Range_Range_Type.t_range idx, ab : Seq.seq idx, b : Core_Ops_Range_Range_Type.t_range idx, bc : Seq.seq idx, c : Core_Ops_Range_Range_Type.t_range idx . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] Produces0.produces a ab b) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] Produces0.produces b bc c) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] Produces0.produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : Core_Ops_Range_Range_Type.t_range idx, ab : Seq.seq idx, b : Core_Ops_Range_Range_Type.t_range idx, bc : Seq.seq idx, c : Core_Ops_Range_Range_Type.t_range idx . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] Produces0.produces a ab b) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] Produces0.produces b bc c) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] Inv0.inv a) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] Inv1.inv ab) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] Inv0.inv b) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] Inv1.inv bc) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] Inv0.inv c) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans
   type idx
   use seq.Seq
+  use seq.Seq
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq idx
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Ops_Range_Range_Type.t_range idx
   clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
     type idx = idx
   function produces_trans (a : Core_Ops_Range_Range_Type.t_range idx) (ab : Seq.seq idx) (b : Core_Ops_Range_Range_Type.t_range idx) (bc : Seq.seq idx) (c : Core_Ops_Range_Range_Type.t_range idx) : ()
@@ -1173,10 +1375,15 @@ module CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans
   val produces_trans (a : Core_Ops_Range_Range_Type.t_range idx) (ab : Seq.seq idx) (b : Core_Ops_Range_Range_Type.t_range idx) (bc : Seq.seq idx) (c : Core_Ops_Range_Range_Type.t_range idx) : ()
     requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] Produces0.produces a ab b}
     requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] Produces0.produces b bc c}
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] Inv0.inv a}
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] Inv1.inv ab}
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] Inv0.inv b}
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] Inv1.inv bc}
+    requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] Inv0.inv c}
     ensures { [#"../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] Produces0.produces a (Seq.(++) ab bc) c }
     ensures { result = produces_trans a ab b bc c }
     
-  axiom produces_trans_spec : forall a : Core_Ops_Range_Range_Type.t_range idx, ab : Seq.seq idx, b : Core_Ops_Range_Range_Type.t_range idx, bc : Seq.seq idx, c : Core_Ops_Range_Range_Type.t_range idx . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] Produces0.produces a ab b) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] Produces0.produces b bc c) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] Produces0.produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : Core_Ops_Range_Range_Type.t_range idx, ab : Seq.seq idx, b : Core_Ops_Range_Range_Type.t_range idx, bc : Seq.seq idx, c : Core_Ops_Range_Range_Type.t_range idx . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] Produces0.produces a ab b) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] Produces0.produces b bc c) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] Inv0.inv a) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] Inv1.inv ab) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] Inv0.inv b) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] Inv1.inv bc) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] Inv0.inv c) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module CreusotContracts_Std1_Num_Impl16_DeepModel_Stub
   use prelude.Int
@@ -1231,6 +1438,20 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Completed
   val completed (self : borrowed (Core_Ops_Range_Range_Type.t_range idx)) : bool
     ensures { result = completed self }
     
+end
+module Core_Option_Option_Type_Inv
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
+  axiom inv_t_option [@rewrite] : forall self : Core_Option_Option_Type.t_option t . Inv0.inv self = (Invariant0.invariant' self /\ match (self) with
+    | Core_Option_Option_Type.C_None -> true
+    | Core_Option_Option_Type.C_Some a_0 -> Inv1.inv (Core_Option_Option_Type.some_0 self)
+    end)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog_Stub
   type self
@@ -1615,6 +1836,12 @@ module CreusotContracts_Std1_Slice_Impl5_InBounds
     ensures { result = in_bounds self seq }
     
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module CreusotContracts_Std1_Slice_Impl5_HasValue_Stub
   type t
   use prelude.Int
@@ -1643,14 +1870,174 @@ module CreusotContracts_Std1_Slice_Impl5_HasValue
     ensures { result = has_value self seq out }
     
 end
+module CreusotContracts_Logic_Seq_Seq_Type_Inv
+  type t
+  use seq.Seq
+  use seq.Seq
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Seq.seq t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Seq.seq t
+  axiom inv_t_seq [@rewrite] : forall self : Seq.seq t . Inv0.inv self = Invariant0.invariant' self
+end
+module CreusotContracts_Invariant_Impl0_Invariant_Stub
+  type t
+  predicate invariant' (self : t)
+end
+module CreusotContracts_Invariant_Impl0_Invariant_Interface
+  type t
+  predicate invariant' (self : t)
+  val invariant' (self : t) : bool
+    ensures { result = invariant' self }
+    
+end
+module CreusotContracts_Invariant_Impl0_Invariant
+  type t
+  predicate invariant' (self : t) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 21 8 21 12] true
+  val invariant' (self : t) : bool
+    ensures { result = invariant' self }
+    
+end
+module Alloc_RawVec_RawVec_Type_Inv
+  type t
+  type a
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = a
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Ptr_Unique_Unique_Type.t_unique t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Alloc_RawVec_RawVec_Type.t_rawvec t a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_RawVec_RawVec_Type.t_rawvec t a
+  axiom inv_t_rawvec [@rewrite] : forall self : Alloc_RawVec_RawVec_Type.t_rawvec t a . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv (Alloc_RawVec_RawVec_Type.rawvec_ptr self) /\ Inv2.inv (Alloc_RawVec_RawVec_Type.rawvec_alloc self))
+end
+module CreusotContracts_Invariant_Impl0_IsInhabited_Stub
+  type t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  function is_inhabited (_1 : ()) : bool
+end
+module CreusotContracts_Invariant_Impl0_IsInhabited_Interface
+  type t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  function is_inhabited (_1 : ()) : bool
+  val is_inhabited (_1 : ()) : bool
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] result }
+    ensures { result = is_inhabited _1 }
+    
+  axiom is_inhabited_spec : forall _1 : () . ([#"../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] is_inhabited _1) && ([#"../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x)
+end
+module CreusotContracts_Invariant_Impl0_IsInhabited
+  type t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  function is_inhabited (_1 : ()) : bool =
+    [#"../../../../creusot-contracts/src/invariant.rs" 32 8 32 12] true
+  val is_inhabited (_1 : ()) : bool
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] result }
+    ensures { result = is_inhabited _1 }
+    
+  axiom is_inhabited_spec : forall _1 : () . ([#"../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] is_inhabited _1) && ([#"../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x)
+end
+module CreusotContracts_Invariant_Invariant_IsInhabited_Stub
+  type self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
+  function is_inhabited (_1 : ()) : bool
+end
+module CreusotContracts_Invariant_Invariant_IsInhabited_Interface
+  type self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
+  function is_inhabited (_1 : ()) : bool
+  val is_inhabited (_1 : ()) : bool
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 9 4 9 45] exists x : self . Inv0.inv x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 10 14 10 20] result }
+    ensures { result = is_inhabited _1 }
+    
+  axiom is_inhabited_spec : forall _1 : () . ([#"../../../../creusot-contracts/src/invariant.rs" 10 14 10 20] is_inhabited _1) && ([#"../../../../creusot-contracts/src/invariant.rs" 9 4 9 45] exists x : self . Inv0.inv x /\ Invariant0.invariant' x)
+end
+module CreusotContracts_Invariant_Invariant_IsInhabited
+  type self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
+  function is_inhabited (_1 : ()) : bool
+  val is_inhabited (_1 : ()) : bool
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 9 4 9 45] exists x : self . Inv0.inv x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 10 14 10 20] result }
+    ensures { result = is_inhabited _1 }
+    
+  axiom is_inhabited_spec : forall _1 : () . ([#"../../../../creusot-contracts/src/invariant.rs" 10 14 10 20] is_inhabited _1) && ([#"../../../../creusot-contracts/src/invariant.rs" 9 4 9 45] exists x : self . Inv0.inv x /\ Invariant0.invariant' x)
+end
+module Core_Ptr_Unique_Unique_Type_Inv
+  type t
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata t
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Ptr_NonNull_NonNull_Type.t_nonnull t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Ptr_Unique_Unique_Type.t_unique t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Ptr_Unique_Unique_Type.t_unique t
+  axiom inv_t_unique [@rewrite] : forall self : Core_Ptr_Unique_Unique_Type.t_unique t . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv (Core_Ptr_Unique_Unique_Type.unique_pointer self) /\ Inv2.inv (Core_Ptr_Unique_Unique_Type.unique__marker self))
+end
+module Alloc_Alloc_Global_Type_Inv
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Alloc_Global_Type.t_global
+  axiom inv_t_global : forall self : Alloc_Alloc_Global_Type.t_global . Inv0.inv self = true
+end
+module Core_Ptr_NonNull_NonNull_Type_Inv
+  type t
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Ptr_NonNull_NonNull_Type.t_nonnull t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Ptr_NonNull_NonNull_Type.t_nonnull t
+  axiom inv_t_nonnull [@rewrite] : forall self : Core_Ptr_NonNull_NonNull_Type.t_nonnull t . Inv0.inv self = Invariant0.invariant' self
+end
+module Core_Marker_PhantomData_Type_Inv
+  type t
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Marker_PhantomData_Type.t_phantomdata t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata t
+  axiom inv_t_phantomdata [@rewrite] : forall self : Core_Marker_PhantomData_Type.t_phantomdata t . Inv0.inv self = Invariant0.invariant' self
+end
 module SelectionSortGeneric_SelectionSort_Interface
   type t
   use prelude.Borrow
   use seq.Seq
-  use seq.Seq
-  clone Core_Num_Impl11_Max_Stub as Max0
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = t
+  use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = Seq.seq t
+  clone Core_Num_Impl11_Max_Stub as Max0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Seq.seq DeepModelTy0.deepModelTy
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel1 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
@@ -1659,6 +2046,8 @@ module SelectionSortGeneric_SelectionSort_Interface
   clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
     type t = t,
     type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   clone CreusotContracts_Logic_Seq_Impl0_PermutationOf_Stub as PermutationOf0 with
     type t = t
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel1 with
@@ -1667,22 +2056,31 @@ module SelectionSortGeneric_SelectionSort_Interface
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv1.inv,
     val Max0.mAX' = Max0.mAX',
+    predicate Inv1.inv = Inv3.inv,
     axiom .
   clone SelectionSortGeneric_Sorted_Stub as Sorted0 with
     type t = DeepModelTy0.deepModelTy
   clone CreusotContracts_Std1_Vec_Impl1_DeepModel_Stub as DeepModel0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv1.inv,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     function IndexLogic0.index_logic = IndexLogic0.index_logic,
     function DeepModel0.deep_model = DeepModel1.deep_model,
+    predicate Inv1.inv = Inv2.inv,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     val Max0.mAX' = Max0.mAX',
+    predicate Inv2.inv = Inv3.inv,
     axiom .
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
   val selection_sort [#"../selection_sort_generic.rs" 30 0 32 29] (v : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : ()
+    requires {[#"../selection_sort_generic.rs" 30 42 30 43] Inv0.inv v}
     ensures { [#"../selection_sort_generic.rs" 28 10 28 35] Sorted0.sorted (DeepModel0.deep_model ( ^ v)) }
     ensures { [#"../selection_sort_generic.rs" 29 0 29 36] PermutationOf0.permutation_of (ShallowModel0.shallow_model ( ^ v)) (ShallowModel1.shallow_model v) }
+    ensures { [#"../selection_sort_generic.rs" 30 42 30 43] Inv1.inv ( ^ v) }
     
 end
 module SelectionSortGeneric_SelectionSort
@@ -1693,8 +2091,203 @@ module SelectionSortGeneric_SelectionSort
   use seq.Seq
   use prelude.Borrow
   use prelude.Slice
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant12 with
+    type self = Core_Marker_PhantomData_Type.t_phantomdata t
+  clone CreusotContracts_Invariant_Inv_Interface as Inv19 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata t
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited12 with
+    type self = Core_Marker_PhantomData_Type.t_phantomdata t,
+    predicate Inv0.inv = Inv19.inv,
+    predicate Invariant0.invariant' = Invariant12.invariant',
+    axiom .
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant11 with
+    type self = Core_Ptr_NonNull_NonNull_Type.t_nonnull t
+  clone CreusotContracts_Invariant_Inv_Interface as Inv18 with
+    type t = Core_Ptr_NonNull_NonNull_Type.t_nonnull t
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited11 with
+    type self = Core_Ptr_NonNull_NonNull_Type.t_nonnull t,
+    predicate Inv0.inv = Inv18.inv,
+    predicate Invariant0.invariant' = Invariant11.invariant',
+    axiom .
+  clone Core_Marker_PhantomData_Type_Inv as Core_Marker_PhantomData_Type_Inv0 with
+    type t = t,
+    predicate Inv0.inv = Inv19.inv,
+    predicate Invariant0.invariant' = Invariant12.invariant',
+    axiom .
+  clone Core_Ptr_NonNull_NonNull_Type_Inv as Core_Ptr_NonNull_NonNull_Type_Inv0 with
+    type t = t,
+    predicate Inv0.inv = Inv18.inv,
+    predicate Invariant0.invariant' = Invariant11.invariant',
+    axiom .
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant10 with
+    type self = Core_Ptr_Unique_Unique_Type.t_unique t
+  clone CreusotContracts_Invariant_Inv_Interface as Inv16 with
+    type t = Core_Ptr_Unique_Unique_Type.t_unique t
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited10 with
+    type self = Core_Ptr_Unique_Unique_Type.t_unique t,
+    predicate Inv0.inv = Inv16.inv,
+    predicate Invariant0.invariant' = Invariant10.invariant',
+    axiom .
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv17 with
+    type t = Alloc_Alloc_Global_Type.t_global
+  clone Alloc_Alloc_Global_Type_Inv as Alloc_Alloc_Global_Type_Inv0 with
+    predicate Inv0.inv = Inv17.inv,
+    axiom .
+  clone Core_Ptr_Unique_Unique_Type_Inv as Core_Ptr_Unique_Unique_Type_Inv0 with
+    type t = t,
+    predicate Inv0.inv = Inv16.inv,
+    predicate Invariant0.invariant' = Invariant10.invariant',
+    predicate Inv1.inv = Inv18.inv,
+    predicate Inv2.inv = Inv19.inv,
+    axiom .
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant9 with
+    type self = Alloc_RawVec_RawVec_Type.t_rawvec t (Alloc_Alloc_Global_Type.t_global)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv13 with
+    type t = Alloc_RawVec_RawVec_Type.t_rawvec t (Alloc_Alloc_Global_Type.t_global)
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited9 with
+    type self = Alloc_RawVec_RawVec_Type.t_rawvec t (Alloc_Alloc_Global_Type.t_global),
+    predicate Inv0.inv = Inv13.inv,
+    predicate Invariant0.invariant' = Invariant9.invariant',
+    axiom .
+  use seq.Seq
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant8 with
+    type t = Seq.seq usize
+  clone CreusotContracts_Invariant_Inv_Interface as Inv12 with
+    type t = Seq.seq usize
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited8 with
+    type t = Seq.seq usize,
+    predicate Inv0.inv = Inv12.inv,
+    predicate Invariant0.invariant' = Invariant8.invariant',
+    axiom .
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant7 with
+    type self = Seq.seq DeepModelTy0.deepModelTy
+  clone CreusotContracts_Invariant_Inv_Interface as Inv11 with
+    type t = Seq.seq DeepModelTy0.deepModelTy
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited7 with
+    type self = Seq.seq DeepModelTy0.deepModelTy,
+    predicate Inv0.inv = Inv11.inv,
+    predicate Invariant0.invariant' = Invariant7.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant6 with
+    type self = Seq.seq t
+  clone CreusotContracts_Invariant_Inv_Interface as Inv10 with
+    type t = Seq.seq t
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited6 with
+    type self = Seq.seq t,
+    predicate Inv0.inv = Inv10.inv,
+    predicate Invariant0.invariant' = Invariant6.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv15 with
+    type t = slice t
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = slice t,
+    predicate Inv0.inv = Inv15.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant5 with
+    type self = borrowed (slice t)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv9 with
+    type t = borrowed (slice t)
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited5 with
+    type self = borrowed (slice t),
+    predicate Inv0.inv = Inv9.inv,
+    predicate Invariant0.invariant' = Invariant5.invariant',
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant4 with
+    type t = Core_Option_Option_Type.t_option usize
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+    type t = Core_Option_Option_Type.t_option usize
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited4 with
+    type t = Core_Option_Option_Type.t_option usize,
+    predicate Inv0.inv = Inv5.inv,
+    predicate Invariant0.invariant' = Invariant4.invariant',
+    axiom .
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant3 with
+    type t = borrowed (Core_Ops_Range_Range_Type.t_range usize)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+    type t = borrowed (Core_Ops_Range_Range_Type.t_range usize)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited3 with
+    type t = borrowed (Core_Ops_Range_Range_Type.t_range usize),
+    predicate Inv0.inv = Inv4.inv,
+    predicate Invariant0.invariant' = Invariant3.invariant',
+    axiom .
+  clone Alloc_RawVec_RawVec_Type_Inv as Alloc_RawVec_RawVec_Type_Inv0 with
+    type t = t,
+    type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv13.inv,
+    predicate Invariant0.invariant' = Invariant9.invariant',
+    predicate Inv1.inv = Inv16.inv,
+    predicate Inv2.inv = Inv17.inv,
+    axiom .
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant2 with
+    type self = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited2 with
+    type self = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
+    predicate Inv0.inv = Inv2.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant1 with
+    type self = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited1 with
+    type self = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv14 with
+    type t = t
+  clone CreusotContracts_Logic_Seq_Seq_Type_Inv as CreusotContracts_Logic_Seq_Seq_Type_Inv2 with
+    type t = usize,
+    predicate Inv0.inv = Inv12.inv,
+    predicate Invariant0.invariant' = Invariant8.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant0 with
+    type t = Core_Ops_Range_Range_Type.t_range usize
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Ops_Range_Range_Type.t_range usize
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited0 with
+    type t = Core_Ops_Range_Range_Type.t_range usize,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  clone CreusotContracts_Logic_Seq_Seq_Type_Inv as CreusotContracts_Logic_Seq_Seq_Type_Inv1 with
+    type t = DeepModelTy0.deepModelTy,
+    predicate Inv0.inv = Inv11.inv,
+    predicate Invariant0.invariant' = Invariant7.invariant',
+    axiom .
+  clone CreusotContracts_Logic_Seq_Seq_Type_Inv as CreusotContracts_Logic_Seq_Seq_Type_Inv0 with
+    type t = t,
+    predicate Inv0.inv = Inv10.inv,
+    predicate Invariant0.invariant' = Invariant6.invariant',
+    axiom .
+  clone TyInv_Borrow as TyInv_Borrow2 with
+    type t = slice t,
+    predicate Inv0.inv = Inv9.inv,
+    predicate Invariant0.invariant' = Invariant5.invariant',
+    predicate Inv1.inv = Inv15.inv,
+    axiom .
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = t,
+    predicate Inv0.inv = Inv14.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
+    type t = usize
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = usize,
+    predicate Inv0.inv = Inv6.inv,
+    axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Interface as GtLog0 with
     type self = DeepModelTy0.deepModelTy
   clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface as GeLog0 with
@@ -1702,25 +2295,57 @@ module SelectionSortGeneric_SelectionSort
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with
     type self = DeepModelTy0.deepModelTy
+  clone Core_Option_Option_Type_Inv as Core_Option_Option_Type_Inv0 with
+    type t = usize,
+    predicate Inv0.inv = Inv5.inv,
+    predicate Invariant0.invariant' = Invariant4.invariant',
+    predicate Inv1.inv = Inv6.inv,
+    axiom .
+  clone TyInv_Borrow as TyInv_Borrow1 with
+    type t = Core_Ops_Range_Range_Type.t_range usize,
+    predicate Inv0.inv = Inv4.inv,
+    predicate Invariant0.invariant' = Invariant3.invariant',
+    predicate Inv1.inv = Inv0.inv,
+    axiom .
+  clone Alloc_Vec_Vec_Type_Inv as Alloc_Vec_Vec_Type_Inv1 with
+    type t = t,
+    type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    predicate Inv1.inv = Inv13.inv,
+    axiom .
+  clone Alloc_Vec_Vec_Type_Inv as Alloc_Vec_Vec_Type_Inv0 with
+    type t = t,
+    type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    predicate Inv1.inv = Inv13.inv,
+    axiom .
   clone CreusotContracts_Model_DeepModel_DeepModel_Interface as DeepModel4 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
-  use seq.Seq
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel2 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv2.inv,
     val Max0.mAX' = Max0.mAX',
+    predicate Inv1.inv = Inv10.inv,
     axiom .
   clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic0 with
     type t = t,
     type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model
+  clone TyInv_Borrow as TyInv_Borrow0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Inv1.inv = Inv2.inv,
+    axiom .
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface as ShallowModel6 with
     type t = t,
     val Max0.mAX' = Max0.mAX',
+    predicate Inv0.inv = Inv10.inv,
     axiom .
   clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel5 with
     type t = slice t,
@@ -1732,6 +2357,10 @@ module SelectionSortGeneric_SelectionSort
     type t = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     function DeepModel0.deep_model = DeepModel4.deep_model
+  clone CreusotContracts_Invariant_Inv_Interface as Inv8 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Interface as Inv7 with
+    type t = t
   clone CreusotContracts_Std1_Slice_Impl5_HasValue as HasValue0 with
     type t = t
   clone CreusotContracts_Std1_Slice_Impl5_InBounds as InBounds0 with
@@ -1780,7 +2409,6 @@ module SelectionSortGeneric_SelectionSort
     axiom .
   use prelude.Int
   clone CreusotContracts_Std1_Num_Impl16_DeepModel as DeepModel2
-  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = Core_Ops_Range_Range_Type.t_range usize
   clone CreusotContracts_Std1_Iter_Range_Impl0_Completed as Completed0 with
@@ -1801,16 +2429,19 @@ module SelectionSortGeneric_SelectionSort
   clone CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans_Interface as ProducesTrans0 with
     type idx = usize,
     predicate Produces0.produces = Produces0.produces,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv12.inv,
     axiom .
   clone CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl_Interface as ProducesRefl0 with
     type idx = usize,
+    predicate Inv0.inv = Inv0.inv,
     predicate Produces0.produces = Produces0.produces,
     axiom .
-  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
-    type t = Core_Ops_Range_Range_Type.t_range usize
   clone Core_Ops_Range_Range_Type_Inv as Core_Ops_Range_Range_Type_Inv0 with
     type idx = usize,
     predicate Inv0.inv = Inv0.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Inv1.inv = Inv6.inv,
     axiom .
   clone CreusotContracts_Std1_Iter_Impl0_IntoIterPost as IntoIterPost0 with
     type i = Core_Ops_Range_Range_Type.t_range usize
@@ -1820,6 +2451,8 @@ module SelectionSortGeneric_SelectionSort
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   use prelude.Ghost
   clone SelectionSortGeneric_SortedRange as SortedRange0 with
     type t = DeepModelTy0.deepModelTy,
@@ -1830,11 +2463,14 @@ module SelectionSortGeneric_SelectionSort
   clone CreusotContracts_Std1_Vec_Impl1_DeepModel_Interface as DeepModel1 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv2.inv,
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model,
     function IndexLogic0.index_logic = IndexLogic0.index_logic,
     function DeepModel0.deep_model = DeepModel4.deep_model,
+    predicate Inv1.inv = Inv11.inv,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     val Max0.mAX' = Max0.mAX',
+    predicate Inv2.inv = Inv10.inv,
     axiom .
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve4 with
     type t = slice t
@@ -1842,18 +2478,25 @@ module SelectionSortGeneric_SelectionSort
     type t = t,
     function ShallowModel0.shallow_model = ShallowModel5.shallow_model,
     function ShallowModel1.shallow_model = ShallowModel6.shallow_model,
-    val Max0.mAX' = Max0.mAX'
+    val Max0.mAX' = Max0.mAX',
+    predicate Inv0.inv = Inv10.inv
   clone Alloc_Vec_Impl10_DerefMut_Interface as DerefMut0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv1.inv,
     function ShallowModel0.shallow_model = ShallowModel5.shallow_model,
     function ShallowModel1.shallow_model = ShallowModel0.shallow_model,
     function ShallowModel2.shallow_model = ShallowModel6.shallow_model,
     function ShallowModel3.shallow_model = ShallowModel2.shallow_model,
-    val Max0.mAX' = Max0.mAX'
+    predicate Inv1.inv = Inv2.inv,
+    predicate Inv2.inv = Inv9.inv,
+    val Max0.mAX' = Max0.mAX',
+    predicate Inv3.inv = Inv10.inv
   clone Core_Cmp_PartialOrd_Lt_Interface as Lt0 with
     type self = t,
     type rhs = t,
+    predicate Inv0.inv = Inv8.inv,
+    predicate Inv1.inv = Inv8.inv,
     function DeepModel0.deep_model = DeepModel3.deep_model,
     function DeepModel1.deep_model = DeepModel3.deep_model,
     predicate LtLog0.lt_log = LtLog0.lt_log,
@@ -1866,16 +2509,21 @@ module SelectionSortGeneric_SelectionSort
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model,
     predicate InBounds0.in_bounds = InBounds0.in_bounds,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Inv1.inv = Inv6.inv,
     predicate HasValue0.has_value = HasValue0.has_value,
+    predicate Inv2.inv = Inv7.inv,
     type Output0.output = t
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Iter_Range_Impl3_Next_Interface as Next0 with
     type a = usize,
+    predicate Inv0.inv = Inv4.inv,
     type Item0.item = usize,
     predicate Completed0.completed = Completed0.completed,
-    predicate Produces0.produces = Produces0.produces
+    predicate Produces0.produces = Produces0.produces,
+    predicate Inv1.inv = Inv0.inv,
+    predicate Inv2.inv = Inv5.inv
   clone SelectionSortGeneric_Partition as Partition0 with
     type t = DeepModelTy0.deepModelTy,
     predicate LeLog0.le_log = LeLog0.le_log
@@ -1897,12 +2545,15 @@ module SelectionSortGeneric_SelectionSort
   clone Alloc_Vec_Impl1_Len_Interface as Len0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv3.inv,
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
   let rec cfg selection_sort [#"../selection_sort_generic.rs" 30 0 32 29] [@cfg:stackify] [@cfg:subregion_analysis] (v : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : ()
+    requires {[#"../selection_sort_generic.rs" 30 42 30 43] Inv1.inv v}
     ensures { [#"../selection_sort_generic.rs" 28 10 28 35] Sorted0.sorted (DeepModel1.deep_model ( ^ v)) }
     ensures { [#"../selection_sort_generic.rs" 29 0 29 36] PermutationOf0.permutation_of (ShallowModel2.shallow_model ( ^ v)) (ShallowModel0.shallow_model v) }
+    ensures { [#"../selection_sort_generic.rs" 30 42 30 43] Inv2.inv ( ^ v) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();

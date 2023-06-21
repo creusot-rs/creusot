@@ -18,6 +18,25 @@ module C11_Id
     ensures { result = id x }
     
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 40 4 40 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module CreusotContracts_Resolve_Resolve_Resolve_Stub
   type self
   predicate resolve (self : self)
@@ -38,13 +57,21 @@ module CreusotContracts_Resolve_Resolve_Resolve
 end
 module C11_Test_Interface
   type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
   val test [#"../11.rs" 18 0 18 23] (_1 : t) : ()
+    requires {[#"../11.rs" 1 0 1 0] Inv0.inv _1}
+    
 end
 module C11_Test
   type t
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = t
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = t
   let rec cfg test [#"../11.rs" 18 0 18 23] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : t) : ()
+    requires {[#"../11.rs" 1 0 1 0] Inv0.inv _1}
+    
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var _1 : t = _1;

@@ -1,4 +1,23 @@
 
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 40 4 40 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module Bdd_Bumpalo_Bump_Type
   type t_bump
 end
@@ -6,12 +25,23 @@ module Bdd_Bumpalo_Impl0_Alloc_Interface
   type t
   use prelude.Borrow
   use Bdd_Bumpalo_Bump_Type as Bdd_Bumpalo_Bump_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = borrowed t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
   val alloc [#"../bdd.rs" 18 8 18 48] (self : Bdd_Bumpalo_Bump_Type.t_bump) (val' : t) : borrowed t
+    requires {[#"../bdd.rs" 18 31 18 34] Inv0.inv val'}
     ensures { [#"../bdd.rs" 17 18 17 32]  * result = val' }
+    ensures { [#"../bdd.rs" 18 42 18 48] Inv1.inv result }
     
 end
 module Bdd_Hashmap_MyHashMap_Type
   type t_myhashmap 'k 'v
+  let function myhashmap_0 (self : t_myhashmap 'k 'v) : Core_Marker_PhantomData_Type.t_phantomdata ('k, 'v)
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_MyHashMap a -> a
+      end
 end
 module Core_Option_Option_Type
   type t_option 't =
@@ -160,6 +190,8 @@ module Bdd_Hashmap_Impl1_Add_Interface
     type self = k
   use map.Map
   use Bdd_Hashmap_MyHashMap_Type as Bdd_Hashmap_MyHashMap_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv4 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap k v
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel1 with
     type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap k v,
     type ShallowModelTy0.shallowModelTy = Map.map DeepModelTy0.deepModelTy (Core_Option_Option_Type.t_option v)
@@ -170,12 +202,24 @@ module Bdd_Hashmap_Impl1_Add_Interface
     type k = k,
     type v = v,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = v
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = k
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed (Bdd_Hashmap_MyHashMap_Type.t_myhashmap k v)
   val add [#"../bdd.rs" 54 8 54 45] (self : borrowed (Bdd_Hashmap_MyHashMap_Type.t_myhashmap k v)) (key : k) (val' : v) : ()
-    ensures { [#"../bdd.rs" 52 8 52 128] forall i : DeepModelTy0.deepModelTy . Map.get (ShallowModel0.shallow_model ( ^ self)) i = (if i = DeepModel0.deep_model key then
+    requires {[#"../bdd.rs" 54 24 54 28] Inv0.inv self}
+    requires {[#"../bdd.rs" 54 30 54 33] Inv1.inv key}
+    requires {[#"../bdd.rs" 54 38 54 41] Inv2.inv val'}
+    ensures { [#"../bdd.rs" 52 8 52 128] forall i : DeepModelTy0.deepModelTy . Inv3.inv i -> Map.get (ShallowModel0.shallow_model ( ^ self)) i = (if i = DeepModel0.deep_model key then
       Core_Option_Option_Type.C_Some val'
     else
       Map.get (ShallowModel1.shallow_model self) i
     ) }
+    ensures { [#"../bdd.rs" 54 24 54 28] Inv4.inv ( ^ self) }
     
 end
 module CreusotContracts_Model_Impl1_ShallowModel_Stub
@@ -250,17 +294,26 @@ module Bdd_Hashmap_Impl1_Get_Interface
   use Core_Option_Option_Type as Core_Option_Option_Type
   use map.Map
   use Bdd_Hashmap_MyHashMap_Type as Bdd_Hashmap_MyHashMap_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Core_Option_Option_Type.t_option v
   clone CreusotContracts_Model_Impl0_DeepModel_Stub as DeepModel0 with
     type t = k,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap k v,
     type ShallowModelTy0.shallowModelTy = Map.map DeepModelTy0.deepModelTy (Core_Option_Option_Type.t_option v)
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = k
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap k v
   val get [#"../bdd.rs" 63 8 63 65] (self : Bdd_Hashmap_MyHashMap_Type.t_myhashmap k v) (key : k) : Core_Option_Option_Type.t_option v
+    requires {[#"../bdd.rs" 63 31 63 35] Inv0.inv self}
+    requires {[#"../bdd.rs" 63 37 63 40] Inv1.inv key}
     ensures { [#"../bdd.rs" 58 18 61 9] match (result) with
       | Core_Option_Option_Type.C_Some v -> Map.get (ShallowModel0.shallow_model self) (DeepModel0.deep_model key) = Core_Option_Option_Type.C_Some v
       | Core_Option_Option_Type.C_None -> Map.get (ShallowModel0.shallow_model self) (DeepModel0.deep_model key) = Core_Option_Option_Type.C_None
       end }
+    ensures { [#"../bdd.rs" 63 52 63 65] Inv2.inv result }
     
 end
 module Bdd_Hashmap_Impl1_New_Interface
@@ -270,6 +323,8 @@ module Bdd_Hashmap_Impl1_New_Interface
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = k
   use Bdd_Hashmap_MyHashMap_Type as Bdd_Hashmap_MyHashMap_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap k v
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone Bdd_Hashmap_Impl0_ShallowModel_Stub as ShallowModel0 with
     type k = k,
@@ -277,6 +332,7 @@ module Bdd_Hashmap_Impl1_New_Interface
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
   val new [#"../bdd.rs" 69 8 69 28] (_1 : ()) : Bdd_Hashmap_MyHashMap_Type.t_myhashmap k v
     ensures { [#"../bdd.rs" 67 18 67 47] ShallowModel0.shallow_model result = Const.const (Core_Option_Option_Type.C_None) }
+    ensures { [#"../bdd.rs" 69 24 69 28] Inv0.inv result }
     
 end
 module Bdd_Hashmap_Hash_HashLog_Stub
@@ -393,7 +449,10 @@ module Bdd_Hashmap_Hash_Hash_Interface
   clone CreusotContracts_Model_Impl0_DeepModel_Stub as DeepModel0 with
     type t = self,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   val hash [#"../bdd.rs" 31 8 31 30] (self : self) : uint64
+    requires {[#"../bdd.rs" 31 17 31 21] Inv0.inv self}
     ensures { [#"../bdd.rs" 30 18 30 62] UInt64.to_int result = HashLog0.hash_log (DeepModel0.deep_model self) }
     
 end
@@ -450,6 +509,23 @@ module Core_Num_Impl9_WrappingAdd_Interface
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] UInt64.to_int self + UInt64.to_int rhs < UInt64.to_int Min0.mIN' -> (exists k : int . k > 0 /\ UInt64.to_int result = UInt64.to_int self + UInt64.to_int rhs + k * (UInt64.to_int Max0.mAX' - UInt64.to_int Min0.mIN' + 1)) }
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] UInt64.to_int self + UInt64.to_int rhs > UInt64.to_int Max0.mAX' -> (exists k : int . k > 0 /\ UInt64.to_int result = UInt64.to_int self + UInt64.to_int rhs - k * (UInt64.to_int Max0.mAX' - UInt64.to_int Min0.mIN' + 1)) }
     
+end
+module TyInv_Tuple2
+  type t0
+  type t1
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = t1
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = (t0, t1)
+  axiom inv_tuple2 [@rewrite] : forall self : (t0, t1) . Inv0.inv self = (let (a_0, a_1) = self in Inv1.inv a_0 /\ Inv2.inv a_1)
+end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
 end
 module CreusotContracts_Std1_Tuples_Impl4_DeepModel_Stub
   type a
@@ -509,7 +585,10 @@ module Bdd_Hashmap_Impl2_Hash_Interface
   clone CreusotContracts_Model_Impl0_DeepModel_Stub as DeepModel0 with
     type t = (u, v),
     type DeepModelTy0.deepModelTy = (DeepModelTy0.deepModelTy, DeepModelTy1.deepModelTy)
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = (u, v)
   val hash [#"../bdd.rs" 76 8 76 29] (self : (u, v)) : uint64
+    requires {[#"../bdd.rs" 76 17 76 21] Inv0.inv self}
     ensures { [#"../bdd.rs" 75 18 75 62] UInt64.to_int result = HashLog0.hash_log (DeepModel0.deep_model self) }
     
 end
@@ -519,16 +598,37 @@ module Bdd_Hashmap_Impl2_Hash
   use prelude.Int
   use prelude.UInt64
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+    type t = v
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+    type t = u
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = (u, v)
+  clone TyInv_Tuple2 as TyInv_Tuple21 with
+    type t0 = u,
+    type t1 = v,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Inv1.inv = Inv4.inv,
+    predicate Inv2.inv = Inv5.inv,
+    axiom .
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy1 with
     type self = v
   clone CreusotContracts_Model_DeepModel_DeepModel_Interface as DeepModel5 with
     type self = v,
     type DeepModelTy0.deepModelTy = DeepModelTy1.deepModelTy
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = v,
+    predicate Inv0.inv = Inv5.inv,
+    axiom .
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = u
   clone CreusotContracts_Model_DeepModel_DeepModel_Interface as DeepModel4 with
     type self = u,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = u,
+    predicate Inv0.inv = Inv4.inv,
+    axiom .
   clone CreusotContracts_Std1_Tuples_Impl4_DeepModel as DeepModel3 with
     type a = u,
     type b = v,
@@ -536,6 +636,13 @@ module Bdd_Hashmap_Impl2_Hash
     type DeepModelTy1.deepModelTy = DeepModelTy1.deepModelTy,
     function DeepModel0.deep_model = DeepModel4.deep_model,
     function DeepModel1.deep_model = DeepModel5.deep_model
+  clone TyInv_Tuple2 as TyInv_Tuple20 with
+    type t0 = u,
+    type t1 = v,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Inv1.inv = Inv4.inv,
+    predicate Inv2.inv = Inv5.inv,
+    axiom .
   clone Core_Num_Impl9_Max as Max0
   clone Core_Num_Impl9_Min as Min0
   clone Core_Num_Impl9_Bits as Bits0
@@ -546,6 +653,8 @@ module Bdd_Hashmap_Impl2_Hash
     type t = v,
     type DeepModelTy0.deepModelTy = DeepModelTy1.deepModelTy,
     function DeepModel0.deep_model = DeepModel5.deep_model
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = v
   clone Bdd_Hashmap_Hash_HashLog_Interface as HashLog1 with
     type self = u,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
@@ -553,6 +662,8 @@ module Bdd_Hashmap_Impl2_Hash
     type t = u,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     function DeepModel0.deep_model = DeepModel4.deep_model
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = u
   clone Bdd_Hashmap_Impl2_HashLog as HashLog0 with
     type u = u,
     type v = v,
@@ -565,6 +676,8 @@ module Bdd_Hashmap_Impl2_Hash
     type t = (u, v),
     type DeepModelTy0.deepModelTy = (DeepModelTy0.deepModelTy, DeepModelTy1.deepModelTy),
     function DeepModel0.deep_model = DeepModel3.deep_model
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = (u, v)
   clone Core_Num_Impl9_WrappingAdd_Interface as WrappingAdd0 with
     val Bits0.bITS' = Bits0.bITS',
     val Min0.mIN' = Min0.mIN',
@@ -575,17 +688,20 @@ module Bdd_Hashmap_Impl2_Hash
     val Max0.mAX' = Max0.mAX'
   clone Bdd_Hashmap_Hash_Hash_Interface as Hash1 with
     type self = v,
+    predicate Inv0.inv = Inv2.inv,
     function DeepModel0.deep_model = DeepModel2.deep_model,
     function HashLog0.hash_log = HashLog2.hash_log,
     type DeepModelTy0.deepModelTy = DeepModelTy1.deepModelTy
   clone Bdd_Hashmap_Hash_Hash_Interface as Hash0 with
     type self = u,
+    predicate Inv0.inv = Inv1.inv,
     function DeepModel0.deep_model = DeepModel1.deep_model,
     function HashLog0.hash_log = HashLog1.hash_log,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = (u, v)
   let rec cfg hash [#"../bdd.rs" 76 8 76 29] [@cfg:stackify] [@cfg:subregion_analysis] (self : (u, v)) : uint64
+    requires {[#"../bdd.rs" 76 17 76 21] Inv0.inv self}
     ensures { [#"../bdd.rs" 75 18 75 62] UInt64.to_int result = HashLog0.hash_log (DeepModel0.deep_model self) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -2372,6 +2488,107 @@ module Bdd_Impl9_BddCanonical_Impl
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../bdd.rs" 420 8 420 29] let _ = () in ()
 end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+    
+end
+module CreusotContracts_Invariant_Invariant_Invariant_Stub
+  type self
+  predicate invariant' (self : self)
+end
+module CreusotContracts_Invariant_Invariant_Invariant_Interface
+  type self
+  predicate invariant' (self : self)
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
+module CreusotContracts_Invariant_Invariant_Invariant
+  type self
+  predicate invariant' (self : self)
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
+module Bdd_Hashmap_MyHashMap_Type_Inv
+  type k
+  type v
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Bdd_Hashmap_MyHashMap_Type as Bdd_Hashmap_MyHashMap_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata (k, v)
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Bdd_Hashmap_MyHashMap_Type.t_myhashmap k v
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap k v
+  axiom inv_t_myhashmap [@rewrite] : forall self : Bdd_Hashmap_MyHashMap_Type.t_myhashmap k v . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv (Bdd_Hashmap_MyHashMap_Type.myhashmap_0 self))
+end
+module CreusotContracts_Invariant_Impl0_Invariant_Stub
+  type t
+  predicate invariant' (self : t)
+end
+module CreusotContracts_Invariant_Impl0_Invariant_Interface
+  type t
+  predicate invariant' (self : t)
+  val invariant' (self : t) : bool
+    ensures { result = invariant' self }
+    
+end
+module CreusotContracts_Invariant_Impl0_Invariant
+  type t
+  predicate invariant' (self : t) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 21 8 21 12] true
+  val invariant' (self : t) : bool
+    ensures { result = invariant' self }
+    
+end
+module Core_Marker_PhantomData_Type_Inv
+  type t
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Marker_PhantomData_Type.t_phantomdata t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata t
+  axiom inv_t_phantomdata [@rewrite] : forall self : Core_Marker_PhantomData_Type.t_phantomdata t . Inv0.inv self = Invariant0.invariant' self
+end
+module CreusotContracts_Invariant_Impl0_IsInhabited_Stub
+  type t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  function is_inhabited (_1 : ()) : bool
+end
+module CreusotContracts_Invariant_Impl0_IsInhabited_Interface
+  type t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  function is_inhabited (_1 : ()) : bool
+  val is_inhabited (_1 : ()) : bool
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] result }
+    ensures { result = is_inhabited _1 }
+    
+  axiom is_inhabited_spec : forall _1 : () . ([#"../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] is_inhabited _1) && ([#"../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x)
+end
+module CreusotContracts_Invariant_Impl0_IsInhabited
+  type t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  function is_inhabited (_1 : ()) : bool =
+    [#"../../../../creusot-contracts/src/invariant.rs" 32 8 32 12] true
+  val is_inhabited (_1 : ()) : bool
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x }
+    ensures { [#"../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] result }
+    ensures { result = is_inhabited _1 }
+    
+  axiom is_inhabited_spec : forall _1 : () . ([#"../../../../creusot-contracts/src/invariant.rs" 27 14 27 20] is_inhabited _1) && ([#"../../../../creusot-contracts/src/invariant.rs" 26 4 26 45] exists x : t . Inv0.inv x /\ Invariant0.invariant' x)
+end
 module Bdd_Impl10_New_Interface
   use prelude.Borrow
   use Bdd_Context_Type as Bdd_Context_Type
@@ -2386,7 +2603,99 @@ module Bdd_Impl10_New
   use map.Map
   use prelude.Borrow
   use Bdd_Bdd_Type as Bdd_Bdd_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant5 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata ((Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd), Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata ((Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd), Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited5 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata ((Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd), Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv5.inv,
+    predicate Invariant0.invariant' = Invariant5.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant4 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited4 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv4.inv,
+    predicate Invariant0.invariant' = Invariant4.invariant',
+    axiom .
+  use Bdd_Node_Type as Bdd_Node_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant3 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata (Bdd_Node_Type.t_node, Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata (Bdd_Node_Type.t_node, Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited3 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata (Bdd_Node_Type.t_node, Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv3.inv,
+    predicate Invariant0.invariant' = Invariant3.invariant',
+    axiom .
+  clone Core_Marker_PhantomData_Type_Inv as Core_Marker_PhantomData_Type_Inv2 with
+    type t = ((Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd), Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv5.inv,
+    predicate Invariant0.invariant' = Invariant5.invariant',
+    axiom .
   use Bdd_Hashmap_MyHashMap_Type as Bdd_Hashmap_MyHashMap_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant2 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited2 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv2.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    axiom .
+  clone Core_Marker_PhantomData_Type_Inv as Core_Marker_PhantomData_Type_Inv1 with
+    type t = (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv4.inv,
+    predicate Invariant0.invariant' = Invariant4.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant1 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited1 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    axiom .
+  clone Core_Marker_PhantomData_Type_Inv as Core_Marker_PhantomData_Type_Inv0 with
+    type t = (Bdd_Node_Type.t_node, Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv3.inv,
+    predicate Invariant0.invariant' = Invariant3.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant0 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited0 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv0.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  clone Bdd_Hashmap_MyHashMap_Type_Inv as Bdd_Hashmap_MyHashMap_Type_Inv2 with
+    type k = (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd),
+    type v = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    predicate Inv1.inv = Inv5.inv,
+    axiom .
+  clone Bdd_Hashmap_MyHashMap_Type_Inv as Bdd_Hashmap_MyHashMap_Type_Inv1 with
+    type k = Bdd_Bdd_Type.t_bdd,
+    type v = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Inv1.inv = Inv4.inv,
+    axiom .
+  clone Bdd_Hashmap_MyHashMap_Type_Inv as Bdd_Hashmap_MyHashMap_Type_Inv0 with
+    type k = Bdd_Node_Type.t_node,
+    type v = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Inv1.inv = Inv3.inv,
+    axiom .
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone Bdd_Hashmap_Impl0_ShallowModel_Interface as ShallowModel2 with
     type k = (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd),
@@ -2397,7 +2706,6 @@ module Bdd_Impl10_New
     type v = Bdd_Bdd_Type.t_bdd,
     type DeepModelTy0.deepModelTy = uint64
   use Bdd_NodeLog_Type as Bdd_NodeLog_Type
-  use Bdd_Node_Type as Bdd_Node_Type
   clone Bdd_Hashmap_Impl0_ShallowModel_Interface as ShallowModel0 with
     type k = Bdd_Node_Type.t_node,
     type v = Bdd_Bdd_Type.t_bdd,
@@ -2408,16 +2716,19 @@ module Bdd_Impl10_New
     type k = (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd),
     type v = Bdd_Bdd_Type.t_bdd,
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model,
+    predicate Inv0.inv = Inv2.inv,
     type DeepModelTy0.deepModelTy = (uint64, uint64)
   clone Bdd_Hashmap_Impl1_New_Interface as New1 with
     type k = Bdd_Bdd_Type.t_bdd,
     type v = Bdd_Bdd_Type.t_bdd,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    predicate Inv0.inv = Inv1.inv,
     type DeepModelTy0.deepModelTy = uint64
   clone Bdd_Hashmap_Impl1_New_Interface as New0 with
     type k = Bdd_Node_Type.t_node,
     type v = Bdd_Bdd_Type.t_bdd,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    predicate Inv0.inv = Inv0.inv,
     type DeepModelTy0.deepModelTy = Bdd_NodeLog_Type.t_nodelog
   let rec cfg new [#"../bdd.rs" 425 4 425 52] [@cfg:stackify] [@cfg:subregion_analysis] (alloc : Bdd_Bumpalo_Bump_Type.t_bump) : Bdd_Context_Type.t_context
     
@@ -2470,6 +2781,49 @@ module CreusotContracts_Resolve_Impl1_Resolve
     ensures { result = resolve self }
     
 end
+module Bdd_Node_Type_Inv
+  use Bdd_Node_Type as Bdd_Node_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Bdd_Node_Type.t_node
+  axiom inv_t_node : forall self : Bdd_Node_Type.t_node . Inv0.inv self = true
+end
+module Core_Option_Option_Type_Inv
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
+  axiom inv_t_option [@rewrite] : forall self : Core_Option_Option_Type.t_option t . Inv0.inv self = (Invariant0.invariant' self /\ match (self) with
+    | Core_Option_Option_Type.C_None -> true
+    | Core_Option_Option_Type.C_Some a_0 -> Inv1.inv (Core_Option_Option_Type.some_0 self)
+    end)
+end
+module TyInv_Borrow
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = borrowed t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed t
+  axiom inv_borrow [@rewrite] : forall self : borrowed t . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv ( * self))
+end
+module Bdd_Bdd_Type_Inv
+  use Bdd_Bdd_Type as Bdd_Bdd_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Bdd_Bdd_Type.t_bdd
+  axiom inv_t_bdd : forall self : Bdd_Bdd_Type.t_bdd . Inv0.inv self = true
+end
+module Bdd_NodeLog_Type_Inv
+  use Bdd_NodeLog_Type as Bdd_NodeLog_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Bdd_NodeLog_Type.t_nodelog
+  axiom inv_t_nodelog : forall self : Bdd_NodeLog_Type.t_nodelog . Inv0.inv self = true
+end
 module Bdd_Impl10_Hashcons_Interface
   use prelude.Borrow
   use Bdd_Node_Type as Bdd_Node_Type
@@ -2494,16 +2848,124 @@ module Bdd_Impl10_Hashcons
   use map.Map
   use prelude.Int
   use prelude.UInt64
+  use Bdd_Bdd_Type as Bdd_Bdd_Type
+  use Bdd_Node_Type as Bdd_Node_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant5 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata (Bdd_Node_Type.t_node, Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv9 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata (Bdd_Node_Type.t_node, Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited4 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata (Bdd_Node_Type.t_node, Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv9.inv,
+    predicate Invariant0.invariant' = Invariant5.invariant',
+    axiom .
+  use Bdd_Hashmap_MyHashMap_Type as Bdd_Hashmap_MyHashMap_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant4 with
+    type t = borrowed (Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd))
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+    type t = borrowed (Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd))
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited3 with
+    type t = borrowed (Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd)),
+    predicate Inv0.inv = Inv5.inv,
+    predicate Invariant0.invariant' = Invariant4.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant3 with
+    type t = borrowed (Bdd_Node_Type.t_node)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+    type t = borrowed (Bdd_Node_Type.t_node)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited2 with
+    type t = borrowed (Bdd_Node_Type.t_node),
+    predicate Inv0.inv = Inv4.inv,
+    predicate Invariant0.invariant' = Invariant3.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
+    type t = Bdd_Bdd_Type.t_bdd
+  clone Bdd_Bdd_Type_Inv as Bdd_Bdd_Type_Inv1 with
+    predicate Inv0.inv = Inv6.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant2 with
+    type t = Core_Option_Option_Type.t_option (Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option (Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited1 with
+    type t = Core_Option_Option_Type.t_option (Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv2.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    axiom .
+  clone Core_Marker_PhantomData_Type_Inv as Core_Marker_PhantomData_Type_Inv0 with
+    type t = (Bdd_Node_Type.t_node, Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv9.inv,
+    predicate Invariant0.invariant' = Invariant5.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant1 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv8 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited0 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv8.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    axiom .
   clone CreusotContracts_Std1_Num_Impl9_ShallowModel as ShallowModel8
+  use Bdd_NodeLog_Type as Bdd_NodeLog_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv11 with
+    type t = Bdd_NodeLog_Type.t_nodelog
+  clone CreusotContracts_Invariant_Inv_Interface as Inv10 with
+    type t = Bdd_Bdd_Type.t_bdd
   use prelude.Int
   clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel7 with
     type t = uint64,
     type ShallowModelTy0.shallowModelTy = int,
     function ShallowModel0.shallow_model = ShallowModel8.shallow_model
   clone Core_Num_Impl9_Max as Max0
-  use Bdd_Bdd_Type as Bdd_Bdd_Type
-  use Bdd_Hashmap_MyHashMap_Type as Bdd_Hashmap_MyHashMap_Type
-  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone Bdd_Hashmap_MyHashMap_Type_Inv as Bdd_Hashmap_MyHashMap_Type_Inv1 with
+    type k = Bdd_Node_Type.t_node,
+    type v = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv8.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Inv1.inv = Inv9.inv,
+    axiom .
+  clone Bdd_NodeLog_Type_Inv as Bdd_NodeLog_Type_Inv0 with
+    predicate Inv0.inv = Inv11.inv,
+    axiom .
+  clone Bdd_Bdd_Type_Inv as Bdd_Bdd_Type_Inv0 with
+    predicate Inv0.inv = Inv6.inv,
+    axiom .
+  clone TyInv_Borrow as TyInv_Borrow1 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv5.inv,
+    predicate Invariant0.invariant' = Invariant4.invariant',
+    predicate Inv1.inv = Inv8.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = Bdd_Node_Type.t_node
+  clone TyInv_Borrow as TyInv_Borrow0 with
+    type t = Bdd_Node_Type.t_node,
+    predicate Inv0.inv = Inv4.inv,
+    predicate Invariant0.invariant' = Invariant3.invariant',
+    predicate Inv1.inv = Inv3.inv,
+    axiom .
+  clone Bdd_Node_Type_Inv as Bdd_Node_Type_Inv1 with
+    predicate Inv0.inv = Inv3.inv,
+    axiom .
+  clone Core_Option_Option_Type_Inv as Core_Option_Option_Type_Inv0 with
+    type t = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    predicate Inv1.inv = Inv10.inv,
+    axiom .
+  clone Bdd_Node_Type_Inv as Bdd_Node_Type_Inv0 with
+    predicate Inv0.inv = Inv3.inv,
+    axiom .
+  clone Bdd_Hashmap_MyHashMap_Type_Inv as Bdd_Hashmap_MyHashMap_Type_Inv0 with
+    type k = Bdd_Node_Type.t_node,
+    type v = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv8.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Inv1.inv = Inv9.inv,
+    axiom .
   clone Bdd_Hashmap_Impl0_ShallowModel_Interface as ShallowModel6 with
     type k = (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd),
     type v = Bdd_Bdd_Type.t_bdd,
@@ -2512,12 +2974,10 @@ module Bdd_Impl10_Hashcons
     type k = Bdd_Bdd_Type.t_bdd,
     type v = Bdd_Bdd_Type.t_bdd,
     type DeepModelTy0.deepModelTy = uint64
-  use Bdd_Node_Type as Bdd_Node_Type
   clone Bdd_Impl8_Leastvar as Leastvar0 with
     val Max0.mAX' = Max0.mAX',
     function ShallowModel0.shallow_model = ShallowModel7.shallow_model
   clone Bdd_Impl8_Interp as Interp0
-  use Bdd_NodeLog_Type as Bdd_NodeLog_Type
   clone Bdd_Hashmap_Impl0_ShallowModel_Interface as ShallowModel3 with
     type k = Bdd_Node_Type.t_node,
     type v = Bdd_Bdd_Type.t_bdd,
@@ -2528,6 +2988,8 @@ module Bdd_Impl10_Hashcons
     type ShallowModelTy0.shallowModelTy = Map.map (Bdd_NodeLog_Type.t_nodelog) (Core_Option_Option_Type.t_option (Bdd_Bdd_Type.t_bdd)),
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model
   clone Bdd_Impl3_DeepModel as DeepModel1
+  clone CreusotContracts_Invariant_Inv_Interface as Inv7 with
+    type t = Bdd_NodeLog_Type.t_nodelog
   use Bdd_Bumpalo_Bump_Type as Bdd_Bumpalo_Bump_Type
   clone CreusotContracts_Model_Impl0_DeepModel as DeepModel0 with
     type t = Bdd_Node_Type.t_node,
@@ -2537,6 +2999,10 @@ module Bdd_Impl10_Hashcons
     type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd),
     type ShallowModelTy0.shallowModelTy = Map.map (Bdd_NodeLog_Type.t_nodelog) (Core_Option_Option_Type.t_option (Bdd_Bdd_Type.t_bdd)),
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Bdd_Node_Type.t_node
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd)
   clone Bdd_Impl4_ShallowModel as ShallowModel1 with
     function DeepModel0.deep_model = DeepModel1.deep_model
   clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel0 with
@@ -2566,19 +3032,29 @@ module Bdd_Impl10_Hashcons
   clone Bdd_Hashmap_Impl1_Add_Interface as Add0 with
     type k = Bdd_Node_Type.t_node,
     type v = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv5.inv,
+    predicate Inv1.inv = Inv3.inv,
+    predicate Inv2.inv = Inv6.inv,
     type DeepModelTy0.deepModelTy = Bdd_NodeLog_Type.t_nodelog,
+    predicate Inv3.inv = Inv7.inv,
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model,
     function DeepModel0.deep_model = DeepModel1.deep_model,
-    function ShallowModel1.shallow_model = ShallowModel4.shallow_model
+    function ShallowModel1.shallow_model = ShallowModel4.shallow_model,
+    predicate Inv4.inv = Inv8.inv
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = Bdd_Node_Type.t_node
   clone Bdd_Bumpalo_Impl0_Alloc_Interface as Alloc0 with
-    type t = Bdd_Node_Type.t_node
+    type t = Bdd_Node_Type.t_node,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Inv1.inv = Inv4.inv
   clone Bdd_Hashmap_Impl1_Get_Interface as Get0 with
     type k = Bdd_Node_Type.t_node,
     type v = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model,
     function DeepModel0.deep_model = DeepModel0.deep_model,
+    predicate Inv2.inv = Inv2.inv,
     type DeepModelTy0.deepModelTy = Bdd_NodeLog_Type.t_nodelog
   let rec cfg hashcons [#"../bdd.rs" 442 4 442 58] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (Bdd_Context_Type.t_context)) (n : Bdd_Node_Type.t_node) : Bdd_Bdd_Type.t_bdd
     requires {[#"../bdd.rs" 436 15 436 31] Invariant0.invariant' ( * self)}
@@ -3232,19 +3708,103 @@ module Bdd_Impl10_Not
   use prelude.UInt64
   use map.Map
   use Bdd_Bdd_Type as Bdd_Bdd_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant4 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv7 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited3 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv7.inv,
+    predicate Invariant0.invariant' = Invariant4.invariant',
+    axiom .
+  use Bdd_Hashmap_MyHashMap_Type as Bdd_Hashmap_MyHashMap_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant3 with
+    type t = borrowed (Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd))
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = borrowed (Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd))
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited2 with
+    type t = borrowed (Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd)),
+    predicate Inv0.inv = Inv3.inv,
+    predicate Invariant0.invariant' = Invariant3.invariant',
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant2 with
+    type t = Core_Option_Option_Type.t_option (Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option (Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited1 with
+    type t = Core_Option_Option_Type.t_option (Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv2.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    axiom .
+  clone Core_Marker_PhantomData_Type_Inv as Core_Marker_PhantomData_Type_Inv0 with
+    type t = (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv7.inv,
+    predicate Invariant0.invariant' = Invariant4.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant1 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited0 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv6.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    axiom .
   use Bdd_NodeLog_Type as Bdd_NodeLog_Type
   use Bdd_Node_Type as Bdd_Node_Type
   clone Bdd_Impl3_DeepModel as DeepModel2
+  clone CreusotContracts_Invariant_Inv_Interface as Inv8 with
+    type t = uint64
   clone CreusotContracts_Std1_Num_Impl9_ShallowModel as ShallowModel8
   clone Bdd_Impl4_ShallowModel as ShallowModel7 with
     function DeepModel0.deep_model = DeepModel2.deep_model
+  clone Bdd_Hashmap_MyHashMap_Type_Inv as Bdd_Hashmap_MyHashMap_Type_Inv1 with
+    type k = Bdd_Bdd_Type.t_bdd,
+    type v = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv6.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Inv1.inv = Inv7.inv,
+    axiom .
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = uint64,
+    predicate Inv0.inv = Inv8.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+    type t = Bdd_Bdd_Type.t_bdd
+  clone Bdd_Bdd_Type_Inv as Bdd_Bdd_Type_Inv1 with
+    predicate Inv0.inv = Inv4.inv,
+    axiom .
+  clone TyInv_Borrow as TyInv_Borrow0 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv3.inv,
+    predicate Invariant0.invariant' = Invariant3.invariant',
+    predicate Inv1.inv = Inv6.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Bdd_Bdd_Type.t_bdd
+  clone Core_Option_Option_Type_Inv as Core_Option_Option_Type_Inv0 with
+    type t = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    predicate Inv1.inv = Inv1.inv,
+    axiom .
+  clone Bdd_Bdd_Type_Inv as Bdd_Bdd_Type_Inv0 with
+    predicate Inv0.inv = Inv4.inv,
+    axiom .
+  clone Bdd_Hashmap_MyHashMap_Type_Inv as Bdd_Hashmap_MyHashMap_Type_Inv0 with
+    type k = Bdd_Bdd_Type.t_bdd,
+    type v = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv6.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Inv1.inv = Inv7.inv,
+    axiom .
   use prelude.Int
   clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel6 with
     type t = uint64,
     type ShallowModelTy0.shallowModelTy = int,
     function ShallowModel0.shallow_model = ShallowModel8.shallow_model
-  use Bdd_Hashmap_MyHashMap_Type as Bdd_Hashmap_MyHashMap_Type
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Bdd_Hashmap_Impl0_ShallowModel_Interface as ShallowModel5 with
     type k = (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd),
     type v = Bdd_Bdd_Type.t_bdd,
@@ -3278,6 +3838,8 @@ module Bdd_Impl10_Not
     type ShallowModelTy0.shallowModelTy = Map.map uint64 (Core_Option_Option_Type.t_option (Bdd_Bdd_Type.t_bdd)),
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone Bdd_Impl5_DeepModel as DeepModel1
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+    type t = uint64
   clone CreusotContracts_Model_Impl0_DeepModel as DeepModel0 with
     type t = Bdd_Bdd_Type.t_bdd,
     type DeepModelTy0.deepModelTy = uint64,
@@ -3286,6 +3848,8 @@ module Bdd_Impl10_Not
     type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd),
     type ShallowModelTy0.shallowModelTy = Map.map uint64 (Core_Option_Option_Type.t_option (Bdd_Bdd_Type.t_bdd)),
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd)
   clone Bdd_Impl8_Size as Size0 with
     axiom .
   clone Bdd_Impl8_Interp as Interp0
@@ -3303,10 +3867,15 @@ module Bdd_Impl10_Not
   clone Bdd_Hashmap_Impl1_Add_Interface as Add0 with
     type k = Bdd_Bdd_Type.t_bdd,
     type v = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Inv1.inv = Inv4.inv,
+    predicate Inv2.inv = Inv4.inv,
     type DeepModelTy0.deepModelTy = uint64,
+    predicate Inv3.inv = Inv5.inv,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
     function DeepModel0.deep_model = DeepModel1.deep_model,
-    function ShallowModel1.shallow_model = ShallowModel2.shallow_model
+    function ShallowModel1.shallow_model = ShallowModel2.shallow_model,
+    predicate Inv4.inv = Inv6.inv
   clone Bdd_Impl10_True_Interface as True0 with
     predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Grows0.grows = Grows0.grows,
@@ -3332,8 +3901,11 @@ module Bdd_Impl10_Not
   clone Bdd_Hashmap_Impl1_Get_Interface as Get0 with
     type k = Bdd_Bdd_Type.t_bdd,
     type v = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     function DeepModel0.deep_model = DeepModel0.deep_model,
+    predicate Inv2.inv = Inv2.inv,
     type DeepModelTy0.deepModelTy = uint64
   let rec cfg not' [#"../bdd.rs" 512 4 512 56] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (Bdd_Context_Type.t_context)) (x : Bdd_Bdd_Type.t_bdd) : Bdd_Bdd_Type.t_bdd
     requires {[#"../bdd.rs" 504 15 504 31] Invariant0.invariant' ( * self)}
@@ -3544,20 +4116,129 @@ module Bdd_Impl10_And
   use prelude.UInt64
   use map.Map
   use Bdd_Bdd_Type as Bdd_Bdd_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant4 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata ((Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd), Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv8 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata ((Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd), Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited3 with
+    type t = Core_Marker_PhantomData_Type.t_phantomdata ((Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd), Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv8.inv,
+    predicate Invariant0.invariant' = Invariant4.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv11 with
+    type t = uint64
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = uint64,
+    predicate Inv0.inv = Inv11.inv,
+    axiom .
+  use Bdd_Hashmap_MyHashMap_Type as Bdd_Hashmap_MyHashMap_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant3 with
+    type t = borrowed (Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd))
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = borrowed (Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd))
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited2 with
+    type t = borrowed (Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd)),
+    predicate Inv0.inv = Inv3.inv,
+    predicate Invariant0.invariant' = Invariant3.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+    type t = Bdd_Bdd_Type.t_bdd
+  clone Bdd_Bdd_Type_Inv as Bdd_Bdd_Type_Inv1 with
+    predicate Inv0.inv = Inv5.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant2 with
+    type t = Core_Option_Option_Type.t_option (Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option (Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited1 with
+    type t = Core_Option_Option_Type.t_option (Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv2.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    axiom .
+  clone Core_Marker_PhantomData_Type_Inv as Core_Marker_PhantomData_Type_Inv0 with
+    type t = ((Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd), Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv8.inv,
+    predicate Invariant0.invariant' = Invariant4.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Impl0_Invariant as Invariant1 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv7 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Impl0_IsInhabited as IsInhabited0 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv7.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    axiom .
   use Bdd_NodeLog_Type as Bdd_NodeLog_Type
   use Bdd_Node_Type as Bdd_Node_Type
   clone Bdd_Impl3_DeepModel as DeepModel4
+  clone CreusotContracts_Invariant_Inv_Interface as Inv10 with
+    type t = (uint64, uint64)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv9 with
+    type t = Bdd_Bdd_Type.t_bdd
   clone CreusotContracts_Std1_Num_Impl9_ShallowModel as ShallowModel8
   clone Bdd_Impl4_ShallowModel as ShallowModel7 with
     function DeepModel0.deep_model = DeepModel4.deep_model
+  clone Bdd_Hashmap_MyHashMap_Type_Inv as Bdd_Hashmap_MyHashMap_Type_Inv1 with
+    type k = (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd),
+    type v = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv7.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Inv1.inv = Inv8.inv,
+    axiom .
   clone Bdd_Impl5_DeepModel as DeepModel3
+  clone TyInv_Tuple2 as TyInv_Tuple22 with
+    type t0 = uint64,
+    type t1 = uint64,
+    predicate Inv0.inv = Inv10.inv,
+    predicate Inv1.inv = Inv11.inv,
+    predicate Inv2.inv = Inv11.inv,
+    axiom .
+  clone Bdd_Bdd_Type_Inv as Bdd_Bdd_Type_Inv0 with
+    predicate Inv0.inv = Inv5.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+    type t = (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd)
+  clone TyInv_Tuple2 as TyInv_Tuple21 with
+    type t0 = Bdd_Bdd_Type.t_bdd,
+    type t1 = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv4.inv,
+    predicate Inv1.inv = Inv5.inv,
+    predicate Inv2.inv = Inv5.inv,
+    axiom .
+  clone TyInv_Borrow as TyInv_Borrow0 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd),
+    predicate Inv0.inv = Inv3.inv,
+    predicate Invariant0.invariant' = Invariant3.invariant',
+    predicate Inv1.inv = Inv7.inv,
+    axiom .
+  clone Core_Option_Option_Type_Inv as Core_Option_Option_Type_Inv0 with
+    type t = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Invariant0.invariant' = Invariant2.invariant',
+    predicate Inv1.inv = Inv9.inv,
+    axiom .
+  clone TyInv_Tuple2 as TyInv_Tuple20 with
+    type t0 = Bdd_Bdd_Type.t_bdd,
+    type t1 = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv4.inv,
+    predicate Inv1.inv = Inv5.inv,
+    predicate Inv2.inv = Inv5.inv,
+    axiom .
+  clone Bdd_Hashmap_MyHashMap_Type_Inv as Bdd_Hashmap_MyHashMap_Type_Inv0 with
+    type k = (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd),
+    type v = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv7.inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Inv1.inv = Inv8.inv,
+    axiom .
   use prelude.Int
   clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel6 with
     type t = uint64,
     type ShallowModelTy0.shallowModelTy = int,
     function ShallowModel0.shallow_model = ShallowModel8.shallow_model
-  use Bdd_Hashmap_MyHashMap_Type as Bdd_Hashmap_MyHashMap_Type
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Bdd_Hashmap_Impl0_ShallowModel_Interface as ShallowModel5 with
     type k = Bdd_Bdd_Type.t_bdd,
     type v = Bdd_Bdd_Type.t_bdd,
@@ -3597,6 +4278,8 @@ module Bdd_Impl10_And
     type DeepModelTy1.deepModelTy = uint64,
     function DeepModel0.deep_model = DeepModel3.deep_model,
     function DeepModel1.deep_model = DeepModel3.deep_model
+  clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
+    type t = (uint64, uint64)
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_Impl2_CmpLog as CmpLog0
   clone CreusotContracts_Std1_Num_Impl10_DeepModel as DeepModel1
@@ -3612,6 +4295,10 @@ module Bdd_Impl10_And
     type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd),
     type ShallowModelTy0.shallowModelTy = Map.map (uint64, uint64) (Core_Option_Option_Type.t_option (Bdd_Bdd_Type.t_bdd)),
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd)
   clone Bdd_Impl8_Size as Size0 with
     axiom .
   clone Bdd_Impl8_Interp as Interp0
@@ -3629,10 +4316,15 @@ module Bdd_Impl10_And
   clone Bdd_Hashmap_Impl1_Add_Interface as Add0 with
     type k = (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd),
     type v = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Inv1.inv = Inv4.inv,
+    predicate Inv2.inv = Inv5.inv,
     type DeepModelTy0.deepModelTy = (uint64, uint64),
+    predicate Inv3.inv = Inv6.inv,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
     function DeepModel0.deep_model = DeepModel2.deep_model,
-    function ShallowModel1.shallow_model = ShallowModel2.shallow_model
+    function ShallowModel1.shallow_model = ShallowModel2.shallow_model,
+    predicate Inv4.inv = Inv7.inv
   clone Bdd_Impl10_False_Interface as False0 with
     predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Grows0.grows = Grows0.grows,
@@ -3664,8 +4356,11 @@ module Bdd_Impl10_And
   clone Bdd_Hashmap_Impl1_Get_Interface as Get0 with
     type k = (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd),
     type v = Bdd_Bdd_Type.t_bdd,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     function DeepModel0.deep_model = DeepModel0.deep_model,
+    predicate Inv2.inv = Inv2.inv,
     type DeepModelTy0.deepModelTy = (uint64, uint64)
   let rec cfg and [#"../bdd.rs" 538 4 538 72] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (Bdd_Context_Type.t_context)) (a : Bdd_Bdd_Type.t_bdd) (b : Bdd_Bdd_Type.t_bdd) : Bdd_Bdd_Type.t_bdd
     requires {[#"../bdd.rs" 529 15 529 31] Invariant0.invariant' ( * self)}
@@ -3944,6 +4639,19 @@ module Bdd_Hashmap_Impl2
   use prelude.Borrow
   use prelude.Int
   use prelude.UInt64
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = v
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = u
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = (u, v)
+  clone TyInv_Tuple2 as TyInv_Tuple21 with
+    type t0 = u,
+    type t1 = v,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv,
+    predicate Inv2.inv = Inv3.inv,
+    axiom .
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy1 with
     type self = v
   clone CreusotContracts_Model_DeepModel_DeepModel_Interface as DeepModel3 with
@@ -3968,6 +4676,13 @@ module Bdd_Hashmap_Impl2
     type DeepModelTy1.deepModelTy = DeepModelTy1.deepModelTy,
     function DeepModel0.deep_model = DeepModel2.deep_model,
     function DeepModel1.deep_model = DeepModel3.deep_model
+  clone TyInv_Tuple2 as TyInv_Tuple20 with
+    type t0 = u,
+    type t1 = v,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv,
+    predicate Inv2.inv = Inv3.inv,
+    axiom .
   clone Bdd_Hashmap_Impl2_HashLog as HashLog0 with
     type u = u,
     type v = v,
@@ -3980,19 +4695,29 @@ module Bdd_Hashmap_Impl2
     type t = (u, v),
     type DeepModelTy0.deepModelTy = (DeepModelTy0.deepModelTy, DeepModelTy1.deepModelTy),
     function DeepModel0.deep_model = DeepModel1.deep_model
-  goal hash_refn : [#"../bdd.rs" 76 8 76 29] forall self : (u, v) . forall result : uint64 . UInt64.to_int result = HashLog0.hash_log (DeepModel0.deep_model self) -> UInt64.to_int result = HashLog0.hash_log (DeepModel0.deep_model self)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = (u, v)
+  goal hash_refn : [#"../bdd.rs" 76 8 76 29] forall self : (u, v) . Inv0.inv self -> Inv0.inv self /\ (forall result : uint64 . UInt64.to_int result = HashLog0.hash_log (DeepModel0.deep_model self) -> UInt64.to_int result = HashLog0.hash_log (DeepModel0.deep_model self))
 end
 module Bdd_Impl1
   use prelude.Borrow
   use prelude.Int
   use prelude.UInt64
+  use Bdd_Node_Type as Bdd_Node_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Bdd_Node_Type.t_node
+  clone Bdd_Node_Type_Inv as Bdd_Node_Type_Inv1 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_NodeLog_Type as Bdd_NodeLog_Type
-  use Bdd_Node_Type as Bdd_Node_Type
   clone Bdd_Impl3_DeepModel as DeepModel1
   clone Core_Num_Impl9_Max as Max0
   clone Bdd_Impl4_ShallowModel as ShallowModel1 with
     function DeepModel0.deep_model = DeepModel1.deep_model
+  clone Bdd_Node_Type_Inv as Bdd_Node_Type_Inv0 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
   clone CreusotContracts_Model_Impl0_DeepModel as DeepModel0 with
     type t = Bdd_Node_Type.t_node,
     type DeepModelTy0.deepModelTy = Bdd_NodeLog_Type.t_nodelog,
@@ -4003,16 +4728,26 @@ module Bdd_Impl1
     type t = Bdd_Node_Type.t_node,
     type ShallowModelTy0.shallowModelTy = Bdd_NodeLog_Type.t_nodelog,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
-  goal hash_refn : [#"../bdd.rs" 116 4 116 25] forall self : Bdd_Node_Type.t_node . forall result : uint64 . UInt64.to_int result = HashLog0.hash_log (ShallowModel0.shallow_model self) -> UInt64.to_int result = HashLog0.hash_log (DeepModel0.deep_model self)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Bdd_Node_Type.t_node
+  goal hash_refn : [#"../bdd.rs" 116 4 116 25] forall self : Bdd_Node_Type.t_node . Inv0.inv self -> (forall result : uint64 . UInt64.to_int result = HashLog0.hash_log (ShallowModel0.shallow_model self) -> UInt64.to_int result = HashLog0.hash_log (DeepModel0.deep_model self))
 end
 module Bdd_Impl2
   use prelude.Borrow
   use prelude.Int
   use prelude.UInt64
   use Bdd_Bdd_Type as Bdd_Bdd_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Bdd_Bdd_Type.t_bdd
+  clone Bdd_Bdd_Type_Inv as Bdd_Bdd_Type_Inv1 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
   clone Bdd_Impl5_DeepModel as DeepModel1
   clone Bdd_Impl6_ShallowModel as ShallowModel1 with
     function DeepModel0.deep_model = DeepModel1.deep_model
+  clone Bdd_Bdd_Type_Inv as Bdd_Bdd_Type_Inv0 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
   clone CreusotContracts_Model_Impl0_DeepModel as DeepModel0 with
     type t = Bdd_Bdd_Type.t_bdd,
     type DeepModelTy0.deepModelTy = uint64,
@@ -4022,7 +4757,9 @@ module Bdd_Impl2
     type t = Bdd_Bdd_Type.t_bdd,
     type ShallowModelTy0.shallowModelTy = uint64,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
-  goal hash_refn : [#"../bdd.rs" 142 4 142 25] forall self : Bdd_Bdd_Type.t_bdd . forall result : uint64 . UInt64.to_int result = HashLog0.hash_log (ShallowModel0.shallow_model self) -> UInt64.to_int result = HashLog0.hash_log (DeepModel0.deep_model self)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Bdd_Bdd_Type.t_bdd
+  goal hash_refn : [#"../bdd.rs" 142 4 142 25] forall self : Bdd_Bdd_Type.t_bdd . Inv0.inv self -> (forall result : uint64 . UInt64.to_int result = HashLog0.hash_log (ShallowModel0.shallow_model self) -> UInt64.to_int result = HashLog0.hash_log (DeepModel0.deep_model self))
 end
 module Bdd_Impl11
   
@@ -4031,31 +4768,73 @@ module Bdd_Impl17
   
 end
 module Bdd_Impl12
-  
+  use prelude.Borrow
+  use Bdd_Node_Type as Bdd_Node_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Bdd_Node_Type.t_node
+  clone Bdd_Node_Type_Inv as Bdd_Node_Type_Inv1 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone Bdd_Node_Type_Inv as Bdd_Node_Type_Inv0 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Bdd_Node_Type.t_node
+  goal assert_receiver_is_total_eq_refn : [#"../bdd.rs" 90 9 90 11] forall self : Bdd_Node_Type.t_node . Inv0.inv self -> (forall result : () . true)
 end
 module Bdd_Impl18
-  
+  use prelude.Borrow
+  use Bdd_Bdd_Type as Bdd_Bdd_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Bdd_Bdd_Type.t_bdd
+  clone Bdd_Bdd_Type_Inv as Bdd_Bdd_Type_Inv1 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone Bdd_Bdd_Type_Inv as Bdd_Bdd_Type_Inv0 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Bdd_Bdd_Type.t_bdd
+  goal assert_receiver_is_total_eq_refn : [#"../bdd.rs" 104 15 104 17] forall self : Bdd_Bdd_Type.t_bdd . Inv0.inv self -> (forall result : () . true)
 end
 module Bdd_Impl13
   use prelude.Borrow
+  use Bdd_Node_Type as Bdd_Node_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Bdd_Node_Type.t_node
+  clone Bdd_Node_Type_Inv as Bdd_Node_Type_Inv1 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_NodeLog_Type as Bdd_NodeLog_Type
-  use Bdd_Node_Type as Bdd_Node_Type
   clone Bdd_Impl3_DeepModel as DeepModel1
+  clone Bdd_Node_Type_Inv as Bdd_Node_Type_Inv0 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
   clone CreusotContracts_Model_Impl0_DeepModel as DeepModel0 with
     type t = Bdd_Node_Type.t_node,
     type DeepModelTy0.deepModelTy = Bdd_NodeLog_Type.t_nodelog,
     function DeepModel0.deep_model = DeepModel1.deep_model
-  goal eq_refn : [#"../bdd.rs" 90 13 90 22] forall self : Bdd_Node_Type.t_node . forall other : Bdd_Node_Type.t_node . forall result : bool . result = (DeepModel0.deep_model self = DeepModel0.deep_model other) -> result = (DeepModel0.deep_model self = DeepModel0.deep_model other)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Bdd_Node_Type.t_node
+  goal eq_refn : [#"../bdd.rs" 90 13 90 22] forall self : Bdd_Node_Type.t_node . forall other : Bdd_Node_Type.t_node . Inv0.inv other /\ Inv0.inv self -> (forall result : bool . result = (DeepModel0.deep_model self = DeepModel0.deep_model other) -> result = (DeepModel0.deep_model self = DeepModel0.deep_model other))
 end
 module Bdd_Impl7
   use prelude.Borrow
   use prelude.Int
   use prelude.UInt64
   use Bdd_Bdd_Type as Bdd_Bdd_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Bdd_Bdd_Type.t_bdd
+  clone Bdd_Bdd_Type_Inv as Bdd_Bdd_Type_Inv1 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
   clone Bdd_Impl5_DeepModel as DeepModel1
   clone Bdd_Impl6_ShallowModel as ShallowModel1 with
     function DeepModel0.deep_model = DeepModel1.deep_model
+  clone Bdd_Bdd_Type_Inv as Bdd_Bdd_Type_Inv0 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
   clone CreusotContracts_Model_Impl0_DeepModel as DeepModel0 with
     type t = Bdd_Bdd_Type.t_bdd,
     type DeepModelTy0.deepModelTy = uint64,
@@ -4064,17 +4843,39 @@ module Bdd_Impl7
     type t = Bdd_Bdd_Type.t_bdd,
     type ShallowModelTy0.shallowModelTy = uint64,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
-  goal eq_refn : [#"../bdd.rs" 202 4 202 34] forall self : Bdd_Bdd_Type.t_bdd . forall other : Bdd_Bdd_Type.t_bdd . forall result : bool . result = (ShallowModel0.shallow_model self = ShallowModel0.shallow_model other) -> result = (DeepModel0.deep_model self = DeepModel0.deep_model other)
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Bdd_Bdd_Type.t_bdd
+  goal eq_refn : [#"../bdd.rs" 202 4 202 34] forall self : Bdd_Bdd_Type.t_bdd . forall other : Bdd_Bdd_Type.t_bdd . Inv0.inv other /\ Inv0.inv self -> (forall result : bool . result = (ShallowModel0.shallow_model self = ShallowModel0.shallow_model other) -> result = (DeepModel0.deep_model self = DeepModel0.deep_model other))
 end
 module Bdd_Impl14
   use prelude.Borrow
   use Bdd_Node_Type as Bdd_Node_Type
-  goal clone'_refn : [#"../bdd.rs" 90 24 90 29] forall self : Bdd_Node_Type.t_node . forall result : Bdd_Node_Type.t_node . result = self -> result = self
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Bdd_Node_Type.t_node
+  clone Bdd_Node_Type_Inv as Bdd_Node_Type_Inv1 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone Bdd_Node_Type_Inv as Bdd_Node_Type_Inv0 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Bdd_Node_Type.t_node
+  goal clone'_refn : [#"../bdd.rs" 90 24 90 29] forall self : Bdd_Node_Type.t_node . Inv0.inv self -> (forall result : Bdd_Node_Type.t_node . result = self -> Inv1.inv result /\ result = self)
 end
 module Bdd_Impl0
   use prelude.Borrow
   use Bdd_Bdd_Type as Bdd_Bdd_Type
-  goal clone'_refn : [#"../bdd.rs" 109 4 109 27] forall self : Bdd_Bdd_Type.t_bdd . forall result : Bdd_Bdd_Type.t_bdd . result = self -> result = self
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Bdd_Bdd_Type.t_bdd
+  clone Bdd_Bdd_Type_Inv as Bdd_Bdd_Type_Inv1 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone Bdd_Bdd_Type_Inv as Bdd_Bdd_Type_Inv0 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Bdd_Bdd_Type.t_bdd
+  goal clone'_refn : [#"../bdd.rs" 109 4 109 27] forall self : Bdd_Bdd_Type.t_bdd . Inv0.inv self -> (forall result : Bdd_Bdd_Type.t_bdd . result = self -> Inv1.inv result /\ result = self)
 end
 module Bdd_Impl15
   

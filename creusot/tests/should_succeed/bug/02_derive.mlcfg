@@ -25,8 +25,43 @@ module C02Derive_Impl0_Clone
   }
   
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 40 4 40 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module C02Derive_Lit_Type_Inv
+  use C02Derive_Lit_Type as C02Derive_Lit_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = C02Derive_Lit_Type.t_lit
+  axiom inv_t_lit : forall self : C02Derive_Lit_Type.t_lit . Inv0.inv self = true
+end
 module C02Derive_Impl0
   use prelude.Borrow
   use C02Derive_Lit_Type as C02Derive_Lit_Type
-  goal clone'_refn : [#"../02_derive.rs" 3 9 3 14] forall self : C02Derive_Lit_Type.t_lit . forall result : C02Derive_Lit_Type.t_lit . result = self
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = C02Derive_Lit_Type.t_lit
+  clone C02Derive_Lit_Type_Inv as C02Derive_Lit_Type_Inv1 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone C02Derive_Lit_Type_Inv as C02Derive_Lit_Type_Inv0 with
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = C02Derive_Lit_Type.t_lit
+  goal clone'_refn : [#"../02_derive.rs" 3 9 3 14] forall self : C02Derive_Lit_Type.t_lit . Inv0.inv self -> (forall result : C02Derive_Lit_Type.t_lit . Inv1.inv result /\ result = self)
 end
