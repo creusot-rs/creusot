@@ -1,4 +1,7 @@
-use crate::{invariant::Invariant, *};
+use crate::{
+    invariant::{inv, Invariant},
+    *,
+};
 pub use ::std::iter::*;
 
 mod cloned;
@@ -40,7 +43,7 @@ pub trait Iterator: ::std::iter::Iterator + Invariant {
     #[requires(MapInv::<Self, _, F>::reinitialize())]
     #[requires(MapInv::<Self, Self::Item, F>::preservation(self, func))]
     #[ensures(result == MapInv { iter: self, func, produced: Ghost::new(Seq::EMPTY) })]
-    #[ensures(result.invariant())]
+    #[ensures(inv(result))]
     fn map_inv<B, F>(self, func: F) -> MapInv<Self, Self::Item, F>
     where
         Self: Sized,
@@ -65,7 +68,7 @@ impl<I: Iterator> IntoIterator for I {
     #[predicate]
     #[open]
     fn into_iter_pre(self) -> bool {
-        self.invariant()
+        pearlite! { true }
     }
 
     #[predicate]
