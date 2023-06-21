@@ -202,6 +202,9 @@ pub(crate) fn check_call<'tcx>(
 
     let mut subst_map: SubstMap = iter.collect();
 
+    // map sub-typing obligations back to there cause
+    let mut span_map: FxHashMap<Span, Ty> = FxHashMap::default();
+
     let (args_gen, res_ty_gen) = match fn_ty_gen.kind() {
         TyKind::FnPtr(bind) => {
             let bind: &PolyFnSig = bind;
@@ -212,7 +215,7 @@ pub(crate) fn check_call<'tcx>(
     };
     args.zip(args_gen).zip(home_sig_args).try_for_each(|((arg, &ty_gen), home_sig_arg)| {
         let (ty, span) = arg;
-
+        span_map.insert(span, ty);
         let ty_gen = subst_map.convert_sig_pair(home_sig_arg, ty_gen, &infcx);
         sup_tys(&ocx, span, ty_gen, ty)
     })?;
@@ -227,21 +230,27 @@ pub(crate) fn check_call<'tcx>(
         (Constraint::RegSubVar(reg, var), Some(vid))
             if var == vid && curr_ok.is_ok() && !sub_ts(reg, ts) =>
         {
-            let reg = DisplayRegion(reg, ctx);
-            let dts = DisplayRegion(ts, ctx);
-            let msg = match origin_types(origin) {
-                None => format!("the expression's home `{reg}` must match the current time slice `{dts}`"),
+            let span = origin.span();
+            curr_ok = match origin_types(origin) {
+                None => {
+                    let ty = span_map[&span];
+                    assert_eq!(ty.home, reg);
+                    check_move_ts(ts, ctx, ty, span).map_err(|e|
+                        e.add_msg(format_args!("\ncaused by function call")))
+                },
                 Some(x) => {
                     let found = prepare_display(x.found, ctx);
                     let replacer = |r: Region<'tcx>| match r.kind() {
                         RegionKind::ReVar(vid2) if vid2 == vid => prepare_display(ts, ctx),
                         _ => r
                     };
+                    let reg = DisplayRegion(reg, ctx);
+                    let dts = DisplayRegion(ts, ctx);
                     let expected = x.expected.fold_with(&mut RegionReplacer{f: replacer, tcx});
-                    format!("the expression's lifetime `{reg}` must match the current time slice `{dts}` (found `{found}`, expected `{expected}`)")
+                    let msg = format!("the expression's lifetime `{reg}` must match the current time slice `{dts}` (found `{found}`, expected `{expected}`)");
+                    Err(Error::new(span, msg))
                 }
             };
-            curr_ok = Err(Error::new(origin.span(), msg))
         }
         _ => {}
     });
@@ -313,17 +322,18 @@ pub(crate) fn check_sup<'tcx>(
             if sub_ts(reg1, reg2) {
                 Ok(())
             } else {
-                let (reg1, reg2) = (DisplayRegion(reg1, ctx), DisplayRegion(reg2, ctx));
-                let msg = match origin_types(&origin) {
-                    None => format!("function was supposed to return data with home `{reg2}` but it is returning data with home `{reg1}`"),
+                match origin_types(&origin) {
+                    None => check_move_ts(reg2, ctx, actual, span).map_err(|e|
+                    e.add_msg(format_args!("\ncaused by return type mismatch"))),
                     Some(t) => {
+                        let (reg1, reg2) = (DisplayRegion(reg1, ctx), DisplayRegion(reg2, ctx));
                         let expected = prepare_display(t.expected, ctx);
                         let found = prepare_display(t.found, ctx);
-                        format!("function was supposed to return data with type `{expected}` but it is returning data with type `{found}`\n\
-                            expected `{reg2}` found `{reg1}`")
+                        let msg = format!("function was supposed to return data with type `{expected}` but it is returning data with type `{found}`\n\
+                            expected `{reg2}` found `{reg1}`");
+                        Err(Error::new(origin.span(), msg))
                     }
-                };
-                Err(Error::new(origin.span(), msg))
+                }
             }
         }
         _ => Ok(()),
@@ -454,7 +464,8 @@ pub(crate) fn mk_ref<'tcx>(
     ty: Ty<'tcx>,
     span: Span,
 ) -> CreusotResult<Ty<'tcx>> {
-    check_move_ts(ts, ctx, ty, span).map_err(|x| x)?;
+    check_move_ts(ts, ctx, ty, span)
+        .map_err(|e| e.add_msg(format_args!("\ncaused by creating reference")))?;
     Ok(Ty::make_ref(lft, ty, ctx.tcx))
 }
 

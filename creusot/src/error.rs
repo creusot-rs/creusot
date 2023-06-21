@@ -1,6 +1,7 @@
 use rustc_errors::DiagnosticId;
 use rustc_session::Session;
 use rustc_span::{Span, DUMMY_SP};
+use std::fmt::Write;
 
 pub type CreusotResult<T> = Result<T, Error>;
 
@@ -18,6 +19,12 @@ impl Error {
 
     pub(crate) fn emit(self, sess: &Session) -> ! {
         sess.span_fatal_with_code(self.span, self.msg, DiagnosticId::Error(String::from("creusot")))
+    }
+
+    pub(crate) fn add_msg(self, msg: std::fmt::Arguments) -> Self {
+        let mut ret = self;
+        ret.msg.write_fmt(msg).unwrap();
+        ret
     }
 }
 

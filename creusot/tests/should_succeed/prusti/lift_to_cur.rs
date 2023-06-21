@@ -1,15 +1,15 @@
 extern crate creusot_contracts;
 use creusot_contracts::prusti_prelude::*;
 
-// #[logic(('curr) -> 'curr)]
-// fn deref(x: &Box<u32>) -> u32 {
-//     **x
-// }
-//
-// #[ensures(result == deref(x))]
-// fn test(x: &Box<u32>) -> u32 {
-//     **x
-// }
+#[logic(('curr) -> 'curr)]
+fn deref(x: &Box<u32>) -> u32 {
+    **x
+}
+
+#[ensures(result == deref(x))]
+pub fn test(x: &Box<u32>) -> u32 {
+    **x
+}
 
 pub trait MkRef {
     #[open]

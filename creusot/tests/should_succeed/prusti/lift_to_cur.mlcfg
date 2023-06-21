@@ -1,4 +1,59 @@
 
+module LiftToCur_Deref_Stub
+  use prelude.Borrow
+  use prelude.Int
+  use prelude.UInt32
+  function deref [#"../lift_to_cur.rs" 5 0 5 29] (x : uint32) : uint32
+end
+module LiftToCur_Deref_Interface
+  use prelude.Borrow
+  use prelude.Int
+  use prelude.UInt32
+  function deref [#"../lift_to_cur.rs" 5 0 5 29] (x : uint32) : uint32
+  val deref [#"../lift_to_cur.rs" 5 0 5 29] (x : uint32) : uint32
+    ensures { result = deref x }
+    
+end
+module LiftToCur_Deref
+  use prelude.Borrow
+  use prelude.Int
+  use prelude.UInt32
+  function deref [#"../lift_to_cur.rs" 5 0 5 29] (x : uint32) : uint32 =
+    [#"../lift_to_cur.rs" 6 6 6 7] x
+  val deref [#"../lift_to_cur.rs" 5 0 5 29] (x : uint32) : uint32
+    ensures { result = deref x }
+    
+end
+module LiftToCur_Test_Interface
+  use prelude.Borrow
+  use prelude.Int
+  use prelude.UInt32
+  clone LiftToCur_Deref_Stub as Deref0
+  val test [#"../lift_to_cur.rs" 10 0 10 32] (x : uint32) : uint32
+    ensures { [#"../lift_to_cur.rs" 9 10 9 28] result = Deref0.deref x }
+    
+end
+module LiftToCur_Test
+  use prelude.Int
+  use prelude.UInt32
+  use prelude.Borrow
+  clone LiftToCur_Deref as Deref0
+  let rec cfg test [#"../lift_to_cur.rs" 10 0 10 32] [@cfg:stackify] [@cfg:subregion_analysis] (x : uint32) : uint32
+    ensures { [#"../lift_to_cur.rs" 9 10 9 28] result = Deref0.deref x }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : uint32;
+  var x_1 : uint32;
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    _0 <- x_1;
+    return _0
+  }
+  
+end
 module LiftToCur_MkRef_MkRef_Stub
   type self
   use prelude.Borrow
