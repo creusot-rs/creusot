@@ -309,7 +309,7 @@ impl<'tcx> Ctx<'tcx> {
     }
 
     /// Fixes an external region by converting it into a singleton set
-    pub(super) fn fix_region(&self, r: Region<'tcx>) -> Region<'tcx> {
+    pub(crate) fn fix_region(&self, r: Region<'tcx>) -> Region<'tcx> {
         let idx = index_of(&self.base_regions, &r);
         let res = RegionSet::singleton(idx as u32);
         if self.relation.idx_outlived_by(CURR_IDX.into(), res) {

@@ -26,6 +26,10 @@ impl Error {
         ret.msg.write_fmt(msg).unwrap();
         ret
     }
+
+    pub(crate) fn msg(self) -> String {
+        self.msg
+    }
 }
 
 #[derive(Debug, Clone)]

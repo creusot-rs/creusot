@@ -367,7 +367,7 @@ impl<'a, 'tcx> TypeVisitor<TyCtxt<'tcx>> for AllRegionsOutliveCheck<'a, 'tcx> {
     }
 }
 
-fn check_move_ts<'tcx>(
+pub(crate) fn check_move_ts<'tcx>(
     ts: Region<'tcx>,
     ctx: &Ctx<'tcx>,
     ty: Ty<'tcx>,

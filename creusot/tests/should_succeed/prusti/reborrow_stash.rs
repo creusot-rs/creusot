@@ -1,4 +1,5 @@
 #![allow(unused)]
+#![deny(creusot::prusti_zombie)]
 extern crate creusot_contracts;
 use creusot_contracts::prusti_prelude::*;
 

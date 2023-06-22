@@ -10,12 +10,16 @@ use rustc_middle::{
     mir::Mutability::Not,
     ty::{self, Binder, FnSig, Region},
 };
-use rustc_span::{symbol::Symbol, Span};
+use rustc_span::{symbol::Symbol, Span, SpanData};
 use smallvec::SmallVec;
 use std::{
+    collections::BTreeMap,
     hash::Hash,
     ops::{ControlFlow, Deref, DerefMut},
+    sync::Mutex,
 };
+
+pub(crate) static ZOMBIE_SPANS: Mutex<BTreeMap<SpanData, String>> = Mutex::new(BTreeMap::new());
 
 type TimeSlice<'tcx> = Region<'tcx>;
 
@@ -139,8 +143,8 @@ pub(super) fn prusti_to_creusot<'tcx>(
     }
 
     let final_type = convert(&mut term, &mut Tenv::new(tenv), ts, &ctx)?;
-    let final_type = strip_derefs_target(&ctx, term.span, ts, final_type, res_ty.ty)?;
     if item_id == owner_id.expect_local() {
+        let final_type = strip_derefs_target(&ctx, term.span, ts, final_type, res_ty.ty)?;
         typeck::check_sup(&ctx, res_ty, final_type, term.span)?
     }
     Ok(term)
@@ -247,29 +251,44 @@ fn deref_depth(ty: ty::Ty<'_>) -> SmallVec<[Indirect; 8]> {
     }
 }
 
+fn add_zombie_lint<'tcx>(ts: Region<'tcx>, ctx: &Ctx<'tcx>, ty: Ty<'tcx>, span: Span) -> Ty<'tcx> {
+    if ty.ty.is_mutable_ptr() {
+        // Add an exception for mutable references
+        return ty
+    }
+    if let Err(e) = typeck::check_move_ts(ts, ctx, ty, span) {
+        let e = e.add_msg(format_args!("\notherwise it would become a zombie"));
+        ZOMBIE_SPANS.lock().unwrap().insert(span.data(), e.msg());
+    }
+    ty
+}
+
 // Preforms the conversion and return the type of `term`
 // Note: since pearlite doesn't have & and * terms this type may have the wrong number of &'s on the outside
 // Recursive calls should generally instead use convert_sdt fix the return type to match the expected type from THIR
 // When handling operators that can work over places (currently projection) convert_sdb1
 // this leaves behind one layer of reference which is used track the lifetime of the projection
 fn convert<'tcx>(
-    term: &mut Term<'tcx>,
+    outer_term: &mut Term<'tcx>,
     tenv: &mut Tenv<'tcx>,
     ts: TimeSlice<'tcx>,
     ctx: &Ctx<'tcx>,
 ) -> CreusotResult<Ty<'tcx>> {
     let tcx = ctx.tcx;
-    let ty = match &mut term.kind {
-        TermKind::Var(v) => *tenv.get(v).unwrap(),
-        TermKind::Lit(_) | TermKind::Item(_, _) => Ty::with_absurd_home(term.ty, tcx), // Can't return mutable reference
+    let ty = match &mut outer_term.kind {
+        TermKind::Var(v) => {
+            let ty = *tenv.get(v).unwrap();
+            add_zombie_lint(ts, ctx, ty, outer_term.span)
+        }
+        TermKind::Lit(_) | TermKind::Item(_, _) => Ty::with_absurd_home(outer_term.ty, tcx),
         TermKind::Binary { lhs, rhs, .. } | TermKind::Impl { lhs, rhs } => {
             convert_sdt(&mut *lhs, tenv, ts, ctx)?;
             convert_sdt(&mut *rhs, tenv, ts, ctx)?;
-            Ty::with_absurd_home(term.ty, tcx)
+            Ty::with_absurd_home(outer_term.ty, tcx)
         }
         TermKind::Unary { arg, .. } => {
             convert_sdt(&mut *arg, tenv, ts, ctx)?;
-            Ty::with_absurd_home(term.ty, tcx)
+            Ty::with_absurd_home(outer_term.ty, tcx)
         }
         TermKind::Forall { binder, body } | TermKind::Exists { binder, body } => {
             let ty = binder.1.tuple_fields()[0];
@@ -280,17 +299,17 @@ fn convert<'tcx>(
             let new_reg = if tcx.is_diagnostic_item(Symbol::intern("prusti_curr"), *id) {
                 Some(ctx.curr_region())
             } else if tcx.is_diagnostic_item(Symbol::intern("prusti_expiry"), *id) {
-                Some(subst.regions().next().unwrap())
+                Some(ctx.fix_region(subst.regions().next().unwrap()))
             } else if tcx.is_diagnostic_item(Symbol::intern("prusti_dbg_ty"), *id) {
                 let mut arg = args.pop().unwrap();
                 let res = convert_sdt(&mut arg, tenv, ts, ctx)?;
                 eprintln!(
                     "{:?} had type {} (THIR type {})",
-                    term.span,
+                    outer_term.span,
                     prepare_display(res, ctx),
-                    term.ty
+                    outer_term.ty
                 );
-                term.kind = arg.kind;
+                outer_term.kind = arg.kind;
                 return Ok(res);
             } else {
                 None
@@ -298,25 +317,26 @@ fn convert<'tcx>(
             if let Some(reg) = new_reg {
                 let mut arg = args.pop().unwrap();
                 let res = convert_sdt(&mut arg, tenv, reg, &ctx)?;
-                term.kind = arg.kind;
-                res
+                outer_term.kind = arg.kind;
+                add_zombie_lint(ts, ctx, res, outer_term.span)
             } else {
                 let _ = convert_sdt(fun, tenv, ts, ctx)?;
                 let args =
                     args.iter_mut().map(|arg| Ok((convert_sdt(arg, tenv, ts, ctx)?, arg.span)));
                 let (id, subst) = typeck::try_resolve(&ctx, *id, *subst);
-                typeck::check_call(ctx, ts, id, subst, args)?
+                let ty = typeck::check_call(ctx, ts, id, subst, args)?;
+                add_zombie_lint(ts, ctx, ty, outer_term.span)
             }
         }
         TermKind::Constructor { fields, variant, .. } => {
             let fields =
                 fields.iter_mut().map(|arg| Ok((convert_sdt(arg, tenv, ts, ctx)?, arg.span)));
-            typeck::check_constructor(ctx, fields, term.ty, *variant)?
+            typeck::check_constructor(ctx, fields, outer_term.ty, *variant)?
         }
         TermKind::Tuple { fields, .. } => {
             let fields =
                 fields.iter_mut().map(|arg| Ok((convert_sdt(arg, tenv, ts, ctx)?, arg.span)));
-            typeck::check_constructor(ctx, fields, term.ty, 0u32.into())?
+            typeck::check_constructor(ctx, fields, outer_term.ty, 0u32.into())?
         }
         curr @ TermKind::Cur { .. } => {
             let curr_owned = std::mem::replace(curr, TermKind::Absurd);
@@ -339,13 +359,13 @@ fn convert<'tcx>(
             let ty = convert_sdt(&mut *scrutinee, tenv, ts, ctx)?;
             if ty.ty.is_ref() {
                 // We would need to deref the reference to check which variant it has
-                typeck::shr_deref(ts, ctx, ty, term.span)?;
+                typeck::shr_deref(ts, ctx, ty, outer_term.span)?;
             }
             let iter = arms.iter_mut().map(|(pat, body)| {
                 let iter = PatternIter { pat, ty, ctx };
                 convert_sdt(&mut *body, &mut *tenv.insert_many(iter), ts, ctx)
             });
-            typeck::union(ctx, term.ty, iter)?
+            typeck::union(ctx, outer_term.ty, iter)?
         }
         TermKind::Let { pattern, arg, body } => {
             if matches!(pattern, Pattern::Tuple(..))
@@ -367,10 +387,13 @@ fn convert<'tcx>(
             let res = ty.as_adt_variant(0u32.into(), tcx).nth(name.as_usize());
             res.unwrap()
         }
-        TermKind::Old { term } => convert_sdt(&mut *term, tenv, ctx.old_region(), ctx)?,
+        TermKind::Old { term } => {
+            let ty = convert_sdt(&mut *term, tenv, ctx.old_region(), ctx)?;
+            add_zombie_lint(ts, ctx, ty, outer_term.span)
+        }
         TermKind::Closure { .. } => todo!(),
-        TermKind::Absurd => Ty::absurd_regions(term.ty, ctx.tcx),
-        _ => return Err(Error::new(term.span, "this operation is not supported in Prusti specs")),
+        TermKind::Absurd => Ty::absurd_regions(outer_term.ty, ctx.tcx),
+        _ => return Err(Error::new(outer_term.span, "this operation is not supported in Prusti specs")),
     };
     Ok(ty)
 }
