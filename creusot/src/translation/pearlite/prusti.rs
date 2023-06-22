@@ -10,16 +10,14 @@ use rustc_middle::{
     mir::Mutability::Not,
     ty::{self, Binder, FnSig, Region},
 };
-use rustc_span::{symbol::Symbol, Span, SpanData};
+use rustc_span::{symbol::Symbol, Span};
 use smallvec::SmallVec;
 use std::{
-    collections::BTreeMap,
     hash::Hash,
     ops::{ControlFlow, Deref, DerefMut},
-    sync::Mutex,
 };
 
-pub(crate) static ZOMBIE_SPANS: Mutex<BTreeMap<SpanData, String>> = Mutex::new(BTreeMap::new());
+use crate::lints::PRUSTI_ZOMBIE;
 
 type TimeSlice<'tcx> = Region<'tcx>;
 
@@ -254,11 +252,11 @@ fn deref_depth(ty: ty::Ty<'_>) -> SmallVec<[Indirect; 8]> {
 fn add_zombie_lint<'tcx>(ts: Region<'tcx>, ctx: &Ctx<'tcx>, ty: Ty<'tcx>, span: Span) -> Ty<'tcx> {
     if ty.ty.is_mutable_ptr() {
         // Add an exception for mutable references
-        return ty
+        return ty;
     }
     if let Err(e) = typeck::check_move_ts(ts, ctx, ty, span) {
         let e = e.add_msg(format_args!("\notherwise it would become a zombie"));
-        ZOMBIE_SPANS.lock().unwrap().insert(span.data(), e.msg());
+        ctx.lint(&PRUSTI_ZOMBIE, span, e.msg())
     }
     ty
 }
@@ -393,7 +391,12 @@ fn convert<'tcx>(
         }
         TermKind::Closure { .. } => todo!(),
         TermKind::Absurd => Ty::absurd_regions(outer_term.ty, ctx.tcx),
-        _ => return Err(Error::new(outer_term.span, "this operation is not supported in Prusti specs")),
+        _ => {
+            return Err(Error::new(
+                outer_term.span,
+                "this operation is not supported in Prusti specs",
+            ))
+        }
     };
     Ok(ty)
 }

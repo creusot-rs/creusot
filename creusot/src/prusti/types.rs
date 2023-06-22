@@ -3,6 +3,7 @@ use crate::error::{CreusotResult, Error};
 use super::{parsing::Home, region_set::*, util::RegionReplacer};
 use itertools::Either;
 use rustc_infer::infer::region_constraints::Constraint;
+use rustc_lint::Lint;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::Mutability,
@@ -10,7 +11,7 @@ use rustc_middle::{
     ty::{AdtDef, BoundRegionKind, List, ParamEnv, Region, TyCtxt, TyKind, TypeFoldable},
 };
 use rustc_span::{
-    def_id::{DefId, CRATE_DEF_ID},
+    def_id::{DefId, LocalDefId, CRATE_DEF_ID},
     Span, Symbol,
 };
 use rustc_target::abi::VariantIdx;
@@ -147,7 +148,7 @@ pub(crate) struct Ctx<'tcx, R = RegionRelation> {
     base_regions: Vec<Region<'tcx>>,
     pub(super) relation: R,
     pub curr_sym: Symbol,
-    pub owner_id: DefId,
+    pub owner_id: LocalDefId,
 }
 
 /// Primarily intended for logic functions with home signatures where since the homes might not be bound
@@ -196,6 +197,11 @@ impl<'tcx, X> Ctx<'tcx, X> {
         let base: ParamEnv = self.tcx.param_env(self.owner_id);
         self.tcx.erase_regions(base)
     }
+
+    pub(crate) fn lint(&self, lint: &'static Lint, span: Span, msg: String) {
+        let hir_id = self.tcx.local_def_id_to_hir_id(self.owner_id);
+        self.tcx.struct_span_lint_hir(lint, hir_id, span, msg, |x| x)
+    }
 }
 
 impl<'tcx> PreCtx<'tcx> {
@@ -204,7 +210,7 @@ impl<'tcx> PreCtx<'tcx> {
         let curr_region = dummy_region(tcx, curr_sym);
         let old_region = dummy_region(tcx, Symbol::intern(OLD_STR));
         let base_regions = vec![old_region, curr_region];
-        Ctx { tcx, relation: (), base_regions, curr_sym, owner_id }
+        Ctx { tcx, relation: (), base_regions, curr_sym, owner_id: owner_id.expect_local() }
     }
 
     pub(super) fn home_to_region(&mut self, s: Symbol) -> Region<'tcx> {
