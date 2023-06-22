@@ -394,6 +394,16 @@ pub(crate) fn check_move_ts<'tcx>(
     }
 }
 
+pub(crate) fn check_move_ts_with_old<'tcx>(
+    ts: Region<'tcx>,
+    ctx: &Ctx<'tcx>,
+    ty: Ty<'tcx>,
+    span: Span,
+    old_ts: Option<Region<'tcx>>,
+) -> CreusotResult<()> {
+    check_move_ts(ts, ctx, Ty{ty: ty.ty, home: old_ts.unwrap_or(ty.home)}, span)
+}
+
 pub(crate) enum MutDerefType {
     Cur,
     Fin,
@@ -491,9 +501,9 @@ pub(crate) fn check_signature_agreement<'tcx>(
     let ts = ts.ok().unwrap();
 
     let sig = tcx.fn_sig(trait_id).subst(tcx, refn_subst);
-    let (ctx, ts, arg_tys, expect_res_ty) =
+    let (ctx, ts, arg_tys, (_, expect_res_ty)) =
         full_signature_logic::<Vec<_>>(tcx, trait_home_sig, sig, &ts, trait_id)?;
-    let args = arg_tys.into_iter().map(|(_, ty)| Ok((ty, impl_span)));
+    let args = arg_tys.into_iter().map(|(_, (_,  ty))| Ok((ty, impl_span)));
     let actual_res_ty = check_call(&ctx, ts, impl_id, impl_id_subst, args)?;
     check_sup(&ctx, expect_res_ty, actual_res_ty, impl_span)
 }

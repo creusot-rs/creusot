@@ -101,7 +101,9 @@ impl<'a, K: Hash + Eq + Copy, V> SemiPersistent<FxHashMap<K, V>> {
     }
 }
 
-type Tenv<'tcx> = SemiPersistent<FxHashMap<Symbol, Ty<'tcx>>>;
+/// Maps identifiers to there type and the time they were bound
+type Tenv<'tcx> = SemiPersistent<FxHashMap<Symbol, (TimeSlice<'tcx>, Ty<'tcx>)>>;
+
 
 pub(super) fn prusti_to_creusot<'tcx>(
     ctx: &ThirTerm<'_, 'tcx>,
@@ -123,19 +125,15 @@ pub(super) fn prusti_to_creusot<'tcx>(
     let home_sig = util::get_attr_lit(tcx, owner_id, &["creusot", "prusti", "home_sig"]);
     let sig: Binder<FnSig> = tcx.fn_sig(owner_id).subst_identity();
 
-    let (ctx, ts, mut tenv, res_ty) = match home_sig {
+    let (ctx, ts, tenv, res_ty) = match home_sig {
         None => {
-            let (ctx, ts, arg_tys, res_ty) = full_signature(tcx, sig, ts, owner_id)?;
-            let tenv = arg_tys
-                .map(|(k, v)| v.map(|v| (k, v)))
-                .collect::<CreusotResult<FxHashMap<_, _>>>()?;
-            (ctx, ts, tenv, res_ty)
+            full_signature(tcx, sig, ts, owner_id)?
         }
         Some(home_sig) => {
-            let (ctx, ts, tenv, res_ty) = full_signature_logic(tcx, home_sig, sig, ts, owner_id)?;
-            (ctx, ts, tenv, res_ty)
+            full_signature_logic(tcx, home_sig, sig, ts, owner_id)?
         }
     };
+    let mut tenv : FxHashMap<_, _> = tenv;
 
     if item_id != owner_id.expect_local() {
         tenv.insert(Symbol::intern("result"), res_ty);
@@ -143,6 +141,7 @@ pub(super) fn prusti_to_creusot<'tcx>(
 
     let final_type = convert(&mut term, &mut Tenv::new(tenv), ts, &ctx)?;
     if item_id == owner_id.expect_local() {
+        let res_ty = res_ty.1;
         let final_type = strip_derefs_target(&ctx, term.span, ts, final_type, res_ty.ty)?;
         typeck::check_sup(&ctx, res_ty, final_type, term.span)?
     }
@@ -188,6 +187,10 @@ impl<'a, 'tcx> InternalIterator for PatternIter<'a, 'tcx> {
     {
         iterate_bindings(self.pat, self.ty, self.ctx, &mut f)
     }
+}
+
+fn pattern_iter<'a, 'tcx>(pat: &'a Pattern<'tcx>, ty: Ty<'tcx>, ctx: &'a Ctx<'tcx>, ts: Region<'tcx>) -> impl InternalIterator<Item=(Symbol, (Region<'tcx>, Ty<'tcx>))> + 'a {
+    PatternIter{pat, ty, ctx}.map(move |(k, v)| (k, (ts, v)))
 }
 
 fn strip_derefs_target<'tcx>(
@@ -250,16 +253,28 @@ fn deref_depth(ty: ty::Ty<'_>) -> SmallVec<[Indirect; 8]> {
     }
 }
 
-fn add_zombie_lint<'tcx>(ts: Region<'tcx>, ctx: &Ctx<'tcx>, ty: Ty<'tcx>, span: Span) -> Ty<'tcx> {
+fn add_zombie_lint<'tcx>(old_ts: Option<Region<'tcx>>, ts: Region<'tcx>, ctx: &Ctx<'tcx>, ty: Ty<'tcx>, span: Span) -> Ty<'tcx> {
     if ty.ty.is_mutable_ptr() {
         // Add an exception for mutable references
         return ty;
     }
-    if let Err(e) = typeck::check_move_ts(ts, ctx, ty, span) {
+    if let Err(e) = typeck::check_move_ts_with_old(ts, ctx, ty, span, old_ts) {
         let e = e.add_msg(format_args!("\notherwise it would become a zombie"));
         ctx.lint(&PRUSTI_ZOMBIE, span, e.msg())
     }
     ty
+}
+
+fn switch_ts<'tcx>(
+    term: &mut Term<'tcx>,
+    tenv: &mut Tenv<'tcx>,
+    old_ts: TimeSlice<'tcx>,
+    new_ts: TimeSlice<'tcx>,
+    ctx: &Ctx<'tcx>,
+    span: Span,
+) -> CreusotResult<Ty<'tcx>> {
+    let ty = convert_sdt(term, tenv, old_ts, ctx)?;
+    Ok(add_zombie_lint(Some(old_ts), new_ts, ctx, ty, span))
 }
 
 // Preforms the conversion and return the type of `term`
@@ -276,8 +291,8 @@ fn convert<'tcx>(
     let tcx = ctx.tcx;
     let ty = match &mut outer_term.kind {
         TermKind::Var(v) => {
-            let ty = *tenv.get(v).unwrap();
-            add_zombie_lint(ts, ctx, ty, outer_term.span)
+            let (old_ts, ty) = *tenv.get(v).unwrap();
+            add_zombie_lint(Some(old_ts), ts, ctx, ty, outer_term.span)
         }
         TermKind::Lit(_) => Ty::with_absurd_home(outer_term.ty, tcx),
         TermKind::Item(id, subst) => {
@@ -296,7 +311,7 @@ fn convert<'tcx>(
         TermKind::Forall { binder, body } | TermKind::Exists { binder, body } => {
             let ty = binder.1.tuple_fields()[0];
             let ty = Ty::all_at_ts(ty, ctx.tcx, ts); // TODO handle lifetimes annotations in ty
-            convert_sdt(&mut *body, &mut tenv.insert(binder.0, ty), ts, ctx)?
+            convert_sdt(&mut *body, &mut tenv.insert(binder.0, (ts, ty)), ts, ctx)?
         }
         TermKind::Call { args, fun, id, .. } => {
             let ty = convert_sdt(fun, tenv, ts, ctx)?;
@@ -321,15 +336,15 @@ fn convert<'tcx>(
             };
             if let Some(reg) = new_reg {
                 let mut arg = args.pop().unwrap();
-                let res = convert_sdt(&mut arg, tenv, reg, &ctx)?;
+                let res = switch_ts(&mut arg, tenv, reg, ts, ctx, outer_term.span)?;
                 outer_term.kind = arg.kind;
-                add_zombie_lint(ts, ctx, res, outer_term.span)
+                res
             } else {
                 let args =
                     args.iter_mut().map(|arg| Ok((convert_sdt(arg, tenv, ts, ctx)?, arg.span)));
                 let (id, subst) = typeck::try_resolve(&ctx, *id, *subst);
                 let ty = typeck::check_call(ctx, ts, id, subst, args)?;
-                add_zombie_lint(ts, ctx, ty, outer_term.span)
+                add_zombie_lint(None, ts, ctx, ty, outer_term.span)
             }
         }
         TermKind::Constructor { fields, variant, .. } => {
@@ -366,7 +381,7 @@ fn convert<'tcx>(
                 typeck::shr_deref(ts, ctx, ty, outer_term.span)?;
             }
             let iter = arms.iter_mut().map(|(pat, body)| {
-                let iter = PatternIter { pat, ty, ctx };
+                let iter = pattern_iter(pat, ty, ctx, ts);
                 convert_sdt(&mut *body, &mut *tenv.insert_many(iter), ts, ctx)
             });
             typeck::union(ctx, outer_term.ty, iter)?
@@ -378,11 +393,11 @@ fn convert<'tcx>(
             {
                 // This was generated by a tuple projection so it should be handled like a projection instead
                 let ty = convert_sdb1(&mut *arg, tenv, ts, ctx)?;
-                let iter = PatternIter { pat: pattern, ty, ctx };
+                let iter = pattern_iter(pattern, ty, ctx, ts);
                 convert(&mut *body, &mut *tenv.insert_many(iter), ts, ctx)?
             } else {
                 let ty = convert_sdt(&mut *arg, tenv, ts, ctx)?;
-                let iter = PatternIter { pat: pattern, ty, ctx };
+                let iter = pattern_iter(pattern, ty, ctx, ts);
                 convert_sdt(&mut *body, &mut *tenv.insert_many(iter), ts, ctx)?
             }
         }
@@ -392,8 +407,7 @@ fn convert<'tcx>(
             res.unwrap()
         }
         TermKind::Old { term } => {
-            let ty = convert_sdt(&mut *term, tenv, ctx.old_region(), ctx)?;
-            add_zombie_lint(ts, ctx, ty, outer_term.span)
+            switch_ts(term, tenv, ctx.old_region(), ts, ctx, outer_term.span)?
         }
         TermKind::Closure { .. } => todo!(),
         TermKind::Absurd => Ty::absurd_regions(outer_term.ty, ctx.tcx),
