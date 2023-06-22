@@ -32,6 +32,7 @@ use rustc_middle::{
         UpvarSubsts,
     },
 };
+use rustc_middle::ty::{CanonicalUserType, TypeVisitableExt, UserType};
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_target::abi::{FieldIdx, VariantIdx};
@@ -149,6 +150,30 @@ pub enum TermKind<'tcx> {
     },
     Absurd,
 }
+
+impl<'tcx> TermKind<'tcx> {
+    pub fn item(def_id: DefId, subst: SubstsRef<'tcx>, user_ty: &Option<Box<CanonicalUserType<'tcx>>>, tcx: TyCtxt<'tcx>) -> Self {
+        let Some(user_ty) = user_ty else {
+            return Self::Item(def_id, subst)
+        };
+
+        match user_ty.value {
+            UserType::Ty(_) => Self::Item(def_id, subst),
+            UserType::TypeOf(def_id2, u_subst) => {
+                assert_eq!(def_id, def_id2);
+                if u_subst.substs.len() != subst.len() {
+                    return Self::Item(def_id, subst)
+                }
+                let subst: Vec<_> = subst.iter()
+                    .zip(u_subst.substs.iter())
+                    .map(|(s, us)| if us.has_escaping_bound_vars() {s} else {us}).collect();
+                let subst = tcx.mk_substs(&*subst);
+                Self::Item(def_id, subst)
+            }
+        }
+    }
+}
+
 impl<'tcx, I: Interner> TypeFoldable<I> for Literal<'tcx> {
     fn try_fold_with<F: rustc_middle::ty::FallibleTypeFolder<I>>(
         self,
@@ -630,18 +655,18 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::ValueTypeAscription { source, .. } => self.expr_term(source),
             ExprKind::Box { value } => self.expr_term(value),
             // ExprKind::Array { ref fields } => todo!("Array {:?}", fields),
-            ExprKind::NonHirLiteral { .. } => match ty.kind() {
+            ExprKind::NonHirLiteral { ref user_ty, .. } => match ty.kind() {
                 TyKind::FnDef(id, substs) => {
-                    Ok(Term { ty, span, kind: TermKind::Item(*id, substs) })
+                    Ok(Term { ty, span, kind: TermKind::item(*id, substs, user_ty, self.ctx.tcx) })
                 }
                 _ => Err(Error::new(thir_term.span, "unhandled literal expression")),
             },
-            ExprKind::NamedConst { def_id, substs, .. } => {
-                Ok(Term { ty, span, kind: TermKind::Item(def_id, substs) })
+            ExprKind::NamedConst { def_id, substs, ref user_ty, .. } => {
+                Ok(Term { ty, span, kind: TermKind::item(def_id, substs, user_ty, self.ctx.tcx) })
             }
-            ExprKind::ZstLiteral { .. } => match ty.kind() {
+            ExprKind::ZstLiteral { ref user_ty, .. } => match ty.kind() {
                 TyKind::FnDef(def_id, subst) => {
-                    Ok(Term { ty, span, kind: TermKind::Item(*def_id, subst) })
+                    Ok(Term { ty, span, kind: TermKind::item(*def_id, subst, user_ty, self.ctx.tcx) })
                 }
                 _ => Ok(Term { ty, span, kind: TermKind::Lit(Literal::ZST) }),
             },

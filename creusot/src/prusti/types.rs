@@ -149,6 +149,7 @@ pub(crate) struct Ctx<'tcx, R = RegionRelation> {
     pub(super) relation: R,
     pub curr_sym: Symbol,
     pub owner_id: LocalDefId,
+    is_logic: bool,
 }
 
 /// Primarily intended for logic functions with home signatures where since the homes might not be bound
@@ -210,7 +211,7 @@ impl<'tcx> PreCtx<'tcx> {
         let curr_region = dummy_region(tcx, curr_sym);
         let old_region = dummy_region(tcx, Symbol::intern(OLD_STR));
         let base_regions = vec![old_region, curr_region];
-        Ctx { tcx, relation: (), base_regions, curr_sym, owner_id: owner_id.expect_local() }
+        Ctx { tcx, relation: (), base_regions, curr_sym, owner_id: owner_id.expect_local(), is_logic: true }
     }
 
     pub(super) fn home_to_region(&mut self, s: Symbol) -> Region<'tcx> {
@@ -303,7 +304,7 @@ impl<'tcx> Ctx<'tcx> {
             ));
         }
 
-        Ok(Ctx { relation, ..res })
+        Ok(Ctx { relation, is_logic: false, ..res })
     }
 
     pub(super) fn curr_home(&self) -> Home {
@@ -316,16 +317,19 @@ impl<'tcx> Ctx<'tcx> {
 
     /// Fixes an external region by converting it into a singleton set
     pub(crate) fn fix_region(&self, r: Region<'tcx>) -> Region<'tcx> {
+        if r.is_erased() {
+            return RegionSet::UNIVERSE.into_region(self.tcx)
+        }
         let idx = index_of(&self.base_regions, &r);
         let res = RegionSet::singleton(idx as u32);
-        if self.relation.idx_outlived_by(CURR_IDX.into(), res) {
+        if self.relation.idx_outlived_by(CURR_IDX.into(), res) || self.is_logic {
             res.into_region(self.tcx)
         } else {
             self.curr_region()
         }
     }
 
-    pub(super) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T) -> T {
+    pub(crate) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T) -> T {
         let tcx = self.tcx;
         t.fold_with(&mut RegionReplacer { tcx, f: |r| self.fix_region(r) })
     }
@@ -336,6 +340,9 @@ pub(super) struct DisplayRegion<'a, 'tcx>(pub Region<'tcx>, pub &'a Ctx<'tcx>);
 impl<'a, 'tcx> Display for DisplayRegion<'a, 'tcx> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let reg_set = RegionSet::from(self.0);
+        if reg_set == RegionSet::UNIVERSE {
+            return write!(f, "'?")
+        }
         // write!(f, "({reg_set:?})")?;
         let mut reg_set_h = reg_set;
         match (reg_set_h.next(), reg_set_h.next()) {

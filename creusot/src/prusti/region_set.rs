@@ -8,6 +8,7 @@ pub(crate) struct RegionSet(u32);
 
 impl RegionSet {
     pub const EMPTY: Self = RegionSet(0);
+    pub const UNIVERSE: Self = RegionSet(u32::MAX);
 
     pub const fn singleton(idx: u32) -> Self {
         assert!(idx < u32::BITS);

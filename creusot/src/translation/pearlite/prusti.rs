@@ -16,6 +16,7 @@ use std::{
     hash::Hash,
     ops::{ControlFlow, Deref, DerefMut},
 };
+use rustc_middle::ty::TyKind;
 
 use crate::lints::PRUSTI_ZOMBIE;
 
@@ -278,7 +279,11 @@ fn convert<'tcx>(
             let ty = *tenv.get(v).unwrap();
             add_zombie_lint(ts, ctx, ty, outer_term.span)
         }
-        TermKind::Lit(_) | TermKind::Item(_, _) => Ty::with_absurd_home(outer_term.ty, tcx),
+        TermKind::Lit(_) => Ty::with_absurd_home(outer_term.ty, tcx),
+        TermKind::Item(id, subst) => {
+            let ty = tcx.mk_fn_def(*id, subst.iter().map(|x| ctx.fix_regions(x)));
+            Ty::with_absurd_home(ty, tcx)
+        }
         TermKind::Binary { lhs, rhs, .. } | TermKind::Impl { lhs, rhs } => {
             convert_sdt(&mut *lhs, tenv, ts, ctx)?;
             convert_sdt(&mut *rhs, tenv, ts, ctx)?;
@@ -293,11 +298,13 @@ fn convert<'tcx>(
             let ty = Ty::all_at_ts(ty, ctx.tcx, ts); // TODO handle lifetimes annotations in ty
             convert_sdt(&mut *body, &mut tenv.insert(binder.0, ty), ts, ctx)?
         }
-        TermKind::Call { args, fun, id, subst } => {
+        TermKind::Call { args, fun, id, .. } => {
+            let ty = convert_sdt(fun, tenv, ts, ctx)?;
+            let TyKind::FnDef(_, subst) = ty.ty.kind() else {unreachable!()};
             let new_reg = if tcx.is_diagnostic_item(Symbol::intern("prusti_curr"), *id) {
                 Some(ctx.curr_region())
             } else if tcx.is_diagnostic_item(Symbol::intern("prusti_expiry"), *id) {
-                Some(ctx.fix_region(subst.regions().next().unwrap()))
+                Some(subst.regions().next().unwrap())
             } else if tcx.is_diagnostic_item(Symbol::intern("prusti_dbg_ty"), *id) {
                 let mut arg = args.pop().unwrap();
                 let res = convert_sdt(&mut arg, tenv, ts, ctx)?;
@@ -318,7 +325,6 @@ fn convert<'tcx>(
                 outer_term.kind = arg.kind;
                 add_zombie_lint(ts, ctx, res, outer_term.span)
             } else {
-                let _ = convert_sdt(fun, tenv, ts, ctx)?;
                 let args =
                     args.iter_mut().map(|arg| Ok((convert_sdt(arg, tenv, ts, ctx)?, arg.span)));
                 let (id, subst) = typeck::try_resolve(&ctx, *id, *subst);
