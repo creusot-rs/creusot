@@ -225,8 +225,9 @@ pub(crate) fn pearlite<'tcx>(
         return Err(Error::new(ctx.def_span(id), "type checking failed"));
     };
 
+    let purity = Purity::of_def_id(ctx.tcx, id.to_def_id());
     visit::walk_expr(
-        &mut PurityVisitor { tcx: ctx.tcx, thir: &thir, in_pure_ctx: true },
+        &mut PurityVisitor { tcx: ctx.tcx, thir: &thir, context: purity },
         &thir[expr],
     );
 
@@ -1043,6 +1044,8 @@ fn not_spec_expr(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: ExprId) -> bool {
 }
 
 use rustc_hir;
+
+use super::specification::Purity;
 
 impl<'tcx> Pattern<'tcx> {
     pub(crate) fn binds(&self, binders: &mut HashSet<Symbol>) {
