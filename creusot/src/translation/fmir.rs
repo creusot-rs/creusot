@@ -141,7 +141,7 @@ pub struct Block<'tcx> {
 
 /// A MIR local along with an optional human-readable name
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum LocalIdent {
+pub(crate) enum LocalIdent {
     Anon(Local),
     User(Symbol),
 }
@@ -160,10 +160,6 @@ impl LocalIdent {
             LocalIdent::User(id) => Symbol::intern(&format!("{}", &*ident_of(*id))),
             LocalIdent::Anon(loc) => Symbol::intern(&format!("_{}", loc.index())),
         }
-    }
-
-    pub(crate) fn ident(&self) -> why3::Ident {
-        self.symbol().to_string().into()
     }
 
     pub(crate) fn is_anon(&self) -> bool {
