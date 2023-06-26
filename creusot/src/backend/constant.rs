@@ -3,8 +3,9 @@ use rustc_middle::ty::{self, InternalSubsts};
 use why3::declaration::{Decl, LetDecl, LetKind, Module, ValDecl};
 
 use crate::{
+    backend::closure_generic_decls,
     ctx::TranslatedItem,
-    translation::{constant::from_ty_const, fmir::LocalDecls, function::closure_generic_decls},
+    translation::{constant::from_ty_const, fmir::LocalDecls},
     util::{self, module_name},
 };
 
