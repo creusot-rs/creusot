@@ -1,12 +1,12 @@
 use super::{clone_map::CloneMap, CloneSummary, Why3Generator};
 use crate::{
     backend::{
+        closure_generic_decls,
         logic::{spec_axiom, val_decl},
         program::{closure_aux_defs, closure_type_use},
         signature::signature_of,
     },
     ctx::*,
-    translation::function::closure_generic_decls,
     util,
 };
 use rustc_hir::def_id::DefId;

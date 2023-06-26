@@ -1,7 +1,9 @@
 use std::borrow::Cow;
 
 use crate::{
-    ctx::*, function::all_generic_decls_for, translation::function::closure_generic_decls, util,
+    backend::{all_generic_decls_for, closure_generic_decls},
+    ctx::*,
+    util,
     util::get_builtin,
 };
 use rustc_hir::def_id::DefId;

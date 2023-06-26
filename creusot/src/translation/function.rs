@@ -26,13 +26,12 @@ use rustc_middle::{
     ty::{
         subst::{GenericArg, SubstsRef},
         ClosureKind::*,
-        EarlyBinder, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt, TyKind,
-        UpvarCapture,
+        EarlyBinder, ParamEnv, Ty, TyCtxt, TyKind, UpvarCapture,
     },
 };
 use rustc_span::{Symbol, DUMMY_SP};
 use std::{collections::HashMap, iter, rc::Rc};
-use why3::declaration::*;
+// use why3::declaration::*;
 
 pub(crate) mod promoted;
 mod statement;
@@ -663,50 +662,6 @@ pub(crate) fn closure_unnest<'tcx>(
     }
 
     unnest
-}
-
-// Closures inherit the generic parameters of the original function they were defined in, but
-// add 3 'ghost' generics tracking metadata about the closure. We choose to erase those parameters,
-// as they contain a function type along with other irrelevant details (for us).
-pub(crate) fn closure_generic_decls(
-    tcx: TyCtxt,
-    mut def_id: DefId,
-) -> impl Iterator<Item = Decl> + '_ {
-    loop {
-        if tcx.is_closure(def_id) {
-            def_id = tcx.parent(def_id);
-        } else {
-            break;
-        }
-    }
-
-    all_generic_decls_for(tcx, def_id)
-}
-
-pub(crate) fn all_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = Decl> + '_ {
-    let generics = tcx.generics_of(def_id);
-
-    generic_decls((0..generics.count()).map(move |i| generics.param_at(i, tcx)))
-}
-
-pub(crate) fn own_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = Decl> + '_ {
-    let generics = tcx.generics_of(def_id);
-    generic_decls(generics.params.iter())
-}
-
-fn generic_decls<'tcx, I: Iterator<Item = &'tcx GenericParamDef> + 'tcx>(
-    it: I,
-) -> impl Iterator<Item = Decl> + 'tcx {
-    it.filter_map(|param| {
-        if let GenericParamDefKind::Type { .. } = param.kind {
-            Some(Decl::TyDecl(TyDecl::Opaque {
-                ty_name: (&*param.name.as_str().to_lowercase()).into(),
-                ty_params: vec![],
-            }))
-        } else {
-            None
-        }
-    })
 }
 
 pub(crate) fn resolve_predicate_of<'tcx>(

@@ -1,3 +1,5 @@
+use ::std::{rc::Rc, sync::Arc};
+
 use crate::*;
 
 /// The shallow model of a type is typically used to specify a data
@@ -21,6 +23,42 @@ pub trait DeepModel {
     type DeepModelTy;
     #[logic]
     fn deep_model(self) -> Self::DeepModelTy;
+}
+
+impl<T: DeepModel + ?Sized> DeepModel for Rc<T> {
+    type DeepModelTy = T::DeepModelTy;
+    #[logic]
+    #[open]
+    fn deep_model(self) -> Self::DeepModelTy {
+        (*self).deep_model()
+    }
+}
+
+impl<T: ShallowModel + ?Sized> ShallowModel for Rc<T> {
+    type ShallowModelTy = T::ShallowModelTy;
+    #[logic]
+    #[open]
+    fn shallow_model(self) -> Self::ShallowModelTy {
+        (*self).shallow_model()
+    }
+}
+
+impl<T: DeepModel + ?Sized> DeepModel for Arc<T> {
+    type DeepModelTy = T::DeepModelTy;
+    #[logic]
+    #[open]
+    fn deep_model(self) -> Self::DeepModelTy {
+        (*self).deep_model()
+    }
+}
+
+impl<T: ShallowModel + ?Sized> ShallowModel for Arc<T> {
+    type ShallowModelTy = T::ShallowModelTy;
+    #[logic]
+    #[open]
+    fn shallow_model(self) -> Self::ShallowModelTy {
+        (*self).shallow_model()
+    }
 }
 
 impl<T: DeepModel + ?Sized> DeepModel for &T {

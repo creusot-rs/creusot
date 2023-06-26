@@ -6,7 +6,7 @@ use super::{
 };
 use crate::{
     backend::{
-        optimization, place,
+        closure_generic_decls, optimization, place,
         place::translate_rplace,
         ty::{self, closure_accessors, translate_closure_ty, translate_ty},
     },
@@ -14,7 +14,7 @@ use crate::{
     translation::{
         binop_to_binop,
         fmir::{self, Block, Branches, Expr, LocalDecls, Place, RValue, Statement, Terminator},
-        function::{closure_contract, closure_generic_decls, promoted, ClosureContract},
+        function::{closure_contract, promoted, ClosureContract},
         unop_to_unop,
     },
     util::{self, module_name, ItemType},
