@@ -325,6 +325,13 @@ impl Purity {
             Purity::Program
         }
     }
+
+    fn can_call(self, other: Purity) -> bool {
+        match (self, other) {
+            (Purity::Logic, Purity::Ghost) => true,
+            (ctx, call) => ctx == call,
+        }
+    }
 }
 
 pub(crate) struct PurityVisitor<'a, 'tcx> {
@@ -337,9 +344,10 @@ impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
     fn purity(&self, fun: thir::ExprId, func_did: DefId) -> Purity {
         let stub = pearlite_stub(self.tcx, self.thir[fun].ty);
 
-        if util::is_predicate(self.tcx, func_did) || matches!(stub, Some(Stub::Fin)) {
+        if matches!(stub, Some(Stub::Fin)) {
             Purity::Logic
-        } else if util::is_logic(self.tcx, func_did)
+        } else if util::is_predicate(self.tcx, func_did)
+            || util::is_logic(self.tcx, func_did)
             || util::get_builtin(self.tcx, func_did).is_some()
             || stub.is_some()
         {
@@ -360,7 +368,8 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
             ExprKind::Call { fun, .. } => {
                 if let &ty::FnDef(func_did, _) = self.thir[fun].ty.kind() {
                     let fn_purity = self.purity(fun, func_did);
-                    if (self.context != fn_purity) && !is_overloaded_item(self.tcx, func_did) {
+                    if !self.context.can_call(fn_purity) && !is_overloaded_item(self.tcx, func_did)
+                    {
                         let msg =
                             format!("called {fn_purity:?} function in {:?} context", self.context);
                         self.tcx.sess.span_err_with_code(

@@ -225,9 +225,9 @@ pub(crate) fn pearlite<'tcx>(
         return Err(Error::new(ctx.def_span(id), "type checking failed"));
     };
 
-    let purity = Purity::of_def_id(ctx.tcx, id.to_def_id());
+    // let purity = Purity::of_def_id(ctx.tcx, id.to_def_id());
     visit::walk_expr(
-        &mut PurityVisitor { tcx: ctx.tcx, thir: &thir, context: purity },
+        &mut PurityVisitor { tcx: ctx.tcx, thir: &thir, context: Purity::Logic },
         &thir[expr],
     );
 
