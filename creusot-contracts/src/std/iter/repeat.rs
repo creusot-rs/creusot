@@ -14,13 +14,13 @@ impl<T> ShallowModel for Repeat<T> {
 impl<T> Invariant for Repeat<T> {}
 
 impl<T: Clone> Iterator for Repeat<T> {
-    #[open(self)]
+    #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! { false }
     }
 
-    #[open(self)]
+    #[open]
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
