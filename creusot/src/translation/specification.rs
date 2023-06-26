@@ -344,10 +344,9 @@ impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
     fn purity(&self, fun: thir::ExprId, func_did: DefId) -> Purity {
         let stub = pearlite_stub(self.tcx, self.thir[fun].ty);
 
-        if matches!(stub, Some(Stub::Fin)) {
+        if matches!(stub, Some(Stub::Fin)) || util::is_predicate(self.tcx, func_did) {
             Purity::Logic
-        } else if util::is_predicate(self.tcx, func_did)
-            || util::is_logic(self.tcx, func_did)
+        } else if util::is_logic(self.tcx, func_did)
             || util::get_builtin(self.tcx, func_did).is_some()
             || stub.is_some()
         {
