@@ -35,7 +35,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeLiveExceptDrop {
     type Idx = Local;
 
     fn statement_effect(
-        &self,
+        &mut self,
         trans: &mut impl GenKill<Self::Idx>,
         statement: &mir::Statement<'tcx>,
         location: Location,
@@ -44,7 +44,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeLiveExceptDrop {
     }
 
     fn terminator_effect(
-        &self,
+        &mut self,
         trans: &mut impl GenKill<Self::Idx>,
         terminator: &mir::Terminator<'tcx>,
         location: Location,
@@ -53,7 +53,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeLiveExceptDrop {
     }
 
     fn call_return_effect(
-        &self,
+        &mut self,
         trans: &mut impl GenKill<Self::Idx>,
         _block: mir::BasicBlock,
         return_places: CallReturnPlaces<'_, 'tcx>,
@@ -66,7 +66,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeLiveExceptDrop {
     }
 
     fn yield_resume_effect(
-        &self,
+        &mut self,
         trans: &mut impl GenKill<Self::Idx>,
         _resume_block: mir::BasicBlock,
         resume_place: mir::Place<'tcx>,
@@ -197,7 +197,6 @@ impl DefUse {
                 | NonMutatingUseContext::ShallowBorrow
                 | NonMutatingUseContext::SharedBorrow
                 | NonMutatingUseContext::PlaceMention
-                | NonMutatingUseContext::UniqueBorrow,
             ) => Some(DefUse::Use),
             PlaceContext::MutatingUse(MutatingUseContext::Drop) => None,
 

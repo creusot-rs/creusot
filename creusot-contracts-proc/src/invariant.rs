@@ -56,7 +56,7 @@ pub struct Loop {
 
 fn filter_invariants(attrs: &mut Vec<Attribute>) -> Vec<Attribute> {
     attrs
-        .drain_filter(|attr| attr.path().get_ident().map(|i| i == "invariant").unwrap_or(false))
+        .extract_if(|attr| attr.path().get_ident().map(|i| i == "invariant").unwrap_or(false))
         .collect()
 }
 

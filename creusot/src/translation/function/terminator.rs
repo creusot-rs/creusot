@@ -230,7 +230,7 @@ pub(crate) fn evaluate_additional_predicates<'tcx>(
     param_env: ParamEnv<'tcx>,
     sp: Span,
 ) -> Result<(), Vec<FulfillmentError<'tcx>>> {
-    let mut fulfill_cx = <dyn TraitEngine<'tcx>>::new(infcx.tcx);
+    let mut fulfill_cx = <dyn TraitEngine<'tcx>>::new(infcx);
     for predicate in p {
         let predicate = infcx.tcx.erase_regions(predicate);
         let cause = ObligationCause::dummy_with_span(sp);

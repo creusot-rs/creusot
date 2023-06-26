@@ -35,7 +35,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeUninitializedLocals {
     type Idx = Local;
 
     fn statement_effect(
-        &self,
+        &mut self,
         trans: &mut impl GenKill<Self::Idx>,
         statement: &mir::Statement<'tcx>,
         loc: Location,
@@ -44,7 +44,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeUninitializedLocals {
     }
 
     fn terminator_effect(
-        &self,
+        &mut self,
         trans: &mut impl GenKill<Self::Idx>,
         terminator: &Terminator<'tcx>,
         loc: Location,
@@ -53,7 +53,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeUninitializedLocals {
     }
 
     fn call_return_effect(
-        &self,
+        &mut self,
         trans: &mut impl GenKill<Self::Idx>,
         _block: BasicBlock,
         return_places: dataflow::CallReturnPlaces<'_, 'tcx>,
@@ -67,7 +67,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeUninitializedLocals {
 
     /// See `Analysis::apply_yield_resume_effect`.
     fn yield_resume_effect(
-        &self,
+        &mut self,
         trans: &mut impl GenKill<Self::Idx>,
         _resume_block: BasicBlock,
         resume_place: mir::Place<'tcx>,
@@ -112,7 +112,6 @@ where
                 | NonMutatingUseContext::Copy
                 | NonMutatingUseContext::SharedBorrow
                 | NonMutatingUseContext::ShallowBorrow
-                | NonMutatingUseContext::UniqueBorrow
                 | NonMutatingUseContext::AddressOf
                 | NonMutatingUseContext::PlaceMention
                 | NonMutatingUseContext::Projection,

@@ -547,7 +547,7 @@ pub(crate) fn closure_contract<'tcx>(
 
         normalize(ctx.tcx, ctx.param_env(def_id), &mut postcondition);
 
-        let unnest_sig = EarlyBinder(ctx.sig(unnest_id).clone()).subst(ctx.tcx, unnest_subst);
+        let unnest_sig = EarlyBinder::bind(ctx.sig(unnest_id).clone()).subst(ctx.tcx, unnest_subst);
 
         let mut unnest = closure_unnest(ctx.tcx, def_id, subst);
         normalize(ctx.tcx, ctx.param_env(def_id), &mut unnest);

@@ -31,7 +31,7 @@ impl<'tcx> ExternSpec<'tcx> {
         tcx: TyCtxt<'tcx>,
         sub: SubstsRef<'tcx>,
     ) -> Vec<Predicate<'tcx>> {
-        EarlyBinder(self.additional_predicates.clone()).subst(tcx, sub)
+        EarlyBinder::bind(self.additional_predicates.clone()).subst(tcx, sub)
     }
 }
 

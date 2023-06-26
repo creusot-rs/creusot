@@ -484,7 +484,7 @@ fn elaborate_type_invariants<'tcx>(
         }
 
         if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
-            let term = EarlyBinder(term).subst(ctx.tcx, subst);
+            let term = EarlyBinder::bind(term).subst(ctx.tcx, subst);
 
             if ty.is_mutable_ptr() {
                 let inner = ty.builtin_deref(true).unwrap().ty;
@@ -509,7 +509,7 @@ fn elaborate_type_invariants<'tcx>(
         ret_ty_span.unwrap_or_else(|| ctx.tcx.def_span(def_id)),
         pre_sig.output,
     ) {
-        let term = EarlyBinder(term).subst(ctx.tcx, subst);
+        let term = EarlyBinder::bind(term).subst(ctx.tcx, subst);
         pre_sig.contract.ensures.push(term);
     }
 }

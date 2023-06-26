@@ -109,9 +109,9 @@ impl<'tcx> Dependency<'tcx> {
         };
 
         match &mut self {
-            Dependency::Item(_, s) => *s = EarlyBinder(*s).subst(tcx, substs),
+            Dependency::Item(_, s) => *s = EarlyBinder::bind(*s).subst(tcx, substs),
             Dependency::Type(ty) | Dependency::TyInv(ty) => {
-                *ty = EarlyBinder(*ty).subst(tcx, substs)
+                *ty = EarlyBinder::bind(*ty).subst(tcx, substs)
             }
         };
         self
