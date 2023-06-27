@@ -9,7 +9,7 @@ use std::collections::HashSet;
 
 use crate::{
     error::{CrErr, CreusotResult, Error},
-    translation::{specification::PurityVisitor, TranslationCtx},
+    translation::TranslationCtx,
     util,
 };
 use itertools::Itertools;
@@ -24,8 +24,7 @@ pub(crate) use rustc_middle::thir;
 use rustc_middle::{
     mir::{BorrowKind, Mutability::*},
     thir::{
-        visit, AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId,
-        StmtKind, Thir,
+        AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
     },
     ty::{
         int_ty, subst::SubstsRef, uint_ty, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitable,
@@ -224,12 +223,6 @@ pub(crate) fn pearlite<'tcx>(
     if thir.exprs.is_empty() {
         return Err(Error::new(ctx.def_span(id), "type checking failed"));
     };
-
-    // let purity = Purity::of_def_id(ctx.tcx, id.to_def_id());
-    visit::walk_expr(
-        &mut PurityVisitor { tcx: ctx.tcx, thir: &thir, context: Purity::Logic },
-        &thir[expr],
-    );
 
     let lower = ThirTerm { ctx, item_id: id, thir: &thir };
 
@@ -1044,8 +1037,6 @@ fn not_spec_expr(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: ExprId) -> bool {
 }
 
 use rustc_hir;
-
-use super::specification::Purity;
 
 impl<'tcx> Pattern<'tcx> {
     pub(crate) fn binds(&self, binders: &mut HashSet<Symbol>) {
