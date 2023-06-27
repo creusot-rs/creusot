@@ -98,31 +98,28 @@ module Traits_Test_Interface
 end
 module Traits_Test
   use prelude.Borrow
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = bool
   clone Traits_Impl1_Model as Model0
   clone Traits_Impl0_Model as Model1 with
     type x = bool,
     type y = bool,
     function Model0.model = Model0.model
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = bool
   let rec cfg test [#"../traits.rs" 24 0 24 33] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed bool) : bool
     ensures { [#"../traits.rs" 23 10 23 42] Model0.model result = old(Model1.model x) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : bool;
-  var x_1 : borrowed bool;
-  var res_3 : bool;
-  var _4 : bool;
+  var x : borrowed bool = x;
+  var res : bool;
   {
-    x_1 <- x;
     goto BB0
   }
   BB0 {
-    res_3 <-  * x_1;
-    _4 <- res_3;
-    x_1 <- { x_1 with current = (not _4) };
-    assume { Resolve0.resolve x_1 };
-    _0 <- res_3;
+    res <-  * x;
+    x <- { x with current = (not res) };
+    assume { Resolve0.resolve x };
+    _0 <- res;
     return _0
   }
   
@@ -174,26 +171,25 @@ module Traits_Test2
   use prelude.Borrow
   use prelude.Int
   use prelude.UInt32
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = uint32
   use Traits_Wrapper_Type as Traits_Wrapper_Type
   clone Traits_Impl2_Model as Model0 with
     type t = borrowed uint32
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = uint32
   let rec cfg test2 [#"../traits.rs" 41 0 41 46] [@cfg:stackify] [@cfg:subregion_analysis] (x : Traits_Wrapper_Type.t_wrapper (borrowed uint32)) : borrowed uint32
     ensures { [#"../traits.rs" 39 10 39 34] result = old(Model0.model x) }
     ensures { [#"../traits.rs" 40 15 40 34] Model0.model x = result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : borrowed uint32;
-  var x_1 : Traits_Wrapper_Type.t_wrapper (borrowed uint32);
+  var x : Traits_Wrapper_Type.t_wrapper (borrowed uint32) = x;
   var _2 : borrowed uint32;
   {
-    x_1 <- x;
     goto BB0
   }
   BB0 {
-    _2 <- borrow_mut ( * Traits_Wrapper_Type.wrapper_0 x_1);
-    x_1 <- (let Traits_Wrapper_Type.C_Wrapper a = x_1 in Traits_Wrapper_Type.C_Wrapper ({ (Traits_Wrapper_Type.wrapper_0 x_1) with current = ( ^ _2) }));
+    _2 <- borrow_mut ( * Traits_Wrapper_Type.wrapper_0 x);
+    x <- (let Traits_Wrapper_Type.C_Wrapper a = x in Traits_Wrapper_Type.C_Wrapper ({ (Traits_Wrapper_Type.wrapper_0 x) with current = ( ^ _2) }));
     _0 <- borrow_mut ( * _2);
     _2 <- { _2 with current = ( ^ _0) };
     assume { Resolve0.resolve _2 };

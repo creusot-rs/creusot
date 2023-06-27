@@ -45,20 +45,20 @@ module Deref_Deref2
 end
 module Deref_Deref3_Stub
   type t
-  function deref3 [#"../deref.rs" 19 0 19 28] (_1' : ()) : t
+  function deref3 [#"../deref.rs" 19 0 19 28] (_1 : ()) : t
 end
 module Deref_Deref3_Interface
   type t
-  function deref3 [#"../deref.rs" 19 0 19 28] (_1' : ()) : t
-  val deref3 [#"../deref.rs" 19 0 19 28] (_1' : ()) : t
-    ensures { result = deref3 _1' }
+  function deref3 [#"../deref.rs" 19 0 19 28] (_1 : ()) : t
+  val deref3 [#"../deref.rs" 19 0 19 28] (_1 : ()) : t
+    ensures { result = deref3 _1 }
     
 end
 module Deref_Deref3
   type t
-  function deref3 [#"../deref.rs" 19 0 19 28] (_1' : ()) : t
-  val deref3 [#"../deref.rs" 19 0 19 28] (_1' : ()) : t
-    ensures { result = deref3 _1' }
+  function deref3 [#"../deref.rs" 19 0 19 28] (_1 : ()) : t
+  val deref3 [#"../deref.rs" 19 0 19 28] (_1 : ()) : t
+    ensures { result = deref3 _1 }
     
 end
 module Deref_MkRef_MkRef_Stub
@@ -83,35 +83,6 @@ module Deref_MkRef_MkRef
     ensures { result = mk_ref self }
     
 end
-module Core_Ptr_NonNull_NonNull_Type
-  use prelude.Opaque
-  type t_nonnull 't =
-    | C_NonNull opaque_ptr
-    
-end
-module Core_Marker_PhantomData_Type
-  type t_phantomdata 't =
-    | C_PhantomData
-    
-end
-module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
-  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
-  type t_unique 't =
-    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
-    
-end
-module Alloc_Boxed_Box_Type
-  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
-  type t_box 't 'a =
-    | C_Box (Core_Ptr_Unique_Unique_Type.t_unique 't) 'a
-    
-end
-module Alloc_Alloc_Global_Type
-  type t_global  =
-    | C_Global
-    
-end
 module Deref_Deref4_Stub
   type t
   use prelude.Borrow
@@ -128,8 +99,6 @@ end
 module Deref_Deref4
   type t
   use prelude.Borrow
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use Alloc_Boxed_Box_Type as Alloc_Boxed_Box_Type
   clone Deref_MkRef_MkRef_Stub as MkRef0 with
     type self = t
   function deref4 [#"../deref.rs" 36 0 36 57] (x : t) : t =
@@ -172,13 +141,12 @@ module Deref_ProjectRef
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : uint32;
-  var x_1 : Deref_X_Type.t_x;
+  var x : Deref_X_Type.t_x = x;
   {
-    x_1 <- x;
     goto BB0
   }
   BB0 {
-    _0 <- Deref_X_Type.x_0 x_1;
+    _0 <- Deref_X_Type.x_0 x;
     return _0
   }
   
@@ -204,13 +172,12 @@ module Deref_ProjectTupleRef
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : uint32;
-  var x_1 : (uint32, uint32);
+  var x : (uint32, uint32) = x;
   {
-    x_1 <- x;
     goto BB0
   }
   BB0 {
-    _0 <- (let (a, _) = x_1 in a);
+    _0 <- (let (a, _) = x in a);
     return _0
   }
   
@@ -230,13 +197,12 @@ module Deref_ProjectTupleBox
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : uint32;
-  var x_1 : (uint32, uint32);
+  var x : (uint32, uint32) = x;
   {
-    x_1 <- x;
     goto BB0
   }
   BB0 {
-    _0 <- (let (a, _) = x_1 in a);
+    _0 <- (let (a, _) = x in a);
     goto BB1
   }
   BB1 {
