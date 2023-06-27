@@ -1,14 +1,15 @@
-#![allow(incomplete_features)]
-#![feature(specialization)]
 extern crate creusot_contracts;
-use creusot_contracts::{invariant, *};
+use creusot_contracts::{
+    invariant::{self, Invariant},
+    *,
+};
 
 pub struct Sum10(i32, i32);
 
-impl invariant::UserInv for Sum10 {
+impl Invariant for Sum10 {
     #[predicate]
     #[open]
-    fn user_inv(self) -> bool {
+    fn invariant(self) -> bool {
         pearlite! { self.0@ + self.1@ == 10 }
     }
 }

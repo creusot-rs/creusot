@@ -6,7 +6,7 @@ use creusot_contracts::{invariant::Invariant, *};
 mod common;
 use common::Iterator;
 
-pub struct Cloned<I> {
+pub struct Cloned<I: Iterator> {
     iter: I,
 }
 
@@ -59,11 +59,4 @@ where
     I: Iterator<Item = &'a T>,
     T: Clone,
 {
-    #[open]
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! {
-            self.iter.invariant()
-        }
-    }
 }

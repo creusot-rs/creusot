@@ -176,7 +176,7 @@ impl Print for Axiom {
         alloc
             .text("axiom ")
             .append(self.name.pretty(alloc, env))
-            .append(" : ")
+            .append(if self.rewrite { " [@rewrite] : " } else { " : " })
             .append(self.axiom.pretty(alloc, env))
     }
 }

@@ -3,6 +3,7 @@ use super::{
     CloneMap, CloneSummary, TransId, Why3Generator,
 };
 use crate::{ctx::*, translation::traits, util};
+use indexmap::IndexSet;
 use rustc_ast::Mutability;
 use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyCtxt, TyKind};
@@ -10,7 +11,7 @@ use rustc_span::{Symbol, DUMMY_SP};
 use why3::{
     declaration::{Axiom, Decl, Module, TyDecl},
     exp::{Exp, Pattern},
-    Ident,
+    Ident, QName,
 };
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
@@ -32,6 +33,7 @@ impl TyInvKind {
             TyKind::Adt(adt_def, adt_substs) if adt_def.is_box() => {
                 TyInvKind::from_ty(adt_substs.type_at(0))
             }
+            // TODO: if ADT inv is trivial, return TyInvKind::Trivial (optimization)
             TyKind::Adt(adt_def, _) => TyInvKind::Adt(adt_def.did()),
             TyKind::Tuple(tys) => TyInvKind::Tuple(tys.len()),
             _ => TyInvKind::Trivial, // TODO
@@ -76,6 +78,45 @@ pub(crate) fn tyinv_substs<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> SubstsRef<'
         TyKind::Tuple(tys) => tcx.mk_substs_from_iter(tys.iter().map(GenericArg::from)),
         _ => tcx.mk_substs(&[GenericArg::from(ty)]),
     }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+enum Mode {
+    Field,
+    Axiom,
+}
+
+pub(crate) fn is_tyinv_trivial<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    ty: Ty<'tcx>,
+) -> bool {
+    if ty.is_closure() {
+        return true;
+    }
+
+    // we cannot use a TypeWalker as it does not visit ADT field types
+    let mut visited_adts = IndexSet::new();
+    let mut stack = vec![ty];
+    while let Some(ty) = stack.pop() {
+        if resolve_user_inv(tcx, ty, param_env).is_some() {
+            return false;
+        }
+
+        match ty.kind() {
+            TyKind::Ref(_, ty, _) => stack.push(*ty),
+            TyKind::Tuple(tys) => stack.extend(*tys),
+            TyKind::Adt(def, substs) if def.is_box() => stack.push(substs.type_at(0)),
+            TyKind::Adt(def, substs) => {
+                let did = def.did();
+                if util::get_builtin(tcx, did).is_none() && visited_adts.insert(did) {
+                    stack.extend(def.all_fields().map(|f| f.ty(tcx, substs)))
+                }
+            }
+            _ => {}
+        }
+    }
+    true
 }
 
 pub(crate) fn build_inv_module<'tcx>(
@@ -124,15 +165,16 @@ fn build_inv_axiom<'tcx>(
     let rhs = if TyInvKind::Trivial == inv_kind {
         Exp::mk_true()
     } else {
-        build_inv_exp(ctx, names, "self".into(), ty, param_env, true)
+        build_inv_exp(ctx, names, "self".into(), ty, param_env, Mode::Axiom)
             .unwrap_or_else(|| Exp::mk_true())
     };
+    let trivial = rhs.is_true();
 
     let axiom = Exp::Forall(
         vec![("self".into(), translate_ty(ctx, names, DUMMY_SP, ty))],
         Box::new(lhs.eq(rhs)),
     );
-    Axiom { name, axiom }
+    Axiom { name, rewrite: !trivial, axiom }
 }
 
 fn build_inv_exp<'tcx>(
@@ -141,11 +183,15 @@ fn build_inv_exp<'tcx>(
     ident: Ident,
     ty: Ty<'tcx>,
     param_env: ParamEnv<'tcx>,
-    destruct_adt: bool,
+    mode: Mode,
 ) -> Option<Exp> {
-    let ty = ctx.normalize_erasing_regions(param_env, ty);
+    let ty = ctx.tcx.normalize_erasing_regions(param_env, ty);
 
-    let user_inv = if destruct_adt {
+    if mode == Mode::Field && is_tyinv_trivial(ctx.tcx, param_env, ty) {
+        return None;
+    }
+
+    let user_inv = if mode == Mode::Axiom {
         resolve_user_inv(ctx.tcx, ty, param_env).map(|(uinv_did, uinv_subst)| {
             let inv_name = names.value(uinv_did, uinv_subst);
             Exp::impure_qvar(inv_name).app(vec![Exp::pure_var(ident.clone())])
@@ -154,7 +200,7 @@ fn build_inv_exp<'tcx>(
         None
     };
 
-    let struct_inv = build_inv_exp_struct(ctx, names, ident, ty, param_env, destruct_adt);
+    let struct_inv = build_inv_exp_struct(ctx, names, ident, ty, param_env, mode);
 
     match (user_inv, struct_inv) {
         (None, None) => None,
@@ -169,24 +215,21 @@ fn build_inv_exp_struct<'tcx>(
     ident: Ident,
     ty: Ty<'tcx>,
     param_env: ParamEnv<'tcx>,
-    destruct_adt: bool,
+    mode: Mode,
 ) -> Option<Exp> {
     match ty.kind() {
         TyKind::Ref(_, ty, Mutability::Not) => {
-            build_inv_exp(ctx, names, ident, *ty, param_env, destruct_adt)
+            build_inv_exp(ctx, names, ident, *ty, param_env, mode)
         }
-        TyKind::Ref(_, ty, Mutability::Mut) if destruct_adt => {
-            // cannot inline in ADTs, or else we might be missing
-            // `use prelude.Borrow`
+        TyKind::Ref(_, ty, Mutability::Mut) => {
+            let mut body = build_inv_exp(ctx, names, "a".into(), *ty, param_env, mode)?;
 
             // TODO include final value
+            names.import_prelude_module(PreludeModule::Borrow);
             let deref = Exp::Current(Box::new(Exp::pure_var(ident)));
-            let body = build_inv_exp(ctx, names, "a".into(), *ty, param_env, destruct_adt)?;
-            Some(Exp::Let {
-                pattern: Pattern::VarP("a".into()),
-                arg: Box::new(deref),
-                body: Box::new(body),
-            })
+
+            body.subst(&[("a".into(), deref)].into());
+            Some(body)
         }
         TyKind::Tuple(tys) => {
             let fields: Vec<Ident> =
@@ -195,21 +238,38 @@ fn build_inv_exp_struct<'tcx>(
             let body = tys
                 .iter()
                 .enumerate()
-                .flat_map(|(i, t)| {
-                    build_inv_exp(ctx, names, fields[i].clone(), t, param_env, destruct_adt)
-                })
+                .flat_map(|(i, t)| build_inv_exp(ctx, names, fields[i].clone(), t, param_env, mode))
                 .reduce(|e1, e2| e1.log_and(e2))?;
 
             let pattern = Pattern::TupleP(fields.into_iter().map(Pattern::VarP).collect());
             Some(Exp::Let { pattern, arg: Box::new(Exp::pure_var(ident)), body: Box::new(body) })
         }
         TyKind::Adt(adt_def, adt_subst) if adt_def.is_box() => {
-            build_inv_exp(ctx, names, ident, adt_subst[0].expect_ty(), param_env, destruct_adt)
+            build_inv_exp(ctx, names, ident, adt_subst.type_at(0), param_env, mode)
         }
-        TyKind::Adt(adt_def, subst) if destruct_adt => {
+        TyKind::Adt(adt_def, adt_subst) if util::get_builtin(ctx.tcx, adt_def.did()).is_some() => {
+            match util::get_builtin(ctx.tcx, adt_def.did()).unwrap().as_str() {
+                "prelude.Ghost.ghost_ty" => {
+                    let mut inv = build_inv_exp(
+                        ctx,
+                        names,
+                        "a".into(),
+                        adt_subst.type_at(0),
+                        param_env,
+                        mode,
+                    )?;
+                    let inner = Exp::pure_qvar(QName::from_string("Ghost.inner").unwrap())
+                        .app_to(Exp::pure_var(ident));
+                    inv.subst(&[("a".into(), inner)].into());
+                    Some(inv)
+                }
+                _ => None,
+            }
+        }
+        TyKind::Adt(adt_def, subst) if mode == Mode::Axiom => {
             build_inv_exp_adt(ctx, names, ident, param_env, *adt_def, subst)
         }
-        TyKind::Ref(_, _, _) | TyKind::Adt(_, _) | TyKind::Param(_) => {
+        TyKind::Adt(_, _) | TyKind::Param(_) => {
             let inv_fun = Exp::impure_qvar(names.ty_inv(ty));
             Some(inv_fun.app_to(Exp::pure_var(ident)))
         }
@@ -228,7 +288,7 @@ fn build_inv_exp_adt<'tcx>(
     let mut branches = vec![];
     let mut trivial = true;
 
-    for var_def in adt_def.variants().iter() {
+    for (var_idx, var_def) in adt_def.variants().iter().enumerate() {
         let tuple_var = var_def.ctor.is_some();
 
         let mut pats = vec![];
@@ -241,9 +301,14 @@ fn build_inv_exp_adt<'tcx>(
             };
 
             let field_ty = field_def.ty(ctx.tcx, subst);
-            if let Some(field_inv) =
-                build_inv_exp(ctx, names, field_name.clone(), field_ty, param_env, false)
+            if let Some(mut field_inv) =
+                build_inv_exp(ctx, names, field_name.clone(), field_ty, param_env, Mode::Field)
             {
+                ctx.translate_accessor(field_def.did);
+                let acc = names.accessor(adt_def.did(), subst, var_idx, field_idx.into());
+                let acc = Exp::impure_qvar(acc).app(vec![Exp::pure_var(ident.clone())]);
+                field_inv.subst(&[(field_name.clone(), acc)].into());
+
                 pats.push(Pattern::VarP(field_name));
                 exp = exp.log_and(field_inv);
                 trivial = false;
@@ -256,7 +321,13 @@ fn build_inv_exp_adt<'tcx>(
         branches.push((Pattern::ConsP(var_name, pats), exp));
     }
 
-    (!trivial).then(|| Exp::Match(Box::new(Exp::pure_var(ident)), branches))
+    let exp = if branches.len() == 1 {
+        branches.pop().unwrap().1
+    } else {
+        Exp::Match(Box::new(Exp::pure_var(ident)), branches)
+    };
+
+    (!trivial).then(|| exp)
 }
 
 fn resolve_user_inv<'tcx>(
@@ -265,7 +336,6 @@ fn resolve_user_inv<'tcx>(
     param_env: ParamEnv<'tcx>,
 ) -> Option<(DefId, SubstsRef<'tcx>)> {
     let trait_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user"))?;
-    let default_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user_default"))?;
 
     let (impl_did, subst) = traits::resolve_assoc_item_opt(
         tcx,
@@ -276,7 +346,7 @@ fn resolve_user_inv<'tcx>(
     let subst = tcx.try_normalize_erasing_regions(param_env, subst).unwrap_or(subst);
 
     // if inv resolved to the default impl and is not specializable, ignore
-    if impl_did == default_did && !traits::still_specializable(tcx, param_env, impl_did, subst) {
+    if impl_did == trait_did && !traits::still_specializable(tcx, param_env, impl_did, subst) {
         None
     } else {
         Some((impl_did, subst))

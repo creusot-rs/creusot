@@ -36,13 +36,7 @@ impl<I> Resolve for Skip<I> {
     }
 }
 
-impl<I: Invariant> Invariant for Skip<I> {
-    #[open]
-    #[predicate]
-    fn invariant(self) -> bool {
-        self.iter().invariant()
-    }
-}
+impl<I> Invariant for Skip<I> {}
 
 impl<I: Iterator> Iterator for Skip<I> {
     #[open]

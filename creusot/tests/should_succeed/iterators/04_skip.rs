@@ -1,26 +1,20 @@
 #![feature(slice_take)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{invariant::Invariant, *};
+use creusot_contracts::{
+    invariant::{inv, Invariant},
+    *,
+};
 
 mod common;
 use common::Iterator;
 
-pub struct Skip<I> {
+pub struct Skip<I: Iterator> {
     iter: I,
     n: usize,
 }
 
-impl<I> Invariant for Skip<I>
-where
-    I: Iterator,
-{
-    #[open]
-    #[predicate]
-    fn invariant(self) -> bool {
-        self.iter.invariant()
-    }
-}
+impl<I: Iterator> Invariant for Skip<I> {}
 
 impl<I> Iterator for Skip<I>
 where
@@ -79,7 +73,7 @@ where
         #[invariant(old_self.iter.produces(skipped.inner(), self.iter))]
         #[invariant(forall<i: Int> 0 <= i && i < skipped.len() ==> skipped[i].resolve())]
         #[invariant((*self).n@ == 0)]
-        #[invariant(self.invariant())]
+        #[invariant(inv(self))]
         loop {
             let r = self.iter.next();
             if n == 0 {
