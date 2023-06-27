@@ -1,13 +1,10 @@
-use super::{
-    pearlite::{normalize, pearlite_stub, Literal, Term, TermKind},
-    LocalIdent,
-};
+use super::pearlite::{normalize, pearlite_stub, Literal, Term, TermKind};
 use crate::{ctx::*, util};
 use rustc_ast::ast::{AttrArgs, AttrArgsEq};
 use rustc_hir::def_id::DefId;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
-    mir::{Body, Local, Location, SourceScope, OUTERMOST_SOURCE_SCOPE},
+    mir::{Body, Local, SourceInfo, SourceScope, OUTERMOST_SOURCE_SCOPE},
     thir::{self, ExprKind, Thir},
     ty::{
         self,
@@ -175,9 +172,12 @@ impl ScopeTree {
 }
 
 // Turn a typing context into a substition.
-pub(crate) fn inv_subst<'tcx>(body: &Body<'tcx>, loc: Location) -> HashMap<Symbol, Term<'tcx>> {
+pub(crate) fn inv_subst<'tcx>(
+    body: &Body<'tcx>,
+    locals: &HashMap<Local, Symbol>,
+    info: SourceInfo,
+) -> HashMap<Symbol, Term<'tcx>> {
     // let local_map = real_locals(tcx, body);
-    let info = body.source_info(loc);
     let mut args = HashMap::new();
 
     let tree = ScopeTree::build(body);
@@ -186,10 +186,7 @@ pub(crate) fn inv_subst<'tcx>(body: &Body<'tcx>, loc: Location) -> HashMap<Symbo
         let loc = v;
         let ty = body.local_decls[loc].ty;
         let span = body.local_decls[loc].source_info.span;
-        args.insert(
-            k,
-            Term { ty, span, kind: TermKind::Var(LocalIdent::dbg_raw(loc, k).symbol()) },
-        );
+        args.insert(k, Term { ty, span, kind: TermKind::Var(locals[&loc]) });
     }
 
     return args;

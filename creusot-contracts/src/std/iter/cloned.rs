@@ -25,13 +25,7 @@ impl<I> Resolve for Cloned<I> {
     }
 }
 
-impl<I: Invariant> Invariant for Cloned<I> {
-    #[open(self)]
-    #[predicate]
-    fn invariant(self) -> bool {
-        self.iter().invariant()
-    }
-}
+impl<I> Invariant for Cloned<I> {}
 
 impl<'a, I, T: 'a> Iterator for Cloned<I>
 where

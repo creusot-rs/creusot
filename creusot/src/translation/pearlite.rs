@@ -1264,19 +1264,24 @@ impl<'tcx> Term<'tcx> {
     }
 
     pub(crate) fn subst(&mut self, inv_subst: &std::collections::HashMap<Symbol, Term<'tcx>>) {
-        self.subst_inner(&mut HashSet::new(), inv_subst);
+        self.subst_with(|k| inv_subst.get(&k).cloned());
     }
-    fn subst_inner(
+
+    pub(crate) fn subst_with<F: FnMut(Symbol) -> Option<Term<'tcx>>>(&mut self, mut f: F) {
+        self.subst_with_inner(&mut HashSet::new(), &mut f)
+    }
+
+    fn subst_with_inner<F: FnMut(Symbol) -> Option<Term<'tcx>>>(
         &mut self,
         bound: &HashSet<Symbol>,
-        inv_subst: &std::collections::HashMap<Symbol, Term<'tcx>>,
+        inv_subst: &mut F,
     ) {
         match &mut self.kind {
             TermKind::Var(v) => {
                 if bound.contains(v) {
                     return;
                 }
-                match inv_subst.get(v) {
+                match inv_subst(*v) {
                     Some(t) => self.kind = t.kind.clone(),
                     None => (),
                 }
@@ -1284,62 +1289,62 @@ impl<'tcx> Term<'tcx> {
             TermKind::Lit(_) => {}
             TermKind::Item(_, _) => {}
             TermKind::Binary { lhs, rhs, .. } => {
-                lhs.subst_inner(bound, inv_subst);
-                rhs.subst_inner(bound, inv_subst)
+                lhs.subst_with_inner(bound, inv_subst);
+                rhs.subst_with_inner(bound, inv_subst)
             }
-            TermKind::Unary { arg, .. } => arg.subst_inner(bound, inv_subst),
+            TermKind::Unary { arg, .. } => arg.subst_with_inner(bound, inv_subst),
             TermKind::Forall { binder, body } => {
                 let mut bound = bound.clone();
                 bound.insert(binder.0);
 
-                body.subst_inner(&bound, inv_subst);
+                body.subst_with_inner(&bound, inv_subst);
             }
             TermKind::Exists { binder, body } => {
                 let mut bound = bound.clone();
                 bound.insert(binder.0);
 
-                body.subst_inner(&bound, inv_subst);
+                body.subst_with_inner(&bound, inv_subst);
             }
             TermKind::Call { fun, args, .. } => {
-                fun.subst_inner(bound, inv_subst);
-                args.iter_mut().for_each(|f| f.subst_inner(bound, inv_subst))
+                fun.subst_with_inner(bound, inv_subst);
+                args.iter_mut().for_each(|f| f.subst_with_inner(bound, inv_subst))
             }
             TermKind::Constructor { fields, .. } => {
-                fields.iter_mut().for_each(|f| f.subst_inner(bound, inv_subst))
+                fields.iter_mut().for_each(|f| f.subst_with_inner(bound, inv_subst))
             }
             TermKind::Tuple { fields } => {
-                fields.iter_mut().for_each(|f| f.subst_inner(bound, inv_subst))
+                fields.iter_mut().for_each(|f| f.subst_with_inner(bound, inv_subst))
             }
-            TermKind::Cur { term } => term.subst_inner(bound, inv_subst),
-            TermKind::Fin { term } => term.subst_inner(bound, inv_subst),
+            TermKind::Cur { term } => term.subst_with_inner(bound, inv_subst),
+            TermKind::Fin { term } => term.subst_with_inner(bound, inv_subst),
             TermKind::Impl { lhs, rhs } => {
-                lhs.subst_inner(bound, inv_subst);
-                rhs.subst_inner(bound, inv_subst)
+                lhs.subst_with_inner(bound, inv_subst);
+                rhs.subst_with_inner(bound, inv_subst)
             }
             TermKind::Match { scrutinee, arms } => {
-                scrutinee.subst_inner(bound, inv_subst);
+                scrutinee.subst_with_inner(bound, inv_subst);
                 let mut bound = bound.clone();
 
                 arms.iter_mut().for_each(|(pat, arm)| {
                     pat.binds(&mut bound);
-                    arm.subst_inner(&bound, inv_subst)
+                    arm.subst_with_inner(&bound, inv_subst)
                 })
             }
             TermKind::Let { pattern, arg, body } => {
-                arg.subst_inner(bound, inv_subst);
+                arg.subst_with_inner(bound, inv_subst);
                 let mut bound = bound.clone();
                 pattern.binds(&mut bound);
-                body.subst_inner(&bound, inv_subst);
+                body.subst_with_inner(&bound, inv_subst);
             }
-            TermKind::Projection { lhs, .. } => lhs.subst_inner(bound, inv_subst),
-            TermKind::Old { term } => term.subst_inner(bound, inv_subst),
+            TermKind::Projection { lhs, .. } => lhs.subst_with_inner(bound, inv_subst),
+            TermKind::Old { term } => term.subst_with_inner(bound, inv_subst),
             TermKind::Closure { body } => {
-                body.subst_inner(&bound, inv_subst);
+                body.subst_with_inner(&bound, inv_subst);
             }
             TermKind::Absurd => {}
             TermKind::Reborrow { cur, fin } => {
-                cur.subst_inner(bound, inv_subst);
-                fin.subst_inner(bound, inv_subst)
+                cur.subst_with_inner(bound, inv_subst);
+                fin.subst_with_inner(bound, inv_subst)
             }
         }
     }

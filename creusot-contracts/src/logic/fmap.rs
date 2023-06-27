@@ -49,7 +49,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     }
 
     #[logic]
-    #[open(self)]
+    #[open]
     #[why3::attr = "inline:trivial"]
     pub fn get(self, k: K) -> Option<SizedW<V>> {
         self.view().get(k)

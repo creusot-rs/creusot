@@ -191,21 +191,21 @@ module Mutex_Impl3_Precondition
 end
 module Mutex_Impl3_Postcondition_Stub
   use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
-  predicate postcondition [#"../mutex.rs" 96 4 96 41] (self : Mutex_AddsTwo_Type.t_addstwo) (_2' : ())
+  predicate postcondition [#"../mutex.rs" 96 4 96 41] (self : Mutex_AddsTwo_Type.t_addstwo) (_2 : ())
 end
 module Mutex_Impl3_Postcondition_Interface
   use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
-  predicate postcondition [#"../mutex.rs" 96 4 96 41] (self : Mutex_AddsTwo_Type.t_addstwo) (_2' : ())
-  val postcondition [#"../mutex.rs" 96 4 96 41] (self : Mutex_AddsTwo_Type.t_addstwo) (_2' : ()) : bool
-    ensures { result = postcondition self _2' }
+  predicate postcondition [#"../mutex.rs" 96 4 96 41] (self : Mutex_AddsTwo_Type.t_addstwo) (_2 : ())
+  val postcondition [#"../mutex.rs" 96 4 96 41] (self : Mutex_AddsTwo_Type.t_addstwo) (_2 : ()) : bool
+    ensures { result = postcondition self _2 }
     
 end
 module Mutex_Impl3_Postcondition
   use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
-  predicate postcondition [#"../mutex.rs" 96 4 96 41] (self : Mutex_AddsTwo_Type.t_addstwo) (_2' : ()) =
+  predicate postcondition [#"../mutex.rs" 96 4 96 41] (self : Mutex_AddsTwo_Type.t_addstwo) (_2 : ()) =
     [#"../mutex.rs" 97 8 97 12] true
-  val postcondition [#"../mutex.rs" 96 4 96 41] (self : Mutex_AddsTwo_Type.t_addstwo) (_2' : ()) : bool
-    ensures { result = postcondition self _2' }
+  val postcondition [#"../mutex.rs" 96 4 96 41] (self : Mutex_AddsTwo_Type.t_addstwo) (_2 : ()) : bool
+    ensures { result = postcondition self _2 }
     
 end
 module Mutex_Impl3_Call_Interface
@@ -218,6 +218,7 @@ module Mutex_Impl3_Call
   use prelude.Borrow
   use Mutex_Even_Type as Mutex_Even_Type
   clone Mutex_Impl2_Inv as Inv0
+  use Mutex_Mutex_Type as Mutex_Mutex_Type
   use Mutex_MutexGuard_Type as Mutex_MutexGuard_Type
   clone Mutex_Impl1_Set_Interface as Set0 with
     type t = uint32,
@@ -227,7 +228,6 @@ module Mutex_Impl3_Call
     type t = uint32,
     type i = Mutex_Even_Type.t_even,
     predicate Inv0.inv = Inv0.inv
-  use Mutex_Mutex_Type as Mutex_Mutex_Type
   clone Mutex_Impl0_Lock_Interface as Lock0 with
     type t = uint32,
     type i = Mutex_Even_Type.t_even
@@ -236,49 +236,37 @@ module Mutex_Impl3_Call
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var self_1 : Mutex_AddsTwo_Type.t_addstwo;
-  var v_2 : Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even);
-  var _3 : Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even);
-  var val'_4 : uint32;
+  var self : Mutex_AddsTwo_Type.t_addstwo = self;
+  var v : Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even);
+  var val' : uint32;
   var _5 : uint32;
-  var _6 : Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even);
-  var _7 : bool;
-  var _8 : uint32;
   var _9 : ();
   var _10 : borrowed (Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even));
-  var _11 : uint32;
-  var _12 : uint32;
   var _13 : ();
   var _14 : borrowed (Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even));
   {
-    self_1 <- self;
     goto BB0
   }
   BB0 {
-    _3 <- Mutex_AddsTwo_Type.addstwo_mutex self_1;
-    v_2 <- ([#"../mutex.rs" 101 20 101 37] Lock0.lock _3);
+    v <- ([#"../mutex.rs" 101 20 101 37] Lock0.lock (Mutex_AddsTwo_Type.addstwo_mutex self));
     goto BB1
   }
   BB1 {
-    _6 <- v_2;
-    _5 <- ([#"../mutex.rs" 102 19 102 28] Deref0.deref _6);
+    _5 <- ([#"../mutex.rs" 102 19 102 28] Deref0.deref v);
     goto BB2
   }
   BB2 {
-    val'_4 <- _5;
-    _8 <- val'_4;
-    _7 <- ([#"../mutex.rs" 103 11 103 23] _8 < ([#"../mutex.rs" 103 17 103 23] (100000 : uint32)));
-    switch (_7)
+    val' <- _5;
+    switch ([#"../mutex.rs" 103 11 103 23] val' < ([#"../mutex.rs" 103 17 103 23] (100000 : uint32)))
       | False -> goto BB5
       | True -> goto BB3
       end
   }
   BB3 {
-    _10 <- borrow_mut v_2;
-    v_2 <-  ^ _10;
-    _12 <- val'_4;
-    _11 <- ([#"../mutex.rs" 104 18 104 25] _12 + ([#"../mutex.rs" 104 24 104 25] (2 : uint32)));
-    _9 <- ([#"../mutex.rs" 104 12 104 26] Set0.set _10 _11);
+    _10 <- borrow_mut v;
+    v <-  ^ _10;
+    _9 <- ([#"../mutex.rs" 104 12 104 26] Set0.set _10 ([#"../mutex.rs" 104 18 104 25] val' + ([#"../mutex.rs" 104 24 104 25] (2 : uint32))));
+    _10 <- any borrowed (Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even));
     goto BB4
   }
   BB4 {
@@ -286,9 +274,10 @@ module Mutex_Impl3_Call
     goto BB7
   }
   BB5 {
-    _14 <- borrow_mut v_2;
-    v_2 <-  ^ _14;
+    _14 <- borrow_mut v;
+    v <-  ^ _14;
     _13 <- ([#"../mutex.rs" 106 12 106 20] Set0.set _14 ([#"../mutex.rs" 106 18 106 19] (0 : uint32)));
+    _14 <- any borrowed (Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even));
     goto BB6
   }
   BB6 {
@@ -385,24 +374,24 @@ module Mutex_FakeFnOnce_Postcondition_Stub
   type self
   clone Mutex_FakeFnOnce_Return_Type as Return0 with
     type self = self
-  predicate postcondition [#"../mutex.rs" 81 4 81 52] (self : self) (_2' : Return0.return')
+  predicate postcondition [#"../mutex.rs" 81 4 81 52] (self : self) (_2 : Return0.return')
 end
 module Mutex_FakeFnOnce_Postcondition_Interface
   type self
   clone Mutex_FakeFnOnce_Return_Type as Return0 with
     type self = self
-  predicate postcondition [#"../mutex.rs" 81 4 81 52] (self : self) (_2' : Return0.return')
-  val postcondition [#"../mutex.rs" 81 4 81 52] (self : self) (_2' : Return0.return') : bool
-    ensures { result = postcondition self _2' }
+  predicate postcondition [#"../mutex.rs" 81 4 81 52] (self : self) (_2 : Return0.return')
+  val postcondition [#"../mutex.rs" 81 4 81 52] (self : self) (_2 : Return0.return') : bool
+    ensures { result = postcondition self _2 }
     
 end
 module Mutex_FakeFnOnce_Postcondition
   type self
   clone Mutex_FakeFnOnce_Return_Type as Return0 with
     type self = self
-  predicate postcondition [#"../mutex.rs" 81 4 81 52] (self : self) (_2' : Return0.return')
-  val postcondition [#"../mutex.rs" 81 4 81 52] (self : self) (_2' : Return0.return') : bool
-    ensures { result = postcondition self _2' }
+  predicate postcondition [#"../mutex.rs" 81 4 81 52] (self : self) (_2 : Return0.return')
+  val postcondition [#"../mutex.rs" 81 4 81 52] (self : self) (_2 : Return0.return') : bool
+    ensures { result = postcondition self _2 }
     
 end
 module Mutex_Impl5_Inv_Stub
@@ -470,12 +459,12 @@ module CreusotContracts_Resolve_Impl1_Resolve
     
 end
 module Mutex_Concurrent_Interface
-  val concurrent [#"../mutex.rs" 163 0 163 19] (_1' : ()) : ()
+  val concurrent [#"../mutex.rs" 163 0 163 19] (_1 : ()) : ()
 end
 module Mutex_Concurrent
-  use prelude.Borrow
   use prelude.Int
   use prelude.UInt32
+  use prelude.Borrow
   use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
   clone Mutex_Impl3_Postcondition as Postcondition0
   use Mutex_SpawnPostCond_Type as Mutex_SpawnPostCond_Type
@@ -486,8 +475,9 @@ module Mutex_Concurrent
   clone Mutex_Impl3_Precondition as Precondition0
   use Mutex_Even_Type as Mutex_Even_Type
   clone Mutex_Impl2_Inv as Inv0
-  use Mutex_JoinHandle_Type as Mutex_JoinHandle_Type
   use Core_Result_Result_Type as Core_Result_Result_Type
+  use Mutex_Mutex_Type as Mutex_Mutex_Type
+  use Mutex_JoinHandle_Type as Mutex_JoinHandle_Type
   clone Mutex_Impl4_Join_Interface as Join0 with
     type t = (),
     type i = Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo),
@@ -496,7 +486,6 @@ module Mutex_Concurrent
     type t = (),
     type f = Mutex_AddsTwo_Type.t_addstwo,
     predicate Precondition0.precondition = Precondition0.precondition
-  use Mutex_Mutex_Type as Mutex_Mutex_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even)
   clone Mutex_Leak_Interface as Leak0 with
@@ -505,74 +494,56 @@ module Mutex_Concurrent
     type t = uint32,
     type i = Mutex_Even_Type.t_even,
     predicate Inv0.inv = Inv0.inv
-  let rec cfg concurrent [#"../mutex.rs" 163 0 163 19] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : ()
+  let rec cfg concurrent [#"../mutex.rs" 163 0 163 19] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var m_1 : Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even);
+  var m : Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even);
   var _2 : borrowed (Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even));
-  var _3 : Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even);
-  var _4 : Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even);
-  var _5 : Mutex_Even_Type.t_even;
-  var t1_6 : Mutex_AddsTwo_Type.t_addstwo;
-  var _7 : Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even);
+  var t1 : Mutex_AddsTwo_Type.t_addstwo;
   var _8 : Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even);
-  var j1_9 : Mutex_JoinHandle_Type.t_joinhandle () (Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo));
-  var _10 : Mutex_AddsTwo_Type.t_addstwo;
-  var t2_11 : Mutex_AddsTwo_Type.t_addstwo;
-  var _12 : Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even);
+  var j1 : Mutex_JoinHandle_Type.t_joinhandle () (Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo));
+  var t2 : Mutex_AddsTwo_Type.t_addstwo;
   var _13 : Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even);
-  var j2_14 : Mutex_JoinHandle_Type.t_joinhandle () (Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo));
-  var _15 : Mutex_AddsTwo_Type.t_addstwo;
+  var j2 : Mutex_JoinHandle_Type.t_joinhandle () (Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo));
   var _16 : Core_Result_Result_Type.t_result () ();
-  var _17 : Mutex_JoinHandle_Type.t_joinhandle () (Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo));
   var _18 : Core_Result_Result_Type.t_result () ();
-  var _19 : Mutex_JoinHandle_Type.t_joinhandle () (Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo));
   {
     goto BB0
   }
   BB0 {
-    _5 <- Mutex_Even_Type.C_Even;
-    _4 <- ([#"../mutex.rs" 164 38 164 57] New0.new ([#"../mutex.rs" 164 49 164 50] (0 : uint32)) _5);
     goto BB1
   }
   BB1 {
-    _3 <- _4;
     goto BB2
   }
   BB2 {
-    _2 <- ([#"../mutex.rs" 164 24 164 59] Leak0.leak _3);
+    _2 <- ([#"../mutex.rs" 164 24 164 59] Leak0.leak ([#"../mutex.rs" 164 38 164 57] New0.new ([#"../mutex.rs" 164 49 164 50] (0 : uint32)) (Mutex_Even_Type.C_Even)));
     goto BB3
   }
   BB3 {
-    m_1 <-  * _2;
+    m <-  * _2;
     assume { Resolve0.resolve _2 };
-    _8 <- m_1;
-    _7 <- _8;
-    t1_6 <- Mutex_AddsTwo_Type.C_AddsTwo _7;
-    _10 <- t1_6;
-    t1_6 <- any Mutex_AddsTwo_Type.t_addstwo;
-    j1_9 <- ([#"../mutex.rs" 166 13 166 22] Spawn0.spawn _10);
+    _8 <- m;
+    t1 <- Mutex_AddsTwo_Type.C_AddsTwo _8;
+    j1 <- ([#"../mutex.rs" 166 13 166 22] Spawn0.spawn t1);
+    t1 <- any Mutex_AddsTwo_Type.t_addstwo;
     goto BB4
   }
   BB4 {
-    _13 <- m_1;
-    _12 <- _13;
-    t2_11 <- Mutex_AddsTwo_Type.C_AddsTwo _12;
-    _15 <- t2_11;
-    t2_11 <- any Mutex_AddsTwo_Type.t_addstwo;
-    j2_14 <- ([#"../mutex.rs" 168 13 168 22] Spawn0.spawn _15);
+    _13 <- m;
+    t2 <- Mutex_AddsTwo_Type.C_AddsTwo _13;
+    j2 <- ([#"../mutex.rs" 168 13 168 22] Spawn0.spawn t2);
+    t2 <- any Mutex_AddsTwo_Type.t_addstwo;
     goto BB5
   }
   BB5 {
-    _17 <- j1_9;
-    j1_9 <- any Mutex_JoinHandle_Type.t_joinhandle () (Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo));
-    _16 <- ([#"../mutex.rs" 171 12 171 21] Join0.join _17);
+    _16 <- ([#"../mutex.rs" 171 12 171 21] Join0.join j1);
+    j1 <- any Mutex_JoinHandle_Type.t_joinhandle () (Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo));
     goto BB6
   }
   BB6 {
-    _19 <- j2_14;
-    j2_14 <- any Mutex_JoinHandle_Type.t_joinhandle () (Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo));
-    _18 <- ([#"../mutex.rs" 172 12 172 21] Join0.join _19);
+    _18 <- ([#"../mutex.rs" 172 12 172 21] Join0.join j2);
+    j2 <- any Mutex_JoinHandle_Type.t_joinhandle () (Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo));
     goto BB7
   }
   BB7 {

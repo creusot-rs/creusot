@@ -5,8 +5,8 @@ use super::{
 };
 use crate::{
     backend,
+    backend::{all_generic_decls_for, own_generic_decls_for},
     ctx::ItemType,
-    translation::function::{all_generic_decls_for, own_generic_decls_for},
     util::{self, item_name, module_name},
 };
 use rustc_hir::{def::Namespace, def_id::DefId};
@@ -16,7 +16,7 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
     let tcx = ctx.tcx;
     let data = ctx.trait_impl(def_id).clone();
 
-    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Body);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Body);
 
     let mut impl_decls = Vec::new();
     for refn in &data.refinements {
@@ -41,7 +41,7 @@ impl<'tcx> Why3Generator<'tcx> {
     pub(crate) fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
         assert_eq!(util::item_type(self.tcx, def_id), ItemType::AssocTy);
 
-        let mut names = CloneMap::new(self.tcx, def_id, CloneLevel::Interface);
+        let mut names = CloneMap::new(self.tcx, def_id.into(), CloneLevel::Interface);
 
         let mut decls: Vec<_> = all_generic_decls_for(self.tcx, def_id).collect();
         let name = item_name(self.tcx, def_id, Namespace::TypeNS);

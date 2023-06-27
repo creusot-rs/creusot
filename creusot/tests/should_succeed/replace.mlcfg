@@ -5,40 +5,9 @@ module Core_Option_Option_Type
     | C_Some 't
     
 end
-module Core_Ptr_NonNull_NonNull_Type
-  use prelude.Opaque
-  type t_nonnull 't =
-    | C_NonNull opaque_ptr
-    
-end
-module Core_Marker_PhantomData_Type
-  type t_phantomdata 't =
-    | C_PhantomData
-    
-end
-module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
-  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
-  type t_unique 't =
-    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
-    
-end
-module Alloc_Boxed_Box_Type
-  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
-  type t_box 't 'a =
-    | C_Box (Core_Ptr_Unique_Unique_Type.t_unique 't) 'a
-    
-end
-module Alloc_Alloc_Global_Type
-  type t_global  =
-    | C_Global
-    
-end
 module Replace_Something_Type
   use prelude.Int
   use prelude.UInt32
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use Alloc_Boxed_Box_Type as Alloc_Boxed_Box_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
   type t_something  =
     | C_Something uint32 (Core_Option_Option_Type.t_option (t_something))
@@ -55,22 +24,17 @@ module Replace_Test
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var _a_1 : Replace_Something_Type.t_something;
-  var b_2 : Replace_Something_Type.t_something;
-  var _3 : Replace_Something_Type.t_something;
+  var _a : Replace_Something_Type.t_something = _a;
+  var b : Replace_Something_Type.t_something = b;
   {
-    _a_1 <- _a;
-    b_2 <- b;
     goto BB0
   }
   BB0 {
-    _3 <- b_2;
-    b_2 <- any Replace_Something_Type.t_something;
     goto BB1
   }
   BB1 {
-    _a_1 <- _3;
-    _3 <- any Replace_Something_Type.t_something;
+    _a <- b;
+    b <- any Replace_Something_Type.t_something;
     goto BB3
   }
   BB3 {

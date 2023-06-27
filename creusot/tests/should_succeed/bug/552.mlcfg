@@ -23,11 +23,6 @@ module C552_Impl0_Invariants
     ensures { result = invariants self }
     
 end
-module C552_Transition_Type
-  type t_transition  =
-    | C_Transition
-    
-end
 module CreusotContracts_Resolve_Impl1_Resolve_Stub
   type t
   use prelude.Borrow
@@ -50,6 +45,11 @@ module CreusotContracts_Resolve_Impl1_Resolve
     ensures { result = resolve self }
     
 end
+module C552_Transition_Type
+  type t_transition  =
+    | C_Transition
+    
+end
 module C552_Impl1_Transition_Interface
   use prelude.Borrow
   use C552_Transition_Type as C552_Transition_Type
@@ -69,9 +69,7 @@ module C552_Impl1_Transition
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : C552_Transition_Type.t_transition;
-  var self_1 : C552_Machine_Type.t_machine;
   {
-    self_1 <- self;
     goto BB0
   }
   BB0 {
@@ -92,11 +90,11 @@ end
 module C552_Impl0_Step
   use prelude.Borrow
   use C552_Machine_Type as C552_Machine_Type
+  clone C552_Impl0_Invariants as Invariants0
+  use C552_Transition_Type as C552_Transition_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = C552_Machine_Type.t_machine
-  use C552_Transition_Type as C552_Transition_Type
-  clone C552_Impl0_Invariants as Invariants0
-  clone C552_Impl1_Transition_Interface as Transition1 with
+  clone C552_Impl1_Transition_Interface as Transition0 with
     predicate Invariants0.invariants = Invariants0.invariants
   let rec cfg step [#"../552.rs" 23 4 23 30] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (C552_Machine_Type.t_machine)) : bool
     requires {[#"../552.rs" 22 4 22 41] Invariants0.invariants ( * self)}
@@ -104,20 +102,17 @@ module C552_Impl0_Step
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : bool;
-  var self_1 : borrowed (C552_Machine_Type.t_machine);
+  var self : borrowed (C552_Machine_Type.t_machine) = self;
   var _4 : C552_Transition_Type.t_transition;
-  var _5 : C552_Machine_Type.t_machine;
   {
-    self_1 <- self;
     goto BB0
   }
   BB0 {
-    _5 <-  * self_1;
-    _4 <- ([#"../552.rs" 24 8 24 25] Transition1.transition _5);
+    _4 <- ([#"../552.rs" 24 8 24 25] Transition0.transition ( * self));
     goto BB1
   }
   BB1 {
-    assume { Resolve0.resolve self_1 };
+    assume { Resolve0.resolve self };
     _0 <- ([#"../552.rs" 25 8 25 13] false);
     return _0
   }

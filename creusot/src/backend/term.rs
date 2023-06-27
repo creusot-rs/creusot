@@ -333,10 +333,10 @@ use crate::translation::pearlite::prusti::strip_all_refs;
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
 
-use super::Why3Generator;
+use super::{dependency::Dependency, Why3Generator};
 
 pub(crate) fn lower_literal<'tcx>(
-    _ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     lit: Literal<'tcx>,
 ) -> Exp {
@@ -360,12 +360,12 @@ pub(crate) fn lower_literal<'tcx>(
         }
         Literal::Function(id, subst) => {
             #[allow(deprecated)]
-            names.insert((id, subst).into());
+            names.insert(Dependency::new(ctx.tcx, (id, subst)));
             Exp::Tuple(Vec::new())
         }
         Literal::Float(f, fty) => {
-            let _why_ty = floatty_to_ty(names, &fty);
-            Constant::Float(f.0).into()
+            let why_ty = floatty_to_ty(names, &fty);
+            Constant::Float(f.0, Some(why_ty)).into()
         }
         Literal::ZST => Exp::Tuple(Vec::new()),
         Literal::String(string) => Constant::String(string).into(),

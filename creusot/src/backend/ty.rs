@@ -291,7 +291,7 @@ pub(crate) fn translate_tydecl(
         return None;
     }
 
-    let mut names = CloneMap::new(ctx.tcx, repr, CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, repr.into(), CloneLevel::Stub);
 
     let name = module_name(ctx.tcx, repr);
     let span = ctx.def_span(repr);
@@ -333,23 +333,18 @@ pub(crate) fn translate_tydecl(
         }
     }
 
-    let mut tys = Vec::new();
-    for did in bg.iter() {
-        tys.push(build_ty_decl(ctx, &mut names, *did));
-    }
+    let ty_decl =
+        TyDecl::Adt { tys: bg.iter().map(|did| build_ty_decl(ctx, &mut names, *did)).collect() };
 
     let (mut decls, _) = names.to_clones(ctx);
-    decls.push(Decl::TyDecl(TyDecl::Adt { tys: tys.clone() }));
+    decls.push(Decl::TyDecl(ty_decl));
+
     let mut modls = vec![Module { name: name.clone(), decls }];
-    for did in bg {
-        if *did == repr {
-            continue;
-        };
-        modls.push(Module {
-            name: module_name(ctx.tcx, *did),
-            decls: vec![Decl::UseDecl(Use { name: name.clone().into(), as_: None, export: true })],
-        });
-    }
+
+    modls.extend(bg.iter().filter(|did| **did != repr).map(|did| Module {
+        name: module_name(ctx.tcx, *did),
+        decls: vec![Decl::UseDecl(Use { name: name.clone().into(), as_: None, export: true })],
+    }));
 
     Some(modls)
 }
@@ -405,13 +400,10 @@ pub(crate) fn ty_param_names(
     }
 
     let gens = tcx.generics_of(def_id);
-    gens.params
-        .iter()
-        .filter_map(|param| match param.kind {
-            ty::GenericParamDefKind::Type { .. } => Some(translate_ty_param(param.name)),
-            _ => None,
-        })
-        .map(Ident::from)
+    (0..gens.count()).map(move |i| gens.param_at(i, tcx)).filter_map(|param| match param.kind {
+        ty::GenericParamDefKind::Type { .. } => Some(translate_ty_param(param.name)),
+        _ => None,
+    })
 }
 
 fn field_ty<'tcx>(
@@ -440,7 +432,7 @@ pub(crate) fn translate_accessor(
 
     let substs = InternalSubsts::identity_for_item(ctx.tcx, adt_did);
     let repr = ctx.representative_type(adt_did);
-    let mut names = CloneMap::new(ctx.tcx, repr, CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, repr.into(), CloneLevel::Stub);
 
     // UGLY hack to ensure that we don't explicitly use/clone the members of a binding group
     let bg = ctx.binding_group(repr).clone();

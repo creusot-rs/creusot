@@ -25,7 +25,6 @@ use creusot_contracts::{
 )]
 pub fn extend<T, I: Iterator<Item = T> + Invariant>(vec: &mut Vec<T>, iter: I) {
     let old_vec = ghost! { vec };
-    #[invariant(iter.invariant())]
     #[invariant(^*old_vec == ^vec)]
     #[invariant(vec@.ext_eq(old_vec@.concat(*produced)))]
     for x in iter {
@@ -44,7 +43,6 @@ pub fn extend<T, I: Iterator<Item = T> + Invariant>(vec: &mut Vec<T>, iter: I) {
 pub fn collect<I: Iterator>(iter: I) -> Vec<I::Item> {
     let mut res = Vec::new();
 
-    #[invariant(iter.invariant())]
     #[invariant(res@.ext_eq(*produced))]
     for x in iter {
         res.push(x);

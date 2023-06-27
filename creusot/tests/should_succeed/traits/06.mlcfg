@@ -39,9 +39,9 @@ module C06_Test_Interface
 end
 module C06_Test
   type t
-  use prelude.Borrow
   use prelude.Int
   use prelude.UIntSize
+  use prelude.Borrow
   clone C06_Ix_Tgt_Type as Tgt0 with
     type self = t
   clone C06_Ix_Ix_Interface as Ix0 with
@@ -52,16 +52,13 @@ module C06_Test
   let rec cfg test [#"../06.rs" 9 0 11 15] [@cfg:stackify] [@cfg:subregion_analysis] (a : t) : Tgt0.tgt
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Tgt0.tgt;
-  var a_1 : t;
-  var _2 : t;
+  var a : t = a;
   {
-    a_1 <- a;
     goto BB0
   }
   BB0 {
-    _2 <- a_1;
-    assume { Resolve0.resolve a_1 };
-    _0 <- ([#"../06.rs" 13 4 13 11] Ix0.ix _2 ([#"../06.rs" 13 9 13 10] (0 : usize)));
+    assume { Resolve0.resolve a };
+    _0 <- ([#"../06.rs" 13 4 13 11] Ix0.ix a ([#"../06.rs" 13 9 13 10] (0 : usize)));
     goto BB1
   }
   BB1 {

@@ -1,7 +1,9 @@
 use std::borrow::Cow;
 
 use crate::{
-    ctx::*, function::all_generic_decls_for, translation::function::closure_generic_decls, util,
+    backend::{all_generic_decls_for, closure_generic_decls},
+    ctx::*,
+    util,
     util::get_builtin,
 };
 use rustc_hir::def_id::DefId;
@@ -65,7 +67,7 @@ fn builtin_body<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
 ) -> (Module, CloneSummary<'tcx>) {
-    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Stub);
     let mut sig = signature_of(ctx, &mut names, def_id);
     let (val_args, val_binders) = binders_to_args(ctx, sig.args);
     sig.args = val_binders;
@@ -133,7 +135,7 @@ pub(crate) fn val_decl<'tcx>(
 }
 
 fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
-    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Stub);
 
     let mut sig = signature_of(ctx, &mut names, def_id);
     let mut val_sig = sig.clone();
@@ -198,7 +200,7 @@ fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, C
 }
 
 pub(crate) fn stub_module(ctx: &mut Why3Generator, def_id: DefId) -> Module {
-    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Stub);
     let mut sig = signature_of(ctx, &mut names, def_id);
 
     if util::is_predicate(ctx.tcx, def_id) {
@@ -225,7 +227,7 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
         return None;
     }
 
-    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Body);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Body);
 
     let mut sig = signature_of(ctx, &mut names, def_id);
 
@@ -278,7 +280,7 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
 
     let axiom = if args.is_empty() { condition } else { Exp::Forall(args, Box::new(condition)) };
 
-    Axiom { name: format!("{}_spec", &*sig.name).into(), axiom }
+    Axiom { name: format!("{}_spec", &*sig.name).into(), rewrite: false, axiom }
 }
 
 fn function_call(sig: &Signature) -> Exp {
@@ -309,7 +311,7 @@ fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {
 
     let axiom = if args.is_empty() { condition } else { Exp::Forall(args, Box::new(condition)) };
 
-    Axiom { name: "def".into(), axiom }
+    Axiom { name: "def".into(), rewrite: false, axiom }
 }
 
 pub(crate) fn impl_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {

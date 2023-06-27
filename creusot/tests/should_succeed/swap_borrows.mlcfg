@@ -63,23 +63,18 @@ module SwapBorrows_Swap
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : (t, t);
-  var x_1 : (t, t);
-  var _3 : t;
-  var _4 : t;
+  var x : (t, t) = x;
   {
-    x_1 <- x;
     goto BB0
   }
   BB0 {
     goto BB1
   }
   BB1 {
-    _3 <- (let (_, a) = x_1 in a);
-    x_1 <- (let (a, b) = x_1 in (a, any t));
-    _4 <- (let (a, _) = x_1 in a);
-    x_1 <- (let (a, b) = x_1 in (any t, b));
-    assume { Resolve0.resolve x_1 };
-    _0 <- (_3, _4);
+    assume { Resolve0.resolve x };
+    _0 <- (let (_, a) = x in a, let (a, _) = x in a);
+    x <- (let (a, b) = x in (a, any t));
+    x <- (let (a, b) = x in (any t, b));
     goto BB2
   }
   BB2 {
@@ -135,7 +130,7 @@ module CreusotContracts_Resolve_Impl2_Resolve
     
 end
 module SwapBorrows_F_Interface
-  val f [#"../swap_borrows.rs" 10 0 10 10] (_1' : ()) : ()
+  val f [#"../swap_borrows.rs" 10 0 10 10] (_1 : ()) : ()
 end
 module SwapBorrows_F
   use prelude.Int
@@ -157,45 +152,41 @@ module SwapBorrows_F
     type t2 = uint32,
     predicate Resolve0.resolve = Resolve3.resolve,
     predicate Resolve1.resolve = Resolve3.resolve
-  let rec cfg f [#"../swap_borrows.rs" 10 0 10 10] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : ()
+  let rec cfg f [#"../swap_borrows.rs" 10 0 10 10] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var a_1 : uint32;
-  var b_2 : uint32;
+  var a : uint32;
+  var b : uint32;
   var _3 : (uint32, uint32);
-  var p_4 : (borrowed uint32, borrowed uint32);
-  var _5 : (borrowed uint32, borrowed uint32);
+  var p : (borrowed uint32, borrowed uint32);
   var _6 : borrowed uint32;
   var _7 : borrowed uint32;
   var _8 : borrowed uint32;
-  var _9 : ();
-  var _11 : ();
   {
     goto BB0
   }
   BB0 {
     _3 <- ([#"../swap_borrows.rs" 11 26 11 27] (0 : uint32), [#"../swap_borrows.rs" 11 29 11 30] (0 : uint32));
-    a_1 <- (let (a, _) = _3 in a);
-    b_2 <- (let (_, a) = _3 in a);
+    a <- (let (a, _) = _3 in a);
+    b <- (let (_, a) = _3 in a);
     assume { Resolve0.resolve _3 };
-    _6 <- borrow_mut a_1;
-    a_1 <-  ^ _6;
-    _8 <- borrow_mut b_2;
-    b_2 <-  ^ _8;
+    _6 <- borrow_mut a;
+    a <-  ^ _6;
+    _8 <- borrow_mut b;
+    b <-  ^ _8;
     _7 <- borrow_mut ( * _8);
     _8 <- { _8 with current = ( ^ _7) };
-    _5 <- (_6, _7);
-    p_4 <- ([#"../swap_borrows.rs" 12 12 12 34] Swap0.swap _5);
+    p <- ([#"../swap_borrows.rs" 12 12 12 34] Swap0.swap (_6, _7));
+    _6 <- any borrowed uint32;
+    _7 <- any borrowed uint32;
     goto BB1
   }
   BB1 {
     assume { Resolve1.resolve _8 };
-    p_4 <- (let (a, b) = p_4 in ({ (let (a, _) = p_4 in a) with current = ([#"../swap_borrows.rs" 13 11 13 13] (10 : uint32)) }, b));
-    assume { Resolve2.resolve p_4 };
-    assert { [@expl:assertion] [#"../swap_borrows.rs" 15 20 15 30] b_2 = (10 : uint32) };
-    _9 <- ();
-    assert { [@expl:assertion] [#"../swap_borrows.rs" 16 20 16 29] a_1 = (0 : uint32) };
-    _11 <- ();
+    p <- (let (a, b) = p in ({ (let (a, _) = p in a) with current = ([#"../swap_borrows.rs" 13 11 13 13] (10 : uint32)) }, b));
+    assume { Resolve2.resolve p };
+    assert { [@expl:assertion] [#"../swap_borrows.rs" 15 20 15 30] b = (10 : uint32) };
+    assert { [@expl:assertion] [#"../swap_borrows.rs" 16 20 16 29] a = (0 : uint32) };
     _0 <- ();
     return _0
   }

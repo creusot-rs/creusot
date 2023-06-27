@@ -1,16 +1,20 @@
 extern crate creusot_contracts;
-use creusot_contracts::{invariant::Invariant, logic::Seq, *};
+use creusot_contracts::{
+    invariant::{inv, Invariant},
+    logic::Seq,
+    *,
+};
 
 mod common;
 use common::Iterator;
 
-pub struct Fuse<I> {
+pub struct Fuse<I: Iterator> {
     // Either it's an actual iterator or
     // it's the ghost of the last iterator *spooky*
     iter: Result<I, Ghost<I>>,
 }
 
-impl<I> Fuse<I> {
+impl<I: Iterator> Fuse<I> {
     #[logic]
     fn inner(self) -> I {
         match self.iter {
@@ -73,8 +77,8 @@ impl<I: Iterator> Invariant for Fuse<I> {
     #[predicate]
     fn invariant(self) -> bool {
         match self.iter {
-            Ok(i) => i.invariant(),
-            Err(gi) => gi.invariant(),
+            Ok(i) => inv(i),
+            Err(gi) => inv(gi),
         }
     }
 }

@@ -25,13 +25,7 @@ impl<I> Resolve for Copied<I> {
     }
 }
 
-impl<I: Invariant> Invariant for Copied<I> {
-    #[open(self)]
-    #[predicate]
-    fn invariant(self) -> bool {
-        self.iter().invariant()
-    }
-}
+impl<I: Iterator> Invariant for Copied<I> {}
 
 impl<'a, I, T: 'a> Iterator for Copied<I>
 where

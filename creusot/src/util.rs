@@ -1,4 +1,5 @@
 use crate::{
+    backend::ty_inv::TyInvKind,
     ctx::*,
     translation::{
         pearlite::{self, super_visit_mut_term, Literal, Term, TermKind, TermVisitorMut},
@@ -93,16 +94,24 @@ pub(crate) fn is_extern_spec(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "extern_spec"]).is_some()
 }
 
-pub(crate) fn is_type_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
+pub(crate) fn is_open_ty_inv(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "open_inv"]).is_some()
+}
+
+pub(crate) fn is_user_tyinv(tcx: TyCtxt, def_id: DefId) -> bool {
     let Some(assoc_item) = tcx.opt_associated_item(def_id) else { return false };
     let Some(trait_item_did) = (match assoc_item.container {
         ty::AssocItemContainer::TraitContainer => Some(def_id),
         ty::AssocItemContainer::ImplContainer => assoc_item.trait_item_def_id,
     }) else { return false };
 
-    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_method"))
-        .map(|inv_did| inv_did == trait_item_did)
-        .unwrap_or(false)
+    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user"))
+        .is_some_and(|inv_did| inv_did == trait_item_did)
+}
+
+pub(crate) fn is_inv_internal(tcx: TyCtxt, def_id: DefId) -> bool {
+    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal"))
+        .is_some_and(|did| did == def_id)
 }
 
 pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
@@ -112,24 +121,6 @@ pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol>
             _ => None,
         }
     })
-}
-
-pub(crate) enum TypeInvariantAttr {
-    None,
-    MaybeIgnore,
-    AlwaysIgnore,
-}
-
-pub(crate) fn ignore_type_invariant(tcx: TyCtxt, def_id: DefId) -> TypeInvariantAttr {
-    match get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "ignore_type_invariant"]) {
-        None => TypeInvariantAttr::None,
-        Some(AttrItem { args: AttrArgs::Eq(_, AttrArgsEq::Hir(v)), .. })
-            if v.symbol.as_str() == "maybe" =>
-        {
-            TypeInvariantAttr::MaybeIgnore
-        }
-        _ => TypeInvariantAttr::AlwaysIgnore,
-    }
 }
 
 pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::Attribute> {
@@ -230,6 +221,15 @@ pub(crate) fn ident_of_ty(sym: Symbol) -> Ident {
 
     id[..1].make_ascii_lowercase();
     Ident::build(&id)
+}
+
+pub(crate) fn inv_module_name(tcx: TyCtxt, kind: TyInvKind) -> Ident {
+    match kind {
+        TyInvKind::Trivial => "TyInv_Trivial".into(),
+        TyInvKind::Borrow => "TyInv_Borrow".into(),
+        TyInvKind::Adt(adt_did) => format!("{}_Inv", &*ident_path(tcx, adt_did)).into(),
+        TyInvKind::Tuple(arity) => format!("TyInv_Tuple{arity}").into(),
+    }
 }
 
 pub(crate) fn module_name(tcx: TyCtxt, def_id: DefId) -> Ident {
@@ -410,7 +410,7 @@ pub(crate) fn pre_sig_of<'tcx>(
     }
 
     if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).subst_identity().kind() {
-        let self_ = Symbol::intern("_1'");
+        let self_ = Symbol::intern("_1");
         let mut pre_subst = closure_capture_subst(ctx.tcx, def_id, subst, None, self_);
 
         let mut s = HashMap::new();
@@ -463,7 +463,8 @@ fn elaborate_type_invariants<'tcx>(
     def_id: DefId,
     pre_sig: &mut PreSignature<'tcx>,
 ) {
-    if is_type_invariant(ctx.tcx, def_id)
+    if is_user_tyinv(ctx.tcx, def_id)
+        || is_inv_internal(ctx.tcx, def_id)
         || (is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
             && pre_sig.contract.ensures.is_empty()
     {
@@ -471,7 +472,17 @@ fn elaborate_type_invariants<'tcx>(
     }
 
     let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
-    for (name, span, ty) in pre_sig.inputs.iter() {
+
+    let param_attrs = def_id
+        .as_local()
+        .and_then(|def_id| get_param_attrs(ctx.tcx, def_id))
+        .filter(|attrs| attrs.len() == pre_sig.inputs.len());
+
+    for (i, (name, span, ty)) in pre_sig.inputs.iter().enumerate() {
+        if let Some(attrs) = &param_attrs && get_attr(attrs[i], &["creusot", "open_inv"]).is_some() {
+            continue;
+        }
+
         if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
             let term = EarlyBinder(term).subst(ctx.tcx, subst);
 
@@ -480,8 +491,9 @@ fn elaborate_type_invariants<'tcx>(
                 let arg = Term { ty: *ty, span: *span, kind: TermKind::Var(*name) };
                 let arg =
                     Term { ty: inner, span: *span, kind: TermKind::Fin { term: Box::new(arg) } };
-                let term =
-                    pearlite::type_invariant_term_with_arg(ctx, def_id, arg, *span, inner).unwrap();
+                // FIXME: why can this be none?
+                let Some(term) =
+                    pearlite::type_invariant_term_with_arg(ctx, def_id, arg, *span, inner) else {continue; };
                 pre_sig.contract.ensures.push(term);
             }
 
@@ -577,6 +589,16 @@ pub(crate) fn is_attr(attr: &Attribute, str: &str) -> bool {
                 && segments[1].ident.as_str() == str
         }
     }
+}
+
+/// Returns `None` if the `def_id` does not refer to a body owner.
+pub(crate) fn get_param_attrs<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: LocalDefId,
+) -> Option<Vec<&'tcx [Attribute]>> {
+    let body_id = tcx.hir().maybe_body_owned_by(def_id)?;
+    let params = tcx.hir().body(body_id).params;
+    Some(params.iter().map(|p| tcx.hir().attrs(p.hir_id)).collect())
 }
 
 use rustc_span::def_id::LocalDefId;
@@ -737,7 +759,7 @@ pub(crate) struct AnonymousParamName(pub(crate) usize);
 
 impl Display for AnonymousParamName {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "_{}'", self.0 + 1)
+        write!(f, "_{}", self.0 + 1)
     }
 }
 

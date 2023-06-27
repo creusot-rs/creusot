@@ -1,12 +1,12 @@
 use super::{clone_map::CloneMap, CloneSummary, Why3Generator};
 use crate::{
     backend::{
+        closure_generic_decls,
         logic::{spec_axiom, val_decl},
         program::{closure_aux_defs, closure_type_use},
         signature::signature_of,
     },
     ctx::*,
-    translation::function::closure_generic_decls,
     util,
 };
 use rustc_hir::def_id::DefId;
@@ -21,7 +21,7 @@ pub(crate) fn interface_for<'tcx>(
     def_id: DefId,
 ) -> (Module, CloneSummary<'tcx>) {
     debug!("interface_for: {def_id:?}");
-    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Stub);
     let mut sig = signature_of(ctx, &mut names, def_id);
 
     sig.contract.variant = Vec::new();
@@ -35,8 +35,8 @@ pub(crate) fn interface_for<'tcx>(
             if subst.as_closure().kind() == ClosureKind::FnMut {
                 sig.contract.ensures.push(
                     Exp::pure_var("unnest".into())
-                        .app_to(Exp::Current(Box::new(Exp::pure_var("_1'".into()))))
-                        .app_to(Exp::Final(Box::new(Exp::pure_var("_1'".into())))),
+                        .app_to(Exp::Current(Box::new(Exp::pure_var("_1".into()))))
+                        .app_to(Exp::Final(Box::new(Exp::pure_var("_1".into())))),
                 )
             }
         }

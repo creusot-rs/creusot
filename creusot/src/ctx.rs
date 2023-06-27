@@ -2,7 +2,7 @@ use std::{collections::HashMap, ops::Deref};
 
 pub(crate) use crate::backend::clone_map::*;
 use crate::{
-    backend::ty::ty_binding_group,
+    backend::{ty::ty_binding_group, ty_inv},
     callbacks,
     creusot_items::{self, CreusotItems},
     error::{CrErr, CreusotResult, Error},
@@ -14,7 +14,7 @@ use crate::{
         fmir,
         pearlite::{self, Term},
         specification::{ContractClauses, PurityVisitor},
-        traits::{self, TraitImpl},
+        traits::TraitImpl,
     },
     util::{self, pre_sig_of, PreSignature},
 };
@@ -29,10 +29,7 @@ use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
     mir::{Body, Promoted},
     thir,
-    ty::{
-        subst::{GenericArgKind, InternalSubsts},
-        GenericArg, ParamEnv, SubstsRef, Ty, TyCtxt, Visibility,
-    },
+    ty::{subst::InternalSubsts, GenericArg, ParamEnv, SubstsRef, Ty, TyCtxt, Visibility},
 };
 use rustc_span::{RealFileName, Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::SelectionContext;
@@ -209,53 +206,19 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         def_id: DefId,
         ty: Ty<'tcx>,
     ) -> Option<(DefId, SubstsRef<'tcx>)> {
-        debug!("resolving type invariant of {ty:?} in {def_id:?}");
         let param_env = self.param_env(def_id);
-        let trait_did = self.get_diagnostic_item(Symbol::intern("creusot_invariant_method"))?;
+        let ty = self.try_normalize_erasing_regions(param_env, ty).ok()?;
 
-        let substs = self.mk_substs(&[GenericArg::from(ty)]);
-        let inv = traits::resolve_opt(self.tcx, param_env, trait_did, substs)?;
-
-        // if inv resolved to the default impl and is not specializable, ignore
-        if inv.0 == trait_did && !traits::still_specializable(self.tcx, param_env, inv.0, inv.1) {
-            return None;
+        if util::is_open_ty_inv(self.tcx, def_id)
+            || ty_inv::is_tyinv_trivial(self.tcx, param_env, ty)
+        {
+            None
+        } else {
+            debug!("resolving type invariant of {ty:?} in {def_id:?}");
+            let inv_did = self.get_diagnostic_item(Symbol::intern("creusot_invariant_internal"))?;
+            let substs = self.mk_substs(&[GenericArg::from(ty)]);
+            Some((inv_did, substs))
         }
-
-        match util::ignore_type_invariant(self.tcx, inv.0) {
-            util::TypeInvariantAttr::None => return Some(inv),
-            util::TypeInvariantAttr::AlwaysIgnore => return None,
-            util::TypeInvariantAttr::MaybeIgnore => {}
-        }
-
-        let mut walker = ty.walk();
-        walker.next(); // skip root type
-        while let Some(arg) = walker.next() {
-            if !matches!(arg.unpack(), GenericArgKind::Type(_)) {
-                walker.skip_current_subtree();
-                continue;
-            }
-
-            let substs = self.mk_substs(&[arg]);
-            let Some(arg_inv) = traits::resolve_opt(self.tcx, param_env, trait_did, substs) else {
-                walker.skip_current_subtree();
-                continue;
-            };
-
-            if arg_inv.0 == trait_did
-                && !traits::still_specializable(self.tcx, param_env, arg_inv.0, arg_inv.1)
-            {
-                walker.skip_current_subtree();
-                continue;
-            }
-
-            match util::ignore_type_invariant(self.tcx, arg_inv.0) {
-                util::TypeInvariantAttr::None => return Some(inv),
-                util::TypeInvariantAttr::AlwaysIgnore => walker.skip_current_subtree(),
-                util::TypeInvariantAttr::MaybeIgnore => {}
-            }
-        }
-
-        None
     }
 
     pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {

@@ -3,8 +3,9 @@ use rustc_middle::ty::{self, InternalSubsts};
 use why3::declaration::{Decl, LetDecl, LetKind, Module, ValDecl};
 
 use crate::{
+    backend::closure_generic_decls,
     ctx::TranslatedItem,
-    translation::{constant::from_ty_const, function::closure_generic_decls},
+    translation::{constant::from_ty_const, fmir::LocalDecls},
     util::{self, module_name},
 };
 
@@ -28,8 +29,8 @@ impl<'tcx> Why3Generator<'tcx> {
         let param_env = self.param_env(def_id);
         let span = self.def_span(def_id);
         let res = from_ty_const(&mut self.ctx, constant, param_env, span);
-        let mut names = CloneMap::new(self.tcx, def_id, CloneLevel::Body);
-        let res = res.to_why(self, &mut names, None);
+        let mut names = CloneMap::new(self.tcx, def_id.into(), CloneLevel::Body);
+        let res = res.to_why(self, &mut names, &LocalDecls::new());
         let sig = signature_of(self, &mut names, def_id);
         let mut decls: Vec<_> = closure_generic_decls(self.tcx, def_id).collect();
         let (clones, summary) = names.to_clones(self);

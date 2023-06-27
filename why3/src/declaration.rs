@@ -162,7 +162,7 @@ pub struct CfgFunction {
     pub sig: Signature,
     pub rec: bool,
     pub constant: bool,
-    pub vars: Vec<(bool, Ident, Type)>,
+    pub vars: Vec<(bool, Ident, Type, Option<Exp>)>,
     pub entry: Block,
     pub blocks: BTreeMap<BlockId, Block>,
 }
@@ -289,6 +289,7 @@ pub struct Use {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Axiom {
     pub name: Ident,
+    pub rewrite: bool,
     pub axiom: Exp,
 }
 
