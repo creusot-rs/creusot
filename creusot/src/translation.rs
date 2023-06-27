@@ -35,6 +35,7 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
         if crate::util::is_spec(ctx.tcx, def_id)
             || crate::util::is_logic(ctx.tcx, def_id)
             || crate::util::is_predicate(ctx.tcx, def_id)
+            || crate::util::is_spec_logic(ctx.tcx, def_id)
         {
             let _ = ctx.term(def_id);
             validate_opacity(ctx, def_id);

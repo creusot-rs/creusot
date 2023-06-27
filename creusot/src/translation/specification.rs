@@ -317,7 +317,10 @@ pub(crate) enum Purity {
 impl Purity {
     pub(crate) fn of_def_id<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Self {
         let is_ghost = util::is_ghost(tcx, def_id);
-        if util::is_predicate(tcx, def_id) || (util::is_spec(tcx, def_id) && !is_ghost) {
+        if util::is_predicate(tcx, def_id)
+            || util::is_spec_logic(tcx, def_id)
+            || (util::is_spec(tcx, def_id) && !is_ghost)
+        {
             Purity::Logic
         } else if util::is_logic(tcx, def_id) || is_ghost {
             Purity::Ghost
@@ -344,7 +347,10 @@ impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
     fn purity(&self, fun: thir::ExprId, func_did: DefId) -> Purity {
         let stub = pearlite_stub(self.tcx, self.thir[fun].ty);
 
-        if matches!(stub, Some(Stub::Fin)) || util::is_predicate(self.tcx, func_did) {
+        if matches!(stub, Some(Stub::Fin))
+            || util::is_predicate(self.tcx, func_did)
+            || util::is_spec_logic(self.tcx, func_did)
+        {
             Purity::Logic
         } else if util::is_logic(self.tcx, func_did)
             || util::get_builtin(self.tcx, func_did).is_some()

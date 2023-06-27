@@ -38,6 +38,7 @@ pub(crate) fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
     crate::util::is_no_translate(tcx, def_id)
         || crate::util::is_logic(tcx, def_id)
         || crate::util::is_predicate(tcx, def_id)
+        || crate::util::is_spec_logic(tcx, def_id)
 }
 
 pub(crate) fn is_no_translate(tcx: TyCtxt, def_id: DefId) -> bool {
@@ -72,6 +73,10 @@ pub(crate) fn is_ghost_closure<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<
     if let TyKind::Closure(def_id, _) = ty.peel_refs().kind()  && is_ghost(tcx, *def_id)  {
         Some(*def_id)
     } else { None }
+}
+
+pub(crate) fn is_spec_logic(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "spec_logic"]).is_some()
 }
 
 pub(crate) fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {
@@ -325,7 +330,7 @@ pub(crate) fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
         DefKind::Fn | DefKind::AssocFn => {
             if is_predicate(tcx, def_id) {
                 ItemType::Predicate
-            } else if is_logic(tcx, def_id) {
+            } else if is_logic(tcx, def_id) || is_spec_logic(tcx, def_id) {
                 ItemType::Logic
             } else {
                 ItemType::Program
@@ -465,7 +470,9 @@ fn elaborate_type_invariants<'tcx>(
 ) {
     if is_user_tyinv(ctx.tcx, def_id)
         || is_inv_internal(ctx.tcx, def_id)
-        || (is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
+        || (is_predicate(ctx.tcx, def_id)
+            || is_logic(ctx.tcx, def_id)
+            || is_spec_logic(ctx.tcx, def_id))
             && pre_sig.contract.ensures.is_empty()
     {
         return;

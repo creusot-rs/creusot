@@ -32,6 +32,11 @@ pub fn ghost(_: TS1) -> TS1 {
     quote::quote! { creusot_contracts::ghost::Ghost::new() }.into()
 }
 
+#[proc_macro_attribute]
+pub fn spec_logic(_: TS1, _: TS1) -> TS1 {
+    TS1::new()
+}
+
 #[proc_macro]
 pub fn pearlite(_: TS1) -> TS1 {
     TS1::new()
