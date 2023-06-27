@@ -312,7 +312,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     mir::BinOp::Shl | mir::BinOp::ShlUnchecked => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
-                    mir::BinOp::Shr | mir::BinOp::ShrUnchecked=> {
+                    mir::BinOp::Shr | mir::BinOp::ShrUnchecked => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
                     mir::BinOp::Lt => BinOp::Lt,

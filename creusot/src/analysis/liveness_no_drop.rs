@@ -196,7 +196,7 @@ impl DefUse {
                 | NonMutatingUseContext::Move
                 | NonMutatingUseContext::ShallowBorrow
                 | NonMutatingUseContext::SharedBorrow
-                | NonMutatingUseContext::PlaceMention
+                | NonMutatingUseContext::PlaceMention,
             ) => Some(DefUse::Use),
             PlaceContext::MutatingUse(MutatingUseContext::Drop) => None,
 

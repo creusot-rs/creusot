@@ -349,7 +349,8 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                     let obligation = Obligation::new(self.tcx, obligation_cause, param_env, pred);
                     if selcx.evaluate_root_obligation(&obligation).map_or(
                         false, // Overflow has occurred, and treat the obligation as possibly holding.
-                        |result| !result.may_apply()) {
+                        |result| !result.may_apply(),
+                    ) {
                         additional_predicates.push(
                             self.tcx.try_normalize_erasing_regions(base_env, pred).unwrap_or(pred),
                         )

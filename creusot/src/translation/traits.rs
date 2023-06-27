@@ -305,14 +305,12 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
             Some((leaf_def.item.def_id, leaf_substs))
         }
         ImplSource::Param(_, _) => Some((def_id, substs)),
-        ImplSource::Builtin(impl_data) => 
-        { 
-            match *substs.type_at(0).kind() {
-                rustc_middle::ty::Closure(closure_def_id, closure_substs) => Some((closure_def_id, closure_substs)),
-                _ => unimplemented!() 
+        ImplSource::Builtin(impl_data) => match *substs.type_at(0).kind() {
+            rustc_middle::ty::Closure(closure_def_id, closure_substs) => {
+                Some((closure_def_id, closure_substs))
             }
-         }
-         ,
+            _ => unimplemented!(),
+        },
         _ => unimplemented!(),
     }
 }
