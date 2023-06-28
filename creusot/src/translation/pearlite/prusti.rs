@@ -301,7 +301,7 @@ fn convert<'tcx>(
         }
         TermKind::Lit(_) => Ty::with_absurd_home(outer_term.ty, tcx),
         TermKind::Item(id, subst) => {
-            let ty = tcx.mk_fn_def(*id, subst.iter().map(|x| ctx.fix_regions(x)));
+            let ty = tcx.mk_fn_def(*id, subst.iter().map(|x| ctx.fix_user_ty_regions(x)));
             Ty::with_absurd_home(ty, tcx)
         }
         TermKind::Binary { lhs, rhs, .. } | TermKind::Impl { lhs, rhs } => {
@@ -324,7 +324,12 @@ fn convert<'tcx>(
             let new_reg = if tcx.is_diagnostic_item(Symbol::intern("prusti_curr"), *id) {
                 Some(ctx.curr_region())
             } else if tcx.is_diagnostic_item(Symbol::intern("prusti_expiry"), *id) {
-                Some(subst.regions().next().unwrap())
+                let r = subst.regions().next().unwrap();
+                if r == ctx.tcx.lifetimes.re_erased {
+                    return Err(Error::new(fun.span, "at_expiry must be given an explicit region"));
+                } else {
+                    Some(r)
+                }
             } else if tcx.is_diagnostic_item(Symbol::intern("prusti_dbg_ty"), *id) {
                 let mut arg = args.pop().unwrap();
                 let res = convert_sdt(&mut arg, tenv, ts, ctx)?;

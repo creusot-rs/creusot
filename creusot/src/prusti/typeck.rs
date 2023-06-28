@@ -252,13 +252,16 @@ pub(crate) fn check_call<'tcx>(
     let var_info = RegionInfo::new(iter);
     curr_ok?;
 
-    let res = res_ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| {
-        if curr_vid == Some(r.as_var()) {
-            ts
-        } else {
-            var_info.get_region(r, tcx)
-        }
-    }});
+    let res = res_ty_gen.fold_with(&mut RegionReplacer {
+        tcx,
+        f: |r| {
+            if curr_vid == Some(r.as_var()) {
+                ts
+            } else {
+                var_info.get_region(r, tcx)
+            }
+        },
+    });
     Ok(res)
 }
 

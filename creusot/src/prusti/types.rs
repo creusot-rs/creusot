@@ -215,6 +215,30 @@ impl<'tcx, X> Ctx<'tcx, X> {
         let hir_id = self.tcx.local_def_id_to_hir_id(self.owner_id);
         self.tcx.struct_span_lint_hir(lint, hir_id, span, msg, |x| x)
     }
+
+    fn try_home_to_region(&self, s: Symbol) -> Option<Region<'tcx>> {
+        if s == self.curr_sym {
+            return Some(self.curr_region());
+        }
+        for (idx, reg) in self.base_regions.iter().enumerate() {
+            if Some(s) == reg.get_name() {
+                return Some(RegionSet::singleton(idx as u32).into_region(self.tcx));
+            }
+        }
+        None
+    }
+
+    fn user_region_to_region(&self, r: Region<'tcx>) -> Option<Region<'tcx>> {
+        self.try_home_to_region(r.get_name()?)
+    }
+
+    pub(crate) fn fix_user_ty_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T) -> T {
+        let tcx = self.tcx;
+        t.fold_with(&mut RegionReplacer {
+            tcx,
+            f: |r| self.user_region_to_region(r).unwrap_or(tcx.lifetimes.re_erased),
+        })
+    }
 }
 
 impl<'tcx> PreCtx<'tcx> {
@@ -234,13 +258,8 @@ impl<'tcx> PreCtx<'tcx> {
     }
 
     pub(super) fn home_to_region(&mut self, s: Symbol) -> Region<'tcx> {
-        if s == self.curr_sym {
-            return self.curr_region();
-        }
-        for (idx, reg) in self.base_regions.iter().enumerate() {
-            if Some(s) == reg.get_name() {
-                return RegionSet::singleton(idx as u32).into_region(self.tcx);
-            }
+        if let Some(x) = self.try_home_to_region(s) {
+            return x;
         }
         let idx = self.base_regions.len();
         self.base_regions.push(dummy_region(self.tcx, s));
@@ -343,7 +362,7 @@ impl<'tcx> Ctx<'tcx> {
     }
 
     /// Fixes an external region by converting it into a singleton set
-    pub(crate) fn fix_region(&self, r: Region<'tcx>) -> Region<'tcx> {
+    pub(super) fn fix_region(&self, r: Region<'tcx>) -> Region<'tcx> {
         if r.is_erased() {
             return RegionSet::UNIVERSE.into_region(self.tcx);
         }
@@ -356,7 +375,7 @@ impl<'tcx> Ctx<'tcx> {
         }
     }
 
-    pub(crate) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T) -> T {
+    pub(super) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T) -> T {
         let tcx = self.tcx;
         t.fold_with(&mut RegionReplacer { tcx, f: |r| self.fix_region(r) })
     }
