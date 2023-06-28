@@ -1,0 +1,74 @@
+
+module CallCurr_Deref_Stub
+  type x
+  use prelude.Borrow
+  function deref [#"../call_curr.rs" 6 0 6 34] (x : x) : x
+end
+module CallCurr_Deref_Interface
+  type x
+  use prelude.Borrow
+  function deref [#"../call_curr.rs" 6 0 6 34] (x : x) : x
+  val deref [#"../call_curr.rs" 6 0 6 34] (x : x) : x
+    ensures { result = deref x }
+    
+end
+module CallCurr_Deref
+  type x
+  use prelude.Borrow
+  function deref [#"../call_curr.rs" 6 0 6 34] (x : x) : x =
+    [#"../call_curr.rs" 7 5 7 6] x
+  val deref [#"../call_curr.rs" 6 0 6 34] (x : x) : x
+    ensures { result = deref x }
+    
+end
+module Alloc_Boxed_Impl12_Clone_Interface
+  type t
+  type a
+  use prelude.Borrow
+  val clone' (self : t) : t
+    ensures { [#"../../../../../creusot-contracts/src/std/clone.rs" 7 0 20 1] result = self }
+    
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+    
+end
+module CallCurr_Test_Interface
+  use prelude.Borrow
+  use prelude.Int
+  use prelude.UInt32
+  clone CallCurr_Deref_Stub as Deref0 with
+    type x = uint32
+  val test [#"../call_curr.rs" 11 0 11 44] (x : uint32) : uint32
+    ensures { [#"../call_curr.rs" 10 10 10 28] Deref0.deref x = result }
+    
+end
+module CallCurr_Test
+  use prelude.Int
+  use prelude.UInt32
+  use prelude.Borrow
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  clone CallCurr_Deref as Deref0 with
+    type x = uint32
+  clone Alloc_Boxed_Impl12_Clone_Interface as Clone0 with
+    type t = uint32,
+    type a = Alloc_Alloc_Global_Type.t_global
+  let rec cfg test [#"../call_curr.rs" 11 0 11 44] [@cfg:stackify] [@cfg:subregion_analysis] (x : uint32) : uint32
+    ensures { [#"../call_curr.rs" 10 10 10 28] Deref0.deref x = result }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : uint32;
+  var x : uint32 = x;
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- ([#"../call_curr.rs" 12 4 12 13] Clone0.clone' x);
+    goto BB1
+  }
+  BB1 {
+    return _0
+  }
+  
+end

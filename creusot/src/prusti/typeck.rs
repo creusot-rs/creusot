@@ -105,13 +105,8 @@ impl RegionInfo {
     }
 
     fn get_region<'tcx>(&self, key: Region<'tcx>, tcx: TyCtxt<'tcx>) -> Region<'tcx> {
-        match key.kind() {
-            RegionKind::ReVar(vid) => {
-                let reg = *self.0.get(&vid).unwrap_or(&RegionSet::EMPTY);
-                reg.into_region(tcx)
-            }
-            _ => unreachable!(),
-        }
+        let reg = *self.0.get(&key.as_var()).unwrap_or(&RegionSet::EMPTY);
+        reg.into_region(tcx)
     }
 }
 
@@ -225,7 +220,7 @@ pub(crate) fn check_call<'tcx>(
     let iter = constraints.constraints.into_iter();
     let curr_vid = subst_map.get_vid(ctx.curr_sym);
     let mut curr_ok = Ok(());
-    let iter = iter.inspect(|(c, origin)| match (*c, curr_vid) {
+    let iter = iter.filter(|(c, origin)| match (*c, curr_vid) {
         (Constraint::RegSubVar(reg, var), Some(vid))
             if var == vid && curr_ok.is_ok() && !sub_ts(reg, ts) =>
         {
@@ -250,13 +245,20 @@ pub(crate) fn check_call<'tcx>(
                     Err(Error::new(span, msg))
                 }
             };
+            false
         }
-        _ => {}
+        _ => true
     });
     let var_info = RegionInfo::new(iter);
     curr_ok?;
 
-    let res = res_ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| var_info.get_region(r, tcx) });
+    let res = res_ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| {
+        if curr_vid == Some(r.as_var()) {
+            ts
+        } else {
+            var_info.get_region(r, tcx)
+        }
+    }});
     Ok(res)
 }
 
