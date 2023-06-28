@@ -180,6 +180,18 @@ fn index_of<T: Eq + Debug>(s: &[T], x: &T) -> usize {
     try_index_of(s, x).expect(&format!("{s:?} did not contain {x:?}"))
 }
 
+fn ty_regions<'tcx>(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Vec<Region<'tcx>> {
+    let mut v = Vec::new();
+    ty.fold_with(&mut RegionReplacer {
+        tcx,
+        f: |r| {
+            v.push(r);
+            r
+        },
+    });
+    v
+}
+
 impl<'tcx, X> Ctx<'tcx, X> {
     pub(crate) fn base_regions(&self) -> impl Iterator<Item = Region<'tcx>> + '_ {
         self.base_regions.iter().copied()
@@ -211,7 +223,14 @@ impl<'tcx> PreCtx<'tcx> {
         let curr_region = dummy_region(tcx, curr_sym);
         let old_region = dummy_region(tcx, Symbol::intern(OLD_STR));
         let base_regions = vec![old_region, curr_region];
-        Ctx { tcx, relation: (), base_regions, curr_sym, owner_id: owner_id.expect_local(), is_logic: true }
+        Ctx {
+            tcx,
+            relation: (),
+            base_regions,
+            curr_sym,
+            owner_id: owner_id.expect_local(),
+            is_logic: true,
+        }
     }
 
     pub(super) fn home_to_region(&mut self, s: Symbol) -> Region<'tcx> {
@@ -254,8 +273,16 @@ impl<'tcx> PreCtx<'tcx> {
         t.fold_with(&mut RegionReplacer { tcx, f: |r| self.fix_region(r) })
     }
 
-    pub(super) fn finish_for_logic(self) -> Ctx<'tcx> {
-        let relation = RegionRelation::new(self.base_regions.len(), iter::empty());
+    pub(super) fn finish_for_logic(self, iter: impl Iterator<Item = Ty<'tcx>>) -> Ctx<'tcx> {
+        let reg_to_idx = |r: Region| RegionSet::from(r).next().unwrap() as usize;
+        let iter = iter
+            .flat_map(|x| {
+                ty_regions(x.ty, self.tcx)
+                    .into_iter()
+                    .map(move |r| (reg_to_idx(r), reg_to_idx(x.home)))
+            })
+            .filter(|(r1, r2)| *r1 == usize::from(CURR_IDX) || *r2 == usize::from(CURR_IDX));
+        let relation = RegionRelation::new(self.base_regions.len(), iter);
         Ctx { relation, ..self }
     }
 }
@@ -318,7 +345,7 @@ impl<'tcx> Ctx<'tcx> {
     /// Fixes an external region by converting it into a singleton set
     pub(crate) fn fix_region(&self, r: Region<'tcx>) -> Region<'tcx> {
         if r.is_erased() {
-            return RegionSet::UNIVERSE.into_region(self.tcx)
+            return RegionSet::UNIVERSE.into_region(self.tcx);
         }
         let idx = index_of(&self.base_regions, &r);
         let res = RegionSet::singleton(idx as u32);
@@ -341,7 +368,7 @@ impl<'a, 'tcx> Display for DisplayRegion<'a, 'tcx> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let reg_set = RegionSet::from(self.0);
         if reg_set == RegionSet::UNIVERSE {
-            return write!(f, "'?")
+            return write!(f, "'?");
         }
         // write!(f, "({reg_set:?})")?;
         let mut reg_set_h = reg_set;

@@ -8,7 +8,7 @@ use internal_iterator::*;
 use rustc_data_structures::fx::FxHashMap;
 use rustc_middle::{
     mir::Mutability::Not,
-    ty::{self, Binder, FnSig, Region},
+    ty::{self, Binder, FnSig, Region, TyKind},
 };
 use rustc_span::{symbol::Symbol, Span};
 use smallvec::SmallVec;
@@ -16,7 +16,6 @@ use std::{
     hash::Hash,
     ops::{ControlFlow, Deref, DerefMut},
 };
-use rustc_middle::ty::TyKind;
 
 use crate::lints::PRUSTI_ZOMBIE;
 
@@ -104,7 +103,6 @@ impl<'a, K: Hash + Eq + Copy, V> SemiPersistent<FxHashMap<K, V>> {
 /// Maps identifiers to there type and the time they were bound
 type Tenv<'tcx> = SemiPersistent<FxHashMap<Symbol, (TimeSlice<'tcx>, Ty<'tcx>)>>;
 
-
 pub(super) fn prusti_to_creusot<'tcx>(
     ctx: &ThirTerm<'_, 'tcx>,
     mut term: Term<'tcx>,
@@ -126,14 +124,10 @@ pub(super) fn prusti_to_creusot<'tcx>(
     let sig: Binder<FnSig> = tcx.fn_sig(owner_id).subst_identity();
 
     let (ctx, ts, tenv, res_ty) = match home_sig {
-        None => {
-            full_signature(tcx, sig, ts, owner_id)?
-        }
-        Some(home_sig) => {
-            full_signature_logic(tcx, home_sig, sig, ts, owner_id)?
-        }
+        None => full_signature(tcx, sig, ts, owner_id)?,
+        Some(home_sig) => full_signature_logic(tcx, home_sig, sig, ts, owner_id)?,
     };
-    let mut tenv : FxHashMap<_, _> = tenv;
+    let mut tenv: FxHashMap<_, _> = tenv;
 
     if item_id != owner_id.expect_local() {
         tenv.insert(Symbol::intern("result"), res_ty);
@@ -189,8 +183,13 @@ impl<'a, 'tcx> InternalIterator for PatternIter<'a, 'tcx> {
     }
 }
 
-fn pattern_iter<'a, 'tcx>(pat: &'a Pattern<'tcx>, ty: Ty<'tcx>, ctx: &'a Ctx<'tcx>, ts: Region<'tcx>) -> impl InternalIterator<Item=(Symbol, (Region<'tcx>, Ty<'tcx>))> + 'a {
-    PatternIter{pat, ty, ctx}.map(move |(k, v)| (k, (ts, v)))
+fn pattern_iter<'a, 'tcx>(
+    pat: &'a Pattern<'tcx>,
+    ty: Ty<'tcx>,
+    ctx: &'a Ctx<'tcx>,
+    ts: Region<'tcx>,
+) -> impl InternalIterator<Item = (Symbol, (Region<'tcx>, Ty<'tcx>))> + 'a {
+    PatternIter { pat, ty, ctx }.map(move |(k, v)| (k, (ts, v)))
 }
 
 fn strip_derefs_target<'tcx>(
@@ -253,7 +252,13 @@ fn deref_depth(ty: ty::Ty<'_>) -> SmallVec<[Indirect; 8]> {
     }
 }
 
-fn add_zombie_lint<'tcx>(old_ts: Option<Region<'tcx>>, ts: Region<'tcx>, ctx: &Ctx<'tcx>, ty: Ty<'tcx>, span: Span) -> Ty<'tcx> {
+fn add_zombie_lint<'tcx>(
+    old_ts: Option<Region<'tcx>>,
+    ts: Region<'tcx>,
+    ctx: &Ctx<'tcx>,
+    ty: Ty<'tcx>,
+    span: Span,
+) -> Ty<'tcx> {
     if ty.ty.is_mutable_ptr() {
         // Add an exception for mutable references
         return ty;

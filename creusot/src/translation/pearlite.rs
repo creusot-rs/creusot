@@ -28,11 +28,10 @@ use rustc_middle::{
         StmtKind, Thir,
     },
     ty::{
-        int_ty, subst::SubstsRef, uint_ty, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitable,
-        UpvarSubsts,
+        int_ty, subst::SubstsRef, uint_ty, CanonicalUserType, Ty, TyCtxt, TyKind, TypeFoldable,
+        TypeVisitable, TypeVisitableExt, UpvarSubsts, UserType,
     },
 };
-use rustc_middle::ty::{CanonicalUserType, TypeVisitableExt, UserType};
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_target::abi::{FieldIdx, VariantIdx};
@@ -152,7 +151,12 @@ pub enum TermKind<'tcx> {
 }
 
 impl<'tcx> TermKind<'tcx> {
-    pub fn item(def_id: DefId, subst: SubstsRef<'tcx>, user_ty: &Option<Box<CanonicalUserType<'tcx>>>, tcx: TyCtxt<'tcx>) -> Self {
+    pub fn item(
+        def_id: DefId,
+        subst: SubstsRef<'tcx>,
+        user_ty: &Option<Box<CanonicalUserType<'tcx>>>,
+        tcx: TyCtxt<'tcx>,
+    ) -> Self {
         let Some(user_ty) = user_ty else {
             return Self::Item(def_id, subst)
         };
@@ -162,11 +166,13 @@ impl<'tcx> TermKind<'tcx> {
             UserType::TypeOf(def_id2, u_subst) => {
                 assert_eq!(def_id, def_id2);
                 if u_subst.substs.len() != subst.len() {
-                    return Self::Item(def_id, subst)
+                    return Self::Item(def_id, subst);
                 }
-                let subst: Vec<_> = subst.iter()
+                let subst: Vec<_> = subst
+                    .iter()
                     .zip(u_subst.substs.iter())
-                    .map(|(s, us)| if us.has_escaping_bound_vars() {s} else {us}).collect();
+                    .map(|(s, us)| if us.has_escaping_bound_vars() { s } else { us })
+                    .collect();
                 let subst = tcx.mk_substs(&*subst);
                 Self::Item(def_id, subst)
             }
@@ -665,9 +671,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 Ok(Term { ty, span, kind: TermKind::item(def_id, substs, user_ty, self.ctx.tcx) })
             }
             ExprKind::ZstLiteral { ref user_ty, .. } => match ty.kind() {
-                TyKind::FnDef(def_id, subst) => {
-                    Ok(Term { ty, span, kind: TermKind::item(*def_id, subst, user_ty, self.ctx.tcx) })
-                }
+                TyKind::FnDef(def_id, subst) => Ok(Term {
+                    ty,
+                    span,
+                    kind: TermKind::item(*def_id, subst, user_ty, self.ctx.tcx),
+                }),
                 _ => Ok(Term { ty, span, kind: TermKind::Lit(Literal::ZST) }),
             },
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {

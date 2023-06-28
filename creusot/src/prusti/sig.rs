@@ -84,7 +84,8 @@ fn add_homes_to_sig<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
             }
         })
         .zip(types);
-    let arg_tys = arg_tys.map(|(k, v)| v.map(|v| (k, (v.home, v)))).collect::<CreusotResult<T>>()?;
+    let arg_tys =
+        arg_tys.map(|(k, v)| v.map(|v| (k, (v.home, v)))).collect::<CreusotResult<T>>()?;
     let res_ty = Ty::try_new(sig.output(), ret_home, span)?;
     Ok((arg_tys, (res_ty.home, res_ty)))
 }
@@ -94,12 +95,7 @@ pub(crate) fn full_signature<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
     sig: Binder<'tcx, FnSig<'tcx>>,
     ts: &Lit,
     owner_id: DefId,
-) -> CreusotResult<(
-    Ctx<'tcx>,
-    Region<'tcx>,
-    T,
-    BindingInfo<'tcx>,
-)> {
+) -> CreusotResult<(Ctx<'tcx>, Region<'tcx>, T, BindingInfo<'tcx>)> {
     let ctx = Ctx::new_for_spec(tcx, owner_id)?;
     let sig = tcx.liberate_late_bound_regions(owner_id, sig);
     let sig = ctx.fix_regions(sig);
@@ -137,6 +133,8 @@ pub(crate) fn full_signature_logic<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
         None => (Either::Right(iter::repeat(ctx.curr_region().into())), ctx.curr_region().into()),
     };
 
-    let (arg_tys, res_ty) = add_homes_to_sig(args, sig, arg_homes, ret_home, home_sig.span)?;
-    Ok((ctx.finish_for_logic(), ts, arg_tys, res_ty))
+    let (arg_tys, res_ty) =
+        add_homes_to_sig::<Vec<_>>(args, sig, arg_homes, ret_home, home_sig.span)?;
+    let iter = IntoIterator::into_iter(&arg_tys).map(|(_, (_, x))| *x);
+    Ok((ctx.finish_for_logic(iter), ts, arg_tys.into_iter().collect(), res_ty))
 }
