@@ -25,32 +25,34 @@ fn main() {
             .filter_map(|(f, new)| {
                 let old = old.get(&f)?;
                 if old.time > 0.0 {
-                    let change = new.time / old.time - 1.;
-                    Some((f, old, new, change))
+                    let d_t = new.time / old.time - 1.;
+                    Some((f, old, new, d_t))
                 } else {
                     None
                 }
             })
             .collect();
 
-        let mean_change = stats.iter().map(|s| s.3).sum::<f64>() / (stats.len() as f64);
+        let mean_d_t = stats.iter().map(|s| s.3).sum::<f64>() / (stats.len() as f64);
 
         stats.sort_by_key(|(_, _, _, c)| (c * 10000.) as i64);
 
-        for (file, old, new, change) in stats {
+        for (file, old, new, d_t) in stats {
             let file = file.strip_prefix("../creusot/tests").unwrap().parent().unwrap();
+            let d_n = new.steps as f64 / old.steps as f64 - 1.;
             println!(
-                "{}: t_old={:.2} t_new={:.2} ({:+.1}%) n_old={} n_new={}",
+                "{}: t_old={:.2} t_new={:.2} ({:+.1}%) n_old={} n_new={} ({:+.1}%)",
                 file.display(),
                 old.time,
                 new.time,
-                change * 100.,
+                d_t * 100.,
                 old.steps,
-                new.steps
+                new.steps,
+                d_n * 100.,
             );
         }
 
-        println!("mean change: {:+.1}%", mean_change * 100.)
+        println!("mean change in proof time: {:+.1}%", mean_d_t * 100.)
     } else {
         for (file, stats) in collect_stats(&args) {
             println!(
