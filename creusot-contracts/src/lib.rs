@@ -33,6 +33,13 @@ mod macros {
     /// Declare a function as being a logical function, this declaration must be pure and
     /// total. It cannot be called from Rust programs as it is *ghost*, in exchange it can
     /// use logical operations and syntax with the help of the [pearlite] macro.
+    pub use creusot_contracts_proc::spec_logic;
+
+    /// Declare a function as being a logical function, this declaration must be pure and
+    /// total. It cannot be called from Rust programs as it is *ghost*, in exchange it can
+    /// use logical operations and syntax with the help of the [pearlite] macro.
+    /// Unlike functions marked with the `[spec_logic]` attribute, `[logic]` fnctions cannot
+    /// use the final value operator (^), nor call other `[predicate]` or `[spec_logic]` functions.
     pub use creusot_contracts_proc::logic;
 
     /// Declare a function as being a logical function, this declaration must be pure and
@@ -99,6 +106,13 @@ mod macros {
     /// Declare a function as being a logical function, this declaration must be pure and
     /// total. It cannot be called from Rust programs as it is *ghost*, in exchange it can
     /// use logical operations and syntax with the help of the [pearlite] macro.
+    pub use creusot_contracts_dummy::spec_logic;
+
+    /// Declare a function as being a logical function, this declaration must be pure and
+    /// total. It cannot be called from Rust programs as it is *ghost*, in exchange it can
+    /// use logical operations and syntax with the help of the [pearlite] macro.
+    /// Unlike functions marked with the `[spec_logic]` attribute, `[logic]` fnctions cannot
+    /// use the final value operator (^), nor call other `[predicate]` or `[spec_logic]` functions.
     pub use creusot_contracts_dummy::logic;
 
     /// Declare a function as being a logical function, this declaration must be pure and

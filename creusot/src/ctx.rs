@@ -13,7 +13,7 @@ use crate::{
         external::{extract_extern_specs_from_item, ExternSpec},
         fmir,
         pearlite::{self, Term},
-        specification::{ContractClauses, PurityVisitor},
+        specification::{ContractClauses, Purity, PurityVisitor},
         traits::TraitImpl,
     },
     util::{self, pre_sig_of, PreSignature},
@@ -419,16 +419,13 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         }
 
         let def_id = def_id.to_def_id();
-        let in_pure_ctx = crate::util::is_spec(self.tcx, def_id)
-            || crate::util::is_logic(self.tcx, def_id)
-            || crate::util::is_predicate(self.tcx, def_id);
-
-        if !in_pure_ctx && crate::util::is_no_translate(self.tcx, def_id) {
+        let purity = Purity::of_def_id(self.tcx, def_id);
+        if purity == Purity::Program && crate::util::is_no_translate(self.tcx, def_id) {
             return;
         }
 
         thir::visit::walk_expr(
-            &mut PurityVisitor { tcx: self.tcx, thir: &thir, in_pure_ctx },
+            &mut PurityVisitor { tcx: self.tcx, thir: &thir, context: purity },
             &thir[expr],
         );
     }
