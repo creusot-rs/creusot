@@ -1,0 +1,216 @@
+
+module CreusotContracts_Resolve_Resolve_Resolve_Stub
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Resolve_Resolve_Resolve_Interface
+  type self
+  predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
+end
+module CreusotContracts_Resolve_Resolve_Resolve
+  type self
+  predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
+end
+module CreusotContracts_Resolve_Impl0_Resolve_Stub
+  type t1
+  type t2
+  predicate resolve (self : (t1, t2))
+end
+module CreusotContracts_Resolve_Impl0_Resolve_Interface
+  type t1
+  type t2
+  predicate resolve (self : (t1, t2))
+  val resolve (self : (t1, t2)) : bool
+    ensures { result = resolve self }
+    
+end
+module CreusotContracts_Resolve_Impl0_Resolve
+  type t1
+  type t2
+  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve1 with
+    type self = t2
+  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
+    type self = t1
+  predicate resolve (self : (t1, t2)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] Resolve0.resolve (let (a, _) = self in a) /\ Resolve1.resolve (let (_, a) = self in a)
+  val resolve (self : (t1, t2)) : bool
+    ensures { result = resolve self }
+    
+end
+module CreusotContracts_Resolve_Impl2_Resolve_Stub
+  type t
+  predicate resolve (self : t)
+end
+module CreusotContracts_Resolve_Impl2_Resolve_Interface
+  type t
+  predicate resolve (self : t)
+  val resolve (self : t) : bool
+    ensures { result = resolve self }
+    
+end
+module CreusotContracts_Resolve_Impl2_Resolve
+  type t
+  predicate resolve (self : t) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 36 8 36 12] true
+  val resolve (self : t) : bool
+    ensures { result = resolve self }
+    
+end
+module Normalize_TestArg_Interface
+  type x
+  use prelude.Int
+  use prelude.UInt32
+  val test_arg [#"../normalize.rs" 15 0 15 61] (x : (uint32, uint32)) : uint32
+    ensures { [#"../normalize.rs" 14 10 14 23] result = (let (a, _) = x in a) }
+    
+end
+module Normalize_TestArg
+  type x
+  use prelude.Int
+  use prelude.UInt32
+  clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
+    type t = uint32
+  clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
+    type t1 = uint32,
+    type t2 = uint32,
+    predicate Resolve0.resolve = Resolve1.resolve,
+    predicate Resolve1.resolve = Resolve1.resolve
+  let rec cfg test_arg [#"../normalize.rs" 15 0 15 61] [@cfg:stackify] [@cfg:subregion_analysis] (x : (uint32, uint32)) : uint32
+    ensures { [#"../normalize.rs" 14 10 14 23] result = (let (a, _) = x in a) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : uint32;
+  var x : (uint32, uint32) = x;
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- (let (a, _) = x in a);
+    assume { Resolve0.resolve x };
+    return _0
+  }
+  
+end
+module Normalize_S_Type
+  use prelude.Int
+  use prelude.UInt32
+  type t_s  =
+    | C_S (uint32, uint32)
+    
+  let function s_f (self : t_s) : (uint32, uint32) = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_S a -> a
+      end
+end
+module Normalize_TestStruct_Interface
+  use prelude.Int
+  use prelude.UInt32
+  use Normalize_S_Type as Normalize_S_Type
+  val test_struct [#"../normalize.rs" 20 0 20 31] (x : Normalize_S_Type.t_s) : uint32
+    ensures { [#"../normalize.rs" 19 10 19 25] result = (let (a, _) = Normalize_S_Type.s_f x in a) }
+    
+end
+module Normalize_TestStruct
+  use prelude.Int
+  use prelude.UInt32
+  use Normalize_S_Type as Normalize_S_Type
+  let rec cfg test_struct [#"../normalize.rs" 20 0 20 31] [@cfg:stackify] [@cfg:subregion_analysis] (x : Normalize_S_Type.t_s) : uint32
+    ensures { [#"../normalize.rs" 19 10 19 25] result = (let (a, _) = Normalize_S_Type.s_f x in a) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : uint32;
+  var x : Normalize_S_Type.t_s = x;
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- (let (a, _) = Normalize_S_Type.s_f x in a);
+    return _0
+  }
+  
+end
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
+    
+end
+module Normalize_T_Output_Type
+  type self
+  type output
+end
+module Normalize_TestRet_Stub
+  type x
+  clone Normalize_T_Output_Type as Output0 with
+    type self = x
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  function test_ret [#"../normalize.rs" 26 0 26 44] (_1 : ()) : Core_Option_Option_Type.t_option Output0.output
+end
+module Normalize_TestRet_Interface
+  type x
+  clone Normalize_T_Output_Type as Output0 with
+    type self = x
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  function test_ret [#"../normalize.rs" 26 0 26 44] (_1 : ()) : Core_Option_Option_Type.t_option Output0.output
+  val test_ret [#"../normalize.rs" 26 0 26 44] (_1 : ()) : Core_Option_Option_Type.t_option Output0.output
+    ensures { result = test_ret _1 }
+    
+end
+module Normalize_TestRet
+  type x
+  clone Normalize_T_Output_Type as Output0 with
+    type self = x
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  function test_ret [#"../normalize.rs" 26 0 26 44] (_1 : ()) : Core_Option_Option_Type.t_option Output0.output =
+    [#"../normalize.rs" 27 4 27 8] Core_Option_Option_Type.C_None
+  val test_ret [#"../normalize.rs" 26 0 26 44] (_1 : ()) : Core_Option_Option_Type.t_option Output0.output
+    ensures { result = test_ret _1 }
+    
+end
+module Normalize_TestCall_Interface
+  use prelude.Int
+  use prelude.UInt32
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone Normalize_TestRet_Stub as TestRet0 with
+    type x = (),
+    type Output0.output = (uint32, uint32)
+  val test_call [#"../normalize.rs" 31 0 31 18] (_1 : ()) : ()
+    ensures { [#"../normalize.rs" 30 10 30 70] match (TestRet0.test_ret ()) with
+      | Core_Option_Option_Type.C_None -> true
+      | Core_Option_Option_Type.C_Some (x, y) -> x > y
+      end }
+    
+end
+module Normalize_TestCall
+  use prelude.Int
+  use prelude.UInt32
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone Normalize_TestRet as TestRet0 with
+    type x = (),
+    type Output0.output = (uint32, uint32)
+  let rec cfg test_call [#"../normalize.rs" 31 0 31 18] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
+    ensures { [#"../normalize.rs" 30 10 30 70] match (TestRet0.test_ret ()) with
+      | Core_Option_Option_Type.C_None -> true
+      | Core_Option_Option_Type.C_Some (x, y) -> x > y
+      end }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    return _0
+  }
+  
+end
+module Normalize_Impl0
+  
+end

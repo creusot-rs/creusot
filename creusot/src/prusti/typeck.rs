@@ -207,6 +207,7 @@ pub(crate) fn check_call<'tcx>(
         }
         _ => unreachable!(),
     };
+    let res_ty_gen = ocx.normalize(res_ty_gen);
     args.zip(args_gen).zip(home_sig_args).try_for_each(|((arg, &ty_gen), home_sig_arg)| {
         let (ty, span) = arg;
         span_map.insert(span, ty);
@@ -278,7 +279,7 @@ pub(crate) fn check_constructor<'tcx>(
     let ocx = SimpleCtxt::new(&infcx, ctx.param_env());
 
     let ty_gen = generalize(Ty::with_absurd_home(target_ty, tcx), &infcx);
-    let fields_gen = ty_gen.as_adt_variant(variant, tcx);
+    let fields_gen = ty_gen.as_adt_variant(variant, ctx);
 
     fields.zip(fields_gen).try_for_each(|((ty, span), ty_gen)| sup_tys(&ocx, span, ty_gen, ty))?;
 
@@ -308,6 +309,13 @@ pub(crate) fn union<'tcx>(
     let var_info = RegionInfo::new(constraints.constraints.into_iter());
     let res = ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| var_info.get_region(r, tcx) });
     Ok(res)
+}
+
+pub(super) fn normalize<'tcx, X, T: TypeFoldable<TyCtxt<'tcx>>>(ctx: &Ctx<'tcx, X>, ty: T) -> T {
+    let tcx = ctx.tcx;
+    let infcx = tcx.infer_ctxt().build();
+    let ocx = SimpleCtxt::new(&infcx, ctx.param_env());
+    ocx.normalize(ty)
 }
 
 pub(crate) fn check_sup<'tcx>(

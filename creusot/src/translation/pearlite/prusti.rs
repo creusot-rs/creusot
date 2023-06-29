@@ -151,14 +151,13 @@ fn iterate_bindings<'tcx, R, F>(
 where
     F: FnMut((Symbol, Ty<'tcx>)) -> ControlFlow<R>,
 {
-    let tcx = ctx.tcx;
     match pat {
         Pattern::Constructor { variant, fields, .. } => ty
-            .as_adt_variant(*variant, tcx)
+            .as_adt_variant(*variant, ctx)
             .zip(fields)
             .try_for_each(|(ty, pat)| iterate_bindings(pat, ty, ctx, f)),
         Pattern::Tuple(fields) => ty
-            .as_adt_variant(0u32.into(), tcx)
+            .as_adt_variant(0u32.into(), ctx)
             .zip(fields)
             .try_for_each(|(ty, pat)| iterate_bindings(pat, ty, ctx, f)),
         Pattern::Binder(sym) => f((*sym, ty)),
@@ -413,7 +412,7 @@ fn convert<'tcx>(
         }
         TermKind::Projection { lhs, name, .. } => {
             let ty = convert_sdb1(&mut *lhs, tenv, ts, ctx)?;
-            let res = ty.as_adt_variant(0u32.into(), tcx).nth(name.as_usize());
+            let res = ty.as_adt_variant(0u32.into(), ctx).nth(name.as_usize());
             res.unwrap()
         }
         TermKind::Old { term } => {

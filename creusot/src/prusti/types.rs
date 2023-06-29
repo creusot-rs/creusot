@@ -19,6 +19,7 @@ use std::{
     fmt::{Debug, Display, Formatter},
     iter,
 };
+use crate::prusti::typeck::normalize;
 
 const CURR_STR: &str = "'curr";
 const OLD_STR: &str = "'old";
@@ -39,31 +40,31 @@ impl<'tcx> Display for Ty<'tcx> {
 }
 
 impl<'tcx> Ty<'tcx> {
-    pub(crate) fn as_adt_variant(
+    pub(crate) fn as_adt_variant<'a>(
         self,
         variant: VariantIdx,
-        tcx: TyCtxt<'tcx>,
-    ) -> impl Iterator<Item = Ty<'tcx>> {
-        match self.as_ref(tcx.lifetimes.re_erased.into()) {
-            None => Either::Left(self.as_adt_variant_h(variant, tcx)),
+        ctx: &'a Ctx<'tcx>,
+    ) -> impl Iterator<Item = Ty<'tcx>> + 'a {
+        match self.as_ref(ctx.tcx.lifetimes.re_erased.into()) {
+            None => Either::Left(self.as_adt_variant_h(variant, ctx)),
             Some((lft, ty, Mutability::Not)) => Either::Right(
-                ty.as_adt_variant_h(variant, tcx)
-                    .map(move |ty| Ty { ty: tcx.mk_imm_ref(lft, ty.ty), home: self.home }),
+                ty.as_adt_variant_h(variant, ctx)
+                    .map(move |ty| Ty { ty: ctx.tcx.mk_imm_ref(lft, ty.ty), home: self.home }),
             ),
             _ => unreachable!(),
         }
     }
 
-    fn as_adt_variant_h(
+    fn as_adt_variant_h<'a>(
         self,
         variant: VariantIdx,
-        tcx: TyCtxt<'tcx>,
-    ) -> impl Iterator<Item = Ty<'tcx>> {
+        ctx: &'a Ctx<'tcx>,
+    ) -> impl Iterator<Item = Ty<'tcx>> + 'a {
         let tys = match self.ty.kind() {
             TyKind::Adt(adt, subst_ref) => {
                 let adt: AdtDef = *adt;
                 let field_defs = &adt.variants()[variant].fields;
-                Either::Left(field_defs.iter().map(move |def| def.ty(tcx, *subst_ref)))
+                Either::Left(field_defs.iter().map(move |def| normalize(ctx, def.ty(ctx.tcx, *subst_ref))))
             }
             TyKind::Tuple(tup) => {
                 let tup: &List<ty::Ty> = tup;
@@ -233,6 +234,7 @@ impl<'tcx, X> Ctx<'tcx, X> {
     }
 
     pub(crate) fn fix_user_ty_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T) -> T {
+        let t = normalize(self, t);
         let tcx = self.tcx;
         t.fold_with(&mut RegionReplacer {
             tcx,
@@ -288,6 +290,7 @@ impl<'tcx> PreCtx<'tcx> {
     }
 
     pub(super) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&mut self, t: T) -> T {
+        let t = normalize(self, t);
         let tcx = self.tcx;
         t.fold_with(&mut RegionReplacer { tcx, f: |r| self.fix_region(r) })
     }
@@ -376,6 +379,7 @@ impl<'tcx> Ctx<'tcx> {
     }
 
     pub(super) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T) -> T {
+        let t = normalize(self, t);
         let tcx = self.tcx;
         t.fold_with(&mut RegionReplacer { tcx, f: |r| self.fix_region(r) })
     }
