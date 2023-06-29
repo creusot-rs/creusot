@@ -25,39 +25,41 @@ pub trait DeepModel {
     fn deep_model(self) -> Self::DeepModelTy;
 }
 
-impl<T: DeepModel + ?Sized> DeepModel for Rc<T> {
+impl<T: DeepModel> DeepModel for Rc<T> {
     type DeepModelTy = T::DeepModelTy;
     #[logic]
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
-        (*self).deep_model()
+        pearlite! { self.shallow_model().deep_model() }
     }
 }
 
-impl<T: ShallowModel + ?Sized> ShallowModel for Rc<T> {
-    type ShallowModelTy = T::ShallowModelTy;
+impl<T> ShallowModel for Rc<T> {
+    type ShallowModelTy = T;
     #[logic]
     #[open]
+    #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
-        (*self).shallow_model()
+        pearlite! { absurd }
     }
 }
 
-impl<T: DeepModel + ?Sized> DeepModel for Arc<T> {
+impl<T: DeepModel> DeepModel for Arc<T> {
     type DeepModelTy = T::DeepModelTy;
     #[logic]
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
-        (*self).deep_model()
+        pearlite! { self@.deep_model() }
     }
 }
 
-impl<T: ShallowModel + ?Sized> ShallowModel for Arc<T> {
-    type ShallowModelTy = T::ShallowModelTy;
+impl<T> ShallowModel for Arc<T> {
+    type ShallowModelTy = T;
     #[logic]
     #[open]
+    #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
-        (*self).shallow_model()
+        pearlite! { absurd }
     }
 }
 
