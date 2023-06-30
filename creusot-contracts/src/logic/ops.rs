@@ -33,10 +33,9 @@ impl<T> IndexLogic<Int> for Ghost<Seq<T>> {
     type Item = T;
 
     #[logic]
-    #[trusted]
-    #[open(self)]
-    #[creusot::builtins = "seq.Seq.get"]
-    fn index_logic(self, _: Int) -> Self::Item {
-        absurd
+    #[open]
+    #[why3::attr = "inline:trivial"]
+    fn index_logic(self, ix: Int) -> Self::Item {
+        pearlite! { (*self)[ix] }
     }
 }
