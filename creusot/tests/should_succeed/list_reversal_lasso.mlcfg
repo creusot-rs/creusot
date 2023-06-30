@@ -1168,6 +1168,34 @@ module ListReversalLasso_Impl4_Loop
     ensures { result = loop_ self first s }
     
 end
+module CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub
+  type t
+  use prelude.Ghost
+  use seq.Seq
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : Ghost.ghost_ty (Seq.seq t)) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl2_IndexLogic_Interface
+  type t
+  use prelude.Ghost
+  use seq.Seq
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : Ghost.ghost_ty (Seq.seq t)) (ix : int) : t
+  val index_logic [@inline:trivial] (self : Ghost.ghost_ty (Seq.seq t)) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
+end
+module CreusotContracts_Logic_Ops_Impl2_IndexLogic
+  type t
+  use prelude.Ghost
+  use seq.Seq
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : Ghost.ghost_ty (Seq.seq t)) (ix : int) : t =
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 39 8 39 33] Seq.get (Ghost.inner self) ix
+  val index_logic [@inline:trivial] (self : Ghost.ghost_ty (Seq.seq t)) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
+end
 module ListReversalLasso_Impl4_ListReversalLoop_Interface
   use prelude.Ghost
   use seq.Seq
@@ -1177,11 +1205,13 @@ module ListReversalLasso_Impl4_ListReversalLoop_Interface
   use seq.Reverse
   use prelude.UIntSize
   use ListReversalLasso_Memory_Type as ListReversalLasso_Memory_Type
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub as IndexLogic0 with
+    type t = usize
   clone ListReversalLasso_Impl4_Loop_Stub as Loop0
   val list_reversal_loop [#"../list_reversal_lasso.rs" 125 4 125 79] (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) (l : usize) (s : Ghost.ghost_ty (Seq.seq usize)) : usize
     requires {[#"../list_reversal_lasso.rs" 122 15 122 26] Seq.length (Ghost.inner s) > 0}
     requires {[#"../list_reversal_lasso.rs" 123 15 123 32] Loop0.loop_ ( * self) l (Ghost.inner s)}
-    ensures { [#"../list_reversal_lasso.rs" 124 14 124 101] Loop0.loop_ ( ^ self) result (Seq.(++) (Seq.singleton (Seq.get s 0)) (Reverse.reverse (SeqExt.subsequence (Ghost.inner s) 1 (Seq.length (Ghost.inner s))))) }
+    ensures { [#"../list_reversal_lasso.rs" 124 14 124 101] Loop0.loop_ ( ^ self) result (Seq.(++) (Seq.singleton (IndexLogic0.index_logic s 0)) (Reverse.reverse (SeqExt.subsequence (Ghost.inner s) 1 (Seq.length (Ghost.inner s))))) }
     
 end
 module ListReversalLasso_Impl4_ListReversalLoop
@@ -1201,19 +1231,19 @@ module ListReversalLasso_Impl4_ListReversalLoop
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic1 with
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic2 with
     type t = usize,
     type s = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   use ListReversalLasso_Memory_Type as ListReversalLasso_Memory_Type
-  clone ListReversalLasso_Impl0_IndexLogic as IndexLogic0 with
-    function IndexLogic0.index_logic = IndexLogic1.index_logic
+  clone ListReversalLasso_Impl0_IndexLogic as IndexLogic1 with
+    function IndexLogic0.index_logic = IndexLogic2.index_logic
   clone ListReversalLasso_Impl3_NonnullPtr as NonnullPtr0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Max0.mAX' = Max0.mAX'
   clone ListReversalLasso_Impl4_ListSeg as ListSeg0 with
     predicate NonnullPtr0.nonnull_ptr = NonnullPtr0.nonnull_ptr,
-    function IndexLogic0.index_logic = IndexLogic0.index_logic
+    function IndexLogic0.index_logic = IndexLogic1.index_logic
   clone ListReversalLasso_Impl4_Loop as Loop0 with
     predicate ListSeg0.list_seg = ListSeg0.list_seg
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
@@ -1224,14 +1254,16 @@ module ListReversalLasso_Impl4_ListReversalLoop
     type t = usize
   clone ListReversalLasso_Impl2_IndexMut_Interface as IndexMut0 with
     predicate NonnullPtr0.nonnull_ptr = NonnullPtr0.nonnull_ptr,
-    function IndexLogic0.index_logic = IndexLogic0.index_logic,
+    function IndexLogic0.index_logic = IndexLogic1.index_logic,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Max0.mAX' = Max0.mAX'
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic as IndexLogic0 with
+    type t = usize
   clone ListReversalLasso_Null as Null0
   let rec cfg list_reversal_loop [#"../list_reversal_lasso.rs" 125 4 125 79] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) (l : usize) (s : Ghost.ghost_ty (Seq.seq usize)) : usize
     requires {[#"../list_reversal_lasso.rs" 122 15 122 26] Seq.length (Ghost.inner s) > 0}
     requires {[#"../list_reversal_lasso.rs" 123 15 123 32] Loop0.loop_ ( * self) l (Ghost.inner s)}
-    ensures { [#"../list_reversal_lasso.rs" 124 14 124 101] Loop0.loop_ ( ^ self) result (Seq.(++) (Seq.singleton (Seq.get s 0)) (Reverse.reverse (SeqExt.subsequence (Ghost.inner s) 1 (Seq.length (Ghost.inner s))))) }
+    ensures { [#"../list_reversal_lasso.rs" 124 14 124 101] Loop0.loop_ ( ^ self) result (Seq.(++) (Seq.singleton (IndexLogic0.index_logic s 0)) (Reverse.reverse (SeqExt.subsequence (Ghost.inner s) 1 (Seq.length (Ghost.inner s))))) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : usize;
@@ -1260,8 +1292,8 @@ module ListReversalLasso_Impl4_ListReversalLoop
   }
   BB2 {
     invariant { [#"../list_reversal_lasso.rs" 129 20 129 48] 0 <= Ghost.inner n /\ Ghost.inner n <= Seq.length (Ghost.inner s) + 1 };
-    invariant { [#"../list_reversal_lasso.rs" 129 8 129 50] Ghost.inner n = Seq.length (Ghost.inner s) + 1 -> l = Null0.nULL' /\ r = Seq.get s 0 /\ NonnullPtr0.nonnull_ptr ( * self) r /\ IndexLogic0.index_logic ( * self) r = Seq.get s (Seq.length (Ghost.inner s) - 1) /\ ListSeg0.list_seg ( * self) (Seq.get s (Seq.length (Ghost.inner s) - 1)) (Reverse.reverse (Ghost.inner s)) (Seq.get s 0) 0 (Seq.length (Ghost.inner s) - 1) };
-    invariant { [#"../list_reversal_lasso.rs" 129 8 129 50] Ghost.inner n <= Seq.length (Ghost.inner s) -> ListSeg0.list_seg ( * self) l (Ghost.inner s) (Seq.get s 0) (Ghost.inner n) (Seq.length (Ghost.inner s)) };
+    invariant { [#"../list_reversal_lasso.rs" 129 8 129 50] Ghost.inner n = Seq.length (Ghost.inner s) + 1 -> l = Null0.nULL' /\ r = IndexLogic0.index_logic s 0 /\ NonnullPtr0.nonnull_ptr ( * self) r /\ IndexLogic1.index_logic ( * self) r = IndexLogic0.index_logic s (Seq.length (Ghost.inner s) - 1) /\ ListSeg0.list_seg ( * self) (IndexLogic0.index_logic s (Seq.length (Ghost.inner s) - 1)) (Reverse.reverse (Ghost.inner s)) (IndexLogic0.index_logic s 0) 0 (Seq.length (Ghost.inner s) - 1) };
+    invariant { [#"../list_reversal_lasso.rs" 129 8 129 50] Ghost.inner n <= Seq.length (Ghost.inner s) -> ListSeg0.list_seg ( * self) l (Ghost.inner s) (IndexLogic0.index_logic s 0) (Ghost.inner n) (Seq.length (Ghost.inner s)) };
     invariant { [#"../list_reversal_lasso.rs" 129 8 129 50] Ghost.inner n <= Seq.length (Ghost.inner s) -> ListSeg0.list_seg ( * self) r (Reverse.reverse (Ghost.inner s)) Null0.nULL' (Seq.length (Ghost.inner s) - Ghost.inner n) (Seq.length (Ghost.inner s)) };
     goto BB3
   }
@@ -1310,8 +1342,8 @@ module ListReversalLasso_Impl4_ListReversalLoop
   }
   BB9 {
     assume { Resolve1.resolve self };
-    assert { [@expl:assertion] [#"../list_reversal_lasso.rs" 143 8 145 54] forall i : int . 0 <= i /\ i < Seq.length (Ghost.inner s) -> Seq.get (Seq.(++) (Seq.singleton (Seq.get s 0)) (Reverse.reverse (SeqExt.subsequence (Ghost.inner s) 1 (Seq.length (Ghost.inner s))))) i = (if i = 0 then
-      Seq.get s 0
+    assert { [@expl:assertion] [#"../list_reversal_lasso.rs" 143 8 145 54] forall i : int . 0 <= i /\ i < Seq.length (Ghost.inner s) -> Seq.get (Seq.(++) (Seq.singleton (IndexLogic0.index_logic s 0)) (Reverse.reverse (SeqExt.subsequence (Ghost.inner s) 1 (Seq.length (Ghost.inner s))))) i = (if i = 0 then
+      IndexLogic0.index_logic s 0
     else
       Seq.get (Reverse.reverse (Ghost.inner s)) (i - 1)
     ) };
@@ -1387,19 +1419,19 @@ module ListReversalLasso_Impl4_ListReversalLasso
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic1 with
+  clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic2 with
     type t = usize,
     type s = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   use ListReversalLasso_Memory_Type as ListReversalLasso_Memory_Type
-  clone ListReversalLasso_Impl0_IndexLogic as IndexLogic0 with
-    function IndexLogic0.index_logic = IndexLogic1.index_logic
+  clone ListReversalLasso_Impl0_IndexLogic as IndexLogic1 with
+    function IndexLogic0.index_logic = IndexLogic2.index_logic
   clone ListReversalLasso_Impl3_NonnullPtr as NonnullPtr0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Max0.mAX' = Max0.mAX'
   clone ListReversalLasso_Impl4_ListSeg as ListSeg0 with
     predicate NonnullPtr0.nonnull_ptr = NonnullPtr0.nonnull_ptr,
-    function IndexLogic0.index_logic = IndexLogic0.index_logic
+    function IndexLogic0.index_logic = IndexLogic1.index_logic
   clone ListReversalLasso_Impl4_Lasso as Lasso0 with
     predicate ListSeg0.list_seg = ListSeg0.list_seg
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
@@ -1410,10 +1442,12 @@ module ListReversalLasso_Impl4_ListReversalLasso
     type t = usize
   clone ListReversalLasso_Impl2_IndexMut_Interface as IndexMut0 with
     predicate NonnullPtr0.nonnull_ptr = NonnullPtr0.nonnull_ptr,
-    function IndexLogic0.index_logic = IndexLogic0.index_logic,
+    function IndexLogic0.index_logic = IndexLogic1.index_logic,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Max0.mAX' = Max0.mAX'
   clone ListReversalLasso_Null as Null0
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic as IndexLogic0 with
+    type t = usize
   let rec cfg list_reversal_lasso [#"../list_reversal_lasso.rs" 163 4 168 12] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) (l : usize) (s1 : Ghost.ghost_ty (Seq.seq usize)) (s2 : Ghost.ghost_ty (Seq.seq usize)) : usize
     requires {[#"../list_reversal_lasso.rs" 161 15 161 38] Lasso0.lasso ( * self) l (Ghost.inner s1) (Ghost.inner s2)}
     ensures { [#"../list_reversal_lasso.rs" 162 14 162 54] Lasso0.lasso ( ^ self) result (Ghost.inner s1) (Reverse.reverse (Ghost.inner s2)) }
@@ -1447,16 +1481,16 @@ module ListReversalLasso_Impl4_ListReversalLasso
   BB2 {
     invariant { [#"../list_reversal_lasso.rs" 172 20 172 58] 0 <= Ghost.inner n /\ Ghost.inner n <= 2 * Seq.length (Ghost.inner s1) + Seq.length (Ghost.inner s2) };
     invariant { [#"../list_reversal_lasso.rs" 172 8 172 60] let mid = if Seq.length (Ghost.inner s2) = 0 then
-      Seq.get s1 (Seq.length (Ghost.inner s1) - 1)
+      IndexLogic0.index_logic s1 (Seq.length (Ghost.inner s1) - 1)
     else
-      Seq.get s2 0
-     in Ghost.inner n <= Seq.length (Ghost.inner s1) -> ListSeg0.list_seg ( * self) l (Ghost.inner s1) mid (Ghost.inner n) (Seq.length (Ghost.inner s1)) /\ ListSeg0.list_seg ( * self) mid (Ghost.inner s2) (Seq.get s1 (Seq.length (Ghost.inner s1) - 1)) 0 (Seq.length (Ghost.inner s2)) /\ ListSeg0.list_seg ( * self) r (Reverse.reverse (Ghost.inner s1)) Null0.nULL' (Seq.length (Ghost.inner s1) - Ghost.inner n) (Seq.length (Ghost.inner s1)) };
-    invariant { [#"../list_reversal_lasso.rs" 172 8 172 60] Seq.length (Ghost.inner s1) < Ghost.inner n /\ Ghost.inner n <= Seq.length (Ghost.inner s1) + Seq.length (Ghost.inner s2) -> ListSeg0.list_seg ( * self) l (Ghost.inner s2) (Seq.get s1 (Seq.length (Ghost.inner s1) - 1)) (Ghost.inner n - Seq.length (Ghost.inner s1)) (Seq.length (Ghost.inner s2)) /\ ListSeg0.list_seg ( * self) r (Reverse.reverse (Ghost.inner s2)) (Seq.get s1 (Seq.length (Ghost.inner s1) - 1)) (Seq.length (Ghost.inner s1) + Seq.length (Ghost.inner s2) - Ghost.inner n) (Seq.length (Ghost.inner s2)) /\ ListSeg0.list_seg ( * self) (Seq.get s1 (Seq.length (Ghost.inner s1) - 1)) (Reverse.reverse (Ghost.inner s1)) Null0.nULL' 0 (Seq.length (Ghost.inner s1)) };
+      IndexLogic0.index_logic s2 0
+     in Ghost.inner n <= Seq.length (Ghost.inner s1) -> ListSeg0.list_seg ( * self) l (Ghost.inner s1) mid (Ghost.inner n) (Seq.length (Ghost.inner s1)) /\ ListSeg0.list_seg ( * self) mid (Ghost.inner s2) (IndexLogic0.index_logic s1 (Seq.length (Ghost.inner s1) - 1)) 0 (Seq.length (Ghost.inner s2)) /\ ListSeg0.list_seg ( * self) r (Reverse.reverse (Ghost.inner s1)) Null0.nULL' (Seq.length (Ghost.inner s1) - Ghost.inner n) (Seq.length (Ghost.inner s1)) };
+    invariant { [#"../list_reversal_lasso.rs" 172 8 172 60] Seq.length (Ghost.inner s1) < Ghost.inner n /\ Ghost.inner n <= Seq.length (Ghost.inner s1) + Seq.length (Ghost.inner s2) -> ListSeg0.list_seg ( * self) l (Ghost.inner s2) (IndexLogic0.index_logic s1 (Seq.length (Ghost.inner s1) - 1)) (Ghost.inner n - Seq.length (Ghost.inner s1)) (Seq.length (Ghost.inner s2)) /\ ListSeg0.list_seg ( * self) r (Reverse.reverse (Ghost.inner s2)) (IndexLogic0.index_logic s1 (Seq.length (Ghost.inner s1) - 1)) (Seq.length (Ghost.inner s1) + Seq.length (Ghost.inner s2) - Ghost.inner n) (Seq.length (Ghost.inner s2)) /\ ListSeg0.list_seg ( * self) (IndexLogic0.index_logic s1 (Seq.length (Ghost.inner s1) - 1)) (Reverse.reverse (Ghost.inner s1)) Null0.nULL' 0 (Seq.length (Ghost.inner s1)) };
     invariant { [#"../list_reversal_lasso.rs" 172 8 172 60] let mid = if Seq.length (Ghost.inner s2) = 0 then
-      Seq.get s1 (Seq.length (Ghost.inner s1) - 1)
+      IndexLogic0.index_logic s1 (Seq.length (Ghost.inner s1) - 1)
     else
-      Seq.get s2 (Seq.length (Ghost.inner s2) - 1)
-     in Seq.length (Ghost.inner s1) + Seq.length (Ghost.inner s2) < Ghost.inner n -> ListSeg0.list_seg ( * self) l (Reverse.reverse (Ghost.inner s1)) Null0.nULL' (Ghost.inner n - Seq.length (Ghost.inner s1) - Seq.length (Ghost.inner s2)) (Seq.length (Ghost.inner s1)) /\ ListSeg0.list_seg ( * self) r (Ghost.inner s1) mid (2 * Seq.length (Ghost.inner s1) + Seq.length (Ghost.inner s2) - Ghost.inner n) (Seq.length (Ghost.inner s1)) /\ ListSeg0.list_seg ( * self) mid (Reverse.reverse (Ghost.inner s2)) (Seq.get s1 (Seq.length (Ghost.inner s1) - 1)) 0 (Seq.length (Ghost.inner s2)) };
+      IndexLogic0.index_logic s2 (Seq.length (Ghost.inner s2) - 1)
+     in Seq.length (Ghost.inner s1) + Seq.length (Ghost.inner s2) < Ghost.inner n -> ListSeg0.list_seg ( * self) l (Reverse.reverse (Ghost.inner s1)) Null0.nULL' (Ghost.inner n - Seq.length (Ghost.inner s1) - Seq.length (Ghost.inner s2)) (Seq.length (Ghost.inner s1)) /\ ListSeg0.list_seg ( * self) r (Ghost.inner s1) mid (2 * Seq.length (Ghost.inner s1) + Seq.length (Ghost.inner s2) - Ghost.inner n) (Seq.length (Ghost.inner s1)) /\ ListSeg0.list_seg ( * self) mid (Reverse.reverse (Ghost.inner s2)) (IndexLogic0.index_logic s1 (Seq.length (Ghost.inner s1) - 1)) 0 (Seq.length (Ghost.inner s2)) };
     goto BB3
   }
   BB3 {
