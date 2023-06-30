@@ -182,7 +182,7 @@ pub trait RangeInclusiveExt<Idx> {
     #[logic]
     fn end_log(self) -> Idx;
 
-    #[predicate]
+    #[logic]
     fn is_empty_log(self) -> bool
     where
         Idx: DeepModel,
@@ -205,7 +205,7 @@ impl<Idx> RangeInclusiveExt<Idx> for RangeInclusive<Idx> {
     }
 
     #[open(self)]
-    #[predicate]
+    #[logic]
     #[trusted]
     #[ensures(!result ==> self.start_log().deep_model() <= self.end_log().deep_model())]
     fn is_empty_log(self) -> bool

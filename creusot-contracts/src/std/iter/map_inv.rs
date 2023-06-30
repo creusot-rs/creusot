@@ -1,6 +1,9 @@
-use crate::{invariant::Invariant, *};
+use crate::{
+    invariant::{inv, Invariant},
+    *,
+};
 
-pub struct MapInv<I, B, F> {
+pub struct MapInv<I: Invariant, B, F> {
     pub iter: I,
     pub func: F,
     pub produced: Ghost<Seq<B>>,
@@ -51,7 +54,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
 }
 
 #[trusted]
-impl<I, B, F> Resolve for MapInv<I, B, F> {
+impl<I: Invariant, B, F> Resolve for MapInv<I, B, F> {
     #[open]
     #[predicate]
     fn resolve(self) -> bool {
@@ -69,7 +72,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Invariant
         pearlite! {
             Self::reinitialize() &&
             self.preservation_inv() &&
-            self.iter.invariant() &&
             self.next_precondition()
         }
     }
@@ -84,7 +86,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> ::std::iter::I
       None => self.completed(),
       Some(v) => (*self).produces_one(v, ^self)
     })]
-    #[maintains((mut self).invariant())]
+    #[maintains(inv(mut self))]
     fn next(&mut self) -> Option<Self::Item> {
         match self.iter.next() {
             Some(v) => {
@@ -122,7 +124,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::I
         pearlite! {
             forall<reset: &mut MapInv<I, _, F>>
                 reset.completed() ==>
-                (^reset).iter.invariant() ==>
+                inv((^reset).iter) ==>
                 (^reset).next_precondition() &&
                 Self::preservation((^reset).iter, (^reset).func)
         }
@@ -159,8 +161,8 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::I
     #[logic]
     #[open(self)]
     #[requires(self.produces_one(e, other))]
-    #[requires(other.iter.invariant())]
-    #[ensures(other.invariant())]
+    #[requires(inv(other.iter))]
+    #[ensures(inv(other))]
     fn produces_one_invariant(self, e: B, other: Self) {}
 
     #[open]

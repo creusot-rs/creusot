@@ -72,6 +72,180 @@ module Model_Pair_Interface
     ensures { [#"../model.rs" 37 10 37 27] ShallowModel0.shallow_model result = (a, b) }
     
 end
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.Opaque
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+    
+end
+module Core_Cell_UnsafeCell_Type
+  type t_unsafecell 't =
+    | C_UnsafeCell 't
+    
+end
+module Core_Sync_Atomic_AtomicUsize_Type
+  use prelude.Int
+  use prelude.UIntSize
+  use Core_Cell_UnsafeCell_Type as Core_Cell_UnsafeCell_Type
+  type t_atomicusize  =
+    | C_AtomicUsize (Core_Cell_UnsafeCell_Type.t_unsafecell usize)
+    
+end
+module Alloc_Sync_ArcInner_Type
+  use Core_Sync_Atomic_AtomicUsize_Type as Core_Sync_Atomic_AtomicUsize_Type
+  type t_arcinner 't =
+    | C_ArcInner (Core_Sync_Atomic_AtomicUsize_Type.t_atomicusize) (Core_Sync_Atomic_AtomicUsize_Type.t_atomicusize) 't
+    
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+    
+end
+module Alloc_Sync_Arc_Type
+  use Alloc_Sync_ArcInner_Type as Alloc_Sync_ArcInner_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_arc 't =
+    | C_Arc (Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Sync_ArcInner_Type.t_arcinner 't)) (Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Sync_ArcInner_Type.t_arcinner 't))
+    
+end
+module CreusotContracts_Model_Impl3_ShallowModel_Stub
+  type t
+  use Alloc_Sync_Arc_Type as Alloc_Sync_Arc_Type
+  function shallow_model (self : Alloc_Sync_Arc_Type.t_arc t) : t
+end
+module CreusotContracts_Model_Impl3_ShallowModel_Interface
+  type t
+  use Alloc_Sync_Arc_Type as Alloc_Sync_Arc_Type
+  function shallow_model (self : Alloc_Sync_Arc_Type.t_arc t) : t
+  val shallow_model (self : Alloc_Sync_Arc_Type.t_arc t) : t
+    ensures { result = shallow_model self }
+    
+end
+module CreusotContracts_Model_Impl3_ShallowModel
+  type t
+  use Alloc_Sync_Arc_Type as Alloc_Sync_Arc_Type
+  function shallow_model (self : Alloc_Sync_Arc_Type.t_arc t) : t
+  val shallow_model (self : Alloc_Sync_Arc_Type.t_arc t) : t
+    ensures { result = shallow_model self }
+    
+end
+module Model_TestArc_Interface
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_Sync_Arc_Type as Alloc_Sync_Arc_Type
+  clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
+    type t = usize
+  val test_arc [#"../model.rs" 43 0 43 41] (a : Alloc_Sync_Arc_Type.t_arc usize) : ()
+    requires {[#"../model.rs" 42 11 42 19] UIntSize.to_int (ShallowModel0.shallow_model a) = 0}
+    
+end
+module Model_TestArc
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_Sync_Arc_Type as Alloc_Sync_Arc_Type
+  clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel0 with
+    type t = usize
+  let rec cfg test_arc [#"../model.rs" 43 0 43 41] [@cfg:stackify] [@cfg:subregion_analysis] (a : Alloc_Sync_Arc_Type.t_arc usize) : ()
+    requires {[#"../model.rs" 42 11 42 19] UIntSize.to_int (ShallowModel0.shallow_model a) = 0}
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    _0 <- ();
+    goto BB2
+  }
+  BB2 {
+    return _0
+  }
+  
+end
+module Core_Cell_Cell_Type
+  use Core_Cell_UnsafeCell_Type as Core_Cell_UnsafeCell_Type
+  type t_cell 't =
+    | C_Cell (Core_Cell_UnsafeCell_Type.t_unsafecell 't)
+    
+end
+module Alloc_Rc_RcBox_Type
+  use prelude.Int
+  use prelude.UIntSize
+  use Core_Cell_Cell_Type as Core_Cell_Cell_Type
+  type t_rcbox 't =
+    | C_RcBox (Core_Cell_Cell_Type.t_cell usize) (Core_Cell_Cell_Type.t_cell usize) 't
+    
+end
+module Alloc_Rc_Rc_Type
+  use Alloc_Rc_RcBox_Type as Alloc_Rc_RcBox_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_rc 't =
+    | C_Rc (Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Rc_RcBox_Type.t_rcbox 't)) (Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Rc_RcBox_Type.t_rcbox 't))
+    
+end
+module CreusotContracts_Model_Impl1_ShallowModel_Stub
+  type t
+  use Alloc_Rc_Rc_Type as Alloc_Rc_Rc_Type
+  function shallow_model (self : Alloc_Rc_Rc_Type.t_rc t) : t
+end
+module CreusotContracts_Model_Impl1_ShallowModel_Interface
+  type t
+  use Alloc_Rc_Rc_Type as Alloc_Rc_Rc_Type
+  function shallow_model (self : Alloc_Rc_Rc_Type.t_rc t) : t
+  val shallow_model (self : Alloc_Rc_Rc_Type.t_rc t) : t
+    ensures { result = shallow_model self }
+    
+end
+module CreusotContracts_Model_Impl1_ShallowModel
+  type t
+  use Alloc_Rc_Rc_Type as Alloc_Rc_Rc_Type
+  function shallow_model (self : Alloc_Rc_Rc_Type.t_rc t) : t
+  val shallow_model (self : Alloc_Rc_Rc_Type.t_rc t) : t
+    ensures { result = shallow_model self }
+    
+end
+module Model_TestRc_Interface
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_Rc_Rc_Type as Alloc_Rc_Rc_Type
+  clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
+    type t = usize
+  val test_rc [#"../model.rs" 46 0 46 37] (v : Alloc_Rc_Rc_Type.t_rc usize) : ()
+    requires {[#"../model.rs" 45 11 45 19] UIntSize.to_int (ShallowModel0.shallow_model v) = 0}
+    
+end
+module Model_TestRc
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_Rc_Rc_Type as Alloc_Rc_Rc_Type
+  clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel0 with
+    type t = usize
+  let rec cfg test_rc [#"../model.rs" 46 0 46 37] [@cfg:stackify] [@cfg:subregion_analysis] (v : Alloc_Rc_Rc_Type.t_rc usize) : ()
+    requires {[#"../model.rs" 45 11 45 19] UIntSize.to_int (ShallowModel0.shallow_model v) = 0}
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    _0 <- ();
+    goto BB2
+  }
+  BB2 {
+    return _0
+  }
+  
+end
 module Model_Impl0
   
 end

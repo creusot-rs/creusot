@@ -2,7 +2,7 @@ use std::{collections::HashMap, ops::Deref};
 
 pub(crate) use crate::backend::clone_map::*;
 use crate::{
-    backend::ty::ty_binding_group,
+    backend::{ty::ty_binding_group, ty_inv},
     callbacks,
     creusot_items::{self, CreusotItems},
     error::{CrErr, CreusotResult, Error},
@@ -13,8 +13,8 @@ use crate::{
         external::{extract_extern_specs_from_item, ExternSpec},
         fmir,
         pearlite::{self, Term},
-        specification::{ContractClauses, PurityVisitor},
-        traits::{self, TraitImpl},
+        specification::{ContractClauses, Purity, PurityVisitor},
+        traits::TraitImpl,
     },
     util::{self, pre_sig_of, PreSignature},
 };
@@ -206,23 +206,19 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         def_id: DefId,
         ty: Ty<'tcx>,
     ) -> Option<(DefId, SubstsRef<'tcx>)> {
-        if util::is_open_ty_inv(self.tcx, def_id) {
-            return None;
-        }
-
-        debug!("resolving type invariant of {ty:?} in {def_id:?}");
         let param_env = self.param_env(def_id);
-        let trait_did = self.get_diagnostic_item(Symbol::intern("creusot_invariant_method"))?;
+        let ty = self.try_normalize_erasing_regions(param_env, ty).ok()?;
 
-        let substs = self.mk_substs(&[GenericArg::from(ty)]);
-        let inv = traits::resolve_opt(self.tcx, param_env, trait_did, substs)?;
-
-        // if inv resolved to the default impl and is not specializable, ignore
-        if inv.0 == trait_did && !traits::still_specializable(self.tcx, param_env, inv.0, inv.1) {
-            return None;
+        if util::is_open_ty_inv(self.tcx, def_id)
+            || ty_inv::is_tyinv_trivial(self.tcx, param_env, ty)
+        {
+            None
+        } else {
+            debug!("resolving type invariant of {ty:?} in {def_id:?}");
+            let inv_did = self.get_diagnostic_item(Symbol::intern("creusot_invariant_internal"))?;
+            let substs = self.mk_substs(&[GenericArg::from(ty)]);
+            Some((inv_did, substs))
         }
-
-        Some(inv)
     }
 
     pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {
@@ -426,16 +422,13 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         }
 
         let def_id = def_id.to_def_id();
-        let in_pure_ctx = crate::util::is_spec(self.tcx, def_id)
-            || crate::util::is_logic(self.tcx, def_id)
-            || crate::util::is_predicate(self.tcx, def_id);
-
-        if !in_pure_ctx && crate::util::is_no_translate(self.tcx, def_id) {
+        let purity = Purity::of_def_id(self.tcx, def_id);
+        if purity == Purity::Program && crate::util::is_no_translate(self.tcx, def_id) {
             return;
         }
 
         thir::visit::walk_expr(
-            &mut PurityVisitor { tcx: self.tcx, thir: &thir, in_pure_ctx },
+            &mut PurityVisitor { tcx: self.tcx, thir: &thir, context: purity },
             &thir[expr],
         );
     }

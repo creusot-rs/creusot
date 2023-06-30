@@ -2,7 +2,7 @@
 extern crate creusot_contracts;
 
 use creusot_contracts::{
-    invariant::Invariant,
+    invariant::{inv, Invariant},
     logic::{Int, Seq},
     *,
 };
@@ -79,7 +79,7 @@ pub fn all_zero(v: &mut Vec<usize>) {
     let mut it = iter_mut(v).into_iter();
     let iter_old = ghost! { it };
     let mut produced = ghost! { Seq::EMPTY };
-    #[invariant(it.invariant())]
+    #[invariant(inv(it))]
     #[invariant(iter_old.produces(produced.inner(), it))]
     #[invariant(forall<i : Int> 0 <= i && i < produced.len() ==> (^produced[i])@ == 0)]
     loop {

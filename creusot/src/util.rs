@@ -38,6 +38,7 @@ pub(crate) fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
     crate::util::is_no_translate(tcx, def_id)
         || crate::util::is_logic(tcx, def_id)
         || crate::util::is_predicate(tcx, def_id)
+        || crate::util::is_spec_logic(tcx, def_id)
 }
 
 pub(crate) fn is_no_translate(tcx: TyCtxt, def_id: DefId) -> bool {
@@ -74,6 +75,10 @@ pub(crate) fn is_ghost_closure<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<
     } else { None }
 }
 
+pub(crate) fn is_spec_logic(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "spec_logic"]).is_some()
+}
+
 pub(crate) fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "predicate"]).is_some()
 }
@@ -98,16 +103,15 @@ pub(crate) fn is_open_ty_inv(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "open_inv"]).is_some()
 }
 
-pub(crate) fn is_type_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
+pub(crate) fn is_user_tyinv(tcx: TyCtxt, def_id: DefId) -> bool {
     let Some(assoc_item) = tcx.opt_associated_item(def_id) else { return false };
     let Some(trait_item_did) = (match assoc_item.container {
         ty::AssocItemContainer::TraitContainer => Some(def_id),
         ty::AssocItemContainer::ImplContainer => assoc_item.trait_item_def_id,
     }) else { return false };
 
-    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_method"))
-        .map(|inv_did| inv_did == trait_item_did)
-        .unwrap_or(false)
+    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user"))
+        .is_some_and(|inv_did| inv_did == trait_item_did)
 }
 
 pub(crate) fn is_inv_internal(tcx: TyCtxt, def_id: DefId) -> bool {
@@ -326,7 +330,7 @@ pub(crate) fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
         DefKind::Fn | DefKind::AssocFn => {
             if is_predicate(tcx, def_id) {
                 ItemType::Predicate
-            } else if is_logic(tcx, def_id) {
+            } else if is_logic(tcx, def_id) || is_spec_logic(tcx, def_id) {
                 ItemType::Logic
             } else {
                 ItemType::Program
@@ -464,8 +468,11 @@ fn elaborate_type_invariants<'tcx>(
     def_id: DefId,
     pre_sig: &mut PreSignature<'tcx>,
 ) {
-    if is_type_invariant(ctx.tcx, def_id)
-        || (is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
+    if is_user_tyinv(ctx.tcx, def_id)
+        || is_inv_internal(ctx.tcx, def_id)
+        || (is_predicate(ctx.tcx, def_id)
+            || is_logic(ctx.tcx, def_id)
+            || is_spec_logic(ctx.tcx, def_id))
             && pre_sig.contract.ensures.is_empty()
     {
         return;
