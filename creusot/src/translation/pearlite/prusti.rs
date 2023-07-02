@@ -1,7 +1,7 @@
 use crate::{
     error::{CreusotResult, Error},
     pearlite::{Pattern, Term, TermKind, ThirTerm},
-    prusti::{full_signature, full_signature_logic, typeck, types::*},
+    prusti::{ctx::CtxRef, full_signature, full_signature_logic, typeck, types::*},
     util,
 };
 use internal_iterator::*;
@@ -17,7 +17,7 @@ use std::{
     ops::{ControlFlow, Deref, DerefMut},
 };
 
-use crate::lints::PRUSTI_ZOMBIE;
+use crate::{lints::PRUSTI_ZOMBIE, prusti::ctx::InternedInfo};
 
 type TimeSlice<'tcx> = Region<'tcx>;
 
@@ -108,6 +108,7 @@ pub(super) fn prusti_to_creusot<'tcx>(
     mut term: Term<'tcx>,
 ) -> CreusotResult<Term<'tcx>> {
     let tcx = ctx.ctx.tcx;
+    let interned = InternedInfo::new(tcx);
     let item_id = ctx.item_id;
     let owner_id = util::param_def_id(tcx, item_id).to_def_id();
 
@@ -124,8 +125,8 @@ pub(super) fn prusti_to_creusot<'tcx>(
     let sig: Binder<FnSig> = tcx.fn_sig(owner_id).subst_identity();
 
     let (ctx, ts, tenv, res_ty) = match home_sig {
-        None => full_signature(tcx, sig, ts, owner_id)?,
-        Some(home_sig) => full_signature_logic(tcx, home_sig, sig, ts, owner_id)?,
+        None => full_signature(&interned, sig, ts, owner_id)?,
+        Some(home_sig) => full_signature_logic(&interned, home_sig, sig, ts, owner_id)?,
     };
     let mut tenv: FxHashMap<_, _> = tenv;
 
@@ -145,7 +146,7 @@ pub(super) fn prusti_to_creusot<'tcx>(
 fn iterate_bindings<'tcx, R, F>(
     pat: &Pattern<'tcx>,
     ty: Ty<'tcx>,
-    ctx: &Ctx<'tcx>,
+    ctx: CtxRef<'_, 'tcx>,
     f: &mut F,
 ) -> ControlFlow<R>
 where
@@ -168,7 +169,7 @@ where
 struct PatternIter<'a, 'tcx> {
     pat: &'a Pattern<'tcx>,
     ty: Ty<'tcx>,
-    ctx: &'a Ctx<'tcx>,
+    ctx: CtxRef<'a, 'tcx>,
 }
 
 impl<'a, 'tcx> InternalIterator for PatternIter<'a, 'tcx> {
@@ -185,14 +186,14 @@ impl<'a, 'tcx> InternalIterator for PatternIter<'a, 'tcx> {
 fn pattern_iter<'a, 'tcx>(
     pat: &'a Pattern<'tcx>,
     ty: Ty<'tcx>,
-    ctx: &'a Ctx<'tcx>,
+    ctx: CtxRef<'a, 'tcx>,
     ts: Region<'tcx>,
 ) -> impl InternalIterator<Item = (Symbol, (Region<'tcx>, Ty<'tcx>))> + 'a {
     PatternIter { pat, ty, ctx }.map(move |(k, v)| (k, (ts, v)))
 }
 
 fn strip_derefs_target<'tcx>(
-    ctx: &Ctx<'tcx>,
+    ctx: CtxRef<'_, 'tcx>,
     span: Span,
     ts: TimeSlice<'tcx>,
     ty: Ty<'tcx>,
@@ -254,7 +255,7 @@ fn deref_depth(ty: ty::Ty<'_>) -> SmallVec<[Indirect; 8]> {
 fn add_zombie_lint<'tcx>(
     old_ts: Option<Region<'tcx>>,
     ts: Region<'tcx>,
-    ctx: &Ctx<'tcx>,
+    ctx: CtxRef<'_, 'tcx>,
     ty: Ty<'tcx>,
     span: Span,
 ) -> Ty<'tcx> {
@@ -274,7 +275,7 @@ fn switch_ts<'tcx>(
     tenv: &mut Tenv<'tcx>,
     old_ts: TimeSlice<'tcx>,
     new_ts: TimeSlice<'tcx>,
-    ctx: &Ctx<'tcx>,
+    ctx: CtxRef<'_, 'tcx>,
     span: Span,
 ) -> CreusotResult<Ty<'tcx>> {
     let ty = convert_sdt(term, tenv, old_ts, ctx)?;
@@ -290,9 +291,10 @@ fn convert<'tcx>(
     outer_term: &mut Term<'tcx>,
     tenv: &mut Tenv<'tcx>,
     ts: TimeSlice<'tcx>,
-    ctx: &Ctx<'tcx>,
+    ctx: CtxRef<'_, 'tcx>,
 ) -> CreusotResult<Ty<'tcx>> {
     let tcx = ctx.tcx;
+    let outer_ty = || ctx.fix_user_ty_regions(outer_term.ty);
     let ty = match &mut outer_term.kind {
         TermKind::Var(v) => {
             let (old_ts, ty) = *tenv.get(v).unwrap();
@@ -326,6 +328,11 @@ fn convert<'tcx>(
                 let r = subst.regions().next().unwrap();
                 if r == ctx.tcx.lifetimes.re_erased {
                     return Err(Error::new(fun.span, "at_expiry must be given an explicit region"));
+                } else if r == ctx.static_region() {
+                    return Err(Error::new(
+                        fun.span,
+                        "at_expiry cannot use 'static since it never expires",
+                    ));
                 } else {
                     Some(r)
                 }
@@ -359,7 +366,7 @@ fn convert<'tcx>(
         TermKind::Constructor { fields, variant, .. } => {
             let fields =
                 fields.iter_mut().map(|arg| Ok((convert_sdt(arg, tenv, ts, ctx)?, arg.span)));
-            typeck::check_constructor(ctx, fields, outer_term.ty, *variant)?
+            typeck::check_constructor(ctx, fields, outer_ty(), *variant)?
         }
         TermKind::Tuple { fields, .. } => {
             let fields =
@@ -393,7 +400,7 @@ fn convert<'tcx>(
                 let iter = pattern_iter(pat, ty, ctx, ts);
                 convert_sdt(&mut *body, &mut *tenv.insert_many(iter), ts, ctx)
             });
-            typeck::union(ctx, outer_term.ty, iter)?
+            typeck::union(ctx, outer_ty(), iter)?
         }
         TermKind::Let { pattern, arg, body } => {
             if matches!(pattern, Pattern::Tuple(..))
@@ -419,7 +426,7 @@ fn convert<'tcx>(
             switch_ts(term, tenv, ctx.old_region(), ts, ctx, outer_term.span)?
         }
         TermKind::Closure { .. } => todo!(),
-        TermKind::Absurd => Ty::absurd_regions(outer_term.ty, ctx.tcx),
+        TermKind::Absurd => Ty::absurd_regions(outer_ty(), ctx.tcx),
         _ => {
             return Err(Error::new(
                 outer_term.span,
@@ -434,7 +441,7 @@ fn convert_sdb1<'tcx>(
     term: &mut Term<'tcx>,
     tenv: &mut Tenv<'tcx>,
     ts: TimeSlice<'tcx>,
-    ctx: &Ctx<'tcx>,
+    ctx: CtxRef<'_, 'tcx>,
 ) -> CreusotResult<Ty<'tcx>> {
     let ty = convert(term, tenv, ts, ctx)?;
     let target = if ty.ty.ref_mutability() == Some(Not) {
@@ -449,7 +456,7 @@ fn convert_sdt<'tcx>(
     term: &mut Term<'tcx>,
     tenv: &mut Tenv<'tcx>,
     ts: TimeSlice<'tcx>,
-    ctx: &Ctx<'tcx>,
+    ctx: CtxRef<'_, 'tcx>,
 ) -> CreusotResult<Ty<'tcx>> {
     strip_derefs_target(ctx, term.span, ts, convert(term, tenv, ts, ctx)?, term.ty)
 }

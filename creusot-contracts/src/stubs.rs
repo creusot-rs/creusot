@@ -81,6 +81,34 @@ pub fn at_expiry<'a: 'a, T>(_: T) -> T {
     absurd
 }
 
+pub trait ReplaceLifetimesWithStatic {
+    #[rustc_diagnostic_item = "prusti_replace_static_user"]
+    type WithStatic;
+}
+
+impl<T> ReplaceLifetimesWithStatic for T {
+    // this is true modulo lifetimes
+    type WithStatic = T;
+}
+
+pub type WithStatic<T> = <T as ReplaceLifetimesWithStatic>::WithStatic;
+
+pub mod __static {
+
+    /// Internal use only
+    #[rustc_diagnostic_item = "prusti_replace_lft"]
+    pub struct ReplaceLft<'x, T>(T, &'x ());
+}
+
+#[logic]
+#[open]
+#[creusot::prusti::home_sig = "('curr) -> 'x"]
+/// Hypothetical snapshot function that duplicates t so that it can be used anywhere
+/// Note: dereferencing a mutable reference created by a snapshot uses the current operator
+pub fn snap<T>(t: T) -> WithStatic<T> {
+    t
+}
+
 #[logic] // avoid triggering error since this is prusti specific
 #[open]
 #[creusot::no_translate]

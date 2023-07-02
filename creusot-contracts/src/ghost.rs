@@ -17,6 +17,14 @@ impl<T: ?Sized> Deref for Ghost<T> {
     }
 }
 
+impl<T> ::std::clone::Clone for Ghost<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<T> Copy for Ghost<T> {}
+
 impl<T: ShallowModel + ?Sized> ShallowModel for Ghost<T> {
     type ShallowModelTy = T::ShallowModelTy;
 
@@ -48,6 +56,7 @@ impl<T: ?Sized> Ghost<T> {
     #[logic]
     #[open(self)]
     #[creusot::builtins = "prelude.Ghost.inner"]
+    #[creusot::prusti::home_sig = "('x) -> 'x"]
     pub fn inner(self) -> T
     where
         T: Sized, // TODO: don't require T: Sized here. Problem: return type is T.

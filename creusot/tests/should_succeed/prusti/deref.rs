@@ -37,6 +37,11 @@ pub fn deref4<'a, 'b, T>(x: &'a Box<&'b Box<T>>) -> &'b T {
     (***x).mk_ref()
 }
 
+#[after_expiry('a, **x == 0u32)]
+pub fn deref5<'a>(x: &'static Box<u32>, y: &'a u32) -> &'a u32 {
+    x
+}
+
 pub struct X(u32, u32);
 
 #[ensures(result == *old(x.0.mk_ref()))]

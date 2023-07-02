@@ -1,15 +1,16 @@
 use crate::{
     error::{CreusotResult, Error},
     prusti::{
+        ctx::{Ctx, CtxRef, InternedInfo, PreCtx},
         parsing,
         parsing::Home,
-        types::{Ctx, PreCtx, Ty},
+        types::Ty,
     },
     util,
 };
 use itertools::Either;
 use rustc_ast::MetaItemLit as Lit;
-use rustc_middle::ty::{Binder, FnSig, Region, TyCtxt};
+use rustc_middle::ty::{Binder, FnSig, Region};
 use rustc_span::{def_id::DefId, symbol::Ident, Span, Symbol, DUMMY_SP};
 use std::iter;
 
@@ -17,7 +18,7 @@ type TimeSlice<'tcx> = Region<'tcx>;
 
 /// Returns region corresponding to `l`
 /// Also checks that 'curr is not blocked
-fn make_time_slice<'tcx>(l: &Lit, ctx: &Ctx<'tcx>) -> CreusotResult<TimeSlice<'tcx>> {
+fn make_time_slice<'tcx>(l: &Lit, ctx: CtxRef<'_, 'tcx>) -> CreusotResult<TimeSlice<'tcx>> {
     let old_region = ctx.old_region();
     let curr_region = ctx.curr_region();
     let mut regions = ctx.base_regions().map(|r| (r.get_name(), ctx.fix_region(r)));
@@ -46,7 +47,10 @@ fn make_time_slice<'tcx>(l: &Lit, ctx: &Ctx<'tcx>) -> CreusotResult<TimeSlice<'t
 }
 
 /// Returns region corresponding to `l` in a logical context
-fn make_time_slice_logic<'tcx>(l: &Lit, ctx: &mut PreCtx<'tcx>) -> CreusotResult<TimeSlice<'tcx>> {
+fn make_time_slice_logic<'a, 'tcx>(
+    l: &Lit,
+    ctx: &mut PreCtx<'a, 'tcx>,
+) -> CreusotResult<TimeSlice<'tcx>> {
     let sym = l.as_token_lit().symbol;
     match sym.as_str() {
         "old" => Ok(ctx.curr_region()), //hack requires clauses to use same time slice as return
@@ -91,12 +95,13 @@ fn add_homes_to_sig<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
 }
 
 pub(crate) fn full_signature<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
-    tcx: TyCtxt<'tcx>,
+    interned: &'a InternedInfo<'tcx>,
     sig: Binder<'tcx, FnSig<'tcx>>,
     ts: &Lit,
     owner_id: DefId,
-) -> CreusotResult<(Ctx<'tcx>, Region<'tcx>, T, BindingInfo<'tcx>)> {
-    let ctx = Ctx::new_for_spec(tcx, owner_id)?;
+) -> CreusotResult<(Ctx<'a, 'tcx>, Region<'tcx>, T, BindingInfo<'tcx>)> {
+    let tcx = interned.tcx;
+    let ctx = Ctx::new_for_spec(interned, owner_id)?;
     let sig = tcx.liberate_late_bound_regions(owner_id, sig);
     let sig = ctx.fix_regions(sig);
 
@@ -109,13 +114,14 @@ pub(crate) fn full_signature<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
 }
 
 pub(crate) fn full_signature_logic<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
-    tcx: TyCtxt<'tcx>,
+    interned: &'a InternedInfo<'tcx>,
     home_sig: &Lit,
     sig: Binder<'tcx, FnSig<'tcx>>,
     ts: &Lit,
     owner_id: DefId,
-) -> CreusotResult<(Ctx<'tcx>, Region<'tcx>, T, BindingInfo<'tcx>)> {
-    let mut ctx = PreCtx::new(tcx, owner_id);
+) -> CreusotResult<(Ctx<'a, 'tcx>, Region<'tcx>, T, BindingInfo<'tcx>)> {
+    let tcx = interned.tcx;
+    let mut ctx = PreCtx::new(interned, owner_id);
     let sig = tcx.liberate_late_bound_regions(owner_id, sig);
     let sig = ctx.fix_regions(sig);
 
