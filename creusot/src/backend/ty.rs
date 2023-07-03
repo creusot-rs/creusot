@@ -372,7 +372,7 @@ fn build_ty_decl<'tcx>(
                 .fields
                 .iter()
                 .map(|f| {
-                    let ty = field_ty(ctx, names, param_env, f, substs);
+                    let ty = field_ty(ctx, names, param_env, did, f, substs);
                     Field { ty, ghost: false }
                 })
                 .collect();
@@ -410,12 +410,29 @@ fn field_ty<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     param_env: ParamEnv<'tcx>,
+    adt_did: DefId,
     field: &FieldDef,
     substs: SubstsRef<'tcx>,
 ) -> MlT {
     let ty = field.ty(ctx.tcx, substs);
     let ty = ctx.try_normalize_erasing_regions(param_env, ty).unwrap_or(ty);
+
+    if !validate_field_ty(ctx.tcx, adt_did, ty) {
+        ctx.crash_and_error(ctx.def_span(field.did), "Illegal use of the Ghost type")
+    }
+
     translate_ty_inner(TyTranslation::Declaration, ctx, names, ctx.def_span(field.did), ty)
+}
+
+fn validate_field_ty<'tcx>(tcx: TyCtxt<'tcx>, adt_did: DefId, ty: Ty<'tcx>) -> bool {
+    !ty.walk().filter_map(ty::GenericArg::as_type).any(|ty| {
+        util::is_ghost_ty(tcx, ty)
+            && ty.walk().filter_map(ty::GenericArg::as_type).any(|ty| match ty.kind() {
+                TyKind::Adt(adt_def, _) => adt_def.did() == adt_did,
+                // TyKind::Param(_) => true,
+                _ => false,
+            })
+    })
 }
 
 pub(crate) fn translate_accessor(
@@ -457,7 +474,8 @@ pub(crate) fn translate_accessor(
     let acc_name = format!("{}_{}", variant.name.as_str().to_ascii_lowercase(), field.name);
 
     let param_env = ctx.param_env(adt_did);
-    let target_ty = field_ty(ctx, &mut names, param_env, &variant.fields[ix.into()], substs);
+    let target_ty =
+        field_ty(ctx, &mut names, param_env, adt_did, &variant.fields[ix.into()], substs);
 
     let variant_arities: Vec<_> = adt_def
         .variants()

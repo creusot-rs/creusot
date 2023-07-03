@@ -75,6 +75,15 @@ pub(crate) fn is_ghost_closure<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<
     } else { None }
 }
 
+pub(crate) fn is_ghost_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    let r: Option<bool> = try {
+        let adt = ty.ty_adt_def()?;
+        let builtin = get_builtin(tcx, adt.did())?;
+        builtin.as_str() == "prelude.Ghost.ghost_ty"
+    };
+    r.unwrap_or(false)
+}
+
 pub(crate) fn is_spec_logic(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "spec_logic"]).is_some()
 }
