@@ -316,7 +316,7 @@ fn convert<'tcx>(
         }
         TermKind::Forall { binder, body } | TermKind::Exists { binder, body } => {
             let ty = binder.1.tuple_fields()[0];
-            let ty = Ty::all_at_ts(ty, ctx.tcx, ts); // TODO handle lifetimes annotations in ty
+            let ty = Ty::all_at_ts(ctx.fix_user_ty_regions(ty), ctx.tcx, ts); // TODO handle lifetimes annotations in ty
             convert_sdt(&mut *body, &mut tenv.insert(binder.0, (ts, ty)), ts, ctx)?
         }
         TermKind::Call { args, fun, id, .. } => {
