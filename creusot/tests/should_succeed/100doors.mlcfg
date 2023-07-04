@@ -417,9 +417,11 @@ end
 module Core_Ops_Range_Range_Type_Inv
   type idx
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = idx
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = Core_Ops_Range_Range_Type.t_range idx
-  axiom inv_t_range : forall self : Core_Ops_Range_Range_Type.t_range idx . Inv0.inv self = true
+  axiom inv_t_range [@rewrite] : forall self : Core_Ops_Range_Range_Type.t_range idx . Inv0.inv self = (Inv1.inv (Core_Ops_Range_Range_Type.range_start self) /\ Inv1.inv (Core_Ops_Range_Range_Type.range_end self))
 end
 module CreusotContracts_Std1_Iter_Iterator_Completed_Stub
   type self
@@ -997,6 +999,12 @@ module CreusotContracts_Std1_Slice_Impl5_ResolveElswhere
     ensures { result = resolve_elswhere self old' fin }
     
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module C100doors_F_Interface
   val f [#"../100doors.rs" 18 0 18 10] (_1 : ()) : ()
 end
@@ -1006,6 +1014,12 @@ module C100doors_F
   use prelude.Ghost
   use seq.Seq
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = usize
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = usize,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
   clone CreusotContracts_Std1_Slice_Impl5_ResolveElswhere as ResolveElswhere0 with
     type t = bool
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
@@ -1056,6 +1070,7 @@ module C100doors_F
   clone Core_Ops_Range_Range_Type_Inv as Core_Ops_Range_Range_Type_Inv0 with
     type idx = usize,
     predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     axiom .
   clone CreusotContracts_Std1_Iter_Impl0_IntoIterPost as IntoIterPost0 with
     type i = Core_Ops_Range_Range_Type.t_range usize
