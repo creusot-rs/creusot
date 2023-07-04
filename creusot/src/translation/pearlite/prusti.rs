@@ -380,7 +380,7 @@ fn convert<'tcx>(
         TermKind::Tuple { fields, .. } => {
             let fields =
                 fields.iter_mut().map(|arg| Ok((convert_sdt(arg, tenv, ts, ctx)?, arg.span)));
-            typeck::check_constructor(ctx, fields, outer_term.ty, 0u32.into())?
+            typeck::check_constructor(ctx, fields, outer_ty(), 0u32.into())?
         }
         curr @ TermKind::Cur { .. } => {
             let curr_owned = std::mem::replace(curr, TermKind::Absurd);
