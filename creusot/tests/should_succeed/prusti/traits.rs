@@ -36,8 +36,8 @@ impl<T> MyModel<T> for Wrapper<T> {
     }
 }
 
-#[ensures(result == old(x.model()))]
-#[after_expiry(x.model() == result)]
+#[ensures(*result == old(*x.model()))]
+#[after_expiry(*x.model() == *result)]
 pub fn test2(x: Wrapper<&mut u32>) -> &mut u32 {
     x.0
 }

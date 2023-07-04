@@ -18,6 +18,7 @@ use std::{
 };
 
 use crate::{lints::PRUSTI_ZOMBIE, prusti::ctx::InternedInfo};
+use crate::translation::pearlite::BinOp;
 
 type TimeSlice<'tcx> = Region<'tcx>;
 
@@ -304,6 +305,14 @@ fn convert<'tcx>(
         TermKind::Item(id, subst) => {
             let ty = tcx.mk_fn_def(*id, subst.iter().map(|x| ctx.fix_user_ty_regions(x)));
             Ty::with_absurd_home(ty, tcx)
+        }
+        TermKind::Binary { lhs, rhs, op: BinOp::Eq, .. } => {
+            for term in [lhs, rhs] {
+                let ty = convert_sdt(&mut *term, tenv, ts, ctx)?;
+                let res = typeck::check_move_ts(ts, ctx, ty, term.span);
+                res.map_err(|e| e.add_msg(format_args!("\nrequired by equality check")))?;
+            }
+            Ty::with_absurd_home(outer_term.ty, tcx)
         }
         TermKind::Binary { lhs, rhs, .. } | TermKind::Impl { lhs, rhs } => {
             convert_sdt(&mut *lhs, tenv, ts, ctx)?;
