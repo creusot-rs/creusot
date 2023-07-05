@@ -135,6 +135,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I::Item, I
     #[logic]
     #[requires(self.produces_one(e, other))]
     #[requires(inv(other.iter))]
+    #[requires(inv(other.func))]
     #[ensures(inv(other))]
     fn produces_one_invariant(self, e: B, #[creusot::open_inv] other: Self) {}
 
@@ -173,6 +174,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Invariant
 #[requires(forall<e : I::Item, i2 : I> iter.produces(Seq::singleton(e), i2) ==> func.precondition((e, Ghost::new(Seq::EMPTY))))]
 #[requires(Map::<I::Item, I, B, F>::reinitialize())]
 #[requires(Map::<I::Item, I, B, F>::preservation(iter, func))]
+#[requires(inv(func))]
 #[ensures(result == Map { iter, func, produced: Ghost::new(Seq::EMPTY) })]
 pub fn map<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B>(
     iter: I,

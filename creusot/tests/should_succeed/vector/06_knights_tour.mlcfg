@@ -309,13 +309,13 @@ module Core_Ops_Range_Range_Type
   type t_range 'idx =
     | C_Range 'idx 'idx
     
-  let function range_end (self : t_range 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_Range _ a -> a
-      end
   let function range_start (self : t_range 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
       | C_Range a _ -> a
+      end
+  let function range_end (self : t_range 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Range _ a -> a
       end
 end
 module CreusotContracts_Std1_Ops_Impl1_Unnest_Stub
@@ -1051,9 +1051,11 @@ end
 module Core_Ops_Range_Range_Type_Inv
   type idx
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = idx
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = Core_Ops_Range_Range_Type.t_range idx
-  axiom inv_t_range : forall self : Core_Ops_Range_Range_Type.t_range idx . Inv0.inv self = true
+  axiom inv_t_range [@rewrite] : forall self : Core_Ops_Range_Range_Type.t_range idx . Inv0.inv self = (Inv1.inv (Core_Ops_Range_Range_Type.range_start self) /\ Inv1.inv (Core_Ops_Range_Range_Type.range_end self))
 end
 module CreusotContracts_Model_DeepModel_DeepModelTy_Type
   type self
@@ -1121,12 +1123,14 @@ module CreusotContracts_Std1_Iter_MapInv_MapInv_Type_Inv
   type i
   type b
   type f
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = f
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
     type t = i
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i b f
-  axiom inv_t_mapinv [@rewrite] : forall self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i b f . Inv0.inv self = Inv1.inv (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self)
+  axiom inv_t_mapinv [@rewrite] : forall self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i b f . Inv0.inv self = (Inv1.inv (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self) /\ Inv2.inv (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self))
 end
 module TyInv_Borrow
   type t
@@ -1558,6 +1562,12 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Completed
     ensures { result = completed self }
     
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module C06KnightsTour_Impl1_New_Interface
   use prelude.UIntSize
   use prelude.Int
@@ -1573,18 +1583,9 @@ module C06KnightsTour_Impl1_New
   use prelude.Int
   use prelude.UIntSize
   use prelude.Borrow
-  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
-    type t = Core_Ops_Range_Range_Type.t_range usize
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use seq.Seq
-  use prelude.Int
-  clone CreusotContracts_Std1_Num_Impl16_DeepModel as DeepModel0
-  clone CreusotContracts_Std1_Iter_Range_Impl0_Completed as Completed1 with
-    type idx = usize,
-    predicate Resolve0.resolve = Resolve2.resolve,
-    function DeepModel0.deep_model = DeepModel0.deep_model
   use prelude.Ghost
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel0 with
@@ -1595,6 +1596,27 @@ module C06KnightsTour_Impl1_New
   clone C06KnightsTour_Impl1_New_Closure3_Interface as Closure30 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Max0.mAX' = Max0.mAX'
+  clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
+    type t = Closure30.c06knightstour_impl1_new_closure3
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Closure30.c06knightstour_impl1_new_closure3,
+    predicate Inv0.inv = Inv6.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+    type t = usize
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = usize,
+    predicate Inv0.inv = Inv5.inv,
+    axiom .
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
+    type t = Core_Ops_Range_Range_Type.t_range usize
+  use prelude.Int
+  clone CreusotContracts_Std1_Num_Impl16_DeepModel as DeepModel0
+  clone CreusotContracts_Std1_Iter_Range_Impl0_Completed as Completed1 with
+    type idx = usize,
+    predicate Resolve0.resolve = Resolve2.resolve,
+    function DeepModel0.deep_model = DeepModel0.deep_model
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize Closure30.c06knightstour_impl1_new_closure3
@@ -1645,6 +1667,7 @@ module C06KnightsTour_Impl1_New
     type f = Closure30.c06knightstour_impl1_new_closure3,
     predicate Inv0.inv = Inv2.inv,
     predicate Inv1.inv = Inv0.inv,
+    predicate Inv2.inv = Inv6.inv,
     axiom .
   clone CreusotContracts_Std1_Iter_MapInv_Impl3_NextPrecondition as NextPrecondition0 with
     type i = Core_Ops_Range_Range_Type.t_range usize,
@@ -1666,6 +1689,7 @@ module C06KnightsTour_Impl1_New
   clone Core_Ops_Range_Range_Type_Inv as Core_Ops_Range_Range_Type_Inv0 with
     type idx = usize,
     predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv5.inv,
     axiom .
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel1 with
     type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
@@ -2160,6 +2184,10 @@ module Core_Mem_ManuallyDrop_ManuallyDrop_Type
   type t_manuallydrop 't =
     | C_ManuallyDrop 't
     
+  let function manuallydrop_value (self : t_manuallydrop 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_ManuallyDrop a -> a
+      end
 end
 module Alloc_Vec_IntoIter_IntoIter_Type
   use prelude.Int
@@ -2171,6 +2199,11 @@ module Alloc_Vec_IntoIter_IntoIter_Type
   type t_intoiter 't 'a =
     | C_IntoIter (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't) usize (Core_Mem_ManuallyDrop_ManuallyDrop_Type.t_manuallydrop 'a) opaque_ptr opaque_ptr
     
+  let function intoiter_alloc (self : t_intoiter 't 'a) : Core_Mem_ManuallyDrop_ManuallyDrop_Type.t_manuallydrop 'a
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_IntoIter _ _ _ a _ _ -> a
+      end
 end
 module CreusotContracts_Std1_Vec_Impl6_ShallowModel_Stub
   type t
@@ -2408,10 +2441,13 @@ end
 module Alloc_Vec_IntoIter_IntoIter_Type_Inv
   type t
   type a
+  use Core_Mem_ManuallyDrop_ManuallyDrop_Type as Core_Mem_ManuallyDrop_ManuallyDrop_Type
   use Alloc_Vec_IntoIter_IntoIter_Type as Alloc_Vec_IntoIter_IntoIter_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Mem_ManuallyDrop_ManuallyDrop_Type.t_manuallydrop a
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter t a
-  axiom inv_t_intoiter : forall self : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter t a . Inv0.inv self = true
+  axiom inv_t_intoiter [@rewrite] : forall self : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter t a . Inv0.inv self = Inv1.inv (Alloc_Vec_IntoIter_IntoIter_Type.intoiter_alloc self)
 end
 module CreusotContracts_Model_Impl7_ShallowModel_Stub
   type t
@@ -2591,6 +2627,21 @@ module CreusotContracts_Std1_Vec_Impl8_ProducesTrans
     
   axiom produces_trans_spec : forall a : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter t a, ab : Seq.seq t, b : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter t a, bc : Seq.seq t, c : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter t a . ([#"../../../../../creusot-contracts/src/std/vec.rs" 240 15 240 32] Produces0.produces a ab b) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 241 15 241 32] Produces0.produces b bc c) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 242 14 242 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
+module Core_Mem_ManuallyDrop_ManuallyDrop_Type_Inv
+  type t
+  use Core_Mem_ManuallyDrop_ManuallyDrop_Type as Core_Mem_ManuallyDrop_ManuallyDrop_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Mem_ManuallyDrop_ManuallyDrop_Type.t_manuallydrop t
+  axiom inv_t_manuallydrop [@rewrite] : forall self : Core_Mem_ManuallyDrop_ManuallyDrop_Type.t_manuallydrop t . Inv0.inv self = Inv1.inv (Core_Mem_ManuallyDrop_ManuallyDrop_Type.manuallydrop_value self)
+end
+module Alloc_Alloc_Global_Type_Inv
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Alloc_Global_Type.t_global
+  axiom inv_t_global : forall self : Alloc_Alloc_Global_Type.t_global . Inv0.inv self = true
+end
 module C06KnightsTour_Impl1_CountDegree_Interface
   use prelude.Borrow
   use prelude.Int
@@ -2612,6 +2663,19 @@ module C06KnightsTour_Impl1_CountDegree
   use prelude.Borrow
   use prelude.IntSize
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Alloc_Alloc_Global_Type.t_global
+  clone Alloc_Alloc_Global_Type_Inv as Alloc_Alloc_Global_Type_Inv0 with
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  use Core_Mem_ManuallyDrop_ManuallyDrop_Type as Core_Mem_ManuallyDrop_ManuallyDrop_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Core_Mem_ManuallyDrop_ManuallyDrop_Type.t_manuallydrop (Alloc_Alloc_Global_Type.t_global)
+  clone Core_Mem_ManuallyDrop_ManuallyDrop_Type_Inv as Core_Mem_ManuallyDrop_ManuallyDrop_Type_Inv0 with
+    type t = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv,
+    axiom .
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use seq.Seq
   use Alloc_Vec_IntoIter_IntoIter_Type as Alloc_Vec_IntoIter_IntoIter_Type
@@ -2666,6 +2730,7 @@ module C06KnightsTour_Impl1_CountDegree
     type t = (isize, isize),
     type a = Alloc_Alloc_Global_Type.t_global,
     predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     axiom .
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel0 with
     type t = (isize, isize),
@@ -3987,12 +4052,31 @@ module C06KnightsTour_KnightsTour
   use prelude.Ghost
   use seq.Seq
   use prelude.IntSize
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+    type t = Alloc_Alloc_Global_Type.t_global
+  clone Alloc_Alloc_Global_Type_Inv as Alloc_Alloc_Global_Type_Inv0 with
+    predicate Inv0.inv = Inv4.inv,
+    axiom .
+  use Core_Mem_ManuallyDrop_ManuallyDrop_Type as Core_Mem_ManuallyDrop_ManuallyDrop_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = Core_Mem_ManuallyDrop_ManuallyDrop_Type.t_manuallydrop (Alloc_Alloc_Global_Type.t_global)
+  clone Core_Mem_ManuallyDrop_ManuallyDrop_Type_Inv as Core_Mem_ManuallyDrop_ManuallyDrop_Type_Inv0 with
+    type t = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Inv1.inv = Inv4.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = usize
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = usize,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
   use C06KnightsTour_Point_Type as C06KnightsTour_Point_Type
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve8 with
     type t = C06KnightsTour_Point_Type.t_point
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve7 with
     type t = usize
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_IntoIter_IntoIter_Type as Alloc_Vec_IntoIter_IntoIter_Type
   clone CreusotContracts_Std1_Vec_Impl6_ShallowModel_Interface as ShallowModel4 with
     type t = (isize, isize),
@@ -4055,6 +4139,7 @@ module C06KnightsTour_KnightsTour
     type t = (isize, isize),
     type a = Alloc_Alloc_Global_Type.t_global,
     predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv3.inv,
     axiom .
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel3 with
     type t = (isize, isize),
@@ -4113,6 +4198,7 @@ module C06KnightsTour_KnightsTour
   clone Core_Ops_Range_Range_Type_Inv as Core_Ops_Range_Range_Type_Inv0 with
     type idx = usize,
     predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv2.inv,
     axiom .
   clone CreusotContracts_Std1_Iter_Impl0_IntoIterPost as IntoIterPost0 with
     type i = Core_Ops_Range_Range_Type.t_range usize

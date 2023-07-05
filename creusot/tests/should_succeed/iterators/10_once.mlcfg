@@ -4,6 +4,11 @@ module Core_Option_Option_Type
     | C_None
     | C_Some 't
     
+  let function some_0 (self : t_option 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_None -> any 't
+      | C_Some a -> a
+      end
 end
 module C10Once_Once_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
@@ -288,10 +293,13 @@ module CreusotContracts_Invariant_Inv
 end
 module C10Once_Once_Type_Inv
   type t
+  use Core_Option_Option_Type as Core_Option_Option_Type
   use C10Once_Once_Type as C10Once_Once_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Option_Option_Type.t_option t
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = C10Once_Once_Type.t_once t
-  axiom inv_t_once : forall self : C10Once_Once_Type.t_once t . Inv0.inv self = true
+  axiom inv_t_once [@rewrite] : forall self : C10Once_Once_Type.t_once t . Inv0.inv self = Inv1.inv (C10Once_Once_Type.once_0 self)
 end
 module TyInv_Borrow
   type t
@@ -306,10 +314,32 @@ module C10Once_Common_Iterator_Item_Type
   type self
   type item
 end
+module Core_Option_Option_Type_Inv
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
+  axiom inv_t_option [@rewrite] : forall self : Core_Option_Option_Type.t_option t . Inv0.inv self = match (self) with
+    | Core_Option_Option_Type.C_None -> true
+    | Core_Option_Option_Type.C_Some a_0 -> Inv1.inv (Core_Option_Option_Type.some_0 self)
+    end
+end
 module C10Once_Impl0
   type t
   use seq.Seq
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = t
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option t
+  clone Core_Option_Option_Type_Inv as Core_Option_Option_Type_Inv0 with
+    type t = t,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv3.inv,
+    axiom .
   use C10Once_Once_Type as C10Once_Once_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = C10Once_Once_Type.t_once t
@@ -325,10 +355,10 @@ module C10Once_Impl0
   clone C10Once_Once_Type_Inv as C10Once_Once_Type_Inv0 with
     type t = t,
     predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv2.inv,
     axiom .
   clone C10Once_Common_Iterator_Item_Type as Item0 with
     type self = C10Once_Once_Type.t_once t
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone C10Once_Impl0_Completed as Completed0 with
     type t = t,
     predicate Resolve0.resolve = Resolve0.resolve
