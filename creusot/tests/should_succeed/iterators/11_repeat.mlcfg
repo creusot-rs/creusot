@@ -280,9 +280,11 @@ end
 module C11Repeat_Repeat_Type_Inv
   type a
   use C11Repeat_Repeat_Type as C11Repeat_Repeat_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = a
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = C11Repeat_Repeat_Type.t_repeat a
-  axiom inv_t_repeat : forall self : C11Repeat_Repeat_Type.t_repeat a . Inv0.inv self = true
+  axiom inv_t_repeat [@rewrite] : forall self : C11Repeat_Repeat_Type.t_repeat a . Inv0.inv self = Inv1.inv (C11Repeat_Repeat_Type.repeat_element self)
 end
 module TyInv_Borrow
   type t
@@ -301,6 +303,8 @@ module C11Repeat_Impl0
   type a
   use seq.Seq
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = a
   use C11Repeat_Repeat_Type as C11Repeat_Repeat_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = C11Repeat_Repeat_Type.t_repeat a
@@ -314,6 +318,7 @@ module C11Repeat_Impl0
   clone C11Repeat_Repeat_Type_Inv as C11Repeat_Repeat_Type_Inv0 with
     type a = a,
     predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv2.inv,
     axiom .
   clone C11Repeat_Common_Iterator_Item_Type as Item0 with
     type self = C11Repeat_Repeat_Type.t_repeat a

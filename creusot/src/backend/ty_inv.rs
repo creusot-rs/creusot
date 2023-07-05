@@ -90,6 +90,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,
+    default_trivial: bool,
 ) -> bool {
     if ty.is_closure() {
         return true;
@@ -99,7 +100,10 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
     let mut visited_adts = IndexSet::new();
     let mut stack = vec![ty];
     while let Some(ty) = stack.pop() {
-        if resolve_user_inv(tcx, ty, param_env).is_some() {
+        if resolve_user_inv(tcx, ty, param_env).is_some()
+            // HACK we should never consider invariants of param types trivial 
+            || (!default_trivial && matches!(ty.kind(), TyKind::Param(_)))
+        {
             return false;
         }
 
@@ -187,7 +191,7 @@ fn build_inv_exp<'tcx>(
 ) -> Option<Exp> {
     let ty = ctx.tcx.normalize_erasing_regions(param_env, ty);
 
-    if mode == Mode::Field && is_tyinv_trivial(ctx.tcx, param_env, ty) {
+    if mode == Mode::Field && is_tyinv_trivial(ctx.tcx, param_env, ty, false) {
         return None;
     }
 

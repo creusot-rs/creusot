@@ -541,6 +541,34 @@ module CreusotContracts_Resolve_Impl1_Resolve
     ensures { result = resolve self }
     
 end
+module CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub
+  type t
+  use prelude.Ghost
+  use seq.Seq
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : Ghost.ghost_ty (Seq.seq t)) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl2_IndexLogic_Interface
+  type t
+  use prelude.Ghost
+  use seq.Seq
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : Ghost.ghost_ty (Seq.seq t)) (ix : int) : t
+  val index_logic [@inline:trivial] (self : Ghost.ghost_ty (Seq.seq t)) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
+end
+module CreusotContracts_Logic_Ops_Impl2_IndexLogic
+  type t
+  use prelude.Ghost
+  use seq.Seq
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : Ghost.ghost_ty (Seq.seq t)) (ix : int) : t =
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 39 8 39 33] Seq.get (Ghost.inner self) ix
+  val index_logic [@inline:trivial] (self : Ghost.ghost_ty (Seq.seq t)) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
+end
 module CreusotContracts_Std1_Default_Default_IsDefault_Stub
   type self
   predicate is_default (self : self)
@@ -730,6 +758,8 @@ module C04Skip_Impl1_Next
     predicate Completed0.completed = Completed1.completed,
     predicate Produces0.produces = Produces0.produces,
     predicate Inv1.inv = Inv3.inv
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic as IndexLogic0 with
+    type t = Item0.item
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
     type self = Ghost.ghost_ty (Seq.seq Item0.item)
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
@@ -788,7 +818,7 @@ module C04Skip_Impl1_Next
   BB4 {
     invariant { [#"../04_skip.rs" 72 20 72 53] Seq.length (Ghost.inner skipped) + UIntSize.to_int n = UIntSize.to_int (C04Skip_Skip_Type.skip_n ( * Ghost.inner old_self)) };
     invariant { [#"../04_skip.rs" 72 8 72 55] Produces0.produces (C04Skip_Skip_Type.skip_iter ( * Ghost.inner old_self)) (Ghost.inner skipped) (C04Skip_Skip_Type.skip_iter ( * self)) };
-    invariant { [#"../04_skip.rs" 72 8 72 55] forall i : int . 0 <= i /\ i < Seq.length (Ghost.inner skipped) -> Resolve3.resolve (Seq.get skipped i) };
+    invariant { [#"../04_skip.rs" 72 8 72 55] forall i : int . 0 <= i /\ i < Seq.length (Ghost.inner skipped) -> Resolve3.resolve (IndexLogic0.index_logic skipped i) };
     invariant { [#"../04_skip.rs" 75 20 75 35] UIntSize.to_int (C04Skip_Skip_Type.skip_n ( * self)) = 0 };
     invariant { [#"../04_skip.rs" 76 20 76 29] Inv0.inv self };
     goto BB5

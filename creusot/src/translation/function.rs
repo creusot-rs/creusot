@@ -285,7 +285,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     fn resolve_locals(&mut self, mut locals: BitSet<Local>) {
         locals.subtract(&self.erased_locals.to_hybrid());
 
-        for local in locals.iter() {
+        // TODO determine resolution order based on outlives relation
+        let locals = locals.iter().collect::<Vec<_>>();
+        for local in locals.into_iter().rev() {
             self.emit_resolve(local.into());
         }
     }
