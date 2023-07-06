@@ -260,6 +260,18 @@ impl<'tcx> Lower<'_, 'tcx> {
                     ("final".into(), self.lower_term(*fin)),
                 ],
             },
+            TermKind::Assert { cond } => {
+                let cond = self.lower_term(*cond);
+                if self.pure == Purity::Program && !cond.is_pure() {
+                    Exp::Let {
+                        pattern: Pat::VarP("a".into()),
+                        arg: Box::new(cond),
+                        body: Box::new(Exp::Assert(Box::new(Exp::impure_var("a".into())))),
+                    }
+                } else {
+                    Exp::Assert(Box::new(cond))
+                }
+            }
         }
     }
 
