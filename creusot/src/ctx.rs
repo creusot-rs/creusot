@@ -29,7 +29,10 @@ use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
     mir::{Body, Promoted},
     thir,
-    ty::{subst::InternalSubsts, GenericArg, ParamEnv, SubstsRef, Ty, TyCtxt, Visibility},
+    ty::{
+        subst::InternalSubsts, Clause, GenericArg, ParamEnv, Predicate, SubstsRef, Ty, TyCtxt,
+        Visibility,
+    },
 };
 use rustc_span::{RealFileName, Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::SelectionContext;
@@ -354,9 +357,17 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                 }
             }
 
-            additional_predicates.extend(base_env.caller_bounds());
+            additional_predicates.extend::<Vec<Predicate>>(
+                base_env.caller_bounds().into_iter().map(Clause::as_predicate).collect(),
+            );
             ParamEnv::new(
-                self.mk_predicates(&additional_predicates),
+                self.mk_clauses(
+                    &(additional_predicates
+                        .into_iter()
+                        .map(Predicate::expect_clause)
+                        .collect::<Vec<Clause>>()
+                        .as_slice()),
+                ),
                 rustc_infer::traits::Reveal::UserFacing,
                 rustc_hir::Constness::NotConst,
             )
