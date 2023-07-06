@@ -225,25 +225,33 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {
-        self.tcx.sess.span_fatal_with_code(span, msg, DiagnosticId::Error(String::from("creusot")))
+        self.tcx.sess.span_fatal_with_code(
+            span,
+            msg.to_string(),
+            DiagnosticId::Error(String::from("creusot")),
+        )
     }
 
     pub(crate) fn fatal_error(&self, span: Span, msg: &str) -> DiagnosticBuilder<'tcx, !> {
         self.tcx.sess.struct_span_fatal_with_code(
             span,
-            msg,
+            msg.to_string(),
             DiagnosticId::Error(String::from("creusot")),
         )
     }
 
     pub(crate) fn error(&self, span: Span, msg: &str) {
-        self.tcx.sess.span_err_with_code(span, msg, DiagnosticId::Error(String::from("creusot")))
+        self.tcx.sess.span_err_with_code(
+            span,
+            msg.to_string(),
+            DiagnosticId::Error(String::from("creusot")),
+        )
     }
 
     pub(crate) fn warn(&self, span: Span, msg: &str) {
         self.tcx.sess.span_warn_with_code(
             span,
-            msg,
+            msg.to_string(),
             DiagnosticId::Lint {
                 name: String::from("creusot"),
                 has_future_breakage: false,
