@@ -1,7 +1,4 @@
-use crate::{
-    invariant::{inv, Invariant},
-    *,
-};
+use crate::{invariant::Invariant, *};
 use ::std::marker::Tuple;
 pub use ::std::ops::*;
 
@@ -161,9 +158,7 @@ extern_spec! {
 
             trait FnMut<Args> where Self : FnMutExt<Args>, Args : Tuple {
                 #[requires((*self).precondition(arg))]
-                #[requires(inv(*self))]
                 #[ensures(self.postcondition_mut(arg, result))]
-                #[ensures(inv(^self))]
                 fn call_mut(&mut self, arg: Args) -> Self::Output;
             }
 
