@@ -103,7 +103,7 @@ impl ContractClauses {
             let term = ctx.term(var_id).unwrap().clone();
             out.variant = Some(term);
         };
-        EarlyBinder(out)
+        EarlyBinder::bind(out)
     }
 
     pub(crate) fn iter_ids(&self) -> impl Iterator<Item = DefId> + '_ {

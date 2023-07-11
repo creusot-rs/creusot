@@ -75,7 +75,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
             },
             Rvalue::Ref(_, ss, pl) => match ss {
-                Shared | Shallow | Unique => {
+                Shared | Shallow => {
                     if self.erased_locals.contains(pl.local) {
                         return;
                     }

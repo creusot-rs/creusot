@@ -121,7 +121,7 @@ impl<'tcx> dataflow::GenKillAnalysis<'tcx> for Borrows<'_, 'tcx> {
     type Idx = BorrowIndex;
 
     fn before_statement_effect(
-        &self,
+        &mut self,
         _trans: &mut impl GenKill<Self::Idx>,
         _statement: &mir::Statement<'tcx>,
         _location: Location,
@@ -129,7 +129,7 @@ impl<'tcx> dataflow::GenKillAnalysis<'tcx> for Borrows<'_, 'tcx> {
     }
 
     fn statement_effect(
-        &self,
+        &mut self,
         trans: &mut impl GenKill<Self::Idx>,
         stmt: &mir::Statement<'tcx>,
         location: Location,
@@ -184,7 +184,7 @@ impl<'tcx> dataflow::GenKillAnalysis<'tcx> for Borrows<'_, 'tcx> {
     }
 
     fn before_terminator_effect(
-        &self,
+        &mut self,
         _trans: &mut impl GenKill<Self::Idx>,
         _terminator: &mir::Terminator<'tcx>,
         _location: Location,
@@ -192,7 +192,7 @@ impl<'tcx> dataflow::GenKillAnalysis<'tcx> for Borrows<'_, 'tcx> {
     }
 
     fn terminator_effect(
-        &self,
+        &mut self,
         trans: &mut impl GenKill<Self::Idx>,
         terminator: &mir::Terminator<'tcx>,
         location: Location,
@@ -211,7 +211,7 @@ impl<'tcx> dataflow::GenKillAnalysis<'tcx> for Borrows<'_, 'tcx> {
     }
 
     fn call_return_effect(
-        &self,
+        &mut self,
         _trans: &mut impl GenKill<Self::Idx>,
         _block: mir::BasicBlock,
         _return_places: dataflow::CallReturnPlaces<'_, 'tcx>,

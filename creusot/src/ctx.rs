@@ -29,7 +29,10 @@ use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
     mir::{Body, Promoted},
     thir,
-    ty::{subst::InternalSubsts, GenericArg, ParamEnv, SubstsRef, Ty, TyCtxt, Visibility},
+    ty::{
+        subst::InternalSubsts, Clause, GenericArg, ParamEnv, Predicate, SubstsRef, Ty, TyCtxt,
+        Visibility,
+    },
 };
 use rustc_span::{RealFileName, Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::SelectionContext;
@@ -222,25 +225,33 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {
-        self.tcx.sess.span_fatal_with_code(span, msg, DiagnosticId::Error(String::from("creusot")))
+        self.tcx.sess.span_fatal_with_code(
+            span,
+            msg.to_string(),
+            DiagnosticId::Error(String::from("creusot")),
+        )
     }
 
     pub(crate) fn fatal_error(&self, span: Span, msg: &str) -> DiagnosticBuilder<'tcx, !> {
         self.tcx.sess.struct_span_fatal_with_code(
             span,
-            msg,
+            msg.to_string(),
             DiagnosticId::Error(String::from("creusot")),
         )
     }
 
     pub(crate) fn error(&self, span: Span, msg: &str) {
-        self.tcx.sess.span_err_with_code(span, msg, DiagnosticId::Error(String::from("creusot")))
+        self.tcx.sess.span_err_with_code(
+            span,
+            msg.to_string(),
+            DiagnosticId::Error(String::from("creusot")),
+        )
     }
 
     pub(crate) fn warn(&self, span: Span, msg: &str) {
         self.tcx.sess.span_warn_with_code(
             span,
-            msg,
+            msg.to_string(),
             DiagnosticId::Lint {
                 name: String::from("creusot"),
                 has_future_breakage: false,
@@ -343,7 +354,10 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                 for pred in es.predicates_for(self.tcx, subst) {
                     let obligation_cause = ObligationCause::dummy();
                     let obligation = Obligation::new(self.tcx, obligation_cause, param_env, pred);
-                    if !selcx.predicate_may_hold_fatal(&obligation) {
+                    if selcx.evaluate_root_obligation(&obligation).map_or(
+                        false, // Overflow has occurred, and treat the obligation as possibly holding.
+                        |result| !result.may_apply(),
+                    ) {
                         additional_predicates.push(
                             self.tcx.try_normalize_erasing_regions(base_env, pred).unwrap_or(pred),
                         )
@@ -351,9 +365,17 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                 }
             }
 
-            additional_predicates.extend(base_env.caller_bounds());
+            additional_predicates.extend::<Vec<Predicate>>(
+                base_env.caller_bounds().into_iter().map(Clause::as_predicate).collect(),
+            );
             ParamEnv::new(
-                self.mk_predicates(&additional_predicates),
+                self.mk_clauses(
+                    &(additional_predicates
+                        .into_iter()
+                        .map(Predicate::expect_clause)
+                        .collect::<Vec<Clause>>()
+                        .as_slice()),
+                ),
                 rustc_infer::traits::Reveal::UserFacing,
                 rustc_hir::Constness::NotConst,
             )

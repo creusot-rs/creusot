@@ -4,15 +4,15 @@ module Own_OwnResult_Type
     | C_Ok 't
     | C_Err 'e
     
-  let function err_0 (self : t_ownresult 't 'e) : 'e = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_Ok _ -> any 'e
-      | C_Err a -> a
-      end
   let function ok_0 (self : t_ownresult 't 'e) : 't = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
       | C_Ok a -> a
       | C_Err _ -> any 't
+      end
+  let function err_0 (self : t_ownresult 't 'e) : 'e = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Ok _ -> any 'e
+      | C_Err a -> a
       end
 end
 module CreusotContracts_Resolve_Resolve_Resolve_Stub
@@ -177,9 +177,9 @@ module Own_Impl0_Ok
   type e
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
     type self = t
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
     type self = e
+  use Core_Option_Option_Type as Core_Option_Option_Type
   use Own_OwnResult_Type as Own_OwnResult_Type
   clone Own_Impl4_Resolve as Resolve0 with
     type t = t,
@@ -265,14 +265,14 @@ module Own_Impl0_Err
   type e
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
     type self = e
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
-    type self = t
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = t
   use Own_OwnResult_Type as Own_OwnResult_Type
-  clone Own_Impl4_Resolve as Resolve0 with
+  clone Own_Impl4_Resolve as Resolve1 with
     type t = t,
     type e = e,
-    predicate Resolve0.resolve = Resolve1.resolve,
+    predicate Resolve0.resolve = Resolve0.resolve,
     predicate Resolve1.resolve = Resolve2.resolve
   let rec cfg err [#"../own.rs" 46 4 46 33] [@cfg:stackify] [@cfg:subregion_analysis] (self : Own_OwnResult_Type.t_ownresult t e) : Core_Option_Option_Type.t_option e
     ensures { [#"../own.rs" 44 4 44 74] (exists t : t . self = Own_OwnResult_Type.C_Ok t) -> result = Core_Option_Option_Type.C_None }
@@ -304,20 +304,20 @@ module Own_Impl0_Err
   BB4 {
     x1 <- Own_OwnResult_Type.err_0 self;
     self <- (let Own_OwnResult_Type.C_Err a = self in Own_OwnResult_Type.C_Err (any e));
-    assume { Resolve0.resolve self };
+    assume { Resolve1.resolve self };
     _0 <- Core_Option_Option_Type.C_Some x1;
     x1 <- any e;
     goto BB8
   }
   BB5 {
-    assume { Resolve0.resolve self };
+    assume { Resolve1.resolve self };
     absurd
   }
   BB6 {
     x <- Own_OwnResult_Type.ok_0 self;
     self <- (let Own_OwnResult_Type.C_Ok a = self in Own_OwnResult_Type.C_Ok (any t));
-    assume { Resolve1.resolve x };
-    assume { Resolve0.resolve self };
+    assume { Resolve0.resolve x };
+    assume { Resolve1.resolve self };
     _0 <- Core_Option_Option_Type.C_None;
     goto BB7
   }
@@ -353,10 +353,10 @@ module Own_Impl0_AsRef
   type e
   use prelude.Borrow
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
-    type self = t
+    type self = e
   use Own_OwnResult_Type as Own_OwnResult_Type
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
-    type self = e
+    type self = t
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = Own_OwnResult_Type.t_ownresult t e
   let rec cfg as_ref [#"../own.rs" 56 4 56 45] [@cfg:stackify] [@cfg:subregion_analysis] (self : Own_OwnResult_Type.t_ownresult t e) : Own_OwnResult_Type.t_ownresult t e
@@ -383,7 +383,7 @@ module Own_Impl0_AsRef
   BB2 {
     x1 <- Own_OwnResult_Type.err_0 self;
     assume { Resolve0.resolve self };
-    assume { Resolve1.resolve x1 };
+    assume { Resolve2.resolve x1 };
     _0 <- Own_OwnResult_Type.C_Err x1;
     goto BB5
   }
@@ -394,7 +394,7 @@ module Own_Impl0_AsRef
   BB4 {
     x <- Own_OwnResult_Type.ok_0 self;
     assume { Resolve0.resolve self };
-    assume { Resolve2.resolve x };
+    assume { Resolve1.resolve x };
     _0 <- Own_OwnResult_Type.C_Ok x;
     goto BB5
   }
@@ -438,13 +438,13 @@ module Own_Impl0_AsMut
   type t
   type e
   use prelude.Borrow
+  use Own_OwnResult_Type as Own_OwnResult_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
-    type t = t
+    type t = Own_OwnResult_Type.t_ownresult t e
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = e
-  use Own_OwnResult_Type as Own_OwnResult_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = Own_OwnResult_Type.t_ownresult t e
+    type t = t
   let rec cfg as_mut [#"../own.rs" 71 4 71 57] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (Own_OwnResult_Type.t_ownresult t e)) : Own_OwnResult_Type.t_ownresult (borrowed t) (borrowed e)
     ensures { [#"../own.rs" 63 4 70 6] exists t : borrowed t .  * self = Own_OwnResult_Type.C_Ok ( * t) /\  ^ self = Own_OwnResult_Type.C_Ok ( ^ t) /\ result = Own_OwnResult_Type.C_Ok t \/ (exists e : borrowed e .  * self = Own_OwnResult_Type.C_Err ( * e) /\  ^ self = Own_OwnResult_Type.C_Err ( ^ e) /\ result = Own_OwnResult_Type.C_Err e) }
     
@@ -478,7 +478,7 @@ module Own_Impl0_AsMut
     goto BB5
   }
   BB3 {
-    assume { Resolve0.resolve self };
+    assume { Resolve2.resolve self };
     absurd
   }
   BB4 {
@@ -488,11 +488,11 @@ module Own_Impl0_AsMut
     x <- { x with current = ( ^ _5) };
     _0 <- Own_OwnResult_Type.C_Ok _5;
     _5 <- any borrowed t;
-    assume { Resolve2.resolve x };
+    assume { Resolve0.resolve x };
     goto BB5
   }
   BB5 {
-    assume { Resolve0.resolve self };
+    assume { Resolve2.resolve self };
     return _0
   }
   
@@ -665,13 +665,13 @@ module Own_Impl0_UnwrapErr
   type e
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
     type self = e
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = t
   use Own_OwnResult_Type as Own_OwnResult_Type
-  clone Own_Impl4_Resolve as Resolve0 with
+  clone Own_Impl4_Resolve as Resolve1 with
     type t = t,
     type e = e,
-    predicate Resolve0.resolve = Resolve1.resolve,
+    predicate Resolve0.resolve = Resolve0.resolve,
     predicate Resolve1.resolve = Resolve2.resolve
   let rec cfg unwrap_err [#"../own.rs" 104 4 106 29] [@cfg:stackify] [@cfg:subregion_analysis] (self : Own_OwnResult_Type.t_ownresult t e) : e
     requires {[#"../own.rs" 102 4 102 55] exists e : e . self = Own_OwnResult_Type.C_Err e}
@@ -703,20 +703,20 @@ module Own_Impl0_UnwrapErr
   BB4 {
     e <- Own_OwnResult_Type.err_0 self;
     self <- (let Own_OwnResult_Type.C_Err a = self in Own_OwnResult_Type.C_Err (any e));
-    assume { Resolve0.resolve self };
+    assume { Resolve1.resolve self };
     _0 <- e;
     e <- any e;
     goto BB7
   }
   BB5 {
-    assume { Resolve0.resolve self };
+    assume { Resolve1.resolve self };
     absurd
   }
   BB6 {
     _t <- Own_OwnResult_Type.ok_0 self;
     self <- (let Own_OwnResult_Type.C_Ok a = self in Own_OwnResult_Type.C_Ok (any t));
-    assume { Resolve1.resolve _t };
-    assume { Resolve0.resolve self };
+    assume { Resolve0.resolve _t };
+    assume { Resolve1.resolve self };
     absurd
   }
   BB7 {
@@ -941,22 +941,22 @@ module Own_Impl0_And
   type e
   type u
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve4 with
-    type self = e
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve3 with
     type self = u
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
-    type self = t
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve3 with
+    type self = e
   use Own_OwnResult_Type as Own_OwnResult_Type
+  clone Own_Impl4_Resolve as Resolve2 with
+    type t = u,
+    type e = e,
+    predicate Resolve0.resolve = Resolve4.resolve,
+    predicate Resolve1.resolve = Resolve3.resolve
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = t
   clone Own_Impl4_Resolve as Resolve1 with
     type t = t,
     type e = e,
-    predicate Resolve0.resolve = Resolve2.resolve,
-    predicate Resolve1.resolve = Resolve4.resolve
-  clone Own_Impl4_Resolve as Resolve0 with
-    type t = u,
-    type e = e,
-    predicate Resolve0.resolve = Resolve3.resolve,
-    predicate Resolve1.resolve = Resolve4.resolve
+    predicate Resolve0.resolve = Resolve0.resolve,
+    predicate Resolve1.resolve = Resolve3.resolve
   let rec cfg and [#"../own.rs" 138 4 138 64] [@cfg:stackify] [@cfg:subregion_analysis] (self : Own_OwnResult_Type.t_ownresult t e) (res : Own_OwnResult_Type.t_ownresult u e) : Own_OwnResult_Type.t_ownresult u e
     ensures { [#"../own.rs" 136 4 136 73] (exists t : t . self = Own_OwnResult_Type.C_Ok t) -> result = res }
     ensures { [#"../own.rs" 137 4 137 86] forall e : e . self = Own_OwnResult_Type.C_Err e -> result = Own_OwnResult_Type.C_Err e }
@@ -986,7 +986,7 @@ module Own_Impl0_And
     goto BB6
   }
   BB4 {
-    assume { Resolve0.resolve res };
+    assume { Resolve2.resolve res };
     e <- Own_OwnResult_Type.err_0 self;
     self <- (let Own_OwnResult_Type.C_Err a = self in Own_OwnResult_Type.C_Err (any e));
     assume { Resolve1.resolve self };
@@ -995,14 +995,14 @@ module Own_Impl0_And
     goto BB8
   }
   BB5 {
-    assume { Resolve0.resolve res };
+    assume { Resolve2.resolve res };
     assume { Resolve1.resolve self };
     absurd
   }
   BB6 {
     x <- Own_OwnResult_Type.ok_0 self;
     self <- (let Own_OwnResult_Type.C_Ok a = self in Own_OwnResult_Type.C_Ok (any t));
-    assume { Resolve2.resolve x };
+    assume { Resolve0.resolve x };
     assume { Resolve1.resolve self };
     _0 <- res;
     res <- any Own_OwnResult_Type.t_ownresult u e;
@@ -1046,9 +1046,9 @@ module Own_Impl0_Or
     type self = f
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve3 with
     type self = t
-  use Own_OwnResult_Type as Own_OwnResult_Type
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
     type self = e
+  use Own_OwnResult_Type as Own_OwnResult_Type
   clone Own_Impl4_Resolve as Resolve1 with
     type t = t,
     type e = e,
@@ -1146,9 +1146,9 @@ module Own_Impl1_Copied
   use prelude.Borrow
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
     type self = e
+  use Own_OwnResult_Type as Own_OwnResult_Type
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
     type self = t
-  use Own_OwnResult_Type as Own_OwnResult_Type
   clone Own_Impl4_Resolve as Resolve0 with
     type t = t,
     type e = e,
@@ -1237,11 +1237,11 @@ module Own_Impl1_Cloned
   use prelude.Borrow
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
     type self = e
+  use Own_OwnResult_Type as Own_OwnResult_Type
   clone Core_Clone_Clone_Clone_Interface as Clone0 with
     type self = t
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
     type self = t
-  use Own_OwnResult_Type as Own_OwnResult_Type
   clone Own_Impl4_Resolve as Resolve0 with
     type t = t,
     type e = e,
@@ -1331,9 +1331,9 @@ module Own_Impl2_Copied
   use prelude.Borrow
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
     type self = e
+  use Own_OwnResult_Type as Own_OwnResult_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = t
-  use Own_OwnResult_Type as Own_OwnResult_Type
   clone Own_Impl4_Resolve as Resolve0 with
     type t = borrowed t,
     type e = e,
@@ -1418,11 +1418,11 @@ module Own_Impl2_Cloned
   use prelude.Borrow
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
     type self = e
+  use Own_OwnResult_Type as Own_OwnResult_Type
   clone Core_Clone_Clone_Clone_Interface as Clone0 with
     type self = t
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = t
-  use Own_OwnResult_Type as Own_OwnResult_Type
   clone Own_Impl4_Resolve as Resolve0 with
     type t = borrowed t,
     type e = e,

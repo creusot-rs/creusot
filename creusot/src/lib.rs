@@ -1,5 +1,5 @@
 #![feature(rustc_private, register_tool)]
-#![feature(box_patterns, control_flow_enum, drain_filter)]
+#![feature(box_patterns, control_flow_enum, extract_if)]
 #![feature(let_chains, never_type, try_blocks)]
 
 #[macro_use]

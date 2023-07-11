@@ -10,7 +10,7 @@ use rustc_middle::{
     thir::{self, visit::Visitor, Expr, ExprKind, Thir},
     ty::{
         subst::{GenericArgKind, InternalSubsts, SubstsRef},
-        EarlyBinder, Predicate, TyCtxt, TyKind,
+        Clause, EarlyBinder, Predicate, TyCtxt, TyKind,
     },
 };
 use rustc_span::Symbol;
@@ -31,7 +31,7 @@ impl<'tcx> ExternSpec<'tcx> {
         tcx: TyCtxt<'tcx>,
         sub: SubstsRef<'tcx>,
     ) -> Vec<Predicate<'tcx>> {
-        EarlyBinder(self.additional_predicates.clone()).subst(tcx, sub)
+        EarlyBinder::bind(self.additional_predicates.clone()).subst(tcx, sub)
     }
 }
 
@@ -131,8 +131,13 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 
     let contract = crate::specification::contract_clauses_of(ctx, def_id.to_def_id()).unwrap();
 
-    let additional_predicates =
-        ctx.predicates_of(def_id).instantiate(ctx.tcx, subst).predicates.into_iter().collect();
+    let additional_predicates = ctx
+        .predicates_of(def_id)
+        .instantiate(ctx.tcx, subst)
+        .predicates
+        .into_iter()
+        .map(Clause::as_predicate)
+        .collect();
 
     let arg_subst = ctx
         .fn_arg_names(def_id)

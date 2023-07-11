@@ -200,6 +200,17 @@ module CreusotContracts_Resolve_Impl1_Resolve
     ensures { result = resolve self }
     
 end
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
+    
+  let function some_0 (self : t_option 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_None -> any 't
+      | C_Some a -> a
+      end
+end
 module Alloc_Alloc_Global_Type
   type t_global  =
     | C_Global
@@ -318,17 +329,6 @@ module CreusotContracts_Std1_Vec_Impl10_Resolve
   val resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve self }
     
-end
-module Core_Option_Option_Type
-  type t_option 't =
-    | C_None
-    | C_Some 't
-    
-  let function some_0 (self : t_option 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_None -> any 't
-      | C_Some a -> a
-      end
 end
 module Alloc_Vec_FromElem_Interface
   type t
@@ -594,7 +594,7 @@ module CreusotContracts_Std1_Slice_SliceIndex_HasValue
     ensures { result = has_value self seq out }
     
 end
-module Alloc_Vec_Impl13_Index_Interface
+module Alloc_Vec_Impl12_Index_Interface
   type t
   type i
   type a
@@ -684,7 +684,7 @@ module CreusotContracts_Std1_Slice_SliceIndex_ResolveElswhere
     ensures { result = resolve_elswhere self old' fin }
     
 end
-module Alloc_Vec_Impl14_IndexMut_Interface
+module Alloc_Vec_Impl13_IndexMut_Interface
   type t
   type i
   type a
@@ -896,25 +896,6 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Completed
     ensures { result = completed self }
     
 end
-module CreusotContracts_Resolve_Impl2_Resolve_Stub
-  type t
-  predicate resolve (self : t)
-end
-module CreusotContracts_Resolve_Impl2_Resolve_Interface
-  type t
-  predicate resolve (self : t)
-  val resolve (self : t) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl2_Resolve
-  type t
-  predicate resolve (self : t) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 36 8 36 12] true
-  val resolve (self : t) : bool
-    ensures { result = resolve self }
-    
-end
 module CreusotContracts_Std1_Slice_Impl5_InBounds_Stub
   type t
   use prelude.Int
@@ -999,6 +980,25 @@ module CreusotContracts_Std1_Slice_Impl5_ResolveElswhere
     ensures { result = resolve_elswhere self old' fin }
     
 end
+module CreusotContracts_Resolve_Impl2_Resolve_Stub
+  type t
+  predicate resolve (self : t)
+end
+module CreusotContracts_Resolve_Impl2_Resolve_Interface
+  type t
+  predicate resolve (self : t)
+  val resolve (self : t) : bool
+    ensures { result = resolve self }
+    
+end
+module CreusotContracts_Resolve_Impl2_Resolve
+  type t
+  predicate resolve (self : t) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 36 8 36 12] true
+  val resolve (self : t) : bool
+    ensures { result = resolve self }
+    
+end
 module TyInv_Trivial
   type t
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
@@ -1020,6 +1020,8 @@ module C100doors_F
     type t = usize,
     predicate Inv0.inv = Inv1.inv,
     axiom .
+  clone CreusotContracts_Resolve_Impl2_Resolve as Resolve3 with
+    type t = bool
   clone CreusotContracts_Std1_Slice_Impl5_ResolveElswhere as ResolveElswhere0 with
     type t = bool
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
@@ -1043,8 +1045,6 @@ module C100doors_F
     type t = Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq bool,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
-  clone CreusotContracts_Resolve_Impl2_Resolve as Resolve3 with
-    type t = bool
   use prelude.Int
   clone CreusotContracts_Std1_Num_Impl16_DeepModel as DeepModel0
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
@@ -1080,9 +1080,15 @@ module C100doors_F
     type t = bool,
     type s = Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global),
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
+  clone CreusotContracts_Std1_Vec_Impl10_Resolve as Resolve2 with
+    type t = bool,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
+    predicate Resolve0.resolve = Resolve3.resolve,
+    val Max0.mAX' = Max0.mAX'
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = bool
-  clone Alloc_Vec_Impl14_IndexMut_Interface as IndexMut0 with
+  clone Alloc_Vec_Impl13_IndexMut_Interface as IndexMut0 with
     type t = bool,
     type i = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -1093,7 +1099,7 @@ module C100doors_F
     predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere,
     type Output0.output = bool,
     val Max0.mAX' = Max0.mAX'
-  clone Alloc_Vec_Impl13_Index_Interface as Index0 with
+  clone Alloc_Vec_Impl12_Index_Interface as Index0 with
     type t = bool,
     type i = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -1101,12 +1107,6 @@ module C100doors_F
     predicate InBounds0.in_bounds = InBounds0.in_bounds,
     predicate HasValue0.has_value = HasValue0.has_value,
     type Output0.output = bool
-  clone CreusotContracts_Std1_Vec_Impl10_Resolve as Resolve1 with
-    type t = bool,
-    function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
-    function IndexLogic0.index_logic = IndexLogic0.index_logic,
-    predicate Resolve0.resolve = Resolve3.resolve,
-    val Max0.mAX' = Max0.mAX'
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Iter_Range_Impl3_Next_Interface as Next0 with
     type a = usize,
@@ -1189,7 +1189,7 @@ module C100doors_F
       end
   }
   BB9 {
-    assume { Resolve1.resolve door_open };
+    assume { Resolve2.resolve door_open };
     _0 <- ();
     goto BB21
   }
@@ -1197,7 +1197,7 @@ module C100doors_F
     goto BB12
   }
   BB11 {
-    assume { Resolve1.resolve door_open };
+    assume { Resolve2.resolve door_open };
     absurd
   }
   BB12 {
@@ -1239,7 +1239,7 @@ module C100doors_F
   }
   BB19 {
     _30 <- { _30 with current = (not _26) };
-    assume { Resolve2.resolve _30 };
+    assume { Resolve1.resolve _30 };
     door <- ([#"../100doors.rs" 27 12 27 24] door + pass);
     _11 <- ();
     goto BB15

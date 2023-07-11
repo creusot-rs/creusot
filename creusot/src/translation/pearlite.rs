@@ -289,9 +289,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
                 use rustc_middle::mir;
                 let op = match op {
-                    mir::BinOp::Add => BinOp::Add,
-                    mir::BinOp::Sub => BinOp::Sub,
-                    mir::BinOp::Mul => BinOp::Mul,
+                    mir::BinOp::Add | mir::BinOp::AddUnchecked => BinOp::Add,
+                    mir::BinOp::Sub | mir::BinOp::SubUnchecked => BinOp::Sub,
+                    mir::BinOp::Mul | mir::BinOp::MulUnchecked => BinOp::Mul,
                     mir::BinOp::Div => BinOp::Div,
                     mir::BinOp::Rem => BinOp::Rem,
                     mir::BinOp::BitXor => {
@@ -303,10 +303,10 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     mir::BinOp::BitOr => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
-                    mir::BinOp::Shl => {
+                    mir::BinOp::Shl | mir::BinOp::ShlUnchecked => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
-                    mir::BinOp::Shr => {
+                    mir::BinOp::Shr | mir::BinOp::ShrUnchecked => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
                     mir::BinOp::Lt => BinOp::Lt,

@@ -1,5 +1,5 @@
 use rustc_middle::mir::Location;
-use rustc_mir_dataflow::{self as dataflow, Analysis, Results, ResultsCursor};
+use rustc_mir_dataflow::{self as dataflow, Analysis, AnalysisResults, Results, ResultsCursor};
 use std::borrow::Borrow;
 
 // Dataflow locations
@@ -39,6 +39,7 @@ impl ExtendedLocation {
     where
         A: Analysis<'tcx, Direction = D>,
         D: Dir,
+        R: AnalysisResults<'tcx, A>,
         R: Borrow<Results<'tcx, A>>,
     {
         use ExtendedLocation::*;

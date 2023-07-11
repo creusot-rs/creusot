@@ -674,54 +674,54 @@ module C05Take_Impl0_Next
 end
 module C05Take_Impl0
   type i
-  use prelude.Borrow
   use seq.Seq
+  use prelude.Borrow
   clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
     type t = i
-  clone C05Take_Common_Iterator_Item_Type as Item0 with
-    type self = i
-  clone C05Take_Common_Iterator_Produces_Interface as Produces1 with
-    type self = i,
-    type Item0.item = Item0.item
   clone C05Take_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
   use C05Take_Take_Type as C05Take_Take_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = C05Take_Take_Type.t_take i
-  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
-    type t = C05Take_Take_Type.t_take i
-  clone C05Take_Take_Type_Inv as C05Take_Take_Type_Inv0 with
-    type i = i,
-    predicate Inv0.inv = Inv1.inv,
-    predicate Inv1.inv = Inv2.inv,
-    axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = C05Take_Take_Type.t_take i
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = borrowed (C05Take_Take_Type.t_take i)
   clone TyInv_Borrow as TyInv_Borrow0 with
     type t = C05Take_Take_Type.t_take i,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv0.inv,
+    axiom .
+  clone C05Take_Common_Iterator_Item_Type as Item0 with
+    type self = i
+  clone C05Take_Common_Iterator_Produces_Interface as Produces1 with
+    type self = i,
+    type Item0.item = Item0.item
+  clone C05Take_Take_Type_Inv as C05Take_Take_Type_Inv0 with
+    type i = i,
     predicate Inv0.inv = Inv0.inv,
-    predicate Inv1.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv,
     axiom .
   clone C05Take_Common_Iterator_Item_Type as Item1 with
     type self = C05Take_Take_Type.t_take i
   use Core_Option_Option_Type as Core_Option_Option_Type
-  clone C05Take_Impl0_Produces as Produces0 with
-    type i = i,
-    type Item0.item = Item0.item,
-    predicate Produces0.produces = Produces1.produces
   clone C05Take_Impl0_Completed as Completed0 with
     type i = i,
     predicate Resolve0.resolve = Resolve0.resolve,
     predicate Completed0.completed = Completed1.completed
-  goal next_refn : [#"../05_take.rs" 53 4 53 41] forall self : borrowed (C05Take_Take_Type.t_take i) . Inv0.inv self -> Inv0.inv self /\ (forall result : Core_Option_Option_Type.t_option Item0.item . Inv1.inv ( ^ self) /\ match (result) with
+  clone C05Take_Impl0_Produces as Produces0 with
+    type i = i,
+    type Item0.item = Item0.item,
+    predicate Produces0.produces = Produces1.produces
+  goal produces_trans_refn : [#"../05_take.rs" 47 4 47 90] forall a : C05Take_Take_Type.t_take i . forall ab : Seq.seq Item0.item . forall b : C05Take_Take_Type.t_take i . forall bc : Seq.seq Item0.item . forall c : C05Take_Take_Type.t_take i . Inv0.inv c /\ Inv0.inv b /\ Inv0.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Inv0.inv c /\ Inv0.inv b /\ Inv0.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
+  goal produces_refl_refn : [#"../05_take.rs" 40 4 40 29] forall a : C05Take_Take_Type.t_take i . Inv0.inv a -> Inv0.inv a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
+  goal next_refn : [#"../05_take.rs" 53 4 53 41] forall self : borrowed (C05Take_Take_Type.t_take i) . Inv1.inv self -> Inv1.inv self /\ (forall result : Core_Option_Option_Type.t_option Item0.item . Inv0.inv ( ^ self) /\ match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
-    end -> Inv1.inv ( ^ self) /\ match (result) with
+    end -> Inv0.inv ( ^ self) /\ match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
     end)
-  goal produces_trans_refn : [#"../05_take.rs" 47 4 47 90] forall a : C05Take_Take_Type.t_take i . forall ab : Seq.seq Item0.item . forall b : C05Take_Take_Type.t_take i . forall bc : Seq.seq Item0.item . forall c : C05Take_Take_Type.t_take i . Inv1.inv c /\ Inv1.inv b /\ Inv1.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Inv1.inv c /\ Inv1.inv b /\ Inv1.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
-  goal produces_refl_refn : [#"../05_take.rs" 40 4 40 29] forall a : C05Take_Take_Type.t_take i . Inv1.inv a -> Inv1.inv a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
 end
 module C05Take_Impl1
   type i
