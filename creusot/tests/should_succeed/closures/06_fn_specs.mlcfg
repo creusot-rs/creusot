@@ -20,6 +20,25 @@ module CreusotContracts_Std1_Ops_FnOnceExt_Precondition
     ensures { result = precondition self a }
     
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module Core_Ops_Function_FnOnce_Output_Type
   type self
   type args
@@ -149,11 +168,17 @@ module Core_Ops_Function_FnOnce_CallOnce_Interface
     type self = self,
     type args = args,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   clone CreusotContracts_Std1_Ops_FnOnceExt_Precondition_Stub as Precondition0 with
     type self = self,
     type args = args
   val call_once (self : self) (args : args) : Output0.output
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 151 0 177 1] Precondition0.precondition self args}
+    requires {Inv0.inv self}
+    requires {Inv1.inv args}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 151 0 177 1] PostconditionOnce0.postcondition_once self args result }
     
 end
@@ -167,11 +192,17 @@ module C06FnSpecs_Weaken3_Interface
     type self = f,
     type args = a,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   clone CreusotContracts_Std1_Ops_FnOnceExt_Precondition_Stub as Precondition0 with
     type self = f,
     type args = a
   val weaken_3 [#"../06_fn_specs.rs" 32 0 32 73] (f : f) (a : a) : Output0.output
     requires {[#"../06_fn_specs.rs" 30 11 30 28] Precondition0.precondition f a}
+    requires {[#"../06_fn_specs.rs" 32 49 32 50] Inv0.inv f}
+    requires {[#"../06_fn_specs.rs" 32 55 32 56] Inv1.inv a}
     ensures { [#"../06_fn_specs.rs" 31 10 31 41] PostconditionOnce0.postcondition_once f a result }
     
 end
@@ -185,6 +216,10 @@ module C06FnSpecs_Weaken3
     type self = f,
     type args = a,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = a
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = f
   clone CreusotContracts_Std1_Ops_FnOnceExt_Precondition_Interface as Precondition0 with
     type self = f,
     type args = a
@@ -192,10 +227,14 @@ module C06FnSpecs_Weaken3
     type self = f,
     type args = a,
     predicate Precondition0.precondition = Precondition0.precondition,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
     type Output0.output = Output0.output
   let rec cfg weaken_3 [#"../06_fn_specs.rs" 32 0 32 73] [@cfg:stackify] [@cfg:subregion_analysis] (f : f) (a : a) : Output0.output
     requires {[#"../06_fn_specs.rs" 30 11 30 28] Precondition0.precondition f a}
+    requires {[#"../06_fn_specs.rs" 32 49 32 50] Inv0.inv f}
+    requires {[#"../06_fn_specs.rs" 32 55 32 56] Inv1.inv a}
     ensures { [#"../06_fn_specs.rs" 31 10 31 41] PostconditionOnce0.postcondition_once f a result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -228,6 +267,15 @@ module C06FnSpecs_Weaken3
   }
   
 end
+module TyInv_Borrow
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed t
+  axiom inv_borrow [@rewrite] : forall self : borrowed t . Inv0.inv self = Inv1.inv ( * self)
+end
 module CreusotContracts_Std1_Ops_FnMutExt_Unnest_Stub
   type self
   type args
@@ -256,9 +304,15 @@ module CreusotContracts_Std1_Ops_FnMutExt_PostconditionMutUnnest_Stub
   clone Core_Ops_Function_FnOnce_Output_Type as Output0 with
     type self = self,
     type args = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = self
   clone CreusotContracts_Std1_Ops_FnMutExt_Unnest_Stub as Unnest0 with
     type self = self,
     type args = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed self
   clone CreusotContracts_Std1_Ops_FnMutExt_PostconditionMut_Stub as PostconditionMut0 with
     type self = self,
     type args = args,
@@ -272,9 +326,15 @@ module CreusotContracts_Std1_Ops_FnMutExt_PostconditionMutUnnest_Interface
   clone Core_Ops_Function_FnOnce_Output_Type as Output0 with
     type self = self,
     type args = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = self
   clone CreusotContracts_Std1_Ops_FnMutExt_Unnest_Stub as Unnest0 with
     type self = self,
     type args = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed self
   clone CreusotContracts_Std1_Ops_FnMutExt_PostconditionMut_Stub as PostconditionMut0 with
     type self = self,
     type args = args,
@@ -282,10 +342,13 @@ module CreusotContracts_Std1_Ops_FnMutExt_PostconditionMutUnnest_Interface
   function postcondition_mut_unnest (self : borrowed self) (args : args) (res : Output0.output) : ()
   val postcondition_mut_unnest (self : borrowed self) (args : args) (res : Output0.output) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 30 15 30 48] PostconditionMut0.postcondition_mut self args res}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 32 37 32 41] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 32 43 32 47] Inv1.inv args}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 31 14 31 35] Unnest0.unnest ( * self) ( ^ self) }
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 32 37 32 41] Inv2.inv ( ^ self) }
     ensures { result = postcondition_mut_unnest self args res }
     
-  axiom postcondition_mut_unnest_spec : forall self : borrowed self, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 30 15 30 48] PostconditionMut0.postcondition_mut self args res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 31 14 31 35] Unnest0.unnest ( * self) ( ^ self))
+  axiom postcondition_mut_unnest_spec : forall self : borrowed self, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 30 15 30 48] PostconditionMut0.postcondition_mut self args res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 32 37 32 41] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 32 43 32 47] Inv1.inv args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 32 37 32 41] Inv2.inv ( ^ self)) && ([#"../../../../../creusot-contracts/src/std/ops.rs" 31 14 31 35] Unnest0.unnest ( * self) ( ^ self))
 end
 module CreusotContracts_Std1_Ops_FnMutExt_PostconditionMutUnnest
   type self
@@ -294,9 +357,15 @@ module CreusotContracts_Std1_Ops_FnMutExt_PostconditionMutUnnest
   clone Core_Ops_Function_FnOnce_Output_Type as Output0 with
     type self = self,
     type args = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = self
   clone CreusotContracts_Std1_Ops_FnMutExt_Unnest_Stub as Unnest0 with
     type self = self,
     type args = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed self
   clone CreusotContracts_Std1_Ops_FnMutExt_PostconditionMut_Stub as PostconditionMut0 with
     type self = self,
     type args = args,
@@ -304,10 +373,13 @@ module CreusotContracts_Std1_Ops_FnMutExt_PostconditionMutUnnest
   function postcondition_mut_unnest (self : borrowed self) (args : args) (res : Output0.output) : ()
   val postcondition_mut_unnest (self : borrowed self) (args : args) (res : Output0.output) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 30 15 30 48] PostconditionMut0.postcondition_mut self args res}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 32 37 32 41] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 32 43 32 47] Inv1.inv args}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 31 14 31 35] Unnest0.unnest ( * self) ( ^ self) }
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 32 37 32 41] Inv2.inv ( ^ self) }
     ensures { result = postcondition_mut_unnest self args res }
     
-  axiom postcondition_mut_unnest_spec : forall self : borrowed self, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 30 15 30 48] PostconditionMut0.postcondition_mut self args res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 31 14 31 35] Unnest0.unnest ( * self) ( ^ self))
+  axiom postcondition_mut_unnest_spec : forall self : borrowed self, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 30 15 30 48] PostconditionMut0.postcondition_mut self args res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 32 37 32 41] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 32 43 32 47] Inv1.inv args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 32 37 32 41] Inv2.inv ( ^ self)) && ([#"../../../../../creusot-contracts/src/std/ops.rs" 31 14 31 35] Unnest0.unnest ( * self) ( ^ self))
 end
 module CreusotContracts_Std1_Ops_FnMutExt_UnnestRefl_Stub
   type self
@@ -315,6 +387,8 @@ module CreusotContracts_Std1_Ops_FnMutExt_UnnestRefl_Stub
   clone CreusotContracts_Std1_Ops_FnMutExt_Unnest_Stub as Unnest0 with
     type self = self,
     type args = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function unnest_refl (self : self) : ()
 end
 module CreusotContracts_Std1_Ops_FnMutExt_UnnestRefl_Interface
@@ -323,12 +397,15 @@ module CreusotContracts_Std1_Ops_FnMutExt_UnnestRefl_Interface
   clone CreusotContracts_Std1_Ops_FnMutExt_Unnest_Stub as Unnest0 with
     type self = self,
     type args = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function unnest_refl (self : self) : ()
   val unnest_refl (self : self) : ()
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 36 19 36 23] Inv0.inv self}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 35 14 35 31] Unnest0.unnest self self }
     ensures { result = unnest_refl self }
     
-  axiom unnest_refl_spec : forall self : self . [#"../../../../../creusot-contracts/src/std/ops.rs" 35 14 35 31] Unnest0.unnest self self
+  axiom unnest_refl_spec : forall self : self . ([#"../../../../../creusot-contracts/src/std/ops.rs" 36 19 36 23] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 35 14 35 31] Unnest0.unnest self self)
 end
 module CreusotContracts_Std1_Ops_FnMutExt_UnnestRefl
   type self
@@ -336,16 +413,21 @@ module CreusotContracts_Std1_Ops_FnMutExt_UnnestRefl
   clone CreusotContracts_Std1_Ops_FnMutExt_Unnest_Stub as Unnest0 with
     type self = self,
     type args = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function unnest_refl (self : self) : ()
   val unnest_refl (self : self) : ()
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 36 19 36 23] Inv0.inv self}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 35 14 35 31] Unnest0.unnest self self }
     ensures { result = unnest_refl self }
     
-  axiom unnest_refl_spec : forall self : self . [#"../../../../../creusot-contracts/src/std/ops.rs" 35 14 35 31] Unnest0.unnest self self
+  axiom unnest_refl_spec : forall self : self . ([#"../../../../../creusot-contracts/src/std/ops.rs" 36 19 36 23] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 35 14 35 31] Unnest0.unnest self self)
 end
 module CreusotContracts_Std1_Ops_FnMutExt_UnnestTrans_Stub
   type self
   type args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   clone CreusotContracts_Std1_Ops_FnMutExt_Unnest_Stub as Unnest0 with
     type self = self,
     type args = args
@@ -354,6 +436,8 @@ end
 module CreusotContracts_Std1_Ops_FnMutExt_UnnestTrans_Interface
   type self
   type args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   clone CreusotContracts_Std1_Ops_FnMutExt_Unnest_Stub as Unnest0 with
     type self = self,
     type args = args
@@ -361,14 +445,19 @@ module CreusotContracts_Std1_Ops_FnMutExt_UnnestTrans_Interface
   val unnest_trans (self : self) (b : self) (c : self) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 39 15 39 29] Unnest0.unnest self b}
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 40 15 40 26] Unnest0.unnest b c}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 42 20 42 24] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 42 26 42 27] Inv0.inv b}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 42 35 42 36] Inv0.inv c}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 41 14 41 28] Unnest0.unnest self c }
     ensures { result = unnest_trans self b c }
     
-  axiom unnest_trans_spec : forall self : self, b : self, c : self . ([#"../../../../../creusot-contracts/src/std/ops.rs" 39 15 39 29] Unnest0.unnest self b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 40 15 40 26] Unnest0.unnest b c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 41 14 41 28] Unnest0.unnest self c)
+  axiom unnest_trans_spec : forall self : self, b : self, c : self . ([#"../../../../../creusot-contracts/src/std/ops.rs" 39 15 39 29] Unnest0.unnest self b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 40 15 40 26] Unnest0.unnest b c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 42 20 42 24] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 42 26 42 27] Inv0.inv b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 42 35 42 36] Inv0.inv c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 41 14 41 28] Unnest0.unnest self c)
 end
 module CreusotContracts_Std1_Ops_FnMutExt_UnnestTrans
   type self
   type args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   clone CreusotContracts_Std1_Ops_FnMutExt_Unnest_Stub as Unnest0 with
     type self = self,
     type args = args
@@ -376,10 +465,13 @@ module CreusotContracts_Std1_Ops_FnMutExt_UnnestTrans
   val unnest_trans (self : self) (b : self) (c : self) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 39 15 39 29] Unnest0.unnest self b}
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 40 15 40 26] Unnest0.unnest b c}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 42 20 42 24] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 42 26 42 27] Inv0.inv b}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 42 35 42 36] Inv0.inv c}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 41 14 41 28] Unnest0.unnest self c }
     ensures { result = unnest_trans self b c }
     
-  axiom unnest_trans_spec : forall self : self, b : self, c : self . ([#"../../../../../creusot-contracts/src/std/ops.rs" 39 15 39 29] Unnest0.unnest self b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 40 15 40 26] Unnest0.unnest b c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 41 14 41 28] Unnest0.unnest self c)
+  axiom unnest_trans_spec : forall self : self, b : self, c : self . ([#"../../../../../creusot-contracts/src/std/ops.rs" 39 15 39 29] Unnest0.unnest self b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 40 15 40 26] Unnest0.unnest b c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 42 20 42 24] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 42 26 42 27] Inv0.inv b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 42 35 42 36] Inv0.inv c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 41 14 41 28] Unnest0.unnest self c)
 end
 module CreusotContracts_Std1_Ops_FnMutExt_FnMutOnce_Stub
   type self
@@ -394,10 +486,16 @@ module CreusotContracts_Std1_Ops_FnMutExt_FnMutOnce_Stub
     type self = self,
     type args = args,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = borrowed self
   clone CreusotContracts_Std1_Ops_FnOnceExt_PostconditionOnce_Stub as PostconditionOnce0 with
     type self = self,
     type args = args,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function fn_mut_once (self : self) (args : args) (res : Output0.output) : ()
 end
 module CreusotContracts_Std1_Ops_FnMutExt_FnMutOnce_Interface
@@ -413,16 +511,24 @@ module CreusotContracts_Std1_Ops_FnMutExt_FnMutOnce_Interface
     type self = self,
     type args = args,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = borrowed self
   clone CreusotContracts_Std1_Ops_FnOnceExt_PostconditionOnce_Stub as PostconditionOnce0 with
     type self = self,
     type args = args,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function fn_mut_once (self : self) (args : args) (res : Output0.output) : ()
   val fn_mut_once (self : self) (args : args) (res : Output0.output) : ()
-    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 45 14 45 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed self .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s)) }
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 46 19 46 23] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 46 25 46 29] Inv1.inv args}
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 45 14 45 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed self . Inv2.inv s /\  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s)) }
     ensures { result = fn_mut_once self args res }
     
-  axiom fn_mut_once_spec : forall self : self, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 45 14 45 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed self .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s))
+  axiom fn_mut_once_spec : forall self : self, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 46 19 46 23] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 46 25 46 29] Inv1.inv args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 45 14 45 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed self . Inv2.inv s /\  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s)))
 end
 module CreusotContracts_Std1_Ops_FnMutExt_FnMutOnce
   type self
@@ -437,16 +543,24 @@ module CreusotContracts_Std1_Ops_FnMutExt_FnMutOnce
     type self = self,
     type args = args,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = borrowed self
   clone CreusotContracts_Std1_Ops_FnOnceExt_PostconditionOnce_Stub as PostconditionOnce0 with
     type self = self,
     type args = args,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function fn_mut_once (self : self) (args : args) (res : Output0.output) : ()
   val fn_mut_once (self : self) (args : args) (res : Output0.output) : ()
-    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 45 14 45 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed self .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s)) }
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 46 19 46 23] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 46 25 46 29] Inv1.inv args}
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 45 14 45 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed self . Inv2.inv s /\  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s)) }
     ensures { result = fn_mut_once self args res }
     
-  axiom fn_mut_once_spec : forall self : self, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 45 14 45 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed self .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s))
+  axiom fn_mut_once_spec : forall self : self, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 46 19 46 23] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 46 25 46 29] Inv1.inv args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 45 14 45 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed self . Inv2.inv s /\  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s)))
 end
 module C06FnSpecs_Weaken2_Interface
   type a
@@ -461,12 +575,20 @@ module C06FnSpecs_Weaken2_Interface
     type self = f,
     type args = a,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = borrowed f
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   clone CreusotContracts_Std1_Ops_FnOnceExt_Precondition_Stub as Precondition0 with
     type self = f,
     type args = a
   val weaken_2 [#"../06_fn_specs.rs" 20 0 20 62] (f : f) (a : a) : Output0.output
     requires {[#"../06_fn_specs.rs" 18 11 18 28] Precondition0.precondition f a}
-    ensures { [#"../06_fn_specs.rs" 19 0 19 93] exists f2 : borrowed f .  * f2 = f /\ PostconditionMut0.postcondition_mut f2 a result /\ Resolve0.resolve ( ^ f2) }
+    requires {[#"../06_fn_specs.rs" 20 38 20 39] Inv0.inv f}
+    requires {[#"../06_fn_specs.rs" 20 44 20 45] Inv1.inv a}
+    ensures { [#"../06_fn_specs.rs" 19 0 19 93] exists f2 : borrowed f . Inv2.inv f2 /\  * f2 = f /\ PostconditionMut0.postcondition_mut f2 a result /\ Resolve0.resolve ( ^ f2) }
     
 end
 module C06FnSpecs_Weaken2
@@ -485,14 +607,23 @@ module C06FnSpecs_Weaken2
     type self = f,
     type args = a,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = borrowed f
   clone CreusotContracts_Std1_Ops_FnOnceExt_PostconditionOnce_Interface as PostconditionOnce0 with
     type self = f,
     type args = a,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = a
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = f
   clone CreusotContracts_Std1_Ops_FnMutExt_FnMutOnce_Interface as FnMutOnce0 with
     type self = f,
     type args = a,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
+    predicate Inv2.inv = Inv2.inv,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     predicate Resolve0.resolve = Resolve0.resolve,
     type Output0.output = Output0.output,
@@ -501,18 +632,28 @@ module C06FnSpecs_Weaken2
     type self = f,
     type args = a,
     predicate Unnest0.unnest = Unnest0.unnest,
+    predicate Inv0.inv = Inv0.inv,
     axiom .
   clone CreusotContracts_Std1_Ops_FnMutExt_UnnestRefl_Interface as UnnestRefl0 with
     type self = f,
     type args = a,
+    predicate Inv0.inv = Inv0.inv,
     predicate Unnest0.unnest = Unnest0.unnest,
     axiom .
   clone CreusotContracts_Std1_Ops_FnMutExt_PostconditionMutUnnest_Interface as PostconditionMutUnnest0 with
     type self = f,
     type args = a,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate Unnest0.unnest = Unnest0.unnest,
+    predicate Inv2.inv = Inv0.inv,
     type Output0.output = Output0.output,
+    axiom .
+  clone TyInv_Borrow as TyInv_Borrow0 with
+    type t = f,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv0.inv,
     axiom .
   clone CreusotContracts_Std1_Ops_FnOnceExt_Precondition_Interface as Precondition0 with
     type self = f,
@@ -521,11 +662,15 @@ module C06FnSpecs_Weaken2
     type a = a,
     type f = f,
     predicate Precondition0.precondition = Precondition0.precondition,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
     type Output0.output = Output0.output
   let rec cfg weaken_2 [#"../06_fn_specs.rs" 20 0 20 62] [@cfg:stackify] [@cfg:subregion_analysis] (f : f) (a : a) : Output0.output
     requires {[#"../06_fn_specs.rs" 18 11 18 28] Precondition0.precondition f a}
-    ensures { [#"../06_fn_specs.rs" 19 0 19 93] exists f2 : borrowed f .  * f2 = f /\ PostconditionMut0.postcondition_mut f2 a result /\ Resolve0.resolve ( ^ f2) }
+    requires {[#"../06_fn_specs.rs" 20 38 20 39] Inv0.inv f}
+    requires {[#"../06_fn_specs.rs" 20 44 20 45] Inv1.inv a}
+    ensures { [#"../06_fn_specs.rs" 19 0 19 93] exists f2 : borrowed f . Inv2.inv f2 /\  * f2 = f /\ PostconditionMut0.postcondition_mut f2 a result /\ Resolve0.resolve ( ^ f2) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Output0.output;
@@ -586,6 +731,8 @@ module CreusotContracts_Std1_Ops_FnExt_FnMut_Stub
   clone Core_Ops_Function_FnOnce_Output_Type as Output0 with
     type self = self,
     type args = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = self
   clone CreusotContracts_Std1_Ops_FnExt_Postcondition_Stub as Postcondition0 with
     type self = self,
     type args = args,
@@ -596,6 +743,10 @@ module CreusotContracts_Std1_Ops_FnExt_FnMut_Stub
     type self = self,
     type args = args,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed self
   function fn_mut (self : borrowed self) (args : args) (res : Output0.output) : ()
 end
 module CreusotContracts_Std1_Ops_FnExt_FnMut_Interface
@@ -605,6 +756,8 @@ module CreusotContracts_Std1_Ops_FnExt_FnMut_Interface
   clone Core_Ops_Function_FnOnce_Output_Type as Output0 with
     type self = self,
     type args = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = self
   clone CreusotContracts_Std1_Ops_FnExt_Postcondition_Stub as Postcondition0 with
     type self = self,
     type args = args,
@@ -615,12 +768,19 @@ module CreusotContracts_Std1_Ops_FnExt_FnMut_Interface
     type self = self,
     type args = args,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed self
   function fn_mut (self : borrowed self) (args : args) (res : Output0.output) : ()
   val fn_mut (self : borrowed self) (args : args) (res : Output0.output) : ()
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 60 19 60 23] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 60 25 60 29] Inv1.inv args}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 59 14 59 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res) }
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 60 19 60 23] Inv2.inv ( ^ self) }
     ensures { result = fn_mut self args res }
     
-  axiom fn_mut_spec : forall self : borrowed self, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 59 14 59 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res)
+  axiom fn_mut_spec : forall self : borrowed self, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 60 19 60 23] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 60 25 60 29] Inv1.inv args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 60 19 60 23] Inv2.inv ( ^ self)) && ([#"../../../../../creusot-contracts/src/std/ops.rs" 59 14 59 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res))
 end
 module CreusotContracts_Std1_Ops_FnExt_FnMut
   type self
@@ -629,6 +789,8 @@ module CreusotContracts_Std1_Ops_FnExt_FnMut
   clone Core_Ops_Function_FnOnce_Output_Type as Output0 with
     type self = self,
     type args = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = self
   clone CreusotContracts_Std1_Ops_FnExt_Postcondition_Stub as Postcondition0 with
     type self = self,
     type args = args,
@@ -639,12 +801,19 @@ module CreusotContracts_Std1_Ops_FnExt_FnMut
     type self = self,
     type args = args,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed self
   function fn_mut (self : borrowed self) (args : args) (res : Output0.output) : ()
   val fn_mut (self : borrowed self) (args : args) (res : Output0.output) : ()
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 60 19 60 23] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 60 25 60 29] Inv1.inv args}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 59 14 59 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res) }
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 60 19 60 23] Inv2.inv ( ^ self) }
     ensures { result = fn_mut self args res }
     
-  axiom fn_mut_spec : forall self : borrowed self, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 59 14 59 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res)
+  axiom fn_mut_spec : forall self : borrowed self, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 60 19 60 23] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 60 25 60 29] Inv1.inv args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 60 19 60 23] Inv2.inv ( ^ self)) && ([#"../../../../../creusot-contracts/src/std/ops.rs" 59 14 59 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res))
 end
 module CreusotContracts_Std1_Ops_FnExt_FnOnce_Stub
   type self
@@ -662,6 +831,10 @@ module CreusotContracts_Std1_Ops_FnExt_FnOnce_Stub
     type self = self,
     type args = args,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function fn_once (self : self) (args : args) (res : Output0.output) : ()
 end
 module CreusotContracts_Std1_Ops_FnExt_FnOnce_Interface
@@ -680,12 +853,18 @@ module CreusotContracts_Std1_Ops_FnExt_FnOnce_Interface
     type self = self,
     type args = args,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function fn_once (self : self) (args : args) (res : Output0.output) : ()
   val fn_once (self : self) (args : args) (res : Output0.output) : ()
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 64 15 64 19] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 64 21 64 25] Inv1.inv args}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 63 14 63 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res) }
     ensures { result = fn_once self args res }
     
-  axiom fn_once_spec : forall self : self, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 63 14 63 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res)
+  axiom fn_once_spec : forall self : self, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 64 15 64 19] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 64 21 64 25] Inv1.inv args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 63 14 63 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res))
 end
 module CreusotContracts_Std1_Ops_FnExt_FnOnce
   type self
@@ -703,12 +882,18 @@ module CreusotContracts_Std1_Ops_FnExt_FnOnce
     type self = self,
     type args = args,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function fn_once (self : self) (args : args) (res : Output0.output) : ()
   val fn_once (self : self) (args : args) (res : Output0.output) : ()
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 64 15 64 19] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 64 21 64 25] Inv1.inv args}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 63 14 63 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res) }
     ensures { result = fn_once self args res }
     
-  axiom fn_once_spec : forall self : self, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 63 14 63 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res)
+  axiom fn_once_spec : forall self : self, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 64 15 64 19] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 64 21 64 25] Inv1.inv args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 63 14 63 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res))
 end
 module C06FnSpecs_Weaken_Interface
   type a
@@ -720,17 +905,24 @@ module C06FnSpecs_Weaken_Interface
     type self = f,
     type args = a,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   clone CreusotContracts_Std1_Ops_FnOnceExt_Precondition_Stub as Precondition0 with
     type self = f,
     type args = a
   val weaken [#"../06_fn_specs.rs" 8 0 8 71] (f : f) (a : a) : Output0.output
     requires {[#"../06_fn_specs.rs" 6 11 6 28] Precondition0.precondition f a}
+    requires {[#"../06_fn_specs.rs" 8 47 8 48] Inv0.inv f}
+    requires {[#"../06_fn_specs.rs" 8 53 8 54] Inv1.inv a}
     ensures { [#"../06_fn_specs.rs" 7 10 7 36] Postcondition0.postcondition f a result }
     
 end
 module C06FnSpecs_Weaken
   type a
   type f
+  use prelude.Borrow
   clone CreusotContracts_Std1_Ops_FnMutExt_Unnest_Interface as Unnest0 with
     type self = f,
     type args = a
@@ -749,10 +941,19 @@ module C06FnSpecs_Weaken
     type self = f,
     type args = a,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = borrowed f
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = a
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = f
   clone CreusotContracts_Std1_Ops_FnMutExt_FnMutOnce_Interface as FnMutOnce0 with
     type self = f,
     type args = a,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
+    predicate Inv2.inv = Inv2.inv,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     predicate Resolve0.resolve = Resolve0.resolve,
     type Output0.output = Output0.output,
@@ -761,18 +962,28 @@ module C06FnSpecs_Weaken
     type self = f,
     type args = a,
     predicate Unnest0.unnest = Unnest0.unnest,
+    predicate Inv0.inv = Inv0.inv,
     axiom .
   clone CreusotContracts_Std1_Ops_FnMutExt_UnnestRefl_Interface as UnnestRefl0 with
     type self = f,
     type args = a,
+    predicate Inv0.inv = Inv0.inv,
     predicate Unnest0.unnest = Unnest0.unnest,
     axiom .
   clone CreusotContracts_Std1_Ops_FnMutExt_PostconditionMutUnnest_Interface as PostconditionMutUnnest0 with
     type self = f,
     type args = a,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate Unnest0.unnest = Unnest0.unnest,
+    predicate Inv2.inv = Inv0.inv,
     type Output0.output = Output0.output,
+    axiom .
+  clone TyInv_Borrow as TyInv_Borrow0 with
+    type t = f,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv0.inv,
     axiom .
   clone CreusotContracts_Std1_Ops_FnExt_Postcondition_Interface as Postcondition0 with
     type self = f,
@@ -781,6 +992,8 @@ module C06FnSpecs_Weaken
   clone CreusotContracts_Std1_Ops_FnExt_FnOnce_Interface as FnOnce0 with
     type self = f,
     type args = a,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
     predicate Resolve0.resolve = Resolve0.resolve,
     predicate Postcondition0.postcondition = Postcondition0.postcondition,
@@ -789,9 +1002,12 @@ module C06FnSpecs_Weaken
   clone CreusotContracts_Std1_Ops_FnExt_FnMut_Interface as FnMut0 with
     type self = f,
     type args = a,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     predicate Resolve0.resolve = Resolve1.resolve,
     predicate Postcondition0.postcondition = Postcondition0.postcondition,
+    predicate Inv2.inv = Inv0.inv,
     type Output0.output = Output0.output,
     axiom .
   clone CreusotContracts_Std1_Ops_FnOnceExt_Precondition_Interface as Precondition0 with
@@ -801,11 +1017,16 @@ module C06FnSpecs_Weaken
     type a = a,
     type f = f,
     predicate Precondition0.precondition = Precondition0.precondition,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
+    predicate Inv2.inv = Inv2.inv,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     predicate Resolve0.resolve = Resolve0.resolve,
     type Output0.output = Output0.output
   let rec cfg weaken [#"../06_fn_specs.rs" 8 0 8 71] [@cfg:stackify] [@cfg:subregion_analysis] (f : f) (a : a) : Output0.output
     requires {[#"../06_fn_specs.rs" 6 11 6 28] Precondition0.precondition f a}
+    requires {[#"../06_fn_specs.rs" 8 47 8 48] Inv0.inv f}
+    requires {[#"../06_fn_specs.rs" 8 53 8 54] Inv1.inv a}
     ensures { [#"../06_fn_specs.rs" 7 10 7 36] Postcondition0.postcondition f a result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -965,11 +1186,17 @@ module C06FnSpecs_Weaken3Std_Interface
     type args = a,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Stub as Precondition0 with
     type args = a,
     type f = f
   val weaken_3_std [#"../06_fn_specs.rs" 38 0 38 64] (f : f) (a : a) : Output0.output
     requires {[#"../06_fn_specs.rs" 36 11 36 28] Precondition0.precondition f a}
+    requires {[#"../06_fn_specs.rs" 38 40 38 41] Inv0.inv f}
+    requires {[#"../06_fn_specs.rs" 38 46 38 47] Inv1.inv a}
     ensures { [#"../06_fn_specs.rs" 37 10 37 41] PostconditionOnce0.postcondition_once f a result }
     
 end
@@ -983,6 +1210,10 @@ module C06FnSpecs_Weaken3Std
     type args = a,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = a
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = f
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Interface as Precondition0 with
     type args = a,
     type f = f
@@ -990,10 +1221,14 @@ module C06FnSpecs_Weaken3Std
     type self = f,
     type args = a,
     predicate Precondition0.precondition = Precondition0.precondition,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
     type Output0.output = Output0.output
   let rec cfg weaken_3_std [#"../06_fn_specs.rs" 38 0 38 64] [@cfg:stackify] [@cfg:subregion_analysis] (f : f) (a : a) : Output0.output
     requires {[#"../06_fn_specs.rs" 36 11 36 28] Precondition0.precondition f a}
+    requires {[#"../06_fn_specs.rs" 38 40 38 41] Inv0.inv f}
+    requires {[#"../06_fn_specs.rs" 38 46 38 47] Inv1.inv a}
     ensures { [#"../06_fn_specs.rs" 37 10 37 41] PostconditionOnce0.postcondition_once f a result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -1054,9 +1289,15 @@ module CreusotContracts_Std1_Ops_Impl1_PostconditionMutUnnest_Stub
   clone Core_Ops_Function_FnOnce_Output_Type as Output0 with
     type self = f,
     type args = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = f
   clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
     type args = args,
     type f = f
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed f
   clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut_Stub as PostconditionMut0 with
     type args = args,
     type f = f,
@@ -1070,9 +1311,15 @@ module CreusotContracts_Std1_Ops_Impl1_PostconditionMutUnnest_Interface
   clone Core_Ops_Function_FnOnce_Output_Type as Output0 with
     type self = f,
     type args = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = f
   clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
     type args = args,
     type f = f
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed f
   clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut_Stub as PostconditionMut0 with
     type args = args,
     type f = f,
@@ -1080,10 +1327,13 @@ module CreusotContracts_Std1_Ops_Impl1_PostconditionMutUnnest_Interface
   function postcondition_mut_unnest (self : borrowed f) (args : args) (res : Output0.output) : ()
   val postcondition_mut_unnest (self : borrowed f) (args : args) (res : Output0.output) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 106 15 106 48] PostconditionMut0.postcondition_mut self args res}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 108 37 108 41] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 108 43 108 47] Inv1.inv args}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 107 14 107 35] Unnest0.unnest ( * self) ( ^ self) }
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 108 37 108 41] Inv2.inv ( ^ self) }
     ensures { result = postcondition_mut_unnest self args res }
     
-  axiom postcondition_mut_unnest_spec : forall self : borrowed f, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 106 15 106 48] PostconditionMut0.postcondition_mut self args res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 107 14 107 35] Unnest0.unnest ( * self) ( ^ self))
+  axiom postcondition_mut_unnest_spec : forall self : borrowed f, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 106 15 106 48] PostconditionMut0.postcondition_mut self args res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 108 37 108 41] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 108 43 108 47] Inv1.inv args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 108 37 108 41] Inv2.inv ( ^ self)) && ([#"../../../../../creusot-contracts/src/std/ops.rs" 107 14 107 35] Unnest0.unnest ( * self) ( ^ self))
 end
 module CreusotContracts_Std1_Ops_Impl1_PostconditionMutUnnest
   type args
@@ -1092,9 +1342,15 @@ module CreusotContracts_Std1_Ops_Impl1_PostconditionMutUnnest
   clone Core_Ops_Function_FnOnce_Output_Type as Output0 with
     type self = f,
     type args = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = f
   clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
     type args = args,
     type f = f
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed f
   clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut_Stub as PostconditionMut0 with
     type args = args,
     type f = f,
@@ -1103,10 +1359,13 @@ module CreusotContracts_Std1_Ops_Impl1_PostconditionMutUnnest
     [#"../../../../../creusot-contracts/src/std/ops.rs" 104 4 104 10] ()
   val postcondition_mut_unnest (self : borrowed f) (args : args) (res : Output0.output) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 106 15 106 48] PostconditionMut0.postcondition_mut self args res}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 108 37 108 41] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 108 43 108 47] Inv1.inv args}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 107 14 107 35] Unnest0.unnest ( * self) ( ^ self) }
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 108 37 108 41] Inv2.inv ( ^ self) }
     ensures { result = postcondition_mut_unnest self args res }
     
-  axiom postcondition_mut_unnest_spec : forall self : borrowed f, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 106 15 106 48] PostconditionMut0.postcondition_mut self args res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 107 14 107 35] Unnest0.unnest ( * self) ( ^ self))
+  axiom postcondition_mut_unnest_spec : forall self : borrowed f, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 106 15 106 48] PostconditionMut0.postcondition_mut self args res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 108 37 108 41] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 108 43 108 47] Inv1.inv args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 108 37 108 41] Inv2.inv ( ^ self)) && ([#"../../../../../creusot-contracts/src/std/ops.rs" 107 14 107 35] Unnest0.unnest ( * self) ( ^ self))
 end
 module CreusotContracts_Std1_Ops_Impl1_UnnestRefl_Stub
   type args
@@ -1114,6 +1373,8 @@ module CreusotContracts_Std1_Ops_Impl1_UnnestRefl_Stub
   clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
     type args = args,
     type f = f
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   function unnest_refl (self : f) : ()
 end
 module CreusotContracts_Std1_Ops_Impl1_UnnestRefl_Interface
@@ -1122,12 +1383,15 @@ module CreusotContracts_Std1_Ops_Impl1_UnnestRefl_Interface
   clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
     type args = args,
     type f = f
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   function unnest_refl (self : f) : ()
   val unnest_refl (self : f) : ()
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 113 19 113 23] Inv0.inv self}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 112 14 112 31] Unnest0.unnest self self }
     ensures { result = unnest_refl self }
     
-  axiom unnest_refl_spec : forall self : f . [#"../../../../../creusot-contracts/src/std/ops.rs" 112 14 112 31] Unnest0.unnest self self
+  axiom unnest_refl_spec : forall self : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 113 19 113 23] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 112 14 112 31] Unnest0.unnest self self)
 end
 module CreusotContracts_Std1_Ops_Impl1_UnnestRefl
   type args
@@ -1135,17 +1399,22 @@ module CreusotContracts_Std1_Ops_Impl1_UnnestRefl
   clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
     type args = args,
     type f = f
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   function unnest_refl (self : f) : () =
     [#"../../../../../creusot-contracts/src/std/ops.rs" 110 4 110 10] ()
   val unnest_refl (self : f) : ()
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 113 19 113 23] Inv0.inv self}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 112 14 112 31] Unnest0.unnest self self }
     ensures { result = unnest_refl self }
     
-  axiom unnest_refl_spec : forall self : f . [#"../../../../../creusot-contracts/src/std/ops.rs" 112 14 112 31] Unnest0.unnest self self
+  axiom unnest_refl_spec : forall self : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 113 19 113 23] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 112 14 112 31] Unnest0.unnest self self)
 end
 module CreusotContracts_Std1_Ops_Impl1_UnnestTrans_Stub
   type args
   type f
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
     type args = args,
     type f = f
@@ -1154,6 +1423,8 @@ end
 module CreusotContracts_Std1_Ops_Impl1_UnnestTrans_Interface
   type args
   type f
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
     type args = args,
     type f = f
@@ -1161,14 +1432,19 @@ module CreusotContracts_Std1_Ops_Impl1_UnnestTrans_Interface
   val unnest_trans (self : f) (b : f) (c : f) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 117 15 117 29] Unnest0.unnest self b}
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 118 15 118 26] Unnest0.unnest b c}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 120 20 120 24] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 120 26 120 27] Inv0.inv b}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 120 35 120 36] Inv0.inv c}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 119 14 119 28] Unnest0.unnest self c }
     ensures { result = unnest_trans self b c }
     
-  axiom unnest_trans_spec : forall self : f, b : f, c : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 15 117 29] Unnest0.unnest self b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 118 15 118 26] Unnest0.unnest b c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 119 14 119 28] Unnest0.unnest self c)
+  axiom unnest_trans_spec : forall self : f, b : f, c : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 15 117 29] Unnest0.unnest self b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 118 15 118 26] Unnest0.unnest b c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 120 20 120 24] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 120 26 120 27] Inv0.inv b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 120 35 120 36] Inv0.inv c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 119 14 119 28] Unnest0.unnest self c)
 end
 module CreusotContracts_Std1_Ops_Impl1_UnnestTrans
   type args
   type f
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
     type args = args,
     type f = f
@@ -1177,10 +1453,13 @@ module CreusotContracts_Std1_Ops_Impl1_UnnestTrans
   val unnest_trans (self : f) (b : f) (c : f) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 117 15 117 29] Unnest0.unnest self b}
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 118 15 118 26] Unnest0.unnest b c}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 120 20 120 24] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 120 26 120 27] Inv0.inv b}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 120 35 120 36] Inv0.inv c}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 119 14 119 28] Unnest0.unnest self c }
     ensures { result = unnest_trans self b c }
     
-  axiom unnest_trans_spec : forall self : f, b : f, c : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 15 117 29] Unnest0.unnest self b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 118 15 118 26] Unnest0.unnest b c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 119 14 119 28] Unnest0.unnest self c)
+  axiom unnest_trans_spec : forall self : f, b : f, c : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 15 117 29] Unnest0.unnest self b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 118 15 118 26] Unnest0.unnest b c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 120 20 120 24] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 120 26 120 27] Inv0.inv b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 120 35 120 36] Inv0.inv c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 119 14 119 28] Unnest0.unnest self c)
 end
 module CreusotContracts_Std1_Ops_Impl1_FnMutOnce_Stub
   type args
@@ -1195,10 +1474,16 @@ module CreusotContracts_Std1_Ops_Impl1_FnMutOnce_Stub
     type args = args,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = borrowed f
   clone CreusotContracts_Std1_Ops_Impl0_PostconditionOnce_Stub as PostconditionOnce0 with
     type args = args,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   function fn_mut_once (self : f) (args : args) (res : Output0.output) : ()
 end
 module CreusotContracts_Std1_Ops_Impl1_FnMutOnce_Interface
@@ -1214,16 +1499,24 @@ module CreusotContracts_Std1_Ops_Impl1_FnMutOnce_Interface
     type args = args,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = borrowed f
   clone CreusotContracts_Std1_Ops_Impl0_PostconditionOnce_Stub as PostconditionOnce0 with
     type args = args,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   function fn_mut_once (self : f) (args : args) (res : Output0.output) : ()
   val fn_mut_once (self : f) (args : args) (res : Output0.output) : ()
-    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 125 14 125 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed f .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s)) }
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 126 19 126 23] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 126 25 126 29] Inv1.inv args}
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 125 14 125 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed f . Inv2.inv s /\  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s)) }
     ensures { result = fn_mut_once self args res }
     
-  axiom fn_mut_once_spec : forall self : f, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 125 14 125 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed f .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s))
+  axiom fn_mut_once_spec : forall self : f, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 126 19 126 23] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 126 25 126 29] Inv1.inv args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 125 14 125 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed f . Inv2.inv s /\  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s)))
 end
 module CreusotContracts_Std1_Ops_Impl1_FnMutOnce
   type args
@@ -1238,16 +1531,24 @@ module CreusotContracts_Std1_Ops_Impl1_FnMutOnce
     type args = args,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = borrowed f
   clone CreusotContracts_Std1_Ops_Impl0_PostconditionOnce_Stub as PostconditionOnce0 with
     type args = args,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   function fn_mut_once (self : f) (args : args) (res : Output0.output) : ()
   val fn_mut_once (self : f) (args : args) (res : Output0.output) : ()
-    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 125 14 125 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed f .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s)) }
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 126 19 126 23] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 126 25 126 29] Inv1.inv args}
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 125 14 125 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed f . Inv2.inv s /\  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s)) }
     ensures { result = fn_mut_once self args res }
     
-  axiom fn_mut_once_spec : forall self : f, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 125 14 125 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed f .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s))
+  axiom fn_mut_once_spec : forall self : f, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 126 19 126 23] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 126 25 126 29] Inv1.inv args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 125 14 125 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed f . Inv2.inv s /\  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s)))
 end
 module C06FnSpecs_Weaken2Std_Interface
   type a
@@ -1262,12 +1563,20 @@ module C06FnSpecs_Weaken2Std_Interface
     type args = a,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = borrowed f
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Stub as Precondition0 with
     type args = a,
     type f = f
   val weaken_2_std [#"../06_fn_specs.rs" 26 0 26 73] (f : f) (a : a) : Output0.output
     requires {[#"../06_fn_specs.rs" 24 11 24 28] Precondition0.precondition f a}
-    ensures { [#"../06_fn_specs.rs" 25 0 25 93] exists f2 : borrowed f .  * f2 = f /\ PostconditionMut0.postcondition_mut f2 a result /\ Resolve0.resolve ( ^ f2) }
+    requires {[#"../06_fn_specs.rs" 26 49 26 50] Inv0.inv f}
+    requires {[#"../06_fn_specs.rs" 26 55 26 56] Inv1.inv a}
+    ensures { [#"../06_fn_specs.rs" 25 0 25 93] exists f2 : borrowed f . Inv2.inv f2 /\  * f2 = f /\ PostconditionMut0.postcondition_mut f2 a result /\ Resolve0.resolve ( ^ f2) }
     
 end
 module C06FnSpecs_Weaken2Std
@@ -1286,14 +1595,23 @@ module C06FnSpecs_Weaken2Std
     type args = a,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = borrowed f
   clone CreusotContracts_Std1_Ops_Impl0_PostconditionOnce_Interface as PostconditionOnce0 with
     type args = a,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = a
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = f
   clone CreusotContracts_Std1_Ops_Impl1_FnMutOnce_Interface as FnMutOnce0 with
     type args = a,
     type f = f,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
+    predicate Inv2.inv = Inv2.inv,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     predicate Resolve0.resolve = Resolve0.resolve,
     type Output0.output = Output0.output,
@@ -1302,18 +1620,28 @@ module C06FnSpecs_Weaken2Std
     type args = a,
     type f = f,
     predicate Unnest0.unnest = Unnest0.unnest,
+    predicate Inv0.inv = Inv0.inv,
     axiom .
   clone CreusotContracts_Std1_Ops_Impl1_UnnestRefl_Interface as UnnestRefl0 with
     type args = a,
     type f = f,
+    predicate Inv0.inv = Inv0.inv,
     predicate Unnest0.unnest = Unnest0.unnest,
     axiom .
   clone CreusotContracts_Std1_Ops_Impl1_PostconditionMutUnnest_Interface as PostconditionMutUnnest0 with
     type args = a,
     type f = f,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate Unnest0.unnest = Unnest0.unnest,
+    predicate Inv2.inv = Inv0.inv,
     type Output0.output = Output0.output,
+    axiom .
+  clone TyInv_Borrow as TyInv_Borrow0 with
+    type t = f,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv0.inv,
     axiom .
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Interface as Precondition0 with
     type args = a,
@@ -1322,11 +1650,15 @@ module C06FnSpecs_Weaken2Std
     type a = a,
     type f = f,
     predicate Precondition0.precondition = Precondition0.precondition,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
     type Output0.output = Output0.output
   let rec cfg weaken_2_std [#"../06_fn_specs.rs" 26 0 26 73] [@cfg:stackify] [@cfg:subregion_analysis] (f : f) (a : a) : Output0.output
     requires {[#"../06_fn_specs.rs" 24 11 24 28] Precondition0.precondition f a}
-    ensures { [#"../06_fn_specs.rs" 25 0 25 93] exists f2 : borrowed f .  * f2 = f /\ PostconditionMut0.postcondition_mut f2 a result /\ Resolve0.resolve ( ^ f2) }
+    requires {[#"../06_fn_specs.rs" 26 49 26 50] Inv0.inv f}
+    requires {[#"../06_fn_specs.rs" 26 55 26 56] Inv1.inv a}
+    ensures { [#"../06_fn_specs.rs" 25 0 25 93] exists f2 : borrowed f . Inv2.inv f2 /\  * f2 = f /\ PostconditionMut0.postcondition_mut f2 a result /\ Resolve0.resolve ( ^ f2) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Output0.output;
@@ -1365,6 +1697,8 @@ module CreusotContracts_Std1_Ops_Impl2_FnMut_Stub
   clone Core_Ops_Function_FnOnce_Output_Type as Output0 with
     type self = f,
     type args = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = f
   clone CreusotContracts_Std1_Ops_Impl2_Postcondition_Stub as Postcondition0 with
     type args = args,
     type f = f,
@@ -1375,6 +1709,10 @@ module CreusotContracts_Std1_Ops_Impl2_FnMut_Stub
     type args = args,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed f
   function fn_mut (self : borrowed f) (args : args) (res : Output0.output) : ()
 end
 module CreusotContracts_Std1_Ops_Impl2_FnMut_Interface
@@ -1384,6 +1722,8 @@ module CreusotContracts_Std1_Ops_Impl2_FnMut_Interface
   clone Core_Ops_Function_FnOnce_Output_Type as Output0 with
     type self = f,
     type args = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = f
   clone CreusotContracts_Std1_Ops_Impl2_Postcondition_Stub as Postcondition0 with
     type args = args,
     type f = f,
@@ -1394,12 +1734,19 @@ module CreusotContracts_Std1_Ops_Impl2_FnMut_Interface
     type args = args,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed f
   function fn_mut (self : borrowed f) (args : args) (res : Output0.output) : ()
   val fn_mut (self : borrowed f) (args : args) (res : Output0.output) : ()
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 142 19 142 23] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 142 25 142 29] Inv1.inv args}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 141 14 141 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res) }
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 142 19 142 23] Inv2.inv ( ^ self) }
     ensures { result = fn_mut self args res }
     
-  axiom fn_mut_spec : forall self : borrowed f, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 141 14 141 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res)
+  axiom fn_mut_spec : forall self : borrowed f, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 142 19 142 23] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 142 25 142 29] Inv1.inv args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 142 19 142 23] Inv2.inv ( ^ self)) && ([#"../../../../../creusot-contracts/src/std/ops.rs" 141 14 141 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res))
 end
 module CreusotContracts_Std1_Ops_Impl2_FnMut
   type args
@@ -1408,6 +1755,8 @@ module CreusotContracts_Std1_Ops_Impl2_FnMut
   clone Core_Ops_Function_FnOnce_Output_Type as Output0 with
     type self = f,
     type args = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = f
   clone CreusotContracts_Std1_Ops_Impl2_Postcondition_Stub as Postcondition0 with
     type args = args,
     type f = f,
@@ -1418,12 +1767,19 @@ module CreusotContracts_Std1_Ops_Impl2_FnMut
     type args = args,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed f
   function fn_mut (self : borrowed f) (args : args) (res : Output0.output) : ()
   val fn_mut (self : borrowed f) (args : args) (res : Output0.output) : ()
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 142 19 142 23] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 142 25 142 29] Inv1.inv args}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 141 14 141 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res) }
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 142 19 142 23] Inv2.inv ( ^ self) }
     ensures { result = fn_mut self args res }
     
-  axiom fn_mut_spec : forall self : borrowed f, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 141 14 141 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res)
+  axiom fn_mut_spec : forall self : borrowed f, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 142 19 142 23] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 142 25 142 29] Inv1.inv args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 142 19 142 23] Inv2.inv ( ^ self)) && ([#"../../../../../creusot-contracts/src/std/ops.rs" 141 14 141 100] PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self /\ Postcondition0.postcondition ( * self) args res))
 end
 module CreusotContracts_Std1_Ops_Impl2_FnOnce_Stub
   type args
@@ -1441,6 +1797,10 @@ module CreusotContracts_Std1_Ops_Impl2_FnOnce_Stub
     type args = args,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   function fn_once (self : f) (args : args) (res : Output0.output) : ()
 end
 module CreusotContracts_Std1_Ops_Impl2_FnOnce_Interface
@@ -1459,12 +1819,18 @@ module CreusotContracts_Std1_Ops_Impl2_FnOnce_Interface
     type args = args,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   function fn_once (self : f) (args : args) (res : Output0.output) : ()
   val fn_once (self : f) (args : args) (res : Output0.output) : ()
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 148 15 148 19] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 148 21 148 25] Inv1.inv args}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 147 14 147 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res) }
     ensures { result = fn_once self args res }
     
-  axiom fn_once_spec : forall self : f, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 147 14 147 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res)
+  axiom fn_once_spec : forall self : f, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 148 15 148 19] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 148 21 148 25] Inv1.inv args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 147 14 147 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res))
 end
 module CreusotContracts_Std1_Ops_Impl2_FnOnce
   type args
@@ -1482,12 +1848,18 @@ module CreusotContracts_Std1_Ops_Impl2_FnOnce
     type args = args,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = args
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   function fn_once (self : f) (args : args) (res : Output0.output) : ()
   val fn_once (self : f) (args : args) (res : Output0.output) : ()
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 148 15 148 19] Inv0.inv self}
+    requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 148 21 148 25] Inv1.inv args}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 147 14 147 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res) }
     ensures { result = fn_once self args res }
     
-  axiom fn_once_spec : forall self : f, args : args, res : Output0.output . [#"../../../../../creusot-contracts/src/std/ops.rs" 147 14 147 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res)
+  axiom fn_once_spec : forall self : f, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 148 15 148 19] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 148 21 148 25] Inv1.inv args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 147 14 147 101] PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self /\ Postcondition0.postcondition self args res))
 end
 module C06FnSpecs_WeakenStd_Interface
   type a
@@ -1499,17 +1871,24 @@ module C06FnSpecs_WeakenStd_Interface
     type args = a,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = a
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Stub as Precondition0 with
     type args = a,
     type f = f
   val weaken_std [#"../06_fn_specs.rs" 14 0 14 62] (f : f) (a : a) : Output0.output
     requires {[#"../06_fn_specs.rs" 12 11 12 28] Precondition0.precondition f a}
+    requires {[#"../06_fn_specs.rs" 14 38 14 39] Inv0.inv f}
+    requires {[#"../06_fn_specs.rs" 14 44 14 45] Inv1.inv a}
     ensures { [#"../06_fn_specs.rs" 13 10 13 36] Postcondition0.postcondition f a result }
     
 end
 module C06FnSpecs_WeakenStd
   type a
   type f
+  use prelude.Borrow
   clone CreusotContracts_Std1_Ops_Impl1_Unnest_Interface as Unnest0 with
     type args = a,
     type f = f
@@ -1528,10 +1907,19 @@ module C06FnSpecs_WeakenStd
     type args = a,
     type f = f,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = borrowed f
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = a
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = f
   clone CreusotContracts_Std1_Ops_Impl1_FnMutOnce_Interface as FnMutOnce0 with
     type args = a,
     type f = f,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
+    predicate Inv2.inv = Inv2.inv,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     predicate Resolve0.resolve = Resolve0.resolve,
     type Output0.output = Output0.output,
@@ -1540,18 +1928,28 @@ module C06FnSpecs_WeakenStd
     type args = a,
     type f = f,
     predicate Unnest0.unnest = Unnest0.unnest,
+    predicate Inv0.inv = Inv0.inv,
     axiom .
   clone CreusotContracts_Std1_Ops_Impl1_UnnestRefl_Interface as UnnestRefl0 with
     type args = a,
     type f = f,
+    predicate Inv0.inv = Inv0.inv,
     predicate Unnest0.unnest = Unnest0.unnest,
     axiom .
   clone CreusotContracts_Std1_Ops_Impl1_PostconditionMutUnnest_Interface as PostconditionMutUnnest0 with
     type args = a,
     type f = f,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate Unnest0.unnest = Unnest0.unnest,
+    predicate Inv2.inv = Inv0.inv,
     type Output0.output = Output0.output,
+    axiom .
+  clone TyInv_Borrow as TyInv_Borrow0 with
+    type t = f,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv0.inv,
     axiom .
   clone CreusotContracts_Std1_Ops_Impl2_Postcondition_Interface as Postcondition0 with
     type args = a,
@@ -1560,6 +1958,8 @@ module C06FnSpecs_WeakenStd
   clone CreusotContracts_Std1_Ops_Impl2_FnOnce_Interface as FnOnce0 with
     type args = a,
     type f = f,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
     predicate Resolve0.resolve = Resolve0.resolve,
     predicate Postcondition0.postcondition = Postcondition0.postcondition,
@@ -1568,9 +1968,12 @@ module C06FnSpecs_WeakenStd
   clone CreusotContracts_Std1_Ops_Impl2_FnMut_Interface as FnMut0 with
     type args = a,
     type f = f,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     predicate Resolve0.resolve = Resolve1.resolve,
     predicate Postcondition0.postcondition = Postcondition0.postcondition,
+    predicate Inv2.inv = Inv0.inv,
     type Output0.output = Output0.output,
     axiom .
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Interface as Precondition0 with
@@ -1580,11 +1983,16 @@ module C06FnSpecs_WeakenStd
     type a = a,
     type f = f,
     predicate Precondition0.precondition = Precondition0.precondition,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
+    predicate Inv2.inv = Inv2.inv,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     predicate Resolve0.resolve = Resolve0.resolve,
     type Output0.output = Output0.output
   let rec cfg weaken_std [#"../06_fn_specs.rs" 14 0 14 62] [@cfg:stackify] [@cfg:subregion_analysis] (f : f) (a : a) : Output0.output
     requires {[#"../06_fn_specs.rs" 12 11 12 28] Precondition0.precondition f a}
+    requires {[#"../06_fn_specs.rs" 14 38 14 39] Inv0.inv f}
+    requires {[#"../06_fn_specs.rs" 14 44 14 45] Inv1.inv a}
     ensures { [#"../06_fn_specs.rs" 13 10 13 36] Postcondition0.postcondition f a result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -1617,25 +2025,57 @@ module C06FnSpecs_WeakenStd
   }
   
 end
+module TyInv_Tuple1
+  type t0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t0
+  axiom inv_tuple1 [@rewrite] : forall self : t0 . Inv0.inv self = (let (a_0) = self in Inv1.inv a_0)
+end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module C06FnSpecs_FnOnceUser_Interface
   type f
   use prelude.Int
   use prelude.UIntSize
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = f
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Stub as Precondition0 with
     type args = usize,
     type f = f
   val fn_once_user [#"../06_fn_specs.rs" 44 0 44 43] (f : f) : ()
     requires {[#"../06_fn_specs.rs" 43 11 43 36] Precondition0.precondition f ((0 : usize))}
+    requires {[#"../06_fn_specs.rs" 44 38 44 39] Inv0.inv f}
     
 end
 module C06FnSpecs_FnOnceUser
   type f
   use prelude.Int
   use prelude.UIntSize
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = usize
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = usize,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = usize
+  clone TyInv_Tuple1 as TyInv_Tuple10 with
+    type t0 = usize,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv,
+    axiom .
   clone CreusotContracts_Std1_Ops_Impl0_PostconditionOnce_Interface as PostconditionOnce0 with
     type args = usize,
     type f = f,
     type Output0.output = ()
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = f
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Interface as Precondition0 with
     type args = usize,
     type f = f
@@ -1643,10 +2083,13 @@ module C06FnSpecs_FnOnceUser
     type self = f,
     type args = usize,
     predicate Precondition0.precondition = Precondition0.precondition,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
     type Output0.output = ()
   let rec cfg fn_once_user [#"../06_fn_specs.rs" 44 0 44 43] [@cfg:stackify] [@cfg:subregion_analysis] (f : f) : ()
     requires {[#"../06_fn_specs.rs" 43 11 43 36] Precondition0.precondition f ((0 : usize))}
+    requires {[#"../06_fn_specs.rs" 44 38 44 39] Inv0.inv f}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -1740,9 +2183,16 @@ module C06FnSpecs_Caller_Interface
 end
 module C06FnSpecs_Caller
   clone C06FnSpecs_Caller_Closure0_Interface as Closure00
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Closure00.c06fnspecs_caller_closure0
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Closure00.c06fnspecs_caller_closure0,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone C06FnSpecs_FnOnceUser_Interface as FnOnceUser0 with
     type f = Closure00.c06fnspecs_caller_closure0,
-    predicate Precondition0.precondition = Closure00.precondition
+    predicate Precondition0.precondition = Closure00.precondition,
+    predicate Inv0.inv = Inv0.inv
   let rec cfg caller [#"../06_fn_specs.rs" 48 0 48 15] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();

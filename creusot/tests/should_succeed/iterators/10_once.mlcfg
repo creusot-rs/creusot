@@ -70,6 +70,25 @@ module C10Once_Impl0_Completed
     ensures { result = completed self }
     
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module C10Once_Impl0_Produces_Stub
   type t
   use seq.Seq
@@ -91,14 +110,38 @@ module C10Once_Impl0_Produces
   type t
   use seq.Seq
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
   use C10Once_Once_Type as C10Once_Once_Type
   predicate produces [#"../10_once.rs" 21 4 21 64] (self : C10Once_Once_Type.t_once t) (visited : Seq.seq t) (o : C10Once_Once_Type.t_once t)
     
    =
-    [#"../10_once.rs" 22 8 25 9] visited = Seq.empty  /\ self = o \/ (exists e : t . self = C10Once_Once_Type.C_Once (Core_Option_Option_Type.C_Some e) /\ visited = Seq.singleton e /\ o = C10Once_Once_Type.C_Once (Core_Option_Option_Type.C_None))
+    [#"../10_once.rs" 22 8 25 9] visited = Seq.empty  /\ self = o \/ (exists e : t . Inv0.inv e /\ self = C10Once_Once_Type.C_Once (Core_Option_Option_Type.C_Some e) /\ visited = Seq.singleton e /\ o = C10Once_Once_Type.C_Once (Core_Option_Option_Type.C_None))
   val produces [#"../10_once.rs" 21 4 21 64] (self : C10Once_Once_Type.t_once t) (visited : Seq.seq t) (o : C10Once_Once_Type.t_once t) : bool
     ensures { result = produces self visited o }
     
+end
+module C10Once_Once_Type_Inv
+  type t
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use C10Once_Once_Type as C10Once_Once_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = C10Once_Once_Type.t_once t
+  axiom inv_t_once [@rewrite] : forall self : C10Once_Once_Type.t_once t . Inv0.inv self = Inv1.inv (C10Once_Once_Type.once_0 self)
+end
+module Core_Option_Option_Type_Inv
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
+  axiom inv_t_option [@rewrite] : forall self : Core_Option_Option_Type.t_option t . Inv0.inv self = match (self) with
+    | Core_Option_Option_Type.C_None -> true
+    | Core_Option_Option_Type.C_Some a_0 -> Inv1.inv (Core_Option_Option_Type.some_0 self)
+    end
 end
 module C10Once_Impl0_ProducesRefl_Stub
   type t
@@ -106,6 +149,8 @@ module C10Once_Impl0_ProducesRefl_Stub
   use C10Once_Once_Type as C10Once_Once_Type
   clone C10Once_Impl0_Produces_Stub as Produces0 with
     type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = C10Once_Once_Type.t_once t
   function produces_refl [#"../10_once.rs" 31 4 31 29] (a : C10Once_Once_Type.t_once t) : ()
 end
 module C10Once_Impl0_ProducesRefl_Interface
@@ -114,12 +159,15 @@ module C10Once_Impl0_ProducesRefl_Interface
   use C10Once_Once_Type as C10Once_Once_Type
   clone C10Once_Impl0_Produces_Stub as Produces0 with
     type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = C10Once_Once_Type.t_once t
   function produces_refl [#"../10_once.rs" 31 4 31 29] (a : C10Once_Once_Type.t_once t) : ()
   val produces_refl [#"../10_once.rs" 31 4 31 29] (a : C10Once_Once_Type.t_once t) : ()
+    requires {[#"../10_once.rs" 31 21 31 22] Inv0.inv a}
     ensures { [#"../10_once.rs" 30 14 30 39] Produces0.produces a (Seq.empty ) a }
     ensures { result = produces_refl a }
     
-  axiom produces_refl_spec : forall a : C10Once_Once_Type.t_once t . [#"../10_once.rs" 30 14 30 39] Produces0.produces a (Seq.empty ) a
+  axiom produces_refl_spec : forall a : C10Once_Once_Type.t_once t . ([#"../10_once.rs" 31 21 31 22] Inv0.inv a) -> ([#"../10_once.rs" 30 14 30 39] Produces0.produces a (Seq.empty ) a)
 end
 module C10Once_Impl0_ProducesRefl
   type t
@@ -127,22 +175,43 @@ module C10Once_Impl0_ProducesRefl
   use C10Once_Once_Type as C10Once_Once_Type
   clone C10Once_Impl0_Produces_Stub as Produces0 with
     type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = C10Once_Once_Type.t_once t
   function produces_refl [#"../10_once.rs" 31 4 31 29] (a : C10Once_Once_Type.t_once t) : () =
     [#"../10_once.rs" 28 4 28 10] ()
   val produces_refl [#"../10_once.rs" 31 4 31 29] (a : C10Once_Once_Type.t_once t) : ()
+    requires {[#"../10_once.rs" 31 21 31 22] Inv0.inv a}
     ensures { [#"../10_once.rs" 30 14 30 39] Produces0.produces a (Seq.empty ) a }
     ensures { result = produces_refl a }
     
-  axiom produces_refl_spec : forall a : C10Once_Once_Type.t_once t . [#"../10_once.rs" 30 14 30 39] Produces0.produces a (Seq.empty ) a
+  axiom produces_refl_spec : forall a : C10Once_Once_Type.t_once t . ([#"../10_once.rs" 31 21 31 22] Inv0.inv a) -> ([#"../10_once.rs" 30 14 30 39] Produces0.produces a (Seq.empty ) a)
 end
 module C10Once_Impl0_ProducesRefl_Impl
   type t
   use seq.Seq
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  use C10Once_Once_Type as C10Once_Once_Type
-  clone C10Once_Impl0_Produces as Produces0 with
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = t
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option t
+  clone Core_Option_Option_Type_Inv as Core_Option_Option_Type_Inv0 with
+    type t = t,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv1.inv,
+    axiom .
+  use C10Once_Once_Type as C10Once_Once_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = C10Once_Once_Type.t_once t
+  clone C10Once_Once_Type_Inv as C10Once_Once_Type_Inv0 with
+    type t = t,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv2.inv,
+    axiom .
+  clone C10Once_Impl0_Produces as Produces0 with
+    type t = t,
+    predicate Inv0.inv = Inv1.inv
   let rec ghost function produces_refl [#"../10_once.rs" 31 4 31 29] (a : C10Once_Once_Type.t_once t) : ()
+    requires {[#"../10_once.rs" 31 21 31 22] Inv0.inv a}
     ensures { [#"../10_once.rs" 30 14 30 39] Produces0.produces a (Seq.empty ) a }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -152,6 +221,8 @@ module C10Once_Impl0_ProducesTrans_Stub
   type t
   use seq.Seq
   use C10Once_Once_Type as C10Once_Once_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = C10Once_Once_Type.t_once t
   clone C10Once_Impl0_Produces_Stub as Produces0 with
     type t = t
   function produces_trans [#"../10_once.rs" 38 4 38 90] (a : C10Once_Once_Type.t_once t) (ab : Seq.seq t) (b : C10Once_Once_Type.t_once t) (bc : Seq.seq t) (c : C10Once_Once_Type.t_once t) : ()
@@ -161,6 +232,8 @@ module C10Once_Impl0_ProducesTrans_Interface
   type t
   use seq.Seq
   use C10Once_Once_Type as C10Once_Once_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = C10Once_Once_Type.t_once t
   clone C10Once_Impl0_Produces_Stub as Produces0 with
     type t = t
   function produces_trans [#"../10_once.rs" 38 4 38 90] (a : C10Once_Once_Type.t_once t) (ab : Seq.seq t) (b : C10Once_Once_Type.t_once t) (bc : Seq.seq t) (c : C10Once_Once_Type.t_once t) : ()
@@ -168,15 +241,20 @@ module C10Once_Impl0_ProducesTrans_Interface
   val produces_trans [#"../10_once.rs" 38 4 38 90] (a : C10Once_Once_Type.t_once t) (ab : Seq.seq t) (b : C10Once_Once_Type.t_once t) (bc : Seq.seq t) (c : C10Once_Once_Type.t_once t) : ()
     requires {[#"../10_once.rs" 35 15 35 32] Produces0.produces a ab b}
     requires {[#"../10_once.rs" 36 15 36 32] Produces0.produces b bc c}
+    requires {[#"../10_once.rs" 38 22 38 23] Inv0.inv a}
+    requires {[#"../10_once.rs" 38 52 38 53] Inv0.inv b}
+    requires {[#"../10_once.rs" 38 82 38 83] Inv0.inv c}
     ensures { [#"../10_once.rs" 37 14 37 42] Produces0.produces a (Seq.(++) ab bc) c }
     ensures { result = produces_trans a ab b bc c }
     
-  axiom produces_trans_spec : forall a : C10Once_Once_Type.t_once t, ab : Seq.seq t, b : C10Once_Once_Type.t_once t, bc : Seq.seq t, c : C10Once_Once_Type.t_once t . ([#"../10_once.rs" 35 15 35 32] Produces0.produces a ab b) -> ([#"../10_once.rs" 36 15 36 32] Produces0.produces b bc c) -> ([#"../10_once.rs" 37 14 37 42] Produces0.produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : C10Once_Once_Type.t_once t, ab : Seq.seq t, b : C10Once_Once_Type.t_once t, bc : Seq.seq t, c : C10Once_Once_Type.t_once t . ([#"../10_once.rs" 35 15 35 32] Produces0.produces a ab b) -> ([#"../10_once.rs" 36 15 36 32] Produces0.produces b bc c) -> ([#"../10_once.rs" 38 22 38 23] Inv0.inv a) -> ([#"../10_once.rs" 38 52 38 53] Inv0.inv b) -> ([#"../10_once.rs" 38 82 38 83] Inv0.inv c) -> ([#"../10_once.rs" 37 14 37 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module C10Once_Impl0_ProducesTrans
   type t
   use seq.Seq
   use C10Once_Once_Type as C10Once_Once_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = C10Once_Once_Type.t_once t
   clone C10Once_Impl0_Produces_Stub as Produces0 with
     type t = t
   function produces_trans [#"../10_once.rs" 38 4 38 90] (a : C10Once_Once_Type.t_once t) (ab : Seq.seq t) (b : C10Once_Once_Type.t_once t) (bc : Seq.seq t) (c : C10Once_Once_Type.t_once t) : ()
@@ -186,21 +264,44 @@ module C10Once_Impl0_ProducesTrans
   val produces_trans [#"../10_once.rs" 38 4 38 90] (a : C10Once_Once_Type.t_once t) (ab : Seq.seq t) (b : C10Once_Once_Type.t_once t) (bc : Seq.seq t) (c : C10Once_Once_Type.t_once t) : ()
     requires {[#"../10_once.rs" 35 15 35 32] Produces0.produces a ab b}
     requires {[#"../10_once.rs" 36 15 36 32] Produces0.produces b bc c}
+    requires {[#"../10_once.rs" 38 22 38 23] Inv0.inv a}
+    requires {[#"../10_once.rs" 38 52 38 53] Inv0.inv b}
+    requires {[#"../10_once.rs" 38 82 38 83] Inv0.inv c}
     ensures { [#"../10_once.rs" 37 14 37 42] Produces0.produces a (Seq.(++) ab bc) c }
     ensures { result = produces_trans a ab b bc c }
     
-  axiom produces_trans_spec : forall a : C10Once_Once_Type.t_once t, ab : Seq.seq t, b : C10Once_Once_Type.t_once t, bc : Seq.seq t, c : C10Once_Once_Type.t_once t . ([#"../10_once.rs" 35 15 35 32] Produces0.produces a ab b) -> ([#"../10_once.rs" 36 15 36 32] Produces0.produces b bc c) -> ([#"../10_once.rs" 37 14 37 42] Produces0.produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : C10Once_Once_Type.t_once t, ab : Seq.seq t, b : C10Once_Once_Type.t_once t, bc : Seq.seq t, c : C10Once_Once_Type.t_once t . ([#"../10_once.rs" 35 15 35 32] Produces0.produces a ab b) -> ([#"../10_once.rs" 36 15 36 32] Produces0.produces b bc c) -> ([#"../10_once.rs" 38 22 38 23] Inv0.inv a) -> ([#"../10_once.rs" 38 52 38 53] Inv0.inv b) -> ([#"../10_once.rs" 38 82 38 83] Inv0.inv c) -> ([#"../10_once.rs" 37 14 37 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module C10Once_Impl0_ProducesTrans_Impl
   type t
   use seq.Seq
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  use C10Once_Once_Type as C10Once_Once_Type
-  clone C10Once_Impl0_Produces as Produces0 with
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = t
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option t
+  clone Core_Option_Option_Type_Inv as Core_Option_Option_Type_Inv0 with
+    type t = t,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv1.inv,
+    axiom .
+  use C10Once_Once_Type as C10Once_Once_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = C10Once_Once_Type.t_once t
+  clone C10Once_Once_Type_Inv as C10Once_Once_Type_Inv0 with
+    type t = t,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv2.inv,
+    axiom .
+  clone C10Once_Impl0_Produces as Produces0 with
+    type t = t,
+    predicate Inv0.inv = Inv1.inv
   let rec ghost function produces_trans [#"../10_once.rs" 38 4 38 90] (a : C10Once_Once_Type.t_once t) (ab : Seq.seq t) (b : C10Once_Once_Type.t_once t) (bc : Seq.seq t) (c : C10Once_Once_Type.t_once t) : ()
     requires {[#"../10_once.rs" 35 15 35 32] Produces0.produces a ab b}
     requires {[#"../10_once.rs" 36 15 36 32] Produces0.produces b bc c}
+    requires {[#"../10_once.rs" 38 22 38 23] Inv0.inv a}
+    requires {[#"../10_once.rs" 38 52 38 53] Inv0.inv b}
+    requires {[#"../10_once.rs" 38 82 38 83] Inv0.inv c}
     ensures { [#"../10_once.rs" 37 14 37 42] Produces0.produces a (Seq.(++) ab bc) c }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -210,25 +311,50 @@ module Core_Option_Impl0_Take_Interface
   type t
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed (Core_Option_Option_Type.t_option t)
   val take (self : borrowed (Core_Option_Option_Type.t_option t)) : Core_Option_Option_Type.t_option t
+    requires {Inv0.inv self}
     ensures { [#"../../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] result =  * self /\  ^ self = Core_Option_Option_Type.C_None }
+    ensures { Inv1.inv ( ^ self) }
+    ensures { Inv1.inv result }
     
+end
+module TyInv_Borrow
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed t
+  axiom inv_borrow [@rewrite] : forall self : borrowed t . Inv0.inv self = Inv1.inv ( * self)
 end
 module C10Once_Impl0_Next_Interface
   type t
   use prelude.Borrow
   use seq.Seq
   use C10Once_Once_Type as C10Once_Once_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = C10Once_Once_Type.t_once t
   clone C10Once_Impl0_Produces_Stub as Produces0 with
     type t = t
   clone C10Once_Impl0_Completed_Stub as Completed0 with
     type t = t
-  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed (C10Once_Once_Type.t_once t)
   val next [#"../10_once.rs" 44 4 44 35] (self : borrowed (C10Once_Once_Type.t_once t)) : Core_Option_Option_Type.t_option t
+    requires {[#"../10_once.rs" 44 17 44 21] Inv0.inv self}
     ensures { [#"../10_once.rs" 40 14 43 5] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
+    ensures { [#"../10_once.rs" 44 17 44 21] Inv1.inv ( ^ self) }
+    ensures { [#"../10_once.rs" 44 26 44 35] Inv2.inv result }
     
 end
 module C10Once_Impl0_Next
@@ -236,21 +362,57 @@ module C10Once_Impl0_Next
   use prelude.Borrow
   use seq.Seq
   use Core_Option_Option_Type as Core_Option_Option_Type
-  use C10Once_Once_Type as C10Once_Once_Type
-  clone C10Once_Impl0_Produces as Produces0 with
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = borrowed (Core_Option_Option_Type.t_option t)
+  clone TyInv_Borrow as TyInv_Borrow1 with
+    type t = Core_Option_Option_Type.t_option t,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Inv1.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
     type t = t
+  clone Core_Option_Option_Type_Inv as Core_Option_Option_Type_Inv0 with
+    type t = t,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv4.inv,
+    axiom .
+  use C10Once_Once_Type as C10Once_Once_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = C10Once_Once_Type.t_once t
+  clone C10Once_Once_Type_Inv as C10Once_Once_Type_Inv0 with
+    type t = t,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = borrowed (C10Once_Once_Type.t_once t)
+  clone TyInv_Borrow as TyInv_Borrow0 with
+    type t = C10Once_Once_Type.t_once t,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
+    axiom .
+  clone C10Once_Impl0_Produces as Produces0 with
+    type t = t,
+    predicate Inv0.inv = Inv4.inv
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = C10Once_Once_Type.t_once t
   clone C10Once_Impl0_Completed as Completed0 with
     type t = t,
     predicate Resolve0.resolve = Resolve0.resolve
   clone Core_Option_Impl0_Take_Interface as Take0 with
-    type t = t
+    type t = t,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Inv1.inv = Inv2.inv
   let rec cfg next [#"../10_once.rs" 44 4 44 35] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (C10Once_Once_Type.t_once t)) : Core_Option_Option_Type.t_option t
+    requires {[#"../10_once.rs" 44 17 44 21] Inv0.inv self}
     ensures { [#"../10_once.rs" 40 14 43 5] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
+    ensures { [#"../10_once.rs" 44 17 44 21] Inv1.inv ( ^ self) }
+    ensures { [#"../10_once.rs" 44 26 44 35] Inv2.inv result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Option_Option_Type.t_option t;
@@ -272,64 +434,17 @@ module C10Once_Impl0_Next
   }
   
 end
-module CreusotContracts_Invariant_Inv_Stub
-  type t
-  predicate inv (_x : t)
-end
-module CreusotContracts_Invariant_Inv_Interface
-  type t
-  predicate inv (_x : t)
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
-module CreusotContracts_Invariant_Inv
-  type t
-  predicate inv (_x : t) =
-    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
-module C10Once_Once_Type_Inv
-  type t
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  use C10Once_Once_Type as C10Once_Once_Type
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = Core_Option_Option_Type.t_option t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = C10Once_Once_Type.t_once t
-  axiom inv_t_once [@rewrite] : forall self : C10Once_Once_Type.t_once t . Inv0.inv self = Inv1.inv (C10Once_Once_Type.once_0 self)
-end
-module TyInv_Borrow
-  type t
-  use prelude.Borrow
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = borrowed t
-  axiom inv_borrow [@rewrite] : forall self : borrowed t . Inv0.inv self = Inv1.inv ( * self)
-end
 module C10Once_Common_Iterator_Item_Type
   type self
   type item
-end
-module Core_Option_Option_Type_Inv
-  type t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = t
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = Core_Option_Option_Type.t_option t
-  axiom inv_t_option [@rewrite] : forall self : Core_Option_Option_Type.t_option t . Inv0.inv self = match (self) with
-    | Core_Option_Option_Type.C_None -> true
-    | Core_Option_Option_Type.C_Some a_0 -> Inv1.inv (Core_Option_Option_Type.some_0 self)
-    end
 end
 module C10Once_Impl0
   type t
   use seq.Seq
   use prelude.Borrow
+  use C10Once_Once_Type as C10Once_Once_Type
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = C10Once_Once_Type.t_once t
   clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
     type t = t
   use Core_Option_Option_Type as Core_Option_Option_Type
@@ -340,9 +455,6 @@ module C10Once_Impl0
     predicate Inv0.inv = Inv2.inv,
     predicate Inv1.inv = Inv3.inv,
     axiom .
-  use C10Once_Once_Type as C10Once_Once_Type
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = C10Once_Once_Type.t_once t
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = C10Once_Once_Type.t_once t
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
@@ -363,10 +475,11 @@ module C10Once_Impl0
     type t = t,
     predicate Resolve0.resolve = Resolve0.resolve
   clone C10Once_Impl0_Produces as Produces0 with
-    type t = t
-  goal produces_refl_refn : [#"../10_once.rs" 31 4 31 29] forall a : C10Once_Once_Type.t_once t . Inv0.inv a -> (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
-  goal produces_trans_refn : [#"../10_once.rs" 38 4 38 90] forall a : C10Once_Once_Type.t_once t . forall ab : Seq.seq t . forall b : C10Once_Once_Type.t_once t . forall bc : Seq.seq t . forall c : C10Once_Once_Type.t_once t . Inv0.inv c /\ Inv0.inv b /\ Inv0.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Produces0.produces b bc c /\ Produces0.produces a ab b /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
-  goal next_refn : [#"../10_once.rs" 44 4 44 35] forall self : borrowed (C10Once_Once_Type.t_once t) . Inv1.inv self -> (forall result : Core_Option_Option_Type.t_option t . match (result) with
+    type t = t,
+    predicate Inv0.inv = Inv3.inv
+  goal produces_refl_refn : [#"../10_once.rs" 31 4 31 29] forall a : C10Once_Once_Type.t_once t . Inv0.inv a -> Inv0.inv a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
+  goal produces_trans_refn : [#"../10_once.rs" 38 4 38 90] forall a : C10Once_Once_Type.t_once t . forall ab : Seq.seq t . forall b : C10Once_Once_Type.t_once t . forall bc : Seq.seq t . forall c : C10Once_Once_Type.t_once t . Inv0.inv c /\ Inv0.inv b /\ Inv0.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Inv0.inv c /\ Inv0.inv b /\ Inv0.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
+  goal next_refn : [#"../10_once.rs" 44 4 44 35] forall self : borrowed (C10Once_Once_Type.t_once t) . Inv1.inv self -> Inv1.inv self /\ (forall result : Core_Option_Option_Type.t_option t . Inv2.inv result /\ Inv0.inv ( ^ self) /\ match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
     end -> Inv0.inv ( ^ self) /\ match (result) with

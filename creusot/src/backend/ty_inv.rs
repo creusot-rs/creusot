@@ -90,8 +90,9 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,
-    default_trivial: bool,
+    _: bool,
 ) -> bool {
+    let default_trivial = false;
     if ty.is_closure() {
         return true;
     }
@@ -101,8 +102,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
     let mut stack = vec![ty];
     while let Some(ty) = stack.pop() {
         if resolve_user_inv(tcx, ty, param_env).is_some()
-            // HACK we should never consider invariants of param types trivial 
-            || (!default_trivial && matches!(ty.kind(), TyKind::Param(_)))
+            ||  matches!(ty.kind(), TyKind::Param(_))
         {
             return false;
         }

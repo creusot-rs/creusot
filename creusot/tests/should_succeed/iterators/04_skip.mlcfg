@@ -590,11 +590,18 @@ end
 module Core_Mem_Take_Interface
   type t
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
   clone CreusotContracts_Std1_Default_Default_IsDefault_Stub as IsDefault0 with
     type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed t
   val take (dest : borrowed t) : t
+    requires {Inv0.inv dest}
     ensures { [#"../../../../../creusot-contracts/src/std/mem.rs" 15 22 15 37] result =  * dest }
     ensures { [#"../../../../../creusot-contracts/src/std/mem.rs" 16 22 16 42] IsDefault0.is_default ( ^ dest) }
+    ensures { Inv1.inv ( ^ dest) }
+    ensures { Inv1.inv result }
     
 end
 module TyInv_Borrow
@@ -653,6 +660,12 @@ module CreusotContracts_Std1_Num_Impl17_IsDefault
     ensures { result = is_default self }
     
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module C04Skip_Impl1_Next_Interface
   type i
   use prelude.Borrow
@@ -686,12 +699,25 @@ module C04Skip_Impl1_Next
   use prelude.Int
   use prelude.UIntSize
   use seq.Seq
-  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
     type t = i
-  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
     type t = borrowed i
-  clone TyInv_Borrow as TyInv_Borrow1 with
+  clone TyInv_Borrow as TyInv_Borrow2 with
     type t = i,
+    predicate Inv0.inv = Inv4.inv,
+    predicate Inv1.inv = Inv5.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = usize
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = usize,
+    predicate Inv0.inv = Inv3.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = borrowed usize
+  clone TyInv_Borrow as TyInv_Borrow1 with
+    type t = usize,
     predicate Inv0.inv = Inv2.inv,
     predicate Inv1.inv = Inv3.inv,
     axiom .
@@ -701,7 +727,7 @@ module C04Skip_Impl1_Next
   clone C04Skip_Skip_Type_Inv as C04Skip_Skip_Type_Inv0 with
     type i = i,
     predicate Inv0.inv = Inv1.inv,
-    predicate Inv1.inv = Inv3.inv,
+    predicate Inv1.inv = Inv5.inv,
     axiom .
   clone C04Skip_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
@@ -720,12 +746,12 @@ module C04Skip_Impl1_Next
   clone C04Skip_Common_Iterator_ProducesTrans_Interface as ProducesTrans0 with
     type self = i,
     predicate Produces0.produces = Produces0.produces,
-    predicate Inv0.inv = Inv3.inv,
+    predicate Inv0.inv = Inv5.inv,
     type Item0.item = Item0.item,
     axiom .
   clone C04Skip_Common_Iterator_ProducesRefl_Interface as ProducesRefl0 with
     type self = i,
-    predicate Inv0.inv = Inv3.inv,
+    predicate Inv0.inv = Inv5.inv,
     predicate Produces0.produces = Produces0.produces,
     type Item0.item = Item0.item,
     axiom .
@@ -741,7 +767,7 @@ module C04Skip_Impl1_Next
     predicate Resolve0.resolve = Resolve3.resolve
   clone C04Skip_Impl1_Completed as Completed0 with
     type i = i,
-    predicate Inv0.inv = Inv2.inv,
+    predicate Inv0.inv = Inv4.inv,
     type Item0.item = Item0.item,
     predicate Produces0.produces = Produces0.produces,
     predicate Resolve0.resolve = Resolve3.resolve,
@@ -753,11 +779,11 @@ module C04Skip_Impl1_Next
     type t = C04Skip_Skip_Type.t_skip i
   clone C04Skip_Common_Iterator_Next_Interface as Next0 with
     type self = i,
-    predicate Inv0.inv = Inv2.inv,
+    predicate Inv0.inv = Inv4.inv,
     type Item0.item = Item0.item,
     predicate Completed0.completed = Completed1.completed,
     predicate Produces0.produces = Produces0.produces,
-    predicate Inv1.inv = Inv3.inv
+    predicate Inv1.inv = Inv5.inv
   clone CreusotContracts_Logic_Ops_Impl2_IndexLogic as IndexLogic0 with
     type t = Item0.item
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
@@ -766,7 +792,9 @@ module C04Skip_Impl1_Next
     type t = usize
   clone Core_Mem_Take_Interface as Take0 with
     type t = usize,
-    predicate IsDefault0.is_default = IsDefault0.is_default
+    predicate Inv0.inv = Inv2.inv,
+    predicate IsDefault0.is_default = IsDefault0.is_default,
+    predicate Inv1.inv = Inv3.inv
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = Ghost.ghost_ty (borrowed (C04Skip_Skip_Type.t_skip i))
   let rec cfg next [#"../04_skip.rs" 68 4 68 41] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (C04Skip_Skip_Type.t_skip i)) : Core_Option_Option_Type.t_option Item0.item
