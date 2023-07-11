@@ -274,13 +274,6 @@ module IteNormalize_Expr_Type
     | C_True
     | C_False
     
-  let function var_v (self : t_expr) : usize = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_IfThenElse _ _ _ -> any usize
-      | C_Var a -> a
-      | C_True -> any usize
-      | C_False -> any usize
-      end
   let function ifthenelse_c (self : t_expr) : t_expr = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
       | C_IfThenElse a _ _ -> a
@@ -302,14 +295,13 @@ module IteNormalize_Expr_Type
       | C_True -> any t_expr
       | C_False -> any t_expr
       end
-end
-module Core_Clone_Impls_Impl5_Clone_Interface
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UIntSize
-  val clone' (self : usize) : usize
-    ensures { [#"../../../../creusot-contracts/src/std/clone.rs" 7 0 20 1] result = self }
-    
+  let function var_v (self : t_expr) : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_IfThenElse _ _ _ -> any usize
+      | C_Var a -> a
+      | C_True -> any usize
+      | C_False -> any usize
+      end
 end
 module Alloc_Boxed_Impl12_Clone_Interface
   type t
@@ -317,6 +309,14 @@ module Alloc_Boxed_Impl12_Clone_Interface
   use prelude.Borrow
   val clone' (self : t) : t
     ensures { [#"../ite_normalize.rs" 68 0 77 1] result = self }
+    
+end
+module Core_Clone_Impls_Impl5_Clone_Interface
+  use prelude.Borrow
+  use prelude.Int
+  use prelude.UIntSize
+  val clone' (self : usize) : usize
+    ensures { [#"../../../../creusot-contracts/src/std/clone.rs" 7 0 20 1] result = self }
     
 end
 module Alloc_Alloc_Global_Type
@@ -336,11 +336,11 @@ module IteNormalize_Impl6_Clone
   use prelude.Int
   use prelude.UIntSize
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  clone Core_Clone_Impls_Impl5_Clone_Interface as Clone1
   use IteNormalize_Expr_Type as IteNormalize_Expr_Type
-  clone Alloc_Boxed_Impl12_Clone_Interface as Clone1 with
+  clone Alloc_Boxed_Impl12_Clone_Interface as Clone0 with
     type t = IteNormalize_Expr_Type.t_expr,
     type a = Alloc_Alloc_Global_Type.t_global
-  clone Core_Clone_Impls_Impl5_Clone_Interface as Clone0
   let rec cfg clone' [#"../ite_normalize.rs" 55 9 55 14] [@cfg:stackify] [@cfg:subregion_analysis] (self : IteNormalize_Expr_Type.t_expr) : IteNormalize_Expr_Type.t_expr
     ensures { [#"../ite_normalize.rs" 55 9 55 14] result = self }
     
@@ -398,7 +398,7 @@ module IteNormalize_Impl6_Clone
     goto BB9
   }
   BB9 {
-    _0 <- IteNormalize_Expr_Type.C_IfThenElse ([#"../ite_normalize.rs" 55 9 55 14] Clone1.clone' _9) ([#"../ite_normalize.rs" 55 9 55 14] Clone1.clone' _12) ([#"../ite_normalize.rs" 55 9 55 14] Clone1.clone' _15);
+    _0 <- IteNormalize_Expr_Type.C_IfThenElse ([#"../ite_normalize.rs" 55 9 55 14] Clone0.clone' _9) ([#"../ite_normalize.rs" 55 9 55 14] Clone0.clone' _12) ([#"../ite_normalize.rs" 55 9 55 14] Clone0.clone' _15);
     goto BB10
   }
   BB10 {
@@ -416,7 +416,7 @@ module IteNormalize_Impl6_Clone
     goto BB14
   }
   BB14 {
-    _0 <- IteNormalize_Expr_Type.C_Var ([#"../ite_normalize.rs" 55 9 55 14] Clone0.clone' _19);
+    _0 <- IteNormalize_Expr_Type.C_Var ([#"../ite_normalize.rs" 55 9 55 14] Clone1.clone' _19);
     goto BB16
   }
   BB15 {
@@ -783,9 +783,9 @@ module IteNormalize_Impl5_Normalize
   use prelude.Borrow
   use IteNormalize_Expr_Type as IteNormalize_Expr_Type
   clone IteNormalize_Impl5_IsNormalized as IsNormalized0
+  clone IteNormalize_Impl6_Clone_Interface as Clone0
   clone IteNormalize_Impl5_Transpose_Interface as Transpose0 with
     predicate IsNormalized0.is_normalized = IsNormalized0.is_normalized
-  clone IteNormalize_Impl6_Clone_Interface as Clone0
   let rec cfg normalize [#"../ite_normalize.rs" 145 4 145 35] [@cfg:stackify] [@cfg:subregion_analysis] (self : IteNormalize_Expr_Type.t_expr) : IteNormalize_Expr_Type.t_expr
     ensures { [#"../ite_normalize.rs" 143 14 143 36] IsNormalized0.is_normalized result }
     variant {[#"../ite_normalize.rs" 144 14 144 18] self}
