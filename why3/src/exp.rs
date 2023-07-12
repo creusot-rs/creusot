@@ -298,6 +298,14 @@ impl Exp {
         Exp::BinaryOp(BinOp::Ne, Box::new(self), Box::new(rhs))
     }
 
+    pub fn lt(self, rhs: Self) -> Self {
+        Exp::BinaryOp(BinOp::Lt, Box::new(self), Box::new(rhs))
+    }
+
+    pub fn leq(self, rhs: Self) -> Self {
+        Exp::BinaryOp(BinOp::Le, Box::new(self), Box::new(rhs))
+    }
+
     pub fn app(mut self, arg: Vec<Self>) -> Self {
         match self {
             Exp::Call(_, ref mut args) => args.extend(arg),

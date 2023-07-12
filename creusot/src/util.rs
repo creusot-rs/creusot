@@ -245,6 +245,7 @@ pub(crate) fn inv_module_name(tcx: TyCtxt, kind: TyInvKind) -> Ident {
         TyInvKind::Box => "TyInv_Box".into(),
         TyInvKind::Adt(adt_did) => format!("{}_Inv", &*ident_path(tcx, adt_did)).into(),
         TyInvKind::Tuple(arity) => format!("TyInv_Tuple{arity}").into(),
+        TyInvKind::Slice => format!("TyInv_Slice").into(),
     }
 }
 
