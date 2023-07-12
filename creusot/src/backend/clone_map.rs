@@ -437,7 +437,7 @@ impl<'tcx> CloneMap<'tcx> {
     }
 
     fn clone_tyinv(&mut self, ctx: &mut Why3Generator<'tcx>, ty: Ty<'tcx>) {
-        if ty.is_box() || matches!(ty.kind(), TyKind::Param(_)) {
+        if matches!(ty.kind(), TyKind::Param(_)) {
             return;
         }
 
