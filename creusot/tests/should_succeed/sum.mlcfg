@@ -1,4 +1,17 @@
 
+module Core_Ops_Range_RangeInclusive_Type
+  type t_rangeinclusive 'idx =
+    | C_RangeInclusive 'idx 'idx bool
+    
+  let function rangeinclusive_start (self : t_rangeinclusive 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_RangeInclusive a _ _ -> a
+      end
+  let function rangeinclusive_end (self : t_rangeinclusive 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_RangeInclusive _ a _ -> a
+      end
+end
 module CreusotContracts_Invariant_Inv_Stub
   type t
   predicate inv (_x : t)
@@ -17,19 +30,6 @@ module CreusotContracts_Invariant_Inv
   val inv (_x : t) : bool
     ensures { result = inv _x }
     
-end
-module Core_Ops_Range_RangeInclusive_Type
-  type t_rangeinclusive 'idx =
-    | C_RangeInclusive 'idx 'idx bool
-    
-  let function rangeinclusive_start (self : t_rangeinclusive 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_RangeInclusive a _ _ -> a
-      end
-  let function rangeinclusive_end (self : t_rangeinclusive 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_RangeInclusive _ a _ -> a
-      end
 end
 module CreusotContracts_Std1_Ops_Impl5_StartLog_Stub
   type idx
@@ -868,6 +868,7 @@ module Sum_SumFirstN
   var n : uint32 = n;
   var sum : uint32;
   var iter : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive uint32;
+  var _7 : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive uint32;
   var iter_old : Ghost.ghost_ty (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive uint32);
   var produced : Ghost.ghost_ty (Seq.seq uint32);
   var _17 : Core_Option_Option_Type.t_option uint32;
@@ -881,10 +882,12 @@ module Sum_SumFirstN
   }
   BB0 {
     sum <- ([#"../sum.rs" 7 18 7 19] (0 : uint32));
+    _7 <- ([#"../sum.rs" 9 13 9 18] New0.new ([#"../sum.rs" 9 13 9 14] (1 : uint32)) n);
     goto BB1
   }
   BB1 {
-    iter <- ([#"../sum.rs" 8 4 8 67] IntoIter0.into_iter ([#"../sum.rs" 9 13 9 18] New0.new ([#"../sum.rs" 9 13 9 14] (1 : uint32)) n));
+    iter <- ([#"../sum.rs" 8 4 8 67] IntoIter0.into_iter _7);
+    _7 <- any Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive uint32;
     goto BB2
   }
   BB2 {

@@ -170,6 +170,19 @@ module C08Haystack_MatchAt
     ensures { result = match_at needle haystack pos len }
     
 end
+module Core_Ops_Range_RangeInclusive_Type
+  type t_rangeinclusive 'idx =
+    | C_RangeInclusive 'idx 'idx bool
+    
+  let function rangeinclusive_start (self : t_rangeinclusive 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_RangeInclusive a _ _ -> a
+      end
+  let function rangeinclusive_end (self : t_rangeinclusive 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_RangeInclusive _ a _ -> a
+      end
+end
 module CreusotContracts_Invariant_Inv_Stub
   type t
   predicate inv (_x : t)
@@ -188,19 +201,6 @@ module CreusotContracts_Invariant_Inv
   val inv (_x : t) : bool
     ensures { result = inv _x }
     
-end
-module Core_Ops_Range_RangeInclusive_Type
-  type t_rangeinclusive 'idx =
-    | C_RangeInclusive 'idx 'idx bool
-    
-  let function rangeinclusive_start (self : t_rangeinclusive 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_RangeInclusive a _ _ -> a
-      end
-  let function rangeinclusive_end (self : t_rangeinclusive 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_RangeInclusive _ a _ -> a
-      end
 end
 module CreusotContracts_Std1_Ops_Impl5_StartLog_Stub
   type idx
@@ -1535,6 +1535,9 @@ module C08Haystack_Search
   var needle : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global) = needle;
   var haystack : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global) = haystack;
   var iter : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize;
+  var _10 : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize;
+  var _12 : usize;
+  var _14 : usize;
   var iter_old : Ghost.ghost_ty (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize);
   var produced : Ghost.ghost_ty (Seq.seq usize);
   var _24 : Core_Option_Option_Type.t_option usize;
@@ -1544,6 +1547,7 @@ module C08Haystack_Search
   var _29 : Ghost.ghost_ty (Seq.seq usize);
   var i : usize;
   var iter1 : Core_Ops_Range_Range_Type.t_range usize;
+  var _36 : usize;
   var iter_old1 : Ghost.ghost_ty (Core_Ops_Range_Range_Type.t_range usize);
   var produced1 : Ghost.ghost_ty (Seq.seq usize);
   var _45 : Core_Option_Option_Type.t_option usize;
@@ -1558,16 +1562,22 @@ module C08Haystack_Search
     goto BB0
   }
   BB0 {
+    _12 <- ([#"../08_haystack.rs" 23 21 23 35] Len0.len haystack);
     goto BB1
   }
   BB1 {
+    _14 <- ([#"../08_haystack.rs" 23 38 23 50] Len0.len needle);
     goto BB2
   }
   BB2 {
+    _10 <- ([#"../08_haystack.rs" 23 17 23 50] New0.new ([#"../08_haystack.rs" 23 17 23 18] (0 : usize)) ([#"../08_haystack.rs" 23 21 23 50] _12 - _14));
+    _12 <- any usize;
+    _14 <- any usize;
     goto BB3
   }
   BB3 {
-    iter <- ([#"../08_haystack.rs" 22 4 22 112] IntoIter0.into_iter ([#"../08_haystack.rs" 23 17 23 50] New0.new ([#"../08_haystack.rs" 23 17 23 18] (0 : usize)) ([#"../08_haystack.rs" 23 21 23 50] ([#"../08_haystack.rs" 23 21 23 35] Len0.len haystack) - ([#"../08_haystack.rs" 23 38 23 50] Len0.len needle))));
+    iter <- ([#"../08_haystack.rs" 22 4 22 112] IntoIter0.into_iter _10);
+    _10 <- any Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize;
     goto BB4
   }
   BB4 {
@@ -1622,10 +1632,12 @@ module C08Haystack_Search
     produced <- _29;
     _29 <- any Ghost.ghost_ty (Seq.seq usize);
     i <- __creusot_proc_iter_elem;
+    _36 <- ([#"../08_haystack.rs" 25 20 25 32] Len0.len needle);
     goto BB15
   }
   BB15 {
-    iter1 <- ([#"../08_haystack.rs" 24 8 24 68] IntoIter1.into_iter (Core_Ops_Range_Range_Type.C_Range ([#"../08_haystack.rs" 25 17 25 18] (0 : usize)) ([#"../08_haystack.rs" 25 20 25 32] Len0.len needle)));
+    iter1 <- ([#"../08_haystack.rs" 24 8 24 68] IntoIter1.into_iter (Core_Ops_Range_Range_Type.C_Range ([#"../08_haystack.rs" 25 17 25 18] (0 : usize)) _36));
+    _36 <- any usize;
     goto BB16
   }
   BB16 {

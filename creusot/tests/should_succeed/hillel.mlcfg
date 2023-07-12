@@ -424,6 +424,7 @@ module Hillel_RightPad
   var len : usize = len;
   var pad : t = pad;
   var old_str : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)));
+  var _19 : usize;
   var _22 : ();
   var _23 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   {
@@ -446,10 +447,11 @@ module Hillel_RightPad
     goto BB3
   }
   BB3 {
+    _19 <- ([#"../hillel.rs" 24 10 24 19] Len0.len ( * str));
     goto BB4
   }
   BB4 {
-    switch ([#"../hillel.rs" 24 10 24 25] ([#"../hillel.rs" 24 10 24 19] Len0.len ( * str)) < len)
+    switch ([#"../hillel.rs" 24 10 24 25] _19 < len)
       | False -> goto BB7
       | True -> goto BB5
       end
@@ -642,6 +644,7 @@ module Hillel_LeftPad
   var pad : t = pad;
   var old_str : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)));
   var c : Ghost.ghost_ty usize;
+  var _20 : usize;
   var _23 : ();
   var _24 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var _26 : Ghost.ghost_ty usize;
@@ -670,10 +673,11 @@ module Hillel_LeftPad
     goto BB4
   }
   BB4 {
+    _20 <- ([#"../hillel.rs" 43 10 43 19] Len0.len ( * str));
     goto BB5
   }
   BB5 {
-    switch ([#"../hillel.rs" 43 10 43 25] ([#"../hillel.rs" 43 10 43 19] Len0.len ( * str)) < len)
+    switch ([#"../hillel.rs" 43 10 43 25] _20 < len)
       | False -> goto BB9
       | True -> goto BB6
       end
@@ -956,6 +960,15 @@ module CreusotContracts_Std1_Vec_Impl1_DeepModel
     
   axiom deep_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get (deep_model self) i = DeepModel0.deep_model (IndexLogic0.index_logic self i)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56] Seq.length (ShallowModel0.shallow_model self) = Seq.length (deep_model self))
 end
+module Core_Slice_Iter_Iter_Type
+  use prelude.Opaque
+  use prelude.Borrow
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_iter 't =
+    | C_Iter (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) opaque_ptr (Core_Marker_PhantomData_Type.t_phantomdata 't)
+    
+end
 module CreusotContracts_Invariant_Inv_Stub
   type t
   predicate inv (_x : t)
@@ -973,15 +986,6 @@ module CreusotContracts_Invariant_Inv
     [#"../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
   val inv (_x : t) : bool
     ensures { result = inv _x }
-    
-end
-module Core_Slice_Iter_Iter_Type
-  use prelude.Opaque
-  use prelude.Borrow
-  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
-  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
-  type t_iter 't =
-    | C_Iter (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) opaque_ptr (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
 module CreusotContracts_Std1_Slice_Impl13_ShallowModel_Stub
@@ -1751,6 +1755,7 @@ module Hillel_InsertUnique
   var elem : t = elem;
   var _8 : Ghost.ghost_ty ();
   var iter : Core_Slice_Iter_Iter_Type.t_iter t;
+  var _14 : Core_Slice_Iter_Iter_Type.t_iter t;
   var _16 : slice t;
   var iter_old : Ghost.ghost_ty (Core_Slice_Iter_Iter_Type.t_iter t);
   var produced : Ghost.ghost_ty (Seq.seq t);
@@ -1760,6 +1765,7 @@ module Hillel_InsertUnique
   var __creusot_proc_iter_elem : t;
   var _31 : Ghost.ghost_ty (Seq.seq t);
   var e : t;
+  var _36 : bool;
   var _39 : t;
   var _46 : ();
   var _47 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
@@ -1787,10 +1793,12 @@ module Hillel_InsertUnique
   }
   BB5 {
     assume { Resolve1.resolve _16 };
+    _14 <- ([#"../hillel.rs" 84 13 84 23] Iter0.iter _16);
     goto BB6
   }
   BB6 {
-    iter <- ([#"../hillel.rs" 83 4 83 111] IntoIter0.into_iter ([#"../hillel.rs" 84 13 84 23] Iter0.iter _16));
+    iter <- ([#"../hillel.rs" 83 4 83 111] IntoIter0.into_iter _14);
+    _14 <- any Core_Slice_Iter_Iter_Type.t_iter t;
     goto BB7
   }
   BB7 {
@@ -1861,12 +1869,13 @@ module Hillel_InsertUnique
     assume { Resolve6.resolve __creusot_proc_iter_elem };
     assert { [@expl:assertion] [#"../hillel.rs" 85 24 85 54] e = IndexLogic1.index_logic ( * vec) (Seq.length (Ghost.inner produced) - 1) };
     _39 <- elem;
+    _36 <- ([#"../hillel.rs" 86 11 86 21] Eq0.eq e _39);
     goto BB19
   }
   BB19 {
     assume { Resolve6.resolve _39 };
     assume { Resolve6.resolve e };
-    switch ([#"../hillel.rs" 86 11 86 21] Eq0.eq e _39)
+    switch (_36)
       | False -> goto BB22
       | True -> goto BB20
       end
@@ -2537,6 +2546,7 @@ module Hillel_Unique
   var unique : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
   var sub_str : Ghost.ghost_ty (Seq.seq t);
   var iter : Core_Ops_Range_Range_Type.t_range usize;
+  var _11 : usize;
   var iter_old : Ghost.ghost_ty (Core_Ops_Range_Range_Type.t_range usize);
   var produced : Ghost.ghost_ty (Seq.seq usize);
   var _23 : Core_Option_Option_Type.t_option usize;
@@ -2565,10 +2575,12 @@ module Hillel_Unique
   }
   BB2 {
     assume { Resolve0.resolve sub_str };
+    _11 <- ([#"../hillel.rs" 106 16 106 25] Len0.len str);
     goto BB3
   }
   BB3 {
-    iter <- ([#"../hillel.rs" 103 4 103 48] IntoIter0.into_iter (Core_Ops_Range_Range_Type.C_Range ([#"../hillel.rs" 106 13 106 14] (0 : usize)) ([#"../hillel.rs" 106 16 106 25] Len0.len str)));
+    iter <- ([#"../hillel.rs" 103 4 103 48] IntoIter0.into_iter (Core_Ops_Range_Range_Type.C_Range ([#"../hillel.rs" 106 13 106 14] (0 : usize)) _11));
+    _11 <- any usize;
     goto BB4
   }
   BB4 {
@@ -3129,6 +3141,7 @@ module Hillel_Fulcrum
   var min_dist : uint32;
   var sum : uint32;
   var iter1 : Core_Ops_Range_Range_Type.t_range usize;
+  var _37 : usize;
   var iter_old1 : Ghost.ghost_ty (Core_Ops_Range_Range_Type.t_range usize);
   var produced1 : Ghost.ghost_ty (Seq.seq usize);
   var _50 : Core_Option_Option_Type.t_option usize;
@@ -3188,6 +3201,7 @@ module Hillel_Fulcrum
     min_i <- ([#"../hillel.rs" 166 27 166 28] (0 : usize));
     min_dist <- total;
     sum <- ([#"../hillel.rs" 169 23 169 24] (0 : uint32));
+    _37 <- ([#"../hillel.rs" 175 16 175 23] Len0.len s);
     goto BB12
   }
   BB8 {
@@ -3210,7 +3224,8 @@ module Hillel_Fulcrum
     goto BB4
   }
   BB12 {
-    iter1 <- ([#"../hillel.rs" 170 4 170 58] IntoIter1.into_iter (Core_Ops_Range_Range_Type.C_Range ([#"../hillel.rs" 175 13 175 14] (0 : usize)) ([#"../hillel.rs" 175 16 175 23] Len0.len s)));
+    iter1 <- ([#"../hillel.rs" 170 4 170 58] IntoIter1.into_iter (Core_Ops_Range_Range_Type.C_Range ([#"../hillel.rs" 175 13 175 14] (0 : usize)) _37));
+    _37 <- any usize;
     goto BB13
   }
   BB13 {

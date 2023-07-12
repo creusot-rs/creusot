@@ -218,7 +218,8 @@ impl<'tcx> SimplePropagator<'tcx> {
             self.visit_statement(&mut s);
             match s {
                 fmir::Statement::Assignment(l, fmir::RValue::Expr(r))
-                    if self.should_propagate(l.local) && !self.usage[&l.local].used_in_pure_ctx => {
+                    // we do not propagate calls to avoid moving them after the resolve of their arguments
+                    if self.should_propagate(l.local) && !self.usage[&l.local].used_in_pure_ctx && !r.is_call() => {
                       self.prop.insert(l.local, r);
                       self.dead.insert(l.local);
                     }

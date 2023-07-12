@@ -316,9 +316,9 @@ module InvariantMoves_TestInvariantMove_Interface
     
 end
 module InvariantMoves_TestInvariantMove
+  use prelude.Borrow
   use prelude.Int
   use prelude.UInt32
-  use prelude.Borrow
   use seq.Seq
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = uint32
@@ -346,19 +346,20 @@ module InvariantMoves_TestInvariantMove
     predicate Resolve0.resolve = Resolve2.resolve,
     val Max0.mAX' = Max0.mAX'
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)
   clone Alloc_Vec_Impl1_Pop_Interface as Pop0 with
     type t = uint32,
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     function ShallowModel1.shallow_model = ShallowModel1.shallow_model,
     val Max0.mAX' = Max0.mAX'
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)
   let rec cfg test_invariant_move [#"../invariant_moves.rs" 5 0 5 43] [@cfg:stackify] [@cfg:subregion_analysis] (x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) = x;
+  var _4 : Core_Option_Option_Type.t_option uint32;
   var _5 : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global));
   var _6 : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global));
   {
@@ -379,11 +380,13 @@ module InvariantMoves_TestInvariantMove
     x <-  ^ _6;
     _5 <- borrow_mut ( * _6);
     _6 <- { _6 with current = ( ^ _5) };
+    _4 <- ([#"../invariant_moves.rs" 7 26 7 40] Pop0.pop _5);
+    _5 <- any borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global));
     goto BB4
   }
   BB4 {
     assume { Resolve0.resolve _6 };
-    switch ([#"../invariant_moves.rs" 7 26 7 40] Pop0.pop _5)
+    switch (_4)
       | Core_Option_Option_Type.C_Some _ -> goto BB5
       | _ -> goto BB7
       end

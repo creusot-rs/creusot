@@ -76,25 +76,6 @@ module CreusotContracts_Resolve_Resolve_Resolve
     ensures { result = resolve self }
     
 end
-module CreusotContracts_Invariant_Inv_Stub
-  type t
-  predicate inv (_x : t)
-end
-module CreusotContracts_Invariant_Inv_Interface
-  type t
-  predicate inv (_x : t)
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
-module CreusotContracts_Invariant_Inv
-  type t
-  predicate inv (_x : t) =
-    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
   type t_nonnull 't =
@@ -113,6 +94,25 @@ module Core_Slice_Iter_Iter_Type
   use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
   type t_iter 't =
     | C_Iter (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) opaque_ptr (Core_Marker_PhantomData_Type.t_phantomdata 't)
+    
+end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
     
 end
 module CreusotContracts_Std1_Slice_Impl13_ShallowModel_Stub
@@ -768,6 +768,7 @@ module C03StdIterators_SliceIter
   var slice : slice t = slice;
   var i : usize;
   var iter : Core_Slice_Iter_Iter_Type.t_iter t;
+  var _7 : Core_Slice_Iter_Iter_Type.t_iter t;
   var iter_old : Ghost.ghost_ty (Core_Slice_Iter_Iter_Type.t_iter t);
   var produced : Ghost.ghost_ty (Seq.seq t);
   var _17 : Core_Option_Option_Type.t_option t;
@@ -781,10 +782,12 @@ module C03StdIterators_SliceIter
   BB0 {
     i <- ([#"../03_std_iterators.rs" 7 16 7 17] (0 : usize));
     assume { Resolve0.resolve slice };
+    _7 <- ([#"../03_std_iterators.rs" 9 13 9 25] Iter0.iter slice);
     goto BB1
   }
   BB1 {
-    iter <- ([#"../03_std_iterators.rs" 8 4 8 38] IntoIter0.into_iter ([#"../03_std_iterators.rs" 9 13 9 25] Iter0.iter slice));
+    iter <- ([#"../03_std_iterators.rs" 8 4 8 38] IntoIter0.into_iter _7);
+    _7 <- any Core_Slice_Iter_Iter_Type.t_iter t;
     goto BB2
   }
   BB2 {
@@ -1915,6 +1918,7 @@ module C03StdIterators_AllZero
   var _0 : ();
   var v : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) = v;
   var iter : Core_Slice_Iter_IterMut_Type.t_itermut usize;
+  var _5 : Core_Slice_Iter_IterMut_Type.t_itermut usize;
   var _6 : borrowed (slice usize);
   var _7 : borrowed (slice usize);
   var _8 : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
@@ -1939,11 +1943,13 @@ module C03StdIterators_AllZero
   BB1 {
     _6 <- borrow_mut ( * _7);
     _7 <- { _7 with current = ( ^ _6) };
+    _5 <- ([#"../03_std_iterators.rs" 30 13 30 25] IterMut0.iter_mut _6);
+    _6 <- any borrowed (slice usize);
     goto BB2
   }
   BB2 {
-    iter <- ([#"../03_std_iterators.rs" 29 4 29 87] IntoIter0.into_iter ([#"../03_std_iterators.rs" 30 13 30 25] IterMut0.iter_mut _6));
-    _6 <- any borrowed (slice usize);
+    iter <- ([#"../03_std_iterators.rs" 29 4 29 87] IntoIter0.into_iter _5);
+    _5 <- any Core_Slice_Iter_IterMut_Type.t_itermut usize;
     goto BB3
   }
   BB3 {
@@ -2011,17 +2017,6 @@ module C03StdIterators_AllZero
   }
   
 end
-module Core_Iter_Adapters_Skip_Skip_Type
-  use prelude.Int
-  use prelude.UIntSize
-  type t_skip 'i =
-    | C_Skip 'i usize
-    
-  let function skip_iter (self : t_skip 'i) : 'i = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_Skip a _ -> a
-      end
-end
 module Core_Iter_Adapters_Take_Take_Type
   use prelude.Int
   use prelude.UIntSize
@@ -2031,6 +2026,17 @@ module Core_Iter_Adapters_Take_Take_Type
   let function take_iter (self : t_take 'i) : 'i = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
       | C_Take a _ -> a
+      end
+end
+module Core_Iter_Adapters_Skip_Skip_Type
+  use prelude.Int
+  use prelude.UIntSize
+  type t_skip 'i =
+    | C_Skip 'i usize
+    
+  let function skip_iter (self : t_skip 'i) : 'i = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Skip a _ -> a
       end
 end
 module CreusotContracts_Std1_Iter_Skip_Impl0_Iter_Stub
@@ -3057,15 +3063,18 @@ module C03StdIterators_SkipTake
   var res : Core_Option_Option_Type.t_option Item0.item;
   var _4 : borrowed (Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i));
   var _5 : Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i);
+  var _6 : Core_Iter_Adapters_Take_Take_Type.t_take i;
   {
     goto BB0
   }
   BB0 {
+    _6 <- ([#"../03_std_iterators.rs" 36 14 36 26] Take0.take iter n);
+    iter <- any i;
     goto BB1
   }
   BB1 {
-    _5 <- ([#"../03_std_iterators.rs" 36 14 36 34] Skip0.skip ([#"../03_std_iterators.rs" 36 14 36 26] Take0.take iter n) n);
-    iter <- any i;
+    _5 <- ([#"../03_std_iterators.rs" 36 14 36 34] Skip0.skip _6 n);
+    _6 <- any Core_Iter_Adapters_Take_Take_Type.t_take i;
     goto BB2
   }
   BB2 {
@@ -3096,61 +3105,25 @@ module C03StdIterators_SkipTake
   }
   
 end
-module CreusotContracts_Std1_Vec_Impl10_Resolve_Stub
-  type t
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
-end
-module CreusotContracts_Std1_Vec_Impl10_Resolve_Interface
-  type t
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
-  val resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Std1_Vec_Impl10_Resolve
-  type t
-  use prelude.Int
+module CreusotContracts_Std1_Iter_MapInv_MapInv_Type
+  use prelude.Ghost
   use seq.Seq
-  clone Core_Num_Impl11_Max_Stub as Max0
-  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
-    type self = t
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
-    type t = t,
-    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
-    type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global,
-    val Max0.mAX' = Max0.mAX',
-    axiom .
-  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Resolve0.resolve (IndexLogic0.index_logic self i)
-  val resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
-    ensures { result = resolve self }
+  type t_mapinv 'i 'b 'f =
+    | C_MapInv 'i 'f (Ghost.ghost_ty (Seq.seq 'b))
     
-end
-module Alloc_Vec_Impl8_Deref_Interface
-  type t
-  type a
-  use prelude.Borrow
-  use prelude.Slice
-  use seq.Seq
-  use seq.Seq
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel1 with
-    type t = Alloc_Vec_Vec_Type.t_vec t a,
-    type ShallowModelTy0.shallowModelTy = Seq.seq t
-  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel0 with
-    type t = slice t,
-    type ShallowModelTy0.shallowModelTy = Seq.seq t
-  val deref (self : Alloc_Vec_Vec_Type.t_vec t a) : slice t
-    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 137 26 137 42] ShallowModel0.shallow_model result = ShallowModel1.shallow_model self }
-    
+  let function mapinv_produced (self : t_mapinv 'i 'b 'f) : Ghost.ghost_ty (Seq.seq 'b)
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_MapInv _ _ a -> a
+      end
+  let function mapinv_iter (self : t_mapinv 'i 'b 'f) : 'i = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_MapInv a _ _ -> a
+      end
+  let function mapinv_func (self : t_mapinv 'i 'b 'f) : 'f = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_MapInv _ a _ -> a
+      end
 end
 module CreusotContracts_Std1_Ops_Impl1_Unnest_Stub
   type args
@@ -3280,6 +3253,62 @@ module C03StdIterators_Counter_Closure0
   }
   
 end
+module CreusotContracts_Std1_Vec_Impl10_Resolve_Stub
+  type t
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+end
+module CreusotContracts_Std1_Vec_Impl10_Resolve_Interface
+  type t
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  val resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = resolve self }
+    
+end
+module CreusotContracts_Std1_Vec_Impl10_Resolve
+  type t
+  use prelude.Int
+  use seq.Seq
+  clone Core_Num_Impl11_Max_Stub as Max0
+  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
+    type self = t
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
+    type t = t,
+    type a = Alloc_Alloc_Global_Type.t_global,
+    val Max0.mAX' = Max0.mAX',
+    axiom .
+  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Resolve0.resolve (IndexLogic0.index_logic self i)
+  val resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = resolve self }
+    
+end
+module Alloc_Vec_Impl8_Deref_Interface
+  type t
+  type a
+  use prelude.Borrow
+  use prelude.Slice
+  use seq.Seq
+  use seq.Seq
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel1 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel0 with
+    type t = slice t,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  val deref (self : Alloc_Vec_Vec_Type.t_vec t a) : slice t
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 137 26 137 42] ShallowModel0.shallow_model result = ShallowModel1.shallow_model self }
+    
+end
 module CreusotContracts_Std1_Ops_Impl0_Precondition_Stub
   type args
   type f
@@ -3300,26 +3329,6 @@ module CreusotContracts_Std1_Ops_Impl0_Precondition
   val precondition (self : f) (_2 : args) : bool
     ensures { result = precondition self _2 }
     
-end
-module CreusotContracts_Std1_Iter_MapInv_MapInv_Type
-  use prelude.Ghost
-  use seq.Seq
-  type t_mapinv 'i 'b 'f =
-    | C_MapInv 'i 'f (Ghost.ghost_ty (Seq.seq 'b))
-    
-  let function mapinv_produced (self : t_mapinv 'i 'b 'f) : Ghost.ghost_ty (Seq.seq 'b)
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_MapInv _ _ a -> a
-      end
-  let function mapinv_iter (self : t_mapinv 'i 'b 'f) : 'i = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_MapInv a _ _ -> a
-      end
-  let function mapinv_func (self : t_mapinv 'i 'b 'f) : 'f = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_MapInv _ a _ -> a
-      end
 end
 module CreusotContracts_Std1_Iter_MapInv_Impl0_Completed_Stub
   type i
@@ -3946,9 +3955,9 @@ end
 module C03StdIterators_Counter
   use prelude.Int
   use prelude.UIntSize
+  use prelude.UInt32
   use prelude.Borrow
   use seq.Seq
-  use prelude.UInt32
   use prelude.Slice
   use seq.Seq
   use prelude.Ghost
@@ -4179,6 +4188,8 @@ module C03StdIterators_Counter
   var v : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) = v;
   var cnt : usize;
   var x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global);
+  var _4 : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 Closure00.c03stditerators_counter_closure0;
+  var _5 : Core_Slice_Iter_Iter_Type.t_iter uint32;
   var _7 : slice uint32;
   var _10 : borrowed usize;
   {
@@ -4190,16 +4201,20 @@ module C03StdIterators_Counter
     goto BB1
   }
   BB1 {
+    _5 <- ([#"../03_std_iterators.rs" 44 22 45 15] Iter0.iter _7);
     goto BB2
   }
   BB2 {
     _10 <- borrow_mut cnt;
     cnt <-  ^ _10;
+    _4 <- ([#"../03_std_iterators.rs" 44 22 53 9] MapInv0.map_inv _5 (Closure00.C03StdIterators_Counter_Closure0 _10));
+    _5 <- any Core_Slice_Iter_Iter_Type.t_iter uint32;
+    _10 <- any borrowed usize;
     goto BB3
   }
   BB3 {
-    x <- ([#"../03_std_iterators.rs" 44 22 54 18] Collect0.collect ([#"../03_std_iterators.rs" 44 22 53 9] MapInv0.map_inv ([#"../03_std_iterators.rs" 44 22 45 15] Iter0.iter _7) (Closure00.C03StdIterators_Counter_Closure0 _10)));
-    _10 <- any borrowed usize;
+    x <- ([#"../03_std_iterators.rs" 44 22 54 18] Collect0.collect _4);
+    _4 <- any CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 Closure00.c03stditerators_counter_closure0;
     goto BB4
   }
   BB4 {
@@ -5130,6 +5145,7 @@ module C03StdIterators_EnumerateRange
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var iter : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize);
+  var _2 : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize);
   var iter_old : Ghost.ghost_ty (Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize));
   var produced : Ghost.ghost_ty (Seq.seq (usize, usize));
   var _12 : Core_Option_Option_Type.t_option (usize, usize);
@@ -5144,10 +5160,12 @@ module C03StdIterators_EnumerateRange
     goto BB0
   }
   BB0 {
+    _2 <- ([#"../03_std_iterators.rs" 74 19 74 38] Enumerate0.enumerate (Core_Ops_Range_Range_Type.C_Range ([#"../03_std_iterators.rs" 74 20 74 21] (0 : usize)) ([#"../03_std_iterators.rs" 74 23 74 25] (10 : usize))));
     goto BB1
   }
   BB1 {
-    iter <- ([#"../03_std_iterators.rs" 73 4 73 96] IntoIter0.into_iter ([#"../03_std_iterators.rs" 74 19 74 38] Enumerate0.enumerate (Core_Ops_Range_Range_Type.C_Range ([#"../03_std_iterators.rs" 74 20 74 21] (0 : usize)) ([#"../03_std_iterators.rs" 74 23 74 25] (10 : usize)))));
+    iter <- ([#"../03_std_iterators.rs" 73 4 73 96] IntoIter0.into_iter _2);
+    _2 <- any Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize);
     goto BB2
   }
   BB2 {
