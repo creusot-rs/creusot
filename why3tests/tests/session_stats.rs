@@ -66,13 +66,26 @@ fn main() {
 }
 
 fn collect_stats_at_rev(rev: &str, args: &Args) -> Result<HashMap<PathBuf, Stats>, git2::Error> {
-    let repo = Repository::open("..")?;
+    let mut repo = Repository::open("..")?;
+
+    let sig = repo.signature()?;
+    let stashed = match repo.stash_save2(&sig, None, None) {
+        Ok(_) => Ok(true),
+        Err(e) if e.code() == git2::ErrorCode::NotFound => Ok(false),
+        Err(e) => Err(e),
+    }?;
 
     let rev = repo.revparse_single(rev)?;
     repo.checkout_tree(&rev, None)?;
+    drop(rev);
+
     let old_stats = collect_stats(&args).collect();
 
     repo.checkout_head(Some(CheckoutBuilder::new().force()))?;
+    if stashed {
+        repo.stash_pop(0, None)?;
+    }
+
     Ok(old_stats)
 }
 
@@ -108,7 +121,7 @@ fn stats_for_session(sess: &Path) -> Stats {
         })
         .fold(Stats::default(), |mut stats, n| {
             stats.time += n.attribute("time").unwrap().parse::<f64>().unwrap();
-            stats.steps += n.attribute("steps").unwrap().parse::<u64>().unwrap();
+            stats.steps += n.attribute("steps").and_then(|a| a.parse::<u64>().ok()).unwrap_or(0);
             stats
         })
 }
