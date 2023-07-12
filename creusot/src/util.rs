@@ -10,7 +10,7 @@ use indexmap::IndexMap;
 use itertools::izip;
 use rustc_ast::{
     ast::{AttrArgs, AttrArgsEq},
-    AttrItem, AttrKind, Attribute,
+    AttrItem, AttrKind, Attribute, Mutability,
 };
 use rustc_hir::{
     def::{DefKind, Namespace},
@@ -240,7 +240,9 @@ pub(crate) fn ident_of_ty(sym: Symbol) -> Ident {
 pub(crate) fn inv_module_name(tcx: TyCtxt, kind: TyInvKind) -> Ident {
     match kind {
         TyInvKind::Trivial => "TyInv_Trivial".into(),
-        TyInvKind::Borrow => "TyInv_Borrow".into(),
+        TyInvKind::Borrow(Mutability::Not) => "TyInv_Borrow_Shared".into(),
+        TyInvKind::Borrow(Mutability::Mut) => "TyInv_Borrow".into(),
+        TyInvKind::Box => "TyInv_Box".into(),
         TyInvKind::Adt(adt_did) => format!("{}_Inv", &*ident_path(tcx, adt_did)).into(),
         TyInvKind::Tuple(arity) => format!("TyInv_Tuple{arity}").into(),
     }

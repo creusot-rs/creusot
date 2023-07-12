@@ -17,7 +17,8 @@ use why3::{
 #[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 pub(crate) enum TyInvKind {
     Trivial,
-    Borrow,
+    Borrow(Mutability),
+    Box,
     Adt(DefId),
     Tuple(usize),
 }
@@ -28,11 +29,8 @@ impl TyInvKind {
             TyKind::Bool | TyKind::Char | TyKind::Int(_) | TyKind::Uint(_) | TyKind::Float(_) => {
                 TyInvKind::Trivial
             }
-            TyKind::Ref(_, ty, Mutability::Not) => TyInvKind::from_ty(*ty),
-            TyKind::Ref(_, _, Mutability::Mut) => TyInvKind::Borrow,
-            TyKind::Adt(adt_def, adt_substs) if adt_def.is_box() => {
-                TyInvKind::from_ty(adt_substs.type_at(0))
-            }
+            TyKind::Ref(_, _, m) => TyInvKind::Borrow(*m),
+            TyKind::Adt(adt_def, _) if adt_def.is_box() => TyInvKind::Box,
             // TODO: if ADT inv is trivial, return TyInvKind::Trivial (optimization)
             TyKind::Adt(adt_def, _) => TyInvKind::Adt(adt_def.did()),
             TyKind::Tuple(tys) => TyInvKind::Tuple(tys.len()),
@@ -43,10 +41,17 @@ impl TyInvKind {
     pub(crate) fn to_skeleton_ty<'tcx>(self, tcx: TyCtxt<'tcx>) -> Ty<'tcx> {
         match self {
             TyInvKind::Trivial => tcx.mk_ty_param(0, Symbol::intern("T")),
-            TyInvKind::Borrow => {
+            TyInvKind::Borrow(m) => {
                 let re = tcx.lifetimes.re_erased;
                 let ty = tcx.mk_ty_param(0, Symbol::intern("T"));
-                tcx.mk_mut_ref(re, ty)
+                match m {
+                    Mutability::Not => tcx.mk_imm_ref(re, ty),
+                    Mutability::Mut => tcx.mk_mut_ref(re, ty),
+                }
+            }
+            TyInvKind::Box => {
+                let ty = tcx.mk_ty_param(0, Symbol::intern("T"));
+                tcx.mk_box(ty)
             }
             TyInvKind::Adt(did) => tcx.type_of(did).subst_identity(),
             TyInvKind::Tuple(arity) => tcx.mk_tup_from_iter(
@@ -57,7 +62,7 @@ impl TyInvKind {
 
     pub(crate) fn generics(self, tcx: TyCtxt) -> Vec<Ident> {
         match self {
-            TyInvKind::Trivial | TyInvKind::Borrow => vec!["t".into()],
+            TyInvKind::Trivial | TyInvKind::Borrow(_) | TyInvKind::Box => vec!["t".into()],
             TyInvKind::Adt(def_id) => ty_param_names(tcx, def_id).collect(),
             TyInvKind::Tuple(arity) => (0..arity).map(|i| format!["t{i}"].into()).collect(),
         }
@@ -69,11 +74,8 @@ pub(crate) fn tyinv_substs<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> SubstsRef<'
         TyKind::Bool | TyKind::Char | TyKind::Int(_) | TyKind::Uint(_) | TyKind::Float(_) => {
             tcx.mk_substs(&[GenericArg::from(ty)])
         }
-        TyKind::Ref(_, ty, Mutability::Not) => tyinv_substs(tcx, *ty),
-        TyKind::Ref(_, ty, Mutability::Mut) => tcx.mk_substs(&[GenericArg::from(*ty)]),
-        TyKind::Adt(adt_def, adt_substs) if adt_def.is_box() => {
-            tyinv_substs(tcx, adt_substs.type_at(0))
-        }
+        TyKind::Ref(_, ty, _) => tcx.mk_substs(&[GenericArg::from(*ty)]),
+        TyKind::Adt(adt_def, adt_substs) if adt_def.is_box() => tcx.mk_substs(&adt_substs[..1]),
         TyKind::Adt(_, adt_substs) => adt_substs,
         TyKind::Tuple(tys) => tcx.mk_substs_from_iter(tys.iter().map(GenericArg::from)),
         _ => tcx.mk_substs(&[GenericArg::from(ty)]),
@@ -153,7 +155,9 @@ fn build_inv_axiom<'tcx>(
 ) -> Axiom {
     let name = match inv_kind {
         TyInvKind::Trivial => "inv_trivial".into(),
-        TyInvKind::Borrow => "inv_borrow".into(),
+        TyInvKind::Borrow(Mutability::Not) => "inv_borrow_shared".into(),
+        TyInvKind::Borrow(Mutability::Mut) => "inv_borrow".into(),
+        TyInvKind::Box => "inv_box".into(),
         TyInvKind::Adt(did) => {
             let ty_name = util::item_name(ctx.tcx, did, Namespace::TypeNS);
             format!("inv_{}", &*ty_name).into()
