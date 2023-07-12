@@ -67,12 +67,12 @@ pub fn destruct(x: (NonZero, &mut NonZero)) {
 #[requires(x.0@ < i32::MAX@)]
 #[requires(x.0@ != -1)]
 pub fn frozen_dead<'a>(mut x: &'a mut NonZero, y: &'a mut NonZero) {
-    let a = &mut x.0;
+    let _a = &mut x.0;
     // here we have to resolve x
     // assert x.inv() fails: depends on ^a which is unknown
     #[allow(unused_assignments)]
     x = y;
-    inc(a); // assert old(x).inv()
+    inc(_a); // assert old(x).inv()
 }
 
 pub struct SumTo10 {

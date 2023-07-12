@@ -68,14 +68,17 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
       Some(v) => (*self).produces_one(v, ^self)
     })]
     fn next(&mut self) -> Option<Self::Item> {
+        let old_self = ghost! { *self };
         match self.iter.next() {
             Some(v) => {
                 proof_assert! { self.func.precondition((v, self.produced)) };
-                ghost! { Self::produces_one_invariant };
                 let produced = ghost! { self.produced.push(v) };
-                let r = Some((self.func)(v, ghost! { self.produced.inner() })); // FIXME: Ghost should be Copy
+                let r = (self.func)(v, ghost! { self.produced.inner() }); // FIXME: Ghost should be Copy
                 self.produced = produced;
-                r
+                ghost! { Self::produces_one_invariant };
+                proof_assert! { old_self.produces_one(r, *self) };
+                let _ = self; // Make sure self is not resolve until here.
+                Some(r)
             }
             None => {
                 self.produced = ghost! { Seq::EMPTY };
