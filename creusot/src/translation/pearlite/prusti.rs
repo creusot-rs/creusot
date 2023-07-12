@@ -388,10 +388,7 @@ fn convert<'tcx>(
                 TermKind::Cur { term } => term,
                 _ => unreachable!(),
             };
-            let ty = convert_sdt(&mut term, tenv, ts, ctx)?;
-            if ty.is_never() {
-                return Ok(Ty::never(ctx.tcx));
-            }
+            let ty = convert_sdb1(&mut term, tenv, ts, ctx)?;
             let (deref_type, inner_ty) = typeck::mut_deref(ts, &ctx, ty, term.span)?;
             *curr = match deref_type {
                 typeck::MutDerefType::Cur => TermKind::Cur { term },

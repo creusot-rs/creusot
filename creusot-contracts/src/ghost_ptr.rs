@@ -84,7 +84,7 @@ impl<T: ?Sized> GhostPtrToken<T> {
     #[ensures(*result == *(**self)@.lookup_unsized(ptr))]
     #[ensures((*^self)@ == (**self)@.remove(ptr))]
     #[ensures((^*self)@ == (^^self)@.insert(ptr, ^result))]
-    // #[ensures(!(^^t)@.contains(ptr))]
+    #[ensures(!(^^self)@.contains(ptr))]
     // ^~ It shouldn't have been possible to add pointer to `t` while we were holding a mutable reference to the pointer
     pub fn take_mut<'o, 'i>(self: &'o mut &'i mut GhostPtrToken<T>, ptr: *const T) -> &'i mut T {
         unsafe { &mut *(ptr as *mut _) }

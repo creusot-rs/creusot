@@ -100,10 +100,6 @@ impl<'tcx> Ty<'tcx> {
         }
     }
 
-    pub(crate) fn never(tcx: TyCtxt<'tcx>) -> Self {
-        Ty { ty: tcx.types.never, home: RegionSet::EMPTY.into_region(tcx) }
-    }
-
     pub(crate) fn all_at_ts(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>, ts: Region<'tcx>) -> Self {
         Ty { ty: ty.fold_with(&mut RegionReplacer { tcx, f: |_| ts }), home: ts }
     }

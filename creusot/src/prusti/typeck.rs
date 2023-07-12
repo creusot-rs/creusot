@@ -521,17 +521,25 @@ pub(crate) fn mut_deref<'tcx>(
     ty: Ty<'tcx>,
     span: Span,
 ) -> CreusotResult<(MutDerefType, Ty<'tcx>)> {
-    let Some((end, nty, Mutability::Mut)) = ty.as_ref(ts) else {unreachable!()};
-    match ts {
-        ts if ty.has_home_at_ts(ts) => Ok((Cur, nty)),
-        ts if sub_ts(end, ts) => Ok((Fin, nty)),
-        _ => {
-            let home = prepare_display(ty.home, &ctx);
-            let end = prepare_display(end, &ctx);
-            let ts = prepare_display(ts, &ctx);
-            return Err(Error::new(span, format!("invalid mut dereference of expression with home `{home}` and lifetime `{end}` at time-slice `{ts}`")));
+    match ty.as_ref(ts) {
+        Some((end, nty, Mutability::Mut)) => match ts {
+            ts if ty.has_home_at_ts(ts) => Ok((Cur, nty)),
+            ts if sub_ts(end, ts) => Ok((Fin, nty)),
+            _ => {
+                let home = prepare_display(ty.home, &ctx);
+                let end = prepare_display(end, &ctx);
+                let ts = prepare_display(ts, &ctx);
+                return Err(Error::new(span, format!("invalid mut dereference of expression with home `{home}` and lifetime `{end}` at time-slice `{ts}`")));
+            }
         }
+        Some((lft, _, _)) => {
+            let ty = shr_deref(ts, ctx, ty, span)?;
+            let Some((_, nty, Mutability::Mut)) = ty.as_ref(ts) else {unreachable!()};
+            Ok((Cur, Ty::make_ref(lft, nty, ctx.tcx)))
+        }
+        _ => unreachable!()
     }
+
 }
 
 pub(crate) fn shr_deref<'tcx>(
