@@ -14,6 +14,7 @@ pub struct Map<I: Iterator, B, F: FnMut(I::Item) -> B> {
     // The inner iterator
     iter: I,
     // The mapper
+    #[creusot::open_inv]
     func: F,
 }
 
@@ -60,14 +61,16 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, B, F> {
       None => self.completed(),
       Some(v) => (*self).produces_one(v, ^self)
     })]
-    #[maintains(inv(mut self))]
     fn next(&mut self) -> Option<Self::Item> {
+        let old_self = ghost! { *self };
         match self.iter.next() {
             Some(v) => {
                 proof_assert! { self.func.precondition((v,)) };
+                let r = (self.func)(v);
                 ghost! { Self::produces_one_invariant };
-
-                Some((self.func)(v))
+                proof_assert! { old_self.produces_one(r, *self) };
+                let _ = self; // Make sure self is not resolve until here.
+                Some(r)
             }
             None => None,
         }
@@ -119,7 +122,6 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
     #[logic]
     #[requires(self.produces_one(e, other))]
     #[requires(inv(other.iter))]
-    #[requires(inv(other.func))]
     #[ensures(inv(other))]
     fn produces_one_invariant(self, e: B, #[creusot::open_inv] other: Self) {}
 
@@ -155,7 +157,6 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, B, F> {
 #[requires(forall<e : I::Item, i2 : I> iter.produces(Seq::singleton(e), i2) ==> func.precondition((e,)))]
 #[requires(Map::<I, B, F>::reinitialize())]
 #[requires(Map::<I, B, F>::preservation(iter, func))]
-#[requires(inv(func))]
 #[ensures(result == Map { iter, func })]
 pub fn map<I: Iterator, B, F: FnMut(I::Item) -> B>(iter: I, func: F) -> Map<I, B, F> {
     Map { iter, func }

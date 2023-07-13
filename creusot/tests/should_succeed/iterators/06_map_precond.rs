@@ -12,7 +12,9 @@ use common::Iterator;
 // FIXME: make it Map<I, A, F> again
 pub struct Map<A, I: Iterator<Item = A>, B, F: FnMut(I::Item, Ghost<Seq<A>>) -> B> {
     iter: I,
+    #[creusot::open_inv]
     func: F,
+    #[creusot::open_inv]
     produced: Ghost<Seq<A>>,
 }
 
@@ -65,16 +67,18 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
       None => self.completed(),
       Some(v) => (*self).produces_one(v, ^self)
     })]
-    #[maintains(inv(mut self))]
     fn next(&mut self) -> Option<Self::Item> {
+        let old_self = ghost! { *self };
         match self.iter.next() {
             Some(v) => {
                 proof_assert! { self.func.precondition((v, self.produced)) };
-                ghost! { Self::produces_one_invariant };
                 let produced = ghost! { self.produced.push(v) };
-                let r = Some((self.func)(v, ghost! { self.produced.inner() })); // FIXME: Ghost should be Copy
+                let r = (self.func)(v, ghost! { self.produced.inner() }); // FIXME: Ghost should be Copy
                 self.produced = produced;
-                r
+                ghost! { Self::produces_one_invariant };
+                proof_assert! { old_self.produces_one(r, *self) };
+                let _ = self; // Make sure self is not resolve until here.
+                Some(r)
             }
             None => {
                 self.produced = ghost! { Seq::EMPTY };
@@ -135,7 +139,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I::Item, I
     #[logic]
     #[requires(self.produces_one(e, other))]
     #[requires(inv(other.iter))]
-    #[requires(inv(other.func))]
     #[ensures(inv(other))]
     fn produces_one_invariant(self, e: B, #[creusot::open_inv] other: Self) {}
 
@@ -174,7 +177,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Invariant
 #[requires(forall<e : I::Item, i2 : I> iter.produces(Seq::singleton(e), i2) ==> func.precondition((e, Ghost::new(Seq::EMPTY))))]
 #[requires(Map::<I::Item, I, B, F>::reinitialize())]
 #[requires(Map::<I::Item, I, B, F>::preservation(iter, func))]
-#[requires(inv(func))]
 #[ensures(result == Map { iter, func, produced: Ghost::new(Seq::EMPTY) })]
 pub fn map<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B>(
     iter: I,

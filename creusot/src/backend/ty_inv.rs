@@ -229,14 +229,18 @@ fn build_inv_exp_struct<'tcx>(
             build_inv_exp(ctx, names, ident, *ty, param_env, mode)
         }
         TyKind::Ref(_, ty, Mutability::Mut) => {
-            let mut body = build_inv_exp(ctx, names, "a".into(), *ty, param_env, mode)?;
-
-            // TODO include final value
+            let inv = build_inv_exp(ctx, names, "a".into(), *ty, param_env, mode)?;
             names.import_prelude_module(PreludeModule::Borrow);
-            let deref = Exp::Current(Box::new(Exp::pure_var(ident)));
 
-            body.subst(&[("a".into(), deref)].into());
-            Some(body)
+            let mut inv_cur = inv.clone();
+            let cur = Exp::Current(Box::new(Exp::pure_var(ident.clone())));
+            inv_cur.subst(&[("a".into(), cur)].into());
+
+            let mut inv_fin = inv;
+            let fin = Exp::Final(Box::new(Exp::pure_var(ident)));
+            inv_fin.subst(&[("a".into(), fin)].into());
+
+            Some(inv_cur.log_and(inv_fin))
         }
         TyKind::Tuple(tys) => {
             let fields: Vec<Ident> =
@@ -342,8 +346,10 @@ fn build_inv_exp_adt<'tcx>(
                 field_def.name.as_str().into()
             };
 
+            let open_inv = util::is_open_ty_inv(ctx.tcx, field_def.did);
+
             let field_ty = field_def.ty(ctx.tcx, subst);
-            if let Some(mut field_inv) =
+            if !open_inv && let Some(mut field_inv) =
                 build_inv_exp(ctx, names, field_name.clone(), field_ty, param_env, Mode::Field)
             {
                 ctx.translate_accessor(field_def.did);

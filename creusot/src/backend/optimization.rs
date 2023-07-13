@@ -92,6 +92,8 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
             }
             fmir::Statement::Invariant(t) => self.visit_term(t),
             fmir::Statement::Variant(t) => self.visit_term(t),
+            fmir::Statement::AssumeTyInv(_, p) => self.read_place(p),
+            fmir::Statement::AssertTyInv(_, p) => self.read_place(p),
         }
     }
 
@@ -256,6 +258,8 @@ impl<'tcx> SimplePropagator<'tcx> {
             fmir::Statement::Assertion { cond, msg: _ } => self.visit_term(cond),
             fmir::Statement::Invariant(t) => self.visit_term(t),
             fmir::Statement::Variant(t) => self.visit_term(t),
+            fmir::Statement::AssumeTyInv(_, _) => {},
+            fmir::Statement::AssertTyInv(_, _) => {},
         }
     }
 
