@@ -1,4 +1,5 @@
 use rustc_hir::{def::DefKind, def_id::DefId};
+use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{EarlyBinder, InternalSubsts, ParamEnv, SubstsRef, Ty, TyCtxt, TyKind};
 use rustc_span::Symbol;
 use rustc_type_ir::AliasKind;
@@ -20,7 +21,7 @@ use super::{
 /// These should be used both to power the cloning system and to order the overall translation of items in Creusot.
 ///
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash, PartialOrd, Ord)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash, PartialOrd, Ord, TypeVisitable, TypeFoldable)]
 pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
     Item(DefId, SubstsRef<'tcx>),
@@ -54,15 +55,15 @@ impl<'tcx> Dependency<'tcx> {
     }
 
     pub(crate) fn resolve(
-        self,
+        mut self,
         ctx: &TranslationCtx<'tcx>,
         param_env: ParamEnv<'tcx>,
     ) -> Option<Self> {
-        match self {
-            Dependency::Type(ty) => resolve_type(ty, ctx.tcx, param_env),
-            Dependency::Item(item, substs) => resolve_item(item, substs, ctx.tcx, param_env),
-            dep @ Dependency::TyInv(_) => Some(dep),
+        if let Dependency::Item(item, substs) = self {
+            self = resolve_item(item, substs, ctx.tcx, param_env);
         }
+
+        ctx.try_normalize_erasing_regions(param_env, self).ok()
     }
 
     pub(crate) fn did(self) -> Option<(DefId, SubstsRef<'tcx>)> {
@@ -90,16 +91,12 @@ impl<'tcx> Dependency<'tcx> {
     }
 
     #[inline]
-    pub(crate) fn erase_regions(mut self, tcx: TyCtxt<'tcx>) -> Self {
-        match &mut self {
-            Dependency::Item(_, s) => *s = tcx.erase_regions(*s),
-            Dependency::Type(ty) | Dependency::TyInv(ty) => *ty = tcx.erase_regions(*ty),
-        };
-        self
+    pub(crate) fn erase_regions(self, tcx: TyCtxt<'tcx>) -> Self {
+        tcx.erase_regions(self)
     }
 
     #[inline]
-    pub(crate) fn subst(mut self, tcx: TyCtxt<'tcx>, other: Dependency<'tcx>) -> Self {
+    pub(crate) fn subst(self, tcx: TyCtxt<'tcx>, other: Dependency<'tcx>) -> Self {
         let substs = if let Dependency::TyInv(ty) = other {
             ty_inv::tyinv_substs(tcx, ty)
         } else if let Some((_, substs)) = other.did() {
@@ -108,13 +105,7 @@ impl<'tcx> Dependency<'tcx> {
             return self;
         };
 
-        match &mut self {
-            Dependency::Item(_, s) => *s = EarlyBinder::bind(*s).subst(tcx, substs),
-            Dependency::Type(ty) | Dependency::TyInv(ty) => {
-                *ty = EarlyBinder::bind(*ty).subst(tcx, substs)
-            }
-        };
-        self
+        EarlyBinder::bind(self).subst(tcx, substs)
     }
 
     #[inline]
@@ -126,32 +117,21 @@ impl<'tcx> Dependency<'tcx> {
     }
 }
 
-fn resolve_type<'tcx>(
-    ty: Ty<'tcx>,
-    tcx: TyCtxt<'tcx>,
-    param_env: ParamEnv<'tcx>,
-) -> Option<Dependency<'tcx>> {
-    let normed = tcx.try_normalize_erasing_regions(param_env, ty);
-    match normed {
-        Ok(ty) => Some(Dependency::Type(ty)),
-        Err(_) => None,
-    }
-}
-
 fn resolve_item<'tcx>(
     item: DefId,
     substs: SubstsRef<'tcx>,
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
-) -> Option<Dependency<'tcx>> {
-    let resolved = if tcx.impl_of_method(item).is_some() {
-        (item, substs)
+) -> Dependency<'tcx> {
+    let resolved = if tcx.trait_of_item(item).is_some()
+        && let Some(resolved) = traits::resolve_opt(tcx, param_env, item, substs) {
+            resolved
     } else {
-        traits::resolve_opt(tcx, param_env, item, substs)?
+        (item, substs)
     };
+
     let resolved = closure_hack(tcx, resolved.0, resolved.1);
-    let normed = tcx.try_normalize_erasing_regions(param_env, resolved).unwrap();
-    Some(Dependency::new(tcx, normed))
+    Dependency::new(tcx, resolved)
 }
 
 pub(crate) fn closure_hack<'tcx>(
