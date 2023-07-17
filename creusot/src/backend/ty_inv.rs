@@ -331,6 +331,11 @@ fn build_inv_exp_adt<'tcx>(
     adt_def: AdtDef,
     subst: SubstsRef<'tcx>,
 ) -> Option<Exp> {
+    // trusted types are opaque and thus have no structual invariant
+    if util::is_trusted(ctx.tcx, adt_def.did()) {
+        return None;
+    }
+
     let mut branches = vec![];
     let mut trivial = true;
 
