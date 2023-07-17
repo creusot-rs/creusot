@@ -31,6 +31,8 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
                 *id = *fid;
                 *subst = fsubst;
 
+                *subst = self.tcx.normalize_erasing_regions(self.param_env, *subst);
+
                 if self.tcx.def_path_str(*id) == "std::boxed::Box::<T>::new" {
                     let arg = args.remove(0);
                     *term = arg;
