@@ -213,8 +213,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         if let Some((id, subst)) = resolve_predicate_of(self.ctx, self.param_env(), place_ty) {
             let p = self.translate_place(pl);
 
-            if self.ctx.type_invariant(self.body_id.def_id(), place_ty).is_some() {
-                self.emit_statement(fmir::Statement::AssertTyInv(place_ty, p.clone()));
+            if let Some((_, s)) = self.ctx.type_invariant(self.body_id.def_id(), place_ty) {
+                self.emit_statement(fmir::Statement::AssertTyInv(s.type_at(0), p.clone()));
             }
 
             self.emit_statement(fmir::Statement::Resolve(id, subst, p));
@@ -232,9 +232,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         self.emit_assignment(lhs, fmir::RValue::Borrow(p));
 
         let rhs_ty = rhs.ty(self.body, self.ctx.tcx).ty;
-        if self.ctx.type_invariant(self.body_id.def_id(), rhs_ty).is_some() {
+        if let Some((_, s)) = self.ctx.type_invariant(self.body_id.def_id(), rhs_ty) {
             let p = self.translate_place(*lhs);
-            self.emit_statement(fmir::Statement::AssumeTyInv(rhs_ty, p));
+            self.emit_statement(fmir::Statement::AssumeTyInv(s.type_at(0), p));
         }
     }
 
