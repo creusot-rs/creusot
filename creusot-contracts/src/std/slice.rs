@@ -239,7 +239,7 @@ extern_spec! {
         #[ensures((^self)@.exchange(self@, i@, j@))]
         fn swap(&mut self, i: usize, j: usize);
 
-        #[ensures(ix.in_bounds(self@) ==> exists<r: _> result == Some(r) && ix.has_value(self_@, *r))]
+        #[ensures(ix.in_bounds(self@) ==> exists<r: _> result == Some(r) && ix.has_value(self@, *r))]
         #[ensures(ix.in_bounds(self@) || result == None)]
         fn get<I : SliceIndex<[T]>>(&self, ix: I) -> Option<&<I as ::std::slice::SliceIndex<[T]>>::Output>;
 
@@ -273,7 +273,7 @@ extern_spec! {
             }
             None => ^self == * self && (**self)@.len() == 0
         })]
-        fn take_first_mut<'a>(self_: &mut &'a mut [T]) -> Option<&'a mut T>;
+        fn take_first_mut<'a>(self: &mut &'a mut Self) -> Option<&'a mut T>;
 
         #[ensures(result@ == self)]
         fn iter(&self) -> Iter<'_, T>;
@@ -301,8 +301,8 @@ extern_spec! {
         fn binary_search(&self, x : &T) -> Result<usize, usize>
             where T: Ord + DeepModel,  T::DeepModelTy: OrdLogic,;
 
-        #[ensures(result@ == self_@)]
-        fn into_vec<A: Allocator>(self_: Box<Self, A>) -> Vec<T, A>;
+        #[ensures(result@ == self@)]
+        fn into_vec<A: Allocator>(self: Box<Self, A>) -> Vec<T, A>;
     }
 
     impl<T, I> IndexMut<I> for [T]
