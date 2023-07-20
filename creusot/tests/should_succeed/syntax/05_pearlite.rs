@@ -87,6 +87,12 @@ pub fn reborrow_index_projection<'a, 'b, T>(a: &'a mut &'b mut [T]) -> &'a mut T
     &mut a[0]
 }
 
+#[open(self)]
+#[creusot::decl::logic]
+pub fn reborrow_index_projection2<'a, 'b, T>(a: &'a &'b [T]) -> &'a T {
+    &a[0]
+}
+
 // Left out until I understand the semantics of `Deref` patterns.
 // #[logic]
 // pub fn proj_opt(x : &mut Option<S>)  -> bool {

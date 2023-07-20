@@ -515,7 +515,14 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     }
                 }
             }
-            ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } => self.expr_term(arg),
+            ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } => {
+                // Turn `& * P` into just `P` (since immutable borrows are erased)
+                if let ExprKind::Deref { arg } = self.thir[arg].kind {
+                    self.expr_term(arg)
+                } else {
+                    self.expr_term(arg)
+                }
+            }
             ExprKind::Borrow { arg, .. } => {
                 let t = self.logical_reborrow(arg)?;
                 Ok(Term { ty, span, kind: t })
@@ -641,6 +648,32 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let term = pearlite(self.ctx, closure_id)?;
 
                 Ok(Term { ty, span, kind: TermKind::Closure { body: Box::new(term) } })
+            }
+
+            ExprKind::Index { lhs, index } => {
+                let lhs = self.expr_term(lhs)?;
+                let index = self.expr_term(index)?;
+
+                let index_logic_method =
+                    self.ctx.get_diagnostic_item(Symbol::intern("index_logic_method")).unwrap();
+                let subst =
+                    self.ctx.mk_substs(&[GenericArg::from(lhs.ty), GenericArg::from(index.ty)]);
+
+                let fun = Term {
+                    ty: self.ctx.type_of(index_logic_method).subst(self.ctx.tcx, subst),
+                    kind: TermKind::Item(index_logic_method, subst),
+                    span,
+                };
+                Ok(Term {
+                    ty,
+                    span,
+                    kind: TermKind::Call {
+                        id: index_logic_method,
+                        subst,
+                        fun: Box::new(fun),
+                        args: vec![lhs, index],
+                    },
+                })
             }
             ref ek => todo!("lower_expr: {:?}", ek),
         }
