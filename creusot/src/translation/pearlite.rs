@@ -517,7 +517,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             }
             ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } => {
                 // Turn `& * P` into just `P` (since immutable borrows are erased)
-                if let ExprKind::Deref { arg } = self.thir[arg].kind {
+                if let ExprKind::Deref { arg } = self.thir[arg].kind && self.thir[arg].ty.ref_mutability() == Some(Not) {
                     self.expr_term(arg)
                 } else {
                     self.expr_term(arg)
