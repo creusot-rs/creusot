@@ -196,7 +196,7 @@ pub mod well_founded;
 // We add some common things at the root of the creusot-contracts library
 pub use crate::{
     ghost::Ghost,
-    logic::{Int, OrdLogic, Seq},
+    logic::{Int, OrdLogic, Seq, IndexLogic as _},
     macros::*,
     model::{DeepModel, ShallowModel},
     resolve::Resolve,
@@ -222,6 +222,8 @@ pub use crate::std::{
     ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
     slice::SliceExt as _,
 };
+
+
 
 // The std vec macro uses special magic to construct the array argument
 // to Box::new directly on the heap. Because the generated MIR is hard

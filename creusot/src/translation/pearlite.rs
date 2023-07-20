@@ -886,7 +886,6 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             }
             ExprKind::Deref { arg } => {
                 let inner = self.expr_term(*arg)?;
-                if let TermKind::Var(_) = inner.kind {}
                 let ty = inner.ty.builtin_deref(false).expect("expected reference type").ty;
 
                 Ok((
@@ -931,9 +930,50 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     },
                 ))
             }
-            _ => Err(Error::new(
+            ExprKind::Call { ty,  args, .. } => {
+                if let TyKind::FnDef(id, subst) = ty.kind()  && Some(*id) ==  self.ctx.get_diagnostic_item(Symbol::intern("index_logic_method")) {
+
+                let (cur, fin) = self.logical_reborrow_inner(args[0])?;
+
+                let index = self.expr_term(args[1])?;
+
+                let index_logic_method =
+                    self.ctx.get_diagnostic_item(Symbol::intern("index_logic_method")).unwrap();
+                let subst =
+                    self.ctx.mk_substs(&[GenericArg::from(cur.ty), GenericArg::from(index.ty)]);
+
+                let fun = Term {
+                    ty: self.ctx.type_of(index_logic_method).subst(self.ctx.tcx, subst),
+                    kind: TermKind::Item(index_logic_method, subst),
+                    span,
+                };
+                Ok((
+                    Term {
+                        ty: *ty,
+                        span,
+                        kind: TermKind::Call {
+                            id: index_logic_method,
+                            subst,
+                            fun: Box::new(fun.clone()),
+                            args: vec![cur, index.clone()],
+                        },
+                    },
+                    Term {
+                        ty: *ty,
+                        span,
+                        kind: TermKind::Call {
+                            id: index_logic_method,
+                            subst,
+                            fun: Box::new(fun),
+                            args: vec![fin, index],
+                        },
+                    },
+                ))
+                } else { panic!() }
+            },
+            e => Err(Error::new(
                 span,
-                "unsupported logical reborrow, only simple field projections are supproted, sorry",
+                format!("unsupported logical reborrow {e:?}, only simple field projections are supproted, sorry"),
             )),
         }
     }

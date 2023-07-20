@@ -8,7 +8,7 @@ pub trait IndexLogic<I> {
     fn index_logic(self, idx: I) -> Self::Item;
 }
 
-impl<T, S: ShallowModel<ShallowModelTy = Seq<T>> + ?Sized> IndexLogic<Int> for S {
+impl<T> IndexLogic<Int> for Vec<T> {
     type Item = T;
 
     #[logic]
@@ -19,7 +19,7 @@ impl<T, S: ShallowModel<ShallowModelTy = Seq<T>> + ?Sized> IndexLogic<Int> for S
     }
 }
 
-impl<T, S: ShallowModel<ShallowModelTy = Seq<T>> + ?Sized> IndexLogic<usize> for S {
+impl<T> IndexLogic<usize> for Vec<T> {
     type Item = T;
 
     #[logic]
@@ -29,6 +29,51 @@ impl<T, S: ShallowModel<ShallowModelTy = Seq<T>> + ?Sized> IndexLogic<usize> for
         pearlite! { self@[ix@] }
     }
 }
+
+impl<T> IndexLogic<Int> for [T] {
+    type Item = T;
+
+    #[logic]
+    #[open]
+    #[why3::attr = "inline:trivial"]
+    fn index_logic(self, ix: Int) -> Self::Item {
+        pearlite! { self@[ix] }
+    }
+}
+
+impl<T> IndexLogic<usize> for [T] {
+    type Item = T;
+
+    #[logic]
+    #[open]
+    #[why3::attr = "inline:trivial"]
+    fn index_logic(self, ix: usize) -> Self::Item {
+        pearlite! { self@[ix@] }
+    }
+}
+
+impl<T, const N : usize> IndexLogic<Int> for [T; N] {
+    type Item = T;
+
+    #[logic]
+    #[open]
+    #[why3::attr = "inline:trivial"]
+    fn index_logic(self, ix: Int) -> Self::Item {
+        pearlite! { self@[ix] }
+    }
+}
+
+impl<T, const N : usize> IndexLogic<usize> for [T; N] {
+    type Item = T;
+
+    #[logic]
+    #[open]
+    #[why3::attr = "inline:trivial"]
+    fn index_logic(self, ix: usize) -> Self::Item {
+        pearlite! { self@[ix@] }
+    }
+}
+
 
 impl<T> IndexLogic<Int> for Ghost<Seq<T>> {
     type Item = T;

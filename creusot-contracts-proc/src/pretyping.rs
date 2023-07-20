@@ -119,7 +119,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             let index = encode_term(index)?;
 
             Ok(quote! {
-                ::creusot_contracts::logic::IndexLogic::index_logic(#expr, #index)
+                (#expr).index_logic(#index)
             })
         }
         RT::Let(_) => Err(EncodeError::Unsupported(term.span(), "Let".into())),
