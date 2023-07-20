@@ -254,22 +254,22 @@ extern_spec! {
         })]
         fn split_at_mut(&mut self, mid: usize) -> (&mut [T], &mut [T]);
 
-        #[ensures(result == None ==> self@.len() == 0 && ^self == *self && self@ == Seq::EMPTY)]
-        #[ensures(forall<first: &mut T, tail: &mut [T]>
-                  result == Some((first, tail))
-                && *first == self[0] && ^first == (^self)[0]
-                && self@.len() > 0 && (^self)@.len() > 0
-                && tail@ == self@.tail()
-                && (^tail)@ == (^self)@.tail())]
+        #[ensures(match result {
+            Some((first, tail)) => {
+                *first == self[0] && ^first == (^self)[0] &&
+                (*self)@.len() > 0 && (^self)@.len() > 0 &&
+                (*tail)@ == (*self)@.tail() &&
+                (^tail)@ == (^self)@.tail()
+            }
+            None => self@.len() == 0 && ^self == *self && self@ == Seq::EMPTY
+        })]
         fn split_first_mut(&mut self) -> Option<(&mut T, &mut [T])>;
 
         #[ensures(match result {
             Some(r) => {
-                * r == (**self)[0] &&
-                ^ r == (^*self)[0] &&
-                (**self)@.len() > 0 && // ^*s.len == **s.len ? (i dont think so)
-                (^*self)@.len() > 0 &&
-                (*^self)@.ext_eq((**self)@.tail()) && (^^self)@.ext_eq((^*self)@.tail())
+                *r == (**self)[0] && ^r == (^*self)[0] &&
+                (**self)@.len() > 0 && (^*self)@.len() > 0 &&
+                (*^self)@ == (**self)@.tail() && (^^self)@ == (^*self)@.tail()
             }
             None => ^self == * self && (**self)@.len() == 0
         })]
@@ -307,19 +307,19 @@ extern_spec! {
 
     impl<T, I> IndexMut<I> for [T]
         where I : SliceIndex<[T]> {
-       #[requires(ix.in_bounds(self@))]
-       #[ensures(ix.has_value(self@, *result))]
-       #[ensures(ix.has_value((^self)@, ^result))]
-       #[ensures(ix.resolve_elswhere(self@, (^self)@))]
-       #[ensures((^self)@.len() == self@.len())]
+        #[requires(ix.in_bounds(self@))]
+        #[ensures(ix.has_value(self@, *result))]
+        #[ensures(ix.has_value((^self)@, ^result))]
+        #[ensures(ix.resolve_elswhere(self@, (^self)@))]
+        #[ensures((^self)@.len() == self@.len())]
         fn index_mut(&mut self, ix: I) -> &mut <[T] as Index<I>>::Output;
     }
 
     impl<T, I> Index<I> for [T]
         where I : SliceIndex<[T]> {
-      #[requires(ix.in_bounds(self@))]
-      #[ensures(ix.has_value(self@, *result))]
-      fn index(&self, ix: I) -> &<[T] as Index<I>>::Output;
+        #[requires(ix.in_bounds(self@))]
+        #[ensures(ix.has_value(self@, *result))]
+        fn index(&self, ix: I) -> &<[T] as Index<I>>::Output;
     }
 }
 
