@@ -5,7 +5,7 @@ use std::mem;
 
 #[ensures(match result {
     Some(r) => {
-        *r == (**self_)[0] && ^r == (^*self_)[0] &&
+        r == (*self_)[0] &&
         (**self_)@.len() > 0 && (^*self_)@.len() > 0 &&
         (*^self_)@ == (**self_)@.tail() && (^^self_)@ == (^*self_)@.tail()
     }

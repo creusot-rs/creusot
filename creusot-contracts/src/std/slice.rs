@@ -246,17 +246,17 @@ extern_spec! {
         #[requires(mid@ <= self@.len())]
         #[ensures({
             let (l,r) = result;  let sl = self@.len();
-            ((^self)@.len() == sl) &&
-            self@.subsequence(0, mid@).ext_eq(l@) &&
-            self@.subsequence(mid@, sl).ext_eq(r@) &&
-            (^self)@.subsequence(0, mid@).ext_eq((^l)@) &&
-            (^self)@.subsequence(mid@, sl).ext_eq((^r)@)
+            (^self)@.len() == sl &&
+            self@.subsequence(0, mid@) == l@ &&
+            self@.subsequence(mid@, sl) == r@ &&
+            (^self)@.subsequence(0, mid@) == (^l)@ &&
+            (^self)@.subsequence(mid@, sl) == (^r)@
         })]
         fn split_at_mut(&mut self, mid: usize) -> (&mut [T], &mut [T]);
 
         #[ensures(match result {
             Some((first, tail)) => {
-                *first == self[0] && ^first == (^self)[0] &&
+                first == &mut self[0] &&
                 (*self)@.len() > 0 && (^self)@.len() > 0 &&
                 (*tail)@ == (*self)@.tail() &&
                 (^tail)@ == (^self)@.tail()
@@ -267,7 +267,7 @@ extern_spec! {
 
         #[ensures(match result {
             Some(r) => {
-                *r == (**self)[0] && ^r == (^*self)[0] &&
+                r == &mut (*self)[0] &&
                 (**self)@.len() > 0 && (^*self)@.len() > 0 &&
                 (*^self)@ == (**self)@.tail() && (^^self)@ == (^*self)@.tail()
             }
