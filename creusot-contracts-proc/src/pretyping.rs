@@ -152,7 +152,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             Ok(quote! {
                 & #mutability #term
             })
-        },
+        }
         RT::Repeat(_) => Err(EncodeError::Unsupported(term.span(), "Repeat".into())),
         RT::Struct(TermStruct { path, fields, rest, brace_token, dot2_token }) => {
             let mut ts = TokenStream::new();
