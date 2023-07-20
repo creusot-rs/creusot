@@ -143,39 +143,48 @@ module CreusotContracts_Model_Impl7_ShallowModel
     ensures { result = shallow_model self }
     
 end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+    
+end
 module CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub
   type t
-  type s
   use prelude.Int
-  function index_logic [@inline:trivial] (self : s) (ix : int) : t
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function index_logic [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (ix : int) : t
+    
 end
 module CreusotContracts_Logic_Ops_Impl0_IndexLogic_Interface
   type t
-  type s
   use prelude.Int
-  function index_logic [@inline:trivial] (self : s) (ix : int) : t
-  val index_logic [@inline:trivial] (self : s) (ix : int) : t
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function index_logic [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (ix : int) : t
+    
+  val index_logic [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (ix : int) : t
     ensures { result = index_logic self ix }
     
 end
 module CreusotContracts_Logic_Ops_Impl0_IndexLogic
   type t
-  type s
   use prelude.Int
   use seq.Seq
-  use seq.Seq
-  clone CreusotContracts_Model_ShallowModel_ShallowModel_Stub as ShallowModel0 with
-    type self = s,
-    type ShallowModelTy0.shallowModelTy = Seq.seq t
-  function index_logic [@inline:trivial] (self : s) (ix : int) : t =
-    [#"../../../../creusot-contracts/src/logic/ops.rs" 18 8 18 31] Seq.get (ShallowModel0.shallow_model self) ix
-  val index_logic [@inline:trivial] (self : s) (ix : int) : t
-    ensures { result = index_logic self ix }
+  clone Core_Num_Impl11_Max_Stub as Max0
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
+    type t = t,
+    type a = Alloc_Alloc_Global_Type.t_global,
+    val Max0.mAX' = Max0.mAX',
+    axiom .
+  function index_logic [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (ix : int) : t
     
-end
-module Alloc_Alloc_Global_Type
-  type t_global  =
-    | C_Global
+   =
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 18 8 18 31] Seq.get (ShallowModel0.shallow_model self) ix
+  val index_logic [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (ix : int) : t
+    ensures { result = index_logic self ix }
     
 end
 module CreusotContracts_Resolve_Resolve_Resolve_Stub
@@ -326,12 +335,8 @@ module Hillel_RightPad_Interface
   clone Core_Num_Impl11_Max_Stub as Max0
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic1 with
-    type t = t,
-    type s = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
   clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
-    type t = t,
-    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+    type t = t
   clone CreusotContracts_Model_Impl7_ShallowModel_Stub as ShallowModel1 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq t
@@ -345,7 +350,7 @@ module Hillel_RightPad_Interface
     ensures { [#"../hillel.rs" 11 10 11 62] Seq.length (ShallowModel0.shallow_model ( ^ str)) = UIntSize.to_int len \/ Seq.length (ShallowModel0.shallow_model ( ^ str)) = Seq.length (ShallowModel1.shallow_model str) }
     ensures { [#"../hillel.rs" 12 0 12 62] UIntSize.to_int len <= Seq.length (ShallowModel1.shallow_model str) -> Seq.length (ShallowModel0.shallow_model ( ^ str)) = Seq.length (ShallowModel1.shallow_model str) }
     ensures { [#"../hillel.rs" 13 0 13 55] UIntSize.to_int len > Seq.length (ShallowModel1.shallow_model str) -> Seq.length (ShallowModel0.shallow_model ( ^ str)) = UIntSize.to_int len }
-    ensures { [#"../hillel.rs" 14 0 14 75] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel1.shallow_model str) -> IndexLogic0.index_logic ( ^ str) i = IndexLogic1.index_logic str i }
+    ensures { [#"../hillel.rs" 14 0 14 75] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel1.shallow_model str) -> IndexLogic0.index_logic ( ^ str) i = IndexLogic0.index_logic ( * str) i }
     ensures { [#"../hillel.rs" 15 0 15 75] forall i : int . Seq.length (ShallowModel1.shallow_model str) <= i /\ i < UIntSize.to_int len -> IndexLogic0.index_logic ( ^ str) i = pad }
     
 end
@@ -356,9 +361,9 @@ module Hillel_RightPad
   use prelude.Int
   use prelude.UIntSize
   use prelude.Borrow
-  clone Core_Num_Impl11_Max as Max0
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel2 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -378,10 +383,6 @@ module Hillel_RightPad
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   use prelude.Ghost
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic2 with
-    type t = t,
-    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
-    function ShallowModel0.shallow_model = ShallowModel2.shallow_model
   clone Alloc_Vec_Impl1_Push_Interface as Push0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -396,18 +397,14 @@ module Hillel_RightPad
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel4.shallow_model
+  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic0 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel2.shallow_model,
+    val Max0.mAX' = Max0.mAX'
   clone CreusotContracts_Ghost_Impl1_ShallowModel as ShallowModel0 with
     type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic1 with
-    type t = t,
-    type s = Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))),
-    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic0 with
-    type t = t,
-    type s = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
-    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
   let rec cfg right_pad [#"../hillel.rs" 16 0 16 59] [@cfg:stackify] [@cfg:subregion_analysis] (str : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (len : usize) (pad : t) : ()
@@ -415,8 +412,8 @@ module Hillel_RightPad
     ensures { [#"../hillel.rs" 11 10 11 62] Seq.length (ShallowModel2.shallow_model ( ^ str)) = UIntSize.to_int len \/ Seq.length (ShallowModel2.shallow_model ( ^ str)) = Seq.length (ShallowModel1.shallow_model str) }
     ensures { [#"../hillel.rs" 12 0 12 62] UIntSize.to_int len <= Seq.length (ShallowModel1.shallow_model str) -> Seq.length (ShallowModel2.shallow_model ( ^ str)) = Seq.length (ShallowModel1.shallow_model str) }
     ensures { [#"../hillel.rs" 13 0 13 55] UIntSize.to_int len > Seq.length (ShallowModel1.shallow_model str) -> Seq.length (ShallowModel2.shallow_model ( ^ str)) = UIntSize.to_int len }
-    ensures { [#"../hillel.rs" 14 0 14 75] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel1.shallow_model str) -> IndexLogic2.index_logic ( ^ str) i = IndexLogic0.index_logic str i }
-    ensures { [#"../hillel.rs" 15 0 15 75] forall i : int . Seq.length (ShallowModel1.shallow_model str) <= i /\ i < UIntSize.to_int len -> IndexLogic2.index_logic ( ^ str) i = pad }
+    ensures { [#"../hillel.rs" 14 0 14 75] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel1.shallow_model str) -> IndexLogic0.index_logic ( ^ str) i = IndexLogic0.index_logic ( * str) i }
+    ensures { [#"../hillel.rs" 15 0 15 75] forall i : int . Seq.length (ShallowModel1.shallow_model str) <= i /\ i < UIntSize.to_int len -> IndexLogic0.index_logic ( ^ str) i = pad }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -442,8 +439,8 @@ module Hillel_RightPad
     invariant { [#"../hillel.rs" 19 16 19 44] Seq.length (ShallowModel0.shallow_model old_str) <= Seq.length (ShallowModel1.shallow_model str) };
     invariant { [#"../hillel.rs" 19 4 19 46] Seq.length (ShallowModel0.shallow_model old_str) < UIntSize.to_int len -> Seq.length (ShallowModel1.shallow_model str) <= UIntSize.to_int len };
     invariant { [#"../hillel.rs" 19 4 19 46] Seq.length (ShallowModel1.shallow_model str) > UIntSize.to_int len -> Seq.length (ShallowModel1.shallow_model str) = Seq.length (ShallowModel0.shallow_model old_str) };
-    invariant { [#"../hillel.rs" 19 4 19 46] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model old_str) -> IndexLogic0.index_logic str i = IndexLogic1.index_logic old_str i };
-    invariant { [#"../hillel.rs" 19 4 19 46] forall i : int . Seq.length (ShallowModel0.shallow_model old_str) <= i /\ i < Seq.length (ShallowModel1.shallow_model str) -> IndexLogic0.index_logic str i = pad };
+    invariant { [#"../hillel.rs" 19 4 19 46] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model old_str) -> IndexLogic0.index_logic ( * str) i = IndexLogic0.index_logic ( * Ghost.inner old_str) i };
+    invariant { [#"../hillel.rs" 19 4 19 46] forall i : int . Seq.length (ShallowModel0.shallow_model old_str) <= i /\ i < Seq.length (ShallowModel1.shallow_model str) -> IndexLogic0.index_logic ( * str) i = pad };
     goto BB3
   }
   BB3 {
@@ -474,6 +471,94 @@ module Hillel_RightPad
   }
   
 end
+module Alloc_Vec_Impl8_Deref_Interface
+  type t
+  type a
+  use prelude.Borrow
+  use prelude.Slice
+  use seq.Seq
+  use seq.Seq
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel1 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel0 with
+    type t = slice t,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  val deref (self : Alloc_Vec_Vec_Type.t_vec t a) : slice t
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 137 26 137 42] ShallowModel0.shallow_model result = ShallowModel1.shallow_model self }
+    
+end
+module CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub
+  type t
+  use seq.Seq
+  use prelude.UIntSize
+  use prelude.Int
+  use prelude.Slice
+  clone Core_Num_Impl11_Max_Stub as Max0
+  function shallow_model (self : slice t) : Seq.seq t
+end
+module CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface
+  type t
+  use seq.Seq
+  use prelude.UIntSize
+  use prelude.Int
+  use prelude.Slice
+  clone Core_Num_Impl11_Max_Stub as Max0
+  function shallow_model (self : slice t) : Seq.seq t
+  val shallow_model (self : slice t) : Seq.seq t
+    ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] result = Slice.id self }
+    ensures { result = shallow_model self }
+    
+  axiom shallow_model_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] shallow_model self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
+end
+module CreusotContracts_Std1_Slice_Impl0_ShallowModel
+  type t
+  use seq.Seq
+  use prelude.UIntSize
+  use prelude.Int
+  use prelude.Slice
+  clone Core_Num_Impl11_Max_Stub as Max0
+  function shallow_model (self : slice t) : Seq.seq t
+  val shallow_model (self : slice t) : Seq.seq t
+    ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] result = Slice.id self }
+    ensures { result = shallow_model self }
+    
+  axiom shallow_model_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] shallow_model self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
+end
+module CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub
+  type t
+  use prelude.Slice
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : slice t) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl2_IndexLogic_Interface
+  type t
+  use prelude.Slice
+  use prelude.Int
+  function index_logic [@inline:trivial] (self : slice t) (ix : int) : t
+  val index_logic [@inline:trivial] (self : slice t) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
+end
+module CreusotContracts_Logic_Ops_Impl2_IndexLogic
+  type t
+  use prelude.Slice
+  use prelude.Int
+  use seq.Seq
+  clone Core_Num_Impl11_Max_Stub as Max0
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel0 with
+    type t = t,
+    val Max0.mAX' = Max0.mAX',
+    axiom .
+  function index_logic [@inline:trivial] (self : slice t) (ix : int) : t =
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 40 8 40 31] Seq.get (ShallowModel0.shallow_model self) ix
+  val index_logic [@inline:trivial] (self : slice t) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
+end
 module Alloc_Vec_Impl1_Insert_Interface
   type t
   type a
@@ -481,15 +566,23 @@ module Alloc_Vec_Impl1_Insert_Interface
   use seq.Seq
   use prelude.Int
   use prelude.UIntSize
+  use prelude.Slice
   use seq.Seq
-  clone Core_Num_Impl11_Max_Stub as Max0
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic1 with
+  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel3 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel2 with
+    type t = slice t,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  clone Core_Num_Impl11_Max_Stub as Max0
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub as IndexLogic0 with
+    type t = t
+  clone Alloc_Vec_Impl8_Deref_Interface as Deref0 with
     type t = t,
-    type s = borrowed (Alloc_Vec_Vec_Type.t_vec t a)
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
-    type t = t,
-    type s = Alloc_Vec_Vec_Type.t_vec t a
+    type a = a,
+    function ShallowModel0.shallow_model = ShallowModel2.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel3.shallow_model
   clone CreusotContracts_Model_Impl7_ShallowModel_Stub as ShallowModel1 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
@@ -500,9 +593,9 @@ module Alloc_Vec_Impl1_Insert_Interface
     axiom .
   val insert (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : usize) (element : t) : ()
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 86 26 86 59] Seq.length (ShallowModel0.shallow_model ( ^ self)) = Seq.length (ShallowModel1.shallow_model self) + 1 }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 87 16 87 89] forall i : int . 0 <= i /\ i < UIntSize.to_int index -> IndexLogic0.index_logic ( ^ self) i = IndexLogic1.index_logic self i }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 88 26 88 52] IndexLogic0.index_logic ( ^ self) (UIntSize.to_int index) = element }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 89 16 89 105] forall i : int . UIntSize.to_int index < i /\ i < Seq.length (ShallowModel0.shallow_model ( ^ self)) -> IndexLogic0.index_logic ( ^ self) i = IndexLogic1.index_logic self (i - 1) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 87 16 87 89] forall i : int . 0 <= i /\ i < UIntSize.to_int index -> IndexLogic0.index_logic (Deref0.deref ( ^ self)) i = IndexLogic0.index_logic (Deref0.deref ( * self)) i }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 88 26 88 52] IndexLogic0.index_logic (Deref0.deref ( ^ self)) (UIntSize.to_int index) = element }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 89 16 89 105] forall i : int . UIntSize.to_int index < i /\ i < Seq.length (ShallowModel0.shallow_model ( ^ self)) -> IndexLogic0.index_logic (Deref0.deref ( ^ self)) i = IndexLogic0.index_logic (Deref0.deref ( * self)) (i - 1) }
     
 end
 module CreusotContracts_Std1_Num_Impl15_ShallowModel_Stub
@@ -537,12 +630,8 @@ module Hillel_LeftPad_Interface
   clone Core_Num_Impl11_Max_Stub as Max0
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic1 with
-    type t = t,
-    type s = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
   clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
-    type t = t,
-    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+    type t = t
   clone CreusotContracts_Model_Impl7_ShallowModel_Stub as ShallowModel1 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq t
@@ -555,7 +644,7 @@ module Hillel_LeftPad_Interface
     ensures { [#"../hillel.rs" 29 10 29 62] Seq.length (ShallowModel0.shallow_model ( ^ str)) >= UIntSize.to_int len /\ Seq.length (ShallowModel0.shallow_model ( ^ str)) >= Seq.length (ShallowModel1.shallow_model str) }
     ensures { [#"../hillel.rs" 30 10 30 62] Seq.length (ShallowModel0.shallow_model ( ^ str)) = UIntSize.to_int len \/ Seq.length (ShallowModel0.shallow_model ( ^ str)) = Seq.length (ShallowModel1.shallow_model str) }
     ensures { [#"../hillel.rs" 31 0 31 90] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model ( ^ str)) - Seq.length (ShallowModel1.shallow_model str) -> IndexLogic0.index_logic ( ^ str) i = pad }
-    ensures { [#"../hillel.rs" 32 0 32 106] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel1.shallow_model str) -> IndexLogic0.index_logic ( ^ str) (i + (Seq.length (ShallowModel0.shallow_model ( ^ str)) - Seq.length (ShallowModel1.shallow_model str))) = IndexLogic1.index_logic str i }
+    ensures { [#"../hillel.rs" 32 0 32 106] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel1.shallow_model str) -> IndexLogic0.index_logic ( ^ str) (i + (Seq.length (ShallowModel0.shallow_model ( ^ str)) - Seq.length (ShallowModel1.shallow_model str))) = IndexLogic0.index_logic ( * str) i }
     
 end
 module Hillel_LeftPad
@@ -565,8 +654,22 @@ module Hillel_LeftPad
   use prelude.UIntSize
   use seq.Seq
   use prelude.Borrow
-  clone CreusotContracts_Std1_Num_Impl15_ShallowModel as ShallowModel7
+  use prelude.Slice
   clone Core_Num_Impl11_Max as Max0
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface as ShallowModel9 with
+    type t = t,
+    val Max0.mAX' = Max0.mAX',
+    axiom .
+  clone CreusotContracts_Std1_Num_Impl15_ShallowModel as ShallowModel8
+  use seq.Seq
+  clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel7 with
+    type t = slice t,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t,
+    function ShallowModel0.shallow_model = ShallowModel9.shallow_model
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic as IndexLogic1 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel9.shallow_model,
+    val Max0.mAX' = Max0.mAX'
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel3 with
@@ -574,16 +677,20 @@ module Hillel_LeftPad
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  use seq.Seq
   clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel6 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model
+  clone Alloc_Vec_Impl8_Deref_Interface as Deref0 with
+    type t = t,
+    type a = Alloc_Alloc_Global_Type.t_global,
+    function ShallowModel0.shallow_model = ShallowModel7.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel6.shallow_model
   use prelude.Int
   clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel5 with
     type t = usize,
     type ShallowModelTy0.shallowModelTy = int,
-    function ShallowModel0.shallow_model = ShallowModel7.shallow_model
+    function ShallowModel0.shallow_model = ShallowModel8.shallow_model
   clone CreusotContracts_Model_Impl7_ShallowModel as ShallowModel1 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
@@ -593,22 +700,16 @@ module Hillel_LeftPad
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   use prelude.Ghost
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic2 with
-    type t = t,
-    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
-    function ShallowModel0.shallow_model = ShallowModel3.shallow_model
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic0 with
-    type t = t,
-    type s = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
-    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone Alloc_Vec_Impl1_Insert_Interface as Insert0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model,
     function ShallowModel1.shallow_model = ShallowModel1.shallow_model,
-    function IndexLogic0.index_logic = IndexLogic2.index_logic,
-    function IndexLogic1.index_logic = IndexLogic0.index_logic,
-    val Max0.mAX' = Max0.mAX'
+    val Deref0.deref = Deref0.deref,
+    function IndexLogic0.index_logic = IndexLogic1.index_logic,
+    val Max0.mAX' = Max0.mAX',
+    function ShallowModel2.shallow_model = ShallowModel7.shallow_model,
+    function ShallowModel3.shallow_model = ShallowModel6.shallow_model
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
@@ -617,25 +718,25 @@ module Hillel_LeftPad
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel6.shallow_model
-  clone CreusotContracts_Ghost_Impl1_ShallowModel as ShallowModel0 with
-    type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
-    type ShallowModelTy0.shallowModelTy = Seq.seq t,
-    function ShallowModel0.shallow_model = ShallowModel4.shallow_model
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic1 with
+  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic0 with
     type t = t,
-    type s = Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))),
-    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+    function ShallowModel0.shallow_model = ShallowModel3.shallow_model,
+    val Max0.mAX' = Max0.mAX'
   clone CreusotContracts_Ghost_Impl1_ShallowModel as ShallowModel2 with
     type t = usize,
     type ShallowModelTy0.shallowModelTy = int,
     function ShallowModel0.shallow_model = ShallowModel5.shallow_model
+  clone CreusotContracts_Ghost_Impl1_ShallowModel as ShallowModel0 with
+    type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
+    type ShallowModelTy0.shallowModelTy = Seq.seq t,
+    function ShallowModel0.shallow_model = ShallowModel4.shallow_model
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
   let rec cfg left_pad [#"../hillel.rs" 33 0 33 58] [@cfg:stackify] [@cfg:subregion_analysis] (str : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (len : usize) (pad : t) : ()
     ensures { [#"../hillel.rs" 29 10 29 62] Seq.length (ShallowModel3.shallow_model ( ^ str)) >= UIntSize.to_int len /\ Seq.length (ShallowModel3.shallow_model ( ^ str)) >= Seq.length (ShallowModel1.shallow_model str) }
     ensures { [#"../hillel.rs" 30 10 30 62] Seq.length (ShallowModel3.shallow_model ( ^ str)) = UIntSize.to_int len \/ Seq.length (ShallowModel3.shallow_model ( ^ str)) = Seq.length (ShallowModel1.shallow_model str) }
-    ensures { [#"../hillel.rs" 31 0 31 90] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel3.shallow_model ( ^ str)) - Seq.length (ShallowModel1.shallow_model str) -> IndexLogic2.index_logic ( ^ str) i = pad }
-    ensures { [#"../hillel.rs" 32 0 32 106] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel1.shallow_model str) -> IndexLogic2.index_logic ( ^ str) (i + (Seq.length (ShallowModel3.shallow_model ( ^ str)) - Seq.length (ShallowModel1.shallow_model str))) = IndexLogic0.index_logic str i }
+    ensures { [#"../hillel.rs" 31 0 31 90] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel3.shallow_model ( ^ str)) - Seq.length (ShallowModel1.shallow_model str) -> IndexLogic0.index_logic ( ^ str) i = pad }
+    ensures { [#"../hillel.rs" 32 0 32 106] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel1.shallow_model str) -> IndexLogic0.index_logic ( ^ str) (i + (Seq.length (ShallowModel3.shallow_model ( ^ str)) - Seq.length (ShallowModel1.shallow_model str))) = IndexLogic0.index_logic ( * str) i }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -668,8 +769,8 @@ module Hillel_LeftPad
     invariant { [#"../hillel.rs" 37 4 37 46] Seq.length (ShallowModel0.shallow_model old_str) < UIntSize.to_int len -> Seq.length (ShallowModel1.shallow_model str) <= UIntSize.to_int len };
     invariant { [#"../hillel.rs" 37 4 37 46] Seq.length (ShallowModel1.shallow_model str) > UIntSize.to_int len -> Seq.length (ShallowModel1.shallow_model str) = Seq.length (ShallowModel0.shallow_model old_str) };
     invariant { [#"../hillel.rs" 40 16 40 49] ShallowModel2.shallow_model c = Seq.length (ShallowModel1.shallow_model str) - Seq.length (ShallowModel0.shallow_model old_str) };
-    invariant { [#"../hillel.rs" 37 4 37 46] forall i : int . ShallowModel2.shallow_model c <= i /\ i < Seq.length (ShallowModel1.shallow_model str) -> IndexLogic0.index_logic str i = IndexLogic1.index_logic old_str (i - ShallowModel2.shallow_model c) };
-    invariant { [#"../hillel.rs" 37 4 37 46] forall i : int . 0 <= i /\ i < ShallowModel2.shallow_model c -> IndexLogic0.index_logic str i = pad };
+    invariant { [#"../hillel.rs" 37 4 37 46] forall i : int . ShallowModel2.shallow_model c <= i /\ i < Seq.length (ShallowModel1.shallow_model str) -> IndexLogic0.index_logic ( * str) i = IndexLogic0.index_logic ( * Ghost.inner old_str) (i - ShallowModel2.shallow_model c) };
+    invariant { [#"../hillel.rs" 37 4 37 46] forall i : int . 0 <= i /\ i < ShallowModel2.shallow_model c -> IndexLogic0.index_logic ( * str) i = pad };
     goto BB4
   }
   BB4 {
@@ -887,16 +988,28 @@ module CreusotContracts_Std1_Vec_Impl1_DeepModel_Stub
   type a
   use seq.Seq
   use prelude.Int
+  use prelude.Slice
+  use seq.Seq
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel2 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel1 with
+    type t = slice t,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
   clone Core_Num_Impl11_Max_Stub as Max0
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = t
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub as IndexLogic0 with
+    type t = t
+  clone Alloc_Vec_Impl8_Deref_Interface as Deref0 with
     type t = t,
-    type s = Alloc_Vec_Vec_Type.t_vec t a
+    type a = a,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel2.shallow_model
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = a,
@@ -909,16 +1022,28 @@ module CreusotContracts_Std1_Vec_Impl1_DeepModel_Interface
   type a
   use seq.Seq
   use prelude.Int
+  use prelude.Slice
+  use seq.Seq
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel2 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel1 with
+    type t = slice t,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
   clone Core_Num_Impl11_Max_Stub as Max0
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = t
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub as IndexLogic0 with
+    type t = t
+  clone Alloc_Vec_Impl8_Deref_Interface as Deref0 with
     type t = t,
-    type s = Alloc_Vec_Vec_Type.t_vec t a
+    type a = a,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel2.shallow_model
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = a,
@@ -927,26 +1052,38 @@ module CreusotContracts_Std1_Vec_Impl1_DeepModel_Interface
   function deep_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq DeepModelTy0.deepModelTy
   val deep_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq DeepModelTy0.deepModelTy
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56] Seq.length (ShallowModel0.shallow_model self) = Seq.length result }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get result i = DeepModel0.deep_model (IndexLogic0.index_logic self i) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get result i = DeepModel0.deep_model (IndexLogic0.index_logic (Deref0.deref self) i) }
     ensures { result = deep_model self }
     
-  axiom deep_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get (deep_model self) i = DeepModel0.deep_model (IndexLogic0.index_logic self i)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56] Seq.length (ShallowModel0.shallow_model self) = Seq.length (deep_model self))
+  axiom deep_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get (deep_model self) i = DeepModel0.deep_model (IndexLogic0.index_logic (Deref0.deref self) i)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56] Seq.length (ShallowModel0.shallow_model self) = Seq.length (deep_model self))
 end
 module CreusotContracts_Std1_Vec_Impl1_DeepModel
   type t
   type a
   use seq.Seq
   use prelude.Int
+  use prelude.Slice
+  use seq.Seq
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel2 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel1 with
+    type t = slice t,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
   clone Core_Num_Impl11_Max_Stub as Max0
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = t
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub as IndexLogic0 with
+    type t = t
+  clone Alloc_Vec_Impl8_Deref_Interface as Deref0 with
     type t = t,
-    type s = Alloc_Vec_Vec_Type.t_vec t a
+    type a = a,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel2.shallow_model
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = a,
@@ -955,10 +1092,10 @@ module CreusotContracts_Std1_Vec_Impl1_DeepModel
   function deep_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq DeepModelTy0.deepModelTy
   val deep_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq DeepModelTy0.deepModelTy
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56] Seq.length (ShallowModel0.shallow_model self) = Seq.length result }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get result i = DeepModel0.deep_model (IndexLogic0.index_logic self i) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get result i = DeepModel0.deep_model (IndexLogic0.index_logic (Deref0.deref self) i) }
     ensures { result = deep_model self }
     
-  axiom deep_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get (deep_model self) i = DeepModel0.deep_model (IndexLogic0.index_logic self i)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56] Seq.length (ShallowModel0.shallow_model self) = Seq.length (deep_model self))
+  axiom deep_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Seq.get (deep_model self) i = DeepModel0.deep_model (IndexLogic0.index_logic (Deref0.deref self) i)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56] Seq.length (ShallowModel0.shallow_model self) = Seq.length (deep_model self))
 end
 module Core_Slice_Iter_Iter_Type
   use prelude.Opaque
@@ -1022,9 +1159,8 @@ module CreusotContracts_Std1_Slice_Impl4_ToRefSeq_Stub
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
-    type t = t,
-    type s = slice t
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub as IndexLogic0 with
+    type t = t
   clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel0 with
     type t = slice t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
@@ -1037,9 +1173,8 @@ module CreusotContracts_Std1_Slice_Impl4_ToRefSeq_Interface
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
-    type t = t,
-    type s = slice t
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub as IndexLogic0 with
+    type t = t
   clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel0 with
     type t = slice t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
@@ -1058,9 +1193,8 @@ module CreusotContracts_Std1_Slice_Impl4_ToRefSeq
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
-    type t = t,
-    type s = slice t
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub as IndexLogic0 with
+    type t = t
   clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel0 with
     type t = slice t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
@@ -1097,9 +1231,8 @@ module CreusotContracts_Std1_Slice_Impl15_Produces
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
-    type t = t,
-    type s = slice t
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub as IndexLogic0 with
+    type t = t
   clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel1 with
     type t = slice t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
@@ -1119,14 +1252,14 @@ module CreusotContracts_Std1_Slice_Impl15_Produces
     ensures { result = produces self visited tl }
     
 end
-module CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub
+module CreusotContracts_Logic_Ops_Impl6_IndexLogic_Stub
   type t
   use prelude.Ghost
   use seq.Seq
   use prelude.Int
   function index_logic [@inline:trivial] (self : Ghost.ghost_ty (Seq.seq t)) (ix : int) : t
 end
-module CreusotContracts_Logic_Ops_Impl2_IndexLogic_Interface
+module CreusotContracts_Logic_Ops_Impl6_IndexLogic_Interface
   type t
   use prelude.Ghost
   use seq.Seq
@@ -1136,13 +1269,13 @@ module CreusotContracts_Logic_Ops_Impl2_IndexLogic_Interface
     ensures { result = index_logic self ix }
     
 end
-module CreusotContracts_Logic_Ops_Impl2_IndexLogic
+module CreusotContracts_Logic_Ops_Impl6_IndexLogic
   type t
   use prelude.Ghost
   use seq.Seq
   use prelude.Int
   function index_logic [@inline:trivial] (self : Ghost.ghost_ty (Seq.seq t)) (ix : int) : t =
-    [#"../../../../creusot-contracts/src/logic/ops.rs" 40 8 40 33] Seq.get (Ghost.inner self) ix
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 85 8 85 33] Seq.get (Ghost.inner self) ix
   val index_logic [@inline:trivial] (self : Ghost.ghost_ty (Seq.seq t)) (ix : int) : t
     ensures { result = index_logic self ix }
     
@@ -1188,24 +1321,6 @@ module Core_Option_Option_Type
       | C_None -> any 't
       | C_Some a -> a
       end
-end
-module Alloc_Vec_Impl8_Deref_Interface
-  type t
-  type a
-  use prelude.Borrow
-  use prelude.Slice
-  use seq.Seq
-  use seq.Seq
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel1 with
-    type t = Alloc_Vec_Vec_Type.t_vec t a,
-    type ShallowModelTy0.shallowModelTy = Seq.seq t
-  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel0 with
-    type t = slice t,
-    type ShallowModelTy0.shallowModelTy = Seq.seq t
-  val deref (self : Alloc_Vec_Vec_Type.t_vec t a) : slice t
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 137 26 137 42] ShallowModel0.shallow_model result = ShallowModel1.shallow_model self }
-    
 end
 module Core_Slice_Impl0_Iter_Interface
   type t
@@ -1287,45 +1402,6 @@ module Core_Slice_Iter_Iter_Type_Inv
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = Core_Slice_Iter_Iter_Type.t_iter t
   axiom inv_t_iter : forall self : Core_Slice_Iter_Iter_Type.t_iter t . Inv0.inv self = true
-end
-module CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub
-  type t
-  use seq.Seq
-  use prelude.UIntSize
-  use prelude.Int
-  use prelude.Slice
-  clone Core_Num_Impl11_Max_Stub as Max0
-  function shallow_model (self : slice t) : Seq.seq t
-end
-module CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface
-  type t
-  use seq.Seq
-  use prelude.UIntSize
-  use prelude.Int
-  use prelude.Slice
-  clone Core_Num_Impl11_Max_Stub as Max0
-  function shallow_model (self : slice t) : Seq.seq t
-  val shallow_model (self : slice t) : Seq.seq t
-    ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
-    ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] result = Slice.id self }
-    ensures { result = shallow_model self }
-    
-  axiom shallow_model_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] shallow_model self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
-end
-module CreusotContracts_Std1_Slice_Impl0_ShallowModel
-  type t
-  use seq.Seq
-  use prelude.UIntSize
-  use prelude.Int
-  use prelude.Slice
-  clone Core_Num_Impl11_Max_Stub as Max0
-  function shallow_model (self : slice t) : Seq.seq t
-  val shallow_model (self : slice t) : Seq.seq t
-    ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
-    ensures { [#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] result = Slice.id self }
-    ensures { result = shallow_model self }
-    
-  axiom shallow_model_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 14 19 41] shallow_model self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
 end
 module CreusotContracts_Std1_Slice_Impl15_Completed_Stub
   type t
@@ -1526,12 +1602,24 @@ module Hillel_InsertUnique_Interface
   type t
   use prelude.Borrow
   use seq.Seq
-  clone Core_Num_Impl11_Max_Stub as Max0
+  use prelude.Slice
+  use seq.Seq
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
+  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel2 with
+    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel1 with
+    type t = slice t,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  clone Core_Num_Impl11_Max_Stub as Max0
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub as IndexLogic0 with
+    type t = t
+  clone Alloc_Vec_Impl8_Deref_Interface as Deref0 with
     type t = t,
-    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+    type a = Alloc_Alloc_Global_Type.t_global,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel2.shallow_model
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -1539,7 +1627,6 @@ module Hillel_InsertUnique_Interface
     axiom .
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = t
-  use seq.Seq
   clone Hillel_Contains_Stub as Contains0 with
     type t = DeepModelTy0.deepModelTy
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel2 with
@@ -1551,10 +1638,13 @@ module Hillel_InsertUnique_Interface
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    val Deref0.deref = Deref0.deref,
     function IndexLogic0.index_logic = IndexLogic0.index_logic,
     function DeepModel0.deep_model = DeepModel2.deep_model,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     val Max0.mAX' = Max0.mAX',
+    function ShallowModel1.shallow_model = ShallowModel1.shallow_model,
+    function ShallowModel2.shallow_model = ShallowModel2.shallow_model,
     axiom .
   clone Hillel_IsUnique_Stub as IsUnique0 with
     type t = DeepModelTy0.deepModelTy
@@ -1621,14 +1711,14 @@ module Hillel_InsertUnique
     function ShallowModel0.shallow_model = ShallowModel6.shallow_model,
     function ShallowModel1.shallow_model = ShallowModel5.shallow_model,
     val Max0.mAX' = Max0.mAX'
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic as IndexLogic2 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel5.shallow_model,
+    val Max0.mAX' = Max0.mAX'
   clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel0 with
     type t = slice t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel5.shallow_model
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic2 with
-    type t = t,
-    type s = slice t,
-    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone CreusotContracts_Std1_Slice_Impl4_ToRefSeq_Interface as ToRefSeq0 with
     type t = t,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
@@ -1663,18 +1753,22 @@ module Hillel_InsertUnique
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic1 with
+  clone Alloc_Vec_Impl8_Deref_Interface as Deref0 with
     type t = t,
-    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
-    function ShallowModel0.shallow_model = ShallowModel3.shallow_model
+    type a = Alloc_Alloc_Global_Type.t_global,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel1.shallow_model
   clone CreusotContracts_Std1_Vec_Impl1_DeepModel_Interface as DeepModel3 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model,
-    function IndexLogic0.index_logic = IndexLogic1.index_logic,
+    val Deref0.deref = Deref0.deref,
+    function IndexLogic0.index_logic = IndexLogic2.index_logic,
     function DeepModel0.deep_model = DeepModel1.deep_model,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     val Max0.mAX' = Max0.mAX',
+    function ShallowModel1.shallow_model = ShallowModel0.shallow_model,
+    function ShallowModel2.shallow_model = ShallowModel1.shallow_model,
     axiom .
   clone Alloc_Vec_Impl1_Push_Interface as Push0 with
     type t = t,
@@ -1698,6 +1792,10 @@ module Hillel_InsertUnique
     function DeepModel0.deep_model = DeepModel4.deep_model,
     function DeepModel1.deep_model = DeepModel4.deep_model,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic1 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel3.shallow_model,
+    val Max0.mAX' = Max0.mAX'
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve6 with
     type self = t
   use Core_Option_Option_Type as Core_Option_Option_Type
@@ -1708,7 +1806,7 @@ module Hillel_InsertUnique
     type Item0.item = t,
     predicate Completed0.completed = Completed0.completed,
     predicate Produces0.produces = Produces0.produces
-  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic as IndexLogic0 with
+  clone CreusotContracts_Logic_Ops_Impl6_IndexLogic as IndexLogic0 with
     type t = t
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve3 with
     type self = Ghost.ghost_ty (Seq.seq t)
@@ -1724,11 +1822,6 @@ module Hillel_InsertUnique
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
     type self = slice t
-  clone Alloc_Vec_Impl8_Deref_Interface as Deref0 with
-    type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global,
-    function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
-    function ShallowModel1.shallow_model = ShallowModel1.shallow_model
   clone Hillel_IsSubset as IsSubset0 with
     type t = DeepModelTy0.deepModelTy,
     predicate Contains0.contains = Contains0.contains
@@ -2006,8 +2099,7 @@ module CreusotContracts_Std1_Vec_Impl10_Resolve
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
-    type t = t,
-    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+    type t = t
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -2237,9 +2329,8 @@ module CreusotContracts_Std1_Slice_Impl1_DeepModel_Stub
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
-    type t = t,
-    type s = slice t
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub as IndexLogic0 with
+    type t = t
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     val Max0.mAX' = Max0.mAX',
@@ -2257,9 +2348,8 @@ module CreusotContracts_Std1_Slice_Impl1_DeepModel_Interface
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
-    type t = t,
-    type s = slice t
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub as IndexLogic0 with
+    type t = t
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     val Max0.mAX' = Max0.mAX',
@@ -2283,9 +2373,8 @@ module CreusotContracts_Std1_Slice_Impl1_DeepModel
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
-    type t = t,
-    type s = slice t
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub as IndexLogic0 with
+    type t = t
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     val Max0.mAX' = Max0.mAX',
@@ -2344,15 +2433,25 @@ module Hillel_Unique_Interface
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = t
   use seq.Seq
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel2 with
+    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel1 with
+    type t = slice t,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
   clone Core_Num_Impl11_Max_Stub as Max0
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel2 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub as IndexLogic0 with
+    type t = t
+  clone Alloc_Vec_Impl8_Deref_Interface as Deref0 with
     type t = t,
-    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+    type a = Alloc_Alloc_Global_Type.t_global,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel2.shallow_model
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -2369,10 +2468,13 @@ module Hillel_Unique_Interface
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    val Deref0.deref = Deref0.deref,
     function IndexLogic0.index_logic = IndexLogic0.index_logic,
     function DeepModel0.deep_model = DeepModel2.deep_model,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     val Max0.mAX' = Max0.mAX',
+    function ShallowModel1.shallow_model = ShallowModel1.shallow_model,
+    function ShallowModel2.shallow_model = ShallowModel2.shallow_model,
     axiom .
   val unique [#"../hillel.rs" 99 0 99 56] (str : slice t) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { [#"../hillel.rs" 96 10 96 40] IsUnique0.is_unique (DeepModel0.deep_model result) }
@@ -2395,40 +2497,56 @@ module Hillel_Unique
     type t = usize,
     predicate Inv0.inv = Inv1.inv,
     axiom .
-  use seq.Seq
   clone Core_Num_Impl11_Max as Max0
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface as ShallowModel2 with
-    type t = t,
-    val Max0.mAX' = Max0.mAX',
-    axiom .
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic1 with
-    type t = t,
-    type s = slice t,
-    function ShallowModel0.shallow_model = ShallowModel2.shallow_model
-  clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
-    type self = t
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Model_DeepModel_DeepModel_Interface as DeepModel3 with
-    type self = t,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel1 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic0 with
+  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic1 with
     type t = t,
-    type s = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    val Max0.mAX' = Max0.mAX'
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface as ShallowModel3 with
+    type t = t,
+    val Max0.mAX' = Max0.mAX',
+    axiom .
+  use seq.Seq
+  clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel2 with
+    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
+    type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+  clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel0 with
+    type t = slice t,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t,
+    function ShallowModel0.shallow_model = ShallowModel3.shallow_model
+  clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
+    type self = t
+  clone CreusotContracts_Model_DeepModel_DeepModel_Interface as DeepModel3 with
+    type self = t,
+    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic as IndexLogic0 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel3.shallow_model,
+    val Max0.mAX' = Max0.mAX'
+  clone Alloc_Vec_Impl8_Deref_Interface as Deref0 with
+    type t = t,
+    type a = Alloc_Alloc_Global_Type.t_global,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel2.shallow_model
   clone CreusotContracts_Std1_Vec_Impl1_DeepModel_Interface as DeepModel0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    val Deref0.deref = Deref0.deref,
     function IndexLogic0.index_logic = IndexLogic0.index_logic,
     function DeepModel0.deep_model = DeepModel3.deep_model,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     val Max0.mAX' = Max0.mAX',
+    function ShallowModel1.shallow_model = ShallowModel0.shallow_model,
+    function ShallowModel2.shallow_model = ShallowModel2.shallow_model,
     axiom .
   clone CreusotContracts_Model_Impl6_DeepModel as DeepModel5 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
@@ -2447,8 +2565,8 @@ module Hillel_Unique
     type t = DeepModelTy0.deepModelTy
   clone CreusotContracts_Std1_Slice_Impl1_DeepModel_Interface as DeepModel4 with
     type t = t,
-    function ShallowModel0.shallow_model = ShallowModel2.shallow_model,
-    function IndexLogic0.index_logic = IndexLogic1.index_logic,
+    function ShallowModel0.shallow_model = ShallowModel3.shallow_model,
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
     function DeepModel0.deep_model = DeepModel3.deep_model,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     val Max0.mAX' = Max0.mAX',
@@ -2481,13 +2599,9 @@ module Hillel_Unique
   clone CreusotContracts_Std1_Vec_Impl10_Resolve as Resolve5 with
     type t = t,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
-    function IndexLogic0.index_logic = IndexLogic0.index_logic,
+    function IndexLogic0.index_logic = IndexLogic1.index_logic,
     predicate Resolve0.resolve = Resolve2.resolve,
     val Max0.mAX' = Max0.mAX'
-  clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel0 with
-    type t = slice t,
-    type ShallowModelTy0.shallowModelTy = Seq.seq t,
-    function ShallowModel0.shallow_model = ShallowModel2.shallow_model
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve4 with
     type self = slice t
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve3 with
@@ -2507,8 +2621,11 @@ module Hillel_Unique
     predicate Contains0.contains = Contains0.contains,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    val Deref0.deref = Deref0.deref,
     function IndexLogic0.index_logic = IndexLogic0.index_logic,
-    val Max0.mAX' = Max0.mAX'
+    val Max0.mAX' = Max0.mAX',
+    function ShallowModel1.shallow_model = ShallowModel0.shallow_model,
+    function ShallowModel2.shallow_model = ShallowModel2.shallow_model
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Iter_Range_Impl3_Next_Interface as Next0 with
     type a = usize,
@@ -3048,14 +3165,14 @@ module Hillel_Fulcrum
     function ShallowModel1.shallow_model = ShallowModel2.shallow_model,
     val Max0.mAX' = Max0.mAX'
   use seq.Seq
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic as IndexLogic0 with
+    type t = uint32,
+    function ShallowModel0.shallow_model = ShallowModel2.shallow_model,
+    val Max0.mAX' = Max0.mAX'
   clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel0 with
     type t = slice uint32,
     type ShallowModelTy0.shallowModelTy = Seq.seq uint32,
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic as IndexLogic0 with
-    type t = uint32,
-    type s = slice uint32,
-    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone CreusotContracts_Std1_Slice_Impl4_ToRefSeq_Interface as ToRefSeq0 with
     type t = uint32,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,

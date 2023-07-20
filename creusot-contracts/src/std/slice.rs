@@ -254,25 +254,25 @@ extern_spec! {
         })]
         fn split_at_mut(&mut self, mid: usize) -> (&mut [T], &mut [T]);
 
-        // #[ensures(match result {
-        //     Some((first, tail)) => {
-        //         first == &mut self[0] &&
-        //         (*self)@.len() > 0 && (^self)@.len() > 0 &&
-        //         (*tail)@ == (*self)@.tail() &&
-        //         (^tail)@ == (^self)@.tail()
-        //     }
-        //     None => self@.len() == 0 && ^self == *self && self@ == Seq::EMPTY
-        // })]
+        #[ensures(match result {
+            Some((first, tail)) => {
+                first == &mut self[0] &&
+                (*self)@.len() > 0 && (^self)@.len() > 0 &&
+                (*tail)@ == (*self)@.tail() &&
+                (^tail)@ == (^self)@.tail()
+            }
+            None => self@.len() == 0 && ^self == *self && self@ == Seq::EMPTY
+        })]
         fn split_first_mut(&mut self) -> Option<(&mut T, &mut [T])>;
 
-        // #[ensures(match result {
-        //     Some(r) => {
-        //         r == &mut (*self)[0] &&
-        //         (**self)@.len() > 0 && (^*self)@.len() > 0 &&
-        //         (*^self)@ == (**self)@.tail() && (^^self)@ == (^*self)@.tail()
-        //     }
-        //     None => ^self == * self && (**self)@.len() == 0
-        // })]
+        #[ensures(match result {
+            Some(r) => {
+                r == &mut (*self)[0] &&
+                (**self)@.len() > 0 && (^*self)@.len() > 0 &&
+                (*^self)@ == (**self)@.tail() && (^^self)@ == (^*self)@.tail()
+            }
+            None => ^self == * self && (**self)@.len() == 0
+        })]
         fn take_first_mut<'a>(self_: &mut &'a mut [T]) -> Option<&'a mut T>;
 
         #[ensures(result@ == self)]
