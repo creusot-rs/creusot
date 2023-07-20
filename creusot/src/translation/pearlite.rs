@@ -27,8 +27,8 @@ use rustc_middle::{
         AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
     },
     ty::{
-        int_ty, subst::SubstsRef, uint_ty, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitable,
-        UpvarSubsts,
+        int_ty, subst::SubstsRef, uint_ty, GenericArg, Ty, TyCtxt, TyKind, TypeFoldable,
+        TypeVisitable, UpvarSubsts,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
@@ -859,6 +859,43 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 Ok((
                     Term { ty, span, kind: TermKind::Cur { term: Box::new(inner.clone()) } },
                     Term { ty, span, kind: TermKind::Fin { term: Box::new(inner) } },
+                ))
+            }
+            ExprKind::Index { lhs, index } => {
+                let (cur, fin) = self.logical_reborrow_inner(*lhs)?;
+                let index = self.expr_term(*index)?;
+
+                let index_logic_method =
+                    self.ctx.get_diagnostic_item(Symbol::intern("index_logic_method")).unwrap();
+                let subst =
+                    self.ctx.mk_substs(&[GenericArg::from(cur.ty), GenericArg::from(index.ty)]);
+
+                let fun = Term {
+                    ty: self.ctx.type_of(index_logic_method).subst(self.ctx.tcx, subst),
+                    kind: TermKind::Item(index_logic_method, subst),
+                    span,
+                };
+                Ok((
+                    Term {
+                        ty,
+                        span,
+                        kind: TermKind::Call {
+                            id: index_logic_method,
+                            subst,
+                            fun: Box::new(fun.clone()),
+                            args: vec![cur, index.clone()],
+                        },
+                    },
+                    Term {
+                        ty,
+                        span,
+                        kind: TermKind::Call {
+                            id: index_logic_method,
+                            subst,
+                            fun: Box::new(fun),
+                            args: vec![fin, index],
+                        },
+                    },
                 ))
             }
             _ => Err(Error::new(

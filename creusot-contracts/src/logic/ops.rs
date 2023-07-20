@@ -4,6 +4,7 @@ pub trait IndexLogic<I> {
     type Item;
 
     #[logic]
+    #[rustc_diagnostic_item = "index_logic_method"]
     fn index_logic(self, idx: I) -> Self::Item;
 }
 
