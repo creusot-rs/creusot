@@ -79,7 +79,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             if let RT::Path(p) = &**func {
                 if p.inner.path.is_ident("old") {
                     return Ok(
-                        quote_spanned! {sp=> ::creusot_contracts::__stubs::old( #(#args),* ) },
+                        quote_spanned! {sp=> *::creusot_contracts::__stubs::old( #(#args),* ) },
                     );
                 }
             }
@@ -255,7 +255,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             }
             Ok(ts)
         }
-        RT::Absurd(_) => Ok(quote_spanned! {sp=> ::creusot_contracts::__stubs::abs() }),
+        RT::Absurd(_) => Ok(quote_spanned! {sp=> *::creusot_contracts::__stubs::abs() }),
         RT::Pearlite(term) => Ok(quote_spanned! {sp=> #term }),
         RT::Closure(clos) => {
             let inputs = &clos.inputs;
@@ -317,7 +317,7 @@ mod tests {
 
         assert_eq!(
             format!("{}", encode_term(&term).unwrap()),
-            ":: creusot_contracts :: __stubs :: old (x)"
+            "* :: creusot_contracts :: __stubs :: old (x)"
         );
     }
 
