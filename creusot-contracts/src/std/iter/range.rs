@@ -40,7 +40,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-#[logic]
+#[ghost]
 #[open]
 #[ensures(r.is_empty_log() == (result == 0))]
 pub fn range_inclusive_len<Idx: DeepModel<DeepModelTy = Int>>(r: RangeInclusive<Idx>) -> Int {

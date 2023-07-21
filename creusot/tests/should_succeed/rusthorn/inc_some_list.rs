@@ -17,7 +17,7 @@ fn random() -> bool {
 }
 
 impl List {
-    #[logic]
+    #[ghost]
     fn sum(self) -> Int {
         pearlite! {
             match self {
@@ -27,7 +27,7 @@ impl List {
         }
     }
 
-    #[logic]
+    #[ghost]
     #[variant(*self)]
     #[ensures(self.sum() >= 0)]
     fn lemma_sum_nonneg(&self) {
@@ -51,7 +51,7 @@ impl List {
     fn take_some(&mut self) -> &mut u32 {
         match self {
             Cons(ma, ml) => {
-                ghost! { ml.lemma_sum_nonneg() };
+                gh! { ml.lemma_sum_nonneg() };
                 if random() {
                     ma
                 } else {

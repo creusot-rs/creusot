@@ -8,7 +8,7 @@ use crate::*;
 /// Models of inner types are typically not involved.
 pub trait ShallowModel {
     type ShallowModelTy;
-    #[logic]
+    #[ghost]
     fn shallow_model(self) -> Self::ShallowModelTy;
 }
 
@@ -21,13 +21,13 @@ pub use creusot_contracts_proc::DeepModel;
 /// Typically, such a model recursively calls deep models of inner types.
 pub trait DeepModel {
     type DeepModelTy;
-    #[logic]
+    #[ghost]
     fn deep_model(self) -> Self::DeepModelTy;
 }
 
 impl<T: DeepModel> DeepModel for Rc<T> {
     type DeepModelTy = T::DeepModelTy;
-    #[logic]
+    #[ghost]
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { self.shallow_model().deep_model() }
@@ -36,7 +36,7 @@ impl<T: DeepModel> DeepModel for Rc<T> {
 
 impl<T> ShallowModel for Rc<T> {
     type ShallowModelTy = T;
-    #[logic]
+    #[ghost]
     #[open]
     #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
@@ -46,7 +46,7 @@ impl<T> ShallowModel for Rc<T> {
 
 impl<T: DeepModel> DeepModel for Arc<T> {
     type DeepModelTy = T::DeepModelTy;
-    #[logic]
+    #[ghost]
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { self@.deep_model() }
@@ -55,7 +55,7 @@ impl<T: DeepModel> DeepModel for Arc<T> {
 
 impl<T> ShallowModel for Arc<T> {
     type ShallowModelTy = T;
-    #[logic]
+    #[ghost]
     #[open]
     #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
@@ -65,7 +65,7 @@ impl<T> ShallowModel for Arc<T> {
 
 impl<T: DeepModel + ?Sized> DeepModel for &T {
     type DeepModelTy = T::DeepModelTy;
-    #[logic]
+    #[ghost]
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
         (*self).deep_model()
@@ -74,7 +74,7 @@ impl<T: DeepModel + ?Sized> DeepModel for &T {
 
 impl<T: ShallowModel + ?Sized> ShallowModel for &T {
     type ShallowModelTy = T::ShallowModelTy;
-    #[logic]
+    #[ghost]
     #[open]
     fn shallow_model(self) -> Self::ShallowModelTy {
         (*self).shallow_model()
@@ -83,7 +83,7 @@ impl<T: ShallowModel + ?Sized> ShallowModel for &T {
 
 impl<T: DeepModel + ?Sized> DeepModel for &mut T {
     type DeepModelTy = T::DeepModelTy;
-    #[logic]
+    #[ghost]
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
         (*self).deep_model()
@@ -92,7 +92,7 @@ impl<T: DeepModel + ?Sized> DeepModel for &mut T {
 
 impl<T: ShallowModel + ?Sized> ShallowModel for &mut T {
     type ShallowModelTy = T::ShallowModelTy;
-    #[logic]
+    #[ghost]
     #[open]
     fn shallow_model(self) -> Self::ShallowModelTy {
         (*self).shallow_model()
@@ -102,7 +102,7 @@ impl<T: ShallowModel + ?Sized> ShallowModel for &mut T {
 impl DeepModel for bool {
     type DeepModelTy = bool;
 
-    #[logic]
+    #[ghost]
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
         self

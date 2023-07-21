@@ -9,13 +9,13 @@ impl<T> Seq<T> {
     #[creusot::builtins = "seq.Seq.empty"]
     pub const EMPTY: Self = { Seq(std::marker::PhantomData) };
 
-    #[logic]
+    #[ghost]
     #[open]
     pub fn new() -> Self {
         Self::EMPTY
     }
 
-    #[logic]
+    #[ghost]
     #[open]
     pub fn get(self, ix: Int) -> Option<T> {
         if 0 <= ix && ix < self.len() {
@@ -26,7 +26,7 @@ impl<T> Seq<T> {
     }
 
     #[trusted]
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[creusot::builtins = "seq_ext.SeqExt.subsequence"]
     pub fn subsequence(self, _: Int, _: Int) -> Self {
@@ -34,21 +34,21 @@ impl<T> Seq<T> {
     }
 
     #[trusted]
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[creusot::builtins = "seq.Seq.singleton"]
     pub fn singleton(_: T) -> Self {
         absurd
     }
 
-    #[logic]
+    #[ghost]
     #[open]
     pub fn tail(self) -> Self {
         self.subsequence(1, self.len())
     }
 
     #[trusted]
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[creusot::builtins = "seq.Seq.length"]
     pub fn len(self) -> Int {
@@ -56,7 +56,7 @@ impl<T> Seq<T> {
     }
 
     #[trusted]
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[creusot::builtins = "seq.Seq.set"]
     pub fn set(self, _: Int, _: T) -> Self {
@@ -72,7 +72,7 @@ impl<T> Seq<T> {
     }
 
     #[trusted]
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[creusot::builtins = "seq.Seq.snoc"]
     pub fn push(self, _: T) -> Self {
@@ -80,7 +80,7 @@ impl<T> Seq<T> {
     }
 
     #[trusted]
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[creusot::builtins = "seq.Seq.(++)"]
     pub fn concat(self, _: Self) -> Self {
@@ -88,7 +88,7 @@ impl<T> Seq<T> {
     }
 
     #[trusted]
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[creusot::builtins = "seq.Reverse.reverse"]
     pub fn reverse(self) -> Self {
@@ -147,7 +147,7 @@ impl<T> Seq<T> {
 impl<T> IndexLogic<Int> for Seq<T> {
     type Item = T;
 
-    #[logic]
+    #[ghost]
     #[trusted]
     #[open(self)]
     #[creusot::builtins = "seq.Seq.get"]

@@ -4,11 +4,11 @@ use creusot_contracts::*;
 
 pub struct A(Vec<usize>);
 
-#[logic]
+#[ghost]
 #[ensures(a.0@ == a.0@)]
 fn u2(a: A) {}
 
-#[logic]
+#[ghost]
 #[open(self)]
 pub fn u(a: A) {
     pearlite! {

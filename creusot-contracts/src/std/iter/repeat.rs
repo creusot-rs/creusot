@@ -3,7 +3,7 @@ use crate::{invariant::Invariant, std::iter::Repeat, *};
 impl<T> ShallowModel for Repeat<T> {
     type ShallowModelTy = T;
 
-    #[logic]
+    #[ghost]
     #[trusted]
     #[open(self)]
     fn shallow_model(self) -> T {

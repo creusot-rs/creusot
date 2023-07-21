@@ -13,7 +13,7 @@ impl<T, A: Allocator> ShallowModel for Vec<T, A> {
     type ShallowModelTy = Seq<T>;
 
     #[open(self)]
-    #[logic]
+    #[ghost]
     #[trusted]
     #[ensures(result.len() <= usize::MAX@)]
     fn shallow_model(self) -> Seq<T> {
@@ -24,7 +24,7 @@ impl<T, A: Allocator> ShallowModel for Vec<T, A> {
 impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[trusted]
     #[ensures(self.shallow_model().len() == result.len())]
@@ -197,7 +197,7 @@ impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
     type ShallowModelTy = Seq<T>;
 
     #[open(self)]
-    #[logic]
+    #[ghost]
     #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
         absurd

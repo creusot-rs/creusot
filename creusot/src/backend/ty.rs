@@ -149,7 +149,7 @@ fn translate_ty_inner<'tcx>(
         Closure(id, subst) => {
             ctx.translate(*id);
 
-            if util::is_logic(ctx.tcx, *id) {
+            if util::is_ghost(ctx.tcx, *id) {
                 return MlT::Tuple(Vec::new());
             }
 

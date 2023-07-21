@@ -6,7 +6,7 @@ pub struct Seven();
 impl ShallowModel for Seven {
     type ShallowModelTy = Int;
 
-    #[logic]
+    #[ghost]
     #[open]
     #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
@@ -25,7 +25,7 @@ pub struct Pair<T, U>(T, U);
 impl<T, U> ShallowModel for Pair<T, U> {
     type ShallowModelTy = (T, U);
 
-    #[logic]
+    #[ghost]
     #[open]
     #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {

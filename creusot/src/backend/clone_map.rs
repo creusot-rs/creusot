@@ -787,7 +787,7 @@ fn cloneable_name(ctx: &TranslationCtx, dep: DepNode, clone_level: CloneLevel) -
 
     // TODO: Refactor.
     match util::item_type(ctx.tcx, def_id) {
-        Logic | Predicate | Impl => match clone_level {
+        Ghost | Logic | Predicate | Impl => match clone_level {
             CloneLevel::Stub => QName {
                 module: Vec::new(),
                 name: format!("{}_Stub", &*module_name(ctx.tcx, def_id)).into(),
@@ -866,7 +866,7 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, dep: DepNode<'tcx>) -> Option<Symb
     use util::ItemType::*;
     let (def_id, _) = dep.did()?;
     match util::item_type(tcx, def_id) {
-        Logic => Some(SymbolKind::Function(tcx.item_name(def_id))),
+        Ghost | Logic => Some(SymbolKind::Function(tcx.item_name(def_id))),
         Predicate => Some(SymbolKind::Predicate(tcx.item_name(def_id))),
         Program => Some(SymbolKind::Val(tcx.item_name(def_id))),
         AssocTy => match tcx.associated_item(def_id).container {

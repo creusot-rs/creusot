@@ -54,7 +54,7 @@ pub(crate) fn interface_for<'tcx>(
                 decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
             }
         }
-        ItemType::Logic => {
+        ItemType::Ghost | ItemType::Logic => {
             let sig_contract = sig.clone();
             sig.contract = Contract::new();
             decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));

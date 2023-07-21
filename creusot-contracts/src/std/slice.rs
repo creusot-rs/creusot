@@ -12,7 +12,7 @@ impl<T> ShallowModel for [T] {
     type ShallowModelTy = Seq<T>;
 
     // We define this as trusted because builtins and ensures are incompatible
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[trusted]
     #[ensures(result.len() <= usize::MAX@)]
@@ -25,7 +25,7 @@ impl<T> ShallowModel for [T] {
 impl<T: DeepModel> DeepModel for [T] {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[trusted]
     #[ensures(self@.len() == result.len())]
@@ -35,7 +35,7 @@ impl<T: DeepModel> DeepModel for [T] {
     }
 }
 
-#[logic]
+#[ghost]
 #[trusted]
 #[creusot::builtins = "prelude.Slice.id"]
 fn slice_model<T>(_: [T]) -> Seq<T> {
@@ -59,15 +59,15 @@ impl<T> Default for &[T] {
 }
 
 pub trait SliceExt<T> {
-    #[logic]
+    #[ghost]
     fn to_mut_seq(&mut self) -> Seq<&mut T>;
 
-    #[logic]
+    #[ghost]
     fn to_ref_seq(&self) -> Seq<&T>;
 }
 
 impl<T> SliceExt<T> for [T] {
-    #[logic]
+    #[ghost]
     #[trusted]
     #[open(self)]
     #[ensures(result.len() == self@.len())]
@@ -77,7 +77,7 @@ impl<T> SliceExt<T> for [T] {
         pearlite! { absurd }
     }
 
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[trusted]
     #[ensures(result.len() == self@.len())]
@@ -354,7 +354,7 @@ impl<T> IntoIterator for &mut [T] {
 impl<'a, T> ShallowModel for Iter<'a, T> {
     type ShallowModelTy = &'a [T];
 
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
@@ -395,7 +395,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
 impl<'a, T> ShallowModel for IterMut<'a, T> {
     type ShallowModelTy = &'a mut [T];
 
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[trusted]
     #[ensures((^result)@.len() == (*result)@.len())]

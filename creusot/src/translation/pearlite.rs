@@ -1,6 +1,6 @@
 // A poorly named module.
 //
-// Entrypoint for translation of all Pearlite specifications and code: #[logic] / #[predicate], contracts, proof_assert!
+// Entrypoint for translation of all Pearlite specifications and code: #[ghost] / #[logic], contracts, proof_assert!
 //
 // Transforms THIR into a Term which may be serialized in Creusot metadata files for usage by dependent crates
 // The `lower` module then transforms a `Term` into a WhyML expression.

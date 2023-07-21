@@ -9,7 +9,7 @@ impl<T: ?Sized> Deref for Ghost<T> {
     type Target = T;
 
     #[trusted]
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[creusot::builtins = "prelude.Ghost.inner"]
     fn deref(&self) -> &Self::Target {
@@ -20,7 +20,7 @@ impl<T: ?Sized> Deref for Ghost<T> {
 impl<T: ShallowModel + ?Sized> ShallowModel for Ghost<T> {
     type ShallowModelTy = T::ShallowModelTy;
 
-    #[logic]
+    #[ghost]
     #[open]
     fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! { self.deref().shallow_model() }
@@ -29,7 +29,7 @@ impl<T: ShallowModel + ?Sized> ShallowModel for Ghost<T> {
 
 impl<T: ?Sized> Ghost<T> {
     #[trusted]
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[creusot::builtins = "prelude.Ghost.new"]
     pub fn new(_: T) -> Ghost<T> {
@@ -37,15 +37,7 @@ impl<T: ?Sized> Ghost<T> {
     }
 
     #[trusted]
-    #[logic]
-    #[open(self)]
-    #[creusot::builtins = "prelude.Ghost.from_fn"]
-    pub fn from_fn<F: Fn() -> Ghost<T>>(_: F) -> Ghost<T> {
-        pearlite! { absurd }
-    }
-
-    #[trusted]
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[creusot::builtins = "prelude.Ghost.inner"]
     pub fn inner(self) -> T

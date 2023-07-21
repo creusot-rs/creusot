@@ -292,10 +292,7 @@ pub(crate) fn contract_of<'tcx>(
 pub(crate) fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
     let def_path = tcx.def_path_str(def_id);
 
-    def_path.ends_with("::ops::Index::index")
-        || def_path.ends_with("::convert::Into::into")
-        || def_path.ends_with("::convert::From::from")
-        || def_path.ends_with("::ops::Mul::mul")
+    def_path.ends_with("::ops::Mul::mul")
         || def_path.ends_with("::ops::Add::add")
         || def_path.ends_with("::ops::Sub::sub")
         || def_path.ends_with("::ops::Div::div")
@@ -303,7 +300,6 @@ pub(crate) fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
         || def_path.ends_with("::ops::Neg::neg")
         || def_path.ends_with("::boxed::Box::<T>::new")
         || def_path.ends_with("::ops::Deref::deref")
-        || def_path.ends_with("::clone::Clone::clone")
         || def_path.ends_with("Ghost::<T>::from_fn")
 }
 
@@ -316,13 +312,13 @@ pub(crate) enum Purity {
 
 impl Purity {
     pub(crate) fn of_def_id<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Self {
-        let is_ghost = util::is_ghost(tcx, def_id);
+        let is_ghost = util::is_ghost_closure(tcx, def_id);
         if util::is_predicate(tcx, def_id)
-            || util::is_spec_logic(tcx, def_id)
+            || util::is_logic(tcx, def_id)
             || (util::is_spec(tcx, def_id) && !is_ghost)
         {
             Purity::Logic
-        } else if util::is_logic(tcx, def_id) || is_ghost {
+        } else if util::is_ghost(tcx, def_id) || is_ghost {
             Purity::Ghost
         } else {
             Purity::Program
@@ -349,10 +345,10 @@ impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
 
         if matches!(stub, Some(Stub::Fin))
             || util::is_predicate(self.tcx, func_did)
-            || util::is_spec_logic(self.tcx, func_did)
+            || util::is_logic(self.tcx, func_did)
         {
             Purity::Logic
-        } else if util::is_logic(self.tcx, func_did)
+        } else if util::is_ghost(self.tcx, func_did)
             || util::get_builtin(self.tcx, func_did).is_some()
             || stub.is_some()
         {

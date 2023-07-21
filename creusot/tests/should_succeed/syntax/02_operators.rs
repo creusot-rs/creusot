@@ -9,12 +9,12 @@ fn division(x: usize, y: usize) -> usize {
     x / y
 }
 
-// #[logic]
+// #[ghost]
 // fn division_logic(x : usize, y : usize) -> usize {
 //     x / y
 // }
 
-#[logic]
+#[ghost]
 fn division_int(x: Int, y: Int) -> Int {
     x / y
 }
@@ -24,12 +24,12 @@ fn modulus(x: usize, y: usize) -> usize {
     x % y
 }
 
-// #[logic]
+// #[ghost]
 // fn modulus_logic(x : usize, y : usize) -> usize {
 //     x % y
 // }
 
-#[logic]
+#[ghost]
 fn modulus_int(x: Int, y: Int) -> Int {
     x % y
 }
@@ -39,7 +39,7 @@ fn multiply(x: usize, y: usize) -> usize {
     x * y
 }
 
-#[logic]
+#[ghost]
 fn multiply_int(x: Int, y: Int) -> Int {
     x * y
 }
@@ -49,12 +49,12 @@ fn add(x: usize, y: usize) -> usize {
     x + y
 }
 
-#[logic]
+#[ghost]
 fn add_int(x: Int, y: Int) -> Int {
     x + y
 }
 
-// #[logic]
+// #[ghost]
 // fn add_logic(x : usize, y : usize) -> usize {
 //     x + y
 // }
@@ -64,7 +64,7 @@ fn sub(x: usize, y: usize) -> usize {
     x - y
 }
 
-#[logic]
+#[ghost]
 fn sub_int(x: Int, y: Int) -> Int {
     x - y
 }
@@ -78,7 +78,7 @@ fn expression(x: usize, y: usize, z: usize) -> bool {
     x / y * z == (x / y) * z
 }
 
-#[logic]
+#[ghost]
 #[ensures(result)]
 fn expression_logic(x: usize, y: usize, z: usize) -> bool {
     x / y * z == (x / y) * z

@@ -20,7 +20,7 @@ fn max(a: usize, b: usize) -> usize {
     }
 }
 
-#[logic]
+#[ghost]
 #[variant(s.len()-i)]
 #[requires(0 <= i && i <= s.len())]
 #[ensures(result >= 0)]
@@ -31,7 +31,7 @@ fn sum_weights<Name>(s: Seq<&Item<Name>>, i: Int) -> Int {
     }
 }
 
-#[logic]
+#[ghost]
 #[variant(s.len()-i)]
 #[requires(i >= 0 && i <= s.len())]
 fn sum_values<Name>(s: Seq<&Item<Name>>, i: Int) -> Int {
@@ -55,7 +55,7 @@ fn subseq_rev<T>(s1: Seq<&T>, i1: Int, s2: Seq<T>, i2: Int) -> bool {
     }
 }
 
-#[logic]
+#[ghost]
 #[variant(i)]
 #[requires(0 <= i && i <= items.len())]
 #[requires(0 <= w)]

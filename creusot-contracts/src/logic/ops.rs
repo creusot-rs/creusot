@@ -3,14 +3,14 @@ use crate::*;
 pub trait IndexLogic<I> {
     type Item;
 
-    #[logic]
+    #[ghost]
     fn index_logic(self, idx: I) -> Self::Item;
 }
 
 impl<T, S: ShallowModel<ShallowModelTy = Seq<T>> + ?Sized> IndexLogic<Int> for S {
     type Item = T;
 
-    #[logic]
+    #[ghost]
     #[open]
     #[why3::attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
@@ -21,7 +21,7 @@ impl<T, S: ShallowModel<ShallowModelTy = Seq<T>> + ?Sized> IndexLogic<Int> for S
 impl<T, S: ShallowModel<ShallowModelTy = Seq<T>> + ?Sized> IndexLogic<usize> for S {
     type Item = T;
 
-    #[logic]
+    #[ghost]
     #[open]
     #[why3::attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
@@ -32,7 +32,7 @@ impl<T, S: ShallowModel<ShallowModelTy = Seq<T>> + ?Sized> IndexLogic<usize> for
 impl<T> IndexLogic<Int> for Ghost<Seq<T>> {
     type Item = T;
 
-    #[logic]
+    #[ghost]
     #[open]
     #[why3::attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {

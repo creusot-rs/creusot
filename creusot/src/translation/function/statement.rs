@@ -13,7 +13,7 @@ use crate::{
         fmir::{self, Expr, RValue},
         specification::inv_subst,
     },
-    util::{self, is_ghost_closure},
+    util::{self, ghost_closure_id},
 };
 
 impl<'tcx> BodyTranslator<'_, 'tcx> {
@@ -68,7 +68,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Rvalue::Use(op) => match op {
                 Move(_pl) | Copy(_pl) => self.translate_operand(op),
                 Constant(box c) => {
-                    if is_ghost_closure(self.tcx, c.literal.ty()).is_some() {
+                    if ghost_closure_id(self.tcx, c.literal.ty()).is_some() {
                         return;
                     };
                     crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
@@ -134,8 +134,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 cond: assertion,
                                 msg: "assertion".to_owned(),
                             });
-                            return;
-                        } else if util::is_ghost(self.tcx, *def_id) {
                             return;
                         } else if util::is_spec(self.tcx, *def_id) {
                             return;

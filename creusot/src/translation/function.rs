@@ -6,7 +6,9 @@ use super::{
 use crate::{
     ctx::*,
     fmir::{self, Expr},
-    gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind},
+    gather_spec_closures::{
+        assertions_and_ghosts, corrected_invariant_names_and_locations, LoopSpecKind,
+    },
     resolve::EagerResolver,
     translation::{
         fmir::LocalDecl,
@@ -88,16 +90,15 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         tcx: TyCtxt<'tcx>,
         ctx: &'body mut TranslationCtx<'tcx>,
         body: &'body Body<'tcx>,
-        // names: &'body mut CloneMap<'tcx>,
         body_id: BodyId,
     ) -> Self {
-        let (invariants, assertions) =
-            corrected_invariant_names_and_locations(ctx, body_id.def_id(), &body);
+        let invariants = corrected_invariant_names_and_locations(ctx, &body);
+        let assertions = assertions_and_ghosts(ctx, &body);
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if crate::util::is_spec(tcx, *def_id) || util::is_ghost(tcx, *def_id) {
+                if crate::util::is_spec(tcx, *def_id) || util::is_ghost_closure(tcx, *def_id) {
                     erased_locals.insert(local);
                 }
             }

@@ -62,12 +62,12 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, B, F> {
       Some(v) => (*self).produces_one(v, ^self)
     })]
     fn next(&mut self) -> Option<Self::Item> {
-        let old_self = ghost! { *self };
+        let old_self = gh! { *self };
         match self.iter.next() {
             Some(v) => {
                 proof_assert! { self.func.precondition((v,)) };
                 let r = (self.func)(v);
-                ghost! { Self::produces_one_invariant };
+                gh! { Self::produces_one_invariant };
                 proof_assert! { old_self.produces_one(r, *self) };
                 let _ = self; // Make sure self is not resolve until here.
                 Some(r)
@@ -119,7 +119,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
         }
     }
 
-    #[logic]
+    #[ghost]
     #[requires(self.produces_one(e, other))]
     #[requires(inv(other.iter))]
     #[ensures(inv(other))]

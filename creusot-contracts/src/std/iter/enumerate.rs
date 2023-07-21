@@ -1,23 +1,23 @@
 use crate::{invariant::Invariant, std::iter::Enumerate, *};
 
 pub trait EnumerateExt<I> {
-    #[logic]
+    #[ghost]
     fn iter(self) -> I;
 
-    #[logic]
+    #[ghost]
     fn n(self) -> Int;
 }
 
 impl<I> EnumerateExt<I> for Enumerate<I> {
     #[trusted]
-    #[logic]
+    #[ghost]
     #[open(self)]
     fn iter(self) -> I {
         absurd
     }
 
     #[trusted]
-    #[logic]
+    #[ghost]
     #[open(self)]
     fn n(self) -> Int {
         absurd

@@ -45,7 +45,7 @@ impl<K: DeepModel, V> Tree<K, V> {
         }
     }
 
-    #[logic]
+    #[ghost]
     fn model_acc(
         self,
         accu: <Self as ShallowModel>::ShallowModelTy,
@@ -62,7 +62,7 @@ impl<K: DeepModel, V> Tree<K, V> {
         }
     }
 
-    #[logic]
+    #[ghost]
     #[ensures(self.model_acc(accu).get(k) == accu.get(k) ||
               exists<v: V> self.model_acc(accu).get(k) == Some(v) && self.has_mapping(k, v))]
     fn model_acc_has_mapping(
@@ -83,7 +83,7 @@ impl<K: DeepModel, V> Tree<K, V> {
         }
     }
 
-    #[logic]
+    #[ghost]
     #[requires(self.bst_invariant())]
     #[ensures(forall<v: V> self.has_mapping(k, v) ==> self.model_acc(accu).get(k) == Some(v))]
     fn has_mapping_model_acc(self, accu: <Self as ShallowModel>::ShallowModelTy, k: K::DeepModelTy)
@@ -104,7 +104,7 @@ impl<K: DeepModel, V> Tree<K, V> {
         }
     }
 
-    #[logic]
+    #[ghost]
     #[requires(self.bst_invariant())]
     #[ensures(forall<v: V> self.has_mapping(k, v) == (self@.get(k) == Some(v)))]
     fn has_mapping_model(self, k: K::DeepModelTy)
@@ -117,7 +117,7 @@ impl<K: DeepModel, V> Tree<K, V> {
         } }
     }
 
-    #[logic]
+    #[ghost]
     #[requires(self.bst_invariant())]
     #[requires(self.has_mapping(k, v1))]
     #[requires(self.has_mapping(k, v2))]
@@ -155,7 +155,7 @@ impl<K: DeepModel, V> Node<K, V> {
 impl<K: DeepModel, V> ShallowModel for Node<K, V> {
     type ShallowModelTy = Mapping<K::DeepModelTy, Option<V>>;
 
-    #[logic]
+    #[ghost]
     #[open(self)]
     fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! {
@@ -167,7 +167,7 @@ impl<K: DeepModel, V> ShallowModel for Node<K, V> {
 impl<K: DeepModel, V> ShallowModel for Tree<K, V> {
     type ShallowModelTy = Mapping<K::DeepModelTy, Option<V>>;
 
-    #[logic]
+    #[ghost]
     #[open(self)]
     fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! { self.model_acc(Mapping::cst(None)) }
@@ -222,7 +222,7 @@ enum CP {
 }
 use CP::*;
 
-#[logic]
+#[ghost]
 fn cpn(c: Color, l: CP, r: CP) -> CP {
     pearlite! { CPN(c, Box::new(l), Box::new(r)) }
 }
@@ -252,7 +252,7 @@ impl CP {
 }
 
 impl<K, V> Tree<K, V> {
-    #[logic]
+    #[ghost]
     fn color(self) -> Color {
         pearlite! {
             match self.node {
@@ -291,7 +291,7 @@ impl<K, V> Node<K, V> {
 /*****************************  The height invariant  *************************/
 
 impl<K, V> Tree<K, V> {
-    #[logic]
+    #[ghost]
     #[ensures(result >= 0)]
     fn height(self) -> Int {
         pearlite! {
@@ -322,7 +322,7 @@ impl<K, V> Tree<K, V> {
 }
 
 impl<K, V> Node<K, V> {
-    #[logic]
+    #[ghost]
     #[ensures(forall<node: Box<Node<K, V>>>
               self == *node ==> result == Tree{ node: Some(node) }.height())]
     fn height(self) -> Int {
@@ -410,7 +410,7 @@ where
               ((^self).left, r.left, r.right) == (l.left, l.right, (*self).right) &&
               r.key == (*self).key)]
     fn rotate_right(&mut self) {
-        let old_self = ghost! { self };
+        let old_self = gh! { self };
 
         //     self
         //    /    \
@@ -460,7 +460,7 @@ where
               (l.left, l.right, (^self).right) == ((*self).left, r.left, r.right) &&
               l.key == (*self).key)]
     fn rotate_left(&mut self) {
-        let old_self = ghost! { self };
+        let old_self = gh! { self };
         let mut x = std::mem::take(&mut self.right.node).unwrap();
         std::mem::swap(&mut self.right, &mut x.left);
         std::mem::swap(self, &mut x);
@@ -626,7 +626,7 @@ where
     pub fn insert(&mut self, key: K, val: V) {
         self.insert_rec(key, val);
         self.node.as_mut().unwrap().color = Black;
-        ghost! { Self::has_mapping_model };
+        gh! { Self::has_mapping_model };
     }
 
     #[requires((*self).internal_invariant())]
@@ -665,7 +665,7 @@ where
             (^self)@ == self@.set(k.deep_model(), None),
         None => (^self)@ == self@ && self@ == Mapping::cst(None)})]
     pub fn delete_max(&mut self) -> Option<(K, V)> {
-        let old_self = ghost! { self };
+        let old_self = gh! { self };
         if let Some(node) = &mut self.node {
             if !node.left.is_red() {
                 node.color = Red;
@@ -678,7 +678,7 @@ where
         if self.is_red() {
             self.node.as_mut().unwrap().color = Black;
         }
-        ghost! { Self::has_mapping_model };
+        gh! { Self::has_mapping_model };
         Some(r)
     }
 
@@ -717,7 +717,7 @@ where
         None => (^self)@ == self@ && self@ == Mapping::cst(None)
     })]
     pub fn delete_min(&mut self) -> Option<(K, V)> {
-        ghost! { Self::has_mapping_model };
+        gh! { Self::has_mapping_model };
 
         if let Some(node) = &mut self.node {
             if !node.left.is_red() {
@@ -775,7 +775,7 @@ where
                     }
                     if let Equal = ord {
                         let mut kv = node.right.delete_min_rec();
-                        ghost! { Self::has_mapping_inj };
+                        gh! { Self::has_mapping_inj };
                         std::mem::swap(&mut node.key, &mut kv.0);
                         std::mem::swap(&mut node.val, &mut kv.1);
                         r = Some(kv)
@@ -798,7 +798,7 @@ where
     })]
     #[ensures((^self)@ == self@.set(key.deep_model(), None))]
     pub fn delete(&mut self, key: &K) -> Option<(K, V)> {
-        ghost! { Self::has_mapping_model };
+        gh! { Self::has_mapping_model };
 
         if let Some(node) = &mut self.node {
             if !node.left.is_red() {
@@ -820,7 +820,7 @@ where
         None => self@.get(key.deep_model()) == None
     })]
     pub fn get(&self, key: &K) -> Option<&V> {
-        ghost! { Self::has_mapping_model };
+        gh! { Self::has_mapping_model };
 
         let mut tree = self;
         #[invariant((*tree).bst_invariant())]
@@ -842,9 +842,9 @@ where
         None => self@.get(key.deep_model()) == None && (^self)@ == self@
     })]
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
-        ghost! { Self::has_mapping_model };
+        gh! { Self::has_mapping_model };
 
-        let old_self = ghost! { self };
+        let old_self = gh! { self };
         let mut tree = self;
 
         #[invariant((*tree).bst_invariant())]

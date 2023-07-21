@@ -3,7 +3,7 @@ extern crate creusot_contracts;
 use creusot_contracts::{logic::Int, *};
 
 // Bug #181
-#[logic]
+#[ghost]
 #[open]
 pub fn max_int(a: Int, b: Int) -> Int {
     if a < b {

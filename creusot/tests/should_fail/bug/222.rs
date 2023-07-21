@@ -3,7 +3,7 @@ extern crate creusot_contracts;
 use creusot_contracts::{logic::Int, *};
 
 trait A {
-    #[logic]
+    #[ghost]
     fn mktrue() -> Int {
         pearlite! { 5 }
     }
@@ -17,7 +17,7 @@ trait A {
 }
 
 impl A for () {
-    #[logic]
+    #[ghost]
     fn mktrue() -> Int {
         pearlite! { 6 }
     }
