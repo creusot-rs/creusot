@@ -439,11 +439,6 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
                         Ok(Term { ty, span, kind: TermKind::Fin { term: Box::new(term) } })
                     }
-                    Some(Cur) => {
-                        let term = self.expr_term(args[0])?;
-
-                        Ok(Term { ty, span, kind: TermKind::Cur { term: Box::new(term) } })
-                    }
                     Some(Impl) => {
                         let lhs = self.expr_term(args[0])?;
                         let rhs = self.expr_term(args[1])?;
@@ -489,9 +484,6 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         Ok(Term { ty, span, kind: TermKind::Old { term: Box::new(term) } })
                     }
                     Some(ResultCheck) => {
-                        Ok(Term { ty, span, kind: TermKind::Tuple { fields: vec![] } })
-                    }
-                    Some(DummyCall) => {
                         Ok(Term { ty, span, kind: TermKind::Tuple { fields: vec![] } })
                     }
                     Some(Absurd) => Ok(Term { ty, span, kind: TermKind::Absurd }),
@@ -569,16 +561,12 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             // TODO: If we deref a shared borrow this should be erased?
             // Can it happen?
             ExprKind::Deref { arg } => {
+                let mut arg_trans = self.expr_term(arg)?;
                 if self.thir[arg].ty.is_box() || self.thir[arg].ty.ref_mutability() == Some(Not) {
-                    let mut arg = self.expr_term(arg)?;
-                    arg.ty = arg.ty.builtin_deref(false).expect("expected &T").ty;
-                    Ok(arg)
+                    arg_trans.ty = arg_trans.ty.builtin_deref(false).expect("expected &T").ty;
+                    Ok(arg_trans)
                 } else {
-                    Ok(Term {
-                        ty,
-                        span,
-                        kind: TermKind::Cur { term: Box::new(self.expr_term(arg)?) },
-                    })
+                    Ok(Term { ty, span, kind: TermKind::Cur { term: Box::new(arg_trans) } })
                 }
             }
             ExprKind::Match { scrutinee, ref arms } => {
@@ -922,7 +910,6 @@ pub(crate) enum Stub {
     Forall,
     Exists,
     Fin,
-    Cur,
     Impl,
     Equals,
     Neq,
@@ -930,7 +917,6 @@ pub(crate) enum Stub {
     Old,
     ResultCheck,
     Absurd,
-    DummyCall,
 }
 
 pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
@@ -943,9 +929,6 @@ pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stu
         }
         if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("fin")) {
             return Some(Stub::Fin);
-        }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("cur")) {
-            return Some(Stub::Cur);
         }
         if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("implication")) {
             return Some(Stub::Impl);
@@ -967,9 +950,6 @@ pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stu
         }
         if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("closure_result_constraint")) {
             return Some(Stub::ResultCheck);
-        }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("closure_dummy_call")) {
-            return Some(Stub::DummyCall);
         }
         None
     } else {
