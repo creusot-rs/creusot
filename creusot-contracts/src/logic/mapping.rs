@@ -27,13 +27,4 @@ impl<A, B> Mapping<A, B> {
     pub fn cst(_: B) -> Self {
         absurd
     }
-
-    #[cfg_attr(creusot, creusot::no_translate)]
-    #[trusted]
-    #[ghost]
-    #[open(self)]
-    #[creusot::builtins = "prelude.Mapping.from_fn"]
-    pub fn from_fn<F: FnOnce(A) -> B>(_: F) -> Self {
-        absurd
-    }
 }

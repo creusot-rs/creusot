@@ -1,11 +1,15 @@
 use super::pearlite::{normalize, pearlite_stub, Literal, Stub, Term, TermKind};
-use crate::{ctx::*, util};
+use crate::{
+    ctx::*,
+    error::{CrErr, Error},
+    util::{self, is_spec},
+};
 use rustc_ast::ast::{AttrArgs, AttrArgsEq};
 use rustc_hir::def_id::DefId;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{Body, Local, SourceInfo, SourceScope, OUTERMOST_SOURCE_SCOPE},
-    thir::{self, ExprKind, Thir},
+    thir::{self, ClosureExpr, ExprKind, Thir},
     ty::{
         self,
         subst::{InternalSubsts, SubstsRef},
@@ -386,6 +390,22 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                         rustc_errors::DiagnosticId::Error(String::from("creusot")),
                     )
                 }
+            }
+            ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
+                if is_spec(self.tcx, closure_id.into()) {
+                    return;
+                }
+
+                let (thir, expr) = self
+                    .tcx
+                    .thir_body(closure_id)
+                    .unwrap_or_else(|_| Error::from(CrErr).emit(self.tcx.sess));
+                let thir = thir.borrow();
+
+                thir::visit::walk_expr(
+                    &mut PurityVisitor { tcx: self.tcx, thir: &thir, context: self.context },
+                    &thir[expr],
+                );
             }
             _ => {}
         }
