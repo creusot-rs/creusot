@@ -67,3 +67,9 @@ pub fn closure_result<R>(_: R, _: R) {}
 pub fn ghost_from_fn<T: ?Sized, F: Fn() -> crate::Ghost<T>>(_: F) -> crate::Ghost<T> {
     panic!()
 }
+
+#[creusot::no_translate]
+#[creusot::builtins = "prelude.Mapping.from_fn"]
+pub fn mapping_from_fn<A, B, F: FnOnce(A) -> B>(_: F) -> crate::logic::Mapping<A, B> {
+    panic!()
+}
