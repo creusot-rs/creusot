@@ -6,7 +6,7 @@ use super::{
 use crate::{
     ctx::*,
     fmir::{self, Expr},
-    gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind},
+    gather_spec_closures::{corrected_invariant_names_and_locations, assertions_and_ghosts, LoopSpecKind},
     resolve::EagerResolver,
     translation::{
         fmir::LocalDecl,
@@ -88,11 +88,10 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         tcx: TyCtxt<'tcx>,
         ctx: &'body mut TranslationCtx<'tcx>,
         body: &'body Body<'tcx>,
-        // names: &'body mut CloneMap<'tcx>,
         body_id: BodyId,
     ) -> Self {
-        let (invariants, assertions) =
-            corrected_invariant_names_and_locations(ctx, body_id.def_id(), &body);
+        let invariants = corrected_invariant_names_and_locations(ctx, &body);
+        let assertions = assertions_and_ghosts(ctx, &body);
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
