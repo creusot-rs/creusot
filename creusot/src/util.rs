@@ -70,7 +70,7 @@ pub(crate) fn is_ghost(tcx: TyCtxt, def_id: DefId) -> bool {
 }
 
 pub(crate) fn is_ghost_closure<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
-    if let TyKind::Closure(def_id, _) = ty.peel_refs().kind()  && is_ghost(tcx, *def_id)  {
+    if let TyKind::Closure(def_id, _) = ty.peel_refs().kind() && is_ghost(tcx, *def_id)  {
         Some(*def_id)
     } else { None }
 }

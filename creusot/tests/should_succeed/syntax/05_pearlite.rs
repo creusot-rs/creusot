@@ -46,13 +46,13 @@ pub fn field1_is_true(x: B) -> bool {
 }
 
 pub fn ghost_closure() {
-    let _x = ghost! { pearlite! { |a : u32| a  } };
+    let _x = ghost! { |a : u32| a };
 }
 
 pub fn pearlite_closure(_x: Ghost<Mapping<u32, bool>>) {}
 
 pub fn caller() {
-    pearlite_closure(ghost! { pearlite! { |_a| true }});
+    pearlite_closure(ghost! { |_a| true });
 }
 
 // Implicit logical reborrows

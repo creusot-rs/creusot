@@ -389,7 +389,6 @@ impl Parse for Assertion {
 #[proc_macro]
 pub fn proof_assert(assertion: TS1) -> TS1 {
     let assert = parse_macro_input!(assertion as Assertion);
-
     let assert_body = pretyping::encode_block(&assert.0).unwrap();
 
     TS1::from(quote! {
@@ -407,13 +406,16 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
 
 #[proc_macro]
 pub fn ghost(assertion: TS1) -> TS1 {
-    let assertion = TokenStream::from(assertion);
+    let assert = parse_macro_input!(assertion as Assertion);
+    let assert_body = pretyping::encode_block(&assert.0).unwrap();
+
     TS1::from(quote! {
         {
-            ::creusot_contracts::ghost::Ghost::from_fn(
+            ::creusot_contracts::__stubs::ghost_from_fn(
                 #[creusot::no_translate]
                 #[creusot::spec]
-                #[creusot::spec::ghost] || { ::creusot_contracts::ghost::Ghost::new (#assertion) }
+                #[creusot::spec::ghost]
+                || { ::creusot_contracts::ghost::Ghost::new (#assert_body) }
             )
         }
     })

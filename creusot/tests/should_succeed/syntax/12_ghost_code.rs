@@ -16,8 +16,8 @@ pub fn omg() {}
 
 pub fn ghost_copy() {
     let a = 0;
-    let mut _s = ghost! { Seq::EMPTY.push(0) };
-    _s = ghost! { { _s.push(a) } };
+    let mut _s = ghost! { Seq::EMPTY.push(0i32) };
+    _s = ghost! { _s.push(a) };
 }
 
 #[logic]
@@ -27,7 +27,7 @@ pub fn ghost_check() {
     let mut x = Vec::new();
 
     // We ghost capture the value and then drop it without affecting program
-    ghost! { {logi_drop(x); } };
+    ghost! { logi_drop(x); };
 
     x.push(0);
 

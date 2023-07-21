@@ -39,14 +39,6 @@ impl<T: ?Sized> Ghost<T> {
     #[trusted]
     #[logic]
     #[open(self)]
-    #[creusot::builtins = "prelude.Ghost.from_fn"]
-    pub fn from_fn<F: Fn() -> Ghost<T>>(_: F) -> Ghost<T> {
-        pearlite! { absurd }
-    }
-
-    #[trusted]
-    #[logic]
-    #[open(self)]
     #[creusot::builtins = "prelude.Ghost.inner"]
     pub fn inner(self) -> T
     where

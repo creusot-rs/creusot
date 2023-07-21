@@ -32,7 +32,7 @@ fn right_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
 #[ensures(forall<i: Int> 0 <= i && i < str@.len() ==> (^str)[i + ((^str)@.len() - str@.len())] == str[i])]
 fn left_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     let old_str = ghost! { str };
-    let mut c: Ghost<usize> = ghost! { 0 };
+    let mut c: Ghost<usize> = ghost! { 0usize };
 
     #[invariant(old_str@.len() <= str@.len())]
     #[invariant(old_str@.len() < len@ ==> str@.len() <= len@)]
@@ -42,7 +42,7 @@ fn left_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     #[invariant(forall<i: Int> 0 <= i && i < c@ ==> str[i] == pad)]
     while str.len() < len {
         str.insert(0, pad);
-        c = ghost! { 1 + c.inner() };
+        c = ghost! { 1usize + *c };
     }
 }
 

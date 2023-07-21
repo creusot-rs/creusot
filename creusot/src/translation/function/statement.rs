@@ -135,8 +135,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 msg: "assertion".to_owned(),
                             });
                             return;
-                        } else if util::is_ghost(self.tcx, *def_id) {
-                            return;
                         } else if util::is_spec(self.tcx, *def_id) {
                             return;
                         } else {

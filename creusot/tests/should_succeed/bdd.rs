@@ -423,10 +423,11 @@ impl<'arena> Context<'arena> {
 
 impl<'arena> Context<'arena> {
     pub fn new(alloc: &'arena bumpalo::Bump) -> Self {
+        let t = &True; // FIXME: make it possible to write this is pearlite
         Context {
             alloc,
             hashcons: hashmap::MyHashMap::new(),
-            hashcons_ghost: ghost! { Mapping::cst(&True) },
+            hashcons_ghost: ghost! { Mapping::cst(t) },
             not_memo: hashmap::MyHashMap::new(),
             and_memo: hashmap::MyHashMap::new(),
             cnt: 0,
@@ -446,7 +447,7 @@ impl<'arena> Context<'arena> {
         }
         let r = Bdd(self.alloc.alloc(n), self.cnt);
         self.hashcons.add(n, r);
-        self.hashcons_ghost = ghost! { pearlite! { self.hashcons_ghost.set(r.1, r.0) } };
+        self.hashcons_ghost = ghost! { self.hashcons_ghost.set(r.1, r.0) };
         if self.cnt > u64::MAX - 1 {
             loop {}
         }

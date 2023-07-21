@@ -98,7 +98,7 @@ impl Memory {
     #[ensures((^self).list(result, s.reverse()))]
     pub fn list_reversal_list(&mut self, mut l: Ptr, s: Ghost<Seq<Ptr>>) -> Ptr {
         let mut r = NULL;
-        let mut n = ghost! { pearlite! { 0 } };
+        let mut n = ghost! { 0 };
 
         #[invariant(0 <= *n && *n <= s.len())]
         #[invariant(self.list_seg(l, *s, NULL, *n, s.len()))]
@@ -106,7 +106,7 @@ impl Memory {
         // #[variant(s.len() - *n)]
         while l != NULL {
             l = std::mem::replace(&mut self[l], std::mem::replace(&mut r, l));
-            n = ghost! { pearlite! { *n + 1 } }
+            n = ghost! { *n + 1 }
         }
         return r;
     }
@@ -124,7 +124,7 @@ impl Memory {
     #[ensures((^self).loop_(result, Seq::singleton(s[0]).concat(s.subsequence(1, s.len()).reverse())))]
     pub fn list_reversal_loop(&mut self, mut l: Ptr, s: Ghost<Seq<Ptr>>) -> Ptr {
         let mut r = NULL;
-        let mut n = ghost! { pearlite! { 0 } };
+        let mut n = ghost! { 0 };
 
         #[invariant(0 <= *n && *n <= s.len() + 1)]
         #[invariant(*n == s.len() + 1 ==>
@@ -137,7 +137,7 @@ impl Memory {
         while l != NULL {
             proof_assert! { *n == s.len() ==> l == s.reverse()[s.len() - 1] }
             l = std::mem::replace(&mut self[l], std::mem::replace(&mut r, l));
-            n = ghost! { pearlite! { *n + 1 } }
+            n = ghost! { *n + 1 }
         }
 
         proof_assert! { forall<i:Int> 0 <= i && i < s.len() ==>
@@ -167,7 +167,7 @@ impl Memory {
         s2: Ghost<Seq<Ptr>>,
     ) -> Ptr {
         let mut r = NULL;
-        let mut n = ghost! { pearlite! { 0 } };
+        let mut n = ghost! { 0 };
 
         #[invariant(0 <= *n && *n <= 2*s1.len() + s2.len())]
         #[invariant({
@@ -189,7 +189,7 @@ impl Memory {
         // #[variant(2*s1.len() + s2.len() - *n)]
         while l != NULL {
             l = std::mem::replace(&mut self[l], std::mem::replace(&mut r, l));
-            n = ghost! { pearlite! { *n + 1 } }
+            n = ghost! { *n + 1 }
         }
         return r;
     }
