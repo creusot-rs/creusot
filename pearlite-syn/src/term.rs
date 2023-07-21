@@ -1,9 +1,5 @@
-use syn::{parse::discouraged::AnyDelimiter, punctuated::Punctuated, *};
-// use crate::macros::*;
-
 use proc_macro2::{Delimiter, Span, TokenStream};
-
-use syn::Pat;
+use syn::{parse::discouraged::AnyDelimiter, punctuated::Punctuated, Pat, *};
 
 #[cfg(feature = "printing")]
 use quote::IdentFragment;

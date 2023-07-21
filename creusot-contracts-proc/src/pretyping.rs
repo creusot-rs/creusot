@@ -30,8 +30,11 @@ impl EncodeError {
 pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
     let sp = term.span();
     match term {
-        // Macros could contain further pearlite expressions..
-        RT::Macro(m) => Ok(quote_spanned! {sp=> #m}),
+        // It's unclear what to do with macros. Either we translate the parameters, but then
+        // it's impossible to handle proc macros whose parameters is not valid pearlite syntax,
+        // or we don't translate parameters, but then we let the user write non-pearlite code
+        // in pearlite...
+        RT::Macro(_) => Err(EncodeError::Unsupported(term.span(), "Macro".into())),
         RT::Array(_) => Err(EncodeError::Unsupported(term.span(), "Array".into())),
         RT::Binary(TermBinary { left, op, right }) => {
             let mut left = left;
