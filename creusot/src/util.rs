@@ -486,9 +486,7 @@ fn elaborate_type_invariants<'tcx>(
 ) {
     if is_user_tyinv(ctx.tcx, def_id)
         || is_inv_internal(ctx.tcx, def_id)
-        || (is_predicate(ctx.tcx, def_id)
-            || is_ghost(ctx.tcx, def_id)
-            || is_logic(ctx.tcx, def_id))
+        || (is_predicate(ctx.tcx, def_id) || is_ghost(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
             && pre_sig.contract.ensures.is_empty()
     {
         return;

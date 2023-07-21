@@ -82,7 +82,7 @@ impl<'tcx> Visitor<'tcx> for Invariants<'tcx> {
             } else if util::is_loop_variant(self.tcx, *id) {
                 LoopSpecKind::Variant
             } else {
-                return
+                return;
             };
             self.invariants.insert(loc, (*id, kind));
         }

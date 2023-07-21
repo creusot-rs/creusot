@@ -8,5 +8,7 @@ trait T {
 
 impl T for () {
     #[ghost]
-    fn f() { () }
+    fn f() {
+        ()
+    }
 }

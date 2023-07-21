@@ -105,7 +105,11 @@ impl<'tcx> Why3Generator<'tcx> {
                     self.finish(def_id);
                 }
             }
-            ItemType::Ghost | ItemType::Logic | ItemType::Predicate | ItemType::Program | ItemType::Closure => {
+            ItemType::Ghost
+            | ItemType::Logic
+            | ItemType::Predicate
+            | ItemType::Program
+            | ItemType::Closure => {
                 self.start(def_id);
                 self.translate_function(def_id);
                 self.finish(def_id);

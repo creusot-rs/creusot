@@ -6,7 +6,9 @@ use super::{
 use crate::{
     ctx::*,
     fmir::{self, Expr},
-    gather_spec_closures::{corrected_invariant_names_and_locations, assertions_and_ghosts, LoopSpecKind},
+    gather_spec_closures::{
+        assertions_and_ghosts, corrected_invariant_names_and_locations, LoopSpecKind,
+    },
     resolve::EagerResolver,
     translation::{
         fmir::LocalDecl,
