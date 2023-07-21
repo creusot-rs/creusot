@@ -78,15 +78,15 @@ fn iter_mut<'a, T>(v: &'a mut Vec<T>) -> IterMut<'a, T> {
 #[ensures(forall<i : _> 0 <= i && i < v@.len() ==> (^v)[i]@ == 0)]
 pub fn all_zero(v: &mut Vec<usize>) {
     let mut it = iter_mut(v).into_iter();
-    let iter_old = ghost! { it };
-    let mut produced = ghost! { Seq::EMPTY };
+    let iter_old = gh! { it };
+    let mut produced = gh! { Seq::EMPTY };
     #[invariant(inv(it))]
     #[invariant(iter_old.produces(produced.inner(), it))]
     #[invariant(forall<i : Int> 0 <= i && i < produced.len() ==> (^produced[i])@ == 0)]
     loop {
         match it.next() {
             Some(x) => {
-                produced = ghost! { produced.concat(Seq::singleton(x)) };
+                produced = gh! { produced.concat(Seq::singleton(x)) };
                 *x = 0;
             }
             None => break,

@@ -49,7 +49,7 @@ pub trait Iterator: ::std::iter::Iterator + Invariant {
         Self: Sized,
         F: FnMut(Self::Item, Ghost<Seq<Self::Item>>) -> B,
     {
-        MapInv { iter: self, func, produced: ghost! {Seq::EMPTY} }
+        MapInv { iter: self, func, produced: gh! {Seq::EMPTY} }
     }
 }
 

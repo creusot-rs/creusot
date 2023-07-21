@@ -96,7 +96,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if crate::util::is_spec(tcx, *def_id) || util::is_ghost(tcx, *def_id) {
+                if crate::util::is_spec(tcx, *def_id) || util::is_ghost_closure(tcx, *def_id) {
                     erased_locals.insert(local);
                 }
             }

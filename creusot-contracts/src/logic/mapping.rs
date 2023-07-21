@@ -5,7 +5,7 @@ pub struct Mapping<A, B>(std::marker::PhantomData<(A, B)>);
 
 impl<A, B> Mapping<A, B> {
     #[trusted]
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[creusot::builtins = "map.Map.get"]
     pub fn get(self, _: A) -> B {
@@ -13,7 +13,7 @@ impl<A, B> Mapping<A, B> {
     }
 
     #[trusted]
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[creusot::builtins = "map.Map.set"]
     pub fn set(self, _: A, _: B) -> Self {
@@ -21,7 +21,7 @@ impl<A, B> Mapping<A, B> {
     }
 
     #[trusted]
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[creusot::builtins = "map.Const.const"]
     pub fn cst(_: B) -> Self {
@@ -30,7 +30,7 @@ impl<A, B> Mapping<A, B> {
 
     #[cfg_attr(creusot, creusot::no_translate)]
     #[trusted]
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[creusot::builtins = "prelude.Mapping.from_fn"]
     pub fn from_fn<F: FnOnce(A) -> B>(_: F) -> Self {

@@ -58,7 +58,7 @@ extern_spec! {
 impl<T: DeepModel> DeepModel for Reverse<T> {
     type DeepModelTy = Reverse<T::DeepModelTy>;
 
-    #[logic]
+    #[ghost]
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { Reverse(self.0.deep_model()) }
@@ -66,7 +66,7 @@ impl<T: DeepModel> DeepModel for Reverse<T> {
 }
 
 impl<T: OrdLogic> OrdLogic for Reverse<T> {
-    #[logic]
+    #[ghost]
     #[open]
     fn cmp_log(self, o: Self) -> Ordering {
         match self.0.cmp_log(o.0) {

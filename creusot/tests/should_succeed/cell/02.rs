@@ -26,7 +26,7 @@ impl<T: Copy, I: Inv<T>> Cell<T, I> {
     }
 }
 
-#[logic]
+#[ghost]
 #[open]
 #[variant(i)]
 pub fn fib(i: Int) -> Int {
@@ -40,7 +40,7 @@ pub fn fib(i: Int) -> Int {
 }
 
 #[open]
-#[logic]
+#[ghost]
 #[requires(0 <= i)]
 #[ensures(fib(i) <= 2.pow(i))]
 #[variant(i)]
@@ -57,7 +57,7 @@ pub fn lemma_fib_bound(i: Int) {
 
 #[trusted]
 #[open]
-#[logic]
+#[ghost]
 #[ensures(2.pow(63) < 0xffff_ffff_ffff_ffffusize@)]
 pub fn lemma_max_int() {}
 
@@ -101,8 +101,8 @@ pub fn fib_memo(mem: &FibCache, i: usize) -> usize {
             } else if i == 1 {
                 1
             } else {
-                ghost! { lemma_max_int };
-                ghost! { lemma_fib_bound };
+                gh! { lemma_max_int };
+                gh! { lemma_fib_bound };
                 fib_memo(mem, i - 1) + fib_memo(mem, i - 2)
             };
             proof_assert! { fib_i@ == fib(i@)};

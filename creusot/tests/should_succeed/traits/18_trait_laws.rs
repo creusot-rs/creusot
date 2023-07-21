@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 pub trait Symmetric {
-    #[logic]
+    #[ghost]
     fn op(self, _: Self) -> Self;
 
     #[law]
@@ -11,7 +11,7 @@ pub trait Symmetric {
 }
 
 #[open]
-#[logic]
+#[ghost]
 #[ensures(result == true)]
 pub fn uses_op<T: Symmetric>(x: T, y: T) -> bool {
     pearlite! { x.op(y) == y.op(x) }
@@ -19,7 +19,7 @@ pub fn uses_op<T: Symmetric>(x: T, y: T) -> bool {
 
 impl Symmetric for () {
     #[open]
-    #[logic]
+    #[ghost]
     fn op(self, _: Self) -> Self {
         ()
     }
@@ -31,7 +31,7 @@ impl Symmetric for () {
 }
 
 #[open]
-#[logic]
+#[ghost]
 #[ensures(result == true)]
 pub fn impl_laws() -> bool {
     pearlite! { ().op(()) == ().op(()) }

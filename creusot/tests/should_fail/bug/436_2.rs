@@ -9,8 +9,8 @@ enum Bad<'a> {
 pub fn test_bad() {
     let mut x = Bad::None;
     let m = &mut x;
-    let g = ghost!(m);
-    *m = Bad::Some(ghost!(*g));
+    let g = gh!(m);
+    *m = Bad::Some(gh!(*g));
     proof_assert!(*m == Bad::Some(g));
     proof_assert!(^*g == ^m);
     let _ = m;

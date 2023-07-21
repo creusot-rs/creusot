@@ -32,7 +32,7 @@ pub struct Sparse<T> {
 impl<T> ShallowModel for Sparse<T> {
     type ShallowModelTy = Seq<Option<T>>;
 
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[trusted]
     #[ensures(result.len() == self.size@)]
@@ -101,7 +101,7 @@ impl<T> Sparse<T> {
 
     /* A key lemma to prove for safety of access in `set()`
      */
-    #[logic]
+    #[ghost]
     #[requires(self.sparse_inv())]
     #[requires(self.n == self.size)]
     #[requires(0 <= i && i < self.size@)]
@@ -121,7 +121,7 @@ impl<T> Sparse<T> {
         let index = self.idx[i];
         if !(index < self.n && self.back[index] == i) {
             // the hard assertion!
-            ghost!(Self::lemma_permutation);
+            gh!(Self::lemma_permutation);
             proof_assert!(self.n@ < self.size@);
             // assert!(self.n < self.size);
             self.idx[i] = self.n;

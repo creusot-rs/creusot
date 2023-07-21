@@ -11,7 +11,7 @@ fn prophecy(x: &mut S) -> bool {
 }
 
 pub fn f() {
-    let b = &mut S { g: ghost! { true } };
-    b.g = ghost! { !prophecy(b) };
+    let b = &mut S { g: gh! { true } };
+    b.g = gh! { !prophecy(b) };
     proof_assert! { false }
 }

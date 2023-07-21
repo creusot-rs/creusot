@@ -10,7 +10,7 @@ use Option::*;
 
 pub struct List(u32, Option<Box<List>>);
 
-#[logic]
+#[ghost]
 fn len(l: List) -> Int {
     {
         let List(_, ls) = l;
@@ -21,7 +21,7 @@ fn len(l: List) -> Int {
     }
 }
 
-#[logic]
+#[ghost]
 fn get(l: List, ix: Int) -> Option<u32> {
     {
         let List(i, ls) = l;
@@ -41,7 +41,7 @@ fn get(l: List, ix: Int) -> Option<u32> {
 #[ensures(len(^param_l) == len(*param_l))]
 #[ensures(forall<i:Int> 0 <= i && i < len(*param_l) && i != param_ix@ ==> get(*param_l, i) == get(^param_l, i))]
 pub fn index_mut(param_l: &mut List, param_ix: usize) -> &mut u32 {
-    let old_l = ghost! { param_l };
+    let old_l = gh! { param_l };
     let mut l = param_l;
     let mut ix = param_ix;
     #[invariant(0usize <= ix && ix@ < len (*l))]

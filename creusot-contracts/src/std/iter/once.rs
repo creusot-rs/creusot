@@ -3,7 +3,7 @@ use crate::{invariant::Invariant, std::iter::Once, *};
 impl<T> ShallowModel for Once<T> {
     type ShallowModelTy = Option<T>;
 
-    #[logic]
+    #[ghost]
     #[trusted]
     #[open(self)]
     fn shallow_model(self) -> Option<T> {

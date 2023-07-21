@@ -3,7 +3,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 #[open]
-#[logic]
+#[ghost]
 pub fn id<T>(x: T) -> T {
     x
 }

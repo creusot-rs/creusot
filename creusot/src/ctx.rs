@@ -309,7 +309,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     fn mk_opacity(&self, item: DefId) -> Opacity {
-        if !matches!(util::item_type(self.tcx, item), ItemType::Predicate | ItemType::Logic) {
+        if !matches!(util::item_type(self.tcx, item), ItemType::Predicate | ItemType::Logic | ItemType::Ghost) {
             return Opacity(Visibility::Public);
         };
 

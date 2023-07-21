@@ -1,13 +1,13 @@
 use crate::{invariant::Invariant, std::iter::Copied, *};
 
 pub trait CopiedExt<I> {
-    #[logic]
+    #[ghost]
     fn iter(self) -> I;
 }
 
 impl<I> CopiedExt<I> for Copied<I> {
     #[open]
-    #[logic]
+    #[ghost]
     #[trusted]
     fn iter(self) -> I {
         pearlite! { absurd }

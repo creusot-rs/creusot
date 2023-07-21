@@ -199,7 +199,7 @@ fn collect_body_ids<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Opti
         .collect::<Vec<_>>();
 
     ids.extend(promoted.iter().filter_map(|(p, p_ty)| {
-        if util::is_ghost_closure(ctx.tcx, *p_ty).is_none() {
+        if util::ghost_closure_id(ctx.tcx, *p_ty).is_none() {
             Some(BodyId::new(def_id.expect_local(), Some(*p)))
         } else {
             None

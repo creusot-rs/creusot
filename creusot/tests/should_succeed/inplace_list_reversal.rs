@@ -11,7 +11,7 @@ pub enum List<T> {
 use List::*;
 type Node<T> = Box<(T, List<T>)>;
 
-#[logic]
+#[ghost]
 #[open(self)]
 pub fn rev_append<T>(n: List<T>, o: List<T>) -> List<T> {
     match n {
@@ -22,7 +22,7 @@ pub fn rev_append<T>(n: List<T>, o: List<T>) -> List<T> {
 
 #[ensures(^l == rev_append(*l, Nil))]
 pub fn rev<T>(l: &mut List<T>) {
-    let old_l = ghost! { l };
+    let old_l = gh! { l };
     let mut prev = Nil;
     let mut head = replace(l, Nil);
     #[invariant(rev_append(head, prev) == rev_append(*old_l.inner(), Nil))]

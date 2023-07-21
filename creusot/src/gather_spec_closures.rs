@@ -3,7 +3,7 @@ use indexmap::{IndexMap, IndexSet};
 use crate::{
     ctx::TranslationCtx,
     pearlite::Term,
-    util::{self, is_ghost_closure},
+    util::{self, ghost_closure_id},
 };
 use rustc_data_structures::graph::WithSuccessors;
 use rustc_hir::def_id::DefId;
@@ -30,7 +30,7 @@ pub(crate) fn assertions_and_ghosts<'tcx>(
         if util::is_assertion(ctx.tcx, clos) {
             let term = ctx.term(clos).unwrap().clone();
             assertions.insert(clos, term);
-        } else if util::is_ghost(ctx.tcx, clos) {
+        } else if util::is_ghost_closure(ctx.tcx, clos) {
             let term = ctx.term(clos).unwrap().clone();
             // A hack should probably be separately tracked
             assertions.insert(clos, term);
@@ -59,7 +59,7 @@ impl<'tcx> Visitor<'tcx> for Closures<'tcx> {
                 self.closures.insert(*id);
             }
             Rvalue::Use(Operand::Constant(box ck)) => {
-                if let Some(def_id) = is_ghost_closure(self.tcx, ck.literal.ty()) {
+                if let Some(def_id) = ghost_closure_id(self.tcx, ck.literal.ty()) {
                     self.closures.insert(def_id);
                 }
             }

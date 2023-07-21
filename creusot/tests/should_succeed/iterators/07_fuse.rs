@@ -11,7 +11,7 @@ pub struct Fuse<I: Iterator> {
 }
 
 impl<I: Iterator> Fuse<I> {
-    #[logic]
+    #[ghost]
     fn inner(self) -> I {
         match self.iter {
             Ok(i) => i,
@@ -47,7 +47,7 @@ impl<I: Iterator> Iterator for Fuse<I> {
             Err(_) => None,
             Ok(iter) => match iter.next() {
                 None => {
-                    self.iter = Err(ghost! { *iter });
+                    self.iter = Err(gh! { *iter });
                     None
                 }
                 x => x,

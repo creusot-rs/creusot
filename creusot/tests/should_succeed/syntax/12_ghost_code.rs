@@ -2,32 +2,32 @@ extern crate creusot_contracts;
 use creusot_contracts::{logic::Seq, *};
 
 pub fn ghost_arg(g: Ghost<u32>) {
-    let _x: Ghost<u32> = ghost! { *g };
+    let _x: Ghost<u32> = gh! { *g };
 }
 
 pub fn ghost_vec() {
     let x: Vec<u32> = Vec::new();
-    let mut _s: Ghost<Vec<_>> = ghost! { x };
+    let mut _s: Ghost<Vec<_>> = gh! { x };
 }
 
 #[open]
-#[logic]
+#[ghost]
 pub fn omg() {}
 
 pub fn ghost_copy() {
     let a = 0;
-    let mut _s = ghost! { Seq::EMPTY.push(0i32) };
-    _s = ghost! { _s.push(a) };
+    let mut _s = gh! { Seq::EMPTY.push(0i32) };
+    _s = gh! { _s.push(a) };
 }
 
-#[logic]
+#[ghost]
 fn logi_drop<T>(_: T) {}
 
 pub fn ghost_check() {
     let mut x = Vec::new();
 
     // We ghost capture the value and then drop it without affecting program
-    ghost! { logi_drop(x); };
+    gh! { logi_drop(x); };
 
     x.push(0);
 
@@ -41,5 +41,5 @@ pub struct MyStruct {
 
 #[requires(x.g@ == 0)]
 pub fn takes_struct(mut x: MyStruct) {
-    x.g = ghost! { x.f };
+    x.g = gh! { x.f };
 }

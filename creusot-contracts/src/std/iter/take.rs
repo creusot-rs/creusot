@@ -1,25 +1,25 @@
 use crate::{invariant::Invariant, std::iter::Take, *};
 
 pub trait TakeExt<I> {
-    #[logic]
+    #[ghost]
     fn iter(self) -> I;
 
-    #[logic]
+    #[ghost]
     fn iter_mut(&mut self) -> &mut I;
 
-    #[logic]
+    #[ghost]
     fn n(self) -> Int;
 }
 
 impl<I> TakeExt<I> for Take<I> {
-    #[logic]
+    #[ghost]
     #[trusted]
     #[open(self)]
     fn iter(self) -> I {
         pearlite! { absurd }
     }
 
-    #[logic]
+    #[ghost]
     #[trusted]
     #[open(self)]
     #[ensures((*self).iter() == *result && (^self).iter() == ^result)]
@@ -27,7 +27,7 @@ impl<I> TakeExt<I> for Take<I> {
         pearlite! { absurd }
     }
 
-    #[logic]
+    #[ghost]
     #[trusted]
     #[open(self)]
     #[ensures(result >= 0 && result <= usize::MAX@)]

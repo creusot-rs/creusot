@@ -4,7 +4,7 @@ pub use ::std::collections::VecDeque;
 impl<T, A: Allocator> ShallowModel for VecDeque<T, A> {
     type ShallowModelTy = Seq<T>;
 
-    #[logic]
+    #[ghost]
     #[trusted]
     #[open(self)]
     #[ensures(result.len() <= usize::MAX@)]
@@ -16,7 +16,7 @@ impl<T, A: Allocator> ShallowModel for VecDeque<T, A> {
 impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
-    #[logic]
+    #[ghost]
     #[trusted]
     #[open(self)]
     #[ensures(self.shallow_model().len() == result.len())]
