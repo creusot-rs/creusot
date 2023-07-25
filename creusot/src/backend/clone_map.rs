@@ -442,10 +442,6 @@ impl<'tcx> CloneMap<'tcx> {
         param_env: ParamEnv<'tcx>,
         ty: Ty<'tcx>,
     ) {
-        if matches!(ty.kind(), TyKind::Param(_)) {
-            return;
-        }
-
         let inv_kind = if ty_inv::is_tyinv_trivial(ctx.tcx, param_env, ty, true) {
             TyInvKind::Trivial
         } else {
