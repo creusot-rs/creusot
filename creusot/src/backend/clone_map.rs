@@ -154,7 +154,11 @@ impl Kind {
 
 use rustc_macros::{TyDecodable, TyEncodable};
 
-use super::{ty::ty_param_names, ty_inv::TyInvKind, TransId, Why3Generator};
+use super::{
+    ty::ty_param_names,
+    ty_inv::{self, TyInvKind},
+    TransId, Why3Generator,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable)]
 enum CloneOpacity {
@@ -422,7 +426,7 @@ impl<'tcx> CloneMap<'tcx> {
                 if util::is_inv_internal(self.tcx, did) && self.clone_level == CloneLevel::Body {
                     let ty = subst.type_at(0);
                     let ty = ctx.try_normalize_erasing_regions(param_env, ty).unwrap_or(ty);
-                    self.clone_tyinv(ctx, ty);
+                    self.clone_tyinv(ctx, param_env, ty);
                 }
 
                 self.clone_laws(ctx, did, subst);
@@ -432,12 +436,22 @@ impl<'tcx> CloneMap<'tcx> {
         }
     }
 
-    fn clone_tyinv(&mut self, ctx: &mut Why3Generator<'tcx>, ty: Ty<'tcx>) {
+    fn clone_tyinv(
+        &mut self,
+        ctx: &mut Why3Generator<'tcx>,
+        param_env: ParamEnv<'tcx>,
+        ty: Ty<'tcx>,
+    ) {
         if matches!(ty.kind(), TyKind::Param(_)) {
             return;
         }
 
-        let inv_kind = TyInvKind::from_ty(ty);
+        let inv_kind = if ty_inv::is_tyinv_trivial(ctx.tcx, param_env, ty, true) {
+            TyInvKind::Trivial
+        } else {
+            TyInvKind::from_ty(ty)
+        };
+
         if let TransId::TyInv(self_kind) = self.self_id && self_kind == inv_kind {
             return;
         }

@@ -34,7 +34,6 @@ impl TyInvKind {
             }
             TyKind::Ref(_, _, m) => TyInvKind::Borrow(*m),
             TyKind::Adt(adt_def, _) if adt_def.is_box() => TyInvKind::Box,
-            // TODO: if ADT inv is trivial, return TyInvKind::Trivial (optimization)
             TyKind::Adt(adt_def, _) => TyInvKind::Adt(adt_def.did()),
             TyKind::Tuple(tys) => TyInvKind::Tuple(tys.len()),
             TyKind::Slice(_) => TyInvKind::Slice,
