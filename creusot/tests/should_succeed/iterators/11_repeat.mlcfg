@@ -280,23 +280,11 @@ module CreusotContracts_Invariant_Inv
     ensures { result = inv _x }
     
 end
-module C11Repeat_Repeat_Type_Inv
-  type a
-  use C11Repeat_Repeat_Type as C11Repeat_Repeat_Type
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = a
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = C11Repeat_Repeat_Type.t_repeat a
-  axiom inv_t_repeat [@rewrite] : forall self : C11Repeat_Repeat_Type.t_repeat a . Inv0.inv self = Inv1.inv (C11Repeat_Repeat_Type.repeat_element self)
-end
-module TyInv_Borrow
+module TyInv_Trivial
   type t
-  use prelude.Borrow
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = t
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = borrowed t
-  axiom inv_borrow [@rewrite] : forall self : borrowed t . Inv0.inv self = (Inv1.inv ( * self) /\ Inv1.inv ( ^ self))
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
 end
 module C11Repeat_Common_Iterator_Item_Type
   type self
@@ -306,22 +294,18 @@ module C11Repeat_Impl0
   type a
   use seq.Seq
   use prelude.Borrow
-  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
-    type t = a
   use C11Repeat_Repeat_Type as C11Repeat_Repeat_Type
-  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
-    type t = C11Repeat_Repeat_Type.t_repeat a
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = borrowed (C11Repeat_Repeat_Type.t_repeat a)
-  clone TyInv_Borrow as TyInv_Borrow0 with
-    type t = C11Repeat_Repeat_Type.t_repeat a,
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = borrowed (C11Repeat_Repeat_Type.t_repeat a),
     predicate Inv0.inv = Inv1.inv,
-    predicate Inv1.inv = Inv0.inv,
     axiom .
-  clone C11Repeat_Repeat_Type_Inv as C11Repeat_Repeat_Type_Inv0 with
-    type a = a,
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = C11Repeat_Repeat_Type.t_repeat a
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = C11Repeat_Repeat_Type.t_repeat a,
     predicate Inv0.inv = Inv0.inv,
-    predicate Inv1.inv = Inv2.inv,
     axiom .
   clone C11Repeat_Common_Iterator_Item_Type as Item0 with
     type self = C11Repeat_Repeat_Type.t_repeat a

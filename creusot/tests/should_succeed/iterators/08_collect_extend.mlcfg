@@ -1224,10 +1224,6 @@ module Core_Mem_ManuallyDrop_ManuallyDrop_Type
   type t_manuallydrop 't =
     | C_ManuallyDrop 't
     
-  let function manuallydrop_value (self : t_manuallydrop 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_ManuallyDrop a -> a
-      end
 end
 module Alloc_Vec_IntoIter_IntoIter_Type
   use prelude.Int
@@ -1239,11 +1235,6 @@ module Alloc_Vec_IntoIter_IntoIter_Type
   type t_intoiter 't 'a =
     | C_IntoIter (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't) usize (Core_Mem_ManuallyDrop_ManuallyDrop_Type.t_manuallydrop 'a) opaque_ptr opaque_ptr
     
-  let function intoiter_alloc (self : t_intoiter 't 'a) : Core_Mem_ManuallyDrop_ManuallyDrop_Type.t_manuallydrop 'a
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_IntoIter _ _ _ a _ _ -> a
-      end
 end
 module CreusotContracts_Std1_Vec_Impl3_IntoIterPre_Stub
   type t
@@ -1354,16 +1345,11 @@ module Alloc_Vec_Impl15_IntoIter_Interface
     ensures { Inv0.inv result }
     
 end
-module Alloc_Vec_IntoIter_IntoIter_Type_Inv
+module TyInv_Trivial
   type t
-  type a
-  use Core_Mem_ManuallyDrop_ManuallyDrop_Type as Core_Mem_ManuallyDrop_ManuallyDrop_Type
-  use Alloc_Vec_IntoIter_IntoIter_Type as Alloc_Vec_IntoIter_IntoIter_Type
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = Core_Mem_ManuallyDrop_ManuallyDrop_Type.t_manuallydrop a
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter t a
-  axiom inv_t_intoiter [@rewrite] : forall self : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter t a . Inv0.inv self = Inv1.inv (Alloc_Vec_IntoIter_IntoIter_Type.intoiter_alloc self)
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
 end
 module CreusotContracts_Std1_Vec_Impl8_Completed_Stub
   type t
@@ -1583,21 +1569,6 @@ module CreusotContracts_Std1_Vec_Impl8_ProducesTrans
     
   axiom produces_trans_spec : forall a : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter t a, ab : Seq.seq t, b : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter t a, bc : Seq.seq t, c : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter t a . ([#"../../../../../creusot-contracts/src/std/vec.rs" 240 15 240 32] Produces0.produces a ab b) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 241 15 241 32] Produces0.produces b bc c) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 242 14 242 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
-module Core_Mem_ManuallyDrop_ManuallyDrop_Type_Inv
-  type t
-  use Core_Mem_ManuallyDrop_ManuallyDrop_Type as Core_Mem_ManuallyDrop_ManuallyDrop_Type
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = Core_Mem_ManuallyDrop_ManuallyDrop_Type.t_manuallydrop t
-  axiom inv_t_manuallydrop [@rewrite] : forall self : Core_Mem_ManuallyDrop_ManuallyDrop_Type.t_manuallydrop t . Inv0.inv self = Inv1.inv (Core_Mem_ManuallyDrop_ManuallyDrop_Type.manuallydrop_value self)
-end
-module Alloc_Alloc_Global_Type_Inv
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = Alloc_Alloc_Global_Type.t_global
-  axiom inv_t_global : forall self : Alloc_Alloc_Global_Type.t_global . Inv0.inv self = true
-end
 module C08CollectExtend_ExtendIndex_Interface
   use prelude.Int
   use prelude.UInt32
@@ -1614,19 +1585,6 @@ module C08CollectExtend_ExtendIndex
   use seq.Seq
   use prelude.Slice
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
-    type t = Alloc_Alloc_Global_Type.t_global
-  clone Alloc_Alloc_Global_Type_Inv as Alloc_Alloc_Global_Type_Inv0 with
-    predicate Inv0.inv = Inv3.inv,
-    axiom .
-  use Core_Mem_ManuallyDrop_ManuallyDrop_Type as Core_Mem_ManuallyDrop_ManuallyDrop_Type
-  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
-    type t = Core_Mem_ManuallyDrop_ManuallyDrop_Type.t_manuallydrop (Alloc_Alloc_Global_Type.t_global)
-  clone Core_Mem_ManuallyDrop_ManuallyDrop_Type_Inv as Core_Mem_ManuallyDrop_ManuallyDrop_Type_Inv0 with
-    type t = Alloc_Alloc_Global_Type.t_global,
-    predicate Inv0.inv = Inv2.inv,
-    predicate Inv1.inv = Inv3.inv,
-    axiom .
   use Alloc_Vec_IntoIter_IntoIter_Type as Alloc_Vec_IntoIter_IntoIter_Type
   clone CreusotContracts_Std1_Vec_Impl6_ShallowModel_Interface as ShallowModel6 with
     type t = uint32,
@@ -1652,20 +1610,17 @@ module C08CollectExtend_ExtendIndex
     type a = Alloc_Alloc_Global_Type.t_global,
     predicate Produces0.produces = Produces0.produces,
     axiom .
-  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
-    type t = Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter uint32 (Alloc_Alloc_Global_Type.t_global)
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = borrowed (Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter uint32 (Alloc_Alloc_Global_Type.t_global))
-  clone TyInv_Borrow as TyInv_Borrow0 with
-    type t = Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter uint32 (Alloc_Alloc_Global_Type.t_global),
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = borrowed (Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter uint32 (Alloc_Alloc_Global_Type.t_global)),
     predicate Inv0.inv = Inv1.inv,
-    predicate Inv1.inv = Inv0.inv,
     axiom .
-  clone Alloc_Vec_IntoIter_IntoIter_Type_Inv as Alloc_Vec_IntoIter_IntoIter_Type_Inv0 with
-    type t = uint32,
-    type a = Alloc_Alloc_Global_Type.t_global,
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter uint32 (Alloc_Alloc_Global_Type.t_global)
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter uint32 (Alloc_Alloc_Global_Type.t_global),
     predicate Inv0.inv = Inv0.inv,
-    predicate Inv1.inv = Inv2.inv,
     axiom .
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface as ShallowModel5 with
