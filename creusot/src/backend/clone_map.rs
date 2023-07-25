@@ -154,11 +154,7 @@ impl Kind {
 
 use rustc_macros::{TyDecodable, TyEncodable};
 
-use super::{
-    ty::ty_param_names,
-    ty_inv::{tyinv_substs, TyInvKind},
-    TransId, Why3Generator,
-};
+use super::{ty::ty_param_names, ty_inv::TyInvKind, TransId, Why3Generator};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable)]
 enum CloneOpacity {
@@ -271,7 +267,7 @@ impl<'tcx> CloneMap<'tcx> {
                 };
             }
 
-            let base = if let Some(inv_kind) = key.ty_inv_kind() {
+            let base = if let CloneNode::TyInv(_, inv_kind) = key {
                 Symbol::intern(&*inv_module_name(self.tcx, inv_kind))
             } else {
                 let did = key.did().unwrap().0;
@@ -447,7 +443,7 @@ impl<'tcx> CloneMap<'tcx> {
         }
 
         ctx.translate_tyinv(inv_kind);
-        self.insert(DepNode::TyInv(ty));
+        self.insert(DepNode::TyInv(ty, inv_kind));
     }
 
     fn clone_dependencies(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
@@ -744,9 +740,9 @@ pub(crate) fn base_subst<'tcx>(
     names: &mut CloneMap<'tcx>,
     dep: DepNode<'tcx>,
 ) -> Vec<CloneSubst> {
-    let (generics, substs) = if let DepNode::TyInv(ty) = dep {
-        let generics = TyInvKind::from_ty(ty).generics(ctx.tcx);
-        let substs = tyinv_substs(ctx.tcx, ty);
+    let (generics, substs) = if let DepNode::TyInv(ty, inv_kind) = dep {
+        let generics = inv_kind.generics(ctx.tcx);
+        let substs = inv_kind.tyinv_substs(ctx.tcx, ty);
         (generics, substs)
     } else if let Some((def_id, subst)) = dep.did() {
         let generics = ty_param_names(ctx.tcx, def_id).collect();
@@ -778,8 +774,7 @@ pub enum CloneLevel {
 fn cloneable_name(ctx: &TranslationCtx, dep: DepNode, clone_level: CloneLevel) -> QName {
     use util::ItemType::*;
 
-    if let DepNode::TyInv(ty) = dep {
-        let inv_kind = TyInvKind::from_ty(ty);
+    if let DepNode::TyInv(_, inv_kind) = dep {
         return inv_module_name(ctx.tcx, inv_kind).into();
     }
 

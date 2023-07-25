@@ -291,7 +291,7 @@ impl<'tcx> Why3Generator<'tcx> {
 
     pub(crate) fn dependencies(&self, key: Dependency<'tcx>) -> Option<&CloneSummary<'tcx>> {
         let tid = match key {
-            Dependency::TyInv(ty) => TransId::TyInv(TyInvKind::from_ty(ty)),
+            Dependency::TyInv(_, inv_kind) => TransId::TyInv(inv_kind),
             _ => key.did().map(|(def_id, _)| TransId::Item(def_id))?,
         };
         self.dependencies.get(&tid)
