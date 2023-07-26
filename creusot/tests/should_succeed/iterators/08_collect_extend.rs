@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 
 use creusot_contracts::{
-    invariant::Invariant,
+    invariant::{inv, Invariant},
     logic::{Int, Seq},
     std::*,
     *,
@@ -19,6 +19,7 @@ use creusot_contracts::{
 // }
 //
 // Here we prove the specific instance of `extend` for `Vec<T>`.
+#[requires(inv((*vec)@) && inv((^vec)@))]
 #[ensures(
   exists<done_ : &mut I, prod: Seq<_>>
     done_.completed() && iter.produces(prod, *done_) && (^vec)@ == vec@.concat(prod)

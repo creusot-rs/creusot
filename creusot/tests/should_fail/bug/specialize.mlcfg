@@ -92,9 +92,38 @@ module Specialize_F
   }
   
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module Specialize_T_X_Interface
   type self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   val x [#"../specialize.rs" 6 4 6 15] (self : self) : ()
+    requires {[#"../specialize.rs" 6 9 6 13] Inv0.inv self}
+    
+end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
 end
 module Specialize_G_Interface
   type t
@@ -106,8 +135,15 @@ module Specialize_G
   type t
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone Specialize_T_X_Interface as X0 with
-    type self = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+    type self = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
+    predicate Inv0.inv = Inv0.inv
   let rec cfg g [#"../specialize.rs" 27 0 27 18] [@cfg:stackify] [@cfg:subregion_analysis] (v : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -172,7 +208,8 @@ module Specialize_H
 end
 module Specialize_Impl0
   type u
+  goal x_refn : [#"../specialize.rs" 12 4 12 22] true
 end
 module Specialize_Impl1
-  
+  goal x_refn : [#"../specialize.rs" 18 4 18 14] true
 end

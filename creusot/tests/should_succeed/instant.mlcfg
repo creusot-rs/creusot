@@ -174,6 +174,25 @@ module Std_Time_Impl0_Elapsed_Interface
     ensures { [#"../../../../creusot-contracts/src/std/time.rs" 146 26 146 38] ShallowModel0.shallow_model result >= 0 }
     
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module CreusotContracts_Model_DeepModel_DeepModelTy_Type
   type self
   type deepModelTy
@@ -297,7 +316,13 @@ module Core_Cmp_PartialOrd_Ge_Interface
   clone CreusotContracts_Model_Impl4_DeepModel_Stub as DeepModel0 with
     type t = self,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = rhs
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   val ge (self : self) (other : rhs) : bool
+    requires {Inv0.inv self}
+    requires {Inv1.inv other}
     ensures { [#"../../../../creusot-contracts/src/std/cmp.rs" 36 26 36 77] result = GeLog0.ge_log (DeepModel0.deep_model self) (DeepModel1.deep_model other) }
     
 end
@@ -448,10 +473,16 @@ module Std_Time_Impl0_CheckedAdd_Interface
 end
 module Core_Option_Impl0_Unwrap_Interface
   type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val unwrap (self : Core_Option_Option_Type.t_option t) : t
     requires {[#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] self <> Core_Option_Option_Type.C_None}
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] Core_Option_Option_Type.C_Some result = self }
+    ensures { Inv1.inv result }
     
 end
 module Std_Time_Impl21_Eq_Interface
@@ -591,7 +622,13 @@ module Core_Cmp_PartialOrd_Gt_Interface
   clone CreusotContracts_Model_Impl4_DeepModel_Stub as DeepModel0 with
     type t = self,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = rhs
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   val gt (self : self) (other : rhs) : bool
+    requires {Inv0.inv self}
+    requires {Inv1.inv other}
     ensures { [#"../../../../creusot-contracts/src/std/cmp.rs" 33 26 33 76] result = GtLog0.gt_log (DeepModel0.deep_model self) (DeepModel1.deep_model other) }
     
 end
@@ -638,7 +675,10 @@ module Core_Option_Impl0_IsSome_Interface
   type t
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val is_some (self : Core_Option_Option_Type.t_option t) : bool
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 21 26 21 51] result = (self <> Core_Option_Option_Type.C_None) }
     
 end
@@ -646,7 +686,10 @@ module Core_Option_Impl0_IsNone_Interface
   type t
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val is_none (self : Core_Option_Option_Type.t_option t) : bool
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 24 26 24 51] result = (self = Core_Option_Option_Type.C_None) }
     
 end
@@ -671,6 +714,12 @@ module Std_Time_Impl0_SaturatingDurationSince_Interface
     ensures { [#"../../../../creusot-contracts/src/std/time.rs" 157 16 157 60] ShallowModel0.shallow_model self > ShallowModel1.shallow_model earlier -> ShallowModel2.shallow_model result > 0 }
     ensures { [#"../../../../creusot-contracts/src/std/time.rs" 158 16 158 62] ShallowModel0.shallow_model self <= ShallowModel1.shallow_model earlier -> ShallowModel2.shallow_model result = 0 }
     
+end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
 end
 module CreusotContracts_Logic_Ord_Impl2_GeLog_Stub
   use prelude.Int
@@ -822,6 +871,8 @@ module CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog_Stub
     type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Stub as LeLog0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function cmp_le_log (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog_Interface
@@ -831,12 +882,16 @@ module CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog_Interface
     type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Stub as LeLog0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function cmp_le_log (x : self) (y : self) : ()
   val cmp_le_log (x : self) (y : self) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 16 18 16 19] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 16 27 16 28] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 15 14 15 64] LeLog0.le_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Greater) }
     ensures { result = cmp_le_log x y }
     
-  axiom cmp_le_log_spec : forall x : self, y : self . [#"../../../../creusot-contracts/src/logic/ord.rs" 15 14 15 64] LeLog0.le_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Greater)
+  axiom cmp_le_log_spec : forall x : self, y : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 16 18 16 19] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 16 27 16 28] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 15 14 15 64] LeLog0.le_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Greater))
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog
   type self
@@ -845,12 +900,16 @@ module CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog
     type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Stub as LeLog0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function cmp_le_log (x : self) (y : self) : ()
   val cmp_le_log (x : self) (y : self) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 16 18 16 19] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 16 27 16 28] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 15 14 15 64] LeLog0.le_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Greater) }
     ensures { result = cmp_le_log x y }
     
-  axiom cmp_le_log_spec : forall x : self, y : self . [#"../../../../creusot-contracts/src/logic/ord.rs" 15 14 15 64] LeLog0.le_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Greater)
+  axiom cmp_le_log_spec : forall x : self, y : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 16 18 16 19] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 16 27 16 28] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 15 14 15 64] LeLog0.le_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Greater))
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog_Stub
   type self
@@ -859,6 +918,8 @@ module CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog_Stub
     type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Stub as LtLog0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function cmp_lt_log (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog_Interface
@@ -868,12 +929,16 @@ module CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog_Interface
     type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Stub as LtLog0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function cmp_lt_log (x : self) (y : self) : ()
   val cmp_lt_log (x : self) (y : self) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 26 18 26 19] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 26 27 26 28] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 25 14 25 61] LtLog0.lt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less) }
     ensures { result = cmp_lt_log x y }
     
-  axiom cmp_lt_log_spec : forall x : self, y : self . [#"../../../../creusot-contracts/src/logic/ord.rs" 25 14 25 61] LtLog0.lt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less)
+  axiom cmp_lt_log_spec : forall x : self, y : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 26 18 26 19] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 26 27 26 28] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 25 14 25 61] LtLog0.lt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less))
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog
   type self
@@ -882,12 +947,16 @@ module CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog
     type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Stub as LtLog0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function cmp_lt_log (x : self) (y : self) : ()
   val cmp_lt_log (x : self) (y : self) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 26 18 26 19] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 26 27 26 28] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 25 14 25 61] LtLog0.lt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less) }
     ensures { result = cmp_lt_log x y }
     
-  axiom cmp_lt_log_spec : forall x : self, y : self . [#"../../../../creusot-contracts/src/logic/ord.rs" 25 14 25 61] LtLog0.lt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less)
+  axiom cmp_lt_log_spec : forall x : self, y : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 26 18 26 19] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 26 27 26 28] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 25 14 25 61] LtLog0.lt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less))
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog_Stub
   type self
@@ -896,6 +965,8 @@ module CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog_Stub
     type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Stub as GeLog0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function cmp_ge_log (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog_Interface
@@ -905,12 +976,16 @@ module CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog_Interface
     type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Stub as GeLog0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function cmp_ge_log (x : self) (y : self) : ()
   val cmp_ge_log (x : self) (y : self) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 36 18 36 19] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 36 27 36 28] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 35 14 35 61] GeLog0.ge_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Less) }
     ensures { result = cmp_ge_log x y }
     
-  axiom cmp_ge_log_spec : forall x : self, y : self . [#"../../../../creusot-contracts/src/logic/ord.rs" 35 14 35 61] GeLog0.ge_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Less)
+  axiom cmp_ge_log_spec : forall x : self, y : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 36 18 36 19] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 36 27 36 28] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 35 14 35 61] GeLog0.ge_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Less))
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog
   type self
@@ -919,12 +994,16 @@ module CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog
     type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Stub as GeLog0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function cmp_ge_log (x : self) (y : self) : ()
   val cmp_ge_log (x : self) (y : self) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 36 18 36 19] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 36 27 36 28] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 35 14 35 61] GeLog0.ge_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Less) }
     ensures { result = cmp_ge_log x y }
     
-  axiom cmp_ge_log_spec : forall x : self, y : self . [#"../../../../creusot-contracts/src/logic/ord.rs" 35 14 35 61] GeLog0.ge_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Less)
+  axiom cmp_ge_log_spec : forall x : self, y : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 36 18 36 19] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 36 27 36 28] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 35 14 35 61] GeLog0.ge_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Less))
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog_Stub
   type self
@@ -933,6 +1012,8 @@ module CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog_Stub
     type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Stub as GtLog0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function cmp_gt_log (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog_Interface
@@ -942,12 +1023,16 @@ module CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog_Interface
     type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Stub as GtLog0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function cmp_gt_log (x : self) (y : self) : ()
   val cmp_gt_log (x : self) (y : self) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 46 18 46 19] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 46 27 46 28] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 45 14 45 64] GtLog0.gt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater) }
     ensures { result = cmp_gt_log x y }
     
-  axiom cmp_gt_log_spec : forall x : self, y : self . [#"../../../../creusot-contracts/src/logic/ord.rs" 45 14 45 64] GtLog0.gt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater)
+  axiom cmp_gt_log_spec : forall x : self, y : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 46 18 46 19] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 46 27 46 28] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 45 14 45 64] GtLog0.gt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater))
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog
   type self
@@ -956,18 +1041,24 @@ module CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog
     type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Stub as GtLog0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function cmp_gt_log (x : self) (y : self) : ()
   val cmp_gt_log (x : self) (y : self) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 46 18 46 19] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 46 27 46 28] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 45 14 45 64] GtLog0.gt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater) }
     ensures { result = cmp_gt_log x y }
     
-  axiom cmp_gt_log_spec : forall x : self, y : self . [#"../../../../creusot-contracts/src/logic/ord.rs" 45 14 45 64] GtLog0.gt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater)
+  axiom cmp_gt_log_spec : forall x : self, y : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 46 18 46 19] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 46 27 46 28] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 45 14 45 64] GtLog0.gt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater))
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Refl_Stub
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function refl (x : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Refl_Interface
@@ -975,28 +1066,36 @@ module CreusotContracts_Logic_Ord_OrdLogic_Refl_Interface
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function refl (x : self) : ()
   val refl (x : self) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 50 12 50 13] Inv0.inv x}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 49 14 49 45] CmpLog0.cmp_log x x = Core_Cmp_Ordering_Type.C_Equal }
     ensures { result = refl x }
     
-  axiom refl_spec : forall x : self . [#"../../../../creusot-contracts/src/logic/ord.rs" 49 14 49 45] CmpLog0.cmp_log x x = Core_Cmp_Ordering_Type.C_Equal
+  axiom refl_spec : forall x : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 50 12 50 13] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 49 14 49 45] CmpLog0.cmp_log x x = Core_Cmp_Ordering_Type.C_Equal)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Refl
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function refl (x : self) : ()
   val refl (x : self) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 50 12 50 13] Inv0.inv x}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 49 14 49 45] CmpLog0.cmp_log x x = Core_Cmp_Ordering_Type.C_Equal }
     ensures { result = refl x }
     
-  axiom refl_spec : forall x : self . [#"../../../../creusot-contracts/src/logic/ord.rs" 49 14 49 45] CmpLog0.cmp_log x x = Core_Cmp_Ordering_Type.C_Equal
+  axiom refl_spec : forall x : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 50 12 50 13] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 49 14 49 45] CmpLog0.cmp_log x x = Core_Cmp_Ordering_Type.C_Equal)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Trans_Stub
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
   function trans (x : self) (y : self) (z : self) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
@@ -1004,33 +1103,45 @@ end
 module CreusotContracts_Logic_Ord_OrdLogic_Trans_Interface
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
   function trans (x : self) (y : self) (z : self) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
   val trans (x : self) (y : self) (z : self) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 53 15 53 32] CmpLog0.cmp_log x y = o}
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 54 15 54 32] CmpLog0.cmp_log y z = o}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 56 13 56 14] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 56 22 56 23] Inv0.inv y}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 56 31 56 32] Inv0.inv z}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 55 14 55 31] CmpLog0.cmp_log x z = o }
     ensures { result = trans x y z o }
     
-  axiom trans_spec : forall x : self, y : self, z : self, o : Core_Cmp_Ordering_Type.t_ordering . ([#"../../../../creusot-contracts/src/logic/ord.rs" 53 15 53 32] CmpLog0.cmp_log x y = o) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 54 15 54 32] CmpLog0.cmp_log y z = o) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 55 14 55 31] CmpLog0.cmp_log x z = o)
+  axiom trans_spec : forall x : self, y : self, z : self, o : Core_Cmp_Ordering_Type.t_ordering . ([#"../../../../creusot-contracts/src/logic/ord.rs" 53 15 53 32] CmpLog0.cmp_log x y = o) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 54 15 54 32] CmpLog0.cmp_log y z = o) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 56 13 56 14] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 56 22 56 23] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 56 31 56 32] Inv0.inv z) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 55 14 55 31] CmpLog0.cmp_log x z = o)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Trans
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
   function trans (x : self) (y : self) (z : self) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
   val trans (x : self) (y : self) (z : self) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 53 15 53 32] CmpLog0.cmp_log x y = o}
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 54 15 54 32] CmpLog0.cmp_log y z = o}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 56 13 56 14] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 56 22 56 23] Inv0.inv y}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 56 31 56 32] Inv0.inv z}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 55 14 55 31] CmpLog0.cmp_log x z = o }
     ensures { result = trans x y z o }
     
-  axiom trans_spec : forall x : self, y : self, z : self, o : Core_Cmp_Ordering_Type.t_ordering . ([#"../../../../creusot-contracts/src/logic/ord.rs" 53 15 53 32] CmpLog0.cmp_log x y = o) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 54 15 54 32] CmpLog0.cmp_log y z = o) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 55 14 55 31] CmpLog0.cmp_log x z = o)
+  axiom trans_spec : forall x : self, y : self, z : self, o : Core_Cmp_Ordering_Type.t_ordering . ([#"../../../../creusot-contracts/src/logic/ord.rs" 53 15 53 32] CmpLog0.cmp_log x y = o) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 54 15 54 32] CmpLog0.cmp_log y z = o) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 56 13 56 14] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 56 22 56 23] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 56 31 56 32] Inv0.inv z) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 55 14 55 31] CmpLog0.cmp_log x z = o)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Antisym1_Stub
   type self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
@@ -1038,32 +1149,42 @@ module CreusotContracts_Logic_Ord_OrdLogic_Antisym1_Stub
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Antisym1_Interface
   type self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
   function antisym1 (x : self) (y : self) : ()
   val antisym1 (x : self) (y : self) : ()
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 59 15 59 45] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 61 16 61 17] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 61 25 61 26] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 60 14 60 47] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Greater }
     ensures { result = antisym1 x y }
     
-  axiom antisym1_spec : forall x : self, y : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 59 15 59 45] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 60 14 60 47] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Greater)
+  axiom antisym1_spec : forall x : self, y : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 59 15 59 45] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 61 16 61 17] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 61 25 61 26] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 60 14 60 47] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Greater)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Antisym1
   type self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
   function antisym1 (x : self) (y : self) : ()
   val antisym1 (x : self) (y : self) : ()
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 59 15 59 45] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 61 16 61 17] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 61 25 61 26] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 60 14 60 47] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Greater }
     ensures { result = antisym1 x y }
     
-  axiom antisym1_spec : forall x : self, y : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 59 15 59 45] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 60 14 60 47] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Greater)
+  axiom antisym1_spec : forall x : self, y : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 59 15 59 45] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 61 16 61 17] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 61 25 61 26] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 60 14 60 47] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Greater)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Antisym2_Stub
   type self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
@@ -1071,35 +1192,45 @@ module CreusotContracts_Logic_Ord_OrdLogic_Antisym2_Stub
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Antisym2_Interface
   type self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
   function antisym2 (x : self) (y : self) : ()
   val antisym2 (x : self) (y : self) : ()
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 64 15 64 48] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 66 16 66 17] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 66 25 66 26] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 65 14 65 44] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Less }
     ensures { result = antisym2 x y }
     
-  axiom antisym2_spec : forall x : self, y : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 64 15 64 48] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 65 14 65 44] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Less)
+  axiom antisym2_spec : forall x : self, y : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 64 15 64 48] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 66 16 66 17] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 66 25 66 26] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 65 14 65 44] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Less)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Antisym2
   type self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
   function antisym2 (x : self) (y : self) : ()
   val antisym2 (x : self) (y : self) : ()
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 64 15 64 48] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 66 16 66 17] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 66 25 66 26] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 65 14 65 44] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Less }
     ensures { result = antisym2 x y }
     
-  axiom antisym2_spec : forall x : self, y : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 64 15 64 48] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 65 14 65 44] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Less)
+  axiom antisym2_spec : forall x : self, y : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 64 15 64 48] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 66 16 66 17] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 66 25 66 26] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 65 14 65 44] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Less)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_EqCmp_Stub
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function eq_cmp (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_EqCmp_Interface
@@ -1107,24 +1238,32 @@ module CreusotContracts_Logic_Ord_OrdLogic_EqCmp_Interface
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function eq_cmp (x : self) (y : self) : ()
   val eq_cmp (x : self) (y : self) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 70 14 70 15] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 70 23 70 24] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 69 14 69 59] (x = y) = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Equal) }
     ensures { result = eq_cmp x y }
     
-  axiom eq_cmp_spec : forall x : self, y : self . [#"../../../../creusot-contracts/src/logic/ord.rs" 69 14 69 59] (x = y) = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Equal)
+  axiom eq_cmp_spec : forall x : self, y : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 70 14 70 15] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 70 23 70 24] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 69 14 69 59] (x = y) = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Equal))
 end
 module CreusotContracts_Logic_Ord_OrdLogic_EqCmp
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function eq_cmp (x : self) (y : self) : ()
   val eq_cmp (x : self) (y : self) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 70 14 70 15] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 70 23 70 24] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 69 14 69 59] (x = y) = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Equal) }
     ensures { result = eq_cmp x y }
     
-  axiom eq_cmp_spec : forall x : self, y : self . [#"../../../../creusot-contracts/src/logic/ord.rs" 69 14 69 59] (x = y) = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Equal)
+  axiom eq_cmp_spec : forall x : self, y : self . ([#"../../../../creusot-contracts/src/logic/ord.rs" 70 14 70 15] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 70 23 70 24] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 69 14 69 59] (x = y) = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Equal))
 end
 module CreusotContracts_Logic_Ord_Impl1_CmpLog_Stub
   type t
@@ -1170,6 +1309,8 @@ module CreusotContracts_Logic_Ord_Impl1_CmpLeLog_Stub
     type t = t
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Stub as LeLog0 with
     type self = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   function cmp_le_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
 end
 module CreusotContracts_Logic_Ord_Impl1_CmpLeLog_Interface
@@ -1180,12 +1321,16 @@ module CreusotContracts_Logic_Ord_Impl1_CmpLeLog_Interface
     type t = t
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Stub as LeLog0 with
     type self = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   function cmp_le_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
   val cmp_le_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 283 18 283 19] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 283 27 283 28] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 282 14 282 64] LeLog0.le_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Greater) }
     ensures { result = cmp_le_log x y }
     
-  axiom cmp_le_log_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . [#"../../../../creusot-contracts/src/logic/ord.rs" 282 14 282 64] LeLog0.le_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Greater)
+  axiom cmp_le_log_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 283 18 283 19] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 283 27 283 28] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 282 14 282 64] LeLog0.le_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Greater))
 end
 module CreusotContracts_Logic_Ord_Impl1_CmpLeLog
   type t
@@ -1195,13 +1340,17 @@ module CreusotContracts_Logic_Ord_Impl1_CmpLeLog
     type t = t
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Stub as LeLog0 with
     type self = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   function cmp_le_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : () =
     [#"../../../../creusot-contracts/src/logic/ord.rs" 280 4 280 10] ()
   val cmp_le_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 283 18 283 19] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 283 27 283 28] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 282 14 282 64] LeLog0.le_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Greater) }
     ensures { result = cmp_le_log x y }
     
-  axiom cmp_le_log_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . [#"../../../../creusot-contracts/src/logic/ord.rs" 282 14 282 64] LeLog0.le_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Greater)
+  axiom cmp_le_log_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 283 18 283 19] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 283 27 283 28] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 282 14 282 64] LeLog0.le_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Greater))
 end
 module CreusotContracts_Logic_Ord_Impl1_CmpLtLog_Stub
   type t
@@ -1211,6 +1360,8 @@ module CreusotContracts_Logic_Ord_Impl1_CmpLtLog_Stub
     type t = t
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Stub as LtLog0 with
     type self = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   function cmp_lt_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
 end
 module CreusotContracts_Logic_Ord_Impl1_CmpLtLog_Interface
@@ -1221,12 +1372,16 @@ module CreusotContracts_Logic_Ord_Impl1_CmpLtLog_Interface
     type t = t
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Stub as LtLog0 with
     type self = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   function cmp_lt_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
   val cmp_lt_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 288 18 288 19] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 288 27 288 28] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 287 14 287 61] LtLog0.lt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less) }
     ensures { result = cmp_lt_log x y }
     
-  axiom cmp_lt_log_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . [#"../../../../creusot-contracts/src/logic/ord.rs" 287 14 287 61] LtLog0.lt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less)
+  axiom cmp_lt_log_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 288 18 288 19] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 288 27 288 28] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 287 14 287 61] LtLog0.lt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less))
 end
 module CreusotContracts_Logic_Ord_Impl1_CmpLtLog
   type t
@@ -1236,13 +1391,17 @@ module CreusotContracts_Logic_Ord_Impl1_CmpLtLog
     type t = t
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Stub as LtLog0 with
     type self = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   function cmp_lt_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : () =
     [#"../../../../creusot-contracts/src/logic/ord.rs" 285 4 285 10] ()
   val cmp_lt_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 288 18 288 19] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 288 27 288 28] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 287 14 287 61] LtLog0.lt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less) }
     ensures { result = cmp_lt_log x y }
     
-  axiom cmp_lt_log_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . [#"../../../../creusot-contracts/src/logic/ord.rs" 287 14 287 61] LtLog0.lt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less)
+  axiom cmp_lt_log_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 288 18 288 19] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 288 27 288 28] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 287 14 287 61] LtLog0.lt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less))
 end
 module CreusotContracts_Logic_Ord_Impl1_CmpGeLog_Stub
   type t
@@ -1252,6 +1411,8 @@ module CreusotContracts_Logic_Ord_Impl1_CmpGeLog_Stub
     type t = t
   clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Stub as GeLog0 with
     type self = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   function cmp_ge_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
 end
 module CreusotContracts_Logic_Ord_Impl1_CmpGeLog_Interface
@@ -1262,12 +1423,16 @@ module CreusotContracts_Logic_Ord_Impl1_CmpGeLog_Interface
     type t = t
   clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Stub as GeLog0 with
     type self = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   function cmp_ge_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
   val cmp_ge_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 293 18 293 19] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 293 27 293 28] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 292 14 292 61] GeLog0.ge_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Less) }
     ensures { result = cmp_ge_log x y }
     
-  axiom cmp_ge_log_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . [#"../../../../creusot-contracts/src/logic/ord.rs" 292 14 292 61] GeLog0.ge_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Less)
+  axiom cmp_ge_log_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 293 18 293 19] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 293 27 293 28] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 292 14 292 61] GeLog0.ge_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Less))
 end
 module CreusotContracts_Logic_Ord_Impl1_CmpGeLog
   type t
@@ -1277,13 +1442,17 @@ module CreusotContracts_Logic_Ord_Impl1_CmpGeLog
     type t = t
   clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Stub as GeLog0 with
     type self = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   function cmp_ge_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : () =
     [#"../../../../creusot-contracts/src/logic/ord.rs" 290 4 290 10] ()
   val cmp_ge_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 293 18 293 19] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 293 27 293 28] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 292 14 292 61] GeLog0.ge_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Less) }
     ensures { result = cmp_ge_log x y }
     
-  axiom cmp_ge_log_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . [#"../../../../creusot-contracts/src/logic/ord.rs" 292 14 292 61] GeLog0.ge_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Less)
+  axiom cmp_ge_log_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 293 18 293 19] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 293 27 293 28] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 292 14 292 61] GeLog0.ge_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Less))
 end
 module CreusotContracts_Logic_Ord_Impl1_CmpGtLog_Stub
   type t
@@ -1293,6 +1462,8 @@ module CreusotContracts_Logic_Ord_Impl1_CmpGtLog_Stub
     type t = t
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Stub as GtLog0 with
     type self = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   function cmp_gt_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
 end
 module CreusotContracts_Logic_Ord_Impl1_CmpGtLog_Interface
@@ -1303,12 +1474,16 @@ module CreusotContracts_Logic_Ord_Impl1_CmpGtLog_Interface
     type t = t
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Stub as GtLog0 with
     type self = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   function cmp_gt_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
   val cmp_gt_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 298 18 298 19] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 298 27 298 28] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 297 14 297 64] GtLog0.gt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater) }
     ensures { result = cmp_gt_log x y }
     
-  axiom cmp_gt_log_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . [#"../../../../creusot-contracts/src/logic/ord.rs" 297 14 297 64] GtLog0.gt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater)
+  axiom cmp_gt_log_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 298 18 298 19] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 298 27 298 28] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 297 14 297 64] GtLog0.gt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater))
 end
 module CreusotContracts_Logic_Ord_Impl1_CmpGtLog
   type t
@@ -1318,13 +1493,17 @@ module CreusotContracts_Logic_Ord_Impl1_CmpGtLog
     type t = t
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Stub as GtLog0 with
     type self = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   function cmp_gt_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : () =
     [#"../../../../creusot-contracts/src/logic/ord.rs" 295 4 295 10] ()
   val cmp_gt_log (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 298 18 298 19] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 298 27 298 28] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 297 14 297 64] GtLog0.gt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater) }
     ensures { result = cmp_gt_log x y }
     
-  axiom cmp_gt_log_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . [#"../../../../creusot-contracts/src/logic/ord.rs" 297 14 297 64] GtLog0.gt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater)
+  axiom cmp_gt_log_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 298 18 298 19] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 298 27 298 28] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 297 14 297 64] GtLog0.gt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater))
 end
 module CreusotContracts_Logic_Ord_Impl1_Refl_Stub
   type t
@@ -1332,6 +1511,8 @@ module CreusotContracts_Logic_Ord_Impl1_Refl_Stub
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_Impl1_CmpLog_Stub as CmpLog0 with
     type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   function refl (x : Core_Option_Option_Type.t_option t) : ()
 end
 module CreusotContracts_Logic_Ord_Impl1_Refl_Interface
@@ -1340,12 +1521,15 @@ module CreusotContracts_Logic_Ord_Impl1_Refl_Interface
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_Impl1_CmpLog_Stub as CmpLog0 with
     type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   function refl (x : Core_Option_Option_Type.t_option t) : ()
   val refl (x : Core_Option_Option_Type.t_option t) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 303 12 303 13] Inv0.inv x}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 302 14 302 45] CmpLog0.cmp_log x x = Core_Cmp_Ordering_Type.C_Equal }
     ensures { result = refl x }
     
-  axiom refl_spec : forall x : Core_Option_Option_Type.t_option t . [#"../../../../creusot-contracts/src/logic/ord.rs" 302 14 302 45] CmpLog0.cmp_log x x = Core_Cmp_Ordering_Type.C_Equal
+  axiom refl_spec : forall x : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 303 12 303 13] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 302 14 302 45] CmpLog0.cmp_log x x = Core_Cmp_Ordering_Type.C_Equal)
 end
 module CreusotContracts_Logic_Ord_Impl1_Refl
   type t
@@ -1353,18 +1537,23 @@ module CreusotContracts_Logic_Ord_Impl1_Refl
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_Impl1_CmpLog_Stub as CmpLog0 with
     type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   function refl (x : Core_Option_Option_Type.t_option t) : () =
     [#"../../../../creusot-contracts/src/logic/ord.rs" 300 4 300 10] ()
   val refl (x : Core_Option_Option_Type.t_option t) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 303 12 303 13] Inv0.inv x}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 302 14 302 45] CmpLog0.cmp_log x x = Core_Cmp_Ordering_Type.C_Equal }
     ensures { result = refl x }
     
-  axiom refl_spec : forall x : Core_Option_Option_Type.t_option t . [#"../../../../creusot-contracts/src/logic/ord.rs" 302 14 302 45] CmpLog0.cmp_log x x = Core_Cmp_Ordering_Type.C_Equal
+  axiom refl_spec : forall x : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 303 12 303 13] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 302 14 302 45] CmpLog0.cmp_log x x = Core_Cmp_Ordering_Type.C_Equal)
 end
 module CreusotContracts_Logic_Ord_Impl1_Trans_Stub
   type t
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   clone CreusotContracts_Logic_Ord_Impl1_CmpLog_Stub as CmpLog0 with
     type t = t
   function trans (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) (z : Core_Option_Option_Type.t_option t) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
@@ -1374,6 +1563,8 @@ module CreusotContracts_Logic_Ord_Impl1_Trans_Interface
   type t
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   clone CreusotContracts_Logic_Ord_Impl1_CmpLog_Stub as CmpLog0 with
     type t = t
   function trans (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) (z : Core_Option_Option_Type.t_option t) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
@@ -1381,15 +1572,20 @@ module CreusotContracts_Logic_Ord_Impl1_Trans_Interface
   val trans (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) (z : Core_Option_Option_Type.t_option t) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 307 15 307 32] CmpLog0.cmp_log x y = o}
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 308 15 308 32] CmpLog0.cmp_log y z = o}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 310 13 310 14] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 310 22 310 23] Inv0.inv y}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 310 31 310 32] Inv0.inv z}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 309 14 309 31] CmpLog0.cmp_log x z = o }
     ensures { result = trans x y z o }
     
-  axiom trans_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t, z : Core_Option_Option_Type.t_option t, o : Core_Cmp_Ordering_Type.t_ordering . ([#"../../../../creusot-contracts/src/logic/ord.rs" 307 15 307 32] CmpLog0.cmp_log x y = o) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 308 15 308 32] CmpLog0.cmp_log y z = o) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 309 14 309 31] CmpLog0.cmp_log x z = o)
+  axiom trans_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t, z : Core_Option_Option_Type.t_option t, o : Core_Cmp_Ordering_Type.t_ordering . ([#"../../../../creusot-contracts/src/logic/ord.rs" 307 15 307 32] CmpLog0.cmp_log x y = o) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 308 15 308 32] CmpLog0.cmp_log y z = o) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 310 13 310 14] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 310 22 310 23] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 310 31 310 32] Inv0.inv z) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 309 14 309 31] CmpLog0.cmp_log x z = o)
 end
 module CreusotContracts_Logic_Ord_Impl1_Trans
   type t
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   clone CreusotContracts_Logic_Ord_Impl1_CmpLog_Stub as CmpLog0 with
     type t = t
   function trans (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) (z : Core_Option_Option_Type.t_option t) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
@@ -1399,14 +1595,19 @@ module CreusotContracts_Logic_Ord_Impl1_Trans
   val trans (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) (z : Core_Option_Option_Type.t_option t) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 307 15 307 32] CmpLog0.cmp_log x y = o}
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 308 15 308 32] CmpLog0.cmp_log y z = o}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 310 13 310 14] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 310 22 310 23] Inv0.inv y}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 310 31 310 32] Inv0.inv z}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 309 14 309 31] CmpLog0.cmp_log x z = o }
     ensures { result = trans x y z o }
     
-  axiom trans_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t, z : Core_Option_Option_Type.t_option t, o : Core_Cmp_Ordering_Type.t_ordering . ([#"../../../../creusot-contracts/src/logic/ord.rs" 307 15 307 32] CmpLog0.cmp_log x y = o) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 308 15 308 32] CmpLog0.cmp_log y z = o) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 309 14 309 31] CmpLog0.cmp_log x z = o)
+  axiom trans_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t, z : Core_Option_Option_Type.t_option t, o : Core_Cmp_Ordering_Type.t_ordering . ([#"../../../../creusot-contracts/src/logic/ord.rs" 307 15 307 32] CmpLog0.cmp_log x y = o) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 308 15 308 32] CmpLog0.cmp_log y z = o) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 310 13 310 14] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 310 22 310 23] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 310 31 310 32] Inv0.inv z) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 309 14 309 31] CmpLog0.cmp_log x z = o)
 end
 module CreusotContracts_Logic_Ord_Impl1_Antisym1_Stub
   type t
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_Impl1_CmpLog_Stub as CmpLog0 with
     type t = t
@@ -1415,20 +1616,26 @@ end
 module CreusotContracts_Logic_Ord_Impl1_Antisym1_Interface
   type t
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_Impl1_CmpLog_Stub as CmpLog0 with
     type t = t
   function antisym1 (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
   val antisym1 (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 314 15 314 45] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 316 16 316 17] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 316 25 316 26] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 315 14 315 47] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Greater }
     ensures { result = antisym1 x y }
     
-  axiom antisym1_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 314 15 314 45] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 315 14 315 47] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Greater)
+  axiom antisym1_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 314 15 314 45] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 316 16 316 17] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 316 25 316 26] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 315 14 315 47] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Greater)
 end
 module CreusotContracts_Logic_Ord_Impl1_Antisym1
   type t
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_Impl1_CmpLog_Stub as CmpLog0 with
     type t = t
@@ -1436,14 +1643,18 @@ module CreusotContracts_Logic_Ord_Impl1_Antisym1
     [#"../../../../creusot-contracts/src/logic/ord.rs" 312 4 312 10] ()
   val antisym1 (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 314 15 314 45] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 316 16 316 17] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 316 25 316 26] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 315 14 315 47] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Greater }
     ensures { result = antisym1 x y }
     
-  axiom antisym1_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 314 15 314 45] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 315 14 315 47] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Greater)
+  axiom antisym1_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 314 15 314 45] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 316 16 316 17] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 316 25 316 26] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 315 14 315 47] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Greater)
 end
 module CreusotContracts_Logic_Ord_Impl1_Antisym2_Stub
   type t
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_Impl1_CmpLog_Stub as CmpLog0 with
     type t = t
@@ -1452,20 +1663,26 @@ end
 module CreusotContracts_Logic_Ord_Impl1_Antisym2_Interface
   type t
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_Impl1_CmpLog_Stub as CmpLog0 with
     type t = t
   function antisym2 (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
   val antisym2 (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 320 15 320 48] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 322 16 322 17] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 322 25 322 26] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 321 14 321 44] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Less }
     ensures { result = antisym2 x y }
     
-  axiom antisym2_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 320 15 320 48] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 321 14 321 44] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Less)
+  axiom antisym2_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 320 15 320 48] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 322 16 322 17] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 322 25 322 26] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 321 14 321 44] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Less)
 end
 module CreusotContracts_Logic_Ord_Impl1_Antisym2
   type t
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_Impl1_CmpLog_Stub as CmpLog0 with
     type t = t
@@ -1473,10 +1690,12 @@ module CreusotContracts_Logic_Ord_Impl1_Antisym2
     [#"../../../../creusot-contracts/src/logic/ord.rs" 318 4 318 10] ()
   val antisym2 (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 320 15 320 48] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 322 16 322 17] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 322 25 322 26] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 321 14 321 44] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Less }
     ensures { result = antisym2 x y }
     
-  axiom antisym2_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 320 15 320 48] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 321 14 321 44] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Less)
+  axiom antisym2_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 320 15 320 48] CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 322 16 322 17] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 322 25 322 26] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 321 14 321 44] CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Less)
 end
 module CreusotContracts_Logic_Ord_Impl1_EqCmp_Stub
   type t
@@ -1484,6 +1703,8 @@ module CreusotContracts_Logic_Ord_Impl1_EqCmp_Stub
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_Impl1_CmpLog_Stub as CmpLog0 with
     type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   function eq_cmp (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
 end
 module CreusotContracts_Logic_Ord_Impl1_EqCmp_Interface
@@ -1492,12 +1713,16 @@ module CreusotContracts_Logic_Ord_Impl1_EqCmp_Interface
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_Impl1_CmpLog_Stub as CmpLog0 with
     type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   function eq_cmp (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
   val eq_cmp (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 327 14 327 15] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 327 23 327 24] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 326 14 326 59] (x = y) = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Equal) }
     ensures { result = eq_cmp x y }
     
-  axiom eq_cmp_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . [#"../../../../creusot-contracts/src/logic/ord.rs" 326 14 326 59] (x = y) = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Equal)
+  axiom eq_cmp_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 327 14 327 15] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 327 23 327 24] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 326 14 326 59] (x = y) = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Equal))
 end
 module CreusotContracts_Logic_Ord_Impl1_EqCmp
   type t
@@ -1505,13 +1730,17 @@ module CreusotContracts_Logic_Ord_Impl1_EqCmp
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_Impl1_CmpLog_Stub as CmpLog0 with
     type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   function eq_cmp (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : () =
     [#"../../../../creusot-contracts/src/logic/ord.rs" 324 4 324 10] ()
   val eq_cmp (x : Core_Option_Option_Type.t_option t) (y : Core_Option_Option_Type.t_option t) : ()
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 327 14 327 15] Inv0.inv x}
+    requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 327 23 327 24] Inv0.inv y}
     ensures { [#"../../../../creusot-contracts/src/logic/ord.rs" 326 14 326 59] (x = y) = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Equal) }
     ensures { result = eq_cmp x y }
     
-  axiom eq_cmp_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . [#"../../../../creusot-contracts/src/logic/ord.rs" 326 14 326 59] (x = y) = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Equal)
+  axiom eq_cmp_spec : forall x : Core_Option_Option_Type.t_option t, y : Core_Option_Option_Type.t_option t . ([#"../../../../creusot-contracts/src/logic/ord.rs" 327 14 327 15] Inv0.inv x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 327 23 327 24] Inv0.inv y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 326 14 326 59] (x = y) = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Equal))
 end
 module CreusotContracts_Logic_Ord_Impl2_CmpLog_Stub
   use prelude.Int
@@ -1545,31 +1774,43 @@ end
 module Instant_TestInstant
   use prelude.Int
   use prelude.UInt64
-  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
-  clone CreusotContracts_Logic_Ord_Impl2_CmpLog as CmpLog1
+  use prelude.Borrow
   use prelude.Int
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+    type t = Core_Option_Option_Type.t_option int
+  clone TyInv_Trivial as TyInv_Trivial4 with
+    type t = Core_Option_Option_Type.t_option int,
+    predicate Inv0.inv = Inv4.inv,
+    axiom .
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
+  clone CreusotContracts_Logic_Ord_Impl2_CmpLog as CmpLog1
   clone CreusotContracts_Logic_Ord_Impl1_CmpLog as CmpLog0 with
     type t = int,
     function CmpLog0.cmp_log = CmpLog1.cmp_log
   clone CreusotContracts_Logic_Ord_Impl1_EqCmp_Interface as EqCmp1 with
     type t = int,
+    predicate Inv0.inv = Inv4.inv,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
   clone CreusotContracts_Logic_Ord_Impl1_Antisym2_Interface as Antisym21 with
     type t = int,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
+    predicate Inv0.inv = Inv4.inv,
     axiom .
   clone CreusotContracts_Logic_Ord_Impl1_Antisym1_Interface as Antisym11 with
     type t = int,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
+    predicate Inv0.inv = Inv4.inv,
     axiom .
   clone CreusotContracts_Logic_Ord_Impl1_Trans_Interface as Trans1 with
     type t = int,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
+    predicate Inv0.inv = Inv4.inv,
     axiom .
   clone CreusotContracts_Logic_Ord_Impl1_Refl_Interface as Refl1 with
     type t = int,
+    predicate Inv0.inv = Inv4.inv,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog as GtLog0 with
@@ -1577,6 +1818,7 @@ module Instant_TestInstant
     function CmpLog0.cmp_log = CmpLog0.cmp_log
   clone CreusotContracts_Logic_Ord_Impl1_CmpGtLog_Interface as CmpGtLog1 with
     type t = int,
+    predicate Inv0.inv = Inv4.inv,
     function GtLog0.gt_log = GtLog0.gt_log,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
@@ -1585,6 +1827,7 @@ module Instant_TestInstant
     function CmpLog0.cmp_log = CmpLog0.cmp_log
   clone CreusotContracts_Logic_Ord_Impl1_CmpGeLog_Interface as CmpGeLog1 with
     type t = int,
+    predicate Inv0.inv = Inv4.inv,
     function GeLog0.ge_log = GeLog1.ge_log,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
@@ -1593,6 +1836,7 @@ module Instant_TestInstant
     function CmpLog0.cmp_log = CmpLog0.cmp_log
   clone CreusotContracts_Logic_Ord_Impl1_CmpLtLog_Interface as CmpLtLog1 with
     type t = int,
+    predicate Inv0.inv = Inv4.inv,
     function LtLog0.lt_log = LtLog0.lt_log,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
@@ -1601,56 +1845,84 @@ module Instant_TestInstant
     function CmpLog0.cmp_log = CmpLog0.cmp_log
   clone CreusotContracts_Logic_Ord_Impl1_CmpLeLog_Interface as CmpLeLog1 with
     type t = int,
+    predicate Inv0.inv = Inv4.inv,
     function LeLog0.le_log = LeLog0.le_log,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
+  use Core_Time_Duration_Type as Core_Time_Duration_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)
+  clone TyInv_Trivial as TyInv_Trivial3 with
+    type t = Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration),
+    predicate Inv0.inv = Inv3.inv,
+    axiom .
+  use Std_Time_Instant_Type as Std_Time_Instant_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Std_Time_Instant_Type.t_instant
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = Std_Time_Instant_Type.t_instant,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Core_Option_Option_Type.t_option (Std_Time_Instant_Type.t_instant)
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Core_Option_Option_Type.t_option (Std_Time_Instant_Type.t_instant),
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_EqCmp_Interface as EqCmp0 with
     type self = Core_Option_Option_Type.t_option int,
+    predicate Inv0.inv = Inv4.inv,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Antisym2_Interface as Antisym20 with
     type self = Core_Option_Option_Type.t_option int,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
+    predicate Inv0.inv = Inv4.inv,
     axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Antisym1_Interface as Antisym10 with
     type self = Core_Option_Option_Type.t_option int,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
+    predicate Inv0.inv = Inv4.inv,
     axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Trans_Interface as Trans0 with
     type self = Core_Option_Option_Type.t_option int,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
+    predicate Inv0.inv = Inv4.inv,
     axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Refl_Interface as Refl0 with
     type self = Core_Option_Option_Type.t_option int,
+    predicate Inv0.inv = Inv4.inv,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog_Interface as CmpGtLog0 with
     type self = Core_Option_Option_Type.t_option int,
+    predicate Inv0.inv = Inv4.inv,
     function GtLog0.gt_log = GtLog0.gt_log,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog_Interface as CmpGeLog0 with
     type self = Core_Option_Option_Type.t_option int,
+    predicate Inv0.inv = Inv4.inv,
     function GeLog0.ge_log = GeLog1.ge_log,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog_Interface as CmpLtLog0 with
     type self = Core_Option_Option_Type.t_option int,
+    predicate Inv0.inv = Inv4.inv,
     function LtLog0.lt_log = LtLog0.lt_log,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog_Interface as CmpLeLog0 with
     type self = Core_Option_Option_Type.t_option int,
+    predicate Inv0.inv = Inv4.inv,
     function LeLog0.le_log = LeLog0.le_log,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
-  use Std_Time_Instant_Type as Std_Time_Instant_Type
   clone CreusotContracts_Std1_Time_Impl2_ShallowModel_Interface as ShallowModel0 with
     axiom .
   clone CreusotContracts_Std1_Time_Impl3_DeepModel_Interface as DeepModel4 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     axiom .
-  use Core_Time_Duration_Type as Core_Time_Duration_Type
   clone CreusotContracts_Std1_Time_SecsToNanos_Interface as SecsToNanos0
   clone Core_Num_Impl9_Max as Max0
   clone CreusotContracts_Std1_Time_Impl0_ShallowModel_Interface as ShallowModel1 with
@@ -1661,6 +1933,12 @@ module Instant_TestInstant
     val Max0.mAX' = Max0.mAX',
     function SecsToNanos0.secs_to_nanos = SecsToNanos0.secs_to_nanos,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Time_Duration_Type.t_duration
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Time_Duration_Type.t_duration,
+    predicate Inv0.inv = Inv0.inv,
     axiom .
   clone CreusotContracts_Logic_Ord_Impl2_GtLog as GtLog1
   clone CreusotContracts_Model_Impl4_DeepModel as DeepModel2 with
@@ -1687,9 +1965,11 @@ module Instant_TestInstant
     val Max0.mAX' = Max0.mAX',
     function SecsToNanos0.secs_to_nanos = SecsToNanos0.secs_to_nanos
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = Core_Time_Duration_Type.t_duration
+    type t = Core_Time_Duration_Type.t_duration,
+    predicate Inv0.inv = Inv3.inv
   clone Core_Option_Impl0_IsSome_Interface as IsSome0 with
-    type t = Core_Time_Duration_Type.t_duration
+    type t = Core_Time_Duration_Type.t_duration,
+    predicate Inv0.inv = Inv3.inv
   clone Std_Time_Impl0_CheckedDurationSince_Interface as CheckedDurationSince0 with
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model,
     function ShallowModel1.shallow_model = ShallowModel0.shallow_model
@@ -1702,6 +1982,8 @@ module Instant_TestInstant
   clone Core_Cmp_PartialOrd_Gt_Interface as Gt0 with
     type self = Core_Time_Duration_Type.t_duration,
     type rhs = Core_Time_Duration_Type.t_duration,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv0.inv,
     function DeepModel0.deep_model = DeepModel0.deep_model,
     function DeepModel1.deep_model = DeepModel0.deep_model,
     function GtLog0.gt_log = GtLog1.gt_log,
@@ -1733,7 +2015,9 @@ module Instant_TestInstant
   clone Std_Time_Impl21_Eq_Interface as Eq0 with
     function DeepModel0.deep_model = DeepModel2.deep_model
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = Std_Time_Instant_Type.t_instant
+    type t = Std_Time_Instant_Type.t_instant,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv
   clone Std_Time_Impl0_CheckedAdd_Interface as CheckedAdd0 with
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
     function DeepModel0.deep_model = DeepModel1.deep_model,
@@ -1744,6 +2028,8 @@ module Instant_TestInstant
   clone Core_Cmp_PartialOrd_Ge_Interface as Ge0 with
     type self = Core_Time_Duration_Type.t_duration,
     type rhs = Core_Time_Duration_Type.t_duration,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv0.inv,
     function DeepModel0.deep_model = DeepModel0.deep_model,
     function DeepModel1.deep_model = DeepModel0.deep_model,
     function GeLog0.ge_log = GeLog0.ge_log,

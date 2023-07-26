@@ -82,19 +82,47 @@ module Core_Num_Impl6_CheckedAdd_Interface
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 128 16 128 89] forall r : uint8 . result = Core_Option_Option_Type.C_Some r -> UInt8.to_int r = UInt8.to_int self + UInt8.to_int rhs }
     
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module Core_Option_Impl0_Unwrap_Interface
   type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val unwrap (self : Core_Option_Option_Type.t_option t) : t
     requires {[#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] self <> Core_Option_Option_Type.C_None}
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] Core_Option_Option_Type.C_Some result = self }
+    ensures { Inv1.inv result }
     
 end
 module Core_Option_Impl0_IsNone_Interface
   type t
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val is_none (self : Core_Option_Option_Type.t_option t) : bool
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 24 26 24 51] result = (self = Core_Option_Option_Type.C_None) }
     
 end
@@ -153,6 +181,12 @@ module Core_Num_Impl6_OverflowingAdd_Interface
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (UInt8.to_int self + UInt8.to_int rhs < UInt8.to_int Min0.mIN' \/ UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int Max0.mAX') }
     
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module CreusotContracts_Resolve_Impl2_Resolve_Stub
   type t
   predicate resolve (self : t)
@@ -179,6 +213,26 @@ module CheckedOps_TestU8AddExample
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = uint8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = uint8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -202,11 +256,13 @@ module CheckedOps_TestU8AddExample
     val Bits0.bITS' = Bits0.bITS',
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv2.inv
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Num_Impl6_CheckedAdd_Interface as CheckedAdd0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -391,6 +447,14 @@ module CheckedOps_TestU8AddOverflow
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -398,7 +462,6 @@ module CheckedOps_TestU8AddOverflow
   clone Core_Num_Impl6_Bits as Bits0
   clone Core_Num_Impl6_Max as Max0
   clone Core_Num_Impl6_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = uint8,
     type t2 = bool,
@@ -416,7 +479,8 @@ module CheckedOps_TestU8AddOverflow
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl6_CheckedAdd_Interface as CheckedAdd0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -558,6 +622,14 @@ module CheckedOps_TestU8OverflowingAdd
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -565,9 +637,9 @@ module CheckedOps_TestU8OverflowingAdd
   clone Core_Num_Impl6_Max as Max0
   clone Core_Num_Impl6_Min as Min0
   clone Core_Num_Impl6_Bits as Bits0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl6_CheckedAdd_Interface as CheckedAdd0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -706,6 +778,26 @@ module CheckedOps_TestU8SubExample
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = uint8
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = uint8,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -729,11 +821,13 @@ module CheckedOps_TestU8SubExample
     val Bits0.bITS' = Bits0.bITS',
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl6_CheckedSub_Interface as CheckedSub0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -918,6 +1012,14 @@ module CheckedOps_TestU8SubOverflow
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -925,7 +1027,6 @@ module CheckedOps_TestU8SubOverflow
   clone Core_Num_Impl6_Bits as Bits0
   clone Core_Num_Impl6_Max as Max0
   clone Core_Num_Impl6_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = uint8,
     type t2 = bool,
@@ -943,7 +1044,8 @@ module CheckedOps_TestU8SubOverflow
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl6_CheckedSub_Interface as CheckedSub0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -1085,6 +1187,14 @@ module CheckedOps_TestU8OverflowingSub
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -1092,9 +1202,9 @@ module CheckedOps_TestU8OverflowingSub
   clone Core_Num_Impl6_Max as Max0
   clone Core_Num_Impl6_Min as Min0
   clone Core_Num_Impl6_Bits as Bits0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl6_CheckedSub_Interface as CheckedSub0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -1233,6 +1343,26 @@ module CheckedOps_TestU8MulExample
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = uint8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = uint8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -1256,11 +1386,13 @@ module CheckedOps_TestU8MulExample
     val Bits0.bITS' = Bits0.bITS',
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv2.inv
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Num_Impl6_CheckedMul_Interface as CheckedMul0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -1443,6 +1575,19 @@ module CheckedOps_TestU8MulZero
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = uint8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = uint8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -1466,9 +1611,10 @@ module CheckedOps_TestU8MulZero
     val Bits0.bITS' = Bits0.bITS',
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Num_Impl6_CheckedMul_Interface as CheckedMul0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -1574,6 +1720,14 @@ module CheckedOps_TestU8OverflowingMul
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -1581,9 +1735,9 @@ module CheckedOps_TestU8OverflowingMul
   clone Core_Num_Impl6_Max as Max0
   clone Core_Num_Impl6_Min as Min0
   clone Core_Num_Impl6_Bits as Bits0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl6_CheckedMul_Interface as CheckedMul0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -1708,6 +1862,26 @@ module CheckedOps_TestU8DivExample
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = uint8
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = uint8,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -1724,11 +1898,13 @@ module CheckedOps_TestU8DivExample
     val Min0.mIN' = Min0.mIN'
   clone Core_Num_Impl6_WrappingDiv_Interface as WrappingDiv0 with
     val Min0.mIN' = Min0.mIN'
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl6_CheckedDiv_Interface as CheckedDiv0 with
     val Min0.mIN' = Min0.mIN'
   let rec cfg test_u8_div_example [#"../checked_ops.rs" 117 0 117 28] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
@@ -1853,6 +2029,19 @@ module CheckedOps_TestU8DivNoOverflow
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = uint8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = uint8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -1869,9 +2058,10 @@ module CheckedOps_TestU8DivNoOverflow
     val Min0.mIN' = Min0.mIN'
   clone Core_Num_Impl6_WrappingDiv_Interface as WrappingDiv0 with
     val Min0.mIN' = Min0.mIN'
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Num_Impl6_CheckedDiv_Interface as CheckedDiv0 with
     val Min0.mIN' = Min0.mIN'
   let rec cfg test_u8_div_no_overflow [#"../checked_ops.rs" 128 0 128 44] [@cfg:stackify] [@cfg:subregion_analysis] (a : uint8) (b : uint8) : ()
@@ -2009,10 +2199,18 @@ end
 module CheckedOps_TestU8DivZero
   use prelude.Int
   use prelude.UInt8
-  clone Core_Num_Impl6_Min as Min0
+  use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
+  clone Core_Num_Impl6_Min as Min0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl6_CheckedDiv_Interface as CheckedDiv0 with
     val Min0.mIN' = Min0.mIN'
   let rec cfg test_u8_div_zero [#"../checked_ops.rs" 137 0 137 30] [@cfg:stackify] [@cfg:subregion_analysis] (a : uint8) : ()
@@ -2143,6 +2341,26 @@ module CheckedOps_TestI8AddExample
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = int8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = int8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -2166,11 +2384,13 @@ module CheckedOps_TestI8AddExample
     val Bits0.bITS' = Bits0.bITS',
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv2.inv
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Num_Impl0_CheckedAdd_Interface as CheckedAdd0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -2433,6 +2653,14 @@ module CheckedOps_TestI8AddOverflowPos
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -2440,7 +2668,6 @@ module CheckedOps_TestI8AddOverflowPos
   clone Core_Num_Impl0_Bits as Bits0
   clone Core_Num_Impl0_Max as Max0
   clone Core_Num_Impl0_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = int8,
     type t2 = bool,
@@ -2458,7 +2685,8 @@ module CheckedOps_TestI8AddOverflowPos
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl0_CheckedAdd_Interface as CheckedAdd0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -2566,6 +2794,14 @@ module CheckedOps_TestI8AddOverflowNeg
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -2573,7 +2809,6 @@ module CheckedOps_TestI8AddOverflowNeg
   clone Core_Num_Impl0_Bits as Bits0
   clone Core_Num_Impl0_Max as Max0
   clone Core_Num_Impl0_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = int8,
     type t2 = bool,
@@ -2591,7 +2826,8 @@ module CheckedOps_TestI8AddOverflowNeg
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl0_CheckedAdd_Interface as CheckedAdd0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -2733,6 +2969,14 @@ module CheckedOps_TestI8OverflowingAdd
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -2740,9 +2984,9 @@ module CheckedOps_TestI8OverflowingAdd
   clone Core_Num_Impl0_Max as Max0
   clone Core_Num_Impl0_Min as Min0
   clone Core_Num_Impl0_Bits as Bits0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl0_CheckedAdd_Interface as CheckedAdd0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -2881,6 +3125,26 @@ module CheckedOps_TestI8SubExample
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = int8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = int8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -2904,11 +3168,13 @@ module CheckedOps_TestI8SubExample
     val Bits0.bITS' = Bits0.bITS',
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv2.inv
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Num_Impl0_CheckedSub_Interface as CheckedSub0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -3172,6 +3438,14 @@ module CheckedOps_TestI8SubOverflowPos
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -3179,7 +3453,6 @@ module CheckedOps_TestI8SubOverflowPos
   clone Core_Num_Impl0_Bits as Bits0
   clone Core_Num_Impl0_Max as Max0
   clone Core_Num_Impl0_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = int8,
     type t2 = bool,
@@ -3197,7 +3470,8 @@ module CheckedOps_TestI8SubOverflowPos
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl0_CheckedSub_Interface as CheckedSub0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -3305,6 +3579,14 @@ module CheckedOps_TestI8SubOverflowNeg
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -3312,7 +3594,6 @@ module CheckedOps_TestI8SubOverflowNeg
   clone Core_Num_Impl0_Bits as Bits0
   clone Core_Num_Impl0_Max as Max0
   clone Core_Num_Impl0_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = int8,
     type t2 = bool,
@@ -3330,7 +3611,8 @@ module CheckedOps_TestI8SubOverflowNeg
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl0_CheckedSub_Interface as CheckedSub0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -3472,6 +3754,14 @@ module CheckedOps_TestI8OverflowingSub
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -3479,9 +3769,9 @@ module CheckedOps_TestI8OverflowingSub
   clone Core_Num_Impl0_Max as Max0
   clone Core_Num_Impl0_Min as Min0
   clone Core_Num_Impl0_Bits as Bits0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl0_CheckedSub_Interface as CheckedSub0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -3620,6 +3910,26 @@ module CheckedOps_TestI8MulExample
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = int8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = int8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -3643,11 +3953,13 @@ module CheckedOps_TestI8MulExample
     val Bits0.bITS' = Bits0.bITS',
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv2.inv
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Num_Impl0_CheckedMul_Interface as CheckedMul0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -3908,6 +4220,19 @@ module CheckedOps_TestI8MulZero
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = int8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = int8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -3931,9 +4256,10 @@ module CheckedOps_TestI8MulZero
     val Bits0.bITS' = Bits0.bITS',
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Num_Impl0_CheckedMul_Interface as CheckedMul0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -4039,6 +4365,14 @@ module CheckedOps_TestI8OverflowingMul
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -4046,9 +4380,9 @@ module CheckedOps_TestI8OverflowingMul
   clone Core_Num_Impl0_Max as Max0
   clone Core_Num_Impl0_Min as Min0
   clone Core_Num_Impl0_Bits as Bits0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl0_CheckedMul_Interface as CheckedMul0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -4173,6 +4507,26 @@ module CheckedOps_TestI8DivExample
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = int8
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = int8,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -4189,11 +4543,13 @@ module CheckedOps_TestI8DivExample
     val Min0.mIN' = Min0.mIN'
   clone Core_Num_Impl0_WrappingDiv_Interface as WrappingDiv0 with
     val Min0.mIN' = Min0.mIN'
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl0_CheckedDiv_Interface as CheckedDiv0 with
     val Min0.mIN' = Min0.mIN'
   let rec cfg test_i8_div_example [#"../checked_ops.rs" 289 0 289 28] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
@@ -4475,6 +4831,19 @@ module CheckedOps_TestI8DivNoOverflow
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = int8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = int8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -4491,9 +4860,10 @@ module CheckedOps_TestI8DivNoOverflow
     val Min0.mIN' = Min0.mIN'
   clone Core_Num_Impl0_WrappingDiv_Interface as WrappingDiv0 with
     val Min0.mIN' = Min0.mIN'
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Num_Impl0_CheckedDiv_Interface as CheckedDiv0 with
     val Min0.mIN' = Min0.mIN'
   let rec cfg test_i8_div_no_overflow [#"../checked_ops.rs" 313 0 313 44] [@cfg:stackify] [@cfg:subregion_analysis] (a : int8) (b : int8) : ()
@@ -4663,10 +5033,18 @@ end
 module CheckedOps_TestI8DivZero
   use prelude.Int
   use prelude.Int8
-  clone Core_Num_Impl0_Min as Min0
+  use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
+  clone Core_Num_Impl0_Min as Min0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl0_CheckedDiv_Interface as CheckedDiv0 with
     val Min0.mIN' = Min0.mIN'
   let rec cfg test_i8_div_zero [#"../checked_ops.rs" 322 0 322 30] [@cfg:stackify] [@cfg:subregion_analysis] (a : int8) : ()

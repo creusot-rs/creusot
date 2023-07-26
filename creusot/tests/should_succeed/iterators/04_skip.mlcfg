@@ -604,11 +604,17 @@ end
 module Core_Mem_Take_Interface
   type t
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
   clone CreusotContracts_Std1_Default_Default_IsDefault_Stub as IsDefault0 with
     type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed t
   val take (dest : borrowed t) : t
+    requires {Inv0.inv dest}
     ensures { [#"../../../../../creusot-contracts/src/std/mem.rs" 15 22 15 37] result =  * dest }
     ensures { [#"../../../../../creusot-contracts/src/std/mem.rs" 16 22 16 42] IsDefault0.is_default ( ^ dest) }
+    ensures { Inv1.inv result }
     
 end
 module TyInv_Borrow
@@ -626,12 +632,14 @@ module C04Skip_Common_Iterator_Next_Interface
   use seq.Seq
   clone C04Skip_Common_Iterator_Item_Type as Item0 with
     type self = self
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Option_Option_Type.t_option Item0.item
   clone C04Skip_Common_Iterator_Produces_Stub as Produces0 with
     type self = self,
     type Item0.item = Item0.item
   clone C04Skip_Common_Iterator_Completed_Stub as Completed0 with
     type self = self
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = borrowed self
   val next [#"../common.rs" 27 4 27 45] (self : borrowed self) : Core_Option_Option_Type.t_option Item0.item
@@ -640,6 +648,7 @@ module C04Skip_Common_Iterator_Next_Interface
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
+    ensures { [#"../common.rs" 27 26 27 44] Inv1.inv result }
     
 end
 module CreusotContracts_Std1_Num_Impl17_IsDefault_Stub
@@ -671,12 +680,14 @@ module C04Skip_Impl1_Next_Interface
   use C04Skip_Skip_Type as C04Skip_Skip_Type
   clone C04Skip_Common_Iterator_Item_Type as Item0 with
     type self = i
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Option_Option_Type.t_option Item0.item
   clone C04Skip_Impl1_Produces_Stub as Produces0 with
     type i = i,
     type Item0.item = Item0.item
   clone C04Skip_Impl1_Completed_Stub as Completed0 with
     type i = i
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = borrowed (C04Skip_Skip_Type.t_skip i)
   val next [#"../04_skip.rs" 68 4 68 41] (self : borrowed (C04Skip_Skip_Type.t_skip i)) : Core_Option_Option_Type.t_option Item0.item
@@ -685,6 +696,7 @@ module C04Skip_Impl1_Next_Interface
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
+    ensures { [#"../04_skip.rs" 68 26 68 41] Inv1.inv result }
     
 end
 module C04Skip_Impl1_Next
@@ -697,19 +709,46 @@ module C04Skip_Impl1_Next
   use C04Skip_Skip_Type as C04Skip_Skip_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = i
-  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+  clone CreusotContracts_Invariant_Inv_Interface as Inv7 with
     type t = C04Skip_Skip_Type.t_skip i
   clone C04Skip_Skip_Type_Inv as C04Skip_Skip_Type_Inv0 with
     type i = i,
-    predicate Inv0.inv = Inv3.inv,
+    predicate Inv0.inv = Inv7.inv,
     predicate Inv1.inv = Inv1.inv,
     axiom .
-  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+  clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
     type t = borrowed i
   clone TyInv_Borrow as TyInv_Borrow1 with
     type t = i,
-    predicate Inv0.inv = Inv2.inv,
+    predicate Inv0.inv = Inv6.inv,
     predicate Inv1.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+    type t = usize
+  clone TyInv_Trivial as TyInv_Trivial4 with
+    type t = usize,
+    predicate Inv0.inv = Inv5.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+    type t = borrowed usize
+  clone TyInv_Trivial as TyInv_Trivial3 with
+    type t = borrowed usize,
+    predicate Inv0.inv = Inv4.inv,
+    axiom .
+  clone C04Skip_Common_Iterator_Item_Type as Item0 with
+    type self = i
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = Core_Option_Option_Type.t_option Item0.item
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = Core_Option_Option_Type.t_option Item0.item,
+    predicate Inv0.inv = Inv3.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Item0.item
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Item0.item,
+    predicate Inv0.inv = Inv2.inv,
     axiom .
   clone C04Skip_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
@@ -722,10 +761,8 @@ module C04Skip_Impl1_Next
   clone TyInv_Borrow as TyInv_Borrow0 with
     type t = C04Skip_Skip_Type.t_skip i,
     predicate Inv0.inv = Inv0.inv,
-    predicate Inv1.inv = Inv3.inv,
+    predicate Inv1.inv = Inv7.inv,
     axiom .
-  clone C04Skip_Common_Iterator_Item_Type as Item0 with
-    type self = i
   clone C04Skip_Common_Iterator_Produces_Interface as Produces0 with
     type self = i,
     type Item0.item = Item0.item
@@ -753,22 +790,22 @@ module C04Skip_Impl1_Next
     predicate Resolve0.resolve = Resolve3.resolve
   clone C04Skip_Impl1_Completed as Completed0 with
     type i = i,
-    predicate Inv0.inv = Inv2.inv,
+    predicate Inv0.inv = Inv6.inv,
     type Item0.item = Item0.item,
     predicate Produces0.produces = Produces0.produces,
     predicate Resolve0.resolve = Resolve3.resolve,
     predicate Completed0.completed = Completed1.completed
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve5 with
     type t = C04Skip_Skip_Type.t_skip i
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve4 with
     type self = Core_Option_Option_Type.t_option Item0.item
   clone C04Skip_Common_Iterator_Next_Interface as Next0 with
     type self = i,
-    predicate Inv0.inv = Inv2.inv,
+    predicate Inv0.inv = Inv6.inv,
     type Item0.item = Item0.item,
     predicate Completed0.completed = Completed1.completed,
-    predicate Produces0.produces = Produces0.produces
+    predicate Produces0.produces = Produces0.produces,
+    predicate Inv1.inv = Inv3.inv
   clone CreusotContracts_Logic_Ops_Impl2_IndexLogic as IndexLogic0 with
     type t = Item0.item
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
@@ -777,7 +814,9 @@ module C04Skip_Impl1_Next
     type t = usize
   clone Core_Mem_Take_Interface as Take0 with
     type t = usize,
-    predicate IsDefault0.is_default = IsDefault0.is_default
+    predicate Inv0.inv = Inv4.inv,
+    predicate IsDefault0.is_default = IsDefault0.is_default,
+    predicate Inv1.inv = Inv5.inv
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = Ghost.ghost_ty (borrowed (C04Skip_Skip_Type.t_skip i))
   let rec cfg next [#"../04_skip.rs" 68 4 68 41] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (C04Skip_Skip_Type.t_skip i)) : Core_Option_Option_Type.t_option Item0.item
@@ -786,6 +825,7 @@ module C04Skip_Impl1_Next
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces1.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
+    ensures { [#"../04_skip.rs" 68 26 68 41] Inv3.inv result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Option_Option_Type.t_option Item0.item;
@@ -873,7 +913,9 @@ module C04Skip_Impl1_Next
   BB11 {
     x <- Core_Option_Option_Type.some_0 r;
     r <- (let Core_Option_Option_Type.C_Some a = r in Core_Option_Option_Type.C_Some (any Item0.item));
+    assert { [@expl:type invariant] Inv2.inv x };
     assume { Resolve3.resolve x };
+    assert { [@expl:type invariant] Inv3.inv r };
     assume { Resolve4.resolve r };
     _25 <- ([#"../04_skip.rs" 83 26 83 67] Ghost.new (Seq.(++) (Ghost.inner skipped) (Seq.singleton x)));
     goto BB12
@@ -906,21 +948,30 @@ module C04Skip_Impl1
   type i
   use seq.Seq
   use prelude.Borrow
-  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
     type t = i
-  clone TyInv_Trivial as TyInv_Trivial0 with
+  clone TyInv_Trivial as TyInv_Trivial1 with
     type t = i,
-    predicate Inv0.inv = Inv3.inv,
+    predicate Inv0.inv = Inv4.inv,
     axiom .
-  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
     type t = borrowed i
   clone TyInv_Borrow as TyInv_Borrow1 with
     type t = i,
-    predicate Inv0.inv = Inv2.inv,
-    predicate Inv1.inv = Inv3.inv,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Inv1.inv = Inv4.inv,
     axiom .
   clone C04Skip_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
+  clone C04Skip_Common_Iterator_Item_Type as Item0 with
+    type self = i
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option Item0.item
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option Item0.item,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
   use C04Skip_Skip_Type as C04Skip_Skip_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = C04Skip_Skip_Type.t_skip i
@@ -931,8 +982,6 @@ module C04Skip_Impl1
     predicate Inv0.inv = Inv1.inv,
     predicate Inv1.inv = Inv0.inv,
     axiom .
-  clone C04Skip_Common_Iterator_Item_Type as Item0 with
-    type self = i
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = Item0.item
   clone C04Skip_Common_Iterator_Produces_Interface as Produces1 with
@@ -941,14 +990,13 @@ module C04Skip_Impl1
   clone C04Skip_Skip_Type_Inv as C04Skip_Skip_Type_Inv0 with
     type i = i,
     predicate Inv0.inv = Inv0.inv,
-    predicate Inv1.inv = Inv3.inv,
+    predicate Inv1.inv = Inv4.inv,
     axiom .
   clone C04Skip_Common_Iterator_Item_Type as Item1 with
     type self = C04Skip_Skip_Type.t_skip i
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone C04Skip_Impl1_Completed as Completed0 with
     type i = i,
-    predicate Inv0.inv = Inv2.inv,
+    predicate Inv0.inv = Inv3.inv,
     type Item0.item = Item0.item,
     predicate Produces0.produces = Produces1.produces,
     predicate Resolve0.resolve = Resolve0.resolve,
@@ -959,10 +1007,10 @@ module C04Skip_Impl1
     predicate Produces0.produces = Produces1.produces,
     predicate Resolve0.resolve = Resolve0.resolve
   goal produces_refl_refn : [#"../04_skip.rs" 55 4 55 29] forall a : C04Skip_Skip_Type.t_skip i . Inv0.inv a -> Inv0.inv a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
-  goal next_refn : [#"../04_skip.rs" 68 4 68 41] forall self : borrowed (C04Skip_Skip_Type.t_skip i) . Inv1.inv self -> Inv1.inv self /\ (forall result : Core_Option_Option_Type.t_option Item0.item . match (result) with
+  goal next_refn : [#"../04_skip.rs" 68 4 68 41] forall self : borrowed (C04Skip_Skip_Type.t_skip i) . Inv1.inv self -> Inv1.inv self /\ (forall result : Core_Option_Option_Type.t_option Item0.item . Inv2.inv result /\ match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
-    end -> match (result) with
+    end -> Inv2.inv result /\ match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
     end)
