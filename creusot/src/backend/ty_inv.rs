@@ -6,6 +6,7 @@ use crate::{ctx::*, translation::traits, util};
 use indexmap::IndexSet;
 use rustc_ast::Mutability;
 use rustc_hir::{def::Namespace, def_id::DefId};
+use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
 use why3::{
@@ -15,7 +16,7 @@ use why3::{
     Ident, QName,
 };
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug, TypeVisitable, TypeFoldable)]
 pub(crate) enum TyInvKind {
     Trivial,
     Borrow(Mutability),
@@ -33,7 +34,6 @@ impl TyInvKind {
             }
             TyKind::Ref(_, _, m) => TyInvKind::Borrow(*m),
             TyKind::Adt(adt_def, _) if adt_def.is_box() => TyInvKind::Box,
-            // TODO: if ADT inv is trivial, return TyInvKind::Trivial (optimization)
             TyKind::Adt(adt_def, _) => TyInvKind::Adt(adt_def.did()),
             TyKind::Tuple(tys) => TyInvKind::Tuple(tys.len()),
             TyKind::Slice(_) => TyInvKind::Slice,
@@ -65,18 +65,19 @@ impl TyInvKind {
             TyInvKind::Tuple(arity) => (0..arity).map(|i| format!["t{i}"].into()).collect(),
         }
     }
-}
 
-pub(crate) fn tyinv_substs<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> SubstsRef<'tcx> {
-    match ty.kind() {
-        TyKind::Bool | TyKind::Char | TyKind::Int(_) | TyKind::Uint(_) | TyKind::Float(_) => {
-            tcx.mk_substs(&[GenericArg::from(ty)])
+    pub(crate) fn tyinv_substs<'tcx>(self, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> SubstsRef<'tcx> {
+        match (self, ty.kind()) {
+            (TyInvKind::Trivial, _) => tcx.mk_substs(&[GenericArg::from(ty)]),
+            (TyInvKind::Borrow(_), TyKind::Ref(_, ty, _))
+            | (TyInvKind::Slice, TyKind::Slice(ty)) => tcx.mk_substs(&[GenericArg::from(*ty)]),
+            (TyInvKind::Box, TyKind::Adt(_, adt_substs)) => tcx.mk_substs(&adt_substs[..1]),
+            (TyInvKind::Adt(_), TyKind::Adt(_, adt_substs)) => adt_substs,
+            (TyInvKind::Tuple(_), TyKind::Tuple(tys)) => {
+                tcx.mk_substs_from_iter(tys.iter().map(GenericArg::from))
+            }
+            _ => unreachable!(),
         }
-        TyKind::Ref(_, ty, _) | TyKind::Slice(ty) => tcx.mk_substs(&[GenericArg::from(*ty)]),
-        TyKind::Adt(adt_def, adt_substs) if adt_def.is_box() => tcx.mk_substs(&adt_substs[..1]),
-        TyKind::Adt(_, adt_substs) => adt_substs,
-        TyKind::Tuple(tys) => tcx.mk_substs_from_iter(tys.iter().map(GenericArg::from)),
-        _ => tcx.mk_substs(&[GenericArg::from(ty)]),
     }
 }
 

@@ -10,10 +10,7 @@ use crate::{
     util::{self, ItemType},
 };
 
-use super::{
-    ty_inv::{self, TyInvKind},
-    TransId,
-};
+use super::{ty_inv::TyInvKind, TransId};
 
 /// Dependencies between items and the resolution logic to find the 'monomorphic' forms accounting
 /// for various Creusot hacks like the handling of closures.
@@ -25,7 +22,7 @@ use super::{
 pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
     Item(DefId, SubstsRef<'tcx>),
-    TyInv(Ty<'tcx>),
+    TyInv(Ty<'tcx>, TyInvKind),
 }
 
 impl<'tcx> Dependency<'tcx> {
@@ -50,7 +47,7 @@ impl<'tcx> Dependency<'tcx> {
 
                 Dependency::new(tcx, (self_id, subst)).erase_regions(tcx)
             }
-            TransId::TyInv(inv_kind) => Dependency::TyInv(inv_kind.to_skeleton_ty(tcx)),
+            TransId::TyInv(inv_kind) => Dependency::TyInv(inv_kind.to_skeleton_ty(tcx), inv_kind),
         }
     }
 
@@ -69,7 +66,7 @@ impl<'tcx> Dependency<'tcx> {
     pub(crate) fn did(self) -> Option<(DefId, SubstsRef<'tcx>)> {
         match self {
             Dependency::Item(def_id, subst) => Some((def_id, subst)),
-            Dependency::Type(t) | Dependency::TyInv(t) => match t.kind() {
+            Dependency::Type(t) | Dependency::TyInv(t, _) => match t.kind() {
                 TyKind::Adt(def, substs) => Some((def.did(), substs)),
                 TyKind::Closure(id, substs) => Some((*id, substs)),
                 TyKind::Alias(AliasKind::Projection, aty) => Some((aty.def_id, aty.substs)),
@@ -78,16 +75,8 @@ impl<'tcx> Dependency<'tcx> {
         }
     }
 
-    pub(crate) fn ty_inv_kind(self) -> Option<TyInvKind> {
-        if let Dependency::TyInv(ty) = self {
-            Some(TyInvKind::from_ty(ty))
-        } else {
-            None
-        }
-    }
-
     pub(crate) fn is_inv(&self) -> bool {
-        matches!(self, Dependency::TyInv(_))
+        matches!(self, Dependency::TyInv(_, _))
     }
 
     #[inline]
@@ -97,8 +86,8 @@ impl<'tcx> Dependency<'tcx> {
 
     #[inline]
     pub(crate) fn subst(self, tcx: TyCtxt<'tcx>, other: Dependency<'tcx>) -> Self {
-        let substs = if let Dependency::TyInv(ty) = other {
-            ty_inv::tyinv_substs(tcx, ty)
+        let substs = if let Dependency::TyInv(ty, inv_kind) = other {
+            inv_kind.tyinv_substs(tcx, ty)
         } else if let Some((_, substs)) = other.did() {
             substs
         } else {

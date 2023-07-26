@@ -241,6 +241,12 @@ module C07Fuse_Common_Iterator_ProducesTrans
     
   axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 18 15 18 32] Produces0.produces a ab b) -> ([#"../common.rs" 19 15 19 32] Produces0.produces b bc c) -> ([#"../common.rs" 21 22 21 23] Inv0.inv a) -> ([#"../common.rs" 21 52 21 53] Inv0.inv b) -> ([#"../common.rs" 21 82 21 83] Inv0.inv c) -> ([#"../common.rs" 20 14 20 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module C07Fuse_Impl1_Produces_Stub
   type i
   use seq.Seq
@@ -400,16 +406,6 @@ module C07Fuse_Common_Iterator_Next_Interface
       end }
     
 end
-module CreusotContracts_Ghost_Ghost_Type_Inv
-  type t
-  use prelude.Ghost
-  use prelude.Ghost
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = Ghost.ghost_ty t
-  axiom inv_t_ghost [@rewrite] : forall self : Ghost.ghost_ty t . Inv0.inv self = Inv1.inv (Ghost.inner self)
-end
 module C07Fuse_Fuse_Type_Inv
   type i
   use prelude.Ghost
@@ -462,17 +458,16 @@ module C07Fuse_Impl1_Next
     predicate Inv0.inv = Inv6.inv,
     predicate Inv1.inv = Inv0.inv,
     axiom .
-  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
-    type t = i
   clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
     type t = Ghost.ghost_ty i
-  clone CreusotContracts_Ghost_Ghost_Type_Inv as CreusotContracts_Ghost_Ghost_Type_Inv0 with
-    type t = i,
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Ghost.ghost_ty i,
     predicate Inv0.inv = Inv5.inv,
-    predicate Inv1.inv = Inv3.inv,
     axiom .
   clone C07Fuse_Impl0_Inner as Inner0 with
     type i = i
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = i
   clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
     type t = borrowed i
   clone TyInv_Borrow as TyInv_Borrow2 with
@@ -498,6 +493,10 @@ module C07Fuse_Impl1_Next
     predicate Inv0.inv = Inv3.inv,
     predicate Produces0.produces = Produces1.produces,
     type Item0.item = Item0.item,
+    axiom .
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = i,
+    predicate Inv0.inv = Inv3.inv,
     axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
     type t = borrowed (C07Fuse_Fuse_Type.t_fuse i)
@@ -715,14 +714,17 @@ module C07Fuse_Impl1_ProducesRefl_Impl
   use seq.Seq
   use prelude.Ghost
   use prelude.Ghost
-  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
-    type t = i
   clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
     type t = Ghost.ghost_ty i
-  clone CreusotContracts_Ghost_Ghost_Type_Inv as CreusotContracts_Ghost_Ghost_Type_Inv0 with
-    type t = i,
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Ghost.ghost_ty i,
     predicate Inv0.inv = Inv3.inv,
-    predicate Inv1.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = i
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = i,
+    predicate Inv0.inv = Inv2.inv,
     axiom .
   use Core_Result_Result_Type as Core_Result_Result_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
@@ -842,14 +844,17 @@ module C07Fuse_Impl1_ProducesTrans_Impl
   use seq.Seq
   use prelude.Ghost
   use prelude.Ghost
-  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
-    type t = i
   clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
     type t = Ghost.ghost_ty i
-  clone CreusotContracts_Ghost_Ghost_Type_Inv as CreusotContracts_Ghost_Ghost_Type_Inv0 with
-    type t = i,
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Ghost.ghost_ty i,
     predicate Inv0.inv = Inv3.inv,
-    predicate Inv1.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = i
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = i,
+    predicate Inv0.inv = Inv2.inv,
     axiom .
   use Core_Result_Result_Type as Core_Result_Result_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
@@ -987,14 +992,17 @@ module C07Fuse_Impl3_IsFused_Impl
   use seq.Seq
   use prelude.Ghost
   use prelude.Ghost
-  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
-    type t = i
   clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
     type t = Ghost.ghost_ty i
-  clone CreusotContracts_Ghost_Ghost_Type_Inv as CreusotContracts_Ghost_Ghost_Type_Inv0 with
-    type t = i,
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Ghost.ghost_ty i,
     predicate Inv0.inv = Inv4.inv,
-    predicate Inv1.inv = Inv3.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = i
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = i,
+    predicate Inv0.inv = Inv3.inv,
     axiom .
   use Core_Result_Result_Type as Core_Result_Result_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
@@ -1075,14 +1083,17 @@ module C07Fuse_Impl1
   use prelude.Borrow
   use prelude.Ghost
   use prelude.Ghost
-  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
-    type t = i
   clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
     type t = Ghost.ghost_ty i
-  clone CreusotContracts_Ghost_Ghost_Type_Inv as CreusotContracts_Ghost_Ghost_Type_Inv0 with
-    type t = i,
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Ghost.ghost_ty i,
     predicate Inv0.inv = Inv4.inv,
-    predicate Inv1.inv = Inv3.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = i
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = i,
+    predicate Inv0.inv = Inv3.inv,
     axiom .
   use Core_Result_Result_Type as Core_Result_Result_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
@@ -1145,14 +1156,17 @@ module C07Fuse_Impl3
   use seq.Seq
   use prelude.Ghost
   use prelude.Ghost
-  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
-    type t = i
   clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
     type t = Ghost.ghost_ty i
-  clone CreusotContracts_Ghost_Ghost_Type_Inv as CreusotContracts_Ghost_Ghost_Type_Inv0 with
-    type t = i,
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Ghost.ghost_ty i,
     predicate Inv0.inv = Inv4.inv,
-    predicate Inv1.inv = Inv3.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = i
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = i,
+    predicate Inv0.inv = Inv3.inv,
     axiom .
   use Core_Result_Result_Type as Core_Result_Result_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
