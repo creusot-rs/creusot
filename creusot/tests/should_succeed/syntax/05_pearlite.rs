@@ -82,16 +82,54 @@ pub fn proj2(x: &mut &mut (S, S)) -> bool {
 // Unnesting through an index projection
 
 #[open(self)]
-#[creusot::decl::logic]
+#[logic]
 pub fn reborrow_index_projection<'a, 'b, T>(a: &'a mut &'b mut [T]) -> &'a mut T {
     &mut a[0]
 }
 
 #[open(self)]
-#[creusot::decl::logic]
+#[logic]
 pub fn reborrow_index_projection2<'a, 'b, T>(a: &'a &'b [T]) -> &'a T {
     &a[0]
 }
+
+#[open(self)]
+#[logic]
+pub fn test3<'a, T>(a: Ghost<&'a mut Vec<T>>) -> &'a mut T {
+    &mut a[0]
+}
+
+#[open(self)]
+#[logic]
+pub fn test4<'a, T>(a: &'a mut Ghost<Vec<T>>) -> &'a mut T {
+    &mut a[0]
+}
+
+#[open(self)]
+#[logic]
+pub fn test5<'a, T>(a: &'a mut &mut &mut Vec<T>) -> &'a mut T {
+    &mut a[0]
+}
+
+#[open(self)]
+#[logic]
+pub fn test6<'a>(a: &'a mut & &mut u32) -> &'a mut u32 {
+    &mut *** a
+}
+
+
+// #[open(self)]
+// #[logic]
+// pub fn test7<'a>(a:  &'a &mut u32) -> &'a mut u32 {
+//     * a
+// }
+
+
+// &mut *** (***x).deref()
+// {
+// current = IndexLogic0.index_logic (Ghost.inner ( * a)) 0;
+// final = IndexLogic0.index_logic ( Ghost.inner ( ^ a)) 0
+// }
 
 // Left out until I understand the semantics of `Deref` patterns.
 // #[logic]

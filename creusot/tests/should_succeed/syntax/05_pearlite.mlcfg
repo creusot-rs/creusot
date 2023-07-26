@@ -431,37 +431,34 @@ module C05Pearlite_Proj2
     ensures { result = proj2 x }
     
 end
-module CreusotContracts_Logic_Ops_Impl3_IndexLogic_Stub
+module CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub
   type t
   use prelude.Slice
   use prelude.Int
-  use prelude.UIntSize
-  function index_logic [@inline:trivial] (self : slice t) (ix : usize) : t
+  function index_logic [@inline:trivial] (self : slice t) (ix : int) : t
 end
-module CreusotContracts_Logic_Ops_Impl3_IndexLogic_Interface
+module CreusotContracts_Logic_Ops_Impl2_IndexLogic_Interface
   type t
   use prelude.Slice
   use prelude.Int
-  use prelude.UIntSize
-  function index_logic [@inline:trivial] (self : slice t) (ix : usize) : t
-  val index_logic [@inline:trivial] (self : slice t) (ix : usize) : t
+  function index_logic [@inline:trivial] (self : slice t) (ix : int) : t
+  val index_logic [@inline:trivial] (self : slice t) (ix : int) : t
     ensures { result = index_logic self ix }
     
 end
-module CreusotContracts_Logic_Ops_Impl3_IndexLogic
+module CreusotContracts_Logic_Ops_Impl2_IndexLogic
   type t
   use prelude.Slice
   use prelude.Int
-  use prelude.UIntSize
   use seq.Seq
   clone Core_Num_Impl11_Max_Stub as Max0
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  function index_logic [@inline:trivial] (self : slice t) (ix : usize) : t =
-    [#"../../../../../creusot-contracts/src/logic/ops.rs" 51 8 51 32] Seq.get (ShallowModel0.shallow_model self) (UIntSize.to_int ix)
-  val index_logic [@inline:trivial] (self : slice t) (ix : usize) : t
+  function index_logic [@inline:trivial] (self : slice t) (ix : int) : t =
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 42 8 42 31] Seq.get (ShallowModel0.shallow_model self) ix
+  val index_logic [@inline:trivial] (self : slice t) (ix : int) : t
     ensures { result = index_logic self ix }
     
 end
@@ -484,13 +481,11 @@ module C05Pearlite_ReborrowIndexProjection
   type t
   use prelude.Borrow
   use prelude.Slice
-  use prelude.Int
-  use prelude.UIntSize
-  clone CreusotContracts_Logic_Ops_Impl3_IndexLogic_Stub as IndexLogic0 with
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub as IndexLogic0 with
     type t = t
   function reborrow_index_projection [#"../05_pearlite.rs" 86 0 86 80] (a : borrowed (borrowed (slice t))) : borrowed t
    =
-    [#"../05_pearlite.rs" 87 4 87 13] {current = IndexLogic0.index_logic ( *  * a) (0 : usize); final = IndexLogic0.index_logic ( ^  * a) (0 : usize)}
+    [#"../05_pearlite.rs" 85 0 85 8] {current = IndexLogic0.index_logic ( *  * a) 0; final = IndexLogic0.index_logic ( ^  * a) 0}
   val reborrow_index_projection [#"../05_pearlite.rs" 86 0 86 80] (a : borrowed (borrowed (slice t))) : borrowed t
     ensures { result = reborrow_index_projection a }
     
@@ -514,13 +509,163 @@ module C05Pearlite_ReborrowIndexProjection2
   type t
   use prelude.Borrow
   use prelude.Slice
-  use prelude.Int
-  use prelude.UIntSize
-  clone CreusotContracts_Logic_Ops_Impl3_IndexLogic_Stub as IndexLogic0 with
+  clone CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub as IndexLogic0 with
     type t = t
   function reborrow_index_projection2 [#"../05_pearlite.rs" 92 0 92 69] (a : slice t) : t =
-    [#"../05_pearlite.rs" 93 5 93 9] IndexLogic0.index_logic a (0 : usize)
+    [#"../05_pearlite.rs" 91 0 91 8] IndexLogic0.index_logic a 0
   val reborrow_index_projection2 [#"../05_pearlite.rs" 92 0 92 69] (a : slice t) : t
     ensures { result = reborrow_index_projection2 a }
+    
+end
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.Opaque
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+    
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+    
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use prelude.Int
+  use prelude.UIntSize
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
+    
+end
+module Alloc_Vec_Vec_Type
+  use prelude.Int
+  use prelude.UIntSize
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
+    
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+    
+end
+module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub
+  type t
+  type a
+  use seq.Seq
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone Core_Num_Impl11_Max_Stub as Max0
+  function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+end
+module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface
+  type t
+  type a
+  use seq.Seq
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone Core_Num_Impl11_Max_Stub as Max0
+  function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { result = shallow_model self }
+    
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
+end
+module CreusotContracts_Std1_Vec_Impl0_ShallowModel
+  type t
+  type a
+  use seq.Seq
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone Core_Num_Impl11_Max_Stub as Max0
+  function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { result = shallow_model self }
+    
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
+end
+module CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub
+  type t
+  type a
+  use prelude.Int
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function index_logic [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec t a) (ix : int) : t
+end
+module CreusotContracts_Logic_Ops_Impl0_IndexLogic_Interface
+  type t
+  type a
+  use prelude.Int
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function index_logic [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec t a) (ix : int) : t
+  val index_logic [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec t a) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
+end
+module CreusotContracts_Logic_Ops_Impl0_IndexLogic
+  type t
+  type a
+  use prelude.Int
+  use seq.Seq
+  clone Core_Num_Impl11_Max_Stub as Max0
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
+    type t = t,
+    type a = a,
+    val Max0.mAX' = Max0.mAX',
+    axiom .
+  function index_logic [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec t a) (ix : int) : t =
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (ShallowModel0.shallow_model self) ix
+  val index_logic [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec t a) (ix : int) : t
+    ensures { result = index_logic self ix }
+    
+end
+module C05Pearlite_Test3_Stub
+  type t
+  use prelude.Ghost
+  use prelude.Borrow
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function test3 [#"../05_pearlite.rs" 98 0 98 58] (a : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) : borrowed t
+    
+end
+module C05Pearlite_Test3_Interface
+  type t
+  use prelude.Ghost
+  use prelude.Borrow
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function test3 [#"../05_pearlite.rs" 98 0 98 58] (a : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) : borrowed t
+    
+  val test3 [#"../05_pearlite.rs" 98 0 98 58] (a : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) : borrowed t
+    ensures { result = test3 a }
+    
+end
+module C05Pearlite_Test3
+  type t
+  use prelude.Ghost
+  use prelude.Borrow
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type a = Alloc_Alloc_Global_Type.t_global
+  function test3 [#"../05_pearlite.rs" 98 0 98 58] (a : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) : borrowed t
+    
+   =
+    [#"../05_pearlite.rs" 97 0 97 8] {current = IndexLogic0.index_logic ( * Ghost.inner a) 0; final = IndexLogic0.index_logic ( ^ Ghost.inner a) 0}
+  val test3 [#"../05_pearlite.rs" 98 0 98 58] (a : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) : borrowed t
+    ensures { result = test3 a }
     
 end

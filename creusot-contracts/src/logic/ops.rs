@@ -1,3 +1,5 @@
+use ::std::alloc::Allocator;
+
 use crate::*;
 
 pub trait IndexLogic<I> {
@@ -8,7 +10,7 @@ pub trait IndexLogic<I> {
     fn index_logic(self, idx: I) -> Self::Item;
 }
 
-impl<T> IndexLogic<Int> for Vec<T> {
+impl<T,  A : Allocator> IndexLogic<Int> for Vec<T, A> {
     type Item = T;
 
     #[logic]
@@ -19,7 +21,7 @@ impl<T> IndexLogic<Int> for Vec<T> {
     }
 }
 
-impl<T> IndexLogic<usize> for Vec<T> {
+impl<T, A : Allocator> IndexLogic<usize> for Vec<T, A> {
     type Item = T;
 
     #[logic]
