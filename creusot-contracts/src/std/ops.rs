@@ -243,3 +243,19 @@ extern_spec! {
         }
     }
 }
+
+extern_spec! {
+    mod std {
+        mod ops {
+            trait IndexMut<Idx>  {
+                #[requires(false)]
+                fn index_mut(&mut self, _ix : Idx) -> &mut Self::Output;
+            }
+
+            trait Index<Idx> {
+                #[requires(false)]
+                fn index(&self, _ix : Idx) -> &Self::Output;
+            }
+        }
+    }
+}

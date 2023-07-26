@@ -70,7 +70,8 @@ impl<'tcx> TranslationCtx<'tcx> {
 
             // If there is no contract to refine, skip this item
             if !self.tcx.def_kind(trait_item).is_fn_like()
-                || self.sig(trait_item).contract.is_empty()
+                || (self.sig(trait_item).contract.is_empty()
+                    && self.sig(impl_item).contract.requires.is_empty())
             {
                 continue;
             }
@@ -147,24 +148,15 @@ fn logic_refinement_term<'tcx>(
     let trait_postcond = trait_sig.contract.ensures_conj(ctx.tcx);
 
     let retty = impl_sig.output;
-    let post_refn = Term {
-        kind: TermKind::Forall {
-            binder: (Symbol::intern("result"), retty),
-            body: Box::new(impl_postcond.implies(trait_postcond)),
-        },
-        ty: ctx.tcx.types.bool,
-        span,
-    };
+
+    let post_refn =
+        impl_postcond.implies(trait_postcond).forall((Symbol::intern("result"), retty)).span(span);
 
     let mut refn = trait_precond.implies(impl_precond.conj(post_refn));
     refn = if args.is_empty() {
         refn
     } else {
-        args.into_iter().rfold(refn, |acc, r| Term {
-            kind: TermKind::Forall { binder: r, body: Box::new(acc) },
-            ty: ctx.tcx.types.bool,
-            span,
-        })
+        args.into_iter().rfold(refn, |acc, r| acc.forall(r).span(span))
     };
 
     refn

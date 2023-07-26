@@ -1163,12 +1163,24 @@ impl<'tcx> Term<'tcx> {
 
     pub(crate) fn conj(self, rhs: Self) -> Self {
         match self.kind {
+            // ⟘ ∧ A = ⟘
             TermKind::Lit(Literal::Bool(false)) => self,
+            // ⟙ ∧ A = A
             TermKind::Lit(Literal::Bool(true)) => rhs,
-            _ => Term {
-                ty: self.ty,
-                kind: TermKind::Binary { op: BinOp::And, lhs: Box::new(self), rhs: Box::new(rhs) },
-                span: DUMMY_SP,
+            _ => match rhs.kind {
+                // A ∧ ⟘ = ⟘
+                TermKind::Lit(Literal::Bool(false)) => rhs,
+                // A ∧ ⟙ = A
+                TermKind::Lit(Literal::Bool(true)) => self,
+                _ => Term {
+                    ty: self.ty,
+                    kind: TermKind::Binary {
+                        op: BinOp::And,
+                        lhs: Box::new(self),
+                        rhs: Box::new(rhs),
+                    },
+                    span: DUMMY_SP,
+                },
             },
         }
     }
@@ -1190,14 +1202,44 @@ impl<'tcx> Term<'tcx> {
     }
 
     pub(crate) fn implies(self, rhs: Self) -> Self {
+        // A → ⟙ = ⟙
+        if let TermKind::Lit(Literal::Bool(true)) = rhs.kind {
+            return rhs;
+        }
+
         match self.kind {
+            // ⟙ → A = A
             TermKind::Lit(Literal::Bool(true)) => rhs,
+            // (⟘ → A) = ⟙
+            TermKind::Lit(Literal::Bool(false)) => {
+                Term { ty: self.ty, kind: TermKind::Lit(Literal::Bool(true)), span: self.span }
+            }
             _ => Term {
                 ty: self.ty,
                 kind: TermKind::Impl { lhs: Box::new(self), rhs: Box::new(rhs) },
                 span: DUMMY_SP,
             },
         }
+    }
+
+    pub(crate) fn forall(self, binder: (Symbol, Ty<'tcx>)) -> Self {
+        assert!(self.ty.is_bool());
+
+        // ∀ x . ⟙ = ⟙
+        if let TermKind::Lit(Literal::Bool(true)) = self.kind {
+            return self;
+        };
+
+        Term {
+            ty: self.ty,
+            kind: TermKind::Forall { binder, body: Box::new(self) },
+            span: DUMMY_SP,
+        }
+    }
+
+    pub(crate) fn span(mut self, sp: Span) -> Self {
+        self.span = sp;
+        self
     }
 
     pub(crate) fn subst(&mut self, inv_subst: &std::collections::HashMap<Symbol, Term<'tcx>>) {
