@@ -33,13 +33,37 @@ module CreusotContracts_Resolve_Impl1_Resolve
     ensures { result = resolve self }
     
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module Core_Result_Impl0_IsOk_Interface
   type t
   type e
   use prelude.Borrow
   use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Result_Result_Type.t_result t e
   val is_ok (self : Core_Result_Result_Type.t_result t e) : bool
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 22 26 22 63] result = (exists t : t . self = Core_Result_Result_Type.C_Ok t) }
+    requires {Inv0.inv self}
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 22 26 22 63] result = (exists t : t . Inv1.inv t /\ self = Core_Result_Result_Type.C_Ok t) }
     
 end
 module Core_Result_Impl0_IsErr_Interface
@@ -47,33 +71,57 @@ module Core_Result_Impl0_IsErr_Interface
   type e
   use prelude.Borrow
   use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Result_Result_Type.t_result t e
   val is_err (self : Core_Result_Result_Type.t_result t e) : bool
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 25 26 25 64] result = (exists e : e . self = Core_Result_Result_Type.C_Err e) }
+    requires {Inv0.inv self}
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 25 26 25 64] result = (exists e : e . Inv1.inv e /\ self = Core_Result_Result_Type.C_Err e) }
     
 end
 module Core_Result_Impl0_Ok_Interface
   type t
   type e
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = e
   use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Result_Result_Type.t_result t e
   val ok (self : Core_Result_Result_Type.t_result t e) : Core_Option_Option_Type.t_option t
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 28 16 28 76] forall t : t . self = Core_Result_Result_Type.C_Ok t -> result = Core_Option_Option_Type.C_Some t }
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 29 16 29 76] (exists e : e . self = Core_Result_Result_Type.C_Err e) -> result = Core_Option_Option_Type.C_None }
+    requires {Inv0.inv self}
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 28 16 28 76] forall t : t . Inv1.inv t -> self = Core_Result_Result_Type.C_Ok t -> result = Core_Option_Option_Type.C_Some t }
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 29 16 29 76] (exists e : e . Inv2.inv e /\ self = Core_Result_Result_Type.C_Err e) -> result = Core_Option_Option_Type.C_None }
+    ensures { Inv3.inv result }
     
 end
 module Core_Option_Impl0_Unwrap_Interface
   type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val unwrap (self : Core_Option_Option_Type.t_option t) : t
     requires {[#"../../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] self <> Core_Option_Option_Type.C_None}
+    requires {Inv0.inv self}
     ensures { [#"../../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] Core_Option_Option_Type.C_Some result = self }
+    ensures { Inv1.inv result }
     
 end
 module Core_Option_Impl0_IsNone_Interface
   type t
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val is_none (self : Core_Option_Option_Type.t_option t) : bool
+    requires {Inv0.inv self}
     ensures { [#"../../../../../creusot-contracts/src/std/option.rs" 24 26 24 51] result = (self = Core_Option_Option_Type.C_None) }
     
 end
@@ -81,10 +129,20 @@ module Core_Result_Impl0_Err_Interface
   type t
   type e
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = Core_Option_Option_Type.t_option e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = e
   use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Result_Result_Type.t_result t e
   val err (self : Core_Result_Result_Type.t_result t e) : Core_Option_Option_Type.t_option e
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 32 16 32 75] (exists t : t . self = Core_Result_Result_Type.C_Ok t) -> result = Core_Option_Option_Type.C_None }
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 33 16 33 77] forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Option_Option_Type.C_Some e }
+    requires {Inv0.inv self}
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 32 16 32 75] (exists t : t . Inv1.inv t /\ self = Core_Result_Result_Type.C_Ok t) -> result = Core_Option_Option_Type.C_None }
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 33 16 33 77] forall e : e . Inv2.inv e -> self = Core_Result_Result_Type.C_Err e -> result = Core_Option_Option_Type.C_Some e }
+    ensures { Inv3.inv result }
     
 end
 module Core_Result_Impl0_AsRef_Interface
@@ -92,27 +150,49 @@ module Core_Result_Impl0_AsRef_Interface
   type e
   use prelude.Borrow
   use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = Core_Result_Result_Type.t_result t e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Result_Result_Type.t_result t e
   val as_ref (self : Core_Result_Result_Type.t_result t e) : Core_Result_Result_Type.t_result t e
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 36 16 36 77] forall t : t . self = Core_Result_Result_Type.C_Ok t -> result = Core_Result_Result_Type.C_Ok t }
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 37 16 37 79] forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
+    requires {Inv0.inv self}
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 36 16 36 77] forall t : t . Inv1.inv t -> self = Core_Result_Result_Type.C_Ok t -> result = Core_Result_Result_Type.C_Ok t }
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 37 16 37 79] forall e : e . Inv2.inv e -> self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
+    ensures { Inv3.inv result }
     
 end
 module Core_Result_Impl0_Unwrap_Interface
   type t
   type e
   use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Result_Result_Type.t_result t e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
   val unwrap (self : Core_Result_Result_Type.t_result t e) : t
-    requires {[#"../../../../../creusot-contracts/src/std/result.rs" 46 16 46 55] exists t : t . self = Core_Result_Result_Type.C_Ok t}
+    requires {[#"../../../../../creusot-contracts/src/std/result.rs" 46 16 46 55] exists t : t . Inv0.inv t /\ self = Core_Result_Result_Type.C_Ok t}
+    requires {Inv1.inv self}
     ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 18 0 119 1] Core_Result_Result_Type.C_Ok result = self }
+    ensures { Inv0.inv result }
     
 end
 module Core_Result_Impl0_UnwrapErr_Interface
   type t
   type e
   use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Result_Result_Type.t_result t e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = e
   val unwrap_err (self : Core_Result_Result_Type.t_result t e) : e
-    requires {[#"../../../../../creusot-contracts/src/std/result.rs" 58 16 58 56] exists e : e . self = Core_Result_Result_Type.C_Err e}
+    requires {[#"../../../../../creusot-contracts/src/std/result.rs" 58 16 58 56] exists e : e . Inv0.inv e /\ self = Core_Result_Result_Type.C_Err e}
+    requires {Inv1.inv self}
     ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 18 0 119 1] Core_Result_Result_Type.C_Err result = self }
+    ensures { Inv0.inv result }
     
 end
 module Core_Result_Impl0_AsMut_Interface
@@ -120,17 +200,36 @@ module Core_Result_Impl0_AsMut_Interface
   type e
   use prelude.Borrow
   use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = Core_Result_Result_Type.t_result (borrowed t) (borrowed e)
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = borrowed e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = borrowed t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed (Core_Result_Result_Type.t_result t e)
   val as_mut (self : borrowed (Core_Result_Result_Type.t_result t e)) : Core_Result_Result_Type.t_result (borrowed t) (borrowed e)
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 40 16 43 18] exists t : borrowed t .  * self = Core_Result_Result_Type.C_Ok ( * t) /\  ^ self = Core_Result_Result_Type.C_Ok ( ^ t) /\ result = Core_Result_Result_Type.C_Ok t \/ (exists e : borrowed e .  * self = Core_Result_Result_Type.C_Err ( * e) /\  ^ self = Core_Result_Result_Type.C_Err ( ^ e) /\ result = Core_Result_Result_Type.C_Err e) }
+    requires {Inv0.inv self}
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 40 16 43 18] exists t : borrowed t . Inv1.inv t /\ ( * self = Core_Result_Result_Type.C_Ok ( * t) /\  ^ self = Core_Result_Result_Type.C_Ok ( ^ t) /\ result = Core_Result_Result_Type.C_Ok t \/ (exists e : borrowed e . Inv2.inv e /\  * self = Core_Result_Result_Type.C_Err ( * e) /\  ^ self = Core_Result_Result_Type.C_Err ( ^ e) /\ result = Core_Result_Result_Type.C_Err e)) }
+    ensures { Inv3.inv result }
     
 end
 module Core_Result_Impl0_UnwrapOr_Interface
   type t
   type e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = e
   use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Result_Result_Type.t_result t e
   val unwrap_or (self : Core_Result_Result_Type.t_result t e) (default : t) : t
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 64 16 64 70] forall t : t . self = Core_Result_Result_Type.C_Ok t -> result = t }
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 65 16 65 79] (exists e : e . self = Core_Result_Result_Type.C_Err e) -> result = default }
+    requires {Inv0.inv self}
+    requires {Inv1.inv default}
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 64 16 64 70] forall t : t . Inv1.inv t -> self = Core_Result_Result_Type.C_Ok t -> result = t }
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 65 16 65 79] (exists e : e . Inv2.inv e /\ self = Core_Result_Result_Type.C_Err e) -> result = default }
+    ensures { Inv1.inv result }
     
 end
 module CreusotContracts_Std1_Default_Default_IsDefault_Stub
@@ -156,10 +255,18 @@ module Core_Result_Impl0_UnwrapOrDefault_Interface
   type e
   clone CreusotContracts_Std1_Default_Default_IsDefault_Stub as IsDefault0 with
     type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = e
   use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Result_Result_Type.t_result t e
   val unwrap_or_default (self : Core_Result_Result_Type.t_result t e) : t
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 68 16 68 70] forall t : t . self = Core_Result_Result_Type.C_Ok t -> result = t }
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 69 16 69 81] (exists e : e . self = Core_Result_Result_Type.C_Err e) -> IsDefault0.is_default result }
+    requires {Inv0.inv self}
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 68 16 68 70] forall t : t . Inv1.inv t -> self = Core_Result_Result_Type.C_Ok t -> result = t }
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 69 16 69 81] (exists e : e . Inv2.inv e /\ self = Core_Result_Result_Type.C_Err e) -> IsDefault0.is_default result }
+    ensures { Inv1.inv result }
     
 end
 module Core_Result_Impl0_And_Interface
@@ -167,19 +274,41 @@ module Core_Result_Impl0_And_Interface
   type e
   type u
   use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Result_Result_Type.t_result u e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Result_Result_Type.t_result t e
   val and (self : Core_Result_Result_Type.t_result t e) (res : Core_Result_Result_Type.t_result u e) : Core_Result_Result_Type.t_result u e
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 74 16 74 74] (exists t : t . self = Core_Result_Result_Type.C_Ok t) -> result = res }
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 75 16 75 76] forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
+    requires {Inv0.inv self}
+    requires {Inv1.inv res}
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 74 16 74 74] (exists t : t . Inv2.inv t /\ self = Core_Result_Result_Type.C_Ok t) -> result = res }
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 75 16 75 76] forall e : e . Inv3.inv e -> self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
+    ensures { Inv1.inv result }
     
 end
 module Core_Result_Impl0_Or_Interface
   type t
   type e
   type f
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = e
   use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Result_Result_Type.t_result t f
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Result_Result_Type.t_result t e
   val or (self : Core_Result_Result_Type.t_result t e) (res : Core_Result_Result_Type.t_result t f) : Core_Result_Result_Type.t_result t f
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 78 16 78 74] forall t : t . self = Core_Result_Result_Type.C_Ok t -> result = Core_Result_Result_Type.C_Ok t }
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 79 16 79 75] (exists e : e . self = Core_Result_Result_Type.C_Err e) -> result = res }
+    requires {Inv0.inv self}
+    requires {Inv1.inv res}
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 78 16 78 74] forall t : t . Inv2.inv t -> self = Core_Result_Result_Type.C_Ok t -> result = Core_Result_Result_Type.C_Ok t }
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 79 16 79 75] (exists e : e . Inv3.inv e /\ self = Core_Result_Result_Type.C_Err e) -> result = res }
+    ensures { Inv1.inv result }
     
 end
 module Core_Result_Impl1_Copied_Interface
@@ -187,21 +316,41 @@ module Core_Result_Impl1_Copied_Interface
   type e
   use prelude.Borrow
   use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = Core_Result_Result_Type.t_result t e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Result_Result_Type.t_result t e
   val copied (self : Core_Result_Result_Type.t_result t e) : Core_Result_Result_Type.t_result t e
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 84 16 84 76] forall t : t . self = Core_Result_Result_Type.C_Ok t -> result = Core_Result_Result_Type.C_Ok t }
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 85 16 85 76] forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
+    requires {Inv0.inv self}
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 84 16 84 76] forall t : t . Inv1.inv t -> self = Core_Result_Result_Type.C_Ok t -> result = Core_Result_Result_Type.C_Ok t }
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 85 16 85 76] forall e : e . Inv2.inv e -> self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
+    ensures { Inv3.inv result }
     
 end
 module Core_Result_Impl2_Copied_Interface
   type t
   type e
   use prelude.Borrow
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = Core_Result_Result_Type.t_result t e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = e
   clone CreusotContracts_Resolve_Impl1_Resolve_Stub as Resolve0 with
     type t = t
-  use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = borrowed t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Result_Result_Type.t_result (borrowed t) e
   val copied (self : Core_Result_Result_Type.t_result (borrowed t) e) : Core_Result_Result_Type.t_result t e
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 98 16 98 95] forall t : borrowed t . self = Core_Result_Result_Type.C_Ok t -> result = Core_Result_Result_Type.C_Ok ( * t) /\ Resolve0.resolve t }
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 99 16 99 76] forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
+    requires {Inv0.inv self}
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 98 16 98 95] forall t : borrowed t . Inv1.inv t -> self = Core_Result_Result_Type.C_Ok t -> result = Core_Result_Result_Type.C_Ok ( * t) /\ Resolve0.resolve t }
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 99 16 99 76] forall e : e . Inv2.inv e -> self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
+    ensures { Inv3.inv result }
     
 end
 module Core_Result_Impl1_Cloned_Interface
@@ -209,21 +358,41 @@ module Core_Result_Impl1_Cloned_Interface
   type e
   use prelude.Borrow
   use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = Core_Result_Result_Type.t_result t e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Result_Result_Type.t_result t e
   val cloned (self : Core_Result_Result_Type.t_result t e) : Core_Result_Result_Type.t_result t e
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 90 16 90 76] forall t : t . self = Core_Result_Result_Type.C_Ok t -> result = Core_Result_Result_Type.C_Ok t }
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 91 16 91 76] forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
+    requires {Inv0.inv self}
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 90 16 90 76] forall t : t . Inv1.inv t -> self = Core_Result_Result_Type.C_Ok t -> result = Core_Result_Result_Type.C_Ok t }
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 91 16 91 76] forall e : e . Inv2.inv e -> self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
+    ensures { Inv3.inv result }
     
 end
 module Core_Result_Impl2_Cloned_Interface
   type t
   type e
   use prelude.Borrow
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = Core_Result_Result_Type.t_result t e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = e
   clone CreusotContracts_Resolve_Impl1_Resolve_Stub as Resolve0 with
     type t = t
-  use Core_Result_Result_Type as Core_Result_Result_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = borrowed t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Result_Result_Type.t_result (borrowed t) e
   val cloned (self : Core_Result_Result_Type.t_result (borrowed t) e) : Core_Result_Result_Type.t_result t e
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 104 16 104 95] forall t : borrowed t . self = Core_Result_Result_Type.C_Ok t -> result = Core_Result_Result_Type.C_Ok ( * t) /\ Resolve0.resolve t }
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 105 16 105 76] forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
+    requires {Inv0.inv self}
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 104 16 104 95] forall t : borrowed t . Inv1.inv t -> self = Core_Result_Result_Type.C_Ok t -> result = Core_Result_Result_Type.C_Ok ( * t) /\ Resolve0.resolve t }
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 105 16 105 76] forall e : e . Inv2.inv e -> self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
+    ensures { Inv3.inv result }
     
 end
 module Core_Result_Impl3_Transpose_Interface
@@ -231,11 +400,27 @@ module Core_Result_Impl3_Transpose_Interface
   type e
   use Core_Result_Result_Type as Core_Result_Result_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = Core_Option_Option_Type.t_option (Core_Result_Result_Type.t_result t e)
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = e
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Result_Result_Type.t_result (Core_Option_Option_Type.t_option t) e
   val transpose (self : Core_Result_Result_Type.t_result (Core_Option_Option_Type.t_option t) e) : Core_Option_Option_Type.t_option (Core_Result_Result_Type.t_result t e)
+    requires {Inv0.inv self}
     ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 112 16 112 63] self = Core_Result_Result_Type.C_Ok (Core_Option_Option_Type.C_None) -> result = Core_Option_Option_Type.C_None }
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 113 16 113 86] forall t : t . self = Core_Result_Result_Type.C_Ok (Core_Option_Option_Type.C_Some t) -> result = Core_Option_Option_Type.C_Some (Core_Result_Result_Type.C_Ok t) }
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 114 16 114 82] forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Option_Option_Type.C_Some (Core_Result_Result_Type.C_Err e) }
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 113 16 113 86] forall t : t . Inv1.inv t -> self = Core_Result_Result_Type.C_Ok (Core_Option_Option_Type.C_Some t) -> result = Core_Option_Option_Type.C_Some (Core_Result_Result_Type.C_Ok t) }
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 114 16 114 82] forall e : e . Inv2.inv e -> self = Core_Result_Result_Type.C_Err e -> result = Core_Option_Option_Type.C_Some (Core_Result_Result_Type.C_Err e) }
+    ensures { Inv3.inv result }
     
+end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
 end
 module CreusotContracts_Std1_Num_Impl26_IsDefault_Stub
   use prelude.Int
@@ -266,99 +451,269 @@ module Result_TestResult
   use prelude.Int
   use prelude.Int32
   use prelude.Borrow
-  clone CreusotContracts_Std1_Num_Impl26_IsDefault as IsDefault0
   use Core_Result_Result_Type as Core_Result_Result_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv14 with
+    type t = Core_Option_Option_Type.t_option (Core_Result_Result_Type.t_result int32 int32)
+  clone TyInv_Trivial as TyInv_Trivial14 with
+    type t = Core_Option_Option_Type.t_option (Core_Result_Result_Type.t_result int32 int32),
+    predicate Inv0.inv = Inv14.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv13 with
+    type t = Core_Option_Option_Type.t_option (Core_Result_Result_Type.t_result int32 int32)
+  clone TyInv_Trivial as TyInv_Trivial13 with
+    type t = Core_Option_Option_Type.t_option (Core_Result_Result_Type.t_result int32 int32),
+    predicate Inv0.inv = Inv13.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv12 with
+    type t = Core_Result_Result_Type.t_result (Core_Option_Option_Type.t_option int32) int32
+  clone TyInv_Trivial as TyInv_Trivial12 with
+    type t = Core_Result_Result_Type.t_result (Core_Option_Option_Type.t_option int32) int32,
+    predicate Inv0.inv = Inv12.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv11 with
+    type t = Core_Result_Result_Type.t_result int32 (borrowed int32)
+  clone TyInv_Trivial as TyInv_Trivial11 with
+    type t = Core_Result_Result_Type.t_result int32 (borrowed int32),
+    predicate Inv0.inv = Inv11.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv10 with
+    type t = Core_Result_Result_Type.t_result int32 int32
+  clone TyInv_Trivial as TyInv_Trivial10 with
+    type t = Core_Result_Result_Type.t_result int32 int32,
+    predicate Inv0.inv = Inv10.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv9 with
+    type t = Core_Result_Result_Type.t_result (borrowed int32) (borrowed int32)
+  clone TyInv_Trivial as TyInv_Trivial9 with
+    type t = Core_Result_Result_Type.t_result (borrowed int32) (borrowed int32),
+    predicate Inv0.inv = Inv9.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv8 with
+    type t = borrowed int32
+  clone TyInv_Trivial as TyInv_Trivial8 with
+    type t = borrowed int32,
+    predicate Inv0.inv = Inv8.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv7 with
+    type t = borrowed (Core_Result_Result_Type.t_result int32 int32)
+  clone TyInv_Trivial as TyInv_Trivial7 with
+    type t = borrowed (Core_Result_Result_Type.t_result int32 int32),
+    predicate Inv0.inv = Inv7.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
+    type t = Core_Result_Result_Type.t_result int32 int32
+  clone TyInv_Trivial as TyInv_Trivial6 with
+    type t = Core_Result_Result_Type.t_result int32 int32,
+    predicate Inv0.inv = Inv6.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+    type t = int32
+  clone TyInv_Trivial as TyInv_Trivial5 with
+    type t = int32,
+    predicate Inv0.inv = Inv5.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+    type t = Core_Option_Option_Type.t_option int32
+  clone TyInv_Trivial as TyInv_Trivial4 with
+    type t = Core_Option_Option_Type.t_option int32,
+    predicate Inv0.inv = Inv4.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = Core_Option_Option_Type.t_option int32
+  clone TyInv_Trivial as TyInv_Trivial3 with
+    type t = Core_Option_Option_Type.t_option int32,
+    predicate Inv0.inv = Inv3.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Result_Result_Type.t_result int32 int32
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = Core_Result_Result_Type.t_result int32 int32,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = int32
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = int32,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Result_Result_Type.t_result int32 int32
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Result_Result_Type.t_result int32 int32,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
+  clone CreusotContracts_Std1_Num_Impl26_IsDefault as IsDefault0
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap6 with
-    type t = Core_Result_Result_Type.t_result int32 int32
+    type t = Core_Result_Result_Type.t_result int32 int32,
+    predicate Inv0.inv = Inv13.inv,
+    predicate Inv1.inv = Inv2.inv
   clone Core_Option_Impl0_IsNone_Interface as IsNone1 with
-    type t = Core_Result_Result_Type.t_result int32 int32
+    type t = Core_Result_Result_Type.t_result int32 int32,
+    predicate Inv0.inv = Inv14.inv
   clone Core_Result_Impl3_Transpose_Interface as Transpose0 with
     type t = int32,
-    type e = int32
+    type e = int32,
+    predicate Inv0.inv = Inv12.inv,
+    predicate Inv1.inv = Inv1.inv,
+    predicate Inv2.inv = Inv1.inv,
+    predicate Inv3.inv = Inv13.inv
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = int32
   clone Core_Result_Impl2_Cloned_Interface as Cloned1 with
     type t = int32,
     type e = borrowed int32,
-    predicate Resolve0.resolve = Resolve0.resolve
+    predicate Inv0.inv = Inv9.inv,
+    predicate Inv1.inv = Inv8.inv,
+    predicate Inv2.inv = Inv8.inv,
+    predicate Resolve0.resolve = Resolve0.resolve,
+    predicate Inv3.inv = Inv11.inv
   clone Core_Result_Impl1_Cloned_Interface as Cloned0 with
     type t = int32,
-    type e = int32
+    type e = int32,
+    predicate Inv0.inv = Inv6.inv,
+    predicate Inv1.inv = Inv5.inv,
+    predicate Inv2.inv = Inv5.inv,
+    predicate Inv3.inv = Inv10.inv
   clone Core_Result_Impl0_UnwrapErr_Interface as UnwrapErr4 with
     type t = int32,
-    type e = borrowed int32
+    type e = borrowed int32,
+    predicate Inv0.inv = Inv8.inv,
+    predicate Inv1.inv = Inv11.inv
   clone Core_Result_Impl0_Unwrap_Interface as Unwrap5 with
     type t = int32,
-    type e = borrowed int32
+    type e = borrowed int32,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv11.inv
   clone Core_Result_Impl2_Copied_Interface as Copied1 with
     type t = int32,
     type e = borrowed int32,
-    predicate Resolve0.resolve = Resolve0.resolve
+    predicate Inv0.inv = Inv9.inv,
+    predicate Inv1.inv = Inv8.inv,
+    predicate Inv2.inv = Inv8.inv,
+    predicate Resolve0.resolve = Resolve0.resolve,
+    predicate Inv3.inv = Inv11.inv
   clone Core_Result_Impl0_UnwrapErr_Interface as UnwrapErr3 with
     type t = int32,
-    type e = int32
+    type e = int32,
+    predicate Inv0.inv = Inv5.inv,
+    predicate Inv1.inv = Inv10.inv
   clone Core_Result_Impl0_Unwrap_Interface as Unwrap4 with
     type t = int32,
-    type e = int32
+    type e = int32,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv10.inv
   clone Core_Result_Impl1_Copied_Interface as Copied0 with
     type t = int32,
-    type e = int32
+    type e = int32,
+    predicate Inv0.inv = Inv6.inv,
+    predicate Inv1.inv = Inv5.inv,
+    predicate Inv2.inv = Inv5.inv,
+    predicate Inv3.inv = Inv10.inv
   clone Core_Result_Impl0_Or_Interface as Or0 with
     type t = int32,
     type e = int32,
-    type f = int32
+    type f = int32,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv2.inv,
+    predicate Inv2.inv = Inv1.inv,
+    predicate Inv3.inv = Inv1.inv
   clone Core_Result_Impl0_And_Interface as And0 with
     type t = int32,
     type e = int32,
-    type u = int32
+    type u = int32,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv2.inv,
+    predicate Inv2.inv = Inv1.inv,
+    predicate Inv3.inv = Inv1.inv
   clone Core_Result_Impl0_UnwrapOrDefault_Interface as UnwrapOrDefault0 with
     type t = int32,
     type e = int32,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv1.inv,
+    predicate Inv2.inv = Inv1.inv,
     predicate IsDefault0.is_default = IsDefault0.is_default
   clone Core_Result_Impl0_UnwrapOr_Interface as UnwrapOr0 with
     type t = int32,
-    type e = int32
+    type e = int32,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv1.inv,
+    predicate Inv2.inv = Inv1.inv
   clone Core_Result_Impl0_UnwrapErr_Interface as UnwrapErr2 with
     type t = int32,
-    type e = int32
+    type e = int32,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv
   clone Core_Result_Impl0_UnwrapErr_Interface as UnwrapErr1 with
     type t = borrowed int32,
-    type e = borrowed int32
+    type e = borrowed int32,
+    predicate Inv0.inv = Inv8.inv,
+    predicate Inv1.inv = Inv9.inv
   clone Core_Result_Impl0_Unwrap_Interface as Unwrap3 with
     type t = int32,
-    type e = int32
+    type e = int32,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv
   clone Core_Result_Impl0_Unwrap_Interface as Unwrap2 with
     type t = borrowed int32,
-    type e = borrowed int32
+    type e = borrowed int32,
+    predicate Inv0.inv = Inv8.inv,
+    predicate Inv1.inv = Inv9.inv
   clone Core_Result_Impl0_AsMut_Interface as AsMut0 with
     type t = int32,
-    type e = int32
+    type e = int32,
+    predicate Inv0.inv = Inv7.inv,
+    predicate Inv1.inv = Inv8.inv,
+    predicate Inv2.inv = Inv8.inv,
+    predicate Inv3.inv = Inv9.inv
   clone Core_Result_Impl0_UnwrapErr_Interface as UnwrapErr0 with
     type t = int32,
-    type e = int32
+    type e = int32,
+    predicate Inv0.inv = Inv5.inv,
+    predicate Inv1.inv = Inv6.inv
   clone Core_Result_Impl0_Unwrap_Interface as Unwrap1 with
     type t = int32,
-    type e = int32
+    type e = int32,
+    predicate Inv0.inv = Inv5.inv,
+    predicate Inv1.inv = Inv6.inv
   clone Core_Result_Impl0_AsRef_Interface as AsRef0 with
     type t = int32,
-    type e = int32
+    type e = int32,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv5.inv,
+    predicate Inv2.inv = Inv5.inv,
+    predicate Inv3.inv = Inv6.inv
   clone Core_Result_Impl0_Err_Interface as Err0 with
     type t = int32,
-    type e = int32
+    type e = int32,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv1.inv,
+    predicate Inv2.inv = Inv1.inv,
+    predicate Inv3.inv = Inv3.inv
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int32
+    type t = int32,
+    predicate Inv0.inv = Inv4.inv
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = int32
+    type t = int32,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Result_Impl0_Ok_Interface as Ok0 with
     type t = int32,
-    type e = int32
+    type e = int32,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv1.inv,
+    predicate Inv2.inv = Inv1.inv,
+    predicate Inv3.inv = Inv3.inv
   clone Core_Result_Impl0_IsErr_Interface as IsErr0 with
     type t = int32,
-    type e = int32
+    type e = int32,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Result_Impl0_IsOk_Interface as IsOk0 with
     type t = int32,
-    type e = int32
+    type e = int32,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   let rec cfg test_result [#"../result.rs" 3 0 3 20] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();

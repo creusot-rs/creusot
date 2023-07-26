@@ -158,6 +158,25 @@ module ListReversalLasso_Impl0_IndexLogic
     ensures { result = index_logic self i }
     
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module Core_Num_Impl11_Max_Stub
   use prelude.Int
   use prelude.UIntSize
@@ -177,6 +196,8 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub
   use prelude.Int
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Core_Num_Impl11_Max_Stub as Max0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
 end
 module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface
@@ -187,12 +208,15 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface
   use prelude.Int
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Core_Num_Impl11_Max_Stub as Max0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
   val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . [#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
 end
 module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   type t
@@ -202,12 +226,15 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   use prelude.Int
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Core_Num_Impl11_Max_Stub as Max0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
   val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . [#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
 end
 module ListReversalLasso_Impl3_NonnullPtr_Stub
   use prelude.Int
@@ -232,10 +259,13 @@ module ListReversalLasso_Impl3_NonnullPtr
   use seq.Seq
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
   clone Core_Num_Impl11_Max_Stub as Max0
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX',
     axiom .
   use ListReversalLasso_Memory_Type as ListReversalLasso_Memory_Type
@@ -358,11 +388,17 @@ module Alloc_Vec_Impl12_Index_Interface
     type self = i,
     type t = slice t
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndex_HasValue_Stub as HasValue0 with
     type self = i,
     type t = slice t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = i
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a
   clone CreusotContracts_Std1_Slice_SliceIndex_InBounds_Stub as InBounds0 with
     type self = i,
     type t = slice t,
@@ -372,7 +408,10 @@ module Alloc_Vec_Impl12_Index_Interface
     type ShallowModelTy0.shallowModelTy = Seq.seq t
   val index (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {[#"../../../../creusot-contracts/src/std/vec.rs" 131 27 131 46] InBounds0.in_bounds index (ShallowModel0.shallow_model self)}
+    requires {Inv0.inv self}
+    requires {Inv1.inv index}
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 132 26 132 54] HasValue0.has_value index (ShallowModel0.shallow_model self) result }
+    ensures { Inv2.inv result }
     
 end
 module CreusotContracts_Std1_Slice_Impl5_InBounds_Stub
@@ -402,6 +441,12 @@ module CreusotContracts_Std1_Slice_Impl5_InBounds
   val in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) : bool
     ensures { result = in_bounds self seq }
     
+end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
 end
 module CreusotContracts_Std1_Slice_Impl5_HasValue_Stub
   type t
@@ -448,13 +493,38 @@ module ListReversalLasso_Impl1_Index
   use prelude.Int
   use prelude.UIntSize
   use seq.Seq
-  use seq.Seq
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
+  clone TyInv_Trivial as TyInv_Trivial3 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
+    predicate Inv0.inv = Inv3.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = usize
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = usize,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = usize
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = usize,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
+  use seq.Seq
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel1 with
     type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv3.inv,
     val Max0.mAX' = Max0.mAX',
     axiom .
   clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic1 with
@@ -474,14 +544,18 @@ module ListReversalLasso_Impl1_Index
     function IndexLogic0.index_logic = IndexLogic1.index_logic
   clone ListReversalLasso_Impl3_NonnullPtr as NonnullPtr0 with
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
-    val Max0.mAX' = Max0.mAX'
+    val Max0.mAX' = Max0.mAX',
+    predicate Inv0.inv = Inv3.inv
   clone Alloc_Vec_Impl12_Index_Interface as Index0 with
     type t = usize,
     type i = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     predicate InBounds0.in_bounds = InBounds0.in_bounds,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate HasValue0.has_value = HasValue0.has_value,
+    predicate Inv2.inv = Inv2.inv,
     type Output0.output = usize
   let rec cfg index [#"../list_reversal_lasso.rs" 30 4 30 35] [@cfg:stackify] [@cfg:subregion_analysis] (self : ListReversalLasso_Memory_Type.t_memory) (i : usize) : usize
     requires {[#"../list_reversal_lasso.rs" 28 15 28 34] NonnullPtr0.nonnull_ptr self i}
@@ -598,11 +672,15 @@ module Alloc_Vec_Impl13_IndexMut_Interface
   use seq.Seq
   use prelude.Slice
   clone Core_Num_Impl11_Max_Stub as Max0
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a
   use seq.Seq
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with
     type self = i,
     type t = slice t
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = borrowed Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndex_ResolveElswhere_Stub as ResolveElswhere0 with
     type self = i,
     type t = slice t,
@@ -610,6 +688,7 @@ module Alloc_Vec_Impl13_IndexMut_Interface
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel1 with
     type t = t,
     type a = a,
+    predicate Inv0.inv = Inv3.inv,
     val Max0.mAX' = Max0.mAX',
     axiom .
   clone CreusotContracts_Std1_Slice_SliceIndex_HasValue_Stub as HasValue0 with
@@ -617,6 +696,10 @@ module Alloc_Vec_Impl13_IndexMut_Interface
     type t = slice t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     type Output0.output = Output0.output
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = i
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed (Alloc_Vec_Vec_Type.t_vec t a)
   clone CreusotContracts_Std1_Slice_SliceIndex_InBounds_Stub as InBounds0 with
     type self = i,
     type t = slice t,
@@ -626,10 +709,13 @@ module Alloc_Vec_Impl13_IndexMut_Interface
     type ShallowModelTy0.shallowModelTy = Seq.seq t
   val index_mut (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : i) : borrowed Output0.output
     requires {[#"../../../../creusot-contracts/src/std/vec.rs" 122 27 122 46] InBounds0.in_bounds index (ShallowModel0.shallow_model self)}
+    requires {Inv0.inv self}
+    requires {Inv1.inv index}
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 123 26 123 54] HasValue0.has_value index (ShallowModel0.shallow_model self) ( * result) }
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 124 26 124 57] HasValue0.has_value index (ShallowModel1.shallow_model ( ^ self)) ( ^ result) }
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 125 26 125 62] ResolveElswhere0.resolve_elswhere index (ShallowModel0.shallow_model self) (ShallowModel1.shallow_model ( ^ self)) }
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 126 26 126 55] Seq.length (ShallowModel1.shallow_model ( ^ self)) = Seq.length (ShallowModel0.shallow_model self) }
+    ensures { Inv2.inv result }
     
 end
 module CreusotContracts_Std1_Slice_Impl5_ResolveElswhere_Stub
@@ -668,9 +754,12 @@ module ListReversalLasso_Impl2_IndexMut_Interface
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Core_Num_Impl11_Max_Stub as Max0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX',
     axiom .
   use ListReversalLasso_Memory_Type as ListReversalLasso_Memory_Type
@@ -689,13 +778,38 @@ module ListReversalLasso_Impl2_IndexMut
   use prelude.Int
   use prelude.UIntSize
   use seq.Seq
-  use seq.Seq
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
+  clone TyInv_Trivial as TyInv_Trivial3 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
+    predicate Inv0.inv = Inv3.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = borrowed usize
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = borrowed usize,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = usize
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = usize,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)),
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
+  use seq.Seq
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel0 with
     type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv3.inv,
     val Max0.mAX' = Max0.mAX',
     axiom .
   clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic1 with
@@ -717,7 +831,8 @@ module ListReversalLasso_Impl2_IndexMut
     function IndexLogic0.index_logic = IndexLogic1.index_logic
   clone ListReversalLasso_Impl3_NonnullPtr as NonnullPtr0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
-    val Max0.mAX' = Max0.mAX'
+    val Max0.mAX' = Max0.mAX',
+    predicate Inv0.inv = Inv3.inv
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = ListReversalLasso_Memory_Type.t_memory
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
@@ -728,10 +843,14 @@ module ListReversalLasso_Impl2_IndexMut
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
     predicate InBounds0.in_bounds = InBounds0.in_bounds,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate HasValue0.has_value = HasValue0.has_value,
     function ShallowModel1.shallow_model = ShallowModel0.shallow_model,
     predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere,
+    predicate Inv2.inv = Inv2.inv,
     type Output0.output = usize,
+    predicate Inv3.inv = Inv3.inv,
     val Max0.mAX' = Max0.mAX'
   let rec cfg index_mut [#"../list_reversal_lasso.rs" 41 4 41 47] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) (i : usize) : borrowed usize
     requires {[#"../list_reversal_lasso.rs" 36 15 36 34] NonnullPtr0.nonnull_ptr ( * self) i}
@@ -819,15 +938,22 @@ module ListReversalLasso_Impl4_ListReversalSafe
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Core_Num_Impl11_Max as Max0
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel0 with
     type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX',
     axiom .
   clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic1 with
     type t = usize,
     type s = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   use ListReversalLasso_Memory_Type as ListReversalLasso_Memory_Type
   clone ListReversalLasso_Impl0_IndexLogic as IndexLogic0 with
     function IndexLogic0.index_logic = IndexLogic1.index_logic
@@ -835,11 +961,13 @@ module ListReversalLasso_Impl4_ListReversalSafe
     type t = usize
   clone ListReversalLasso_Impl3_NonnullPtr as NonnullPtr0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
-    val Max0.mAX' = Max0.mAX'
+    val Max0.mAX' = Max0.mAX',
+    predicate Inv0.inv = Inv0.inv
   clone ListReversalLasso_Impl2_IndexMut_Interface as IndexMut0 with
     predicate NonnullPtr0.nonnull_ptr = NonnullPtr0.nonnull_ptr,
     function IndexLogic0.index_logic = IndexLogic0.index_logic,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX'
   clone ListReversalLasso_Impl1_Index_Interface as Index0 with
     predicate NonnullPtr0.nonnull_ptr = NonnullPtr0.nonnull_ptr,
@@ -988,9 +1116,16 @@ end
 module Core_Mem_Replace_Interface
   type t
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed t
   val replace (dest : borrowed t) (src : t) : t
+    requires {Inv0.inv dest}
+    requires {Inv1.inv src}
     ensures { [#"../../../../creusot-contracts/src/std/mem.rs" 7 22 7 34]  ^ dest = src }
     ensures { [#"../../../../creusot-contracts/src/std/mem.rs" 8 22 8 37] result =  * dest }
+    ensures { Inv1.inv result }
     
 end
 module ListReversalLasso_Impl4_ListReversalList_Interface
@@ -1015,12 +1150,31 @@ module ListReversalLasso_Impl4_ListReversalList
   use prelude.Borrow
   use seq.Reverse
   use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = usize
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = usize,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = borrowed usize
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = borrowed usize,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel0 with
     type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX',
     axiom .
   clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic1 with
@@ -1032,7 +1186,8 @@ module ListReversalLasso_Impl4_ListReversalList
     function IndexLogic0.index_logic = IndexLogic1.index_logic
   clone ListReversalLasso_Impl3_NonnullPtr as NonnullPtr0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
-    val Max0.mAX' = Max0.mAX'
+    val Max0.mAX' = Max0.mAX',
+    predicate Inv0.inv = Inv0.inv
   clone ListReversalLasso_Impl4_ListSeg as ListSeg0 with
     predicate NonnullPtr0.nonnull_ptr = NonnullPtr0.nonnull_ptr,
     function IndexLogic0.index_logic = IndexLogic0.index_logic
@@ -1043,11 +1198,14 @@ module ListReversalLasso_Impl4_ListReversalList
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = usize
   clone Core_Mem_Replace_Interface as Replace0 with
-    type t = usize
+    type t = usize,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv
   clone ListReversalLasso_Impl2_IndexMut_Interface as IndexMut0 with
     predicate NonnullPtr0.nonnull_ptr = NonnullPtr0.nonnull_ptr,
     function IndexLogic0.index_logic = IndexLogic0.index_logic,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX'
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = ListReversalLasso_Memory_Type.t_memory
@@ -1228,13 +1386,32 @@ module ListReversalLasso_Impl4_ListReversalLoop
   use prelude.Borrow
   use seq.Reverse
   use seq_ext.SeqExt
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = usize
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = usize,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = borrowed usize
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = borrowed usize,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
   use seq.Seq
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel0 with
     type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX',
     axiom .
   clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic2 with
@@ -1246,7 +1423,8 @@ module ListReversalLasso_Impl4_ListReversalLoop
     function IndexLogic0.index_logic = IndexLogic2.index_logic
   clone ListReversalLasso_Impl3_NonnullPtr as NonnullPtr0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
-    val Max0.mAX' = Max0.mAX'
+    val Max0.mAX' = Max0.mAX',
+    predicate Inv0.inv = Inv0.inv
   clone ListReversalLasso_Impl4_ListSeg as ListSeg0 with
     predicate NonnullPtr0.nonnull_ptr = NonnullPtr0.nonnull_ptr,
     function IndexLogic0.index_logic = IndexLogic1.index_logic
@@ -1255,11 +1433,14 @@ module ListReversalLasso_Impl4_ListReversalLoop
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = usize
   clone Core_Mem_Replace_Interface as Replace0 with
-    type t = usize
+    type t = usize,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv
   clone ListReversalLasso_Impl2_IndexMut_Interface as IndexMut0 with
     predicate NonnullPtr0.nonnull_ptr = NonnullPtr0.nonnull_ptr,
     function IndexLogic0.index_logic = IndexLogic1.index_logic,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX'
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = ListReversalLasso_Memory_Type.t_memory
@@ -1423,12 +1604,31 @@ module ListReversalLasso_Impl4_ListReversalLasso
   use prelude.Borrow
   use seq.Reverse
   use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = usize
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = usize,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = borrowed usize
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = borrowed usize,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel0 with
     type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX',
     axiom .
   clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic2 with
@@ -1440,7 +1640,8 @@ module ListReversalLasso_Impl4_ListReversalLasso
     function IndexLogic0.index_logic = IndexLogic2.index_logic
   clone ListReversalLasso_Impl3_NonnullPtr as NonnullPtr0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
-    val Max0.mAX' = Max0.mAX'
+    val Max0.mAX' = Max0.mAX',
+    predicate Inv0.inv = Inv0.inv
   clone ListReversalLasso_Impl4_ListSeg as ListSeg0 with
     predicate NonnullPtr0.nonnull_ptr = NonnullPtr0.nonnull_ptr,
     function IndexLogic0.index_logic = IndexLogic1.index_logic
@@ -1449,11 +1650,14 @@ module ListReversalLasso_Impl4_ListReversalLasso
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = usize
   clone Core_Mem_Replace_Interface as Replace0 with
-    type t = usize
+    type t = usize,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv
   clone ListReversalLasso_Impl2_IndexMut_Interface as IndexMut0 with
     predicate NonnullPtr0.nonnull_ptr = NonnullPtr0.nonnull_ptr,
     function IndexLogic0.index_logic = IndexLogic1.index_logic,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX'
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = ListReversalLasso_Memory_Type.t_memory
@@ -1732,10 +1936,13 @@ module ListReversalLasso_Impl4_FindLassoAux_Stub
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Core_Num_Impl11_Max_Stub as Max0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
   use seq.Seq
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX',
     axiom .
   use ListReversalLasso_Memory_Type as ListReversalLasso_Memory_Type
@@ -1756,10 +1963,13 @@ module ListReversalLasso_Impl4_FindLassoAux_Interface
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Core_Num_Impl11_Max_Stub as Max0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
   use seq.Seq
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX',
     axiom .
   use ListReversalLasso_Memory_Type as ListReversalLasso_Memory_Type
@@ -1796,6 +2006,8 @@ module ListReversalLasso_Impl4_FindLassoAux
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Core_Num_Impl11_Max_Stub as Max0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
   use seq.Seq
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone ListReversalLasso_Impl4_FindPtrInSeq_Stub as FindPtrInSeq0 with
@@ -1807,6 +2019,7 @@ module ListReversalLasso_Impl4_FindLassoAux
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX',
     axiom .
   clone ListReversalLasso_Impl4_Lasso_Stub as Lasso0
@@ -1849,13 +2062,20 @@ module ListReversalLasso_Impl4_FindLassoAux_Impl
   use prelude.Int
   use prelude.UIntSize
   use seq_ext.SeqExt
-  use seq.Seq
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
+  use seq.Seq
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel0 with
     type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX',
     axiom .
   clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic1 with
@@ -1874,7 +2094,8 @@ module ListReversalLasso_Impl4_FindLassoAux_Impl
     axiom .
   clone ListReversalLasso_Impl3_NonnullPtr as NonnullPtr0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
-    val Max0.mAX' = Max0.mAX'
+    val Max0.mAX' = Max0.mAX',
+    predicate Inv0.inv = Inv0.inv
   clone ListReversalLasso_Impl4_ListSeg as ListSeg0 with
     predicate NonnullPtr0.nonnull_ptr = NonnullPtr0.nonnull_ptr,
     function IndexLogic0.index_logic = IndexLogic0.index_logic
@@ -1962,9 +2183,12 @@ module ListReversalLasso_Impl4_FindLasso
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Core_Num_Impl11_Max_Stub as Max0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX',
     axiom .
   use ListReversalLasso_Memory_Type as ListReversalLasso_Memory_Type
@@ -1984,6 +2208,7 @@ module ListReversalLasso_Impl4_FindLasso
     predicate List0.list = List0.list,
     predicate Lasso0.lasso = Lasso0.lasso,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX',
     axiom .
   function find_lasso [#"../list_reversal_lasso.rs" 270 4 270 71] (self : ListReversalLasso_Memory_Type.t_memory) (first : usize) : (Seq.seq usize, Core_Option_Option_Type.t_option (Seq.seq usize))
@@ -2008,13 +2233,20 @@ module ListReversalLasso_Impl4_FindLasso_Impl
   use seq.Seq
   use prelude.Int
   use prelude.UIntSize
-  use seq.Seq
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
+  use seq.Seq
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel0 with
     type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX',
     axiom .
   clone CreusotContracts_Logic_Ops_Impl1_IndexLogic as IndexLogic1 with
@@ -2033,7 +2265,8 @@ module ListReversalLasso_Impl4_FindLasso_Impl
     function IndexLogic0.index_logic = IndexLogic1.index_logic
   clone ListReversalLasso_Impl3_NonnullPtr as NonnullPtr0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
-    val Max0.mAX' = Max0.mAX'
+    val Max0.mAX' = Max0.mAX',
+    predicate Inv0.inv = Inv0.inv
   clone ListReversalLasso_Impl4_ListSeg as ListSeg0 with
     predicate NonnullPtr0.nonnull_ptr = NonnullPtr0.nonnull_ptr,
     function IndexLogic0.index_logic = IndexLogic0.index_logic
@@ -2058,6 +2291,7 @@ module ListReversalLasso_Impl4_FindLasso_Impl
     function Pigeon0.pigeon = Pigeon0.pigeon,
     function IndexLogic0.index_logic = IndexLogic0.index_logic,
     function FindPtrInSeq0.find_ptr_in_seq = FindPtrInSeq0.find_ptr_in_seq,
+    predicate Inv0.inv = Inv0.inv,
     val Max0.mAX' = Max0.mAX',
     axiom .
   let rec ghost function find_lasso [#"../list_reversal_lasso.rs" 270 4 270 71] (self : ListReversalLasso_Memory_Type.t_memory) (first : usize) : (Seq.seq usize, Core_Option_Option_Type.t_option (Seq.seq usize))

@@ -51,6 +51,25 @@ module C14AssocInLogic_ToTy
     ensures { result = to_ty _x }
     
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module C14AssocInLogic_Test_Interface
   type t
   clone C14AssocInLogic_Assoc_Ty_Type as Ty0 with
@@ -61,7 +80,10 @@ module C14AssocInLogic_Test_Interface
   clone C14AssocInLogic_ToTy_Stub as ToTy0 with
     type t = t,
     type Ty0.ty = Ty0.ty
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
   val test [#"../14_assoc_in_logic.rs" 23 0 23 28] (_a : t) : ()
+    requires {[#"../14_assoc_in_logic.rs" 23 22 23 24] Inv0.inv _a}
     ensures { [#"../14_assoc_in_logic.rs" 22 10 22 34] _a = FromTy0.from_ty (ToTy0.to_ty _a) }
     
 end

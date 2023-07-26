@@ -27,11 +27,33 @@ module CreusotContracts_Resolve_Impl1_Resolve
     ensures { result = resolve self }
     
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module Core_Option_Impl0_IsSome_Interface
   type t
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val is_some (self : Core_Option_Option_Type.t_option t) : bool
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 21 26 21 51] result = (self <> Core_Option_Option_Type.C_None) }
     
 end
@@ -39,75 +61,134 @@ module Core_Option_Impl0_IsNone_Interface
   type t
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val is_none (self : Core_Option_Option_Type.t_option t) : bool
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 24 26 24 51] result = (self = Core_Option_Option_Type.C_None) }
     
 end
 module Core_Option_Impl0_Unwrap_Interface
   type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val unwrap (self : Core_Option_Option_Type.t_option t) : t
     requires {[#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] self <> Core_Option_Option_Type.C_None}
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] Core_Option_Option_Type.C_Some result = self }
+    ensures { Inv1.inv result }
     
 end
 module Core_Option_Impl0_UnwrapOr_Interface
   type t
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val unwrap_or (self : Core_Option_Option_Type.t_option t) (default : t) : t
+    requires {Inv0.inv self}
+    requires {Inv1.inv default}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 35 16 35 62] self = Core_Option_Option_Type.C_None -> result = default }
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] self = Core_Option_Option_Type.C_None \/ self = Core_Option_Option_Type.C_Some result }
+    ensures { Inv1.inv result }
     
 end
 module Core_Option_Impl0_AsMut_Interface
   type t
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Core_Option_Option_Type.t_option (borrowed t)
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = borrowed t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed (Core_Option_Option_Type.t_option t)
   val as_mut (self : borrowed (Core_Option_Option_Type.t_option t)) : Core_Option_Option_Type.t_option (borrowed t)
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 39 16 39 77]  * self = Core_Option_Option_Type.C_None -> result = Core_Option_Option_Type.C_None /\  ^ self = Core_Option_Option_Type.C_None }
-    ensures { [#"../../../../creusot-contracts/src/std/option.rs" 40 16 43 18]  * self = Core_Option_Option_Type.C_None \/ (exists r : borrowed t . result = Core_Option_Option_Type.C_Some r /\  * self = Core_Option_Option_Type.C_Some ( * r) /\  ^ self = Core_Option_Option_Type.C_Some ( ^ r)) }
+    ensures { [#"../../../../creusot-contracts/src/std/option.rs" 40 16 43 18]  * self = Core_Option_Option_Type.C_None \/ (exists r : borrowed t . Inv1.inv r /\ result = Core_Option_Option_Type.C_Some r /\  * self = Core_Option_Option_Type.C_Some ( * r) /\  ^ self = Core_Option_Option_Type.C_Some ( ^ r)) }
+    ensures { Inv2.inv result }
     
 end
 module Core_Option_Impl0_AsRef_Interface
   type t
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val as_ref (self : Core_Option_Option_Type.t_option t) : Core_Option_Option_Type.t_option t
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 46 16 46 60] self = Core_Option_Option_Type.C_None -> result = Core_Option_Option_Type.C_None }
-    ensures { [#"../../../../creusot-contracts/src/std/option.rs" 47 16 49 18] self = Core_Option_Option_Type.C_None \/ (exists r : t . result = Core_Option_Option_Type.C_Some r /\ self = Core_Option_Option_Type.C_Some r) }
+    ensures { [#"../../../../creusot-contracts/src/std/option.rs" 47 16 49 18] self = Core_Option_Option_Type.C_None \/ (exists r : t . Inv1.inv r /\ result = Core_Option_Option_Type.C_Some r /\ self = Core_Option_Option_Type.C_Some r) }
+    ensures { Inv2.inv result }
     
 end
 module Core_Option_Impl0_And_Interface
   type t
   type u
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Option_Option_Type.t_option u
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val and (self : Core_Option_Option_Type.t_option t) (optb : Core_Option_Option_Type.t_option u) : Core_Option_Option_Type.t_option u
+    requires {Inv0.inv self}
+    requires {Inv1.inv optb}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 52 16 52 59] self = Core_Option_Option_Type.C_None -> result = Core_Option_Option_Type.C_None }
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] self = Core_Option_Option_Type.C_None \/ result = optb }
+    ensures { Inv1.inv result }
     
 end
 module Core_Option_Impl0_Or_Interface
   type t
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val or (self : Core_Option_Option_Type.t_option t) (optb : Core_Option_Option_Type.t_option t) : Core_Option_Option_Type.t_option t
+    requires {Inv0.inv self}
+    requires {Inv0.inv optb}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 56 16 56 59] self = Core_Option_Option_Type.C_None -> result = optb }
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] self = Core_Option_Option_Type.C_None \/ result = self }
+    ensures { Inv0.inv result }
     
 end
 module Core_Option_Impl0_Take_Interface
   type t
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed (Core_Option_Option_Type.t_option t)
   val take (self : borrowed (Core_Option_Option_Type.t_option t)) : Core_Option_Option_Type.t_option t
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] result =  * self /\  ^ self = Core_Option_Option_Type.C_None }
+    ensures { Inv1.inv result }
     
 end
 module Core_Option_Impl0_Replace_Interface
   type t
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed (Core_Option_Option_Type.t_option t)
   val replace (self : borrowed (Core_Option_Option_Type.t_option t)) (value : t) : Core_Option_Option_Type.t_option t
+    requires {Inv0.inv self}
+    requires {Inv1.inv value}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] result =  * self /\  ^ self = Core_Option_Option_Type.C_Some value }
+    ensures { Inv2.inv result }
     
 end
 module CreusotContracts_Std1_Default_Default_IsDefault_Stub
@@ -130,61 +211,108 @@ module CreusotContracts_Std1_Default_Default_IsDefault
 end
 module Core_Option_Impl0_UnwrapOrDefault_Interface
   type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
   clone CreusotContracts_Std1_Default_Default_IsDefault_Stub as IsDefault0 with
     type self = t
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val unwrap_or_default (self : Core_Option_Option_Type.t_option t) : t
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 66 16 66 64] self = Core_Option_Option_Type.C_None -> IsDefault0.is_default result }
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] self = Core_Option_Option_Type.C_None \/ self = Core_Option_Option_Type.C_Some result }
+    ensures { Inv1.inv result }
     
 end
 module Core_Option_Impl2_Copied_Interface
   type t
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val copied (self : Core_Option_Option_Type.t_option t) : Core_Option_Option_Type.t_option t
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 74 16 74 59] self = Core_Option_Option_Type.C_None -> result = Core_Option_Option_Type.C_None }
-    ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] self = Core_Option_Option_Type.C_None \/ (exists t : t . self = Core_Option_Option_Type.C_Some t /\ result = Core_Option_Option_Type.C_Some t) }
+    ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] self = Core_Option_Option_Type.C_None \/ (exists t : t . Inv1.inv t /\ self = Core_Option_Option_Type.C_Some t /\ result = Core_Option_Option_Type.C_Some t) }
+    ensures { Inv2.inv result }
     
 end
 module Core_Option_Impl3_Copied_Interface
   type t
   use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Core_Option_Option_Type.t_option t
   clone CreusotContracts_Resolve_Impl1_Resolve_Stub as Resolve0 with
     type t = t
-  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = borrowed t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option (borrowed t)
   val copied (self : Core_Option_Option_Type.t_option (borrowed t)) : Core_Option_Option_Type.t_option t
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 88 16 88 59] self = Core_Option_Option_Type.C_None -> result = Core_Option_Option_Type.C_None }
-    ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] self = Core_Option_Option_Type.C_None \/ (exists t : borrowed t . self = Core_Option_Option_Type.C_Some t /\ result = Core_Option_Option_Type.C_Some ( * t) /\ Resolve0.resolve t) }
+    ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] self = Core_Option_Option_Type.C_None \/ (exists t : borrowed t . Inv1.inv t /\ self = Core_Option_Option_Type.C_Some t /\ result = Core_Option_Option_Type.C_Some ( * t) /\ Resolve0.resolve t) }
+    ensures { Inv2.inv result }
     
 end
 module Core_Option_Impl2_Cloned_Interface
   type t
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Core_Option_Option_Type.t_option t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val cloned (self : Core_Option_Option_Type.t_option t) : Core_Option_Option_Type.t_option t
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 80 16 80 59] self = Core_Option_Option_Type.C_None -> result = Core_Option_Option_Type.C_None }
-    ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] self = Core_Option_Option_Type.C_None \/ (exists t : t . self = Core_Option_Option_Type.C_Some t /\ result = Core_Option_Option_Type.C_Some t) }
+    ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] self = Core_Option_Option_Type.C_None \/ (exists t : t . Inv1.inv t /\ self = Core_Option_Option_Type.C_Some t /\ result = Core_Option_Option_Type.C_Some t) }
+    ensures { Inv2.inv result }
     
 end
 module Core_Option_Impl3_Cloned_Interface
   type t
   use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Core_Option_Option_Type.t_option t
   clone CreusotContracts_Resolve_Impl1_Resolve_Stub as Resolve0 with
     type t = t
-  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = borrowed t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option (borrowed t)
   val cloned (self : Core_Option_Option_Type.t_option (borrowed t)) : Core_Option_Option_Type.t_option t
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 97 16 97 59] self = Core_Option_Option_Type.C_None -> result = Core_Option_Option_Type.C_None }
-    ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] self = Core_Option_Option_Type.C_None \/ (exists t : borrowed t . self = Core_Option_Option_Type.C_Some t /\ result = Core_Option_Option_Type.C_Some ( * t) /\ Resolve0.resolve t) }
+    ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] self = Core_Option_Option_Type.C_None \/ (exists t : borrowed t . Inv1.inv t /\ self = Core_Option_Option_Type.C_Some t /\ result = Core_Option_Option_Type.C_Some ( * t) /\ Resolve0.resolve t) }
+    ensures { Inv2.inv result }
     
 end
 module Core_Option_Impl44_Flatten_Interface
   type t
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val flatten (self : Core_Option_Option_Type.t_option (Core_Option_Option_Type.t_option t)) : Core_Option_Option_Type.t_option t
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 108 16 108 59] self = Core_Option_Option_Type.C_None -> result = Core_Option_Option_Type.C_None }
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] self = Core_Option_Option_Type.C_None \/ self = Core_Option_Option_Type.C_Some result }
+    ensures { Inv0.inv result }
     
+end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
 end
 module CreusotContracts_Std1_Num_Impl26_IsDefault_Stub
   use prelude.Int
@@ -215,54 +343,155 @@ module Option_TestOption
   use prelude.Int
   use prelude.Int32
   use prelude.Borrow
-  clone CreusotContracts_Std1_Num_Impl26_IsDefault as IsDefault0
   use Core_Option_Option_Type as Core_Option_Option_Type
-  clone Core_Option_Impl44_Flatten_Interface as Flatten0 with
+  clone CreusotContracts_Invariant_Inv_Interface as Inv9 with
+    type t = Core_Option_Option_Type.t_option int32
+  clone TyInv_Trivial as TyInv_Trivial9 with
+    type t = Core_Option_Option_Type.t_option int32,
+    predicate Inv0.inv = Inv9.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv8 with
+    type t = Core_Option_Option_Type.t_option int32
+  clone TyInv_Trivial as TyInv_Trivial8 with
+    type t = Core_Option_Option_Type.t_option int32,
+    predicate Inv0.inv = Inv8.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv7 with
     type t = int32
+  clone TyInv_Trivial as TyInv_Trivial7 with
+    type t = int32,
+    predicate Inv0.inv = Inv7.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
+    type t = Core_Option_Option_Type.t_option (borrowed int32)
+  clone TyInv_Trivial as TyInv_Trivial6 with
+    type t = Core_Option_Option_Type.t_option (borrowed int32),
+    predicate Inv0.inv = Inv6.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+    type t = Core_Option_Option_Type.t_option (borrowed int32)
+  clone TyInv_Trivial as TyInv_Trivial5 with
+    type t = Core_Option_Option_Type.t_option (borrowed int32),
+    predicate Inv0.inv = Inv5.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+    type t = borrowed int32
+  clone TyInv_Trivial as TyInv_Trivial4 with
+    type t = borrowed int32,
+    predicate Inv0.inv = Inv4.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = borrowed (Core_Option_Option_Type.t_option int32)
+  clone TyInv_Trivial as TyInv_Trivial3 with
+    type t = borrowed (Core_Option_Option_Type.t_option int32),
+    predicate Inv0.inv = Inv3.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = int32
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = int32,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Core_Option_Option_Type.t_option int32
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Core_Option_Option_Type.t_option int32,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int32
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int32,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
+  clone CreusotContracts_Std1_Num_Impl26_IsDefault as IsDefault0
+  clone Core_Option_Impl44_Flatten_Interface as Flatten0 with
+    type t = int32,
+    predicate Inv0.inv = Inv1.inv
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = int32
   clone Core_Option_Impl3_Cloned_Interface as Cloned1 with
     type t = int32,
-    predicate Resolve0.resolve = Resolve0.resolve
+    predicate Inv0.inv = Inv5.inv,
+    predicate Inv1.inv = Inv4.inv,
+    predicate Resolve0.resolve = Resolve0.resolve,
+    predicate Inv2.inv = Inv1.inv
   clone Core_Option_Impl2_Cloned_Interface as Cloned0 with
-    type t = int32
+    type t = int32,
+    predicate Inv0.inv = Inv8.inv,
+    predicate Inv1.inv = Inv7.inv,
+    predicate Inv2.inv = Inv1.inv
   clone Core_Option_Impl3_Copied_Interface as Copied1 with
     type t = int32,
-    predicate Resolve0.resolve = Resolve0.resolve
+    predicate Inv0.inv = Inv5.inv,
+    predicate Inv1.inv = Inv4.inv,
+    predicate Resolve0.resolve = Resolve0.resolve,
+    predicate Inv2.inv = Inv1.inv
   clone Core_Option_Impl2_Copied_Interface as Copied0 with
-    type t = int32
+    type t = int32,
+    predicate Inv0.inv = Inv8.inv,
+    predicate Inv1.inv = Inv7.inv,
+    predicate Inv2.inv = Inv1.inv
   clone Core_Option_Impl0_UnwrapOrDefault_Interface as UnwrapOrDefault0 with
     type t = int32,
-    predicate IsDefault0.is_default = IsDefault0.is_default
+    predicate Inv0.inv = Inv1.inv,
+    predicate IsDefault0.is_default = IsDefault0.is_default,
+    predicate Inv1.inv = Inv2.inv
   clone Core_Option_Impl0_Replace_Interface as Replace0 with
-    type t = int32
+    type t = int32,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Inv1.inv = Inv2.inv,
+    predicate Inv2.inv = Inv1.inv
   clone Core_Option_Impl0_Take_Interface as Take0 with
-    type t = int32
+    type t = int32,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Option_Impl0_Or_Interface as Or0 with
-    type t = int32
+    type t = int32,
+    predicate Inv0.inv = Inv1.inv
   clone Core_Option_Impl0_And_Interface as And0 with
     type t = int32,
-    type u = int32
+    type u = int32,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap2 with
-    type t = int32
+    type t = int32,
+    predicate Inv0.inv = Inv8.inv,
+    predicate Inv1.inv = Inv7.inv
   clone Core_Option_Impl0_IsNone_Interface as IsNone2 with
-    type t = int32
+    type t = int32,
+    predicate Inv0.inv = Inv9.inv
   clone Core_Option_Impl0_AsRef_Interface as AsRef0 with
-    type t = int32
+    type t = int32,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv7.inv,
+    predicate Inv2.inv = Inv8.inv
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap1 with
-    type t = borrowed int32
+    type t = borrowed int32,
+    predicate Inv0.inv = Inv5.inv,
+    predicate Inv1.inv = Inv4.inv
   clone Core_Option_Impl0_IsNone_Interface as IsNone1 with
-    type t = borrowed int32
+    type t = borrowed int32,
+    predicate Inv0.inv = Inv6.inv
   clone Core_Option_Impl0_AsMut_Interface as AsMut0 with
-    type t = int32
+    type t = int32,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Inv1.inv = Inv4.inv,
+    predicate Inv2.inv = Inv5.inv
   clone Core_Option_Impl0_UnwrapOr_Interface as UnwrapOr0 with
-    type t = int32
+    type t = int32,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = int32
+    type t = int32,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int32
+    type t = int32,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Option_Impl0_IsSome_Interface as IsSome0 with
-    type t = int32
+    type t = int32,
+    predicate Inv0.inv = Inv0.inv
   let rec cfg test_option [#"../option.rs" 4 0 4 20] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();

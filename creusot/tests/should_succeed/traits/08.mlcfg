@@ -1,4 +1,23 @@
 
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module CreusotContracts_Resolve_Resolve_Resolve_Stub
   type self
   predicate resolve (self : self)
@@ -17,17 +36,35 @@ module CreusotContracts_Resolve_Resolve_Resolve
     ensures { result = resolve self }
     
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module C08_Tr_Program_Interface
   type self
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   val program [#"../08.rs" 12 4 12 21] (self : self) : ()
+    requires {[#"../08.rs" 12 16 12 20] Inv0.inv self}
+    
 end
 module C08_Tr_Program
   type self
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = self
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = self,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = self
   let rec cfg program [#"../08.rs" 12 4 12 21] [@cfg:stackify] [@cfg:subregion_analysis] (self : self) : ()
+    requires {[#"../08.rs" 12 16 12 20] Inv0.inv self}
+    
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var self : self = self;
@@ -36,6 +73,7 @@ module C08_Tr_Program
   }
   BB0 {
     _0 <- ();
+    assert { [@expl:type invariant] Inv0.inv self };
     assume { Resolve0.resolve self };
     return _0
   }
@@ -43,13 +81,25 @@ module C08_Tr_Program
 end
 module C08_Test_Interface
   type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
   val test [#"../08.rs" 15 0 15 24] (_1 : t) : ()
+    requires {[#"../08.rs" 1 0 1 0] Inv0.inv _1}
+    
 end
 module C08_Test
   type t
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = t
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = t,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = t
   let rec cfg test [#"../08.rs" 15 0 15 24] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : t) : ()
+    requires {[#"../08.rs" 1 0 1 0] Inv0.inv _1}
+    
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var _1 : t = _1;
@@ -58,6 +108,7 @@ module C08_Test
   }
   BB0 {
     _0 <- ();
+    assert { [@expl:type invariant] Inv0.inv _1 };
     assume { Resolve0.resolve _1 };
     goto BB1
   }

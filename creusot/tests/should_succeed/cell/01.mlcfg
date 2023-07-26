@@ -1,4 +1,23 @@
 
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module C01_Inv_Inv_Stub
   type self
   type t
@@ -48,11 +67,17 @@ module C01_Impl0_Get_Interface
   type i
   use prelude.Borrow
   use C01_Cell_Type as C01_Cell_Type
-  clone C01_Inv_Inv_Stub as Inv0 with
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = t
+  clone C01_Inv_Inv_Stub as Inv1 with
     type self = i,
     type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = C01_Cell_Type.t_cell t i
   val get [#"../01.rs" 19 4 19 26] (self : C01_Cell_Type.t_cell t i) : t
-    ensures { [#"../01.rs" 18 14 18 28] Inv0.inv result }
+    requires {[#"../01.rs" 19 16 19 20] Inv0.inv self}
+    ensures { [#"../01.rs" 18 14 18 28] Inv1.inv result }
+    ensures { [#"../01.rs" 19 25 19 26] Inv2.inv result }
     
 end
 module C01_Impl0_Set_Interface
@@ -60,11 +85,17 @@ module C01_Impl0_Set_Interface
   type i
   use prelude.Borrow
   use C01_Cell_Type as C01_Cell_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = C01_Cell_Type.t_cell t i
   clone C01_Inv_Inv_Stub as Inv0 with
     type self = i,
     type t = t
   val set [#"../01.rs" 25 4 25 27] (self : C01_Cell_Type.t_cell t i) (v : t) : ()
     requires {[#"../01.rs" 24 15 24 24] Inv0.inv v}
+    requires {[#"../01.rs" 25 16 25 20] Inv1.inv self}
+    requires {[#"../01.rs" 25 22 25 23] Inv2.inv v}
     
 end
 module C01_Impl1_Inv_Stub
@@ -94,6 +125,12 @@ module C01_Even_Type
     | C_Even
     
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module C01_AddsTwo_Interface
   use prelude.Borrow
   use prelude.Int
@@ -106,17 +143,33 @@ module C01_AddsTwo
   use prelude.Int
   use prelude.UInt32
   use prelude.Borrow
-  clone C01_Impl1_Inv as Inv0
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = uint32
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = uint32,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
   use C01_Even_Type as C01_Even_Type
   use C01_Cell_Type as C01_Cell_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even),
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
+  clone C01_Impl1_Inv as Inv1
   clone C01_Impl0_Set_Interface as Set0 with
     type t = uint32,
     type i = C01_Even_Type.t_even,
-    predicate Inv0.inv = Inv0.inv
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv0.inv,
+    predicate Inv2.inv = Inv2.inv
   clone C01_Impl0_Get_Interface as Get0 with
     type t = uint32,
     type i = C01_Even_Type.t_even,
-    predicate Inv0.inv = Inv0.inv
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
+    predicate Inv2.inv = Inv2.inv
   let rec cfg adds_two [#"../01.rs" 40 0 40 36] [@cfg:stackify] [@cfg:subregion_analysis] (c : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]

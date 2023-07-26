@@ -74,9 +74,46 @@ end
 module C464_Impl0
   
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module C464_Impl1
-  use C464_AssocStruct_Type as C464_AssocStruct_Type
-  clone C464_Impl0_Invariant as Invariant0
   use C464_Struct_Type as C464_Struct_Type
-  goal invariant'_refn : [#"../464.rs" 34 4 34 50] forall self : C464_Struct_Type.t_struct . forall assoc : C464_AssocStruct_Type.t_assocstruct . forall result : bool . result -> Invariant0.invariant' assoc -> result -> Invariant0.invariant' assoc
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = C464_Struct_Type.t_struct
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = C464_Struct_Type.t_struct,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  use C464_AssocStruct_Type as C464_AssocStruct_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = C464_AssocStruct_Type.t_assocstruct
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = C464_AssocStruct_Type.t_assocstruct,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
+  clone C464_Impl0_Invariant as Invariant0
+  goal invariant'_refn : [#"../464.rs" 34 4 34 50] forall self : C464_Struct_Type.t_struct . forall assoc : C464_AssocStruct_Type.t_assocstruct . Inv0.inv assoc /\ Inv1.inv self -> (forall result : bool . result -> Invariant0.invariant' assoc -> result -> Invariant0.invariant' assoc)
 end
