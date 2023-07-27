@@ -313,7 +313,7 @@ module C15Enumerate_Impl1_Invariant
     type t = i
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
   predicate invariant' [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) =
-    [#"../15_enumerate.rs" 73 12 74 79] (forall i : i . Inv0.inv i -> (forall s : Seq.seq Item0.item . Produces0.produces (C15Enumerate_Enumerate_Type.enumerate_iter self) s i -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int Max0.mAX')) /\ (forall i : borrowed i . Inv1.inv i -> Completed0.completed i -> Produces0.produces ( * i) (Seq.empty ) ( ^ i))
+    [#"../15_enumerate.rs" 73 12 74 79] (forall i : i . forall s : Seq.seq Item0.item . Inv0.inv i -> Produces0.produces (C15Enumerate_Enumerate_Type.enumerate_iter self) s i -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int Max0.mAX') /\ (forall i : borrowed i . Inv1.inv i -> Completed0.completed i -> Produces0.produces ( * i) (Seq.empty ) ( ^ i))
   val invariant' [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) : bool
     ensures { result = invariant' self }
     
@@ -430,8 +430,8 @@ module C15Enumerate_Impl0_ProducesRefl_Impl
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
   clone C15Enumerate_Impl1_Invariant as Invariant0 with
     type i = i,
-    predicate Inv0.inv = Inv1.inv,
     type Item0.item = Item0.item,
+    predicate Inv0.inv = Inv1.inv,
     predicate Produces0.produces = Produces1.produces,
     val Max0.mAX' = Max0.mAX',
     predicate Inv1.inv = Inv2.inv,
@@ -555,8 +555,8 @@ module C15Enumerate_Impl0_ProducesTrans_Impl
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
   clone C15Enumerate_Impl1_Invariant as Invariant0 with
     type i = i,
-    predicate Inv0.inv = Inv1.inv,
     type Item0.item = Item0.item,
+    predicate Inv0.inv = Inv1.inv,
     predicate Produces0.produces = Produces1.produces,
     val Max0.mAX' = Max0.mAX',
     predicate Inv1.inv = Inv2.inv,
@@ -721,8 +721,8 @@ module C15Enumerate_Impl0_Next
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
   clone C15Enumerate_Impl1_Invariant as Invariant0 with
     type i = i,
-    predicate Inv0.inv = Inv0.inv,
     type Item0.item = Item0.item,
+    predicate Inv0.inv = Inv0.inv,
     predicate Produces0.produces = Produces1.produces,
     val Max0.mAX' = Max0.mAX',
     predicate Inv1.inv = Inv4.inv,
@@ -884,10 +884,10 @@ module C15Enumerate_Enumerate_Interface
   clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
     type t = C15Enumerate_Enumerate_Type.t_enumerate i
   clone Core_Usize_Max_Stub as Max0
-  clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
-    type self = i
   clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
     type t = i
+  clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
+    type self = i
   clone C15Enumerate_Common_Iterator_Produces_Stub as Produces0 with
     type self = i,
     type Item0.item = Item0.item
@@ -897,7 +897,7 @@ module C15Enumerate_Enumerate_Interface
     type t = borrowed i
   val enumerate [#"../15_enumerate.rs" 81 0 81 54] (iter : i) : C15Enumerate_Enumerate_Type.t_enumerate i
     requires {[#"../15_enumerate.rs" 79 0 79 75] forall i : borrowed i . Inv0.inv i -> Completed0.completed i -> Produces0.produces ( * i) (Seq.empty ) ( ^ i)}
-    requires {[#"../15_enumerate.rs" 80 0 80 93] forall i : i . Inv1.inv i -> (forall s : Seq.seq Item0.item . Produces0.produces iter s i -> Seq.length s < UIntSize.to_int Max0.mAX')}
+    requires {[#"../15_enumerate.rs" 80 0 80 93] forall i : i . forall s : Seq.seq Item0.item . Inv1.inv i -> Produces0.produces iter s i -> Seq.length s < UIntSize.to_int Max0.mAX'}
     requires {[#"../15_enumerate.rs" 81 30 81 34] Inv1.inv iter}
     ensures { [#"../15_enumerate.rs" 81 42 81 54] Inv2.inv result }
     
@@ -923,8 +923,8 @@ module C15Enumerate_Enumerate
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
   clone C15Enumerate_Impl1_Invariant as Invariant0 with
     type i = i,
-    predicate Inv0.inv = Inv1.inv,
     type Item0.item = Item0.item,
+    predicate Inv0.inv = Inv1.inv,
     predicate Produces0.produces = Produces0.produces,
     val Max0.mAX' = Max0.mAX',
     predicate Inv1.inv = Inv0.inv,
@@ -960,7 +960,7 @@ module C15Enumerate_Enumerate
     axiom .
   let rec cfg enumerate [#"../15_enumerate.rs" 81 0 81 54] [@cfg:stackify] [@cfg:subregion_analysis] (iter : i) : C15Enumerate_Enumerate_Type.t_enumerate i
     requires {[#"../15_enumerate.rs" 79 0 79 75] forall i : borrowed i . Inv0.inv i -> Completed0.completed i -> Produces0.produces ( * i) (Seq.empty ) ( ^ i)}
-    requires {[#"../15_enumerate.rs" 80 0 80 93] forall i : i . Inv1.inv i -> (forall s : Seq.seq Item0.item . Produces0.produces iter s i -> Seq.length s < UIntSize.to_int Max0.mAX')}
+    requires {[#"../15_enumerate.rs" 80 0 80 93] forall i : i . forall s : Seq.seq Item0.item . Inv1.inv i -> Produces0.produces iter s i -> Seq.length s < UIntSize.to_int Max0.mAX'}
     requires {[#"../15_enumerate.rs" 81 30 81 34] Inv1.inv iter}
     ensures { [#"../15_enumerate.rs" 81 42 81 54] Inv2.inv result }
     
@@ -1016,8 +1016,8 @@ module C15Enumerate_Impl0
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
   clone C15Enumerate_Impl1_Invariant as Invariant0 with
     type i = i,
-    predicate Inv0.inv = Inv3.inv,
     type Item0.item = Item0.item,
+    predicate Inv0.inv = Inv3.inv,
     predicate Produces0.produces = Produces1.produces,
     val Max0.mAX' = Max0.mAX',
     predicate Inv1.inv = Inv4.inv,

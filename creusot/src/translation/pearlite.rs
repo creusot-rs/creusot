@@ -383,56 +383,31 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 match pearlite_stub(self.ctx.tcx, f_ty) {
                     Some(Forall) => {
                         let (binder, body) = self.quant_term(args[0])?;
-                        let body = match type_invariant_term(
+                        if let Some(inv_term) = type_invariant_term(
                             self.ctx,
                             self.item_id.to_def_id(),
                             binder.0,
                             span,
                             binder.1.tuple_fields()[0],
                         ) {
-                            Some(inv_term) => Term {
-                                ty,
-                                span,
-                                kind: TermKind::Impl {
-                                    lhs: Box::new(inv_term),
-                                    rhs: Box::new(body),
-                                },
-                            },
-                            None => body,
-                        };
-
-                        Ok(Term {
-                            ty,
-                            span,
-                            kind: TermKind::Forall { binder, body: Box::new(body) },
-                        })
+                            Ok(body.guarded_forall(binder, inv_term).span(span))
+                        } else {
+                            Ok(body.forall(binder).span(span))
+                        }
                     }
                     Some(Exists) => {
                         let (binder, body) = self.quant_term(args[0])?;
-                        let body = match type_invariant_term(
+                        if let Some(inv_term) = type_invariant_term(
                             self.ctx,
                             self.item_id.to_def_id(),
                             binder.0,
                             span,
                             binder.1.tuple_fields()[0],
                         ) {
-                            Some(inv_term) => Term {
-                                ty,
-                                span,
-                                kind: TermKind::Binary {
-                                    op: BinOp::And,
-                                    lhs: Box::new(inv_term),
-                                    rhs: Box::new(body),
-                                },
-                            },
-                            None => body,
-                        };
-
-                        Ok(Term {
-                            ty,
-                            span,
-                            kind: TermKind::Exists { binder, body: Box::new(body) },
-                        })
+                            Ok(body.guarded_exists(binder, inv_term).span(span))
+                        } else {
+                            Ok(body.exists(binder).span(span))
+                        }
                     }
                     Some(Fin) => {
                         let term = self.expr_term(args[0])?;
@@ -1235,6 +1210,49 @@ impl<'tcx> Term<'tcx> {
             kind: TermKind::Forall { binder, body: Box::new(self) },
             span: DUMMY_SP,
         }
+    }
+
+    /// Creates a term like `forall<binder> guard ==> self`.
+    pub(crate) fn guarded_forall(mut self, binder: (Symbol, Ty<'tcx>), guard: Self) -> Self {
+        assert!(self.ty.is_bool() && guard.ty.is_bool());
+
+        let mut inner = &mut self;
+        while let TermKind::Forall { ref mut body, .. } = inner.kind {
+            // TODO check binder not free in guard
+            inner = body
+        }
+
+        *inner = guard.implies(inner.clone());
+        self.forall(binder)
+    }
+
+    pub(crate) fn exists(self, binder: (Symbol, Ty<'tcx>)) -> Self {
+        assert!(self.ty.is_bool());
+
+        // ∃ x . ⟘ = ⟘
+        if let TermKind::Lit(Literal::Bool(false)) = self.kind {
+            return self;
+        };
+
+        Term {
+            ty: self.ty,
+            kind: TermKind::Exists { binder, body: Box::new(self) },
+            span: DUMMY_SP,
+        }
+    }
+
+    /// Creates a term like `exists<binder> guard && self`.
+    pub(crate) fn guarded_exists(mut self, binder: (Symbol, Ty<'tcx>), guard: Self) -> Self {
+        assert!(self.ty.is_bool() && guard.ty.is_bool());
+
+        let mut inner = &mut self;
+        while let TermKind::Exists { ref mut body, .. } = inner.kind {
+            // TODO check binder not free in guard
+            inner = body
+        }
+
+        *inner = guard.conj(inner.clone());
+        self.exists(binder)
     }
 
     pub(crate) fn span(mut self, sp: Span) -> Self {
