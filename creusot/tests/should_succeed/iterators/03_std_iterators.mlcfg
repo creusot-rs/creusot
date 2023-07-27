@@ -2607,7 +2607,7 @@ module CreusotContracts_Std1_Iter_Skip_Impl2_Completed
     val Max0.mAX' = Max0.mAX',
     axiom .
   predicate completed (self : borrowed (Core_Iter_Adapters_Skip_Skip_Type.t_skip i)) =
-    [#"../../../../../creusot-contracts/src/std/iter/skip.rs" 45 8 53 9] N0.n ( ^ self) = 0 /\ (exists i : borrowed i . Inv0.inv i /\ (exists s : Seq.seq Item0.item . Seq.length s <= N0.n ( * self) /\ Produces0.produces (Iter0.iter ( * self)) s ( * i) /\ (forall i : int . 0 <= i /\ i < Seq.length s -> Resolve0.resolve (Seq.get s i)) /\ Completed0.completed i /\  ^ i = Iter0.iter ( ^ self)))
+    [#"../../../../../creusot-contracts/src/std/iter/skip.rs" 45 8 53 9] N0.n ( ^ self) = 0 /\ (exists i : borrowed i . exists s : Seq.seq Item0.item . Inv0.inv i /\ Seq.length s <= N0.n ( * self) /\ Produces0.produces (Iter0.iter ( * self)) s ( * i) /\ (forall i : int . 0 <= i /\ i < Seq.length s -> Resolve0.resolve (Seq.get s i)) /\ Completed0.completed i /\  ^ i = Iter0.iter ( ^ self))
   val completed (self : borrowed (Core_Iter_Adapters_Skip_Skip_Type.t_skip i)) : bool
     ensures { result = completed self }
     
@@ -3339,8 +3339,8 @@ module C03StdIterators_SkipTake
   clone CreusotContracts_Std1_Iter_Skip_Impl2_Completed as Completed0 with
     type i = Core_Iter_Adapters_Take_Take_Type.t_take i,
     function N0.n = N1.n,
-    predicate Inv0.inv = Inv5.inv,
     type Item0.item = Item0.item,
+    predicate Inv0.inv = Inv5.inv,
     function Iter0.iter = Iter1.iter,
     predicate Produces0.produces = Produces1.produces,
     predicate Resolve0.resolve = Resolve3.resolve,
@@ -3842,7 +3842,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl3_Preservation
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = i
   predicate preservation (iter : i) (func : f) =
-    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 151 8 158 9] forall i : i . Inv0.inv i -> (forall b : b . Inv1.inv b -> (forall f : borrowed f . Inv2.inv f -> (forall e2 : Item0.item . Inv3.inv e2 -> (forall e1 : Item0.item . Inv3.inv e1 -> (forall s : Seq.seq Item0.item . Unnest0.unnest func ( * f) -> Produces0.produces iter (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1, Ghost.new s) -> PostconditionMut0.postcondition_mut f (e1, Ghost.new s) b -> Precondition0.precondition ( ^ f) (e2, Ghost.new (Seq.snoc s e1)))))))
+    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 151 8 158 9] forall i : i . forall b : b . forall f : borrowed f . forall e2 : Item0.item . forall e1 : Item0.item . forall s : Seq.seq Item0.item . Inv0.inv i -> Inv1.inv b -> Inv2.inv f -> Inv3.inv e2 -> Inv3.inv e1 -> Unnest0.unnest func ( * f) -> Produces0.produces iter (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1, Ghost.new s) -> PostconditionMut0.postcondition_mut f (e1, Ghost.new s) b -> Precondition0.precondition ( ^ f) (e2, Ghost.new (Seq.snoc s e1))
   val preservation (iter : i) (func : f) : bool
     ensures { result = preservation iter func }
     
@@ -3928,7 +3928,7 @@ module CreusotContracts_Std1_Iter_Iterator_MapInv_Interface
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = self
   val map_inv (self : self) (func : f) : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv self Item0.item f
-    requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 42 4 42 138] forall i2 : self . Inv0.inv i2 -> (forall e : Item0.item . Inv1.inv e -> Produces0.produces self (Seq.singleton e) i2 -> Precondition0.precondition func (e, Ghost.new (Seq.empty )))}
+    requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 42 4 42 138] forall i2 : self . forall e : Item0.item . Inv0.inv i2 -> Inv1.inv e -> Produces0.produces self (Seq.singleton e) i2 -> Precondition0.precondition func (e, Ghost.new (Seq.empty ))}
     requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 43 15 43 51] Reinitialize0.reinitialize ()}
     requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 44 15 44 70] Preservation0.preservation self func}
     requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 47 21 47 25] Inv0.inv self}
@@ -4514,10 +4514,10 @@ module C03StdIterators_Counter
     predicate Unnest0.unnest = Closure00.unnest,
     predicate Precondition0.precondition = Closure00.precondition,
     predicate PostconditionMut0.postcondition_mut = Closure00.postcondition_mut,
+    type Item0.item = uint32,
     predicate Inv0.inv = Inv2.inv,
     predicate Inv1.inv = Inv8.inv,
     predicate Inv2.inv = Inv9.inv,
-    type Item0.item = uint32,
     predicate Inv3.inv = Inv3.inv,
     predicate Produces0.produces = Produces0.produces
   clone CreusotContracts_Std1_Iter_MapInv_Impl3_Reinitialize as Reinitialize0 with
@@ -4569,8 +4569,8 @@ module C03StdIterators_Counter
     type b = uint32,
     type f = Closure00.c03stditerators_counter_closure0,
     predicate Precondition0.precondition = Closure00.precondition,
-    predicate Inv0.inv = Inv2.inv,
     type Item0.item = uint32,
+    predicate Inv0.inv = Inv2.inv,
     predicate Inv1.inv = Inv3.inv,
     predicate Produces0.produces = Produces0.produces,
     predicate Reinitialize0.reinitialize = Reinitialize0.reinitialize,
