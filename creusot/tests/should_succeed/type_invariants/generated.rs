@@ -19,7 +19,16 @@ pub enum Foo<'a, T> {
     B(T),
 }
 
-#[requires(invariant::inv(x))]
 pub fn use_foo<'a>(x: Foo<'a, (Foo<'a, u32>, &'a mut Sum10)>) {
     proof_assert!(invariant::inv(x));
+}
+
+pub fn take_closure<T, F: FnOnce() -> T>(f: F) -> T {
+    f()
+}
+
+pub fn test_closure() {
+    let x = Sum10(3, 7);
+    let c = move || x;
+    take_closure(c);
 }

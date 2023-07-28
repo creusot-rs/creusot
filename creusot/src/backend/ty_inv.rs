@@ -7,7 +7,7 @@ use indexmap::IndexSet;
 use rustc_ast::Mutability;
 use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
-use rustc_middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{self, subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
 use why3::{
     declaration::{Axiom, Decl, Module, TyDecl},
@@ -24,6 +24,12 @@ pub(crate) enum TyInvKind {
     Adt(DefId),
     Tuple(usize),
     Slice,
+    Array(
+        #[type_visitable(ignore)]
+        #[type_foldable(identity)]
+        ty::ScalarInt,
+    ),
+    Closure(DefId),
 }
 
 impl TyInvKind {
@@ -37,6 +43,8 @@ impl TyInvKind {
             TyKind::Adt(adt_def, _) => TyInvKind::Adt(adt_def.did()),
             TyKind::Tuple(tys) => TyInvKind::Tuple(tys.len()),
             TyKind::Slice(_) => TyInvKind::Slice,
+            TyKind::Array(_, ct) => TyInvKind::Array(ct.to_valtree().unwrap_leaf()),
+            TyKind::Closure(def_id, _) => TyInvKind::Closure(*def_id),
             _ => TyInvKind::Trivial, // TODO
         }
     }
@@ -48,20 +56,30 @@ impl TyInvKind {
             TyInvKind::Borrow(Mutability::Not) => tcx.mk_imm_ref(tcx.lifetimes.re_erased, param),
             TyInvKind::Borrow(Mutability::Mut) => tcx.mk_mut_ref(tcx.lifetimes.re_erased, param),
             TyInvKind::Box => tcx.mk_box(param),
-            TyInvKind::Adt(did) => tcx.type_of(did).subst_identity(),
+            TyInvKind::Adt(did) | TyInvKind::Closure(did) => tcx.type_of(did).subst_identity(),
             TyInvKind::Tuple(arity) => tcx.mk_tup_from_iter(
                 (0..arity).map(|i| tcx.mk_ty_param(i as _, Symbol::intern(&format!("T{i}")))),
             ),
             TyInvKind::Slice => tcx.mk_slice(param),
+            TyInvKind::Array(len) => {
+                let ct = tcx.mk_const(ty::ValTree::from_scalar_int(len), tcx.types.usize);
+                tcx.mk_array_with_const_len(param, ct)
+            }
         }
     }
 
     pub(crate) fn generics(self, tcx: TyCtxt) -> Vec<Ident> {
         match self {
-            TyInvKind::Trivial | TyInvKind::Borrow(_) | TyInvKind::Box | TyInvKind::Slice => {
+            TyInvKind::Trivial
+            | TyInvKind::Borrow(_)
+            | TyInvKind::Box
+            | TyInvKind::Slice
+            | TyInvKind::Array(_) => {
                 vec!["t".into()]
             }
-            TyInvKind::Adt(def_id) => ty_param_names(tcx, def_id).collect(),
+            TyInvKind::Adt(def_id) | TyInvKind::Closure(def_id) => {
+                ty_param_names(tcx, def_id).collect()
+            }
             TyInvKind::Tuple(arity) => (0..arity).map(|i| format!["t{i}"].into()).collect(),
         }
     }
@@ -70,11 +88,17 @@ impl TyInvKind {
         match (self, ty.kind()) {
             (TyInvKind::Trivial, _) => tcx.mk_substs(&[GenericArg::from(ty)]),
             (TyInvKind::Borrow(_), TyKind::Ref(_, ty, _))
-            | (TyInvKind::Slice, TyKind::Slice(ty)) => tcx.mk_substs(&[GenericArg::from(*ty)]),
+            | (TyInvKind::Slice, TyKind::Slice(ty))
+            | (TyInvKind::Array(_), TyKind::Array(ty, _)) => {
+                tcx.mk_substs(&[GenericArg::from(*ty)])
+            }
             (TyInvKind::Box, TyKind::Adt(_, adt_substs)) => tcx.mk_substs(&adt_substs[..1]),
             (TyInvKind::Adt(_), TyKind::Adt(_, adt_substs)) => adt_substs,
             (TyInvKind::Tuple(_), TyKind::Tuple(tys)) => {
                 tcx.mk_substs_from_iter(tys.iter().map(GenericArg::from))
+            }
+            (TyInvKind::Closure(_), TyKind::Closure(_, substs)) => {
+                tcx.mk_substs(substs.as_closure().parent_substs())
             }
             _ => unreachable!(),
         }
@@ -93,10 +117,6 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
     ty: Ty<'tcx>,
     default_trivial: bool,
 ) -> bool {
-    if ty.is_closure() {
-        return true;
-    }
-
     // we cannot use a TypeWalker as it does not visit ADT field types
     let mut visited_adts = IndexSet::new();
     let mut stack = vec![ty];
@@ -108,7 +128,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
         }
 
         match ty.kind() {
-            TyKind::Ref(_, ty, _) | TyKind::Slice(ty) => stack.push(*ty),
+            TyKind::Ref(_, ty, _) | TyKind::Slice(ty) | TyKind::Array(ty, _) => stack.push(*ty),
             TyKind::Tuple(tys) => stack.extend(*tys),
             TyKind::Adt(def, substs) if def.is_box() => stack.push(substs.type_at(0)),
             TyKind::Adt(def, substs) => {
@@ -117,6 +137,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
                     stack.extend(def.all_fields().map(|f| f.ty(tcx, substs)))
                 }
             }
+            TyKind::Closure(_, substs) => stack.extend(substs.as_closure().upvar_tys()),
             _ => {}
         }
     }
@@ -156,12 +177,13 @@ fn build_inv_axiom<'tcx>(
         TyInvKind::Borrow(Mutability::Not) => "inv_borrow_shared".into(),
         TyInvKind::Borrow(Mutability::Mut) => "inv_borrow".into(),
         TyInvKind::Box => "inv_box".into(),
-        TyInvKind::Adt(did) => {
+        TyInvKind::Adt(did) | TyInvKind::Closure(did) => {
             let ty_name = util::item_name(ctx.tcx, did, Namespace::TypeNS);
             format!("inv_{}", &*ty_name).into()
         }
         TyInvKind::Tuple(arity) => format!("inv_tuple{arity}").into(),
         TyInvKind::Slice => "inv_slice".into(),
+        TyInvKind::Array(len) => format!("inv_array{len}").into(),
     };
 
     let param_env =
@@ -255,7 +277,7 @@ fn build_inv_exp_struct<'tcx>(
             let pattern = Pattern::TupleP(fields.into_iter().map(Pattern::VarP).collect());
             Some(Exp::Let { pattern, arg: Box::new(Exp::pure_var(ident)), body: Box::new(body) })
         }
-        TyKind::Slice(ty) => {
+        TyKind::Slice(ty) | TyKind::Array(ty, _) => {
             names.import_prelude_module(PreludeModule::Slice);
             let seq = Exp::pure_qvar(QName::from_string("Slice.id").unwrap())
                 .app_to(Exp::pure_var(ident));
@@ -293,7 +315,10 @@ fn build_inv_exp_struct<'tcx>(
         TyKind::Adt(adt_def, subst) if mode == Mode::Axiom => {
             build_inv_exp_adt(ctx, names, ident, param_env, *adt_def, subst)
         }
-        TyKind::Adt(_, _) | TyKind::Param(_) => {
+        TyKind::Closure(def_id, subst) if mode == Mode::Axiom => {
+            build_inv_exp_closure(ctx, names, ident, param_env, *def_id, subst)
+        }
+        TyKind::Adt(_, _) | TyKind::Closure(_, _) | TyKind::Param(_) => {
             let inv_fun = Exp::impure_qvar(names.ty_inv(ty));
             Some(inv_fun.app_to(Exp::pure_var(ident)))
         }
@@ -379,6 +404,33 @@ fn build_inv_exp_adt<'tcx>(
     } else {
         Exp::Match(Box::new(Exp::pure_var(ident)), branches)
     };
+
+    (!trivial).then(|| exp)
+}
+
+fn build_inv_exp_closure<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    ident: Ident,
+    param_env: ParamEnv<'tcx>,
+    def_id: DefId,
+    subst: SubstsRef<'tcx>,
+) -> Option<Exp> {
+    let closure = subst.as_closure();
+
+    let mut exp = Exp::mk_true();
+    let mut trivial = true;
+    for (i, ty) in closure.upvar_tys().enumerate() {
+        if let Some(mut inv_exp) = build_inv_exp(ctx, names, "a".into(), ty, param_env, Mode::Field)
+        {
+            let acc = names.accessor(def_id, subst, 0, i.into());
+            let acc = Exp::impure_qvar(acc).app(vec![Exp::pure_var(ident.clone())]);
+            inv_exp.subst(&[("a".into(), acc)].into());
+
+            exp = exp.log_and(inv_exp);
+            trivial = false;
+        }
+    }
 
     (!trivial).then(|| exp)
 }

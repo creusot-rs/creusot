@@ -243,9 +243,12 @@ pub(crate) fn inv_module_name(tcx: TyCtxt, kind: TyInvKind) -> Ident {
         TyInvKind::Borrow(Mutability::Not) => "TyInv_Borrow_Shared".into(),
         TyInvKind::Borrow(Mutability::Mut) => "TyInv_Borrow".into(),
         TyInvKind::Box => "TyInv_Box".into(),
-        TyInvKind::Adt(adt_did) => format!("{}_Inv", &*ident_path(tcx, adt_did)).into(),
+        TyInvKind::Adt(did) | TyInvKind::Closure(did) => {
+            format!("{}_Inv", &*ident_path(tcx, did)).into()
+        }
         TyInvKind::Tuple(arity) => format!("TyInv_Tuple{arity}").into(),
         TyInvKind::Slice => format!("TyInv_Slice").into(),
+        TyInvKind::Array(len) => format!("TyInv_Array{len}").into(),
     }
 }
 

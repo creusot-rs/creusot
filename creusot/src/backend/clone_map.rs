@@ -452,6 +452,10 @@ impl<'tcx> CloneMap<'tcx> {
             return;
         }
 
+        if let TransId::Item(self_did) = self.self_id && let TyInvKind::Closure(inv_did) = inv_kind && self_did == inv_did {
+            return;
+        }
+
         ctx.translate_tyinv(inv_kind);
         self.insert(DepNode::TyInv(ty, inv_kind));
     }
@@ -879,7 +883,7 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, dep: DepNode<'tcx>) -> Option<Symb
             ty::ImplContainer => None,
         },
         Trait | Impl => unreachable!("trait blocks have no refinable symbols"),
-        Type => None,
+        Type | Closure => None,
         Constant => Some(SymbolKind::Const(tcx.item_name(def_id))),
         _ => unreachable!(),
     }

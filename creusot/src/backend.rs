@@ -223,8 +223,8 @@ impl<'tcx> Why3Generator<'tcx> {
             return;
         }
 
-        if let TyInvKind::Adt(adt_did) = inv_kind {
-            self.translate(adt_did);
+        if let TyInvKind::Adt(did) | TyInvKind::Closure(did) = inv_kind {
+            self.translate(did);
         }
 
         let (modl, deps) = ty_inv::build_inv_module(self, inv_kind);
