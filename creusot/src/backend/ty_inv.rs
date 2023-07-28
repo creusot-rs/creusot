@@ -30,6 +30,7 @@ pub(crate) enum TyInvKind {
         ty::ScalarInt,
     ),
     Closure(DefId),
+    Never,
 }
 
 impl TyInvKind {
@@ -45,6 +46,7 @@ impl TyInvKind {
             TyKind::Slice(_) => TyInvKind::Slice,
             TyKind::Array(_, ct) => TyInvKind::Array(ct.to_valtree().unwrap_leaf()),
             TyKind::Closure(def_id, _) => TyInvKind::Closure(*def_id),
+            TyKind::Never => TyInvKind::Never,
             _ => TyInvKind::Trivial, // TODO
         }
     }
@@ -65,6 +67,7 @@ impl TyInvKind {
                 let ct = tcx.mk_const(ty::ValTree::from_scalar_int(len), tcx.types.usize);
                 tcx.mk_array_with_const_len(param, ct)
             }
+            TyInvKind::Never => tcx.types.never,
         }
     }
 
@@ -81,6 +84,7 @@ impl TyInvKind {
                 ty_param_names(tcx, def_id).collect()
             }
             TyInvKind::Tuple(arity) => (0..arity).map(|i| format!["t{i}"].into()).collect(),
+            TyInvKind::Never => vec![],
         }
     }
 
@@ -100,6 +104,7 @@ impl TyInvKind {
             (TyInvKind::Closure(_), TyKind::Closure(_, substs)) => {
                 tcx.mk_substs(substs.as_closure().parent_substs())
             }
+            (TyInvKind::Never, TyKind::Never) => tcx.mk_substs(&[]),
             _ => unreachable!(),
         }
     }
@@ -138,6 +143,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
                 }
             }
             TyKind::Closure(_, substs) => stack.extend(substs.as_closure().upvar_tys()),
+            TyKind::Never => return false,
             _ => {}
         }
     }
@@ -184,6 +190,7 @@ fn build_inv_axiom<'tcx>(
         TyInvKind::Tuple(arity) => format!("inv_tuple{arity}").into(),
         TyInvKind::Slice => "inv_slice".into(),
         TyInvKind::Array(len) => format!("inv_array{len}").into(),
+        TyInvKind::Never => "inv_never".into(),
     };
 
     let param_env =
@@ -318,6 +325,7 @@ fn build_inv_exp_struct<'tcx>(
         TyKind::Closure(def_id, subst) if mode == Mode::Axiom => {
             build_inv_exp_closure(ctx, names, ident, param_env, *def_id, subst)
         }
+        TyKind::Never => Some(Exp::mk_false()),
         TyKind::Adt(_, _) | TyKind::Closure(_, _) | TyKind::Param(_) => {
             let inv_fun = Exp::impure_qvar(names.ty_inv(ty));
             Some(inv_fun.app_to(Exp::pure_var(ident)))
