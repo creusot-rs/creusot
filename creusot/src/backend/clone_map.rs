@@ -445,6 +445,15 @@ impl<'tcx> CloneMap<'tcx> {
         let inv_kind = if ty_inv::is_tyinv_trivial(ctx.tcx, param_env, ty, true) {
             TyInvKind::Trivial
         } else {
+            if let TyKind::Array(_, ct) = ty.kind() {
+                let ty::ConstKind::Value(ty::ValTree::Leaf(_)) = ct.kind() else {
+                    ctx.crash_and_error(
+                        DUMMY_SP,
+                        "type invariants for arrays with generic length are not supported!",
+                    );
+                };
+            }
+
             TyInvKind::from_ty(ty)
         };
 
