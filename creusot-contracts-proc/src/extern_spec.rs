@@ -339,6 +339,9 @@ fn escape_self_in_term(t: &mut Term) {
                 escape_self_in_term(to);
             }
         }
+        Term::Reference(TermReference { expr, .. }) => {
+            escape_self_in_term(expr);
+        }
         Term::Repeat(TermRepeat { expr, len, .. }) => {
             escape_self_in_term(expr);
             escape_self_in_term(len);

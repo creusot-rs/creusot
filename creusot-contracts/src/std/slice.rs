@@ -247,10 +247,10 @@ extern_spec! {
         #[ensures({
             let (l,r) = result;  let sl = self@.len();
             ((^self)@.len() == sl) &&
-            self@.subsequence(0, mid@).ext_eq(l@) &&
-            self@.subsequence(mid@, sl).ext_eq(r@) &&
-            (^self)@.subsequence(0, mid@).ext_eq((^l)@) &&
-            (^self)@.subsequence(mid@, sl).ext_eq((^r)@)
+            self@.subsequence(0, mid@) == l@ &&
+            self@.subsequence(mid@, sl) == r@ &&
+            (^self)@.subsequence(0, mid@) == (^l)@ &&
+            (^self)@.subsequence(mid@, sl) == (^r)@
         })]
         fn split_at_mut(&mut self, mid: usize) -> (&mut [T], &mut [T]);
 

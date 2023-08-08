@@ -122,7 +122,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             let index = encode_term(index)?;
 
             Ok(quote! {
-                ::creusot_contracts::logic::IndexLogic::index_logic(#expr, #index)
+                (#expr).index_logic(#index)
             })
         }
         RT::Let(_) => Err(EncodeError::Unsupported(term.span(), "Let".into())),
@@ -150,6 +150,12 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         }
         RT::Path(_) => Ok(quote_spanned! {sp=> #term }),
         RT::Range(_) => Err(EncodeError::Unsupported(term.span(), "Range".into())),
+        RT::Reference(TermReference { mutability, expr, .. }) => {
+            let term = encode_term(expr)?;
+            Ok(quote! {
+                & #mutability #term
+            })
+        }
         RT::Repeat(_) => Err(EncodeError::Unsupported(term.span(), "Repeat".into())),
         RT::Struct(TermStruct { path, fields, rest, brace_token, dot2_token }) => {
             let mut ts = TokenStream::new();
