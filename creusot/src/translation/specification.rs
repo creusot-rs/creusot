@@ -304,6 +304,7 @@ pub(crate) fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
         || def_path.ends_with("::ops::Neg::neg")
         || def_path.ends_with("::boxed::Box::<T>::new")
         || def_path.ends_with("::ops::Deref::deref")
+        || def_path.ends_with("::ops::DerefMut::deref_mut")
         || def_path.ends_with("Ghost::<T>::from_fn")
 }
 

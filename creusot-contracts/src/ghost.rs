@@ -11,6 +11,7 @@ impl<T: ?Sized> Deref for Ghost<T> {
     #[trusted]
     #[ghost]
     #[open(self)]
+    #[rustc_diagnostic_item = "ghost_deref"]
     #[creusot::builtins = "prelude.Ghost.inner"]
     fn deref(&self) -> &Self::Target {
         pearlite! { absurd }
@@ -47,6 +48,7 @@ impl<T: ?Sized> Ghost<T> {
     #[trusted]
     #[ghost]
     #[open(self)]
+    #[rustc_diagnostic_item = "ghost_inner"]
     #[creusot::builtins = "prelude.Ghost.inner"]
     pub fn inner(self) -> T
     where
