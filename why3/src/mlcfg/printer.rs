@@ -662,11 +662,6 @@ impl Print for Exp {
                     " ",
                 ))
             }),
-
-            Exp::BorrowMut(box exp) => {
-                alloc.text("borrow_mut ").append(parens!(alloc, env, self.precedence().next(), exp))
-            }
-
             Exp::Const(c) => c.pretty(alloc, env),
 
             Exp::UnaryOp(UnOp::Not, box op) => {

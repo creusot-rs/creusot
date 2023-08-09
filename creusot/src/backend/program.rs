@@ -631,7 +631,10 @@ impl<'tcx> Statement<'tcx> {
     ) -> Vec<mlcfg::Statement> {
         match self {
             Statement::Assignment(lhs, RValue::Borrow(rhs)) => {
-                let borrow = Exp::BorrowMut(Box::new(rhs.as_rplace(ctx, names, locals)));
+                let borrow = Exp::Call(
+                    Box::new(Exp::impure_qvar(QName::from_string("Borrow.borrow_mut").unwrap())),
+                    vec![rhs.as_rplace(ctx, names, locals)],
+                );
                 let reassign = Exp::Final(Box::new(lhs.as_rplace(ctx, names, locals)));
 
                 vec![
