@@ -5,19 +5,7 @@ mod common;
 use common::Iterator;
 
 pub struct Fuse<I: Iterator> {
-    // Either it's an actual iterator or
-    // it's the ghost of the last iterator *spooky*
-    iter: Result<I, Ghost<I>>,
-}
-
-impl<I: Iterator> Fuse<I> {
-    #[ghost]
-    fn inner(self) -> I {
-        match self.iter {
-            Ok(i) => i,
-            Err(gi) => *gi,
-        }
-    }
+    iter: Option<I>,
 }
 
 impl<I: Iterator> Iterator for Fuse<I> {
@@ -26,15 +14,18 @@ impl<I: Iterator> Iterator for Fuse<I> {
     #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { exists<x :_> (^self).iter == Err(x) }
+        pearlite! { (^self).iter == None }
     }
 
     #[open]
     #[predicate]
     fn produces(self, prod: Seq<Self::Item>, other: Self) -> bool {
         match self.iter {
-            Err(_) => prod == Seq::EMPTY && other.iter == self.iter,
-            Ok(i) => i.produces(prod, other.inner()),
+            None => prod == Seq::EMPTY && other.iter == self.iter,
+            Some(i) => match other.iter {
+                Some(i2) => i.produces(prod, i2),
+                None => false,
+            },
         }
     }
 
@@ -44,10 +35,10 @@ impl<I: Iterator> Iterator for Fuse<I> {
     })]
     fn next(&mut self) -> Option<Self::Item> {
         match &mut self.iter {
-            Err(_) => None,
-            Ok(iter) => match iter.next() {
+            None => None,
+            Some(iter) => match iter.next() {
                 None => {
-                    self.iter = Err(gh! { *iter });
+                    self.iter = None;
                     None
                 }
                 x => x,
