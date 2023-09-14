@@ -42,6 +42,7 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
             type DeepModelTy = #deep_model_ty_name;
 
             #[ghost]
+            #[open(self)]
             fn deep_model(self) -> Self::DeepModelTy {
                 #eq
             }
