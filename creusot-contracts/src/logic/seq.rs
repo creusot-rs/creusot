@@ -144,6 +144,16 @@ impl<T> Seq<T> {
     }
 }
 
+impl<'a, T> Seq<&'a T> {
+    #[ghost]
+    #[open(self)]
+    #[ensures(result.len() == self.len())]
+    #[ensures(forall<i : _> 0 <= i && i < self.len() ==> *self[i] == result[i])]
+    pub fn to_owned(self) -> Seq<T> {
+        pearlite! { absurd }
+    }
+}
+
 impl<T> IndexLogic<Int> for Seq<T> {
     type Item = T;
 
