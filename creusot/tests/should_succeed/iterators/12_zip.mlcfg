@@ -222,6 +222,12 @@ module C12Zip_Common_Iterator_ProducesTrans
     
   axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 18 15 18 32] Produces0.produces a ab b) -> ([#"../common.rs" 19 15 19 32] Produces0.produces b bc c) -> ([#"../common.rs" 21 22 21 23] Inv0.inv a) -> ([#"../common.rs" 21 52 21 53] Inv0.inv b) -> ([#"../common.rs" 21 82 21 83] Inv0.inv c) -> ([#"../common.rs" 20 14 20 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module C12Zip_Impl0_Produces_Stub
   type i
   type j
@@ -356,10 +362,20 @@ module C12Zip_Impl0_ProducesRefl_Impl
   type i
   type j
   use seq.Seq
-  clone C12Zip_Common_Iterator_Item_Type as Item1 with
-    type self = j
   clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
     type t = j
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = j,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = i
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = i,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone C12Zip_Common_Iterator_Item_Type as Item1 with
+    type self = j
   clone C12Zip_Common_Iterator_Produces_Interface as Produces2 with
     type self = j,
     type Item0.item = Item1.item
@@ -377,8 +393,6 @@ module C12Zip_Impl0_ProducesRefl_Impl
     axiom .
   clone C12Zip_Common_Iterator_Item_Type as Item0 with
     type self = i
-  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
-    type t = i
   clone C12Zip_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
     type Item0.item = Item0.item
@@ -503,8 +517,16 @@ module C12Zip_Impl0_ProducesTrans_Impl
   use seq.Seq
   clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
     type t = j
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = j,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = i
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = i,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
   clone C12Zip_Common_Iterator_Item_Type as Item1 with
     type self = j
   clone C12Zip_Common_Iterator_Produces_Interface as Produces2 with
@@ -648,16 +670,16 @@ module C12Zip_Common_Iterator_Next_Interface
   type self
   use prelude.Borrow
   use seq.Seq
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = self
   clone C12Zip_Common_Iterator_Item_Type as Item0 with
     type self = self
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Option_Option_Type.t_option Item0.item
   clone C12Zip_Common_Iterator_Produces_Stub as Produces0 with
     type self = self,
     type Item0.item = Item0.item
   clone C12Zip_Common_Iterator_Completed_Stub as Completed0 with
     type self = self
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = borrowed self
   val next [#"../common.rs" 27 4 27 45] (self : borrowed self) : Core_Option_Option_Type.t_option Item0.item
@@ -666,7 +688,7 @@ module C12Zip_Common_Iterator_Next_Interface
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
-    ensures { [#"../common.rs" 27 17 27 21] Inv1.inv ( ^ self) }
+    ensures { [#"../common.rs" 27 26 27 44] Inv1.inv result }
     
 end
 module TyInv_Borrow
@@ -676,7 +698,7 @@ module TyInv_Borrow
     type t = t
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = borrowed t
-  axiom inv_borrow [@rewrite] : forall self : borrowed t . Inv0.inv self = Inv1.inv ( * self)
+  axiom inv_borrow [@rewrite] : forall self : borrowed t . Inv0.inv self = (Inv1.inv ( * self) /\ Inv1.inv ( ^ self))
 end
 module C12Zip_Impl0_Next_Interface
   type i
@@ -684,12 +706,13 @@ module C12Zip_Impl0_Next_Interface
   use prelude.Borrow
   use seq.Seq
   use C12Zip_Zip_Type as C12Zip_Zip_Type
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = C12Zip_Zip_Type.t_zip i j
   clone C12Zip_Common_Iterator_Item_Type as Item1 with
     type self = j
   clone C12Zip_Common_Iterator_Item_Type as Item0 with
     type self = i
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Core_Option_Option_Type.t_option (Item0.item, Item1.item)
   clone C12Zip_Impl0_Produces_Stub as Produces0 with
     type i = i,
     type j = j,
@@ -698,7 +721,6 @@ module C12Zip_Impl0_Next_Interface
   clone C12Zip_Impl0_Completed_Stub as Completed0 with
     type i = i,
     type j = j
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = borrowed (C12Zip_Zip_Type.t_zip i j)
   val next [#"../12_zip.rs" 50 4 50 44] (self : borrowed (C12Zip_Zip_Type.t_zip i j)) : Core_Option_Option_Type.t_option (Item0.item, Item1.item)
@@ -707,7 +729,7 @@ module C12Zip_Impl0_Next_Interface
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
-    ensures { [#"../12_zip.rs" 50 17 50 21] Inv1.inv ( ^ self) }
+    ensures { [#"../12_zip.rs" 50 26 50 44] Inv1.inv result }
     
 end
 module C12Zip_Impl0_Next
@@ -715,50 +737,74 @@ module C12Zip_Impl0_Next
   type j
   use prelude.Borrow
   use seq.Seq
-  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
-    type t = j
-  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
-    type t = borrowed j
-  clone TyInv_Borrow as TyInv_Borrow2 with
-    type t = j,
-    predicate Inv0.inv = Inv4.inv,
-    predicate Inv1.inv = Inv5.inv,
-    axiom .
-  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
-    type t = i
-  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
-    type t = borrowed i
-  clone TyInv_Borrow as TyInv_Borrow1 with
-    type t = i,
-    predicate Inv0.inv = Inv2.inv,
-    predicate Inv1.inv = Inv3.inv,
-    axiom .
-  use C12Zip_Zip_Type as C12Zip_Zip_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = j
+  use C12Zip_Zip_Type as C12Zip_Zip_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = i
+  clone CreusotContracts_Invariant_Inv_Interface as Inv9 with
     type t = C12Zip_Zip_Type.t_zip i j
   clone C12Zip_Zip_Type_Inv as C12Zip_Zip_Type_Inv0 with
     type i = i,
     type j = j,
-    predicate Inv0.inv = Inv1.inv,
-    predicate Inv1.inv = Inv3.inv,
-    predicate Inv2.inv = Inv5.inv,
-    axiom .
-  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
-    type t = borrowed (C12Zip_Zip_Type.t_zip i j)
-  clone TyInv_Borrow as TyInv_Borrow0 with
-    type t = C12Zip_Zip_Type.t_zip i j,
-    predicate Inv0.inv = Inv0.inv,
-    predicate Inv1.inv = Inv1.inv,
+    predicate Inv0.inv = Inv9.inv,
+    predicate Inv1.inv = Inv0.inv,
+    predicate Inv2.inv = Inv1.inv,
     axiom .
   clone C12Zip_Common_Iterator_Item_Type as Item1 with
     type self = j
   use Core_Option_Option_Type as Core_Option_Option_Type
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve3 with
-    type self = Core_Option_Option_Type.t_option Item1.item
+  clone CreusotContracts_Invariant_Inv_Interface as Inv8 with
+    type t = Core_Option_Option_Type.t_option Item1.item
+  clone TyInv_Trivial as TyInv_Trivial5 with
+    type t = Core_Option_Option_Type.t_option Item1.item,
+    predicate Inv0.inv = Inv8.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv7 with
+    type t = borrowed j
+  clone TyInv_Borrow as TyInv_Borrow2 with
+    type t = j,
+    predicate Inv0.inv = Inv7.inv,
+    predicate Inv1.inv = Inv1.inv,
+    axiom .
   clone C12Zip_Common_Iterator_Item_Type as Item0 with
     type self = i
+  clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
+    type t = Core_Option_Option_Type.t_option Item0.item
+  clone TyInv_Trivial as TyInv_Trivial4 with
+    type t = Core_Option_Option_Type.t_option Item0.item,
+    predicate Inv0.inv = Inv6.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+    type t = borrowed i
+  clone TyInv_Borrow as TyInv_Borrow1 with
+    type t = i,
+    predicate Inv0.inv = Inv5.inv,
+    predicate Inv1.inv = Inv0.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+    type t = Core_Option_Option_Type.t_option (Item0.item, Item1.item)
+  clone TyInv_Trivial as TyInv_Trivial3 with
+    type t = Core_Option_Option_Type.t_option (Item0.item, Item1.item),
+    predicate Inv0.inv = Inv4.inv,
+    axiom .
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve3 with
+    type self = Core_Option_Option_Type.t_option Item1.item
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
     type self = Core_Option_Option_Type.t_option Item0.item
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = (Core_Option_Option_Type.t_option Item0.item, Core_Option_Option_Type.t_option Item1.item)
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = (Core_Option_Option_Type.t_option Item0.item, Core_Option_Option_Type.t_option Item1.item),
+    predicate Inv0.inv = Inv3.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = borrowed (C12Zip_Zip_Type.t_zip i j)
+  clone TyInv_Borrow as TyInv_Borrow0 with
+    type t = C12Zip_Zip_Type.t_zip i j,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv9.inv,
+    axiom .
   clone C12Zip_Common_Iterator_Produces_Interface as Produces2 with
     type self = j,
     type Item0.item = Item1.item
@@ -767,14 +813,18 @@ module C12Zip_Impl0_Next
   clone C12Zip_Common_Iterator_ProducesTrans_Interface as ProducesTrans1 with
     type self = j,
     predicate Produces0.produces = Produces2.produces,
-    predicate Inv0.inv = Inv5.inv,
+    predicate Inv0.inv = Inv1.inv,
     type Item0.item = Item1.item,
     axiom .
   clone C12Zip_Common_Iterator_ProducesRefl_Interface as ProducesRefl1 with
     type self = j,
-    predicate Inv0.inv = Inv5.inv,
+    predicate Inv0.inv = Inv1.inv,
     predicate Produces0.produces = Produces2.produces,
     type Item0.item = Item1.item,
+    axiom .
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = j,
+    predicate Inv0.inv = Inv1.inv,
     axiom .
   clone C12Zip_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
@@ -784,14 +834,18 @@ module C12Zip_Impl0_Next
   clone C12Zip_Common_Iterator_ProducesTrans_Interface as ProducesTrans0 with
     type self = i,
     predicate Produces0.produces = Produces1.produces,
-    predicate Inv0.inv = Inv3.inv,
+    predicate Inv0.inv = Inv0.inv,
     type Item0.item = Item0.item,
     axiom .
   clone C12Zip_Common_Iterator_ProducesRefl_Interface as ProducesRefl0 with
     type self = i,
-    predicate Inv0.inv = Inv3.inv,
+    predicate Inv0.inv = Inv0.inv,
     predicate Produces0.produces = Produces1.produces,
     type Item0.item = Item0.item,
+    axiom .
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = i,
+    predicate Inv0.inv = Inv0.inv,
     axiom .
   clone C12Zip_Impl0_Produces as Produces0 with
     type i = i,
@@ -810,35 +864,37 @@ module C12Zip_Impl0_Next
     type t2 = Core_Option_Option_Type.t_option Item1.item,
     predicate Resolve0.resolve = Resolve2.resolve,
     predicate Resolve1.resolve = Resolve3.resolve
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = C12Zip_Zip_Type.t_zip i j
   clone C12Zip_Common_Iterator_Next_Interface as Next1 with
     type self = j,
-    predicate Inv0.inv = Inv4.inv,
+    predicate Inv0.inv = Inv7.inv,
     type Item0.item = Item1.item,
     predicate Completed0.completed = Completed2.completed,
     predicate Produces0.produces = Produces2.produces,
-    predicate Inv1.inv = Inv5.inv
+    predicate Inv1.inv = Inv8.inv
   clone C12Zip_Common_Iterator_Next_Interface as Next0 with
     type self = i,
-    predicate Inv0.inv = Inv2.inv,
+    predicate Inv0.inv = Inv5.inv,
     type Item0.item = Item0.item,
     predicate Completed0.completed = Completed1.completed,
     predicate Produces0.produces = Produces1.produces,
-    predicate Inv1.inv = Inv3.inv
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = C12Zip_Zip_Type.t_zip i j
+    predicate Inv1.inv = Inv6.inv
   let rec cfg next [#"../12_zip.rs" 50 4 50 44] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (C12Zip_Zip_Type.t_zip i j)) : Core_Option_Option_Type.t_option (Item0.item, Item1.item)
-    requires {[#"../12_zip.rs" 50 17 50 21] Inv0.inv self}
+    requires {[#"../12_zip.rs" 50 17 50 21] Inv2.inv self}
     ensures { [#"../12_zip.rs" 46 14 49 5] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
-    ensures { [#"../12_zip.rs" 50 17 50 21] Inv1.inv ( ^ self) }
+    ensures { [#"../12_zip.rs" 50 26 50 44] Inv4.inv result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Option_Option_Type.t_option (Item0.item, Item1.item);
   var self : borrowed (C12Zip_Zip_Type.t_zip i j) = self;
   var _3 : (Core_Option_Option_Type.t_option Item0.item, Core_Option_Option_Type.t_option Item1.item);
+  var _4 : Core_Option_Option_Type.t_option Item0.item;
   var _5 : borrowed i;
+  var _6 : Core_Option_Option_Type.t_option Item1.item;
   var _7 : borrowed j;
   var i1 : Item0.item;
   var i2 : Item1.item;
@@ -846,20 +902,27 @@ module C12Zip_Impl0_Next
     goto BB0
   }
   BB0 {
-    _5 <- borrow_mut (C12Zip_Zip_Type.zip_iter1 ( * self));
+    _5 <- Borrow.borrow_mut (C12Zip_Zip_Type.zip_iter1 ( * self));
     self <- { self with current = (let C12Zip_Zip_Type.C_Zip a b =  * self in C12Zip_Zip_Type.C_Zip ( ^ _5) b) };
+    assume { Inv0.inv ( ^ _5) };
+    _4 <- ([#"../12_zip.rs" 51 15 51 32] Next0.next _5);
+    _5 <- any borrowed i;
     goto BB1
   }
   BB1 {
-    _7 <- borrow_mut (C12Zip_Zip_Type.zip_iter2 ( * self));
+    _7 <- Borrow.borrow_mut (C12Zip_Zip_Type.zip_iter2 ( * self));
     self <- { self with current = (let C12Zip_Zip_Type.C_Zip a b =  * self in C12Zip_Zip_Type.C_Zip a ( ^ _7)) };
+    assume { Inv1.inv ( ^ _7) };
+    _6 <- ([#"../12_zip.rs" 51 34 51 51] Next1.next _7);
+    _7 <- any borrowed j;
     goto BB2
   }
   BB2 {
+    assert { [@expl:type invariant] Inv2.inv self };
     assume { Resolve0.resolve self };
-    _3 <- ([#"../12_zip.rs" 51 15 51 32] Next0.next _5, [#"../12_zip.rs" 51 34 51 51] Next1.next _7);
-    _5 <- any borrowed i;
-    _7 <- any borrowed j;
+    _3 <- (_4, _6);
+    _4 <- any Core_Option_Option_Type.t_option Item0.item;
+    _6 <- any Core_Option_Option_Type.t_option Item1.item;
     goto BB3
   }
   BB3 {
@@ -872,6 +935,7 @@ module C12Zip_Impl0_Next
       end
   }
   BB5 {
+    assert { [@expl:type invariant] Inv3.inv _3 };
     assume { Resolve1.resolve _3 };
     _0 <- Core_Option_Option_Type.C_None;
     goto BB14
@@ -890,6 +954,7 @@ module C12Zip_Impl0_Next
     _3 <- (let (a, b) = _3 in (let Core_Option_Option_Type.C_Some a = let (a, _) = _3 in a in Core_Option_Option_Type.C_Some (any Item0.item), b));
     i2 <- Core_Option_Option_Type.some_0 (let (_, a) = _3 in a);
     _3 <- (let (a, b) = _3 in (a, let Core_Option_Option_Type.C_Some a = let (_, a) = _3 in a in Core_Option_Option_Type.C_Some (any Item1.item)));
+    assert { [@expl:type invariant] Inv3.inv _3 };
     assume { Resolve1.resolve _3 };
     goto BB9
   }
@@ -922,46 +987,65 @@ end
 module C12Zip_Impl0
   type i
   type j
-  use prelude.Borrow
   use seq.Seq
-  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
     type t = j
-  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = j,
+    predicate Inv0.inv = Inv4.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
     type t = i
-  clone C12Zip_Common_Iterator_Item_Type as Item1 with
-    type self = j
-  clone C12Zip_Common_Iterator_Produces_Interface as Produces2 with
-    type self = j,
-    type Item0.item = Item1.item
-  clone C12Zip_Common_Iterator_Item_Type as Item0 with
-    type self = i
-  clone C12Zip_Common_Iterator_Produces_Interface as Produces1 with
-    type self = i,
-    type Item0.item = Item0.item
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = i,
+    predicate Inv0.inv = Inv3.inv,
+    axiom .
   clone C12Zip_Common_Iterator_Completed_Interface as Completed2 with
     type self = j
   clone C12Zip_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
-  use C12Zip_Zip_Type as C12Zip_Zip_Type
-  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
-    type t = C12Zip_Zip_Type.t_zip i j
-  clone C12Zip_Zip_Type_Inv as C12Zip_Zip_Type_Inv0 with
-    type i = i,
-    type j = j,
-    predicate Inv0.inv = Inv1.inv,
-    predicate Inv1.inv = Inv2.inv,
-    predicate Inv2.inv = Inv3.inv,
+  clone C12Zip_Common_Iterator_Item_Type as Item1 with
+    type self = j
+  clone C12Zip_Common_Iterator_Item_Type as Item0 with
+    type self = i
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option (Item0.item, Item1.item)
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option (Item0.item, Item1.item),
+    predicate Inv0.inv = Inv2.inv,
     axiom .
+  use C12Zip_Zip_Type as C12Zip_Zip_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = C12Zip_Zip_Type.t_zip i j
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = borrowed (C12Zip_Zip_Type.t_zip i j)
   clone TyInv_Borrow as TyInv_Borrow0 with
     type t = C12Zip_Zip_Type.t_zip i j,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv0.inv,
+    axiom .
+  clone C12Zip_Common_Iterator_Produces_Interface as Produces2 with
+    type self = j,
+    type Item0.item = Item1.item
+  clone C12Zip_Common_Iterator_Produces_Interface as Produces1 with
+    type self = i,
+    type Item0.item = Item0.item
+  clone C12Zip_Zip_Type_Inv as C12Zip_Zip_Type_Inv0 with
+    type i = i,
+    type j = j,
     predicate Inv0.inv = Inv0.inv,
-    predicate Inv1.inv = Inv1.inv,
+    predicate Inv1.inv = Inv3.inv,
+    predicate Inv2.inv = Inv4.inv,
     axiom .
   clone C12Zip_Common_Iterator_Item_Type as Item2 with
     type self = C12Zip_Zip_Type.t_zip i j
-  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone C12Zip_Impl0_Completed as Completed0 with
+    type i = i,
+    type j = j,
+    predicate Completed0.completed = Completed1.completed,
+    predicate Completed1.completed = Completed2.completed
   clone C12Zip_Impl0_Produces as Produces0 with
     type i = i,
     type j = j,
@@ -969,20 +1053,15 @@ module C12Zip_Impl0
     type Item1.item = Item1.item,
     predicate Produces0.produces = Produces1.produces,
     predicate Produces1.produces = Produces2.produces
-  clone C12Zip_Impl0_Completed as Completed0 with
-    type i = i,
-    type j = j,
-    predicate Completed0.completed = Completed1.completed,
-    predicate Completed1.completed = Completed2.completed
-  goal next_refn : [#"../12_zip.rs" 50 4 50 44] forall self : borrowed (C12Zip_Zip_Type.t_zip i j) . Inv0.inv self -> Inv0.inv self /\ (forall result : Core_Option_Option_Type.t_option (Item0.item, Item1.item) . Inv1.inv ( ^ self) /\ match (result) with
+  goal produces_refl_refn : [#"../12_zip.rs" 37 4 37 29] forall a : C12Zip_Zip_Type.t_zip i j . Inv0.inv a -> Inv0.inv a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
+  goal produces_trans_refn : [#"../12_zip.rs" 44 4 44 90] forall a : C12Zip_Zip_Type.t_zip i j . forall ab : Seq.seq (Item0.item, Item1.item) . forall b : C12Zip_Zip_Type.t_zip i j . forall bc : Seq.seq (Item0.item, Item1.item) . forall c : C12Zip_Zip_Type.t_zip i j . Inv0.inv c /\ Inv0.inv b /\ Inv0.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Inv0.inv c /\ Inv0.inv b /\ Inv0.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
+  goal next_refn : [#"../12_zip.rs" 50 4 50 44] forall self : borrowed (C12Zip_Zip_Type.t_zip i j) . Inv1.inv self -> Inv1.inv self /\ (forall result : Core_Option_Option_Type.t_option (Item0.item, Item1.item) . Inv2.inv result /\ match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
-    end -> Inv1.inv ( ^ self) /\ match (result) with
+    end -> Inv2.inv result /\ match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
     end)
-  goal produces_trans_refn : [#"../12_zip.rs" 44 4 44 90] forall a : C12Zip_Zip_Type.t_zip i j . forall ab : Seq.seq (Item0.item, Item1.item) . forall b : C12Zip_Zip_Type.t_zip i j . forall bc : Seq.seq (Item0.item, Item1.item) . forall c : C12Zip_Zip_Type.t_zip i j . Inv1.inv c /\ Inv1.inv b /\ Inv1.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Inv1.inv c /\ Inv1.inv b /\ Inv1.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
-  goal produces_refl_refn : [#"../12_zip.rs" 37 4 37 29] forall a : C12Zip_Zip_Type.t_zip i j . Inv1.inv a -> Inv1.inv a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
 end
 module C12Zip_Impl1
   type i

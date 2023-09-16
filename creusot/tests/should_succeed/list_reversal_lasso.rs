@@ -16,7 +16,7 @@ impl IndexLogic<Ptr> for Memory {
     type Item = Ptr;
 
     #[open(self)]
-    #[logic]
+    #[ghost]
     fn index_logic(self, i: Ptr) -> Ptr {
         pearlite! { self.0[i] }
     }
@@ -98,7 +98,7 @@ impl Memory {
     #[ensures((^self).list(result, s.reverse()))]
     pub fn list_reversal_list(&mut self, mut l: Ptr, s: Ghost<Seq<Ptr>>) -> Ptr {
         let mut r = NULL;
-        let mut n = ghost! { pearlite! { 0 } };
+        let mut n = gh! { 0 };
 
         #[invariant(0 <= *n && *n <= s.len())]
         #[invariant(self.list_seg(l, *s, NULL, *n, s.len()))]
@@ -106,7 +106,7 @@ impl Memory {
         // #[variant(s.len() - *n)]
         while l != NULL {
             l = std::mem::replace(&mut self[l], std::mem::replace(&mut r, l));
-            n = ghost! { pearlite! { *n + 1 } }
+            n = gh! { *n + 1 }
         }
         return r;
     }
@@ -124,7 +124,7 @@ impl Memory {
     #[ensures((^self).loop_(result, Seq::singleton(s[0]).concat(s.subsequence(1, s.len()).reverse())))]
     pub fn list_reversal_loop(&mut self, mut l: Ptr, s: Ghost<Seq<Ptr>>) -> Ptr {
         let mut r = NULL;
-        let mut n = ghost! { pearlite! { 0 } };
+        let mut n = gh! { 0 };
 
         #[invariant(0 <= *n && *n <= s.len() + 1)]
         #[invariant(*n == s.len() + 1 ==>
@@ -137,7 +137,7 @@ impl Memory {
         while l != NULL {
             proof_assert! { *n == s.len() ==> l == s.reverse()[s.len() - 1] }
             l = std::mem::replace(&mut self[l], std::mem::replace(&mut r, l));
-            n = ghost! { pearlite! { *n + 1 } }
+            n = gh! { *n + 1 }
         }
 
         proof_assert! { forall<i:Int> 0 <= i && i < s.len() ==>
@@ -167,7 +167,7 @@ impl Memory {
         s2: Ghost<Seq<Ptr>>,
     ) -> Ptr {
         let mut r = NULL;
-        let mut n = ghost! { pearlite! { 0 } };
+        let mut n = gh! { 0 };
 
         #[invariant(0 <= *n && *n <= 2*s1.len() + s2.len())]
         #[invariant({
@@ -189,12 +189,12 @@ impl Memory {
         // #[variant(2*s1.len() + s2.len() - *n)]
         while l != NULL {
             l = std::mem::replace(&mut self[l], std::mem::replace(&mut r, l));
-            n = ghost! { pearlite! { *n + 1 } }
+            n = gh! { *n + 1 }
         }
         return r;
     }
 
-    #[logic]
+    #[ghost]
     #[requires(0 <= i && i <= s.len())]
     #[ensures(match result {
         None => forall<j: Int> i <= j && j < s.len() ==> s[j]@ != p,
@@ -209,7 +209,7 @@ impl Memory {
         }
     }
 
-    #[logic]
+    #[ghost]
     #[requires(0 <= n)]
     #[requires(forall<i: Int> 0 <= i && i < s.len() ==> s[i]@ < n)]
     #[requires(forall<i: Int, j: Int> 0 <= i && i < s.len() && 0 <= j && j < s.len() && i != j ==> s[i] != s[j])]
@@ -232,7 +232,7 @@ impl Memory {
         }
     }
 
-    #[logic]
+    #[ghost]
     #[requires(self.mem_is_well_formed())]
     #[requires(last == NULL || self.nonnull_ptr(last))]
     #[requires(self.list_seg(first, s, last, 0, s.len()))]
@@ -259,7 +259,7 @@ impl Memory {
         }
     }
 
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[requires(self.mem_is_well_formed())]
     #[requires(first == NULL || self.nonnull_ptr(first))]

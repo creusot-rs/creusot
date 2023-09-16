@@ -1,22 +1,22 @@
 use crate::{invariant::Invariant, std::iter::Skip, *};
 
 pub trait SkipExt<I> {
-    #[logic]
+    #[ghost]
     fn iter(self) -> I;
 
-    #[logic]
+    #[ghost]
     fn n(self) -> Int;
 }
 
 impl<I> SkipExt<I> for Skip<I> {
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[trusted]
     fn iter(self) -> I {
         pearlite! { absurd }
     }
 
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[trusted]
     #[ensures(result >= 0 && result <= usize::MAX@)]

@@ -30,8 +30,11 @@ impl EncodeError {
 pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
     let sp = term.span();
     match term {
-        // Macros could contain further pearlite expressions..
-        RT::Macro(m) => Ok(quote_spanned! {sp=> #m}),
+        // It's unclear what to do with macros. Either we translate the parameters, but then
+        // it's impossible to handle proc macros whose parameters is not valid pearlite syntax,
+        // or we don't translate parameters, but then we let the user write non-pearlite code
+        // in pearlite...
+        RT::Macro(_) => Err(EncodeError::Unsupported(term.span(), "Macro".into())),
         RT::Array(_) => Err(EncodeError::Unsupported(term.span(), "Array".into())),
         RT::Binary(TermBinary { left, op, right }) => {
             let mut left = left;
@@ -79,7 +82,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             if let RT::Path(p) = &**func {
                 if p.inner.path.is_ident("old") {
                     return Ok(
-                        quote_spanned! {sp=> ::creusot_contracts::__stubs::old( #(#args),* ) },
+                        quote_spanned! {sp=> *::creusot_contracts::__stubs::old( #(#args),* ) },
                     );
                 }
             }
@@ -119,7 +122,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             let index = encode_term(index)?;
 
             Ok(quote! {
-                ::creusot_contracts::logic::IndexLogic::index_logic(#expr, #index)
+                (#expr).index_logic(#index)
             })
         }
         RT::Let(_) => Err(EncodeError::Unsupported(term.span(), "Let".into())),
@@ -147,6 +150,12 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         }
         RT::Path(_) => Ok(quote_spanned! {sp=> #term }),
         RT::Range(_) => Err(EncodeError::Unsupported(term.span(), "Range".into())),
+        RT::Reference(TermReference { mutability, expr, .. }) => {
+            let term = encode_term(expr)?;
+            Ok(quote! {
+                & #mutability #term
+            })
+        }
         RT::Repeat(_) => Err(EncodeError::Unsupported(term.span(), "Repeat".into())),
         RT::Struct(TermStruct { path, fields, rest, brace_token, dot2_token }) => {
             let mut ts = TokenStream::new();
@@ -255,7 +264,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             }
             Ok(ts)
         }
-        RT::Absurd(_) => Ok(quote_spanned! {sp=> ::creusot_contracts::__stubs::abs() }),
+        RT::Absurd(_) => Ok(quote_spanned! {sp=> *::creusot_contracts::__stubs::abs() }),
         RT::Pearlite(term) => Ok(quote_spanned! {sp=> #term }),
         RT::Closure(clos) => {
             let inputs = &clos.inputs;
@@ -263,7 +272,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             let clos = encode_term(&*clos.body)?;
 
             Ok(
-                quote_spanned! {sp=> ::creusot_contracts::logic::Mapping::from_fn(#[creusot::decl::logic] #[creusot::no_translate] |#inputs| #retty #clos)},
+                quote_spanned! {sp=> ::creusot_contracts::__stubs::mapping_from_fn(#[creusot::decl::logic] #[creusot::no_translate] |#inputs| #retty #clos)},
             )
         }
         RT::__Nonexhaustive => todo!(),
@@ -317,7 +326,7 @@ mod tests {
 
         assert_eq!(
             format!("{}", encode_term(&term).unwrap()),
-            ":: creusot_contracts :: __stubs :: old (x)"
+            "* :: creusot_contracts :: __stubs :: old (x)"
         );
     }
 

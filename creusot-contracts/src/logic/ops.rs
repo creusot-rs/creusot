@@ -1,16 +1,18 @@
+use ::std::alloc::Allocator;
+
 use crate::*;
 
 pub trait IndexLogic<I> {
     type Item;
 
-    #[logic]
+    #[ghost]
     fn index_logic(self, idx: I) -> Self::Item;
 }
 
-impl<T, S: ShallowModel<ShallowModelTy = Seq<T>> + ?Sized> IndexLogic<Int> for S {
+impl<T, A: Allocator> IndexLogic<Int> for Vec<T, A> {
     type Item = T;
 
-    #[logic]
+    #[ghost]
     #[open]
     #[why3::attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
@@ -18,10 +20,54 @@ impl<T, S: ShallowModel<ShallowModelTy = Seq<T>> + ?Sized> IndexLogic<Int> for S
     }
 }
 
-impl<T, S: ShallowModel<ShallowModelTy = Seq<T>> + ?Sized> IndexLogic<usize> for S {
+impl<T, A: Allocator> IndexLogic<usize> for Vec<T, A> {
     type Item = T;
 
-    #[logic]
+    #[ghost]
+    #[open]
+    #[why3::attr = "inline:trivial"]
+    fn index_logic(self, ix: usize) -> Self::Item {
+        pearlite! { self@[ix@] }
+    }
+}
+
+impl<T> IndexLogic<Int> for [T] {
+    type Item = T;
+
+    #[ghost]
+    #[open]
+    #[why3::attr = "inline:trivial"]
+    fn index_logic(self, ix: Int) -> Self::Item {
+        pearlite! { self@[ix] }
+    }
+}
+
+impl<T> IndexLogic<usize> for [T] {
+    type Item = T;
+
+    #[ghost]
+    #[open]
+    #[why3::attr = "inline:trivial"]
+    fn index_logic(self, ix: usize) -> Self::Item {
+        pearlite! { self@[ix@] }
+    }
+}
+
+impl<T, const N: usize> IndexLogic<Int> for [T; N] {
+    type Item = T;
+
+    #[ghost]
+    #[open]
+    #[why3::attr = "inline:trivial"]
+    fn index_logic(self, ix: Int) -> Self::Item {
+        pearlite! { self@[ix] }
+    }
+}
+
+impl<T, const N: usize> IndexLogic<usize> for [T; N] {
+    type Item = T;
+
+    #[ghost]
     #[open]
     #[why3::attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
@@ -32,11 +78,10 @@ impl<T, S: ShallowModel<ShallowModelTy = Seq<T>> + ?Sized> IndexLogic<usize> for
 impl<T> IndexLogic<Int> for Ghost<Seq<T>> {
     type Item = T;
 
-    #[logic]
-    #[trusted]
-    #[open(self)]
-    #[creusot::builtins = "seq.Seq.get"]
-    fn index_logic(self, _: Int) -> Self::Item {
-        absurd
+    #[ghost]
+    #[open]
+    #[why3::attr = "inline:trivial"]
+    fn index_logic(self, ix: Int) -> Self::Item {
+        pearlite! { (*self)[ix] }
     }
 }

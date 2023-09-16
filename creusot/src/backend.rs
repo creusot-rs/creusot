@@ -105,7 +105,11 @@ impl<'tcx> Why3Generator<'tcx> {
                     self.finish(def_id);
                 }
             }
-            ItemType::Logic | ItemType::Predicate | ItemType::Program | ItemType::Closure => {
+            ItemType::Ghost
+            | ItemType::Logic
+            | ItemType::Predicate
+            | ItemType::Program
+            | ItemType::Closure => {
                 self.start(def_id);
                 self.translate_function(def_id);
                 self.finish(def_id);
@@ -163,7 +167,7 @@ impl<'tcx> Why3Generator<'tcx> {
         let (interface, deps) = interface::interface_for(self, def_id);
 
         let translated = match util::item_type(self.tcx, def_id) {
-            ItemType::Logic | ItemType::Predicate => {
+            ItemType::Ghost | ItemType::Logic | ItemType::Predicate => {
                 debug!("translating {:?} as logical", def_id);
                 let (stub, modl, proof_modl, has_axioms, deps) =
                     crate::backend::logic::translate_logic_or_predicate(self, def_id);
@@ -287,7 +291,7 @@ impl<'tcx> Why3Generator<'tcx> {
 
     pub(crate) fn dependencies(&self, key: Dependency<'tcx>) -> Option<&CloneSummary<'tcx>> {
         let tid = match key {
-            Dependency::TyInv(ty) => TransId::TyInv(TyInvKind::from_ty(ty)),
+            Dependency::TyInv(_, inv_kind) => TransId::TyInv(inv_kind),
             _ => key.did().map(|(def_id, _)| TransId::Item(def_id))?,
         };
         self.dependencies.get(&tid)

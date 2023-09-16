@@ -13,7 +13,7 @@ use crate::{
         fmir::{self, Expr, RValue},
         specification::inv_subst,
     },
-    util::{self, is_ghost_closure},
+    util::{self, ghost_closure_id},
 };
 
 impl<'tcx> BodyTranslator<'_, 'tcx> {
@@ -68,14 +68,14 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Rvalue::Use(op) => match op {
                 Move(_pl) | Copy(_pl) => self.translate_operand(op),
                 Constant(box c) => {
-                    if is_ghost_closure(self.tcx, c.literal.ty()).is_some() {
+                    if ghost_closure_id(self.tcx, c.literal.ty()).is_some() {
                         return;
                     };
                     crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
                 }
             },
             Rvalue::Ref(_, ss, pl) => match ss {
-                Shared | Shallow | Unique => {
+                Shared | Shallow => {
                     if self.erased_locals.contains(pl.local) {
                         return;
                     }
@@ -134,8 +134,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 cond: assertion,
                                 msg: "assertion".to_owned(),
                             });
-                            return;
-                        } else if util::is_ghost(self.tcx, *def_id) {
                             return;
                         } else if util::is_spec(self.tcx, *def_id) {
                             return;
@@ -198,16 +196,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             let need_resolve_before = resolver.need_resolve_locals_before(loc);
             let dead_after = resolver.dead_locals_after(loc);
 
-            // if the lhs place is resolved during computation of the rhs
-            // split the assignment and resolve the local inbetween
-            let lhs_ty = place.ty(self.body, self.tcx).ty;
-            if !place.is_indirect() && need_resolve_before.contains(place.local)
-                && let Some((id, subst)) = super::resolve_predicate_of(self.ctx, self.param_env(), lhs_ty) {
-                self.emit_statement(fmir::Statement::Resolve(id, subst, self.translate_place(*place)));
-                self.emit_assignment(place, RValue::Expr(rval));
-            } else {
-                self.emit_assignment(place, RValue::Expr(rval));
+            if !place.is_indirect() && need_resolve_before.contains(place.local) {
+                self.emit_resolve(*place);
             }
+
+            self.emit_assignment(place, RValue::Expr(rval));
 
             // Check if the local is a zombie:
             // if lhs local is dead after the assignment, emit resolve

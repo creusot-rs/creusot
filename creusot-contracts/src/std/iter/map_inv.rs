@@ -92,14 +92,14 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> ::std::iter::I
             Some(v) => {
                 proof_assert! { self.func.precondition((v, self.produced)) };
                 #[allow(path_statements)]
-                let _: Ghost<()> = ghost! { {Self::produces_one_invariant; ()} };
-                let produced = ghost! { self.produced.push(v) };
-                let r = Some((self.func)(v, ghost! { self.produced.inner() })); // FIXME: Ghost should be Copy
+                let _: Ghost<()> = gh! { {Self::produces_one_invariant; ()} };
+                let produced = gh! { self.produced.push(v) };
+                let r = Some((self.func)(v, gh! { self.produced.inner() })); // FIXME: Ghost should be Copy
                 self.produced = produced;
                 r
             }
             None => {
-                self.produced = ghost! { Seq::EMPTY };
+                self.produced = gh! { Seq::EMPTY };
                 None
             }
         }
@@ -158,7 +158,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::I
         }
     }
 
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[requires(self.produces_one(e, other))]
     #[requires(inv(other.iter))]

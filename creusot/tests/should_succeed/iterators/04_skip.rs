@@ -66,9 +66,9 @@ where
       Some(v) => (*self).produces(Seq::singleton(v), ^self)
     })]
     fn next(&mut self) -> Option<I::Item> {
-        let old_self = ghost! { self };
+        let old_self = gh! { self };
         let mut n = std::mem::take(&mut self.n);
-        let mut skipped = ghost! { Seq::EMPTY };
+        let mut skipped = gh! { Seq::EMPTY };
         #[invariant(skipped.len() + n@ == old_self.n@)]
         #[invariant(old_self.iter.produces(skipped.inner(), self.iter))]
         #[invariant(forall<i: Int> 0 <= i && i < skipped.len() ==> skipped[i].resolve())]
@@ -80,7 +80,7 @@ where
                 return r;
             }
             if let Some(x) = r {
-                skipped = ghost! { skipped.concat(Seq::singleton(x)) };
+                skipped = gh! { skipped.concat(Seq::singleton(x)) };
                 n -= 1
             } else {
                 return r;

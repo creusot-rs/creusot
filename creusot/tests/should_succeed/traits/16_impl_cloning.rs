@@ -6,7 +6,7 @@ pub struct Vec<T>(std::vec::Vec<T>);
 impl<T> ShallowModel for Vec<T> {
     type ShallowModelTy = Seq<T>;
     #[open]
-    #[logic]
+    #[ghost]
     #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
         absurd

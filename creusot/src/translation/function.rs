@@ -6,7 +6,9 @@ use super::{
 use crate::{
     ctx::*,
     fmir::{self, Expr},
-    gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind},
+    gather_spec_closures::{
+        assertions_and_ghosts, corrected_invariant_names_and_locations, LoopSpecKind,
+    },
     resolve::EagerResolver,
     translation::{
         fmir::LocalDecl,
@@ -88,16 +90,15 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         tcx: TyCtxt<'tcx>,
         ctx: &'body mut TranslationCtx<'tcx>,
         body: &'body Body<'tcx>,
-        // names: &'body mut CloneMap<'tcx>,
         body_id: BodyId,
     ) -> Self {
-        let (invariants, assertions) =
-            corrected_invariant_names_and_locations(ctx, body_id.def_id(), &body);
+        let invariants = corrected_invariant_names_and_locations(ctx, &body);
+        let assertions = assertions_and_ghosts(ctx, &body);
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if crate::util::is_spec(tcx, *def_id) || util::is_ghost(tcx, *def_id) {
+                if crate::util::is_spec(tcx, *def_id) || util::is_ghost_closure(tcx, *def_id) {
                     erased_locals.insert(local);
                 }
             }
@@ -209,10 +210,14 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn emit_resolve(&mut self, pl: Place<'tcx>) {
-        if let Some((id, subst)) =
-            resolve_predicate_of(self.ctx, self.param_env(), pl.ty(self.body, self.ctx.tcx).ty)
-        {
+        let place_ty = pl.ty(self.body, self.ctx.tcx).ty;
+        if let Some((id, subst)) = resolve_predicate_of(self.ctx, self.param_env(), place_ty) {
             let p = self.translate_place(pl);
+
+            if let Some((_, s)) = self.ctx.type_invariant(self.body_id.def_id(), place_ty) {
+                self.emit_statement(fmir::Statement::AssertTyInv(s.type_at(0), p.clone()));
+            }
+
             self.emit_statement(fmir::Statement::Resolve(id, subst, p));
         }
     }
@@ -226,6 +231,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     fn emit_borrow(&mut self, lhs: &Place<'tcx>, rhs: &Place<'tcx>) {
         let p = self.translate_place(*rhs);
         self.emit_assignment(lhs, fmir::RValue::Borrow(p));
+
+        let rhs_ty = rhs.ty(self.body, self.ctx.tcx).ty;
+        if let Some((_, s)) = self.ctx.type_invariant(self.body_id.def_id(), rhs_ty) {
+            let p = self.translate_place(*lhs);
+            self.emit_statement(fmir::Statement::AssumeTyInv(s.type_at(0), p));
+        }
     }
 
     fn emit_ghost_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>) {
@@ -285,7 +296,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     fn resolve_locals(&mut self, mut locals: BitSet<Local>) {
         locals.subtract(&self.erased_locals.to_hybrid());
 
-        for local in locals.iter() {
+        // TODO determine resolution order based on outlives relation
+        let locals = locals.iter().collect::<Vec<_>>();
+        for local in locals.into_iter().rev() {
             self.emit_resolve(local.into());
         }
     }
@@ -546,7 +559,7 @@ pub(crate) fn closure_contract<'tcx>(
 
         normalize(ctx.tcx, ctx.param_env(def_id), &mut postcondition);
 
-        let unnest_sig = EarlyBinder(ctx.sig(unnest_id).clone()).subst(ctx.tcx, unnest_subst);
+        let unnest_sig = EarlyBinder::bind(ctx.sig(unnest_id).clone()).subst(ctx.tcx, unnest_subst);
 
         let mut unnest = closure_unnest(ctx.tcx, def_id, subst);
         normalize(ctx.tcx, ctx.param_env(def_id), &mut unnest);

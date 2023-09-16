@@ -45,7 +45,7 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
     - [Install `rustup`](https://www.rust-lang.org/tools/install), to get the suitable Rust toolchain
 1. Set up **Why3**
     - [Get `opam`](https://opam.ocaml.org/doc/Install.html), the package manager for OCaml
-    - Pin `why3` to `master` : 
+    - Pin `why3` to `master` :
     ```
     $ opam pin add why3 https://gitlab.inria.fr/why3/why3.git
     $ opam pin add why3-ide https://gitlab.inria.fr/why3/why3.git
@@ -160,14 +160,18 @@ Contracts and logic functions are written in Pearlite, a specification language 
 - Logical Expressions: quantifiers (`forall` and `exists`), logical implication `==>`, *logical* equality `a == b`, labels
 - Rust specific logical expressions: access to the **final** value of a mutable reference `^`, access to the *model* of an object `@`
 
-We also provide two new attributes on Rust functions: `logic` and `predicate`.
-Marked  `#[logic]` or `#[predicate]`, a function can be used in specs and other logical conditions (`requires`/`ensures` and `invariant`).
+We also provide three new attributes on Rust functions: `ghost`, `logic` and `predicate`.
+
+A ghost function is marked with `#[ghost]`. It can be used in ghost code, to assign ghost
+variables of the `Ghost<T>` type.
+
+Marked  `#[logic]` or `#[predicate]`, a function can be used in specs and other logical conditions (`requires`/`ensures` and `invariant`). They can use ghost functions.
 The two attributes have the following difference.
 - A `logic` function can freely have logical, non-executable operations, such as quantifiers, logic equalities, etc. Instead, this function can't be called in normal Rust code (the function body of a `logic` function is replaced with a panic).
   You can use pearlite syntax for any part in the logic function by marking that part with the `pearlite! { ... }` macro.
 - A `predicate` is a logical function which returns a proposition (in practice, returns a boolean value).
 
-When you write *recursive* `logic` or `predicate` functions, you have to show that the function terminates.
+When you write *recursive* `ghost`, `logic` or `predicate` functions, you have to show that the function terminates.
 For that, you can add `#[variant(EXPR)]` attribute, which says that the value of the expression `EXPR` strictly decreases (in a known well-founded order) at each recursive call.
 The type of `EXPR` should implement the `WellFounded` trait.
 

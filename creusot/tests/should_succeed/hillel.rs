@@ -14,7 +14,7 @@ use creusot_contracts::{
 #[ensures(forall<i: Int> 0 <= i && i < str@.len() ==> (^str)[i] == str[i])]
 #[ensures(forall<i: Int> str@.len() <= i && i < len@ ==> (^str)[i] == pad)]
 fn right_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
-    let old_str = ghost! { str };
+    let old_str = gh! { str };
 
     #[invariant(old_str@.len() <= str@.len())]
     #[invariant(old_str@.len() < len@ ==> str@.len() <= len@)]
@@ -31,8 +31,8 @@ fn right_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
 #[ensures(forall<i: Int> 0 <= i && i < ((^str)@.len() - str@.len()) ==> (^str)[i] == pad)]
 #[ensures(forall<i: Int> 0 <= i && i < str@.len() ==> (^str)[i + ((^str)@.len() - str@.len())] == str[i])]
 fn left_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
-    let old_str = ghost! { str };
-    let mut c: Ghost<usize> = ghost! { 0 };
+    let old_str = gh! { str };
+    let mut c: Ghost<usize> = gh! { 0usize };
 
     #[invariant(old_str@.len() <= str@.len())]
     #[invariant(old_str@.len() < len@ ==> str@.len() <= len@)]
@@ -42,7 +42,7 @@ fn left_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     #[invariant(forall<i: Int> 0 <= i && i < c@ ==> str[i] == pad)]
     while str.len() < len {
         str.insert(0, pad);
-        c = ghost! { 1 + c.inner() };
+        c = gh! { 1usize + *c };
     }
 }
 
@@ -67,7 +67,7 @@ fn is_subset<T>(sub: Seq<T>, sup: Seq<T>) -> bool {
     }
 }
 
-#[logic]
+#[ghost]
 #[ensures(is_subset(s, s.push(elem)))]
 fn subset_push<T>(s: Seq<T>, elem: T) {}
 
@@ -77,7 +77,7 @@ fn subset_push<T>(s: Seq<T>, elem: T) {}
 #[ensures(is_subset((^vec).deep_model(), vec.deep_model().push(elem.deep_model())))]
 #[ensures(contains((^vec).deep_model(), elem.deep_model()))]
 fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
-    ghost! { subset_push::<T::DeepModelTy> };
+    gh! { subset_push::<T::DeepModelTy> };
     proof_assert! { is_subset(vec.deep_model(), vec.deep_model().push(elem.deep_model())) };
 
     #[invariant(forall<j: Int> 0 <= j && j < produced.len() ==> produced[j].deep_model() != elem.deep_model())]
@@ -98,7 +98,7 @@ fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
 #[ensures(is_subset(str.deep_model(), result.deep_model()))]
 fn unique<T: Eq + DeepModel + Copy>(str: &[T]) -> Vec<T> {
     let mut unique = Vec::new();
-    let mut sub_str: Ghost<Seq<T>> = ghost! { Seq::new() };
+    let mut sub_str: Ghost<Seq<T>> = gh! { Seq::new() };
 
     #[invariant(is_unique(unique.deep_model()))]
     #[invariant(is_subset(unique.deep_model(), str.deep_model()))]
@@ -106,7 +106,7 @@ fn unique<T: Eq + DeepModel + Copy>(str: &[T]) -> Vec<T> {
     for i in 0..str.len() {
         let elem: T = str[i];
         insert_unique(&mut unique, elem);
-        sub_str = ghost! { sub_str.push(elem) };
+        sub_str = gh! { sub_str.push(elem) };
     }
 
     proof_assert! { is_subset(str.deep_model().subsequence(0, str@.len()), unique.deep_model()) }
@@ -114,7 +114,7 @@ fn unique<T: Eq + DeepModel + Copy>(str: &[T]) -> Vec<T> {
     unique
 }
 
-#[logic]
+#[ghost]
 #[variant(to - from)]
 #[requires(0 <= from && from <= to && to <= seq.len())]
 #[ensures(result >= 0)]
@@ -126,7 +126,7 @@ fn sum_range(seq: Seq<u32>, from: Int, to: Int) -> Int {
     }
 }
 
-#[logic]
+#[ghost]
 #[variant(i - from)]
 #[requires(0 <= from && from <= i && i <= to && to <= seq.len())]
 #[ensures(sum_range(seq, from, to) == sum_range(seq, from, i) + sum_range(seq, i, to))]
@@ -136,7 +136,7 @@ fn sum_range_split(seq: Seq<u32>, from: Int, to: Int, i: Int) {
     }
 }
 
-#[logic]
+#[ghost]
 #[requires(0 <= i && i <= seq.len())]
 #[ensures(0 <= result && result <= sum_range(seq, 0 , seq.len()))]
 #[ensures(0 == i || i == seq.len() ==> result == sum_range(seq, 0, seq.len()))]

@@ -46,13 +46,13 @@ pub fn field1_is_true(x: B) -> bool {
 }
 
 pub fn ghost_closure() {
-    let _x = ghost! { pearlite! { |a : u32| a  } };
+    let _x = gh! { |a : u32| a };
 }
 
 pub fn pearlite_closure(_x: Ghost<Mapping<u32, bool>>) {}
 
 pub fn caller() {
-    pearlite_closure(ghost! { pearlite! { |_a| true }});
+    pearlite_closure(gh! { |_a| true });
 }
 
 // Implicit logical reborrows
@@ -61,26 +61,26 @@ pub struct S {}
 
 impl S {
     #[open]
-    #[logic]
+    #[ghost]
     pub fn x(&mut self) -> bool {
         true
     }
 }
 
 #[open]
-#[logic]
+#[ghost]
 pub fn proj(x: &mut (S, S)) -> bool {
     x.0.x()
 }
 
 #[open]
-#[logic]
+#[ghost]
 pub fn proj2(x: &mut &mut (S, S)) -> bool {
     x.0.x()
 }
 
 // Left out until I understand the semantics of `Deref` patterns.
-// #[logic]
+// #[ghost]
 // pub fn proj_opt(x : &mut Option<S>)  -> bool {
 //     match x {
 //         Some(a) => a.x(),

@@ -15,7 +15,7 @@ impl<T: ?Sized> ShallowModel for GhostPtrToken<T> {
     type ShallowModelTy = FMap<GhostPtr<T>, T>;
 
     #[trusted]
-    #[logic]
+    #[ghost]
     #[open(self)]
     fn shallow_model(self) -> Self::ShallowModelTy {
         absurd
@@ -26,7 +26,7 @@ impl<T: ?Sized> GhostPtrToken<T> {
     /// Creates a new [`GhostPtr`] that has no permission
     #[ensures(result@ == FMap::empty())]
     pub fn new() -> Self {
-        GhostPtrToken(ghost!(FMap::empty()), PhantomData)
+        GhostPtrToken(gh!(FMap::empty()), PhantomData)
     }
 
     #[trusted]
@@ -124,7 +124,7 @@ impl<T: ?Sized> GhostPtrToken<T> {
 impl<T: ?Sized> GhostPtrExt<T> for GhostPtr<T> {
     #[trusted]
     #[open(self)]
-    #[logic]
+    #[ghost]
     #[ensures(forall<t: GhostPtrToken<T>> !t@.contains(result))]
     // #[ensures(result.addr_logic() == 0@)]
     #[ensures(forall<ptr: GhostPtr<T>> ptr.addr_logic() == result.addr_logic() ==> ptr == result)]
@@ -133,7 +133,7 @@ impl<T: ?Sized> GhostPtrExt<T> for GhostPtr<T> {
     }
 
     #[trusted]
-    #[logic]
+    #[ghost]
     #[open(self)]
     fn addr_logic(self) -> Int {
         absurd
@@ -141,9 +141,9 @@ impl<T: ?Sized> GhostPtrExt<T> for GhostPtr<T> {
 }
 
 pub trait GhostPtrExt<T: ?Sized>: Sized {
-    #[logic]
+    #[ghost]
     fn null_logic() -> Self;
-    #[logic]
+    #[ghost]
     fn addr_logic(self) -> Int;
 }
 

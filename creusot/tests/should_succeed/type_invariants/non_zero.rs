@@ -12,6 +12,7 @@ impl Invariant for NonZeroU32 {
 
     #[law]
     #[open]
+    #[logic]
     #[ensures(exists<x: Self> x.invariant())]
     #[ensures(result)]
     fn is_inhabited() -> bool

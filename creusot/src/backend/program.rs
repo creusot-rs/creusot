@@ -199,7 +199,7 @@ fn collect_body_ids<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Opti
         .collect::<Vec<_>>();
 
     ids.extend(promoted.iter().filter_map(|(p, p_ty)| {
-        if util::is_ghost_closure(ctx.tcx, *p_ty).is_none() {
+        if util::ghost_closure_id(ctx.tcx, *p_ty).is_none() {
             Some(BodyId::new(def_id.expect_local(), Some(*p)))
         } else {
             None
@@ -631,7 +631,10 @@ impl<'tcx> Statement<'tcx> {
     ) -> Vec<mlcfg::Statement> {
         match self {
             Statement::Assignment(lhs, RValue::Borrow(rhs)) => {
-                let borrow = Exp::BorrowMut(Box::new(rhs.as_rplace(ctx, names, locals)));
+                let borrow = Exp::Call(
+                    Box::new(Exp::impure_qvar(QName::from_string("Borrow.borrow_mut").unwrap())),
+                    vec![rhs.as_rplace(ctx, names, locals)],
+                );
                 let reassign = Exp::Final(Box::new(lhs.as_rplace(ctx, names, locals)));
 
                 vec![
@@ -675,6 +678,22 @@ impl<'tcx> Statement<'tcx> {
                 vec![mlcfg::Statement::Invariant(lower_pure(ctx, names, inv))]
             }
             Statement::Variant(var) => vec![mlcfg::Statement::Variant(lower_pure(ctx, names, var))],
+            Statement::AssumeTyInv(ty, pl) => {
+                let inv_fun = Exp::impure_qvar(names.ty_inv(ty));
+                let arg = Exp::Final(Box::new(pl.as_rplace(ctx, names, locals)));
+
+                vec![mlcfg::Statement::Assume(inv_fun.app_to(arg))]
+            }
+            Statement::AssertTyInv(ty, pl) => {
+                let inv_fun = Exp::impure_qvar(names.ty_inv(ty));
+                let arg = pl.as_rplace(ctx, names, locals);
+                let exp = Exp::Attr(
+                    Attribute::Attr(format!("expl:type invariant")),
+                    Box::new(inv_fun.app_to(arg)),
+                );
+
+                vec![mlcfg::Statement::Assert(exp)]
+            }
         }
     }
 }

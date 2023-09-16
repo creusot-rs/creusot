@@ -1,4 +1,23 @@
 
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module CreusotContracts_Resolve_Resolve_Resolve_Stub
   type self
   predicate resolve (self : self)
@@ -17,15 +36,33 @@ module CreusotContracts_Resolve_Resolve_Resolve
     ensures { result = resolve self }
     
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module C693_F_Interface
   type ifc
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = ifc
   val f [#"../693.rs" 3 0 3 21] (_1 : ifc) : ()
+    requires {[#"../693.rs" 1 0 1 0] Inv0.inv _1}
+    
 end
 module C693_F
   type ifc
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = ifc
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = ifc,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = ifc
   let rec cfg f [#"../693.rs" 3 0 3 21] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ifc) : ()
+    requires {[#"../693.rs" 1 0 1 0] Inv0.inv _1}
+    
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var _1 : ifc = _1;
@@ -34,6 +71,7 @@ module C693_F
   }
   BB0 {
     _0 <- ();
+    assert { [@expl:type invariant] Inv0.inv _1 };
     assume { Resolve0.resolve _1 };
     goto BB1
   }
@@ -48,8 +86,15 @@ end
 module C693_G
   use prelude.Int
   use prelude.Int32
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = int32
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = int32,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone C693_F_Interface as F0 with
-    type ifc = int32
+    type ifc = int32,
+    predicate Inv0.inv = Inv0.inv
   let rec cfg g [#"../693.rs" 5 0 5 10] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();

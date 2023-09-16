@@ -70,7 +70,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
             let subst = InternalSubsts::identity_for_item(self.tcx, impl_item);
 
-            let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.0.substs);
+            let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.skip_binder().substs);
 
             match crate::prusti::check_signature_agreement(
                 self.tcx, impl_item, trait_item, refn_subst,
@@ -81,7 +81,8 @@ impl<'tcx> TranslationCtx<'tcx> {
 
             // If there is no contract to refine, skip this item
             if !self.tcx.def_kind(trait_item).is_fn_like()
-                || self.sig(trait_item).contract.is_empty()
+                || (self.sig(trait_item).contract.is_empty()
+                    && self.sig(impl_item).contract.requires.is_empty())
             {
                 continue;
             }
@@ -128,7 +129,7 @@ fn logic_refinement_term<'tcx>(
     let trait_sig = {
         let pre_sig = ctx.sig(trait_item_id).clone();
         let param_env = ctx.param_env(impl_item_id);
-        EarlyBinder(pre_sig).subst(ctx.tcx, refn_subst).normalize(ctx.tcx, param_env)
+        EarlyBinder::bind(pre_sig).subst(ctx.tcx, refn_subst).normalize(ctx.tcx, param_env)
     };
 
     let impl_sig = ctx.sig(impl_item_id).clone();
@@ -154,24 +155,15 @@ fn logic_refinement_term<'tcx>(
     let trait_postcond = trait_sig.contract.ensures_conj(ctx.tcx);
 
     let retty = impl_sig.output;
-    let post_refn = Term {
-        kind: TermKind::Forall {
-            binder: (Symbol::intern("result"), retty),
-            body: Box::new(impl_postcond.implies(trait_postcond)),
-        },
-        ty: ctx.tcx.types.bool,
-        span,
-    };
+
+    let post_refn =
+        impl_postcond.implies(trait_postcond).forall((Symbol::intern("result"), retty)).span(span);
 
     let mut refn = trait_precond.implies(impl_precond.conj(post_refn));
     refn = if args.is_empty() {
         refn
     } else {
-        args.into_iter().rfold(refn, |acc, r| Term {
-            kind: TermKind::Forall { binder: r, body: Box::new(acc) },
-            ty: ctx.tcx.types.bool,
-            span,
-        })
+        args.into_iter().rfold(refn, |acc, r| acc.forall(r).span(span))
     };
 
     refn
@@ -312,7 +304,12 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
             Some((leaf_def.item.def_id, leaf_substs))
         }
         ImplSource::Param(_, _) => Some((def_id, substs)),
-        ImplSource::Closure(impl_data) => Some((impl_data.closure_def_id, impl_data.substs)),
+        ImplSource::Builtin(_) => match *substs.type_at(0).kind() {
+            rustc_middle::ty::Closure(closure_def_id, closure_substs) => {
+                Some((closure_def_id, closure_substs))
+            }
+            _ => unimplemented!(),
+        },
         _ => unimplemented!(),
     }
 }
@@ -342,7 +339,7 @@ pub(crate) fn still_specializable<'tcx>(
         let trait_generics = substs.truncate_to(tcx, tcx.generics_of(trait_id));
         !is_final && trait_generics.still_further_specializable()
     } else if let Some(impl_id) = tcx.impl_of_method(def_id) && tcx.trait_id_of_impl(impl_id).is_some() {
-        let is_final = tcx.impl_defaultness(def_id).is_final();
+        let is_final = tcx.defaultness(def_id).is_final();
         let trait_ref = tcx.impl_trait_ref(impl_id).unwrap();
         !is_final && trait_ref.subst(tcx, substs).still_further_specializable()
     } else {

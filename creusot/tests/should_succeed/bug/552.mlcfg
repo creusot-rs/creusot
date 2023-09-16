@@ -118,9 +118,40 @@ module C552_Impl0_Step
   }
   
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module C552_Impl0
   use prelude.Borrow
   use C552_Machine_Type as C552_Machine_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = borrowed (C552_Machine_Type.t_machine)
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = borrowed (C552_Machine_Type.t_machine),
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone C552_Impl0_Invariants as Invariants0
-  goal step_refn : [#"../552.rs" 23 4 23 30] forall self : borrowed (C552_Machine_Type.t_machine) . Invariants0.invariants ( * self) -> Invariants0.invariants ( * self) /\ (forall result : bool . Invariants0.invariants ( ^ self) -> Invariants0.invariants ( ^ self))
+  goal step_refn : [#"../552.rs" 23 4 23 30] forall self : borrowed (C552_Machine_Type.t_machine) . Inv0.inv self /\ Invariants0.invariants ( * self) -> Invariants0.invariants ( * self) /\ (forall result : bool . Invariants0.invariants ( ^ self) -> Invariants0.invariants ( ^ self))
 end

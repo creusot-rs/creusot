@@ -56,7 +56,7 @@ module C01Basic_UsesClosure_Closure0_Interface
   predicate unnest [#"../01_basic.rs" 6 14 6 16] (self : c01basic_usesclosure_closure0) (_2 : c01basic_usesclosure_closure0)
     
    =
-    [#"../01_basic.rs" 1 0 1 0] field_0 _2 = field_0 self /\ true
+    [#"../01_basic.rs" 1 0 1 0] field_0 _2 = field_0 self
   predicate precondition [#"../01_basic.rs" 6 14 6 16] (self : c01basic_usesclosure_closure0) (_ : ()) =
     [#"../01_basic.rs" 1 0 1 0] true
   predicate postcondition_once [#"../01_basic.rs" 6 14 6 16] (self : c01basic_usesclosure_closure0) (_ : ()) (result : bool)
@@ -83,7 +83,7 @@ module C01Basic_UsesClosure_Closure0
   predicate unnest [#"../01_basic.rs" 6 14 6 16] (self : c01basic_usesclosure_closure0) (_2 : c01basic_usesclosure_closure0)
     
    =
-    [#"../01_basic.rs" 1 0 1 0] field_0 _2 = field_0 self /\ true
+    [#"../01_basic.rs" 1 0 1 0] field_0 _2 = field_0 self
   predicate precondition [#"../01_basic.rs" 6 14 6 16] (self : c01basic_usesclosure_closure0) (_ : ()) =
     [#"../01_basic.rs" 1 0 1 0] true
   predicate postcondition_once [#"../01_basic.rs" 6 14 6 16] (self : c01basic_usesclosure_closure0) (_ : ()) (result : bool)
@@ -277,7 +277,7 @@ module C01Basic_MoveClosure_Closure0_Interface
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../01_basic.rs" 1 0 1 0] let C01Basic_MoveClosure_Closure0 a = self in a
   predicate resolve [#"../01_basic.rs" 19 16 19 23] (_1 : c01basic_moveclosure_closure0) =
-    [#"../01_basic.rs" 1 0 1 0] Resolve0.resolve (field_0 _1) /\ true
+    [#"../01_basic.rs" 1 0 1 0] Resolve0.resolve (field_0 _1)
   predicate unnest [#"../01_basic.rs" 19 16 19 23] (self : c01basic_moveclosure_closure0) (_2 : c01basic_moveclosure_closure0)
     
    =
@@ -309,7 +309,7 @@ module C01Basic_MoveClosure_Closure0
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../01_basic.rs" 1 0 1 0] let C01Basic_MoveClosure_Closure0 a = self in a
   predicate resolve [#"../01_basic.rs" 19 16 19 23] (_1 : c01basic_moveclosure_closure0) =
-    [#"../01_basic.rs" 1 0 1 0] Resolve1.resolve (field_0 _1) /\ true
+    [#"../01_basic.rs" 1 0 1 0] Resolve1.resolve (field_0 _1)
   predicate unnest [#"../01_basic.rs" 19 16 19 23] (self : c01basic_moveclosure_closure0) (_2 : c01basic_moveclosure_closure0)
     
    =
@@ -366,18 +366,18 @@ module C01Basic_MoveClosure
   }
   BB0 {
     _2 <- ([#"../01_basic.rs" 17 17 17 21] (0 : int32));
-    a <- borrow_mut _2;
+    a <- Borrow.borrow_mut _2;
     _2 <-  ^ a;
     x <- Closure00.C01Basic_MoveClosure_Closure0 a;
     a <- any borrowed int32;
-    _5 <- borrow_mut x;
+    _5 <- Borrow.borrow_mut x;
     x <-  ^ _5;
     _4 <- ([#"../01_basic.rs" 23 4 23 9] let () = () in Closure00.c01Basic_MoveClosure_Closure0 _5);
     _5 <- any borrowed Closure00.c01basic_moveclosure_closure0;
     goto BB1
   }
   BB1 {
-    _8 <- borrow_mut x;
+    _8 <- Borrow.borrow_mut x;
     x <-  ^ _8;
     _7 <- ([#"../01_basic.rs" 24 4 24 9] let () = () in Closure00.c01Basic_MoveClosure_Closure0 _8);
     _8 <- any borrowed Closure00.c01basic_moveclosure_closure0;
@@ -390,10 +390,39 @@ module C01Basic_MoveClosure
   }
   
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module C01Basic_NewRef_Interface
   type t
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed t
   val new_ref [#"../01_basic.rs" 28 0 28 36] (_1 : ()) : borrowed t
+    ensures { [#"../01_basic.rs" 28 27 28 36] Inv0.inv result }
+    
+end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
 end
 module C01Basic_MoveMut_Closure0_Type
   use prelude.Borrow
@@ -414,7 +443,7 @@ module C01Basic_MoveMut_Closure0_Interface
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../01_basic.rs" 1 0 1 0] let C01Basic_MoveMut_Closure0 a = self in a
   predicate resolve [#"../01_basic.rs" 35 16 35 23] (_1 : c01basic_movemut_closure0) =
-    [#"../01_basic.rs" 1 0 1 0] Resolve0.resolve (field_0 _1) /\ true
+    [#"../01_basic.rs" 1 0 1 0] Resolve0.resolve (field_0 _1)
   predicate unnest [#"../01_basic.rs" 35 16 35 23] (self : c01basic_movemut_closure0) (_2 : c01basic_movemut_closure0) =
     [#"../01_basic.rs" 1 0 1 0] true
   predicate precondition [#"../01_basic.rs" 35 16 35 23] (self : c01basic_movemut_closure0) (_ : ()) =
@@ -435,17 +464,24 @@ module C01Basic_MoveMut_Closure0
   use prelude.Borrow
   use prelude.Int
   use prelude.UInt32
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = borrowed uint32
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = borrowed uint32,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = c01basic_movemut_closure0
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = uint32
   clone C01Basic_NewRef_Interface as NewRef0 with
-    type t = uint32
+    type t = uint32,
+    predicate Inv0.inv = Inv0.inv
   let function field_0 [#"../01_basic.rs" 35 16 35 23] (self : c01basic_movemut_closure0) : borrowed uint32
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../01_basic.rs" 1 0 1 0] let C01Basic_MoveMut_Closure0 a = self in a
   predicate resolve [#"../01_basic.rs" 35 16 35 23] (_1 : c01basic_movemut_closure0) =
-    [#"../01_basic.rs" 1 0 1 0] Resolve0.resolve (field_0 _1) /\ true
+    [#"../01_basic.rs" 1 0 1 0] Resolve0.resolve (field_0 _1)
   predicate unnest [#"../01_basic.rs" 35 16 35 23] (self : c01basic_movemut_closure0) (_2 : c01basic_movemut_closure0) =
     [#"../01_basic.rs" 1 0 1 0] true
   predicate precondition [#"../01_basic.rs" 35 16 35 23] (self : c01basic_movemut_closure0) (_ : ()) =
@@ -472,7 +508,7 @@ module C01Basic_MoveMut_Closure0
     goto BB1
   }
   BB1 {
-    _2 <- borrow_mut ( * _3);
+    _2 <- Borrow.borrow_mut ( * _3);
     _3 <- { _3 with current = ( ^ _2) };
     _1 <- { _1 with current = (let C01Basic_MoveMut_Closure0 a =  * _1 in C01Basic_MoveMut_Closure0 _2) };
     _2 <- any borrowed uint32;
@@ -510,18 +546,18 @@ module C01Basic_MoveMut
   }
   BB0 {
     _2 <- ([#"../01_basic.rs" 33 21 33 25] (0 : uint32));
-    x <- borrow_mut _2;
+    x <- Borrow.borrow_mut _2;
     _2 <-  ^ x;
     a <- Closure00.C01Basic_MoveMut_Closure0 x;
     x <- any borrowed uint32;
-    _5 <- borrow_mut a;
+    _5 <- Borrow.borrow_mut a;
     a <-  ^ _5;
     _4 <- ([#"../01_basic.rs" 38 4 38 9] let () = () in Closure00.c01Basic_MoveMut_Closure0 _5);
     _5 <- any borrowed Closure00.c01basic_movemut_closure0;
     goto BB1
   }
   BB1 {
-    _8 <- borrow_mut a;
+    _8 <- Borrow.borrow_mut a;
     a <-  ^ _8;
     _7 <- ([#"../01_basic.rs" 39 4 39 9] let () = () in Closure00.c01Basic_MoveMut_Closure0 _8);
     _8 <- any borrowed Closure00.c01basic_movemut_closure0;

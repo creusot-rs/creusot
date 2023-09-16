@@ -1,9 +1,5 @@
-use syn::{parse::discouraged::AnyDelimiter, punctuated::Punctuated, *};
-// use crate::macros::*;
-
 use proc_macro2::{Delimiter, Span, TokenStream};
-
-use syn::Pat;
+use syn::{parse::discouraged::AnyDelimiter, punctuated::Punctuated, Pat, *};
 
 #[cfg(feature = "printing")]
 use quote::IdentFragment;
@@ -84,6 +80,9 @@ ast_enum_of_structs! {
 
         /// A range term: `1..2`, `1..`, `..2`, `1..=2`, `..=2`.
         Range(TermRange),
+
+        /// A referencing operation: `&a` or `&mut a`.
+        Reference(TermReference),
 
         /// An array literal constructed from one repeated element: `[0u8; N]`.
         Repeat(TermRepeat),
@@ -343,6 +342,16 @@ ast_struct! {
         pub from: Option<Box<Term>>,
         pub limits: RangeLimits,
         pub to: Option<Box<Term>>,
+    }
+}
+
+ast_struct! {
+    /// A referencing operation: `&a` or `&mut a`.
+    #[cfg_attr(doc_cfg, doc(cfg(feature = "full")))]
+    pub struct TermReference #full {
+        pub and_token: Token![&],
+        pub mutability: Option<Token![mut]>,
+        pub expr: Box<Term>,
     }
 }
 
@@ -1003,7 +1012,13 @@ pub(crate) mod parsing {
     }
 
     fn unary_term(input: ParseStream, allow_struct: AllowStruct) -> Result<Term> {
-        if input.peek(Token![*]) || input.peek(Token![!]) || input.peek(Token![-]) {
+        if input.peek(Token![&]) {
+            Ok(Term::Reference(TermReference {
+                and_token: input.parse()?,
+                mutability: input.parse()?,
+                expr: Box::new(unary_term(input, allow_struct)?),
+            }))
+        } else if input.peek(Token![*]) || input.peek(Token![!]) || input.peek(Token![-]) {
             // <UnOp> <trailer>
             Ok(Term::Unary(TermUnary {
                 op: input.parse()?,
@@ -1486,6 +1501,7 @@ pub(crate) mod parsing {
         TermField, Field, "expected struct field access",
         TermIndex, Index, "expected indexing term",
         TermRange, Range, "expected range term",
+        TermReference, Reference, "expected reference term",
         TermStruct, Struct, "expected struct literal term",
         TermRepeat, Repeat, "expected array literal constructed from one repeated element",
         TermParen, Paren, "expected parenthesized term",
@@ -2066,6 +2082,14 @@ pub(crate) mod printing {
                 RangeLimits::Closed(t) => t.to_tokens(tokens),
             }
             self.to.to_tokens(tokens);
+        }
+    }
+
+    impl ToTokens for TermReference {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            self.and_token.to_tokens(tokens);
+            self.mutability.to_tokens(tokens);
+            self.expr.to_tokens(tokens);
         }
     }
 

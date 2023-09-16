@@ -18,21 +18,22 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
 
     let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Body);
 
-    let mut impl_decls = Vec::new();
+    let mut decls: Vec<_> = own_generic_decls_for(ctx.tcx, def_id).collect();
+    let mut refn_decls = Vec::new();
+
     for refn in &data.refinements {
         let name = item_name(tcx, refn.impl_.0, Namespace::ValueNS);
 
-        impl_decls.extend(own_generic_decls_for(tcx, refn.impl_.0));
-        impl_decls.push(Decl::Goal(Goal {
+        decls.extend(own_generic_decls_for(tcx, refn.impl_.0));
+        refn_decls.push(Decl::Goal(Goal {
             name: format!("{}_refn", &*name).into(),
             goal: lower_pure(ctx, &mut names, refn.refn.clone()),
         }));
     }
 
-    let mut decls: Vec<_> = own_generic_decls_for(ctx.tcx, def_id).collect();
     let (clones, _) = names.to_clones(ctx);
     decls.extend(clones);
-    decls.extend(impl_decls);
+    decls.extend(refn_decls);
 
     Module { name: module_name(ctx.tcx, def_id), decls }
 }
@@ -60,9 +61,10 @@ impl<'tcx> Why3Generator<'tcx> {
             }
         };
 
+        decls.push(Decl::TyDecl(ty_decl));
+
         let (clones, summary) = names.to_clones(self);
         decls.extend(clones);
-        decls.push(Decl::TyDecl(ty_decl));
 
         (Module { name: module_name(self.tcx, def_id), decls }, summary)
     }

@@ -1,4 +1,23 @@
 
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module CreusotContracts_Resolve_Resolve_Resolve_Stub
   type self
   predicate resolve (self : self)
@@ -37,26 +56,49 @@ module CreusotContracts_Std1_Default_Default_IsDefault
 end
 module Core_Default_Default_Default_Interface
   type self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   clone CreusotContracts_Std1_Default_Default_IsDefault_Stub as IsDefault0 with
     type self = self
   val default (_1 : ()) : self
     ensures { [#"../../../../creusot-contracts/src/std/default.rs" 13 26 13 45] IsDefault0.is_default result }
+    ensures { Inv0.inv result }
     
+end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
 end
 module ResolveUninit_MaybeUninit_Interface
   type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
   val maybe_uninit [#"../resolve_uninit.rs" 5 0 5 51] (b : bool) (y : t) : t
+    requires {[#"../resolve_uninit.rs" 5 41 5 42] Inv0.inv y}
+    ensures { [#"../resolve_uninit.rs" 5 50 5 51] Inv0.inv result }
+    
 end
 module ResolveUninit_MaybeUninit
   type t
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = t
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = t,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Std1_Default_Default_IsDefault_Interface as IsDefault0 with
     type self = t
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = t
   clone Core_Default_Default_Default_Interface as Default0 with
     type self = t,
-    predicate IsDefault0.is_default = IsDefault0.is_default
+    predicate IsDefault0.is_default = IsDefault0.is_default,
+    predicate Inv0.inv = Inv0.inv
   let rec cfg maybe_uninit [#"../resolve_uninit.rs" 5 0 5 51] [@cfg:stackify] [@cfg:subregion_analysis] (b : bool) (y : t) : t
+    requires {[#"../resolve_uninit.rs" 5 41 5 42] Inv0.inv y}
+    ensures { [#"../resolve_uninit.rs" 5 50 5 51] Inv0.inv result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : t;
@@ -64,6 +106,7 @@ module ResolveUninit_MaybeUninit
   var y : t = y;
   var x : t;
   var _4 : ();
+  var _6 : t;
   {
     goto BB0
   }
@@ -74,13 +117,16 @@ module ResolveUninit_MaybeUninit
       end
   }
   BB1 {
+    _6 <- ([#"../resolve_uninit.rs" 8 12 8 24] Default0.default ());
     goto BB2
   }
   BB2 {
     goto BB3
   }
   BB3 {
-    x <- ([#"../resolve_uninit.rs" 8 12 8 24] Default0.default ());
+    x <- _6;
+    _6 <- any t;
+    assert { [@expl:type invariant] Inv0.inv x };
     assume { Resolve0.resolve x };
     goto BB5
   }
@@ -171,16 +217,16 @@ module ResolveUninit_InitJoin
       end
   }
   BB1 {
-    _8 <- borrow_mut x;
+    _8 <- Borrow.borrow_mut x;
     x <-  ^ _8;
-    _7 <- borrow_mut ( * _8);
+    _7 <- Borrow.borrow_mut ( * _8);
     _8 <- { _8 with current = ( ^ _7) };
     z <- _7;
     _7 <- any borrowed int32;
     assume { Resolve0.resolve _8 };
-    _10 <- borrow_mut ( * z);
+    _10 <- Borrow.borrow_mut ( * z);
     z <- { z with current = ( ^ _10) };
-    _9 <- borrow_mut ( * _10);
+    _9 <- Borrow.borrow_mut ( * _10);
     _10 <- { _10 with current = ( ^ _9) };
     y <- _9;
     _9 <- any borrowed int32;
@@ -189,9 +235,9 @@ module ResolveUninit_InitJoin
     goto BB7
   }
   BB2 {
-    _12 <- borrow_mut x;
+    _12 <- Borrow.borrow_mut x;
     x <-  ^ _12;
-    _11 <- borrow_mut ( * _12);
+    _11 <- Borrow.borrow_mut ( * _12);
     _12 <- { _12 with current = ( ^ _11) };
     y <- _11;
     _11 <- any borrowed int32;

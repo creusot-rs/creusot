@@ -1,10 +1,10 @@
-use crate::{std::alloc::Allocator, *};
+use crate::{logic::IndexLogic, std::alloc::Allocator, *};
 pub use ::std::collections::VecDeque;
 
 impl<T, A: Allocator> ShallowModel for VecDeque<T, A> {
     type ShallowModelTy = Seq<T>;
 
-    #[logic]
+    #[ghost]
     #[trusted]
     #[open(self)]
     #[ensures(result.len() <= usize::MAX@)]
@@ -16,7 +16,7 @@ impl<T, A: Allocator> ShallowModel for VecDeque<T, A> {
 impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
-    #[logic]
+    #[ghost]
     #[trusted]
     #[open(self)]
     #[ensures(self.shallow_model().len() == result.len())]
@@ -24,6 +24,28 @@ impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
               ==> result[i] == self[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { absurd }
+    }
+}
+
+impl<T, A: Allocator> IndexLogic<Int> for VecDeque<T, A> {
+    type Item = T;
+
+    #[ghost]
+    #[open]
+    #[why3::attr = "inline:trivial"]
+    fn index_logic(self, ix: Int) -> Self::Item {
+        pearlite! { self@[ix] }
+    }
+}
+
+impl<T, A: Allocator> IndexLogic<usize> for VecDeque<T, A> {
+    type Item = T;
+
+    #[ghost]
+    #[open]
+    #[why3::attr = "inline:trivial"]
+    fn index_logic(self, ix: usize) -> Self::Item {
+        pearlite! { self@[ix@] }
     }
 }
 

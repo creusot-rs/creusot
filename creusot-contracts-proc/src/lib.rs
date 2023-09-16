@@ -1,4 +1,4 @@
-#![feature(box_patterns, drain_filter, extend_one, proc_macro_def_site)]
+#![feature(box_patterns, extract_if, extend_one, proc_macro_def_site)]
 extern crate proc_macro;
 use extern_spec::ExternSpecs;
 use pearlite_syn::*;
@@ -399,7 +399,6 @@ impl Parse for Assertion {
 #[proc_macro]
 pub fn proof_assert(assertion: TS1) -> TS1 {
     let assert = parse_macro_input!(assertion as Assertion);
-
     let assert_body = pretyping::encode_block(&assert.0).unwrap();
 
     TS1::from(quote! {
@@ -416,14 +415,17 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
 }
 
 #[proc_macro]
-pub fn ghost(assertion: TS1) -> TS1 {
-    let assertion = TokenStream::from(assertion);
+pub fn gh(assertion: TS1) -> TS1 {
+    let assert = parse_macro_input!(assertion as Assertion);
+    let assert_body = pretyping::encode_block(&assert.0).unwrap();
+
     TS1::from(quote! {
         {
-            ::creusot_contracts::ghost::Ghost::from_fn(
+            ::creusot_contracts::__stubs::ghost_from_fn(
                 #[creusot::no_translate]
                 #[creusot::spec]
-                #[creusot::spec::ghost] || { ::creusot_contracts::ghost::Ghost::new (#assertion) }
+                #[creusot::spec::ghost]
+                || { ::creusot_contracts::ghost::Ghost::new (#assert_body) }
             )
         }
     })
@@ -475,6 +477,42 @@ impl Parse for LogicInput {
 }
 
 #[proc_macro_attribute]
+pub fn ghost(_: TS1, tokens: TS1) -> TS1 {
+    let log = parse_macro_input!(tokens as LogicInput);
+    match log {
+        LogicInput::Item(log) => ghost_item(log),
+        LogicInput::Sig(sig) => ghost_sig(sig),
+    }
+}
+
+fn ghost_sig(sig: TraitItemSignature) -> TS1 {
+    let span = sig.span();
+    TS1::from(quote_spanned! {span=>
+        #[creusot::decl::ghost]
+        #sig
+    })
+}
+
+fn ghost_item(log: LogicItem) -> TS1 {
+    let span = log.sig.span();
+
+    let term = log.body;
+    let vis = log.vis;
+    let def = log.defaultness;
+    let sig = log.sig;
+    let attrs = log.attrs;
+    let req_body = pretyping::encode_block(&term.stmts).unwrap();
+
+    TS1::from(quote_spanned! {span=>
+        #[creusot::decl::ghost]
+        #(#attrs)*
+        #vis #def #sig {
+            #req_body
+        }
+    })
+}
+
+#[proc_macro_attribute]
 pub fn logic(_: TS1, tokens: TS1) -> TS1 {
     let log = parse_macro_input!(tokens as LogicInput);
     match log {
@@ -515,7 +553,7 @@ pub fn law(_: TS1, tokens: TS1) -> TS1 {
     let tokens = TokenStream::from(tokens);
     TS1::from(quote! {
         #[creusot::decl::law]
-        #[::creusot_contracts::logic]
+        #[::creusot_contracts::ghost]
         #tokens
     })
 }

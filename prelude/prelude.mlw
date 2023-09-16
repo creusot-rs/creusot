@@ -1,8 +1,6 @@
 (* Why3 Logical Types *)
 module Mapping
-  function from_fn (f : 'a -> 'b) : ('a -> 'b) = f
-  val from_fn (f : 'a -> 'b) : ('a -> 'b)
-    ensures { result = from_fn f }
+  let function from_fn (f : 'a -> 'b) : ('a -> 'b) = f
 end
 
 module Seq
@@ -207,10 +205,11 @@ module Char
   axiom chr_code: forall c. chr (code c) = c
 end
 module Ghost
-  type ghost_ty 't = 't
+  type ghost_ty 't
   val function new (ghost x : 't) : ghost_ty 't
-    ensures { result = x }
-  let function inner (x : ghost_ty 't) : 't = x
+  val function inner (x : ghost_ty 't) : 't
+  axiom new_spec: forall x: 't [new x]. inner (new x) = x
+  axiom inner_spec: forall x: ghost_ty 't [inner x]. new (inner x) = x
 end
 
 module Slice
@@ -221,6 +220,8 @@ module Slice
   type slice 'a =
     { elts : seq 'a }
     invariant { Seq.length elts <= max_uint64 }
+  axiom slice_ext :
+    forall x y: slice 'a. x.elts = y.elts -> x = y
 
   type array 'a = slice 'a
 

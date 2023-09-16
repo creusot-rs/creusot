@@ -32,7 +32,7 @@ pub struct Sparse<T> {
 impl<T> ShallowModel for Sparse<T> {
     type ShallowModelTy = Seq<Option<T>>;
 
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[trusted]
     #[ensures(result.len() == self.size@)]
@@ -83,10 +83,10 @@ impl<T> Sparse<T> {
     #[requires(self.sparse_inv())]
     #[requires(i@ < self@.len())]
     #[ensures(match result {
-        None => self[i@] == None,
-        Some(x) => self[i@] == Some(*x)
+        None => self@[i@] == None,
+        Some(x) => self@[i@] == Some(*x)
     })]
-    #[ensures(match self[i@] {
+    #[ensures(match self@[i@] {
         None => result == None,
         Some(_) => true // result == Some(x) need 'asref'
     })]
@@ -101,7 +101,7 @@ impl<T> Sparse<T> {
 
     /* A key lemma to prove for safety of access in `set()`
      */
-    #[logic]
+    #[ghost]
     #[requires(self.sparse_inv())]
     #[requires(self.n == self.size)]
     #[requires(0 <= i && i < self.size@)]
@@ -114,14 +114,14 @@ impl<T> Sparse<T> {
     #[requires(i@ < self@.len())]
     #[ensures((^self).sparse_inv())]
     #[ensures((^self)@.len() == self@.len())]
-    #[ensures(forall<j: Int> j != i@ ==> (^self)[j] == self[j])]
-    #[ensures((^self)[i@] == Some(v))]
+    #[ensures(forall<j: Int> j != i@ ==> (^self)@[j] == self@[j])]
+    #[ensures((^self)@[i@] == Some(v))]
     pub fn set(&mut self, i: usize, v: T) {
         self.values[i] = v;
         let index = self.idx[i];
         if !(index < self.n && self.back[index] == i) {
             // the hard assertion!
-            ghost!(Self::lemma_permutation);
+            gh!(Self::lemma_permutation);
             proof_assert!(self.n@ < self.size@);
             // assert!(self.n < self.size);
             self.idx[i] = self.n;
@@ -138,7 +138,7 @@ impl<T> Sparse<T> {
  */
 #[ensures(result.sparse_inv())]
 #[ensures(result.size == sz)]
-#[ensures(forall<i: Int> result[i] == None)]
+#[ensures(forall<i: Int> result@[i] == None)]
 pub fn create<T: Clone + Copy>(sz: usize, dummy: T) -> Sparse<T> {
     Sparse { size: sz, n: 0, values: vec![dummy; sz], idx: vec![0; sz], back: vec![0; sz] }
 }

@@ -12,7 +12,9 @@ use common::Iterator;
 // FIXME: make it Map<I, A, F> again
 pub struct Map<A, I: Iterator<Item = A>, B, F: FnMut(I::Item, Ghost<Seq<A>>) -> B> {
     iter: I,
+    #[creusot::open_inv]
     func: F,
+    #[creusot::open_inv]
     produced: Ghost<Seq<A>>,
 }
 
@@ -65,19 +67,21 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
       None => self.completed(),
       Some(v) => (*self).produces_one(v, ^self)
     })]
-    #[maintains(inv(mut self))]
     fn next(&mut self) -> Option<Self::Item> {
+        let old_self = gh! { *self };
         match self.iter.next() {
             Some(v) => {
                 proof_assert! { self.func.precondition((v, self.produced)) };
-                ghost! { Self::produces_one_invariant };
-                let produced = ghost! { self.produced.push(v) };
-                let r = Some((self.func)(v, ghost! { self.produced.inner() })); // FIXME: Ghost should be Copy
+                let produced = gh! { self.produced.push(v) };
+                let r = (self.func)(v, gh! { self.produced.inner() }); // FIXME: Ghost should be Copy
                 self.produced = produced;
-                r
+                gh! { Self::produces_one_invariant };
+                proof_assert! { old_self.produces_one(r, *self) };
+                let _ = self; // Make sure self is not resolve until here.
+                Some(r)
             }
             None => {
-                self.produced = ghost! { Seq::EMPTY };
+                self.produced = gh! { Seq::EMPTY };
                 None
             }
         }
@@ -132,7 +136,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I::Item, I
         }
     }
 
-    #[logic]
+    #[ghost]
     #[requires(self.produces_one(e, other))]
     #[requires(inv(other.iter))]
     #[ensures(inv(other))]
@@ -178,7 +182,7 @@ pub fn map<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B>(
     iter: I,
     func: F,
 ) -> Map<I::Item, I, B, F> {
-    Map { iter, func, produced: ghost! {Seq::EMPTY} }
+    Map { iter, func, produced: gh! {Seq::EMPTY} }
 }
 
 pub fn identity<I: Iterator>(iter: I) {

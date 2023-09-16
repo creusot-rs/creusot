@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic, open};
+use creusot_contracts::*;
 
 pub struct S1 {
     pub f: i32,
@@ -18,7 +18,7 @@ pub fn test_assign(mut s: S2) {
 }
 
 #[open]
-#[logic]
+#[ghost]
 pub fn test_logic(s: S2) {
     s.s1.f;
 }

@@ -10,7 +10,7 @@ fn add_some(a: &mut u64) {
 #[requires(*a == 3u64)]
 #[ensures(^a > *a)]
 pub fn foo(a: &mut u64) {
-    let a_p: Ghost<u64> = ghost!(*a);
+    let a_p: Ghost<u64> = gh!(*a);
     add_some(a);
     proof_assert!(*a > *a_p);
 }

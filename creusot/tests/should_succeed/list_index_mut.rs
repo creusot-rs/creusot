@@ -1,65 +1,54 @@
 extern crate creusot_contracts;
 use creusot_contracts::{logic::Int, *};
 
-enum Option<T> {
-    None,
-    Some(T),
-}
-
-use Option::*;
-
 pub struct List(u32, Option<Box<List>>);
+impl List {
+    #[ghost]
+    fn len(self: List) -> Int {
+        {
+            let List(_, ls) = self;
+            1 + match ls {
+                Some(ls) => ls.len(),
+                None => 0,
+            }
+        }
+    }
 
-#[logic]
-fn len(l: List) -> Int {
-    {
-        let List(_, ls) = l;
-        1 + match ls {
-            Some(ls) => len(*ls),
-            None => 0,
+    #[ghost]
+    fn get(self: List, ix: Int) -> Option<u32> {
+        {
+            let List(i, ls) = self;
+            match ix > 0 {
+                false => Some(i),
+                true => match ls {
+                    Some(ls) => ls.get(ix - 1),
+                    None => None,
+                },
+            }
         }
     }
 }
 
-#[logic]
-fn get(l: List, ix: Int) -> Option<u32> {
-    {
-        let List(i, ls) = l;
-        match ix > 0 {
-            false => Some(i),
-            true => match ls {
-                Some(ls) => get(*ls, ix - 1),
-                None => None,
-            },
-        }
-    }
-}
-
-#[requires(param_ix@ < len(*param_l))]
-#[ensures(Some(*result) == get(*param_l, param_ix@))]
-#[ensures(Some(^result) == get(^param_l, param_ix@))]
-#[ensures(len(^param_l) == len(*param_l))]
-#[ensures(forall<i:Int> 0 <= i && i < len(*param_l) && i != param_ix@ ==> get(*param_l, i) == get(^param_l, i))]
-pub fn index_mut(param_l: &mut List, param_ix: usize) -> &mut u32 {
-    let old_l = ghost! { param_l };
-    let mut l = param_l;
-    let mut ix = param_ix;
-    #[invariant(0usize <= ix && ix@ < len (*l))]
-    #[invariant(get(*l, ix@) == get(**old_l, param_ix@))]
-    #[invariant(get(^l, ix@) == get(^*old_l, param_ix@))]
-    #[invariant(len(^l) == len(*l) ==> len(^*old_l) == len(**old_l))]
+#[requires(ix@ < l.len())]
+#[ensures(Some(*result) == l.get(ix@))]
+#[ensures(Some(^result) == (^l).get(ix@))]
+#[ensures((^l).len() == (*l).len())]
+#[ensures(forall<i:Int> 0 <= i && i < l.len() && i != ix@ ==> l.get(i) == (^l).get(i))]
+pub fn index_mut(mut l: &mut List, mut ix: usize) -> &mut u32 {
+    let old_l = gh! { l };
+    let old_ix = gh! { ix };
+    #[invariant(0usize <= ix && ix@ < l.len())]
+    #[invariant(l.get(ix@) == (**old_l).get(old_ix@))]
+    #[invariant((^l).get(ix@) == (^*old_l).get(old_ix@))]
+    #[invariant((^l).len() == l.len() ==> (^*old_l).len() == (**old_l).len())]
     #[invariant(
-        (forall<i:Int> 0 <= i && i < len (*l) && i != ix@ ==> get(^l, i) == get(*l, i)) ==>
-        forall<i:Int> 0 <= i && i < len (**old_l) && i != param_ix@ ==>
-            get (^*old_l, i) == get (**old_l, i)
+        (forall<i:Int> 0 <= i && i < l.len() && i != ix@ ==> (^l).get(i) == l.get(i)) ==>
+        forall<i:Int> 0 <= i && i < old_l.len() && i != old_ix@ ==>
+            (^*old_l).get(i) == (**old_l).get(i)
     )]
     while ix > 0 {
-        match l.1 {
-            Some(ref mut n) => {
-                l = n;
-            }
-            None => std::process::abort(),
-        }
+        l = l.1.as_mut().unwrap();
+
         ix -= 1;
     }
 
@@ -67,10 +56,10 @@ pub fn index_mut(param_l: &mut List, param_ix: usize) -> &mut u32 {
 }
 
 // Ensure that this performs a set on the list
-#[requires(ix@ < len(*l))]
-#[ensures(Some(v) == get(^l, ix@))]
-#[ensures(len(^l) == len(*l))]
-#[ensures(forall<i:Int> 0 <= i && i < len(*l) && i != ix@ ==> get(*l, i) == get(^l, i))]
+#[requires(ix@ < l.len())]
+#[ensures(Some(v) == (^l).get(ix@))]
+#[ensures((^l).len() == l.len())]
+#[ensures(forall<i:Int> 0 <= i && i < l.len() && i != ix@ ==> l.get(i) == (^l).get(i))]
 pub fn write(l: &mut List, ix: usize, v: u32) {
     *index_mut(l, ix) = v;
 }

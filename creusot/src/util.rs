@@ -10,7 +10,7 @@ use indexmap::IndexMap;
 use itertools::izip;
 use rustc_ast::{
     ast::{AttrArgs, AttrArgsEq},
-    AttrItem, AttrKind, Attribute, MetaItemLit,
+    AttrItem, AttrKind, Attribute, MetaItemLit, Mutability,
 };
 use rustc_hir::{
     def::{DefKind, Namespace},
@@ -36,8 +36,9 @@ use why3::{
 
 pub(crate) fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
     crate::util::is_no_translate(tcx, def_id)
-        || crate::util::is_logic(tcx, def_id)
+        || crate::util::is_ghost(tcx, def_id)
         || crate::util::is_predicate(tcx, def_id)
+        || crate::util::is_logic(tcx, def_id)
 }
 
 pub(crate) fn is_no_translate(tcx: TyCtxt, def_id: DefId) -> bool {
@@ -64,22 +65,35 @@ pub(crate) fn is_assertion(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "assert"]).is_some()
 }
 
-pub(crate) fn is_ghost(tcx: TyCtxt, def_id: DefId) -> bool {
+pub(crate) fn is_ghost_closure(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "ghost"]).is_some()
 }
 
-pub(crate) fn is_ghost_closure<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
-    if let TyKind::Closure(def_id, _) = ty.peel_refs().kind()  && is_ghost(tcx, *def_id)  {
+pub(crate) fn ghost_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
+    if let TyKind::Closure(def_id, _) = ty.peel_refs().kind() && is_ghost_closure(tcx, *def_id)  {
         Some(*def_id)
     } else { None }
+}
+
+pub(crate) fn is_ghost_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    let r: Option<bool> = try {
+        let adt = ty.ty_adt_def()?;
+        let builtin = get_builtin(tcx, adt.did())?;
+        builtin.as_str() == "prelude.Ghost.ghost_ty"
+    };
+    r.unwrap_or(false)
+}
+
+pub(crate) fn is_logic(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "logic"]).is_some()
 }
 
 pub(crate) fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "predicate"]).is_some()
 }
 
-pub(crate) fn is_logic(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "logic"]).is_some()
+pub(crate) fn is_ghost(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "ghost"]).is_some()
 }
 
 pub(crate) fn is_trusted(tcx: TyCtxt, def_id: DefId) -> bool {
@@ -158,7 +172,7 @@ pub(crate) fn has_body(ctx: &mut TranslationCtx, def_id: DefId) -> bool {
         ctx.tcx.hir().maybe_body_owned_by(local_id).is_some()
     } else {
         match item_type(ctx.tcx, def_id) {
-            ItemType::Logic | ItemType::Predicate => ctx.term(def_id).is_some(),
+            ItemType::Ghost | ItemType::Logic | ItemType::Predicate => ctx.term(def_id).is_some(),
             _ => false,
         }
     }
@@ -226,9 +240,12 @@ pub(crate) fn ident_of_ty(sym: Symbol) -> Ident {
 pub(crate) fn inv_module_name(tcx: TyCtxt, kind: TyInvKind) -> Ident {
     match kind {
         TyInvKind::Trivial => "TyInv_Trivial".into(),
-        TyInvKind::Borrow => "TyInv_Borrow".into(),
+        TyInvKind::Borrow(Mutability::Not) => "TyInv_Borrow_Shared".into(),
+        TyInvKind::Borrow(Mutability::Mut) => "TyInv_Borrow".into(),
+        TyInvKind::Box => "TyInv_Box".into(),
         TyInvKind::Adt(adt_did) => format!("{}_Inv", &*ident_path(tcx, adt_did)).into(),
         TyInvKind::Tuple(arity) => format!("TyInv_Tuple{arity}").into(),
+        TyInvKind::Slice => format!("TyInv_Slice").into(),
     }
 }
 
@@ -273,6 +290,7 @@ fn ident_path(tcx: TyCtxt, def_id: DefId) -> Ident {
 pub enum ItemType {
     Logic,
     Predicate,
+    Ghost,
     Program,
     Closure,
     Trait,
@@ -286,7 +304,7 @@ pub enum ItemType {
 impl ItemType {
     pub(crate) fn val(&self, sig: Signature) -> ValDecl {
         match self {
-            ItemType::Logic => {
+            ItemType::Logic | ItemType::Ghost => {
                 ValDecl { sig, ghost: false, val: false, kind: Some(LetKind::Function) }
             }
             ItemType::Predicate => {
@@ -306,6 +324,7 @@ impl ItemType {
         match self {
             ItemType::Logic => "logic function",
             ItemType::Predicate => "predicate",
+            ItemType::Ghost => "ghost function",
             ItemType::Program => "program function",
             ItemType::Closure => "closure",
             ItemType::Trait => "trait declaration",
@@ -325,6 +344,8 @@ pub(crate) fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
         DefKind::Fn | DefKind::AssocFn => {
             if is_predicate(tcx, def_id) {
                 ItemType::Predicate
+            } else if is_ghost(tcx, def_id) {
+                ItemType::Ghost
             } else if is_logic(tcx, def_id) {
                 ItemType::Logic
             } else {
@@ -465,7 +486,7 @@ fn elaborate_type_invariants<'tcx>(
 ) {
     if is_user_tyinv(ctx.tcx, def_id)
         || is_inv_internal(ctx.tcx, def_id)
-        || (is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
+        || (is_predicate(ctx.tcx, def_id) || is_ghost(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
             && pre_sig.contract.ensures.is_empty()
     {
         return;
@@ -484,19 +505,7 @@ fn elaborate_type_invariants<'tcx>(
         }
 
         if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
-            let term = EarlyBinder(term).subst(ctx.tcx, subst);
-
-            if ty.is_mutable_ptr() {
-                let inner = ty.builtin_deref(true).unwrap().ty;
-                let arg = Term { ty: *ty, span: *span, kind: TermKind::Var(*name) };
-                let arg =
-                    Term { ty: inner, span: *span, kind: TermKind::Fin { term: Box::new(arg) } };
-                // FIXME: why can this be none?
-                let Some(term) =
-                    pearlite::type_invariant_term_with_arg(ctx, def_id, arg, *span, inner) else {continue; };
-                pre_sig.contract.ensures.push(term);
-            }
-
+            let term = EarlyBinder::bind(term).subst(ctx.tcx, subst);
             pre_sig.contract.requires.push(term);
         }
     }
@@ -509,7 +518,7 @@ fn elaborate_type_invariants<'tcx>(
         ret_ty_span.unwrap_or_else(|| ctx.tcx.def_span(def_id)),
         pre_sig.output,
     ) {
-        let term = EarlyBinder(term).subst(ctx.tcx, subst);
+        let term = EarlyBinder::bind(term).subst(ctx.tcx, subst);
         pre_sig.contract.ensures.push(term);
     }
 }

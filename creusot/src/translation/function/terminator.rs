@@ -7,7 +7,6 @@ use crate::{
         specification::inv_subst,
         traits,
     },
-    util::is_ghost_closure,
 };
 use itertools::Itertools;
 use rustc_hir::def_id::DefId;
@@ -26,7 +25,7 @@ use rustc_middle::{
         ParamEnv, Predicate, Ty, TyKind,
     },
 };
-use rustc_span::Span;
+use rustc_span::{Span, Symbol};
 use rustc_trait_selection::traits::{error_reporting::TypeErrCtxtExt, TraitEngineExt};
 use std::collections::HashMap;
 
@@ -72,15 +71,14 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
 
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
-                if let Some(param) = subst.get(1) &&
-                    let GenericArgKind::Type(ty) = param.unpack() &&
-                    let Some(def_id) = is_ghost_closure(self.tcx, ty) {
-                    let mut assertion = self.assertions.remove(&def_id).unwrap();
+                if Some(fun_def_id) == self.tcx.get_diagnostic_item(Symbol::intern("ghost_from_fn"))
+                {
+                    let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() else { panic!() };
+                    let TyKind::Closure(def_id, _) = ty.kind() else { panic!() };
+                    let mut assertion = self.assertions.remove(def_id).unwrap();
                     assertion.subst(&inv_subst(self.body, &self.locals, terminator.source_info));
-                    let (loc, bb) = (destination, target.unwrap());
-
-                    self.emit_ghost_assign(*loc, assertion);
-                    self.emit_terminator(Terminator::Goto(bb));
+                    self.emit_ghost_assign(*destination, assertion);
+                    self.emit_terminator(Terminator::Goto(target.unwrap()));
                     return;
                 }
 
@@ -230,7 +228,7 @@ pub(crate) fn evaluate_additional_predicates<'tcx>(
     param_env: ParamEnv<'tcx>,
     sp: Span,
 ) -> Result<(), Vec<FulfillmentError<'tcx>>> {
-    let mut fulfill_cx = <dyn TraitEngine<'tcx>>::new(infcx.tcx);
+    let mut fulfill_cx = <dyn TraitEngine<'tcx>>::new(infcx);
     for predicate in p {
         let predicate = infcx.tcx.erase_regions(predicate);
         let cause = ObligationCause::dummy_with_span(sp);

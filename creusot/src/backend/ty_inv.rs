@@ -6,20 +6,24 @@ use crate::{ctx::*, translation::traits, util};
 use indexmap::IndexSet;
 use rustc_ast::Mutability;
 use rustc_hir::{def::Namespace, def_id::DefId};
+use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
 use why3::{
     declaration::{Axiom, Decl, Module, TyDecl},
-    exp::{Exp, Pattern},
+    exp::{Constant, Exp, Pattern},
+    ty::Type as MlT,
     Ident, QName,
 };
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug, TypeVisitable, TypeFoldable)]
 pub(crate) enum TyInvKind {
     Trivial,
-    Borrow,
+    Borrow(Mutability),
+    Box,
     Adt(DefId),
     Tuple(usize),
+    Slice,
 }
 
 impl TyInvKind {
@@ -28,55 +32,52 @@ impl TyInvKind {
             TyKind::Bool | TyKind::Char | TyKind::Int(_) | TyKind::Uint(_) | TyKind::Float(_) => {
                 TyInvKind::Trivial
             }
-            TyKind::Ref(_, ty, Mutability::Not) => TyInvKind::from_ty(*ty),
-            TyKind::Ref(_, _, Mutability::Mut) => TyInvKind::Borrow,
-            TyKind::Adt(adt_def, adt_substs) if adt_def.is_box() => {
-                TyInvKind::from_ty(adt_substs.type_at(0))
-            }
-            // TODO: if ADT inv is trivial, return TyInvKind::Trivial (optimization)
+            TyKind::Ref(_, _, m) => TyInvKind::Borrow(*m),
+            TyKind::Adt(adt_def, _) if adt_def.is_box() => TyInvKind::Box,
             TyKind::Adt(adt_def, _) => TyInvKind::Adt(adt_def.did()),
             TyKind::Tuple(tys) => TyInvKind::Tuple(tys.len()),
+            TyKind::Slice(_) => TyInvKind::Slice,
             _ => TyInvKind::Trivial, // TODO
         }
     }
 
     pub(crate) fn to_skeleton_ty<'tcx>(self, tcx: TyCtxt<'tcx>) -> Ty<'tcx> {
+        let param = tcx.mk_ty_param(0, Symbol::intern("T"));
         match self {
-            TyInvKind::Trivial => tcx.mk_ty_param(0, Symbol::intern("T")),
-            TyInvKind::Borrow => {
-                let re = tcx.lifetimes.re_erased;
-                let ty = tcx.mk_ty_param(0, Symbol::intern("T"));
-                tcx.mk_mut_ref(re, ty)
-            }
+            TyInvKind::Trivial => param,
+            TyInvKind::Borrow(Mutability::Not) => tcx.mk_imm_ref(tcx.lifetimes.re_erased, param),
+            TyInvKind::Borrow(Mutability::Mut) => tcx.mk_mut_ref(tcx.lifetimes.re_erased, param),
+            TyInvKind::Box => tcx.mk_box(param),
             TyInvKind::Adt(did) => tcx.type_of(did).subst_identity(),
             TyInvKind::Tuple(arity) => tcx.mk_tup_from_iter(
                 (0..arity).map(|i| tcx.mk_ty_param(i as _, Symbol::intern(&format!("T{i}")))),
             ),
+            TyInvKind::Slice => tcx.mk_slice(param),
         }
     }
 
     pub(crate) fn generics(self, tcx: TyCtxt) -> Vec<Ident> {
         match self {
-            TyInvKind::Trivial | TyInvKind::Borrow => vec!["t".into()],
+            TyInvKind::Trivial | TyInvKind::Borrow(_) | TyInvKind::Box | TyInvKind::Slice => {
+                vec!["t".into()]
+            }
             TyInvKind::Adt(def_id) => ty_param_names(tcx, def_id).collect(),
             TyInvKind::Tuple(arity) => (0..arity).map(|i| format!["t{i}"].into()).collect(),
         }
     }
-}
 
-pub(crate) fn tyinv_substs<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> SubstsRef<'tcx> {
-    match ty.kind() {
-        TyKind::Bool | TyKind::Char | TyKind::Int(_) | TyKind::Uint(_) | TyKind::Float(_) => {
-            tcx.mk_substs(&[GenericArg::from(ty)])
+    pub(crate) fn tyinv_substs<'tcx>(self, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> SubstsRef<'tcx> {
+        match (self, ty.kind()) {
+            (TyInvKind::Trivial, _) => tcx.mk_substs(&[GenericArg::from(ty)]),
+            (TyInvKind::Borrow(_), TyKind::Ref(_, ty, _))
+            | (TyInvKind::Slice, TyKind::Slice(ty)) => tcx.mk_substs(&[GenericArg::from(*ty)]),
+            (TyInvKind::Box, TyKind::Adt(_, adt_substs)) => tcx.mk_substs(&adt_substs[..1]),
+            (TyInvKind::Adt(_), TyKind::Adt(_, adt_substs)) => adt_substs,
+            (TyInvKind::Tuple(_), TyKind::Tuple(tys)) => {
+                tcx.mk_substs_from_iter(tys.iter().map(GenericArg::from))
+            }
+            _ => unreachable!(),
         }
-        TyKind::Ref(_, ty, Mutability::Not) => tyinv_substs(tcx, *ty),
-        TyKind::Ref(_, ty, Mutability::Mut) => tcx.mk_substs(&[GenericArg::from(*ty)]),
-        TyKind::Adt(adt_def, adt_substs) if adt_def.is_box() => {
-            tyinv_substs(tcx, adt_substs.type_at(0))
-        }
-        TyKind::Adt(_, adt_substs) => adt_substs,
-        TyKind::Tuple(tys) => tcx.mk_substs_from_iter(tys.iter().map(GenericArg::from)),
-        _ => tcx.mk_substs(&[GenericArg::from(ty)]),
     }
 }
 
@@ -90,6 +91,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,
+    default_trivial: bool,
 ) -> bool {
     if ty.is_closure() {
         return true;
@@ -99,12 +101,14 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
     let mut visited_adts = IndexSet::new();
     let mut stack = vec![ty];
     while let Some(ty) = stack.pop() {
-        if resolve_user_inv(tcx, ty, param_env).is_some() {
+        if resolve_user_inv(tcx, ty, param_env).is_some()
+            || (!default_trivial && matches!(ty.kind(), TyKind::Param(_) | TyKind::Alias(_, _)))
+        {
             return false;
         }
 
         match ty.kind() {
-            TyKind::Ref(_, ty, _) => stack.push(*ty),
+            TyKind::Ref(_, ty, _) | TyKind::Slice(ty) => stack.push(*ty),
             TyKind::Tuple(tys) => stack.extend(*tys),
             TyKind::Adt(def, substs) if def.is_box() => stack.push(substs.type_at(0)),
             TyKind::Adt(def, substs) => {
@@ -149,12 +153,15 @@ fn build_inv_axiom<'tcx>(
 ) -> Axiom {
     let name = match inv_kind {
         TyInvKind::Trivial => "inv_trivial".into(),
-        TyInvKind::Borrow => "inv_borrow".into(),
+        TyInvKind::Borrow(Mutability::Not) => "inv_borrow_shared".into(),
+        TyInvKind::Borrow(Mutability::Mut) => "inv_borrow".into(),
+        TyInvKind::Box => "inv_box".into(),
         TyInvKind::Adt(did) => {
             let ty_name = util::item_name(ctx.tcx, did, Namespace::TypeNS);
             format!("inv_{}", &*ty_name).into()
         }
         TyInvKind::Tuple(arity) => format!("inv_tuple{arity}").into(),
+        TyInvKind::Slice => "inv_slice".into(),
     };
 
     let param_env =
@@ -187,7 +194,7 @@ fn build_inv_exp<'tcx>(
 ) -> Option<Exp> {
     let ty = ctx.tcx.normalize_erasing_regions(param_env, ty);
 
-    if mode == Mode::Field && is_tyinv_trivial(ctx.tcx, param_env, ty) {
+    if mode == Mode::Field && is_tyinv_trivial(ctx.tcx, param_env, ty, false) {
         return None;
     }
 
@@ -222,14 +229,18 @@ fn build_inv_exp_struct<'tcx>(
             build_inv_exp(ctx, names, ident, *ty, param_env, mode)
         }
         TyKind::Ref(_, ty, Mutability::Mut) => {
-            let mut body = build_inv_exp(ctx, names, "a".into(), *ty, param_env, mode)?;
-
-            // TODO include final value
+            let inv = build_inv_exp(ctx, names, "a".into(), *ty, param_env, mode)?;
             names.import_prelude_module(PreludeModule::Borrow);
-            let deref = Exp::Current(Box::new(Exp::pure_var(ident)));
 
-            body.subst(&[("a".into(), deref)].into());
-            Some(body)
+            let mut inv_cur = inv.clone();
+            let cur = Exp::Current(Box::new(Exp::pure_var(ident.clone())));
+            inv_cur.subst(&[("a".into(), cur)].into());
+
+            let mut inv_fin = inv;
+            let fin = Exp::Final(Box::new(Exp::pure_var(ident)));
+            inv_fin.subst(&[("a".into(), fin)].into());
+
+            Some(inv_cur.log_and(inv_fin))
         }
         TyKind::Tuple(tys) => {
             let fields: Vec<Ident> =
@@ -243,6 +254,12 @@ fn build_inv_exp_struct<'tcx>(
 
             let pattern = Pattern::TupleP(fields.into_iter().map(Pattern::VarP).collect());
             Some(Exp::Let { pattern, arg: Box::new(Exp::pure_var(ident)), body: Box::new(body) })
+        }
+        TyKind::Slice(ty) => {
+            names.import_prelude_module(PreludeModule::Slice);
+            let seq = Exp::pure_qvar(QName::from_string("Slice.id").unwrap())
+                .app_to(Exp::pure_var(ident));
+            build_inv_exp_seq(ctx, names, seq, param_env, *ty)
         }
         TyKind::Adt(adt_def, adt_subst) if adt_def.is_box() => {
             build_inv_exp(ctx, names, ident, adt_subst.type_at(0), param_env, mode)
@@ -263,6 +280,13 @@ fn build_inv_exp_struct<'tcx>(
                     inv.subst(&[("a".into(), inner)].into());
                     Some(inv)
                 }
+                "seq.Seq.seq" => build_inv_exp_seq(
+                    ctx,
+                    names,
+                    Exp::pure_var(ident),
+                    param_env,
+                    adt_subst.type_at(0),
+                ),
                 _ => None,
             }
         }
@@ -277,6 +301,28 @@ fn build_inv_exp_struct<'tcx>(
     }
 }
 
+fn build_inv_exp_seq<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    seq: Exp,
+    param_env: ParamEnv<'tcx>,
+    ty: Ty<'tcx>,
+) -> Option<Exp> {
+    names.import_prelude_module(PreludeModule::Seq);
+    names.import_prelude_module(PreludeModule::Int);
+
+    let const_0 = Exp::Const(Constant::Int(0, None));
+    let i: Exp = Exp::pure_var("i".into());
+    let len = Exp::pure_qvar(QName::from_string("Seq.length").unwrap()).app_to(seq.clone());
+    let bounds = const_0.leq(i.clone()).log_and(i.clone().lt(len));
+
+    let ith = Exp::pure_qvar(QName::from_string("Seq.get").unwrap()).app(vec![seq, i]);
+    let mut body = build_inv_exp(ctx, names, "a".into(), ty, param_env, Mode::Field)?;
+    body.subst(&[("a".into(), ith)].into());
+
+    Some(Exp::Forall(vec![("i".into(), MlT::Integer)], Box::new(bounds.implies(body))))
+}
+
 fn build_inv_exp_adt<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
@@ -285,6 +331,11 @@ fn build_inv_exp_adt<'tcx>(
     adt_def: AdtDef,
     subst: SubstsRef<'tcx>,
 ) -> Option<Exp> {
+    // trusted types are opaque and thus have no structual invariant
+    if util::is_trusted(ctx.tcx, adt_def.did()) {
+        return None;
+    }
+
     let mut branches = vec![];
     let mut trivial = true;
 
@@ -300,8 +351,10 @@ fn build_inv_exp_adt<'tcx>(
                 field_def.name.as_str().into()
             };
 
+            let open_inv = util::is_open_ty_inv(ctx.tcx, field_def.did);
+
             let field_ty = field_def.ty(ctx.tcx, subst);
-            if let Some(mut field_inv) =
+            if !open_inv && let Some(mut field_inv) =
                 build_inv_exp(ctx, names, field_name.clone(), field_ty, param_env, Mode::Field)
             {
                 ctx.translate_accessor(field_def.did);

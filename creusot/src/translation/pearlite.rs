@@ -1,6 +1,6 @@
 // A poorly named module.
 //
-// Entrypoint for translation of all Pearlite specifications and code: #[logic] / #[predicate], contracts, proof_assert!
+// Entrypoint for translation of all Pearlite specifications and code: #[ghost] / #[logic], contracts, proof_assert!
 //
 // Transforms THIR into a Term which may be serialized in Creusot metadata files for usage by dependent crates
 // The `lower` module then transforms a `Term` into a WhyML expression.
@@ -9,7 +9,7 @@ use std::collections::HashSet;
 
 use crate::{
     error::{CrErr, CreusotResult, Error},
-    translation::{specification::PurityVisitor, TranslationCtx},
+    translation::TranslationCtx,
     util,
 };
 use itertools::Itertools;
@@ -24,8 +24,7 @@ pub(crate) use rustc_middle::thir;
 use rustc_middle::{
     mir::{BorrowKind, Mutability::*},
     thir::{
-        visit, AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId,
-        StmtKind, Thir,
+        AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
     },
     ty::{
         int_ty, subst::SubstsRef, uint_ty, CanonicalUserType, Ty, TyCtxt, TyKind, TypeFoldable,
@@ -257,11 +256,6 @@ pub(crate) fn pearlite<'tcx>(
         return Err(Error::new(ctx.def_span(id), "type checking failed"));
     };
 
-    visit::walk_expr(
-        &mut PurityVisitor { tcx: ctx.tcx, thir: &thir, in_pure_ctx: true },
-        &thir[expr],
-    );
-
     let lower = ThirTerm { ctx, item_id: id, thir: &thir };
 
     let res = lower.body_term(expr)?;
@@ -328,9 +322,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
                 use rustc_middle::mir;
                 let op = match op {
-                    mir::BinOp::Add => BinOp::Add,
-                    mir::BinOp::Sub => BinOp::Sub,
-                    mir::BinOp::Mul => BinOp::Mul,
+                    mir::BinOp::Add | mir::BinOp::AddUnchecked => BinOp::Add,
+                    mir::BinOp::Sub | mir::BinOp::SubUnchecked => BinOp::Sub,
+                    mir::BinOp::Mul | mir::BinOp::MulUnchecked => BinOp::Mul,
                     mir::BinOp::Div => BinOp::Div,
                     mir::BinOp::Rem => BinOp::Rem,
                     mir::BinOp::BitXor => {
@@ -342,10 +336,10 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     mir::BinOp::BitOr => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
-                    mir::BinOp::Shl => {
+                    mir::BinOp::Shl | mir::BinOp::ShlUnchecked => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
-                    mir::BinOp::Shr => {
+                    mir::BinOp::Shr | mir::BinOp::ShrUnchecked => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
                     mir::BinOp::Lt => BinOp::Lt,
@@ -422,66 +416,36 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 match pearlite_stub(self.ctx.tcx, f_ty) {
                     Some(Forall) => {
                         let (binder, body) = self.quant_term(args[0])?;
-                        let body = match type_invariant_term(
+                        if let Some(inv_term) = type_invariant_term(
                             self.ctx,
                             self.item_id.to_def_id(),
                             binder.0,
                             span,
                             binder.1.tuple_fields()[0],
                         ) {
-                            Some(inv_term) => Term {
-                                ty,
-                                span,
-                                kind: TermKind::Impl {
-                                    lhs: Box::new(inv_term),
-                                    rhs: Box::new(body),
-                                },
-                            },
-                            None => body,
-                        };
-
-                        Ok(Term {
-                            ty,
-                            span,
-                            kind: TermKind::Forall { binder, body: Box::new(body) },
-                        })
+                            Ok(body.guarded_forall(binder, inv_term).span(span))
+                        } else {
+                            Ok(body.forall(binder).span(span))
+                        }
                     }
                     Some(Exists) => {
                         let (binder, body) = self.quant_term(args[0])?;
-                        let body = match type_invariant_term(
+                        if let Some(inv_term) = type_invariant_term(
                             self.ctx,
                             self.item_id.to_def_id(),
                             binder.0,
                             span,
                             binder.1.tuple_fields()[0],
                         ) {
-                            Some(inv_term) => Term {
-                                ty,
-                                span,
-                                kind: TermKind::Binary {
-                                    op: BinOp::And,
-                                    lhs: Box::new(inv_term),
-                                    rhs: Box::new(body),
-                                },
-                            },
-                            None => body,
-                        };
-
-                        Ok(Term {
-                            ty,
-                            span,
-                            kind: TermKind::Exists { binder, body: Box::new(body) },
-                        })
+                            Ok(body.guarded_exists(binder, inv_term).span(span))
+                        } else {
+                            Ok(body.exists(binder).span(span))
+                        }
                     }
                     Some(Fin) => {
                         let term = self.expr_term(args[0])?;
 
                         Ok(Term { ty, span, kind: TermKind::Fin { term: Box::new(term) } })
-                    }
-                    Some(Cur) => {
-                        let term = self.expr_term(args[0])?;
-
-                        Ok(Term { ty, span, kind: TermKind::Cur { term: Box::new(term) } })
                     }
                     Some(Impl) => {
                         let lhs = self.expr_term(args[0])?;
@@ -528,9 +492,6 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         Ok(Term { ty, span, kind: TermKind::Old { term: Box::new(term) } })
                     }
                     Some(ResultCheck) => {
-                        Ok(Term { ty, span, kind: TermKind::Tuple { fields: vec![] } })
-                    }
-                    Some(DummyCall) => {
                         Ok(Term { ty, span, kind: TermKind::Tuple { fields: vec![] } })
                     }
                     Some(Absurd) => Ok(Term { ty, span, kind: TermKind::Absurd }),
@@ -608,16 +569,12 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             // TODO: If we deref a shared borrow this should be erased?
             // Can it happen?
             ExprKind::Deref { arg } => {
+                let mut arg_trans = self.expr_term(arg)?;
                 if self.thir[arg].ty.is_box() || self.thir[arg].ty.ref_mutability() == Some(Not) {
-                    let mut arg = self.expr_term(arg)?;
-                    arg.ty = arg.ty.builtin_deref(false).expect("expected &T").ty;
-                    Ok(arg)
+                    arg_trans.ty = arg_trans.ty.builtin_deref(false).expect("expected &T").ty;
+                    Ok(arg_trans)
                 } else {
-                    Ok(Term {
-                        ty,
-                        span,
-                        kind: TermKind::Cur { term: Box::new(self.expr_term(arg)?) },
-                    })
+                    Ok(Term { ty, span, kind: TermKind::Cur { term: Box::new(arg_trans) } })
                 }
             }
             ExprKind::Match { scrutinee, ref arms } => {
@@ -941,16 +898,7 @@ pub(crate) fn type_invariant_term<'tcx>(
 ) -> Option<Term<'tcx>> {
     // assert!(!name.as_str().is_empty(), "name has len 0, env={env_did:?}, ty={ty:?}");
     let arg = Term { ty, span, kind: TermKind::Var(name) };
-    type_invariant_term_with_arg(ctx, env_did, arg, span, ty)
-}
 
-pub(crate) fn type_invariant_term_with_arg<'tcx>(
-    ctx: &TranslationCtx<'tcx>,
-    env_did: DefId,
-    arg: Term<'tcx>,
-    span: Span,
-    ty: Ty<'tcx>,
-) -> Option<Term<'tcx>> {
     let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(env_did, ty)?;
     let inv_fn_ty = ctx.type_of(inv_fn_did).subst(ctx.tcx, inv_fn_substs);
     assert!(matches!(inv_fn_ty.kind(), TyKind::FnDef(id, _) if id == &inv_fn_did));
@@ -973,7 +921,6 @@ pub(crate) enum Stub {
     Forall,
     Exists,
     Fin,
-    Cur,
     Impl,
     Equals,
     Neq,
@@ -981,7 +928,6 @@ pub(crate) enum Stub {
     Old,
     ResultCheck,
     Absurd,
-    DummyCall,
 }
 
 pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
@@ -994,9 +940,6 @@ pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stu
         }
         if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("fin")) {
             return Some(Stub::Fin);
-        }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("cur")) {
-            return Some(Stub::Cur);
         }
         if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("implication")) {
             return Some(Stub::Impl);
@@ -1018,9 +961,6 @@ pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stu
         }
         if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("closure_result_constraint")) {
             return Some(Stub::ResultCheck);
-        }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("closure_dummy_call")) {
-            return Some(Stub::DummyCall);
         }
         None
     } else {
@@ -1234,12 +1174,24 @@ impl<'tcx> Term<'tcx> {
 
     pub(crate) fn conj(self, rhs: Self) -> Self {
         match self.kind {
+            // ⟘ ∧ A = ⟘
             TermKind::Lit(Literal::Bool(false)) => self,
+            // ⟙ ∧ A = A
             TermKind::Lit(Literal::Bool(true)) => rhs,
-            _ => Term {
-                ty: self.ty,
-                kind: TermKind::Binary { op: BinOp::And, lhs: Box::new(self), rhs: Box::new(rhs) },
-                span: DUMMY_SP,
+            _ => match rhs.kind {
+                // A ∧ ⟘ = ⟘
+                TermKind::Lit(Literal::Bool(false)) => rhs,
+                // A ∧ ⟙ = A
+                TermKind::Lit(Literal::Bool(true)) => self,
+                _ => Term {
+                    ty: self.ty,
+                    kind: TermKind::Binary {
+                        op: BinOp::And,
+                        lhs: Box::new(self),
+                        rhs: Box::new(rhs),
+                    },
+                    span: DUMMY_SP,
+                },
             },
         }
     }
@@ -1261,14 +1213,87 @@ impl<'tcx> Term<'tcx> {
     }
 
     pub(crate) fn implies(self, rhs: Self) -> Self {
+        // A → ⟙ = ⟙
+        if let TermKind::Lit(Literal::Bool(true)) = rhs.kind {
+            return rhs;
+        }
+
         match self.kind {
+            // ⟙ → A = A
             TermKind::Lit(Literal::Bool(true)) => rhs,
+            // (⟘ → A) = ⟙
+            TermKind::Lit(Literal::Bool(false)) => {
+                Term { ty: self.ty, kind: TermKind::Lit(Literal::Bool(true)), span: self.span }
+            }
             _ => Term {
                 ty: self.ty,
                 kind: TermKind::Impl { lhs: Box::new(self), rhs: Box::new(rhs) },
                 span: DUMMY_SP,
             },
         }
+    }
+
+    pub(crate) fn forall(self, binder: (Symbol, Ty<'tcx>)) -> Self {
+        assert!(self.ty.is_bool());
+
+        // ∀ x . ⟙ = ⟙
+        if let TermKind::Lit(Literal::Bool(true)) = self.kind {
+            return self;
+        };
+
+        Term {
+            ty: self.ty,
+            kind: TermKind::Forall { binder, body: Box::new(self) },
+            span: DUMMY_SP,
+        }
+    }
+
+    /// Creates a term like `forall<binder> guard ==> self`.
+    pub(crate) fn guarded_forall(mut self, binder: (Symbol, Ty<'tcx>), guard: Self) -> Self {
+        assert!(self.ty.is_bool() && guard.ty.is_bool());
+
+        let mut inner = &mut self;
+        while let TermKind::Forall { ref mut body, .. } = inner.kind {
+            // TODO check binder not free in guard
+            inner = body
+        }
+
+        *inner = guard.implies(inner.clone());
+        self.forall(binder)
+    }
+
+    pub(crate) fn exists(self, binder: (Symbol, Ty<'tcx>)) -> Self {
+        assert!(self.ty.is_bool());
+
+        // ∃ x . ⟘ = ⟘
+        if let TermKind::Lit(Literal::Bool(false)) = self.kind {
+            return self;
+        };
+
+        Term {
+            ty: self.ty,
+            kind: TermKind::Exists { binder, body: Box::new(self) },
+            span: DUMMY_SP,
+        }
+    }
+
+    /// Creates a term like `exists<binder> guard && self`.
+    pub(crate) fn guarded_exists(mut self, binder: (Symbol, Ty<'tcx>), guard: Self) -> Self {
+        assert!(self.ty.is_bool() && guard.ty.is_bool());
+
+        let mut inner = &mut self;
+        while let TermKind::Exists { ref mut body, .. } = inner.kind {
+            // TODO check binder not free in guard
+            inner = body
+        }
+
+        *inner = guard.conj(inner.clone());
+        self.exists(binder)
+    }
+
+    pub(crate) fn span(mut self, sp: Span) -> Self {
+        self.span = sp;
+        self
     }
 
     pub(crate) fn subst(&mut self, inv_subst: &std::collections::HashMap<Symbol, Term<'tcx>>) {

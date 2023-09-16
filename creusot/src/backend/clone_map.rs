@@ -156,7 +156,7 @@ use rustc_macros::{TyDecodable, TyEncodable};
 
 use super::{
     ty::ty_param_names,
-    ty_inv::{tyinv_substs, TyInvKind},
+    ty_inv::{self, TyInvKind},
     TransId, Why3Generator,
 };
 
@@ -271,7 +271,7 @@ impl<'tcx> CloneMap<'tcx> {
                 };
             }
 
-            let base = if let Some(inv_kind) = key.ty_inv_kind() {
+            let base = if let CloneNode::TyInv(_, inv_kind) = key {
                 Symbol::intern(&*inv_module_name(self.tcx, inv_kind))
             } else {
                 let did = key.did().unwrap().0;
@@ -426,7 +426,7 @@ impl<'tcx> CloneMap<'tcx> {
                 if util::is_inv_internal(self.tcx, did) && self.clone_level == CloneLevel::Body {
                     let ty = subst.type_at(0);
                     let ty = ctx.try_normalize_erasing_regions(param_env, ty).unwrap_or(ty);
-                    self.clone_tyinv(ctx, ty);
+                    self.clone_tyinv(ctx, param_env, ty);
                 }
 
                 self.clone_laws(ctx, did, subst);
@@ -436,18 +436,24 @@ impl<'tcx> CloneMap<'tcx> {
         }
     }
 
-    fn clone_tyinv(&mut self, ctx: &mut Why3Generator<'tcx>, ty: Ty<'tcx>) {
-        if ty.is_box() || matches!(ty.kind(), TyKind::Param(_)) {
-            return;
-        }
+    fn clone_tyinv(
+        &mut self,
+        ctx: &mut Why3Generator<'tcx>,
+        param_env: ParamEnv<'tcx>,
+        ty: Ty<'tcx>,
+    ) {
+        let inv_kind = if ty_inv::is_tyinv_trivial(ctx.tcx, param_env, ty, true) {
+            TyInvKind::Trivial
+        } else {
+            TyInvKind::from_ty(ty)
+        };
 
-        let inv_kind = TyInvKind::from_ty(ty);
         if let TransId::TyInv(self_kind) = self.self_id && self_kind == inv_kind {
             return;
         }
 
         ctx.translate_tyinv(inv_kind);
-        self.insert(DepNode::TyInv(ty));
+        self.insert(DepNode::TyInv(ty, inv_kind));
     }
 
     fn clone_dependencies(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
@@ -744,9 +750,9 @@ pub(crate) fn base_subst<'tcx>(
     names: &mut CloneMap<'tcx>,
     dep: DepNode<'tcx>,
 ) -> Vec<CloneSubst> {
-    let (generics, substs) = if let DepNode::TyInv(ty) = dep {
-        let generics = TyInvKind::from_ty(ty).generics(ctx.tcx);
-        let substs = tyinv_substs(ctx.tcx, ty);
+    let (generics, substs) = if let DepNode::TyInv(ty, inv_kind) = dep {
+        let generics = inv_kind.generics(ctx.tcx);
+        let substs = inv_kind.tyinv_substs(ctx.tcx, ty);
         (generics, substs)
     } else if let Some((def_id, subst)) = dep.did() {
         let generics = ty_param_names(ctx.tcx, def_id).collect();
@@ -778,8 +784,7 @@ pub enum CloneLevel {
 fn cloneable_name(ctx: &TranslationCtx, dep: DepNode, clone_level: CloneLevel) -> QName {
     use util::ItemType::*;
 
-    if let DepNode::TyInv(ty) = dep {
-        let inv_kind = TyInvKind::from_ty(ty);
+    if let DepNode::TyInv(_, inv_kind) = dep {
         return inv_module_name(ctx.tcx, inv_kind).into();
     }
 
@@ -787,7 +792,7 @@ fn cloneable_name(ctx: &TranslationCtx, dep: DepNode, clone_level: CloneLevel) -
 
     // TODO: Refactor.
     match util::item_type(ctx.tcx, def_id) {
-        Logic | Predicate | Impl => match clone_level {
+        Ghost | Logic | Predicate | Impl => match clone_level {
             CloneLevel::Stub => QName {
                 module: Vec::new(),
                 name: format!("{}_Stub", &*module_name(ctx.tcx, def_id)).into(),
@@ -866,7 +871,7 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, dep: DepNode<'tcx>) -> Option<Symb
     use util::ItemType::*;
     let (def_id, _) = dep.did()?;
     match util::item_type(tcx, def_id) {
-        Logic => Some(SymbolKind::Function(tcx.item_name(def_id))),
+        Ghost | Logic => Some(SymbolKind::Function(tcx.item_name(def_id))),
         Predicate => Some(SymbolKind::Predicate(tcx.item_name(def_id))),
         Program => Some(SymbolKind::Val(tcx.item_name(def_id))),
         AssocTy => match tcx.associated_item(def_id).container {

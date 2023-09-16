@@ -28,8 +28,13 @@ pub fn proof_assert(_: TS1) -> TS1 {
 }
 
 #[proc_macro]
-pub fn ghost(_: TS1) -> TS1 {
-    quote::quote! { creusot_contracts::ghost::Ghost::new() }.into()
+pub fn gh(_: TS1) -> TS1 {
+    quote::quote! { creusot_contracts::ghost::Ghost::dummy() }.into()
+}
+
+#[proc_macro_attribute]
+pub fn logic(_: TS1, _: TS1) -> TS1 {
+    TS1::new()
 }
 
 #[proc_macro]
@@ -38,7 +43,7 @@ pub fn pearlite(_: TS1) -> TS1 {
 }
 
 #[proc_macro_attribute]
-pub fn logic(_: TS1, _: TS1) -> TS1 {
+pub fn ghost(_: TS1, _: TS1) -> TS1 {
     TS1::new()
 }
 

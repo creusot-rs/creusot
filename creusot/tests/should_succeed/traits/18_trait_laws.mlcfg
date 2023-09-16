@@ -1,4 +1,23 @@
 
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module C18TraitLaws_Symmetric_Op_Stub
   type self
   function op [#"../18_trait_laws.rs" 6 4 6 33] (self : self) (_2 : self) : self
@@ -17,68 +36,103 @@ module C18TraitLaws_Symmetric_Op
     ensures { result = op self _2 }
     
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module C18TraitLaws_Symmetric_Reflexive_Stub
   type self
   clone C18TraitLaws_Symmetric_Op_Stub as Op0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function reflexive [#"../18_trait_laws.rs" 10 4 10 35] (a : self) (b : self) : ()
 end
 module C18TraitLaws_Symmetric_Reflexive_Interface
   type self
   clone C18TraitLaws_Symmetric_Op_Stub as Op0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function reflexive [#"../18_trait_laws.rs" 10 4 10 35] (a : self) (b : self) : ()
   val reflexive [#"../18_trait_laws.rs" 10 4 10 35] (a : self) (b : self) : ()
+    requires {[#"../18_trait_laws.rs" 10 17 10 18] Inv0.inv a}
+    requires {[#"../18_trait_laws.rs" 10 26 10 27] Inv0.inv b}
     ensures { [#"../18_trait_laws.rs" 9 14 9 32] Op0.op a b = Op0.op b a }
     ensures { result = reflexive a b }
     
-  axiom reflexive_spec : forall a : self, b : self . [#"../18_trait_laws.rs" 9 14 9 32] Op0.op a b = Op0.op b a
+  axiom reflexive_spec : forall a : self, b : self . ([#"../18_trait_laws.rs" 10 17 10 18] Inv0.inv a) -> ([#"../18_trait_laws.rs" 10 26 10 27] Inv0.inv b) -> ([#"../18_trait_laws.rs" 9 14 9 32] Op0.op a b = Op0.op b a)
 end
 module C18TraitLaws_Symmetric_Reflexive
   type self
   clone C18TraitLaws_Symmetric_Op_Stub as Op0 with
     type self = self
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = self
   function reflexive [#"../18_trait_laws.rs" 10 4 10 35] (a : self) (b : self) : ()
   val reflexive [#"../18_trait_laws.rs" 10 4 10 35] (a : self) (b : self) : ()
+    requires {[#"../18_trait_laws.rs" 10 17 10 18] Inv0.inv a}
+    requires {[#"../18_trait_laws.rs" 10 26 10 27] Inv0.inv b}
     ensures { [#"../18_trait_laws.rs" 9 14 9 32] Op0.op a b = Op0.op b a }
     ensures { result = reflexive a b }
     
-  axiom reflexive_spec : forall a : self, b : self . [#"../18_trait_laws.rs" 9 14 9 32] Op0.op a b = Op0.op b a
+  axiom reflexive_spec : forall a : self, b : self . ([#"../18_trait_laws.rs" 10 17 10 18] Inv0.inv a) -> ([#"../18_trait_laws.rs" 10 26 10 27] Inv0.inv b) -> ([#"../18_trait_laws.rs" 9 14 9 32] Op0.op a b = Op0.op b a)
 end
 module C18TraitLaws_UsesOp_Stub
   type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
   function uses_op [#"../18_trait_laws.rs" 16 0 16 48] (x : t) (y : t) : bool
 end
 module C18TraitLaws_UsesOp_Interface
   type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
   function uses_op [#"../18_trait_laws.rs" 16 0 16 48] (x : t) (y : t) : bool
   val uses_op [#"../18_trait_laws.rs" 16 0 16 48] (x : t) (y : t) : bool
+    requires {[#"../18_trait_laws.rs" 16 29 16 30] Inv0.inv x}
+    requires {[#"../18_trait_laws.rs" 16 35 16 36] Inv0.inv y}
     ensures { [#"../18_trait_laws.rs" 15 10 15 24] result = true }
     ensures { result = uses_op x y }
     
-  axiom uses_op_spec : forall x : t, y : t . [#"../18_trait_laws.rs" 15 10 15 24] uses_op x y = true
+  axiom uses_op_spec : forall x : t, y : t . ([#"../18_trait_laws.rs" 16 29 16 30] Inv0.inv x) -> ([#"../18_trait_laws.rs" 16 35 16 36] Inv0.inv y) -> ([#"../18_trait_laws.rs" 15 10 15 24] uses_op x y = true)
 end
 module C18TraitLaws_UsesOp
   type t
   clone C18TraitLaws_Symmetric_Op_Stub as Op0 with
     type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
   function uses_op [#"../18_trait_laws.rs" 16 0 16 48] (x : t) (y : t) : bool =
     [#"../18_trait_laws.rs" 17 16 17 34] Op0.op x y = Op0.op y x
   val uses_op [#"../18_trait_laws.rs" 16 0 16 48] (x : t) (y : t) : bool
+    requires {[#"../18_trait_laws.rs" 16 29 16 30] Inv0.inv x}
+    requires {[#"../18_trait_laws.rs" 16 35 16 36] Inv0.inv y}
     ensures { [#"../18_trait_laws.rs" 15 10 15 24] result = true }
     ensures { result = uses_op x y }
     
-  axiom uses_op_spec : forall x : t, y : t . [#"../18_trait_laws.rs" 15 10 15 24] uses_op x y = true
+  axiom uses_op_spec : forall x : t, y : t . ([#"../18_trait_laws.rs" 16 29 16 30] Inv0.inv x) -> ([#"../18_trait_laws.rs" 16 35 16 36] Inv0.inv y) -> ([#"../18_trait_laws.rs" 15 10 15 24] uses_op x y = true)
 end
 module C18TraitLaws_UsesOp_Impl
   type t
   clone C18TraitLaws_Symmetric_Op_Interface as Op0 with
     type self = t
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = t
   clone C18TraitLaws_Symmetric_Reflexive_Interface as Reflexive0 with
     type self = t,
+    predicate Inv0.inv = Inv0.inv,
     function Op0.op = Op0.op,
     axiom .
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = t,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   let rec ghost function uses_op [#"../18_trait_laws.rs" 16 0 16 48] (x : t) (y : t) : bool
+    requires {[#"../18_trait_laws.rs" 16 29 16 30] Inv0.inv x}
+    requires {[#"../18_trait_laws.rs" 16 35 16 36] Inv0.inv y}
     ensures { [#"../18_trait_laws.rs" 15 10 15 24] result = true }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -164,6 +218,12 @@ module C18TraitLaws_ImplLaws_Impl
     [#"../18_trait_laws.rs" 37 16 37 38] let b = Op0.op () () in let a = Op0.op () () in pure {a = b}
 end
 module C18TraitLaws_Impl0
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = ()
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = (),
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone C18TraitLaws_Impl0_Op as Op0
-  goal reflexive_refn : [#"../18_trait_laws.rs" 30 4 30 34] forall a : () . forall b : () . forall result : () . Op0.op a b = Op0.op b a -> Op0.op a b = Op0.op b a
+  goal reflexive_refn : [#"../18_trait_laws.rs" 30 4 30 34] forall a : () . forall b : () . Inv0.inv b /\ Inv0.inv a -> (forall result : () . Op0.op a b = Op0.op b a -> Op0.op a b = Op0.op b a)
 end

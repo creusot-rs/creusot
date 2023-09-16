@@ -4,7 +4,7 @@ pub use ::std::option::*;
 impl<T: DeepModel> DeepModel for Option<T> {
     type DeepModelTy = Option<T::DeepModelTy>;
 
-    #[logic]
+    #[ghost]
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
         match self {
@@ -125,7 +125,7 @@ impl<T> ShallowModel for IntoIter<T> {
     type ShallowModelTy = Option<T>;
 
     #[open(self)]
-    #[logic]
+    #[ghost]
     #[trusted]
     fn shallow_model(self) -> Option<T> {
         pearlite! { absurd }
@@ -181,7 +181,7 @@ impl<'a, T> ShallowModel for Iter<'a, T> {
     type ShallowModelTy = Option<&'a T>;
 
     #[open(self)]
-    #[logic]
+    #[ghost]
     #[trusted]
     fn shallow_model(self) -> Option<&'a T> {
         pearlite! { absurd }
@@ -239,7 +239,7 @@ impl<'a, T> IntoIterator for &'a Option<T> {
 impl<'a, T> ShallowModel for IterMut<'a, T> {
     type ShallowModelTy = Option<&'a mut T>;
 
-    #[logic]
+    #[ghost]
     #[open(self)]
     #[trusted]
     fn shallow_model(self) -> Option<&'a mut T> {

@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 
 use creusot_contracts::{
-    invariant::Invariant,
+    invariant::{inv, Invariant},
     logic::{Int, Seq},
     std::*,
     *,
@@ -19,12 +19,13 @@ use creusot_contracts::{
 // }
 //
 // Here we prove the specific instance of `extend` for `Vec<T>`.
+#[requires(inv((*vec)@) && inv((^vec)@))]
 #[ensures(
   exists<done_ : &mut I, prod: Seq<_>>
     done_.completed() && iter.produces(prod, *done_) && (^vec)@ == vec@.concat(prod)
 )]
 pub fn extend<T, I: Iterator<Item = T> + Invariant>(vec: &mut Vec<T>, iter: I) {
-    let old_vec = ghost! { vec };
+    let old_vec = gh! { vec };
     #[invariant(^*old_vec == ^vec)]
     #[invariant(vec@.ext_eq(old_vec@.concat(*produced)))]
     for x in iter {
@@ -51,8 +52,8 @@ pub fn collect<I: Iterator>(iter: I) -> Vec<I::Item> {
 }
 
 pub fn extend_index(mut v1: Vec<u32>, v2: Vec<u32>) {
-    let oldv1 = ghost! { *v1 };
-    let oldv2 = ghost! { *v2 };
+    let oldv1 = gh! { *v1 };
+    let oldv2 = gh! { *v2 };
     extend(&mut v1, v2.into_iter());
 
     proof_assert! { v1@.ext_eq(oldv1@.concat(oldv2@)) };

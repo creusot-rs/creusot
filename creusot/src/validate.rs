@@ -103,7 +103,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
             continue;
         }
 
-        let trait_ref = ctx.impl_trait_ref(*impl_id).unwrap().0;
+        let trait_ref = ctx.impl_trait_ref(*impl_id).unwrap().skip_binder();
 
         if util::is_trusted(ctx.tcx, trait_ref.def_id)
             != util::is_trusted(ctx.tcx, impl_id.to_def_id())

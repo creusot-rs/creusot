@@ -1,4 +1,10 @@
 
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
+    
+end
 module CreusotContracts_Resolve_Resolve_Resolve_Stub
   type self
   predicate resolve (self : self)
@@ -43,12 +49,6 @@ module CreusotContracts_Resolve_Impl0_Resolve
     ensures { result = resolve self }
     
 end
-module Core_Option_Option_Type
-  type t_option 't =
-    | C_None
-    | C_Some 't
-    
-end
 module Core_Num_Impl6_Min_Stub
   use prelude.Int
   use prelude.UInt8
@@ -82,19 +82,47 @@ module Core_Num_Impl6_CheckedAdd_Interface
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 128 16 128 89] forall r : uint8 . result = Core_Option_Option_Type.C_Some r -> UInt8.to_int r = UInt8.to_int self + UInt8.to_int rhs }
     
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module Core_Option_Impl0_Unwrap_Interface
   type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val unwrap (self : Core_Option_Option_Type.t_option t) : t
     requires {[#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] self <> Core_Option_Option_Type.C_None}
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] Core_Option_Option_Type.C_Some result = self }
+    ensures { Inv1.inv result }
     
 end
 module Core_Option_Impl0_IsNone_Interface
   type t
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Core_Option_Option_Type.t_option t
   val is_none (self : Core_Option_Option_Type.t_option t) : bool
+    requires {Inv0.inv self}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 24 26 24 51] result = (self = Core_Option_Option_Type.C_None) }
     
 end
@@ -153,6 +181,12 @@ module Core_Num_Impl6_OverflowingAdd_Interface
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (UInt8.to_int self + UInt8.to_int rhs < UInt8.to_int Min0.mIN' \/ UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int Max0.mAX') }
     
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module CreusotContracts_Resolve_Impl2_Resolve_Stub
   type t
   predicate resolve (self : t)
@@ -179,6 +213,26 @@ module CheckedOps_TestU8AddExample
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = uint8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = uint8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -186,7 +240,6 @@ module CheckedOps_TestU8AddExample
   clone Core_Num_Impl6_Bits as Bits0
   clone Core_Num_Impl6_Max as Max0
   clone Core_Num_Impl6_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = uint8,
     type t2 = bool,
@@ -204,9 +257,12 @@ module CheckedOps_TestU8AddExample
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv2.inv
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Num_Impl6_CheckedAdd_Interface as CheckedAdd0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -214,6 +270,14 @@ module CheckedOps_TestU8AddExample
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
+  var _4 : uint8;
+  var _5 : Core_Option_Option_Type.t_option uint8;
+  var _9 : bool;
+  var _11 : Core_Option_Option_Type.t_option uint8;
+  var _16 : uint8;
+  var _21 : uint8;
+  var _26 : uint8;
+  var _31 : uint8;
   var res : (uint8, bool);
   var _36 : bool;
   var res1 : (uint8, bool);
@@ -222,13 +286,16 @@ module CheckedOps_TestU8AddExample
     goto BB0
   }
   BB0 {
+    _5 <- ([#"../checked_ops.rs" 6 12 6 31] CheckedAdd0.checked_add ([#"../checked_ops.rs" 6 12 6 15] (5 : uint8)) ([#"../checked_ops.rs" 6 28 6 30] (10 : uint8)));
     goto BB1
   }
   BB1 {
+    _4 <- ([#"../checked_ops.rs" 6 12 6 40] Unwrap0.unwrap _5);
+    _5 <- any Core_Option_Option_Type.t_option uint8;
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 6 12 6 46] ([#"../checked_ops.rs" 6 12 6 40] Unwrap0.unwrap ([#"../checked_ops.rs" 6 12 6 31] CheckedAdd0.checked_add ([#"../checked_ops.rs" 6 12 6 15] (5 : uint8)) ([#"../checked_ops.rs" 6 28 6 30] (10 : uint8)))) = ([#"../checked_ops.rs" 6 44 6 46] (15 : uint8))))
+    switch (not ([#"../checked_ops.rs" 6 12 6 46] _4 = ([#"../checked_ops.rs" 6 44 6 46] (15 : uint8))))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -237,13 +304,15 @@ module CheckedOps_TestU8AddExample
     absurd
   }
   BB4 {
+    _11 <- ([#"../checked_ops.rs" 7 12 7 33] CheckedAdd0.checked_add ([#"../checked_ops.rs" 7 12 7 17] (250 : uint8)) ([#"../checked_ops.rs" 7 30 7 32] (10 : uint8)));
     goto BB5
   }
   BB5 {
+    _9 <- ([#"../checked_ops.rs" 7 12 7 43] IsNone0.is_none _11);
     goto BB6
   }
   BB6 {
-    switch (not ([#"../checked_ops.rs" 7 12 7 43] IsNone0.is_none ([#"../checked_ops.rs" 7 12 7 33] CheckedAdd0.checked_add ([#"../checked_ops.rs" 7 12 7 17] (250 : uint8)) ([#"../checked_ops.rs" 7 30 7 32] (10 : uint8)))))
+    switch (not _9)
       | False -> goto BB8
       | True -> goto BB7
       end
@@ -252,10 +321,11 @@ module CheckedOps_TestU8AddExample
     absurd
   }
   BB8 {
+    _16 <- ([#"../checked_ops.rs" 9 12 9 32] WrappingAdd0.wrapping_add ([#"../checked_ops.rs" 9 12 9 15] (5 : uint8)) ([#"../checked_ops.rs" 9 29 9 31] (10 : uint8)));
     goto BB9
   }
   BB9 {
-    switch (not ([#"../checked_ops.rs" 9 12 9 38] ([#"../checked_ops.rs" 9 12 9 32] WrappingAdd0.wrapping_add ([#"../checked_ops.rs" 9 12 9 15] (5 : uint8)) ([#"../checked_ops.rs" 9 29 9 31] (10 : uint8))) = ([#"../checked_ops.rs" 9 36 9 38] (15 : uint8))))
+    switch (not ([#"../checked_ops.rs" 9 12 9 38] _16 = ([#"../checked_ops.rs" 9 36 9 38] (15 : uint8))))
       | False -> goto BB11
       | True -> goto BB10
       end
@@ -264,10 +334,11 @@ module CheckedOps_TestU8AddExample
     absurd
   }
   BB11 {
+    _21 <- ([#"../checked_ops.rs" 10 12 10 34] WrappingAdd0.wrapping_add ([#"../checked_ops.rs" 10 12 10 17] (250 : uint8)) ([#"../checked_ops.rs" 10 31 10 33] (10 : uint8)));
     goto BB12
   }
   BB12 {
-    switch (not ([#"../checked_ops.rs" 10 12 10 39] ([#"../checked_ops.rs" 10 12 10 34] WrappingAdd0.wrapping_add ([#"../checked_ops.rs" 10 12 10 17] (250 : uint8)) ([#"../checked_ops.rs" 10 31 10 33] (10 : uint8))) = ([#"../checked_ops.rs" 10 38 10 39] (4 : uint8))))
+    switch (not ([#"../checked_ops.rs" 10 12 10 39] _21 = ([#"../checked_ops.rs" 10 38 10 39] (4 : uint8))))
       | False -> goto BB14
       | True -> goto BB13
       end
@@ -276,10 +347,11 @@ module CheckedOps_TestU8AddExample
     absurd
   }
   BB14 {
+    _26 <- ([#"../checked_ops.rs" 12 12 12 34] SaturatingAdd0.saturating_add ([#"../checked_ops.rs" 12 12 12 15] (5 : uint8)) ([#"../checked_ops.rs" 12 31 12 33] (10 : uint8)));
     goto BB15
   }
   BB15 {
-    switch (not ([#"../checked_ops.rs" 12 12 12 40] ([#"../checked_ops.rs" 12 12 12 34] SaturatingAdd0.saturating_add ([#"../checked_ops.rs" 12 12 12 15] (5 : uint8)) ([#"../checked_ops.rs" 12 31 12 33] (10 : uint8))) = ([#"../checked_ops.rs" 12 38 12 40] (15 : uint8))))
+    switch (not ([#"../checked_ops.rs" 12 12 12 40] _26 = ([#"../checked_ops.rs" 12 38 12 40] (15 : uint8))))
       | False -> goto BB17
       | True -> goto BB16
       end
@@ -288,10 +360,11 @@ module CheckedOps_TestU8AddExample
     absurd
   }
   BB17 {
+    _31 <- ([#"../checked_ops.rs" 13 12 13 36] SaturatingAdd0.saturating_add ([#"../checked_ops.rs" 13 12 13 17] (250 : uint8)) ([#"../checked_ops.rs" 13 33 13 35] (10 : uint8)));
     goto BB18
   }
   BB18 {
-    switch (not ([#"../checked_ops.rs" 13 12 13 43] ([#"../checked_ops.rs" 13 12 13 36] SaturatingAdd0.saturating_add ([#"../checked_ops.rs" 13 12 13 17] (250 : uint8)) ([#"../checked_ops.rs" 13 33 13 35] (10 : uint8))) = ([#"../checked_ops.rs" 13 40 13 43] (255 : uint8))))
+    switch (not ([#"../checked_ops.rs" 13 12 13 43] _31 = ([#"../checked_ops.rs" 13 40 13 43] (255 : uint8))))
       | False -> goto BB20
       | True -> goto BB19
       end
@@ -374,6 +447,14 @@ module CheckedOps_TestU8AddOverflow
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -381,7 +462,6 @@ module CheckedOps_TestU8AddOverflow
   clone Core_Num_Impl6_Bits as Bits0
   clone Core_Num_Impl6_Max as Max0
   clone Core_Num_Impl6_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = uint8,
     type t2 = bool,
@@ -399,7 +479,8 @@ module CheckedOps_TestU8AddOverflow
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl6_CheckedAdd_Interface as CheckedAdd0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -409,19 +490,25 @@ module CheckedOps_TestU8AddOverflow
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var a : uint8 = a;
+  var _5 : bool;
+  var _7 : Core_Option_Option_Type.t_option uint8;
+  var _13 : uint8;
+  var _21 : uint8;
   var res : (uint8, bool);
   var _28 : bool;
   {
     goto BB0
   }
   BB0 {
+    _7 <- ([#"../checked_ops.rs" 24 12 24 32] CheckedAdd0.checked_add ([#"../checked_ops.rs" 24 12 24 17] (255 : uint8)) a);
     goto BB1
   }
   BB1 {
+    _5 <- ([#"../checked_ops.rs" 24 12 24 42] IsNone0.is_none _7);
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 24 12 24 42] IsNone0.is_none ([#"../checked_ops.rs" 24 12 24 32] CheckedAdd0.checked_add ([#"../checked_ops.rs" 24 12 24 17] (255 : uint8)) a)))
+    switch (not _5)
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -430,10 +517,11 @@ module CheckedOps_TestU8AddOverflow
     absurd
   }
   BB4 {
+    _13 <- ([#"../checked_ops.rs" 25 12 25 33] WrappingAdd0.wrapping_add ([#"../checked_ops.rs" 25 12 25 17] (255 : uint8)) a);
     goto BB5
   }
   BB5 {
-    switch (not ([#"../checked_ops.rs" 25 12 25 42] ([#"../checked_ops.rs" 25 12 25 33] WrappingAdd0.wrapping_add ([#"../checked_ops.rs" 25 12 25 17] (255 : uint8)) a) = ([#"../checked_ops.rs" 25 37 25 42] a - ([#"../checked_ops.rs" 25 41 25 42] (1 : uint8)))))
+    switch (not ([#"../checked_ops.rs" 25 12 25 42] _13 = ([#"../checked_ops.rs" 25 37 25 42] a - ([#"../checked_ops.rs" 25 41 25 42] (1 : uint8)))))
       | False -> goto BB7
       | True -> goto BB6
       end
@@ -442,10 +530,11 @@ module CheckedOps_TestU8AddOverflow
     absurd
   }
   BB7 {
+    _21 <- ([#"../checked_ops.rs" 26 12 26 35] SaturatingAdd0.saturating_add ([#"../checked_ops.rs" 26 12 26 17] (255 : uint8)) a);
     goto BB8
   }
   BB8 {
-    switch (not ([#"../checked_ops.rs" 26 12 26 42] ([#"../checked_ops.rs" 26 12 26 35] SaturatingAdd0.saturating_add ([#"../checked_ops.rs" 26 12 26 17] (255 : uint8)) a) = ([#"../checked_ops.rs" 26 39 26 42] (255 : uint8))))
+    switch (not ([#"../checked_ops.rs" 26 12 26 42] _21 = ([#"../checked_ops.rs" 26 39 26 42] (255 : uint8))))
       | False -> goto BB10
       | True -> goto BB9
       end
@@ -533,7 +622,14 @@ module CheckedOps_TestU8OverflowingAdd
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -542,7 +638,8 @@ module CheckedOps_TestU8OverflowingAdd
   clone Core_Num_Impl6_Min as Min0
   clone Core_Num_Impl6_Bits as Bits0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl6_CheckedAdd_Interface as CheckedAdd0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -566,7 +663,10 @@ module CheckedOps_TestU8OverflowingAdd
   var a : uint8 = a;
   var b : uint8 = b;
   var _7 : (uint8, bool);
+  var _10 : uint8;
   var _18 : (uint8, bool);
+  var _21 : bool;
+  var _23 : Core_Option_Option_Type.t_option uint8;
   {
     goto BB0
   }
@@ -576,10 +676,11 @@ module CheckedOps_TestU8OverflowingAdd
   }
   BB1 {
     assume { Resolve0.resolve _7 };
+    _10 <- ([#"../checked_ops.rs" 40 38 40 55] WrappingAdd0.wrapping_add a b);
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 40 12 40 55] (let (a, _) = _7 in a) = ([#"../checked_ops.rs" 40 38 40 55] WrappingAdd0.wrapping_add a b)))
+    switch (not ([#"../checked_ops.rs" 40 12 40 55] (let (a, _) = _7 in a) = _10))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -593,13 +694,15 @@ module CheckedOps_TestU8OverflowingAdd
   }
   BB5 {
     assume { Resolve0.resolve _18 };
+    _23 <- ([#"../checked_ops.rs" 41 38 41 54] CheckedAdd0.checked_add a b);
     goto BB6
   }
   BB6 {
+    _21 <- ([#"../checked_ops.rs" 41 38 41 64] IsNone0.is_none _23);
     goto BB7
   }
   BB7 {
-    switch (not ([#"../checked_ops.rs" 41 12 41 64] Bool.eqb (let (_, a) = _18 in a) ([#"../checked_ops.rs" 41 38 41 64] IsNone0.is_none ([#"../checked_ops.rs" 41 38 41 54] CheckedAdd0.checked_add a b))))
+    switch (not ([#"../checked_ops.rs" 41 12 41 64] Bool.eqb (let (_, a) = _18 in a) _21))
       | False -> goto BB9
       | True -> goto BB8
       end
@@ -675,6 +778,26 @@ module CheckedOps_TestU8SubExample
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = uint8
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = uint8,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -682,7 +805,6 @@ module CheckedOps_TestU8SubExample
   clone Core_Num_Impl6_Bits as Bits0
   clone Core_Num_Impl6_Max as Max0
   clone Core_Num_Impl6_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = uint8,
     type t2 = bool,
@@ -700,9 +822,12 @@ module CheckedOps_TestU8SubExample
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl6_CheckedSub_Interface as CheckedSub0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -710,6 +835,14 @@ module CheckedOps_TestU8SubExample
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
+  var _3 : bool;
+  var _5 : Core_Option_Option_Type.t_option uint8;
+  var _10 : uint8;
+  var _11 : Core_Option_Option_Type.t_option uint8;
+  var _16 : uint8;
+  var _21 : uint8;
+  var _26 : uint8;
+  var _31 : uint8;
   var res : (uint8, bool);
   var _36 : bool;
   var res1 : (uint8, bool);
@@ -718,13 +851,15 @@ module CheckedOps_TestU8SubExample
     goto BB0
   }
   BB0 {
+    _5 <- ([#"../checked_ops.rs" 46 12 46 31] CheckedSub0.checked_sub ([#"../checked_ops.rs" 46 12 46 15] (5 : uint8)) ([#"../checked_ops.rs" 46 28 46 30] (10 : uint8)));
     goto BB1
   }
   BB1 {
+    _3 <- ([#"../checked_ops.rs" 46 12 46 41] IsNone0.is_none _5);
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 46 12 46 41] IsNone0.is_none ([#"../checked_ops.rs" 46 12 46 31] CheckedSub0.checked_sub ([#"../checked_ops.rs" 46 12 46 15] (5 : uint8)) ([#"../checked_ops.rs" 46 28 46 30] (10 : uint8)))))
+    switch (not _3)
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -733,13 +868,16 @@ module CheckedOps_TestU8SubExample
     absurd
   }
   BB4 {
+    _11 <- ([#"../checked_ops.rs" 47 12 47 33] CheckedSub0.checked_sub ([#"../checked_ops.rs" 47 12 47 17] (250 : uint8)) ([#"../checked_ops.rs" 47 30 47 32] (10 : uint8)));
     goto BB5
   }
   BB5 {
+    _10 <- ([#"../checked_ops.rs" 47 12 47 42] Unwrap0.unwrap _11);
+    _11 <- any Core_Option_Option_Type.t_option uint8;
     goto BB6
   }
   BB6 {
-    switch (not ([#"../checked_ops.rs" 47 12 47 49] ([#"../checked_ops.rs" 47 12 47 42] Unwrap0.unwrap ([#"../checked_ops.rs" 47 12 47 33] CheckedSub0.checked_sub ([#"../checked_ops.rs" 47 12 47 17] (250 : uint8)) ([#"../checked_ops.rs" 47 30 47 32] (10 : uint8)))) = ([#"../checked_ops.rs" 47 46 47 49] (240 : uint8))))
+    switch (not ([#"../checked_ops.rs" 47 12 47 49] _10 = ([#"../checked_ops.rs" 47 46 47 49] (240 : uint8))))
       | False -> goto BB8
       | True -> goto BB7
       end
@@ -748,10 +886,11 @@ module CheckedOps_TestU8SubExample
     absurd
   }
   BB8 {
+    _16 <- ([#"../checked_ops.rs" 49 12 49 32] WrappingSub0.wrapping_sub ([#"../checked_ops.rs" 49 12 49 15] (5 : uint8)) ([#"../checked_ops.rs" 49 29 49 31] (10 : uint8)));
     goto BB9
   }
   BB9 {
-    switch (not ([#"../checked_ops.rs" 49 12 49 39] ([#"../checked_ops.rs" 49 12 49 32] WrappingSub0.wrapping_sub ([#"../checked_ops.rs" 49 12 49 15] (5 : uint8)) ([#"../checked_ops.rs" 49 29 49 31] (10 : uint8))) = ([#"../checked_ops.rs" 49 36 49 39] (251 : uint8))))
+    switch (not ([#"../checked_ops.rs" 49 12 49 39] _16 = ([#"../checked_ops.rs" 49 36 49 39] (251 : uint8))))
       | False -> goto BB11
       | True -> goto BB10
       end
@@ -760,10 +899,11 @@ module CheckedOps_TestU8SubExample
     absurd
   }
   BB11 {
+    _21 <- ([#"../checked_ops.rs" 50 12 50 34] WrappingSub0.wrapping_sub ([#"../checked_ops.rs" 50 12 50 17] (250 : uint8)) ([#"../checked_ops.rs" 50 31 50 33] (10 : uint8)));
     goto BB12
   }
   BB12 {
-    switch (not ([#"../checked_ops.rs" 50 12 50 41] ([#"../checked_ops.rs" 50 12 50 34] WrappingSub0.wrapping_sub ([#"../checked_ops.rs" 50 12 50 17] (250 : uint8)) ([#"../checked_ops.rs" 50 31 50 33] (10 : uint8))) = ([#"../checked_ops.rs" 50 38 50 41] (240 : uint8))))
+    switch (not ([#"../checked_ops.rs" 50 12 50 41] _21 = ([#"../checked_ops.rs" 50 38 50 41] (240 : uint8))))
       | False -> goto BB14
       | True -> goto BB13
       end
@@ -772,10 +912,11 @@ module CheckedOps_TestU8SubExample
     absurd
   }
   BB14 {
+    _26 <- ([#"../checked_ops.rs" 52 12 52 34] SaturatingSub0.saturating_sub ([#"../checked_ops.rs" 52 12 52 15] (5 : uint8)) ([#"../checked_ops.rs" 52 31 52 33] (10 : uint8)));
     goto BB15
   }
   BB15 {
-    switch (not ([#"../checked_ops.rs" 52 12 52 39] ([#"../checked_ops.rs" 52 12 52 34] SaturatingSub0.saturating_sub ([#"../checked_ops.rs" 52 12 52 15] (5 : uint8)) ([#"../checked_ops.rs" 52 31 52 33] (10 : uint8))) = ([#"../checked_ops.rs" 52 38 52 39] (0 : uint8))))
+    switch (not ([#"../checked_ops.rs" 52 12 52 39] _26 = ([#"../checked_ops.rs" 52 38 52 39] (0 : uint8))))
       | False -> goto BB17
       | True -> goto BB16
       end
@@ -784,10 +925,11 @@ module CheckedOps_TestU8SubExample
     absurd
   }
   BB17 {
+    _31 <- ([#"../checked_ops.rs" 53 12 53 36] SaturatingSub0.saturating_sub ([#"../checked_ops.rs" 53 12 53 17] (250 : uint8)) ([#"../checked_ops.rs" 53 33 53 35] (10 : uint8)));
     goto BB18
   }
   BB18 {
-    switch (not ([#"../checked_ops.rs" 53 12 53 43] ([#"../checked_ops.rs" 53 12 53 36] SaturatingSub0.saturating_sub ([#"../checked_ops.rs" 53 12 53 17] (250 : uint8)) ([#"../checked_ops.rs" 53 33 53 35] (10 : uint8))) = ([#"../checked_ops.rs" 53 40 53 43] (240 : uint8))))
+    switch (not ([#"../checked_ops.rs" 53 12 53 43] _31 = ([#"../checked_ops.rs" 53 40 53 43] (240 : uint8))))
       | False -> goto BB20
       | True -> goto BB19
       end
@@ -870,6 +1012,14 @@ module CheckedOps_TestU8SubOverflow
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -877,7 +1027,6 @@ module CheckedOps_TestU8SubOverflow
   clone Core_Num_Impl6_Bits as Bits0
   clone Core_Num_Impl6_Max as Max0
   clone Core_Num_Impl6_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = uint8,
     type t2 = bool,
@@ -895,7 +1044,8 @@ module CheckedOps_TestU8SubOverflow
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl6_CheckedSub_Interface as CheckedSub0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -905,19 +1055,25 @@ module CheckedOps_TestU8SubOverflow
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var a : uint8 = a;
+  var _5 : bool;
+  var _7 : Core_Option_Option_Type.t_option uint8;
+  var _13 : uint8;
+  var _22 : uint8;
   var res : (uint8, bool);
   var _29 : bool;
   {
     goto BB0
   }
   BB0 {
+    _7 <- ([#"../checked_ops.rs" 64 12 64 30] CheckedSub0.checked_sub ([#"../checked_ops.rs" 64 12 64 15] (0 : uint8)) a);
     goto BB1
   }
   BB1 {
+    _5 <- ([#"../checked_ops.rs" 64 12 64 40] IsNone0.is_none _7);
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 64 12 64 40] IsNone0.is_none ([#"../checked_ops.rs" 64 12 64 30] CheckedSub0.checked_sub ([#"../checked_ops.rs" 64 12 64 15] (0 : uint8)) a)))
+    switch (not _5)
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -926,10 +1082,11 @@ module CheckedOps_TestU8SubOverflow
     absurd
   }
   BB4 {
+    _13 <- ([#"../checked_ops.rs" 65 12 65 31] WrappingSub0.wrapping_sub ([#"../checked_ops.rs" 65 12 65 15] (0 : uint8)) a);
     goto BB5
   }
   BB5 {
-    switch (not ([#"../checked_ops.rs" 65 12 65 46] ([#"../checked_ops.rs" 65 12 65 31] WrappingSub0.wrapping_sub ([#"../checked_ops.rs" 65 12 65 15] (0 : uint8)) a) = ([#"../checked_ops.rs" 65 35 65 46] ([#"../checked_ops.rs" 65 35 65 42] ([#"../checked_ops.rs" 65 35 65 38] (255 : uint8)) - a) + ([#"../checked_ops.rs" 65 45 65 46] (1 : uint8)))))
+    switch (not ([#"../checked_ops.rs" 65 12 65 46] _13 = ([#"../checked_ops.rs" 65 35 65 46] ([#"../checked_ops.rs" 65 35 65 42] ([#"../checked_ops.rs" 65 35 65 38] (255 : uint8)) - a) + ([#"../checked_ops.rs" 65 45 65 46] (1 : uint8)))))
       | False -> goto BB7
       | True -> goto BB6
       end
@@ -938,10 +1095,11 @@ module CheckedOps_TestU8SubOverflow
     absurd
   }
   BB7 {
+    _22 <- ([#"../checked_ops.rs" 66 12 66 33] SaturatingSub0.saturating_sub ([#"../checked_ops.rs" 66 12 66 15] (0 : uint8)) a);
     goto BB8
   }
   BB8 {
-    switch (not ([#"../checked_ops.rs" 66 12 66 38] ([#"../checked_ops.rs" 66 12 66 33] SaturatingSub0.saturating_sub ([#"../checked_ops.rs" 66 12 66 15] (0 : uint8)) a) = ([#"../checked_ops.rs" 66 37 66 38] (0 : uint8))))
+    switch (not ([#"../checked_ops.rs" 66 12 66 38] _22 = ([#"../checked_ops.rs" 66 37 66 38] (0 : uint8))))
       | False -> goto BB10
       | True -> goto BB9
       end
@@ -1029,7 +1187,14 @@ module CheckedOps_TestU8OverflowingSub
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -1038,7 +1203,8 @@ module CheckedOps_TestU8OverflowingSub
   clone Core_Num_Impl6_Min as Min0
   clone Core_Num_Impl6_Bits as Bits0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl6_CheckedSub_Interface as CheckedSub0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -1062,7 +1228,10 @@ module CheckedOps_TestU8OverflowingSub
   var a : uint8 = a;
   var b : uint8 = b;
   var _7 : (uint8, bool);
+  var _10 : uint8;
   var _18 : (uint8, bool);
+  var _21 : bool;
+  var _23 : Core_Option_Option_Type.t_option uint8;
   {
     goto BB0
   }
@@ -1072,10 +1241,11 @@ module CheckedOps_TestU8OverflowingSub
   }
   BB1 {
     assume { Resolve0.resolve _7 };
+    _10 <- ([#"../checked_ops.rs" 80 38 80 55] WrappingSub0.wrapping_sub a b);
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 80 12 80 55] (let (a, _) = _7 in a) = ([#"../checked_ops.rs" 80 38 80 55] WrappingSub0.wrapping_sub a b)))
+    switch (not ([#"../checked_ops.rs" 80 12 80 55] (let (a, _) = _7 in a) = _10))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -1089,13 +1259,15 @@ module CheckedOps_TestU8OverflowingSub
   }
   BB5 {
     assume { Resolve0.resolve _18 };
+    _23 <- ([#"../checked_ops.rs" 81 38 81 54] CheckedSub0.checked_sub a b);
     goto BB6
   }
   BB6 {
+    _21 <- ([#"../checked_ops.rs" 81 38 81 64] IsNone0.is_none _23);
     goto BB7
   }
   BB7 {
-    switch (not ([#"../checked_ops.rs" 81 12 81 64] Bool.eqb (let (_, a) = _18 in a) ([#"../checked_ops.rs" 81 38 81 64] IsNone0.is_none ([#"../checked_ops.rs" 81 38 81 54] CheckedSub0.checked_sub a b))))
+    switch (not ([#"../checked_ops.rs" 81 12 81 64] Bool.eqb (let (_, a) = _18 in a) _21))
       | False -> goto BB9
       | True -> goto BB8
       end
@@ -1171,6 +1343,26 @@ module CheckedOps_TestU8MulExample
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = uint8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = uint8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -1178,7 +1370,6 @@ module CheckedOps_TestU8MulExample
   clone Core_Num_Impl6_Bits as Bits0
   clone Core_Num_Impl6_Max as Max0
   clone Core_Num_Impl6_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = uint8,
     type t2 = bool,
@@ -1196,9 +1387,12 @@ module CheckedOps_TestU8MulExample
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv2.inv
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Num_Impl6_CheckedMul_Interface as CheckedMul0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -1206,6 +1400,14 @@ module CheckedOps_TestU8MulExample
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
+  var _4 : uint8;
+  var _5 : Core_Option_Option_Type.t_option uint8;
+  var _9 : bool;
+  var _11 : Core_Option_Option_Type.t_option uint8;
+  var _16 : uint8;
+  var _21 : uint8;
+  var _26 : uint8;
+  var _31 : uint8;
   var res : (uint8, bool);
   var _36 : bool;
   var res1 : (uint8, bool);
@@ -1214,13 +1416,16 @@ module CheckedOps_TestU8MulExample
     goto BB0
   }
   BB0 {
+    _5 <- ([#"../checked_ops.rs" 86 12 86 31] CheckedMul0.checked_mul ([#"../checked_ops.rs" 86 12 86 15] (5 : uint8)) ([#"../checked_ops.rs" 86 28 86 30] (10 : uint8)));
     goto BB1
   }
   BB1 {
+    _4 <- ([#"../checked_ops.rs" 86 12 86 40] Unwrap0.unwrap _5);
+    _5 <- any Core_Option_Option_Type.t_option uint8;
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 86 12 86 46] ([#"../checked_ops.rs" 86 12 86 40] Unwrap0.unwrap ([#"../checked_ops.rs" 86 12 86 31] CheckedMul0.checked_mul ([#"../checked_ops.rs" 86 12 86 15] (5 : uint8)) ([#"../checked_ops.rs" 86 28 86 30] (10 : uint8)))) = ([#"../checked_ops.rs" 86 44 86 46] (50 : uint8))))
+    switch (not ([#"../checked_ops.rs" 86 12 86 46] _4 = ([#"../checked_ops.rs" 86 44 86 46] (50 : uint8))))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -1229,13 +1434,15 @@ module CheckedOps_TestU8MulExample
     absurd
   }
   BB4 {
+    _11 <- ([#"../checked_ops.rs" 87 12 87 32] CheckedMul0.checked_mul ([#"../checked_ops.rs" 87 12 87 16] (50 : uint8)) ([#"../checked_ops.rs" 87 29 87 31] (10 : uint8)));
     goto BB5
   }
   BB5 {
+    _9 <- ([#"../checked_ops.rs" 87 12 87 42] IsNone0.is_none _11);
     goto BB6
   }
   BB6 {
-    switch (not ([#"../checked_ops.rs" 87 12 87 42] IsNone0.is_none ([#"../checked_ops.rs" 87 12 87 32] CheckedMul0.checked_mul ([#"../checked_ops.rs" 87 12 87 16] (50 : uint8)) ([#"../checked_ops.rs" 87 29 87 31] (10 : uint8)))))
+    switch (not _9)
       | False -> goto BB8
       | True -> goto BB7
       end
@@ -1244,10 +1451,11 @@ module CheckedOps_TestU8MulExample
     absurd
   }
   BB8 {
+    _16 <- ([#"../checked_ops.rs" 89 12 89 32] WrappingMul0.wrapping_mul ([#"../checked_ops.rs" 89 12 89 15] (5 : uint8)) ([#"../checked_ops.rs" 89 29 89 31] (10 : uint8)));
     goto BB9
   }
   BB9 {
-    switch (not ([#"../checked_ops.rs" 89 12 89 38] ([#"../checked_ops.rs" 89 12 89 32] WrappingMul0.wrapping_mul ([#"../checked_ops.rs" 89 12 89 15] (5 : uint8)) ([#"../checked_ops.rs" 89 29 89 31] (10 : uint8))) = ([#"../checked_ops.rs" 89 36 89 38] (50 : uint8))))
+    switch (not ([#"../checked_ops.rs" 89 12 89 38] _16 = ([#"../checked_ops.rs" 89 36 89 38] (50 : uint8))))
       | False -> goto BB11
       | True -> goto BB10
       end
@@ -1256,10 +1464,11 @@ module CheckedOps_TestU8MulExample
     absurd
   }
   BB11 {
+    _21 <- ([#"../checked_ops.rs" 90 12 90 33] WrappingMul0.wrapping_mul ([#"../checked_ops.rs" 90 12 90 16] (50 : uint8)) ([#"../checked_ops.rs" 90 30 90 32] (10 : uint8)));
     goto BB12
   }
   BB12 {
-    switch (not ([#"../checked_ops.rs" 90 12 90 40] ([#"../checked_ops.rs" 90 12 90 33] WrappingMul0.wrapping_mul ([#"../checked_ops.rs" 90 12 90 16] (50 : uint8)) ([#"../checked_ops.rs" 90 30 90 32] (10 : uint8))) = ([#"../checked_ops.rs" 90 37 90 40] (244 : uint8))))
+    switch (not ([#"../checked_ops.rs" 90 12 90 40] _21 = ([#"../checked_ops.rs" 90 37 90 40] (244 : uint8))))
       | False -> goto BB14
       | True -> goto BB13
       end
@@ -1268,10 +1477,11 @@ module CheckedOps_TestU8MulExample
     absurd
   }
   BB14 {
+    _26 <- ([#"../checked_ops.rs" 92 12 92 34] SaturatingMul0.saturating_mul ([#"../checked_ops.rs" 92 12 92 15] (5 : uint8)) ([#"../checked_ops.rs" 92 31 92 33] (10 : uint8)));
     goto BB15
   }
   BB15 {
-    switch (not ([#"../checked_ops.rs" 92 12 92 40] ([#"../checked_ops.rs" 92 12 92 34] SaturatingMul0.saturating_mul ([#"../checked_ops.rs" 92 12 92 15] (5 : uint8)) ([#"../checked_ops.rs" 92 31 92 33] (10 : uint8))) = ([#"../checked_ops.rs" 92 38 92 40] (50 : uint8))))
+    switch (not ([#"../checked_ops.rs" 92 12 92 40] _26 = ([#"../checked_ops.rs" 92 38 92 40] (50 : uint8))))
       | False -> goto BB17
       | True -> goto BB16
       end
@@ -1280,10 +1490,11 @@ module CheckedOps_TestU8MulExample
     absurd
   }
   BB17 {
+    _31 <- ([#"../checked_ops.rs" 93 12 93 35] SaturatingMul0.saturating_mul ([#"../checked_ops.rs" 93 12 93 16] (50 : uint8)) ([#"../checked_ops.rs" 93 32 93 34] (10 : uint8)));
     goto BB18
   }
   BB18 {
-    switch (not ([#"../checked_ops.rs" 93 12 93 42] ([#"../checked_ops.rs" 93 12 93 35] SaturatingMul0.saturating_mul ([#"../checked_ops.rs" 93 12 93 16] (50 : uint8)) ([#"../checked_ops.rs" 93 32 93 34] (10 : uint8))) = ([#"../checked_ops.rs" 93 39 93 42] (255 : uint8))))
+    switch (not ([#"../checked_ops.rs" 93 12 93 42] _31 = ([#"../checked_ops.rs" 93 39 93 42] (255 : uint8))))
       | False -> goto BB20
       | True -> goto BB19
       end
@@ -1364,6 +1575,19 @@ module CheckedOps_TestU8MulZero
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = uint8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = uint8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -1371,7 +1595,6 @@ module CheckedOps_TestU8MulZero
   clone Core_Num_Impl6_Bits as Bits0
   clone Core_Num_Impl6_Max as Max0
   clone Core_Num_Impl6_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = uint8,
     type t2 = bool,
@@ -1389,7 +1612,9 @@ module CheckedOps_TestU8MulZero
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Num_Impl6_CheckedMul_Interface as CheckedMul0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -1398,19 +1623,26 @@ module CheckedOps_TestU8MulZero
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var a : uint8 = a;
+  var _5 : uint8;
+  var _6 : Core_Option_Option_Type.t_option uint8;
+  var _12 : uint8;
+  var _18 : uint8;
   var res : (uint8, bool);
   var _25 : bool;
   {
     goto BB0
   }
   BB0 {
+    _6 <- ([#"../checked_ops.rs" 103 12 103 30] CheckedMul0.checked_mul ([#"../checked_ops.rs" 103 12 103 15] (0 : uint8)) a);
     goto BB1
   }
   BB1 {
+    _5 <- ([#"../checked_ops.rs" 103 12 103 39] Unwrap0.unwrap _6);
+    _6 <- any Core_Option_Option_Type.t_option uint8;
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 103 12 103 44] ([#"../checked_ops.rs" 103 12 103 39] Unwrap0.unwrap ([#"../checked_ops.rs" 103 12 103 30] CheckedMul0.checked_mul ([#"../checked_ops.rs" 103 12 103 15] (0 : uint8)) a)) = ([#"../checked_ops.rs" 103 43 103 44] (0 : uint8))))
+    switch (not ([#"../checked_ops.rs" 103 12 103 44] _5 = ([#"../checked_ops.rs" 103 43 103 44] (0 : uint8))))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -1419,10 +1651,11 @@ module CheckedOps_TestU8MulZero
     absurd
   }
   BB4 {
+    _12 <- ([#"../checked_ops.rs" 104 12 104 31] WrappingMul0.wrapping_mul ([#"../checked_ops.rs" 104 12 104 15] (0 : uint8)) a);
     goto BB5
   }
   BB5 {
-    switch (not ([#"../checked_ops.rs" 104 12 104 36] ([#"../checked_ops.rs" 104 12 104 31] WrappingMul0.wrapping_mul ([#"../checked_ops.rs" 104 12 104 15] (0 : uint8)) a) = ([#"../checked_ops.rs" 104 35 104 36] (0 : uint8))))
+    switch (not ([#"../checked_ops.rs" 104 12 104 36] _12 = ([#"../checked_ops.rs" 104 35 104 36] (0 : uint8))))
       | False -> goto BB7
       | True -> goto BB6
       end
@@ -1431,10 +1664,11 @@ module CheckedOps_TestU8MulZero
     absurd
   }
   BB7 {
+    _18 <- ([#"../checked_ops.rs" 105 12 105 33] SaturatingMul0.saturating_mul ([#"../checked_ops.rs" 105 12 105 15] (0 : uint8)) a);
     goto BB8
   }
   BB8 {
-    switch (not ([#"../checked_ops.rs" 105 12 105 38] ([#"../checked_ops.rs" 105 12 105 33] SaturatingMul0.saturating_mul ([#"../checked_ops.rs" 105 12 105 15] (0 : uint8)) a) = ([#"../checked_ops.rs" 105 37 105 38] (0 : uint8))))
+    switch (not ([#"../checked_ops.rs" 105 12 105 38] _18 = ([#"../checked_ops.rs" 105 37 105 38] (0 : uint8))))
       | False -> goto BB10
       | True -> goto BB9
       end
@@ -1486,7 +1720,14 @@ module CheckedOps_TestU8OverflowingMul
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -1495,7 +1736,8 @@ module CheckedOps_TestU8OverflowingMul
   clone Core_Num_Impl6_Min as Min0
   clone Core_Num_Impl6_Bits as Bits0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl6_CheckedMul_Interface as CheckedMul0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -1519,7 +1761,10 @@ module CheckedOps_TestU8OverflowingMul
   var a : uint8 = a;
   var b : uint8 = b;
   var _7 : (uint8, bool);
+  var _10 : uint8;
   var _18 : (uint8, bool);
+  var _21 : bool;
+  var _23 : Core_Option_Option_Type.t_option uint8;
   {
     goto BB0
   }
@@ -1529,10 +1774,11 @@ module CheckedOps_TestU8OverflowingMul
   }
   BB1 {
     assume { Resolve0.resolve _7 };
+    _10 <- ([#"../checked_ops.rs" 112 38 112 55] WrappingMul0.wrapping_mul a b);
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 112 12 112 55] (let (a, _) = _7 in a) = ([#"../checked_ops.rs" 112 38 112 55] WrappingMul0.wrapping_mul a b)))
+    switch (not ([#"../checked_ops.rs" 112 12 112 55] (let (a, _) = _7 in a) = _10))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -1546,13 +1792,15 @@ module CheckedOps_TestU8OverflowingMul
   }
   BB5 {
     assume { Resolve0.resolve _18 };
+    _23 <- ([#"../checked_ops.rs" 113 38 113 54] CheckedMul0.checked_mul a b);
     goto BB6
   }
   BB6 {
+    _21 <- ([#"../checked_ops.rs" 113 38 113 64] IsNone0.is_none _23);
     goto BB7
   }
   BB7 {
-    switch (not ([#"../checked_ops.rs" 113 12 113 64] Bool.eqb (let (_, a) = _18 in a) ([#"../checked_ops.rs" 113 38 113 64] IsNone0.is_none ([#"../checked_ops.rs" 113 38 113 54] CheckedMul0.checked_mul a b))))
+    switch (not ([#"../checked_ops.rs" 113 12 113 64] Bool.eqb (let (_, a) = _18 in a) _21))
       | False -> goto BB9
       | True -> goto BB8
       end
@@ -1614,12 +1862,31 @@ module CheckedOps_TestU8DivExample
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = uint8
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = uint8,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
     type t = uint8
   clone Core_Num_Impl6_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = uint8,
     type t2 = bool,
@@ -1632,28 +1899,39 @@ module CheckedOps_TestU8DivExample
   clone Core_Num_Impl6_WrappingDiv_Interface as WrappingDiv0 with
     val Min0.mIN' = Min0.mIN'
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl6_CheckedDiv_Interface as CheckedDiv0 with
     val Min0.mIN' = Min0.mIN'
   let rec cfg test_u8_div_example [#"../checked_ops.rs" 117 0 117 28] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
+  var _3 : bool;
+  var _5 : Core_Option_Option_Type.t_option uint8;
+  var _10 : uint8;
+  var _11 : Core_Option_Option_Type.t_option uint8;
+  var _16 : uint8;
+  var _21 : uint8;
   var res : (uint8, bool);
   var _26 : bool;
   {
     goto BB0
   }
   BB0 {
+    _5 <- ([#"../checked_ops.rs" 118 12 118 30] CheckedDiv0.checked_div ([#"../checked_ops.rs" 118 12 118 15] (5 : uint8)) ([#"../checked_ops.rs" 118 28 118 29] (0 : uint8)));
     goto BB1
   }
   BB1 {
+    _3 <- ([#"../checked_ops.rs" 118 12 118 40] IsNone0.is_none _5);
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 118 12 118 40] IsNone0.is_none ([#"../checked_ops.rs" 118 12 118 30] CheckedDiv0.checked_div ([#"../checked_ops.rs" 118 12 118 15] (5 : uint8)) ([#"../checked_ops.rs" 118 28 118 29] (0 : uint8)))))
+    switch (not _3)
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -1662,13 +1940,16 @@ module CheckedOps_TestU8DivExample
     absurd
   }
   BB4 {
+    _11 <- ([#"../checked_ops.rs" 119 12 119 30] CheckedDiv0.checked_div ([#"../checked_ops.rs" 119 12 119 15] (5 : uint8)) ([#"../checked_ops.rs" 119 28 119 29] (2 : uint8)));
     goto BB5
   }
   BB5 {
+    _10 <- ([#"../checked_ops.rs" 119 12 119 39] Unwrap0.unwrap _11);
+    _11 <- any Core_Option_Option_Type.t_option uint8;
     goto BB6
   }
   BB6 {
-    switch (not ([#"../checked_ops.rs" 119 12 119 44] ([#"../checked_ops.rs" 119 12 119 39] Unwrap0.unwrap ([#"../checked_ops.rs" 119 12 119 30] CheckedDiv0.checked_div ([#"../checked_ops.rs" 119 12 119 15] (5 : uint8)) ([#"../checked_ops.rs" 119 28 119 29] (2 : uint8)))) = ([#"../checked_ops.rs" 119 43 119 44] (2 : uint8))))
+    switch (not ([#"../checked_ops.rs" 119 12 119 44] _10 = ([#"../checked_ops.rs" 119 43 119 44] (2 : uint8))))
       | False -> goto BB8
       | True -> goto BB7
       end
@@ -1677,10 +1958,11 @@ module CheckedOps_TestU8DivExample
     absurd
   }
   BB8 {
+    _16 <- ([#"../checked_ops.rs" 120 12 120 31] WrappingDiv0.wrapping_div ([#"../checked_ops.rs" 120 12 120 15] (5 : uint8)) ([#"../checked_ops.rs" 120 29 120 30] (2 : uint8)));
     goto BB9
   }
   BB9 {
-    switch (not ([#"../checked_ops.rs" 120 12 120 36] ([#"../checked_ops.rs" 120 12 120 31] WrappingDiv0.wrapping_div ([#"../checked_ops.rs" 120 12 120 15] (5 : uint8)) ([#"../checked_ops.rs" 120 29 120 30] (2 : uint8))) = ([#"../checked_ops.rs" 120 35 120 36] (2 : uint8))))
+    switch (not ([#"../checked_ops.rs" 120 12 120 36] _16 = ([#"../checked_ops.rs" 120 35 120 36] (2 : uint8))))
       | False -> goto BB11
       | True -> goto BB10
       end
@@ -1689,10 +1971,11 @@ module CheckedOps_TestU8DivExample
     absurd
   }
   BB11 {
+    _21 <- ([#"../checked_ops.rs" 121 12 121 33] SaturatingDiv0.saturating_div ([#"../checked_ops.rs" 121 12 121 15] (5 : uint8)) ([#"../checked_ops.rs" 121 31 121 32] (2 : uint8)));
     goto BB12
   }
   BB12 {
-    switch (not ([#"../checked_ops.rs" 121 12 121 38] ([#"../checked_ops.rs" 121 12 121 33] SaturatingDiv0.saturating_div ([#"../checked_ops.rs" 121 12 121 15] (5 : uint8)) ([#"../checked_ops.rs" 121 31 121 32] (2 : uint8))) = ([#"../checked_ops.rs" 121 37 121 38] (2 : uint8))))
+    switch (not ([#"../checked_ops.rs" 121 12 121 38] _21 = ([#"../checked_ops.rs" 121 37 121 38] (2 : uint8))))
       | False -> goto BB14
       | True -> goto BB13
       end
@@ -1746,12 +2029,24 @@ module CheckedOps_TestU8DivNoOverflow
   use prelude.Int
   use prelude.UInt8
   use prelude.Bool
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = uint8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = uint8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
     type t = uint8
   clone Core_Num_Impl6_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = uint8,
     type t2 = bool,
@@ -1764,7 +2059,9 @@ module CheckedOps_TestU8DivNoOverflow
   clone Core_Num_Impl6_WrappingDiv_Interface as WrappingDiv0 with
     val Min0.mIN' = Min0.mIN'
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Num_Impl6_CheckedDiv_Interface as CheckedDiv0 with
     val Min0.mIN' = Min0.mIN'
   let rec cfg test_u8_div_no_overflow [#"../checked_ops.rs" 128 0 128 44] [@cfg:stackify] [@cfg:subregion_analysis] (a : uint8) (b : uint8) : ()
@@ -1774,10 +2071,14 @@ module CheckedOps_TestU8DivNoOverflow
   var _0 : ();
   var a : uint8 = a;
   var b : uint8 = b;
+  var _7 : uint8;
+  var _8 : Core_Option_Option_Type.t_option uint8;
   var _13 : uint8;
   var _14 : bool;
+  var _19 : uint8;
   var _24 : uint8;
   var _25 : bool;
+  var _30 : uint8;
   var _35 : uint8;
   var _36 : bool;
   var res : (uint8, bool);
@@ -1788,9 +2089,12 @@ module CheckedOps_TestU8DivNoOverflow
     goto BB0
   }
   BB0 {
+    _8 <- ([#"../checked_ops.rs" 129 12 129 28] CheckedDiv0.checked_div a b);
     goto BB1
   }
   BB1 {
+    _7 <- ([#"../checked_ops.rs" 129 12 129 37] Unwrap0.unwrap _8);
+    _8 <- any Core_Option_Option_Type.t_option uint8;
     goto BB2
   }
   BB2 {
@@ -1800,7 +2104,7 @@ module CheckedOps_TestU8DivNoOverflow
     goto BB3
   }
   BB3 {
-    switch (not ([#"../checked_ops.rs" 129 12 129 46] ([#"../checked_ops.rs" 129 12 129 37] Unwrap0.unwrap ([#"../checked_ops.rs" 129 12 129 28] CheckedDiv0.checked_div a b)) = ([#"../checked_ops.rs" 129 41 129 46] a / _13)))
+    switch (not ([#"../checked_ops.rs" 129 12 129 46] _7 = ([#"../checked_ops.rs" 129 41 129 46] a / _13)))
       | False -> goto BB5
       | True -> goto BB4
       end
@@ -1809,6 +2113,7 @@ module CheckedOps_TestU8DivNoOverflow
     absurd
   }
   BB5 {
+    _19 <- ([#"../checked_ops.rs" 130 12 130 29] WrappingDiv0.wrapping_div a b);
     goto BB6
   }
   BB6 {
@@ -1818,7 +2123,7 @@ module CheckedOps_TestU8DivNoOverflow
     goto BB7
   }
   BB7 {
-    switch (not ([#"../checked_ops.rs" 130 12 130 38] ([#"../checked_ops.rs" 130 12 130 29] WrappingDiv0.wrapping_div a b) = ([#"../checked_ops.rs" 130 33 130 38] a / _24)))
+    switch (not ([#"../checked_ops.rs" 130 12 130 38] _19 = ([#"../checked_ops.rs" 130 33 130 38] a / _24)))
       | False -> goto BB9
       | True -> goto BB8
       end
@@ -1827,6 +2132,7 @@ module CheckedOps_TestU8DivNoOverflow
     absurd
   }
   BB9 {
+    _30 <- ([#"../checked_ops.rs" 131 12 131 31] SaturatingDiv0.saturating_div a b);
     goto BB10
   }
   BB10 {
@@ -1836,7 +2142,7 @@ module CheckedOps_TestU8DivNoOverflow
     goto BB11
   }
   BB11 {
-    switch (not ([#"../checked_ops.rs" 131 12 131 40] ([#"../checked_ops.rs" 131 12 131 31] SaturatingDiv0.saturating_div a b) = ([#"../checked_ops.rs" 131 35 131 40] a / _35)))
+    switch (not ([#"../checked_ops.rs" 131 12 131 40] _30 = ([#"../checked_ops.rs" 131 35 131 40] a / _35)))
       | False -> goto BB13
       | True -> goto BB12
       end
@@ -1893,10 +2199,18 @@ end
 module CheckedOps_TestU8DivZero
   use prelude.Int
   use prelude.UInt8
-  clone Core_Num_Impl6_Min as Min0
+  use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option uint8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option uint8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
+  clone Core_Num_Impl6_Min as Min0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = uint8
+    type t = uint8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl6_CheckedDiv_Interface as CheckedDiv0 with
     val Min0.mIN' = Min0.mIN'
   let rec cfg test_u8_div_zero [#"../checked_ops.rs" 137 0 137 30] [@cfg:stackify] [@cfg:subregion_analysis] (a : uint8) : ()
@@ -1904,17 +2218,21 @@ module CheckedOps_TestU8DivZero
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var a : uint8 = a;
+  var _4 : bool;
+  var _6 : Core_Option_Option_Type.t_option uint8;
   {
     goto BB0
   }
   BB0 {
+    _6 <- ([#"../checked_ops.rs" 138 12 138 28] CheckedDiv0.checked_div a ([#"../checked_ops.rs" 138 26 138 27] (0 : uint8)));
     goto BB1
   }
   BB1 {
+    _4 <- ([#"../checked_ops.rs" 138 12 138 38] IsNone0.is_none _6);
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 138 12 138 38] IsNone0.is_none ([#"../checked_ops.rs" 138 12 138 28] CheckedDiv0.checked_div a ([#"../checked_ops.rs" 138 26 138 27] (0 : uint8)))))
+    switch (not _4)
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -2023,6 +2341,26 @@ module CheckedOps_TestI8AddExample
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = int8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = int8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -2030,7 +2368,6 @@ module CheckedOps_TestI8AddExample
   clone Core_Num_Impl0_Bits as Bits0
   clone Core_Num_Impl0_Max as Max0
   clone Core_Num_Impl0_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = int8,
     type t2 = bool,
@@ -2048,9 +2385,12 @@ module CheckedOps_TestI8AddExample
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv2.inv
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Num_Impl0_CheckedAdd_Interface as CheckedAdd0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -2058,6 +2398,18 @@ module CheckedOps_TestI8AddExample
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
+  var _4 : int8;
+  var _5 : Core_Option_Option_Type.t_option int8;
+  var _9 : bool;
+  var _11 : Core_Option_Option_Type.t_option int8;
+  var _15 : bool;
+  var _17 : Core_Option_Option_Type.t_option int8;
+  var _22 : int8;
+  var _27 : int8;
+  var _32 : int8;
+  var _37 : int8;
+  var _42 : int8;
+  var _47 : int8;
   var res : (int8, bool);
   var _52 : bool;
   var res1 : (int8, bool);
@@ -2068,13 +2420,16 @@ module CheckedOps_TestI8AddExample
     goto BB0
   }
   BB0 {
+    _5 <- ([#"../checked_ops.rs" 143 12 143 31] CheckedAdd0.checked_add ([#"../checked_ops.rs" 143 12 143 15] (5 : int8)) ([#"../checked_ops.rs" 143 28 143 30] (10 : int8)));
     goto BB1
   }
   BB1 {
+    _4 <- ([#"../checked_ops.rs" 143 12 143 40] Unwrap0.unwrap _5);
+    _5 <- any Core_Option_Option_Type.t_option int8;
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 143 12 143 46] ([#"../checked_ops.rs" 143 12 143 40] Unwrap0.unwrap ([#"../checked_ops.rs" 143 12 143 31] CheckedAdd0.checked_add ([#"../checked_ops.rs" 143 12 143 15] (5 : int8)) ([#"../checked_ops.rs" 143 28 143 30] (10 : int8)))) = ([#"../checked_ops.rs" 143 44 143 46] (15 : int8))))
+    switch (not ([#"../checked_ops.rs" 143 12 143 46] _4 = ([#"../checked_ops.rs" 143 44 143 46] (15 : int8))))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -2083,13 +2438,15 @@ module CheckedOps_TestI8AddExample
     absurd
   }
   BB4 {
+    _11 <- ([#"../checked_ops.rs" 144 12 144 33] CheckedAdd0.checked_add ([#"../checked_ops.rs" 144 12 144 17] (120 : int8)) ([#"../checked_ops.rs" 144 30 144 32] (10 : int8)));
     goto BB5
   }
   BB5 {
+    _9 <- ([#"../checked_ops.rs" 144 12 144 43] IsNone0.is_none _11);
     goto BB6
   }
   BB6 {
-    switch (not ([#"../checked_ops.rs" 144 12 144 43] IsNone0.is_none ([#"../checked_ops.rs" 144 12 144 33] CheckedAdd0.checked_add ([#"../checked_ops.rs" 144 12 144 17] (120 : int8)) ([#"../checked_ops.rs" 144 30 144 32] (10 : int8)))))
+    switch (not _9)
       | False -> goto BB8
       | True -> goto BB7
       end
@@ -2098,13 +2455,15 @@ module CheckedOps_TestI8AddExample
     absurd
   }
   BB8 {
+    _17 <- ([#"../checked_ops.rs" 145 12 145 37] CheckedAdd0.checked_add ([#"../checked_ops.rs" 145 12 145 20] (-120 : int8)) ([#"../checked_ops.rs" 145 33 145 36] (-10 : int8)));
     goto BB9
   }
   BB9 {
+    _15 <- ([#"../checked_ops.rs" 145 12 145 47] IsNone0.is_none _17);
     goto BB10
   }
   BB10 {
-    switch (not ([#"../checked_ops.rs" 145 12 145 47] IsNone0.is_none ([#"../checked_ops.rs" 145 12 145 37] CheckedAdd0.checked_add ([#"../checked_ops.rs" 145 12 145 20] (-120 : int8)) ([#"../checked_ops.rs" 145 33 145 36] (-10 : int8)))))
+    switch (not _15)
       | False -> goto BB12
       | True -> goto BB11
       end
@@ -2113,10 +2472,11 @@ module CheckedOps_TestI8AddExample
     absurd
   }
   BB12 {
+    _22 <- ([#"../checked_ops.rs" 147 12 147 32] WrappingAdd0.wrapping_add ([#"../checked_ops.rs" 147 12 147 15] (5 : int8)) ([#"../checked_ops.rs" 147 29 147 31] (10 : int8)));
     goto BB13
   }
   BB13 {
-    switch (not ([#"../checked_ops.rs" 147 12 147 38] ([#"../checked_ops.rs" 147 12 147 32] WrappingAdd0.wrapping_add ([#"../checked_ops.rs" 147 12 147 15] (5 : int8)) ([#"../checked_ops.rs" 147 29 147 31] (10 : int8))) = ([#"../checked_ops.rs" 147 36 147 38] (15 : int8))))
+    switch (not ([#"../checked_ops.rs" 147 12 147 38] _22 = ([#"../checked_ops.rs" 147 36 147 38] (15 : int8))))
       | False -> goto BB15
       | True -> goto BB14
       end
@@ -2125,10 +2485,11 @@ module CheckedOps_TestI8AddExample
     absurd
   }
   BB15 {
+    _27 <- ([#"../checked_ops.rs" 148 12 148 34] WrappingAdd0.wrapping_add ([#"../checked_ops.rs" 148 12 148 17] (120 : int8)) ([#"../checked_ops.rs" 148 31 148 33] (10 : int8)));
     goto BB16
   }
   BB16 {
-    switch (not ([#"../checked_ops.rs" 148 12 148 42] ([#"../checked_ops.rs" 148 12 148 34] WrappingAdd0.wrapping_add ([#"../checked_ops.rs" 148 12 148 17] (120 : int8)) ([#"../checked_ops.rs" 148 31 148 33] (10 : int8))) = ([#"../checked_ops.rs" 148 38 148 42] (-126 : int8))))
+    switch (not ([#"../checked_ops.rs" 148 12 148 42] _27 = ([#"../checked_ops.rs" 148 38 148 42] (-126 : int8))))
       | False -> goto BB18
       | True -> goto BB17
       end
@@ -2137,10 +2498,11 @@ module CheckedOps_TestI8AddExample
     absurd
   }
   BB18 {
+    _32 <- ([#"../checked_ops.rs" 149 12 149 38] WrappingAdd0.wrapping_add ([#"../checked_ops.rs" 149 12 149 20] (-120 : int8)) ([#"../checked_ops.rs" 149 34 149 37] (-10 : int8)));
     goto BB19
   }
   BB19 {
-    switch (not ([#"../checked_ops.rs" 149 12 149 45] ([#"../checked_ops.rs" 149 12 149 38] WrappingAdd0.wrapping_add ([#"../checked_ops.rs" 149 12 149 20] (-120 : int8)) ([#"../checked_ops.rs" 149 34 149 37] (-10 : int8))) = ([#"../checked_ops.rs" 149 42 149 45] (126 : int8))))
+    switch (not ([#"../checked_ops.rs" 149 12 149 45] _32 = ([#"../checked_ops.rs" 149 42 149 45] (126 : int8))))
       | False -> goto BB21
       | True -> goto BB20
       end
@@ -2149,10 +2511,11 @@ module CheckedOps_TestI8AddExample
     absurd
   }
   BB21 {
+    _37 <- ([#"../checked_ops.rs" 151 12 151 34] SaturatingAdd0.saturating_add ([#"../checked_ops.rs" 151 12 151 15] (5 : int8)) ([#"../checked_ops.rs" 151 31 151 33] (10 : int8)));
     goto BB22
   }
   BB22 {
-    switch (not ([#"../checked_ops.rs" 151 12 151 40] ([#"../checked_ops.rs" 151 12 151 34] SaturatingAdd0.saturating_add ([#"../checked_ops.rs" 151 12 151 15] (5 : int8)) ([#"../checked_ops.rs" 151 31 151 33] (10 : int8))) = ([#"../checked_ops.rs" 151 38 151 40] (15 : int8))))
+    switch (not ([#"../checked_ops.rs" 151 12 151 40] _37 = ([#"../checked_ops.rs" 151 38 151 40] (15 : int8))))
       | False -> goto BB24
       | True -> goto BB23
       end
@@ -2161,10 +2524,11 @@ module CheckedOps_TestI8AddExample
     absurd
   }
   BB24 {
+    _42 <- ([#"../checked_ops.rs" 152 12 152 36] SaturatingAdd0.saturating_add ([#"../checked_ops.rs" 152 12 152 17] (120 : int8)) ([#"../checked_ops.rs" 152 33 152 35] (10 : int8)));
     goto BB25
   }
   BB25 {
-    switch (not ([#"../checked_ops.rs" 152 12 152 43] ([#"../checked_ops.rs" 152 12 152 36] SaturatingAdd0.saturating_add ([#"../checked_ops.rs" 152 12 152 17] (120 : int8)) ([#"../checked_ops.rs" 152 33 152 35] (10 : int8))) = ([#"../checked_ops.rs" 152 40 152 43] (127 : int8))))
+    switch (not ([#"../checked_ops.rs" 152 12 152 43] _42 = ([#"../checked_ops.rs" 152 40 152 43] (127 : int8))))
       | False -> goto BB27
       | True -> goto BB26
       end
@@ -2173,10 +2537,11 @@ module CheckedOps_TestI8AddExample
     absurd
   }
   BB27 {
+    _47 <- ([#"../checked_ops.rs" 153 12 153 40] SaturatingAdd0.saturating_add ([#"../checked_ops.rs" 153 12 153 20] (-120 : int8)) ([#"../checked_ops.rs" 153 36 153 39] (-10 : int8)));
     goto BB28
   }
   BB28 {
-    switch (not ([#"../checked_ops.rs" 153 12 153 48] ([#"../checked_ops.rs" 153 12 153 40] SaturatingAdd0.saturating_add ([#"../checked_ops.rs" 153 12 153 20] (-120 : int8)) ([#"../checked_ops.rs" 153 36 153 39] (-10 : int8))) = ([#"../checked_ops.rs" 153 44 153 48] (-128 : int8))))
+    switch (not ([#"../checked_ops.rs" 153 12 153 48] _47 = ([#"../checked_ops.rs" 153 44 153 48] (-128 : int8))))
       | False -> goto BB30
       | True -> goto BB29
       end
@@ -2288,6 +2653,14 @@ module CheckedOps_TestI8AddOverflowPos
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -2295,7 +2668,6 @@ module CheckedOps_TestI8AddOverflowPos
   clone Core_Num_Impl0_Bits as Bits0
   clone Core_Num_Impl0_Max as Max0
   clone Core_Num_Impl0_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = int8,
     type t2 = bool,
@@ -2313,7 +2685,8 @@ module CheckedOps_TestI8AddOverflowPos
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl0_CheckedAdd_Interface as CheckedAdd0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -2323,19 +2696,25 @@ module CheckedOps_TestI8AddOverflowPos
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var a : int8 = a;
+  var _5 : bool;
+  var _7 : Core_Option_Option_Type.t_option int8;
+  var _13 : int8;
+  var _22 : int8;
   var res : (int8, bool);
   var _29 : bool;
   {
     goto BB0
   }
   BB0 {
+    _7 <- ([#"../checked_ops.rs" 166 12 166 32] CheckedAdd0.checked_add ([#"../checked_ops.rs" 166 12 166 17] (127 : int8)) a);
     goto BB1
   }
   BB1 {
+    _5 <- ([#"../checked_ops.rs" 166 12 166 42] IsNone0.is_none _7);
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 166 12 166 42] IsNone0.is_none ([#"../checked_ops.rs" 166 12 166 32] CheckedAdd0.checked_add ([#"../checked_ops.rs" 166 12 166 17] (127 : int8)) a)))
+    switch (not _5)
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -2344,10 +2723,11 @@ module CheckedOps_TestI8AddOverflowPos
     absurd
   }
   BB4 {
+    _13 <- ([#"../checked_ops.rs" 167 12 167 33] WrappingAdd0.wrapping_add ([#"../checked_ops.rs" 167 12 167 17] (127 : int8)) a);
     goto BB5
   }
   BB5 {
-    switch (not ([#"../checked_ops.rs" 167 12 167 48] ([#"../checked_ops.rs" 167 12 167 33] WrappingAdd0.wrapping_add ([#"../checked_ops.rs" 167 12 167 17] (127 : int8)) a) = ([#"../checked_ops.rs" 167 37 167 48] ([#"../checked_ops.rs" 167 37 167 44] a - ([#"../checked_ops.rs" 167 41 167 44] (127 : int8))) - ([#"../checked_ops.rs" 167 47 167 48] (2 : int8)))))
+    switch (not ([#"../checked_ops.rs" 167 12 167 48] _13 = ([#"../checked_ops.rs" 167 37 167 48] ([#"../checked_ops.rs" 167 37 167 44] a - ([#"../checked_ops.rs" 167 41 167 44] (127 : int8))) - ([#"../checked_ops.rs" 167 47 167 48] (2 : int8)))))
       | False -> goto BB7
       | True -> goto BB6
       end
@@ -2356,10 +2736,11 @@ module CheckedOps_TestI8AddOverflowPos
     absurd
   }
   BB7 {
+    _22 <- ([#"../checked_ops.rs" 168 12 168 35] SaturatingAdd0.saturating_add ([#"../checked_ops.rs" 168 12 168 17] (127 : int8)) a);
     goto BB8
   }
   BB8 {
-    switch (not ([#"../checked_ops.rs" 168 12 168 42] ([#"../checked_ops.rs" 168 12 168 35] SaturatingAdd0.saturating_add ([#"../checked_ops.rs" 168 12 168 17] (127 : int8)) a) = ([#"../checked_ops.rs" 168 39 168 42] (127 : int8))))
+    switch (not ([#"../checked_ops.rs" 168 12 168 42] _22 = ([#"../checked_ops.rs" 168 39 168 42] (127 : int8))))
       | False -> goto BB10
       | True -> goto BB9
       end
@@ -2413,6 +2794,14 @@ module CheckedOps_TestI8AddOverflowNeg
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -2420,7 +2809,6 @@ module CheckedOps_TestI8AddOverflowNeg
   clone Core_Num_Impl0_Bits as Bits0
   clone Core_Num_Impl0_Max as Max0
   clone Core_Num_Impl0_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = int8,
     type t2 = bool,
@@ -2438,7 +2826,8 @@ module CheckedOps_TestI8AddOverflowNeg
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl0_CheckedAdd_Interface as CheckedAdd0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -2448,19 +2837,25 @@ module CheckedOps_TestI8AddOverflowNeg
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var a : int8 = a;
+  var _5 : bool;
+  var _7 : Core_Option_Option_Type.t_option int8;
+  var _13 : int8;
+  var _22 : int8;
   var res : (int8, bool);
   var _29 : bool;
   {
     goto BB0
   }
   BB0 {
+    _7 <- ([#"../checked_ops.rs" 176 12 176 35] CheckedAdd0.checked_add ([#"../checked_ops.rs" 176 12 176 20] (-128 : int8)) a);
     goto BB1
   }
   BB1 {
+    _5 <- ([#"../checked_ops.rs" 176 12 176 45] IsNone0.is_none _7);
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 176 12 176 45] IsNone0.is_none ([#"../checked_ops.rs" 176 12 176 35] CheckedAdd0.checked_add ([#"../checked_ops.rs" 176 12 176 20] (-128 : int8)) a)))
+    switch (not _5)
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -2469,10 +2864,11 @@ module CheckedOps_TestI8AddOverflowNeg
     absurd
   }
   BB4 {
+    _13 <- ([#"../checked_ops.rs" 177 12 177 36] WrappingAdd0.wrapping_add ([#"../checked_ops.rs" 177 12 177 20] (-128 : int8)) a);
     goto BB5
   }
   BB5 {
-    switch (not ([#"../checked_ops.rs" 177 12 177 51] ([#"../checked_ops.rs" 177 12 177 36] WrappingAdd0.wrapping_add ([#"../checked_ops.rs" 177 12 177 20] (-128 : int8)) a) = ([#"../checked_ops.rs" 177 40 177 51] ([#"../checked_ops.rs" 177 40 177 47] a + ([#"../checked_ops.rs" 177 44 177 47] (127 : int8))) + ([#"../checked_ops.rs" 177 50 177 51] (1 : int8)))))
+    switch (not ([#"../checked_ops.rs" 177 12 177 51] _13 = ([#"../checked_ops.rs" 177 40 177 51] ([#"../checked_ops.rs" 177 40 177 47] a + ([#"../checked_ops.rs" 177 44 177 47] (127 : int8))) + ([#"../checked_ops.rs" 177 50 177 51] (1 : int8)))))
       | False -> goto BB7
       | True -> goto BB6
       end
@@ -2481,10 +2877,11 @@ module CheckedOps_TestI8AddOverflowNeg
     absurd
   }
   BB7 {
+    _22 <- ([#"../checked_ops.rs" 178 12 178 38] SaturatingAdd0.saturating_add ([#"../checked_ops.rs" 178 12 178 20] (-128 : int8)) a);
     goto BB8
   }
   BB8 {
-    switch (not ([#"../checked_ops.rs" 178 12 178 46] ([#"../checked_ops.rs" 178 12 178 38] SaturatingAdd0.saturating_add ([#"../checked_ops.rs" 178 12 178 20] (-128 : int8)) a) = ([#"../checked_ops.rs" 178 42 178 46] (-128 : int8))))
+    switch (not ([#"../checked_ops.rs" 178 12 178 46] _22 = ([#"../checked_ops.rs" 178 42 178 46] (-128 : int8))))
       | False -> goto BB10
       | True -> goto BB9
       end
@@ -2572,7 +2969,14 @@ module CheckedOps_TestI8OverflowingAdd
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -2581,7 +2985,8 @@ module CheckedOps_TestI8OverflowingAdd
   clone Core_Num_Impl0_Min as Min0
   clone Core_Num_Impl0_Bits as Bits0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl0_CheckedAdd_Interface as CheckedAdd0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -2605,7 +3010,10 @@ module CheckedOps_TestI8OverflowingAdd
   var a : int8 = a;
   var b : int8 = b;
   var _7 : (int8, bool);
+  var _10 : int8;
   var _18 : (int8, bool);
+  var _21 : bool;
+  var _23 : Core_Option_Option_Type.t_option int8;
   {
     goto BB0
   }
@@ -2615,10 +3023,11 @@ module CheckedOps_TestI8OverflowingAdd
   }
   BB1 {
     assume { Resolve0.resolve _7 };
+    _10 <- ([#"../checked_ops.rs" 192 38 192 55] WrappingAdd0.wrapping_add a b);
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 192 12 192 55] (let (a, _) = _7 in a) = ([#"../checked_ops.rs" 192 38 192 55] WrappingAdd0.wrapping_add a b)))
+    switch (not ([#"../checked_ops.rs" 192 12 192 55] (let (a, _) = _7 in a) = _10))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -2632,13 +3041,15 @@ module CheckedOps_TestI8OverflowingAdd
   }
   BB5 {
     assume { Resolve0.resolve _18 };
+    _23 <- ([#"../checked_ops.rs" 193 38 193 54] CheckedAdd0.checked_add a b);
     goto BB6
   }
   BB6 {
+    _21 <- ([#"../checked_ops.rs" 193 38 193 64] IsNone0.is_none _23);
     goto BB7
   }
   BB7 {
-    switch (not ([#"../checked_ops.rs" 193 12 193 64] Bool.eqb (let (_, a) = _18 in a) ([#"../checked_ops.rs" 193 38 193 64] IsNone0.is_none ([#"../checked_ops.rs" 193 38 193 54] CheckedAdd0.checked_add a b))))
+    switch (not ([#"../checked_ops.rs" 193 12 193 64] Bool.eqb (let (_, a) = _18 in a) _21))
       | False -> goto BB9
       | True -> goto BB8
       end
@@ -2714,6 +3125,26 @@ module CheckedOps_TestI8SubExample
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = int8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = int8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -2721,7 +3152,6 @@ module CheckedOps_TestI8SubExample
   clone Core_Num_Impl0_Bits as Bits0
   clone Core_Num_Impl0_Max as Max0
   clone Core_Num_Impl0_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = int8,
     type t2 = bool,
@@ -2739,9 +3169,12 @@ module CheckedOps_TestI8SubExample
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv2.inv
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Num_Impl0_CheckedSub_Interface as CheckedSub0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -2749,6 +3182,18 @@ module CheckedOps_TestI8SubExample
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
+  var _4 : int8;
+  var _5 : Core_Option_Option_Type.t_option int8;
+  var _10 : int8;
+  var _11 : Core_Option_Option_Type.t_option int8;
+  var _15 : bool;
+  var _17 : Core_Option_Option_Type.t_option int8;
+  var _22 : int8;
+  var _27 : int8;
+  var _32 : int8;
+  var _37 : int8;
+  var _42 : int8;
+  var _47 : int8;
   var res : (int8, bool);
   var _52 : bool;
   var res1 : (int8, bool);
@@ -2759,13 +3204,16 @@ module CheckedOps_TestI8SubExample
     goto BB0
   }
   BB0 {
+    _5 <- ([#"../checked_ops.rs" 198 12 198 31] CheckedSub0.checked_sub ([#"../checked_ops.rs" 198 12 198 15] (5 : int8)) ([#"../checked_ops.rs" 198 28 198 30] (10 : int8)));
     goto BB1
   }
   BB1 {
+    _4 <- ([#"../checked_ops.rs" 198 12 198 40] Unwrap0.unwrap _5);
+    _5 <- any Core_Option_Option_Type.t_option int8;
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 198 12 198 46] ([#"../checked_ops.rs" 198 12 198 40] Unwrap0.unwrap ([#"../checked_ops.rs" 198 12 198 31] CheckedSub0.checked_sub ([#"../checked_ops.rs" 198 12 198 15] (5 : int8)) ([#"../checked_ops.rs" 198 28 198 30] (10 : int8)))) = ([#"../checked_ops.rs" 198 44 198 46] (-5 : int8))))
+    switch (not ([#"../checked_ops.rs" 198 12 198 46] _4 = ([#"../checked_ops.rs" 198 44 198 46] (-5 : int8))))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -2774,13 +3222,16 @@ module CheckedOps_TestI8SubExample
     absurd
   }
   BB4 {
+    _11 <- ([#"../checked_ops.rs" 199 12 199 33] CheckedSub0.checked_sub ([#"../checked_ops.rs" 199 12 199 17] (120 : int8)) ([#"../checked_ops.rs" 199 30 199 32] (10 : int8)));
     goto BB5
   }
   BB5 {
+    _10 <- ([#"../checked_ops.rs" 199 12 199 42] Unwrap0.unwrap _11);
+    _11 <- any Core_Option_Option_Type.t_option int8;
     goto BB6
   }
   BB6 {
-    switch (not ([#"../checked_ops.rs" 199 12 199 49] ([#"../checked_ops.rs" 199 12 199 42] Unwrap0.unwrap ([#"../checked_ops.rs" 199 12 199 33] CheckedSub0.checked_sub ([#"../checked_ops.rs" 199 12 199 17] (120 : int8)) ([#"../checked_ops.rs" 199 30 199 32] (10 : int8)))) = ([#"../checked_ops.rs" 199 46 199 49] (110 : int8))))
+    switch (not ([#"../checked_ops.rs" 199 12 199 49] _10 = ([#"../checked_ops.rs" 199 46 199 49] (110 : int8))))
       | False -> goto BB8
       | True -> goto BB7
       end
@@ -2789,13 +3240,15 @@ module CheckedOps_TestI8SubExample
     absurd
   }
   BB8 {
+    _17 <- ([#"../checked_ops.rs" 200 12 200 36] CheckedSub0.checked_sub ([#"../checked_ops.rs" 200 12 200 20] (-120 : int8)) ([#"../checked_ops.rs" 200 33 200 35] (10 : int8)));
     goto BB9
   }
   BB9 {
+    _15 <- ([#"../checked_ops.rs" 200 12 200 46] IsNone0.is_none _17);
     goto BB10
   }
   BB10 {
-    switch (not ([#"../checked_ops.rs" 200 12 200 46] IsNone0.is_none ([#"../checked_ops.rs" 200 12 200 36] CheckedSub0.checked_sub ([#"../checked_ops.rs" 200 12 200 20] (-120 : int8)) ([#"../checked_ops.rs" 200 33 200 35] (10 : int8)))))
+    switch (not _15)
       | False -> goto BB12
       | True -> goto BB11
       end
@@ -2804,10 +3257,11 @@ module CheckedOps_TestI8SubExample
     absurd
   }
   BB12 {
+    _22 <- ([#"../checked_ops.rs" 202 12 202 32] WrappingSub0.wrapping_sub ([#"../checked_ops.rs" 202 12 202 15] (5 : int8)) ([#"../checked_ops.rs" 202 29 202 31] (10 : int8)));
     goto BB13
   }
   BB13 {
-    switch (not ([#"../checked_ops.rs" 202 12 202 38] ([#"../checked_ops.rs" 202 12 202 32] WrappingSub0.wrapping_sub ([#"../checked_ops.rs" 202 12 202 15] (5 : int8)) ([#"../checked_ops.rs" 202 29 202 31] (10 : int8))) = ([#"../checked_ops.rs" 202 36 202 38] (-5 : int8))))
+    switch (not ([#"../checked_ops.rs" 202 12 202 38] _22 = ([#"../checked_ops.rs" 202 36 202 38] (-5 : int8))))
       | False -> goto BB15
       | True -> goto BB14
       end
@@ -2816,10 +3270,11 @@ module CheckedOps_TestI8SubExample
     absurd
   }
   BB15 {
+    _27 <- ([#"../checked_ops.rs" 203 12 203 34] WrappingSub0.wrapping_sub ([#"../checked_ops.rs" 203 12 203 17] (120 : int8)) ([#"../checked_ops.rs" 203 31 203 33] (10 : int8)));
     goto BB16
   }
   BB16 {
-    switch (not ([#"../checked_ops.rs" 203 12 203 41] ([#"../checked_ops.rs" 203 12 203 34] WrappingSub0.wrapping_sub ([#"../checked_ops.rs" 203 12 203 17] (120 : int8)) ([#"../checked_ops.rs" 203 31 203 33] (10 : int8))) = ([#"../checked_ops.rs" 203 38 203 41] (110 : int8))))
+    switch (not ([#"../checked_ops.rs" 203 12 203 41] _27 = ([#"../checked_ops.rs" 203 38 203 41] (110 : int8))))
       | False -> goto BB18
       | True -> goto BB17
       end
@@ -2828,10 +3283,11 @@ module CheckedOps_TestI8SubExample
     absurd
   }
   BB18 {
+    _32 <- ([#"../checked_ops.rs" 204 12 204 37] WrappingSub0.wrapping_sub ([#"../checked_ops.rs" 204 12 204 20] (-120 : int8)) ([#"../checked_ops.rs" 204 34 204 36] (10 : int8)));
     goto BB19
   }
   BB19 {
-    switch (not ([#"../checked_ops.rs" 204 12 204 44] ([#"../checked_ops.rs" 204 12 204 37] WrappingSub0.wrapping_sub ([#"../checked_ops.rs" 204 12 204 20] (-120 : int8)) ([#"../checked_ops.rs" 204 34 204 36] (10 : int8))) = ([#"../checked_ops.rs" 204 41 204 44] (126 : int8))))
+    switch (not ([#"../checked_ops.rs" 204 12 204 44] _32 = ([#"../checked_ops.rs" 204 41 204 44] (126 : int8))))
       | False -> goto BB21
       | True -> goto BB20
       end
@@ -2840,10 +3296,11 @@ module CheckedOps_TestI8SubExample
     absurd
   }
   BB21 {
+    _37 <- ([#"../checked_ops.rs" 206 12 206 34] SaturatingSub0.saturating_sub ([#"../checked_ops.rs" 206 12 206 15] (5 : int8)) ([#"../checked_ops.rs" 206 31 206 33] (10 : int8)));
     goto BB22
   }
   BB22 {
-    switch (not ([#"../checked_ops.rs" 206 12 206 40] ([#"../checked_ops.rs" 206 12 206 34] SaturatingSub0.saturating_sub ([#"../checked_ops.rs" 206 12 206 15] (5 : int8)) ([#"../checked_ops.rs" 206 31 206 33] (10 : int8))) = ([#"../checked_ops.rs" 206 38 206 40] (-5 : int8))))
+    switch (not ([#"../checked_ops.rs" 206 12 206 40] _37 = ([#"../checked_ops.rs" 206 38 206 40] (-5 : int8))))
       | False -> goto BB24
       | True -> goto BB23
       end
@@ -2852,10 +3309,11 @@ module CheckedOps_TestI8SubExample
     absurd
   }
   BB24 {
+    _42 <- ([#"../checked_ops.rs" 207 12 207 36] SaturatingSub0.saturating_sub ([#"../checked_ops.rs" 207 12 207 17] (120 : int8)) ([#"../checked_ops.rs" 207 33 207 35] (10 : int8)));
     goto BB25
   }
   BB25 {
-    switch (not ([#"../checked_ops.rs" 207 12 207 43] ([#"../checked_ops.rs" 207 12 207 36] SaturatingSub0.saturating_sub ([#"../checked_ops.rs" 207 12 207 17] (120 : int8)) ([#"../checked_ops.rs" 207 33 207 35] (10 : int8))) = ([#"../checked_ops.rs" 207 40 207 43] (110 : int8))))
+    switch (not ([#"../checked_ops.rs" 207 12 207 43] _42 = ([#"../checked_ops.rs" 207 40 207 43] (110 : int8))))
       | False -> goto BB27
       | True -> goto BB26
       end
@@ -2864,10 +3322,11 @@ module CheckedOps_TestI8SubExample
     absurd
   }
   BB27 {
+    _47 <- ([#"../checked_ops.rs" 208 12 208 39] SaturatingSub0.saturating_sub ([#"../checked_ops.rs" 208 12 208 20] (-120 : int8)) ([#"../checked_ops.rs" 208 36 208 38] (10 : int8)));
     goto BB28
   }
   BB28 {
-    switch (not ([#"../checked_ops.rs" 208 12 208 47] ([#"../checked_ops.rs" 208 12 208 39] SaturatingSub0.saturating_sub ([#"../checked_ops.rs" 208 12 208 20] (-120 : int8)) ([#"../checked_ops.rs" 208 36 208 38] (10 : int8))) = ([#"../checked_ops.rs" 208 43 208 47] (-128 : int8))))
+    switch (not ([#"../checked_ops.rs" 208 12 208 47] _47 = ([#"../checked_ops.rs" 208 43 208 47] (-128 : int8))))
       | False -> goto BB30
       | True -> goto BB29
       end
@@ -2979,6 +3438,14 @@ module CheckedOps_TestI8SubOverflowPos
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -2986,7 +3453,6 @@ module CheckedOps_TestI8SubOverflowPos
   clone Core_Num_Impl0_Bits as Bits0
   clone Core_Num_Impl0_Max as Max0
   clone Core_Num_Impl0_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = int8,
     type t2 = bool,
@@ -3004,7 +3470,8 @@ module CheckedOps_TestI8SubOverflowPos
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl0_CheckedSub_Interface as CheckedSub0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -3014,19 +3481,25 @@ module CheckedOps_TestI8SubOverflowPos
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var a : int8 = a;
+  var _5 : bool;
+  var _7 : Core_Option_Option_Type.t_option int8;
+  var _13 : int8;
+  var _22 : int8;
   var res : (int8, bool);
   var _29 : bool;
   {
     goto BB0
   }
   BB0 {
+    _7 <- ([#"../checked_ops.rs" 221 12 221 35] CheckedSub0.checked_sub ([#"../checked_ops.rs" 221 12 221 20] (-128 : int8)) a);
     goto BB1
   }
   BB1 {
+    _5 <- ([#"../checked_ops.rs" 221 12 221 45] IsNone0.is_none _7);
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 221 12 221 45] IsNone0.is_none ([#"../checked_ops.rs" 221 12 221 35] CheckedSub0.checked_sub ([#"../checked_ops.rs" 221 12 221 20] (-128 : int8)) a)))
+    switch (not _5)
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -3035,10 +3508,11 @@ module CheckedOps_TestI8SubOverflowPos
     absurd
   }
   BB4 {
+    _13 <- ([#"../checked_ops.rs" 222 12 222 36] WrappingSub0.wrapping_sub ([#"../checked_ops.rs" 222 12 222 20] (-128 : int8)) a);
     goto BB5
   }
   BB5 {
-    switch (not ([#"../checked_ops.rs" 222 12 222 51] ([#"../checked_ops.rs" 222 12 222 36] WrappingSub0.wrapping_sub ([#"../checked_ops.rs" 222 12 222 20] (-128 : int8)) a) = ([#"../checked_ops.rs" 222 40 222 51] ([#"../checked_ops.rs" 222 40 222 47] ([#"../checked_ops.rs" 222 40 222 43] (127 : int8)) - a) + ([#"../checked_ops.rs" 222 50 222 51] (1 : int8)))))
+    switch (not ([#"../checked_ops.rs" 222 12 222 51] _13 = ([#"../checked_ops.rs" 222 40 222 51] ([#"../checked_ops.rs" 222 40 222 47] ([#"../checked_ops.rs" 222 40 222 43] (127 : int8)) - a) + ([#"../checked_ops.rs" 222 50 222 51] (1 : int8)))))
       | False -> goto BB7
       | True -> goto BB6
       end
@@ -3047,10 +3521,11 @@ module CheckedOps_TestI8SubOverflowPos
     absurd
   }
   BB7 {
+    _22 <- ([#"../checked_ops.rs" 223 12 223 38] SaturatingSub0.saturating_sub ([#"../checked_ops.rs" 223 12 223 20] (-128 : int8)) a);
     goto BB8
   }
   BB8 {
-    switch (not ([#"../checked_ops.rs" 223 12 223 46] ([#"../checked_ops.rs" 223 12 223 38] SaturatingSub0.saturating_sub ([#"../checked_ops.rs" 223 12 223 20] (-128 : int8)) a) = ([#"../checked_ops.rs" 223 42 223 46] (-128 : int8))))
+    switch (not ([#"../checked_ops.rs" 223 12 223 46] _22 = ([#"../checked_ops.rs" 223 42 223 46] (-128 : int8))))
       | False -> goto BB10
       | True -> goto BB9
       end
@@ -3104,6 +3579,14 @@ module CheckedOps_TestI8SubOverflowNeg
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -3111,7 +3594,6 @@ module CheckedOps_TestI8SubOverflowNeg
   clone Core_Num_Impl0_Bits as Bits0
   clone Core_Num_Impl0_Max as Max0
   clone Core_Num_Impl0_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = int8,
     type t2 = bool,
@@ -3129,7 +3611,8 @@ module CheckedOps_TestI8SubOverflowNeg
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl0_CheckedSub_Interface as CheckedSub0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -3139,19 +3622,25 @@ module CheckedOps_TestI8SubOverflowNeg
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var a : int8 = a;
+  var _5 : bool;
+  var _7 : Core_Option_Option_Type.t_option int8;
+  var _13 : int8;
+  var _23 : int8;
   var res : (int8, bool);
   var _30 : bool;
   {
     goto BB0
   }
   BB0 {
+    _7 <- ([#"../checked_ops.rs" 231 12 231 32] CheckedSub0.checked_sub ([#"../checked_ops.rs" 231 12 231 17] (127 : int8)) a);
     goto BB1
   }
   BB1 {
+    _5 <- ([#"../checked_ops.rs" 231 12 231 42] IsNone0.is_none _7);
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 231 12 231 42] IsNone0.is_none ([#"../checked_ops.rs" 231 12 231 32] CheckedSub0.checked_sub ([#"../checked_ops.rs" 231 12 231 17] (127 : int8)) a)))
+    switch (not _5)
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -3160,10 +3649,11 @@ module CheckedOps_TestI8SubOverflowNeg
     absurd
   }
   BB4 {
+    _13 <- ([#"../checked_ops.rs" 232 12 232 33] WrappingSub0.wrapping_sub ([#"../checked_ops.rs" 232 12 232 17] (127 : int8)) a);
     goto BB5
   }
   BB5 {
-    switch (not ([#"../checked_ops.rs" 232 12 232 51] ([#"../checked_ops.rs" 232 12 232 33] WrappingSub0.wrapping_sub ([#"../checked_ops.rs" 232 12 232 17] (127 : int8)) a) = ([#"../checked_ops.rs" 232 37 232 51] - ([#"../checked_ops.rs" 232 38 232 45] ([#"../checked_ops.rs" 232 39 232 40] (2 : int8)) + a) - ([#"../checked_ops.rs" 232 48 232 51] (127 : int8)))))
+    switch (not ([#"../checked_ops.rs" 232 12 232 51] _13 = ([#"../checked_ops.rs" 232 37 232 51] - ([#"../checked_ops.rs" 232 38 232 45] ([#"../checked_ops.rs" 232 39 232 40] (2 : int8)) + a) - ([#"../checked_ops.rs" 232 48 232 51] (127 : int8)))))
       | False -> goto BB7
       | True -> goto BB6
       end
@@ -3172,10 +3662,11 @@ module CheckedOps_TestI8SubOverflowNeg
     absurd
   }
   BB7 {
+    _23 <- ([#"../checked_ops.rs" 233 12 233 35] SaturatingSub0.saturating_sub ([#"../checked_ops.rs" 233 12 233 17] (127 : int8)) a);
     goto BB8
   }
   BB8 {
-    switch (not ([#"../checked_ops.rs" 233 12 233 42] ([#"../checked_ops.rs" 233 12 233 35] SaturatingSub0.saturating_sub ([#"../checked_ops.rs" 233 12 233 17] (127 : int8)) a) = ([#"../checked_ops.rs" 233 39 233 42] (127 : int8))))
+    switch (not ([#"../checked_ops.rs" 233 12 233 42] _23 = ([#"../checked_ops.rs" 233 39 233 42] (127 : int8))))
       | False -> goto BB10
       | True -> goto BB9
       end
@@ -3263,7 +3754,14 @@ module CheckedOps_TestI8OverflowingSub
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -3272,7 +3770,8 @@ module CheckedOps_TestI8OverflowingSub
   clone Core_Num_Impl0_Min as Min0
   clone Core_Num_Impl0_Bits as Bits0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl0_CheckedSub_Interface as CheckedSub0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -3296,7 +3795,10 @@ module CheckedOps_TestI8OverflowingSub
   var a : int8 = a;
   var b : int8 = b;
   var _7 : (int8, bool);
+  var _10 : int8;
   var _18 : (int8, bool);
+  var _21 : bool;
+  var _23 : Core_Option_Option_Type.t_option int8;
   {
     goto BB0
   }
@@ -3306,10 +3808,11 @@ module CheckedOps_TestI8OverflowingSub
   }
   BB1 {
     assume { Resolve0.resolve _7 };
+    _10 <- ([#"../checked_ops.rs" 247 38 247 55] WrappingSub0.wrapping_sub a b);
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 247 12 247 55] (let (a, _) = _7 in a) = ([#"../checked_ops.rs" 247 38 247 55] WrappingSub0.wrapping_sub a b)))
+    switch (not ([#"../checked_ops.rs" 247 12 247 55] (let (a, _) = _7 in a) = _10))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -3323,13 +3826,15 @@ module CheckedOps_TestI8OverflowingSub
   }
   BB5 {
     assume { Resolve0.resolve _18 };
+    _23 <- ([#"../checked_ops.rs" 248 38 248 54] CheckedSub0.checked_sub a b);
     goto BB6
   }
   BB6 {
+    _21 <- ([#"../checked_ops.rs" 248 38 248 64] IsNone0.is_none _23);
     goto BB7
   }
   BB7 {
-    switch (not ([#"../checked_ops.rs" 248 12 248 64] Bool.eqb (let (_, a) = _18 in a) ([#"../checked_ops.rs" 248 38 248 64] IsNone0.is_none ([#"../checked_ops.rs" 248 38 248 54] CheckedSub0.checked_sub a b))))
+    switch (not ([#"../checked_ops.rs" 248 12 248 64] Bool.eqb (let (_, a) = _18 in a) _21))
       | False -> goto BB9
       | True -> goto BB8
       end
@@ -3405,6 +3910,26 @@ module CheckedOps_TestI8MulExample
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = int8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = int8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -3412,7 +3937,6 @@ module CheckedOps_TestI8MulExample
   clone Core_Num_Impl0_Bits as Bits0
   clone Core_Num_Impl0_Max as Max0
   clone Core_Num_Impl0_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = int8,
     type t2 = bool,
@@ -3430,9 +3954,12 @@ module CheckedOps_TestI8MulExample
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv2.inv
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Num_Impl0_CheckedMul_Interface as CheckedMul0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -3440,6 +3967,18 @@ module CheckedOps_TestI8MulExample
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
+  var _4 : int8;
+  var _5 : Core_Option_Option_Type.t_option int8;
+  var _9 : bool;
+  var _11 : Core_Option_Option_Type.t_option int8;
+  var _15 : bool;
+  var _17 : Core_Option_Option_Type.t_option int8;
+  var _22 : int8;
+  var _27 : int8;
+  var _32 : int8;
+  var _37 : int8;
+  var _42 : int8;
+  var _47 : int8;
   var res : (int8, bool);
   var _52 : bool;
   var res1 : (int8, bool);
@@ -3450,13 +3989,16 @@ module CheckedOps_TestI8MulExample
     goto BB0
   }
   BB0 {
+    _5 <- ([#"../checked_ops.rs" 253 12 253 31] CheckedMul0.checked_mul ([#"../checked_ops.rs" 253 12 253 15] (5 : int8)) ([#"../checked_ops.rs" 253 28 253 30] (10 : int8)));
     goto BB1
   }
   BB1 {
+    _4 <- ([#"../checked_ops.rs" 253 12 253 40] Unwrap0.unwrap _5);
+    _5 <- any Core_Option_Option_Type.t_option int8;
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 253 12 253 46] ([#"../checked_ops.rs" 253 12 253 40] Unwrap0.unwrap ([#"../checked_ops.rs" 253 12 253 31] CheckedMul0.checked_mul ([#"../checked_ops.rs" 253 12 253 15] (5 : int8)) ([#"../checked_ops.rs" 253 28 253 30] (10 : int8)))) = ([#"../checked_ops.rs" 253 44 253 46] (50 : int8))))
+    switch (not ([#"../checked_ops.rs" 253 12 253 46] _4 = ([#"../checked_ops.rs" 253 44 253 46] (50 : int8))))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -3465,13 +4007,15 @@ module CheckedOps_TestI8MulExample
     absurd
   }
   BB4 {
+    _11 <- ([#"../checked_ops.rs" 254 12 254 32] CheckedMul0.checked_mul ([#"../checked_ops.rs" 254 12 254 16] (50 : int8)) ([#"../checked_ops.rs" 254 29 254 31] (10 : int8)));
     goto BB5
   }
   BB5 {
+    _9 <- ([#"../checked_ops.rs" 254 12 254 42] IsNone0.is_none _11);
     goto BB6
   }
   BB6 {
-    switch (not ([#"../checked_ops.rs" 254 12 254 42] IsNone0.is_none ([#"../checked_ops.rs" 254 12 254 32] CheckedMul0.checked_mul ([#"../checked_ops.rs" 254 12 254 16] (50 : int8)) ([#"../checked_ops.rs" 254 29 254 31] (10 : int8)))))
+    switch (not _9)
       | False -> goto BB8
       | True -> goto BB7
       end
@@ -3480,13 +4024,15 @@ module CheckedOps_TestI8MulExample
     absurd
   }
   BB8 {
+    _17 <- ([#"../checked_ops.rs" 255 12 255 33] CheckedMul0.checked_mul ([#"../checked_ops.rs" 255 12 255 16] (50 : int8)) ([#"../checked_ops.rs" 255 29 255 32] (-10 : int8)));
     goto BB9
   }
   BB9 {
+    _15 <- ([#"../checked_ops.rs" 255 12 255 43] IsNone0.is_none _17);
     goto BB10
   }
   BB10 {
-    switch (not ([#"../checked_ops.rs" 255 12 255 43] IsNone0.is_none ([#"../checked_ops.rs" 255 12 255 33] CheckedMul0.checked_mul ([#"../checked_ops.rs" 255 12 255 16] (50 : int8)) ([#"../checked_ops.rs" 255 29 255 32] (-10 : int8)))))
+    switch (not _15)
       | False -> goto BB12
       | True -> goto BB11
       end
@@ -3495,10 +4041,11 @@ module CheckedOps_TestI8MulExample
     absurd
   }
   BB12 {
+    _22 <- ([#"../checked_ops.rs" 257 12 257 32] WrappingMul0.wrapping_mul ([#"../checked_ops.rs" 257 12 257 15] (5 : int8)) ([#"../checked_ops.rs" 257 29 257 31] (10 : int8)));
     goto BB13
   }
   BB13 {
-    switch (not ([#"../checked_ops.rs" 257 12 257 38] ([#"../checked_ops.rs" 257 12 257 32] WrappingMul0.wrapping_mul ([#"../checked_ops.rs" 257 12 257 15] (5 : int8)) ([#"../checked_ops.rs" 257 29 257 31] (10 : int8))) = ([#"../checked_ops.rs" 257 36 257 38] (50 : int8))))
+    switch (not ([#"../checked_ops.rs" 257 12 257 38] _22 = ([#"../checked_ops.rs" 257 36 257 38] (50 : int8))))
       | False -> goto BB15
       | True -> goto BB14
       end
@@ -3507,10 +4054,11 @@ module CheckedOps_TestI8MulExample
     absurd
   }
   BB15 {
+    _27 <- ([#"../checked_ops.rs" 258 12 258 33] WrappingMul0.wrapping_mul ([#"../checked_ops.rs" 258 12 258 16] (50 : int8)) ([#"../checked_ops.rs" 258 30 258 32] (10 : int8)));
     goto BB16
   }
   BB16 {
-    switch (not ([#"../checked_ops.rs" 258 12 258 40] ([#"../checked_ops.rs" 258 12 258 33] WrappingMul0.wrapping_mul ([#"../checked_ops.rs" 258 12 258 16] (50 : int8)) ([#"../checked_ops.rs" 258 30 258 32] (10 : int8))) = ([#"../checked_ops.rs" 258 37 258 40] (-12 : int8))))
+    switch (not ([#"../checked_ops.rs" 258 12 258 40] _27 = ([#"../checked_ops.rs" 258 37 258 40] (-12 : int8))))
       | False -> goto BB18
       | True -> goto BB17
       end
@@ -3519,10 +4067,11 @@ module CheckedOps_TestI8MulExample
     absurd
   }
   BB18 {
+    _32 <- ([#"../checked_ops.rs" 259 12 259 34] WrappingMul0.wrapping_mul ([#"../checked_ops.rs" 259 12 259 16] (50 : int8)) ([#"../checked_ops.rs" 259 30 259 33] (-10 : int8)));
     goto BB19
   }
   BB19 {
-    switch (not ([#"../checked_ops.rs" 259 12 259 40] ([#"../checked_ops.rs" 259 12 259 34] WrappingMul0.wrapping_mul ([#"../checked_ops.rs" 259 12 259 16] (50 : int8)) ([#"../checked_ops.rs" 259 30 259 33] (-10 : int8))) = ([#"../checked_ops.rs" 259 38 259 40] (12 : int8))))
+    switch (not ([#"../checked_ops.rs" 259 12 259 40] _32 = ([#"../checked_ops.rs" 259 38 259 40] (12 : int8))))
       | False -> goto BB21
       | True -> goto BB20
       end
@@ -3531,10 +4080,11 @@ module CheckedOps_TestI8MulExample
     absurd
   }
   BB21 {
+    _37 <- ([#"../checked_ops.rs" 261 12 261 34] SaturatingMul0.saturating_mul ([#"../checked_ops.rs" 261 12 261 15] (5 : int8)) ([#"../checked_ops.rs" 261 31 261 33] (10 : int8)));
     goto BB22
   }
   BB22 {
-    switch (not ([#"../checked_ops.rs" 261 12 261 40] ([#"../checked_ops.rs" 261 12 261 34] SaturatingMul0.saturating_mul ([#"../checked_ops.rs" 261 12 261 15] (5 : int8)) ([#"../checked_ops.rs" 261 31 261 33] (10 : int8))) = ([#"../checked_ops.rs" 261 38 261 40] (50 : int8))))
+    switch (not ([#"../checked_ops.rs" 261 12 261 40] _37 = ([#"../checked_ops.rs" 261 38 261 40] (50 : int8))))
       | False -> goto BB24
       | True -> goto BB23
       end
@@ -3543,10 +4093,11 @@ module CheckedOps_TestI8MulExample
     absurd
   }
   BB24 {
+    _42 <- ([#"../checked_ops.rs" 262 12 262 35] SaturatingMul0.saturating_mul ([#"../checked_ops.rs" 262 12 262 16] (50 : int8)) ([#"../checked_ops.rs" 262 32 262 34] (10 : int8)));
     goto BB25
   }
   BB25 {
-    switch (not ([#"../checked_ops.rs" 262 12 262 42] ([#"../checked_ops.rs" 262 12 262 35] SaturatingMul0.saturating_mul ([#"../checked_ops.rs" 262 12 262 16] (50 : int8)) ([#"../checked_ops.rs" 262 32 262 34] (10 : int8))) = ([#"../checked_ops.rs" 262 39 262 42] (127 : int8))))
+    switch (not ([#"../checked_ops.rs" 262 12 262 42] _42 = ([#"../checked_ops.rs" 262 39 262 42] (127 : int8))))
       | False -> goto BB27
       | True -> goto BB26
       end
@@ -3555,10 +4106,11 @@ module CheckedOps_TestI8MulExample
     absurd
   }
   BB27 {
+    _47 <- ([#"../checked_ops.rs" 263 12 263 36] SaturatingMul0.saturating_mul ([#"../checked_ops.rs" 263 12 263 16] (50 : int8)) ([#"../checked_ops.rs" 263 32 263 35] (-10 : int8)));
     goto BB28
   }
   BB28 {
-    switch (not ([#"../checked_ops.rs" 263 12 263 44] ([#"../checked_ops.rs" 263 12 263 36] SaturatingMul0.saturating_mul ([#"../checked_ops.rs" 263 12 263 16] (50 : int8)) ([#"../checked_ops.rs" 263 32 263 35] (-10 : int8))) = ([#"../checked_ops.rs" 263 40 263 44] (-128 : int8))))
+    switch (not ([#"../checked_ops.rs" 263 12 263 44] _47 = ([#"../checked_ops.rs" 263 40 263 44] (-128 : int8))))
       | False -> goto BB30
       | True -> goto BB29
       end
@@ -3668,6 +4220,19 @@ module CheckedOps_TestI8MulZero
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = int8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = int8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -3675,7 +4240,6 @@ module CheckedOps_TestI8MulZero
   clone Core_Num_Impl0_Bits as Bits0
   clone Core_Num_Impl0_Max as Max0
   clone Core_Num_Impl0_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = int8,
     type t2 = bool,
@@ -3693,7 +4257,9 @@ module CheckedOps_TestI8MulZero
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Num_Impl0_CheckedMul_Interface as CheckedMul0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -3702,19 +4268,26 @@ module CheckedOps_TestI8MulZero
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var a : int8 = a;
+  var _5 : int8;
+  var _6 : Core_Option_Option_Type.t_option int8;
+  var _12 : int8;
+  var _18 : int8;
   var res : (int8, bool);
   var _25 : bool;
   {
     goto BB0
   }
   BB0 {
+    _6 <- ([#"../checked_ops.rs" 275 12 275 30] CheckedMul0.checked_mul ([#"../checked_ops.rs" 275 12 275 15] (0 : int8)) a);
     goto BB1
   }
   BB1 {
+    _5 <- ([#"../checked_ops.rs" 275 12 275 39] Unwrap0.unwrap _6);
+    _6 <- any Core_Option_Option_Type.t_option int8;
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 275 12 275 44] ([#"../checked_ops.rs" 275 12 275 39] Unwrap0.unwrap ([#"../checked_ops.rs" 275 12 275 30] CheckedMul0.checked_mul ([#"../checked_ops.rs" 275 12 275 15] (0 : int8)) a)) = ([#"../checked_ops.rs" 275 43 275 44] (0 : int8))))
+    switch (not ([#"../checked_ops.rs" 275 12 275 44] _5 = ([#"../checked_ops.rs" 275 43 275 44] (0 : int8))))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -3723,10 +4296,11 @@ module CheckedOps_TestI8MulZero
     absurd
   }
   BB4 {
+    _12 <- ([#"../checked_ops.rs" 276 12 276 31] WrappingMul0.wrapping_mul ([#"../checked_ops.rs" 276 12 276 15] (0 : int8)) a);
     goto BB5
   }
   BB5 {
-    switch (not ([#"../checked_ops.rs" 276 12 276 36] ([#"../checked_ops.rs" 276 12 276 31] WrappingMul0.wrapping_mul ([#"../checked_ops.rs" 276 12 276 15] (0 : int8)) a) = ([#"../checked_ops.rs" 276 35 276 36] (0 : int8))))
+    switch (not ([#"../checked_ops.rs" 276 12 276 36] _12 = ([#"../checked_ops.rs" 276 35 276 36] (0 : int8))))
       | False -> goto BB7
       | True -> goto BB6
       end
@@ -3735,10 +4309,11 @@ module CheckedOps_TestI8MulZero
     absurd
   }
   BB7 {
+    _18 <- ([#"../checked_ops.rs" 277 12 277 33] SaturatingMul0.saturating_mul ([#"../checked_ops.rs" 277 12 277 15] (0 : int8)) a);
     goto BB8
   }
   BB8 {
-    switch (not ([#"../checked_ops.rs" 277 12 277 38] ([#"../checked_ops.rs" 277 12 277 33] SaturatingMul0.saturating_mul ([#"../checked_ops.rs" 277 12 277 15] (0 : int8)) a) = ([#"../checked_ops.rs" 277 37 277 38] (0 : int8))))
+    switch (not ([#"../checked_ops.rs" 277 12 277 38] _18 = ([#"../checked_ops.rs" 277 37 277 38] (0 : int8))))
       | False -> goto BB10
       | True -> goto BB9
       end
@@ -3790,7 +4365,14 @@ module CheckedOps_TestI8OverflowingMul
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
@@ -3799,7 +4381,8 @@ module CheckedOps_TestI8OverflowingMul
   clone Core_Num_Impl0_Min as Min0
   clone Core_Num_Impl0_Bits as Bits0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl0_CheckedMul_Interface as CheckedMul0 with
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
@@ -3823,7 +4406,10 @@ module CheckedOps_TestI8OverflowingMul
   var a : int8 = a;
   var b : int8 = b;
   var _7 : (int8, bool);
+  var _10 : int8;
   var _18 : (int8, bool);
+  var _21 : bool;
+  var _23 : Core_Option_Option_Type.t_option int8;
   {
     goto BB0
   }
@@ -3833,10 +4419,11 @@ module CheckedOps_TestI8OverflowingMul
   }
   BB1 {
     assume { Resolve0.resolve _7 };
+    _10 <- ([#"../checked_ops.rs" 284 38 284 55] WrappingMul0.wrapping_mul a b);
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 284 12 284 55] (let (a, _) = _7 in a) = ([#"../checked_ops.rs" 284 38 284 55] WrappingMul0.wrapping_mul a b)))
+    switch (not ([#"../checked_ops.rs" 284 12 284 55] (let (a, _) = _7 in a) = _10))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -3850,13 +4437,15 @@ module CheckedOps_TestI8OverflowingMul
   }
   BB5 {
     assume { Resolve0.resolve _18 };
+    _23 <- ([#"../checked_ops.rs" 285 38 285 54] CheckedMul0.checked_mul a b);
     goto BB6
   }
   BB6 {
+    _21 <- ([#"../checked_ops.rs" 285 38 285 64] IsNone0.is_none _23);
     goto BB7
   }
   BB7 {
-    switch (not ([#"../checked_ops.rs" 285 12 285 64] Bool.eqb (let (_, a) = _18 in a) ([#"../checked_ops.rs" 285 38 285 64] IsNone0.is_none ([#"../checked_ops.rs" 285 38 285 54] CheckedMul0.checked_mul a b))))
+    switch (not ([#"../checked_ops.rs" 285 12 285 64] Bool.eqb (let (_, a) = _18 in a) _21))
       | False -> goto BB9
       | True -> goto BB8
       end
@@ -3918,12 +4507,31 @@ module CheckedOps_TestI8DivExample
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = int8
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = int8,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
     type t = int8
   clone Core_Num_Impl0_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = int8,
     type t2 = bool,
@@ -3936,15 +4544,32 @@ module CheckedOps_TestI8DivExample
   clone Core_Num_Impl0_WrappingDiv_Interface as WrappingDiv0 with
     val Min0.mIN' = Min0.mIN'
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl0_CheckedDiv_Interface as CheckedDiv0 with
     val Min0.mIN' = Min0.mIN'
   let rec cfg test_i8_div_example [#"../checked_ops.rs" 289 0 289 28] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
+  var _3 : bool;
+  var _5 : Core_Option_Option_Type.t_option int8;
+  var _10 : int8;
+  var _11 : Core_Option_Option_Type.t_option int8;
+  var _16 : int8;
+  var _17 : Core_Option_Option_Type.t_option int8;
+  var _21 : bool;
+  var _23 : Core_Option_Option_Type.t_option int8;
+  var _28 : int8;
+  var _33 : int8;
+  var _38 : int8;
+  var _43 : int8;
+  var _48 : int8;
+  var _53 : int8;
   var res : (int8, bool);
   var _58 : bool;
   var res1 : (int8, bool);
@@ -3955,13 +4580,15 @@ module CheckedOps_TestI8DivExample
     goto BB0
   }
   BB0 {
+    _5 <- ([#"../checked_ops.rs" 290 12 290 30] CheckedDiv0.checked_div ([#"../checked_ops.rs" 290 12 290 15] (5 : int8)) ([#"../checked_ops.rs" 290 28 290 29] (0 : int8)));
     goto BB1
   }
   BB1 {
+    _3 <- ([#"../checked_ops.rs" 290 12 290 40] IsNone0.is_none _5);
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 290 12 290 40] IsNone0.is_none ([#"../checked_ops.rs" 290 12 290 30] CheckedDiv0.checked_div ([#"../checked_ops.rs" 290 12 290 15] (5 : int8)) ([#"../checked_ops.rs" 290 28 290 29] (0 : int8)))))
+    switch (not _3)
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -3970,13 +4597,16 @@ module CheckedOps_TestI8DivExample
     absurd
   }
   BB4 {
+    _11 <- ([#"../checked_ops.rs" 291 12 291 30] CheckedDiv0.checked_div ([#"../checked_ops.rs" 291 12 291 15] (5 : int8)) ([#"../checked_ops.rs" 291 28 291 29] (2 : int8)));
     goto BB5
   }
   BB5 {
+    _10 <- ([#"../checked_ops.rs" 291 12 291 39] Unwrap0.unwrap _11);
+    _11 <- any Core_Option_Option_Type.t_option int8;
     goto BB6
   }
   BB6 {
-    switch (not ([#"../checked_ops.rs" 291 12 291 44] ([#"../checked_ops.rs" 291 12 291 39] Unwrap0.unwrap ([#"../checked_ops.rs" 291 12 291 30] CheckedDiv0.checked_div ([#"../checked_ops.rs" 291 12 291 15] (5 : int8)) ([#"../checked_ops.rs" 291 28 291 29] (2 : int8)))) = ([#"../checked_ops.rs" 291 43 291 44] (2 : int8))))
+    switch (not ([#"../checked_ops.rs" 291 12 291 44] _10 = ([#"../checked_ops.rs" 291 43 291 44] (2 : int8))))
       | False -> goto BB8
       | True -> goto BB7
       end
@@ -3985,13 +4615,16 @@ module CheckedOps_TestI8DivExample
     absurd
   }
   BB8 {
+    _17 <- ([#"../checked_ops.rs" 292 12 292 31] CheckedDiv0.checked_div ([#"../checked_ops.rs" 292 12 292 15] (5 : int8)) ([#"../checked_ops.rs" 292 28 292 30] (-2 : int8)));
     goto BB9
   }
   BB9 {
+    _16 <- ([#"../checked_ops.rs" 292 12 292 40] Unwrap0.unwrap _17);
+    _17 <- any Core_Option_Option_Type.t_option int8;
     goto BB10
   }
   BB10 {
-    switch (not ([#"../checked_ops.rs" 292 12 292 46] ([#"../checked_ops.rs" 292 12 292 40] Unwrap0.unwrap ([#"../checked_ops.rs" 292 12 292 31] CheckedDiv0.checked_div ([#"../checked_ops.rs" 292 12 292 15] (5 : int8)) ([#"../checked_ops.rs" 292 28 292 30] (-2 : int8)))) = ([#"../checked_ops.rs" 292 44 292 46] (-2 : int8))))
+    switch (not ([#"../checked_ops.rs" 292 12 292 46] _16 = ([#"../checked_ops.rs" 292 44 292 46] (-2 : int8))))
       | False -> goto BB12
       | True -> goto BB11
       end
@@ -4000,13 +4633,15 @@ module CheckedOps_TestI8DivExample
     absurd
   }
   BB12 {
+    _23 <- ([#"../checked_ops.rs" 293 12 293 36] CheckedDiv0.checked_div ([#"../checked_ops.rs" 293 12 293 20] (-128 : int8)) ([#"../checked_ops.rs" 293 33 293 35] (-1 : int8)));
     goto BB13
   }
   BB13 {
+    _21 <- ([#"../checked_ops.rs" 293 12 293 46] IsNone0.is_none _23);
     goto BB14
   }
   BB14 {
-    switch (not ([#"../checked_ops.rs" 293 12 293 46] IsNone0.is_none ([#"../checked_ops.rs" 293 12 293 36] CheckedDiv0.checked_div ([#"../checked_ops.rs" 293 12 293 20] (-128 : int8)) ([#"../checked_ops.rs" 293 33 293 35] (-1 : int8)))))
+    switch (not _21)
       | False -> goto BB16
       | True -> goto BB15
       end
@@ -4015,10 +4650,11 @@ module CheckedOps_TestI8DivExample
     absurd
   }
   BB16 {
+    _28 <- ([#"../checked_ops.rs" 295 12 295 31] WrappingDiv0.wrapping_div ([#"../checked_ops.rs" 295 12 295 15] (5 : int8)) ([#"../checked_ops.rs" 295 29 295 30] (2 : int8)));
     goto BB17
   }
   BB17 {
-    switch (not ([#"../checked_ops.rs" 295 12 295 36] ([#"../checked_ops.rs" 295 12 295 31] WrappingDiv0.wrapping_div ([#"../checked_ops.rs" 295 12 295 15] (5 : int8)) ([#"../checked_ops.rs" 295 29 295 30] (2 : int8))) = ([#"../checked_ops.rs" 295 35 295 36] (2 : int8))))
+    switch (not ([#"../checked_ops.rs" 295 12 295 36] _28 = ([#"../checked_ops.rs" 295 35 295 36] (2 : int8))))
       | False -> goto BB19
       | True -> goto BB18
       end
@@ -4027,10 +4663,11 @@ module CheckedOps_TestI8DivExample
     absurd
   }
   BB19 {
+    _33 <- ([#"../checked_ops.rs" 296 12 296 32] WrappingDiv0.wrapping_div ([#"../checked_ops.rs" 296 12 296 15] (5 : int8)) ([#"../checked_ops.rs" 296 29 296 31] (-2 : int8)));
     goto BB20
   }
   BB20 {
-    switch (not ([#"../checked_ops.rs" 296 12 296 38] ([#"../checked_ops.rs" 296 12 296 32] WrappingDiv0.wrapping_div ([#"../checked_ops.rs" 296 12 296 15] (5 : int8)) ([#"../checked_ops.rs" 296 29 296 31] (-2 : int8))) = ([#"../checked_ops.rs" 296 36 296 38] (-2 : int8))))
+    switch (not ([#"../checked_ops.rs" 296 12 296 38] _33 = ([#"../checked_ops.rs" 296 36 296 38] (-2 : int8))))
       | False -> goto BB22
       | True -> goto BB21
       end
@@ -4039,10 +4676,11 @@ module CheckedOps_TestI8DivExample
     absurd
   }
   BB22 {
+    _38 <- ([#"../checked_ops.rs" 297 12 297 37] WrappingDiv0.wrapping_div ([#"../checked_ops.rs" 297 12 297 20] (-128 : int8)) ([#"../checked_ops.rs" 297 34 297 36] (-1 : int8)));
     goto BB23
   }
   BB23 {
-    switch (not ([#"../checked_ops.rs" 297 12 297 45] ([#"../checked_ops.rs" 297 12 297 37] WrappingDiv0.wrapping_div ([#"../checked_ops.rs" 297 12 297 20] (-128 : int8)) ([#"../checked_ops.rs" 297 34 297 36] (-1 : int8))) = ([#"../checked_ops.rs" 297 41 297 45] (-128 : int8))))
+    switch (not ([#"../checked_ops.rs" 297 12 297 45] _38 = ([#"../checked_ops.rs" 297 41 297 45] (-128 : int8))))
       | False -> goto BB25
       | True -> goto BB24
       end
@@ -4051,10 +4689,11 @@ module CheckedOps_TestI8DivExample
     absurd
   }
   BB25 {
+    _43 <- ([#"../checked_ops.rs" 299 12 299 33] SaturatingDiv0.saturating_div ([#"../checked_ops.rs" 299 12 299 15] (5 : int8)) ([#"../checked_ops.rs" 299 31 299 32] (2 : int8)));
     goto BB26
   }
   BB26 {
-    switch (not ([#"../checked_ops.rs" 299 12 299 38] ([#"../checked_ops.rs" 299 12 299 33] SaturatingDiv0.saturating_div ([#"../checked_ops.rs" 299 12 299 15] (5 : int8)) ([#"../checked_ops.rs" 299 31 299 32] (2 : int8))) = ([#"../checked_ops.rs" 299 37 299 38] (2 : int8))))
+    switch (not ([#"../checked_ops.rs" 299 12 299 38] _43 = ([#"../checked_ops.rs" 299 37 299 38] (2 : int8))))
       | False -> goto BB28
       | True -> goto BB27
       end
@@ -4063,10 +4702,11 @@ module CheckedOps_TestI8DivExample
     absurd
   }
   BB28 {
+    _48 <- ([#"../checked_ops.rs" 300 12 300 34] SaturatingDiv0.saturating_div ([#"../checked_ops.rs" 300 12 300 15] (5 : int8)) ([#"../checked_ops.rs" 300 31 300 33] (-2 : int8)));
     goto BB29
   }
   BB29 {
-    switch (not ([#"../checked_ops.rs" 300 12 300 40] ([#"../checked_ops.rs" 300 12 300 34] SaturatingDiv0.saturating_div ([#"../checked_ops.rs" 300 12 300 15] (5 : int8)) ([#"../checked_ops.rs" 300 31 300 33] (-2 : int8))) = ([#"../checked_ops.rs" 300 38 300 40] (-2 : int8))))
+    switch (not ([#"../checked_ops.rs" 300 12 300 40] _48 = ([#"../checked_ops.rs" 300 38 300 40] (-2 : int8))))
       | False -> goto BB31
       | True -> goto BB30
       end
@@ -4075,10 +4715,11 @@ module CheckedOps_TestI8DivExample
     absurd
   }
   BB31 {
+    _53 <- ([#"../checked_ops.rs" 301 12 301 39] SaturatingDiv0.saturating_div ([#"../checked_ops.rs" 301 12 301 20] (-128 : int8)) ([#"../checked_ops.rs" 301 36 301 38] (-1 : int8)));
     goto BB32
   }
   BB32 {
-    switch (not ([#"../checked_ops.rs" 301 12 301 47] ([#"../checked_ops.rs" 301 12 301 39] SaturatingDiv0.saturating_div ([#"../checked_ops.rs" 301 12 301 20] (-128 : int8)) ([#"../checked_ops.rs" 301 36 301 38] (-1 : int8))) = ([#"../checked_ops.rs" 301 43 301 47] (-128 : int8))))
+    switch (not ([#"../checked_ops.rs" 301 12 301 47] _53 = ([#"../checked_ops.rs" 301 43 301 47] (-128 : int8))))
       | False -> goto BB34
       | True -> goto BB33
       end
@@ -4190,12 +4831,24 @@ module CheckedOps_TestI8DivNoOverflow
   use prelude.Int
   use prelude.Int8
   use prelude.Bool
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = int8
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = int8,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
     type t = int8
   clone Core_Num_Impl0_Min as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = int8,
     type t2 = bool,
@@ -4208,7 +4861,9 @@ module CheckedOps_TestI8DivNoOverflow
   clone Core_Num_Impl0_WrappingDiv_Interface as WrappingDiv0 with
     val Min0.mIN' = Min0.mIN'
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv
   clone Core_Num_Impl0_CheckedDiv_Interface as CheckedDiv0 with
     val Min0.mIN' = Min0.mIN'
   let rec cfg test_i8_div_no_overflow [#"../checked_ops.rs" 313 0 313 44] [@cfg:stackify] [@cfg:subregion_analysis] (a : int8) (b : int8) : ()
@@ -4218,14 +4873,18 @@ module CheckedOps_TestI8DivNoOverflow
   var _0 : ();
   var a : int8 = a;
   var b : int8 = b;
+  var _7 : int8;
+  var _8 : Core_Option_Option_Type.t_option int8;
   var _12 : int8;
   var _13 : int8;
   var _14 : bool;
   var _17 : bool;
+  var _22 : int8;
   var _26 : int8;
   var _27 : int8;
   var _28 : bool;
   var _31 : bool;
+  var _36 : int8;
   var _40 : int8;
   var _41 : int8;
   var _42 : bool;
@@ -4240,9 +4899,12 @@ module CheckedOps_TestI8DivNoOverflow
     goto BB0
   }
   BB0 {
+    _8 <- ([#"../checked_ops.rs" 314 12 314 28] CheckedDiv0.checked_div a b);
     goto BB1
   }
   BB1 {
+    _7 <- ([#"../checked_ops.rs" 314 12 314 37] Unwrap0.unwrap _8);
+    _8 <- any Core_Option_Option_Type.t_option int8;
     goto BB2
   }
   BB2 {
@@ -4258,7 +4920,7 @@ module CheckedOps_TestI8DivNoOverflow
     goto BB4
   }
   BB4 {
-    switch (not ([#"../checked_ops.rs" 314 12 314 46] ([#"../checked_ops.rs" 314 12 314 37] Unwrap0.unwrap ([#"../checked_ops.rs" 314 12 314 28] CheckedDiv0.checked_div a b)) = ([#"../checked_ops.rs" 314 41 314 46] _12 / _13)))
+    switch (not ([#"../checked_ops.rs" 314 12 314 46] _7 = ([#"../checked_ops.rs" 314 41 314 46] _12 / _13)))
       | False -> goto BB6
       | True -> goto BB5
       end
@@ -4267,6 +4929,7 @@ module CheckedOps_TestI8DivNoOverflow
     absurd
   }
   BB6 {
+    _22 <- ([#"../checked_ops.rs" 315 12 315 29] WrappingDiv0.wrapping_div a b);
     goto BB7
   }
   BB7 {
@@ -4282,7 +4945,7 @@ module CheckedOps_TestI8DivNoOverflow
     goto BB9
   }
   BB9 {
-    switch (not ([#"../checked_ops.rs" 315 12 315 38] ([#"../checked_ops.rs" 315 12 315 29] WrappingDiv0.wrapping_div a b) = ([#"../checked_ops.rs" 315 33 315 38] _26 / _27)))
+    switch (not ([#"../checked_ops.rs" 315 12 315 38] _22 = ([#"../checked_ops.rs" 315 33 315 38] _26 / _27)))
       | False -> goto BB11
       | True -> goto BB10
       end
@@ -4291,6 +4954,7 @@ module CheckedOps_TestI8DivNoOverflow
     absurd
   }
   BB11 {
+    _36 <- ([#"../checked_ops.rs" 316 12 316 31] SaturatingDiv0.saturating_div a b);
     goto BB12
   }
   BB12 {
@@ -4306,7 +4970,7 @@ module CheckedOps_TestI8DivNoOverflow
     goto BB14
   }
   BB14 {
-    switch (not ([#"../checked_ops.rs" 316 12 316 40] ([#"../checked_ops.rs" 316 12 316 31] SaturatingDiv0.saturating_div a b) = ([#"../checked_ops.rs" 316 35 316 40] _40 / _41)))
+    switch (not ([#"../checked_ops.rs" 316 12 316 40] _36 = ([#"../checked_ops.rs" 316 35 316 40] _40 / _41)))
       | False -> goto BB16
       | True -> goto BB15
       end
@@ -4369,10 +5033,18 @@ end
 module CheckedOps_TestI8DivZero
   use prelude.Int
   use prelude.Int8
-  clone Core_Num_Impl0_Min as Min0
+  use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Core_Option_Option_Type.t_option int8
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Core_Option_Option_Type.t_option int8,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
+  clone Core_Num_Impl0_Min as Min0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with
-    type t = int8
+    type t = int8,
+    predicate Inv0.inv = Inv0.inv
   clone Core_Num_Impl0_CheckedDiv_Interface as CheckedDiv0 with
     val Min0.mIN' = Min0.mIN'
   let rec cfg test_i8_div_zero [#"../checked_ops.rs" 322 0 322 30] [@cfg:stackify] [@cfg:subregion_analysis] (a : int8) : ()
@@ -4380,17 +5052,21 @@ module CheckedOps_TestI8DivZero
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var a : int8 = a;
+  var _4 : bool;
+  var _6 : Core_Option_Option_Type.t_option int8;
   {
     goto BB0
   }
   BB0 {
+    _6 <- ([#"../checked_ops.rs" 323 12 323 28] CheckedDiv0.checked_div a ([#"../checked_ops.rs" 323 26 323 27] (0 : int8)));
     goto BB1
   }
   BB1 {
+    _4 <- ([#"../checked_ops.rs" 323 12 323 38] IsNone0.is_none _6);
     goto BB2
   }
   BB2 {
-    switch (not ([#"../checked_ops.rs" 323 12 323 38] IsNone0.is_none ([#"../checked_ops.rs" 323 12 323 28] CheckedDiv0.checked_div a ([#"../checked_ops.rs" 323 26 323 27] (0 : int8)))))
+    switch (not _4)
       | False -> goto BB4
       | True -> goto BB3
       end

@@ -164,7 +164,7 @@ fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, C
 
         if sig_contract.contract.variant.is_empty() {
             let decl = match util::item_type(ctx.tcx, def_id) {
-                ItemType::Logic => Decl::LogicDefn(Logic { sig, body }),
+                ItemType::Ghost | ItemType::Logic => Decl::LogicDefn(Logic { sig, body }),
                 ItemType::Predicate => Decl::PredDecl(Predicate { sig, body }),
                 _ => unreachable!(),
             };
@@ -248,7 +248,7 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
             sig.retty = None;
             Some(LetKind::Predicate)
         }
-        ItemType::Logic => Some(LetKind::Function),
+        ItemType::Ghost | ItemType::Logic => Some(LetKind::Function),
         _ => unreachable!(),
     };
 

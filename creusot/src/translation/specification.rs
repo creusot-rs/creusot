@@ -1,11 +1,15 @@
-use super::pearlite::{normalize, pearlite_stub, Literal, Term, TermKind};
-use crate::{ctx::*, util};
+use super::pearlite::{normalize, pearlite_stub, Literal, Stub, Term, TermKind};
+use crate::{
+    ctx::*,
+    error::{CrErr, Error},
+    util::{self, is_spec},
+};
 use rustc_ast::ast::{AttrArgs, AttrArgsEq};
 use rustc_hir::def_id::DefId;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{Body, Local, SourceInfo, SourceScope, OUTERMOST_SOURCE_SCOPE},
-    thir::{self, ExprKind, Thir},
+    thir::{self, ClosureExpr, ExprKind, Thir},
     ty::{
         self,
         subst::{InternalSubsts, SubstsRef},
@@ -103,7 +107,7 @@ impl ContractClauses {
             let term = ctx.term(var_id).unwrap().clone();
             out.variant = Some(term);
         };
-        EarlyBinder(out)
+        EarlyBinder::bind(out)
     }
 
     pub(crate) fn iter_ids(&self) -> impl Iterator<Item = DefId> + '_ {
@@ -292,10 +296,7 @@ pub(crate) fn contract_of<'tcx>(
 pub(crate) fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
     let def_path = tcx.def_path_str(def_id);
 
-    def_path.ends_with("::ops::Index::index")
-        || def_path.ends_with("::convert::Into::into")
-        || def_path.ends_with("::convert::From::from")
-        || def_path.ends_with("::ops::Mul::mul")
+    def_path.ends_with("::ops::Mul::mul")
         || def_path.ends_with("::ops::Add::add")
         || def_path.ends_with("::ops::Sub::sub")
         || def_path.ends_with("::ops::Div::div")
@@ -303,22 +304,62 @@ pub(crate) fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
         || def_path.ends_with("::ops::Neg::neg")
         || def_path.ends_with("::boxed::Box::<T>::new")
         || def_path.ends_with("::ops::Deref::deref")
-        || def_path.ends_with("::clone::Clone::clone")
         || def_path.ends_with("Ghost::<T>::from_fn")
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum Purity {
+    Program,
+    Ghost,
+    Logic,
+}
+
+impl Purity {
+    pub(crate) fn of_def_id<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Self {
+        let is_ghost = util::is_ghost_closure(tcx, def_id);
+        if util::is_predicate(tcx, def_id)
+            || util::is_logic(tcx, def_id)
+            || (util::is_spec(tcx, def_id) && !is_ghost)
+        {
+            Purity::Logic
+        } else if util::is_ghost(tcx, def_id) || is_ghost {
+            Purity::Ghost
+        } else {
+            Purity::Program
+        }
+    }
+
+    fn can_call(self, other: Purity) -> bool {
+        match (self, other) {
+            (Purity::Logic, Purity::Ghost) => true,
+            (ctx, call) => ctx == call,
+        }
+    }
 }
 
 pub(crate) struct PurityVisitor<'a, 'tcx> {
     pub(crate) tcx: TyCtxt<'tcx>,
     pub(crate) thir: &'a Thir<'tcx>,
-    pub(crate) in_pure_ctx: bool,
+    pub(crate) context: Purity,
 }
 
 impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
-    fn is_pure(&self, fun: thir::ExprId, func_did: DefId) -> bool {
-        util::is_predicate(self.tcx, func_did)
+    fn purity(&self, fun: thir::ExprId, func_did: DefId) -> Purity {
+        let stub = pearlite_stub(self.tcx, self.thir[fun].ty);
+
+        if matches!(stub, Some(Stub::Fin))
+            || util::is_predicate(self.tcx, func_did)
             || util::is_logic(self.tcx, func_did)
+        {
+            Purity::Logic
+        } else if util::is_ghost(self.tcx, func_did)
             || util::get_builtin(self.tcx, func_did).is_some()
-            || pearlite_stub(self.tcx, self.thir[fun].ty).is_some()
+            || stub.is_some()
+        {
+            Purity::Ghost
+        } else {
+            Purity::Program
+        }
     }
 }
 
@@ -331,28 +372,40 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
         match expr.kind {
             ExprKind::Call { fun, .. } => {
                 if let &ty::FnDef(func_did, _) = self.thir[fun].ty.kind() {
-                    if (self.in_pure_ctx != self.is_pure(fun, func_did))
-                        && !is_overloaded_item(self.tcx, func_did)
+                    let fn_purity = self.purity(fun, func_did);
+                    if !self.context.can_call(fn_purity) && !is_overloaded_item(self.tcx, func_did)
                     {
-                        let msg = if self.in_pure_ctx {
-                            "called impure program function in logical context"
-                        } else {
-                            "called logical function in impure context"
-                        };
-
+                        let msg =
+                            format!("called {fn_purity:?} function in {:?} context", self.context);
                         self.tcx.sess.span_err_with_code(
                             self.thir[fun].span,
                             format!("{} {:?}", msg, self.tcx.def_path_str(func_did)),
                             rustc_errors::DiagnosticId::Error(String::from("creusot")),
                         );
                     }
-                } else if self.in_pure_ctx {
+                } else if self.context != Purity::Program {
                     self.tcx.sess.span_fatal_with_code(
                         expr.span,
                         "non function call in logical context",
                         rustc_errors::DiagnosticId::Error(String::from("creusot")),
                     )
                 }
+            }
+            ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
+                if is_spec(self.tcx, closure_id.into()) {
+                    return;
+                }
+
+                let (thir, expr) = self
+                    .tcx
+                    .thir_body(closure_id)
+                    .unwrap_or_else(|_| Error::from(CrErr).emit(self.tcx.sess));
+                let thir = thir.borrow();
+
+                thir::visit::walk_expr(
+                    &mut PurityVisitor { tcx: self.tcx, thir: &thir, context: self.context },
+                    &thir[expr],
+                );
             }
             _ => {}
         }

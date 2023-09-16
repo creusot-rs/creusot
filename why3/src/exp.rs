@@ -99,7 +99,9 @@ pub enum Purity {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Exp {
     Any(Type),
+    // TODO: Remove
     Current(Box<Exp>),
+    // TODO: Remove
     Final(Box<Exp>),
     Let { pattern: Pattern, arg: Box<Exp>, body: Box<Exp> },
     Var(Ident, Purity),
@@ -109,7 +111,6 @@ pub enum Exp {
     RecField { record: Box<Exp>, label: String },
     Tuple(Vec<Exp>),
     Constructor { ctor: QName, args: Vec<Exp> },
-    BorrowMut(Box<Exp>),
     Const(Constant),
     BinaryOp(BinOp, Box<Exp>, Box<Exp>),
     UnaryOp(UnOp, Box<Exp>),
@@ -165,7 +166,6 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
         Exp::RecField { record, label: _ } => f.visit_mut(record),
         Exp::Tuple(exps) => exps.iter_mut().for_each(|e| f.visit_mut(e)),
         Exp::Constructor { ctor: _, args } => args.iter_mut().for_each(|e| f.visit_mut(e)),
-        Exp::BorrowMut(e) => f.visit_mut(e),
         Exp::Const(_) => {}
         Exp::BinaryOp(_, l, r) => {
             f.visit_mut(l);
@@ -229,7 +229,6 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
         Exp::RecField { record, label: _ } => f.visit(record),
         Exp::Tuple(exps) => exps.iter().for_each(|e| f.visit(e)),
         Exp::Constructor { ctor: _, args } => args.iter().for_each(|e| f.visit(e)),
-        Exp::BorrowMut(e) => f.visit(e),
         Exp::Const(_) => {}
         Exp::BinaryOp(_, l, r) => {
             f.visit(l);
@@ -296,6 +295,14 @@ impl Exp {
 
     pub fn neq(self, rhs: Self) -> Self {
         Exp::BinaryOp(BinOp::Ne, Box::new(self), Box::new(rhs))
+    }
+
+    pub fn lt(self, rhs: Self) -> Self {
+        Exp::BinaryOp(BinOp::Lt, Box::new(self), Box::new(rhs))
+    }
+
+    pub fn leq(self, rhs: Self) -> Self {
+        Exp::BinaryOp(BinOp::Le, Box::new(self), Box::new(rhs))
     }
 
     pub fn app(mut self, arg: Vec<Self>) -> Self {
@@ -533,7 +540,6 @@ impl Exp {
             // Exp::Seq(_, _) => { Term }
             Exp::Match(_, _) => Abs,
             Exp::IfThenElse(_, _, _) => IfLet,
-            Exp::BorrowMut(_) => App,
             Exp::Const(_) => Atom,
             Exp::UnaryOp(UnOp::Neg | UnOp::FloatNeg, _) => Prefix,
             Exp::UnaryOp(UnOp::Not, _) => Not,

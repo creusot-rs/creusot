@@ -1,4 +1,23 @@
 
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module CreusotContracts_Resolve_Resolve_Resolve_Stub
   type self
   predicate resolve (self : self)
@@ -17,15 +36,33 @@ module CreusotContracts_Resolve_Resolve_Resolve
     ensures { result = resolve self }
     
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module C05Annotations_Assertion_Interface
   type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
   val assertion [#"../05_annotations.rs" 5 0 5 25] (x : t) : ()
+    requires {[#"../05_annotations.rs" 5 20 5 21] Inv0.inv x}
+    
 end
 module C05Annotations_Assertion
   type t
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = t
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = t,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = t
   let rec cfg assertion [#"../05_annotations.rs" 5 0 5 25] [@cfg:stackify] [@cfg:subregion_analysis] (x : t) : ()
+    requires {[#"../05_annotations.rs" 5 20 5 21] Inv0.inv x}
+    
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var x : t = x;
@@ -33,6 +70,7 @@ module C05Annotations_Assertion
     goto BB0
   }
   BB0 {
+    assert { [@expl:type invariant] Inv0.inv x };
     assume { Resolve0.resolve x };
     assert { [@expl:assertion] [#"../05_annotations.rs" 6 20 6 26] x = x };
     goto BB1

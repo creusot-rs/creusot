@@ -31,7 +31,7 @@ pub fn selection_sort<T: Ord + DeepModel>(v: &mut Vec<T>)
 where
     T::DeepModelTy: OrdLogic,
 {
-    let old_v = ghost! { v };
+    let old_v = gh! { v };
     #[invariant(v@.permutation_of(old_v@))]
     #[invariant(sorted_range(v.deep_model(), 0, produced.len()))]
     #[invariant(partition(v.deep_model(), produced.len()))]

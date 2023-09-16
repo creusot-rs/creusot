@@ -8,12 +8,6 @@ pub fn fin<T: ?Sized>(_: &mut T) -> Box<T> {
 }
 
 #[creusot::no_translate]
-#[rustc_diagnostic_item = "cur"]
-pub fn cur<T>(_: &mut T) -> T {
-    panic!()
-}
-
-#[creusot::no_translate]
 #[rustc_diagnostic_item = "equal"]
 pub fn equal<T: ?Sized>(_: T, _: T) -> bool {
     panic!();
@@ -25,6 +19,7 @@ pub fn neq<T: ?Sized>(_: T, _: T) -> bool {
     panic!();
 }
 
+// FIXME : T should be ?Sized
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "exists"]
 pub fn exists<T, F: Fn(T) -> bool>(_: F) -> bool {
@@ -45,25 +40,37 @@ pub fn implication(_: bool, _: bool) -> bool {
 
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "old"]
-pub fn old<T>(_: T) -> T {
+pub fn old<T: ?Sized>(_: T) -> Box<T> {
     panic!()
 }
 
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "absurd"]
-pub fn abs<T>() -> T {
+pub fn abs<T: ?Sized>() -> Box<T> {
     panic!()
 }
 
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "variant_check"]
-pub fn variant_check<R: crate::well_founded::WellFounded>(r: R) -> R {
-    r
+pub fn variant_check<R: crate::well_founded::WellFounded + ?Sized>(_: R) -> Box<R> {
+    panic!()
 }
 
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "closure_result_constraint"]
-pub fn closure_result<R>(_: R, _: R) {}
+pub fn closure_result<R: ?Sized>(_: R, _: R) {}
+
+#[creusot::no_translate]
+#[rustc_diagnostic_item = "ghost_from_fn"]
+pub fn ghost_from_fn<T: ?Sized, F: Fn() -> crate::Ghost<T>>(_: F) -> crate::Ghost<T> {
+    panic!()
+}
+
+#[creusot::no_translate]
+#[creusot::builtins = "prelude.Mapping.from_fn"]
+pub fn mapping_from_fn<A, B, F: FnOnce(A) -> B>(_: F) -> crate::logic::Mapping<A, B> {
+    panic!()
+}
 
 #[logic] // avoid triggering error since this is prusti specific
 #[open]
