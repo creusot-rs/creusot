@@ -1190,10 +1190,8 @@ pub(crate) mod parsing {
         }
     }
 
-    fn is_mod_style(p : &Path) -> bool {
-            p.segments
-                .iter()
-                .all(|segment| segment.arguments.is_none())
+    fn is_mod_style(p: &Path) -> bool {
+        p.segments.iter().all(|segment| segment.arguments.is_none())
     }
 
     fn path_or_macro_or_struct(input: ParseStream, allow_struct: AllowStruct) -> Result<Term> {

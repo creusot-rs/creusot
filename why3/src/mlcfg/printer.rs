@@ -774,7 +774,7 @@ impl Print for Exp {
                 .intersperse(fields.iter().map(|f| f.pretty(alloc, env)), "; ")
                 .enclose("[|", "|]"),
             Exp::FnLit(e) => alloc.text("fun _ -> ").append(e.pretty(alloc, env)).parens(),
-            Exp::Assert(e) => alloc.text("assert ").append(e.pretty(alloc,env).braces()),
+            Exp::Assert(e) => alloc.text("assert ").append(e.pretty(alloc, env).braces()),
         }
     }
 }

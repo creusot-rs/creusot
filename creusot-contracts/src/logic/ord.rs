@@ -193,10 +193,10 @@ ord_logic_impl!(isize);
 impl OrdLogic for bool {
     #[open]
     #[ghost]
-    fn cmp_log(self, o : Self) -> Ordering {
+    fn cmp_log(self, o: Self) -> Ordering {
         match (self, o) {
             (false, false) => Ordering::Equal,
-            (true, true)   => Ordering::Equal,
+            (true, true) => Ordering::Equal,
             (false, true) => Ordering::Less,
             (true, false) => Ordering::Greater,
         }

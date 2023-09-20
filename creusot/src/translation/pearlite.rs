@@ -1108,7 +1108,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
             visitor.visit_mut_term(&mut *cur);
             visitor.visit_mut_term(&mut *fin)
         }
-        TermKind::Assert { cond } => visitor.visit_mut_term(&mut* cond),
+        TermKind::Assert { cond } => visitor.visit_mut_term(&mut *cond),
     }
 }
 
