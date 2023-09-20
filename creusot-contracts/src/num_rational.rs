@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{ghost, logic, open, trusted, DeepModel, OrdLogic};
+use crate::{ghost, open, trusted, DeepModel, OrdLogic};
 use num_rational::BigRational;
 use std::cmp::Ordering;
 
