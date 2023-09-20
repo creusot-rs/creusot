@@ -1,4 +1,23 @@
 
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
   type t_nonnull 't =
@@ -42,7 +61,10 @@ module Specialize_Impl0_X_Interface
   type u
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec u (Alloc_Alloc_Global_Type.t_global)
   val x [#"../specialize.rs" 12 4 12 22] (self : Alloc_Vec_Vec_Type.t_vec u (Alloc_Alloc_Global_Type.t_global)) : ()
+    requires {[#"../specialize.rs" 12 17 12 21] Inv0.inv self}
     ensures { [#"../specialize.rs" 11 14 11 19] false }
     
 end
@@ -92,25 +114,6 @@ module Specialize_F
   }
   
 end
-module CreusotContracts_Invariant_Inv_Stub
-  type t
-  predicate inv (_x : t)
-end
-module CreusotContracts_Invariant_Inv_Interface
-  type t
-  predicate inv (_x : t)
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
-module CreusotContracts_Invariant_Inv
-  type t
-  predicate inv (_x : t) =
-    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
 module Specialize_T_X_Interface
   type self
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
@@ -129,7 +132,11 @@ module Specialize_G_Interface
   type t
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   val g [#"../specialize.rs" 27 0 27 18] (v : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : ()
+    requires {[#"../specialize.rs" 27 8 27 9] Inv0.inv v}
+    
 end
 module Specialize_G
   type t
@@ -145,6 +152,7 @@ module Specialize_G
     type self = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     predicate Inv0.inv = Inv0.inv
   let rec cfg g [#"../specialize.rs" 27 0 27 18] [@cfg:stackify] [@cfg:subregion_analysis] (v : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : ()
+    requires {[#"../specialize.rs" 27 8 27 9] Inv0.inv v}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -180,8 +188,15 @@ module Specialize_H
   use prelude.Int32
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global),
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone Specialize_Impl0_X_Interface as X0 with
-    type u = int32
+    type u = int32,
+    predicate Inv0.inv = Inv0.inv
   let rec cfg h [#"../specialize.rs" 34 0 34 17] [@cfg:stackify] [@cfg:subregion_analysis] (v : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -208,7 +223,15 @@ module Specialize_H
 end
 module Specialize_Impl0
   type u
-  goal x_refn : [#"../specialize.rs" 12 4 12 22] true
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Alloc_Vec_Vec_Type.t_vec u (Alloc_Alloc_Global_Type.t_global)
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Alloc_Vec_Vec_Type.t_vec u (Alloc_Alloc_Global_Type.t_global),
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
+  goal x_refn : [#"../specialize.rs" 12 4 12 22] forall self : Alloc_Vec_Vec_Type.t_vec u (Alloc_Alloc_Global_Type.t_global) . Inv0.inv self -> Inv0.inv self
 end
 module Specialize_Impl1
   goal x_refn : [#"../specialize.rs" 18 4 18 14] true
