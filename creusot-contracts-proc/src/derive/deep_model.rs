@@ -35,6 +35,12 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
 
     let eq = deep_model(&name, &deep_model_ty_name, &input.data);
 
+    let open = match vis {
+        syn::Visibility::Public(_) => quote! {#[open]},
+        syn::Visibility::Restricted(res) => quote! { #[open(#res)] },
+        syn::Visibility::Inherited => quote! { #[open(self)] },
+    };
+
     let expanded = quote! {
         #ty
 
@@ -42,7 +48,7 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
             type DeepModelTy = #deep_model_ty_name;
 
             #[ghost]
-            #[open(self)]
+            #open
             fn deep_model(self) -> Self::DeepModelTy {
                 #eq
             }
