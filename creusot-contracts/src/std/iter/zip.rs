@@ -1,4 +1,4 @@
-use crate::{invariant::Invariant, std::iter::Zip, *};
+use crate::{std::iter::Zip, *};
 
 pub trait ZipExt<A: Iterator, B: Iterator> {
     #[ghost]
@@ -23,8 +23,6 @@ impl<A: Iterator, B: Iterator> ZipExt<A, B> for Zip<A, B> {
         pearlite! { absurd }
     }
 }
-
-impl<A: Iterator, B: Iterator> Invariant for Zip<A, B> {}
 
 impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
     #[open]
