@@ -75,3 +75,30 @@ pub fn enumerate_range() {
         let _ = (ix, x);
     }
 }
+
+#[predicate]
+fn equiv_range<T>(s1: Seq<T>, s2: Seq<T>, l: Int, u: Int) -> bool {
+    pearlite! {
+        forall<i : Int> l <= i && i < u ==> s1[i] == s2[i]
+    }
+}
+
+#[predicate]
+fn equiv_reverse_range<T>(s1: Seq<T>, s2: Seq<T>, l: Int, u: Int, n: Int) -> bool {
+    pearlite! {
+        forall<i : Int> l <= i && i < u ==> s1[i] == s2[n-i]
+    }
+}
+
+#[ensures((^slice)@.ext_eq(slice@.reverse()))]
+pub fn my_reverse<T>(slice: &mut [T]) {
+    let n = slice.len();
+    let old_v: Ghost<&mut [T]> = gh! { slice };
+    #[invariant(n@ == slice@.len())]
+    #[invariant(equiv_range(slice@, old_v@, produced.len(), n@-produced.len()))]
+    #[invariant(equiv_reverse_range(slice@, old_v@, 0, produced.len(), n@-1))]
+    #[invariant(equiv_reverse_range(slice@, old_v@, n@-produced.len(), n@, n@-1))]
+    for (i, j) in (0..n / 2).zip(0..n / 2) {
+        slice.swap(i, n - j - 1);
+    }
+}

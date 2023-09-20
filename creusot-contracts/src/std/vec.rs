@@ -109,13 +109,12 @@ extern_spec! {
             }
 
             impl<T, A : Allocator> Extend<T> for Vec<T, A> {
-                #[ensures(exists<done_ : &mut I, prod: Seq<I::Item>>
+                #[ensures(exists<done_ : &mut I, prod: Seq<T>>
                     done_.completed() && iter.produces(prod, *done_) && (^self)@ == self@.concat(prod)
                 )]
                 fn extend<I>(&mut self, iter: I)
                 where
-                    // TODO: Investigate why ::std::iter::Iterator<Item = T> is needed... shouldn't it be implied?
-                    I : Iterator<Item = T> + Invariant + ::std::iter::Iterator<Item = T>;
+                    I : Iterator<Item = T>;
             }
 
             impl<T, I : SliceIndex<[T]>, A : Allocator> IndexMut<I> for Vec<T, A> {
