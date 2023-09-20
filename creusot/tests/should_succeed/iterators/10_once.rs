@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::{invariant::Invariant, *};
+use creusot_contracts::*;
 
 mod common;
 use common::Iterator;
@@ -45,5 +45,3 @@ impl<T> Iterator for Once<T> {
         self.0.take()
     }
 }
-
-impl<T> Invariant for Once<T> {}

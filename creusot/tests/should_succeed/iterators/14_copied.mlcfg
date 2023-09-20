@@ -146,15 +146,6 @@ module CreusotContracts_Invariant_Inv
     ensures { result = inv _x }
     
 end
-module C14Copied_Copied_Type_Inv
-  type i
-  use C14Copied_Copied_Type as C14Copied_Copied_Type
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = i
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = C14Copied_Copied_Type.t_copied i
-  axiom inv_t_copied [@rewrite] : forall self : C14Copied_Copied_Type.t_copied i . Inv0.inv self = Inv1.inv (C14Copied_Copied_Type.copied_iter self)
-end
 module TyInv_Trivial
   type t
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
@@ -324,7 +315,7 @@ module C14Copied_Impl0_ProducesRefl_Impl
   use prelude.Borrow
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = i
-  clone TyInv_Trivial as TyInv_Trivial0 with
+  clone TyInv_Trivial as TyInv_Trivial1 with
     type t = i,
     predicate Inv0.inv = Inv1.inv,
     axiom .
@@ -346,10 +337,9 @@ module C14Copied_Impl0_ProducesRefl_Impl
   use C14Copied_Copied_Type as C14Copied_Copied_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = C14Copied_Copied_Type.t_copied i
-  clone C14Copied_Copied_Type_Inv as C14Copied_Copied_Type_Inv0 with
-    type i = i,
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = C14Copied_Copied_Type.t_copied i,
     predicate Inv0.inv = Inv0.inv,
-    predicate Inv1.inv = Inv1.inv,
     axiom .
   clone C14Copied_Impl0_Produces as Produces0 with
     type i = i,
@@ -430,7 +420,7 @@ module C14Copied_Impl0_ProducesTrans_Impl
   use prelude.Borrow
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = i
-  clone TyInv_Trivial as TyInv_Trivial0 with
+  clone TyInv_Trivial as TyInv_Trivial1 with
     type t = i,
     predicate Inv0.inv = Inv1.inv,
     axiom .
@@ -452,10 +442,9 @@ module C14Copied_Impl0_ProducesTrans_Impl
   use C14Copied_Copied_Type as C14Copied_Copied_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = C14Copied_Copied_Type.t_copied i
-  clone C14Copied_Copied_Type_Inv as C14Copied_Copied_Type_Inv0 with
-    type i = i,
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = C14Copied_Copied_Type.t_copied i,
     predicate Inv0.inv = Inv0.inv,
-    predicate Inv1.inv = Inv1.inv,
     axiom .
   clone C14Copied_Impl0_Produces as Produces0 with
     type i = i,
@@ -525,15 +514,6 @@ module C14Copied_Common_Iterator_Next_Interface
     ensures { [#"../common.rs" 27 26 27 44] Inv1.inv result }
     
 end
-module TyInv_Borrow
-  type t
-  use prelude.Borrow
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = borrowed t
-  axiom inv_borrow [@rewrite] : forall self : borrowed t . Inv0.inv self = (Inv1.inv ( * self) /\ Inv1.inv ( ^ self))
-end
 module Core_Option_Impl2_Copied_Interface
   type t
   use prelude.Borrow
@@ -582,54 +562,45 @@ module C14Copied_Impl0_Next
   type t
   use prelude.Borrow
   use seq.Seq
-  use C14Copied_Copied_Type as C14Copied_Copied_Type
-  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
-    type t = i
-  clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
-    type t = C14Copied_Copied_Type.t_copied i
-  clone C14Copied_Copied_Type_Inv as C14Copied_Copied_Type_Inv0 with
-    type i = i,
-    predicate Inv0.inv = Inv6.inv,
-    predicate Inv1.inv = Inv0.inv,
-    axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
     type t = t
-  clone TyInv_Trivial as TyInv_Trivial3 with
+  clone TyInv_Trivial as TyInv_Trivial5 with
     type t = t,
     predicate Inv0.inv = Inv5.inv,
     axiom .
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
     type t = Core_Option_Option_Type.t_option t
-  clone TyInv_Trivial as TyInv_Trivial2 with
+  clone TyInv_Trivial as TyInv_Trivial4 with
     type t = Core_Option_Option_Type.t_option t,
     predicate Inv0.inv = Inv4.inv,
     axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
     type t = borrowed i
-  clone TyInv_Borrow as TyInv_Borrow1 with
-    type t = i,
+  clone TyInv_Trivial as TyInv_Trivial3 with
+    type t = borrowed i,
     predicate Inv0.inv = Inv3.inv,
-    predicate Inv1.inv = Inv0.inv,
     axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
     type t = Core_Option_Option_Type.t_option t
-  clone TyInv_Trivial as TyInv_Trivial1 with
+  clone TyInv_Trivial as TyInv_Trivial2 with
     type t = Core_Option_Option_Type.t_option t,
     predicate Inv0.inv = Inv2.inv,
     axiom .
+  use C14Copied_Copied_Type as C14Copied_Copied_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = borrowed (C14Copied_Copied_Type.t_copied i)
-  clone TyInv_Borrow as TyInv_Borrow0 with
-    type t = C14Copied_Copied_Type.t_copied i,
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = borrowed (C14Copied_Copied_Type.t_copied i),
     predicate Inv0.inv = Inv1.inv,
-    predicate Inv1.inv = Inv6.inv,
     axiom .
   clone C14Copied_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
     type Item0.item = t
   clone C14Copied_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = i
   clone C14Copied_Common_Iterator_ProducesTrans_Interface as ProducesTrans0 with
     type self = i,
     predicate Produces0.produces = Produces1.produces,
@@ -709,19 +680,12 @@ module C14Copied_Impl0
   type t
   use prelude.Borrow
   use seq.Seq
-  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
-    type t = i
-  clone TyInv_Trivial as TyInv_Trivial1 with
-    type t = i,
-    predicate Inv0.inv = Inv3.inv,
-    axiom .
   use C14Copied_Copied_Type as C14Copied_Copied_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
     type t = C14Copied_Copied_Type.t_copied i
-  clone C14Copied_Copied_Type_Inv as C14Copied_Copied_Type_Inv0 with
-    type i = i,
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = C14Copied_Copied_Type.t_copied i,
     predicate Inv0.inv = Inv2.inv,
-    predicate Inv1.inv = Inv3.inv,
     axiom .
   clone C14Copied_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
@@ -731,16 +695,15 @@ module C14Copied_Impl0
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = Core_Option_Option_Type.t_option t
-  clone TyInv_Trivial as TyInv_Trivial0 with
+  clone TyInv_Trivial as TyInv_Trivial1 with
     type t = Core_Option_Option_Type.t_option t,
     predicate Inv0.inv = Inv1.inv,
     axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = borrowed (C14Copied_Copied_Type.t_copied i)
-  clone TyInv_Borrow as TyInv_Borrow0 with
-    type t = C14Copied_Copied_Type.t_copied i,
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = borrowed (C14Copied_Copied_Type.t_copied i),
     predicate Inv0.inv = Inv0.inv,
-    predicate Inv1.inv = Inv2.inv,
     axiom .
   clone C14Copied_Common_Iterator_Item_Type as Item0 with
     type self = C14Copied_Copied_Type.t_copied i
@@ -761,8 +724,4 @@ module C14Copied_Impl0
     end)
   goal produces_trans_refn : [#"../14_copied.rs" 46 4 46 90] forall a : C14Copied_Copied_Type.t_copied i . forall ab : Seq.seq t . forall b : C14Copied_Copied_Type.t_copied i . forall bc : Seq.seq t . forall c : C14Copied_Copied_Type.t_copied i . Inv2.inv c /\ Inv2.inv b /\ Inv2.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Inv2.inv c /\ Inv2.inv b /\ Inv2.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
   goal produces_refl_refn : [#"../14_copied.rs" 39 4 39 29] forall a : C14Copied_Copied_Type.t_copied i . Inv2.inv a -> Inv2.inv a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
-end
-module C14Copied_Impl1
-  type i
-  type t
 end

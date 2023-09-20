@@ -1,7 +1,7 @@
 #![feature(slice_take)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{invariant::Invariant, *};
+use creusot_contracts::*;
 
 mod common;
 use common::Iterator;
@@ -59,5 +59,3 @@ where
         }
     }
 }
-
-impl<I: Iterator> Invariant for Take<I> {}

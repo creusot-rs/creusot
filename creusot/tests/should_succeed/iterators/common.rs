@@ -1,7 +1,7 @@
 // UISKIP WHY3SKIP
-use creusot_contracts::{invariant::Invariant, logic::Seq, *};
+use creusot_contracts::{logic::Seq, *};
 
-pub trait Iterator: Invariant {
+pub trait Iterator {
     type Item;
 
     #[predicate]

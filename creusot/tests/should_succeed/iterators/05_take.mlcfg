@@ -291,15 +291,6 @@ module C05Take_Impl0_Produces
     ensures { result = produces self visited o }
     
 end
-module C05Take_Take_Type_Inv
-  type i
-  use C05Take_Take_Type as C05Take_Take_Type
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = i
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = C05Take_Take_Type.t_take i
-  axiom inv_t_take [@rewrite] : forall self : C05Take_Take_Type.t_take i . Inv0.inv self = Inv1.inv (C05Take_Take_Type.take_iter self)
-end
 module C05Take_Impl0_ProducesRefl_Stub
   type i
   use seq.Seq
@@ -357,7 +348,7 @@ module C05Take_Impl0_ProducesRefl_Impl
   use seq.Seq
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = i
-  clone TyInv_Trivial as TyInv_Trivial0 with
+  clone TyInv_Trivial as TyInv_Trivial1 with
     type t = i,
     predicate Inv0.inv = Inv1.inv,
     axiom .
@@ -381,10 +372,9 @@ module C05Take_Impl0_ProducesRefl_Impl
   use C05Take_Take_Type as C05Take_Take_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = C05Take_Take_Type.t_take i
-  clone C05Take_Take_Type_Inv as C05Take_Take_Type_Inv0 with
-    type i = i,
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = C05Take_Take_Type.t_take i,
     predicate Inv0.inv = Inv0.inv,
-    predicate Inv1.inv = Inv1.inv,
     axiom .
   clone C05Take_Impl0_Produces as Produces0 with
     type i = i,
@@ -466,7 +456,7 @@ module C05Take_Impl0_ProducesTrans_Impl
   use seq.Seq
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = i
-  clone TyInv_Trivial as TyInv_Trivial0 with
+  clone TyInv_Trivial as TyInv_Trivial1 with
     type t = i,
     predicate Inv0.inv = Inv1.inv,
     axiom .
@@ -490,10 +480,9 @@ module C05Take_Impl0_ProducesTrans_Impl
   use C05Take_Take_Type as C05Take_Take_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = C05Take_Take_Type.t_take i
-  clone C05Take_Take_Type_Inv as C05Take_Take_Type_Inv0 with
-    type i = i,
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = C05Take_Take_Type.t_take i,
     predicate Inv0.inv = Inv0.inv,
-    predicate Inv1.inv = Inv1.inv,
     axiom .
   clone C05Take_Impl0_Produces as Produces0 with
     type i = i,
@@ -515,15 +504,6 @@ module Core_Option_Option_Type
     | C_None
     | C_Some 't
     
-end
-module TyInv_Borrow
-  type t
-  use prelude.Borrow
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = borrowed t
-  axiom inv_borrow [@rewrite] : forall self : borrowed t . Inv0.inv self = (Inv1.inv ( * self) /\ Inv1.inv ( ^ self))
 end
 module C05Take_Common_Iterator_Next_Interface
   type self
@@ -582,29 +562,18 @@ module C05Take_Impl0_Next
   use prelude.UIntSize
   use prelude.Borrow
   use seq.Seq
-  use C05Take_Take_Type as C05Take_Take_Type
-  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
-    type t = i
-  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
-    type t = C05Take_Take_Type.t_take i
-  clone C05Take_Take_Type_Inv as C05Take_Take_Type_Inv0 with
-    type i = i,
-    predicate Inv0.inv = Inv4.inv,
-    predicate Inv1.inv = Inv1.inv,
-    axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
     type t = borrowed i
-  clone TyInv_Borrow as TyInv_Borrow1 with
-    type t = i,
+  clone TyInv_Trivial as TyInv_Trivial3 with
+    type t = borrowed i,
     predicate Inv0.inv = Inv3.inv,
-    predicate Inv1.inv = Inv1.inv,
     axiom .
   clone C05Take_Common_Iterator_Item_Type as Item0 with
     type self = i
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
     type t = Core_Option_Option_Type.t_option Item0.item
-  clone TyInv_Trivial as TyInv_Trivial1 with
+  clone TyInv_Trivial as TyInv_Trivial2 with
     type t = Core_Option_Option_Type.t_option Item0.item,
     predicate Inv0.inv = Inv2.inv,
     axiom .
@@ -613,6 +582,8 @@ module C05Take_Impl0_Next
     type Item0.item = Item0.item
   clone C05Take_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = i
   clone C05Take_Common_Iterator_ProducesTrans_Interface as ProducesTrans0 with
     type self = i,
     predicate Produces0.produces = Produces1.produces,
@@ -625,16 +596,16 @@ module C05Take_Impl0_Next
     predicate Produces0.produces = Produces1.produces,
     type Item0.item = Item0.item,
     axiom .
-  clone TyInv_Trivial as TyInv_Trivial0 with
+  clone TyInv_Trivial as TyInv_Trivial1 with
     type t = i,
     predicate Inv0.inv = Inv1.inv,
     axiom .
+  use C05Take_Take_Type as C05Take_Take_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = borrowed (C05Take_Take_Type.t_take i)
-  clone TyInv_Borrow as TyInv_Borrow0 with
-    type t = C05Take_Take_Type.t_take i,
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = borrowed (C05Take_Take_Type.t_take i),
     predicate Inv0.inv = Inv0.inv,
-    predicate Inv1.inv = Inv4.inv,
     axiom .
   clone C05Take_Impl0_Produces as Produces0 with
     type i = i,
@@ -703,12 +674,6 @@ module C05Take_Impl0
   type i
   use seq.Seq
   use prelude.Borrow
-  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
-    type t = i
-  clone TyInv_Trivial as TyInv_Trivial1 with
-    type t = i,
-    predicate Inv0.inv = Inv3.inv,
-    axiom .
   clone C05Take_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
   use C05Take_Take_Type as C05Take_Take_Type
@@ -719,26 +684,24 @@ module C05Take_Impl0
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
     type t = Core_Option_Option_Type.t_option Item0.item
-  clone TyInv_Trivial as TyInv_Trivial0 with
+  clone TyInv_Trivial as TyInv_Trivial2 with
     type t = Core_Option_Option_Type.t_option Item0.item,
     predicate Inv0.inv = Inv2.inv,
     axiom .
-  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
-    type t = C05Take_Take_Type.t_take i
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = borrowed (C05Take_Take_Type.t_take i)
-  clone TyInv_Borrow as TyInv_Borrow0 with
-    type t = C05Take_Take_Type.t_take i,
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = borrowed (C05Take_Take_Type.t_take i),
     predicate Inv0.inv = Inv1.inv,
-    predicate Inv1.inv = Inv0.inv,
     axiom .
   clone C05Take_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
     type Item0.item = Item0.item
-  clone C05Take_Take_Type_Inv as C05Take_Take_Type_Inv0 with
-    type i = i,
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = C05Take_Take_Type.t_take i
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = C05Take_Take_Type.t_take i,
     predicate Inv0.inv = Inv0.inv,
-    predicate Inv1.inv = Inv3.inv,
     axiom .
   clone C05Take_Common_Iterator_Item_Type as Item1 with
     type self = C05Take_Take_Type.t_take i
@@ -759,7 +722,4 @@ module C05Take_Impl0
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
     end)
-end
-module C05Take_Impl1
-  type i
 end

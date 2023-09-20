@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{invariant::Invariant, logic::Seq, *};
+use creusot_contracts::{logic::Seq, *};
 
 mod common;
 use common::Iterator;
@@ -14,7 +14,10 @@ impl<I: Iterator> Iterator for Fuse<I> {
     #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { (^self).iter == None }
+        pearlite! {
+            (self.iter == None || exists<it:&mut I> it.completed() && self.iter == Some(*it)) &&
+            (^self).iter == None
+        }
     }
 
     #[open]
@@ -58,8 +61,6 @@ impl<I: Iterator> Iterator for Fuse<I> {
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
-
-impl<I: Iterator> Invariant for Fuse<I> {}
 
 // Not a subtrait of `FusedIterator` here for type inference reasons.
 // extern_spec! version should be though.

@@ -5,6 +5,7 @@ mod cloned;
 mod copied;
 mod empty;
 mod enumerate;
+mod fuse;
 mod map_inv;
 mod once;
 mod range;
@@ -16,6 +17,7 @@ mod zip;
 pub use cloned::ClonedExt;
 pub use copied::CopiedExt;
 pub use enumerate::EnumerateExt;
+pub use fuse::FusedIterator;
 pub use map_inv::MapInv;
 pub use skip::SkipExt;
 pub use take::TakeExt;
@@ -115,6 +117,9 @@ extern_spec! {
 
                 #[ensures(result.iter() == self && result.n() == 0)]
                 fn enumerate(self) -> Enumerate<Self>;
+
+                #[ensures(result@ == Some(self))]
+                fn fuse(self) -> Fuse<Self>;
 
                 #[requires(other.into_iter_pre())]
                 #[ensures(result.itera() == self)]

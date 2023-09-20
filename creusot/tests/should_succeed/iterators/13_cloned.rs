@@ -1,7 +1,7 @@
 #![feature(slice_take)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{invariant::Invariant, *};
+use creusot_contracts::*;
 
 mod common;
 use common::Iterator;
@@ -52,11 +52,4 @@ where
     fn next(&mut self) -> Option<T> {
         self.iter.next().cloned()
     }
-}
-
-impl<'a, I, T: 'a> Invariant for Cloned<I>
-where
-    I: Iterator<Item = &'a T>,
-    T: Clone,
-{
 }
