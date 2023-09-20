@@ -22,6 +22,7 @@ pub use enumerate::EnumerateExt;
 pub use map_inv::MapInv;
 pub use skip::SkipExt;
 pub use take::TakeExt;
+pub use zip::ZipExt;
 
 pub trait Iterator: ::std::iter::Iterator + Invariant {
     #[predicate]
@@ -54,7 +55,8 @@ pub trait Iterator: ::std::iter::Iterator + Invariant {
     }
 }
 
-pub trait IntoIterator: ::std::iter::IntoIterator {
+pub trait IntoIterator: ::std::iter::IntoIterator
+    where Self::IntoIter: Iterator {
     #[predicate]
     #[open]
     fn into_iter_pre(self) -> bool {
@@ -118,7 +120,8 @@ extern_spec! {
                 #[requires(other.into_iter_pre())]
                 #[ensures(result.itera() == self)]
                 #[ensures(other.into_iter_post(result.iterb()))]
-                fn zip<U: IntoIterator>(self, other: U) -> Zip<Self, U>;
+                fn zip<U: IntoIterator>(self, other: U) -> Zip<Self, U::IntoIter>
+                    where U::IntoIter: Iterator;
 
                 // TODO: Investigate why Self_ needed
                 #[ensures(exists<done_ : &mut Self_, prod: Seq<_>> (^done_).resolve() && done_.completed() &&
