@@ -14,6 +14,7 @@ mod range;
 mod repeat;
 mod skip;
 mod take;
+mod zip;
 
 pub use cloned::ClonedExt;
 pub use copied::CopiedExt;
@@ -113,6 +114,11 @@ extern_spec! {
 
                 #[ensures(result.iter() == self && result.n() == 0)]
                 fn enumerate(self) -> Enumerate<Self>;
+
+                #[requires(other.into_iter_pre())]
+                #[ensures(result.itera() == self)]
+                #[ensures(other.into_iter_post(result.iterb()))]
+                fn zip<U: IntoIterator>(self, other: U) -> Zip<Self, U>;
 
                 // TODO: Investigate why Self_ needed
                 #[ensures(exists<done_ : &mut Self_, prod: Seq<_>> (^done_).resolve() && done_.completed() &&
