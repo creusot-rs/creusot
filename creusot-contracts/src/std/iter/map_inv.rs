@@ -3,7 +3,7 @@ use crate::{
     *,
 };
 
-pub struct MapInv<I: Invariant, B, F> {
+pub struct MapInv<I, B, F> {
     pub iter: I,
     pub func: F,
     pub produced: Ghost<Seq<B>>,
@@ -54,7 +54,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
 }
 
 #[trusted]
-impl<I: Invariant, B, F> Resolve for MapInv<I, B, F> {
+impl<I, B, F> Resolve for MapInv<I, B, F> {
     #[open]
     #[predicate]
     fn resolve(self) -> bool {

@@ -30,7 +30,7 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
     #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite!{
+        pearlite! {
             exists<a: &mut A, b: &mut B>
                    *a == (*self).itera() && *b == (*self).iterb()
                 && ^a == (^self).itera() && ^b == (^self).iterb()

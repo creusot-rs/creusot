@@ -16,7 +16,7 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
     #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite!{
+        pearlite! {
              (self.a.completed() && (*self).b == (^self).b)
           || (exists<x: A::Item> self.a.produces(Seq::singleton(x), (^self).a) &&
                                  x.resolve() && self.b.completed())
@@ -52,8 +52,14 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
       Some(v) => self.produces(Seq::singleton(v), ^self)
     })]
     fn next(&mut self) -> Option<Self::Item> {
-        let x = match self.a.next() { None => return None, Some(x) => x };
-        let y = match self.b.next() { None => return None, Some(y) => y };
+        let x = match self.a.next() {
+            None => return None,
+            Some(x) => x,
+        };
+        let y = match self.b.next() {
+            None => return None,
+            Some(y) => y,
+        };
         Some((x, y))
     }
 }

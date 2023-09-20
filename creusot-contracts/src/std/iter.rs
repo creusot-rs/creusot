@@ -1,7 +1,4 @@
-use crate::{
-    invariant::{inv, Invariant},
-    *,
-};
+use crate::{invariant::inv, *};
 pub use ::std::iter::*;
 
 mod cloned;
@@ -24,7 +21,7 @@ pub use skip::SkipExt;
 pub use take::TakeExt;
 pub use zip::ZipExt;
 
-pub trait Iterator: ::std::iter::Iterator + Invariant {
+pub trait Iterator: ::std::iter::Iterator {
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, _o: Self) -> bool;
 
@@ -56,7 +53,9 @@ pub trait Iterator: ::std::iter::Iterator + Invariant {
 }
 
 pub trait IntoIterator: ::std::iter::IntoIterator
-    where Self::IntoIter: Iterator {
+where
+    Self::IntoIter: Iterator,
+{
     #[predicate]
     #[open]
     fn into_iter_pre(self) -> bool {
@@ -90,7 +89,7 @@ extern_spec! {
     mod std {
         mod iter {
             trait Iterator
-                where Self : Iterator + Invariant {
+                where Self : Iterator {
 
                 #[ensures(match result {
                     None => self.completed(),
@@ -136,7 +135,7 @@ extern_spec! {
                 #[requires(self.into_iter_pre())]
                 #[ensures(self.into_iter_post(result))]
                 fn into_iter(self) -> Self::IntoIter
-                    where Self::IntoIter: Iterator + Invariant;
+                    where Self::IntoIter: Iterator;
             }
 
             trait FromIterator<A>
