@@ -6,30 +6,6 @@
 
 **Creusot** is a *deductive verifier* for Rust code. It verifies your code is safe from panics, overflows, and assertion failures. By adding annotations you can take it further and verify your code does the *correct* thing.
 
-## Demo
-
-Save the following as `demo.rs`
-
-```rust
-pub fn sort(v: &mut [u32])
-
-{
-    let mut i = 0;
-    while i < v.len() {
-        if i == 0 || v[i - 1] <= v[i] {
-            i += 1;
-        } else {
-            v.swap(i - 1, i);
-            i -= 1;
-        }
-    }
-}
-
-```
-
-
-**Creusot** is a tool for *deductive verification* of Rust code. It allows you to annotate your code with specifications, invariants and assertions and then *verify* them formally and automatically, *proving*, mathematically, that your code satisfies your specifications.
-
 Creusot works by translating Rust code to WhyML, the verification and specification language of [Why3](https://why3.lri.fr). Users can then leverage the full power of Why3 to (semi)-automatically discharge the verification conditions!
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for technical details.
