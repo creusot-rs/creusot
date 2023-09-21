@@ -1,6 +1,6 @@
 use pearlite_syn::Term as RT;
 use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
-use syn::{spanned::Spanned, Pat};
+use syn::{spanned::Spanned, ExprMacro, Macro, Pat};
 
 use pearlite_syn::term::*;
 use quote::{quote, quote_spanned, ToTokens};
@@ -34,6 +34,9 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         // it's impossible to handle proc macros whose parameters is not valid pearlite syntax,
         // or we don't translate parameters, but then we let the user write non-pearlite code
         // in pearlite...
+        RT::Macro(ExprMacro { mac: Macro { path, .. }, .. }) if path.is_ident("proof_assert") => {
+            Ok(term.to_token_stream())
+        }
         RT::Macro(_) => Err(EncodeError::Unsupported(term.span(), "Macro".into())),
         RT::Array(_) => Err(EncodeError::Unsupported(term.span(), "Array".into())),
         RT::Binary(TermBinary { left, op, right }) => {
