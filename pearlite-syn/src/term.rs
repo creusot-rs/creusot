@@ -971,6 +971,34 @@ pub(crate) mod parsing {
                     }
                 }
                 lhs = Term::Binary(TermBinary { left: Box::new(lhs), op, right: Box::new(rhs) });
+            } else if Precedence::Range >= base && input.peek(Token![..]) {
+                let limits: RangeLimits = input.parse()?;
+                let rhs = if matches!(limits, RangeLimits::HalfOpen(_))
+                    && (input.is_empty()
+                        || input.peek(Token![,])
+                        || input.peek(Token![;])
+                        || input.peek(Token![.]) && !input.peek(Token![..])
+                        || !allow_struct.0 && input.peek(token::Brace))
+                {
+                    None
+                } else {
+                    let mut rhs = unary_term(input, allow_struct)?;
+                    loop {
+                        let next = peek_precedence(input);
+                        if next > Precedence::Range {
+                            rhs = parse_term(input, rhs, allow_struct, next)?;
+                        } else {
+                            break;
+                        }
+                    }
+                    Some(rhs)
+                };
+                lhs = Term::Range(TermRange {
+                    // attrs: Vec::new(),
+                    from: Some(Box::new(lhs)),
+                    limits,
+                    to: rhs.map(Box::new),
+                });
             } else if Precedence::Cast >= base && input.peek(Token![as]) {
                 let as_token: Token![as] = input.parse()?;
                 let ty = input.call(Type::without_plus)?;
