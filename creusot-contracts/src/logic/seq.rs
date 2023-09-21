@@ -1,3 +1,5 @@
+use ::std::ops::Range;
+
 use crate::{logic::ops::IndexLogic, *};
 
 #[cfg_attr(creusot, creusot::builtins = "seq.Seq.seq")]
@@ -163,5 +165,16 @@ impl<T> IndexLogic<Int> for Seq<T> {
     #[creusot::builtins = "seq.Seq.get"]
     fn index_logic(self, _: Int) -> Self::Item {
         absurd
+    }
+}
+
+impl<T> IndexLogic<Range<Int>> for Seq<T> {
+    type Item = Seq<T>;
+
+    #[ghost]
+    #[open]
+    #[why3::attr = "inline:trivial"]
+    fn index_logic(self, r: Range<Int>) -> Self::Item {
+        self.subsequence(r.start, r.end)
     }
 }
