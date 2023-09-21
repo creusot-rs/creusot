@@ -260,7 +260,6 @@ impl<'tcx> CloneMap<'tcx> {
     )]
     pub(crate) fn insert(&mut self, key: CloneNode<'tcx>) -> &mut CloneInfo {
         let key = key.erase_regions(self.tcx).closure_hack(self.tcx);
-
         self.names.entry(key).or_insert_with(|| {
             if let CloneNode::Type(ty) = key && !matches!(ty.kind(), TyKind::Alias(_, _)) {
                 return if let Some((did, _)) = key.did() {
@@ -298,13 +297,17 @@ impl<'tcx> CloneMap<'tcx> {
         self.insert(node).qname_ident(name.into())
     }
 
+    #[deprecated(
+        note = "this API is bad and should be entirely eliminated. Don't introduce new usages."
+    )]
     pub(crate) fn projection(
         &mut self,
         ctx: &mut TranslationCtx<'tcx>,
         alias: AliasTy<'tcx>,
-    ) -> QName {
-        let alias = ctx.try_normalize_erasing_regions(self.param_env(ctx), alias).unwrap_or(alias);
-        self.ty(alias.def_id, alias.substs)
+    ) -> Ty<'tcx> {
+        let ty = ctx.mk_alias(AliasKind::Projection, alias);
+        let ty = ctx.try_normalize_erasing_regions(self.param_env(ctx), ty).unwrap_or(ty);
+        ty
     }
 
     pub(crate) fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
@@ -468,8 +471,19 @@ impl<'tcx> CloneMap<'tcx> {
     fn clone_dependencies(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
         let key_public = self.names[&key].public;
 
-        if let Some((_, key_subst)) = key.did() {
-            // Check the substitution for nodeendencies on closures
+        if let Some((id, key_subst)) = key.did() {
+            if util::item_type(ctx.tcx, id) == ItemType::Type {
+                for p in ctx.projections_in_ty(id).to_owned() {
+                    let node = self.resolve_dep(
+                        ctx,
+                        CloneNode::new(ctx.tcx, (p.def_id, p.substs)).subst(ctx.tcx, key),
+                    );
+                    self.insert(node).public |= key_public;
+                    self.add_graph_edge(key, node);
+                }
+            }
+
+            // Check the substitution for node dependencies on closures
             walk_types(key_subst, |t| {
                 let node = match t.kind() {
                     TyKind::Alias(AliasKind::Projection, pty) => {
@@ -595,7 +609,7 @@ impl<'tcx> CloneMap<'tcx> {
                 let use_decl = self.used_types.insert(def_id).then(|| {
                     if let Some(builtin) = get_builtin(ctx.tcx, def_id) {
                         let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
-                        Use { name: name, as_: None, export: false }
+                        Use { name, as_: None, export: false }
                     } else {
                         let name = cloneable_name(ctx, item, CloneLevel::Body);
                         Use { name: name.clone(), as_: Some(name), export: false }
@@ -680,8 +694,12 @@ impl<'tcx> CloneMap<'tcx> {
 
         self.last_cloned = self.names.len();
 
-        // Broken because of closures which share a defid for the type *and* function
-        // debug_assert!(!is_cyclic_directed(&self.clone_graph), "clone graph for {:?} is cyclic", self.self_id );
+        // // Broken because of closures which share a defid for the type *and* function
+        // debug_assert!(
+        //     !petgraph::algo::is_cyclic_directed(&self.clone_graph),
+        //     "clone graph for {:?} is cyclic",
+        //     self.self_id
+        // );
 
         let mut topo = DfsPostOrder::new(&self.clone_graph, self.self_key());
         while let Some(node) = topo.walk_next(&self.clone_graph) {

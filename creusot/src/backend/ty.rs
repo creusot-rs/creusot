@@ -13,7 +13,8 @@ use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_middle::ty::{
     self,
     subst::{InternalSubsts, SubstsRef},
-    AliasKind, AliasTy, EarlyBinder, FieldDef, GenericArgKind, ParamEnv, Ty, TyCtxt, TyKind,
+    AliasKind, AliasTy, EarlyBinder, FieldDef, GenericArg, GenericArgKind, ParamEnv, Ty, TyCtxt,
+    TyKind,
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_type_ir::sty::TyKind::*;
@@ -198,16 +199,16 @@ fn translate_projection_ty<'tcx>(
     pty: &AliasTy<'tcx>,
 ) -> MlT {
     if let TyTranslation::Declaration(id) = mode {
-        let ix = ctx.projections_in_ty(id).iter().position(|t| t == pty);
-        if let Some(ix) = ix {
-            return MlT::TVar(Ident::build(&format!("proj{ix}")));
-        }
-    };
-
-    // eprintln!("{:?}", pty);
-    let name = names.projection(ctx, *pty);
-    MlT::TConstructor(name)
-    // MlT::UNIT
+        let ix = ctx.projections_in_ty(id).iter().position(|t| t == pty).unwrap();
+        return MlT::TVar(Ident::build(&format!("proj{ix}")));
+    } else {
+        #[allow(deprecated)]
+        let proj_ty = names.projection(ctx, *pty);
+        if let TyKind::Alias(AliasKind::Projection, aty) = proj_ty.kind() {
+            return MlT::TConstructor(names.ty(aty.def_id, aty.substs));
+        };
+        translate_ty(ctx, names, DUMMY_SP, proj_ty)
+    }
 }
 
 pub(crate) fn translate_closure_ty<'tcx>(
@@ -280,6 +281,7 @@ impl<'tcx> Why3Generator<'tcx> {
         let mut v = Vec::new();
         let param_env = self.param_env(def_id);
 
+        // FIXME: Make this a proper BFS / DFS
         let subst = InternalSubsts::identity_for_item(self.tcx, def_id);
         for f in self.adt_def(def_id).all_fields() {
             let ty = f.ty(self.tcx, subst);
@@ -295,6 +297,15 @@ impl<'tcx> Why3Generator<'tcx> {
                         }
                     }
 
+                    // Add projections of types appearing in the substitution of a field.
+                    for a in
+                        substs.iter().flat_map(GenericArg::walk).filter_map(GenericArg::as_type)
+                    {
+                        match a.kind() {
+                            TyKind::Alias(AliasKind::Projection, aty) => v.push(*aty),
+                            _ => {}
+                        };
+                    }
                     // v.extend(self.projections_in_ty(adt.did()))
                 }
                 _ => {}
@@ -519,7 +530,6 @@ pub(crate) fn translate_accessor(
         }
     }
 
-    let ty_name = names.ty(adt_did, substs);
     let acc_name = format!("{}_{}", variant.name.as_str().to_ascii_lowercase(), field.name);
 
     let param_env = ctx.param_env(adt_did);
@@ -532,9 +542,12 @@ pub(crate) fn translate_accessor(
         .map(|var| (names.constructor(var.def_id, substs), var.fields.len()))
         .collect();
 
-    let this = MlT::TApp(
-        Box::new(MlT::TConstructor(ty_name.clone().into())),
-        ty_param_names(ctx.tcx, adt_did).map(MlT::TVar).collect(),
+    let this = translate_ty_inner(
+        TyTranslation::Declaration(adt_did),
+        ctx,
+        &mut names,
+        DUMMY_SP,
+        ctx.type_of(adt_did).subst_identity(),
     );
 
     let _ = names.to_clones(ctx);
