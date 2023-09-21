@@ -144,6 +144,16 @@ impl<T> Seq<T> {
     }
 }
 
+impl<T> Seq<&T> {
+    #[logic]
+    #[open]
+    #[trusted]
+    #[creusot::builtins = "prelude.Seq.to_owned"]
+    pub fn to_owned(self) -> Seq<T> {
+        pearlite! {absurd}
+    }
+}
+
 impl<T> IndexLogic<Int> for Seq<T> {
     type Item = T;
 

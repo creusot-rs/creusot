@@ -98,6 +98,7 @@ pub enum Purity {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Exp {
+    Assert(Box<Exp>),
     Any(Type),
     // TODO: Remove
     Current(Box<Exp>),
@@ -202,6 +203,7 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
         Exp::Record { fields } => fields.iter_mut().for_each(|(_, e)| f.visit_mut(e)),
         Exp::Sequence(fields) => fields.iter_mut().for_each(|e| f.visit_mut(e)),
         Exp::FnLit(e) => f.visit_mut(e),
+        Exp::Assert(e) => f.visit_mut(e),
     }
 }
 
@@ -265,6 +267,7 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
         Exp::Record { fields } => fields.iter().for_each(|(_, e)| f.visit(e)),
         Exp::Sequence(fields) => fields.iter().for_each(|e| f.visit(e)),
         Exp::FnLit(e) => f.visit(e),
+        Exp::Assert(e) => f.visit(e),
     }
 }
 
@@ -383,6 +386,7 @@ impl Exp {
                     // This is a bit absurd, but you can't put "pure {...}"
                     // in a term, so it's not "pure".
                     Exp::Pure(_) => self.pure &= false,
+                    Exp::Assert(_) => self.pure &= false,
                     _ => {
                         super_visit(self, exp);
                     }
@@ -560,6 +564,7 @@ impl Exp {
             Exp::Record { fields: _ } => Atom,
             Exp::Sequence(_) => Atom,
             Exp::FnLit(_) => Atom,
+            Exp::Assert(_) => Atom,
             // _ => unimplemented!("{:?}", self),
         }
     }

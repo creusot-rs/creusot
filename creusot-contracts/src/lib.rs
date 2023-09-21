@@ -167,6 +167,9 @@ pub mod logic;
 pub mod std;
 
 #[cfg(creusot)]
+pub mod num_rational;
+
+#[cfg(creusot)]
 pub mod ghost;
 
 #[cfg(not(creusot))]

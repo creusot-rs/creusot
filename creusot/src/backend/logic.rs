@@ -162,7 +162,7 @@ fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, C
         let term = ctx.term(def_id).unwrap().clone();
         let body = lower_pure(ctx, &mut names, term);
 
-        if sig_contract.contract.variant.is_empty() {
+        if sig_contract.contract.variant.is_empty() && body.is_pure() {
             let decl = match util::item_type(ctx.tcx, def_id) {
                 ItemType::Ghost | ItemType::Logic => Decl::LogicDefn(Logic { sig, body }),
                 ItemType::Predicate => Decl::PredDecl(Predicate { sig, body }),
