@@ -5,6 +5,121 @@ use pearlite_syn::Term;
 use quote::quote;
 
 #[test]
+fn test_range() {
+    snapshot!(quote!(x[0..]) as Term, @r###"
+    TermIndex {
+        expr: TermPath {
+            inner: ExprPath {
+                attrs: [],
+                qself: None,
+                path: Path {
+                    leading_colon: None,
+                    segments: [
+                        PathSegment {
+                            ident: Ident(
+                                x,
+                            ),
+                            arguments: PathArguments::None,
+                        },
+                    ],
+                },
+            },
+        },
+        bracket_token: Bracket,
+        index: TermRange {
+            from: Some(
+                TermLit {
+                    lit: Lit::Int {
+                        token: 0,
+                    },
+                },
+            ),
+            limits: RangeLimits::HalfOpen(
+                DotDot,
+            ),
+            to: None,
+        },
+    }
+    "###);
+    snapshot!(quote!(x[0..5]) as Term, @r###"
+    TermIndex {
+        expr: TermPath {
+            inner: ExprPath {
+                attrs: [],
+                qself: None,
+                path: Path {
+                    leading_colon: None,
+                    segments: [
+                        PathSegment {
+                            ident: Ident(
+                                x,
+                            ),
+                            arguments: PathArguments::None,
+                        },
+                    ],
+                },
+            },
+        },
+        bracket_token: Bracket,
+        index: TermRange {
+            from: Some(
+                TermLit {
+                    lit: Lit::Int {
+                        token: 0,
+                    },
+                },
+            ),
+            limits: RangeLimits::HalfOpen(
+                DotDot,
+            ),
+            to: Some(
+                TermLit {
+                    lit: Lit::Int {
+                        token: 5,
+                    },
+                },
+            ),
+        },
+    }
+    "###);
+    snapshot!(quote!(x[..5]) as Term, @r###"
+    TermIndex {
+        expr: TermPath {
+            inner: ExprPath {
+                attrs: [],
+                qself: None,
+                path: Path {
+                    leading_colon: None,
+                    segments: [
+                        PathSegment {
+                            ident: Ident(
+                                x,
+                            ),
+                            arguments: PathArguments::None,
+                        },
+                    ],
+                },
+            },
+        },
+        bracket_token: Bracket,
+        index: TermRange {
+            from: None,
+            limits: RangeLimits::HalfOpen(
+                DotDot,
+            ),
+            to: Some(
+                TermLit {
+                    lit: Lit::Int {
+                        token: 5,
+                    },
+                },
+            ),
+        },
+    }
+    "###);
+}
+
+#[test]
 fn test_impl() {
     snapshot!(quote!(false ==> true) as Term, @r###"
     TermImpl {

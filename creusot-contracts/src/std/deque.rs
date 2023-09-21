@@ -1,4 +1,5 @@
-use crate::{logic::IndexLogic, std::alloc::Allocator, *};
+use crate::{invariant::Invariant, logic::IndexLogic, std::alloc::Allocator, *};
+use ::std::collections::vec_deque::{IntoIter, Iter};
 pub use ::std::collections::VecDeque;
 
 impl<T, A: Allocator> ShallowModel for VecDeque<T, A> {
@@ -12,6 +13,131 @@ impl<T, A: Allocator> ShallowModel for VecDeque<T, A> {
         pearlite! { absurd }
     }
 }
+
+impl<'a, T> Invariant for Iter<'a, T> {}
+
+impl<T, A: Allocator> ShallowModel for IntoIter<T, A> {
+    type ShallowModelTy = Seq<T>;
+
+    #[open(self)]
+    #[ghost]
+    #[trusted]
+    fn shallow_model(self) -> Self::ShallowModelTy {
+        absurd
+    }
+}
+
+impl<'a, T> ShallowModel for Iter<'a, T> {
+    // TODO : This seems wrong
+    type ShallowModelTy = &'a [T];
+
+    #[ghost]
+    #[open(self)]
+    #[trusted]
+    fn shallow_model(self) -> Self::ShallowModelTy {
+        absurd
+    }
+}
+
+impl<'a, T> Iterator for Iter<'a, T> {
+    #[predicate]
+    #[open]
+    fn completed(&mut self) -> bool {
+        pearlite! { self.resolve() && (*self)@@ == Seq::EMPTY }
+    }
+
+    #[predicate]
+    #[open]
+    fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
+        pearlite! {
+            self@.to_ref_seq() == visited.concat(tl@.to_ref_seq())
+        }
+    }
+
+    #[law]
+    #[open]
+    #[ensures(a.produces(Seq::EMPTY, a))]
+    fn produces_refl(a: Self) {}
+
+    #[law]
+    #[open]
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
+
+impl<T, A: Allocator> Invariant for IntoIter<T, A> {}
+
+impl<T, A: Allocator> Iterator for IntoIter<T, A> {
+    #[predicate]
+    #[open]
+    fn completed(&mut self) -> bool {
+        pearlite! { self.resolve() && self@ == Seq::EMPTY }
+    }
+
+    #[predicate]
+    #[open]
+    fn produces(self, visited: Seq<T>, rhs: Self) -> bool {
+        pearlite! {
+            self@ == visited.concat(rhs@)
+        }
+    }
+
+    #[law]
+    #[open]
+    #[ensures(a.produces(Seq::EMPTY, a))]
+    fn produces_refl(a: Self) {}
+
+    #[law]
+    #[open]
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {}
+}
+
+impl<T, A: Allocator> IntoIterator for VecDeque<T, A> {
+    #[predicate]
+    #[open]
+    fn into_iter_pre(self) -> bool {
+        pearlite! { true }
+    }
+
+    #[predicate]
+    #[open]
+    fn into_iter_post(self, res: Self::IntoIter) -> bool {
+        pearlite! { self@ == res@ }
+    }
+}
+
+impl<T, A: Allocator> IntoIterator for &VecDeque<T, A> {
+    #[predicate]
+    #[open]
+    fn into_iter_pre(self) -> bool {
+        pearlite! { true }
+    }
+
+    #[predicate]
+    #[open]
+    fn into_iter_post(self, res: Self::IntoIter) -> bool {
+        pearlite! { self@ == res@@ }
+    }
+}
+
+// impl<T, A: Allocator> IntoIterator for &mut VecDeque<T, A> {
+//     #[predicate]
+//     #[open]
+//     fn into_iter_pre(self) -> bool {
+//         pearlite! { true }
+//     }
+
+//     #[predicate]
+//     #[open]
+//     fn into_iter_post(self, res: Self::IntoIter) -> bool {
+//         pearlite! { self@ == res@@ }
+//     }
+// }
 
 impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
     type DeepModelTy = Seq<T::DeepModelTy>;
