@@ -445,10 +445,23 @@ impl<'tcx> CloneMap<'tcx> {
         let inv_kind = if ty_inv::is_tyinv_trivial(ctx.tcx, param_env, ty, true) {
             TyInvKind::Trivial
         } else {
+            if let TyKind::Array(_, ct) = ty.kind() {
+                let ty::ConstKind::Value(ty::ValTree::Leaf(_)) = ct.kind() else {
+                    ctx.crash_and_error(
+                        DUMMY_SP,
+                        "type invariants for arrays with generic length are not supported!",
+                    );
+                };
+            }
+
             TyInvKind::from_ty(ty)
         };
 
         if let TransId::TyInv(self_kind) = self.self_id && self_kind == inv_kind {
+            return;
+        }
+
+        if let TransId::Item(self_did) = self.self_id && let TyInvKind::Closure(inv_did) = inv_kind && self_did == inv_did {
             return;
         }
 
@@ -879,7 +892,7 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, dep: DepNode<'tcx>) -> Option<Symb
             ty::ImplContainer => None,
         },
         Trait | Impl => unreachable!("trait blocks have no refinable symbols"),
-        Type => None,
+        Type | Closure => None,
         Constant => Some(SymbolKind::Const(tcx.item_name(def_id))),
         _ => unreachable!(),
     }
