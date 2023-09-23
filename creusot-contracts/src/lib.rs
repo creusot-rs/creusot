@@ -24,7 +24,7 @@ mod macros {
     /// A post-condition of a function or trait item
     pub use base_macros::ensures;
 
-    pub use base_macros::ghost;
+    pub use base_macros::gh;
 
     /// A loop invariant
     /// The first argument should be a name for the invariant
@@ -39,6 +39,13 @@ mod macros {
     /// total. It cannot be called from Rust programs as it is *ghost*, in exchange it can
     /// use logical operations and syntax with the help of the [pearlite] macro.
     pub use base_macros::logic;
+
+    /// Declare a function as being a ghost function, this declaration must be pure and
+    /// total. It cannot be called from Rust programs as it is *ghost*, in exchange it can
+    /// use logical operations and syntax with the help of the [pearlite] macro.
+    /// Unlike functions marked with the `[logic]` attribute, `[ghost]` functions cannot
+    /// use the final value operator (^), nor call other `[predicate]` or `[logic]` functions.
+    pub use base_macros::ghost;
 
     /// Declare a function as being a logical function, this declaration must be pure and
     /// total. It cannot be called from Rust programs as it is *ghost*, in exchange it can
@@ -101,11 +108,7 @@ pub mod ghost {
         T: ?Sized;
 
     impl<T> Ghost<T> {
-        pub fn new() -> Ghost<T> {
-            Ghost(std::marker::PhantomData)
-        }
-
-        pub fn from_fn<F: Fn() -> Ghost<T>>(_: F) -> Ghost<T> {
+        pub fn dummy() -> Ghost<T> {
             Ghost(std::marker::PhantomData)
         }
     }
@@ -122,7 +125,7 @@ pub mod well_founded;
 mod base_prelude {
     pub use crate::{
         ghost::Ghost,
-        logic::{Int, OrdLogic, Seq},
+        logic::{IndexLogic as _, Int, OrdLogic, Seq},
         model::{DeepModel, ShallowModel},
         resolve::Resolve,
         std::{

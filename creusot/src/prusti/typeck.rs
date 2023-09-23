@@ -531,15 +531,14 @@ pub(crate) fn mut_deref<'tcx>(
                 let ts = prepare_display(ts, &ctx);
                 return Err(Error::new(span, format!("invalid mut dereference of expression with home `{home}` and lifetime `{end}` at time-slice `{ts}`")));
             }
-        }
+        },
         Some((lft, _, _)) => {
             let ty = shr_deref(ts, ctx, ty, span)?;
             let Some((_, nty, Mutability::Mut)) = ty.as_ref(ts) else {unreachable!()};
             Ok((Cur, Ty::make_ref(lft, nty, ctx.tcx)))
         }
-        _ => unreachable!()
+        _ => unreachable!(),
     }
-
 }
 
 pub(crate) fn shr_deref<'tcx>(

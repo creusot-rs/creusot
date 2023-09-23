@@ -30,7 +30,7 @@ impl RegionSet {
     pub fn into_region(self, tcx: TyCtxt<'_>) -> Region<'_> {
         let reg =
             EarlyBoundRegion { index: self.0, def_id: CRATE_DEF_ID.to_def_id(), name: kw::In };
-        tcx.mk_re_early_bound(reg)
+        Region::new_early_bound(tcx, reg)
     }
 }
 

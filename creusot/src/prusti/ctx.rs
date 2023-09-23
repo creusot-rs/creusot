@@ -95,7 +95,7 @@ impl<'a, 'tcx> Debug for BaseCtx<'a, 'tcx> {
 
 pub(super) fn dummy_region(tcx: TyCtxt<'_>, sym: Symbol) -> Region<'_> {
     let def_id = CRATE_DEF_ID.to_def_id();
-    tcx.mk_re_free(def_id, BoundRegionKind::BrNamed(def_id, sym))
+    Region::new_free(tcx, def_id, BoundRegionKind::BrNamed(def_id, sym))
 }
 
 fn try_index_of<T: Eq>(s: &[T], x: &T) -> Option<usize> {

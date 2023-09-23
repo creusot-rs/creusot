@@ -17,8 +17,7 @@ use std::{
     ops::{ControlFlow, Deref, DerefMut},
 };
 
-use crate::{lints::PRUSTI_ZOMBIE, prusti::ctx::InternedInfo};
-use crate::translation::pearlite::BinOp;
+use crate::{lints::PRUSTI_ZOMBIE, prusti::ctx::InternedInfo, translation::pearlite::BinOp};
 
 type TimeSlice<'tcx> = Region<'tcx>;
 

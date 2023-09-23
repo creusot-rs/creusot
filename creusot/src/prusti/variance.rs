@@ -9,8 +9,8 @@ use rustc_infer::{
 use rustc_middle::{
     traits::ObligationCause,
     ty::{
-        Binder, BoundVariableKind, EarlyBinder, FnSig, GenericPredicates, InternalSubsts, ParamEnv,
-        PredicateKind, Region, SubstsRef, Ty, TyCtxt,
+        Binder, BoundVariableKind, ClauseKind, EarlyBinder, FnSig, GenericPredicates,
+        InternalSubsts, ParamEnv, PredicateKind, Region, SubstsRef, Ty, TyCtxt,
     },
 };
 use rustc_span::{
@@ -34,7 +34,7 @@ pub(crate) fn constraints_of_fn<'tcx>(
 
     let eb_regions = InternalSubsts::identity_for_item(tcx, def_id).regions();
     let lb_regions = fn_sig.bound_vars().iter().filter_map(move |x| match x {
-        BoundVariableKind::Region(r) => Some(tcx.mk_re_free(def_id.to_def_id(), r)),
+        BoundVariableKind::Region(r) => Some(Region::new_free(tcx, def_id.to_def_id(), r)),
         _ => None,
     });
     let regions = eb_regions.chain(lb_regions);
@@ -57,12 +57,14 @@ pub(crate) fn constraints_of_fn<'tcx>(
     // predicate constraints
     let predicates: GenericPredicates = tcx.predicates_of(def_id);
     let predicates = predicates.instantiate_identity(tcx).predicates;
-    let obligations = predicates.into_iter().map(mk_obligation);
+    let obligations = predicates.into_iter().map(|x| mk_obligation(x.as_predicate()));
     ocx.register_obligations(obligations);
 
     // well formedness constraints
     ocx.register_obligation(mk_obligation(
-        tcx.mk_predicate(Binder::dummy(PredicateKind::WellFormed(fn_ty.into()))),
+        tcx.mk_predicate(Binder::dummy(PredicateKind::Clause(ClauseKind::WellFormed(
+            fn_ty.into(),
+        )))),
     ));
 
     assert!(ocx.select_all_or_error().is_empty());
@@ -89,7 +91,7 @@ pub(crate) fn generalize_fn_def<'tcx>(
     let id_subst = InternalSubsts::identity_for_item(tcx, def_id);
     let iter1 = id_subst.regions().zip(subst_ref.regions());
     let iter2 = map.into_iter().map(move |(br, reg_gen)| {
-        let reg = tcx.mk_re_free(def_id, br.kind);
+        let reg = Region::new_free(tcx, def_id, br.kind);
         (reg, reg_gen)
     });
     let iter = iter1.chain(iter2);
