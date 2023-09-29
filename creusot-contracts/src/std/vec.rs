@@ -118,12 +118,14 @@ extern_spec! {
             }
 
             impl<T, A : Allocator> Extend<T> for Vec<T, A> {
-                #[ensures(exists<done_ : &mut I, prod: Seq<T>>
-                    done_.completed() && iter.produces(prod, *done_) && (^self)@ == self@.concat(prod)
+                #[requires(iter.into_iter_pre())]
+                #[ensures(exists<start_ : I::IntoIter, done_ : &mut I::IntoIter, prod: Seq<T>>
+                    iter.into_iter_post(start_) &&
+                    done_.completed() && start_.produces(prod, *done_) && (^self)@ == self@.concat(prod)
                 )]
                 fn extend<I>(&mut self, iter: I)
                 where
-                    I : Iterator<Item = T>;
+                    I : IntoIterator<Item = T>, I::IntoIter : Iterator;
             }
 
             impl<T, I : SliceIndex<[T]>, A : Allocator> IndexMut<I> for Vec<T, A> {
