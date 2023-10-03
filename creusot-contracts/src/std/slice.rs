@@ -399,7 +399,6 @@ impl<'a, T> ShallowModel for IterMut<'a, T> {
     #[open(self)]
     #[trusted]
     #[ensures((^result)@.len() == (*result)@.len())]
-    #[creusot::open_inv]
     fn shallow_model(self) -> Self::ShallowModelTy {
         absurd
     }
@@ -411,15 +410,6 @@ impl<'a, T> Resolve for IterMut<'a, T> {
     #[open]
     fn resolve(self) -> bool {
         pearlite! { *self@ == ^self@ }
-    }
-}
-
-impl<'a, T> Invariant for IterMut<'a, T> {
-    #[predicate]
-    #[open]
-    fn invariant(self) -> bool {
-        // Property that is always true but we must carry around..
-        pearlite! { (^self@)@.len() == (*self@)@.len() }
     }
 }
 

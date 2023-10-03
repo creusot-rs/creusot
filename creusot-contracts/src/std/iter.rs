@@ -1,4 +1,4 @@
-use crate::{invariant::inv, *};
+use crate::*;
 pub use ::std::iter::*;
 
 mod cloned;
@@ -44,7 +44,6 @@ pub trait Iterator: ::std::iter::Iterator {
     #[requires(MapInv::<Self, _, F>::reinitialize())]
     #[requires(MapInv::<Self, Self::Item, F>::preservation(self, func))]
     #[ensures(result == MapInv { iter: self, func, produced: Ghost::new(Seq::EMPTY) })]
-    #[ensures(inv(result))]
     fn map_inv<B, F>(self, func: F) -> MapInv<Self, Self::Item, F>
     where
         Self: Sized,

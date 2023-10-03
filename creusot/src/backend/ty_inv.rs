@@ -364,10 +364,8 @@ fn build_inv_exp_adt<'tcx>(
                 field_def.name.as_str().into()
             };
 
-            let open_inv = util::is_open_ty_inv(ctx.tcx, field_def.did);
-
             let field_ty = field_def.ty(ctx.tcx, subst);
-            if !open_inv && let Some(mut field_inv) =
+            if let Some(mut field_inv) =
                 build_inv_exp(ctx, names, field_name.clone(), field_ty, param_env, Mode::Field)
             {
                 ctx.translate_accessor(field_def.did);
