@@ -1,10 +1,7 @@
 #![feature(unboxed_closures)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{
-    invariant::{inv, Invariant},
-    *,
-};
+use creusot_contracts::{invariant::Invariant, *};
 
 mod common;
 use common::Iterator;
@@ -61,7 +58,6 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, B, F> {
       Some(v) => (*self).produces_one(v, ^self)
     })]
     fn next(&mut self) -> Option<Self::Item> {
-        let old_self = gh! { *self };
         match self.iter.next() {
             Some(v) => {
                 proof_assert! { self.func.precondition((v,)) };

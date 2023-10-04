@@ -9,18 +9,6 @@ impl Invariant for NonZeroU32 {
     fn invariant(self) -> bool {
         pearlite! { self.0@ > 0 }
     }
-
-    #[law]
-    #[open]
-    #[logic]
-    #[ensures(exists<x: Self> x.invariant())]
-    #[ensures(result)]
-    fn is_inhabited() -> bool
-    where
-        Self: Sized,
-    {
-        NonZeroU32(1_u32).invariant()
-    }
 }
 
 impl NonZeroU32 {

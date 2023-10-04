@@ -1,4 +1,4 @@
-use crate::{invariant::Invariant, std::iter::Skip, *};
+use crate::{std::iter::Skip, *};
 
 pub trait SkipExt<I> {
     #[ghost]
@@ -35,8 +35,6 @@ impl<I> Resolve for Skip<I> {
         }
     }
 }
-
-impl<I> Invariant for Skip<I> {}
 
 impl<I: Iterator> Iterator for Skip<I> {
     #[open]

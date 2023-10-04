@@ -1,5 +1,4 @@
 use crate::{
-    invariant::Invariant,
     std::{
         alloc::Allocator,
         ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
@@ -361,8 +360,6 @@ impl<'a, T> ShallowModel for Iter<'a, T> {
         absurd
     }
 }
-
-impl<'a, T> Invariant for Iter<'a, T> {}
 
 impl<'a, T> Iterator for Iter<'a, T> {
     #[predicate]

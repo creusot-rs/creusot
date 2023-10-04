@@ -1,6 +1,4 @@
-use crate::{invariant::Invariant, std::iter::Empty, *};
-
-impl<T> Invariant for Empty<T> {}
+use crate::{std::iter::Empty, *};
 
 impl<T> Iterator for Empty<T> {
     #[open]
