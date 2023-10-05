@@ -1,5 +1,5 @@
 use crate::{
-    invariant::{inv, Invariant},
+    invariant::Invariant,
     std::{
         alloc::Allocator,
         ops::{Deref, DerefMut, Index, IndexMut},
@@ -57,7 +57,7 @@ impl<T, A: Allocator> Invariant for Vec<T, A> {
     #[open]
     #[creusot::structural_inv]
     fn invariant(self) -> bool {
-        pearlite! { inv(self@) }
+        pearlite! { invariant::inv(self@) }
     }
 }
 
@@ -220,8 +220,6 @@ impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
         pearlite! { forall<i: Int> 0 <= i && i < self@.len() ==> self@[i].resolve() }
     }
 }
-
-impl<T, A: Allocator> Invariant for std::vec::IntoIter<T, A> {}
 
 impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     #[predicate]

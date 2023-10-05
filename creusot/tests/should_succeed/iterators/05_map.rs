@@ -1,10 +1,7 @@
 #![feature(unboxed_closures)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{
-    invariant::{inv, Invariant},
-    *,
-};
+use creusot_contracts::{invariant::Invariant, *};
 
 mod common;
 use common::Iterator;
@@ -14,7 +11,6 @@ pub struct Map<I: Iterator, B, F: FnMut(I::Item) -> B> {
     // The inner iterator
     iter: I,
     // The mapper
-    #[creusot::open_inv]
     func: F,
 }
 
@@ -24,7 +20,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, B, F> {
     #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { self.iter.completed() && self.func == (^self).func }
+        pearlite! { self.iter.completed() && (*self).func == (^self).func }
     }
 
     #[law]
@@ -62,15 +58,11 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, B, F> {
       Some(v) => (*self).produces_one(v, ^self)
     })]
     fn next(&mut self) -> Option<Self::Item> {
-        let old_self = gh! { *self };
         match self.iter.next() {
             Some(v) => {
                 proof_assert! { self.func.precondition((v,)) };
-                let r = (self.func)(v);
                 gh! { Self::produces_one_invariant };
-                proof_assert! { old_self.produces_one(r, *self) };
-                let _ = self; // Make sure self is not resolve until here.
-                Some(r)
+                Some((self.func)(v))
             }
             None => None,
         }
@@ -79,31 +71,9 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, B, F> {
 
 impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
     #[predicate]
-    fn next_precondition(#[creusot::open_inv] self) -> bool {
+    fn next_precondition(iter: I, func: F) -> bool {
         pearlite! {
-            forall<e: I::Item, i: I> self.iter.produces(Seq::singleton(e), i) ==> self.func.precondition((e,))
-        }
-    }
-
-    #[predicate]
-    #[creusot::open_inv]
-    fn reinitialize() -> bool {
-        pearlite! {
-            forall<reset : &mut Map<I, B, F>> inv((^reset).iter) ==>
-                reset.completed() ==> (^reset).next_precondition() && Self::preservation((^reset).iter, (^reset).func)
-        }
-    }
-
-    #[predicate]
-    #[ensures(result == Self::preservation(self.iter, self.func))]
-    fn preservation_inv(#[creusot::open_inv] self) -> bool {
-        pearlite! {
-            forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
-                self.func.unnest(*f) ==>
-                self.iter.produces(s.push(e1).push(e2), i) ==>
-                (*f).precondition((e1,)) ==>
-                f.postcondition_mut((e1,), b) ==>
-                (^f).precondition((e2,))
+            forall<e: I::Item, i: I> iter.produces(Seq::singleton(e), i) ==> func.precondition((e,))
         }
     }
 
@@ -119,19 +89,32 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
         }
     }
 
+    #[predicate]
+    fn reinitialize() -> bool {
+        pearlite! {
+            forall<iter: &mut I, func: F>
+                iter.completed() ==>
+                Self::next_precondition(^iter, func) && Self::preservation(^iter, func)
+        }
+    }
+
     #[ghost]
-    #[requires(self.produces_one(e, other))]
-    #[requires(inv(other.iter))]
-    #[ensures(inv(other))]
-    fn produces_one_invariant(self, e: B, #[creusot::open_inv] other: Self) {}
+    #[requires(self.iter.produces(Seq::singleton(e), iter))]
+    #[requires(*f == self.func)]
+    #[requires(f.postcondition_mut((e,), r) )]
+    #[ensures(Self::preservation(iter, ^f))]
+    #[ensures(Self::next_precondition(iter, ^f))]
+    fn produces_one_invariant(self, e: I::Item, r: B, f: &mut F, iter: I) {
+        proof_assert! {
+            forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, i: I>
+                iter.produces(s.push(e1).push(e2), i) ==>
+                self.iter.produces(Seq::singleton(e).concat(s).push(e1).push(e2), i)
+        }
+    }
 
     #[predicate]
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
-    fn produces_one(
-        #[creusot::open_inv] self,
-        visited: B,
-        #[creusot::open_inv] succ: Self,
-    ) -> bool {
+    fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {
             exists<f: &mut F> *f == self.func && ^f == succ.func
             && { exists<e : I::Item> self.iter.produces(Seq::singleton(e), succ.iter)
@@ -148,8 +131,8 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, B, F> {
     fn invariant(self) -> bool {
         pearlite! {
             Self::reinitialize() &&
-            self.preservation_inv() &&
-            self.next_precondition()
+            Self::preservation(self.iter, self.func) &&
+            Self::next_precondition(self.iter, self.func)
         }
     }
 }
