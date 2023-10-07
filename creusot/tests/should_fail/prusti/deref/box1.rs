@@ -3,7 +3,7 @@ use creusot_contracts::prusti_prelude::*;
 
 pub trait MkRef {
     #[open]
-    #[logic(('x) -> 'x)]
+    #[logic]
     fn mk_ref(&self) -> &Self {
         self
     }

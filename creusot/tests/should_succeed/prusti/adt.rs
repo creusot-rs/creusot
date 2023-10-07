@@ -8,7 +8,7 @@ pub fn test(x: (&mut u32, &mut u32)) {
 }
 
 #[open]
-#[logic(('x, 'x) -> 'x)]
+#[logic]
 pub fn test_constructor<'a, 'b>(x: &'a mut u32, y: &'b mut u32) -> (&'a mut u32, &'b mut u32) {
     (x, y)
 }
@@ -16,7 +16,7 @@ pub fn test_constructor<'a, 'b>(x: &'a mut u32, y: &'b mut u32) -> (&'a mut u32,
 pub struct SamePair<X>(X, X);
 
 #[open]
-#[logic(('x, 'x) -> 'x)]
+#[logic]
 pub fn test_constructor2<'a>(x: &'a mut u32, y: &'a mut u32) -> SamePair<&'a mut u32> {
     SamePair(x, y)
 }

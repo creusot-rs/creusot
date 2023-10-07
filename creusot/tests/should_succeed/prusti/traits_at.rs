@@ -3,13 +3,13 @@ use creusot_contracts::prusti_prelude::*;
 
 trait MyModel {
     type ModelTy;
-    #[logic(('curr) -> 'curr)]
+    #[logic]
     fn model(self) -> Self::ModelTy;
 }
 
 impl<'a, X: MyModel> MyModel for &'a mut X {
     type ModelTy = X::ModelTy;
-    #[logic(('curr) -> 'curr)]
+    #[logic]
     fn model(self) -> Self::ModelTy {
         X::model(*self)
     }
@@ -17,9 +17,9 @@ impl<'a, X: MyModel> MyModel for &'a mut X {
 
 impl<'a> MyModel for bool{
     type ModelTy = bool;
-    #[logic(('_) -> '_)]
+    #[logic('_)]
     fn model(self) -> bool {
-        if self {true} else {false}
+        pearlite!{absurd}
     }
 }
 

@@ -26,7 +26,7 @@ module Match_Test1
   use Core_Result_Result_Type as Core_Result_Result_Type
   function test1 [#"../match.rs" 7 0 7 65] (x : Core_Result_Result_Type.t_result (borrowed x) (borrowed x)) : borrowed x
    =
-    [#"../match.rs" 6 0 6 20] match (x) with
+    [#"../match.rs" 6 0 6 8] match (x) with
       | Core_Result_Result_Type.C_Ok ok -> ok
       | Core_Result_Result_Type.C_Err err -> err
       end
@@ -54,7 +54,7 @@ module Match_TestCur
   use prelude.Borrow
   use Core_Result_Result_Type as Core_Result_Result_Type
   function test_cur [#"../match.rs" 16 0 16 57] (x : Core_Result_Result_Type.t_result (borrowed x) (borrowed x)) : x =
-    [#"../match.rs" 15 0 15 26] let r = match (x) with
+    [#"../match.rs" 15 0 15 8] let r = match (x) with
       | Core_Result_Result_Type.C_Ok ok -> ok
       | Core_Result_Result_Type.C_Err err -> err
       end in  * r
@@ -84,47 +84,12 @@ module CreusotContracts_Resolve_Impl1_Resolve
     ensures { result = resolve self }
     
 end
-module Match_TestProc_Interface
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  val test_proc [#"../match.rs" 25 0 25 60] (x : borrowed uint32) (b : bool) : borrowed uint32
-    ensures { [#"../match.rs" 24 19 24 52]  ^ (if b then x else result) = (5 : uint32) }
-    
-end
-module Match_TestProc
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = uint32
-  let rec cfg test_proc [#"../match.rs" 25 0 25 60] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed uint32) (b : bool) : borrowed uint32
-    ensures { [#"../match.rs" 24 19 24 52]  ^ (if b then x else result) = (5 : uint32) }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : borrowed uint32;
-  var x : borrowed uint32 = x;
-  var _3 : borrowed uint32;
-  {
-    goto BB0
-  }
-  BB0 {
-    _3 <- borrow_mut ( * x);
-    x <- { x with current = ( ^ _3) };
-    _0 <- borrow_mut ( * _3);
-    _3 <- { _3 with current = ( ^ _0) };
-    assume { Resolve0.resolve _3 };
-    assume { Resolve0.resolve x };
-    return _0
-  }
-  
-end
 module Match_TestProcCur_Interface
   use prelude.Borrow
   use prelude.Int
   use prelude.UInt32
   val test_proc_cur [#"../match.rs" 30 0 30 69] (x : borrowed uint32) (y : borrowed uint32) (b : bool) : ()
-    ensures { [#"../match.rs" 29 10 29 38]  ^ (if b then x else y) = (5 : uint32) }
+    requires {[#"../match.rs" 29 11 29 39]  * (if b then x else y) = (5 : uint32)}
     
 end
 module Match_TestProcCur
@@ -134,7 +99,7 @@ module Match_TestProcCur
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = uint32
   let rec cfg test_proc_cur [#"../match.rs" 30 0 30 69] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed uint32) (y : borrowed uint32) (b : bool) : ()
-    ensures { [#"../match.rs" 29 10 29 38]  ^ (if b then x else y) = (5 : uint32) }
+    requires {[#"../match.rs" 29 11 29 39]  * (if b then x else y) = (5 : uint32)}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -162,7 +127,7 @@ module Match_TestProcCur
     assume { Resolve0.resolve x };
     _7 <- y;
     y <- any borrowed uint32;
-    r <- borrow_mut ( * _7);
+    r <- Borrow.borrow_mut ( * _7);
     _7 <- { _7 with current = ( ^ r) };
     assume { Resolve0.resolve _7 };
     goto BB3
@@ -192,7 +157,7 @@ module Match_Id
   type x
   use prelude.Borrow
   function id [#"../match.rs" 37 0 37 43] (x : borrowed x) : borrowed x =
-    [#"../match.rs" 36 0 36 20] x
+    [#"../match.rs" 36 0 36 8] x
   val id [#"../match.rs" 37 0 37 43] (x : borrowed x) : borrowed x
     ensures { result = id x }
     
@@ -230,7 +195,7 @@ module Match_Unwrap
   use Core_Option_Option_Type as Core_Option_Option_Type
   function unwrap [#"../match.rs" 44 0 44 60] (x : Core_Option_Option_Type.t_option (borrowed uint32)) : borrowed uint32
    =
-    [#"../match.rs" 42 0 42 20] match (x) with
+    [#"../match.rs" 42 0 42 8] match (x) with
       | Core_Option_Option_Type.C_Some x -> x
       | Core_Option_Option_Type.C_None -> Id0.id absurd
       end
@@ -250,7 +215,7 @@ module Match_Unwrap_Impl
     requires {[#"../match.rs" 43 11 43 20] x <> Core_Option_Option_Type.C_None}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../match.rs" 42 0 42 20] match (x) with
+    [#"../match.rs" 42 0 42 8] match (x) with
       | Core_Option_Option_Type.C_Some x -> x
       | Core_Option_Option_Type.C_None -> let a' = absurd in Id0.id a'
       end
@@ -265,10 +230,6 @@ module Match_TestNever_Interface
       | Core_Result_Result_Type.C_Ok x -> x
       | Core_Result_Result_Type.C_Err x -> absurd
       end in  * (let (a, _) = x in a) = (0 : uint32)}
-    ensures { [#"../match.rs" 52 0 52 70] let (a, b) = match (x) with
-      | Core_Result_Result_Type.C_Ok x -> x
-      | Core_Result_Result_Type.C_Err x -> absurd
-      end in  ^ a =  ^ b }
     
 end
 module Match_TestNever
@@ -281,10 +242,6 @@ module Match_TestNever
       | Core_Result_Result_Type.C_Ok x -> x
       | Core_Result_Result_Type.C_Err x -> absurd
       end in  * (let (a, _) = x in a) = (0 : uint32)}
-    ensures { [#"../match.rs" 52 0 52 70] let (a, b) = match (x) with
-      | Core_Result_Result_Type.C_Ok x -> x
-      | Core_Result_Result_Type.C_Err x -> absurd
-      end in  ^ a =  ^ b }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();

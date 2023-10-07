@@ -71,10 +71,10 @@ fn add_homes_to_sig<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
     sig: FnSig<'tcx>,
     arg_homes: impl Iterator<Item = Home<Region<'tcx>>>,
     ret_home: Home<Region<'tcx>>,
-    span: Span,
+    _span: Span,
 ) -> CreusotResult<(T, BindingInfo<'tcx>)> {
     let types =
-        sig.inputs().iter().zip(arg_homes).map(move |(&ty, home)| Ty::try_new(ty, home, span));
+        sig.inputs().iter().zip(arg_homes);
 
     let arg_tys = args
         .iter()
@@ -89,9 +89,9 @@ fn add_homes_to_sig<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
         })
         .zip(types);
     let arg_tys =
-        arg_tys.map(|(k, v)| v.map(|v| (k, (v.home, v)))).collect::<CreusotResult<T>>()?;
-    let res_ty = Ty::try_new(sig.output(), ret_home, span)?;
-    Ok((arg_tys, (res_ty.home, res_ty)))
+        arg_tys.map(|(k, (&ty, home))| (k, (home.data, Ty{ty}))).collect::<T>();
+    let res_ty = Ty{ty: sig.output()};
+    Ok((arg_tys, (ret_home.data, res_ty)))
 }
 
 pub(crate) fn full_signature<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
@@ -127,20 +127,20 @@ pub(crate) fn full_signature_logic<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
 
     let ts = make_time_slice_logic(ts, &mut ctx)?;
     let args = ctx.tcx.fn_arg_names(ctx.owner_id);
-    let (arg_homes, ret_home) = match parsing::parse_home_sig_lit(home_sig)? {
-        Some((arg_homes, _)) if arg_homes.len() != sig.inputs().len() => {
+    let ret_home = ctx.curr_region().into();
+    let arg_homes = match parsing::parse_home_sig_lit(home_sig)? {
+        Some(arg_homes) if arg_homes.len() != sig.inputs().len() => {
             return Err(Error::new(home_sig.span, "number of args doesn't match signature"));
         }
-        Some((arg_homes, ret_home)) => {
-            let ret_home = ctx.map_parsed_home(ret_home);
+        Some(arg_homes) => {
             let arg_homes = arg_homes.into_iter().map(|h| ctx.map_parsed_home(h));
-            (Either::Left(arg_homes), ret_home)
+            Either::Left(arg_homes)
         }
-        None => (Either::Right(iter::repeat(ctx.curr_region().into())), ctx.curr_region().into()),
+        None => Either::Right(iter::repeat(ctx.curr_region().into())),
     };
 
     let (arg_tys, res_ty) =
         add_homes_to_sig::<Vec<_>>(args, sig, arg_homes, ret_home, home_sig.span)?;
-    let iter = IntoIterator::into_iter(&arg_tys).map(|(_, (_, x))| *x);
+    let iter = IntoIterator::into_iter(&arg_tys).map(|(_, x)| *x);
     Ok((ctx.finish_for_logic(iter), ts, arg_tys.into_iter().collect(), res_ty))
 }

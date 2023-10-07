@@ -37,6 +37,25 @@ module Forall_Test1
   }
   
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module Forall_Check_Check_Stub
   type self
   function check' [#"../forall.rs" 15 4 15 27] (self : self) : bool
@@ -55,20 +74,34 @@ module Forall_Check_Check
     ensures { result = check' self }
     
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module Forall_Test2_Interface
   type t
   clone Forall_Check_Check_Stub as Check0 with
     type self = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
   val test2 [#"../forall.rs" 19 0 19 24] (_1 : ()) : ()
-    requires {[#"../forall.rs" 18 0 18 35] forall t : t . Check0.check' t}
+    requires {[#"../forall.rs" 18 0 18 35] forall t : t . Inv0.inv t -> Check0.check' t}
     
 end
 module Forall_Test2
   type t
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = t
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = t,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone Forall_Check_Check_Interface as Check0 with
     type self = t
   let rec cfg test2 [#"../forall.rs" 19 0 19 24] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
-    requires {[#"../forall.rs" 18 0 18 35] forall t : t . Check0.check' t}
+    requires {[#"../forall.rs" 18 0 18 35] forall t : t . Inv0.inv t -> Check0.check' t}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();

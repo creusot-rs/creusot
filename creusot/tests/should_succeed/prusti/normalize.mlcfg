@@ -97,6 +97,25 @@ module Normalize_TestArg
   }
   
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module Normalize_S_Type
   use prelude.Int
   use prelude.UInt32
@@ -108,11 +127,20 @@ module Normalize_S_Type
       | C_S a -> a
       end
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module Normalize_TestStruct_Interface
   use prelude.Int
   use prelude.UInt32
   use Normalize_S_Type as Normalize_S_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Normalize_S_Type.t_s
   val test_struct [#"../normalize.rs" 20 0 20 31] (x : Normalize_S_Type.t_s) : uint32
+    requires {[#"../normalize.rs" 20 19 20 20] Inv0.inv x}
     ensures { [#"../normalize.rs" 19 10 19 25] result = (let (a, _) = Normalize_S_Type.s_f x in a) }
     
 end
@@ -120,7 +148,14 @@ module Normalize_TestStruct
   use prelude.Int
   use prelude.UInt32
   use Normalize_S_Type as Normalize_S_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = Normalize_S_Type.t_s
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Normalize_S_Type.t_s,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   let rec cfg test_struct [#"../normalize.rs" 20 0 20 31] [@cfg:stackify] [@cfg:subregion_analysis] (x : Normalize_S_Type.t_s) : uint32
+    requires {[#"../normalize.rs" 20 19 20 20] Inv0.inv x}
     ensures { [#"../normalize.rs" 19 10 19 25] result = (let (a, _) = Normalize_S_Type.s_f x in a) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]

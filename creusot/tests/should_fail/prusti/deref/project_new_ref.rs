@@ -4,7 +4,7 @@ use creusot_contracts::prusti_prelude::*;
 
 pub trait MkRef {
     #[open]
-    #[logic(('x) -> 'x)]
+    #[logic]
     fn mk_ref(&self) -> &Self {
         self
     }
@@ -12,7 +12,7 @@ pub trait MkRef {
 
 impl<T> MkRef for T {}
 
-#[ensures(result == **old(x).0.mk_ref())]
+#[ensures(result == **(old(x)).0.mk_ref())]
 pub fn project_new_ref<'a>(x: (Box<u32>, u32)) -> u32 {
     *x.0
 }

@@ -35,42 +35,97 @@ module Logic_Unreachable
   type x
   use prelude.Borrow
   function unreachable [#"../logic.rs" 14 0 14 40] (_1 : ()) : borrowed x =
-    [#"../logic.rs" 13 0 13 18] unreachable ()
+    [#"../logic.rs" 13 0 13 8] unreachable ()
   val unreachable [#"../logic.rs" 14 0 14 40] (_1 : ()) : borrowed x
     ensures { result = unreachable _1 }
     
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module Logic_Cur_Stub
   type x
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = x
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed x
   function cur [#"../logic.rs" 21 0 21 36] (x : borrowed x) : x
 end
 module Logic_Cur_Interface
   type x
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = x
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed x
   function cur [#"../logic.rs" 21 0 21 36] (x : borrowed x) : x
   val cur [#"../logic.rs" 21 0 21 36] (x : borrowed x) : x
+    requires {[#"../logic.rs" 21 18 21 19] Inv0.inv x}
     ensures { [#"../logic.rs" 20 10 20 22] result =  * x }
+    ensures { [#"../logic.rs" 21 35 21 36] Inv1.inv result }
     ensures { result = cur x }
     
-  axiom cur_spec : forall x : borrowed x . [#"../logic.rs" 20 10 20 22] cur x =  * x
+  axiom cur_spec : forall x : borrowed x . ([#"../logic.rs" 21 18 21 19] Inv0.inv x) -> ([#"../logic.rs" 21 35 21 36] Inv1.inv (cur x)) && ([#"../logic.rs" 20 10 20 22] cur x =  * x)
 end
 module Logic_Cur
   type x
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = x
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed x
   function cur [#"../logic.rs" 21 0 21 36] (x : borrowed x) : x =
     [#"../logic.rs" 22 4 22 6]  * x
   val cur [#"../logic.rs" 21 0 21 36] (x : borrowed x) : x
+    requires {[#"../logic.rs" 21 18 21 19] Inv0.inv x}
     ensures { [#"../logic.rs" 20 10 20 22] result =  * x }
+    ensures { [#"../logic.rs" 21 35 21 36] Inv1.inv result }
     ensures { result = cur x }
     
-  axiom cur_spec : forall x : borrowed x . [#"../logic.rs" 20 10 20 22] cur x =  * x
+  axiom cur_spec : forall x : borrowed x . ([#"../logic.rs" 21 18 21 19] Inv0.inv x) -> ([#"../logic.rs" 21 35 21 36] Inv1.inv (cur x)) && ([#"../logic.rs" 20 10 20 22] cur x =  * x)
 end
 module Logic_Cur_Impl
   type x
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = x
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = x,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = borrowed x
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = borrowed x,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   let rec ghost function cur [#"../logic.rs" 21 0 21 36] (x : borrowed x) : x
+    requires {[#"../logic.rs" 21 18 21 19] Inv0.inv x}
     ensures { [#"../logic.rs" 20 10 20 22] result =  * x }
+    ensures { [#"../logic.rs" 21 35 21 36] Inv1.inv result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../logic.rs" 22 4 22 6]  * x
@@ -78,34 +133,64 @@ end
 module Logic_Fin_Stub
   type x
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = x
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed x
   function fin [#"../logic.rs" 28 0 28 42] (x : borrowed x) : x
 end
 module Logic_Fin_Interface
   type x
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = x
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed x
   function fin [#"../logic.rs" 28 0 28 42] (x : borrowed x) : x
   val fin [#"../logic.rs" 28 0 28 42] (x : borrowed x) : x
+    requires {[#"../logic.rs" 28 21 28 22] Inv0.inv x}
     ensures { [#"../logic.rs" 27 10 27 22] result =  ^ x }
+    ensures { [#"../logic.rs" 28 41 28 42] Inv1.inv result }
     ensures { result = fin x }
     
-  axiom fin_spec : forall x : borrowed x . [#"../logic.rs" 27 10 27 22] fin x =  ^ x
+  axiom fin_spec : forall x : borrowed x . ([#"../logic.rs" 28 21 28 22] Inv0.inv x) -> ([#"../logic.rs" 28 41 28 42] Inv1.inv (fin x)) && ([#"../logic.rs" 27 10 27 22] fin x =  ^ x)
 end
 module Logic_Fin
   type x
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = x
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed x
   function fin [#"../logic.rs" 28 0 28 42] (x : borrowed x) : x =
     [#"../logic.rs" 29 4 29 6]  ^ x
   val fin [#"../logic.rs" 28 0 28 42] (x : borrowed x) : x
+    requires {[#"../logic.rs" 28 21 28 22] Inv0.inv x}
     ensures { [#"../logic.rs" 27 10 27 22] result =  ^ x }
+    ensures { [#"../logic.rs" 28 41 28 42] Inv1.inv result }
     ensures { result = fin x }
     
-  axiom fin_spec : forall x : borrowed x . [#"../logic.rs" 27 10 27 22] fin x =  ^ x
+  axiom fin_spec : forall x : borrowed x . ([#"../logic.rs" 28 21 28 22] Inv0.inv x) -> ([#"../logic.rs" 28 41 28 42] Inv1.inv (fin x)) && ([#"../logic.rs" 27 10 27 22] fin x =  ^ x)
 end
 module Logic_Fin_Impl
   type x
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = x
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = x,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = borrowed x
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = borrowed x,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   let rec ghost function fin [#"../logic.rs" 28 0 28 42] (x : borrowed x) : x
+    requires {[#"../logic.rs" 28 21 28 22] Inv0.inv x}
     ensures { [#"../logic.rs" 27 10 27 22] result =  ^ x }
+    ensures { [#"../logic.rs" 28 41 28 42] Inv1.inv result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../logic.rs" 29 4 29 6]  ^ x
@@ -113,38 +198,56 @@ end
 module Logic_Expiry_Stub
   type x
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed x
   function expiry [#"../logic.rs" 36 0 36 47] (x : borrowed x) : borrowed x
 end
 module Logic_Expiry_Interface
   type x
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed x
   function expiry [#"../logic.rs" 36 0 36 47] (x : borrowed x) : borrowed x
   val expiry [#"../logic.rs" 36 0 36 47] (x : borrowed x) : borrowed x
-    ensures { [#"../logic.rs" 34 19 34 32]  * result =  * x }
+    requires {[#"../logic.rs" 36 21 36 22] Inv0.inv x}
+    ensures { [#"../logic.rs" 34 22 34 35]  * result =  * x }
     ensures { [#"../logic.rs" 35 19 35 32]  ^ result =  ^ x }
+    ensures { [#"../logic.rs" 36 38 36 47] Inv0.inv result }
     ensures { result = expiry x }
     
-  axiom expiry_spec : forall x : borrowed x . ([#"../logic.rs" 35 19 35 32]  ^ expiry x =  ^ x) && ([#"../logic.rs" 34 19 34 32]  * expiry x =  * x)
+  axiom expiry_spec : forall x : borrowed x . ([#"../logic.rs" 36 21 36 22] Inv0.inv x) -> ([#"../logic.rs" 36 38 36 47] Inv0.inv (expiry x)) && ([#"../logic.rs" 35 19 35 32]  ^ expiry x =  ^ x) && ([#"../logic.rs" 34 22 34 35]  * expiry x =  * x)
 end
 module Logic_Expiry
   type x
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed x
   function expiry [#"../logic.rs" 36 0 36 47] (x : borrowed x) : borrowed x =
-    [#"../logic.rs" 33 0 33 20] x
+    [#"../logic.rs" 33 0 33 8] x
   val expiry [#"../logic.rs" 36 0 36 47] (x : borrowed x) : borrowed x
-    ensures { [#"../logic.rs" 34 19 34 32]  * result =  * x }
+    requires {[#"../logic.rs" 36 21 36 22] Inv0.inv x}
+    ensures { [#"../logic.rs" 34 22 34 35]  * result =  * x }
     ensures { [#"../logic.rs" 35 19 35 32]  ^ result =  ^ x }
+    ensures { [#"../logic.rs" 36 38 36 47] Inv0.inv result }
     ensures { result = expiry x }
     
-  axiom expiry_spec : forall x : borrowed x . ([#"../logic.rs" 35 19 35 32]  ^ expiry x =  ^ x) && ([#"../logic.rs" 34 19 34 32]  * expiry x =  * x)
+  axiom expiry_spec : forall x : borrowed x . ([#"../logic.rs" 36 21 36 22] Inv0.inv x) -> ([#"../logic.rs" 36 38 36 47] Inv0.inv (expiry x)) && ([#"../logic.rs" 35 19 35 32]  ^ expiry x =  ^ x) && ([#"../logic.rs" 34 22 34 35]  * expiry x =  * x)
 end
 module Logic_Expiry_Impl
   type x
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = borrowed x
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = borrowed x,
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   let rec ghost function expiry [#"../logic.rs" 36 0 36 47] (x : borrowed x) : borrowed x
-    ensures { [#"../logic.rs" 34 19 34 32]  * result =  * x }
+    requires {[#"../logic.rs" 36 21 36 22] Inv0.inv x}
+    ensures { [#"../logic.rs" 34 22 34 35]  * result =  * x }
     ensures { [#"../logic.rs" 35 19 35 32]  ^ result =  ^ x }
+    ensures { [#"../logic.rs" 36 38 36 47] Inv0.inv result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../logic.rs" 33 0 33 20] x
+    [#"../logic.rs" 33 0 33 8] x
 end

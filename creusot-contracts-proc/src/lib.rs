@@ -800,19 +800,11 @@ pub fn prusti_logic(attr: TS1, tokens: TS1) -> TS1 {
     })
 }
 
-fn prusti_add_home_sig_return(t: &TokenStream) -> String {
-    if t.is_empty() {
-        format!("{t}")
-    } else {
-        format!("({t}) -> '_")
-    }
-}
-
 #[proc_macro_attribute]
 pub fn prusti_predicate(attr: TS1, tokens: TS1) -> TS1 {
     let attr = TokenStream::from(attr);
     let tokens = TokenStream::from(tokens);
-    let sig = prusti_add_home_sig_return(&attr);
+    let sig = format!("{attr}");
     let sig = LitStr::new(&sig, attr.span());
     TS1::from(quote! {
         #[creusot::prusti::ts="curr"]
@@ -826,7 +818,7 @@ pub fn prusti_predicate(attr: TS1, tokens: TS1) -> TS1 {
 pub fn prusti_law(attr: TS1, tokens: TS1) -> TS1 {
     let attr = TokenStream::from(attr);
     let tokens = TokenStream::from(tokens);
-    let sig = prusti_add_home_sig_return(&attr);
+    let sig = format!("{attr}");
     let sig = LitStr::new(&sig, attr.span());
     TS1::from(quote! {
         #[creusot::prusti::ts="curr"]

@@ -17,7 +17,7 @@ use std::{
     ops::{ControlFlow, Deref, DerefMut},
 };
 
-use crate::{lints::PRUSTI_ZOMBIE, prusti::ctx::InternedInfo, translation::pearlite::BinOp};
+use crate::{prusti::ctx::InternedInfo, translation::pearlite::BinOp};
 
 type TimeSlice<'tcx> = Region<'tcx>;
 
@@ -134,10 +134,10 @@ pub(super) fn prusti_to_creusot<'tcx>(
         tenv.insert(Symbol::intern("result"), res_ty);
     }
 
-    let final_type = convert(&mut term, &mut Tenv::new(tenv), ts, &ctx)?;
+    let final_type = convert_sdt(&mut term, &mut Tenv::new(tenv), ts, &ctx)?;
     if item_id == owner_id.expect_local() {
         let res_ty = res_ty.1;
-        let final_type = strip_derefs_target(&ctx, term.span, ts, final_type, res_ty.ty)?;
+        // let final_type = strip_derefs_target(&ctx, term.span, ts, final_type, res_ty.ty)?;
         typeck::check_sup(&ctx, res_ty, final_type, term.span)?
     }
     Ok(term)
@@ -195,11 +195,11 @@ fn pattern_iter<'a, 'tcx>(
 fn strip_derefs_target<'tcx>(
     ctx: CtxRef<'_, 'tcx>,
     span: Span,
-    ts: TimeSlice<'tcx>,
-    ty: Ty<'tcx>,
+    current_state: Region<'tcx>,
+    (valid_state, ty): (Region<'tcx>, Ty<'tcx>),
     target: ty::Ty<'tcx>,
-) -> CreusotResult<Ty<'tcx>> {
-    let (mut depth, mut target_depth) = (deref_depth(ty.ty), deref_depth(target));
+) -> CreusotResult<(Region<'tcx>, Ty<'tcx>)> {
+    let (mut depth, mut target_depth) = (deref_depth(ty.ty, ctx), deref_depth(target, ctx));
     loop {
         if let (Some(x), Some(y)) = (depth.last(), target_depth.last()) && x == y {
             depth.pop();
@@ -208,28 +208,32 @@ fn strip_derefs_target<'tcx>(
             break
         }
     }
-    let mut ty = ty;
-    let mut add_lft = ts;
+    let (mut valid_state, mut ty) = (valid_state, ty);
+    let mut add_lft = current_state;
     // strip off indirections that aren't in the target type
+    if !depth.is_empty() {
+        ty = typeck::check_move_state(valid_state, current_state, ctx, ty, span)?;
+        valid_state = current_state
+    }
     for ind in depth {
         match ind {
             Indirect::Box => {
-                ty = typeck::box_deref(ts, ctx, ty, span)?;
+                ty = typeck::box_deref(current_state, ctx, ty, span)?;
             }
             Indirect::Ref => {
                 add_lft = ty.ref_lft();
-                ty = typeck::shr_deref(ts, ctx, ty, span)?;
+                ty = typeck::shr_deref(current_state, ctx, ty, span)?;
             }
         }
     }
     for ind in target_depth {
         // add indirections that aren't in current type
         assert!(matches!(ind, Indirect::Ref));
-        ty = typeck::mk_ref(ts, add_lft, ctx, ty, span)?;
-        add_lft = ts;
+        ty = typeck::mk_ref(current_state, add_lft, ctx, ty, span)?;
+        add_lft = current_state;
     }
     // eprintln!("sd {:?} had type {} (THIR type {})", span, prepare_display(ty, ctx), target);
-    Ok(ty)
+    Ok((valid_state, ty))
 }
 
 #[derive(PartialEq, Eq)]
@@ -238,48 +242,25 @@ enum Indirect {
     Ref,
 }
 
-fn deref_depth(ty: ty::Ty<'_>) -> SmallVec<[Indirect; 8]> {
+fn deref_depth(ty: ty::Ty<'_>, ctx: CtxRef<'_, '_>) -> SmallVec<[Indirect; 8]> {
     let mut ty = ty;
     let mut res = SmallVec::new();
     loop {
-        let (nty, ind) = match ty.kind() {
-            ty::TyKind::Ref(_, ty, Not) => (*ty, Indirect::Ref),
-            ty::TyKind::Adt(adt, _) if adt.is_box() => (ty.boxed_ty(), Indirect::Box),
-            _ => return res,
+        ty = match ty.kind() {
+            ty::TyKind::Ref(_, ty, Not) => {
+                res.push(Indirect::Ref);
+                *ty
+            },
+            ty::TyKind::Adt(adt, _) if adt.is_box() => {
+                res.push(Indirect::Box);
+                ty.boxed_ty()
+            },
+            _ => match ctx.zombie_info.as_zombie(ty) {
+                None => return res,
+                Some(ty) => ty
+            },
         };
-        ty = nty;
-        res.push(ind)
     }
-}
-
-fn add_zombie_lint<'tcx>(
-    old_ts: Option<Region<'tcx>>,
-    ts: Region<'tcx>,
-    ctx: CtxRef<'_, 'tcx>,
-    ty: Ty<'tcx>,
-    span: Span,
-) -> Ty<'tcx> {
-    if ty.ty.is_mutable_ptr() {
-        // Add an exception for mutable references
-        return ty;
-    }
-    if let Err(e) = typeck::check_move_ts_with_old(ts, ctx, ty, span, old_ts) {
-        let e = e.add_msg(format_args!("\notherwise it would become a zombie"));
-        ctx.lint(&PRUSTI_ZOMBIE, span, e.msg())
-    }
-    ty
-}
-
-fn switch_ts<'tcx>(
-    term: &mut Term<'tcx>,
-    tenv: &mut Tenv<'tcx>,
-    old_ts: TimeSlice<'tcx>,
-    new_ts: TimeSlice<'tcx>,
-    ctx: CtxRef<'_, 'tcx>,
-    span: Span,
-) -> CreusotResult<Ty<'tcx>> {
-    let ty = convert_sdt(term, tenv, old_ts, ctx)?;
-    Ok(add_zombie_lint(Some(old_ts), new_ts, ctx, ty, span))
 }
 
 // Preforms the conversion and return the type of `term`
@@ -287,18 +268,21 @@ fn switch_ts<'tcx>(
 // Recursive calls should generally instead use convert_sdt fix the return type to match the expected type from THIR
 // When handling operators that can work over places (currently projection) convert_sdb1
 // this leaves behind one layer of reference which is used track the lifetime of the projection
+
+// Also returns the state the the term is valid in this is usually `ts` but is different for `at` expressions
 fn convert<'tcx>(
     outer_term: &mut Term<'tcx>,
     tenv: &mut Tenv<'tcx>,
     ts: TimeSlice<'tcx>,
     ctx: CtxRef<'_, 'tcx>,
-) -> CreusotResult<Ty<'tcx>> {
+) -> CreusotResult<(Region<'tcx>, Ty<'tcx>)> {
     let tcx = ctx.tcx;
+    let mut res_state = ts;
     let outer_ty = || ctx.fix_user_ty_regions(outer_term.ty);
     let ty = match &mut outer_term.kind {
         TermKind::Var(v) => {
             let (old_ts, ty) = *tenv.get(v).unwrap();
-            add_zombie_lint(Some(old_ts), ts, ctx, ty, outer_term.span)
+            typeck::check_move_state(old_ts, ts, ctx, ty, outer_term.span)?
         }
         TermKind::Lit(_) => Ty::with_absurd_home(outer_term.ty, tcx),
         TermKind::Item(id, subst) => {
@@ -307,9 +291,11 @@ fn convert<'tcx>(
         }
         TermKind::Binary { lhs, rhs, op: BinOp::Eq, .. } => {
             for term in [lhs, rhs] {
-                let ty = convert_sdt(&mut *term, tenv, ts, ctx)?;
-                let res = typeck::check_move_ts(ts, ctx, ty, term.span);
-                res.map_err(|e| e.add_msg(format_args!("\nrequired by equality check")))?;
+                let (_, ty) = convert_sdt_state(&mut *term, tenv, ts, ctx)?;
+                if ctx.zombie_info.contains_zombie(ty.ty) {
+                    let d_ty = prepare_display(ty, ctx);
+                    return Err(Error::new(term.span, format!("binary operation `==` cannot be applied to type `{d_ty}`")))
+                }
             }
             Ty::with_absurd_home(outer_term.ty, tcx)
         }
@@ -354,21 +340,21 @@ fn convert<'tcx>(
                     outer_term.ty
                 );
                 outer_term.kind = arg.kind;
-                return Ok(res);
+                return Ok((res_state, res));
             } else {
                 None
             };
             if let Some(reg) = new_reg {
                 let mut arg = args.pop().unwrap();
-                let res = switch_ts(&mut arg, tenv, reg, ts, ctx, outer_term.span)?;
+                let res = convert_sdt(&mut arg, tenv, reg, ctx)?;
+                res_state = reg;
                 outer_term.kind = arg.kind;
                 res
             } else {
                 let args =
-                    args.iter_mut().map(|arg| Ok((convert_sdt(arg, tenv, ts, ctx)?, arg.span)));
+                    args.iter_mut().map(|arg| Ok((convert_sdt_state(arg, tenv, ts, ctx)?, arg.span)));
                 let (id, subst) = typeck::try_resolve(&ctx, *id, *subst);
-                let ty = typeck::check_call(ctx, ts, id, subst, args)?;
-                add_zombie_lint(None, ts, ctx, ty, outer_term.span)
+                typeck::check_call(ctx, ts, id, subst, args)?
             }
         }
         TermKind::Constructor { fields, variant, .. } => {
@@ -403,7 +389,8 @@ fn convert<'tcx>(
             }
             let iter = arms.iter_mut().map(|(pat, body)| {
                 let iter = pattern_iter(pat, ty, ctx, ts);
-                convert_sdt(&mut *body, &mut *tenv.insert_many(iter), ts, ctx)
+                let ty = convert_sdt(&mut *body, &mut *tenv.insert_many(iter), ts, ctx)?;
+                Ok((ty, body.span))
             });
             typeck::union(ctx, outer_ty(), iter)?
         }
@@ -415,7 +402,9 @@ fn convert<'tcx>(
                 // This was generated by a tuple projection so it should be handled like a projection instead
                 let ty = convert_sdb1(&mut *arg, tenv, ts, ctx)?;
                 let iter = pattern_iter(pattern, ty, ctx, ts);
-                convert(&mut *body, &mut *tenv.insert_many(iter), ts, ctx)?
+                let (rs, ty) = convert(&mut *body, &mut *tenv.insert_many(iter), ts, ctx)?;
+                res_state = rs;
+                ty
             } else {
                 let ty = convert_sdt(&mut *arg, tenv, ts, ctx)?;
                 let iter = pattern_iter(pattern, ty, ctx, ts);
@@ -428,7 +417,9 @@ fn convert<'tcx>(
             res.unwrap()
         }
         TermKind::Old { term } => {
-            switch_ts(term, tenv, ctx.old_region(), ts, ctx, outer_term.span)?
+            let res = convert_sdt(term, tenv, ctx.old_region(), ctx)?;
+            res_state = ctx.old_region();
+            res
         }
         TermKind::Closure { .. } => todo!(),
         TermKind::Absurd => Ty::absurd_regions(outer_ty(), ctx.tcx),
@@ -439,7 +430,7 @@ fn convert<'tcx>(
             ))
         }
     };
-    Ok(ty)
+    Ok((res_state, ty))
 }
 
 fn convert_sdb1<'tcx>(
@@ -448,13 +439,14 @@ fn convert_sdb1<'tcx>(
     ts: TimeSlice<'tcx>,
     ctx: CtxRef<'_, 'tcx>,
 ) -> CreusotResult<Ty<'tcx>> {
-    let ty = convert(term, tenv, ts, ctx)?;
+    let sty@(_, ty) = convert(term, tenv, ts, ctx)?;
     let target = if ty.ty.ref_mutability() == Some(Not) {
         ctx.tcx.mk_imm_ref(ctx.tcx.lifetimes.re_erased, term.ty)
     } else {
         term.ty
     };
-    strip_derefs_target(ctx, term.span, ts, ty, target)
+    let (valid_state, ty) = strip_derefs_target(ctx, term.span, ts, sty, target)?;
+    typeck::check_move_state(valid_state, ts, ctx, ty, term.span)
 }
 
 fn convert_sdt<'tcx>(
@@ -463,7 +455,17 @@ fn convert_sdt<'tcx>(
     ts: TimeSlice<'tcx>,
     ctx: CtxRef<'_, 'tcx>,
 ) -> CreusotResult<Ty<'tcx>> {
-    strip_derefs_target(ctx, term.span, ts, convert(term, tenv, ts, ctx)?, term.ty)
+    let (valid_state, ty) = convert_sdt_state(term, tenv, ts, ctx)?;
+    typeck::check_move_state(valid_state, ts, ctx, ty, term.span)
+}
+
+fn convert_sdt_state<'tcx>(
+    term: &mut Term<'tcx>,
+    tenv: &mut Tenv<'tcx>,
+    ts: TimeSlice<'tcx>,
+    ctx: CtxRef<'_, 'tcx>,
+) -> CreusotResult<(Region<'tcx>, Ty<'tcx>)> {
+    strip_derefs_target(ctx, term.span, ts,convert(term, tenv, ts, ctx)?, term.ty)
 }
 
 impl<'tcx> Term<'tcx> {}

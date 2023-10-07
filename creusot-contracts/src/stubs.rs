@@ -100,20 +100,22 @@ impl<T> ReplaceLifetimesWithStatic for T {
 
 pub type WithStatic<T> = <T as ReplaceLifetimesWithStatic>::WithStatic;
 
-pub mod __static {
+pub mod __prusti {
 
     /// Internal use only
     #[rustc_diagnostic_item = "prusti_replace_lft"]
     pub struct ReplaceLft<'x, T>(T, &'x ());
-}
 
-#[logic]
-#[open]
-#[creusot::prusti::home_sig = "('curr) -> 'x"]
-/// Hypothetical snapshot function that duplicates t so that it can be used anywhere
-/// Note: dereferencing a mutable reference created by a snapshot uses the current operator
-pub fn snap<T>(t: T) -> WithStatic<T> {
-    t
+    #[rustc_diagnostic_item = "prusti_zombie_internal"]
+    pub struct Zombie<T>(core::marker::PhantomData<T>);
+
+    impl<T> Copy for Zombie<T> {}
+
+    impl<T> Clone for Zombie<T> {
+        fn clone(&self) -> Self {
+            *self
+        }
+    }
 }
 
 #[logic] // avoid triggering error since this is prusti specific

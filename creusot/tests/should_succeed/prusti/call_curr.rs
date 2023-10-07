@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 use creusot_contracts::prusti_prelude::*;
 
 #[open]
-#[logic(('curr) -> 'curr)]
+#[logic]
 pub fn deref<'a, X>(x: &'a X) -> X {
     *x
 }

@@ -21,6 +21,7 @@ use std::{
     iter,
     ops::Deref,
 };
+use crate::prusti::zombie::ZombieDefIds;
 
 const CURR_STR: &str = "'curr";
 const OLD_STR: &str = "'old";
@@ -36,6 +37,7 @@ pub(crate) struct InternedInfo<'tcx> {
     pub tcx: TyCtxt<'tcx>,
     pub curr_sym: Symbol,
     pub(super) static_replacer_info: StaticNormalizerDefIds,
+    pub zombie_info: ZombieDefIds,
 }
 
 pub(crate) struct BaseCtx<'a, 'tcx> {
@@ -124,6 +126,7 @@ impl<'tcx> InternedInfo<'tcx> {
             tcx,
             curr_sym: Symbol::intern(CURR_STR),
             static_replacer_info: StaticNormalizerDefIds::new(tcx),
+            zombie_info: ZombieDefIds::new(tcx)
         }
     }
 
@@ -206,6 +209,10 @@ impl<'a, 'tcx> BaseCtx<'a, 'tcx> {
         let iter = iter.chain((0..n).into_iter().map(|n| (usize::from(STATIC_IDX), n)));
         RegionRelation::new(n, iter)
     }
+
+    pub(super) fn region_index_to_name(&self, idx: u32) -> Symbol {
+        self.base_regions[idx as usize].get_name().unwrap_or(Symbol::intern("'_"))
+    }
 }
 
 impl<'a, 'tcx> PreCtx<'a, 'tcx> {
@@ -249,15 +256,14 @@ impl<'a, 'tcx> PreCtx<'a, 'tcx> {
         normalize(&*self, t)
     }
 
-    pub(super) fn finish_for_logic(self, iter: impl Iterator<Item = Ty<'tcx>>) -> Ctx<'a, 'tcx> {
+    pub(super) fn finish_for_logic(self, iter: impl Iterator<Item = (Region<'tcx>, Ty<'tcx>)>) -> Ctx<'a, 'tcx> {
         let reg_to_idx = |r: Region| RegionSet::from(r).next().unwrap() as usize;
         let iter = iter
-            .flat_map(|x| {
-                ty_regions(x.ty, self.tcx)
+            .flat_map(|(state, ty)| {
+                ty_regions(ty.ty, self.tcx)
                     .into_iter()
-                    .map(move |r| (reg_to_idx(r), reg_to_idx(x.home)))
-            })
-            .filter(|(r1, r2)| *r1 == usize::from(CURR_IDX) || *r2 == usize::from(CURR_IDX));
+                    .map(move |r| (reg_to_idx(r), reg_to_idx(state)))
+            });
         let relation = self.base.make_relation(iter);
         Ctx { base: self.base, relation }
     }
@@ -317,10 +323,6 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
 
     pub(super) fn curr_home(&self) -> Home {
         self.curr_sym.into()
-    }
-
-    pub(super) fn region_index_to_name(&self, idx: u32) -> Symbol {
-        self.base_regions[idx as usize].get_name().unwrap_or(Symbol::intern("'_"))
     }
 
     /// Fixes an external region by converting it into a singleton set

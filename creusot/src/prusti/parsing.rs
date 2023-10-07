@@ -12,7 +12,7 @@ pub(super) struct Home<T = Symbol> {
     pub data: T,
 }
 
-pub(super) type HomeSig = (Vec<Home>, Home);
+pub(super) type HomeSig = Vec<Home>;
 
 fn parse_home(rest: &mut &str, counter: &mut u32) -> Option<Home> {
     skip_space(rest);
@@ -34,17 +34,8 @@ fn parse_home(rest: &mut &str, counter: &mut u32) -> Option<Home> {
     Some(home)
 }
 
-fn parse_home_tuple(rest: &mut &str, counter: &mut u32) -> Option<Vec<Home>> {
-    *rest = rest.strip_prefix("(")?;
+fn parse_home_list(rest: &mut &str, counter: &mut u32) -> Option<Vec<Home>> {
     let mut res = Vec::new();
-    skip_space(rest);
-    match rest.strip_prefix(")") {
-        Some(r) => {
-            *rest = r;
-            return Some(res);
-        }
-        None => {}
-    };
     loop {
         skip_space(rest);
         res.push(parse_home(rest, counter)?);
@@ -55,27 +46,22 @@ fn parse_home_tuple(rest: &mut &str, counter: &mut u32) -> Option<Vec<Home>> {
         }
     }
     skip_space(rest);
-    *rest = rest.strip_prefix(")")?;
     Some(res)
 }
 
 fn parse_home_sig(rest: &mut &str) -> Option<HomeSig> {
     let mut counter = 0;
     skip_space(rest);
-    let args = parse_home_tuple(rest, &mut counter)?;
-    skip_space(rest);
-    *rest = rest.strip_prefix("->")?;
-    skip_space(rest);
-    let res = parse_home(rest, &mut counter)?;
+    let args = parse_home_list(rest, &mut counter)?;
     skip_space(rest);
     if rest.is_empty() {
-        Some((args, res))
+        Some(args)
     } else {
         None
     }
 }
 
-pub(super) fn parse_home_sig_lit(sig: &Lit) -> CreusotResult<Option<(Vec<Home>, Home)>> {
+pub(super) fn parse_home_sig_lit(sig: &Lit) -> CreusotResult<Option<HomeSig>> {
     let s = sig.as_token_lit().symbol;
     let mut s = s.as_str();
     if s.is_empty() {
