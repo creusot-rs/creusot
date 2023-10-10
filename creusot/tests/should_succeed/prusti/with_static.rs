@@ -1,3 +1,4 @@
+#![warn(creusot::prusti_final)]
 extern crate creusot_contracts;
 use creusot_contracts::prusti_prelude::*;
 
@@ -6,7 +7,6 @@ use creusot_contracts::prusti_prelude::*;
 pub fn id<X>(x: WithStatic<X>) -> WithStatic<X> {
     x
 }
-
 
 #[open]
 #[logic]

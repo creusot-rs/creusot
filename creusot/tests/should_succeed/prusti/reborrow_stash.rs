@@ -1,3 +1,4 @@
+#![warn(creusot::prusti_final)]
 #![allow(unused)]
 #![deny(creusot::prusti_zombie)]
 extern crate creusot_contracts;

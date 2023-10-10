@@ -250,14 +250,14 @@ fn deref_depth(ty: ty::Ty<'_>, ctx: CtxRef<'_, '_>) -> SmallVec<[Indirect; 8]> {
             ty::TyKind::Ref(_, ty, Not) => {
                 res.push(Indirect::Ref);
                 *ty
-            },
+            }
             ty::TyKind::Adt(adt, _) if adt.is_box() => {
                 res.push(Indirect::Box);
                 ty.boxed_ty()
-            },
+            }
             _ => match ctx.zombie_info.as_zombie(ty) {
                 None => return res,
-                Some(ty) => ty
+                Some(ty) => ty,
             },
         };
     }
@@ -294,7 +294,10 @@ fn convert<'tcx>(
                 let (_, ty) = convert_sdt_state(&mut *term, tenv, ts, ctx)?;
                 if ctx.zombie_info.contains_zombie(ty.ty) {
                     let d_ty = prepare_display(ty, ctx);
-                    return Err(Error::new(term.span, format!("binary operation `==` cannot be applied to type `{d_ty}`")))
+                    return Err(Error::new(
+                        term.span,
+                        format!("binary operation `==` cannot be applied to type `{d_ty}`"),
+                    ));
                 }
             }
             Ty::with_absurd_home(outer_term.ty, tcx)
@@ -333,12 +336,9 @@ fn convert<'tcx>(
             } else if tcx.is_diagnostic_item(Symbol::intern("prusti_dbg_ty"), *id) {
                 let mut arg = args.pop().unwrap();
                 let res = convert_sdt(&mut arg, tenv, ts, ctx)?;
-                eprintln!(
-                    "{:?} had type {} (THIR type {})",
-                    outer_term.span,
-                    prepare_display(res, ctx),
-                    outer_term.ty
-                );
+                let s =
+                    format!("had type {} (THIR type {})", prepare_display(res, ctx), outer_term.ty);
+                ctx.lint(crate::lints::PRUSTI_DBG_TY, arg.span, s);
                 outer_term.kind = arg.kind;
                 return Ok((res_state, res));
             } else {
@@ -351,8 +351,9 @@ fn convert<'tcx>(
                 outer_term.kind = arg.kind;
                 res
             } else {
-                let args =
-                    args.iter_mut().map(|arg| Ok((convert_sdt_state(arg, tenv, ts, ctx)?, arg.span)));
+                let args = args
+                    .iter_mut()
+                    .map(|arg| Ok((convert_sdt_state(arg, tenv, ts, ctx)?, arg.span)));
                 let (id, subst) = typeck::try_resolve(&ctx, *id, *subst);
                 typeck::check_call(ctx, ts, id, subst, args)?
             }
@@ -377,7 +378,10 @@ fn convert<'tcx>(
             let (deref_type, inner_ty) = typeck::mut_deref(ts, &ctx, ty, term.span)?;
             *curr = match deref_type {
                 typeck::MutDerefType::Cur => TermKind::Cur { term },
-                typeck::MutDerefType::Fin => TermKind::Fin { term },
+                typeck::MutDerefType::Fin => {
+                    ctx.lint(crate::lints::PRUSTI_FINAL, term.span, "final operator");
+                    TermKind::Fin { term }
+                }
             };
             inner_ty
         }
@@ -439,7 +443,7 @@ fn convert_sdb1<'tcx>(
     ts: TimeSlice<'tcx>,
     ctx: CtxRef<'_, 'tcx>,
 ) -> CreusotResult<Ty<'tcx>> {
-    let sty@(_, ty) = convert(term, tenv, ts, ctx)?;
+    let sty @ (_, ty) = convert(term, tenv, ts, ctx)?;
     let target = if ty.ty.ref_mutability() == Some(Not) {
         ctx.tcx.mk_imm_ref(ctx.tcx.lifetimes.re_erased, term.ty)
     } else {
@@ -465,7 +469,7 @@ fn convert_sdt_state<'tcx>(
     ts: TimeSlice<'tcx>,
     ctx: CtxRef<'_, 'tcx>,
 ) -> CreusotResult<(Region<'tcx>, Ty<'tcx>)> {
-    strip_derefs_target(ctx, term.span, ts,convert(term, tenv, ts, ctx)?, term.ty)
+    strip_derefs_target(ctx, term.span, ts, convert(term, tenv, ts, ctx)?, term.ty)
 }
 
 impl<'tcx> Term<'tcx> {}

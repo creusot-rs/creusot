@@ -9,9 +9,7 @@ use rustc_middle::{
 };
 use rustc_span::Symbol;
 use rustc_target::abi::VariantIdx;
-use std::{
-    fmt::{Debug, Display, Formatter},
-};
+use std::fmt::{Debug, Display, Formatter};
 
 pub(super) fn sub_ts<'tcx>(ts1: Region<'tcx>, ts2: Region<'tcx>) -> bool {
     RegionSet::from(ts1).subset(RegionSet::from(ts2))
@@ -130,7 +128,7 @@ impl<'tcx> Ty<'tcx> {
 
 pub(super) fn make_region_for_display<'tcx>(
     r: Region<'tcx>,
-    ctx: &'_  BaseCtx<'_, 'tcx>,
+    ctx: &'_ BaseCtx<'_, 'tcx>,
 ) -> Region<'tcx> {
     let tcx = ctx.tcx;
     let reg_set = RegionSet::from(r);
@@ -168,7 +166,6 @@ pub(crate) fn display_fold<'a, 'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
         ctx: ctx.interned,
     })
 }
-
 
 impl<'a, 'tcx, T: Copy + TypeFoldable<TyCtxt<'tcx>> + Display> Display
     for DisplayFoldable<'a, 'tcx, T>

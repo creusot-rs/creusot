@@ -8,6 +8,7 @@ use super::{
 };
 use crate::{
     error::{CreusotResult, Error},
+    lints::PRUSTI_ZOMBIE,
     prusti::{
         ctx::{BaseCtx, CtxRef, InternedInfo},
         with_static::PrettyRegionReplacer,
@@ -24,17 +25,18 @@ use rustc_infer::{
     },
     traits::ObligationCause,
 };
-use rustc_middle::{span_bug, ty, ty::{
-    error::{ExpectedFound, TypeError},
-    Instance, InternalSubsts, PolyFnSig, Region, RegionKind, RegionVid, SubstsRef, TyCtxt,
-    TyKind, TypeFoldable, TypeSuperVisitable, TypeVisitable, TypeVisitor,
-}};
+use rustc_middle::{
+    span_bug, ty,
+    ty::{
+        error::{ExpectedFound, TypeError},
+        Instance, InternalSubsts, PolyFnSig, Region, RegionKind, RegionVid, SubstsRef, TyCtxt,
+        TyKind, TypeFoldable, TypeSuperVisitable, TypeVisitable, TypeVisitor,
+    },
+};
 use rustc_span::{def_id::DefId, Span, Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
 use rustc_trait_selection::traits::ObligationCtxt;
-use std::{iter, ops::ControlFlow};
-use std::collections::hash_map::Entry;
-use crate::lints::PRUSTI_ZOMBIE;
+use std::{collections::hash_map::Entry, iter, ops::ControlFlow};
 
 // fn prepare_dbg<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(t: T, tcx: TyCtxt<'tcx>) -> T {
 //     t.fold_with(&mut RegionReplacer {
@@ -73,17 +75,17 @@ fn home_sig(ctx: CtxRef<'_, '_>, def_id: DefId) -> CreusotResult<Option<HomeSig>
 trait Captures<'tcx> {}
 impl<'tcx, X> Captures<'tcx> for X {}
 
-fn filter_elided<'tcx>(iter: impl Iterator<Item=(Region<'tcx>, Region<'tcx>)>) -> impl Iterator<Item=(Symbol, RegionVid)> + Captures<'tcx>{
+fn filter_elided<'tcx>(
+    iter: impl Iterator<Item = (Region<'tcx>, Region<'tcx>)>,
+) -> impl Iterator<Item = (Symbol, RegionVid)> + Captures<'tcx> {
     let el_name = Symbol::intern("'_");
-    iter
-        .into_iter()
-        .filter_map(move |(k, v): (Region, Region)| {
-            assert!(v.is_var());
-            match k.get_name() {
-                Some(name) if name != el_name => Some((name, v.as_var())),
-                _ => None, // Ignore elided regions
-            }
-        })
+    iter.into_iter().filter_map(move |(k, v): (Region, Region)| {
+        assert!(v.is_var());
+        match k.get_name() {
+            Some(name) if name != el_name => Some((name, v.as_var())),
+            _ => None, // Ignore elided regions
+        }
+    })
 }
 
 /// Maps region variables to there lower bounds
@@ -95,23 +97,19 @@ impl RegionInfo {
         mut constraints: impl Iterator<Item = (Constraint<'tcx>, SubregionOrigin<'tcx>)>,
     ) -> CreusotResult<Self> {
         let mut res = RegionInfo(FxHashMap::default());
-        constraints.try_for_each(|(c, origin)| CreusotResult::Ok(match c {
-            Constraint::VarSubReg(gen, reg) => res.add_bound(gen, reg),
-            Constraint::RegSubReg(static_reg, reg) if static_reg.is_static() => {
-                check_call_region_constraint(
-                    ctx,
-                    None,
-                    ctx.static_region(),
-                    reg,
-                    &origin,
-                )?;
-            }
-            Constraint::RegSubVar(_, _) => {} // These comes from invariance which we ignore
-            Constraint::RegSubReg(_, static_reg) if static_reg.is_static() => {}
-            x => {
-                warn!("unhandled constraint {:?}", x)
-            }
-        }))?;
+        constraints.try_for_each(|(c, origin)| {
+            CreusotResult::Ok(match c {
+                Constraint::VarSubReg(gen, reg) => res.add_bound(gen, reg),
+                Constraint::RegSubReg(static_reg, reg) if static_reg.is_static() => {
+                    check_call_region_constraint(ctx, None, ctx.static_region(), reg, &origin)?;
+                }
+                Constraint::RegSubVar(_, _) => {} // These comes from invariance which we ignore
+                Constraint::RegSubReg(_, static_reg) if static_reg.is_static() => {}
+                x => {
+                    warn!("unhandled constraint {:?}", x)
+                }
+            })
+        })?;
         Ok(res)
     }
 
@@ -187,9 +185,10 @@ fn sup_tys<'tcx>(
                 RegionKind::ReStatic => tcx.lifetimes.re_static,
                 _ => tcx.lifetimes.re_erased,
             };
-            let ty_gen = ty_gen.fold_with(&mut PrettyRegionReplacer { f: replacer, ctx: ctx.ctx.interned });
-            return Err(Error::new(span, format!("expected `{ty_gen}` found `{ty}`")))
-        },
+            let ty_gen =
+                ty_gen.fold_with(&mut PrettyRegionReplacer { f: replacer, ctx: ctx.ctx.interned });
+            return Err(Error::new(span, format!("expected `{ty_gen}` found `{ty}`")));
+        }
     };
     Ok(())
 }
@@ -264,16 +263,15 @@ pub(crate) fn check_call<'tcx>(
     })?;
 
     // maps region variables to states they must be equal to
-    let constrained_vars: FxHashMap<_, _> = subst_iter.filter_map(|(home, var)| {
-        let constraint = if home == ctx.curr_sym {
-            ts
-        } else {
-            *constrained_homes.get(&home)?
-        };
-        Some((var, constraint))
-    }).collect();
+    let constrained_vars: FxHashMap<_, _> = subst_iter
+        .filter_map(|(home, var)| {
+            let constraint =
+                if home == ctx.curr_sym { ts } else { *constrained_homes.get(&home)? };
+            Some((var, constraint))
+        })
+        .collect();
 
-    let res_ty_gen = Ty{ty: res_ty_gen};
+    let res_ty_gen = Ty { ty: res_ty_gen };
     let constraints = infcx.take_and_reset_region_constraints();
     // let outlives = OutlivesEnvironment::new(param_env);
     // infcx.process_registered_region_obligations(&outlives);
@@ -361,7 +359,7 @@ pub(crate) fn check_constructor<'tcx>(
     fields.zip(fields_gen).try_for_each(|((ty, span), ty_gen)| sup_tys(&ocx, span, ty_gen, ty))?;
 
     let constraints = infcx.take_and_reset_region_constraints();
-    let var_info = RegionInfo::new(ctx,constraints.constraints.into_iter())?;
+    let var_info = RegionInfo::new(ctx, constraints.constraints.into_iter())?;
     Ok(ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| var_info.get_region(r, tcx) }))
 }
 
@@ -378,7 +376,7 @@ pub(crate) fn union<'tcx>(
     let ty_gen = generalize(Ty::with_absurd_home(target, tcx), &infcx);
     elts.try_for_each(|(ty, span)| sup_tys(&ocx, span, ty_gen, ty))?;
     let constraints = infcx.take_and_reset_region_constraints();
-    let var_info = RegionInfo::new(ctx,constraints.constraints.into_iter())?;
+    let var_info = RegionInfo::new(ctx, constraints.constraints.into_iter())?;
     let res = ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| var_info.get_region(r, tcx) });
     Ok(res)
 }
@@ -506,7 +504,7 @@ pub(crate) fn check_move_state<'tcx>(
             );
             ctx.lint(&PRUSTI_ZOMBIE, span, e.msg())
         }
-        Ok(Ty{ty: rty})
+        Ok(Ty { ty: rty })
     }
 }
 
@@ -523,13 +521,16 @@ pub(crate) fn mut_deref<'tcx>(
 ) -> CreusotResult<(MutDerefType, Ty<'tcx>)> {
     let (ty, zombie) = match ctx.zombie_info.as_zombie(ty.ty) {
         None => (ty, false),
-        Some(ty) => (Ty{ty}, true),
+        Some(ty) => (Ty { ty }, true),
     };
     match ty.as_ref(ts) {
         Some((end, nty, Mutability::Mut)) => match (sub_ts(end, ts), zombie) {
             (true, true) => Ok((Fin, nty)),
             (false, false) => Ok((Cur, nty)),
-            (true, false)  => Ok((Cur, nty)), // TODO handle ambiguity,
+            (true, false) => {
+                ctx.lint(crate::lints::PRUSTI_AMBIGUITY, span, "ambiguous dereference");
+                Ok((Cur, nty))
+            }
             (false, true) => {
                 let end = prepare_display(end, &ctx);
                 let ts = prepare_display(ts, &ctx);
@@ -539,10 +540,10 @@ pub(crate) fn mut_deref<'tcx>(
         Some((lft, _, Mutability::Not)) => {
             assert!(!zombie);
             let ty = shr_deref(ts, ctx, ty, span)?;
-            let (op, rty)= mut_deref(ts, ctx, ty, span)?;
+            let (op, rty) = mut_deref(ts, ctx, ty, span)?;
             Ok((op, Ty::make_ref(lft, rty, ctx.tcx)))
         }
-        _ => span_bug!(span, "bug")
+        _ => span_bug!(span, "bug"),
     }
 }
 
@@ -554,7 +555,7 @@ pub(crate) fn shr_deref<'tcx>(
 ) -> CreusotResult<Ty<'tcx>> {
     let Some((end, nty, Mutability::Not)) = ty.as_ref(ts) else {span_bug!(span, "bug")};
     // if ts has it's home in the current state we should know it's lifetime is longer than it's home
-    if ctx.relation.outlived_by(ts.into(), end.into()){
+    if ctx.relation.outlived_by(ts.into(), end.into()) {
         Ok(nty)
     } else {
         let end = prepare_display(end, &ctx);

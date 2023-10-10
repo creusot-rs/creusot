@@ -5,6 +5,7 @@ use crate::prusti::{
     typeck::normalize,
     types::Ty,
     with_static::{FixingRegionReplacer, StaticNormalizerDefIds},
+    zombie::ZombieDefIds,
 };
 use rustc_infer::infer::region_constraints::Constraint;
 use rustc_lint::Lint;
@@ -21,7 +22,6 @@ use std::{
     iter,
     ops::Deref,
 };
-use crate::prusti::zombie::ZombieDefIds;
 
 const CURR_STR: &str = "'curr";
 const OLD_STR: &str = "'old";
@@ -126,7 +126,7 @@ impl<'tcx> InternedInfo<'tcx> {
             tcx,
             curr_sym: Symbol::intern(CURR_STR),
             static_replacer_info: StaticNormalizerDefIds::new(tcx),
-            zombie_info: ZombieDefIds::new(tcx)
+            zombie_info: ZombieDefIds::new(tcx),
         }
     }
 
@@ -157,9 +157,9 @@ impl<'a, 'tcx> BaseCtx<'a, 'tcx> {
         self.param_env
     }
 
-    pub(crate) fn lint(&self, lint: &'static Lint, span: Span, msg: String) {
+    pub(crate) fn lint(&self, lint: &'static Lint, span: Span, msg: impl Into<String>) {
         let hir_id = self.tcx.local_def_id_to_hir_id(self.owner_id);
-        self.tcx.struct_span_lint_hir(lint, hir_id, span, msg, |x| x)
+        self.tcx.struct_span_lint_hir(lint, hir_id, span, msg.into(), |x| x)
     }
 
     fn try_home_to_region(&self, s: Symbol) -> Option<Region<'tcx>> {
@@ -256,14 +256,14 @@ impl<'a, 'tcx> PreCtx<'a, 'tcx> {
         normalize(&*self, t)
     }
 
-    pub(super) fn finish_for_logic(self, iter: impl Iterator<Item = (Region<'tcx>, Ty<'tcx>)>) -> Ctx<'a, 'tcx> {
+    pub(super) fn finish_for_logic(
+        self,
+        iter: impl Iterator<Item = (Region<'tcx>, Ty<'tcx>)>,
+    ) -> Ctx<'a, 'tcx> {
         let reg_to_idx = |r: Region| RegionSet::from(r).next().unwrap() as usize;
-        let iter = iter
-            .flat_map(|(state, ty)| {
-                ty_regions(ty.ty, self.tcx)
-                    .into_iter()
-                    .map(move |r| (reg_to_idx(r), reg_to_idx(state)))
-            });
+        let iter = iter.flat_map(|(state, ty)| {
+            ty_regions(ty.ty, self.tcx).into_iter().map(move |r| (reg_to_idx(r), reg_to_idx(state)))
+        });
         let relation = self.base.make_relation(iter);
         Ctx { base: self.base, relation }
     }

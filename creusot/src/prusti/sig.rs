@@ -73,8 +73,7 @@ fn add_homes_to_sig<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
     ret_home: Home<Region<'tcx>>,
     _span: Span,
 ) -> CreusotResult<(T, BindingInfo<'tcx>)> {
-    let types =
-        sig.inputs().iter().zip(arg_homes);
+    let types = sig.inputs().iter().zip(arg_homes);
 
     let arg_tys = args
         .iter()
@@ -88,9 +87,8 @@ fn add_homes_to_sig<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
             }
         })
         .zip(types);
-    let arg_tys =
-        arg_tys.map(|(k, (&ty, home))| (k, (home.data, Ty{ty}))).collect::<T>();
-    let res_ty = Ty{ty: sig.output()};
+    let arg_tys = arg_tys.map(|(k, (&ty, home))| (k, (home.data, Ty { ty }))).collect::<T>();
+    let res_ty = Ty { ty: sig.output() };
     Ok((arg_tys, (ret_home.data, res_ty)))
 }
 

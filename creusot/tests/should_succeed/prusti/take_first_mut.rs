@@ -1,3 +1,4 @@
+#![warn(creusot::prusti_final)]
 extern crate creusot_contracts;
 use ::std::mem;
 use creusot_contracts::prusti_prelude::*;

@@ -1,3 +1,4 @@
+#![warn(creusot::prusti_final)]
 #![feature(never_type)]
 extern crate creusot_contracts;
 use creusot_contracts::prusti_prelude::*;
