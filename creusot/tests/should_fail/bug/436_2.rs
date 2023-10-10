@@ -10,7 +10,7 @@ pub fn test_bad() {
     let mut x = Bad::None;
     let m = &mut x;
     let g = gh!(m);
-    *m = Bad::Some(gh!(*g));
+    *m = Bad::Some(g);
     proof_assert!(*m == Bad::Some(g));
     proof_assert!(^*g == ^m);
     let _ = m;

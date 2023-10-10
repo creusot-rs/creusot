@@ -20,6 +20,15 @@ pub fn ghost_copy() {
     _s = gh! { _s.push(a) };
 }
 
+pub fn ghost_is_copy() {
+    let mut x = 0;
+    let r = &mut x;
+    let g = gh! { r };
+    let g1 = g;
+    let g2 = g;
+    proof_assert!(g1 == g2);
+}
+
 #[ghost]
 fn logi_drop<T>(_: T) {}
 
