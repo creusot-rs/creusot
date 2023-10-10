@@ -178,11 +178,19 @@ pub mod ghost {
     where
         T: ?Sized;
 
-    impl<T> Ghost<T> {
+    impl<T: ?Sized> Ghost<T> {
         pub fn dummy() -> Ghost<T> {
             Ghost(std::marker::PhantomData)
         }
     }
+
+    impl<T: ?Sized> Clone for Ghost<T> {
+        fn clone(&self) -> Self {
+            Self::dummy()
+        }
+    }
+
+    impl<T: ?Sized> Copy for Ghost<T> {}
 }
 
 pub mod ghost_ptr;
