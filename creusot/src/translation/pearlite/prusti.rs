@@ -323,16 +323,8 @@ fn convert<'tcx>(
                 Some(ctx.curr_region())
             } else if tcx.is_diagnostic_item(Symbol::intern("prusti_expiry"), *id) {
                 let r = subst.regions().next().unwrap();
-                if r == ctx.tcx.lifetimes.re_erased {
-                    return Err(Error::new(fun.span, "at_expiry must be given an explicit region"));
-                } else if r == ctx.static_region() {
-                    return Err(Error::new(
-                        fun.span,
-                        "at_expiry cannot use 'static since it never expires",
-                    ));
-                } else {
-                    Some(r)
-                }
+                ctx.try_move_state(r, fun.span)?;
+                Some(r)
             } else if tcx.is_diagnostic_item(Symbol::intern("prusti_dbg_ty"), *id) {
                 let mut arg = args.pop().unwrap();
                 let res = convert_sdt(&mut arg, tenv, ts, ctx)?;

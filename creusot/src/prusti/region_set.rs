@@ -32,6 +32,16 @@ impl RegionSet {
             EarlyBoundRegion { index: self.0, def_id: CRATE_DEF_ID.to_def_id(), name: kw::In };
         Region::new_early_bound(tcx, reg)
     }
+
+    pub fn try_into_singleton(self) -> Option<u32> {
+        let mut iter = self.into_iter();
+        let res = iter.next();
+        if iter.next().is_none() {
+            res
+        } else {
+            None
+        }
+    }
 }
 
 impl<'tcx> From<Region<'tcx>> for RegionSet {
@@ -74,6 +84,7 @@ impl RegionRelation {
     fn with_capacity(n: usize) -> RegionRelation {
         assert!(n <= 32);
         let mut res = RegionRelation(vec![RegionSet::EMPTY; n * 2].into_boxed_slice());
+        let n = n as u32;
         (0..n).into_iter().for_each(|i| res.set_outlives(i, i));
         res
     }
@@ -90,12 +101,12 @@ impl RegionRelation {
         &self.0[self.size()..]
     }
 
-    fn set_outlives(&mut self, r1: usize, r2: usize) {
+    fn set_outlives(&mut self, r1: u32, r2: u32) {
         let size = self.size();
-        let os = &mut self.0[..size][r1];
-        *os = os.union(RegionSet::singleton(r2 as u32));
-        let obs = &mut self.0[size..][r2];
-        *obs = obs.union(RegionSet::singleton(r1 as u32))
+        let os = &mut self.0[..size][r1 as usize];
+        *os = os.union(RegionSet::singleton(r2));
+        let obs = &mut self.0[size..][r2 as usize];
+        *obs = obs.union(RegionSet::singleton(r1))
     }
 
     fn square_onto(&self, scratch: &mut RegionRelation) {
@@ -103,7 +114,7 @@ impl RegionRelation {
         (0..self.size()).into_iter().cartesian_product(0..self.size()).for_each(|(i, j)| {
             if self.outlive_sets()[i].intersect(self.outlived_by_sets()[j]) != RegionSet::EMPTY {
                 // There exists a region that i outlives and j is outlived_by so i transitively outlives j
-                scratch.set_outlives(i, j)
+                scratch.set_outlives(i as u32, j as u32)
             }
         })
     }
@@ -141,7 +152,7 @@ impl RegionRelation {
     }
 
     /// Requires all the elements of relation to be less that n
-    pub fn new(n: usize, relation: impl Iterator<Item = (usize, usize)>) -> RegionRelation {
+    pub fn new(n: usize, relation: impl Iterator<Item = (u32, u32)>) -> RegionRelation {
         let mut res = Self::with_capacity(n);
         relation.for_each(|(i, j)| res.set_outlives(i, j));
         res.transitive_closure();
