@@ -275,7 +275,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             let clos = encode_term(&*clos.body)?;
 
             Ok(
-                quote_spanned! {sp=> ::creusot_contracts::__stubs::mapping_from_fn(#[creusot::decl::logic] #[creusot::no_translate] |#inputs| #retty #clos)},
+                quote_spanned! {sp=> ::creusot_contracts::__stubs::mapping_from_fn(#[creusot::no_translate] |#inputs| #retty #clos)},
             )
         }
         RT::__Nonexhaustive => todo!(),
