@@ -13,6 +13,7 @@
 
 extern crate creusot_contracts;
 use creusot_contracts::{
+    invariant::Invariant,
     logic::{Int, Seq},
     vec, *,
 };
@@ -42,23 +43,10 @@ impl<T> ShallowModel for Sparse<T> {
     }
 }
 
-impl<T> Sparse<T> {
-    /* The function `s.is_elt(i)` tells whether index `i` points to a
-     * existing element. It can be checked as follows:
-     *   (1) check that array `idx` maps `i` to a index `j` between 0 and `n` (excluded)
-     *   (2) check that `back[j]` is `i`
-     */
-    #[ghost]
-    fn is_elt(&self, i: Int) -> bool {
-        pearlite! { self.idx[i]@ < self.n@
-                    && self.back[self.idx[i]@]@ == i
-        }
-    }
-
-    /* The data invariant of the Sparse Array structure
-     */
+impl<T> Invariant for Sparse<T> {
+    #[open(self)]
     #[predicate]
-    fn sparse_inv(&self) -> bool {
+    fn invariant(self) -> bool {
         pearlite! {
             self.n@ <= self.size@
                 && self@.len() == self.size@
@@ -72,10 +60,23 @@ impl<T> Sparse<T> {
                 }
         }
     }
+}
+
+impl<T> Sparse<T> {
+    /* The function `s.is_elt(i)` tells whether index `i` points to a
+     * existing element. It can be checked as follows:
+     *   (1) check that array `idx` maps `i` to a index `j` between 0 and `n` (excluded)
+     *   (2) check that `back[j]` is `i`
+     */
+    #[ghost]
+    fn is_elt(&self, i: Int) -> bool {
+        pearlite! { self.idx[i]@ < self.n@
+                    && self.back[self.idx[i]@]@ == i
+        }
+    }
 
     /* The method for accessing
      */
-    #[requires(self.sparse_inv())]
     #[requires(i@ < self@.len())]
     #[ensures(match result {
         None => self@[i@] == None,
@@ -97,7 +98,6 @@ impl<T> Sparse<T> {
     /* A key lemma to prove for safety of access in `set()`
      */
     #[ghost]
-    #[requires(self.sparse_inv())]
     #[requires(self.n == self.size)]
     #[requires(0 <= i && i < self.size@)]
     #[ensures(self.is_elt(i))]
@@ -105,9 +105,7 @@ impl<T> Sparse<T> {
 
     /* The method for modifying
      */
-    #[requires((*self).sparse_inv())]
     #[requires(i@ < self@.len())]
-    #[ensures((^self).sparse_inv())]
     #[ensures((^self)@.len() == self@.len())]
     #[ensures(forall<j: Int> 0 <= j && j < self@.len() && j != i@ ==> (^self)@[j] == self@[j])]
     #[ensures((^self)@[i@] == Some(v))]
@@ -131,7 +129,6 @@ impl<T> Sparse<T> {
  * element of type `T`, required because Rust would not accept
  * to create non-initialized arrays.
  */
-#[ensures(result.sparse_inv())]
 #[ensures(result.size == sz)]
 #[ensures(forall<i: Int> 0 <= i && i < sz@ ==> result@[i] == None)]
 pub fn create<T: Clone + Copy>(sz: usize, dummy: T) -> Sparse<T> {
