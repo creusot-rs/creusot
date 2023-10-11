@@ -33,7 +33,6 @@ pub fn fin<'curr, X>(x: &'curr mut X) -> X {
 #[open]
 #[logic]
 #[after_expiry('curr, *result == *x)]
-#[after_expiry('a, *result == *x)]
 pub fn expiry<'a, X>(x: &'a mut X) -> &'a mut X {
     x
 }
