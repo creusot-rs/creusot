@@ -123,7 +123,7 @@ pub(crate) fn full_signature_logic<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
     let sig = tcx.liberate_late_bound_regions(owner_id, sig);
     let sig = ctx.fix_regions(sig);
 
-    let ts = make_time_slice_logic(ts, &mut ctx)?;
+    let ts2 = make_time_slice_logic(ts, &mut ctx)?;
     let args = ctx.tcx.fn_arg_names(ctx.owner_id);
     let ret_home = ctx.curr_region().into();
     let arg_homes = match parsing::parse_home_sig_lit(home_sig)? {
@@ -140,5 +140,7 @@ pub(crate) fn full_signature_logic<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
     let (arg_tys, res_ty) =
         add_homes_to_sig::<Vec<_>>(args, sig, arg_homes, ret_home, home_sig.span)?;
     let iter = IntoIterator::into_iter(&arg_tys).map(|(_, x)| *x);
-    Ok((ctx.finish_for_logic(iter), ts, arg_tys.into_iter().collect(), res_ty))
+    let ctx = ctx.finish_for_logic(iter);
+    ctx.try_move_state(ts2, ts.span)?;
+    Ok((ctx, ts2, arg_tys.into_iter().collect(), res_ty))
 }
