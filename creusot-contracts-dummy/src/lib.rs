@@ -98,6 +98,11 @@ pub fn prusti_logic(_: TS1, _: TS1) -> TS1 {
 }
 
 #[proc_macro_attribute]
+pub fn prusti_ghost(_: TS1, _: TS1) -> TS1 {
+    TS1::new()
+}
+
+#[proc_macro_attribute]
 pub fn prusti_predicate(_: TS1, _: TS1) -> TS1 {
     TS1::new()
 }

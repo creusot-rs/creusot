@@ -1,5 +1,5 @@
 use crate as creusot_contracts;
-use creusot_contracts::{logic, open};
+use creusot_contracts::{ghost, open};
 
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "fin"]
@@ -72,7 +72,7 @@ pub fn mapping_from_fn<A, B, F: FnOnce(A) -> B>(_: F) -> crate::logic::Mapping<A
     panic!()
 }
 
-#[logic] // avoid triggering error since this is prusti specific
+#[ghost] // avoid triggering error since this is prusti specific
 #[open]
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "prusti_curr"]
@@ -80,7 +80,7 @@ pub fn curr<T>(_: T) -> T {
     absurd
 }
 
-#[logic] // avoid triggering error since this is prusti specific
+#[ghost] // avoid triggering error since this is prusti specific
 #[open]
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "prusti_expiry"]
@@ -118,7 +118,7 @@ pub mod __prusti {
     }
 }
 
-#[logic] // avoid triggering error since this is prusti specific
+#[ghost] // avoid triggering error since this is prusti specific
 #[open]
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "prusti_dbg_ty"]

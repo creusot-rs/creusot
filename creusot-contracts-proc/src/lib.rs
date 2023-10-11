@@ -801,6 +801,21 @@ pub fn prusti_logic(attr: TS1, tokens: TS1) -> TS1 {
 }
 
 #[proc_macro_attribute]
+pub fn prusti_ghost(attr: TS1, tokens: TS1) -> TS1 {
+    let attr = TokenStream::from(attr);
+    let tokens = TokenStream::from(tokens);
+    let sig = format!("{attr}");
+    let sig = LitStr::new(&sig, attr.span());
+    TS1::from(quote! {
+        #[forbid(creusot::prusti_final)]
+        #[creusot::prusti::ts="curr"]
+        #[creusot::prusti::home_sig=#sig]
+        #[::creusot_contracts::ghost]
+        #tokens
+    })
+}
+
+#[proc_macro_attribute]
 pub fn prusti_predicate(attr: TS1, tokens: TS1) -> TS1 {
     let attr = TokenStream::from(attr);
     let tokens = TokenStream::from(tokens);

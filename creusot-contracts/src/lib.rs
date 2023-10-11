@@ -154,7 +154,7 @@ mod base_prelude {
 
 pub mod prusti_macros {
     pub use base_macros::{
-        ghost, invariant, open, pearlite, proof_assert, prusti_ensures as ensures,
+        prusti_ghost as ghost, invariant, open, pearlite, proof_assert, prusti_ensures as ensures,
         prusti_ensures_expiry as after_expiry, prusti_law as law, prusti_logic as logic,
         prusti_predicate as predicate, prusti_requires as requires, trusted, variant,
     };
