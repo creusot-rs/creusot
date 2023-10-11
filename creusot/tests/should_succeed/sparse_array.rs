@@ -34,15 +34,11 @@ impl<T> ShallowModel for Sparse<T> {
 
     #[ghost]
     #[open(self)]
-    #[trusted]
-    #[ensures(result.len() == self.size@)]
-    #[ensures(forall<i:Int>
-              result[i] == (if self.is_elt(i) { Some(self.values[i]) } else { None })
-    )]
     fn shallow_model(self) -> Self::ShallowModelTy {
-        // we miss a way to define the sequence, we need
-        // a higher-order definition by comprehension
-        absurd
+        pearlite! {
+            Seq::new(self.size@,
+                     |i| if self.is_elt(i) { Some(self.values[i]) } else { None })
+        }
     }
 }
 
@@ -52,10 +48,9 @@ impl<T> Sparse<T> {
      *   (1) check that array `idx` maps `i` to a index `j` between 0 and `n` (excluded)
      *   (2) check that `back[j]` is `i`
      */
-    #[predicate]
+    #[ghost]
     fn is_elt(&self, i: Int) -> bool {
-        pearlite! { 0 <= i && i < self.size@
-                    && self.idx[i]@ < self.n@
+        pearlite! { self.idx[i]@ < self.n@
                     && self.back[self.idx[i]@]@ == i
         }
     }
@@ -114,7 +109,7 @@ impl<T> Sparse<T> {
     #[requires(i@ < self@.len())]
     #[ensures((^self).sparse_inv())]
     #[ensures((^self)@.len() == self@.len())]
-    #[ensures(forall<j: Int> j != i@ ==> (^self)@[j] == self@[j])]
+    #[ensures(forall<j: Int> 0 <= j && j < self@.len() && j != i@ ==> (^self)@[j] == self@[j])]
     #[ensures((^self)@[i@] == Some(v))]
     pub fn set(&mut self, i: usize, v: T) {
         self.values[i] = v;
@@ -138,7 +133,7 @@ impl<T> Sparse<T> {
  */
 #[ensures(result.sparse_inv())]
 #[ensures(result.size == sz)]
-#[ensures(forall<i: Int> result@[i] == None)]
+#[ensures(forall<i: Int> 0 <= i && i < sz@ ==> result@[i] == None)]
 pub fn create<T: Clone + Copy>(sz: usize, dummy: T) -> Sparse<T> {
     Sparse { size: sz, n: 0, values: vec![dummy; sz], idx: vec![0; sz], back: vec![0; sz] }
 }

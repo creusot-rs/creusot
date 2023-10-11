@@ -98,7 +98,7 @@ fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
 #[ensures(is_subset(str.deep_model(), result.deep_model()))]
 fn unique<T: Eq + DeepModel + Copy>(str: &[T]) -> Vec<T> {
     let mut unique = Vec::new();
-    let mut sub_str: Ghost<Seq<T>> = gh! { Seq::new() };
+    let mut sub_str: Ghost<Seq<T>> = gh! { Seq::EMPTY };
 
     #[invariant(is_unique(unique.deep_model()))]
     #[invariant(is_subset(unique.deep_model(), str.deep_model()))]
