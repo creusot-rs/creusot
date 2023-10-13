@@ -482,7 +482,7 @@ impl<'tcx> CloneMap<'tcx> {
                     }
                     TyKind::Closure(id, subst) => {
                         // Sketchy... shouldn't we need to do something to subst?
-                        Some(CloneNode::new(ctx.tcx, (*id, *subst)))
+                        Some(CloneNode::as_ty(ctx.tcx, (*id, *subst)))
                     }
                     TyKind::Adt(_, _) => Some(CloneNode::Type(t)),
                     _ => None,
@@ -621,6 +621,9 @@ impl<'tcx> CloneMap<'tcx> {
 
             match dep {
                 DepNode::Type(ty) => {
+                    if ty.is_closure() {
+                        continue;
+                    }
                     for (nm, sym) in syms.clone() {
                         let ty_name = nm.qname_ident(sym.ident());
                         let ty = backend::ty::translate_ty(ctx, self, DUMMY_SP, ty);

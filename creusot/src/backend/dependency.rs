@@ -32,7 +32,13 @@ impl<'tcx> Dependency<'tcx> {
             ItemType::Type | ItemType::Closure | ItemType::AssocTy
         ));
 
-        Dependency::Type(tcx.type_of(did).subst(tcx, subst))
+        match item_type(tcx, did) {
+            ItemType::Type | ItemType::Closure => Dependency::Type(tcx.type_of(did).subst(tcx, subst)),
+            ItemType::AssocTy => Dependency::Type(tcx.mk_alias(AliasKind::Projection, tcx.mk_alias_ty(did, subst))),
+            _ => unreachable!(),
+        }
+
+
     }
     pub(crate) fn new(tcx: TyCtxt<'tcx>, (did, subst): (DefId, SubstsRef<'tcx>)) -> Self {
         match util::item_type(tcx, did) {
