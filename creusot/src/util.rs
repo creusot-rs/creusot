@@ -208,7 +208,7 @@ pub(crate) fn item_name(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Ident {
             if ns == Namespace::TypeNS {
                 id = id.to_string().to_ascii_lowercase().into();
             } else {
-                id.decapitalize();
+                id = "closure".into();
             }
             id
         }

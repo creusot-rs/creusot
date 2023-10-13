@@ -206,6 +206,10 @@ impl<'tcx> CloneInfo {
     fn qname_ident(&self, method: Ident) -> QName {
         self.kind.qname_ident(method)
     }
+
+    pub(crate) fn hide(&mut self) {
+        self.kind = Kind::Hidden;
+    }
 }
 
 impl<'tcx> CloneMap<'tcx> {
@@ -261,10 +265,19 @@ impl<'tcx> CloneMap<'tcx> {
     pub(crate) fn insert(&mut self, key: CloneNode<'tcx>) -> &mut CloneInfo {
         let key = key.erase_regions(self.tcx).closure_hack(self.tcx);
 
+        if let Dependency::Item(id, _) = key && self.tcx.is_closure(id) {
+            self.insert(Dependency::Type(self.tcx.type_of(id).subst_identity()));
+        }
+
         self.names.entry(key).or_insert_with(|| {
             if let CloneNode::Type(ty) = key && !matches!(ty.kind(), TyKind::Alias(_, _)) {
                 return if let Some((did, _)) = key.did() {
-                    let name = Symbol::intern(&*module_name(self.tcx, did));
+                    let mut module = module_name(self.tcx, did);
+                    if self.tcx.is_closure(did) {
+                        module = format!("{}_Type", &*module).into();
+                    }
+                    let name = Symbol::intern(&*module);
+
                     CloneInfo::from_name(name, self.public)
                 } else {
                     CloneInfo::hidden()
@@ -300,7 +313,7 @@ impl<'tcx> CloneMap<'tcx> {
 
     pub(crate) fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
         let name = item_name(self.tcx, def_id, Namespace::TypeNS);
-        let node = CloneNode::new(self.tcx, (def_id, subst));
+        let node = Dependency::as_ty(self.tcx, (def_id, subst));
         self.insert(node).qname_ident(name.into())
     }
 
@@ -582,11 +595,11 @@ impl<'tcx> CloneMap<'tcx> {
         if let DepNode::Type(_) = item {
             let (def_id, _) = item.did()?;
             // check if type is not an assoc type
-            if util::item_type(ctx.tcx, def_id) == ItemType::Type {
+            if util::item_type(ctx.tcx, def_id) != ItemType::AssocTy {
                 let use_decl = self.used_types.insert(def_id).then(|| {
                     if let Some(builtin) = get_builtin(ctx.tcx, def_id) {
                         let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
-                        Use { name: name, as_: None, export: false }
+                        Use { name, as_: None, export: false }
                     } else {
                         let name = cloneable_name(ctx, item, CloneLevel::Body);
                         Use { name: name.clone(), as_: Some(name), export: false }
@@ -790,6 +803,7 @@ fn cloneable_name(ctx: &TranslationCtx, dep: DepNode, clone_level: CloneLevel) -
 
     let (def_id, _) = dep.did().unwrap();
 
+    let is_ty = if let Dependency::Type(_) = dep { true } else { false };
     // TODO: Refactor.
     match util::item_type(ctx.tcx, def_id) {
         Ghost | Logic | Predicate | Impl => match clone_level {
@@ -809,9 +823,15 @@ fn cloneable_name(ctx: &TranslationCtx, dep: DepNode, clone_level: CloneLevel) -
             },
         },
 
-        Program | Closure => {
-            QName { module: Vec::new(), name: interface::interface_name(ctx, def_id) }
+        Closure => {
+            if is_ty {
+                // HACK: MAJOR hack
+                format!("{}_Type", module_name(ctx.tcx, def_id).to_string()).into()
+            } else {
+                QName { module: Vec::new(), name: interface::interface_name(ctx, def_id) }
+            }
         }
+        Program => QName { module: Vec::new(), name: interface::interface_name(ctx, def_id) },
         Trait | Type | AssocTy => module_name(ctx.tcx, def_id).into(),
         Unsupported(_) => unreachable!(),
     }
@@ -874,6 +894,7 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, dep: DepNode<'tcx>) -> Option<Symb
         Ghost | Logic => Some(SymbolKind::Function(tcx.item_name(def_id))),
         Predicate => Some(SymbolKind::Predicate(tcx.item_name(def_id))),
         Program => Some(SymbolKind::Val(tcx.item_name(def_id))),
+        Closure => Some(SymbolKind::Val(Symbol::intern("closure"))),
         AssocTy => match tcx.associated_item(def_id).container {
             ty::TraitContainer => Some(SymbolKind::Type(tcx.item_name(def_id))),
             ty::ImplContainer => None,

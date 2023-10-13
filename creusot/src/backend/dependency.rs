@@ -7,7 +7,7 @@ use rustc_type_ir::AliasKind;
 use crate::{
     ctx::TranslationCtx,
     translation::traits,
-    util::{self, ItemType},
+    util::{self, item_type, ItemType},
 };
 
 use super::{ty_inv::TyInvKind, TransId};
@@ -26,6 +26,14 @@ pub(crate) enum Dependency<'tcx> {
 }
 
 impl<'tcx> Dependency<'tcx> {
+    pub(crate) fn as_ty(tcx: TyCtxt<'tcx>, (did, subst): (DefId, SubstsRef<'tcx>)) -> Self {
+        assert!(matches!(
+            item_type(tcx, did),
+            ItemType::Type | ItemType::Closure | ItemType::AssocTy
+        ));
+
+        Dependency::Type(tcx.type_of(did).subst(tcx, subst))
+    }
     pub(crate) fn new(tcx: TyCtxt<'tcx>, (did, subst): (DefId, SubstsRef<'tcx>)) -> Self {
         match util::item_type(tcx, did) {
             ItemType::Type => Dependency::Type(tcx.mk_adt(tcx.adt_def(did), subst)),
