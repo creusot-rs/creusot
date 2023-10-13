@@ -230,6 +230,10 @@ impl<T> SliceIndex<[T]> for RangeToInclusive<usize> {
 
 extern_spec! {
     impl<T> [T] {
+        #[requires(self@.len() == src@.len())]
+        #[ensures((^self)@ == src@)]
+        fn copy_from_slice(&mut self, src: &[T]) where T : Copy;
+
         #[ensures(self@.len() == result@)]
         fn len(&self) -> usize;
 

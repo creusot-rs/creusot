@@ -1,4 +1,5 @@
-use crate::{logic::IndexLogic, std::alloc::Allocator, *};
+use crate::{invariant::Invariant, logic::IndexLogic, std::alloc::Allocator, *};
+use ::std::collections::vec_deque::Iter;
 pub use ::std::collections::VecDeque;
 
 impl<T, A: Allocator> ShallowModel for VecDeque<T, A> {
@@ -95,4 +96,59 @@ extern_spec! {
             }
         }
     }
+}
+
+impl<T, A: Allocator> IntoIterator for &VecDeque<T, A> {
+    #[predicate]
+    #[open]
+    fn into_iter_pre(self) -> bool {
+        pearlite! { true }
+    }
+
+    #[predicate]
+    #[open]
+    fn into_iter_post(self, res: Self::IntoIter) -> bool {
+        pearlite! { self@ == res@@ }
+    }
+}
+
+impl<'a, T> ShallowModel for Iter<'a, T> {
+    type ShallowModelTy = &'a [T];
+
+    #[ghost]
+    #[open(self)]
+    #[trusted]
+    fn shallow_model(self) -> Self::ShallowModelTy {
+        absurd
+    }
+}
+
+impl<'a, T> Invariant for Iter<'a, T> {}
+
+impl<'a, T> Iterator for Iter<'a, T> {
+    #[predicate]
+    #[open]
+    fn completed(&mut self) -> bool {
+        pearlite! { self.resolve() && (*self@)@ == Seq::EMPTY }
+    }
+
+    #[predicate]
+    #[open]
+    fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
+        pearlite! {
+            self@.to_ref_seq() == visited.concat(tl@.to_ref_seq())
+        }
+    }
+
+    #[law]
+    #[open]
+    #[ensures(a.produces(Seq::EMPTY, a))]
+    fn produces_refl(a: Self) {}
+
+    #[law]
+    #[open]
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
