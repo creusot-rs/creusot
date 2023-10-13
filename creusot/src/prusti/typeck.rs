@@ -11,6 +11,7 @@ use crate::{
     lints::PRUSTI_ZOMBIE,
     prusti::{
         ctx::{BaseCtx, CtxRef, InternedInfo},
+        parsing::Outlives,
         with_static::PrettyRegionReplacer,
     },
     util,
@@ -213,13 +214,15 @@ pub(crate) fn check_call<'tcx>(
     def_id: DefId,
     subst_ref: SubstsRef<'tcx>,
     args: impl Iterator<Item = CreusotResult<((Region<'tcx>, Ty<'tcx>), Span)>>,
+    call_span: Span,
 ) -> CreusotResult<Ty<'tcx>> {
     let tcx = ctx.tcx;
     // Eagerly evaluate args to avoid running multiple inference contexts at the same time
     let args = args.collect::<CreusotResult<Vec<_>>>()?.into_iter();
-    let home_sig_args = match home_sig(ctx, def_id)? {
-        Some(args) => Either::Left(args.into_iter()),
-        None => Either::Right(iter::repeat(ctx.curr_home())),
+    let home_sig = home_sig(ctx, def_id)?;
+    let (home_sig_args, home_sig_bounds) = match &home_sig {
+        Some(home_sig) => (Either::Left(home_sig.args()), Either::Left(home_sig.bounds())),
+        None => (Either::Right(iter::repeat(ctx.curr_home())), Either::Right(iter::empty())),
     };
 
     let infcx = tcx.infer_ctxt().build();
@@ -241,32 +244,49 @@ pub(crate) fn check_call<'tcx>(
     // maps homes in the home signature to states that were passed in for them
     let mut constrained_homes = FxHashMap::default();
 
-    args.zip(args_gen).zip(home_sig_args).try_for_each(|((arg, &ty_gen), home_sig_arg)| {
+    for ((arg, &ty_gen), home_sig_arg) in args.zip(args_gen).zip(home_sig_args) {
         let ((from_ts, mut ty), span) = arg;
-        if home_sig_arg.data == ctx.curr_sym {
+        if home_sig_arg == ctx.curr_sym {
             ty = check_move_state(from_ts, ts, ctx, ty, span)?;
         } else {
-            match constrained_homes.entry(home_sig_arg.data) {
-                Entry::Vacant(vac) => {vac.insert(from_ts);},
+            match constrained_homes.entry(home_sig_arg) {
+                Entry::Vacant(vac) => {
+                    vac.insert(from_ts);
+                }
                 Entry::Occupied(occ) if *occ.get() != from_ts => {
                     let d_oth_ts = prepare_display(*occ.get(), ctx);
                     let d_this_ts = prepare_display(from_ts, ctx);
                     return Err(Error::new(span, format!("expected argument to come from state `{d_oth_ts}`, but it came from `{d_this_ts}`\n\
-                    required by home signature of function")))
+                    required by home signature of function")));
                 }
                 _ => {}
             }
         }
 
-        let ty_gen = Ty{ty: ty_gen};
-        sup_tys(&ocx, span, ty_gen, ty)
-    })?;
+        let ty_gen = Ty { ty: ty_gen };
+        sup_tys(&ocx, span, ty_gen, ty)?;
+    }
+    constrained_homes.insert(ctx.curr_sym, ts); // 'curr is always constrained to the current state
+
+    // check explicit constraints
+    for Outlives { long, short } in home_sig_bounds {
+        if let (Some(&long), Some(&short)) =
+            (constrained_homes.get(&long), constrained_homes.get(&short))
+        {
+            if !ctx.relation.outlives(long.into(), short.into()) {
+                let dlong = prepare_display(long, ctx);
+                let dshort = prepare_display(short, ctx);
+                let msg = format!("expected `{dlong}` to outlive `{dshort}`\n\
+                    required by home signature of function");
+                return Err(Error::new(call_span, msg));
+            }
+        }
+    }
 
     // maps region variables to states they must be equal to
     let constrained_vars: FxHashMap<_, _> = subst_iter
         .filter_map(|(home, var)| {
-            let constraint =
-                if home == ctx.curr_sym { ts } else { *constrained_homes.get(&home)? };
+            let constraint = *constrained_homes.get(&home)?;
             Some((var, constraint))
         })
         .collect();
@@ -305,6 +325,13 @@ pub(crate) fn check_call<'tcx>(
             }
         },
     });
+    if let Some(r) = ty_outlives(res, ts, ctx) {
+        let dty = prepare_display(res, ctx);
+        let dts = prepare_display(ts, ctx);
+        let r = prepare_display(r, ctx);
+        let msg = format!("`{dty}` cannot be returned in `{dts}` since it doesn't live long enough\n`{r}` doesn't outlive `{dts}`");
+        return Err(Error::new(call_span, msg));
+    }
     Ok(res)
 }
 
@@ -473,6 +500,14 @@ impl<'a, 'tcx> TypeVisitor<TyCtxt<'tcx>> for AllRegionsOutliveCheck<'a, 'tcx> {
     }
 }
 
+fn ty_outlives<'tcx>(
+    ty: Ty<'tcx>,
+    state: Region<'tcx>,
+    ctx: CtxRef<'_, 'tcx>,
+) -> Option<Region<'tcx>> {
+    ty.ty.visit_with(&mut AllRegionsOutliveCheck { ctx, ts: state.into() }).break_value()
+}
+
 pub(crate) fn check_move_state<'tcx>(
     from_state: Region<'tcx>,
     to_state: Region<'tcx>,
@@ -485,9 +520,7 @@ pub(crate) fn check_move_state<'tcx>(
     let d_from_ts = prepare_display(from_state, ctx);
     if to_state == from_state {
         Ok(ty)
-    } else if let ControlFlow::Break(r) =
-        ty.ty.visit_with(&mut AllRegionsOutliveCheck { ctx, ts: to_state.into() })
-    {
+    } else if let Some(r) = ty_outlives(ty, to_state, ctx) {
         let r = prepare_display(r, ctx);
         Err(Error::new(span, format!("`{dty}` cannot be moved from `{d_from_ts}` to `{d_to_ts}` since it doesn't live long enough\n`{r}` doesn't outlive `{d_to_ts}`")))
     } else if !ctx.relation.outlives(to_state.into(), from_state.into()) {
@@ -611,7 +644,7 @@ pub(crate) fn check_signature_agreement<'tcx>(
         full_signature_logic::<Vec<_>>(&interned, trait_home_sig, sig, &ts, impl_id)?;
     let args = arg_tys.into_iter().map(|(_, ty)| Ok((ty, impl_span)));
     let actual_res_ty =
-        check_call(&ctx, ts, impl_id, ctx.fix_user_ty_regions(impl_id_subst), args)?;
+        check_call(&ctx, ts, impl_id, ctx.fix_user_ty_regions(impl_id_subst), args, impl_span)?;
     debug!(
         "{impl_id:?}: expected {}, found {}",
         prepare_display(expect_res_ty, &ctx),

@@ -347,7 +347,7 @@ fn convert<'tcx>(
                     .iter_mut()
                     .map(|arg| Ok((convert_sdt_state(arg, tenv, ts, ctx)?, arg.span)));
                 let (id, subst) = typeck::try_resolve(&ctx, *id, *subst);
-                typeck::check_call(ctx, ts, id, subst, args)?
+                typeck::check_call(ctx, ts, id, subst, args, outer_term.span)?
             }
         }
         TermKind::Constructor { fields, variant, .. } => {

@@ -3,12 +3,12 @@ use crate::{
     prusti::{
         ctx::{Ctx, CtxRef, InternedInfo, PreCtx},
         parsing,
-        parsing::Home,
+        parsing::{HomeSig, Outlives},
         types::Ty,
     },
     util,
 };
-use itertools::Either;
+use itertools::{Either, Itertools};
 use rustc_ast::MetaItemLit as Lit;
 use rustc_middle::ty::{Binder, FnSig, Region};
 use rustc_span::{def_id::DefId, symbol::Ident, Span, Symbol, DUMMY_SP};
@@ -69,8 +69,8 @@ type Binding<'tcx> = (Symbol, BindingInfo<'tcx>);
 fn add_homes_to_sig<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
     args: &'tcx [Ident],
     sig: FnSig<'tcx>,
-    arg_homes: impl Iterator<Item = Home<Region<'tcx>>>,
-    ret_home: Home<Region<'tcx>>,
+    arg_homes: impl Iterator<Item = Region<'tcx>>,
+    ret_home: Region<'tcx>,
     _span: Span,
 ) -> CreusotResult<(T, BindingInfo<'tcx>)> {
     let types = sig.inputs().iter().zip(arg_homes);
@@ -87,9 +87,9 @@ fn add_homes_to_sig<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
             }
         })
         .zip(types);
-    let arg_tys = arg_tys.map(|(k, (&ty, home))| (k, (home.data, Ty { ty }))).collect::<T>();
+    let arg_tys = arg_tys.map(|(k, (&ty, home))| (k, (home, Ty { ty }))).collect::<T>();
     let res_ty = Ty { ty: sig.output() };
-    Ok((arg_tys, (ret_home.data, res_ty)))
+    Ok((arg_tys, (ret_home, res_ty)))
 }
 
 pub(crate) fn full_signature<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
@@ -111,9 +111,21 @@ pub(crate) fn full_signature<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
     Ok((ctx, ts, arg_tys, res_ty))
 }
 
+fn validate_home_sig(home_sig: &HomeSig, ctx: &PreCtx, span: Span) -> CreusotResult<()> {
+    for bound in home_sig.bounds().flat_map(|Outlives { long, short }| [long, short]) {
+        if bound != ctx.curr_sym && !home_sig.args().contains(&bound) {
+            let msg = format!(
+                "signature uses the state `{bound}` in a constraint but not for any argument"
+            );
+            return Err(Error::new(span, msg));
+        }
+    }
+    Ok(())
+}
+
 pub(crate) fn full_signature_logic<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
     interned: &'a InternedInfo<'tcx>,
-    home_sig: &Lit,
+    home_sig_lit: &Lit,
     sig: Binder<'tcx, FnSig<'tcx>>,
     ts: &Lit,
     owner_id: DefId,
@@ -126,21 +138,27 @@ pub(crate) fn full_signature_logic<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
     let ts2 = make_time_slice_logic(ts, &mut ctx)?;
     let args = ctx.tcx.fn_arg_names(ctx.owner_id);
     let ret_home = ctx.curr_region().into();
-    let arg_homes = match parsing::parse_home_sig_lit(home_sig)? {
-        Some(arg_homes) if arg_homes.len() != sig.inputs().len() => {
-            return Err(Error::new(home_sig.span, "number of args doesn't match signature"));
+    let hs_span = home_sig_lit.span;
+    let home_sig = parsing::parse_home_sig_lit(home_sig_lit)?;
+    let (arg_homes, bounds) = match &home_sig {
+        Some(home_sig) if home_sig.args_len() != sig.inputs().len() => {
+            return Err(Error::new(hs_span, "number of args doesn't match signature"));
         }
-        Some(arg_homes) => {
-            let arg_homes = arg_homes.into_iter().map(|h| ctx.map_parsed_home(h));
-            Either::Left(arg_homes)
+        Some(home_sig) => {
+            validate_home_sig(home_sig, &ctx, hs_span)?;
+            let arg_homes = home_sig.args().map(|h| ctx.home_to_region(h));
+            (Either::Left(arg_homes), Either::Left(home_sig.bounds()))
         }
-        None => Either::Right(iter::repeat(ctx.curr_region().into())),
+        None => {
+            (Either::Right(iter::repeat(ctx.curr_region().into())), Either::Right(iter::empty()))
+        }
     };
 
-    let (arg_tys, res_ty) =
-        add_homes_to_sig::<Vec<_>>(args, sig, arg_homes, ret_home, home_sig.span)?;
+    let (arg_tys, res_ty) = add_homes_to_sig::<Vec<_>>(args, sig, arg_homes, ret_home, hs_span)?;
     let iter = IntoIterator::into_iter(&arg_tys).map(|(_, x)| *x);
-    let ctx = ctx.finish_for_logic(iter);
+    let iter = iter.chain(iter::once(res_ty));
+
+    let ctx = ctx.finish_for_logic(iter, bounds);
     ctx.try_move_state(ts2, ts.span)?;
     Ok((ctx, ts2, arg_tys.into_iter().collect(), res_ty))
 }

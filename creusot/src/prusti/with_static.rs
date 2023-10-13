@@ -95,17 +95,17 @@ impl<'a, 'tcx, F: FnMut(Region<'tcx>) -> Region<'tcx>> TypeFolder<TyCtxt<'tcx>>
         self.ctx.tcx
     }
 
-    fn fold_ty(&mut self, t: Ty<'tcx>) -> Ty<'tcx> {
-        match t.kind() {
-            TyKind::Param(..) => {
-                let r = self.ctx.curr_region();
-                let did = self.ctx.static_replacer_info.internal;
-                let tcx = self.ctx.tcx;
-                tcx.mk_adt(tcx.adt_def(did), tcx.mk_substs(&[r.into(), t.into()]))
-            }
-            _ => t.super_fold_with(self),
-        }
-    }
+    // fn fold_ty(&mut self, t: Ty<'tcx>) -> Ty<'tcx> {
+    //     match t.kind() {
+    //         TyKind::Param(..) => {
+    //             let r = self.ctx.curr_region();
+    //             let did = self.ctx.static_replacer_info.internal;
+    //             let tcx = self.ctx.tcx;
+    //             tcx.mk_adt(tcx.adt_def(did), tcx.mk_substs(&[r.into(), t.into()]))
+    //         }
+    //         _ => t.super_fold_with(self),
+    //     }
+    // }
 
     fn fold_region(&mut self, r: Region<'tcx>) -> Region<'tcx> {
         (self.f)(r)

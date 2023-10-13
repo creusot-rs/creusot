@@ -1,7 +1,8 @@
 use crate::error::{CreusotResult, Error};
 
-use super::{parsing::Home, region_set::*, util::RegionReplacer};
+use super::{parsing::Home, region_set::*};
 use crate::prusti::{
+    parsing::Outlives,
     typeck::normalize,
     types::{prepare_display, Ty},
     with_static::{FixingRegionReplacer, StaticNormalizerDefIds},
@@ -11,7 +12,7 @@ use rustc_infer::infer::region_constraints::Constraint;
 use rustc_lint::Lint;
 use rustc_middle::{
     ty,
-    ty::{BoundRegionKind, ParamEnv, Region, TyCtxt, TypeFoldable},
+    ty::{walk::TypeWalker, BoundRegionKind, ParamEnv, Region, TyCtxt, TypeFoldable},
 };
 use rustc_span::{
     def_id::{DefId, LocalDefId, CRATE_DEF_ID},
@@ -114,16 +115,8 @@ fn index_of<T: Eq + Debug>(s: &[T], x: &T) -> usize {
     try_index_of(s, x).expect(&format!("{s:?} did not contain {x:?}"))
 }
 
-fn ty_regions<'tcx>(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Vec<Region<'tcx>> {
-    let mut v = Vec::new();
-    ty.fold_with(&mut RegionReplacer {
-        tcx,
-        f: |r| {
-            v.push(r);
-            r
-        },
-    });
-    v
+fn ty_regions<'tcx>(ty: ty::Ty<'tcx>) -> impl Iterator<Item = Region<'tcx>> {
+    TypeWalker::new(ty.into()).filter_map(|x| x.as_region())
 }
 
 impl<'tcx> InternedInfo<'tcx> {
@@ -240,10 +233,6 @@ impl<'a, 'tcx> PreCtx<'a, 'tcx> {
         RegionSet::singleton(idx as u32).into_region(self.tcx)
     }
 
-    pub(super) fn map_parsed_home(&mut self, home: Home) -> Home<Region<'tcx>> {
-        Home { data: self.home_to_region(home.data) }
-    }
-
     /// Fixes an external region by converting it into a singleton set
     pub(super) fn fix_region(&mut self, r: Region<'tcx>) -> Region<'tcx> {
         if r.get_name() == Some(self.curr_sym) {
@@ -269,14 +258,23 @@ impl<'a, 'tcx> PreCtx<'a, 'tcx> {
     pub(super) fn finish_for_logic(
         self,
         iter: impl Iterator<Item = (Region<'tcx>, Ty<'tcx>)>,
+        bounds: impl Iterator<Item = Outlives>,
     ) -> Ctx<'a, 'tcx> {
         let mut valid_states = RegionSet::singleton(CURR_IDX.into());
         let reg_to_idx = |r: Region| RegionSet::from(r).try_into_singleton().unwrap();
-        let iter = iter.flat_map(|(state, ty)| {
-            let state_idx = reg_to_idx(state);
-            valid_states = valid_states.union(RegionSet::singleton(state_idx));
-            ty_regions(ty.ty, self.tcx).into_iter().map(move |r| (reg_to_idx(r), reg_to_idx(state)))
-        });
+        let iter = iter
+            .flat_map(|(state, ty)| {
+                let state_idx = reg_to_idx(state);
+                valid_states = valid_states.union(RegionSet::singleton(state_idx));
+                ty_regions(ty.ty).into_iter().map(move |r| (reg_to_idx(r), state_idx))
+            })
+            .chain(bounds.filter_map(|b| {
+                let home = b.long;
+                let long = reg_to_idx(self.try_home_to_region(home)?);
+                let home = b.short;
+                let short = reg_to_idx(self.try_home_to_region(home)?);
+                Some((long, short))
+            }));
         let relation = self.base.make_relation(iter);
         let base = BaseCtx { fn_type: FnType::Logic { valid_states }, ..self.base };
         Ctx { base, relation }

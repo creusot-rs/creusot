@@ -1,0 +1,12 @@
+extern crate creusot_contracts;
+use creusot_contracts::prusti_prelude::*;
+
+#[logic('x)]
+fn move_state<'x, T: Copy>(t: T) -> T {
+    move_state2(at_expiry::<'x>(t))
+}
+
+#[logic('x where 'curr: 'x)]
+fn move_state2<'x, T: Copy>(t: T) -> T {
+    t
+}
