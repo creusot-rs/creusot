@@ -191,7 +191,8 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
     pub(crate) fn body_with_facts(&mut self, def_id: LocalDefId) -> &BodyWithBorrowckFacts<'tcx> {
         if !self.bodies.contains_key(&def_id) {
-            let body = callbacks::get_body(self.tcx, def_id).unwrap();
+            let body = callbacks::get_body(self.tcx, def_id)
+                .unwrap_or_else(|| panic!("did not find body for {def_id:?}"));
 
             // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
             // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
