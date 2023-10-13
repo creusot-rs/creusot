@@ -67,7 +67,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
             Some(v) => {
                 proof_assert! { self.func.precondition((v, self.produced)) };
                 let produced = gh! { self.produced.push(v) };
-                let r = (self.func)(v, gh! { self.produced.inner() }); // FIXME: Ghost should be Copy
+                let r = (self.func)(v, self.produced);
                 self.produced = produced;
                 gh! { Self::produces_one_invariant };
                 let _ = self; // Make sure self is not resolve until here.
