@@ -77,18 +77,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     let TyKind::Closure(def_id, _) = ty.kind() else { panic!() };
                     let mut assertion = self.assertions.remove(def_id).unwrap();
                     assertion.subst(&inv_subst(self.body, &self.locals, terminator.source_info));
-
-                    if let Some(resolver) = &mut self.resolver {
-                        let frozen = resolver.frozen_locals_before(location);
-                        let free_vars = assertion.free_vars();
-                        for f in frozen.iter() {
-                            if free_vars.contains(&self.locals[&f]) {
-                                let msg = format!("Use of borrowed variable {}", self.locals[&f]);
-                                self.ctx.crash_and_error(assertion.span, &msg);
-                            }
-                        }
-                    }
-
+                    self.check_ghost_term(&assertion, location);
                     self.emit_ghost_assign(*destination, assertion);
                     self.emit_terminator(Terminator::Goto(target.unwrap()));
                     return;
@@ -189,6 +178,19 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             AssertKind::DivisionByZero(_) => format!("division by zero"),
             AssertKind::RemainderByZero(_) => format!("remainder by zero"),
             _ => unreachable!("Resume assertions"),
+        }
+    }
+
+    fn check_ghost_term(&mut self, term: &Term<'tcx>, location: Location) {
+        if let Some(resolver) = &mut self.resolver {
+            let frozen = resolver.frozen_locals_before(location);
+            let free_vars = term.free_vars();
+            for f in frozen.iter() {
+                if free_vars.contains(&self.locals[&f]) {
+                    let msg = format!("Use of borrowed variable {}", self.locals[&f]);
+                    self.ctx.crash_and_error(term.span, &msg);
+                }
+            }
         }
     }
 }
