@@ -77,6 +77,18 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     let TyKind::Closure(def_id, _) = ty.kind() else { panic!() };
                     let mut assertion = self.assertions.remove(def_id).unwrap();
                     assertion.subst(&inv_subst(self.body, &self.locals, terminator.source_info));
+
+                    if let Some(resolver) = &mut self.resolver {
+                        let frozen = resolver.frozen_locals_before(location);
+                        let free_vars = assertion.free_vars();
+                        for f in frozen.iter() {
+                            if free_vars.contains(&self.locals[&f]) {
+                                let msg = format!("Use of borrowed variable {}", self.locals[&f]);
+                                self.ctx.crash_and_error(assertion.span, &msg);
+                            }
+                        }
+                    }
+
                     self.emit_ghost_assign(*destination, assertion);
                     self.emit_terminator(Terminator::Goto(target.unwrap()));
                     return;
