@@ -21,7 +21,7 @@ type TimeSlice<'tcx> = Region<'tcx>;
 fn make_time_slice<'tcx>(l: &Lit, ctx: CtxRef<'_, 'tcx>) -> CreusotResult<TimeSlice<'tcx>> {
     let old_region = ctx.old_region();
     let curr_region = ctx.curr_region();
-    let mut regions = ctx.base_regions().map(|r| (r.get_name(), ctx.fix_region(r)));
+    let mut regions = ctx.base_states().iter().map(|&r| (r.get_name(), ctx.fix_region(r)));
     let sym = l.as_token_lit().symbol;
     match sym.as_str() {
         "old" => Ok(old_region),

@@ -1,7 +1,7 @@
 use super::{
     full_signature_logic,
     parsing::{parse_home_sig_lit, HomeSig},
-    region_set::RegionSet,
+    region_set::StateSet,
     typeck::MutDerefType::{Cur, Fin},
     types::*,
     util::{generalize, RegionReplacer},
@@ -90,7 +90,7 @@ fn filter_elided<'tcx>(
 }
 
 /// Maps region variables to there lower bounds
-struct RegionInfo(FxHashMap<RegionVid, RegionSet>);
+struct RegionInfo(FxHashMap<RegionVid, StateSet>);
 
 impl RegionInfo {
     fn new<'tcx>(
@@ -115,12 +115,12 @@ impl RegionInfo {
     }
 
     fn add_bound(&mut self, key: RegionVid, val: Region<'_>) {
-        let reg = self.0.entry(key).or_insert(RegionSet::EMPTY);
+        let reg = self.0.entry(key).or_insert(StateSet::EMPTY);
         *reg = reg.union(val.into())
     }
 
     fn get_region<'tcx>(&self, key: Region<'tcx>, tcx: TyCtxt<'tcx>) -> Region<'tcx> {
-        let reg = *self.0.get(&key.as_var()).unwrap_or(&RegionSet::EMPTY);
+        let reg = *self.0.get(&key.as_var()).unwrap_or(&StateSet::EMPTY);
         reg.into_region(tcx)
     }
 }
@@ -477,7 +477,7 @@ pub(crate) fn try_resolve<'tcx>(
 
 struct AllRegionsOutliveCheck<'a, 'tcx> {
     ctx: CtxRef<'a, 'tcx>,
-    ts: RegionSet,
+    ts: StateSet,
 }
 
 impl<'a, 'tcx> TypeVisitor<TyCtxt<'tcx>> for AllRegionsOutliveCheck<'a, 'tcx> {

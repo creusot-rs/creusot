@@ -12,7 +12,7 @@ use rustc_target::abi::VariantIdx;
 use std::fmt::{Debug, Display, Formatter};
 
 pub(super) fn sub_ts<'tcx>(ts1: Region<'tcx>, ts2: Region<'tcx>) -> bool {
-    RegionSet::from(ts1).subset(RegionSet::from(ts2))
+    StateSet::from(ts1).subset(StateSet::from(ts2))
 }
 
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
@@ -114,7 +114,7 @@ impl<'tcx> Ty<'tcx> {
     }
 
     pub(crate) fn absurd_regions(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
-        Self::all_at_ts(ty, tcx, RegionSet::EMPTY.into_region(tcx))
+        Self::all_at_ts(ty, tcx, StateSet::EMPTY.into_region(tcx))
     }
 
     pub(crate) fn with_absurd_home(ty: ty::Ty<'tcx>, _tcx: TyCtxt<'tcx>) -> Self {
@@ -131,19 +131,19 @@ pub(super) fn make_region_for_display<'tcx>(
     ctx: &'_ BaseCtx<'_, 'tcx>,
 ) -> Region<'tcx> {
     let tcx = ctx.tcx;
-    let reg_set = RegionSet::from(r);
-    if reg_set == RegionSet::UNIVERSE {
+    let reg_set = StateSet::from(r);
+    if reg_set == StateSet::UNIVERSE {
         return dummy_region(tcx, Symbol::intern("'?"));
     }
     let mut reg_set_h = reg_set;
     match (reg_set_h.next(), reg_set_h.next()) {
         (None, _) => dummy_region(tcx, Symbol::intern("'!")),
-        (Some(x), None) => ctx.base_regions().nth(x as usize).unwrap(),
+        (Some(x), None) => ctx.base_states()[x],
         _ => {
             use std::fmt::Write;
             let mut f = String::new();
             write!(f, "{{").unwrap();
-            let mut iter = reg_set.map(|x| ctx.region_index_to_name(x));
+            let mut iter = reg_set.map(|x| ctx.state_to_name(x));
             write!(f, "{}", iter.next().unwrap()).unwrap();
             for x in iter {
                 write!(f, "|{x}").unwrap();
