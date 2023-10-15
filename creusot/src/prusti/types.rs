@@ -11,7 +11,7 @@ use rustc_span::Symbol;
 use rustc_target::abi::VariantIdx;
 use std::fmt::{Debug, Display, Formatter};
 
-pub(super) fn sub_ts<'tcx>(ts1: Region<'tcx>, ts2: Region<'tcx>) -> bool {
+pub(super) fn sub_stateset<'tcx>(ts1: Region<'tcx>, ts2: Region<'tcx>) -> bool {
     StateSet::from(ts1).subset(StateSet::from(ts2))
 }
 
@@ -35,7 +35,7 @@ impl<'tcx> Ty<'tcx> {
         variant: VariantIdx,
         ctx: CtxRef<'a, 'tcx>,
     ) -> impl Iterator<Item = Ty<'tcx>> + 'a {
-        match self.as_ref(ctx.tcx.lifetimes.re_erased.into()) {
+        match self.as_ref() {
             None => Either::Left(self.as_adt_variant_h1(variant, ctx)),
             Some((lft, ty, Mutability::Not)) => Either::Right(
                 ty.as_adt_variant_h1(variant, ctx)
@@ -82,7 +82,7 @@ impl<'tcx> Ty<'tcx> {
         tys.map(|ty| Ty { ty })
     }
 
-    pub(super) fn as_ref(self, _: Region<'tcx>) -> Option<(Region<'tcx>, Self, Mutability)> {
+    pub(super) fn as_ref(self) -> Option<(Region<'tcx>, Self, Mutability)> {
         match self.ty.kind() {
             &TyKind::Ref(region, ty, m) => Some((region, Ty { ty }, m)),
             _ => None,
@@ -182,4 +182,8 @@ pub(crate) fn prepare_display<'a, 'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
     ctx: CtxRef<'a, 'tcx>,
 ) -> DisplayFoldable<'a, 'tcx, T> {
     DisplayFoldable(t, &ctx.base)
+}
+
+pub(crate) fn display_state<'a, 'tcx>(t: State, ctx: CtxRef<'a, 'tcx>) -> impl Display + 'tcx {
+    ctx.base_states()[t]
 }

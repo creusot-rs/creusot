@@ -9,5 +9,7 @@ mod util;
 mod variance;
 mod with_static;
 mod zombie;
+mod fn_sig_binder;
 
 pub(crate) use sig::{full_signature, full_signature_logic};
+pub(crate) use region_set::State;

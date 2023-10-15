@@ -2,26 +2,27 @@ use crate::{
     error::{CreusotResult, Error},
     prusti::{
         ctx::{Ctx, CtxRef, InternedInfo, PreCtx},
+        fn_sig_binder::FnSigBinder,
         parsing,
         parsing::{HomeSig, Outlives},
+        region_set::State,
         types::Ty,
     },
     util,
 };
 use itertools::{Either, Itertools};
 use rustc_ast::MetaItemLit as Lit;
-use rustc_middle::ty::{Binder, FnSig, Region};
+use rustc_middle::ty::{FnSig, SubstsRef};
 use rustc_span::{def_id::DefId, symbol::Ident, Span, Symbol, DUMMY_SP};
 use std::iter;
 
-type TimeSlice<'tcx> = Region<'tcx>;
-
 /// Returns region corresponding to `l`
 /// Also checks that 'curr is not blocked
-fn make_time_slice<'tcx>(l: &Lit, ctx: CtxRef<'_, 'tcx>) -> CreusotResult<TimeSlice<'tcx>> {
-    let old_region = ctx.old_region();
-    let curr_region = ctx.curr_region();
-    let mut regions = ctx.base_states().iter().map(|&r| (r.get_name(), ctx.fix_region(r)));
+fn make_state<'tcx>(l: &Lit, ctx: CtxRef<'_, 'tcx>) -> CreusotResult<State> {
+    let old_region = ctx.old_state();
+    let curr_region = ctx.curr_state();
+    let mut regions =
+        ctx.base_states().iter_enumerated().map(|(s, &r)| (r.get_name(), ctx.normalize_state(s)));
     let sym = l.as_token_lit().symbol;
     match sym.as_str() {
         "old" => Ok(old_region),
@@ -47,30 +48,27 @@ fn make_time_slice<'tcx>(l: &Lit, ctx: CtxRef<'_, 'tcx>) -> CreusotResult<TimeSl
 }
 
 /// Returns region corresponding to `l` in a logical context
-fn make_time_slice_logic<'a, 'tcx>(
-    l: &Lit,
-    ctx: &mut PreCtx<'a, 'tcx>,
-) -> CreusotResult<TimeSlice<'tcx>> {
+fn make_time_state_logic<'a, 'tcx>(l: &Lit, ctx: &mut PreCtx<'a, 'tcx>) -> CreusotResult<State> {
     let sym = l.as_token_lit().symbol;
     match sym.as_str() {
-        "old" => Ok(ctx.curr_region()), //hack requires clauses to use same time slice as return
-        "curr" => Ok(ctx.curr_region()),
+        "old" => Ok(ctx.curr_state()), //hack requires clauses to use same time slice as return
+        "curr" => Ok(ctx.curr_state()),
         "'_" => Err(Error::new(
             l.span,
             "expiry contract on logic function must use a concrete lifetime/home",
         )),
-        _ => Ok(ctx.home_to_region(sym)),
+        _ => Ok(ctx.home_to_state(sym)),
     }
 }
 
-type BindingInfo<'tcx> = (Region<'tcx>, Ty<'tcx>);
+type BindingInfo<'tcx> = (State, Ty<'tcx>);
 type Binding<'tcx> = (Symbol, BindingInfo<'tcx>);
 
 fn add_homes_to_sig<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
     args: &'tcx [Ident],
     sig: FnSig<'tcx>,
-    arg_homes: impl Iterator<Item = Region<'tcx>>,
-    ret_home: Region<'tcx>,
+    arg_homes: impl Iterator<Item = State>,
+    ret_home: State,
     _span: Span,
 ) -> CreusotResult<(T, BindingInfo<'tcx>)> {
     let types = sig.inputs().iter().zip(arg_homes);
@@ -94,18 +92,18 @@ fn add_homes_to_sig<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
 
 pub(crate) fn full_signature<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
     interned: &'a InternedInfo<'tcx>,
-    sig: Binder<'tcx, FnSig<'tcx>>,
     ts: &Lit,
     owner_id: DefId,
-) -> CreusotResult<(Ctx<'a, 'tcx>, Region<'tcx>, T, BindingInfo<'tcx>)> {
+) -> CreusotResult<(Ctx<'a, 'tcx>, State, T, BindingInfo<'tcx>)> {
     let tcx = interned.tcx;
-    let ctx = Ctx::new_for_spec(interned, owner_id)?;
-    let sig = tcx.liberate_late_bound_regions(owner_id, sig);
+    let sig = FnSigBinder::new(tcx, owner_id, None);
+    let ctx = Ctx::new_for_spec(interned, sig)?;
+    let sig = tcx.liberate_late_bound_regions(owner_id, sig.sig());
     let sig = ctx.fix_regions(sig);
 
-    let ts = make_time_slice(ts, &ctx)?;
-    let arg_homes = iter::repeat(ctx.old_region().into());
-    let ret_home = ctx.curr_region().into();
+    let ts = make_state(ts, &ctx)?;
+    let arg_homes = iter::repeat(ctx.old_state().into());
+    let ret_home = ctx.curr_state().into();
     let args = ctx.tcx.fn_arg_names(ctx.owner_id);
     let (arg_tys, res_ty) = add_homes_to_sig(args, sig, arg_homes, ret_home, DUMMY_SP)?;
     Ok((ctx, ts, arg_tys, res_ty))
@@ -126,18 +124,19 @@ fn validate_home_sig(home_sig: &HomeSig, ctx: &PreCtx, span: Span) -> CreusotRes
 pub(crate) fn full_signature_logic<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
     interned: &'a InternedInfo<'tcx>,
     home_sig_lit: &Lit,
-    sig: Binder<'tcx, FnSig<'tcx>>,
+    subst: Option<SubstsRef<'tcx>>,
     ts: &Lit,
     owner_id: DefId,
-) -> CreusotResult<(Ctx<'a, 'tcx>, Region<'tcx>, T, BindingInfo<'tcx>)> {
+) -> CreusotResult<(Ctx<'a, 'tcx>, State, T, BindingInfo<'tcx>)> {
     let tcx = interned.tcx;
-    let mut ctx = PreCtx::new(interned, owner_id);
-    let sig = tcx.liberate_late_bound_regions(owner_id, sig);
+    let sig = FnSigBinder::new(tcx, owner_id, subst);
+    let mut ctx = PreCtx::new(interned, sig);
+    let sig = tcx.liberate_late_bound_regions(owner_id, sig.sig());
     let sig = ctx.fix_regions(sig);
 
-    let ts2 = make_time_slice_logic(ts, &mut ctx)?;
+    let ts2 = make_time_state_logic(ts, &mut ctx)?;
     let args = ctx.tcx.fn_arg_names(ctx.owner_id);
-    let ret_home = ctx.curr_region().into();
+    let ret_home = ctx.curr_state().into();
     let hs_span = home_sig_lit.span;
     let home_sig = parsing::parse_home_sig_lit(home_sig_lit)?;
     let (arg_homes, bounds) = match &home_sig {
@@ -146,11 +145,11 @@ pub(crate) fn full_signature_logic<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
         }
         Some(home_sig) => {
             validate_home_sig(home_sig, &ctx, hs_span)?;
-            let arg_homes = home_sig.args().map(|h| ctx.home_to_region(h));
+            let arg_homes = home_sig.args().map(|h| ctx.home_to_state(h));
             (Either::Left(arg_homes), Either::Left(home_sig.bounds()))
         }
         None => {
-            (Either::Right(iter::repeat(ctx.curr_region().into())), Either::Right(iter::empty()))
+            (Either::Right(iter::repeat(ctx.curr_state().into())), Either::Right(iter::empty()))
         }
     };
 

@@ -1,8 +1,9 @@
 use itertools::Itertools;
+use rustc_index::Idx;
 use rustc_middle::ty::{EarlyBoundRegion, Region, RegionKind, TyCtxt};
 use rustc_span::{def_id::CRATE_DEF_ID, symbol::kw};
 use std::fmt::{Debug, Formatter};
-use rustc_index::Idx;
+use rustc_middle::bug;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
 pub(crate) struct State(pub(super) u32);
@@ -20,7 +21,7 @@ impl Idx for State {
 }
 
 impl State {
-    pub(super) fn range(n: usize) -> impl Iterator<Item=State> {
+    pub(super) fn range(n: usize) -> impl Iterator<Item = State> {
         (0..n).map(|i| State::new(i))
     }
 }
@@ -70,7 +71,7 @@ impl<'tcx> From<Region<'tcx>> for StateSet {
     fn from(value: Region<'tcx>) -> Self {
         match value.kind() {
             RegionKind::ReEarlyBound(EarlyBoundRegion { index, .. }) => StateSet(index),
-            _ => unreachable!(),
+            _ => bug!(),
         }
     }
 }
@@ -149,27 +150,11 @@ impl RegionRelation {
         }
     }
 
-    pub(super) fn state_outlives(&self, state: State, set: StateSet) -> bool {
-        match self.outlive_sets().get(state.index()) {
-            Some(s) => set.subset(*s),
-            None => StateSet::singleton(state) == set,
-        }
-    }
-
-    pub fn state_outlived_by(&self, state: State, set: StateSet) -> bool {
+    pub fn outlives_state(&self, set: StateSet, state: State) -> bool {
         match self.outlived_by_sets().get(state.index()) {
             Some(s) => set.subset(*s),
             None => StateSet::singleton(state) == set,
         }
-    }
-
-    pub fn outlives(&self, r1: StateSet, r2: StateSet) -> bool {
-        r1.into_iter().all(|r1| self.state_outlives(r1, r2))
-    }
-
-    /// Returns the same result as self.outlives(r2, r1) but is optimized for r1 being the smaller set
-    pub fn outlived_by(&self, r1: StateSet, r2: StateSet) -> bool {
-        r1.into_iter().all(|r1| self.state_outlived_by(r1, r2))
     }
 
     /// Requires all the elements of relation to be less that n

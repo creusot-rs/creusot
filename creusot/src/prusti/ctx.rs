@@ -2,12 +2,15 @@ use crate::error::{CreusotResult, Error};
 
 use super::{parsing::Home, region_set::*};
 use crate::prusti::{
+    fn_sig_binder::FnSigBinder,
     parsing::Outlives,
     typeck::normalize,
-    types::{prepare_display, Ty},
+    types::{display_state, prepare_display, Ty},
+    variance::regions_of_fn,
     with_static::{FixingRegionReplacer, StaticNormalizerDefIds},
     zombie::ZombieDefIds,
 };
+use rustc_index::{Idx, IndexVec};
 use rustc_infer::infer::region_constraints::Constraint;
 use rustc_lint::Lint;
 use rustc_middle::{
@@ -15,7 +18,7 @@ use rustc_middle::{
     ty::{walk::TypeWalker, BoundRegionKind, ParamEnv, Region, TyCtxt, TypeFoldable},
 };
 use rustc_span::{
-    def_id::{DefId, LocalDefId, CRATE_DEF_ID},
+    def_id::{LocalDefId, CRATE_DEF_ID},
     Span, Symbol,
 };
 use std::{
@@ -23,17 +26,13 @@ use std::{
     iter,
     ops::Deref,
 };
-use rustc_index::{Idx, IndexVec};
 
 const CURR_STR: &str = "'curr";
 const OLD_STR: &str = "'old";
 
-const OLD_STATE: State = State(0);
-const STATIC_STATE: State = State(1);
-const CURR_STATE: State = State(2);
-const OLD_REG_SET: StateSet = StateSet::singleton(OLD_STATE);
-pub(super) const STATIC_REG_SET: StateSet = StateSet::singleton(STATIC_STATE);
-pub(super) const CURR_REG_SET: StateSet = StateSet::singleton(CURR_STATE);
+pub(crate) const OLD_STATE: State = State(0);
+pub(crate) const STATIC_STATE: State = State(1);
+pub(crate) const CURR_STATE: State = State(2);
 
 #[derive(Debug)]
 enum FnType {
@@ -130,20 +129,24 @@ impl<'tcx> InternedInfo<'tcx> {
         }
     }
 
-    pub(crate) fn mk_region(&self, rs: StateSet) -> Region<'tcx> {
+    fn mk_region(&self, rs: StateSet) -> Region<'tcx> {
         rs.into_region(self.tcx)
     }
 
-    pub(crate) fn old_region(&self) -> Region<'tcx> {
-        self.mk_region(OLD_REG_SET)
+    pub(crate) fn state_to_reg(&self, state: State) -> Region<'tcx> {
+        self.mk_region(StateSet::singleton(state))
     }
 
-    pub(crate) fn curr_region(&self) -> Region<'tcx> {
-        self.mk_region(CURR_REG_SET)
+    pub(crate) fn old_state(&self) -> State {
+        OLD_STATE
     }
 
-    pub(crate) fn static_region(&self) -> Region<'tcx> {
-        self.mk_region(STATIC_REG_SET)
+    pub(crate) fn curr_state(&self) -> State {
+        CURR_STATE
+    }
+
+    pub(super) fn static_region(&self) -> Region<'tcx> {
+        self.state_to_reg(STATIC_STATE)
     }
 }
 
@@ -162,45 +165,46 @@ impl<'a, 'tcx> BaseCtx<'a, 'tcx> {
         self.tcx.struct_span_lint_hir(lint, hir_id, span, msg.into(), |x| x)
     }
 
-    fn try_home_to_region(&self, s: Symbol) -> Option<Region<'tcx>> {
+    fn try_home_to_state(&self, s: Symbol) -> Option<State> {
         if s == self.curr_sym {
-            return Some(self.curr_region());
+            return Some(self.curr_state());
         }
         for (idx, reg) in self.base_states.iter_enumerated() {
             if Some(s) == reg.get_name() {
-                return Some(StateSet::singleton(idx).into_region(self.tcx));
+                return Some(idx);
             }
         }
         None
     }
 
-    fn user_region_to_region(&self, r: Region<'tcx>) -> Option<Region<'tcx>> {
-        self.try_home_to_region(r.get_name()?)
-    }
-
-    fn new(interned: &'a InternedInfo<'tcx>, owner_id: DefId) -> Self {
+    fn new(interned: &'a InternedInfo<'tcx>, sig: FnSigBinder<'tcx>) -> Self {
         let tcx = interned.tcx;
-        let curr_region = dummy_region(tcx, interned.curr_sym);
+        let mut curr_region = dummy_region(tcx, interned.curr_sym);
         let old_region = dummy_region(tcx, Symbol::intern(OLD_STR));
-        let base_states = [old_region, tcx.lifetimes.re_static, curr_region].into_iter().collect();
-        let base: ParamEnv = tcx.param_env(owner_id);
+        let mut base_states: IndexVec<_, _> =
+            [old_region, tcx.lifetimes.re_static, curr_region].into_iter().collect();
+        // Add all regions (if any of them are 'curr replace the curr_region instead
+        let rs = regions_of_fn(tcx, sig);
+        let curr_sym = interned.curr_sym;
+        base_states.extend(rs.filter_map(|x| {
+            if x.get_name() == Some(curr_sym) {
+                curr_region = x;
+                None
+            } else {
+                Some(x)
+            }
+        }));
+        base_states[CURR_STATE] = curr_region;
+        let base: ParamEnv = tcx.param_env(sig.def_id());
         let fixed = base.fold_with(&mut FixingRegionReplacer { ctx: interned, f: |r| r });
         let erased = tcx.erase_regions(fixed);
         BaseCtx {
             interned,
             base_states,
-            owner_id: owner_id.expect_local(),
+            owner_id: sig.def_id(),
             fn_type: FnType::Logic { valid_states: StateSet::EMPTY },
             param_env: erased,
         }
-    }
-
-    pub(crate) fn fix_user_ty_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T) -> T {
-        let t = t.fold_with(&mut FixingRegionReplacer {
-            ctx: self.interned,
-            f: |r| self.user_region_to_region(r).unwrap_or(self.tcx.lifetimes.re_erased),
-        });
-        normalize(self, t)
     }
 
     fn make_relation(&self, iter: impl Iterator<Item = (State, State)>) -> RegionRelation {
@@ -220,32 +224,27 @@ impl<'a, 'tcx> BaseCtx<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> PreCtx<'a, 'tcx> {
-    pub(crate) fn new(interned: &'a InternedInfo<'tcx>, owner_id: DefId) -> Self {
-        PreCtx { base: BaseCtx::new(interned, owner_id) }
+    pub(super) fn new(interned: &'a InternedInfo<'tcx>, sig: FnSigBinder<'tcx>) -> Self {
+        PreCtx { base: BaseCtx::new(interned, sig) }
     }
 
-    pub(super) fn home_to_region(&mut self, s: Symbol) -> Region<'tcx> {
-        if let Some(x) = self.try_home_to_region(s) {
+    pub(super) fn home_to_state(&mut self, s: Symbol) -> State {
+        if let Some(x) = self.try_home_to_state(s) {
             return x;
         }
-        let idx = self.base.base_states.push(dummy_region(self.tcx, s));
         // homes that are not declared
-        StateSet::singleton(idx).into_region(self.tcx)
+        self.base.base_states.push(dummy_region(self.tcx, s))
     }
 
     /// Fixes an external region by converting it into a singleton set
-    pub(super) fn fix_region(&mut self, r: Region<'tcx>) -> Region<'tcx> {
-        if r.get_name() == Some(self.curr_sym) {
-            return self.curr_region();
-        }
-        let idx = match try_index_of(&self.base_states, &r) {
-            Some(idx) => idx,
-            None => self.base.base_states.push(r),
+    fn fix_region(&self, r: Region<'tcx>) -> Region<'tcx> {
+        let Some(state) = try_index_of(&self.base_states, &r) else {
+            return self.tcx.lifetimes.re_erased
         };
-        StateSet::singleton(idx).into_region(self.tcx)
+        self.state_to_reg(state)
     }
 
-    pub(super) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&mut self, t: T) -> T {
+    pub(crate) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T) -> T {
         let t = t
             .fold_with(&mut FixingRegionReplacer { ctx: self.interned, f: |r| self.fix_region(r) });
         normalize(&*self, t)
@@ -253,22 +252,19 @@ impl<'a, 'tcx> PreCtx<'a, 'tcx> {
 
     pub(super) fn finish_for_logic(
         self,
-        iter: impl Iterator<Item = (Region<'tcx>, Ty<'tcx>)>,
+        iter: impl Iterator<Item = (State, Ty<'tcx>)>,
         bounds: impl Iterator<Item = Outlives>,
     ) -> Ctx<'a, 'tcx> {
         let mut valid_states = StateSet::singleton(CURR_STATE.into());
-        let reg_to_idx = |r: Region| StateSet::from(r).try_into_singleton().unwrap();
+        let reg_to_idx = |r| StateSet::from(r).try_into_singleton().unwrap();
         let iter = iter
             .flat_map(|(state, ty)| {
-                let state_idx = reg_to_idx(state);
-                valid_states = valid_states.union(StateSet::singleton(state_idx));
-                ty_regions(ty.ty).into_iter().map(move |r| (reg_to_idx(r), state_idx))
+                valid_states = valid_states.union(StateSet::singleton(state));
+                ty_regions(ty.ty).into_iter().map(move |r| (reg_to_idx(r), state))
             })
             .chain(bounds.filter_map(|b| {
-                let home = b.long;
-                let long = reg_to_idx(self.try_home_to_region(home)?);
-                let home = b.short;
-                let short = reg_to_idx(self.try_home_to_region(home)?);
+                let long = self.try_home_to_state(b.long)?;
+                let short = self.try_home_to_state(b.short)?;
                 Some((long, short))
             }));
         let relation = self.base.make_relation(iter);
@@ -280,27 +276,12 @@ impl<'a, 'tcx> PreCtx<'a, 'tcx> {
 impl<'a, 'tcx> Ctx<'a, 'tcx> {
     pub(super) fn new_for_spec(
         interned: &'a InternedInfo<'tcx>,
-        owner_id: DefId,
+        sig: FnSigBinder<'tcx>,
     ) -> CreusotResult<Self> {
         let tcx = interned.tcx;
-        let mut res = BaseCtx::new(interned, owner_id);
+        let mut res = BaseCtx::new(interned, sig);
         res.fn_type = FnType::Program;
-        let (rs, constraints) = super::variance::constraints_of_fn(tcx, owner_id.expect_local());
-        let mut cur_region = None;
-
-        // Add all regions (if any of them are 'curr replace the curr_region instead
-        let curr_sym = res.curr_sym;
-        res.base_states.extend(rs.filter_map(|x| {
-            if x.get_name() == Some(curr_sym) {
-                cur_region = Some(x);
-                None
-            } else {
-                Some(x)
-            }
-        }));
-        if let Some(cur_region) = cur_region {
-            res.base_states[CURR_STATE] = cur_region
-        }
+        let constraints = super::variance::constraints_of_fn(tcx, sig);
 
         let mut failed = false;
         let reg_to_idx = |r| index_of(&res.base_states, &r);
@@ -320,7 +301,7 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
         let relation = res.make_relation(constraints);
         if failed {
             return Err(Error::new(
-                tcx.def_ident_span(owner_id).unwrap(),
+                tcx.def_ident_span(sig.def_id()).unwrap(),
                 format!("{CURR_STR} region must not be blocked"),
             ));
         }
@@ -331,27 +312,42 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
         self.curr_sym.into()
     }
 
-    /// Fixes an external region by converting it into a singleton set
-    pub(super) fn fix_region(&self, r: Region<'tcx>) -> Region<'tcx> {
-        if r.is_erased() {
-            return StateSet::UNIVERSE.into_region(self.tcx);
-        }
-        let idx = index_of(&self.base_states, &r);
-        let res = StateSet::singleton(idx);
-        if self.relation.state_outlived_by(CURR_STATE.into(), res) || self.is_logic() {
-            res.into_region(self.tcx)
+    pub(super) fn normalize_state(&self, s: State) -> State {
+        let res = StateSet::singleton(s);
+        if self.relation.outlives_state(res, CURR_STATE.into()) || self.is_logic() {
+            s
         } else {
-            self.curr_region()
+            // s was not blocked
+            self.curr_state()
         }
     }
 
-    pub(super) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T) -> T {
+    /// Fixes an external region by converting it into a singleton set
+    fn fix_region(&self, r: Region<'tcx>) -> Region<'tcx> {
+        let Some(base_state) = try_index_of(&self.base_states, &r) else {
+            return self.tcx.lifetimes.re_erased
+        };
+        let state = self.normalize_state(base_state);
+        self.state_to_reg(state)
+    }
+
+    pub(crate) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T) -> T {
         let t = t
             .fold_with(&mut FixingRegionReplacer { ctx: self.interned, f: |r| self.fix_region(r) });
         normalize(&*self, t)
     }
 
-    pub(crate) fn try_move_state(&self, state: Region<'tcx>, span: Span) -> CreusotResult<()> {
+    pub(super) fn try_move_state(&self, state: State, span: Span) -> CreusotResult<()> {
+        match self.fn_type {
+            FnType::Logic { valid_states } if !StateSet::singleton(state).subset(valid_states) => {
+                let dstate = display_state(state, self);
+                Err(Error::new(span, format!("Cannot move to the state set {dstate} since it might have been instantiated with multiple states")))
+            }
+            _ => Ok(()),
+        }
+    }
+
+    pub(crate) fn try_move_rstate(&self, state: Region<'tcx>, span: Span) -> CreusotResult<State> {
         if state == self.tcx.lifetimes.re_erased {
             return Err(Error::new(span, "at_expiry must be given an explicit region"));
         } else if state == self.static_region() {
@@ -360,15 +356,11 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
 
         let dstate = prepare_display(state, self);
         let state = StateSet::from(state);
-        if state.try_into_singleton().is_none() {
+        let Some(s) = state.try_into_singleton() else {
             return Err(Error::new(span, format!("Cannot move to state set {dstate}")));
         };
-        match self.fn_type {
-            FnType::Logic { valid_states } if !state.subset(valid_states) => {
-                Err(Error::new(span, format!("Cannot move to the state set {dstate} since it might have been instantiated with multiple states")))
-            }
-            _ => Ok(()),
-        }
+        self.try_move_state(s, span)?;
+        Ok(s)
     }
 }
 
