@@ -6,6 +6,7 @@ use crate::prusti::{
     parsing::Outlives,
     typeck::normalize,
     types::{display_state, prepare_display, Ty},
+    util::name_to_def_id,
     variance::regions_of_fn,
     with_static::{FixingRegionReplacer, StaticNormalizerDefIds},
     zombie::ZombieDefIds,
@@ -18,7 +19,7 @@ use rustc_middle::{
     ty::{walk::TypeWalker, BoundRegionKind, ParamEnv, Region, TyCtxt, TypeFoldable},
 };
 use rustc_span::{
-    def_id::{LocalDefId, CRATE_DEF_ID},
+    def_id::{DefId, LocalDefId, CRATE_DEF_ID},
     Span, Symbol,
 };
 use std::{
@@ -45,6 +46,7 @@ pub(crate) struct InternedInfo<'tcx> {
     pub curr_sym: Symbol,
     pub(super) static_replacer_info: StaticNormalizerDefIds,
     pub zombie_info: ZombieDefIds,
+    pub(super) plain_def_id: DefId,
 }
 
 pub(crate) struct BaseCtx<'a, 'tcx> {
@@ -126,6 +128,7 @@ impl<'tcx> InternedInfo<'tcx> {
             curr_sym: Symbol::intern(CURR_STR),
             static_replacer_info: StaticNormalizerDefIds::new(tcx),
             zombie_info: ZombieDefIds::new(tcx),
+            plain_def_id: name_to_def_id(tcx, "prusti_plain"),
         }
     }
 

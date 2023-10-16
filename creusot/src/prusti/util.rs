@@ -1,6 +1,6 @@
 use rustc_infer::infer::{InferCtxt, RegionVariableOrigin};
 use rustc_middle::ty::{Region, TyCtxt, TypeFoldable, TypeFolder};
-use rustc_span::DUMMY_SP;
+use rustc_span::{def_id::DefId, Symbol, DUMMY_SP};
 
 pub(super) fn generalize<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(t: T, infcx: &InferCtxt<'tcx>) -> T {
     t.fold_with(&mut RegionReplacer {
@@ -24,4 +24,9 @@ impl<'tcx, F: FnMut(Region<'tcx>) -> Region<'tcx>> TypeFolder<TyCtxt<'tcx>>
     fn fold_region(&mut self, r: Region<'tcx>) -> Region<'tcx> {
         (self.f)(r)
     }
+}
+
+pub(super) fn name_to_def_id<'tcx>(tcx: TyCtxt<'tcx>, name: &str) -> DefId {
+    let map = &tcx.all_diagnostic_items(()).name_to_id;
+    map[&Symbol::intern(name)]
 }

@@ -1,7 +1,8 @@
+use crate::prusti::util::name_to_def_id;
 use rustc_middle::ty::{
     ParamEnv, Ty, TyCtxt, TyKind, TypeSuperVisitable, TypeVisitable, TypeVisitor,
 };
-use rustc_span::{def_id::DefId, Symbol};
+use rustc_span::def_id::DefId;
 use std::ops::ControlFlow;
 
 pub struct ZombieDefIds {
@@ -10,9 +11,7 @@ pub struct ZombieDefIds {
 
 impl ZombieDefIds {
     pub fn new(tcx: TyCtxt<'_>) -> ZombieDefIds {
-        let map = &tcx.all_diagnostic_items(()).name_to_id;
-        let find_did = |name| map[&Symbol::intern(name)];
-        ZombieDefIds { internal: find_did("prusti_zombie_internal") }
+        ZombieDefIds { internal: name_to_def_id(tcx, "prusti_zombie_internal") }
     }
 
     /// Makes a type copy by wrapping parts of it in Zombie

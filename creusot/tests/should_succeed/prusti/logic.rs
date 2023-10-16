@@ -36,3 +36,15 @@ pub fn fin<'curr, X>(x: &'curr mut X) -> X {
 pub fn expiry<'a, X>(x: &'a mut X) -> &'a mut X {
     x
 }
+
+#[open]
+#[logic('_)]
+pub fn check_plain(x: u32) -> u32 {
+    x
+}
+
+#[open]
+#[logic('_)]
+pub fn check_plain_tuple(x: (bool, f32)) -> (bool, f32) {
+    x
+}

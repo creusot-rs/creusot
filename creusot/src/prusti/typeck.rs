@@ -37,8 +37,9 @@ use rustc_middle::{
 };
 use rustc_span::{def_id::DefId, Span, Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
-use rustc_trait_selection::traits::ObligationCtxt;
+use rustc_trait_selection::{traits, traits::ObligationCtxt};
 use std::{iter, ops::ControlFlow};
+
 type SmallVec<T> = smallvec::SmallVec<[T; 4]>;
 
 // fn prepare_dbg<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(t: T, tcx: TyCtxt<'tcx>) -> T {
@@ -506,6 +507,18 @@ fn ty_outlives<'tcx>(ty: Ty<'tcx>, state: State, ctx: CtxRef<'_, 'tcx>) -> Optio
     ty.ty.visit_with(&mut AllRegionsOutliveCheck { ctx, state }).break_value()
 }
 
+fn is_trivially_plain<'tcx>(ty: Ty<'tcx>) -> bool {
+    let kind = ty.ty.kind();
+    kind.is_primitive() || matches!(kind, TyKind::RawPtr(_))
+}
+
+fn is_plain<'tcx>(ctx: CtxRef<'_, 'tcx>, ty: Ty<'tcx>) -> bool {
+    let trait_def_id = ctx.plain_def_id;
+    let infcx = ctx.tcx.infer_ctxt().build();
+    let param_env = ctx.param_env();
+    traits::type_known_to_meet_bound_modulo_regions(&infcx, param_env, ty.ty, trait_def_id)
+}
+
 pub(crate) fn check_move_state<'tcx>(
     from_state: State,
     to_state: State,
@@ -516,12 +529,14 @@ pub(crate) fn check_move_state<'tcx>(
     let dty = prepare_display(ty, ctx);
     let d_to_ts = display_state(to_state, ctx);
     let d_from_ts = display_state(from_state, ctx);
-    if to_state == from_state {
+    if to_state == from_state || is_trivially_plain(ty) {
         Ok(ty)
     } else if let Some(r) = ty_outlives(ty, to_state, ctx) {
         let r = prepare_display(r, ctx);
         Err(Error::new(span, format!("`{dty}` cannot be moved from `{d_from_ts}` to `{d_to_ts}` since it doesn't live long enough\n`{r}` doesn't outlive `{d_to_ts}`")))
-    } else if !ctx.relation.outlives_state(StateSet::singleton(to_state), from_state) {
+    } else if !(ctx.relation.outlives_state(StateSet::singleton(to_state), from_state)
+        || is_plain(ctx, ty))
+    {
         Err(Error::new(
             span,
             format!("`{dty}` cannot be moved from `{d_from_ts}` to `{d_to_ts}` since it didn't exist at that point"),
@@ -639,8 +654,13 @@ pub(crate) fn check_signature_agreement<'tcx>(
     let ts = ts.ok().unwrap();
 
     let interned = InternedInfo::new(tcx);
-    let (ctx, ts, arg_tys, (_, expect_res_ty)) =
-        full_signature_logic::<SmallVec<_>>(&interned, trait_home_sig, Some(refn_subst), &ts, trait_id)?;
+    let (ctx, ts, arg_tys, (_, expect_res_ty)) = full_signature_logic::<SmallVec<_>>(
+        &interned,
+        trait_home_sig,
+        Some(refn_subst),
+        &ts,
+        trait_id,
+    )?;
     let args = arg_tys.into_iter().map(|(_, ty)| Ok((ty, impl_span)));
     let actual_res_ty =
         check_call(&ctx, ts, impl_id, ctx.fix_regions(impl_id_subst), args, impl_span)?;

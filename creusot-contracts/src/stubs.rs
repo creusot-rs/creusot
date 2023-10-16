@@ -1,5 +1,5 @@
 use crate as creusot_contracts;
-use creusot_contracts::{ghost, open};
+use creusot_contracts::{ghost, open, trusted};
 
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "fin"]
@@ -87,6 +87,46 @@ pub fn curr<T>(_: T) -> T {
 pub fn at_expiry<'a: 'a, T>(_: T) -> T {
     absurd
 }
+
+#[trusted]
+#[rustc_diagnostic_item = "prusti_plain"]
+pub trait Plain: Copy {}
+
+macro_rules! impl_plain {
+    () => {};
+    ( $first:ident $( $rest:ident )* ) => {
+        #[trusted]
+        impl Plain for $first {}
+        impl_plain!{$($rest)*}
+    };
+}
+
+impl_plain! {u8 u16 u32 u64 u128 i8 i16 i32 i64 i128 f32 f64 char bool}
+
+#[trusted]
+impl<T> Plain for *mut T {}
+
+#[trusted]
+impl<T> Plain for *const T {}
+
+macro_rules! tuple_impl_plain {
+    ( $($( $name:ident )+ )?) => {
+        #[trusted]
+        impl$(<$($name: Plain),+>)? Plain for ($($($name,)+)?) {}
+    };
+}
+
+macro_rules! tuple_impl_all_plain {
+    ( $first:ident $( $name:ident )* ) => {
+        tuple_impl_plain!{$first $($name)*}
+        tuple_impl_all_plain!{$($name)*}
+    };
+    () => {
+         tuple_impl_plain!{}
+    }
+}
+
+tuple_impl_all_plain! {A B C D E F G H I J K L}
 
 pub trait ReplaceLifetimesWithStatic {
     #[rustc_diagnostic_item = "prusti_replace_static_user"]

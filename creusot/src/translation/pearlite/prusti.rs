@@ -1,6 +1,6 @@
 use crate::{
     error::{CreusotResult, Error},
-    pearlite::{Pattern, Term, TermKind, ThirTerm, BinOp},
+    pearlite::{BinOp, Pattern, Term, TermKind, ThirTerm},
     prusti::{ctx::CtxRef, full_signature, full_signature_logic, typeck, types::*},
     util,
 };
@@ -226,7 +226,13 @@ fn strip_derefs_target<'tcx>(
     for ind in target_depth {
         // add indirections that aren't in current type
         assert!(matches!(ind, Indirect::Ref));
-        ty = typeck::mk_ref(current_state, add_lft.unwrap_or_else(|| ctx.state_to_reg(current_state)), ctx, ty, span)?;
+        ty = typeck::mk_ref(
+            current_state,
+            add_lft.unwrap_or_else(|| ctx.state_to_reg(current_state)),
+            ctx,
+            ty,
+            span,
+        )?;
         add_lft = None;
     }
     // eprintln!("sd {:?} had type {} (THIR type {})", span, prepare_display(ty, ctx), target);

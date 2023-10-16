@@ -1,9 +1,11 @@
 use itertools::Itertools;
 use rustc_index::Idx;
-use rustc_middle::ty::{EarlyBoundRegion, Region, RegionKind, TyCtxt};
+use rustc_middle::{
+    bug,
+    ty::{EarlyBoundRegion, Region, RegionKind, TyCtxt},
+};
 use rustc_span::{def_id::CRATE_DEF_ID, symbol::kw};
 use std::fmt::{Debug, Formatter};
-use rustc_middle::bug;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
 pub(crate) struct State(pub(super) u32);
