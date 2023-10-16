@@ -1,28 +1,29 @@
-use crate::{
-    invariant::{inv, Invariant},
-    *,
-};
+use crate::*;
 pub use ::std::iter::*;
 
 mod cloned;
 mod copied;
 mod empty;
 mod enumerate;
+mod fuse;
 mod map_inv;
 mod once;
 mod range;
 mod repeat;
 mod skip;
 mod take;
+mod zip;
 
 pub use cloned::ClonedExt;
 pub use copied::CopiedExt;
 pub use enumerate::EnumerateExt;
+pub use fuse::FusedIterator;
 pub use map_inv::MapInv;
 pub use skip::SkipExt;
 pub use take::TakeExt;
+pub use zip::ZipExt;
 
-pub trait Iterator: ::std::iter::Iterator + Invariant {
+pub trait Iterator: ::std::iter::Iterator {
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, _o: Self) -> bool;
 
@@ -43,7 +44,6 @@ pub trait Iterator: ::std::iter::Iterator + Invariant {
     #[requires(MapInv::<Self, _, F>::reinitialize())]
     #[requires(MapInv::<Self, Self::Item, F>::preservation(self, func))]
     #[ensures(result == MapInv { iter: self, func, produced: Ghost::new(Seq::EMPTY) })]
-    #[ensures(inv(result))]
     fn map_inv<B, F>(self, func: F) -> MapInv<Self, Self::Item, F>
     where
         Self: Sized,
@@ -53,7 +53,10 @@ pub trait Iterator: ::std::iter::Iterator + Invariant {
     }
 }
 
-pub trait IntoIterator: ::std::iter::IntoIterator {
+pub trait IntoIterator: ::std::iter::IntoIterator
+where
+    Self::IntoIter: Iterator,
+{
     #[predicate]
     #[open]
     fn into_iter_pre(self) -> bool {
@@ -87,7 +90,7 @@ extern_spec! {
     mod std {
         mod iter {
             trait Iterator
-                where Self : Iterator + Invariant {
+                where Self : Iterator {
 
                 #[ensures(match result {
                     None => self.completed(),
@@ -114,6 +117,15 @@ extern_spec! {
                 #[ensures(result.iter() == self && result.n() == 0)]
                 fn enumerate(self) -> Enumerate<Self>;
 
+                #[ensures(result@ == Some(self))]
+                fn fuse(self) -> Fuse<Self>;
+
+                #[requires(other.into_iter_pre())]
+                #[ensures(result.itera() == self)]
+                #[ensures(other.into_iter_post(result.iterb()))]
+                fn zip<U: IntoIterator>(self, other: U) -> Zip<Self, U::IntoIter>
+                    where U::IntoIter: Iterator;
+
                 // TODO: Investigate why Self_ needed
                 #[ensures(exists<done_ : &mut Self_, prod: Seq<_>> (^done_).resolve() && done_.completed() &&
                     self.produces(prod, *done_) && B::from_iter_post(prod, result))]
@@ -127,7 +139,7 @@ extern_spec! {
                 #[requires(self.into_iter_pre())]
                 #[ensures(self.into_iter_post(result))]
                 fn into_iter(self) -> Self::IntoIter
-                    where Self::IntoIter: Iterator + Invariant;
+                    where Self::IntoIter: Iterator;
             }
 
             trait FromIterator<A>

@@ -1,7 +1,7 @@
 // UNSTABLE
 extern crate creusot_contracts;
 
-use creusot_contracts::{logic::Mapping, Clone, PartialEq, *};
+use creusot_contracts::{invariant::Invariant, logic::Mapping, Clone, PartialEq, *};
 use std::cmp::Ordering::*;
 
 /* Axiomatization of bumpalo */
@@ -256,10 +256,10 @@ pub struct Context<'arena> {
     cnt: u64,
 }
 
-impl<'arena> Context<'arena> {
+impl<'arena> Invariant for Context<'arena> {
     #[open(self)]
     #[predicate]
-    pub fn invariant(self) -> bool {
+    fn invariant(self) -> bool {
         pearlite! {
             (forall<n: NodeLog>
                 match self.hashcons@.get(n) {
@@ -288,7 +288,9 @@ impl<'arena> Context<'arena> {
                 }})
         }
     }
+}
 
+impl<'arena> Context<'arena> {
     #[open(self)]
     #[predicate]
     pub fn grows(&mut self) -> bool {
@@ -343,7 +345,6 @@ impl<'arena> Context<'arena> {
     pub fn grows_trans(&mut self, o: &mut Self, oo: &mut Self) {}
 
     #[ghost]
-    #[requires(self.invariant())]
     #[requires(self.is_valid_bdd(a))]
     #[requires(x@ < a.leastvar())]
     #[ensures(a.interp(v) == a.interp(v.set(x, b)))]
@@ -360,7 +361,6 @@ impl<'arena> Context<'arena> {
     }
 
     #[ghost]
-    #[requires(self.invariant())]
     #[requires(self.is_valid_bdd(a))]
     #[requires(self.is_valid_bdd(b))]
     #[requires(a != b)]
@@ -410,7 +410,6 @@ impl<'arena> Context<'arena> {
 
     #[ghost]
     #[open(self)]
-    #[requires(self.invariant())]
     #[requires(self.is_valid_bdd(a))]
     #[requires(self.is_valid_bdd(b))]
     #[requires(forall<v: _> a.interp(v) == b.interp(v))]
@@ -434,10 +433,8 @@ impl<'arena> Context<'arena> {
         }
     }
 
-    #[requires(self.invariant())]
     #[requires(self.is_valid_node(n))]
     #[ensures(*result.0 == n)]
-    #[ensures((^self).invariant())]
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
     fn hashcons(&mut self, n: Node<'arena>) -> Bdd<'arena> {
@@ -449,17 +446,18 @@ impl<'arena> Context<'arena> {
         self.hashcons.add(n, r);
         self.hashcons_ghost = gh! { self.hashcons_ghost.set(r.1, r.0) };
         if self.cnt > u64::MAX - 1 {
-            loop {}
+            loop {
+                // prevent self from being resolved
+                self.cnt = self.cnt;
+            }
         }
         self.cnt += 1;
         r
     }
 
-    #[requires(self.invariant())]
     #[requires(self.is_valid_bdd(childt))]
     #[requires(self.is_valid_bdd(childf))]
     #[requires(x@ < childt.leastvar() && x@ < childf.leastvar())]
-    #[ensures((^self).invariant())]
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
     #[ensures(forall<v:_> result.interp(v) == if v.get(x) { childt.interp(v) } else { childf.interp(v) })]
@@ -471,8 +469,6 @@ impl<'arena> Context<'arena> {
         self.hashcons(If { v: x, childt, childf })
     }
 
-    #[requires(self.invariant())]
-    #[ensures((^self).invariant())]
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
     #[ensures(forall<v:_> result.interp(v))]
@@ -481,8 +477,6 @@ impl<'arena> Context<'arena> {
         self.hashcons(True)
     }
 
-    #[requires(self.invariant())]
-    #[ensures((^self).invariant())]
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
     #[ensures(forall<v:_> !result.interp(v))]
@@ -491,8 +485,6 @@ impl<'arena> Context<'arena> {
         self.hashcons(False)
     }
 
-    #[requires(self.invariant())]
-    #[ensures((^self).invariant())]
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
     #[ensures(forall<v:_> result.interp(v) == v.get(x))]
@@ -502,9 +494,7 @@ impl<'arena> Context<'arena> {
         self.node(x, t, f)
     }
 
-    #[requires(self.invariant())]
     #[requires(self.is_valid_bdd(x))]
-    #[ensures((^self).invariant())]
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
     #[ensures(forall<v:_> result.interp(v) == !x.interp(v))]
@@ -527,10 +517,8 @@ impl<'arena> Context<'arena> {
         r
     }
 
-    #[requires(self.invariant())]
     #[requires(self.is_valid_bdd(a))]
     #[requires(self.is_valid_bdd(b))]
-    #[ensures((^self).invariant())]
     #[ensures(self.grows())]
     #[ensures((^self).is_valid_bdd(result))]
     #[ensures(forall<v:_> result.interp(v) == (a.interp(v) && b.interp(v)))]

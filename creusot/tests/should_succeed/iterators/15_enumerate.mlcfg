@@ -66,6 +66,25 @@ module C15Enumerate_Common_Iterator_Item_Type
   type self
   type item
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 16 4 16 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module C15Enumerate_Common_Iterator_Produces_Stub
   type self
   use seq.Seq
@@ -91,25 +110,6 @@ module C15Enumerate_Common_Iterator_Produces
   predicate produces [#"../common.rs" 8 4 8 66] (self : self) (visited : Seq.seq Item0.item) (_o : self)
   val produces [#"../common.rs" 8 4 8 66] (self : self) (visited : Seq.seq Item0.item) (_o : self) : bool
     ensures { result = produces self visited _o }
-    
-end
-module CreusotContracts_Invariant_Inv_Stub
-  type t
-  predicate inv (_x : t)
-end
-module CreusotContracts_Invariant_Inv_Interface
-  type t
-  predicate inv (_x : t)
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
-module CreusotContracts_Invariant_Inv
-  type t
-  predicate inv (_x : t) =
-    [#"../../../../../creusot-contracts/src/invariant.rs" 27 4 27 8] true
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
     
 end
 module C15Enumerate_Common_Iterator_ProducesRefl_Stub
@@ -165,6 +165,9 @@ module C15Enumerate_Common_Iterator_ProducesTrans_Stub
   use seq.Seq
   clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
     type self = self
+  use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq Item0.item
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = self
   clone C15Enumerate_Common_Iterator_Produces_Stub as Produces0 with
@@ -178,6 +181,9 @@ module C15Enumerate_Common_Iterator_ProducesTrans_Interface
   use seq.Seq
   clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
     type self = self
+  use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq Item0.item
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = self
   clone C15Enumerate_Common_Iterator_Produces_Stub as Produces0 with
@@ -189,18 +195,23 @@ module C15Enumerate_Common_Iterator_ProducesTrans_Interface
     requires {[#"../common.rs" 18 15 18 32] Produces0.produces a ab b}
     requires {[#"../common.rs" 19 15 19 32] Produces0.produces b bc c}
     requires {[#"../common.rs" 21 22 21 23] Inv0.inv a}
+    requires {[#"../common.rs" 21 31 21 33] Inv1.inv ab}
     requires {[#"../common.rs" 21 52 21 53] Inv0.inv b}
+    requires {[#"../common.rs" 21 61 21 63] Inv1.inv bc}
     requires {[#"../common.rs" 21 82 21 83] Inv0.inv c}
     ensures { [#"../common.rs" 20 14 20 42] Produces0.produces a (Seq.(++) ab bc) c }
     ensures { result = produces_trans a ab b bc c }
     
-  axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 18 15 18 32] Produces0.produces a ab b) -> ([#"../common.rs" 19 15 19 32] Produces0.produces b bc c) -> ([#"../common.rs" 21 22 21 23] Inv0.inv a) -> ([#"../common.rs" 21 52 21 53] Inv0.inv b) -> ([#"../common.rs" 21 82 21 83] Inv0.inv c) -> ([#"../common.rs" 20 14 20 42] Produces0.produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 18 15 18 32] Produces0.produces a ab b) -> ([#"../common.rs" 19 15 19 32] Produces0.produces b bc c) -> ([#"../common.rs" 21 22 21 23] Inv0.inv a) -> ([#"../common.rs" 21 31 21 33] Inv1.inv ab) -> ([#"../common.rs" 21 52 21 53] Inv0.inv b) -> ([#"../common.rs" 21 61 21 63] Inv1.inv bc) -> ([#"../common.rs" 21 82 21 83] Inv0.inv c) -> ([#"../common.rs" 20 14 20 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module C15Enumerate_Common_Iterator_ProducesTrans
   type self
   use seq.Seq
   clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
     type self = self
+  use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq Item0.item
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = self
   clone C15Enumerate_Common_Iterator_Produces_Stub as Produces0 with
@@ -212,12 +223,14 @@ module C15Enumerate_Common_Iterator_ProducesTrans
     requires {[#"../common.rs" 18 15 18 32] Produces0.produces a ab b}
     requires {[#"../common.rs" 19 15 19 32] Produces0.produces b bc c}
     requires {[#"../common.rs" 21 22 21 23] Inv0.inv a}
+    requires {[#"../common.rs" 21 31 21 33] Inv1.inv ab}
     requires {[#"../common.rs" 21 52 21 53] Inv0.inv b}
+    requires {[#"../common.rs" 21 61 21 63] Inv1.inv bc}
     requires {[#"../common.rs" 21 82 21 83] Inv0.inv c}
     ensures { [#"../common.rs" 20 14 20 42] Produces0.produces a (Seq.(++) ab bc) c }
     ensures { result = produces_trans a ab b bc c }
     
-  axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 18 15 18 32] Produces0.produces a ab b) -> ([#"../common.rs" 19 15 19 32] Produces0.produces b bc c) -> ([#"../common.rs" 21 22 21 23] Inv0.inv a) -> ([#"../common.rs" 21 52 21 53] Inv0.inv b) -> ([#"../common.rs" 21 82 21 83] Inv0.inv c) -> ([#"../common.rs" 20 14 20 42] Produces0.produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 18 15 18 32] Produces0.produces a ab b) -> ([#"../common.rs" 19 15 19 32] Produces0.produces b bc c) -> ([#"../common.rs" 21 22 21 23] Inv0.inv a) -> ([#"../common.rs" 21 31 21 33] Inv1.inv ab) -> ([#"../common.rs" 21 52 21 53] Inv0.inv b) -> ([#"../common.rs" 21 61 21 63] Inv1.inv bc) -> ([#"../common.rs" 21 82 21 83] Inv0.inv c) -> ([#"../common.rs" 20 14 20 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module TyInv_Trivial
   type t
@@ -257,14 +270,17 @@ module C15Enumerate_Impl0_Produces
   use prelude.UIntSize
   clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
     type self = i
+  use seq.Seq
   clone C15Enumerate_Common_Iterator_Produces_Stub as Produces0 with
     type self = i,
     type Item0.item = Item0.item
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = Seq.seq Item0.item
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
   predicate produces [#"../15_enumerate.rs" 28 4 28 64] (self : C15Enumerate_Enumerate_Type.t_enumerate i) (visited : Seq.seq (usize, Item0.item)) (o : C15Enumerate_Enumerate_Type.t_enumerate i)
     
    =
-    [#"../15_enumerate.rs" 29 8 34 9] Seq.length visited = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count o) - UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) /\ (exists s : Seq.seq Item0.item . Produces0.produces (C15Enumerate_Enumerate_Type.enumerate_iter self) s (C15Enumerate_Enumerate_Type.enumerate_iter o) /\ Seq.length visited = Seq.length s /\ (forall i : int . 0 <= i /\ i < Seq.length s -> UIntSize.to_int (let (a, _) = Seq.get visited i in a) = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + i /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
+    [#"../15_enumerate.rs" 29 8 34 9] Seq.length visited = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count o) - UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) /\ (exists s : Seq.seq Item0.item . Inv0.inv s /\ Produces0.produces (C15Enumerate_Enumerate_Type.enumerate_iter self) s (C15Enumerate_Enumerate_Type.enumerate_iter o) /\ Seq.length visited = Seq.length s /\ (forall i : int . 0 <= i /\ i < Seq.length s -> UIntSize.to_int (let (a, _) = Seq.get visited i in a) = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + i /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
   val produces [#"../15_enumerate.rs" 28 4 28 64] (self : C15Enumerate_Enumerate_Type.t_enumerate i) (visited : Seq.seq (usize, Item0.item)) (o : C15Enumerate_Enumerate_Type.t_enumerate i) : bool
     ensures { result = produces self visited o }
     
@@ -299,21 +315,24 @@ module C15Enumerate_Impl1_Invariant
   use prelude.UIntSize
   use prelude.Int
   use prelude.Borrow
-  clone C15Enumerate_Common_Iterator_Completed_Stub as Completed0 with
-    type self = i
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = borrowed i
-  clone Core_Usize_Max_Stub as Max0
   clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
     type self = i
+  use seq.Seq
+  clone C15Enumerate_Common_Iterator_Completed_Stub as Completed0 with
+    type self = i
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = borrowed i
+  clone Core_Usize_Max_Stub as Max0
   clone C15Enumerate_Common_Iterator_Produces_Stub as Produces0 with
     type self = i,
     type Item0.item = Item0.item
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq Item0.item
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = i
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
   predicate invariant' [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) =
-    [#"../15_enumerate.rs" 73 12 74 79] (forall i : i . forall s : Seq.seq Item0.item . Inv0.inv i -> Produces0.produces (C15Enumerate_Enumerate_Type.enumerate_iter self) s i -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int Max0.mAX') /\ (forall i : borrowed i . Inv1.inv i -> Completed0.completed i -> Produces0.produces ( * i) (Seq.empty ) ( ^ i))
+    [#"../15_enumerate.rs" 73 12 74 79] (forall i : i . forall s : Seq.seq Item0.item . Inv0.inv i -> Inv1.inv s -> Produces0.produces (C15Enumerate_Enumerate_Type.enumerate_iter self) s i -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int Max0.mAX') /\ (forall i : borrowed i . Inv2.inv i -> Completed0.completed i -> Produces0.produces ( * i) (Seq.empty ) ( ^ i))
   val invariant' [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) : bool
     ensures { result = invariant' self }
     
@@ -328,15 +347,6 @@ module C15Enumerate_Enumerate_Type_Inv
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = C15Enumerate_Enumerate_Type.t_enumerate i
   axiom inv_t_enumerate [@rewrite] : forall self : C15Enumerate_Enumerate_Type.t_enumerate i . Inv0.inv self = (Invariant0.invariant' self /\ Inv1.inv (C15Enumerate_Enumerate_Type.enumerate_iter self))
-end
-module TyInv_Borrow
-  type t
-  use prelude.Borrow
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = borrowed t
-  axiom inv_borrow [@rewrite] : forall self : borrowed t . Inv0.inv self = (Inv1.inv ( * self) /\ Inv1.inv ( ^ self))
 end
 module C15Enumerate_Impl0_ProducesRefl_Stub
   type i
@@ -394,36 +404,43 @@ module C15Enumerate_Impl0_ProducesRefl_Impl
   type i
   use seq.Seq
   use prelude.Borrow
-  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
-    type t = i
-  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
     type t = borrowed i
-  clone TyInv_Borrow as TyInv_Borrow0 with
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = borrowed i,
+    predicate Inv0.inv = Inv3.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = i
+  clone TyInv_Trivial as TyInv_Trivial1 with
     type t = i,
     predicate Inv0.inv = Inv2.inv,
-    predicate Inv1.inv = Inv1.inv,
-    axiom .
-  clone TyInv_Trivial as TyInv_Trivial0 with
-    type t = i,
-    predicate Inv0.inv = Inv1.inv,
     axiom .
   clone C15Enumerate_Common_Iterator_Completed_Interface as Completed0 with
     type self = i
   clone Core_Usize_Max as Max0
   clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
     type self = i
+  use seq.Seq
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Seq.seq Item0.item
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Seq.seq Item0.item,
+    predicate Inv0.inv = Inv1.inv,
+    axiom .
   clone C15Enumerate_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
     type Item0.item = Item0.item
   clone C15Enumerate_Common_Iterator_ProducesTrans_Interface as ProducesTrans0 with
     type self = i,
     predicate Produces0.produces = Produces1.produces,
-    predicate Inv0.inv = Inv1.inv,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv1.inv,
     type Item0.item = Item0.item,
     axiom .
   clone C15Enumerate_Common_Iterator_ProducesRefl_Interface as ProducesRefl0 with
     type self = i,
-    predicate Inv0.inv = Inv1.inv,
+    predicate Inv0.inv = Inv2.inv,
     predicate Produces0.produces = Produces1.produces,
     type Item0.item = Item0.item,
     axiom .
@@ -431,10 +448,11 @@ module C15Enumerate_Impl0_ProducesRefl_Impl
   clone C15Enumerate_Impl1_Invariant as Invariant0 with
     type i = i,
     type Item0.item = Item0.item,
-    predicate Inv0.inv = Inv1.inv,
+    predicate Inv0.inv = Inv2.inv,
+    predicate Inv1.inv = Inv1.inv,
     predicate Produces0.produces = Produces1.produces,
     val Max0.mAX' = Max0.mAX',
-    predicate Inv1.inv = Inv2.inv,
+    predicate Inv2.inv = Inv3.inv,
     predicate Completed0.completed = Completed0.completed
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = C15Enumerate_Enumerate_Type.t_enumerate i
@@ -442,11 +460,12 @@ module C15Enumerate_Impl0_ProducesRefl_Impl
     type i = i,
     predicate Inv0.inv = Inv0.inv,
     predicate Invariant0.invariant' = Invariant0.invariant',
-    predicate Inv1.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv,
     axiom .
   clone C15Enumerate_Impl0_Produces as Produces0 with
     type i = i,
     type Item0.item = Item0.item,
+    predicate Inv0.inv = Inv1.inv,
     predicate Produces0.produces = Produces1.produces
   let rec ghost function produces_refl [#"../15_enumerate.rs" 40 4 40 29] (a : C15Enumerate_Enumerate_Type.t_enumerate i) : ()
     requires {[#"../15_enumerate.rs" 40 21 40 22] Inv0.inv a}
@@ -462,7 +481,10 @@ module C15Enumerate_Impl0_ProducesTrans_Stub
   use prelude.UIntSize
   clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
     type self = i
+  use seq.Seq
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq (usize, Item0.item)
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = C15Enumerate_Enumerate_Type.t_enumerate i
   clone C15Enumerate_Impl0_Produces_Stub as Produces0 with
@@ -478,7 +500,10 @@ module C15Enumerate_Impl0_ProducesTrans_Interface
   use prelude.UIntSize
   clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
     type self = i
+  use seq.Seq
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq (usize, Item0.item)
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = C15Enumerate_Enumerate_Type.t_enumerate i
   clone C15Enumerate_Impl0_Produces_Stub as Produces0 with
@@ -490,12 +515,14 @@ module C15Enumerate_Impl0_ProducesTrans_Interface
     requires {[#"../15_enumerate.rs" 44 15 44 32] Produces0.produces a ab b}
     requires {[#"../15_enumerate.rs" 45 15 45 32] Produces0.produces b bc c}
     requires {[#"../15_enumerate.rs" 47 22 47 23] Inv0.inv a}
+    requires {[#"../15_enumerate.rs" 47 31 47 33] Inv1.inv ab}
     requires {[#"../15_enumerate.rs" 47 52 47 53] Inv0.inv b}
+    requires {[#"../15_enumerate.rs" 47 61 47 63] Inv1.inv bc}
     requires {[#"../15_enumerate.rs" 47 82 47 83] Inv0.inv c}
     ensures { [#"../15_enumerate.rs" 46 14 46 42] Produces0.produces a (Seq.(++) ab bc) c }
     ensures { result = produces_trans a ab b bc c }
     
-  axiom produces_trans_spec : forall a : C15Enumerate_Enumerate_Type.t_enumerate i, ab : Seq.seq (usize, Item0.item), b : C15Enumerate_Enumerate_Type.t_enumerate i, bc : Seq.seq (usize, Item0.item), c : C15Enumerate_Enumerate_Type.t_enumerate i . ([#"../15_enumerate.rs" 44 15 44 32] Produces0.produces a ab b) -> ([#"../15_enumerate.rs" 45 15 45 32] Produces0.produces b bc c) -> ([#"../15_enumerate.rs" 47 22 47 23] Inv0.inv a) -> ([#"../15_enumerate.rs" 47 52 47 53] Inv0.inv b) -> ([#"../15_enumerate.rs" 47 82 47 83] Inv0.inv c) -> ([#"../15_enumerate.rs" 46 14 46 42] Produces0.produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : C15Enumerate_Enumerate_Type.t_enumerate i, ab : Seq.seq (usize, Item0.item), b : C15Enumerate_Enumerate_Type.t_enumerate i, bc : Seq.seq (usize, Item0.item), c : C15Enumerate_Enumerate_Type.t_enumerate i . ([#"../15_enumerate.rs" 44 15 44 32] Produces0.produces a ab b) -> ([#"../15_enumerate.rs" 45 15 45 32] Produces0.produces b bc c) -> ([#"../15_enumerate.rs" 47 22 47 23] Inv0.inv a) -> ([#"../15_enumerate.rs" 47 31 47 33] Inv1.inv ab) -> ([#"../15_enumerate.rs" 47 52 47 53] Inv0.inv b) -> ([#"../15_enumerate.rs" 47 61 47 63] Inv1.inv bc) -> ([#"../15_enumerate.rs" 47 82 47 83] Inv0.inv c) -> ([#"../15_enumerate.rs" 46 14 46 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module C15Enumerate_Impl0_ProducesTrans
   type i
@@ -504,7 +531,10 @@ module C15Enumerate_Impl0_ProducesTrans
   use prelude.UIntSize
   clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
     type self = i
+  use seq.Seq
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = Seq.seq (usize, Item0.item)
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = C15Enumerate_Enumerate_Type.t_enumerate i
   clone C15Enumerate_Impl0_Produces_Stub as Produces0 with
@@ -518,12 +548,14 @@ module C15Enumerate_Impl0_ProducesTrans
     requires {[#"../15_enumerate.rs" 44 15 44 32] Produces0.produces a ab b}
     requires {[#"../15_enumerate.rs" 45 15 45 32] Produces0.produces b bc c}
     requires {[#"../15_enumerate.rs" 47 22 47 23] Inv0.inv a}
+    requires {[#"../15_enumerate.rs" 47 31 47 33] Inv1.inv ab}
     requires {[#"../15_enumerate.rs" 47 52 47 53] Inv0.inv b}
+    requires {[#"../15_enumerate.rs" 47 61 47 63] Inv1.inv bc}
     requires {[#"../15_enumerate.rs" 47 82 47 83] Inv0.inv c}
     ensures { [#"../15_enumerate.rs" 46 14 46 42] Produces0.produces a (Seq.(++) ab bc) c }
     ensures { result = produces_trans a ab b bc c }
     
-  axiom produces_trans_spec : forall a : C15Enumerate_Enumerate_Type.t_enumerate i, ab : Seq.seq (usize, Item0.item), b : C15Enumerate_Enumerate_Type.t_enumerate i, bc : Seq.seq (usize, Item0.item), c : C15Enumerate_Enumerate_Type.t_enumerate i . ([#"../15_enumerate.rs" 44 15 44 32] Produces0.produces a ab b) -> ([#"../15_enumerate.rs" 45 15 45 32] Produces0.produces b bc c) -> ([#"../15_enumerate.rs" 47 22 47 23] Inv0.inv a) -> ([#"../15_enumerate.rs" 47 52 47 53] Inv0.inv b) -> ([#"../15_enumerate.rs" 47 82 47 83] Inv0.inv c) -> ([#"../15_enumerate.rs" 46 14 46 42] Produces0.produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : C15Enumerate_Enumerate_Type.t_enumerate i, ab : Seq.seq (usize, Item0.item), b : C15Enumerate_Enumerate_Type.t_enumerate i, bc : Seq.seq (usize, Item0.item), c : C15Enumerate_Enumerate_Type.t_enumerate i . ([#"../15_enumerate.rs" 44 15 44 32] Produces0.produces a ab b) -> ([#"../15_enumerate.rs" 45 15 45 32] Produces0.produces b bc c) -> ([#"../15_enumerate.rs" 47 22 47 23] Inv0.inv a) -> ([#"../15_enumerate.rs" 47 31 47 33] Inv1.inv ab) -> ([#"../15_enumerate.rs" 47 52 47 53] Inv0.inv b) -> ([#"../15_enumerate.rs" 47 61 47 63] Inv1.inv bc) -> ([#"../15_enumerate.rs" 47 82 47 83] Inv0.inv c) -> ([#"../15_enumerate.rs" 46 14 46 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module C15Enumerate_Impl0_ProducesTrans_Impl
   type i
@@ -531,47 +563,61 @@ module C15Enumerate_Impl0_ProducesTrans_Impl
   use prelude.Int
   use prelude.UIntSize
   use prelude.Borrow
-  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
-    type t = i
-  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
     type t = borrowed i
-  clone TyInv_Borrow as TyInv_Borrow0 with
-    type t = i,
-    predicate Inv0.inv = Inv2.inv,
-    predicate Inv1.inv = Inv1.inv,
+  clone TyInv_Trivial as TyInv_Trivial3 with
+    type t = borrowed i,
+    predicate Inv0.inv = Inv4.inv,
     axiom .
-  clone TyInv_Trivial as TyInv_Trivial0 with
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = i
+  clone TyInv_Trivial as TyInv_Trivial2 with
     type t = i,
-    predicate Inv0.inv = Inv1.inv,
+    predicate Inv0.inv = Inv3.inv,
     axiom .
   clone C15Enumerate_Common_Iterator_Completed_Interface as Completed0 with
     type self = i
   clone Core_Usize_Max as Max0
   clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
     type self = i
+  use seq.Seq
   clone C15Enumerate_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
     type Item0.item = Item0.item
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Seq.seq Item0.item
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
   clone C15Enumerate_Impl1_Invariant as Invariant0 with
     type i = i,
     type Item0.item = Item0.item,
-    predicate Inv0.inv = Inv1.inv,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Inv1.inv = Inv2.inv,
     predicate Produces0.produces = Produces1.produces,
     val Max0.mAX' = Max0.mAX',
-    predicate Inv1.inv = Inv2.inv,
+    predicate Inv2.inv = Inv4.inv,
     predicate Completed0.completed = Completed0.completed
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Seq.seq Item0.item,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
   clone C15Enumerate_Common_Iterator_ProducesTrans_Interface as ProducesTrans0 with
     type self = i,
     predicate Produces0.produces = Produces1.produces,
-    predicate Inv0.inv = Inv1.inv,
+    predicate Inv0.inv = Inv3.inv,
+    predicate Inv1.inv = Inv2.inv,
     type Item0.item = Item0.item,
     axiom .
   clone C15Enumerate_Common_Iterator_ProducesRefl_Interface as ProducesRefl0 with
     type self = i,
-    predicate Inv0.inv = Inv1.inv,
+    predicate Inv0.inv = Inv3.inv,
     predicate Produces0.produces = Produces1.produces,
     type Item0.item = Item0.item,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Seq.seq (usize, Item0.item)
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = Seq.seq (usize, Item0.item),
+    predicate Inv0.inv = Inv1.inv,
     axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = C15Enumerate_Enumerate_Type.t_enumerate i
@@ -579,17 +625,20 @@ module C15Enumerate_Impl0_ProducesTrans_Impl
     type i = i,
     predicate Inv0.inv = Inv0.inv,
     predicate Invariant0.invariant' = Invariant0.invariant',
-    predicate Inv1.inv = Inv1.inv,
+    predicate Inv1.inv = Inv3.inv,
     axiom .
   clone C15Enumerate_Impl0_Produces as Produces0 with
     type i = i,
     type Item0.item = Item0.item,
+    predicate Inv0.inv = Inv2.inv,
     predicate Produces0.produces = Produces1.produces
   let rec ghost function produces_trans [#"../15_enumerate.rs" 47 4 47 90] (a : C15Enumerate_Enumerate_Type.t_enumerate i) (ab : Seq.seq (usize, Item0.item)) (b : C15Enumerate_Enumerate_Type.t_enumerate i) (bc : Seq.seq (usize, Item0.item)) (c : C15Enumerate_Enumerate_Type.t_enumerate i) : ()
     requires {[#"../15_enumerate.rs" 44 15 44 32] Produces0.produces a ab b}
     requires {[#"../15_enumerate.rs" 45 15 45 32] Produces0.produces b bc c}
     requires {[#"../15_enumerate.rs" 47 22 47 23] Inv0.inv a}
+    requires {[#"../15_enumerate.rs" 47 31 47 33] Inv1.inv ab}
     requires {[#"../15_enumerate.rs" 47 52 47 53] Inv0.inv b}
+    requires {[#"../15_enumerate.rs" 47 61 47 63] Inv1.inv bc}
     requires {[#"../15_enumerate.rs" 47 82 47 83] Inv0.inv c}
     ensures { [#"../15_enumerate.rs" 46 14 46 42] Produces0.produces a (Seq.(++) ab bc) c }
     
@@ -672,6 +721,15 @@ module C15Enumerate_Common_Iterator_Next_Interface
     ensures { [#"../common.rs" 27 26 27 44] Inv1.inv result }
     
 end
+module TyInv_Borrow
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed t
+  axiom inv_borrow [@rewrite] : forall self : borrowed t . Inv0.inv self = (Inv1.inv ( * self) /\ Inv1.inv ( ^ self))
+end
 module C15Enumerate_Impl0_Next_Interface
   type i
   use prelude.Int
@@ -707,15 +765,18 @@ module C15Enumerate_Impl0_Next
   use prelude.UIntSize
   use seq.Seq
   clone Core_Usize_Max as Max0
+  clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
+    type self = i
+  use seq.Seq
   clone C15Enumerate_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
   clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
     type t = borrowed i
-  clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
-    type self = i
   clone C15Enumerate_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
     type Item0.item = Item0.item
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+    type t = Seq.seq Item0.item
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = i
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
@@ -723,22 +784,26 @@ module C15Enumerate_Impl0_Next
     type i = i,
     type Item0.item = Item0.item,
     predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv5.inv,
     predicate Produces0.produces = Produces1.produces,
     val Max0.mAX' = Max0.mAX',
-    predicate Inv1.inv = Inv4.inv,
+    predicate Inv2.inv = Inv4.inv,
     predicate Completed0.completed = Completed1.completed
-  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+  clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
     type t = C15Enumerate_Enumerate_Type.t_enumerate i
   clone C15Enumerate_Enumerate_Type_Inv as C15Enumerate_Enumerate_Type_Inv0 with
     type i = i,
-    predicate Inv0.inv = Inv5.inv,
+    predicate Inv0.inv = Inv6.inv,
     predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Inv1.inv = Inv0.inv,
     axiom .
-  clone TyInv_Borrow as TyInv_Borrow1 with
-    type t = i,
+  clone TyInv_Trivial as TyInv_Trivial4 with
+    type t = Seq.seq Item0.item,
+    predicate Inv0.inv = Inv5.inv,
+    axiom .
+  clone TyInv_Trivial as TyInv_Trivial3 with
+    type t = borrowed i,
     predicate Inv0.inv = Inv4.inv,
-    predicate Inv1.inv = Inv0.inv,
     axiom .
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
@@ -752,7 +817,7 @@ module C15Enumerate_Impl0_Next
   clone TyInv_Borrow as TyInv_Borrow0 with
     type t = C15Enumerate_Enumerate_Type.t_enumerate i,
     predicate Inv0.inv = Inv2.inv,
-    predicate Inv1.inv = Inv5.inv,
+    predicate Inv1.inv = Inv6.inv,
     axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = Core_Option_Option_Type.t_option Item0.item
@@ -764,6 +829,7 @@ module C15Enumerate_Impl0_Next
     type self = i,
     predicate Produces0.produces = Produces1.produces,
     predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv5.inv,
     type Item0.item = Item0.item,
     axiom .
   clone C15Enumerate_Common_Iterator_ProducesRefl_Interface as ProducesRefl0 with
@@ -779,6 +845,7 @@ module C15Enumerate_Impl0_Next
   clone C15Enumerate_Impl0_Produces as Produces0 with
     type i = i,
     type Item0.item = Item0.item,
+    predicate Inv0.inv = Inv5.inv,
     predicate Produces0.produces = Produces1.produces
   clone C15Enumerate_Impl0_Completed as Completed0 with
     type i = i,
@@ -880,14 +947,17 @@ module C15Enumerate_Enumerate_Interface
   use seq.Seq
   use prelude.UIntSize
   use prelude.Int
-  use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
-  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
-    type t = C15Enumerate_Enumerate_Type.t_enumerate i
-  clone Core_Usize_Max_Stub as Max0
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = i
   clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
     type self = i
+  use seq.Seq
+  use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
+  clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
+    type t = C15Enumerate_Enumerate_Type.t_enumerate i
+  clone Core_Usize_Max_Stub as Max0
+  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
+    type t = Seq.seq Item0.item
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = i
   clone C15Enumerate_Common_Iterator_Produces_Stub as Produces0 with
     type self = i,
     type Item0.item = Item0.item
@@ -897,9 +967,9 @@ module C15Enumerate_Enumerate_Interface
     type t = borrowed i
   val enumerate [#"../15_enumerate.rs" 81 0 81 54] (iter : i) : C15Enumerate_Enumerate_Type.t_enumerate i
     requires {[#"../15_enumerate.rs" 79 0 79 75] forall i : borrowed i . Inv0.inv i -> Completed0.completed i -> Produces0.produces ( * i) (Seq.empty ) ( ^ i)}
-    requires {[#"../15_enumerate.rs" 80 0 80 93] forall i : i . forall s : Seq.seq Item0.item . Inv1.inv i -> Produces0.produces iter s i -> Seq.length s < UIntSize.to_int Max0.mAX'}
+    requires {[#"../15_enumerate.rs" 80 0 80 93] forall i : i . forall s : Seq.seq Item0.item . Inv1.inv i -> Inv2.inv s -> Produces0.produces iter s i -> Seq.length s < UIntSize.to_int Max0.mAX'}
     requires {[#"../15_enumerate.rs" 81 30 81 34] Inv1.inv iter}
-    ensures { [#"../15_enumerate.rs" 81 42 81 54] Inv2.inv result }
+    ensures { [#"../15_enumerate.rs" 81 42 81 54] Inv3.inv result }
     
 end
 module C15Enumerate_Enumerate
@@ -908,16 +978,19 @@ module C15Enumerate_Enumerate
   use prelude.UIntSize
   use prelude.Borrow
   use seq.Seq
+  clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
+    type self = i
+  use seq.Seq
   clone C15Enumerate_Common_Iterator_Completed_Interface as Completed0 with
     type self = i
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = borrowed i
   clone Core_Usize_Max as Max0
-  clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
-    type self = i
   clone C15Enumerate_Common_Iterator_Produces_Interface as Produces0 with
     type self = i,
     type Item0.item = Item0.item
+  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+    type t = Seq.seq Item0.item
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = i
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
@@ -925,19 +998,24 @@ module C15Enumerate_Enumerate
     type i = i,
     type Item0.item = Item0.item,
     predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv,
     predicate Produces0.produces = Produces0.produces,
     val Max0.mAX' = Max0.mAX',
-    predicate Inv1.inv = Inv0.inv,
+    predicate Inv2.inv = Inv0.inv,
     predicate Completed0.completed = Completed0.completed
-  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
     type t = C15Enumerate_Enumerate_Type.t_enumerate i
   clone C15Enumerate_Enumerate_Type_Inv as C15Enumerate_Enumerate_Type_Inv0 with
     type i = i,
-    predicate Inv0.inv = Inv2.inv,
+    predicate Inv0.inv = Inv3.inv,
     predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Inv1.inv = Inv1.inv,
     axiom .
-  clone TyInv_Trivial as TyInv_Trivial0 with
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = Seq.seq Item0.item,
+    predicate Inv0.inv = Inv2.inv,
+    axiom .
+  clone TyInv_Trivial as TyInv_Trivial1 with
     type t = i,
     predicate Inv0.inv = Inv1.inv,
     axiom .
@@ -945,6 +1023,7 @@ module C15Enumerate_Enumerate
     type self = i,
     predicate Produces0.produces = Produces0.produces,
     predicate Inv0.inv = Inv1.inv,
+    predicate Inv1.inv = Inv2.inv,
     type Item0.item = Item0.item,
     axiom .
   clone C15Enumerate_Common_Iterator_ProducesRefl_Interface as ProducesRefl0 with
@@ -953,16 +1032,15 @@ module C15Enumerate_Enumerate
     predicate Produces0.produces = Produces0.produces,
     type Item0.item = Item0.item,
     axiom .
-  clone TyInv_Borrow as TyInv_Borrow0 with
-    type t = i,
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = borrowed i,
     predicate Inv0.inv = Inv0.inv,
-    predicate Inv1.inv = Inv1.inv,
     axiom .
   let rec cfg enumerate [#"../15_enumerate.rs" 81 0 81 54] [@cfg:stackify] [@cfg:subregion_analysis] (iter : i) : C15Enumerate_Enumerate_Type.t_enumerate i
     requires {[#"../15_enumerate.rs" 79 0 79 75] forall i : borrowed i . Inv0.inv i -> Completed0.completed i -> Produces0.produces ( * i) (Seq.empty ) ( ^ i)}
-    requires {[#"../15_enumerate.rs" 80 0 80 93] forall i : i . forall s : Seq.seq Item0.item . Inv1.inv i -> Produces0.produces iter s i -> Seq.length s < UIntSize.to_int Max0.mAX'}
+    requires {[#"../15_enumerate.rs" 80 0 80 93] forall i : i . forall s : Seq.seq Item0.item . Inv1.inv i -> Inv2.inv s -> Produces0.produces iter s i -> Seq.length s < UIntSize.to_int Max0.mAX'}
     requires {[#"../15_enumerate.rs" 81 30 81 34] Inv1.inv iter}
-    ensures { [#"../15_enumerate.rs" 81 42 81 54] Inv2.inv result }
+    ensures { [#"../15_enumerate.rs" 81 42 81 54] Inv3.inv result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : C15Enumerate_Enumerate_Type.t_enumerate i;
@@ -992,43 +1070,56 @@ module C15Enumerate_Impl0
   use prelude.Int
   use prelude.UIntSize
   use seq.Seq
-  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
-    type t = i
-  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+  clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
     type t = borrowed i
-  clone TyInv_Borrow as TyInv_Borrow1 with
-    type t = i,
-    predicate Inv0.inv = Inv4.inv,
-    predicate Inv1.inv = Inv3.inv,
+  clone TyInv_Trivial as TyInv_Trivial4 with
+    type t = borrowed i,
+    predicate Inv0.inv = Inv6.inv,
     axiom .
-  clone TyInv_Trivial as TyInv_Trivial1 with
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+    type t = i
+  clone TyInv_Trivial as TyInv_Trivial3 with
     type t = i,
-    predicate Inv0.inv = Inv3.inv,
+    predicate Inv0.inv = Inv5.inv,
     axiom .
   clone Core_Usize_Max as Max0
-  clone C15Enumerate_Common_Iterator_Completed_Interface as Completed1 with
-    type self = i
   clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
+    type self = i
+  use seq.Seq
+  clone C15Enumerate_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
   clone C15Enumerate_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
     type Item0.item = Item0.item
+  clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
+    type t = Seq.seq Item0.item
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
   clone C15Enumerate_Impl1_Invariant as Invariant0 with
     type i = i,
     type Item0.item = Item0.item,
-    predicate Inv0.inv = Inv3.inv,
+    predicate Inv0.inv = Inv5.inv,
+    predicate Inv1.inv = Inv4.inv,
     predicate Produces0.produces = Produces1.produces,
     val Max0.mAX' = Max0.mAX',
-    predicate Inv1.inv = Inv4.inv,
+    predicate Inv2.inv = Inv6.inv,
     predicate Completed0.completed = Completed1.completed
+  clone TyInv_Trivial as TyInv_Trivial2 with
+    type t = Seq.seq Item0.item,
+    predicate Inv0.inv = Inv4.inv,
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
+    type t = Seq.seq (usize, Item0.item)
+  clone TyInv_Trivial as TyInv_Trivial1 with
+    type t = Seq.seq (usize, Item0.item),
+    predicate Inv0.inv = Inv3.inv,
+    axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
     type t = C15Enumerate_Enumerate_Type.t_enumerate i
   clone C15Enumerate_Enumerate_Type_Inv as C15Enumerate_Enumerate_Type_Inv0 with
     type i = i,
     predicate Inv0.inv = Inv2.inv,
     predicate Invariant0.invariant' = Invariant0.invariant',
-    predicate Inv1.inv = Inv3.inv,
+    predicate Inv1.inv = Inv5.inv,
     axiom .
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
@@ -1049,6 +1140,7 @@ module C15Enumerate_Impl0
   clone C15Enumerate_Impl0_Produces as Produces0 with
     type i = i,
     type Item0.item = Item0.item,
+    predicate Inv0.inv = Inv4.inv,
     predicate Produces0.produces = Produces1.produces
   clone C15Enumerate_Impl0_Completed as Completed0 with
     type i = i,
@@ -1061,7 +1153,7 @@ module C15Enumerate_Impl0
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
     end)
   goal produces_refl_refn : [#"../15_enumerate.rs" 40 4 40 29] forall a : C15Enumerate_Enumerate_Type.t_enumerate i . Inv2.inv a -> Inv2.inv a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
-  goal produces_trans_refn : [#"../15_enumerate.rs" 47 4 47 90] forall a : C15Enumerate_Enumerate_Type.t_enumerate i . forall ab : Seq.seq (usize, Item0.item) . forall b : C15Enumerate_Enumerate_Type.t_enumerate i . forall bc : Seq.seq (usize, Item0.item) . forall c : C15Enumerate_Enumerate_Type.t_enumerate i . Inv2.inv c /\ Inv2.inv b /\ Inv2.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Inv2.inv c /\ Inv2.inv b /\ Inv2.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
+  goal produces_trans_refn : [#"../15_enumerate.rs" 47 4 47 90] forall a : C15Enumerate_Enumerate_Type.t_enumerate i . forall ab : Seq.seq (usize, Item0.item) . forall b : C15Enumerate_Enumerate_Type.t_enumerate i . forall bc : Seq.seq (usize, Item0.item) . forall c : C15Enumerate_Enumerate_Type.t_enumerate i . Inv2.inv c /\ Inv3.inv bc /\ Inv2.inv b /\ Inv3.inv ab /\ Inv2.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Inv2.inv c /\ Inv3.inv bc /\ Inv2.inv b /\ Inv3.inv ab /\ Inv2.inv a /\ Produces0.produces b bc c /\ Produces0.produces a ab b /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
 end
 module C15Enumerate_Impl1
   type i

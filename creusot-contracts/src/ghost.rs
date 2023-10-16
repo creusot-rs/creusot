@@ -35,6 +35,14 @@ impl<T: ShallowModel + ?Sized> ShallowModel for Ghost<T> {
     }
 }
 
+impl<T: ?Sized> Clone for Ghost<T> {
+    fn clone(&self) -> Self {
+        gh! { **self }
+    }
+}
+
+impl<T: ?Sized> Copy for Ghost<T> {}
+
 impl<T: ?Sized> Ghost<T> {
     #[trusted]
     #[ghost]

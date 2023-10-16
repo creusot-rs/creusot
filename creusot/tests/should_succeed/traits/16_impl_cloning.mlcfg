@@ -69,6 +69,25 @@ module C16ImplCloning_Impl0_ShallowModel
     ensures { result = shallow_model self }
     
 end
+module CreusotContracts_Invariant_Inv_Stub
+  type t
+  predicate inv (_x : t)
+end
+module CreusotContracts_Invariant_Inv_Interface
+  type t
+  predicate inv (_x : t)
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
+module CreusotContracts_Invariant_Inv
+  type t
+  predicate inv (_x : t) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 16 4 16 8] true
+  val inv (_x : t) : bool
+    ensures { result = inv _x }
+    
+end
 module CreusotContracts_Model_ShallowModel_ShallowModelTy_Type
   type self
   type shallowModelTy
@@ -123,7 +142,7 @@ module CreusotContracts_Model_Impl7_ShallowModel
     type self = t,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
   function shallow_model (self : borrowed t) : ShallowModelTy0.shallowModelTy =
-    [#"../../../../../creusot-contracts/src/model.rs" 98 8 98 31] ShallowModel0.shallow_model ( * self)
+    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] ShallowModel0.shallow_model ( * self)
   val shallow_model (self : borrowed t) : ShallowModelTy0.shallowModelTy
     ensures { result = shallow_model self }
     
@@ -150,6 +169,12 @@ module CreusotContracts_Resolve_Impl1_Resolve
     ensures { result = resolve self }
     
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module C16ImplCloning_Test_Interface
   type t
   use prelude.Borrow
@@ -161,7 +186,10 @@ module C16ImplCloning_Test_Interface
   clone CreusotContracts_Model_Impl7_ShallowModel_Stub as ShallowModel0 with
     type t = C16ImplCloning_Vec_Type.t_vec t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed (C16ImplCloning_Vec_Type.t_vec t)
   val test [#"../16_impl_cloning.rs" 17 0 17 30] (x : borrowed (C16ImplCloning_Vec_Type.t_vec t)) : ()
+    requires {[#"../16_impl_cloning.rs" 17 15 17 16] Inv0.inv x}
     ensures { [#"../16_impl_cloning.rs" 16 10 16 21] ShallowModel0.shallow_model x = ShallowModel1.shallow_model ( * x) }
     
 end
@@ -171,6 +199,12 @@ module C16ImplCloning_Test
   use seq.Seq
   use seq.Seq
   use C16ImplCloning_Vec_Type as C16ImplCloning_Vec_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
+    type t = borrowed (C16ImplCloning_Vec_Type.t_vec t)
+  clone TyInv_Trivial as TyInv_Trivial0 with
+    type t = borrowed (C16ImplCloning_Vec_Type.t_vec t),
+    predicate Inv0.inv = Inv0.inv,
+    axiom .
   clone C16ImplCloning_Impl0_ShallowModel as ShallowModel1 with
     type t = t
   clone CreusotContracts_Model_Impl7_ShallowModel as ShallowModel0 with
@@ -180,6 +214,7 @@ module C16ImplCloning_Test
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = C16ImplCloning_Vec_Type.t_vec t
   let rec cfg test [#"../16_impl_cloning.rs" 17 0 17 30] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed (C16ImplCloning_Vec_Type.t_vec t)) : ()
+    requires {[#"../16_impl_cloning.rs" 17 15 17 16] Inv0.inv x}
     ensures { [#"../16_impl_cloning.rs" 16 10 16 21] ShallowModel0.shallow_model x = ShallowModel1.shallow_model ( * x) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -189,6 +224,7 @@ module C16ImplCloning_Test
     goto BB0
   }
   BB0 {
+    assert { [@expl:type invariant] Inv0.inv x };
     assume { Resolve0.resolve x };
     _0 <- ();
     return _0

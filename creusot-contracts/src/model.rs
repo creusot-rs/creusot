@@ -15,6 +15,9 @@ pub trait ShallowModel {
 #[cfg(creusot)]
 pub use creusot_contracts_proc::DeepModel;
 
+#[cfg(not(creusot))]
+pub use creusot_contracts_dummy::DeepModel;
+
 /// The deep model corresponds to the model used for specifying
 /// operations such as equality, hash function or ordering, which are
 /// computed deeply in a data structure.

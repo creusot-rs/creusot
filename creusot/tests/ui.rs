@@ -18,7 +18,7 @@ fn main() {
     let creusot_rustc = escargot::CargoBuild::new()
         .bin("creusot-rustc")
         .current_release()
-        .manifest_path("../cargo-creusot/Cargo.toml")
+        .manifest_path("../creusot-rustc/Cargo.toml")
         .current_target()
         .run()
         .unwrap();

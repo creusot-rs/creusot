@@ -101,7 +101,12 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
     let mut visited_adts = IndexSet::new();
     let mut stack = vec![ty];
     while let Some(ty) = stack.pop() {
-        if resolve_user_inv(tcx, ty, param_env).is_some()
+        let user_inv = resolve_user_inv(tcx, ty, param_env)
+            .map(|(uinv_did, _)| util::is_structural_ty_inv(tcx, uinv_did));
+
+        // IF there is a user invariant AND it is not structural
+        // OR ty is a param or alias AND we default to considering them trivial
+        if user_inv == Some(false)
             || (!default_trivial && matches!(ty.kind(), TyKind::Param(_) | TyKind::Alias(_, _)))
         {
             return false;
@@ -111,6 +116,12 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
             TyKind::Ref(_, ty, _) | TyKind::Slice(ty) => stack.push(*ty),
             TyKind::Tuple(tys) => stack.extend(*tys),
             TyKind::Adt(def, substs) if def.is_box() => stack.push(substs.type_at(0)),
+            TyKind::Adt(def, substs)
+                if util::get_builtin(tcx, def.did()).is_some() || user_inv == Some(true) =>
+            {
+                // if the ADT has a structural user invariant, do not look into fields but only consider substs
+                stack.extend(substs.types())
+            }
             TyKind::Adt(def, substs) => {
                 let did = def.did();
                 if util::get_builtin(tcx, did).is_none() && visited_adts.insert(did) {
@@ -265,8 +276,10 @@ fn build_inv_exp_struct<'tcx>(
             build_inv_exp(ctx, names, ident, adt_subst.type_at(0), param_env, mode)
         }
         TyKind::Adt(adt_def, adt_subst) if util::get_builtin(ctx.tcx, adt_def.did()).is_some() => {
+            // should these be structural user invs?
             match util::get_builtin(ctx.tcx, adt_def.did()).unwrap().as_str() {
                 "prelude.Ghost.ghost_ty" => {
+                    names.import_builtin_module("prelude.Ghost".into());
                     let mut inv = build_inv_exp(
                         ctx,
                         names,
@@ -351,10 +364,8 @@ fn build_inv_exp_adt<'tcx>(
                 field_def.name.as_str().into()
             };
 
-            let open_inv = util::is_open_ty_inv(ctx.tcx, field_def.did);
-
             let field_ty = field_def.ty(ctx.tcx, subst);
-            if !open_inv && let Some(mut field_inv) =
+            if let Some(mut field_inv) =
                 build_inv_exp(ctx, names, field_name.clone(), field_ty, param_env, Mode::Field)
             {
                 ctx.translate_accessor(field_def.did);
@@ -390,6 +401,7 @@ fn resolve_user_inv<'tcx>(
 ) -> Option<(DefId, SubstsRef<'tcx>)> {
     let trait_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user"))?;
 
+    // eprintln!("resolving inv for {ty}, {param_env:?}");
     let (impl_did, subst) = traits::resolve_assoc_item_opt(
         tcx,
         param_env,

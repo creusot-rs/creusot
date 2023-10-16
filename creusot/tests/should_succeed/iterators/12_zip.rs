@@ -1,22 +1,26 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::{invariant::Invariant, logic::Seq, *};
+use creusot_contracts::{logic::Seq, *};
 
 mod common;
 use common::Iterator;
 
-struct Zip<I: Iterator, J: Iterator> {
-    iter1: I,
-    iter2: J,
+struct Zip<A: Iterator, B: Iterator> {
+    a: A,
+    b: B,
 }
 
-impl<I: Iterator, J: Iterator> Iterator for Zip<I, J> {
-    type Item = (I::Item, J::Item);
+impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
+    type Item = (A::Item, B::Item);
 
     #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
-        self.iter1.completed() || self.iter2.completed()
+        pearlite! {
+             (self.a.completed() && (*self).b == (^self).b)
+          || (exists<x: A::Item> self.a.produces(Seq::singleton(x), (^self).a) &&
+                                 x.resolve() && self.b.completed())
+        }
     }
 
     #[open]
@@ -27,7 +31,7 @@ impl<I: Iterator, J: Iterator> Iterator for Zip<I, J> {
             exists<p1 : Seq<_>, p2 : Seq<_>>
             p1.len() == p2.len() && p2.len() == visited.len() &&
             (forall<i :_> 0 <= i && i < visited.len() ==> visited[i] == (p1[i], p2[i])) &&
-            self.iter1.produces(p1, tl.iter1) && self.iter2.produces(p2, tl.iter2)
+            self.a.produces(p1, tl.a) && self.b.produces(p2, tl.b)
         }
     }
 
@@ -48,11 +52,14 @@ impl<I: Iterator, J: Iterator> Iterator for Zip<I, J> {
       Some(v) => self.produces(Seq::singleton(v), ^self)
     })]
     fn next(&mut self) -> Option<Self::Item> {
-        match (self.iter1.next(), self.iter2.next()) {
-            (Some(i1), Some(i2)) => Some((i1, i2)),
-            _ => None,
-        }
+        let x = match self.a.next() {
+            None => return None,
+            Some(x) => x,
+        };
+        let y = match self.b.next() {
+            None => return None,
+            Some(y) => y,
+        };
+        Some((x, y))
     }
 }
-
-impl<I: Iterator, J: Iterator> Invariant for Zip<I, J> {}

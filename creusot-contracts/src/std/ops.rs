@@ -1,4 +1,4 @@
-use crate::{invariant::Invariant, *};
+use crate::*;
 use ::std::marker::Tuple;
 pub use ::std::ops::*;
 
@@ -171,10 +171,6 @@ extern_spec! {
     }
 }
 
-impl<Idx> Invariant for Range<Idx> {}
-
-impl<Idx> Invariant for RangeInclusive<Idx> {}
-
 pub trait RangeInclusiveExt<Idx> {
     #[ghost]
     fn start_log(self) -> Idx;
@@ -247,12 +243,12 @@ extern_spec! {
 extern_spec! {
     mod std {
         mod ops {
-            trait IndexMut<Idx>  {
+            trait IndexMut<Idx>  where Idx : ?Sized, Self : ?Sized {
                 #[requires(false)]
                 fn index_mut(&mut self, _ix : Idx) -> &mut Self::Output;
             }
 
-            trait Index<Idx> {
+            trait Index<Idx>  where Idx : ?Sized,  Self : ?Sized {
                 #[requires(false)]
                 fn index(&self, _ix : Idx) -> &Self::Output;
             }

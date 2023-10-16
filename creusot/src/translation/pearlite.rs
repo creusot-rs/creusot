@@ -76,6 +76,9 @@ pub enum TermKind<'tcx> {
     Var(Symbol),
     Lit(Literal<'tcx>),
     Item(DefId, SubstsRef<'tcx>),
+    Assert {
+        cond: Box<Term<'tcx>>,
+    },
     Binary {
         op: BinOp,
         lhs: Box<Term<'tcx>>,
@@ -638,7 +641,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
                 let term = pearlite(self.ctx, closure_id)?;
 
-                Ok(Term { ty, span, kind: TermKind::Closure { body: Box::new(term) } })
+                if util::is_assertion(self.ctx.tcx, closure_id.to_def_id()) {
+                    Ok(Term { ty, span, kind: TermKind::Assert { cond: Box::new(term) } })
+                } else {
+                    Ok(Term { ty, span, kind: TermKind::Closure { body: Box::new(term) } })
+                }
             }
             ref ek => todo!("lower_expr: {:?}", ek),
         };
@@ -1082,6 +1089,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
             visitor.visit_term(&*cur);
             visitor.visit_term(&*fin)
         }
+        TermKind::Assert { cond } => visitor.visit_term(&*cond),
     }
 }
 
@@ -1136,6 +1144,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
             visitor.visit_mut_term(&mut *cur);
             visitor.visit_mut_term(&mut *fin)
         }
+        TermKind::Assert { cond } => visitor.visit_mut_term(&mut *cond),
     }
 }
 
@@ -1379,6 +1388,7 @@ impl<'tcx> Term<'tcx> {
                 cur.subst_with_inner(bound, inv_subst);
                 fin.subst_with_inner(bound, inv_subst)
             }
+            TermKind::Assert { cond } => cond.subst_with_inner(bound, inv_subst),
         }
     }
 }

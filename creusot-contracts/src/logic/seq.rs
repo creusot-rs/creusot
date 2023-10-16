@@ -1,4 +1,7 @@
-use crate::{logic::ops::IndexLogic, *};
+use crate::{
+    logic::{ops::IndexLogic, Mapping},
+    *,
+};
 
 #[cfg_attr(creusot, creusot::builtins = "seq.Seq.seq")]
 pub struct Seq<T: ?Sized>(std::marker::PhantomData<T>);
@@ -9,10 +12,12 @@ impl<T> Seq<T> {
     #[creusot::builtins = "seq.Seq.empty"]
     pub const EMPTY: Self = { Seq(std::marker::PhantomData) };
 
+    #[trusted]
     #[ghost]
-    #[open]
-    pub fn new() -> Self {
-        Self::EMPTY
+    #[open(self)]
+    #[creusot::builtins = "seq.Seq.create"]
+    pub fn new(_: Int, _: Mapping<Int, T>) -> Self {
+        absurd
     }
 
     #[ghost]
@@ -141,6 +146,16 @@ impl<T> Seq<T> {
         T: OrdLogic,
     {
         self.sorted_range(0, self.len())
+    }
+}
+
+impl<T> Seq<&T> {
+    #[logic]
+    #[open]
+    #[trusted]
+    #[creusot::builtins = "prelude.Seq.to_owned"]
+    pub fn to_owned(self) -> Seq<T> {
+        pearlite! {absurd}
     }
 }
 

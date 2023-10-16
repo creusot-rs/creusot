@@ -1,9 +1,6 @@
-use crate::{
-    invariant::{inv, Invariant},
-    *,
-};
+use crate::{invariant::Invariant, *};
 
-pub struct MapInv<I: Invariant, B, F> {
+pub struct MapInv<I, B, F> {
     pub iter: I,
     pub func: F,
     pub produced: Ghost<Seq<B>>,
@@ -54,7 +51,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
 }
 
 #[trusted]
-impl<I: Invariant, B, F> Resolve for MapInv<I, B, F> {
+impl<I, B, F> Resolve for MapInv<I, B, F> {
     #[open]
     #[predicate]
     fn resolve(self) -> bool {
@@ -71,8 +68,8 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Invariant
     fn invariant(self) -> bool {
         pearlite! {
             Self::reinitialize() &&
-            self.preservation_inv() &&
-            self.next_precondition()
+            Self::preservation_inv(self.iter, self.func, *self.produced) &&
+            Self::next_precondition(self.iter, self.func, *self.produced)
         }
     }
 }
@@ -86,17 +83,19 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> ::std::iter::I
       None => self.completed(),
       Some(v) => (*self).produces_one(v, ^self)
     })]
-    #[maintains(inv(mut self))]
     fn next(&mut self) -> Option<Self::Item> {
+        let old_self: Ghost<Self> = gh! { *self };
         match self.iter.next() {
             Some(v) => {
                 proof_assert! { self.func.precondition((v, self.produced)) };
-                #[allow(path_statements)]
-                let _: Ghost<()> = gh! { {Self::produces_one_invariant; ()} };
                 let produced = gh! { self.produced.push(v) };
-                let r = Some((self.func)(v, gh! { self.produced.inner() })); // FIXME: Ghost should be Copy
+                let r = (self.func)(v, self.produced);
                 self.produced = produced;
-                r
+                #[allow(path_statements)]
+                let _: Ghost<()> = gh! { { Self::produces_one_invariant; () } };
+                proof_assert! { old_self.produces_one(r, *self) };
+                let _ = self; // Make sure self is not resolve until here.
+                Some(r)
             }
             None => {
                 self.produced = gh! { Seq::EMPTY };
@@ -109,39 +108,24 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> ::std::iter::I
 impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::Item, F> {
     #[open]
     #[predicate]
-    #[creusot::open_inv]
-    pub fn next_precondition(self) -> bool {
+    pub fn next_precondition(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {
             forall<e: I::Item, i: I>
-                self.iter.produces(Seq::singleton(e), i) ==>
-                self.func.precondition((e, self.produced))
+                iter.produces(Seq::singleton(e), i) ==>
+                func.precondition((e, Ghost::new(produced)))
         }
     }
 
-    #[open]
     #[predicate]
-    pub fn reinitialize() -> bool {
-        pearlite! {
-            forall<reset: &mut MapInv<I, _, F>>
-                reset.completed() ==>
-                inv((^reset).iter) ==>
-                (^reset).next_precondition() &&
-                Self::preservation((^reset).iter, (^reset).func)
-        }
-    }
-
-    #[open(self)]
-    #[predicate]
-    #[ensures(self.produced.inner() == Seq::EMPTY ==> result == Self::preservation(self.iter, self.func))]
-    #[creusot::open_inv]
-    pub fn preservation_inv(self) -> bool {
+    #[ensures(produced == Seq::EMPTY ==> result == Self::preservation(iter, func))]
+    fn preservation_inv(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
-                self.func.unnest(*f) ==>
-                self.iter.produces(s.push(e1).push(e2), i) ==>
-                (*f).precondition((e1, Ghost::new(self.produced.concat(s)))) ==>
-                f.postcondition_mut((e1, Ghost::new(self.produced.concat(s))), b) ==>
-                (^f).precondition((e2, Ghost::new(self.produced.concat(s).push(e1))))
+                func.unnest(*f) ==>
+                iter.produces(s.push(e1).push(e2), i) ==>
+                (*f).precondition((e1, Ghost::new(produced.concat(s)))) ==>
+                f.postcondition_mut((e1, Ghost::new(produced.concat(s))), b) ==>
+                (^f).precondition((e2, Ghost::new(produced.concat(s).push(e1))))
         }
     }
 
@@ -158,17 +142,35 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::I
         }
     }
 
+    #[open]
+    #[predicate]
+    pub fn reinitialize() -> bool {
+        pearlite! {
+            forall<iter: &mut I, func: F>
+                iter.completed() ==>
+                Self::next_precondition(^iter, func, Seq::EMPTY) &&
+                Self::preservation(^iter, func)
+        }
+    }
+
     #[ghost]
-    #[open(self)]
-    #[requires(self.produces_one(e, other))]
-    #[requires(inv(other.iter))]
-    #[ensures(inv(other))]
-    fn produces_one_invariant(self, e: B, other: Self) {}
+    #[requires(self.iter.produces(Seq::singleton(e), iter))]
+    #[requires(*f == self.func)]
+    #[requires(f.postcondition_mut((e, self.produced), r) )]
+    #[ensures(Self::preservation_inv(iter, ^f, self.produced.push(e)))]
+    #[ensures(Self::next_precondition(iter, ^f, self.produced.push(e)))]
+    fn produces_one_invariant(self, e: I::Item, r: B, f: &mut F, iter: I) {
+        proof_assert! {
+            forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, i: I>
+                iter.produces(s.push(e1).push(e2), i) ==>
+                self.iter.produces(Seq::singleton(e).concat(s).push(e1).push(e2), i)
+        }
+    }
 
     #[open]
     #[predicate]
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
-    pub fn produces_one(self, visited: B, succ: Self) -> bool {
+    fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {
             exists<f: &mut F> *f == self.func && ^f == succ.func
             && { exists<e: I::Item> self.iter.produces(Seq::singleton(e), succ.iter)

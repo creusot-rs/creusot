@@ -87,6 +87,10 @@ mod macros {
     /// A body can only be visible in contexts where all the symbols used in the body are also visible.
     /// This means you cannot `#[open]` a body which refers to a `pub(crate)` symbol.
     pub use base_macros::open;
+
+    pub use creusot_contracts_proc::DeepModel;
+
+    pub use creusot_contracts_proc::Resolve;
 }
 
 #[cfg(creusot)]
@@ -99,6 +103,9 @@ pub mod logic;
 pub mod std;
 
 #[cfg(creusot)]
+pub mod num_rational;
+
+#[cfg(creusot)]
 pub mod ghost;
 
 #[cfg(not(creusot))]
@@ -107,11 +114,19 @@ pub mod ghost {
     where
         T: ?Sized;
 
-    impl<T> Ghost<T> {
+    impl<T: ?Sized> Ghost<T> {
         pub fn dummy() -> Ghost<T> {
             Ghost(std::marker::PhantomData)
         }
     }
+
+    impl<T: ?Sized> Clone for Ghost<T> {
+        fn clone(&self) -> Self {
+            Self::dummy()
+        }
+    }
+
+    impl<T: ?Sized> Copy for Ghost<T> {}
 }
 
 pub mod ghost_ptr;

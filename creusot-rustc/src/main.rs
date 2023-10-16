@@ -1,17 +1,19 @@
 #![feature(rustc_private)]
-
 extern crate lazy_static;
 extern crate rustc_driver;
 extern crate rustc_errors;
 extern crate rustc_interface;
 extern crate rustc_session;
 
+mod options;
+use options::Args;
+
 #[macro_use]
 extern crate log;
 
-use cargo_creusot::options::{Args, CreusotArgs};
 use clap::*;
 use creusot::callbacks::*;
+use options::CreusotArgs;
 use rustc_driver::{RunCompiler, DEFAULT_LOCALE_RESOURCES};
 use rustc_errors::{emitter::EmitterWriter, TerminalUrl};
 use rustc_interface::interface::try_print_query_stack;
@@ -141,7 +143,7 @@ fn setup_plugin() {
 }
 
 fn sysroot_path() -> String {
-    let toolchain: toml::Value = toml::from_str(include_str!("../../../rust-toolchain")).unwrap();
+    let toolchain: toml::Value = toml::from_str(include_str!("../../rust-toolchain")).unwrap();
     let channel = toolchain["toolchain"]["channel"].as_str().unwrap();
 
     let output = Command::new("rustup")

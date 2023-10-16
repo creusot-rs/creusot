@@ -1,5 +1,4 @@
 use crate::{
-    invariant::Invariant,
     std::{
         alloc::Allocator,
         ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
@@ -231,6 +230,10 @@ impl<T> SliceIndex<[T]> for RangeToInclusive<usize> {
 
 extern_spec! {
     impl<T> [T] {
+        #[requires(self@.len() == src@.len())]
+        #[ensures((^self)@ == src@)]
+        fn copy_from_slice(&mut self, src: &[T]) where T : Copy;
+
         #[ensures(self@.len() == result@)]
         fn len(&self) -> usize;
 
@@ -362,8 +365,6 @@ impl<'a, T> ShallowModel for Iter<'a, T> {
     }
 }
 
-impl<'a, T> Invariant for Iter<'a, T> {}
-
 impl<'a, T> Iterator for Iter<'a, T> {
     #[predicate]
     #[open]
@@ -399,7 +400,6 @@ impl<'a, T> ShallowModel for IterMut<'a, T> {
     #[open(self)]
     #[trusted]
     #[ensures((^result)@.len() == (*result)@.len())]
-    #[creusot::open_inv]
     fn shallow_model(self) -> Self::ShallowModelTy {
         absurd
     }
@@ -411,15 +411,6 @@ impl<'a, T> Resolve for IterMut<'a, T> {
     #[open]
     fn resolve(self) -> bool {
         pearlite! { *self@ == ^self@ }
-    }
-}
-
-impl<'a, T> Invariant for IterMut<'a, T> {
-    #[predicate]
-    #[open]
-    fn invariant(self) -> bool {
-        // Property that is always true but we must carry around..
-        pearlite! { (^self@)@.len() == (*self@)@.len() }
     }
 }
 

@@ -52,6 +52,15 @@ impl<T> Resolve for Vec<T> {
     }
 }
 
+impl<T, A: Allocator> Invariant for Vec<T, A> {
+    #[predicate]
+    #[open]
+    #[creusot::structural_inv]
+    fn invariant(self) -> bool {
+        pearlite! { invariant::inv(self@) }
+    }
+}
+
 extern_spec! {
     mod std {
         mod vec {
@@ -109,13 +118,14 @@ extern_spec! {
             }
 
             impl<T, A : Allocator> Extend<T> for Vec<T, A> {
-                #[ensures(exists<done_ : &mut I, prod: Seq<I::Item>>
-                    done_.completed() && iter.produces(prod, *done_) && (^self)@ == self@.concat(prod)
+                #[requires(iter.into_iter_pre())]
+                #[ensures(exists<start_ : I::IntoIter, done_ : &mut I::IntoIter, prod: Seq<T>>
+                    iter.into_iter_post(start_) &&
+                    done_.completed() && start_.produces(prod, *done_) && (^self)@ == self@.concat(prod)
                 )]
                 fn extend<I>(&mut self, iter: I)
                 where
-                    // TODO: Investigate why ::std::iter::Iterator<Item = T> is needed... shouldn't it be implied?
-                    I : Iterator<Item = T> + Invariant + ::std::iter::Iterator<Item = T>;
+                    I : IntoIterator<Item = T>, I::IntoIter : Iterator;
             }
 
             impl<T, I : SliceIndex<[T]>, A : Allocator> IndexMut<I> for Vec<T, A> {
@@ -212,8 +222,6 @@ impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
         pearlite! { forall<i: Int> 0 <= i && i < self@.len() ==> self@[i].resolve() }
     }
 }
-
-impl<T, A: Allocator> Invariant for std::vec::IntoIter<T, A> {}
 
 impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     #[predicate]

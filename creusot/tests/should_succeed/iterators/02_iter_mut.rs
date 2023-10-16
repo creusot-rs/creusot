@@ -66,7 +66,6 @@ impl<'a, T> IterMut<'a, T> {
     }
 }
 
-#[requires(inv((*v)@) && inv((^v)@))]
 #[ensures(result.inner@ == v@)]
 #[ensures((^result.inner)@ == (^v)@)]
 #[ensures((^v)@.len() == v@.len())]
