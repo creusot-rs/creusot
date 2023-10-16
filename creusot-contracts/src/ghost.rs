@@ -17,14 +17,6 @@ impl<T: ?Sized> Deref for Ghost<T> {
     }
 }
 
-impl<T> ::std::clone::Clone for Ghost<T> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<T> Copy for Ghost<T> {}
-
 impl<T: ShallowModel + ?Sized> ShallowModel for Ghost<T> {
     type ShallowModelTy = T::ShallowModelTy;
 
