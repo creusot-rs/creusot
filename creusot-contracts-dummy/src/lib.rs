@@ -81,3 +81,8 @@ pub fn open(_: TS1, tokens: TS1) -> TS1 {
 pub fn derive_deep_model(_: TS1) -> TS1 {
     TS1::new()
 }
+
+#[proc_macro_derive(Resolve)]
+pub fn derive_resolve(_: TS1) -> TS1 {
+    TS1::new()
+}

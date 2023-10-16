@@ -1,3 +1,4 @@
+#![feature(min_specialization)]
 extern crate creusot_contracts;
 use creusot_contracts::{
     std::{clone::Clone, cmp::PartialEq},
@@ -41,4 +42,19 @@ impl<A: DeepModel, B: DeepModel> DeepModel for Sum<A, B> {
             Sum::B(b) => Sum::B(b.deep_model()),
         }
     }
+}
+
+// Resolve derive macro
+
+#[derive(Resolve)]
+pub struct Product2<'a, A> {
+    a: &'a mut A,
+    b: bool,
+    c: Vec<u32>,
+}
+
+#[derive(Resolve)]
+pub enum Sum2<A, B> {
+    X(A),
+    Y { a: bool, x: B },
 }

@@ -728,3 +728,8 @@ pub fn derive_clone(tokens: TS1) -> TS1 {
 pub fn derive_deep_model(tokens: TS1) -> TS1 {
     derive::derive_deep_model(tokens)
 }
+
+#[proc_macro_derive(Resolve)]
+pub fn derive_resolve(tokens: TS1) -> TS1 {
+    derive::derive_resolve(tokens)
+}
