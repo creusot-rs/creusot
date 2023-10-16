@@ -5,7 +5,7 @@ use crate::{
     util,
 };
 use internal_iterator::*;
-use rustc_data_structures::fx::FxHashMap;
+use rustc_data_structures::sso::SsoHashMap;
 use rustc_middle::{
     mir::Mutability::Not,
     ty::{self, TyKind},
@@ -60,12 +60,12 @@ impl<'a, T, F: FnMut(&mut T)> Drop for Revert<'a, T, F> {
     }
 }
 
-impl<'a, K: Hash + Eq + Copy, V> SemiPersistent<FxHashMap<K, V>> {
+impl<'a, K: Hash + Eq + Copy, V> SemiPersistent<SsoHashMap<K, V>> {
     fn insert(
         &mut self,
         key: K,
         val: V,
-    ) -> Revert<'_, FxHashMap<K, V>, impl FnMut(&mut FxHashMap<K, V>)> {
+    ) -> Revert<'_, SsoHashMap<K, V>, impl FnMut(&mut SsoHashMap<K, V>)> {
         let mut last_val = self.0.insert(key, val);
         Revert {
             data: self,
@@ -81,7 +81,7 @@ impl<'a, K: Hash + Eq + Copy, V> SemiPersistent<FxHashMap<K, V>> {
     fn insert_many(
         &mut self,
         key_vals: impl IntoInternalIterator<Item = (K, V)>,
-    ) -> Revert<'_, FxHashMap<K, V>, impl FnMut(&mut FxHashMap<K, V>)> {
+    ) -> Revert<'_, SsoHashMap<K, V>, impl FnMut(&mut SsoHashMap<K, V>)> {
         let mut revert_vec: Vec<_> =
             key_vals.into_internal_iter().map(|(k, v)| (k, self.0.insert(k, v))).collect();
         Revert {
@@ -99,7 +99,7 @@ impl<'a, K: Hash + Eq + Copy, V> SemiPersistent<FxHashMap<K, V>> {
 }
 
 /// Maps identifiers to there type and the time they were bound
-type Tenv<'tcx> = SemiPersistent<FxHashMap<Symbol, (State, Ty<'tcx>)>>;
+type Tenv<'tcx> = SemiPersistent<SsoHashMap<Symbol, (State, Ty<'tcx>)>>;
 
 pub(super) fn prusti_to_creusot<'tcx>(
     ctx: &ThirTerm<'_, 'tcx>,
@@ -125,7 +125,7 @@ pub(super) fn prusti_to_creusot<'tcx>(
         None => full_signature(&interned, ts, owner_id)?,
         Some(home_sig) => full_signature_logic(&interned, home_sig, None, ts, owner_id)?,
     };
-    let mut tenv: FxHashMap<_, _> = tenv;
+    let mut tenv: SsoHashMap<_, _> = tenv;
 
     if item_id != owner_id.expect_local() {
         tenv.insert(Symbol::intern("result"), res_ty);

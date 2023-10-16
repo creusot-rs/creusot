@@ -19,7 +19,7 @@ use crate::{
 };
 use itertools::Either;
 use rustc_ast::Mutability;
-use rustc_data_structures::fx::FxHashMap;
+use rustc_data_structures::sso::SsoHashMap;
 use rustc_infer::{
     infer::{
         at::ToTrace, region_constraints::Constraint, InferCtxt, RegionVariableOrigin,
@@ -38,7 +38,8 @@ use rustc_middle::{
 use rustc_span::{def_id::DefId, Span, Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
 use rustc_trait_selection::traits::ObligationCtxt;
-use std::{collections::hash_map::Entry, iter, ops::ControlFlow};
+use std::{iter, ops::ControlFlow};
+type SmallVec<T> = smallvec::SmallVec<[T; 4]>;
 
 // fn prepare_dbg<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(t: T, tcx: TyCtxt<'tcx>) -> T {
 //     t.fold_with(&mut RegionReplacer {
@@ -91,14 +92,14 @@ fn filter_elided<'tcx>(
 }
 
 /// Maps region variables to there lower bounds
-struct RegionInfo(FxHashMap<RegionVid, StateSet>);
+struct RegionInfo(SsoHashMap<RegionVid, StateSet>);
 
 impl RegionInfo {
     fn new<'tcx>(
         ctx: CtxRef<'_, 'tcx>,
         mut constraints: impl Iterator<Item = (Constraint<'tcx>, SubregionOrigin<'tcx>)>,
     ) -> CreusotResult<Self> {
-        let mut res = RegionInfo(FxHashMap::default());
+        let mut res = RegionInfo(SsoHashMap::default());
         constraints.try_for_each(|(c, origin)| {
             CreusotResult::Ok(match c {
                 Constraint::VarSubReg(gen, reg) => res.add_bound(gen, reg),
@@ -219,7 +220,7 @@ pub(crate) fn check_call<'tcx>(
 ) -> CreusotResult<Ty<'tcx>> {
     let tcx = ctx.tcx;
     // Eagerly evaluate args to avoid running multiple inference contexts at the same time
-    let args = args.collect::<CreusotResult<Vec<_>>>()?.into_iter();
+    let args = args.collect::<CreusotResult<SmallVec<_>>>()?.into_iter();
     let home_sig = home_sig(ctx, def_id)?;
     let (home_sig_args, home_sig_bounds) = match &home_sig {
         Some(home_sig) => (Either::Left(home_sig.args()), Either::Left(home_sig.bounds())),
@@ -243,19 +244,16 @@ pub(crate) fn check_call<'tcx>(
     };
 
     // maps homes in the home signature to states that were passed in for them
-    let mut constrained_homes = FxHashMap::default();
+    let mut constrained_homes = SsoHashMap::default();
 
     for ((arg, &ty_gen), home_sig_arg) in args.zip(args_gen).zip(home_sig_args) {
         let ((from_state, mut ty), span) = arg;
         if home_sig_arg == ctx.curr_sym {
             ty = check_move_state(from_state, state, ctx, ty, span)?;
         } else {
-            match constrained_homes.entry(home_sig_arg) {
-                Entry::Vacant(vac) => {
-                    vac.insert(from_state);
-                }
-                Entry::Occupied(occ) if *occ.get() != from_state => {
-                    let d_oth_ts = display_state(*occ.get(), ctx);
+            match constrained_homes.insert(home_sig_arg, from_state) {
+                Some(oth_state) if oth_state != from_state => {
+                    let d_oth_ts = display_state(oth_state, ctx);
                     let d_this_ts = display_state(from_state, ctx);
                     return Err(Error::new(span, format!("expected argument to come from state `{d_oth_ts}`, but it came from `{d_this_ts}`\n\
                     required by home signature of function")));
@@ -287,7 +285,7 @@ pub(crate) fn check_call<'tcx>(
     }
 
     // maps region variables to states they must be equal to
-    let constrained_vars: FxHashMap<_, _> = subst_iter
+    let constrained_vars: SsoHashMap<_, _> = subst_iter
         .filter_map(|(home, var)| {
             let constraint = *constrained_homes.get(&home)?;
             Some((var, constraint))
@@ -380,7 +378,7 @@ pub(crate) fn check_constructor<'tcx>(
 ) -> CreusotResult<Ty<'tcx>> {
     let tcx = ctx.tcx;
     // Eagerly evaluate args to avoid running multiple inference contexts at the same time
-    let fields = fields.collect::<CreusotResult<Vec<_>>>()?.into_iter();
+    let fields = fields.collect::<CreusotResult<SmallVec<_>>>()?.into_iter();
     let infcx = tcx.infer_ctxt().build();
     let ocx = SimpleCtxt::new(&infcx, &*ctx);
 
@@ -400,7 +398,7 @@ pub(crate) fn union<'tcx>(
     elts: impl Iterator<Item = CreusotResult<(Ty<'tcx>, Span)>>,
 ) -> CreusotResult<Ty<'tcx>> {
     // Eagerly evaluate args to avoid running multiple inference contexts at the same time
-    let mut elts = elts.collect::<CreusotResult<Vec<_>>>()?.into_iter();
+    let mut elts = elts.collect::<CreusotResult<SmallVec<_>>>()?.into_iter();
     let tcx = ctx.tcx;
     let infcx = tcx.infer_ctxt().build();
     let ocx = SimpleCtxt::new(&infcx, &*ctx);
@@ -433,7 +431,7 @@ pub(crate) fn check_sup<'tcx>(
     let ocx = SimpleCtxt::new(&infcx, &*ctx);
 
     // Avoid contravariant constraints
-    let mut back_map = FxHashMap::default();
+    let mut back_map = SsoHashMap::default();
     let expected = expected.fold_with(&mut RegionReplacer {
         tcx,
         f: |r| {
@@ -642,7 +640,7 @@ pub(crate) fn check_signature_agreement<'tcx>(
 
     let interned = InternedInfo::new(tcx);
     let (ctx, ts, arg_tys, (_, expect_res_ty)) =
-        full_signature_logic::<Vec<_>>(&interned, trait_home_sig, Some(refn_subst), &ts, trait_id)?;
+        full_signature_logic::<SmallVec<_>>(&interned, trait_home_sig, Some(refn_subst), &ts, trait_id)?;
     let args = arg_tys.into_iter().map(|(_, ty)| Ok((ty, impl_span)));
     let actual_res_ty =
         check_call(&ctx, ts, impl_id, ctx.fix_regions(impl_id_subst), args, impl_span)?;
