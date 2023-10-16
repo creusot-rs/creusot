@@ -180,19 +180,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             _ => unreachable!("Resume assertions"),
         }
     }
-
-    fn check_ghost_term(&mut self, term: &Term<'tcx>, location: Location) {
-        if let Some(resolver) = &mut self.resolver {
-            let frozen = resolver.frozen_locals_before(location);
-            let free_vars = term.free_vars();
-            for f in frozen.iter() {
-                if free_vars.contains(&self.locals[&f]) {
-                    let msg = format!("Use of borrowed variable {}", self.locals[&f]);
-                    self.ctx.crash_and_error(term.span, &msg);
-                }
-            }
-        }
-    }
 }
 
 pub(crate) fn resolve_function<'tcx>(

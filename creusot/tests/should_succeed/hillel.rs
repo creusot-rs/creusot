@@ -79,10 +79,11 @@ fn subset_push<T>(s: Seq<T>, elem: T) {}
 fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
     gh! { subset_push::<T::DeepModelTy> };
     proof_assert! { is_subset(vec.deep_model(), vec.deep_model().push(elem.deep_model())) };
+    let ghost_vec = gh! { *vec };
 
     #[invariant(forall<j: Int> 0 <= j && j < produced.len() ==> produced[j].deep_model() != elem.deep_model())]
     for e in vec.iter() {
-        proof_assert! { *e == (*vec)[produced.len()-1] };
+        proof_assert! { *e == ghost_vec[produced.len()-1] };
         if e == &elem {
             proof_assert! { contains(vec.deep_model(), elem.deep_model()) };
             return;
