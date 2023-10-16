@@ -28,7 +28,7 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
                 &format!("{}DeepModel", name.to_string()),
                 proc_macro::Span::def_site().into(),
             );
-            let deep_model_ty = deep_model_ty(&ident, &input.data);
+            let deep_model_ty = deep_model_ty(&ident, &generics, &input.data);
 
             (ident.into(), Some(quote! { #vis #deep_model_ty}))
         };
@@ -45,7 +45,7 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
         #ty
 
         impl #impl_generics ::creusot_contracts::DeepModel for #name #ty_generics #where_clause {
-            type DeepModelTy = #deep_model_ty_name;
+            type DeepModelTy = #deep_model_ty_name #ty_generics;
 
             #[ghost]
             #open
@@ -82,7 +82,7 @@ fn add_trait_bounds(mut generics: Generics) -> Generics {
     generics
 }
 
-fn deep_model_ty_fields(base_ident: &Ident, fields: &Fields) -> TokenStream {
+fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
     match fields {
         Fields::Named(ref fields) => {
             let recurse = fields.named.iter().map(|f| {
@@ -94,7 +94,7 @@ fn deep_model_ty_fields(base_ident: &Ident, fields: &Fields) -> TokenStream {
                 }
             });
             quote! {
-                #base_ident { #(#recurse),*}
+                 { #(#recurse),*}
             }
         }
         Fields::Unnamed(ref fields) => {
@@ -106,29 +106,29 @@ fn deep_model_ty_fields(base_ident: &Ident, fields: &Fields) -> TokenStream {
                 }
             });
             quote! {
-                #base_ident (#(#recurse),*)
+                 (#(#recurse),*)
             }
         }
-        Fields::Unit => quote! {
-            #base_ident
-        },
+        Fields::Unit => quote! {},
     }
 }
 
-fn deep_model_ty(base_ident: &Ident, data: &Data) -> TokenStream {
+fn deep_model_ty(base_ident: &Ident, generics: &Generics, data: &Data) -> TokenStream {
     match data {
         Data::Struct(ref data) => {
-            let data = deep_model_ty_fields(base_ident, &data.fields);
-            quote! { struct  #data }
+            let data = deep_model_ty_fields(&data.fields);
+            quote! { struct #base_ident #generics #data }
         }
         Data::Enum(ref data) => {
             let arms = data.variants.iter().map(|v| {
                 let ident = &v.ident;
-                deep_model_ty_fields(ident, &v.fields)
+                let fields = deep_model_ty_fields(&v.fields);
+
+                quote! { #ident #fields }
             });
 
             quote! {
-                enum #base_ident {
+                enum #base_ident #generics {
                     #(#arms),*
                 }
             }

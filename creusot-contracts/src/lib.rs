@@ -82,6 +82,10 @@ mod macros {
     /// A body can only be visible in contexts where all the symbols used in the body are also visible.
     /// This means you cannot `#[open]` a body which refers to a `pub(crate)` symbol.
     pub use creusot_contracts_proc::open;
+
+    pub use creusot_contracts_proc::DeepModel;
+
+    pub use creusot_contracts_proc::Resolve;
 }
 
 #[cfg(not(creusot))]
@@ -155,6 +159,10 @@ mod macros {
     /// A body can only be visible in contexts where all the symbols used in the body are also visible.
     /// This means you cannot `#[open]` a body which refers to a `pub(crate)` symbol.
     pub use creusot_contracts_dummy::open;
+
+    pub use creusot_contracts_proc::DeepModel;
+
+    pub use creusot_contracts_proc::Resolve;
 }
 
 #[cfg(creusot)]
