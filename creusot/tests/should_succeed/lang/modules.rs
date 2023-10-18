@@ -4,17 +4,9 @@ extern crate creusot_contracts;
 pub mod nested {
     use creusot_contracts::*;
 
+    #[derive(Resolve)]
     enum Nested {
         Test,
-    }
-
-    #[trusted]
-    impl Resolve for Nested {
-        #[open]
-        #[predicate]
-        fn resolve(self) -> bool {
-            true
-        }
     }
 
     #[ensures(result == true)]
