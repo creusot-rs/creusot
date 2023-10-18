@@ -167,6 +167,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     &self.locals,
                     *self.body.source_info(bb.start_location()),
                 ));
+                self.check_ghost_term(&body, bb.start_location());
                 match kind {
                     LoopSpecKind::Variant => self.emit_statement(fmir::Statement::Variant(body)),
                     LoopSpecKind::Invariant => {
