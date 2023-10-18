@@ -112,8 +112,8 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
         let old_l = gh! { l };
 
         #[invariant(^old_self.inner() == ^self)]
-        #[invariant(self.good_bucket(*l, index@))]
-        #[invariant(self.good_bucket(^l, index@) ==> self.good_bucket(^old_l.inner(), index@ ))]
+        #[invariant(old_self.good_bucket(*l, index@))]
+        #[invariant(old_self.good_bucket(^l, index@) ==> old_self.good_bucket(^old_l.inner(), index@))]
         #[invariant((^l).get(key.deep_model()) == Some(val) ==> (^*old_l).get(key.deep_model()) == Some(val))]
         #[invariant(forall <i:_> (^l).get(i) == (*l).get(i) ==> (^*old_l).get(i) == old_l.get(i))]
         #[invariant((*l).no_double_binding())]
