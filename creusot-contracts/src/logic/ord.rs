@@ -70,6 +70,67 @@ pub trait OrdLogic {
     fn eq_cmp(x: Self, y: Self);
 }
 
+#[macro_export]
+macro_rules! ord_laws_impl {
+    () => {
+        #[::creusot_contracts::law]
+        #[::creusot_contracts::open(self)]
+        fn cmp_le_log(_: Self, _: Self) {
+            ()
+        }
+
+        #[::creusot_contracts::law]
+        #[::creusot_contracts::open(self)]
+        fn cmp_lt_log(_: Self, _: Self) {
+            ()
+        }
+
+        #[::creusot_contracts::law]
+        #[::creusot_contracts::open(self)]
+        fn cmp_ge_log(_: Self, _: Self) {
+            ()
+        }
+
+        #[::creusot_contracts::law]
+        #[::creusot_contracts::open(self)]
+        fn cmp_gt_log(_: Self, _: Self) {
+            ()
+        }
+
+        #[::creusot_contracts::law]
+        #[::creusot_contracts::open(self)]
+        fn refl(_: Self) {
+            ()
+        }
+
+        #[::creusot_contracts::law]
+        #[::creusot_contracts::open(self)]
+        fn trans(_: Self, _: Self, _: Self, _: Ordering) {
+            ()
+        }
+
+        #[::creusot_contracts::law]
+        #[::creusot_contracts::open(self)]
+        fn antisym1(_: Self, _: Self) {
+            ()
+        }
+
+        #[::creusot_contracts::law]
+        #[::creusot_contracts::open(self)]
+        fn antisym2(_: Self, _: Self) {
+            ()
+        }
+
+        #[::creusot_contracts::law]
+        #[::creusot_contracts::open(self)]
+        fn eq_cmp(_: Self, _: Self) {
+            ()
+        }
+    };
+}
+
+pub use ord_laws_impl;
+
 macro_rules! ord_logic_impl {
     ($t:ty) => {
         impl OrdLogic for $t {
@@ -117,59 +178,7 @@ macro_rules! ord_logic_impl {
                 true
             }
 
-            #[ghost]
-            #[open(self)]
-            fn cmp_le_log(_: Self, _: Self) {
-                ()
-            }
-
-            #[ghost]
-            #[open(self)]
-            fn cmp_lt_log(_: Self, _: Self) {
-                ()
-            }
-
-            #[ghost]
-            #[open(self)]
-            fn cmp_ge_log(_: Self, _: Self) {
-                ()
-            }
-
-            #[ghost]
-            #[open(self)]
-            fn cmp_gt_log(_: Self, _: Self) {
-                ()
-            }
-
-            #[ghost]
-            #[open(self)]
-            fn refl(_: Self) {
-                ()
-            }
-
-            #[ghost]
-            #[open(self)]
-            fn trans(_: Self, _: Self, _: Self, _: Ordering) {
-                ()
-            }
-
-            #[ghost]
-            #[open(self)]
-            fn antisym1(_: Self, _: Self) {
-                ()
-            }
-
-            #[ghost]
-            #[open(self)]
-            fn antisym2(_: Self, _: Self) {
-                ()
-            }
-
-            #[ghost]
-            #[open(self)]
-            fn eq_cmp(_: Self, _: Self) {
-                ()
-            }
+            ord_laws_impl! {}
         }
     };
 }
@@ -202,41 +211,7 @@ impl OrdLogic for bool {
         }
     }
 
-    #[ghost]
-    #[open(self)]
-    fn cmp_le_log(_: Self, _: Self) {}
-
-    #[ghost]
-    #[open(self)]
-    fn cmp_lt_log(_: Self, _: Self) {}
-
-    #[ghost]
-    #[open(self)]
-    fn cmp_ge_log(_: Self, _: Self) {}
-
-    #[ghost]
-    #[open(self)]
-    fn cmp_gt_log(_: Self, _: Self) {}
-
-    #[ghost]
-    #[open(self)]
-    fn refl(_: Self) {}
-
-    #[ghost]
-    #[open(self)]
-    fn trans(_: Self, _: Self, _: Self, _: Ordering) {}
-
-    #[ghost]
-    #[open(self)]
-    fn antisym1(_: Self, _: Self) {}
-
-    #[ghost]
-    #[open(self)]
-    fn antisym2(_: Self, _: Self) {}
-
-    #[ghost]
-    #[open(self)]
-    fn eq_cmp(_: Self, _: Self) {}
+    ord_laws_impl! {}
 }
 
 impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
@@ -260,18 +235,10 @@ impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
     }
 
     #[ghost]
-    #[open(self)]
-    fn cmp_le_log(_: Self, _: Self) {}
-
-    #[ghost]
     #[open]
     fn lt_log(self, o: Self) -> bool {
         pearlite! { (self.0 == o.0 && self.1 < o.1) || self.0 < o.0 }
     }
-
-    #[ghost]
-    #[open(self)]
-    fn cmp_lt_log(_: Self, _: Self) {}
 
     #[ghost]
     #[open]
@@ -280,38 +247,12 @@ impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
     }
 
     #[ghost]
-    #[open(self)]
-    fn cmp_ge_log(_: Self, _: Self) {}
-
-    #[ghost]
     #[open]
     fn gt_log(self, o: Self) -> bool {
         pearlite! { (self.0 == o.0 && self.1 > o.1) || self.0 > o.0 }
     }
 
-    #[ghost]
-    #[open(self)]
-    fn cmp_gt_log(_: Self, _: Self) {}
-
-    #[ghost]
-    #[open(self)]
-    fn refl(_: Self) {}
-
-    #[ghost]
-    #[open(self)]
-    fn trans(_: Self, _: Self, _: Self, _: Ordering) {}
-
-    #[ghost]
-    #[open(self)]
-    fn antisym1(_: Self, _: Self) {}
-
-    #[ghost]
-    #[open(self)]
-    fn antisym2(_: Self, _: Self) {}
-
-    #[ghost]
-    #[open(self)]
-    fn eq_cmp(_: Self, _: Self) {}
+    ord_laws_impl! {}
 }
 
 impl<T: OrdLogic> OrdLogic for Option<T> {
@@ -326,52 +267,5 @@ impl<T: OrdLogic> OrdLogic for Option<T> {
         }
     }
 
-    #[law]
-    #[open(self)]
-    #[ensures(x.le_log(y) == (x.cmp_log(y) != Ordering::Greater))]
-    fn cmp_le_log(x: Self, y: Self) {}
-
-    #[law]
-    #[open(self)]
-    #[ensures(x.lt_log(y) == (x.cmp_log(y) == Ordering::Less))]
-    fn cmp_lt_log(x: Self, y: Self) {}
-
-    #[law]
-    #[open(self)]
-    #[ensures(x.ge_log(y) == (x.cmp_log(y) != Ordering::Less))]
-    fn cmp_ge_log(x: Self, y: Self) {}
-
-    #[law]
-    #[open(self)]
-    #[ensures(x.gt_log(y) == (x.cmp_log(y) == Ordering::Greater))]
-    fn cmp_gt_log(x: Self, y: Self) {}
-
-    #[law]
-    #[open(self)]
-    #[ensures(x.cmp_log(x) == Ordering::Equal)]
-    fn refl(x: Self) {}
-
-    #[law]
-    #[open(self)]
-    #[requires(x.cmp_log(y) == o)]
-    #[requires(y.cmp_log(z) == o)]
-    #[ensures(x.cmp_log(z) == o)]
-    fn trans(x: Self, y: Self, z: Self, o: Ordering) {}
-
-    #[law]
-    #[open(self)]
-    #[requires(x.cmp_log(y) == Ordering::Less)]
-    #[ensures(y.cmp_log(x) == Ordering::Greater)]
-    fn antisym1(x: Self, y: Self) {}
-
-    #[law]
-    #[open(self)]
-    #[requires(x.cmp_log(y) == Ordering::Greater)]
-    #[ensures(y.cmp_log(x) == Ordering::Less)]
-    fn antisym2(x: Self, y: Self) {}
-
-    #[law]
-    #[open(self)]
-    #[ensures((x == y) == (x.cmp_log(y) == Ordering::Equal))]
-    fn eq_cmp(x: Self, y: Self) {}
+    ord_laws_impl! {}
 }

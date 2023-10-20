@@ -20,6 +20,7 @@ pub struct Options {
     pub in_cargo: bool,
     pub span_mode: SpanMode,
     pub match_str: Option<String>,
+    pub simple_triggers: bool,
 }
 
 #[derive(Debug, Clone)]

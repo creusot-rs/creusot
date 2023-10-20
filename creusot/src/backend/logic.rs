@@ -9,7 +9,7 @@ use crate::{
 use rustc_hir::def_id::DefId;
 use why3::{
     declaration::*,
-    exp::{BinOp, Binder, Exp},
+    exp::{BinOp, Binder, Exp, Trigger},
     Ident, QName,
 };
 
@@ -269,7 +269,8 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
     let mut condition = preconditions.rfold(postcondition, |acc, arg| arg.implies(acc));
 
     let func_call = function_call(sig);
-    condition.subst(&[("result".into(), func_call)].into_iter().collect());
+    let trigger = sig.trigger.clone().unwrap_or_else(|| Trigger::single(func_call.clone()));
+    condition.subst(&[("result".into(), func_call.clone())].into_iter().collect());
     let args: Vec<(_, _)> = sig
         .args
         .iter()
@@ -278,7 +279,8 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
         .filter(|arg| &*arg.0 != "_")
         .collect();
 
-    let axiom = if args.is_empty() { condition } else { Exp::Forall(args, Box::new(condition)) };
+    let axiom =
+        if args.is_empty() { condition } else { Exp::forall_trig(args, trigger, condition) };
 
     Axiom { name: format!("{}_spec", &*sig.name).into(), rewrite: false, axiom }
 }
@@ -301,15 +303,17 @@ fn function_call(sig: &Signature) -> Exp {
 
 fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {
     let call = function_call(sig);
+    let trigger = sig.trigger.clone().unwrap_or_else(|| Trigger::single(call.clone()));
 
-    let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call), Box::new(body));
+    let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
 
     let preconditions = sig.contract.requires.iter().cloned();
     let condition = preconditions.rfold(equation, |acc, arg| arg.implies(acc));
 
     let args: Vec<_> = sig.args.clone().into_iter().flat_map(|b| b.var_type_pairs()).collect();
 
-    let axiom = if args.is_empty() { condition } else { Exp::Forall(args, Box::new(condition)) };
+    let axiom =
+        if args.is_empty() { condition } else { Exp::forall_trig(args, trigger, condition) };
 
     Axiom { name: "def".into(), rewrite: false, axiom }
 }
