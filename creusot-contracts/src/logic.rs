@@ -7,7 +7,6 @@ mod mapping;
 mod ops;
 pub mod ord;
 mod seq;
-mod seq2;
 mod set;
 
 pub use fmap::FMap;
