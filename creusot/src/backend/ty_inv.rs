@@ -187,10 +187,12 @@ fn build_inv_axiom<'tcx>(
             .unwrap_or_else(|| Exp::mk_true())
     };
     let trivial = rhs.is_true();
+    let trigger =
+        if ctx.opts.simple_triggers { Trigger::single(lhs.clone()) } else { Trigger::NONE };
 
     let axiom = Exp::forall_trig(
         vec![("self".into(), translate_ty(ctx, names, DUMMY_SP, ty))],
-        Trigger::single(lhs.clone()),
+        trigger,
         lhs.eq(rhs),
     );
     Axiom { name, rewrite: !trivial, axiom }
