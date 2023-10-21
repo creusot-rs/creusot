@@ -111,7 +111,6 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
         let mut l: &mut List<_> = &mut self.buckets[index];
         let old_l = gh! { l };
 
-        #[invariant(^old_self.inner() == ^self)]
         #[invariant(old_self.good_bucket(*l, index@))]
         #[invariant(old_self.good_bucket(^l, index@) ==> old_self.good_bucket(^old_l.inner(), index@))]
         #[invariant((^l).get(key.deep_model()) == Some(val) ==> (^*old_l).get(key.deep_model()) == Some(val))]

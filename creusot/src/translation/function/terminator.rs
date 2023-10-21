@@ -77,6 +77,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     let TyKind::Closure(def_id, _) = ty.kind() else { panic!() };
                     let mut assertion = self.assertions.remove(def_id).unwrap();
                     assertion.subst(&inv_subst(self.body, &self.locals, terminator.source_info));
+                    self.check_ghost_term(&assertion, location);
                     self.emit_ghost_assign(*destination, assertion);
                     self.emit_terminator(Terminator::Goto(target.unwrap()));
                     return;

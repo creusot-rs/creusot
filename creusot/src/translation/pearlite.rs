@@ -1355,4 +1355,87 @@ impl<'tcx> Term<'tcx> {
             TermKind::Assert { cond } => cond.subst_with_inner(bound, inv_subst),
         }
     }
+
+    pub(crate) fn free_vars(&self) -> HashSet<Symbol> {
+        let mut free = HashSet::new();
+        self.free_vars_inner(&HashSet::new(), &mut free);
+        free
+    }
+
+    fn free_vars_inner(&self, bound: &HashSet<Symbol>, free: &mut HashSet<Symbol>) {
+        match &self.kind {
+            TermKind::Var(v) => {
+                if !bound.contains(v) {
+                    free.insert(*v);
+                }
+            }
+            TermKind::Lit(_) => {}
+            TermKind::Item(_, _) => {}
+            TermKind::Binary { lhs, rhs, .. } => {
+                lhs.free_vars_inner(bound, free);
+                rhs.free_vars_inner(bound, free)
+            }
+            TermKind::Unary { arg, .. } => arg.free_vars_inner(bound, free),
+            TermKind::Forall { binder, body } => {
+                let mut bound = bound.clone();
+                bound.insert(binder.0);
+
+                body.free_vars_inner(&bound, free);
+            }
+            TermKind::Exists { binder, body } => {
+                let mut bound = bound.clone();
+                bound.insert(binder.0);
+
+                body.free_vars_inner(&bound, free);
+            }
+            TermKind::Call { fun, args, .. } => {
+                fun.free_vars_inner(bound, free);
+                for arg in args {
+                    arg.free_vars_inner(bound, free);
+                }
+            }
+            TermKind::Constructor { fields, .. } => {
+                for field in fields {
+                    field.free_vars_inner(bound, free);
+                }
+            }
+            TermKind::Tuple { fields } => {
+                for field in fields {
+                    field.free_vars_inner(bound, free);
+                }
+            }
+            TermKind::Cur { term } => term.free_vars_inner(bound, free),
+            TermKind::Fin { term } => term.free_vars_inner(bound, free),
+            TermKind::Impl { lhs, rhs } => {
+                lhs.free_vars_inner(bound, free);
+                rhs.free_vars_inner(bound, free)
+            }
+            TermKind::Match { scrutinee, arms } => {
+                scrutinee.free_vars_inner(bound, free);
+                let mut bound = bound.clone();
+
+                for (pat, arm) in arms {
+                    pat.binds(&mut bound);
+                    arm.free_vars_inner(&bound, free);
+                }
+            }
+            TermKind::Let { pattern, arg, body } => {
+                arg.free_vars_inner(bound, free);
+                let mut bound = bound.clone();
+                pattern.binds(&mut bound);
+                body.free_vars_inner(&bound, free);
+            }
+            TermKind::Projection { lhs, .. } => lhs.free_vars_inner(bound, free),
+            TermKind::Old { term } => term.free_vars_inner(bound, free),
+            TermKind::Closure { body } => {
+                body.free_vars_inner(&bound, free);
+            }
+            TermKind::Absurd => {}
+            TermKind::Reborrow { cur, fin } => {
+                cur.free_vars_inner(bound, free);
+                fin.free_vars_inner(bound, free)
+            }
+            TermKind::Assert { cond } => cond.free_vars_inner(bound, free),
+        }
+    }
 }
