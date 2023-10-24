@@ -35,6 +35,9 @@ pub struct CreusotArgs {
     /// Check the installed why3 version.
     #[clap(long, default_value_t = true, action = clap::ArgAction::Set)]
     pub check_why3: bool,
+    /// uses `result` as the trigger of definition and specification axioms of logic/ghost/predicate functions
+    #[clap(long, default_value_t = false, action = clap::ArgAction::Set)]
+    pub simple_triggers: bool,
 }
 
 /// Parse a single key-value pair
@@ -93,6 +96,7 @@ impl CreusotArgs {
             in_cargo: cargo_creusot,
             span_mode: span_mode,
             match_str: self.focus_on,
+            simple_triggers: self.simple_triggers,
         }
     }
 }

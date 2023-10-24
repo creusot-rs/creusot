@@ -151,19 +151,13 @@ impl<'tcx> Lower<'_, 'tcx> {
             TermKind::Forall { binder, box body } => {
                 let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, binder.1);
                 self.pure_exp(|this| {
-                    Exp::Forall(
-                        vec![(binder.0.to_string().into(), ty)],
-                        Box::new(this.lower_term(body)),
-                    )
+                    Exp::forall(vec![(binder.0.to_string().into(), ty)], this.lower_term(body))
                 })
             }
             TermKind::Exists { binder, box body } => {
                 let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, binder.1);
                 self.pure_exp(|this| {
-                    Exp::Exists(
-                        vec![(binder.0.to_string().into(), ty)],
-                        Box::new(this.lower_term(body)),
-                    )
+                    Exp::exists(vec![(binder.0.to_string().into(), ty)], this.lower_term(body))
                 })
             }
             TermKind::Constructor { typ, variant, fields } => {

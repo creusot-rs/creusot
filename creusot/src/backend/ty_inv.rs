@@ -11,7 +11,7 @@ use rustc_middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyCtx
 use rustc_span::{Symbol, DUMMY_SP};
 use why3::{
     declaration::{Axiom, Decl, Module, TyDecl},
-    exp::{Constant, Exp, Pattern},
+    exp::{Constant, Exp, Pattern, Trigger},
     ty::Type as MlT,
     Ident, QName,
 };
@@ -187,10 +187,13 @@ fn build_inv_axiom<'tcx>(
             .unwrap_or_else(|| Exp::mk_true())
     };
     let trivial = rhs.is_true();
+    let trigger =
+        if ctx.opts.simple_triggers { Trigger::single(lhs.clone()) } else { Trigger::NONE };
 
-    let axiom = Exp::Forall(
+    let axiom = Exp::forall_trig(
         vec![("self".into(), translate_ty(ctx, names, DUMMY_SP, ty))],
-        Box::new(lhs.eq(rhs)),
+        trigger,
+        lhs.eq(rhs),
     );
     Axiom { name, rewrite: !trivial, axiom }
 }
@@ -333,7 +336,7 @@ fn build_inv_exp_seq<'tcx>(
     let mut body = build_inv_exp(ctx, names, "a".into(), ty, param_env, Mode::Field)?;
     body.subst(&[("a".into(), ith)].into());
 
-    Some(Exp::Forall(vec![("i".into(), MlT::Integer)], Box::new(bounds.implies(body))))
+    Some(Exp::forall(vec![("i".into(), MlT::Integer)], bounds.implies(body)))
 }
 
 fn build_inv_exp_adt<'tcx>(

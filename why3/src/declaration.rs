@@ -2,7 +2,7 @@ use indexmap::IndexSet;
 use std::collections::{BTreeMap, HashMap};
 
 use crate::{
-    exp::{Binder, Exp, ExpMutVisitor},
+    exp::{Binder, Exp, ExpMutVisitor, Trigger},
     mlcfg::{Block, BlockId},
     ty::Type,
     *,
@@ -143,6 +143,7 @@ pub enum Attribute {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Signature {
     pub name: Ident,
+    pub trigger: Option<Trigger>, // None means Trigger::single(function_call(self))
     pub attrs: Vec<Attribute>,
     pub retty: Option<Type>,
     pub args: Vec<Binder>,

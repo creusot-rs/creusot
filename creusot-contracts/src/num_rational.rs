@@ -65,57 +65,5 @@ impl OrdLogic for Real {
         true
     }
 
-    #[ghost]
-    #[open(self)]
-    fn cmp_le_log(_: Self, _: Self) {
-        ()
-    }
-
-    #[ghost]
-    #[open(self)]
-    fn cmp_lt_log(_: Self, _: Self) {
-        ()
-    }
-
-    #[ghost]
-    #[open(self)]
-    fn cmp_ge_log(_: Self, _: Self) {
-        ()
-    }
-
-    #[ghost]
-    #[open(self)]
-    fn cmp_gt_log(_: Self, _: Self) {
-        ()
-    }
-
-    #[ghost]
-    #[open(self)]
-    fn refl(_: Self) {
-        ()
-    }
-
-    #[ghost]
-    #[open(self)]
-    fn trans(_: Self, _: Self, _: Self, _: Ordering) {
-        ()
-    }
-
-    #[ghost]
-    #[open(self)]
-    fn antisym1(_: Self, _: Self) {
-        ()
-    }
-
-    #[ghost]
-    #[open(self)]
-    fn antisym2(_: Self, _: Self) {
-        ()
-    }
-
-    #[ghost]
-    #[open(self)]
-    fn eq_cmp(_: Self, _: Self) {
-        ()
-    }
+    crate::logic::ord::ord_laws_impl! {}
 }
