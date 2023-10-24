@@ -176,7 +176,7 @@ fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, C
             let val = ity.val(sig.clone());
             decls.push(Decl::ValDecl(val));
             decls.push(val_decl(ctx, &mut names, def_id));
-            if sig.trigger.is_none() {
+            if sig.uses_simple_triggers() {
                 limited_function_encode(&mut decls, &def_sig, &sig_contract.contract, body, ity)
             } else {
                 decls.push(Decl::Axiom(definition_axiom(&def_sig, body, "def")));
@@ -221,6 +221,8 @@ fn subst_qname(body: &mut Exp, name: &Ident, lim_name: &Ident) {
     QNameSubst(name, lim_name).visit_mut(body)
 }
 
+// Use the limited function encoding from https://pm.inf.ethz.ch/publications/HeuleKassiosMuellerSummers12.pdf
+// Originally introduced in https://dl.acm.org/doi/10.1145/1529282.1529411
 fn limited_function_encode(
     decls: &mut Vec<Decl>,
     sig: &Signature,
