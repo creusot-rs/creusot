@@ -1,4 +1,4 @@
-use std::{borrow::Cow, ops::Deref};
+use std::{borrow::Cow, fmt::Write, ops::Deref};
 
 use indexmap::Equivalent;
 #[cfg(feature = "serialize")]
@@ -18,6 +18,13 @@ impl Ident {
         }
         // TODO: ensure that all characters are valid
         Ident(name.into())
+    }
+
+    pub fn from_string(mut name: String) -> Self {
+        if RESERVED.contains(&&*name) {
+            name.write_str("'").unwrap();
+        }
+        Ident(name)
     }
 
     pub fn to_string(self) -> String {
