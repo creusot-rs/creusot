@@ -67,4 +67,11 @@ impl<T: ?Sized> Set<T> {
     pub fn union(self, _: Self) -> Self {
         pearlite! { absurd}
     }
+
+    #[predicate]
+    #[open(self)]
+    #[creusot::builtins = "set.Set.subset"]
+    pub fn is_subset(self, _: Self) -> bool {
+        pearlite! { absurd }
+    }
 }

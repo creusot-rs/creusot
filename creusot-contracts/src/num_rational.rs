@@ -1,12 +1,36 @@
 use std::marker::PhantomData;
 
-use crate::{ghost, open, trusted, DeepModel, OrdLogic};
-use num_rational::BigRational;
+use crate::{ghost, open, trusted, DeepModel, ShallowModel, Int, OrdLogic};
+use num_rational::{BigRational};
+use num::BigInt;
 use std::cmp::Ordering;
 
 #[cfg_attr(creusot, creusot::builtins = "prelude.Real.real")]
 #[trusted]
 pub struct Real(PhantomData<*mut ()>);
+
+#[cfg(creusot)]
+impl DeepModel for BigInt {
+    type DeepModelTy = Int;
+
+    #[ghost]
+    #[open(self)]
+    #[trusted]
+    fn deep_model(self) -> Self::DeepModelTy {
+        absurd
+    }
+}
+
+#[cfg(creusot)]
+impl ShallowModel for BigInt {
+    type ShallowModelTy = Int;
+
+    #[ghost]
+    #[open]
+    fn shallow_model(self) -> Self::ShallowModelTy {
+        self.deep_model()
+    }
+}
 
 #[cfg(creusot)]
 impl DeepModel for BigRational {
