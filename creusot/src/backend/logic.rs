@@ -223,6 +223,11 @@ fn subst_qname(body: &mut Exp, name: &Ident, lim_name: &Ident) {
 
 // Use the limited function encoding from https://pm.inf.ethz.ch/publications/HeuleKassiosMuellerSummers12.pdf
 // Originally introduced in https://dl.acm.org/doi/10.1145/1529282.1529411
+
+// This prevents recursive functions from being unfolded more than once which makes the definition
+// axiom weaker but avoids having it cause a matching loop. This is useful since it can help the
+// solve return "unknown" instead of relying on a timeout, and give it a chance to apply map
+// extensionality axioms.
 fn limited_function_encode(
     decls: &mut Vec<Decl>,
     sig: &Signature,
