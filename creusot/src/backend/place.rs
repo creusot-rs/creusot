@@ -88,11 +88,22 @@ fn create_assign_rec<'tcx>(
 
             let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
             if mutability == Mut {
-                RecUp {
-                    record: Box::new(translate_rplace(ctx, names, locals, base, &proj[..proj_ix])),
-                    label: "current".into(),
-                    val: Box::new(inner),
-                }
+                Exp::Call(
+                    Box::new(Exp::QVar(
+                        QName { module: vec!["Borrow".into()], name: "make_borrow".into() },
+                        why3::exp::Purity::Logic,
+                    )),
+                    vec![
+                        inner,
+                        Exp::Final(Box::new(translate_rplace(
+                            ctx,
+                            names,
+                            locals,
+                            base,
+                            &proj[..proj_ix],
+                        ))),
+                    ],
+                )
             } else {
                 inner
             }
