@@ -248,12 +248,13 @@ impl<'tcx> Lower<'_, 'tcx> {
                 Exp::Abs(binders, Box::new(body))
             }
             TermKind::Absurd => Exp::Absurd,
-            TermKind::Reborrow { cur, fin } => Exp::Record {
-                fields: vec![
-                    ("current".into(), self.lower_term(*cur)),
-                    ("final".into(), self.lower_term(*fin)),
-                ],
-            },
+            TermKind::Reborrow { cur, fin } => Exp::Call(
+                Box::new(Exp::QVar(
+                    QName { module: vec!["Borrow".into()], name: "make_borrow".into() },
+                    why3::exp::Purity::Logic,
+                )),
+                vec![self.lower_term(*cur), self.lower_term(*fin)],
+            ),
             TermKind::Assert { cond } => {
                 let cond = self.lower_term(*cond);
                 if self.pure == Purity::Program && !cond.is_pure() {

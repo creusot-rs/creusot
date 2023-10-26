@@ -43,11 +43,14 @@ module Bool
     i = 1
 end
 module Borrow
-  type borrowed 'a = { current : 'a ; final : 'a; }
-  let function ( *_ ) x = x.current
-  let function ( ^_ ) x = x.final
+  type borrowed 'a
+  val function ( *_ ) (x : borrowed 'a) : 'a
+  val function ( ^_ ) (x : borrowed 'a) : 'a
+  val function make_borrow (current : 'a) (final : 'a) : borrowed 'a
+    ensures { current = *result }
+    ensures { final = ^result }
   val borrow_mut (a : 'a) : borrowed 'a
-  ensures { *result = a }
+    ensures { *result = a }
 end
 
 module Real
