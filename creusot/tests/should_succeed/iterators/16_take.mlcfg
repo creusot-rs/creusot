@@ -83,7 +83,7 @@ module C16Take_Impl0_Completed
   clone CreusotContracts_Resolve_Impl1_Resolve_Stub as Resolve0 with
     type t = C16Take_Take_Type.t_take i
   predicate completed [#"../16_take.rs" 22 4 22 35] (self : borrowed (C16Take_Take_Type.t_take i)) =
-    [#"../16_take.rs" 23 8 26 9] UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) = 0 /\ Resolve0.resolve self \/ UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) > 0 /\ UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) = UIntSize.to_int (C16Take_Take_Type.take_n ( ^ self)) + 1 /\ Completed0.completed {current = C16Take_Take_Type.take_iter ( * self); final = C16Take_Take_Type.take_iter ( ^ self)}
+    [#"../16_take.rs" 23 8 26 9] UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) = 0 /\ Resolve0.resolve self \/ UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) > 0 /\ UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) = UIntSize.to_int (C16Take_Take_Type.take_n ( ^ self)) + 1 /\ Completed0.completed (Borrow.make_borrow (C16Take_Take_Type.take_iter ( * self)) (C16Take_Take_Type.take_iter ( ^ self)))
   val completed [#"../16_take.rs" 22 4 22 35] (self : borrowed (C16Take_Take_Type.t_take i)) : bool
     ensures { result = completed self }
     
@@ -698,9 +698,9 @@ module C16Take_Impl0_Next
       end
   }
   BB1 {
-    self <- { self with current = (let C16Take_Take_Type.C_Take a b =  * self in C16Take_Take_Type.C_Take a ([#"../16_take.rs" 55 12 55 23] C16Take_Take_Type.take_n ( * self) - ([#"../16_take.rs" 55 22 55 23] (1 : usize)))) };
+    self <- Borrow.make_borrow (let C16Take_Take_Type.C_Take a b =  * self in C16Take_Take_Type.C_Take a ([#"../16_take.rs" 55 12 55 23] C16Take_Take_Type.take_n ( * self) - ([#"../16_take.rs" 55 22 55 23] (1 : usize)))) ( ^ self);
     _5 <- Borrow.borrow_mut (C16Take_Take_Type.take_iter ( * self));
-    self <- { self with current = (let C16Take_Take_Type.C_Take a b =  * self in C16Take_Take_Type.C_Take ( ^ _5) b) };
+    self <- Borrow.make_borrow (let C16Take_Take_Type.C_Take a b =  * self in C16Take_Take_Type.C_Take ( ^ _5) b) ( ^ self);
     assume { Inv1.inv ( ^ _5) };
     _0 <- ([#"../16_take.rs" 56 12 56 28] Next0.next _5);
     _5 <- any borrowed i;

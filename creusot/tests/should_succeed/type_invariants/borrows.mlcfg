@@ -178,11 +178,11 @@ module Borrows_Impl1_InnerMut
   }
   BB0 {
     _5 <- Borrow.borrow_mut (Borrows_NonZero_Type.nonzero_0 ( * self));
-    self <- { self with current = (let Borrows_NonZero_Type.C_NonZero a =  * self in Borrows_NonZero_Type.C_NonZero ( ^ _5)) };
+    self <- Borrow.make_borrow (let Borrows_NonZero_Type.C_NonZero a =  * self in Borrows_NonZero_Type.C_NonZero ( ^ _5)) ( ^ self);
     _2 <- Borrow.borrow_mut ( * _5);
-    _5 <- { _5 with current = ( ^ _2) };
+    _5 <- Borrow.make_borrow ( ^ _2) ( ^ _5);
     _0 <- Borrow.borrow_mut ( * _2);
-    _2 <- { _2 with current = ( ^ _0) };
+    _2 <- Borrow.make_borrow ( ^ _0) ( ^ _2);
     assume { Resolve0.resolve _5 };
     assume { Resolve0.resolve _2 };
     assert { [@expl:type invariant] Inv0.inv self };
@@ -321,7 +321,7 @@ module Borrows_Inc
     goto BB0
   }
   BB0 {
-    x <- { x with current = ([#"../borrows.rs" 102 4 102 11]  * x + ([#"../borrows.rs" 102 10 102 11] (1 : int32))) };
+    x <- Borrow.make_borrow ([#"../borrows.rs" 102 4 102 11]  * x + ([#"../borrows.rs" 102 10 102 11] (1 : int32))) ( ^ x);
     assume { Resolve0.resolve x };
     _0 <- ();
     return _0
@@ -391,9 +391,9 @@ module Borrows_Simple
   }
   BB0 {
     _6 <- Borrow.borrow_mut (Borrows_NonZero_Type.nonzero_0 ( * x));
-    x <- { x with current = (let Borrows_NonZero_Type.C_NonZero a =  * x in Borrows_NonZero_Type.C_NonZero ( ^ _6)) };
+    x <- Borrow.make_borrow (let Borrows_NonZero_Type.C_NonZero a =  * x in Borrows_NonZero_Type.C_NonZero ( ^ _6)) ( ^ x);
     _5 <- Borrow.borrow_mut ( * _6);
-    _6 <- { _6 with current = ( ^ _5) };
+    _6 <- Borrow.make_borrow ( ^ _5) ( ^ _6);
     _4 <- ([#"../borrows.rs" 32 4 32 17] Inc0.inc _5);
     _5 <- any borrowed int32;
     goto BB1
@@ -473,7 +473,7 @@ module Borrows_Hard
   }
   BB0 {
     _7 <- Borrow.borrow_mut ( * x);
-    x <- { x with current = ( ^ _7) };
+    x <- Borrow.make_borrow ( ^ _7) ( ^ x);
     assume { Inv0.inv ( ^ _7) };
     _6 <- ([#"../borrows.rs" 39 8 39 21] InnerMut0.inner_mut _7);
     _7 <- any borrowed (Borrows_NonZero_Type.t_nonzero);
@@ -481,7 +481,7 @@ module Borrows_Hard
   }
   BB1 {
     _5 <- Borrow.borrow_mut ( * _6);
-    _6 <- { _6 with current = ( ^ _5) };
+    _6 <- Borrow.make_borrow ( ^ _5) ( ^ _6);
     _4 <- ([#"../borrows.rs" 39 4 39 22] Inc0.inc _5);
     _5 <- any borrowed int32;
     goto BB2
@@ -649,9 +649,9 @@ module Borrows_Tuple
   BB0 {
     x <- (let (a, b) = x in (let Borrows_NonZero_Type.C_NonZero a = let (a, _) = x in a in Borrows_NonZero_Type.C_NonZero ([#"../borrows.rs" 46 13 46 14] (0 : int32)), b));
     _6 <- Borrow.borrow_mut (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a)));
-    x <- (let (a, b) = x in (a, { (let (_, a) = x in a) with current = (let Borrows_NonZero_Type.C_NonZero a =  * (let (_, a) = x in a) in Borrows_NonZero_Type.C_NonZero ( ^ _6)) }));
+    x <- (let (a, b) = x in (a, Borrow.make_borrow (let Borrows_NonZero_Type.C_NonZero a =  * (let (_, a) = x in a) in Borrows_NonZero_Type.C_NonZero ( ^ _6)) ( ^ (let (_, a) = x in a))));
     _5 <- Borrow.borrow_mut ( * _6);
-    _6 <- { _6 with current = ( ^ _5) };
+    _6 <- Borrow.make_borrow ( ^ _5) ( ^ _6);
     _4 <- ([#"../borrows.rs" 47 4 47 20] Inc0.inc _5);
     _5 <- any borrowed int32;
     goto BB1
@@ -747,9 +747,9 @@ module Borrows_PartialMove
     a <- (let (a, _) = x in a);
     x <- (let (a, b) = x in (any Borrows_NonZero_Type.t_nonzero, b));
     _7 <- Borrow.borrow_mut (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a)));
-    x <- (let (a, b) = x in (a, { (let (_, a) = x in a) with current = (let Borrows_NonZero_Type.C_NonZero a =  * (let (_, a) = x in a) in Borrows_NonZero_Type.C_NonZero ( ^ _7)) }));
+    x <- (let (a, b) = x in (a, Borrow.make_borrow (let Borrows_NonZero_Type.C_NonZero a =  * (let (_, a) = x in a) in Borrows_NonZero_Type.C_NonZero ( ^ _7)) ( ^ (let (_, a) = x in a))));
     _6 <- Borrow.borrow_mut ( * _7);
-    _7 <- { _7 with current = ( ^ _6) };
+    _7 <- Borrow.make_borrow ( ^ _6) ( ^ _7);
     _5 <- ([#"../borrows.rs" 55 4 55 20] Inc0.inc _6);
     _6 <- any borrowed int32;
     goto BB1
@@ -852,9 +852,9 @@ module Borrows_Destruct
     assume { Resolve0.resolve x };
     a <- (let Borrows_NonZero_Type.C_NonZero a = a in Borrows_NonZero_Type.C_NonZero ([#"../borrows.rs" 63 10 63 11] (0 : int32)));
     _8 <- Borrow.borrow_mut (Borrows_NonZero_Type.nonzero_0 ( * b));
-    b <- { b with current = (let Borrows_NonZero_Type.C_NonZero a =  * b in Borrows_NonZero_Type.C_NonZero ( ^ _8)) };
+    b <- Borrow.make_borrow (let Borrows_NonZero_Type.C_NonZero a =  * b in Borrows_NonZero_Type.C_NonZero ( ^ _8)) ( ^ b);
     _7 <- Borrow.borrow_mut ( * _8);
-    _8 <- { _8 with current = ( ^ _7) };
+    _8 <- Borrow.make_borrow ( ^ _7) ( ^ _8);
     _6 <- ([#"../borrows.rs" 64 4 64 17] Inc0.inc _7);
     _7 <- any borrowed int32;
     goto BB1
@@ -935,9 +935,9 @@ module Borrows_FrozenDead
   }
   BB0 {
     _a <- Borrow.borrow_mut (Borrows_NonZero_Type.nonzero_0 ( * x));
-    x <- { x with current = (let Borrows_NonZero_Type.C_NonZero a =  * x in Borrows_NonZero_Type.C_NonZero ( ^ _a)) };
+    x <- Borrow.make_borrow (let Borrows_NonZero_Type.C_NonZero a =  * x in Borrows_NonZero_Type.C_NonZero ( ^ _a)) ( ^ x);
     _6 <- Borrow.borrow_mut ( * y);
-    y <- { y with current = ( ^ _6) };
+    y <- Borrow.make_borrow ( ^ _6) ( ^ y);
     assume { Inv0.inv ( ^ _6) };
     assert { [@expl:type invariant] Inv1.inv x };
     assume { Resolve0.resolve x };
@@ -946,7 +946,7 @@ module Borrows_FrozenDead
     assert { [@expl:type invariant] Inv1.inv x };
     assume { Resolve0.resolve x };
     _8 <- Borrow.borrow_mut ( * _a);
-    _a <- { _a with current = ( ^ _8) };
+    _a <- Borrow.make_borrow ( ^ _8) ( ^ _a);
     _7 <- ([#"../borrows.rs" 75 4 75 11] Inc0.inc _8);
     _8 <- any borrowed int32;
     goto BB1
@@ -1045,7 +1045,7 @@ module Borrows_Dec
     goto BB0
   }
   BB0 {
-    x <- { x with current = ([#"../borrows.rs" 108 4 108 11]  * x - ([#"../borrows.rs" 108 10 108 11] (1 : int32))) };
+    x <- Borrow.make_borrow ([#"../borrows.rs" 108 4 108 11]  * x - ([#"../borrows.rs" 108 10 108 11] (1 : int32))) ( ^ x);
     assume { Resolve0.resolve x };
     _0 <- ();
     return _0
@@ -1127,9 +1127,9 @@ module Borrows_Impl3_Foo
   }
   BB0 {
     _5 <- Borrow.borrow_mut (Borrows_SumTo10_Type.sumto10_a ( * self));
-    self <- { self with current = (let Borrows_SumTo10_Type.C_SumTo10 a b =  * self in Borrows_SumTo10_Type.C_SumTo10 ( ^ _5) b) };
+    self <- Borrow.make_borrow (let Borrows_SumTo10_Type.C_SumTo10 a b =  * self in Borrows_SumTo10_Type.C_SumTo10 ( ^ _5) b) ( ^ self);
     _4 <- Borrow.borrow_mut ( * _5);
-    _5 <- { _5 with current = ( ^ _4) };
+    _5 <- Borrow.make_borrow ( ^ _4) ( ^ _5);
     _3 <- ([#"../borrows.rs" 94 8 94 24] Inc0.inc _4);
     _4 <- any borrowed int32;
     goto BB1
@@ -1137,9 +1137,9 @@ module Borrows_Impl3_Foo
   BB1 {
     assume { Resolve0.resolve _5 };
     _8 <- Borrow.borrow_mut (Borrows_SumTo10_Type.sumto10_b ( * self));
-    self <- { self with current = (let Borrows_SumTo10_Type.C_SumTo10 a b =  * self in Borrows_SumTo10_Type.C_SumTo10 a ( ^ _8)) };
+    self <- Borrow.make_borrow (let Borrows_SumTo10_Type.C_SumTo10 a b =  * self in Borrows_SumTo10_Type.C_SumTo10 a ( ^ _8)) ( ^ self);
     _7 <- Borrow.borrow_mut ( * _8);
-    _8 <- { _8 with current = ( ^ _7) };
+    _8 <- Borrow.make_borrow ( ^ _7) ( ^ _8);
     _6 <- ([#"../borrows.rs" 95 8 95 24] Dec0.dec _7);
     _7 <- any borrowed int32;
     goto BB2
