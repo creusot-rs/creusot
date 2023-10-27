@@ -9,7 +9,7 @@ use crate::{
 use rustc_hir::def_id::DefId;
 use why3::{
     declaration::*,
-    exp::{BinOp, Binder, Exp, Trigger},
+    exp::{super_visit_mut, BinOp, Binder, Exp, ExpMutVisitor, Trigger},
     Ident, QName,
 };
 
@@ -161,9 +161,10 @@ fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, C
     } else {
         let term = ctx.term(def_id).unwrap().clone();
         let body = lower_pure(ctx, &mut names, term);
+        let ity = util::item_type(ctx.tcx, def_id);
 
         if sig_contract.contract.variant.is_empty() && body.is_pure() {
-            let decl = match util::item_type(ctx.tcx, def_id) {
+            let decl = match ity {
                 ItemType::Ghost | ItemType::Logic => Decl::LogicDefn(Logic { sig, body }),
                 ItemType::Predicate => Decl::PredDecl(Predicate { sig, body }),
                 _ => unreachable!(),
@@ -172,12 +173,16 @@ fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, C
             decls.push(val_decl(ctx, &mut names, def_id));
         } else if body.is_pure() {
             let def_sig = sig.clone();
-            let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
+            let val = ity.val(sig.clone());
             decls.push(Decl::ValDecl(val));
             decls.push(val_decl(ctx, &mut names, def_id));
-            decls.push(Decl::Axiom(definition_axiom(&def_sig, body)));
+            if sig.uses_simple_triggers() {
+                limited_function_encode(&mut decls, &def_sig, &sig_contract.contract, body, ity)
+            } else {
+                decls.push(Decl::Axiom(definition_axiom(&def_sig, body, "def")));
+            }
         } else {
-            let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
+            let val = ity.val(sig.clone());
             decls.push(Decl::ValDecl(val));
             decls.push(val_decl(ctx, &mut names, def_id));
         }
@@ -197,6 +202,56 @@ fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, C
         .collect();
 
     (Module { name, decls }, summary)
+}
+
+fn subst_qname(body: &mut Exp, name: &Ident, lim_name: &Ident) {
+    struct QNameSubst<'a>(&'a Ident, &'a Ident);
+
+    impl<'a> ExpMutVisitor for QNameSubst<'a> {
+        fn visit_mut(&mut self, exp: &mut Exp) {
+            match exp {
+                Exp::QVar(qname, _) if qname.module.is_empty() && &qname.name == self.0 => {
+                    *exp = Exp::pure_var(self.1.clone())
+                }
+                _ => super_visit_mut(self, exp),
+            }
+        }
+    }
+
+    QNameSubst(name, lim_name).visit_mut(body)
+}
+
+// Use the limited function encoding from https://pm.inf.ethz.ch/publications/HeuleKassiosMuellerSummers12.pdf
+// Originally introduced in https://dl.acm.org/doi/10.1145/1529282.1529411
+
+// This prevents recursive functions from being unfolded more than once which makes the definition
+// axiom weaker but avoids having it cause a matching loop. This is useful since it can help the
+// solve return "unknown" instead of relying on a timeout, and give it a chance to apply map
+// extensionality axioms.
+fn limited_function_encode(
+    decls: &mut Vec<Decl>,
+    sig: &Signature,
+    contract: &Contract,
+    mut body: Exp,
+    ity: ItemType,
+) {
+    let lim_name = Ident::from_string(format!("{}_lim", &*sig.name));
+    subst_qname(&mut body, &sig.name, &lim_name);
+    let mut lim_sig = Signature {
+        name: lim_name,
+        trigger: None,
+        attrs: vec![],
+        retty: sig.retty.clone(),
+        args: sig.args.clone(),
+        contract: contract.clone(),
+    };
+    let lim_call = function_call(&lim_sig);
+    let lim_spec = spec_axiom(&lim_sig);
+    lim_sig.contract = Default::default();
+    decls.push(Decl::ValDecl(ity.val(lim_sig)));
+    decls.push(Decl::Axiom(definition_axiom(&sig, body, "def")));
+    decls.push(Decl::Axiom(definition_axiom(&sig, lim_call, "def_lim")));
+    decls.push(Decl::Axiom(lim_spec));
 }
 
 pub(crate) fn stub_module(ctx: &mut Why3Generator, def_id: DefId) -> Module {
@@ -301,7 +356,7 @@ fn function_call(sig: &Signature) -> Exp {
     Exp::pure_var(sig.name.clone()).app(args)
 }
 
-fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {
+fn definition_axiom(sig: &Signature, body: Exp, name: &str) -> Axiom {
     let call = function_call(sig);
     let trigger = sig.trigger.clone().unwrap_or_else(|| Trigger::single(call.clone()));
 
@@ -315,7 +370,7 @@ fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {
     let axiom =
         if args.is_empty() { condition } else { Exp::forall_trig(args, trigger, condition) };
 
-    Axiom { name: "def".into(), rewrite: false, axiom }
+    Axiom { name: name.into(), rewrite: false, axiom }
 }
 
 pub(crate) fn impl_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
