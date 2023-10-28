@@ -209,11 +209,9 @@ module Char
 end
 
 module Ghost
-  type ghost_ty 't
-  val function new (ghost x : 't) : ghost_ty 't
-  val function inner (x : ghost_ty 't) : 't
-  axiom new_spec: forall x: 't [new x]. inner (new x) = x
-  axiom inner_spec: forall x: ghost_ty 't [inner x]. new (inner x) = x
+  type ghost_ty 't = { ghost inner2 : 't }
+  let function new [@inline:trivial] (ghost x : 't) = { inner2 = x; }
+  let ghost function inner [@inline:trivial] (x : ghost_ty 't) = x.inner2
 end
 
 module Slice

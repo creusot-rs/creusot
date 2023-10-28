@@ -1,0 +1,202 @@
+
+(* Counterexamples: set model parser *)
+model_parser "smtv2"
+
+import "smt-libv2.gen"
+printer "smtv2.6"
+import "smt-libv2-bv.gen"
+import "z3_bv.gen"
+import "smt-libv2-floats.gen"
+
+(* Performed introductions depending on whether counterexamples are
+   requested, as said by the meta "get_counterexmp". When this meta
+   set, this transformation introduces the model variables that are
+   still embedded in the goal. When it is not set, it removes all
+   these unused-ce-related variables, even in the context.  *)
+transformation "counterexamples_dependent_intros"
+
+transformation "inline_trivial"
+transformation "eliminate_builtin"
+transformation "remove_unused_keep_constants"
+transformation "eliminate_symbol"
+transformation "eliminate_definition_conditionally"
+transformation "eliminate_inductive"
+transformation "eliminate_epsilon"
+transformation "eliminate_literal"
+
+transformation "simplify_formula"
+(*transformation "simplify_trivial_quantification"*)
+
+(* Prepare for counter-example query: get rid of some quantifiers (makes it
+possible to query model values of the variables in premises) and introduce
+counter-example projections  *)
+transformation "prepare_for_counterexmp"
+
+transformation "eliminate_projections_sums"
+transformation "compile_match"
+
+(** Error messages specific to Z3 *)
+
+outofmemory "(error \".*out of memory\")"
+outofmemory "Failed to verify: pthread_create"
+outofmemory "std::bad_alloc"
+outofmemory "Resource temporarily unavailable"
+outofmemory "Cannot allocate memory"
+(* not convenient: is more a problem of fork
+outofmemory "error while loading shared libraries:.*failed to map segment from shared object"
+*)
+timeout "^timeout$"
+timeout "interrupted by timeout"
+steps ":rlimit-count +\\([0-9]+\\)" 1
+steplimitexceeded "Maximal allocation counts [0-9]+ have been exceeded"
+
+(** Z3 needs "(push)" to provide models *)
+theory BuiltIn
+  meta "counterexample_need_smtlib_push" ""
+end
+
+theory int.Int
+  remove prop CompatOrderMult
+end
+
+(** Extra theories supported by Z3 *)
+
+(* div/mod of Z3 seems to be Euclidean Division *)
+theory int.EuclideanDivision
+  syntax function div "(div %1 %2)"
+  syntax function mod "(mod %1 %2)"
+  remove prop Mod_bound
+  remove prop Div_mod
+  remove prop Mod_1
+  remove prop Div_1
+end
+
+theory int.MinMax
+  remove allprops
+end
+
+theory real.FromInt
+  syntax function from_int "(to_real %1)"
+  remove prop Zero
+  remove prop One
+  remove prop Add
+  remove prop Sub
+  remove prop Mul
+  remove prop Neg
+end
+
+(* does not work: Z3 segfaults
+theory real.Trigonometry
+
+  syntax function cos "(cos %1)"
+  syntax function sin "(sin %1)"
+  syntax function pi "pi"
+  syntax function tan "(tan %1)"
+  syntax function atan "(atan %1)"
+
+end
+*)
+
+theory ieee_float.Float64
+(* check the sign bit; if pos |%1| else |%1| - 2^1025 *)
+   syntax function to_int
+     "(ite (= ((_ extract 1024 1024) ((_ fp.to_sbv 1025) %1 %2)) #b0) (bv2int ((_ fp.to_sbv 1025) %1 %2)) (- (bv2int ((_ fp.to_sbv 1025) %1 %2)) (bv2int (bvshl (_ bv1 1026) (_ bv1025 1026)))))"
+ (* we do not define of_int since z3 will not prove anything if it
+    appears (05/01/2017) *)
+end
+
+theory ieee_float.Float32
+  (* check the sign bit; if pos |%1| else |%1| - 2^129 *)
+   syntax function to_int
+     "(ite (= ((_ extract 128 128) ((_ fp.to_sbv 129) %1 %2)) #b0) (bv2int ((_ fp.to_sbv 129) %1 %2)) (- (bv2int ((_ fp.to_sbv 129) %1 %2)) (bv2int (bvshl (_ bv1 130) (_ bv129 130)))))"
+end
+
+theory real.Real
+  remove prop add_div
+  remove prop sub_div
+  remove prop neg_div
+  remove prop assoc_mul_div
+  remove prop assoc_div_mul
+  remove prop assoc_div_div
+  remove prop CompatOrderMult
+end
+
+theory real.Square
+  remove allprops
+end
+
+import "smtlib-strings.gen"
+
+theory string.RegExpr
+
+  syntax type re             "(RegEx String)"
+
+  syntax function to_re      "(str.to.re %1)"
+  syntax predicate in_re     "(str.in.re %1 %2)"
+
+  syntax function concat     "(re.++ %1 %2)"
+  syntax function union      "(re.union %1 %2)"
+  syntax function inter      "(re.inter %1 %2)"
+  syntax function star       "(re.* %1)"
+  syntax function plus       "(re.+ %1)"
+
+  syntax function none       "re.nostr"
+  syntax function allchar    "re.allchar"
+
+  syntax function opt        "(re.opt %1)"
+  syntax function range      "(re.range %1 %2)"
+  syntax function power      "(re.loop %2 %1 %1)"
+  syntax function loop       "(re.loop %3 %1 %2)"
+
+end
+
+theory BuiltIn
+  meta "select_inst_default" "all"
+  meta "select_lskept_default" "all"
+  meta "select_lsinst_default" "all"
+  meta "select_kept_default" "local"
+end
+
+theory map.Const
+  syntax function const "((as const %t0) %1)"
+end
+
+theory seq.Seq
+  meta "encoding:ignore_polymorphism_ts" type seq
+  meta "ls:eliminate" function length
+  meta "ls:eliminate" function get
+  meta "ls:eliminate" function ([])
+  meta "ls:eliminate" predicate (==)
+  meta "ls:eliminate" function create
+  meta "ls:eliminate" function empty
+  meta "ls:eliminate" function set
+  meta "ls:eliminate" function ([<-])
+  meta "ls:eliminate" function singleton
+  meta "ls:eliminate" function cons
+  meta "ls:eliminate" function snoc
+  meta "ls:eliminate" function ([..])
+  meta "ls:eliminate" function ([_..])
+  meta "ls:eliminate" function ([.._])
+  meta "ls:eliminate" function (++)
+end
+
+
+(* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+   Copyright (c) 2011-2021 ETH Zurich.
+*)
+prelude ";;; generated by no_mbqi extension"
+prelude "(set-option :smt.AUTO_CONFIG false)"
+prelude "(set-option :smt.PHASE_SELECTION 0)"
+prelude "(set-option :smt.RESTART_STRATEGY 0)"
+prelude "(set-option :smt.RESTART_FACTOR 1.5)"
+prelude "(set-option :smt.ARITH.RANDOM_INITIAL_VALUE true)"
+prelude "(set-option :smt.CASE_SPLIT 3)"
+prelude "(set-option :smt.DELAY_UNITS true)"
+prelude "(set-option :NNF.SK_HACK true)"
+prelude "(set-option :smt.MBQI false)"
+prelude "(set-option :smt.BV.REFLECT true)"
+prelude "(set-option :smt.qi.max_multi_patterns 1000)"
+prelude "(set-option :smt.QI.EAGER_THRESHOLD 10)"

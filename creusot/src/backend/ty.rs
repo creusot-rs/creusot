@@ -20,8 +20,8 @@ use rustc_type_ir::sty::TyKind::*;
 use std::collections::VecDeque;
 use why3::{
     declaration::{
-        AdtDecl, ConstructorDecl, Contract, Decl, Field, LetDecl, LetKind, Module, Signature,
-        TyDecl, Use,
+        AdtDecl, Attribute, ConstructorDecl, Contract, Decl, Field, LetDecl, LetKind, Module,
+        Signature, TyDecl, Use,
     },
     exp::{Binder, Exp, Pattern, Trigger},
     ty::Type as MlT,
@@ -519,7 +519,7 @@ pub(crate) fn build_accessor(
     let sig = Signature {
         name: acc_name.clone(),
         trigger,
-        attrs: Vec::new(),
+        attrs: vec![Attribute::Attr("inline:trivial".into())],
         args: vec![Binder::typed("self".into(), this.clone())],
         retty: Some(field_ty.clone()),
         contract: Contract::new(),

@@ -15,7 +15,6 @@ impl<T> ShallowModel for [T] {
     #[open(self)]
     #[trusted]
     #[ensures(result.len() <= usize::MAX@)]
-    #[ensures(result == slice_model(self))]
     fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! { absurd }
     }
@@ -32,13 +31,6 @@ impl<T: DeepModel> DeepModel for [T] {
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { absurd }
     }
-}
-
-#[ghost]
-#[trusted]
-#[creusot::builtins = "prelude.Slice.id"]
-fn slice_model<T>(_: [T]) -> Seq<T> {
-    pearlite! { absurd }
 }
 
 impl<T> Default for &mut [T] {
