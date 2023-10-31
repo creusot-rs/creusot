@@ -242,8 +242,10 @@ impl<'tcx> Why3Generator<'tcx> {
         self.functions.get(&tid)
     }
 
-    pub(crate) fn modules(self) -> impl Iterator<Item = (TransId, TranslatedItem)> + 'tcx {
-        self.functions.into_iter()
+    pub(crate) fn modules(
+        self,
+    ) -> (impl Iterator<Item = (TransId, TranslatedItem)> + 'tcx, TranslationCtx<'tcx>) {
+        (self.functions.into_iter(), self.ctx)
     }
 
     pub(crate) fn start_group(&mut self, ids: IndexSet<DefId>) {

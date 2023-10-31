@@ -21,6 +21,7 @@ pub struct Options {
     pub span_mode: SpanMode,
     pub match_str: Option<String>,
     pub simple_triggers: bool,
+    pub why3_cmd: Option<String>,
 }
 
 #[derive(Debug, Clone)]
