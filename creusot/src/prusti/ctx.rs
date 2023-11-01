@@ -8,7 +8,6 @@ use crate::prusti::{
     types::{display_state, prepare_display, Ty},
     util::name_to_def_id,
     variance::regions_of_fn,
-    with_static::{FixingRegionReplacer, StaticNormalizerDefIds},
     zombie::ZombieDefIds,
 };
 use rustc_index::{Idx, IndexVec};
@@ -16,10 +15,10 @@ use rustc_infer::infer::region_constraints::Constraint;
 use rustc_lint::Lint;
 use rustc_middle::{
     ty,
-    ty::{walk::TypeWalker, BoundRegionKind, ParamEnv, Region, TyCtxt, TypeFoldable},
+    ty::{BoundRegionKind, ParamEnv, Region, TyCtxt, TypeFoldable, walk::TypeWalker},
 };
 use rustc_span::{
-    def_id::{DefId, LocalDefId, CRATE_DEF_ID},
+    def_id::{CRATE_DEF_ID, DefId, LocalDefId},
     Span, Symbol,
 };
 use std::{
@@ -27,6 +26,7 @@ use std::{
     iter,
     ops::Deref,
 };
+use crate::prusti::zombie::fixing_replace;
 
 const CURR_STR: &str = "'curr";
 const OLD_STR: &str = "'old";
@@ -44,7 +44,6 @@ enum FnType {
 pub(crate) struct InternedInfo<'tcx> {
     pub tcx: TyCtxt<'tcx>,
     pub curr_sym: Symbol,
-    pub(super) static_replacer_info: StaticNormalizerDefIds,
     pub zombie_info: ZombieDefIds,
     pub(super) plain_def_id: DefId,
 }
@@ -126,13 +125,12 @@ impl<'tcx> InternedInfo<'tcx> {
         Self {
             tcx,
             curr_sym: Symbol::intern(CURR_STR),
-            static_replacer_info: StaticNormalizerDefIds::new(tcx),
             zombie_info: ZombieDefIds::new(tcx),
             plain_def_id: name_to_def_id(tcx, "prusti_plain"),
         }
     }
 
-    fn mk_region(&self, rs: StateSet) -> Region<'tcx> {
+    pub(crate) fn mk_region(&self, rs: StateSet) -> Region<'tcx> {
         rs.into_region(self.tcx)
     }
 
@@ -199,7 +197,7 @@ impl<'a, 'tcx> BaseCtx<'a, 'tcx> {
         }));
         base_states[CURR_STATE] = curr_region;
         let base: ParamEnv = tcx.param_env(sig.def_id());
-        let fixed = base.fold_with(&mut FixingRegionReplacer { ctx: interned, f: |r| r });
+        let fixed = fixing_replace(interned, |r| r, base);
         let erased = tcx.erase_regions(fixed);
         BaseCtx {
             interned,
@@ -248,8 +246,7 @@ impl<'a, 'tcx> PreCtx<'a, 'tcx> {
     }
 
     pub(crate) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T) -> T {
-        let t = t
-            .fold_with(&mut FixingRegionReplacer { ctx: self.interned, f: |r| self.fix_region(r) });
+        let t = fixing_replace(self.interned, |r| self.fix_region(r), t);
         normalize(&*self, t)
     }
 
@@ -335,8 +332,7 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
     }
 
     pub(crate) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T) -> T {
-        let t = t
-            .fold_with(&mut FixingRegionReplacer { ctx: self.interned, f: |r| self.fix_region(r) });
+        let t = fixing_replace(self.interned, |r| self.fix_region(r), t);
         normalize(&*self, t)
     }
 

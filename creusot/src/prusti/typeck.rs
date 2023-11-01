@@ -1,6 +1,6 @@
 use super::{
     full_signature_logic,
-    parsing::{parse_home_sig_lit, HomeSig},
+    parsing::{HomeSig, parse_home_sig_lit},
     region_set::StateSet,
     typeck::MutDerefType::{Cur, Fin},
     types::*,
@@ -13,7 +13,6 @@ use crate::{
         ctx::{BaseCtx, CtxRef, InternedInfo},
         parsing::Outlives,
         region_set::State,
-        with_static::PrettyRegionReplacer,
     },
     util,
 };
@@ -22,23 +21,21 @@ use rustc_ast::Mutability;
 use rustc_data_structures::sso::SsoHashMap;
 use rustc_infer::{
     infer::{
-        at::ToTrace, region_constraints::Constraint, InferCtxt, RegionVariableOrigin,
+        at::ToTrace, InferCtxt, region_constraints::Constraint, RegionVariableOrigin,
         SubregionOrigin, TyCtxtInferExt, ValuePairs,
     },
     traits::ObligationCause,
 };
-use rustc_middle::{
-    span_bug, ty,
-    ty::{
-        error::{ExpectedFound, TypeError},
-        Instance, InternalSubsts, PolyFnSig, Region, RegionKind, RegionVid, SubstsRef, TyCtxt,
-        TyKind, TypeFoldable, TypeSuperVisitable, TypeVisitable, TypeVisitor,
-    },
-};
-use rustc_span::{def_id::DefId, Span, Symbol, DUMMY_SP};
+use rustc_middle::{span_bug, ty, ty::{
+    error::{ExpectedFound, TypeError},
+    Instance, InternalSubsts, PolyFnSig, Region, RegionKind, RegionVid, SubstsRef, TyCtxt,
+    TyKind, TypeFoldable, TypeVisitable, TypeVisitor,
+}};
+use rustc_span::{def_id::DefId, DUMMY_SP, Span, Symbol};
 use rustc_target::abi::VariantIdx;
 use rustc_trait_selection::{traits, traits::ObligationCtxt};
 use std::{iter, ops::ControlFlow};
+use crate::prusti::zombie::{pretty_replace, ZombieStatus};
 
 type SmallVec<T> = smallvec::SmallVec<[T; 4]>;
 
@@ -152,8 +149,7 @@ impl<'a, 'tcx> SimpleCtxt<'a, 'tcx> {
         )
     }
 
-    fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T, static_r: Region<'tcx>) -> T {
-        let t = super::with_static::normalize_static_replacer(self.ctx, t, static_r);
+    fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T) -> T {
         self.ocx.normalize(&ObligationCause::dummy(), self.ctx.param_env(), t)
     }
 
@@ -189,8 +185,7 @@ fn sup_tys<'tcx>(
                 RegionKind::ReStatic => tcx.lifetimes.re_static,
                 _ => tcx.lifetimes.re_erased,
             };
-            let ty_gen =
-                ty_gen.fold_with(&mut PrettyRegionReplacer { f: replacer, ctx: ctx.ctx.interned });
+            let ty_gen = pretty_replace(ctx.ctx.interned, replacer, ty_gen);
             return Err(Error::new(span, format!("expected `{ty_gen}` found `{ty}`")));
         }
     };
@@ -232,7 +227,7 @@ pub(crate) fn check_call<'tcx>(
     let ocx = SimpleCtxt::new(&infcx, &*ctx);
     let subst_ref = generalize(subst_ref, &infcx);
     let (fn_ty_gen, iter) = super::variance::generalize_fn_def(tcx, def_id, &infcx, subst_ref);
-    let fn_ty_gen = ocx.normalize(fn_ty_gen, tcx.lifetimes.re_static);
+    let fn_ty_gen = ocx.normalize(fn_ty_gen);
     let subst_iter = filter_elided(iter);
 
     let (args_gen, res_ty_gen) = match fn_ty_gen.kind() {
@@ -363,8 +358,7 @@ fn check_call_region_constraint<'tcx>(
             };
             let reg = prepare_display(actual_r, ctx);
             let dts = prepare_display(expected_r, ctx);
-            let expected =
-                x.expected.fold_with(&mut PrettyRegionReplacer { f: replacer, ctx: ctx.interned });
+            let expected = pretty_replace(ctx.interned, replacer, x.expected);
             let msg = format!("the expression's lifetime `{reg}` must match the current time slice `{dts}` (found `{found}`, expected `{expected}`)");
             Err(Error::new(span, msg))
         }
@@ -418,7 +412,7 @@ pub(super) fn normalize<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
     let tcx = ctx.tcx;
     let infcx = tcx.infer_ctxt().build();
     let ocx = SimpleCtxt::new(&infcx, ctx);
-    ocx.normalize(ty, ctx.static_region())
+    ocx.normalize(ty)
 }
 
 pub(crate) fn check_sup<'tcx>(
@@ -486,14 +480,6 @@ struct AllRegionsOutliveCheck<'a, 'tcx> {
 impl<'a, 'tcx> TypeVisitor<TyCtxt<'tcx>> for AllRegionsOutliveCheck<'a, 'tcx> {
     type BreakTy = Region<'tcx>;
 
-    fn visit_ty(&mut self, t: ty::Ty<'tcx>) -> ControlFlow<Self::BreakTy> {
-        if self.ctx.static_replacer_info.ty_as_replace_lft_adt(t).is_some() {
-            ControlFlow::Continue(()) // these regions mean the wrong thing
-        } else {
-            t.super_visit_with(self)
-        }
-    }
-
     fn visit_region(&mut self, r: Region<'tcx>) -> ControlFlow<Self::BreakTy> {
         if self.ctx.relation.outlives_state(r.into(), self.state) {
             ControlFlow::Continue(())
@@ -505,11 +491,6 @@ impl<'a, 'tcx> TypeVisitor<TyCtxt<'tcx>> for AllRegionsOutliveCheck<'a, 'tcx> {
 
 fn ty_outlives<'tcx>(ty: Ty<'tcx>, state: State, ctx: CtxRef<'_, 'tcx>) -> Option<Region<'tcx>> {
     ty.ty.visit_with(&mut AllRegionsOutliveCheck { ctx, state }).break_value()
-}
-
-fn is_trivially_plain<'tcx>(ty: Ty<'tcx>) -> bool {
-    let kind = ty.ty.kind();
-    kind.is_primitive() || matches!(kind, TyKind::RawPtr(_))
 }
 
 fn is_plain<'tcx>(ctx: CtxRef<'_, 'tcx>, ty: Ty<'tcx>) -> bool {
@@ -529,7 +510,7 @@ pub(crate) fn check_move_state<'tcx>(
     let dty = prepare_display(ty, ctx);
     let d_to_ts = display_state(to_state, ctx);
     let d_from_ts = display_state(from_state, ctx);
-    if to_state == from_state || is_trivially_plain(ty) {
+    if to_state == from_state {
         Ok(ty)
     } else if let Some(r) = ty_outlives(ty, to_state, ctx) {
         let r = prepare_display(r, ctx);
@@ -542,7 +523,7 @@ pub(crate) fn check_move_state<'tcx>(
             format!("`{dty}` cannot be moved from `{d_from_ts}` to `{d_to_ts}` since it didn't exist at that point"),
         ))
     } else {
-        let (rty, is_zombie) = ctx.zombie_info.mk_zombie(ty.ty, ctx.tcx, ctx.param_env());
+        let (rty, is_zombie) = ty.mk_zombie(ctx);
         if is_zombie && !ty.ty.is_mutable_ptr() {
             let e = Error::new(
                 span,
@@ -550,7 +531,7 @@ pub(crate) fn check_move_state<'tcx>(
             );
             ctx.lint(&PRUSTI_ZOMBIE, span, e.msg())
         }
-        Ok(Ty { ty: rty })
+        Ok(rty)
     }
 }
 
@@ -565,31 +546,26 @@ pub(crate) fn mut_deref<'tcx>(
     ty: Ty<'tcx>,
     span: Span,
 ) -> CreusotResult<(MutDerefType, Ty<'tcx>)> {
-    let (ty, zombie) = match ctx.zombie_info.as_zombie(ty.ty) {
-        None => (ty, false),
-        Some(ty) => (Ty { ty }, true),
-    };
-    match ty.as_ref() {
-        Some((end, nty, Mutability::Mut)) => {
+    match ty.as_ref(ctx) {
+        Some((end, nty, zombie, Mutability::Mut)) => {
             match (StateSet::from(end) == StateSet::singleton(state), zombie) {
-                (true, true) => Ok((Fin, nty)),
-                (false, false) => Ok((Cur, nty)),
-                (true, false) => {
+                (true, ZombieStatus::Zombie) => Ok((Fin, nty)),
+                (false, ZombieStatus::NonZombie) => Ok((Cur, nty)),
+                (true, ZombieStatus::NonZombie) => {
                     ctx.lint(crate::lints::PRUSTI_AMBIGUITY, span, "ambiguous dereference");
                     Ok((Cur, nty))
                 }
-                (false, true) => {
+                (false, ZombieStatus::Zombie) => {
                     let end = prepare_display(end, &ctx);
                     let state = display_state(state, &ctx);
                     Err(Error::new(span, format!("invalid mut dereference of zombie expression with lifetime `{end}` in state `{state}`")))
                 }
             }
         }
-        Some((lft, _, Mutability::Not)) => {
-            assert!(!zombie);
-            let ty = shr_deref(state, ctx, ty, span)?;
+        Some((lft, _, _, Mutability::Not)) => {
+            let ty = shr_deref(state, ctx, ty, span)?.0;
             let (op, rty) = mut_deref(state, ctx, ty, span)?;
-            Ok((op, Ty::make_ref(lft, rty, ctx.tcx)))
+            Ok((op, Ty::make_ref(lft, rty, ctx)))
         }
         _ => span_bug!(span, "bug"),
     }
@@ -600,11 +576,11 @@ pub(crate) fn shr_deref<'tcx>(
     ctx: CtxRef<'_, 'tcx>,
     ty: Ty<'tcx>,
     span: Span,
-) -> CreusotResult<Ty<'tcx>> {
-    let Some((end, nty, Mutability::Not)) = ty.as_ref() else {span_bug!(span, "bug")};
+) -> CreusotResult<(Ty<'tcx>, Region<'tcx>)> {
+    let Some((end, nty, _, Mutability::Not)) = ty.as_ref(ctx) else {span_bug!(span, "bug")};
     // if ts has it's home in the current state we should know it's lifetime is longer than it's home
     if ctx.relation.outlives_state(end.into(), state) {
-        Ok(nty)
+        Ok((nty, end))
     } else {
         let end = prepare_display(end, &ctx);
         let ts = display_state(state, &ctx);
@@ -618,9 +594,14 @@ pub(crate) fn box_deref<'tcx>(
     ty: Ty<'tcx>,
     span: Span,
 ) -> CreusotResult<Ty<'tcx>> {
-    match ctx.zombie_info.as_zombie(ty.ty) {
-        None => Ok(ty.try_unbox().unwrap()),
-        Some(_) => Err(Error::new(span, format!("invalid box dereference of zombie expression"))),
+    match ty.unpack(ctx) {
+        (ZombieStatus::NonZombie, ty) => match ty.kind() {
+            &TyKind::Adt(adt, subst) if adt.is_box() => {
+                Ok(Ty { ty: subst.types().next().unwrap() })
+            }
+            _ => span_bug!(span, "bug"),
+        },
+        (ZombieStatus::Zombie, _) => Err(Error::new(span, format!("invalid box dereference of zombie expression"))),
     }
 }
 
@@ -631,7 +612,7 @@ pub(crate) fn mk_ref<'tcx>(
     ty: Ty<'tcx>,
     _span: Span,
 ) -> CreusotResult<Ty<'tcx>> {
-    Ok(Ty::make_ref(lft, ty, ctx.tcx))
+    Ok(Ty::make_ref(lft, ty, ctx))
 }
 
 pub(crate) fn check_signature_agreement<'tcx>(

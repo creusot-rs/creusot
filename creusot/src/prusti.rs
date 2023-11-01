@@ -8,7 +8,6 @@ mod sig;
 pub(crate) mod types;
 mod util;
 mod variance;
-mod with_static;
 mod zombie;
 
 pub(crate) use region_set::State;

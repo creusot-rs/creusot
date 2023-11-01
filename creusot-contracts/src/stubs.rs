@@ -133,18 +133,8 @@ pub trait ReplaceLifetimesWithStatic {
     type WithStatic;
 }
 
-impl<T> ReplaceLifetimesWithStatic for T {
-    // this is true modulo lifetimes
-    type WithStatic = T;
-}
-
-pub type WithStatic<T> = <T as ReplaceLifetimesWithStatic>::WithStatic;
 
 pub mod __prusti {
-
-    /// Internal use only
-    #[rustc_diagnostic_item = "prusti_replace_lft"]
-    pub struct ReplaceLft<'x, T>(T, &'x ());
 
     #[rustc_diagnostic_item = "prusti_zombie_internal"]
     pub struct Zombie<T>(core::marker::PhantomData<T>);

@@ -196,7 +196,7 @@ fn strip_derefs_target<'tcx>(
     (valid_state, ty): (State, Ty<'tcx>),
     target: ty::Ty<'tcx>,
 ) -> CreusotResult<(State, Ty<'tcx>)> {
-    let (mut depth, mut target_depth) = (deref_depth(ty.ty, ctx), deref_depth(target, ctx));
+    let (mut depth, mut target_depth) = (deref_depth_local(ty, ctx), deref_depth_extern(target));
     loop {
         if let (Some(x), Some(y)) = (depth.last(), target_depth.last()) && x == y {
             depth.pop();
@@ -218,8 +218,9 @@ fn strip_derefs_target<'tcx>(
                 ty = typeck::box_deref(current_state, ctx, ty, span)?;
             }
             Indirect::Ref => {
-                add_lft = Some(ty.ref_lft());
-                ty = typeck::shr_deref(current_state, ctx, ty, span)?;
+                let r = typeck::shr_deref(current_state, ctx, ty, span)?;
+                add_lft = Some(r.1);
+                ty = r.0
             }
         }
     }
@@ -245,24 +246,41 @@ enum Indirect {
     Ref,
 }
 
-fn deref_depth(ty: ty::Ty<'_>, ctx: CtxRef<'_, '_>) -> SmallVec<[Indirect; 8]> {
+fn deref_depth_extern(ty: ty::Ty<'_>) -> SmallVec<[Indirect; 8]> {
     let mut ty = ty;
     let mut res = SmallVec::new();
     loop {
         ty = match ty.kind() {
-            ty::TyKind::Ref(_, ty, Not) => {
+            TyKind::Ref(_, ty, Not) => {
                 res.push(Indirect::Ref);
                 *ty
             }
-            ty::TyKind::Adt(adt, _) if adt.is_box() => {
+            TyKind::Adt(adt, _) if adt.is_box() => {
                 res.push(Indirect::Box);
                 ty.boxed_ty()
             }
-            _ => match ctx.zombie_info.as_zombie(ty) {
-                None => return res,
-                Some(ty) => ty,
-            },
+            _ => return res
         };
+    }
+}
+
+fn deref_depth_local<'tcx>(ty: Ty<'tcx>, ctx: CtxRef<'_, 'tcx>) -> SmallVec<[Indirect; 8]> {
+    let mut ty = ty;
+    let mut res = SmallVec::new();
+    loop {
+        let unpacked_ty = ty.unpack(ctx).1;
+        let inner_ty = match unpacked_ty.kind() {
+            TyKind::Ref(_, ty, Not) => {
+                res.push(Indirect::Ref);
+                *ty
+            }
+            TyKind::Adt(adt, _) if adt.is_box() => {
+                res.push(Indirect::Box);
+                unpacked_ty.boxed_ty()
+            }
+            _ => return res
+        };
+        ty = Ty{ty: inner_ty}
     }
 }
 
@@ -295,7 +313,7 @@ fn convert<'tcx>(
         TermKind::Binary { lhs, rhs, op: BinOp::Eq, .. } => {
             for term in [lhs, rhs] {
                 let (_, ty) = convert_sdt_state(&mut *term, tenv, state, ctx)?;
-                if ctx.zombie_info.contains_zombie(ty.ty) {
+                if ty.contains_zombie(ctx) {
                     let d_ty = prepare_display(ty, ctx);
                     return Err(Error::new(
                         term.span,

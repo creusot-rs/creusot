@@ -176,7 +176,7 @@ pub mod prusti_macros {
     };
 
     #[cfg(creusot)]
-    pub use crate::__stubs::{at_expiry, curr, WithStatic};
+    pub use crate::__stubs::{at_expiry, curr};
 }
 
 pub mod prelude {

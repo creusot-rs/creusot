@@ -1,9 +1,30 @@
-use crate::prusti::util::name_to_def_id;
-use rustc_middle::ty::{
-    ParamEnv, Ty, TyCtxt, TyKind, TypeSuperVisitable, TypeVisitable, TypeVisitor,
-};
+use crate::prusti::util::{name_to_def_id, RegionReplacer};
+use rustc_middle::ty::{ParamEnv, Region, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable, TypeVisitable, TypeVisitor};
 use rustc_span::def_id::DefId;
 use std::ops::ControlFlow;
+use crate::prusti::ctx::InternedInfo;
+
+pub enum ZombieStatus {
+    Zombie,
+    NonZombie,
+}
+
+pub(super) fn fixing_replace<'tcx, F, T>(ctx: &InternedInfo<'tcx>, f: F, ty: T) -> T
+    where
+        F: FnMut(Region<'tcx>) -> Region<'tcx>,
+        T: TypeFoldable<TyCtxt<'tcx>>,
+{
+    ty.fold_with(&mut RegionReplacer { tcx: ctx.tcx, f })
+}
+
+pub(super) fn pretty_replace<'tcx, F, T>(ctx: &InternedInfo<'tcx>, f: F, ty: T) -> T
+    where
+        F: FnMut(Region<'tcx>) -> Region<'tcx>,
+        T: TypeFoldable<TyCtxt<'tcx>>,
+{
+    ty.fold_with(&mut RegionReplacer { tcx: ctx.tcx, f })
+}
+
 
 pub struct ZombieDefIds {
     internal: DefId,
@@ -14,9 +35,18 @@ impl ZombieDefIds {
         ZombieDefIds { internal: name_to_def_id(tcx, "prusti_zombie_internal") }
     }
 
+    pub(super) fn mk_zombie_raw<'tcx>(
+        &self,
+        ty: Ty<'tcx>,
+        tcx: TyCtxt<'tcx>,
+    ) -> Ty<'tcx> {
+        let did = self.internal;
+        tcx.mk_adt(tcx.adt_def(did), tcx.mk_substs(&[ty.into()]))
+    }
+
     /// Makes a type copy by wrapping parts of it in Zombie
     /// result.1 is true iff the type was changed
-    pub fn mk_zombie<'tcx>(
+    pub(super) fn mk_zombie<'tcx>(
         &self,
         ty: Ty<'tcx>,
         tcx: TyCtxt<'tcx>,
@@ -25,13 +55,12 @@ impl ZombieDefIds {
         if ty.is_copy_modulo_regions(tcx, param_env) {
             (ty, false)
         } else {
-            let did = self.internal;
-            let ty = tcx.mk_adt(tcx.adt_def(did), tcx.mk_substs(&[ty.into()]));
+            let ty = self.mk_zombie_raw(ty, tcx);
             (ty, true)
         }
     }
 
-    pub fn as_zombie<'tcx>(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub(super) fn as_zombie<'tcx>(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         match ty.kind() {
             TyKind::Adt(def, subst) if def.did() == self.internal => Some(subst[0].expect_ty()),
             _ => None,
