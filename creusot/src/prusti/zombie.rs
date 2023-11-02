@@ -4,6 +4,7 @@ use rustc_span::def_id::DefId;
 use std::ops::ControlFlow;
 use crate::prusti::ctx::InternedInfo;
 
+#[derive(Copy, Clone, Debug)]
 pub enum ZombieStatus {
     Zombie,
     NonZombie,

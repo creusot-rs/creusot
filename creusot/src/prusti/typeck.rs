@@ -1,6 +1,6 @@
 use super::{
-    full_signature_logic,
-    parsing::{HomeSig, parse_home_sig_lit},
+    flat_ty, full_signature_logic,
+    parsing::{parse_home_sig_lit, HomeSig},
     region_set::StateSet,
     typeck::MutDerefType::{Cur, Fin},
     types::*,
@@ -13,6 +13,7 @@ use crate::{
         ctx::{BaseCtx, CtxRef, InternedInfo},
         parsing::Outlives,
         region_set::State,
+        zombie::{pretty_replace, ZombieStatus},
     },
     util,
 };
@@ -21,21 +22,24 @@ use rustc_ast::Mutability;
 use rustc_data_structures::sso::SsoHashMap;
 use rustc_infer::{
     infer::{
-        at::ToTrace, InferCtxt, region_constraints::Constraint, RegionVariableOrigin,
+        at::ToTrace, region_constraints::Constraint, InferCtxt,
         SubregionOrigin, TyCtxtInferExt, ValuePairs,
     },
     traits::ObligationCause,
 };
-use rustc_middle::{span_bug, ty, ty::{
-    error::{ExpectedFound, TypeError},
-    Instance, InternalSubsts, PolyFnSig, Region, RegionKind, RegionVid, SubstsRef, TyCtxt,
-    TyKind, TypeFoldable, TypeVisitable, TypeVisitor,
-}};
-use rustc_span::{def_id::DefId, DUMMY_SP, Span, Symbol};
+use rustc_middle::{
+    span_bug, ty,
+    ty::{
+        error::{ExpectedFound, TypeError},
+        Instance, InternalSubsts, PolyFnSig, Region, RegionKind, RegionVid, SubstsRef, TyCtxt,
+        TyKind, TypeFoldable, TypeVisitable, TypeVisitor,
+    },
+};
+use rustc_span::{def_id::DefId, Span, Symbol};
 use rustc_target::abi::VariantIdx;
 use rustc_trait_selection::{traits, traits::ObligationCtxt};
 use std::{iter, ops::ControlFlow};
-use crate::prusti::zombie::{pretty_replace, ZombieStatus};
+use crate::prusti::flat_ty::{CheckSupError, flatten_ty};
 
 type SmallVec<T> = smallvec::SmallVec<[T; 4]>;
 
@@ -351,7 +355,7 @@ fn check_call_region_constraint<'tcx>(
             let found = prepare_display(x.found, ctx);
             let replacer = |r: Region<'tcx>| match r.kind() {
                 RegionKind::ReVar(vid2) if Some(vid2) == vid => {
-                    make_region_for_display(expected_r, ctx)
+                    make_region_for_display(expected_r.into(), ctx)
                 }
                 RegionKind::ReStatic => tcx.lifetimes.re_static,
                 _ => tcx.lifetimes.re_erased,
@@ -368,7 +372,7 @@ fn check_call_region_constraint<'tcx>(
 pub(crate) fn check_constructor<'tcx>(
     ctx: CtxRef<'_, 'tcx>,
     fields: impl Iterator<Item = CreusotResult<(Ty<'tcx>, Span)>>,
-    target_ty: ty::Ty<'tcx>,
+    target_ty: Ty<'tcx>,
     variant: VariantIdx,
 ) -> CreusotResult<Ty<'tcx>> {
     let tcx = ctx.tcx;
@@ -377,7 +381,7 @@ pub(crate) fn check_constructor<'tcx>(
     let infcx = tcx.infer_ctxt().build();
     let ocx = SimpleCtxt::new(&infcx, &*ctx);
 
-    let ty_gen = generalize(Ty::with_absurd_home(target_ty, tcx), &infcx);
+    let ty_gen = generalize(target_ty, &infcx);
     let fields_gen = ty_gen.as_adt_variant(variant, ctx);
 
     fields.zip(fields_gen).try_for_each(|((ty, span), ty_gen)| sup_tys(&ocx, span, ty_gen, ty))?;
@@ -392,17 +396,21 @@ pub(crate) fn union<'tcx>(
     target: ty::Ty<'tcx>,
     elts: impl Iterator<Item = CreusotResult<(Ty<'tcx>, Span)>>,
 ) -> CreusotResult<Ty<'tcx>> {
-    // Eagerly evaluate args to avoid running multiple inference contexts at the same time
-    let mut elts = elts.collect::<CreusotResult<SmallVec<_>>>()?.into_iter();
-    let tcx = ctx.tcx;
-    let infcx = tcx.infer_ctxt().build();
-    let ocx = SimpleCtxt::new(&infcx, &*ctx);
-    let ty_gen = generalize(Ty::with_absurd_home(target, tcx), &infcx);
-    elts.try_for_each(|(ty, span)| sup_tys(&ocx, span, ty_gen, ty))?;
-    let constraints = infcx.take_and_reset_region_constraints();
-    let var_info = RegionInfo::new(ctx, constraints.constraints.into_iter())?;
-    let res = ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| var_info.get_region(r, tcx) });
-    Ok(res)
+    let mut elts = elts.map(|elt| Ok(elt?.0)).collect::<CreusotResult<SmallVec<_>>>()?.into_iter();
+    match elts.next() {
+        None => Ok(ctx.fix_ty(target, || ctx.interned.mk_region(StateSet::EMPTY))),
+        Some(ty) => match elts.next() {
+            None => Ok(ty),
+            Some(ty2) => {
+                let mut flat = flat_ty::flatten_ty(ctx, ty);
+                flat_ty::union(ctx, &mut flat, ty2);
+                for ty2 in elts {
+                    flat_ty::union(ctx, &mut flat, ty2)
+                }
+                Ok(flat_ty::flat_to_ty(ctx, &flat, ty))
+            }
+        },
+    }
 }
 
 pub(super) fn normalize<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
@@ -421,44 +429,20 @@ pub(crate) fn check_sup<'tcx>(
     actual: Ty<'tcx>,
     span: Span,
 ) -> CreusotResult<()> {
-    let tcx = ctx.tcx;
-    let infcx = tcx.infer_ctxt().build();
-    let ocx = SimpleCtxt::new(&infcx, &*ctx);
-
-    // Avoid contravariant constraints
-    let mut back_map = SsoHashMap::default();
-    let expected = expected.fold_with(&mut RegionReplacer {
-        tcx,
-        f: |r| {
-            let res = infcx.next_region_var(RegionVariableOrigin::MiscVariable(DUMMY_SP));
-            back_map.insert(res.as_var(), r);
-            res
-        },
-    });
-    sup_tys(&ocx, span, expected, actual)?;
-    let constraints = infcx.take_and_reset_region_constraints();
-    constraints.constraints.into_iter().try_for_each(|(c, origin)| match c {
-        Constraint::VarSubReg(var, reg1) => {
-            let reg2 = back_map[&var];
-            if sub_stateset(reg1, reg2) {
-                Ok(())
-            } else {
-                match origin_types(&origin) {
-                    None => span_bug!(origin.span(), "bug"),
-                    Some(t) => {
-                        let (reg1, reg2) = (prepare_display(reg1, ctx), prepare_display(reg2, ctx));
-                        let expected = t.expected.fold_with(&mut RegionReplacer{tcx, f: |r| back_map[&r.as_var()]});
-                        let expected = prepare_display(expected, ctx);
-                        let found = prepare_display(t.found, ctx);
-                        let msg = format!("function was supposed to return data with type `{expected}` but it is returning data with type `{found}`\n\
-                            expected `{reg2}` found `{reg1}`");
-                        Err(Error::new(origin.span(), msg))
-                    }
-                }
-            }
+    let expected_d = prepare_display(expected, ctx);
+    let found_d = prepare_display(actual, ctx);
+    let expected = flatten_ty(ctx, expected);
+    match flat_ty::check_sup(ctx, expected, actual) {
+        Ok(()) => Ok(()),
+        Err(CheckSupError::ZombieMismatch) => Err(Error::new(span, format!("expected `{expected_d}` found `{found_d}`"))),
+        Err(CheckSupError::StateMismatch {expected, found}) => {
+            let exprect_r = make_region_for_display(expected, &ctx.base);
+            let found_r = make_region_for_display(found, &ctx.base);
+            let msg = format!("function was supposed to return data with type `{expected_d}` but it is returning data with type `{found_d}`\n\
+                            expected `{exprect_r}` found `{found_r}`");
+            Err(Error::new(span, msg))
         }
-        _ => Ok(()),
-    })
+    }
 }
 
 pub(crate) fn try_resolve<'tcx>(
@@ -601,7 +585,9 @@ pub(crate) fn box_deref<'tcx>(
             }
             _ => span_bug!(span, "bug"),
         },
-        (ZombieStatus::Zombie, _) => Err(Error::new(span, format!("invalid box dereference of zombie expression"))),
+        (ZombieStatus::Zombie, _) => {
+            Err(Error::new(span, format!("invalid box dereference of zombie expression")))
+        }
     }
 }
 
@@ -643,8 +629,11 @@ pub(crate) fn check_signature_agreement<'tcx>(
         trait_id,
     )?;
     let args = arg_tys.into_iter().map(|(_, ty)| Ok((ty, impl_span)));
+    // lifetimes bound from the impl block that aren't used in the Self type are excluded
+    // we can erase these lifetimes since they will disappear after substitution
+    let subst_ref = ctx.fix_regions(impl_id_subst, || ctx.tcx.lifetimes.re_erased);
     let actual_res_ty =
-        check_call(&ctx, ts, impl_id, ctx.fix_regions(impl_id_subst), args, impl_span)?;
+        check_call(&ctx, ts, impl_id, subst_ref, args, impl_span)?;
     debug!(
         "{impl_id:?}: expected {}, found {}",
         prepare_display(expect_res_ty, &ctx),

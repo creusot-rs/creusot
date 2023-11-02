@@ -1,4 +1,4 @@
-use super::{region_set::*, util::RegionReplacer};
+use super::{region_set::*};
 use crate::prusti::{ctx::*, typeck::normalize};
 use itertools::Either;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
@@ -116,30 +116,16 @@ impl<'tcx> Ty<'tcx> {
     pub(super) fn make_ref(ts: Region<'tcx>, ty: Ty<'tcx>, ctx: CtxRef<'_, 'tcx>) -> Self {
         Ty { ty: ctx.tcx.mk_imm_ref(ts, ty.ty) }.pack(ZombieStatus::NonZombie, ctx)
     }
-
-    pub(crate) fn all_at_ts(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>, ts: Region<'tcx>) -> Self {
-        Ty { ty: ty.fold_with(&mut RegionReplacer { tcx, f: |_| ts }) }
-    }
-
-    pub(crate) fn absurd_regions(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
-        Self::all_at_ts(ty, tcx, StateSet::EMPTY.into_region(tcx))
-    }
-
-    pub(crate) fn with_absurd_home(ty: ty::Ty<'tcx>, _tcx: TyCtxt<'tcx>) -> Self {
-        Ty { ty }
-    }
-
     pub(crate) fn is_never(self) -> bool {
         self.ty.is_never()
     }
 }
 
 pub(super) fn make_region_for_display<'tcx>(
-    r: Region<'tcx>,
+    reg_set: StateSet,
     ctx: &'_ BaseCtx<'_, 'tcx>,
 ) -> Region<'tcx> {
     let tcx = ctx.tcx;
-    let reg_set = StateSet::from(r);
     if reg_set == StateSet::UNIVERSE {
         return dummy_region(tcx, Symbol::intern("'?"));
     }
@@ -169,7 +155,7 @@ pub(crate) fn display_fold<'a, 'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
     t: T,
     ctx: &'a BaseCtx<'a, 'tcx>,
 ) -> T {
-    pretty_replace(ctx.interned, |r| make_region_for_display(r, ctx), t)
+    pretty_replace(ctx.interned, |r| make_region_for_display(r.into(), ctx), t)
 }
 
 impl<'a, 'tcx, T: Copy + TypeFoldable<TyCtxt<'tcx>> + Display> Display

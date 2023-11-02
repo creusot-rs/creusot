@@ -13,10 +13,7 @@ use crate::prusti::{
 use rustc_index::{Idx, IndexVec};
 use rustc_infer::infer::region_constraints::Constraint;
 use rustc_lint::Lint;
-use rustc_middle::{
-    ty,
-    ty::{BoundRegionKind, ParamEnv, Region, TyCtxt, TypeFoldable, walk::TypeWalker},
-};
+use rustc_middle::{bug, ty, ty::{BoundRegionKind, ParamEnv, Region, TyCtxt, TypeFoldable, walk::TypeWalker}};
 use rustc_span::{
     def_id::{CRATE_DEF_ID, DefId, LocalDefId},
     Span, Symbol,
@@ -240,7 +237,7 @@ impl<'a, 'tcx> PreCtx<'a, 'tcx> {
     /// Fixes an external region by converting it into a singleton set
     fn fix_region(&self, r: Region<'tcx>) -> Region<'tcx> {
         let Some(state) = try_index_of(&self.base_states, &r) else {
-            return self.tcx.lifetimes.re_erased
+            bug!()
         };
         self.state_to_reg(state)
     }
@@ -323,17 +320,30 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
     }
 
     /// Fixes an external region by converting it into a singleton set
-    fn fix_region(&self, r: Region<'tcx>) -> Region<'tcx> {
+    fn fix_region(&self, r: Region<'tcx>, or: impl Fn() -> Region<'tcx>) -> Region<'tcx> {
         let Some(base_state) = try_index_of(&self.base_states, &r) else {
-            return self.tcx.lifetimes.re_erased
+            return or()
         };
         let state = self.normalize_state(base_state);
         self.state_to_reg(state)
     }
 
-    pub(crate) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T) -> T {
-        let t = fixing_replace(self.interned, |r| self.fix_region(r), t);
+    pub(super) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T, or: impl Fn() -> Region<'tcx>) -> T {
+        let t = fixing_replace(self.interned, |r| self.fix_region(r, &or), t);
         normalize(&*self, t)
+    }
+
+    pub(crate) fn fix_ty(&self, ty: ty::Ty<'tcx>, or: impl Fn() -> Region<'tcx>) -> Ty<'tcx> {
+        Ty{ty: self.fix_regions(ty, or)}
+    }
+
+    pub(crate) fn fix_ty_with_absurd(&self, ty: ty::Ty<'tcx>) -> Ty<'tcx> {
+        let emp = self.interned.mk_region(StateSet::EMPTY);
+        self.fix_ty(ty, || emp)
+    }
+
+    pub(crate) fn fix_ty_with_erased(&self, ty: ty::Ty<'tcx>) -> Ty<'tcx> {
+        self.fix_ty(ty, || self.tcx.lifetimes.re_erased)
     }
 
     pub(super) fn try_move_state(&self, state: State, span: Span) -> CreusotResult<()> {

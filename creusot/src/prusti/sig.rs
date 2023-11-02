@@ -15,6 +15,7 @@ use rustc_ast::MetaItemLit as Lit;
 use rustc_middle::ty::{FnSig, SubstsRef};
 use rustc_span::{def_id::DefId, symbol::Ident, Span, Symbol, DUMMY_SP};
 use std::iter;
+use rustc_middle::bug;
 
 /// Returns region corresponding to `l`
 /// Also checks that 'curr is not blocked
@@ -99,7 +100,7 @@ pub(crate) fn full_signature<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
     let sig = FnSigBinder::new(tcx, owner_id, None);
     let ctx = Ctx::new_for_spec(interned, sig)?;
     let sig = tcx.liberate_late_bound_regions(owner_id, sig.sig());
-    let sig = ctx.fix_regions(sig);
+    let sig = ctx.fix_regions(sig, || bug!());
 
     let ts = make_state(ts, &ctx)?;
     let arg_homes = iter::repeat(ctx.old_state().into());

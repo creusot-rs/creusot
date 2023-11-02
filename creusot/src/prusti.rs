@@ -9,6 +9,8 @@ pub(crate) mod types;
 mod util;
 mod variance;
 mod zombie;
+mod flat_ty;
+mod bitvec;
 
 pub(crate) use region_set::State;
 pub(crate) use sig::{full_signature, full_signature_logic};

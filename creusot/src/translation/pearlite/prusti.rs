@@ -299,16 +299,16 @@ fn convert<'tcx>(
 ) -> CreusotResult<(State, Ty<'tcx>)> {
     let tcx = ctx.tcx;
     let mut res_state = state;
-    let outer_ty = || ctx.fix_regions(outer_term.ty);
+    let outer_ty = || ctx.fix_ty_with_erased(outer_term.ty);
     let ty = match &mut outer_term.kind {
         TermKind::Var(v) => {
             let (old_ts, ty) = *tenv.get(v).unwrap();
             typeck::check_move_state(old_ts, state, ctx, ty, outer_term.span)?
         }
-        TermKind::Lit(_) => Ty::with_absurd_home(outer_term.ty, tcx),
+        TermKind::Lit(_) =>  ctx.fix_ty_with_absurd(outer_term.ty),
         TermKind::Item(id, subst) => {
-            let ty = tcx.mk_fn_def(*id, subst.iter().map(|x| ctx.fix_regions(x)));
-            Ty::with_absurd_home(ty, tcx)
+            let ty = tcx.mk_fn_def(*id, subst.iter());
+            ctx.fix_ty_with_erased(ty)
         }
         TermKind::Binary { lhs, rhs, op: BinOp::Eq, .. } => {
             for term in [lhs, rhs] {
@@ -321,20 +321,21 @@ fn convert<'tcx>(
                     ));
                 }
             }
-            Ty::with_absurd_home(outer_term.ty, tcx)
+            ctx.fix_ty_with_absurd(outer_term.ty)
         }
         TermKind::Binary { lhs, rhs, .. } | TermKind::Impl { lhs, rhs } => {
             convert_sdt(&mut *lhs, tenv, state, ctx)?;
             convert_sdt(&mut *rhs, tenv, state, ctx)?;
-            Ty::with_absurd_home(outer_term.ty, tcx)
+            ctx.fix_ty_with_absurd(outer_term.ty)
         }
         TermKind::Unary { arg, .. } => {
             convert_sdt(&mut *arg, tenv, state, ctx)?;
-            Ty::with_absurd_home(outer_term.ty, tcx)
+            ctx.fix_ty_with_absurd(outer_term.ty)
         }
         TermKind::Forall { binder, body } | TermKind::Exists { binder, body } => {
             let ty = binder.1.tuple_fields()[0];
-            let ty = Ty::all_at_ts(ctx.fix_regions(ty), ctx.tcx, ctx.state_to_reg(state)); // TODO handle lifetimes annotations in ty
+            let state_r =  ctx.state_to_reg(state);
+            let ty = ctx.fix_ty(ty, || state_r); // TODO handle lifetimes annotations in ty
             convert_sdt(&mut *body, &mut tenv.insert(binder.0, (state, ty)), state, ctx)?
         }
         TermKind::Call { args, fun, id, .. } => {
@@ -409,7 +410,7 @@ fn convert<'tcx>(
                 let ty = convert_sdt(&mut *body, &mut *tenv.insert_many(iter), state, ctx)?;
                 Ok((ty, body.span))
             });
-            typeck::union(ctx, outer_ty(), iter)?
+            typeck::union(ctx, outer_term.ty, iter)?
         }
         TermKind::Let { pattern, arg, body } => {
             if matches!(pattern, Pattern::Tuple(..))
@@ -439,7 +440,7 @@ fn convert<'tcx>(
             res
         }
         TermKind::Closure { .. } => todo!(),
-        TermKind::Absurd => Ty::absurd_regions(outer_ty(), ctx.tcx),
+        TermKind::Absurd => ctx.fix_ty_with_absurd(outer_term.ty),
         _ => {
             return Err(Error::new(
                 outer_term.span,
