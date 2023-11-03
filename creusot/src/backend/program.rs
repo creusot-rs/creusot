@@ -1,5 +1,6 @@
 use super::{
     clone_map::{CloneLevel, PreludeModule},
+    dependency::Dependency,
     signature::signature_of,
     term::{lower_impure, lower_pure},
     Why3Generator,
@@ -22,7 +23,7 @@ use crate::{
 use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
 use rustc_middle::{
     mir::{BasicBlock, BinOp},
-    ty::TyKind,
+    ty::{InternalSubsts, SubstsRef, TyKind},
 };
 use rustc_span::DUMMY_SP;
 use rustc_type_ir::{IntTy, UintTy};
@@ -38,6 +39,12 @@ use super::signature::sig_to_why3;
 
 fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
     let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Body);
+    names
+        .insert(Dependency::as_ty(
+            ctx.tcx,
+            (def_id, InternalSubsts::identity_for_item(ctx.tcx, def_id)),
+        ))
+        .hide();
     let mut decls = Vec::new();
 
     let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).subst_identity().kind() else { unreachable!() };
