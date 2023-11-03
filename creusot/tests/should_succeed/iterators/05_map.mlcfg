@@ -61,7 +61,7 @@ module C05Map_Impl0_Completed
     type self = i
   use C05Map_Map_Type as C05Map_Map_Type
   predicate completed [#"../05_map.rs" 22 4 22 35] (self : borrowed (C05Map_Map_Type.t_map i b f)) =
-    [#"../05_map.rs" 23 8 23 75] Completed0.completed (Borrow.make_borrow (C05Map_Map_Type.map_iter ( * self)) (C05Map_Map_Type.map_iter ( ^ self))) /\ C05Map_Map_Type.map_func ( * self) = C05Map_Map_Type.map_func ( ^ self)
+    [#"../05_map.rs" 23 8 23 75] Completed0.completed {current = C05Map_Map_Type.map_iter ( * self); final = C05Map_Map_Type.map_iter ( ^ self); addr = Borrow.make_new_addr ()} /\ C05Map_Map_Type.map_func ( * self) = C05Map_Map_Type.map_func ( ^ self)
   val completed [#"../05_map.rs" 22 4 22 35] (self : borrowed (C05Map_Map_Type.t_map i b f)) : bool
     ensures { result = completed self }
     
@@ -2546,7 +2546,7 @@ module C05Map_Impl0_Next
   }
   BB0 {
     _4 <- Borrow.borrow_mut (C05Map_Map_Type.map_iter ( * self));
-    self <- Borrow.make_borrow (let C05Map_Map_Type.C_Map a b =  * self in C05Map_Map_Type.C_Map ( ^ _4) b) ( ^ self);
+    self <- { self with current = (let C05Map_Map_Type.C_Map a b =  * self in C05Map_Map_Type.C_Map ( ^ _4) b) ; addr = Borrow.make_new_addr () ; };
     assume { Inv0.inv ( ^ _4) };
     _3 <- ([#"../05_map.rs" 61 14 61 30] Next0.next _4);
     _4 <- any borrowed i;
@@ -2591,7 +2591,7 @@ module C05Map_Impl0_Next
   BB7 {
     assume { Resolve1.resolve _9 };
     _12 <- Borrow.borrow_mut (C05Map_Map_Type.map_func ( * self));
-    self <- Borrow.make_borrow (let C05Map_Map_Type.C_Map a b =  * self in C05Map_Map_Type.C_Map a ( ^ _12)) ( ^ self);
+    self <- { self with current = (let C05Map_Map_Type.C_Map a b =  * self in C05Map_Map_Type.C_Map a ( ^ _12)) ; addr = Borrow.make_new_addr () ; };
     assume { Inv2.inv ( ^ _12) };
     _11 <- ([#"../05_map.rs" 65 21 65 35] CallMut0.call_mut _12 (v));
     _12 <- any borrowed f;
