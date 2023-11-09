@@ -1,20 +1,16 @@
 use super::util::generalize;
 use crate::prusti::fn_sig_binder::FnSigBinder;
 use rustc_infer::{
-    infer::{
-        outlives::env::OutlivesEnvironment, region_constraints::Constraint, InferCtxt,
-        RegionVariableOrigin, TyCtxtInferExt,
-    },
+    infer::{outlives::env::OutlivesEnvironment, region_constraints::Constraint, TyCtxtInferExt},
     traits::Obligation,
 };
 use rustc_middle::{
     traits::ObligationCause,
     ty::{
-        walk::TypeWalker, Binder, BoundVariableKind, ClauseKind, GenericPredicates, InternalSubsts,
-        ParamEnv, PredicateKind, Region, SubstsRef, Ty, TyCtxt,
+        walk::TypeWalker, Binder, BoundVariableKind, ClauseKind, GenericPredicates, ParamEnv,
+        PredicateKind, Region, TyCtxt,
     },
 };
-use rustc_span::{def_id::DefId, DUMMY_SP};
 use rustc_trait_selection::traits::ObligationCtxt;
 
 /// Returns a set of all regions in a function and an iterator over there constraints
@@ -75,26 +71,4 @@ pub(super) fn constraints_of_fn<'tcx>(
 
     let constraints = infcx.take_and_reset_region_constraints();
     constraints.constraints.into_iter().map(move |(x, _)| x)
-}
-
-pub(crate) fn generalize_fn_def<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    def_id: DefId,
-    infcx: &InferCtxt<'tcx>,
-    subst_ref: SubstsRef<'tcx>,
-) -> (Ty<'tcx>, impl Iterator<Item = (Region<'tcx>, Region<'tcx>)>) {
-    let fn_ty_gen = tcx.mk_fn_def(def_id, subst_ref);
-    let (fn_sig_gen, map) = tcx.replace_late_bound_regions(fn_ty_gen.fn_sig(tcx), |_| {
-        infcx.next_region_var(RegionVariableOrigin::MiscVariable(DUMMY_SP))
-    });
-    let fn_ty_gen = tcx.mk_fn_ptr(Binder::dummy(fn_sig_gen));
-
-    let id_subst = InternalSubsts::identity_for_item(tcx, def_id);
-    let iter1 = id_subst.regions().zip(subst_ref.regions());
-    let iter2 = map.into_iter().map(move |(br, reg_gen)| {
-        let reg = Region::new_free(tcx, def_id, br.kind);
-        (reg, reg_gen)
-    });
-    let iter = iter1.chain(iter2);
-    (fn_ty_gen, iter)
 }

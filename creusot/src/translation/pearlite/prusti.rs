@@ -259,7 +259,7 @@ fn deref_depth_extern(ty: ty::Ty<'_>) -> SmallVec<[Indirect; 8]> {
                 res.push(Indirect::Box);
                 ty.boxed_ty()
             }
-            _ => return res
+            _ => return res,
         };
     }
 }
@@ -278,9 +278,9 @@ fn deref_depth_local<'tcx>(ty: Ty<'tcx>, ctx: CtxRef<'_, 'tcx>) -> SmallVec<[Ind
                 res.push(Indirect::Box);
                 unpacked_ty.boxed_ty()
             }
-            _ => return res
+            _ => return res,
         };
-        ty = Ty{ty: inner_ty}
+        ty = Ty { ty: inner_ty }
     }
 }
 
@@ -305,7 +305,7 @@ fn convert<'tcx>(
             let (old_ts, ty) = *tenv.get(v).unwrap();
             typeck::check_move_state(old_ts, state, ctx, ty, outer_term.span)?
         }
-        TermKind::Lit(_) =>  ctx.fix_ty_with_absurd(outer_term.ty),
+        TermKind::Lit(_) => ctx.fix_ty_with_absurd(outer_term.ty),
         TermKind::Item(id, subst) => {
             let ty = tcx.mk_fn_def(*id, subst.iter());
             ctx.fix_ty_with_erased(ty)
@@ -334,7 +334,7 @@ fn convert<'tcx>(
         }
         TermKind::Forall { binder, body } | TermKind::Exists { binder, body } => {
             let ty = binder.1.tuple_fields()[0];
-            let state_r =  ctx.state_to_reg(state);
+            let state_r = ctx.state_to_reg(state);
             let ty = ctx.fix_ty(ty, || state_r); // TODO handle lifetimes annotations in ty
             convert_sdt(&mut *body, &mut tenv.insert(binder.0, (state, ty)), state, ctx)?
         }

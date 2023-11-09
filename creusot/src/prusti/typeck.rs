@@ -4,13 +4,15 @@ use super::{
     region_set::StateSet,
     typeck::MutDerefType::{Cur, Fin},
     types::*,
-    util::{generalize, RegionReplacer},
+    util::RegionReplacer,
 };
 use crate::{
     error::{CreusotResult, Error},
     lints::PRUSTI_ZOMBIE,
     prusti::{
-        ctx::{BaseCtx, CtxRef, InternedInfo},
+        ctx::{BaseCtx, CtxRef, InternedInfo, STATIC_STATE},
+        flat_rust_ty::{flatten_rust_ty, walk_with_rust_flat_ty, RustReg},
+        flat_ty::{flatten_ty, CheckSupError},
         parsing::Outlives,
         region_set::State,
         zombie::{pretty_replace, ZombieStatus},
@@ -20,26 +22,19 @@ use crate::{
 use itertools::Either;
 use rustc_ast::Mutability;
 use rustc_data_structures::sso::SsoHashMap;
-use rustc_infer::{
-    infer::{
-        at::ToTrace, region_constraints::Constraint, InferCtxt,
-        SubregionOrigin, TyCtxtInferExt, ValuePairs,
-    },
-    traits::ObligationCause,
-};
+use rustc_index::IndexVec;
+use rustc_infer::{infer::TyCtxtInferExt, traits::ObligationCause};
 use rustc_middle::{
-    span_bug, ty,
+    bug, span_bug, ty,
     ty::{
-        error::{ExpectedFound, TypeError},
-        Instance, InternalSubsts, PolyFnSig, Region, RegionKind, RegionVid, SubstsRef, TyCtxt,
-        TyKind, TypeFoldable, TypeVisitable, TypeVisitor,
+        Binder, Instance, InternalSubsts, PolyFnSig, Region, RegionKind, RegionVid, SubstsRef,
+        TyCtxt, TyKind, TypeFoldable, TypeVisitable, TypeVisitor,
     },
 };
 use rustc_span::{def_id::DefId, Span, Symbol};
 use rustc_target::abi::VariantIdx;
-use rustc_trait_selection::{traits, traits::ObligationCtxt};
+use rustc_trait_selection::{traits, traits::NormalizeExt};
 use std::{iter, ops::ControlFlow};
-use crate::prusti::flat_ty::{CheckSupError, flatten_ty};
 
 type SmallVec<T> = smallvec::SmallVec<[T; 4]>;
 
@@ -93,121 +88,187 @@ fn filter_elided<'tcx>(
     })
 }
 
+#[derive(Eq, PartialEq, Copy, Clone)]
+enum ReVarStatus {
+    Bound(StateSet),
+    Exact(StateSet),
+}
+
 /// Maps region variables to there lower bounds
-struct RegionInfo(SsoHashMap<RegionVid, StateSet>);
+struct VarInfo(IndexVec<RegionVid, ReVarStatus>);
 
-impl RegionInfo {
-    fn new<'tcx>(
-        ctx: CtxRef<'_, 'tcx>,
-        mut constraints: impl Iterator<Item = (Constraint<'tcx>, SubregionOrigin<'tcx>)>,
-    ) -> CreusotResult<Self> {
-        let mut res = RegionInfo(SsoHashMap::default());
-        constraints.try_for_each(|(c, origin)| {
-            CreusotResult::Ok(match c {
-                Constraint::VarSubReg(gen, reg) => res.add_bound(gen, reg),
-                Constraint::RegSubReg(static_reg, reg) if static_reg.is_static() => {
-                    check_call_region_constraint(ctx, None, ctx.static_region(), reg, &origin)?;
-                }
-                Constraint::RegSubVar(_, _) => {} // These comes from invariance which we ignore
-                Constraint::RegSubReg(_, static_reg) if static_reg.is_static() => {}
-                x => {
-                    warn!("unhandled constraint {:?}", x)
-                }
-            })
-        })?;
-        Ok(res)
-    }
-
-    fn add_bound(&mut self, key: RegionVid, val: Region<'_>) {
-        let reg = self.0.entry(key).or_insert(StateSet::EMPTY);
-        *reg = reg.union(val.into())
-    }
-
-    fn get_region<'tcx>(&self, key: Region<'tcx>, tcx: TyCtxt<'tcx>) -> Region<'tcx> {
-        let reg = *self.0.get(&key.as_var()).unwrap_or(&StateSet::EMPTY);
-        reg.into_region(tcx)
-    }
-}
-
-struct SimpleCtxt<'a, 'tcx> {
-    ocx: ObligationCtxt<'a, 'tcx>,
-    ctx: &'a BaseCtx<'a, 'tcx>,
-}
-
-impl<'a, 'tcx> SimpleCtxt<'a, 'tcx> {
-    fn new(infcx: &'a InferCtxt<'tcx>, ctx: &'a BaseCtx<'a, 'tcx>) -> Self {
-        SimpleCtxt { ocx: ObligationCtxt::new(infcx), ctx }
-    }
-
-    fn sup<T: ToTrace<'tcx>>(
-        &self,
-        span: Span,
-        expected: T,
-        actual: T,
-    ) -> Result<(), TypeError<'tcx>> {
-        self.ocx.sup(
-            &ObligationCause::dummy_with_span(span),
-            self.ctx.param_env(),
-            expected,
-            actual,
-        )
-    }
-
-    fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T) -> T {
-        self.ocx.normalize(&ObligationCause::dummy(), self.ctx.param_env(), t)
-    }
-
-    fn infcx(&self) -> &'a InferCtxt<'tcx> {
-        self.ocx.infcx
-    }
-
-    fn tcx(&self) -> TyCtxt<'tcx> {
-        self.infcx().tcx
-    }
-}
-
-fn sup_tys<'tcx>(
-    ctx: &SimpleCtxt<'_, 'tcx>,
-    span: Span,
-    ty_gen: Ty<'tcx>,
-    ty: Ty<'tcx>,
-) -> CreusotResult<()> {
-    if ty.is_never() {
-        return Ok(()); // Don't generate constraints for the never type
-    }
-    let Ty { ty: ty_gen } = ty_gen;
-    let Ty { ty } = ty;
-    match ctx.sup(span, ty_gen, ty) {
-        Ok(()) => (),
-        Err(_) => {
-            // let err = display_fold(err, ctx.ctx);
-            // return Err(Error::new(span, err.to_string(ctx.tcx())))
-            // Sadly this doesn't work since TypeError doesn't implement type TypeFoldable
-            let ty = display_fold(ty, ctx.ctx);
-            let tcx = ctx.tcx();
-            let replacer = |r: Region<'tcx>| match r.kind() {
-                RegionKind::ReStatic => tcx.lifetimes.re_static,
-                _ => tcx.lifetimes.re_erased,
-            };
-            let ty_gen = pretty_replace(ctx.ctx.interned, replacer, ty_gen);
-            return Err(Error::new(span, format!("expected `{ty_gen}` found `{ty}`")));
+impl VarInfo {
+    fn force_exact(&mut self, idx: RegionVid, exact: StateSet) -> Result<(), CheckSupError> {
+        match self.0[idx] {
+            ReVarStatus::Bound(expected) if !expected.subset(exact) => {
+                return Err(CheckSupError::StateMismatch { expected, found: exact })
+            }
+            ReVarStatus::Exact(expected) if expected != exact => {
+                return Err(CheckSupError::StateMismatch { expected, found: exact })
+            }
+            _ => {}
         }
-    };
-    Ok(())
+        self.0[idx] = ReVarStatus::Exact(exact);
+        Ok(())
+    }
+
+    fn add_bound(&mut self, expected: RustReg, found: StateSet) -> Result<(), CheckSupError> {
+        match expected {
+            RustReg::Static => {
+                let expected = StateSet::singleton(STATIC_STATE);
+                if found.subset(expected) {
+                    Ok(())
+                } else {
+                    Err(CheckSupError::StateMismatch { expected, found })
+                }
+            }
+            RustReg::Var(v) => match self.0[v] {
+                ReVarStatus::Bound(ss) => {
+                    self.0[v] = ReVarStatus::Bound(ss.union(found));
+                    Ok(())
+                }
+                ReVarStatus::Exact(expected) => {
+                    if found.subset(expected) {
+                        Ok(())
+                    } else {
+                        Err(CheckSupError::StateMismatch { expected, found })
+                    }
+                }
+            },
+        }
+    }
+
+    fn get_region<'tcx>(&self, key: Region<'tcx>, ctx: CtxRef<'_, 'tcx>) -> Region<'tcx> {
+        let ss = match key.kind() {
+            RegionKind::ReVar(vid) => match self.0[vid] {
+                ReVarStatus::Bound(ss) => ss,
+                ReVarStatus::Exact(ss) => ss,
+            },
+            RegionKind::ReStatic => StateSet::singleton(STATIC_STATE),
+            _ => bug!(),
+        };
+        ctx.mk_region(ss)
+    }
+
+    fn fold<'tcx>(&self, ty_gen: ty::Ty<'tcx>, ctx: CtxRef<'_, 'tcx>) -> Ty<'tcx> {
+        Ty {
+            ty: ty_gen
+                .fold_with(&mut RegionReplacer { tcx: ctx.tcx, f: |r| self.get_region(r, ctx) }),
+        }
+    }
+
+    fn get_exact_stateset<'tcx>(&self, vid: RegionVid) -> Option<StateSet> {
+        match self.0[vid] {
+            ReVarStatus::Bound(_) => None,
+            ReVarStatus::Exact(ss) => Some(ss),
+        }
+    }
 }
 
-fn origin_types<'tcx>(origin: &SubregionOrigin<'tcx>) -> Option<ExpectedFound<ty::Ty<'tcx>>> {
-    match origin {
-        SubregionOrigin::Subtype(t) => match t.values {
-            ValuePairs::Regions(_) => None,
-            ValuePairs::Terms(terms) => Some(ExpectedFound {
-                found: terms.found.ty().unwrap(),
-                expected: terms.expected.ty().unwrap(),
-            }),
-            _ => unreachable!(),
-        },
-        _ => unreachable!(),
+/// Expand error when expected is a local type
+fn expand_error_sup<'tcx>(
+    ctx: CtxRef<'_, 'tcx>,
+    span: Span,
+    expected: Ty<'tcx>,
+    found: Ty<'tcx>,
+    err: CheckSupError,
+) -> Error {
+    let expected_raw = display_fold(expected.ty, ctx);
+    let found_d = prepare_display(found, ctx);
+    match err {
+        CheckSupError::ZombieMismatch => {
+            Error::new(span, format!("expected `{expected_raw}` found `{found_d}`"))
+        }
+        CheckSupError::StateMismatch { expected, found } => {
+            let expected_r = make_region_for_display(expected, &ctx.base);
+            let found_r = make_region_for_display(found, &ctx.base);
+            let msg = format!("function was supposed to return data with type `{expected_raw}` but it is returning data with type `{found_d}`\n\
+                            expected `{expected_r}` found `{found_r}`");
+            Error::new(span, msg)
+        }
     }
+}
+
+/// Expand error when expected is a generalize rust type
+fn expand_error_gen<'tcx>(
+    ctx: CtxRef<'_, 'tcx>,
+    span: Span,
+    var_info: &VarInfo,
+    ty_gen: ty::Ty<'tcx>,
+    ty: Ty<'tcx>,
+    err: CheckSupError,
+) -> Error {
+    let tcx = ctx.tcx;
+    let replacer = |r: Region<'tcx>| match r.kind() {
+        RegionKind::ReVar(vid) => match var_info.get_exact_stateset(vid) {
+            None => tcx.lifetimes.re_erased,
+            Some(ss) => make_region_for_display(ss, ctx),
+        },
+        RegionKind::ReStatic => tcx.lifetimes.re_static,
+        _ => tcx.lifetimes.re_erased,
+    };
+    let ty_gen = pretty_replace(ctx.interned, replacer, ty_gen);
+    let ty = prepare_display(ty, ctx);
+    match err {
+        CheckSupError::ZombieMismatch => {
+            Error::new(span, format!("expected `{ty_gen}` found `{ty}`"))
+        }
+        CheckSupError::StateMismatch { expected, found } => {
+            let expected_r = make_region_for_display(expected, &ctx.base);
+            let found_r = make_region_for_display(found, &ctx.base);
+            let msg = format!("the expression's lifetime `{found_r}` must match the current time slice `{expected_r}` (found `{ty}`, expected `{ty_gen}`)");
+            Error::new(span, msg)
+        }
+    }
+}
+
+fn generalize<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(tcx: TyCtxt<'tcx>, t: T) -> (T, VarInfo) {
+    let mut var_info = IndexVec::new();
+    let res = t.fold_with(&mut RegionReplacer {
+        tcx,
+        f: |_| Region::new_var(tcx, var_info.push(ReVarStatus::Bound(StateSet::EMPTY))),
+    });
+    (res, VarInfo(var_info))
+}
+
+fn check_gen<'tcx>(
+    ctx: CtxRef<'_, 'tcx>,
+    span: Span,
+    ty: Ty<'tcx>,
+    ty_gen: ty::Ty<'tcx>,
+    var_info: &mut VarInfo,
+) -> CreusotResult<()> {
+    let flat_gen = flatten_rust_ty(ty_gen);
+    let res = walk_with_rust_flat_ty(
+        ctx,
+        &flat_gen,
+        ty,
+        |found, expected| var_info.add_bound(expected, found),
+        |_, _| span_bug!(span, "bug"),
+    );
+    res.map_err(|err| expand_error_gen(ctx, span, var_info, ty_gen, ty, err))
+}
+
+fn generalize_fn_def<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    var_info: &mut VarInfo,
+    subst_ref: SubstsRef<'tcx>,
+) -> (ty::Ty<'tcx>, impl Iterator<Item = (Region<'tcx>, Region<'tcx>)>) {
+    let fn_ty_gen = tcx.mk_fn_def(def_id, subst_ref);
+    let (fn_sig_gen, map) = tcx.replace_late_bound_regions(fn_ty_gen.fn_sig(tcx), |_| {
+        Region::new_var(tcx, var_info.0.push(ReVarStatus::Bound(StateSet::EMPTY)))
+    });
+    let fn_ty_gen = tcx.mk_fn_ptr(Binder::dummy(fn_sig_gen));
+
+    let id_subst = InternalSubsts::identity_for_item(tcx, def_id);
+    let iter1 = id_subst.regions().zip(subst_ref.regions());
+    let iter2 = map.into_iter().map(move |(br, reg_gen)| {
+        let reg = Region::new_free(tcx, def_id, br.kind);
+        (reg, reg_gen)
+    });
+    let iter = iter1.chain(iter2);
+    (fn_ty_gen, iter)
 }
 
 pub(crate) fn check_call<'tcx>(
@@ -220,18 +281,16 @@ pub(crate) fn check_call<'tcx>(
 ) -> CreusotResult<Ty<'tcx>> {
     let tcx = ctx.tcx;
     // Eagerly evaluate args to avoid running multiple inference contexts at the same time
-    let args = args.collect::<CreusotResult<SmallVec<_>>>()?.into_iter();
+    let mut args = args.collect::<CreusotResult<SmallVec<_>>>()?;
     let home_sig = home_sig(ctx, def_id)?;
     let (home_sig_args, home_sig_bounds) = match &home_sig {
         Some(home_sig) => (Either::Left(home_sig.args()), Either::Left(home_sig.bounds())),
         None => (Either::Right(iter::repeat(ctx.curr_home())), Either::Right(iter::empty())),
     };
 
-    let infcx = tcx.infer_ctxt().build();
-    let ocx = SimpleCtxt::new(&infcx, &*ctx);
-    let subst_ref = generalize(subst_ref, &infcx);
-    let (fn_ty_gen, iter) = super::variance::generalize_fn_def(tcx, def_id, &infcx, subst_ref);
-    let fn_ty_gen = ocx.normalize(fn_ty_gen);
+    let (subst_ref, mut var_info) = generalize(tcx, subst_ref);
+    let (fn_ty_gen, iter) = generalize_fn_def(tcx, def_id, &mut var_info, subst_ref);
+    let fn_ty_gen = normalize(ctx, fn_ty_gen);
     let subst_iter = filter_elided(iter);
 
     let (args_gen, res_ty_gen) = match fn_ty_gen.kind() {
@@ -246,24 +305,21 @@ pub(crate) fn check_call<'tcx>(
     // maps homes in the home signature to states that were passed in for them
     let mut constrained_homes = SsoHashMap::default();
 
-    for ((arg, &ty_gen), home_sig_arg) in args.zip(args_gen).zip(home_sig_args) {
-        let ((from_state, mut ty), span) = arg;
+    for (arg, home_sig_arg) in args.iter_mut().zip(home_sig_args) {
+        let ((from_state, ty), span) = arg;
         if home_sig_arg == ctx.curr_sym {
-            ty = check_move_state(from_state, state, ctx, ty, span)?;
+            *ty = check_move_state(*from_state, state, ctx, *ty, *span)?;
         } else {
-            match constrained_homes.insert(home_sig_arg, from_state) {
-                Some(oth_state) if oth_state != from_state => {
+            match constrained_homes.insert(home_sig_arg, *from_state) {
+                Some(oth_state) if oth_state != *from_state => {
                     let d_oth_ts = display_state(oth_state, ctx);
-                    let d_this_ts = display_state(from_state, ctx);
-                    return Err(Error::new(span, format!("expected argument to come from state `{d_oth_ts}`, but it came from `{d_this_ts}`\n\
+                    let d_this_ts = display_state(*from_state, ctx);
+                    return Err(Error::new(*span, format!("expected argument to come from state `{d_oth_ts}`, but it came from `{d_this_ts}`\n\
                     required by home signature of function")));
                 }
                 _ => {}
             }
         }
-
-        let ty_gen = Ty { ty: ty_gen };
-        sup_tys(&ocx, span, ty_gen, ty)?;
     }
     constrained_homes.insert(ctx.curr_sym, state); // 'curr is always constrained to the current state
 
@@ -284,49 +340,17 @@ pub(crate) fn check_call<'tcx>(
         }
     }
 
-    // maps region variables to states they must be equal to
-    let constrained_vars: SsoHashMap<_, _> = subst_iter
-        .filter_map(|(home, var)| {
-            let constraint = *constrained_homes.get(&home)?;
-            Some((var, constraint))
-        })
-        .collect();
-
-    let res_ty_gen = Ty { ty: res_ty_gen };
-    let constraints = infcx.take_and_reset_region_constraints();
-    // let outlives = OutlivesEnvironment::new(param_env);
-    // infcx.process_registered_region_obligations(&outlives);
-
-    let iter = constraints.constraints.into_iter();
-    let mut curr_ok = Ok(());
-    let iter = iter.filter(|(c, origin)| match *c {
-        _ if curr_ok.is_err() => false,
-        Constraint::VarSubReg(var, reg) => {
-            if let Some(constraint) = constrained_vars.get(&var) {
-                let constraint = ctx.state_to_reg(*constraint);
-                curr_ok = check_call_region_constraint(ctx, Some(var), constraint, reg, &origin);
-                false
-            } else {
-                true
-            }
+    for (home, var) in subst_iter {
+        if let Some(&constraint) = constrained_homes.get(&home) {
+            var_info.force_exact(var, StateSet::singleton(constraint)).unwrap();
         }
-        _ => true,
-    });
-    let var_info = RegionInfo::new(ctx, iter)?;
-    curr_ok?;
+    }
 
-    let res = res_ty_gen.fold_with(&mut RegionReplacer {
-        tcx,
-        f: |r| {
-            if r.is_static() {
-                ctx.static_region()
-            } else if let Some(constraint) = constrained_vars.get(&r.as_var()) {
-                ctx.state_to_reg(*constraint)
-            } else {
-                var_info.get_region(r, tcx)
-            }
-        },
-    });
+    for (((_, ty), span), ty_gen) in args.into_iter().zip(args_gen) {
+        check_gen(ctx, span, ty, *ty_gen, &mut var_info)?;
+    }
+
+    let res = var_info.fold(res_ty_gen, ctx);
     if let Some(r) = ty_outlives(res, state, ctx) {
         let dty = prepare_display(res, ctx);
         let dstate = display_state(state, ctx);
@@ -335,38 +359,6 @@ pub(crate) fn check_call<'tcx>(
         return Err(Error::new(call_span, msg));
     }
     Ok(res)
-}
-
-fn check_call_region_constraint<'tcx>(
-    ctx: CtxRef<'_, 'tcx>,
-    vid: Option<RegionVid>,
-    expected_r: Region<'tcx>,
-    actual_r: Region<'tcx>,
-    origin: &SubregionOrigin<'tcx>,
-) -> Result<(), Error> {
-    if sub_stateset(actual_r, expected_r) {
-        return Ok(());
-    }
-    let tcx = ctx.tcx;
-    let span = origin.span();
-    match origin_types(origin) {
-        None => span_bug!(span, "bug"),
-        Some(x) => {
-            let found = prepare_display(x.found, ctx);
-            let replacer = |r: Region<'tcx>| match r.kind() {
-                RegionKind::ReVar(vid2) if Some(vid2) == vid => {
-                    make_region_for_display(expected_r.into(), ctx)
-                }
-                RegionKind::ReStatic => tcx.lifetimes.re_static,
-                _ => tcx.lifetimes.re_erased,
-            };
-            let reg = prepare_display(actual_r, ctx);
-            let dts = prepare_display(expected_r, ctx);
-            let expected = pretty_replace(ctx.interned, replacer, x.expected);
-            let msg = format!("the expression's lifetime `{reg}` must match the current time slice `{dts}` (found `{found}`, expected `{expected}`)");
-            Err(Error::new(span, msg))
-        }
-    }
 }
 
 pub(crate) fn check_constructor<'tcx>(
@@ -378,17 +370,14 @@ pub(crate) fn check_constructor<'tcx>(
     let tcx = ctx.tcx;
     // Eagerly evaluate args to avoid running multiple inference contexts at the same time
     let fields = fields.collect::<CreusotResult<SmallVec<_>>>()?.into_iter();
-    let infcx = tcx.infer_ctxt().build();
-    let ocx = SimpleCtxt::new(&infcx, &*ctx);
 
-    let ty_gen = generalize(target_ty, &infcx);
+    let (ty_gen, mut var_info) = generalize(tcx, target_ty);
     let fields_gen = ty_gen.as_adt_variant(variant, ctx);
 
-    fields.zip(fields_gen).try_for_each(|((ty, span), ty_gen)| sup_tys(&ocx, span, ty_gen, ty))?;
-
-    let constraints = infcx.take_and_reset_region_constraints();
-    let var_info = RegionInfo::new(ctx, constraints.constraints.into_iter())?;
-    Ok(ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| var_info.get_region(r, tcx) }))
+    fields.zip(fields_gen).try_for_each(|((ty, span), Ty { ty: ty_gen })| {
+        check_gen(ctx, span, ty, ty_gen, &mut var_info)
+    })?;
+    Ok(var_info.fold(ty_gen.ty, ctx))
 }
 
 pub(crate) fn union<'tcx>(
@@ -419,8 +408,7 @@ pub(super) fn normalize<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
 ) -> T {
     let tcx = ctx.tcx;
     let infcx = tcx.infer_ctxt().build();
-    let ocx = SimpleCtxt::new(&infcx, ctx);
-    ocx.normalize(ty)
+    infcx.at(&ObligationCause::dummy(), ctx.param_env()).normalize(ty).value
 }
 
 pub(crate) fn check_sup<'tcx>(
@@ -429,20 +417,9 @@ pub(crate) fn check_sup<'tcx>(
     actual: Ty<'tcx>,
     span: Span,
 ) -> CreusotResult<()> {
-    let expected_d = prepare_display(expected, ctx);
-    let found_d = prepare_display(actual, ctx);
-    let expected = flatten_ty(ctx, expected);
-    match flat_ty::check_sup(ctx, expected, actual) {
-        Ok(()) => Ok(()),
-        Err(CheckSupError::ZombieMismatch) => Err(Error::new(span, format!("expected `{expected_d}` found `{found_d}`"))),
-        Err(CheckSupError::StateMismatch {expected, found}) => {
-            let exprect_r = make_region_for_display(expected, &ctx.base);
-            let found_r = make_region_for_display(found, &ctx.base);
-            let msg = format!("function was supposed to return data with type `{expected_d}` but it is returning data with type `{found_d}`\n\
-                            expected `{exprect_r}` found `{found_r}`");
-            Err(Error::new(span, msg))
-        }
-    }
+    let expected_flat = flatten_ty(ctx, expected);
+    flat_ty::check_sup(ctx, expected_flat, actual)
+        .map_err(|err| expand_error_sup(ctx, span, expected, actual, err))
 }
 
 pub(crate) fn try_resolve<'tcx>(
@@ -632,8 +609,7 @@ pub(crate) fn check_signature_agreement<'tcx>(
     // lifetimes bound from the impl block that aren't used in the Self type are excluded
     // we can erase these lifetimes since they will disappear after substitution
     let subst_ref = ctx.fix_regions(impl_id_subst, || ctx.tcx.lifetimes.re_erased);
-    let actual_res_ty =
-        check_call(&ctx, ts, impl_id, subst_ref, args, impl_span)?;
+    let actual_res_ty = check_call(&ctx, ts, impl_id, subst_ref, args, impl_span)?;
     debug!(
         "{impl_id:?}: expected {}, found {}",
         prepare_display(expect_res_ty, &ctx),

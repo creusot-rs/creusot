@@ -1,7 +1,12 @@
-use crate::prusti::{bitvec, bitvec::BitVec, ctx::{CtxRef}, region_set::StateSet, types::Ty, zombie::ZombieStatus};
+use crate::prusti::{
+    bitvec, bitvec::BitVec, ctx::CtxRef, region_set::StateSet, types::Ty, zombie::ZombieStatus,
+};
 use rustc_middle::{
     ty,
-    ty::{Region, TyCtxt, TypeSuperVisitable, TypeVisitable, TypeVisitor},
+    ty::{
+        Region, TyCtxt, TypeFoldable, TypeFolder, TypeSuperFoldable, TypeSuperVisitable,
+        TypeVisitable, TypeVisitor,
+    },
 };
 use smallvec::SmallVec;
 use std::{
@@ -10,9 +15,8 @@ use std::{
         ControlFlow,
         ControlFlow::{Break, Continue},
     },
+    slice,
 };
-use rustc_middle::ty::{TypeFoldable, TypeFolder, TypeSuperFoldable};
-use std::slice;
 
 /// Represents the flattened state sets and zombie statuses from a type
 /// Useful for comparing and combining multiple types that are the same modulo states and zombies
@@ -29,14 +33,14 @@ struct StateZombieVisitor<'a, 'tcx, Z, FS, FZ> {
     in_zombie: Z,
 }
 
-fn result_to_cf<T, E>(r: Result<T, E>) -> ControlFlow<E, T> {
+pub(super) fn result_to_cf<T, E>(r: Result<T, E>) -> ControlFlow<E, T> {
     match r {
         Ok(x) => Continue(x),
         Err(e) => Break(e),
     }
 }
 
-fn cf_to_result<T, E>(r: ControlFlow<E, T>) -> Result<T, E> {
+pub(super) fn cf_to_result<T, E>(r: ControlFlow<E, T>) -> Result<T, E> {
     match r {
         Continue(x) => Ok(x),
         Break(e) => Err(e),
@@ -99,7 +103,7 @@ impl ZombieStatus {
     }
 }
 
-fn into_ok<T>(r: Result<T, Infallible>) -> T {
+pub(super) fn into_ok<T>(r: Result<T, Infallible>) -> T {
     match r {
         Ok(v) => v,
         Err(e) => match e {},
@@ -173,6 +177,7 @@ pub(super) fn union<'tcx>(ctx: CtxRef<'_, 'tcx>, flat: &mut FlatTy, ty: Ty<'tcx>
     ))
 }
 
+#[derive(Debug)]
 pub(super) enum CheckSupError {
     ZombieMismatch,
     StateMismatch { expected: StateSet, found: StateSet },
@@ -206,7 +211,7 @@ pub(super) fn check_sup<'a, 'tcx>(
 struct FlatTyBuilder<'a, 'tcx> {
     ctx: CtxRef<'a, 'tcx>,
     states: slice::Iter<'a, StateSet>,
-    zombies: bitvec::Iter<'a>
+    zombies: bitvec::Iter<'a>,
 }
 
 impl<'a, 'tcx> TypeFolder<TyCtxt<'tcx>> for FlatTyBuilder<'a, 'tcx> {
@@ -215,10 +220,10 @@ impl<'a, 'tcx> TypeFolder<TyCtxt<'tcx>> for FlatTyBuilder<'a, 'tcx> {
     }
 
     fn fold_ty(&mut self, ty: ty::Ty<'tcx>) -> ty::Ty<'tcx> {
-        let (_, ty) = Ty{ty}.unpack(self.ctx);
+        let (_, ty) = Ty { ty }.unpack(self.ctx);
         let status = ZombieStatus::from_bit(self.zombies.next().unwrap());
         let ty = ty.super_fold_with(self);
-        Ty{ty}.pack(status, self.ctx).ty
+        Ty { ty }.pack(status, self.ctx).ty
     }
 
     fn fold_region(&mut self, _: Region<'tcx>) -> Region<'tcx> {
@@ -226,7 +231,12 @@ impl<'a, 'tcx> TypeFolder<TyCtxt<'tcx>> for FlatTyBuilder<'a, 'tcx> {
     }
 }
 
-pub(super) fn flat_to_ty<'tcx>(ctx: CtxRef<'_, 'tcx>, flat_ty: &FlatTy, skeleton: Ty<'tcx>) -> Ty<'tcx> {
-    let mut b = FlatTyBuilder{ctx, states: flat_ty.states.iter(), zombies: flat_ty.zombies.iter()};
-    Ty{ty: skeleton.ty.fold_with(&mut b)}
+pub(super) fn flat_to_ty<'tcx>(
+    ctx: CtxRef<'_, 'tcx>,
+    flat_ty: &FlatTy,
+    skeleton: Ty<'tcx>,
+) -> Ty<'tcx> {
+    let mut b =
+        FlatTyBuilder { ctx, states: flat_ty.states.iter(), zombies: flat_ty.zombies.iter() };
+    Ty { ty: skeleton.ty.fold_with(&mut b) }
 }

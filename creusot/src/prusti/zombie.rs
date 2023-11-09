@@ -1,8 +1,13 @@
-use crate::prusti::util::{name_to_def_id, RegionReplacer};
-use rustc_middle::ty::{ParamEnv, Region, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable, TypeVisitable, TypeVisitor};
+use crate::prusti::{
+    ctx::InternedInfo,
+    util::{name_to_def_id, RegionReplacer},
+};
+use rustc_middle::ty::{
+    ParamEnv, Region, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable, TypeVisitable,
+    TypeVisitor,
+};
 use rustc_span::def_id::DefId;
 use std::ops::ControlFlow;
-use crate::prusti::ctx::InternedInfo;
 
 #[derive(Copy, Clone, Debug)]
 pub enum ZombieStatus {
@@ -11,21 +16,20 @@ pub enum ZombieStatus {
 }
 
 pub(super) fn fixing_replace<'tcx, F, T>(ctx: &InternedInfo<'tcx>, f: F, ty: T) -> T
-    where
-        F: FnMut(Region<'tcx>) -> Region<'tcx>,
-        T: TypeFoldable<TyCtxt<'tcx>>,
+where
+    F: FnMut(Region<'tcx>) -> Region<'tcx>,
+    T: TypeFoldable<TyCtxt<'tcx>>,
 {
     ty.fold_with(&mut RegionReplacer { tcx: ctx.tcx, f })
 }
 
 pub(super) fn pretty_replace<'tcx, F, T>(ctx: &InternedInfo<'tcx>, f: F, ty: T) -> T
-    where
-        F: FnMut(Region<'tcx>) -> Region<'tcx>,
-        T: TypeFoldable<TyCtxt<'tcx>>,
+where
+    F: FnMut(Region<'tcx>) -> Region<'tcx>,
+    T: TypeFoldable<TyCtxt<'tcx>>,
 {
     ty.fold_with(&mut RegionReplacer { tcx: ctx.tcx, f })
 }
-
 
 pub struct ZombieDefIds {
     internal: DefId,
@@ -36,11 +40,7 @@ impl ZombieDefIds {
         ZombieDefIds { internal: name_to_def_id(tcx, "prusti_zombie_internal") }
     }
 
-    pub(super) fn mk_zombie_raw<'tcx>(
-        &self,
-        ty: Ty<'tcx>,
-        tcx: TyCtxt<'tcx>,
-    ) -> Ty<'tcx> {
+    pub(super) fn mk_zombie_raw<'tcx>(&self, ty: Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Ty<'tcx> {
         let did = self.internal;
         tcx.mk_adt(tcx.adt_def(did), tcx.mk_substs(&[ty.into()]))
     }

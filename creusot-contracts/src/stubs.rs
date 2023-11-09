@@ -133,7 +133,6 @@ pub trait ReplaceLifetimesWithStatic {
     type WithStatic;
 }
 
-
 pub mod __prusti {
 
     #[rustc_diagnostic_item = "prusti_zombie_internal"]

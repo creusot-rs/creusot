@@ -8,14 +8,17 @@ use crate::prusti::{
     types::{display_state, prepare_display, Ty},
     util::name_to_def_id,
     variance::regions_of_fn,
-    zombie::ZombieDefIds,
+    zombie::{fixing_replace, ZombieDefIds},
 };
 use rustc_index::{Idx, IndexVec};
 use rustc_infer::infer::region_constraints::Constraint;
 use rustc_lint::Lint;
-use rustc_middle::{bug, ty, ty::{BoundRegionKind, ParamEnv, Region, TyCtxt, TypeFoldable, walk::TypeWalker}};
+use rustc_middle::{
+    bug, ty,
+    ty::{walk::TypeWalker, BoundRegionKind, ParamEnv, Region, TyCtxt, TypeFoldable},
+};
 use rustc_span::{
-    def_id::{CRATE_DEF_ID, DefId, LocalDefId},
+    def_id::{DefId, LocalDefId, CRATE_DEF_ID},
     Span, Symbol,
 };
 use std::{
@@ -23,7 +26,6 @@ use std::{
     iter,
     ops::Deref,
 };
-use crate::prusti::zombie::fixing_replace;
 
 const CURR_STR: &str = "'curr";
 const OLD_STR: &str = "'old";
@@ -328,13 +330,17 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
         self.state_to_reg(state)
     }
 
-    pub(super) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T, or: impl Fn() -> Region<'tcx>) -> T {
+    pub(super) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(
+        &self,
+        t: T,
+        or: impl Fn() -> Region<'tcx>,
+    ) -> T {
         let t = fixing_replace(self.interned, |r| self.fix_region(r, &or), t);
         normalize(&*self, t)
     }
 
     pub(crate) fn fix_ty(&self, ty: ty::Ty<'tcx>, or: impl Fn() -> Region<'tcx>) -> Ty<'tcx> {
-        Ty{ty: self.fix_regions(ty, or)}
+        Ty { ty: self.fix_regions(ty, or) }
     }
 
     pub(crate) fn fix_ty_with_absurd(&self, ty: ty::Ty<'tcx>) -> Ty<'tcx> {

@@ -1,5 +1,9 @@
-use super::{region_set::*};
-use crate::prusti::{ctx::*, typeck::normalize};
+use super::region_set::*;
+use crate::prusti::{
+    ctx::*,
+    typeck::normalize,
+    zombie::{pretty_replace, ZombieStatus},
+};
 use itertools::Either;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
@@ -10,11 +14,6 @@ use rustc_middle::{
 use rustc_span::Symbol;
 use rustc_target::abi::VariantIdx;
 use std::fmt::{Debug, Display, Formatter};
-use crate::prusti::zombie::{pretty_replace, ZombieStatus};
-
-pub(super) fn sub_stateset<'tcx>(ts1: Region<'tcx>, ts2: Region<'tcx>) -> bool {
-    StateSet::from(ts1).subset(StateSet::from(ts2))
-}
 
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 /// Since we use a different subtyping for this analysis
@@ -34,7 +33,7 @@ impl<'tcx> Ty<'tcx> {
     pub(super) fn pack(self, status: ZombieStatus, ctx: CtxRef<'_, 'tcx>) -> Self {
         match status {
             ZombieStatus::NonZombie => self,
-            ZombieStatus::Zombie => Ty{ty: ctx.zombie_info.mk_zombie_raw(self.ty, ctx.tcx)}
+            ZombieStatus::Zombie => Ty { ty: ctx.zombie_info.mk_zombie_raw(self.ty, ctx.tcx) },
         }
     }
 
@@ -47,7 +46,7 @@ impl<'tcx> Ty<'tcx> {
 
     pub(super) fn mk_zombie(self, ctx: CtxRef<'_, 'tcx>) -> (Self, bool) {
         let (ty, z) = ctx.zombie_info.mk_zombie(self.ty, ctx.tcx, ctx.param_env());
-        (Ty{ty}, z)
+        (Ty { ty }, z)
     }
 
     pub fn contains_zombie(self, ctx: CtxRef<'_, 'tcx>) -> bool {
@@ -62,8 +61,7 @@ impl<'tcx> Ty<'tcx> {
         match self.as_ref(ctx) {
             None => Either::Left(self.as_adt_variant_h1(variant, ctx)),
             Some((lft, ty, _, Mutability::Not)) => Either::Right(
-                ty.as_adt_variant_h1(variant, ctx)
-                    .map(move |ty| Ty::make_ref(lft, ty, ctx)),
+                ty.as_adt_variant_h1(variant, ctx).map(move |ty| Ty::make_ref(lft, ty, ctx)),
             ),
             _ => unreachable!(),
         }
@@ -75,10 +73,12 @@ impl<'tcx> Ty<'tcx> {
         ctx: CtxRef<'a, 'tcx>,
     ) -> impl Iterator<Item = Ty<'tcx>> + 'a {
         match self.unpack(ctx) {
-            (ZombieStatus::NonZombie, ty) => Either::Left(Ty{ty}.as_adt_variant_h2(variant, ctx)),
-            (ZombieStatus::Zombie, ty)  => {
-                Either::Right(Ty{ty}.as_adt_variant_h2(variant, ctx).map(|ty| ty.mk_zombie(ctx).0))
+            (ZombieStatus::NonZombie, ty) => {
+                Either::Left(Ty { ty }.as_adt_variant_h2(variant, ctx))
             }
+            (ZombieStatus::Zombie, ty) => Either::Right(
+                Ty { ty }.as_adt_variant_h2(variant, ctx).map(|ty| ty.mk_zombie(ctx).0),
+            ),
         }
     }
 
@@ -105,19 +105,19 @@ impl<'tcx> Ty<'tcx> {
         tys.map(|ty| Ty { ty })
     }
 
-    pub(super) fn as_ref(self, ctx: CtxRef<'_, 'tcx>) -> Option<(Region<'tcx>, Self, ZombieStatus, Mutability)> {
+    pub(super) fn as_ref(
+        self,
+        ctx: CtxRef<'_, 'tcx>,
+    ) -> Option<(Region<'tcx>, Self, ZombieStatus, Mutability)> {
         let (status, ty) = self.unpack(ctx);
         match ty.kind() {
-            &TyKind::Ref(region, ty, m) => Some((region, Ty { ty }, status,  m)),
+            &TyKind::Ref(region, ty, m) => Some((region, Ty { ty }, status, m)),
             _ => None,
         }
     }
 
     pub(super) fn make_ref(ts: Region<'tcx>, ty: Ty<'tcx>, ctx: CtxRef<'_, 'tcx>) -> Self {
         Ty { ty: ctx.tcx.mk_imm_ref(ts, ty.ty) }.pack(ZombieStatus::NonZombie, ctx)
-    }
-    pub(crate) fn is_never(self) -> bool {
-        self.ty.is_never()
     }
 }
 

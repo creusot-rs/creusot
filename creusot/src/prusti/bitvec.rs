@@ -1,6 +1,8 @@
-use std::fmt::{Debug, Formatter};
-use std::{iter, slice};
 use smallvec::SmallVec;
+use std::{
+    fmt::{Debug, Formatter},
+    iter, slice,
+};
 
 type BitVecElt = u32;
 const BITS: u8 = BitVecElt::BITS as u8;
@@ -13,7 +15,7 @@ pub struct BitVec {
 
 impl BitVec {
     pub fn new() -> Self {
-        BitVec{data: SmallVec::new(), extra_len: BITS}
+        BitVec { data: SmallVec::new(), extra_len: BITS }
     }
 
     pub fn push(&mut self, b: bool) {
@@ -49,16 +51,19 @@ impl BitVec {
 
 pub struct Biterator {
     bits: BitVecElt,
-    elts: u8
+    elts: u8,
 }
 
 impl Biterator {
     fn new_full(bits: BitVecElt) -> Biterator {
-        Biterator{bits, elts: BITS}
+        Biterator { bits, elts: BITS }
     }
 }
 
-pub type Iter<'a> = iter::Chain<iter::FlatMap<iter::Copied<slice::Iter<'a, BitVecElt>>, Biterator, fn(BitVecElt) -> Biterator>, Biterator>; // TODO use TAIT
+pub type Iter<'a> = iter::Chain<
+    iter::FlatMap<iter::Copied<slice::Iter<'a, BitVecElt>>, Biterator, fn(BitVecElt) -> Biterator>,
+    Biterator,
+>; // TODO use TAIT
 
 impl<'a> IntoIterator for &'a BitVec {
     type Item = bool;
@@ -66,8 +71,16 @@ impl<'a> IntoIterator for &'a BitVec {
 
     fn into_iter(self) -> Self::IntoIter {
         match self.data.split_last() {
-            None => (&[] as &[BitVecElt]).iter().copied().flat_map(Biterator::new_full as _).chain(Biterator{bits: 0, elts: 0}),
-            Some((&bits, rest)) => rest.iter().copied().flat_map(Biterator::new_full as _).chain(Biterator{bits, elts: self.extra_len})
+            None => (&[] as &[BitVecElt])
+                .iter()
+                .copied()
+                .flat_map(Biterator::new_full as _)
+                .chain(Biterator { bits: 0, elts: 0 }),
+            Some((&bits, rest)) => rest
+                .iter()
+                .copied()
+                .flat_map(Biterator::new_full as _)
+                .chain(Biterator { bits, elts: self.extra_len }),
         }
     }
 }

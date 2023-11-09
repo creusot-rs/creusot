@@ -12,10 +12,12 @@ use crate::{
 };
 use itertools::{Either, Itertools};
 use rustc_ast::MetaItemLit as Lit;
-use rustc_middle::ty::{FnSig, SubstsRef};
+use rustc_middle::{
+    bug,
+    ty::{FnSig, SubstsRef},
+};
 use rustc_span::{def_id::DefId, symbol::Ident, Span, Symbol, DUMMY_SP};
 use std::iter;
-use rustc_middle::bug;
 
 /// Returns region corresponding to `l`
 /// Also checks that 'curr is not blocked
