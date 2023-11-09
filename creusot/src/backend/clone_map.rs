@@ -478,8 +478,16 @@ impl<'tcx> CloneMap<'tcx> {
                         ctx,
                         CloneNode::new(ctx.tcx, (p.def_id, p.substs)).subst(ctx.tcx, key),
                     );
-                    self.insert(node).public |= key_public;
-                    self.add_graph_edge(key, node);
+
+                    let is_type = self
+                        .self_did()
+                        .map(|did| util::item_type(self.tcx, did) == ItemType::Type)
+                        .unwrap_or(false);
+
+                    if !is_type {
+                        self.insert(node).public |= key_public;
+                        self.add_graph_edge(key, node);
+                    }
                 }
             }
 
