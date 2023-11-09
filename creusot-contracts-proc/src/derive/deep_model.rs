@@ -2,7 +2,7 @@ use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, quote_spanned};
 use syn::{
     parse_macro_input, parse_quote, spanned::Spanned, Data, DeriveInput, Error, Expr, ExprLit,
-    Fields, GenericParam, Generics, Index, Lit, Meta, MetaNameValue, Path,
+    Fields, GenericParam, Generics, Index, Lit, Meta, MetaNameValue, Path, TypeGenerics, WhereClause, ImplGenerics,
 };
 
 pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -28,7 +28,7 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
                 &format!("{}DeepModel", name.to_string()),
                 proc_macro::Span::def_site().into(),
             );
-            let deep_model_ty = deep_model_ty(&ident, &generics, &input.data);
+            let deep_model_ty = deep_model_ty(&ident, &impl_generics, &input.data);
 
             (ident.into(), Some(quote! { #vis #deep_model_ty}))
         };
@@ -36,9 +36,9 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     let eq = deep_model(&name, &deep_model_ty_name, &input.data);
 
     let open = match vis {
-        syn::Visibility::Public(_) => quote! {#[open]},
-        syn::Visibility::Restricted(res) => quote! { #[open(#res)] },
-        syn::Visibility::Inherited => quote! { #[open(self)] },
+        syn::Visibility::Public(_) => quote! {#[creusot_contracts::open]},
+        syn::Visibility::Restricted(res) => quote! { #[creusot_contracts::open(#res)] },
+        syn::Visibility::Inherited => quote! { #[creusot_contracts::open(self)] },
     };
 
     let expanded = quote! {
@@ -47,7 +47,7 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
         impl #impl_generics ::creusot_contracts::DeepModel for #name #ty_generics #where_clause {
             type DeepModelTy = #deep_model_ty_name #ty_generics;
 
-            #[ghost]
+            #[creusot_contracts::ghost]
             #open
             fn deep_model(self) -> Self::DeepModelTy {
                 #eq
@@ -113,7 +113,7 @@ fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
     }
 }
 
-fn deep_model_ty(base_ident: &Ident, generics: &Generics, data: &Data) -> TokenStream {
+fn deep_model_ty(base_ident: &Ident, generics : &ImplGenerics, data: &Data) -> TokenStream {
     match data {
         Data::Struct(ref data) => {
             let data = deep_model_ty_fields(&data.fields);

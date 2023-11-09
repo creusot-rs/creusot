@@ -1,7 +1,13 @@
 use std::marker::PhantomData;
 
+<<<<<<< Updated upstream
 use crate::{ghost, open, trusted, DeepModel, OrdLogic};
 use num_rational::BigRational;
+=======
+use crate::{ghost, open, trusted, DeepModel, ShallowModel, Int, OrdLogic};
+use num_rational::{BigRational};
+pub use num::BigInt;
+>>>>>>> Stashed changes
 use std::cmp::Ordering;
 
 #[cfg_attr(creusot, creusot::builtins = "prelude.Real.real")]
