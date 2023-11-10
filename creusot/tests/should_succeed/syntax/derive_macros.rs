@@ -58,3 +58,15 @@ pub enum Sum2<A, B> {
     X(A),
     Y { a: bool, x: B },
 }
+
+#[derive(DeepModel)]
+pub struct List<T> {
+    pub elem: T,
+    pub tail: Option<Box<List<T>>>,
+}
+
+#[derive(DeepModel)]
+pub enum Expr<V> {
+    Var(V),
+    Add(Box<Expr<V>>, Box<Expr<V>>),
+}
