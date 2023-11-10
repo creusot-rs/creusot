@@ -19,7 +19,7 @@ impl<'tcx> Place<'tcx> {
         let mut ty = PlaceTy::from_ty(locals[&self.local].ty);
 
         for p in &self.projection {
-            ty = projection_ty(ty, tcx, *p);
+            ty = projection_ty(ty, tcx, p);
         }
 
         ty.ty

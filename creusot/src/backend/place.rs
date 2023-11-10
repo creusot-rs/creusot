@@ -1,16 +1,21 @@
 use crate::{
     ctx::CloneMap,
-    translation::fmir::{self, LocalDecls},
+    translation::{
+        fmir::{self, LocalDecls},
+        projection_vec::map_projections,
+    },
 };
 use rustc_middle::{
     mir::{self, tcx::PlaceTy, ProjectionElem},
     ty::{self, Ty, TyCtxt, TyKind},
 };
 use rustc_span::Symbol;
+use std::fmt::Debug;
 use why3::{
     exp::{
         Exp::{self, *},
         Pattern::*,
+        Purity,
     },
     mlcfg::{
         Statement::*,
@@ -71,7 +76,7 @@ fn create_assign_rec<'tcx>(
         ctx,
         names,
         locals,
-        projection_ty(place_ty, ctx.tcx, proj[proj_ix]),
+        projection_ty(place_ty, ctx.tcx, &proj[proj_ix]),
         base,
         proj,
         proj_ix + 1,
@@ -177,9 +182,6 @@ fn create_assign_rec<'tcx>(
     }
 }
 
-// [(P as Some)]   ---> [_1]
-// [(P as Some).0] ---> let Some(a) = [_1] in a
-// [(* P)] ---> * [P]
 pub(crate) fn translate_rplace<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
@@ -187,15 +189,28 @@ pub(crate) fn translate_rplace<'tcx>(
     loc: Symbol,
     proj: &[mir::ProjectionElem<Symbol, Ty<'tcx>>],
 ) -> Exp {
-    let mut inner = Exp::impure_var(Ident::build(loc.as_str()));
-    if proj.is_empty() {
-        return inner;
-    }
+    let proj =
+        map_projections(proj.iter().copied(), |loc| Exp::impure_var(Ident::build(loc.as_str())));
+    let inner = Exp::impure_var(Ident::build(loc.as_str()));
+    translate_rplace_gen(ctx, names, inner, locals[&loc].ty, proj, Purity::Program)
+}
 
+// [(P as Some)]   ---> [_1]
+// [(P as Some).0] ---> let Some(a) = [_1] in a
+// [(* P)] ---> * [P]
+pub(crate) fn translate_rplace_gen<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    mut inner: Exp,
+    ty: Ty<'tcx>,
+    proj: impl Iterator<Item = ProjectionElem<Exp, Ty<'tcx>>>,
+    purity: Purity,
+) -> Exp {
     use rustc_middle::mir::ProjectionElem::*;
-    let mut place_ty = PlaceTy::from_ty(locals[&loc].ty);
+    let mut place_ty = PlaceTy::from_ty(ty);
 
     for elem in proj {
+        let next_place_ty = projection_ty(place_ty, ctx.tcx, &elem);
         match elem {
             Deref => {
                 use rustc_hir::Mutability::*;
@@ -209,10 +224,10 @@ pub(crate) fn translate_rplace<'tcx>(
                     let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
                     let _variant = &def.variants()[variant_id];
 
-                    ctx.translate_accessor(def.variants()[variant_id].fields[*ix].did);
+                    ctx.translate_accessor(def.variants()[variant_id].fields[ix].did);
 
-                    let acc = names.accessor(def.did(), subst, variant_id.as_usize(), *ix);
-                    inner = Call(Box::new(Exp::impure_qvar(acc)), vec![inner]);
+                    let acc = names.accessor(def.did(), subst, variant_id.as_usize(), ix);
+                    inner = Call(Box::new(QVar(acc, purity)), vec![inner]);
                 }
                 TyKind::Tuple(fields) => {
                     let mut pat = vec![Wildcard; fields.len()];
@@ -221,12 +236,12 @@ pub(crate) fn translate_rplace<'tcx>(
                     inner = Let {
                         pattern: TupleP(pat),
                         arg: Box::new(inner),
-                        body: Box::new(Exp::impure_var("a".into())),
+                        body: Box::new(Var("a".into(), purity)),
                     }
                 }
                 TyKind::Closure(id, subst) => {
                     inner = Call(
-                        Box::new(Exp::impure_qvar(names.accessor(*id, subst, 0, *ix))),
+                        Box::new(QVar(names.accessor(*id, subst, 0, ix), purity)),
                         vec![inner],
                     );
                 }
@@ -234,27 +249,25 @@ pub(crate) fn translate_rplace<'tcx>(
             },
             Downcast(_, _) => {}
             Index(ix) => {
-                // TODO: Use [_] syntax
-                let ix_exp = Exp::impure_var(Ident::build(ix.as_str()));
                 inner = Call(
-                    Box::new(Exp::impure_qvar(QName::from_string("Slice.get").unwrap())),
-                    vec![inner, ix_exp],
+                    Box::new(QVar(QName::from_string("Slice.get").unwrap(), purity)),
+                    vec![inner, ix],
                 )
             }
             ConstantIndex { .. } => unimplemented!("constant index projection"),
             Subslice { .. } => unimplemented!("subslice projection"),
             OpaqueCast(_) => unimplemented!("opaque cast projection"),
         }
-        place_ty = projection_ty(place_ty, ctx.tcx, *elem);
+        place_ty = next_place_ty;
     }
 
     inner
 }
 
-pub fn projection_ty<'tcx>(
+pub fn projection_ty<'tcx, V: Debug>(
     pty: PlaceTy<'tcx>,
     tcx: TyCtxt<'tcx>,
-    elem: ProjectionElem<Symbol, Ty<'tcx>>,
+    elem: &ProjectionElem<V, Ty<'tcx>>,
 ) -> PlaceTy<'tcx> {
-    pty.projection_ty_core(tcx, ty::ParamEnv::empty(), &elem, |_, _, ty| ty, |_, ty| ty)
+    pty.projection_ty_core(tcx, ty::ParamEnv::empty(), elem, |_, _, ty| ty, |_, ty| ty)
 }

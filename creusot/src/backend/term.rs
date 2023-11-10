@@ -248,25 +248,39 @@ impl<'tcx> Lower<'_, 'tcx> {
                 Exp::Abs(binders, Box::new(body))
             }
             TermKind::Absurd => Exp::Absurd,
-            TermKind::Reborrow { cur, fin } => Exp::Record {
-                fields: vec![
-                    ("current".into(), self.lower_term(*cur)),
-                    ("final".into(), self.lower_term(*fin)),
-                    (
-                        "addr".into(),
-                        Exp::Call(
-                            Box::new(Exp::QVar(
-                                QName {
-                                    module: vec!["Borrow".into()],
-                                    name: "make_new_addr".into(),
-                                },
-                                why3::exp::Purity::Logic,
-                            )),
-                            vec![Exp::Tuple(Vec::new())],
+            TermKind::Reborrow { box term, projection } => {
+                let ty = term.ty.builtin_deref(false).expect("expected reference type").ty;
+                let inner = self.lower_term(term);
+                self.names.import_prelude_module(PreludeModule::Borrow);
+                let curr = Exp::Current(Box::new(inner.clone()));
+                let fin = Exp::Final(Box::new(inner));
+                let proj: Vec<_> =
+                    map_projections(projection.into_iter(), |term| self.lower_term(term)).collect();
+                let pure = Purity::Logic;
+                let proj1 = proj.iter().cloned();
+                let curr = translate_rplace_gen(self.ctx, self.names, curr, ty, proj1, pure);
+                let fin =
+                    translate_rplace_gen(self.ctx, self.names, fin, ty, proj.into_iter(), pure);
+                Exp::Record {
+                    fields: vec![
+                        ("current".into(), curr),
+                        ("final".into(), fin),
+                        (
+                            "addr".into(),
+                            Exp::Call(
+                                Box::new(Exp::QVar(
+                                    QName {
+                                        module: vec!["Borrow".into()],
+                                        name: "make_new_addr".into(),
+                                    },
+                                    why3::exp::Purity::Logic,
+                                )),
+                                vec![Exp::Tuple(Vec::new())],
+                            ),
                         ),
-                    ),
-                ],
-            },
+                    ],
+                }
+            }
             TermKind::Assert { cond } => {
                 let cond = self.lower_term(*cond);
                 if self.pure == Purity::Program && !cond.is_pure() {
@@ -348,6 +362,7 @@ impl<'tcx> Lower<'_, 'tcx> {
     }
 }
 
+use crate::{backend::place::translate_rplace_gen, translation::projection_vec::map_projections};
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
 
