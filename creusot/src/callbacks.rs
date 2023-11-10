@@ -6,7 +6,7 @@ use rustc_middle::ty::TyCtxt;
 
 use std::{cell::RefCell, collections::HashMap, thread_local};
 
-use crate::{cleanup_spec_closures::*, options::Options};
+use crate::{cleanup_spec_closures::*, options::Options, remove_mir_reborrows::*};
 
 pub struct ToWhy {
     opts: Options,
@@ -32,6 +32,7 @@ impl Callbacks for ToWhy {
                 let mir = (rustc_interface::DEFAULT_QUERY_PROVIDERS.mir_built)(tcx, def_id);
                 let mut mir = mir.steal();
                 cleanup_spec_closures(tcx, def_id.to_def_id(), &mut mir);
+                remove_mir_reborrows(tcx, &mut mir);
                 tcx.alloc_steal_mir(mir)
             };
 

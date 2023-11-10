@@ -197,6 +197,22 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel
     
   axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
 end
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
+    
+  let function some_0 (self : t_option 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_None -> any 't
+      | C_Some a -> a
+      end
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+    
+end
 module CreusotContracts_Resolve_Impl1_Resolve_Stub
   type t
   use prelude.Borrow
@@ -217,22 +233,6 @@ module CreusotContracts_Resolve_Impl1_Resolve
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
     ensures { result = resolve self }
-    
-end
-module Core_Option_Option_Type
-  type t_option 't =
-    | C_None
-    | C_Some 't
-    
-  let function some_0 (self : t_option 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_None -> any 't
-      | C_Some a -> a
-      end
-end
-module Alloc_Alloc_Global_Type
-  type t_global  =
-    | C_Global
     
 end
 module CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub
@@ -1162,6 +1162,8 @@ module C100doors_F
     predicate Inv0.inv = Inv5.inv,
     axiom .
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve3 with
+    type t = Core_Ops_Range_Range_Type.t_range usize
   clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
     type t = borrowed (Core_Ops_Range_Range_Type.t_range usize)
   clone TyInv_Trivial as TyInv_Trivial4 with
@@ -1186,7 +1188,7 @@ module C100doors_F
     type t = bool,
     predicate Inv0.inv = Inv1.inv,
     axiom .
-  clone CreusotContracts_Resolve_Impl2_Resolve as Resolve3 with
+  clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = bool
   clone CreusotContracts_Std1_Slice_Impl5_ResolveElswhere as ResolveElswhere0 with
     type t = bool
@@ -1212,11 +1214,9 @@ module C100doors_F
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   use prelude.Int
   clone CreusotContracts_Std1_Num_Impl16_DeepModel as DeepModel0
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = Core_Ops_Range_Range_Type.t_range usize
   clone CreusotContracts_Std1_Iter_Range_Impl0_Completed as Completed0 with
     type idx = usize,
-    predicate Resolve0.resolve = Resolve0.resolve,
+    predicate Resolve0.resolve = Resolve3.resolve,
     function DeepModel0.deep_model = DeepModel0.deep_model
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = Core_Ops_Range_Range_Type.t_range usize
@@ -1249,15 +1249,15 @@ module C100doors_F
     predicate Inv0.inv = Inv2.inv,
     val Max0.mAX' = Max0.mAX',
     predicate Inv1.inv = Inv3.inv
-  clone CreusotContracts_Std1_Vec_Impl10_Resolve as Resolve2 with
+  clone CreusotContracts_Std1_Vec_Impl10_Resolve as Resolve1 with
     type t = bool,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     function IndexLogic0.index_logic = IndexLogic0.index_logic,
-    predicate Resolve0.resolve = Resolve3.resolve,
+    predicate Resolve0.resolve = Resolve2.resolve,
     predicate Inv0.inv = Inv2.inv,
     val Max0.mAX' = Max0.mAX',
     predicate Inv1.inv = Inv3.inv
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = bool
   clone Alloc_Vec_Impl13_IndexMut_Interface as IndexMut0 with
     type t = bool,
@@ -1314,7 +1314,6 @@ module C100doors_F
   var produced : Ghost.ghost_ty (Seq.seq usize);
   var _11 : ();
   var _12 : Core_Option_Option_Type.t_option usize;
-  var _13 : borrowed (Core_Ops_Range_Range_Type.t_range usize);
   var _14 : borrowed (Core_Ops_Range_Range_Type.t_range usize);
   var __creusot_proc_iter_elem : usize;
   var _17 : Ghost.ghost_ty (Seq.seq usize);
@@ -1357,21 +1356,18 @@ module C100doors_F
   BB7 {
     _14 <- Borrow.borrow_mut iter;
     iter <-  ^ _14;
-    _13 <- Borrow.borrow_mut ( * _14);
-    _14 <- { _14 with current = ( ^ _13) };
-    _12 <- ([#"../100doors.rs" 20 4 20 41] Next0.next _13);
-    _13 <- any borrowed (Core_Ops_Range_Range_Type.t_range usize);
+    _12 <- ([#"../100doors.rs" 20 4 20 41] Next0.next _14);
+    _14 <- any borrowed (Core_Ops_Range_Range_Type.t_range usize);
     goto BB8
   }
   BB8 {
-    assume { Resolve0.resolve _14 };
     switch (_12)
       | Core_Option_Option_Type.C_None -> goto BB9
       | Core_Option_Option_Type.C_Some _ -> goto BB10
       end
   }
   BB9 {
-    assume { Resolve2.resolve door_open };
+    assume { Resolve1.resolve door_open };
     _0 <- ();
     goto BB21
   }
@@ -1379,7 +1375,7 @@ module C100doors_F
     goto BB12
   }
   BB11 {
-    assume { Resolve2.resolve door_open };
+    assume { Resolve1.resolve door_open };
     absurd
   }
   BB12 {
@@ -1421,7 +1417,7 @@ module C100doors_F
   }
   BB19 {
     _30 <- { _30 with current = (not _26) };
-    assume { Resolve1.resolve _30 };
+    assume { Resolve0.resolve _30 };
     door <- ([#"../100doors.rs" 27 12 27 24] door + pass);
     _11 <- ();
     goto BB15

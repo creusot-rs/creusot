@@ -48,5 +48,6 @@ use translation::*;
 mod error;
 pub(crate) mod lints;
 pub(crate) mod metadata;
+mod remove_mir_reborrows;
 mod translated_item;
 mod validate;

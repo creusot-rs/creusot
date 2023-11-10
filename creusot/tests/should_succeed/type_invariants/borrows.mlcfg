@@ -159,10 +159,8 @@ module Borrows_Impl1_InnerMut
     predicate Inv0.inv = Inv0.inv,
     predicate Inv1.inv = Inv1.inv,
     axiom .
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
-    type t = Borrows_NonZero_Type.t_nonzero
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = int32
+    type t = Borrows_NonZero_Type.t_nonzero
   let rec cfg inner_mut [#"../borrows.rs" 23 4 23 43] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (Borrows_NonZero_Type.t_nonzero)) : borrowed int32
     requires {[#"../borrows.rs" 23 26 23 30] Inv0.inv self}
     ensures { [#"../borrows.rs" 21 14 21 38] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * self)) = Int32.to_int ( * result) }
@@ -171,7 +169,6 @@ module Borrows_Impl1_InnerMut
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : borrowed int32;
   var self : borrowed (Borrows_NonZero_Type.t_nonzero) = self;
-  var _2 : borrowed int32;
   var _5 : borrowed int32;
   {
     goto BB0
@@ -179,14 +176,10 @@ module Borrows_Impl1_InnerMut
   BB0 {
     _5 <- Borrow.borrow_mut (Borrows_NonZero_Type.nonzero_0 ( * self));
     self <- { self with current = (let Borrows_NonZero_Type.C_NonZero a =  * self in Borrows_NonZero_Type.C_NonZero ( ^ _5)) };
-    _2 <- Borrow.borrow_mut ( * _5);
-    _5 <- { _5 with current = ( ^ _2) };
-    _0 <- Borrow.borrow_mut ( * _2);
-    _2 <- { _2 with current = ( ^ _0) };
-    assume { Resolve0.resolve _5 };
-    assume { Resolve0.resolve _2 };
+    _0 <- _5;
+    _5 <- any borrowed int32;
     assert { [@expl:type invariant] Inv0.inv self };
-    assume { Resolve1.resolve self };
+    assume { Resolve0.resolve self };
     return _0
   }
   
@@ -368,10 +361,8 @@ module Borrows_Simple
     type ShallowModelTy0.shallowModelTy = int,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone Core_Num_Impl2_Max as Max0
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
-    type t = Borrows_NonZero_Type.t_nonzero
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = int32
+    type t = Borrows_NonZero_Type.t_nonzero
   clone Borrows_Inc_Interface as Inc0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Max0.mAX' = Max0.mAX'
@@ -384,7 +375,6 @@ module Borrows_Simple
   var _0 : ();
   var x : borrowed (Borrows_NonZero_Type.t_nonzero) = x;
   var _4 : ();
-  var _5 : borrowed int32;
   var _6 : borrowed int32;
   {
     goto BB0
@@ -392,16 +382,13 @@ module Borrows_Simple
   BB0 {
     _6 <- Borrow.borrow_mut (Borrows_NonZero_Type.nonzero_0 ( * x));
     x <- { x with current = (let Borrows_NonZero_Type.C_NonZero a =  * x in Borrows_NonZero_Type.C_NonZero ( ^ _6)) };
-    _5 <- Borrow.borrow_mut ( * _6);
-    _6 <- { _6 with current = ( ^ _5) };
-    _4 <- ([#"../borrows.rs" 32 4 32 17] Inc0.inc _5);
-    _5 <- any borrowed int32;
+    _4 <- ([#"../borrows.rs" 32 4 32 17] Inc0.inc _6);
+    _6 <- any borrowed int32;
     goto BB1
   }
   BB1 {
-    assume { Resolve0.resolve _6 };
     assert { [@expl:type invariant] Inv0.inv x };
-    assume { Resolve1.resolve x };
+    assume { Resolve0.resolve x };
     _0 <- ();
     return _0
   }
@@ -425,71 +412,57 @@ module Borrows_Hard
   use prelude.Borrow
   use prelude.Int
   use prelude.Int32
-  clone CreusotContracts_Std1_Num_Impl24_ShallowModel as ShallowModel1
   use Borrows_NonZero_Type as Borrows_NonZero_Type
   clone Borrows_Impl0_Invariant as Invariant0
-  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
-    type t = Borrows_NonZero_Type.t_nonzero
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Borrows_NonZero_Type.t_nonzero
+  clone Borrows_NonZero_Type_Inv as Borrows_NonZero_Type_Inv0 with
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  clone CreusotContracts_Std1_Num_Impl24_ShallowModel as ShallowModel1
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = borrowed (Borrows_NonZero_Type.t_nonzero)
   clone TyInv_Borrow as TyInv_Borrow0 with
     type t = Borrows_NonZero_Type.t_nonzero,
-    predicate Inv0.inv = Inv1.inv,
-    predicate Inv1.inv = Inv0.inv,
+    predicate Inv0.inv = Inv0.inv,
+    predicate Inv1.inv = Inv1.inv,
     axiom .
   use prelude.Int
   clone CreusotContracts_Model_Impl7_ShallowModel as ShallowModel0 with
     type t = int32,
     type ShallowModelTy0.shallowModelTy = int,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
-  clone Borrows_NonZero_Type_Inv as Borrows_NonZero_Type_Inv0 with
-    predicate Inv0.inv = Inv0.inv,
-    predicate Invariant0.invariant' = Invariant0.invariant',
-    axiom .
   clone Core_Num_Impl2_Max as Max0
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
-    type t = Borrows_NonZero_Type.t_nonzero
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = int32
   clone Borrows_Inc_Interface as Inc0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Max0.mAX' = Max0.mAX'
   clone Borrows_Impl1_InnerMut_Interface as InnerMut0 with
-    predicate Inv0.inv = Inv1.inv
+    predicate Inv0.inv = Inv0.inv
   let rec cfg hard [#"../borrows.rs" 38 0 38 28] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed (Borrows_NonZero_Type.t_nonzero)) : ()
     requires {[#"../borrows.rs" 36 11 36 27] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) < Int32.to_int Max0.mAX'}
     requires {[#"../borrows.rs" 37 11 37 21] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) <> - 1}
-    requires {[#"../borrows.rs" 38 12 38 13] Inv1.inv x}
+    requires {[#"../borrows.rs" 38 12 38 13] Inv0.inv x}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var x : borrowed (Borrows_NonZero_Type.t_nonzero) = x;
   var _4 : ();
-  var _5 : borrowed int32;
   var _6 : borrowed int32;
-  var _7 : borrowed (Borrows_NonZero_Type.t_nonzero);
   {
     goto BB0
   }
   BB0 {
-    _7 <- Borrow.borrow_mut ( * x);
-    x <- { x with current = ( ^ _7) };
-    assume { Inv0.inv ( ^ _7) };
-    _6 <- ([#"../borrows.rs" 39 8 39 21] InnerMut0.inner_mut _7);
-    _7 <- any borrowed (Borrows_NonZero_Type.t_nonzero);
+    _6 <- ([#"../borrows.rs" 39 8 39 21] InnerMut0.inner_mut x);
+    x <- any borrowed (Borrows_NonZero_Type.t_nonzero);
     goto BB1
   }
   BB1 {
-    _5 <- Borrow.borrow_mut ( * _6);
-    _6 <- { _6 with current = ( ^ _5) };
-    _4 <- ([#"../borrows.rs" 39 4 39 22] Inc0.inc _5);
-    _5 <- any borrowed int32;
+    _4 <- ([#"../borrows.rs" 39 4 39 22] Inc0.inc _6);
+    _6 <- any borrowed int32;
     goto BB2
   }
   BB2 {
-    assume { Resolve0.resolve _6 };
-    assert { [@expl:type invariant] Inv1.inv x };
-    assume { Resolve1.resolve x };
     _0 <- ();
     return _0
   }
@@ -603,9 +576,9 @@ module Borrows_Tuple
     predicate Invariant0.invariant' = Invariant0.invariant',
     axiom .
   clone CreusotContracts_Std1_Num_Impl24_ShallowModel as ShallowModel1
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve3 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
     type t = Borrows_NonZero_Type.t_nonzero
-  clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
+  clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
     type t = Borrows_NonZero_Type.t_nonzero
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))
@@ -622,13 +595,11 @@ module Borrows_Tuple
     type ShallowModelTy0.shallowModelTy = int,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone Core_Num_Impl2_Max as Max0
-  clone CreusotContracts_Resolve_Impl0_Resolve as Resolve1 with
+  clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = Borrows_NonZero_Type.t_nonzero,
     type t2 = borrowed (Borrows_NonZero_Type.t_nonzero),
-    predicate Resolve0.resolve = Resolve2.resolve,
-    predicate Resolve1.resolve = Resolve3.resolve
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = int32
+    predicate Resolve0.resolve = Resolve1.resolve,
+    predicate Resolve1.resolve = Resolve2.resolve
   clone Borrows_Inc_Interface as Inc0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Max0.mAX' = Max0.mAX'
@@ -641,7 +612,6 @@ module Borrows_Tuple
   var _0 : ();
   var x : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero)) = x;
   var _4 : ();
-  var _5 : borrowed int32;
   var _6 : borrowed int32;
   {
     goto BB0
@@ -650,16 +620,13 @@ module Borrows_Tuple
     x <- (let (a, b) = x in (let Borrows_NonZero_Type.C_NonZero a = let (a, _) = x in a in Borrows_NonZero_Type.C_NonZero ([#"../borrows.rs" 46 13 46 14] (0 : int32)), b));
     _6 <- Borrow.borrow_mut (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a)));
     x <- (let (a, b) = x in (a, { (let (_, a) = x in a) with current = (let Borrows_NonZero_Type.C_NonZero a =  * (let (_, a) = x in a) in Borrows_NonZero_Type.C_NonZero ( ^ _6)) }));
-    _5 <- Borrow.borrow_mut ( * _6);
-    _6 <- { _6 with current = ( ^ _5) };
-    _4 <- ([#"../borrows.rs" 47 4 47 20] Inc0.inc _5);
-    _5 <- any borrowed int32;
+    _4 <- ([#"../borrows.rs" 47 4 47 20] Inc0.inc _6);
+    _6 <- any borrowed int32;
     goto BB1
   }
   BB1 {
-    assume { Resolve0.resolve _6 };
     assert { [@expl:type invariant] Inv0.inv x };
-    assume { Resolve1.resolve x };
+    assume { Resolve0.resolve x };
     _0 <- ();
     return _0
   }
@@ -699,9 +666,9 @@ module Borrows_PartialMove
     predicate Invariant0.invariant' = Invariant0.invariant',
     axiom .
   clone CreusotContracts_Std1_Num_Impl24_ShallowModel as ShallowModel1
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve3 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
     type t = Borrows_NonZero_Type.t_nonzero
-  clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
+  clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
     type t = Borrows_NonZero_Type.t_nonzero
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))
@@ -718,13 +685,11 @@ module Borrows_PartialMove
     type ShallowModelTy0.shallowModelTy = int,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone Core_Num_Impl2_Max as Max0
-  clone CreusotContracts_Resolve_Impl0_Resolve as Resolve1 with
+  clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = Borrows_NonZero_Type.t_nonzero,
     type t2 = borrowed (Borrows_NonZero_Type.t_nonzero),
-    predicate Resolve0.resolve = Resolve2.resolve,
-    predicate Resolve1.resolve = Resolve3.resolve
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = int32
+    predicate Resolve0.resolve = Resolve1.resolve,
+    predicate Resolve1.resolve = Resolve2.resolve
   clone Borrows_Inc_Interface as Inc0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Max0.mAX' = Max0.mAX'
@@ -738,7 +703,6 @@ module Borrows_PartialMove
   var x : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero)) = x;
   var a : Borrows_NonZero_Type.t_nonzero;
   var _5 : ();
-  var _6 : borrowed int32;
   var _7 : borrowed int32;
   {
     goto BB0
@@ -748,16 +712,13 @@ module Borrows_PartialMove
     x <- (let (a, b) = x in (any Borrows_NonZero_Type.t_nonzero, b));
     _7 <- Borrow.borrow_mut (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a)));
     x <- (let (a, b) = x in (a, { (let (_, a) = x in a) with current = (let Borrows_NonZero_Type.C_NonZero a =  * (let (_, a) = x in a) in Borrows_NonZero_Type.C_NonZero ( ^ _7)) }));
-    _6 <- Borrow.borrow_mut ( * _7);
-    _7 <- { _7 with current = ( ^ _6) };
-    _5 <- ([#"../borrows.rs" 55 4 55 20] Inc0.inc _6);
-    _6 <- any borrowed int32;
+    _5 <- ([#"../borrows.rs" 55 4 55 20] Inc0.inc _7);
+    _7 <- any borrowed int32;
     goto BB1
   }
   BB1 {
-    assume { Resolve0.resolve _7 };
     assert { [@expl:type invariant] Inv0.inv x };
-    assume { Resolve1.resolve x };
+    assume { Resolve0.resolve x };
     a <- (let Borrows_NonZero_Type.C_NonZero a = a in Borrows_NonZero_Type.C_NonZero ([#"../borrows.rs" 56 10 56 11] (0 : int32)));
     _0 <- ();
     return _0
@@ -803,7 +764,7 @@ module Borrows_Destruct
     type t = int32,
     type ShallowModelTy0.shallowModelTy = int,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
-  clone CreusotContracts_Resolve_Impl2_Resolve as Resolve3 with
+  clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = Borrows_NonZero_Type.t_nonzero
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))
@@ -815,18 +776,16 @@ module Borrows_Destruct
     predicate Inv2.inv = Inv1.inv,
     axiom .
   clone Core_Num_Impl2_Max as Max0
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
-    type t = Borrows_NonZero_Type.t_nonzero
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
-    type t = int32
+    type t = Borrows_NonZero_Type.t_nonzero
   clone Borrows_Inc_Interface as Inc0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Max0.mAX' = Max0.mAX'
   clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
     type t1 = Borrows_NonZero_Type.t_nonzero,
     type t2 = borrowed (Borrows_NonZero_Type.t_nonzero),
-    predicate Resolve0.resolve = Resolve3.resolve,
-    predicate Resolve1.resolve = Resolve2.resolve
+    predicate Resolve0.resolve = Resolve2.resolve,
+    predicate Resolve1.resolve = Resolve1.resolve
   let rec cfg destruct [#"../borrows.rs" 61 0 61 43] [@cfg:stackify] [@cfg:subregion_analysis] (x : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) : ()
     requires {[#"../borrows.rs" 59 11 59 29] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) < Int32.to_int Max0.mAX'}
     requires {[#"../borrows.rs" 60 11 60 23] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) <> - 1}
@@ -838,7 +797,6 @@ module Borrows_Destruct
   var a : Borrows_NonZero_Type.t_nonzero;
   var b : borrowed (Borrows_NonZero_Type.t_nonzero);
   var _6 : ();
-  var _7 : borrowed int32;
   var _8 : borrowed int32;
   {
     goto BB0
@@ -853,16 +811,13 @@ module Borrows_Destruct
     a <- (let Borrows_NonZero_Type.C_NonZero a = a in Borrows_NonZero_Type.C_NonZero ([#"../borrows.rs" 63 10 63 11] (0 : int32)));
     _8 <- Borrow.borrow_mut (Borrows_NonZero_Type.nonzero_0 ( * b));
     b <- { b with current = (let Borrows_NonZero_Type.C_NonZero a =  * b in Borrows_NonZero_Type.C_NonZero ( ^ _8)) };
-    _7 <- Borrow.borrow_mut ( * _8);
-    _8 <- { _8 with current = ( ^ _7) };
-    _6 <- ([#"../borrows.rs" 64 4 64 17] Inc0.inc _7);
-    _7 <- any borrowed int32;
+    _6 <- ([#"../borrows.rs" 64 4 64 17] Inc0.inc _8);
+    _8 <- any borrowed int32;
     goto BB1
   }
   BB1 {
-    assume { Resolve1.resolve _8 };
     assert { [@expl:type invariant] Inv1.inv b };
-    assume { Resolve2.resolve b };
+    assume { Resolve1.resolve b };
     _0 <- ();
     return _0
   }
@@ -887,30 +842,28 @@ module Borrows_FrozenDead
   use prelude.Borrow
   use prelude.Int
   use prelude.Int32
-  clone CreusotContracts_Std1_Num_Impl24_ShallowModel as ShallowModel1
   use Borrows_NonZero_Type as Borrows_NonZero_Type
   clone Borrows_Impl0_Invariant as Invariant0
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Borrows_NonZero_Type.t_nonzero
+  clone Borrows_NonZero_Type_Inv as Borrows_NonZero_Type_Inv0 with
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  clone CreusotContracts_Std1_Num_Impl24_ShallowModel as ShallowModel1
   use prelude.Int
   clone CreusotContracts_Model_Impl7_ShallowModel as ShallowModel0 with
     type t = int32,
     type ShallowModelTy0.shallowModelTy = int,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
-    type t = Borrows_NonZero_Type.t_nonzero
-  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = borrowed (Borrows_NonZero_Type.t_nonzero)
   clone TyInv_Borrow as TyInv_Borrow0 with
     type t = Borrows_NonZero_Type.t_nonzero,
-    predicate Inv0.inv = Inv1.inv,
-    predicate Inv1.inv = Inv0.inv,
-    axiom .
-  clone Borrows_NonZero_Type_Inv as Borrows_NonZero_Type_Inv0 with
     predicate Inv0.inv = Inv0.inv,
-    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Inv1.inv = Inv1.inv,
     axiom .
   clone Core_Num_Impl2_Max as Max0
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
-    type t = int32
   clone Borrows_Inc_Interface as Inc0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Max0.mAX' = Max0.mAX'
@@ -919,43 +872,33 @@ module Borrows_FrozenDead
   let rec cfg frozen_dead [#"../borrows.rs" 69 0 69 66] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed (Borrows_NonZero_Type.t_nonzero)) (y : borrowed (Borrows_NonZero_Type.t_nonzero)) : ()
     requires {[#"../borrows.rs" 67 11 67 27] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) < Int32.to_int Max0.mAX'}
     requires {[#"../borrows.rs" 68 11 68 21] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) <> - 1}
-    requires {[#"../borrows.rs" 69 27 69 28] Inv1.inv x}
-    requires {[#"../borrows.rs" 69 47 69 48] Inv1.inv y}
+    requires {[#"../borrows.rs" 69 27 69 28] Inv0.inv x}
+    requires {[#"../borrows.rs" 69 47 69 48] Inv0.inv y}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var x : borrowed (Borrows_NonZero_Type.t_nonzero) = x;
   var y : borrowed (Borrows_NonZero_Type.t_nonzero) = y;
   var _a : borrowed int32;
-  var _6 : borrowed (Borrows_NonZero_Type.t_nonzero);
   var _7 : ();
-  var _8 : borrowed int32;
   {
     goto BB0
   }
   BB0 {
     _a <- Borrow.borrow_mut (Borrows_NonZero_Type.nonzero_0 ( * x));
     x <- { x with current = (let Borrows_NonZero_Type.C_NonZero a =  * x in Borrows_NonZero_Type.C_NonZero ( ^ _a)) };
-    _6 <- Borrow.borrow_mut ( * y);
-    y <- { y with current = ( ^ _6) };
-    assume { Inv0.inv ( ^ _6) };
-    assert { [@expl:type invariant] Inv1.inv x };
+    assert { [@expl:type invariant] Inv0.inv x };
     assume { Resolve0.resolve x };
-    x <- _6;
-    _6 <- any borrowed (Borrows_NonZero_Type.t_nonzero);
-    assert { [@expl:type invariant] Inv1.inv x };
+    x <- y;
+    y <- any borrowed (Borrows_NonZero_Type.t_nonzero);
+    assert { [@expl:type invariant] Inv0.inv x };
     assume { Resolve0.resolve x };
-    _8 <- Borrow.borrow_mut ( * _a);
-    _a <- { _a with current = ( ^ _8) };
-    _7 <- ([#"../borrows.rs" 75 4 75 11] Inc0.inc _8);
-    _8 <- any borrowed int32;
+    _7 <- ([#"../borrows.rs" 75 4 75 11] Inc0.inc _a);
+    _a <- any borrowed int32;
     goto BB1
   }
   BB1 {
-    assume { Resolve1.resolve _a };
     _0 <- ();
-    assert { [@expl:type invariant] Inv1.inv y };
-    assume { Resolve0.resolve y };
     return _0
   }
   
@@ -1099,13 +1042,11 @@ module Borrows_Impl3_Foo
     type ShallowModelTy0.shallowModelTy = int,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone Core_Num_Impl2_Max as Max0
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = Borrows_SumTo10_Type.t_sumto10
   clone Borrows_Dec_Interface as Dec0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Min0.mIN' = Min0.mIN'
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = int32
   clone Borrows_Inc_Interface as Inc0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Max0.mAX' = Max0.mAX'
@@ -1117,10 +1058,8 @@ module Borrows_Impl3_Foo
   var _0 : ();
   var self : borrowed (Borrows_SumTo10_Type.t_sumto10) = self;
   var _3 : ();
-  var _4 : borrowed int32;
   var _5 : borrowed int32;
   var _6 : ();
-  var _7 : borrowed int32;
   var _8 : borrowed int32;
   {
     goto BB0
@@ -1128,26 +1067,20 @@ module Borrows_Impl3_Foo
   BB0 {
     _5 <- Borrow.borrow_mut (Borrows_SumTo10_Type.sumto10_a ( * self));
     self <- { self with current = (let Borrows_SumTo10_Type.C_SumTo10 a b =  * self in Borrows_SumTo10_Type.C_SumTo10 ( ^ _5) b) };
-    _4 <- Borrow.borrow_mut ( * _5);
-    _5 <- { _5 with current = ( ^ _4) };
-    _3 <- ([#"../borrows.rs" 94 8 94 24] Inc0.inc _4);
-    _4 <- any borrowed int32;
+    _3 <- ([#"../borrows.rs" 94 8 94 24] Inc0.inc _5);
+    _5 <- any borrowed int32;
     goto BB1
   }
   BB1 {
-    assume { Resolve0.resolve _5 };
     _8 <- Borrow.borrow_mut (Borrows_SumTo10_Type.sumto10_b ( * self));
     self <- { self with current = (let Borrows_SumTo10_Type.C_SumTo10 a b =  * self in Borrows_SumTo10_Type.C_SumTo10 a ( ^ _8)) };
-    _7 <- Borrow.borrow_mut ( * _8);
-    _8 <- { _8 with current = ( ^ _7) };
-    _6 <- ([#"../borrows.rs" 95 8 95 24] Dec0.dec _7);
-    _7 <- any borrowed int32;
+    _6 <- ([#"../borrows.rs" 95 8 95 24] Dec0.dec _8);
+    _8 <- any borrowed int32;
     goto BB2
   }
   BB2 {
-    assume { Resolve0.resolve _8 };
     assert { [@expl:type invariant] Inv0.inv self };
-    assume { Resolve1.resolve self };
+    assume { Resolve0.resolve self };
     _0 <- ();
     return _0
   }

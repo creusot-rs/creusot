@@ -372,6 +372,17 @@ module CreusotContracts_Ghost_Impl1_ShallowModel
     ensures { result = shallow_model self }
     
 end
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
+    
+  let function some_0 (self : t_option 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_None -> any 't
+      | C_Some a -> a
+      end
+end
 module CreusotContracts_Resolve_Impl1_Resolve_Stub
   type t
   use prelude.Borrow
@@ -393,17 +404,6 @@ module CreusotContracts_Resolve_Impl1_Resolve
   val resolve (self : borrowed t) : bool
     ensures { result = resolve self }
     
-end
-module Core_Option_Option_Type
-  type t_option 't =
-    | C_None
-    | C_Some 't
-    
-  let function some_0 (self : t_option 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_None -> any 't
-      | C_Some a -> a
-      end
 end
 module TyInv_Trivial
   type t
@@ -959,50 +959,52 @@ module C03KnuthShuffle_KnuthShuffle
     type t = Seq.seq t,
     predicate Inv0.inv = Inv9.inv,
     axiom .
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv8 with
-    type t = Core_Option_Option_Type.t_option usize
+    type t = slice t
   clone TyInv_Trivial as TyInv_Trivial8 with
-    type t = Core_Option_Option_Type.t_option usize,
+    type t = slice t,
     predicate Inv0.inv = Inv8.inv,
     axiom .
-  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv7 with
-    type t = borrowed (Core_Ops_Range_Range_Type.t_range usize)
+    type t = borrowed (slice t)
   clone TyInv_Trivial as TyInv_Trivial7 with
-    type t = borrowed (Core_Ops_Range_Range_Type.t_range usize),
+    type t = borrowed (slice t),
     predicate Inv0.inv = Inv7.inv,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
+    type t = Core_Option_Option_Type.t_option usize
+  clone TyInv_Trivial as TyInv_Trivial6 with
+    type t = Core_Option_Option_Type.t_option usize,
+    predicate Inv0.inv = Inv6.inv,
+    axiom .
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
+    type t = Core_Ops_Range_Range_Type.t_range usize
+  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
+    type t = borrowed (Core_Ops_Range_Range_Type.t_range usize)
+  clone TyInv_Trivial as TyInv_Trivial5 with
+    type t = borrowed (Core_Ops_Range_Range_Type.t_range usize),
+    predicate Inv0.inv = Inv5.inv,
     axiom .
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
-    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
-  clone TyInv_Trivial as TyInv_Trivial6 with
-    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
-    predicate Inv0.inv = Inv6.inv,
-    axiom .
-  clone CreusotContracts_Invariant_Inv_Interface as Inv5 with
-    type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
-  clone TyInv_Trivial as TyInv_Trivial5 with
-    type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
-    predicate Inv0.inv = Inv5.inv,
-    axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
-    type t = borrowed (slice t)
+    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   clone TyInv_Trivial as TyInv_Trivial4 with
-    type t = borrowed (slice t),
+    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     predicate Inv0.inv = Inv4.inv,
     axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
-    type t = slice t
+    type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
   clone TyInv_Trivial as TyInv_Trivial3 with
-    type t = slice t,
+    type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
     predicate Inv0.inv = Inv3.inv,
     axiom .
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface as ShallowModel6 with
     type t = t,
-    predicate Inv0.inv = Inv3.inv,
+    predicate Inv0.inv = Inv8.inv,
     val Max0.mAX' = Max0.mAX',
     predicate Inv1.inv = Inv9.inv,
     axiom .
@@ -1018,11 +1020,9 @@ module C03KnuthShuffle_KnuthShuffle
     axiom .
   use prelude.Int
   clone CreusotContracts_Std1_Num_Impl16_DeepModel as DeepModel0
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
-    type t = Core_Ops_Range_Range_Type.t_range usize
   clone CreusotContracts_Std1_Iter_Range_Impl0_Completed as Completed0 with
     type idx = usize,
-    predicate Resolve0.resolve = Resolve1.resolve,
+    predicate Resolve0.resolve = Resolve2.resolve,
     function DeepModel0.deep_model = DeepModel0.deep_model
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel2 with
     type t = t,
@@ -1074,38 +1074,36 @@ module C03KnuthShuffle_KnuthShuffle
     type t = Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))),
     predicate Inv0.inv = Inv0.inv,
     axiom .
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve3 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
-    type t = slice t
   clone Core_Slice_Impl0_Swap_Interface as Swap0 with
     type t = t,
     function ShallowModel0.shallow_model = ShallowModel5.shallow_model,
-    predicate Inv0.inv = Inv4.inv,
+    predicate Inv0.inv = Inv7.inv,
     function ShallowModel1.shallow_model = ShallowModel6.shallow_model,
-    predicate Inv1.inv = Inv3.inv,
+    predicate Inv1.inv = Inv8.inv,
     val Max0.mAX' = Max0.mAX',
     predicate Inv2.inv = Inv9.inv
   clone Alloc_Vec_Impl9_DerefMut_Interface as DerefMut0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
-    predicate Inv0.inv = Inv5.inv,
+    predicate Inv0.inv = Inv3.inv,
     function ShallowModel0.shallow_model = ShallowModel5.shallow_model,
     function ShallowModel1.shallow_model = ShallowModel0.shallow_model,
     function ShallowModel2.shallow_model = ShallowModel6.shallow_model,
     function ShallowModel3.shallow_model = ShallowModel2.shallow_model,
-    predicate Inv1.inv = Inv4.inv,
-    predicate Inv2.inv = Inv3.inv,
+    predicate Inv1.inv = Inv7.inv,
+    predicate Inv2.inv = Inv8.inv,
     val Max0.mAX' = Max0.mAX',
     predicate Inv3.inv = Inv9.inv,
     predicate Inv4.inv = Inv2.inv
   clone C03KnuthShuffle_RandInRange_Interface as RandInRange0
   clone Core_Iter_Range_Impl3_Next_Interface as Next0 with
     type a = usize,
-    predicate Inv0.inv = Inv7.inv,
+    predicate Inv0.inv = Inv5.inv,
     predicate Completed0.completed = Completed0.completed,
     predicate Produces0.produces = Produces0.produces,
-    predicate Inv1.inv = Inv8.inv
+    predicate Inv1.inv = Inv6.inv
   clone CreusotContracts_Logic_Seq_Impl0_PermutationOf as PermutationOf0 with
     type t = t
   clone CreusotContracts_Ghost_Impl1_ShallowModel as ShallowModel1 with
@@ -1120,12 +1118,12 @@ module C03KnuthShuffle_KnuthShuffle
   clone Alloc_Vec_Impl1_Len_Interface as Len0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
-    predicate Inv0.inv = Inv6.inv,
+    predicate Inv0.inv = Inv4.inv,
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
   let rec cfg knuth_shuffle [#"../03_knuth_shuffle.rs" 13 0 13 39] [@cfg:stackify] [@cfg:subregion_analysis] (v : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : ()
-    requires {[#"../03_knuth_shuffle.rs" 13 24 13 25] Inv5.inv v}
+    requires {[#"../03_knuth_shuffle.rs" 13 24 13 25] Inv3.inv v}
     ensures { [#"../03_knuth_shuffle.rs" 12 0 12 36] PermutationOf0.permutation_of (ShallowModel2.shallow_model ( ^ v)) (ShallowModel0.shallow_model v) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -1137,7 +1135,6 @@ module C03KnuthShuffle_KnuthShuffle
   var iter_old : Ghost.ghost_ty (Core_Ops_Range_Range_Type.t_range usize);
   var produced : Ghost.ghost_ty (Seq.seq usize);
   var _17 : Core_Option_Option_Type.t_option usize;
-  var _18 : borrowed (Core_Ops_Range_Range_Type.t_range usize);
   var _19 : borrowed (Core_Ops_Range_Range_Type.t_range usize);
   var __creusot_proc_iter_elem : usize;
   var _22 : Ghost.ghost_ty (Seq.seq usize);
@@ -1146,7 +1143,6 @@ module C03KnuthShuffle_KnuthShuffle
   var _26 : usize;
   var i : usize;
   var _31 : ();
-  var _32 : borrowed (slice t);
   var _33 : borrowed (slice t);
   var _34 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   {
@@ -1187,22 +1183,19 @@ module C03KnuthShuffle_KnuthShuffle
   BB7 {
     _19 <- Borrow.borrow_mut iter;
     iter <-  ^ _19;
-    _18 <- Borrow.borrow_mut ( * _19);
-    _19 <- { _19 with current = ( ^ _18) };
-    _17 <- ([#"../03_knuth_shuffle.rs" 16 4 16 43] Next0.next _18);
-    _18 <- any borrowed (Core_Ops_Range_Range_Type.t_range usize);
+    _17 <- ([#"../03_knuth_shuffle.rs" 16 4 16 43] Next0.next _19);
+    _19 <- any borrowed (Core_Ops_Range_Range_Type.t_range usize);
     goto BB8
   }
   BB8 {
-    assume { Resolve1.resolve _19 };
     switch (_17)
       | Core_Option_Option_Type.C_None -> goto BB9
       | Core_Option_Option_Type.C_Some _ -> goto BB10
       end
   }
   BB9 {
-    assert { [@expl:type invariant] Inv5.inv v };
-    assume { Resolve3.resolve v };
+    assert { [@expl:type invariant] Inv3.inv v };
+    assume { Resolve1.resolve v };
     _0 <- ();
     return _0
   }
@@ -1210,8 +1203,8 @@ module C03KnuthShuffle_KnuthShuffle
     goto BB12
   }
   BB11 {
-    assert { [@expl:type invariant] Inv5.inv v };
-    assume { Resolve3.resolve v };
+    assert { [@expl:type invariant] Inv3.inv v };
+    assume { Resolve1.resolve v };
     absurd
   }
   BB12 {
@@ -1241,16 +1234,11 @@ module C03KnuthShuffle_KnuthShuffle
     goto BB16
   }
   BB16 {
-    _32 <- Borrow.borrow_mut ( * _33);
-    _33 <- { _33 with current = ( ^ _32) };
-    assume { Inv3.inv ( ^ _32) };
-    _31 <- ([#"../03_knuth_shuffle.rs" 22 8 22 28] Swap0.swap _32 i ([#"../03_knuth_shuffle.rs" 22 18 22 27] upper - ([#"../03_knuth_shuffle.rs" 22 26 22 27] (1 : usize))));
-    _32 <- any borrowed (slice t);
+    _31 <- ([#"../03_knuth_shuffle.rs" 22 8 22 28] Swap0.swap _33 i ([#"../03_knuth_shuffle.rs" 22 18 22 27] upper - ([#"../03_knuth_shuffle.rs" 22 26 22 27] (1 : usize))));
+    _33 <- any borrowed (slice t);
     goto BB17
   }
   BB17 {
-    assert { [@expl:type invariant] Inv4.inv _33 };
-    assume { Resolve2.resolve _33 };
     goto BB6
   }
   

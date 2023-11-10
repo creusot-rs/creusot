@@ -214,28 +214,6 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Produces
     ensures { result = produces self visited o }
     
 end
-module CreusotContracts_Resolve_Impl1_Resolve_Stub
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-end
-module CreusotContracts_Resolve_Impl1_Resolve_Interface
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl1_Resolve
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
 module Core_Option_Option_Type
   type t_option 't =
     | C_None
@@ -563,6 +541,28 @@ module CreusotContracts_Std1_Num_Impl7_DeepModel
     ensures { result = deep_model self }
     
 end
+module CreusotContracts_Resolve_Impl1_Resolve_Stub
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Resolve_Impl1_Resolve_Interface
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
+end
+module CreusotContracts_Resolve_Impl1_Resolve
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
+end
 module CreusotContracts_Std1_Iter_Range_Impl0_Completed_Stub
   type idx
   use prelude.Borrow
@@ -626,6 +626,8 @@ module SumOfOdds_ComputeSumOfOdd
     predicate Inv0.inv = Inv2.inv,
     axiom .
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = Core_Ops_Range_Range_Type.t_range uint32
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = borrowed (Core_Ops_Range_Range_Type.t_range uint32)
   clone TyInv_Trivial as TyInv_Trivial1 with
@@ -635,8 +637,6 @@ module SumOfOdds_ComputeSumOfOdd
   clone SumOfOdds_Sqr as Sqr0
   use prelude.Int
   clone CreusotContracts_Std1_Num_Impl7_DeepModel as DeepModel0
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = Core_Ops_Range_Range_Type.t_range uint32
   clone CreusotContracts_Std1_Iter_Range_Impl0_Completed as Completed0 with
     type idx = uint32,
     predicate Resolve0.resolve = Resolve0.resolve,
@@ -694,7 +694,6 @@ module SumOfOdds_ComputeSumOfOdd
   var iter_old : Ghost.ghost_ty (Core_Ops_Range_Range_Type.t_range uint32);
   var produced : Ghost.ghost_ty (Seq.seq uint32);
   var _18 : Core_Option_Option_Type.t_option uint32;
-  var _19 : borrowed (Core_Ops_Range_Range_Type.t_range uint32);
   var _20 : borrowed (Core_Ops_Range_Range_Type.t_range uint32);
   var __creusot_proc_iter_elem : uint32;
   var _23 : Ghost.ghost_ty (Seq.seq uint32);
@@ -727,14 +726,11 @@ module SumOfOdds_ComputeSumOfOdd
   BB5 {
     _20 <- Borrow.borrow_mut iter;
     iter <-  ^ _20;
-    _19 <- Borrow.borrow_mut ( * _20);
-    _20 <- { _20 with current = ( ^ _19) };
-    _18 <- ([#"../sum_of_odds.rs" 38 4 38 50] Next0.next _19);
-    _19 <- any borrowed (Core_Ops_Range_Range_Type.t_range uint32);
+    _18 <- ([#"../sum_of_odds.rs" 38 4 38 50] Next0.next _20);
+    _20 <- any borrowed (Core_Ops_Range_Range_Type.t_range uint32);
     goto BB6
   }
   BB6 {
-    assume { Resolve0.resolve _20 };
     switch (_18)
       | Core_Option_Option_Type.C_None -> goto BB7
       | Core_Option_Option_Type.C_Some _ -> goto BB8

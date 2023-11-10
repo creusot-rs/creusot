@@ -651,27 +651,27 @@ module Own_Impl0_AsMut
     predicate Inv0.inv = Inv5.inv,
     axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
-    type t = borrowed (Own_OwnResult_Type.t_ownresult t e)
+    type t = borrowed e
   clone TyInv_Trivial as TyInv_Trivial4 with
-    type t = borrowed (Own_OwnResult_Type.t_ownresult t e),
+    type t = borrowed e,
     predicate Inv0.inv = Inv4.inv,
     axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
-    type t = borrowed e
+    type t = borrowed t
   clone TyInv_Trivial as TyInv_Trivial3 with
-    type t = borrowed e,
+    type t = borrowed t,
     predicate Inv0.inv = Inv3.inv,
     axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
-    type t = e
+    type t = borrowed (Own_OwnResult_Type.t_ownresult t e)
   clone TyInv_Trivial as TyInv_Trivial2 with
-    type t = e,
+    type t = borrowed (Own_OwnResult_Type.t_ownresult t e),
     predicate Inv0.inv = Inv2.inv,
     axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
-    type t = borrowed t
+    type t = e
   clone TyInv_Trivial as TyInv_Trivial1 with
-    type t = borrowed t,
+    type t = e,
     predicate Inv0.inv = Inv1.inv,
     axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
@@ -680,24 +680,18 @@ module Own_Impl0_AsMut
     type t = t,
     predicate Inv0.inv = Inv0.inv,
     axiom .
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
-    type t = Own_OwnResult_Type.t_ownresult t e
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
-    type t = e
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = t
+    type t = Own_OwnResult_Type.t_ownresult t e
   let rec cfg as_mut [#"../own.rs" 71 4 71 57] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (Own_OwnResult_Type.t_ownresult t e)) : Own_OwnResult_Type.t_ownresult (borrowed t) (borrowed e)
-    requires {[#"../own.rs" 71 23 71 27] Inv4.inv self}
-    ensures { [#"../own.rs" 63 4 70 6] exists t : borrowed t . Inv1.inv t /\ ( * self = Own_OwnResult_Type.C_Ok ( * t) /\  ^ self = Own_OwnResult_Type.C_Ok ( ^ t) /\ result = Own_OwnResult_Type.C_Ok t \/ (exists e : borrowed e . Inv3.inv e /\  * self = Own_OwnResult_Type.C_Err ( * e) /\  ^ self = Own_OwnResult_Type.C_Err ( ^ e) /\ result = Own_OwnResult_Type.C_Err e)) }
+    requires {[#"../own.rs" 71 23 71 27] Inv2.inv self}
+    ensures { [#"../own.rs" 63 4 70 6] exists t : borrowed t . Inv3.inv t /\ ( * self = Own_OwnResult_Type.C_Ok ( * t) /\  ^ self = Own_OwnResult_Type.C_Ok ( ^ t) /\ result = Own_OwnResult_Type.C_Ok t \/ (exists e : borrowed e . Inv4.inv e /\  * self = Own_OwnResult_Type.C_Err ( * e) /\  ^ self = Own_OwnResult_Type.C_Err ( ^ e) /\ result = Own_OwnResult_Type.C_Err e)) }
     ensures { [#"../own.rs" 71 32 71 57] Inv5.inv result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Own_OwnResult_Type.t_ownresult (borrowed t) (borrowed e);
   var self : borrowed (Own_OwnResult_Type.t_ownresult t e) = self;
   var x : borrowed t;
-  var _5 : borrowed t;
   var x1 : borrowed e;
-  var _7 : borrowed e;
   {
     goto BB0
   }
@@ -713,37 +707,27 @@ module Own_Impl0_AsMut
   BB2 {
     x1 <- Borrow.borrow_mut (Own_OwnResult_Type.err_0 ( * self));
     self <- { self with current = (let Own_OwnResult_Type.C_Err a =  * self in Own_OwnResult_Type.C_Err ( ^ x1)) };
-    assume { Inv2.inv ( ^ x1) };
-    _7 <- Borrow.borrow_mut ( * x1);
-    x1 <- { x1 with current = ( ^ _7) };
-    assume { Inv2.inv ( ^ _7) };
-    _0 <- Own_OwnResult_Type.C_Err _7;
-    _7 <- any borrowed e;
-    assert { [@expl:type invariant] Inv3.inv x1 };
-    assume { Resolve1.resolve x1 };
+    assume { Inv1.inv ( ^ x1) };
+    _0 <- Own_OwnResult_Type.C_Err x1;
+    x1 <- any borrowed e;
     goto BB5
   }
   BB3 {
-    assert { [@expl:type invariant] Inv4.inv self };
-    assume { Resolve2.resolve self };
+    assert { [@expl:type invariant] Inv2.inv self };
+    assume { Resolve0.resolve self };
     absurd
   }
   BB4 {
     x <- Borrow.borrow_mut (Own_OwnResult_Type.ok_0 ( * self));
     self <- { self with current = (let Own_OwnResult_Type.C_Ok a =  * self in Own_OwnResult_Type.C_Ok ( ^ x)) };
     assume { Inv0.inv ( ^ x) };
-    _5 <- Borrow.borrow_mut ( * x);
-    x <- { x with current = ( ^ _5) };
-    assume { Inv0.inv ( ^ _5) };
-    _0 <- Own_OwnResult_Type.C_Ok _5;
-    _5 <- any borrowed t;
-    assert { [@expl:type invariant] Inv1.inv x };
-    assume { Resolve0.resolve x };
+    _0 <- Own_OwnResult_Type.C_Ok x;
+    x <- any borrowed t;
     goto BB5
   }
   BB5 {
-    assert { [@expl:type invariant] Inv4.inv self };
-    assume { Resolve2.resolve self };
+    assert { [@expl:type invariant] Inv2.inv self };
+    assume { Resolve0.resolve self };
     return _0
   }
   
