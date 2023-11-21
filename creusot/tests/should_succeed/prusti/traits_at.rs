@@ -20,7 +20,17 @@ impl<'a> MyModel for bool{
     type ModelTy = bool;
     #[logic('_)]
     fn model(self) -> bool {
-        pearlite!{absurd}
+        self
+    }
+}
+
+struct Wrap<T>(T);
+impl<T> MyModel for Wrap<T> {
+    type ModelTy = T;
+
+    #[logic]
+    fn model(self) -> Self::ModelTy {
+        self.0
     }
 }
 
@@ -29,4 +39,9 @@ pub fn test(x: &mut bool) -> bool {
     let res = *x;
     *x = !res;
     res
+}
+
+#[ensures(result == x.model())]
+pub fn test2(x: Wrap<bool>) -> bool {
+    x.0
 }

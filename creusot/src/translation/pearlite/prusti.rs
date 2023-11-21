@@ -8,6 +8,7 @@ use internal_iterator::*;
 use rustc_data_structures::sso::SsoHashMap;
 use rustc_middle::{
     mir::Mutability::Not,
+    span_bug,
     ty::{self, TyKind},
 };
 use rustc_span::{symbol::Symbol, Span};
@@ -299,7 +300,6 @@ fn convert<'tcx>(
 ) -> CreusotResult<(State, Ty<'tcx>)> {
     let tcx = ctx.tcx;
     let mut res_state = state;
-    let outer_ty = || ctx.fix_ty_with_erased(outer_term.ty);
     let ty = match &mut outer_term.kind {
         TermKind::Var(v) => {
             let (old_ts, ty) = *tenv.get(v).unwrap();
@@ -375,12 +375,15 @@ fn convert<'tcx>(
         TermKind::Constructor { fields, variant, .. } => {
             let fields =
                 fields.iter_mut().map(|arg| Ok((convert_sdt(arg, tenv, state, ctx)?, arg.span)));
-            typeck::check_constructor(ctx, fields, outer_ty(), *variant)?
+            let TyKind::Adt(adt, subst) = outer_term.ty.kind() else {
+                span_bug!(outer_term.span, "bug")
+            };
+            typeck::check_constructor(ctx, fields, subst, *adt, *variant)?
         }
         TermKind::Tuple { fields, .. } => {
             let fields =
                 fields.iter_mut().map(|arg| Ok((convert_sdt(arg, tenv, state, ctx)?, arg.span)));
-            typeck::check_constructor(ctx, fields, outer_ty(), 0u32.into())?
+            typeck::check_tuple_constructor(ctx, fields)?
         }
         curr @ TermKind::Cur { .. } => {
             let curr_owned = std::mem::replace(curr, TermKind::Absurd);
