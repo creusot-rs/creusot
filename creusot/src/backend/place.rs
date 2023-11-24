@@ -90,22 +90,7 @@ fn create_assign_rec<'tcx>(
             if mutability == Mut {
                 RecUp {
                     record: Box::new(translate_rplace(ctx, names, locals, base, &proj[..proj_ix])),
-                    updates: vec![
-                        ("current".into(), inner),
-                        (
-                            "addr".into(),
-                            Exp::Call(
-                                Box::new(Exp::QVar(
-                                    QName {
-                                        module: vec!["Borrow".into()],
-                                        name: "make_new_addr".into(),
-                                    },
-                                    why3::exp::Purity::Logic,
-                                )),
-                                vec![Exp::Tuple(Vec::new())],
-                            ),
-                        ),
-                    ],
+                    updates: vec![("current".into(), inner)],
                 }
             } else {
                 inner
