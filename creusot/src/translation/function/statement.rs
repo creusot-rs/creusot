@@ -1,3 +1,12 @@
+use super::BodyTranslator;
+use crate::{
+    analysis::NotFinalPlaces,
+    translation::{
+        fmir::{self, Expr, ExprKind, RValue},
+        specification::inv_subst,
+    },
+    util::{self, ghost_closure_id},
+};
 use rustc_borrowck::borrow_set::TwoPhaseActivation;
 use rustc_middle::{
     mir::{
@@ -6,25 +15,22 @@ use rustc_middle::{
     },
     ty::adjustment::PointerCast,
 };
+use rustc_mir_dataflow::ResultsCursor;
 use rustc_span::DUMMY_SP;
 
-use super::BodyTranslator;
-use crate::{
-    translation::{
-        fmir::{self, Expr, ExprKind, RValue},
-        specification::inv_subst,
-    },
-    util::{self, ghost_closure_id},
-};
-
 impl<'tcx> BodyTranslator<'_, 'tcx> {
-    pub(crate) fn translate_statement(&mut self, statement: &'_ Statement<'tcx>, loc: Location) {
+    pub(crate) fn translate_statement(
+        &mut self,
+        not_final_borrows: &mut ResultsCursor<'_, 'tcx, NotFinalPlaces<'tcx>>,
+        statement: &'_ Statement<'tcx>,
+        loc: Location,
+    ) {
         let mut resolved_during = self.resolver.as_mut().map(|r| r.resolved_locals_during(loc));
 
         use StatementKind::*;
         match statement.kind {
             Assign(box (ref pl, ref rv)) => {
-                self.translate_assign(statement.source_info, pl, rv, loc);
+                self.translate_assign(not_final_borrows, statement.source_info, pl, rv, loc);
 
                 // if the lhs local becomes resolved during the assignment,
                 // we cannot resolve it afterwards.
@@ -60,6 +66,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
     fn translate_assign(
         &mut self,
+        not_final_borrows: &mut ResultsCursor<'_, 'tcx, NotFinalPlaces<'tcx>>,
         si: SourceInfo,
         place: &'_ Place<'tcx>,
         rvalue: &'_ Rvalue<'tcx>,
@@ -90,7 +97,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         return;
                     }
 
-                    self.emit_borrow(place, pl, span);
+                    let is_final = NotFinalPlaces::is_final_at(not_final_borrows, pl, loc);
+                    self.emit_borrow(place, pl, is_final, span);
                     return;
                 }
             },

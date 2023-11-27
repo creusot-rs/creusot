@@ -6,6 +6,7 @@ pub(crate) mod function;
 pub(crate) mod pearlite;
 pub(crate) mod specification;
 pub(crate) mod traits;
+pub(crate) mod projection_vec;
 
 use crate::{
     backend::{TransId, Why3Generator},
