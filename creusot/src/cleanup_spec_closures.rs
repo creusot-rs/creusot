@@ -85,7 +85,10 @@ impl<'tcx> MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
                 {
                     substs.iter_mut().for_each(|p| {
                         if p.is_move() {
-                            self.unused.insert(p.place().unwrap().as_local().unwrap());
+                            let place = p.place().unwrap();
+                            if let Some(loc) = place.as_local() {
+                                self.unused.insert(loc);
+                            }
                         }
                     });
                     *substs = IndexVec::new();
