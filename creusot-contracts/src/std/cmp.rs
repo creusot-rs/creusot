@@ -13,6 +13,12 @@ extern_spec! {
                 where
                     Self: DeepModel,
                     Rhs: DeepModel<DeepModelTy = Self::DeepModelTy>;
+
+                #[ensures(result == (self.deep_model() != rhs.deep_model()))]
+                fn ne(&self, rhs: &Rhs) -> bool
+                where
+                    Self: DeepModel,
+                    Rhs: DeepModel<DeepModelTy = Self::DeepModelTy>;
             }
 
             // TODO: for now, we only support total orders
