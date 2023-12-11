@@ -150,7 +150,7 @@ impl<T> Seq<T> {
 }
 
 impl<T> Seq<&T> {
-    #[logic]
+    #[ghost]
     #[open]
     #[trusted]
     #[creusot::builtins = "prelude.Seq.to_owned"]

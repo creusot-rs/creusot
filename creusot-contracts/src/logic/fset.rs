@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{*, logic::Mapping};
 
 #[cfg_attr(creusot, creusot::builtins = "set.Fset.fset")]
 pub struct FSet<T: ?Sized>(std::marker::PhantomData<T>);
@@ -14,6 +14,23 @@ impl<T: ?Sized> FSet<T> {
     #[why3::attr = "inline:trivial"]
     pub fn contains(self, e: T) -> bool {
         Self::mem(e, self)
+    }
+
+    #[ghost]
+    #[open(self)]
+    #[why3::attr = "inline:trivial"]
+    pub fn map<U>(self, f : Mapping<T, U>) -> FSet<U>
+        where T : Sized {
+       Self::map_inner(f, self)
+    }
+
+    #[doc(hidden)]
+    #[ghost]
+    #[open(self)]
+    #[creusot::builtins = "set.Fset.map"]
+    pub fn map_inner<U>(_ : Mapping<T, U>, _: Self) -> FSet<U>
+        where T : Sized {
+        pearlite! { absurd }
     }
 
     #[doc(hidden)]
