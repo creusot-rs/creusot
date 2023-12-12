@@ -79,6 +79,44 @@ pub fn proj2(x: &mut &mut (S, S)) -> bool {
     x.0.x()
 }
 
+// Unnesting through an index projection
+
+#[open(self)]
+#[ghost]
+pub fn reborrow_index_projection<'a, 'b, T>(a: &'a mut &'b mut [T]) -> &'a mut T {
+    &mut a[0]
+}
+
+#[open(self)]
+#[ghost]
+pub fn reborrow_index_projection2<'a, 'b, T>(a: &'a &'b [T]) -> &'a T {
+    &a[0]
+}
+
+#[open(self)]
+#[ghost]
+pub fn test3<'a, T>(a: Ghost<&'a mut Vec<T>>) -> &'a mut T {
+    &mut a[0]
+}
+
+#[open(self)]
+#[ghost]
+pub fn test4<'a, T>(a: &'a mut Ghost<Vec<T>>) -> &'a mut T {
+    &mut a[0]
+}
+
+#[open(self)]
+#[ghost]
+pub fn test5<'a, T>(a: &'a mut &mut &mut Vec<T>) -> &'a mut T {
+    &mut a[0]
+}
+
+#[open(self)]
+#[ghost]
+pub fn test6<'a>(a: &'a mut &&mut u32) -> &'a mut u32 {
+    &mut ***a
+}
+
 // Left out until I understand the semantics of `Deref` patterns.
 // #[ghost]
 // pub fn proj_opt(x : &mut Option<S>)  -> bool {
