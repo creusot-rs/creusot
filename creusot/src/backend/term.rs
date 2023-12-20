@@ -1,3 +1,4 @@
+use super::{program::borrow_generated_id, Why3Generator};
 use crate::{
     backend::ty::{floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty},
     ctx::*,
@@ -5,7 +6,8 @@ use crate::{
     util,
     util::get_builtin,
 };
-use rustc_middle::ty::{EarlyBinder, Ty, TyKind};
+use rustc_hir::def_id::DefId;
+use rustc_middle::ty::{subst::SubstsRef, EarlyBinder, Ty, TyCtxt, TyKind};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
     ty::Type,
@@ -346,11 +348,6 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         None
     }
 }
-
-use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
-
-use super::{program::borrow_generated_id, Why3Generator};
 
 pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
     _: &mut TranslationCtx<'tcx>,
