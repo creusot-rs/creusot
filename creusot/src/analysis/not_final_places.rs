@@ -1,9 +1,4 @@
 use crate::extended_location::ExtendedLocation;
-use std::collections::HashMap;
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at https://mozilla.org/MPL/2.0/.
-//
 use rustc_index::bit_set::BitSet;
 use rustc_middle::mir::{
     self, visit::Visitor, BasicBlock, Location, Place, PlaceRef, ProjectionElem, Statement,
@@ -12,6 +7,7 @@ use rustc_middle::mir::{
 use rustc_mir_dataflow::{
     fmt::DebugWithContext, AnalysisDomain, Backward, GenKill, GenKillAnalysis, ResultsCursor,
 };
+use std::collections::HashMap;
 
 pub type PlaceId = usize;
 
