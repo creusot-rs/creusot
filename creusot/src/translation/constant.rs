@@ -1,6 +1,8 @@
 use crate::{
-    ctx::TranslationCtx, traits::resolve_assoc_item_opt, translation::pearlite::Literal,
-    util::get_builtin,
+    ctx::TranslationCtx,
+    traits::resolve_assoc_item_opt,
+    translation::pearlite::Literal,
+    util::{get_builtin, is_trusted},
 };
 use rustc_middle::{
     mir::{
@@ -81,7 +83,7 @@ pub(crate) fn from_ty_const<'tcx>(
     // Check if a constant is builtin and thus should not be evaluated further
     // Builtin constants are given a body which panics
     if let ConstKind::Unevaluated(u) = c.kind() &&
-       let Some(_) = get_builtin(ctx.tcx, u.def) {
+        (get_builtin(ctx.tcx, u.def).is_some() || is_trusted(ctx.tcx, u.def)) {
             return Expr::Constant(Term { kind: TermKind::Lit(Literal::Function(u.def, u.substs)), ty: c.ty(), span})
     };
 
