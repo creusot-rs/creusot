@@ -383,28 +383,6 @@ module CreusotContracts_Std1_Iter_Range_Impl1_Produces
     ensures { result = produces self visited o }
     
 end
-module CreusotContracts_Resolve_Impl1_Resolve_Stub
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-end
-module CreusotContracts_Resolve_Impl1_Resolve_Interface
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl1_Resolve
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
 module Core_Option_Option_Type
   type t_option 't =
     | C_None
@@ -1102,8 +1080,6 @@ module Sum_SumFirstN
     type i = Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive uint32
   clone CreusotContracts_Std1_Iter_Impl0_IntoIterPre as IntoIterPre0 with
     type i = Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive uint32
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive uint32
   clone Core_Iter_Range_Impl12_Next_Interface as Next0 with
     type a = uint32,
     predicate Inv0.inv = Inv2.inv,
@@ -1138,7 +1114,6 @@ module Sum_SumFirstN
   var iter_old : Ghost.ghost_ty (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive uint32);
   var produced : Ghost.ghost_ty (Seq.seq uint32);
   var _17 : Core_Option_Option_Type.t_option uint32;
-  var _18 : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive uint32);
   var _19 : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive uint32);
   var __creusot_proc_iter_elem : uint32;
   var _22 : Ghost.ghost_ty (Seq.seq uint32);
@@ -1176,14 +1151,11 @@ module Sum_SumFirstN
   BB6 {
     _19 <- Borrow.borrow_mut iter;
     iter <-  ^ _19;
-    _18 <- Borrow.borrow_mut ( * _19);
-    _19 <- { _19 with current = ( ^ _18) };
-    _17 <- ([#"../sum.rs" 8 4 8 67] Next0.next _18);
-    _18 <- any borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive uint32);
+    _17 <- ([#"../sum.rs" 8 4 8 67] Next0.next _19);
+    _19 <- any borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive uint32);
     goto BB7
   }
   BB7 {
-    assume { Resolve0.resolve _19 };
     switch (_17)
       | Core_Option_Option_Type.C_None -> goto BB8
       | Core_Option_Option_Type.C_Some _ -> goto BB9

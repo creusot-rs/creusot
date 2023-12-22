@@ -3097,9 +3097,6 @@ module Bdd_Impl11_Node
   use prelude.UInt64
   use map.Map
   use Bdd_Bdd_Type as Bdd_Bdd_Type
-  use Bdd_NodeLog_Type as Bdd_NodeLog_Type
-  use Bdd_Node_Type as Bdd_Node_Type
-  clone Bdd_Impl3_DeepModel as DeepModel1
   use Bdd_Hashmap_MyHashMap_Type as Bdd_Hashmap_MyHashMap_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone Bdd_Hashmap_Impl0_ShallowModel_Interface as ShallowModel8 with
@@ -3110,11 +3107,9 @@ module Bdd_Impl11_Node
     type k = Bdd_Bdd_Type.t_bdd,
     type v = Bdd_Bdd_Type.t_bdd,
     type DeepModelTy0.deepModelTy = uint64
-  clone Bdd_Impl5_DeepModel as DeepModel0
-  clone CreusotContracts_Std1_Num_Impl9_ShallowModel as ShallowModel6
-  clone Bdd_Impl4_ShallowModel as ShallowModel5 with
-    function DeepModel0.deep_model = DeepModel1.deep_model
+  use Bdd_Node_Type as Bdd_Node_Type
   use prelude.Int
+  clone CreusotContracts_Std1_Num_Impl9_ShallowModel as ShallowModel6
   clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel3 with
     type t = uint64,
     type ShallowModelTy0.shallowModelTy = int,
@@ -3124,6 +3119,10 @@ module Bdd_Impl11_Node
     val Max0.mAX' = Max0.mAX',
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model
   clone Bdd_Impl8_Interp as Interp0
+  use Bdd_NodeLog_Type as Bdd_NodeLog_Type
+  clone Bdd_Impl3_DeepModel as DeepModel1
+  clone Bdd_Impl4_ShallowModel as ShallowModel5 with
+    function DeepModel0.deep_model = DeepModel1.deep_model
   clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel2 with
     type t = Bdd_Node_Type.t_node,
     type ShallowModelTy0.shallowModelTy = Bdd_NodeLog_Type.t_nodelog,
@@ -3148,20 +3147,21 @@ module Bdd_Impl11_Node
     function Leastvar0.leastvar = Leastvar0.leastvar,
     function ShallowModel2.shallow_model = ShallowModel7.shallow_model,
     function ShallowModel3.shallow_model = ShallowModel8.shallow_model
+  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Bdd_Context_Type.t_context
+  clone Bdd_Context_Type_Inv as Bdd_Context_Type_Inv0 with
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  clone Bdd_Impl5_DeepModel as DeepModel0
   clone Bdd_Impl6_ShallowModel as ShallowModel4 with
     function DeepModel0.deep_model = DeepModel0.deep_model
   clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
-    type t = Bdd_Context_Type.t_context
-  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = borrowed (Bdd_Context_Type.t_context)
   clone TyInv_Borrow as TyInv_Borrow0 with
     type t = Bdd_Context_Type.t_context,
-    predicate Inv0.inv = Inv1.inv,
-    predicate Inv1.inv = Inv0.inv,
-    axiom .
-  clone Bdd_Context_Type_Inv as Bdd_Context_Type_Inv0 with
     predicate Inv0.inv = Inv0.inv,
-    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Inv1.inv = Inv1.inv,
     axiom .
   clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel0 with
     type t = Bdd_Bdd_Type.t_bdd,
@@ -3173,7 +3173,7 @@ module Bdd_Impl11_Node
     type t = Bdd_Context_Type.t_context
   clone Bdd_Impl11_Hashcons_Interface as Hashcons0 with
     predicate IsValidNode0.is_valid_node = IsValidNode0.is_valid_node,
-    predicate Inv0.inv = Inv1.inv,
+    predicate Inv0.inv = Inv0.inv,
     predicate Grows0.grows = Grows0.grows,
     predicate IsValidBdd0.is_valid_bdd = IsValidBdd0.is_valid_bdd
   clone Bdd_Impl7_Eq_Interface as Eq0 with
@@ -3182,7 +3182,7 @@ module Bdd_Impl11_Node
     requires {[#"../bdd.rs" 458 15 458 40] IsValidBdd0.is_valid_bdd ( * self) childt}
     requires {[#"../bdd.rs" 459 15 459 40] IsValidBdd0.is_valid_bdd ( * self) childf}
     requires {[#"../bdd.rs" 460 15 460 63] UInt64.to_int x < Leastvar0.leastvar childt /\ UInt64.to_int x < Leastvar0.leastvar childf}
-    requires {[#"../bdd.rs" 465 17 465 21] Inv1.inv self}
+    requires {[#"../bdd.rs" 465 17 465 21] Inv0.inv self}
     ensures { [#"../bdd.rs" 461 14 461 26] Grows0.grows self }
     ensures { [#"../bdd.rs" 462 14 462 42] IsValidBdd0.is_valid_bdd ( ^ self) result }
     ensures { [#"../bdd.rs" 463 4 463 106] forall v : Map.map uint64 bool . Interp0.interp result v = (if Map.get v x then
@@ -3199,7 +3199,6 @@ module Bdd_Impl11_Node
   var childt : Bdd_Bdd_Type.t_bdd = childt;
   var childf : Bdd_Bdd_Type.t_bdd = childf;
   var _13 : bool;
-  var _17 : borrowed (Bdd_Context_Type.t_context);
   {
     goto BB0
   }
@@ -3214,22 +3213,17 @@ module Bdd_Impl11_Node
       end
   }
   BB2 {
-    assert { [@expl:type invariant] Inv1.inv self };
+    assert { [@expl:type invariant] Inv0.inv self };
     assume { Resolve0.resolve self };
     _0 <- childt;
     goto BB5
   }
   BB3 {
-    _17 <- Borrow.borrow_mut ( * self);
-    self <- { self with current = ( ^ _17) };
-    assume { Inv0.inv ( ^ _17) };
-    _0 <- ([#"../bdd.rs" 469 8 469 50] Hashcons0.hashcons _17 (Bdd_Node_Type.C_If x childt childf));
-    _17 <- any borrowed (Bdd_Context_Type.t_context);
+    _0 <- ([#"../bdd.rs" 469 8 469 50] Hashcons0.hashcons self (Bdd_Node_Type.C_If x childt childf));
+    self <- any borrowed (Bdd_Context_Type.t_context);
     goto BB4
   }
   BB4 {
-    assert { [@expl:type invariant] Inv1.inv self };
-    assume { Resolve0.resolve self };
     goto BB5
   }
   BB5 {
@@ -3265,9 +3259,6 @@ module Bdd_Impl11_True
   use prelude.Int
   use prelude.UInt64
   use Bdd_Bdd_Type as Bdd_Bdd_Type
-  use Bdd_NodeLog_Type as Bdd_NodeLog_Type
-  use Bdd_Node_Type as Bdd_Node_Type
-  clone Bdd_Impl3_DeepModel as DeepModel0
   use Bdd_Hashmap_MyHashMap_Type as Bdd_Hashmap_MyHashMap_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone Bdd_Hashmap_Impl0_ShallowModel_Interface as ShallowModel6 with
@@ -3278,10 +3269,9 @@ module Bdd_Impl11_True
     type k = Bdd_Bdd_Type.t_bdd,
     type v = Bdd_Bdd_Type.t_bdd,
     type DeepModelTy0.deepModelTy = uint64
-  clone CreusotContracts_Std1_Num_Impl9_ShallowModel as ShallowModel4
-  clone Bdd_Impl4_ShallowModel as ShallowModel3 with
-    function DeepModel0.deep_model = DeepModel0.deep_model
+  use Bdd_Node_Type as Bdd_Node_Type
   use prelude.Int
+  clone CreusotContracts_Std1_Num_Impl9_ShallowModel as ShallowModel4
   clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel2 with
     type t = uint64,
     type ShallowModelTy0.shallowModelTy = int,
@@ -3291,6 +3281,10 @@ module Bdd_Impl11_True
     val Max0.mAX' = Max0.mAX',
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model
   clone Bdd_Impl8_Interp as Interp0
+  use Bdd_NodeLog_Type as Bdd_NodeLog_Type
+  clone Bdd_Impl3_DeepModel as DeepModel0
+  clone Bdd_Impl4_ShallowModel as ShallowModel3 with
+    function DeepModel0.deep_model = DeepModel0.deep_model
   clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel1 with
     type t = Bdd_Node_Type.t_node,
     type ShallowModelTy0.shallowModelTy = Bdd_NodeLog_Type.t_nodelog,
@@ -3315,30 +3309,28 @@ module Bdd_Impl11_True
     function Leastvar0.leastvar = Leastvar0.leastvar,
     function ShallowModel2.shallow_model = ShallowModel5.shallow_model,
     function ShallowModel3.shallow_model = ShallowModel6.shallow_model
-  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
-    type t = Bdd_Context_Type.t_context
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Bdd_Context_Type.t_context
+  clone Bdd_Context_Type_Inv as Bdd_Context_Type_Inv0 with
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = borrowed (Bdd_Context_Type.t_context)
   clone TyInv_Borrow as TyInv_Borrow0 with
     type t = Bdd_Context_Type.t_context,
-    predicate Inv0.inv = Inv1.inv,
-    predicate Inv1.inv = Inv0.inv,
-    axiom .
-  clone Bdd_Context_Type_Inv as Bdd_Context_Type_Inv0 with
     predicate Inv0.inv = Inv0.inv,
-    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Inv1.inv = Inv1.inv,
     axiom .
   clone Bdd_Impl10_Grows as Grows0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = Bdd_Context_Type.t_context
   clone Bdd_Impl11_Hashcons_Interface as Hashcons0 with
     predicate IsValidNode0.is_valid_node = IsValidNode0.is_valid_node,
-    predicate Inv0.inv = Inv1.inv,
+    predicate Inv0.inv = Inv0.inv,
     predicate Grows0.grows = Grows0.grows,
     predicate IsValidBdd0.is_valid_bdd = IsValidBdd0.is_valid_bdd
   let rec cfg true_ [#"../bdd.rs" 476 4 476 42] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (Bdd_Context_Type.t_context)) : Bdd_Bdd_Type.t_bdd
-    requires {[#"../bdd.rs" 476 22 476 26] Inv1.inv self}
+    requires {[#"../bdd.rs" 476 22 476 26] Inv0.inv self}
     ensures { [#"../bdd.rs" 472 14 472 26] Grows0.grows self }
     ensures { [#"../bdd.rs" 473 14 473 42] IsValidBdd0.is_valid_bdd ( ^ self) result }
     ensures { [#"../bdd.rs" 474 4 474 44] forall v : Map.map uint64 bool . Interp0.interp result v }
@@ -3347,21 +3339,15 @@ module Bdd_Impl11_True
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Bdd_Bdd_Type.t_bdd;
   var self : borrowed (Bdd_Context_Type.t_context) = self;
-  var _6 : borrowed (Bdd_Context_Type.t_context);
   {
     goto BB0
   }
   BB0 {
-    _6 <- Borrow.borrow_mut ( * self);
-    self <- { self with current = ( ^ _6) };
-    assume { Inv0.inv ( ^ _6) };
-    _0 <- ([#"../bdd.rs" 477 8 477 27] Hashcons0.hashcons _6 (Bdd_Node_Type.C_True));
-    _6 <- any borrowed (Bdd_Context_Type.t_context);
+    _0 <- ([#"../bdd.rs" 477 8 477 27] Hashcons0.hashcons self (Bdd_Node_Type.C_True));
+    self <- any borrowed (Bdd_Context_Type.t_context);
     goto BB1
   }
   BB1 {
-    assert { [@expl:type invariant] Inv1.inv self };
-    assume { Resolve0.resolve self };
     return _0
   }
   
@@ -3394,9 +3380,6 @@ module Bdd_Impl11_False
   use prelude.Int
   use prelude.UInt64
   use Bdd_Bdd_Type as Bdd_Bdd_Type
-  use Bdd_NodeLog_Type as Bdd_NodeLog_Type
-  use Bdd_Node_Type as Bdd_Node_Type
-  clone Bdd_Impl3_DeepModel as DeepModel0
   use Bdd_Hashmap_MyHashMap_Type as Bdd_Hashmap_MyHashMap_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone Bdd_Hashmap_Impl0_ShallowModel_Interface as ShallowModel6 with
@@ -3407,10 +3390,9 @@ module Bdd_Impl11_False
     type k = Bdd_Bdd_Type.t_bdd,
     type v = Bdd_Bdd_Type.t_bdd,
     type DeepModelTy0.deepModelTy = uint64
-  clone CreusotContracts_Std1_Num_Impl9_ShallowModel as ShallowModel4
-  clone Bdd_Impl4_ShallowModel as ShallowModel3 with
-    function DeepModel0.deep_model = DeepModel0.deep_model
+  use Bdd_Node_Type as Bdd_Node_Type
   use prelude.Int
+  clone CreusotContracts_Std1_Num_Impl9_ShallowModel as ShallowModel4
   clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel2 with
     type t = uint64,
     type ShallowModelTy0.shallowModelTy = int,
@@ -3420,6 +3402,10 @@ module Bdd_Impl11_False
     val Max0.mAX' = Max0.mAX',
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model
   clone Bdd_Impl8_Interp as Interp0
+  use Bdd_NodeLog_Type as Bdd_NodeLog_Type
+  clone Bdd_Impl3_DeepModel as DeepModel0
+  clone Bdd_Impl4_ShallowModel as ShallowModel3 with
+    function DeepModel0.deep_model = DeepModel0.deep_model
   clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel1 with
     type t = Bdd_Node_Type.t_node,
     type ShallowModelTy0.shallowModelTy = Bdd_NodeLog_Type.t_nodelog,
@@ -3444,30 +3430,28 @@ module Bdd_Impl11_False
     function Leastvar0.leastvar = Leastvar0.leastvar,
     function ShallowModel2.shallow_model = ShallowModel5.shallow_model,
     function ShallowModel3.shallow_model = ShallowModel6.shallow_model
-  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
-    type t = Bdd_Context_Type.t_context
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
+    type t = Bdd_Context_Type.t_context
+  clone Bdd_Context_Type_Inv as Bdd_Context_Type_Inv0 with
+    predicate Inv0.inv = Inv1.inv,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
     type t = borrowed (Bdd_Context_Type.t_context)
   clone TyInv_Borrow as TyInv_Borrow0 with
     type t = Bdd_Context_Type.t_context,
-    predicate Inv0.inv = Inv1.inv,
-    predicate Inv1.inv = Inv0.inv,
-    axiom .
-  clone Bdd_Context_Type_Inv as Bdd_Context_Type_Inv0 with
     predicate Inv0.inv = Inv0.inv,
-    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Inv1.inv = Inv1.inv,
     axiom .
   clone Bdd_Impl10_Grows as Grows0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = Bdd_Context_Type.t_context
   clone Bdd_Impl11_Hashcons_Interface as Hashcons0 with
     predicate IsValidNode0.is_valid_node = IsValidNode0.is_valid_node,
-    predicate Inv0.inv = Inv1.inv,
+    predicate Inv0.inv = Inv0.inv,
     predicate Grows0.grows = Grows0.grows,
     predicate IsValidBdd0.is_valid_bdd = IsValidBdd0.is_valid_bdd
   let rec cfg false_ [#"../bdd.rs" 484 4 484 43] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (Bdd_Context_Type.t_context)) : Bdd_Bdd_Type.t_bdd
-    requires {[#"../bdd.rs" 484 23 484 27] Inv1.inv self}
+    requires {[#"../bdd.rs" 484 23 484 27] Inv0.inv self}
     ensures { [#"../bdd.rs" 480 14 480 26] Grows0.grows self }
     ensures { [#"../bdd.rs" 481 14 481 42] IsValidBdd0.is_valid_bdd ( ^ self) result }
     ensures { [#"../bdd.rs" 482 4 482 45] forall v : Map.map uint64 bool . not Interp0.interp result v }
@@ -3476,21 +3460,15 @@ module Bdd_Impl11_False
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Bdd_Bdd_Type.t_bdd;
   var self : borrowed (Bdd_Context_Type.t_context) = self;
-  var _6 : borrowed (Bdd_Context_Type.t_context);
   {
     goto BB0
   }
   BB0 {
-    _6 <- Borrow.borrow_mut ( * self);
-    self <- { self with current = ( ^ _6) };
-    assume { Inv0.inv ( ^ _6) };
-    _0 <- ([#"../bdd.rs" 485 8 485 28] Hashcons0.hashcons _6 (Bdd_Node_Type.C_False));
-    _6 <- any borrowed (Bdd_Context_Type.t_context);
+    _0 <- ([#"../bdd.rs" 485 8 485 28] Hashcons0.hashcons self (Bdd_Node_Type.C_False));
+    self <- any borrowed (Bdd_Context_Type.t_context);
     goto BB1
   }
   BB1 {
-    assert { [@expl:type invariant] Inv1.inv self };
-    assume { Resolve0.resolve self };
     return _0
   }
   
@@ -3585,8 +3563,6 @@ module Bdd_Impl11_V
     axiom .
   clone Bdd_Impl10_Grows as Grows0 with
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = Bdd_Context_Type.t_context
   clone Bdd_Impl11_Node_Interface as Node0 with
     predicate IsValidBdd0.is_valid_bdd = IsValidBdd0.is_valid_bdd,
     function Leastvar0.leastvar = Leastvar0.leastvar,
@@ -3621,7 +3597,6 @@ module Bdd_Impl11_V
   var _7 : borrowed (Bdd_Context_Type.t_context);
   var f : Bdd_Bdd_Type.t_bdd;
   var _9 : borrowed (Bdd_Context_Type.t_context);
-  var _10 : borrowed (Bdd_Context_Type.t_context);
   {
     goto BB0
   }
@@ -3642,16 +3617,11 @@ module Bdd_Impl11_V
     goto BB2
   }
   BB2 {
-    _10 <- Borrow.borrow_mut ( * self);
-    self <- { self with current = ( ^ _10) };
-    assume { Inv0.inv ( ^ _10) };
-    _0 <- ([#"../bdd.rs" 494 8 494 26] Node0.node _10 x t f);
-    _10 <- any borrowed (Bdd_Context_Type.t_context);
+    _0 <- ([#"../bdd.rs" 494 8 494 26] Node0.node self x t f);
+    self <- any borrowed (Bdd_Context_Type.t_context);
     goto BB3
   }
   BB3 {
-    assert { [@expl:type invariant] Inv1.inv self };
-    assume { Resolve0.resolve self };
     return _0
   }
   
