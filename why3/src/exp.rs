@@ -112,19 +112,39 @@ impl Trigger {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Exp {
     Assert(Box<Exp>),
+    Assume(Box<Exp>),
     Any(Type),
     // TODO: Remove
     Current(Box<Exp>),
     // TODO: Remove
     Final(Box<Exp>),
-    Let { pattern: Pattern, arg: Box<Exp>, body: Box<Exp> },
+    Let {
+        pattern: Pattern,
+        arg: Box<Exp>,
+        body: Box<Exp>,
+    },
     Var(Ident, Purity),
     QVar(QName, Purity),
-    Record { fields: Vec<(String, Exp)> },
-    RecUp { record: Box<Exp>, label: String, val: Box<Exp> },
-    RecField { record: Box<Exp>, label: String },
+    /// Record construction
+    Record {
+        fields: Vec<(String, Exp)>,
+    },
+    /// Record update
+    RecUp {
+        record: Box<Exp>,
+        label: String,
+        val: Box<Exp>,
+    },
+    /// Record access
+    RecField {
+        record: Box<Exp>,
+        label: String,
+    },
     Tuple(Vec<Exp>),
-    Constructor { ctor: QName, args: Vec<Exp> },
+    Constructor {
+        ctor: QName,
+        args: Vec<Exp>,
+    },
     Const(Constant),
     BinaryOp(BinOp, Box<Exp>, Box<Exp>),
     UnaryOp(UnOp, Box<Exp>),
@@ -132,7 +152,11 @@ pub enum Exp {
     Verbatim(String),
     Attr(Attribute, Box<Exp>),
     Ghost(Box<Exp>),
+    /// Lambda abstraction
     Abs(Vec<Binder>, Box<Exp>),
+    /// Expression (statement) sequencing (aka ;)
+    Chain(Vec<Exp>),
+
     Match(Box<Exp>, Vec<(Pattern, Exp)>),
     IfThenElse(Box<Exp>, Box<Exp>, Box<Exp>),
     Ascribe(Box<Exp>, Type),
@@ -143,7 +167,6 @@ pub enum Exp {
     Impl(Box<Exp>, Box<Exp>),
     Forall(Vec<(Ident, Type)>, Trigger, Box<Exp>),
     Exists(Vec<(Ident, Type)>, Trigger, Box<Exp>),
-    Sequence(Vec<Exp>),
     FnLit(Box<Exp>),
 }
 
@@ -224,9 +247,10 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
         Exp::Attr(_, e) => f.visit_mut(e),
         Exp::Ghost(e) => f.visit_mut(e),
         Exp::Record { fields } => fields.iter_mut().for_each(|(_, e)| f.visit_mut(e)),
-        Exp::Sequence(fields) => fields.iter_mut().for_each(|e| f.visit_mut(e)),
+        Exp::Chain(fields) => fields.iter_mut().for_each(|e| f.visit_mut(e)),
         Exp::FnLit(e) => f.visit_mut(e),
         Exp::Assert(e) => f.visit_mut(e),
+        Exp::Assume(e) => f.visit_mut(e),
     }
 }
 
@@ -305,9 +329,10 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
         Exp::Attr(_, e) => f.visit(e),
         Exp::Ghost(e) => f.visit(e),
         Exp::Record { fields } => fields.iter().for_each(|(_, e)| f.visit(e)),
-        Exp::Sequence(fields) => fields.iter().for_each(|e| f.visit(e)),
+        Exp::Chain(fields) => fields.iter().for_each(|e| f.visit(e)),
         Exp::FnLit(e) => f.visit(e),
         Exp::Assert(e) => f.visit(e),
+        Exp::Assume(e) => f.visit(e),
     }
 }
 
@@ -625,9 +650,11 @@ impl Exp {
             Exp::Attr(_, _) => Attr,
             Exp::Ghost(_) => App,
             Exp::Record { fields: _ } => Atom,
-            Exp::Sequence(_) => Atom,
+            // TODO: Wrong, should introduce a better name for it
+            Exp::Chain(_) => Attr,
             Exp::FnLit(_) => Atom,
             Exp::Assert(_) => Atom,
+            Exp::Assume(_) => Atom,
             // _ => unimplemented!("{:?}", self),
         }
     }

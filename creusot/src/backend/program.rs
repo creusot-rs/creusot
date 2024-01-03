@@ -431,11 +431,35 @@ impl<'tcx> Expr<'tcx> {
                 len_call
             }
             ExprKind::Array(fields) => {
-                Exp::impure_qvar(QName::from_string("Slice.create").unwrap())
-                    .app_to(Exp::Const(Constant::Int(fields.len() as i128, None)))
-                    .app_to(Exp::Sequence(
-                        fields.into_iter().map(|f| f.to_why(ctx, names, locals)).collect(),
-                    ))
+                let id = Ident::build("__arr_temp");
+                let ty = translate_ty(ctx, names, DUMMY_SP, self.ty);
+
+                let len = fields.len();
+
+                let arr_var = Exp::impure_var(id.clone());
+                let arr_elts =
+                    Exp::RecField { record: Box::new(arr_var.clone()), label: "elts".into() };
+                let fields = fields.into_iter().enumerate().map(|(ix, f)| {
+                    Exp::impure_qvar(QName::from_string("Seq.get").unwrap())
+                        .app(vec![arr_elts.clone(), Exp::Const(Constant::Int(ix as i128, None))])
+                        .eq(f.to_why(ctx, names, locals))
+                });
+
+                Exp::Let {
+                    pattern: Pattern::VarP(id.clone()),
+                    arg: Box::new(Exp::Any(ty)),
+                    body: Box::new(Exp::Chain(
+                        fields
+                            .map(|e| Exp::Assume(Box::new(e)))
+                            .chain(std::iter::once(Exp::Assume(Box::new(
+                                Exp::impure_qvar(QName::from_string("Slice.length").unwrap())
+                                    .app_to(arr_var.clone())
+                                    .eq(Exp::Const(Constant::Int(len as i128, None))),
+                            ))))
+                            .chain(std::iter::once(arr_var.clone()))
+                            .collect(),
+                    )),
+                }
             }
             ExprKind::Repeat(e, len) => {
                 Exp::impure_qvar(QName::from_string("Slice.create").unwrap())
