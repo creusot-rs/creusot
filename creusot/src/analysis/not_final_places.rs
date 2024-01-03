@@ -1,8 +1,11 @@
 use crate::extended_location::ExtendedLocation;
 use rustc_index::bit_set::BitSet;
-use rustc_middle::mir::{
-    self, visit::Visitor, BasicBlock, Location, Place, PlaceRef, ProjectionElem, Statement,
-    Terminator,
+use rustc_middle::{
+    mir::{
+        self, visit::Visitor, BasicBlock, Body, Location, Place, PlaceElem, PlaceRef,
+        ProjectionElem, Statement, Terminator,
+    },
+    ty::TyCtxt,
 };
 use rustc_mir_dataflow::{
     fmt::DebugWithContext, AnalysisDomain, Backward, GenKill, GenKillAnalysis, ResultsCursor,
@@ -60,7 +63,7 @@ pub struct NotFinalPlaces<'tcx> {
 }
 
 impl<'tcx> NotFinalPlaces<'tcx> {
-    pub fn new(body: &mir::Body<'tcx>) -> Self {
+    pub fn new(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> Self {
         struct VisitAllPlaces<'tcx>(HashMap<PlaceRef<'tcx>, PlaceId>);
         impl<'tcx> Visitor<'tcx> for VisitAllPlaces<'tcx> {
             fn visit_place(
@@ -87,18 +90,19 @@ impl<'tcx> NotFinalPlaces<'tcx> {
         let mut contains_dereference = BitSet::new_empty(places.len());
         let mut subplaces = vec![Vec::new(); places.len()];
         let mut conflicting_places = vec![Vec::new(); places.len()];
-        for (place, id) in &places {
+        for (&place, &id) in &places {
             if place.projection.get(1..).unwrap_or_default().contains(&ProjectionElem::Deref) {
-                contains_dereference.insert(*id);
+                contains_dereference.insert(id);
             }
-            for (other_place, other_id) in &places {
+            for (&other_place, &other_id) in &places {
                 if id == other_id || place.local != other_place.local {
                     continue;
                 }
                 if other_place.projection.get(..place.projection.len()) == Some(place.projection) {
-                    subplaces[*id].push(*other_place);
-                    conflicting_places[*id].push(*other_place);
-                    conflicting_places[*other_id].push(*place);
+                    subplaces[id].push(other_place);
+                }
+                if places_conflict(tcx, body, place, other_place) {
+                    conflicting_places[id].push(other_place);
                 }
             }
         }
@@ -135,6 +139,252 @@ impl<'tcx> NotFinalPlaces<'tcx> {
             }
         }
         true
+    }
+}
+
+/// Helper function for checking if two places conflict.
+///
+/// Common conflicting cases include:
+/// - Both places are the same: `*a.b` and `*a.b`
+/// - One place is a subplace of the other: `a.b.c` and `a.b`
+/// - There is a runtime indirection: `a[i]` and `a[j]`
+// FIXME: this is mostly copied from `rustc_borrowck::places_conflict`: it would be nice if the corresponding function would be public.
+fn places_conflict<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &Body<'tcx>,
+    place1: PlaceRef<'tcx>,
+    place2: PlaceRef<'tcx>,
+) -> bool {
+    if place1.local != place2.local {
+        // We have proven the borrow disjoint - further projections will remain disjoint.
+        return false;
+    }
+
+    place_components_conflict(tcx, body, place1, place2)
+}
+
+enum Overlap {
+    /// Places components are garanteed disjoint (e.g. `a.b` and `a.c`)
+    Disjoint,
+    /// Places pass through different fields of an union: we consider this case to be a conflict.
+    Arbitrary,
+    /// Places components might lead to the same place (e.g. `a.b` and `a.b`, or `a[i]` and `a[j]`)
+    EqualOrDisjoint,
+}
+
+fn place_components_conflict<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &Body<'tcx>,
+    place1: PlaceRef<'tcx>,
+    place2: PlaceRef<'tcx>,
+) -> bool {
+    // loop invariant: borrow_c is always either equal to access_c or disjoint from it.
+    for ((borrow_place, borrow_c), &access_c) in
+        std::iter::zip(place1.iter_projections(), place2.projection)
+    {
+        // Borrow and access path both have more components.
+        //
+        // Examples:
+        //
+        // - borrow of `a.(...)`, access to `a.(...)`
+        // - borrow of `a.(...)`, access to `b.(...)`
+        //
+        // Here we only see the components we have checked so
+        // far (in our examples, just the first component). We
+        // check whether the components being borrowed vs
+        // accessed are disjoint (as in the second example,
+        // but not the first).
+        match place_projection_conflict(tcx, body, borrow_place, borrow_c, access_c) {
+            Overlap::Arbitrary => {
+                // We have encountered different fields of potentially
+                // the same union - the borrow now partially overlaps.
+                //
+                // There is no *easy* way of comparing the fields
+                // further on, because they might have different types
+                // (e.g., borrows of `u.a.0` and `u.b.y` where `.0` and
+                // `.y` come from different structs).
+                return true;
+            }
+            Overlap::EqualOrDisjoint => {
+                // This is the recursive case - proceed to the next element.
+            }
+            Overlap::Disjoint => {
+                // We have proven the borrow disjoint - further
+                // projections will remain disjoint.
+                return false;
+            }
+        }
+    }
+
+    // One place is a subplace of the other, e.g. `a.b` and `a.b.c`.
+    true
+}
+
+// Given that the bases of `elem1` and `elem2` are always either equal
+// or disjoint (and have the same type!), return the overlap situation
+// between `elem1` and `elem2`.
+fn place_projection_conflict<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &Body<'tcx>,
+    pi1: PlaceRef<'tcx>,
+    pi1_elem: PlaceElem<'tcx>,
+    pi2_elem: PlaceElem<'tcx>,
+) -> Overlap {
+    match (pi1_elem, pi2_elem) {
+        (ProjectionElem::Deref, ProjectionElem::Deref) => {
+            // derefs (e.g., `*x` vs. `*x`) - recur.
+            Overlap::EqualOrDisjoint
+        }
+        (ProjectionElem::OpaqueCast(_), ProjectionElem::OpaqueCast(_)) => {
+            // casts to other types may always conflict irrespective of the type being cast to.
+            Overlap::EqualOrDisjoint
+        }
+        (ProjectionElem::Field(f1, _), ProjectionElem::Field(f2, _)) => {
+            if f1 == f2 {
+                // same field (e.g., `a.y` vs. `a.y`) - recur.
+                Overlap::EqualOrDisjoint
+            } else {
+                let ty = pi1.ty(body, tcx).ty;
+                if ty.is_union() {
+                    // Different fields of a union, we are basically stuck.
+                    Overlap::Arbitrary
+                } else {
+                    // Different fields of a struct (`a.x` vs. `a.y`). Disjoint!
+                    Overlap::Disjoint
+                }
+            }
+        }
+        (ProjectionElem::Downcast(_, v1), ProjectionElem::Downcast(_, v2)) => {
+            if v1 == v2 {
+                // same variant.
+                Overlap::EqualOrDisjoint
+            } else {
+                // even if the two variants may occupy the same space, they are disjoint since they cannot be active at the same time. The same is _not_ true for unions.
+                Overlap::Disjoint
+            }
+        }
+        (
+            ProjectionElem::Index(..),
+            ProjectionElem::Index(..)
+            | ProjectionElem::ConstantIndex { .. }
+            | ProjectionElem::Subslice { .. },
+        )
+        | (
+            ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. },
+            ProjectionElem::Index(..),
+        ) => {
+            // Array indexes (`a[0]` vs. `a[i]`). They might overlap.
+            Overlap::EqualOrDisjoint
+        }
+        (
+            ProjectionElem::ConstantIndex { offset: o1, min_length: _, from_end: false },
+            ProjectionElem::ConstantIndex { offset: o2, min_length: _, from_end: false },
+        )
+        | (
+            ProjectionElem::ConstantIndex { offset: o1, min_length: _, from_end: true },
+            ProjectionElem::ConstantIndex { offset: o2, min_length: _, from_end: true },
+        ) => {
+            if o1 == o2 {
+                Overlap::EqualOrDisjoint
+            } else {
+                Overlap::Disjoint
+            }
+        }
+        (
+            ProjectionElem::ConstantIndex {
+                offset: offset_from_begin,
+                min_length: min_length1,
+                from_end: false,
+            },
+            ProjectionElem::ConstantIndex {
+                offset: offset_from_end,
+                min_length: min_length2,
+                from_end: true,
+            },
+        )
+        | (
+            ProjectionElem::ConstantIndex {
+                offset: offset_from_end,
+                min_length: min_length1,
+                from_end: true,
+            },
+            ProjectionElem::ConstantIndex {
+                offset: offset_from_begin,
+                min_length: min_length2,
+                from_end: false,
+            },
+        ) => {
+            // both patterns matched so it must be at least the greater of the two
+            let min_length = std::cmp::max(min_length1, min_length2);
+            // `offset_from_end` can be in range `[1..min_length]`, 1 indicates the last
+            // element (like -1 in Python) and `min_length` the first.
+            // Therefore, `min_length - offset_from_end` gives the minimal possible
+            // offset from the beginning
+            if offset_from_begin >= min_length - offset_from_end {
+                Overlap::EqualOrDisjoint
+            } else {
+                Overlap::Disjoint
+            }
+        }
+        (
+            ProjectionElem::ConstantIndex { offset, min_length: _, from_end: false },
+            ProjectionElem::Subslice { from, to, from_end: false },
+        )
+        | (
+            ProjectionElem::Subslice { from, to, from_end: false },
+            ProjectionElem::ConstantIndex { offset, min_length: _, from_end: false },
+        ) => {
+            if (from..to).contains(&offset) {
+                Overlap::EqualOrDisjoint
+            } else {
+                Overlap::Disjoint
+            }
+        }
+        (
+            ProjectionElem::ConstantIndex { offset, min_length: _, from_end: false },
+            ProjectionElem::Subslice { from, .. },
+        )
+        | (
+            ProjectionElem::Subslice { from, .. },
+            ProjectionElem::ConstantIndex { offset, min_length: _, from_end: false },
+        ) => {
+            if offset >= from {
+                Overlap::EqualOrDisjoint
+            } else {
+                Overlap::Disjoint
+            }
+        }
+        (
+            ProjectionElem::ConstantIndex { offset, min_length: _, from_end: true },
+            ProjectionElem::Subslice { to, from_end: true, .. },
+        )
+        | (
+            ProjectionElem::Subslice { to, from_end: true, .. },
+            ProjectionElem::ConstantIndex { offset, min_length: _, from_end: true },
+        ) => {
+            if offset > to {
+                Overlap::EqualOrDisjoint
+            } else {
+                Overlap::Disjoint
+            }
+        }
+        (
+            ProjectionElem::Subslice { from: f1, to: t1, from_end: false },
+            ProjectionElem::Subslice { from: f2, to: t2, from_end: false },
+        ) => {
+            if f2 >= t1 || f1 >= t2 {
+                Overlap::Disjoint
+            } else {
+                Overlap::EqualOrDisjoint
+            }
+        }
+        (ProjectionElem::Subslice { .. }, ProjectionElem::Subslice { .. }) => {
+            Overlap::EqualOrDisjoint
+        }
+        _ => panic!(
+            "mismatched projections in place_element_conflict: {:?} and {:?}",
+            pi1_elem, pi2_elem
+        ),
     }
 }
 

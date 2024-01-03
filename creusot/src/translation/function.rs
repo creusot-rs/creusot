@@ -158,7 +158,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn translate_body(&mut self) {
-        let mut not_final_places = NotFinalPlaces::new(self.body)
+        let mut not_final_places = NotFinalPlaces::new(self.tcx, self.body)
             .into_engine(self.tcx, self.body)
             .iterate_to_fixpoint()
             .into_results_cursor(self.body);
