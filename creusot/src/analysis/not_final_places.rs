@@ -69,21 +69,14 @@ impl<'tcx> NotFinalPlaces<'tcx> {
                 _: mir::visit::PlaceContext,
                 _: Location,
             ) {
-                let mut place_ref = place.as_ref();
-                loop {
+                let place_ref = place.as_ref();
+                for place in
+                    std::iter::once(place_ref).chain(place_ref.iter_projections().map(|(p, _)| p))
+                {
                     let idx = self.0.len();
-                    if let std::collections::hash_map::Entry::Vacant(entry) =
-                        self.0.entry(place_ref)
-                    {
+                    if let std::collections::hash_map::Entry::Vacant(entry) = self.0.entry(place) {
                         entry.insert(idx);
                     }
-                    if place_ref.projection.is_empty() {
-                        break;
-                    }
-                    // Include all "superplace" of the place.
-                    // This is needed, because in `is_final_at`, we might refer to such a
-                    // place, even though it does not appear in the MIR.
-                    place_ref.projection = &place_ref.projection[..place_ref.projection.len() - 1]
                 }
             }
         }
