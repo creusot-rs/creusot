@@ -1,5 +1,5 @@
 use super::{
-    fmir::{LocalDecls, LocalIdent, RValue},
+    fmir::{ExprKind, LocalDecls, LocalIdent, RValue},
     pearlite::{normalize, Term},
     specification::inv_subst,
 };
@@ -306,13 +306,15 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     // Useful helper to translate an operand
     pub(crate) fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Expr<'tcx> {
-        match operand {
-            Operand::Copy(pl) => Expr::Copy(self.translate_place(*pl)),
-            Operand::Move(pl) => Expr::Move(self.translate_place(*pl)),
+        let kind = match operand {
+            Operand::Copy(pl) => ExprKind::Copy(self.translate_place(*pl)),
+            Operand::Move(pl) => ExprKind::Move(self.translate_place(*pl)),
             Operand::Constant(c) => {
-                crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
+                return crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
             }
-        }
+        };
+
+        Expr { kind, span: DUMMY_SP, ty: operand.ty(self.body, self.tcx) }
     }
 
     fn translate_place(&self, _pl: mir::Place<'tcx>) -> fmir::Place<'tcx> {

@@ -111,23 +111,23 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
     // fn visit_term(&mut self, t: &Term<'tcx>) {}
 
     fn visit_expr(&mut self, e: &fmir::Expr<'tcx>) {
-        match e {
-            fmir::Expr::Move(p) => self.read_place(p),
-            fmir::Expr::Copy(p) => self.read_place(p),
-            fmir::Expr::BinOp(_, _, l, r) => {
+        match &e.kind {
+            fmir::ExprKind::Move(p) => self.read_place(p),
+            fmir::ExprKind::Copy(p) => self.read_place(p),
+            fmir::ExprKind::BinOp(_, _, l, r) => {
                 self.visit_expr(l);
                 self.visit_expr(r)
             }
-            fmir::Expr::UnaryOp(_, _, e) => self.visit_expr(e),
-            fmir::Expr::Constructor(_, _, es) => es.iter().for_each(|e| self.visit_expr(e)),
-            fmir::Expr::Call(_, _, es) => es.iter().for_each(|e| self.visit_expr(e)),
-            fmir::Expr::Constant(t) => self.visit_term(t),
-            fmir::Expr::Cast(e, _, _) => self.visit_expr(e),
-            fmir::Expr::Tuple(es) => es.iter().for_each(|e| self.visit_expr(e)),
-            fmir::Expr::Span(_, e) => self.visit_expr(e),
-            fmir::Expr::Len(e) => self.visit_expr(e),
-            fmir::Expr::Array(es) => es.iter().for_each(|e| self.visit_expr(e)),
-            fmir::Expr::Repeat(l, r) => {
+            fmir::ExprKind::UnaryOp(_, _, e) => self.visit_expr(e),
+            fmir::ExprKind::Constructor(_, _, es) => es.iter().for_each(|e| self.visit_expr(e)),
+            fmir::ExprKind::Call(_, _, es) => es.iter().for_each(|e| self.visit_expr(e)),
+            fmir::ExprKind::Constant(t) => self.visit_term(t),
+            fmir::ExprKind::Cast(e, _, _) => self.visit_expr(e),
+            fmir::ExprKind::Tuple(es) => es.iter().for_each(|e| self.visit_expr(e)),
+            fmir::ExprKind::Span(_, e) => self.visit_expr(e),
+            fmir::ExprKind::Len(e) => self.visit_expr(e),
+            fmir::ExprKind::Array(es) => es.iter().for_each(|e| self.visit_expr(e)),
+            fmir::ExprKind::Repeat(l, r) => {
                 self.visit_expr(l);
                 self.visit_expr(r)
             }
@@ -274,26 +274,26 @@ impl<'tcx> SimplePropagator<'tcx> {
     }
 
     fn visit_expr(&mut self, e: &mut fmir::Expr<'tcx>) {
-        match e {
-            fmir::Expr::Move(p) | fmir::Expr::Copy(p) => {
+        match &mut e.kind {
+            fmir::ExprKind::Move(p) | fmir::ExprKind::Copy(p) => {
               if let Some(l) = p.as_symbol() && let Some(v) = self.prop.remove(&l) {
                 *e = v;
               }
             },
-            fmir::Expr::BinOp(_, _, l, r) => {
+            fmir::ExprKind::BinOp(_, _, l, r) => {
                 self.visit_expr(l);
                 self.visit_expr(r)
             }
-            fmir::Expr::UnaryOp(_, _, e) => self.visit_expr(e),
-            fmir::Expr::Constructor(_, _, es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
-            fmir::Expr::Call(_, _, es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
-            fmir::Expr::Constant(t) => self.visit_term(t),
-            fmir::Expr::Cast(e, _, _) => self.visit_expr(e),
-            fmir::Expr::Tuple(es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
-            fmir::Expr::Span(_, e) => self.visit_expr(e),
-            fmir::Expr::Len(e) => self.visit_expr(e),
-            fmir::Expr::Array(es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
-            fmir::Expr::Repeat(l, r) => {
+            fmir::ExprKind::UnaryOp(_, _, e) => self.visit_expr(e),
+            fmir::ExprKind::Constructor(_, _, es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
+            fmir::ExprKind::Call(_, _, es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
+            fmir::ExprKind::Constant(t) => self.visit_term(t),
+            fmir::ExprKind::Cast(e, _, _) => self.visit_expr(e),
+            fmir::ExprKind::Tuple(es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
+            fmir::ExprKind::Span(_, e) => self.visit_expr(e),
+            fmir::ExprKind::Len(e) => self.visit_expr(e),
+            fmir::ExprKind::Array(es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
+            fmir::ExprKind::Repeat(l, r) => {
                 self.visit_expr(l);
                 self.visit_expr(r)
             }
