@@ -6,6 +6,8 @@ use crate::{
     util::get_builtin,
 };
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind};
+use rustc_span::Symbol;
+use rustc_type_ir::FloatTy;
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
     ty::Type,
@@ -62,6 +64,7 @@ impl<'tcx> Lower<'_, 'tcx> {
             }
             TermKind::Var(v) => Exp::pure_var(util::ident_of(v)),
             TermKind::Binary { op, box lhs, box rhs } => {
+                let ty = lhs.ty;
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
 
@@ -71,8 +74,6 @@ impl<'tcx> Lower<'_, 'tcx> {
                 }
 
                 match (op, self.pure) {
-                    (Div, _) => Exp::pure_var("div".into()).app(vec![lhs, rhs]),
-                    (Rem, _) => Exp::pure_var("mod".into()).app(vec![lhs, rhs]),
                     (Eq | Ne | Lt | Le | Gt | Ge, Purity::Program) => {
                         let (a, lhs) = if lhs.is_pure() {
                             (lhs, None)
@@ -86,9 +87,8 @@ impl<'tcx> Lower<'_, 'tcx> {
                             (Exp::Var("b".into(), self.pure), Some(rhs))
                         };
 
-                        let op = binop_to_binop(op, Purity::Logic);
                         let mut inner =
-                            Exp::Pure(Box::new(Exp::BinaryOp(op, Box::new(a), Box::new(b))));
+                            binop_to_binop(self.ctx.tcx, self.names, op, ty, Purity::Logic, a, b);
 
                         if let Some(lhs) = lhs {
                             inner = Exp::Let {
@@ -108,7 +108,7 @@ impl<'tcx> Lower<'_, 'tcx> {
 
                         inner
                     }
-                    _ => Exp::BinaryOp(binop_to_binop(op, self.pure), Box::new(lhs), Box::new(rhs)),
+                    _ => binop_to_binop(self.ctx.tcx, self.names, op, ty, self.pure, lhs, rhs),
                 }
             }
             TermKind::Unary { op, box arg } => {
@@ -338,7 +338,11 @@ impl<'tcx> Lower<'_, 'tcx> {
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
 
-use super::{dependency::Dependency, Why3Generator};
+use super::{
+    dependency::Dependency,
+    program::{int_to_prelude, uint_to_prelude},
+    Why3Generator,
+};
 
 pub(crate) fn lower_literal<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
@@ -377,23 +381,70 @@ pub(crate) fn lower_literal<'tcx>(
     }
 }
 
-fn binop_to_binop(op: pearlite::BinOp, purity: Purity) -> why3::exp::BinOp {
+fn binop_module<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, op: pearlite::BinOp) -> PreludeModule {
+    use pearlite::BinOp;
+    match ty.kind() {
+        TyKind::Int(ity) => int_to_prelude(*ity),
+        TyKind::Uint(uty) => uint_to_prelude(*uty),
+        TyKind::Float(FloatTy::F32) => PreludeModule::Float32,
+        TyKind::Float(FloatTy::F64) => PreludeModule::Float64,
+        TyKind::Adt(def, _) => {
+            if Some(def.did()) == tcx.get_diagnostic_item(Symbol::intern("creusot_int")) {
+                PreludeModule::Int
+            } else {
+                PreludeModule::Bool
+            }
+        }
+        TyKind::Bool => PreludeModule::Bool,
+        _ => {
+            assert!(matches!(op, BinOp::Eq | BinOp::Ne));
+            PreludeModule::Bool
+        }
+    }
+}
+
+fn binop_to_binop<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    op: pearlite::BinOp,
+    ty: Ty<'tcx>,
+    purity: Purity,
+    left: Exp,
+    right: Exp,
+) -> Exp {
+    let prelude = binop_module(tcx, ty, op);
+    names.import_prelude_module(prelude);
+
+    let mut module = prelude.qname();
     match (op, purity) {
-        (pearlite::BinOp::Add, _) => BinOp::Add,
-        (pearlite::BinOp::Sub, _) => BinOp::Sub,
-        (pearlite::BinOp::Mul, _) => BinOp::Mul,
-        (pearlite::BinOp::Lt, _) => BinOp::Lt,
-        (pearlite::BinOp::Le, _) => BinOp::Le,
-        (pearlite::BinOp::Gt, _) => BinOp::Gt,
-        (pearlite::BinOp::Ge, _) => BinOp::Ge,
-        (pearlite::BinOp::Eq, Purity::Logic) => BinOp::Eq,
-        (pearlite::BinOp::Ne, Purity::Logic) => BinOp::Ne,
-        (pearlite::BinOp::And, Purity::Logic) => BinOp::LogAnd,
-        (pearlite::BinOp::And, Purity::Program) => BinOp::LazyAnd,
-        (pearlite::BinOp::Or, Purity::Logic) => BinOp::LogOr,
-        (pearlite::BinOp::Or, Purity::Program) => BinOp::LazyOr,
+        (pearlite::BinOp::Add, _) => module.push_ident("add"),
+        (pearlite::BinOp::Sub, _) => module.push_ident("sub"),
+        (pearlite::BinOp::Mul, _) => module.push_ident("mul"),
+        (pearlite::BinOp::Div, _) => module.push_ident("div"),
+        (pearlite::BinOp::Rem, _) => module.push_ident("rem"),
+        (pearlite::BinOp::Lt, _) => module.push_ident("lt"),
+        (pearlite::BinOp::Le, _) => module.push_ident("le"),
+        (pearlite::BinOp::Gt, _) => module.push_ident("gt"),
+        (pearlite::BinOp::Ge, _) => module.push_ident("ge"),
+        (pearlite::BinOp::Eq, Purity::Logic) => return left.eq(right),
+        (pearlite::BinOp::Ne, Purity::Logic) => return left.neq(right),
+        (pearlite::BinOp::And, Purity::Logic) => {
+            return Exp::BinaryOp(BinOp::LogAnd, Box::new(left), Box::new(right))
+        }
+        (pearlite::BinOp::And, Purity::Program) => {
+            return Exp::BinaryOp(BinOp::LazyAnd, Box::new(left), Box::new(right))
+        }
+        (pearlite::BinOp::Or, Purity::Logic) => {
+            return Exp::BinaryOp(BinOp::LogOr, Box::new(left), Box::new(right))
+        }
+        (pearlite::BinOp::Or, Purity::Program) => {
+            return Exp::BinaryOp(BinOp::LazyOr, Box::new(left), Box::new(right))
+        }
         _ => unreachable!(),
     }
+
+    module = module.without_search_path();
+    Exp::pure_qvar(module).app(vec![left, right])
 }
 
 pub(super) fn mk_binders(func: Exp, args: Vec<Exp>) -> Exp {

@@ -96,6 +96,14 @@ impl QName {
         self.module.last()
     }
 
+    /// Returns the name for symbol `id` contianed in `self`.
+    pub fn push_ident(&mut self, id: impl Into<Ident>) {
+        let old = std::mem::replace(&mut self.name, id.into());
+        self.module.push(old);
+    }
+
+    /// Return a qualified identifier for the module of `self`.
+    /// Turns `file.path.Module.foo` into `file.path.Module`
     pub fn module_qname(mut self) -> QName {
         assert!(!self.module.is_empty(), "ident has no module {:?}", self);
         let id = self.module.pop().unwrap();
@@ -103,6 +111,8 @@ impl QName {
         self
     }
 
+    /// Strips the file path portion of a module name,
+    /// Turning `file.path.Module.foo` into `Module.foo`
     pub fn without_search_path(mut self) -> QName {
         let mut i = 0;
         while i < self.module.len() {

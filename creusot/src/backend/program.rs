@@ -12,25 +12,21 @@ use crate::{
     },
     ctx::{BodyId, CloneMap, TranslationCtx},
     translation::{
-        binop_to_binop,
-        fmir::{
-            self, Block, Branches, Expr, ExprKind, LocalDecls, Place, RValue, Statement, Terminator,
-        },
+        fmir::{self, *},
         function::{closure_contract, promoted, ClosureContract},
-        unop_to_unop,
     },
     util::{self, module_name, ItemType},
 };
 use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
 use rustc_middle::{
-    mir::{BasicBlock, BinOp},
-    ty::TyKind,
+    mir::{self, BasicBlock, BinOp},
+    ty::{Ty, TyKind},
 };
 use rustc_span::DUMMY_SP;
-use rustc_type_ir::{IntTy, UintTy};
+use rustc_type_ir::{FloatTy, IntTy, UintTy};
 use why3::{
     declaration::{self, Attribute, CfgFunction, Decl, LetDecl, LetKind, Module, Predicate, Use},
-    exp::{Constant, Exp, Pattern},
+    exp::{Constant, Exp, Pattern, UnOp},
     mlcfg,
     mlcfg::BlockId,
     Ident, QName,
@@ -336,15 +332,12 @@ impl<'tcx> Expr<'tcx> {
                 // Hack
                 translate_ty(ctx, names, DUMMY_SP, ty);
 
-                Exp::BinaryOp(
-                    binop_to_binop(ctx, ty, op),
-                    Box::new(l.to_why(ctx, names, locals)),
-                    Box::new(r.to_why(ctx, names, locals)),
-                )
+                let l = l.to_why(ctx, names, locals);
+                let r = r.to_why(ctx, names, locals);
+
+                binop_to_binop(ty, op, l, r)
             }
-            ExprKind::UnaryOp(op, ty, arg) => {
-                Exp::UnaryOp(unop_to_unop(ty, op), Box::new(arg.to_why(ctx, names, locals)))
-            }
+            ExprKind::UnaryOp(op, ty, arg) => unop_to_unop(ty, op, arg.to_why(ctx, names, locals)),
             ExprKind::Constructor(id, subst, args) => {
                 let args = args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
 
@@ -509,7 +502,7 @@ impl<'tcx> Terminator<'tcx> {
                 };
             }
             Terminator::Switch(_, brs) => match brs {
-                Branches::Int(brs, def) => {
+                Branches::Int(_, brs, def) => {
                     if *def == from {
                         *def = to
                     };
@@ -519,7 +512,7 @@ impl<'tcx> Terminator<'tcx> {
                         }
                     }
                 }
-                Branches::Uint(brs, def) => {
+                Branches::Uint(_, brs, def) => {
                     if *def == from {
                         *def = to
                     };
@@ -580,12 +573,16 @@ impl<'tcx> Branches<'tcx> {
         discr: Exp,
     ) -> mlcfg::Terminator {
         use why3::mlcfg::Terminator::*;
-
         match self {
-            Branches::Int(brs, def) => {
+            Branches::Int(ty, brs, def) => {
                 brs.into_iter().rfold(Goto(BlockId(def.into())), |acc, (val, bb)| {
                     Switch(
-                        discr.clone().eq(Exp::Const(why3::exp::Constant::Int(val, None))),
+                        binop_to_binop(
+                            ty,
+                            BinOp::Eq,
+                            discr.clone(),
+                            Exp::Const(Constant::Int(val, None)),
+                        ),
                         vec![
                             (Pattern::mk_true(), Goto(BlockId(bb.into()))),
                             (Pattern::mk_false(), acc),
@@ -593,10 +590,15 @@ impl<'tcx> Branches<'tcx> {
                     )
                 })
             }
-            Branches::Uint(brs, def) => {
+            Branches::Uint(ty, brs, def) => {
                 brs.into_iter().rfold(Goto(BlockId(def.into())), |acc, (val, bb)| {
                     Switch(
-                        discr.clone().eq(Exp::Const(why3::exp::Constant::Uint(val, None))),
+                        binop_to_binop(
+                            ty,
+                            BinOp::Eq,
+                            discr.clone(),
+                            Exp::Const(Constant::Uint(val, None)),
+                        ),
                         vec![
                             (Pattern::mk_true(), Goto(BlockId(bb.into()))),
                             (Pattern::mk_false(), acc),
@@ -731,7 +733,73 @@ impl<'tcx> Statement<'tcx> {
     }
 }
 
-fn int_to_prelude(ity: IntTy) -> PreludeModule {
+pub(crate) fn binop_to_binop(ty: Ty, op: mir::BinOp, left: Exp, right: Exp) -> Exp {
+    let prelude: PreludeModule = match ty.kind() {
+        TyKind::Int(ity) => int_to_prelude(*ity),
+        TyKind::Uint(uty) => uint_to_prelude(*uty),
+        TyKind::Float(FloatTy::F32) => PreludeModule::Float32,
+        TyKind::Float(FloatTy::F64) => PreludeModule::Float64,
+        _ => unreachable!("non-primitive type for binary operation {ty:?}"),
+    };
+
+    let mut module = prelude.qname();
+
+    match op {
+        BinOp::Add => module.push_ident("add"),
+        BinOp::AddUnchecked => module.push_ident("add"),
+        BinOp::Sub => module.push_ident("sub"),
+        BinOp::SubUnchecked => module.push_ident("sub"),
+        BinOp::Mul => module.push_ident("mul"),
+        BinOp::MulUnchecked => module.push_ident("mul"),
+        BinOp::Div => module.push_ident("div"),
+        BinOp::Rem => module.push_ident("rem"),
+        BinOp::BitXor => module.push_ident("bw_xor"),
+        BinOp::BitAnd => module.push_ident("bw_and"),
+        BinOp::BitOr => module.push_ident("bw_or"),
+        BinOp::Shl => module.push_ident("shl"),
+        BinOp::ShlUnchecked => module.push_ident("shl"),
+        BinOp::Shr => module.push_ident("shr"),
+        BinOp::ShrUnchecked => module.push_ident("shr"),
+        BinOp::Eq => module.push_ident("eq"),
+        BinOp::Lt => module.push_ident("lt"),
+        BinOp::Le => module.push_ident("le"),
+        BinOp::Ne => module.push_ident("ne"),
+        BinOp::Ge => module.push_ident("ge"),
+        BinOp::Gt => module.push_ident("gt"),
+        BinOp::Offset => unimplemented!("pointer offsets are unsupported"),
+    };
+
+    module = module.without_search_path();
+    Exp::impure_qvar(module).app(vec![left, right])
+}
+
+pub(crate) fn unop_to_unop(ty: Ty, op: rustc_middle::mir::UnOp, e: Exp) -> Exp {
+    let prelude: PreludeModule = match ty.kind() {
+        TyKind::Int(ity) => int_to_prelude(*ity),
+        TyKind::Uint(uty) => uint_to_prelude(*uty),
+        TyKind::Float(FloatTy::F32) => PreludeModule::Float32,
+        TyKind::Float(FloatTy::F64) => PreludeModule::Float64,
+        TyKind::Bool => {
+            assert_eq!(op, mir::UnOp::Not);
+            PreludeModule::Bool
+        }
+        _ => unreachable!("non-primitive type for unary operation"),
+    };
+
+    let mut module = prelude.qname();
+
+    match op {
+        mir::UnOp::Not => Exp::UnaryOp(UnOp::Not, Box::new(e)),
+        mir::UnOp::Neg => {
+            module.push_ident("neg");
+
+            module = module.without_search_path();
+            Exp::impure_qvar(module).app_to(e)
+        }
+    }
+}
+
+pub(crate) fn int_to_prelude(ity: IntTy) -> PreludeModule {
     match ity {
         IntTy::Isize => PreludeModule::Isize,
         IntTy::I8 => PreludeModule::Int8,
@@ -742,7 +810,7 @@ fn int_to_prelude(ity: IntTy) -> PreludeModule {
     }
 }
 
-fn uint_to_prelude(ity: UintTy) -> PreludeModule {
+pub(crate) fn uint_to_prelude(ity: UintTy) -> PreludeModule {
     match ity {
         UintTy::Usize => PreludeModule::Usize,
         UintTy::U8 => PreludeModule::UInt8,

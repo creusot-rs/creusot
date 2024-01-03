@@ -58,6 +58,7 @@ pub enum RValue<'tcx> {
     Expr(Expr<'tcx>),
 }
 
+
 #[derive(Clone, Debug)]
 pub struct Expr<'tcx> {
     pub kind: ExprKind<'tcx>,
@@ -138,8 +139,8 @@ pub enum Terminator<'tcx> {
 
 #[derive(Clone)]
 pub enum Branches<'tcx> {
-    Int(Vec<(i128, BasicBlock)>, BasicBlock),
-    Uint(Vec<(u128, BasicBlock)>, BasicBlock),
+    Int(Ty<'tcx>, Vec<(i128, BasicBlock)>, BasicBlock),
+    Uint(Ty<'tcx>, Vec<(u128, BasicBlock)>, BasicBlock),
     Constructor(AdtDef<'tcx>, SubstsRef<'tcx>, Vec<(VariantIdx, BasicBlock)>, BasicBlock),
     Bool(BasicBlock, BasicBlock),
 }

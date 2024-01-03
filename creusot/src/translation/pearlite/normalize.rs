@@ -79,13 +79,13 @@ fn optimize_builtin<'tcx>(
         Some(TermKind::Binary { op: BinOp::Rem, lhs: Box::new(args.remove(0)), rhs: Box::new(args.remove(0)) })
     } else if builtin_attr == Some(Symbol::intern("neg_int")) {
         Some(TermKind::Unary { op: pearlite::UnOp::Neg, arg: Box::new(args.remove(0)) })
-    } else if builtin_attr == Some(Symbol::intern("int.Int.(<=)")) {
+    } else if builtin_attr == Some(Symbol::intern("prelude.Int.(<=)")) {
         Some(TermKind::Binary { op: BinOp::Le, lhs: Box::new(args.remove(0)), rhs: Box::new(args.remove(0)) })
-    } else if builtin_attr == Some(Symbol::intern("int.Int.(<)")) {
+    } else if builtin_attr == Some(Symbol::intern("prelude.Int.(<)")) {
         Some(TermKind::Binary { op: BinOp::Lt, lhs: Box::new(args.remove(0)), rhs: Box::new(args.remove(0)) })
-    } else if builtin_attr == Some(Symbol::intern("int.Int.(>=)")) {
+    } else if builtin_attr == Some(Symbol::intern("prelude.Int.(>=)")) {
         Some(TermKind::Binary { op: BinOp::Ge, lhs: Box::new(args.remove(0)), rhs: Box::new(args.remove(0)) })
-    } else if builtin_attr == Some(Symbol::intern("int.Int.(>)")) {
+    } else if builtin_attr == Some(Symbol::intern("prelude.Int.(>)")) {
         Some(TermKind::Binary { op: BinOp::Gt, lhs: Box::new(args.remove(0)), rhs: Box::new(args.remove(0)) })
     } else if builtin_attr == Some(Symbol::intern("==")) {
         Some(TermKind::Binary { op: BinOp::Eq, lhs: Box::new(args.remove(0)), rhs: Box::new(args.remove(0)) })

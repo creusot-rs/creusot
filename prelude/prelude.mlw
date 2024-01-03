@@ -9,10 +9,6 @@ module Seq
   function to_owned (a : 'a) : 'a = a
 end
 
-module Int
-  use export mach.int.Int
-end
-
 (* Rust primitive types *)
 
 module Opaque
@@ -22,7 +18,7 @@ module Opaque
 end
 
 module Bool
-  let eqb (a : bool) (b : bool) : bool =
+  let function eqb (a : bool) (b : bool) : bool =
     ensures { result <-> a = b  }
     match a, b with
     | True, True -> True
@@ -33,6 +29,16 @@ module Bool
   let neqb (a : bool) (b : bool) : bool =
     ensures { result <-> a <> b  }
     not (eqb a b)
+
+
+  function eq [@inline:trivial] (a b : 'a) : bool = a = b
+  function ne [@inline:trivial] (a b : 'a) : bool = a <> b
+
+  function and (a b : bool) : bool = a /\ b
+  function and2 (a b : bool) : bool = a && b
+  function or  (a b : bool) : bool = a || b
+  function or2 (a b : bool) : bool = a || b
+
 
   let to_int (b : bool) : int =
     if b then 1 else 0
@@ -55,11 +61,34 @@ module Real
 
 end
 
-(* Signed Integer *)
-module IntSize
-  use export mach.int.Int64
-  type isize = int64
+module Int
+  use mach.int.Int
+
+  let function add [@inline:trivial] (a b : int) : int = a + b
+  let function sub [@inline:trivial] (a b : int) : int = a - b
+  let function mul [@inline:trivial] (a b : int) : int = a * b
+  let function div [@inline:trivial] (a b : int) : int
+    requires { b <> 0 }
+    = a / b
+  let function rem [@inline:trivial] (a b : int) : int
+    requires { b <> 0 }
+    = a % b
+  let function neg [@inline:trivial] (a : int) : int = - a
+
+  let predicate (<) [@inline:trivial] a b = a < b
+  let predicate (<=) [@inline:trivial]  a b = a <= b
+  let predicate (>) [@inline:trivial]  a b = a > b
+  let predicate (>=) [@inline:trivial]  a b = a >= b
+
+  let predicate lt [@inline:trivial] (a b : int) : bool = a < b
+  let predicate le [@inline:trivial] (a b : int) : bool = a <= b
+  let predicate gt [@inline:trivial] (a b : int) : bool = a > b
+  let predicate ge [@inline:trivial] (a b : int) : bool = a >= b
+  let predicate eq [@inline:trivial] (a b : int) : bool = a = b
+  let predicate ne [@inline:trivial] (a b : int) : bool = a <> b
 end
+
+(* Signed Integer *)
 module Int8
   use int.Int
 
@@ -69,7 +98,7 @@ module Int8
   let constant max_int8 : int =   0x7f
   function to_int (x : int8) : int = int8'int x
 
-  clone export mach.int.Bounded_int with
+  clone export numeric.BoundedInt with
     type t = int8,
     constant min = int8'minInt,
     constant max = int8'maxInt,
@@ -77,6 +106,7 @@ module Int8
     lemma to_int_in_bounds,
     lemma extensionality
 end
+
 module Int16
   use int.Int
 
@@ -86,7 +116,7 @@ module Int16
   let constant max_int16 : int =   0x7fff
   function to_int (x : int16) : int = int16'int x
 
-  clone export mach.int.Bounded_int with
+  clone export numeric.BoundedInt with
     type t = int16,
     constant min = int16'minInt,
     constant max = int16'maxInt,
@@ -94,22 +124,59 @@ module Int16
     lemma to_int_in_bounds,
     lemma extensionality
 end
+
 module Int32
-  use export mach.int.Int32
+  use int.Int
+
+  type int32 = < range -0x8000_0000 0x7fff_ffff >
+
+  let constant min_int16 : int = - 0x8000_0000
+  let constant max_int16 : int =   0x7fff_ffff
+  function to_int (x : int32) : int = int32'int x
+
+  clone export numeric.BoundedInt with
+    type t = int32,
+    constant min = int32'minInt,
+    constant max = int32'maxInt,
+    function to_int = int32'int,
+    lemma to_int_in_bounds,
+    lemma extensionality
+
 end
+
 module Int64
-  use export mach.int.Int64
+  use int.Int
+
+  type int64 = < range -0x8000_0000_0000_0000 0x7fff_ffff_ffff_ffff >
+
+  let constant min_int64 : int = - 0x8000_0000_0000_0000
+  let constant max_int64 : int =   0x7fff_ffff_ffff_ffff
+  function to_int (x : int64) : int = int64'int x
+
+  clone export numeric.BoundedInt with
+    type t = int64,
+    constant min = int64'minInt,
+    constant max = int64'maxInt,
+    function to_int = int64'int,
+    lemma to_int_in_bounds,
+    lemma extensionality
 end
+
+module IntSize
+  use export Int64
+  type isize = int64
+end
+
 module Int128
   use int.Int
 
-  type int128 = < range -0x80000000000000000000000000000000 0x7fffffffffffffffffffffffffffffff >
+  type int128 = < range -0x8000_0000_0000_0000_0000_0000_0000_0000 0x7fff_ffff_ffff_ffff_ffff_ffff_ffff_ffff >
 
-  let constant min_int128 : int = - 0x80000000000000000000000000000000
-  let constant max_int128 : int =   0x7fffffffffffffffffffffffffffffff
+  let constant min_int128 : int = - 0x8000_0000_0000_0000_0000_0000_0000_0000
+  let constant max_int128 : int =   0x7fff_ffff_ffff_ffff_ffff_ffff_ffff_ffff
   function to_int (x : int128) : int = int128'int x
 
-  clone export mach.int.Bounded_int with
+  clone export numeric.BoundedInt with
     type t = int128,
     constant min = int128'minInt,
     constant max = int128'maxInt,
@@ -119,10 +186,7 @@ module Int128
 end
 
 (* Unsigned Integers *)
-module UIntSize
-  use export mach.int.UInt64
-  type usize = uint64
-end
+
 module UInt8
   use int.Int
 
@@ -132,14 +196,14 @@ module UInt8
   let constant max_uint8 : int =  0xff
   function to_int (x : uint8) : int = uint8'int x
 
-  clone export mach.int.Bounded_int with
+  clone export numeric.Unsigned with
     type t = uint8,
-    constant min = uint8'minInt,
     constant max = uint8'maxInt,
     function to_int = uint8'int,
     lemma to_int_in_bounds,
     lemma extensionality
 end
+
 module UInt16
   use int.Int
 
@@ -149,32 +213,64 @@ module UInt16
   let constant max_uint16 : int =  0xffff
   function to_int (x : uint16) : int = uint16'int x
 
-  clone export mach.int.Bounded_int with
+  clone export numeric.Unsigned with
     type t = uint16,
-    constant min = uint16'minInt,
     constant max = uint16'maxInt,
     function to_int = uint16'int,
     lemma to_int_in_bounds,
     lemma extensionality
 end
+
 module UInt32
-  use export mach.int.UInt32
+ use int.Int
+
+  type uint32 = < range 0x0 0xffff_ffff >
+
+  let constant min_uint32 : int =  0x0
+  let constant max_uint32 : int =  0xffff_ffff
+  function to_int (x : uint32) : int = uint32'int x
+
+  clone export numeric.Unsigned with
+    type t = uint32,
+    constant max = uint32'maxInt,
+    function to_int = uint32'int,
+    lemma to_int_in_bounds,
+    lemma extensionality
 end
+
 module UInt64
-  use export mach.int.UInt64
+  use int.Int
+
+  type uint64 = < range 0x0 0xffff_ffff_ffff_ffff >
+
+  let constant min_uint64 : int =  0x0
+  let constant max_uint64 : int =  0xffff_ffff_ffff_ffff
+  function to_int (x : uint64) : int = uint64'int x
+
+  clone export numeric.Unsigned with
+    type t = uint64,
+    constant max = uint64'maxInt,
+    function to_int = uint64'int,
+    lemma to_int_in_bounds,
+    lemma extensionality
+end
+
+
+module UIntSize
+  use export UInt64
+  type usize = uint64
 end
 module UInt128
   use int.Int
 
-  type uint128 = < range 0x0 0xffffffffffffffffffffffffffffffff >
+  type uint128 = < range 0x0 0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff >
 
-  let constant min_uint128 : int =  0x00000000000000000000000000000000
-  let constant max_uint128 : int =  0xffffffffffffffffffffffffffffffff
+  let constant min_uint128 : int =  0x0
+  let constant max_uint128 : int =  0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff
   function to_int (x : uint128) : int = uint128'int x
 
-  clone export mach.int.Bounded_int with
+  clone export numeric.Unsigned with
     type t = uint128,
-    constant min = uint128'minInt,
     constant max = uint128'maxInt,
     function to_int = uint128'int,
     lemma to_int_in_bounds,
@@ -183,10 +279,32 @@ end
 
 (* Floats *)
 module Float32
-  use export ieee_float.Float32
+  use  ieee_float.Float32
+
+  let function neg (x:t)   : t = .- x
+  let function add  (x y:t) : t = x .+ y
+  let function sub  (x y:t) : t =  x .- y
+  let function mul  (x y:t) : t =  x .* y
+  let function div  (x y:t) : t =  x ./ y
+
+  let lt (x y : t) : bool = x .< y
+  let le (x y : t) : bool = x .< y
+  let gt (x y : t) : bool = x .> y
+  let ge (x y : t) : bool = x .>= y
 end
 module Float64
-  use export ieee_float.Float64
+  use ieee_float.Float64
+
+  let function neg (x:t)   : t = .- x
+  let function add  (x y:t) : t = x .+ y
+  let function sub  (x y:t) : t =  x .- y
+  let function mul  (x y:t) : t =  x .* y
+  let function div  (x y:t) : t =  x ./ y
+
+  let lt (x y : t) : bool = x .< y
+  let le (x y : t) : bool = x .< y
+  let gt (x y : t) : bool = x .> y
+  let ge (x y : t) : bool = x .>= y
 end
 
 module Char

@@ -149,7 +149,7 @@ macro_rules! ord_logic_impl {
             #[trusted]
             #[open]
             #[ghost]
-            #[creusot::builtins = "int.Int.(<=)"]
+            #[creusot::builtins = "prelude.Int.le"]
             fn le_log(self, _: Self) -> bool {
                 true
             }
@@ -157,7 +157,7 @@ macro_rules! ord_logic_impl {
             #[trusted]
             #[open]
             #[ghost]
-            #[creusot::builtins = "int.Int.(<)"]
+            #[creusot::builtins = "prelude.Int.lt"]
             fn lt_log(self, _: Self) -> bool {
                 true
             }
@@ -165,7 +165,7 @@ macro_rules! ord_logic_impl {
             #[trusted]
             #[open]
             #[ghost]
-            #[creusot::builtins = "int.Int.(>=)"]
+            #[creusot::builtins = "prelude.Int.ge"]
             fn ge_log(self, _: Self) -> bool {
                 true
             }
@@ -173,7 +173,7 @@ macro_rules! ord_logic_impl {
             #[trusted]
             #[open]
             #[ghost]
-            #[creusot::builtins = "int.Int.(>)"]
+            #[creusot::builtins = "prelude.Int.gt"]
             fn gt_log(self, _: Self) -> bool {
                 true
             }

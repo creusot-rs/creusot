@@ -1,0 +1,94 @@
+module BoundedInt
+
+  use int.Int
+
+  type t
+
+  constant min : int
+  constant max : int
+
+  function to_int (n:t) : int
+  meta coercion function to_int
+  meta "model_projection" function to_int
+
+  val to_int (n:t) : int
+    ensures { result = n }
+
+  predicate in_bounds (n:int) = min <= n <= max
+
+  axiom to_int_in_bounds: forall n:t. in_bounds n
+
+  val of_int (n:int) : t
+    requires { [@expl:integer overflow] in_bounds n }
+    ensures  { result = n }
+
+  val function add (a:t) (b:t) : t
+    requires { [@expl:integer overflow] in_bounds (a + b) }
+    ensures   { result = a + b }
+
+  val function sub (a:t) (b:t) : t
+    requires { [@expl:integer overflow] in_bounds (a - b) }
+    ensures  { result = a - b }
+
+  val function mul (a:t) (b:t) : t
+    requires { [@expl:integer overflow] in_bounds (a * b) }
+    ensures  { result = a * b }
+
+  val function neg (a:t) : t
+    requires { [@expl:integer overflow] in_bounds (- a) }
+    ensures  { result = - a }
+
+  axiom extensionality: forall x y: t. to_int x = to_int y -> x = y
+
+  val function eq (a:t) (b:t) : bool
+    ensures { result <-> a = b }
+    ensures { to_int a = to_int b -> result }
+
+  val function ne (a:t) (b:t) : bool
+    ensures { result <-> a <> b }
+    ensures { to_int a <> to_int b -> result }
+
+  val function le (a:t) (b:t) : bool
+    ensures  { result <-> to_int a <= to_int b }
+
+  val function lt (a:t) (b:t) : bool
+    ensures  { result <-> to_int a < to_int b }
+
+  val function ge (a:t) (b:t) : bool
+    ensures  { result <-> to_int a >= to_int b }
+
+  val function gt (a:t) (b:t) : bool
+    ensures  { result <-> to_int a > to_int b }
+
+  use int.ComputerDivision
+
+  val function div (a:t) (b:t) : t
+    requires { [@expl:division by zero] b <> 0 }
+    requires { [@expl:integer overflow] in_bounds (div a b) }
+    ensures  { result = div a b }
+
+  val function rem (a:t) (b:t) : t
+    requires { [@expl:division by zero] b <> 0 }
+    requires { [@expl:integer overflow] in_bounds (mod a b) }
+    ensures  { result = mod a b }
+
+end
+
+module Unsigned
+
+  use int.Int
+
+  let constant min_unsigned : int = 0
+
+  clone export BoundedInt with
+    constant min = min_unsigned, axiom .
+
+  constant zero_unsigned : t
+
+  axiom zero_unsigned_is_zero : to_int zero_unsigned = 0
+
+  constant radix : int
+
+  axiom radix_def : radix = max+1
+
+end

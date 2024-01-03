@@ -344,10 +344,12 @@ pub fn super_visit_trigger<T: ExpVisitor>(f: &mut T, trigger: &Trigger) {
 }
 
 impl Exp {
+    /// Creates a program expresion for a symbol `q`
     pub fn impure_qvar(q: QName) -> Self {
         Exp::QVar(q, Purity::Program)
     }
 
+    /// Creates a logic expresion for a symbol `q`
     pub fn impure_var(v: Ident) -> Self {
         Exp::Var(v, Purity::Program)
     }

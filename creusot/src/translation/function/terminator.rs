@@ -311,15 +311,12 @@ pub(crate) fn make_switch<'tcx>(
             ctx.crash_and_error(si.span, "Float patterns are currently unsupported")
         }
         TyKind::Uint(_) => {
-            let branches: Vec<(_, BasicBlock)> =
-                targets.iter().map(|(val, tgt)| (val, tgt)).collect();
-            Terminator::Switch(discr, Branches::Uint(branches, targets.otherwise()))
+            let branches = targets.iter().map(|(val, tgt)| (val, tgt)).collect();
+            Terminator::Switch(discr, Branches::Uint(switch_ty, branches, targets.otherwise()))
         }
         TyKind::Int(_) => {
-            let branches: Vec<(_, BasicBlock)> =
-                targets.iter().map(|(val, tgt)| (val as i128, tgt)).collect();
-
-            Terminator::Switch(discr, Branches::Int(branches, targets.otherwise()))
+            let branches = targets.iter().map(|(val, tgt)| (val as i128, tgt)).collect();
+            Terminator::Switch(discr, Branches::Int(switch_ty, branches, targets.otherwise()))
         }
         ty => unimplemented!("{ty:?}"),
     }
