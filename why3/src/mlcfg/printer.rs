@@ -788,11 +788,12 @@ impl Print for Exp {
                     "; ",
                 )
                 .braces(),
-            Exp::Sequence(fields) => alloc
-                .intersperse(fields.iter().map(|f| f.pretty(alloc, env)), "; ")
-                .enclose("[|", "|]"),
+            Exp::Chain(fields) => {
+                alloc.intersperse(fields.iter().map(|f| f.pretty(alloc, env)), "; ")
+            }
             Exp::FnLit(e) => alloc.text("fun _ -> ").append(e.pretty(alloc, env)).parens(),
             Exp::Assert(e) => alloc.text("assert ").append(e.pretty(alloc, env).braces()),
+            Exp::Assume(e) => alloc.text("assume ").append(e.pretty(alloc, env).braces()),
         }
     }
 }
