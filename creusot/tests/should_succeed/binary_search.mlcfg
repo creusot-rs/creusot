@@ -57,10 +57,10 @@ module BinarySearch_Impl0_LenLogic_Interface
   function len_logic [#"../binary_search.rs" 22 4 22 29] (self : BinarySearch_List_Type.t_list t) : int
   val len_logic [#"../binary_search.rs" 22 4 22 29] (self : BinarySearch_List_Type.t_list t) : int
     requires {[#"../binary_search.rs" 22 17 22 21] Inv0.inv self}
-    ensures { [#"../binary_search.rs" 21 14 21 25] result >= 0 }
+    ensures { [#"../binary_search.rs" 21 14 21 25] Int.ge result 0 }
     ensures { result = len_logic self }
     
-  axiom len_logic_spec : forall self : BinarySearch_List_Type.t_list t . ([#"../binary_search.rs" 22 17 22 21] Inv0.inv self) -> ([#"../binary_search.rs" 21 14 21 25] len_logic self >= 0)
+  axiom len_logic_spec : forall self : BinarySearch_List_Type.t_list t . ([#"../binary_search.rs" 22 17 22 21] Inv0.inv self) -> ([#"../binary_search.rs" 21 14 21 25] Int.ge (len_logic self) 0)
 end
 module BinarySearch_Impl0_LenLogic
   type t
@@ -70,15 +70,15 @@ module BinarySearch_Impl0_LenLogic
     type t = BinarySearch_List_Type.t_list t
   function len_logic [#"../binary_search.rs" 22 4 22 29] (self : BinarySearch_List_Type.t_list t) : int =
     [#"../binary_search.rs" 23 8 26 9] match (self) with
-      | BinarySearch_List_Type.C_Cons _ ls -> 1 + len_logic ls
+      | BinarySearch_List_Type.C_Cons _ ls -> Int.add 1 (len_logic ls)
       | BinarySearch_List_Type.C_Nil -> 0
       end
   val len_logic [#"../binary_search.rs" 22 4 22 29] (self : BinarySearch_List_Type.t_list t) : int
     requires {[#"../binary_search.rs" 22 17 22 21] Inv0.inv self}
-    ensures { [#"../binary_search.rs" 21 14 21 25] result >= 0 }
+    ensures { [#"../binary_search.rs" 21 14 21 25] Int.ge result 0 }
     ensures { result = len_logic self }
     
-  axiom len_logic_spec : forall self : BinarySearch_List_Type.t_list t . ([#"../binary_search.rs" 22 17 22 21] Inv0.inv self) -> ([#"../binary_search.rs" 21 14 21 25] len_logic self >= 0)
+  axiom len_logic_spec : forall self : BinarySearch_List_Type.t_list t . ([#"../binary_search.rs" 22 17 22 21] Inv0.inv self) -> ([#"../binary_search.rs" 21 14 21 25] Int.ge (len_logic self) 0)
 end
 module BinarySearch_Impl0_LenLogic_Impl
   type t
@@ -92,11 +92,11 @@ module BinarySearch_Impl0_LenLogic_Impl
     axiom .
   let rec ghost function len_logic [#"../binary_search.rs" 22 4 22 29] (self : BinarySearch_List_Type.t_list t) : int
     requires {[#"../binary_search.rs" 22 17 22 21] Inv0.inv self}
-    ensures { [#"../binary_search.rs" 21 14 21 25] result >= 0 }
+    ensures { [#"../binary_search.rs" 21 14 21 25] Int.ge result 0 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../binary_search.rs" 23 8 26 9] match (self) with
-      | BinarySearch_List_Type.C_Cons _ ls -> 1 + len_logic ls
+      | BinarySearch_List_Type.C_Cons _ ls -> Int.add 1 (len_logic ls)
       | BinarySearch_List_Type.C_Nil -> 0
       end
 end
@@ -134,7 +134,7 @@ module BinarySearch_Impl0_Get
     
    =
     [#"../binary_search.rs" 31 8 40 9] match (self) with
-      | BinarySearch_List_Type.C_Cons t ls -> if ix = 0 then Core_Option_Option_Type.C_Some t else get ls (ix - 1)
+      | BinarySearch_List_Type.C_Cons t ls -> if ix = 0 then Core_Option_Option_Type.C_Some t else get ls (Int.sub ix 1)
       | BinarySearch_List_Type.C_Nil -> Core_Option_Option_Type.C_None
       end
   val get [#"../binary_search.rs" 30 4 30 38] (self : BinarySearch_List_Type.t_list t) (ix : int) : Core_Option_Option_Type.t_option t
@@ -163,6 +163,7 @@ module BinarySearch_Impl0_Index_Interface
   type t
   use prelude.UIntSize
   use prelude.Int
+  use prelude.Bool
   use prelude.Borrow
   use BinarySearch_List_Type as BinarySearch_List_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
@@ -179,7 +180,7 @@ module BinarySearch_Impl0_Index_Interface
     predicate Inv0.inv = Inv2.inv,
     axiom .
   val index [#"../binary_search.rs" 45 4 45 40] (self : BinarySearch_List_Type.t_list t) (ix : usize) : t
-    requires {[#"../binary_search.rs" 43 15 43 37] UIntSize.to_int ix < LenLogic0.len_logic self}
+    requires {[#"../binary_search.rs" 43 15 43 37] Int.lt (UIntSize.to_int ix) (LenLogic0.len_logic self)}
     requires {[#"../binary_search.rs" 45 14 45 18] Inv0.inv self}
     ensures { [#"../binary_search.rs" 44 14 44 44] Core_Option_Option_Type.C_Some result = Get0.get self (UIntSize.to_int ix) }
     ensures { [#"../binary_search.rs" 45 38 45 40] Inv1.inv result }
@@ -189,6 +190,7 @@ module BinarySearch_Impl0_Index
   type t
   use prelude.UIntSize
   use prelude.Int
+  use prelude.Bool
   use prelude.Borrow
   use BinarySearch_List_Type as BinarySearch_List_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv3 with
@@ -229,7 +231,7 @@ module BinarySearch_Impl0_Index
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = BinarySearch_List_Type.t_list t
   let rec cfg index [#"../binary_search.rs" 45 4 45 40] [@cfg:stackify] [@cfg:subregion_analysis] (self : BinarySearch_List_Type.t_list t) (ix : usize) : t
-    requires {[#"../binary_search.rs" 43 15 43 37] UIntSize.to_int ix < LenLogic0.len_logic self}
+    requires {[#"../binary_search.rs" 43 15 43 37] Int.lt (UIntSize.to_int ix) (LenLogic0.len_logic self)}
     requires {[#"../binary_search.rs" 45 14 45 18] Inv0.inv self}
     ensures { [#"../binary_search.rs" 44 14 44 44] Core_Option_Option_Type.C_Some result = Get0.get self (UIntSize.to_int ix) }
     ensures { [#"../binary_search.rs" 45 38 45 40] Inv2.inv result }
@@ -254,7 +256,7 @@ module BinarySearch_Impl0_Index
     goto BB1
   }
   BB1 {
-    invariant { [#"../binary_search.rs" 49 20 49 39] UIntSize.to_int ix < LenLogic0.len_logic l };
+    invariant { [#"../binary_search.rs" 49 20 49 39] Int.lt (UIntSize.to_int ix) (LenLogic0.len_logic l) };
     invariant { [#"../binary_search.rs" 50 20 50 52] Get0.get self (UIntSize.to_int orig_ix) = Get0.get l (UIntSize.to_int ix) };
     goto BB2
   }
@@ -272,7 +274,7 @@ module BinarySearch_Impl0_Index
     ls <- ([#"../binary_search.rs" 51 26 51 28] BinarySearch_List_Type.cons_1 l);
     assert { [@expl:type invariant] Inv0.inv l };
     assume { Resolve0.resolve l };
-    switch ([#"../binary_search.rs" 52 15 52 21] ix > ([#"../binary_search.rs" 52 20 52 21] [#"../binary_search.rs" 52 20 52 21] (0 : usize)))
+    switch ([#"../binary_search.rs" 52 15 52 21] UIntSize.gt ix ([#"../binary_search.rs" 52 20 52 21] [#"../binary_search.rs" 52 20 52 21] (0 : usize)))
       | False -> goto BB6
       | True -> goto BB5
       end
@@ -286,7 +288,7 @@ module BinarySearch_Impl0_Index
     assert { [@expl:type invariant] Inv1.inv _17 };
     assume { Resolve1.resolve _17 };
     l <- ([#"../binary_search.rs" 53 20 53 24] _17);
-    ix <- ([#"../binary_search.rs" 54 16 54 23] ix - ([#"../binary_search.rs" 54 22 54 23] [#"../binary_search.rs" 54 22 54 23] (1 : usize)));
+    ix <- ([#"../binary_search.rs" 54 16 54 23] UIntSize.sub ix ([#"../binary_search.rs" 54 22 54 23] [#"../binary_search.rs" 54 22 54 23] (1 : usize)));
     goto BB1
   }
   BB6 {
@@ -319,9 +321,9 @@ module BinarySearch_Impl0_Len_Interface
     predicate Inv0.inv = Inv1.inv,
     axiom .
   val len [#"../binary_search.rs" 66 4 66 26] (self : BinarySearch_List_Type.t_list t) : usize
-    requires {[#"../binary_search.rs" 63 15 63 44] LenLogic0.len_logic self <= 1000000}
+    requires {[#"../binary_search.rs" 63 15 63 44] Int.le (LenLogic0.len_logic self) 1000000}
     requires {[#"../binary_search.rs" 66 12 66 16] Inv0.inv self}
-    ensures { [#"../binary_search.rs" 64 14 64 30] result >= (0 : usize) }
+    ensures { [#"../binary_search.rs" 64 14 64 30] Int.ge result (0 : usize) }
     ensures { [#"../binary_search.rs" 65 14 65 41] UIntSize.to_int result = LenLogic0.len_logic self }
     
 end
@@ -358,9 +360,9 @@ module BinarySearch_Impl0_Len
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = BinarySearch_List_Type.t_list t
   let rec cfg len [#"../binary_search.rs" 66 4 66 26] [@cfg:stackify] [@cfg:subregion_analysis] (self : BinarySearch_List_Type.t_list t) : usize
-    requires {[#"../binary_search.rs" 63 15 63 44] LenLogic0.len_logic self <= 1000000}
+    requires {[#"../binary_search.rs" 63 15 63 44] Int.le (LenLogic0.len_logic self) 1000000}
     requires {[#"../binary_search.rs" 66 12 66 16] Inv0.inv self}
-    ensures { [#"../binary_search.rs" 64 14 64 30] result >= (0 : usize) }
+    ensures { [#"../binary_search.rs" 64 14 64 30] Int.ge result (0 : usize) }
     ensures { [#"../binary_search.rs" 65 14 65 41] UIntSize.to_int result = LenLogic0.len_logic self }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -380,7 +382,7 @@ module BinarySearch_Impl0_Len
     goto BB1
   }
   BB1 {
-    invariant { [#"../binary_search.rs" 69 20 69 60] UIntSize.to_int len + LenLogic0.len_logic l = LenLogic0.len_logic self };
+    invariant { [#"../binary_search.rs" 69 20 69 60] Int.add (UIntSize.to_int len) (LenLogic0.len_logic l) = LenLogic0.len_logic self };
     goto BB2
   }
   BB2 {
@@ -396,7 +398,7 @@ module BinarySearch_Impl0_Len
     ls <- ([#"../binary_search.rs" 70 26 70 28] BinarySearch_List_Type.cons_1 l);
     assert { [@expl:type invariant] Inv0.inv l };
     assume { Resolve0.resolve l };
-    len <- ([#"../binary_search.rs" 71 12 71 20] len + ([#"../binary_search.rs" 71 19 71 20] [#"../binary_search.rs" 71 19 71 20] (1 : usize)));
+    len <- ([#"../binary_search.rs" 71 12 71 20] UIntSize.add len ([#"../binary_search.rs" 71 19 71 20] [#"../binary_search.rs" 71 19 71 20] (1 : usize)));
     assert { [@expl:type invariant] Inv1.inv ls };
     assume { Resolve1.resolve ls };
     l <- ([#"../binary_search.rs" 72 16 72 18] ls);
@@ -468,8 +470,8 @@ module BinarySearch_Impl1_IsSorted
   clone BinarySearch_Impl0_Get_Stub as Get0 with
     type t = uint32
   predicate is_sorted [#"../binary_search.rs" 88 4 88 30] (self : BinarySearch_List_Type.t_list uint32) =
-    [#"../binary_search.rs" 90 12 97 13] forall x2 : int . forall x1 : int . x1 <= x2 -> match ((Get0.get self x1, Get0.get self x2)) with
-      | (Core_Option_Option_Type.C_Some v1, Core_Option_Option_Type.C_Some v2) -> v1 <= v2
+    [#"../binary_search.rs" 90 12 97 13] forall x2 : int . forall x1 : int . Int.le x1 x2 -> match ((Get0.get self x1, Get0.get self x2)) with
+      | (Core_Option_Option_Type.C_Some v1, Core_Option_Option_Type.C_Some v2) -> Int.le v1 v2
       | (Core_Option_Option_Type.C_None, Core_Option_Option_Type.C_None) -> true
       | _ -> false
       end
@@ -486,6 +488,7 @@ end
 module BinarySearch_BinarySearch_Interface
   use prelude.Int
   use prelude.UIntSize
+  use prelude.Bool
   use prelude.UInt32
   use prelude.Borrow
   use BinarySearch_List_Type as BinarySearch_List_Type
@@ -503,16 +506,17 @@ module BinarySearch_BinarySearch_Interface
     predicate Inv0.inv = Inv0.inv,
     axiom .
   val binary_search [#"../binary_search.rs" 109 0 109 72] (arr : BinarySearch_List_Type.t_list uint32) (elem : uint32) : Core_Result_Result_Type.t_result usize usize
-    requires {[#"../binary_search.rs" 102 11 102 39] LenLogic0.len_logic arr <= 1000000}
+    requires {[#"../binary_search.rs" 102 11 102 39] Int.le (LenLogic0.len_logic arr) 1000000}
     requires {[#"../binary_search.rs" 103 11 103 26] IsSorted0.is_sorted arr}
     ensures { [#"../binary_search.rs" 104 0 104 73] forall x : usize . result = Core_Result_Result_Type.C_Ok x -> Get0.get arr (UIntSize.to_int x) = Core_Option_Option_Type.C_Some elem }
-    ensures { [#"../binary_search.rs" 105 0 106 78] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . 0 <= UIntSize.to_int i /\ UIntSize.to_int i < UIntSize.to_int x -> GetDefault0.get_default arr (UIntSize.to_int i) (0 : uint32) <= elem) }
-    ensures { [#"../binary_search.rs" 107 0 108 90] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . UIntSize.to_int x < UIntSize.to_int i /\ UIntSize.to_int i < LenLogic0.len_logic arr -> elem < GetDefault0.get_default arr (UIntSize.to_int i) (0 : uint32)) }
+    ensures { [#"../binary_search.rs" 105 0 106 78] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . Int.le 0 (UIntSize.to_int i) /\ Int.lt (UIntSize.to_int i) (UIntSize.to_int x) -> Int.le (GetDefault0.get_default arr (UIntSize.to_int i) (0 : uint32)) elem) }
+    ensures { [#"../binary_search.rs" 107 0 108 90] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . Int.lt (UIntSize.to_int x) (UIntSize.to_int i) /\ Int.lt (UIntSize.to_int i) (LenLogic0.len_logic arr) -> Int.lt elem (GetDefault0.get_default arr (UIntSize.to_int i) (0 : uint32))) }
     
 end
 module BinarySearch_BinarySearch
   use prelude.Int
   use prelude.UIntSize
+  use prelude.Bool
   use prelude.UInt32
   use prelude.Borrow
   clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
@@ -560,11 +564,11 @@ module BinarySearch_BinarySearch
     predicate Inv0.inv = Inv0.inv,
     predicate Inv1.inv = Inv1.inv
   let rec cfg binary_search [#"../binary_search.rs" 109 0 109 72] [@cfg:stackify] [@cfg:subregion_analysis] (arr : BinarySearch_List_Type.t_list uint32) (elem : uint32) : Core_Result_Result_Type.t_result usize usize
-    requires {[#"../binary_search.rs" 102 11 102 39] LenLogic0.len_logic arr <= 1000000}
+    requires {[#"../binary_search.rs" 102 11 102 39] Int.le (LenLogic0.len_logic arr) 1000000}
     requires {[#"../binary_search.rs" 103 11 103 26] IsSorted0.is_sorted arr}
     ensures { [#"../binary_search.rs" 104 0 104 73] forall x : usize . result = Core_Result_Result_Type.C_Ok x -> Get0.get arr (UIntSize.to_int x) = Core_Option_Option_Type.C_Some elem }
-    ensures { [#"../binary_search.rs" 105 0 106 78] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . 0 <= UIntSize.to_int i /\ UIntSize.to_int i < UIntSize.to_int x -> GetDefault0.get_default arr (UIntSize.to_int i) (0 : uint32) <= elem) }
-    ensures { [#"../binary_search.rs" 107 0 108 90] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . UIntSize.to_int x < UIntSize.to_int i /\ UIntSize.to_int i < LenLogic0.len_logic arr -> elem < GetDefault0.get_default arr (UIntSize.to_int i) (0 : uint32)) }
+    ensures { [#"../binary_search.rs" 105 0 106 78] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . Int.le 0 (UIntSize.to_int i) /\ Int.lt (UIntSize.to_int i) (UIntSize.to_int x) -> Int.le (GetDefault0.get_default arr (UIntSize.to_int i) (0 : uint32)) elem) }
+    ensures { [#"../binary_search.rs" 107 0 108 90] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . Int.lt (UIntSize.to_int x) (UIntSize.to_int i) /\ Int.lt (UIntSize.to_int i) (LenLogic0.len_logic arr) -> Int.lt elem (GetDefault0.get_default arr (UIntSize.to_int i) (0 : uint32))) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Result_Result_Type.t_result usize usize;
@@ -588,7 +592,7 @@ module BinarySearch_BinarySearch
     goto BB1
   }
   BB1 {
-    switch ([#"../binary_search.rs" 110 7 110 21] _10 = ([#"../binary_search.rs" 110 20 110 21] [#"../binary_search.rs" 110 20 110 21] (0 : usize)))
+    switch ([#"../binary_search.rs" 110 7 110 21] UIntSize.eq _10 ([#"../binary_search.rs" 110 20 110 21] [#"../binary_search.rs" 110 20 110 21] (0 : usize)))
       | False -> goto BB3
       | True -> goto BB2
       end
@@ -606,30 +610,30 @@ module BinarySearch_BinarySearch
     goto BB5
   }
   BB5 {
-    invariant { [#"../binary_search.rs" 116 16 116 63] 0 < UIntSize.to_int size /\ UIntSize.to_int size + UIntSize.to_int base <= LenLogic0.len_logic arr };
-    invariant { [#"../binary_search.rs" 116 4 116 65] forall i : usize . i < base -> GetDefault0.get_default arr (UIntSize.to_int i) (0 : uint32) <= elem };
-    invariant { [#"../binary_search.rs" 116 4 116 65] forall i : usize . UIntSize.to_int base + UIntSize.to_int size < UIntSize.to_int i /\ UIntSize.to_int i < LenLogic0.len_logic arr -> elem < GetDefault0.get_default arr (UIntSize.to_int i) (0 : uint32) };
+    invariant { [#"../binary_search.rs" 116 16 116 63] Int.lt 0 (UIntSize.to_int size) /\ Int.le (Int.add (UIntSize.to_int size) (UIntSize.to_int base)) (LenLogic0.len_logic arr) };
+    invariant { [#"../binary_search.rs" 116 4 116 65] forall i : usize . Int.lt i base -> Int.le (GetDefault0.get_default arr (UIntSize.to_int i) (0 : uint32)) elem };
+    invariant { [#"../binary_search.rs" 116 4 116 65] forall i : usize . Int.lt (Int.add (UIntSize.to_int base) (UIntSize.to_int size)) (UIntSize.to_int i) /\ Int.lt (UIntSize.to_int i) (LenLogic0.len_logic arr) -> Int.lt elem (GetDefault0.get_default arr (UIntSize.to_int i) (0 : uint32)) };
     goto BB6
   }
   BB6 {
-    switch ([#"../binary_search.rs" 119 10 119 18] size > ([#"../binary_search.rs" 119 17 119 18] [#"../binary_search.rs" 119 17 119 18] (1 : usize)))
+    switch ([#"../binary_search.rs" 119 10 119 18] UIntSize.gt size ([#"../binary_search.rs" 119 17 119 18] [#"../binary_search.rs" 119 17 119 18] (1 : usize)))
       | False -> goto BB13
       | True -> goto BB7
       end
   }
   BB7 {
-    _25 <- ([#"../binary_search.rs" 120 19 120 27] ([#"../binary_search.rs" 120 26 120 27] [#"../binary_search.rs" 120 26 120 27] (2 : usize)) = ([#"../binary_search.rs" 120 19 120 27] [#"../binary_search.rs" 120 19 120 27] (0 : usize)));
+    _25 <- ([#"../binary_search.rs" 120 19 120 27] UIntSize.eq ([#"../binary_search.rs" 120 26 120 27] [#"../binary_search.rs" 120 26 120 27] (2 : usize)) ([#"../binary_search.rs" 120 19 120 27] [#"../binary_search.rs" 120 19 120 27] (0 : usize)));
     assert { [@expl:division by zero] [#"../binary_search.rs" 120 19 120 27] not _25 };
     goto BB8
   }
   BB8 {
-    half <- ([#"../binary_search.rs" 120 19 120 27] size / ([#"../binary_search.rs" 120 26 120 27] [#"../binary_search.rs" 120 26 120 27] (2 : usize)));
-    mid <- ([#"../binary_search.rs" 121 18 121 29] base + half);
+    half <- ([#"../binary_search.rs" 120 19 120 27] UIntSize.div size ([#"../binary_search.rs" 120 26 120 27] [#"../binary_search.rs" 120 26 120 27] (2 : usize)));
+    mid <- ([#"../binary_search.rs" 121 18 121 29] UIntSize.add base half);
     _32 <- ([#"../binary_search.rs" 123 19 123 33] Index0.index ([#"../binary_search.rs" 123 19 123 33] arr) mid);
     goto BB9
   }
   BB9 {
-    switch ([#"../binary_search.rs" 123 18 123 40] _32 > elem)
+    switch ([#"../binary_search.rs" 123 18 123 40] UInt32.gt _32 elem)
       | False -> goto BB11
       | True -> goto BB10
       end
@@ -645,7 +649,7 @@ module BinarySearch_BinarySearch
   BB12 {
     base <- _29;
     _29 <- any usize;
-    size <- ([#"../binary_search.rs" 124 8 124 20] size - half);
+    size <- ([#"../binary_search.rs" 124 8 124 20] UIntSize.sub size half);
     goto BB5
   }
   BB13 {
@@ -654,7 +658,7 @@ module BinarySearch_BinarySearch
   }
   BB14 {
     cmp <- _41;
-    switch ([#"../binary_search.rs" 128 7 128 18] cmp = elem)
+    switch ([#"../binary_search.rs" 128 7 128 18] UInt32.eq cmp elem)
       | False -> goto BB16
       | True -> goto BB15
       end
@@ -664,13 +668,13 @@ module BinarySearch_BinarySearch
     goto BB20
   }
   BB16 {
-    switch ([#"../binary_search.rs" 130 14 130 24] cmp < elem)
+    switch ([#"../binary_search.rs" 130 14 130 24] UInt32.lt cmp elem)
       | False -> goto BB18
       | True -> goto BB17
       end
   }
   BB17 {
-    _0 <- ([#"../binary_search.rs" 131 8 131 21] Core_Result_Result_Type.C_Err ([#"../binary_search.rs" 131 12 131 20] base + ([#"../binary_search.rs" 131 19 131 20] [#"../binary_search.rs" 131 19 131 20] (1 : usize))));
+    _0 <- ([#"../binary_search.rs" 131 8 131 21] Core_Result_Result_Type.C_Err ([#"../binary_search.rs" 131 12 131 20] UIntSize.add base ([#"../binary_search.rs" 131 19 131 20] [#"../binary_search.rs" 131 19 131 20] (1 : usize))));
     goto BB19
   }
   BB18 {

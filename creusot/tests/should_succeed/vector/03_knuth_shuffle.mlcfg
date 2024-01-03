@@ -2,9 +2,10 @@
 module C03KnuthShuffle_RandInRange_Interface
   use prelude.UIntSize
   use prelude.Int
+  use prelude.Bool
   val rand_in_range [#"../03_knuth_shuffle.rs" 8 0 8 45] (l : usize) (u : usize) : usize
-    requires {[#"../03_knuth_shuffle.rs" 6 11 6 19] UIntSize.to_int l <= UIntSize.to_int u}
-    ensures { [#"../03_knuth_shuffle.rs" 7 10 7 40] UIntSize.to_int l <= UIntSize.to_int result /\ UIntSize.to_int result < UIntSize.to_int u }
+    requires {[#"../03_knuth_shuffle.rs" 6 11 6 19] Int.le (UIntSize.to_int l) (UIntSize.to_int u)}
+    ensures { [#"../03_knuth_shuffle.rs" 7 10 7 40] Int.le (UIntSize.to_int l) (UIntSize.to_int result) /\ Int.lt (UIntSize.to_int result) (UIntSize.to_int u) }
     
 end
 module CreusotContracts_Invariant_Inv_Stub
@@ -102,11 +103,11 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
   val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self}
-    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length result) (UIntSize.to_int Max0.mAX') }
     ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv result }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length (shallow_model self)) (UIntSize.to_int Max0.mAX'))
 end
 module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   type t
@@ -124,11 +125,11 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
   val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self}
-    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length result) (UIntSize.to_int Max0.mAX') }
     ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv result }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length (shallow_model self)) (UIntSize.to_int Max0.mAX'))
 end
 module CreusotContracts_Model_ShallowModel_ShallowModelTy_Type
   type self
@@ -296,6 +297,7 @@ end
 module CreusotContracts_Std1_Iter_Range_Impl0_Produces
   type idx
   use seq.Seq
+  use prelude.Bool
   use prelude.Int
   use prelude.Int
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
@@ -305,7 +307,7 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Produces
   predicate produces (self : Core_Ops_Range_Range_Type.t_range idx) (visited : Seq.seq idx) (o : Core_Ops_Range_Range_Type.t_range idx)
     
    =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self) <= DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0 -> DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o) <= DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o) - DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> DeepModel0.deep_model (Seq.get visited i) = DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self) + i)
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ Int.le (DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self)) (DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o)) /\ (Int.gt (Seq.length visited) 0 -> Int.le (DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o)) (DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_end o))) /\ Seq.length visited = Int.sub (DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o)) (DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self)) /\ (forall i : int . Int.le 0 i /\ Int.lt i (Seq.length visited) -> DeepModel0.deep_model (Seq.get visited i) = Int.add (DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self)) i)
   val produces (self : Core_Ops_Range_Range_Type.t_range idx) (visited : Seq.seq idx) (o : Core_Ops_Range_Range_Type.t_range idx) : bool
     ensures { result = produces self visited o }
     
@@ -388,6 +390,7 @@ end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
+  use prelude.Bool
   predicate resolve (self : borrowed t) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
@@ -416,8 +419,8 @@ module Alloc_Vec_Impl1_Len_Interface
   type a
   use prelude.UIntSize
   use seq.Seq
-  use prelude.Borrow
   use prelude.Int
+  use prelude.Borrow
   use seq.Seq
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel0 with
@@ -575,6 +578,7 @@ module CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub
   use prelude.UIntSize
   use prelude.Int
   use prelude.Slice
+  use prelude.Bool
   use seq.Seq
   clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
     type t = Seq.seq t
@@ -589,6 +593,7 @@ module CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface
   use prelude.UIntSize
   use prelude.Int
   use prelude.Slice
+  use prelude.Bool
   use seq.Seq
   clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
     type t = Seq.seq t
@@ -598,12 +603,12 @@ module CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface
   function shallow_model (self : slice t) : Seq.seq t
   val shallow_model (self : slice t) : Seq.seq t
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] Inv0.inv self}
-    ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Int.le (Seq.length result) (UIntSize.to_int Max0.mAX') }
     ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] result = Slice.id self }
     ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] Inv1.inv result }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] shallow_model self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
+  axiom shallow_model_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] shallow_model self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Int.le (Seq.length (shallow_model self)) (UIntSize.to_int Max0.mAX'))
 end
 module CreusotContracts_Std1_Slice_Impl0_ShallowModel
   type t
@@ -611,6 +616,7 @@ module CreusotContracts_Std1_Slice_Impl0_ShallowModel
   use prelude.UIntSize
   use prelude.Int
   use prelude.Slice
+  use prelude.Bool
   use seq.Seq
   clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
     type t = Seq.seq t
@@ -620,16 +626,17 @@ module CreusotContracts_Std1_Slice_Impl0_ShallowModel
   function shallow_model (self : slice t) : Seq.seq t
   val shallow_model (self : slice t) : Seq.seq t
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] Inv0.inv self}
-    ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Int.le (Seq.length result) (UIntSize.to_int Max0.mAX') }
     ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] result = Slice.id self }
     ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] Inv1.inv result }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] shallow_model self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
+  axiom shallow_model_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] shallow_model self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Int.le (Seq.length (shallow_model self)) (UIntSize.to_int Max0.mAX'))
 end
 module Alloc_Vec_Impl9_DerefMut_Interface
   type t
   type a
+  use prelude.Bool
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
@@ -698,8 +705,8 @@ module Core_Slice_Impl0_Swap_Interface
     type t = slice t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
   val swap (self : borrowed (slice t)) (a : usize) (b : usize) : ()
-    requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 240 19 240 35] UIntSize.to_int a < Seq.length (ShallowModel0.shallow_model self)}
-    requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 241 19 241 35] UIntSize.to_int b < Seq.length (ShallowModel0.shallow_model self)}
+    requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 240 19 240 35] Int.lt (UIntSize.to_int a) (Seq.length (ShallowModel0.shallow_model self))}
+    requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 241 19 241 35] Int.lt (UIntSize.to_int b) (Seq.length (ShallowModel0.shallow_model self))}
     requires {Inv0.inv self}
     ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 242 8 242 52] Permut.exchange (ShallowModel1.shallow_model ( ^ self)) (ShallowModel0.shallow_model self) (UIntSize.to_int a) (UIntSize.to_int b) }
     
@@ -736,6 +743,7 @@ module CreusotContracts_Std1_Iter_Impl0_IntoIterPost_Interface
 end
 module CreusotContracts_Std1_Iter_Impl0_IntoIterPost
   type i
+  use prelude.Bool
   predicate into_iter_post (self : i) (res : i) =
     [#"../../../../../creusot-contracts/src/std/iter.rs" 80 8 80 19] self = res
   val into_iter_post (self : i) (res : i) : bool
@@ -894,6 +902,7 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Completed
   type idx
   use prelude.Borrow
   use prelude.Int
+  use prelude.Bool
   use prelude.Int
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = idx,
@@ -902,7 +911,7 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Completed
   clone CreusotContracts_Resolve_Impl1_Resolve_Stub as Resolve0 with
     type t = Core_Ops_Range_Range_Type.t_range idx
   predicate completed (self : borrowed (Core_Ops_Range_Range_Type.t_range idx)) =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] Resolve0.resolve self /\ DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start ( * self)) >= DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_end ( * self))
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] Resolve0.resolve self /\ Int.ge (DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start ( * self))) (DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_end ( * self)))
   val completed (self : borrowed (Core_Ops_Range_Range_Type.t_range idx)) : bool
     ensures { result = completed self }
     
@@ -1227,7 +1236,7 @@ module C03KnuthShuffle_KnuthShuffle
     goto BB14
   }
   BB14 {
-    upper <- ([#"../03_knuth_shuffle.rs" 20 20 20 31] _26 - n);
+    upper <- ([#"../03_knuth_shuffle.rs" 20 20 20 31] UIntSize.sub _26 n);
     _26 <- any usize;
     i <- ([#"../03_knuth_shuffle.rs" 21 16 21 39] RandInRange0.rand_in_range ([#"../03_knuth_shuffle.rs" 21 30 21 31] [#"../03_knuth_shuffle.rs" 21 30 21 31] (0 : usize)) upper);
     goto BB15
@@ -1244,7 +1253,7 @@ module C03KnuthShuffle_KnuthShuffle
     _32 <- Borrow.borrow_mut ( * _33);
     _33 <- { _33 with current = ( ^ _32) };
     assume { Inv3.inv ( ^ _32) };
-    _31 <- ([#"../03_knuth_shuffle.rs" 22 8 22 28] Swap0.swap _32 i ([#"../03_knuth_shuffle.rs" 22 18 22 27] upper - ([#"../03_knuth_shuffle.rs" 22 26 22 27] [#"../03_knuth_shuffle.rs" 22 26 22 27] (1 : usize))));
+    _31 <- ([#"../03_knuth_shuffle.rs" 22 8 22 28] Swap0.swap _32 i ([#"../03_knuth_shuffle.rs" 22 18 22 27] UIntSize.sub upper ([#"../03_knuth_shuffle.rs" 22 26 22 27] [#"../03_knuth_shuffle.rs" 22 26 22 27] (1 : usize))));
     _32 <- any borrowed (slice t);
     goto BB17
   }

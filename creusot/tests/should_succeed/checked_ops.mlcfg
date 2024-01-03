@@ -39,6 +39,7 @@ end
 module CreusotContracts_Resolve_Impl0_Resolve
   type t1
   type t2
+  use prelude.Bool
   clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve1 with
     type self = t2
   clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
@@ -72,14 +73,15 @@ module Core_Num_Impl6_Max
     (255 : uint8)
 end
 module Core_Num_Impl6_CheckedAdd_Interface
+  use prelude.Bool
   use prelude.UInt8
   use prelude.Int
   clone Core_Num_Impl6_Max_Stub as Max0
   clone Core_Num_Impl6_Min_Stub as Min0
   use Core_Option_Option_Type as Core_Option_Option_Type
   val checked_add (self : uint8) (rhs : uint8) : Core_Option_Option_Type.t_option uint8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 124 20 125 89] (result = Core_Option_Option_Type.C_None) = (UInt8.to_int self + UInt8.to_int rhs < UInt8.to_int Min0.mIN' \/ UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int Max0.mAX') }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 128 16 128 89] forall r : uint8 . result = Core_Option_Option_Type.C_Some r -> UInt8.to_int r = UInt8.to_int self + UInt8.to_int rhs }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 124 20 125 89] (result = Core_Option_Option_Type.C_None) = (Int.lt (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') \/ Int.gt (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX')) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 128 16 128 89] forall r : uint8 . result = Core_Option_Option_Type.C_Some r -> UInt8.to_int r = Int.add (UInt8.to_int self) (UInt8.to_int rhs) }
     
 end
 module CreusotContracts_Invariant_Inv_Stub
@@ -103,6 +105,7 @@ module CreusotContracts_Invariant_Inv
 end
 module Core_Option_Impl0_Unwrap_Interface
   type t
+  use prelude.Bool
   clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
     type t = t
   use Core_Option_Option_Type as Core_Option_Option_Type
@@ -117,6 +120,7 @@ module Core_Option_Impl0_Unwrap_Interface
 end
 module Core_Option_Impl0_IsNone_Interface
   type t
+  use prelude.Bool
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
@@ -143,25 +147,27 @@ module Core_Num_Impl6_WrappingAdd_Interface
   use prelude.UInt32
   use int.Power
   use int.EuclideanDivision
+  use prelude.Bool
   clone Core_Num_Impl6_Max_Stub as Max0
   clone Core_Num_Impl6_Min_Stub as Min0
   clone Core_Num_Impl6_Bits_Stub as Bits0
   val wrapping_add (self : uint8) (rhs : uint8) : uint8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] UInt8.to_int result = EuclideanDivision.mod (UInt8.to_int self + UInt8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + UInt8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] UInt8.to_int self + UInt8.to_int rhs >= UInt8.to_int Min0.mIN' /\ UInt8.to_int self + UInt8.to_int rhs <= UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int self + UInt8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] UInt8.to_int self + UInt8.to_int rhs < UInt8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ UInt8.to_int result = UInt8.to_int self + UInt8.to_int rhs + k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ UInt8.to_int result = UInt8.to_int self + UInt8.to_int rhs - k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] UInt8.to_int result = Int.add (EuclideanDivision.mod (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (Power.power 2 (UInt32.to_int Bits0.bITS'))) (UInt8.to_int Min0.mIN') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] Int.ge (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') /\ Int.le (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX') -> UInt8.to_int result = Int.add (UInt8.to_int self) (UInt8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] Int.lt (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') -> (exists k : int . Int.gt k 0 /\ UInt8.to_int result = Int.add (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (Int.mul k (Int.add (Int.sub (UInt8.to_int Max0.mAX') (UInt8.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] Int.gt (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX') -> (exists k : int . Int.gt k 0 /\ UInt8.to_int result = Int.sub (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (Int.mul k (Int.add (Int.sub (UInt8.to_int Max0.mAX') (UInt8.to_int Min0.mIN')) 1))) }
     
 end
 module Core_Num_Impl6_SaturatingAdd_Interface
   use prelude.UInt8
   use prelude.Int
+  use prelude.Bool
   clone Core_Num_Impl6_Max_Stub as Max0
   clone Core_Num_Impl6_Min_Stub as Min0
   val saturating_add (self : uint8) (rhs : uint8) : uint8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] UInt8.to_int self + UInt8.to_int rhs >= UInt8.to_int Min0.mIN' /\ UInt8.to_int self + UInt8.to_int rhs <= UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int self + UInt8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] UInt8.to_int self + UInt8.to_int rhs < UInt8.to_int Min0.mIN' -> UInt8.to_int result = UInt8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int Max0.mAX' }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] Int.ge (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') /\ Int.le (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX') -> UInt8.to_int result = Int.add (UInt8.to_int self) (UInt8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] Int.lt (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') -> UInt8.to_int result = UInt8.to_int Min0.mIN' }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] Int.gt (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX') -> UInt8.to_int result = UInt8.to_int Max0.mAX' }
     
 end
 module Core_Num_Impl6_OverflowingAdd_Interface
@@ -170,15 +176,16 @@ module Core_Num_Impl6_OverflowingAdd_Interface
   use prelude.UInt32
   use int.Power
   use int.EuclideanDivision
+  use prelude.Bool
   clone Core_Num_Impl6_Max_Stub as Max0
   clone Core_Num_Impl6_Min_Stub as Min0
   clone Core_Num_Impl6_Bits_Stub as Bits0
   val overflowing_add (self : uint8) (rhs : uint8) : (uint8, bool)
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 175 20 175 95] UInt8.to_int (let (a, _) = result in a) = EuclideanDivision.mod (UInt8.to_int self + UInt8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + UInt8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 178 16 181 18] UInt8.to_int self + UInt8.to_int rhs >= UInt8.to_int Min0.mIN' /\ UInt8.to_int self + UInt8.to_int rhs <= UInt8.to_int Max0.mAX' -> UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self + UInt8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 185 16 189 18] UInt8.to_int self + UInt8.to_int rhs < UInt8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self + UInt8.to_int rhs + k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 190 16 194 18] UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self + UInt8.to_int rhs - k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (UInt8.to_int self + UInt8.to_int rhs < UInt8.to_int Min0.mIN' \/ UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int Max0.mAX') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 175 20 175 95] UInt8.to_int (let (a, _) = result in a) = Int.add (EuclideanDivision.mod (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (Power.power 2 (UInt32.to_int Bits0.bITS'))) (UInt8.to_int Min0.mIN') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 178 16 181 18] Int.ge (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') /\ Int.le (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX') -> UInt8.to_int (let (a, _) = result in a) = Int.add (UInt8.to_int self) (UInt8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 185 16 189 18] Int.lt (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') -> (exists k : int . Int.gt k 0 /\ UInt8.to_int (let (a, _) = result in a) = Int.add (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (Int.mul k (Int.add (Int.sub (UInt8.to_int Max0.mAX') (UInt8.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 190 16 194 18] Int.gt (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX') -> (exists k : int . Int.gt k 0 /\ UInt8.to_int (let (a, _) = result in a) = Int.sub (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (Int.mul k (Int.add (Int.sub (UInt8.to_int Max0.mAX') (UInt8.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (Int.lt (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') \/ Int.gt (Int.add (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX')) }
     
 end
 module TyInv_Trivial
@@ -295,7 +302,7 @@ module CheckedOps_TestU8AddExample
     goto BB2
   }
   BB2 {
-    switch ([#"../checked_ops.rs" 6 4 6 47] not ([#"../checked_ops.rs" 6 12 6 46] _4 = ([#"../checked_ops.rs" 6 44 6 46] [#"../checked_ops.rs" 6 44 6 46] (15 : uint8))))
+    switch ([#"../checked_ops.rs" 6 4 6 47] not ([#"../checked_ops.rs" 6 12 6 46] UInt8.eq _4 ([#"../checked_ops.rs" 6 44 6 46] [#"../checked_ops.rs" 6 44 6 46] (15 : uint8))))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -325,7 +332,7 @@ module CheckedOps_TestU8AddExample
     goto BB9
   }
   BB9 {
-    switch ([#"../checked_ops.rs" 9 4 9 39] not ([#"../checked_ops.rs" 9 12 9 38] _16 = ([#"../checked_ops.rs" 9 36 9 38] [#"../checked_ops.rs" 9 36 9 38] (15 : uint8))))
+    switch ([#"../checked_ops.rs" 9 4 9 39] not ([#"../checked_ops.rs" 9 12 9 38] UInt8.eq _16 ([#"../checked_ops.rs" 9 36 9 38] [#"../checked_ops.rs" 9 36 9 38] (15 : uint8))))
       | False -> goto BB11
       | True -> goto BB10
       end
@@ -338,7 +345,7 @@ module CheckedOps_TestU8AddExample
     goto BB12
   }
   BB12 {
-    switch ([#"../checked_ops.rs" 10 4 10 40] not ([#"../checked_ops.rs" 10 12 10 39] _21 = ([#"../checked_ops.rs" 10 38 10 39] [#"../checked_ops.rs" 10 38 10 39] (4 : uint8))))
+    switch ([#"../checked_ops.rs" 10 4 10 40] not ([#"../checked_ops.rs" 10 12 10 39] UInt8.eq _21 ([#"../checked_ops.rs" 10 38 10 39] [#"../checked_ops.rs" 10 38 10 39] (4 : uint8))))
       | False -> goto BB14
       | True -> goto BB13
       end
@@ -351,7 +358,7 @@ module CheckedOps_TestU8AddExample
     goto BB15
   }
   BB15 {
-    switch ([#"../checked_ops.rs" 12 4 12 41] not ([#"../checked_ops.rs" 12 12 12 40] _26 = ([#"../checked_ops.rs" 12 38 12 40] [#"../checked_ops.rs" 12 38 12 40] (15 : uint8))))
+    switch ([#"../checked_ops.rs" 12 4 12 41] not ([#"../checked_ops.rs" 12 12 12 40] UInt8.eq _26 ([#"../checked_ops.rs" 12 38 12 40] [#"../checked_ops.rs" 12 38 12 40] (15 : uint8))))
       | False -> goto BB17
       | True -> goto BB16
       end
@@ -364,7 +371,7 @@ module CheckedOps_TestU8AddExample
     goto BB18
   }
   BB18 {
-    switch ([#"../checked_ops.rs" 13 4 13 44] not ([#"../checked_ops.rs" 13 12 13 43] _31 = ([#"../checked_ops.rs" 13 40 13 43] [#"../checked_ops.rs" 13 40 13 43] (255 : uint8))))
+    switch ([#"../checked_ops.rs" 13 4 13 44] not ([#"../checked_ops.rs" 13 12 13 43] UInt8.eq _31 ([#"../checked_ops.rs" 13 40 13 43] [#"../checked_ops.rs" 13 40 13 43] (255 : uint8))))
       | False -> goto BB20
       | True -> goto BB19
       end
@@ -377,7 +384,7 @@ module CheckedOps_TestU8AddExample
     goto BB21
   }
   BB21 {
-    switch ([#"../checked_ops.rs" 16 12 16 23] (let (a, _) = res in a) = ([#"../checked_ops.rs" 16 21 16 23] [#"../checked_ops.rs" 16 21 16 23] (15 : uint8)))
+    switch ([#"../checked_ops.rs" 16 12 16 23] UInt8.eq (let (a, _) = res in a) ([#"../checked_ops.rs" 16 21 16 23] [#"../checked_ops.rs" 16 21 16 23] (15 : uint8)))
       | False -> goto BB22
       | True -> goto BB23
       end
@@ -406,7 +413,7 @@ module CheckedOps_TestU8AddExample
     goto BB27
   }
   BB27 {
-    switch ([#"../checked_ops.rs" 18 12 18 22] (let (a, _) = res1 in a) = ([#"../checked_ops.rs" 18 21 18 22] [#"../checked_ops.rs" 18 21 18 22] (4 : uint8)))
+    switch ([#"../checked_ops.rs" 18 12 18 22] UInt8.eq (let (a, _) = res1 in a) ([#"../checked_ops.rs" 18 21 18 22] [#"../checked_ops.rs" 18 21 18 22] (4 : uint8)))
       | False -> goto BB28
       | True -> goto BB29
       end
@@ -521,7 +528,7 @@ module CheckedOps_TestU8AddOverflow
     goto BB5
   }
   BB5 {
-    switch ([#"../checked_ops.rs" 25 4 25 43] not ([#"../checked_ops.rs" 25 12 25 42] _13 = ([#"../checked_ops.rs" 25 37 25 42] a - ([#"../checked_ops.rs" 25 41 25 42] [#"../checked_ops.rs" 25 41 25 42] (1 : uint8)))))
+    switch ([#"../checked_ops.rs" 25 4 25 43] not ([#"../checked_ops.rs" 25 12 25 42] UInt8.eq _13 ([#"../checked_ops.rs" 25 37 25 42] UInt8.sub a ([#"../checked_ops.rs" 25 41 25 42] [#"../checked_ops.rs" 25 41 25 42] (1 : uint8)))))
       | False -> goto BB7
       | True -> goto BB6
       end
@@ -534,7 +541,7 @@ module CheckedOps_TestU8AddOverflow
     goto BB8
   }
   BB8 {
-    switch ([#"../checked_ops.rs" 26 4 26 43] not ([#"../checked_ops.rs" 26 12 26 42] _21 = ([#"../checked_ops.rs" 26 39 26 42] [#"../checked_ops.rs" 26 39 26 42] (255 : uint8))))
+    switch ([#"../checked_ops.rs" 26 4 26 43] not ([#"../checked_ops.rs" 26 12 26 42] UInt8.eq _21 ([#"../checked_ops.rs" 26 39 26 42] [#"../checked_ops.rs" 26 39 26 42] (255 : uint8))))
       | False -> goto BB10
       | True -> goto BB9
       end
@@ -547,7 +554,7 @@ module CheckedOps_TestU8AddOverflow
     goto BB11
   }
   BB11 {
-    switch ([#"../checked_ops.rs" 28 12 28 26] (let (a, _) = res in a) = ([#"../checked_ops.rs" 28 21 28 26] a - ([#"../checked_ops.rs" 28 25 28 26] [#"../checked_ops.rs" 28 25 28 26] (1 : uint8))))
+    switch ([#"../checked_ops.rs" 28 12 28 26] UInt8.eq (let (a, _) = res in a) ([#"../checked_ops.rs" 28 21 28 26] UInt8.sub a ([#"../checked_ops.rs" 28 25 28 26] [#"../checked_ops.rs" 28 25 28 26] (1 : uint8))))
       | False -> goto BB12
       | True -> goto BB13
       end
@@ -580,13 +587,15 @@ end
 module CheckedOps_TestU8WrappingAdd_Interface
   use prelude.UInt8
   use prelude.Int
+  use prelude.Bool
   val test_u8_wrapping_add [#"../checked_ops.rs" 34 0 34 47] (a : uint8) (b : uint8) : uint8
-    ensures { [#"../checked_ops.rs" 33 10 33 56] UInt8.to_int result = UInt8.to_int a + UInt8.to_int b \/ UInt8.to_int result = UInt8.to_int a + UInt8.to_int b - 256 }
+    ensures { [#"../checked_ops.rs" 33 10 33 56] UInt8.to_int result = Int.add (UInt8.to_int a) (UInt8.to_int b) \/ UInt8.to_int result = Int.sub (Int.add (UInt8.to_int a) (UInt8.to_int b)) 256 }
     
 end
 module CheckedOps_TestU8WrappingAdd
   use prelude.Int
   use prelude.UInt8
+  use prelude.Bool
   clone Core_Num_Impl6_Max as Max0
   clone Core_Num_Impl6_Min as Min0
   clone Core_Num_Impl6_Bits as Bits0
@@ -595,7 +604,7 @@ module CheckedOps_TestU8WrappingAdd
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   let rec cfg test_u8_wrapping_add [#"../checked_ops.rs" 34 0 34 47] [@cfg:stackify] [@cfg:subregion_analysis] (a : uint8) (b : uint8) : uint8
-    ensures { [#"../checked_ops.rs" 33 10 33 56] UInt8.to_int result = UInt8.to_int a + UInt8.to_int b \/ UInt8.to_int result = UInt8.to_int a + UInt8.to_int b - 256 }
+    ensures { [#"../checked_ops.rs" 33 10 33 56] UInt8.to_int result = Int.add (UInt8.to_int a) (UInt8.to_int b) \/ UInt8.to_int result = Int.sub (Int.add (UInt8.to_int a) (UInt8.to_int b)) 256 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : uint8;
@@ -680,7 +689,7 @@ module CheckedOps_TestU8OverflowingAdd
     goto BB2
   }
   BB2 {
-    switch ([#"../checked_ops.rs" 40 4 40 56] not ([#"../checked_ops.rs" 40 12 40 55] (let (a, _) = _7 in a) = _10))
+    switch ([#"../checked_ops.rs" 40 4 40 56] not ([#"../checked_ops.rs" 40 12 40 55] UInt8.eq (let (a, _) = _7 in a) _10))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -717,14 +726,15 @@ module CheckedOps_TestU8OverflowingAdd
   
 end
 module Core_Num_Impl6_CheckedSub_Interface
+  use prelude.Bool
   use prelude.UInt8
   use prelude.Int
   clone Core_Num_Impl6_Max_Stub as Max0
   clone Core_Num_Impl6_Min_Stub as Min0
   use Core_Option_Option_Type as Core_Option_Option_Type
   val checked_sub (self : uint8) (rhs : uint8) : Core_Option_Option_Type.t_option uint8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 124 20 125 89] (result = Core_Option_Option_Type.C_None) = (UInt8.to_int self - UInt8.to_int rhs < UInt8.to_int Min0.mIN' \/ UInt8.to_int self - UInt8.to_int rhs > UInt8.to_int Max0.mAX') }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 128 16 128 89] forall r : uint8 . result = Core_Option_Option_Type.C_Some r -> UInt8.to_int r = UInt8.to_int self - UInt8.to_int rhs }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 124 20 125 89] (result = Core_Option_Option_Type.C_None) = (Int.lt (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') \/ Int.gt (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX')) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 128 16 128 89] forall r : uint8 . result = Core_Option_Option_Type.C_Some r -> UInt8.to_int r = Int.sub (UInt8.to_int self) (UInt8.to_int rhs) }
     
 end
 module Core_Num_Impl6_WrappingSub_Interface
@@ -733,25 +743,27 @@ module Core_Num_Impl6_WrappingSub_Interface
   use prelude.UInt32
   use int.Power
   use int.EuclideanDivision
+  use prelude.Bool
   clone Core_Num_Impl6_Max_Stub as Max0
   clone Core_Num_Impl6_Min_Stub as Min0
   clone Core_Num_Impl6_Bits_Stub as Bits0
   val wrapping_sub (self : uint8) (rhs : uint8) : uint8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] UInt8.to_int result = EuclideanDivision.mod (UInt8.to_int self - UInt8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + UInt8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] UInt8.to_int self - UInt8.to_int rhs >= UInt8.to_int Min0.mIN' /\ UInt8.to_int self - UInt8.to_int rhs <= UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int self - UInt8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] UInt8.to_int self - UInt8.to_int rhs < UInt8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ UInt8.to_int result = UInt8.to_int self - UInt8.to_int rhs + k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] UInt8.to_int self - UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ UInt8.to_int result = UInt8.to_int self - UInt8.to_int rhs - k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] UInt8.to_int result = Int.add (EuclideanDivision.mod (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (Power.power 2 (UInt32.to_int Bits0.bITS'))) (UInt8.to_int Min0.mIN') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] Int.ge (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') /\ Int.le (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX') -> UInt8.to_int result = Int.sub (UInt8.to_int self) (UInt8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] Int.lt (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') -> (exists k : int . Int.gt k 0 /\ UInt8.to_int result = Int.add (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (Int.mul k (Int.add (Int.sub (UInt8.to_int Max0.mAX') (UInt8.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] Int.gt (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX') -> (exists k : int . Int.gt k 0 /\ UInt8.to_int result = Int.sub (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (Int.mul k (Int.add (Int.sub (UInt8.to_int Max0.mAX') (UInt8.to_int Min0.mIN')) 1))) }
     
 end
 module Core_Num_Impl6_SaturatingSub_Interface
   use prelude.UInt8
   use prelude.Int
+  use prelude.Bool
   clone Core_Num_Impl6_Max_Stub as Max0
   clone Core_Num_Impl6_Min_Stub as Min0
   val saturating_sub (self : uint8) (rhs : uint8) : uint8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] UInt8.to_int self - UInt8.to_int rhs >= UInt8.to_int Min0.mIN' /\ UInt8.to_int self - UInt8.to_int rhs <= UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int self - UInt8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] UInt8.to_int self - UInt8.to_int rhs < UInt8.to_int Min0.mIN' -> UInt8.to_int result = UInt8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] UInt8.to_int self - UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int Max0.mAX' }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] Int.ge (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') /\ Int.le (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX') -> UInt8.to_int result = Int.sub (UInt8.to_int self) (UInt8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] Int.lt (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') -> UInt8.to_int result = UInt8.to_int Min0.mIN' }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] Int.gt (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX') -> UInt8.to_int result = UInt8.to_int Max0.mAX' }
     
 end
 module Core_Num_Impl6_OverflowingSub_Interface
@@ -760,15 +772,16 @@ module Core_Num_Impl6_OverflowingSub_Interface
   use prelude.UInt32
   use int.Power
   use int.EuclideanDivision
+  use prelude.Bool
   clone Core_Num_Impl6_Max_Stub as Max0
   clone Core_Num_Impl6_Min_Stub as Min0
   clone Core_Num_Impl6_Bits_Stub as Bits0
   val overflowing_sub (self : uint8) (rhs : uint8) : (uint8, bool)
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 175 20 175 95] UInt8.to_int (let (a, _) = result in a) = EuclideanDivision.mod (UInt8.to_int self - UInt8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + UInt8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 178 16 181 18] UInt8.to_int self - UInt8.to_int rhs >= UInt8.to_int Min0.mIN' /\ UInt8.to_int self - UInt8.to_int rhs <= UInt8.to_int Max0.mAX' -> UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self - UInt8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 185 16 189 18] UInt8.to_int self - UInt8.to_int rhs < UInt8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self - UInt8.to_int rhs + k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 190 16 194 18] UInt8.to_int self - UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self - UInt8.to_int rhs - k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (UInt8.to_int self - UInt8.to_int rhs < UInt8.to_int Min0.mIN' \/ UInt8.to_int self - UInt8.to_int rhs > UInt8.to_int Max0.mAX') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 175 20 175 95] UInt8.to_int (let (a, _) = result in a) = Int.add (EuclideanDivision.mod (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (Power.power 2 (UInt32.to_int Bits0.bITS'))) (UInt8.to_int Min0.mIN') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 178 16 181 18] Int.ge (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') /\ Int.le (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX') -> UInt8.to_int (let (a, _) = result in a) = Int.sub (UInt8.to_int self) (UInt8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 185 16 189 18] Int.lt (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') -> (exists k : int . Int.gt k 0 /\ UInt8.to_int (let (a, _) = result in a) = Int.add (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (Int.mul k (Int.add (Int.sub (UInt8.to_int Max0.mAX') (UInt8.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 190 16 194 18] Int.gt (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX') -> (exists k : int . Int.gt k 0 /\ UInt8.to_int (let (a, _) = result in a) = Int.sub (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (Int.mul k (Int.add (Int.sub (UInt8.to_int Max0.mAX') (UInt8.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (Int.lt (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') \/ Int.gt (Int.sub (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX')) }
     
 end
 module CheckedOps_TestU8SubExample_Interface
@@ -877,7 +890,7 @@ module CheckedOps_TestU8SubExample
     goto BB6
   }
   BB6 {
-    switch ([#"../checked_ops.rs" 47 4 47 50] not ([#"../checked_ops.rs" 47 12 47 49] _10 = ([#"../checked_ops.rs" 47 46 47 49] [#"../checked_ops.rs" 47 46 47 49] (240 : uint8))))
+    switch ([#"../checked_ops.rs" 47 4 47 50] not ([#"../checked_ops.rs" 47 12 47 49] UInt8.eq _10 ([#"../checked_ops.rs" 47 46 47 49] [#"../checked_ops.rs" 47 46 47 49] (240 : uint8))))
       | False -> goto BB8
       | True -> goto BB7
       end
@@ -890,7 +903,7 @@ module CheckedOps_TestU8SubExample
     goto BB9
   }
   BB9 {
-    switch ([#"../checked_ops.rs" 49 4 49 40] not ([#"../checked_ops.rs" 49 12 49 39] _16 = ([#"../checked_ops.rs" 49 36 49 39] [#"../checked_ops.rs" 49 36 49 39] (251 : uint8))))
+    switch ([#"../checked_ops.rs" 49 4 49 40] not ([#"../checked_ops.rs" 49 12 49 39] UInt8.eq _16 ([#"../checked_ops.rs" 49 36 49 39] [#"../checked_ops.rs" 49 36 49 39] (251 : uint8))))
       | False -> goto BB11
       | True -> goto BB10
       end
@@ -903,7 +916,7 @@ module CheckedOps_TestU8SubExample
     goto BB12
   }
   BB12 {
-    switch ([#"../checked_ops.rs" 50 4 50 42] not ([#"../checked_ops.rs" 50 12 50 41] _21 = ([#"../checked_ops.rs" 50 38 50 41] [#"../checked_ops.rs" 50 38 50 41] (240 : uint8))))
+    switch ([#"../checked_ops.rs" 50 4 50 42] not ([#"../checked_ops.rs" 50 12 50 41] UInt8.eq _21 ([#"../checked_ops.rs" 50 38 50 41] [#"../checked_ops.rs" 50 38 50 41] (240 : uint8))))
       | False -> goto BB14
       | True -> goto BB13
       end
@@ -916,7 +929,7 @@ module CheckedOps_TestU8SubExample
     goto BB15
   }
   BB15 {
-    switch ([#"../checked_ops.rs" 52 4 52 40] not ([#"../checked_ops.rs" 52 12 52 39] _26 = ([#"../checked_ops.rs" 52 38 52 39] [#"../checked_ops.rs" 52 38 52 39] (0 : uint8))))
+    switch ([#"../checked_ops.rs" 52 4 52 40] not ([#"../checked_ops.rs" 52 12 52 39] UInt8.eq _26 ([#"../checked_ops.rs" 52 38 52 39] [#"../checked_ops.rs" 52 38 52 39] (0 : uint8))))
       | False -> goto BB17
       | True -> goto BB16
       end
@@ -929,7 +942,7 @@ module CheckedOps_TestU8SubExample
     goto BB18
   }
   BB18 {
-    switch ([#"../checked_ops.rs" 53 4 53 44] not ([#"../checked_ops.rs" 53 12 53 43] _31 = ([#"../checked_ops.rs" 53 40 53 43] [#"../checked_ops.rs" 53 40 53 43] (240 : uint8))))
+    switch ([#"../checked_ops.rs" 53 4 53 44] not ([#"../checked_ops.rs" 53 12 53 43] UInt8.eq _31 ([#"../checked_ops.rs" 53 40 53 43] [#"../checked_ops.rs" 53 40 53 43] (240 : uint8))))
       | False -> goto BB20
       | True -> goto BB19
       end
@@ -942,7 +955,7 @@ module CheckedOps_TestU8SubExample
     goto BB21
   }
   BB21 {
-    switch ([#"../checked_ops.rs" 56 12 56 24] (let (a, _) = res in a) = ([#"../checked_ops.rs" 56 21 56 24] [#"../checked_ops.rs" 56 21 56 24] (251 : uint8)))
+    switch ([#"../checked_ops.rs" 56 12 56 24] UInt8.eq (let (a, _) = res in a) ([#"../checked_ops.rs" 56 21 56 24] [#"../checked_ops.rs" 56 21 56 24] (251 : uint8)))
       | False -> goto BB22
       | True -> goto BB23
       end
@@ -971,7 +984,7 @@ module CheckedOps_TestU8SubExample
     goto BB27
   }
   BB27 {
-    switch ([#"../checked_ops.rs" 58 12 58 24] (let (a, _) = res1 in a) = ([#"../checked_ops.rs" 58 21 58 24] [#"../checked_ops.rs" 58 21 58 24] (240 : uint8)))
+    switch ([#"../checked_ops.rs" 58 12 58 24] UInt8.eq (let (a, _) = res1 in a) ([#"../checked_ops.rs" 58 21 58 24] [#"../checked_ops.rs" 58 21 58 24] (240 : uint8)))
       | False -> goto BB28
       | True -> goto BB29
       end
@@ -1086,7 +1099,7 @@ module CheckedOps_TestU8SubOverflow
     goto BB5
   }
   BB5 {
-    switch ([#"../checked_ops.rs" 65 4 65 47] not ([#"../checked_ops.rs" 65 12 65 46] _13 = ([#"../checked_ops.rs" 65 35 65 46] ([#"../checked_ops.rs" 65 35 65 42] ([#"../checked_ops.rs" 65 35 65 38] [#"../checked_ops.rs" 65 35 65 38] (255 : uint8)) - a) + ([#"../checked_ops.rs" 65 45 65 46] [#"../checked_ops.rs" 65 45 65 46] (1 : uint8)))))
+    switch ([#"../checked_ops.rs" 65 4 65 47] not ([#"../checked_ops.rs" 65 12 65 46] UInt8.eq _13 ([#"../checked_ops.rs" 65 35 65 46] UInt8.add ([#"../checked_ops.rs" 65 35 65 42] UInt8.sub ([#"../checked_ops.rs" 65 35 65 38] [#"../checked_ops.rs" 65 35 65 38] (255 : uint8)) a) ([#"../checked_ops.rs" 65 45 65 46] [#"../checked_ops.rs" 65 45 65 46] (1 : uint8)))))
       | False -> goto BB7
       | True -> goto BB6
       end
@@ -1099,7 +1112,7 @@ module CheckedOps_TestU8SubOverflow
     goto BB8
   }
   BB8 {
-    switch ([#"../checked_ops.rs" 66 4 66 39] not ([#"../checked_ops.rs" 66 12 66 38] _22 = ([#"../checked_ops.rs" 66 37 66 38] [#"../checked_ops.rs" 66 37 66 38] (0 : uint8))))
+    switch ([#"../checked_ops.rs" 66 4 66 39] not ([#"../checked_ops.rs" 66 12 66 38] UInt8.eq _22 ([#"../checked_ops.rs" 66 37 66 38] [#"../checked_ops.rs" 66 37 66 38] (0 : uint8))))
       | False -> goto BB10
       | True -> goto BB9
       end
@@ -1112,7 +1125,7 @@ module CheckedOps_TestU8SubOverflow
     goto BB11
   }
   BB11 {
-    switch ([#"../checked_ops.rs" 68 12 68 32] (let (a, _) = res in a) = ([#"../checked_ops.rs" 68 21 68 32] ([#"../checked_ops.rs" 68 21 68 28] ([#"../checked_ops.rs" 68 21 68 24] [#"../checked_ops.rs" 68 21 68 24] (255 : uint8)) - a) + ([#"../checked_ops.rs" 68 31 68 32] [#"../checked_ops.rs" 68 31 68 32] (1 : uint8))))
+    switch ([#"../checked_ops.rs" 68 12 68 32] UInt8.eq (let (a, _) = res in a) ([#"../checked_ops.rs" 68 21 68 32] UInt8.add ([#"../checked_ops.rs" 68 21 68 28] UInt8.sub ([#"../checked_ops.rs" 68 21 68 24] [#"../checked_ops.rs" 68 21 68 24] (255 : uint8)) a) ([#"../checked_ops.rs" 68 31 68 32] [#"../checked_ops.rs" 68 31 68 32] (1 : uint8))))
       | False -> goto BB12
       | True -> goto BB13
       end
@@ -1145,13 +1158,15 @@ end
 module CheckedOps_TestU8WrappingSub_Interface
   use prelude.UInt8
   use prelude.Int
+  use prelude.Bool
   val test_u8_wrapping_sub [#"../checked_ops.rs" 74 0 74 47] (a : uint8) (b : uint8) : uint8
-    ensures { [#"../checked_ops.rs" 73 10 73 56] UInt8.to_int result = UInt8.to_int a - UInt8.to_int b \/ UInt8.to_int result = UInt8.to_int a - UInt8.to_int b + 256 }
+    ensures { [#"../checked_ops.rs" 73 10 73 56] UInt8.to_int result = Int.sub (UInt8.to_int a) (UInt8.to_int b) \/ UInt8.to_int result = Int.add (Int.sub (UInt8.to_int a) (UInt8.to_int b)) 256 }
     
 end
 module CheckedOps_TestU8WrappingSub
   use prelude.Int
   use prelude.UInt8
+  use prelude.Bool
   clone Core_Num_Impl6_Max as Max0
   clone Core_Num_Impl6_Min as Min0
   clone Core_Num_Impl6_Bits as Bits0
@@ -1160,7 +1175,7 @@ module CheckedOps_TestU8WrappingSub
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   let rec cfg test_u8_wrapping_sub [#"../checked_ops.rs" 74 0 74 47] [@cfg:stackify] [@cfg:subregion_analysis] (a : uint8) (b : uint8) : uint8
-    ensures { [#"../checked_ops.rs" 73 10 73 56] UInt8.to_int result = UInt8.to_int a - UInt8.to_int b \/ UInt8.to_int result = UInt8.to_int a - UInt8.to_int b + 256 }
+    ensures { [#"../checked_ops.rs" 73 10 73 56] UInt8.to_int result = Int.sub (UInt8.to_int a) (UInt8.to_int b) \/ UInt8.to_int result = Int.add (Int.sub (UInt8.to_int a) (UInt8.to_int b)) 256 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : uint8;
@@ -1245,7 +1260,7 @@ module CheckedOps_TestU8OverflowingSub
     goto BB2
   }
   BB2 {
-    switch ([#"../checked_ops.rs" 80 4 80 56] not ([#"../checked_ops.rs" 80 12 80 55] (let (a, _) = _7 in a) = _10))
+    switch ([#"../checked_ops.rs" 80 4 80 56] not ([#"../checked_ops.rs" 80 12 80 55] UInt8.eq (let (a, _) = _7 in a) _10))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -1282,14 +1297,15 @@ module CheckedOps_TestU8OverflowingSub
   
 end
 module Core_Num_Impl6_CheckedMul_Interface
+  use prelude.Bool
   use prelude.UInt8
   use prelude.Int
   clone Core_Num_Impl6_Max_Stub as Max0
   clone Core_Num_Impl6_Min_Stub as Min0
   use Core_Option_Option_Type as Core_Option_Option_Type
   val checked_mul (self : uint8) (rhs : uint8) : Core_Option_Option_Type.t_option uint8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 124 20 125 89] (result = Core_Option_Option_Type.C_None) = (UInt8.to_int self * UInt8.to_int rhs < UInt8.to_int Min0.mIN' \/ UInt8.to_int self * UInt8.to_int rhs > UInt8.to_int Max0.mAX') }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 128 16 128 89] forall r : uint8 . result = Core_Option_Option_Type.C_Some r -> UInt8.to_int r = UInt8.to_int self * UInt8.to_int rhs }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 124 20 125 89] (result = Core_Option_Option_Type.C_None) = (Int.lt (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') \/ Int.gt (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX')) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 128 16 128 89] forall r : uint8 . result = Core_Option_Option_Type.C_Some r -> UInt8.to_int r = Int.mul (UInt8.to_int self) (UInt8.to_int rhs) }
     
 end
 module Core_Num_Impl6_WrappingMul_Interface
@@ -1298,25 +1314,27 @@ module Core_Num_Impl6_WrappingMul_Interface
   use prelude.UInt32
   use int.Power
   use int.EuclideanDivision
+  use prelude.Bool
   clone Core_Num_Impl6_Max_Stub as Max0
   clone Core_Num_Impl6_Min_Stub as Min0
   clone Core_Num_Impl6_Bits_Stub as Bits0
   val wrapping_mul (self : uint8) (rhs : uint8) : uint8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] UInt8.to_int result = EuclideanDivision.mod (UInt8.to_int self * UInt8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + UInt8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] UInt8.to_int self * UInt8.to_int rhs >= UInt8.to_int Min0.mIN' /\ UInt8.to_int self * UInt8.to_int rhs <= UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int self * UInt8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] UInt8.to_int self * UInt8.to_int rhs < UInt8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ UInt8.to_int result = UInt8.to_int self * UInt8.to_int rhs + k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] UInt8.to_int self * UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ UInt8.to_int result = UInt8.to_int self * UInt8.to_int rhs - k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] UInt8.to_int result = Int.add (EuclideanDivision.mod (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (Power.power 2 (UInt32.to_int Bits0.bITS'))) (UInt8.to_int Min0.mIN') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] Int.ge (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') /\ Int.le (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX') -> UInt8.to_int result = Int.mul (UInt8.to_int self) (UInt8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] Int.lt (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') -> (exists k : int . Int.gt k 0 /\ UInt8.to_int result = Int.add (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (Int.mul k (Int.add (Int.sub (UInt8.to_int Max0.mAX') (UInt8.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] Int.gt (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX') -> (exists k : int . Int.gt k 0 /\ UInt8.to_int result = Int.sub (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (Int.mul k (Int.add (Int.sub (UInt8.to_int Max0.mAX') (UInt8.to_int Min0.mIN')) 1))) }
     
 end
 module Core_Num_Impl6_SaturatingMul_Interface
   use prelude.UInt8
   use prelude.Int
+  use prelude.Bool
   clone Core_Num_Impl6_Max_Stub as Max0
   clone Core_Num_Impl6_Min_Stub as Min0
   val saturating_mul (self : uint8) (rhs : uint8) : uint8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] UInt8.to_int self * UInt8.to_int rhs >= UInt8.to_int Min0.mIN' /\ UInt8.to_int self * UInt8.to_int rhs <= UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int self * UInt8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] UInt8.to_int self * UInt8.to_int rhs < UInt8.to_int Min0.mIN' -> UInt8.to_int result = UInt8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] UInt8.to_int self * UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int Max0.mAX' }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] Int.ge (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') /\ Int.le (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX') -> UInt8.to_int result = Int.mul (UInt8.to_int self) (UInt8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] Int.lt (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') -> UInt8.to_int result = UInt8.to_int Min0.mIN' }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] Int.gt (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX') -> UInt8.to_int result = UInt8.to_int Max0.mAX' }
     
 end
 module Core_Num_Impl6_OverflowingMul_Interface
@@ -1325,15 +1343,16 @@ module Core_Num_Impl6_OverflowingMul_Interface
   use prelude.UInt32
   use int.Power
   use int.EuclideanDivision
+  use prelude.Bool
   clone Core_Num_Impl6_Max_Stub as Max0
   clone Core_Num_Impl6_Min_Stub as Min0
   clone Core_Num_Impl6_Bits_Stub as Bits0
   val overflowing_mul (self : uint8) (rhs : uint8) : (uint8, bool)
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 175 20 175 95] UInt8.to_int (let (a, _) = result in a) = EuclideanDivision.mod (UInt8.to_int self * UInt8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + UInt8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 178 16 181 18] UInt8.to_int self * UInt8.to_int rhs >= UInt8.to_int Min0.mIN' /\ UInt8.to_int self * UInt8.to_int rhs <= UInt8.to_int Max0.mAX' -> UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self * UInt8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 185 16 189 18] UInt8.to_int self * UInt8.to_int rhs < UInt8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self * UInt8.to_int rhs + k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 190 16 194 18] UInt8.to_int self * UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self * UInt8.to_int rhs - k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (UInt8.to_int self * UInt8.to_int rhs < UInt8.to_int Min0.mIN' \/ UInt8.to_int self * UInt8.to_int rhs > UInt8.to_int Max0.mAX') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 175 20 175 95] UInt8.to_int (let (a, _) = result in a) = Int.add (EuclideanDivision.mod (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (Power.power 2 (UInt32.to_int Bits0.bITS'))) (UInt8.to_int Min0.mIN') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 178 16 181 18] Int.ge (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') /\ Int.le (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX') -> UInt8.to_int (let (a, _) = result in a) = Int.mul (UInt8.to_int self) (UInt8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 185 16 189 18] Int.lt (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') -> (exists k : int . Int.gt k 0 /\ UInt8.to_int (let (a, _) = result in a) = Int.add (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (Int.mul k (Int.add (Int.sub (UInt8.to_int Max0.mAX') (UInt8.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 190 16 194 18] Int.gt (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX') -> (exists k : int . Int.gt k 0 /\ UInt8.to_int (let (a, _) = result in a) = Int.sub (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (Int.mul k (Int.add (Int.sub (UInt8.to_int Max0.mAX') (UInt8.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (Int.lt (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Min0.mIN') \/ Int.gt (Int.mul (UInt8.to_int self) (UInt8.to_int rhs)) (UInt8.to_int Max0.mAX')) }
     
 end
 module CheckedOps_TestU8MulExample_Interface
@@ -1425,7 +1444,7 @@ module CheckedOps_TestU8MulExample
     goto BB2
   }
   BB2 {
-    switch ([#"../checked_ops.rs" 86 4 86 47] not ([#"../checked_ops.rs" 86 12 86 46] _4 = ([#"../checked_ops.rs" 86 44 86 46] [#"../checked_ops.rs" 86 44 86 46] (50 : uint8))))
+    switch ([#"../checked_ops.rs" 86 4 86 47] not ([#"../checked_ops.rs" 86 12 86 46] UInt8.eq _4 ([#"../checked_ops.rs" 86 44 86 46] [#"../checked_ops.rs" 86 44 86 46] (50 : uint8))))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -1455,7 +1474,7 @@ module CheckedOps_TestU8MulExample
     goto BB9
   }
   BB9 {
-    switch ([#"../checked_ops.rs" 89 4 89 39] not ([#"../checked_ops.rs" 89 12 89 38] _16 = ([#"../checked_ops.rs" 89 36 89 38] [#"../checked_ops.rs" 89 36 89 38] (50 : uint8))))
+    switch ([#"../checked_ops.rs" 89 4 89 39] not ([#"../checked_ops.rs" 89 12 89 38] UInt8.eq _16 ([#"../checked_ops.rs" 89 36 89 38] [#"../checked_ops.rs" 89 36 89 38] (50 : uint8))))
       | False -> goto BB11
       | True -> goto BB10
       end
@@ -1468,7 +1487,7 @@ module CheckedOps_TestU8MulExample
     goto BB12
   }
   BB12 {
-    switch ([#"../checked_ops.rs" 90 4 90 41] not ([#"../checked_ops.rs" 90 12 90 40] _21 = ([#"../checked_ops.rs" 90 37 90 40] [#"../checked_ops.rs" 90 37 90 40] (244 : uint8))))
+    switch ([#"../checked_ops.rs" 90 4 90 41] not ([#"../checked_ops.rs" 90 12 90 40] UInt8.eq _21 ([#"../checked_ops.rs" 90 37 90 40] [#"../checked_ops.rs" 90 37 90 40] (244 : uint8))))
       | False -> goto BB14
       | True -> goto BB13
       end
@@ -1481,7 +1500,7 @@ module CheckedOps_TestU8MulExample
     goto BB15
   }
   BB15 {
-    switch ([#"../checked_ops.rs" 92 4 92 41] not ([#"../checked_ops.rs" 92 12 92 40] _26 = ([#"../checked_ops.rs" 92 38 92 40] [#"../checked_ops.rs" 92 38 92 40] (50 : uint8))))
+    switch ([#"../checked_ops.rs" 92 4 92 41] not ([#"../checked_ops.rs" 92 12 92 40] UInt8.eq _26 ([#"../checked_ops.rs" 92 38 92 40] [#"../checked_ops.rs" 92 38 92 40] (50 : uint8))))
       | False -> goto BB17
       | True -> goto BB16
       end
@@ -1494,7 +1513,7 @@ module CheckedOps_TestU8MulExample
     goto BB18
   }
   BB18 {
-    switch ([#"../checked_ops.rs" 93 4 93 43] not ([#"../checked_ops.rs" 93 12 93 42] _31 = ([#"../checked_ops.rs" 93 39 93 42] [#"../checked_ops.rs" 93 39 93 42] (255 : uint8))))
+    switch ([#"../checked_ops.rs" 93 4 93 43] not ([#"../checked_ops.rs" 93 12 93 42] UInt8.eq _31 ([#"../checked_ops.rs" 93 39 93 42] [#"../checked_ops.rs" 93 39 93 42] (255 : uint8))))
       | False -> goto BB20
       | True -> goto BB19
       end
@@ -1507,7 +1526,7 @@ module CheckedOps_TestU8MulExample
     goto BB21
   }
   BB21 {
-    switch ([#"../checked_ops.rs" 96 12 96 23] (let (a, _) = res in a) = ([#"../checked_ops.rs" 96 21 96 23] [#"../checked_ops.rs" 96 21 96 23] (50 : uint8)))
+    switch ([#"../checked_ops.rs" 96 12 96 23] UInt8.eq (let (a, _) = res in a) ([#"../checked_ops.rs" 96 21 96 23] [#"../checked_ops.rs" 96 21 96 23] (50 : uint8)))
       | False -> goto BB22
       | True -> goto BB23
       end
@@ -1536,7 +1555,7 @@ module CheckedOps_TestU8MulExample
     goto BB27
   }
   BB27 {
-    switch ([#"../checked_ops.rs" 98 12 98 24] (let (a, _) = res1 in a) = ([#"../checked_ops.rs" 98 21 98 24] [#"../checked_ops.rs" 98 21 98 24] (244 : uint8)))
+    switch ([#"../checked_ops.rs" 98 12 98 24] UInt8.eq (let (a, _) = res1 in a) ([#"../checked_ops.rs" 98 21 98 24] [#"../checked_ops.rs" 98 21 98 24] (244 : uint8)))
       | False -> goto BB28
       | True -> goto BB29
       end
@@ -1642,7 +1661,7 @@ module CheckedOps_TestU8MulZero
     goto BB2
   }
   BB2 {
-    switch ([#"../checked_ops.rs" 103 4 103 45] not ([#"../checked_ops.rs" 103 12 103 44] _5 = ([#"../checked_ops.rs" 103 43 103 44] [#"../checked_ops.rs" 103 43 103 44] (0 : uint8))))
+    switch ([#"../checked_ops.rs" 103 4 103 45] not ([#"../checked_ops.rs" 103 12 103 44] UInt8.eq _5 ([#"../checked_ops.rs" 103 43 103 44] [#"../checked_ops.rs" 103 43 103 44] (0 : uint8))))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -1655,7 +1674,7 @@ module CheckedOps_TestU8MulZero
     goto BB5
   }
   BB5 {
-    switch ([#"../checked_ops.rs" 104 4 104 37] not ([#"../checked_ops.rs" 104 12 104 36] _12 = ([#"../checked_ops.rs" 104 35 104 36] [#"../checked_ops.rs" 104 35 104 36] (0 : uint8))))
+    switch ([#"../checked_ops.rs" 104 4 104 37] not ([#"../checked_ops.rs" 104 12 104 36] UInt8.eq _12 ([#"../checked_ops.rs" 104 35 104 36] [#"../checked_ops.rs" 104 35 104 36] (0 : uint8))))
       | False -> goto BB7
       | True -> goto BB6
       end
@@ -1668,7 +1687,7 @@ module CheckedOps_TestU8MulZero
     goto BB8
   }
   BB8 {
-    switch ([#"../checked_ops.rs" 105 4 105 39] not ([#"../checked_ops.rs" 105 12 105 38] _18 = ([#"../checked_ops.rs" 105 37 105 38] [#"../checked_ops.rs" 105 37 105 38] (0 : uint8))))
+    switch ([#"../checked_ops.rs" 105 4 105 39] not ([#"../checked_ops.rs" 105 12 105 38] UInt8.eq _18 ([#"../checked_ops.rs" 105 37 105 38] [#"../checked_ops.rs" 105 37 105 38] (0 : uint8))))
       | False -> goto BB10
       | True -> goto BB9
       end
@@ -1681,7 +1700,7 @@ module CheckedOps_TestU8MulZero
     goto BB11
   }
   BB11 {
-    switch ([#"../checked_ops.rs" 107 12 107 22] (let (a, _) = res in a) = ([#"../checked_ops.rs" 107 21 107 22] [#"../checked_ops.rs" 107 21 107 22] (0 : uint8)))
+    switch ([#"../checked_ops.rs" 107 12 107 22] UInt8.eq (let (a, _) = res in a) ([#"../checked_ops.rs" 107 21 107 22] [#"../checked_ops.rs" 107 21 107 22] (0 : uint8)))
       | False -> goto BB12
       | True -> goto BB13
       end
@@ -1778,7 +1797,7 @@ module CheckedOps_TestU8OverflowingMul
     goto BB2
   }
   BB2 {
-    switch ([#"../checked_ops.rs" 112 4 112 56] not ([#"../checked_ops.rs" 112 12 112 55] (let (a, _) = _7 in a) = _10))
+    switch ([#"../checked_ops.rs" 112 4 112 56] not ([#"../checked_ops.rs" 112 12 112 55] UInt8.eq (let (a, _) = _7 in a) _10))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -1815,43 +1834,47 @@ module CheckedOps_TestU8OverflowingMul
   
 end
 module Core_Num_Impl6_CheckedDiv_Interface
+  use prelude.Bool
   use prelude.UInt8
   use prelude.Int
   clone Core_Num_Impl6_Min_Stub as Min0
   use Core_Option_Option_Type as Core_Option_Option_Type
   val checked_div (self : uint8) (rhs : uint8) : Core_Option_Option_Type.t_option uint8
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 66 26 66 97] (result = Core_Option_Option_Type.C_None) = (UInt8.to_int rhs = 0 \/ UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 68 16 68 85] forall r : uint8 . result = Core_Option_Option_Type.C_Some r -> UInt8.to_int r = div (UInt8.to_int self) (UInt8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 68 16 68 85] forall r : uint8 . result = Core_Option_Option_Type.C_Some r -> UInt8.to_int r = Int.div (UInt8.to_int self) (UInt8.to_int rhs) }
     
 end
 module Core_Num_Impl6_WrappingDiv_Interface
   use prelude.UInt8
   use prelude.Int
+  use prelude.Bool
   clone Core_Num_Impl6_Min_Stub as Min0
   val wrapping_div (self : uint8) (rhs : uint8) : uint8
     requires {[#"../../../../creusot-contracts/src/std/num.rs" 73 27 73 36] UInt8.to_int rhs <> 0}
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 75 16 75 85] UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1 -> UInt8.to_int result = UInt8.to_int self }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 77 26 77 89] UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int result = div (UInt8.to_int self) (UInt8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 77 26 77 89] UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int result = Int.div (UInt8.to_int self) (UInt8.to_int rhs) }
     
 end
 module Core_Num_Impl6_SaturatingDiv_Interface
   use prelude.UInt8
   use prelude.Int
+  use prelude.Bool
   clone Core_Num_Impl6_Min_Stub as Min0
   val saturating_div (self : uint8) (rhs : uint8) : uint8
     requires {[#"../../../../creusot-contracts/src/std/num.rs" 82 27 82 36] UInt8.to_int rhs <> 0}
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 84 16 84 91] UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1 -> UInt8.to_int result = UInt8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 86 26 86 89] UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int result = div (UInt8.to_int self) (UInt8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 86 26 86 89] UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int result = Int.div (UInt8.to_int self) (UInt8.to_int rhs) }
     
 end
 module Core_Num_Impl6_OverflowingDiv_Interface
   use prelude.UInt8
   use prelude.Int
+  use prelude.Bool
   clone Core_Num_Impl6_Min_Stub as Min0
   val overflowing_div (self : uint8) (rhs : uint8) : (uint8, bool)
     requires {[#"../../../../creusot-contracts/src/std/num.rs" 91 27 91 36] UInt8.to_int rhs <> 0}
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 93 16 93 87] UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1 -> UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 95 26 95 91] UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int (let (a, _) = result in a) = div (UInt8.to_int self) (UInt8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 95 26 95 91] UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int (let (a, _) = result in a) = Int.div (UInt8.to_int self) (UInt8.to_int rhs) }
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 97 26 97 74] (let (_, a) = result in a) = (UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1) }
     
 end
@@ -1949,7 +1972,7 @@ module CheckedOps_TestU8DivExample
     goto BB6
   }
   BB6 {
-    switch ([#"../checked_ops.rs" 119 4 119 45] not ([#"../checked_ops.rs" 119 12 119 44] _10 = ([#"../checked_ops.rs" 119 43 119 44] [#"../checked_ops.rs" 119 43 119 44] (2 : uint8))))
+    switch ([#"../checked_ops.rs" 119 4 119 45] not ([#"../checked_ops.rs" 119 12 119 44] UInt8.eq _10 ([#"../checked_ops.rs" 119 43 119 44] [#"../checked_ops.rs" 119 43 119 44] (2 : uint8))))
       | False -> goto BB8
       | True -> goto BB7
       end
@@ -1962,7 +1985,7 @@ module CheckedOps_TestU8DivExample
     goto BB9
   }
   BB9 {
-    switch ([#"../checked_ops.rs" 120 4 120 37] not ([#"../checked_ops.rs" 120 12 120 36] _16 = ([#"../checked_ops.rs" 120 35 120 36] [#"../checked_ops.rs" 120 35 120 36] (2 : uint8))))
+    switch ([#"../checked_ops.rs" 120 4 120 37] not ([#"../checked_ops.rs" 120 12 120 36] UInt8.eq _16 ([#"../checked_ops.rs" 120 35 120 36] [#"../checked_ops.rs" 120 35 120 36] (2 : uint8))))
       | False -> goto BB11
       | True -> goto BB10
       end
@@ -1975,7 +1998,7 @@ module CheckedOps_TestU8DivExample
     goto BB12
   }
   BB12 {
-    switch ([#"../checked_ops.rs" 121 4 121 39] not ([#"../checked_ops.rs" 121 12 121 38] _21 = ([#"../checked_ops.rs" 121 37 121 38] [#"../checked_ops.rs" 121 37 121 38] (2 : uint8))))
+    switch ([#"../checked_ops.rs" 121 4 121 39] not ([#"../checked_ops.rs" 121 12 121 38] UInt8.eq _21 ([#"../checked_ops.rs" 121 37 121 38] [#"../checked_ops.rs" 121 37 121 38] (2 : uint8))))
       | False -> goto BB14
       | True -> goto BB13
       end
@@ -1988,7 +2011,7 @@ module CheckedOps_TestU8DivExample
     goto BB15
   }
   BB15 {
-    switch ([#"../checked_ops.rs" 123 12 123 22] (let (a, _) = res in a) = ([#"../checked_ops.rs" 123 21 123 22] [#"../checked_ops.rs" 123 21 123 22] (2 : uint8)))
+    switch ([#"../checked_ops.rs" 123 12 123 22] UInt8.eq (let (a, _) = res in a) ([#"../checked_ops.rs" 123 21 123 22] [#"../checked_ops.rs" 123 21 123 22] (2 : uint8)))
       | False -> goto BB16
       | True -> goto BB17
       end
@@ -2099,12 +2122,12 @@ module CheckedOps_TestU8DivNoOverflow
   }
   BB2 {
     _13 <- b;
-    _14 <- ([#"../checked_ops.rs" 129 41 129 46] _13 = ([#"../checked_ops.rs" 129 41 129 46] [#"../checked_ops.rs" 129 41 129 46] (0 : uint8)));
+    _14 <- ([#"../checked_ops.rs" 129 41 129 46] UInt8.eq _13 ([#"../checked_ops.rs" 129 41 129 46] [#"../checked_ops.rs" 129 41 129 46] (0 : uint8)));
     assert { [@expl:division by zero] [#"../checked_ops.rs" 129 41 129 46] not _14 };
     goto BB3
   }
   BB3 {
-    switch ([#"../checked_ops.rs" 129 4 129 47] not ([#"../checked_ops.rs" 129 12 129 46] _7 = ([#"../checked_ops.rs" 129 41 129 46] a / _13)))
+    switch ([#"../checked_ops.rs" 129 4 129 47] not ([#"../checked_ops.rs" 129 12 129 46] UInt8.eq _7 ([#"../checked_ops.rs" 129 41 129 46] UInt8.div a _13)))
       | False -> goto BB5
       | True -> goto BB4
       end
@@ -2118,12 +2141,12 @@ module CheckedOps_TestU8DivNoOverflow
   }
   BB6 {
     _24 <- b;
-    _25 <- ([#"../checked_ops.rs" 130 33 130 38] _24 = ([#"../checked_ops.rs" 130 33 130 38] [#"../checked_ops.rs" 130 33 130 38] (0 : uint8)));
+    _25 <- ([#"../checked_ops.rs" 130 33 130 38] UInt8.eq _24 ([#"../checked_ops.rs" 130 33 130 38] [#"../checked_ops.rs" 130 33 130 38] (0 : uint8)));
     assert { [@expl:division by zero] [#"../checked_ops.rs" 130 33 130 38] not _25 };
     goto BB7
   }
   BB7 {
-    switch ([#"../checked_ops.rs" 130 4 130 39] not ([#"../checked_ops.rs" 130 12 130 38] _19 = ([#"../checked_ops.rs" 130 33 130 38] a / _24)))
+    switch ([#"../checked_ops.rs" 130 4 130 39] not ([#"../checked_ops.rs" 130 12 130 38] UInt8.eq _19 ([#"../checked_ops.rs" 130 33 130 38] UInt8.div a _24)))
       | False -> goto BB9
       | True -> goto BB8
       end
@@ -2137,12 +2160,12 @@ module CheckedOps_TestU8DivNoOverflow
   }
   BB10 {
     _35 <- b;
-    _36 <- ([#"../checked_ops.rs" 131 35 131 40] _35 = ([#"../checked_ops.rs" 131 35 131 40] [#"../checked_ops.rs" 131 35 131 40] (0 : uint8)));
+    _36 <- ([#"../checked_ops.rs" 131 35 131 40] UInt8.eq _35 ([#"../checked_ops.rs" 131 35 131 40] [#"../checked_ops.rs" 131 35 131 40] (0 : uint8)));
     assert { [@expl:division by zero] [#"../checked_ops.rs" 131 35 131 40] not _36 };
     goto BB11
   }
   BB11 {
-    switch ([#"../checked_ops.rs" 131 4 131 41] not ([#"../checked_ops.rs" 131 12 131 40] _30 = ([#"../checked_ops.rs" 131 35 131 40] a / _35)))
+    switch ([#"../checked_ops.rs" 131 4 131 41] not ([#"../checked_ops.rs" 131 12 131 40] UInt8.eq _30 ([#"../checked_ops.rs" 131 35 131 40] UInt8.div a _35)))
       | False -> goto BB13
       | True -> goto BB12
       end
@@ -2156,7 +2179,7 @@ module CheckedOps_TestU8DivNoOverflow
   }
   BB14 {
     _48 <- b;
-    _49 <- ([#"../checked_ops.rs" 133 21 133 26] _48 = ([#"../checked_ops.rs" 133 21 133 26] [#"../checked_ops.rs" 133 21 133 26] (0 : uint8)));
+    _49 <- ([#"../checked_ops.rs" 133 21 133 26] UInt8.eq _48 ([#"../checked_ops.rs" 133 21 133 26] [#"../checked_ops.rs" 133 21 133 26] (0 : uint8)));
     assert { [@expl:division by zero] [#"../checked_ops.rs" 133 21 133 26] not _49 };
     goto BB18
   }
@@ -2177,7 +2200,7 @@ module CheckedOps_TestU8DivNoOverflow
       end
   }
   BB18 {
-    switch ([#"../checked_ops.rs" 133 12 133 26] (let (a, _) = res in a) = ([#"../checked_ops.rs" 133 21 133 26] a / _48))
+    switch ([#"../checked_ops.rs" 133 12 133 26] UInt8.eq (let (a, _) = res in a) ([#"../checked_ops.rs" 133 21 133 26] UInt8.div a _48))
       | False -> goto BB15
       | True -> goto BB16
       end
@@ -2269,14 +2292,15 @@ module Core_Num_Impl0_Max
     (127 : int8)
 end
 module Core_Num_Impl0_CheckedAdd_Interface
+  use prelude.Bool
   use prelude.Int8
   use prelude.Int
   clone Core_Num_Impl0_Max_Stub as Max0
   clone Core_Num_Impl0_Min_Stub as Min0
   use Core_Option_Option_Type as Core_Option_Option_Type
   val checked_add (self : int8) (rhs : int8) : Core_Option_Option_Type.t_option int8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 124 20 125 89] (result = Core_Option_Option_Type.C_None) = (Int8.to_int self + Int8.to_int rhs < Int8.to_int Min0.mIN' \/ Int8.to_int self + Int8.to_int rhs > Int8.to_int Max0.mAX') }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 128 16 128 89] forall r : int8 . result = Core_Option_Option_Type.C_Some r -> Int8.to_int r = Int8.to_int self + Int8.to_int rhs }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 124 20 125 89] (result = Core_Option_Option_Type.C_None) = (Int.lt (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') \/ Int.gt (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX')) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 128 16 128 89] forall r : int8 . result = Core_Option_Option_Type.C_Some r -> Int8.to_int r = Int.add (Int8.to_int self) (Int8.to_int rhs) }
     
 end
 module Core_Num_Impl0_Bits_Stub
@@ -2296,25 +2320,27 @@ module Core_Num_Impl0_WrappingAdd_Interface
   use prelude.UInt32
   use int.Power
   use int.EuclideanDivision
+  use prelude.Bool
   clone Core_Num_Impl0_Max_Stub as Max0
   clone Core_Num_Impl0_Min_Stub as Min0
   clone Core_Num_Impl0_Bits_Stub as Bits0
   val wrapping_add (self : int8) (rhs : int8) : int8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] Int8.to_int result = EuclideanDivision.mod (Int8.to_int self + Int8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + Int8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] Int8.to_int self + Int8.to_int rhs >= Int8.to_int Min0.mIN' /\ Int8.to_int self + Int8.to_int rhs <= Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int self + Int8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] Int8.to_int self + Int8.to_int rhs < Int8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self + Int8.to_int rhs + k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] Int8.to_int self + Int8.to_int rhs > Int8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self + Int8.to_int rhs - k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] Int8.to_int result = Int.add (EuclideanDivision.mod (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Power.power 2 (UInt32.to_int Bits0.bITS'))) (Int8.to_int Min0.mIN') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] Int.ge (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') /\ Int.le (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX') -> Int8.to_int result = Int.add (Int8.to_int self) (Int8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] Int.lt (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') -> (exists k : int . Int.gt k 0 /\ Int8.to_int result = Int.add (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int.mul k (Int.add (Int.sub (Int8.to_int Max0.mAX') (Int8.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] Int.gt (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX') -> (exists k : int . Int.gt k 0 /\ Int8.to_int result = Int.sub (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int.mul k (Int.add (Int.sub (Int8.to_int Max0.mAX') (Int8.to_int Min0.mIN')) 1))) }
     
 end
 module Core_Num_Impl0_SaturatingAdd_Interface
   use prelude.Int8
   use prelude.Int
+  use prelude.Bool
   clone Core_Num_Impl0_Max_Stub as Max0
   clone Core_Num_Impl0_Min_Stub as Min0
   val saturating_add (self : int8) (rhs : int8) : int8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] Int8.to_int self + Int8.to_int rhs >= Int8.to_int Min0.mIN' /\ Int8.to_int self + Int8.to_int rhs <= Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int self + Int8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] Int8.to_int self + Int8.to_int rhs < Int8.to_int Min0.mIN' -> Int8.to_int result = Int8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] Int8.to_int self + Int8.to_int rhs > Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int Max0.mAX' }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] Int.ge (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') /\ Int.le (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX') -> Int8.to_int result = Int.add (Int8.to_int self) (Int8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] Int.lt (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') -> Int8.to_int result = Int8.to_int Min0.mIN' }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] Int.gt (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX') -> Int8.to_int result = Int8.to_int Max0.mAX' }
     
 end
 module Core_Num_Impl0_OverflowingAdd_Interface
@@ -2323,15 +2349,16 @@ module Core_Num_Impl0_OverflowingAdd_Interface
   use prelude.UInt32
   use int.Power
   use int.EuclideanDivision
+  use prelude.Bool
   clone Core_Num_Impl0_Max_Stub as Max0
   clone Core_Num_Impl0_Min_Stub as Min0
   clone Core_Num_Impl0_Bits_Stub as Bits0
   val overflowing_add (self : int8) (rhs : int8) : (int8, bool)
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 175 20 175 95] Int8.to_int (let (a, _) = result in a) = EuclideanDivision.mod (Int8.to_int self + Int8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + Int8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 178 16 181 18] Int8.to_int self + Int8.to_int rhs >= Int8.to_int Min0.mIN' /\ Int8.to_int self + Int8.to_int rhs <= Int8.to_int Max0.mAX' -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self + Int8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 185 16 189 18] Int8.to_int self + Int8.to_int rhs < Int8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self + Int8.to_int rhs + k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 190 16 194 18] Int8.to_int self + Int8.to_int rhs > Int8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self + Int8.to_int rhs - k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (Int8.to_int self + Int8.to_int rhs < Int8.to_int Min0.mIN' \/ Int8.to_int self + Int8.to_int rhs > Int8.to_int Max0.mAX') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 175 20 175 95] Int8.to_int (let (a, _) = result in a) = Int.add (EuclideanDivision.mod (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Power.power 2 (UInt32.to_int Bits0.bITS'))) (Int8.to_int Min0.mIN') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 178 16 181 18] Int.ge (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') /\ Int.le (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX') -> Int8.to_int (let (a, _) = result in a) = Int.add (Int8.to_int self) (Int8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 185 16 189 18] Int.lt (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') -> (exists k : int . Int.gt k 0 /\ Int8.to_int (let (a, _) = result in a) = Int.add (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int.mul k (Int.add (Int.sub (Int8.to_int Max0.mAX') (Int8.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 190 16 194 18] Int.gt (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX') -> (exists k : int . Int.gt k 0 /\ Int8.to_int (let (a, _) = result in a) = Int.sub (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int.mul k (Int.add (Int.sub (Int8.to_int Max0.mAX') (Int8.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (Int.lt (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') \/ Int.gt (Int.add (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX')) }
     
 end
 module CheckedOps_TestI8AddExample_Interface
@@ -2429,7 +2456,7 @@ module CheckedOps_TestI8AddExample
     goto BB2
   }
   BB2 {
-    switch ([#"../checked_ops.rs" 143 4 143 47] not ([#"../checked_ops.rs" 143 12 143 46] _4 = ([#"../checked_ops.rs" 143 44 143 46] [#"../checked_ops.rs" 143 44 143 46] (15 : int8))))
+    switch ([#"../checked_ops.rs" 143 4 143 47] not ([#"../checked_ops.rs" 143 12 143 46] Int8.eq _4 ([#"../checked_ops.rs" 143 44 143 46] [#"../checked_ops.rs" 143 44 143 46] (15 : int8))))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -2476,7 +2503,7 @@ module CheckedOps_TestI8AddExample
     goto BB13
   }
   BB13 {
-    switch ([#"../checked_ops.rs" 147 4 147 39] not ([#"../checked_ops.rs" 147 12 147 38] _22 = ([#"../checked_ops.rs" 147 36 147 38] [#"../checked_ops.rs" 147 36 147 38] (15 : int8))))
+    switch ([#"../checked_ops.rs" 147 4 147 39] not ([#"../checked_ops.rs" 147 12 147 38] Int8.eq _22 ([#"../checked_ops.rs" 147 36 147 38] [#"../checked_ops.rs" 147 36 147 38] (15 : int8))))
       | False -> goto BB15
       | True -> goto BB14
       end
@@ -2489,7 +2516,7 @@ module CheckedOps_TestI8AddExample
     goto BB16
   }
   BB16 {
-    switch ([#"../checked_ops.rs" 148 4 148 43] not ([#"../checked_ops.rs" 148 12 148 42] _27 = ([#"../checked_ops.rs" 148 38 148 42] [#"../checked_ops.rs" 148 38 148 42] (-126 : int8))))
+    switch ([#"../checked_ops.rs" 148 4 148 43] not ([#"../checked_ops.rs" 148 12 148 42] Int8.eq _27 ([#"../checked_ops.rs" 148 38 148 42] [#"../checked_ops.rs" 148 38 148 42] (-126 : int8))))
       | False -> goto BB18
       | True -> goto BB17
       end
@@ -2502,7 +2529,7 @@ module CheckedOps_TestI8AddExample
     goto BB19
   }
   BB19 {
-    switch ([#"../checked_ops.rs" 149 4 149 46] not ([#"../checked_ops.rs" 149 12 149 45] _32 = ([#"../checked_ops.rs" 149 42 149 45] [#"../checked_ops.rs" 149 42 149 45] (126 : int8))))
+    switch ([#"../checked_ops.rs" 149 4 149 46] not ([#"../checked_ops.rs" 149 12 149 45] Int8.eq _32 ([#"../checked_ops.rs" 149 42 149 45] [#"../checked_ops.rs" 149 42 149 45] (126 : int8))))
       | False -> goto BB21
       | True -> goto BB20
       end
@@ -2515,7 +2542,7 @@ module CheckedOps_TestI8AddExample
     goto BB22
   }
   BB22 {
-    switch ([#"../checked_ops.rs" 151 4 151 41] not ([#"../checked_ops.rs" 151 12 151 40] _37 = ([#"../checked_ops.rs" 151 38 151 40] [#"../checked_ops.rs" 151 38 151 40] (15 : int8))))
+    switch ([#"../checked_ops.rs" 151 4 151 41] not ([#"../checked_ops.rs" 151 12 151 40] Int8.eq _37 ([#"../checked_ops.rs" 151 38 151 40] [#"../checked_ops.rs" 151 38 151 40] (15 : int8))))
       | False -> goto BB24
       | True -> goto BB23
       end
@@ -2528,7 +2555,7 @@ module CheckedOps_TestI8AddExample
     goto BB25
   }
   BB25 {
-    switch ([#"../checked_ops.rs" 152 4 152 44] not ([#"../checked_ops.rs" 152 12 152 43] _42 = ([#"../checked_ops.rs" 152 40 152 43] [#"../checked_ops.rs" 152 40 152 43] (127 : int8))))
+    switch ([#"../checked_ops.rs" 152 4 152 44] not ([#"../checked_ops.rs" 152 12 152 43] Int8.eq _42 ([#"../checked_ops.rs" 152 40 152 43] [#"../checked_ops.rs" 152 40 152 43] (127 : int8))))
       | False -> goto BB27
       | True -> goto BB26
       end
@@ -2541,7 +2568,7 @@ module CheckedOps_TestI8AddExample
     goto BB28
   }
   BB28 {
-    switch ([#"../checked_ops.rs" 153 4 153 49] not ([#"../checked_ops.rs" 153 12 153 48] _47 = ([#"../checked_ops.rs" 153 44 153 48] [#"../checked_ops.rs" 153 44 153 48] (-128 : int8))))
+    switch ([#"../checked_ops.rs" 153 4 153 49] not ([#"../checked_ops.rs" 153 12 153 48] Int8.eq _47 ([#"../checked_ops.rs" 153 44 153 48] [#"../checked_ops.rs" 153 44 153 48] (-128 : int8))))
       | False -> goto BB30
       | True -> goto BB29
       end
@@ -2554,7 +2581,7 @@ module CheckedOps_TestI8AddExample
     goto BB31
   }
   BB31 {
-    switch ([#"../checked_ops.rs" 156 12 156 23] (let (a, _) = res in a) = ([#"../checked_ops.rs" 156 21 156 23] [#"../checked_ops.rs" 156 21 156 23] (15 : int8)))
+    switch ([#"../checked_ops.rs" 156 12 156 23] Int8.eq (let (a, _) = res in a) ([#"../checked_ops.rs" 156 21 156 23] [#"../checked_ops.rs" 156 21 156 23] (15 : int8)))
       | False -> goto BB32
       | True -> goto BB33
       end
@@ -2583,7 +2610,7 @@ module CheckedOps_TestI8AddExample
     goto BB37
   }
   BB37 {
-    switch ([#"../checked_ops.rs" 158 12 158 25] (let (a, _) = res1 in a) = ([#"../checked_ops.rs" 158 21 158 25] [#"../checked_ops.rs" 158 21 158 25] (-126 : int8)))
+    switch ([#"../checked_ops.rs" 158 12 158 25] Int8.eq (let (a, _) = res1 in a) ([#"../checked_ops.rs" 158 21 158 25] [#"../checked_ops.rs" 158 21 158 25] (-126 : int8)))
       | False -> goto BB38
       | True -> goto BB39
       end
@@ -2612,7 +2639,7 @@ module CheckedOps_TestI8AddExample
     goto BB43
   }
   BB43 {
-    switch ([#"../checked_ops.rs" 160 12 160 24] (let (a, _) = res2 in a) = ([#"../checked_ops.rs" 160 21 160 24] [#"../checked_ops.rs" 160 21 160 24] (126 : int8)))
+    switch ([#"../checked_ops.rs" 160 12 160 24] Int8.eq (let (a, _) = res2 in a) ([#"../checked_ops.rs" 160 21 160 24] [#"../checked_ops.rs" 160 21 160 24] (126 : int8)))
       | False -> goto BB44
       | True -> goto BB45
       end
@@ -2646,7 +2673,7 @@ module CheckedOps_TestI8AddOverflowPos_Interface
   use prelude.Int8
   use prelude.Int
   val test_i8_add_overflow_pos [#"../checked_ops.rs" 165 0 165 38] (a : int8) : ()
-    requires {[#"../checked_ops.rs" 164 11 164 17] Int8.to_int a > 0}
+    requires {[#"../checked_ops.rs" 164 11 164 17] Int.gt (Int8.to_int a) 0}
     
 end
 module CheckedOps_TestI8AddOverflowPos
@@ -2691,7 +2718,7 @@ module CheckedOps_TestI8AddOverflowPos
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   let rec cfg test_i8_add_overflow_pos [#"../checked_ops.rs" 165 0 165 38] [@cfg:stackify] [@cfg:subregion_analysis] (a : int8) : ()
-    requires {[#"../checked_ops.rs" 164 11 164 17] Int8.to_int a > 0}
+    requires {[#"../checked_ops.rs" 164 11 164 17] Int.gt (Int8.to_int a) 0}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -2727,7 +2754,7 @@ module CheckedOps_TestI8AddOverflowPos
     goto BB5
   }
   BB5 {
-    switch ([#"../checked_ops.rs" 167 4 167 49] not ([#"../checked_ops.rs" 167 12 167 48] _13 = ([#"../checked_ops.rs" 167 37 167 48] ([#"../checked_ops.rs" 167 37 167 44] a - ([#"../checked_ops.rs" 167 41 167 44] [#"../checked_ops.rs" 167 41 167 44] (127 : int8))) - ([#"../checked_ops.rs" 167 47 167 48] [#"../checked_ops.rs" 167 47 167 48] (2 : int8)))))
+    switch ([#"../checked_ops.rs" 167 4 167 49] not ([#"../checked_ops.rs" 167 12 167 48] Int8.eq _13 ([#"../checked_ops.rs" 167 37 167 48] Int8.sub ([#"../checked_ops.rs" 167 37 167 44] Int8.sub a ([#"../checked_ops.rs" 167 41 167 44] [#"../checked_ops.rs" 167 41 167 44] (127 : int8))) ([#"../checked_ops.rs" 167 47 167 48] [#"../checked_ops.rs" 167 47 167 48] (2 : int8)))))
       | False -> goto BB7
       | True -> goto BB6
       end
@@ -2740,7 +2767,7 @@ module CheckedOps_TestI8AddOverflowPos
     goto BB8
   }
   BB8 {
-    switch ([#"../checked_ops.rs" 168 4 168 43] not ([#"../checked_ops.rs" 168 12 168 42] _22 = ([#"../checked_ops.rs" 168 39 168 42] [#"../checked_ops.rs" 168 39 168 42] (127 : int8))))
+    switch ([#"../checked_ops.rs" 168 4 168 43] not ([#"../checked_ops.rs" 168 12 168 42] Int8.eq _22 ([#"../checked_ops.rs" 168 39 168 42] [#"../checked_ops.rs" 168 39 168 42] (127 : int8))))
       | False -> goto BB10
       | True -> goto BB9
       end
@@ -2753,7 +2780,7 @@ module CheckedOps_TestI8AddOverflowPos
     goto BB11
   }
   BB11 {
-    switch ([#"../checked_ops.rs" 170 12 170 32] (let (a, _) = res in a) = ([#"../checked_ops.rs" 170 21 170 32] ([#"../checked_ops.rs" 170 21 170 28] a - ([#"../checked_ops.rs" 170 25 170 28] [#"../checked_ops.rs" 170 25 170 28] (127 : int8))) - ([#"../checked_ops.rs" 170 31 170 32] [#"../checked_ops.rs" 170 31 170 32] (2 : int8))))
+    switch ([#"../checked_ops.rs" 170 12 170 32] Int8.eq (let (a, _) = res in a) ([#"../checked_ops.rs" 170 21 170 32] Int8.sub ([#"../checked_ops.rs" 170 21 170 28] Int8.sub a ([#"../checked_ops.rs" 170 25 170 28] [#"../checked_ops.rs" 170 25 170 28] (127 : int8))) ([#"../checked_ops.rs" 170 31 170 32] [#"../checked_ops.rs" 170 31 170 32] (2 : int8))))
       | False -> goto BB12
       | True -> goto BB13
       end
@@ -2787,7 +2814,7 @@ module CheckedOps_TestI8AddOverflowNeg_Interface
   use prelude.Int8
   use prelude.Int
   val test_i8_add_overflow_neg [#"../checked_ops.rs" 175 0 175 38] (a : int8) : ()
-    requires {[#"../checked_ops.rs" 174 11 174 17] Int8.to_int a < 0}
+    requires {[#"../checked_ops.rs" 174 11 174 17] Int.lt (Int8.to_int a) 0}
     
 end
 module CheckedOps_TestI8AddOverflowNeg
@@ -2832,7 +2859,7 @@ module CheckedOps_TestI8AddOverflowNeg
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   let rec cfg test_i8_add_overflow_neg [#"../checked_ops.rs" 175 0 175 38] [@cfg:stackify] [@cfg:subregion_analysis] (a : int8) : ()
-    requires {[#"../checked_ops.rs" 174 11 174 17] Int8.to_int a < 0}
+    requires {[#"../checked_ops.rs" 174 11 174 17] Int.lt (Int8.to_int a) 0}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -2868,7 +2895,7 @@ module CheckedOps_TestI8AddOverflowNeg
     goto BB5
   }
   BB5 {
-    switch ([#"../checked_ops.rs" 177 4 177 52] not ([#"../checked_ops.rs" 177 12 177 51] _13 = ([#"../checked_ops.rs" 177 40 177 51] ([#"../checked_ops.rs" 177 40 177 47] a + ([#"../checked_ops.rs" 177 44 177 47] [#"../checked_ops.rs" 177 44 177 47] (127 : int8))) + ([#"../checked_ops.rs" 177 50 177 51] [#"../checked_ops.rs" 177 50 177 51] (1 : int8)))))
+    switch ([#"../checked_ops.rs" 177 4 177 52] not ([#"../checked_ops.rs" 177 12 177 51] Int8.eq _13 ([#"../checked_ops.rs" 177 40 177 51] Int8.add ([#"../checked_ops.rs" 177 40 177 47] Int8.add a ([#"../checked_ops.rs" 177 44 177 47] [#"../checked_ops.rs" 177 44 177 47] (127 : int8))) ([#"../checked_ops.rs" 177 50 177 51] [#"../checked_ops.rs" 177 50 177 51] (1 : int8)))))
       | False -> goto BB7
       | True -> goto BB6
       end
@@ -2881,7 +2908,7 @@ module CheckedOps_TestI8AddOverflowNeg
     goto BB8
   }
   BB8 {
-    switch ([#"../checked_ops.rs" 178 4 178 47] not ([#"../checked_ops.rs" 178 12 178 46] _22 = ([#"../checked_ops.rs" 178 42 178 46] [#"../checked_ops.rs" 178 42 178 46] (-128 : int8))))
+    switch ([#"../checked_ops.rs" 178 4 178 47] not ([#"../checked_ops.rs" 178 12 178 46] Int8.eq _22 ([#"../checked_ops.rs" 178 42 178 46] [#"../checked_ops.rs" 178 42 178 46] (-128 : int8))))
       | False -> goto BB10
       | True -> goto BB9
       end
@@ -2894,7 +2921,7 @@ module CheckedOps_TestI8AddOverflowNeg
     goto BB11
   }
   BB11 {
-    switch ([#"../checked_ops.rs" 180 12 180 32] (let (a, _) = res in a) = ([#"../checked_ops.rs" 180 21 180 32] ([#"../checked_ops.rs" 180 21 180 28] a + ([#"../checked_ops.rs" 180 25 180 28] [#"../checked_ops.rs" 180 25 180 28] (127 : int8))) + ([#"../checked_ops.rs" 180 31 180 32] [#"../checked_ops.rs" 180 31 180 32] (1 : int8))))
+    switch ([#"../checked_ops.rs" 180 12 180 32] Int8.eq (let (a, _) = res in a) ([#"../checked_ops.rs" 180 21 180 32] Int8.add ([#"../checked_ops.rs" 180 21 180 28] Int8.add a ([#"../checked_ops.rs" 180 25 180 28] [#"../checked_ops.rs" 180 25 180 28] (127 : int8))) ([#"../checked_ops.rs" 180 31 180 32] [#"../checked_ops.rs" 180 31 180 32] (1 : int8))))
       | False -> goto BB12
       | True -> goto BB13
       end
@@ -2927,13 +2954,15 @@ end
 module CheckedOps_TestI8WrappingAdd_Interface
   use prelude.Int8
   use prelude.Int
+  use prelude.Bool
   val test_i8_wrapping_add [#"../checked_ops.rs" 186 0 186 47] (a : int8) (b : int8) : int8
-    ensures { [#"../checked_ops.rs" 185 10 185 84] Int8.to_int result = Int8.to_int a + Int8.to_int b \/ Int8.to_int result = Int8.to_int a + Int8.to_int b - 256 \/ Int8.to_int result = Int8.to_int a + Int8.to_int b + 256 }
+    ensures { [#"../checked_ops.rs" 185 10 185 84] Int8.to_int result = Int.add (Int8.to_int a) (Int8.to_int b) \/ Int8.to_int result = Int.sub (Int.add (Int8.to_int a) (Int8.to_int b)) 256 \/ Int8.to_int result = Int.add (Int.add (Int8.to_int a) (Int8.to_int b)) 256 }
     
 end
 module CheckedOps_TestI8WrappingAdd
   use prelude.Int
   use prelude.Int8
+  use prelude.Bool
   clone Core_Num_Impl0_Max as Max0
   clone Core_Num_Impl0_Min as Min0
   clone Core_Num_Impl0_Bits as Bits0
@@ -2942,7 +2971,7 @@ module CheckedOps_TestI8WrappingAdd
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   let rec cfg test_i8_wrapping_add [#"../checked_ops.rs" 186 0 186 47] [@cfg:stackify] [@cfg:subregion_analysis] (a : int8) (b : int8) : int8
-    ensures { [#"../checked_ops.rs" 185 10 185 84] Int8.to_int result = Int8.to_int a + Int8.to_int b \/ Int8.to_int result = Int8.to_int a + Int8.to_int b - 256 \/ Int8.to_int result = Int8.to_int a + Int8.to_int b + 256 }
+    ensures { [#"../checked_ops.rs" 185 10 185 84] Int8.to_int result = Int.add (Int8.to_int a) (Int8.to_int b) \/ Int8.to_int result = Int.sub (Int.add (Int8.to_int a) (Int8.to_int b)) 256 \/ Int8.to_int result = Int.add (Int.add (Int8.to_int a) (Int8.to_int b)) 256 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : int8;
@@ -3027,7 +3056,7 @@ module CheckedOps_TestI8OverflowingAdd
     goto BB2
   }
   BB2 {
-    switch ([#"../checked_ops.rs" 192 4 192 56] not ([#"../checked_ops.rs" 192 12 192 55] (let (a, _) = _7 in a) = _10))
+    switch ([#"../checked_ops.rs" 192 4 192 56] not ([#"../checked_ops.rs" 192 12 192 55] Int8.eq (let (a, _) = _7 in a) _10))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -3064,14 +3093,15 @@ module CheckedOps_TestI8OverflowingAdd
   
 end
 module Core_Num_Impl0_CheckedSub_Interface
+  use prelude.Bool
   use prelude.Int8
   use prelude.Int
   clone Core_Num_Impl0_Max_Stub as Max0
   clone Core_Num_Impl0_Min_Stub as Min0
   use Core_Option_Option_Type as Core_Option_Option_Type
   val checked_sub (self : int8) (rhs : int8) : Core_Option_Option_Type.t_option int8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 124 20 125 89] (result = Core_Option_Option_Type.C_None) = (Int8.to_int self - Int8.to_int rhs < Int8.to_int Min0.mIN' \/ Int8.to_int self - Int8.to_int rhs > Int8.to_int Max0.mAX') }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 128 16 128 89] forall r : int8 . result = Core_Option_Option_Type.C_Some r -> Int8.to_int r = Int8.to_int self - Int8.to_int rhs }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 124 20 125 89] (result = Core_Option_Option_Type.C_None) = (Int.lt (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') \/ Int.gt (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX')) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 128 16 128 89] forall r : int8 . result = Core_Option_Option_Type.C_Some r -> Int8.to_int r = Int.sub (Int8.to_int self) (Int8.to_int rhs) }
     
 end
 module Core_Num_Impl0_WrappingSub_Interface
@@ -3080,25 +3110,27 @@ module Core_Num_Impl0_WrappingSub_Interface
   use prelude.UInt32
   use int.Power
   use int.EuclideanDivision
+  use prelude.Bool
   clone Core_Num_Impl0_Max_Stub as Max0
   clone Core_Num_Impl0_Min_Stub as Min0
   clone Core_Num_Impl0_Bits_Stub as Bits0
   val wrapping_sub (self : int8) (rhs : int8) : int8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] Int8.to_int result = EuclideanDivision.mod (Int8.to_int self - Int8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + Int8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] Int8.to_int self - Int8.to_int rhs >= Int8.to_int Min0.mIN' /\ Int8.to_int self - Int8.to_int rhs <= Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int self - Int8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] Int8.to_int self - Int8.to_int rhs < Int8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self - Int8.to_int rhs + k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] Int8.to_int self - Int8.to_int rhs > Int8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self - Int8.to_int rhs - k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] Int8.to_int result = Int.add (EuclideanDivision.mod (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Power.power 2 (UInt32.to_int Bits0.bITS'))) (Int8.to_int Min0.mIN') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] Int.ge (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') /\ Int.le (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX') -> Int8.to_int result = Int.sub (Int8.to_int self) (Int8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] Int.lt (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') -> (exists k : int . Int.gt k 0 /\ Int8.to_int result = Int.add (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int.mul k (Int.add (Int.sub (Int8.to_int Max0.mAX') (Int8.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] Int.gt (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX') -> (exists k : int . Int.gt k 0 /\ Int8.to_int result = Int.sub (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int.mul k (Int.add (Int.sub (Int8.to_int Max0.mAX') (Int8.to_int Min0.mIN')) 1))) }
     
 end
 module Core_Num_Impl0_SaturatingSub_Interface
   use prelude.Int8
   use prelude.Int
+  use prelude.Bool
   clone Core_Num_Impl0_Max_Stub as Max0
   clone Core_Num_Impl0_Min_Stub as Min0
   val saturating_sub (self : int8) (rhs : int8) : int8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] Int8.to_int self - Int8.to_int rhs >= Int8.to_int Min0.mIN' /\ Int8.to_int self - Int8.to_int rhs <= Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int self - Int8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] Int8.to_int self - Int8.to_int rhs < Int8.to_int Min0.mIN' -> Int8.to_int result = Int8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] Int8.to_int self - Int8.to_int rhs > Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int Max0.mAX' }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] Int.ge (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') /\ Int.le (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX') -> Int8.to_int result = Int.sub (Int8.to_int self) (Int8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] Int.lt (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') -> Int8.to_int result = Int8.to_int Min0.mIN' }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] Int.gt (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX') -> Int8.to_int result = Int8.to_int Max0.mAX' }
     
 end
 module Core_Num_Impl0_OverflowingSub_Interface
@@ -3107,15 +3139,16 @@ module Core_Num_Impl0_OverflowingSub_Interface
   use prelude.UInt32
   use int.Power
   use int.EuclideanDivision
+  use prelude.Bool
   clone Core_Num_Impl0_Max_Stub as Max0
   clone Core_Num_Impl0_Min_Stub as Min0
   clone Core_Num_Impl0_Bits_Stub as Bits0
   val overflowing_sub (self : int8) (rhs : int8) : (int8, bool)
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 175 20 175 95] Int8.to_int (let (a, _) = result in a) = EuclideanDivision.mod (Int8.to_int self - Int8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + Int8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 178 16 181 18] Int8.to_int self - Int8.to_int rhs >= Int8.to_int Min0.mIN' /\ Int8.to_int self - Int8.to_int rhs <= Int8.to_int Max0.mAX' -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self - Int8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 185 16 189 18] Int8.to_int self - Int8.to_int rhs < Int8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self - Int8.to_int rhs + k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 190 16 194 18] Int8.to_int self - Int8.to_int rhs > Int8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self - Int8.to_int rhs - k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (Int8.to_int self - Int8.to_int rhs < Int8.to_int Min0.mIN' \/ Int8.to_int self - Int8.to_int rhs > Int8.to_int Max0.mAX') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 175 20 175 95] Int8.to_int (let (a, _) = result in a) = Int.add (EuclideanDivision.mod (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Power.power 2 (UInt32.to_int Bits0.bITS'))) (Int8.to_int Min0.mIN') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 178 16 181 18] Int.ge (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') /\ Int.le (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX') -> Int8.to_int (let (a, _) = result in a) = Int.sub (Int8.to_int self) (Int8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 185 16 189 18] Int.lt (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') -> (exists k : int . Int.gt k 0 /\ Int8.to_int (let (a, _) = result in a) = Int.add (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int.mul k (Int.add (Int.sub (Int8.to_int Max0.mAX') (Int8.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 190 16 194 18] Int.gt (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX') -> (exists k : int . Int.gt k 0 /\ Int8.to_int (let (a, _) = result in a) = Int.sub (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int.mul k (Int.add (Int.sub (Int8.to_int Max0.mAX') (Int8.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (Int.lt (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') \/ Int.gt (Int.sub (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX')) }
     
 end
 module CheckedOps_TestI8SubExample_Interface
@@ -3213,7 +3246,7 @@ module CheckedOps_TestI8SubExample
     goto BB2
   }
   BB2 {
-    switch ([#"../checked_ops.rs" 198 4 198 47] not ([#"../checked_ops.rs" 198 12 198 46] _4 = ([#"../checked_ops.rs" 198 44 198 46] [#"../checked_ops.rs" 198 44 198 46] (-5 : int8))))
+    switch ([#"../checked_ops.rs" 198 4 198 47] not ([#"../checked_ops.rs" 198 12 198 46] Int8.eq _4 ([#"../checked_ops.rs" 198 44 198 46] [#"../checked_ops.rs" 198 44 198 46] (-5 : int8))))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -3231,7 +3264,7 @@ module CheckedOps_TestI8SubExample
     goto BB6
   }
   BB6 {
-    switch ([#"../checked_ops.rs" 199 4 199 50] not ([#"../checked_ops.rs" 199 12 199 49] _10 = ([#"../checked_ops.rs" 199 46 199 49] [#"../checked_ops.rs" 199 46 199 49] (110 : int8))))
+    switch ([#"../checked_ops.rs" 199 4 199 50] not ([#"../checked_ops.rs" 199 12 199 49] Int8.eq _10 ([#"../checked_ops.rs" 199 46 199 49] [#"../checked_ops.rs" 199 46 199 49] (110 : int8))))
       | False -> goto BB8
       | True -> goto BB7
       end
@@ -3261,7 +3294,7 @@ module CheckedOps_TestI8SubExample
     goto BB13
   }
   BB13 {
-    switch ([#"../checked_ops.rs" 202 4 202 39] not ([#"../checked_ops.rs" 202 12 202 38] _22 = ([#"../checked_ops.rs" 202 36 202 38] [#"../checked_ops.rs" 202 36 202 38] (-5 : int8))))
+    switch ([#"../checked_ops.rs" 202 4 202 39] not ([#"../checked_ops.rs" 202 12 202 38] Int8.eq _22 ([#"../checked_ops.rs" 202 36 202 38] [#"../checked_ops.rs" 202 36 202 38] (-5 : int8))))
       | False -> goto BB15
       | True -> goto BB14
       end
@@ -3274,7 +3307,7 @@ module CheckedOps_TestI8SubExample
     goto BB16
   }
   BB16 {
-    switch ([#"../checked_ops.rs" 203 4 203 42] not ([#"../checked_ops.rs" 203 12 203 41] _27 = ([#"../checked_ops.rs" 203 38 203 41] [#"../checked_ops.rs" 203 38 203 41] (110 : int8))))
+    switch ([#"../checked_ops.rs" 203 4 203 42] not ([#"../checked_ops.rs" 203 12 203 41] Int8.eq _27 ([#"../checked_ops.rs" 203 38 203 41] [#"../checked_ops.rs" 203 38 203 41] (110 : int8))))
       | False -> goto BB18
       | True -> goto BB17
       end
@@ -3287,7 +3320,7 @@ module CheckedOps_TestI8SubExample
     goto BB19
   }
   BB19 {
-    switch ([#"../checked_ops.rs" 204 4 204 45] not ([#"../checked_ops.rs" 204 12 204 44] _32 = ([#"../checked_ops.rs" 204 41 204 44] [#"../checked_ops.rs" 204 41 204 44] (126 : int8))))
+    switch ([#"../checked_ops.rs" 204 4 204 45] not ([#"../checked_ops.rs" 204 12 204 44] Int8.eq _32 ([#"../checked_ops.rs" 204 41 204 44] [#"../checked_ops.rs" 204 41 204 44] (126 : int8))))
       | False -> goto BB21
       | True -> goto BB20
       end
@@ -3300,7 +3333,7 @@ module CheckedOps_TestI8SubExample
     goto BB22
   }
   BB22 {
-    switch ([#"../checked_ops.rs" 206 4 206 41] not ([#"../checked_ops.rs" 206 12 206 40] _37 = ([#"../checked_ops.rs" 206 38 206 40] [#"../checked_ops.rs" 206 38 206 40] (-5 : int8))))
+    switch ([#"../checked_ops.rs" 206 4 206 41] not ([#"../checked_ops.rs" 206 12 206 40] Int8.eq _37 ([#"../checked_ops.rs" 206 38 206 40] [#"../checked_ops.rs" 206 38 206 40] (-5 : int8))))
       | False -> goto BB24
       | True -> goto BB23
       end
@@ -3313,7 +3346,7 @@ module CheckedOps_TestI8SubExample
     goto BB25
   }
   BB25 {
-    switch ([#"../checked_ops.rs" 207 4 207 44] not ([#"../checked_ops.rs" 207 12 207 43] _42 = ([#"../checked_ops.rs" 207 40 207 43] [#"../checked_ops.rs" 207 40 207 43] (110 : int8))))
+    switch ([#"../checked_ops.rs" 207 4 207 44] not ([#"../checked_ops.rs" 207 12 207 43] Int8.eq _42 ([#"../checked_ops.rs" 207 40 207 43] [#"../checked_ops.rs" 207 40 207 43] (110 : int8))))
       | False -> goto BB27
       | True -> goto BB26
       end
@@ -3326,7 +3359,7 @@ module CheckedOps_TestI8SubExample
     goto BB28
   }
   BB28 {
-    switch ([#"../checked_ops.rs" 208 4 208 48] not ([#"../checked_ops.rs" 208 12 208 47] _47 = ([#"../checked_ops.rs" 208 43 208 47] [#"../checked_ops.rs" 208 43 208 47] (-128 : int8))))
+    switch ([#"../checked_ops.rs" 208 4 208 48] not ([#"../checked_ops.rs" 208 12 208 47] Int8.eq _47 ([#"../checked_ops.rs" 208 43 208 47] [#"../checked_ops.rs" 208 43 208 47] (-128 : int8))))
       | False -> goto BB30
       | True -> goto BB29
       end
@@ -3339,7 +3372,7 @@ module CheckedOps_TestI8SubExample
     goto BB31
   }
   BB31 {
-    switch ([#"../checked_ops.rs" 211 12 211 23] (let (a, _) = res in a) = ([#"../checked_ops.rs" 211 21 211 23] [#"../checked_ops.rs" 211 21 211 23] (-5 : int8)))
+    switch ([#"../checked_ops.rs" 211 12 211 23] Int8.eq (let (a, _) = res in a) ([#"../checked_ops.rs" 211 21 211 23] [#"../checked_ops.rs" 211 21 211 23] (-5 : int8)))
       | False -> goto BB32
       | True -> goto BB33
       end
@@ -3368,7 +3401,7 @@ module CheckedOps_TestI8SubExample
     goto BB37
   }
   BB37 {
-    switch ([#"../checked_ops.rs" 213 12 213 24] (let (a, _) = res1 in a) = ([#"../checked_ops.rs" 213 21 213 24] [#"../checked_ops.rs" 213 21 213 24] (110 : int8)))
+    switch ([#"../checked_ops.rs" 213 12 213 24] Int8.eq (let (a, _) = res1 in a) ([#"../checked_ops.rs" 213 21 213 24] [#"../checked_ops.rs" 213 21 213 24] (110 : int8)))
       | False -> goto BB38
       | True -> goto BB39
       end
@@ -3397,7 +3430,7 @@ module CheckedOps_TestI8SubExample
     goto BB43
   }
   BB43 {
-    switch ([#"../checked_ops.rs" 215 12 215 24] (let (a, _) = res2 in a) = ([#"../checked_ops.rs" 215 21 215 24] [#"../checked_ops.rs" 215 21 215 24] (126 : int8)))
+    switch ([#"../checked_ops.rs" 215 12 215 24] Int8.eq (let (a, _) = res2 in a) ([#"../checked_ops.rs" 215 21 215 24] [#"../checked_ops.rs" 215 21 215 24] (126 : int8)))
       | False -> goto BB44
       | True -> goto BB45
       end
@@ -3431,7 +3464,7 @@ module CheckedOps_TestI8SubOverflowPos_Interface
   use prelude.Int8
   use prelude.Int
   val test_i8_sub_overflow_pos [#"../checked_ops.rs" 220 0 220 38] (a : int8) : ()
-    requires {[#"../checked_ops.rs" 219 11 219 17] Int8.to_int a > 0}
+    requires {[#"../checked_ops.rs" 219 11 219 17] Int.gt (Int8.to_int a) 0}
     
 end
 module CheckedOps_TestI8SubOverflowPos
@@ -3476,7 +3509,7 @@ module CheckedOps_TestI8SubOverflowPos
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   let rec cfg test_i8_sub_overflow_pos [#"../checked_ops.rs" 220 0 220 38] [@cfg:stackify] [@cfg:subregion_analysis] (a : int8) : ()
-    requires {[#"../checked_ops.rs" 219 11 219 17] Int8.to_int a > 0}
+    requires {[#"../checked_ops.rs" 219 11 219 17] Int.gt (Int8.to_int a) 0}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -3512,7 +3545,7 @@ module CheckedOps_TestI8SubOverflowPos
     goto BB5
   }
   BB5 {
-    switch ([#"../checked_ops.rs" 222 4 222 52] not ([#"../checked_ops.rs" 222 12 222 51] _13 = ([#"../checked_ops.rs" 222 40 222 51] ([#"../checked_ops.rs" 222 40 222 47] ([#"../checked_ops.rs" 222 40 222 43] [#"../checked_ops.rs" 222 40 222 43] (127 : int8)) - a) + ([#"../checked_ops.rs" 222 50 222 51] [#"../checked_ops.rs" 222 50 222 51] (1 : int8)))))
+    switch ([#"../checked_ops.rs" 222 4 222 52] not ([#"../checked_ops.rs" 222 12 222 51] Int8.eq _13 ([#"../checked_ops.rs" 222 40 222 51] Int8.add ([#"../checked_ops.rs" 222 40 222 47] Int8.sub ([#"../checked_ops.rs" 222 40 222 43] [#"../checked_ops.rs" 222 40 222 43] (127 : int8)) a) ([#"../checked_ops.rs" 222 50 222 51] [#"../checked_ops.rs" 222 50 222 51] (1 : int8)))))
       | False -> goto BB7
       | True -> goto BB6
       end
@@ -3525,7 +3558,7 @@ module CheckedOps_TestI8SubOverflowPos
     goto BB8
   }
   BB8 {
-    switch ([#"../checked_ops.rs" 223 4 223 47] not ([#"../checked_ops.rs" 223 12 223 46] _22 = ([#"../checked_ops.rs" 223 42 223 46] [#"../checked_ops.rs" 223 42 223 46] (-128 : int8))))
+    switch ([#"../checked_ops.rs" 223 4 223 47] not ([#"../checked_ops.rs" 223 12 223 46] Int8.eq _22 ([#"../checked_ops.rs" 223 42 223 46] [#"../checked_ops.rs" 223 42 223 46] (-128 : int8))))
       | False -> goto BB10
       | True -> goto BB9
       end
@@ -3538,7 +3571,7 @@ module CheckedOps_TestI8SubOverflowPos
     goto BB11
   }
   BB11 {
-    switch ([#"../checked_ops.rs" 225 12 225 32] (let (a, _) = res in a) = ([#"../checked_ops.rs" 225 21 225 32] ([#"../checked_ops.rs" 225 21 225 28] ([#"../checked_ops.rs" 225 21 225 24] [#"../checked_ops.rs" 225 21 225 24] (127 : int8)) - a) + ([#"../checked_ops.rs" 225 31 225 32] [#"../checked_ops.rs" 225 31 225 32] (1 : int8))))
+    switch ([#"../checked_ops.rs" 225 12 225 32] Int8.eq (let (a, _) = res in a) ([#"../checked_ops.rs" 225 21 225 32] Int8.add ([#"../checked_ops.rs" 225 21 225 28] Int8.sub ([#"../checked_ops.rs" 225 21 225 24] [#"../checked_ops.rs" 225 21 225 24] (127 : int8)) a) ([#"../checked_ops.rs" 225 31 225 32] [#"../checked_ops.rs" 225 31 225 32] (1 : int8))))
       | False -> goto BB12
       | True -> goto BB13
       end
@@ -3572,7 +3605,7 @@ module CheckedOps_TestI8SubOverflowNeg_Interface
   use prelude.Int8
   use prelude.Int
   val test_i8_sub_overflow_neg [#"../checked_ops.rs" 230 0 230 38] (a : int8) : ()
-    requires {[#"../checked_ops.rs" 229 11 229 17] Int8.to_int a < 0}
+    requires {[#"../checked_ops.rs" 229 11 229 17] Int.lt (Int8.to_int a) 0}
     
 end
 module CheckedOps_TestI8SubOverflowNeg
@@ -3617,7 +3650,7 @@ module CheckedOps_TestI8SubOverflowNeg
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   let rec cfg test_i8_sub_overflow_neg [#"../checked_ops.rs" 230 0 230 38] [@cfg:stackify] [@cfg:subregion_analysis] (a : int8) : ()
-    requires {[#"../checked_ops.rs" 229 11 229 17] Int8.to_int a < 0}
+    requires {[#"../checked_ops.rs" 229 11 229 17] Int.lt (Int8.to_int a) 0}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -3653,7 +3686,7 @@ module CheckedOps_TestI8SubOverflowNeg
     goto BB5
   }
   BB5 {
-    switch ([#"../checked_ops.rs" 232 4 232 52] not ([#"../checked_ops.rs" 232 12 232 51] _13 = ([#"../checked_ops.rs" 232 37 232 51] ([#"../checked_ops.rs" 232 37 232 45] - ([#"../checked_ops.rs" 232 38 232 45] ([#"../checked_ops.rs" 232 39 232 40] [#"../checked_ops.rs" 232 39 232 40] (2 : int8)) + a)) - ([#"../checked_ops.rs" 232 48 232 51] [#"../checked_ops.rs" 232 48 232 51] (127 : int8)))))
+    switch ([#"../checked_ops.rs" 232 4 232 52] not ([#"../checked_ops.rs" 232 12 232 51] Int8.eq _13 ([#"../checked_ops.rs" 232 37 232 51] Int8.sub ([#"../checked_ops.rs" 232 37 232 45] Int8.neg ([#"../checked_ops.rs" 232 38 232 45] Int8.add ([#"../checked_ops.rs" 232 39 232 40] [#"../checked_ops.rs" 232 39 232 40] (2 : int8)) a)) ([#"../checked_ops.rs" 232 48 232 51] [#"../checked_ops.rs" 232 48 232 51] (127 : int8)))))
       | False -> goto BB7
       | True -> goto BB6
       end
@@ -3666,7 +3699,7 @@ module CheckedOps_TestI8SubOverflowNeg
     goto BB8
   }
   BB8 {
-    switch ([#"../checked_ops.rs" 233 4 233 43] not ([#"../checked_ops.rs" 233 12 233 42] _23 = ([#"../checked_ops.rs" 233 39 233 42] [#"../checked_ops.rs" 233 39 233 42] (127 : int8))))
+    switch ([#"../checked_ops.rs" 233 4 233 43] not ([#"../checked_ops.rs" 233 12 233 42] Int8.eq _23 ([#"../checked_ops.rs" 233 39 233 42] [#"../checked_ops.rs" 233 39 233 42] (127 : int8))))
       | False -> goto BB10
       | True -> goto BB9
       end
@@ -3679,7 +3712,7 @@ module CheckedOps_TestI8SubOverflowNeg
     goto BB11
   }
   BB11 {
-    switch ([#"../checked_ops.rs" 235 12 235 35] (let (a, _) = res in a) = ([#"../checked_ops.rs" 235 21 235 35] ([#"../checked_ops.rs" 235 21 235 29] - ([#"../checked_ops.rs" 235 22 235 29] ([#"../checked_ops.rs" 235 23 235 24] [#"../checked_ops.rs" 235 23 235 24] (2 : int8)) + a)) - ([#"../checked_ops.rs" 235 32 235 35] [#"../checked_ops.rs" 235 32 235 35] (127 : int8))))
+    switch ([#"../checked_ops.rs" 235 12 235 35] Int8.eq (let (a, _) = res in a) ([#"../checked_ops.rs" 235 21 235 35] Int8.sub ([#"../checked_ops.rs" 235 21 235 29] Int8.neg ([#"../checked_ops.rs" 235 22 235 29] Int8.add ([#"../checked_ops.rs" 235 23 235 24] [#"../checked_ops.rs" 235 23 235 24] (2 : int8)) a)) ([#"../checked_ops.rs" 235 32 235 35] [#"../checked_ops.rs" 235 32 235 35] (127 : int8))))
       | False -> goto BB12
       | True -> goto BB13
       end
@@ -3712,13 +3745,15 @@ end
 module CheckedOps_TestI8WrappingSub_Interface
   use prelude.Int8
   use prelude.Int
+  use prelude.Bool
   val test_i8_wrapping_sub [#"../checked_ops.rs" 241 0 241 47] (a : int8) (b : int8) : int8
-    ensures { [#"../checked_ops.rs" 240 10 240 84] Int8.to_int result = Int8.to_int a - Int8.to_int b \/ Int8.to_int result = Int8.to_int a - Int8.to_int b + 256 \/ Int8.to_int result = Int8.to_int a - Int8.to_int b - 256 }
+    ensures { [#"../checked_ops.rs" 240 10 240 84] Int8.to_int result = Int.sub (Int8.to_int a) (Int8.to_int b) \/ Int8.to_int result = Int.add (Int.sub (Int8.to_int a) (Int8.to_int b)) 256 \/ Int8.to_int result = Int.sub (Int.sub (Int8.to_int a) (Int8.to_int b)) 256 }
     
 end
 module CheckedOps_TestI8WrappingSub
   use prelude.Int
   use prelude.Int8
+  use prelude.Bool
   clone Core_Num_Impl0_Max as Max0
   clone Core_Num_Impl0_Min as Min0
   clone Core_Num_Impl0_Bits as Bits0
@@ -3727,7 +3762,7 @@ module CheckedOps_TestI8WrappingSub
     val Min0.mIN' = Min0.mIN',
     val Max0.mAX' = Max0.mAX'
   let rec cfg test_i8_wrapping_sub [#"../checked_ops.rs" 241 0 241 47] [@cfg:stackify] [@cfg:subregion_analysis] (a : int8) (b : int8) : int8
-    ensures { [#"../checked_ops.rs" 240 10 240 84] Int8.to_int result = Int8.to_int a - Int8.to_int b \/ Int8.to_int result = Int8.to_int a - Int8.to_int b + 256 \/ Int8.to_int result = Int8.to_int a - Int8.to_int b - 256 }
+    ensures { [#"../checked_ops.rs" 240 10 240 84] Int8.to_int result = Int.sub (Int8.to_int a) (Int8.to_int b) \/ Int8.to_int result = Int.add (Int.sub (Int8.to_int a) (Int8.to_int b)) 256 \/ Int8.to_int result = Int.sub (Int.sub (Int8.to_int a) (Int8.to_int b)) 256 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : int8;
@@ -3812,7 +3847,7 @@ module CheckedOps_TestI8OverflowingSub
     goto BB2
   }
   BB2 {
-    switch ([#"../checked_ops.rs" 247 4 247 56] not ([#"../checked_ops.rs" 247 12 247 55] (let (a, _) = _7 in a) = _10))
+    switch ([#"../checked_ops.rs" 247 4 247 56] not ([#"../checked_ops.rs" 247 12 247 55] Int8.eq (let (a, _) = _7 in a) _10))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -3849,14 +3884,15 @@ module CheckedOps_TestI8OverflowingSub
   
 end
 module Core_Num_Impl0_CheckedMul_Interface
+  use prelude.Bool
   use prelude.Int8
   use prelude.Int
   clone Core_Num_Impl0_Max_Stub as Max0
   clone Core_Num_Impl0_Min_Stub as Min0
   use Core_Option_Option_Type as Core_Option_Option_Type
   val checked_mul (self : int8) (rhs : int8) : Core_Option_Option_Type.t_option int8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 124 20 125 89] (result = Core_Option_Option_Type.C_None) = (Int8.to_int self * Int8.to_int rhs < Int8.to_int Min0.mIN' \/ Int8.to_int self * Int8.to_int rhs > Int8.to_int Max0.mAX') }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 128 16 128 89] forall r : int8 . result = Core_Option_Option_Type.C_Some r -> Int8.to_int r = Int8.to_int self * Int8.to_int rhs }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 124 20 125 89] (result = Core_Option_Option_Type.C_None) = (Int.lt (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') \/ Int.gt (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX')) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 128 16 128 89] forall r : int8 . result = Core_Option_Option_Type.C_Some r -> Int8.to_int r = Int.mul (Int8.to_int self) (Int8.to_int rhs) }
     
 end
 module Core_Num_Impl0_WrappingMul_Interface
@@ -3865,25 +3901,27 @@ module Core_Num_Impl0_WrappingMul_Interface
   use prelude.UInt32
   use int.Power
   use int.EuclideanDivision
+  use prelude.Bool
   clone Core_Num_Impl0_Max_Stub as Max0
   clone Core_Num_Impl0_Min_Stub as Min0
   clone Core_Num_Impl0_Bits_Stub as Bits0
   val wrapping_mul (self : int8) (rhs : int8) : int8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] Int8.to_int result = EuclideanDivision.mod (Int8.to_int self * Int8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + Int8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] Int8.to_int self * Int8.to_int rhs >= Int8.to_int Min0.mIN' /\ Int8.to_int self * Int8.to_int rhs <= Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int self * Int8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] Int8.to_int self * Int8.to_int rhs < Int8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self * Int8.to_int rhs + k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] Int8.to_int self * Int8.to_int rhs > Int8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self * Int8.to_int rhs - k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] Int8.to_int result = Int.add (EuclideanDivision.mod (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Power.power 2 (UInt32.to_int Bits0.bITS'))) (Int8.to_int Min0.mIN') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] Int.ge (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') /\ Int.le (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX') -> Int8.to_int result = Int.mul (Int8.to_int self) (Int8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] Int.lt (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') -> (exists k : int . Int.gt k 0 /\ Int8.to_int result = Int.add (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int.mul k (Int.add (Int.sub (Int8.to_int Max0.mAX') (Int8.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] Int.gt (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX') -> (exists k : int . Int.gt k 0 /\ Int8.to_int result = Int.sub (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int.mul k (Int.add (Int.sub (Int8.to_int Max0.mAX') (Int8.to_int Min0.mIN')) 1))) }
     
 end
 module Core_Num_Impl0_SaturatingMul_Interface
   use prelude.Int8
   use prelude.Int
+  use prelude.Bool
   clone Core_Num_Impl0_Max_Stub as Max0
   clone Core_Num_Impl0_Min_Stub as Min0
   val saturating_mul (self : int8) (rhs : int8) : int8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] Int8.to_int self * Int8.to_int rhs >= Int8.to_int Min0.mIN' /\ Int8.to_int self * Int8.to_int rhs <= Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int self * Int8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] Int8.to_int self * Int8.to_int rhs < Int8.to_int Min0.mIN' -> Int8.to_int result = Int8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] Int8.to_int self * Int8.to_int rhs > Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int Max0.mAX' }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] Int.ge (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') /\ Int.le (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX') -> Int8.to_int result = Int.mul (Int8.to_int self) (Int8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] Int.lt (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') -> Int8.to_int result = Int8.to_int Min0.mIN' }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] Int.gt (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX') -> Int8.to_int result = Int8.to_int Max0.mAX' }
     
 end
 module Core_Num_Impl0_OverflowingMul_Interface
@@ -3892,15 +3930,16 @@ module Core_Num_Impl0_OverflowingMul_Interface
   use prelude.UInt32
   use int.Power
   use int.EuclideanDivision
+  use prelude.Bool
   clone Core_Num_Impl0_Max_Stub as Max0
   clone Core_Num_Impl0_Min_Stub as Min0
   clone Core_Num_Impl0_Bits_Stub as Bits0
   val overflowing_mul (self : int8) (rhs : int8) : (int8, bool)
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 175 20 175 95] Int8.to_int (let (a, _) = result in a) = EuclideanDivision.mod (Int8.to_int self * Int8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + Int8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 178 16 181 18] Int8.to_int self * Int8.to_int rhs >= Int8.to_int Min0.mIN' /\ Int8.to_int self * Int8.to_int rhs <= Int8.to_int Max0.mAX' -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self * Int8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 185 16 189 18] Int8.to_int self * Int8.to_int rhs < Int8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self * Int8.to_int rhs + k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 190 16 194 18] Int8.to_int self * Int8.to_int rhs > Int8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self * Int8.to_int rhs - k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (Int8.to_int self * Int8.to_int rhs < Int8.to_int Min0.mIN' \/ Int8.to_int self * Int8.to_int rhs > Int8.to_int Max0.mAX') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 175 20 175 95] Int8.to_int (let (a, _) = result in a) = Int.add (EuclideanDivision.mod (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Power.power 2 (UInt32.to_int Bits0.bITS'))) (Int8.to_int Min0.mIN') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 178 16 181 18] Int.ge (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') /\ Int.le (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX') -> Int8.to_int (let (a, _) = result in a) = Int.mul (Int8.to_int self) (Int8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 185 16 189 18] Int.lt (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') -> (exists k : int . Int.gt k 0 /\ Int8.to_int (let (a, _) = result in a) = Int.add (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int.mul k (Int.add (Int.sub (Int8.to_int Max0.mAX') (Int8.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 190 16 194 18] Int.gt (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX') -> (exists k : int . Int.gt k 0 /\ Int8.to_int (let (a, _) = result in a) = Int.sub (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int.mul k (Int.add (Int.sub (Int8.to_int Max0.mAX') (Int8.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (Int.lt (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Min0.mIN') \/ Int.gt (Int.mul (Int8.to_int self) (Int8.to_int rhs)) (Int8.to_int Max0.mAX')) }
     
 end
 module CheckedOps_TestI8MulExample_Interface
@@ -3998,7 +4037,7 @@ module CheckedOps_TestI8MulExample
     goto BB2
   }
   BB2 {
-    switch ([#"../checked_ops.rs" 253 4 253 47] not ([#"../checked_ops.rs" 253 12 253 46] _4 = ([#"../checked_ops.rs" 253 44 253 46] [#"../checked_ops.rs" 253 44 253 46] (50 : int8))))
+    switch ([#"../checked_ops.rs" 253 4 253 47] not ([#"../checked_ops.rs" 253 12 253 46] Int8.eq _4 ([#"../checked_ops.rs" 253 44 253 46] [#"../checked_ops.rs" 253 44 253 46] (50 : int8))))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -4045,7 +4084,7 @@ module CheckedOps_TestI8MulExample
     goto BB13
   }
   BB13 {
-    switch ([#"../checked_ops.rs" 257 4 257 39] not ([#"../checked_ops.rs" 257 12 257 38] _22 = ([#"../checked_ops.rs" 257 36 257 38] [#"../checked_ops.rs" 257 36 257 38] (50 : int8))))
+    switch ([#"../checked_ops.rs" 257 4 257 39] not ([#"../checked_ops.rs" 257 12 257 38] Int8.eq _22 ([#"../checked_ops.rs" 257 36 257 38] [#"../checked_ops.rs" 257 36 257 38] (50 : int8))))
       | False -> goto BB15
       | True -> goto BB14
       end
@@ -4058,7 +4097,7 @@ module CheckedOps_TestI8MulExample
     goto BB16
   }
   BB16 {
-    switch ([#"../checked_ops.rs" 258 4 258 41] not ([#"../checked_ops.rs" 258 12 258 40] _27 = ([#"../checked_ops.rs" 258 37 258 40] [#"../checked_ops.rs" 258 37 258 40] (-12 : int8))))
+    switch ([#"../checked_ops.rs" 258 4 258 41] not ([#"../checked_ops.rs" 258 12 258 40] Int8.eq _27 ([#"../checked_ops.rs" 258 37 258 40] [#"../checked_ops.rs" 258 37 258 40] (-12 : int8))))
       | False -> goto BB18
       | True -> goto BB17
       end
@@ -4071,7 +4110,7 @@ module CheckedOps_TestI8MulExample
     goto BB19
   }
   BB19 {
-    switch ([#"../checked_ops.rs" 259 4 259 41] not ([#"../checked_ops.rs" 259 12 259 40] _32 = ([#"../checked_ops.rs" 259 38 259 40] [#"../checked_ops.rs" 259 38 259 40] (12 : int8))))
+    switch ([#"../checked_ops.rs" 259 4 259 41] not ([#"../checked_ops.rs" 259 12 259 40] Int8.eq _32 ([#"../checked_ops.rs" 259 38 259 40] [#"../checked_ops.rs" 259 38 259 40] (12 : int8))))
       | False -> goto BB21
       | True -> goto BB20
       end
@@ -4084,7 +4123,7 @@ module CheckedOps_TestI8MulExample
     goto BB22
   }
   BB22 {
-    switch ([#"../checked_ops.rs" 261 4 261 41] not ([#"../checked_ops.rs" 261 12 261 40] _37 = ([#"../checked_ops.rs" 261 38 261 40] [#"../checked_ops.rs" 261 38 261 40] (50 : int8))))
+    switch ([#"../checked_ops.rs" 261 4 261 41] not ([#"../checked_ops.rs" 261 12 261 40] Int8.eq _37 ([#"../checked_ops.rs" 261 38 261 40] [#"../checked_ops.rs" 261 38 261 40] (50 : int8))))
       | False -> goto BB24
       | True -> goto BB23
       end
@@ -4097,7 +4136,7 @@ module CheckedOps_TestI8MulExample
     goto BB25
   }
   BB25 {
-    switch ([#"../checked_ops.rs" 262 4 262 43] not ([#"../checked_ops.rs" 262 12 262 42] _42 = ([#"../checked_ops.rs" 262 39 262 42] [#"../checked_ops.rs" 262 39 262 42] (127 : int8))))
+    switch ([#"../checked_ops.rs" 262 4 262 43] not ([#"../checked_ops.rs" 262 12 262 42] Int8.eq _42 ([#"../checked_ops.rs" 262 39 262 42] [#"../checked_ops.rs" 262 39 262 42] (127 : int8))))
       | False -> goto BB27
       | True -> goto BB26
       end
@@ -4110,7 +4149,7 @@ module CheckedOps_TestI8MulExample
     goto BB28
   }
   BB28 {
-    switch ([#"../checked_ops.rs" 263 4 263 45] not ([#"../checked_ops.rs" 263 12 263 44] _47 = ([#"../checked_ops.rs" 263 40 263 44] [#"../checked_ops.rs" 263 40 263 44] (-128 : int8))))
+    switch ([#"../checked_ops.rs" 263 4 263 45] not ([#"../checked_ops.rs" 263 12 263 44] Int8.eq _47 ([#"../checked_ops.rs" 263 40 263 44] [#"../checked_ops.rs" 263 40 263 44] (-128 : int8))))
       | False -> goto BB30
       | True -> goto BB29
       end
@@ -4123,7 +4162,7 @@ module CheckedOps_TestI8MulExample
     goto BB31
   }
   BB31 {
-    switch ([#"../checked_ops.rs" 266 12 266 23] (let (a, _) = res in a) = ([#"../checked_ops.rs" 266 21 266 23] [#"../checked_ops.rs" 266 21 266 23] (50 : int8)))
+    switch ([#"../checked_ops.rs" 266 12 266 23] Int8.eq (let (a, _) = res in a) ([#"../checked_ops.rs" 266 21 266 23] [#"../checked_ops.rs" 266 21 266 23] (50 : int8)))
       | False -> goto BB32
       | True -> goto BB33
       end
@@ -4152,7 +4191,7 @@ module CheckedOps_TestI8MulExample
     goto BB37
   }
   BB37 {
-    switch ([#"../checked_ops.rs" 268 12 268 24] (let (a, _) = res1 in a) = ([#"../checked_ops.rs" 268 21 268 24] [#"../checked_ops.rs" 268 21 268 24] (-12 : int8)))
+    switch ([#"../checked_ops.rs" 268 12 268 24] Int8.eq (let (a, _) = res1 in a) ([#"../checked_ops.rs" 268 21 268 24] [#"../checked_ops.rs" 268 21 268 24] (-12 : int8)))
       | False -> goto BB38
       | True -> goto BB39
       end
@@ -4181,7 +4220,7 @@ module CheckedOps_TestI8MulExample
     goto BB43
   }
   BB43 {
-    switch ([#"../checked_ops.rs" 270 12 270 23] (let (a, _) = res2 in a) = ([#"../checked_ops.rs" 270 21 270 23] [#"../checked_ops.rs" 270 21 270 23] (12 : int8)))
+    switch ([#"../checked_ops.rs" 270 12 270 23] Int8.eq (let (a, _) = res2 in a) ([#"../checked_ops.rs" 270 21 270 23] [#"../checked_ops.rs" 270 21 270 23] (12 : int8)))
       | False -> goto BB44
       | True -> goto BB45
       end
@@ -4287,7 +4326,7 @@ module CheckedOps_TestI8MulZero
     goto BB2
   }
   BB2 {
-    switch ([#"../checked_ops.rs" 275 4 275 45] not ([#"../checked_ops.rs" 275 12 275 44] _5 = ([#"../checked_ops.rs" 275 43 275 44] [#"../checked_ops.rs" 275 43 275 44] (0 : int8))))
+    switch ([#"../checked_ops.rs" 275 4 275 45] not ([#"../checked_ops.rs" 275 12 275 44] Int8.eq _5 ([#"../checked_ops.rs" 275 43 275 44] [#"../checked_ops.rs" 275 43 275 44] (0 : int8))))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -4300,7 +4339,7 @@ module CheckedOps_TestI8MulZero
     goto BB5
   }
   BB5 {
-    switch ([#"../checked_ops.rs" 276 4 276 37] not ([#"../checked_ops.rs" 276 12 276 36] _12 = ([#"../checked_ops.rs" 276 35 276 36] [#"../checked_ops.rs" 276 35 276 36] (0 : int8))))
+    switch ([#"../checked_ops.rs" 276 4 276 37] not ([#"../checked_ops.rs" 276 12 276 36] Int8.eq _12 ([#"../checked_ops.rs" 276 35 276 36] [#"../checked_ops.rs" 276 35 276 36] (0 : int8))))
       | False -> goto BB7
       | True -> goto BB6
       end
@@ -4313,7 +4352,7 @@ module CheckedOps_TestI8MulZero
     goto BB8
   }
   BB8 {
-    switch ([#"../checked_ops.rs" 277 4 277 39] not ([#"../checked_ops.rs" 277 12 277 38] _18 = ([#"../checked_ops.rs" 277 37 277 38] [#"../checked_ops.rs" 277 37 277 38] (0 : int8))))
+    switch ([#"../checked_ops.rs" 277 4 277 39] not ([#"../checked_ops.rs" 277 12 277 38] Int8.eq _18 ([#"../checked_ops.rs" 277 37 277 38] [#"../checked_ops.rs" 277 37 277 38] (0 : int8))))
       | False -> goto BB10
       | True -> goto BB9
       end
@@ -4326,7 +4365,7 @@ module CheckedOps_TestI8MulZero
     goto BB11
   }
   BB11 {
-    switch ([#"../checked_ops.rs" 279 12 279 22] (let (a, _) = res in a) = ([#"../checked_ops.rs" 279 21 279 22] [#"../checked_ops.rs" 279 21 279 22] (0 : int8)))
+    switch ([#"../checked_ops.rs" 279 12 279 22] Int8.eq (let (a, _) = res in a) ([#"../checked_ops.rs" 279 21 279 22] [#"../checked_ops.rs" 279 21 279 22] (0 : int8)))
       | False -> goto BB12
       | True -> goto BB13
       end
@@ -4423,7 +4462,7 @@ module CheckedOps_TestI8OverflowingMul
     goto BB2
   }
   BB2 {
-    switch ([#"../checked_ops.rs" 284 4 284 56] not ([#"../checked_ops.rs" 284 12 284 55] (let (a, _) = _7 in a) = _10))
+    switch ([#"../checked_ops.rs" 284 4 284 56] not ([#"../checked_ops.rs" 284 12 284 55] Int8.eq (let (a, _) = _7 in a) _10))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -4460,43 +4499,47 @@ module CheckedOps_TestI8OverflowingMul
   
 end
 module Core_Num_Impl0_CheckedDiv_Interface
+  use prelude.Bool
   use prelude.Int8
   use prelude.Int
   clone Core_Num_Impl0_Min_Stub as Min0
   use Core_Option_Option_Type as Core_Option_Option_Type
   val checked_div (self : int8) (rhs : int8) : Core_Option_Option_Type.t_option int8
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 66 26 66 97] (result = Core_Option_Option_Type.C_None) = (Int8.to_int rhs = 0 \/ Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 68 16 68 85] forall r : int8 . result = Core_Option_Option_Type.C_Some r -> Int8.to_int r = div (Int8.to_int self) (Int8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 68 16 68 85] forall r : int8 . result = Core_Option_Option_Type.C_Some r -> Int8.to_int r = Int.div (Int8.to_int self) (Int8.to_int rhs) }
     
 end
 module Core_Num_Impl0_WrappingDiv_Interface
   use prelude.Int8
   use prelude.Int
+  use prelude.Bool
   clone Core_Num_Impl0_Min_Stub as Min0
   val wrapping_div (self : int8) (rhs : int8) : int8
     requires {[#"../../../../creusot-contracts/src/std/num.rs" 73 27 73 36] Int8.to_int rhs <> 0}
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 75 16 75 85] Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1 -> Int8.to_int result = Int8.to_int self }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 77 26 77 89] Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1 \/ Int8.to_int result = div (Int8.to_int self) (Int8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 77 26 77 89] Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1 \/ Int8.to_int result = Int.div (Int8.to_int self) (Int8.to_int rhs) }
     
 end
 module Core_Num_Impl0_SaturatingDiv_Interface
   use prelude.Int8
   use prelude.Int
+  use prelude.Bool
   clone Core_Num_Impl0_Min_Stub as Min0
   val saturating_div (self : int8) (rhs : int8) : int8
     requires {[#"../../../../creusot-contracts/src/std/num.rs" 82 27 82 36] Int8.to_int rhs <> 0}
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 84 16 84 91] Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1 -> Int8.to_int result = Int8.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 86 26 86 89] Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1 \/ Int8.to_int result = div (Int8.to_int self) (Int8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 86 26 86 89] Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1 \/ Int8.to_int result = Int.div (Int8.to_int self) (Int8.to_int rhs) }
     
 end
 module Core_Num_Impl0_OverflowingDiv_Interface
   use prelude.Int8
   use prelude.Int
+  use prelude.Bool
   clone Core_Num_Impl0_Min_Stub as Min0
   val overflowing_div (self : int8) (rhs : int8) : (int8, bool)
     requires {[#"../../../../creusot-contracts/src/std/num.rs" 91 27 91 36] Int8.to_int rhs <> 0}
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 93 16 93 87] Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1 -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 95 26 95 91] Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1 \/ Int8.to_int (let (a, _) = result in a) = div (Int8.to_int self) (Int8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 95 26 95 91] Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1 \/ Int8.to_int (let (a, _) = result in a) = Int.div (Int8.to_int self) (Int8.to_int rhs) }
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 97 26 97 74] (let (_, a) = result in a) = (Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1) }
     
 end
@@ -4606,7 +4649,7 @@ module CheckedOps_TestI8DivExample
     goto BB6
   }
   BB6 {
-    switch ([#"../checked_ops.rs" 291 4 291 45] not ([#"../checked_ops.rs" 291 12 291 44] _10 = ([#"../checked_ops.rs" 291 43 291 44] [#"../checked_ops.rs" 291 43 291 44] (2 : int8))))
+    switch ([#"../checked_ops.rs" 291 4 291 45] not ([#"../checked_ops.rs" 291 12 291 44] Int8.eq _10 ([#"../checked_ops.rs" 291 43 291 44] [#"../checked_ops.rs" 291 43 291 44] (2 : int8))))
       | False -> goto BB8
       | True -> goto BB7
       end
@@ -4624,7 +4667,7 @@ module CheckedOps_TestI8DivExample
     goto BB10
   }
   BB10 {
-    switch ([#"../checked_ops.rs" 292 4 292 47] not ([#"../checked_ops.rs" 292 12 292 46] _16 = ([#"../checked_ops.rs" 292 44 292 46] [#"../checked_ops.rs" 292 44 292 46] (-2 : int8))))
+    switch ([#"../checked_ops.rs" 292 4 292 47] not ([#"../checked_ops.rs" 292 12 292 46] Int8.eq _16 ([#"../checked_ops.rs" 292 44 292 46] [#"../checked_ops.rs" 292 44 292 46] (-2 : int8))))
       | False -> goto BB12
       | True -> goto BB11
       end
@@ -4654,7 +4697,7 @@ module CheckedOps_TestI8DivExample
     goto BB17
   }
   BB17 {
-    switch ([#"../checked_ops.rs" 295 4 295 37] not ([#"../checked_ops.rs" 295 12 295 36] _28 = ([#"../checked_ops.rs" 295 35 295 36] [#"../checked_ops.rs" 295 35 295 36] (2 : int8))))
+    switch ([#"../checked_ops.rs" 295 4 295 37] not ([#"../checked_ops.rs" 295 12 295 36] Int8.eq _28 ([#"../checked_ops.rs" 295 35 295 36] [#"../checked_ops.rs" 295 35 295 36] (2 : int8))))
       | False -> goto BB19
       | True -> goto BB18
       end
@@ -4667,7 +4710,7 @@ module CheckedOps_TestI8DivExample
     goto BB20
   }
   BB20 {
-    switch ([#"../checked_ops.rs" 296 4 296 39] not ([#"../checked_ops.rs" 296 12 296 38] _33 = ([#"../checked_ops.rs" 296 36 296 38] [#"../checked_ops.rs" 296 36 296 38] (-2 : int8))))
+    switch ([#"../checked_ops.rs" 296 4 296 39] not ([#"../checked_ops.rs" 296 12 296 38] Int8.eq _33 ([#"../checked_ops.rs" 296 36 296 38] [#"../checked_ops.rs" 296 36 296 38] (-2 : int8))))
       | False -> goto BB22
       | True -> goto BB21
       end
@@ -4680,7 +4723,7 @@ module CheckedOps_TestI8DivExample
     goto BB23
   }
   BB23 {
-    switch ([#"../checked_ops.rs" 297 4 297 46] not ([#"../checked_ops.rs" 297 12 297 45] _38 = ([#"../checked_ops.rs" 297 41 297 45] [#"../checked_ops.rs" 297 41 297 45] (-128 : int8))))
+    switch ([#"../checked_ops.rs" 297 4 297 46] not ([#"../checked_ops.rs" 297 12 297 45] Int8.eq _38 ([#"../checked_ops.rs" 297 41 297 45] [#"../checked_ops.rs" 297 41 297 45] (-128 : int8))))
       | False -> goto BB25
       | True -> goto BB24
       end
@@ -4693,7 +4736,7 @@ module CheckedOps_TestI8DivExample
     goto BB26
   }
   BB26 {
-    switch ([#"../checked_ops.rs" 299 4 299 39] not ([#"../checked_ops.rs" 299 12 299 38] _43 = ([#"../checked_ops.rs" 299 37 299 38] [#"../checked_ops.rs" 299 37 299 38] (2 : int8))))
+    switch ([#"../checked_ops.rs" 299 4 299 39] not ([#"../checked_ops.rs" 299 12 299 38] Int8.eq _43 ([#"../checked_ops.rs" 299 37 299 38] [#"../checked_ops.rs" 299 37 299 38] (2 : int8))))
       | False -> goto BB28
       | True -> goto BB27
       end
@@ -4706,7 +4749,7 @@ module CheckedOps_TestI8DivExample
     goto BB29
   }
   BB29 {
-    switch ([#"../checked_ops.rs" 300 4 300 41] not ([#"../checked_ops.rs" 300 12 300 40] _48 = ([#"../checked_ops.rs" 300 38 300 40] [#"../checked_ops.rs" 300 38 300 40] (-2 : int8))))
+    switch ([#"../checked_ops.rs" 300 4 300 41] not ([#"../checked_ops.rs" 300 12 300 40] Int8.eq _48 ([#"../checked_ops.rs" 300 38 300 40] [#"../checked_ops.rs" 300 38 300 40] (-2 : int8))))
       | False -> goto BB31
       | True -> goto BB30
       end
@@ -4719,7 +4762,7 @@ module CheckedOps_TestI8DivExample
     goto BB32
   }
   BB32 {
-    switch ([#"../checked_ops.rs" 301 4 301 48] not ([#"../checked_ops.rs" 301 12 301 47] _53 = ([#"../checked_ops.rs" 301 43 301 47] [#"../checked_ops.rs" 301 43 301 47] (-128 : int8))))
+    switch ([#"../checked_ops.rs" 301 4 301 48] not ([#"../checked_ops.rs" 301 12 301 47] Int8.eq _53 ([#"../checked_ops.rs" 301 43 301 47] [#"../checked_ops.rs" 301 43 301 47] (-128 : int8))))
       | False -> goto BB34
       | True -> goto BB33
       end
@@ -4732,7 +4775,7 @@ module CheckedOps_TestI8DivExample
     goto BB35
   }
   BB35 {
-    switch ([#"../checked_ops.rs" 304 12 304 22] (let (a, _) = res in a) = ([#"../checked_ops.rs" 304 21 304 22] [#"../checked_ops.rs" 304 21 304 22] (2 : int8)))
+    switch ([#"../checked_ops.rs" 304 12 304 22] Int8.eq (let (a, _) = res in a) ([#"../checked_ops.rs" 304 21 304 22] [#"../checked_ops.rs" 304 21 304 22] (2 : int8)))
       | False -> goto BB36
       | True -> goto BB37
       end
@@ -4761,7 +4804,7 @@ module CheckedOps_TestI8DivExample
     goto BB41
   }
   BB41 {
-    switch ([#"../checked_ops.rs" 306 12 306 23] (let (a, _) = res1 in a) = ([#"../checked_ops.rs" 306 21 306 23] [#"../checked_ops.rs" 306 21 306 23] (-2 : int8)))
+    switch ([#"../checked_ops.rs" 306 12 306 23] Int8.eq (let (a, _) = res1 in a) ([#"../checked_ops.rs" 306 21 306 23] [#"../checked_ops.rs" 306 21 306 23] (-2 : int8)))
       | False -> goto BB42
       | True -> goto BB43
       end
@@ -4790,7 +4833,7 @@ module CheckedOps_TestI8DivExample
     goto BB47
   }
   BB47 {
-    switch ([#"../checked_ops.rs" 308 12 308 25] (let (a, _) = res2 in a) = ([#"../checked_ops.rs" 308 21 308 25] [#"../checked_ops.rs" 308 21 308 25] (-128 : int8)))
+    switch ([#"../checked_ops.rs" 308 12 308 25] Int8.eq (let (a, _) = res2 in a) ([#"../checked_ops.rs" 308 21 308 25] [#"../checked_ops.rs" 308 21 308 25] (-128 : int8)))
       | False -> goto BB48
       | True -> goto BB49
       end
@@ -4823,6 +4866,7 @@ end
 module CheckedOps_TestI8DivNoOverflow_Interface
   use prelude.Int8
   use prelude.Int
+  use prelude.Bool
   val test_i8_div_no_overflow [#"../checked_ops.rs" 313 0 313 44] (a : int8) (b : int8) : ()
     requires {[#"../checked_ops.rs" 312 11 312 46] Int8.to_int b <> 0 /\ (Int8.to_int a <> - 128 \/ Int8.to_int b <> - 1)}
     
@@ -4910,17 +4954,17 @@ module CheckedOps_TestI8DivNoOverflow
   BB2 {
     _12 <- a;
     _13 <- b;
-    _14 <- ([#"../checked_ops.rs" 314 41 314 46] _13 = ([#"../checked_ops.rs" 314 41 314 46] [#"../checked_ops.rs" 314 41 314 46] (0 : int8)));
+    _14 <- ([#"../checked_ops.rs" 314 41 314 46] Int8.eq _13 ([#"../checked_ops.rs" 314 41 314 46] [#"../checked_ops.rs" 314 41 314 46] (0 : int8)));
     assert { [@expl:division by zero] [#"../checked_ops.rs" 314 41 314 46] not _14 };
     goto BB3
   }
   BB3 {
-    _17 <- ([#"../checked_ops.rs" 314 41 314 46] ([#"../checked_ops.rs" 314 41 314 46] _13 = ([#"../checked_ops.rs" 314 41 314 46] [#"../checked_ops.rs" 314 41 314 46] (-1 : int8))) && ([#"../checked_ops.rs" 314 41 314 46] _12 = ([#"../checked_ops.rs" 314 41 314 46] [#"../checked_ops.rs" 314 41 314 46] (-128 : int8))));
+    _17 <- ([#"../checked_ops.rs" 314 41 314 46] ([#"../checked_ops.rs" 314 41 314 46] Int8.eq _13 ([#"../checked_ops.rs" 314 41 314 46] [#"../checked_ops.rs" 314 41 314 46] (-1 : int8))) && ([#"../checked_ops.rs" 314 41 314 46] Int8.eq _12 ([#"../checked_ops.rs" 314 41 314 46] [#"../checked_ops.rs" 314 41 314 46] (-128 : int8))));
     assert { [@expl:Div overflow] [#"../checked_ops.rs" 314 41 314 46] not _17 };
     goto BB4
   }
   BB4 {
-    switch ([#"../checked_ops.rs" 314 4 314 47] not ([#"../checked_ops.rs" 314 12 314 46] _7 = ([#"../checked_ops.rs" 314 41 314 46] _12 / _13)))
+    switch ([#"../checked_ops.rs" 314 4 314 47] not ([#"../checked_ops.rs" 314 12 314 46] Int8.eq _7 ([#"../checked_ops.rs" 314 41 314 46] Int8.div _12 _13)))
       | False -> goto BB6
       | True -> goto BB5
       end
@@ -4935,17 +4979,17 @@ module CheckedOps_TestI8DivNoOverflow
   BB7 {
     _26 <- a;
     _27 <- b;
-    _28 <- ([#"../checked_ops.rs" 315 33 315 38] _27 = ([#"../checked_ops.rs" 315 33 315 38] [#"../checked_ops.rs" 315 33 315 38] (0 : int8)));
+    _28 <- ([#"../checked_ops.rs" 315 33 315 38] Int8.eq _27 ([#"../checked_ops.rs" 315 33 315 38] [#"../checked_ops.rs" 315 33 315 38] (0 : int8)));
     assert { [@expl:division by zero] [#"../checked_ops.rs" 315 33 315 38] not _28 };
     goto BB8
   }
   BB8 {
-    _31 <- ([#"../checked_ops.rs" 315 33 315 38] ([#"../checked_ops.rs" 315 33 315 38] _27 = ([#"../checked_ops.rs" 315 33 315 38] [#"../checked_ops.rs" 315 33 315 38] (-1 : int8))) && ([#"../checked_ops.rs" 315 33 315 38] _26 = ([#"../checked_ops.rs" 315 33 315 38] [#"../checked_ops.rs" 315 33 315 38] (-128 : int8))));
+    _31 <- ([#"../checked_ops.rs" 315 33 315 38] ([#"../checked_ops.rs" 315 33 315 38] Int8.eq _27 ([#"../checked_ops.rs" 315 33 315 38] [#"../checked_ops.rs" 315 33 315 38] (-1 : int8))) && ([#"../checked_ops.rs" 315 33 315 38] Int8.eq _26 ([#"../checked_ops.rs" 315 33 315 38] [#"../checked_ops.rs" 315 33 315 38] (-128 : int8))));
     assert { [@expl:Div overflow] [#"../checked_ops.rs" 315 33 315 38] not _31 };
     goto BB9
   }
   BB9 {
-    switch ([#"../checked_ops.rs" 315 4 315 39] not ([#"../checked_ops.rs" 315 12 315 38] _22 = ([#"../checked_ops.rs" 315 33 315 38] _26 / _27)))
+    switch ([#"../checked_ops.rs" 315 4 315 39] not ([#"../checked_ops.rs" 315 12 315 38] Int8.eq _22 ([#"../checked_ops.rs" 315 33 315 38] Int8.div _26 _27)))
       | False -> goto BB11
       | True -> goto BB10
       end
@@ -4960,17 +5004,17 @@ module CheckedOps_TestI8DivNoOverflow
   BB12 {
     _40 <- a;
     _41 <- b;
-    _42 <- ([#"../checked_ops.rs" 316 35 316 40] _41 = ([#"../checked_ops.rs" 316 35 316 40] [#"../checked_ops.rs" 316 35 316 40] (0 : int8)));
+    _42 <- ([#"../checked_ops.rs" 316 35 316 40] Int8.eq _41 ([#"../checked_ops.rs" 316 35 316 40] [#"../checked_ops.rs" 316 35 316 40] (0 : int8)));
     assert { [@expl:division by zero] [#"../checked_ops.rs" 316 35 316 40] not _42 };
     goto BB13
   }
   BB13 {
-    _45 <- ([#"../checked_ops.rs" 316 35 316 40] ([#"../checked_ops.rs" 316 35 316 40] _41 = ([#"../checked_ops.rs" 316 35 316 40] [#"../checked_ops.rs" 316 35 316 40] (-1 : int8))) && ([#"../checked_ops.rs" 316 35 316 40] _40 = ([#"../checked_ops.rs" 316 35 316 40] [#"../checked_ops.rs" 316 35 316 40] (-128 : int8))));
+    _45 <- ([#"../checked_ops.rs" 316 35 316 40] ([#"../checked_ops.rs" 316 35 316 40] Int8.eq _41 ([#"../checked_ops.rs" 316 35 316 40] [#"../checked_ops.rs" 316 35 316 40] (-1 : int8))) && ([#"../checked_ops.rs" 316 35 316 40] Int8.eq _40 ([#"../checked_ops.rs" 316 35 316 40] [#"../checked_ops.rs" 316 35 316 40] (-128 : int8))));
     assert { [@expl:Div overflow] [#"../checked_ops.rs" 316 35 316 40] not _45 };
     goto BB14
   }
   BB14 {
-    switch ([#"../checked_ops.rs" 316 4 316 41] not ([#"../checked_ops.rs" 316 12 316 40] _36 = ([#"../checked_ops.rs" 316 35 316 40] _40 / _41)))
+    switch ([#"../checked_ops.rs" 316 4 316 41] not ([#"../checked_ops.rs" 316 12 316 40] Int8.eq _36 ([#"../checked_ops.rs" 316 35 316 40] Int8.div _40 _41)))
       | False -> goto BB16
       | True -> goto BB15
       end
@@ -4985,7 +5029,7 @@ module CheckedOps_TestI8DivNoOverflow
   BB17 {
     _56 <- a;
     _57 <- b;
-    _58 <- ([#"../checked_ops.rs" 318 21 318 26] _57 = ([#"../checked_ops.rs" 318 21 318 26] [#"../checked_ops.rs" 318 21 318 26] (0 : int8)));
+    _58 <- ([#"../checked_ops.rs" 318 21 318 26] Int8.eq _57 ([#"../checked_ops.rs" 318 21 318 26] [#"../checked_ops.rs" 318 21 318 26] (0 : int8)));
     assert { [@expl:division by zero] [#"../checked_ops.rs" 318 21 318 26] not _58 };
     goto BB21
   }
@@ -5006,12 +5050,12 @@ module CheckedOps_TestI8DivNoOverflow
       end
   }
   BB21 {
-    _61 <- ([#"../checked_ops.rs" 318 21 318 26] ([#"../checked_ops.rs" 318 21 318 26] _57 = ([#"../checked_ops.rs" 318 21 318 26] [#"../checked_ops.rs" 318 21 318 26] (-1 : int8))) && ([#"../checked_ops.rs" 318 21 318 26] _56 = ([#"../checked_ops.rs" 318 21 318 26] [#"../checked_ops.rs" 318 21 318 26] (-128 : int8))));
+    _61 <- ([#"../checked_ops.rs" 318 21 318 26] ([#"../checked_ops.rs" 318 21 318 26] Int8.eq _57 ([#"../checked_ops.rs" 318 21 318 26] [#"../checked_ops.rs" 318 21 318 26] (-1 : int8))) && ([#"../checked_ops.rs" 318 21 318 26] Int8.eq _56 ([#"../checked_ops.rs" 318 21 318 26] [#"../checked_ops.rs" 318 21 318 26] (-128 : int8))));
     assert { [@expl:Div overflow] [#"../checked_ops.rs" 318 21 318 26] not _61 };
     goto BB22
   }
   BB22 {
-    switch ([#"../checked_ops.rs" 318 12 318 26] (let (a, _) = res in a) = ([#"../checked_ops.rs" 318 21 318 26] _56 / _57))
+    switch ([#"../checked_ops.rs" 318 12 318 26] Int8.eq (let (a, _) = res in a) ([#"../checked_ops.rs" 318 21 318 26] Int8.div _56 _57))
       | False -> goto BB18
       | True -> goto BB19
       end

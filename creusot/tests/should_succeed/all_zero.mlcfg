@@ -35,7 +35,7 @@ module AllZero_Impl0_Len
   use AllZero_List_Type as AllZero_List_Type
   function len [#"../all_zero.rs" 13 4 13 23] (self : AllZero_List_Type.t_list) : int =
     [#"../all_zero.rs" 14 8 17 9] match (self) with
-      | AllZero_List_Type.C_Cons _ ls -> 1 + len ls
+      | AllZero_List_Type.C_Cons _ ls -> Int.add 1 (len ls)
       | AllZero_List_Type.C_Nil -> 0
       end
   val len [#"../all_zero.rs" 13 4 13 23] (self : AllZero_List_Type.t_list) : int
@@ -76,7 +76,7 @@ module AllZero_Impl0_Get
     
    =
     [#"../all_zero.rs" 22 8 28 9] match (self) with
-      | AllZero_List_Type.C_Cons x ls -> if ix = 0 then Core_Option_Option_Type.C_Some x else get ls (ix - 1)
+      | AllZero_List_Type.C_Cons x ls -> if ix = 0 then Core_Option_Option_Type.C_Some x else get ls (Int.sub ix 1)
       | AllZero_List_Type.C_Nil -> Core_Option_Option_Type.C_None
       end
   val get [#"../all_zero.rs" 21 4 21 40] (self : AllZero_List_Type.t_list) (ix : int) : Core_Option_Option_Type.t_option uint32
@@ -99,6 +99,7 @@ end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
+  use prelude.Bool
   predicate resolve (self : borrowed t) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
@@ -108,13 +109,14 @@ end
 module AllZero_AllZero_Interface
   use prelude.Int
   use prelude.Borrow
+  use prelude.Bool
   use prelude.UInt32
   use AllZero_List_Type as AllZero_List_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone AllZero_Impl0_Get_Stub as Get0
   clone AllZero_Impl0_Len_Stub as Len0
   val all_zero [#"../all_zero.rs" 34 0 34 29] (l : borrowed (AllZero_List_Type.t_list)) : ()
-    ensures { [#"../all_zero.rs" 32 0 32 77] forall i : int . 0 <= i /\ i < Len0.len ( * l) -> Get0.get ( ^ l) i = Core_Option_Option_Type.C_Some (0 : uint32) }
+    ensures { [#"../all_zero.rs" 32 0 32 77] forall i : int . Int.le 0 i /\ Int.lt i (Len0.len ( * l)) -> Get0.get ( ^ l) i = Core_Option_Option_Type.C_Some (0 : uint32) }
     ensures { [#"../all_zero.rs" 33 10 33 34] Len0.len ( * l) = Len0.len ( ^ l) }
     
 end
@@ -122,6 +124,7 @@ module AllZero_AllZero
   use prelude.Ghost
   use prelude.Borrow
   use prelude.Int
+  use prelude.Bool
   use prelude.UInt32
   use AllZero_List_Type as AllZero_List_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
@@ -134,7 +137,7 @@ module AllZero_AllZero
   clone AllZero_Impl0_Get as Get0
   clone AllZero_Impl0_Len as Len0
   let rec cfg all_zero [#"../all_zero.rs" 34 0 34 29] [@cfg:stackify] [@cfg:subregion_analysis] (l : borrowed (AllZero_List_Type.t_list)) : ()
-    ensures { [#"../all_zero.rs" 32 0 32 77] forall i : int . 0 <= i /\ i < Len0.len ( * l) -> Get0.get ( ^ l) i = Core_Option_Option_Type.C_Some (0 : uint32) }
+    ensures { [#"../all_zero.rs" 32 0 32 77] forall i : int . Int.le 0 i /\ Int.lt i (Len0.len ( * l)) -> Get0.get ( ^ l) i = Core_Option_Option_Type.C_Some (0 : uint32) }
     ensures { [#"../all_zero.rs" 33 10 33 34] Len0.len ( * l) = Len0.len ( ^ l) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -158,7 +161,7 @@ module AllZero_AllZero
     goto BB2
   }
   BB2 {
-    invariant { [#"../all_zero.rs" 39 4 41 88] (forall i : int . 0 <= i /\ i < Len0.len ( * loop_l) -> Get0.get ( ^ loop_l) i = Core_Option_Option_Type.C_Some (0 : uint32)) -> (forall i : int . 0 <= i /\ i < Len0.len ( * Ghost.inner old_l) -> Get0.get ( ^ Ghost.inner old_l) i = Core_Option_Option_Type.C_Some (0 : uint32)) };
+    invariant { [#"../all_zero.rs" 39 4 41 88] (forall i : int . Int.le 0 i /\ Int.lt i (Len0.len ( * loop_l)) -> Get0.get ( ^ loop_l) i = Core_Option_Option_Type.C_Some (0 : uint32)) -> (forall i : int . Int.le 0 i /\ Int.lt i (Len0.len ( * Ghost.inner old_l)) -> Get0.get ( ^ Ghost.inner old_l) i = Core_Option_Option_Type.C_Some (0 : uint32)) };
     invariant { [#"../all_zero.rs" 39 4 41 88] Len0.len ( ^ loop_l) = Len0.len ( * loop_l) -> Len0.len ( ^ Ghost.inner old_l) = Len0.len ( * Ghost.inner old_l) };
     goto BB3
   }

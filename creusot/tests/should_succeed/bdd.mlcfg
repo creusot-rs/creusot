@@ -24,6 +24,7 @@ end
 module Bdd_Bumpalo_Impl0_Alloc_Interface
   type t
   use prelude.Borrow
+  use prelude.Bool
   use Bdd_Bumpalo_Bump_Type as Bdd_Bumpalo_Bump_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
     type t = borrowed t
@@ -180,6 +181,7 @@ module Bdd_Hashmap_Impl1_Add_Interface
   type v
   use prelude.Borrow
   use map.Map
+  use prelude.Bool
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = k
@@ -278,6 +280,7 @@ module Bdd_Hashmap_Impl1_Get_Interface
   type v
   use prelude.Borrow
   use map.Map
+  use prelude.Bool
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = k
   use Core_Option_Option_Type as Core_Option_Option_Type
@@ -306,6 +309,7 @@ module Bdd_Hashmap_Impl1_New_Interface
   type k
   type v
   use map.Const
+  use prelude.Bool
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = k
   use Bdd_Hashmap_MyHashMap_Type as Bdd_Hashmap_MyHashMap_Type
@@ -396,7 +400,7 @@ module Bdd_Hashmap_Impl2_HashLog
     type self = u,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
   function hash_log [#"../bdd.rs" 82 8 82 48] (x : (DeepModelTy0.deepModelTy, DeepModelTy1.deepModelTy)) : int =
-    [#"../bdd.rs" 83 24 83 84] mod (HashLog0.hash_log (let (a, _) = x in a) + HashLog1.hash_log (let (_, a) = x in a) * 17) (UInt64.to_int Max0.mAX' + 1)
+    [#"../bdd.rs" 83 24 83 84] Int.rem (Int.add (HashLog0.hash_log (let (a, _) = x in a)) (Int.mul (HashLog1.hash_log (let (_, a) = x in a)) 17)) (Int.add (UInt64.to_int Max0.mAX') 1)
   val hash_log [#"../bdd.rs" 82 8 82 48] (x : (DeepModelTy0.deepModelTy, DeepModelTy1.deepModelTy)) : int
     ensures { result = hash_log x }
     
@@ -422,8 +426,8 @@ end
 module Bdd_Hashmap_Hash_Hash_Interface
   type self
   use prelude.UInt64
-  use prelude.Borrow
   use prelude.Int
+  use prelude.Borrow
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = self
   clone Bdd_Hashmap_Hash_HashLog_Stub as HashLog0 with
@@ -473,14 +477,15 @@ module Core_Num_Impl9_WrappingMul_Interface
   use prelude.UInt32
   use int.Power
   use int.EuclideanDivision
+  use prelude.Bool
   clone Core_Num_Impl9_Max_Stub as Max0
   clone Core_Num_Impl9_Min_Stub as Min0
   clone Core_Num_Impl9_Bits_Stub as Bits0
   val wrapping_mul (self : uint64) (rhs : uint64) : uint64
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] UInt64.to_int result = EuclideanDivision.mod (UInt64.to_int self * UInt64.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + UInt64.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] UInt64.to_int self * UInt64.to_int rhs >= UInt64.to_int Min0.mIN' /\ UInt64.to_int self * UInt64.to_int rhs <= UInt64.to_int Max0.mAX' -> UInt64.to_int result = UInt64.to_int self * UInt64.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] UInt64.to_int self * UInt64.to_int rhs < UInt64.to_int Min0.mIN' -> (exists k : int . k > 0 /\ UInt64.to_int result = UInt64.to_int self * UInt64.to_int rhs + k * (UInt64.to_int Max0.mAX' - UInt64.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] UInt64.to_int self * UInt64.to_int rhs > UInt64.to_int Max0.mAX' -> (exists k : int . k > 0 /\ UInt64.to_int result = UInt64.to_int self * UInt64.to_int rhs - k * (UInt64.to_int Max0.mAX' - UInt64.to_int Min0.mIN' + 1)) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] UInt64.to_int result = Int.add (EuclideanDivision.mod (Int.mul (UInt64.to_int self) (UInt64.to_int rhs)) (Power.power 2 (UInt32.to_int Bits0.bITS'))) (UInt64.to_int Min0.mIN') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] Int.ge (Int.mul (UInt64.to_int self) (UInt64.to_int rhs)) (UInt64.to_int Min0.mIN') /\ Int.le (Int.mul (UInt64.to_int self) (UInt64.to_int rhs)) (UInt64.to_int Max0.mAX') -> UInt64.to_int result = Int.mul (UInt64.to_int self) (UInt64.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] Int.lt (Int.mul (UInt64.to_int self) (UInt64.to_int rhs)) (UInt64.to_int Min0.mIN') -> (exists k : int . Int.gt k 0 /\ UInt64.to_int result = Int.add (Int.mul (UInt64.to_int self) (UInt64.to_int rhs)) (Int.mul k (Int.add (Int.sub (UInt64.to_int Max0.mAX') (UInt64.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] Int.gt (Int.mul (UInt64.to_int self) (UInt64.to_int rhs)) (UInt64.to_int Max0.mAX') -> (exists k : int . Int.gt k 0 /\ UInt64.to_int result = Int.sub (Int.mul (UInt64.to_int self) (UInt64.to_int rhs)) (Int.mul k (Int.add (Int.sub (UInt64.to_int Max0.mAX') (UInt64.to_int Min0.mIN')) 1))) }
     
 end
 module Core_Num_Impl9_WrappingAdd_Interface
@@ -489,14 +494,15 @@ module Core_Num_Impl9_WrappingAdd_Interface
   use prelude.UInt32
   use int.Power
   use int.EuclideanDivision
+  use prelude.Bool
   clone Core_Num_Impl9_Max_Stub as Max0
   clone Core_Num_Impl9_Min_Stub as Min0
   clone Core_Num_Impl9_Bits_Stub as Bits0
   val wrapping_add (self : uint64) (rhs : uint64) : uint64
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] UInt64.to_int result = EuclideanDivision.mod (UInt64.to_int self + UInt64.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + UInt64.to_int Min0.mIN' }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] UInt64.to_int self + UInt64.to_int rhs >= UInt64.to_int Min0.mIN' /\ UInt64.to_int self + UInt64.to_int rhs <= UInt64.to_int Max0.mAX' -> UInt64.to_int result = UInt64.to_int self + UInt64.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] UInt64.to_int self + UInt64.to_int rhs < UInt64.to_int Min0.mIN' -> (exists k : int . k > 0 /\ UInt64.to_int result = UInt64.to_int self + UInt64.to_int rhs + k * (UInt64.to_int Max0.mAX' - UInt64.to_int Min0.mIN' + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] UInt64.to_int self + UInt64.to_int rhs > UInt64.to_int Max0.mAX' -> (exists k : int . k > 0 /\ UInt64.to_int result = UInt64.to_int self + UInt64.to_int rhs - k * (UInt64.to_int Max0.mAX' - UInt64.to_int Min0.mIN' + 1)) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] UInt64.to_int result = Int.add (EuclideanDivision.mod (Int.add (UInt64.to_int self) (UInt64.to_int rhs)) (Power.power 2 (UInt32.to_int Bits0.bITS'))) (UInt64.to_int Min0.mIN') }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] Int.ge (Int.add (UInt64.to_int self) (UInt64.to_int rhs)) (UInt64.to_int Min0.mIN') /\ Int.le (Int.add (UInt64.to_int self) (UInt64.to_int rhs)) (UInt64.to_int Max0.mAX') -> UInt64.to_int result = Int.add (UInt64.to_int self) (UInt64.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] Int.lt (Int.add (UInt64.to_int self) (UInt64.to_int rhs)) (UInt64.to_int Min0.mIN') -> (exists k : int . Int.gt k 0 /\ UInt64.to_int result = Int.add (Int.add (UInt64.to_int self) (UInt64.to_int rhs)) (Int.mul k (Int.add (Int.sub (UInt64.to_int Max0.mAX') (UInt64.to_int Min0.mIN')) 1))) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] Int.gt (Int.add (UInt64.to_int self) (UInt64.to_int rhs)) (UInt64.to_int Max0.mAX') -> (exists k : int . Int.gt k 0 /\ UInt64.to_int result = Int.sub (Int.add (UInt64.to_int self) (UInt64.to_int rhs)) (Int.mul k (Int.add (Int.sub (UInt64.to_int Max0.mAX') (UInt64.to_int Min0.mIN')) 1))) }
     
 end
 module CreusotContracts_Std1_Tuples_Impl4_DeepModel_Stub
@@ -543,8 +549,8 @@ module Bdd_Hashmap_Impl2_Hash_Interface
   type u
   type v
   use prelude.UInt64
-  use prelude.Borrow
   use prelude.Int
+  use prelude.Borrow
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy1 with
     type self = v
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
@@ -782,6 +788,7 @@ end
 module CreusotContracts_Resolve_Impl0_Resolve
   type t1
   type t2
+  use prelude.Bool
   clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve1 with
     type self = t2
   clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
@@ -844,9 +851,10 @@ module Bdd_Impl6_ShallowModel
     
 end
 module Bdd_Impl7_Eq_Interface
+  use prelude.UInt64
+  use prelude.Bool
   use prelude.Borrow
   use prelude.Int
-  use prelude.UInt64
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel0 with
     type t = Bdd_Bdd_Type.t_bdd,
@@ -859,6 +867,7 @@ module Bdd_Impl7_Eq
   use prelude.Int
   use prelude.UInt64
   use prelude.Borrow
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   clone Bdd_Impl5_DeepModel as DeepModel0
   clone Bdd_Impl6_ShallowModel as ShallowModel1 with
@@ -878,12 +887,13 @@ module Bdd_Impl7_Eq
     goto BB0
   }
   BB0 {
-    _0 <- ([#"../bdd.rs" 203 8 203 21] Bdd_Bdd_Type.bdd_1 self = Bdd_Bdd_Type.bdd_1 o);
+    _0 <- ([#"../bdd.rs" 203 8 203 21] UInt64.eq (Bdd_Bdd_Type.bdd_1 self) (Bdd_Bdd_Type.bdd_1 o));
     return _0
   }
   
 end
 module Core_Cmp_Impls_Impl25_Eq_Interface
+  use prelude.Bool
   use prelude.Borrow
   use prelude.Int
   use prelude.UInt64
@@ -964,6 +974,7 @@ module CreusotContracts_Std1_Num_Impl10_DeepModel
     
 end
 module Bdd_Impl14_Eq_Interface
+  use prelude.Bool
   use prelude.Borrow
   use Bdd_NodeLog_Type as Bdd_NodeLog_Type
   use Bdd_Node_Type as Bdd_Node_Type
@@ -978,6 +989,7 @@ module Bdd_Impl14_Eq
   use prelude.Borrow
   use prelude.Int
   use prelude.UInt64
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   clone Bdd_Impl5_DeepModel as DeepModel4
   clone CreusotContracts_Std1_Num_Impl10_DeepModel as DeepModel3
@@ -1154,14 +1166,15 @@ module Bdd_Impl14_Eq
   
 end
 module Core_Clone_Impls_Impl9_Clone_Interface
+  use prelude.UInt64
   use prelude.Borrow
   use prelude.Int
-  use prelude.UInt64
   val clone' (self : uint64) : uint64
     ensures { [#"../../../../creusot-contracts/src/std/clone.rs" 7 0 20 1] result = self }
     
 end
 module Bdd_Impl0_Clone_Interface
+  use prelude.Bool
   use prelude.Borrow
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   val clone' [#"../bdd.rs" 109 4 109 27] (self : Bdd_Bdd_Type.t_bdd) : Bdd_Bdd_Type.t_bdd
@@ -1170,6 +1183,7 @@ module Bdd_Impl0_Clone_Interface
 end
 module Bdd_Impl0_Clone
   use prelude.Borrow
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   let rec cfg clone' [#"../bdd.rs" 109 4 109 27] [@cfg:stackify] [@cfg:subregion_analysis] (self : Bdd_Bdd_Type.t_bdd) : Bdd_Bdd_Type.t_bdd
     ensures { [#"../bdd.rs" 108 14 108 29] result = self }
@@ -1187,6 +1201,7 @@ module Bdd_Impl0_Clone
   
 end
 module Bdd_Impl15_Clone_Interface
+  use prelude.Bool
   use prelude.Borrow
   use Bdd_Node_Type as Bdd_Node_Type
   val clone' [#"../bdd.rs" 90 24 90 29] (self : Bdd_Node_Type.t_node) : Bdd_Node_Type.t_node
@@ -1197,6 +1212,7 @@ module Bdd_Impl15_Clone
   use prelude.Int
   use prelude.UInt64
   use prelude.Borrow
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   clone Bdd_Impl0_Clone_Interface as Clone1
   clone Core_Clone_Impls_Impl9_Clone_Interface as Clone0
@@ -1316,7 +1332,7 @@ module Bdd_Impl1_HashLog
     [#"../bdd.rs" 130 12 135 13] match (x) with
       | Bdd_NodeLog_Type.C_False -> 1
       | Bdd_NodeLog_Type.C_True -> 2
-      | Bdd_NodeLog_Type.C_If v childt childf -> mod (UInt64.to_int v + UInt64.to_int childt * 5 + UInt64.to_int childf * 7) (UInt64.to_int Max0.mAX' + 1)
+      | Bdd_NodeLog_Type.C_If v childt childf -> Int.rem (Int.add (Int.add (UInt64.to_int v) (Int.mul (UInt64.to_int childt) 5)) (Int.mul (UInt64.to_int childf) 7)) (Int.add (UInt64.to_int Max0.mAX') 1)
       end
   val hash_log [#"../bdd.rs" 128 4 128 44] (x : Bdd_NodeLog_Type.t_nodelog) : int
     ensures { result = hash_log x }
@@ -1347,8 +1363,8 @@ module Bdd_Impl4_ShallowModel
 end
 module Bdd_Impl1_Hash_Interface
   use prelude.UInt64
-  use prelude.Borrow
   use prelude.Int
+  use prelude.Borrow
   use Bdd_NodeLog_Type as Bdd_NodeLog_Type
   use Bdd_Node_Type as Bdd_Node_Type
   clone Bdd_Impl1_HashLog_Stub as HashLog0
@@ -1479,8 +1495,8 @@ module Bdd_Impl2_HashLog
 end
 module Bdd_Impl2_Hash_Interface
   use prelude.UInt64
-  use prelude.Borrow
   use prelude.Int
+  use prelude.Borrow
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   clone Bdd_Impl2_HashLog_Stub as HashLog0
   clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel0 with
@@ -1565,10 +1581,10 @@ module Bdd_Impl8_Size_Interface
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   function size [#"../bdd.rs" 224 4 224 24] (self : Bdd_Bdd_Type.t_bdd) : int
   val size [#"../bdd.rs" 224 4 224 24] (self : Bdd_Bdd_Type.t_bdd) : int
-    ensures { [#"../bdd.rs" 223 14 223 25] result >= 0 }
+    ensures { [#"../bdd.rs" 223 14 223 25] Int.ge result 0 }
     ensures { result = size self }
     
-  axiom size_spec : forall self : Bdd_Bdd_Type.t_bdd . [#"../bdd.rs" 223 14 223 25] size self >= 0
+  axiom size_spec : forall self : Bdd_Bdd_Type.t_bdd . [#"../bdd.rs" 223 14 223 25] Int.ge (size self) 0
 end
 module Bdd_Impl8_Size
   use prelude.Int
@@ -1578,26 +1594,26 @@ module Bdd_Impl8_Size
     [#"../bdd.rs" 226 12 234 13] match (self) with
       | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_True) _ -> 0
       | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_False) _ -> 0
-      | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If _ childt childf) _ -> let ht = size childt in let hf = size childf in 1 + ht + hf
+      | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If _ childt childf) _ -> let ht = size childt in let hf = size childf in Int.add (Int.add 1 ht) hf
       end
   val size [#"../bdd.rs" 224 4 224 24] (self : Bdd_Bdd_Type.t_bdd) : int
-    ensures { [#"../bdd.rs" 223 14 223 25] result >= 0 }
+    ensures { [#"../bdd.rs" 223 14 223 25] Int.ge result 0 }
     ensures { result = size self }
     
-  axiom size_spec : forall self : Bdd_Bdd_Type.t_bdd . [#"../bdd.rs" 223 14 223 25] size self >= 0
+  axiom size_spec : forall self : Bdd_Bdd_Type.t_bdd . [#"../bdd.rs" 223 14 223 25] Int.ge (size self) 0
 end
 module Bdd_Impl8_Size_Impl
   use prelude.Int
   use Bdd_Node_Type as Bdd_Node_Type
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   let rec ghost function size [#"../bdd.rs" 224 4 224 24] (self : Bdd_Bdd_Type.t_bdd) : int
-    ensures { [#"../bdd.rs" 223 14 223 25] result >= 0 }
+    ensures { [#"../bdd.rs" 223 14 223 25] Int.ge result 0 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../bdd.rs" 226 12 234 13] match (self) with
       | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_True) _ -> 0
       | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_False) _ -> 0
-      | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If _ childt childf) _ -> let ht = size childt in let hf = size childf in 1 + ht + hf
+      | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If _ childt childf) _ -> let ht = size childt in let hf = size childf in Int.add (Int.add 1 ht) hf
       end
 end
 module Bdd_Impl8_Leastvar_Stub
@@ -1625,8 +1641,8 @@ module Bdd_Impl8_Leastvar
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   function leastvar [#"../bdd.rs" 239 4 239 28] (self : Bdd_Bdd_Type.t_bdd) : int =
     [#"../bdd.rs" 241 12 245 13] match (self) with
-      | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_True) _ -> UInt64.to_int Max0.mAX' + 1
-      | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_False) _ -> UInt64.to_int Max0.mAX' + 1
+      | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_True) _ -> Int.add (UInt64.to_int Max0.mAX') 1
+      | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_False) _ -> Int.add (UInt64.to_int Max0.mAX') 1
       | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If v _ _) _ -> ShallowModel0.shallow_model v
       end
   val leastvar [#"../bdd.rs" 239 4 239 28] (self : Bdd_Bdd_Type.t_bdd) : int
@@ -1693,6 +1709,7 @@ module Bdd_Impl10_IsValidBdd_Interface
 end
 module Bdd_Impl10_IsValidBdd
   use map.Map
+  use prelude.Bool
   use Bdd_NodeLog_Type as Bdd_NodeLog_Type
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_Node_Type as Bdd_Node_Type
@@ -1726,6 +1743,7 @@ module Bdd_Impl10_IsValidNode_Interface
     
 end
 module Bdd_Impl10_IsValidNode
+  use prelude.Bool
   use prelude.UInt64
   use prelude.Int
   use Bdd_Bdd_Type as Bdd_Bdd_Type
@@ -1737,7 +1755,7 @@ module Bdd_Impl10_IsValidNode
     [#"../bdd.rs" 318 12 327 13] match (n) with
       | Bdd_Node_Type.C_True -> true
       | Bdd_Node_Type.C_False -> true
-      | Bdd_Node_Type.C_If v childt childf -> Bdd_Bdd_Type.bdd_0 childt <> Bdd_Bdd_Type.bdd_0 childf /\ IsValidBdd0.is_valid_bdd self childt /\ IsValidBdd0.is_valid_bdd self childf /\ UInt64.to_int v < Leastvar0.leastvar childt /\ UInt64.to_int v < Leastvar0.leastvar childf
+      | Bdd_Node_Type.C_If v childt childf -> Bdd_Bdd_Type.bdd_0 childt <> Bdd_Bdd_Type.bdd_0 childf /\ IsValidBdd0.is_valid_bdd self childt /\ IsValidBdd0.is_valid_bdd self childf /\ Int.lt (UInt64.to_int v) (Leastvar0.leastvar childt) /\ Int.lt (UInt64.to_int v) (Leastvar0.leastvar childf)
       end
   val is_valid_node [#"../bdd.rs" 316 4 316 51] (self : Bdd_Context_Type.t_context) (n : Bdd_Node_Type.t_node) : bool
     ensures { result = is_valid_node self n }
@@ -1755,6 +1773,7 @@ module Bdd_Impl9_Invariant_Interface
     
 end
 module Bdd_Impl9_Invariant
+  use prelude.Bool
   use prelude.Int
   use prelude.Ghost
   use map.Map
@@ -1786,14 +1805,14 @@ module Bdd_Impl9_Invariant
     type ShallowModelTy0.shallowModelTy = Bdd_NodeLog_Type.t_nodelog
   predicate invariant' [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) =
     [#"../bdd.rs" 264 12 288 19] (forall n : Bdd_NodeLog_Type.t_nodelog . match (Map.get (ShallowModel1.shallow_model (Bdd_Context_Type.context_hashcons self)) n) with
-      | Core_Option_Option_Type.C_Some b -> ShallowModel0.shallow_model (Bdd_Bdd_Type.bdd_0 b) = n /\ IsValidNode0.is_valid_node self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
+      | Core_Option_Option_Type.C_Some b -> ShallowModel0.shallow_model (Bdd_Bdd_Type.bdd_0 b) = n /\ IsValidNode0.is_valid_node self (Bdd_Bdd_Type.bdd_0 b) /\ Int.lt (Bdd_Bdd_Type.bdd_1 b) (Bdd_Context_Type.context_cnt self) /\ Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
       | Core_Option_Option_Type.C_None -> true
       end) /\ (forall bm : uint64 . match (Map.get (ShallowModel2.shallow_model (Bdd_Context_Type.context_not_memo self)) bm) with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in IsValidBdd0.is_valid_bdd self n /\ IsValidBdd0.is_valid_bdd self b /\ (forall v : Map.map uint64 bool . Interp0.interp n v = (not Interp0.interp b v)) /\ Leastvar0.leastvar b <= Leastvar0.leastvar n
+      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in IsValidBdd0.is_valid_bdd self n /\ IsValidBdd0.is_valid_bdd self b /\ (forall v : Map.map uint64 bool . Interp0.interp n v = (not Interp0.interp b v)) /\ Int.le (Leastvar0.leastvar b) (Leastvar0.leastvar n)
       end) /\ (forall abm : (uint64, uint64) . match (Map.get (ShallowModel3.shallow_model (Bdd_Context_Type.context_and_memo self)) abm) with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in IsValidBdd0.is_valid_bdd self n /\ IsValidBdd0.is_valid_bdd self a /\ IsValidBdd0.is_valid_bdd self b /\ (forall v : Map.map uint64 bool . Interp0.interp n v = (Interp0.interp a v /\ Interp0.interp b v)) /\ (Leastvar0.leastvar a <= Leastvar0.leastvar n \/ Leastvar0.leastvar b <= Leastvar0.leastvar n)
+      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in IsValidBdd0.is_valid_bdd self n /\ IsValidBdd0.is_valid_bdd self a /\ IsValidBdd0.is_valid_bdd self b /\ (forall v : Map.map uint64 bool . Interp0.interp n v = (Interp0.interp a v /\ Interp0.interp b v)) /\ (Int.le (Leastvar0.leastvar a) (Leastvar0.leastvar n) \/ Int.le (Leastvar0.leastvar b) (Leastvar0.leastvar n))
       end)
   val invariant' [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) : bool
     ensures { result = invariant' self }
@@ -1817,6 +1836,7 @@ module Bdd_Impl10_Grows
   use prelude.UInt64
   use prelude.Int
   use map.Map
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_Node_Type as Bdd_Node_Type
   use Bdd_Hashmap_MyHashMap_Type as Bdd_Hashmap_MyHashMap_Type
@@ -1828,7 +1848,7 @@ module Bdd_Impl10_Grows
     type DeepModelTy0.deepModelTy = Bdd_NodeLog_Type.t_nodelog
   use Bdd_Context_Type as Bdd_Context_Type
   predicate grows [#"../bdd.rs" 296 4 296 35] (self : borrowed (Bdd_Context_Type.t_context)) =
-    [#"../bdd.rs" 297 8 304 9] UInt64.to_int (Bdd_Context_Type.context_cnt ( * self)) <= UInt64.to_int (Bdd_Context_Type.context_cnt ( ^ self)) /\ (forall n : Bdd_NodeLog_Type.t_nodelog . match (Map.get (ShallowModel0.shallow_model (Bdd_Context_Type.context_hashcons ( * self))) n) with
+    [#"../bdd.rs" 297 8 304 9] Int.le (UInt64.to_int (Bdd_Context_Type.context_cnt ( * self))) (UInt64.to_int (Bdd_Context_Type.context_cnt ( ^ self))) /\ (forall n : Bdd_NodeLog_Type.t_nodelog . match (Map.get (ShallowModel0.shallow_model (Bdd_Context_Type.context_hashcons ( * self))) n) with
       | Core_Option_Option_Type.C_Some b -> Map.get (ShallowModel0.shallow_model (Bdd_Context_Type.context_hashcons ( ^ self))) n = Core_Option_Option_Type.C_Some b
       | Core_Option_Option_Type.C_None -> true
       end)
@@ -2006,6 +2026,7 @@ module Bdd_Impl10_GrowsIsValidBdd_Impl
 end
 module Bdd_Impl10_GrowsTrans_Stub
   use prelude.Borrow
+  use prelude.Bool
   use Bdd_Context_Type as Bdd_Context_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = borrowed (Bdd_Context_Type.t_context)
@@ -2015,6 +2036,7 @@ module Bdd_Impl10_GrowsTrans_Stub
 end
 module Bdd_Impl10_GrowsTrans_Interface
   use prelude.Borrow
+  use prelude.Bool
   use Bdd_Context_Type as Bdd_Context_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = borrowed (Bdd_Context_Type.t_context)
@@ -2036,6 +2058,7 @@ module Bdd_Impl10_GrowsTrans_Interface
 end
 module Bdd_Impl10_GrowsTrans
   use prelude.Borrow
+  use prelude.Bool
   use Bdd_Context_Type as Bdd_Context_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = borrowed (Bdd_Context_Type.t_context)
@@ -2059,6 +2082,7 @@ module Bdd_Impl10_GrowsTrans
 end
 module Bdd_Impl10_GrowsTrans_Impl
   use prelude.Borrow
+  use prelude.Bool
   use prelude.Int
   use prelude.UInt64
   clone CreusotContracts_Std1_Num_Impl9_ShallowModel as ShallowModel6
@@ -2144,6 +2168,7 @@ module Bdd_Impl10_SetIrreleventVar_Stub
   use prelude.UInt64
   use prelude.Int
   use map.Map
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_Context_Type as Bdd_Context_Type
   clone Bdd_Impl8_Interp_Stub as Interp0
@@ -2158,6 +2183,7 @@ module Bdd_Impl10_SetIrreleventVar_Interface
   use prelude.UInt64
   use prelude.Int
   use map.Map
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_Context_Type as Bdd_Context_Type
   clone Bdd_Impl8_Interp_Stub as Interp0
@@ -2169,17 +2195,18 @@ module Bdd_Impl10_SetIrreleventVar_Interface
     
   val set_irrelevent_var [#"../bdd.rs" 351 4 351 87] (self : Bdd_Context_Type.t_context) (a : Bdd_Bdd_Type.t_bdd) (x : uint64) (v : Map.map uint64 bool) (b : bool) : ()
     requires {[#"../bdd.rs" 348 15 348 35] IsValidBdd0.is_valid_bdd self a}
-    requires {[#"../bdd.rs" 349 15 349 32] UInt64.to_int x < Leastvar0.leastvar a}
+    requires {[#"../bdd.rs" 349 15 349 32] Int.lt (UInt64.to_int x) (Leastvar0.leastvar a)}
     requires {[#"../bdd.rs" 351 26 351 30] Inv0.inv self}
     ensures { [#"../bdd.rs" 350 14 350 50] Interp0.interp a v = Interp0.interp a (Map.set v x b) }
     ensures { result = set_irrelevent_var self a x v b }
     
-  axiom set_irrelevent_var_spec : forall self : Bdd_Context_Type.t_context, a : Bdd_Bdd_Type.t_bdd, x : uint64, v : Map.map uint64 bool, b : bool . ([#"../bdd.rs" 348 15 348 35] IsValidBdd0.is_valid_bdd self a) -> ([#"../bdd.rs" 349 15 349 32] UInt64.to_int x < Leastvar0.leastvar a) -> ([#"../bdd.rs" 351 26 351 30] Inv0.inv self) -> ([#"../bdd.rs" 350 14 350 50] Interp0.interp a v = Interp0.interp a (Map.set v x b))
+  axiom set_irrelevent_var_spec : forall self : Bdd_Context_Type.t_context, a : Bdd_Bdd_Type.t_bdd, x : uint64, v : Map.map uint64 bool, b : bool . ([#"../bdd.rs" 348 15 348 35] IsValidBdd0.is_valid_bdd self a) -> ([#"../bdd.rs" 349 15 349 32] Int.lt (UInt64.to_int x) (Leastvar0.leastvar a)) -> ([#"../bdd.rs" 351 26 351 30] Inv0.inv self) -> ([#"../bdd.rs" 350 14 350 50] Interp0.interp a v = Interp0.interp a (Map.set v x b))
 end
 module Bdd_Impl10_SetIrreleventVar
   use prelude.UInt64
   use prelude.Int
   use map.Map
+  use prelude.Bool
   use Bdd_Node_Type as Bdd_Node_Type
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_Context_Type as Bdd_Context_Type
@@ -2197,17 +2224,18 @@ module Bdd_Impl10_SetIrreleventVar
       end
   val set_irrelevent_var [#"../bdd.rs" 351 4 351 87] (self : Bdd_Context_Type.t_context) (a : Bdd_Bdd_Type.t_bdd) (x : uint64) (v : Map.map uint64 bool) (b : bool) : ()
     requires {[#"../bdd.rs" 348 15 348 35] IsValidBdd0.is_valid_bdd self a}
-    requires {[#"../bdd.rs" 349 15 349 32] UInt64.to_int x < Leastvar0.leastvar a}
+    requires {[#"../bdd.rs" 349 15 349 32] Int.lt (UInt64.to_int x) (Leastvar0.leastvar a)}
     requires {[#"../bdd.rs" 351 26 351 30] Inv0.inv self}
     ensures { [#"../bdd.rs" 350 14 350 50] Interp0.interp a v = Interp0.interp a (Map.set v x b) }
     ensures { result = set_irrelevent_var self a x v b }
     
-  axiom set_irrelevent_var_spec : forall self : Bdd_Context_Type.t_context, a : Bdd_Bdd_Type.t_bdd, x : uint64, v : Map.map uint64 bool, b : bool . ([#"../bdd.rs" 348 15 348 35] IsValidBdd0.is_valid_bdd self a) -> ([#"../bdd.rs" 349 15 349 32] UInt64.to_int x < Leastvar0.leastvar a) -> ([#"../bdd.rs" 351 26 351 30] Inv0.inv self) -> ([#"../bdd.rs" 350 14 350 50] Interp0.interp a v = Interp0.interp a (Map.set v x b))
+  axiom set_irrelevent_var_spec : forall self : Bdd_Context_Type.t_context, a : Bdd_Bdd_Type.t_bdd, x : uint64, v : Map.map uint64 bool, b : bool . ([#"../bdd.rs" 348 15 348 35] IsValidBdd0.is_valid_bdd self a) -> ([#"../bdd.rs" 349 15 349 32] Int.lt (UInt64.to_int x) (Leastvar0.leastvar a)) -> ([#"../bdd.rs" 351 26 351 30] Inv0.inv self) -> ([#"../bdd.rs" 350 14 350 50] Interp0.interp a v = Interp0.interp a (Map.set v x b))
 end
 module Bdd_Impl10_SetIrreleventVar_Impl
   use prelude.UInt64
   use prelude.Int
   use map.Map
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_Hashmap_MyHashMap_Type as Bdd_Hashmap_MyHashMap_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
@@ -2267,7 +2295,7 @@ module Bdd_Impl10_SetIrreleventVar_Impl
     axiom .
   let rec ghost function set_irrelevent_var [#"../bdd.rs" 351 4 351 87] (self : Bdd_Context_Type.t_context) (a : Bdd_Bdd_Type.t_bdd) (x : uint64) (v : Map.map uint64 bool) (b : bool) : ()
     requires {[#"../bdd.rs" 348 15 348 35] IsValidBdd0.is_valid_bdd self a}
-    requires {[#"../bdd.rs" 349 15 349 32] UInt64.to_int x < Leastvar0.leastvar a}
+    requires {[#"../bdd.rs" 349 15 349 32] Int.lt (UInt64.to_int x) (Leastvar0.leastvar a)}
     requires {[#"../bdd.rs" 351 26 351 30] Inv0.inv self}
     ensures { [#"../bdd.rs" 350 14 350 50] Interp0.interp a v = Interp0.interp a (Map.set v x b) }
     
@@ -2278,6 +2306,7 @@ module Bdd_Impl10_SetIrreleventVar_Impl
       end
 end
 module Bdd_Impl10_DiscrValuation_Stub
+  use prelude.Bool
   use prelude.Int
   use map.Map
   use prelude.UInt64
@@ -2293,6 +2322,7 @@ module Bdd_Impl10_DiscrValuation_Stub
     
 end
 module Bdd_Impl10_DiscrValuation_Interface
+  use prelude.Bool
   use prelude.Int
   use map.Map
   use prelude.UInt64
@@ -2317,6 +2347,7 @@ module Bdd_Impl10_DiscrValuation_Interface
   axiom discr_valuation_spec : forall self : Bdd_Context_Type.t_context, a : Bdd_Bdd_Type.t_bdd, b : Bdd_Bdd_Type.t_bdd . ([#"../bdd.rs" 364 15 364 35] IsValidBdd0.is_valid_bdd self a) -> ([#"../bdd.rs" 365 15 365 35] IsValidBdd0.is_valid_bdd self b) -> ([#"../bdd.rs" 366 15 366 21] a <> b) -> ([#"../bdd.rs" 370 23 370 27] Inv0.inv self) -> ([#"../bdd.rs" 367 14 367 50] Interp0.interp a (discr_valuation self a b) <> Interp0.interp b (discr_valuation self a b))
 end
 module Bdd_Impl10_DiscrValuation
+  use prelude.Bool
   use prelude.Int
   use map.Map
   use prelude.UInt64
@@ -2347,7 +2378,7 @@ module Bdd_Impl10_DiscrValuation
     ensures { [#"../bdd.rs" 367 14 367 50] Interp0.interp a result <> Interp0.interp b result }
     ensures { result = discr_valuation self a b }
     
-  axiom def : forall self : Bdd_Context_Type.t_context, a : Bdd_Bdd_Type.t_bdd, b : Bdd_Bdd_Type.t_bdd . discr_valuation self a b = ([#"../bdd.rs" 372 12 372 36] let _ = () in if Leastvar0.leastvar a < Leastvar0.leastvar b then
+  axiom def : forall self : Bdd_Context_Type.t_context, a : Bdd_Bdd_Type.t_bdd, b : Bdd_Bdd_Type.t_bdd . discr_valuation self a b = ([#"../bdd.rs" 372 12 372 36] let _ = () in if Int.lt (Leastvar0.leastvar a) (Leastvar0.leastvar b) then
     match (a) with
       | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If v childt childf) _ -> if childf <> b then
         Map.set (discr_valuation self childf b) v false
@@ -2357,7 +2388,7 @@ module Bdd_Impl10_DiscrValuation
       | _ -> Const.const true
       end
   else
-    if Leastvar0.leastvar a > Leastvar0.leastvar b then
+    if Int.gt (Leastvar0.leastvar a) (Leastvar0.leastvar b) then
       match (b) with
         | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If v childt childf) _ -> if childf <> a then
           Map.set (discr_valuation self a childf) v false
@@ -2383,6 +2414,7 @@ module Bdd_Impl10_DiscrValuation
   axiom discr_valuation_spec : forall self : Bdd_Context_Type.t_context, a : Bdd_Bdd_Type.t_bdd, b : Bdd_Bdd_Type.t_bdd . ([#"../bdd.rs" 364 15 364 35] IsValidBdd0.is_valid_bdd self a) -> ([#"../bdd.rs" 365 15 365 35] IsValidBdd0.is_valid_bdd self b) -> ([#"../bdd.rs" 366 15 366 21] a <> b) -> ([#"../bdd.rs" 370 23 370 27] Inv0.inv self) -> ([#"../bdd.rs" 367 14 367 50] Interp0.interp a (discr_valuation self a b) <> Interp0.interp b (discr_valuation self a b))
 end
 module Bdd_Impl10_DiscrValuation_Impl
+  use prelude.Bool
   use prelude.Int
   use map.Map
   use prelude.UInt64
@@ -2458,12 +2490,12 @@ module Bdd_Impl10_DiscrValuation_Impl
     requires {[#"../bdd.rs" 366 15 366 21] a <> b}
     requires {[#"../bdd.rs" 370 23 370 27] Inv0.inv self}
     ensures { [#"../bdd.rs" 367 14 367 50] Interp0.interp a result <> Interp0.interp b result }
-    variant {[#"../bdd.rs" 368 14 368 33] Size0.size a + Size0.size b}
+    variant {[#"../bdd.rs" 368 14 368 33] Int.add (Size0.size a) (Size0.size b)}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../bdd.rs" 372 12 372 36] let _ = () in if let b = Leastvar0.leastvar b in let a = Leastvar0.leastvar a in pure {a < b} then
+    [#"../bdd.rs" 372 12 372 36] let _ = () in if let a' = Leastvar0.leastvar a in let b' = Leastvar0.leastvar b in Int.lt a' b' then
       match (a) with
-        | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If v childt childf) _ -> if pure {childf <> b} then
+        | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If v childt childf) _ -> if childf <> b then
           let a' = discr_valuation self childf b in Map.set a' v false
         else
           let a' = discr_valuation self childt b in Map.set a' v true
@@ -2471,9 +2503,9 @@ module Bdd_Impl10_DiscrValuation_Impl
         | _ -> Const.const true
         end
     else
-      if let b = Leastvar0.leastvar b in let a = Leastvar0.leastvar a in pure {a > b} then
+      if let a' = Leastvar0.leastvar a in let b' = Leastvar0.leastvar b in Int.gt a' b' then
         match (b) with
-          | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If v childt childf) _ -> if pure {childf <> a} then
+          | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If v childt childf) _ -> if childf <> a then
             let a' = discr_valuation self a childf in Map.set a' v false
           else
             let a' = discr_valuation self a childt in Map.set a' v true
@@ -2483,7 +2515,7 @@ module Bdd_Impl10_DiscrValuation_Impl
       else
         match (a) with
           | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If v childta childfa) _ -> match (b) with
-            | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If _ childtb childfb) _ -> if pure {childfa <> childfb} then
+            | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If _ childtb childfb) _ -> if childfa <> childfb then
               let a' = discr_valuation self childfa childfb in Map.set a' v false
             else
               let a' = discr_valuation self childta childtb in Map.set a' v true
@@ -2499,6 +2531,7 @@ module Bdd_Impl10_BddCanonical_Stub
   use map.Map
   use prelude.Int
   use prelude.UInt64
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_Context_Type as Bdd_Context_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
@@ -2512,6 +2545,7 @@ module Bdd_Impl10_BddCanonical_Interface
   use map.Map
   use prelude.Int
   use prelude.UInt64
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_Context_Type as Bdd_Context_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
@@ -2534,6 +2568,7 @@ module Bdd_Impl10_BddCanonical
   use map.Map
   use prelude.Int
   use prelude.UInt64
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   clone Bdd_Impl8_Size_Stub as Size0 with
     axiom .
@@ -2566,6 +2601,7 @@ module Bdd_Impl10_BddCanonical_Impl
   use map.Map
   use prelude.Int
   use prelude.UInt64
+  use prelude.Bool
   clone CreusotContracts_Std1_Num_Impl9_ShallowModel as ShallowModel6
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_Hashmap_MyHashMap_Type as Bdd_Hashmap_MyHashMap_Type
@@ -2800,6 +2836,7 @@ end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
+  use prelude.Bool
   predicate resolve (self : borrowed t) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
@@ -2808,6 +2845,7 @@ module CreusotContracts_Resolve_Impl1_Resolve
 end
 module Bdd_Impl11_Hashcons_Interface
   use prelude.Borrow
+  use prelude.Bool
   use Bdd_Node_Type as Bdd_Node_Type
   use Bdd_Context_Type as Bdd_Context_Type
   use Bdd_Bdd_Type as Bdd_Bdd_Type
@@ -2825,6 +2863,7 @@ module Bdd_Impl11_Hashcons_Interface
     
 end
 module Bdd_Impl11_Hashcons
+  use prelude.Bool
   use prelude.Borrow
   use prelude.Ghost
   use map.Map
@@ -3036,7 +3075,7 @@ module Bdd_Impl11_Hashcons
   BB7 {
     self <- { self with current = (let Bdd_Context_Type.C_Context a b c d e f =  * self in Bdd_Context_Type.C_Context a b _27 d e f) };
     _27 <- any Ghost.ghost_ty (Map.map uint64 (Bdd_Node_Type.t_node));
-    switch ([#"../bdd.rs" 448 11 448 34] Bdd_Context_Type.context_cnt ( * self) > ([#"../bdd.rs" 448 22 448 34] ([#"../bdd.rs" 448 22 448 30] [#"../bdd.rs" 448 22 448 30] (18446744073709551615 : uint64)) - ([#"../bdd.rs" 448 33 448 34] [#"../bdd.rs" 448 33 448 34] (1 : uint64))))
+    switch ([#"../bdd.rs" 448 11 448 34] UInt64.gt (Bdd_Context_Type.context_cnt ( * self)) ([#"../bdd.rs" 448 22 448 34] UInt64.sub ([#"../bdd.rs" 448 22 448 30] [#"../bdd.rs" 448 22 448 30] (18446744073709551615 : uint64)) ([#"../bdd.rs" 448 33 448 34] [#"../bdd.rs" 448 33 448 34] (1 : uint64))))
       | False -> goto BB11
       | True -> goto BB8
       end
@@ -3052,7 +3091,7 @@ module Bdd_Impl11_Hashcons
     goto BB9
   }
   BB11 {
-    self <- { self with current = (let Bdd_Context_Type.C_Context a b c d e f =  * self in Bdd_Context_Type.C_Context a b c d e ([#"../bdd.rs" 454 8 454 21] Bdd_Context_Type.context_cnt ( * self) + ([#"../bdd.rs" 454 20 454 21] [#"../bdd.rs" 454 20 454 21] (1 : uint64)))) };
+    self <- { self with current = (let Bdd_Context_Type.C_Context a b c d e f =  * self in Bdd_Context_Type.C_Context a b c d e ([#"../bdd.rs" 454 8 454 21] UInt64.add (Bdd_Context_Type.context_cnt ( * self)) ([#"../bdd.rs" 454 20 454 21] [#"../bdd.rs" 454 20 454 21] (1 : uint64)))) };
     assert { [@expl:type invariant] Inv0.inv self };
     assume { Resolve0.resolve self };
     _0 <- r1;
@@ -3067,6 +3106,7 @@ module Bdd_Impl11_Node_Interface
   use prelude.Borrow
   use prelude.UInt64
   use prelude.Int
+  use prelude.Bool
   use map.Map
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_Context_Type as Bdd_Context_Type
@@ -3079,7 +3119,7 @@ module Bdd_Impl11_Node_Interface
   val node [#"../bdd.rs" 465 4 465 87] (self : borrowed (Bdd_Context_Type.t_context)) (x : uint64) (childt : Bdd_Bdd_Type.t_bdd) (childf : Bdd_Bdd_Type.t_bdd) : Bdd_Bdd_Type.t_bdd
     requires {[#"../bdd.rs" 458 15 458 40] IsValidBdd0.is_valid_bdd ( * self) childt}
     requires {[#"../bdd.rs" 459 15 459 40] IsValidBdd0.is_valid_bdd ( * self) childf}
-    requires {[#"../bdd.rs" 460 15 460 63] UInt64.to_int x < Leastvar0.leastvar childt /\ UInt64.to_int x < Leastvar0.leastvar childf}
+    requires {[#"../bdd.rs" 460 15 460 63] Int.lt (UInt64.to_int x) (Leastvar0.leastvar childt) /\ Int.lt (UInt64.to_int x) (Leastvar0.leastvar childf)}
     requires {[#"../bdd.rs" 465 17 465 21] Inv0.inv self}
     ensures { [#"../bdd.rs" 461 14 461 26] Grows0.grows self }
     ensures { [#"../bdd.rs" 462 14 462 42] IsValidBdd0.is_valid_bdd ( ^ self) result }
@@ -3088,13 +3128,14 @@ module Bdd_Impl11_Node_Interface
     else
       Interp0.interp childf v
     ) }
-    ensures { [#"../bdd.rs" 464 14 464 37] UInt64.to_int x <= Leastvar0.leastvar result }
+    ensures { [#"../bdd.rs" 464 14 464 37] Int.le (UInt64.to_int x) (Leastvar0.leastvar result) }
     
 end
 module Bdd_Impl11_Node
   use prelude.Borrow
   use prelude.Int
   use prelude.UInt64
+  use prelude.Bool
   use map.Map
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_NodeLog_Type as Bdd_NodeLog_Type
@@ -3181,7 +3222,7 @@ module Bdd_Impl11_Node
   let rec cfg node [#"../bdd.rs" 465 4 465 87] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (Bdd_Context_Type.t_context)) (x : uint64) (childt : Bdd_Bdd_Type.t_bdd) (childf : Bdd_Bdd_Type.t_bdd) : Bdd_Bdd_Type.t_bdd
     requires {[#"../bdd.rs" 458 15 458 40] IsValidBdd0.is_valid_bdd ( * self) childt}
     requires {[#"../bdd.rs" 459 15 459 40] IsValidBdd0.is_valid_bdd ( * self) childf}
-    requires {[#"../bdd.rs" 460 15 460 63] UInt64.to_int x < Leastvar0.leastvar childt /\ UInt64.to_int x < Leastvar0.leastvar childf}
+    requires {[#"../bdd.rs" 460 15 460 63] Int.lt (UInt64.to_int x) (Leastvar0.leastvar childt) /\ Int.lt (UInt64.to_int x) (Leastvar0.leastvar childf)}
     requires {[#"../bdd.rs" 465 17 465 21] Inv1.inv self}
     ensures { [#"../bdd.rs" 461 14 461 26] Grows0.grows self }
     ensures { [#"../bdd.rs" 462 14 462 42] IsValidBdd0.is_valid_bdd ( ^ self) result }
@@ -3190,7 +3231,7 @@ module Bdd_Impl11_Node
     else
       Interp0.interp childf v
     ) }
-    ensures { [#"../bdd.rs" 464 14 464 37] UInt64.to_int x <= Leastvar0.leastvar result }
+    ensures { [#"../bdd.rs" 464 14 464 37] Int.le (UInt64.to_int x) (Leastvar0.leastvar result) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Bdd_Bdd_Type.t_bdd;
@@ -3256,7 +3297,7 @@ module Bdd_Impl11_True_Interface
     ensures { [#"../bdd.rs" 472 14 472 26] Grows0.grows self }
     ensures { [#"../bdd.rs" 473 14 473 42] IsValidBdd0.is_valid_bdd ( ^ self) result }
     ensures { [#"../bdd.rs" 474 4 474 44] forall v : Map.map uint64 bool . Interp0.interp result v }
-    ensures { [#"../bdd.rs" 475 14 475 46] UInt64.to_int Max0.mAX' + 1 = Leastvar0.leastvar result }
+    ensures { [#"../bdd.rs" 475 14 475 46] Int.add (UInt64.to_int Max0.mAX') 1 = Leastvar0.leastvar result }
     
 end
 module Bdd_Impl11_True
@@ -3342,7 +3383,7 @@ module Bdd_Impl11_True
     ensures { [#"../bdd.rs" 472 14 472 26] Grows0.grows self }
     ensures { [#"../bdd.rs" 473 14 473 42] IsValidBdd0.is_valid_bdd ( ^ self) result }
     ensures { [#"../bdd.rs" 474 4 474 44] forall v : Map.map uint64 bool . Interp0.interp result v }
-    ensures { [#"../bdd.rs" 475 14 475 46] UInt64.to_int Max0.mAX' + 1 = Leastvar0.leastvar result }
+    ensures { [#"../bdd.rs" 475 14 475 46] Int.add (UInt64.to_int Max0.mAX') 1 = Leastvar0.leastvar result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Bdd_Bdd_Type.t_bdd;
@@ -3385,7 +3426,7 @@ module Bdd_Impl11_False_Interface
     ensures { [#"../bdd.rs" 480 14 480 26] Grows0.grows self }
     ensures { [#"../bdd.rs" 481 14 481 42] IsValidBdd0.is_valid_bdd ( ^ self) result }
     ensures { [#"../bdd.rs" 482 4 482 45] forall v : Map.map uint64 bool . not Interp0.interp result v }
-    ensures { [#"../bdd.rs" 483 14 483 46] UInt64.to_int Max0.mAX' + 1 = Leastvar0.leastvar result }
+    ensures { [#"../bdd.rs" 483 14 483 46] Int.add (UInt64.to_int Max0.mAX') 1 = Leastvar0.leastvar result }
     
 end
 module Bdd_Impl11_False
@@ -3471,7 +3512,7 @@ module Bdd_Impl11_False
     ensures { [#"../bdd.rs" 480 14 480 26] Grows0.grows self }
     ensures { [#"../bdd.rs" 481 14 481 42] IsValidBdd0.is_valid_bdd ( ^ self) result }
     ensures { [#"../bdd.rs" 482 4 482 45] forall v : Map.map uint64 bool . not Interp0.interp result v }
-    ensures { [#"../bdd.rs" 483 14 483 46] UInt64.to_int Max0.mAX' + 1 = Leastvar0.leastvar result }
+    ensures { [#"../bdd.rs" 483 14 483 46] Int.add (UInt64.to_int Max0.mAX') 1 = Leastvar0.leastvar result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Bdd_Bdd_Type.t_bdd;
@@ -3500,6 +3541,7 @@ module Bdd_Impl11_V_Interface
   use map.Map
   use prelude.Int
   use prelude.UInt64
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_Context_Type as Bdd_Context_Type
   clone Bdd_Impl8_Interp_Stub as Interp0
@@ -3519,6 +3561,7 @@ module Bdd_Impl11_V
   use prelude.Int
   use prelude.UInt64
   use map.Map
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_NodeLog_Type as Bdd_NodeLog_Type
   use Bdd_Node_Type as Bdd_Node_Type
@@ -3661,6 +3704,7 @@ module Bdd_Impl11_Not_Interface
   use map.Map
   use prelude.Int
   use prelude.UInt64
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_Context_Type as Bdd_Context_Type
   clone Bdd_Impl8_Size_Stub as Size0 with
@@ -3677,7 +3721,7 @@ module Bdd_Impl11_Not_Interface
     ensures { [#"../bdd.rs" 498 14 498 26] Grows0.grows self }
     ensures { [#"../bdd.rs" 499 14 499 42] IsValidBdd0.is_valid_bdd ( ^ self) result }
     ensures { [#"../bdd.rs" 500 4 500 60] forall v : Map.map uint64 bool . Interp0.interp result v = (not Interp0.interp x v) }
-    ensures { [#"../bdd.rs" 501 14 501 47] Leastvar0.leastvar x <= Leastvar0.leastvar result }
+    ensures { [#"../bdd.rs" 501 14 501 47] Int.le (Leastvar0.leastvar x) (Leastvar0.leastvar result) }
     
 end
 module Bdd_Impl11_Not
@@ -3685,6 +3729,7 @@ module Bdd_Impl11_Not
   use prelude.Int
   use prelude.UInt64
   use map.Map
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_NodeLog_Type as Bdd_NodeLog_Type
   use Bdd_Node_Type as Bdd_Node_Type
@@ -3837,7 +3882,7 @@ module Bdd_Impl11_Not
     ensures { [#"../bdd.rs" 498 14 498 26] Grows0.grows self }
     ensures { [#"../bdd.rs" 499 14 499 42] IsValidBdd0.is_valid_bdd ( ^ self) result }
     ensures { [#"../bdd.rs" 500 4 500 60] forall v : Map.map uint64 bool . Interp0.interp result v = (not Interp0.interp x v) }
-    ensures { [#"../bdd.rs" 501 14 501 47] Leastvar0.leastvar x <= Leastvar0.leastvar result }
+    ensures { [#"../bdd.rs" 501 14 501 47] Int.le (Leastvar0.leastvar x) (Leastvar0.leastvar result) }
     variant {[#"../bdd.rs" 502 14 502 22] Size0.size x}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -3996,7 +4041,7 @@ module CreusotContracts_Logic_Ord_Impl3_CmpLog
   use prelude.Int
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   function cmp_log (self : int) (o : int) : Core_Cmp_Ordering_Type.t_ordering =
-    [#"../../../../creusot-contracts/src/logic/ord.rs" 137 12 146 17] if self < o then
+    [#"../../../../creusot-contracts/src/logic/ord.rs" 137 12 146 17] if Int.lt self o then
       Core_Cmp_Ordering_Type.C_Less
     else
       if self = o then Core_Cmp_Ordering_Type.C_Equal else Core_Cmp_Ordering_Type.C_Greater
@@ -4006,6 +4051,7 @@ module CreusotContracts_Logic_Ord_Impl3_CmpLog
     
 end
 module Core_Cmp_Impls_Impl63_Cmp_Interface
+  use prelude.Bool
   use prelude.Borrow
   use prelude.Int
   use prelude.UInt64
@@ -4195,6 +4241,7 @@ module Bdd_Impl11_And_Interface
   use map.Map
   use prelude.Int
   use prelude.UInt64
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_Context_Type as Bdd_Context_Type
   clone Bdd_Impl8_Size_Stub as Size0 with
@@ -4212,7 +4259,7 @@ module Bdd_Impl11_And_Interface
     ensures { [#"../bdd.rs" 522 14 522 26] Grows0.grows self }
     ensures { [#"../bdd.rs" 523 14 523 42] IsValidBdd0.is_valid_bdd ( ^ self) result }
     ensures { [#"../bdd.rs" 524 4 524 76] forall v : Map.map uint64 bool . Interp0.interp result v = (Interp0.interp a v /\ Interp0.interp b v) }
-    ensures { [#"../bdd.rs" 525 14 525 84] Leastvar0.leastvar a <= Leastvar0.leastvar result \/ Leastvar0.leastvar b <= Leastvar0.leastvar result }
+    ensures { [#"../bdd.rs" 525 14 525 84] Int.le (Leastvar0.leastvar a) (Leastvar0.leastvar result) \/ Int.le (Leastvar0.leastvar b) (Leastvar0.leastvar result) }
     
 end
 module Bdd_Impl11_And
@@ -4220,6 +4267,7 @@ module Bdd_Impl11_And
   use prelude.Int
   use prelude.UInt64
   use map.Map
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_NodeLog_Type as Bdd_NodeLog_Type
   use Bdd_Node_Type as Bdd_Node_Type
@@ -4408,8 +4456,8 @@ module Bdd_Impl11_And
     ensures { [#"../bdd.rs" 522 14 522 26] Grows0.grows self }
     ensures { [#"../bdd.rs" 523 14 523 42] IsValidBdd0.is_valid_bdd ( ^ self) result }
     ensures { [#"../bdd.rs" 524 4 524 76] forall v : Map.map uint64 bool . Interp0.interp result v = (Interp0.interp a v /\ Interp0.interp b v) }
-    ensures { [#"../bdd.rs" 525 14 525 84] Leastvar0.leastvar a <= Leastvar0.leastvar result \/ Leastvar0.leastvar b <= Leastvar0.leastvar result }
-    variant {[#"../bdd.rs" 526 14 526 33] Size0.size a + Size0.size b}
+    ensures { [#"../bdd.rs" 525 14 525 84] Int.le (Leastvar0.leastvar a) (Leastvar0.leastvar result) \/ Int.le (Leastvar0.leastvar b) (Leastvar0.leastvar result) }
+    variant {[#"../bdd.rs" 526 14 526 33] Int.add (Size0.size a) (Size0.size b)}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Bdd_Bdd_Type.t_bdd;
@@ -4710,6 +4758,7 @@ module Bdd_Hashmap_Impl2
   use prelude.Borrow
   use prelude.Int
   use prelude.UInt64
+  use prelude.Bool
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy1 with
     type self = v
   clone CreusotContracts_Model_DeepModel_DeepModel_Interface as DeepModel3 with
@@ -4822,6 +4871,7 @@ module Bdd_Impl19
 end
 module Bdd_Impl14
   use prelude.Borrow
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use Bdd_NodeLog_Type as Bdd_NodeLog_Type
   use Bdd_Node_Type as Bdd_Node_Type
@@ -4840,8 +4890,9 @@ module Bdd_Impl14
 end
 module Bdd_Impl7
   use prelude.Borrow
-  use prelude.Int
+  use prelude.Bool
   use prelude.UInt64
+  use prelude.Int
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   clone Bdd_Impl5_DeepModel as DeepModel1
   clone Bdd_Impl6_ShallowModel as ShallowModel1 with
@@ -4864,6 +4915,7 @@ module Bdd_Impl7
 end
 module Bdd_Impl15
   use prelude.Borrow
+  use prelude.Bool
   use Bdd_Node_Type as Bdd_Node_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = Bdd_Node_Type.t_node
@@ -4881,6 +4933,7 @@ module Bdd_Impl15
 end
 module Bdd_Impl0
   use prelude.Borrow
+  use prelude.Bool
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = Bdd_Bdd_Type.t_bdd

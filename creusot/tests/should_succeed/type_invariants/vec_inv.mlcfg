@@ -30,7 +30,7 @@ module VecInv_Impl0_Invariant
   use prelude.Int
   use VecInv_SumTo10_Type as VecInv_SumTo10_Type
   predicate invariant' [#"../vec_inv.rs" 12 4 12 30] (self : VecInv_SumTo10_Type.t_sumto10) =
-    [#"../vec_inv.rs" 13 20 13 43] Int32.to_int (VecInv_SumTo10_Type.sumto10_a self) + Int32.to_int (VecInv_SumTo10_Type.sumto10_b self) = 10
+    [#"../vec_inv.rs" 13 20 13 43] Int.add (Int32.to_int (VecInv_SumTo10_Type.sumto10_a self)) (Int32.to_int (VecInv_SumTo10_Type.sumto10_b self)) = 10
   val invariant' [#"../vec_inv.rs" 12 4 12 30] (self : VecInv_SumTo10_Type.t_sumto10) : bool
     ensures { result = invariant' self }
     
@@ -134,11 +134,11 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
   val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self}
-    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length result) (UIntSize.to_int Max0.mAX') }
     ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv result }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length (shallow_model self)) (UIntSize.to_int Max0.mAX'))
 end
 module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   type t
@@ -156,11 +156,11 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
   val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self}
-    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length result) (UIntSize.to_int Max0.mAX') }
     ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv result }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length (shallow_model self)) (UIntSize.to_int Max0.mAX'))
 end
 module Alloc_Alloc_Global_Type
   type t_global  =
@@ -246,6 +246,7 @@ module CreusotContracts_Std1_Vec_Impl10_Resolve
   type t
   use prelude.Int
   use seq.Seq
+  use prelude.Bool
   use seq.Seq
   clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
     type t = Seq.seq t
@@ -267,7 +268,7 @@ module CreusotContracts_Std1_Vec_Impl10_Resolve
     predicate Inv1.inv = Inv1.inv,
     axiom .
   predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Resolve0.resolve (IndexLogic0.index_logic self i)
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . Int.le 0 i /\ Int.lt i (Seq.length (ShallowModel0.shallow_model self)) -> Resolve0.resolve (IndexLogic0.index_logic self i)
   val resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve self }
     
@@ -341,6 +342,7 @@ end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
+  use prelude.Bool
   predicate resolve (self : borrowed t) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
@@ -402,7 +404,7 @@ module VecInv_Vec_Interface
     predicate Inv1.inv = Inv1.inv,
     axiom .
   val vec [#"../vec_inv.rs" 18 0 18 32] (x : Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global)) : ()
-    requires {[#"../vec_inv.rs" 17 11 17 23] Seq.length (ShallowModel0.shallow_model x) > 0}
+    requires {[#"../vec_inv.rs" 17 11 17 23] Int.gt (Seq.length (ShallowModel0.shallow_model x)) 0}
     requires {[#"../vec_inv.rs" 18 11 18 12] Inv0.inv x}
     
 end
@@ -485,7 +487,7 @@ module VecInv_Vec
     val Max0.mAX' = Max0.mAX',
     predicate Inv1.inv = Inv1.inv
   let rec cfg vec [#"../vec_inv.rs" 18 0 18 32] [@cfg:stackify] [@cfg:subregion_analysis] (x : Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global)) : ()
-    requires {[#"../vec_inv.rs" 17 11 17 23] Seq.length (ShallowModel0.shallow_model x) > 0}
+    requires {[#"../vec_inv.rs" 17 11 17 23] Int.gt (Seq.length (ShallowModel0.shallow_model x)) 0}
     requires {[#"../vec_inv.rs" 18 11 18 12] Inv0.inv x}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -500,7 +502,7 @@ module VecInv_Vec
     goto BB1
   }
   BB1 {
-    assert { [@expl:assertion] [#"../vec_inv.rs" 19 20 19 43] Int32.to_int (VecInv_SumTo10_Type.sumto10_a ( * IndexLogic0.index_logic x 0)) + Int32.to_int (VecInv_SumTo10_Type.sumto10_b ( * IndexLogic0.index_logic x 0)) = 10 };
+    assert { [@expl:assertion] [#"../vec_inv.rs" 19 20 19 43] Int.add (Int32.to_int (VecInv_SumTo10_Type.sumto10_a ( * IndexLogic0.index_logic x 0))) (Int32.to_int (VecInv_SumTo10_Type.sumto10_b ( * IndexLogic0.index_logic x 0))) = 10 };
     goto BB2
   }
   BB2 {

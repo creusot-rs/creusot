@@ -22,10 +22,14 @@ module FilterPositive_NumOfPos
   val num_of_pos [#"../filter_positive.rs" 37 0 37 49] (i : int) (j : int) (t : Seq.seq int32) : int
     ensures { result = num_of_pos i j t }
     
-  axiom def : forall i : int, j : int, t : Seq.seq int32 . num_of_pos i j t = ([#"../filter_positive.rs" 38 4 46 5] if i >= j then
+  axiom def : forall i : int, j : int, t : Seq.seq int32 . num_of_pos i j t = ([#"../filter_positive.rs" 38 4 46 5] if Int.ge i j then
     0
   else
-    if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
+    if Int.gt (Int32.to_int (Seq.get t (Int.sub j 1))) 0 then
+      Int.add (num_of_pos i (Int.sub j 1) t) 1
+    else
+      num_of_pos i (Int.sub j 1) t
+    
   )
 end
 module FilterPositive_NumOfPos_Impl
@@ -33,13 +37,17 @@ module FilterPositive_NumOfPos_Impl
   use seq.Seq
   use prelude.Int32
   let rec ghost function num_of_pos [#"../filter_positive.rs" 37 0 37 49] (i : int) (j : int) (t : Seq.seq int32) : int
-    variant {[#"../filter_positive.rs" 36 10 36 13] j - i}
+    variant {[#"../filter_positive.rs" 36 10 36 13] Int.sub j i}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../filter_positive.rs" 38 4 46 5] if pure {i >= j} then
+    [#"../filter_positive.rs" 38 4 46 5] if Int.ge i j then
       0
     else
-      if pure {Int32.to_int (Seq.get t (j - 1)) > 0} then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
+      if Int.gt (Int32.to_int (Seq.get t (Int.sub j 1))) 0 then
+        Int.add (num_of_pos i (Int.sub j 1) t) 1
+      else
+        num_of_pos i (Int.sub j 1) t
+      
     
 end
 module FilterPositive_LemmaNumOfPosIncreasing_Stub
@@ -60,11 +68,11 @@ module FilterPositive_LemmaNumOfPosIncreasing_Interface
   function lemma_num_of_pos_increasing [#"../filter_positive.rs" 65 0 65 67] (i : int) (j : int) (k : int) (t : Seq.seq int32) : ()
     
   val lemma_num_of_pos_increasing [#"../filter_positive.rs" 65 0 65 67] (i : int) (j : int) (k : int) (t : Seq.seq int32) : ()
-    requires {[#"../filter_positive.rs" 62 11 62 17] j <= k}
-    ensures { [#"../filter_positive.rs" 63 10 63 48] NumOfPos0.num_of_pos i j t <= NumOfPos0.num_of_pos i k t }
+    requires {[#"../filter_positive.rs" 62 11 62 17] Int.le j k}
+    ensures { [#"../filter_positive.rs" 63 10 63 48] Int.le (NumOfPos0.num_of_pos i j t) (NumOfPos0.num_of_pos i k t) }
     ensures { result = lemma_num_of_pos_increasing i j k t }
     
-  axiom lemma_num_of_pos_increasing_spec : forall i : int, j : int, k : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 62 11 62 17] j <= k) -> ([#"../filter_positive.rs" 63 10 63 48] NumOfPos0.num_of_pos i j t <= NumOfPos0.num_of_pos i k t)
+  axiom lemma_num_of_pos_increasing_spec : forall i : int, j : int, k : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 62 11 62 17] Int.le j k) -> ([#"../filter_positive.rs" 63 10 63 48] Int.le (NumOfPos0.num_of_pos i j t) (NumOfPos0.num_of_pos i k t))
 end
 module FilterPositive_LemmaNumOfPosIncreasing
   use prelude.Int
@@ -75,16 +83,16 @@ module FilterPositive_LemmaNumOfPosIncreasing
   function lemma_num_of_pos_increasing [#"../filter_positive.rs" 65 0 65 67] (i : int) (j : int) (k : int) (t : Seq.seq int32) : ()
     
   val lemma_num_of_pos_increasing [#"../filter_positive.rs" 65 0 65 67] (i : int) (j : int) (k : int) (t : Seq.seq int32) : ()
-    requires {[#"../filter_positive.rs" 62 11 62 17] j <= k}
-    ensures { [#"../filter_positive.rs" 63 10 63 48] NumOfPos0.num_of_pos i j t <= NumOfPos0.num_of_pos i k t }
+    requires {[#"../filter_positive.rs" 62 11 62 17] Int.le j k}
+    ensures { [#"../filter_positive.rs" 63 10 63 48] Int.le (NumOfPos0.num_of_pos i j t) (NumOfPos0.num_of_pos i k t) }
     ensures { result = lemma_num_of_pos_increasing i j k t }
     
-  axiom def : forall i : int, j : int, k : int, t : Seq.seq int32 . lemma_num_of_pos_increasing i j k t = ([#"../filter_positive.rs" 67 8 69 9] if j < k then
-    lemma_num_of_pos_increasing i (j + 1) k t
+  axiom def : forall i : int, j : int, k : int, t : Seq.seq int32 . lemma_num_of_pos_increasing i j k t = ([#"../filter_positive.rs" 67 8 69 9] if Int.lt j k then
+    lemma_num_of_pos_increasing i (Int.add j 1) k t
   else
     ()
   )
-  axiom lemma_num_of_pos_increasing_spec : forall i : int, j : int, k : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 62 11 62 17] j <= k) -> ([#"../filter_positive.rs" 63 10 63 48] NumOfPos0.num_of_pos i j t <= NumOfPos0.num_of_pos i k t)
+  axiom lemma_num_of_pos_increasing_spec : forall i : int, j : int, k : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 62 11 62 17] Int.le j k) -> ([#"../filter_positive.rs" 63 10 63 48] Int.le (NumOfPos0.num_of_pos i j t) (NumOfPos0.num_of_pos i k t))
 end
 module FilterPositive_LemmaNumOfPosIncreasing_Impl
   use prelude.Int
@@ -93,16 +101,17 @@ module FilterPositive_LemmaNumOfPosIncreasing_Impl
   clone FilterPositive_NumOfPos as NumOfPos0 with
     axiom .
   let rec ghost function lemma_num_of_pos_increasing [#"../filter_positive.rs" 65 0 65 67] (i : int) (j : int) (k : int) (t : Seq.seq int32) : ()
-    requires {[#"../filter_positive.rs" 62 11 62 17] j <= k}
-    ensures { [#"../filter_positive.rs" 63 10 63 48] NumOfPos0.num_of_pos i j t <= NumOfPos0.num_of_pos i k t }
-    variant {[#"../filter_positive.rs" 64 10 64 13] k - j}
+    requires {[#"../filter_positive.rs" 62 11 62 17] Int.le j k}
+    ensures { [#"../filter_positive.rs" 63 10 63 48] Int.le (NumOfPos0.num_of_pos i j t) (NumOfPos0.num_of_pos i k t) }
+    variant {[#"../filter_positive.rs" 64 10 64 13] Int.sub k j}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../filter_positive.rs" 67 8 69 9] if pure {j < k} then lemma_num_of_pos_increasing i (j + 1) k t else ()
+    [#"../filter_positive.rs" 67 8 69 9] if Int.lt j k then lemma_num_of_pos_increasing i (Int.add j 1) k t else ()
 end
 module FilterPositive_LemmaNumOfPosStrictlyIncreasing_Stub
   use prelude.Int
   use seq.Seq
+  use prelude.Bool
   use prelude.Int32
   clone FilterPositive_NumOfPos_Stub as NumOfPos0 with
     axiom .
@@ -111,21 +120,23 @@ end
 module FilterPositive_LemmaNumOfPosStrictlyIncreasing_Interface
   use prelude.Int
   use seq.Seq
+  use prelude.Bool
   use prelude.Int32
   clone FilterPositive_NumOfPos_Stub as NumOfPos0 with
     axiom .
   function lemma_num_of_pos_strictly_increasing [#"../filter_positive.rs" 79 0 79 60] (i : int) (t : Seq.seq int32) : ()
   val lemma_num_of_pos_strictly_increasing [#"../filter_positive.rs" 79 0 79 60] (i : int) (t : Seq.seq int32) : ()
-    requires {[#"../filter_positive.rs" 76 11 76 32] 0 <= i /\ i < Seq.length t}
-    requires {[#"../filter_positive.rs" 77 11 77 20] Int32.to_int (Seq.get t i) > 0}
-    ensures { [#"../filter_positive.rs" 78 10 78 49] NumOfPos0.num_of_pos 0 i t < NumOfPos0.num_of_pos 0 (i + 1) t }
+    requires {[#"../filter_positive.rs" 76 11 76 32] Int.le 0 i /\ Int.lt i (Seq.length t)}
+    requires {[#"../filter_positive.rs" 77 11 77 20] Int.gt (Int32.to_int (Seq.get t i)) 0}
+    ensures { [#"../filter_positive.rs" 78 10 78 49] Int.lt (NumOfPos0.num_of_pos 0 i t) (NumOfPos0.num_of_pos 0 (Int.add i 1) t) }
     ensures { result = lemma_num_of_pos_strictly_increasing i t }
     
-  axiom lemma_num_of_pos_strictly_increasing_spec : forall i : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 76 11 76 32] 0 <= i /\ i < Seq.length t) -> ([#"../filter_positive.rs" 77 11 77 20] Int32.to_int (Seq.get t i) > 0) -> ([#"../filter_positive.rs" 78 10 78 49] NumOfPos0.num_of_pos 0 i t < NumOfPos0.num_of_pos 0 (i + 1) t)
+  axiom lemma_num_of_pos_strictly_increasing_spec : forall i : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 76 11 76 32] Int.le 0 i /\ Int.lt i (Seq.length t)) -> ([#"../filter_positive.rs" 77 11 77 20] Int.gt (Int32.to_int (Seq.get t i)) 0) -> ([#"../filter_positive.rs" 78 10 78 49] Int.lt (NumOfPos0.num_of_pos 0 i t) (NumOfPos0.num_of_pos 0 (Int.add i 1) t))
 end
 module FilterPositive_LemmaNumOfPosStrictlyIncreasing
   use prelude.Int
   use seq.Seq
+  use prelude.Bool
   use prelude.Int32
   clone FilterPositive_NumOfPos_Stub as NumOfPos0 with
     axiom .
@@ -133,23 +144,24 @@ module FilterPositive_LemmaNumOfPosStrictlyIncreasing
    =
     [#"../filter_positive.rs" 75 0 75 8] ()
   val lemma_num_of_pos_strictly_increasing [#"../filter_positive.rs" 79 0 79 60] (i : int) (t : Seq.seq int32) : ()
-    requires {[#"../filter_positive.rs" 76 11 76 32] 0 <= i /\ i < Seq.length t}
-    requires {[#"../filter_positive.rs" 77 11 77 20] Int32.to_int (Seq.get t i) > 0}
-    ensures { [#"../filter_positive.rs" 78 10 78 49] NumOfPos0.num_of_pos 0 i t < NumOfPos0.num_of_pos 0 (i + 1) t }
+    requires {[#"../filter_positive.rs" 76 11 76 32] Int.le 0 i /\ Int.lt i (Seq.length t)}
+    requires {[#"../filter_positive.rs" 77 11 77 20] Int.gt (Int32.to_int (Seq.get t i)) 0}
+    ensures { [#"../filter_positive.rs" 78 10 78 49] Int.lt (NumOfPos0.num_of_pos 0 i t) (NumOfPos0.num_of_pos 0 (Int.add i 1) t) }
     ensures { result = lemma_num_of_pos_strictly_increasing i t }
     
-  axiom lemma_num_of_pos_strictly_increasing_spec : forall i : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 76 11 76 32] 0 <= i /\ i < Seq.length t) -> ([#"../filter_positive.rs" 77 11 77 20] Int32.to_int (Seq.get t i) > 0) -> ([#"../filter_positive.rs" 78 10 78 49] NumOfPos0.num_of_pos 0 i t < NumOfPos0.num_of_pos 0 (i + 1) t)
+  axiom lemma_num_of_pos_strictly_increasing_spec : forall i : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 76 11 76 32] Int.le 0 i /\ Int.lt i (Seq.length t)) -> ([#"../filter_positive.rs" 77 11 77 20] Int.gt (Int32.to_int (Seq.get t i)) 0) -> ([#"../filter_positive.rs" 78 10 78 49] Int.lt (NumOfPos0.num_of_pos 0 i t) (NumOfPos0.num_of_pos 0 (Int.add i 1) t))
 end
 module FilterPositive_LemmaNumOfPosStrictlyIncreasing_Impl
   use prelude.Int
   use seq.Seq
+  use prelude.Bool
   use prelude.Int32
   clone FilterPositive_NumOfPos as NumOfPos0 with
     axiom .
   let rec ghost function lemma_num_of_pos_strictly_increasing [#"../filter_positive.rs" 79 0 79 60] (i : int) (t : Seq.seq int32) : ()
-    requires {[#"../filter_positive.rs" 76 11 76 32] 0 <= i /\ i < Seq.length t}
-    requires {[#"../filter_positive.rs" 77 11 77 20] Int32.to_int (Seq.get t i) > 0}
-    ensures { [#"../filter_positive.rs" 78 10 78 49] NumOfPos0.num_of_pos 0 i t < NumOfPos0.num_of_pos 0 (i + 1) t }
+    requires {[#"../filter_positive.rs" 76 11 76 32] Int.le 0 i /\ Int.lt i (Seq.length t)}
+    requires {[#"../filter_positive.rs" 77 11 77 20] Int.gt (Int32.to_int (Seq.get t i)) 0}
+    ensures { [#"../filter_positive.rs" 78 10 78 49] Int.lt (NumOfPos0.num_of_pos 0 i t) (NumOfPos0.num_of_pos 0 (Int.add i 1) t) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../filter_positive.rs" 75 0 75 8] ()
@@ -254,11 +266,11 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
   val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self}
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length result) (UIntSize.to_int Max0.mAX') }
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv result }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length (shallow_model self)) (UIntSize.to_int Max0.mAX'))
 end
 module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   type t
@@ -276,11 +288,11 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
   val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self}
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length result) (UIntSize.to_int Max0.mAX') }
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv result }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length (shallow_model self)) (UIntSize.to_int Max0.mAX'))
 end
 module CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub
   type t
@@ -361,6 +373,7 @@ module CreusotContracts_Std1_Vec_Impl10_Resolve
   type t
   use prelude.Int
   use seq.Seq
+  use prelude.Bool
   use seq.Seq
   clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
     type t = Seq.seq t
@@ -382,7 +395,7 @@ module CreusotContracts_Std1_Vec_Impl10_Resolve
     predicate Inv1.inv = Inv1.inv,
     axiom .
   predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model self) -> Resolve0.resolve (IndexLogic0.index_logic self i)
+    [#"../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . Int.le 0 i /\ Int.lt i (Seq.length (ShallowModel0.shallow_model self)) -> Resolve0.resolve (IndexLogic0.index_logic self i)
   val resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve self }
     
@@ -403,6 +416,7 @@ end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
+  use prelude.Bool
   predicate resolve (self : borrowed t) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
@@ -473,8 +487,8 @@ module Alloc_Vec_Impl1_Len_Interface
   type a
   use prelude.UIntSize
   use seq.Seq
-  use prelude.Borrow
   use prelude.Int
+  use prelude.Borrow
   use seq.Seq
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel0 with
@@ -492,6 +506,7 @@ module Alloc_Vec_FromElem_Interface
   use seq.Seq
   use prelude.UIntSize
   use prelude.Int
+  use prelude.Bool
   use seq.Seq
   clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
     type t = Seq.seq t
@@ -515,7 +530,7 @@ module Alloc_Vec_FromElem_Interface
   val from_elem (elem : t) (n : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     requires {Inv0.inv elem}
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 157 22 157 41] Seq.length (ShallowModel0.shallow_model result) = UIntSize.to_int n }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 158 12 158 78] forall i : int . 0 <= i /\ i < UIntSize.to_int n -> IndexLogic0.index_logic result i = elem }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 158 12 158 78] forall i : int . Int.le 0 i /\ Int.lt i (UIntSize.to_int n) -> IndexLogic0.index_logic result i = elem }
     ensures { Inv1.inv result }
     
 end
@@ -692,6 +707,7 @@ module Alloc_Vec_Impl13_IndexMut_Interface
   type a
   use prelude.Borrow
   use seq.Seq
+  use prelude.Int
   use prelude.Slice
   use seq.Seq
   clone CreusotContracts_Invariant_Inv_Stub as Inv4 with
@@ -791,7 +807,7 @@ module CreusotContracts_Std1_Slice_Impl5_InBounds
   use prelude.UIntSize
   use seq.Seq
   predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) =
-    [#"../../../../creusot-contracts/src/std/slice.rs" 108 20 108 37] UIntSize.to_int self < Seq.length seq
+    [#"../../../../creusot-contracts/src/std/slice.rs" 108 20 108 37] Int.lt (UIntSize.to_int self) (Seq.length seq)
   val in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) : bool
     ensures { result = in_bounds self seq }
     
@@ -818,6 +834,7 @@ module CreusotContracts_Std1_Slice_Impl5_HasValue
   use prelude.Int
   use prelude.UIntSize
   use seq.Seq
+  use prelude.Bool
   predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
     [#"../../../../creusot-contracts/src/std/slice.rs" 115 20 115 37] Seq.get seq (UIntSize.to_int self) = out
   val has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) : bool
@@ -846,8 +863,9 @@ module CreusotContracts_Std1_Slice_Impl5_ResolveElswhere
   use prelude.Int
   use prelude.UIntSize
   use seq.Seq
+  use prelude.Bool
   predicate resolve_elswhere [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t) =
-    [#"../../../../creusot-contracts/src/std/slice.rs" 122 8 122 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+    [#"../../../../creusot-contracts/src/std/slice.rs" 122 8 122 96] forall i : int . Int.le 0 i /\ i <> UIntSize.to_int self /\ Int.lt i (Seq.length old') -> Seq.get old' i = Seq.get fin i
   val resolve_elswhere [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t) : bool
     ensures { result = resolve_elswhere self old' fin }
     
@@ -1039,8 +1057,8 @@ module FilterPositive_M
     goto BB3
   }
   BB3 {
-    invariant { [#"../filter_positive.rs" 85 16 85 30] UIntSize.to_int i <= Seq.length (ShallowModel0.shallow_model t) };
-    invariant { [#"../filter_positive.rs" 86 16 86 28] UIntSize.to_int count <= UIntSize.to_int i };
+    invariant { [#"../filter_positive.rs" 85 16 85 30] Int.le (UIntSize.to_int i) (Seq.length (ShallowModel0.shallow_model t)) };
+    invariant { [#"../filter_positive.rs" 86 16 86 28] Int.le (UIntSize.to_int count) (UIntSize.to_int i) };
     invariant { [#"../filter_positive.rs" 87 16 87 45] UIntSize.to_int count = NumOfPos0.num_of_pos 0 (UIntSize.to_int i) (ShallowModel0.shallow_model t) };
     goto BB4
   }
@@ -1049,7 +1067,7 @@ module FilterPositive_M
     goto BB5
   }
   BB5 {
-    switch ([#"../filter_positive.rs" 89 10 89 21] i < _12)
+    switch ([#"../filter_positive.rs" 89 10 89 21] UIntSize.lt i _12)
       | False -> goto BB11
       | True -> goto BB6
       end
@@ -1059,13 +1077,13 @@ module FilterPositive_M
     goto BB7
   }
   BB7 {
-    switch ([#"../filter_positive.rs" 90 11 90 19] _17 > ([#"../filter_positive.rs" 90 18 90 19] [#"../filter_positive.rs" 90 18 90 19] (0 : int32)))
+    switch ([#"../filter_positive.rs" 90 11 90 19] Int32.gt _17 ([#"../filter_positive.rs" 90 18 90 19] [#"../filter_positive.rs" 90 18 90 19] (0 : int32)))
       | False -> goto BB9
       | True -> goto BB8
       end
   }
   BB8 {
-    count <- ([#"../filter_positive.rs" 91 12 91 22] count + ([#"../filter_positive.rs" 91 21 91 22] [#"../filter_positive.rs" 91 21 91 22] (1 : usize)));
+    count <- ([#"../filter_positive.rs" 91 12 91 22] UIntSize.add count ([#"../filter_positive.rs" 91 21 91 22] [#"../filter_positive.rs" 91 21 91 22] (1 : usize)));
     _14 <- ([#"../filter_positive.rs" 91 12 91 22] ());
     goto BB10
   }
@@ -1074,7 +1092,7 @@ module FilterPositive_M
     goto BB10
   }
   BB10 {
-    i <- ([#"../filter_positive.rs" 93 8 93 14] i + ([#"../filter_positive.rs" 93 13 93 14] [#"../filter_positive.rs" 93 13 93 14] (1 : usize)));
+    i <- ([#"../filter_positive.rs" 93 8 93 14] UIntSize.add i ([#"../filter_positive.rs" 93 13 93 14] [#"../filter_positive.rs" 93 13 93 14] (1 : usize)));
     _9 <- ([#"../filter_positive.rs" 89 22 94 5] ());
     goto BB3
   }
@@ -1103,7 +1121,7 @@ module FilterPositive_M
     goto BB17
   }
   BB17 {
-    switch ([#"../filter_positive.rs" 102 10 102 21] i < _30)
+    switch ([#"../filter_positive.rs" 102 10 102 21] UIntSize.lt i _30)
       | False -> goto BB27
       | True -> goto BB18
       end
@@ -1113,17 +1131,17 @@ module FilterPositive_M
     goto BB19
   }
   BB19 {
-    switch ([#"../filter_positive.rs" 103 11 103 19] _35 > ([#"../filter_positive.rs" 103 18 103 19] [#"../filter_positive.rs" 103 18 103 19] (0 : int32)))
+    switch ([#"../filter_positive.rs" 103 11 103 19] Int32.gt _35 ([#"../filter_positive.rs" 103 18 103 19] [#"../filter_positive.rs" 103 18 103 19] (0 : int32)))
       | False -> goto BB25
       | True -> goto BB20
       end
   }
   BB20 {
-    assert { [@expl:assertion] [#"../filter_positive.rs" 106 16 106 59] let _ = LemmaNumOfPosStrictlyIncreasing0.lemma_num_of_pos_strictly_increasing (UIntSize.to_int i) (ShallowModel0.shallow_model u) in NumOfPos0.num_of_pos 0 (UIntSize.to_int i) (ShallowModel0.shallow_model t) < NumOfPos0.num_of_pos 0 (UIntSize.to_int i + 1) (ShallowModel0.shallow_model t) };
+    assert { [@expl:assertion] [#"../filter_positive.rs" 106 16 106 59] let _ = LemmaNumOfPosStrictlyIncreasing0.lemma_num_of_pos_strictly_increasing (UIntSize.to_int i) (ShallowModel0.shallow_model u) in Int.lt (NumOfPos0.num_of_pos 0 (UIntSize.to_int i) (ShallowModel0.shallow_model t)) (NumOfPos0.num_of_pos 0 (Int.add (UIntSize.to_int i) 1) (ShallowModel0.shallow_model t)) };
     goto BB21
   }
   BB21 {
-    assert { [@expl:assertion] [#"../filter_positive.rs" 110 16 110 63] let _ = LemmaNumOfPosIncreasing0.lemma_num_of_pos_increasing 0 (UIntSize.to_int i + 1) (Seq.length (ShallowModel0.shallow_model t)) (ShallowModel0.shallow_model t) in UIntSize.to_int count < Seq.length (ShallowModel0.shallow_model u) };
+    assert { [@expl:assertion] [#"../filter_positive.rs" 110 16 110 63] let _ = LemmaNumOfPosIncreasing0.lemma_num_of_pos_increasing 0 (Int.add (UIntSize.to_int i) 1) (Seq.length (ShallowModel0.shallow_model t)) (ShallowModel0.shallow_model t) in Int.lt (UIntSize.to_int count) (Seq.length (ShallowModel0.shallow_model u)) };
     goto BB22
   }
   BB22 {
@@ -1140,7 +1158,7 @@ module FilterPositive_M
   BB24 {
     _46 <- { _46 with current = _43 };
     assume { Resolve1.resolve _46 };
-    count <- ([#"../filter_positive.rs" 114 12 114 22] count + ([#"../filter_positive.rs" 114 21 114 22] [#"../filter_positive.rs" 114 21 114 22] (1 : usize)));
+    count <- ([#"../filter_positive.rs" 114 12 114 22] UIntSize.add count ([#"../filter_positive.rs" 114 21 114 22] [#"../filter_positive.rs" 114 21 114 22] (1 : usize)));
     _32 <- ([#"../filter_positive.rs" 103 20 115 9] ());
     goto BB26
   }
@@ -1149,7 +1167,7 @@ module FilterPositive_M
     goto BB26
   }
   BB26 {
-    i <- ([#"../filter_positive.rs" 116 8 116 14] i + ([#"../filter_positive.rs" 116 13 116 14] [#"../filter_positive.rs" 116 13 116 14] (1 : usize)));
+    i <- ([#"../filter_positive.rs" 116 8 116 14] UIntSize.add i ([#"../filter_positive.rs" 116 13 116 14] [#"../filter_positive.rs" 116 13 116 14] (1 : usize)));
     _9 <- ([#"../filter_positive.rs" 102 22 117 5] ());
     goto BB15
   }

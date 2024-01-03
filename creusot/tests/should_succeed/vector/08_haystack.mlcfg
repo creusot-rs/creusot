@@ -158,11 +158,11 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
   val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self}
-    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length result) (UIntSize.to_int Max0.mAX') }
     ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv result }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length (shallow_model self)) (UIntSize.to_int Max0.mAX'))
 end
 module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   type t
@@ -180,11 +180,11 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
   val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self}
-    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length result) (UIntSize.to_int Max0.mAX') }
     ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv result }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length (shallow_model self)) (UIntSize.to_int Max0.mAX'))
 end
 module CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub
   type t
@@ -254,6 +254,7 @@ module C08Haystack_MatchAt
   use prelude.Int
   use prelude.UInt8
   use seq.Seq
+  use prelude.Bool
   use seq.Seq
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
@@ -266,7 +267,7 @@ module C08Haystack_MatchAt
   predicate match_at [#"../08_haystack.rs" 7 0 7 77] (needle : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (haystack : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (pos : int) (len : int)
     
    =
-    [#"../08_haystack.rs" 8 4 12 5] len <= Seq.length (ShallowModel0.shallow_model needle) /\ pos <= Seq.length (ShallowModel0.shallow_model haystack) - len /\ (forall i : int . 0 <= i /\ i < len -> IndexLogic0.index_logic needle i = IndexLogic0.index_logic haystack (pos + i))
+    [#"../08_haystack.rs" 8 4 12 5] Int.le len (Seq.length (ShallowModel0.shallow_model needle)) /\ Int.le pos (Int.sub (Seq.length (ShallowModel0.shallow_model haystack)) len) /\ (forall i : int . Int.le 0 i /\ Int.lt i len -> IndexLogic0.index_logic needle i = IndexLogic0.index_logic haystack (Int.add pos i))
   val match_at [#"../08_haystack.rs" 7 0 7 77] (needle : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (haystack : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (pos : int) (len : int) : bool
     ensures { result = match_at needle haystack pos len }
     
@@ -387,6 +388,7 @@ module CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface
 end
 module CreusotContracts_Logic_Ord_OrdLogic_LeLog
   type self
+  use prelude.Bool
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
@@ -475,9 +477,8 @@ module CreusotContracts_Logic_Ord_Impl3_LeLog_Interface
 end
 module CreusotContracts_Logic_Ord_Impl3_LeLog
   use prelude.Int
-  use int.Int
   function le_log (self : int) (_2 : int) : bool =
-    Int.(<=) self _2
+    Int.le self _2
   val le_log (self : int) (_2 : int) : bool
     ensures { result = le_log self _2 }
     
@@ -485,6 +486,7 @@ end
 module CreusotContracts_Std1_Iter_Range_RangeInclusiveLen_Stub
   type idx
   use prelude.Int
+  use prelude.Bool
   use prelude.Int
   clone CreusotContracts_Logic_Ord_Impl3_LeLog_Stub as LeLog0
   use Core_Ops_Range_RangeInclusive_Type as Core_Ops_Range_RangeInclusive_Type
@@ -511,6 +513,7 @@ end
 module CreusotContracts_Std1_Iter_Range_RangeInclusiveLen_Interface
   type idx
   use prelude.Int
+  use prelude.Bool
   use prelude.Int
   clone CreusotContracts_Logic_Ord_Impl3_LeLog_Stub as LeLog0
   use Core_Ops_Range_RangeInclusive_Type as Core_Ops_Range_RangeInclusive_Type
@@ -543,6 +546,7 @@ end
 module CreusotContracts_Std1_Iter_Range_RangeInclusiveLen
   type idx
   use prelude.Int
+  use prelude.Bool
   use prelude.Int
   clone CreusotContracts_Logic_Ord_Impl3_LeLog_Stub as LeLog0
   use Core_Ops_Range_RangeInclusive_Type as Core_Ops_Range_RangeInclusive_Type
@@ -568,7 +572,7 @@ module CreusotContracts_Std1_Iter_Range_RangeInclusiveLen
     [#"../../../../../creusot-contracts/src/std/iter/range.rs" 47 4 50 5] if IsEmptyLog0.is_empty_log r then
       0
     else
-      DeepModel0.deep_model (EndLog0.end_log r) - DeepModel0.deep_model (StartLog0.start_log r) + 1
+      Int.add (Int.sub (DeepModel0.deep_model (EndLog0.end_log r)) (DeepModel0.deep_model (StartLog0.start_log r))) 1
     
   val range_inclusive_len (r : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : int
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 46 62 46 63] Inv0.inv r}
@@ -598,6 +602,7 @@ module CreusotContracts_Std1_Iter_Range_Impl1_Produces
   type idx
   use seq.Seq
   use prelude.Int
+  use prelude.Bool
   use prelude.Int
   clone CreusotContracts_Logic_Ord_Impl3_LeLog_Stub as LeLog0
   use Core_Ops_Range_RangeInclusive_Type as Core_Ops_Range_RangeInclusive_Type
@@ -631,7 +636,7 @@ module CreusotContracts_Std1_Iter_Range_Impl1_Produces
   predicate produces (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) (visited : Seq.seq idx) (o : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx)
     
    =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 65 8 71 9] Seq.length visited = RangeInclusiveLen0.range_inclusive_len self - RangeInclusiveLen0.range_inclusive_len o /\ (IsEmptyLog0.is_empty_log self -> IsEmptyLog0.is_empty_log o) /\ (IsEmptyLog0.is_empty_log o \/ EndLog0.end_log self = EndLog0.end_log o) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> DeepModel0.deep_model (Seq.get visited i) = DeepModel0.deep_model (StartLog0.start_log self) + i)
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 65 8 71 9] Seq.length visited = Int.sub (RangeInclusiveLen0.range_inclusive_len self) (RangeInclusiveLen0.range_inclusive_len o) /\ (IsEmptyLog0.is_empty_log self -> IsEmptyLog0.is_empty_log o) /\ (IsEmptyLog0.is_empty_log o \/ EndLog0.end_log self = EndLog0.end_log o) /\ (forall i : int . Int.le 0 i /\ Int.lt i (Seq.length visited) -> DeepModel0.deep_model (Seq.get visited i) = Int.add (DeepModel0.deep_model (StartLog0.start_log self)) i)
   val produces (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) (visited : Seq.seq idx) (o : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : bool
     ensures { result = produces self visited o }
     
@@ -652,6 +657,7 @@ end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
+  use prelude.Bool
   predicate resolve (self : borrowed t) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
@@ -702,6 +708,7 @@ end
 module CreusotContracts_Std1_Iter_Range_Impl0_Produces
   type idx
   use seq.Seq
+  use prelude.Bool
   use prelude.Int
   use prelude.Int
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
@@ -711,7 +718,7 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Produces
   predicate produces (self : Core_Ops_Range_Range_Type.t_range idx) (visited : Seq.seq idx) (o : Core_Ops_Range_Range_Type.t_range idx)
     
    =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self) <= DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0 -> DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o) <= DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o) - DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> DeepModel0.deep_model (Seq.get visited i) = DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self) + i)
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ Int.le (DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self)) (DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o)) /\ (Int.gt (Seq.length visited) 0 -> Int.le (DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o)) (DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_end o))) /\ Seq.length visited = Int.sub (DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o)) (DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self)) /\ (forall i : int . Int.le 0 i /\ Int.lt i (Seq.length visited) -> DeepModel0.deep_model (Seq.get visited i) = Int.add (DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self)) i)
   val produces (self : Core_Ops_Range_Range_Type.t_range idx) (visited : Seq.seq idx) (o : Core_Ops_Range_Range_Type.t_range idx) : bool
     ensures { result = produces self visited o }
     
@@ -721,8 +728,8 @@ module Alloc_Vec_Impl1_Len_Interface
   type a
   use prelude.UIntSize
   use seq.Seq
-  use prelude.Borrow
   use prelude.Int
+  use prelude.Borrow
   use seq.Seq
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel0 with
@@ -737,6 +744,7 @@ module Alloc_Vec_Impl1_Len_Interface
 end
 module Core_Ops_Range_Impl7_New_Interface
   type idx
+  use prelude.Bool
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = idx
   use Core_Ops_Range_RangeInclusive_Type as Core_Ops_Range_RangeInclusive_Type
@@ -1100,6 +1108,7 @@ module CreusotContracts_Std1_Iter_Impl0_IntoIterPost_Interface
 end
 module CreusotContracts_Std1_Iter_Impl0_IntoIterPost
   type i
+  use prelude.Bool
   predicate into_iter_post (self : i) (res : i) =
     [#"../../../../../creusot-contracts/src/std/iter.rs" 80 8 80 19] self = res
   val into_iter_post (self : i) (res : i) : bool
@@ -1235,6 +1244,7 @@ end
 module CreusotContracts_Std1_Iter_Range_Impl1_Completed
   type idx
   use prelude.Borrow
+  use prelude.Bool
   use prelude.Int
   use prelude.Int
   clone CreusotContracts_Logic_Ord_Impl3_LeLog_Stub as LeLog0
@@ -1393,6 +1403,7 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Completed
   type idx
   use prelude.Borrow
   use prelude.Int
+  use prelude.Bool
   use prelude.Int
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = idx,
@@ -1401,7 +1412,7 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Completed
   clone CreusotContracts_Resolve_Impl1_Resolve_Stub as Resolve0 with
     type t = Core_Ops_Range_Range_Type.t_range idx
   predicate completed (self : borrowed (Core_Ops_Range_Range_Type.t_range idx)) =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] Resolve0.resolve self /\ DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start ( * self)) >= DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_end ( * self))
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] Resolve0.resolve self /\ Int.ge (DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start ( * self))) (DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_end ( * self)))
   val completed (self : borrowed (Core_Ops_Range_Range_Type.t_range idx)) : bool
     ensures { result = completed self }
     
@@ -1429,7 +1440,7 @@ module CreusotContracts_Std1_Slice_Impl5_InBounds
   use prelude.UIntSize
   use seq.Seq
   predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) =
-    [#"../../../../../creusot-contracts/src/std/slice.rs" 108 20 108 37] UIntSize.to_int self < Seq.length seq
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 108 20 108 37] Int.lt (UIntSize.to_int self) (Seq.length seq)
   val in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) : bool
     ensures { result = in_bounds self seq }
     
@@ -1456,6 +1467,7 @@ module CreusotContracts_Std1_Slice_Impl5_HasValue
   use prelude.Int
   use prelude.UIntSize
   use seq.Seq
+  use prelude.Bool
   predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
     [#"../../../../../creusot-contracts/src/std/slice.rs" 115 20 115 37] Seq.get seq (UIntSize.to_int self) = out
   val has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) : bool
@@ -1639,6 +1651,7 @@ end
 module C08Haystack_Search_Interface
   use seq.Seq
   use prelude.Int
+  use prelude.Bool
   use prelude.UIntSize
   use prelude.Borrow
   use prelude.UInt8
@@ -1650,10 +1663,10 @@ module C08Haystack_Search_Interface
     type t = Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq uint8
   val search [#"../08_haystack.rs" 21 0 21 60] (needle : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (haystack : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) : usize
-    requires {[#"../08_haystack.rs" 15 11 15 65] Seq.length (ShallowModel0.shallow_model needle) >= 1 /\ Seq.length (ShallowModel0.shallow_model needle) <= Seq.length (ShallowModel0.shallow_model haystack)}
-    ensures { [#"../08_haystack.rs" 16 10 16 85] UIntSize.to_int result = Seq.length (ShallowModel0.shallow_model haystack) \/ UIntSize.to_int result < Seq.length (ShallowModel0.shallow_model haystack) - Seq.length (ShallowModel0.shallow_model needle) + 1 }
-    ensures { [#"../08_haystack.rs" 17 0 19 108] UIntSize.to_int result < Seq.length (ShallowModel0.shallow_model haystack) -> MatchAt0.match_at needle haystack (UIntSize.to_int result) (Seq.length (ShallowModel0.shallow_model needle)) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int result -> not MatchAt0.match_at needle haystack i (Seq.length (ShallowModel0.shallow_model needle))) }
-    ensures { [#"../08_haystack.rs" 20 0 20 139] UIntSize.to_int result = Seq.length (ShallowModel0.shallow_model haystack) -> (forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model haystack) -> not MatchAt0.match_at needle haystack i (Seq.length (ShallowModel0.shallow_model needle))) }
+    requires {[#"../08_haystack.rs" 15 11 15 65] Int.ge (Seq.length (ShallowModel0.shallow_model needle)) 1 /\ Int.le (Seq.length (ShallowModel0.shallow_model needle)) (Seq.length (ShallowModel0.shallow_model haystack))}
+    ensures { [#"../08_haystack.rs" 16 10 16 85] UIntSize.to_int result = Seq.length (ShallowModel0.shallow_model haystack) \/ Int.lt (UIntSize.to_int result) (Int.add (Int.sub (Seq.length (ShallowModel0.shallow_model haystack)) (Seq.length (ShallowModel0.shallow_model needle))) 1) }
+    ensures { [#"../08_haystack.rs" 17 0 19 108] Int.lt (UIntSize.to_int result) (Seq.length (ShallowModel0.shallow_model haystack)) -> MatchAt0.match_at needle haystack (UIntSize.to_int result) (Seq.length (ShallowModel0.shallow_model needle)) /\ (forall i : int . Int.le 0 i /\ Int.lt i (UIntSize.to_int result) -> not MatchAt0.match_at needle haystack i (Seq.length (ShallowModel0.shallow_model needle))) }
+    ensures { [#"../08_haystack.rs" 20 0 20 139] UIntSize.to_int result = Seq.length (ShallowModel0.shallow_model haystack) -> (forall i : int . Int.le 0 i /\ Int.lt i (Seq.length (ShallowModel0.shallow_model haystack)) -> not MatchAt0.match_at needle haystack i (Seq.length (ShallowModel0.shallow_model needle))) }
     
 end
 module C08Haystack_Search
@@ -1661,6 +1674,7 @@ module C08Haystack_Search
   use prelude.UIntSize
   use prelude.Ghost
   use seq.Seq
+  use prelude.Bool
   use prelude.Borrow
   use prelude.UInt8
   use seq.Seq
@@ -1903,10 +1917,10 @@ module C08Haystack_Search
     predicate Inv0.inv = Inv2.inv,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   let rec cfg search [#"../08_haystack.rs" 21 0 21 60] [@cfg:stackify] [@cfg:subregion_analysis] (needle : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (haystack : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) : usize
-    requires {[#"../08_haystack.rs" 15 11 15 65] Seq.length (ShallowModel0.shallow_model needle) >= 1 /\ Seq.length (ShallowModel0.shallow_model needle) <= Seq.length (ShallowModel0.shallow_model haystack)}
-    ensures { [#"../08_haystack.rs" 16 10 16 85] UIntSize.to_int result = Seq.length (ShallowModel0.shallow_model haystack) \/ UIntSize.to_int result < Seq.length (ShallowModel0.shallow_model haystack) - Seq.length (ShallowModel0.shallow_model needle) + 1 }
-    ensures { [#"../08_haystack.rs" 17 0 19 108] UIntSize.to_int result < Seq.length (ShallowModel0.shallow_model haystack) -> MatchAt0.match_at needle haystack (UIntSize.to_int result) (Seq.length (ShallowModel0.shallow_model needle)) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int result -> not MatchAt0.match_at needle haystack i (Seq.length (ShallowModel0.shallow_model needle))) }
-    ensures { [#"../08_haystack.rs" 20 0 20 139] UIntSize.to_int result = Seq.length (ShallowModel0.shallow_model haystack) -> (forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model haystack) -> not MatchAt0.match_at needle haystack i (Seq.length (ShallowModel0.shallow_model needle))) }
+    requires {[#"../08_haystack.rs" 15 11 15 65] Int.ge (Seq.length (ShallowModel0.shallow_model needle)) 1 /\ Int.le (Seq.length (ShallowModel0.shallow_model needle)) (Seq.length (ShallowModel0.shallow_model haystack))}
+    ensures { [#"../08_haystack.rs" 16 10 16 85] UIntSize.to_int result = Seq.length (ShallowModel0.shallow_model haystack) \/ Int.lt (UIntSize.to_int result) (Int.add (Int.sub (Seq.length (ShallowModel0.shallow_model haystack)) (Seq.length (ShallowModel0.shallow_model needle))) 1) }
+    ensures { [#"../08_haystack.rs" 17 0 19 108] Int.lt (UIntSize.to_int result) (Seq.length (ShallowModel0.shallow_model haystack)) -> MatchAt0.match_at needle haystack (UIntSize.to_int result) (Seq.length (ShallowModel0.shallow_model needle)) /\ (forall i : int . Int.le 0 i /\ Int.lt i (UIntSize.to_int result) -> not MatchAt0.match_at needle haystack i (Seq.length (ShallowModel0.shallow_model needle))) }
+    ensures { [#"../08_haystack.rs" 20 0 20 139] UIntSize.to_int result = Seq.length (ShallowModel0.shallow_model haystack) -> (forall i : int . Int.le 0 i /\ Int.lt i (Seq.length (ShallowModel0.shallow_model haystack)) -> not MatchAt0.match_at needle haystack i (Seq.length (ShallowModel0.shallow_model needle))) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : usize;
@@ -1948,7 +1962,7 @@ module C08Haystack_Search
     goto BB2
   }
   BB2 {
-    _10 <- ([#"../08_haystack.rs" 23 17 23 50] New0.new ([#"../08_haystack.rs" 23 17 23 18] [#"../08_haystack.rs" 23 17 23 18] (0 : usize)) ([#"../08_haystack.rs" 23 21 23 50] _12 - _14));
+    _10 <- ([#"../08_haystack.rs" 23 17 23 50] New0.new ([#"../08_haystack.rs" 23 17 23 18] [#"../08_haystack.rs" 23 17 23 18] (0 : usize)) ([#"../08_haystack.rs" 23 21 23 50] UIntSize.sub _12 _14));
     _12 <- any usize;
     _14 <- any usize;
     goto BB3
@@ -1972,7 +1986,7 @@ module C08Haystack_Search
   BB7 {
     invariant { [#"../08_haystack.rs" 22 4 22 112] Inv0.inv iter };
     invariant { [#"../08_haystack.rs" 22 4 22 112] Produces0.produces (Ghost.inner iter_old) (Ghost.inner produced) iter };
-    invariant { [#"../08_haystack.rs" 22 4 22 112] forall k : int . 0 <= k /\ k < Seq.length (Ghost.inner produced) -> not MatchAt0.match_at needle haystack k (Seq.length (ShallowModel0.shallow_model needle)) };
+    invariant { [#"../08_haystack.rs" 22 4 22 112] forall k : int . Int.le 0 k /\ Int.lt k (Seq.length (Ghost.inner produced)) -> not MatchAt0.match_at needle haystack k (Seq.length (ShallowModel0.shallow_model needle)) };
     goto BB8
   }
   BB8 {
@@ -2071,11 +2085,11 @@ module C08Haystack_Search
     goto BB26
   }
   BB26 {
-    _59 <- ([#"../08_haystack.rs" 26 28 26 43] Index0.index ([#"../08_haystack.rs" 26 28 26 36] haystack) ([#"../08_haystack.rs" 26 37 26 42] i + j));
+    _59 <- ([#"../08_haystack.rs" 26 28 26 43] Index0.index ([#"../08_haystack.rs" 26 28 26 36] haystack) ([#"../08_haystack.rs" 26 37 26 42] UIntSize.add i j));
     goto BB27
   }
   BB27 {
-    switch ([#"../08_haystack.rs" 26 15 26 43] _55 <> _59)
+    switch ([#"../08_haystack.rs" 26 15 26 43] UInt8.ne _55 _59)
       | False -> goto BB28
       | True -> goto BB29
       end

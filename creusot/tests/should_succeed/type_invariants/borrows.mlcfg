@@ -23,6 +23,7 @@ module Borrows_Impl0_Invariant_Interface
 end
 module Borrows_Impl0_Invariant
   use prelude.Int32
+  use prelude.Int
   use Borrows_NonZero_Type as Borrows_NonZero_Type
   predicate invariant' [#"../borrows.rs" 9 4 9 30] (self : Borrows_NonZero_Type.t_nonzero) =
     [#"../borrows.rs" 10 20 10 32] Int32.to_int (Borrows_NonZero_Type.nonzero_0 self) <> 0
@@ -112,6 +113,7 @@ end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
+  use prelude.Bool
   predicate resolve (self : borrowed t) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
@@ -293,8 +295,8 @@ module Borrows_Inc_Interface
     type t = int32,
     type ShallowModelTy0.shallowModelTy = int
   val inc [#"../borrows.rs" 101 0 101 23] (x : borrowed int32) : ()
-    requires {[#"../borrows.rs" 99 11 99 25] ShallowModel0.shallow_model x < Int32.to_int Max0.mAX'}
-    ensures { [#"../borrows.rs" 100 10 100 25] Int32.to_int ( ^ x) = ShallowModel0.shallow_model x + 1 }
+    requires {[#"../borrows.rs" 99 11 99 25] Int.lt (ShallowModel0.shallow_model x) (Int32.to_int Max0.mAX')}
+    ensures { [#"../borrows.rs" 100 10 100 25] Int32.to_int ( ^ x) = Int.add (ShallowModel0.shallow_model x) 1 }
     
 end
 module Borrows_Inc
@@ -311,8 +313,8 @@ module Borrows_Inc
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = int32
   let rec cfg inc [#"../borrows.rs" 101 0 101 23] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed int32) : ()
-    requires {[#"../borrows.rs" 99 11 99 25] ShallowModel0.shallow_model x < Int32.to_int Max0.mAX'}
-    ensures { [#"../borrows.rs" 100 10 100 25] Int32.to_int ( ^ x) = ShallowModel0.shallow_model x + 1 }
+    requires {[#"../borrows.rs" 99 11 99 25] Int.lt (ShallowModel0.shallow_model x) (Int32.to_int Max0.mAX')}
+    ensures { [#"../borrows.rs" 100 10 100 25] Int32.to_int ( ^ x) = Int.add (ShallowModel0.shallow_model x) 1 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -321,7 +323,7 @@ module Borrows_Inc
     goto BB0
   }
   BB0 {
-    x <- { x with current = ([#"../borrows.rs" 102 4 102 11]  * x + ([#"../borrows.rs" 102 10 102 11] [#"../borrows.rs" 102 10 102 11] (1 : int32))) };
+    x <- { x with current = ([#"../borrows.rs" 102 4 102 11] Int32.add ( * x) ([#"../borrows.rs" 102 10 102 11] [#"../borrows.rs" 102 10 102 11] (1 : int32))) };
     assume { Resolve0.resolve x };
     _0 <- ([#"../borrows.rs" 101 24 103 1] ());
     return _0
@@ -337,7 +339,7 @@ module Borrows_Simple_Interface
     type t = borrowed (Borrows_NonZero_Type.t_nonzero)
   clone Core_Num_Impl2_Max_Stub as Max0
   val simple [#"../borrows.rs" 31 0 31 30] (x : borrowed (Borrows_NonZero_Type.t_nonzero)) : ()
-    requires {[#"../borrows.rs" 29 11 29 27] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) < Int32.to_int Max0.mAX'}
+    requires {[#"../borrows.rs" 29 11 29 27] Int.lt (Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x))) (Int32.to_int Max0.mAX')}
     requires {[#"../borrows.rs" 30 11 30 21] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) <> - 1}
     requires {[#"../borrows.rs" 31 14 31 15] Inv0.inv x}
     
@@ -376,7 +378,7 @@ module Borrows_Simple
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Max0.mAX' = Max0.mAX'
   let rec cfg simple [#"../borrows.rs" 31 0 31 30] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed (Borrows_NonZero_Type.t_nonzero)) : ()
-    requires {[#"../borrows.rs" 29 11 29 27] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) < Int32.to_int Max0.mAX'}
+    requires {[#"../borrows.rs" 29 11 29 27] Int.lt (Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x))) (Int32.to_int Max0.mAX')}
     requires {[#"../borrows.rs" 30 11 30 21] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) <> - 1}
     requires {[#"../borrows.rs" 31 14 31 15] Inv0.inv x}
     
@@ -416,7 +418,7 @@ module Borrows_Hard_Interface
     type t = borrowed (Borrows_NonZero_Type.t_nonzero)
   clone Core_Num_Impl2_Max_Stub as Max0
   val hard [#"../borrows.rs" 38 0 38 28] (x : borrowed (Borrows_NonZero_Type.t_nonzero)) : ()
-    requires {[#"../borrows.rs" 36 11 36 27] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) < Int32.to_int Max0.mAX'}
+    requires {[#"../borrows.rs" 36 11 36 27] Int.lt (Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x))) (Int32.to_int Max0.mAX')}
     requires {[#"../borrows.rs" 37 11 37 21] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) <> - 1}
     requires {[#"../borrows.rs" 38 12 38 13] Inv0.inv x}
     
@@ -457,7 +459,7 @@ module Borrows_Hard
   clone Borrows_Impl1_InnerMut_Interface as InnerMut0 with
     predicate Inv0.inv = Inv1.inv
   let rec cfg hard [#"../borrows.rs" 38 0 38 28] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed (Borrows_NonZero_Type.t_nonzero)) : ()
-    requires {[#"../borrows.rs" 36 11 36 27] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) < Int32.to_int Max0.mAX'}
+    requires {[#"../borrows.rs" 36 11 36 27] Int.lt (Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x))) (Int32.to_int Max0.mAX')}
     requires {[#"../borrows.rs" 37 11 37 21] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) <> - 1}
     requires {[#"../borrows.rs" 38 12 38 13] Inv1.inv x}
     
@@ -529,6 +531,7 @@ end
 module CreusotContracts_Resolve_Impl0_Resolve
   type t1
   type t2
+  use prelude.Bool
   clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve1 with
     type self = t2
   clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
@@ -578,7 +581,7 @@ module Borrows_Tuple_Interface
     type t = (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))
   clone Core_Num_Impl2_Max_Stub as Max0
   val tuple [#"../borrows.rs" 45 0 45 44] (x : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) : ()
-    requires {[#"../borrows.rs" 43 11 43 29] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) < Int32.to_int Max0.mAX'}
+    requires {[#"../borrows.rs" 43 11 43 29] Int.lt (Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a)))) (Int32.to_int Max0.mAX')}
     requires {[#"../borrows.rs" 44 11 44 23] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) <> - 1}
     requires {[#"../borrows.rs" 45 17 45 18] Inv0.inv x}
     
@@ -633,7 +636,7 @@ module Borrows_Tuple
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Max0.mAX' = Max0.mAX'
   let rec cfg tuple [#"../borrows.rs" 45 0 45 44] [@cfg:stackify] [@cfg:subregion_analysis] (x : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) : ()
-    requires {[#"../borrows.rs" 43 11 43 29] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) < Int32.to_int Max0.mAX'}
+    requires {[#"../borrows.rs" 43 11 43 29] Int.lt (Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a)))) (Int32.to_int Max0.mAX')}
     requires {[#"../borrows.rs" 44 11 44 23] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) <> - 1}
     requires {[#"../borrows.rs" 45 17 45 18] Inv0.inv x}
     
@@ -674,7 +677,7 @@ module Borrows_PartialMove_Interface
     type t = (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))
   clone Core_Num_Impl2_Max_Stub as Max0
   val partial_move [#"../borrows.rs" 53 0 53 47] (x : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) : ()
-    requires {[#"../borrows.rs" 51 11 51 29] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) < Int32.to_int Max0.mAX'}
+    requires {[#"../borrows.rs" 51 11 51 29] Int.lt (Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a)))) (Int32.to_int Max0.mAX')}
     requires {[#"../borrows.rs" 52 11 52 23] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) <> - 1}
     requires {[#"../borrows.rs" 53 20 53 21] Inv0.inv x}
     
@@ -729,7 +732,7 @@ module Borrows_PartialMove
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Max0.mAX' = Max0.mAX'
   let rec cfg partial_move [#"../borrows.rs" 53 0 53 47] [@cfg:stackify] [@cfg:subregion_analysis] (x : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) : ()
-    requires {[#"../borrows.rs" 51 11 51 29] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) < Int32.to_int Max0.mAX'}
+    requires {[#"../borrows.rs" 51 11 51 29] Int.lt (Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a)))) (Int32.to_int Max0.mAX')}
     requires {[#"../borrows.rs" 52 11 52 23] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) <> - 1}
     requires {[#"../borrows.rs" 53 20 53 21] Inv0.inv x}
     
@@ -773,7 +776,7 @@ module Borrows_Destruct_Interface
     type t = (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))
   clone Core_Num_Impl2_Max_Stub as Max0
   val destruct [#"../borrows.rs" 61 0 61 43] (x : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) : ()
-    requires {[#"../borrows.rs" 59 11 59 29] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) < Int32.to_int Max0.mAX'}
+    requires {[#"../borrows.rs" 59 11 59 29] Int.lt (Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a)))) (Int32.to_int Max0.mAX')}
     requires {[#"../borrows.rs" 60 11 60 23] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) <> - 1}
     requires {[#"../borrows.rs" 61 16 61 17] Inv0.inv x}
     
@@ -828,7 +831,7 @@ module Borrows_Destruct
     predicate Resolve0.resolve = Resolve3.resolve,
     predicate Resolve1.resolve = Resolve2.resolve
   let rec cfg destruct [#"../borrows.rs" 61 0 61 43] [@cfg:stackify] [@cfg:subregion_analysis] (x : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) : ()
-    requires {[#"../borrows.rs" 59 11 59 29] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) < Int32.to_int Max0.mAX'}
+    requires {[#"../borrows.rs" 59 11 59 29] Int.lt (Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a)))) (Int32.to_int Max0.mAX')}
     requires {[#"../borrows.rs" 60 11 60 23] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) <> - 1}
     requires {[#"../borrows.rs" 61 16 61 17] Inv0.inv x}
     
@@ -877,7 +880,7 @@ module Borrows_FrozenDead_Interface
     type t = borrowed (Borrows_NonZero_Type.t_nonzero)
   clone Core_Num_Impl2_Max_Stub as Max0
   val frozen_dead [#"../borrows.rs" 69 0 69 66] (x : borrowed (Borrows_NonZero_Type.t_nonzero)) (y : borrowed (Borrows_NonZero_Type.t_nonzero)) : ()
-    requires {[#"../borrows.rs" 67 11 67 27] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) < Int32.to_int Max0.mAX'}
+    requires {[#"../borrows.rs" 67 11 67 27] Int.lt (Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x))) (Int32.to_int Max0.mAX')}
     requires {[#"../borrows.rs" 68 11 68 21] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) <> - 1}
     requires {[#"../borrows.rs" 69 27 69 28] Inv0.inv x}
     requires {[#"../borrows.rs" 69 47 69 48] Inv0.inv y}
@@ -917,7 +920,7 @@ module Borrows_FrozenDead
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = Borrows_NonZero_Type.t_nonzero
   let rec cfg frozen_dead [#"../borrows.rs" 69 0 69 66] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed (Borrows_NonZero_Type.t_nonzero)) (y : borrowed (Borrows_NonZero_Type.t_nonzero)) : ()
-    requires {[#"../borrows.rs" 67 11 67 27] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) < Int32.to_int Max0.mAX'}
+    requires {[#"../borrows.rs" 67 11 67 27] Int.lt (Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x))) (Int32.to_int Max0.mAX')}
     requires {[#"../borrows.rs" 68 11 68 21] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) <> - 1}
     requires {[#"../borrows.rs" 69 27 69 28] Inv1.inv x}
     requires {[#"../borrows.rs" 69 47 69 48] Inv1.inv y}
@@ -991,7 +994,7 @@ module Borrows_Impl2_Invariant
   use prelude.Int
   use Borrows_SumTo10_Type as Borrows_SumTo10_Type
   predicate invariant' [#"../borrows.rs" 86 4 86 30] (self : Borrows_SumTo10_Type.t_sumto10) =
-    [#"../borrows.rs" 87 20 87 43] Int32.to_int (Borrows_SumTo10_Type.sumto10_a self) + Int32.to_int (Borrows_SumTo10_Type.sumto10_b self) = 10
+    [#"../borrows.rs" 87 20 87 43] Int.add (Int32.to_int (Borrows_SumTo10_Type.sumto10_a self)) (Int32.to_int (Borrows_SumTo10_Type.sumto10_b self)) = 10
   val invariant' [#"../borrows.rs" 86 4 86 30] (self : Borrows_SumTo10_Type.t_sumto10) : bool
     ensures { result = invariant' self }
     
@@ -1017,8 +1020,8 @@ module Borrows_Dec_Interface
     type t = int32,
     type ShallowModelTy0.shallowModelTy = int
   val dec [#"../borrows.rs" 107 0 107 23] (x : borrowed int32) : ()
-    requires {[#"../borrows.rs" 105 11 105 25] ShallowModel0.shallow_model x > Int32.to_int Min0.mIN'}
-    ensures { [#"../borrows.rs" 106 10 106 25] Int32.to_int ( ^ x) = ShallowModel0.shallow_model x - 1 }
+    requires {[#"../borrows.rs" 105 11 105 25] Int.gt (ShallowModel0.shallow_model x) (Int32.to_int Min0.mIN')}
+    ensures { [#"../borrows.rs" 106 10 106 25] Int32.to_int ( ^ x) = Int.sub (ShallowModel0.shallow_model x) 1 }
     
 end
 module Borrows_Dec
@@ -1035,8 +1038,8 @@ module Borrows_Dec
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = int32
   let rec cfg dec [#"../borrows.rs" 107 0 107 23] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed int32) : ()
-    requires {[#"../borrows.rs" 105 11 105 25] ShallowModel0.shallow_model x > Int32.to_int Min0.mIN'}
-    ensures { [#"../borrows.rs" 106 10 106 25] Int32.to_int ( ^ x) = ShallowModel0.shallow_model x - 1 }
+    requires {[#"../borrows.rs" 105 11 105 25] Int.gt (ShallowModel0.shallow_model x) (Int32.to_int Min0.mIN')}
+    ensures { [#"../borrows.rs" 106 10 106 25] Int32.to_int ( ^ x) = Int.sub (ShallowModel0.shallow_model x) 1 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -1045,7 +1048,7 @@ module Borrows_Dec
     goto BB0
   }
   BB0 {
-    x <- { x with current = ([#"../borrows.rs" 108 4 108 11]  * x - ([#"../borrows.rs" 108 10 108 11] [#"../borrows.rs" 108 10 108 11] (1 : int32))) };
+    x <- { x with current = ([#"../borrows.rs" 108 4 108 11] Int32.sub ( * x) ([#"../borrows.rs" 108 10 108 11] [#"../borrows.rs" 108 10 108 11] (1 : int32))) };
     assume { Resolve0.resolve x };
     _0 <- ([#"../borrows.rs" 107 24 109 1] ());
     return _0
@@ -1068,7 +1071,7 @@ module Borrows_Impl3_Foo_Interface
     type t = borrowed (Borrows_SumTo10_Type.t_sumto10)
   clone Core_Num_Impl2_Max_Stub as Max0
   val foo [#"../borrows.rs" 93 4 93 25] (self : borrowed (Borrows_SumTo10_Type.t_sumto10)) : ()
-    requires {[#"../borrows.rs" 92 15 92 34] Int32.to_int (Borrows_SumTo10_Type.sumto10_a ( * self)) < Int32.to_int Max0.mAX'}
+    requires {[#"../borrows.rs" 92 15 92 34] Int.lt (Int32.to_int (Borrows_SumTo10_Type.sumto10_a ( * self))) (Int32.to_int Max0.mAX')}
     requires {[#"../borrows.rs" 93 20 93 24] Inv0.inv self}
     
 end
@@ -1110,7 +1113,7 @@ module Borrows_Impl3_Foo
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Max0.mAX' = Max0.mAX'
   let rec cfg foo [#"../borrows.rs" 93 4 93 25] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (Borrows_SumTo10_Type.t_sumto10)) : ()
-    requires {[#"../borrows.rs" 92 15 92 34] Int32.to_int (Borrows_SumTo10_Type.sumto10_a ( * self)) < Int32.to_int Max0.mAX'}
+    requires {[#"../borrows.rs" 92 15 92 34] Int.lt (Int32.to_int (Borrows_SumTo10_Type.sumto10_a ( * self))) (Int32.to_int Max0.mAX')}
     requires {[#"../borrows.rs" 93 20 93 24] Inv0.inv self}
     
    = [@vc:do_not_keep_trace] [@vc:sp]

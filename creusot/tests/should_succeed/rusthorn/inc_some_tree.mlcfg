@@ -44,7 +44,7 @@ module IncSomeTree_Impl0_Sum
   use IncSomeTree_Tree_Type as IncSomeTree_Tree_Type
   function sum [#"../inc_some_tree.rs" 21 4 21 23] (self : IncSomeTree_Tree_Type.t_tree) : int =
     [#"../inc_some_tree.rs" 23 12 26 13] match (self) with
-      | IncSomeTree_Tree_Type.C_Node tl a tr -> sum tl + UInt32.to_int a + sum tr
+      | IncSomeTree_Tree_Type.C_Node tl a tr -> Int.add (Int.add (sum tl) (UInt32.to_int a)) (sum tr)
       | IncSomeTree_Tree_Type.C_Leaf -> 0
       end
   val sum [#"../inc_some_tree.rs" 21 4 21 23] (self : IncSomeTree_Tree_Type.t_tree) : int
@@ -65,10 +65,10 @@ module IncSomeTree_Impl0_LemmaSumNonneg_Interface
   clone IncSomeTree_Impl0_Sum_Stub as Sum0
   function lemma_sum_nonneg [#"../inc_some_tree.rs" 33 4 33 30] (self : IncSomeTree_Tree_Type.t_tree) : ()
   val lemma_sum_nonneg [#"../inc_some_tree.rs" 33 4 33 30] (self : IncSomeTree_Tree_Type.t_tree) : ()
-    ensures { [#"../inc_some_tree.rs" 32 14 32 29] Sum0.sum self >= 0 }
+    ensures { [#"../inc_some_tree.rs" 32 14 32 29] Int.ge (Sum0.sum self) 0 }
     ensures { result = lemma_sum_nonneg self }
     
-  axiom lemma_sum_nonneg_spec : forall self : IncSomeTree_Tree_Type.t_tree . [#"../inc_some_tree.rs" 32 14 32 29] Sum0.sum self >= 0
+  axiom lemma_sum_nonneg_spec : forall self : IncSomeTree_Tree_Type.t_tree . [#"../inc_some_tree.rs" 32 14 32 29] Int.ge (Sum0.sum self) 0
 end
 module IncSomeTree_Impl0_LemmaSumNonneg
   use prelude.Int
@@ -77,14 +77,14 @@ module IncSomeTree_Impl0_LemmaSumNonneg
   clone IncSomeTree_Impl0_Sum_Stub as Sum0
   function lemma_sum_nonneg [#"../inc_some_tree.rs" 33 4 33 30] (self : IncSomeTree_Tree_Type.t_tree) : ()
   val lemma_sum_nonneg [#"../inc_some_tree.rs" 33 4 33 30] (self : IncSomeTree_Tree_Type.t_tree) : ()
-    ensures { [#"../inc_some_tree.rs" 32 14 32 29] Sum0.sum self >= 0 }
+    ensures { [#"../inc_some_tree.rs" 32 14 32 29] Int.ge (Sum0.sum self) 0 }
     ensures { result = lemma_sum_nonneg self }
     
   axiom def : forall self : IncSomeTree_Tree_Type.t_tree . lemma_sum_nonneg self = ([#"../inc_some_tree.rs" 34 8 40 9] match (self) with
     | IncSomeTree_Tree_Type.C_Node tl _ tr -> let _ = lemma_sum_nonneg tl in let _ = lemma_sum_nonneg tr in ()
     | IncSomeTree_Tree_Type.C_Leaf -> ()
     end)
-  axiom lemma_sum_nonneg_spec : forall self : IncSomeTree_Tree_Type.t_tree . [#"../inc_some_tree.rs" 32 14 32 29] Sum0.sum self >= 0
+  axiom lemma_sum_nonneg_spec : forall self : IncSomeTree_Tree_Type.t_tree . [#"../inc_some_tree.rs" 32 14 32 29] Int.ge (Sum0.sum self) 0
 end
 module IncSomeTree_Impl0_LemmaSumNonneg_Impl
   use prelude.Int
@@ -92,7 +92,7 @@ module IncSomeTree_Impl0_LemmaSumNonneg_Impl
   use IncSomeTree_Tree_Type as IncSomeTree_Tree_Type
   clone IncSomeTree_Impl0_Sum as Sum0
   let rec ghost function lemma_sum_nonneg [#"../inc_some_tree.rs" 33 4 33 30] (self : IncSomeTree_Tree_Type.t_tree) : ()
-    ensures { [#"../inc_some_tree.rs" 32 14 32 29] Sum0.sum self >= 0 }
+    ensures { [#"../inc_some_tree.rs" 32 14 32 29] Int.ge (Sum0.sum self) 0 }
     variant {[#"../inc_some_tree.rs" 31 15 31 19] self}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -108,7 +108,7 @@ module IncSomeTree_Impl0_SumX_Interface
   use IncSomeTree_Tree_Type as IncSomeTree_Tree_Type
   clone IncSomeTree_Impl0_Sum_Stub as Sum0
   val sum_x [#"../inc_some_tree.rs" 45 4 45 26] (self : IncSomeTree_Tree_Type.t_tree) : uint32
-    requires {[#"../inc_some_tree.rs" 43 15 43 38] Sum0.sum self <= 1000000}
+    requires {[#"../inc_some_tree.rs" 43 15 43 38] Int.le (Sum0.sum self) 1000000}
     ensures { [#"../inc_some_tree.rs" 44 14 44 35] UInt32.to_int result = Sum0.sum self }
     
 end
@@ -122,7 +122,7 @@ module IncSomeTree_Impl0_SumX
     function Sum0.sum = Sum0.sum,
     axiom .
   let rec cfg sum_x [#"../inc_some_tree.rs" 45 4 45 26] [@cfg:stackify] [@cfg:subregion_analysis] (self : IncSomeTree_Tree_Type.t_tree) : uint32
-    requires {[#"../inc_some_tree.rs" 43 15 43 38] Sum0.sum self <= 1000000}
+    requires {[#"../inc_some_tree.rs" 43 15 43 38] Int.le (Sum0.sum self) 1000000}
     ensures { [#"../inc_some_tree.rs" 44 14 44 35] UInt32.to_int result = Sum0.sum self }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -165,7 +165,7 @@ module IncSomeTree_Impl0_SumX
     goto BB6
   }
   BB6 {
-    _0 <- ([#"../inc_some_tree.rs" 53 16 53 44] ([#"../inc_some_tree.rs" 53 16 53 31] _11 + a) + _14);
+    _0 <- ([#"../inc_some_tree.rs" 53 16 53 44] UInt32.add ([#"../inc_some_tree.rs" 53 16 53 31] UInt32.add _11 a) _14);
     _11 <- any uint32;
     _14 <- any uint32;
     goto BB7
@@ -250,6 +250,7 @@ end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
+  use prelude.Bool
   predicate resolve (self : borrowed t) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
@@ -289,8 +290,8 @@ module IncSomeTree_Impl0_TakeSome_Interface
     type ShallowModelTy0.shallowModelTy = int
   clone IncSomeTree_Impl0_Sum_Stub as Sum0
   val take_some [#"../inc_some_tree.rs" 61 4 61 39] (self : borrowed (IncSomeTree_Tree_Type.t_tree)) : borrowed uint32
-    ensures { [#"../inc_some_tree.rs" 59 14 59 64] Sum0.sum ( ^ self) - Sum0.sum ( * self) = UInt32.to_int ( ^ result) - ShallowModel0.shallow_model result }
-    ensures { [#"../inc_some_tree.rs" 60 14 60 35] ShallowModel0.shallow_model result <= Sum0.sum ( * self) }
+    ensures { [#"../inc_some_tree.rs" 59 14 59 64] Int.sub (Sum0.sum ( ^ self)) (Sum0.sum ( * self)) = Int.sub (UInt32.to_int ( ^ result)) (ShallowModel0.shallow_model result) }
+    ensures { [#"../inc_some_tree.rs" 60 14 60 35] Int.le (ShallowModel0.shallow_model result) (Sum0.sum ( * self)) }
     
 end
 module IncSomeTree_Impl0_TakeSome
@@ -316,8 +317,8 @@ module IncSomeTree_Impl0_TakeSome
     function Sum0.sum = Sum0.sum,
     axiom .
   let rec cfg take_some [#"../inc_some_tree.rs" 61 4 61 39] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (IncSomeTree_Tree_Type.t_tree)) : borrowed uint32
-    ensures { [#"../inc_some_tree.rs" 59 14 59 64] Sum0.sum ( ^ self) - Sum0.sum ( * self) = UInt32.to_int ( ^ result) - ShallowModel0.shallow_model result }
-    ensures { [#"../inc_some_tree.rs" 60 14 60 35] ShallowModel0.shallow_model result <= Sum0.sum ( * self) }
+    ensures { [#"../inc_some_tree.rs" 59 14 59 64] Int.sub (Sum0.sum ( ^ self)) (Sum0.sum ( * self)) = Int.sub (UInt32.to_int ( ^ result)) (ShallowModel0.shallow_model result) }
+    ensures { [#"../inc_some_tree.rs" 60 14 60 35] Int.le (ShallowModel0.shallow_model result) (Sum0.sum ( * self)) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : borrowed uint32;
@@ -462,7 +463,7 @@ module IncSomeTree_IncSomeTree_Interface
   use IncSomeTree_Tree_Type as IncSomeTree_Tree_Type
   clone IncSomeTree_Impl0_Sum_Stub as Sum0
   val inc_some_tree [#"../inc_some_tree.rs" 83 0 83 41] (t : IncSomeTree_Tree_Type.t_tree) (k : uint32) : ()
-    requires {[#"../inc_some_tree.rs" 82 11 82 36] Sum0.sum t + UInt32.to_int k <= 1000000}
+    requires {[#"../inc_some_tree.rs" 82 11 82 36] Int.le (Int.add (Sum0.sum t) (UInt32.to_int k)) 1000000}
     
 end
 module IncSomeTree_IncSomeTree
@@ -485,7 +486,7 @@ module IncSomeTree_IncSomeTree
   clone IncSomeTree_Impl0_SumX_Interface as SumX0 with
     function Sum0.sum = Sum0.sum
   let rec cfg inc_some_tree [#"../inc_some_tree.rs" 83 0 83 41] [@cfg:stackify] [@cfg:subregion_analysis] (t : IncSomeTree_Tree_Type.t_tree) (k : uint32) : ()
-    requires {[#"../inc_some_tree.rs" 82 11 82 36] Sum0.sum t + UInt32.to_int k <= 1000000}
+    requires {[#"../inc_some_tree.rs" 82 11 82 36] Int.le (Int.add (Sum0.sum t) (UInt32.to_int k)) 1000000}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -513,13 +514,13 @@ module IncSomeTree_IncSomeTree
     goto BB3
   }
   BB3 {
-    ma <- { ma with current = ([#"../inc_some_tree.rs" 86 4 86 12]  * ma + k) };
+    ma <- { ma with current = ([#"../inc_some_tree.rs" 86 4 86 12] UInt32.add ( * ma) k) };
     assume { Resolve0.resolve ma };
     _12 <- ([#"../inc_some_tree.rs" 87 12 87 21] SumX0.sum_x ([#"../inc_some_tree.rs" 87 12 87 21] t));
     goto BB4
   }
   BB4 {
-    switch ([#"../inc_some_tree.rs" 87 4 87 34] not ([#"../inc_some_tree.rs" 87 12 87 33] _12 = ([#"../inc_some_tree.rs" 87 25 87 33] sum0 + k)))
+    switch ([#"../inc_some_tree.rs" 87 4 87 34] not ([#"../inc_some_tree.rs" 87 12 87 33] UInt32.eq _12 ([#"../inc_some_tree.rs" 87 25 87 33] UInt32.add sum0 k)))
       | False -> goto BB6
       | True -> goto BB5
       end

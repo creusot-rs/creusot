@@ -39,7 +39,7 @@ module IncSomeList_Impl0_Sum
   use IncSomeList_List_Type as IncSomeList_List_Type
   function sum [#"../inc_some_list.rs" 21 4 21 23] (self : IncSomeList_List_Type.t_list) : int =
     [#"../inc_some_list.rs" 23 12 26 13] match (self) with
-      | IncSomeList_List_Type.C_Cons a l -> UInt32.to_int a + sum l
+      | IncSomeList_List_Type.C_Cons a l -> Int.add (UInt32.to_int a) (sum l)
       | IncSomeList_List_Type.C_Nil -> 0
       end
   val sum [#"../inc_some_list.rs" 21 4 21 23] (self : IncSomeList_List_Type.t_list) : int
@@ -60,10 +60,10 @@ module IncSomeList_Impl0_LemmaSumNonneg_Interface
   clone IncSomeList_Impl0_Sum_Stub as Sum0
   function lemma_sum_nonneg [#"../inc_some_list.rs" 33 4 33 30] (self : IncSomeList_List_Type.t_list) : ()
   val lemma_sum_nonneg [#"../inc_some_list.rs" 33 4 33 30] (self : IncSomeList_List_Type.t_list) : ()
-    ensures { [#"../inc_some_list.rs" 32 14 32 29] Sum0.sum self >= 0 }
+    ensures { [#"../inc_some_list.rs" 32 14 32 29] Int.ge (Sum0.sum self) 0 }
     ensures { result = lemma_sum_nonneg self }
     
-  axiom lemma_sum_nonneg_spec : forall self : IncSomeList_List_Type.t_list . [#"../inc_some_list.rs" 32 14 32 29] Sum0.sum self >= 0
+  axiom lemma_sum_nonneg_spec : forall self : IncSomeList_List_Type.t_list . [#"../inc_some_list.rs" 32 14 32 29] Int.ge (Sum0.sum self) 0
 end
 module IncSomeList_Impl0_LemmaSumNonneg
   use prelude.Int
@@ -72,14 +72,14 @@ module IncSomeList_Impl0_LemmaSumNonneg
   clone IncSomeList_Impl0_Sum_Stub as Sum0
   function lemma_sum_nonneg [#"../inc_some_list.rs" 33 4 33 30] (self : IncSomeList_List_Type.t_list) : ()
   val lemma_sum_nonneg [#"../inc_some_list.rs" 33 4 33 30] (self : IncSomeList_List_Type.t_list) : ()
-    ensures { [#"../inc_some_list.rs" 32 14 32 29] Sum0.sum self >= 0 }
+    ensures { [#"../inc_some_list.rs" 32 14 32 29] Int.ge (Sum0.sum self) 0 }
     ensures { result = lemma_sum_nonneg self }
     
   axiom def : forall self : IncSomeList_List_Type.t_list . lemma_sum_nonneg self = ([#"../inc_some_list.rs" 34 8 37 9] match (self) with
     | IncSomeList_List_Type.C_Cons _ l -> lemma_sum_nonneg l
     | IncSomeList_List_Type.C_Nil -> ()
     end)
-  axiom lemma_sum_nonneg_spec : forall self : IncSomeList_List_Type.t_list . [#"../inc_some_list.rs" 32 14 32 29] Sum0.sum self >= 0
+  axiom lemma_sum_nonneg_spec : forall self : IncSomeList_List_Type.t_list . [#"../inc_some_list.rs" 32 14 32 29] Int.ge (Sum0.sum self) 0
 end
 module IncSomeList_Impl0_LemmaSumNonneg_Impl
   use prelude.Int
@@ -87,7 +87,7 @@ module IncSomeList_Impl0_LemmaSumNonneg_Impl
   use IncSomeList_List_Type as IncSomeList_List_Type
   clone IncSomeList_Impl0_Sum as Sum0
   let rec ghost function lemma_sum_nonneg [#"../inc_some_list.rs" 33 4 33 30] (self : IncSomeList_List_Type.t_list) : ()
-    ensures { [#"../inc_some_list.rs" 32 14 32 29] Sum0.sum self >= 0 }
+    ensures { [#"../inc_some_list.rs" 32 14 32 29] Int.ge (Sum0.sum self) 0 }
     variant {[#"../inc_some_list.rs" 31 15 31 19] self}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -103,7 +103,7 @@ module IncSomeList_Impl0_SumX_Interface
   use IncSomeList_List_Type as IncSomeList_List_Type
   clone IncSomeList_Impl0_Sum_Stub as Sum0
   val sum_x [#"../inc_some_list.rs" 42 4 42 26] (self : IncSomeList_List_Type.t_list) : uint32
-    requires {[#"../inc_some_list.rs" 40 15 40 38] Sum0.sum self <= 1000000}
+    requires {[#"../inc_some_list.rs" 40 15 40 38] Int.le (Sum0.sum self) 1000000}
     ensures { [#"../inc_some_list.rs" 41 14 41 35] UInt32.to_int result = Sum0.sum self }
     
 end
@@ -114,7 +114,7 @@ module IncSomeList_Impl0_SumX
   use IncSomeList_List_Type as IncSomeList_List_Type
   clone IncSomeList_Impl0_Sum as Sum0
   let rec cfg sum_x [#"../inc_some_list.rs" 42 4 42 26] [@cfg:stackify] [@cfg:subregion_analysis] (self : IncSomeList_List_Type.t_list) : uint32
-    requires {[#"../inc_some_list.rs" 40 15 40 38] Sum0.sum self <= 1000000}
+    requires {[#"../inc_some_list.rs" 40 15 40 38] Int.le (Sum0.sum self) 1000000}
     ensures { [#"../inc_some_list.rs" 41 14 41 35] UInt32.to_int result = Sum0.sum self }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -149,7 +149,7 @@ module IncSomeList_Impl0_SumX
     goto BB5
   }
   BB5 {
-    _0 <- ([#"../inc_some_list.rs" 44 26 44 40] a + _8);
+    _0 <- ([#"../inc_some_list.rs" 44 26 44 40] UInt32.add a _8);
     _8 <- any uint32;
     goto BB6
   }
@@ -233,6 +233,7 @@ end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
+  use prelude.Bool
   predicate resolve (self : borrowed t) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
@@ -272,8 +273,8 @@ module IncSomeList_Impl0_TakeSome_Interface
     type ShallowModelTy0.shallowModelTy = int
   clone IncSomeList_Impl0_Sum_Stub as Sum0
   val take_some [#"../inc_some_list.rs" 51 4 51 39] (self : borrowed (IncSomeList_List_Type.t_list)) : borrowed uint32
-    ensures { [#"../inc_some_list.rs" 49 14 49 64] Sum0.sum ( ^ self) - Sum0.sum ( * self) = UInt32.to_int ( ^ result) - ShallowModel0.shallow_model result }
-    ensures { [#"../inc_some_list.rs" 50 14 50 35] ShallowModel0.shallow_model result <= Sum0.sum ( * self) }
+    ensures { [#"../inc_some_list.rs" 49 14 49 64] Int.sub (Sum0.sum ( ^ self)) (Sum0.sum ( * self)) = Int.sub (UInt32.to_int ( ^ result)) (ShallowModel0.shallow_model result) }
+    ensures { [#"../inc_some_list.rs" 50 14 50 35] Int.le (ShallowModel0.shallow_model result) (Sum0.sum ( * self)) }
     
 end
 module IncSomeList_Impl0_TakeSome
@@ -300,8 +301,8 @@ module IncSomeList_Impl0_TakeSome
     function Sum0.sum = Sum0.sum,
     axiom .
   let rec cfg take_some [#"../inc_some_list.rs" 51 4 51 39] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (IncSomeList_List_Type.t_list)) : borrowed uint32
-    ensures { [#"../inc_some_list.rs" 49 14 49 64] Sum0.sum ( ^ self) - Sum0.sum ( * self) = UInt32.to_int ( ^ result) - ShallowModel0.shallow_model result }
-    ensures { [#"../inc_some_list.rs" 50 14 50 35] ShallowModel0.shallow_model result <= Sum0.sum ( * self) }
+    ensures { [#"../inc_some_list.rs" 49 14 49 64] Int.sub (Sum0.sum ( ^ self)) (Sum0.sum ( * self)) = Int.sub (UInt32.to_int ( ^ result)) (ShallowModel0.shallow_model result) }
+    ensures { [#"../inc_some_list.rs" 50 14 50 35] Int.le (ShallowModel0.shallow_model result) (Sum0.sum ( * self)) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : borrowed uint32;
@@ -410,7 +411,7 @@ module IncSomeList_IncSomeList_Interface
   use IncSomeList_List_Type as IncSomeList_List_Type
   clone IncSomeList_Impl0_Sum_Stub as Sum0
   val inc_some_list [#"../inc_some_list.rs" 67 0 67 41] (l : IncSomeList_List_Type.t_list) (k : uint32) : ()
-    requires {[#"../inc_some_list.rs" 66 11 66 36] Sum0.sum l + UInt32.to_int k <= 1000000}
+    requires {[#"../inc_some_list.rs" 66 11 66 36] Int.le (Int.add (Sum0.sum l) (UInt32.to_int k)) 1000000}
     
 end
 module IncSomeList_IncSomeList
@@ -433,7 +434,7 @@ module IncSomeList_IncSomeList
   clone IncSomeList_Impl0_SumX_Interface as SumX0 with
     function Sum0.sum = Sum0.sum
   let rec cfg inc_some_list [#"../inc_some_list.rs" 67 0 67 41] [@cfg:stackify] [@cfg:subregion_analysis] (l : IncSomeList_List_Type.t_list) (k : uint32) : ()
-    requires {[#"../inc_some_list.rs" 66 11 66 36] Sum0.sum l + UInt32.to_int k <= 1000000}
+    requires {[#"../inc_some_list.rs" 66 11 66 36] Int.le (Int.add (Sum0.sum l) (UInt32.to_int k)) 1000000}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -461,13 +462,13 @@ module IncSomeList_IncSomeList
     goto BB3
   }
   BB3 {
-    ma <- { ma with current = ([#"../inc_some_list.rs" 70 4 70 12]  * ma + k) };
+    ma <- { ma with current = ([#"../inc_some_list.rs" 70 4 70 12] UInt32.add ( * ma) k) };
     assume { Resolve0.resolve ma };
     _12 <- ([#"../inc_some_list.rs" 71 12 71 21] SumX0.sum_x ([#"../inc_some_list.rs" 71 12 71 21] l));
     goto BB4
   }
   BB4 {
-    switch ([#"../inc_some_list.rs" 71 4 71 34] not ([#"../inc_some_list.rs" 71 12 71 33] _12 = ([#"../inc_some_list.rs" 71 25 71 33] sum0 + k)))
+    switch ([#"../inc_some_list.rs" 71 4 71 34] not ([#"../inc_some_list.rs" 71 12 71 33] UInt32.eq _12 ([#"../inc_some_list.rs" 71 25 71 33] UInt32.add sum0 k)))
       | False -> goto BB6
       | True -> goto BB5
       end

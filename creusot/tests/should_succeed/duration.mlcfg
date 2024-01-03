@@ -13,7 +13,7 @@ end
 module CreusotContracts_Std1_Time_SecsToNanos
   use prelude.Int
   function secs_to_nanos (secs : int) : int =
-    [#"../../../../creusot-contracts/src/std/time.rs" 48 4 48 24] secs * 1000000000
+    [#"../../../../creusot-contracts/src/std/time.rs" 48 4 48 24] Int.mul secs 1000000000
   val secs_to_nanos (secs : int) : int
     ensures { result = secs_to_nanos secs }
     
@@ -47,6 +47,7 @@ end
 module CreusotContracts_Std1_Time_Impl0_ShallowModel_Stub
   use prelude.Int
   use prelude.UInt64
+  use prelude.Bool
   use Core_Time_Duration_Type as Core_Time_Duration_Type
   clone CreusotContracts_Std1_Time_SecsToNanos_Stub as SecsToNanos0
   clone Core_Num_Impl9_Max_Stub as Max0
@@ -55,28 +56,30 @@ end
 module CreusotContracts_Std1_Time_Impl0_ShallowModel_Interface
   use prelude.Int
   use prelude.UInt64
+  use prelude.Bool
   use Core_Time_Duration_Type as Core_Time_Duration_Type
   clone CreusotContracts_Std1_Time_SecsToNanos_Stub as SecsToNanos0
   clone Core_Num_Impl9_Max_Stub as Max0
   function shallow_model (self : Core_Time_Duration_Type.t_duration) : int
   val shallow_model (self : Core_Time_Duration_Type.t_duration) : int
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 13 14 13 77] result >= 0 /\ result <= SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX') + 999999999 }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 13 14 13 77] Int.ge result 0 /\ Int.le result (Int.add (SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX')) 999999999) }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Core_Time_Duration_Type.t_duration . [#"../../../../creusot-contracts/src/std/time.rs" 13 14 13 77] shallow_model self >= 0 /\ shallow_model self <= SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX') + 999999999
+  axiom shallow_model_spec : forall self : Core_Time_Duration_Type.t_duration . [#"../../../../creusot-contracts/src/std/time.rs" 13 14 13 77] Int.ge (shallow_model self) 0 /\ Int.le (shallow_model self) (Int.add (SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX')) 999999999)
 end
 module CreusotContracts_Std1_Time_Impl0_ShallowModel
   use prelude.Int
   use prelude.UInt64
+  use prelude.Bool
   use Core_Time_Duration_Type as Core_Time_Duration_Type
   clone CreusotContracts_Std1_Time_SecsToNanos_Stub as SecsToNanos0
   clone Core_Num_Impl9_Max_Stub as Max0
   function shallow_model (self : Core_Time_Duration_Type.t_duration) : int
   val shallow_model (self : Core_Time_Duration_Type.t_duration) : int
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 13 14 13 77] result >= 0 /\ result <= SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX') + 999999999 }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 13 14 13 77] Int.ge result 0 /\ Int.le result (Int.add (SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX')) 999999999) }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Core_Time_Duration_Type.t_duration . [#"../../../../creusot-contracts/src/std/time.rs" 13 14 13 77] shallow_model self >= 0 /\ shallow_model self <= SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX') + 999999999
+  axiom shallow_model_spec : forall self : Core_Time_Duration_Type.t_duration . [#"../../../../creusot-contracts/src/std/time.rs" 13 14 13 77] Int.ge (shallow_model self) 0 /\ Int.le (shallow_model self) (Int.add (SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX')) 999999999)
 end
 module Core_Option_Option_Type
   type t_option 't =
@@ -98,7 +101,7 @@ end
 module CreusotContracts_Std1_Time_NanosToSecs
   use prelude.Int
   function nanos_to_secs (nanos : int) : int =
-    [#"../../../../creusot-contracts/src/std/time.rs" 43 4 43 25] div nanos 1000000000
+    [#"../../../../creusot-contracts/src/std/time.rs" 43 4 43 25] Int.div nanos 1000000000
   val nanos_to_secs (nanos : int) : int
     ensures { result = nanos_to_secs nanos }
     
@@ -116,8 +119,8 @@ module Core_Time_Impl1_New_Interface
     axiom .
   clone CreusotContracts_Std1_Time_NanosToSecs_Stub as NanosToSecs0
   val new (secs : uint64) (nanos : uint32) : Core_Time_Duration_Type.t_duration
-    requires {[#"../../../../creusot-contracts/src/std/time.rs" 80 27 80 69] UInt64.to_int secs + NanosToSecs0.nanos_to_secs (UInt32.to_int nanos) <= UInt64.to_int Max0.mAX'}
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 81 26 81 66] ShallowModel0.shallow_model result = SecsToNanos0.secs_to_nanos (UInt64.to_int secs) + UInt32.to_int nanos }
+    requires {[#"../../../../creusot-contracts/src/std/time.rs" 80 27 80 69] Int.le (Int.add (UInt64.to_int secs) (NanosToSecs0.nanos_to_secs (UInt32.to_int nanos))) (UInt64.to_int Max0.mAX')}
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 81 26 81 66] ShallowModel0.shallow_model result = Int.add (SecsToNanos0.secs_to_nanos (UInt64.to_int secs)) (UInt32.to_int nanos) }
     
 end
 module CreusotContracts_Model_ShallowModel_ShallowModelTy_Type
@@ -181,8 +184,8 @@ module CreusotContracts_Model_Impl5_ShallowModel
 end
 module Core_Time_Impl1_AsNanos_Interface
   use prelude.UInt128
-  use prelude.UInt64
   use prelude.Int
+  use prelude.UInt64
   use prelude.Borrow
   use prelude.Int
   use Core_Time_Duration_Type as Core_Time_Duration_Type
@@ -193,7 +196,7 @@ module Core_Time_Impl1_AsNanos_Interface
     type ShallowModelTy0.shallowModelTy = int
   val as_nanos (self : Core_Time_Duration_Type.t_duration) : uint128
     ensures { [#"../../../../creusot-contracts/src/std/time.rs" 121 26 121 42] UInt128.to_int result = ShallowModel0.shallow_model self }
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 122 26 122 75] UInt128.to_int result <= SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX') + 999999999 }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 122 26 122 75] Int.le (UInt128.to_int result) (Int.add (SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX')) 999999999) }
     
 end
 module Core_Time_Impl1_FromSecs_Interface
@@ -221,7 +224,7 @@ module Core_Time_Impl1_FromMillis_Interface
     function SecsToNanos0.secs_to_nanos = SecsToNanos0.secs_to_nanos,
     axiom .
   val from_millis (millis : uint64) : Core_Time_Duration_Type.t_duration
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 87 26 87 58] ShallowModel0.shallow_model result = UInt64.to_int millis * 1000000 }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 87 26 87 58] ShallowModel0.shallow_model result = Int.mul (UInt64.to_int millis) 1000000 }
     
 end
 module Core_Time_Impl1_FromMicros_Interface
@@ -235,7 +238,7 @@ module Core_Time_Impl1_FromMicros_Interface
     function SecsToNanos0.secs_to_nanos = SecsToNanos0.secs_to_nanos,
     axiom .
   val from_micros (micros : uint64) : Core_Time_Duration_Type.t_duration
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 90 26 90 54] ShallowModel0.shallow_model result = UInt64.to_int micros * 1000 }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 90 26 90 54] ShallowModel0.shallow_model result = Int.mul (UInt64.to_int micros) 1000 }
     
 end
 module Core_Time_Impl1_FromNanos_Interface
@@ -253,8 +256,9 @@ module Core_Time_Impl1_FromNanos_Interface
     
 end
 module Core_Time_Impl1_IsZero_Interface
-  use prelude.Borrow
   use prelude.Int
+  use prelude.Bool
+  use prelude.Borrow
   use prelude.Int
   use Core_Time_Duration_Type as Core_Time_Duration_Type
   clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel0 with
@@ -267,8 +271,8 @@ module Core_Time_Impl1_IsZero_Interface
 end
 module Core_Time_Impl1_AsSecs_Interface
   use prelude.UInt64
-  use prelude.Borrow
   use prelude.Int
+  use prelude.Borrow
   use prelude.Int
   use Core_Time_Duration_Type as Core_Time_Duration_Type
   clone CreusotContracts_Std1_Time_NanosToSecs_Stub as NanosToSecs0
@@ -293,7 +297,7 @@ end
 module CreusotContracts_Std1_Time_NanosToMillis
   use prelude.Int
   function nanos_to_millis (nanos : int) : int =
-    [#"../../../../creusot-contracts/src/std/time.rs" 38 4 38 21] div nanos 1000000
+    [#"../../../../creusot-contracts/src/std/time.rs" 38 4 38 21] Int.div nanos 1000000
   val nanos_to_millis (nanos : int) : int
     ensures { result = nanos_to_millis nanos }
     
@@ -309,8 +313,8 @@ module Core_Time_Impl1_SubsecMillis_Interface
     type t = Core_Time_Duration_Type.t_duration,
     type ShallowModelTy0.shallowModelTy = int
   val subsec_millis (self : Core_Time_Duration_Type.t_duration) : uint32
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 103 26 103 67] UInt32.to_int result = mod (NanosToMillis0.nanos_to_millis (ShallowModel0.shallow_model self)) 1000 }
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 104 26 104 44] result < (1000 : uint32) }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 103 26 103 67] UInt32.to_int result = Int.rem (NanosToMillis0.nanos_to_millis (ShallowModel0.shallow_model self)) 1000 }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 104 26 104 44] Int.lt result (1000 : uint32) }
     
 end
 module CreusotContracts_Std1_Time_NanosToMicros_Stub
@@ -327,7 +331,7 @@ end
 module CreusotContracts_Std1_Time_NanosToMicros
   use prelude.Int
   function nanos_to_micros (nanos : int) : int =
-    [#"../../../../creusot-contracts/src/std/time.rs" 34 4 34 17] div nanos 1000
+    [#"../../../../creusot-contracts/src/std/time.rs" 34 4 34 17] Int.div nanos 1000
   val nanos_to_micros (nanos : int) : int
     ensures { result = nanos_to_micros nanos }
     
@@ -343,8 +347,8 @@ module Core_Time_Impl1_SubsecMicros_Interface
     type t = Core_Time_Duration_Type.t_duration,
     type ShallowModelTy0.shallowModelTy = int
   val subsec_micros (self : Core_Time_Duration_Type.t_duration) : uint32
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 107 26 107 71] UInt32.to_int result = mod (NanosToMicros0.nanos_to_micros (ShallowModel0.shallow_model self)) 1000000 }
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 108 26 108 48] result < (1000000 : uint32) }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 107 26 107 71] UInt32.to_int result = Int.rem (NanosToMicros0.nanos_to_micros (ShallowModel0.shallow_model self)) 1000000 }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 108 26 108 48] Int.lt result (1000000 : uint32) }
     
 end
 module Core_Time_Impl1_SubsecNanos_Interface
@@ -357,14 +361,14 @@ module Core_Time_Impl1_SubsecNanos_Interface
     type t = Core_Time_Duration_Type.t_duration,
     type ShallowModelTy0.shallowModelTy = int
   val subsec_nanos (self : Core_Time_Duration_Type.t_duration) : uint32
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 111 26 111 60] UInt32.to_int result = mod (ShallowModel0.shallow_model self) 1000000000 }
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 112 26 112 52] result < (1000000000 : uint32) }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 111 26 111 60] UInt32.to_int result = Int.rem (ShallowModel0.shallow_model self) 1000000000 }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 112 26 112 52] Int.lt result (1000000000 : uint32) }
     
 end
 module Core_Time_Impl1_AsMillis_Interface
   use prelude.UInt128
-  use prelude.Borrow
   use prelude.Int
+  use prelude.Borrow
   use prelude.Int
   use Core_Time_Duration_Type as Core_Time_Duration_Type
   clone CreusotContracts_Std1_Time_NanosToMillis_Stub as NanosToMillis0
@@ -377,8 +381,8 @@ module Core_Time_Impl1_AsMillis_Interface
 end
 module Core_Time_Impl1_AsMicros_Interface
   use prelude.UInt128
-  use prelude.Borrow
   use prelude.Int
+  use prelude.Borrow
   use prelude.Int
   use Core_Time_Duration_Type as Core_Time_Duration_Type
   clone CreusotContracts_Std1_Time_NanosToMicros_Stub as NanosToMicros0
@@ -458,6 +462,7 @@ end
 module Core_Time_Impl1_CheckedAdd_Interface
   use prelude.Int
   use prelude.UInt64
+  use prelude.Bool
   use prelude.Int
   clone CreusotContracts_Std1_Time_SecsToNanos_Stub as SecsToNanos0
   use Core_Time_Duration_Type as Core_Time_Duration_Type
@@ -472,8 +477,8 @@ module Core_Time_Impl1_CheckedAdd_Interface
     function SecsToNanos0.secs_to_nanos = SecsToNanos0.secs_to_nanos,
     axiom .
   val checked_add (self : Core_Time_Duration_Type.t_duration) (rhs : Core_Time_Duration_Type.t_duration) : Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 125 16 125 86] NanosToSecs0.nanos_to_secs (ShallowModel0.shallow_model self + ShallowModel0.shallow_model rhs) > UInt64.to_int Max0.mAX' -> result = Core_Option_Option_Type.C_None }
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 126 16 126 114] NanosToSecs0.nanos_to_secs (ShallowModel0.shallow_model self + ShallowModel0.shallow_model rhs) <= UInt64.to_int Max0.mAX' -> DeepModel0.deep_model result = Core_Option_Option_Type.C_Some (ShallowModel0.shallow_model self + ShallowModel0.shallow_model rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 125 16 125 86] Int.gt (NanosToSecs0.nanos_to_secs (Int.add (ShallowModel0.shallow_model self) (ShallowModel0.shallow_model rhs))) (UInt64.to_int Max0.mAX') -> result = Core_Option_Option_Type.C_None }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 126 16 126 114] Int.le (NanosToSecs0.nanos_to_secs (Int.add (ShallowModel0.shallow_model self) (ShallowModel0.shallow_model rhs))) (UInt64.to_int Max0.mAX') -> DeepModel0.deep_model result = Core_Option_Option_Type.C_Some (Int.add (ShallowModel0.shallow_model self) (ShallowModel0.shallow_model rhs)) }
     
 end
 module CreusotContracts_Invariant_Inv_Stub
@@ -497,6 +502,7 @@ module CreusotContracts_Invariant_Inv
 end
 module Core_Option_Impl0_IsNone_Interface
   type t
+  use prelude.Bool
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
@@ -508,6 +514,7 @@ module Core_Option_Impl0_IsNone_Interface
 end
 module Core_Option_Impl0_IsSome_Interface
   type t
+  use prelude.Bool
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
@@ -519,6 +526,7 @@ module Core_Option_Impl0_IsSome_Interface
 end
 module Core_Time_Impl1_CheckedSub_Interface
   use prelude.Int
+  use prelude.Bool
   use prelude.Int
   clone CreusotContracts_Std1_Time_SecsToNanos_Stub as SecsToNanos0
   clone Core_Num_Impl9_Max_Stub as Max0
@@ -532,14 +540,15 @@ module Core_Time_Impl1_CheckedSub_Interface
     function SecsToNanos0.secs_to_nanos = SecsToNanos0.secs_to_nanos,
     axiom .
   val checked_sub (self : Core_Time_Duration_Type.t_duration) (rhs : Core_Time_Duration_Type.t_duration) : Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 129 16 129 63] ShallowModel0.shallow_model self - ShallowModel0.shallow_model rhs < 0 -> result = Core_Option_Option_Type.C_None }
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 130 16 130 91] ShallowModel0.shallow_model self - ShallowModel0.shallow_model rhs >= 0 -> DeepModel0.deep_model result = Core_Option_Option_Type.C_Some (ShallowModel0.shallow_model self - ShallowModel0.shallow_model rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 129 16 129 63] Int.lt (Int.sub (ShallowModel0.shallow_model self) (ShallowModel0.shallow_model rhs)) 0 -> result = Core_Option_Option_Type.C_None }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 130 16 130 91] Int.ge (Int.sub (ShallowModel0.shallow_model self) (ShallowModel0.shallow_model rhs)) 0 -> DeepModel0.deep_model result = Core_Option_Option_Type.C_Some (Int.sub (ShallowModel0.shallow_model self) (ShallowModel0.shallow_model rhs)) }
     
 end
 module Core_Time_Impl1_CheckedMul_Interface
   use prelude.UInt32
   use prelude.Int
   use prelude.UInt64
+  use prelude.Bool
   use prelude.Int
   clone CreusotContracts_Std1_Time_SecsToNanos_Stub as SecsToNanos0
   use Core_Time_Duration_Type as Core_Time_Duration_Type
@@ -554,13 +563,14 @@ module Core_Time_Impl1_CheckedMul_Interface
     function SecsToNanos0.secs_to_nanos = SecsToNanos0.secs_to_nanos,
     axiom .
   val checked_mul (self : Core_Time_Duration_Type.t_duration) (rhs : uint32) : Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 133 16 133 86] NanosToSecs0.nanos_to_secs (ShallowModel0.shallow_model self * UInt32.to_int rhs) > UInt64.to_int Max0.mAX' -> result = Core_Option_Option_Type.C_None }
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 134 16 134 114] NanosToSecs0.nanos_to_secs (ShallowModel0.shallow_model self * UInt32.to_int rhs) <= UInt64.to_int Max0.mAX' -> DeepModel0.deep_model result = Core_Option_Option_Type.C_Some (ShallowModel0.shallow_model self * UInt32.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 133 16 133 86] Int.gt (NanosToSecs0.nanos_to_secs (Int.mul (ShallowModel0.shallow_model self) (UInt32.to_int rhs))) (UInt64.to_int Max0.mAX') -> result = Core_Option_Option_Type.C_None }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 134 16 134 114] Int.le (NanosToSecs0.nanos_to_secs (Int.mul (ShallowModel0.shallow_model self) (UInt32.to_int rhs))) (UInt64.to_int Max0.mAX') -> DeepModel0.deep_model result = Core_Option_Option_Type.C_Some (Int.mul (ShallowModel0.shallow_model self) (UInt32.to_int rhs)) }
     
 end
 module Core_Time_Impl1_CheckedDiv_Interface
   use prelude.Int
   use prelude.UInt32
+  use prelude.Bool
   clone CreusotContracts_Std1_Time_SecsToNanos_Stub as SecsToNanos0
   clone Core_Num_Impl9_Max_Stub as Max0
   use prelude.Int
@@ -575,7 +585,7 @@ module Core_Time_Impl1_CheckedDiv_Interface
     type DeepModelTy0.deepModelTy = int
   val checked_div (self : Core_Time_Duration_Type.t_duration) (rhs : uint32) : Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)
     ensures { [#"../../../../creusot-contracts/src/std/time.rs" 137 16 137 58] rhs = (0 : uint32) -> result = Core_Option_Option_Type.C_None }
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 138 16 138 85] rhs <> (0 : uint32) -> DeepModel0.deep_model result = Core_Option_Option_Type.C_Some (div (ShallowModel0.shallow_model self) (UInt32.to_int rhs)) }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 138 16 138 85] rhs <> (0 : uint32) -> DeepModel0.deep_model result = Core_Option_Option_Type.C_Some (Int.div (ShallowModel0.shallow_model self) (UInt32.to_int rhs)) }
     
 end
 module Core_Time_Impl2_Add_Interface
@@ -589,8 +599,8 @@ module Core_Time_Impl2_Add_Interface
     function SecsToNanos0.secs_to_nanos = SecsToNanos0.secs_to_nanos,
     axiom .
   val add (self : Core_Time_Duration_Type.t_duration) (rhs : Core_Time_Duration_Type.t_duration) : Core_Time_Duration_Type.t_duration
-    requires {[#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] ShallowModel0.shallow_model self + ShallowModel0.shallow_model rhs <= SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX') + 999999999}
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] ShallowModel0.shallow_model self + ShallowModel0.shallow_model rhs = ShallowModel0.shallow_model result }
+    requires {[#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] Int.le (Int.add (ShallowModel0.shallow_model self) (ShallowModel0.shallow_model rhs)) (Int.add (SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX')) 999999999)}
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] Int.add (ShallowModel0.shallow_model self) (ShallowModel0.shallow_model rhs) = ShallowModel0.shallow_model result }
     
 end
 module Core_Time_Impl4_Sub_Interface
@@ -603,8 +613,8 @@ module Core_Time_Impl4_Sub_Interface
     function SecsToNanos0.secs_to_nanos = SecsToNanos0.secs_to_nanos,
     axiom .
   val sub (self : Core_Time_Duration_Type.t_duration) (rhs : Core_Time_Duration_Type.t_duration) : Core_Time_Duration_Type.t_duration
-    requires {[#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] ShallowModel0.shallow_model self - ShallowModel0.shallow_model rhs >= 0}
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] ShallowModel0.shallow_model self - ShallowModel0.shallow_model rhs = ShallowModel0.shallow_model result }
+    requires {[#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] Int.ge (Int.sub (ShallowModel0.shallow_model self) (ShallowModel0.shallow_model rhs)) 0}
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] Int.sub (ShallowModel0.shallow_model self) (ShallowModel0.shallow_model rhs) = ShallowModel0.shallow_model result }
     
 end
 module TyInv_Trivial
@@ -616,6 +626,7 @@ end
 module CreusotContracts_Std1_Time_Impl1_DeepModel_Stub
   use prelude.Int
   use prelude.UInt64
+  use prelude.Bool
   use Core_Time_Duration_Type as Core_Time_Duration_Type
   clone CreusotContracts_Std1_Time_SecsToNanos_Stub as SecsToNanos0
   clone Core_Num_Impl9_Max_Stub as Max0
@@ -628,6 +639,7 @@ end
 module CreusotContracts_Std1_Time_Impl1_DeepModel_Interface
   use prelude.Int
   use prelude.UInt64
+  use prelude.Bool
   use Core_Time_Duration_Type as Core_Time_Duration_Type
   clone CreusotContracts_Std1_Time_SecsToNanos_Stub as SecsToNanos0
   clone Core_Num_Impl9_Max_Stub as Max0
@@ -637,15 +649,16 @@ module CreusotContracts_Std1_Time_Impl1_DeepModel_Interface
     axiom .
   function deep_model (self : Core_Time_Duration_Type.t_duration) : int
   val deep_model (self : Core_Time_Duration_Type.t_duration) : int
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 25 14 25 77] result >= 0 /\ result <= SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX') + 999999999 }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 25 14 25 77] Int.ge result 0 /\ Int.le result (Int.add (SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX')) 999999999) }
     ensures { [#"../../../../creusot-contracts/src/std/time.rs" 26 14 26 44] result = ShallowModel0.shallow_model self }
     ensures { result = deep_model self }
     
-  axiom deep_model_spec : forall self : Core_Time_Duration_Type.t_duration . ([#"../../../../creusot-contracts/src/std/time.rs" 26 14 26 44] deep_model self = ShallowModel0.shallow_model self) && ([#"../../../../creusot-contracts/src/std/time.rs" 25 14 25 77] deep_model self >= 0 /\ deep_model self <= SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX') + 999999999)
+  axiom deep_model_spec : forall self : Core_Time_Duration_Type.t_duration . ([#"../../../../creusot-contracts/src/std/time.rs" 26 14 26 44] deep_model self = ShallowModel0.shallow_model self) && ([#"../../../../creusot-contracts/src/std/time.rs" 25 14 25 77] Int.ge (deep_model self) 0 /\ Int.le (deep_model self) (Int.add (SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX')) 999999999))
 end
 module CreusotContracts_Std1_Time_Impl1_DeepModel
   use prelude.Int
   use prelude.UInt64
+  use prelude.Bool
   use Core_Time_Duration_Type as Core_Time_Duration_Type
   clone CreusotContracts_Std1_Time_SecsToNanos_Stub as SecsToNanos0
   clone Core_Num_Impl9_Max_Stub as Max0
@@ -655,11 +668,11 @@ module CreusotContracts_Std1_Time_Impl1_DeepModel
     axiom .
   function deep_model (self : Core_Time_Duration_Type.t_duration) : int
   val deep_model (self : Core_Time_Duration_Type.t_duration) : int
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 25 14 25 77] result >= 0 /\ result <= SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX') + 999999999 }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 25 14 25 77] Int.ge result 0 /\ Int.le result (Int.add (SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX')) 999999999) }
     ensures { [#"../../../../creusot-contracts/src/std/time.rs" 26 14 26 44] result = ShallowModel0.shallow_model self }
     ensures { result = deep_model self }
     
-  axiom deep_model_spec : forall self : Core_Time_Duration_Type.t_duration . ([#"../../../../creusot-contracts/src/std/time.rs" 26 14 26 44] deep_model self = ShallowModel0.shallow_model self) && ([#"../../../../creusot-contracts/src/std/time.rs" 25 14 25 77] deep_model self >= 0 /\ deep_model self <= SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX') + 999999999)
+  axiom deep_model_spec : forall self : Core_Time_Duration_Type.t_duration . ([#"../../../../creusot-contracts/src/std/time.rs" 26 14 26 44] deep_model self = ShallowModel0.shallow_model self) && ([#"../../../../creusot-contracts/src/std/time.rs" 25 14 25 77] Int.ge (deep_model self) 0 /\ Int.le (deep_model self) (Int.add (SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX')) 999999999))
 end
 module Duration_TestDuration_Interface
   val test_duration [#"../duration.rs" 7 0 7 22] (_1 : ()) : ()
@@ -834,7 +847,7 @@ module Duration_TestDuration
     goto BB2
   }
   BB2 {
-    switch ([#"../duration.rs" 10 4 10 33] not ([#"../duration.rs" 10 12 10 32] _7 = ([#"../duration.rs" 10 31 10 32] [#"../duration.rs" 10 31 10 32] (0 : uint128))))
+    switch ([#"../duration.rs" 10 4 10 33] not ([#"../duration.rs" 10 12 10 32] UInt128.eq _7 ([#"../duration.rs" 10 31 10 32] [#"../duration.rs" 10 31 10 32] (0 : uint128))))
       | False -> goto BB4
       | True -> goto BB3
       end
@@ -897,7 +910,7 @@ module Duration_TestDuration
     goto BB16
   }
   BB16 {
-    switch ([#"../duration.rs" 29 4 29 34] not ([#"../duration.rs" 29 12 29 33] ([#"../duration.rs" 29 12 29 13] [#"../duration.rs" 29 12 29 13] (1 : uint64)) = _37))
+    switch ([#"../duration.rs" 29 4 29 34] not ([#"../duration.rs" 29 12 29 33] UInt64.eq ([#"../duration.rs" 29 12 29 13] [#"../duration.rs" 29 12 29 13] (1 : uint64)) _37))
       | False -> goto BB18
       | True -> goto BB17
       end
@@ -910,7 +923,7 @@ module Duration_TestDuration
     goto BB19
   }
   BB19 {
-    switch ([#"../duration.rs" 30 4 30 40] not ([#"../duration.rs" 30 12 30 39] ([#"../duration.rs" 30 12 30 13] [#"../duration.rs" 30 12 30 13] (0 : uint32)) = _43))
+    switch ([#"../duration.rs" 30 4 30 40] not ([#"../duration.rs" 30 12 30 39] UInt32.eq ([#"../duration.rs" 30 12 30 13] [#"../duration.rs" 30 12 30 13] (0 : uint32)) _43))
       | False -> goto BB21
       | True -> goto BB20
       end
@@ -923,7 +936,7 @@ module Duration_TestDuration
     goto BB22
   }
   BB22 {
-    switch ([#"../duration.rs" 31 4 31 40] not ([#"../duration.rs" 31 12 31 39] ([#"../duration.rs" 31 12 31 13] [#"../duration.rs" 31 12 31 13] (0 : uint32)) = _49))
+    switch ([#"../duration.rs" 31 4 31 40] not ([#"../duration.rs" 31 12 31 39] UInt32.eq ([#"../duration.rs" 31 12 31 13] [#"../duration.rs" 31 12 31 13] (0 : uint32)) _49))
       | False -> goto BB24
       | True -> goto BB23
       end
@@ -936,7 +949,7 @@ module Duration_TestDuration
     goto BB25
   }
   BB25 {
-    switch ([#"../duration.rs" 32 4 32 39] not ([#"../duration.rs" 32 12 32 38] ([#"../duration.rs" 32 12 32 13] [#"../duration.rs" 32 12 32 13] (0 : uint32)) = _55))
+    switch ([#"../duration.rs" 32 4 32 39] not ([#"../duration.rs" 32 12 32 38] UInt32.eq ([#"../duration.rs" 32 12 32 13] [#"../duration.rs" 32 12 32 13] (0 : uint32)) _55))
       | False -> goto BB27
       | True -> goto BB26
       end
@@ -953,7 +966,7 @@ module Duration_TestDuration
     goto BB29
   }
   BB29 {
-    switch ([#"../duration.rs" 34 4 34 69] not ([#"../duration.rs" 34 12 34 68] ([#"../duration.rs" 34 12 34 44] UInt128.of_int (UInt32.to_int _62)) = _64))
+    switch ([#"../duration.rs" 34 4 34 69] not ([#"../duration.rs" 34 12 34 68] UInt128.eq ([#"../duration.rs" 34 12 34 44] UInt128.of_int (UInt32.to_int _62)) _64))
       | False -> goto BB31
       | True -> goto BB30
       end
@@ -970,7 +983,7 @@ module Duration_TestDuration
     goto BB33
   }
   BB33 {
-    switch ([#"../duration.rs" 35 4 35 69] not ([#"../duration.rs" 35 12 35 68] ([#"../duration.rs" 35 12 35 44] UInt128.of_int (UInt32.to_int _71)) = _73))
+    switch ([#"../duration.rs" 35 4 35 69] not ([#"../duration.rs" 35 12 35 68] UInt128.eq ([#"../duration.rs" 35 12 35 44] UInt128.of_int (UInt32.to_int _71)) _73))
       | False -> goto BB35
       | True -> goto BB34
       end
@@ -987,7 +1000,7 @@ module Duration_TestDuration
     goto BB37
   }
   BB37 {
-    switch ([#"../duration.rs" 36 4 36 65] not ([#"../duration.rs" 36 12 36 64] ([#"../duration.rs" 36 12 36 42] UInt128.of_int (UInt32.to_int _80)) = _82))
+    switch ([#"../duration.rs" 36 4 36 65] not ([#"../duration.rs" 36 12 36 64] UInt128.eq ([#"../duration.rs" 36 12 36 42] UInt128.of_int (UInt32.to_int _80)) _82))
       | False -> goto BB39
       | True -> goto BB38
       end

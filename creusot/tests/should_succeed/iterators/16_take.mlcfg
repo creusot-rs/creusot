@@ -30,6 +30,7 @@ end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
+  use prelude.Bool
   predicate resolve (self : borrowed t) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
@@ -77,13 +78,14 @@ module C16Take_Impl0_Completed
   use prelude.Borrow
   use prelude.UIntSize
   use prelude.Int
+  use prelude.Bool
   clone C16Take_Common_Iterator_Completed_Stub as Completed0 with
     type self = i
   use C16Take_Take_Type as C16Take_Take_Type
   clone CreusotContracts_Resolve_Impl1_Resolve_Stub as Resolve0 with
     type t = C16Take_Take_Type.t_take i
   predicate completed [#"../16_take.rs" 22 4 22 35] (self : borrowed (C16Take_Take_Type.t_take i)) =
-    [#"../16_take.rs" 23 8 26 9] UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) = 0 /\ Resolve0.resolve self \/ UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) > 0 /\ UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) = UIntSize.to_int (C16Take_Take_Type.take_n ( ^ self)) + 1 /\ Completed0.completed {current = C16Take_Take_Type.take_iter ( * self); final = C16Take_Take_Type.take_iter ( ^ self)}
+    [#"../16_take.rs" 23 8 26 9] UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) = 0 /\ Resolve0.resolve self \/ Int.gt (UIntSize.to_int (C16Take_Take_Type.take_n ( * self))) 0 /\ UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) = Int.add (UIntSize.to_int (C16Take_Take_Type.take_n ( ^ self))) 1 /\ Completed0.completed {current = C16Take_Take_Type.take_iter ( * self); final = C16Take_Take_Type.take_iter ( ^ self)}
   val completed [#"../16_take.rs" 22 4 22 35] (self : borrowed (C16Take_Take_Type.t_take i)) : bool
     ensures { result = completed self }
     
@@ -290,6 +292,7 @@ module C16Take_Impl0_Produces
   use seq.Seq
   use prelude.UIntSize
   use prelude.Int
+  use prelude.Bool
   clone C16Take_Common_Iterator_Item_Type as Item0 with
     type self = i
   clone C16Take_Common_Iterator_Produces_Stub as Produces0 with
@@ -299,7 +302,7 @@ module C16Take_Impl0_Produces
   predicate produces [#"../16_take.rs" 31 4 31 64] (self : C16Take_Take_Type.t_take i) (visited : Seq.seq Item0.item) (o : C16Take_Take_Type.t_take i)
     
    =
-    [#"../16_take.rs" 32 8 34 9] UIntSize.to_int (C16Take_Take_Type.take_n self) = UIntSize.to_int (C16Take_Take_Type.take_n o) + Seq.length visited /\ Produces0.produces (C16Take_Take_Type.take_iter self) visited (C16Take_Take_Type.take_iter o)
+    [#"../16_take.rs" 32 8 34 9] UIntSize.to_int (C16Take_Take_Type.take_n self) = Int.add (UIntSize.to_int (C16Take_Take_Type.take_n o)) (Seq.length visited) /\ Produces0.produces (C16Take_Take_Type.take_iter self) visited (C16Take_Take_Type.take_iter o)
   val produces [#"../16_take.rs" 31 4 31 64] (self : C16Take_Take_Type.t_take i) (visited : Seq.seq Item0.item) (o : C16Take_Take_Type.t_take i) : bool
     ensures { result = produces self visited o }
     
@@ -692,13 +695,13 @@ module C16Take_Impl0_Next
     goto BB0
   }
   BB0 {
-    switch ([#"../16_take.rs" 54 11 54 22] C16Take_Take_Type.take_n ( * self) <> ([#"../16_take.rs" 54 21 54 22] [#"../16_take.rs" 54 21 54 22] (0 : usize)))
+    switch ([#"../16_take.rs" 54 11 54 22] UIntSize.ne (C16Take_Take_Type.take_n ( * self)) ([#"../16_take.rs" 54 21 54 22] [#"../16_take.rs" 54 21 54 22] (0 : usize)))
       | False -> goto BB3
       | True -> goto BB1
       end
   }
   BB1 {
-    self <- { self with current = (let C16Take_Take_Type.C_Take a b =  * self in C16Take_Take_Type.C_Take a ([#"../16_take.rs" 55 12 55 23] C16Take_Take_Type.take_n ( * self) - ([#"../16_take.rs" 55 22 55 23] [#"../16_take.rs" 55 22 55 23] (1 : usize)))) };
+    self <- { self with current = (let C16Take_Take_Type.C_Take a b =  * self in C16Take_Take_Type.C_Take a ([#"../16_take.rs" 55 12 55 23] UIntSize.sub (C16Take_Take_Type.take_n ( * self)) ([#"../16_take.rs" 55 22 55 23] [#"../16_take.rs" 55 22 55 23] (1 : usize)))) };
     _5 <- Borrow.borrow_mut (C16Take_Take_Type.take_iter ( * self));
     self <- { self with current = (let C16Take_Take_Type.C_Take a b =  * self in C16Take_Take_Type.C_Take ( ^ _5) b) };
     assume { Inv1.inv ( ^ _5) };
@@ -726,6 +729,7 @@ module C16Take_Impl0
   type i
   use prelude.Borrow
   use seq.Seq
+  use prelude.Bool
   clone C16Take_Common_Iterator_Item_Type as Item0 with
     type self = i
   use seq.Seq

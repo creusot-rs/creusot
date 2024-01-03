@@ -134,6 +134,7 @@ module CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface
 end
 module CreusotContracts_Logic_Ord_OrdLogic_LeLog
   type self
+  use prelude.Bool
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with
     type self = self
@@ -222,9 +223,8 @@ module CreusotContracts_Logic_Ord_Impl3_LeLog_Interface
 end
 module CreusotContracts_Logic_Ord_Impl3_LeLog
   use prelude.Int
-  use int.Int
   function le_log (self : int) (_2 : int) : bool =
-    Int.(<=) self _2
+    Int.le self _2
   val le_log (self : int) (_2 : int) : bool
     ensures { result = le_log self _2 }
     
@@ -232,6 +232,7 @@ end
 module CreusotContracts_Std1_Iter_Range_RangeInclusiveLen_Stub
   type idx
   use prelude.Int
+  use prelude.Bool
   use prelude.Int
   clone CreusotContracts_Logic_Ord_Impl3_LeLog_Stub as LeLog0
   use Core_Ops_Range_RangeInclusive_Type as Core_Ops_Range_RangeInclusive_Type
@@ -258,6 +259,7 @@ end
 module CreusotContracts_Std1_Iter_Range_RangeInclusiveLen_Interface
   type idx
   use prelude.Int
+  use prelude.Bool
   use prelude.Int
   clone CreusotContracts_Logic_Ord_Impl3_LeLog_Stub as LeLog0
   use Core_Ops_Range_RangeInclusive_Type as Core_Ops_Range_RangeInclusive_Type
@@ -290,6 +292,7 @@ end
 module CreusotContracts_Std1_Iter_Range_RangeInclusiveLen
   type idx
   use prelude.Int
+  use prelude.Bool
   use prelude.Int
   clone CreusotContracts_Logic_Ord_Impl3_LeLog_Stub as LeLog0
   use Core_Ops_Range_RangeInclusive_Type as Core_Ops_Range_RangeInclusive_Type
@@ -315,7 +318,7 @@ module CreusotContracts_Std1_Iter_Range_RangeInclusiveLen
     [#"../../../../creusot-contracts/src/std/iter/range.rs" 47 4 50 5] if IsEmptyLog0.is_empty_log r then
       0
     else
-      DeepModel0.deep_model (EndLog0.end_log r) - DeepModel0.deep_model (StartLog0.start_log r) + 1
+      Int.add (Int.sub (DeepModel0.deep_model (EndLog0.end_log r)) (DeepModel0.deep_model (StartLog0.start_log r))) 1
     
   val range_inclusive_len (r : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : int
     requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 46 62 46 63] Inv0.inv r}
@@ -345,6 +348,7 @@ module CreusotContracts_Std1_Iter_Range_Impl1_Produces
   type idx
   use seq.Seq
   use prelude.Int
+  use prelude.Bool
   use prelude.Int
   clone CreusotContracts_Logic_Ord_Impl3_LeLog_Stub as LeLog0
   use Core_Ops_Range_RangeInclusive_Type as Core_Ops_Range_RangeInclusive_Type
@@ -378,7 +382,7 @@ module CreusotContracts_Std1_Iter_Range_Impl1_Produces
   predicate produces (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) (visited : Seq.seq idx) (o : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx)
     
    =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 65 8 71 9] Seq.length visited = RangeInclusiveLen0.range_inclusive_len self - RangeInclusiveLen0.range_inclusive_len o /\ (IsEmptyLog0.is_empty_log self -> IsEmptyLog0.is_empty_log o) /\ (IsEmptyLog0.is_empty_log o \/ EndLog0.end_log self = EndLog0.end_log o) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> DeepModel0.deep_model (Seq.get visited i) = DeepModel0.deep_model (StartLog0.start_log self) + i)
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 65 8 71 9] Seq.length visited = Int.sub (RangeInclusiveLen0.range_inclusive_len self) (RangeInclusiveLen0.range_inclusive_len o) /\ (IsEmptyLog0.is_empty_log self -> IsEmptyLog0.is_empty_log o) /\ (IsEmptyLog0.is_empty_log o \/ EndLog0.end_log self = EndLog0.end_log o) /\ (forall i : int . Int.le 0 i /\ Int.lt i (Seq.length visited) -> DeepModel0.deep_model (Seq.get visited i) = Int.add (DeepModel0.deep_model (StartLog0.start_log self)) i)
   val produces (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) (visited : Seq.seq idx) (o : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx) : bool
     ensures { result = produces self visited o }
     
@@ -399,6 +403,7 @@ end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
+  use prelude.Bool
   predicate resolve (self : borrowed t) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
@@ -418,6 +423,7 @@ module Core_Option_Option_Type
 end
 module Core_Ops_Range_Impl7_New_Interface
   type idx
+  use prelude.Bool
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = idx
   use Core_Ops_Range_RangeInclusive_Type as Core_Ops_Range_RangeInclusive_Type
@@ -651,6 +657,7 @@ module CreusotContracts_Std1_Iter_Impl0_IntoIterPost_Interface
 end
 module CreusotContracts_Std1_Iter_Impl0_IntoIterPost
   type i
+  use prelude.Bool
   predicate into_iter_post (self : i) (res : i) =
     [#"../../../../creusot-contracts/src/std/iter.rs" 80 8 80 19] self = res
   val into_iter_post (self : i) (res : i) : bool
@@ -786,6 +793,7 @@ end
 module CreusotContracts_Std1_Iter_Range_Impl1_Completed
   type idx
   use prelude.Borrow
+  use prelude.Bool
   use prelude.Int
   use prelude.Int
   clone CreusotContracts_Logic_Ord_Impl3_LeLog_Stub as LeLog0
@@ -992,8 +1000,8 @@ module Sum_SumFirstN_Interface
   use prelude.UInt32
   use prelude.Int
   val sum_first_n [#"../sum.rs" 6 0 6 33] (n : uint32) : uint32
-    requires {[#"../sum.rs" 4 11 4 20] UInt32.to_int n < 1000}
-    ensures { [#"../sum.rs" 5 10 5 38] UInt32.to_int result = div (UInt32.to_int n * (UInt32.to_int n + 1)) 2 }
+    requires {[#"../sum.rs" 4 11 4 20] Int.lt (UInt32.to_int n) 1000}
+    ensures { [#"../sum.rs" 5 10 5 38] UInt32.to_int result = Int.div (Int.mul (UInt32.to_int n) (Int.add (UInt32.to_int n) 1)) 2 }
     
 end
 module Sum_SumFirstN
@@ -1126,8 +1134,8 @@ module Sum_SumFirstN
     predicate Inv1.inv = Inv0.inv,
     type DeepModelTy0.deepModelTy = int
   let rec cfg sum_first_n [#"../sum.rs" 6 0 6 33] [@cfg:stackify] [@cfg:subregion_analysis] (n : uint32) : uint32
-    requires {[#"../sum.rs" 4 11 4 20] UInt32.to_int n < 1000}
-    ensures { [#"../sum.rs" 5 10 5 38] UInt32.to_int result = div (UInt32.to_int n * (UInt32.to_int n + 1)) 2 }
+    requires {[#"../sum.rs" 4 11 4 20] Int.lt (UInt32.to_int n) 1000}
+    ensures { [#"../sum.rs" 5 10 5 38] UInt32.to_int result = Int.div (Int.mul (UInt32.to_int n) (Int.add (UInt32.to_int n) 1)) 2 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : uint32;
@@ -1170,7 +1178,7 @@ module Sum_SumFirstN
   BB5 {
     invariant { [#"../sum.rs" 8 4 8 67] Inv0.inv iter };
     invariant { [#"../sum.rs" 8 4 8 67] Produces0.produces (Ghost.inner iter_old) (Ghost.inner produced) iter };
-    invariant { [#"../sum.rs" 8 16 8 65] UInt32.to_int sum = div (Seq.length (Ghost.inner produced) * (Seq.length (Ghost.inner produced) + 1)) 2 };
+    invariant { [#"../sum.rs" 8 16 8 65] UInt32.to_int sum = Int.div (Int.mul (Seq.length (Ghost.inner produced)) (Int.add (Seq.length (Ghost.inner produced)) 1)) 2 };
     goto BB6
   }
   BB6 {
@@ -1208,7 +1216,7 @@ module Sum_SumFirstN
     produced <- _22;
     _22 <- any Ghost.ghost_ty (Seq.seq uint32);
     i <- __creusot_proc_iter_elem;
-    sum <- ([#"../sum.rs" 10 8 10 16] sum + i);
+    sum <- ([#"../sum.rs" 10 8 10 16] UInt32.add sum i);
     goto BB5
   }
   

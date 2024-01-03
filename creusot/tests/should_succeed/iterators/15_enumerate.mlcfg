@@ -268,6 +268,7 @@ module C15Enumerate_Impl0_Produces
   use seq.Seq
   use prelude.Int
   use prelude.UIntSize
+  use prelude.Bool
   clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
     type self = i
   use seq.Seq
@@ -280,7 +281,7 @@ module C15Enumerate_Impl0_Produces
   predicate produces [#"../15_enumerate.rs" 28 4 28 64] (self : C15Enumerate_Enumerate_Type.t_enumerate i) (visited : Seq.seq (usize, Item0.item)) (o : C15Enumerate_Enumerate_Type.t_enumerate i)
     
    =
-    [#"../15_enumerate.rs" 29 8 34 9] Seq.length visited = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count o) - UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) /\ (exists s : Seq.seq Item0.item . Inv0.inv s /\ Produces0.produces (C15Enumerate_Enumerate_Type.enumerate_iter self) s (C15Enumerate_Enumerate_Type.enumerate_iter o) /\ Seq.length visited = Seq.length s /\ (forall i : int . 0 <= i /\ i < Seq.length s -> UIntSize.to_int (let (a, _) = Seq.get visited i in a) = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + i /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
+    [#"../15_enumerate.rs" 29 8 34 9] Seq.length visited = Int.sub (UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count o)) (UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self)) /\ (exists s : Seq.seq Item0.item . Inv0.inv s /\ Produces0.produces (C15Enumerate_Enumerate_Type.enumerate_iter self) s (C15Enumerate_Enumerate_Type.enumerate_iter o) /\ Seq.length visited = Seq.length s /\ (forall i : int . Int.le 0 i /\ Int.lt i (Seq.length s) -> UIntSize.to_int (let (a, _) = Seq.get visited i in a) = Int.add (UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self)) i /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
   val produces [#"../15_enumerate.rs" 28 4 28 64] (self : C15Enumerate_Enumerate_Type.t_enumerate i) (visited : Seq.seq (usize, Item0.item)) (o : C15Enumerate_Enumerate_Type.t_enumerate i) : bool
     ensures { result = produces self visited o }
     
@@ -315,6 +316,7 @@ module C15Enumerate_Impl1_Invariant
   use prelude.UIntSize
   use prelude.Int
   use prelude.Borrow
+  use prelude.Bool
   clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
     type self = i
   use seq.Seq
@@ -332,7 +334,7 @@ module C15Enumerate_Impl1_Invariant
     type t = i
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
   predicate invariant' [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) =
-    [#"../15_enumerate.rs" 73 12 74 79] (forall i : i . forall s : Seq.seq Item0.item . Inv0.inv i -> Inv1.inv s -> Produces0.produces (C15Enumerate_Enumerate_Type.enumerate_iter self) s i -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int Max0.mAX') /\ (forall i : borrowed i . Inv2.inv i -> Completed0.completed i -> Produces0.produces ( * i) (Seq.empty ) ( ^ i))
+    [#"../15_enumerate.rs" 73 12 74 79] (forall i : i . forall s : Seq.seq Item0.item . Inv0.inv i -> Inv1.inv s -> Produces0.produces (C15Enumerate_Enumerate_Type.enumerate_iter self) s i -> Int.lt (Int.add (UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self)) (Seq.length s)) (UIntSize.to_int Max0.mAX')) /\ (forall i : borrowed i . Inv2.inv i -> Completed0.completed i -> Produces0.produces ( * i) (Seq.empty ) ( ^ i))
   val invariant' [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) : bool
     ensures { result = invariant' self }
     
@@ -690,6 +692,7 @@ end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
+  use prelude.Bool
   predicate resolve (self : borrowed t) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
@@ -902,7 +905,7 @@ module C15Enumerate_Impl0_Next
     assert { [@expl:type invariant] Inv1.inv _3 };
     assume { Resolve0.resolve _3 };
     n <- C15Enumerate_Enumerate_Type.enumerate_count ( * self);
-    self <- { self with current = (let C15Enumerate_Enumerate_Type.C_Enumerate a b =  * self in C15Enumerate_Enumerate_Type.C_Enumerate a ([#"../15_enumerate.rs" 58 16 58 31] C15Enumerate_Enumerate_Type.enumerate_count ( * self) + ([#"../15_enumerate.rs" 58 30 58 31] [#"../15_enumerate.rs" 58 30 58 31] (1 : usize)))) };
+    self <- { self with current = (let C15Enumerate_Enumerate_Type.C_Enumerate a b =  * self in C15Enumerate_Enumerate_Type.C_Enumerate a ([#"../15_enumerate.rs" 58 16 58 31] UIntSize.add (C15Enumerate_Enumerate_Type.enumerate_count ( * self)) ([#"../15_enumerate.rs" 58 30 58 31] [#"../15_enumerate.rs" 58 30 58 31] (1 : usize)))) };
     assert { [@expl:type invariant] Inv2.inv self };
     assume { Resolve1.resolve self };
     goto BB6
@@ -967,7 +970,7 @@ module C15Enumerate_Enumerate_Interface
     type t = borrowed i
   val enumerate [#"../15_enumerate.rs" 81 0 81 54] (iter : i) : C15Enumerate_Enumerate_Type.t_enumerate i
     requires {[#"../15_enumerate.rs" 79 0 79 75] forall i : borrowed i . Inv0.inv i -> Completed0.completed i -> Produces0.produces ( * i) (Seq.empty ) ( ^ i)}
-    requires {[#"../15_enumerate.rs" 80 0 80 93] forall i : i . forall s : Seq.seq Item0.item . Inv1.inv i -> Inv2.inv s -> Produces0.produces iter s i -> Seq.length s < UIntSize.to_int Max0.mAX'}
+    requires {[#"../15_enumerate.rs" 80 0 80 93] forall i : i . forall s : Seq.seq Item0.item . Inv1.inv i -> Inv2.inv s -> Produces0.produces iter s i -> Int.lt (Seq.length s) (UIntSize.to_int Max0.mAX')}
     requires {[#"../15_enumerate.rs" 81 30 81 34] Inv1.inv iter}
     ensures { [#"../15_enumerate.rs" 81 42 81 54] Inv3.inv result }
     
@@ -1038,7 +1041,7 @@ module C15Enumerate_Enumerate
     axiom .
   let rec cfg enumerate [#"../15_enumerate.rs" 81 0 81 54] [@cfg:stackify] [@cfg:subregion_analysis] (iter : i) : C15Enumerate_Enumerate_Type.t_enumerate i
     requires {[#"../15_enumerate.rs" 79 0 79 75] forall i : borrowed i . Inv0.inv i -> Completed0.completed i -> Produces0.produces ( * i) (Seq.empty ) ( ^ i)}
-    requires {[#"../15_enumerate.rs" 80 0 80 93] forall i : i . forall s : Seq.seq Item0.item . Inv1.inv i -> Inv2.inv s -> Produces0.produces iter s i -> Seq.length s < UIntSize.to_int Max0.mAX'}
+    requires {[#"../15_enumerate.rs" 80 0 80 93] forall i : i . forall s : Seq.seq Item0.item . Inv1.inv i -> Inv2.inv s -> Produces0.produces iter s i -> Int.lt (Seq.length s) (UIntSize.to_int Max0.mAX')}
     requires {[#"../15_enumerate.rs" 81 30 81 34] Inv1.inv iter}
     ensures { [#"../15_enumerate.rs" 81 42 81 54] Inv3.inv result }
     
@@ -1070,6 +1073,7 @@ module C15Enumerate_Impl0
   use prelude.Int
   use prelude.UIntSize
   use seq.Seq
+  use prelude.Bool
   clone CreusotContracts_Invariant_Inv_Interface as Inv6 with
     type t = borrowed i
   clone TyInv_Trivial as TyInv_Trivial4 with

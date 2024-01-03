@@ -18,8 +18,9 @@ module C04BinarySearch_SortedRange
   use seq.Seq
   use prelude.Int
   use prelude.UInt32
+  use prelude.Bool
   predicate sorted_range [#"../04_binary_search.rs" 8 0 8 52] (s : Seq.seq uint32) (l : int) (u : int) =
-    [#"../04_binary_search.rs" 9 4 11 5] forall j : int . forall i : int . l <= i /\ i < j /\ j < u -> Seq.get s i <= Seq.get s j
+    [#"../04_binary_search.rs" 9 4 11 5] forall j : int . forall i : int . Int.le l i /\ Int.lt i j /\ Int.lt j u -> Int.le (Seq.get s i) (Seq.get s j)
   val sorted_range [#"../04_binary_search.rs" 8 0 8 52] (s : Seq.seq uint32) (l : int) (u : int) : bool
     ensures { result = sorted_range s l u }
     
@@ -210,11 +211,11 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
   val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self}
-    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length result) (UIntSize.to_int Max0.mAX') }
     ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv result }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length (shallow_model self)) (UIntSize.to_int Max0.mAX'))
 end
 module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   type t
@@ -232,11 +233,11 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
   val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self}
-    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length result <= UIntSize.to_int Max0.mAX' }
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length result) (UIntSize.to_int Max0.mAX') }
     ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv result }
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX')
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] Inv1.inv (shallow_model self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Int.le (Seq.length (shallow_model self)) (UIntSize.to_int Max0.mAX'))
 end
 module CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub
   type t
@@ -290,8 +291,8 @@ module Alloc_Vec_Impl1_Len_Interface
   type a
   use prelude.UIntSize
   use seq.Seq
-  use prelude.Borrow
   use prelude.Int
+  use prelude.Borrow
   use seq.Seq
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel0 with
@@ -439,7 +440,7 @@ module CreusotContracts_Std1_Slice_Impl5_InBounds
   use prelude.UIntSize
   use seq.Seq
   predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) =
-    [#"../../../../../creusot-contracts/src/std/slice.rs" 108 20 108 37] UIntSize.to_int self < Seq.length seq
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 108 20 108 37] Int.lt (UIntSize.to_int self) (Seq.length seq)
   val in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) : bool
     ensures { result = in_bounds self seq }
     
@@ -466,6 +467,7 @@ module CreusotContracts_Std1_Slice_Impl5_HasValue
   use prelude.Int
   use prelude.UIntSize
   use seq.Seq
+  use prelude.Bool
   predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
     [#"../../../../../creusot-contracts/src/std/slice.rs" 115 20 115 37] Seq.get seq (UIntSize.to_int self) = out
   val has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) : bool
@@ -476,8 +478,9 @@ module C04BinarySearch_BinarySearch_Interface
   use seq.Seq
   use prelude.UIntSize
   use prelude.Int
-  use prelude.Borrow
+  use prelude.Bool
   use prelude.UInt32
+  use prelude.Borrow
   use seq.Seq
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
@@ -491,17 +494,18 @@ module C04BinarySearch_BinarySearch_Interface
     type t = Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq uint32
   val binary_search [#"../04_binary_search.rs" 26 0 26 71] (arr : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (elem : uint32) : Core_Result_Result_Type.t_result usize usize
-    requires {[#"../04_binary_search.rs" 19 11 19 36] Seq.length (ShallowModel0.shallow_model arr) <= UIntSize.to_int Max0.mAX'}
+    requires {[#"../04_binary_search.rs" 19 11 19 36] Int.le (Seq.length (ShallowModel0.shallow_model arr)) (UIntSize.to_int Max0.mAX')}
     requires {[#"../04_binary_search.rs" 20 11 20 23] Sorted0.sorted (ShallowModel0.shallow_model arr)}
     ensures { [#"../04_binary_search.rs" 21 0 21 63] forall x : usize . result = Core_Result_Result_Type.C_Ok x -> IndexLogic0.index_logic arr (UIntSize.to_int x) = elem }
-    ensures { [#"../04_binary_search.rs" 22 0 23 48] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . i < x -> IndexLogic0.index_logic arr (UIntSize.to_int i) <= elem) }
-    ensures { [#"../04_binary_search.rs" 24 0 25 65] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . x < i /\ UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model arr) -> elem < IndexLogic0.index_logic arr (UIntSize.to_int i)) }
+    ensures { [#"../04_binary_search.rs" 22 0 23 48] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . Int.lt i x -> Int.le (IndexLogic0.index_logic arr (UIntSize.to_int i)) elem) }
+    ensures { [#"../04_binary_search.rs" 24 0 25 65] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . Int.lt x i /\ Int.lt (UIntSize.to_int i) (Seq.length (ShallowModel0.shallow_model arr)) -> Int.lt elem (IndexLogic0.index_logic arr (UIntSize.to_int i))) }
     
 end
 module C04BinarySearch_BinarySearch
   use prelude.Int
   use prelude.UIntSize
   use seq.Seq
+  use prelude.Bool
   use prelude.UInt32
   use prelude.Borrow
   clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
@@ -581,11 +585,11 @@ module C04BinarySearch_BinarySearch
     predicate Inv0.inv = Inv0.inv,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   let rec cfg binary_search [#"../04_binary_search.rs" 26 0 26 71] [@cfg:stackify] [@cfg:subregion_analysis] (arr : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (elem : uint32) : Core_Result_Result_Type.t_result usize usize
-    requires {[#"../04_binary_search.rs" 19 11 19 36] Seq.length (ShallowModel0.shallow_model arr) <= UIntSize.to_int Max0.mAX'}
+    requires {[#"../04_binary_search.rs" 19 11 19 36] Int.le (Seq.length (ShallowModel0.shallow_model arr)) (UIntSize.to_int Max0.mAX')}
     requires {[#"../04_binary_search.rs" 20 11 20 23] Sorted0.sorted (ShallowModel0.shallow_model arr)}
     ensures { [#"../04_binary_search.rs" 21 0 21 63] forall x : usize . result = Core_Result_Result_Type.C_Ok x -> IndexLogic0.index_logic arr (UIntSize.to_int x) = elem }
-    ensures { [#"../04_binary_search.rs" 22 0 23 48] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . i < x -> IndexLogic0.index_logic arr (UIntSize.to_int i) <= elem) }
-    ensures { [#"../04_binary_search.rs" 24 0 25 65] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . x < i /\ UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model arr) -> elem < IndexLogic0.index_logic arr (UIntSize.to_int i)) }
+    ensures { [#"../04_binary_search.rs" 22 0 23 48] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . Int.lt i x -> Int.le (IndexLogic0.index_logic arr (UIntSize.to_int i)) elem) }
+    ensures { [#"../04_binary_search.rs" 24 0 25 65] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . Int.lt x i /\ Int.lt (UIntSize.to_int i) (Seq.length (ShallowModel0.shallow_model arr)) -> Int.lt elem (IndexLogic0.index_logic arr (UIntSize.to_int i))) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Result_Result_Type.t_result usize usize;
@@ -609,7 +613,7 @@ module C04BinarySearch_BinarySearch
     goto BB1
   }
   BB1 {
-    switch ([#"../04_binary_search.rs" 27 7 27 21] _10 = ([#"../04_binary_search.rs" 27 20 27 21] [#"../04_binary_search.rs" 27 20 27 21] (0 : usize)))
+    switch ([#"../04_binary_search.rs" 27 7 27 21] UIntSize.eq _10 ([#"../04_binary_search.rs" 27 20 27 21] [#"../04_binary_search.rs" 27 20 27 21] (0 : usize)))
       | False -> goto BB3
       | True -> goto BB2
       end
@@ -627,30 +631,30 @@ module C04BinarySearch_BinarySearch
     goto BB5
   }
   BB5 {
-    invariant { [#"../04_binary_search.rs" 33 16 33 56] 0 < UIntSize.to_int size /\ UIntSize.to_int size + UIntSize.to_int base <= Seq.length (ShallowModel0.shallow_model arr) };
-    invariant { [#"../04_binary_search.rs" 33 4 33 58] forall i : usize . i < base -> IndexLogic0.index_logic arr (UIntSize.to_int i) <= elem };
-    invariant { [#"../04_binary_search.rs" 33 4 33 58] forall i : usize . UIntSize.to_int base + UIntSize.to_int size < UIntSize.to_int i /\ UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model arr) -> elem < IndexLogic0.index_logic arr (UIntSize.to_int i) };
+    invariant { [#"../04_binary_search.rs" 33 16 33 56] Int.lt 0 (UIntSize.to_int size) /\ Int.le (Int.add (UIntSize.to_int size) (UIntSize.to_int base)) (Seq.length (ShallowModel0.shallow_model arr)) };
+    invariant { [#"../04_binary_search.rs" 33 4 33 58] forall i : usize . Int.lt i base -> Int.le (IndexLogic0.index_logic arr (UIntSize.to_int i)) elem };
+    invariant { [#"../04_binary_search.rs" 33 4 33 58] forall i : usize . Int.lt (Int.add (UIntSize.to_int base) (UIntSize.to_int size)) (UIntSize.to_int i) /\ Int.lt (UIntSize.to_int i) (Seq.length (ShallowModel0.shallow_model arr)) -> Int.lt elem (IndexLogic0.index_logic arr (UIntSize.to_int i)) };
     goto BB6
   }
   BB6 {
-    switch ([#"../04_binary_search.rs" 36 10 36 18] size > ([#"../04_binary_search.rs" 36 17 36 18] [#"../04_binary_search.rs" 36 17 36 18] (1 : usize)))
+    switch ([#"../04_binary_search.rs" 36 10 36 18] UIntSize.gt size ([#"../04_binary_search.rs" 36 17 36 18] [#"../04_binary_search.rs" 36 17 36 18] (1 : usize)))
       | False -> goto BB13
       | True -> goto BB7
       end
   }
   BB7 {
-    _25 <- ([#"../04_binary_search.rs" 37 19 37 27] ([#"../04_binary_search.rs" 37 26 37 27] [#"../04_binary_search.rs" 37 26 37 27] (2 : usize)) = ([#"../04_binary_search.rs" 37 19 37 27] [#"../04_binary_search.rs" 37 19 37 27] (0 : usize)));
+    _25 <- ([#"../04_binary_search.rs" 37 19 37 27] UIntSize.eq ([#"../04_binary_search.rs" 37 26 37 27] [#"../04_binary_search.rs" 37 26 37 27] (2 : usize)) ([#"../04_binary_search.rs" 37 19 37 27] [#"../04_binary_search.rs" 37 19 37 27] (0 : usize)));
     assert { [@expl:division by zero] [#"../04_binary_search.rs" 37 19 37 27] not _25 };
     goto BB8
   }
   BB8 {
-    half <- ([#"../04_binary_search.rs" 37 19 37 27] size / ([#"../04_binary_search.rs" 37 26 37 27] [#"../04_binary_search.rs" 37 26 37 27] (2 : usize)));
-    mid <- ([#"../04_binary_search.rs" 38 18 38 29] base + half);
+    half <- ([#"../04_binary_search.rs" 37 19 37 27] UIntSize.div size ([#"../04_binary_search.rs" 37 26 37 27] [#"../04_binary_search.rs" 37 26 37 27] (2 : usize)));
+    mid <- ([#"../04_binary_search.rs" 38 18 38 29] UIntSize.add base half);
     _32 <- ([#"../04_binary_search.rs" 40 18 40 26] Index0.index ([#"../04_binary_search.rs" 40 18 40 21] arr) mid);
     goto BB9
   }
   BB9 {
-    switch ([#"../04_binary_search.rs" 40 18 40 33] _32 > elem)
+    switch ([#"../04_binary_search.rs" 40 18 40 33] UInt32.gt _32 elem)
       | False -> goto BB11
       | True -> goto BB10
       end
@@ -666,7 +670,7 @@ module C04BinarySearch_BinarySearch
   BB12 {
     base <- _29;
     _29 <- any usize;
-    size <- ([#"../04_binary_search.rs" 41 8 41 20] size - half);
+    size <- ([#"../04_binary_search.rs" 41 8 41 20] UIntSize.sub size half);
     goto BB5
   }
   BB13 {
@@ -675,7 +679,7 @@ module C04BinarySearch_BinarySearch
   }
   BB14 {
     cmp <- _41;
-    switch ([#"../04_binary_search.rs" 45 7 45 18] cmp = elem)
+    switch ([#"../04_binary_search.rs" 45 7 45 18] UInt32.eq cmp elem)
       | False -> goto BB16
       | True -> goto BB15
       end
@@ -685,13 +689,13 @@ module C04BinarySearch_BinarySearch
     goto BB20
   }
   BB16 {
-    switch ([#"../04_binary_search.rs" 47 14 47 24] cmp < elem)
+    switch ([#"../04_binary_search.rs" 47 14 47 24] UInt32.lt cmp elem)
       | False -> goto BB18
       | True -> goto BB17
       end
   }
   BB17 {
-    _0 <- ([#"../04_binary_search.rs" 48 8 48 21] Core_Result_Result_Type.C_Err ([#"../04_binary_search.rs" 48 12 48 20] base + ([#"../04_binary_search.rs" 48 19 48 20] [#"../04_binary_search.rs" 48 19 48 20] (1 : usize))));
+    _0 <- ([#"../04_binary_search.rs" 48 8 48 21] Core_Result_Result_Type.C_Err ([#"../04_binary_search.rs" 48 12 48 20] UIntSize.add base ([#"../04_binary_search.rs" 48 19 48 20] [#"../04_binary_search.rs" 48 19 48 20] (1 : usize))));
     goto BB19
   }
   BB18 {

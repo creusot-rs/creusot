@@ -122,8 +122,9 @@ module C04Skip_Impl0_Completed
   type i
   use prelude.Borrow
   use prelude.UIntSize
-  use seq.Seq
   use prelude.Int
+  use seq.Seq
+  use prelude.Bool
   clone C04Skip_Common_Iterator_Item_Type as Item0 with
     type self = i
   use seq.Seq
@@ -140,7 +141,7 @@ module C04Skip_Impl0_Completed
     type t = borrowed i
   use C04Skip_Skip_Type as C04Skip_Skip_Type
   predicate completed [#"../04_skip.rs" 22 4 22 35] (self : borrowed (C04Skip_Skip_Type.t_skip i)) =
-    [#"../04_skip.rs" 23 8 31 9] UIntSize.to_int (C04Skip_Skip_Type.skip_n ( ^ self)) = 0 /\ (exists i : borrowed i . exists s : Seq.seq Item0.item . Inv0.inv i /\ Inv1.inv s /\ Seq.length s <= UIntSize.to_int (C04Skip_Skip_Type.skip_n ( * self)) /\ Produces0.produces (C04Skip_Skip_Type.skip_iter ( * self)) s ( * i) /\ (forall i : int . 0 <= i /\ i < Seq.length s -> Resolve0.resolve (Seq.get s i)) /\ Completed0.completed i /\  ^ i = C04Skip_Skip_Type.skip_iter ( ^ self))
+    [#"../04_skip.rs" 23 8 31 9] UIntSize.to_int (C04Skip_Skip_Type.skip_n ( ^ self)) = 0 /\ (exists i : borrowed i . exists s : Seq.seq Item0.item . Inv0.inv i /\ Inv1.inv s /\ Int.le (Seq.length s) (UIntSize.to_int (C04Skip_Skip_Type.skip_n ( * self))) /\ Produces0.produces (C04Skip_Skip_Type.skip_iter ( * self)) s ( * i) /\ (forall i : int . Int.le 0 i /\ Int.lt i (Seq.length s) -> Resolve0.resolve (Seq.get s i)) /\ Completed0.completed i /\  ^ i = C04Skip_Skip_Type.skip_iter ( ^ self))
   val completed [#"../04_skip.rs" 22 4 22 35] (self : borrowed (C04Skip_Skip_Type.t_skip i)) : bool
     ensures { result = completed self }
     
@@ -295,6 +296,7 @@ end
 module C04Skip_Impl0_Produces
   type i
   use seq.Seq
+  use prelude.Bool
   use prelude.UIntSize
   use prelude.Int
   clone C04Skip_Common_Iterator_Item_Type as Item0 with
@@ -311,7 +313,7 @@ module C04Skip_Impl0_Produces
   predicate produces [#"../04_skip.rs" 36 4 36 64] (self : C04Skip_Skip_Type.t_skip i) (visited : Seq.seq Item0.item) (o : C04Skip_Skip_Type.t_skip i)
     
    =
-    [#"../04_skip.rs" 37 8 44 9] visited = Seq.empty  /\ self = o \/ UIntSize.to_int (C04Skip_Skip_Type.skip_n o) = 0 /\ Seq.length visited > 0 /\ (exists s : Seq.seq Item0.item . Inv0.inv s /\ Seq.length s = UIntSize.to_int (C04Skip_Skip_Type.skip_n self) /\ Produces0.produces (C04Skip_Skip_Type.skip_iter self) (Seq.(++) s visited) (C04Skip_Skip_Type.skip_iter o) /\ (forall i : int . 0 <= i /\ i < Seq.length s -> Resolve0.resolve (Seq.get s i)))
+    [#"../04_skip.rs" 37 8 44 9] visited = Seq.empty  /\ self = o \/ UIntSize.to_int (C04Skip_Skip_Type.skip_n o) = 0 /\ Int.gt (Seq.length visited) 0 /\ (exists s : Seq.seq Item0.item . Inv0.inv s /\ Seq.length s = UIntSize.to_int (C04Skip_Skip_Type.skip_n self) /\ Produces0.produces (C04Skip_Skip_Type.skip_iter self) (Seq.(++) s visited) (C04Skip_Skip_Type.skip_iter o) /\ (forall i : int . Int.le 0 i /\ Int.lt i (Seq.length s) -> Resolve0.resolve (Seq.get s i)))
   val produces [#"../04_skip.rs" 36 4 36 64] (self : C04Skip_Skip_Type.t_skip i) (visited : Seq.seq Item0.item) (o : C04Skip_Skip_Type.t_skip i) : bool
     ensures { result = produces self visited o }
     
@@ -590,6 +592,7 @@ end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
+  use prelude.Bool
   predicate resolve (self : borrowed t) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve (self : borrowed t) : bool
@@ -645,6 +648,7 @@ end
 module Core_Mem_Take_Interface
   type t
   use prelude.Borrow
+  use prelude.Bool
   clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
     type t = t
   clone CreusotContracts_Std1_Default_Default_IsDefault_Stub as IsDefault0 with
@@ -738,6 +742,7 @@ module C04Skip_Impl0_Next
   use prelude.Int
   use prelude.UIntSize
   use seq.Seq
+  use prelude.Bool
   clone C04Skip_Common_Iterator_Item_Type as Item0 with
     type self = i
   use seq.Seq
@@ -912,9 +917,9 @@ module C04Skip_Impl0_Next
     goto BB4
   }
   BB4 {
-    invariant { [#"../04_skip.rs" 67 20 67 53] Seq.length (Ghost.inner skipped) + UIntSize.to_int n = UIntSize.to_int (C04Skip_Skip_Type.skip_n ( * Ghost.inner old_self)) };
+    invariant { [#"../04_skip.rs" 67 20 67 53] Int.add (Seq.length (Ghost.inner skipped)) (UIntSize.to_int n) = UIntSize.to_int (C04Skip_Skip_Type.skip_n ( * Ghost.inner old_self)) };
     invariant { [#"../04_skip.rs" 67 8 67 55] Produces0.produces (C04Skip_Skip_Type.skip_iter ( * Ghost.inner old_self)) (Ghost.inner skipped) (C04Skip_Skip_Type.skip_iter ( * self)) };
-    invariant { [#"../04_skip.rs" 67 8 67 55] forall i : int . 0 <= i /\ i < Seq.length (Ghost.inner skipped) -> Resolve3.resolve (IndexLogic0.index_logic skipped i) };
+    invariant { [#"../04_skip.rs" 67 8 67 55] forall i : int . Int.le 0 i /\ Int.lt i (Seq.length (Ghost.inner skipped)) -> Resolve3.resolve (IndexLogic0.index_logic skipped i) };
     invariant { [#"../04_skip.rs" 70 20 70 35] UIntSize.to_int (C04Skip_Skip_Type.skip_n ( * self)) = 0 };
     invariant { [#"../04_skip.rs" 71 20 71 29] Inv2.inv self };
     goto BB5
@@ -928,7 +933,7 @@ module C04Skip_Impl0_Next
     goto BB6
   }
   BB6 {
-    switch ([#"../04_skip.rs" 74 15 74 21] n = ([#"../04_skip.rs" 74 20 74 21] [#"../04_skip.rs" 74 20 74 21] (0 : usize)))
+    switch ([#"../04_skip.rs" 74 15 74 21] UIntSize.eq n ([#"../04_skip.rs" 74 20 74 21] [#"../04_skip.rs" 74 20 74 21] (0 : usize)))
       | False -> goto BB8
       | True -> goto BB7
       end
@@ -971,7 +976,7 @@ module C04Skip_Impl0_Next
     _25 <- any Ghost.ghost_ty (Seq.seq Item0.item);
     assert { [@expl:type invariant] Inv1.inv skipped };
     assume { Resolve2.resolve skipped };
-    n <- ([#"../04_skip.rs" 79 16 79 22] n - ([#"../04_skip.rs" 79 21 79 22] [#"../04_skip.rs" 79 21 79 22] (1 : usize)));
+    n <- ([#"../04_skip.rs" 79 16 79 22] UIntSize.sub n ([#"../04_skip.rs" 79 21 79 22] [#"../04_skip.rs" 79 21 79 22] (1 : usize)));
     goto BB13
   }
   BB13 {
@@ -991,6 +996,7 @@ end
 module C04Skip_Impl0
   type i
   use seq.Seq
+  use prelude.Bool
   use prelude.Borrow
   clone CreusotContracts_Invariant_Inv_Interface as Inv4 with
     type t = borrowed i

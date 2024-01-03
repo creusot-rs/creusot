@@ -26,7 +26,7 @@ module NonZero_Impl0_Invariant
   use prelude.Int
   use NonZero_NonZeroU32_Type as NonZero_NonZeroU32_Type
   predicate invariant' [#"../non_zero.rs" 9 4 9 30] (self : NonZero_NonZeroU32_Type.t_nonzerou32) =
-    [#"../non_zero.rs" 10 20 10 31] UInt32.to_int (NonZero_NonZeroU32_Type.nonzerou32_0 self) > 0
+    [#"../non_zero.rs" 10 20 10 31] Int.gt (UInt32.to_int (NonZero_NonZeroU32_Type.nonzerou32_0 self)) 0
   val invariant' [#"../non_zero.rs" 9 4 9 30] (self : NonZero_NonZeroU32_Type.t_nonzerou32) : bool
     ensures { result = invariant' self }
     
@@ -64,7 +64,7 @@ module NonZero_Impl1_New_Interface
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = NonZero_NonZeroU32_Type.t_nonzerou32
   val new [#"../non_zero.rs" 16 4 16 30] (n : uint32) : NonZero_NonZeroU32_Type.t_nonzerou32
-    requires {[#"../non_zero.rs" 15 15 15 21] UInt32.to_int n > 0}
+    requires {[#"../non_zero.rs" 15 15 15 21] Int.gt (UInt32.to_int n) 0}
     ensures { [#"../non_zero.rs" 16 26 16 30] Inv0.inv result }
     
 end
@@ -80,7 +80,7 @@ module NonZero_Impl1_New
     predicate Invariant0.invariant' = Invariant0.invariant',
     axiom .
   let rec cfg new [#"../non_zero.rs" 16 4 16 30] [@cfg:stackify] [@cfg:subregion_analysis] (n : uint32) : NonZero_NonZeroU32_Type.t_nonzerou32
-    requires {[#"../non_zero.rs" 15 15 15 21] UInt32.to_int n > 0}
+    requires {[#"../non_zero.rs" 15 15 15 21] Int.gt (UInt32.to_int n) 0}
     ensures { [#"../non_zero.rs" 16 26 16 30] Inv0.inv result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -114,7 +114,7 @@ module NonZero_Impl1_Add_Interface
     type t = NonZero_NonZeroU32_Type.t_nonzerou32
   clone Core_Num_Impl8_Max_Stub as Max0
   val add [#"../non_zero.rs" 21 4 21 39] (self : NonZero_NonZeroU32_Type.t_nonzerou32) (rhs : NonZero_NonZeroU32_Type.t_nonzerou32) : NonZero_NonZeroU32_Type.t_nonzerou32
-    requires {[#"../non_zero.rs" 20 15 20 44] UInt32.to_int (NonZero_NonZeroU32_Type.nonzerou32_0 self) + UInt32.to_int (NonZero_NonZeroU32_Type.nonzerou32_0 rhs) <= UInt32.to_int Max0.mAX'}
+    requires {[#"../non_zero.rs" 20 15 20 44] Int.le (Int.add (UInt32.to_int (NonZero_NonZeroU32_Type.nonzerou32_0 self)) (UInt32.to_int (NonZero_NonZeroU32_Type.nonzerou32_0 rhs))) (UInt32.to_int Max0.mAX')}
     requires {[#"../non_zero.rs" 21 15 21 19] Inv0.inv self}
     requires {[#"../non_zero.rs" 21 21 21 24] Inv0.inv rhs}
     ensures { [#"../non_zero.rs" 21 35 21 39] Inv0.inv result }
@@ -133,7 +133,7 @@ module NonZero_Impl1_Add
     axiom .
   clone Core_Num_Impl8_Max as Max0
   let rec cfg add [#"../non_zero.rs" 21 4 21 39] [@cfg:stackify] [@cfg:subregion_analysis] (self : NonZero_NonZeroU32_Type.t_nonzerou32) (rhs : NonZero_NonZeroU32_Type.t_nonzerou32) : NonZero_NonZeroU32_Type.t_nonzerou32
-    requires {[#"../non_zero.rs" 20 15 20 44] UInt32.to_int (NonZero_NonZeroU32_Type.nonzerou32_0 self) + UInt32.to_int (NonZero_NonZeroU32_Type.nonzerou32_0 rhs) <= UInt32.to_int Max0.mAX'}
+    requires {[#"../non_zero.rs" 20 15 20 44] Int.le (Int.add (UInt32.to_int (NonZero_NonZeroU32_Type.nonzerou32_0 self)) (UInt32.to_int (NonZero_NonZeroU32_Type.nonzerou32_0 rhs))) (UInt32.to_int Max0.mAX')}
     requires {[#"../non_zero.rs" 21 15 21 19] Inv0.inv self}
     requires {[#"../non_zero.rs" 21 21 21 24] Inv0.inv rhs}
     ensures { [#"../non_zero.rs" 21 35 21 39] Inv0.inv result }
@@ -146,7 +146,7 @@ module NonZero_Impl1_Add
     goto BB0
   }
   BB0 {
-    _0 <- ([#"../non_zero.rs" 22 8 22 28] NonZero_NonZeroU32_Type.C_NonZeroU32 ([#"../non_zero.rs" 22 13 22 27] NonZero_NonZeroU32_Type.nonzerou32_0 self + NonZero_NonZeroU32_Type.nonzerou32_0 rhs));
+    _0 <- ([#"../non_zero.rs" 22 8 22 28] NonZero_NonZeroU32_Type.C_NonZeroU32 ([#"../non_zero.rs" 22 13 22 27] UInt32.add (NonZero_NonZeroU32_Type.nonzerou32_0 self) (NonZero_NonZeroU32_Type.nonzerou32_0 rhs)));
     return _0
   }
   
@@ -171,7 +171,7 @@ module NonZero_Impl1_SubPre
   predicate sub_pre [#"../non_zero.rs" 27 4 27 43] (self : NonZero_NonZeroU32_Type.t_nonzerou32) (rhs : NonZero_NonZeroU32_Type.t_nonzerou32)
     
    =
-    [#"../non_zero.rs" 28 20 28 36] UInt32.to_int (NonZero_NonZeroU32_Type.nonzerou32_0 self) > UInt32.to_int (NonZero_NonZeroU32_Type.nonzerou32_0 rhs)
+    [#"../non_zero.rs" 28 20 28 36] Int.gt (UInt32.to_int (NonZero_NonZeroU32_Type.nonzerou32_0 self)) (UInt32.to_int (NonZero_NonZeroU32_Type.nonzerou32_0 rhs))
   val sub_pre [#"../non_zero.rs" 27 4 27 43] (self : NonZero_NonZeroU32_Type.t_nonzerou32) (rhs : NonZero_NonZeroU32_Type.t_nonzerou32) : bool
     ensures { result = sub_pre self rhs }
     
@@ -281,7 +281,7 @@ module NonZero_Impl1_Sub
     goto BB0
   }
   BB0 {
-    _0 <- ([#"../non_zero.rs" 41 8 41 28] NonZero_NonZeroU32_Type.C_NonZeroU32 ([#"../non_zero.rs" 41 13 41 27] NonZero_NonZeroU32_Type.nonzerou32_0 self - NonZero_NonZeroU32_Type.nonzerou32_0 rhs));
+    _0 <- ([#"../non_zero.rs" 41 8 41 28] NonZero_NonZeroU32_Type.C_NonZeroU32 ([#"../non_zero.rs" 41 13 41 27] UInt32.sub (NonZero_NonZeroU32_Type.nonzerou32_0 self) (NonZero_NonZeroU32_Type.nonzerou32_0 rhs)));
     return _0
   }
   
