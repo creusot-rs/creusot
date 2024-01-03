@@ -13,7 +13,7 @@ use rustc_span::{Span, Symbol};
 use rustc_target::abi::Size;
 
 use super::{
-    fmir::Expr,
+    fmir::{Expr, ExprKind},
     pearlite::{Term, TermKind},
 };
 
@@ -36,7 +36,7 @@ pub(crate) fn from_mir_constant_kind<'tcx>(
     }
 
     if ck.ty().is_unit() {
-        return Expr::Tuple(Vec::new());
+        return Expr { kind: ExprKind::Tuple(Vec::new()), ty: ck.ty(), span };
     }
 
     if ck.ty().peel_refs().is_str() {
@@ -49,27 +49,39 @@ pub(crate) fn from_mir_constant_kind<'tcx>(
                 .unwrap();
             let string = std::str::from_utf8(bytes).unwrap();
 
-            return Expr::Constant(Term {
-                kind: TermKind::Lit(Literal::String(string.into())),
+            return Expr {
                 ty: ck.ty(),
                 span,
-            });
+                kind: ExprKind::Constant(Term {
+                    kind: TermKind::Lit(Literal::String(string.into())),
+                    ty: ck.ty(),
+                    span,
+                }),
+            };
         }
     }
 
     if let ConstantKind::Unevaluated(UnevaluatedConst { promoted: Some(p), .. }, _) = ck {
-        return Expr::Constant(Term {
-            kind: TermKind::Var(Symbol::intern(&format!("promoted{:?}", p.as_usize()))),
+        return Expr {
+            kind: ExprKind::Constant(Term {
+                kind: TermKind::Var(Symbol::intern(&format!("promoted{:?}", p.as_usize()))),
+                ty: ck.ty(),
+                span,
+            }),
             ty: ck.ty(),
             span,
-        });
+        };
     }
 
-    return Expr::Constant(Term {
-        kind: TermKind::Lit(try_to_bits(ctx, env, ck.ty(), span, ck)),
+    return Expr {
+        kind: ExprKind::Constant(Term {
+            kind: TermKind::Lit(try_to_bits(ctx, env, ck.ty(), span, ck)),
+            ty: ck.ty(),
+            span,
+        }),
         ty: ck.ty(),
         span,
-    });
+    };
 }
 
 pub(crate) fn from_ty_const<'tcx>(
@@ -82,18 +94,22 @@ pub(crate) fn from_ty_const<'tcx>(
     // Builtin constants are given a body which panics
     if let ConstKind::Unevaluated(u) = c.kind() &&
        let Some(_) = get_builtin(ctx.tcx, u.def) {
-            return Expr::Constant(Term { kind: TermKind::Lit(Literal::Function(u.def, u.substs)), ty: c.ty(), span})
+            return Expr { kind: ExprKind::Constant(Term { kind: TermKind::Lit(Literal::Function(u.def, u.substs)), ty: c.ty(), span}), ty: c.ty(), span }
     };
 
     if let ConstKind::Param(_) = c.kind() {
         ctx.crash_and_error(span, "const generic parameters are not yet supported");
     }
 
-    return Expr::Constant(Term {
-        kind: TermKind::Lit(try_to_bits(ctx, env, c.ty(), span, c)),
+    return Expr {
+        kind: ExprKind::Constant(Term {
+            kind: TermKind::Lit(try_to_bits(ctx, env, c.ty(), span, c)),
+            ty: c.ty(),
+            span,
+        }),
         ty: c.ty(),
         span,
-    });
+    };
 }
 
 fn try_to_bits<'tcx, C: ToBits<'tcx>>(
