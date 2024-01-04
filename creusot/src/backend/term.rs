@@ -87,8 +87,11 @@ impl<'tcx> Lower<'_, 'tcx> {
                             (Exp::Var("b".into(), self.pure), Some(rhs))
                         };
 
-                        let mut inner =
+                        let inner =
                             binop_to_binop(self.ctx.tcx, self.names, op, ty, Purity::Logic, a, b);
+
+                        let mut inner =
+                            Exp::Pure(Box::new(inner));
 
                         if let Some(lhs) = lhs {
                             inner = Exp::Let {
@@ -426,6 +429,8 @@ fn binop_to_binop<'tcx>(
         (pearlite::BinOp::Le, _) => module.push_ident("le"),
         (pearlite::BinOp::Gt, _) => module.push_ident("gt"),
         (pearlite::BinOp::Ge, _) => module.push_ident("ge"),
+        (pearlite::BinOp::Eq, Purity::Program) => module.push_ident("eq"),
+        (pearlite::BinOp::Ne, Purity::Program) => module.push_ident("ne"),
         (pearlite::BinOp::Eq, Purity::Logic) => return left.eq(right),
         (pearlite::BinOp::Ne, Purity::Logic) => return left.neq(right),
         (pearlite::BinOp::And, Purity::Logic) => {
@@ -440,7 +445,7 @@ fn binop_to_binop<'tcx>(
         (pearlite::BinOp::Or, Purity::Program) => {
             return Exp::BinaryOp(BinOp::LazyOr, Box::new(left), Box::new(right))
         }
-        _ => unreachable!(),
+        _ => unreachable!("{op:?} {purity:?}"),
     }
 
     module = module.without_search_path();
