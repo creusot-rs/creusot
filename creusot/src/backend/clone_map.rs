@@ -101,22 +101,17 @@ pub struct CloneMap<'tcx> {
     // Track how many instances of a name already exist
     name_counts: IndexMap<Symbol, usize>,
 
-    // Indicates the desired level of information in clones
-    // - Stub: serves purely in logical function definitions to get around the limitations of `clone`
-    // - Interface: Will clone only the interface of used modules
-    // - Body: Will directly use the full body of dependencies, except for program functions
-    clone_level: CloneLevel,
-
     // TransId of the item which is cloning. Used for trait resolution
     self_id: TransId,
     // TODO: Push the graph into an opaque type with tight api boundary
     // Graph which is used to calculate the full clone set
-    clone_graph: DiGraphMap<DepNode<'tcx>, IndexSet<(Kind, SymbolKind)>>,
+    /// Graph of clones rooted at `self_id`, the edges are labeled with the level at which a dependence occurs along with any names which must be substituted
+    clone_graph: DiGraphMap<DepNode<'tcx>, (CloneLevel, IndexSet<(Kind, SymbolKind)>)>,
     // Index of the last cloned entry
     last_cloned: usize,
 
     // Internal state to determine whether clones should be public or not
-    public: bool,
+    dep_level: CloneLevel,
 
     // Used to ensure we only have a single `use` per type.
     used_types: IndexSet<DefId>,
@@ -170,8 +165,8 @@ enum CloneOpacity {
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub struct CloneInfo {
     kind: Kind,
-    cloned: bool,
-    public: bool,
+    /// The highest 'visibility' this clone is visible from
+    level: CloneLevel,
     opaque: CloneOpacity,
 }
 
@@ -186,17 +181,12 @@ impl Into<CloneKind> for Kind {
 }
 
 impl<'tcx> CloneInfo {
-    fn from_name(name: Symbol, public: bool) -> Self {
-        CloneInfo { kind: Kind::Named(name), cloned: false, public, opaque: CloneOpacity::Default }
+    fn from_name(name: Symbol, level: CloneLevel) -> Self {
+        CloneInfo { kind: Kind::Named(name), level, opaque: CloneOpacity::Default }
     }
 
     fn hidden() -> Self {
-        CloneInfo {
-            kind: Kind::Hidden,
-            cloned: false,
-            public: false,
-            opaque: CloneOpacity::Default,
-        }
+        CloneInfo { kind: Kind::Hidden, level: CloneLevel::Body, opaque: CloneOpacity::Default }
     }
 
     pub(crate) fn opaque(&mut self) {
@@ -209,7 +199,7 @@ impl<'tcx> CloneInfo {
 }
 
 impl<'tcx> CloneMap<'tcx> {
-    pub(crate) fn new(tcx: TyCtxt<'tcx>, self_id: TransId, clone_level: CloneLevel) -> Self {
+    pub(crate) fn new(tcx: TyCtxt<'tcx>, self_id: TransId) -> Self {
         let mut names = IndexMap::new();
 
         debug!("cloning self: {:?}", self_id);
@@ -221,10 +211,9 @@ impl<'tcx> CloneMap<'tcx> {
             names,
             name_counts: Default::default(),
             prelude: IndexMap::new(),
-            clone_level,
             clone_graph: DiGraphMap::new(),
             last_cloned: 0,
-            public: false,
+            dep_level: CloneLevel::Body,
             used_types: Default::default(),
         }
     }
@@ -239,13 +228,13 @@ impl<'tcx> CloneMap<'tcx> {
             .collect()
     }
 
-    pub(crate) fn with_public_clones<F, A>(&mut self, f: F) -> A
+    pub(crate) fn with_vis<F, A>(&mut self, vis: CloneLevel, f: F) -> A
     where
         F: FnOnce(&mut Self) -> A,
     {
-        let public = std::mem::replace(&mut self.public, true);
+        let public = std::mem::replace(&mut self.dep_level, vis);
         let ret = f(self);
-        self.public = public;
+        self.dep_level = public;
         ret
     }
 
@@ -264,7 +253,7 @@ impl<'tcx> CloneMap<'tcx> {
             if let CloneNode::Type(ty) = key && !matches!(ty.kind(), TyKind::Alias(_, _)) {
                 return if let Some((did, _)) = key.did() {
                     let name = Symbol::intern(&*module_name(self.tcx, did));
-                    CloneInfo::from_name(name, self.public)
+                    CloneInfo::from_name(name, self.dep_level)
                 } else {
                     CloneInfo::hidden()
                 };
@@ -287,7 +276,7 @@ impl<'tcx> CloneMap<'tcx> {
 
             let count: usize = *self.name_counts.entry(base).and_modify(|c| *c += 1).or_insert(0);
             trace!("inserting {key:?} as {base}{count}");
-            CloneInfo::from_name(Symbol::intern(&format!("{base}{count}")), self.public)
+            CloneInfo::from_name(Symbol::intern(&format!("{base}{count}")), self.dep_level)
         })
     }
 
@@ -398,7 +387,7 @@ impl<'tcx> CloneMap<'tcx> {
     }
 
     // Update the clone graph with new entries
-    fn update_graph(&mut self, ctx: &mut Why3Generator<'tcx>) {
+    fn update_graph(&mut self, ctx: &mut Why3Generator<'tcx>, depth: CloneDepth) {
         // Construct a maximal sharing graph for all dependencies.
         // We build edges between each (function, subst) pair, following the call graph
         // Additionally, when the substitution refers to an associated type, we construct
@@ -413,11 +402,11 @@ impl<'tcx> CloneMap<'tcx> {
             let key = *self.names.get_index(i).unwrap().0;
 
             i += 1;
-            trace!("update graph with {:?} (public={:?})", key, self.names[&key].public);
+            trace!("update graph with {:?} (public={:?})", key, self.names[&key].level);
 
             let self_key = self.self_key();
             if key != self_key {
-                self.add_graph_edge(self_key, key);
+                self.add_graph_edge(self_key, key, CloneLevel::Root);
             }
 
             if self.names[&key].kind == Kind::Hidden {
@@ -435,13 +424,13 @@ impl<'tcx> CloneMap<'tcx> {
 
                 ctx.translate(did);
 
-                if util::is_inv_internal(self.tcx, did) && self.clone_level == CloneLevel::Body {
+                if util::is_inv_internal(self.tcx, did) && depth == CloneDepth::Deep {
                     let ty = subst.type_at(0);
                     let ty = ctx.try_normalize_erasing_regions(param_env, ty).unwrap_or(ty);
                     self.clone_tyinv(ctx, param_env, ty);
                 }
 
-                self.clone_laws(ctx, did, subst);
+                self.clone_laws(ctx, did, subst, depth);
             }
 
             self.clone_dependencies(ctx, key);
@@ -469,7 +458,7 @@ impl<'tcx> CloneMap<'tcx> {
     }
 
     fn clone_dependencies(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
-        let key_public = self.names[&key].public;
+        let key_public = self.names[&key].level;
 
         if let Some((id, key_subst)) = key.did() {
             if util::item_type(ctx.tcx, id) == ItemType::Type {
@@ -485,8 +474,9 @@ impl<'tcx> CloneMap<'tcx> {
                         .unwrap_or(false);
 
                     if !is_type {
-                        self.insert(node).public |= key_public;
-                        self.add_graph_edge(key, node);
+                        let info = self.insert(node);
+                        info.level = info.level.min(key_public);
+                        self.add_graph_edge(key, node, CloneLevel::Stub);
                     }
                 }
             }
@@ -507,41 +497,42 @@ impl<'tcx> CloneMap<'tcx> {
                 };
 
                 if let Some(node) = node {
-                    self.insert(node).public |= key_public;
-                    self.add_graph_edge(key, node);
+                    let info = self.insert(node);
+                    info.level = info.level.min(key_public);
+                    self.add_graph_edge(key, node, CloneLevel::Stub);
                 }
             });
         }
 
-        let opaque_clone = !matches!(self.clone_level, CloneLevel::Body)
-            || self.names[&key].opaque == CloneOpacity::Opaque;
+        // let opaque_clone = !matches!(self.clone_level, CloneLevel::Body)
+        //     || self.names[&key].opaque == CloneOpacity::Opaque;
 
         trace!(
-            "cloning dependencies of {:?} {:?}, len={:?}, opaque={opaque_clone}",
+            "cloning dependencies of {:?} {:?}, len={:?}",
             self.names[&key].kind,
             key,
             ctx.dependencies(key).map(|d| d.len())
         );
-        for (dep, info) in ctx.dependencies(key).iter().flat_map(|i| i.iter()) {
-            if opaque_clone && !info.public && !key.is_inv() {
-                continue;
-            }
 
-            trace!("adding dependency {:?} {:?}", dep, info.public);
+        for (dep, info) in ctx.dependencies(key).iter().flat_map(|i| i.iter()) {
+            trace!("adding dependency {:?} {:?}", dep, info.level);
 
             let orig = dep;
 
             let dep = self.resolve_dep(ctx, dep.subst(self.tcx, key));
 
             trace!("inserting dependency {:?} {:?}", key, dep);
-            self.insert(dep).public |= key_public && info.public;
+            // self.with_vis(key_public, |nm| { nm.insert(dep); });
+            let dep_info = self.insert(dep);
+
+            dep_info.level = dep_info.level.min(key_public.max(info.level));
 
             // Skip reflexive edges
             if dep == key {
                 continue;
             }
 
-            let edge_set = self.add_graph_edge(key, dep);
+            let edge_set = self.add_graph_edge(key, dep, info.level);
             if let Some(sym) = refineable_symbol(ctx.tcx, *orig) {
                 edge_set.insert((info.kind, sym));
             }
@@ -553,16 +544,17 @@ impl<'tcx> CloneMap<'tcx> {
         &mut self,
         user: DepNode<'tcx>,
         prov: DepNode<'tcx>,
+        level: CloneLevel,
     ) -> &mut IndexSet<(Kind, SymbolKind)> {
         let k1 = &self.names[&user].kind;
         let k2 = &self.names[&prov].kind;
         trace!("edge {k1:?} = {:?} --> {k2:?} = {:?}", user, prov);
 
         if let None = self.clone_graph.edge_weight_mut(user, prov) {
-            self.clone_graph.add_edge(user, prov, IndexSet::new());
+            self.clone_graph.add_edge(user, prov, (level, IndexSet::new()));
         };
 
-        self.clone_graph.edge_weight_mut(user, prov).unwrap()
+        &mut self.clone_graph.edge_weight_mut(user, prov).unwrap().1
     }
 
     // Given an initial substitution, find out the substituted and resolved version of the dependency `dep`.
@@ -578,9 +570,14 @@ impl<'tcx> CloneMap<'tcx> {
         ctx: &mut TranslationCtx<'tcx>,
         key_did: DefId,
         key_subst: SubstsRef<'tcx>,
+        depth: CloneDepth,
     ) {
         let Some(item) = ctx.tcx.opt_associated_item(key_did) else { return };
         let Some(self_did) = self.self_did() else { return };
+
+        if depth == CloneDepth::Shallow {
+            return;
+        }
 
         // Dont clone laws into the trait / impl which defines them.
         if let Some(self_item) = ctx.tcx.opt_associated_item(self_did)
@@ -594,21 +591,22 @@ impl<'tcx> CloneMap<'tcx> {
             return;
         }
 
-        if self.clone_level == CloneLevel::Stub {
-            return;
-        }
-
         let tcx = ctx.tcx;
         for law in ctx.laws(item.container_id(tcx)) {
             trace!("adding law {:?} in {:?}", *law, self.self_id);
 
             // No way the substitution is correct...
             let law = self.insert(DepNode::new(tcx, (*law, key_subst)));
-            law.public = false;
+            law.level = CloneLevel::Body;
         }
     }
 
-    fn build_clone(&mut self, ctx: &mut Why3Generator<'tcx>, item: DepNode<'tcx>) -> Option<Decl> {
+    fn build_clone(
+        &mut self,
+        ctx: &mut Why3Generator<'tcx>,
+        item: DepNode<'tcx>,
+        depth: CloneDepth,
+    ) -> Option<Decl> {
         // Types can't be cloned, but are used (for now).
         if let DepNode::Type(_) = item {
             let (def_id, _) = item.did()?;
@@ -632,9 +630,20 @@ impl<'tcx> CloneMap<'tcx> {
 
         let outbound: Vec<_> = self.clone_graph.neighbors_directed(item, Outgoing).collect();
 
+        let clone_level = match (depth, self.names[&item].opaque) {
+            (CloneDepth::Deep, CloneOpacity::Opaque) => CloneLevel::Interface,
+            (CloneDepth::Deep, _) => CloneLevel::Body,
+            (CloneDepth::Shallow, _) => CloneLevel::Stub,
+        };
+
+        let level_of_item = clone_level;
         // Grab definitions from all of our dependencies
         for dep in outbound {
-            let syms = &self.clone_graph[(item, dep)];
+            let (edge_level, syms) = &self.clone_graph[(item, dep)];
+
+            if *edge_level > level_of_item {
+                continue;
+            };
             trace!("dependency={:?} of={:?} syms={:?}", dep, item, syms);
 
             match dep {
@@ -663,11 +672,6 @@ impl<'tcx> CloneMap<'tcx> {
             clone_subst.push(CloneSubst::Axiom(None))
         }
 
-        let clone_level = match (self.clone_level, self.names[&item].opaque) {
-            (CloneLevel::Body, CloneOpacity::Opaque) => CloneLevel::Interface,
-            (x, _) => x,
-        };
-
         trace!(
             "emit clone node={item:?} name={:?} as={:?}",
             cloneable_name(ctx, item, clone_level),
@@ -684,14 +688,16 @@ impl<'tcx> CloneMap<'tcx> {
     pub(crate) fn to_clones(
         mut self,
         ctx: &mut Why3Generator<'tcx>,
+        depth: CloneDepth,
     ) -> (Vec<Decl>, CloneSummary<'tcx>) {
         trace!("emitting clones for {:?}", self.self_id);
         let mut decls = Vec::new();
 
         use petgraph::visit::Walker;
+        let mut roots: IndexSet<_> = self.names.keys().cloned().collect();
 
         // Update the clone graph with any new entries.
-        self.update_graph(ctx);
+        self.update_graph(ctx, depth);
 
         trace!(
             "dep_graph processed={} nodes={} edges={}",
@@ -708,12 +714,27 @@ impl<'tcx> CloneMap<'tcx> {
         //     "clone graph for {:?} is cyclic",
         //     self.self_id
         // );
+        //
+
+        let mut i = 0;
+
+        while i < roots.len() {
+            let r = roots.get_index(i).unwrap();
+            for (_, e, (l, _)) in self.clone_graph.edges_directed(*r, Outgoing) {
+                if *l == CloneLevel::Stub {
+                    roots.insert(e);
+                }
+            }
+            i += 1
+        }
+
+        let mut cloned = IndexSet::new();
 
         let mut topo = DfsPostOrder::new(&self.clone_graph, self.self_key());
         while let Some(node) = topo.walk_next(&self.clone_graph) {
             trace!("processing node {:?}", self.names[&node].kind);
 
-            if std::mem::replace(&mut self.names[&node].cloned, true) {
+            if !cloned.insert(node) {
                 continue;
             }
 
@@ -721,12 +742,20 @@ impl<'tcx> CloneMap<'tcx> {
                 continue;
             }
 
-            let Some(decl) = self.build_clone(ctx, node) else { continue };
+            if !roots.contains(&node) && depth == CloneDepth::Shallow {
+                // eprintln!("Not cloning {node:?} at {:?} {:?}", self.names[&node].level, depth);
+                continue;
+            }
+
+            let Some(decl) = self.build_clone(ctx, node, depth) else { continue };
             decls.push(decl);
         }
 
         // debug_assert!(topo.finished.len() >= self.names.len(), "missed a clone in {:?}", self.self_id);
 
+        let mut summary = self.summary();
+
+        summary.retain(|k, _| roots.contains(k));
         let clones = self
             .prelude
             .iter_mut()
@@ -738,7 +767,7 @@ impl<'tcx> CloneMap<'tcx> {
             .map(|q| Decl::UseDecl(Use { name: q.clone(), as_: None, export: false }))
             .chain(decls.into_iter())
             .collect();
-        (clones, self.summary())
+        (clones, summary)
     }
 
     // For debugging the clone graph
@@ -780,6 +809,12 @@ impl<'tcx> CloneMap<'tcx> {
     }
 }
 
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+pub enum CloneDepth {
+    Shallow,
+    Deep,
+}
+
 pub(crate) fn base_subst<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
@@ -809,11 +844,12 @@ pub(crate) fn base_subst<'tcx>(
 
 // Which kind of module should we clone
 // TODO: Unify with `CloneOpacity`
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, TyDecodable, TyEncodable, Debug, Hash)]
 pub enum CloneLevel {
     Stub,
     Interface,
     Body,
+    Root,
 }
 
 fn cloneable_name(ctx: &TranslationCtx, dep: DepNode, clone_level: CloneLevel) -> QName {
@@ -834,7 +870,7 @@ fn cloneable_name(ctx: &TranslationCtx, dep: DepNode, clone_level: CloneLevel) -
             },
             // Why do we do this? Why not use the stub here as well?
             CloneLevel::Interface => interface::interface_name(ctx, def_id).into(),
-            CloneLevel::Body => module_name(ctx.tcx, def_id).into(),
+            CloneLevel::Body | CloneLevel::Root => module_name(ctx.tcx, def_id).into(),
         },
         Constant => match clone_level {
             CloneLevel::Body => module_name(ctx.tcx, def_id).into(),

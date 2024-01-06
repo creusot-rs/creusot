@@ -21,7 +21,7 @@ pub(crate) fn interface_for<'tcx>(
     def_id: DefId,
 ) -> (Module, CloneSummary<'tcx>) {
     debug!("interface_for: {def_id:?}");
-    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into());
     let mut sig = signature_of(ctx, &mut names, def_id);
 
     sig.contract.variant = Vec::new();
@@ -71,7 +71,7 @@ pub(crate) fn interface_for<'tcx>(
     }
 
     let name = interface_name(ctx, def_id);
-    let (clones, summary) = names.to_clones(ctx);
+    let (clones, summary) = names.to_clones(ctx, CloneDepth::Shallow);
     let decls = closure_generic_decls(ctx.tcx, def_id)
         .chain(closure_type_use(ctx, def_id))
         .chain(clones)

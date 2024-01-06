@@ -1,7 +1,7 @@
 use super::{
     clone_map::{CloneLevel, CloneMap, CloneSummary},
     term::lower_pure,
-    Why3Generator,
+    CloneDepth, Why3Generator,
 };
 use crate::{
     backend,
@@ -16,7 +16,7 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
     let tcx = ctx.tcx;
     let data = ctx.trait_impl(def_id).clone();
 
-    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Body);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into());
 
     let mut decls: Vec<_> = own_generic_decls_for(ctx.tcx, def_id).collect();
     let mut refn_decls = Vec::new();
@@ -31,7 +31,7 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
         }));
     }
 
-    let (clones, _) = names.to_clones(ctx);
+    let (clones, _) = names.to_clones(ctx, CloneDepth::Deep);
     decls.extend(clones);
     decls.extend(refn_decls);
 
@@ -42,13 +42,13 @@ impl<'tcx> Why3Generator<'tcx> {
     pub(crate) fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
         assert_eq!(util::item_type(self.tcx, def_id), ItemType::AssocTy);
 
-        let mut names = CloneMap::new(self.tcx, def_id.into(), CloneLevel::Interface);
+        let mut names = CloneMap::new(self.tcx, def_id.into());
 
         let mut decls: Vec<_> = all_generic_decls_for(self.tcx, def_id).collect();
         let name = item_name(self.tcx, def_id, Namespace::TypeNS);
 
         let ty_decl = match self.tcx.associated_item(def_id).container {
-            rustc_middle::ty::ImplContainer => names.with_public_clones(|names| {
+            rustc_middle::ty::ImplContainer => names.with_vis(CloneLevel::Stub, |names| {
                 let assoc_ty = self.tcx.type_of(def_id).subst_identity();
                 TyDecl::Alias {
                     ty_name: name.clone(),
@@ -63,7 +63,7 @@ impl<'tcx> Why3Generator<'tcx> {
 
         decls.push(Decl::TyDecl(ty_decl));
 
-        let (clones, summary) = names.to_clones(self);
+        let (clones, summary) = names.to_clones(self, CloneDepth::Shallow);
         decls.extend(clones);
 
         (Module { name: module_name(self.tcx, def_id), decls }, summary)

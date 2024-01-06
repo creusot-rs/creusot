@@ -14,7 +14,7 @@ use crate::{
     },
 };
 
-use super::{term::lower_pure, Why3Generator};
+use super::{term::lower_pure, CloneLevel, Why3Generator};
 
 pub(crate) fn signature_of<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
@@ -34,12 +34,13 @@ pub(crate) fn sig_to_why3<'tcx>(
     // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
     def_id: DefId,
 ) -> Signature {
-    let contract = names.with_public_clones(|names| contract_to_why3(pre_sig.contract, ctx, names));
+    let contract = names
+        .with_vis(CloneLevel::Interface, |names| contract_to_why3(pre_sig.contract, ctx, names));
 
     let name = item_name(ctx.tcx, def_id, Namespace::ValueNS);
 
     let span = ctx.tcx.def_span(def_id);
-    let args: Vec<Binder> = names.with_public_clones(|names| {
+    let args: Vec<Binder> = names.with_vis(CloneLevel::Stub, |names| {
         pre_sig
             .inputs
             .into_iter()
@@ -64,8 +65,9 @@ pub(crate) fn sig_to_why3<'tcx>(
         .and_then(|span| ctx.span_attr(span))
         .map(|attr| attrs.push(attr));
 
-    let retty = names
-        .with_public_clones(|names| backend::ty::translate_ty(ctx, names, span, pre_sig.output));
+    let retty = names.with_vis(CloneLevel::Stub, |names| {
+        backend::ty::translate_ty(ctx, names, span, pre_sig.output)
+    });
     let trigger = if ctx.opts.simple_triggers
         && should_replace_trigger(ctx.tcx, def_id)
         && retty != Type::UNIT

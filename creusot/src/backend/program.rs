@@ -1,8 +1,8 @@
 use super::{
-    clone_map::{CloneLevel, PreludeModule},
+    clone_map::PreludeModule,
     signature::signature_of,
     term::{lower_impure, lower_pure},
-    Why3Generator,
+    CloneDepth, Why3Generator,
 };
 use crate::{
     backend::{
@@ -39,13 +39,13 @@ use why3::{
 use super::signature::sig_to_why3;
 
 fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
-    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Body);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into());
     let mut decls = Vec::new();
 
     let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).subst_identity().kind() else { unreachable!() };
     let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
 
-    let (clones, _) = names.to_clones(ctx);
+    let (clones, _) = names.to_clones(ctx, CloneDepth::Deep);
     decls.extend(
         // Definitely a hack but good enough for the moment
         clones.into_iter().filter(|d| matches!(d, Decl::UseDecl(_))),
@@ -154,7 +154,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     def_id: DefId,
 ) -> Option<Module> {
     let tcx = ctx.tcx;
-    let mut names = CloneMap::new(tcx, def_id.into(), CloneLevel::Body);
+    let mut names = CloneMap::new(tcx, def_id.into());
 
     let body_ids = collect_body_ids(ctx, def_id)?;
     let body = to_why(ctx, &mut names, body_ids[0]);
@@ -170,7 +170,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
         .map(|body_id| lower_promoted(ctx, &mut names, *body_id))
         .collect::<Vec<_>>();
 
-    let (clones, _) = names.to_clones(ctx);
+    let (clones, _) = names.to_clones(ctx, CloneDepth::Deep);
 
     let decls = closure_generic_decls(ctx.tcx, def_id)
         .chain(closure_type_use(ctx, def_id))
