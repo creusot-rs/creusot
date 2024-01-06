@@ -141,7 +141,7 @@ pub(crate) fn build_inv_module<'tcx>(
     let mut names = CloneMap::new(ctx.tcx, TransId::TyInv(inv_kind));
     let generics = inv_kind.generics(ctx.tcx);
     let inv_axiom =
-        names.with_vis(CloneLevel::Interface, |names| build_inv_axiom(ctx, names, inv_kind));
+        names.with_vis(CloneLevel::Contract, |names| build_inv_axiom(ctx, names, inv_kind));
 
     let mut decls = vec![];
     decls.extend(

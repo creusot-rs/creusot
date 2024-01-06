@@ -35,12 +35,12 @@ pub(crate) fn sig_to_why3<'tcx>(
     def_id: DefId,
 ) -> Signature {
     let contract = names
-        .with_vis(CloneLevel::Interface, |names| contract_to_why3(pre_sig.contract, ctx, names));
+        .with_vis(CloneLevel::Contract, |names| contract_to_why3(pre_sig.contract, ctx, names));
 
     let name = item_name(ctx.tcx, def_id, Namespace::ValueNS);
 
     let span = ctx.tcx.def_span(def_id);
-    let args: Vec<Binder> = names.with_vis(CloneLevel::Stub, |names| {
+    let args: Vec<Binder> = names.with_vis(CloneLevel::Signature, |names| {
         pre_sig
             .inputs
             .into_iter()
@@ -65,7 +65,7 @@ pub(crate) fn sig_to_why3<'tcx>(
         .and_then(|span| ctx.span_attr(span))
         .map(|attr| attrs.push(attr));
 
-    let retty = names.with_vis(CloneLevel::Stub, |names| {
+    let retty = names.with_vis(CloneLevel::Signature, |names| {
         backend::ty::translate_ty(ctx, names, span, pre_sig.output)
     });
     let trigger = if ctx.opts.simple_triggers

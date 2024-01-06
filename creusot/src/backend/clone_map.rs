@@ -134,7 +134,6 @@ impl<'tcx> Drop for CloneMap<'tcx> {
 enum Kind {
     Named(Symbol),
     Hidden,
-    Export,
 }
 
 impl Kind {
@@ -144,6 +143,15 @@ impl Kind {
             _ => Vec::new(),
         };
         QName { module, name: method }
+    }
+}
+
+impl Into<CloneKind> for Kind {
+    fn into(self) -> CloneKind {
+        match self {
+            Kind::Named(i) => CloneKind::Named(i.to_string().into()),
+            Kind::Hidden => CloneKind::Bare,
+        }
     }
 }
 
@@ -162,22 +170,15 @@ enum CloneOpacity {
     Default,
 }
 
+/// Metadata about a specific clone including the name provided for that clone
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub struct CloneInfo {
+    /// The name of the clone, with is effectively an `Option<String>`
     kind: Kind,
     /// The highest 'visibility' this clone is visible from
     level: CloneLevel,
+    /// Whether this clone is opaque (hides the body of logical functions)
     opaque: CloneOpacity,
-}
-
-impl Into<CloneKind> for Kind {
-    fn into(self) -> CloneKind {
-        match self {
-            Kind::Named(i) => CloneKind::Named(i.to_string().into()),
-            Kind::Hidden => CloneKind::Bare,
-            Kind::Export => CloneKind::Export,
-        }
-    }
 }
 
 impl<'tcx> CloneInfo {
@@ -196,6 +197,22 @@ impl<'tcx> CloneInfo {
     fn qname_ident(&self, method: Ident) -> QName {
         self.kind.qname_ident(method)
     }
+
+    /// Sets level to the minimum of the current level or the provided one
+    fn join_level(&mut self, level: CloneLevel) {
+        self.level = self.level.min(level);
+    }
+}
+
+/// Determines whether we clone only the names of symbols or if we want
+/// to clone the 'whole thing' (aka contracts and logical function bodies)
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+pub enum CloneDepth {
+    /// Clone the minimal amount, providing only the names (and types) of symbols
+    Shallow,
+    /// 'The whole she-bang', clone the entire required graph, providing the complete definitions
+    /// for logical functions and the contracts for program functions.
+    Deep,
 }
 
 impl<'tcx> CloneMap<'tcx> {
@@ -474,9 +491,8 @@ impl<'tcx> CloneMap<'tcx> {
                         .unwrap_or(false);
 
                     if !is_type {
-                        let info = self.insert(node);
-                        info.level = info.level.min(key_public);
-                        self.add_graph_edge(key, node, CloneLevel::Stub);
+                        self.insert(node).join_level(key_public);
+                        self.add_graph_edge(key, node, CloneLevel::Signature);
                     }
                 }
             }
@@ -497,9 +513,8 @@ impl<'tcx> CloneMap<'tcx> {
                 };
 
                 if let Some(node) = node {
-                    let info = self.insert(node);
-                    info.level = info.level.min(key_public);
-                    self.add_graph_edge(key, node, CloneLevel::Stub);
+                    self.insert(node).join_level(key_public);
+                    self.add_graph_edge(key, node, CloneLevel::Signature);
                 }
             });
         }
@@ -522,10 +537,7 @@ impl<'tcx> CloneMap<'tcx> {
             let dep = self.resolve_dep(ctx, dep.subst(self.tcx, key));
 
             trace!("inserting dependency {:?} {:?}", key, dep);
-            // self.with_vis(key_public, |nm| { nm.insert(dep); });
-            let dep_info = self.insert(dep);
-
-            dep_info.level = dep_info.level.min(key_public.max(info.level));
+            self.insert(dep).join_level(key_public.max(info.level));
 
             // Skip reflexive edges
             if dep == key {
@@ -630,13 +642,15 @@ impl<'tcx> CloneMap<'tcx> {
 
         let outbound: Vec<_> = self.clone_graph.neighbors_directed(item, Outgoing).collect();
 
-        let clone_level = match (depth, self.names[&item].opaque) {
-            (CloneDepth::Deep, CloneOpacity::Opaque) => CloneLevel::Interface,
+        let level_of_item = match (depth, self.names[&item].opaque) {
+            // We are requesting a deep clone of an opaque thing: stop at the contract
+            (CloneDepth::Deep, CloneOpacity::Opaque) => CloneLevel::Contract,
+            // Otherwise, go deep and get the body
             (CloneDepth::Deep, _) => CloneLevel::Body,
-            (CloneDepth::Shallow, _) => CloneLevel::Stub,
+            // If we are only doing shallow clones, stop at the signature (no contracts)
+            (CloneDepth::Shallow, _) => CloneLevel::Signature,
         };
 
-        let level_of_item = clone_level;
         // Grab definitions from all of our dependencies
         for dep in outbound {
             let (edge_level, syms) = &self.clone_graph[(item, dep)];
@@ -674,12 +688,12 @@ impl<'tcx> CloneMap<'tcx> {
 
         trace!(
             "emit clone node={item:?} name={:?} as={:?}",
-            cloneable_name(ctx, item, clone_level),
+            cloneable_name(ctx, item, level_of_item),
             self.names[&item].kind.clone()
         );
 
         Some(Decl::Clone(DeclClone {
-            name: cloneable_name(ctx, item, clone_level),
+            name: cloneable_name(ctx, item, level_of_item),
             subst: clone_subst,
             kind: self.names[&item].kind.clone().into(),
         }))
@@ -707,21 +721,14 @@ impl<'tcx> CloneMap<'tcx> {
         );
 
         self.last_cloned = self.names.len();
-
-        // // Broken because of closures which share a defid for the type *and* function
-        // debug_assert!(
-        //     !petgraph::algo::is_cyclic_directed(&self.clone_graph),
-        //     "clone graph for {:?} is cyclic",
-        //     self.self_id
-        // );
-        //
-
         let mut i = 0;
 
+        // The `roots` are the clones which were explicitly requested by the user, but we must extend those to include any associated types which
+        // may appear in the signature of another root clone.
         while i < roots.len() {
             let r = roots.get_index(i).unwrap();
             for (_, e, (l, _)) in self.clone_graph.edges_directed(*r, Outgoing) {
-                if *l == CloneLevel::Stub {
+                if *l == CloneLevel::Signature {
                     roots.insert(e);
                 }
             }
@@ -743,7 +750,6 @@ impl<'tcx> CloneMap<'tcx> {
             }
 
             if !roots.contains(&node) && depth == CloneDepth::Shallow {
-                // eprintln!("Not cloning {node:?} at {:?} {:?}", self.names[&node].level, depth);
                 continue;
             }
 
@@ -754,8 +760,9 @@ impl<'tcx> CloneMap<'tcx> {
         // debug_assert!(topo.finished.len() >= self.names.len(), "missed a clone in {:?}", self.self_id);
 
         let mut summary = self.summary();
-
+        // Only return the roots (direct dependencies) of the graph as dependencies
         summary.retain(|k, _| roots.contains(k));
+
         let clones = self
             .prelude
             .iter_mut()
@@ -809,12 +816,6 @@ impl<'tcx> CloneMap<'tcx> {
     }
 }
 
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
-pub enum CloneDepth {
-    Shallow,
-    Deep,
-}
-
 pub(crate) fn base_subst<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
@@ -842,13 +843,16 @@ pub(crate) fn base_subst<'tcx>(
     clone_substs
 }
 
-// Which kind of module should we clone
-// TODO: Unify with `CloneOpacity`
+/// Which level a clone appears at, determines its visibility in the different modules generated by Creusot
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, TyDecodable, TyEncodable, Debug, Hash)]
-pub enum CloneLevel {
-    Stub,
-    Interface,
+pub(crate) enum CloneLevel {
+    /// This clone appears in a function signature or type
+    Signature,
+    /// This clone occurs in the contract of a function
+    Contract,
+    /// This clone occurs in the body of a program or logical function.
     Body,
+    /// This clone is an artificial edge internally injected to 'root' clones
     Root,
 }
 
@@ -864,12 +868,12 @@ fn cloneable_name(ctx: &TranslationCtx, dep: DepNode, clone_level: CloneLevel) -
     // TODO: Refactor.
     match util::item_type(ctx.tcx, def_id) {
         Ghost | Logic | Predicate | Impl => match clone_level {
-            CloneLevel::Stub => QName {
+            CloneLevel::Signature => QName {
                 module: Vec::new(),
                 name: format!("{}_Stub", &*module_name(ctx.tcx, def_id)).into(),
             },
             // Why do we do this? Why not use the stub here as well?
-            CloneLevel::Interface => interface::interface_name(ctx, def_id).into(),
+            CloneLevel::Contract => interface::interface_name(ctx, def_id).into(),
             CloneLevel::Body | CloneLevel::Root => module_name(ctx.tcx, def_id).into(),
         },
         Constant => match clone_level {

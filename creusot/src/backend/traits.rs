@@ -48,7 +48,7 @@ impl<'tcx> Why3Generator<'tcx> {
         let name = item_name(self.tcx, def_id, Namespace::TypeNS);
 
         let ty_decl = match self.tcx.associated_item(def_id).container {
-            rustc_middle::ty::ImplContainer => names.with_vis(CloneLevel::Stub, |names| {
+            rustc_middle::ty::ImplContainer => names.with_vis(CloneLevel::Signature, |names| {
                 let assoc_ty = self.tcx.type_of(def_id).subst_identity();
                 TyDecl::Alias {
                     ty_name: name.clone(),
