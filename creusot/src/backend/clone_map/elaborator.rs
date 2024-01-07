@@ -1,7 +1,6 @@
 use std::iter;
 
 use indexmap::IndexSet;
-use petgraph::EdgeDirection::Outgoing;
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::ParamEnv;
 use rustc_span::DUMMY_SP;
@@ -68,9 +67,9 @@ impl<'tcx> CloneElaborator<'tcx> {
         let mut clone_subst = base_subst(ctx, self.param_env, names, item);
         trace!("base substs of {item:?}: {clone_subst:?}");
 
-        let outbound: Vec<_> = deps.neighbors_directed(item, Outgoing).collect();
+        let outbound: Vec<_> = deps.dependencies(item).collect();
 
-        let level_of_item = match (depth, names.names[&item].opaque) {
+        let level_of_item = match (depth, deps.info(item).opaque) {
             // We are requesting a deep clone of an opaque thing: stop at the contract
             (CloneDepth::Deep, CloneOpacity::Opaque) => CloneLevel::Contract,
             // Otherwise, go deep and get the body
@@ -80,10 +79,8 @@ impl<'tcx> CloneElaborator<'tcx> {
         };
 
         // Grab definitions from all of our dependencies
-        for dep in outbound {
-            let (edge_level, syms) = &deps[(item, dep)];
-
-            if *edge_level > level_of_item {
+        for (edge_level, syms, dep) in outbound {
+            if edge_level > level_of_item {
                 continue;
             };
             trace!("dependency={:?} of={:?} syms={:?}", dep, item, syms);
@@ -98,7 +95,7 @@ impl<'tcx> CloneElaborator<'tcx> {
                 }
                 _ => {
                     for (nm, sym) in syms {
-                        let elem = sym.to_subst(*nm, names.names[&dep].kind);
+                        let elem = sym.to_subst(*nm, deps.info(dep).kind);
                         clone_subst.push(elem);
                     }
                 }
@@ -117,13 +114,13 @@ impl<'tcx> CloneElaborator<'tcx> {
         trace!(
             "emit clone node={item:?} name={:?} as={:?}",
             cloneable_name(ctx, item, level_of_item),
-            names.names[&item].kind.clone()
+            deps.info(item).kind.clone()
         );
 
         Some(Decl::Clone(DeclClone {
             name: cloneable_name(ctx, item, level_of_item),
             subst: clone_subst,
-            kind: names.names[&item].kind.clone().into(),
+            kind: deps.info(item).kind.clone().into(),
         }))
     }
 }
