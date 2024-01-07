@@ -548,18 +548,17 @@ impl<'tcx> CloneMap<'tcx> {
         // Update the clone graph with any new entries.
         let clone_graph = graph.update_graph(ctx, depth);
 
-        let mut i = 0;
-
-        // The `roots` are the clones which were explicitly requested by the user, but we must extend those to include any associated types which
-        // may appear in the signature of another root clone.
-        while i < roots.len() {
-            let r = roots.get_index(i).unwrap();
-            for (l, _, e) in clone_graph.dependencies(*r) {
-                if l == CloneLevel::Signature {
-                    roots.insert(e);
+        {   // Update `roots` to include any associated types which appear in the signature of another root.
+            let mut i = 0;
+            while i < roots.len() {
+                let r = roots.get_index(i).unwrap();
+                for (l, _, e) in clone_graph.dependencies(*r) {
+                    if l == CloneLevel::Signature {
+                        roots.insert(e);
+                    }
                 }
+                i += 1
             }
-            i += 1
         }
 
         let mut elab = CloneElaborator::new(param_env);

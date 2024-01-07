@@ -52,6 +52,12 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     ) -> DepGraph<'tcx> {
         let self_key = CloneNode::from_trans_id(ctx.tcx, self.self_id);
 
+        // for key in &self.expansion_queue {
+        //     if *key != self_key {
+        //         self.clone_graph.add_graph_edge(self_key, *key, CloneLevel::Root);
+        //     }
+        // }
+
         while let Some(key) = self.expansion_queue.pop_front() {
             trace!("update graph with {:?} (public={:?})", key, self.clone_graph.info(key).level);
 
@@ -80,69 +86,72 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 if util::is_inv_internal(ctx.tcx, did) && depth == CloneDepth::Deep {
                     let ty = subst.type_at(0);
                     let ty = ctx.try_normalize_erasing_regions(self.param_env, ty).unwrap_or(ty);
-                    self.clone_tyinv(ctx, self.param_env, ty);
+                    self.expand_ty_inv(ctx, self.param_env, ty);
                 }
 
-                self.clone_laws(ctx, did, subst, depth);
+                self.expand_laws(ctx, did, subst, depth);
             }
 
-            self.clone_dependencies(ctx, key);
+            self.expand_subst(ctx, key);
+            self.expand_projections(ctx, key);
+            self.expand_dependencies(ctx, key);
         }
 
         self.clone_graph
     }
 
-    fn clone_dependencies(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
+    fn expand_projections(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
+        let Some((id, _)) = key.did() else { return; };
+        let ItemType::Type = util::item_type(ctx.tcx, id) else {return; };
+
         let key_public = self.clone_graph.info(key).level;
 
-        if let Some((id, key_subst)) = key.did() {
-            if util::item_type(ctx.tcx, id) == ItemType::Type {
-                for p in ctx.projections_in_ty(id).to_owned() {
-                    let node = self.resolve_dep(
-                        ctx,
-                        CloneNode::new(ctx.tcx, (p.def_id, p.substs)).subst(ctx.tcx, key),
-                    );
+        for p in ctx.projections_in_ty(id).to_owned() {
+            let node = self.resolve_dep(
+                ctx,
+                CloneNode::new(ctx.tcx, (p.def_id, p.substs)).subst(ctx.tcx, key),
+            );
 
-                    let is_type = self
-                        .self_did()
-                        .map(|did| util::item_type(ctx.tcx, did) == ItemType::Type)
-                        .unwrap_or(false);
+            let is_type = self
+                .self_did()
+                .map(|did| util::item_type(ctx.tcx, did) == ItemType::Type)
+                .unwrap_or(false);
 
-                    if !is_type {
-                        self.add_node(node, key_public);
-                        self.clone_graph.add_graph_edge(key, node, CloneLevel::Signature);
-                    }
-                }
+            if !is_type {
+                self.add_node(node, key_public);
+                self.clone_graph.add_graph_edge(key, node, CloneLevel::Signature);
             }
-
-            // Check the substitution for node dependencies on closures
-            walk_types(key_subst, |t| {
-                let node = match t.kind() {
-                    TyKind::Alias(AliasKind::Projection, pty) => {
-                        let node = CloneNode::new(ctx.tcx, (pty.def_id, pty.substs));
-                        Some(self.resolve_dep(ctx, node))
-                    }
-                    TyKind::Closure(id, subst) => {
-                        // Sketchy... shouldn't we need to do something to subst?
-                        Some(CloneNode::new(ctx.tcx, (*id, *subst)))
-                    }
-                    TyKind::Adt(_, _) => Some(CloneNode::Type(t)),
-                    _ => None,
-                };
-
-                if let Some(node) = node {
-                    self.add_node(node, key_public);
-                    self.clone_graph.add_graph_edge(key, node, CloneLevel::Signature);
-                }
-            });
         }
+    }
 
-        // trace!(
-        //     "cloning dependencies of {:?} {:?}, len={:?}",
-        //     self.names[&key].kind,
-        //     key,
-        //     ctx.dependencies(key).map(|d| d.len())
-        // );
+    fn expand_subst(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
+        let Some((_, key_subst)) = key.did() else { return; };
+        let key_public = self.clone_graph.info(key).level;
+
+        // Check the substitution for node dependencies on closures
+        walk_types(key_subst, |t| {
+            let node = match t.kind() {
+                TyKind::Alias(AliasKind::Projection, pty) => {
+                    let node = CloneNode::new(ctx.tcx, (pty.def_id, pty.substs));
+                    Some(self.resolve_dep(ctx, node))
+                }
+                TyKind::Closure(id, subst) => {
+                    // Sketchy... shouldn't we need to do something to subst?
+                    Some(CloneNode::new(ctx.tcx, (*id, *subst)))
+                }
+                TyKind::Adt(_, _) => Some(CloneNode::Type(t)),
+                _ => None,
+            };
+
+            if let Some(node) = node {
+                self.add_node(node, key_public);
+                self.clone_graph.add_graph_edge(key, node, CloneLevel::Signature);
+            }
+        });
+    }
+
+    fn expand_dependencies(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
+        let key_public = self.clone_graph.info(key).level;
 
         for (dep, info) in ctx.dependencies(key).iter().flat_map(|i| i.iter()) {
             trace!("adding dependency {:?} {:?}", dep, info.level);
@@ -166,7 +175,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         }
     }
 
-    fn clone_tyinv(
+    fn expand_ty_inv(
         &mut self,
         ctx: &mut Why3Generator<'tcx>,
         param_env: ParamEnv<'tcx>,
@@ -186,7 +195,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         self.add_node(DepNode::TyInv(ty, inv_kind), CloneLevel::Body);
     }
 
-    fn clone_laws(
+    fn expand_laws(
         &mut self,
         ctx: &mut TranslationCtx<'tcx>,
         key_did: DefId,
@@ -206,6 +215,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             return;
         }
 
+        // TODO: Push out of graph expansion
         // If the function we are cloning into is `#[trusted]` there is no need for laws.
         // Similarily, if it has no body, there will be no proofs.
         if util::is_trusted(ctx.tcx, self_did) || !util::has_body(ctx, self_did) {
