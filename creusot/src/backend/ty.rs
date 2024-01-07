@@ -48,19 +48,19 @@ enum TyTranslation {
 }
 
 // Translate a type usage
-pub(crate) fn translate_ty<'tcx>(
+pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut N,
     span: Span,
     ty: Ty<'tcx>,
 ) -> MlT {
     translate_ty_inner(TyTranslation::Usage, ctx, names, span, ty)
 }
 
-fn translate_ty_inner<'tcx>(
+fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
     trans: TyTranslation,
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut N,
     span: Span,
     ty: Ty<'tcx>,
 ) -> MlT {
@@ -192,18 +192,18 @@ fn translate_ty_inner<'tcx>(
     }
 }
 
-fn translate_projection_ty<'tcx>(
+fn translate_projection_ty<'tcx, N: Namer<'tcx>>(
     mode: TyTranslation,
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut N,
     pty: &AliasTy<'tcx>,
 ) -> MlT {
     if let TyTranslation::Declaration(id) = mode {
         let ix = ctx.projections_in_ty(id).iter().position(|t| t == pty).unwrap();
         return MlT::TVar(Ident::build(&format!("proj{ix}")));
     } else {
-        #[allow(deprecated)]
-        let proj_ty = names.projection(ctx, *pty);
+        let ty = ctx.mk_alias(AliasKind::Projection, *pty);
+        let proj_ty = names.normalize(ctx, ty);
         if let TyKind::Alias(AliasKind::Projection, aty) = proj_ty.kind() {
             return MlT::TConstructor(names.ty(aty.def_id, aty.substs));
         };
@@ -666,7 +666,10 @@ pub(crate) fn build_closure_accessor<'tcx>(
     (pre_sig, term)
 }
 
-pub(crate) fn intty_to_ty(names: &mut CloneMap<'_>, ity: &rustc_middle::ty::IntTy) -> MlT {
+pub(crate) fn intty_to_ty<'tcx, N: Namer<'tcx>>(
+    names: &mut N,
+    ity: &rustc_middle::ty::IntTy,
+) -> MlT {
     use rustc_middle::ty::IntTy::*;
     names.import_prelude_module(PreludeModule::Int);
 
@@ -698,7 +701,10 @@ pub(crate) fn intty_to_ty(names: &mut CloneMap<'_>, ity: &rustc_middle::ty::IntT
     }
 }
 
-pub(crate) fn uintty_to_ty(names: &mut CloneMap<'_>, ity: &rustc_middle::ty::UintTy) -> MlT {
+pub(crate) fn uintty_to_ty<'tcx, N: Namer<'tcx>>(
+    names: &mut N,
+    ity: &rustc_middle::ty::UintTy,
+) -> MlT {
     use rustc_middle::ty::UintTy::*;
     names.import_prelude_module(PreludeModule::Int);
 
@@ -730,7 +736,10 @@ pub(crate) fn uintty_to_ty(names: &mut CloneMap<'_>, ity: &rustc_middle::ty::Uin
     }
 }
 
-pub(crate) fn floatty_to_ty(names: &mut CloneMap<'_>, fty: &rustc_middle::ty::FloatTy) -> MlT {
+pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(
+    names: &mut N,
+    fty: &rustc_middle::ty::FloatTy,
+) -> MlT {
     use rustc_middle::ty::FloatTy::*;
 
     match fty {
