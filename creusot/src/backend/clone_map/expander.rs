@@ -7,6 +7,8 @@ use crate::{backend::ty_inv, translation::traits};
 
 use super::*;
 
+/// The `Expander` takes a list of 'root' dependencies (items explicitly requested by user code),
+/// and expands this into a complete dependency graph.
 pub(super) struct Expander<'tcx> {
     pub clone_graph: DiGraphMap<DepNode<'tcx>, (CloneLevel, IndexSet<(Kind, SymbolKind)>)>,
     pub clone_map: CloneMap<'tcx>,
@@ -16,7 +18,7 @@ impl<'tcx> Expander<'tcx> {
     pub fn new(names: CloneMap<'tcx>) -> Self {
         Self { clone_graph: Default::default(), clone_map: names }
     }
-    // Update the clone graph with new entries
+    /// Expand the graph with new entries
     pub fn update_graph(&mut self, ctx: &mut Why3Generator<'tcx>, depth: CloneDepth) {
         // Construct a maximal sharing graph for all dependencies.
         // We build edges between each (function, subst) pair, following the call graph

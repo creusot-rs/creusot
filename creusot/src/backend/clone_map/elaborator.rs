@@ -24,6 +24,9 @@ use crate::{
 
 use super::{DepGraph, DepNode};
 
+/// The `CloneElaborator` is responsible for transforming an individual `DepNode` into a clone,
+/// to do this it is provided access to the graph (so it can fill in the dependencies of a clone) and to the `CloneMap`
+/// as it needs to translate types which introduces a circularity
 pub(super) struct CloneElaborator<'tcx> {
     used_types: IndexSet<DefId>,
     param_env: ParamEnv<'tcx>,
