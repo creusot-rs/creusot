@@ -192,7 +192,7 @@ impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
     }
 
     fn import_builtin_module(&mut self, module: QName) {
-        self.prelude.entry(module).or_insert(false);
+        self.names.prelude.entry(module).or_insert(false);
     }
 }
 
@@ -205,11 +205,7 @@ pub(super) type CloneSummary<'tcx> = IndexMap<CloneNode<'tcx>, CloneInfo>;
 pub struct CloneMap<'tcx> {
     tcx: TyCtxt<'tcx>,
 
-    prelude: IndexMap<QName, bool>,
-
-    names: IndexMap<CloneNode<'tcx>, Kind>,
-
-    name_counts: NameSupply,
+    names: CloneNames<'tcx>,
 
     dep_info: IndexMap<Dependency<'tcx>, CloneLevel>,
 
@@ -223,6 +219,53 @@ pub struct CloneMap<'tcx> {
 #[derive(Default, Clone)]
 struct NameSupply {
     name_counts: IndexMap<Symbol, usize>,
+}
+
+#[derive(Clone)]
+struct CloneNames<'tcx> {
+    tcx: TyCtxt<'tcx>,
+    counts: NameSupply,
+    names: IndexMap<CloneNode<'tcx>, Kind>,
+    prelude: IndexMap<QName, bool>,
+}
+
+impl<'tcx> CloneNames<'tcx> {
+    fn new(tcx: TyCtxt<'tcx>) -> Self {
+        CloneNames {
+            tcx,
+            counts: Default::default(),
+            names: Default::default(),
+            prelude: Default::default(),
+        }
+    }
+    fn insert(&mut self, key: DepNode<'tcx>) -> Kind {
+        *self.names.entry(key).or_insert_with(|| {
+            if let CloneNode::Type(ty) = key && !matches!(ty.kind(), TyKind::Alias(_, _)) {
+                return if let Some((did, _)) = key.did() {
+                    let name = Symbol::intern(&*module_name(self.tcx, did));
+                    Kind::Named(name)
+                } else {
+                    Kind::Hidden
+                };
+            }
+
+            let base = if let CloneNode::TyInv(_, inv_kind) = key {
+                Symbol::intern(&*inv_module_name(self.tcx, inv_kind))
+            } else {
+                let did = key.did().unwrap().0;
+                let base = match util::item_type(self.tcx, did) {
+                    ItemType::Impl => self.tcx.item_name(self.tcx.trait_id_of_impl(did).unwrap()),
+                    ItemType::Closure => Symbol::intern(&format!(
+                        "closure{}",
+                        self.tcx.def_path(did).data.last().unwrap().disambiguator
+                    )),
+                    _ => self.tcx.item_name(did),
+                };
+                Symbol::intern(&base.as_str().to_upper_camel_case())
+            };
+            Kind::Named(self.counts.insert(base))
+        })
+    }
 }
 
 impl NameSupply {
@@ -247,12 +290,14 @@ impl<'tcx> DepGraph<'tcx> {
         &mut self.info[&key]
     }
 
-    fn add_node(&mut self, key: DepNode<'tcx>, kind: Kind, level: CloneLevel) {
+    fn add_node(&mut self, key: DepNode<'tcx>, kind: Kind, level: CloneLevel) -> bool {
+        let contained = self.info.contains_key(&key);
         self.info.entry(key).and_modify(|info| info.join_level(level)).or_insert(CloneInfo {
             kind,
             level,
             opaque: CloneOpacity::Default,
         });
+        !contained
     }
 
     // Adds a dependency from `user` on `prov` for the symbol `sym`.
@@ -350,22 +395,14 @@ pub enum CloneDepth {
 
 impl<'tcx> CloneMap<'tcx> {
     pub(crate) fn new(tcx: TyCtxt<'tcx>, self_id: TransId) -> Self {
-        let mut names = IndexMap::new();
+        let mut names = CloneNames::new(tcx);
         let mut dep_info = IndexMap::default();
 
         debug!("cloning self: {:?}", self_id);
-        names.insert(CloneNode::from_trans_id(tcx, self_id), Kind::Hidden);
+        names.names.insert(CloneNode::from_trans_id(tcx, self_id), Kind::Hidden);
         dep_info.insert(CloneNode::from_trans_id(tcx, self_id), CloneLevel::Body);
 
-        CloneMap {
-            tcx,
-            self_id,
-            names,
-            name_counts: Default::default(),
-            prelude: IndexMap::new(),
-            dep_info,
-            dep_level: CloneLevel::Body,
-        }
+        CloneMap { tcx, self_id, names, dep_info, dep_level: CloneLevel::Body }
     }
 
     pub(crate) fn with_vis<F, A>(&mut self, vis: CloneLevel, f: F) -> A
@@ -381,12 +418,11 @@ impl<'tcx> CloneMap<'tcx> {
     /// Internal: only meant for mutually recursive type declaration
     pub(crate) fn insert_hidden(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) {
         let node = CloneNode::new(self.tcx, (def_id, subst)).erase_regions(self.tcx);
-        self.names.insert(node, Kind::Hidden);
+        self.names.names.insert(node, Kind::Hidden);
         self.dep_info.insert(node, CloneLevel::Body);
     }
 
     fn insert(&mut self, key: CloneNode<'tcx>) -> Kind {
-        assert!(self.dep_info.len() == self.names.len());
         let key = key.erase_regions(self.tcx).closure_hack(self.tcx);
         self.dep_info
             .entry(key)
@@ -395,32 +431,7 @@ impl<'tcx> CloneMap<'tcx> {
             })
             .or_insert(self.dep_level);
 
-        *self.names.entry(key).or_insert_with(|| {
-            if let CloneNode::Type(ty) = key && !matches!(ty.kind(), TyKind::Alias(_, _)) {
-                return if let Some((did, _)) = key.did() {
-                    let name = Symbol::intern(&*module_name(self.tcx, did));
-                    Kind::Named(name)
-                } else {
-                    Kind::Hidden
-                };
-            }
-
-            let base = if let CloneNode::TyInv(_, inv_kind) = key {
-                Symbol::intern(&*inv_module_name(self.tcx, inv_kind))
-            } else {
-                let did = key.did().unwrap().0;
-                let base = match util::item_type(self.tcx, did) {
-                    ItemType::Impl => self.tcx.item_name(self.tcx.trait_id_of_impl(did).unwrap()),
-                    ItemType::Closure => Symbol::intern(&format!(
-                        "closure{}",
-                        self.tcx.def_path(did).data.last().unwrap().disambiguator
-                    )),
-                    _ => self.tcx.item_name(did),
-                };
-                Symbol::intern(&base.as_str().to_upper_camel_case())
-            };
-            Kind::Named(self.name_counts.insert(base))
-        })
+        self.names.insert(key)
     }
 
     pub(crate) fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
@@ -513,7 +524,7 @@ impl<'tcx> CloneMap<'tcx> {
     }
 
     pub(crate) fn import_builtin_module(&mut self, module: QName) {
-        self.prelude.entry(module).or_insert(false);
+        self.names.prelude.entry(module).or_insert(false);
     }
 
     pub(crate) fn to_clones(
@@ -525,17 +536,17 @@ impl<'tcx> CloneMap<'tcx> {
         let mut decls = Vec::new();
 
         use petgraph::visit::Walker;
-        let mut roots: IndexSet<_> = self.names.keys().cloned().collect();
+        let mut roots: IndexSet<_> = self.names.names.keys().cloned().collect();
 
-        let mut graph = Expander::new(self);
+        let param_env = self.param_env(ctx);
+        let mut graph = Expander::new(&mut self.names, self.self_id, param_env);
+
+        for r in &roots {
+            graph.add_root(*r, self.dep_info[r])
+        }
 
         // Update the clone graph with any new entries.
-        graph.update_graph(ctx, depth);
-        // HACK, Temporary
-        self = graph.clone_map;
-        let clone_graph = graph.clone_graph;
-
-        let mut elab = CloneElaborator::new(self.param_env(ctx));
+        let clone_graph = graph.update_graph(ctx, depth);
 
         let mut i = 0;
 
@@ -551,6 +562,7 @@ impl<'tcx> CloneMap<'tcx> {
             i += 1
         }
 
+        let mut elab = CloneElaborator::new(param_env);
         let mut cloned = IndexSet::new();
 
         let mut topo = DfsPostOrder::new(&clone_graph.graph, self.self_key());
@@ -588,6 +600,7 @@ impl<'tcx> CloneMap<'tcx> {
             .collect();
 
         let clones = self
+            .names
             .prelude
             .iter_mut()
             .filter(|(_, v)| !(**v))

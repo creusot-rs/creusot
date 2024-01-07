@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{subst::SubstsRef, AliasKind, ParamEnv, Ty, TyKind};
 
@@ -7,34 +9,52 @@ use super::*;
 
 /// The `Expander` takes a list of 'root' dependencies (items explicitly requested by user code),
 /// and expands this into a complete dependency graph.
-pub(super) struct Expander<'tcx> {
+pub(super) struct Expander<'a, 'tcx> {
     pub clone_graph: DepGraph<'tcx>,
-    pub clone_map: CloneMap<'tcx>,
+    pub namer: &'a mut CloneNames<'tcx>,
+    self_id: TransId,
+    param_env: ParamEnv<'tcx>,
+    expansion_queue: VecDeque<DepNode<'tcx>>,
 }
 
-impl<'tcx> Expander<'tcx> {
-    pub fn new(names: CloneMap<'tcx>) -> Self {
-        Self { clone_graph: Default::default(), clone_map: names }
+impl<'a, 'tcx> Expander<'a, 'tcx> {
+    pub fn new(
+        namer: &'a mut CloneNames<'tcx>,
+        self_id: TransId,
+        param_env: ParamEnv<'tcx>,
+    ) -> Self {
+        Self {
+            clone_graph: Default::default(),
+            namer,
+            self_id,
+            param_env,
+            expansion_queue: Default::default(),
+        }
     }
+
+    fn self_did(&self) -> Option<DefId> {
+        match self.self_id {
+            TransId::Item(did) | TransId::TyInv(TyInvKind::Adt(did)) => Some(did),
+            _ => None,
+        }
+    }
+
+    pub fn add_root(&mut self, key: DepNode<'tcx>, level: CloneLevel) {
+        self.clone_graph.add_node(key, self.namer.insert(key), level);
+        self.expansion_queue.push_back(key);
+    }
+
     /// Expand the graph with new entries
-    pub fn update_graph(&mut self, ctx: &mut Why3Generator<'tcx>, depth: CloneDepth) {
-        let mut i = 0;
-        let param_env = self.clone_map.param_env(ctx);
-        while i < self.clone_map.names.len() {
-            let key = *self.clone_map.names.get_index(i).unwrap().0;
+    pub fn update_graph(
+        mut self,
+        ctx: &mut Why3Generator<'tcx>,
+        depth: CloneDepth,
+    ) -> DepGraph<'tcx> {
+        let self_key = CloneNode::from_trans_id(ctx.tcx, self.self_id);
 
-            assert_eq!(self.clone_map.dep_info.len(), self.clone_map.names.len());
-
-            self.clone_graph.add_node(
-                key,
-                self.clone_map.names[&key],
-                self.clone_map.dep_info[&key],
-            );
-
-            i += 1;
+        while let Some(key) = self.expansion_queue.pop_front() {
             trace!("update graph with {:?} (public={:?})", key, self.clone_graph.info(key).level);
 
-            let self_key = self.clone_map.self_key();
             if key != self_key {
                 self.clone_graph.add_graph_edge(self_key, key, CloneLevel::Root);
             }
@@ -44,14 +64,13 @@ impl<'tcx> Expander<'tcx> {
             }
 
             if let Some((did, subst)) = key.did() {
-                if traits::still_specializable(ctx.tcx, param_env, did, subst) {
+                if traits::still_specializable(ctx.tcx, self.param_env, did, subst) {
                     self.clone_graph.info_mut(key).opaque();
                 }
 
-                if self
-                    .clone_map
-                    .self_did()
-                    .is_some_and(|self_did| !ctx.is_transparent_from(did, self_did))
+                if self_key
+                    .did()
+                    .is_some_and(|(self_did, _)| !ctx.is_transparent_from(did, self_did))
                 {
                     self.clone_graph.info_mut(key).opaque();
                 }
@@ -60,8 +79,8 @@ impl<'tcx> Expander<'tcx> {
 
                 if util::is_inv_internal(ctx.tcx, did) && depth == CloneDepth::Deep {
                     let ty = subst.type_at(0);
-                    let ty = ctx.try_normalize_erasing_regions(param_env, ty).unwrap_or(ty);
-                    self.clone_tyinv(ctx, param_env, ty);
+                    let ty = ctx.try_normalize_erasing_regions(self.param_env, ty).unwrap_or(ty);
+                    self.clone_tyinv(ctx, self.param_env, ty);
                 }
 
                 self.clone_laws(ctx, did, subst, depth);
@@ -69,6 +88,8 @@ impl<'tcx> Expander<'tcx> {
 
             self.clone_dependencies(ctx, key);
         }
+
+        self.clone_graph
     }
 
     fn clone_dependencies(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
@@ -83,7 +104,6 @@ impl<'tcx> Expander<'tcx> {
                     );
 
                     let is_type = self
-                        .clone_map
                         .self_did()
                         .map(|did| util::item_type(ctx.tcx, did) == ItemType::Type)
                         .unwrap_or(false);
@@ -158,12 +178,12 @@ impl<'tcx> Expander<'tcx> {
             TyInvKind::from_ty(ty)
         };
 
-        if let TransId::TyInv(self_kind) = self.clone_map.self_id && self_kind == inv_kind {
+        if let TransId::TyInv(self_kind) = self.self_id && self_kind == inv_kind {
             return;
         }
 
         ctx.translate_tyinv(inv_kind);
-        self.add_node(DepNode::TyInv(ty, inv_kind),  CloneLevel::Body);
+        self.add_node(DepNode::TyInv(ty, inv_kind), CloneLevel::Body);
     }
 
     fn clone_laws(
@@ -174,7 +194,7 @@ impl<'tcx> Expander<'tcx> {
         depth: CloneDepth,
     ) {
         let Some(item) = ctx.tcx.opt_associated_item(key_did) else { return };
-        let Some(self_did) = self.clone_map.self_did() else { return };
+        let Some(self_did) = self.self_did() else { return };
 
         if depth == CloneDepth::Shallow {
             return;
@@ -194,7 +214,7 @@ impl<'tcx> Expander<'tcx> {
 
         let tcx = ctx.tcx;
         for law in ctx.laws(item.container_id(tcx)) {
-            trace!("adding law {:?} in {:?}", *law, self.clone_map.self_id);
+            trace!("adding law {:?} in {:?}", *law, self.self_id);
             let dep = DepNode::new(tcx, (*law, key_subst));
             self.add_node(dep, CloneLevel::Body);
         }
@@ -204,13 +224,14 @@ impl<'tcx> Expander<'tcx> {
     // This will attempt to normalize traits and associated types if the substitution provides enough
     // information.
     fn resolve_dep(&self, ctx: &TranslationCtx<'tcx>, dep: DepNode<'tcx>) -> DepNode<'tcx> {
-        let param_env = self.clone_map.param_env(ctx);
+        let param_env = self.param_env;
         dep.resolve(ctx, param_env).unwrap_or(dep)
     }
 
     fn add_node(&mut self, dep: DepNode<'tcx>, level: CloneLevel) {
-        self.clone_graph.add_node(dep, self.clone_map.insert(dep), level);
-
+        if self.clone_graph.add_node(dep, self.namer.insert(dep), level) {
+            self.expansion_queue.push_back(dep);
+        }
     }
 }
 
