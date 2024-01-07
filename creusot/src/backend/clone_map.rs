@@ -107,27 +107,12 @@ pub struct CloneMap<'tcx> {
     // Graph which is used to calculate the full clone set
     /// Graph of clones rooted at `self_id`, the edges are labeled with the level at which a dependence occurs along with any names which must be substituted
     clone_graph: DiGraphMap<DepNode<'tcx>, (CloneLevel, IndexSet<(Kind, SymbolKind)>)>,
-    // Index of the last cloned entry
-    last_cloned: usize,
 
     // Internal state to determine whether clones should be public or not
     dep_level: CloneLevel,
 
     // Used to ensure we only have a single `use` per type.
     used_types: IndexSet<DefId>,
-}
-
-impl<'tcx> Drop for CloneMap<'tcx> {
-    fn drop(&mut self) {
-        if self.last_cloned != self.names.len() {
-            debug!(
-                "Dropping clone map with un-emitted clones. {:?} clones emitted of {:?} total {:?}",
-                self.last_cloned,
-                self.names.len(),
-                self.self_id,
-            );
-        }
-    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable, Hash)]
@@ -229,7 +214,6 @@ impl<'tcx> CloneMap<'tcx> {
             name_counts: Default::default(),
             prelude: IndexMap::new(),
             clone_graph: DiGraphMap::new(),
-            last_cloned: 0,
             dep_level: CloneLevel::Body,
             used_types: Default::default(),
         }
@@ -413,7 +397,7 @@ impl<'tcx> CloneMap<'tcx> {
         // Along the edge, we include the 'original' substitution, which we can use
         // to build the correct substitution.
         //
-        let mut i = self.last_cloned;
+        let mut i = 0;
         let param_env = self.param_env(ctx);
         while i < self.names.len() {
             let key = *self.names.get_index(i).unwrap().0;
@@ -613,92 +597,6 @@ impl<'tcx> CloneMap<'tcx> {
         }
     }
 
-    fn build_clone(
-        &mut self,
-        ctx: &mut Why3Generator<'tcx>,
-        item: DepNode<'tcx>,
-        depth: CloneDepth,
-    ) -> Option<Decl> {
-        // Types can't be cloned, but are used (for now).
-        if let DepNode::Type(_) = item {
-            let (def_id, _) = item.did()?;
-            // check if type is not an assoc type
-            if util::item_type(ctx.tcx, def_id) == ItemType::Type {
-                let use_decl = self.used_types.insert(def_id).then(|| {
-                    if let Some(builtin) = get_builtin(ctx.tcx, def_id) {
-                        let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
-                        Use { name, as_: None, export: false }
-                    } else {
-                        let name = cloneable_name(ctx, item, CloneLevel::Body);
-                        Use { name: name.clone(), as_: Some(name), export: false }
-                    }
-                });
-                return use_decl.map(Decl::UseDecl);
-            }
-        }
-
-        let mut clone_subst = base_subst(ctx, self, item);
-        trace!("base substs of {item:?}: {clone_subst:?}");
-
-        let outbound: Vec<_> = self.clone_graph.neighbors_directed(item, Outgoing).collect();
-
-        let level_of_item = match (depth, self.names[&item].opaque) {
-            // We are requesting a deep clone of an opaque thing: stop at the contract
-            (CloneDepth::Deep, CloneOpacity::Opaque) => CloneLevel::Contract,
-            // Otherwise, go deep and get the body
-            (CloneDepth::Deep, _) => CloneLevel::Body,
-            // If we are only doing shallow clones, stop at the signature (no contracts)
-            (CloneDepth::Shallow, _) => CloneLevel::Signature,
-        };
-
-        // Grab definitions from all of our dependencies
-        for dep in outbound {
-            let (edge_level, syms) = &self.clone_graph[(item, dep)];
-
-            if *edge_level > level_of_item {
-                continue;
-            };
-            trace!("dependency={:?} of={:?} syms={:?}", dep, item, syms);
-
-            match dep {
-                DepNode::Type(ty) => {
-                    for (nm, sym) in syms.clone() {
-                        let ty_name = nm.qname_ident(sym.ident());
-                        let ty = backend::ty::translate_ty(ctx, self, DUMMY_SP, ty);
-                        clone_subst.push(CloneSubst::Type(ty_name, ty))
-                    }
-                }
-                _ => {
-                    for (nm, sym) in syms {
-                        let elem = sym.to_subst(*nm, self.names[&dep].kind);
-                        clone_subst.push(elem);
-                    }
-                }
-            }
-        }
-
-        let use_axioms = item.is_inv()
-            || item.did().is_some_and(|(def_id, _)| {
-                ctx.item(def_id).map(|i| i.has_axioms()).unwrap_or(false)
-            });
-
-        if use_axioms {
-            clone_subst.push(CloneSubst::Axiom(None))
-        }
-
-        trace!(
-            "emit clone node={item:?} name={:?} as={:?}",
-            cloneable_name(ctx, item, level_of_item),
-            self.names[&item].kind.clone()
-        );
-
-        Some(Decl::Clone(DeclClone {
-            name: cloneable_name(ctx, item, level_of_item),
-            subst: clone_subst,
-            kind: self.names[&item].kind.clone().into(),
-        }))
-    }
-
     pub(crate) fn to_clones(
         mut self,
         ctx: &mut Why3Generator<'tcx>,
@@ -713,14 +611,6 @@ impl<'tcx> CloneMap<'tcx> {
         // Update the clone graph with any new entries.
         self.update_graph(ctx, depth);
 
-        trace!(
-            "dep_graph processed={} nodes={} edges={}",
-            self.last_cloned,
-            self.clone_graph.node_count(),
-            self.clone_graph.edge_count()
-        );
-
-        self.last_cloned = self.names.len();
         let mut i = 0;
 
         // The `roots` are the clones which were explicitly requested by the user, but we must extend those to include any associated types which
@@ -979,5 +869,95 @@ impl<'tcx, F: FnMut(Ty<'tcx>)> TypeVisitor<TyCtxt<'tcx>> for TyVisitor<'tcx, F> 
         };
         (self.f)(t);
         t.super_visit_with(self)
+    }
+}
+
+struct CloneElaborator {}
+
+impl<'tcx> CloneElaborator {
+    fn build_clone(
+        &mut self,
+        ctx: &mut Why3Generator<'tcx>,
+        item: DepNode<'tcx>,
+        depth: CloneDepth,
+    ) -> Option<Decl> {
+        // Types can't be cloned, but are used (for now).
+        if let DepNode::Type(_) = item {
+            let (def_id, _) = item.did()?;
+            // check if type is not an assoc type
+            if util::item_type(ctx.tcx, def_id) == ItemType::Type {
+                let use_decl = self.used_types.insert(def_id).then(|| {
+                    if let Some(builtin) = get_builtin(ctx.tcx, def_id) {
+                        let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
+                        Use { name, as_: None, export: false }
+                    } else {
+                        let name = cloneable_name(ctx, item, CloneLevel::Body);
+                        Use { name: name.clone(), as_: Some(name), export: false }
+                    }
+                });
+                return use_decl.map(Decl::UseDecl);
+            }
+        }
+
+        let mut clone_subst = base_subst(ctx, self, item);
+        trace!("base substs of {item:?}: {clone_subst:?}");
+
+        let outbound: Vec<_> = self.clone_graph.neighbors_directed(item, Outgoing).collect();
+
+        let level_of_item = match (depth, self.names[&item].opaque) {
+            // We are requesting a deep clone of an opaque thing: stop at the contract
+            (CloneDepth::Deep, CloneOpacity::Opaque) => CloneLevel::Contract,
+            // Otherwise, go deep and get the body
+            (CloneDepth::Deep, _) => CloneLevel::Body,
+            // If we are only doing shallow clones, stop at the signature (no contracts)
+            (CloneDepth::Shallow, _) => CloneLevel::Signature,
+        };
+
+        // Grab definitions from all of our dependencies
+        for dep in outbound {
+            let (edge_level, syms) = &self.clone_graph[(item, dep)];
+
+            if *edge_level > level_of_item {
+                continue;
+            };
+            trace!("dependency={:?} of={:?} syms={:?}", dep, item, syms);
+
+            match dep {
+                DepNode::Type(ty) => {
+                    for (nm, sym) in syms.clone() {
+                        let ty_name = nm.qname_ident(sym.ident());
+                        let ty = backend::ty::translate_ty(ctx, self, DUMMY_SP, ty);
+                        clone_subst.push(CloneSubst::Type(ty_name, ty))
+                    }
+                }
+                _ => {
+                    for (nm, sym) in syms {
+                        let elem = sym.to_subst(*nm, self.names[&dep].kind);
+                        clone_subst.push(elem);
+                    }
+                }
+            }
+        }
+
+        let use_axioms = item.is_inv()
+            || item.did().is_some_and(|(def_id, _)| {
+                ctx.item(def_id).map(|i| i.has_axioms()).unwrap_or(false)
+            });
+
+        if use_axioms {
+            clone_subst.push(CloneSubst::Axiom(None))
+        }
+
+        trace!(
+            "emit clone node={item:?} name={:?} as={:?}",
+            cloneable_name(ctx, item, level_of_item),
+            self.names[&item].kind.clone()
+        );
+
+        Some(Decl::Clone(DeclClone {
+            name: cloneable_name(ctx, item, level_of_item),
+            subst: clone_subst,
+            kind: self.names[&item].kind.clone().into(),
+        }))
     }
 }
