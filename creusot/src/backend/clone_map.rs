@@ -1,10 +1,14 @@
 #![allow(deprecated)]
 
-use std::iter;
+use std::{collections::HashSet, fmt::Display, iter};
 
 use heck::ToUpperCamelCase;
 use indexmap::{IndexMap, IndexSet};
-use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
+use itertools::Itertools;
+use petgraph::{
+    algo::is_cyclic_directed, graphmap::DiGraphMap, visit::DfsPostOrder, Direction,
+    EdgeDirection::Outgoing,
+};
 use rustc_hir::{
     def::{DefKind, Namespace},
     def_id::DefId,
@@ -84,6 +88,108 @@ impl PreludeModule {
             PreludeModule::Borrow => QName::from_string("prelude.Borrow").unwrap(),
             PreludeModule::Slice => QName::from_string("prelude.Slice").unwrap(),
         }
+    }
+}
+
+pub(crate) trait Namer<'tcx> {
+    fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName;
+
+    fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName;
+
+    fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName;
+
+    /// Creates a name for a type or closure projection ie: x.field1
+    /// This also includes projections from `enum` types
+    ///
+    /// * `def_id` - The id of the type or closure being projected
+    /// * `subst` - Substitution that type is being accessed at
+    /// * `variant` - The constructor being used. For closures this is always 0
+    /// * `ix` - The field in that constructor being accessed.
+    fn accessor(
+        &mut self,
+        def_id: DefId,
+        subst: SubstsRef<'tcx>,
+        variant: usize,
+        ix: FieldIdx,
+    ) -> QName;
+
+    fn normalize(&self, ctx: &TranslationCtx<'tcx>, ty: Ty<'tcx>) -> Ty<'tcx>;
+
+    fn import_prelude_module(&mut self, module: PreludeModule);
+
+    fn import_builtin_module(&mut self, module: QName);
+}
+
+impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
+    fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+        let name = item_name(self.tcx, def_id, Namespace::ValueNS);
+        let node = CloneNode::new(self.tcx, (def_id, subst));
+        self.insert(node).qname_ident(name.into())
+    }
+
+    fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+        let name = item_name(self.tcx, def_id, Namespace::TypeNS);
+        let node = CloneNode::new(self.tcx, (def_id, subst));
+        self.insert(node).qname_ident(name.into())
+    }
+
+    fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+        let type_id = match self.tcx.def_kind(def_id) {
+            DefKind::Closure | DefKind::Struct | DefKind::Enum | DefKind::Union => def_id,
+            DefKind::Variant => self.tcx.parent(def_id),
+            _ => unreachable!("Not a type or constructor"),
+        };
+        let mut name = item_name(self.tcx, def_id, Namespace::ValueNS);
+        name.capitalize();
+        let node = CloneNode::new(self.tcx, (type_id, subst));
+        self.insert(node).qname_ident(name.into())
+    }
+
+    /// Creates a name for a type or closure projection ie: x.field1
+    /// This also includes projections from `enum` types
+    ///
+    /// * `def_id` - The id of the type or closure being projected
+    /// * `subst` - Substitution that type is being accessed at
+    /// * `variant` - The constructor being used. For closures this is always 0
+    /// * `ix` - The field in that constructor being accessed.
+    fn accessor(
+        &mut self,
+        def_id: DefId,
+        subst: SubstsRef<'tcx>,
+        variant: usize,
+        ix: FieldIdx,
+    ) -> QName {
+        let tcx = self.tcx;
+        let node = CloneNode::new(self.tcx, (def_id, subst));
+        let clone = self.insert(node);
+        let name: Ident = match util::item_type(tcx, def_id) {
+            ItemType::Closure => format!("field_{}", ix.as_usize()).into(),
+            ItemType::Type => {
+                let variant_def = &tcx.adt_def(def_id).variants()[variant.into()];
+                let variant = variant_def;
+                format!(
+                    "{}_{}",
+                    variant.name.as_str().to_ascii_lowercase(),
+                    variant.fields[ix].name
+                )
+                .into()
+            }
+            _ => panic!("accessor: invalid item kind"),
+        };
+
+        clone.qname_ident(name.into())
+    }
+
+    fn normalize(&self, ctx: &TranslationCtx<'tcx>, ty: Ty<'tcx>) -> Ty<'tcx> {
+        self.tcx.try_normalize_erasing_regions(self.param_env(ctx), ty).unwrap_or(ty)
+    }
+
+    fn import_prelude_module(&mut self, module: PreludeModule) {
+        self.import_builtin_module(module.qname());
+    }
+
+    fn import_builtin_module(&mut self, module: QName) {
+        self.prelude.entry(module).or_insert(false);
     }
 }
 
@@ -706,9 +812,10 @@ impl<'tcx> CloneMap<'tcx> {
     }
 }
 
-pub(crate) fn base_subst<'tcx>(
+pub(crate) fn base_subst<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    names: &mut N,
     dep: DepNode<'tcx>,
 ) -> Vec<CloneSubst> {
     let (generics, substs) = if let DepNode::TyInv(ty, inv_kind) = dep {
