@@ -11,21 +11,21 @@ use crate::{
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Module {
     pub name: Ident,
     pub decls: Vec<Decl>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Scope {
     pub name: Ident,
     pub decls: Vec<Decl>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Decl {
     CfgDecl(CfgFunction),
@@ -49,7 +49,7 @@ impl Decl {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Contract {
     pub requires: Vec<Exp>,
@@ -132,14 +132,14 @@ impl Contract {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Attribute {
     Attr(String),
     Span(String, usize, usize, usize, usize), // file, start line, start col, end line, end col
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Signature {
     pub name: Ident,
@@ -156,14 +156,14 @@ impl Signature {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Logic {
     pub sig: Signature,
     pub body: Exp,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct CfgFunction {
     pub sig: Signature,
@@ -174,14 +174,14 @@ pub struct CfgFunction {
     pub blocks: BTreeMap<BlockId, Block>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Predicate {
     pub sig: Signature,
     pub body: Exp,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum TyDecl {
     Adt { tys: Vec<AdtDecl> },
@@ -189,7 +189,7 @@ pub enum TyDecl {
     Opaque { ty_name: Ident, ty_params: Vec<Ident> },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct AdtDecl {
     pub ty_name: Ident,
@@ -197,14 +197,14 @@ pub struct AdtDecl {
     pub constrs: Vec<ConstructorDecl>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct ConstructorDecl {
     pub name: Ident,
     pub fields: Vec<Field>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Field {
     pub ghost: bool,
@@ -233,7 +233,7 @@ impl TyDecl {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct DeclClone {
     pub name: QName,
@@ -241,7 +241,7 @@ pub struct DeclClone {
     pub kind: CloneKind,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum CloneKind {
     Bare,
@@ -249,7 +249,7 @@ pub enum CloneKind {
     Export,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum CloneSubst {
     Type(QName, Type),
@@ -265,7 +265,7 @@ impl CloneSubst {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum ValKind {
     Val { sig: Signature },
@@ -275,7 +275,7 @@ pub enum ValKind {
     ValPredicate { sig: Signature },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct ValDecl {
     pub ghost: bool,
@@ -284,7 +284,7 @@ pub struct ValDecl {
     pub sig: Signature,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Use {
     pub name: QName,
@@ -292,7 +292,7 @@ pub struct Use {
     pub export: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Axiom {
     pub name: Ident,
@@ -300,14 +300,14 @@ pub struct Axiom {
     pub axiom: Exp,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Goal {
     pub name: Ident,
     pub goal: Exp,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct LetDecl {
     pub kind: Option<LetKind>,
@@ -317,7 +317,7 @@ pub struct LetDecl {
     pub body: Exp,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum LetKind {
     Function,

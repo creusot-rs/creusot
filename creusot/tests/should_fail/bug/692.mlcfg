@@ -77,30 +77,6 @@ module CreusotContracts_Invariant_Inv
     ensures { result = inv _x }
     
 end
-module CreusotContracts_Resolve_Resolve_Resolve_Stub
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Resolve_Resolve_Resolve_Interface
-  type self
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Resolve_Resolve
-  type self
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
-    ensures { result = resolve self }
-    
-end
-module TyInv_Trivial
-  type t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = t
-  axiom inv_trivial : forall self : t . Inv0.inv self = true
-end
 module CreusotContracts_Std1_Ops_Impl1_PostconditionMut_Stub
   type args
   type f
@@ -275,6 +251,24 @@ module CreusotContracts_Std1_Ops_Impl0_PostconditionOnce
   predicate postcondition_once (self : f) (_2 : args) (_3 : Output0.output)
   val postcondition_once (self : f) (_2 : args) (_3 : Output0.output) : bool
     ensures { result = postcondition_once self _2 _3 }
+    
+end
+module CreusotContracts_Resolve_Resolve_Resolve_Stub
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Resolve_Resolve_Resolve_Interface
+  type self
+  predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
+end
+module CreusotContracts_Resolve_Resolve_Resolve
+  type self
+  predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
     
 end
 module CreusotContracts_Std1_Ops_Impl2_FnOnce_Stub
@@ -662,6 +656,12 @@ module CreusotContracts_Std1_Ops_Impl1_FnMutOnce
     
   axiom fn_mut_once_spec : forall self : f, args : args, res : Output0.output . ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 19 123 23] Inv0.inv self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 25 123 29] Inv1.inv args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] Inv2.inv res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] PostconditionOnce0.postcondition_once self args res = (exists s : borrowed f . Inv3.inv s /\  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s)))
 end
+module TyInv_Trivial
+  type t
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = t
+  axiom inv_trivial : forall self : t . Inv0.inv self = true
+end
 module C692_Incorrect_Interface
   type c
   type b
@@ -795,14 +795,14 @@ module C692_Incorrect
     type t = b,
     predicate Inv0.inv = Inv0.inv,
     axiom .
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = b
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Interface as Precondition1 with
     type args = bool,
     type f = b
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Interface as Precondition0 with
     type args = (),
     type f = c
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
-    type self = b
   let rec cfg incorrect [#"../692.rs" 8 0 8 76] [@cfg:stackify] [@cfg:subregion_analysis] (cond : c) (branch : b) : ()
     requires {[#"../692.rs" 5 0 6 87] Precondition0.precondition cond () /\ (forall b : bool . Precondition1.precondition branch (b) /\ (exists b : bool . forall b0 : bool . Postcondition0.postcondition cond () b0 -> b0 = b))}
     requires {[#"../692.rs" 8 57 8 61] Inv1.inv cond}

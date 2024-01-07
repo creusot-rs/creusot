@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod printer;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Block {
     pub statements: Vec<Statement>,
@@ -19,7 +19,7 @@ pub struct Block {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct BlockId(pub usize);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Terminator {
     Goto(BlockId),
@@ -42,7 +42,7 @@ impl Terminator {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Statement {
     Assign { lhs: Ident, rhs: Exp },

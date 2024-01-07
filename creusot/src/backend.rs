@@ -37,6 +37,15 @@ pub(crate) enum TransId {
     TyInv(TyInvKind),
 }
 
+impl TransId {
+    fn did(self) -> Option<DefId> {
+        match self {
+            Self::Item(def_id) => Some(def_id),
+            _ => None,
+        }
+    }
+}
+
 impl From<DefId> for TransId {
     fn from(def_id: DefId) -> Self {
         TransId::Item(def_id)
@@ -196,6 +205,8 @@ impl<'tcx> Why3Generator<'tcx> {
             _ => unreachable!(),
         };
 
+        // eprintln!("adding {def_id:?}");
+
         self.functions.insert(def_id.into(), translated);
     }
 
@@ -224,7 +235,8 @@ impl<'tcx> Why3Generator<'tcx> {
 
     pub(crate) fn translate_tyinv(&mut self, inv_kind: TyInvKind) {
         let tid = TransId::TyInv(inv_kind);
-        if self.dependencies.contains_key(&tid) {
+        // Avoid recursion
+        if !self.translated_items.insert(tid) {
             return;
         }
 
@@ -233,6 +245,9 @@ impl<'tcx> Why3Generator<'tcx> {
         }
 
         let (modl, deps) = ty_inv::build_inv_module(self, inv_kind);
+        // if inv_kind == TyInvKind::Trivial {
+        //     panic!("Adding trivial ty inv module");
+        // }
         self.dependencies.insert(tid, deps);
         self.functions.insert(tid, TranslatedItem::TyInv { modl });
     }

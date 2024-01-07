@@ -6,7 +6,7 @@ use indexmap::IndexSet;
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum BinOp {
     LogAnd,  // i.e., /\
@@ -79,7 +79,7 @@ impl BinOp {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum UnOp {
     Not,
@@ -87,14 +87,14 @@ pub enum UnOp {
     FloatNeg,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Purity {
     Logic,
     Program,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 // TODO: multi-trigger/multiple triggers
 pub struct Trigger(pub Option<Box<Exp>>);
@@ -108,7 +108,7 @@ impl Trigger {
 }
 
 // TODO: Should we introduce an 'ExprKind' struct which wraps `Exp` with attributes?
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Exp {
     Assert(Box<Exp>),
@@ -170,7 +170,7 @@ pub enum Exp {
     FnLit(Box<Exp>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Binder {
     Wild,                           // let f _ = ..
@@ -858,7 +858,7 @@ impl Binder {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Constant {
     Int(i128, Option<Type>),
@@ -884,7 +884,7 @@ impl Constant {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Pattern {
     Wildcard,

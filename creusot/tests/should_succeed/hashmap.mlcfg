@@ -151,13 +151,13 @@ module Hashmap_Impl1_NoDoubleBinding
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = k
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
+    type self = k,
+    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
   use Hashmap_List_Type as Hashmap_List_Type
   clone Hashmap_Impl1_Get_Stub as Get0 with
     type k = k,
     type v = v,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
-  clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
-    type self = k,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
   predicate no_double_binding [#"../hashmap.rs" 38 4 38 38] (self : Hashmap_List_Type.t_list (k, v)) =
     [#"../hashmap.rs" 40 12 43 13] match (self) with
@@ -610,9 +610,9 @@ module Hashmap_Impl3_ShallowModel
   use map.Map
   use prelude.Mapping
   use Hashmap_List_Type as Hashmap_List_Type
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = k
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Hashmap_Impl1_Get_Stub as Get0 with
     type k = k,
     type v = v,
@@ -655,6 +655,7 @@ module Hashmap_Impl5_GoodBucket
   type k
   type v
   use prelude.Int
+  use Hashmap_List_Type as Hashmap_List_Type
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = k
   use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
@@ -663,7 +664,6 @@ module Hashmap_Impl5_GoodBucket
     type v = v,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
   use Core_Option_Option_Type as Core_Option_Option_Type
-  use Hashmap_List_Type as Hashmap_List_Type
   clone Hashmap_Impl1_Get_Stub as Get0 with
     type k = k,
     type v = v,
@@ -715,13 +715,6 @@ module Hashmap_Impl5_HashmapInv
   clone Hashmap_Impl1_NoDoubleBinding_Stub as NoDoubleBinding0 with
     type k = k,
     type v = v
-  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
-  clone Hashmap_Impl5_GoodBucket_Stub as GoodBucket0 with
-    type k = k,
-    type v = v
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
-    type t = Hashmap_List_Type.t_list (k, v),
-    type a = Alloc_Alloc_Global_Type.t_global
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = Hashmap_List_Type.t_list (k, v),
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -729,6 +722,13 @@ module Hashmap_Impl5_HashmapInv
     val Max0.mAX' = Max0.mAX',
     predicate Inv1.inv = Inv1.inv,
     axiom .
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
+  clone Hashmap_Impl5_GoodBucket_Stub as GoodBucket0 with
+    type k = k,
+    type v = v
+  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
+    type t = Hashmap_List_Type.t_list (k, v),
+    type a = Alloc_Alloc_Global_Type.t_global
   predicate hashmap_inv [#"../hashmap.rs" 209 4 209 33] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) =
     [#"../hashmap.rs" 210 8 213 9] 0 < Seq.length (ShallowModel0.shallow_model (Hashmap_MyHashMap_Type.myhashmap_buckets self)) /\ (forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model (Hashmap_MyHashMap_Type.myhashmap_buckets self)) -> GoodBucket0.good_bucket self (IndexLogic0.index_logic (Hashmap_MyHashMap_Type.myhashmap_buckets self) i) i /\ NoDoubleBinding0.no_double_binding (IndexLogic0.index_logic (Hashmap_MyHashMap_Type.myhashmap_buckets self) i))
   val hashmap_inv [#"../hashmap.rs" 209 4 209 33] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) : bool
@@ -748,9 +748,6 @@ module Alloc_Vec_FromElem_Interface
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
-  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
-    type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -758,6 +755,9 @@ module Alloc_Vec_FromElem_Interface
     val Max0.mAX' = Max0.mAX',
     predicate Inv1.inv = Inv2.inv,
     axiom .
+  clone CreusotContracts_Logic_Ops_Impl0_IndexLogic_Stub as IndexLogic0 with
+    type t = t,
+    type a = Alloc_Alloc_Global_Type.t_global
   clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
     type t = t
   val from_elem (elem : t) (n : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
@@ -907,6 +907,14 @@ module Hashmap_Impl5_New
     predicate Inv1.inv = Inv0.inv,
     function Get0.get = Get0.get,
     function BucketIx0.bucket_ix = BucketIx0.bucket_ix
+  clone Alloc_Vec_FromElem_Interface as FromElem0 with
+    type t = Hashmap_List_Type.t_list (k, v),
+    predicate Inv0.inv = Inv2.inv,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
+    predicate Inv1.inv = Inv3.inv,
+    val Max0.mAX' = Max0.mAX',
+    predicate Inv2.inv = Inv4.inv
   clone Hashmap_Impl3_ShallowModel as ShallowModel0 with
     type k = k,
     type v = v,
@@ -923,14 +931,6 @@ module Hashmap_Impl5_New
     predicate Inv0.inv = Inv3.inv,
     val Max0.mAX' = Max0.mAX',
     predicate Inv1.inv = Inv4.inv
-  clone Alloc_Vec_FromElem_Interface as FromElem0 with
-    type t = Hashmap_List_Type.t_list (k, v),
-    predicate Inv0.inv = Inv2.inv,
-    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
-    function IndexLogic0.index_logic = IndexLogic0.index_logic,
-    predicate Inv1.inv = Inv3.inv,
-    val Max0.mAX' = Max0.mAX',
-    predicate Inv2.inv = Inv4.inv
   let rec cfg new [#"../hashmap.rs" 98 4 98 46] [@cfg:stackify] [@cfg:subregion_analysis] (size : usize) : Hashmap_MyHashMap_Type.t_myhashmap k v
     requires {[#"../hashmap.rs" 95 15 95 24] 0 < UIntSize.to_int size}
     ensures { [#"../hashmap.rs" 96 14 96 34] HashmapInv0.hashmap_inv result }
@@ -1410,9 +1410,6 @@ module Hashmap_Impl5_Add_Interface
     type self = k
   use map.Map
   use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
-  clone CreusotContracts_Model_Impl7_ShallowModel_Stub as ShallowModel1 with
-    type t = Hashmap_MyHashMap_Type.t_myhashmap k v,
-    type ShallowModelTy0.shallowModelTy = Map.map DeepModelTy0.deepModelTy (Core_Option_Option_Type.t_option v)
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = k,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
@@ -1420,6 +1417,9 @@ module Hashmap_Impl5_Add_Interface
     type k = k,
     type v = v,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Model_Impl7_ShallowModel_Stub as ShallowModel1 with
+    type t = Hashmap_MyHashMap_Type.t_myhashmap k v,
+    type ShallowModelTy0.shallowModelTy = Map.map DeepModelTy0.deepModelTy (Core_Option_Option_Type.t_option v)
   clone CreusotContracts_Invariant_Inv_Stub as Inv3 with
     type t = DeepModelTy0.deepModelTy
   clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
@@ -1488,10 +1488,6 @@ module Hashmap_Impl5_Add
     type t = Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global),
     predicate Inv0.inv = Inv13.inv,
     axiom .
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
-    type self = k
-  use map.Map
   clone Core_Num_Impl11_Max as Max0
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)
@@ -1509,6 +1505,8 @@ module Hashmap_Impl5_Add
     predicate Inv0.inv = Inv1.inv,
     val Max0.mAX' = Max0.mAX',
     predicate Inv1.inv = Inv17.inv
+  clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
+    type self = k
   clone Hashmap_Hash_HashLog_Interface as HashLog0 with
     type self = k,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
@@ -1626,47 +1624,8 @@ module Hashmap_Impl5_Add
     type t = Ghost.ghost_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)),
     predicate Inv0.inv = Inv0.inv,
     axiom .
-  clone Hashmap_Impl1_Get as Get0 with
-    type k = k,
-    type v = v,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
-    function DeepModel0.deep_model = DeepModel0.deep_model
-  clone Hashmap_Impl3_ShallowModel as ShallowModel0 with
-    type k = k,
-    type v = v,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
-    function Bucket0.bucket = Bucket0.bucket,
-    function Get0.get = Get0.get
-  clone CreusotContracts_Model_Impl7_ShallowModel as ShallowModel1 with
-    type t = Hashmap_MyHashMap_Type.t_myhashmap k v,
-    type ShallowModelTy0.shallowModelTy = Map.map DeepModelTy0.deepModelTy (Core_Option_Option_Type.t_option v),
-    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve9 with
     type self = Hashmap_List_Type.t_list (k, v)
-  clone Hashmap_Impl1_NoDoubleBinding as NoDoubleBinding0 with
-    type k = k,
-    type v = v,
-    function DeepModel0.deep_model = DeepModel0.deep_model,
-    function Get0.get = Get0.get,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
-  clone Hashmap_Impl5_GoodBucket as GoodBucket0 with
-    type k = k,
-    type v = v,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
-    predicate Inv0.inv = Inv7.inv,
-    predicate Inv1.inv = Inv5.inv,
-    function Get0.get = Get0.get,
-    function BucketIx0.bucket_ix = BucketIx0.bucket_ix
-  clone Hashmap_Impl5_HashmapInv as HashmapInv0 with
-    type k = k,
-    type v = v,
-    function ShallowModel0.shallow_model = ShallowModel4.shallow_model,
-    function IndexLogic0.index_logic = IndexLogic0.index_logic,
-    predicate GoodBucket0.good_bucket = GoodBucket0.good_bucket,
-    predicate NoDoubleBinding0.no_double_binding = NoDoubleBinding0.no_double_binding,
-    predicate Inv0.inv = Inv1.inv,
-    val Max0.mAX' = Max0.mAX',
-    predicate Inv1.inv = Inv17.inv
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve8 with
     type t = Hashmap_MyHashMap_Type.t_myhashmap k v
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve7 with
@@ -1687,6 +1646,26 @@ module Hashmap_Impl5_Add
     function DeepModel0.deep_model = DeepModel1.deep_model,
     function DeepModel1.deep_model = DeepModel1.deep_model,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone Hashmap_Impl1_Get as Get0 with
+    type k = k,
+    type v = v,
+    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
+    function DeepModel0.deep_model = DeepModel0.deep_model
+  clone Hashmap_Impl1_NoDoubleBinding as NoDoubleBinding0 with
+    type k = k,
+    type v = v,
+    function DeepModel0.deep_model = DeepModel0.deep_model,
+    function Get0.get = Get0.get,
+    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone Hashmap_Impl5_GoodBucket as GoodBucket0 with
+    type k = k,
+    type v = v,
+    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
+    predicate Inv0.inv = Inv7.inv,
+    predicate Inv1.inv = Inv5.inv,
+    function Get0.get = Get0.get,
+    function BucketIx0.bucket_ix = BucketIx0.bucket_ix
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
     type self = Ghost.ghost_ty (borrowed (Hashmap_List_Type.t_list (k, v)))
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
@@ -1720,6 +1699,27 @@ module Hashmap_Impl5_Add
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = Ghost.ghost_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
+  use map.Map
+  clone Hashmap_Impl3_ShallowModel as ShallowModel0 with
+    type k = k,
+    type v = v,
+    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
+    function Bucket0.bucket = Bucket0.bucket,
+    function Get0.get = Get0.get
+  clone CreusotContracts_Model_Impl7_ShallowModel as ShallowModel1 with
+    type t = Hashmap_MyHashMap_Type.t_myhashmap k v,
+    type ShallowModelTy0.shallowModelTy = Map.map DeepModelTy0.deepModelTy (Core_Option_Option_Type.t_option v),
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  clone Hashmap_Impl5_HashmapInv as HashmapInv0 with
+    type k = k,
+    type v = v,
+    function ShallowModel0.shallow_model = ShallowModel4.shallow_model,
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
+    predicate GoodBucket0.good_bucket = GoodBucket0.good_bucket,
+    predicate NoDoubleBinding0.no_double_binding = NoDoubleBinding0.no_double_binding,
+    predicate Inv0.inv = Inv1.inv,
+    val Max0.mAX' = Max0.mAX',
+    predicate Inv1.inv = Inv17.inv
   let rec cfg add [#"../hashmap.rs" 106 4 106 41] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (key : k) (val' : v) : ()
     requires {[#"../hashmap.rs" 103 15 103 36] HashmapInv0.hashmap_inv ( * self)}
     requires {[#"../hashmap.rs" 106 20 106 24] Inv12.inv self}
@@ -2103,7 +2103,6 @@ module Hashmap_Impl5_Get
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     function Bucket0.bucket = Bucket0.bucket,
     function Get0.get = Get0.get
-  use map.Map
   clone Hashmap_Impl1_NoDoubleBinding as NoDoubleBinding0 with
     type k = k,
     type v = v,
@@ -2166,20 +2165,6 @@ module Hashmap_Impl5_Get
     type t = k,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     function DeepModel0.deep_model = DeepModel0.deep_model
-  clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel0 with
-    type t = Hashmap_MyHashMap_Type.t_myhashmap k v,
-    type ShallowModelTy0.shallowModelTy = Map.map DeepModelTy0.deepModelTy (Core_Option_Option_Type.t_option v),
-    function ShallowModel0.shallow_model = ShallowModel3.shallow_model
-  clone Hashmap_Impl5_HashmapInv as HashmapInv0 with
-    type k = k,
-    type v = v,
-    function ShallowModel0.shallow_model = ShallowModel2.shallow_model,
-    function IndexLogic0.index_logic = IndexLogic0.index_logic,
-    predicate GoodBucket0.good_bucket = GoodBucket0.good_bucket,
-    predicate NoDoubleBinding0.no_double_binding = NoDoubleBinding0.no_double_binding,
-    predicate Inv0.inv = Inv9.inv,
-    val Max0.mAX' = Max0.mAX',
-    predicate Inv1.inv = Inv10.inv
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve5 with
     type self = k
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve4 with
@@ -2222,6 +2207,21 @@ module Hashmap_Impl5_Get
     function DeepModel0.deep_model = DeepModel1.deep_model,
     function HashLog0.hash_log = HashLog0.hash_log,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  use map.Map
+  clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel0 with
+    type t = Hashmap_MyHashMap_Type.t_myhashmap k v,
+    type ShallowModelTy0.shallowModelTy = Map.map DeepModelTy0.deepModelTy (Core_Option_Option_Type.t_option v),
+    function ShallowModel0.shallow_model = ShallowModel3.shallow_model
+  clone Hashmap_Impl5_HashmapInv as HashmapInv0 with
+    type k = k,
+    type v = v,
+    function ShallowModel0.shallow_model = ShallowModel2.shallow_model,
+    function IndexLogic0.index_logic = IndexLogic0.index_logic,
+    predicate GoodBucket0.good_bucket = GoodBucket0.good_bucket,
+    predicate NoDoubleBinding0.no_double_binding = NoDoubleBinding0.no_double_binding,
+    predicate Inv0.inv = Inv9.inv,
+    val Max0.mAX' = Max0.mAX',
+    predicate Inv1.inv = Inv10.inv
   let rec cfg get [#"../hashmap.rs" 141 4 141 43] [@cfg:stackify] [@cfg:subregion_analysis] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (key : k) : Core_Option_Option_Type.t_option v
     requires {[#"../hashmap.rs" 136 15 136 33] HashmapInv0.hashmap_inv self}
     requires {[#"../hashmap.rs" 141 16 141 20] Inv0.inv self}
@@ -2408,21 +2408,6 @@ module Hashmap_Impl5_Resize_Interface
   clone Core_Num_Impl11_Max_Stub as Max0
   clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
     type t = Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)
-  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
-  clone CreusotContracts_Model_Impl7_ShallowModel_Stub as ShallowModel2 with
-    type t = Hashmap_MyHashMap_Type.t_myhashmap k v,
-    type ShallowModelTy0.shallowModelTy = Map.map DeepModelTy0.deepModelTy (Core_Option_Option_Type.t_option v)
-  clone Hashmap_Impl3_ShallowModel_Stub as ShallowModel1 with
-    type k = k,
-    type v = v,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = DeepModelTy0.deepModelTy
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)
-  clone Hashmap_Impl5_HashmapInv_Stub as HashmapInv0 with
-    type k = k,
-    type v = v
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = Hashmap_List_Type.t_list (k, v),
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -2430,6 +2415,21 @@ module Hashmap_Impl5_Resize_Interface
     val Max0.mAX' = Max0.mAX',
     predicate Inv1.inv = Inv3.inv,
     axiom .
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
+  clone Hashmap_Impl3_ShallowModel_Stub as ShallowModel1 with
+    type k = k,
+    type v = v,
+    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Model_Impl7_ShallowModel_Stub as ShallowModel2 with
+    type t = Hashmap_MyHashMap_Type.t_myhashmap k v,
+    type ShallowModelTy0.shallowModelTy = Map.map DeepModelTy0.deepModelTy (Core_Option_Option_Type.t_option v)
+  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
+    type t = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
+    type t = borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)
+  clone Hashmap_Impl5_HashmapInv_Stub as HashmapInv0 with
+    type k = k,
+    type v = v
   val resize [#"../hashmap.rs" 161 4 161 24] (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) : ()
     requires {[#"../hashmap.rs" 156 15 156 41] Seq.length (ShallowModel0.shallow_model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self))) < 1000}
     requires {[#"../hashmap.rs" 157 15 157 36] HashmapInv0.hashmap_inv ( * self)}
