@@ -279,6 +279,7 @@ impl NameSupply {
 struct DepGraph<'tcx> {
     graph: DiGraphMap<DepNode<'tcx>, (CloneLevel, IndexSet<(Kind, SymbolKind)>)>,
     info: IndexMap<DepNode<'tcx>, CloneInfo>,
+    roots: IndexSet<DepNode<'tcx>>,
 }
 
 impl<'tcx> DepGraph<'tcx> {
@@ -298,6 +299,15 @@ impl<'tcx> DepGraph<'tcx> {
             opaque: CloneOpacity::Default,
         });
         !contained
+    }
+
+    fn add_root(&mut self, key: DepNode<'tcx>, kind: Kind, level: CloneLevel) {
+        self.roots.insert(key);
+        self.add_node(key, kind, level);
+    }
+
+    fn is_root(&self, key: DepNode<'tcx>) -> bool {
+        self.roots.contains(&key)
     }
 
     // Adds a dependency from `user` on `prov` for the symbol `sym`.
@@ -548,7 +558,8 @@ impl<'tcx> CloneMap<'tcx> {
         // Update the clone graph with any new entries.
         let clone_graph = graph.update_graph(ctx, depth);
 
-        {   // Update `roots` to include any associated types which appear in the signature of another root.
+        {
+            // Update `roots` to include any associated types which appear in the signature of another root.
             let mut i = 0;
             while i < roots.len() {
                 let r = roots.get_index(i).unwrap();

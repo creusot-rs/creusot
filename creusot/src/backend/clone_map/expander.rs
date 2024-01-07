@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 
+use petgraph::Direction;
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{subst::SubstsRef, AliasKind, ParamEnv, Ty, TyKind};
 
@@ -40,7 +41,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     }
 
     pub fn add_root(&mut self, key: DepNode<'tcx>, level: CloneLevel) {
-        self.clone_graph.add_node(key, self.namer.insert(key), level);
+        self.clone_graph.add_root(key, self.namer.insert(key), level);
         self.expansion_queue.push_back(key);
     }
 
@@ -52,16 +53,30 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     ) -> DepGraph<'tcx> {
         let self_key = CloneNode::from_trans_id(ctx.tcx, self.self_id);
 
-        // for key in &self.expansion_queue {
-        //     if *key != self_key {
-        //         self.clone_graph.add_graph_edge(self_key, *key, CloneLevel::Root);
-        //     }
-        // }
+        for key in &self.expansion_queue {
+            if *key != self_key {
+                self.clone_graph.add_graph_edge(self_key, *key, CloneLevel::Root);
+            }
+        }
 
         while let Some(key) = self.expansion_queue.pop_front() {
             trace!("update graph with {:?} (public={:?})", key, self.clone_graph.info(key).level);
 
-            if key != self_key {
+            if depth == CloneDepth::Shallow && !self.clone_graph.is_root(key) {
+                // If there is a Signature level edge from a pre-existing root node, mark this one as root as well as it must be an associated type in
+                // a root signature
+                if self.clone_graph.graph.edges_directed(key, Direction::Incoming).any(
+                    |(src, _, (lvl, _))| {
+                        self.clone_graph.is_root(src) && *lvl == CloneLevel::Signature
+                    },
+                ) {
+                    self.add_root(key, self.clone_graph.info(key).level)
+                } else {
+                    continue;
+                }
+            }
+
+            if self.clone_graph.graph.edges_directed(key, Direction::Incoming).count() == 0 {
                 self.clone_graph.add_graph_edge(self_key, key, CloneLevel::Root);
             }
 
