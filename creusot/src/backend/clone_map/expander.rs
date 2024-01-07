@@ -1,12 +1,17 @@
 use indexmap::IndexSet;
 use petgraph::graphmap::DiGraphMap;
-use rustc_middle::ty::{SubstsRef, Ty, ParamEnv, TyKind};
+use rustc_middle::ty::{ParamEnv, SubstsRef, Ty, TyKind};
 use rustc_span::source_map::DefId;
 use rustc_type_ir::AliasKind;
 
-use crate::{backend::{Why3Generator, ty_inv::TyInvKind, clone_map::refineable_symbol, TransId}, ctx::TranslationCtx, util::{self, ItemType}, translation::traits};
+use crate::{
+    backend::{clone_map::refineable_symbol, ty_inv::TyInvKind, TransId, Why3Generator},
+    ctx::TranslationCtx,
+    translation::traits,
+    util::{self, ItemType},
+};
 
-use super::{DepNode, CloneDepth, CloneLevel, Kind, SymbolKind, CloneNode, walk_types};
+use super::{walk_types, CloneDepth, CloneLevel, CloneNode, DepNode, Kind, SymbolKind};
 
 struct Expander<'tcx> {
     clone_graph: DiGraphMap<DepNode<'tcx>, (CloneLevel, IndexSet<(Kind, SymbolKind)>)>,
