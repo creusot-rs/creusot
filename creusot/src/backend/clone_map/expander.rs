@@ -1,5 +1,3 @@
-use indexmap::IndexSet;
-use petgraph::graphmap::DiGraphMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{subst::SubstsRef, AliasKind, ParamEnv, Ty, TyKind};
 
@@ -10,7 +8,7 @@ use super::*;
 /// The `Expander` takes a list of 'root' dependencies (items explicitly requested by user code),
 /// and expands this into a complete dependency graph.
 pub(super) struct Expander<'tcx> {
-    pub clone_graph: DiGraphMap<DepNode<'tcx>, (CloneLevel, IndexSet<(Kind, SymbolKind)>)>,
+    pub clone_graph: DepGraph<'tcx>,
     pub clone_map: CloneMap<'tcx>,
 }
 
@@ -20,34 +18,34 @@ impl<'tcx> Expander<'tcx> {
     }
     /// Expand the graph with new entries
     pub fn update_graph(&mut self, ctx: &mut Why3Generator<'tcx>, depth: CloneDepth) {
-        // Construct a maximal sharing graph for all dependencies.
-        // We build edges between each (function, subst) pair, following the call graph
-        // Additionally, when the substitution refers to an associated type, we construct
-        // a relevant edge.
-        //
-        // Along the edge, we include the 'original' substitution, which we can use
-        // to build the correct substitution.
-        //
         let mut i = 0;
         let param_env = self.clone_map.param_env(ctx);
         while i < self.clone_map.names.len() {
             let key = *self.clone_map.names.get_index(i).unwrap().0;
 
+            assert_eq!(self.clone_map.dep_info.len(), self.clone_map.names.len());
+
+            self.clone_graph.add_node(
+                key,
+                self.clone_map.names[&key],
+                self.clone_map.dep_info[&key],
+            );
+
             i += 1;
-            trace!("update graph with {:?} (public={:?})", key, self.clone_map.names[&key].level);
+            trace!("update graph with {:?} (public={:?})", key, self.clone_graph.info(key).level);
 
             let self_key = self.clone_map.self_key();
             if key != self_key {
-                self.add_graph_edge(self_key, key, CloneLevel::Root);
+                self.clone_graph.add_graph_edge(self_key, key, CloneLevel::Root);
             }
 
-            if self.clone_map.names[&key].kind == Kind::Hidden {
+            if self.clone_graph.info(key).kind == Kind::Hidden {
                 continue;
             }
 
             if let Some((did, subst)) = key.did() {
                 if traits::still_specializable(ctx.tcx, param_env, did, subst) {
-                    self.clone_map.names[&key].opaque();
+                    self.clone_graph.info_mut(key).opaque();
                 }
 
                 if self
@@ -55,7 +53,7 @@ impl<'tcx> Expander<'tcx> {
                     .self_did()
                     .is_some_and(|self_did| !ctx.is_transparent_from(did, self_did))
                 {
-                    self.clone_map.names[&key].opaque();
+                    self.clone_graph.info_mut(key).opaque();
                 }
 
                 ctx.translate(did);
@@ -74,7 +72,7 @@ impl<'tcx> Expander<'tcx> {
     }
 
     fn clone_dependencies(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
-        let key_public = self.clone_map.names[&key].level;
+        let key_public = self.clone_graph.info(key).level;
 
         if let Some((id, key_subst)) = key.did() {
             if util::item_type(ctx.tcx, id) == ItemType::Type {
@@ -91,8 +89,8 @@ impl<'tcx> Expander<'tcx> {
                         .unwrap_or(false);
 
                     if !is_type {
-                        self.clone_map.insert(node).join_level(key_public);
-                        self.add_graph_edge(key, node, CloneLevel::Signature);
+                        self.add_node(node, key_public);
+                        self.clone_graph.add_graph_edge(key, node, CloneLevel::Signature);
                     }
                 }
             }
@@ -113,14 +111,11 @@ impl<'tcx> Expander<'tcx> {
                 };
 
                 if let Some(node) = node {
-                    self.clone_map.insert(node).join_level(key_public);
-                    self.add_graph_edge(key, node, CloneLevel::Signature);
+                    self.add_node(node, key_public);
+                    self.clone_graph.add_graph_edge(key, node, CloneLevel::Signature);
                 }
             });
         }
-
-        // let opaque_clone = !matches!(self.clone_level, CloneLevel::Body)
-        //     || self.names[&key].opaque == CloneOpacity::Opaque;
 
         // trace!(
         //     "cloning dependencies of {:?} {:?}, len={:?}",
@@ -137,14 +132,14 @@ impl<'tcx> Expander<'tcx> {
             let dep = self.resolve_dep(ctx, dep.subst(ctx.tcx, key));
 
             trace!("inserting dependency {:?} {:?}", key, dep);
-            self.clone_map.insert(dep).join_level(key_public.max(info.level));
+            self.add_node(dep, key_public.max(info.level));
 
             // Skip reflexive edges
             if dep == key {
                 continue;
             }
 
-            let edge_set = self.add_graph_edge(key, dep, info.level);
+            let edge_set = self.clone_graph.add_graph_edge(key, dep, info.level);
             if let Some(sym) = refineable_symbol(ctx.tcx, *orig) {
                 edge_set.insert((info.kind, sym));
             }
@@ -168,25 +163,7 @@ impl<'tcx> Expander<'tcx> {
         }
 
         ctx.translate_tyinv(inv_kind);
-        self.clone_map.insert(DepNode::TyInv(ty, inv_kind));
-    }
-
-    // Adds a dependency from `user` on `prov` for the symbol `sym`.
-    fn add_graph_edge(
-        &mut self,
-        user: DepNode<'tcx>,
-        prov: DepNode<'tcx>,
-        level: CloneLevel,
-    ) -> &mut IndexSet<(Kind, SymbolKind)> {
-        let k1 = &self.clone_map.names[&user].kind;
-        let k2 = &self.clone_map.names[&prov].kind;
-        trace!("edge {k1:?} = {:?} --> {k2:?} = {:?}", user, prov);
-
-        if let None = self.clone_graph.edge_weight_mut(user, prov) {
-            self.clone_graph.add_edge(user, prov, (level, IndexSet::new()));
-        };
-
-        &mut self.clone_graph.edge_weight_mut(user, prov).unwrap().1
+        self.add_node(DepNode::TyInv(ty, inv_kind),  CloneLevel::Body);
     }
 
     fn clone_laws(
@@ -218,10 +195,8 @@ impl<'tcx> Expander<'tcx> {
         let tcx = ctx.tcx;
         for law in ctx.laws(item.container_id(tcx)) {
             trace!("adding law {:?} in {:?}", *law, self.clone_map.self_id);
-
-            // No way the substitution is correct...
-            let law = self.clone_map.insert(DepNode::new(tcx, (*law, key_subst)));
-            law.level = CloneLevel::Body;
+            let dep = DepNode::new(tcx, (*law, key_subst));
+            self.add_node(dep, CloneLevel::Body);
         }
     }
 
@@ -231,6 +206,11 @@ impl<'tcx> Expander<'tcx> {
     fn resolve_dep(&self, ctx: &TranslationCtx<'tcx>, dep: DepNode<'tcx>) -> DepNode<'tcx> {
         let param_env = self.clone_map.param_env(ctx);
         dep.resolve(ctx, param_env).unwrap_or(dep)
+    }
+
+    fn add_node(&mut self, dep: DepNode<'tcx>, level: CloneLevel) {
+        self.clone_graph.add_node(dep, self.clone_map.insert(dep), level);
+
     }
 }
 

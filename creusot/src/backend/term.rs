@@ -338,10 +338,10 @@ impl<'tcx> Lower<'_, 'tcx> {
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
 
-use super::{dependency::Dependency, Why3Generator};
+use super::Why3Generator;
 
 pub(crate) fn lower_literal<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    _: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     lit: Literal<'tcx>,
 ) -> Exp {
@@ -364,8 +364,7 @@ pub(crate) fn lower_literal<'tcx>(
             }
         }
         Literal::Function(id, subst) => {
-            #[allow(deprecated)]
-            names.insert(Dependency::new(ctx.tcx, (id, subst)));
+            names.value(id, subst);
             Exp::Tuple(Vec::new())
         }
         Literal::Float(f, fty) => {
