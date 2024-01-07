@@ -341,7 +341,7 @@ pub(crate) fn translate_tydecl(
         return None;
     }
 
-    let mut names = CloneMap::new(ctx.tcx, repr.into(), CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, repr.into());
 
     let name = module_name(ctx.tcx, repr);
     let span = ctx.def_span(repr);
@@ -361,7 +361,7 @@ pub(crate) fn translate_tydecl(
                 ty_params: ty_params.clone(),
             })],
         };
-        let _ = names.to_clones(ctx);
+        let _ = names.to_clones(ctx, CloneDepth::Shallow);
         return Some(vec![modl]);
     }
 
@@ -386,7 +386,7 @@ pub(crate) fn translate_tydecl(
     let ty_decl =
         TyDecl::Adt { tys: bg.iter().map(|did| build_ty_decl(ctx, &mut names, *did)).collect() };
 
-    let (mut decls, _) = names.to_clones(ctx);
+    let (mut decls, _) = names.to_clones(ctx, CloneDepth::Shallow);
     decls.push(Decl::TyDecl(ty_decl));
 
     let mut modls = vec![Module { name: name.clone(), decls }];
@@ -509,7 +509,7 @@ pub(crate) fn translate_accessor(
 
     let substs = InternalSubsts::identity_for_item(ctx.tcx, adt_did);
     let repr = ctx.representative_type(adt_did);
-    let mut names = CloneMap::new(ctx.tcx, repr.into(), CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, repr.into());
 
     // UGLY hack to ensure that we don't explicitly use/clone the members of a binding group
     let bg = ctx.binding_group(repr).clone();
@@ -550,7 +550,7 @@ pub(crate) fn translate_accessor(
         ctx.type_of(adt_did).subst_identity(),
     );
 
-    let _ = names.to_clones(ctx);
+    let _ = names.to_clones(ctx, CloneDepth::Shallow);
 
     build_accessor(
         this,
