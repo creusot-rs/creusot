@@ -187,14 +187,14 @@ pub mod ghost {
         T: ?Sized;
 
     impl<T: ?Sized> Ghost<T> {
-        pub fn dummy() -> Ghost<T> {
+        pub fn from_fn(_: fn() -> T) -> Self {
             Ghost(std::marker::PhantomData)
         }
     }
 
     impl<T: ?Sized> Clone for Ghost<T> {
         fn clone(&self) -> Self {
-            Self::dummy()
+            Ghost(std::marker::PhantomData)
         }
     }
 

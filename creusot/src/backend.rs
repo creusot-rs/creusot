@@ -1,6 +1,6 @@
 use indexmap::{IndexMap, IndexSet};
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::{GenericParamDef, GenericParamDefKind, TyCtxt};
+use rustc_middle::ty::{AliasTy, GenericParamDef, GenericParamDefKind, TyCtxt};
 use rustc_span::DUMMY_SP;
 use why3::declaration::{Decl, TyDecl};
 
@@ -8,7 +8,10 @@ use crate::{
     ctx::{TranslatedItem, TranslationCtx},
     util::{self, ItemType},
 };
-use std::ops::{Deref, DerefMut};
+use std::{
+    collections::HashMap,
+    ops::{Deref, DerefMut},
+};
 
 pub(crate) use clone_map::*;
 
@@ -43,6 +46,7 @@ impl From<DefId> for TransId {
 pub struct Why3Generator<'tcx> {
     ctx: TranslationCtx<'tcx>,
     dependencies: IndexMap<TransId, CloneSummary<'tcx>>,
+    projections_in_ty: HashMap<DefId, Vec<AliasTy<'tcx>>>,
     functions: IndexMap<TransId, TranslatedItem>,
     translated_items: IndexSet<TransId>,
     in_translation: Vec<IndexSet<TransId>>,
@@ -67,6 +71,7 @@ impl<'tcx> Why3Generator<'tcx> {
         Why3Generator {
             ctx,
             dependencies: Default::default(),
+            projections_in_ty: Default::default(),
             functions: Default::default(),
             translated_items: Default::default(),
             in_translation: Default::default(),
@@ -297,6 +302,15 @@ impl<'tcx> Why3Generator<'tcx> {
             _ => key.did().map(|(def_id, _)| TransId::Item(def_id))?,
         };
         self.dependencies.get(&tid)
+    }
+
+    pub(crate) fn projections_in_ty(&mut self, item: DefId) -> &[AliasTy<'tcx>] {
+        if self.projections_in_ty.get(&item).is_none() {
+            let res = self.get_projections_in_ty(item);
+            self.projections_in_ty.insert(item, res);
+        };
+
+        &self.projections_in_ty[&item]
     }
 }
 

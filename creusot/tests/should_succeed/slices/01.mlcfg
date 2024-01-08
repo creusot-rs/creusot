@@ -209,8 +209,8 @@ module C01_IndexSlice
     goto BB0
   }
   BB0 {
-    _3 <- ([#"../01.rs" 7 6 7 8] (10 : usize));
-    _5 <- ([#"../01.rs" 7 4 7 9] _3 < Slice.length a);
+    _3 <- ([#"../01.rs" 7 6 7 8] [#"../01.rs" 7 6 7 8] (10 : usize));
+    _5 <- ([#"../01.rs" 7 4 7 9] _3 < ([#"../01.rs" 7 4 7 9] Slice.length a));
     assert { [@expl:index in bounds] [#"../01.rs" 7 4 7 9] _5 };
     goto BB1
   }
@@ -271,20 +271,11 @@ module CreusotContracts_Logic_Ops_Impl2_IndexLogic
   use prelude.Slice
   use prelude.Int
   use seq.Seq
-  use seq.Seq
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = Seq.seq t
-  clone Core_Num_Impl11_Max_Stub as Max0
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = slice t
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
-    predicate Inv0.inv = Inv0.inv,
-    val Max0.mAX' = Max0.mAX',
-    predicate Inv1.inv = Inv1.inv,
     axiom .
   function index_logic [@inline:trivial] (self : slice t) (ix : int) : t =
-    [#"../../../../../creusot-contracts/src/logic/ops.rs" 41 8 41 31] Seq.get (ShallowModel0.shallow_model self) ix
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 42 8 42 31] Seq.get (ShallowModel0.shallow_model self) ix
   val index_logic [@inline:trivial] (self : slice t) (ix : int) : t
     ensures { result = index_logic self ix }
     
@@ -317,9 +308,9 @@ module C01_IndexMutSlice_Interface
   use prelude.UInt32
   use prelude.Slice
   use prelude.Int
-  use seq.Seq
   clone CreusotContracts_Logic_Ops_Impl2_IndexLogic_Stub as IndexLogic0 with
     type t = uint32
+  use seq.Seq
   clone CreusotContracts_Model_Impl7_ShallowModel_Stub as ShallowModel0 with
     type t = slice uint32,
     type ShallowModelTy0.shallowModelTy = Seq.seq uint32
@@ -357,10 +348,7 @@ module C01_IndexMutSlice
     axiom .
   clone CreusotContracts_Logic_Ops_Impl2_IndexLogic as IndexLogic0 with
     type t = uint32,
-    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
-    predicate Inv0.inv = Inv0.inv,
-    val Max0.mAX' = Max0.mAX',
-    predicate Inv1.inv = Inv1.inv
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone CreusotContracts_Model_Impl7_ShallowModel as ShallowModel0 with
     type t = slice uint32,
     type ShallowModelTy0.shallowModelTy = Seq.seq uint32,
@@ -380,15 +368,15 @@ module C01_IndexMutSlice
     goto BB0
   }
   BB0 {
-    _4 <- ([#"../01.rs" 13 6 13 7] (2 : usize));
-    _6 <- ([#"../01.rs" 13 4 13 8] _4 < Slice.length ( * a));
+    _4 <- ([#"../01.rs" 13 6 13 7] [#"../01.rs" 13 6 13 7] (2 : usize));
+    _6 <- ([#"../01.rs" 13 4 13 8] _4 < ([#"../01.rs" 13 4 13 8] Slice.length ( * a)));
     assert { [@expl:index in bounds] [#"../01.rs" 13 4 13 8] _6 };
     goto BB1
   }
   BB1 {
-    a <- { a with current = Slice.set ( * a) _4 ([#"../01.rs" 13 11 13 12] (3 : uint32)) };
+    a <- { a with current = Slice.set ( * a) _4 ([#"../01.rs" 13 11 13 12] [#"../01.rs" 13 11 13 12] (3 : uint32)) };
     assume { Resolve0.resolve a };
-    _0 <- ();
+    _0 <- ([#"../01.rs" 12 38 14 1] ());
     return _0
   }
   
@@ -440,10 +428,10 @@ module C01_SliceFirst_Interface
   use prelude.Borrow
   use seq.Seq
   use prelude.Slice
-  use seq.Seq
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
     type t = Core_Option_Option_Type.t_option t
+  use seq.Seq
   clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel0 with
     type t = slice t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
@@ -487,13 +475,6 @@ module C01_SliceFirst
     type t = Core_Option_Option_Type.t_option t,
     predicate Inv0.inv = Inv2.inv,
     axiom .
-  clone Core_Num_Impl11_Max as Max0
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface as ShallowModel1 with
-    type t = t,
-    predicate Inv0.inv = Inv3.inv,
-    val Max0.mAX' = Max0.mAX',
-    predicate Inv1.inv = Inv4.inv,
-    axiom .
   clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
     type t = t
   clone TyInv_Trivial as TyInv_Trivial1 with
@@ -506,16 +487,20 @@ module C01_SliceFirst
     type t = slice t,
     predicate Inv0.inv = Inv0.inv,
     axiom .
+  clone Core_Num_Impl11_Max as Max0
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface as ShallowModel1 with
+    type t = t,
+    predicate Inv0.inv = Inv3.inv,
+    val Max0.mAX' = Max0.mAX',
+    predicate Inv1.inv = Inv4.inv,
+    axiom .
   clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel0 with
     type t = slice t,
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone CreusotContracts_Logic_Ops_Impl2_IndexLogic as IndexLogic0 with
     type t = t,
-    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
-    predicate Inv0.inv = Inv3.inv,
-    val Max0.mAX' = Max0.mAX',
-    predicate Inv1.inv = Inv4.inv
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
     type self = t
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
@@ -543,34 +528,34 @@ module C01_SliceFirst
     goto BB0
   }
   BB0 {
-    _4 <- ([#"../01.rs" 21 7 21 14] Len0.len a);
+    _4 <- ([#"../01.rs" 21 7 21 14] Len0.len ([#"../01.rs" 21 7 21 14] a));
     goto BB1
   }
   BB1 {
-    switch ([#"../01.rs" 21 7 21 18] _4 > ([#"../01.rs" 21 17 21 18] (0 : usize)))
+    switch ([#"../01.rs" 21 7 21 18] _4 > ([#"../01.rs" 21 17 21 18] [#"../01.rs" 21 17 21 18] (0 : usize)))
       | False -> goto BB4
       | True -> goto BB2
       end
   }
   BB2 {
-    _8 <- ([#"../01.rs" 22 16 22 17] (0 : usize));
-    _10 <- ([#"../01.rs" 22 14 22 18] _8 < Slice.length a);
+    _8 <- ([#"../01.rs" 22 16 22 17] [#"../01.rs" 22 16 22 17] (0 : usize));
+    _10 <- ([#"../01.rs" 22 14 22 18] _8 < ([#"../01.rs" 22 14 22 18] Slice.length a));
     assert { [@expl:index in bounds] [#"../01.rs" 22 14 22 18] _10 };
     goto BB3
   }
   BB3 {
-    _7 <- Slice.get a _8;
+    _7 <- ([#"../01.rs" 22 13 22 18] Slice.get a _8);
     assert { [@expl:type invariant] Inv0.inv a };
     assume { Resolve0.resolve a };
     assert { [@expl:type invariant] Inv1.inv _7 };
     assume { Resolve1.resolve _7 };
-    _0 <- Core_Option_Option_Type.C_Some _7;
+    _0 <- ([#"../01.rs" 22 8 22 19] Core_Option_Option_Type.C_Some ([#"../01.rs" 22 13 22 18] _7));
     goto BB5
   }
   BB4 {
     assert { [@expl:type invariant] Inv0.inv a };
     assume { Resolve0.resolve a };
-    _0 <- Core_Option_Option_Type.C_None;
+    _0 <- ([#"../01.rs" 24 8 24 12] Core_Option_Option_Type.C_None);
     goto BB5
   }
   BB5 {

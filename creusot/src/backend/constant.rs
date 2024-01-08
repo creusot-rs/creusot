@@ -10,10 +10,10 @@ use crate::{
 };
 
 use super::{
-    clone_map::{CloneLevel, CloneMap, CloneSummary},
+    clone_map::{CloneMap, CloneSummary},
     logic::stub_module,
     signature::signature_of,
-    Why3Generator,
+    CloneDepth, Why3Generator,
 };
 
 impl<'tcx> Why3Generator<'tcx> {
@@ -29,11 +29,11 @@ impl<'tcx> Why3Generator<'tcx> {
         let param_env = self.param_env(def_id);
         let span = self.def_span(def_id);
         let res = from_ty_const(&mut self.ctx, constant, param_env, span);
-        let mut names = CloneMap::new(self.tcx, def_id.into(), CloneLevel::Body);
+        let mut names = CloneMap::new(self.tcx, def_id.into());
         let res = res.to_why(self, &mut names, &LocalDecls::new());
         let sig = signature_of(self, &mut names, def_id);
         let mut decls: Vec<_> = closure_generic_decls(self.tcx, def_id).collect();
-        let (clones, summary) = names.to_clones(self);
+        let (clones, summary) = names.to_clones(self, CloneDepth::Deep);
         decls.extend(clones);
         if !util::is_trusted(self.tcx, def_id) {
             decls.push(Decl::Let(LetDecl {

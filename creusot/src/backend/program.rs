@@ -1,8 +1,8 @@
 use super::{
-    clone_map::{CloneLevel, PreludeModule},
+    clone_map::PreludeModule,
     signature::signature_of,
     term::{lower_impure, lower_pure},
-    Why3Generator,
+    CloneDepth, Why3Generator,
 };
 use crate::{
     backend::{
@@ -13,7 +13,9 @@ use crate::{
     ctx::{BodyId, CloneMap, TranslationCtx},
     translation::{
         binop_to_binop,
-        fmir::{self, Block, Branches, Expr, LocalDecls, Place, RValue, Statement, Terminator},
+        fmir::{
+            self, Block, Branches, Expr, ExprKind, LocalDecls, Place, RValue, Statement, Terminator,
+        },
         function::{closure_contract, promoted, ClosureContract},
         unop_to_unop,
     },
@@ -37,13 +39,13 @@ use why3::{
 use super::signature::sig_to_why3;
 
 fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
-    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Body);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into());
     let mut decls = Vec::new();
 
     let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).subst_identity().kind() else { unreachable!() };
     let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
 
-    let (clones, _) = names.to_clones(ctx);
+    let (clones, _) = names.to_clones(ctx, CloneDepth::Deep);
     decls.extend(
         // Definitely a hack but good enough for the moment
         clones.into_iter().filter(|d| matches!(d, Decl::UseDecl(_))),
@@ -152,7 +154,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     def_id: DefId,
 ) -> Option<Module> {
     let tcx = ctx.tcx;
-    let mut names = CloneMap::new(tcx, def_id.into(), CloneLevel::Body);
+    let mut names = CloneMap::new(tcx, def_id.into());
 
     let body_ids = collect_body_ids(ctx, def_id)?;
     let body = to_why(ctx, &mut names, body_ids[0]);
@@ -168,7 +170,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
         .map(|body_id| lower_promoted(ctx, &mut names, *body_id))
         .collect::<Vec<_>>();
 
-    let (clones, _) = names.to_clones(ctx);
+    let (clones, _) = names.to_clones(ctx, CloneDepth::Deep);
 
     let decls = closure_generic_decls(ctx.tcx, def_id)
         .chain(closure_type_use(ctx, def_id))
@@ -311,26 +313,26 @@ impl<'tcx> Expr<'tcx> {
         names: &mut CloneMap<'tcx>,
         locals: &LocalDecls<'tcx>,
     ) -> Exp {
-        match self {
-            Expr::Move(pl) => {
+        let e = match self.kind {
+            ExprKind::Move(pl) => {
                 // TODO invalidate original place
                 pl.as_rplace(ctx, names, locals)
             }
-            Expr::Copy(pl) => pl.as_rplace(ctx, names, locals),
-            Expr::BinOp(BinOp::BitAnd, ty, l, r) if ty.is_bool() => {
+            ExprKind::Copy(pl) => pl.as_rplace(ctx, names, locals),
+            ExprKind::BinOp(BinOp::BitAnd, ty, l, r) if ty.is_bool() => {
                 l.to_why(ctx, names, locals).lazy_and(r.to_why(ctx, names, locals))
             }
-            Expr::BinOp(BinOp::Eq, ty, l, r) if ty.is_bool() => {
+            ExprKind::BinOp(BinOp::Eq, ty, l, r) if ty.is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
                 Exp::impure_qvar(QName::from_string("Bool.eqb").unwrap())
                     .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
-            Expr::BinOp(BinOp::Ne, ty, l, r) if ty.is_bool() => {
+            ExprKind::BinOp(BinOp::Ne, ty, l, r) if ty.is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
                 Exp::impure_qvar(QName::from_string("Bool.neqb").unwrap())
                     .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
-            Expr::BinOp(op, ty, l, r) => {
+            ExprKind::BinOp(op, ty, l, r) => {
                 // Hack
                 translate_ty(ctx, names, DUMMY_SP, ty);
 
@@ -340,10 +342,10 @@ impl<'tcx> Expr<'tcx> {
                     Box::new(r.to_why(ctx, names, locals)),
                 )
             }
-            Expr::UnaryOp(op, ty, arg) => {
+            ExprKind::UnaryOp(op, ty, arg) => {
                 Exp::UnaryOp(unop_to_unop(ty, op), Box::new(arg.to_why(ctx, names, locals)))
             }
-            Expr::Constructor(id, subst, args) => {
+            ExprKind::Constructor(id, subst, args) => {
                 let args = args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
 
                 match ctx.def_kind(id) {
@@ -357,7 +359,7 @@ impl<'tcx> Expr<'tcx> {
                     }
                 }
             }
-            Expr::Call(id, subst, args) => {
+            ExprKind::Call(id, subst, args) => {
                 let mut args: Vec<_> =
                     args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
                 let fname = names.value(id, subst);
@@ -387,15 +389,11 @@ impl<'tcx> Expr<'tcx> {
                 };
                 exp
             }
-            Expr::Constant(c) => lower_impure(ctx, names, c),
-            Expr::Tuple(f) => {
+            ExprKind::Constant(c) => lower_impure(ctx, names, c),
+            ExprKind::Tuple(f) => {
                 Exp::Tuple(f.into_iter().map(|f| f.to_why(ctx, names, locals)).collect())
             }
-            Expr::Span(sp, e) => {
-                let e = e.to_why(ctx, names, locals);
-                ctx.attach_span(sp, e)
-            } // Expr::Cast(_, _) => todo!(),
-            Expr::Cast(e, source, target) => {
+            ExprKind::Cast(e, source, target) => {
                 let to_int = match source.kind() {
                     TyKind::Int(ity) => {
                         names.import_prelude_module(int_to_prelude(*ity));
@@ -426,40 +424,73 @@ impl<'tcx> Expr<'tcx> {
 
                 from_int.app_to(to_int.app_to(e.to_why(ctx, names, locals)))
             }
-            Expr::Len(pl) => {
+            ExprKind::Len(pl) => {
                 let len_call = Exp::impure_qvar(QName::from_string("Slice.length").unwrap())
                     .app_to(pl.to_why(ctx, names, locals));
                 len_call
             }
-            Expr::Array(fields) => Exp::impure_qvar(QName::from_string("Slice.create").unwrap())
-                .app_to(Exp::Const(Constant::Int(fields.len() as i128, None)))
-                .app_to(Exp::Sequence(
-                    fields.into_iter().map(|f| f.to_why(ctx, names, locals)).collect(),
-                )),
-            Expr::Repeat(e, len) => Exp::impure_qvar(QName::from_string("Slice.create").unwrap())
-                .app_to(len.to_why(ctx, names, locals))
-                .app_to(Exp::FnLit(Box::new(e.to_why(ctx, names, locals)))),
+            ExprKind::Array(fields) => {
+                let id = Ident::build("__arr_temp");
+                let ty = translate_ty(ctx, names, DUMMY_SP, self.ty);
+
+                let len = fields.len();
+
+                let arr_var = Exp::impure_var(id.clone());
+                let arr_elts =
+                    Exp::RecField { record: Box::new(arr_var.clone()), label: "elts".into() };
+                let fields = fields.into_iter().enumerate().map(|(ix, f)| {
+                    Exp::impure_qvar(QName::from_string("Seq.get").unwrap())
+                        .app(vec![arr_elts.clone(), Exp::Const(Constant::Int(ix as i128, None))])
+                        .eq(f.to_why(ctx, names, locals))
+                });
+
+                Exp::Let {
+                    pattern: Pattern::VarP(id.clone()),
+                    arg: Box::new(Exp::Any(ty)),
+                    body: Box::new(Exp::Chain(
+                        fields
+                            .map(|e| Exp::Assume(Box::new(e)))
+                            .chain(std::iter::once(Exp::Assume(Box::new(
+                                Exp::impure_qvar(QName::from_string("Slice.length").unwrap())
+                                    .app_to(arr_var.clone())
+                                    .eq(Exp::Const(Constant::Int(len as i128, None))),
+                            ))))
+                            .chain(std::iter::once(arr_var.clone()))
+                            .collect(),
+                    )),
+                }
+            }
+            ExprKind::Repeat(e, len) => {
+                Exp::impure_qvar(QName::from_string("Slice.create").unwrap())
+                    .app_to(len.to_why(ctx, names, locals))
+                    .app_to(Exp::FnLit(Box::new(e.to_why(ctx, names, locals))))
+            }
+        };
+
+        if self.span != DUMMY_SP {
+            ctx.attach_span(self.span, e)
+        } else {
+            e
         }
     }
 
     fn invalidated_places(&self, places: &mut Vec<fmir::Place<'tcx>>) {
-        match self {
-            Expr::Move(p) => places.push(p.clone()),
-            Expr::Copy(_) => {}
-            Expr::BinOp(_, _, l, r) => {
+        match &self.kind {
+            ExprKind::Move(p) => places.push(p.clone()),
+            ExprKind::Copy(_) => {}
+            ExprKind::BinOp(_, _, l, r) => {
                 l.invalidated_places(places);
                 r.invalidated_places(places)
             }
-            Expr::UnaryOp(_, _, e) => e.invalidated_places(places),
-            Expr::Constructor(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
-            Expr::Call(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
-            Expr::Constant(_) => {}
-            Expr::Cast(e, _, _) => e.invalidated_places(places),
-            Expr::Tuple(es) => es.iter().for_each(|e| e.invalidated_places(places)),
-            Expr::Span(_, e) => e.invalidated_places(places),
-            Expr::Len(e) => e.invalidated_places(places),
-            Expr::Array(f) => f.iter().for_each(|f| f.invalidated_places(places)),
-            Expr::Repeat(e, len) => {
+            ExprKind::UnaryOp(_, _, e) => e.invalidated_places(places),
+            ExprKind::Constructor(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
+            ExprKind::Call(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
+            ExprKind::Constant(_) => {}
+            ExprKind::Cast(e, _, _) => e.invalidated_places(places),
+            ExprKind::Tuple(es) => es.iter().for_each(|e| e.invalidated_places(places)),
+            ExprKind::Len(e) => e.invalidated_places(places),
+            ExprKind::Array(f) => f.iter().for_each(|f| f.invalidated_places(places)),
+            ExprKind::Repeat(e, len) => {
                 e.invalidated_places(places);
                 len.invalidated_places(places)
             }

@@ -154,7 +154,7 @@ impl<T> Seq<&T> {
     #[open]
     #[trusted]
     #[creusot::builtins = "prelude.Seq.to_owned"]
-    pub fn to_owned(self) -> Seq<T> {
+    pub fn to_owned_seq(self) -> Seq<T> {
         pearlite! {absurd}
     }
 }

@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{ghost, open, trusted, DeepModel, OrdLogic};
+use crate::{ghost, open, pearlite, trusted, DeepModel, Int, OrdLogic};
 use num_rational::BigRational;
 use std::cmp::Ordering;
 
@@ -17,6 +17,15 @@ impl DeepModel for BigRational {
     #[trusted]
     fn deep_model(self) -> Self::DeepModelTy {
         absurd
+    }
+}
+
+impl Real {
+    #[ghost]
+    #[trusted]
+    #[open(self)]
+    pub fn from_int(_: Int) -> Self {
+        pearlite! { absurd }
     }
 }
 
