@@ -124,7 +124,6 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
             fmir::ExprKind::Constant(t) => self.visit_term(t),
             fmir::ExprKind::Cast(e, _, _) => self.visit_expr(e),
             fmir::ExprKind::Tuple(es) => es.iter().for_each(|e| self.visit_expr(e)),
-            fmir::ExprKind::Span(_, e) => self.visit_expr(e),
             fmir::ExprKind::Len(e) => self.visit_expr(e),
             fmir::ExprKind::Array(es) => es.iter().for_each(|e| self.visit_expr(e)),
             fmir::ExprKind::Repeat(l, r) => {
@@ -290,7 +289,6 @@ impl<'tcx> SimplePropagator<'tcx> {
             fmir::ExprKind::Constant(t) => self.visit_term(t),
             fmir::ExprKind::Cast(e, _, _) => self.visit_expr(e),
             fmir::ExprKind::Tuple(es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
-            fmir::ExprKind::Span(_, e) => self.visit_expr(e),
             fmir::ExprKind::Len(e) => self.visit_expr(e),
             fmir::ExprKind::Array(es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
             fmir::ExprKind::Repeat(l, r) => {
