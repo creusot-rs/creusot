@@ -652,13 +652,10 @@ pub(crate) fn borrow_generated_id<V: std::fmt::Debug, T: std::fmt::Debug>(
         Box::new(Exp::pure_qvar(QName::from_string("Borrow.get_id").unwrap())),
         vec![original_borrow],
     );
-    // NOTE: no Deref should be present.
     for proj in projection {
         match proj {
             ProjectionElem::Deref => {
-                unreachable!(
-                    "the final borrow analysis should have garanteed that only one `Deref` appears"
-                )
+                // Deref of a box
             }
             ProjectionElem::Field(idx, _) => {
                 borrow_id = Exp::Call(
@@ -700,16 +697,14 @@ impl<'tcx> Statement<'tcx> {
                     place::create_assign_inner(ctx, names, locals, &rhs, reassign, span),
                 ]
             }
-            Statement::Assignment(lhs, RValue::FinalBorrow(rhs)) => {
-                let find_borrow =
-                    rhs.projection.iter().position(|p| matches!(p, ProjectionElem::Deref)).unwrap();
+            Statement::Assignment(lhs, RValue::FinalBorrow(rhs, deref_index)) => {
                 let original_borrow = Place {
                     local: rhs.local.clone(),
-                    projection: rhs.projection[..find_borrow].to_vec(),
+                    projection: rhs.projection[..deref_index].to_vec(),
                 }
                 .as_rplace(ctx, names, locals);
                 let borrow_id =
-                    borrow_generated_id(original_borrow, &rhs.projection[find_borrow + 1..]);
+                    borrow_generated_id(original_borrow, &rhs.projection[deref_index + 1..]);
                 let borrow = Exp::Call(
                     Box::new(Exp::impure_qvar(QName::from_string("Borrow.borrow_final").unwrap())),
                     vec![rhs.as_rplace(ctx, names, locals), borrow_id],

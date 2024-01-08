@@ -41,8 +41,8 @@ pub type PlaceId = usize;
 /// let location: rustc_middle::mir::Location = /* location of the reborrow in the MIR body */;
 /// let is_final = NotFinalPlaces::is_final_at(not_final_borrows, place, location);
 /// ```
-#[derive(Debug)]
 pub struct NotFinalPlaces<'tcx> {
+    tcx: TyCtxt<'tcx>,
     /// Mapping from a place to its ID
     ///
     /// This is necessary to use a `BitSet<PlaceId>`.
@@ -106,24 +106,36 @@ impl<'tcx> NotFinalPlaces<'tcx> {
                 }
             }
         }
-        Self { places, has_indirection: contains_dereference, subplaces, conflicting_places }
+        Self { tcx, places, has_indirection: contains_dereference, subplaces, conflicting_places }
     }
 
-    /// Run the analysis right **after** `location`, and determines if `place` is a final reborrow.
+    /// Run the analysis right **after** `location`, and determines if the borrow of
+    /// `place` is a final reborrow.
+    ///
+    /// # Returns
+    /// - If the reborrow is final, return the position of the dereference of the
+    /// original borrow in `place.projection`.
+    ///   
+    ///   For example, if the reborrow `&mut (*x.0)` is final, then the projections are
+    /// `[Field(0), Deref]`, and so we return `Some(1)`.
+    ///
+    ///   `Deref` of a box is not considered as a dereference of a borrow.
+    /// - Else, return `None`.
     pub fn is_final_at(
-        cursor: &mut ResultsCursor<'_, 'tcx, NotFinalPlaces<'tcx>>,
+        cursor: &mut ResultsCursor<'_, 'tcx, Self>,
         place: &Place<'tcx>,
         location: Location,
-    ) -> bool {
-        let deref_position =
-            match place.projection.iter().position(|p| matches!(p, ProjectionElem::Deref)) {
-                Some(p) => p,
-                // This is not a reborrow
-                None => return false,
-            };
-        if place.projection[deref_position + 1..].contains(&ProjectionElem::Deref) {
+    ) -> Option<usize> {
+        let deref_position = match Self::place_get_first_deref(place.as_ref(), cursor) {
+            Some(p) => p,
+            // `p` is not a reborrow
+            None => return None,
+        };
+        let borrowed =
+            PlaceRef { local: place.local, projection: &place.projection[deref_position + 1..] };
+        if Self::place_get_first_deref(borrowed, cursor).is_some() {
             // unnesting
-            return false;
+            return None;
         }
 
         ExtendedLocation::Start(location.successor_within_block()).seek_to(cursor);
@@ -135,10 +147,22 @@ impl<'tcx> NotFinalPlaces<'tcx> {
         for place in std::iter::once(&place_borrow).chain(analysis.conflicting_places[id].iter()) {
             let id = analysis.places[place];
             if cursor.contains(id) {
-                return false;
+                return None;
             }
         }
-        true
+        Some(deref_position)
+    }
+
+    /// Helper function: gets the index of the first projection of `place` that is a deref,
+    /// but not a deref of a box.
+    fn place_get_first_deref(
+        place: PlaceRef<'tcx>,
+        cursor: &mut ResultsCursor<'_, 'tcx, Self>,
+    ) -> Option<usize> {
+        place.iter_projections().position(|(pl, proj)| {
+            proj == ProjectionElem::Deref
+                && !pl.ty(&cursor.body().local_decls, cursor.analysis().tcx).ty.is_box()
+        })
     }
 }
 
