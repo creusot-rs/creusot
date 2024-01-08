@@ -14,7 +14,7 @@ use crate::{
     },
 };
 
-use super::{term::lower_pure, CloneLevel, Why3Generator};
+use super::{term::lower_pure, CloneLevel, Namer, Why3Generator};
 
 pub(crate) fn signature_of<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
@@ -26,9 +26,9 @@ pub(crate) fn signature_of<'tcx>(
     sig_to_why3(ctx, names, pre_sig, def_id)
 }
 
-pub(crate) fn sig_to_why3<'tcx>(
+pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut N,
     pre_sig: PreSignature<'tcx>,
     // FIXME: Get rid of this def id
     // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
@@ -79,10 +79,10 @@ pub(crate) fn sig_to_why3<'tcx>(
     Signature { name, trigger, attrs, retty: Some(retty), args, contract }
 }
 
-fn contract_to_why3<'tcx>(
+fn contract_to_why3<'tcx, N: Namer<'tcx>>(
     pre: PreContract<'tcx>,
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut N,
 ) -> Contract {
     let mut out = Contract::new();
     for term in pre.requires {

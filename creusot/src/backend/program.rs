@@ -2,7 +2,7 @@ use super::{
     clone_map::PreludeModule,
     signature::signature_of,
     term::{lower_impure, lower_pure},
-    CloneDepth, Why3Generator,
+    CloneDepth, Namer, Why3Generator,
 };
 use crate::{
     backend::{

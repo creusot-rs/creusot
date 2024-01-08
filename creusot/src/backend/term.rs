@@ -12,9 +12,9 @@ use why3::{
     Ident, QName,
 };
 
-pub(crate) fn lower_pure<'tcx>(
+pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut N,
     term: Term<'tcx>,
 ) -> Exp {
     let span = term.span;
@@ -23,9 +23,9 @@ pub(crate) fn lower_pure<'tcx>(
     ctx.attach_span(span, term)
 }
 
-pub(crate) fn lower_impure<'tcx>(
+pub(crate) fn lower_impure<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut N,
     term: Term<'tcx>,
 ) -> Exp {
     let span = term.span;
@@ -34,13 +34,13 @@ pub(crate) fn lower_impure<'tcx>(
     ctx.attach_span(span, term)
 }
 
-pub(super) struct Lower<'a, 'tcx> {
+pub(super) struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     pub(super) ctx: &'a mut Why3Generator<'tcx>,
-    pub(super) names: &'a mut CloneMap<'tcx>,
+    pub(super) names: &'a mut N,
     // true when we are translating a purely logical term
     pub(super) pure: Purity,
 }
-impl<'tcx> Lower<'_, 'tcx> {
+impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     pub(crate) fn lower_term(&mut self, term: Term<'tcx>) -> Exp {
         match term.kind {
             TermKind::Lit(l) => {
@@ -340,9 +340,9 @@ use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
 
 use super::Why3Generator;
 
-pub(crate) fn lower_literal<'tcx>(
+pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
     _: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut N,
     lit: Literal<'tcx>,
 ) -> Exp {
     match lit {

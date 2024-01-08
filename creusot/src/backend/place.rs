@@ -1,4 +1,5 @@
 use crate::{
+    backend::Namer,
     ctx::CloneMap,
     translation::fmir::{self, LocalDecls},
 };

@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
     backend,
-    backend::{all_generic_decls_for, own_generic_decls_for},
+    backend::{all_generic_decls_for, own_generic_decls_for, Namer},
     ctx::ItemType,
     util::{self, item_name, module_name},
 };

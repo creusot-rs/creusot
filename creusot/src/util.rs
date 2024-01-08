@@ -306,6 +306,16 @@ pub enum ItemType {
 }
 
 impl ItemType {
+    pub(crate) fn let_kind(&self) -> Option<LetKind> {
+        match self {
+            ItemType::Logic | ItemType::Ghost => Some(LetKind::Function),
+            ItemType::Predicate => Some(LetKind::Predicate),
+            ItemType::Program | ItemType::Closure => None,
+            ItemType::Constant => Some(LetKind::Constant),
+            _ => None,
+        }
+    }
+
     pub(crate) fn val(&self, sig: Signature) -> ValDecl {
         match self {
             ItemType::Logic | ItemType::Ghost => {
