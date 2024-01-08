@@ -393,7 +393,6 @@ impl<'tcx> Expr<'tcx> {
             ExprKind::Tuple(f) => {
                 Exp::Tuple(f.into_iter().map(|f| f.to_why(ctx, names, locals)).collect())
             }
-            ExprKind::Span(_, e) => e.to_why(ctx, names, locals), // ExprKind::Cast(_, _) => todo!(),
             ExprKind::Cast(e, source, target) => {
                 let to_int = match source.kind() {
                     TyKind::Int(ity) => {
@@ -489,7 +488,6 @@ impl<'tcx> Expr<'tcx> {
             ExprKind::Constant(_) => {}
             ExprKind::Cast(e, _, _) => e.invalidated_places(places),
             ExprKind::Tuple(es) => es.iter().for_each(|e| e.invalidated_places(places)),
-            ExprKind::Span(_, e) => e.invalidated_places(places),
             ExprKind::Len(e) => e.invalidated_places(places),
             ExprKind::Array(f) => f.iter().for_each(|f| f.invalidated_places(places)),
             ExprKind::Repeat(e, len) => {
