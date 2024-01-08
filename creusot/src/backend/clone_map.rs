@@ -22,7 +22,7 @@ use why3::{
 use crate::{
     backend::{
         clone_map::{elaborator::CloneElaborator, expander::Expander},
-        dependency::Dependency,
+        dependency::{Dependencies, Dependency, HasDeps},
         interface,
     },
     ctx::*,
@@ -434,6 +434,13 @@ impl<'tcx> CloneMap<'tcx> {
 
     fn insert(&mut self, key: CloneNode<'tcx>) -> Kind {
         let key = key.erase_regions(self.tcx).closure_hack(self.tcx);
+        if format!("{key:?}") == "Type(std::option::Option<std::boxed::Box<Node<K, V>>>)"
+            && format!("{:?}", self.self_did())
+                == "Some(DefId(0:89 ~ redd_black_tree[b0bf]::{impl#0}::has_mapping))"
+        {
+            eprintln!("{}\n\n", std::backtrace::Backtrace::force_capture());
+        }
+
         self.dep_info
             .entry(key)
             .and_modify(|l| {
@@ -547,6 +554,22 @@ impl<'tcx> CloneMap<'tcx> {
 
         use petgraph::visit::Walker;
         let mut roots: IndexSet<_> = self.names.names.keys().cloned().collect();
+
+        // TODO: Remove the clones which are currently necessary since `Dependencies` needs the whole `Why3Generator` to access
+        // projections in types.
+        if let Some(did) = self.self_did() && ctx.is_logical(did) && let Some(t) = ctx.term(did).cloned() {
+            let sig = ctx.sig(did).clone();
+
+            let mut deps = Dependencies(ctx, Default::default(), Default::default());
+            t.gather_deps(&mut deps);
+            sig.gather_deps(&mut deps);
+
+
+            for k in &roots {
+                if *k == self.self_key() { continue }
+                assert!(deps.1.contains(k), "static dependencies for {:?} are missing {:?} {:?} {:?}", did, k, ctx.sig(did).clone(),  ctx.term(did).unwrap());
+            }
+        }
 
         let param_env = self.param_env(ctx);
         let mut graph = Expander::new(&mut self.names, self.self_id, param_env);

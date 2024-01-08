@@ -310,6 +310,10 @@ impl<'tcx> Why3Generator<'tcx> {
 
         &self.projections_in_ty[&item]
     }
+
+    fn is_logical(&self, did: DefId) -> bool {
+       matches!(util::item_type(self.tcx, did), ItemType::Logic | ItemType::Ghost | ItemType::Predicate)
+    }
 }
 
 // Closures inherit the generic parameters of the original function they were defined in, but

@@ -1,3 +1,4 @@
+use indexmap::IndexSet;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{EarlyBinder, InternalSubsts, ParamEnv, SubstsRef, Ty, TyCtxt, TyKind};
@@ -6,11 +7,15 @@ use rustc_type_ir::AliasKind;
 
 use crate::{
     ctx::TranslationCtx,
-    translation::traits,
-    util::{self, ItemType},
+    translation::{
+        pearlite::{super_visit_term, Pattern, Term, TermVisitor},
+        specification::PreContract,
+        traits,
+    },
+    util::{self, ItemType, PreSignature},
 };
 
-use super::{ty_inv::TyInvKind, TransId};
+use super::{ty_inv::TyInvKind, walk_types, PreludeModule, TransId, Why3Generator};
 
 /// Dependencies between items and the resolution logic to find the 'monomorphic' forms accounting
 /// for various Creusot hacks like the handling of closures.
@@ -151,4 +156,131 @@ pub(crate) fn closure_hack<'tcx>(
     }
 
     (def_id, subst)
+}
+
+pub(crate) struct Dependencies<'a, 'tcx>(
+    pub &'a mut Why3Generator<'tcx>,
+    pub IndexSet<Dependency<'tcx>>,
+    pub IndexSet<PreludeModule>,
+);
+impl<'a, 'tcx> Dependencies<'a, 'tcx> {
+    fn push(&mut self, def_id: DefId, substs: SubstsRef<'tcx>) {
+        self.1.insert(Dependency::new(self.0.tcx, (def_id, substs)));
+        substs.gather_deps(self);
+    }
+    fn push_prelude(&mut self, pm: PreludeModule) {
+        self.2.insert(pm);
+    }
+}
+
+pub(crate) trait HasDeps<'tcx> {
+    fn gather_deps(&self, deps: &mut Dependencies<'_, 'tcx>);
+}
+
+impl<'tcx> HasDeps<'tcx> for Term<'tcx> {
+    fn gather_deps(&self, deps: &mut Dependencies<'_, 'tcx>) {
+        deps.visit_term(self);
+    }
+}
+
+impl<'tcx> HasDeps<'tcx> for PreSignature<'tcx> {
+    fn gather_deps(&self, deps: &mut Dependencies<'_, 'tcx>) {
+        self.inputs.iter().for_each(|(_, _, ty)| ty.gather_deps(deps));
+        self.output.gather_deps(deps);
+        self.contract.gather_deps(deps);
+    }
+}
+
+impl<'tcx> HasDeps<'tcx> for PreContract<'tcx> {
+    fn gather_deps(&self, deps: &mut Dependencies<'_, 'tcx>) {
+        self.variant.iter().for_each(|t| t.gather_deps(deps));
+        self.requires.iter().for_each(|t| t.gather_deps(deps));
+        self.ensures.iter().for_each(|t| t.gather_deps(deps));
+    }
+}
+
+impl<'tcx> HasDeps<'tcx> for Ty<'tcx> {
+    fn gather_deps(&self, deps: &mut Dependencies<'_, 'tcx>) {
+        walk_types(*self, |ty| {
+            use rustc_type_ir::TyKind;
+            match ty.kind() {
+                TyKind::Adt(def, subst) => {
+                    deps.push(def.did(), subst);
+                    for p in deps.0.projections_in_ty(def.did()).to_owned() {
+                        EarlyBinder::bind(p.to_ty(deps.0.tcx))
+                            .subst(deps.0.tcx, subst)
+                            .gather_deps(deps);
+                    }
+                }
+                TyKind::Alias(_, aty) => deps.push(aty.def_id, aty.substs),
+                _ => (),
+            }
+        })
+    }
+}
+
+impl<'tcx> HasDeps<'tcx> for SubstsRef<'tcx> {
+    fn gather_deps(&self, deps: &mut Dependencies<'_, 'tcx>) {
+        walk_types(*self, |ty| {
+            ty.gather_deps(deps);
+        })
+    }
+}
+
+impl<'tcx> HasDeps<'tcx> for Pattern<'tcx> {
+    fn gather_deps(&self, deps: &mut Dependencies<'_, 'tcx>) {
+        match self {
+            Pattern::Constructor { adt, substs, fields, .. } => {
+                let type_id = match deps.0.def_kind(*adt) {
+                    DefKind::Closure | DefKind::Struct | DefKind::Enum | DefKind::Union => *adt,
+                    DefKind::Variant => deps.0.parent(*adt),
+                    _ => unreachable!("Not a type or constructor"),
+                };
+                deps.push(type_id, substs);
+                fields.iter().for_each(|p| p.gather_deps(deps))
+            }
+            Pattern::Tuple(_) => (),
+            Pattern::Wildcard => (),
+            Pattern::Binder(_) => (),
+            Pattern::Boolean(_) => (),
+        }
+    }
+}
+
+impl<'tcx> TermVisitor<'tcx> for Dependencies<'_, 'tcx> {
+    fn visit_term(&mut self, term: &Term<'tcx>) {
+        use crate::translation::pearlite::TermKind;
+        // TODO: This is missing dependencies that occur inside of patterns and in types
+        match &term.kind {
+            TermKind::Item(id, subst) => self.push(*id, subst),
+            TermKind::Call { id, subst, .. } => self.push(*id, subst),
+            TermKind::Constructor { typ, variant, .. } => {
+                let TyKind::Adt(_, subst) = term.ty.kind() else { return };
+                let def_id = self.0.adt_def(typ).variants()[*variant].def_id;
+                self.push(self.0.adt_def(typ).did(), subst);
+                self.push(def_id, subst);
+            }
+            TermKind::Match { scrutinee, arms } => {
+                scrutinee.ty.gather_deps(self);
+
+                arms.iter().for_each(|(pat, _)| pat.gather_deps(self));
+            }
+            TermKind::Cur { .. } => self.push_prelude(PreludeModule::Borrow),
+            TermKind::Fin { .. } => self.push_prelude(PreludeModule::Borrow),
+            TermKind::Forall { binder, .. } => binder.1.gather_deps(self),
+            TermKind::Exists { binder, .. } => binder.1.gather_deps(self),
+            TermKind::Projection { lhs, .. } => {
+                let base_ty = lhs.ty;
+
+                let (def_id, substs) = match base_ty.kind() {
+                    TyKind::Closure(did, substs) => (*did, substs),
+                    TyKind::Adt(def, substs) => (def.did(), substs),
+                    _ => unreachable!(),
+                };
+                self.push(def_id, substs);
+            }
+            _ => {}
+        };
+        super_visit_term(term, self)
+    }
 }
