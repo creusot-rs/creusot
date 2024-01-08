@@ -44,7 +44,7 @@ impl<'tcx> CloneElaborator<'tcx> {
         // Temporary, turn parametric
         deps: &DepGraph<'tcx>,
         item: DepNode<'tcx>,
-        depth: CloneDepth,
+        level_of_item: CloneLevel,
     ) -> Option<Decl> {
         // Types can't be cloned, but are used (for now).
         if let DepNode::Type(_) = item {
@@ -67,19 +67,8 @@ impl<'tcx> CloneElaborator<'tcx> {
         let mut clone_subst = base_subst(ctx, self.param_env, names, item);
         trace!("base substs of {item:?}: {clone_subst:?}");
 
-        let outbound: Vec<_> = deps.dependencies(item).collect();
-
-        let level_of_item = match (depth, deps.info(item).opaque) {
-            // We are requesting a deep clone of an opaque thing: stop at the contract
-            (CloneDepth::Deep, CloneOpacity::Opaque) => CloneLevel::Contract,
-            // Otherwise, go deep and get the body
-            (CloneDepth::Deep, _) => CloneLevel::Body,
-            // If we are only doing shallow clones, stop at the signature (no contracts)
-            (CloneDepth::Shallow, _) => CloneLevel::Signature,
-        };
-
         // Grab definitions from all of our dependencies
-        for (edge_level, syms, dep) in outbound {
+        for (edge_level, syms, dep) in deps.dependencies(item) {
             if edge_level > level_of_item {
                 continue;
             };

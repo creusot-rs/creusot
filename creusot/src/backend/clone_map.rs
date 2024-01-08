@@ -591,7 +591,16 @@ impl<'tcx> CloneMap<'tcx> {
                 continue;
             }
 
-            let Some(decl) = elab.build_clone(ctx, &mut self, &clone_graph, node, depth) else { continue };
+            let level_of_item = match (depth, clone_graph.info(node).opaque) {
+                // We are requesting a deep clone of an opaque thing: stop at the contract
+                (CloneDepth::Deep, CloneOpacity::Opaque) => CloneLevel::Contract,
+                // Otherwise, go deep and get the body
+                (CloneDepth::Deep, _) => CloneLevel::Body,
+                // If we are only doing shallow clones, stop at the signature (no contracts)
+                (CloneDepth::Shallow, _) => CloneLevel::Signature,
+            };
+
+            let Some(decl) = elab.build_clone(ctx, &mut self, &clone_graph, node, level_of_item) else { continue };
             decls.push(decl);
         }
 
