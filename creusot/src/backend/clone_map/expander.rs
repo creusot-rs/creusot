@@ -80,10 +80,6 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 self.clone_graph.add_graph_edge(self_key, key, CloneLevel::Root);
             }
 
-            if self.clone_graph.info(key).kind == Kind::Hidden {
-                continue;
-            }
-
             if let Some((did, subst)) = key.did() {
                 if traits::still_specializable(ctx.tcx, self.param_env, did, subst) {
                     self.clone_graph.info_mut(key).opaque();
@@ -171,8 +167,6 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         for (dep, info) in ctx.dependencies(key).iter().flat_map(|i| i.iter()) {
             trace!("adding dependency {:?} {:?}", dep, info.level);
 
-            let orig = dep;
-
             let dep = self.resolve_dep(ctx, dep.subst(ctx.tcx, key));
 
             trace!("inserting dependency {:?} {:?}", key, dep);
@@ -183,10 +177,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 continue;
             }
 
-            let edge_set = self.clone_graph.add_graph_edge(key, dep, info.level);
-            if let Some(sym) = refineable_symbol(ctx.tcx, *orig) {
-                edge_set.insert((info.kind, sym));
-            }
+            self.clone_graph.add_graph_edge(key, dep, info.level);
         }
     }
 
@@ -257,24 +248,5 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         if self.clone_graph.add_node(dep, self.namer.insert(dep), level) {
             self.expansion_queue.push_back(dep);
         }
-    }
-}
-
-// Identify the name and kind of symbol which can be refined in a given defid
-fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, dep: DepNode<'tcx>) -> Option<SymbolKind> {
-    use util::ItemType::*;
-    let (def_id, _) = dep.did()?;
-    match util::item_type(tcx, def_id) {
-        Ghost | Logic => Some(SymbolKind::Function(tcx.item_name(def_id))),
-        Predicate => Some(SymbolKind::Predicate(tcx.item_name(def_id))),
-        Program => Some(SymbolKind::Val(tcx.item_name(def_id))),
-        AssocTy => match tcx.associated_item(def_id).container {
-            ty::TraitContainer => Some(SymbolKind::Type(tcx.item_name(def_id))),
-            ty::ImplContainer => None,
-        },
-        Trait | Impl => unreachable!("trait blocks have no refinable symbols"),
-        Type => None,
-        Constant => Some(SymbolKind::Const(tcx.item_name(def_id))),
-        _ => unreachable!(),
     }
 }

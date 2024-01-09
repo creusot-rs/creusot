@@ -237,15 +237,15 @@ impl<'tcx> Why3Generator<'tcx> {
         self.functions.insert(tid, TranslatedItem::TyInv { modl });
     }
 
-    pub(crate) fn item(&self, def_id: DefId) -> Option<&TranslatedItem> {
-        let tid: TransId = if matches!(util::item_type(***self, def_id), ItemType::Type) {
-            self.representative_type(def_id)
-        } else {
-            def_id
-        }
-        .into();
-        self.functions.get(&tid)
-    }
+    // pub(crate) fn item(&self, def_id: DefId) -> Option<&TranslatedItem> {
+    //     let tid: TransId = if matches!(util::item_type(***self, def_id), ItemType::Type) {
+    //         self.representative_type(def_id)
+    //     } else {
+    //         def_id
+    //     }
+    //     .into();
+    //     self.functions.get(&tid)
+    // }
 
     pub(crate) fn modules(self) -> impl Iterator<Item = (TransId, TranslatedItem)> + 'tcx {
         self.functions.into_iter()

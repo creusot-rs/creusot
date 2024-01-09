@@ -45,14 +45,6 @@ pub enum TranslatedItem {
 }
 
 impl<'a> TranslatedItem {
-    pub(crate) fn has_axioms(&self) -> bool {
-        match self {
-            TranslatedItem::Logic { has_axioms, .. } => *has_axioms,
-            TranslatedItem::Program { .. } => false,
-            _ => false,
-        }
-    }
-
     pub(crate) fn modules(self) -> Box<dyn Iterator<Item = Module>> {
         use std::iter;
         use TranslatedItem::*;

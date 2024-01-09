@@ -1,6 +1,6 @@
 #![allow(deprecated)]
 
-use heck::{ToSnakeCase, ToUpperCamelCase};
+use heck::ToSnakeCase;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
 use rustc_hir::{
@@ -15,21 +15,18 @@ use rustc_span::Symbol;
 use rustc_target::abi::FieldIdx;
 
 use why3::{
-    declaration::{CloneKind, CloneSubst, Decl, Use},
+    declaration::{CloneKind, Decl, Use},
     Ident, QName,
 };
 
 use crate::{
     backend::{
-        clone_map::{
-            elaborator::{CloneElaborator, SymbolElaborator},
-            expander::Expander,
-        },
+        clone_map::{elaborator::*, expander::Expander},
         dependency::Dependency,
         interface,
     },
     ctx::*,
-    util::{self, ident_of, ident_of_ty, inv_module_name, item_name, module_name},
+    util::{self, inv_module_name, item_name, module_name},
 };
 use rustc_macros::{TyDecodable, TyEncodable};
 
@@ -134,18 +131,16 @@ pub(crate) trait Namer<'tcx> {
 
 impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
     fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        let name = item_name(self.tcx, def_id, Namespace::ValueNS);
         let node = CloneNode::new(self.tcx, (def_id, subst));
         match self.insert(node) {
-            Kind::Hidden => name.into(),
+            Kind::Hidden(nm) => nm.as_str().to_snake_case().into(),
             Kind::Named(nm) => nm.as_str().to_snake_case().into(),
         }
     }
 
     fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        let name = item_name(self.tcx, def_id, Namespace::TypeNS);
         let node = CloneNode::new(self.tcx, (def_id, subst));
-        self.insert(node).qname_ident(name.into())
+        self.insert(node).ident().into()
     }
 
     fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
@@ -274,24 +269,12 @@ impl<'tcx> CloneNames<'tcx> {
                     let name = Symbol::intern(&*module_name(self.tcx, did));
                     Kind::Named(name)
                 } else {
-                    Kind::Hidden
+                    Kind::Hidden(Symbol::intern("hidden_type_name"))
                 };
             }
 
-            let base = if let CloneNode::TyInv(_, inv_kind) = key {
-                Symbol::intern(&*inv_module_name(self.tcx, inv_kind))
-            } else {
-                let did = key.did().unwrap().0;
-                let base = match util::item_type(self.tcx, did) {
-                    ItemType::Impl => self.tcx.item_name(self.tcx.trait_id_of_impl(did).unwrap()),
-                    ItemType::Closure => Symbol::intern(&format!(
-                        "closure{}",
-                        self.tcx.def_path(did).data.last().unwrap().disambiguator
-                    )),
-                    _ => self.tcx.item_name(did),
-                };
-                Symbol::intern(&base.as_str().to_upper_camel_case())
-            };
+            let base = key.base_ident(self.tcx);
+
             Kind::Named(self.counts.insert(base))
         })
     }
@@ -306,7 +289,7 @@ impl NameSupply {
 
 #[derive(Default)]
 struct DepGraph<'tcx> {
-    graph: DiGraphMap<DepNode<'tcx>, (CloneLevel, IndexSet<(Kind, SymbolKind)>)>,
+    graph: DiGraphMap<DepNode<'tcx>, (CloneLevel, ())>,
     info: IndexMap<DepNode<'tcx>, CloneInfo>,
     roots: IndexSet<DepNode<'tcx>>,
 }
@@ -340,36 +323,36 @@ impl<'tcx> DepGraph<'tcx> {
     }
 
     // Adds a dependency from `user` on `prov` for the symbol `sym`.
-    fn add_graph_edge(
-        &mut self,
-        user: DepNode<'tcx>,
-        prov: DepNode<'tcx>,
-        level: CloneLevel,
-    ) -> &mut IndexSet<(Kind, SymbolKind)> {
+    fn add_graph_edge(&mut self, user: DepNode<'tcx>, prov: DepNode<'tcx>, level: CloneLevel) {
         // trace!("edge {k1:?} = {:?} --> {k2:?} = {:?}", user, prov);
 
         if let None = self.graph.edge_weight_mut(user, prov) {
-            self.graph.add_edge(user, prov, (level, IndexSet::new()));
+            self.graph.add_edge(user, prov, (level, ()));
         };
-
-        &mut self.graph.edge_weight_mut(user, prov).unwrap().1
     }
 
     fn dependencies(
         &self,
         node: DepNode<'tcx>,
-    ) -> impl Iterator<Item = (CloneLevel, &IndexSet<(Kind, SymbolKind)>, DepNode<'tcx>)> {
-        self.graph.edges_directed(node, Outgoing).map(|(_, n, (lvl, nms))| (*lvl, nms, n))
+    ) -> impl Iterator<Item = (CloneLevel, DepNode<'tcx>)> + '_ {
+        self.graph.edges_directed(node, Outgoing).map(|(_, n, (lvl, _))| (*lvl, n))
     }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable, Hash)]
 enum Kind {
     Named(Symbol),
-    Hidden,
+    // Unclear why we need to keep `Hideen` around
+    Hidden(Symbol),
 }
 
 impl Kind {
+    fn ident(&self) -> Ident {
+        match self {
+            Kind::Named(nm) => nm.as_str().into(),
+            Kind::Hidden(nm) => nm.as_str().into(),
+        }
+    }
     fn qname_ident(&self, method: Ident) -> QName {
         let module = match &self {
             Kind::Named(name) => vec![name.to_string().into()],
@@ -383,7 +366,7 @@ impl Into<CloneKind> for Kind {
     fn into(self) -> CloneKind {
         match self {
             Kind::Named(i) => CloneKind::Named(i.to_string().into()),
-            Kind::Hidden => CloneKind::Bare,
+            Kind::Hidden(_) => CloneKind::Bare,
         }
     }
 }
@@ -438,8 +421,9 @@ impl<'tcx> CloneMap<'tcx> {
         let mut dep_info = IndexMap::default();
 
         debug!("cloning self: {:?}", self_id);
-        names.names.insert(CloneNode::from_trans_id(tcx, self_id), Kind::Hidden);
-        dep_info.insert(CloneNode::from_trans_id(tcx, self_id), CloneLevel::Body);
+        let node = CloneNode::from_trans_id(tcx, self_id);
+        names.names.insert(node, Kind::Hidden(node.base_ident(tcx)));
+        dep_info.insert(node, CloneLevel::Body);
 
         CloneMap { tcx, self_id, names, dep_info, dep_level: CloneLevel::Body }
     }
@@ -447,7 +431,7 @@ impl<'tcx> CloneMap<'tcx> {
     /// Internal: only meant for mutually recursive type declaration
     pub(crate) fn insert_hidden(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) {
         let node = CloneNode::new(self.tcx, (def_id, subst)).erase_regions(self.tcx);
-        self.names.names.insert(node, Kind::Hidden);
+        self.names.names.insert(node, Kind::Hidden(node.base_ident(self.tcx)));
         self.dep_info.insert(node, CloneLevel::Body);
     }
 
@@ -516,7 +500,7 @@ impl<'tcx> CloneMap<'tcx> {
             let mut i = 0;
             while i < roots.len() {
                 let r = roots.get_index(i).unwrap();
-                for (l, _, e) in clone_graph.dependencies(*r) {
+                for (l, e) in clone_graph.dependencies(*r) {
                     if l == CloneLevel::Signature {
                         roots.insert(e);
                     }
@@ -536,7 +520,7 @@ impl<'tcx> CloneMap<'tcx> {
                 continue;
             }
 
-            if clone_graph.info(node).kind == Kind::Hidden {
+            if matches!(clone_graph.info(node).kind, Kind::Hidden(_)) {
                 continue;
             }
 
@@ -563,7 +547,7 @@ impl<'tcx> CloneMap<'tcx> {
         let summary: CloneSummary<'tcx> = roots
             .into_iter()
             .filter_map(|r| {
-                if clone_graph.info(r).kind == Kind::Hidden {
+                if matches!(clone_graph.info(r).kind, Kind::Hidden(_)) {
                     None
                 } else {
                     Some((r, clone_graph.info(r).clone()))
@@ -633,55 +617,6 @@ fn cloneable_name(ctx: &TranslationCtx, dep: DepNode, clone_level: CloneLevel) -
         }
         Trait | Type | AssocTy => module_name(ctx.tcx, def_id).into(),
         Unsupported(_) => unreachable!(),
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum SymbolKind {
-    Val(Symbol),
-    Type(Symbol),
-    Function(Symbol),
-    Predicate(Symbol),
-    Const(Symbol),
-}
-
-impl SymbolKind {
-    fn sym(&self) -> Symbol {
-        match self {
-            SymbolKind::Val(i) => *i,
-            SymbolKind::Type(i) => *i,
-            SymbolKind::Function(i) => *i,
-            SymbolKind::Predicate(i) => *i,
-            SymbolKind::Const(i) => *i,
-        }
-    }
-
-    fn ident(&self) -> Ident {
-        match self {
-            SymbolKind::Type(_) => ident_of_ty(self.sym()),
-            _ => ident_of(self.sym()),
-        }
-    }
-
-    fn to_subst(self, src: Kind, tgt: Kind) -> CloneSubst {
-        let id = self.ident();
-        match self {
-            SymbolKind::Val(_) => CloneSubst::Val(src.qname_ident(id.clone()), tgt.qname_ident(id)),
-            SymbolKind::Type(_) => CloneSubst::Type(
-                src.qname_ident(id.clone()),
-                why3::ty::Type::TConstructor(tgt.qname_ident(id)),
-            ),
-            SymbolKind::Function(_) => {
-                CloneSubst::Function(src.qname_ident(id.clone()), tgt.qname_ident(id))
-            }
-            SymbolKind::Predicate(_) => {
-                CloneSubst::Predicate(src.qname_ident(id.clone()), tgt.qname_ident(id))
-            }
-            SymbolKind::Const(_) => {
-                // TMP
-                CloneSubst::Val(src.qname_ident(id.clone()), tgt.qname_ident(id))
-            }
-        }
     }
 }
 
