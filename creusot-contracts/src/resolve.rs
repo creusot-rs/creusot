@@ -26,6 +26,15 @@ impl<T: ?Sized> Resolve for &mut T {
     }
 }
 
+#[trusted]
+impl<T> Resolve for Box<T> {
+    #[predicate]
+    #[open]
+    fn resolve(self) -> bool {
+        Resolve::resolve(*self)
+    }
+}
+
 #[cfg(creusot)]
 #[trusted]
 impl<T> Resolve for T {
