@@ -2,7 +2,11 @@ use super::{
     ty::{translate_ty, ty_param_names},
     CloneMap, CloneSummary, TransId, Why3Generator,
 };
-use crate::{ctx::*, translation::traits, util};
+use crate::{
+    ctx::*,
+    translation::{pearlite::Term, traits},
+    util,
+};
 use indexmap::IndexSet;
 use rustc_ast::Mutability;
 use rustc_hir::{def::Namespace, def_id::DefId};
@@ -158,7 +162,31 @@ pub(crate) fn build_inv_module<'tcx>(
     (Module { name: util::inv_module_name(ctx.tcx, inv_kind), decls }, summary)
 }
 
-fn build_inv_axiom<'tcx>(
+pub(crate) fn invariant_term<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    ty: Ty<'tcx>,
+    inv_kind: TyInvKind,
+) -> Term<'tcx> {
+    let inv_id = ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
+    let subst = ctx.mk_substs(&[GenericArg::from(ty)]);
+    let tcx = ctx.tcx;
+    match inv_kind {
+        TyInvKind::Trivial => {
+            let var = Term::var(Symbol::intern("x"), ty);
+            Term::forall(
+                Term::eq(tcx, Term::call(tcx, inv_id, subst, vec![var]), Term::mk_true(tcx)),
+                (Symbol::intern("x"), ty),
+            )
+        }
+        TyInvKind::Borrow(_) => todo!(),
+        TyInvKind::Box => todo!(),
+        TyInvKind::Adt(_) => todo!(),
+        TyInvKind::Tuple(_) => todo!(),
+        TyInvKind::Slice => todo!(),
+    }
+}
+
+pub(crate) fn build_inv_axiom<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     inv_kind: TyInvKind,

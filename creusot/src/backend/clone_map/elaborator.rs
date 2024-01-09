@@ -2,12 +2,12 @@ use std::iter;
 
 use indexmap::IndexSet;
 use rustc_hir::{def::Namespace, def_id::DefId};
-use rustc_middle::ty::{ParamEnv, SubstsRef, Ty};
+use rustc_middle::ty::{EarlyBinder, ParamEnv, SubstsRef, Ty};
 use rustc_span::DUMMY_SP;
 use rustc_target::abi::FieldIdx;
 
 use why3::{
-    declaration::{CloneSubst, Decl, DeclClone, LetDecl, Use, ValDecl},
+    declaration::{Axiom, CloneSubst, Decl, DeclClone, LetDecl, Use, ValDecl},
     Ident, QName,
 };
 
@@ -18,6 +18,7 @@ use crate::{
         signature::{sig_to_why3, signature_of},
         term::lower_pure,
         ty::ty_param_names,
+        ty_inv::{build_inv_axiom, invariant_term},
         Why3Generator,
     },
     ctx::*,
@@ -181,17 +182,16 @@ impl<'tcx> SymbolElaborator<'tcx> {
             }
         }
 
-        if let DepNode::TyInv(_, _) = item {
-            eprintln!("Maing clone for type invariant, so skipping");
-
-            return None;
+        if let DepNode::TyInv(ty, kind) = item {
+            let term = invariant_term(ctx, ty, kind);
+            let exp = lower_pure(ctx, names, term);
+            let axiom = Axiom { name: names.ty_inv(ty).name, rewrite: false, axiom: exp };
+            return Some(Decl::Axiom(axiom));
         }
 
         let Some((def_id, subst)) = item.did() else { unreachable!() };
 
-
-
-        let mut pre_sig = ctx.sig(def_id).clone();
+        let mut pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone()).subst(ctx.tcx, subst);
         let kind = util::item_type(ctx.tcx, def_id).let_kind();
         // let names = SymNamer(names.names.clone());
         // let names = &mut & names ;

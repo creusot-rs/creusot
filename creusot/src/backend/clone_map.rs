@@ -1,6 +1,6 @@
 #![allow(deprecated)]
 
-use heck::ToUpperCamelCase;
+use heck::{ToUpperCamelCase, ToSnakeCase};
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
 use rustc_hir::{
@@ -136,7 +136,7 @@ impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
         let node = CloneNode::new(self.tcx, (def_id, subst));
         match self.insert(node) {
             Kind::Hidden => name.into(),
-            Kind::Named(nm) => nm.as_str().to_lowercase().into(),
+            Kind::Named(nm) => nm.as_str().to_snake_case().into(),
         }
     }
 
