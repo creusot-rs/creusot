@@ -1,9 +1,13 @@
 use std::iter;
 
+use heck::ToSnakeCase;
 use indexmap::IndexSet;
-use rustc_hir::{def::Namespace, def_id::DefId};
-use rustc_middle::ty::{EarlyBinder, ParamEnv, SubstsRef, Ty};
-use rustc_span::DUMMY_SP;
+use rustc_hir::{
+    def::{DefKind, Namespace},
+    def_id::DefId,
+};
+use rustc_middle::ty::{self, EarlyBinder, ParamEnv, SubstsRef, Ty, TyCtxt};
+use rustc_span::{Symbol, DUMMY_SP};
 use rustc_target::abi::FieldIdx;
 
 use why3::{
@@ -22,7 +26,7 @@ use crate::{
         Why3Generator,
     },
     ctx::*,
-    translation::specification::PreContract,
+    translation::{pearlite::normalize, specification::PreContract},
     util::{self, get_builtin, item_name},
 };
 
@@ -181,6 +185,17 @@ impl<'tcx> SymbolElaborator<'tcx> {
                 return use_decl.map(Decl::UseDecl);
             }
         }
+        let self_key = names.self_key();
+
+        let old_names = names;
+        let mut names = SymNamer {
+            tcx: ctx.tcx,
+            names: old_names.names.clone(),
+            param_env: old_names.param_env(ctx),
+        };
+        let names = &mut names;
+
+        // let names = old_names;
 
         if let DepNode::TyInv(ty, kind) = item {
             let term = invariant_term(ctx, ty, kind);
@@ -190,6 +205,17 @@ impl<'tcx> SymbolElaborator<'tcx> {
         }
 
         let Some((def_id, subst)) = item.did() else { unreachable!() };
+
+        if util::item_type(ctx.tcx, def_id) == ItemType::AssocTy {
+            let DepNode::Type(assoc_ty) = item else { panic!() };
+            eprintln!("{:?}", self_key);
+            eprintln!(
+                " associated type for the moment {assoc_ty:?} normalizes to {:?}",
+                names.normalize(ctx, assoc_ty)
+            );
+
+            return Some(ctx.assoc_ty_decl(names, def_id));
+        }
 
         let mut pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone()).subst(ctx.tcx, subst);
         let kind = util::item_type(ctx.tcx, def_id).let_kind();
@@ -218,6 +244,8 @@ impl<'tcx> SymbolElaborator<'tcx> {
         if ctx.is_logical(def_id) {
             let term = ctx.term(def_id)?.clone();
 
+            let mut term = EarlyBinder::bind(term).subst(ctx.tcx, subst);
+            normalize(ctx.tcx, names.param_env, &mut term);
             let body = lower_pure(ctx, names, term);
 
             Some(Decl::Let(LetDecl { kind, sig, rec: false, ghost: false, body }))
@@ -228,62 +256,111 @@ impl<'tcx> SymbolElaborator<'tcx> {
     }
 }
 
-// struct SymNamer<'tcx>(CloneNames<'tcx>);
+struct SymNamer<'tcx> {
+    tcx: TyCtxt<'tcx>,
+    names: CloneNames<'tcx>,
+    param_env: ParamEnv<'tcx>,
+}
 
-// impl<'tcx> Namer<'tcx> for &SymNamer<'tcx> {
-//     fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-//         let node = DepNode::new(self.0.tcx, (def_id, subst));
-//         let kind = self.0.names[&node];
-//         eprintln!("{def_id:?} {subst:?}");
-//         match kind {
-//             Kind::Hidden => "foo".into(),
-//             Kind::Named(nm) => "bar".into(),
-//         }
-//     }
+impl<'tcx> SymNamer<'tcx> {
+    fn get(&self, ix: DepNode<'tcx>) -> &Kind {
+        self.names.names.get(&ix).unwrap_or_else(|| {
+            panic!("Could not find {ix:?}");
+        })
+    }
+}
 
-//     // Wrong since types are currently still being used under the current model. Once they are also 'cloned' into a module we can make this change
-//     fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-//         let node = DepNode::new(self.0.tcx, (def_id, subst));
-//         let kind = self.0.names[&node];
+impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
+    fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+        let name = item_name(self.tcx, def_id, Namespace::ValueNS);
+        let node = DepNode::new(self.tcx, (def_id, subst));
+        match self.get(node) {
+            Kind::Hidden => name.into(),
+            Kind::Named(nm) => nm.as_str().to_snake_case().into(),
+        }
+    }
 
-//         "type".into()
-//         // match kind {
-//         //     Kind::Hidden => item_name(self.0.tcx, def_id, Namespace::TypeNS).into(),
-//         //     Kind::Named(nm) => Ident::build(nm.as_str()).into(),
-//         // }
-//     }
+    fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+        let name = item_name(self.tcx, def_id, Namespace::TypeNS);
+        let node = DepNode::new(self.tcx, (def_id, subst));
+        self.get(node).qname_ident(name.into())
+    }
 
-//     fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-//         todo!()
-//     }
+    fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+        let type_id = match self.tcx.def_kind(def_id) {
+            DefKind::Closure | DefKind::Struct | DefKind::Enum | DefKind::Union => def_id,
+            DefKind::Variant => self.tcx.parent(def_id),
+            _ => unreachable!("Not a type or constructor"),
+        };
+        let mut name = item_name(self.tcx, def_id, Namespace::ValueNS);
+        name.capitalize();
+        let node = DepNode::new(self.tcx, (type_id, subst));
+        self.get(node).qname_ident(name.into())
+    }
 
-//     fn accessor(
-//         &mut self,
-//         def_id: DefId,
-//         subst: SubstsRef<'tcx>,
-//         variant: usize,
-//         ix: FieldIdx,
-//     ) -> QName {
-//         "accessor".into()
-//     }
+    /// Creates a name for a type or closure projection ie: x.field1
+    /// This also includes projections from `enum` types
+    ///
+    /// * `def_id` - The id of the type or closure being projected
+    /// * `subst` - Substitution that type is being accessed at
+    /// * `variant` - The constructor being used. For closures this is always 0
+    /// * `ix` - The field in that constructor being accessed.
+    fn accessor(
+        &mut self,
+        def_id: DefId,
+        subst: SubstsRef<'tcx>,
+        variant: usize,
+        ix: FieldIdx,
+    ) -> QName {
+        let tcx = self.tcx;
+        let node = DepNode::new(self.tcx, (def_id, subst));
+        let clone = self.get(node);
+        let name: Ident = match util::item_type(tcx, def_id) {
+            ItemType::Closure => format!("field_{}", ix.as_usize()).into(),
+            ItemType::Type => {
+                let variant_def = &tcx.adt_def(def_id).variants()[variant.into()];
+                let variant = variant_def;
+                format!(
+                    "{}_{}",
+                    variant.name.as_str().to_ascii_lowercase(),
+                    variant.fields[ix].name
+                )
+                .into()
+            }
+            _ => panic!("accessor: invalid item kind"),
+        };
 
-//     fn normalize(&self, _: &TranslationCtx<'tcx>, _: Ty<'tcx>) -> Ty<'tcx> {
-//         panic!("Normalization not yet implemented")
-//         // self.tcx.try_normalize_erasing_regions(self.param_env(ctx), ty).unwrap_or(ty)
-//     }
+        clone.qname_ident(name.into())
+    }
 
-//     fn import_prelude_module(&mut self, _: PreludeModule) {
-//         ()
-//     }
+    fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName {
+        let def_id =
+            self.tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
+        let subst = self.tcx.mk_substs(&[ty::GenericArg::from(ty)]);
+        self.value(def_id, subst)
+    }
 
-//     fn import_builtin_module(&mut self, _: QName) {
-//         ()
-//     }
+    fn normalize(&self, _: &TranslationCtx<'tcx>, ty: Ty<'tcx>) -> Ty<'tcx> {
+        self.tcx.try_normalize_erasing_regions(self.param_env, ty).unwrap_or(ty)
 
-//     fn with_vis<F, A>(&mut self, _: CloneLevel, f: F) -> A
-//     where
-//         F: FnOnce(&mut Self) -> A,
-//     {
-//         f(self)
-//     }
-// }
+        // self.tcx.try_normalize_erasing_regions(self.param_env(ctx), ty).unwrap_or(ty)
+    }
+
+    fn import_prelude_module(&mut self, module: PreludeModule) {
+        self.import_builtin_module(module.qname());
+    }
+
+    fn import_builtin_module(&mut self, module: QName) {
+        self.names.prelude.entry(module).or_insert(false);
+    }
+
+    fn with_vis<F, A>(&mut self, _: CloneLevel, f: F) -> A
+    where
+        F: FnOnce(&mut Self) -> A,
+    {
+        // let public = std::mem::replace(&mut self.dep_level, vis);
+        let ret = f(self);
+        // self.dep_level = public;
+        ret
+    }
+}

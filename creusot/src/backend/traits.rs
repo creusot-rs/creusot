@@ -45,6 +45,17 @@ impl<'tcx> Why3Generator<'tcx> {
         let mut names = CloneMap::new(self.tcx, def_id.into());
 
         let mut decls: Vec<_> = all_generic_decls_for(self.tcx, def_id).collect();
+        let ty_decl = self.assoc_ty_decl(&mut names, def_id);
+
+        decls.push(ty_decl);
+
+        let (clones, summary) = names.to_clones(self, CloneDepth::Shallow);
+        decls.extend(clones);
+
+        (Module { name: module_name(self.tcx, def_id), decls }, summary)
+    }
+
+    pub(crate) fn assoc_ty_decl<N: Namer<'tcx>>(&mut self, names: &mut N, def_id: DefId) -> Decl {
         let name = item_name(self.tcx, def_id, Namespace::TypeNS);
 
         let ty_decl = match self.tcx.associated_item(def_id).container {
@@ -61,11 +72,6 @@ impl<'tcx> Why3Generator<'tcx> {
             }
         };
 
-        decls.push(Decl::TyDecl(ty_decl));
-
-        let (clones, summary) = names.to_clones(self, CloneDepth::Shallow);
-        decls.extend(clones);
-
-        (Module { name: module_name(self.tcx, def_id), decls }, summary)
+        Decl::TyDecl(ty_decl)
     }
 }

@@ -1,6 +1,6 @@
 #![allow(deprecated)]
 
-use heck::{ToUpperCamelCase, ToSnakeCase};
+use heck::{ToSnakeCase, ToUpperCamelCase};
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
 use rustc_hir::{
@@ -104,6 +104,8 @@ pub(crate) trait Namer<'tcx> {
 
     fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName;
 
+    fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName;
+
     /// Creates a name for a type or closure projection ie: x.field1
     /// This also includes projections from `enum` types
     ///
@@ -191,6 +193,13 @@ impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
         };
 
         clone.qname_ident(name.into())
+    }
+
+    fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName {
+        let def_id =
+            self.tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
+        let subst = self.tcx.mk_substs(&[ty::GenericArg::from(ty)]);
+        self.value(def_id, subst)
     }
 
     fn normalize(&self, ctx: &TranslationCtx<'tcx>, ty: Ty<'tcx>) -> Ty<'tcx> {
@@ -452,14 +461,6 @@ impl<'tcx> CloneMap<'tcx> {
             .or_insert(self.dep_level);
 
         self.names.insert(key)
-    }
-
-    // TODO: Move into trait
-    pub(crate) fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName {
-        let def_id =
-            self.tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
-        let subst = self.tcx.mk_substs(&[ty::GenericArg::from(ty)]);
-        self.value(def_id, subst)
     }
 
     fn self_key(&self) -> CloneNode<'tcx> {

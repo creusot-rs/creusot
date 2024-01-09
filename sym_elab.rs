@@ -2,19 +2,17 @@ extern crate creusot_contracts;
 
 use creusot_contracts::*;
 
-pub struct A(Vec<usize>);
-
-#[ghost]
-#[ensures(a.0@ == a.0@)]
-fn u2(a: A) {}
-
-#[ghost]
-#[open(self)]
-pub fn u(a: A) {
-    pearlite! {
-        u2(a)
+// This program exhibited a bug where we resolve the borrow of `push`, causing
+// us to prove an invalid loop invariant
+// This program should not prove.
+#[ensures(result@.len() == n@)]
+pub fn make_vec_of_size(n: usize) -> Vec<bool> {
+    let mut out: Vec<bool> = Vec::new();
+    let mut i = 0;
+    #[invariant(0usize <= i && i <= n)]
+    while i <= n {
+        out.push(false);
+        i += 1
     }
+    return out;
 }
-
-#[ensures(u(*a) == (u(*a)))]
-pub fn ex(a: &A) {}
