@@ -134,12 +134,10 @@ impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
     fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
         let name = item_name(self.tcx, def_id, Namespace::ValueNS);
         let node = CloneNode::new(self.tcx, (def_id, subst));
-        let nm = match self.insert(node) {
+        match self.insert(node) {
             Kind::Hidden => name.into(),
             Kind::Named(nm) => nm.as_str().to_lowercase().into(),
-        };
-        eprintln!("Asked for name of {def_id:?}, {subst:?} which is {:?}", nm);
-        nm
+        }
     }
 
     fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {

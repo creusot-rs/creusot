@@ -181,7 +181,15 @@ impl<'tcx> SymbolElaborator<'tcx> {
             }
         }
 
+        if let DepNode::TyInv(_, _) = item {
+            eprintln!("Maing clone for type invariant, so skipping");
+
+            return None;
+        }
+
         let Some((def_id, subst)) = item.did() else { unreachable!() };
+
+
 
         let mut pre_sig = ctx.sig(def_id).clone();
         let kind = util::item_type(ctx.tcx, def_id).let_kind();
@@ -205,9 +213,6 @@ impl<'tcx> SymbolElaborator<'tcx> {
         };
 
         let mut sig = sig_to_why3(ctx, names, pre_sig, def_id);
-        eprintln!("cloning {def_id:?} with name {:?}", names.value(def_id, subst));
-        eprintln!("  in {:?}", names.self_did());
-        eprintln!("{:?}", names.names.names);
         sig.name = names.value(def_id, subst).name;
 
         if ctx.is_logical(def_id) {
