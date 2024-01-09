@@ -37,7 +37,7 @@ pub struct CreusotArgs {
     pub simple_triggers: bool,
     /// Run why3 with the following configuration (Should start with "prove" or "ide")
     #[clap(long)]
-    why3: Option<String>
+    why3: Option<String>,
 }
 
 /// Parse a single key-value pair

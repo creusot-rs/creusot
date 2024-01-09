@@ -1,6 +1,7 @@
 use crate::{ctx::TranslationCtx, options::Options};
 use include_dir::{include_dir, Dir};
 use rustc_ast::{
+    mut_visit::DummyAstNode,
     ptr::P,
     token::{Lit, LitKind},
     Block, Expr, ExprKind, Pat, PatKind, PathSegment, Ty, TyKind, DUMMY_NODE_ID,
@@ -16,7 +17,6 @@ use std::{
     path::PathBuf,
     process::{Command, Stdio},
 };
-use rustc_ast::mut_visit::DummyAstNode;
 use tempdir::TempDir;
 use why3::ce_models::{ConcreteTerm, FunLitElt, Goal, Loc, ProverResult, TBool, Term, Why3Span};
 
@@ -172,14 +172,15 @@ fn fun<'a>(args: impl IntoIterator<Item = &'a str>, body: Expr) -> Expr {
 }
 
 fn app(f: &str, args: impl IntoIterator<Item = Expr>) -> Expr {
-    let mut v= args.into_iter().map(|x| P(x)).collect();
-    if false { // This is necessary for type checking since ThinVec is not nameable
-        return exp(ExprKind::Call(P(name_to_path(f)), v))
+    let mut v = args.into_iter().map(|x| P(x)).collect();
+    if false {
+        // This is necessary for type checking since ThinVec is not nameable
+        return exp(ExprKind::Call(P(name_to_path(f)), v));
     }
-    let take = |x: &mut P<Expr>| std::mem::replace(&mut**x, Expr::dummy());
+    let take = |x: &mut P<Expr>| std::mem::replace(&mut **x, Expr::dummy());
     match (f, &mut *v) {
         ("(=)" | "=", [t1, t2]) => binop("=", [t1, t2].map(take)),
-        _ => exp(ExprKind::Call(P(name_to_path(f)), v))
+        _ => exp(ExprKind::Call(P(name_to_path(f)), v)),
     }
 }
 
@@ -224,7 +225,10 @@ fn binop(op: &str, [t1, t2]: [Expr; 2]) -> Expr {
         "Tand" => And,
         "Or" => Or,
         "Tor" => Or,
-        _ => {warn!("unsupported Binop {op}"); BitXor},
+        _ => {
+            warn!("unsupported Binop {op}");
+            BitXor
+        }
     };
     exp(ExprKind::Binary(dummy_spanned(op), P(t1), P(t2)))
 }
@@ -266,14 +270,10 @@ fn cterm_to_ast(t: &ConcreteTerm) -> Expr {
         ConcreteTerm::Var(v) => name_to_path(&*v),
         ConcreteTerm::Integer(n) => lit(&n.int_value, LitKind::Integer, None),
         ConcreteTerm::Boolean(b) => lit(&b.to_string(), LitKind::Bool, None),
-        ConcreteTerm::App { ls, args } => {
-            app(ls, args.into_iter().map(|x| cterm_to_ast(x)))
-        }
+        ConcreteTerm::App { ls, args } => app(ls, args.into_iter().map(|x| cterm_to_ast(x))),
         ConcreteTerm::If { ift, then, elset } => ite([ift, then, elset].map(|x| cterm_to_ast(x))),
         ConcreteTerm::String(s) => lit(&format!("{s:?}"), LitKind::Str, None),
-        ConcreteTerm::Eps { var, t } => {
-            app("eps!", [fun([&**var], cterm_to_ast(&*t))])
-        }
+        ConcreteTerm::Eps { var, t } => app("eps!", [fun([&**var], cterm_to_ast(&*t))]),
         ConcreteTerm::Fun { args, body } => fun(args.iter().map(|x| &**x), cterm_to_ast(body)),
         ConcreteTerm::Quant { quant, vs, t } => {
             app(quant, [fun(vs.iter().map(|x| &**x), cterm_to_ast(&*t))])
@@ -285,18 +285,38 @@ fn cterm_to_ast(t: &ConcreteTerm) -> Expr {
             app("funlit!", [arr, cterm_to_ast(other)])
         }
         ConcreteTerm::Proj { name, value } => match (&**name, &**value) {
-            ("prelude.UInt8.uint8'int", ConcreteTerm::Integer(n)) => lit(&n.int_value, LitKind::Integer, Some("u8")),
-            ("prelude.UInt16.uint16'int", ConcreteTerm::Integer(n)) => lit(&n.int_value, LitKind::Integer, Some("u16")),
-            ("mach.int.UInt32Gen.uint32'int", ConcreteTerm::Integer(n)) => lit(&n.int_value, LitKind::Integer, Some("u32")),
-            ("mach.int.UInt64Gen.uint64'int", ConcreteTerm::Integer(n)) => lit(&n.int_value, LitKind::Integer, Some("u64")),
-            ("prelude.UInt128.uint16'int", ConcreteTerm::Integer(n)) => lit(&n.int_value, LitKind::Integer, Some("u128")),
-            ("prelude.Int8.int8'int", ConcreteTerm::Integer(n)) => lit(&n.int_value, LitKind::Integer, Some("i8")),
-            ("prelude.Int16.int16'int", ConcreteTerm::Integer(n)) => lit(&n.int_value, LitKind::Integer, Some("i16")),
-            ("mach.int.Int32.int32'int", ConcreteTerm::Integer(n)) => lit(&n.int_value, LitKind::Integer, Some("i32")),
-            ("mach.int.Int64.int64'int", ConcreteTerm::Integer(n)) => lit(&n.int_value, LitKind::Integer, Some("i64")),
-            ("prelude.Int128.int128'int", ConcreteTerm::Integer(n)) => lit(&n.int_value, LitKind::Integer, Some("i128")),
+            ("prelude.UInt8.uint8'int", ConcreteTerm::Integer(n)) => {
+                lit(&n.int_value, LitKind::Integer, Some("u8"))
+            }
+            ("prelude.UInt16.uint16'int", ConcreteTerm::Integer(n)) => {
+                lit(&n.int_value, LitKind::Integer, Some("u16"))
+            }
+            ("mach.int.UInt32Gen.uint32'int", ConcreteTerm::Integer(n)) => {
+                lit(&n.int_value, LitKind::Integer, Some("u32"))
+            }
+            ("mach.int.UInt64Gen.uint64'int", ConcreteTerm::Integer(n)) => {
+                lit(&n.int_value, LitKind::Integer, Some("u64"))
+            }
+            ("prelude.UInt128.uint16'int", ConcreteTerm::Integer(n)) => {
+                lit(&n.int_value, LitKind::Integer, Some("u128"))
+            }
+            ("prelude.Int8.int8'int", ConcreteTerm::Integer(n)) => {
+                lit(&n.int_value, LitKind::Integer, Some("i8"))
+            }
+            ("prelude.Int16.int16'int", ConcreteTerm::Integer(n)) => {
+                lit(&n.int_value, LitKind::Integer, Some("i16"))
+            }
+            ("mach.int.Int32.int32'int", ConcreteTerm::Integer(n)) => {
+                lit(&n.int_value, LitKind::Integer, Some("i32"))
+            }
+            ("mach.int.Int64.int64'int", ConcreteTerm::Integer(n)) => {
+                lit(&n.int_value, LitKind::Integer, Some("i64"))
+            }
+            ("prelude.Int128.int128'int", ConcreteTerm::Integer(n)) => {
+                lit(&n.int_value, LitKind::Integer, Some("i128"))
+            }
             _ => app("proj!", [name_to_path(name), cterm_to_ast(value)]),
-        }
+        },
         _ => lit(&format!("{t:?}"), LitKind::Str, None),
     }
 }

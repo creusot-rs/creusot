@@ -388,7 +388,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
     pub(crate) fn span_attr(&self, span: Span) -> Option<why3::declaration::Attribute> {
         if let Some(span) = crate::run_why3::encode_span(&self.opts, span) {
-            return Some(span)
+            return Some(span);
         };
         let lo = self.sess.source_map().lookup_char_pos(span.lo());
         let hi = self.sess.source_map().lookup_char_pos(span.hi());

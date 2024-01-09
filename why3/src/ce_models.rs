@@ -1,8 +1,6 @@
 use serde::Deserialize;
 use serde_json::Value as Json;
-use std::{
-    fmt::{Debug, Formatter},
-};
+use std::fmt::{Debug, Formatter};
 
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -25,10 +23,10 @@ pub struct Why3Span {
 impl Debug for Loc {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Loc::Span(Why3Span{file_name, start_line, start_char, end_line, end_char }) => {
+            Loc::Span(Why3Span { file_name, start_line, start_char, end_line, end_char }) => {
                 write!(f, "[#\"{file_name}\" {start_line} {start_char} {end_line} {end_char}]")
             }
-            _ => write!(f, "[#???]")
+            _ => write!(f, "[#???]"),
         }
     }
 }
