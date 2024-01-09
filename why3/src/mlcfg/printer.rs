@@ -835,6 +835,11 @@ impl Print for Statement {
         A::Doc: Clone,
     {
         match self {
+            Statement::Assign { lhs, rhs: Exp::Attr(a, rhs) } => a
+                .pretty(alloc, env)
+                .append(lhs.pretty(alloc, env))
+                .append(" <- ")
+                .append(parens!(alloc, env, Precedence::Impl, rhs)),
             Statement::Assign { lhs, rhs } => lhs
                 .pretty(alloc, env)
                 .append(" <- ")
