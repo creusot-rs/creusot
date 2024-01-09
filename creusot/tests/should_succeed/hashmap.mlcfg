@@ -2299,6 +2299,27 @@ module CreusotContracts_Ghost_Impl1_ShallowModel
     ensures { result = shallow_model self }
     
 end
+module CreusotContracts_Resolve_Impl2_Resolve_Stub
+  type t
+  predicate resolve (self : t)
+end
+module CreusotContracts_Resolve_Impl2_Resolve_Interface
+  type t
+  predicate resolve (self : t)
+  val resolve (self : t) : bool
+    ensures { result = resolve self }
+    
+end
+module CreusotContracts_Resolve_Impl2_Resolve
+  type t
+  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
+    type self = t
+  predicate resolve (self : t) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 34 8 34 31] Resolve0.resolve self
+  val resolve (self : t) : bool
+    ensures { result = resolve self }
+    
+end
 module Core_Mem_Replace_Interface
   type t
   use prelude.Borrow
@@ -2503,8 +2524,11 @@ module Hashmap_Impl5_Resize
     type t = Hashmap_MyHashMap_Type.t_myhashmap k v,
     type ShallowModelTy0.shallowModelTy = Map.map DeepModelTy0.deepModelTy (Core_Option_Option_Type.t_option v),
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve7 with
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve4 with
     type self = Hashmap_List_Type.t_list (k, v)
+  clone CreusotContracts_Resolve_Impl2_Resolve as Resolve7 with
+    type t = Hashmap_List_Type.t_list (k, v),
+    predicate Resolve0.resolve = Resolve4.resolve
   clone Hashmap_Impl1_NoDoubleBinding as NoDoubleBinding0 with
     type k = k,
     type v = v,
@@ -2542,8 +2566,6 @@ module Hashmap_Impl5_Resize
     type self = v
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve5 with
     type self = k
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve4 with
-    type self = Hashmap_List_Type.t_list (k, v)
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve3 with
     type t = Hashmap_List_Type.t_list (k, v)
   clone Core_Mem_Replace_Interface as Replace0 with
