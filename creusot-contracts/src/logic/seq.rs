@@ -55,6 +55,7 @@ impl<T> Seq<T> {
     #[trusted]
     #[ghost]
     #[open(self)]
+    #[rustc_diagnostic_item = "seq_len"]
     #[creusot::builtins = "seq.Seq.length"]
     pub fn len(self) -> Int {
         absurd
@@ -165,6 +166,7 @@ impl<T> IndexLogic<Int> for Seq<T> {
     #[ghost]
     #[trusted]
     #[open(self)]
+    #[rustc_diagnostic_item = "seq_index"]
     #[creusot::builtins = "seq.Seq.get"]
     fn index_logic(self, _: Int) -> Self::Item {
         absurd

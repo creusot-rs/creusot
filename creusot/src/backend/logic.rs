@@ -3,6 +3,7 @@ use std::borrow::Cow;
 use crate::{
     backend::{all_generic_decls_for, closure_generic_decls},
     ctx::*,
+    translation::pearlite::Term,
     util,
     util::get_builtin,
 };
@@ -92,7 +93,7 @@ fn builtin_body<'tcx>(
     let builtin = QName::from_string(get_builtin(ctx.tcx, def_id).unwrap().as_str()).unwrap();
 
     if !builtin.module.is_empty() {
-        names.import_builtin_module(builtin.clone().module_qname());
+        // names.import_builtin_module(builtin.clone().module_qname());
     }
 
     let mut decls: Vec<_> = all_generic_decls_for(ctx.tcx, def_id).collect();
@@ -117,9 +118,9 @@ fn builtin_body<'tcx>(
 }
 
 // Create the program symbol with the same name that has a contract agreeing with the logical symbol.
-pub(crate) fn val_decl<'tcx>(
+pub(crate) fn val_decl<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut N,
     def_id: DefId,
 ) -> Decl {
     let mut sig = signature_of(ctx, names, def_id);
@@ -134,64 +135,101 @@ pub(crate) fn val_decl<'tcx>(
     Decl::ValDecl(ValDecl { sig, ghost: false, val: true, kind: None })
 }
 
-fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
-    let mut names = CloneMap::new(ctx.tcx, def_id.into());
+fn body_decls<'tcx, N: Namer<'tcx>>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut N,
+    def_id: DefId,
+) -> Vec<Decl> {
+    let mut decls: Vec<_> = Vec::new();
 
-    let mut sig = signature_of(ctx, &mut names, def_id);
-    let mut val_sig = sig.clone();
-    val_sig.contract.variant = Vec::new();
-    let (val_args, val_binders) = binders_to_args(ctx, val_sig.args);
-    val_sig.contract.ensures =
-        vec![Exp::pure_var("result".into()).eq(Exp::pure_var(sig.name.clone()).app(val_args))];
-    val_sig.args = val_binders;
+    // let (mut sig, val_sig) = sigs(ctx, sig);
+    if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
+        let mut sig = signature_of(ctx, names, def_id);
+        sig.contract.variant = Vec::new();
 
-    if util::is_predicate(ctx.tcx, def_id) {
+        let val = util::item_type(ctx.tcx, def_id).val(sig);
+        decls.push(Decl::ValDecl(val));
+        decls.push(val_decl(ctx, names, def_id));
+        return decls;
+    }
+
+    let term = ctx.term(def_id).unwrap().clone();
+
+    let sig = signature_of(ctx, names, def_id);
+
+    lower_body_term(ctx, names, sig, term, def_id)
+}
+
+pub(crate) fn lower_body_term<'tcx, N: Namer<'tcx>>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut N,
+    sig: Signature,
+    body: Term<'tcx>,
+    def_id: DefId,
+) -> Vec<Decl> {
+    let mut decls = Vec::new();
+
+    let sig_contract = sig.clone();
+    let (mut sig, val_sig) = sigs(ctx, sig);
+    if util::item_type(ctx.tcx, def_id) == ItemType::Predicate {
         sig.retty = None;
     }
 
-    let sig_contract = sig.clone();
-    sig.contract = Contract::new();
+    let body = lower_pure(ctx, names, body);
+    let ity = util::item_type(ctx.tcx, def_id);
 
-    let mut decls: Vec<_> = Vec::new();
+    if sig_contract.contract.variant.is_empty() && body.is_pure() {
+        let decl = match ity {
+            ItemType::Ghost | ItemType::Logic => Decl::LogicDefn(Logic { sig, body }),
+            ItemType::Predicate => Decl::PredDecl(Predicate { sig, body }),
+            _ => unreachable!("{ity:?}"),
+        };
 
-    if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
-        let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
+        decls.push(decl);
+        decls.push(Decl::val(val_sig));
+    } else if body.is_pure() {
+        let def_sig = sig.clone();
+        let val = ity.val(sig);
         decls.push(Decl::ValDecl(val));
-        decls.push(val_decl(ctx, &mut names, def_id));
-    } else {
-        let term = ctx.term(def_id).unwrap().clone();
-        let body = lower_pure(ctx, &mut names, term);
-        let ity = util::item_type(ctx.tcx, def_id);
-
-        if sig_contract.contract.variant.is_empty() && body.is_pure() {
-            let decl = match ity {
-                ItemType::Ghost | ItemType::Logic => Decl::LogicDefn(Logic { sig, body }),
-                ItemType::Predicate => Decl::PredDecl(Predicate { sig, body }),
-                _ => unreachable!(),
-            };
-            decls.push(decl);
-            decls.push(val_decl(ctx, &mut names, def_id));
-        } else if body.is_pure() {
-            let def_sig = sig.clone();
-            let val = ity.val(sig.clone());
-            decls.push(Decl::ValDecl(val));
-            decls.push(val_decl(ctx, &mut names, def_id));
-            if sig.uses_simple_triggers() {
-                limited_function_encode(&mut decls, &def_sig, &sig_contract.contract, body, ity)
-            } else {
-                decls.push(Decl::Axiom(definition_axiom(&def_sig, body, "def")));
-            }
+        decls.push(Decl::val(val_sig));
+        if def_sig.uses_simple_triggers() {
+            limited_function_encode(&mut decls, &def_sig, &sig_contract.contract, body, ity)
         } else {
-            let val = ity.val(sig.clone());
-            decls.push(Decl::ValDecl(val));
-            decls.push(val_decl(ctx, &mut names, def_id));
+            decls.push(Decl::Axiom(definition_axiom(&def_sig, body, "def")));
         }
+    } else {
+        let val = ity.val(sig);
+        decls.push(Decl::ValDecl(val));
+        decls.push(Decl::val(val_sig));
     }
 
     let has_axioms = !ctx.sig(def_id).contract.ensures.is_empty();
     if has_axioms {
         decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
     }
+
+    decls
+}
+
+pub fn sigs<'tcx>(ctx: &mut Why3Generator<'tcx>, mut sig: Signature) -> (Signature, Signature) {
+    let mut contract = std::mem::take(&mut sig.contract);
+    let mut prog_sig = sig.clone();
+
+    contract.variant = Vec::new();
+    prog_sig.contract = contract;
+    let (val_args, val_binders) = binders_to_args(ctx, prog_sig.args);
+    prog_sig.args = val_binders;
+
+    prog_sig.contract.ensures =
+        vec![Exp::pure_var("result".into()).eq(Exp::pure_var(sig.name.clone()).app(val_args))];
+
+    (sig, prog_sig)
+}
+
+fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
+    let mut names = CloneMap::new(ctx.tcx, def_id.into());
+
+    let decls = body_decls(ctx, &mut names, def_id);
 
     let name = module_name(ctx.tcx, def_id);
 
@@ -356,7 +394,7 @@ fn function_call(sig: &Signature) -> Exp {
     Exp::pure_var(sig.name.clone()).app(args)
 }
 
-fn definition_axiom(sig: &Signature, body: Exp, name: &str) -> Axiom {
+fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
     let call = function_call(sig);
     let trigger = sig.trigger.clone().unwrap_or_else(|| Trigger::single(call.clone()));
 
@@ -370,6 +408,7 @@ fn definition_axiom(sig: &Signature, body: Exp, name: &str) -> Axiom {
     let axiom =
         if args.is_empty() { condition } else { Exp::forall_trig(args, trigger, condition) };
 
+    let name = format!("{}_{suffix}", &*sig.name);
     Axiom { name: name.into(), rewrite: false, axiom }
 }
 

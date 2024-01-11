@@ -4,6 +4,7 @@ use super::{
     specification::inv_subst,
 };
 use crate::{
+    backend::ty::closure_accessors,
     ctx::*,
     fmir::{self, Expr},
     gather_spec_closures::{
@@ -405,6 +406,7 @@ fn translate_vars<'tcx>(
     (vars, locals)
 }
 
+#[derive(Clone)]
 pub(crate) struct ClosureContract<'tcx> {
     pub(crate) resolve: (PreSignature<'tcx>, Term<'tcx>),
     pub(crate) precond: (PreSignature<'tcx>, Term<'tcx>),
@@ -412,6 +414,13 @@ pub(crate) struct ClosureContract<'tcx> {
     pub(crate) postcond_mut: Option<(PreSignature<'tcx>, Term<'tcx>)>,
     pub(crate) postcond: Option<(PreSignature<'tcx>, Term<'tcx>)>,
     pub(crate) unnest: Option<(PreSignature<'tcx>, Term<'tcx>)>,
+    pub(crate) accessors: Vec<(PreSignature<'tcx>, Term<'tcx>)>,
+}
+
+impl<'tcx> TranslationCtx<'tcx> {
+    pub(crate) fn build_closure_contract(&mut self, def_id: DefId) -> ClosureContract<'tcx> {
+        closure_contract(self, def_id)
+    }
 }
 
 pub(crate) fn closure_contract<'tcx>(
@@ -504,6 +513,7 @@ pub(crate) fn closure_contract<'tcx>(
 
     let mut resolve = closure_resolve(ctx, def_id, subst);
     normalize(ctx.tcx, ctx.param_env(def_id), &mut resolve.1);
+    let accessors = closure_accessors(ctx, def_id).into_iter().map(|(_, s, t)| (s, t)).collect();
     let mut contracts = ClosureContract {
         resolve,
         precond,
@@ -511,6 +521,7 @@ pub(crate) fn closure_contract<'tcx>(
         postcond_once: None,
         postcond_mut: None,
         unnest: None,
+        accessors,
     };
 
     if kind <= Fn {

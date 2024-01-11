@@ -316,12 +316,13 @@ impl ItemType {
         }
     }
 
-    pub(crate) fn val(&self, sig: Signature) -> ValDecl {
+    pub(crate) fn val(&self, mut sig: Signature) -> ValDecl {
         match self {
             ItemType::Logic | ItemType::Ghost => {
                 ValDecl { sig, ghost: false, val: false, kind: Some(LetKind::Function) }
             }
             ItemType::Predicate => {
+                sig.retty = None;
                 ValDecl { sig, ghost: false, val: false, kind: Some(LetKind::Predicate) }
             }
             ItemType::Program | ItemType::Closure => {

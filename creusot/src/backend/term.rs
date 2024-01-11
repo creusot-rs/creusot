@@ -231,15 +231,12 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::pure_qvar(accessor).app(vec![lhs])
             }
             TermKind::Closure { body } => {
-                let id = match term.ty.kind() {
-                    TyKind::Closure(id, _) => id,
-                    _ => unreachable!("closure has non closure type!"),
-                };
-
+                let TyKind::Closure(id, subst) = term.ty.kind() else { unreachable!("closure has non closure type")};
                 let body = self.lower_term(*body);
 
                 let mut binders = Vec::new();
                 let sig = self.ctx.sig(*id).clone();
+                let sig = EarlyBinder::bind(sig).subst(self.ctx.tcx, subst);
                 for arg in sig.inputs.iter().skip(1) {
                     binders
                         .push(Binder::typed(Ident::build(&arg.0.to_string()), self.lower_ty(arg.2)))
@@ -320,7 +317,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         let builtin_attr = get_builtin(self.ctx.tcx, def_id.unwrap());
 
         if let Some(builtin) = builtin_attr.and_then(|a| QName::from_string(&a.as_str())) {
-            self.names.import_builtin_module(builtin.clone().module_qname());
+            self.names.value(def_id.unwrap(), _substs);
+            // self.names.import_builtin_module(builtin.clone().module_qname());
 
             if let Purity::Program = self.pure {
                 return Some(mk_binders(

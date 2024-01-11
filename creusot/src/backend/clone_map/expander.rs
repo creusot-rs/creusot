@@ -1,6 +1,13 @@
 use std::collections::VecDeque;
 
-use crate::{backend::ty_inv, translation::traits};
+use crate::{
+    backend::{
+        program::{int_to_prelude, uint_to_prelude},
+        ty_inv,
+    },
+    translation::traits,
+    util::get_builtin,
+};
 use petgraph::Direction;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
@@ -53,7 +60,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         ctx: &mut Why3Generator<'tcx>,
         depth: CloneDepth,
     ) -> DepGraph<'tcx> {
-        let self_key = CloneNode::from_trans_id(ctx.tcx, self.self_id);
+        let self_key = DepNode::from_trans_id(ctx.tcx, self.self_id);
 
         for key in &self.expansion_queue {
             if *key != self_key {
@@ -63,7 +70,6 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
         while let Some(key) = self.expansion_queue.pop_front() {
             trace!("update graph with {:?} (public={:?})", key, self.clone_graph.info(key).level);
-
             if depth == CloneDepth::Shallow && !self.clone_graph.is_root(key) {
                 // If there is a Signature level edge from a pre-existing root node, mark this one as root as well as it must be an associated type in
                 // a root signature
@@ -94,6 +100,10 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                     self.clone_graph.info_mut(key).opaque();
                 }
 
+                if matches!(key, DepNode::Item(_, _)) && get_builtin(ctx.tcx, did).is_some() {
+                    continue;
+                }
+
                 ctx.translate(did);
 
                 if util::is_inv_internal(ctx.tcx, did) && depth == CloneDepth::Deep {
@@ -120,10 +130,8 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         let key_public = self.clone_graph.info(key).level;
 
         for p in ctx.projections_in_ty(id).to_owned() {
-            let node = self.resolve_dep(
-                ctx,
-                CloneNode::new(ctx.tcx, (p.def_id, p.substs)).subst(ctx.tcx, key),
-            );
+            let node = self
+                .resolve_dep(ctx, DepNode::new(ctx.tcx, (p.def_id, p.substs)).subst(ctx.tcx, key));
 
             let is_type = self
                 .self_did()
@@ -140,23 +148,19 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     fn expand_subst(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
         let Some((_, key_subst)) = key.did() else { return; };
         let key_public = self.clone_graph.info(key).level;
-
         // Check the substitution for node dependencies on closures
         walk_types(key_subst, |t| {
             let node = match t.kind() {
                 TyKind::Alias(AliasKind::Projection, pty) => {
-                    let node = CloneNode::new(ctx.tcx, (pty.def_id, pty.substs));
+                    let node = DepNode::new(ctx.tcx, (pty.def_id, pty.substs));
                     Some(self.resolve_dep(ctx, node))
                 }
-                TyKind::Closure(id, subst) => {
-                    // Sketchy... shouldn't we need to do something to subst?
-                    Some(CloneNode::new(ctx.tcx, (*id, *subst)))
-                }
-                TyKind::Ref(_, _, Mutability::Mut) => {
-                    self.clone_graph.add_builtin(PreludeModule::Borrow);
-                    None
-                }
-                TyKind::Adt(_, _) => Some(CloneNode::Type(t)),
+                TyKind::Closure(_, _) => Some(DepNode::Type(t)),
+                TyKind::Ref(_, _, Mutability::Mut) => Some(DepNode::Buitlin(PreludeModule::Borrow)),
+                TyKind::Int(ity) => Some(DepNode::Buitlin(int_to_prelude(*ity))),
+                TyKind::Uint(uty) => Some(DepNode::Buitlin(uint_to_prelude(*uty))),
+                TyKind::Slice(_) => Some(DepNode::Buitlin(PreludeModule::Slice)),
+                TyKind::Adt(_, _) => Some(DepNode::Type(t)),
                 _ => None,
             };
 
@@ -169,6 +173,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
     fn expand_dependencies(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
         let key_public = self.clone_graph.info(key).level;
+
 
         for (dep, info) in ctx.dependencies(key).iter().flat_map(|i| i.iter()) {
             trace!("adding dependency {:?} {:?}", dep, info.level);
@@ -196,7 +201,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         let inv_kind = if ty_inv::is_tyinv_trivial(ctx.tcx, param_env, ty, true) {
             TyInvKind::Trivial
         } else {
-            TyInvKind::from_ty(ty)
+            TyInvKind::from_ty(ctx.tcx, ty).unwrap_or(TyInvKind::Trivial)
         };
 
         if let TransId::TyInv(self_kind) = self.self_id && self_kind == inv_kind {

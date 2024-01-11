@@ -7,7 +7,6 @@ use why3::{
 
 use crate::{
     backend,
-    ctx::CloneMap,
     translation::specification::PreContract,
     util::{
         ident_of, item_name, should_replace_trigger, why3_attrs, AnonymousParamName, PreSignature,
@@ -16,9 +15,9 @@ use crate::{
 
 use super::{term::lower_pure, CloneLevel, Namer, Why3Generator};
 
-pub(crate) fn signature_of<'tcx>(
+pub(crate) fn signature_of<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut N,
     def_id: DefId,
 ) -> Signature {
     debug!("signature_of {def_id:?}");
@@ -68,6 +67,7 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
     let retty = names.with_vis(CloneLevel::Signature, |names| {
         backend::ty::translate_ty(ctx, names, span, pre_sig.output)
     });
+
     let trigger = if ctx.opts.simple_triggers
         && should_replace_trigger(ctx.tcx, def_id)
         && retty != Type::UNIT

@@ -16,7 +16,8 @@ pub enum TranslatedItem {
         has_axioms: bool,
     },
     Closure {
-        interface: Vec<Module>,
+        ty_modl: Module,
+        interface: Module,
         modl: Option<Module>,
     },
     Program {
@@ -58,7 +59,7 @@ impl<'a> TranslatedItem {
             Program { modl, .. } => Box::new(modl.into_iter()),
             Trait { .. } => Box::new(iter::empty()),
             Impl { modl, .. } => Box::new(iter::once(modl)),
-            AssocTy {  .. } => Box::new(iter::empty()),
+            AssocTy { .. } => Box::new(iter::empty()),
             Constant { stub, modl, .. } => {
                 Box::new(std::iter::once(stub).chain(std::iter::once(modl)))
             }
@@ -67,9 +68,8 @@ impl<'a> TranslatedItem {
 
                 Box::new(modl.into_iter())
             }
-            Closure { modl, .. } => Box::new(modl.into_iter()),
+            Closure { ty_modl, modl, .. } => Box::new(iter::once(ty_modl).chain(modl.into_iter())),
             TyInv { .. } => Box::new(iter::empty()),
         }
     }
-
 }

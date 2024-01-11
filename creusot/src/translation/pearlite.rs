@@ -1211,7 +1211,7 @@ impl<'tcx> Term<'tcx> {
     }
 
     pub(crate) fn cur(self) -> Self {
-        assert!(self.ty.is_ref(), "cannot dereference type {:?}", self.ty);
+        assert!(self.ty.is_ref() || self.ty.is_box(), "cannot dereference type {:?}", self.ty);
 
         Term {
             ty: self.ty.builtin_deref(false).unwrap().ty,
@@ -1262,12 +1262,23 @@ impl<'tcx> Term<'tcx> {
         }
     }
 
-    pub(crate) fn eq(tcx: TyCtxt<'tcx>, lhs: Self, rhs: Self) -> Self {
+    pub(crate) fn bin_op(self, tcx: TyCtxt<'tcx>, op: BinOp, rhs: Self) -> Self {
         Term {
             ty: tcx.types.bool,
-            kind: TermKind::Binary { op: BinOp::Eq, lhs: Box::new(lhs), rhs: Box::new(rhs) },
+            kind: TermKind::Binary { op, lhs: Box::new(self), rhs: Box::new(rhs) },
             span: DUMMY_SP,
         }
+    }
+
+    pub(crate) fn eq(tcx: TyCtxt<'tcx>, lhs: Self, rhs: Self) -> Self {
+        lhs.bin_op(tcx, BinOp::Eq, rhs)
+    }
+
+    pub(crate) fn int(tcx: TyCtxt<'tcx>, val: i128) -> Self {
+        let ty = tcx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap();
+        let ty = tcx.type_of(ty).skip_binder();
+
+        Term { ty, kind: TermKind::Lit(Literal::Integer(val)), span: DUMMY_SP }
     }
 
     pub(crate) fn implies(self, rhs: Self) -> Self {
