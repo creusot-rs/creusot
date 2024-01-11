@@ -126,15 +126,20 @@ impl<'tcx> NotFinalPlaces<'tcx> {
         place: &Place<'tcx>,
         location: Location,
     ) -> Option<usize> {
-        let deref_position = match Self::place_get_first_deref(place.as_ref(), cursor) {
-            Some(p) => p,
-            // `p` is not a reborrow
-            None => return None,
-        };
+        let deref_position =
+            match Self::place_get_first_deref(place.as_ref(), cursor.body(), cursor.analysis().tcx)
+            {
+                Some(p) => p,
+                // `p` is not a reborrow
+                None => return None,
+            };
         let borrowed =
             PlaceRef { local: place.local, projection: &place.projection[deref_position + 1..] };
-        if Self::place_get_first_deref(borrowed, cursor).is_some() {
-            // unnesting
+        if Self::has_indirection(borrowed, cursor.body(), cursor.analysis().tcx) {
+            // some type of indirection
+            // Examples:
+            // - &mut **x  // unnesting
+            // - &mut x[y] // runtime indexing
             return None;
         }
 
@@ -153,15 +158,26 @@ impl<'tcx> NotFinalPlaces<'tcx> {
         Some(deref_position)
     }
 
+    fn has_indirection(place: PlaceRef<'tcx>, body: &mir::Body<'tcx>, tcx: TyCtxt<'tcx>) -> bool {
+        place.iter_projections().any(|(pl, proj)| match proj {
+            ProjectionElem::Deref => pl.ty(&body.local_decls, tcx).ty.is_box(),
+            ProjectionElem::Index(_)
+            | ProjectionElem::ConstantIndex { .. }
+            | ProjectionElem::Subslice { .. }
+            | ProjectionElem::OpaqueCast(_) => true,
+            _ => false,
+        })
+    }
+
     /// Helper function: gets the index of the first projection of `place` that is a deref,
     /// but not a deref of a box.
     fn place_get_first_deref(
         place: PlaceRef<'tcx>,
-        cursor: &mut ResultsCursor<'_, 'tcx, Self>,
+        body: &mir::Body<'tcx>,
+        tcx: TyCtxt<'tcx>,
     ) -> Option<usize> {
         place.iter_projections().position(|(pl, proj)| {
-            proj == ProjectionElem::Deref
-                && !pl.ty(&cursor.body().local_decls, cursor.analysis().tcx).ty.is_box()
+            proj == ProjectionElem::Deref && !pl.ty(&body.local_decls, tcx).ty.is_box()
         })
     }
 }
