@@ -37,7 +37,7 @@ mod expander;
 
 // Prelude modules
 #[allow(dead_code)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PreludeModule {
     Float32,
     Float64,
@@ -292,6 +292,7 @@ struct DepGraph<'tcx> {
     graph: DiGraphMap<DepNode<'tcx>, (CloneLevel, ())>,
     info: IndexMap<DepNode<'tcx>, CloneInfo>,
     roots: IndexSet<DepNode<'tcx>>,
+    builtins: IndexSet<PreludeModule>,
 }
 
 impl<'tcx> DepGraph<'tcx> {
@@ -316,6 +317,10 @@ impl<'tcx> DepGraph<'tcx> {
     fn add_root(&mut self, key: DepNode<'tcx>, kind: Kind, level: CloneLevel) {
         self.roots.insert(key);
         self.add_node(key, kind, level);
+    }
+
+    fn add_builtin(&mut self, pm: PreludeModule) {
+        self.builtins.insert(pm);
     }
 
     fn is_root(&self, key: DepNode<'tcx>) -> bool {
@@ -511,6 +516,10 @@ impl<'tcx> CloneMap<'tcx> {
 
         let mut elab = SymbolElaborator::new(param_env);
         let mut cloned = IndexSet::new();
+
+        for p in &clone_graph.builtins {
+            self.import_prelude_module(*p);
+        }
 
         let mut topo = DfsPostOrder::new(&clone_graph.graph, self.self_key());
         while let Some(node) = topo.walk_next(&clone_graph.graph) {

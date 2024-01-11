@@ -1,10 +1,12 @@
 use std::collections::VecDeque;
 
+use crate::{backend::ty_inv, translation::traits};
 use petgraph::Direction;
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{subst::SubstsRef, AliasKind, ParamEnv, Ty, TyKind};
-
-use crate::{backend::ty_inv, translation::traits};
+use rustc_middle::{
+    mir::Mutability,
+    ty::{subst::SubstsRef, AliasKind, ParamEnv, Ty, TyKind},
+};
 
 use super::*;
 
@@ -149,6 +151,10 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 TyKind::Closure(id, subst) => {
                     // Sketchy... shouldn't we need to do something to subst?
                     Some(CloneNode::new(ctx.tcx, (*id, *subst)))
+                }
+                TyKind::Ref(_, _, Mutability::Mut) => {
+                    self.clone_graph.add_builtin(PreludeModule::Borrow);
+                    None
                 }
                 TyKind::Adt(_, _) => Some(CloneNode::Type(t)),
                 _ => None,
