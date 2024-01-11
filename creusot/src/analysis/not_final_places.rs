@@ -47,10 +47,18 @@ pub struct NotFinalPlaces<'tcx> {
     ///
     /// This is necessary to use a `BitSet<PlaceId>`.
     places: HashMap<PlaceRef<'tcx>, PlaceId>,
-    /// Used to ban unnesting (`**ref_ref_x = ...`)
+    /// Contains the places that dereference a mutable ref.
     ///
-    /// In practice, this means the underlying place has no `Deref`.
-    has_indirection: BitSet<PlaceId>,
+    /// For example,
+    /// ```ignore
+    /// let x: &mut T = /* ... */;
+    /// *x;       // has dereference
+    /// x.field;  // has dereference
+    /// let y: Box<T> = /* ... */;
+    /// *y;       // does not have dereference
+    /// y.field;  // does not have dereference
+    /// ```
+    has_dereference: BitSet<PlaceId>,
     /// Maps each place to the set of its subplaces.
     ///
     /// A `p1` is a subplace of `p2` if they refer to the same local variable, and
@@ -87,12 +95,12 @@ impl<'tcx> NotFinalPlaces<'tcx> {
         let mut visitor = VisitAllPlaces(HashMap::new());
         visitor.visit_body(body);
         let places = visitor.0;
-        let mut contains_dereference = BitSet::new_empty(places.len());
+        let mut has_dereference = BitSet::new_empty(places.len());
         let mut subplaces = vec![Vec::new(); places.len()];
         let mut conflicting_places = vec![Vec::new(); places.len()];
         for (&place, &id) in &places {
-            if place.projection.get(1..).unwrap_or_default().contains(&ProjectionElem::Deref) {
-                contains_dereference.insert(id);
+            if Self::place_get_first_deref(place, body, tcx).is_some() {
+                has_dereference.insert(id);
             }
             for (&other_place, &other_id) in &places {
                 if id == other_id || place.local != other_place.local {
@@ -106,7 +114,7 @@ impl<'tcx> NotFinalPlaces<'tcx> {
                 }
             }
         }
-        Self { tcx, places, has_indirection: contains_dereference, subplaces, conflicting_places }
+        Self { tcx, places, has_dereference, subplaces, conflicting_places }
     }
 
     /// Run the analysis right **after** `location`, and determines if the borrow of
@@ -160,7 +168,7 @@ impl<'tcx> NotFinalPlaces<'tcx> {
 
     fn has_indirection(place: PlaceRef<'tcx>, body: &mir::Body<'tcx>, tcx: TyCtxt<'tcx>) -> bool {
         place.iter_projections().any(|(pl, proj)| match proj {
-            ProjectionElem::Deref => pl.ty(&body.local_decls, tcx).ty.is_box(),
+            ProjectionElem::Deref => !pl.ty(&body.local_decls, tcx).ty.is_box(),
             ProjectionElem::Index(_)
             | ProjectionElem::ConstantIndex { .. }
             | ProjectionElem::Subslice { .. }
@@ -504,13 +512,33 @@ where
     T: GenKill<PlaceId>,
 {
     fn visit_place(&mut self, place: &Place<'tcx>, context: mir::visit::PlaceContext, _: Location) {
-        use mir::visit::{MutatingUseContext, PlaceContext};
+        use mir::visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext};
         match context {
-            // TODO: should we really accept _all_ nonmutating uses ?
-            PlaceContext::NonMutatingUse(_)
-            // Note that a borrow is considered a read
+            // Although they read the borrow, most `NonMutatingUse` are fine, because they can't influence the prophecized value.
+            // The only non-mutating uses we need to consider are:
+            // - `Move`: the borrow may be used somewhere else to change its prophecy.
+            // - 'Copy': cannot be emitted for a mutable borrow
+            PlaceContext::NonMutatingUse(NonMutatingUseContext::Move)
+            // Note that a borrow triggers a gen
+            // e.g.
+            // ```rust
+            // let bor = &mut x;
+            // let r1 = &mut *bor;
+            // // ...
+            // let r2 = &mut *bor; // r1 is not final !
+            // ```
             | PlaceContext::MutatingUse(MutatingUseContext::Borrow) => {
                 self.trans.gen(self.mapping.places[&place.as_ref()])
+            }
+            PlaceContext::MutatingUse(MutatingUseContext::Store)
+            | PlaceContext::MutatingUse(MutatingUseContext::Call)
+            | PlaceContext::MutatingUse(MutatingUseContext::SetDiscriminant)
+            | PlaceContext::MutatingUse(MutatingUseContext::AsmOutput) => {
+                let id = self.mapping.places[&place.as_ref()];
+                if self.mapping.has_dereference.contains(id) {
+                    // We are writing under a dereference, so this changes the prophecy of the underlying borrow. 
+                    self.trans.gen(id);
+                }
             }
             _ => {}
         }
@@ -528,17 +556,18 @@ where
     fn visit_place(&mut self, place: &Place<'tcx>, context: mir::visit::PlaceContext, _: Location) {
         use mir::visit::{MutatingUseContext, PlaceContext};
         match context {
-            PlaceContext::MutatingUse(MutatingUseContext::Drop | MutatingUseContext::Store) => {
+            PlaceContext::MutatingUse(
+                MutatingUseContext::Store
+                | MutatingUseContext::Call
+                // Technically true, but unsupported by Creusot anyways
+                | MutatingUseContext::AsmOutput,
+            ) => {
                 let id: usize = self.mapping.places[&place.as_ref()];
-                if !self.mapping.has_indirection.contains(id) {
-                    self.trans.kill(id);
-                    // Now, kill all subplaces of this place
-                    for subplace in self.mapping.subplaces[id].iter() {
-                        let subplace_id: usize = self.mapping.places[subplace];
-                        if !self.mapping.has_indirection.contains(subplace_id) {
-                            self.trans.kill(subplace_id);
-                        }
-                    }
+                self.trans.kill(id);
+                // Now, kill all subplaces of this place
+                for subplace in self.mapping.subplaces[id].iter() {
+                    let subplace_id: usize = self.mapping.places[subplace];
+                    self.trans.kill(subplace_id);
                 }
             }
             _ => {}
