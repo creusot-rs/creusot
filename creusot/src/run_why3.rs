@@ -12,6 +12,7 @@ use rustc_span::{
 };
 use serde_json::Deserializer;
 use std::{
+    collections::{btree_map::Entry, BTreeMap},
     fmt::Write,
     io::BufReader,
     path::PathBuf,
@@ -46,6 +47,7 @@ pub(super) fn run_why3<'tcx>(ctx: &TranslationCtx<'tcx>, file: Option<PathBuf>) 
 
     if base_cmd == "prove" {
         command.arg("--json");
+        let span_map = &ctx.span_map;
         let mut child = command.stdout(Stdio::piped()).spawn().expect("could not run why3");
         let mut stdout = BufReader::new(child.stdout.take().unwrap());
         let de = Deserializer::from_reader(&mut stdout);
@@ -54,16 +56,16 @@ pub(super) fn run_why3<'tcx>(ctx: &TranslationCtx<'tcx>, file: Option<PathBuf>) 
                 Ok(x) => {
                     let ProverResult { answer, step, time, .. } = &x.prover_result;
                     if answer != "Valid" {
-                        let span = loc_to_span(&x.term.loc);
+                        let span = span_map.decode_span(&x.term.loc);
                         let msg = format!(
                             "Prover reported {answer:?} (time: {time:?}, steps: {step:?}) when trying to solve goal {:?} {:?}",
                             x.term.goal_name, x.term.explanations
                         );
-                        ctx.error(span, &msg);
+                        ctx.error(span.unwrap_or_default(), &msg);
                         for model in x.prover_result.model_elems() {
-                            let span = loc_to_span(&model.location);
+                            let span = span_map.decode_span(&model.location);
                             let mut msg = format!("Model Element for {}\n", model.lsymbol.name);
-                            if span == DUMMY_SP {
+                            if span.is_none() {
                                 writeln!(msg, "Span: {:?}", &model.location).unwrap();
                             }
                             writeln!(msg, "Type: {:?}", model.value.value_type).unwrap();
@@ -71,7 +73,7 @@ pub(super) fn run_why3<'tcx>(ctx: &TranslationCtx<'tcx>, file: Option<PathBuf>) 
                             writeln!(msg, "Term: {}", expr_to_string(&term)).unwrap();
                             let cterm = cterm_to_ast(&model.value.value_concrete_term);
                             writeln!(msg, "Concrete Term: {}", expr_to_string(&cterm)).unwrap();
-                            ctx.sess.span_note_without_error(span, msg)
+                            ctx.sess.span_note_without_error(span.unwrap_or_default(), msg)
                         }
                     }
                 }
@@ -90,28 +92,58 @@ pub(super) fn run_why3<'tcx>(ctx: &TranslationCtx<'tcx>, file: Option<PathBuf>) 
     }
 }
 
-pub(super) fn encode_span(opts: &Options, span: Span) -> Option<why3::declaration::Attribute> {
-    if let Some(cmd) = &opts.why3_cmd && cmd.starts_with("prove") {
-        Some(why3::declaration::Attribute::Span(
-            "rustc_span".into(),
-            span.lo().0 as usize,
-            span.hi().0 as usize,
-            0,
-            0
-        ))
-    } else {
-        None
-    }
+#[derive(Debug, Default)]
+pub struct SpanMap {
+    vec: Vec<SyntaxContext>,
+    map: BTreeMap<SyntaxContext, usize>,
 }
 
-fn loc_to_span<'tcx>(loc: &Loc) -> Span {
-    match loc {
-        Loc::Span(Why3Span { file_name, start_line, start_char, .. })
-            if file_name == "rustc_span" =>
-        {
-            Span::new(BytePos(*start_line), BytePos(*start_char), SyntaxContext::root(), None)
+impl SpanMap {
+    fn encode_syntactic_context(&mut self, s: SyntaxContext) -> usize {
+        let SpanMap { vec, map } = self;
+        match map.entry(s) {
+            Entry::Vacant(v) => {
+                v.insert(vec.len() + 1);
+                vec.push(s);
+                vec.len()
+            }
+            Entry::Occupied(o) => *o.get(),
         }
-        _ => DUMMY_SP,
+    }
+
+    fn decode_syntactic_context(&self, s: usize) -> SyntaxContext {
+        self.vec[s]
+    }
+
+    pub(crate) fn encode_span(
+        &mut self,
+        opts: &Options,
+        span: Span,
+    ) -> Option<why3::declaration::Attribute> {
+        if let Some(cmd) = &opts.why3_cmd && cmd.starts_with("prove") {
+            let data = span.data();
+            Some(why3::declaration::Attribute::Span(
+                "rustc_span".into(),
+                data.lo.0 as usize,
+                data.hi.0 as usize,
+                self.encode_syntactic_context(data.ctxt),
+                0
+            ))
+        } else {
+            None
+        }
+    }
+
+    fn decode_span(&self, loc: &Loc) -> Option<Span> {
+        match loc {
+            Loc::Span(Why3Span { file_name, start_line, start_char, end_line, .. })
+                if file_name == "rustc_span" =>
+            {
+                let ctxt = self.decode_syntactic_context(*end_line as usize);
+                Some(Span::new(BytePos(*start_line), BytePos(*start_char), ctxt, None))
+            }
+            _ => None,
+        }
     }
 }
 

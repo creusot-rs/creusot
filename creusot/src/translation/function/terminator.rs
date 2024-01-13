@@ -60,13 +60,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
                 self.emit_terminator(switch);
             }
-            Terminate => self.emit_terminator(Terminator::Abort),
+            Terminate => self.emit_terminator(Terminator::Abort(terminator.source_info.span)),
             Return => self.emit_terminator(Terminator::Return),
-            Unreachable => self.emit_terminator(Terminator::Abort),
+            Unreachable => self.emit_terminator(Terminator::Abort(terminator.source_info.span)),
             Call { func, args, destination, target, .. } => {
                 if target.is_none() {
                     // If we have no target block after the call, then we cannot move past it.
-                    self.emit_terminator(Terminator::Abort);
+                    self.emit_terminator(Terminator::Abort(terminator.source_info.span));
                     return;
                 }
 

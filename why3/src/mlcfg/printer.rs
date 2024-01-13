@@ -825,6 +825,20 @@ impl Print for Binder {
     }
 }
 
+fn pretty_attr<'b, 'a: 'b, A: DocAllocator<'a>>(
+    attr: &'a Option<Attribute>,
+    alloc: &'a A,
+    env: &mut PrintEnv,
+) -> DocBuilder<'a, A>
+where
+    A::Doc: Clone,
+{
+    match attr {
+        Some(attr) => attr.pretty(alloc, env),
+        None => alloc.nil(),
+    }
+}
+
 impl Print for Statement {
     fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
@@ -835,13 +849,8 @@ impl Print for Statement {
         A::Doc: Clone,
     {
         match self {
-            Statement::Assign { lhs, rhs: Exp::Attr(a, rhs) } => a
-                .pretty(alloc, env)
+            Statement::Assign { attr, lhs, rhs } => pretty_attr(attr, alloc, env)
                 .append(lhs.pretty(alloc, env))
-                .append(" <- ")
-                .append(parens!(alloc, env, Precedence::Impl, rhs)),
-            Statement::Assign { lhs, rhs } => lhs
-                .pretty(alloc, env)
                 .append(" <- ")
                 .append(parens!(alloc, env, Precedence::Impl, rhs)),
             Statement::Invariant(e) => {

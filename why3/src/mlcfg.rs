@@ -1,4 +1,5 @@
 use crate::{
+    declaration::Attribute,
     exp::{Exp, Pattern},
     ty::Type,
     Ident, QName,
@@ -45,7 +46,7 @@ impl Terminator {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Statement {
-    Assign { lhs: Ident, rhs: Exp },
+    Assign { attr: Option<Attribute>, lhs: Ident, rhs: Exp },
     Invariant(Exp),
     Variant(Exp),
     Assume(Exp),

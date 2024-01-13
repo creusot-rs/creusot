@@ -8,6 +8,7 @@ use crate::{
     error::{CrErr, CreusotResult, Error},
     metadata::{BinaryMetadata, Metadata},
     options::{Options, SpanMode},
+    run_why3::SpanMap,
     translation::{
         self,
         external::{extract_extern_specs_from_item, ExternSpec},
@@ -97,6 +98,7 @@ pub struct TranslationCtx<'tcx> {
     sig: HashMap<DefId, PreSignature<'tcx>>,
     bodies: HashMap<LocalDefId, BodyWithBorrowckFacts<'tcx>>,
     opacity: HashMap<DefId, Opacity>,
+    pub(crate) span_map: SpanMap,
 }
 
 #[derive(Copy, Clone)]
@@ -139,6 +141,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             sig: Default::default(),
             bodies: Default::default(),
             opacity: Default::default(),
+            span_map: Default::default(),
         }
     }
 
@@ -386,8 +389,8 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         }
     }
 
-    pub(crate) fn span_attr(&self, span: Span) -> Option<why3::declaration::Attribute> {
-        if let Some(span) = crate::run_why3::encode_span(&self.opts, span) {
+    pub(crate) fn span_attr(&mut self, span: Span) -> Option<why3::declaration::Attribute> {
+        if let Some(span) = self.span_map.encode_span(&self.opts, span) {
             return Some(span);
         };
         let lo = self.sess.source_map().lookup_char_pos(span.lo());
@@ -429,7 +432,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         ))
     }
 
-    pub(crate) fn attach_span(&self, span: Span, exp: Exp) -> Exp {
+    pub(crate) fn attach_span(&mut self, span: Span, exp: Exp) -> Exp {
         if let Some(attr) = self.span_attr(span) {
             Exp::Attr(attr, Box::new(exp))
         } else {

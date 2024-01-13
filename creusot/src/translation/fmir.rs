@@ -54,7 +54,7 @@ pub enum Statement<'tcx> {
 #[derive(Clone, Debug)]
 pub enum RValue<'tcx> {
     Ghost(Term<'tcx>),
-    Borrow(Place<'tcx>),
+    Borrow(Place<'tcx>, Span),
     Expr(Expr<'tcx>),
 }
 
@@ -130,7 +130,7 @@ pub enum Terminator<'tcx> {
     Goto(BasicBlock),
     Switch(Expr<'tcx>, Branches<'tcx>),
     Return,
-    Abort,
+    Abort(Span),
 }
 
 #[derive(Clone)]
