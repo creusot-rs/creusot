@@ -1,5 +1,5 @@
 use super::{
-    fmir::{LocalDecls, LocalIdent, RValue},
+    fmir::{ExprKind, LocalDecls, LocalIdent, RValue},
     pearlite::{normalize, Term},
     specification::inv_subst,
 };
@@ -24,7 +24,7 @@ use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
 
 use rustc_middle::{
-    mir::{self, traversal::reverse_postorder, BasicBlock, Body, Local, Operand, Place},
+    mir::{self, traversal::reverse_postorder, BasicBlock, Body, Local, Location, Operand, Place},
     ty::{
         subst::{GenericArg, SubstsRef},
         ClosureKind::*,
@@ -167,6 +167,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     &self.locals,
                     *self.body.source_info(bb.start_location()),
                 ));
+                self.check_ghost_term(&body, bb.start_location());
                 match kind {
                     LoopSpecKind::Variant => self.emit_statement(fmir::Statement::Variant(body)),
                     LoopSpecKind::Invariant => {
@@ -305,13 +306,15 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     // Useful helper to translate an operand
     pub(crate) fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Expr<'tcx> {
-        match operand {
-            Operand::Copy(pl) => Expr::Copy(self.translate_place(*pl)),
-            Operand::Move(pl) => Expr::Move(self.translate_place(*pl)),
+        let kind = match operand {
+            Operand::Copy(pl) => ExprKind::Copy(self.translate_place(*pl)),
+            Operand::Move(pl) => ExprKind::Move(self.translate_place(*pl)),
             Operand::Constant(c) => {
-                crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
+                return crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
             }
-        }
+        };
+
+        Expr { kind, span: DUMMY_SP, ty: operand.ty(self.body, self.tcx) }
     }
 
     fn translate_place(&self, _pl: mir::Place<'tcx>) -> fmir::Place<'tcx> {
@@ -333,6 +336,19 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             })
             .collect();
         fmir::Place { local: self.locals[&_pl.local], projection }
+    }
+
+    fn check_ghost_term(&mut self, term: &Term<'tcx>, location: Location) {
+        if let Some(resolver) = &mut self.resolver {
+            let frozen = resolver.frozen_locals_before(location);
+            let free_vars = term.free_vars();
+            for f in frozen.iter() {
+                if free_vars.contains(&self.locals[&f]) {
+                    let msg = format!("Use of borrowed variable {}", self.locals[&f]);
+                    self.ctx.crash_and_error(term.span, &msg);
+                }
+            }
+        }
     }
 }
 

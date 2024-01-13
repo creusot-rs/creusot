@@ -3,7 +3,7 @@ use std::{fmt::Display, iter::once};
 use super::*;
 use crate::{
     declaration::*,
-    exp::{AssocDir, BinOp, Binder, Constant, Precedence, UnOp},
+    exp::{AssocDir, BinOp, Binder, Constant, Precedence, Trigger, UnOp},
 };
 use num::{Float, Zero};
 use pretty::*;
@@ -614,6 +614,22 @@ impl Print for Type {
     }
 }
 
+impl Print for Trigger {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        match &self.0 {
+            None => alloc.nil(),
+            Some(exp) => exp.pretty(alloc, env).brackets(),
+        }
+    }
+}
+
 impl Print for Exp {
     fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
@@ -730,7 +746,7 @@ impl Print for Exp {
                 .append("else")
                 .append(alloc.line().append(e.pretty(alloc, env)).nest(2).append(alloc.line_()))
                 .group(),
-            Exp::Forall(binders, box exp) => alloc
+            Exp::Forall(binders, trig, box exp) => alloc
                 .text("forall ")
                 .append(alloc.intersperse(
                     binders.iter().map(|(b, t)| {
@@ -738,9 +754,10 @@ impl Print for Exp {
                     }),
                     ", ",
                 ))
+                .append(trig.pretty(alloc, env))
                 .append(" . ")
                 .append(exp.pretty(alloc, env)),
-            Exp::Exists(binders, box exp) => alloc
+            Exp::Exists(binders, trig, box exp) => alloc
                 .text("exists ")
                 .append(alloc.intersperse(
                     binders.iter().map(|(b, t)| {
@@ -748,6 +765,7 @@ impl Print for Exp {
                     }),
                     ", ",
                 ))
+                .append(trig.pretty(alloc, env))
                 .append(" . ")
                 .append(exp.pretty(alloc, env)),
             Exp::Impl(box hyp, box exp) => {
@@ -770,11 +788,12 @@ impl Print for Exp {
                     "; ",
                 )
                 .braces(),
-            Exp::Sequence(fields) => alloc
-                .intersperse(fields.iter().map(|f| f.pretty(alloc, env)), "; ")
-                .enclose("[|", "|]"),
+            Exp::Chain(fields) => {
+                alloc.intersperse(fields.iter().map(|f| f.pretty(alloc, env)), "; ")
+            }
             Exp::FnLit(e) => alloc.text("fun _ -> ").append(e.pretty(alloc, env)).parens(),
             Exp::Assert(e) => alloc.text("assert ").append(e.pretty(alloc, env).braces()),
+            Exp::Assume(e) => alloc.text("assume ").append(e.pretty(alloc, env).braces()),
         }
     }
 }

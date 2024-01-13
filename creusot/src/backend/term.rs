@@ -151,19 +151,13 @@ impl<'tcx> Lower<'_, 'tcx> {
             TermKind::Forall { binder, box body } => {
                 let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, binder.1);
                 self.pure_exp(|this| {
-                    Exp::Forall(
-                        vec![(binder.0.to_string().into(), ty)],
-                        Box::new(this.lower_term(body)),
-                    )
+                    Exp::forall(vec![(binder.0.to_string().into(), ty)], this.lower_term(body))
                 })
             }
             TermKind::Exists { binder, box body } => {
                 let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, binder.1);
                 self.pure_exp(|this| {
-                    Exp::Exists(
-                        vec![(binder.0.to_string().into(), ty)],
-                        Box::new(this.lower_term(body)),
-                    )
+                    Exp::exists(vec![(binder.0.to_string().into(), ty)], this.lower_term(body))
                 })
             }
             TermKind::Constructor { typ, variant, fields } => {
@@ -345,10 +339,10 @@ use crate::translation::pearlite::prusti::strip_all_refs;
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
 
-use super::{dependency::Dependency, Why3Generator};
+use super::Why3Generator;
 
 pub(crate) fn lower_literal<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    _: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     lit: Literal<'tcx>,
 ) -> Exp {
@@ -371,8 +365,7 @@ pub(crate) fn lower_literal<'tcx>(
             }
         }
         Literal::Function(id, subst) => {
-            #[allow(deprecated)]
-            names.insert(Dependency::new(ctx.tcx, (id, subst)));
+            names.value(id, subst);
             Exp::Tuple(Vec::new())
         }
         Literal::Float(f, fty) => {

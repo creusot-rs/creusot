@@ -3,11 +3,11 @@ pub use ::std::boxed::*;
 
 #[cfg(creusot)]
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
-    type DeepModelTy = T::DeepModelTy;
+    type DeepModelTy = Box<T::DeepModelTy>;
     #[ghost]
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
-        (*self).deep_model()
+        Box::new((*self).deep_model())
     }
 }
 

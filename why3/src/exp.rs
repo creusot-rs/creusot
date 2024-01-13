@@ -94,24 +94,57 @@ pub enum Purity {
     Program,
 }
 
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+// TODO: multi-trigger/multiple triggers
+pub struct Trigger(pub Option<Box<Exp>>);
+
+impl Trigger {
+    pub const NONE: Trigger = Trigger(None);
+
+    pub fn single(exp: Exp) -> Self {
+        Trigger(Some(Box::new(exp)))
+    }
+}
+
 // TODO: Should we introduce an 'ExprKind' struct which wraps `Exp` with attributes?
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Exp {
     Assert(Box<Exp>),
+    Assume(Box<Exp>),
     Any(Type),
     // TODO: Remove
     Current(Box<Exp>),
     // TODO: Remove
     Final(Box<Exp>),
-    Let { pattern: Pattern, arg: Box<Exp>, body: Box<Exp> },
+    Let {
+        pattern: Pattern,
+        arg: Box<Exp>,
+        body: Box<Exp>,
+    },
     Var(Ident, Purity),
     QVar(QName, Purity),
-    Record { fields: Vec<(String, Exp)> },
-    RecUp { record: Box<Exp>, label: String, val: Box<Exp> },
-    RecField { record: Box<Exp>, label: String },
+    /// Record construction
+    Record {
+        fields: Vec<(String, Exp)>,
+    },
+    /// Record update
+    RecUp {
+        record: Box<Exp>,
+        label: String,
+        val: Box<Exp>,
+    },
+    /// Record access
+    RecField {
+        record: Box<Exp>,
+        label: String,
+    },
     Tuple(Vec<Exp>),
-    Constructor { ctor: QName, args: Vec<Exp> },
+    Constructor {
+        ctor: QName,
+        args: Vec<Exp>,
+    },
     Const(Constant),
     BinaryOp(BinOp, Box<Exp>, Box<Exp>),
     UnaryOp(UnOp, Box<Exp>),
@@ -119,7 +152,11 @@ pub enum Exp {
     Verbatim(String),
     Attr(Attribute, Box<Exp>),
     Ghost(Box<Exp>),
+    /// Lambda abstraction
     Abs(Vec<Binder>, Box<Exp>),
+    /// Expression (statement) sequencing (aka ;)
+    Chain(Vec<Exp>),
+
     Match(Box<Exp>, Vec<(Pattern, Exp)>),
     IfThenElse(Box<Exp>, Box<Exp>, Box<Exp>),
     Ascribe(Box<Exp>, Type),
@@ -128,9 +165,8 @@ pub enum Exp {
     Old(Box<Exp>),
     Absurd,
     Impl(Box<Exp>, Box<Exp>),
-    Forall(Vec<(Ident, Type)>, Box<Exp>),
-    Exists(Vec<(Ident, Type)>, Box<Exp>),
-    Sequence(Vec<Exp>),
+    Forall(Vec<(Ident, Type)>, Trigger, Box<Exp>),
+    Exists(Vec<(Ident, Type)>, Trigger, Box<Exp>),
     FnLit(Box<Exp>),
 }
 
@@ -146,6 +182,10 @@ pub enum Binder {
 pub trait ExpMutVisitor: Sized {
     fn visit_mut(&mut self, exp: &mut Exp) {
         super_visit_mut(self, exp)
+    }
+
+    fn visit_trigger_mut(&mut self, trig: &mut Trigger) {
+        super_visit_mut_trigger(self, trig)
     }
 }
 
@@ -196,20 +236,38 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
             f.visit_mut(l);
             f.visit_mut(r)
         }
-        Exp::Forall(_, e) => f.visit_mut(e),
-        Exp::Exists(_, e) => f.visit_mut(e),
+        Exp::Forall(_, t, e) => {
+            f.visit_trigger_mut(t);
+            f.visit_mut(e)
+        }
+        Exp::Exists(_, t, e) => {
+            f.visit_trigger_mut(t);
+            f.visit_mut(e)
+        }
         Exp::Attr(_, e) => f.visit_mut(e),
         Exp::Ghost(e) => f.visit_mut(e),
         Exp::Record { fields } => fields.iter_mut().for_each(|(_, e)| f.visit_mut(e)),
-        Exp::Sequence(fields) => fields.iter_mut().for_each(|e| f.visit_mut(e)),
+        Exp::Chain(fields) => fields.iter_mut().for_each(|e| f.visit_mut(e)),
         Exp::FnLit(e) => f.visit_mut(e),
         Exp::Assert(e) => f.visit_mut(e),
+        Exp::Assume(e) => f.visit_mut(e),
+    }
+}
+
+pub fn super_visit_mut_trigger<T: ExpMutVisitor>(f: &mut T, trigger: &mut Trigger) {
+    match &mut trigger.0 {
+        None => {}
+        Some(exp) => f.visit_mut(exp),
     }
 }
 
 pub trait ExpVisitor: Sized {
     fn visit(&mut self, exp: &Exp) {
         super_visit(self, exp)
+    }
+
+    fn visit_trigger(&mut self, trig: &Trigger) {
+        super_visit_trigger(self, trig)
     }
 }
 
@@ -260,14 +318,28 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
             f.visit(l);
             f.visit(r)
         }
-        Exp::Forall(_, e) => f.visit(e),
-        Exp::Exists(_, e) => f.visit(e),
+        Exp::Forall(_, t, e) => {
+            f.visit_trigger(t);
+            f.visit(e)
+        }
+        Exp::Exists(_, t, e) => {
+            f.visit_trigger(t);
+            f.visit(e)
+        }
         Exp::Attr(_, e) => f.visit(e),
         Exp::Ghost(e) => f.visit(e),
         Exp::Record { fields } => fields.iter().for_each(|(_, e)| f.visit(e)),
-        Exp::Sequence(fields) => fields.iter().for_each(|e| f.visit(e)),
+        Exp::Chain(fields) => fields.iter().for_each(|e| f.visit(e)),
         Exp::FnLit(e) => f.visit(e),
         Exp::Assert(e) => f.visit(e),
+        Exp::Assume(e) => f.visit(e),
+    }
+}
+
+pub fn super_visit_trigger<T: ExpVisitor>(f: &mut T, trigger: &Trigger) {
+    match &trigger.0 {
+        None => {}
+        Some(exp) => f.visit(exp),
     }
 }
 
@@ -353,6 +425,22 @@ impl Exp {
         } else {
             Exp::Impl(Box::new(self), Box::new(other))
         }
+    }
+
+    pub fn forall_trig(bound: Vec<(Ident, Type)>, trigger: Trigger, body: Exp) -> Self {
+        Exp::Forall(bound, trigger, Box::new(body))
+    }
+
+    pub fn forall(bound: Vec<(Ident, Type)>, body: Exp) -> Self {
+        Exp::forall_trig(bound, Trigger::NONE, body)
+    }
+
+    pub fn exists_trig(bound: Vec<(Ident, Type)>, trigger: Trigger, body: Exp) -> Self {
+        Exp::Exists(bound, trigger, Box::new(body))
+    }
+
+    pub fn exists(bound: Vec<(Ident, Type)>, body: Exp) -> Self {
+        Exp::exists_trig(bound, Trigger::NONE, body)
     }
 
     pub fn is_true(&self) -> bool {
@@ -551,8 +639,8 @@ impl Exp {
             Exp::Call(_, _) => App,
             // Exp::Verbatim(_) => Any,
             Exp::Impl(_, _) => Impl,
-            Exp::Forall(_, _) => IfLet,
-            Exp::Exists(_, _) => IfLet,
+            Exp::Forall(_, _, _) => IfLet,
+            Exp::Exists(_, _, _) => IfLet,
             Exp::Ascribe(_, _) => Cast,
             Exp::Absurd => Atom,
             Exp::Pure(_) => Atom,
@@ -562,9 +650,11 @@ impl Exp {
             Exp::Attr(_, _) => Attr,
             Exp::Ghost(_) => App,
             Exp::Record { fields: _ } => Atom,
-            Exp::Sequence(_) => Atom,
+            // TODO: Wrong, should introduce a better name for it
+            Exp::Chain(_) => Attr,
             Exp::FnLit(_) => Atom,
             Exp::Assert(_) => Atom,
+            Exp::Assume(_) => Atom,
             // _ => unimplemented!("{:?}", self),
         }
     }
@@ -587,19 +677,19 @@ impl Exp {
                         self.visit(arg);
                         self.fvs.extend(fvs);
                     }
-                    Exp::Forall(bnds, exp) => {
+                    Exp::Forall(bnds, trig, exp) => {
                         let fvs = std::mem::take(&mut self.fvs);
                         self.visit(exp);
-
+                        self.visit_trigger(trig);
                         bnds.iter().for_each(|(l, _)| {
                             self.fvs.remove(l);
                         });
                         self.fvs.extend(fvs);
                     }
-                    Exp::Exists(bnds, exp) => {
+                    Exp::Exists(bnds, trig, exp) => {
                         let fvs = std::mem::take(&mut self.fvs);
                         self.visit(exp);
-
+                        self.visit_trigger(trig);
                         bnds.iter().for_each(|(l, _)| {
                             self.fvs.remove(l);
                         });
@@ -684,21 +774,23 @@ impl Exp {
                             s.visit_mut(br);
                         }
                     }
-                    Exp::Forall(binders, exp) => {
+                    Exp::Forall(binders, trig, exp) => {
                         let mut subst = self.clone();
                         binders.iter().for_each(|k| {
                             subst.remove(&k.0);
                         });
                         let mut s = &subst;
                         s.visit_mut(exp);
+                        s.visit_trigger_mut(trig);
                     }
-                    Exp::Exists(binders, exp) => {
+                    Exp::Exists(binders, trig, exp) => {
                         let mut subst = self.clone();
                         binders.iter().for_each(|k| {
                             subst.remove(&k.0);
                         });
                         let mut s = &subst;
                         s.visit_mut(exp);
+                        s.visit_trigger_mut(trig);
                     }
                     _ => super_visit_mut(self, exp),
                 }

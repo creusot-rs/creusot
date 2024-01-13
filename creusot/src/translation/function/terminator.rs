@@ -2,7 +2,7 @@ use super::BodyTranslator;
 use crate::{
     ctx::TranslationCtx,
     translation::{
-        fmir::{self, Branches, Expr, RValue, Terminator},
+        fmir::*,
         pearlite::{Term, TermKind, UnOp},
         specification::inv_subst,
         traits,
@@ -77,6 +77,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     let TyKind::Closure(def_id, _) = ty.kind() else { panic!() };
                     let mut assertion = self.assertions.remove(def_id).unwrap();
                     assertion.subst(&inv_subst(self.body, &self.locals, terminator.source_info));
+                    self.check_ghost_term(&assertion, location);
                     self.emit_ghost_assign(*destination, assertion);
                     self.emit_terminator(Terminator::Goto(target.unwrap()));
                     return;
@@ -99,8 +100,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     args.iter().map(|arg| self.translate_operand(arg)).collect();
 
                 if func_args.is_empty() {
+                    // TODO: Remove this, push the 0-ary handling down to why3 backend
                     // We use tuple as a dummy argument for 0-ary functions
-                    func_args.push(Expr::Tuple(vec![]))
+                    func_args.push(Expr {
+                        span: DUMMY_SP,
+                        kind: ExprKind::Tuple(vec![]),
+                        ty: self.ctx.types.unit,
+                    })
                 }
                 let call_exp = if self.is_box_new(fun_def_id) {
                     assert_eq!(func_args.len(), 1);
@@ -114,9 +120,12 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         .try_normalize_erasing_regions(self.param_env(), subst)
                         .unwrap_or(subst);
 
-                    let exp = Expr::Call(fun_def_id, subst, func_args);
-                    let span = span.source_callsite();
-                    Expr::Span(span, Box::new(exp))
+                    let exp = Expr {
+                        span: span.source_callsite(),
+                        kind: ExprKind::Call(fun_def_id, subst, func_args),
+                        ty: destination.ty(self.body, self.tcx).ty,
+                    };
+                    exp
                 };
 
                 let (loc, bb) = (destination, target.unwrap());
@@ -148,7 +157,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         kind: TermKind::Unary { op: UnOp::Not, arg: Box::new(cond) },
                     };
                 }
-                self.emit_statement(fmir::Statement::Assertion { cond, msg });
+                self.emit_statement(Statement::Assertion { cond, msg });
                 self.emit_terminator(mk_goto(*target))
             }
 

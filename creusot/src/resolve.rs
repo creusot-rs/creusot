@@ -160,6 +160,11 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         self.dead_locals()
     }
 
+    pub fn frozen_locals_before(&mut self, loc: Location) -> BitSet<Local> {
+        ExtendedLocation::Start(loc).seek_to(&mut self.borrows);
+        self.frozen_locals()
+    }
+
     pub fn resolved_locals_between_blocks(
         &mut self,
         from: BasicBlock,

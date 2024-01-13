@@ -5,12 +5,16 @@
 // Transforms THIR into a Term which may be serialized in Creusot metadata files for usage by dependent crates
 // The `lower` module then transforms a `Term` into a WhyML expression.
 
-use std::collections::HashSet;
+use std::{
+    collections::HashSet,
+    fmt::{Display, Formatter},
+    unreachable,
+};
 
 use crate::{
     error::{CrErr, CreusotResult, Error},
     translation::TranslationCtx,
-    util,
+    util::{self, is_ghost_ty},
 };
 use itertools::Itertools;
 use log::*;
@@ -27,7 +31,7 @@ use rustc_middle::{
         AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
     },
     ty::{
-        int_ty, subst::SubstsRef, uint_ty, CanonicalUserType, Ty, TyCtxt, TyKind, TypeFoldable,
+        int_ty, subst::SubstsRef, uint_ty, GenericArg, CanonicalUserType, Ty, TyCtxt, TyKind, TypeFoldable,
         TypeVisitable, TypeVisitableExt, UpvarSubsts, UserType,
     },
 };
@@ -518,7 +522,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     }
                 }
             }
-            ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } => self.expr_term(arg),
+            ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } => {
+                let mut e = self.expr_term(arg)?;
+                e.ty = ty;
+                Ok(e)
+            }
             ExprKind::Borrow { arg, .. } => {
                 let t = self.logical_reborrow(arg)?;
                 Ok(Term { ty, span, kind: t })
@@ -834,6 +842,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         if let ExprKind::Deref { arg } = self.thir[rebor_id].kind {
             return Ok(self.expr_term(arg)?.kind);
         };
+        // eprintln!("{}", PrintExpr(self.thir, rebor_id));
         // Handle every other case.
         let (cur, fin) = self.logical_reborrow_inner(rebor_id)?;
 
@@ -858,20 +867,75 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 ))
             }
             ExprKind::Deref { arg } => {
-                let inner = self.expr_term(*arg)?;
-                if let TermKind::Var(_) = inner.kind {}
-                let ty = inner.ty.builtin_deref(false).expect("expected reference type").ty;
+                // Detect * ghost_deref & and treat that as a single 'projection'
+                if self.is_ghost_deref(*arg) {
+                    let ExprKind::Call { args, .. } = &self.thir[*arg].kind else { unreachable!() };
+                    let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } = self.thir[args[0]].kind else { unreachable!() };
 
-                Ok((
-                    Term { ty, span, kind: TermKind::Cur { term: Box::new(inner.clone()) } },
-                    Term { ty, span, kind: TermKind::Fin { term: Box::new(inner) } },
-                ))
+                    let (cur, fin) = self.logical_reborrow_inner(arg)?;
+                    let deref_method =
+                        self.ctx.get_diagnostic_item(Symbol::intern("ghost_inner")).unwrap();
+                    // Extract the `T` from `Ghost<T>`
+                    let TyKind::Adt(_, subst) = self.thir[arg].ty.peel_refs().kind() else {unreachable!()};
+                    return Ok((
+                        Term::call(self.ctx.tcx, deref_method, subst, vec![cur]),
+                        Term::call(self.ctx.tcx, deref_method, subst, vec![fin]),
+                    ));
+                };
+
+                let inner = self.expr_term(*arg)?;
+
+                Ok((inner.clone().cur().span(span), inner.fin().span(span)))
             }
-            _ => Err(Error::new(
+            ExprKind::Call { ty: fn_ty, args, .. } if fn_ty.is_fn() => {
+                let index_logic_method =
+                    self.ctx.get_diagnostic_item(Symbol::intern("index_logic_method")).unwrap();
+
+                let TyKind::FnDef(id,_) = fn_ty.kind() else { panic!("expected function type") };
+
+                let (cur, fin) = self.logical_reborrow_inner(args[0])?;
+
+                if id == &index_logic_method {
+                    let index = self.expr_term(args[1])?;
+
+                    let subst =
+                        self.ctx.mk_substs(&[GenericArg::from(cur.ty), GenericArg::from(index.ty)]);
+
+                    Ok((
+                        Term::call(
+                            self.ctx.tcx,
+                            index_logic_method,
+                            subst,
+                            vec![cur, index.clone()],
+                        ),
+                        Term::call(
+                            self.ctx.tcx,
+                            index_logic_method,
+                            subst,
+                            vec![fin, index.clone()],
+                        ),
+                    ))
+                } else {
+                    return Err(Error::new(span, format!("unsupported projection {id:?}")));
+                }
+            }
+            e => Err(Error::new(
                 span,
-                "unsupported logical reborrow, only simple field projections are supproted, sorry",
+                format!("unsupported logical reborrow {e:?}, only simple field projections are supported"),
             )),
         }
+    }
+
+    pub(crate) fn is_ghost_deref(&self, expr_id: ExprId) -> bool {
+        let ExprKind::Call { ty, .. } = &self.thir[expr_id].kind else {return false};
+
+        let TyKind::FnDef(id, sub) = ty.kind() else { panic!("expected function type") };
+
+        if Some(*id) != self.ctx.get_diagnostic_item(Symbol::intern("deref_method")) {
+            return false;
+        }
+
+        sub[0].as_type().map(|ty| is_ghost_ty(self.ctx.tcx, ty)).unwrap_or(false)
     }
 
     fn mk_projection(&self, lhs: Term<'tcx>, name: FieldIdx) -> Result<TermKind<'tcx>, Error> {
@@ -1157,6 +1221,27 @@ impl<'tcx> Term<'tcx> {
         Term { ty: tcx.types.bool, kind: TermKind::Lit(Literal::Bool(false)), span: DUMMY_SP }
     }
 
+    pub(crate) fn call(
+        tcx: TyCtxt<'tcx>,
+        def_id: DefId,
+        subst: SubstsRef<'tcx>,
+        args: Vec<Term<'tcx>>,
+    ) -> Self {
+        let ty = tcx.type_of(def_id).subst(tcx, subst);
+        let result = ty.fn_sig(tcx).skip_binder().output();
+        let fun = Term {
+            ty: tcx.type_of(def_id).subst(tcx, subst),
+            kind: TermKind::Item(def_id, subst),
+            span: DUMMY_SP,
+        };
+
+        Term {
+            ty: result,
+            span: DUMMY_SP,
+            kind: TermKind::Call { id: def_id, subst, fun: Box::new(fun.clone()), args },
+        }
+    }
+
     pub(crate) fn var(sym: Symbol, ty: Ty<'tcx>) -> Self {
         Term { ty, kind: TermKind::Var(sym), span: DUMMY_SP }
     }
@@ -1391,4 +1476,168 @@ impl<'tcx> Term<'tcx> {
             TermKind::Assert { cond } => cond.subst_with_inner(bound, inv_subst),
         }
     }
+
+    pub(crate) fn free_vars(&self) -> HashSet<Symbol> {
+        let mut free = HashSet::new();
+        self.free_vars_inner(&HashSet::new(), &mut free);
+        free
+    }
+
+    fn free_vars_inner(&self, bound: &HashSet<Symbol>, free: &mut HashSet<Symbol>) {
+        match &self.kind {
+            TermKind::Var(v) => {
+                if !bound.contains(v) {
+                    free.insert(*v);
+                }
+            }
+            TermKind::Lit(_) => {}
+            TermKind::Item(_, _) => {}
+            TermKind::Binary { lhs, rhs, .. } => {
+                lhs.free_vars_inner(bound, free);
+                rhs.free_vars_inner(bound, free)
+            }
+            TermKind::Unary { arg, .. } => arg.free_vars_inner(bound, free),
+            TermKind::Forall { binder, body } => {
+                let mut bound = bound.clone();
+                bound.insert(binder.0);
+
+                body.free_vars_inner(&bound, free);
+            }
+            TermKind::Exists { binder, body } => {
+                let mut bound = bound.clone();
+                bound.insert(binder.0);
+
+                body.free_vars_inner(&bound, free);
+            }
+            TermKind::Call { fun, args, .. } => {
+                fun.free_vars_inner(bound, free);
+                for arg in args {
+                    arg.free_vars_inner(bound, free);
+                }
+            }
+            TermKind::Constructor { fields, .. } => {
+                for field in fields {
+                    field.free_vars_inner(bound, free);
+                }
+            }
+            TermKind::Tuple { fields } => {
+                for field in fields {
+                    field.free_vars_inner(bound, free);
+                }
+            }
+            TermKind::Cur { term } => term.free_vars_inner(bound, free),
+            TermKind::Fin { term } => term.free_vars_inner(bound, free),
+            TermKind::Impl { lhs, rhs } => {
+                lhs.free_vars_inner(bound, free);
+                rhs.free_vars_inner(bound, free)
+            }
+            TermKind::Match { scrutinee, arms } => {
+                scrutinee.free_vars_inner(bound, free);
+                let mut bound = bound.clone();
+
+                for (pat, arm) in arms {
+                    pat.binds(&mut bound);
+                    arm.free_vars_inner(&bound, free);
+                }
+            }
+            TermKind::Let { pattern, arg, body } => {
+                arg.free_vars_inner(bound, free);
+                let mut bound = bound.clone();
+                pattern.binds(&mut bound);
+                body.free_vars_inner(&bound, free);
+            }
+            TermKind::Projection { lhs, .. } => lhs.free_vars_inner(bound, free),
+            TermKind::Old { term } => term.free_vars_inner(bound, free),
+            TermKind::Closure { body } => {
+                body.free_vars_inner(&bound, free);
+            }
+            TermKind::Absurd => {}
+            TermKind::Reborrow { cur, fin } => {
+                cur.free_vars_inner(bound, free);
+                fin.free_vars_inner(bound, free)
+            }
+            TermKind::Assert { cond } => cond.free_vars_inner(bound, free),
+        }
+    }
+}
+
+struct PrintExpr<'a, 'tcx>(&'a Thir<'tcx>, ExprId);
+
+impl Display for PrintExpr<'_, '_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        print_thir_expr(f, self.0, self.1)
+    }
+}
+
+fn print_thir_expr<'tcx>(
+    fmt: &mut Formatter,
+    thir: &Thir<'tcx>,
+    expr_id: ExprId,
+) -> std::fmt::Result {
+    match &thir[expr_id].kind {
+        ExprKind::Call { fun, args, .. } => {
+            print_thir_expr(fmt, thir, *fun)?;
+            write!(fmt, "(")?;
+            for a in args.iter() {
+                print_thir_expr(fmt, thir, *a)?;
+                write!(fmt, ",")?;
+            }
+            write!(fmt, ")")?;
+        }
+        ExprKind::Deref { arg } => {
+            write!(fmt, "* ")?;
+            print_thir_expr(fmt, thir, *arg)?;
+        }
+        ExprKind::Borrow { borrow_kind, arg } => {
+            match borrow_kind {
+                BorrowKind::Shared => write!(fmt, "& ")?,
+                BorrowKind::Shallow => write!(fmt, "&shallow ")?,
+                BorrowKind::Mut { .. } => write!(fmt, "&mut ")?,
+            };
+
+            print_thir_expr(fmt, thir, *arg)?;
+        }
+        ExprKind::Field { lhs, variant_index, name } => {
+            print_thir_expr(fmt, thir, *lhs)?;
+            let ty = thir[expr_id].ty;
+            let (var_name, field_name) = match ty.kind() {
+                TyKind::Adt(def, _) => {
+                    let var = &def.variants()[*variant_index];
+                    (var.name.to_string(), var.fields[*name].name.to_string())
+                }
+                TyKind::Tuple(_) => ("_".into(), format!("{name:?}")),
+                _ => unreachable!(),
+            };
+
+            write!(fmt, " as {var_name} . {field_name}")?;
+        }
+        ExprKind::Index { lhs, index } => {
+            print_thir_expr(fmt, thir, *lhs)?;
+            write!(fmt, "[")?;
+            print_thir_expr(fmt, thir, *index)?;
+            write!(fmt, "]")?;
+        }
+        ExprKind::ZstLiteral { .. } => match thir[expr_id].ty.kind() {
+            TyKind::FnDef(id, _) => write!(fmt, "{id:?}")?,
+            _ => write!(fmt, "zst")?,
+        },
+        ExprKind::Literal { lit, neg } => {
+            if *neg {
+                write!(fmt, "-")?;
+            }
+
+            write!(fmt, "{}", lit.node)?;
+        }
+        ExprKind::Use { source } => print_thir_expr(fmt, thir, *source)?,
+        ExprKind::VarRef { id } => {
+            write!(fmt, "{:?}", id.0)?;
+        }
+        ExprKind::Scope { value, .. } => {
+            print_thir_expr(fmt, thir, *value)?;
+        }
+        _ => {
+            write!(fmt, "{:?}", thir[expr_id])?;
+        }
+    }
+    Ok(())
 }

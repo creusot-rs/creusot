@@ -9,7 +9,7 @@ use crate::{
 use rustc_hir::def_id::DefId;
 use why3::{
     declaration::*,
-    exp::{BinOp, Binder, Exp},
+    exp::{super_visit_mut, BinOp, Binder, Exp, ExpMutVisitor, Trigger},
     Ident, QName,
 };
 
@@ -67,7 +67,7 @@ fn builtin_body<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
 ) -> (Module, CloneSummary<'tcx>) {
-    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into());
     let mut sig = signature_of(ctx, &mut names, def_id);
     let (val_args, val_binders) = binders_to_args(ctx, sig.args);
     sig.args = val_binders;
@@ -96,7 +96,7 @@ fn builtin_body<'tcx>(
     }
 
     let mut decls: Vec<_> = all_generic_decls_for(ctx.tcx, def_id).collect();
-    let (clones, summary) = names.to_clones(ctx);
+    let (clones, summary) = names.to_clones(ctx, CloneDepth::Shallow);
 
     decls.extend(clones);
     if !builtin.module.is_empty() {
@@ -135,7 +135,7 @@ pub(crate) fn val_decl<'tcx>(
 }
 
 fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
-    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into());
 
     let mut sig = signature_of(ctx, &mut names, def_id);
     let mut val_sig = sig.clone();
@@ -161,9 +161,10 @@ fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, C
     } else {
         let term = ctx.term(def_id).unwrap().clone();
         let body = lower_pure(ctx, &mut names, term);
+        let ity = util::item_type(ctx.tcx, def_id);
 
         if sig_contract.contract.variant.is_empty() && body.is_pure() {
-            let decl = match util::item_type(ctx.tcx, def_id) {
+            let decl = match ity {
                 ItemType::Ghost | ItemType::Logic => Decl::LogicDefn(Logic { sig, body }),
                 ItemType::Predicate => Decl::PredDecl(Predicate { sig, body }),
                 _ => unreachable!(),
@@ -172,12 +173,16 @@ fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, C
             decls.push(val_decl(ctx, &mut names, def_id));
         } else if body.is_pure() {
             let def_sig = sig.clone();
-            let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
+            let val = ity.val(sig.clone());
             decls.push(Decl::ValDecl(val));
             decls.push(val_decl(ctx, &mut names, def_id));
-            decls.push(Decl::Axiom(definition_axiom(&def_sig, body)));
+            if sig.uses_simple_triggers() {
+                limited_function_encode(&mut decls, &def_sig, &sig_contract.contract, body, ity)
+            } else {
+                decls.push(Decl::Axiom(definition_axiom(&def_sig, body, "def")));
+            }
         } else {
-            let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
+            let val = ity.val(sig.clone());
             decls.push(Decl::ValDecl(val));
             decls.push(val_decl(ctx, &mut names, def_id));
         }
@@ -190,7 +195,7 @@ fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, C
 
     let name = module_name(ctx.tcx, def_id);
 
-    let (clones, summary) = names.to_clones(ctx);
+    let (clones, summary) = names.to_clones(ctx, CloneDepth::Shallow);
     let decls = closure_generic_decls(ctx.tcx, def_id)
         .chain(clones.into_iter())
         .chain(decls.into_iter())
@@ -199,8 +204,58 @@ fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, C
     (Module { name, decls }, summary)
 }
 
+fn subst_qname(body: &mut Exp, name: &Ident, lim_name: &Ident) {
+    struct QNameSubst<'a>(&'a Ident, &'a Ident);
+
+    impl<'a> ExpMutVisitor for QNameSubst<'a> {
+        fn visit_mut(&mut self, exp: &mut Exp) {
+            match exp {
+                Exp::QVar(qname, _) if qname.module.is_empty() && &qname.name == self.0 => {
+                    *exp = Exp::pure_var(self.1.clone())
+                }
+                _ => super_visit_mut(self, exp),
+            }
+        }
+    }
+
+    QNameSubst(name, lim_name).visit_mut(body)
+}
+
+// Use the limited function encoding from https://pm.inf.ethz.ch/publications/HeuleKassiosMuellerSummers12.pdf
+// Originally introduced in https://dl.acm.org/doi/10.1145/1529282.1529411
+
+// This prevents recursive functions from being unfolded more than once which makes the definition
+// axiom weaker but avoids having it cause a matching loop. This is useful since it can help the
+// solve return "unknown" instead of relying on a timeout, and give it a chance to apply map
+// extensionality axioms.
+fn limited_function_encode(
+    decls: &mut Vec<Decl>,
+    sig: &Signature,
+    contract: &Contract,
+    mut body: Exp,
+    ity: ItemType,
+) {
+    let lim_name = Ident::from_string(format!("{}_lim", &*sig.name));
+    subst_qname(&mut body, &sig.name, &lim_name);
+    let mut lim_sig = Signature {
+        name: lim_name,
+        trigger: None,
+        attrs: vec![],
+        retty: sig.retty.clone(),
+        args: sig.args.clone(),
+        contract: contract.clone(),
+    };
+    let lim_call = function_call(&lim_sig);
+    let lim_spec = spec_axiom(&lim_sig);
+    lim_sig.contract = Default::default();
+    decls.push(Decl::ValDecl(ity.val(lim_sig)));
+    decls.push(Decl::Axiom(definition_axiom(&sig, body, "def")));
+    decls.push(Decl::Axiom(definition_axiom(&sig, lim_call, "def_lim")));
+    decls.push(Decl::Axiom(lim_spec));
+}
+
 pub(crate) fn stub_module(ctx: &mut Why3Generator, def_id: DefId) -> Module {
-    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into());
     let mut sig = signature_of(ctx, &mut names, def_id);
 
     if util::is_predicate(ctx.tcx, def_id) {
@@ -215,7 +270,7 @@ pub(crate) fn stub_module(ctx: &mut Why3Generator, def_id: DefId) -> Module {
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
-    let (clones, _) = names.to_clones(ctx);
+    let (clones, _) = names.to_clones(ctx, CloneDepth::Shallow);
     decls.extend(clones);
     decls.push(decl);
 
@@ -227,12 +282,12 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
         return None;
     }
 
-    let mut names = CloneMap::new(ctx.tcx, def_id.into(), CloneLevel::Body);
+    let mut names = CloneMap::new(ctx.tcx, def_id.into());
 
     let mut sig = signature_of(ctx, &mut names, def_id);
 
     if sig.contract.is_empty() {
-        let _ = names.to_clones(ctx);
+        let _ = names.to_clones(ctx, CloneDepth::Deep);
         return None;
     }
     let term = ctx.term(def_id).unwrap().clone();
@@ -240,7 +295,7 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
-    let (clones, _) = names.to_clones(ctx);
+    let (clones, _) = names.to_clones(ctx, CloneDepth::Deep);
     decls.extend(clones);
 
     let kind = match util::item_type(ctx.tcx, def_id) {
@@ -269,7 +324,8 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
     let mut condition = preconditions.rfold(postcondition, |acc, arg| arg.implies(acc));
 
     let func_call = function_call(sig);
-    condition.subst(&[("result".into(), func_call)].into_iter().collect());
+    let trigger = sig.trigger.clone().unwrap_or_else(|| Trigger::single(func_call.clone()));
+    condition.subst(&[("result".into(), func_call.clone())].into_iter().collect());
     let args: Vec<(_, _)> = sig
         .args
         .iter()
@@ -278,7 +334,8 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
         .filter(|arg| &*arg.0 != "_")
         .collect();
 
-    let axiom = if args.is_empty() { condition } else { Exp::Forall(args, Box::new(condition)) };
+    let axiom =
+        if args.is_empty() { condition } else { Exp::forall_trig(args, trigger, condition) };
 
     Axiom { name: format!("{}_spec", &*sig.name).into(), rewrite: false, axiom }
 }
@@ -299,19 +356,21 @@ fn function_call(sig: &Signature) -> Exp {
     Exp::pure_var(sig.name.clone()).app(args)
 }
 
-fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {
+fn definition_axiom(sig: &Signature, body: Exp, name: &str) -> Axiom {
     let call = function_call(sig);
+    let trigger = sig.trigger.clone().unwrap_or_else(|| Trigger::single(call.clone()));
 
-    let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call), Box::new(body));
+    let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
 
     let preconditions = sig.contract.requires.iter().cloned();
     let condition = preconditions.rfold(equation, |acc, arg| arg.implies(acc));
 
     let args: Vec<_> = sig.args.clone().into_iter().flat_map(|b| b.var_type_pairs()).collect();
 
-    let axiom = if args.is_empty() { condition } else { Exp::Forall(args, Box::new(condition)) };
+    let axiom =
+        if args.is_empty() { condition } else { Exp::forall_trig(args, trigger, condition) };
 
-    Axiom { name: "def".into(), rewrite: false, axiom }
+    Axiom { name: name.into(), rewrite: false, axiom }
 }
 
 pub(crate) fn impl_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {

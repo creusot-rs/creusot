@@ -8,6 +8,8 @@ use rustc_middle::{
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::VariantIdx;
 
+pub use rustc_span::DUMMY_SP;
+
 #[derive(Clone, Debug)]
 pub struct Place<'tcx> {
     pub(crate) local: Symbol,
@@ -57,7 +59,14 @@ pub enum RValue<'tcx> {
 }
 
 #[derive(Clone, Debug)]
-pub enum Expr<'tcx> {
+pub struct Expr<'tcx> {
+    pub kind: ExprKind<'tcx>,
+    pub ty: Ty<'tcx>,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug)]
+pub enum ExprKind<'tcx> {
     Move(Place<'tcx>),
     Copy(Place<'tcx>),
     BinOp(BinOp, Ty<'tcx>, Box<Expr<'tcx>>, Box<Expr<'tcx>>),
@@ -68,7 +77,6 @@ pub enum Expr<'tcx> {
     Constant(Term<'tcx>),
     Cast(Box<Expr<'tcx>>, Ty<'tcx>, Ty<'tcx>),
     Tuple(Vec<Expr<'tcx>>),
-    Span(Span, Box<Expr<'tcx>>),
     Len(Box<Expr<'tcx>>),
     Array(Vec<Expr<'tcx>>),
     Repeat(Box<Expr<'tcx>>, Box<Expr<'tcx>>),
@@ -76,45 +84,43 @@ pub enum Expr<'tcx> {
 
 impl<'tcx> Expr<'tcx> {
     pub fn is_call(&self) -> bool {
-        match self {
-            Expr::Move(_) => false,
-            Expr::Copy(_) => false,
-            Expr::BinOp(_, _, _, _) => false,
-            Expr::UnaryOp(_, _, _) => false,
-            Expr::Constructor(_, _, _) => false,
-            Expr::Call(_, _, _) => true,
-            Expr::Constant(_) => false,
-            Expr::Cast(_, _, _) => false,
-            Expr::Tuple(_) => false,
-            Expr::Span(_, e) => e.is_call(),
-            Expr::Len(_) => false,
-            Expr::Array(_) => false,
-            Expr::Repeat(_, _) => false,
+        match &self.kind {
+            ExprKind::Move(_) => false,
+            ExprKind::Copy(_) => false,
+            ExprKind::BinOp(_, _, _, _) => false,
+            ExprKind::UnaryOp(_, _, _) => false,
+            ExprKind::Constructor(_, _, _) => false,
+            ExprKind::Call(_, _, _) => true,
+            ExprKind::Constant(_) => false,
+            ExprKind::Cast(_, _, _) => false,
+            ExprKind::Tuple(_) => false,
+            ExprKind::Len(_) => false,
+            ExprKind::Array(_) => false,
+            ExprKind::Repeat(_, _) => false,
         }
     }
 
     pub fn is_pure(&self) -> bool {
-        match self {
-            Expr::Move(_) => true,
-            Expr::Copy(_) => true,
-            Expr::BinOp(
+        match &self.kind {
+            ExprKind::Move(_) => true,
+            ExprKind::Copy(_) => true,
+            ExprKind::BinOp(
                 BinOp::Add | BinOp::Mul | BinOp::Rem | BinOp::Div | BinOp::Sub,
                 _,
                 _,
                 _,
             ) => false,
-            Expr::BinOp(_, _, _, _) => true,
-            Expr::UnaryOp(UnOp::Neg, _, _) => false,
-            Expr::UnaryOp(_, _, _) => true,
-            Expr::Constructor(_, _, es) => es.iter().all(|e| e.is_pure()),
-            Expr::Call(_, _, es) => es.iter().all(|e| e.is_pure()),
-            Expr::Constant(_) => true,
-            Expr::Cast(_, _, _) => false,
-            Expr::Tuple(es) => es.iter().all(|e| e.is_pure()),
-            Expr::Span(_, e) => e.is_pure(),
-            Expr::Len(e) => e.is_pure(),
-            Expr::Array(es) => es.iter().all(|e| e.is_pure()),
-            Expr::Repeat(l, r) => l.is_pure() && r.is_pure(),
+            ExprKind::BinOp(_, _, _, _) => true,
+            ExprKind::UnaryOp(UnOp::Neg, _, _) => false,
+            ExprKind::UnaryOp(_, _, _) => true,
+            ExprKind::Constructor(_, _, es) => es.iter().all(|e| e.is_pure()),
+            ExprKind::Call(_, _, es) => es.iter().all(|e| e.is_pure()),
+            ExprKind::Constant(_) => true,
+            ExprKind::Cast(_, _, _) => false,
+            ExprKind::Tuple(es) => es.iter().all(|e| e.is_pure()),
+            ExprKind::Len(e) => e.is_pure(),
+            ExprKind::Array(es) => es.iter().all(|e| e.is_pure()),
+            ExprKind::Repeat(l, r) => l.is_pure() && r.is_pure(),
         }
     }
 }

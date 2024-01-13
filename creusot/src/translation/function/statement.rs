@@ -6,11 +6,12 @@ use rustc_middle::{
     },
     ty::adjustment::PointerCast,
 };
+use rustc_span::DUMMY_SP;
 
 use super::BodyTranslator;
 use crate::{
     translation::{
-        fmir::{self, Expr, RValue},
+        fmir::{self, Expr, ExprKind, RValue},
         specification::inv_subst,
     },
     util::{self, ghost_closure_id},
@@ -64,6 +65,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         rvalue: &'_ Rvalue<'tcx>,
         loc: Location,
     ) {
+        let ty = rvalue.ty(self.body, self.tcx);
+        let span = si.span;
         let rval: Expr<'tcx> = match rvalue {
             Rvalue::Use(op) => match op {
                 Move(_pl) | Copy(_pl) => self.translate_operand(op),
@@ -80,7 +83,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         return;
                     }
 
-                    Expr::Copy(self.translate_place(self.compute_ref_place(*pl, loc)))
+                    Expr {
+                        kind: ExprKind::Copy(
+                            self.translate_place(self.compute_ref_place(*pl, loc)),
+                        ),
+                        span,
+                        ty,
+                    }
                 }
                 Mut { .. } => {
                     if self.erased_locals.contains(pl.local) {
@@ -96,28 +105,34 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 self.ctx.crash_and_error(si.span, "bitwise operations are currently unsupported")
             }
             Rvalue::BinaryOp(op, box (l, r)) | Rvalue::CheckedBinaryOp(op, box (l, r)) => {
-                let exp = Expr::BinOp(
+                let kind = ExprKind::BinOp(
                     *op,
                     l.ty(self.body, self.tcx),
                     Box::new(self.translate_operand(l)),
                     Box::new(self.translate_operand(r)),
                 );
-                Expr::Span(si.span, Box::new(exp))
+
+                Expr { kind, ty, span }
             }
             Rvalue::UnaryOp(op, v) => {
-                Expr::UnaryOp(*op, v.ty(self.body, self.tcx), Box::new(self.translate_operand(v)))
+                let kind = ExprKind::UnaryOp(
+                    *op,
+                    v.ty(self.body, self.tcx),
+                    Box::new(self.translate_operand(v)),
+                );
+                Expr { kind, ty, span }
             }
             Rvalue::Aggregate(box kind, ops) => {
                 use rustc_middle::mir::AggregateKind::*;
                 let fields = ops.iter().map(|op| self.translate_operand(op)).collect();
 
-                match kind {
-                    Tuple => Expr::Tuple(fields),
+                let kind = match kind {
+                    Tuple => ExprKind::Tuple(fields),
                     Adt(adt, varix, subst, _, _) => {
                         // self.ctx.translate(*adt);
                         let variant = self.tcx.adt_def(*adt).variant(*varix).def_id;
 
-                        Expr::Constructor(variant, subst, fields)
+                        ExprKind::Constructor(variant, subst, fields)
                     }
                     Closure(def_id, subst) => {
                         if util::is_invariant(self.tcx, *def_id)
@@ -130,6 +145,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 .remove(def_id)
                                 .expect("Could not find body of assertion");
                             assertion.subst(&inv_subst(&self.body, &self.locals, si));
+                            self.check_ghost_term(&assertion, loc);
                             self.emit_statement(fmir::Statement::Assertion {
                                 cond: assertion,
                                 msg: "assertion".to_owned(),
@@ -138,25 +154,47 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         } else if util::is_spec(self.tcx, *def_id) {
                             return;
                         } else {
-                            Expr::Constructor(*def_id, subst, fields)
+                            ExprKind::Constructor(*def_id, subst, fields)
                         }
                     }
-                    Array(_) => Expr::Array(fields),
+                    Array(_) => ExprKind::Array(fields),
                     _ => self.ctx.crash_and_error(
                         si.span,
                         &format!("the rvalue {:?} is not currently supported", kind),
                     ),
-                }
+                };
+
+                Expr { kind, ty, span }
             }
-            Rvalue::Len(pl) => Expr::Len(Box::new(Expr::Copy(self.translate_place(*pl)))),
-            Rvalue::Cast(CastKind::IntToInt | CastKind::PtrToPtr, op, ty) => {
+            Rvalue::Len(pl) => {
+                let e = Expr {
+                    kind: ExprKind::Copy(self.translate_place(*pl)),
+                    ty: pl.ty(self.body, self.tcx).ty,
+                    span: DUMMY_SP,
+                };
+                let kind = ExprKind::Len(Box::new(e));
+
+                Expr { kind, ty, span }
+            }
+            Rvalue::Cast(CastKind::IntToInt | CastKind::PtrToPtr, op, cast_ty) => {
                 let op_ty = op.ty(self.body, self.tcx);
-                Expr::Cast(Box::new(self.translate_operand(op)), op_ty, *ty)
+                let kind = ExprKind::Cast(Box::new(self.translate_operand(op)), op_ty, *cast_ty);
+                Expr { kind, ty, span }
             }
-            Rvalue::Repeat(op, len) => Expr::Repeat(
-                Box::new(self.translate_operand(op)),
-                Box::new(crate::constant::from_ty_const(self.ctx, *len, self.param_env(), si.span)),
-            ),
+            Rvalue::Repeat(op, len) => {
+                let kind = ExprKind::Repeat(
+                    Box::new(self.translate_operand(op)),
+                    Box::new(crate::constant::from_ty_const(
+                        self.ctx,
+                        *len,
+                        self.param_env(),
+                        si.span,
+                    )),
+                );
+
+                Expr { kind, ty, span }
+            }
+
             Rvalue::Cast(CastKind::Pointer(PointerCast::Unsize), op, ty) => {
                 if let Some(t) = ty.builtin_deref(true) && t.ty.is_slice() {
                     // treat &[T; N] to &[T] casts as normal assignments

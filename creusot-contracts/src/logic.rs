@@ -5,7 +5,7 @@ mod fset;
 mod int;
 mod mapping;
 mod ops;
-mod ord;
+pub mod ord;
 mod seq;
 mod set;
 

@@ -11,7 +11,7 @@ use rustc_middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyCtx
 use rustc_span::{Symbol, DUMMY_SP};
 use why3::{
     declaration::{Axiom, Decl, Module, TyDecl},
-    exp::{Constant, Exp, Pattern},
+    exp::{Constant, Exp, Pattern, Trigger},
     ty::Type as MlT,
     Ident, QName,
 };
@@ -138,9 +138,10 @@ pub(crate) fn build_inv_module<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     inv_kind: TyInvKind,
 ) -> (Module, CloneSummary<'tcx>) {
-    let mut names = CloneMap::new(ctx.tcx, TransId::TyInv(inv_kind), CloneLevel::Stub);
+    let mut names = CloneMap::new(ctx.tcx, TransId::TyInv(inv_kind));
     let generics = inv_kind.generics(ctx.tcx);
-    let inv_axiom = build_inv_axiom(ctx, &mut names, inv_kind);
+    let inv_axiom =
+        names.with_vis(CloneLevel::Contract, |names| build_inv_axiom(ctx, names, inv_kind));
 
     let mut decls = vec![];
     decls.extend(
@@ -149,7 +150,7 @@ pub(crate) fn build_inv_module<'tcx>(
             .map(|ty_name| Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: vec![] })),
     );
 
-    let (clones, summary) = names.to_clones(ctx);
+    let (clones, summary) = names.to_clones(ctx, CloneDepth::Shallow);
     decls.extend(clones);
 
     decls.push(Decl::Axiom(inv_axiom));
@@ -187,10 +188,13 @@ fn build_inv_axiom<'tcx>(
             .unwrap_or_else(|| Exp::mk_true())
     };
     let trivial = rhs.is_true();
+    let trigger =
+        if ctx.opts.simple_triggers { Trigger::single(lhs.clone()) } else { Trigger::NONE };
 
-    let axiom = Exp::Forall(
+    let axiom = Exp::forall_trig(
         vec![("self".into(), translate_ty(ctx, names, DUMMY_SP, ty))],
-        Box::new(lhs.eq(rhs)),
+        trigger,
+        lhs.eq(rhs),
     );
     Axiom { name, rewrite: !trivial, axiom }
 }
@@ -333,7 +337,7 @@ fn build_inv_exp_seq<'tcx>(
     let mut body = build_inv_exp(ctx, names, "a".into(), ty, param_env, Mode::Field)?;
     body.subst(&[("a".into(), ith)].into());
 
-    Some(Exp::Forall(vec![("i".into(), MlT::Integer)], Box::new(bounds.implies(body))))
+    Some(Exp::forall(vec![("i".into(), MlT::Integer)], bounds.implies(body)))
 }
 
 fn build_inv_exp_adt<'tcx>(
