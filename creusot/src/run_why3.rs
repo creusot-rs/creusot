@@ -8,11 +8,12 @@ use rustc_ast::{
 };
 use rustc_ast_pretty::pprust::expr_to_string;
 use rustc_span::{
-    source_map::dummy_spanned, symbol::Ident, BytePos, Span, Symbol, SyntaxContext, DUMMY_SP,
+    def_id::LocalDefId, source_map::dummy_spanned, symbol::Ident, BytePos, Span, Symbol,
+    SyntaxContext, DUMMY_SP,
 };
 use serde_json::Deserializer;
 use std::{
-    collections::{btree_map::Entry, BTreeMap},
+    collections::{hash_map::Entry, HashMap},
     fmt::Write,
     io::BufReader,
     path::PathBuf,
@@ -92,26 +93,29 @@ pub(super) fn run_why3<'tcx>(ctx: &TranslationCtx<'tcx>, file: Option<PathBuf>) 
     }
 }
 
+pub type SpanData = (SyntaxContext, Option<LocalDefId>);
+
 #[derive(Debug, Default)]
 pub struct SpanMap {
-    vec: Vec<SyntaxContext>,
-    map: BTreeMap<SyntaxContext, usize>,
+    vec: Vec<SpanData>,
+    map: HashMap<SpanData, usize>,
 }
 
 impl SpanMap {
-    fn encode_syntactic_context(&mut self, s: SyntaxContext) -> usize {
+    fn encode_span_data(&mut self, s: SpanData) -> usize {
         let SpanMap { vec, map } = self;
         match map.entry(s) {
             Entry::Vacant(v) => {
-                v.insert(vec.len() + 1);
+                let i = vec.len();
+                v.insert(i);
                 vec.push(s);
-                vec.len()
+                i
             }
             Entry::Occupied(o) => *o.get(),
         }
     }
 
-    fn decode_syntactic_context(&self, s: usize) -> SyntaxContext {
+    fn decode_span_data(&self, s: usize) -> SpanData {
         self.vec[s]
     }
 
@@ -126,7 +130,7 @@ impl SpanMap {
                 "rustc_span".into(),
                 data.lo.0 as usize,
                 data.hi.0 as usize,
-                self.encode_syntactic_context(data.ctxt),
+                self.encode_span_data((data.ctxt, data.parent)),
                 0
             ))
         } else {
@@ -139,8 +143,8 @@ impl SpanMap {
             Loc::Span(Why3Span { file_name, start_line, start_char, end_line, .. })
                 if file_name == "rustc_span" =>
             {
-                let ctxt = self.decode_syntactic_context(*end_line as usize);
-                Some(Span::new(BytePos(*start_line), BytePos(*start_char), ctxt, None))
+                let data = self.decode_span_data(*end_line as usize);
+                Some(Span::new(BytePos(*start_line), BytePos(*start_char), data.0, data.1))
             }
             _ => None,
         }

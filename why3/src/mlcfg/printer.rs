@@ -834,7 +834,7 @@ where
     A::Doc: Clone,
 {
     match attr {
-        Some(attr) => attr.pretty(alloc, env),
+        Some(attr) => attr.pretty(alloc, env).append(" "),
         None => alloc.nil(),
     }
 }
