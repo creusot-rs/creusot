@@ -92,6 +92,12 @@ pub fn at_expiry<'a: 'a, T>(_: T) -> T {
 #[rustc_diagnostic_item = "prusti_plain"]
 pub trait Plain: Copy {}
 
+#[rustc_diagnostic_item = "prusti_snap_eq"]
+/// Trait representing types that can be checked for equality when using Prusti contracts
+pub trait SnapEq {}
+
+impl<X> SnapEq for X {}
+
 macro_rules! impl_plain {
     () => {};
     ( $first:ident $( $rest:ident )* ) => {

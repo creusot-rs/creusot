@@ -247,7 +247,7 @@ fn expand_error_gen<'tcx>(
 ) -> Error {
     let tcx = ctx.tcx;
     let replacer = |r: Region<'tcx>| match r.kind() {
-        RegionKind::ReVar(vid) => match var_info.get_exact_stateset(vid) {
+        RegionKind::ReVar(vid) => match var_info.reg.get_exact_stateset(vid) {
             None => tcx.lifetimes.re_erased,
             Some(ss) => make_region_for_display(ss, ctx),
         },

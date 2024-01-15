@@ -310,7 +310,7 @@ fn convert<'tcx>(
             let ty = tcx.mk_fn_def(*id, subst.iter());
             ctx.fix_ty_with_erased(ty)
         }
-        TermKind::Binary { lhs, rhs, op: BinOp::Eq, .. } => {
+        TermKind::Binary { lhs, rhs, op: BinOp::Eq | BinOp::Ne, .. } => {
             for term in [lhs, rhs] {
                 let (_, ty) = convert_sdt_state(&mut *term, tenv, state, ctx)?;
                 if ty.contains_zombie(ctx) {
