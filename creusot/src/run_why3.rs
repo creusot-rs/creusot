@@ -1,4 +1,4 @@
-use crate::{ctx::TranslationCtx, options::Options};
+use crate::{backend::Why3Generator, options::Options};
 use include_dir::{include_dir, Dir};
 use rustc_ast::{
     mut_visit::DummyAstNode,
@@ -24,7 +24,7 @@ use why3::ce_models::{ConcreteTerm, FunLitElt, Goal, Loc, ProverResult, TBool, T
 
 static PRELUDE: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/../prelude");
 
-pub(super) fn run_why3<'tcx>(ctx: &TranslationCtx<'tcx>, file: Option<PathBuf>) {
+pub(super) fn run_why3<'tcx>(ctx: &Why3Generator<'tcx>, file: Option<PathBuf>) {
     let Some(why3_cmd) = &ctx.opts.why3_cmd else {
         return
     };

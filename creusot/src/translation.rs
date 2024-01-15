@@ -120,7 +120,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
         let matcher = why3.opts.match_str.clone();
         let matcher: &str = matcher.as_ref().map(|s| &s[..]).unwrap_or("");
         let tcx = why3.tcx;
-        let (modules, ctx) = why3.modules();
+        let modules = why3.modules();
         let modules = modules.flat_map(|(id, item)| {
             if let TransId::Item(did) = id && tcx.def_path_str(did).contains(matcher) {
                 item.modules()
@@ -132,7 +132,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
         let crate_name = tcx.crate_name(LOCAL_CRATE).to_string().to_upper_camel_case();
         print_crate(&mut out, crate_name, modules)?;
         drop(out); //flush the buffer before running why3
-        run_why3(&ctx, file);
+        run_why3(&why3, file);
     }
     debug!("after_analysis_dump: {:?}", start.elapsed());
 
