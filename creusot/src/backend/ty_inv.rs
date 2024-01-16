@@ -98,12 +98,6 @@ impl TyInvKind {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-enum Mode {
-    Field,
-    Axiom,
-}
-
 pub(crate) fn is_tyinv_trivial<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
@@ -184,19 +178,12 @@ pub(crate) fn mk_inv_call<'tcx>(ctx: &mut Why3Generator<'tcx>, term: Term<'tcx>)
     call_term
 }
 
-pub(crate) fn invariant_term<'tcx>(
+fn structural_invariant<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    ty: Ty<'tcx>,
+    subject: Term<'tcx>,
     inv_kind: Option<TyInvKind>,
 ) -> Term<'tcx> {
-    let subject = Term::var(Symbol::intern("x"), ty);
-
-    let inv_id = ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
-    let subst = ctx.mk_substs(&[GenericArg::from(subject.ty)]);
-    let rhs = build_invariant_term(ctx, subject.clone(), inv_kind);
-    let lhs = Term::call(ctx.tcx, inv_id, subst, vec![subject]);
-
-    Term::forall(Term::eq(ctx.tcx, lhs, rhs), (Symbol::intern("x"), ty))
+    build_invariant_term(ctx, subject, inv_kind)
 }
 
 pub(crate) fn build_invariant_term<'tcx>(
@@ -362,57 +349,68 @@ pub(crate) fn build_inv_axiom<'tcx>(
         if let TyInvKind::Adt(did) = inv_kind { ctx.param_env(did) } else { ParamEnv::empty() };
 
     let ty = inv_kind.to_skeleton_ty(ctx.tcx);
-    let lhs: Exp = Exp::impure_qvar(names.ty_inv(ty)).app_to(Exp::pure_var("self".into()));
+    let kind = TyInvKind::from_ty(ctx.tcx, ty);
+    // TODO : Refactor and push binding down
+    let lhs: Exp = Exp::impure_qvar(names.ty_inv(ty)).app_to(Exp::pure_var("x".into()));
     let rhs = if TyInvKind::Trivial == inv_kind {
         Exp::mk_true()
     } else {
-        build_inv_exp(ctx, names, "self".into(), ty, param_env, Mode::Axiom)
-            .unwrap_or_else(|| Exp::mk_true())
+        let inv_term = elaborate_inv(ctx, param_env, ty, kind);
+        let inv_term = lower_pure(ctx, names, inv_term);
+        inv_term
     };
     let trivial = rhs.is_true();
     let trigger =
         if ctx.opts.simple_triggers { Trigger::single(lhs.clone()) } else { Trigger::NONE };
 
     let axiom = Exp::forall_trig(
-        vec![("self".into(), translate_ty(ctx, names, DUMMY_SP, ty))],
+        vec![("x".into(), translate_ty(ctx, names, DUMMY_SP, ty))],
         trigger,
         lhs.eq(rhs),
     );
     Axiom { name, rewrite: !trivial, axiom }
 }
 
-fn build_inv_exp<'tcx>(
+pub(crate) fn elaborate_inv<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
-    ident: Ident,
+    param_env: ParamEnv<'tcx>,
+    ty: Ty<'tcx>,
+    kind: Option<TyInvKind>,
+) -> Term<'tcx> {
+    let subject = Term::var(Symbol::intern("x"), ty);
+
+    let term = inv_rhs(ctx, ty, param_env, kind);
+
+    let inv_id = ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
+    let subst = ctx.mk_substs(&[GenericArg::from(subject.ty)]);
+
+    let lhs = Term::call(ctx.tcx, inv_id, subst, vec![subject]);
+
+    Term::forall(Term::eq(ctx.tcx, lhs, term), (Symbol::intern("x"), ty))
+}
+
+fn inv_rhs<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
     ty: Ty<'tcx>,
     param_env: ParamEnv<'tcx>,
-    mode: Mode,
-) -> Option<Exp> {
-    let ty = ctx.tcx.normalize_erasing_regions(param_env, ty);
-
-    if mode == Mode::Field && is_tyinv_trivial(ctx.tcx, param_env, ty, false) {
-        return None;
+    kind: Option<TyInvKind>,
+) -> Term<'tcx> {
+    if let Some(TyInvKind::Trivial) = kind {
+        return Term::mk_true(ctx.tcx);
     }
 
-    let user_inv = if mode == Mode::Axiom {
+    let subject = Term::var(Symbol::intern("x"), ty);
+
+    let user_inv: Option<Term<'_>> =
         resolve_user_inv(ctx.tcx, ty, param_env).map(|(uinv_did, uinv_subst)| {
-            let inv_name = names.value(uinv_did, uinv_subst);
-            Exp::impure_qvar(inv_name).app(vec![Exp::pure_var(ident.clone())])
-        })
-    } else {
-        None
-    };
+            Term::call(ctx.tcx, uinv_did, uinv_subst, vec![subject.clone()])
+        });
 
-    // let struct_inv = build_inv_exp_struct(ctx, names, ident, ty, param_env, mode);
-    let kind = TyInvKind::from_ty(ctx.tcx, ty);
-    let struct_inv = invariant_term(ctx, ty, kind);
+    let struct_inv = structural_invariant(ctx, subject.clone(), kind);
 
-    let struct_inv = Some(lower_pure(ctx, names, struct_inv));
-    match (user_inv, struct_inv) {
-        (None, None) => None,
-        (Some(inv), None) | (None, Some(inv)) => Some(inv),
-        (Some(user_inv), Some(struct_inv)) => Some(user_inv.log_and(struct_inv)),
+    match user_inv {
+        Some(inv) => inv.conj(struct_inv),
+        _ => struct_inv,
     }
 }
 

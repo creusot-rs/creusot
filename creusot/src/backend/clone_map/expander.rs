@@ -174,7 +174,6 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     fn expand_dependencies(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
         let key_public = self.clone_graph.info(key).level;
 
-
         for (dep, info) in ctx.dependencies(key).iter().flat_map(|i| i.iter()) {
             trace!("adding dependency {:?} {:?}", dep, info.level);
 

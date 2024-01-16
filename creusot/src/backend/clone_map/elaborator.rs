@@ -20,7 +20,7 @@ use crate::{
         program::{int_to_prelude, uint_to_prelude},
         signature::sig_to_why3,
         term::lower_pure,
-        ty_inv::invariant_term,
+        ty_inv::elaborate_inv,
         TransId, Why3Generator,
     },
     ctx::*,
@@ -98,7 +98,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
         // let names = old_names;
 
         if let DepNode::TyInv(ty, kind) = item {
-            let term = invariant_term(ctx, ty, Some(kind));
+            let term = elaborate_inv(ctx, param_env, ty, Some(kind));
             let exp = lower_pure(ctx, names, term);
             let axiom = Axiom { name: names.ty_inv(ty).name, rewrite: false, axiom: exp };
             return vec![Decl::Axiom(axiom)];
