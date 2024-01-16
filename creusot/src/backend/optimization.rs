@@ -77,7 +77,7 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
 
     fn visit_statement(&mut self, b: &fmir::Statement<'tcx>) {
         match b {
-            fmir::Statement::Assignment(p, r) => {
+            fmir::Statement::Assignment(p, r, _) => {
                 self.write_place(p);
                 self.visit_rvalue(r)
             }
@@ -100,7 +100,7 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
     fn visit_rvalue(&mut self, r: &fmir::RValue<'tcx>) {
         match r {
             fmir::RValue::Ghost(t) => self.visit_term(t),
-            fmir::RValue::Borrow(p, _) => {
+            fmir::RValue::Borrow(p) => {
                 self.read_place(p);
                 self.read_place(p)
             }
@@ -218,13 +218,13 @@ impl<'tcx> SimplePropagator<'tcx> {
         for mut s in std::mem::take(&mut b.stmts) {
             self.visit_statement(&mut s);
             match s {
-                fmir::Statement::Assignment(l, fmir::RValue::Expr(r))
+                fmir::Statement::Assignment(l, fmir::RValue::Expr(r), _)
                     // we do not propagate calls to avoid moving them after the resolve of their arguments
                     if self.should_propagate(l.local) && !self.usage[&l.local].used_in_pure_ctx && !r.is_call() => {
                       self.prop.insert(l.local, r);
                       self.dead.insert(l.local);
                     }
-                fmir::Statement::Assignment(ref l, fmir::RValue::Expr(ref r)) if self.should_erase(l.local)  && !r.is_call() && r.is_pure() => {
+                fmir::Statement::Assignment(ref l, fmir::RValue::Expr(ref r), _) if self.should_erase(l.local)  && !r.is_call() && r.is_pure() => {
                       self.dead.insert(l.local);
                 }
                 fmir::Statement::Resolve(_,_, ref p) => {
@@ -248,7 +248,7 @@ impl<'tcx> SimplePropagator<'tcx> {
 
     fn visit_statement(&mut self, s: &mut fmir::Statement<'tcx>) {
         match s {
-            fmir::Statement::Assignment(_, r) => self.visit_rvalue(r),
+            fmir::Statement::Assignment(_, r, _) => self.visit_rvalue(r),
             fmir::Statement::Resolve(_, _, p) => {
               if let Some(l) = p.as_symbol() && self.dead.contains(&l) {
 
@@ -265,7 +265,7 @@ impl<'tcx> SimplePropagator<'tcx> {
     fn visit_rvalue(&mut self, r: &mut fmir::RValue<'tcx>) {
         match r {
             fmir::RValue::Ghost(t) => self.visit_term(t),
-            fmir::RValue::Borrow(p, _) => {
+            fmir::RValue::Borrow(p) => {
                 assert!(self.prop.get(&p.local).is_none(), "Trying to propagate borrowed variable")
             }
             fmir::RValue::Expr(e) => self.visit_expr(e),

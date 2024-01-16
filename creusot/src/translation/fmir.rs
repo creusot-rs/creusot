@@ -38,7 +38,7 @@ impl<'tcx> Place<'tcx> {
 
 #[derive(Clone, Debug)]
 pub enum Statement<'tcx> {
-    Assignment(Place<'tcx>, RValue<'tcx>),
+    Assignment(Place<'tcx>, RValue<'tcx>, Span),
     // TODO: Remove `Resolve` and replace it with `Assume`.
     // The reason I have not done this yet is that it would require transforming a `Place` to a `Term`.
     Resolve(DefId, SubstsRef<'tcx>, Place<'tcx>),
@@ -54,7 +54,7 @@ pub enum Statement<'tcx> {
 #[derive(Clone, Debug)]
 pub enum RValue<'tcx> {
     Ghost(Term<'tcx>),
-    Borrow(Place<'tcx>, Span),
+    Borrow(Place<'tcx>),
     Expr(Expr<'tcx>),
 }
 

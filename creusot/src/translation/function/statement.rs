@@ -214,7 +214,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 self.emit_resolve(*place);
             }
 
-            self.emit_assignment(place, RValue::Expr(rval));
+            self.emit_assignment(place, RValue::Expr(rval), span);
 
             // Check if the local is a zombie:
             // if lhs local is dead after the assignment, emit resolve
@@ -222,7 +222,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 self.emit_resolve(*place);
             }
         } else {
-            self.emit_assignment(place, RValue::Expr(rval));
+            self.emit_assignment(place, RValue::Expr(rval), span);
         }
     }
 
