@@ -1,102 +1,24 @@
 
-module CreusotContracts_Invariant_Inv_Stub
-  type t
-  predicate inv (_x : t)
-end
-module CreusotContracts_Invariant_Inv_Interface
-  type t
-  predicate inv (_x : t)
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
-module CreusotContracts_Invariant_Inv
-  type t
-  predicate inv (_x : t) =
-    [#"../../../../creusot-contracts/src/invariant.rs" 16 4 16 8] true
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
-module CreusotContracts_Resolve_Resolve_Resolve_Stub
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Resolve_Resolve_Resolve_Interface
-  type self
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Resolve_Resolve
-  type self
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl0_Resolve_Stub
-  type t1
-  type t2
-  predicate resolve (self : (t1, t2))
-end
-module CreusotContracts_Resolve_Impl0_Resolve_Interface
-  type t1
-  type t2
-  predicate resolve (self : (t1, t2))
-  val resolve (self : (t1, t2)) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl0_Resolve
-  type t1
-  type t2
-  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve1 with
-    type self = t2
-  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
-    type self = t1
-  predicate resolve (self : (t1, t2)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] Resolve0.resolve (let (a, _) = self in a) /\ Resolve1.resolve (let (_, a) = self in a)
-  val resolve (self : (t1, t2)) : bool
-    ensures { result = resolve self }
-    
-end
-module TyInv_Trivial
-  type t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = t
-  axiom inv_trivial : forall self : t . Inv0.inv self = true
-end
-module SwapBorrows_Swap_Interface
-  type t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = (t, t)
-  val swap [#"../swap_borrows.rs" 5 0 5 31] (x : (t, t)) : (t, t)
-    requires {[#"../swap_borrows.rs" 5 11 5 12] Inv0.inv x}
-    ensures { [#"../swap_borrows.rs" 4 10 4 30] result = (let (_, a) = x in a, let (a, _) = x in a) }
-    ensures { [#"../swap_borrows.rs" 5 25 5 31] Inv0.inv result }
-    
-end
 module SwapBorrows_Swap
   type t
-  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
-    type t = (t, t)
-  clone TyInv_Trivial as TyInv_Trivial0 with
-    type t = (t, t),
-    predicate Inv0.inv = Inv0.inv,
-    axiom .
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
-    type self = t
-  clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
-    type t1 = t,
-    type t2 = t,
-    predicate Resolve0.resolve = Resolve1.resolve,
-    predicate Resolve1.resolve = Resolve1.resolve
+  predicate inv0 (_x : (t, t))
+  val inv0 (_x : (t, t)) : bool
+    ensures { result = inv0 _x }
+    
+  axiom inv0 : [#"../swap_borrows.rs" 1 0 1 0] forall x : (t, t) . inv0 x = true
+  predicate resolve1 (self : t)
+  val resolve1 (self : t) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : (t, t)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve1 (let (_, a) = self in a)
+  val resolve0 (self : (t, t)) : bool
+    ensures { result = resolve0 self }
+    
   let rec cfg swap [#"../swap_borrows.rs" 5 0 5 31] [@cfg:stackify] [@cfg:subregion_analysis] (x : (t, t)) : (t, t)
-    requires {[#"../swap_borrows.rs" 5 11 5 12] Inv0.inv x}
+    requires {[#"../swap_borrows.rs" 5 11 5 12] inv0 x}
     ensures { [#"../swap_borrows.rs" 4 10 4 30] result = (let (_, a) = x in a, let (a, _) = x in a) }
-    ensures { [#"../swap_borrows.rs" 5 25 5 31] Inv0.inv result }
+    ensures { [#"../swap_borrows.rs" 5 25 5 31] inv0 result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : (t, t);
@@ -108,8 +30,8 @@ module SwapBorrows_Swap
     goto BB1
   }
   BB1 {
-    assert { [@expl:type invariant] Inv0.inv x };
-    assume { Resolve0.resolve x };
+    assert { [@expl:type invariant] inv0 x };
+    assume { resolve0 x };
     _0 <- ([#"../swap_borrows.rs" 6 4 6 14] (let (_, a) = x in a, let (a, _) = x in a));
     x <- (let (a, b) = x in (a, any t));
     x <- (let (a, b) = x in (any t, b));
@@ -126,77 +48,40 @@ module SwapBorrows_Swap
   }
   
 end
-module CreusotContracts_Resolve_Impl1_Resolve_Stub
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-end
-module CreusotContracts_Resolve_Impl1_Resolve_Interface
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl1_Resolve
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl3_Resolve_Stub
-  type t
-  predicate resolve (self : t)
-end
-module CreusotContracts_Resolve_Impl3_Resolve_Interface
-  type t
-  predicate resolve (self : t)
-  val resolve (self : t) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl3_Resolve
-  type t
-  predicate resolve (self : t) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
-  val resolve (self : t) : bool
-    ensures { result = resolve self }
-    
-end
-module SwapBorrows_F_Interface
-  val f [#"../swap_borrows.rs" 10 0 10 10] (_1 : ()) : ()
-end
 module SwapBorrows_F
-  use prelude.Int
   use prelude.UInt32
   use prelude.Borrow
-  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
-    type t = (borrowed uint32, borrowed uint32)
-  clone TyInv_Trivial as TyInv_Trivial0 with
-    type t = (borrowed uint32, borrowed uint32),
-    predicate Inv0.inv = Inv0.inv,
-    axiom .
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
-    type t = uint32
-  clone CreusotContracts_Resolve_Impl0_Resolve as Resolve2 with
-    type t1 = borrowed uint32,
-    type t2 = borrowed uint32,
-    predicate Resolve0.resolve = Resolve1.resolve,
-    predicate Resolve1.resolve = Resolve1.resolve
-  clone SwapBorrows_Swap_Interface as Swap0 with
-    type t = borrowed uint32,
-    predicate Inv0.inv = Inv0.inv
-  clone CreusotContracts_Resolve_Impl3_Resolve as Resolve3 with
-    type t = uint32
-  clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
-    type t1 = uint32,
-    type t2 = uint32,
-    predicate Resolve0.resolve = Resolve3.resolve,
-    predicate Resolve1.resolve = Resolve3.resolve
+  predicate inv0 (_x : (borrowed uint32, borrowed uint32))
+  val inv0 (_x : (borrowed uint32, borrowed uint32)) : bool
+    ensures { result = inv0 _x }
+    
+  axiom inv0 : [#"../swap_borrows.rs" 1 0 1 0] forall x : (borrowed uint32, borrowed uint32) . inv0 x = true
+  predicate resolve1 (self : borrowed uint32) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve1 (self : borrowed uint32) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve2 (self : (borrowed uint32, borrowed uint32)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve1 (let (_, a) = self in a)
+  val resolve2 (self : (borrowed uint32, borrowed uint32)) : bool
+    ensures { result = resolve2 self }
+    
+  val swap0 [#"../swap_borrows.rs" 5 0 5 31] (x : (borrowed uint32, borrowed uint32)) : (borrowed uint32, borrowed uint32)
+    requires {[#"../swap_borrows.rs" 5 11 5 12] inv0 x}
+    ensures { [#"../swap_borrows.rs" 4 10 4 30] result = (let (_, a) = x in a, let (a, _) = x in a) }
+    ensures { [#"../swap_borrows.rs" 5 25 5 31] inv0 result }
+    
+  predicate resolve3 (self : uint32) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
+  val resolve3 (self : uint32) : bool
+    ensures { result = resolve3 self }
+    
+  predicate resolve0 (self : (uint32, uint32)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve3 (let (a, _) = self in a) /\ resolve3 (let (_, a) = self in a)
+  val resolve0 (self : (uint32, uint32)) : bool
+    ensures { result = resolve0 self }
+    
+  use prelude.Int
   let rec cfg f [#"../swap_borrows.rs" 10 0 10 10] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -214,22 +99,22 @@ module SwapBorrows_F
     _3 <- ([#"../swap_borrows.rs" 11 25 11 31] ([#"../swap_borrows.rs" 11 26 11 27] [#"../swap_borrows.rs" 11 26 11 27] (0 : uint32), [#"../swap_borrows.rs" 11 29 11 30] [#"../swap_borrows.rs" 11 29 11 30] (0 : uint32)));
     a <- (let (a, _) = _3 in a);
     b <- (let (_, a) = _3 in a);
-    assume { Resolve0.resolve _3 };
+    assume { resolve0 _3 };
     _6 <- Borrow.borrow_mut a;
     a <-  ^ _6;
     _8 <- Borrow.borrow_mut b;
     b <-  ^ _8;
     _7 <- Borrow.borrow_mut ( * _8);
     _8 <- { _8 with current = ( ^ _7) };
-    p <- ([#"../swap_borrows.rs" 12 12 12 34] Swap0.swap ([#"../swap_borrows.rs" 12 17 12 33] (_6, _7)));
+    p <- ([#"../swap_borrows.rs" 12 12 12 34] swap0 ([#"../swap_borrows.rs" 12 17 12 33] (_6, _7)));
     _6 <- any borrowed uint32;
     _7 <- any borrowed uint32;
     goto BB1
   }
   BB1 {
-    assume { Resolve1.resolve _8 };
+    assume { resolve1 _8 };
     p <- (let (a, b) = p in ({ (let (a, _) = p in a) with current = ([#"../swap_borrows.rs" 13 11 13 13] [#"../swap_borrows.rs" 13 11 13 13] (10 : uint32)) }, b));
-    assume { Resolve2.resolve p };
+    assume { resolve2 p };
     assert { [@expl:assertion] [#"../swap_borrows.rs" 15 20 15 30] b = (10 : uint32) };
     assert { [@expl:assertion] [#"../swap_borrows.rs" 16 20 16 29] a = (0 : uint32) };
     _0 <- ([#"../swap_borrows.rs" 10 11 17 1] ());

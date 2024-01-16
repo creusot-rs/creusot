@@ -1,14 +1,18 @@
 extern crate creusot_contracts;
-use creusot_contracts::{vec, *};
+use creusot_contracts::{invariant::Invariant, *};
 
-// #[requires(x <)]
-// fn f(x : usize)  {}
+pub struct SumTo10 {
+    a: i32,
+    b: i32,
+}
 
-pub fn can_extend() {
-    let mut v = vec![0];
-    // let w = vec![4, 5, 6];
-    // v.extend(w);
+impl Invariant for SumTo10 {
+    #[open]
+    #[predicate]
+    fn invariant(self) -> bool {
+        true
+    }
+}
 
-    // let z = vec![1, 2, 3, 4, 5, 6];
-    // proof_assert!(z@.ext_eq(v@));
+pub fn vec(x: Vec<&mut SumTo10>) {
 }
