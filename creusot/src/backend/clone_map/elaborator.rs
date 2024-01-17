@@ -98,6 +98,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
         // let names = old_names;
 
         if let DepNode::TyInv(ty, kind) = item {
+            // eprintln!("Elaborating invariant {item:?}");
             let term = elaborate_inv(ctx, param_env, ty, Some(kind));
             let exp = lower_pure(ctx, names, term);
             let axiom = Axiom { name: names.ty_inv(ty).name, rewrite: false, axiom: exp };

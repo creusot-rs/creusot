@@ -154,6 +154,17 @@ pub(crate) fn build_inv_module<'tcx>(
     let inv_axiom =
         names.with_vis(CloneLevel::Contract, |names| build_inv_axiom(ctx, names, inv_kind));
 
+    {
+        let param_env =
+            if let TyInvKind::Adt(did) = inv_kind { ctx.param_env(did) } else { ParamEnv::empty() };
+
+        let ty = inv_kind.to_skeleton_ty(ctx.tcx);
+        let (id, subst) =
+            resolve_user_inv(ctx.tcx, ty, param_env).unwrap_or(user_inv_item(ctx.tcx, ty));
+
+        names.value(id, subst);
+    }
+
     let mut decls = vec![];
     decls.extend(
         generics
@@ -162,6 +173,7 @@ pub(crate) fn build_inv_module<'tcx>(
     );
 
     let (clones, summary) = names.to_clones(ctx, CloneDepth::Shallow);
+    // eprintln!("summary of {inv_kind:?} -> {summary:#?}");
     decls.extend(clones);
 
     decls.push(Decl::Axiom(inv_axiom));
@@ -327,12 +339,8 @@ fn build_inv_term_adt<'tcx>(ctx: &mut Why3Generator<'tcx>, term: Term<'tcx>) -> 
     Some(exp)
 }
 
-pub(crate) fn build_inv_axiom<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
-    inv_kind: TyInvKind,
-) -> Axiom {
-    let name = match inv_kind {
+fn axiom_name(ctx: &Why3Generator<'_>, inv_kind: TyInvKind) -> Ident {
+    match inv_kind {
         TyInvKind::Trivial => "inv_trivial".into(),
         TyInvKind::Borrow(Mutability::Not) => "inv_borrow_shared".into(),
         TyInvKind::Borrow(Mutability::Mut) => "inv_borrow".into(),
@@ -343,7 +351,15 @@ pub(crate) fn build_inv_axiom<'tcx>(
         }
         TyInvKind::Tuple(arity) => format!("inv_tuple{arity}").into(),
         TyInvKind::Slice => "inv_slice".into(),
-    };
+    }
+}
+
+pub(crate) fn build_inv_axiom<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    inv_kind: TyInvKind,
+) -> Axiom {
+    let name = axiom_name(ctx, inv_kind);
 
     let param_env =
         if let TyInvKind::Adt(did) = inv_kind { ctx.param_env(did) } else { ParamEnv::empty() };
@@ -401,10 +417,13 @@ fn inv_rhs<'tcx>(
 
     let subject = Term::var(Symbol::intern("x"), ty);
 
+    // eprintln!("searching for {ty:?} in {param_env:?}");
     let user_inv: Option<Term<'_>> =
         resolve_user_inv(ctx.tcx, ty, param_env).map(|(uinv_did, uinv_subst)| {
             Term::call(ctx.tcx, uinv_did, uinv_subst, vec![subject.clone()])
         });
+
+    // eprintln!("user inv of {kind:?} is {user_inv:?}");
 
     let struct_inv = structural_invariant(ctx, subject.clone(), kind);
 
@@ -414,20 +433,21 @@ fn inv_rhs<'tcx>(
     }
 }
 
+fn user_inv_item<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> (DefId, SubstsRef<'tcx>) {
+    let trait_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap();
+
+    (trait_did, tcx.mk_substs(&[GenericArg::from(ty)]))
+}
+
 fn resolve_user_inv<'tcx>(
     tcx: TyCtxt<'tcx>,
     ty: Ty<'tcx>,
     param_env: ParamEnv<'tcx>,
 ) -> Option<(DefId, SubstsRef<'tcx>)> {
-    let trait_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user"))?;
+    let (trait_did, subst) = user_inv_item(tcx, ty);
 
     // eprintln!("resolving inv for {ty}, {param_env:?}");
-    let (impl_did, subst) = traits::resolve_assoc_item_opt(
-        tcx,
-        param_env,
-        trait_did,
-        tcx.mk_substs(&[GenericArg::from(ty)]),
-    )?;
+    let (impl_did, subst) = traits::resolve_assoc_item_opt(tcx, param_env, trait_did, subst)?;
     let subst = tcx.try_normalize_erasing_regions(param_env, subst).unwrap_or(subst);
 
     // if inv resolved to the default impl and is not specializable, ignore
