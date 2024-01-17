@@ -433,6 +433,7 @@ fn inv_rhs<'tcx>(
     }
 }
 
+// TODO: Handle missing defid gracefully
 fn user_inv_item<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> (DefId, SubstsRef<'tcx>) {
     let trait_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap();
 

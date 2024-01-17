@@ -297,10 +297,10 @@ pub fn to_why<'tcx>(
 }
 
 impl<'tcx> Expr<'tcx> {
-    pub(crate) fn to_why(
+    pub(crate) fn to_why<N : Namer<'tcx>>(
         self,
         ctx: &mut Why3Generator<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut N,
         locals: &LocalDecls<'tcx>,
     ) -> Exp {
         let e = match self.kind {
@@ -633,10 +633,10 @@ impl<'tcx> Block<'tcx> {
 }
 
 impl<'tcx> Place<'tcx> {
-    pub(crate) fn as_rplace(
+    pub(crate) fn as_rplace<N : Namer<'tcx>>(
         &self,
         ctx: &mut Why3Generator<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut N,
         locals: &LocalDecls<'tcx>,
     ) -> why3::Exp {
         translate_rplace(ctx, names, locals, self.local, &self.projection)

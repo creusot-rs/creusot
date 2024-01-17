@@ -16,7 +16,7 @@ use why3::{
 use crate::{
     backend::{
         dependency::HackedId,
-        logic::{lower_body_term, sigs},
+        logic::{lower_body_term, sigs, spec_axiom},
         program::{int_to_prelude, uint_to_prelude},
         signature::sig_to_why3,
         term::lower_pure,
@@ -25,6 +25,7 @@ use crate::{
     },
     ctx::*,
     translation::{
+        fmir::LocalDecls,
         pearlite::{normalize, Term},
         specification::PreContract,
     },
@@ -155,6 +156,8 @@ impl<'tcx> SymbolElaborator<'tcx> {
         sig.name = name;
         let ghost = matches!(kind, Some(LetKind::Function | LetKind::Predicate)) && !is_accessor;
 
+        // eprintln!("{item:?} at {level_of_item:?}");
+
         if CloneLevel::Signature == level_of_item {
             return val(ctx, sig, kind, ghost);
         } else if CloneLevel::Contract == level_of_item {
@@ -193,7 +196,23 @@ impl<'tcx> SymbolElaborator<'tcx> {
             let d = lower_body_term(ctx, names, sig, term, def_id);
             old_names.names.prelude.extend(names.names.prelude.clone());
             d
+        } else if util::item_type(ctx.tcx, def_id) == ItemType::Constant {
+            let uneval = ty::UnevaluatedConst::new(def_id, subst);
+            let constant = ctx
+                .mk_const(ty::ConstKind::Unevaluated(uneval), ctx.type_of(def_id).subst_identity());
 
+            let param_env = ctx.param_env(def_id);
+            let span = ctx.def_span(def_id);
+            let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, param_env, span);
+            let res = res.to_why(ctx, names, &LocalDecls::new());
+
+            vec![Decl::Let(LetDecl {
+                kind: Some(LetKind::Constant),
+                sig: sig.clone(),
+                rec: false,
+                ghost: false,
+                body: res,
+            })]
             // vec![Decl::Let(LetDecl { kind, sig, rec: false, ghost, body })]
         } else {
             val(ctx, sig, kind, ghost)
@@ -210,6 +229,8 @@ fn val<'tcx>(
     sig.contract.variant = Vec::new();
 
     if let Some(k) = kind {
+        let ax = if !sig.contract.is_empty() { Some(spec_axiom(&sig)) } else { None };
+
         let (mut sig, prog_sig) = sigs(ctx, sig);
         if let LetKind::Predicate = k {
             sig.retty = None;
@@ -219,10 +240,16 @@ fn val<'tcx>(
             return vec![Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig })];
         }
 
-        vec![
+
+        let mut d = vec![
             Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig }),
             Decl::ValDecl(ValDecl { ghost: false, val: true, kind: None, sig: prog_sig }),
-        ]
+        ];
+
+        if let Some(ax) = ax {
+            d.push(Decl::Axiom(ax))
+        }
+        d
     } else {
         // Program signature
         vec![Decl::ValDecl(ValDecl { ghost, val: true, kind, sig })]
