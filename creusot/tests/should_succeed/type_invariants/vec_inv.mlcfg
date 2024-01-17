@@ -66,43 +66,59 @@ module Alloc_Alloc_Global_Type
 end
 module VecInv_Vec
   use prelude.Int32
+  predicate invariant6 (self : int32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant6 (self : int32) : bool
+    ensures { result = invariant6 self }
+    
   predicate inv7 (_x : int32)
   val inv7 (_x : int32) : bool
     ensures { result = inv7 _x }
     
   axiom inv7 : [#"../vec_inv.rs" 1 0 1 0] forall x : int32 . inv7 x = true
-  use VecInv_SumTo10_Type as VecInv_SumTo10_Type
   use prelude.Int
   use prelude.Int32
-  predicate invariant1 [#"../vec_inv.rs" 12 4 12 30] (self : VecInv_SumTo10_Type.t_sumto10) =
+  use VecInv_SumTo10_Type as VecInv_SumTo10_Type
+  predicate invariant5 [#"../vec_inv.rs" 12 4 12 30] (self : VecInv_SumTo10_Type.t_sumto10) =
     [#"../vec_inv.rs" 13 20 13 43] Int32.to_int (VecInv_SumTo10_Type.sumto10_a self) + Int32.to_int (VecInv_SumTo10_Type.sumto10_b self) = 10
-  val invariant1 [#"../vec_inv.rs" 12 4 12 30] (self : VecInv_SumTo10_Type.t_sumto10) : bool
-    ensures { result = invariant1 self }
+  val invariant5 [#"../vec_inv.rs" 12 4 12 30] (self : VecInv_SumTo10_Type.t_sumto10) : bool
+    ensures { result = invariant5 self }
     
   predicate inv6 (_x : VecInv_SumTo10_Type.t_sumto10)
   val inv6 (_x : VecInv_SumTo10_Type.t_sumto10) : bool
     ensures { result = inv6 _x }
     
-  axiom inv6 : [#"../vec_inv.rs" 1 0 1 0] forall x : VecInv_SumTo10_Type.t_sumto10 . inv6 x = match (x) with
+  axiom inv6 : [#"../vec_inv.rs" 1 0 1 0] forall x : VecInv_SumTo10_Type.t_sumto10 . inv6 x = (invariant5 x /\ match (x) with
     | VecInv_SumTo10_Type.C_SumTo10 a b -> inv7 a /\ inv7 b
-    end
+    end)
   use prelude.Borrow
+  predicate invariant4 (self : borrowed (VecInv_SumTo10_Type.t_sumto10)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant4 (self : borrowed (VecInv_SumTo10_Type.t_sumto10)) : bool
+    ensures { result = invariant4 self }
+    
   predicate inv5 (_x : borrowed (VecInv_SumTo10_Type.t_sumto10))
   val inv5 (_x : borrowed (VecInv_SumTo10_Type.t_sumto10)) : bool
     ensures { result = inv5 _x }
     
   axiom inv5 : [#"../vec_inv.rs" 1 0 1 0] forall x : borrowed (VecInv_SumTo10_Type.t_sumto10) . inv5 x = (inv6 ( * x) /\ inv6 ( ^ x))
+  use prelude.Slice
+  predicate invariant1 (self : slice (borrowed (VecInv_SumTo10_Type.t_sumto10))) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant1 (self : slice (borrowed (VecInv_SumTo10_Type.t_sumto10))) : bool
+    ensures { result = invariant1 self }
+    
   use seq.Seq
   use seq.Seq
   use prelude.UIntSize
-  use prelude.Slice
   predicate inv1 (_x : Seq.seq (borrowed (VecInv_SumTo10_Type.t_sumto10)))
   val inv1 (_x : Seq.seq (borrowed (VecInv_SumTo10_Type.t_sumto10))) : bool
     ensures { result = inv1 _x }
     
   use prelude.Slice
   use prelude.UIntSize
-  constant max0  : usize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
   use seq.Seq
   predicate inv4 (_x : slice (borrowed (VecInv_SumTo10_Type.t_sumto10)))
   val inv4 (_x : slice (borrowed (VecInv_SumTo10_Type.t_sumto10))) : bool
@@ -114,6 +130,7 @@ module VecInv_Vec
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv4 self}
     ensures { result = shallow_model3 self }
     
+  axiom shallow_model3_spec : forall self : slice (borrowed (VecInv_SumTo10_Type.t_sumto10)) . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv4 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv1 (shallow_model3 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] shallow_model3 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
   function index_logic2 [@inline:trivial] (self : slice (borrowed (VecInv_SumTo10_Type.t_sumto10))) (ix : int) : borrowed (VecInv_SumTo10_Type.t_sumto10)
     
    =
@@ -128,6 +145,11 @@ module VecInv_Vec
     
   use prelude.UInt64
   axiom inv4 : [#"../vec_inv.rs" 1 0 1 0] forall x : slice (borrowed (VecInv_SumTo10_Type.t_sumto10)) . inv4 x = (forall i : uint64 . 0 <= i -> i < slice_len0 x -> inv5 (index_logic2 x i))
+  predicate invariant3 (self : usize) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant3 (self : usize) : bool
+    ensures { result = invariant3 self }
+    
   predicate inv3 (_x : usize)
   val inv3 (_x : usize) : bool
     ensures { result = inv3 _x }
@@ -135,6 +157,13 @@ module VecInv_Vec
   axiom inv3 : [#"../vec_inv.rs" 1 0 1 0] forall x : usize . inv3 x = true
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  predicate invariant2 (self : Alloc_RawVec_RawVec_Type.t_rawvec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global))
+    
+   =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant2 (self : Alloc_RawVec_RawVec_Type.t_rawvec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : Alloc_RawVec_RawVec_Type.t_rawvec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global))
     
   val inv2 (_x : Alloc_RawVec_RawVec_Type.t_rawvec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global)) : bool
@@ -154,6 +183,7 @@ module VecInv_Vec
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self}
     ensures { result = shallow_model1 self }
     
+  axiom shallow_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv1 (shallow_model1 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max0)
   predicate invariant0 (self : Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -161,9 +191,9 @@ module VecInv_Vec
   val invariant0 (self : Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = invariant0 self }
     
-  axiom inv0 : [#"../vec_inv.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global) . inv0 x = match (x) with
+  axiom inv0 : [#"../vec_inv.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global) . inv0 x = (invariant0 x /\ match (x) with
     | Alloc_Vec_Vec_Type.C_Vec buf len -> inv2 buf /\ inv3 len
-    end
+    end)
   function index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global)) (ix : int) : borrowed (VecInv_SumTo10_Type.t_sumto10)
     
    =

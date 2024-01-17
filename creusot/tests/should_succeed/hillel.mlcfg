@@ -52,6 +52,10 @@ end
 module Hillel_RightPad
   type t
   use seq.Seq
+  predicate invariant5 (self : Seq.seq t)
+  val invariant5 (self : Seq.seq t) : bool
+    ensures { result = invariant5 self }
+    
   predicate inv5 (_x : Seq.seq t)
   val inv5 (_x : Seq.seq t) : bool
     ensures { result = inv5 _x }
@@ -59,43 +63,67 @@ module Hillel_RightPad
   axiom inv5 : [#"../hillel.rs" 1 0 1 0] forall x : Seq.seq t . inv5 x = true
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate invariant4 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  val invariant4 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant4 self }
+    
   predicate inv4 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
   val inv4 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv4 _x }
     
   axiom inv4 : [#"../hillel.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv4 x = true
+  use prelude.UIntSize
+  use prelude.Int
+  use prelude.UIntSize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+  use seq.Seq
   predicate inv3 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
   val inv3 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv3 _x }
     
+  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
+  val shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self}
+    ensures { result = shallow_model3 self }
+    
+  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv5 (shallow_model3 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
+  predicate invariant3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv5 (shallow_model3 self)
+  val invariant3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant3 self }
+    
   axiom inv3 : [#"../hillel.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv3 x = true
   use prelude.Borrow
+  predicate invariant2 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
+  val invariant2 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
   val inv2 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : bool
     ensures { result = inv2 _x }
     
   axiom inv2 : [#"../hillel.rs" 1 0 1 0] forall x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) . inv2 x = true
+  predicate invariant1 (self : t)
+  val invariant1 (self : t) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : t)
   val inv1 (_x : t) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../hillel.rs" 1 0 1 0] forall x : t . inv1 x = true
   use prelude.Ghost
+  predicate invariant0 (self : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))))
+    
+  val invariant0 (self : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))))
   val inv0 (_x : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) : bool
     ensures { result = inv0 _x }
     
   axiom inv0 : [#"../hillel.rs" 1 0 1 0] forall x : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) . inv0 x = true
-  use prelude.UIntSize
-  use prelude.Int
-  use prelude.UIntSize
-  constant max0  : usize
-  use seq.Seq
-  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
-  val shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
-    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self}
-    ensures { result = shallow_model3 self }
-    
   use seq.Seq
   function shallow_model1 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : Seq.seq t
    =
@@ -226,6 +254,10 @@ end
 module Hillel_LeftPad
   type t
   use seq.Seq
+  predicate invariant5 (self : Seq.seq t)
+  val invariant5 (self : Seq.seq t) : bool
+    ensures { result = invariant5 self }
+    
   predicate inv5 (_x : Seq.seq t)
   val inv5 (_x : Seq.seq t) : bool
     ensures { result = inv5 _x }
@@ -233,43 +265,67 @@ module Hillel_LeftPad
   axiom inv5 : [#"../hillel.rs" 1 0 1 0] forall x : Seq.seq t . inv5 x = true
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate invariant4 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  val invariant4 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant4 self }
+    
   predicate inv4 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
   val inv4 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv4 _x }
     
   axiom inv4 : [#"../hillel.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv4 x = true
+  use prelude.UIntSize
+  use prelude.Int
+  use prelude.UIntSize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+  use seq.Seq
   predicate inv3 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
   val inv3 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv3 _x }
     
+  function shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
+  val shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self}
+    ensures { result = shallow_model4 self }
+    
+  axiom shallow_model4_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv5 (shallow_model4 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model4 self) <= UIntSize.to_int max0)
+  predicate invariant3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv5 (shallow_model4 self)
+  val invariant3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant3 self }
+    
   axiom inv3 : [#"../hillel.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv3 x = true
   use prelude.Borrow
+  predicate invariant2 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
+  val invariant2 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
   val inv2 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : bool
     ensures { result = inv2 _x }
     
   axiom inv2 : [#"../hillel.rs" 1 0 1 0] forall x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) . inv2 x = true
+  predicate invariant1 (self : t)
+  val invariant1 (self : t) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : t)
   val inv1 (_x : t) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../hillel.rs" 1 0 1 0] forall x : t . inv1 x = true
   use prelude.Ghost
+  predicate invariant0 (self : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))))
+    
+  val invariant0 (self : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))))
   val inv0 (_x : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) : bool
     ensures { result = inv0 _x }
     
   axiom inv0 : [#"../hillel.rs" 1 0 1 0] forall x : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) . inv0 x = true
-  use prelude.UIntSize
-  use prelude.Int
-  use prelude.UIntSize
-  constant max0  : usize
-  use seq.Seq
-  function shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
-  val shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
-    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self}
-    ensures { result = shallow_model4 self }
-    
   use prelude.Ghost
   use seq.Seq
   function index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (ix : int) : t
@@ -425,12 +481,20 @@ module Hillel_LeftPad
 end
 module Hillel_SubsetPush_Impl
   type t
+  predicate invariant1 (self : t)
+  val invariant1 (self : t) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : t)
   val inv1 (_x : t) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../hillel.rs" 1 0 1 0] forall x : t . inv1 x = true
   use seq.Seq
+  predicate invariant0 (self : Seq.seq t)
+  val invariant0 (self : Seq.seq t) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : Seq.seq t)
   val inv0 (_x : Seq.seq t) : bool
     ensures { result = inv0 _x }
@@ -481,22 +545,38 @@ end
 module Hillel_InsertUnique
   type t
   use prelude.Slice
+  predicate invariant15 (self : slice t)
+  val invariant15 (self : slice t) : bool
+    ensures { result = invariant15 self }
+    
   predicate inv15 (_x : slice t)
   val inv15 (_x : slice t) : bool
     ensures { result = inv15 _x }
     
   axiom inv15 : [#"../hillel.rs" 1 0 1 0] forall x : slice t . inv15 x = true
   use seq.Seq
+  predicate invariant14 (self : Seq.seq t)
+  val invariant14 (self : Seq.seq t) : bool
+    ensures { result = invariant14 self }
+    
   predicate inv14 (_x : Seq.seq t)
   val inv14 (_x : Seq.seq t) : bool
     ensures { result = inv14 _x }
     
   axiom inv14 : [#"../hillel.rs" 1 0 1 0] forall x : Seq.seq t . inv14 x = true
+  predicate invariant13 (self : Seq.seq t)
+  val invariant13 (self : Seq.seq t) : bool
+    ensures { result = invariant13 self }
+    
   predicate inv13 (_x : Seq.seq t)
   val inv13 (_x : Seq.seq t) : bool
     ensures { result = inv13 _x }
     
   axiom inv13 : [#"../hillel.rs" 1 0 1 0] forall x : Seq.seq t . inv13 x = true
+  predicate invariant12 (self : t)
+  val invariant12 (self : t) : bool
+    ensures { result = invariant12 self }
+    
   predicate inv12 (_x : t)
   val inv12 (_x : t) : bool
     ensures { result = inv12 _x }
@@ -504,44 +584,89 @@ module Hillel_InsertUnique
   axiom inv12 : [#"../hillel.rs" 1 0 1 0] forall x : t . inv12 x = true
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate invariant11 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  val invariant11 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant11 self }
+    
   predicate inv11 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
   val inv11 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv11 _x }
     
   axiom inv11 : [#"../hillel.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv11 x = true
   type deep_model_ty0
+  predicate invariant10 (self : deep_model_ty0)
+  val invariant10 (self : deep_model_ty0) : bool
+    ensures { result = invariant10 self }
+    
   predicate inv10 (_x : deep_model_ty0)
   val inv10 (_x : deep_model_ty0) : bool
     ensures { result = inv10 _x }
     
   axiom inv10 : [#"../hillel.rs" 1 0 1 0] forall x : deep_model_ty0 . inv10 x = true
+  predicate invariant9 (self : Seq.seq deep_model_ty0)
+  val invariant9 (self : Seq.seq deep_model_ty0) : bool
+    ensures { result = invariant9 self }
+    
   predicate inv9 (_x : Seq.seq deep_model_ty0)
   val inv9 (_x : Seq.seq deep_model_ty0) : bool
     ensures { result = inv9 _x }
     
   axiom inv9 : [#"../hillel.rs" 1 0 1 0] forall x : Seq.seq deep_model_ty0 . inv9 x = true
+  use prelude.UIntSize
+  use prelude.Int
+  use prelude.UIntSize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+  use seq.Seq
   predicate inv8 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
   val inv8 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv8 _x }
     
+  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
+  val shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv8 self}
+    ensures { result = shallow_model3 self }
+    
+  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv8 self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv14 (shallow_model3 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
+  predicate invariant8 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv14 (shallow_model3 self)
+  val invariant8 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant8 self }
+    
   axiom inv8 : [#"../hillel.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv8 x = true
   use prelude.Borrow
+  predicate invariant7 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
+  val invariant7 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : bool
+    ensures { result = invariant7 self }
+    
   predicate inv7 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
   val inv7 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : bool
     ensures { result = inv7 _x }
     
   axiom inv7 : [#"../hillel.rs" 1 0 1 0] forall x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) . inv7 x = true
+  predicate invariant6 (self : t)
+  val invariant6 (self : t) : bool
+    ensures { result = invariant6 self }
+    
   predicate inv6 (_x : t)
   val inv6 (_x : t) : bool
     ensures { result = inv6 _x }
     
   axiom inv6 : [#"../hillel.rs" 1 0 1 0] forall x : t . inv6 x = true
+  predicate invariant5 (self : t)
+  val invariant5 (self : t) : bool
+    ensures { result = invariant5 self }
+    
   predicate inv5 (_x : t)
   val inv5 (_x : t) : bool
     ensures { result = inv5 _x }
     
   axiom inv5 : [#"../hillel.rs" 1 0 1 0] forall x : t . inv5 x = true
   use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant4 (self : Core_Option_Option_Type.t_option t)
+  val invariant4 (self : Core_Option_Option_Type.t_option t) : bool
+    ensures { result = invariant4 self }
+    
   predicate inv4 (_x : Core_Option_Option_Type.t_option t)
   val inv4 (_x : Core_Option_Option_Type.t_option t) : bool
     ensures { result = inv4 _x }
@@ -550,17 +675,13 @@ module Hillel_InsertUnique
   use Core_Slice_Iter_Iter_Type as Core_Slice_Iter_Iter_Type
   use seq.Seq
   use seq.Seq
-  use prelude.UIntSize
   use prelude.Slice
-  use prelude.Int
-  use prelude.UIntSize
-  constant max0  : usize
-  use seq.Seq
   function shallow_model5 (self : slice t) : Seq.seq t
   val shallow_model5 (self : slice t) : Seq.seq t
     requires {[#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv15 self}
     ensures { result = shallow_model5 self }
     
+  axiom shallow_model5_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv15 self) -> ([#"../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv14 (shallow_model5 self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] shallow_model5 self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model5 self) <= UIntSize.to_int max0)
   function index_logic5 [@inline:trivial] (self : slice t) (ix : int) : t =
     [#"../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (shallow_model5 self) ix
   val index_logic5 [@inline:trivial] (self : slice t) (ix : int) : t
@@ -582,6 +703,7 @@ module Hillel_InsertUnique
     requires {[#"../../../../creusot-contracts/src/std/slice.rs" 91 19 91 23] inv1 self}
     ensures { result = to_ref_seq0 self }
     
+  axiom to_ref_seq0_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 91 19 91 23] inv1 self) -> ([#"../../../../creusot-contracts/src/std/slice.rs" 91 4 91 35] inv13 (to_ref_seq0 self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 90 4 90 82] forall i : int . 0 <= i /\ i < Seq.length (to_ref_seq0 self) -> Seq.get (to_ref_seq0 self) i = index_logic5 self i) && ([#"../../../../creusot-contracts/src/std/slice.rs" 89 14 89 41] Seq.length (to_ref_seq0 self) = Seq.length (shallow_model0 self))
   function shallow_model2 (self : Core_Slice_Iter_Iter_Type.t_iter t) : slice t
   val shallow_model2 (self : Core_Slice_Iter_Iter_Type.t_iter t) : slice t
     ensures { result = shallow_model2 self }
@@ -612,18 +734,34 @@ module Hillel_InsertUnique
     ensures { result = produces_refl0 a }
     
   axiom produces_refl0_spec : forall a : Core_Slice_Iter_Iter_Type.t_iter t . [#"../../../../creusot-contracts/src/std/slice.rs" 392 14 392 39] produces0 a (Seq.empty ) a
+  predicate invariant3 (self : Core_Slice_Iter_Iter_Type.t_iter t)
+  val invariant3 (self : Core_Slice_Iter_Iter_Type.t_iter t) : bool
+    ensures { result = invariant3 self }
+    
   predicate inv3 (_x : Core_Slice_Iter_Iter_Type.t_iter t)
   val inv3 (_x : Core_Slice_Iter_Iter_Type.t_iter t) : bool
     ensures { result = inv3 _x }
     
   axiom inv3 : [#"../hillel.rs" 1 0 1 0] forall x : Core_Slice_Iter_Iter_Type.t_iter t . inv3 x = true
   use prelude.Ghost
+  predicate invariant2 (self : Ghost.ghost_ty (Seq.seq t))
+  val invariant2 (self : Ghost.ghost_ty (Seq.seq t)) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : Ghost.ghost_ty (Seq.seq t))
   val inv2 (_x : Ghost.ghost_ty (Seq.seq t)) : bool
     ensures { result = inv2 _x }
     
   axiom inv2 : [#"../hillel.rs" 1 0 1 0] forall x : Ghost.ghost_ty (Seq.seq t) . inv2 x = true
+  predicate invariant1 (self : slice t)
+  val invariant1 (self : slice t) : bool
+    ensures { result = invariant1 self }
+    
   axiom inv1 : [#"../hillel.rs" 1 0 1 0] forall x : slice t . inv1 x = true
+  predicate invariant0 (self : Ghost.ghost_ty (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
+  val invariant0 (self : Ghost.ghost_ty (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : Ghost.ghost_ty (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
   val inv0 (_x : Ghost.ghost_ty (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : bool
     ensures { result = inv0 _x }
@@ -632,11 +770,6 @@ module Hillel_InsertUnique
   function deep_model1 (self : t) : deep_model_ty0
   val deep_model1 (self : t) : deep_model_ty0
     ensures { result = deep_model1 self }
-    
-  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
-  val shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
-    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv8 self}
-    ensures { result = shallow_model3 self }
     
   function index_logic1 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (ix : int) : t
     
@@ -652,6 +785,7 @@ module Hillel_InsertUnique
     requires {[#"../../../../creusot-contracts/src/std/vec.rs" 33 18 33 22] inv8 self}
     ensures { result = deep_model3 self }
     
+  axiom deep_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 33 18 33 22] inv8 self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 33 4 33 44] inv9 (deep_model3 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (shallow_model3 self) -> Seq.get (deep_model3 self) i = deep_model1 (index_logic1 self i)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56] Seq.length (shallow_model3 self) = Seq.length (deep_model3 self))
   use seq.Seq
   function shallow_model4 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : Seq.seq t
    =
@@ -1028,6 +1162,10 @@ end
 module Hillel_Unique
   type t
   use prelude.Slice
+  predicate invariant11 (self : slice t)
+  val invariant11 (self : slice t) : bool
+    ensures { result = invariant11 self }
+    
   predicate inv11 (_x : slice t)
   val inv11 (_x : slice t) : bool
     ensures { result = inv11 _x }
@@ -1035,17 +1173,31 @@ module Hillel_Unique
   axiom inv11 : [#"../hillel.rs" 1 0 1 0] forall x : slice t . inv11 x = true
   use prelude.UIntSize
   use seq.Seq
+  predicate invariant10 (self : Seq.seq usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant10 (self : Seq.seq usize) : bool
+    ensures { result = invariant10 self }
+    
   predicate inv10 (_x : Seq.seq usize)
   val inv10 (_x : Seq.seq usize) : bool
     ensures { result = inv10 _x }
     
   axiom inv10 : [#"../hillel.rs" 1 0 1 0] forall x : Seq.seq usize . inv10 x = true
+  predicate invariant9 (self : Seq.seq t)
+  val invariant9 (self : Seq.seq t) : bool
+    ensures { result = invariant9 self }
+    
   predicate inv9 (_x : Seq.seq t)
   val inv9 (_x : Seq.seq t) : bool
     ensures { result = inv9 _x }
     
   axiom inv9 : [#"../hillel.rs" 1 0 1 0] forall x : Seq.seq t . inv9 x = true
   use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant8 (self : Core_Option_Option_Type.t_option usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant8 (self : Core_Option_Option_Type.t_option usize) : bool
+    ensures { result = invariant8 self }
+    
   predicate inv8 (_x : Core_Option_Option_Type.t_option usize)
   val inv8 (_x : Core_Option_Option_Type.t_option usize) : bool
     ensures { result = inv8 _x }
@@ -1053,17 +1205,30 @@ module Hillel_Unique
   axiom inv8 : [#"../hillel.rs" 1 0 1 0] forall x : Core_Option_Option_Type.t_option usize . inv8 x = true
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   use prelude.Borrow
+  predicate invariant7 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant7 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
+    ensures { result = invariant7 self }
+    
   predicate inv7 (_x : borrowed (Core_Ops_Range_Range_Type.t_range usize))
   val inv7 (_x : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
     ensures { result = inv7 _x }
     
   axiom inv7 : [#"../hillel.rs" 1 0 1 0] forall x : borrowed (Core_Ops_Range_Range_Type.t_range usize) . inv7 x = true
   type deep_model_ty0
+  predicate invariant6 (self : Seq.seq deep_model_ty0)
+  val invariant6 (self : Seq.seq deep_model_ty0) : bool
+    ensures { result = invariant6 self }
+    
   predicate inv6 (_x : Seq.seq deep_model_ty0)
   val inv6 (_x : Seq.seq deep_model_ty0) : bool
     ensures { result = inv6 _x }
     
   axiom inv6 : [#"../hillel.rs" 1 0 1 0] forall x : Seq.seq deep_model_ty0 . inv6 x = true
+  predicate invariant5 (self : slice t)
+  val invariant5 (self : slice t) : bool
+    ensures { result = invariant5 self }
+    
   predicate inv5 (_x : slice t)
   val inv5 (_x : slice t) : bool
     ensures { result = inv5 _x }
@@ -1071,19 +1236,43 @@ module Hillel_Unique
   axiom inv5 : [#"../hillel.rs" 1 0 1 0] forall x : slice t . inv5 x = true
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate invariant4 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
+  val invariant4 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : bool
+    ensures { result = invariant4 self }
+    
   predicate inv4 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
   val inv4 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : bool
     ensures { result = inv4 _x }
     
   axiom inv4 : [#"../hillel.rs" 1 0 1 0] forall x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) . inv4 x = true
+  predicate invariant3 (self : t)
+  val invariant3 (self : t) : bool
+    ensures { result = invariant3 self }
+    
   predicate inv3 (_x : t)
   val inv3 (_x : t) : bool
     ensures { result = inv3 _x }
     
   axiom inv3 : [#"../hillel.rs" 1 0 1 0] forall x : t . inv3 x = true
+  use prelude.Int
+  use prelude.UIntSize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+  use seq.Seq
   predicate inv2 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
   val inv2 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv2 _x }
+    
+  function shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
+  val shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv2 self}
+    ensures { result = shallow_model1 self }
+    
+  axiom shallow_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv2 self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv9 (shallow_model1 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max0)
+  predicate invariant2 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv9 (shallow_model1 self)
+  val invariant2 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant2 self }
     
   axiom inv2 : [#"../hillel.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv2 x = true
   use seq.Seq
@@ -1094,8 +1283,6 @@ module Hillel_Unique
   use prelude.Int
   use seq.Seq
   use seq.Seq
-  use prelude.Int
-  use prelude.UIntSize
   function deep_model2 (self : usize) : int =
     [#"../../../../creusot-contracts/src/std/num.rs" 22 16 22 35] UIntSize.to_int self
   val deep_model2 (self : usize) : int
@@ -1120,14 +1307,25 @@ module Hillel_Unique
     requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv1 c}
     ensures { result = produces_trans0 a ab b bc c }
     
+  axiom produces_trans0_spec : forall a : Core_Ops_Range_Range_Type.t_range usize, ab : Seq.seq usize, b : Core_Ops_Range_Range_Type.t_range usize, bc : Seq.seq usize, c : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces0 a ab b) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces0 b bc c) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv1 a) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv10 ab) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv1 b) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv10 bc) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv1 c) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] produces0 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl0 (a : Core_Ops_Range_Range_Type.t_range usize) : ()
   val produces_refl0 (a : Core_Ops_Range_Range_Type.t_range usize) : ()
     requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 22] inv1 a}
     ensures { result = produces_refl0 a }
     
+  axiom produces_refl0_spec : forall a : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 22] inv1 a) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 39] produces0 a (Seq.empty ) a)
+  predicate invariant1 (self : Core_Ops_Range_Range_Type.t_range usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant1 (self : Core_Ops_Range_Range_Type.t_range usize) : bool
+    ensures { result = invariant1 self }
+    
   axiom inv1 : [#"../hillel.rs" 1 0 1 0] forall x : Core_Ops_Range_Range_Type.t_range usize . inv1 x = true
   use prelude.Ghost
+  predicate invariant0 (self : Ghost.ghost_ty (Seq.seq t))
+  val invariant0 (self : Ghost.ghost_ty (Seq.seq t)) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : Ghost.ghost_ty (Seq.seq t))
   val inv0 (_x : Ghost.ghost_ty (Seq.seq t)) : bool
     ensures { result = inv0 _x }
@@ -1138,13 +1336,6 @@ module Hillel_Unique
     ensures { result = resolve2 self }
     
   use seq.Seq
-  constant max0  : usize
-  use seq.Seq
-  function shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
-  val shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
-    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv2 self}
-    ensures { result = shallow_model1 self }
-    
   function index_logic2 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (ix : int) : t
     
    =
@@ -1164,6 +1355,7 @@ module Hillel_Unique
     requires {[#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv11 self}
     ensures { result = shallow_model3 self }
     
+  axiom shallow_model3_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv11 self) -> ([#"../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv9 (shallow_model3 self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] shallow_model3 self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
   function shallow_model0 (self : slice t) : Seq.seq t =
     [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model3 self
   val shallow_model0 (self : slice t) : Seq.seq t
@@ -1202,6 +1394,7 @@ module Hillel_Unique
     requires {[#"../../../../creusot-contracts/src/std/vec.rs" 33 18 33 22] inv2 self}
     ensures { result = deep_model0 self }
     
+  axiom deep_model0_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 33 18 33 22] inv2 self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 33 4 33 44] inv6 (deep_model0 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (shallow_model1 self) -> Seq.get (deep_model0 self) i = deep_model3 (index_logic2 self i)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56] Seq.length (shallow_model1 self) = Seq.length (deep_model0 self))
   predicate is_unique0 [#"../hillel.rs" 50 0 50 34] (s : Seq.seq deep_model_ty0) =
     [#"../hillel.rs" 51 4 53 5] forall j : int . forall i : int . 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s -> Seq.get s i = Seq.get s j -> i = j
   val is_unique0 [#"../hillel.rs" 50 0 50 34] (s : Seq.seq deep_model_ty0) : bool
@@ -1254,6 +1447,7 @@ module Hillel_Unique
     requires {[#"../../../../creusot-contracts/src/std/slice.rs" 32 18 32 22] inv11 self}
     ensures { result = deep_model4 self }
     
+  axiom deep_model4_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 32 18 32 22] inv11 self) -> ([#"../../../../creusot-contracts/src/std/slice.rs" 32 4 32 44] inv6 (deep_model4 self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 31 4 31 95] forall i : int . 0 <= i /\ i < Seq.length (deep_model4 self) -> Seq.get (deep_model4 self) i = deep_model3 (index_logic4 self i)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 30 14 30 41] Seq.length (shallow_model3 self) = Seq.length (deep_model4 self))
   function deep_model1 (self : slice t) : Seq.seq deep_model_ty0 =
     [#"../../../../creusot-contracts/src/model.rs" 74 8 74 28] deep_model4 self
   val deep_model1 (self : slice t) : Seq.seq deep_model_ty0
@@ -1549,29 +1743,54 @@ end
 module Hillel_Fulcrum
   use prelude.UIntSize
   use seq.Seq
+  predicate invariant9 (self : Seq.seq usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant9 (self : Seq.seq usize) : bool
+    ensures { result = invariant9 self }
+    
   predicate inv9 (_x : Seq.seq usize)
   val inv9 (_x : Seq.seq usize) : bool
     ensures { result = inv9 _x }
     
   axiom inv9 : [#"../hillel.rs" 1 0 1 0] forall x : Seq.seq usize . inv9 x = true
   use prelude.UInt32
+  predicate invariant8 (self : Seq.seq uint32) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant8 (self : Seq.seq uint32) : bool
+    ensures { result = invariant8 self }
+    
   predicate inv8 (_x : Seq.seq uint32)
   val inv8 (_x : Seq.seq uint32) : bool
     ensures { result = inv8 _x }
     
   axiom inv8 : [#"../hillel.rs" 1 0 1 0] forall x : Seq.seq uint32 . inv8 x = true
   use prelude.Slice
+  predicate invariant7 (self : slice uint32) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant7 (self : slice uint32) : bool
+    ensures { result = invariant7 self }
+    
   predicate inv7 (_x : slice uint32)
   val inv7 (_x : slice uint32) : bool
     ensures { result = inv7 _x }
     
   axiom inv7 : [#"../hillel.rs" 1 0 1 0] forall x : slice uint32 . inv7 x = true
+  predicate invariant6 (self : Seq.seq uint32) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant6 (self : Seq.seq uint32) : bool
+    ensures { result = invariant6 self }
+    
   predicate inv6 (_x : Seq.seq uint32)
   val inv6 (_x : Seq.seq uint32) : bool
     ensures { result = inv6 _x }
     
   axiom inv6 : [#"../hillel.rs" 1 0 1 0] forall x : Seq.seq uint32 . inv6 x = true
   use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant5 (self : Core_Option_Option_Type.t_option usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant5 (self : Core_Option_Option_Type.t_option usize) : bool
+    ensures { result = invariant5 self }
+    
   predicate inv5 (_x : Core_Option_Option_Type.t_option usize)
   val inv5 (_x : Core_Option_Option_Type.t_option usize) : bool
     ensures { result = inv5 _x }
@@ -1579,16 +1798,31 @@ module Hillel_Fulcrum
   axiom inv5 : [#"../hillel.rs" 1 0 1 0] forall x : Core_Option_Option_Type.t_option usize . inv5 x = true
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   use prelude.Borrow
+  predicate invariant4 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant4 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
+    ensures { result = invariant4 self }
+    
   predicate inv4 (_x : borrowed (Core_Ops_Range_Range_Type.t_range usize))
   val inv4 (_x : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
     ensures { result = inv4 _x }
     
   axiom inv4 : [#"../hillel.rs" 1 0 1 0] forall x : borrowed (Core_Ops_Range_Range_Type.t_range usize) . inv4 x = true
+  predicate invariant3 (self : Core_Option_Option_Type.t_option uint32) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant3 (self : Core_Option_Option_Type.t_option uint32) : bool
+    ensures { result = invariant3 self }
+    
   predicate inv3 (_x : Core_Option_Option_Type.t_option uint32)
   val inv3 (_x : Core_Option_Option_Type.t_option uint32) : bool
     ensures { result = inv3 _x }
     
   axiom inv3 : [#"../hillel.rs" 1 0 1 0] forall x : Core_Option_Option_Type.t_option uint32 . inv3 x = true
+  predicate invariant2 (self : slice uint32) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant2 (self : slice uint32) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : slice uint32)
   val inv2 (_x : slice uint32) : bool
     ensures { result = inv2 _x }
@@ -1628,24 +1862,33 @@ module Hillel_Fulcrum
     requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv1 c}
     ensures { result = produces_trans1 a ab b bc c }
     
+  axiom produces_trans1_spec : forall a : Core_Ops_Range_Range_Type.t_range usize, ab : Seq.seq usize, b : Core_Ops_Range_Range_Type.t_range usize, bc : Seq.seq usize, c : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces1 a ab b) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces1 b bc c) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv1 a) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv9 ab) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv1 b) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv9 bc) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv1 c) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] produces1 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl1 (a : Core_Ops_Range_Range_Type.t_range usize) : ()
   val produces_refl1 (a : Core_Ops_Range_Range_Type.t_range usize) : ()
     requires {[#"../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 22] inv1 a}
     ensures { result = produces_refl1 a }
     
+  axiom produces_refl1_spec : forall a : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 22] inv1 a) -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 39] produces1 a (Seq.empty ) a)
+  predicate invariant1 (self : Core_Ops_Range_Range_Type.t_range usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant1 (self : Core_Ops_Range_Range_Type.t_range usize) : bool
+    ensures { result = invariant1 self }
+    
   axiom inv1 : [#"../hillel.rs" 1 0 1 0] forall x : Core_Ops_Range_Range_Type.t_range usize . inv1 x = true
   use Core_Slice_Iter_Iter_Type as Core_Slice_Iter_Iter_Type
   use seq.Seq
   use seq.Seq
   use prelude.Slice
-  constant max0  : usize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
   use seq.Seq
   function shallow_model4 (self : slice uint32) : Seq.seq uint32
   val shallow_model4 (self : slice uint32) : Seq.seq uint32
     requires {[#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv7 self}
     ensures { result = shallow_model4 self }
     
+  axiom shallow_model4_spec : forall self : slice uint32 . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv7 self) -> ([#"../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv8 (shallow_model4 self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] shallow_model4 self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model4 self) <= UIntSize.to_int max0)
   function index_logic3 [@inline:trivial] (self : slice uint32) (ix : int) : uint32 =
     [#"../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (shallow_model4 self) ix
   val index_logic3 [@inline:trivial] (self : slice uint32) (ix : int) : uint32
@@ -1663,6 +1906,7 @@ module Hillel_Fulcrum
     requires {[#"../../../../creusot-contracts/src/std/slice.rs" 91 19 91 23] inv2 self}
     ensures { result = to_ref_seq0 self }
     
+  axiom to_ref_seq0_spec : forall self : slice uint32 . ([#"../../../../creusot-contracts/src/std/slice.rs" 91 19 91 23] inv2 self) -> ([#"../../../../creusot-contracts/src/std/slice.rs" 91 4 91 35] inv6 (to_ref_seq0 self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 90 4 90 82] forall i : int . 0 <= i /\ i < Seq.length (to_ref_seq0 self) -> Seq.get (to_ref_seq0 self) i = index_logic3 self i) && ([#"../../../../creusot-contracts/src/std/slice.rs" 89 14 89 41] Seq.length (to_ref_seq0 self) = Seq.length (shallow_model1 self))
   function shallow_model3 (self : Core_Slice_Iter_Iter_Type.t_iter uint32) : slice uint32
   val shallow_model3 (self : Core_Slice_Iter_Iter_Type.t_iter uint32) : slice uint32
     ensures { result = shallow_model3 self }
@@ -1693,6 +1937,11 @@ module Hillel_Fulcrum
     ensures { result = produces_refl0 a }
     
   axiom produces_refl0_spec : forall a : Core_Slice_Iter_Iter_Type.t_iter uint32 . [#"../../../../creusot-contracts/src/std/slice.rs" 392 14 392 39] produces0 a (Seq.empty ) a
+  predicate invariant0 (self : Core_Slice_Iter_Iter_Type.t_iter uint32) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant0 (self : Core_Slice_Iter_Iter_Type.t_iter uint32) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : Core_Slice_Iter_Iter_Type.t_iter uint32)
   val inv0 (_x : Core_Slice_Iter_Iter_Type.t_iter uint32) : bool
     ensures { result = inv0 _x }

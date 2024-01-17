@@ -3,16 +3,28 @@ module C06FnSpecs_Weaken3
   type a
   type f
   type output0
+  predicate invariant2 (self : output0)
+  val invariant2 (self : output0) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : output0)
   val inv2 (_x : output0) : bool
     ensures { result = inv2 _x }
     
   axiom inv2 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : output0 . inv2 x = true
+  predicate invariant1 (self : a)
+  val invariant1 (self : a) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : a)
   val inv1 (_x : a) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : a . inv1 x = true
+  predicate invariant0 (self : f)
+  val invariant0 (self : f) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : f)
   val inv0 (_x : f) : bool
     ensures { result = inv0 _x }
@@ -74,6 +86,10 @@ module C06FnSpecs_Weaken2
   type a
   type f
   type output0
+  predicate invariant3 (self : output0)
+  val invariant3 (self : output0) : bool
+    ensures { result = invariant3 self }
+    
   predicate inv3 (_x : output0)
   val inv3 (_x : output0) : bool
     ensures { result = inv3 _x }
@@ -111,6 +127,7 @@ module C06FnSpecs_Weaken2
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 43 37 43 40] inv3 res}
     ensures { result = fn_mut_once0 self args res }
     
+  axiom fn_mut_once0_spec : forall self : f, args : a, res : output0 . ([#"../../../../../creusot-contracts/src/std/ops.rs" 43 19 43 23] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 43 25 43 29] inv1 args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 43 37 43 40] inv3 res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 42 14 42 135] postcondition_once0 self args res = (exists s : borrowed f . inv2 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve0 ( ^ s)))
   predicate unnest0 (self : f) (_2 : f)
   val unnest0 (self : f) (_2 : f) : bool
     ensures { result = unnest0 self _2 }
@@ -124,11 +141,13 @@ module C06FnSpecs_Weaken2
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 39 35 39 36] inv0 c}
     ensures { result = unnest_trans0 self b c }
     
+  axiom unnest_trans0_spec : forall self : f, b : f, c : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 36 15 36 29] unnest0 self b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 37 15 37 26] unnest0 b c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 39 20 39 24] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 39 26 39 27] inv0 b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 39 35 39 36] inv0 c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 38 14 38 28] unnest0 self c)
   function unnest_refl0 (self : f) : ()
   val unnest_refl0 (self : f) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 33 19 33 23] inv0 self}
     ensures { result = unnest_refl0 self }
     
+  axiom unnest_refl0_spec : forall self : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 33 19 33 23] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 32 14 32 31] unnest0 self self)
   function postcondition_mut_unnest0 (self : borrowed f) (args : a) (res : output0) : ()
   val postcondition_mut_unnest0 (self : borrowed f) (args : a) (res : output0) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 27 15 27 48] postcondition_mut0 self args res}
@@ -137,8 +156,21 @@ module C06FnSpecs_Weaken2
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 29 55 29 58] inv3 res}
     ensures { result = postcondition_mut_unnest0 self args res }
     
+  axiom postcondition_mut_unnest0_spec : forall self : borrowed f, args : a, res : output0 . ([#"../../../../../creusot-contracts/src/std/ops.rs" 27 15 27 48] postcondition_mut0 self args res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 29 37 29 41] inv2 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 29 43 29 47] inv1 args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 29 55 29 58] inv3 res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 28 14 28 35] unnest0 ( * self) ( ^ self))
+  predicate invariant2 (self : borrowed f)
+  val invariant2 (self : borrowed f) : bool
+    ensures { result = invariant2 self }
+    
   axiom inv2 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : borrowed f . inv2 x = true
+  predicate invariant1 (self : a)
+  val invariant1 (self : a) : bool
+    ensures { result = invariant1 self }
+    
   axiom inv1 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : a . inv1 x = true
+  predicate invariant0 (self : f)
+  val invariant0 (self : f) : bool
+    ensures { result = invariant0 self }
+    
   axiom inv0 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : f . inv0 x = true
   predicate precondition0 (self : f) (a : a)
   val precondition0 (self : f) (a : a) : bool
@@ -228,6 +260,7 @@ module C06FnSpecs_Weaken
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 43 37 43 40] inv2 res}
     ensures { result = fn_mut_once0 self args res }
     
+  axiom fn_mut_once0_spec : forall self : f, args : a, res : output0 . ([#"../../../../../creusot-contracts/src/std/ops.rs" 43 19 43 23] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 43 25 43 29] inv1 args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 43 37 43 40] inv2 res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 42 14 42 135] postcondition_once0 self args res = (exists s : borrowed f . inv3 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve0 ( ^ s)))
   predicate unnest0 (self : f) (_2 : f)
   val unnest0 (self : f) (_2 : f) : bool
     ensures { result = unnest0 self _2 }
@@ -241,11 +274,13 @@ module C06FnSpecs_Weaken
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 39 35 39 36] inv0 c}
     ensures { result = unnest_trans0 self b c }
     
+  axiom unnest_trans0_spec : forall self : f, b : f, c : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 36 15 36 29] unnest0 self b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 37 15 37 26] unnest0 b c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 39 20 39 24] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 39 26 39 27] inv0 b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 39 35 39 36] inv0 c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 38 14 38 28] unnest0 self c)
   function unnest_refl0 (self : f) : ()
   val unnest_refl0 (self : f) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 33 19 33 23] inv0 self}
     ensures { result = unnest_refl0 self }
     
+  axiom unnest_refl0_spec : forall self : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 33 19 33 23] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 32 14 32 31] unnest0 self self)
   function postcondition_mut_unnest0 (self : borrowed f) (args : a) (res : output0) : ()
   val postcondition_mut_unnest0 (self : borrowed f) (args : a) (res : output0) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 27 15 27 48] postcondition_mut0 self args res}
@@ -254,7 +289,16 @@ module C06FnSpecs_Weaken
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 29 55 29 58] inv2 res}
     ensures { result = postcondition_mut_unnest0 self args res }
     
+  axiom postcondition_mut_unnest0_spec : forall self : borrowed f, args : a, res : output0 . ([#"../../../../../creusot-contracts/src/std/ops.rs" 27 15 27 48] postcondition_mut0 self args res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 29 37 29 41] inv3 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 29 43 29 47] inv1 args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 29 55 29 58] inv2 res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 28 14 28 35] unnest0 ( * self) ( ^ self))
+  predicate invariant3 (self : borrowed f)
+  val invariant3 (self : borrowed f) : bool
+    ensures { result = invariant3 self }
+    
   axiom inv3 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : borrowed f . inv3 x = true
+  predicate invariant2 (self : output0)
+  val invariant2 (self : output0) : bool
+    ensures { result = invariant2 self }
+    
   axiom inv2 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : output0 . inv2 x = true
   predicate postcondition0 (self : f) (_2 : a) (_3 : output0)
   val postcondition0 (self : f) (_2 : a) (_3 : output0) : bool
@@ -267,6 +311,7 @@ module C06FnSpecs_Weaken
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 61 33 61 36] inv2 res}
     ensures { result = fn_once0 self args res }
     
+  axiom fn_once0_spec : forall self : f, args : a, res : output0 . ([#"../../../../../creusot-contracts/src/std/ops.rs" 61 15 61 19] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 61 21 61 25] inv1 args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 61 33 61 36] inv2 res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 60 14 60 101] postcondition_once0 self args res = (resolve0 self /\ postcondition0 self args res))
   predicate resolve1 (self : borrowed f) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve1 (self : borrowed f) : bool
@@ -279,7 +324,16 @@ module C06FnSpecs_Weaken
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 57 37 57 40] inv2 res}
     ensures { result = fn_mut0 self args res }
     
+  axiom fn_mut0_spec : forall self : borrowed f, args : a, res : output0 . ([#"../../../../../creusot-contracts/src/std/ops.rs" 57 19 57 23] inv3 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 57 25 57 29] inv1 args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 57 37 57 40] inv2 res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 56 14 56 100] postcondition_mut0 self args res = (resolve1 self /\ postcondition0 ( * self) args res))
+  predicate invariant1 (self : a)
+  val invariant1 (self : a) : bool
+    ensures { result = invariant1 self }
+    
   axiom inv1 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : a . inv1 x = true
+  predicate invariant0 (self : f)
+  val invariant0 (self : f) : bool
+    ensures { result = invariant0 self }
+    
   axiom inv0 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : f . inv0 x = true
   predicate precondition0 (self : f) (a : a)
   val precondition0 (self : f) (a : a) : bool
@@ -333,16 +387,28 @@ module C06FnSpecs_Weaken3Std
   type a
   type f
   type output0
+  predicate invariant2 (self : output0)
+  val invariant2 (self : output0) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : output0)
   val inv2 (_x : output0) : bool
     ensures { result = inv2 _x }
     
   axiom inv2 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : output0 . inv2 x = true
+  predicate invariant1 (self : a)
+  val invariant1 (self : a) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : a)
   val inv1 (_x : a) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : a . inv1 x = true
+  predicate invariant0 (self : f)
+  val invariant0 (self : f) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : f)
   val inv0 (_x : f) : bool
     ensures { result = inv0 _x }
@@ -404,6 +470,10 @@ module C06FnSpecs_Weaken2Std
   type a
   type f
   type output0
+  predicate invariant3 (self : output0)
+  val invariant3 (self : output0) : bool
+    ensures { result = invariant3 self }
+    
   predicate inv3 (_x : output0)
   val inv3 (_x : output0) : bool
     ensures { result = inv3 _x }
@@ -441,6 +511,7 @@ module C06FnSpecs_Weaken2Std
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] inv3 res}
     ensures { result = fn_mut_once0 self args res }
     
+  axiom fn_mut_once0_spec : forall self : f, args : a, res : output0 . ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 19 123 23] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 25 123 29] inv1 args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] inv3 res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] postcondition_once0 self args res = (exists s : borrowed f . inv2 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve0 ( ^ s)))
   predicate unnest0 (self : f) (_2 : f)
   val unnest0 (self : f) (_2 : f) : bool
     ensures { result = unnest0 self _2 }
@@ -454,11 +525,13 @@ module C06FnSpecs_Weaken2Std
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 117 35 117 36] inv0 c}
     ensures { result = unnest_trans0 self b c }
     
+  axiom unnest_trans0_spec : forall self : f, b : f, c : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 114 15 114 29] unnest0 self b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 115 15 115 26] unnest0 b c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 20 117 24] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 26 117 27] inv0 b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 35 117 36] inv0 c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 116 14 116 28] unnest0 self c)
   function unnest_refl0 (self : f) : ()
   val unnest_refl0 (self : f) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 110 19 110 23] inv0 self}
     ensures { result = unnest_refl0 self }
     
+  axiom unnest_refl0_spec : forall self : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 110 19 110 23] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 109 14 109 31] unnest0 self self)
   function postcondition_mut_unnest0 (self : borrowed f) (args : a) (res : output0) : ()
   val postcondition_mut_unnest0 (self : borrowed f) (args : a) (res : output0) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 103 15 103 48] postcondition_mut0 self args res}
@@ -467,8 +540,21 @@ module C06FnSpecs_Weaken2Std
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 105 55 105 58] inv3 res}
     ensures { result = postcondition_mut_unnest0 self args res }
     
+  axiom postcondition_mut_unnest0_spec : forall self : borrowed f, args : a, res : output0 . ([#"../../../../../creusot-contracts/src/std/ops.rs" 103 15 103 48] postcondition_mut0 self args res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 105 37 105 41] inv2 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 105 43 105 47] inv1 args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 105 55 105 58] inv3 res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 104 14 104 35] unnest0 ( * self) ( ^ self))
+  predicate invariant2 (self : borrowed f)
+  val invariant2 (self : borrowed f) : bool
+    ensures { result = invariant2 self }
+    
   axiom inv2 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : borrowed f . inv2 x = true
+  predicate invariant1 (self : a)
+  val invariant1 (self : a) : bool
+    ensures { result = invariant1 self }
+    
   axiom inv1 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : a . inv1 x = true
+  predicate invariant0 (self : f)
+  val invariant0 (self : f) : bool
+    ensures { result = invariant0 self }
+    
   axiom inv0 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : f . inv0 x = true
   predicate precondition0 (self : f) (_2 : a)
   val precondition0 (self : f) (_2 : a) : bool
@@ -558,6 +644,7 @@ module C06FnSpecs_WeakenStd
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] inv2 res}
     ensures { result = fn_mut_once0 self args res }
     
+  axiom fn_mut_once0_spec : forall self : f, args : a, res : output0 . ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 19 123 23] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 25 123 29] inv1 args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] inv2 res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] postcondition_once0 self args res = (exists s : borrowed f . inv3 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve0 ( ^ s)))
   predicate unnest0 (self : f) (_2 : f)
   val unnest0 (self : f) (_2 : f) : bool
     ensures { result = unnest0 self _2 }
@@ -571,11 +658,13 @@ module C06FnSpecs_WeakenStd
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 117 35 117 36] inv0 c}
     ensures { result = unnest_trans0 self b c }
     
+  axiom unnest_trans0_spec : forall self : f, b : f, c : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 114 15 114 29] unnest0 self b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 115 15 115 26] unnest0 b c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 20 117 24] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 26 117 27] inv0 b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 35 117 36] inv0 c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 116 14 116 28] unnest0 self c)
   function unnest_refl0 (self : f) : ()
   val unnest_refl0 (self : f) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 110 19 110 23] inv0 self}
     ensures { result = unnest_refl0 self }
     
+  axiom unnest_refl0_spec : forall self : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 110 19 110 23] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 109 14 109 31] unnest0 self self)
   function postcondition_mut_unnest0 (self : borrowed f) (args : a) (res : output0) : ()
   val postcondition_mut_unnest0 (self : borrowed f) (args : a) (res : output0) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 103 15 103 48] postcondition_mut0 self args res}
@@ -584,7 +673,16 @@ module C06FnSpecs_WeakenStd
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 105 55 105 58] inv2 res}
     ensures { result = postcondition_mut_unnest0 self args res }
     
+  axiom postcondition_mut_unnest0_spec : forall self : borrowed f, args : a, res : output0 . ([#"../../../../../creusot-contracts/src/std/ops.rs" 103 15 103 48] postcondition_mut0 self args res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 105 37 105 41] inv3 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 105 43 105 47] inv1 args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 105 55 105 58] inv2 res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 104 14 104 35] unnest0 ( * self) ( ^ self))
+  predicate invariant3 (self : borrowed f)
+  val invariant3 (self : borrowed f) : bool
+    ensures { result = invariant3 self }
+    
   axiom inv3 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : borrowed f . inv3 x = true
+  predicate invariant2 (self : output0)
+  val invariant2 (self : output0) : bool
+    ensures { result = invariant2 self }
+    
   axiom inv2 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : output0 . inv2 x = true
   predicate postcondition0 (self : f) (_2 : a) (_3 : output0)
   val postcondition0 (self : f) (_2 : a) (_3 : output0) : bool
@@ -597,6 +695,7 @@ module C06FnSpecs_WeakenStd
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 145 33 145 36] inv2 res}
     ensures { result = fn_once0 self args res }
     
+  axiom fn_once0_spec : forall self : f, args : a, res : output0 . ([#"../../../../../creusot-contracts/src/std/ops.rs" 145 15 145 19] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 145 21 145 25] inv1 args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 145 33 145 36] inv2 res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 144 14 144 101] postcondition_once0 self args res = (resolve0 self /\ postcondition0 self args res))
   predicate resolve1 (self : borrowed f) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve1 (self : borrowed f) : bool
@@ -609,7 +708,16 @@ module C06FnSpecs_WeakenStd
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 139 37 139 40] inv2 res}
     ensures { result = fn_mut0 self args res }
     
+  axiom fn_mut0_spec : forall self : borrowed f, args : a, res : output0 . ([#"../../../../../creusot-contracts/src/std/ops.rs" 139 19 139 23] inv3 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 139 25 139 29] inv1 args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 139 37 139 40] inv2 res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 138 14 138 100] postcondition_mut0 self args res = (resolve1 self /\ postcondition0 ( * self) args res))
+  predicate invariant1 (self : a)
+  val invariant1 (self : a) : bool
+    ensures { result = invariant1 self }
+    
   axiom inv1 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : a . inv1 x = true
+  predicate invariant0 (self : f)
+  val invariant0 (self : f) : bool
+    ensures { result = invariant0 self }
+    
   axiom inv0 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : f . inv0 x = true
   predicate precondition0 (self : f) (_2 : a)
   val precondition0 (self : f) (_2 : a) : bool
@@ -661,17 +769,31 @@ module C06FnSpecs_WeakenStd
 end
 module C06FnSpecs_FnOnceUser
   type f
+  predicate invariant2 (self : ()) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant2 (self : ()) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : ())
   val inv2 (_x : ()) : bool
     ensures { result = inv2 _x }
     
   axiom inv2 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : () . inv2 x = true
   use prelude.UIntSize
+  predicate invariant1 (self : usize) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant1 (self : usize) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : usize)
   val inv1 (_x : usize) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../06_fn_specs.rs" 1 0 1 0] forall x : usize . inv1 x = true
+  predicate invariant0 (self : f)
+  val invariant0 (self : f) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : f)
   val inv0 (_x : f) : bool
     ensures { result = inv0 _x }
@@ -752,6 +874,11 @@ module C06FnSpecs_Caller
   use prelude.UIntSize
   use prelude.Int32
   use C06FnSpecs_Caller_Closure0_Type as C06FnSpecs_Caller_Closure0
+  predicate invariant0 (self : C06FnSpecs_Caller_Closure0.c06fnspecs_caller_closure0) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant0 (self : C06FnSpecs_Caller_Closure0.c06fnspecs_caller_closure0) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : C06FnSpecs_Caller_Closure0.c06fnspecs_caller_closure0)
   val inv0 (_x : C06FnSpecs_Caller_Closure0.c06fnspecs_caller_closure0) : bool
     ensures { result = inv0 _x }

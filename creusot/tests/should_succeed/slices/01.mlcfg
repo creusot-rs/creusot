@@ -13,12 +13,22 @@ end
 module C01_IndexSlice
   use prelude.UInt32
   use seq.Seq
+  predicate invariant1 (self : Seq.seq uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant1 (self : Seq.seq uint32) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : Seq.seq uint32)
   val inv1 (_x : Seq.seq uint32) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../01.rs" 1 0 1 0] forall x : Seq.seq uint32 . inv1 x = true
   use prelude.Slice
+  predicate invariant0 (self : slice uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant0 (self : slice uint32) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : slice uint32)
   val inv0 (_x : slice uint32) : bool
     ensures { result = inv0 _x }
@@ -29,12 +39,14 @@ module C01_IndexSlice
   use prelude.Slice
   use prelude.Int
   use prelude.UIntSize
-  constant max0  : usize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
   function shallow_model1 (self : slice uint32) : Seq.seq uint32
   val shallow_model1 (self : slice uint32) : Seq.seq uint32
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv0 self}
     ensures { result = shallow_model1 self }
     
+  axiom shallow_model1_spec : forall self : slice uint32 . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv1 (shallow_model1 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] shallow_model1 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max0)
   use prelude.Borrow
   function shallow_model0 (self : slice uint32) : Seq.seq uint32 =
     [#"../../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model1 self
@@ -67,12 +79,22 @@ end
 module C01_IndexMutSlice
   use prelude.UInt32
   use seq.Seq
+  predicate invariant1 (self : Seq.seq uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant1 (self : Seq.seq uint32) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : Seq.seq uint32)
   val inv1 (_x : Seq.seq uint32) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../01.rs" 1 0 1 0] forall x : Seq.seq uint32 . inv1 x = true
   use prelude.Slice
+  predicate invariant0 (self : slice uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant0 (self : slice uint32) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : slice uint32)
   val inv0 (_x : slice uint32) : bool
     ensures { result = inv0 _x }
@@ -84,13 +106,15 @@ module C01_IndexMutSlice
   use prelude.Slice
   use prelude.Int
   use prelude.UIntSize
-  constant max0  : usize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
   use seq.Seq
   function shallow_model2 (self : slice uint32) : Seq.seq uint32
   val shallow_model2 (self : slice uint32) : Seq.seq uint32
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv0 self}
     ensures { result = shallow_model2 self }
     
+  axiom shallow_model2_spec : forall self : slice uint32 . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv1 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] shallow_model2 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
   function index_logic0 [@inline:trivial] (self : slice uint32) (ix : int) : uint32 =
     [#"../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (shallow_model2 self) ix
   val index_logic0 [@inline:trivial] (self : slice uint32) (ix : int) : uint32
@@ -142,28 +166,48 @@ end
 module C01_SliceFirst
   type t
   use seq.Seq
+  predicate invariant4 (self : Seq.seq t)
+  val invariant4 (self : Seq.seq t) : bool
+    ensures { result = invariant4 self }
+    
   predicate inv4 (_x : Seq.seq t)
   val inv4 (_x : Seq.seq t) : bool
     ensures { result = inv4 _x }
     
   axiom inv4 : [#"../01.rs" 1 0 1 0] forall x : Seq.seq t . inv4 x = true
   use prelude.Slice
+  predicate invariant3 (self : slice t)
+  val invariant3 (self : slice t) : bool
+    ensures { result = invariant3 self }
+    
   predicate inv3 (_x : slice t)
   val inv3 (_x : slice t) : bool
     ensures { result = inv3 _x }
     
   axiom inv3 : [#"../01.rs" 1 0 1 0] forall x : slice t . inv3 x = true
   use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant2 (self : Core_Option_Option_Type.t_option t)
+  val invariant2 (self : Core_Option_Option_Type.t_option t) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : Core_Option_Option_Type.t_option t)
   val inv2 (_x : Core_Option_Option_Type.t_option t) : bool
     ensures { result = inv2 _x }
     
   axiom inv2 : [#"../01.rs" 1 0 1 0] forall x : Core_Option_Option_Type.t_option t . inv2 x = true
+  predicate invariant1 (self : t)
+  val invariant1 (self : t) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : t)
   val inv1 (_x : t) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../01.rs" 1 0 1 0] forall x : t . inv1 x = true
+  predicate invariant0 (self : slice t)
+  val invariant0 (self : slice t) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : slice t)
   val inv0 (_x : slice t) : bool
     ensures { result = inv0 _x }
@@ -174,12 +218,14 @@ module C01_SliceFirst
   use prelude.Slice
   use prelude.Int
   use prelude.UIntSize
-  constant max0  : usize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
   function shallow_model2 (self : slice t) : Seq.seq t
   val shallow_model2 (self : slice t) : Seq.seq t
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv3 self}
     ensures { result = shallow_model2 self }
     
+  axiom shallow_model2_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv3 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv4 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] shallow_model2 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
   use prelude.Borrow
   function shallow_model0 (self : slice t) : Seq.seq t =
     [#"../../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model2 self

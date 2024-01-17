@@ -58,25 +58,57 @@ end
 module InvariantMoves_TestInvariantMove
   use prelude.UInt32
   use seq.Seq
+  predicate invariant3 (self : Seq.seq uint32) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant3 (self : Seq.seq uint32) : bool
+    ensures { result = invariant3 self }
+    
   predicate inv3 (_x : Seq.seq uint32)
   val inv3 (_x : Seq.seq uint32) : bool
     ensures { result = inv3 _x }
     
   axiom inv3 : [#"../invariant_moves.rs" 1 0 1 0] forall x : Seq.seq uint32 . inv3 x = true
+  use prelude.UIntSize
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use prelude.Int
+  use prelude.UIntSize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+  use seq.Seq
   predicate inv2 (_x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))
   val inv2 (_x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv2 _x }
     
+  function shallow_model0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
+  val shallow_model0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv2 self}
+    ensures { result = shallow_model0 self }
+    
+  axiom shallow_model0_spec : forall self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv2 self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv3 (shallow_model0 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model0 self) <= UIntSize.to_int max0)
+  predicate invariant2 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv3 (shallow_model0 self)
+  val invariant2 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant2 self }
+    
   axiom inv2 : [#"../invariant_moves.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . inv2 x = true
   use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant1 (self : Core_Option_Option_Type.t_option uint32) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant1 (self : Core_Option_Option_Type.t_option uint32) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : Core_Option_Option_Type.t_option uint32)
   val inv1 (_x : Core_Option_Option_Type.t_option uint32) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../invariant_moves.rs" 1 0 1 0] forall x : Core_Option_Option_Type.t_option uint32 . inv1 x = true
   use prelude.Borrow
+  predicate invariant0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)))
   val inv0 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) : bool
     ensures { result = inv0 _x }
@@ -88,16 +120,6 @@ module InvariantMoves_TestInvariantMove
     ensures { result = resolve2 self }
     
   use seq.Seq
-  use prelude.UIntSize
-  use prelude.Int
-  use prelude.UIntSize
-  constant max0  : usize
-  use seq.Seq
-  function shallow_model0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
-  val shallow_model0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
-    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv2 self}
-    ensures { result = shallow_model0 self }
-    
   function index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (ix : int) : uint32
     
    =

@@ -28,6 +28,10 @@ module C05Map_Impl0_Next
   type b
   type f
   type i
+  predicate invariant9 (self : f)
+  val invariant9 (self : f) : bool
+    ensures { result = invariant9 self }
+    
   predicate inv9 (_x : f)
   val inv9 (_x : f) : bool
     ensures { result = inv9 _x }
@@ -65,6 +69,7 @@ module C05Map_Impl0_Next
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] inv7 res}
     ensures { result = fn_mut_once0 self args res }
     
+  axiom fn_mut_once0_spec : forall self : f, args : a, res : b . ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 19 123 23] inv9 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 25 123 29] inv6 args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] inv7 res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] postcondition_once0 self args res = (exists s : borrowed f . inv8 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve3 ( ^ s)))
   predicate unnest0 (self : f) (_2 : f)
   val unnest0 (self : f) (_2 : f) : bool
     ensures { result = unnest0 self _2 }
@@ -78,11 +83,13 @@ module C05Map_Impl0_Next
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 117 35 117 36] inv9 c}
     ensures { result = unnest_trans0 self b c }
     
+  axiom unnest_trans0_spec : forall self : f, b : f, c : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 114 15 114 29] unnest0 self b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 115 15 115 26] unnest0 b c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 20 117 24] inv9 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 26 117 27] inv9 b) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 35 117 36] inv9 c) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 116 14 116 28] unnest0 self c)
   function unnest_refl0 (self : f) : ()
   val unnest_refl0 (self : f) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 110 19 110 23] inv9 self}
     ensures { result = unnest_refl0 self }
     
+  axiom unnest_refl0_spec : forall self : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 110 19 110 23] inv9 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 109 14 109 31] unnest0 self self)
   function postcondition_mut_unnest0 (self : borrowed f) (args : a) (res : b) : ()
   val postcondition_mut_unnest0 (self : borrowed f) (args : a) (res : b) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 103 15 103 48] postcondition_mut0 self args res}
@@ -91,7 +98,16 @@ module C05Map_Impl0_Next
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 105 55 105 58] inv7 res}
     ensures { result = postcondition_mut_unnest0 self args res }
     
+  axiom postcondition_mut_unnest0_spec : forall self : borrowed f, args : a, res : b . ([#"../../../../../creusot-contracts/src/std/ops.rs" 103 15 103 48] postcondition_mut0 self args res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 105 37 105 41] inv8 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 105 43 105 47] inv6 args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 105 55 105 58] inv7 res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 104 14 104 35] unnest0 ( * self) ( ^ self))
+  predicate invariant8 (self : borrowed f)
+  val invariant8 (self : borrowed f) : bool
+    ensures { result = invariant8 self }
+    
   axiom inv8 : [#"../05_map.rs" 1 0 1 0] forall x : borrowed f . inv8 x = true
+  predicate invariant7 (self : b)
+  val invariant7 (self : b) : bool
+    ensures { result = invariant7 self }
+    
   axiom inv7 : [#"../05_map.rs" 1 0 1 0] forall x : b . inv7 x = true
   predicate postcondition0 (self : f) (_2 : a) (_3 : b)
   val postcondition0 (self : f) (_2 : a) (_3 : b) : bool
@@ -104,6 +120,7 @@ module C05Map_Impl0_Next
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 145 33 145 36] inv7 res}
     ensures { result = fn_once0 self args res }
     
+  axiom fn_once0_spec : forall self : f, args : a, res : b . ([#"../../../../../creusot-contracts/src/std/ops.rs" 145 15 145 19] inv9 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 145 21 145 25] inv6 args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 145 33 145 36] inv7 res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 144 14 144 101] postcondition_once0 self args res = (resolve3 self /\ postcondition0 self args res))
   predicate resolve2 (self : borrowed f) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve2 (self : borrowed f) : bool
@@ -116,34 +133,63 @@ module C05Map_Impl0_Next
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 139 37 139 40] inv7 res}
     ensures { result = fn_mut0 self args res }
     
+  axiom fn_mut0_spec : forall self : borrowed f, args : a, res : b . ([#"../../../../../creusot-contracts/src/std/ops.rs" 139 19 139 23] inv8 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 139 25 139 29] inv6 args) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 139 37 139 40] inv7 res) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 138 14 138 100] postcondition_mut0 self args res = (resolve2 self /\ postcondition0 ( * self) args res))
+  predicate invariant6 (self : a)
+  val invariant6 (self : a) : bool
+    ensures { result = invariant6 self }
+    
   axiom inv6 : [#"../05_map.rs" 1 0 1 0] forall x : a . inv6 x = true
+  predicate invariant5 (self : f)
+  val invariant5 (self : f) : bool
+    ensures { result = invariant5 self }
+    
   predicate inv5 (_x : f)
   val inv5 (_x : f) : bool
     ensures { result = inv5 _x }
     
   axiom inv5 : [#"../05_map.rs" 1 0 1 0] forall x : f . inv5 x = true
+  predicate invariant4 (self : borrowed i)
+  val invariant4 (self : borrowed i) : bool
+    ensures { result = invariant4 self }
+    
   predicate inv4 (_x : borrowed i)
   val inv4 (_x : borrowed i) : bool
     ensures { result = inv4 _x }
     
   axiom inv4 : [#"../05_map.rs" 1 0 1 0] forall x : borrowed i . inv4 x = true
   use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant3 (self : Core_Option_Option_Type.t_option b)
+  val invariant3 (self : Core_Option_Option_Type.t_option b) : bool
+    ensures { result = invariant3 self }
+    
   predicate inv3 (_x : Core_Option_Option_Type.t_option b)
   val inv3 (_x : Core_Option_Option_Type.t_option b) : bool
     ensures { result = inv3 _x }
     
   axiom inv3 : [#"../05_map.rs" 1 0 1 0] forall x : Core_Option_Option_Type.t_option b . inv3 x = true
   use C05Map_Map_Type as C05Map_Map_Type
+  predicate invariant2 (self : borrowed (C05Map_Map_Type.t_map i f))
+  val invariant2 (self : borrowed (C05Map_Map_Type.t_map i f)) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : borrowed (C05Map_Map_Type.t_map i f))
   val inv2 (_x : borrowed (C05Map_Map_Type.t_map i f)) : bool
     ensures { result = inv2 _x }
     
   axiom inv2 : [#"../05_map.rs" 1 0 1 0] forall x : borrowed (C05Map_Map_Type.t_map i f) . inv2 x = true
+  predicate invariant1 (self : Core_Option_Option_Type.t_option a)
+  val invariant1 (self : Core_Option_Option_Type.t_option a) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : Core_Option_Option_Type.t_option a)
   val inv1 (_x : Core_Option_Option_Type.t_option a) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../05_map.rs" 1 0 1 0] forall x : Core_Option_Option_Type.t_option a . inv1 x = true
+  predicate invariant0 (self : i)
+  val invariant0 (self : i) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : i)
   val inv0 (_x : i) : bool
     ensures { result = inv0 _x }
@@ -258,6 +304,10 @@ module C05Map_Impl0
   type f
   type i
   use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant1 (self : Core_Option_Option_Type.t_option b)
+  val invariant1 (self : Core_Option_Option_Type.t_option b) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : Core_Option_Option_Type.t_option b)
   val inv1 (_x : Core_Option_Option_Type.t_option b) : bool
     ensures { result = inv1 _x }
@@ -265,6 +315,10 @@ module C05Map_Impl0
   axiom inv1 : [#"../05_map.rs" 1 0 1 0] forall x : Core_Option_Option_Type.t_option b . inv1 x = true
   use C05Map_Map_Type as C05Map_Map_Type
   use prelude.Borrow
+  predicate invariant0 (self : borrowed (C05Map_Map_Type.t_map i f))
+  val invariant0 (self : borrowed (C05Map_Map_Type.t_map i f)) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : borrowed (C05Map_Map_Type.t_map i f))
   val inv0 (_x : borrowed (C05Map_Map_Type.t_map i f)) : bool
     ensures { result = inv0 _x }

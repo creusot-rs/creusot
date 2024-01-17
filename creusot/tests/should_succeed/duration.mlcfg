@@ -34,6 +34,11 @@ end
 module Duration_TestDuration
   use Core_Time_Duration_Type as Core_Time_Duration_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant0 (self : Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant0 (self : Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration))
   val inv0 (_x : Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) : bool
     ensures { result = inv0 _x }
@@ -46,11 +51,13 @@ module Duration_TestDuration
     ensures { result = secs_to_nanos0 secs }
     
   use prelude.UInt64
-  constant max0  : uint64
+  let constant max0  : uint64 = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : uint64)
   function shallow_model0 (self : Core_Time_Duration_Type.t_duration) : int
   val shallow_model0 (self : Core_Time_Duration_Type.t_duration) : int
     ensures { result = shallow_model0 self }
     
+  axiom shallow_model0_spec : forall self : Core_Time_Duration_Type.t_duration . [#"../../../../creusot-contracts/src/std/time.rs" 13 14 13 77] shallow_model0 self >= 0 /\ shallow_model0 self <= secs_to_nanos0 (UInt64.to_int max0) + 999999999
   val sub0 (self : Core_Time_Duration_Type.t_duration) (rhs : Core_Time_Duration_Type.t_duration) : Core_Time_Duration_Type.t_duration
     requires {[#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] shallow_model0 self - shallow_model0 rhs >= 0}
     ensures { [#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] shallow_model0 self - shallow_model0 rhs = shallow_model0 result }
@@ -65,6 +72,7 @@ module Duration_TestDuration
   val deep_model1 (self : Core_Time_Duration_Type.t_duration) : int
     ensures { result = deep_model1 self }
     
+  axiom deep_model1_spec : forall self : Core_Time_Duration_Type.t_duration . ([#"../../../../creusot-contracts/src/std/time.rs" 26 14 26 44] deep_model1 self = shallow_model0 self) && ([#"../../../../creusot-contracts/src/std/time.rs" 25 14 25 77] deep_model1 self >= 0 /\ deep_model1 self <= secs_to_nanos0 (UInt64.to_int max0) + 999999999)
   function deep_model0 (self : Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) : Core_Option_Option_Type.t_option int
     
    =

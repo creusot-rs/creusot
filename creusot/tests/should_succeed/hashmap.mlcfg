@@ -126,6 +126,10 @@ end
 module Hashmap_Impl5_New
   type k
   type v
+  predicate invariant5 (self : v)
+  val invariant5 (self : v) : bool
+    ensures { result = invariant5 self }
+    
   predicate inv5 (_x : v)
   val inv5 (_x : v) : bool
     ensures { result = inv5 _x }
@@ -133,30 +137,66 @@ module Hashmap_Impl5_New
   axiom inv5 : [#"../hashmap.rs" 1 0 1 0] forall x : v . inv5 x = true
   use Hashmap_List_Type as Hashmap_List_Type
   use seq.Seq
+  predicate invariant4 (self : Seq.seq (Hashmap_List_Type.t_list (k, v)))
+  val invariant4 (self : Seq.seq (Hashmap_List_Type.t_list (k, v))) : bool
+    ensures { result = invariant4 self }
+    
   predicate inv4 (_x : Seq.seq (Hashmap_List_Type.t_list (k, v)))
   val inv4 (_x : Seq.seq (Hashmap_List_Type.t_list (k, v))) : bool
     ensures { result = inv4 _x }
     
   axiom inv4 : [#"../hashmap.rs" 1 0 1 0] forall x : Seq.seq (Hashmap_List_Type.t_list (k, v)) . inv4 x = true
+  use prelude.UIntSize
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use prelude.Int
+  use prelude.UIntSize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+  use seq.Seq
   predicate inv3 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
   val inv3 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv3 _x }
     
+  function shallow_model2 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
+    
+  val shallow_model2 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self}
+    ensures { result = shallow_model2 self }
+    
+  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv4 (shallow_model2 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
+  predicate invariant3 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
+    
+   =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv4 (shallow_model2 self)
+  val invariant3 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant3 self }
+    
   axiom inv3 : [#"../hashmap.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . inv3 x = true
+  predicate invariant2 (self : Hashmap_List_Type.t_list (k, v))
+  val invariant2 (self : Hashmap_List_Type.t_list (k, v)) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : Hashmap_List_Type.t_list (k, v))
   val inv2 (_x : Hashmap_List_Type.t_list (k, v)) : bool
     ensures { result = inv2 _x }
     
   axiom inv2 : [#"../hashmap.rs" 1 0 1 0] forall x : Hashmap_List_Type.t_list (k, v) . inv2 x = true
   use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
+  predicate invariant1 (self : Hashmap_MyHashMap_Type.t_myhashmap k v)
+  val invariant1 (self : Hashmap_MyHashMap_Type.t_myhashmap k v) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : Hashmap_MyHashMap_Type.t_myhashmap k v)
   val inv1 (_x : Hashmap_MyHashMap_Type.t_myhashmap k v) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../hashmap.rs" 1 0 1 0] forall x : Hashmap_MyHashMap_Type.t_myhashmap k v . inv1 x = true
   type deep_model_ty0
+  predicate invariant0 (self : deep_model_ty0)
+  val invariant0 (self : deep_model_ty0) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : deep_model_ty0)
   val inv0 (_x : deep_model_ty0) : bool
     ensures { result = inv0 _x }
@@ -185,18 +225,7 @@ module Hashmap_Impl5_New
   val get1 [#"../hashmap.rs" 28 4 28 56] (self : Hashmap_List_Type.t_list (k, v)) (index : deep_model_ty0) : Core_Option_Option_Type.t_option v
     ensures { result = get1 self index }
     
-  use prelude.Int
   use seq.Seq
-  use prelude.UIntSize
-  use prelude.UIntSize
-  constant max0  : usize
-  use seq.Seq
-  function shallow_model2 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
-    
-  val shallow_model2 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
-    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self}
-    ensures { result = shallow_model2 self }
-    
   function index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (ix : int) : Hashmap_List_Type.t_list (k, v)
     
    =
@@ -300,12 +329,21 @@ module Hashmap_Impl5_Add
   type v
   use Hashmap_List_Type as Hashmap_List_Type
   use seq.Seq
+  predicate invariant17 (self : Seq.seq (Hashmap_List_Type.t_list (k, v)))
+  val invariant17 (self : Seq.seq (Hashmap_List_Type.t_list (k, v))) : bool
+    ensures { result = invariant17 self }
+    
   predicate inv17 (_x : Seq.seq (Hashmap_List_Type.t_list (k, v)))
   val inv17 (_x : Seq.seq (Hashmap_List_Type.t_list (k, v))) : bool
     ensures { result = inv17 _x }
     
   axiom inv17 : [#"../hashmap.rs" 1 0 1 0] forall x : Seq.seq (Hashmap_List_Type.t_list (k, v)) . inv17 x = true
   use prelude.UIntSize
+  predicate invariant16 (self : usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant16 (self : usize) : bool
+    ensures { result = invariant16 self }
+    
   predicate inv16 (_x : usize)
   val inv16 (_x : usize) : bool
     ensures { result = inv16 _x }
@@ -314,85 +352,166 @@ module Hashmap_Impl5_Add
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use prelude.Borrow
+  predicate invariant15 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)))
+    
+  val invariant15 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) : bool
+    ensures { result = invariant15 self }
+    
   predicate inv15 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)))
     
   val inv15 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) : bool
     ensures { result = inv15 _x }
     
   axiom inv15 : [#"../hashmap.rs" 1 0 1 0] forall x : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) . inv15 x = true
+  predicate invariant14 (self : k)
+  val invariant14 (self : k) : bool
+    ensures { result = invariant14 self }
+    
   predicate inv14 (_x : k)
   val inv14 (_x : k) : bool
     ensures { result = inv14 _x }
     
   axiom inv14 : [#"../hashmap.rs" 1 0 1 0] forall x : k . inv14 x = true
+  predicate invariant13 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
+    
+  val invariant13 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant13 self }
+    
   predicate inv13 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
   val inv13 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv13 _x }
     
   axiom inv13 : [#"../hashmap.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . inv13 x = true
   use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
+  predicate invariant12 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
+  val invariant12 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) : bool
+    ensures { result = invariant12 self }
+    
   predicate inv12 (_x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
   val inv12 (_x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) : bool
     ensures { result = inv12 _x }
     
   axiom inv12 : [#"../hashmap.rs" 1 0 1 0] forall x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v) . inv12 x = true
+  predicate invariant11 (self : borrowed (Hashmap_List_Type.t_list (k, v)))
+  val invariant11 (self : borrowed (Hashmap_List_Type.t_list (k, v))) : bool
+    ensures { result = invariant11 self }
+    
   predicate inv11 (_x : borrowed (Hashmap_List_Type.t_list (k, v)))
   val inv11 (_x : borrowed (Hashmap_List_Type.t_list (k, v))) : bool
     ensures { result = inv11 _x }
     
   axiom inv11 : [#"../hashmap.rs" 1 0 1 0] forall x : borrowed (Hashmap_List_Type.t_list (k, v)) . inv11 x = true
+  predicate invariant10 (self : borrowed v)
+  val invariant10 (self : borrowed v) : bool
+    ensures { result = invariant10 self }
+    
   predicate inv10 (_x : borrowed v)
   val inv10 (_x : borrowed v) : bool
     ensures { result = inv10 _x }
     
   axiom inv10 : [#"../hashmap.rs" 1 0 1 0] forall x : borrowed v . inv10 x = true
+  predicate invariant9 (self : borrowed k)
+  val invariant9 (self : borrowed k) : bool
+    ensures { result = invariant9 self }
+    
   predicate inv9 (_x : borrowed k)
   val inv9 (_x : borrowed k) : bool
     ensures { result = inv9 _x }
     
   axiom inv9 : [#"../hashmap.rs" 1 0 1 0] forall x : borrowed k . inv9 x = true
+  predicate invariant8 (self : Hashmap_List_Type.t_list (k, v))
+  val invariant8 (self : Hashmap_List_Type.t_list (k, v)) : bool
+    ensures { result = invariant8 self }
+    
   predicate inv8 (_x : Hashmap_List_Type.t_list (k, v))
   val inv8 (_x : Hashmap_List_Type.t_list (k, v)) : bool
     ensures { result = inv8 _x }
     
   axiom inv8 : [#"../hashmap.rs" 1 0 1 0] forall x : Hashmap_List_Type.t_list (k, v) . inv8 x = true
+  predicate invariant7 (self : v)
+  val invariant7 (self : v) : bool
+    ensures { result = invariant7 self }
+    
   predicate inv7 (_x : v)
   val inv7 (_x : v) : bool
     ensures { result = inv7 _x }
     
   axiom inv7 : [#"../hashmap.rs" 1 0 1 0] forall x : v . inv7 x = true
+  predicate invariant6 (self : k)
+  val invariant6 (self : k) : bool
+    ensures { result = invariant6 self }
+    
   predicate inv6 (_x : k)
   val inv6 (_x : k) : bool
     ensures { result = inv6 _x }
     
   axiom inv6 : [#"../hashmap.rs" 1 0 1 0] forall x : k . inv6 x = true
   type deep_model_ty0
+  predicate invariant5 (self : deep_model_ty0)
+  val invariant5 (self : deep_model_ty0) : bool
+    ensures { result = invariant5 self }
+    
   predicate inv5 (_x : deep_model_ty0)
   val inv5 (_x : deep_model_ty0) : bool
     ensures { result = inv5 _x }
     
   axiom inv5 : [#"../hashmap.rs" 1 0 1 0] forall x : deep_model_ty0 . inv5 x = true
   use prelude.Ghost
+  predicate invariant4 (self : Ghost.ghost_ty (borrowed (Hashmap_List_Type.t_list (k, v))))
+  val invariant4 (self : Ghost.ghost_ty (borrowed (Hashmap_List_Type.t_list (k, v)))) : bool
+    ensures { result = invariant4 self }
+    
   predicate inv4 (_x : Ghost.ghost_ty (borrowed (Hashmap_List_Type.t_list (k, v))))
   val inv4 (_x : Ghost.ghost_ty (borrowed (Hashmap_List_Type.t_list (k, v)))) : bool
     ensures { result = inv4 _x }
     
   axiom inv4 : [#"../hashmap.rs" 1 0 1 0] forall x : Ghost.ghost_ty (borrowed (Hashmap_List_Type.t_list (k, v))) . inv4 x = true
+  predicate invariant3 (self : borrowed (Hashmap_List_Type.t_list (k, v)))
+  val invariant3 (self : borrowed (Hashmap_List_Type.t_list (k, v))) : bool
+    ensures { result = invariant3 self }
+    
   predicate inv3 (_x : borrowed (Hashmap_List_Type.t_list (k, v)))
   val inv3 (_x : borrowed (Hashmap_List_Type.t_list (k, v))) : bool
     ensures { result = inv3 _x }
     
   axiom inv3 : [#"../hashmap.rs" 1 0 1 0] forall x : borrowed (Hashmap_List_Type.t_list (k, v)) . inv3 x = true
+  predicate invariant2 (self : Hashmap_List_Type.t_list (k, v))
+  val invariant2 (self : Hashmap_List_Type.t_list (k, v)) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : Hashmap_List_Type.t_list (k, v))
   val inv2 (_x : Hashmap_List_Type.t_list (k, v)) : bool
     ensures { result = inv2 _x }
     
   axiom inv2 : [#"../hashmap.rs" 1 0 1 0] forall x : Hashmap_List_Type.t_list (k, v) . inv2 x = true
+  use prelude.Int
+  use prelude.UIntSize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+  use seq.Seq
   predicate inv1 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
   val inv1 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv1 _x }
     
+  function shallow_model6 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
+    
+  val shallow_model6 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv1 self}
+    ensures { result = shallow_model6 self }
+    
+  axiom shallow_model6_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv1 self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv17 (shallow_model6 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model6 self) <= UIntSize.to_int max0)
+  predicate invariant1 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
+    
+   =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv17 (shallow_model6 self)
+  val invariant1 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant1 self }
+    
   axiom inv1 : [#"../hashmap.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . inv1 x = true
+  predicate invariant0 (self : Ghost.ghost_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)))
+  val invariant0 (self : Ghost.ghost_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : Ghost.ghost_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)))
   val inv0 (_x : Ghost.ghost_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) : bool
     ensures { result = inv0 _x }
@@ -419,17 +538,7 @@ module Hashmap_Impl5_Add
   val get0 [#"../hashmap.rs" 28 4 28 56] (self : Hashmap_List_Type.t_list (k, v)) (index : deep_model_ty0) : Core_Option_Option_Type.t_option v
     ensures { result = get0 self index }
     
-  use prelude.Int
   use seq.Seq
-  use prelude.UIntSize
-  constant max0  : usize
-  use seq.Seq
-  function shallow_model6 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
-    
-  val shallow_model6 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
-    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv1 self}
-    ensures { result = shallow_model6 self }
-    
   function index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (ix : int) : Hashmap_List_Type.t_list (k, v)
     
    =
@@ -812,11 +921,19 @@ module Hashmap_Impl5_Get
   type k
   type v
   type deep_model_ty0
+  predicate invariant12 (self : deep_model_ty0)
+  val invariant12 (self : deep_model_ty0) : bool
+    ensures { result = invariant12 self }
+    
   predicate inv12 (_x : deep_model_ty0)
   val inv12 (_x : deep_model_ty0) : bool
     ensures { result = inv12 _x }
     
   axiom inv12 : [#"../hashmap.rs" 1 0 1 0] forall x : deep_model_ty0 . inv12 x = true
+  predicate invariant11 (self : v)
+  val invariant11 (self : v) : bool
+    ensures { result = invariant11 self }
+    
   predicate inv11 (_x : v)
   val inv11 (_x : v) : bool
     ensures { result = inv11 _x }
@@ -824,61 +941,122 @@ module Hashmap_Impl5_Get
   axiom inv11 : [#"../hashmap.rs" 1 0 1 0] forall x : v . inv11 x = true
   use Hashmap_List_Type as Hashmap_List_Type
   use seq.Seq
+  predicate invariant10 (self : Seq.seq (Hashmap_List_Type.t_list (k, v)))
+  val invariant10 (self : Seq.seq (Hashmap_List_Type.t_list (k, v))) : bool
+    ensures { result = invariant10 self }
+    
   predicate inv10 (_x : Seq.seq (Hashmap_List_Type.t_list (k, v)))
   val inv10 (_x : Seq.seq (Hashmap_List_Type.t_list (k, v))) : bool
     ensures { result = inv10 _x }
     
   axiom inv10 : [#"../hashmap.rs" 1 0 1 0] forall x : Seq.seq (Hashmap_List_Type.t_list (k, v)) . inv10 x = true
+  use prelude.UIntSize
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use prelude.Int
+  use prelude.UIntSize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+  use seq.Seq
   predicate inv9 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
   val inv9 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv9 _x }
     
+  function shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
+    
+  val shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv9 self}
+    ensures { result = shallow_model4 self }
+    
+  axiom shallow_model4_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv9 self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv10 (shallow_model4 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model4 self) <= UIntSize.to_int max0)
+  predicate invariant9 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
+    
+   =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv10 (shallow_model4 self)
+  val invariant9 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant9 self }
+    
   axiom inv9 : [#"../hashmap.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . inv9 x = true
-  use prelude.UIntSize
+  predicate invariant8 (self : usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant8 (self : usize) : bool
+    ensures { result = invariant8 self }
+    
   predicate inv8 (_x : usize)
   val inv8 (_x : usize) : bool
     ensures { result = inv8 _x }
     
   axiom inv8 : [#"../hashmap.rs" 1 0 1 0] forall x : usize . inv8 x = true
+  predicate invariant7 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
+    
+  val invariant7 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant7 self }
+    
   predicate inv7 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
   val inv7 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv7 _x }
     
   axiom inv7 : [#"../hashmap.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . inv7 x = true
   use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant6 (self : Core_Option_Option_Type.t_option v)
+  val invariant6 (self : Core_Option_Option_Type.t_option v) : bool
+    ensures { result = invariant6 self }
+    
   predicate inv6 (_x : Core_Option_Option_Type.t_option v)
   val inv6 (_x : Core_Option_Option_Type.t_option v) : bool
     ensures { result = inv6 _x }
     
   axiom inv6 : [#"../hashmap.rs" 1 0 1 0] forall x : Core_Option_Option_Type.t_option v . inv6 x = true
+  predicate invariant5 (self : k)
+  val invariant5 (self : k) : bool
+    ensures { result = invariant5 self }
+    
   predicate inv5 (_x : k)
   val inv5 (_x : k) : bool
     ensures { result = inv5 _x }
     
   axiom inv5 : [#"../hashmap.rs" 1 0 1 0] forall x : k . inv5 x = true
+  predicate invariant4 (self : Hashmap_List_Type.t_list (k, v))
+  val invariant4 (self : Hashmap_List_Type.t_list (k, v)) : bool
+    ensures { result = invariant4 self }
+    
   predicate inv4 (_x : Hashmap_List_Type.t_list (k, v))
   val inv4 (_x : Hashmap_List_Type.t_list (k, v)) : bool
     ensures { result = inv4 _x }
     
   axiom inv4 : [#"../hashmap.rs" 1 0 1 0] forall x : Hashmap_List_Type.t_list (k, v) . inv4 x = true
+  predicate invariant3 (self : v)
+  val invariant3 (self : v) : bool
+    ensures { result = invariant3 self }
+    
   predicate inv3 (_x : v)
   val inv3 (_x : v) : bool
     ensures { result = inv3 _x }
     
   axiom inv3 : [#"../hashmap.rs" 1 0 1 0] forall x : v . inv3 x = true
+  predicate invariant2 (self : k)
+  val invariant2 (self : k) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : k)
   val inv2 (_x : k) : bool
     ensures { result = inv2 _x }
     
   axiom inv2 : [#"../hashmap.rs" 1 0 1 0] forall x : k . inv2 x = true
+  predicate invariant1 (self : Hashmap_List_Type.t_list (k, v))
+  val invariant1 (self : Hashmap_List_Type.t_list (k, v)) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : Hashmap_List_Type.t_list (k, v))
   val inv1 (_x : Hashmap_List_Type.t_list (k, v)) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../hashmap.rs" 1 0 1 0] forall x : Hashmap_List_Type.t_list (k, v) . inv1 x = true
   use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
+  predicate invariant0 (self : Hashmap_MyHashMap_Type.t_myhashmap k v)
+  val invariant0 (self : Hashmap_MyHashMap_Type.t_myhashmap k v) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : Hashmap_MyHashMap_Type.t_myhashmap k v)
   val inv0 (_x : Hashmap_MyHashMap_Type.t_myhashmap k v) : bool
     ensures { result = inv0 _x }
@@ -905,17 +1083,7 @@ module Hashmap_Impl5_Get
   val get0 [#"../hashmap.rs" 28 4 28 56] (self : Hashmap_List_Type.t_list (k, v)) (index : deep_model_ty0) : Core_Option_Option_Type.t_option v
     ensures { result = get0 self index }
     
-  use prelude.Int
   use seq.Seq
-  use prelude.UIntSize
-  constant max0  : usize
-  use seq.Seq
-  function shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
-    
-  val shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
-    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv9 self}
-    ensures { result = shallow_model4 self }
-    
   function index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (ix : int) : Hashmap_List_Type.t_list (k, v)
     
    =
@@ -1172,6 +1340,11 @@ module Hashmap_Impl5_Resize
   type k
   type v
   use prelude.UIntSize
+  predicate invariant13 (self : usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant13 (self : usize) : bool
+    ensures { result = invariant13 self }
+    
   predicate inv13 (_x : usize)
   val inv13 (_x : usize) : bool
     ensures { result = inv13 _x }
@@ -1181,6 +1354,11 @@ module Hashmap_Impl5_Resize
   use Hashmap_List_Type as Hashmap_List_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use prelude.Borrow
+  predicate invariant12 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)))
+    
+  val invariant12 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) : bool
+    ensures { result = invariant12 self }
+    
   predicate inv12 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)))
     
   val inv12 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) : bool
@@ -1188,64 +1366,128 @@ module Hashmap_Impl5_Resize
     
   axiom inv12 : [#"../hashmap.rs" 1 0 1 0] forall x : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) . inv12 x = true
   use seq.Seq
+  predicate invariant11 (self : Seq.seq (Hashmap_List_Type.t_list (k, v)))
+  val invariant11 (self : Seq.seq (Hashmap_List_Type.t_list (k, v))) : bool
+    ensures { result = invariant11 self }
+    
   predicate inv11 (_x : Seq.seq (Hashmap_List_Type.t_list (k, v)))
   val inv11 (_x : Seq.seq (Hashmap_List_Type.t_list (k, v))) : bool
     ensures { result = inv11 _x }
     
   axiom inv11 : [#"../hashmap.rs" 1 0 1 0] forall x : Seq.seq (Hashmap_List_Type.t_list (k, v)) . inv11 x = true
+  predicate invariant10 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
+    
+  val invariant10 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant10 self }
+    
   predicate inv10 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
   val inv10 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv10 _x }
     
   axiom inv10 : [#"../hashmap.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . inv10 x = true
+  predicate invariant9 (self : Hashmap_List_Type.t_list (k, v))
+  val invariant9 (self : Hashmap_List_Type.t_list (k, v)) : bool
+    ensures { result = invariant9 self }
+    
   predicate inv9 (_x : Hashmap_List_Type.t_list (k, v))
   val inv9 (_x : Hashmap_List_Type.t_list (k, v)) : bool
     ensures { result = inv9 _x }
     
   axiom inv9 : [#"../hashmap.rs" 1 0 1 0] forall x : Hashmap_List_Type.t_list (k, v) . inv9 x = true
+  predicate invariant8 (self : v)
+  val invariant8 (self : v) : bool
+    ensures { result = invariant8 self }
+    
   predicate inv8 (_x : v)
   val inv8 (_x : v) : bool
     ensures { result = inv8 _x }
     
   axiom inv8 : [#"../hashmap.rs" 1 0 1 0] forall x : v . inv8 x = true
+  predicate invariant7 (self : k)
+  val invariant7 (self : k) : bool
+    ensures { result = invariant7 self }
+    
   predicate inv7 (_x : k)
   val inv7 (_x : k) : bool
     ensures { result = inv7 _x }
     
   axiom inv7 : [#"../hashmap.rs" 1 0 1 0] forall x : k . inv7 x = true
+  predicate invariant6 (self : borrowed (Hashmap_List_Type.t_list (k, v)))
+  val invariant6 (self : borrowed (Hashmap_List_Type.t_list (k, v))) : bool
+    ensures { result = invariant6 self }
+    
   predicate inv6 (_x : borrowed (Hashmap_List_Type.t_list (k, v)))
   val inv6 (_x : borrowed (Hashmap_List_Type.t_list (k, v))) : bool
     ensures { result = inv6 _x }
     
   axiom inv6 : [#"../hashmap.rs" 1 0 1 0] forall x : borrowed (Hashmap_List_Type.t_list (k, v)) . inv6 x = true
+  predicate invariant5 (self : Hashmap_List_Type.t_list (k, v))
+  val invariant5 (self : Hashmap_List_Type.t_list (k, v)) : bool
+    ensures { result = invariant5 self }
+    
   predicate inv5 (_x : Hashmap_List_Type.t_list (k, v))
   val inv5 (_x : Hashmap_List_Type.t_list (k, v)) : bool
     ensures { result = inv5 _x }
     
   axiom inv5 : [#"../hashmap.rs" 1 0 1 0] forall x : Hashmap_List_Type.t_list (k, v) . inv5 x = true
+  use prelude.Int
+  use prelude.UIntSize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+  use seq.Seq
   predicate inv4 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
   val inv4 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv4 _x }
     
+  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
+    
+  val shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self}
+    ensures { result = shallow_model3 self }
+    
+  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv11 (shallow_model3 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
+  predicate invariant4 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
+    
+   =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv11 (shallow_model3 self)
+  val invariant4 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant4 self }
+    
   axiom inv4 : [#"../hashmap.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . inv4 x = true
   use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
+  predicate invariant3 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
+  val invariant3 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) : bool
+    ensures { result = invariant3 self }
+    
   predicate inv3 (_x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
   val inv3 (_x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) : bool
     ensures { result = inv3 _x }
     
   axiom inv3 : [#"../hashmap.rs" 1 0 1 0] forall x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v) . inv3 x = true
+  predicate invariant2 (self : Hashmap_MyHashMap_Type.t_myhashmap k v)
+  val invariant2 (self : Hashmap_MyHashMap_Type.t_myhashmap k v) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : Hashmap_MyHashMap_Type.t_myhashmap k v)
   val inv2 (_x : Hashmap_MyHashMap_Type.t_myhashmap k v) : bool
     ensures { result = inv2 _x }
     
   axiom inv2 : [#"../hashmap.rs" 1 0 1 0] forall x : Hashmap_MyHashMap_Type.t_myhashmap k v . inv2 x = true
   type deep_model_ty0
+  predicate invariant1 (self : deep_model_ty0)
+  val invariant1 (self : deep_model_ty0) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : deep_model_ty0)
   val inv1 (_x : deep_model_ty0) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../hashmap.rs" 1 0 1 0] forall x : deep_model_ty0 . inv1 x = true
   use prelude.Ghost
+  predicate invariant0 (self : Ghost.ghost_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)))
+  val invariant0 (self : Ghost.ghost_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : Ghost.ghost_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)))
   val inv0 (_x : Ghost.ghost_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) : bool
     ensures { result = inv0 _x }
@@ -1272,17 +1514,7 @@ module Hashmap_Impl5_Resize
   val get1 [#"../hashmap.rs" 28 4 28 56] (self : Hashmap_List_Type.t_list (k, v)) (index : deep_model_ty0) : Core_Option_Option_Type.t_option v
     ensures { result = get1 self index }
     
-  use prelude.Int
   use seq.Seq
-  use prelude.UIntSize
-  constant max0  : usize
-  use seq.Seq
-  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
-    
-  val shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
-    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self}
-    ensures { result = shallow_model3 self }
-    
   function index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (ix : int) : Hashmap_List_Type.t_list (k, v)
     
    =
@@ -1680,6 +1912,11 @@ module Hashmap_Main
   use prelude.UIntSize
   use Hashmap_List_Type as Hashmap_List_Type
   use seq.Seq
+  predicate invariant8 (self : Seq.seq (Hashmap_List_Type.t_list (usize, isize))) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant8 (self : Seq.seq (Hashmap_List_Type.t_list (usize, isize))) : bool
+    ensures { result = invariant8 self }
+    
   predicate inv8 (_x : Seq.seq (Hashmap_List_Type.t_list (usize, isize)))
   val inv8 (_x : Seq.seq (Hashmap_List_Type.t_list (usize, isize))) : bool
     ensures { result = inv8 _x }
@@ -1687,12 +1924,36 @@ module Hashmap_Main
   axiom inv8 : [#"../hashmap.rs" 1 0 1 0] forall x : Seq.seq (Hashmap_List_Type.t_list (usize, isize)) . inv8 x = true
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use prelude.Int
+  use prelude.UIntSize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+  use seq.Seq
   predicate inv7 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (usize, isize)) (Alloc_Alloc_Global_Type.t_global))
     
   val inv7 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (usize, isize)) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv7 _x }
     
+  function shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (usize, isize)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (usize, isize))
+    
+  val shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (usize, isize)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (usize, isize))
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self}
+    ensures { result = shallow_model4 self }
+    
+  axiom shallow_model4_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (usize, isize)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv8 (shallow_model4 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model4 self) <= UIntSize.to_int max0)
+  predicate invariant7 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (usize, isize)) (Alloc_Alloc_Global_Type.t_global))
+    
+   =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv8 (shallow_model4 self)
+  val invariant7 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (usize, isize)) (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant7 self }
+    
   axiom inv7 : [#"../hashmap.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (usize, isize)) (Alloc_Alloc_Global_Type.t_global) . inv7 x = true
+  predicate invariant6 (self : isize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant6 (self : isize) : bool
+    ensures { result = invariant6 self }
+    
   predicate inv6 (_x : isize)
   val inv6 (_x : isize) : bool
     ensures { result = inv6 _x }
@@ -1700,33 +1961,63 @@ module Hashmap_Main
   axiom inv6 : [#"../hashmap.rs" 1 0 1 0] forall x : isize . inv6 x = true
   use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
   use prelude.Borrow
+  predicate invariant5 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant5 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) : bool
+    ensures { result = invariant5 self }
+    
   predicate inv5 (_x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize))
   val inv5 (_x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) : bool
     ensures { result = inv5 _x }
     
   axiom inv5 : [#"../hashmap.rs" 1 0 1 0] forall x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize) . inv5 x = true
   use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant4 (self : Core_Option_Option_Type.t_option isize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant4 (self : Core_Option_Option_Type.t_option isize) : bool
+    ensures { result = invariant4 self }
+    
   predicate inv4 (_x : Core_Option_Option_Type.t_option isize)
   val inv4 (_x : Core_Option_Option_Type.t_option isize) : bool
     ensures { result = inv4 _x }
     
   axiom inv4 : [#"../hashmap.rs" 1 0 1 0] forall x : Core_Option_Option_Type.t_option isize . inv4 x = true
+  predicate invariant3 (self : usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant3 (self : usize) : bool
+    ensures { result = invariant3 self }
+    
   predicate inv3 (_x : usize)
   val inv3 (_x : usize) : bool
     ensures { result = inv3 _x }
     
   axiom inv3 : [#"../hashmap.rs" 1 0 1 0] forall x : usize . inv3 x = true
+  predicate invariant2 (self : Hashmap_MyHashMap_Type.t_myhashmap usize isize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant2 (self : Hashmap_MyHashMap_Type.t_myhashmap usize isize) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : Hashmap_MyHashMap_Type.t_myhashmap usize isize)
   val inv2 (_x : Hashmap_MyHashMap_Type.t_myhashmap usize isize) : bool
     ensures { result = inv2 _x }
     
   axiom inv2 : [#"../hashmap.rs" 1 0 1 0] forall x : Hashmap_MyHashMap_Type.t_myhashmap usize isize . inv2 x = true
+  predicate invariant1 (self : Hashmap_MyHashMap_Type.t_myhashmap usize isize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant1 (self : Hashmap_MyHashMap_Type.t_myhashmap usize isize) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : Hashmap_MyHashMap_Type.t_myhashmap usize isize)
   val inv1 (_x : Hashmap_MyHashMap_Type.t_myhashmap usize isize) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../hashmap.rs" 1 0 1 0] forall x : Hashmap_MyHashMap_Type.t_myhashmap usize isize . inv1 x = true
   use prelude.Int
+  predicate invariant0 (self : int) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant0 (self : int) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : int)
   val inv0 (_x : int) : bool
     ensures { result = inv0 _x }
@@ -1734,8 +2025,6 @@ module Hashmap_Main
   axiom inv0 : [#"../hashmap.rs" 1 0 1 0] forall x : int . inv0 x = true
   use map.Map
   use prelude.Mapping
-  use prelude.UIntSize
-  use prelude.Int
   function deep_model0 (self : usize) : int =
     [#"../../../../creusot-contracts/src/std/num.rs" 22 16 22 35] UIntSize.to_int self
   val deep_model0 (self : usize) : int
@@ -1756,14 +2045,6 @@ module Hashmap_Main
     ensures { result = get2 self index }
     
   use seq.Seq
-  constant max0  : usize
-  use seq.Seq
-  function shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (usize, isize)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (usize, isize))
-    
-  val shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (usize, isize)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (usize, isize))
-    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self}
-    ensures { result = shallow_model4 self }
-    
   function index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (usize, isize)) (Alloc_Alloc_Global_Type.t_global)) (ix : int) : Hashmap_List_Type.t_list (usize, isize)
     
    =
@@ -1986,11 +2267,19 @@ end
 module Hashmap_Impl0
   type t
   use Hashmap_List_Type as Hashmap_List_Type
+  predicate invariant1 (self : Hashmap_List_Type.t_list t)
+  val invariant1 (self : Hashmap_List_Type.t_list t) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : Hashmap_List_Type.t_list t)
   val inv1 (_x : Hashmap_List_Type.t_list t) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../hashmap.rs" 1 0 1 0] forall x : Hashmap_List_Type.t_list t . inv1 x = true
+  predicate invariant0 (self : Hashmap_List_Type.t_list t)
+  val invariant0 (self : Hashmap_List_Type.t_list t) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : Hashmap_List_Type.t_list t)
   val inv0 (_x : Hashmap_List_Type.t_list t) : bool
     ensures { result = inv0 _x }
@@ -2001,6 +2290,11 @@ module Hashmap_Impl0
 end
 module Hashmap_Impl2
   use prelude.UIntSize
+  predicate invariant0 (self : usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant0 (self : usize) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : usize)
   val inv0 (_x : usize) : bool
     ensures { result = inv0 _x }

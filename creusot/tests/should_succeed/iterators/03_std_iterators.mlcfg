@@ -44,28 +44,48 @@ end
 module C03StdIterators_SliceIter
   type t
   use seq.Seq
+  predicate invariant7 (self : Seq.seq t)
+  val invariant7 (self : Seq.seq t) : bool
+    ensures { result = invariant7 self }
+    
   predicate inv7 (_x : Seq.seq t)
   val inv7 (_x : Seq.seq t) : bool
     ensures { result = inv7 _x }
     
   axiom inv7 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Seq.seq t . inv7 x = true
   use prelude.Slice
+  predicate invariant6 (self : slice t)
+  val invariant6 (self : slice t) : bool
+    ensures { result = invariant6 self }
+    
   predicate inv6 (_x : slice t)
   val inv6 (_x : slice t) : bool
     ensures { result = inv6 _x }
     
   axiom inv6 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : slice t . inv6 x = true
+  predicate invariant5 (self : Seq.seq t)
+  val invariant5 (self : Seq.seq t) : bool
+    ensures { result = invariant5 self }
+    
   predicate inv5 (_x : Seq.seq t)
   val inv5 (_x : Seq.seq t) : bool
     ensures { result = inv5 _x }
     
   axiom inv5 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Seq.seq t . inv5 x = true
+  predicate invariant4 (self : t)
+  val invariant4 (self : t) : bool
+    ensures { result = invariant4 self }
+    
   predicate inv4 (_x : t)
   val inv4 (_x : t) : bool
     ensures { result = inv4 _x }
     
   axiom inv4 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : t . inv4 x = true
   use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant3 (self : Core_Option_Option_Type.t_option t)
+  val invariant3 (self : Core_Option_Option_Type.t_option t) : bool
+    ensures { result = invariant3 self }
+    
   predicate inv3 (_x : Core_Option_Option_Type.t_option t)
   val inv3 (_x : Core_Option_Option_Type.t_option t) : bool
     ensures { result = inv3 _x }
@@ -79,13 +99,15 @@ module C03StdIterators_SliceIter
   use prelude.Slice
   use prelude.Int
   use prelude.UIntSize
-  constant max0  : usize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
   use seq.Seq
   function shallow_model3 (self : slice t) : Seq.seq t
   val shallow_model3 (self : slice t) : Seq.seq t
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv6 self}
     ensures { result = shallow_model3 self }
     
+  axiom shallow_model3_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv6 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv7 (shallow_model3 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] shallow_model3 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
   function index_logic1 [@inline:trivial] (self : slice t) (ix : int) : t =
     [#"../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (shallow_model3 self) ix
   val index_logic1 [@inline:trivial] (self : slice t) (ix : int) : t
@@ -107,6 +129,7 @@ module C03StdIterators_SliceIter
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 91 19 91 23] inv0 self}
     ensures { result = to_ref_seq0 self }
     
+  axiom to_ref_seq0_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 91 19 91 23] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 91 4 91 35] inv5 (to_ref_seq0 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 90 4 90 82] forall i : int . 0 <= i /\ i < Seq.length (to_ref_seq0 self) -> Seq.get (to_ref_seq0 self) i = index_logic1 self i) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 89 14 89 41] Seq.length (to_ref_seq0 self) = Seq.length (shallow_model1 self))
   function shallow_model2 (self : Core_Slice_Iter_Iter_Type.t_iter t) : slice t
   val shallow_model2 (self : Core_Slice_Iter_Iter_Type.t_iter t) : slice t
     ensures { result = shallow_model2 self }
@@ -137,17 +160,29 @@ module C03StdIterators_SliceIter
     ensures { result = produces_refl0 a }
     
   axiom produces_refl0_spec : forall a : Core_Slice_Iter_Iter_Type.t_iter t . [#"../../../../../creusot-contracts/src/std/slice.rs" 392 14 392 39] produces0 a (Seq.empty ) a
+  predicate invariant2 (self : Core_Slice_Iter_Iter_Type.t_iter t)
+  val invariant2 (self : Core_Slice_Iter_Iter_Type.t_iter t) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : Core_Slice_Iter_Iter_Type.t_iter t)
   val inv2 (_x : Core_Slice_Iter_Iter_Type.t_iter t) : bool
     ensures { result = inv2 _x }
     
   axiom inv2 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Core_Slice_Iter_Iter_Type.t_iter t . inv2 x = true
   use prelude.Ghost
+  predicate invariant1 (self : Ghost.ghost_ty (Seq.seq t))
+  val invariant1 (self : Ghost.ghost_ty (Seq.seq t)) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : Ghost.ghost_ty (Seq.seq t))
   val inv1 (_x : Ghost.ghost_ty (Seq.seq t)) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Ghost.ghost_ty (Seq.seq t) . inv1 x = true
+  predicate invariant0 (self : slice t)
+  val invariant0 (self : slice t) : bool
+    ensures { result = invariant0 self }
+    
   axiom inv0 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : slice t . inv0 x = true
   predicate resolve6 (self : Core_Slice_Iter_Iter_Type.t_iter t)
   val resolve6 (self : Core_Slice_Iter_Iter_Type.t_iter t) : bool
@@ -357,40 +392,81 @@ end
 module C03StdIterators_VecIter
   type t
   use prelude.Slice
+  predicate invariant9 (self : slice t)
+  val invariant9 (self : slice t) : bool
+    ensures { result = invariant9 self }
+    
   predicate inv9 (_x : slice t)
   val inv9 (_x : slice t) : bool
     ensures { result = inv9 _x }
     
   axiom inv9 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : slice t . inv9 x = true
   use seq.Seq
+  predicate invariant8 (self : Seq.seq t)
+  val invariant8 (self : Seq.seq t) : bool
+    ensures { result = invariant8 self }
+    
   predicate inv8 (_x : Seq.seq t)
   val inv8 (_x : Seq.seq t) : bool
     ensures { result = inv8 _x }
     
   axiom inv8 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Seq.seq t . inv8 x = true
+  use prelude.UIntSize
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use prelude.Int
+  use prelude.UIntSize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+  use seq.Seq
   predicate inv7 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
   val inv7 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv7 _x }
     
+  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
+  val shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
+    requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self}
+    ensures { result = shallow_model3 self }
+    
+  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv8 (shallow_model3 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
+  predicate invariant7 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv8 (shallow_model3 self)
+  val invariant7 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant7 self }
+    
   axiom inv7 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv7 x = true
+  predicate invariant6 (self : slice t)
+  val invariant6 (self : slice t) : bool
+    ensures { result = invariant6 self }
+    
   predicate inv6 (_x : slice t)
   val inv6 (_x : slice t) : bool
     ensures { result = inv6 _x }
     
   axiom inv6 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : slice t . inv6 x = true
+  predicate invariant5 (self : Seq.seq t)
+  val invariant5 (self : Seq.seq t) : bool
+    ensures { result = invariant5 self }
+    
   predicate inv5 (_x : Seq.seq t)
   val inv5 (_x : Seq.seq t) : bool
     ensures { result = inv5 _x }
     
   axiom inv5 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Seq.seq t . inv5 x = true
+  predicate invariant4 (self : t)
+  val invariant4 (self : t) : bool
+    ensures { result = invariant4 self }
+    
   predicate inv4 (_x : t)
   val inv4 (_x : t) : bool
     ensures { result = inv4 _x }
     
   axiom inv4 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : t . inv4 x = true
   use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant3 (self : Core_Option_Option_Type.t_option t)
+  val invariant3 (self : Core_Option_Option_Type.t_option t) : bool
+    ensures { result = invariant3 self }
+    
   predicate inv3 (_x : Core_Option_Option_Type.t_option t)
   val inv3 (_x : Core_Option_Option_Type.t_option t) : bool
     ensures { result = inv3 _x }
@@ -400,17 +476,13 @@ module C03StdIterators_VecIter
   use Core_Slice_Iter_Iter_Type as Core_Slice_Iter_Iter_Type
   use seq.Seq
   use seq.Seq
-  use prelude.UIntSize
   use prelude.Slice
-  use prelude.Int
-  use prelude.UIntSize
-  constant max0  : usize
-  use seq.Seq
   function shallow_model6 (self : slice t) : Seq.seq t
   val shallow_model6 (self : slice t) : Seq.seq t
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv9 self}
     ensures { result = shallow_model6 self }
     
+  axiom shallow_model6_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv9 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv8 (shallow_model6 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] shallow_model6 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model6 self) <= UIntSize.to_int max0)
   function index_logic1 [@inline:trivial] (self : slice t) (ix : int) : t =
     [#"../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (shallow_model6 self) ix
   val index_logic1 [@inline:trivial] (self : slice t) (ix : int) : t
@@ -428,6 +500,7 @@ module C03StdIterators_VecIter
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 91 19 91 23] inv6 self}
     ensures { result = to_ref_seq0 self }
     
+  axiom to_ref_seq0_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 91 19 91 23] inv6 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 91 4 91 35] inv5 (to_ref_seq0 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 90 4 90 82] forall i : int . 0 <= i /\ i < Seq.length (to_ref_seq0 self) -> Seq.get (to_ref_seq0 self) i = index_logic1 self i) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 89 14 89 41] Seq.length (to_ref_seq0 self) = Seq.length (shallow_model4 self))
   function shallow_model2 (self : Core_Slice_Iter_Iter_Type.t_iter t) : slice t
   val shallow_model2 (self : Core_Slice_Iter_Iter_Type.t_iter t) : slice t
     ensures { result = shallow_model2 self }
@@ -458,27 +531,34 @@ module C03StdIterators_VecIter
     ensures { result = produces_refl0 a }
     
   axiom produces_refl0_spec : forall a : Core_Slice_Iter_Iter_Type.t_iter t . [#"../../../../../creusot-contracts/src/std/slice.rs" 392 14 392 39] produces0 a (Seq.empty ) a
+  predicate invariant2 (self : Core_Slice_Iter_Iter_Type.t_iter t)
+  val invariant2 (self : Core_Slice_Iter_Iter_Type.t_iter t) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : Core_Slice_Iter_Iter_Type.t_iter t)
   val inv2 (_x : Core_Slice_Iter_Iter_Type.t_iter t) : bool
     ensures { result = inv2 _x }
     
   axiom inv2 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Core_Slice_Iter_Iter_Type.t_iter t . inv2 x = true
   use prelude.Ghost
+  predicate invariant1 (self : Ghost.ghost_ty (Seq.seq t))
+  val invariant1 (self : Ghost.ghost_ty (Seq.seq t)) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : Ghost.ghost_ty (Seq.seq t))
   val inv1 (_x : Ghost.ghost_ty (Seq.seq t)) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Ghost.ghost_ty (Seq.seq t) . inv1 x = true
+  predicate invariant0 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  val invariant0 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
   val inv0 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv0 _x }
     
   axiom inv0 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv0 x = true
-  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
-  val shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
-    requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self}
-    ensures { result = shallow_model3 self }
-    
   function shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t =
     [#"../../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model3 self
   val shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
@@ -665,17 +745,32 @@ module C03StdIterators_AllZero
   use prelude.UIntSize
   use prelude.Borrow
   use seq.Seq
+  predicate invariant7 (self : Seq.seq (borrowed usize)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant7 (self : Seq.seq (borrowed usize)) : bool
+    ensures { result = invariant7 self }
+    
   predicate inv7 (_x : Seq.seq (borrowed usize))
   val inv7 (_x : Seq.seq (borrowed usize)) : bool
     ensures { result = inv7 _x }
     
   axiom inv7 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Seq.seq (borrowed usize) . inv7 x = true
   use prelude.Slice
+  predicate invariant6 (self : slice usize) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant6 (self : slice usize) : bool
+    ensures { result = invariant6 self }
+    
   predicate inv6 (_x : slice usize)
   val inv6 (_x : slice usize) : bool
     ensures { result = inv6 _x }
     
   axiom inv6 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : slice usize . inv6 x = true
+  predicate invariant5 (self : Seq.seq usize) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant5 (self : Seq.seq usize) : bool
+    ensures { result = invariant5 self }
+    
   predicate inv5 (_x : Seq.seq usize)
   val inv5 (_x : Seq.seq usize) : bool
     ensures { result = inv5 _x }
@@ -683,22 +778,53 @@ module C03StdIterators_AllZero
   axiom inv5 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Seq.seq usize . inv5 x = true
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use prelude.Int
+  use prelude.UIntSize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+  use seq.Seq
   predicate inv4 (_x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
   val inv4 (_x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv4 _x }
     
+  function shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
+  val shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
+    requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self}
+    ensures { result = shallow_model1 self }
+    
+  axiom shallow_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv5 (shallow_model1 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max0)
+  predicate invariant4 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv5 (shallow_model1 self)
+  val invariant4 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant4 self }
+    
   axiom inv4 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . inv4 x = true
   use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant3 (self : Core_Option_Option_Type.t_option (borrowed usize)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant3 (self : Core_Option_Option_Type.t_option (borrowed usize)) : bool
+    ensures { result = invariant3 self }
+    
   predicate inv3 (_x : Core_Option_Option_Type.t_option (borrowed usize))
   val inv3 (_x : Core_Option_Option_Type.t_option (borrowed usize)) : bool
     ensures { result = inv3 _x }
     
   axiom inv3 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Core_Option_Option_Type.t_option (borrowed usize) . inv3 x = true
+  predicate invariant2 (self : borrowed (slice usize)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant2 (self : borrowed (slice usize)) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : borrowed (slice usize))
   val inv2 (_x : borrowed (slice usize)) : bool
     ensures { result = inv2 _x }
     
   axiom inv2 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : borrowed (slice usize) . inv2 x = true
+  predicate invariant1 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant1 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)))
   val inv1 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : bool
     ensures { result = inv1 _x }
@@ -708,15 +834,12 @@ module C03StdIterators_AllZero
   use seq.Seq
   use seq.Seq
   use prelude.Slice
-  use prelude.Int
-  use prelude.UIntSize
-  constant max0  : usize
-  use seq.Seq
   function shallow_model4 (self : slice usize) : Seq.seq usize
   val shallow_model4 (self : slice usize) : Seq.seq usize
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv6 self}
     ensures { result = shallow_model4 self }
     
+  axiom shallow_model4_spec : forall self : slice usize . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv6 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv5 (shallow_model4 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] shallow_model4 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model4 self) <= UIntSize.to_int max0)
   function index_logic4 [@inline:trivial] (self : slice usize) (ix : int) : usize =
     [#"../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (shallow_model4 self) ix
   val index_logic4 [@inline:trivial] (self : slice usize) (ix : int) : usize
@@ -734,10 +857,12 @@ module C03StdIterators_AllZero
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 82 23 82 27] inv2 self}
     ensures { result = to_mut_seq0 self }
     
+  axiom to_mut_seq0_spec : forall self : borrowed (slice usize) . ([#"../../../../../creusot-contracts/src/std/slice.rs" 82 23 82 27] inv2 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 82 4 82 43] inv7 (to_mut_seq0 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 81 4 81 85] forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq0 self) ->  ^ Seq.get (to_mut_seq0 self) i = index_logic4 ( ^ self) i) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 80 4 80 82] forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq0 self) ->  * Seq.get (to_mut_seq0 self) i = index_logic4 ( * self) i) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 79 14 79 41] Seq.length (to_mut_seq0 self) = Seq.length (shallow_model3 self))
   function shallow_model5 (self : Core_Slice_Iter_IterMut_Type.t_itermut usize) : borrowed (slice usize)
   val shallow_model5 (self : Core_Slice_Iter_IterMut_Type.t_itermut usize) : borrowed (slice usize)
     ensures { result = shallow_model5 self }
     
+  axiom shallow_model5_spec : forall self : Core_Slice_Iter_IterMut_Type.t_itermut usize . ([#"../../../../../creusot-contracts/src/std/slice.rs" 410 4 410 50] inv2 (shallow_model5 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 409 14 409 50] Seq.length (shallow_model4 ( ^ shallow_model5 self)) = Seq.length (shallow_model4 ( * shallow_model5 self)))
   predicate produces0 (self : Core_Slice_Iter_IterMut_Type.t_itermut usize) (visited : Seq.seq (borrowed usize)) (tl : Core_Slice_Iter_IterMut_Type.t_itermut usize)
     
    =
@@ -764,16 +889,16 @@ module C03StdIterators_AllZero
     ensures { result = produces_refl0 a }
     
   axiom produces_refl0_spec : forall a : Core_Slice_Iter_IterMut_Type.t_itermut usize . [#"../../../../../creusot-contracts/src/std/slice.rs" 441 14 441 39] produces0 a (Seq.empty ) a
+  predicate invariant0 (self : Core_Slice_Iter_IterMut_Type.t_itermut usize) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant0 (self : Core_Slice_Iter_IterMut_Type.t_itermut usize) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : Core_Slice_Iter_IterMut_Type.t_itermut usize)
   val inv0 (_x : Core_Slice_Iter_IterMut_Type.t_itermut usize) : bool
     ensures { result = inv0 _x }
     
   axiom inv0 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Core_Slice_Iter_IterMut_Type.t_itermut usize . inv0 x = true
-  function shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
-  val shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
-    requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self}
-    ensures { result = shallow_model1 self }
-    
   function index_logic1 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix : int) : usize
     
    =
@@ -996,6 +1121,10 @@ end
 module C03StdIterators_SkipTake
   type i
   use prelude.Borrow
+  predicate invariant7 (self : borrowed i)
+  val invariant7 (self : borrowed i) : bool
+    ensures { result = invariant7 self }
+    
   predicate inv7 (_x : borrowed i)
   val inv7 (_x : borrowed i) : bool
     ensures { result = inv7 _x }
@@ -1027,12 +1156,14 @@ module C03StdIterators_SkipTake
     requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 41 82 41 83] inv2 c}
     ensures { result = produces_trans2 a ab b bc c }
     
+  axiom produces_trans2_spec : forall a : i, ab : Seq.seq item0, b : i, bc : Seq.seq item0, c : i . ([#"../../../../../creusot-contracts/src/std/iter.rs" 38 15 38 32] produces2 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 39 15 39 32] produces2 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 22 41 23] inv2 a) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 31 41 33] inv6 ab) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 52 41 53] inv2 b) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 61 41 63] inv6 bc) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 82 41 83] inv2 c) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 40 14 40 42] produces2 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl2 (a : i) : ()
   val produces_refl2 (a : i) : ()
     requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 35 21 35 22] inv2 a}
     ensures { result = produces_refl2 a }
     
+  axiom produces_refl2_spec : forall a : i . ([#"../../../../../creusot-contracts/src/std/iter.rs" 35 21 35 22] inv2 a) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 34 14 34 39] produces2 a (Seq.empty ) a)
   use Core_Iter_Adapters_Take_Take_Type as Core_Iter_Adapters_Take_Take_Type
   predicate inv3 (_x : Core_Iter_Adapters_Take_Take_Type.t_take i)
   val inv3 (_x : Core_Iter_Adapters_Take_Take_Type.t_take i) : bool
@@ -1046,12 +1177,14 @@ module C03StdIterators_SkipTake
   use seq.Seq
   use prelude.UIntSize
   use prelude.UIntSize
-  constant max0  : usize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
   function n0 (self : Core_Iter_Adapters_Take_Take_Type.t_take i) : int
   val n0 (self : Core_Iter_Adapters_Take_Take_Type.t_take i) : int
     requires {[#"../../../../../creusot-contracts/src/std/iter/take.rs" 34 9 34 13] inv3 self}
     ensures { result = n0 self }
     
+  axiom n0_spec : forall self : Core_Iter_Adapters_Take_Take_Type.t_take i . ([#"../../../../../creusot-contracts/src/std/iter/take.rs" 34 9 34 13] inv3 self) -> ([#"../../../../../creusot-contracts/src/std/iter/take.rs" 33 14 33 50] n0 self >= 0 /\ n0 self <= UIntSize.to_int max0)
   predicate produces1 (self : Core_Iter_Adapters_Take_Take_Type.t_take i) (visited : Seq.seq item0) (o : Core_Iter_Adapters_Take_Take_Type.t_take i)
     
    =
@@ -1071,12 +1204,22 @@ module C03StdIterators_SkipTake
     requires {[#"../../../../../creusot-contracts/src/std/iter/take.rs" 78 82 78 83] inv3 c}
     ensures { result = produces_trans1 a ab b bc c }
     
+  axiom produces_trans1_spec : forall a : Core_Iter_Adapters_Take_Take_Type.t_take i, ab : Seq.seq item0, b : Core_Iter_Adapters_Take_Take_Type.t_take i, bc : Seq.seq item0, c : Core_Iter_Adapters_Take_Take_Type.t_take i . ([#"../../../../../creusot-contracts/src/std/iter/take.rs" 75 15 75 32] produces1 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter/take.rs" 76 15 76 32] produces1 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter/take.rs" 78 22 78 23] inv3 a) -> ([#"../../../../../creusot-contracts/src/std/iter/take.rs" 78 31 78 33] inv6 ab) -> ([#"../../../../../creusot-contracts/src/std/iter/take.rs" 78 52 78 53] inv3 b) -> ([#"../../../../../creusot-contracts/src/std/iter/take.rs" 78 61 78 63] inv6 bc) -> ([#"../../../../../creusot-contracts/src/std/iter/take.rs" 78 82 78 83] inv3 c) -> ([#"../../../../../creusot-contracts/src/std/iter/take.rs" 77 14 77 42] produces1 a (Seq.(++) ab bc) c)
   function produces_refl1 (a : Core_Iter_Adapters_Take_Take_Type.t_take i) : ()
   val produces_refl1 (a : Core_Iter_Adapters_Take_Take_Type.t_take i) : ()
     requires {[#"../../../../../creusot-contracts/src/std/iter/take.rs" 71 21 71 22] inv3 a}
     ensures { result = produces_refl1 a }
     
+  axiom produces_refl1_spec : forall a : Core_Iter_Adapters_Take_Take_Type.t_take i . ([#"../../../../../creusot-contracts/src/std/iter/take.rs" 71 21 71 22] inv3 a) -> ([#"../../../../../creusot-contracts/src/std/iter/take.rs" 70 14 70 39] produces1 a (Seq.empty ) a)
+  predicate invariant6 (self : Seq.seq item0)
+  val invariant6 (self : Seq.seq item0) : bool
+    ensures { result = invariant6 self }
+    
   axiom inv6 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Seq.seq item0 . inv6 x = true
+  predicate invariant5 (self : borrowed (Core_Iter_Adapters_Take_Take_Type.t_take i))
+  val invariant5 (self : borrowed (Core_Iter_Adapters_Take_Take_Type.t_take i)) : bool
+    ensures { result = invariant5 self }
+    
   predicate inv5 (_x : borrowed (Core_Iter_Adapters_Take_Take_Type.t_take i))
   val inv5 (_x : borrowed (Core_Iter_Adapters_Take_Take_Type.t_take i)) : bool
     ensures { result = inv5 _x }
@@ -1102,6 +1245,7 @@ module C03StdIterators_SkipTake
     requires {[#"../../../../../creusot-contracts/src/std/iter/skip.rs" 23 9 23 13] inv0 self}
     ensures { result = n1 self }
     
+  axiom n1_spec : forall self : Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i) . ([#"../../../../../creusot-contracts/src/std/iter/skip.rs" 23 9 23 13] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/iter/skip.rs" 22 14 22 50] n1 self >= 0 /\ n1 self <= UIntSize.to_int max0)
   predicate produces0 (self : Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i)) (visited : Seq.seq item0) (o : Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i))
     
    =
@@ -1121,25 +1265,48 @@ module C03StdIterators_SkipTake
     requires {[#"../../../../../creusot-contracts/src/std/iter/skip.rs" 77 82 77 83] inv0 c}
     ensures { result = produces_trans0 a ab b bc c }
     
+  axiom produces_trans0_spec : forall a : Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i), ab : Seq.seq item0, b : Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i), bc : Seq.seq item0, c : Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i) . ([#"../../../../../creusot-contracts/src/std/iter/skip.rs" 74 15 74 32] produces0 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter/skip.rs" 75 15 75 32] produces0 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter/skip.rs" 77 22 77 23] inv0 a) -> ([#"../../../../../creusot-contracts/src/std/iter/skip.rs" 77 31 77 33] inv6 ab) -> ([#"../../../../../creusot-contracts/src/std/iter/skip.rs" 77 52 77 53] inv0 b) -> ([#"../../../../../creusot-contracts/src/std/iter/skip.rs" 77 61 77 63] inv6 bc) -> ([#"../../../../../creusot-contracts/src/std/iter/skip.rs" 77 82 77 83] inv0 c) -> ([#"../../../../../creusot-contracts/src/std/iter/skip.rs" 76 14 76 42] produces0 a (Seq.(++) ab bc) c)
   function produces_refl0 (a : Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i)) : ()
     
   val produces_refl0 (a : Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i)) : ()
     requires {[#"../../../../../creusot-contracts/src/std/iter/skip.rs" 70 21 70 22] inv0 a}
     ensures { result = produces_refl0 a }
     
+  axiom produces_refl0_spec : forall a : Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i) . ([#"../../../../../creusot-contracts/src/std/iter/skip.rs" 70 21 70 22] inv0 a) -> ([#"../../../../../creusot-contracts/src/std/iter/skip.rs" 69 14 69 39] produces0 a (Seq.empty ) a)
+  predicate invariant4 (self : borrowed (Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i)))
+    
+  val invariant4 (self : borrowed (Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i))) : bool
+    ensures { result = invariant4 self }
+    
   predicate inv4 (_x : borrowed (Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i)))
   val inv4 (_x : borrowed (Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i))) : bool
     ensures { result = inv4 _x }
     
   axiom inv4 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : borrowed (Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i)) . inv4 x = true
+  predicate invariant3 (self : Core_Iter_Adapters_Take_Take_Type.t_take i)
+  val invariant3 (self : Core_Iter_Adapters_Take_Take_Type.t_take i) : bool
+    ensures { result = invariant3 self }
+    
   axiom inv3 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Core_Iter_Adapters_Take_Take_Type.t_take i . inv3 x = true
+  predicate invariant2 (self : i)
+  val invariant2 (self : i) : bool
+    ensures { result = invariant2 self }
+    
   axiom inv2 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : i . inv2 x = true
   use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant1 (self : Core_Option_Option_Type.t_option item0)
+  val invariant1 (self : Core_Option_Option_Type.t_option item0) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : Core_Option_Option_Type.t_option item0)
   val inv1 (_x : Core_Option_Option_Type.t_option item0) : bool
     ensures { result = inv1 _x }
     
   axiom inv1 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Core_Option_Option_Type.t_option item0 . inv1 x = true
+  predicate invariant0 (self : Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i))
+  val invariant0 (self : Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i)) : bool
+    ensures { result = invariant0 self }
+    
   axiom inv0 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i) . inv0 x = true
   predicate resolve1 (self : Core_Option_Option_Type.t_option item0)
   val resolve1 (self : Core_Option_Option_Type.t_option item0) : bool
@@ -1169,6 +1336,7 @@ module C03StdIterators_SkipTake
     requires {[#"../../../../../creusot-contracts/src/std/iter/take.rs" 26 21 26 25] inv5 self}
     ensures { result = iter_mut0 self }
     
+  axiom iter_mut0_spec : forall self : borrowed (Core_Iter_Adapters_Take_Take_Type.t_take i) . ([#"../../../../../creusot-contracts/src/std/iter/take.rs" 26 21 26 25] inv5 self) -> ([#"../../../../../creusot-contracts/src/std/iter/take.rs" 26 4 26 36] inv7 (iter_mut0 self)) && ([#"../../../../../creusot-contracts/src/std/iter/take.rs" 25 14 25 68] iter0 ( * self) =  * iter_mut0 self /\ iter0 ( ^ self) =  ^ iter_mut0 self)
   predicate resolve5 (self : borrowed (Core_Iter_Adapters_Take_Take_Type.t_take i)) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve5 (self : borrowed (Core_Iter_Adapters_Take_Take_Type.t_take i)) : bool
@@ -1298,7 +1466,8 @@ module C03StdIterators_Counter_Closure0
   use prelude.Ghost
   use prelude.UIntSize
   use prelude.Int
-  constant max0  : usize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
   use seq.Seq
   use prelude.Ghost
   use prelude.UIntSize
@@ -1340,12 +1509,22 @@ module C03StdIterators_Counter
   use prelude.UInt32
   use seq.Seq
   use prelude.Ghost
+  predicate invariant15 (self : Ghost.ghost_ty (Seq.seq uint32)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant15 (self : Ghost.ghost_ty (Seq.seq uint32)) : bool
+    ensures { result = invariant15 self }
+    
   predicate inv15 (_x : Ghost.ghost_ty (Seq.seq uint32))
   val inv15 (_x : Ghost.ghost_ty (Seq.seq uint32)) : bool
     ensures { result = inv15 _x }
     
   axiom inv15 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Ghost.ghost_ty (Seq.seq uint32) . inv15 x = true
   use prelude.Slice
+  predicate invariant14 (self : slice uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant14 (self : slice uint32) : bool
+    ensures { result = invariant14 self }
+    
   predicate inv14 (_x : slice uint32)
   val inv14 (_x : slice uint32) : bool
     ensures { result = inv14 _x }
@@ -1355,51 +1534,91 @@ module C03StdIterators_Counter
   use prelude.Int16
   use prelude.Borrow
   use C03StdIterators_Counter_Closure0_Type as C03StdIterators_Counter_Closure0
+  predicate invariant13 (self : Seq.seq (borrowed C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant13 (self : Seq.seq (borrowed C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0)) : bool
+    ensures { result = invariant13 self }
+    
   predicate inv13 (_x : Seq.seq (borrowed C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0))
   val inv13 (_x : Seq.seq (borrowed C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0)) : bool
     ensures { result = inv13 _x }
     
   axiom inv13 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Seq.seq (borrowed C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) . inv13 x = true
+  predicate invariant12 (self : borrowed C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant12 (self : borrowed C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) : bool
+    ensures { result = invariant12 self }
+    
   predicate inv12 (_x : borrowed C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0)
   val inv12 (_x : borrowed C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) : bool
     ensures { result = inv12 _x }
     
   axiom inv12 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : borrowed C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0 . inv12 x = true
+  predicate invariant11 (self : uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant11 (self : uint32) : bool
+    ensures { result = invariant11 self }
+    
   predicate inv11 (_x : uint32)
   val inv11 (_x : uint32) : bool
     ensures { result = inv11 _x }
     
   axiom inv11 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : uint32 . inv11 x = true
   use Core_Slice_Iter_Iter_Type as Core_Slice_Iter_Iter_Type
+  predicate invariant10 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant10 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) : bool
+    ensures { result = invariant10 self }
+    
   predicate inv10 (_x : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32))
   val inv10 (_x : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) : bool
     ensures { result = inv10 _x }
     
   axiom inv10 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32) . inv10 x = true
+  predicate invariant9 (self : Seq.seq uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant9 (self : Seq.seq uint32) : bool
+    ensures { result = invariant9 self }
+    
   predicate inv9 (_x : Seq.seq uint32)
   val inv9 (_x : Seq.seq uint32) : bool
     ensures { result = inv9 _x }
     
   axiom inv9 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Seq.seq uint32 . inv9 x = true
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  predicate inv8 (_x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))
-  val inv8 (_x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : bool
-    ensures { result = inv8 _x }
-    
-  axiom inv8 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . inv8 x = true
-  use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
-  use seq.Seq
   predicate inv6 (_x : Seq.seq uint32)
   val inv6 (_x : Seq.seq uint32) : bool
     ensures { result = inv6 _x }
     
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use prelude.Int
+  use prelude.UIntSize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+  use seq.Seq
+  predicate inv8 (_x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))
+  val inv8 (_x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = inv8 _x }
+    
+  function shallow_model0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
+  val shallow_model0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
+    requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv8 self}
+    ensures { result = shallow_model0 self }
+    
+  axiom shallow_model0_spec : forall self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv8 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv6 (shallow_model0 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model0 self) <= UIntSize.to_int max0)
+  predicate invariant8 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv6 (shallow_model0 self)
+  val invariant8 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant8 self }
+    
+  axiom inv8 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . inv8 x = true
+  use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
+  use seq.Seq
   predicate inv5 (_x : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0)
     
   val inv5 (_x : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) : bool
     ensures { result = inv5 _x }
     
-  use prelude.Int
   let function field_00 [#"../03_std_iterators.rs" 48 12 48 91] (self : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) : borrowed usize
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -1410,13 +1629,11 @@ module C03StdIterators_Counter
     [#"../03_std_iterators.rs" 1 0 1 0]  ^ field_00 _2 =  ^ field_00 self
   use seq.Seq
   use prelude.Ghost
-  use prelude.UIntSize
   predicate postcondition_mut0 [#"../03_std_iterators.rs" 48 12 48 91] (self : borrowed C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) (args : (uint32, Ghost.ghost_ty (Seq.seq uint32))) (result : uint32)
     
    =
     [#"../03_std_iterators.rs" 1 0 1 0] (let (x, _prod) = args in UIntSize.to_int ( * field_00 ( ^ self)) = UIntSize.to_int ( * field_00 ( * self)) + 1 /\ UIntSize.to_int ( * field_00 ( ^ self)) = Seq.length (Ghost.inner _prod) + 1 /\ result = x) /\ unnest0 ( * self) ( ^ self)
   use seq.Seq
-  constant max0  : usize
   predicate precondition0 [#"../03_std_iterators.rs" 48 12 48 91] (self : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) (args : (uint32, Ghost.ghost_ty (Seq.seq uint32)))
     
    =
@@ -1429,12 +1646,12 @@ module C03StdIterators_Counter
   use seq.Seq
   use prelude.Ghost
   use prelude.Slice
-  use seq.Seq
   function shallow_model5 (self : slice uint32) : Seq.seq uint32
   val shallow_model5 (self : slice uint32) : Seq.seq uint32
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv14 self}
     ensures { result = shallow_model5 self }
     
+  axiom shallow_model5_spec : forall self : slice uint32 . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv14 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv6 (shallow_model5 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] shallow_model5 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model5 self) <= UIntSize.to_int max0)
   function index_logic4 [@inline:trivial] (self : slice uint32) (ix : int) : uint32 =
     [#"../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (shallow_model5 self) ix
   val index_logic4 [@inline:trivial] (self : slice uint32) (ix : int) : uint32
@@ -1454,6 +1671,7 @@ module C03StdIterators_Counter
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 91 19 91 23] inv1 self}
     ensures { result = to_ref_seq0 self }
     
+  axiom to_ref_seq0_spec : forall self : slice uint32 . ([#"../../../../../creusot-contracts/src/std/slice.rs" 91 19 91 23] inv1 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 91 4 91 35] inv9 (to_ref_seq0 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 90 4 90 82] forall i : int . 0 <= i /\ i < Seq.length (to_ref_seq0 self) -> Seq.get (to_ref_seq0 self) i = index_logic4 self i) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 89 14 89 41] Seq.length (to_ref_seq0 self) = Seq.length (shallow_model2 self))
   function shallow_model4 (self : Core_Slice_Iter_Iter_Type.t_iter uint32) : slice uint32
   val shallow_model4 (self : Core_Slice_Iter_Iter_Type.t_iter uint32) : slice uint32
     ensures { result = shallow_model4 self }
@@ -1488,6 +1706,7 @@ module C03StdIterators_Counter
     requires {[#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 31 82 31 83] inv5 c}
     ensures { result = produces_trans2 a ab b bc c }
     
+  axiom produces_trans2_spec : forall a : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0, ab : Seq.seq uint32, b : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0, bc : Seq.seq uint32, c : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0 . ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 28 15 28 32] produces1 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 29 15 29 32] produces1 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 31 22 31 23] inv5 a) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 31 31 31 33] inv6 ab) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 31 52 31 53] inv5 b) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 31 61 31 63] inv6 bc) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 31 82 31 83] inv5 c) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 30 14 30 42] produces1 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl2 (a : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) : ()
     
@@ -1495,24 +1714,97 @@ module C03StdIterators_Counter
     requires {[#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 24 21 24 22] inv5 a}
     ensures { result = produces_refl2 a }
     
+  axiom produces_refl2_spec : forall a : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0 . ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 24 21 24 22] inv5 a) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 23 14 23 39] produces1 a (Seq.empty ) a)
+  predicate invariant7 (self : borrowed (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0))
+    
+   =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant7 (self : borrowed (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0)) : bool
+    ensures { result = invariant7 self }
+    
   predicate inv7 (_x : borrowed (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0))
     
   val inv7 (_x : borrowed (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0)) : bool
     ensures { result = inv7 _x }
     
   axiom inv7 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : borrowed (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) . inv7 x = (inv5 ( * x) /\ inv5 ( ^ x))
+  predicate invariant6 (self : Seq.seq uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant6 (self : Seq.seq uint32) : bool
+    ensures { result = invariant6 self }
+    
   axiom inv6 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Seq.seq uint32 . inv6 x = true
-  predicate inv4 (_x : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0)
-  val inv4 (_x : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) : bool
-    ensures { result = inv4 _x }
+  use seq.Seq
+  predicate inv3 (_x : uint32)
+  val inv3 (_x : uint32) : bool
+    ensures { result = inv3 _x }
     
   predicate inv2 (_x : Core_Slice_Iter_Iter_Type.t_iter uint32)
   val inv2 (_x : Core_Slice_Iter_Iter_Type.t_iter uint32) : bool
     ensures { result = inv2 _x }
     
-  axiom inv5 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0 . inv5 x = match (x) with
+  predicate next_precondition0 (iter : Core_Slice_Iter_Iter_Type.t_iter uint32) (func : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) (produced : Seq.seq uint32)
+    
+   =
+    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 112 8 116 9] forall i : Core_Slice_Iter_Iter_Type.t_iter uint32 . forall e : uint32 . inv2 i -> inv3 e -> produces0 iter (Seq.singleton e) i -> precondition0 func (e, Ghost.new produced)
+  val next_precondition0 (iter : Core_Slice_Iter_Iter_Type.t_iter uint32) (func : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) (produced : Seq.seq uint32) : bool
+    ensures { result = next_precondition0 iter func produced }
+    
+  use seq.Seq
+  predicate preservation0 (iter : Core_Slice_Iter_Iter_Type.t_iter uint32) (func : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0)
+    
+   =
+    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 135 8 142 9] forall i : Core_Slice_Iter_Iter_Type.t_iter uint32 . forall b : uint32 . forall f : borrowed C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0 . forall e2 : uint32 . forall e1 : uint32 . forall s : Seq.seq uint32 . inv2 i -> inv11 b -> inv12 f -> inv3 e2 -> inv3 e1 -> inv9 s -> unnest0 func ( * f) -> produces0 iter (Seq.snoc (Seq.snoc s e1) e2) i -> precondition0 ( * f) (e1, Ghost.new s) -> postcondition_mut0 f (e1, Ghost.new s) b -> precondition0 ( ^ f) (e2, Ghost.new (Seq.snoc s e1))
+  val preservation0 (iter : Core_Slice_Iter_Iter_Type.t_iter uint32) (func : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) : bool
+    ensures { result = preservation0 iter func }
+    
+  use seq.Seq
+  predicate inv4 (_x : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0)
+  val inv4 (_x : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) : bool
+    ensures { result = inv4 _x }
+    
+  predicate preservation_inv0 (iter : Core_Slice_Iter_Iter_Type.t_iter uint32) (func : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) (produced : Seq.seq uint32)
+    
+  val preservation_inv0 (iter : Core_Slice_Iter_Iter_Type.t_iter uint32) (func : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) (produced : Seq.seq uint32) : bool
+    requires {[#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 121 24 121 28] inv2 iter}
+    requires {[#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 121 33 121 37] inv4 func}
+    requires {[#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 121 42 121 50] inv9 produced}
+    ensures { result = preservation_inv0 iter func produced }
+    
+  axiom preservation_inv0_spec : forall iter : Core_Slice_Iter_Iter_Type.t_iter uint32, func : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0, produced : Seq.seq uint32 . ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 121 24 121 28] inv2 iter) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 121 33 121 37] inv4 func) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 121 42 121 50] inv9 produced) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 120 4 120 83] produced = Seq.empty  -> preservation_inv0 iter func produced = preservation0 iter func)
+  function shallow_model6 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) : slice uint32 =
+    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model4 ( * self)
+  val shallow_model6 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) : slice uint32
+    ensures { result = shallow_model6 self }
+    
+  predicate resolve5 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve5 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) : bool
+    ensures { result = resolve5 self }
+    
+  predicate completed1 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) =
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 379 20 379 61] resolve5 self /\ shallow_model5 (shallow_model6 self) = Seq.empty 
+  val completed1 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) : bool
+    ensures { result = completed1 self }
+    
+  predicate reinitialize0 (_1 : ()) =
+    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 148 8 153 9] forall func : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0 . forall iter : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32) . inv4 func -> inv10 iter -> completed1 iter -> next_precondition0 ( ^ iter) func (Seq.empty ) /\ preservation0 ( ^ iter) func
+  val reinitialize0 (_1 : ()) : bool
+    ensures { result = reinitialize0 _1 }
+    
+  predicate invariant5 (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0)
+    
+  val invariant5 (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) : bool
+    ensures { result = invariant5 self }
+    
+  axiom inv5 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0 . inv5 x = (invariant5 x /\ match (x) with
     | CreusotContracts_Std1_Iter_MapInv_MapInv_Type.C_MapInv iter func produced -> inv2 iter /\ inv4 func /\ inv15 produced
-    end
+    end)
+  predicate invariant4 (self : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant4 (self : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) : bool
+    ensures { result = invariant4 self }
+    
   axiom inv4 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0 . inv4 x = true
   function produces_trans1 (a : Core_Slice_Iter_Iter_Type.t_iter uint32) (ab : Seq.seq uint32) (b : Core_Slice_Iter_Iter_Type.t_iter uint32) (bc : Seq.seq uint32) (c : Core_Slice_Iter_Iter_Type.t_iter uint32) : ()
     
@@ -1526,20 +1818,35 @@ module C03StdIterators_Counter
     ensures { result = produces_trans1 a ab b bc c }
     
   axiom produces_trans1_spec : forall a : Core_Slice_Iter_Iter_Type.t_iter uint32, ab : Seq.seq uint32, b : Core_Slice_Iter_Iter_Type.t_iter uint32, bc : Seq.seq uint32, c : Core_Slice_Iter_Iter_Type.t_iter uint32 . ([#"../../../../../creusot-contracts/src/std/slice.rs" 397 15 397 32] produces0 a ab b) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 398 15 398 32] produces0 b bc c) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 400 31 400 33] inv9 ab) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 400 61 400 63] inv9 bc) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 399 14 399 42] produces0 a (Seq.(++) ab bc) c)
-  use seq.Seq
   function produces_refl1 (a : Core_Slice_Iter_Iter_Type.t_iter uint32) : () =
     [#"../../../../../creusot-contracts/src/std/slice.rs" 390 4 390 10] ()
   val produces_refl1 (a : Core_Slice_Iter_Iter_Type.t_iter uint32) : ()
     ensures { result = produces_refl1 a }
     
   axiom produces_refl1_spec : forall a : Core_Slice_Iter_Iter_Type.t_iter uint32 . [#"../../../../../creusot-contracts/src/std/slice.rs" 392 14 392 39] produces0 a (Seq.empty ) a
-  predicate inv3 (_x : uint32)
-  val inv3 (_x : uint32) : bool
-    ensures { result = inv3 _x }
+  predicate invariant3 (self : uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant3 (self : uint32) : bool
+    ensures { result = invariant3 self }
     
   axiom inv3 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : uint32 . inv3 x = true
+  predicate invariant2 (self : Core_Slice_Iter_Iter_Type.t_iter uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant2 (self : Core_Slice_Iter_Iter_Type.t_iter uint32) : bool
+    ensures { result = invariant2 self }
+    
   axiom inv2 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Core_Slice_Iter_Iter_Type.t_iter uint32 . inv2 x = true
+  predicate invariant1 (self : slice uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant1 (self : slice uint32) : bool
+    ensures { result = invariant1 self }
+    
   axiom inv1 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : slice uint32 . inv1 x = true
+  predicate invariant0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))
   val inv0 (_x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv0 _x }
@@ -1557,17 +1864,14 @@ module C03StdIterators_Counter
     requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 41 82 41 83] inv2 c}
     ensures { result = produces_trans0 a ab b bc c }
     
+  axiom produces_trans0_spec : forall a : Core_Slice_Iter_Iter_Type.t_iter uint32, ab : Seq.seq uint32, b : Core_Slice_Iter_Iter_Type.t_iter uint32, bc : Seq.seq uint32, c : Core_Slice_Iter_Iter_Type.t_iter uint32 . ([#"../../../../../creusot-contracts/src/std/iter.rs" 38 15 38 32] produces0 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 39 15 39 32] produces0 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 22 41 23] inv2 a) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 31 41 33] inv9 ab) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 52 41 53] inv2 b) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 61 41 63] inv9 bc) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 82 41 83] inv2 c) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 40 14 40 42] produces0 a (Seq.(++) ab bc) c)
   function produces_refl0 (a : Core_Slice_Iter_Iter_Type.t_iter uint32) : ()
   val produces_refl0 (a : Core_Slice_Iter_Iter_Type.t_iter uint32) : ()
     requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 35 21 35 22] inv2 a}
     ensures { result = produces_refl0 a }
     
+  axiom produces_refl0_spec : forall a : Core_Slice_Iter_Iter_Type.t_iter uint32 . ([#"../../../../../creusot-contracts/src/std/iter.rs" 35 21 35 22] inv2 a) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 34 14 34 39] produces0 a (Seq.empty ) a)
   use seq.Seq
-  function shallow_model0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
-  val shallow_model0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
-    requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv8 self}
-    ensures { result = shallow_model0 self }
-    
   predicate resolve2 (self : uint32) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
   val resolve2 (self : uint32) : bool
@@ -1591,21 +1895,6 @@ module C03StdIterators_Counter
     [#"../../../../../creusot-contracts/src/std/vec.rs" 258 20 258 32] prod = shallow_model0 res
   val from_iter_post0 (prod : Seq.seq uint32) (res : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = from_iter_post0 prod res }
-    
-  function shallow_model6 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) : slice uint32 =
-    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model4 ( * self)
-  val shallow_model6 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) : slice uint32
-    ensures { result = shallow_model6 self }
-    
-  predicate resolve5 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve5 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) : bool
-    ensures { result = resolve5 self }
-    
-  predicate completed1 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) =
-    [#"../../../../../creusot-contracts/src/std/slice.rs" 379 20 379 61] resolve5 self /\ shallow_model5 (shallow_model6 self) = Seq.empty 
-  val completed1 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) : bool
-    ensures { result = completed1 self }
     
   predicate completed0 (self : borrowed (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0))
     
@@ -1639,27 +1928,6 @@ module C03StdIterators_Counter
     requires {inv5 self}
     ensures { [#"../../../../../creusot-contracts/src/std/iter.rs" 130 16 131 84] exists prod : Seq.seq uint32 . exists done_ : borrowed (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) . inv6 prod /\ inv7 done_ /\ resolve1 ( ^ done_) /\ completed0 done_ /\ produces1 self prod ( * done_) /\ from_iter_post0 prod result }
     ensures { inv8 result }
-    
-  use seq.Seq
-  predicate preservation0 (iter : Core_Slice_Iter_Iter_Type.t_iter uint32) (func : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0)
-    
-   =
-    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 135 8 142 9] forall i : Core_Slice_Iter_Iter_Type.t_iter uint32 . forall b : uint32 . forall f : borrowed C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0 . forall e2 : uint32 . forall e1 : uint32 . forall s : Seq.seq uint32 . inv2 i -> inv11 b -> inv12 f -> inv3 e2 -> inv3 e1 -> inv9 s -> unnest0 func ( * f) -> produces0 iter (Seq.snoc (Seq.snoc s e1) e2) i -> precondition0 ( * f) (e1, Ghost.new s) -> postcondition_mut0 f (e1, Ghost.new s) b -> precondition0 ( ^ f) (e2, Ghost.new (Seq.snoc s e1))
-  val preservation0 (iter : Core_Slice_Iter_Iter_Type.t_iter uint32) (func : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) : bool
-    ensures { result = preservation0 iter func }
-    
-  use seq.Seq
-  predicate next_precondition0 (iter : Core_Slice_Iter_Iter_Type.t_iter uint32) (func : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) (produced : Seq.seq uint32)
-    
-   =
-    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 112 8 116 9] forall i : Core_Slice_Iter_Iter_Type.t_iter uint32 . forall e : uint32 . inv2 i -> inv3 e -> produces0 iter (Seq.singleton e) i -> precondition0 func (e, Ghost.new produced)
-  val next_precondition0 (iter : Core_Slice_Iter_Iter_Type.t_iter uint32) (func : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) (produced : Seq.seq uint32) : bool
-    ensures { result = next_precondition0 iter func produced }
-    
-  predicate reinitialize0 (_1 : ()) =
-    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 148 8 153 9] forall func : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0 . forall iter : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32) . inv4 func -> inv10 iter -> completed1 iter -> next_precondition0 ( ^ iter) func (Seq.empty ) /\ preservation0 ( ^ iter) func
-  val reinitialize0 (_1 : ()) : bool
-    ensures { result = reinitialize0 _1 }
     
   val map_inv0 (self : Core_Slice_Iter_Iter_Type.t_iter uint32) (func : C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0) : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0
     requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 43 4 43 138] forall i2 : Core_Slice_Iter_Iter_Type.t_iter uint32 . forall e : uint32 . inv2 i2 -> inv3 e -> produces0 self (Seq.singleton e) i2 -> precondition0 func (e, Ghost.new (Seq.empty ))}
@@ -1762,12 +2030,22 @@ end
 module C03StdIterators_SumRange
   use prelude.IntSize
   use seq.Seq
+  predicate invariant3 (self : Seq.seq isize) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant3 (self : Seq.seq isize) : bool
+    ensures { result = invariant3 self }
+    
   predicate inv3 (_x : Seq.seq isize)
   val inv3 (_x : Seq.seq isize) : bool
     ensures { result = inv3 _x }
     
   axiom inv3 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Seq.seq isize . inv3 x = true
   use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant2 (self : Core_Option_Option_Type.t_option isize) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant2 (self : Core_Option_Option_Type.t_option isize) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : Core_Option_Option_Type.t_option isize)
   val inv2 (_x : Core_Option_Option_Type.t_option isize) : bool
     ensures { result = inv2 _x }
@@ -1775,6 +2053,11 @@ module C03StdIterators_SumRange
   axiom inv2 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Core_Option_Option_Type.t_option isize . inv2 x = true
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   use prelude.Borrow
+  predicate invariant1 (self : borrowed (Core_Ops_Range_Range_Type.t_range isize)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant1 (self : borrowed (Core_Ops_Range_Range_Type.t_range isize)) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv1 (_x : borrowed (Core_Ops_Range_Range_Type.t_range isize))
   val inv1 (_x : borrowed (Core_Ops_Range_Range_Type.t_range isize)) : bool
     ensures { result = inv1 _x }
@@ -1814,11 +2097,18 @@ module C03StdIterators_SumRange
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv0 c}
     ensures { result = produces_trans0 a ab b bc c }
     
+  axiom produces_trans0_spec : forall a : Core_Ops_Range_Range_Type.t_range isize, ab : Seq.seq isize, b : Core_Ops_Range_Range_Type.t_range isize, bc : Seq.seq isize, c : Core_Ops_Range_Range_Type.t_range isize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces0 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces0 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv0 a) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv3 ab) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv0 b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv3 bc) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv0 c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] produces0 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl0 (a : Core_Ops_Range_Range_Type.t_range isize) : ()
   val produces_refl0 (a : Core_Ops_Range_Range_Type.t_range isize) : ()
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 22] inv0 a}
     ensures { result = produces_refl0 a }
+    
+  axiom produces_refl0_spec : forall a : Core_Ops_Range_Range_Type.t_range isize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 22] inv0 a) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 39] produces0 a (Seq.empty ) a)
+  predicate invariant0 (self : Core_Ops_Range_Range_Type.t_range isize) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant0 (self : Core_Ops_Range_Range_Type.t_range isize) : bool
+    ensures { result = invariant0 self }
     
   axiom inv0 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Core_Ops_Range_Range_Type.t_range isize . inv0 x = true
   use prelude.Ghost
@@ -1951,27 +2241,58 @@ module Core_Iter_Adapters_Enumerate_Enumerate_Type
     | C_Enumerate 'i usize
     
 end
+module Core_Usize_Max_Stub
+  use prelude.UIntSize
+  use prelude.Int
+  val constant mAX'  : usize
+end
+module Core_Usize_Max
+  use prelude.UIntSize
+  use prelude.Int
+  let constant mAX'  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+end
 module C03StdIterators_EnumerateRange
   use prelude.UIntSize
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   use prelude.Borrow
+  predicate invariant7 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant7 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
+    ensures { result = invariant7 self }
+    
   predicate inv7 (_x : borrowed (Core_Ops_Range_Range_Type.t_range usize))
   val inv7 (_x : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
     ensures { result = inv7 _x }
     
   axiom inv7 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : borrowed (Core_Ops_Range_Range_Type.t_range usize) . inv7 x = true
   use seq.Seq
+  predicate invariant6 (self : Seq.seq (usize, usize)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant6 (self : Seq.seq (usize, usize)) : bool
+    ensures { result = invariant6 self }
+    
   predicate inv6 (_x : Seq.seq (usize, usize))
   val inv6 (_x : Seq.seq (usize, usize)) : bool
     ensures { result = inv6 _x }
     
   axiom inv6 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Seq.seq (usize, usize) . inv6 x = true
+  predicate invariant5 (self : usize) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant5 (self : usize) : bool
+    ensures { result = invariant5 self }
+    
   predicate inv5 (_x : usize)
   val inv5 (_x : usize) : bool
     ensures { result = inv5 _x }
     
   axiom inv5 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : usize . inv5 x = true
   use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant4 (self : Core_Option_Option_Type.t_option (usize, usize)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant4 (self : Core_Option_Option_Type.t_option (usize, usize)) : bool
+    ensures { result = invariant4 self }
+    
   predicate inv4 (_x : Core_Option_Option_Type.t_option (usize, usize))
   val inv4 (_x : Core_Option_Option_Type.t_option (usize, usize)) : bool
     ensures { result = inv4 _x }
@@ -2015,15 +2336,34 @@ module C03StdIterators_EnumerateRange
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv2 c}
     ensures { result = produces_trans1 a ab b bc c }
     
+  axiom produces_trans1_spec : forall a : Core_Ops_Range_Range_Type.t_range usize, ab : Seq.seq usize, b : Core_Ops_Range_Range_Type.t_range usize, bc : Seq.seq usize, c : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces1 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces1 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv2 a) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv3 ab) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv2 b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv3 bc) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv2 c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] produces1 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl1 (a : Core_Ops_Range_Range_Type.t_range usize) : ()
   val produces_refl1 (a : Core_Ops_Range_Range_Type.t_range usize) : ()
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 22] inv2 a}
     ensures { result = produces_refl1 a }
     
+  axiom produces_refl1_spec : forall a : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 22] inv2 a) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 39] produces1 a (Seq.empty ) a)
+  predicate invariant3 (self : Seq.seq usize) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant3 (self : Seq.seq usize) : bool
+    ensures { result = invariant3 self }
+    
   axiom inv3 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Seq.seq usize . inv3 x = true
+  predicate invariant2 (self : Core_Ops_Range_Range_Type.t_range usize) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant2 (self : Core_Ops_Range_Range_Type.t_range usize) : bool
+    ensures { result = invariant2 self }
+    
   axiom inv2 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Core_Ops_Range_Range_Type.t_range usize . inv2 x = true
   use Core_Iter_Adapters_Enumerate_Enumerate_Type as Core_Iter_Adapters_Enumerate_Enumerate_Type
+  predicate invariant1 (self : borrowed (Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize)))
+    
+   =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant1 (self : borrowed (Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize))) : bool
+    ensures { result = invariant1 self }
+    
   predicate inv0 (_x : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize))
     
   val inv0 (_x : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize)) : bool
@@ -2067,6 +2407,7 @@ module C03StdIterators_EnumerateRange
     requires {[#"../../../../../creusot-contracts/src/std/iter/enumerate.rs" 80 82 80 83] inv0 c}
     ensures { result = produces_trans0 a ab b bc c }
     
+  axiom produces_trans0_spec : forall a : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize), ab : Seq.seq (usize, usize), b : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize), bc : Seq.seq (usize, usize), c : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize) . ([#"../../../../../creusot-contracts/src/std/iter/enumerate.rs" 77 15 77 32] produces0 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter/enumerate.rs" 78 15 78 32] produces0 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter/enumerate.rs" 80 22 80 23] inv0 a) -> ([#"../../../../../creusot-contracts/src/std/iter/enumerate.rs" 80 31 80 33] inv6 ab) -> ([#"../../../../../creusot-contracts/src/std/iter/enumerate.rs" 80 52 80 53] inv0 b) -> ([#"../../../../../creusot-contracts/src/std/iter/enumerate.rs" 80 61 80 63] inv6 bc) -> ([#"../../../../../creusot-contracts/src/std/iter/enumerate.rs" 80 82 80 83] inv0 c) -> ([#"../../../../../creusot-contracts/src/std/iter/enumerate.rs" 79 14 79 42] produces0 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl0 (a : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize)) : ()
     
@@ -2074,9 +2415,27 @@ module C03StdIterators_EnumerateRange
     requires {[#"../../../../../creusot-contracts/src/std/iter/enumerate.rs" 73 21 73 22] inv0 a}
     ensures { result = produces_refl0 a }
     
-  axiom inv0 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize) . inv0 x = match (x) with
+  axiom produces_refl0_spec : forall a : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize) . ([#"../../../../../creusot-contracts/src/std/iter/enumerate.rs" 73 21 73 22] inv0 a) -> ([#"../../../../../creusot-contracts/src/std/iter/enumerate.rs" 72 14 72 39] produces0 a (Seq.empty ) a)
+  predicate resolve5 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve5 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
+    ensures { result = resolve5 self }
+    
+  predicate completed1 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve5 self /\ deep_model0 (Core_Ops_Range_Range_Type.range_start ( * self)) >= deep_model0 (Core_Ops_Range_Range_Type.range_end ( * self))
+  val completed1 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
+    ensures { result = completed1 self }
+    
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+  predicate invariant0 (self : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize))
+    
+  val invariant0 (self : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize)) : bool
+    ensures { result = invariant0 self }
+    
+  axiom inv0 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize) . inv0 x = (invariant0 x /\ match (x) with
     | Core_Iter_Adapters_Enumerate_Enumerate_Type.C_Enumerate iter count -> inv2 iter /\ inv5 count
-    end
+    end)
   use prelude.Ghost
   predicate resolve4 (self : Core_Ops_Range_Range_Type.t_range usize) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
@@ -2107,16 +2466,6 @@ module C03StdIterators_EnumerateRange
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve0 (self : borrowed (Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize))) : bool
     ensures { result = resolve0 self }
-    
-  predicate resolve5 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve5 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
-    ensures { result = resolve5 self }
-    
-  predicate completed1 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve5 self /\ deep_model0 (Core_Ops_Range_Range_Type.range_start ( * self)) >= deep_model0 (Core_Ops_Range_Range_Type.range_end ( * self))
-  val completed1 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
-    ensures { result = completed1 self }
     
   predicate completed0 (self : borrowed (Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize)))
     
@@ -2273,6 +2622,11 @@ end
 module C03StdIterators_MyReverse
   type t
   use prelude.UIntSize
+  predicate invariant12 (self : usize) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant12 (self : usize) : bool
+    ensures { result = invariant12 self }
+    
   predicate inv12 (_x : usize)
   val inv12 (_x : usize) : bool
     ensures { result = inv12 _x }
@@ -2280,29 +2634,55 @@ module C03StdIterators_MyReverse
   axiom inv12 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : usize . inv12 x = true
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   use prelude.Borrow
+  predicate invariant11 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant11 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
+    ensures { result = invariant11 self }
+    
   predicate inv11 (_x : borrowed (Core_Ops_Range_Range_Type.t_range usize))
   val inv11 (_x : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
     ensures { result = inv11 _x }
     
   axiom inv11 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : borrowed (Core_Ops_Range_Range_Type.t_range usize) . inv11 x = true
   use seq.Seq
+  predicate invariant10 (self : Seq.seq (usize, usize)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant10 (self : Seq.seq (usize, usize)) : bool
+    ensures { result = invariant10 self }
+    
   predicate inv10 (_x : Seq.seq (usize, usize))
   val inv10 (_x : Seq.seq (usize, usize)) : bool
     ensures { result = inv10 _x }
     
   axiom inv10 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Seq.seq (usize, usize) . inv10 x = true
+  predicate invariant9 (self : Seq.seq t)
+  val invariant9 (self : Seq.seq t) : bool
+    ensures { result = invariant9 self }
+    
   predicate inv9 (_x : Seq.seq t)
   val inv9 (_x : Seq.seq t) : bool
     ensures { result = inv9 _x }
     
   axiom inv9 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Seq.seq t . inv9 x = true
   use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant8 (self : Core_Option_Option_Type.t_option (usize, usize)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant8 (self : Core_Option_Option_Type.t_option (usize, usize)) : bool
+    ensures { result = invariant8 self }
+    
   predicate inv8 (_x : Core_Option_Option_Type.t_option (usize, usize))
   val inv8 (_x : Core_Option_Option_Type.t_option (usize, usize)) : bool
     ensures { result = inv8 _x }
     
   axiom inv8 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Core_Option_Option_Type.t_option (usize, usize) . inv8 x = true
   use Core_Iter_Adapters_Zip_Zip_Type as Core_Iter_Adapters_Zip_Zip_Type
+  predicate invariant7 (self : borrowed (Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)))
+    
+   =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant7 (self : borrowed (Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize))) : bool
+    ensures { result = invariant7 self }
+    
   predicate inv7 (_x : borrowed (Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)))
     
   val inv7 (_x : borrowed (Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize))) : bool
@@ -2347,25 +2727,49 @@ module C03StdIterators_MyReverse
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv5 c}
     ensures { result = produces_trans1 a ab b bc c }
     
+  axiom produces_trans1_spec : forall a : Core_Ops_Range_Range_Type.t_range usize, ab : Seq.seq usize, b : Core_Ops_Range_Range_Type.t_range usize, bc : Seq.seq usize, c : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces1 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces1 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv5 a) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv6 ab) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv5 b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv6 bc) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv5 c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] produces1 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl1 (a : Core_Ops_Range_Range_Type.t_range usize) : ()
   val produces_refl1 (a : Core_Ops_Range_Range_Type.t_range usize) : ()
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 22] inv5 a}
     ensures { result = produces_refl1 a }
     
+  axiom produces_refl1_spec : forall a : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 22] inv5 a) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 39] produces1 a (Seq.empty ) a)
+  predicate invariant6 (self : Seq.seq usize) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant6 (self : Seq.seq usize) : bool
+    ensures { result = invariant6 self }
+    
   axiom inv6 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Seq.seq usize . inv6 x = true
+  predicate invariant5 (self : Core_Ops_Range_Range_Type.t_range usize) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant5 (self : Core_Ops_Range_Range_Type.t_range usize) : bool
+    ensures { result = invariant5 self }
+    
   axiom inv5 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Core_Ops_Range_Range_Type.t_range usize . inv5 x = true
   use prelude.Slice
+  predicate invariant4 (self : slice t)
+  val invariant4 (self : slice t) : bool
+    ensures { result = invariant4 self }
+    
   predicate inv4 (_x : slice t)
   val inv4 (_x : slice t) : bool
     ensures { result = inv4 _x }
     
   axiom inv4 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : slice t . inv4 x = true
+  predicate invariant3 (self : borrowed (slice t))
+  val invariant3 (self : borrowed (slice t)) : bool
+    ensures { result = invariant3 self }
+    
   predicate inv3 (_x : borrowed (slice t))
   val inv3 (_x : borrowed (slice t)) : bool
     ensures { result = inv3 _x }
     
   axiom inv3 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : borrowed (slice t) . inv3 x = true
+  predicate invariant2 (self : slice t)
+  val invariant2 (self : slice t) : bool
+    ensures { result = invariant2 self }
+    
   predicate inv2 (_x : slice t)
   val inv2 (_x : slice t) : bool
     ensures { result = inv2 _x }
@@ -2408,6 +2812,7 @@ module C03StdIterators_MyReverse
     requires {[#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 82 63 83] inv1 c}
     ensures { result = produces_trans0 a ab b bc c }
     
+  axiom produces_trans0_spec : forall a : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize), ab : Seq.seq (usize, usize), b : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize), bc : Seq.seq (usize, usize), c : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize) . ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 60 15 60 32] produces0 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 61 15 61 32] produces0 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 22 63 23] inv1 a) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 31 63 33] inv10 ab) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 52 63 53] inv1 b) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 61 63 63] inv10 bc) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 82 63 83] inv1 c) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 62 14 62 42] produces0 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl0 (a : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)) : ()
     
@@ -2415,8 +2820,20 @@ module C03StdIterators_MyReverse
     requires {[#"../../../../../creusot-contracts/src/std/iter/zip.rs" 56 21 56 22] inv1 a}
     ensures { result = produces_refl0 a }
     
+  axiom produces_refl0_spec : forall a : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize) . ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 56 21 56 22] inv1 a) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 55 14 55 39] produces0 a (Seq.empty ) a)
+  predicate invariant1 (self : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize))
+    
+   =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant1 (self : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)) : bool
+    ensures { result = invariant1 self }
+    
   axiom inv1 : [#"../03_std_iterators.rs" 1 0 1 0] forall x : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize) . inv1 x = true
   use prelude.Ghost
+  predicate invariant0 (self : Ghost.ghost_ty (borrowed (slice t)))
+  val invariant0 (self : Ghost.ghost_ty (borrowed (slice t))) : bool
+    ensures { result = invariant0 self }
+    
   predicate inv0 (_x : Ghost.ghost_ty (borrowed (slice t)))
   val inv0 (_x : Ghost.ghost_ty (borrowed (slice t))) : bool
     ensures { result = inv0 _x }
@@ -2425,13 +2842,15 @@ module C03StdIterators_MyReverse
   use seq.Seq
   use seq.Reverse
   use prelude.Slice
-  constant max0  : usize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
   use seq.Seq
   function shallow_model3 (self : slice t) : Seq.seq t
   val shallow_model3 (self : slice t) : Seq.seq t
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv2 self}
     ensures { result = shallow_model3 self }
     
+  axiom shallow_model3_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv2 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv9 (shallow_model3 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] shallow_model3 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
   predicate resolve3 (self : borrowed (slice t)) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve3 (self : borrowed (slice t)) : bool
