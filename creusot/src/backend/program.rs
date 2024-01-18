@@ -297,7 +297,7 @@ pub fn to_why<'tcx>(
 }
 
 impl<'tcx> Expr<'tcx> {
-    pub(crate) fn to_why<N : Namer<'tcx>>(
+    pub(crate) fn to_why<N: Namer<'tcx>>(
         self,
         ctx: &mut Why3Generator<'tcx>,
         names: &mut N,
@@ -633,7 +633,7 @@ impl<'tcx> Block<'tcx> {
 }
 
 impl<'tcx> Place<'tcx> {
-    pub(crate) fn as_rplace<N : Namer<'tcx>>(
+    pub(crate) fn as_rplace<N: Namer<'tcx>>(
         &self,
         ctx: &mut Why3Generator<'tcx>,
         names: &mut N,

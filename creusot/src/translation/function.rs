@@ -562,27 +562,17 @@ pub(crate) fn closure_contract<'tcx>(
         let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
 
         let mut postcondition: Term<'tcx> = postcondition;
-        postcondition = postcondition.conj(Term {
-            ty: ctx.types.bool,
-            kind: TermKind::Call {
-                id: unnest_id.into(),
-                subst: unnest_subst,
-                fun: Box::new(Term::item(ctx.tcx, unnest_id, unnest_subst)),
-                args: vec![
-                    Term::var(
-                        Symbol::intern("self"),
-                        ctx.mk_mut_ref(ctx.lifetimes.re_erased, self_ty),
-                    )
+        postcondition = postcondition.conj(Term::call(
+            ctx.tcx,
+            unnest_id,
+            unnest_subst,
+            vec![
+                Term::var(Symbol::intern("self"), ctx.mk_mut_ref(ctx.lifetimes.re_erased, self_ty))
                     .cur(),
-                    Term::var(
-                        Symbol::intern("self"),
-                        ctx.mk_mut_ref(ctx.lifetimes.re_erased, self_ty),
-                    )
+                Term::var(Symbol::intern("self"), ctx.mk_mut_ref(ctx.lifetimes.re_erased, self_ty))
                     .fin(),
-                ],
-            },
-            span: DUMMY_SP,
-        });
+            ],
+        ));
 
         normalize(ctx.tcx, ctx.param_env(def_id), &mut postcondition);
 

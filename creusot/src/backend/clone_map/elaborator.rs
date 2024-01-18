@@ -240,7 +240,6 @@ fn val<'tcx>(
             return vec![Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig })];
         }
 
-
         let mut d = vec![
             Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig }),
             Decl::ValDecl(ValDecl { ghost: false, val: true, kind: None, sig: prog_sig }),
