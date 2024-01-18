@@ -3,7 +3,7 @@ use creusot_contracts::prusti_prelude::*;
 
 pub trait Trait {}
 
-impl<T> Trait for T {}
+impl<'a> Trait for &'a mut u32 {}
 #[logic]
 fn id<X: Trait>(x: X) -> X {
     x

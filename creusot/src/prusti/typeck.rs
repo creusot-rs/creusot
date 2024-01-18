@@ -5,6 +5,7 @@ use super::{
     typeck::MutDerefType::{Cur, Fin},
     types::*,
     util::RegionReplacer,
+    FnSigBinder,
 };
 use crate::{
     error::{CreusotResult, Error},
@@ -12,7 +13,7 @@ use crate::{
     prusti::{
         ctx::{BaseCtx, CtxRef, InternedInfo, STATIC_STATE},
         flat_rust_ty::{flatten_rust_ty, walk_with_rust_flat_ty, RustReg},
-        flat_ty::{flat_to_ty, flatten_ty, into_continue, CheckSupError, FlatTy},
+        flat_ty::{flat_to_ty, flatten_ty, CheckSupError, FlatTy},
         parsing::Outlives,
         region_set::State,
         zombie::{pretty_replace, ZombieStatus},
@@ -23,21 +24,28 @@ use itertools::Either;
 use rustc_ast::Mutability;
 use rustc_data_structures::sso::SsoHashMap;
 use rustc_index::{bit_set::BitSet, IndexVec};
-use rustc_infer::{infer::TyCtxtInferExt, traits::ObligationCause};
+use rustc_infer::{
+    infer::TyCtxtInferExt,
+    traits::{Obligation, ObligationCause},
+};
 use rustc_middle::{
     bug, span_bug, ty,
     ty::{
-        AdtDef, Binder, ClauseKind, GenericArg, GenericParamDefKind, GenericPredicates, InferTy,
-        Instance, InternalSubsts, PolyFnSig, Region, RegionKind, RegionVid, SubstsRef, TyCtxt,
-        TyKind, TypeFoldable, TypeFolder, TypeSuperFoldable, TypeSuperVisitable, TypeVisitable,
-        TypeVisitor,
+        AdtDef, Binder, GenericArg, GenericParamDefKind, GenericPredicates, InferTy, Instance,
+        InstantiatedPredicates, InternalSubsts, PolyFnSig, Region, RegionKind, RegionVid,
+        SubstsRef, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypeSuperFoldable, TypeSuperVisitable,
+        TypeVisitable, TypeVisitor,
     },
 };
 use rustc_span::{def_id::DefId, Span, Symbol};
 use rustc_target::abi::VariantIdx;
-use rustc_trait_selection::{traits, traits::NormalizeExt};
+use rustc_trait_selection::{
+    traits,
+    traits::{query::evaluate_obligation::InferCtxtExt, NormalizeExt},
+};
 use std::{
     convert::Infallible,
+    fmt::Debug,
     iter,
     ops::{ControlFlow, ControlFlow::Continue},
 };
@@ -185,6 +193,8 @@ impl RegVarInfo {
 struct VarInfo<'tcx> {
     reg: RegVarInfo,
     ty: TyVarInfo<'tcx>,
+    subst: SubstsRef<'tcx>,
+    def_id: DefId,
 }
 
 struct VarFolder<'a, 'tcx>(&'a VarInfo<'tcx>, CtxRef<'a, 'tcx>);
@@ -207,8 +217,19 @@ impl<'a, 'tcx> TypeFolder<TyCtxt<'tcx>> for VarFolder<'a, 'tcx> {
 }
 
 impl<'tcx> VarInfo<'tcx> {
-    fn fold(&self, ty: ty::Ty<'tcx>, ctx: CtxRef<'_, 'tcx>) -> Ty<'tcx> {
-        Ty { ty: ty.fold_with(&mut VarFolder(self, ctx)) }
+    fn fold<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T, ctx: CtxRef<'_, 'tcx>) -> T {
+        t.fold_with(&mut VarFolder(self, ctx))
+    }
+    fn fold_ty(
+        &self,
+        ty: ty::Ty<'tcx>,
+        ctx: CtxRef<'_, 'tcx>,
+        span: Span,
+    ) -> CreusotResult<Ty<'tcx>> {
+        let final_subst = self.fold(self.subst, ctx);
+        let predicates: GenericPredicates<'tcx> = ctx.tcx.predicates_of(self.def_id);
+        check_predicates(ctx, predicates.instantiate(ctx.tcx, final_subst), span)?;
+        Ok(Ty { ty: self.fold(ty, ctx) })
     }
 }
 
@@ -269,9 +290,9 @@ fn expand_error_gen<'tcx>(
     }
 }
 
-struct TypeVarVisitor(BitSet<u32>);
+struct TypeVarVisitor<'a>(&'a mut BitSet<u32>);
 
-impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for TypeVarVisitor {
+impl<'a, 'tcx> TypeVisitor<TyCtxt<'tcx>> for TypeVarVisitor<'a> {
     type BreakTy = Infallible;
     fn visit_ty(&mut self, ty: ty::Ty<'tcx>) -> ControlFlow<Self::BreakTy> {
         match ty.kind() {
@@ -284,21 +305,30 @@ impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for TypeVarVisitor {
     }
 }
 
-fn generalize<'tcx>(
+struct AliasTyVarVisitor(BitSet<u32>);
+
+impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for AliasTyVarVisitor {
+    type BreakTy = Infallible;
+    fn visit_ty(&mut self, ty: ty::Ty<'tcx>) -> ControlFlow<Self::BreakTy> {
+        match ty.kind() {
+            TyKind::Alias(_, ty) => ty.substs.visit_with(&mut TypeVarVisitor(&mut self.0)),
+            _ => ty.super_visit_with(self),
+        }
+    }
+}
+
+fn generalize<'tcx, I: Iterator<Item = ty::Ty<'tcx>>>(
     ctx: CtxRef<'_, 'tcx>,
     subst: SubstsRef<'tcx>,
     def_id: DefId,
-) -> (SubstsRef<'tcx>, VarInfo<'tcx>) {
+    check_tys: impl Fn(SubstsRef<'tcx>) -> I,
+) -> VarInfo<'tcx> {
     let tcx = ctx.tcx;
     let mut reg = RegVarInfo(IndexVec::new());
     let mut ty = TyVarInfo(IndexVec::new());
-    let predicates: GenericPredicates<'tcx> = tcx.predicates_of(def_id);
-    let mut constrained_vars = TypeVarVisitor(BitSet::new_empty(subst.len()));
-    for clause in predicates.instantiate_identity(tcx).predicates {
-        match clause.kind().skip_binder() {
-            ClauseKind::Trait(t) if t.def_id() == tcx.lang_items().sized_trait().unwrap() => {}
-            _ => into_continue(clause.visit_with(&mut constrained_vars)),
-        }
+    let mut constrained_vars = AliasTyVarVisitor(BitSet::new_empty(subst.len()));
+    for check_ty in check_tys(InternalSubsts::identity_for_item(tcx, def_id)) {
+        let _ = check_ty.visit_with(&mut constrained_vars);
     }
     let res = InternalSubsts::for_item(tcx, def_id, |param, _| {
         let elt: GenericArg<'tcx> = subst[param.index as usize];
@@ -315,7 +345,7 @@ fn generalize<'tcx>(
             }),
         }
     });
-    (res, VarInfo { reg, ty })
+    VarInfo { reg, ty, subst: res, def_id }
 }
 
 fn check_gen<'tcx>(
@@ -339,17 +369,16 @@ fn check_gen<'tcx>(
 fn generalize_fn_def<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
-    var_info: &mut VarInfo,
-    subst_ref: SubstsRef<'tcx>,
+    var_info: &mut VarInfo<'tcx>,
 ) -> (ty::Ty<'tcx>, impl Iterator<Item = (Region<'tcx>, Region<'tcx>)>) {
-    let fn_ty_gen = tcx.mk_fn_def(def_id, subst_ref);
+    let fn_ty_gen = tcx.mk_fn_def(def_id, var_info.subst);
     let (fn_sig_gen, map) = tcx.replace_late_bound_regions(fn_ty_gen.fn_sig(tcx), |_| {
         Region::new_var(tcx, var_info.reg.0.push(ReVarStatus::Bound(StateSet::EMPTY)))
     });
     let fn_ty_gen = tcx.mk_fn_ptr(Binder::dummy(fn_sig_gen));
 
     let id_subst = InternalSubsts::identity_for_item(tcx, def_id);
-    let iter1 = id_subst.regions().zip(subst_ref.regions());
+    let iter1 = id_subst.regions().zip(var_info.subst.regions());
     let iter2 = map.into_iter().map(move |(br, reg_gen)| {
         let reg = Region::new_free(tcx, def_id, br.kind);
         (reg, reg_gen)
@@ -375,8 +404,11 @@ pub(crate) fn check_call<'tcx>(
         None => (Either::Right(iter::repeat(ctx.curr_home())), Either::Right(iter::empty())),
     };
 
-    let (subst_ref, mut var_info) = generalize(ctx, subst_ref, def_id);
-    let (fn_ty_gen, iter) = generalize_fn_def(tcx, def_id, &mut var_info, subst_ref);
+    let mut var_info = generalize(ctx, subst_ref, def_id, |s| {
+        let x = tcx.mk_fn_def(def_id, s).fn_sig(tcx).skip_binder();
+        x.inputs().iter().copied().chain([x.output()])
+    });
+    let (fn_ty_gen, iter) = generalize_fn_def(tcx, def_id, &mut var_info);
     let fn_ty_gen = normalize(ctx, fn_ty_gen);
     let subst_iter = filter_elided(iter);
 
@@ -437,7 +469,7 @@ pub(crate) fn check_call<'tcx>(
         check_gen(ctx, span, ty, *ty_gen, &mut var_info)?;
     }
 
-    let res = var_info.fold(res_ty_gen, ctx);
+    let res = var_info.fold_ty(res_ty_gen, ctx, call_span)?;
     if let Some(r) = ty_outlives(res, state, ctx) {
         let dty = prepare_display(res, ctx);
         let dstate = display_state(state, ctx);
@@ -454,18 +486,21 @@ pub(crate) fn check_constructor<'tcx>(
     subst: SubstsRef<'tcx>,
     adt: AdtDef<'tcx>,
     variant: VariantIdx,
+    span: Span,
 ) -> CreusotResult<Ty<'tcx>> {
     let tcx = ctx.tcx;
     // Eagerly evaluate args to avoid running multiple inference contexts at the same time
     let fields = fields.collect::<CreusotResult<SmallVec<_>>>()?.into_iter();
-    let (subst_gen, mut var_info) = generalize(ctx, subst, adt.did());
+    let mut var_info = generalize(ctx, subst, adt.did(), |s| {
+        adt.variant(variant).fields.iter().map(|x| x.ty(tcx, s))
+    });
     let fields_gen =
-        adt.variant(variant).fields.iter().map(|x| normalize(ctx, x.ty(tcx, subst_gen)));
+        adt.variant(variant).fields.iter().map(|x| normalize(ctx, x.ty(tcx, var_info.subst)));
 
     fields
         .zip(fields_gen)
         .try_for_each(|((ty, span), ty_gen)| check_gen(ctx, span, ty, ty_gen, &mut var_info))?;
-    Ok(var_info.fold(tcx.mk_adt(adt, subst_gen), ctx))
+    Ok(var_info.fold_ty(tcx.mk_adt(adt, var_info.subst), ctx, span)?)
 }
 
 pub(crate) fn check_tuple_constructor<'tcx>(
@@ -499,7 +534,7 @@ pub(crate) fn union<'tcx>(
     }
 }
 
-pub(super) fn normalize<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
+pub(super) fn normalize<'tcx, T: Debug + TypeFoldable<TyCtxt<'tcx>>>(
     ctx: &'_ BaseCtx<'_, 'tcx>,
     ty: T,
 ) -> T {
@@ -553,9 +588,30 @@ fn ty_outlives<'tcx>(ty: Ty<'tcx>, state: State, ctx: CtxRef<'_, 'tcx>) -> Optio
 
 fn is_plain<'tcx>(ctx: CtxRef<'_, 'tcx>, ty: Ty<'tcx>) -> bool {
     let trait_def_id = ctx.plain_def_id;
-    let infcx = ctx.tcx.infer_ctxt().build();
+    let infcx = ctx.tcx.infer_ctxt().ignoring_regions().build();
     let param_env = ctx.param_env();
     traits::type_known_to_meet_bound_modulo_regions(&infcx, param_env, ty.ty, trait_def_id)
+}
+
+fn check_predicates<'tcx>(
+    ctx: CtxRef<'_, 'tcx>,
+    predicates: InstantiatedPredicates<'tcx>,
+    span: Span,
+) -> CreusotResult<()> {
+    let infcx = ctx.tcx.infer_ctxt().ignoring_regions().build();
+    for (pred, _) in ctx.tcx.erase_regions(predicates) {
+        let ob = Obligation::new(
+            ctx.tcx,
+            ObligationCause::dummy_with_span(span),
+            ctx.param_env(),
+            pred.as_predicate(),
+        );
+        let x = infcx.evaluate_obligation_no_overflow(&ob);
+        if !x.must_apply_modulo_regions() {
+            return Err(Error::new(span, format!("Unsatisfied bound {}", pred)));
+        }
+    }
+    Ok(())
 }
 
 pub(crate) fn check_move_state<'tcx>(
@@ -698,9 +754,8 @@ pub(crate) fn check_signature_agreement<'tcx>(
     let (ctx, ts, arg_tys, (_, expect_res_ty)) = full_signature_logic::<SmallVec<_>>(
         &interned,
         trait_home_sig,
-        Some(refn_subst),
+        FnSigBinder::for_trait_impl(tcx, trait_id, impl_id, refn_subst),
         &ts,
-        trait_id,
     )?;
     let args = arg_tys.into_iter().map(|(_, ty)| Ok((ty, impl_span)));
     // lifetimes bound from the impl block that aren't used in the Self type are excluded

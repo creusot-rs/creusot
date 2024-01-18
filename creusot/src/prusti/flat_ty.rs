@@ -110,13 +110,6 @@ pub(super) fn into_ok<T>(r: Result<T, Infallible>) -> T {
     }
 }
 
-pub(super) fn into_continue<T>(r: ControlFlow<Infallible, T>) -> T {
-    match r {
-        Continue(v) => v,
-        Break(e) => match e {},
-    }
-}
-
 pub(super) fn flatten_ty<'tcx>(ctx: CtxRef<'_, 'tcx>, ty: Ty<'tcx>) -> FlatTy {
     let mut states = SmallVec::new();
     let mut zombies = BitVec::new();

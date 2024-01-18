@@ -14,10 +14,10 @@ impl<'a, X: MyModel<Y>, Y> MyModel<Y> for &'a mut X {
     }
 }
 
-impl<'a> MyModel<bool> for bool{
+impl<'a> MyModel<bool> for bool {
     #[logic('x)]
     fn model(self) -> bool {
-        pearlite!{absurd}
+        self
     }
 }
 

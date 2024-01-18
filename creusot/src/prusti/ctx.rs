@@ -195,7 +195,7 @@ impl<'a, 'tcx> BaseCtx<'a, 'tcx> {
             }
         }));
         base_states[CURR_STATE] = curr_region;
-        let base: ParamEnv = tcx.param_env(sig.def_id());
+        let base = sig.param_env();
         let fixed = fixing_replace(interned, |r| r, base);
         let erased = tcx.erase_regions(fixed);
         BaseCtx {

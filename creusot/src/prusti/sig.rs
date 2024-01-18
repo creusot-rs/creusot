@@ -12,10 +12,7 @@ use crate::{
 };
 use itertools::{Either, Itertools};
 use rustc_ast::MetaItemLit as Lit;
-use rustc_middle::{
-    bug,
-    ty::{FnSig, SubstsRef},
-};
+use rustc_middle::{bug, ty::FnSig};
 use rustc_span::{def_id::DefId, symbol::Ident, Span, Symbol, DUMMY_SP};
 use std::iter;
 
@@ -99,7 +96,7 @@ pub(crate) fn full_signature<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
     owner_id: DefId,
 ) -> CreusotResult<(Ctx<'a, 'tcx>, State, T, BindingInfo<'tcx>)> {
     let tcx = interned.tcx;
-    let sig = FnSigBinder::new(tcx, owner_id, None);
+    let sig = FnSigBinder::new(tcx, owner_id);
     let ctx = Ctx::new_for_spec(interned, sig)?;
     let sig = tcx.liberate_late_bound_regions(owner_id, sig.sig());
     let sig = ctx.fix_regions(sig, || bug!());
@@ -127,14 +124,12 @@ fn validate_home_sig(home_sig: &HomeSig, ctx: &PreCtx, span: Span) -> CreusotRes
 pub(crate) fn full_signature_logic<'a, 'tcx, T: FromIterator<Binding<'tcx>>>(
     interned: &'a InternedInfo<'tcx>,
     home_sig_lit: &Lit,
-    subst: Option<SubstsRef<'tcx>>,
+    sig: FnSigBinder<'tcx>,
     ts: &Lit,
-    owner_id: DefId,
 ) -> CreusotResult<(Ctx<'a, 'tcx>, State, T, BindingInfo<'tcx>)> {
     let tcx = interned.tcx;
-    let sig = FnSigBinder::new(tcx, owner_id, subst);
     let mut ctx = PreCtx::new(interned, sig);
-    let sig = tcx.liberate_late_bound_regions(owner_id, sig.sig());
+    let sig = tcx.liberate_late_bound_regions(sig.def_id().to_def_id(), sig.sig());
     let sig = ctx.fix_regions(sig);
 
     let ts2 = make_time_state_logic(ts, &mut ctx)?;

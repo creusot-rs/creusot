@@ -3,7 +3,7 @@ use creusot_contracts::prusti_prelude::*;
 
 pub trait Trait {}
 
-impl<T> Trait for T {}
+impl Trait for Box<u32> {}
 enum MyOp<X: Trait> {
     None,
     Some(X),

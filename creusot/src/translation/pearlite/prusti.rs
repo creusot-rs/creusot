@@ -18,7 +18,7 @@ use std::{
     ops::{ControlFlow, Deref, DerefMut},
 };
 
-use crate::prusti::{ctx::InternedInfo, State};
+use crate::prusti::{ctx::InternedInfo, FnSigBinder, State};
 
 #[derive(Debug)]
 struct SemiPersistent<T>(T);
@@ -124,7 +124,9 @@ pub(super) fn prusti_to_creusot<'tcx>(
 
     let (ctx, ts, tenv, res_ty) = match home_sig {
         None => full_signature(&interned, ts, owner_id)?,
-        Some(home_sig) => full_signature_logic(&interned, home_sig, None, ts, owner_id)?,
+        Some(home_sig) => {
+            full_signature_logic(&interned, home_sig, FnSigBinder::new(tcx, owner_id), ts)?
+        }
     };
     let mut tenv: SsoHashMap<_, _> = tenv;
 
@@ -378,7 +380,7 @@ fn convert<'tcx>(
             let TyKind::Adt(adt, subst) = outer_term.ty.kind() else {
                 span_bug!(outer_term.span, "bug")
             };
-            typeck::check_constructor(ctx, fields, subst, *adt, *variant)?
+            typeck::check_constructor(ctx, fields, subst, *adt, *variant, outer_term.span)?
         }
         TermKind::Tuple { fields, .. } => {
             let fields =

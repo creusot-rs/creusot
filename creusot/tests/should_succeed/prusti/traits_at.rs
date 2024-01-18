@@ -1,6 +1,6 @@
 #![warn(creusot::prusti_final)]
 extern crate creusot_contracts;
-use creusot_contracts::prusti_prelude::*;
+use creusot_contracts::prusti_prelude::{self, *};
 
 trait MyModel {
     type ModelTy;
@@ -16,7 +16,7 @@ impl<'a, X: MyModel> MyModel for &'a mut X {
     }
 }
 
-impl<'a> MyModel for bool{
+impl<'a> MyModel for bool {
     type ModelTy = bool;
     #[logic('_)]
     fn model(self) -> bool {
@@ -24,7 +24,8 @@ impl<'a> MyModel for bool{
     }
 }
 
-struct Wrap<T>(T);
+#[derive(Copy, prusti_prelude::Clone)]
+pub struct Wrap<T>(T);
 impl<T> MyModel for Wrap<T> {
     type ModelTy = T;
 

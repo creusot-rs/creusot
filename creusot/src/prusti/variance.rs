@@ -43,7 +43,7 @@ pub(super) fn constraints_of_fn<'tcx>(
 
     // generalize function type and param_env
     let fn_ty_gen = generalize(fn_ty, &infcx);
-    let param_env: ParamEnv = generalize(tcx.param_env(sig.def_id()), &infcx);
+    let param_env: ParamEnv = generalize(sig.param_env(), &infcx);
 
     // subtyping constraints
     let ocx = ObligationCtxt::new(&infcx);

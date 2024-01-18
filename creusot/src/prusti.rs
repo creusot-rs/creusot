@@ -13,5 +13,6 @@ mod util;
 mod variance;
 mod zombie;
 
+pub(crate) use fn_sig_binder::FnSigBinder;
 pub(crate) use region_set::State;
 pub(crate) use sig::{full_signature, full_signature_logic};

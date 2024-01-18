@@ -21,3 +21,11 @@ pub struct SamePair<X>(X, X);
 pub fn test_constructor2<'a>(x: &'a mut u32, y: &'a mut u32) -> SamePair<&'a mut u32> {
     SamePair(x, y)
 }
+
+pub struct HasModel<T: ShallowModel>(T::ShallowModelTy);
+
+#[open]
+#[logic]
+pub fn test_constructor3<T: ShallowModel>(x: T) -> HasModel<T> {
+    HasModel(x.shallow_model())
+}
