@@ -49,8 +49,8 @@ impl<'tcx> Ty<'tcx> {
         (Ty { ty }, z)
     }
 
-    pub fn contains_zombie(self, ctx: CtxRef<'_, 'tcx>) -> bool {
-        ctx.zombie_info.contains_zombie(self.ty)
+    pub fn is_snap_eq(self, ctx: CtxRef<'_, 'tcx>) -> bool {
+        ctx.zombie_info.is_snap_eq(self.ty, ctx)
     }
 
     pub(crate) fn as_adt_variant<'a>(

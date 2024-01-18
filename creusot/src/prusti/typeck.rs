@@ -290,7 +290,7 @@ fn expand_error_gen<'tcx>(
     }
 }
 
-struct TypeVarVisitor<'a>(&'a mut BitSet<u32>);
+pub(super) struct TypeVarVisitor<'a>(pub &'a mut BitSet<u32>);
 
 impl<'a, 'tcx> TypeVisitor<TyCtxt<'tcx>> for TypeVarVisitor<'a> {
     type BreakTy = Infallible;
@@ -600,14 +600,22 @@ fn check_predicates<'tcx>(
 ) -> CreusotResult<()> {
     let infcx = ctx.tcx.infer_ctxt().ignoring_regions().build();
     for (pred, _) in ctx.tcx.erase_regions(predicates) {
-        let ob = Obligation::new(
-            ctx.tcx,
-            ObligationCause::dummy_with_span(span),
-            ctx.param_env(),
-            pred.as_predicate(),
-        );
-        let x = infcx.evaluate_obligation_no_overflow(&ob);
-        if !x.must_apply_modulo_regions() {
+        let ok = match pred.as_trait_clause() {
+            Some(x) if x.def_id() == ctx.zombie_info.snap_eq() => {
+                let ty = ctx.tcx.erase_late_bound_regions(x.self_ty());
+                Ty { ty }.is_snap_eq(ctx)
+            }
+            _ => {
+                let ob = Obligation::new(
+                    ctx.tcx,
+                    ObligationCause::dummy_with_span(span),
+                    ctx.param_env(),
+                    pred.as_predicate(),
+                );
+                infcx.evaluate_obligation_no_overflow(&ob).must_apply_modulo_regions()
+            }
+        };
+        if !ok {
             return Err(Error::new(span, format!("Unsatisfied bound {}", pred)));
         }
     }

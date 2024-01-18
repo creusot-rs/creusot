@@ -3,12 +3,12 @@ use creusot_contracts::prusti_prelude::*;
 
 #[logic]
 #[ensures(result == *x)]
-fn need_static<X>(x: &'static X) -> X {
+fn need_static<X: SnapEq>(x: &'static X) -> X {
     *x
 }
 
 #[logic]
 #[ensures(result == *x)]
-fn cur<'a, X>(x: &'a X) -> X {
+fn cur<'a, X: SnapEq>(x: &'a X) -> X {
     need_static(x)
 }

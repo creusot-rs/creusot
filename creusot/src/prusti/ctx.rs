@@ -10,7 +10,7 @@ use crate::prusti::{
     variance::regions_of_fn,
     zombie::{fixing_replace, ZombieDefIds},
 };
-use rustc_index::{Idx, IndexVec};
+use rustc_index::{bit_set::BitSet, Idx, IndexVec};
 use rustc_infer::infer::region_constraints::Constraint;
 use rustc_lint::Lint;
 use rustc_middle::{
@@ -53,6 +53,7 @@ pub(crate) struct BaseCtx<'a, 'tcx> {
     pub(super) owner_id: LocalDefId,
     param_env: ParamEnv<'tcx>,
     fn_type: FnType,
+    snap_eq_vars: BitSet<u32>,
 }
 
 impl<'a, 'tcx> Deref for BaseCtx<'a, 'tcx> {
@@ -198,12 +199,14 @@ impl<'a, 'tcx> BaseCtx<'a, 'tcx> {
         let base = sig.param_env();
         let fixed = fixing_replace(interned, |r| r, base);
         let erased = tcx.erase_regions(fixed);
+        let snap_eq_vars = interned.zombie_info.find_snap_eq_vars(erased, sig.subst().len());
         BaseCtx {
             interned,
             base_states,
             owner_id: sig.def_id(),
             fn_type: FnType::Logic { valid_states: StateSet::EMPTY },
             param_env: erased,
+            snap_eq_vars,
         }
     }
 
@@ -376,6 +379,14 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
         };
         self.try_move_state(s, span)?;
         Ok(s)
+    }
+
+    pub(super) fn snap_eq_var(&self, v: u32) -> bool {
+        if self.is_logic() {
+            self.snap_eq_vars.contains(v)
+        } else {
+            true
+        }
     }
 }
 

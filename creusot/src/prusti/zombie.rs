@@ -1,7 +1,9 @@
 use crate::prusti::{
-    ctx::InternedInfo,
+    ctx::{CtxRef, InternedInfo},
+    typeck::TypeVarVisitor,
     util::{name_to_def_id, RegionReplacer},
 };
+use rustc_index::bit_set::BitSet;
 use rustc_middle::ty::{
     ParamEnv, Region, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable, TypeVisitable,
     TypeVisitor,
@@ -33,11 +35,15 @@ where
 
 pub struct ZombieDefIds {
     internal: DefId,
+    snap_eq: DefId,
 }
 
 impl ZombieDefIds {
     pub fn new(tcx: TyCtxt<'_>) -> ZombieDefIds {
-        ZombieDefIds { internal: name_to_def_id(tcx, "prusti_zombie_internal") }
+        ZombieDefIds {
+            internal: name_to_def_id(tcx, "prusti_zombie_internal"),
+            snap_eq: name_to_def_id(tcx, "prusti_snap_eq"),
+        }
     }
 
     pub(super) fn mk_zombie_raw<'tcx>(&self, ty: Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Ty<'tcx> {
@@ -68,22 +74,49 @@ impl ZombieDefIds {
         }
     }
 
-    pub fn contains_zombie(&self, ty: Ty<'_>) -> bool {
-        ty.visit_with(&mut HasZombieVisitor { def_ids: self }).is_break()
+    pub(super) fn is_snap_eq<'tcx>(&self, ty: Ty<'tcx>, ctx: CtxRef<'_, 'tcx>) -> bool {
+        ty.visit_with(&mut HasZombieVisitor { def_ids: self, ctx }).is_continue()
+    }
+
+    pub fn snap_eq(&self) -> DefId {
+        self.snap_eq
+    }
+
+    pub fn find_snap_eq_vars(&self, param_env: ParamEnv<'_>, size: usize) -> BitSet<u32> {
+        let mut vars = BitSet::new_empty(size);
+        for clause in param_env.caller_bounds() {
+            match clause.as_trait_clause() {
+                Some(x) if x.def_id() == self.snap_eq => {
+                    let _ = x.self_ty().visit_with(&mut TypeVarVisitor(&mut vars));
+                }
+                _ => {}
+            }
+        }
+        vars
     }
 }
 
-struct HasZombieVisitor<'a> {
+struct HasZombieVisitor<'a, 'tcx> {
     def_ids: &'a ZombieDefIds,
+    ctx: CtxRef<'a, 'tcx>,
 }
 
-impl<'tcx, 'a> TypeVisitor<TyCtxt<'tcx>> for HasZombieVisitor<'a> {
+impl<'tcx, 'a> TypeVisitor<TyCtxt<'tcx>> for HasZombieVisitor<'a, 'tcx> {
     type BreakTy = ();
     fn visit_ty(&mut self, t: Ty<'tcx>) -> ControlFlow<Self::BreakTy> {
         if self.def_ids.as_zombie(t).is_some() {
             ControlFlow::Break(())
         } else {
-            t.super_visit_with(self)
+            match t.kind() {
+                TyKind::Param(p) => {
+                    if !self.ctx.snap_eq_var(p.index) {
+                        ControlFlow::Break(())
+                    } else {
+                        ControlFlow::Continue(())
+                    }
+                }
+                _ => t.super_visit_with(self),
+            }
         }
     }
 }

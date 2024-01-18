@@ -315,11 +315,11 @@ fn convert<'tcx>(
         TermKind::Binary { lhs, rhs, op: BinOp::Eq | BinOp::Ne, .. } => {
             for term in [lhs, rhs] {
                 let (_, ty) = convert_sdt_state(&mut *term, tenv, state, ctx)?;
-                if ty.contains_zombie(ctx) {
+                if !ty.is_snap_eq(ctx) {
                     let d_ty = prepare_display(ty, ctx);
                     return Err(Error::new(
                         term.span,
-                        format!("binary operation `==` cannot be applied to type `{d_ty}`"),
+                        format!("binary operation `==` cannot be applied to type `{d_ty}` since it doesn't implement `SnapEq`"),
                     ));
                 }
             }
