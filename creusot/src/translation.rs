@@ -120,7 +120,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
             if let TransId::Item(did) = id && tcx.def_path_str(did).contains(matcher) {
                 item.modules()
             } else {
-                item.interface()
+                Box::new(std::iter::empty())
             }
         });
 

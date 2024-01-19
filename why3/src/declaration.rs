@@ -47,6 +47,19 @@ impl Decl {
     pub fn module_like(&self) -> bool {
         matches!(self, Self::Scope(_) | Self::Module(_))
     }
+
+    pub fn val(sig: Signature) -> Self {
+        Decl::ValDecl(ValDecl { ghost: false, val: true, kind: None, sig })
+    }
+
+    pub fn val_pred(mut sig: Signature) -> Self {
+        sig.retty = None;
+        Decl::ValDecl(ValDecl { ghost: false, val: true, kind: Some(LetKind::Predicate), sig })
+    }
+
+    pub fn val_fn(sig: Signature) -> Self {
+        Decl::ValDecl(ValDecl { ghost: false, val: true, kind: Some(LetKind::Function), sig })
+    }
 }
 
 #[derive(Debug, Default, Clone)]
@@ -317,7 +330,7 @@ pub struct LetDecl {
     pub body: Exp,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum LetKind {
     Function,

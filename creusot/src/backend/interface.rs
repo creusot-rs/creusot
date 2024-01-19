@@ -3,7 +3,7 @@ use crate::{
     backend::{
         closure_generic_decls,
         logic::{spec_axiom, val_decl},
-        program::{closure_aux_defs, closure_type_use},
+        program::closure_aux_defs,
         signature::signature_of,
     },
     ctx::*,
@@ -72,11 +72,7 @@ pub(crate) fn interface_for<'tcx>(
 
     let name = interface_name(ctx, def_id);
     let (clones, summary) = names.to_clones(ctx, CloneDepth::Shallow);
-    let decls = closure_generic_decls(ctx.tcx, def_id)
-        .chain(closure_type_use(ctx, def_id))
-        .chain(clones)
-        .chain(decls)
-        .collect();
+    let decls = closure_generic_decls(ctx.tcx, def_id).chain(clones).chain(decls).collect();
 
     (Module { name, decls }, summary)
 }

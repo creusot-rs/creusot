@@ -1,4 +1,5 @@
 use crate::{
+    backend::Namer,
     ctx::CloneMap,
     translation::fmir::{self, LocalDecls},
 };
@@ -166,9 +167,9 @@ fn create_assign_rec<'tcx>(
 // [(P as Some)]   ---> [_1]
 // [(P as Some).0] ---> let Some(a) = [_1] in a
 // [(* P)] ---> * [P]
-pub(crate) fn translate_rplace<'tcx>(
+pub(crate) fn translate_rplace<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut N,
     locals: &LocalDecls<'tcx>,
     loc: Symbol,
     proj: &[mir::ProjectionElem<Symbol, Ty<'tcx>>],

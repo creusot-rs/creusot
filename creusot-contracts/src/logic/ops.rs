@@ -38,6 +38,7 @@ impl<T> IndexLogic<Int> for [T] {
     #[ghost]
     #[open]
     #[why3::attr = "inline:trivial"]
+    #[rustc_diagnostic_item = "slice_index_logic"]
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { self@[ix] }
     }

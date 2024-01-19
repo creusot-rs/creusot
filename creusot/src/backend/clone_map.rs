@@ -1,6 +1,6 @@
 #![allow(deprecated)]
 
-use heck::ToUpperCamelCase;
+use heck::ToSnakeCase;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
 use rustc_hir::{
@@ -15,29 +15,28 @@ use rustc_span::Symbol;
 use rustc_target::abi::FieldIdx;
 
 use why3::{
-    declaration::{CloneKind, CloneSubst, Decl, Use},
+    declaration::{CloneKind, Decl, Use},
     Ident, QName,
 };
 
 use crate::{
     backend::{
-        clone_map::{elaborator::CloneElaborator, expander::Expander},
+        clone_map::{elaborator::*, expander::Expander},
         dependency::Dependency,
-        interface,
     },
     ctx::*,
-    util::{self, ident_of, ident_of_ty, inv_module_name, item_name, module_name},
+    util::{self, item_name, module_name},
 };
-use rustc_macros::{TyDecodable, TyEncodable};
+use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 
-use super::{ty_inv::TyInvKind, TransId, Why3Generator};
+use super::{dependency::HackedId, ty_inv::TyInvKind, TransId, Why3Generator};
 
 mod elaborator;
 mod expander;
 
 // Prelude modules
 #[allow(dead_code)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, TypeVisitable, TypeFoldable)]
 pub enum PreludeModule {
     Float32,
     Float64,
@@ -99,7 +98,11 @@ pub(crate) trait Namer<'tcx> {
 
     fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName;
 
+    fn real_ty(&mut self, ty: Ty<'tcx>) -> QName;
+
     fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName;
+
+    fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName;
 
     /// Creates a name for a type or closure projection ie: x.field1
     /// This also includes projections from `enum` types
@@ -118,22 +121,39 @@ pub(crate) trait Namer<'tcx> {
 
     fn normalize(&self, ctx: &TranslationCtx<'tcx>, ty: Ty<'tcx>) -> Ty<'tcx>;
 
-    fn import_prelude_module(&mut self, module: PreludeModule);
+    fn import_prelude_module(&mut self, _: PreludeModule);
 
-    fn import_builtin_module(&mut self, module: QName);
+    fn with_vis<F, A>(&mut self, vis: CloneLevel, f: F) -> A
+    where
+        F: FnOnce(&mut Self) -> A;
 }
 
 impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
     fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        let name = item_name(self.tcx, def_id, Namespace::ValueNS);
-        let node = CloneNode::new(self.tcx, (def_id, subst));
-        self.insert(node).qname_ident(name.into())
+        let node = DepNode::new(self.tcx, (def_id, subst));
+        match self.insert(node) {
+            Kind::Hidden(nm) => nm.as_str().to_snake_case().into(),
+            Kind::Named(nm) => nm.as_str().to_snake_case().into(),
+        }
     }
 
     fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+        let mut node = DepNode::new(self.tcx, (def_id, subst));
+
+        if self.tcx.is_closure(def_id) {
+            node = DepNode::Type(self.tcx.mk_closure(def_id, subst));
+        }
+
         let name = item_name(self.tcx, def_id, Namespace::TypeNS);
-        let node = CloneNode::new(self.tcx, (def_id, subst));
-        self.insert(node).qname_ident(name.into())
+        match self.tcx.def_kind(def_id) {
+            DefKind::AssocTy => self.insert(node).ident().into(),
+            _ => self.insert(node).qname_ident(name),
+        }
+    }
+
+    fn real_ty(&mut self, ty: Ty<'tcx>) -> QName {
+        let node = DepNode::Type(ty);
+        self.insert(node).ident().into()
     }
 
     fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
@@ -144,8 +164,9 @@ impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
         };
         let mut name = item_name(self.tcx, def_id, Namespace::ValueNS);
         name.capitalize();
-        let node = CloneNode::new(self.tcx, (type_id, subst));
-        self.insert(node).qname_ident(name.into())
+        let mut qname = self.ty(type_id, subst);
+        qname.name = name.into();
+        qname
     }
 
     /// Creates a name for a type or closure projection ie: x.field1
@@ -163,24 +184,36 @@ impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
         ix: FieldIdx,
     ) -> QName {
         let tcx = self.tcx;
-        let node = CloneNode::new(self.tcx, (def_id, subst));
+        let node = match util::item_type(tcx, def_id) {
+            ItemType::Closure => {
+                DepNode::Hacked(HackedId::Accessor(ix.as_u32() as u8), def_id, subst)
+            }
+            _ => DepNode::new(tcx, (def_id, subst)),
+        };
+
         let clone = self.insert(node);
-        let name: Ident = match util::item_type(tcx, def_id) {
-            ItemType::Closure => format!("field_{}", ix.as_usize()).into(),
+        match util::item_type(tcx, def_id) {
+            ItemType::Closure => clone.ident().into(),
             ItemType::Type => {
                 let variant_def = &tcx.adt_def(def_id).variants()[variant.into()];
                 let variant = variant_def;
-                format!(
+                let name: Ident = format!(
                     "{}_{}",
                     variant.name.as_str().to_ascii_lowercase(),
                     variant.fields[ix].name
                 )
-                .into()
+                .into();
+                clone.qname_ident(name.into())
             }
             _ => panic!("accessor: invalid item kind"),
-        };
+        }
+    }
 
-        clone.qname_ident(name.into())
+    fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName {
+        let def_id =
+            self.tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
+        let subst = self.tcx.mk_substs(&[ty::GenericArg::from(ty)]);
+        self.value(def_id, subst)
     }
 
     fn normalize(&self, ctx: &TranslationCtx<'tcx>, ty: Ty<'tcx>) -> Ty<'tcx> {
@@ -188,18 +221,23 @@ impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
     }
 
     fn import_prelude_module(&mut self, module: PreludeModule) {
-        self.import_builtin_module(module.qname());
+        self.insert(DepNode::Buitlin(module));
     }
 
-    fn import_builtin_module(&mut self, module: QName) {
-        self.names.prelude.entry(module).or_insert(false);
+    fn with_vis<F, A>(&mut self, vis: CloneLevel, f: F) -> A
+    where
+        F: FnOnce(&mut Self) -> A,
+    {
+        let public = std::mem::replace(&mut self.dep_level, vis);
+        let ret = f(self);
+        self.dep_level = public;
+        ret
     }
 }
 
 // a clone node is expected to have a DefId
-type CloneNode<'tcx> = Dependency<'tcx>;
 type DepNode<'tcx> = Dependency<'tcx>;
-pub(super) type CloneSummary<'tcx> = IndexMap<CloneNode<'tcx>, CloneInfo>;
+pub(super) type CloneSummary<'tcx> = IndexMap<DepNode<'tcx>, CloneInfo>;
 
 #[derive(Clone)]
 pub struct CloneMap<'tcx> {
@@ -225,8 +263,18 @@ struct NameSupply {
 struct CloneNames<'tcx> {
     tcx: TyCtxt<'tcx>,
     counts: NameSupply,
-    names: IndexMap<CloneNode<'tcx>, Kind>,
+    names: IndexMap<DepNode<'tcx>, Kind>,
     prelude: IndexMap<QName, bool>,
+}
+
+impl std::fmt::Debug for CloneNames<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (n, k) in &self.names {
+            writeln!(f, "{n:?} -> {k:?}")?;
+        }
+
+        Ok(())
+    }
 }
 
 impl<'tcx> CloneNames<'tcx> {
@@ -240,29 +288,19 @@ impl<'tcx> CloneNames<'tcx> {
     }
     fn insert(&mut self, key: DepNode<'tcx>) -> Kind {
         *self.names.entry(key).or_insert_with(|| {
-            if let CloneNode::Type(ty) = key && !matches!(ty.kind(), TyKind::Alias(_, _)) {
-                return if let Some((did, _)) = key.did() {
+            if let DepNode::Type(ty) = key && !matches!(ty.kind(), TyKind::Alias(_, _)) {
+                let kind =  if let Some((did, _)) = key.did() {
                     let name = Symbol::intern(&*module_name(self.tcx, did));
                     Kind::Named(name)
                 } else {
-                    Kind::Hidden
+                    Kind::Hidden(Symbol::intern("hidden_type_name"))
                 };
+
+                return kind;
             }
 
-            let base = if let CloneNode::TyInv(_, inv_kind) = key {
-                Symbol::intern(&*inv_module_name(self.tcx, inv_kind))
-            } else {
-                let did = key.did().unwrap().0;
-                let base = match util::item_type(self.tcx, did) {
-                    ItemType::Impl => self.tcx.item_name(self.tcx.trait_id_of_impl(did).unwrap()),
-                    ItemType::Closure => Symbol::intern(&format!(
-                        "closure{}",
-                        self.tcx.def_path(did).data.last().unwrap().disambiguator
-                    )),
-                    _ => self.tcx.item_name(did),
-                };
-                Symbol::intern(&base.as_str().to_upper_camel_case())
-            };
+            let base = key.base_ident(self.tcx);
+
             Kind::Named(self.counts.insert(base))
         })
     }
@@ -277,9 +315,10 @@ impl NameSupply {
 
 #[derive(Default)]
 struct DepGraph<'tcx> {
-    graph: DiGraphMap<DepNode<'tcx>, (CloneLevel, IndexSet<(Kind, SymbolKind)>)>,
+    graph: DiGraphMap<DepNode<'tcx>, (CloneLevel, ())>,
     info: IndexMap<DepNode<'tcx>, CloneInfo>,
     roots: IndexSet<DepNode<'tcx>>,
+    builtins: IndexSet<PreludeModule>,
 }
 
 impl<'tcx> DepGraph<'tcx> {
@@ -311,37 +350,37 @@ impl<'tcx> DepGraph<'tcx> {
     }
 
     // Adds a dependency from `user` on `prov` for the symbol `sym`.
-    fn add_graph_edge(
-        &mut self,
-        user: DepNode<'tcx>,
-        prov: DepNode<'tcx>,
-        level: CloneLevel,
-    ) -> &mut IndexSet<(Kind, SymbolKind)> {
+    fn add_graph_edge(&mut self, user: DepNode<'tcx>, prov: DepNode<'tcx>, level: CloneLevel) {
         // trace!("edge {k1:?} = {:?} --> {k2:?} = {:?}", user, prov);
 
         if let None = self.graph.edge_weight_mut(user, prov) {
-            self.graph.add_edge(user, prov, (level, IndexSet::new()));
+            self.graph.add_edge(user, prov, (level, ()));
         };
-
-        &mut self.graph.edge_weight_mut(user, prov).unwrap().1
     }
 
     fn dependencies(
         &self,
         node: DepNode<'tcx>,
-    ) -> impl Iterator<Item = (CloneLevel, &IndexSet<(Kind, SymbolKind)>, DepNode<'tcx>)> {
-        self.graph.edges_directed(node, Outgoing).map(|(_, n, (lvl, nms))| (*lvl, nms, n))
+    ) -> impl Iterator<Item = (CloneLevel, DepNode<'tcx>)> + '_ {
+        self.graph.edges_directed(node, Outgoing).map(|(_, n, (lvl, _))| (*lvl, n))
     }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable, Hash)]
 enum Kind {
     Named(Symbol),
-    Hidden,
+    // Unclear why we need to keep `Hideen` around
+    Hidden(Symbol),
 }
 
 impl Kind {
-    pub(crate) fn qname_ident(&self, method: Ident) -> QName {
+    fn ident(&self) -> Ident {
+        match self {
+            Kind::Named(nm) => nm.as_str().into(),
+            Kind::Hidden(nm) => nm.as_str().into(),
+        }
+    }
+    fn qname_ident(&self, method: Ident) -> QName {
         let module = match &self {
             Kind::Named(name) => vec![name.to_string().into()],
             _ => Vec::new(),
@@ -354,7 +393,7 @@ impl Into<CloneKind> for Kind {
     fn into(self) -> CloneKind {
         match self {
             Kind::Named(i) => CloneKind::Named(i.to_string().into()),
-            Kind::Hidden => CloneKind::Bare,
+            Kind::Hidden(_) => CloneKind::Bare,
         }
     }
 }
@@ -409,30 +448,28 @@ impl<'tcx> CloneMap<'tcx> {
         let mut dep_info = IndexMap::default();
 
         debug!("cloning self: {:?}", self_id);
-        names.names.insert(CloneNode::from_trans_id(tcx, self_id), Kind::Hidden);
-        dep_info.insert(CloneNode::from_trans_id(tcx, self_id), CloneLevel::Body);
+        let node = DepNode::from_trans_id(tcx, self_id);
+        names.names.insert(node, Kind::Hidden(node.base_ident(tcx)));
+        dep_info.insert(node, CloneLevel::Body);
 
         CloneMap { tcx, self_id, names, dep_info, dep_level: CloneLevel::Body }
     }
 
-    pub(crate) fn with_vis<F, A>(&mut self, vis: CloneLevel, f: F) -> A
-    where
-        F: FnOnce(&mut Self) -> A,
-    {
-        let public = std::mem::replace(&mut self.dep_level, vis);
-        let ret = f(self);
-        self.dep_level = public;
-        ret
-    }
-
     /// Internal: only meant for mutually recursive type declaration
     pub(crate) fn insert_hidden(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) {
-        let node = CloneNode::new(self.tcx, (def_id, subst)).erase_regions(self.tcx);
-        self.names.names.insert(node, Kind::Hidden);
+        let node = DepNode::new(self.tcx, (def_id, subst)).erase_regions(self.tcx);
+        self.names.names.insert(node, Kind::Hidden(node.base_ident(self.tcx)));
         self.dep_info.insert(node, CloneLevel::Body);
     }
 
-    fn insert(&mut self, key: CloneNode<'tcx>) -> Kind {
+    // Hack: for closure ty decls
+    pub(crate) fn insert_hidden_type(&mut self, ty: Ty<'tcx>) {
+        let node = DepNode::Type(ty);
+        self.names.names.insert(node, Kind::Hidden(node.base_ident(self.tcx)));
+        self.dep_info.insert(node, CloneLevel::Body);
+    }
+
+    fn insert(&mut self, key: DepNode<'tcx>) -> Kind {
         let key = key.erase_regions(self.tcx).closure_hack(self.tcx);
         self.dep_info
             .entry(key)
@@ -444,74 +481,8 @@ impl<'tcx> CloneMap<'tcx> {
         self.names.insert(key)
     }
 
-    pub(crate) fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        let name = item_name(self.tcx, def_id, Namespace::ValueNS);
-        let node = CloneNode::new(self.tcx, (def_id, subst));
-        self.insert(node).qname_ident(name.into())
-    }
-
-    pub(crate) fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        let name = item_name(self.tcx, def_id, Namespace::TypeNS);
-        let node = CloneNode::new(self.tcx, (def_id, subst));
-        self.insert(node).qname_ident(name.into())
-    }
-
-    pub(crate) fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        let type_id = match self.tcx.def_kind(def_id) {
-            DefKind::Closure | DefKind::Struct | DefKind::Enum | DefKind::Union => def_id,
-            DefKind::Variant => self.tcx.parent(def_id),
-            _ => unreachable!("Not a type or constructor"),
-        };
-        let mut name = item_name(self.tcx, def_id, Namespace::ValueNS);
-        name.capitalize();
-        let node = CloneNode::new(self.tcx, (type_id, subst));
-        self.insert(node).qname_ident(name.into())
-    }
-
-    /// Creates a name for a type or closure projection ie: x.field1
-    /// This also includes projections from `enum` types
-    ///
-    /// * `def_id` - The id of the type or closure being projected
-    /// * `subst` - Substitution that type is being accessed at
-    /// * `variant` - The constructor being used. For closures this is always 0
-    /// * `ix` - The field in that constructor being accessed.
-    pub(crate) fn accessor(
-        &mut self,
-        def_id: DefId,
-        subst: SubstsRef<'tcx>,
-        variant: usize,
-        ix: FieldIdx,
-    ) -> QName {
-        let tcx = self.tcx;
-        let node = CloneNode::new(self.tcx, (def_id, subst));
-        let clone = self.insert(node);
-        let name: Ident = match util::item_type(tcx, def_id) {
-            ItemType::Closure => format!("field_{}", ix.as_usize()).into(),
-            ItemType::Type => {
-                let variant_def = &tcx.adt_def(def_id).variants()[variant.into()];
-                let variant = variant_def;
-                format!(
-                    "{}_{}",
-                    variant.name.as_str().to_ascii_lowercase(),
-                    variant.fields[ix].name
-                )
-                .into()
-            }
-            _ => panic!("accessor: invalid item kind"),
-        };
-
-        clone.qname_ident(name.into())
-    }
-
-    pub(crate) fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName {
-        let def_id =
-            self.tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
-        let subst = self.tcx.mk_substs(&[ty::GenericArg::from(ty)]);
-        self.value(def_id, subst)
-    }
-
-    fn self_key(&self) -> CloneNode<'tcx> {
-        CloneNode::from_trans_id(self.tcx, self.self_id)
+    fn self_key(&self) -> DepNode<'tcx> {
+        DepNode::from_trans_id(self.tcx, self.self_id)
     }
 
     fn self_did(&self) -> Option<DefId> {
@@ -527,14 +498,6 @@ impl<'tcx> CloneMap<'tcx> {
         } else {
             ParamEnv::empty()
         }
-    }
-
-    pub(crate) fn import_prelude_module(&mut self, module: PreludeModule) {
-        self.import_builtin_module(module.qname());
-    }
-
-    pub(crate) fn import_builtin_module(&mut self, module: QName) {
-        self.names.prelude.entry(module).or_insert(false);
     }
 
     pub(crate) fn to_clones(
@@ -563,7 +526,7 @@ impl<'tcx> CloneMap<'tcx> {
             let mut i = 0;
             while i < roots.len() {
                 let r = roots.get_index(i).unwrap();
-                for (l, _, e) in clone_graph.dependencies(*r) {
+                for (l, e) in clone_graph.dependencies(*r) {
                     if l == CloneLevel::Signature {
                         roots.insert(e);
                     }
@@ -572,8 +535,12 @@ impl<'tcx> CloneMap<'tcx> {
             }
         }
 
-        let mut elab = CloneElaborator::new(param_env);
+        let mut elab = SymbolElaborator::new(param_env);
         let mut cloned = IndexSet::new();
+
+        for p in &clone_graph.builtins {
+            self.import_prelude_module(*p);
+        }
 
         let mut topo = DfsPostOrder::new(&clone_graph.graph, self.self_key());
         while let Some(node) = topo.walk_next(&clone_graph.graph) {
@@ -583,7 +550,7 @@ impl<'tcx> CloneMap<'tcx> {
                 continue;
             }
 
-            if clone_graph.info(node).kind == Kind::Hidden {
+            if matches!(clone_graph.info(node).kind, Kind::Hidden(_)) {
                 continue;
             }
 
@@ -591,8 +558,17 @@ impl<'tcx> CloneMap<'tcx> {
                 continue;
             }
 
-            let Some(decl) = elab.build_clone(ctx, &mut self, &clone_graph, node, depth) else { continue };
-            decls.push(decl);
+            let level_of_item = match (depth, clone_graph.info(node).opaque) {
+                // We are requesting a deep clone of an opaque thing: stop at the contract
+                (CloneDepth::Deep, CloneOpacity::Opaque) => CloneLevel::Contract,
+                // Otherwise, go deep and get the body
+                (CloneDepth::Deep, _) => CloneLevel::Body,
+                // If we are only doing shallow clones, stop at the signature (no contracts)
+                (CloneDepth::Shallow, _) => CloneLevel::Signature,
+            };
+
+            let decl = elab.build_clone(ctx, &mut self, &clone_graph, node, level_of_item);
+            decls.extend(decl);
         }
 
         // debug_assert!(topo.finished.len() >= self.names.len(), "missed a clone in {:?}", self.self_id);
@@ -601,7 +577,7 @@ impl<'tcx> CloneMap<'tcx> {
         let summary: CloneSummary<'tcx> = roots
             .into_iter()
             .filter_map(|r| {
-                if clone_graph.info(r).kind == Kind::Hidden {
+                if matches!(clone_graph.info(r).kind, Kind::Hidden(_)) {
                     None
                 } else {
                     Some((r, clone_graph.info(r).clone()))
@@ -636,91 +612,6 @@ pub(crate) enum CloneLevel {
     Body,
     /// This clone is an artificial edge internally injected to 'root' clones
     Root,
-}
-
-fn cloneable_name(ctx: &TranslationCtx, dep: DepNode, clone_level: CloneLevel) -> QName {
-    use util::ItemType::*;
-
-    if let DepNode::TyInv(_, inv_kind) = dep {
-        return inv_module_name(ctx.tcx, inv_kind).into();
-    }
-
-    let (def_id, _) = dep.did().unwrap();
-
-    // TODO: Refactor.
-    match util::item_type(ctx.tcx, def_id) {
-        Ghost | Logic | Predicate | Impl => match clone_level {
-            CloneLevel::Signature => QName {
-                module: Vec::new(),
-                name: format!("{}_Stub", &*module_name(ctx.tcx, def_id)).into(),
-            },
-            // Why do we do this? Why not use the stub here as well?
-            CloneLevel::Contract => interface::interface_name(ctx, def_id).into(),
-            CloneLevel::Body | CloneLevel::Root => module_name(ctx.tcx, def_id).into(),
-        },
-        Constant => match clone_level {
-            CloneLevel::Body => module_name(ctx.tcx, def_id).into(),
-            _ => QName {
-                module: Vec::new(),
-                name: format!("{}_Stub", &*module_name(ctx.tcx, def_id)).into(),
-            },
-        },
-
-        Program | Closure => {
-            QName { module: Vec::new(), name: interface::interface_name(ctx, def_id) }
-        }
-        Trait | Type | AssocTy => module_name(ctx.tcx, def_id).into(),
-        Unsupported(_) => unreachable!(),
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum SymbolKind {
-    Val(Symbol),
-    Type(Symbol),
-    Function(Symbol),
-    Predicate(Symbol),
-    Const(Symbol),
-}
-
-impl SymbolKind {
-    fn sym(&self) -> Symbol {
-        match self {
-            SymbolKind::Val(i) => *i,
-            SymbolKind::Type(i) => *i,
-            SymbolKind::Function(i) => *i,
-            SymbolKind::Predicate(i) => *i,
-            SymbolKind::Const(i) => *i,
-        }
-    }
-
-    fn ident(&self) -> Ident {
-        match self {
-            SymbolKind::Type(_) => ident_of_ty(self.sym()),
-            _ => ident_of(self.sym()),
-        }
-    }
-
-    fn to_subst(self, src: Kind, tgt: Kind) -> CloneSubst {
-        let id = self.ident();
-        match self {
-            SymbolKind::Val(_) => CloneSubst::Val(src.qname_ident(id.clone()), tgt.qname_ident(id)),
-            SymbolKind::Type(_) => CloneSubst::Type(
-                src.qname_ident(id.clone()),
-                why3::ty::Type::TConstructor(tgt.qname_ident(id)),
-            ),
-            SymbolKind::Function(_) => {
-                CloneSubst::Function(src.qname_ident(id.clone()), tgt.qname_ident(id))
-            }
-            SymbolKind::Predicate(_) => {
-                CloneSubst::Predicate(src.qname_ident(id.clone()), tgt.qname_ident(id))
-            }
-            SymbolKind::Const(_) => {
-                // TMP
-                CloneSubst::Val(src.qname_ident(id.clone()), tgt.qname_ident(id))
-            }
-        }
-    }
 }
 
 // Walk all the types in a substitution so we can add dependencies on them

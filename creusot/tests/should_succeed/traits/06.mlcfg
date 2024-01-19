@@ -1,121 +1,50 @@
 
-module CreusotContracts_Invariant_Inv_Stub
-  type t
-  predicate inv (_x : t)
-end
-module CreusotContracts_Invariant_Inv_Interface
-  type t
-  predicate inv (_x : t)
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
-module CreusotContracts_Invariant_Inv
-  type t
-  predicate inv (_x : t) =
-    [#"../../../../../creusot-contracts/src/invariant.rs" 16 4 16 8] true
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
-module C06_Ix_Tgt_Type
-  type self
-  type tgt
-end
-module CreusotContracts_Resolve_Resolve_Resolve_Stub
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Resolve_Resolve_Resolve_Interface
-  type self
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Resolve_Resolve
-  type self
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
-    ensures { result = resolve self }
-    
-end
-module TyInv_Trivial
-  type t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = t
-  axiom inv_trivial : forall self : t . Inv0.inv self = true
-end
-module C06_Ix_Ix_Interface
-  type self
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UIntSize
-  clone C06_Ix_Tgt_Type as Tgt0 with
-    type self = self
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = Tgt0.tgt
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = self
-  val ix [#"../06.rs" 6 4 6 41] (self : self) (ix : usize) : Tgt0.tgt
-    requires {[#"../06.rs" 6 11 6 15] Inv0.inv self}
-    ensures { [#"../06.rs" 6 31 6 40] Inv1.inv result }
-    
-end
-module C06_Test_Interface
-  type t
-  use prelude.Borrow
-  clone C06_Ix_Tgt_Type as Tgt0 with
-    type self = t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = Tgt0.tgt
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = t
-  val test [#"../06.rs" 9 0 11 15] (a : t) : Tgt0.tgt
-    requires {[#"../06.rs" 9 19 9 20] Inv0.inv a}
-    ensures { [#"../06.rs" 9 29 9 35] Inv1.inv result }
-    
-end
 module C06_Test
   type t
-  use prelude.Int
-  use prelude.UIntSize
+  type tgt0
+  predicate invariant1 (self : tgt0)
+  val invariant1 (self : tgt0) : bool
+    ensures { result = invariant1 self }
+    
+  predicate inv1 (_x : tgt0)
+  val inv1 (_x : tgt0) : bool
+    ensures { result = inv1 _x }
+    
+  axiom inv1 : [#"../06.rs" 1 0 1 0] forall x : tgt0 . inv1 x = true
+  predicate invariant0 (self : t)
+  val invariant0 (self : t) : bool
+    ensures { result = invariant0 self }
+    
+  predicate inv0 (_x : t)
+  val inv0 (_x : t) : bool
+    ensures { result = inv0 _x }
+    
+  axiom inv0 : [#"../06.rs" 1 0 1 0] forall x : t . inv0 x = true
   use prelude.Borrow
-  clone C06_Ix_Tgt_Type as Tgt0 with
-    type self = t
-  clone CreusotContracts_Invariant_Inv_Interface as Inv1 with
-    type t = Tgt0.tgt
-  clone TyInv_Trivial as TyInv_Trivial1 with
-    type t = Tgt0.tgt,
-    predicate Inv0.inv = Inv1.inv,
-    axiom .
-  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
-    type t = t
-  clone TyInv_Trivial as TyInv_Trivial0 with
-    type t = t,
-    predicate Inv0.inv = Inv0.inv,
-    axiom .
-  clone C06_Ix_Ix_Interface as Ix0 with
-    type self = t,
-    predicate Inv0.inv = Inv0.inv,
-    predicate Inv1.inv = Inv1.inv,
-    type Tgt0.tgt = Tgt0.tgt
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
-    type self = t
-  let rec cfg test [#"../06.rs" 9 0 11 15] [@cfg:stackify] [@cfg:subregion_analysis] (a : t) : Tgt0.tgt
-    requires {[#"../06.rs" 9 19 9 20] Inv0.inv a}
-    ensures { [#"../06.rs" 9 29 9 35] Inv1.inv result }
+  use prelude.UIntSize
+  use prelude.Int
+  val ix0 [#"../06.rs" 6 4 6 41] (self : t) (ix : usize) : tgt0
+    requires {[#"../06.rs" 6 11 6 15] inv0 self}
+    ensures { [#"../06.rs" 6 31 6 40] inv1 result }
+    
+  predicate resolve0 (self : t)
+  val resolve0 (self : t) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg test [#"../06.rs" 9 0 11 15] [@cfg:stackify] [@cfg:subregion_analysis] (a : t) : tgt0
+    requires {[#"../06.rs" 9 19 9 20] inv0 a}
+    ensures { [#"../06.rs" 9 29 9 35] inv1 result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : Tgt0.tgt;
+  var _0 : tgt0;
   var a : t = a;
   {
     goto BB0
   }
   BB0 {
-    assert { [@expl:type invariant] Inv0.inv a };
-    assume { Resolve0.resolve a };
-    _0 <- ([#"../06.rs" 13 4 13 11] Ix0.ix ([#"../06.rs" 13 4 13 11] a) ([#"../06.rs" 13 9 13 10] [#"../06.rs" 13 9 13 10] (0 : usize)));
+    assert { [@expl:type invariant] inv0 a };
+    assume { resolve0 a };
+    _0 <- ([#"../06.rs" 13 4 13 11] ix0 ([#"../06.rs" 13 4 13 11] a) ([#"../06.rs" 13 9 13 10] [#"../06.rs" 13 9 13 10] (0 : usize)));
     goto BB1
   }
   BB1 {

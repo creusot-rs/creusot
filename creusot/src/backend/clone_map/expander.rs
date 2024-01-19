@@ -1,10 +1,19 @@
 use std::collections::VecDeque;
 
+use crate::{
+    backend::{
+        program::{int_to_prelude, uint_to_prelude},
+        ty_inv,
+    },
+    translation::traits,
+    util::get_builtin,
+};
 use petgraph::Direction;
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{subst::SubstsRef, AliasKind, ParamEnv, Ty, TyKind};
-
-use crate::{backend::ty_inv, translation::traits};
+use rustc_middle::{
+    mir::Mutability,
+    ty::{subst::SubstsRef, AliasKind, ParamEnv, Ty, TyKind},
+};
 
 use super::*;
 
@@ -51,7 +60,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         ctx: &mut Why3Generator<'tcx>,
         depth: CloneDepth,
     ) -> DepGraph<'tcx> {
-        let self_key = CloneNode::from_trans_id(ctx.tcx, self.self_id);
+        let self_key = DepNode::from_trans_id(ctx.tcx, self.self_id);
 
         for key in &self.expansion_queue {
             if *key != self_key {
@@ -61,7 +70,6 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
         while let Some(key) = self.expansion_queue.pop_front() {
             trace!("update graph with {:?} (public={:?})", key, self.clone_graph.info(key).level);
-
             if depth == CloneDepth::Shallow && !self.clone_graph.is_root(key) {
                 // If there is a Signature level edge from a pre-existing root node, mark this one as root as well as it must be an associated type in
                 // a root signature
@@ -80,10 +88,6 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 self.clone_graph.add_graph_edge(self_key, key, CloneLevel::Root);
             }
 
-            if self.clone_graph.info(key).kind == Kind::Hidden {
-                continue;
-            }
-
             if let Some((did, subst)) = key.did() {
                 if traits::still_specializable(ctx.tcx, self.param_env, did, subst) {
                     self.clone_graph.info_mut(key).opaque();
@@ -94,6 +98,10 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                     .is_some_and(|(self_did, _)| !ctx.is_transparent_from(did, self_did))
                 {
                     self.clone_graph.info_mut(key).opaque();
+                }
+
+                if matches!(key, DepNode::Item(_, _)) && get_builtin(ctx.tcx, did).is_some() {
+                    continue;
                 }
 
                 ctx.translate(did);
@@ -122,10 +130,8 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         let key_public = self.clone_graph.info(key).level;
 
         for p in ctx.projections_in_ty(id).to_owned() {
-            let node = self.resolve_dep(
-                ctx,
-                CloneNode::new(ctx.tcx, (p.def_id, p.substs)).subst(ctx.tcx, key),
-            );
+            let node = self
+                .resolve_dep(ctx, DepNode::new(ctx.tcx, (p.def_id, p.substs)).subst(ctx.tcx, key));
 
             let is_type = self
                 .self_did()
@@ -142,19 +148,19 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     fn expand_subst(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
         let Some((_, key_subst)) = key.did() else { return; };
         let key_public = self.clone_graph.info(key).level;
-
         // Check the substitution for node dependencies on closures
         walk_types(key_subst, |t| {
             let node = match t.kind() {
                 TyKind::Alias(AliasKind::Projection, pty) => {
-                    let node = CloneNode::new(ctx.tcx, (pty.def_id, pty.substs));
+                    let node = DepNode::new(ctx.tcx, (pty.def_id, pty.substs));
                     Some(self.resolve_dep(ctx, node))
                 }
-                TyKind::Closure(id, subst) => {
-                    // Sketchy... shouldn't we need to do something to subst?
-                    Some(CloneNode::new(ctx.tcx, (*id, *subst)))
-                }
-                TyKind::Adt(_, _) => Some(CloneNode::Type(t)),
+                TyKind::Closure(_, _) => Some(DepNode::Type(t)),
+                TyKind::Ref(_, _, Mutability::Mut) => Some(DepNode::Buitlin(PreludeModule::Borrow)),
+                TyKind::Int(ity) => Some(DepNode::Buitlin(int_to_prelude(*ity))),
+                TyKind::Uint(uty) => Some(DepNode::Buitlin(uint_to_prelude(*uty))),
+                TyKind::Slice(_) => Some(DepNode::Buitlin(PreludeModule::Slice)),
+                TyKind::Adt(_, _) => Some(DepNode::Type(t)),
                 _ => None,
             };
 
@@ -168,10 +174,11 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     fn expand_dependencies(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
         let key_public = self.clone_graph.info(key).level;
 
+        if let DepNode::TyInv(_, _) = key {
+            // eprintln!("deps of{key:?} {:#?} ", ctx.dependencies(key));
+        }
         for (dep, info) in ctx.dependencies(key).iter().flat_map(|i| i.iter()) {
             trace!("adding dependency {:?} {:?}", dep, info.level);
-
-            let orig = dep;
 
             let dep = self.resolve_dep(ctx, dep.subst(ctx.tcx, key));
 
@@ -183,10 +190,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 continue;
             }
 
-            let edge_set = self.clone_graph.add_graph_edge(key, dep, info.level);
-            if let Some(sym) = refineable_symbol(ctx.tcx, *orig) {
-                edge_set.insert((info.kind, sym));
-            }
+            self.clone_graph.add_graph_edge(key, dep, info.level);
         }
     }
 
@@ -199,7 +203,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         let inv_kind = if ty_inv::is_tyinv_trivial(ctx.tcx, param_env, ty, true) {
             TyInvKind::Trivial
         } else {
-            TyInvKind::from_ty(ty)
+            TyInvKind::from_ty(ctx.tcx, ty).unwrap_or(TyInvKind::Trivial)
         };
 
         if let TransId::TyInv(self_kind) = self.self_id && self_kind == inv_kind {
@@ -257,24 +261,5 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         if self.clone_graph.add_node(dep, self.namer.insert(dep), level) {
             self.expansion_queue.push_back(dep);
         }
-    }
-}
-
-// Identify the name and kind of symbol which can be refined in a given defid
-fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, dep: DepNode<'tcx>) -> Option<SymbolKind> {
-    use util::ItemType::*;
-    let (def_id, _) = dep.did()?;
-    match util::item_type(tcx, def_id) {
-        Ghost | Logic => Some(SymbolKind::Function(tcx.item_name(def_id))),
-        Predicate => Some(SymbolKind::Predicate(tcx.item_name(def_id))),
-        Program => Some(SymbolKind::Val(tcx.item_name(def_id))),
-        AssocTy => match tcx.associated_item(def_id).container {
-            ty::TraitContainer => Some(SymbolKind::Type(tcx.item_name(def_id))),
-            ty::ImplContainer => None,
-        },
-        Trait | Impl => unreachable!("trait blocks have no refinable symbols"),
-        Type => None,
-        Constant => Some(SymbolKind::Const(tcx.item_name(def_id))),
-        _ => unreachable!(),
     }
 }

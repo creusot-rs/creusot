@@ -1,44 +1,18 @@
 
-module CreusotContracts_Resolve_Impl1_Resolve_Stub
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-end
-module CreusotContracts_Resolve_Impl1_Resolve_Interface
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl1_Resolve
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
-module Unnest_Unnest_Interface
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  val unnest [#"../unnest.rs" 8 0 8 64] (x : borrowed (borrowed uint32)) : borrowed uint32
-    ensures { [#"../unnest.rs" 5 10 5 24]  * result =  *  * x }
-    ensures { [#"../unnest.rs" 6 10 6 24]  ^ result =  *  ^ x }
-    ensures { [#"../unnest.rs" 7 10 7 20]  ^  * x =  ^  ^ x }
-    
-end
 module Unnest_Unnest
-  use prelude.Borrow
-  use prelude.Int
   use prelude.UInt32
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
-    type t = borrowed uint32
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = uint32
+  use prelude.Int
+  use prelude.Borrow
+  predicate resolve1 (self : borrowed (borrowed uint32)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve1 (self : borrowed (borrowed uint32)) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : borrowed uint32) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve0 (self : borrowed uint32) : bool
+    ensures { result = resolve0 self }
+    
   let rec cfg unnest [#"../unnest.rs" 8 0 8 64] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed (borrowed uint32)) : borrowed uint32
     ensures { [#"../unnest.rs" 5 10 5 24]  * result =  *  * x }
     ensures { [#"../unnest.rs" 6 10 6 24]  ^ result =  *  ^ x }
@@ -56,8 +30,8 @@ module Unnest_Unnest
     x <- { x with current = { ( * x) with current = ( ^ _2) } };
     _0 <- Borrow.borrow_mut ( * _2);
     _2 <- { _2 with current = ( ^ _0) };
-    assume { Resolve0.resolve _2 };
-    assume { Resolve1.resolve x };
+    assume { resolve0 _2 };
+    assume { resolve1 x };
     return _0
   }
   

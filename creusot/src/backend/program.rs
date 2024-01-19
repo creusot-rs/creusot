@@ -1,14 +1,15 @@
 use super::{
     clone_map::PreludeModule,
+    dependency::HackedId,
     signature::signature_of,
     term::{lower_impure, lower_pure},
-    CloneDepth, Why3Generator,
+    CloneDepth, Namer, TransId, Why3Generator,
 };
 use crate::{
     backend::{
         closure_generic_decls, optimization, place,
         place::translate_rplace,
-        ty::{self, closure_accessors, translate_closure_ty, translate_ty},
+        ty::{self, translate_closure_ty, translate_ty},
     },
     ctx::{BodyId, CloneMap, TranslationCtx},
     translation::{
@@ -16,7 +17,7 @@ use crate::{
         fmir::{
             self, Block, Branches, Expr, ExprKind, LocalDecls, Place, RValue, Statement, Terminator,
         },
-        function::{closure_contract, promoted, ClosureContract},
+        function::promoted,
         unop_to_unop,
     },
     util::{self, module_name, ItemType},
@@ -29,7 +30,7 @@ use rustc_middle::{
 use rustc_span::DUMMY_SP;
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
-    declaration::{self, Attribute, CfgFunction, Decl, LetDecl, LetKind, Module, Predicate, Use},
+    declaration::{self, Attribute, CfgFunction, Decl, LetDecl, LetKind, Module},
     exp::{Constant, Exp, Pattern},
     mlcfg,
     mlcfg::BlockId,
@@ -42,7 +43,8 @@ fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
     let mut names = CloneMap::new(ctx.tcx, def_id.into());
     let mut decls = Vec::new();
 
-    let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).subst_identity().kind() else { unreachable!() };
+    let TyKind::Closure(_, subst) = ctx.type_of(def_id).subst_identity().kind() else { unreachable!() };
+    names.insert_hidden_type(ctx.type_of(def_id).subst_identity());
     let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
 
     let (clones, _) = names.to_clones(ctx, CloneDepth::Deep);
@@ -55,42 +57,78 @@ fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
     Module { name: format!("{}_Type", &*module_name(ctx.tcx, def_id)).into(), decls }
 }
 
-pub(crate) fn closure_type_use<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Option<Decl> {
-    if !ctx.is_closure(def_id) {
-        return None;
-    }
-
-    Some(Decl::UseDecl(Use {
-        name: format!("{}_Type", &*module_name(ctx.tcx, def_id)).into(),
-        as_: None,
-        export: true,
-    }))
-}
-
 pub(crate) fn closure_aux_defs<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    _: &mut CloneMap<'tcx>,
     def_id: DefId,
 ) -> Vec<Decl> {
-    let mut decls: Vec<_> = closure_accessors(ctx, def_id)
-        .into_iter()
-        .map(|(sym, sig, body)| -> Decl {
-            let mut sig = sig_to_why3(ctx, names, sig, def_id);
-            sig.name = Ident::build(sym.as_str());
+    // COMPLETE HACK. This should be properly cleaned up
+    let contract = ctx.closure_contract(def_id).clone();
 
-            Decl::Let(LetDecl {
-                kind: Some(LetKind::Function),
-                rec: false,
-                ghost: false,
-                sig,
-                body: lower_pure(ctx, names, body),
-            })
-        })
-        .collect();
-    let contract = closure_contract(ctx, def_id).to_why(ctx, def_id, names);
+    // HACK RESOLVE
+    let mut names = CloneMap::new(ctx.tcx, def_id.into());
+    sig_to_why3(ctx, &mut names, contract.resolve.0, def_id);
+    lower_pure(ctx, &mut names, contract.resolve.1);
 
-    decls.extend(contract);
-    decls
+    let (_, deps) = names.to_clones(ctx, CloneDepth::Shallow);
+    ctx.dependencies.insert(TransId::Hacked(HackedId::Resolve, def_id), deps);
+
+    // HACK PRECOND
+    let mut names = CloneMap::new(ctx.tcx, def_id.into());
+    sig_to_why3(ctx, &mut names, contract.precond.0, def_id);
+    lower_pure(ctx, &mut names, contract.precond.1);
+
+    let (_, deps) = names.to_clones(ctx, CloneDepth::Shallow);
+    ctx.dependencies.insert(TransId::Hacked(HackedId::Precondition, def_id), deps);
+
+    // HACK POST ONCE
+    if let Some((sig, term)) = contract.postcond_once {
+        let mut names = CloneMap::new(ctx.tcx, def_id.into());
+        sig_to_why3(ctx, &mut names, sig, def_id);
+        lower_pure(ctx, &mut names, term);
+
+        let (_, deps) = names.to_clones(ctx, CloneDepth::Shallow);
+        ctx.dependencies.insert(TransId::Hacked(HackedId::PostconditionOnce, def_id), deps);
+    }
+
+    // HACK POST MUT
+    if let Some((sig, term)) = contract.postcond_mut {
+        let mut names = CloneMap::new(ctx.tcx, def_id.into());
+        sig_to_why3(ctx, &mut names, sig, def_id);
+        lower_pure(ctx, &mut names, term);
+
+        let (_, deps) = names.to_clones(ctx, CloneDepth::Shallow);
+        ctx.dependencies.insert(TransId::Hacked(HackedId::PostconditionMut, def_id), deps);
+    }
+    // HACK POST
+    if let Some((sig, term)) = contract.postcond {
+        let mut names = CloneMap::new(ctx.tcx, def_id.into());
+        sig_to_why3(ctx, &mut names, sig, def_id);
+        lower_pure(ctx, &mut names, term);
+
+        let (_, deps) = names.to_clones(ctx, CloneDepth::Shallow);
+        ctx.dependencies.insert(TransId::Hacked(HackedId::Postcondition, def_id), deps);
+    }
+    // HACK UNNEst
+    if let Some((sig, term)) = contract.unnest {
+        let mut names = CloneMap::new(ctx.tcx, def_id.into());
+        sig_to_why3(ctx, &mut names, sig, def_id);
+        lower_pure(ctx, &mut names, term);
+
+        let (_, deps) = names.to_clones(ctx, CloneDepth::Shallow);
+        ctx.dependencies.insert(TransId::Hacked(HackedId::Unnest, def_id), deps);
+    } // END COMPLETE HACK
+      // decls.extend(contract);
+      // decls
+    for (ix, (sig, term)) in contract.accessors.into_iter().enumerate() {
+        let mut names = CloneMap::new(ctx.tcx, def_id.into());
+        sig_to_why3(ctx, &mut names, sig, def_id);
+        lower_pure(ctx, &mut names, term);
+
+        let (_, deps) = names.to_clones(ctx, CloneDepth::Shallow);
+        ctx.dependencies.insert(TransId::Hacked(HackedId::Accessor(ix as u8), def_id), deps);
+    }
+    Vec::new()
 }
 
 pub(crate) fn translate_closure<'tcx>(
@@ -100,53 +138,6 @@ pub(crate) fn translate_closure<'tcx>(
     assert!(ctx.is_closure(def_id));
 
     (closure_ty(ctx, def_id), translate_function(ctx, def_id))
-}
-
-impl<'tcx> ClosureContract<'tcx> {
-    pub(crate) fn to_why(
-        self,
-        ctx: &mut Why3Generator<'tcx>,
-        def_id: DefId,
-        names: &mut CloneMap<'tcx>,
-    ) -> impl Iterator<Item = Decl> {
-        std::iter::once({
-            let mut sig = sig_to_why3(ctx, names, self.resolve.0, def_id);
-            sig.retty = None;
-            sig.name = Ident::build("resolve");
-            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, names, self.resolve.1) })
-        })
-        .chain(self.unnest.map(|(s, t)| {
-            let mut sig = sig_to_why3(ctx, names, s, def_id);
-            sig.retty = None;
-            sig.name = Ident::build("unnest");
-            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, names, t) })
-        }))
-        .chain(std::iter::once({
-            let mut sig = sig_to_why3(ctx, names, self.precond.0, def_id);
-            sig.retty = None;
-            sig.name = Ident::build("precondition");
-
-            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, names, self.precond.1) })
-        }))
-        .chain(self.postcond_once.map(|(s, t)| {
-            let mut sig = sig_to_why3(ctx, names, s, def_id);
-            sig.retty = None;
-            sig.name = Ident::build("postcondition_once");
-            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, names, t) })
-        }))
-        .chain(self.postcond_mut.map(|(s, t)| {
-            let mut sig = sig_to_why3(ctx, names, s, def_id);
-            sig.retty = None;
-            sig.name = Ident::build("postcondition_mut");
-            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, names, t) })
-        }))
-        .chain(self.postcond.map(|(s, t)| {
-            let mut sig = sig_to_why3(ctx, names, s, def_id);
-            sig.retty = None;
-            sig.name = Ident::build("postcondition");
-            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, names, t) })
-        }))
-    }
 }
 
 pub(crate) fn translate_function<'tcx, 'sess>(
@@ -173,7 +164,6 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     let (clones, _) = names.to_clones(ctx, CloneDepth::Deep);
 
     let decls = closure_generic_decls(ctx.tcx, def_id)
-        .chain(closure_type_use(ctx, def_id))
         .chain(clones)
         .chain(closure_defs)
         .chain(promoteds)
@@ -307,10 +297,10 @@ pub fn to_why<'tcx>(
 }
 
 impl<'tcx> Expr<'tcx> {
-    pub(crate) fn to_why(
+    pub(crate) fn to_why<N: Namer<'tcx>>(
         self,
         ctx: &mut Why3Generator<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut N,
         locals: &LocalDecls<'tcx>,
     ) -> Exp {
         let e = match self.kind {
@@ -643,10 +633,10 @@ impl<'tcx> Block<'tcx> {
 }
 
 impl<'tcx> Place<'tcx> {
-    pub(crate) fn as_rplace(
+    pub(crate) fn as_rplace<N: Namer<'tcx>>(
         &self,
         ctx: &mut Why3Generator<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut N,
         locals: &LocalDecls<'tcx>,
     ) -> why3::Exp {
         translate_rplace(ctx, names, locals, self.local, &self.projection)
@@ -729,7 +719,7 @@ impl<'tcx> Statement<'tcx> {
     }
 }
 
-fn int_to_prelude(ity: IntTy) -> PreludeModule {
+pub(crate) fn int_to_prelude(ity: IntTy) -> PreludeModule {
     match ity {
         IntTy::Isize => PreludeModule::Isize,
         IntTy::I8 => PreludeModule::Int8,
@@ -740,7 +730,7 @@ fn int_to_prelude(ity: IntTy) -> PreludeModule {
     }
 }
 
-fn uint_to_prelude(ity: UintTy) -> PreludeModule {
+pub(crate) fn uint_to_prelude(ity: UintTy) -> PreludeModule {
     match ity {
         UintTy::Usize => PreludeModule::Usize,
         UintTy::U8 => PreludeModule::UInt8,

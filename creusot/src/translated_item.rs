@@ -16,7 +16,8 @@ pub enum TranslatedItem {
         has_axioms: bool,
     },
     Closure {
-        interface: Vec<Module>,
+        ty_modl: Module,
+        interface: Module,
         modl: Option<Module>,
     },
     Program {
@@ -45,30 +46,20 @@ pub enum TranslatedItem {
 }
 
 impl<'a> TranslatedItem {
-    pub(crate) fn has_axioms(&self) -> bool {
-        match self {
-            TranslatedItem::Logic { has_axioms, .. } => *has_axioms,
-            TranslatedItem::Program { .. } => false,
-            _ => false,
-        }
-    }
-
     pub(crate) fn modules(self) -> Box<dyn Iterator<Item = Module>> {
         use std::iter;
         use TranslatedItem::*;
         match self {
-            Logic { interface, stub, modl, proof_modl, .. } => Box::new(
-                iter::once(stub)
-                    .chain(iter::once(interface))
-                    .chain(iter::once(modl))
-                    .chain(proof_modl.into_iter()),
+            Logic { proof_modl, .. } => Box::new(
+                // iter::once(stub)
+                // .chain(iter::once(interface))
+                // .chain(iter::once(modl))
+                proof_modl.into_iter(), // .chain(proof_modl.into_iter()),
             ),
-            Program { interface, modl, .. } => {
-                Box::new(iter::once(interface).chain(modl.into_iter()))
-            }
+            Program { modl, .. } => Box::new(modl.into_iter()),
             Trait { .. } => Box::new(iter::empty()),
             Impl { modl, .. } => Box::new(iter::once(modl)),
-            AssocTy { modl, .. } => Box::new(iter::once(modl)),
+            AssocTy { .. } => Box::new(iter::empty()),
             Constant { stub, modl, .. } => {
                 Box::new(std::iter::once(stub).chain(std::iter::once(modl)))
             }
@@ -77,28 +68,8 @@ impl<'a> TranslatedItem {
 
                 Box::new(modl.into_iter())
             }
-            Closure { interface, modl } => Box::new(interface.into_iter().chain(modl.into_iter())),
-            TyInv { modl } => Box::new(iter::once(modl)),
-        }
-    }
-
-    pub(crate) fn interface(self) -> Box<dyn Iterator<Item = Module>> {
-        match self {
-            TranslatedItem::Logic { interface, modl, stub, .. } => Box::new(
-                std::iter::once(stub)
-                    .chain(std::iter::once(interface))
-                    .chain(std::iter::once(modl)),
-            ),
-            TranslatedItem::Program { interface, .. } => Box::new(std::iter::once(interface)),
-            TranslatedItem::Trait { .. } => Box::new(std::iter::empty()),
-            TranslatedItem::Impl { modl, .. } => Box::new(std::iter::once(modl)),
-            TranslatedItem::AssocTy { modl, .. } => Box::new(std::iter::once(modl)),
-            TranslatedItem::Constant { stub, modl, .. } => {
-                Box::new(std::iter::once(stub).chain(std::iter::once(modl)))
-            }
-            TranslatedItem::Type { .. } => self.modules(),
-            TranslatedItem::Closure { interface, modl: _ } => Box::new(interface.into_iter()),
-            TranslatedItem::TyInv { modl } => Box::new(std::iter::once(modl)),
+            Closure { ty_modl, modl, .. } => Box::new(iter::once(ty_modl).chain(modl.into_iter())),
+            TyInv { .. } => Box::new(iter::empty()),
         }
     }
 }

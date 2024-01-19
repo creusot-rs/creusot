@@ -46,8 +46,6 @@ pub trait Print {
     }
 }
 
-use itertools::*;
-
 // TODO: replace with functions
 macro_rules! parens {
     ($alloc:ident, $env:ident, $parent:ident, $child:ident) => {
@@ -1226,28 +1224,12 @@ impl Print for QName {
     fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
-        env: &mut PrintEnv,
+        _: &mut PrintEnv,
     ) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
-        use itertools::EitherOrBoth::*;
-        // Strip the shared prefix between currently open scope and the identifier we are printing
-        let module_path = env
-            .scopes
-            .iter()
-            .zip_longest(self.module.iter())
-            // Skip the common prefix, and keep everything else.
-            .skip_while(|e| match e {
-                // Skip common prefix
-                Both(p, m) => p == m,
-                _ => false,
-            })
-            // If the opened scopes were longer, drop them
-            .filter(|e| !e.is_left())
-            .map(|t| t.reduce(|_, f| f))
-            // TODO investigate if this clone can be removed :/
-            .map(|t| alloc.text(t.0.clone()));
+        let module_path = self.module.iter().map(|t| alloc.text(&t.0));
 
         alloc.intersperse(module_path.chain(std::iter::once(alloc.text(self.name().0))), ".")
     }

@@ -6,6 +6,7 @@ use why3::declaration::{Decl, TyDecl};
 
 use crate::{
     ctx::{TranslatedItem, TranslationCtx},
+    translation::pearlite::Term,
     util::{self, ItemType},
 };
 use std::{
@@ -15,7 +16,10 @@ use std::{
 
 pub(crate) use clone_map::*;
 
-use self::{dependency::Dependency, ty_inv::TyInvKind};
+use self::{
+    dependency::{Dependency, HackedId},
+    ty_inv::TyInvKind,
+};
 
 pub(crate) mod clone_map;
 pub(crate) mod constant;
@@ -35,6 +39,7 @@ pub(crate) mod ty_inv;
 pub(crate) enum TransId {
     Item(DefId),
     TyInv(TyInvKind),
+    Hacked(HackedId, DefId),
 }
 
 impl From<DefId> for TransId {
@@ -75,6 +80,26 @@ impl<'tcx> Why3Generator<'tcx> {
             functions: Default::default(),
             translated_items: Default::default(),
             in_translation: Default::default(),
+        }
+    }
+
+    fn term(&mut self, id: impl Into<TransId>) -> Option<&Term<'tcx>> {
+        match id.into() {
+            TransId::Item(id) => self.ctx.term(id),
+            // For the moment at least
+            TransId::TyInv(_) => unreachable!(),
+            TransId::Hacked(h, id) => {
+                let c = self.ctx.closure_contract(id);
+                match h {
+                    HackedId::PostconditionOnce => Some(&c.postcond_once.as_ref()?.1),
+                    HackedId::PostconditionMut => Some(&c.postcond_mut.as_ref()?.1),
+                    HackedId::Postcondition => Some(&c.postcond.as_ref()?.1),
+                    HackedId::Precondition => Some(&c.precond.1),
+                    HackedId::Unnest => Some(&c.unnest.as_ref()?.1),
+                    HackedId::Resolve => Some(&c.resolve.1),
+                    HackedId::Accessor(ix) => Some(&c.accessors[ix as usize].1),
+                }
+            }
         }
     }
 
@@ -184,7 +209,7 @@ impl<'tcx> Why3Generator<'tcx> {
                 let (ty_modl, modl) = program::translate_closure(self, def_id);
                 self.dependencies.insert(def_id.into(), deps);
 
-                TranslatedItem::Closure { interface: vec![ty_modl, interface], modl }
+                TranslatedItem::Closure { ty_modl, interface, modl }
             }
             ItemType::Program => {
                 debug!("translating {def_id:?} as program");
@@ -237,15 +262,15 @@ impl<'tcx> Why3Generator<'tcx> {
         self.functions.insert(tid, TranslatedItem::TyInv { modl });
     }
 
-    pub(crate) fn item(&self, def_id: DefId) -> Option<&TranslatedItem> {
-        let tid: TransId = if matches!(util::item_type(***self, def_id), ItemType::Type) {
-            self.representative_type(def_id)
-        } else {
-            def_id
-        }
-        .into();
-        self.functions.get(&tid)
-    }
+    // pub(crate) fn item(&self, def_id: DefId) -> Option<&TranslatedItem> {
+    //     let tid: TransId = if matches!(util::item_type(***self, def_id), ItemType::Type) {
+    //         self.representative_type(def_id)
+    //     } else {
+    //         def_id
+    //     }
+    //     .into();
+    //     self.functions.get(&tid)
+    // }
 
     pub(crate) fn modules(self) -> impl Iterator<Item = (TransId, TranslatedItem)> + 'tcx {
         self.functions.into_iter()
@@ -295,10 +320,7 @@ impl<'tcx> Why3Generator<'tcx> {
     }
 
     pub(crate) fn dependencies(&self, key: Dependency<'tcx>) -> Option<&CloneSummary<'tcx>> {
-        let tid = match key {
-            Dependency::TyInv(_, inv_kind) => TransId::TyInv(inv_kind),
-            _ => key.did().map(|(def_id, _)| TransId::Item(def_id))?,
-        };
+        let tid = key.to_trans_id()?;
         self.dependencies.get(&tid)
     }
 
@@ -309,6 +331,21 @@ impl<'tcx> Why3Generator<'tcx> {
         };
 
         &self.projections_in_ty[&item]
+    }
+
+    fn is_logical(&self, item: DefId) -> bool {
+        matches!(
+            util::item_type(self.tcx, item),
+            ItemType::Logic | ItemType::Predicate | ItemType::Ghost
+        )
+    }
+
+    fn is_accessor(&self, item: TransId) -> bool {
+        match item {
+            TransId::Hacked(HackedId::Accessor(_), _) => true,
+            TransId::Item(id) => self.def_kind(id) == DefKind::Field,
+            _ => false,
+        }
     }
 }
 
