@@ -1,11 +1,7 @@
 use std::borrow::Cow;
 
 use crate::{
-    backend::{all_generic_decls_for, closure_generic_decls},
-    ctx::*,
-    translation::pearlite::Term,
-    util,
-    util::get_builtin,
+    backend::all_generic_decls_for, ctx::*, translation::pearlite::Term, util, util::get_builtin,
 };
 use rustc_hir::def_id::DefId;
 use why3::{
@@ -52,16 +48,15 @@ pub(crate) fn binders_to_args(
 pub(crate) fn translate_logic_or_predicate<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
-) -> (Module, Module, Option<Module>, bool, CloneSummary<'tcx>) {
-    let has_axioms = !ctx.sig(def_id).contract.is_empty();
-
-    let (body_modl, deps) = if get_builtin(ctx.tcx, def_id).is_some() {
-        builtin_body(ctx, def_id)
+) -> (Option<Module>, CloneSummary<'tcx>) {
+    let deps = if get_builtin(ctx.tcx, def_id).is_some() {
+        builtin_body(ctx, def_id).1
     } else {
-        body_module(ctx, def_id)
+        body_deps(ctx, def_id)
     };
+
     let proof_modl = if def_id.is_local() { proof_module(ctx, def_id) } else { None };
-    (stub_module(ctx, def_id), body_modl, proof_modl, has_axioms, deps)
+    (proof_modl, deps)
 }
 
 fn builtin_body<'tcx>(
@@ -261,20 +256,14 @@ pub fn sigs<'tcx>(ctx: &mut Why3Generator<'tcx>, mut sig: Signature) -> (Signatu
     (sig, prog_sig)
 }
 
-fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
+fn body_deps<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> CloneSummary<'tcx> {
     let mut names = CloneMap::new(ctx.tcx, def_id.into());
 
-    let decls = body_decls(ctx, &mut names, def_id);
+    let _ = body_decls(ctx, &mut names, def_id);
 
-    let name = module_name(ctx.tcx, def_id);
+    let (_, summary) = names.to_clones(ctx, CloneDepth::Shallow);
 
-    let (clones, summary) = names.to_clones(ctx, CloneDepth::Shallow);
-    let decls = closure_generic_decls(ctx.tcx, def_id)
-        .chain(clones.into_iter())
-        .chain(decls.into_iter())
-        .collect();
-
-    (Module { name, decls }, summary)
+    summary
 }
 
 fn subst_qname(body: &mut Exp, name: &Ident, lim_name: &Ident) {
@@ -321,29 +310,6 @@ fn limited_function_encode(
     decls.push(Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig: sig.clone() }));
     decls.push(Decl::Axiom(definition_axiom(&sig, body, "def")));
     decls.push(Decl::Axiom(definition_axiom(&sig, lim_call, "def_lim")));
-}
-
-pub(crate) fn stub_module(ctx: &mut Why3Generator, def_id: DefId) -> Module {
-    let mut names = CloneMap::new(ctx.tcx, def_id.into());
-    let mut sig = signature_of(ctx, &mut names, def_id);
-
-    if util::is_predicate(ctx.tcx, def_id) {
-        sig.retty = None;
-    }
-    sig.contract = Contract::new();
-
-    let decl = Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig));
-
-    let name = module_name(ctx.tcx, def_id);
-    let name = format!("{}_Stub", &*name).into();
-
-    let mut decls: Vec<_> = Vec::new();
-    decls.extend(all_generic_decls_for(ctx.tcx, def_id));
-    let (clones, _) = names.to_clones(ctx, CloneDepth::Shallow);
-    decls.extend(clones);
-    decls.push(decl);
-
-    Module { name, decls }
 }
 
 fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
