@@ -9,15 +9,14 @@ use rustc_span::Symbol;
 use rustc_target::abi::FieldIdx;
 
 use why3::{
-    declaration::{Axiom, Decl, LetDecl, LetKind, Predicate, Signature, Use, ValDecl},
+    declaration::{Axiom, Decl, LetDecl, LetKind, Signature, Use, ValDecl},
     Ident, QName,
 };
 
 use crate::{
     backend::{
         dependency::HackedId,
-        logic::{lower_body_term, sigs, spec_axiom},
-        program::{int_to_prelude, uint_to_prelude},
+        logic::{lower_logical_defn, lower_pure_defn, sigs, spec_axiom},
         signature::sig_to_why3,
         term::lower_pure,
         ty_inv::elaborate_inv,
@@ -53,19 +52,44 @@ impl<'tcx> SymbolElaborator<'tcx> {
         item: DepNode<'tcx>,
         level_of_item: CloneLevel,
     ) -> Vec<Decl> {
-        // Types can't be cloned, but are used (for now).
-        if let DepNode::Type(ty) = item {
-            // eprintln!("Cloning type {item:?}");
-            let Some((def_id, subst)) = item.did() else {
-                match ty.kind() {
-                    TyKind::Int(ity) => names.import_prelude_module(int_to_prelude(*ity)),
-                    TyKind::Uint(uty) => names.import_prelude_module(uint_to_prelude(*uty)),
-                    _ => (),
-                }
-                return Vec::new()
-            };
-            // check if type is not an assoc type
-            if util::item_type(ctx.tcx, def_id) != ItemType::AssocTy {
+        let old_names = names;
+        let mut names = SymNamer {
+            tcx: ctx.tcx,
+            names: old_names.names.clone(),
+            param_env: old_names.param_env(ctx),
+        };
+        let names = &mut names;
+
+        let param_env = old_names.param_env(ctx);
+
+        match item {
+            DepNode::Type(ty) => return self.elaborate_ty(ctx, names, ty),
+            DepNode::Buitlin(b) => {
+                return vec![Decl::UseDecl(Use { name: b.qname(), as_: None, export: false })]
+            }
+            DepNode::TyInv(ty, kind) => {
+                let term = elaborate_inv(ctx, param_env, ty, Some(kind));
+                let exp = lower_pure(ctx, names, term);
+                let axiom = Axiom { name: names.ty_inv(ty).name, rewrite: false, axiom: exp };
+                return vec![Decl::Axiom(axiom)];
+            }
+            DepNode::Item(_, _) | DepNode::Hacked(_, _, _) => {
+                return self.elaborate_item(ctx, names, param_env, level_of_item, item)
+            }
+        };
+    }
+
+    fn elaborate_ty<N: Namer<'tcx>>(
+        &mut self,
+        ctx: &mut Why3Generator<'tcx>,
+        names: &mut N,
+        ty: Ty<'tcx>,
+    ) -> Vec<Decl> {
+        let Some((def_id, subst)) = DepNode::Type(ty).did() else { return Vec::new() };
+
+        match ty.kind() {
+            TyKind::Alias(_, _) => vec![ctx.assoc_ty_decl(names, def_id, subst)],
+            _ => {
                 let use_decl = self.used_types.insert(def_id).then(|| {
                     if let Some(builtin) = get_builtin(ctx.tcx, def_id) {
                         let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
@@ -81,35 +105,19 @@ impl<'tcx> SymbolElaborator<'tcx> {
                         Use { name: mod_name.into(), as_: Some(name), export: false }
                     }
                 });
-                return use_decl.into_iter().map(Decl::UseDecl).collect();
+                use_decl.into_iter().map(Decl::UseDecl).collect()
             }
         }
-        // let self_key = names.self_key();
+    }
 
-        let old_names = names;
-        let mut names = SymNamer {
-            tcx: ctx.tcx,
-            names: old_names.names.clone(),
-            param_env: old_names.param_env(ctx),
-        };
-        let names = &mut names;
-
-        let param_env = old_names.param_env(ctx);
-
-        // let names = old_names;
-
-        if let DepNode::TyInv(ty, kind) = item {
-            // eprintln!("Elaborating invariant {item:?}");
-            let term = elaborate_inv(ctx, param_env, ty, Some(kind));
-            let exp = lower_pure(ctx, names, term);
-            let axiom = Axiom { name: names.ty_inv(ty).name, rewrite: false, axiom: exp };
-            return vec![Decl::Axiom(axiom)];
-        }
-
-        if let DepNode::Buitlin(b) = item {
-            return vec![Decl::UseDecl(Use { name: b.qname(), as_: None, export: false })];
-        }
-
+    fn elaborate_item(
+        &self,
+        ctx: &mut Why3Generator<'tcx>,
+        names: &mut SymNamer<'tcx>,
+        param_env: ParamEnv<'tcx>,
+        level_of_item: CloneLevel,
+        item: DepNode<'tcx>,
+    ) -> Vec<Decl> {
         let Some((def_id, subst)) = item.did() else { unreachable!("{item:?}") };
 
         if let Some(b) = get_builtin(ctx.tcx, def_id) {
@@ -120,14 +128,10 @@ impl<'tcx> SymbolElaborator<'tcx> {
             })];
         }
 
-        let is_accessor = item.to_trans_id().is_some_and(|i| ctx.is_accessor(i));
-        if util::item_type(ctx.tcx, def_id) == ItemType::AssocTy {
-            return vec![ctx.assoc_ty_decl(names, def_id, subst)];
-        }
-
         let mut pre_sig = EarlyBinder::bind(sig(ctx, item)).subst(ctx.tcx, subst);
         pre_sig = pre_sig.normalize(ctx.tcx, param_env);
 
+        let is_accessor = item.to_trans_id().is_some_and(|i| ctx.is_accessor(i));
         let kind = if item.is_hacked() {
             if is_accessor {
                 Some(LetKind::Function)
@@ -137,10 +141,6 @@ impl<'tcx> SymbolElaborator<'tcx> {
         } else {
             util::item_type(ctx.tcx, def_id).let_kind()
         };
-        // let names = SymNamer(names.names.clone());
-        // let names = &mut & names ;
-        // assert!(!petgraph::algo::is_cyclic_directed(&deps.graph));
-        // eprintln!("'cloning' {item:?} as name {:?}", names.get(item).ident());
 
         if CloneLevel::Signature == level_of_item {
             pre_sig.contract = PreContract::default();
@@ -154,54 +154,30 @@ impl<'tcx> SymbolElaborator<'tcx> {
 
         let mut sig = sig_to_why3(ctx, names, pre_sig, def_id);
         sig.name = name;
-        let ghost = matches!(kind, Some(LetKind::Function | LetKind::Predicate)) && !is_accessor;
-
-        // eprintln!("{item:?} at {level_of_item:?}");
 
         if CloneLevel::Signature == level_of_item {
-            return val(ctx, sig, kind, ghost);
+            return val(ctx, sig, kind);
         } else if CloneLevel::Contract == level_of_item {
-            return val(ctx, sig, kind, ghost);
+            return val(ctx, sig, kind);
         };
 
-        if item.is_hacked() {
-            let Some(mut term) = term(ctx, item) else { return Vec::new() };
-            normalize(ctx.tcx, param_env, &mut term);
-            let body = lower_pure(ctx, names, term);
-            if let Some(LetKind::Predicate) = kind {
-                sig.retty = None
-            };
-
-            match kind.unwrap() {
-                LetKind::Function => {
-                    vec![Decl::Let(LetDecl { kind, sig, rec: false, ghost: false, body })]
-                }
-
-                // vec![Decl::LogicDefn(Logic { sig, body })],
-                LetKind::Predicate => vec![Decl::PredDecl(Predicate { sig, body })],
-                _ => unreachable!(),
-            }
-        } else if ctx.is_logical(def_id) {
+        if item.is_hacked() || ctx.is_logical(def_id) {
             let Some(term) = term(ctx, item) else { return Vec::new() };
-            // let term = ctx.term(def_id)?.clone();
-
             let mut term = EarlyBinder::bind(term).subst(ctx.tcx, subst);
             normalize(ctx.tcx, param_env, &mut term);
-
-            // eprintln!("{term:?}");
-            // if ghost && body.is_pure() {
-            //     body = Exp::Pure(Box::new(body))
-            // }
-
-            let d = lower_body_term(ctx, names, sig, term, def_id);
-            old_names.names.prelude.extend(names.names.prelude.clone());
-            d
+            if is_accessor {
+                lower_logical_defn(ctx, names, sig, kind, term)
+            } else if item.is_hacked() {
+                // TODO: Clean this up and merge with previous branches
+                lower_pure_defn(ctx, names, sig, kind, false, term)
+            } else {
+                lower_logical_defn(ctx, names, sig, kind, term)
+            }
         } else if util::item_type(ctx.tcx, def_id) == ItemType::Constant {
             let uneval = ty::UnevaluatedConst::new(def_id, subst);
             let constant = ctx
                 .mk_const(ty::ConstKind::Unevaluated(uneval), ctx.type_of(def_id).subst_identity());
 
-            let param_env = ctx.param_env(def_id);
             let span = ctx.def_span(def_id);
             let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, param_env, span);
             let res = res.to_why(ctx, names, &LocalDecls::new());
@@ -213,9 +189,8 @@ impl<'tcx> SymbolElaborator<'tcx> {
                 ghost: false,
                 body: res,
             })]
-            // vec![Decl::Let(LetDecl { kind, sig, rec: false, ghost, body })]
         } else {
-            val(ctx, sig, kind, ghost)
+            val(ctx, sig, kind)
         }
     }
 }
@@ -224,7 +199,6 @@ fn val<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     mut sig: Signature,
     kind: Option<LetKind>,
-    ghost: bool,
 ) -> Vec<Decl> {
     sig.contract.variant = Vec::new();
 
@@ -250,8 +224,7 @@ fn val<'tcx>(
         }
         d
     } else {
-        // Program signature
-        vec![Decl::ValDecl(ValDecl { ghost, val: true, kind, sig })]
+        vec![Decl::ValDecl(ValDecl { ghost: false, val: true, kind, sig })]
     }
 }
 
