@@ -5,6 +5,7 @@ use rustc_span::DUMMY_SP;
 use why3::declaration::{Decl, TyDecl};
 
 use crate::{
+    backend::interface::interface_for,
     ctx::{TranslatedItem, TranslationCtx},
     translation::pearlite::Term,
     util::{self, ItemType},
@@ -146,10 +147,10 @@ impl<'tcx> Why3Generator<'tcx> {
             }
             ItemType::AssocTy => {
                 self.start(def_id);
-                let (modl, dependencies) = self.translate_assoc_ty(def_id);
+                let (_, dependencies) = self.translate_assoc_ty(def_id);
                 self.finish(def_id);
                 self.dependencies.insert(tid, dependencies);
-                self.functions.insert(tid, TranslatedItem::AssocTy { modl });
+                self.functions.insert(tid, TranslatedItem::AssocTy {});
             }
             ItemType::Constant => {
                 self.start(def_id);
@@ -194,29 +195,26 @@ impl<'tcx> Why3Generator<'tcx> {
             return;
         }
 
-        let (interface, deps) = interface::interface_for(self, def_id);
-
         let translated = match util::item_type(self.tcx, def_id) {
             ItemType::Ghost | ItemType::Logic | ItemType::Predicate => {
                 debug!("translating {:?} as logical", def_id);
-                let (stub, modl, proof_modl, has_axioms, deps) =
-                    crate::backend::logic::translate_logic_or_predicate(self, def_id);
+                let (proof_modl, deps) = logic::translate_logic_or_predicate(self, def_id);
                 self.dependencies.insert(def_id.into(), deps);
 
-                TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
+                TranslatedItem::Logic { proof_modl }
             }
             ItemType::Closure => {
-                let (ty_modl, modl) = program::translate_closure(self, def_id);
+                let (deps, ty_modl, modl) = program::translate_closure(self, def_id);
                 self.dependencies.insert(def_id.into(), deps);
 
-                TranslatedItem::Closure { ty_modl, interface, modl }
+                TranslatedItem::Closure { ty_modl, modl }
             }
             ItemType::Program => {
                 debug!("translating {def_id:?} as program");
-
+                let (_, modl) = program::translate_function(self, def_id);
+                let (_, deps) = interface_for(self, def_id);
                 self.dependencies.insert(def_id.into(), deps);
-                let modl = program::translate_function(self, def_id);
-                TranslatedItem::Program { interface, modl }
+                TranslatedItem::Program { modl }
             }
             _ => unreachable!(),
         };

@@ -5,34 +5,22 @@ use why3::declaration::{Decl, Module};
 
 pub enum TranslatedItem {
     Logic {
-        // A module which contains the contract with an opaque function symbol
-        interface: Module,
-        // A dummy module which just contains the function symbol with no contract
-        stub: Module,
-        // A module which contains the function body but uses stubs for all called functions
-        modl: Module,
         // A module which contains the function body (and contract) but uses the actual bodies of all called functions
         proof_modl: Option<Module>,
-        has_axioms: bool,
     },
     Closure {
         ty_modl: Module,
-        interface: Module,
         modl: Option<Module>,
     },
     Program {
-        interface: Module,
         modl: Option<Module>,
     },
     Trait {},
     Impl {
         modl: Module, // Refinement of traits,
     },
-    AssocTy {
-        modl: Module,
-    },
+    AssocTy {},
     Constant {
-        stub: Module,
         modl: Module,
     },
     // Types can not have dependencies yet, as Why3 does not yet have applicative clones
@@ -60,9 +48,7 @@ impl<'a> TranslatedItem {
             Trait { .. } => Box::new(iter::empty()),
             Impl { modl, .. } => Box::new(iter::once(modl)),
             AssocTy { .. } => Box::new(iter::empty()),
-            Constant { stub, modl, .. } => {
-                Box::new(std::iter::once(stub).chain(std::iter::once(modl)))
-            }
+            Constant { modl, .. } => Box::new(std::iter::once(modl)),
             Type { mut modl, accessors, .. } => {
                 modl[0].decls.extend(accessors.values().flat_map(|v| v.values()).cloned());
 

@@ -3,7 +3,7 @@ use super::{
     dependency::HackedId,
     signature::signature_of,
     term::{lower_impure, lower_pure},
-    CloneDepth, Namer, TransId, Why3Generator,
+    CloneDepth, CloneSummary, Namer, TransId, Why3Generator,
 };
 use crate::{
     backend::{
@@ -134,20 +134,23 @@ pub(crate) fn closure_aux_defs<'tcx>(
 pub(crate) fn translate_closure<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
-) -> (Module, Option<Module>) {
+) -> (CloneSummary<'tcx>, Module, Option<Module>) {
     assert!(ctx.is_closure(def_id));
-
-    (closure_ty(ctx, def_id), translate_function(ctx, def_id))
+    let (summary, func) = translate_function(ctx, def_id);
+    (summary, closure_ty(ctx, def_id), func)
 }
 
 pub(crate) fn translate_function<'tcx, 'sess>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
-) -> Option<Module> {
+) -> (CloneSummary<'tcx>, Option<Module>) {
     let tcx = ctx.tcx;
     let mut names = CloneMap::new(tcx, def_id.into());
 
-    let body_ids = collect_body_ids(ctx, def_id)?;
+    let Some(body_ids) = collect_body_ids(ctx, def_id) else {
+        let (_, clones) = names.to_clones(ctx, CloneDepth::Deep);
+        return (clones, None);
+    };
     let body = to_why(ctx, &mut names, body_ids[0]);
 
     let closure_defs = if ctx.tcx.is_closure(def_id) {
@@ -161,7 +164,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
         .map(|body_id| lower_promoted(ctx, &mut names, *body_id))
         .collect::<Vec<_>>();
 
-    let (clones, _) = names.to_clones(ctx, CloneDepth::Deep);
+    let (clones, summary) = names.to_clones(ctx, CloneDepth::Deep);
 
     let decls = closure_generic_decls(ctx.tcx, def_id)
         .chain(clones)
@@ -171,7 +174,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
         .collect();
 
     let name = module_name(ctx.tcx, def_id);
-    Some(Module { name, decls })
+    (summary, Some(Module { name, decls }))
 }
 
 fn collect_body_ids<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Option<Vec<BodyId>> {

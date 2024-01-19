@@ -11,7 +11,6 @@ use crate::{
 
 use super::{
     clone_map::{CloneMap, CloneSummary},
-    logic::stub_module,
     signature::signature_of,
     CloneDepth, Why3Generator,
 };
@@ -52,9 +51,7 @@ impl<'tcx> Why3Generator<'tcx> {
             }))
         }
 
-        let stub = stub_module(self, def_id);
-
         let modl = Module { name: module_name(self.tcx, def_id), decls };
-        (TranslatedItem::Constant { stub, modl }, summary)
+        (TranslatedItem::Constant { modl }, summary)
     }
 }

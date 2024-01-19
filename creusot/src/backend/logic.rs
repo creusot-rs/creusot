@@ -52,16 +52,14 @@ pub(crate) fn binders_to_args(
 pub(crate) fn translate_logic_or_predicate<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
-) -> (Module, Module, Option<Module>, bool, CloneSummary<'tcx>) {
-    let has_axioms = !ctx.sig(def_id).contract.is_empty();
-
-    let (body_modl, deps) = if get_builtin(ctx.tcx, def_id).is_some() {
+) -> (Option<Module>, CloneSummary<'tcx>) {
+    let (_, deps) = if get_builtin(ctx.tcx, def_id).is_some() {
         builtin_body(ctx, def_id)
     } else {
         body_module(ctx, def_id)
     };
     let proof_modl = if def_id.is_local() { proof_module(ctx, def_id) } else { None };
-    (stub_module(ctx, def_id), body_modl, proof_modl, has_axioms, deps)
+    (proof_modl, deps)
 }
 
 fn builtin_body<'tcx>(

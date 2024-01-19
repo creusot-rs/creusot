@@ -126,8 +126,18 @@ module C594_TestClosure
   use C594_TestClosure_Closure1_Type as C594_TestClosure_Closure1
   predicate resolve1 [#"../594.rs" 18 14 18 37] (_1 : C594_TestClosure_Closure1.c594_testclosure_closure1) =
     [#"../594.rs" 1 0 1 0] true
-  use prelude.Int
   use prelude.Borrow
+  use prelude.Int
+  predicate resolve3 (self : int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
+  val resolve3 (self : int32) : bool
+    ensures { result = resolve3 self }
+    
+  predicate resolve2 (self : (int32, int32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve3 (let (a, _) = self in a) /\ resolve3 (let (_, a) = self in a)
+  val resolve2 (self : (int32, int32)) : bool
+    ensures { result = resolve2 self }
+    
   val closure10 [#"../594.rs" 18 14 18 37] (_1 : C594_TestClosure_Closure1.c594_testclosure_closure1) (_2 : (int32, int32)) : int32
     ensures { [#"../594.rs" 18 24 18 35] let (_a, b) = _2 in result = b }
     
