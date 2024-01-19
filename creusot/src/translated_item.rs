@@ -20,9 +20,7 @@ pub enum TranslatedItem {
         modl: Module, // Refinement of traits,
     },
     AssocTy {},
-    Constant {
-        modl: Module,
-    },
+    Constant {},
     // Types can not have dependencies yet, as Why3 does not yet have applicative clones
     Type {
         modl: Vec<Module>,
@@ -38,17 +36,12 @@ impl<'a> TranslatedItem {
         use std::iter;
         use TranslatedItem::*;
         match self {
-            Logic { proof_modl, .. } => Box::new(
-                // iter::once(stub)
-                // .chain(iter::once(interface))
-                // .chain(iter::once(modl))
-                proof_modl.into_iter(), // .chain(proof_modl.into_iter()),
-            ),
+            Logic { proof_modl, .. } => Box::new(proof_modl.into_iter()),
             Program { modl, .. } => Box::new(modl.into_iter()),
             Trait { .. } => Box::new(iter::empty()),
             Impl { modl, .. } => Box::new(iter::once(modl)),
             AssocTy { .. } => Box::new(iter::empty()),
-            Constant { modl, .. } => Box::new(std::iter::once(modl)),
+            Constant { .. } => Box::new(iter::empty()),
             Type { mut modl, accessors, .. } => {
                 modl[0].decls.extend(accessors.values().flat_map(|v| v.values()).cloned());
 
