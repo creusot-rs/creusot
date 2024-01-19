@@ -6,7 +6,7 @@ use super::{
 use crate::{
     ctx::*,
     translation::{
-        pearlite::{Term, TermKind},
+        pearlite::{Pattern, Term, TermKind},
         traits,
     },
     util,
@@ -159,10 +159,11 @@ pub(crate) fn build_inv_module<'tcx>(
             if let TyInvKind::Adt(did) = inv_kind { ctx.param_env(did) } else { ParamEnv::empty() };
 
         let ty = inv_kind.to_skeleton_ty(ctx.tcx);
-        let (id, subst) =
-            resolve_user_inv(ctx.tcx, ty, param_env).unwrap_or(user_inv_item(ctx.tcx, ty));
-
-        names.value(id, subst);
+        if let Some((id, subst)) =
+            resolve_user_inv(ctx.tcx, ty, param_env).or(user_inv_item(ctx.tcx, ty))
+        {
+            names.value(id, subst);
+        }
     }
 
     let mut decls = vec![];
@@ -221,7 +222,36 @@ pub(crate) fn build_invariant_term<'tcx>(
         TyInvKind::Adt(_) => {
             build_inv_term_adt(ctx, term).unwrap_or_else(|| Term::mk_true(ctx.tcx))
         }
-        TyInvKind::Tuple(_) => Term::mk_true(ctx.tcx),
+        TyInvKind::Tuple(l) => {
+            let TyKind::Tuple(tys) = term.ty.kind() else { unreachable!() };
+
+            let ids = ('a'..).take(l);
+
+            let pattern = Pattern::Tuple(
+                ids.clone()
+                    .into_iter()
+                    .map(|id| Symbol::intern(&id.to_string()))
+                    .map(Pattern::Binder)
+                    .collect(),
+            );
+            Term {
+                kind: TermKind::Let {
+                    pattern,
+                    arg: Box::new(term),
+                    body: Box::new(ids.into_iter().enumerate().fold(
+                        Term::mk_true(ctx.tcx),
+                        |acc, (ix, id)| {
+                            acc.conj(mk_inv_call(
+                                ctx,
+                                Term::var(Symbol::intern(&id.to_string()), tys[ix]),
+                            ))
+                        },
+                    )),
+                },
+                ty: ctx.types.bool,
+                span: DUMMY_SP,
+            }
+        }
         TyInvKind::Slice => build_inv_term_seq(ctx, term),
     }
 }
@@ -434,10 +464,10 @@ fn inv_rhs<'tcx>(
 }
 
 // TODO: Handle missing defid gracefully
-fn user_inv_item<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> (DefId, SubstsRef<'tcx>) {
-    let trait_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap();
+fn user_inv_item<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(DefId, SubstsRef<'tcx>)> {
+    let trait_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user"))?;
 
-    (trait_did, tcx.mk_substs(&[GenericArg::from(ty)]))
+    Some((trait_did, tcx.mk_substs(&[GenericArg::from(ty)])))
 }
 
 fn resolve_user_inv<'tcx>(
@@ -445,7 +475,7 @@ fn resolve_user_inv<'tcx>(
     ty: Ty<'tcx>,
     param_env: ParamEnv<'tcx>,
 ) -> Option<(DefId, SubstsRef<'tcx>)> {
-    let (trait_did, subst) = user_inv_item(tcx, ty);
+    let (trait_did, subst) = user_inv_item(tcx, ty)?;
 
     // eprintln!("resolving inv for {ty}, {param_env:?}");
     let (impl_did, subst) = traits::resolve_assoc_item_opt(tcx, param_env, trait_did, subst)?;

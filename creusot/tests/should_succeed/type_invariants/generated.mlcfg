@@ -25,20 +25,55 @@ module Generated_Foo_Type
     
 end
 module Generated_UseFoo
-  use prelude.Int32
-  predicate invariant5 (self : int32) =
+  use prelude.UInt32
+  predicate invariant7 (self : uint32) =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  val invariant5 (self : int32) : bool
+  val invariant7 (self : uint32) : bool
+    ensures { result = invariant7 self }
+    
+  predicate inv7 (_x : uint32)
+  val inv7 (_x : uint32) : bool
+    ensures { result = inv7 _x }
+    
+  axiom inv7 : [#"../generated.rs" 1 0 1 0] forall x : uint32 . inv7 x = true
+  use prelude.Int32
+  predicate invariant6 (self : int32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant6 (self : int32) : bool
+    ensures { result = invariant6 self }
+    
+  predicate inv6 (_x : int32)
+  val inv6 (_x : int32) : bool
+    ensures { result = inv6 _x }
+    
+  axiom inv6 : [#"../generated.rs" 1 0 1 0] forall x : int32 . inv6 x = true
+  use prelude.UIntSize
+  use Generated_Sum10_Type as Generated_Sum10_Type
+  use prelude.Borrow
+  use Generated_Foo_Type as Generated_Foo_Type
+  predicate invariant5 (self : Generated_Foo_Type.t_foo uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant5 (self : Generated_Foo_Type.t_foo uint32) : bool
     ensures { result = invariant5 self }
     
-  predicate inv5 (_x : int32)
-  val inv5 (_x : int32) : bool
+  predicate inv2 (_x : usize)
+  val inv2 (_x : usize) : bool
+    ensures { result = inv2 _x }
+    
+  predicate inv1 (_x : borrowed (Generated_Sum10_Type.t_sum10))
+  val inv1 (_x : borrowed (Generated_Sum10_Type.t_sum10)) : bool
+    ensures { result = inv1 _x }
+    
+  predicate inv5 (_x : Generated_Foo_Type.t_foo uint32)
+  val inv5 (_x : Generated_Foo_Type.t_foo uint32) : bool
     ensures { result = inv5 _x }
     
-  axiom inv5 : [#"../generated.rs" 1 0 1 0] forall x : int32 . inv5 x = true
+  axiom inv5 : [#"../generated.rs" 1 0 1 0] forall x : Generated_Foo_Type.t_foo uint32 . inv5 x = match (x) with
+    | Generated_Foo_Type.C_A f1 f2 -> inv1 f1 /\ inv2 f2
+    | Generated_Foo_Type.C_B a_0 -> inv7 a_0
+    end
   use prelude.Int
   use prelude.Int32
-  use Generated_Sum10_Type as Generated_Sum10_Type
   predicate invariant4 [#"../generated.rs" 9 4 9 30] (self : Generated_Sum10_Type.t_sum10) =
     [#"../generated.rs" 10 20 10 43] Int32.to_int (Generated_Sum10_Type.sum10_0 self) + Int32.to_int (Generated_Sum10_Type.sum10_1 self) = 10
   val invariant4 [#"../generated.rs" 9 4 9 30] (self : Generated_Sum10_Type.t_sum10) : bool
@@ -49,11 +84,8 @@ module Generated_UseFoo
     ensures { result = inv4 _x }
     
   axiom inv4 : [#"../generated.rs" 1 0 1 0] forall x : Generated_Sum10_Type.t_sum10 . inv4 x = (invariant4 x /\ match (x) with
-    | Generated_Sum10_Type.C_Sum10 a_0 a_1 -> inv5 a_0 /\ inv5 a_1
+    | Generated_Sum10_Type.C_Sum10 a_0 a_1 -> inv6 a_0 /\ inv6 a_1
     end)
-  use prelude.Borrow
-  use prelude.UInt32
-  use Generated_Foo_Type as Generated_Foo_Type
   predicate invariant3 (self : (Generated_Foo_Type.t_foo uint32, borrowed (Generated_Sum10_Type.t_sum10))) =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
   val invariant3 (self : (Generated_Foo_Type.t_foo uint32, borrowed (Generated_Sum10_Type.t_sum10))) : bool
@@ -63,26 +95,17 @@ module Generated_UseFoo
   val inv3 (_x : (Generated_Foo_Type.t_foo uint32, borrowed (Generated_Sum10_Type.t_sum10))) : bool
     ensures { result = inv3 _x }
     
-  axiom inv3 : [#"../generated.rs" 1 0 1 0] forall x : (Generated_Foo_Type.t_foo uint32, borrowed (Generated_Sum10_Type.t_sum10)) . inv3 x = true
-  use prelude.UIntSize
+  axiom inv3 : [#"../generated.rs" 1 0 1 0] forall x : (Generated_Foo_Type.t_foo uint32, borrowed (Generated_Sum10_Type.t_sum10)) . inv3 x = (let (a, b) = x in inv5 a /\ inv1 b)
   predicate invariant2 (self : usize) =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
   val invariant2 (self : usize) : bool
     ensures { result = invariant2 self }
-    
-  predicate inv2 (_x : usize)
-  val inv2 (_x : usize) : bool
-    ensures { result = inv2 _x }
     
   axiom inv2 : [#"../generated.rs" 1 0 1 0] forall x : usize . inv2 x = true
   predicate invariant1 (self : borrowed (Generated_Sum10_Type.t_sum10)) =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
   val invariant1 (self : borrowed (Generated_Sum10_Type.t_sum10)) : bool
     ensures { result = invariant1 self }
-    
-  predicate inv1 (_x : borrowed (Generated_Sum10_Type.t_sum10))
-  val inv1 (_x : borrowed (Generated_Sum10_Type.t_sum10)) : bool
-    ensures { result = inv1 _x }
     
   axiom inv1 : [#"../generated.rs" 1 0 1 0] forall x : borrowed (Generated_Sum10_Type.t_sum10) . inv1 x = (inv4 ( * x) /\ inv4 ( ^ x))
   predicate invariant0 (self : Generated_Foo_Type.t_foo (Generated_Foo_Type.t_foo uint32, borrowed (Generated_Sum10_Type.t_sum10)))
