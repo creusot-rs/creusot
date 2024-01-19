@@ -41,6 +41,13 @@ fn slice_model<T>(_: [T]) -> Seq<T> {
     pearlite! { absurd }
 }
 
+#[ghost]
+#[open]
+#[rustc_diagnostic_item = "slice_len_logic"]
+pub fn slice_len<T>(x: [T]) -> Int {
+    pearlite! { x@.len() }
+}
+
 impl<T> Default for &mut [T] {
     #[open]
     #[predicate]

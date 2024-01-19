@@ -19,8 +19,8 @@ use rustc_hir::{
 };
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
-    self, subst::SubstsRef, BorrowKind, ClosureKind, EarlyBinder, InternalSubsts, Ty, TyCtxt,
-    TyKind, UpvarCapture,
+    self, subst::SubstsRef, BorrowKind, ClosureKind, EarlyBinder, GenericArg, InternalSubsts, Ty,
+    TyCtxt, TyKind, UpvarCapture,
 };
 use rustc_span::{symbol, symbol::kw, Span, Symbol, DUMMY_SP};
 use std::{
@@ -306,12 +306,23 @@ pub enum ItemType {
 }
 
 impl ItemType {
-    pub(crate) fn val(&self, sig: Signature) -> ValDecl {
+    pub(crate) fn let_kind(&self) -> Option<LetKind> {
+        match self {
+            ItemType::Logic | ItemType::Ghost => Some(LetKind::Function),
+            ItemType::Predicate => Some(LetKind::Predicate),
+            ItemType::Program | ItemType::Closure => None,
+            ItemType::Constant => Some(LetKind::Constant),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn val(&self, mut sig: Signature) -> ValDecl {
         match self {
             ItemType::Logic | ItemType::Ghost => {
                 ValDecl { sig, ghost: false, val: false, kind: Some(LetKind::Function) }
             }
             ItemType::Predicate => {
+                sig.retty = None;
                 ValDecl { sig, ghost: false, val: false, kind: Some(LetKind::Predicate) }
             }
             ItemType::Program | ItemType::Closure => {
@@ -449,6 +460,23 @@ pub(crate) fn pre_sig_of<'tcx>(
 
             pre.subst(&s);
         }
+
+        let kind = subst.as_closure().kind();
+
+        if kind == ClosureKind::FnMut {
+            let args = subst.as_closure().sig().inputs().skip_binder()[0];
+            let unnest_subst =
+                ctx.mk_substs(&[GenericArg::from(args), GenericArg::from(env_ty.peel_refs())]);
+
+            let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
+
+            contract.ensures.push(Term::call(
+                ctx.tcx,
+                unnest_id,
+                unnest_subst,
+                vec![Term::var(self_, env_ty).cur(), Term::var(self_, env_ty).fin()],
+            ));
+        };
 
         let mut post_subst =
             closure_capture_subst(ctx.tcx, def_id, subst, Some(subst.as_closure().kind()), self_);

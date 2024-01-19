@@ -1,14 +1,8 @@
 
-module C09_Test_Interface
-  type t
-  use prelude.Int
-  use prelude.UInt32
-  val test [#"../09.rs" 7 0 7 43] (t : uint32) : uint32
-end
 module C09_Test
   type t
-  use prelude.Int
   use prelude.UInt32
+  use prelude.Int
   let rec cfg test [#"../09.rs" 7 0 7 43] [@cfg:stackify] [@cfg:subregion_analysis] (t : uint32) : uint32
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : uint32;
@@ -17,76 +11,37 @@ module C09_Test
     goto BB0
   }
   BB0 {
-    [#"../09.rs" 8 4 8 9] _0 <- ([#"../09.rs" 8 4 8 9] ([#"../09.rs" 8 4 8 5] t) + ([#"../09.rs" 8 8 8 9] [#"../09.rs" 8 8 8 9] (0 : uint32)));
+    _0 <- ([#"../09.rs" 8 4 8 9] t + ([#"../09.rs" 8 8 8 9] [#"../09.rs" 8 8 8 9] (0 : uint32)));
     return _0
   }
   
 end
-module CreusotContracts_Invariant_Inv_Stub
-  type t
-  predicate inv (_x : t)
-end
-module CreusotContracts_Invariant_Inv_Interface
-  type t
-  predicate inv (_x : t)
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
-module CreusotContracts_Invariant_Inv
-  type t
-  predicate inv (_x : t) =
-    [#"../../../../../creusot-contracts/src/invariant.rs" 16 4 16 8] true
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
-module C09_Tr_X_Type
-  type self
-  type x
-end
-module TyInv_Trivial
-  type t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = t
-  axiom inv_trivial : forall self : t . Inv0.inv self = true
-end
-module C09_Test2_Interface
-  type t
-  type u
-  clone C09_Tr_X_Type as X0 with
-    type self = t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = X0.x
-  val test2 [#"../09.rs" 11 0 11 53] (t : X0.x) : X0.x
-    requires {[#"../09.rs" 11 37 11 38] Inv0.inv t}
-    ensures { [#"../09.rs" 11 49 11 53] Inv0.inv result }
-    
-end
 module C09_Test2
   type t
   type u
-  clone C09_Tr_X_Type as X0 with
-    type self = t
-  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
-    type t = X0.x
-  clone TyInv_Trivial as TyInv_Trivial0 with
-    type t = X0.x,
-    predicate Inv0.inv = Inv0.inv,
-    axiom .
-  let rec cfg test2 [#"../09.rs" 11 0 11 53] [@cfg:stackify] [@cfg:subregion_analysis] (t : X0.x) : X0.x
-    requires {[#"../09.rs" 11 37 11 38] Inv0.inv t}
-    ensures { [#"../09.rs" 11 49 11 53] Inv0.inv result }
+  type x0
+  predicate invariant0 (self : x0)
+  val invariant0 (self : x0) : bool
+    ensures { result = invariant0 self }
+    
+  predicate inv0 (_x : x0)
+  val inv0 (_x : x0) : bool
+    ensures { result = inv0 _x }
+    
+  axiom inv0 : [#"../09.rs" 1 0 1 0] forall x : x0 . inv0 x = true
+  let rec cfg test2 [#"../09.rs" 11 0 11 53] [@cfg:stackify] [@cfg:subregion_analysis] (t : x0) : x0
+    requires {[#"../09.rs" 11 37 11 38] inv0 t}
+    ensures { [#"../09.rs" 11 49 11 53] inv0 result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : X0.x;
-  var t : X0.x = t;
+  var _0 : x0;
+  var t : x0 = t;
   {
     goto BB0
   }
   BB0 {
-    [#"../09.rs" 12 4 12 5] _0 <- ([#"../09.rs" 12 4 12 5] t);
-    [#"../09.rs" 12 4 12 5] t <- any X0.x;
+    _0 <- t;
+    t <- any x0;
     goto BB1
   }
   BB1 {

@@ -12,9 +12,9 @@ use why3::{
     Ident, QName,
 };
 
-pub(crate) fn lower_pure<'tcx>(
+pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut N,
     term: Term<'tcx>,
 ) -> Exp {
     let span = term.span;
@@ -23,9 +23,9 @@ pub(crate) fn lower_pure<'tcx>(
     ctx.attach_span(span, term)
 }
 
-pub(crate) fn lower_impure<'tcx>(
+pub(crate) fn lower_impure<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut N,
     term: Term<'tcx>,
 ) -> Exp {
     let span = term.span;
@@ -34,13 +34,13 @@ pub(crate) fn lower_impure<'tcx>(
     ctx.attach_span(span, term)
 }
 
-pub(super) struct Lower<'a, 'tcx> {
+pub(super) struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     pub(super) ctx: &'a mut Why3Generator<'tcx>,
-    pub(super) names: &'a mut CloneMap<'tcx>,
+    pub(super) names: &'a mut N,
     // true when we are translating a purely logical term
     pub(super) pure: Purity,
 }
-impl<'tcx> Lower<'_, 'tcx> {
+impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     pub(crate) fn lower_term(&mut self, term: Term<'tcx>) -> Exp {
         match term.kind {
             TermKind::Lit(l) => {
@@ -231,15 +231,12 @@ impl<'tcx> Lower<'_, 'tcx> {
                 Exp::pure_qvar(accessor).app(vec![lhs])
             }
             TermKind::Closure { body } => {
-                let id = match term.ty.kind() {
-                    TyKind::Closure(id, _) => id,
-                    _ => unreachable!("closure has non closure type!"),
-                };
-
+                let TyKind::Closure(id, subst) = term.ty.kind() else { unreachable!("closure has non closure type")};
                 let body = self.lower_term(*body);
 
                 let mut binders = Vec::new();
                 let sig = self.ctx.sig(*id).clone();
+                let sig = EarlyBinder::bind(sig).subst(self.ctx.tcx, subst);
                 for arg in sig.inputs.iter().skip(1) {
                     binders
                         .push(Binder::typed(Ident::build(&arg.0.to_string()), self.lower_ty(arg.2)))
@@ -320,7 +317,8 @@ impl<'tcx> Lower<'_, 'tcx> {
         let builtin_attr = get_builtin(self.ctx.tcx, def_id.unwrap());
 
         if let Some(builtin) = builtin_attr.and_then(|a| QName::from_string(&a.as_str())) {
-            self.names.import_builtin_module(builtin.clone().module_qname());
+            self.names.value(def_id.unwrap(), _substs);
+            // self.names.import_builtin_module(builtin.clone().module_qname());
 
             if let Purity::Program = self.pure {
                 return Some(mk_binders(
@@ -340,9 +338,9 @@ use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
 
 use super::Why3Generator;
 
-pub(crate) fn lower_literal<'tcx>(
+pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
     _: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut N,
     lit: Literal<'tcx>,
 ) -> Exp {
     match lit {

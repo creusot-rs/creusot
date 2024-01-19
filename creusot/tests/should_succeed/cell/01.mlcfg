@@ -1,44 +1,4 @@
 
-module CreusotContracts_Invariant_Inv_Stub
-  type t
-  predicate inv (_x : t)
-end
-module CreusotContracts_Invariant_Inv_Interface
-  type t
-  predicate inv (_x : t)
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
-module CreusotContracts_Invariant_Inv
-  type t
-  predicate inv (_x : t) =
-    [#"../../../../../creusot-contracts/src/invariant.rs" 16 4 16 8] true
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
-module C01_Inv_Inv_Stub
-  type self
-  type t
-  predicate inv [#"../01.rs" 8 4 8 25] (x : t)
-end
-module C01_Inv_Inv_Interface
-  type self
-  type t
-  predicate inv [#"../01.rs" 8 4 8 25] (x : t)
-  val inv [#"../01.rs" 8 4 8 25] (x : t) : bool
-    ensures { result = inv x }
-    
-end
-module C01_Inv_Inv
-  type self
-  type t
-  predicate inv [#"../01.rs" 8 4 8 25] (x : t)
-  val inv [#"../01.rs" 8 4 8 25] (x : t) : bool
-    ensures { result = inv x }
-    
-end
 module Core_Cell_UnsafeCell_Type
   type t_unsafecell 't =
     | C_UnsafeCell 't
@@ -62,114 +22,52 @@ module C01_Cell_Type
     | C_Cell (Core_Cell_Cell_Type.t_cell 't) (Core_Marker_PhantomData_Type.t_phantomdata 'i)
     
 end
-module C01_Impl0_Get_Interface
-  type t
-  type i
-  use prelude.Borrow
-  use C01_Cell_Type as C01_Cell_Type
-  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
-    type t = t
-  clone C01_Inv_Inv_Stub as Inv1 with
-    type self = i,
-    type t = t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = C01_Cell_Type.t_cell t i
-  val get [#"../01.rs" 19 4 19 26] (self : C01_Cell_Type.t_cell t i) : t
-    requires {[#"../01.rs" 19 16 19 20] Inv0.inv self}
-    ensures { [#"../01.rs" 18 14 18 28] Inv1.inv result }
-    ensures { [#"../01.rs" 19 25 19 26] Inv2.inv result }
-    
-end
-module C01_Impl0_Set_Interface
-  type t
-  type i
-  use prelude.Borrow
-  use C01_Cell_Type as C01_Cell_Type
-  clone CreusotContracts_Invariant_Inv_Stub as Inv2 with
-    type t = t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv1 with
-    type t = C01_Cell_Type.t_cell t i
-  clone C01_Inv_Inv_Stub as Inv0 with
-    type self = i,
-    type t = t
-  val set [#"../01.rs" 25 4 25 27] (self : C01_Cell_Type.t_cell t i) (v : t) : ()
-    requires {[#"../01.rs" 24 15 24 24] Inv0.inv v}
-    requires {[#"../01.rs" 25 16 25 20] Inv1.inv self}
-    requires {[#"../01.rs" 25 22 25 23] Inv2.inv v}
-    
-end
-module C01_Impl1_Inv_Stub
-  use prelude.Int
-  use prelude.UInt32
-  predicate inv [#"../01.rs" 35 4 35 26] (x : uint32)
-end
-module C01_Impl1_Inv_Interface
-  use prelude.Int
-  use prelude.UInt32
-  predicate inv [#"../01.rs" 35 4 35 26] (x : uint32)
-  val inv [#"../01.rs" 35 4 35 26] (x : uint32) : bool
-    ensures { result = inv x }
-    
-end
-module C01_Impl1_Inv
-  use prelude.Int
-  use prelude.UInt32
-  predicate inv [#"../01.rs" 35 4 35 26] (x : uint32) =
-    [#"../01.rs" 36 8 36 24] mod x (2 : uint32) = (0 : uint32)
-  val inv [#"../01.rs" 35 4 35 26] (x : uint32) : bool
-    ensures { result = inv x }
-    
-end
 module C01_Even_Type
   type t_even  =
     | C_Even
     
 end
-module TyInv_Trivial
-  type t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = t
-  axiom inv_trivial : forall self : t . Inv0.inv self = true
-end
-module C01_AddsTwo_Interface
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  use C01_Even_Type as C01_Even_Type
-  use C01_Cell_Type as C01_Cell_Type
-  val adds_two [#"../01.rs" 40 0 40 36] (c : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) : ()
-end
 module C01_AddsTwo
-  use prelude.Int
   use prelude.UInt32
-  use prelude.Borrow
-  clone CreusotContracts_Invariant_Inv_Interface as Inv2 with
-    type t = uint32
-  clone TyInv_Trivial as TyInv_Trivial1 with
-    type t = uint32,
-    predicate Inv0.inv = Inv2.inv,
-    axiom .
+  predicate invariant1 (self : uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant1 (self : uint32) : bool
+    ensures { result = invariant1 self }
+    
+  predicate inv2 (_x : uint32)
+  val inv2 (_x : uint32) : bool
+    ensures { result = inv2 _x }
+    
+  axiom inv2 : [#"../01.rs" 1 0 1 0] forall x : uint32 . inv2 x = true
   use C01_Even_Type as C01_Even_Type
   use C01_Cell_Type as C01_Cell_Type
-  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
-    type t = C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)
-  clone TyInv_Trivial as TyInv_Trivial0 with
-    type t = C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even),
-    predicate Inv0.inv = Inv0.inv,
-    axiom .
-  clone C01_Impl1_Inv as Inv1
-  clone C01_Impl0_Set_Interface as Set0 with
-    type t = uint32,
-    type i = C01_Even_Type.t_even,
-    predicate Inv0.inv = Inv1.inv,
-    predicate Inv1.inv = Inv0.inv,
-    predicate Inv2.inv = Inv2.inv
-  clone C01_Impl0_Get_Interface as Get0 with
-    type t = uint32,
-    type i = C01_Even_Type.t_even,
-    predicate Inv0.inv = Inv0.inv,
-    predicate Inv1.inv = Inv1.inv,
-    predicate Inv2.inv = Inv2.inv
+  predicate invariant0 (self : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant0 (self : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) : bool
+    ensures { result = invariant0 self }
+    
+  predicate inv0 (_x : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even))
+  val inv0 (_x : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) : bool
+    ensures { result = inv0 _x }
+    
+  axiom inv0 : [#"../01.rs" 1 0 1 0] forall x : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even) . inv0 x = true
+  use prelude.Borrow
+  use prelude.Int
+  predicate inv1 [#"../01.rs" 35 4 35 26] (x : uint32) =
+    [#"../01.rs" 36 8 36 24] mod x (2 : uint32) = (0 : uint32)
+  val inv1 [#"../01.rs" 35 4 35 26] (x : uint32) : bool
+    ensures { result = inv1 x }
+    
+  val set0 [#"../01.rs" 25 4 25 27] (self : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) (v : uint32) : ()
+    requires {[#"../01.rs" 24 15 24 24] inv1 v}
+    requires {[#"../01.rs" 25 16 25 20] inv0 self}
+    requires {[#"../01.rs" 25 22 25 23] inv2 v}
+    
+  val get0 [#"../01.rs" 19 4 19 26] (self : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) : uint32
+    requires {[#"../01.rs" 19 16 19 20] inv0 self}
+    ensures { [#"../01.rs" 18 14 18 28] inv1 result }
+    ensures { [#"../01.rs" 19 25 19 26] inv2 result }
+    
   let rec cfg adds_two [#"../01.rs" 40 0 40 36] [@cfg:stackify] [@cfg:subregion_analysis] (c : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -182,29 +80,29 @@ module C01_AddsTwo
     goto BB0
   }
   BB0 {
-    [#"../01.rs" 41 12 41 19] v <- ([#"../01.rs" 41 12 41 19] Get0.get ([#"../01.rs" 41 12 41 19] c));
+    v <- ([#"../01.rs" 41 12 41 19] get0 ([#"../01.rs" 41 12 41 19] c));
     goto BB1
   }
   BB1 {
-    switch ([#"../01.rs" 43 7 43 17] ([#"../01.rs" 43 7 43 8] v) < ([#"../01.rs" 43 11 43 17] [#"../01.rs" 43 11 43 17] (100000 : uint32)))
+    switch ([#"../01.rs" 43 7 43 17] v < ([#"../01.rs" 43 11 43 17] [#"../01.rs" 43 11 43 17] (100000 : uint32)))
       | False -> goto BB4
       | True -> goto BB2
       end
   }
   BB2 {
-    [#"../01.rs" 44 8 44 20] _6 <- ([#"../01.rs" 44 8 44 20] Set0.set ([#"../01.rs" 44 8 44 20] c) ([#"../01.rs" 44 14 44 19] ([#"../01.rs" 44 14 44 15] v) + ([#"../01.rs" 44 18 44 19] [#"../01.rs" 44 18 44 19] (2 : uint32))));
+    _6 <- ([#"../01.rs" 44 8 44 20] set0 ([#"../01.rs" 44 8 44 20] c) ([#"../01.rs" 44 14 44 19] v + ([#"../01.rs" 44 18 44 19] [#"../01.rs" 44 18 44 19] (2 : uint32))));
     goto BB3
   }
   BB3 {
-    [#"../01.rs" 43 18 45 5] _0 <- ([#"../01.rs" 43 18 45 5] ());
+    _0 <- ([#"../01.rs" 43 18 45 5] ());
     goto BB6
   }
   BB4 {
-    [#"../01.rs" 46 8 46 16] _10 <- ([#"../01.rs" 46 8 46 16] Set0.set ([#"../01.rs" 46 8 46 16] c) ([#"../01.rs" 46 14 46 15] [#"../01.rs" 46 14 46 15] (0 : uint32)));
+    _10 <- ([#"../01.rs" 46 8 46 16] set0 ([#"../01.rs" 46 8 46 16] c) ([#"../01.rs" 46 14 46 15] [#"../01.rs" 46 14 46 15] (0 : uint32)));
     goto BB5
   }
   BB5 {
-    [#"../01.rs" 45 11 47 5] _0 <- ([#"../01.rs" 45 11 47 5] ());
+    _0 <- ([#"../01.rs" 45 11 47 5] ());
     goto BB6
   }
   BB6 {

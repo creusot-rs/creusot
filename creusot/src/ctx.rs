@@ -12,6 +12,7 @@ use crate::{
         self,
         external::{extract_extern_specs_from_item, ExternSpec},
         fmir,
+        function::ClosureContract,
         pearlite::{self, Term},
         specification::{ContractClauses, Purity, PurityVisitor},
         traits::TraitImpl,
@@ -96,6 +97,7 @@ pub struct TranslationCtx<'tcx> {
     sig: HashMap<DefId, PreSignature<'tcx>>,
     bodies: HashMap<LocalDefId, BodyWithBorrowckFacts<'tcx>>,
     opacity: HashMap<DefId, Opacity>,
+    closure_contract: HashMap<DefId, ClosureContract<'tcx>>,
 }
 
 #[derive(Copy, Clone)]
@@ -138,6 +140,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             sig: Default::default(),
             bodies: Default::default(),
             opacity: Default::default(),
+            closure_contract: Default::default(),
         }
     }
 
@@ -146,6 +149,8 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     queryish!(trait_impl, &TraitImpl<'tcx>, translate_impl);
+
+    queryish!(closure_contract, &ClosureContract<'tcx>, build_closure_contract);
 
     pub(crate) fn fmir_body(&mut self, body_id: BodyId) -> Option<&fmir::Body<'tcx>> {
         if !self.fmir_body.contains_key(&body_id) {
