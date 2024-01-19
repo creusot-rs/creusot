@@ -102,7 +102,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,
-    default_trivial: bool,
+    param_is_trivial: bool,
 ) -> bool {
     if ty.is_closure() {
         return true;
@@ -118,7 +118,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
         // IF there is a user invariant AND it is not structural
         // OR ty is a param or alias AND we default to considering them trivial
         if user_inv == Some(false)
-            || (!default_trivial && matches!(ty.kind(), TyKind::Param(_) | TyKind::Alias(_, _)))
+            || (!param_is_trivial && matches!(ty.kind(), TyKind::Param(_) | TyKind::Alias(_, _)))
         {
             return false;
         }
@@ -143,6 +143,252 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
         }
     }
     true
+}
+
+pub struct InvariantElaborator<'tcx> {
+    default_trivial: bool,
+    param_env: ParamEnv<'tcx>,
+}
+
+impl<'tcx> InvariantElaborator<'tcx> {
+    pub(crate) fn new(param_env: ParamEnv<'tcx>, default_trivial: bool) -> Self {
+        InvariantElaborator { default_trivial, param_env }
+    }
+
+    pub(crate) fn elaborate_inv(
+        &self,
+        ctx: &mut Why3Generator<'tcx>,
+        ty: Ty<'tcx>,
+        kind: Option<TyInvKind>,
+    ) -> Term<'tcx> {
+        let subject = Term::var(Symbol::intern("x"), ty);
+
+        let term = self.inv_rhs(ctx, ty, kind);
+
+        let inv_id = ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
+        let subst = ctx.mk_substs(&[GenericArg::from(subject.ty)]);
+
+        let lhs = Term::call(ctx.tcx, inv_id, subst, vec![subject]);
+
+        Term::forall(Term::eq(ctx.tcx, lhs, term), (Symbol::intern("x"), ty))
+    }
+
+    fn structural_invariant(
+        &self,
+        ctx: &mut Why3Generator<'tcx>,
+        term: Term<'tcx>,
+        inv_kind: Option<TyInvKind>,
+    ) -> Term<'tcx> {
+        let tcx = ctx.tcx;
+        let Some(inv_kind) = inv_kind else {
+        return self.mk_inv_call(ctx, term);
+    };
+
+        match inv_kind {
+            TyInvKind::Trivial => Term::mk_true(tcx),
+            TyInvKind::Borrow(Mutability::Not) => self.mk_inv_call(ctx, term.cur()),
+            TyInvKind::Borrow(Mutability::Mut) => {
+                self.mk_inv_call(ctx, term.clone().cur()).conj(self.mk_inv_call(ctx, term.fin()))
+            }
+            TyInvKind::Box => self.mk_inv_call(ctx, term.cur()),
+            TyInvKind::Adt(_) => {
+                self.build_inv_term_adt(ctx, term).unwrap_or_else(|| Term::mk_true(ctx.tcx))
+            }
+            TyInvKind::Tuple(l) => {
+                let TyKind::Tuple(tys) = term.ty.kind() else { unreachable!() };
+
+                let ids = ('a'..).take(l);
+
+                let pattern = Pattern::Tuple(
+                    ids.clone()
+                        .into_iter()
+                        .map(|id| Symbol::intern(&id.to_string()))
+                        .map(Pattern::Binder)
+                        .collect(),
+                );
+                Term {
+                    kind: TermKind::Let {
+                        pattern,
+                        arg: Box::new(term),
+                        body: Box::new(ids.into_iter().enumerate().fold(
+                            Term::mk_true(ctx.tcx),
+                            |acc, (ix, id)| {
+                                acc.conj(self.mk_inv_call(
+                                    ctx,
+                                    Term::var(Symbol::intern(&id.to_string()), tys[ix]),
+                                ))
+                            },
+                        )),
+                    },
+                    ty: ctx.types.bool,
+                    span: DUMMY_SP,
+                }
+            }
+            TyInvKind::Slice => self.build_inv_term_seq(ctx, term),
+        }
+    }
+
+    fn inv_rhs(
+        &self,
+        ctx: &mut Why3Generator<'tcx>,
+        ty: Ty<'tcx>,
+        kind: Option<TyInvKind>,
+    ) -> Term<'tcx> {
+        if let Some(TyInvKind::Trivial) = kind {
+            return Term::mk_true(ctx.tcx);
+        }
+
+        let subject = Term::var(Symbol::intern("x"), ty);
+
+        // eprintln!("searching for {ty:?} in {param_env:?}");
+        let user_inv: Option<Term<'_>> =
+            resolve_user_inv(ctx.tcx, ty, self.param_env).map(|(uinv_did, uinv_subst)| {
+                Term::call(ctx.tcx, uinv_did, uinv_subst, vec![subject.clone()])
+            });
+
+        // eprintln!("user inv of {kind:?} is {user_inv:?}");
+
+        let struct_inv = self.structural_invariant(ctx, subject, kind);
+
+        match user_inv {
+            Some(inv) => inv.conj(struct_inv),
+            _ => struct_inv,
+        }
+    }
+
+    // TODO: Use a param env to determine whether this specific invaraint call should ne trivial
+    // TODO: Cache the result of invariant trivial checks
+    pub(crate) fn mk_inv_call(
+        &self,
+        ctx: &mut Why3Generator<'tcx>,
+        term: Term<'tcx>,
+    ) -> Term<'tcx> {
+        if is_tyinv_trivial(ctx.tcx, self.param_env, term.ty, self.default_trivial) {
+            return Term::mk_true(ctx.tcx);
+        }
+
+        let inv_id = ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
+        let subst = ctx.mk_substs(&[GenericArg::from(term.ty)]);
+        let call_term = Term::call(ctx.tcx, inv_id, subst, vec![term]);
+        call_term
+    }
+
+    fn build_inv_term_adt(
+        &self,
+        ctx: &mut Why3Generator<'tcx>,
+        term: Term<'tcx>,
+    ) -> Option<Term<'tcx>> {
+        let TyKind::Adt(adt_def, subst) = term.ty.kind() else { unreachable!("asked to build ADT invariant for non-ADT type {:?}", term.ty) };
+
+        use crate::pearlite::*;
+        // trusted types are opaque and thus have no structual invariant
+        if util::is_trusted(ctx.tcx, adt_def.did()) {
+            return None;
+        }
+
+        let mut arms: Vec<(_, Term<'tcx>)> = vec![];
+
+        for (var_idx, var_def) in adt_def.variants().iter().enumerate() {
+            let tuple_var = var_def.ctor.is_some();
+
+            let mut pats: Vec<Pattern<'tcx>> = vec![];
+            let mut exp: Term<'tcx> = Term::mk_true(ctx.tcx);
+            for (field_idx, field_def) in var_def.fields.iter().enumerate() {
+                let field_name: Symbol = if tuple_var {
+                    Symbol::intern(&format!("a_{field_idx}"))
+                } else {
+                    field_def.name
+                };
+
+                let field_ty = field_def.ty(ctx.tcx, subst);
+
+                let var = Term::var(field_name, field_ty);
+                let subst = ctx.mk_substs(&[GenericArg::from(field_ty)]);
+                // TODO elide trivial invariants
+                let f_exp = self.mk_inv_call(ctx, var);
+                exp = exp.conj(f_exp);
+                pats.push(Pattern::Binder(field_name));
+            }
+
+            arms.push((
+                Pattern::Constructor {
+                    adt: var_def.def_id,
+                    substs: subst,
+                    variant: var_idx.into(),
+                    fields: pats,
+                },
+                exp,
+            ));
+        }
+        let exp = {
+            let self_ = term;
+            Term {
+                kind: TermKind::Match { scrutinee: Box::new(self_), arms },
+                ty: ctx.types.bool,
+                span: DUMMY_SP,
+            }
+        };
+
+        Some(exp)
+    }
+
+    fn build_inv_term_seq(&self, ctx: &mut Why3Generator<'tcx>, term: Term<'tcx>) -> Term<'tcx> {
+        let elt_ty;
+        let seq_len;
+        let seq_get;
+        let int_ty;
+
+        match term.ty.kind() {
+            TyKind::Slice(ty) => {
+                seq_len = ctx.get_diagnostic_item(Symbol::intern("slice_len_logic")).unwrap();
+                seq_get = ctx.get_diagnostic_item(Symbol::intern("slice_index_logic")).unwrap();
+                int_ty = ctx.types.u64;
+
+                elt_ty = *ty;
+            }
+            TyKind::Adt(_, subst) => {
+                seq_len = ctx.get_diagnostic_item(Symbol::intern("seq_len")).unwrap();
+                seq_get = ctx.get_diagnostic_item(Symbol::intern("seq_index")).unwrap();
+
+                let int_id = ctx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap();
+                int_ty = ctx.type_of(int_id).skip_binder();
+                elt_ty = subst.type_at(0);
+            }
+            _ => unreachable!("asked to build Seq invariant for non-Seq type"),
+        };
+
+        let index = Term::var(Symbol::intern("i"), int_ty);
+
+        let subst = ctx.mk_substs(&[GenericArg::from(elt_ty)]);
+
+        let mut index_call = Term::call(ctx.tcx, seq_get, subst, vec![term.clone(), index.clone()]);
+        index_call.ty = elt_ty;
+        let call_term = self.mk_inv_call(ctx, index_call);
+
+        let lower_bound = Term {
+            kind: TermKind::Binary {
+                op: crate::translation::pearlite::BinOp::Le,
+                lhs: Box::new(Term::int(ctx.tcx, 0)),
+                rhs: Box::new(index.clone()),
+            },
+            ty: ctx.types.bool,
+            span: DUMMY_SP,
+        };
+
+        let len = Term::call(ctx.tcx, seq_len, subst, vec![term.clone()]);
+
+        let upper_bound = Term {
+            kind: TermKind::Binary {
+                op: crate::translation::pearlite::BinOp::Lt,
+                rhs: Box::new(len),
+                lhs: Box::new(index.clone()),
+            },
+            ty: ctx.types.bool,
+            span: DUMMY_SP,
+        };
+
+        lower_bound.implies(upper_bound).implies(call_term).forall((Symbol::intern("i"), int_ty))
+    }
 }
 
 pub(crate) fn build_inv_module<'tcx>(
@@ -182,193 +428,6 @@ pub(crate) fn build_inv_module<'tcx>(
     (Module { name: util::inv_module_name(ctx.tcx, inv_kind), decls }, summary)
 }
 
-// TODO: Use a param env to determine whether this specific invaraint call should ne trivial
-// TODO: Cache the result of invariant trivial checks
-pub(crate) fn mk_inv_call<'tcx>(ctx: &mut Why3Generator<'tcx>, term: Term<'tcx>) -> Term<'tcx> {
-    let inv_id = ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
-    let subst = ctx.mk_substs(&[GenericArg::from(term.ty)]);
-    let call_term = Term::call(ctx.tcx, inv_id, subst, vec![term]);
-    call_term
-}
-
-fn structural_invariant<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
-    subject: Term<'tcx>,
-    inv_kind: Option<TyInvKind>,
-) -> Term<'tcx> {
-    build_invariant_term(ctx, subject, inv_kind)
-}
-
-pub(crate) fn build_invariant_term<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
-    term: Term<'tcx>,
-    inv_kind: Option<TyInvKind>,
-) -> Term<'tcx> {
-    let tcx = ctx.tcx;
-    let Some(inv_kind) = inv_kind else {
-        return mk_inv_call(ctx, term);
-    };
-
-    match inv_kind {
-        TyInvKind::Trivial => Term::mk_true(tcx),
-        TyInvKind::Borrow(Mutability::Not) => {
-            // assert!(term.ty.is_ref());
-            mk_inv_call(ctx, term.cur())
-        }
-        TyInvKind::Borrow(Mutability::Mut) => {
-            mk_inv_call(ctx, term.clone().cur()).conj(mk_inv_call(ctx, term.fin()))
-        }
-        TyInvKind::Box => mk_inv_call(ctx, term.cur()),
-        TyInvKind::Adt(_) => {
-            build_inv_term_adt(ctx, term).unwrap_or_else(|| Term::mk_true(ctx.tcx))
-        }
-        TyInvKind::Tuple(l) => {
-            let TyKind::Tuple(tys) = term.ty.kind() else { unreachable!() };
-
-            let ids = ('a'..).take(l);
-
-            let pattern = Pattern::Tuple(
-                ids.clone()
-                    .into_iter()
-                    .map(|id| Symbol::intern(&id.to_string()))
-                    .map(Pattern::Binder)
-                    .collect(),
-            );
-            Term {
-                kind: TermKind::Let {
-                    pattern,
-                    arg: Box::new(term),
-                    body: Box::new(ids.into_iter().enumerate().fold(
-                        Term::mk_true(ctx.tcx),
-                        |acc, (ix, id)| {
-                            acc.conj(mk_inv_call(
-                                ctx,
-                                Term::var(Symbol::intern(&id.to_string()), tys[ix]),
-                            ))
-                        },
-                    )),
-                },
-                ty: ctx.types.bool,
-                span: DUMMY_SP,
-            }
-        }
-        TyInvKind::Slice => build_inv_term_seq(ctx, term),
-    }
-}
-
-fn build_inv_term_seq<'tcx>(ctx: &mut Why3Generator<'tcx>, term: Term<'tcx>) -> Term<'tcx> {
-    let elt_ty;
-    let inv_id;
-    let seq_len;
-    let seq_get;
-    let int_ty;
-    inv_id = ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
-
-    match term.ty.kind() {
-        TyKind::Slice(ty) => {
-            seq_len = ctx.get_diagnostic_item(Symbol::intern("slice_len_logic")).unwrap();
-            seq_get = ctx.get_diagnostic_item(Symbol::intern("slice_index_logic")).unwrap();
-            int_ty = ctx.types.u64;
-
-            elt_ty = *ty;
-        }
-        TyKind::Adt(_, subst) => {
-            seq_len = ctx.get_diagnostic_item(Symbol::intern("seq_len")).unwrap();
-            seq_get = ctx.get_diagnostic_item(Symbol::intern("seq_index")).unwrap();
-
-            let int_id = ctx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap();
-            int_ty = ctx.type_of(int_id).skip_binder();
-            elt_ty = subst.type_at(0);
-        }
-        _ => unreachable!("asked to build Seq invariant for non-Seq type"),
-    };
-
-    let index = Term::var(Symbol::intern("i"), int_ty);
-
-    let subst = ctx.mk_substs(&[GenericArg::from(elt_ty)]);
-
-    let index_call = Term::call(ctx.tcx, seq_get, subst, vec![term.clone(), index.clone()]);
-
-    let call_term = Term::call(ctx.tcx, inv_id, subst, vec![index_call]);
-
-    let lower_bound = Term {
-        kind: TermKind::Binary {
-            op: crate::translation::pearlite::BinOp::Le,
-            lhs: Box::new(Term::int(ctx.tcx, 0)),
-            rhs: Box::new(index.clone()),
-        },
-        ty: ctx.types.bool,
-        span: DUMMY_SP,
-    };
-
-    let len = Term::call(ctx.tcx, seq_len, subst, vec![term.clone()]);
-
-    let upper_bound = Term {
-        kind: TermKind::Binary {
-            op: crate::translation::pearlite::BinOp::Lt,
-            rhs: Box::new(len),
-            lhs: Box::new(index.clone()),
-        },
-        ty: ctx.types.bool,
-        span: DUMMY_SP,
-    };
-
-    lower_bound.implies(upper_bound).implies(call_term).forall((Symbol::intern("i"), int_ty))
-}
-
-fn build_inv_term_adt<'tcx>(ctx: &mut Why3Generator<'tcx>, term: Term<'tcx>) -> Option<Term<'tcx>> {
-    let TyKind::Adt(adt_def, subst) = term.ty.kind() else { unreachable!("asked to build ADT invariant for non-ADT type {:?}", term.ty) };
-
-    use crate::pearlite::*;
-    // trusted types are opaque and thus have no structual invariant
-    if util::is_trusted(ctx.tcx, adt_def.did()) {
-        return None;
-    }
-
-    let inv_id = ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
-
-    let mut arms: Vec<(_, Term<'tcx>)> = vec![];
-
-    for (var_idx, var_def) in adt_def.variants().iter().enumerate() {
-        let tuple_var = var_def.ctor.is_some();
-
-        let mut pats: Vec<Pattern<'tcx>> = vec![];
-        let mut exp: Term<'tcx> = Term::mk_true(ctx.tcx);
-        for (field_idx, field_def) in var_def.fields.iter().enumerate() {
-            let field_name: Symbol =
-                if tuple_var { Symbol::intern(&format!("a_{field_idx}")) } else { field_def.name };
-
-            let field_ty = field_def.ty(ctx.tcx, subst);
-            let var = Term::var(field_name, field_ty);
-            let subst = ctx.mk_substs(&[GenericArg::from(field_ty)]);
-            // TODO elide trivial invariants
-            let f_exp = Term::call(ctx.tcx, inv_id, subst, vec![var]);
-            exp = exp.conj(f_exp);
-            pats.push(Pattern::Binder(field_name));
-        }
-
-        arms.push((
-            Pattern::Constructor {
-                adt: var_def.def_id,
-                substs: subst,
-                variant: var_idx.into(),
-                fields: pats,
-            },
-            exp,
-        ));
-    }
-    let exp = {
-        let self_ = term;
-        Term {
-            kind: TermKind::Match { scrutinee: Box::new(self_), arms },
-            ty: ctx.types.bool,
-            span: DUMMY_SP,
-        }
-    };
-
-    Some(exp)
-}
-
 fn axiom_name(ctx: &Why3Generator<'_>, inv_kind: TyInvKind) -> Ident {
     match inv_kind {
         TyInvKind::Trivial => "inv_trivial".into(),
@@ -384,7 +443,7 @@ fn axiom_name(ctx: &Why3Generator<'_>, inv_kind: TyInvKind) -> Ident {
     }
 }
 
-pub(crate) fn build_inv_axiom<'tcx>(
+fn build_inv_axiom<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     inv_kind: TyInvKind,
@@ -401,7 +460,7 @@ pub(crate) fn build_inv_axiom<'tcx>(
     let rhs = if TyInvKind::Trivial == inv_kind {
         Exp::mk_true()
     } else {
-        let inv_term = elaborate_inv(ctx, param_env, ty, kind);
+        let inv_term = InvariantElaborator::new(param_env, false).elaborate_inv(ctx, ty, kind);
         let inv_term = lower_pure(ctx, names, inv_term);
         inv_term
     };
@@ -415,52 +474,6 @@ pub(crate) fn build_inv_axiom<'tcx>(
         lhs.eq(rhs),
     );
     Axiom { name, rewrite: !trivial, axiom }
-}
-
-pub(crate) fn elaborate_inv<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
-    param_env: ParamEnv<'tcx>,
-    ty: Ty<'tcx>,
-    kind: Option<TyInvKind>,
-) -> Term<'tcx> {
-    let subject = Term::var(Symbol::intern("x"), ty);
-
-    let term = inv_rhs(ctx, ty, param_env, kind);
-
-    let inv_id = ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
-    let subst = ctx.mk_substs(&[GenericArg::from(subject.ty)]);
-
-    let lhs = Term::call(ctx.tcx, inv_id, subst, vec![subject]);
-
-    Term::forall(Term::eq(ctx.tcx, lhs, term), (Symbol::intern("x"), ty))
-}
-
-fn inv_rhs<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
-    ty: Ty<'tcx>,
-    param_env: ParamEnv<'tcx>,
-    kind: Option<TyInvKind>,
-) -> Term<'tcx> {
-    if let Some(TyInvKind::Trivial) = kind {
-        return Term::mk_true(ctx.tcx);
-    }
-
-    let subject = Term::var(Symbol::intern("x"), ty);
-
-    // eprintln!("searching for {ty:?} in {param_env:?}");
-    let user_inv: Option<Term<'_>> =
-        resolve_user_inv(ctx.tcx, ty, param_env).map(|(uinv_did, uinv_subst)| {
-            Term::call(ctx.tcx, uinv_did, uinv_subst, vec![subject.clone()])
-        });
-
-    // eprintln!("user inv of {kind:?} is {user_inv:?}");
-
-    let struct_inv = structural_invariant(ctx, subject.clone(), kind);
-
-    match user_inv {
-        Some(inv) => inv.conj(struct_inv),
-        _ => struct_inv,
-    }
 }
 
 // TODO: Handle missing defid gracefully

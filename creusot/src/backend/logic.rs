@@ -312,7 +312,6 @@ fn limited_function_encode(
     decls.push(Decl::Axiom(definition_axiom(&sig, lim_call, "def_lim")));
 }
 
-
 fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
     if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
         return None;
