@@ -353,6 +353,9 @@ impl<'tcx> Why3Generator<'tcx> {
     }
 
     pub(crate) fn span_attr(&mut self, span: Span) -> Option<why3::declaration::Attribute> {
+        if span.is_dummy() {
+            return None;
+        }
         if let Some(span) = self.span_map.encode_span(&self.ctx.opts, span) {
             return Some(span);
         };

@@ -9,13 +9,13 @@ module C11_Test
   val inv0 (_x : t) : bool
     ensures { result = inv0 _x }
     
-  axiom inv0 : [#"../11.rs" 1 0 1 0] forall x : t . inv0 x = true
+  axiom inv0 : forall x : t . inv0 x = true
   predicate resolve0 (self : t)
   val resolve0 (self : t) : bool
     ensures { result = resolve0 self }
     
   let rec cfg test [#"../11.rs" 18 0 18 23] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : t) : ()
-    requires {[#"../11.rs" 1 0 1 0] inv0 _1}
+    requires {inv0 _1}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -24,7 +24,7 @@ module C11_Test
     goto BB0
   }
   BB0 {
-    _0 <- ([#"../11.rs" 18 24 18 26] ());
+    [#"../11.rs" 18 24 18 26] _0 <- ([#"../11.rs" 18 24 18 26] ());
     assert { [@expl:type invariant] inv0 _1 };
     assume { resolve0 _1 };
     goto BB1
