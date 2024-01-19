@@ -1,7 +1,7 @@
 use super::region_set::*;
 use crate::prusti::{
     ctx::*,
-    typeck::normalize,
+    typeck::{mk_zombie, normalize},
     zombie::{pretty_replace, ZombieStatus},
 };
 use itertools::Either;
@@ -45,7 +45,7 @@ impl<'tcx> Ty<'tcx> {
     }
 
     pub(super) fn mk_zombie(self, ctx: CtxRef<'_, 'tcx>) -> (Self, bool) {
-        let (ty, z) = ctx.zombie_info.mk_zombie(self.ty, ctx.tcx, ctx.param_env());
+        let (ty, z) = mk_zombie(self.ty, ctx);
         (Ty { ty }, z)
     }
 

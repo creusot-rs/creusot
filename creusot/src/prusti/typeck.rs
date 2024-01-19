@@ -23,25 +23,29 @@ use crate::{
 use itertools::Either;
 use rustc_ast::Mutability;
 use rustc_data_structures::sso::SsoHashMap;
+use rustc_hir::LangItem;
 use rustc_index::{bit_set::BitSet, IndexVec};
 use rustc_infer::{
-    infer::TyCtxtInferExt,
+    infer::{
+        type_variable::{TypeVariableOrigin, TypeVariableOriginKind},
+        InferCtxt, TyCtxtInferExt,
+    },
     traits::{Obligation, ObligationCause},
 };
 use rustc_middle::{
     bug, span_bug, ty,
     ty::{
-        AdtDef, Binder, GenericArg, GenericParamDefKind, GenericPredicates, InferTy, Instance,
-        InstantiatedPredicates, InternalSubsts, PolyFnSig, Region, RegionKind, RegionVid,
-        SubstsRef, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypeSuperFoldable, TypeSuperVisitable,
-        TypeVisitable, TypeVisitor,
+        AdtDef, Binder, ClauseKind, GenericArg, GenericParamDefKind, GenericPredicates, InferTy,
+        Instance, InstantiatedPredicates, InternalSubsts, PolyFnSig, PredicateKind, Region,
+        RegionKind, RegionVid, SubstsRef, TyCtxt, TyKind, TyVid, TypeFoldable, TypeFolder,
+        TypeSuperFoldable, TypeSuperVisitable, TypeVisitable, TypeVisitor,
     },
 };
-use rustc_span::{def_id::DefId, Span, Symbol};
+use rustc_span::{def_id::DefId, Span, Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
 use rustc_trait_selection::{
     traits,
-    traits::{query::evaluate_obligation::InferCtxtExt, NormalizeExt},
+    traits::{query::evaluate_obligation::InferCtxtExt, NormalizeExt, ObligationCtxt},
 };
 use std::{
     convert::Infallible,
@@ -647,11 +651,9 @@ pub(crate) fn check_move_state<'tcx>(
     } else {
         let (rty, is_zombie) = ty.mk_zombie(ctx);
         if is_zombie && !ty.ty.is_mutable_ptr() {
-            let e = Error::new(
-                span,
-                format!("`{dty}` cannot be moved from `{d_from_ts}` to `{d_to_ts}` without becoming a zombie")
-            );
-            ctx.lint(&PRUSTI_ZOMBIE, span, e.msg())
+            let rty = prepare_display(rty, ctx);
+            let msg = format!("`{dty}` cannot be moved from `{d_from_ts}` to `{d_to_ts}` without becoming a zombie `{rty}");
+            ctx.lint(&PRUSTI_ZOMBIE, span, msg)
         }
         Ok(rty)
     }
@@ -776,4 +778,93 @@ pub(crate) fn check_signature_agreement<'tcx>(
         prepare_display(actual_res_ty, &ctx)
     );
     check_sup(&ctx, expect_res_ty, actual_res_ty, impl_span)
+}
+
+/// Makes a type copy by wrapping parts of it in Zombie
+/// result.1 is true iff the type was changed
+pub(super) fn mk_zombie<'tcx>(ty: ty::Ty<'tcx>, ctx: CtxRef<'_, 'tcx>) -> (ty::Ty<'tcx>, bool) {
+    let tcx = ctx.tcx;
+    let param_env = ctx.param_env();
+    if ty.is_copy_modulo_regions(tcx, param_env) {
+        (ty, false)
+    } else {
+        let copy_id = tcx.require_lang_item(LangItem::Copy, None);
+        let sized_id = tcx.require_lang_item(LangItem::Sized, None);
+        let mut infcx = ctx.tcx.infer_ctxt().ignoring_regions().build();
+        let ty_gen = ty.super_fold_with(&mut ZombieGenFolder(&mut infcx));
+        let mut need_copy = BitSet::new_empty(infcx.num_ty_vars());
+        let ocx = ObligationCtxt::new(&infcx);
+        ocx.register_bound(ObligationCause::dummy(), param_env, ty_gen, copy_id);
+        for ob in ocx.select_all_or_error() {
+            match ob.obligation.predicate.kind().skip_binder() {
+                PredicateKind::Clause(ClauseKind::Trait(x))
+                    if x.def_id() == copy_id && x.self_ty().is_ty_var() =>
+                {
+                    // Mark that this variable needs to be copy by unifying it with ()
+                    ocx.eq_exp(
+                        &ObligationCause::dummy(),
+                        param_env,
+                        true,
+                        tcx.types.unit,
+                        x.self_ty(),
+                    )
+                    .unwrap();
+                }
+                PredicateKind::Clause(ClauseKind::Trait(x))
+                    if x.def_id() == sized_id && x.self_ty().is_ty_var() =>
+                {
+                    // Ignore _: Sized bounds since T: Sized => Zombie<T>: Sized
+                }
+                _ => {
+                    // If there are any other obligations required to make ty: Copy we need to wrap the whole thing
+                    // in a zombie
+                    let ty = ctx.zombie_info.mk_zombie_raw(ty, tcx);
+                    return (ty, true);
+                }
+            }
+        }
+        for i in 0..need_copy.domain_size() {
+            let vid = TyVid::from(i);
+            if !infcx.resolve_vars_if_possible(tcx.mk_ty_var(vid)).is_ty_var() {
+                // Store all marked type variables in set
+                // (This needs to be done in two steps since the FulfillmentErrors may contain
+                // equivalent but not identical type variables)
+                need_copy.insert(vid);
+            }
+        }
+        (ty.super_fold_with(&mut ZombieFolder(ctx, 0, need_copy)), true)
+    }
+}
+
+struct ZombieFolder<'a, 'tcx>(CtxRef<'a, 'tcx>, usize, BitSet<TyVid>);
+
+impl<'a, 'tcx> TypeFolder<TyCtxt<'tcx>> for ZombieFolder<'a, 'tcx> {
+    fn interner(&self) -> TyCtxt<'tcx> {
+        self.0.tcx
+    }
+
+    fn fold_ty(&mut self, ty: ty::Ty<'tcx>) -> ty::Ty<'tcx> {
+        let res = if self.2.contains(self.1.into()) { mk_zombie(ty, self.0).0 } else { ty };
+        self.1 += 1;
+        res
+    }
+}
+
+struct ZombieGenFolder<'a, 'tcx>(&'a mut InferCtxt<'tcx>);
+
+impl<'a, 'tcx> TypeFolder<TyCtxt<'tcx>> for ZombieGenFolder<'a, 'tcx> {
+    fn interner(&self) -> TyCtxt<'tcx> {
+        self.0.tcx
+    }
+
+    fn fold_ty(&mut self, _: ty::Ty<'tcx>) -> ty::Ty<'tcx> {
+        self.0.next_ty_var(TypeVariableOrigin {
+            kind: TypeVariableOriginKind::MiscVariable,
+            span: DUMMY_SP,
+        })
+    }
+
+    fn fold_region(&mut self, _: Region<'tcx>) -> Region<'tcx> {
+        self.0.tcx.lifetimes.re_erased
+    }
 }

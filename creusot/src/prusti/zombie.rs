@@ -51,22 +51,6 @@ impl ZombieDefIds {
         tcx.mk_adt(tcx.adt_def(did), tcx.mk_substs(&[ty.into()]))
     }
 
-    /// Makes a type copy by wrapping parts of it in Zombie
-    /// result.1 is true iff the type was changed
-    pub(super) fn mk_zombie<'tcx>(
-        &self,
-        ty: Ty<'tcx>,
-        tcx: TyCtxt<'tcx>,
-        param_env: ParamEnv<'tcx>,
-    ) -> (Ty<'tcx>, bool) {
-        if ty.is_copy_modulo_regions(tcx, param_env) {
-            (ty, false)
-        } else {
-            let ty = self.mk_zombie_raw(ty, tcx);
-            (ty, true)
-        }
-    }
-
     pub(super) fn as_zombie<'tcx>(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         match ty.kind() {
             TyKind::Adt(def, subst) if def.did() == self.internal => Some(subst[0].expect_ty()),
