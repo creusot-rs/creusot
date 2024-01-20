@@ -74,33 +74,40 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     (Div, _) => Exp::pure_var("div".into()).app(vec![lhs, rhs]),
                     (Rem, _) => Exp::pure_var("mod".into()).app(vec![lhs, rhs]),
                     (Eq | Ne | Lt | Le | Gt | Ge, Purity::Program) => {
+                        let (lfvs, rfvs) = (lhs.fvs(), rhs.fvs());
+                        let mut freshvars = (0..)
+                            .map(|i| format!("x{i}").into())
+                            .filter(|x: &Ident| !(lfvs.contains(x) || rfvs.contains(x)));
+
                         let (a, lhs) = if lhs.is_pure() {
                             (lhs, None)
                         } else {
-                            (Exp::Var("a".into(), self.pure), Some(lhs))
+                            let v = freshvars.next().unwrap();
+                            (Exp::Var(v.clone(), self.pure), Some((v, lhs)))
                         };
 
                         let (b, rhs) = if rhs.is_pure() {
                             (rhs, None)
                         } else {
-                            (Exp::Var("b".into(), self.pure), Some(rhs))
+                            let v = freshvars.next().unwrap();
+                            (Exp::Var(v.clone(), self.pure), Some((v, rhs)))
                         };
 
                         let op = binop_to_binop(op, Purity::Logic);
                         let mut inner =
                             Exp::Pure(Box::new(Exp::BinaryOp(op, Box::new(a), Box::new(b))));
 
-                        if let Some(lhs) = lhs {
+                        if let Some((a, lhs)) = lhs {
                             inner = Exp::Let {
-                                pattern: Pat::VarP("a".into()),
+                                pattern: Pat::VarP(a),
                                 arg: Box::new(lhs),
                                 body: Box::new(inner),
                             }
                         };
 
-                        if let Some(rhs) = rhs {
+                        if let Some((b, rhs)) = rhs {
                             inner = Exp::Let {
-                                pattern: Pat::VarP("b".into()),
+                                pattern: Pat::VarP(b),
                                 arg: Box::new(rhs),
                                 body: Box::new(inner),
                             }

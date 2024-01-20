@@ -4,11 +4,11 @@ module C12Zip_Zip_Type
     | C_Zip 'a 'b
     
   let function zip_a (self : t_zip 'a 'b) : 'a = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_Zip a _ -> a
       end
   let function zip_b (self : t_zip 'a 'b) : 'b = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_Zip _ a -> a
       end
 end
@@ -281,7 +281,7 @@ module Core_Option_Option_Type
     | C_Some 't
     
   let function some_0 (self : t_option 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_None -> any 't
       | C_Some a -> a
       end
@@ -484,7 +484,7 @@ module C12Zip_Impl0_Next
   use seq.Seq
   val next1 [#"../common.rs" 27 4 27 45] (self : borrowed b) : Core_Option_Option_Type.t_option item1
     requires {[#"../common.rs" 27 17 27 21] inv8 self}
-    ensures { [#"../common.rs" 23 14 26 5] match (result) with
+    ensures { [#"../common.rs" 23 14 26 5] match result with
       | Core_Option_Option_Type.C_None -> completed2 self
       | Core_Option_Option_Type.C_Some v -> produces2 ( * self) (Seq.singleton v) ( ^ self)
       end }
@@ -501,7 +501,7 @@ module C12Zip_Impl0_Next
     
   val next0 [#"../common.rs" 27 4 27 45] (self : borrowed a) : Core_Option_Option_Type.t_option item0
     requires {[#"../common.rs" 27 17 27 21] inv7 self}
-    ensures { [#"../common.rs" 23 14 26 5] match (result) with
+    ensures { [#"../common.rs" 23 14 26 5] match result with
       | Core_Option_Option_Type.C_None -> completed1 self
       | Core_Option_Option_Type.C_Some v -> produces1 ( * self) (Seq.singleton v) ( ^ self)
       end }
@@ -509,7 +509,7 @@ module C12Zip_Impl0_Next
     
   let rec cfg next [#"../12_zip.rs" 54 4 54 44] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (C12Zip_Zip_Type.t_zip a b)) : Core_Option_Option_Type.t_option (item0, item1)
     requires {[#"../12_zip.rs" 54 17 54 21] inv2 self}
-    ensures { [#"../12_zip.rs" 50 14 53 5] match (result) with
+    ensures { [#"../12_zip.rs" 50 14 53 5] match result with
       | Core_Option_Option_Type.C_None -> completed0 self
       | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
       end }
@@ -531,7 +531,7 @@ module C12Zip_Impl0_Next
   }
   BB0 {
     _5 <- Borrow.borrow_mut (C12Zip_Zip_Type.zip_a ( * self));
-    self <- { self with current = (let C12Zip_Zip_Type.C_Zip a b =  * self in C12Zip_Zip_Type.C_Zip ( ^ _5) b) };
+    self <- { self with current = (let C12Zip_Zip_Type.C_Zip x0 x1 =  * self in C12Zip_Zip_Type.C_Zip ( ^ _5) x1) };
     assume { inv0 ( ^ _5) };
     _4 <- ([#"../12_zip.rs" 55 22 55 35] next0 _5);
     _5 <- any borrowed a;
@@ -548,7 +548,7 @@ module C12Zip_Impl0_Next
   }
   BB3 {
     x1 <- Core_Option_Option_Type.some_0 _4;
-    _4 <- (let Core_Option_Option_Type.C_Some a = _4 in Core_Option_Option_Type.C_Some (any item0));
+    _4 <- (let Core_Option_Option_Type.C_Some x0 = _4 in Core_Option_Option_Type.C_Some (any item0));
     assert { [@expl:type invariant] inv1 _4 };
     assume { resolve0 _4 };
     x <- x1;
@@ -571,7 +571,7 @@ module C12Zip_Impl0_Next
   }
   BB7 {
     _11 <- Borrow.borrow_mut (C12Zip_Zip_Type.zip_b ( * self));
-    self <- { self with current = (let C12Zip_Zip_Type.C_Zip a b =  * self in C12Zip_Zip_Type.C_Zip a ( ^ _11)) };
+    self <- { self with current = (let C12Zip_Zip_Type.C_Zip x0 x1 =  * self in C12Zip_Zip_Type.C_Zip x0 ( ^ _11)) };
     assume { inv3 ( ^ _11) };
     _10 <- ([#"../12_zip.rs" 59 22 59 35] next1 _11);
     _11 <- any borrowed b;
@@ -590,7 +590,7 @@ module C12Zip_Impl0_Next
   }
   BB10 {
     y1 <- Core_Option_Option_Type.some_0 _10;
-    _10 <- (let Core_Option_Option_Type.C_Some a = _10 in Core_Option_Option_Type.C_Some (any item1));
+    _10 <- (let Core_Option_Option_Type.C_Some x0 = _10 in Core_Option_Option_Type.C_Some (any item1));
     assert { [@expl:type invariant] inv4 _10 };
     assume { resolve2 _10 };
     y <- y1;
@@ -775,10 +775,10 @@ module C12Zip_Impl0
   use seq.Seq
   goal produces_refl_refn : [#"../12_zip.rs" 41 4 41 29] forall a : C12Zip_Zip_Type.t_zip a b . inv0 a -> inv0 a /\ (forall result : () . produces0 a (Seq.empty ) a -> produces0 a (Seq.empty ) a)
   goal produces_trans_refn : [#"../12_zip.rs" 48 4 48 90] forall a : C12Zip_Zip_Type.t_zip a b . forall ab : Seq.seq (item0, item1) . forall b : C12Zip_Zip_Type.t_zip a b . forall bc : Seq.seq (item0, item1) . forall c : C12Zip_Zip_Type.t_zip a b . inv0 c /\ inv1 bc /\ inv0 b /\ inv1 ab /\ inv0 a /\ produces0 b bc c /\ produces0 a ab b -> inv0 c /\ inv1 bc /\ inv0 b /\ inv1 ab /\ inv0 a /\ produces0 b bc c /\ produces0 a ab b /\ (forall result : () . produces0 a (Seq.(++) ab bc) c -> produces0 a (Seq.(++) ab bc) c)
-  goal next_refn : [#"../12_zip.rs" 54 4 54 44] forall self : borrowed (C12Zip_Zip_Type.t_zip a b) . inv2 self -> inv2 self /\ (forall result : Core_Option_Option_Type.t_option (item0, item1) . inv3 result /\ match (result) with
+  goal next_refn : [#"../12_zip.rs" 54 4 54 44] forall self : borrowed (C12Zip_Zip_Type.t_zip a b) . inv2 self -> inv2 self /\ (forall result : Core_Option_Option_Type.t_option (item0, item1) . inv3 result /\ match result with
     | Core_Option_Option_Type.C_None -> completed0 self
     | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
-    end -> inv3 result /\ match (result) with
+    end -> inv3 result /\ match result with
     | Core_Option_Option_Type.C_None -> completed0 self
     | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
     end)

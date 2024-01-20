@@ -8,7 +8,7 @@ module Core_Option_Option_Type
     | C_Some 't
     
   let function some_0 (self : t_option 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_None -> any 't
       | C_Some a -> a
       end
@@ -23,28 +23,28 @@ module IteNormalize_Expr_Type
     | C_False
     
   let function ifthenelse_c (self : t_expr) : t_expr = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_IfThenElse a _ _ -> a
       | C_Var _ -> any t_expr
       | C_True -> any t_expr
       | C_False -> any t_expr
       end
   let function ifthenelse_t (self : t_expr) : t_expr = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_IfThenElse _ a _ -> a
       | C_Var _ -> any t_expr
       | C_True -> any t_expr
       | C_False -> any t_expr
       end
   let function ifthenelse_e (self : t_expr) : t_expr = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_IfThenElse _ _ a -> a
       | C_Var _ -> any t_expr
       | C_True -> any t_expr
       | C_False -> any t_expr
       end
   let function var_v (self : t_expr) : usize = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_IfThenElse _ _ _ -> any usize
       | C_Var a -> a
       | C_True -> any usize
@@ -340,8 +340,8 @@ end
 module IteNormalize_Impl5_Transpose
   use IteNormalize_Expr_Type as IteNormalize_Expr_Type
   predicate is_normalized0 [#"../ite_normalize.rs" 126 4 126 34] (self : IteNormalize_Expr_Type.t_expr) =
-    [#"../ite_normalize.rs" 127 8 140 9] match (self) with
-      | IteNormalize_Expr_Type.C_IfThenElse c t e -> is_normalized0 c /\ is_normalized0 t /\ is_normalized0 e /\ match (c) with
+    [#"../ite_normalize.rs" 127 8 140 9] match self with
+      | IteNormalize_Expr_Type.C_IfThenElse c t e -> is_normalized0 c /\ is_normalized0 t /\ is_normalized0 e /\ match c with
         | IteNormalize_Expr_Type.C_IfThenElse _ _ _ -> false
         | _ -> true
         end
@@ -427,11 +427,11 @@ module IteNormalize_Impl5_Transpose
   }
   BB10 {
     c <- IteNormalize_Expr_Type.ifthenelse_c self;
-    self <- (let IteNormalize_Expr_Type.C_IfThenElse a b c = self in IteNormalize_Expr_Type.C_IfThenElse (any IteNormalize_Expr_Type.t_expr) b c);
+    self <- (let IteNormalize_Expr_Type.C_IfThenElse x0 x1 x2 = self in IteNormalize_Expr_Type.C_IfThenElse (any IteNormalize_Expr_Type.t_expr) x1 x2);
     t <- IteNormalize_Expr_Type.ifthenelse_t self;
-    self <- (let IteNormalize_Expr_Type.C_IfThenElse a b c = self in IteNormalize_Expr_Type.C_IfThenElse a (any IteNormalize_Expr_Type.t_expr) c);
+    self <- (let IteNormalize_Expr_Type.C_IfThenElse x0 x1 x2 = self in IteNormalize_Expr_Type.C_IfThenElse x0 (any IteNormalize_Expr_Type.t_expr) x2);
     e <- IteNormalize_Expr_Type.ifthenelse_e self;
-    self <- (let IteNormalize_Expr_Type.C_IfThenElse a b c = self in IteNormalize_Expr_Type.C_IfThenElse a b (any IteNormalize_Expr_Type.t_expr));
+    self <- (let IteNormalize_Expr_Type.C_IfThenElse x0 x1 x2 = self in IteNormalize_Expr_Type.C_IfThenElse x0 x1 (any IteNormalize_Expr_Type.t_expr));
     assume { resolve0 t };
     _17 <- ([#"../ite_normalize.rs" 114 40 114 49] clone0 ([#"../ite_normalize.rs" 114 40 114 49] a));
     goto BB11
@@ -539,8 +539,8 @@ end
 module IteNormalize_Impl5_Normalize
   use IteNormalize_Expr_Type as IteNormalize_Expr_Type
   predicate is_normalized0 [#"../ite_normalize.rs" 126 4 126 34] (self : IteNormalize_Expr_Type.t_expr) =
-    [#"../ite_normalize.rs" 127 8 140 9] match (self) with
-      | IteNormalize_Expr_Type.C_IfThenElse c t e -> is_normalized0 c /\ is_normalized0 t /\ is_normalized0 e /\ match (c) with
+    [#"../ite_normalize.rs" 127 8 140 9] match self with
+      | IteNormalize_Expr_Type.C_IfThenElse c t e -> is_normalized0 c /\ is_normalized0 t /\ is_normalized0 e /\ match c with
         | IteNormalize_Expr_Type.C_IfThenElse _ _ _ -> false
         | _ -> true
         end
@@ -712,7 +712,7 @@ module IteNormalize_Impl5_SimplifyHelper
   use IteNormalize_Expr_Type as IteNormalize_Expr_Type
   predicate does_not_contain0 [#"../ite_normalize.rs" 169 4 169 48] (self : IteNormalize_Expr_Type.t_expr) (vp : usize)
    =
-    [#"../ite_normalize.rs" 170 8 176 9] match (self) with
+    [#"../ite_normalize.rs" 170 8 176 9] match self with
       | IteNormalize_Expr_Type.C_IfThenElse c t e -> does_not_contain0 c vp /\ does_not_contain0 t vp /\ does_not_contain0 e vp
       | IteNormalize_Expr_Type.C_Var v -> v <> vp
       | _ -> true
@@ -721,8 +721,8 @@ module IteNormalize_Impl5_SimplifyHelper
     ensures { result = does_not_contain0 self vp }
     
   predicate is_simplified0 [#"../ite_normalize.rs" 158 4 158 34] (self : IteNormalize_Expr_Type.t_expr) =
-    [#"../ite_normalize.rs" 159 8 165 9] match (self) with
-      | IteNormalize_Expr_Type.C_IfThenElse c t e -> match (c) with
+    [#"../ite_normalize.rs" 159 8 165 9] match self with
+      | IteNormalize_Expr_Type.C_IfThenElse c t e -> match c with
         | IteNormalize_Expr_Type.C_Var v -> does_not_contain0 t v /\ does_not_contain0 e v
         | c -> is_simplified0 c /\ is_simplified0 t /\ is_simplified0 e
         end
@@ -741,8 +741,8 @@ module IteNormalize_Impl5_SimplifyHelper
     ensures { result = shallow_model0 self }
     
   predicate is_normalized0 [#"../ite_normalize.rs" 126 4 126 34] (self : IteNormalize_Expr_Type.t_expr) =
-    [#"../ite_normalize.rs" 127 8 140 9] match (self) with
-      | IteNormalize_Expr_Type.C_IfThenElse c t e -> is_normalized0 c /\ is_normalized0 t /\ is_normalized0 e /\ match (c) with
+    [#"../ite_normalize.rs" 127 8 140 9] match self with
+      | IteNormalize_Expr_Type.C_IfThenElse c t e -> is_normalized0 c /\ is_normalized0 t /\ is_normalized0 e /\ match c with
         | IteNormalize_Expr_Type.C_IfThenElse _ _ _ -> false
         | _ -> true
         end
@@ -872,11 +872,11 @@ module IteNormalize_Impl5_SimplifyHelper
   }
   BB7 {
     c <- IteNormalize_Expr_Type.ifthenelse_c self;
-    self <- (let IteNormalize_Expr_Type.C_IfThenElse a b c = self in IteNormalize_Expr_Type.C_IfThenElse (any IteNormalize_Expr_Type.t_expr) b c);
+    self <- (let IteNormalize_Expr_Type.C_IfThenElse x0 x1 x2 = self in IteNormalize_Expr_Type.C_IfThenElse (any IteNormalize_Expr_Type.t_expr) x1 x2);
     t <- IteNormalize_Expr_Type.ifthenelse_t self;
-    self <- (let IteNormalize_Expr_Type.C_IfThenElse a b c = self in IteNormalize_Expr_Type.C_IfThenElse a (any IteNormalize_Expr_Type.t_expr) c);
+    self <- (let IteNormalize_Expr_Type.C_IfThenElse x0 x1 x2 = self in IteNormalize_Expr_Type.C_IfThenElse x0 (any IteNormalize_Expr_Type.t_expr) x2);
     e <- IteNormalize_Expr_Type.ifthenelse_e self;
-    self <- (let IteNormalize_Expr_Type.C_IfThenElse a b c = self in IteNormalize_Expr_Type.C_IfThenElse a b (any IteNormalize_Expr_Type.t_expr));
+    self <- (let IteNormalize_Expr_Type.C_IfThenElse x0 x1 x2 = self in IteNormalize_Expr_Type.C_IfThenElse x0 x1 (any IteNormalize_Expr_Type.t_expr));
     switch (c)
       | IteNormalize_Expr_Type.C_Var _ -> goto BB9
       | _ -> goto BB8
@@ -1095,7 +1095,7 @@ module IteNormalize_Impl5_Simplify
   use IteNormalize_Expr_Type as IteNormalize_Expr_Type
   predicate does_not_contain0 [#"../ite_normalize.rs" 169 4 169 48] (self : IteNormalize_Expr_Type.t_expr) (vp : usize)
    =
-    [#"../ite_normalize.rs" 170 8 176 9] match (self) with
+    [#"../ite_normalize.rs" 170 8 176 9] match self with
       | IteNormalize_Expr_Type.C_IfThenElse c t e -> does_not_contain0 c vp /\ does_not_contain0 t vp /\ does_not_contain0 e vp
       | IteNormalize_Expr_Type.C_Var v -> v <> vp
       | _ -> true
@@ -1104,8 +1104,8 @@ module IteNormalize_Impl5_Simplify
     ensures { result = does_not_contain0 self vp }
     
   predicate is_simplified0 [#"../ite_normalize.rs" 158 4 158 34] (self : IteNormalize_Expr_Type.t_expr) =
-    [#"../ite_normalize.rs" 159 8 165 9] match (self) with
-      | IteNormalize_Expr_Type.C_IfThenElse c t e -> match (c) with
+    [#"../ite_normalize.rs" 159 8 165 9] match self with
+      | IteNormalize_Expr_Type.C_IfThenElse c t e -> match c with
         | IteNormalize_Expr_Type.C_Var v -> does_not_contain0 t v /\ does_not_contain0 e v
         | c -> is_simplified0 c /\ is_simplified0 t /\ is_simplified0 e
         end
@@ -1115,8 +1115,8 @@ module IteNormalize_Impl5_Simplify
     ensures { result = is_simplified0 self }
     
   predicate is_normalized0 [#"../ite_normalize.rs" 126 4 126 34] (self : IteNormalize_Expr_Type.t_expr) =
-    [#"../ite_normalize.rs" 127 8 140 9] match (self) with
-      | IteNormalize_Expr_Type.C_IfThenElse c t e -> is_normalized0 c /\ is_normalized0 t /\ is_normalized0 e /\ match (c) with
+    [#"../ite_normalize.rs" 127 8 140 9] match self with
+      | IteNormalize_Expr_Type.C_IfThenElse c t e -> is_normalized0 c /\ is_normalized0 t /\ is_normalized0 e /\ match c with
         | IteNormalize_Expr_Type.C_IfThenElse _ _ _ -> false
         | _ -> true
         end

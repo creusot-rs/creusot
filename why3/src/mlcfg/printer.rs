@@ -646,7 +646,7 @@ impl Print for Exp {
                 .text("let ")
                 .append(pattern.pretty(alloc, env))
                 .append(" = ")
-                .append(parens!(alloc, env, self, arg))
+                .append(arg.pretty(alloc, env))
                 .append(" in ")
                 .append(body.pretty(alloc, env)),
             Exp::Var(v, _) => v.pretty(alloc, env),
@@ -657,16 +657,16 @@ impl Print for Exp {
                 .append(" with ")
                 .append(alloc.text(label))
                 .append(" = ")
-                .append(parens!(alloc, env, self, val))
+                .append(parens!(alloc, env, Precedence::Attr.next(), val))
                 .append(alloc.space())
                 .braces(),
             Exp::RecField { box record, label } => {
                 record.pretty(alloc, env).append(".").append(label)
             }
 
-            Exp::Tuple(args) => {
-                alloc.intersperse(args.iter().map(|a| a.pretty(alloc, env)), ", ").parens()
-            }
+            Exp::Tuple(args) => alloc
+                .intersperse(args.iter().map(|a| parens!(alloc, env, Precedence::Cast, a)), ", ")
+                .parens(),
 
             Exp::Constructor { ctor, args } => ctor.pretty(alloc, env).append(if args.is_empty() {
                 alloc.nil()
@@ -685,7 +685,9 @@ impl Print for Exp {
             Exp::UnaryOp(UnOp::Neg, box op) => {
                 alloc.text("- ").append(parens!(alloc, env, self, op))
             }
-            Exp::UnaryOp(UnOp::FloatNeg, box op) => alloc.text(".- ").append(op.pretty(alloc, env)),
+            Exp::UnaryOp(UnOp::FloatNeg, box op) => {
+                alloc.text(".- ").append(parens!(alloc, env, self, op))
+            }
             Exp::BinaryOp(op, box l, box r) => match self.associativity() {
                 Some(AssocDir::Left) => parens!(alloc, env, self, l),
                 Some(AssocDir::Right) | None => parens!(alloc, env, self.precedence().next(), l),
@@ -718,7 +720,7 @@ impl Print for Exp {
 
             Exp::Match(box scrut, brs) => alloc
                 .text("match ")
-                .append(scrut.pretty(alloc, env).parens())
+                .append(scrut.pretty(alloc, env))
                 .append(" with")
                 .append(alloc.hardline())
                 .append(
@@ -770,7 +772,7 @@ impl Print for Exp {
                 parens!(alloc, env, self, hyp).append(" -> ").append(parens!(alloc, env, self, exp))
             }
             Exp::Ascribe(e, t) => {
-                e.pretty(alloc, env).append(" : ").append(t.pretty(alloc, env)).group()
+                parens!(alloc, env, self, e).append(" : ").append(t.pretty(alloc, env)).group()
             }
             Exp::Pure(e) => alloc.text("pure ").append(e.pretty(alloc, env).braces()),
             Exp::Ghost(e) => {
@@ -780,9 +782,14 @@ impl Print for Exp {
             Exp::Old(e) => alloc.text("old").append(e.pretty(alloc, env).parens()),
             Exp::Record { fields } => alloc
                 .intersperse(
-                    fields
-                        .iter()
-                        .map(|(nm, a)| alloc.text(nm).append(" = ").append(a.pretty(alloc, env))),
+                    fields.iter().map(|(nm, a)| {
+                        alloc.text(nm).append(" = ").append(parens!(
+                            alloc,
+                            env,
+                            Precedence::Attr.next(),
+                            a
+                        ))
+                    }),
                     "; ",
                 )
                 .braces(),

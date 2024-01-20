@@ -1,0 +1,214 @@
+
+module C922_G
+  use prelude.Int32
+  use prelude.Int
+  use prelude.Borrow
+  predicate resolve3 (self : int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
+  val resolve3 (self : int32) : bool
+    ensures { result = resolve3 self }
+    
+  predicate resolve0 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve0 (self : borrowed int32) : bool
+    ensures { result = resolve0 self }
+    
+  predicate resolve2 (self : (int32, borrowed int32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve3 (let (a, _) = self in a) /\ resolve0 (let (_, a) = self in a)
+  val resolve2 (self : (int32, borrowed int32)) : bool
+    ensures { result = resolve2 self }
+    
+  predicate resolve1 (self : ((int32, borrowed int32), int32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve2 (let (a, _) = self in a) /\ resolve3 (let (_, a) = self in a)
+  val resolve1 (self : ((int32, borrowed int32), int32)) : bool
+    ensures { result = resolve1 self }
+    
+  let rec cfg g [#"../922.rs" 5 0 5 57] [@cfg:stackify] [@cfg:subregion_analysis] (x : ((int32, borrowed int32), int32)) : borrowed int32
+    ensures { [#"../922.rs" 4 0 4 27] result = (let (_, a) = let (a, _) = x in a in a) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : borrowed int32;
+  var x : ((int32, borrowed int32), int32) = x;
+  var _2 : borrowed int32;
+  var _4 : borrowed int32;
+  {
+    goto BB0
+  }
+  BB0 {
+    _4 <- Borrow.borrow_mut ( * (let (_, a) = let (a, _) = x in a in a));
+    x <- (let (x0, x1) = x in ((let (x0, x1) = let (a, _) = x in a in (x0, { (let (_, a) = let (a, _) = x in a in a) with current =  ^ _4 })), x1));
+    _2 <- Borrow.borrow_mut ( * _4);
+    _4 <- { _4 with current =  ^ _2 };
+    _0 <- Borrow.borrow_mut ( * _2);
+    _2 <- { _2 with current =  ^ _0 };
+    assume { resolve0 _4 };
+    assume { resolve0 _2 };
+    assume { resolve1 x };
+    return _0
+  }
+  
+end
+module C922_F1
+  use prelude.Int32
+  use prelude.Int
+  use prelude.Borrow
+  predicate resolve1 (self : borrowed (int32, borrowed int32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve1 (self : borrowed (int32, borrowed int32)) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve0 (self : borrowed int32) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg f1 [#"../922.rs" 12 0 12 59] [@cfg:stackify] [@cfg:subregion_analysis] (b : borrowed (int32, borrowed int32)) : borrowed int32
+    ensures { [#"../922.rs" 9 10 9 28]  * result =  * (let (_, a) =  * b in a) }
+    ensures { [#"../922.rs" 10 10 10 28]  ^ result =  * (let (_, a) =  ^ b in a) }
+    ensures { [#"../922.rs" 11 10 11 28]  ^ (let (_, a) =  * b in a) =  ^ (let (_, a) =  ^ b in a) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : borrowed int32;
+  var b : borrowed (int32, borrowed int32) = b;
+  var _2 : borrowed int32;
+  var _6 : borrowed int32;
+  {
+    goto BB0
+  }
+  BB0 {
+    _6 <- Borrow.borrow_mut ( * (let (_, a) =  * b in a));
+    b <- { b with current = (let (x0, x1) =  * b in (x0, { (let (_, a) =  * b in a) with current =  ^ _6 })) };
+    _2 <- Borrow.borrow_mut ( * _6);
+    _6 <- { _6 with current =  ^ _2 };
+    _0 <- Borrow.borrow_mut ( * _2);
+    _2 <- { _2 with current =  ^ _0 };
+    assume { resolve0 _6 };
+    assume { resolve0 _2 };
+    assume { resolve1 b };
+    return _0
+  }
+  
+end
+module C922_F2
+  use prelude.Int32
+  use prelude.Int
+  use prelude.Borrow
+  predicate resolve1 (self : borrowed (int32, borrowed int32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve1 (self : borrowed (int32, borrowed int32)) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve0 (self : borrowed int32) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg f2 [#"../922.rs" 19 0 19 60] [@cfg:stackify] [@cfg:subregion_analysis] (x0 : borrowed (int32, borrowed int32)) : borrowed int32
+    ensures { [#"../922.rs" 16 10 16 29]  * result =  * (let (_, a) =  * x0 in a) }
+    ensures { [#"../922.rs" 17 10 17 29]  ^ result =  * (let (_, a) =  ^ x0 in a) }
+    ensures { [#"../922.rs" 18 10 18 30]  ^ (let (_, a) =  * x0 in a) =  ^ (let (_, a) =  ^ x0 in a) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : borrowed int32;
+  var x0 : borrowed (int32, borrowed int32) = x0;
+  var _2 : borrowed int32;
+  var _6 : borrowed int32;
+  {
+    goto BB0
+  }
+  BB0 {
+    _6 <- Borrow.borrow_mut ( * (let (_, a) =  * x0 in a));
+    x0 <- { x0 with current = (let (x1, x2) =  * x0 in (x1, { (let (_, a) =  * x0 in a) with current =  ^ _6 })) };
+    _2 <- Borrow.borrow_mut ( * _6);
+    _6 <- { _6 with current =  ^ _2 };
+    _0 <- Borrow.borrow_mut ( * _2);
+    _2 <- { _2 with current =  ^ _0 };
+    assume { resolve0 _6 };
+    assume { resolve0 _2 };
+    assume { resolve1 x0 };
+    return _0
+  }
+  
+end
+module C922_F3
+  use prelude.Int32
+  use prelude.Int
+  use prelude.Borrow
+  predicate resolve1 (self : borrowed (int32, borrowed int32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve1 (self : borrowed (int32, borrowed int32)) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve0 (self : borrowed int32) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg f3 [#"../922.rs" 26 0 26 60] [@cfg:stackify] [@cfg:subregion_analysis] (x1 : borrowed (int32, borrowed int32)) : borrowed int32
+    ensures { [#"../922.rs" 23 10 23 29]  * result =  * (let (_, a) =  * x1 in a) }
+    ensures { [#"../922.rs" 24 10 24 29]  ^ result =  * (let (_, a) =  ^ x1 in a) }
+    ensures { [#"../922.rs" 25 10 25 30]  ^ (let (_, a) =  * x1 in a) =  ^ (let (_, a) =  ^ x1 in a) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : borrowed int32;
+  var x1 : borrowed (int32, borrowed int32) = x1;
+  var _2 : borrowed int32;
+  var _6 : borrowed int32;
+  {
+    goto BB0
+  }
+  BB0 {
+    _6 <- Borrow.borrow_mut ( * (let (_, a) =  * x1 in a));
+    x1 <- { x1 with current = (let (x0, x2) =  * x1 in (x0, { (let (_, a) =  * x1 in a) with current =  ^ _6 })) };
+    _2 <- Borrow.borrow_mut ( * _6);
+    _6 <- { _6 with current =  ^ _2 };
+    _0 <- Borrow.borrow_mut ( * _2);
+    _2 <- { _2 with current =  ^ _0 };
+    assume { resolve0 _6 };
+    assume { resolve0 _2 };
+    assume { resolve1 x1 };
+    return _0
+  }
+  
+end
+module C922_F4
+  use prelude.Int32
+  use prelude.Int
+  use prelude.Borrow
+  predicate resolve1 (self : borrowed (int32, borrowed int32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve1 (self : borrowed (int32, borrowed int32)) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve0 (self : borrowed int32) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg f4 [#"../922.rs" 33 0 33 60] [@cfg:stackify] [@cfg:subregion_analysis] (x2 : borrowed (int32, borrowed int32)) : borrowed int32
+    ensures { [#"../922.rs" 30 10 30 29]  * result =  * (let (_, a) =  * x2 in a) }
+    ensures { [#"../922.rs" 31 10 31 29]  ^ result =  * (let (_, a) =  ^ x2 in a) }
+    ensures { [#"../922.rs" 32 10 32 30]  ^ (let (_, a) =  * x2 in a) =  ^ (let (_, a) =  ^ x2 in a) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : borrowed int32;
+  var x2 : borrowed (int32, borrowed int32) = x2;
+  var _2 : borrowed int32;
+  var _6 : borrowed int32;
+  {
+    goto BB0
+  }
+  BB0 {
+    _6 <- Borrow.borrow_mut ( * (let (_, a) =  * x2 in a));
+    x2 <- { x2 with current = (let (x0, x1) =  * x2 in (x0, { (let (_, a) =  * x2 in a) with current =  ^ _6 })) };
+    _2 <- Borrow.borrow_mut ( * _6);
+    _6 <- { _6 with current =  ^ _2 };
+    _0 <- Borrow.borrow_mut ( * _2);
+    _2 <- { _2 with current =  ^ _0 };
+    assume { resolve0 _6 };
+    assume { resolve0 _2 };
+    assume { resolve1 x2 };
+    return _0
+  }
+  
+end
