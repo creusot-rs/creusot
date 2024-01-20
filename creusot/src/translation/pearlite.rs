@@ -918,13 +918,40 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 Ok(res)
             }
             ExprKind::Deref { arg } => {
+                // Detect * ghost_deref & and treat that as a single 'projection'
+                if self.is_ghost_deref(*arg) {
+                    let ExprKind::Call { args, .. } = &self.thir[*arg].kind else { unreachable!() };
+                    let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } = self.thir[args[0]].kind else { unreachable!() };
+
+                    let (term, projections) = self.logical_reborrow_inner_project(arg)?;
+                    return Ok((
+                        term,
+                        projections,
+                    ));
+                };
+
                 let inner = self.expr_term(*arg)?;
-                if let TermKind::Var(_) = inner.kind {}
                 Ok((inner, Vec::new()))
             }
-            _ => Err(Error::new(
+            ExprKind::Call { ty: fn_ty, args, .. } if fn_ty.is_fn() => {
+                let index_logic_method = self.ctx.get_diagnostic_item(Symbol::intern("index_logic_method")).unwrap();
+
+                let TyKind::FnDef(id,_) = fn_ty.kind() else { panic!("expected function type") };
+
+                let (term, mut projections) = self.logical_reborrow_inner_project(args[0])?;
+
+                if id == &index_logic_method {
+                    let index = self.expr_term(args[1])?;
+
+                    projections.push(ProjectionElem::Index(index));
+                    Ok((term, projections))
+                } else {
+                    return Err(Error::new(span, format!("unsupported projection {id:?}")));
+                }
+            }
+            e => Err(Error::new(
                 span,
-                "unsupported logical reborrow, only simple field projections are supproted, sorry",
+                format!("unsupported logical reborrow {e:?}, only simple field projections are supported"),
             )),
         }
     }

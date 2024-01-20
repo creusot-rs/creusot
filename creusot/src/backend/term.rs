@@ -259,13 +259,10 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Reborrow { cur, fin, term, projection } => {
                 let inner = self.lower_term(*term);
                 let borrow_id = borrow_generated_id(inner, &projection);
-                Exp::Record {
-                    fields: vec![
-                        ("current".into(), self.lower_term(*cur)),
-                        ("final".into(), self.lower_term(*fin)),
-                        ("addr".into(), borrow_id),
-                    ],
-                }
+                Exp::Call(
+                    Box::new(Exp::QVar("Borrow.borrow_logic".into(), Purity::Logic)),
+                    vec![self.lower_term(*cur), self.lower_term(*fin), borrow_id],
+                )
             }
             TermKind::Assert { cond } => {
                 let cond = self.lower_term(&*cond);

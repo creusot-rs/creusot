@@ -670,8 +670,7 @@ pub(crate) fn borrow_generated_id<V: std::fmt::Debug, T: std::fmt::Debug>(
             | ProjectionElem::ConstantIndex { .. }
             | ProjectionElem::Subslice { .. }
             | ProjectionElem::OpaqueCast(_) => {
-                // Should not appear, ruled out in `NotFinalPlaces::is_final_at`
-                todo!("{proj:?} not supported as final")
+                // Should only appear in logic, so we can ignore them.
             }
         }
     }
