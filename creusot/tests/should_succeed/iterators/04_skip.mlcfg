@@ -6,11 +6,11 @@ module C04Skip_Skip_Type
     | C_Skip 'i usize
     
   let function skip_n (self : t_skip 'i) : usize = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_Skip _ a -> a
       end
   let function skip_iter (self : t_skip 'i) : 'i = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_Skip a _ -> a
       end
 end
@@ -184,7 +184,7 @@ module Core_Option_Option_Type
     | C_Some 't
     
   let function some_0 (self : t_option 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_None -> any 't
       | C_Some a -> a
       end
@@ -351,7 +351,7 @@ module C04Skip_Impl0_Next
     
   val next0 [#"../common.rs" 27 4 27 45] (self : borrowed i) : Core_Option_Option_Type.t_option item0
     requires {[#"../common.rs" 27 17 27 21] inv8 self}
-    ensures { [#"../common.rs" 23 14 26 5] match (result) with
+    ensures { [#"../common.rs" 23 14 26 5] match result with
       | Core_Option_Option_Type.C_None -> completed1 self
       | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
       end }
@@ -393,7 +393,7 @@ module C04Skip_Impl0_Next
   use prelude.Ghost
   let rec cfg next [#"../04_skip.rs" 63 4 63 41] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (C04Skip_Skip_Type.t_skip i)) : Core_Option_Option_Type.t_option item0
     requires {[#"../04_skip.rs" 63 17 63 21] inv2 self}
-    ensures { [#"../04_skip.rs" 59 14 62 5] match (result) with
+    ensures { [#"../04_skip.rs" 59 14 62 5] match result with
       | Core_Option_Option_Type.C_None -> completed0 self
       | Core_Option_Option_Type.C_Some v -> produces1 ( * self) (Seq.singleton v) ( ^ self)
       end }
@@ -422,9 +422,9 @@ module C04Skip_Impl0_Next
     assert { [@expl:type invariant] inv0 old_self };
     assume { resolve0 old_self };
     _7 <- Borrow.borrow_mut (C04Skip_Skip_Type.skip_n ( * self));
-    self <- { self with current = (let C04Skip_Skip_Type.C_Skip a b =  * self in C04Skip_Skip_Type.C_Skip a ( ^ _7)) };
+    self <- { self with current = (let C04Skip_Skip_Type.C_Skip x0 x1 =  * self in C04Skip_Skip_Type.C_Skip x0 ( ^ _7)) };
     _6 <- Borrow.borrow_mut ( * _7);
-    _7 <- { _7 with current = ( ^ _6) };
+    _7 <- { _7 with current =  ^ _6 };
     n <- ([#"../04_skip.rs" 65 20 65 47] take0 _6);
     _6 <- any borrowed usize;
     goto BB2
@@ -449,7 +449,7 @@ module C04Skip_Impl0_Next
   }
   BB5 {
     _18 <- Borrow.borrow_mut (C04Skip_Skip_Type.skip_iter ( * self));
-    self <- { self with current = (let C04Skip_Skip_Type.C_Skip a b =  * self in C04Skip_Skip_Type.C_Skip ( ^ _18) b) };
+    self <- { self with current = (let C04Skip_Skip_Type.C_Skip x0 x1 =  * self in C04Skip_Skip_Type.C_Skip ( ^ _18) x1) };
     assume { inv3 ( ^ _18) };
     r <- ([#"../04_skip.rs" 73 20 73 36] next0 _18);
     _18 <- any borrowed i;
@@ -486,7 +486,7 @@ module C04Skip_Impl0_Next
   }
   BB11 {
     x <- Core_Option_Option_Type.some_0 r;
-    r <- (let Core_Option_Option_Type.C_Some a = r in Core_Option_Option_Type.C_Some (any item0));
+    r <- (let Core_Option_Option_Type.C_Some x0 = r in Core_Option_Option_Type.C_Some (any item0));
     assert { [@expl:type invariant] inv4 x };
     assume { resolve3 x };
     assert { [@expl:type invariant] inv5 r };
@@ -601,10 +601,10 @@ module C04Skip_Impl0
     ensures { result = produces0 self visited o }
     
   goal produces_refl_refn : [#"../04_skip.rs" 50 4 50 29] forall a : C04Skip_Skip_Type.t_skip i . inv0 a -> inv0 a /\ (forall result : () . produces0 a (Seq.empty ) a -> produces0 a (Seq.empty ) a)
-  goal next_refn : [#"../04_skip.rs" 63 4 63 41] forall self : borrowed (C04Skip_Skip_Type.t_skip i) . inv1 self -> inv1 self /\ (forall result : Core_Option_Option_Type.t_option item0 . inv2 result /\ match (result) with
+  goal next_refn : [#"../04_skip.rs" 63 4 63 41] forall self : borrowed (C04Skip_Skip_Type.t_skip i) . inv1 self -> inv1 self /\ (forall result : Core_Option_Option_Type.t_option item0 . inv2 result /\ match result with
     | Core_Option_Option_Type.C_None -> completed0 self
     | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
-    end -> inv2 result /\ match (result) with
+    end -> inv2 result /\ match result with
     | Core_Option_Option_Type.C_None -> completed0 self
     | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
     end)

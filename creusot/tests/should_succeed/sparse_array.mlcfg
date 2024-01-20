@@ -47,26 +47,26 @@ module SparseArray_Sparse_Type
     | C_Sparse usize usize (Alloc_Vec_Vec_Type.t_vec 't (Alloc_Alloc_Global_Type.t_global)) (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
     
   let function sparse_size (self : t_sparse 't) : usize = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_Sparse a _ _ _ _ -> a
       end
   let function sparse_idx (self : t_sparse 't) : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
    = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_Sparse _ _ _ a _ -> a
       end
   let function sparse_n (self : t_sparse 't) : usize = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_Sparse _ a _ _ _ -> a
       end
   let function sparse_back (self : t_sparse 't) : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
    = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_Sparse _ _ _ _ a -> a
       end
   let function sparse_values (self : t_sparse 't) : Alloc_Vec_Vec_Type.t_vec 't (Alloc_Alloc_Global_Type.t_global)
    = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_Sparse _ _ a _ _ -> a
       end
 end
@@ -178,7 +178,7 @@ module SparseArray_Impl2_Get
     ensures { result = shallow_model4 self }
     
   predicate invariant7 [#"../sparse_array.rs" 49 4 49 30] (self : SparseArray_Sparse_Type.t_sparse t) =
-    [#"../sparse_array.rs" 50 8 61 9] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) <= UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model4 self) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model6 (SparseArray_Sparse_Type.sparse_values self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model5 (SparseArray_Sparse_Type.sparse_idx self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model5 (SparseArray_Sparse_Type.sparse_back self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) -> match (index_logic4 (SparseArray_Sparse_Type.sparse_back self) i) with
+    [#"../sparse_array.rs" 50 8 61 9] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) <= UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model4 self) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model6 (SparseArray_Sparse_Type.sparse_values self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model5 (SparseArray_Sparse_Type.sparse_idx self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model5 (SparseArray_Sparse_Type.sparse_back self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) -> match index_logic4 (SparseArray_Sparse_Type.sparse_back self) i with
       | j -> 0 <= UIntSize.to_int j /\ UIntSize.to_int j < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ UIntSize.to_int (index_logic4 (SparseArray_Sparse_Type.sparse_idx self) (UIntSize.to_int j)) = i
       end)
   val invariant7 [#"../sparse_array.rs" 49 4 49 30] (self : SparseArray_Sparse_Type.t_sparse t) : bool
@@ -188,7 +188,7 @@ module SparseArray_Impl2_Get
   val inv7 (_x : SparseArray_Sparse_Type.t_sparse t) : bool
     ensures { result = inv7 _x }
     
-  axiom inv7 : [#"../sparse_array.rs" 1 0 1 0] forall x : SparseArray_Sparse_Type.t_sparse t . inv7 x = (invariant7 x /\ match (x) with
+  axiom inv7 : [#"../sparse_array.rs" 1 0 1 0] forall x : SparseArray_Sparse_Type.t_sparse t . inv7 x = (invariant7 x /\ match x with
     | SparseArray_Sparse_Type.C_Sparse size n values idx back -> true
     end)
   predicate invariant6 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
@@ -319,11 +319,11 @@ module SparseArray_Impl2_Get
   let rec cfg get [#"../sparse_array.rs" 89 4 89 45] [@cfg:stackify] [@cfg:subregion_analysis] (self : SparseArray_Sparse_Type.t_sparse t) (i : usize) : Core_Option_Option_Type.t_option t
     requires {[#"../sparse_array.rs" 80 15 80 31] UIntSize.to_int i < Seq.length (shallow_model1 self)}
     requires {[#"../sparse_array.rs" 89 16 89 20] inv0 self}
-    ensures { [#"../sparse_array.rs" 81 14 84 5] match (result) with
+    ensures { [#"../sparse_array.rs" 81 14 84 5] match result with
       | Core_Option_Option_Type.C_None -> Seq.get (shallow_model1 self) (UIntSize.to_int i) = Core_Option_Option_Type.C_None
       | Core_Option_Option_Type.C_Some x -> Seq.get (shallow_model1 self) (UIntSize.to_int i) = Core_Option_Option_Type.C_Some x
       end }
-    ensures { [#"../sparse_array.rs" 85 14 88 5] match (Seq.get (shallow_model1 self) (UIntSize.to_int i)) with
+    ensures { [#"../sparse_array.rs" 85 14 88 5] match Seq.get (shallow_model1 self) (UIntSize.to_int i) with
       | Core_Option_Option_Type.C_None -> result = Core_Option_Option_Type.C_None
       | Core_Option_Option_Type.C_Some _ -> true
       end }
@@ -499,7 +499,7 @@ module SparseArray_Impl2_LemmaPermutation_Impl
     ensures { result = shallow_model2 self }
     
   predicate invariant0 [#"../sparse_array.rs" 49 4 49 30] (self : SparseArray_Sparse_Type.t_sparse t) =
-    [#"../sparse_array.rs" 50 8 61 9] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) <= UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model2 self) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model3 (SparseArray_Sparse_Type.sparse_values self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model1 (SparseArray_Sparse_Type.sparse_idx self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model1 (SparseArray_Sparse_Type.sparse_back self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) -> match (index_logic0 (SparseArray_Sparse_Type.sparse_back self) i) with
+    [#"../sparse_array.rs" 50 8 61 9] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) <= UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model2 self) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model3 (SparseArray_Sparse_Type.sparse_values self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model1 (SparseArray_Sparse_Type.sparse_idx self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model1 (SparseArray_Sparse_Type.sparse_back self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) -> match index_logic0 (SparseArray_Sparse_Type.sparse_back self) i with
       | j -> 0 <= UIntSize.to_int j /\ UIntSize.to_int j < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ UIntSize.to_int (index_logic0 (SparseArray_Sparse_Type.sparse_idx self) (UIntSize.to_int j)) = i
       end)
   val invariant0 [#"../sparse_array.rs" 49 4 49 30] (self : SparseArray_Sparse_Type.t_sparse t) : bool
@@ -509,7 +509,7 @@ module SparseArray_Impl2_LemmaPermutation_Impl
   val inv0 (_x : SparseArray_Sparse_Type.t_sparse t) : bool
     ensures { result = inv0 _x }
     
-  axiom inv0 : [#"../sparse_array.rs" 1 0 1 0] forall x : SparseArray_Sparse_Type.t_sparse t . inv0 x = (invariant0 x /\ match (x) with
+  axiom inv0 : [#"../sparse_array.rs" 1 0 1 0] forall x : SparseArray_Sparse_Type.t_sparse t . inv0 x = (invariant0 x /\ match x with
     | SparseArray_Sparse_Type.C_Sparse size n values idx back -> true
     end)
   let rec ghost function lemma_permutation [#"../sparse_array.rs" 104 4 104 38] (self : SparseArray_Sparse_Type.t_sparse t) (i : int) : ()
@@ -637,7 +637,7 @@ module SparseArray_Impl2_Set
     ensures { result = shallow_model2 self }
     
   predicate invariant8 [#"../sparse_array.rs" 49 4 49 30] (self : SparseArray_Sparse_Type.t_sparse t) =
-    [#"../sparse_array.rs" 50 8 61 9] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) <= UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model2 self) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model4 (SparseArray_Sparse_Type.sparse_values self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model7 (SparseArray_Sparse_Type.sparse_idx self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model7 (SparseArray_Sparse_Type.sparse_back self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) -> match (index_logic4 (SparseArray_Sparse_Type.sparse_back self) i) with
+    [#"../sparse_array.rs" 50 8 61 9] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) <= UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model2 self) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model4 (SparseArray_Sparse_Type.sparse_values self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model7 (SparseArray_Sparse_Type.sparse_idx self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model7 (SparseArray_Sparse_Type.sparse_back self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) -> match index_logic4 (SparseArray_Sparse_Type.sparse_back self) i with
       | j -> 0 <= UIntSize.to_int j /\ UIntSize.to_int j < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ UIntSize.to_int (index_logic4 (SparseArray_Sparse_Type.sparse_idx self) (UIntSize.to_int j)) = i
       end)
   val invariant8 [#"../sparse_array.rs" 49 4 49 30] (self : SparseArray_Sparse_Type.t_sparse t) : bool
@@ -647,7 +647,7 @@ module SparseArray_Impl2_Set
   val inv8 (_x : SparseArray_Sparse_Type.t_sparse t) : bool
     ensures { result = inv8 _x }
     
-  axiom inv8 : [#"../sparse_array.rs" 1 0 1 0] forall x : SparseArray_Sparse_Type.t_sparse t . inv8 x = (invariant8 x /\ match (x) with
+  axiom inv8 : [#"../sparse_array.rs" 1 0 1 0] forall x : SparseArray_Sparse_Type.t_sparse t . inv8 x = (invariant8 x /\ match x with
     | SparseArray_Sparse_Type.C_Sparse size n values idx back -> true
     end)
   predicate invariant7 (self : usize) =
@@ -874,7 +874,7 @@ module SparseArray_Impl2_Set
   }
   BB1 {
     _10 <- Borrow.borrow_mut (SparseArray_Sparse_Type.sparse_values ( * self));
-    self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse a b c d e =  * self in SparseArray_Sparse_Type.C_Sparse a b ( ^ _10) d e) };
+    self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 x4 =  * self in SparseArray_Sparse_Type.C_Sparse x0 x1 ( ^ _10) x3 x4) };
     assume { inv0 ( ^ _10) };
     _9 <- ([#"../sparse_array.rs" 113 8 113 22] index_mut0 _10 i);
     _10 <- any borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
@@ -929,7 +929,7 @@ module SparseArray_Impl2_Set
     assume { resolve3 _27 };
     assert { [@expl:assertion] [#"../sparse_array.rs" 118 26 118 46] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n ( * self)) < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size ( * self)) };
     _33 <- Borrow.borrow_mut (SparseArray_Sparse_Type.sparse_idx ( * self));
-    self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse a b c d e =  * self in SparseArray_Sparse_Type.C_Sparse a b c ( ^ _33) e) };
+    self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 x4 =  * self in SparseArray_Sparse_Type.C_Sparse x0 x1 x2 ( ^ _33) x4) };
     _32 <- ([#"../sparse_array.rs" 120 12 120 23] index_mut1 _33 i);
     _33 <- any borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
     goto BB13
@@ -938,7 +938,7 @@ module SparseArray_Impl2_Set
     _32 <- { _32 with current = SparseArray_Sparse_Type.sparse_n ( * self) };
     assume { resolve4 _32 };
     _37 <- Borrow.borrow_mut (SparseArray_Sparse_Type.sparse_back ( * self));
-    self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse a b c d e =  * self in SparseArray_Sparse_Type.C_Sparse a b c d ( ^ _37)) };
+    self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 x4 =  * self in SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 ( ^ _37)) };
     _36 <- ([#"../sparse_array.rs" 121 12 121 29] index_mut1 _37 (SparseArray_Sparse_Type.sparse_n ( * self)));
     _37 <- any borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
     goto BB14
@@ -946,7 +946,7 @@ module SparseArray_Impl2_Set
   BB14 {
     _36 <- { _36 with current = i };
     assume { resolve4 _36 };
-    self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse a b c d e =  * self in SparseArray_Sparse_Type.C_Sparse a ([#"../sparse_array.rs" 122 12 122 23] SparseArray_Sparse_Type.sparse_n ( * self) + ([#"../sparse_array.rs" 122 22 122 23] [#"../sparse_array.rs" 122 22 122 23] (1 : usize))) c d e) };
+    self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 x4 =  * self in SparseArray_Sparse_Type.C_Sparse x0 ([#"../sparse_array.rs" 122 12 122 23] SparseArray_Sparse_Type.sparse_n ( * self) + ([#"../sparse_array.rs" 122 22 122 23] [#"../sparse_array.rs" 122 22 122 23] (1 : usize))) x2 x3 x4) };
     assert { [@expl:type invariant] inv3 self };
     assume { resolve2 self };
     _0 <- ([#"../sparse_array.rs" 115 54 123 9] ());
@@ -1078,7 +1078,7 @@ module SparseArray_Create
     ensures { result = shallow_model1 self }
     
   predicate invariant1 [#"../sparse_array.rs" 49 4 49 30] (self : SparseArray_Sparse_Type.t_sparse t) =
-    [#"../sparse_array.rs" 50 8 61 9] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) <= UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model1 self) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model2 (SparseArray_Sparse_Type.sparse_values self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model3 (SparseArray_Sparse_Type.sparse_idx self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model3 (SparseArray_Sparse_Type.sparse_back self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) -> match (index_logic2 (SparseArray_Sparse_Type.sparse_back self) i) with
+    [#"../sparse_array.rs" 50 8 61 9] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) <= UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model1 self) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model2 (SparseArray_Sparse_Type.sparse_values self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model3 (SparseArray_Sparse_Type.sparse_idx self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model3 (SparseArray_Sparse_Type.sparse_back self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) -> match index_logic2 (SparseArray_Sparse_Type.sparse_back self) i with
       | j -> 0 <= UIntSize.to_int j /\ UIntSize.to_int j < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ UIntSize.to_int (index_logic2 (SparseArray_Sparse_Type.sparse_idx self) (UIntSize.to_int j)) = i
       end)
   val invariant1 [#"../sparse_array.rs" 49 4 49 30] (self : SparseArray_Sparse_Type.t_sparse t) : bool
@@ -1088,7 +1088,7 @@ module SparseArray_Create
   val inv1 (_x : SparseArray_Sparse_Type.t_sparse t) : bool
     ensures { result = inv1 _x }
     
-  axiom inv1 : [#"../sparse_array.rs" 1 0 1 0] forall x : SparseArray_Sparse_Type.t_sparse t . inv1 x = (invariant1 x /\ match (x) with
+  axiom inv1 : [#"../sparse_array.rs" 1 0 1 0] forall x : SparseArray_Sparse_Type.t_sparse t . inv1 x = (invariant1 x /\ match x with
     | SparseArray_Sparse_Type.C_Sparse size n values idx back -> true
     end)
   predicate invariant0 (self : t)
@@ -1312,13 +1312,13 @@ module SparseArray_F
     ensures { result = shallow_model2 self }
     
   predicate invariant0 [#"../sparse_array.rs" 49 4 49 30] (self : SparseArray_Sparse_Type.t_sparse int32) =
-    [#"../sparse_array.rs" 50 8 61 9] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) <= UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model2 self) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model6 (SparseArray_Sparse_Type.sparse_values self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model7 (SparseArray_Sparse_Type.sparse_idx self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model7 (SparseArray_Sparse_Type.sparse_back self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) -> match (index_logic2 (SparseArray_Sparse_Type.sparse_back self) i) with
+    [#"../sparse_array.rs" 50 8 61 9] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) <= UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model2 self) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model6 (SparseArray_Sparse_Type.sparse_values self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model7 (SparseArray_Sparse_Type.sparse_idx self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model7 (SparseArray_Sparse_Type.sparse_back self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) -> match index_logic2 (SparseArray_Sparse_Type.sparse_back self) i with
       | j -> 0 <= UIntSize.to_int j /\ UIntSize.to_int j < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ UIntSize.to_int (index_logic2 (SparseArray_Sparse_Type.sparse_idx self) (UIntSize.to_int j)) = i
       end)
   val invariant0 [#"../sparse_array.rs" 49 4 49 30] (self : SparseArray_Sparse_Type.t_sparse int32) : bool
     ensures { result = invariant0 self }
     
-  axiom inv0 : [#"../sparse_array.rs" 1 0 1 0] forall x : SparseArray_Sparse_Type.t_sparse int32 . inv0 x = (invariant0 x /\ match (x) with
+  axiom inv0 : [#"../sparse_array.rs" 1 0 1 0] forall x : SparseArray_Sparse_Type.t_sparse int32 . inv0 x = (invariant0 x /\ match x with
     | SparseArray_Sparse_Type.C_Sparse size n values idx back -> true
     end)
   use prelude.Int32
@@ -1354,11 +1354,11 @@ module SparseArray_F
   val get0 [#"../sparse_array.rs" 89 4 89 45] (self : SparseArray_Sparse_Type.t_sparse int32) (i : usize) : Core_Option_Option_Type.t_option int32
     requires {[#"../sparse_array.rs" 80 15 80 31] UIntSize.to_int i < Seq.length (shallow_model3 self)}
     requires {[#"../sparse_array.rs" 89 16 89 20] inv2 self}
-    ensures { [#"../sparse_array.rs" 81 14 84 5] match (result) with
+    ensures { [#"../sparse_array.rs" 81 14 84 5] match result with
       | Core_Option_Option_Type.C_None -> Seq.get (shallow_model3 self) (UIntSize.to_int i) = Core_Option_Option_Type.C_None
       | Core_Option_Option_Type.C_Some x -> Seq.get (shallow_model3 self) (UIntSize.to_int i) = Core_Option_Option_Type.C_Some x
       end }
-    ensures { [#"../sparse_array.rs" 85 14 88 5] match (Seq.get (shallow_model3 self) (UIntSize.to_int i)) with
+    ensures { [#"../sparse_array.rs" 85 14 88 5] match Seq.get (shallow_model3 self) (UIntSize.to_int i) with
       | Core_Option_Option_Type.C_None -> result = Core_Option_Option_Type.C_None
       | Core_Option_Option_Type.C_Some _ -> true
       end }
@@ -1440,11 +1440,11 @@ module SparseArray_F
   BB8 {
     y <- _18;
     _18 <- any Core_Option_Option_Type.t_option int32;
-    assert { [@expl:assertion] [#"../sparse_array.rs" 152 18 155 5] match (x) with
+    assert { [@expl:assertion] [#"../sparse_array.rs" 152 18 155 5] match x with
       | Core_Option_Option_Type.C_None -> false
       | Core_Option_Option_Type.C_Some z -> shallow_model0 z = 1
       end };
-    assert { [@expl:assertion] [#"../sparse_array.rs" 156 18 159 5] match (y) with
+    assert { [@expl:assertion] [#"../sparse_array.rs" 156 18 159 5] match y with
       | Core_Option_Option_Type.C_None -> false
       | Core_Option_Option_Type.C_Some z -> shallow_model0 z = 2
       end };

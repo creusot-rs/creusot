@@ -5,12 +5,12 @@ module Own_OwnResult_Type
     | C_Err 'e
     
   let function ok_0 (self : t_ownresult 't 'e) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_Ok a -> a
       | C_Err _ -> any 't
       end
   let function err_0 (self : t_ownresult 't 'e) : 'e = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_Ok _ -> any 'e
       | C_Err a -> a
       end
@@ -146,7 +146,7 @@ module Core_Option_Option_Type
     | C_Some 't
     
   let function some_0 (self : t_option 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_None -> any 't
       | C_Some a -> a
       end
@@ -201,7 +201,7 @@ module Own_Impl0_Ok
     ensures { result = resolve2 self }
     
   predicate resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
-    [#"../own.rs" 16 8 19 9] match (self) with
+    [#"../own.rs" 16 8 19 9] match self with
       | Own_OwnResult_Type.C_Ok t -> resolve2 t
       | Own_OwnResult_Type.C_Err e -> resolve1 e
       end
@@ -239,7 +239,7 @@ module Own_Impl0_Ok
   }
   BB4 {
     x1 <- Own_OwnResult_Type.err_0 self;
-    self <- (let Own_OwnResult_Type.C_Err a = self in Own_OwnResult_Type.C_Err (any e));
+    self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
     assert { [@expl:type invariant] inv1 x1 };
     assume { resolve1 x1 };
     assert { [@expl:type invariant] inv0 self };
@@ -254,7 +254,7 @@ module Own_Impl0_Ok
   }
   BB6 {
     x <- Own_OwnResult_Type.ok_0 self;
-    self <- (let Own_OwnResult_Type.C_Ok a = self in Own_OwnResult_Type.C_Ok (any t));
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
     assert { [@expl:type invariant] inv0 self };
     assume { resolve0 self };
     _0 <- ([#"../own.rs" 38 32 38 39] Core_Option_Option_Type.C_Some x);
@@ -328,7 +328,7 @@ module Own_Impl0_Err
     ensures { result = resolve0 self }
     
   predicate resolve1 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
-    [#"../own.rs" 16 8 19 9] match (self) with
+    [#"../own.rs" 16 8 19 9] match self with
       | Own_OwnResult_Type.C_Ok t -> resolve0 t
       | Own_OwnResult_Type.C_Err e -> resolve2 e
       end
@@ -366,7 +366,7 @@ module Own_Impl0_Err
   }
   BB4 {
     x1 <- Own_OwnResult_Type.err_0 self;
-    self <- (let Own_OwnResult_Type.C_Err a = self in Own_OwnResult_Type.C_Err (any e));
+    self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
     assert { [@expl:type invariant] inv1 self };
     assume { resolve1 self };
     _0 <- ([#"../own.rs" 50 33 50 40] Core_Option_Option_Type.C_Some x1);
@@ -380,7 +380,7 @@ module Own_Impl0_Err
   }
   BB6 {
     x <- Own_OwnResult_Type.ok_0 self;
-    self <- (let Own_OwnResult_Type.C_Ok a = self in Own_OwnResult_Type.C_Ok (any t));
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
     assert { [@expl:type invariant] inv0 x };
     assume { resolve0 x };
     assert { [@expl:type invariant] inv1 self };
@@ -609,10 +609,10 @@ module Own_Impl0_AsMut
   }
   BB2 {
     x1 <- Borrow.borrow_mut (Own_OwnResult_Type.err_0 ( * self));
-    self <- { self with current = (let Own_OwnResult_Type.C_Err a =  * self in Own_OwnResult_Type.C_Err ( ^ x1)) };
+    self <- { self with current = (let Own_OwnResult_Type.C_Err x0 =  * self in Own_OwnResult_Type.C_Err ( ^ x1)) };
     assume { inv2 ( ^ x1) };
     _7 <- Borrow.borrow_mut ( * x1);
-    x1 <- { x1 with current = ( ^ _7) };
+    x1 <- { x1 with current =  ^ _7 };
     assume { inv2 ( ^ _7) };
     _0 <- ([#"../own.rs" 74 41 74 58] Own_OwnResult_Type.C_Err _7);
     _7 <- any borrowed e;
@@ -627,10 +627,10 @@ module Own_Impl0_AsMut
   }
   BB4 {
     x <- Borrow.borrow_mut (Own_OwnResult_Type.ok_0 ( * self));
-    self <- { self with current = (let Own_OwnResult_Type.C_Ok a =  * self in Own_OwnResult_Type.C_Ok ( ^ x)) };
+    self <- { self with current = (let Own_OwnResult_Type.C_Ok x0 =  * self in Own_OwnResult_Type.C_Ok ( ^ x)) };
     assume { inv0 ( ^ x) };
     _5 <- Borrow.borrow_mut ( * x);
-    x <- { x with current = ( ^ _5) };
+    x <- { x with current =  ^ _5 };
     assume { inv0 ( ^ _5) };
     _0 <- ([#"../own.rs" 73 40 73 56] Own_OwnResult_Type.C_Ok _5);
     _5 <- any borrowed t;
@@ -685,7 +685,7 @@ module Own_Impl0_Unwrap
     ensures { result = resolve2 self }
     
   predicate resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
-    [#"../own.rs" 16 8 19 9] match (self) with
+    [#"../own.rs" 16 8 19 9] match self with
       | Own_OwnResult_Type.C_Ok t -> resolve2 t
       | Own_OwnResult_Type.C_Err e -> resolve1 e
       end
@@ -723,7 +723,7 @@ module Own_Impl0_Unwrap
   }
   BB4 {
     _e <- Own_OwnResult_Type.err_0 self;
-    self <- (let Own_OwnResult_Type.C_Err a = self in Own_OwnResult_Type.C_Err (any e));
+    self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
     assert { [@expl:type invariant] inv1 _e };
     assume { resolve1 _e };
     assert { [@expl:type invariant] inv0 self };
@@ -737,7 +737,7 @@ module Own_Impl0_Unwrap
   }
   BB6 {
     t <- Own_OwnResult_Type.ok_0 self;
-    self <- (let Own_OwnResult_Type.C_Ok a = self in Own_OwnResult_Type.C_Ok (any t));
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
     assert { [@expl:type invariant] inv0 self };
     assume { resolve0 self };
     _0 <- t;
@@ -793,7 +793,7 @@ module Own_Impl0_Expect
     ensures { result = resolve2 self }
     
   predicate resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
-    [#"../own.rs" 16 8 19 9] match (self) with
+    [#"../own.rs" 16 8 19 9] match self with
       | Own_OwnResult_Type.C_Ok t -> resolve2 t
       | Own_OwnResult_Type.C_Err e -> resolve1 e
       end
@@ -831,7 +831,7 @@ module Own_Impl0_Expect
   }
   BB4 {
     _e <- Own_OwnResult_Type.err_0 self;
-    self <- (let Own_OwnResult_Type.C_Err a = self in Own_OwnResult_Type.C_Err (any e));
+    self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
     assert { [@expl:type invariant] inv1 _e };
     assume { resolve1 _e };
     assert { [@expl:type invariant] inv0 self };
@@ -845,7 +845,7 @@ module Own_Impl0_Expect
   }
   BB6 {
     t <- Own_OwnResult_Type.ok_0 self;
-    self <- (let Own_OwnResult_Type.C_Ok a = self in Own_OwnResult_Type.C_Ok (any t));
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
     assert { [@expl:type invariant] inv0 self };
     assume { resolve0 self };
     _0 <- t;
@@ -900,7 +900,7 @@ module Own_Impl0_UnwrapErr
     ensures { result = resolve0 self }
     
   predicate resolve1 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
-    [#"../own.rs" 16 8 19 9] match (self) with
+    [#"../own.rs" 16 8 19 9] match self with
       | Own_OwnResult_Type.C_Ok t -> resolve0 t
       | Own_OwnResult_Type.C_Err e -> resolve2 e
       end
@@ -938,7 +938,7 @@ module Own_Impl0_UnwrapErr
   }
   BB4 {
     e <- Own_OwnResult_Type.err_0 self;
-    self <- (let Own_OwnResult_Type.C_Err a = self in Own_OwnResult_Type.C_Err (any e));
+    self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
     assert { [@expl:type invariant] inv1 self };
     assume { resolve1 self };
     _0 <- e;
@@ -952,7 +952,7 @@ module Own_Impl0_UnwrapErr
   }
   BB6 {
     _t <- Own_OwnResult_Type.ok_0 self;
-    self <- (let Own_OwnResult_Type.C_Ok a = self in Own_OwnResult_Type.C_Ok (any t));
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
     assert { [@expl:type invariant] inv0 _t };
     assume { resolve0 _t };
     assert { [@expl:type invariant] inv1 self };
@@ -1007,7 +1007,7 @@ module Own_Impl0_UnwrapOr
     ensures { result = resolve0 self }
     
   predicate resolve1 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
-    [#"../own.rs" 16 8 19 9] match (self) with
+    [#"../own.rs" 16 8 19 9] match self with
       | Own_OwnResult_Type.C_Ok t -> resolve0 t
       | Own_OwnResult_Type.C_Err e -> resolve2 e
       end
@@ -1047,7 +1047,7 @@ module Own_Impl0_UnwrapOr
   }
   BB4 {
     e <- Own_OwnResult_Type.err_0 self;
-    self <- (let Own_OwnResult_Type.C_Err a = self in Own_OwnResult_Type.C_Err (any e));
+    self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
     assert { [@expl:type invariant] inv2 e };
     assume { resolve2 e };
     assert { [@expl:type invariant] inv1 self };
@@ -1067,7 +1067,7 @@ module Own_Impl0_UnwrapOr
     assert { [@expl:type invariant] inv0 default };
     assume { resolve0 default };
     t <- Own_OwnResult_Type.ok_0 self;
-    self <- (let Own_OwnResult_Type.C_Ok a = self in Own_OwnResult_Type.C_Ok (any t));
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
     assert { [@expl:type invariant] inv1 self };
     assume { resolve1 self };
     _0 <- t;
@@ -1139,7 +1139,7 @@ module Own_Impl0_UnwrapOrDefault
     ensures { result = resolve1 self }
     
   predicate resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
-    [#"../own.rs" 16 8 19 9] match (self) with
+    [#"../own.rs" 16 8 19 9] match self with
       | Own_OwnResult_Type.C_Ok t -> resolve1 t
       | Own_OwnResult_Type.C_Err e -> resolve2 e
       end
@@ -1187,7 +1187,7 @@ module Own_Impl0_UnwrapOrDefault
   }
   BB6 {
     x <- Own_OwnResult_Type.ok_0 self;
-    self <- (let Own_OwnResult_Type.C_Ok a = self in Own_OwnResult_Type.C_Ok (any t));
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
     assert { [@expl:type invariant] inv0 self };
     assume { resolve0 self };
     _0 <- x;
@@ -1255,7 +1255,7 @@ module Own_Impl0_And
     ensures { result = resolve4 self }
     
   predicate resolve2 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult u e) =
-    [#"../own.rs" 16 8 19 9] match (self) with
+    [#"../own.rs" 16 8 19 9] match self with
       | Own_OwnResult_Type.C_Ok t -> resolve4 t
       | Own_OwnResult_Type.C_Err e -> resolve3 e
       end
@@ -1267,7 +1267,7 @@ module Own_Impl0_And
     ensures { result = resolve0 self }
     
   predicate resolve1 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
-    [#"../own.rs" 16 8 19 9] match (self) with
+    [#"../own.rs" 16 8 19 9] match self with
       | Own_OwnResult_Type.C_Ok t -> resolve0 t
       | Own_OwnResult_Type.C_Err e -> resolve3 e
       end
@@ -1309,7 +1309,7 @@ module Own_Impl0_And
     assert { [@expl:type invariant] inv2 res };
     assume { resolve2 res };
     e <- Own_OwnResult_Type.err_0 self;
-    self <- (let Own_OwnResult_Type.C_Err a = self in Own_OwnResult_Type.C_Err (any e));
+    self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
     assert { [@expl:type invariant] inv1 self };
     assume { resolve1 self };
     _0 <- ([#"../own.rs" 142 33 142 50] Own_OwnResult_Type.C_Err e);
@@ -1325,7 +1325,7 @@ module Own_Impl0_And
   }
   BB6 {
     x <- Own_OwnResult_Type.ok_0 self;
-    self <- (let Own_OwnResult_Type.C_Ok a = self in Own_OwnResult_Type.C_Ok (any t));
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
     assert { [@expl:type invariant] inv0 x };
     assume { resolve0 x };
     assert { [@expl:type invariant] inv1 self };
@@ -1404,7 +1404,7 @@ module Own_Impl0_Or
     ensures { result = resolve3 self }
     
   predicate resolve1 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
-    [#"../own.rs" 16 8 19 9] match (self) with
+    [#"../own.rs" 16 8 19 9] match self with
       | Own_OwnResult_Type.C_Ok t -> resolve3 t
       | Own_OwnResult_Type.C_Err e -> resolve2 e
       end
@@ -1416,7 +1416,7 @@ module Own_Impl0_Or
     ensures { result = resolve4 self }
     
   predicate resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t f) =
-    [#"../own.rs" 16 8 19 9] match (self) with
+    [#"../own.rs" 16 8 19 9] match self with
       | Own_OwnResult_Type.C_Ok t -> resolve3 t
       | Own_OwnResult_Type.C_Err e -> resolve4 e
       end
@@ -1456,7 +1456,7 @@ module Own_Impl0_Or
   }
   BB4 {
     e <- Own_OwnResult_Type.err_0 self;
-    self <- (let Own_OwnResult_Type.C_Err a = self in Own_OwnResult_Type.C_Err (any e));
+    self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
     assert { [@expl:type invariant] inv2 e };
     assume { resolve2 e };
     assert { [@expl:type invariant] inv1 self };
@@ -1476,7 +1476,7 @@ module Own_Impl0_Or
     assert { [@expl:type invariant] inv0 res };
     assume { resolve0 res };
     v <- Own_OwnResult_Type.ok_0 self;
-    self <- (let Own_OwnResult_Type.C_Ok a = self in Own_OwnResult_Type.C_Ok (any t));
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
     assert { [@expl:type invariant] inv1 self };
     assume { resolve1 self };
     _0 <- ([#"../own.rs" 150 32 150 48] Own_OwnResult_Type.C_Ok v);
@@ -1553,7 +1553,7 @@ module Own_Impl1_Copied
     ensures { result = resolve2 self }
     
   predicate resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
-    [#"../own.rs" 16 8 19 9] match (self) with
+    [#"../own.rs" 16 8 19 9] match self with
       | Own_OwnResult_Type.C_Ok t -> resolve1 t
       | Own_OwnResult_Type.C_Err e -> resolve2 e
       end
@@ -1591,7 +1591,7 @@ module Own_Impl1_Copied
   }
   BB4 {
     e <- Own_OwnResult_Type.err_0 self;
-    self <- (let Own_OwnResult_Type.C_Err a = self in Own_OwnResult_Type.C_Err (any e));
+    self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
     assert { [@expl:type invariant] inv0 self };
     assume { resolve0 self };
     _0 <- ([#"../own.rs" 167 33 167 50] Own_OwnResult_Type.C_Err e);
@@ -1690,7 +1690,7 @@ module Own_Impl1_Cloned
     ensures { result = resolve2 self }
     
   predicate resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
-    [#"../own.rs" 16 8 19 9] match (self) with
+    [#"../own.rs" 16 8 19 9] match self with
       | Own_OwnResult_Type.C_Ok t -> resolve1 t
       | Own_OwnResult_Type.C_Err e -> resolve2 e
       end
@@ -1729,7 +1729,7 @@ module Own_Impl1_Cloned
   }
   BB4 {
     e <- Own_OwnResult_Type.err_0 self;
-    self <- (let Own_OwnResult_Type.C_Err a = self in Own_OwnResult_Type.C_Err (any e));
+    self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
     assert { [@expl:type invariant] inv0 self };
     assume { resolve0 self };
     _0 <- ([#"../own.rs" 180 33 180 50] Own_OwnResult_Type.C_Err e);
@@ -1823,7 +1823,7 @@ module Own_Impl2_Copied
     ensures { result = resolve2 self }
     
   predicate resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult (borrowed t) e) =
-    [#"../own.rs" 16 8 19 9] match (self) with
+    [#"../own.rs" 16 8 19 9] match self with
       | Own_OwnResult_Type.C_Ok t -> resolve1 t
       | Own_OwnResult_Type.C_Err e -> resolve2 e
       end
@@ -1861,7 +1861,7 @@ module Own_Impl2_Copied
   }
   BB4 {
     e <- Own_OwnResult_Type.err_0 self;
-    self <- (let Own_OwnResult_Type.C_Err a = self in Own_OwnResult_Type.C_Err (any e));
+    self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
     assert { [@expl:type invariant] inv0 self };
     assume { resolve0 self };
     _0 <- ([#"../own.rs" 195 33 195 50] Own_OwnResult_Type.C_Err e);
@@ -1875,7 +1875,7 @@ module Own_Impl2_Copied
   }
   BB6 {
     t <- Own_OwnResult_Type.ok_0 self;
-    self <- (let Own_OwnResult_Type.C_Ok a = self in Own_OwnResult_Type.C_Ok (any borrowed t));
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any borrowed t));
     assert { [@expl:type invariant] inv0 self };
     assume { resolve0 self };
     assert { [@expl:type invariant] inv1 t };
@@ -1971,7 +1971,7 @@ module Own_Impl2_Cloned
     ensures { result = resolve2 self }
     
   predicate resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult (borrowed t) e) =
-    [#"../own.rs" 16 8 19 9] match (self) with
+    [#"../own.rs" 16 8 19 9] match self with
       | Own_OwnResult_Type.C_Ok t -> resolve1 t
       | Own_OwnResult_Type.C_Err e -> resolve2 e
       end
@@ -2010,7 +2010,7 @@ module Own_Impl2_Cloned
   }
   BB4 {
     e <- Own_OwnResult_Type.err_0 self;
-    self <- (let Own_OwnResult_Type.C_Err a = self in Own_OwnResult_Type.C_Err (any e));
+    self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
     assert { [@expl:type invariant] inv0 self };
     assume { resolve0 self };
     _0 <- ([#"../own.rs" 208 33 208 50] Own_OwnResult_Type.C_Err e);
@@ -2024,7 +2024,7 @@ module Own_Impl2_Cloned
   }
   BB6 {
     t <- Own_OwnResult_Type.ok_0 self;
-    self <- (let Own_OwnResult_Type.C_Ok a = self in Own_OwnResult_Type.C_Ok (any borrowed t));
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any borrowed t));
     assert { [@expl:type invariant] inv0 self };
     assume { resolve0 self };
     _6 <- ([#"../own.rs" 207 46 207 55] clone0 ([#"../own.rs" 207 46 207 55]  * t));
@@ -2106,7 +2106,7 @@ module Own_Impl3_Transpose
   predicate resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult (Core_Option_Option_Type.t_option t) e)
     
    =
-    [#"../own.rs" 16 8 19 9] match (self) with
+    [#"../own.rs" 16 8 19 9] match self with
       | Own_OwnResult_Type.C_Ok t -> resolve1 t
       | Own_OwnResult_Type.C_Err e -> resolve2 e
       end
@@ -2162,14 +2162,14 @@ module Own_Impl3_Transpose
   }
   BB8 {
     e <- Own_OwnResult_Type.err_0 self;
-    self <- (let Own_OwnResult_Type.C_Err a = self in Own_OwnResult_Type.C_Err (any e));
+    self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
     assert { [@expl:type invariant] inv0 self };
     assume { resolve0 self };
     goto BB14
   }
   BB9 {
     x <- Core_Option_Option_Type.some_0 (Own_OwnResult_Type.ok_0 self);
-    self <- (let Own_OwnResult_Type.C_Ok a = self in Own_OwnResult_Type.C_Ok (let Core_Option_Option_Type.C_Some a = Own_OwnResult_Type.ok_0 self in Core_Option_Option_Type.C_Some (any t)));
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (let Core_Option_Option_Type.C_Some x0 = Own_OwnResult_Type.ok_0 self in Core_Option_Option_Type.C_Some (any t)));
     assert { [@expl:type invariant] inv0 self };
     assume { resolve0 self };
     goto BB10
