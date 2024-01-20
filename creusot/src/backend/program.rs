@@ -697,7 +697,7 @@ impl<'tcx> Statement<'tcx> {
                     place::create_assign_inner(ctx, names, locals, &rhs, reassign, span),
                 ]
             }
-            Statement::Assignment(lhs, RValue::FinalBorrow(rhs, deref_index)) => {
+            Statement::Assignment(lhs, RValue::FinalBorrow(rhs, deref_index), span) => {
                 let original_borrow = Place {
                     local: rhs.local.clone(),
                     projection: rhs.projection[..deref_index].to_vec(),
@@ -712,8 +712,8 @@ impl<'tcx> Statement<'tcx> {
                 let reassign = Exp::Final(Box::new(lhs.as_rplace(ctx, names, locals)));
 
                 vec![
-                    place::create_assign_inner(ctx, names, locals, &lhs, borrow),
-                    place::create_assign_inner(ctx, names, locals, &rhs, reassign),
+                    place::create_assign_inner(ctx, names, locals, &lhs, borrow, span),
+                    place::create_assign_inner(ctx, names, locals, &rhs, reassign, span),
                 ]
             }
             Statement::Assignment(lhs, RValue::Ghost(rhs), span) => {
