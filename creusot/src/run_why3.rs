@@ -208,15 +208,12 @@ fn fun<'a>(args: impl IntoIterator<Item = &'a str>, body: Expr) -> Expr {
 }
 
 fn app(f: &str, args: impl IntoIterator<Item = Expr>) -> Expr {
-    let mut v = args.into_iter().map(|x| P(x)).collect();
-    if false {
-        // This is necessary for type checking since ThinVec is not nameable
-        return exp(ExprKind::Call(P(name_to_path(f)), v));
-    }
+    let mut v: Vec<_> = args.into_iter().map(|x| P(x)).collect();
+
     let take = |x: &mut P<Expr>| std::mem::replace(&mut **x, Expr::dummy());
     match (f, &mut *v) {
         ("(=)" | "=", [t1, t2]) => binop("=", [t1, t2].map(take)),
-        _ => exp(ExprKind::Call(P(name_to_path(f)), v)),
+        _ => exp(ExprKind::Call(P(name_to_path(f)), v.into())),
     }
 }
 
