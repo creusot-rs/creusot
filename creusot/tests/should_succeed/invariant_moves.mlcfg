@@ -56,7 +56,7 @@ module InvariantMoves_TestInvariantMove
   val inv3 (_x : Seq.seq uint32) : bool
     ensures { result = inv3 _x }
     
-  axiom inv3 : forall x : Seq.seq uint32 . inv3 x = true
+  axiom inv3 : [#"../invariant_moves.rs" 1 0 1 0] forall x : Seq.seq uint32 . inv3 x = true
   use prelude.UIntSize
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
@@ -80,7 +80,7 @@ module InvariantMoves_TestInvariantMove
   val invariant2 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = invariant2 self }
     
-  axiom inv2 : forall x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . inv2 x = true
+  axiom inv2 : [#"../invariant_moves.rs" 1 0 1 0] forall x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . inv2 x = true
   use Core_Option_Option_Type as Core_Option_Option_Type
   predicate invariant1 (self : Core_Option_Option_Type.t_option uint32) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
@@ -91,7 +91,7 @@ module InvariantMoves_TestInvariantMove
   val inv1 (_x : Core_Option_Option_Type.t_option uint32) : bool
     ensures { result = inv1 _x }
     
-  axiom inv1 : forall x : Core_Option_Option_Type.t_option uint32 . inv1 x = true
+  axiom inv1 : [#"../invariant_moves.rs" 1 0 1 0] forall x : Core_Option_Option_Type.t_option uint32 . inv1 x = true
   use prelude.Borrow
   predicate invariant0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
@@ -102,7 +102,7 @@ module InvariantMoves_TestInvariantMove
   val inv0 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) : bool
     ensures { result = inv0 _x }
     
-  axiom inv0 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) . inv0 x = true
+  axiom inv0 : [#"../invariant_moves.rs" 1 0 1 0] forall x : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) . inv0 x = true
   predicate resolve2 (self : uint32) =
     [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
   val resolve2 (self : uint32) : bool
@@ -137,7 +137,7 @@ module InvariantMoves_TestInvariantMove
     
   val pop0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) : Core_Option_Option_Type.t_option uint32
     requires {inv0 self}
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 81 26 86 17] match (result) with
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 81 26 86 17] match result with
       | Core_Option_Option_Type.C_Some t -> shallow_model0 ( ^ self) = SeqExt.subsequence (shallow_model1 self) 0 (Seq.length (shallow_model1 self) - 1) /\ shallow_model1 self = Seq.snoc (shallow_model0 ( ^ self)) t
       | Core_Option_Option_Type.C_None ->  * self =  ^ self /\ Seq.length (shallow_model1 self) = 0
       end }
@@ -165,11 +165,11 @@ module InvariantMoves_TestInvariantMove
     goto BB3
   }
   BB3 {
-    [#"../invariant_moves.rs" 7 26 7 34] _6 <- Borrow.borrow_mut x;
-    [#"../invariant_moves.rs" 7 26 7 34] x <-  ^ _6;
-    [#"../invariant_moves.rs" 7 26 7 40] _5 <- Borrow.borrow_mut ( * _6);
-    [#"../invariant_moves.rs" 7 26 7 40] _6 <- { _6 with current = ( ^ _5) };
-    [#"../invariant_moves.rs" 7 26 7 40] _4 <- ([#"../invariant_moves.rs" 7 26 7 40] pop0 _5);
+    _6 <- Borrow.borrow_mut x;
+    x <-  ^ _6;
+    _5 <- Borrow.borrow_mut ( * _6);
+    _6 <- { _6 with current =  ^ _5 };
+    _4 <- ([#"../invariant_moves.rs" 7 26 7 40] pop0 _5);
     _5 <- any borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global));
     goto BB4
   }
@@ -188,7 +188,7 @@ module InvariantMoves_TestInvariantMove
   }
   BB7 {
     assume { resolve1 x };
-    [#"../invariant_moves.rs" 7 4 7 45] _0 <- ([#"../invariant_moves.rs" 7 4 7 45] ());
+    _0 <- ([#"../invariant_moves.rs" 7 4 7 45] ());
     goto BB8
   }
   BB8 {

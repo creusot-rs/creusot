@@ -7,12 +7,12 @@ module AllZero_List_Type
     | C_Nil
     
   let function cons_0 (self : t_list) : uint32 = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_Cons a _ -> a
       | C_Nil -> any uint32
       end
   let function cons_1 (self : t_list) : t_list = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_Cons _ a -> a
       | C_Nil -> any t_list
       end
@@ -49,7 +49,7 @@ module AllZero_AllZero
   function get0 [#"../all_zero.rs" 21 4 21 40] (self : AllZero_List_Type.t_list) (ix : int) : Core_Option_Option_Type.t_option uint32
     
    =
-    [#"../all_zero.rs" 22 8 28 9] match (self) with
+    [#"../all_zero.rs" 22 8 28 9] match self with
       | AllZero_List_Type.C_Cons x ls -> if ix = 0 then Core_Option_Option_Type.C_Some x else get0 ls (ix - 1)
       | AllZero_List_Type.C_Nil -> Core_Option_Option_Type.C_None
       end
@@ -57,7 +57,7 @@ module AllZero_AllZero
     ensures { result = get0 self ix }
     
   function len0 [#"../all_zero.rs" 13 4 13 23] (self : AllZero_List_Type.t_list) : int =
-    [#"../all_zero.rs" 14 8 17 9] match (self) with
+    [#"../all_zero.rs" 14 8 17 9] match self with
       | AllZero_List_Type.C_Cons _ ls -> 1 + len0 ls
       | AllZero_List_Type.C_Nil -> 0
       end
@@ -81,12 +81,12 @@ module AllZero_AllZero
     goto BB0
   }
   BB0 {
-    [#"../all_zero.rs" 36 16 36 25] old_l <- ([#"../all_zero.rs" 36 16 36 25] Ghost.new l);
+    old_l <- ([#"../all_zero.rs" 36 16 36 25] Ghost.new l);
     goto BB1
   }
   BB1 {
-    [#"../all_zero.rs" 37 21 37 22] loop_l <- ([#"../all_zero.rs" 37 21 37 22] l);
-    [#"../all_zero.rs" 37 21 37 22] l <- any borrowed (AllZero_List_Type.t_list);
+    loop_l <- l;
+    l <- any borrowed (AllZero_List_Type.t_list);
     goto BB2
   }
   BB2 {
@@ -104,23 +104,23 @@ module AllZero_AllZero
     goto BB5
   }
   BB5 {
-    [#"../all_zero.rs" 43 19 43 24] value <- Borrow.borrow_mut (AllZero_List_Type.cons_0 ( * loop_l));
-    [#"../all_zero.rs" 43 19 43 24] loop_l <- { loop_l with current = (let AllZero_List_Type.C_Cons a b =  * loop_l in AllZero_List_Type.C_Cons ( ^ value) b) };
-    [#"../all_zero.rs" 43 26 43 30] next <- Borrow.borrow_mut (AllZero_List_Type.cons_1 ( * loop_l));
-    [#"../all_zero.rs" 43 26 43 30] loop_l <- { loop_l with current = (let AllZero_List_Type.C_Cons a b =  * loop_l in AllZero_List_Type.C_Cons a ( ^ next)) };
-    [#"../all_zero.rs" 44 8 44 18] value <- { value with current = ([#"../all_zero.rs" 44 8 44 18] [#"../all_zero.rs" 44 17 44 18] (0 : uint32)) };
+    value <- Borrow.borrow_mut (AllZero_List_Type.cons_0 ( * loop_l));
+    loop_l <- { loop_l with current = (let AllZero_List_Type.C_Cons x0 x1 =  * loop_l in AllZero_List_Type.C_Cons ( ^ value) x1) };
+    next <- Borrow.borrow_mut (AllZero_List_Type.cons_1 ( * loop_l));
+    loop_l <- { loop_l with current = (let AllZero_List_Type.C_Cons x0 x1 =  * loop_l in AllZero_List_Type.C_Cons x0 ( ^ next)) };
+    value <- { value with current = ([#"../all_zero.rs" 44 17 44 18] [#"../all_zero.rs" 44 17 44 18] (0 : uint32)) };
     assume { resolve0 value };
-    [#"../all_zero.rs" 45 17 45 21] _13 <- Borrow.borrow_mut ( * next);
-    [#"../all_zero.rs" 45 17 45 21] next <- { next with current = ( ^ _13) };
+    _13 <- Borrow.borrow_mut ( * next);
+    next <- { next with current =  ^ _13 };
     assume { resolve1 loop_l };
-    [#"../all_zero.rs" 45 8 45 21] loop_l <- ([#"../all_zero.rs" 45 8 45 21] _13);
-    [#"../all_zero.rs" 45 8 45 21] _13 <- any borrowed (AllZero_List_Type.t_list);
+    loop_l <- _13;
+    _13 <- any borrowed (AllZero_List_Type.t_list);
     assume { resolve2 next };
     goto BB2
   }
   BB6 {
     assume { resolve1 loop_l };
-    [#"../all_zero.rs" 43 4 46 5] _0 <- ([#"../all_zero.rs" 43 4 46 5] ());
+    _0 <- ([#"../all_zero.rs" 43 4 46 5] ());
     return _0
   }
   

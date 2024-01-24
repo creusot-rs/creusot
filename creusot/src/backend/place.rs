@@ -79,6 +79,8 @@ fn create_assign_rec<'tcx>(
         proj_ix + 1,
         rhs,
     );
+    let fvs = inner.fvs();
+    let freshvars = (0..).map(|i| format!("x{i}").into()).filter(|x| !fvs.contains(x));
     use ProjectionElem::*;
     match &proj[proj_ix] {
         Deref => {
@@ -99,12 +101,11 @@ fn create_assign_rec<'tcx>(
             TyKind::Adt(def, subst) => {
                 let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
                 let variant = &def.variants()[variant_id];
-                let var_size = variant.fields.len();
 
-                let field_pats =
-                    ('a'..).map(|c| VarP(c.to_string().into())).take(var_size).collect();
+                let varnames = freshvars.take(variant.fields.len()).collect::<Vec<Ident>>();
+                let field_pats = varnames.clone().into_iter().map(|x| VarP(x)).collect();
                 let mut varexps: Vec<Exp> =
-                    ('a'..).map(|c| Exp::impure_var(c.to_string().into())).take(var_size).collect();
+                    varnames.into_iter().map(|x| Exp::impure_var(x)).collect();
 
                 varexps[ix.as_usize()] = inner;
 
@@ -116,12 +117,10 @@ fn create_assign_rec<'tcx>(
                 }
             }
             TyKind::Tuple(fields) => {
-                let var_size = fields.len();
-
-                let field_pats =
-                    ('a'..).map(|c| VarP(c.to_string().into())).take(var_size).collect();
+                let varnames = freshvars.take(fields.len()).collect::<Vec<Ident>>();
+                let field_pats = varnames.clone().into_iter().map(|x| VarP(x.into())).collect();
                 let mut varexps: Vec<Exp> =
-                    ('a'..).map(|c| Exp::impure_var(c.to_string().into())).take(var_size).collect();
+                    varnames.into_iter().map(|x| Exp::impure_var(x.into())).collect();
 
                 varexps[ix.as_usize()] = inner;
 
@@ -132,11 +131,11 @@ fn create_assign_rec<'tcx>(
                 }
             }
             TyKind::Closure(id, subst) => {
-                let count = subst.as_closure().upvar_tys().count();
-                let field_pats = ('a'..).map(|c| VarP(c.to_string().into())).take(count).collect();
-
+                let varnames =
+                    freshvars.take(subst.as_closure().upvar_tys().count()).collect::<Vec<Ident>>();
+                let field_pats = varnames.clone().into_iter().map(|x| VarP(x.into())).collect();
                 let mut varexps: Vec<Exp> =
-                    ('a'..).map(|c| Exp::impure_var(c.to_string().into())).take(count).collect();
+                    varnames.into_iter().map(|x| Exp::impure_var(x.into())).collect();
 
                 varexps[ix.as_usize()] = inner;
                 let cons = names.constructor(*id, subst);
