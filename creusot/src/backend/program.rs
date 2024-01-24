@@ -22,7 +22,7 @@ use crate::{
     },
     util::{self, module_name, ItemType},
 };
-use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
+use rustc_hir::{def_id::DefId, Unsafety};
 use rustc_middle::{
     mir::{BasicBlock, BinOp},
     ty::TyKind,
@@ -57,26 +57,22 @@ fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
     Module { name: format!("{}_Type", &*module_name(ctx.tcx, def_id)).into(), decls }
 }
 
-pub(crate) fn closure_aux_defs<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
-    _: &mut CloneMap<'tcx>,
-    def_id: DefId,
-) -> Vec<Decl> {
+pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) {
     // COMPLETE HACK. This should be properly cleaned up
     let contract = ctx.closure_contract(def_id).clone();
 
     // HACK RESOLVE
     let mut names = CloneMap::new(ctx.tcx, def_id.into());
-    sig_to_why3(ctx, &mut names, contract.resolve.0, def_id);
-    lower_pure(ctx, &mut names, contract.resolve.1);
+    sig_to_why3(ctx, &mut names, &contract.resolve.0, def_id);
+    lower_pure(ctx, &mut names, &contract.resolve.1);
 
     let (_, deps) = names.to_clones(ctx, CloneDepth::Shallow);
     ctx.dependencies.insert(TransId::Hacked(HackedId::Resolve, def_id), deps);
 
     // HACK PRECOND
     let mut names = CloneMap::new(ctx.tcx, def_id.into());
-    sig_to_why3(ctx, &mut names, contract.precond.0, def_id);
-    lower_pure(ctx, &mut names, contract.precond.1);
+    sig_to_why3(ctx, &mut names, &contract.precond.0, def_id);
+    lower_pure(ctx, &mut names, &contract.precond.1);
 
     let (_, deps) = names.to_clones(ctx, CloneDepth::Shallow);
     ctx.dependencies.insert(TransId::Hacked(HackedId::Precondition, def_id), deps);
@@ -84,8 +80,8 @@ pub(crate) fn closure_aux_defs<'tcx>(
     // HACK POST ONCE
     if let Some((sig, term)) = contract.postcond_once {
         let mut names = CloneMap::new(ctx.tcx, def_id.into());
-        sig_to_why3(ctx, &mut names, sig, def_id);
-        lower_pure(ctx, &mut names, term);
+        sig_to_why3(ctx, &mut names, &sig, def_id);
+        lower_pure(ctx, &mut names, &term);
 
         let (_, deps) = names.to_clones(ctx, CloneDepth::Shallow);
         ctx.dependencies.insert(TransId::Hacked(HackedId::PostconditionOnce, def_id), deps);
@@ -94,8 +90,8 @@ pub(crate) fn closure_aux_defs<'tcx>(
     // HACK POST MUT
     if let Some((sig, term)) = contract.postcond_mut {
         let mut names = CloneMap::new(ctx.tcx, def_id.into());
-        sig_to_why3(ctx, &mut names, sig, def_id);
-        lower_pure(ctx, &mut names, term);
+        sig_to_why3(ctx, &mut names, &sig, def_id);
+        lower_pure(ctx, &mut names, &term);
 
         let (_, deps) = names.to_clones(ctx, CloneDepth::Shallow);
         ctx.dependencies.insert(TransId::Hacked(HackedId::PostconditionMut, def_id), deps);
@@ -103,8 +99,8 @@ pub(crate) fn closure_aux_defs<'tcx>(
     // HACK POST
     if let Some((sig, term)) = contract.postcond {
         let mut names = CloneMap::new(ctx.tcx, def_id.into());
-        sig_to_why3(ctx, &mut names, sig, def_id);
-        lower_pure(ctx, &mut names, term);
+        sig_to_why3(ctx, &mut names, &sig, def_id);
+        lower_pure(ctx, &mut names, &term);
 
         let (_, deps) = names.to_clones(ctx, CloneDepth::Shallow);
         ctx.dependencies.insert(TransId::Hacked(HackedId::Postcondition, def_id), deps);
@@ -112,8 +108,8 @@ pub(crate) fn closure_aux_defs<'tcx>(
     // HACK UNNEst
     if let Some((sig, term)) = contract.unnest {
         let mut names = CloneMap::new(ctx.tcx, def_id.into());
-        sig_to_why3(ctx, &mut names, sig, def_id);
-        lower_pure(ctx, &mut names, term);
+        sig_to_why3(ctx, &mut names, &sig, def_id);
+        lower_pure(ctx, &mut names, &term);
 
         let (_, deps) = names.to_clones(ctx, CloneDepth::Shallow);
         ctx.dependencies.insert(TransId::Hacked(HackedId::Unnest, def_id), deps);
@@ -122,13 +118,12 @@ pub(crate) fn closure_aux_defs<'tcx>(
       // decls
     for (ix, (sig, term)) in contract.accessors.into_iter().enumerate() {
         let mut names = CloneMap::new(ctx.tcx, def_id.into());
-        sig_to_why3(ctx, &mut names, sig, def_id);
-        lower_pure(ctx, &mut names, term);
+        sig_to_why3(ctx, &mut names, &sig, def_id);
+        lower_pure(ctx, &mut names, &term);
 
         let (_, deps) = names.to_clones(ctx, CloneDepth::Shallow);
         ctx.dependencies.insert(TransId::Hacked(HackedId::Accessor(ix as u8), def_id), deps);
     }
-    Vec::new()
 }
 
 pub(crate) fn translate_closure<'tcx>(
@@ -153,10 +148,8 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     };
     let body = to_why(ctx, &mut names, body_ids[0]);
 
-    let closure_defs = if ctx.tcx.is_closure(def_id) {
-        closure_aux_defs(ctx, &mut names, def_id)
-    } else {
-        Vec::new()
+    if ctx.tcx.is_closure(def_id) {
+        closure_aux_defs(ctx, def_id)
     };
 
     let promoteds = body_ids[1..]
@@ -168,7 +161,6 @@ pub(crate) fn translate_function<'tcx, 'sess>(
 
     let decls = closure_generic_decls(ctx.tcx, def_id)
         .chain(clones)
-        .chain(closure_defs)
         .chain(promoteds)
         .chain(std::iter::once(body))
         .collect();
@@ -218,7 +210,7 @@ fn lower_promoted<'tcx>(
     let promoted = promoted::translate_promoted(ctx, body_id);
     let (sig, fmir) = promoted.unwrap_or_else(|e| e.emit(ctx.tcx.sess));
 
-    let mut sig = sig_to_why3(ctx, names, sig, body_id.def_id());
+    let mut sig = sig_to_why3(ctx, names, &sig, body_id.def_id());
     sig.name = format!("promoted{:?}", body_id.promoted.unwrap().as_usize()).into();
 
     let mut previous_block = None;
@@ -312,45 +304,37 @@ impl<'tcx> Expr<'tcx> {
                 pl.as_rplace(ctx, names, locals)
             }
             ExprKind::Copy(pl) => pl.as_rplace(ctx, names, locals),
-            ExprKind::BinOp(BinOp::BitAnd, ty, l, r) if ty.is_bool() => {
+            ExprKind::BinOp(BinOp::BitAnd, l, r) if l.ty.is_bool() => {
                 l.to_why(ctx, names, locals).lazy_and(r.to_why(ctx, names, locals))
             }
-            ExprKind::BinOp(BinOp::Eq, ty, l, r) if ty.is_bool() => {
+            ExprKind::BinOp(BinOp::Eq, l, r) if l.ty.is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
                 Exp::impure_qvar(QName::from_string("Bool.eqb").unwrap())
                     .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
-            ExprKind::BinOp(BinOp::Ne, ty, l, r) if ty.is_bool() => {
+            ExprKind::BinOp(BinOp::Ne, l, r) if l.ty.is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
                 Exp::impure_qvar(QName::from_string("Bool.neqb").unwrap())
                     .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
-            ExprKind::BinOp(op, ty, l, r) => {
+            ExprKind::BinOp(op, l, r) => {
                 // Hack
-                translate_ty(ctx, names, DUMMY_SP, ty);
+                translate_ty(ctx, names, DUMMY_SP, l.ty);
 
                 Exp::BinaryOp(
-                    binop_to_binop(ctx, ty, op),
+                    binop_to_binop(ctx, l.ty, op),
                     Box::new(l.to_why(ctx, names, locals)),
                     Box::new(r.to_why(ctx, names, locals)),
                 )
             }
-            ExprKind::UnaryOp(op, ty, arg) => {
-                Exp::UnaryOp(unop_to_unop(ty, op), Box::new(arg.to_why(ctx, names, locals)))
+            ExprKind::UnaryOp(op, arg) => {
+                Exp::UnaryOp(unop_to_unop(arg.ty, op), Box::new(arg.to_why(ctx, names, locals)))
             }
             ExprKind::Constructor(id, subst, args) => {
                 let args = args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
 
-                match ctx.def_kind(id) {
-                    DefKind::Closure => {
-                        let ctor = names.constructor(id, subst);
-                        Exp::Constructor { ctor, args }
-                    }
-                    _ => {
-                        let ctor = names.constructor(id, subst);
-                        Exp::Constructor { ctor, args }
-                    }
-                }
+                let ctor = names.constructor(id, subst);
+                Exp::Constructor { ctor, args }
             }
             ExprKind::Call(id, subst, args) => {
                 let mut args: Vec<_> =
@@ -382,7 +366,7 @@ impl<'tcx> Expr<'tcx> {
                 };
                 exp
             }
-            ExprKind::Constant(c) => lower_impure(ctx, names, c),
+            ExprKind::Constant(c) => lower_impure(ctx, names, &c),
             ExprKind::Tuple(f) => {
                 Exp::Tuple(f.into_iter().map(|f| f.to_why(ctx, names, locals)).collect())
             }
@@ -471,11 +455,11 @@ impl<'tcx> Expr<'tcx> {
         match &self.kind {
             ExprKind::Move(p) => places.push((p.clone(), self.span)),
             ExprKind::Copy(_) => {}
-            ExprKind::BinOp(_, _, l, r) => {
+            ExprKind::BinOp(_, l, r) => {
                 l.invalidated_places(places);
                 r.invalidated_places(places)
             }
-            ExprKind::UnaryOp(_, _, e) => e.invalidated_places(places),
+            ExprKind::UnaryOp(_, e) => e.invalidated_places(places),
             ExprKind::Constructor(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
             ExprKind::Call(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
             ExprKind::Constant(_) => {}
@@ -633,8 +617,17 @@ impl<'tcx> Block<'tcx> {
         names: &mut CloneMap<'tcx>,
         locals: &LocalDecls<'tcx>,
     ) -> why3::mlcfg::Block {
-        let mut statements =
-            self.stmts.into_iter().flat_map(|s| s.to_why(ctx, names, locals)).collect();
+        let mut statements = Vec::new();
+
+        for v in self.variant.into_iter() {
+            statements.push(mlcfg::Statement::Variant(lower_pure(ctx, names, &v)));
+        }
+
+        for i in self.invariants {
+            statements.push(mlcfg::Statement::Invariant(lower_pure(ctx, names, &i)));
+        }
+
+        statements.extend(self.stmts.into_iter().flat_map(|s| s.to_why(ctx, names, locals)));
         let terminator = self.terminator.to_why(ctx, names, locals, &mut statements);
         mlcfg::Block { statements, terminator }
     }
@@ -672,7 +665,7 @@ impl<'tcx> Statement<'tcx> {
                 ]
             }
             Statement::Assignment(lhs, RValue::Ghost(rhs), span) => {
-                let ghost = lower_pure(ctx, names, rhs);
+                let ghost = lower_pure(ctx, names, &rhs);
 
                 vec![place::create_assign_inner(ctx, names, locals, &lhs, ghost, span)]
             }
@@ -707,22 +700,19 @@ impl<'tcx> Statement<'tcx> {
             Statement::Assertion { cond, msg } => {
                 vec![mlcfg::Statement::Assert(Exp::Attr(
                     Attribute::Attr(format!("expl:{msg}")),
-                    Box::new(lower_pure(ctx, names, cond)),
+                    Box::new(lower_pure(ctx, names, &cond)),
                 ))]
             }
-
-            Statement::Invariant(inv) => {
-                vec![mlcfg::Statement::Invariant(lower_pure(ctx, names, inv))]
-            }
-            Statement::Variant(var) => vec![mlcfg::Statement::Variant(lower_pure(ctx, names, var))],
-            Statement::AssumeTyInv(ty, pl) => {
-                let inv_fun = Exp::impure_qvar(names.ty_inv(ty));
+            Statement::AssumeBorrowInv(pl) => {
+                let inv_fun = Exp::impure_qvar(
+                    names.ty_inv(pl.ty(ctx.tcx, locals).builtin_deref(false).unwrap().ty),
+                );
                 let arg = Exp::Final(Box::new(pl.as_rplace(ctx, names, locals)));
 
                 vec![mlcfg::Statement::Assume(inv_fun.app_to(arg))]
             }
-            Statement::AssertTyInv(ty, pl) => {
-                let inv_fun = Exp::impure_qvar(names.ty_inv(ty));
+            Statement::AssertTyInv(pl) => {
+                let inv_fun = Exp::impure_qvar(names.ty_inv(pl.ty(ctx.tcx, locals)));
                 let arg = pl.as_rplace(ctx, names, locals);
                 let exp = Exp::Attr(
                     Attribute::Attr(format!("expl:type invariant")),

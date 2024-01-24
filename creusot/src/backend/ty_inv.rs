@@ -459,7 +459,7 @@ fn build_inv_axiom<'tcx>(
         Exp::mk_true()
     } else {
         let inv_term = InvariantElaborator::new(param_env, false).elaborate_inv(ctx, ty, kind);
-        let inv_term = lower_pure(ctx, names, inv_term);
+        let inv_term = lower_pure(ctx, names, &inv_term);
         inv_term
     };
     let trivial = rhs.is_true();

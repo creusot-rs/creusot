@@ -216,7 +216,7 @@ impl<'tcx> Why3Generator<'tcx> {
             ItemType::Program => {
                 debug!("translating {def_id:?} as program");
                 let (_, modl) = program::translate_function(self, def_id);
-                let (_, deps) = interface_for(self, def_id);
+                let deps = interface_for(self, def_id);
                 self.dependencies.insert(def_id.into(), deps);
                 TranslatedItem::Program { modl }
             }

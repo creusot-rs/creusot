@@ -162,6 +162,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 continue;
             }
 
+            let mut invariants = Vec::new();
+            let mut variant = None;
+
             for (kind, mut body) in self.invariants.remove(&bb).unwrap_or_else(Vec::new) {
                 body.subst(&inv_subst(
                     self.body,
@@ -170,9 +173,17 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 ));
                 self.check_ghost_term(&body, bb.start_location());
                 match kind {
-                    LoopSpecKind::Variant => self.emit_statement(fmir::Statement::Variant(body)),
+                    LoopSpecKind::Variant => {
+                        if variant.is_some() {
+                            self.ctx.crash_and_error(
+                                body.span,
+                                "Only one variant can be provided for each loop",
+                            );
+                        }
+                        variant = Some(body);
+                    }
                     LoopSpecKind::Invariant => {
-                        self.emit_statement(fmir::Statement::Invariant(body))
+                        invariants.push(body);
                     }
                 }
             }
@@ -195,6 +206,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             }
 
             let block = fmir::Block {
+                invariants,
+                variant,
                 stmts: std::mem::take(&mut self.current_block.0),
                 terminator: std::mem::replace(&mut self.current_block.1, None).unwrap(),
             };
@@ -216,8 +229,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         if let Some((id, subst)) = resolve_predicate_of(self.ctx, self.param_env(), place_ty) {
             let p = self.translate_place(pl);
 
-            if let Some((_, s)) = self.ctx.type_invariant(self.body_id.def_id(), place_ty) {
-                self.emit_statement(fmir::Statement::AssertTyInv(s.type_at(0), p.clone()));
+            if let Some(_) = self.ctx.type_invariant(self.body_id.def_id(), place_ty) {
+                self.emit_statement(fmir::Statement::AssertTyInv(p.clone()));
             }
 
             self.emit_statement(fmir::Statement::Resolve(id, subst, p));
@@ -235,9 +248,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         self.emit_assignment(lhs, fmir::RValue::Borrow(p), span);
 
         let rhs_ty = rhs.ty(self.body, self.ctx.tcx).ty;
-        if let Some((_, s)) = self.ctx.type_invariant(self.body_id.def_id(), rhs_ty) {
+        if let Some(_) = self.ctx.type_invariant(self.body_id.def_id(), rhs_ty) {
             let p = self.translate_place(*lhs);
-            self.emit_statement(fmir::Statement::AssumeTyInv(s.type_at(0), p));
+            self.emit_statement(fmir::Statement::AssumeBorrowInv(p));
         }
     }
 
@@ -279,6 +292,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             // Otherwise, we emit the resolves and move them to a stand-alone block.
             self.resolve_locals(resolved);
             let resolve_block = fmir::Block {
+                variant: None,
+                invariants: Vec::new(),
                 stmts: std::mem::take(&mut self.current_block.0),
                 terminator: fmir::Terminator::Goto(bb),
             };

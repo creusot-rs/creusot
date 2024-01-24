@@ -15,7 +15,7 @@ use why3::{
 pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,
-    term: Term<'tcx>,
+    term: &Term<'tcx>,
 ) -> Exp {
     let span = term.span;
     let mut term = Lower { ctx, names, pure: Purity::Logic }.lower_term(term);
@@ -26,7 +26,7 @@ pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
 pub(crate) fn lower_impure<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,
-    term: Term<'tcx>,
+    term: &Term<'tcx>,
 ) -> Exp {
     let span = term.span;
     let mut term = Lower { ctx, names, pure: Purity::Program }.lower_term(term);
@@ -41,26 +41,26 @@ pub(super) struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     pub(super) pure: Purity,
 }
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
-    pub(crate) fn lower_term(&mut self, term: Term<'tcx>) -> Exp {
-        match term.kind {
+    pub(crate) fn lower_term(&mut self, term: &Term<'tcx>) -> Exp {
+        match &term.kind {
             TermKind::Lit(l) => {
                 let c = lower_literal(self.ctx, self.names, l);
                 c
             }
             // FIXME: this is a weird dance.
             TermKind::Item(id, subst) => {
-                let method = (id, subst);
+                let method = (*id, *subst);
                 debug!("resolved_method={:?}", method);
                 self.lookup_builtin(method, &Vec::new()).unwrap_or_else(|| {
                     // eprintln!("{id:?} {subst:?}");
-                    let clone = self.names.value(id, subst);
+                    let clone = self.names.value(*id, subst);
                     match self.ctx.type_of(id).subst_identity().kind() {
                         TyKind::FnDef(_, _) => Exp::Tuple(Vec::new()),
                         _ => Exp::pure_qvar(clone),
                     }
                 })
             }
-            TermKind::Var(v) => Exp::pure_var(util::ident_of(v)),
+            TermKind::Var(v) => Exp::pure_var(util::ident_of(*v)),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -93,7 +93,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                             (Exp::Var(v.clone(), self.pure), Some((v, rhs)))
                         };
 
-                        let op = binop_to_binop(op, Purity::Logic);
+                        let op = binop_to_binop(*op, Purity::Logic);
                         let mut inner =
                             Exp::Pure(Box::new(Exp::BinaryOp(op, Box::new(a), Box::new(b))));
 
@@ -115,7 +115,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                         inner
                     }
-                    _ => Exp::BinaryOp(binop_to_binop(op, self.pure), Box::new(lhs), Box::new(rhs)),
+                    _ => {
+                        Exp::BinaryOp(binop_to_binop(*op, self.pure), Box::new(lhs), Box::new(rhs))
+                    }
                 }
             }
             TermKind::Unary { op, box arg } => {
@@ -138,9 +140,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     args = vec![Exp::Tuple(vec![])];
                 }
 
-                let method = (id, subst);
+                let method = (*id, *subst);
 
-                if is_identity_from(self.ctx.tcx, id, method.1) {
+                if is_identity_from(self.ctx.tcx, *id, method.1) {
                     return args.remove(0);
                 }
 
@@ -168,12 +170,13 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 })
             }
             TermKind::Constructor { typ, variant, fields } => {
-                self.ctx.translate(typ);
+                self.ctx.translate(*typ);
                 let TyKind::Adt(_, subst) = term.ty.kind() else { unreachable!() };
                 let args = fields.into_iter().map(|f| self.lower_term(f)).collect();
 
-                let ctor =
-                    self.names.constructor(self.ctx.adt_def(typ).variants()[variant].def_id, subst);
+                let ctor = self
+                    .names
+                    .constructor(self.ctx.adt_def(typ).variants()[*variant].def_id, subst);
                 Exp::Constructor { ctor, args }
             }
             TermKind::Cur { box term } => {
@@ -192,14 +195,13 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 self.pure_exp(|this| this.lower_term(lhs).implies(this.lower_term(rhs)))
             }
             TermKind::Old { box term } => Exp::Old(Box::new(self.lower_term(term))),
-            TermKind::Match { box scrutinee, mut arms } => {
+            TermKind::Match { box scrutinee, arms } => {
                 if scrutinee.ty.peel_refs().is_bool() {
-                    let true_br = if let Pattern::Boolean(true) = arms[0].0 {
-                        arms.remove(0).1
+                    let (true_br, false_br) = if let Pattern::Boolean(true) = arms[0].0 {
+                        (&arms[0].1, &arms[1].1)
                     } else {
-                        arms.remove(1).1
+                        (&arms[1].1, &arms[0].1)
                     };
-                    let false_br = arms.remove(0).1;
                     Exp::IfThenElse(
                         Box::new(self.lower_term(scrutinee)),
                         Box::new(self.lower_term(true_br)),
@@ -208,7 +210,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 } else {
                     let _ = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, scrutinee.ty);
                     let arms = arms
-                        .into_iter()
+                        .iter()
                         .map(|(pat, body)| (self.lower_pat(pat), self.lower_term(body)))
                         .collect();
                     Exp::Match(Box::new(self.lower_term(scrutinee)), arms)
@@ -227,10 +229,10 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let lhs = self.lower_term(lhs);
 
                 let accessor = match base_ty.kind() {
-                    TyKind::Closure(did, substs) => self.names.accessor(*did, substs, 0, name),
+                    TyKind::Closure(did, substs) => self.names.accessor(*did, substs, 0, *name),
                     TyKind::Adt(def, substs) => {
-                        self.ctx.translate_accessor(def.variants()[0u32.into()].fields[name].did);
-                        self.names.accessor(def.did(), substs, 0, name)
+                        self.ctx.translate_accessor(def.variants()[0u32.into()].fields[*name].did);
+                        self.names.accessor(def.did(), substs, 0, *name)
                     }
                     k => unreachable!("Projection from {k:?}"),
                 };
@@ -239,7 +241,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Closure { body } => {
                 let TyKind::Closure(id, subst) = term.ty.kind() else { unreachable!("closure has non closure type")};
-                let body = self.lower_term(*body);
+                let body = self.lower_term(&*body);
 
                 let mut binders = Vec::new();
                 let sig = self.ctx.sig(*id).clone();
@@ -254,12 +256,12 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Absurd => Exp::Absurd,
             TermKind::Reborrow { cur, fin } => Exp::Record {
                 fields: vec![
-                    ("current".into(), self.lower_term(*cur)),
-                    ("final".into(), self.lower_term(*fin)),
+                    ("current".into(), self.lower_term(&*cur)),
+                    ("final".into(), self.lower_term(&*fin)),
                 ],
             },
             TermKind::Assert { cond } => {
-                let cond = self.lower_term(*cond);
+                let cond = self.lower_term(&*cond);
                 if self.pure == Purity::Program && !cond.is_pure() {
                     Exp::Let {
                         pattern: Pat::VarP("a".into()),
@@ -285,18 +287,18 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         }
     }
 
-    fn lower_pat(&mut self, pat: Pattern<'tcx>) -> Pat {
+    fn lower_pat(&mut self, pat: &Pattern<'tcx>) -> Pat {
         match pat {
             Pattern::Constructor { adt, variant: _, fields, substs } => {
                 // let variant = &adt.variants()[variant];
                 let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
                 // eprintln!("{adt:?}");
-                Pat::ConsP(self.names.constructor(adt, substs), fields)
+                Pat::ConsP(self.names.constructor(*adt, substs), fields)
             }
             Pattern::Wildcard => Pat::Wildcard,
             Pattern::Binder(name) => Pat::VarP(name.to_string().into()),
             Pattern::Boolean(b) => {
-                if b {
+                if *b {
                     Pat::mk_true()
                 } else {
                     Pat::mk_false()
@@ -348,28 +350,28 @@ use super::Why3Generator;
 pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
     _: &mut TranslationCtx<'tcx>,
     names: &mut N,
-    lit: Literal<'tcx>,
+    lit: &Literal<'tcx>,
 ) -> Exp {
-    match lit {
-        Literal::Integer(i) => Constant::Int(i, None).into(),
+    match &lit {
+        Literal::Integer(i) => Constant::Int(*i, None).into(),
         Literal::MachSigned(u, intty) => {
             let why_ty = intty_to_ty(names, &intty);
-            Constant::Int(u, Some(why_ty)).into()
+            Constant::Int(*u, Some(why_ty)).into()
         }
         Literal::MachUnsigned(u, uty) => {
             let why_ty = uintty_to_ty(names, &uty);
 
-            Constant::Uint(u, Some(why_ty)).into()
+            Constant::Uint(*u, Some(why_ty)).into()
         }
         Literal::Bool(b) => {
-            if b {
+            if *b {
                 Constant::const_true().into()
             } else {
                 Constant::const_false().into()
             }
         }
         Literal::Function(id, subst) => {
-            names.value(id, subst);
+            names.value(*id, subst);
             Exp::Tuple(Vec::new())
         }
         Literal::Float(f, fty) => {
@@ -377,7 +379,7 @@ pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
             Constant::Float(f.0, Some(why_ty)).into()
         }
         Literal::ZST => Exp::Tuple(Vec::new()),
-        Literal::String(string) => Constant::String(string).into(),
+        Literal::String(string) => Constant::String(string.clone()).into(),
     }
 }
 

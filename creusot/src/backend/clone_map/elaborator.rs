@@ -70,7 +70,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
             DepNode::TyInv(ty, kind) => {
                 let term =
                     InvariantElaborator::new(param_env, true).elaborate_inv(ctx, ty, Some(kind));
-                let exp = lower_pure(ctx, names, term);
+                let exp = lower_pure(ctx, names, &term);
                 let axiom = Axiom { name: names.ty_inv(ty).name, rewrite: false, axiom: exp };
                 return vec![Decl::Axiom(axiom)];
             }
@@ -153,7 +153,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
             names.value(def_id, subst).name
         };
 
-        let mut sig = sig_to_why3(ctx, names, pre_sig, def_id);
+        let mut sig = sig_to_why3(ctx, names, &pre_sig, def_id);
         sig.name = name;
 
         if CloneLevel::Signature == level_of_item {

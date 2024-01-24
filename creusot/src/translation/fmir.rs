@@ -39,14 +39,10 @@ impl<'tcx> Place<'tcx> {
 #[derive(Clone, Debug)]
 pub enum Statement<'tcx> {
     Assignment(Place<'tcx>, RValue<'tcx>, Span),
-    // TODO: Remove `Resolve` and replace it with `Assume`.
-    // The reason I have not done this yet is that it would require transforming a `Place` to a `Term`.
     Resolve(DefId, SubstsRef<'tcx>, Place<'tcx>),
     Assertion { cond: Term<'tcx>, msg: String },
-    Invariant(Term<'tcx>),
-    Variant(Term<'tcx>),
-    AssumeTyInv(Ty<'tcx>, Place<'tcx>),
-    AssertTyInv(Ty<'tcx>, Place<'tcx>),
+    AssumeBorrowInv(Place<'tcx>),
+    AssertTyInv(Place<'tcx>),
 }
 
 // Re-organize this completely
@@ -67,10 +63,12 @@ pub struct Expr<'tcx> {
 
 #[derive(Clone, Debug)]
 pub enum ExprKind<'tcx> {
+    // Extract this into a standalone `Operand` type
     Move(Place<'tcx>),
     Copy(Place<'tcx>),
-    BinOp(BinOp, Ty<'tcx>, Box<Expr<'tcx>>, Box<Expr<'tcx>>),
-    UnaryOp(UnOp, Ty<'tcx>, Box<Expr<'tcx>>),
+    // Revisit whether this is a good idea to allow general expression trees.
+    BinOp(BinOp, Box<Expr<'tcx>>, Box<Expr<'tcx>>),
+    UnaryOp(UnOp, Box<Expr<'tcx>>),
     Constructor(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
     // Should this be a statement?
     Call(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
@@ -87,8 +85,8 @@ impl<'tcx> Expr<'tcx> {
         match &self.kind {
             ExprKind::Move(_) => false,
             ExprKind::Copy(_) => false,
-            ExprKind::BinOp(_, _, _, _) => false,
-            ExprKind::UnaryOp(_, _, _) => false,
+            ExprKind::BinOp(_, _, _) => false,
+            ExprKind::UnaryOp(_, _) => false,
             ExprKind::Constructor(_, _, _) => false,
             ExprKind::Call(_, _, _) => true,
             ExprKind::Constant(_) => false,
@@ -108,11 +106,10 @@ impl<'tcx> Expr<'tcx> {
                 BinOp::Add | BinOp::Mul | BinOp::Rem | BinOp::Div | BinOp::Sub,
                 _,
                 _,
-                _,
             ) => false,
-            ExprKind::BinOp(_, _, _, _) => true,
-            ExprKind::UnaryOp(UnOp::Neg, _, _) => false,
-            ExprKind::UnaryOp(_, _, _) => true,
+            ExprKind::BinOp(_, _, _) => true,
+            ExprKind::UnaryOp(UnOp::Neg, _) => false,
+            ExprKind::UnaryOp(_, _) => true,
             ExprKind::Constructor(_, _, es) => es.iter().all(|e| e.is_pure()),
             ExprKind::Call(_, _, es) => es.iter().all(|e| e.is_pure()),
             ExprKind::Constant(_) => true,
@@ -143,6 +140,8 @@ pub enum Branches<'tcx> {
 
 #[derive(Clone)]
 pub struct Block<'tcx> {
+    pub(crate) invariants: Vec<Term<'tcx>>,
+    pub(crate) variant: Option<Term<'tcx>>,
     pub(crate) stmts: Vec<Statement<'tcx>>,
     pub(crate) terminator: Terminator<'tcx>,
 }
