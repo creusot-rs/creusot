@@ -633,8 +633,17 @@ impl<'tcx> Block<'tcx> {
         names: &mut CloneMap<'tcx>,
         locals: &LocalDecls<'tcx>,
     ) -> why3::mlcfg::Block {
-        let mut statements =
-            self.stmts.into_iter().flat_map(|s| s.to_why(ctx, names, locals)).collect();
+        let mut statements = Vec::new();
+
+        for v in self.variant.into_iter() {
+            statements.push(mlcfg::Statement::Variant(lower_pure(ctx, names, v)));
+        }
+
+        for i in self.invariants {
+            statements.push(mlcfg::Statement::Invariant(lower_pure(ctx, names, i)));
+        }
+
+        statements.extend(self.stmts.into_iter().flat_map(|s| s.to_why(ctx, names, locals)));
         let terminator = self.terminator.to_why(ctx, names, locals, &mut statements);
         mlcfg::Block { statements, terminator }
     }
@@ -711,10 +720,10 @@ impl<'tcx> Statement<'tcx> {
                 ))]
             }
 
-            Statement::Invariant(inv) => {
-                vec![mlcfg::Statement::Invariant(lower_pure(ctx, names, inv))]
-            }
-            Statement::Variant(var) => vec![mlcfg::Statement::Variant(lower_pure(ctx, names, var))],
+            // Statement::Invariant(inv) => {
+            //     vec![mlcfg::Statement::Invariant(lower_pure(ctx, names, inv))]
+            // }
+            // Statement::Variant(var) => vec![mlcfg::Statement::Variant(lower_pure(ctx, names, var))],
             Statement::AssumeTyInv(ty, pl) => {
                 let inv_fun = Exp::impure_qvar(names.ty_inv(ty));
                 let arg = Exp::Final(Box::new(pl.as_rplace(ctx, names, locals)));
