@@ -3,7 +3,6 @@ use crate::{
     backend::{
         closure_generic_decls,
         logic::{spec_axiom, val_decl},
-        program::closure_aux_defs,
         signature::signature_of,
     },
     ctx::*,
@@ -29,8 +28,6 @@ pub(crate) fn interface_for<'tcx>(
     let mut decls = Vec::new();
 
     if ctx.tcx.is_closure(def_id) {
-        decls.extend(closure_aux_defs(ctx, &mut names, def_id));
-
         if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).subst_identity().kind() {
             if subst.as_closure().kind() == ClosureKind::FnMut {
                 sig.contract.ensures.push(

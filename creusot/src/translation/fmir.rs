@@ -63,8 +63,10 @@ pub struct Expr<'tcx> {
 
 #[derive(Clone, Debug)]
 pub enum ExprKind<'tcx> {
+    // Extract this into a standalone `Operand` type
     Move(Place<'tcx>),
     Copy(Place<'tcx>),
+    // Revisit whether this is a good idea to allow general expression trees.
     BinOp(BinOp, Box<Expr<'tcx>>, Box<Expr<'tcx>>),
     UnaryOp(UnOp, Box<Expr<'tcx>>),
     Constructor(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),

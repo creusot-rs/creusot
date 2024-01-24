@@ -211,7 +211,7 @@ pub(crate) fn lower_pure_defn<'tcx, N: Namer<'tcx>>(
         sig.retty = None;
     }
 
-    let body = lower_pure(ctx, names, body);
+    let body = lower_pure(ctx, names, &body);
 
     if !body.is_pure() {
         let val = ValDecl { ghost: false, val: false, kind, sig };
@@ -326,7 +326,7 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
         return None;
     }
     let term = ctx.term(def_id).unwrap().clone();
-    let body = lower_impure(ctx, &mut names, term);
+    let body = lower_impure(ctx, &mut names, &term);
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
