@@ -312,31 +312,31 @@ impl<'tcx> Expr<'tcx> {
                 pl.as_rplace(ctx, names, locals)
             }
             ExprKind::Copy(pl) => pl.as_rplace(ctx, names, locals),
-            ExprKind::BinOp(BinOp::BitAnd, ty, l, r) if ty.is_bool() => {
+            ExprKind::BinOp(BinOp::BitAnd, l, r) if l.ty.is_bool() => {
                 l.to_why(ctx, names, locals).lazy_and(r.to_why(ctx, names, locals))
             }
-            ExprKind::BinOp(BinOp::Eq, ty, l, r) if ty.is_bool() => {
+            ExprKind::BinOp(BinOp::Eq, l, r) if l.ty.is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
                 Exp::impure_qvar(QName::from_string("Bool.eqb").unwrap())
                     .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
-            ExprKind::BinOp(BinOp::Ne, ty, l, r) if ty.is_bool() => {
+            ExprKind::BinOp(BinOp::Ne, l, r) if l.ty.is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
                 Exp::impure_qvar(QName::from_string("Bool.neqb").unwrap())
                     .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
-            ExprKind::BinOp(op, ty, l, r) => {
+            ExprKind::BinOp(op, l, r) => {
                 // Hack
-                translate_ty(ctx, names, DUMMY_SP, ty);
+                translate_ty(ctx, names, DUMMY_SP, l.ty);
 
                 Exp::BinaryOp(
-                    binop_to_binop(ctx, ty, op),
+                    binop_to_binop(ctx, l.ty, op),
                     Box::new(l.to_why(ctx, names, locals)),
                     Box::new(r.to_why(ctx, names, locals)),
                 )
             }
-            ExprKind::UnaryOp(op, ty, arg) => {
-                Exp::UnaryOp(unop_to_unop(ty, op), Box::new(arg.to_why(ctx, names, locals)))
+            ExprKind::UnaryOp(op, arg) => {
+                Exp::UnaryOp(unop_to_unop(arg.ty, op), Box::new(arg.to_why(ctx, names, locals)))
             }
             ExprKind::Constructor(id, subst, args) => {
                 let args = args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
@@ -471,11 +471,11 @@ impl<'tcx> Expr<'tcx> {
         match &self.kind {
             ExprKind::Move(p) => places.push((p.clone(), self.span)),
             ExprKind::Copy(_) => {}
-            ExprKind::BinOp(_, _, l, r) => {
+            ExprKind::BinOp(_, l, r) => {
                 l.invalidated_places(places);
                 r.invalidated_places(places)
             }
-            ExprKind::UnaryOp(_, _, e) => e.invalidated_places(places),
+            ExprKind::UnaryOp(_, e) => e.invalidated_places(places),
             ExprKind::Constructor(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
             ExprKind::Call(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
             ExprKind::Constant(_) => {}

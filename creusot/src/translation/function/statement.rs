@@ -101,16 +101,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Rvalue::BinaryOp(op, box (l, r)) | Rvalue::CheckedBinaryOp(op, box (l, r)) => {
                 ExprKind::BinOp(
                     *op,
-                    l.ty(self.body, self.tcx),
                     Box::new(self.translate_operand(l)),
                     Box::new(self.translate_operand(r)),
                 )
             }
-            Rvalue::UnaryOp(op, v) => ExprKind::UnaryOp(
-                *op,
-                v.ty(self.body, self.tcx),
-                Box::new(self.translate_operand(v)),
-            ),
+            Rvalue::UnaryOp(op, v) => ExprKind::UnaryOp(*op, Box::new(self.translate_operand(v))),
             Rvalue::Aggregate(box kind, ops) => {
                 use rustc_middle::mir::AggregateKind::*;
                 let fields = ops.iter().map(|op| self.translate_operand(op)).collect();

@@ -114,11 +114,11 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
         match &e.kind {
             ExprKind::Move(p) => self.read_place(p),
             ExprKind::Copy(p) => self.read_place(p),
-            ExprKind::BinOp(_, _, l, r) => {
+            ExprKind::BinOp(_, l, r) => {
                 self.visit_expr(l);
                 self.visit_expr(r)
             }
-            ExprKind::UnaryOp(_, _, e) => self.visit_expr(e),
+            ExprKind::UnaryOp(_, e) => self.visit_expr(e),
             ExprKind::Constructor(_, _, es) => es.iter().for_each(|e| self.visit_expr(e)),
             ExprKind::Call(_, _, es) => es.iter().for_each(|e| self.visit_expr(e)),
             ExprKind::Constant(t) => self.visit_term(t),
@@ -277,11 +277,11 @@ impl<'tcx> SimplePropagator<'tcx> {
                 *e = v;
               }
             },
-            ExprKind::BinOp(_, _, l, r) => {
+            ExprKind::BinOp(_, l, r) => {
                 self.visit_expr(l);
                 self.visit_expr(r)
             }
-            ExprKind::UnaryOp(_, _, e) => self.visit_expr(e),
+            ExprKind::UnaryOp(_, e) => self.visit_expr(e),
             ExprKind::Constructor(_, _, es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
             ExprKind::Call(_, _, es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
             ExprKind::Constant(t) => self.visit_term(t),
