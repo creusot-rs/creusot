@@ -22,7 +22,7 @@ use crate::{
     },
     util::{self, module_name, ItemType},
 };
-use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
+use rustc_hir::{def_id::DefId, Unsafety};
 use rustc_middle::{
     mir::{BasicBlock, BinOp},
     ty::TyKind,
@@ -341,16 +341,8 @@ impl<'tcx> Expr<'tcx> {
             ExprKind::Constructor(id, subst, args) => {
                 let args = args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
 
-                match ctx.def_kind(id) {
-                    DefKind::Closure => {
-                        let ctor = names.constructor(id, subst);
-                        Exp::Constructor { ctor, args }
-                    }
-                    _ => {
-                        let ctor = names.constructor(id, subst);
-                        Exp::Constructor { ctor, args }
-                    }
-                }
+                let ctor = names.constructor(id, subst);
+                Exp::Constructor { ctor, args }
             }
             ExprKind::Call(id, subst, args) => {
                 let mut args: Vec<_> =
@@ -719,11 +711,6 @@ impl<'tcx> Statement<'tcx> {
                     Box::new(lower_pure(ctx, names, cond)),
                 ))]
             }
-
-            // Statement::Invariant(inv) => {
-            //     vec![mlcfg::Statement::Invariant(lower_pure(ctx, names, inv))]
-            // }
-            // Statement::Variant(var) => vec![mlcfg::Statement::Variant(lower_pure(ctx, names, var))],
             Statement::AssumeBorrowInv(pl) => {
                 let inv_fun = Exp::impure_qvar(
                     names.ty_inv(pl.ty(ctx.tcx, locals).builtin_deref(false).unwrap().ty),
