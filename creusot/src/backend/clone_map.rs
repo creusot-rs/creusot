@@ -15,7 +15,7 @@ use rustc_span::Symbol;
 use rustc_target::abi::FieldIdx;
 
 use why3::{
-    declaration::{CloneKind, Decl, Use},
+    declaration::{CloneKind, Decl},
     Ident, QName,
 };
 
@@ -264,7 +264,6 @@ struct CloneNames<'tcx> {
     tcx: TyCtxt<'tcx>,
     counts: NameSupply,
     names: IndexMap<DepNode<'tcx>, Kind>,
-    prelude: IndexMap<QName, bool>,
 }
 
 impl std::fmt::Debug for CloneNames<'_> {
@@ -279,12 +278,7 @@ impl std::fmt::Debug for CloneNames<'_> {
 
 impl<'tcx> CloneNames<'tcx> {
     fn new(tcx: TyCtxt<'tcx>) -> Self {
-        CloneNames {
-            tcx,
-            counts: Default::default(),
-            names: Default::default(),
-            prelude: Default::default(),
-        }
+        CloneNames { tcx, counts: Default::default(), names: Default::default() }
     }
     fn insert(&mut self, key: DepNode<'tcx>) -> Kind {
         *self.names.entry(key).or_insert_with(|| {
@@ -366,6 +360,7 @@ impl<'tcx> DepGraph<'tcx> {
     }
 }
 
+// TODO: Get rid of the enum
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable, Hash)]
 enum Kind {
     Named(Symbol),
@@ -380,6 +375,8 @@ impl Kind {
             Kind::Hidden(nm) => nm.as_str().into(),
         }
     }
+
+    // TODO: Get rid
     fn qname_ident(&self, method: Ident) -> QName {
         let module = match &self {
             Kind::Named(name) => vec![name.to_string().into()],
@@ -585,18 +582,7 @@ impl<'tcx> CloneMap<'tcx> {
             })
             .collect();
 
-        let clones = self
-            .names
-            .prelude
-            .iter_mut()
-            .filter(|(_, v)| !(**v))
-            .map(|(p, v)| {
-                *v = true;
-                p
-            })
-            .map(|q| Decl::UseDecl(Use { name: q.clone(), as_: None, export: false }))
-            .chain(decls.into_iter())
-            .collect();
+        let clones = decls;
         (clones, summary)
     }
 }

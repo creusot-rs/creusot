@@ -303,8 +303,6 @@ impl<'tcx> InvariantElaborator<'tcx> {
                 let field_ty = field_def.ty(ctx.tcx, subst);
 
                 let var = Term::var(field_name, field_ty);
-                let subst = ctx.mk_substs(&[GenericArg::from(field_ty)]);
-                // TODO elide trivial invariants
                 let f_exp = self.mk_inv_call(ctx, var);
                 exp = exp.conj(f_exp);
                 pats.push(Pattern::Binder(field_name));
