@@ -41,7 +41,7 @@ pub enum Statement<'tcx> {
     Assignment(Place<'tcx>, RValue<'tcx>, Span),
     Resolve(DefId, SubstsRef<'tcx>, Place<'tcx>),
     Assertion { cond: Term<'tcx>, msg: String },
-    AssumeBorrowInv(Ty<'tcx>, Place<'tcx>),
+    AssumeBorrowInv(Place<'tcx>),
     AssertTyInv(Place<'tcx>),
 }
 

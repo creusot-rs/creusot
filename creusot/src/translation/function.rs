@@ -250,7 +250,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let rhs_ty = rhs.ty(self.body, self.ctx.tcx).ty;
         if let Some((_, s)) = self.ctx.type_invariant(self.body_id.def_id(), rhs_ty) {
             let p = self.translate_place(*lhs);
-            self.emit_statement(fmir::Statement::AssumeBorrowInv(s.type_at(0), p));
+            self.emit_statement(fmir::Statement::AssumeBorrowInv(p));
         }
     }
 
