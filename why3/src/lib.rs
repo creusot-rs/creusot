@@ -1,4 +1,5 @@
 #![feature(box_patterns)]
+pub mod ce_models;
 pub mod declaration;
 pub mod exp;
 pub mod mlcfg;

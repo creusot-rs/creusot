@@ -1,7 +1,7 @@
 use indexmap::{IndexMap, IndexSet};
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{AliasTy, GenericParamDef, GenericParamDefKind, TyCtxt};
-use rustc_span::DUMMY_SP;
+use rustc_span::{RealFileName, Span, DUMMY_SP};
 use why3::declaration::{Decl, TyDecl};
 
 use crate::{
@@ -15,7 +15,9 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+use crate::{options::SpanMode, run_why3::SpanMap};
 pub(crate) use clone_map::*;
+use why3::Exp;
 
 use self::{
     dependency::{Dependency, HackedId},
@@ -56,6 +58,7 @@ pub struct Why3Generator<'tcx> {
     functions: IndexMap<TransId, TranslatedItem>,
     translated_items: IndexSet<TransId>,
     in_translation: Vec<IndexSet<TransId>>,
+    pub(crate) span_map: SpanMap,
 }
 
 impl<'tcx> Deref for Why3Generator<'tcx> {
@@ -81,6 +84,7 @@ impl<'tcx> Why3Generator<'tcx> {
             functions: Default::default(),
             translated_items: Default::default(),
             in_translation: Default::default(),
+            span_map: Default::default(),
         }
     }
 
@@ -270,8 +274,10 @@ impl<'tcx> Why3Generator<'tcx> {
     //     self.functions.get(&tid)
     // }
 
-    pub(crate) fn modules(self) -> impl Iterator<Item = (TransId, TranslatedItem)> + 'tcx {
-        self.functions.into_iter()
+    pub(crate) fn modules<'a>(
+        &'a mut self,
+    ) -> impl Iterator<Item = (TransId, TranslatedItem)> + 'a {
+        self.functions.drain(..)
     }
 
     pub(crate) fn start_group(&mut self, ids: IndexSet<DefId>) {
@@ -343,6 +349,60 @@ impl<'tcx> Why3Generator<'tcx> {
             TransId::Hacked(HackedId::Accessor(_), _) => true,
             TransId::Item(id) => self.def_kind(id) == DefKind::Field,
             _ => false,
+        }
+    }
+
+    pub(crate) fn span_attr(&mut self, span: Span) -> Option<why3::declaration::Attribute> {
+        if span.is_dummy() {
+            return None;
+        }
+        if let Some(span) = self.span_map.encode_span(&self.ctx.opts, span) {
+            return Some(span);
+        };
+        let lo = self.sess.source_map().lookup_char_pos(span.lo());
+        let hi = self.sess.source_map().lookup_char_pos(span.hi());
+
+        let rustc_span::FileName::Real(path) = &lo.file.name else { return None };
+
+        // If we ask for relative paths and the paths comes from the standard library, then we prefer returning
+        // None, since the relative path of the stdlib is not stable.
+        let path = match (&self.opts.span_mode, path) {
+            (SpanMode::Relative, RealFileName::Remapped { .. }) => return None,
+            _ => path.local_path_if_available(),
+        };
+
+        let mut buf;
+        let path = if path.is_relative() {
+            buf = std::env::current_dir().unwrap();
+            buf.push(path);
+            buf.as_path()
+        } else {
+            path
+        };
+
+        let filename = match self.opts.span_mode {
+            SpanMode::Absolute => path.to_string_lossy().into_owned(),
+            SpanMode::Relative => {
+                // Why3 treats the spans as relative to the session not the source file??
+                format!("{}", self.opts.relative_to_output(&path).to_string_lossy())
+            }
+            _ => return None,
+        };
+
+        Some(why3::declaration::Attribute::Span(
+            filename,
+            lo.line,
+            lo.col_display,
+            hi.line,
+            hi.col_display,
+        ))
+    }
+
+    pub(crate) fn attach_span(&mut self, span: Span, exp: Exp) -> Exp {
+        if let Some(attr) = self.span_attr(span) {
+            Exp::Attr(attr, Box::new(exp))
+        } else {
+            exp
         }
     }
 }

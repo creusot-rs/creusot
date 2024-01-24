@@ -11,7 +11,7 @@ module C492_ReborrowTuple
   val inv2 (_x : (borrowed t, uint32)) : bool
     ensures { result = inv2 _x }
     
-  axiom inv2 : [#"../492.rs" 1 0 1 0] forall x : (borrowed t, uint32) . inv2 x = true
+  axiom inv2 : forall x : (borrowed t, uint32) . inv2 x = true
   predicate invariant1 (self : borrowed t)
   val invariant1 (self : borrowed t) : bool
     ensures { result = invariant1 self }
@@ -20,7 +20,7 @@ module C492_ReborrowTuple
   val inv1 (_x : borrowed t) : bool
     ensures { result = inv1 _x }
     
-  axiom inv1 : [#"../492.rs" 1 0 1 0] forall x : borrowed t . inv1 x = true
+  axiom inv1 : forall x : borrowed t . inv1 x = true
   predicate invariant0 (self : t)
   val invariant0 (self : t) : bool
     ensures { result = invariant0 self }
@@ -29,7 +29,7 @@ module C492_ReborrowTuple
   val inv0 (_x : t) : bool
     ensures { result = inv0 _x }
     
-  axiom inv0 : [#"../492.rs" 1 0 1 0] forall x : t . inv0 x = true
+  axiom inv0 : forall x : t . inv0 x = true
   predicate resolve0 (self : borrowed t) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve0 (self : borrowed t) : bool
@@ -49,10 +49,10 @@ module C492_ReborrowTuple
     goto BB0
   }
   BB0 {
-    _3 <- Borrow.borrow_mut ( * x);
-    x <- { x with current =  ^ _3 };
+    [#"../492.rs" 6 5 6 6] _3 <- Borrow.borrow_mut ( * x);
+    [#"../492.rs" 6 5 6 6] x <- { x with current =  ^ _3 };
     assume { inv0 ( ^ _3) };
-    _0 <- ([#"../492.rs" 6 4 6 11] (_3, ([#"../492.rs" 6 8 6 10] [#"../492.rs" 6 8 6 10] (32 : uint32))));
+    [#"../492.rs" 6 4 6 11] _0 <- ([#"../492.rs" 6 4 6 11] (_3, ([#"../492.rs" 6 8 6 10] [#"../492.rs" 6 8 6 10] (32 : uint32))));
     _3 <- any borrowed t;
     assert { [@expl:type invariant] inv1 x };
     assume { resolve0 x };
@@ -73,7 +73,7 @@ module C492_Test
   val inv1 (_x : (borrowed int32, uint32)) : bool
     ensures { result = inv1 _x }
     
-  axiom inv1 : [#"../492.rs" 1 0 1 0] forall x : (borrowed int32, uint32) . inv1 x = true
+  axiom inv1 : forall x : (borrowed int32, uint32) . inv1 x = true
   predicate invariant0 (self : borrowed int32) =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
   val invariant0 (self : borrowed int32) : bool
@@ -83,7 +83,7 @@ module C492_Test
   val inv0 (_x : borrowed int32) : bool
     ensures { result = inv0 _x }
     
-  axiom inv0 : [#"../492.rs" 1 0 1 0] forall x : borrowed int32 . inv0 x = true
+  axiom inv0 : forall x : borrowed int32 . inv0 x = true
   predicate resolve1 (self : borrowed int32) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve1 (self : borrowed int32) : bool
@@ -119,24 +119,24 @@ module C492_Test
     goto BB0
   }
   BB0 {
-    x <- ([#"../492.rs" 11 16 11 17] [#"../492.rs" 11 16 11 17] (5 : int32));
-    _6 <- Borrow.borrow_mut x;
-    x <-  ^ _6;
-    _5 <- Borrow.borrow_mut ( * _6);
-    _6 <- { _6 with current =  ^ _5 };
-    _4 <- ([#"../492.rs" 12 19 12 41] reborrow_tuple0 _5);
+    [#"../492.rs" 11 16 11 17] x <- ([#"../492.rs" 11 16 11 17] [#"../492.rs" 11 16 11 17] (5 : int32));
+    [#"../492.rs" 12 34 12 40] _6 <- Borrow.borrow_mut x;
+    [#"../492.rs" 12 34 12 40] x <-  ^ _6;
+    [#"../492.rs" 12 34 12 40] _5 <- Borrow.borrow_mut ( * _6);
+    [#"../492.rs" 12 34 12 40] _6 <- { _6 with current =  ^ _5 };
+    [#"../492.rs" 12 19 12 41] _4 <- ([#"../492.rs" 12 19 12 41] reborrow_tuple0 _5);
     _5 <- any borrowed int32;
     goto BB1
   }
   BB1 {
-    res <- (let (a, _) = _4 in a);
-    _4 <- (let (x0, x1) = _4 in (any borrowed int32, x1));
+    [#"../492.rs" 12 9 12 12] res <- ([#"../492.rs" 12 9 12 12] let (a, _) = _4 in a);
+    [#"../492.rs" 12 9 12 12] _4 <- (let (x0, x1) = _4 in (any borrowed int32, x1));
     assume { resolve0 _4 };
     assume { resolve1 _6 };
     assert { [@expl:assertion] [#"../492.rs" 13 18 13 30]  ^ res = (5 : int32) };
-    res <- { res with current = ([#"../492.rs" 14 11 14 13] [#"../492.rs" 14 11 14 13] (10 : int32)) };
+    [#"../492.rs" 14 4 14 13] res <- { res with current = ([#"../492.rs" 14 4 14 13] [#"../492.rs" 14 11 14 13] (10 : int32)) };
     assume { resolve1 res };
-    _0 <- ([#"../492.rs" 10 14 15 1] ());
+    [#"../492.rs" 10 14 15 1] _0 <- ([#"../492.rs" 10 14 15 1] ());
     return _0
   }
   

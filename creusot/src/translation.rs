@@ -90,10 +90,11 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
     }
 
     if why3.should_compile() {
+        use crate::run_why3::run_why3;
         use std::fs::File;
-        let mut out: Box<dyn Write> = match why3.opts.output_file {
-            Some(OutputFile::File(ref f)) => Box::new(std::io::BufWriter::new(File::create(f)?)),
-            Some(OutputFile::Stdout) => Box::new(std::io::stdout()),
+        let file = match why3.opts.output_file {
+            Some(OutputFile::File(ref f)) => Some(f.clone().into()),
+            Some(OutputFile::Stdout) => None,
             None => {
                 let outputs = why3.output_filenames(());
                 let crate_name = why3.crate_name(LOCAL_CRATE);
@@ -108,15 +109,19 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
                 } else {
                     outputs.out_directory.clone()
                 };
-                let out_path = directory.join(&libname);
-                Box::new(std::io::BufWriter::new(File::create(out_path)?))
+                Some(directory.join(&libname))
             }
+        };
+        let mut out: Box<dyn Write> = match &file {
+            Some(f) => Box::new(std::io::BufWriter::new(File::create(f)?)),
+            None => Box::new(std::io::stdout()),
         };
 
         let matcher = why3.opts.match_str.clone();
         let matcher: &str = matcher.as_ref().map(|s| &s[..]).unwrap_or("");
         let tcx = why3.tcx;
-        let modules = why3.modules().flat_map(|(id, item)| {
+        let modules = why3.modules();
+        let modules = modules.flat_map(|(id, item)| {
             if let TransId::Item(did) = id && tcx.def_path_str(did).contains(matcher) {
                 item.modules()
             } else {
@@ -126,6 +131,8 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
 
         let crate_name = tcx.crate_name(LOCAL_CRATE).to_string().to_upper_camel_case();
         print_crate(&mut out, crate_name, modules)?;
+        drop(out); //flush the buffer before running why3
+        run_why3(&why3, file);
     }
     debug!("after_analysis_dump: {:?}", start.elapsed());
 

@@ -27,7 +27,7 @@ use rustc_middle::{
     mir::{BasicBlock, BinOp},
     ty::TyKind,
 };
-use rustc_span::DUMMY_SP;
+use rustc_span::{Span, DUMMY_SP};
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
     declaration::{self, Attribute, CfgFunction, Decl, LetDecl, LetKind, Module},
@@ -241,7 +241,7 @@ fn lower_promoted<'tcx>(
         let exps: Vec<_> =
             bbd.stmts.into_iter().map(|s| s.to_why(ctx, names, &fmir.locals)).flatten().collect();
         exp = exps.into_iter().rfold(exp, |acc, asgn| match asgn {
-            why3::mlcfg::Statement::Assign { lhs, rhs } => {
+            why3::mlcfg::Statement::Assign { lhs, rhs, attr: _ } => {
                 Exp::Let { pattern: Pattern::VarP(lhs), arg: Box::new(rhs), body: Box::new(acc) }
             }
             why3::mlcfg::Statement::Assume(_) => acc,
@@ -467,9 +467,9 @@ impl<'tcx> Expr<'tcx> {
         }
     }
 
-    fn invalidated_places(&self, places: &mut Vec<fmir::Place<'tcx>>) {
+    fn invalidated_places(&self, places: &mut Vec<(fmir::Place<'tcx>, Span)>) {
         match &self.kind {
-            ExprKind::Move(p) => places.push(p.clone()),
+            ExprKind::Move(p) => places.push((p.clone(), self.span)),
             ExprKind::Copy(_) => {}
             ExprKind::BinOp(_, _, l, r) => {
                 l.invalidated_places(places);
@@ -540,7 +540,7 @@ impl<'tcx> Terminator<'tcx> {
                 }
             },
             Terminator::Return => {}
-            Terminator::Abort => {}
+            Terminator::Abort(_) => {}
         }
     }
 
@@ -549,6 +549,7 @@ impl<'tcx> Terminator<'tcx> {
         ctx: &mut Why3Generator<'tcx>,
         names: &mut CloneMap<'tcx>,
         locals: &LocalDecls<'tcx>,
+        statements: &mut Vec<mlcfg::Statement>,
     ) -> why3::mlcfg::Terminator {
         use why3::mlcfg::Terminator::*;
         match self {
@@ -558,7 +559,11 @@ impl<'tcx> Terminator<'tcx> {
                 branches.to_why(ctx, names, discr)
             }
             Terminator::Return => Return,
-            Terminator::Abort => Absurd,
+            Terminator::Abort(span) => {
+                let exp = ctx.attach_span(span, Exp::mk_false());
+                statements.push(mlcfg::Statement::Assert(exp));
+                Absurd
+            }
         }
     }
 }
@@ -628,10 +633,10 @@ impl<'tcx> Block<'tcx> {
         names: &mut CloneMap<'tcx>,
         locals: &LocalDecls<'tcx>,
     ) -> why3::mlcfg::Block {
-        mlcfg::Block {
-            statements: self.stmts.into_iter().flat_map(|s| s.to_why(ctx, names, locals)).collect(),
-            terminator: self.terminator.to_why(ctx, names, locals),
-        }
+        let mut statements =
+            self.stmts.into_iter().flat_map(|s| s.to_why(ctx, names, locals)).collect();
+        let terminator = self.terminator.to_why(ctx, names, locals, &mut statements);
+        mlcfg::Block { statements, terminator }
     }
 }
 
@@ -654,7 +659,7 @@ impl<'tcx> Statement<'tcx> {
         locals: &LocalDecls<'tcx>,
     ) -> Vec<mlcfg::Statement> {
         match self {
-            Statement::Assignment(lhs, RValue::Borrow(rhs)) => {
+            Statement::Assignment(lhs, RValue::Borrow(rhs), span) => {
                 let borrow = Exp::Call(
                     Box::new(Exp::impure_qvar(QName::from_string("Borrow.borrow_mut").unwrap())),
                     vec![rhs.as_rplace(ctx, names, locals)],
@@ -662,24 +667,32 @@ impl<'tcx> Statement<'tcx> {
                 let reassign = Exp::Final(Box::new(lhs.as_rplace(ctx, names, locals)));
 
                 vec![
-                    place::create_assign_inner(ctx, names, locals, &lhs, borrow),
-                    place::create_assign_inner(ctx, names, locals, &rhs, reassign),
+                    place::create_assign_inner(ctx, names, locals, &lhs, borrow, span),
+                    place::create_assign_inner(ctx, names, locals, &rhs, reassign, span),
                 ]
             }
-            Statement::Assignment(lhs, RValue::Ghost(rhs)) => {
+            Statement::Assignment(lhs, RValue::Ghost(rhs), span) => {
                 let ghost = lower_pure(ctx, names, rhs);
 
-                vec![place::create_assign_inner(ctx, names, locals, &lhs, ghost)]
+                vec![place::create_assign_inner(ctx, names, locals, &lhs, ghost, span)]
             }
-            Statement::Assignment(lhs, RValue::Expr(rhs)) => {
+            Statement::Assignment(lhs, RValue::Expr(rhs), span) => {
                 let mut invalid = Vec::new();
                 rhs.invalidated_places(&mut invalid);
                 let rhs = rhs.to_why(ctx, names, locals);
-                let mut exps = vec![place::create_assign_inner(ctx, names, locals, &lhs, rhs)];
-                for pl in invalid {
+                let mut exps =
+                    vec![place::create_assign_inner(ctx, names, locals, &lhs, rhs, span)];
+                for (pl, pl_span) in invalid {
                     let ty = pl.ty(ctx.tcx, locals);
-                    let ty = translate_ty(ctx, names, DUMMY_SP, ty);
-                    exps.push(place::create_assign_inner(ctx, names, locals, &pl, Exp::Any(ty)));
+                    let ty = translate_ty(ctx, names, pl_span.substitute_dummy(span), ty);
+                    exps.push(place::create_assign_inner(
+                        ctx,
+                        names,
+                        locals,
+                        &pl,
+                        Exp::Any(ty),
+                        pl_span,
+                    ));
                 }
                 exps
             }

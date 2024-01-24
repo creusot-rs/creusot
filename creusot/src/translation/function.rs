@@ -32,7 +32,7 @@ use rustc_middle::{
         EarlyBinder, ParamEnv, Ty, TyCtxt, TyKind, UpvarCapture,
     },
 };
-use rustc_span::{Symbol, DUMMY_SP};
+use rustc_span::{Span, Symbol, DUMMY_SP};
 use std::{collections::HashMap, iter, rc::Rc};
 // use why3::declaration::*;
 
@@ -230,9 +230,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         self.current_block.1 = Some(t);
     }
 
-    fn emit_borrow(&mut self, lhs: &Place<'tcx>, rhs: &Place<'tcx>) {
+    fn emit_borrow(&mut self, lhs: &Place<'tcx>, rhs: &Place<'tcx>, span: Span) {
         let p = self.translate_place(*rhs);
-        self.emit_assignment(lhs, fmir::RValue::Borrow(p));
+        self.emit_assignment(lhs, fmir::RValue::Borrow(p), span);
 
         let rhs_ty = rhs.ty(self.body, self.ctx.tcx).ty;
         if let Some((_, s)) = self.ctx.type_invariant(self.body_id.def_id(), rhs_ty) {
@@ -241,13 +241,13 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         }
     }
 
-    fn emit_ghost_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>) {
-        self.emit_assignment(&lhs, fmir::RValue::Ghost(rhs))
+    fn emit_ghost_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>, span: Span) {
+        self.emit_assignment(&lhs, fmir::RValue::Ghost(rhs), span)
     }
 
-    fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: RValue<'tcx>) {
+    fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: RValue<'tcx>, span: Span) {
         let p = self.translate_place(*lhs);
-        self.emit_statement(fmir::Statement::Assignment(p, rhs));
+        self.emit_statement(fmir::Statement::Assignment(p, rhs, span));
     }
 
     // Inserts resolves for locals which died over the course of a goto or switch

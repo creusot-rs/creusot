@@ -60,13 +60,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
                 self.emit_terminator(switch);
             }
-            Terminate => self.emit_terminator(Terminator::Abort),
+            Terminate => self.emit_terminator(Terminator::Abort(terminator.source_info.span)),
             Return => self.emit_terminator(Terminator::Return),
-            Unreachable => self.emit_terminator(Terminator::Abort),
+            Unreachable => self.emit_terminator(Terminator::Abort(terminator.source_info.span)),
             Call { func, args, destination, target, .. } => {
                 if target.is_none() {
                     // If we have no target block after the call, then we cannot move past it.
-                    self.emit_terminator(Terminator::Abort);
+                    self.emit_terminator(Terminator::Abort(terminator.source_info.span));
                     return;
                 }
 
@@ -78,7 +78,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     let mut assertion = self.assertions.remove(def_id).unwrap();
                     assertion.subst(&inv_subst(self.body, &self.locals, terminator.source_info));
                     self.check_ghost_term(&assertion, location);
-                    self.emit_ghost_assign(*destination, assertion);
+                    self.emit_ghost_assign(*destination, assertion, span);
                     self.emit_terminator(Terminator::Goto(target.unwrap()));
                     return;
                 }
@@ -129,7 +129,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 };
 
                 let (loc, bb) = (destination, target.unwrap());
-                self.emit_assignment(&loc, RValue::Expr(call_exp));
+                self.emit_assignment(&loc, RValue::Expr(call_exp), span);
                 self.emit_terminator(Terminator::Goto(bb));
             }
             Assert { cond, expected, msg, target, unwind: _ } => {

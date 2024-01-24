@@ -7,7 +7,7 @@ use rustc_middle::{
     mir::{self, tcx::PlaceTy, ProjectionElem},
     ty::{self, Ty, TyCtxt, TyKind},
 };
-use rustc_span::Symbol;
+use rustc_span::{Span, Symbol};
 use why3::{
     exp::{
         Exp::{self, *},
@@ -39,6 +39,7 @@ pub(crate) fn create_assign_inner<'tcx>(
     locals: &LocalDecls<'tcx>,
     lhs: &fmir::Place<'tcx>,
     rhs: Exp,
+    span: Span,
 ) -> mlcfg::Statement {
     let inner = create_assign_rec(
         ctx,
@@ -51,7 +52,7 @@ pub(crate) fn create_assign_inner<'tcx>(
         rhs,
     );
 
-    Assign { lhs: Ident::build(lhs.local.as_str()), rhs: inner }
+    Assign { lhs: Ident::build(lhs.local.as_str()), rhs: inner, attr: ctx.span_attr(span) }
 }
 
 fn create_assign_rec<'tcx>(
