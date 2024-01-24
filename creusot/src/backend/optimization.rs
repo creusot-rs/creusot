@@ -92,8 +92,8 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
                 self.visit_term(cond);
                 self.visit_term(cond);
             }
-            Statement::AssumeTyInv(_, p) => self.read_place(p),
-            Statement::AssertTyInv(_, p) => self.read_place(p),
+            Statement::AssumeBorrowInv(_, p) => self.read_place(p),
+            Statement::AssertTyInv(p) => self.read_place(p),
         }
     }
 
@@ -255,8 +255,8 @@ impl<'tcx> SimplePropagator<'tcx> {
               }
             }
             Statement::Assertion { cond, msg: _ } => self.visit_term(cond),
-            Statement::AssumeTyInv(_, _) => {},
-            Statement::AssertTyInv(_, _) => {},
+            Statement::AssumeBorrowInv(_, _) => {},
+            Statement::AssertTyInv( _) => {},
         }
     }
 
