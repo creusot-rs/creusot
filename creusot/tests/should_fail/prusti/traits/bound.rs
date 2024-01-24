@@ -11,6 +11,6 @@ struct MyStruct;
 impl MyTrait for MyStruct {
     #[logic('x where 'curr: 'x)]
     fn test<'x, Y: Copy>(x: &'x mut Y) -> Y {
-        at_expiry::<'x>(*x)
+        at::<'x>(*x)
     }
 }

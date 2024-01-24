@@ -87,10 +87,6 @@ mod macros {
     /// A body can only be visible in contexts where all the symbols used in the body are also visible.
     /// This means you cannot `#[open]` a body which refers to a `pub(crate)` symbol.
     pub use base_macros::open;
-
-    pub use creusot_contracts_proc::DeepModel;
-
-    pub use creusot_contracts_proc::Resolve;
 }
 
 #[cfg(creusot)]
@@ -132,6 +128,7 @@ pub mod ghost {
 pub mod ghost_ptr;
 pub mod invariant;
 pub mod model;
+mod prusti;
 pub mod resolve;
 pub mod util;
 pub mod well_founded;
@@ -174,9 +171,6 @@ pub mod prusti_macros {
         prusti_logic as logic, prusti_predicate as predicate, prusti_requires as requires, trusted,
         variant,
     };
-
-    #[cfg(creusot)]
-    pub use crate::__stubs::{at_expiry, curr, Plain, SnapEq};
 }
 
 pub mod prelude {
@@ -184,7 +178,7 @@ pub mod prelude {
 }
 
 pub mod prusti_prelude {
-    pub use crate::{base_prelude::*, prusti_macros::*};
+    pub use crate::{base_prelude::*, prusti::*, prusti_macros::*};
 }
 
 pub use prelude::*;

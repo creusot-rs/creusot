@@ -367,7 +367,7 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
 
     pub(crate) fn try_move_rstate(&self, state: Region<'tcx>, span: Span) -> CreusotResult<State> {
         if state == self.tcx.lifetimes.re_erased {
-            return Err(Error::new(span, "at_expiry must be given an explicit region"));
+            return Err(Error::new(span, "at must be given an explicit region"));
         } else if state == self.static_region() {
             return Err(Error::new(span, "Cannot move to 'static since it never expires"));
         }

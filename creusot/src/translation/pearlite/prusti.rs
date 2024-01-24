@@ -345,7 +345,7 @@ fn convert<'tcx>(
             let TyKind::FnDef(_, subst) = ty.ty.kind() else {unreachable!()};
             let new_reg = if tcx.is_diagnostic_item(Symbol::intern("prusti_curr"), *id) {
                 Some(ctx.curr_state())
-            } else if tcx.is_diagnostic_item(Symbol::intern("prusti_expiry"), *id) {
+            } else if tcx.is_diagnostic_item(Symbol::intern("prusti_at"), *id) {
                 let r = subst.regions().next().unwrap();
                 let s = ctx.try_move_rstate(r, fun.span)?;
                 Some(s)

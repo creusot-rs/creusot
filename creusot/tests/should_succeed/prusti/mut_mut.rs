@@ -13,5 +13,5 @@ pub fn v1<'a, 'b, 'c, X>(x: &'c mut &'a mut X, y: &'c mut &'b mut X) -> bool {
 #[logic('x, 'y)]
 #[ensures(result)]
 pub fn v2<'x, 'y, 'a, 'c, X>(x: &'c mut &'a mut X, y: &'c mut &'a mut X) -> bool {
-    v1(at_expiry::<'x>(x), at_expiry::<'y>(y))
+    v1(at::<'x>(x), at::<'y>(y))
 }

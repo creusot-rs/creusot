@@ -8,5 +8,5 @@ pub fn project_deref_bad<'a>(x: &u32, y: &'a u32) -> &'a u32 {
 
 #[logic('x where 'curr: 'x)]
 fn move_state<'x, T: Copy>(t: T) -> T {
-    at_expiry::<'x>(t)
+    at::<'x>(t)
 }
