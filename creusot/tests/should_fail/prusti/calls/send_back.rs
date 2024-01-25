@@ -6,7 +6,7 @@ fn move_state<'x, T: Copy>(t: T) -> T {
     move_state2(at::<'x>(t))
 }
 
-#[logic('x where 'curr: 'x)]
+#[logic('x where 'now: 'x)]
 fn move_state2<'x, T: Copy>(t: T) -> T {
     t
 }

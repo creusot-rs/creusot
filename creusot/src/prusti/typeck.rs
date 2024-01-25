@@ -35,10 +35,11 @@ use rustc_infer::{
 use rustc_middle::{
     bug, span_bug, ty,
     ty::{
-        AdtDef, Binder, ClauseKind, GenericArg, GenericParamDefKind, GenericPredicates, InferTy,
-        Instance, InstantiatedPredicates, InternalSubsts, PolyFnSig, PredicateKind, Region,
-        RegionKind, RegionVid, SubstsRef, TyCtxt, TyKind, TyVid, TypeFoldable, TypeFolder,
-        TypeSuperFoldable, TypeSuperVisitable, TypeVisitable, TypeVisitor,
+        AdtDef, Binder, BoundRegionKind, ClauseKind, GenericArg, GenericParamDefKind,
+        GenericPredicates, InferTy, Instance, InstantiatedPredicates, InternalSubsts, PolyFnSig,
+        PredicateKind, Region, RegionKind, RegionVid, SubstsRef, TyCtxt, TyKind, TyVid,
+        TypeFoldable, TypeFolder, TypeSuperFoldable, TypeSuperVisitable, TypeVisitable,
+        TypeVisitor,
     },
 };
 use rustc_span::{def_id::DefId, Span, Symbol, DUMMY_SP};
@@ -56,31 +57,27 @@ use std::{
 
 type SmallVec<T> = smallvec::SmallVec<[T; 4]>;
 
-// fn prepare_dbg<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(t: T, tcx: TyCtxt<'tcx>) -> T {
-//     t.fold_with(&mut RegionReplacer {
-//         tcx,
-//         f: |r| dummy_region(tcx, Symbol::intern(&*format!("{r:?}"))),
-//     })
-// }
-//
-// macro_rules! dbg2 {
-//     ($val:expr, $tcx:expr) => {
-//         // Use of `match` here is intentional because it affects the lifetimes
-//         // of temporaries - https://stackoverflow.com/a/48732525/1063961
-//         match $val {
-//             tmp => {
-//                 ::std::eprintln!(
-//                     "[{}:{}] {} = {:#?}",
-//                     ::std::file!(),
-//                     ::std::line!(),
-//                     ::std::stringify!($val),
-//                     prepare_dbg(tmp, $tcx)
-//                 );
-//                 tmp
-//             }
-//         }
-//     };
-// }
+pub fn def_id_to_span(tcx: TyCtxt<'_>, id: DefId) -> Span {
+    tcx.def_ident_span(id).unwrap_or(DUMMY_SP)
+}
+
+fn bound_reg_to_span(tcx: TyCtxt<'_>, r: BoundRegionKind) -> Span {
+    match r {
+        BoundRegionKind::BrAnon(span) => span.unwrap_or(DUMMY_SP),
+        BoundRegionKind::BrNamed(x, _) => def_id_to_span(tcx, x),
+        BoundRegionKind::BrEnv => DUMMY_SP,
+    }
+}
+
+pub fn reg_to_span<'tcx>(tcx: TyCtxt<'tcx>, r: Region<'tcx>) -> Span {
+    match r.kind() {
+        RegionKind::ReEarlyBound(x) => def_id_to_span(tcx, x.def_id),
+        RegionKind::ReLateBound(_, x) => bound_reg_to_span(tcx, x.kind),
+        RegionKind::ReFree(x) => bound_reg_to_span(tcx, x.bound_region),
+        RegionKind::RePlaceholder(x) => bound_reg_to_span(tcx, x.bound.kind),
+        _ => DUMMY_SP,
+    }
+}
 
 fn home_sig(ctx: CtxRef<'_, '_>, def_id: DefId) -> CreusotResult<Option<HomeSig>> {
     let home_sig = util::get_attr_lit(ctx.tcx, def_id, &["creusot", "prusti", "home_sig"]);
@@ -405,7 +402,7 @@ pub(crate) fn check_call<'tcx>(
     let home_sig = home_sig(ctx, def_id)?;
     let (home_sig_args, home_sig_bounds) = match &home_sig {
         Some(home_sig) => (Either::Left(home_sig.args()), Either::Left(home_sig.bounds())),
-        None => (Either::Right(iter::repeat(ctx.curr_home())), Either::Right(iter::empty())),
+        None => (Either::Right(iter::repeat(ctx.now_sym)), Either::Right(iter::empty())),
     };
 
     let mut var_info = generalize(ctx, subst_ref, def_id, |s| {
@@ -430,7 +427,7 @@ pub(crate) fn check_call<'tcx>(
 
     for (arg, home_sig_arg) in args.iter_mut().zip(home_sig_args) {
         let ((from_state, ty), span) = arg;
-        if home_sig_arg == ctx.curr_sym {
+        if home_sig_arg == ctx.now_sym {
             *ty = check_move_state(*from_state, state, ctx, *ty, *span)?;
         } else {
             match constrained_homes.insert(home_sig_arg, *from_state) {
@@ -444,7 +441,7 @@ pub(crate) fn check_call<'tcx>(
             }
         }
     }
-    constrained_homes.insert(ctx.curr_sym, state); // 'curr is always constrained to the current state
+    constrained_homes.insert(ctx.now_sym, state); // 'curr is always constrained to the current state
 
     // check explicit constraints
     for Outlives { long, short } in home_sig_bounds {
@@ -652,7 +649,7 @@ pub(crate) fn check_move_state<'tcx>(
         let (rty, is_zombie) = ty.mk_zombie(ctx);
         if is_zombie && !ty.ty.is_mutable_ptr() {
             let rty = prepare_display(rty, ctx);
-            let msg = format!("`{dty}` cannot be moved from `{d_from_ts}` to `{d_to_ts}` without becoming a zombie `{rty}");
+            let msg = format!("`{dty}` cannot be moved from `{d_from_ts}` to `{d_to_ts}` without becoming a zombie `{rty}`");
             ctx.lint(&PRUSTI_ZOMBIE, span, msg)
         }
         Ok(rty)

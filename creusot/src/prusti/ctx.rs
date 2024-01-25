@@ -1,13 +1,13 @@
 use crate::error::{CreusotResult, Error};
 
-use super::{parsing::Home, region_set::*};
+use super::region_set::*;
 use crate::prusti::{
     fn_sig_binder::FnSigBinder,
     parsing::Outlives,
-    typeck::normalize,
+    typeck::{normalize, reg_to_span},
     types::{display_state, prepare_display, Ty},
     util::name_to_def_id,
-    variance::regions_of_fn,
+    variance::{regions_in_arg, regions_of_fn},
     zombie::{fixing_replace, ZombieDefIds},
 };
 use rustc_index::{bit_set::BitSet, Idx, IndexVec};
@@ -19,7 +19,7 @@ use rustc_middle::{
 };
 use rustc_span::{
     def_id::{DefId, LocalDefId, CRATE_DEF_ID},
-    Span, Symbol,
+    Span, Symbol, DUMMY_SP,
 };
 use std::{
     fmt::{Debug, Formatter},
@@ -27,12 +27,15 @@ use std::{
     ops::Deref,
 };
 
-const CURR_STR: &str = "'curr";
-const OLD_STR: &str = "'old";
+const POST_STR: &str = "'post";
+const PRE_STR: &str = "'pre";
+const NOW_STR: &str = "'now";
 
-pub(crate) const OLD_STATE: State = State(0);
-pub(crate) const STATIC_STATE: State = State(1);
-pub(crate) const CURR_STATE: State = State(2);
+pub(super) const PRE_STATE: State = State(2);
+pub(super) const STATIC_STATE: State = State(0);
+
+pub(super) const POST_STATE: State = State(1);
+pub(super) const NOW_STATE: State = State(1);
 
 #[derive(Debug)]
 enum FnType {
@@ -42,7 +45,12 @@ enum FnType {
 
 pub(crate) struct InternedInfo<'tcx> {
     pub tcx: TyCtxt<'tcx>,
-    pub curr_sym: Symbol,
+    pub pre_sym: Symbol,
+    pub post_sym: Symbol,
+    pub now_sym: Symbol,
+    pub pre_display_reg: Region<'tcx>,
+    pub post_display_reg: Region<'tcx>,
+    pub now_display_reg: Region<'tcx>,
     pub zombie_info: ZombieDefIds,
     pub(super) plain_def_id: DefId,
 }
@@ -122,9 +130,16 @@ fn ty_regions<'tcx>(ty: ty::Ty<'tcx>) -> impl Iterator<Item = Region<'tcx>> {
 
 impl<'tcx> InternedInfo<'tcx> {
     pub(crate) fn new(tcx: TyCtxt<'tcx>) -> Self {
+        let syms = [PRE_STR, POST_STR, NOW_STR].map(Symbol::intern);
+        let regions = syms.map(|x| dummy_region(tcx, x));
         Self {
             tcx,
-            curr_sym: Symbol::intern(CURR_STR),
+            pre_sym: syms[0],
+            post_sym: syms[1],
+            now_sym: syms[2],
+            pre_display_reg: regions[0],
+            post_display_reg: regions[1],
+            now_display_reg: regions[2],
             zombie_info: ZombieDefIds::new(tcx),
             plain_def_id: name_to_def_id(tcx, "prusti_plain"),
         }
@@ -136,14 +151,6 @@ impl<'tcx> InternedInfo<'tcx> {
 
     pub(crate) fn state_to_reg(&self, state: State) -> Region<'tcx> {
         self.mk_region(StateSet::singleton(state))
-    }
-
-    pub(crate) fn old_state(&self) -> State {
-        OLD_STATE
-    }
-
-    pub(crate) fn curr_state(&self) -> State {
-        CURR_STATE
     }
 
     pub(super) fn static_region(&self) -> Region<'tcx> {
@@ -166,48 +173,50 @@ impl<'a, 'tcx> BaseCtx<'a, 'tcx> {
         self.tcx.struct_span_lint_hir(lint, hir_id, span, msg.into(), |x| x)
     }
 
-    fn try_home_to_state(&self, s: Symbol) -> Option<State> {
-        if s == self.curr_sym {
-            return Some(self.curr_state());
-        }
-        for (idx, reg) in self.base_states.iter_enumerated() {
-            if Some(s) == reg.get_name() {
-                return Some(idx);
-            }
-        }
-        None
-    }
-
-    fn new(interned: &'a InternedInfo<'tcx>, sig: FnSigBinder<'tcx>) -> Self {
+    fn new(
+        interned: &'a InternedInfo<'tcx>,
+        sig: FnSigBinder<'tcx>,
+        logic: bool,
+    ) -> CreusotResult<Self> {
+        let (base_states, fn_type) = if logic {
+            (
+                IndexVec::from_iter([interned.tcx.lifetimes.re_static, interned.now_display_reg]),
+                FnType::Logic { valid_states: StateSet::EMPTY },
+            )
+        } else {
+            (
+                IndexVec::from_iter([
+                    interned.tcx.lifetimes.re_static,
+                    interned.post_display_reg,
+                    interned.pre_display_reg,
+                ]),
+                FnType::Program,
+            )
+        };
         let tcx = interned.tcx;
-        let mut curr_region = dummy_region(tcx, interned.curr_sym);
-        let old_region = dummy_region(tcx, Symbol::intern(OLD_STR));
-        let mut base_states: IndexVec<_, _> =
-            [old_region, tcx.lifetimes.re_static, curr_region].into_iter().collect();
-        // Add all regions (if any of them are 'curr replace the curr_region instead
-        let rs = regions_of_fn(tcx, sig);
-        let curr_sym = interned.curr_sym;
-        base_states.extend(rs.filter_map(|x| {
-            if x.get_name() == Some(curr_sym) {
-                curr_region = x;
-                None
-            } else {
-                Some(x)
-            }
-        }));
-        base_states[CURR_STATE] = curr_region;
         let base = sig.param_env();
         let fixed = fixing_replace(interned, |r| r, base);
         let erased = tcx.erase_regions(fixed);
         let snap_eq_vars = interned.zombie_info.find_snap_eq_vars(erased, sig.subst().len());
-        BaseCtx {
+        let mut res = BaseCtx {
             interned,
             base_states,
             owner_id: sig.def_id(),
-            fn_type: FnType::Logic { valid_states: StateSet::EMPTY },
+            fn_type,
             param_env: erased,
             snap_eq_vars,
+        };
+        // Add all regions (if any of them are 'curr replace the curr_region instead
+        let rs = regions_of_fn(tcx, sig);
+        for r in rs {
+            let span = reg_to_span(tcx, r);
+            if let Some(s) = res.builtin_state(r.get_name_or_anon(), span)? {
+                res.base_states[s] = r;
+            } else {
+                res.base_states.push(r);
+            }
         }
+        Ok(res)
     }
 
     fn make_relation(&self, iter: impl Iterator<Item = (State, State)>) -> RegionRelation {
@@ -224,19 +233,80 @@ impl<'a, 'tcx> BaseCtx<'a, 'tcx> {
     fn is_logic(&self) -> bool {
         matches!(self.fn_type, FnType::Logic { .. })
     }
+
+    pub(crate) fn pre_state(&self, span: Span) -> CreusotResult<State> {
+        if self.is_logic() {
+            Err(Error::new(
+                span,
+                format!("{PRE_STR} can only be used in specifications of program functions"),
+            ))
+        } else {
+            Ok(PRE_STATE)
+        }
+    }
+
+    pub(crate) fn post_state(&self, span: Span) -> CreusotResult<State> {
+        if self.is_logic() {
+            Err(Error::new(
+                span,
+                format!("{POST_STR} can only be used in specifications of program functions"),
+            ))
+        } else {
+            Ok(POST_STATE)
+        }
+    }
+
+    pub(crate) fn now_state(&self, span: Span) -> CreusotResult<State> {
+        if self.is_logic() {
+            Ok(NOW_STATE)
+        } else {
+            Err(Error::new(
+                span,
+                format!("{NOW_STR} can not be used in specifications of program functions"),
+            ))
+        }
+    }
+
+    pub(crate) fn builtin_state(&self, s: Symbol, span: Span) -> CreusotResult<Option<State>> {
+        if s == self.now_sym {
+            Ok(Some(self.now_state(span)?))
+        } else if s == self.pre_sym {
+            Ok(Some(self.pre_state(span)?))
+        } else if s == self.post_sym {
+            Ok(Some(self.post_state(span)?))
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 impl<'a, 'tcx> PreCtx<'a, 'tcx> {
-    pub(super) fn new(interned: &'a InternedInfo<'tcx>, sig: FnSigBinder<'tcx>) -> Self {
-        PreCtx { base: BaseCtx::new(interned, sig) }
+    pub(super) fn new(
+        interned: &'a InternedInfo<'tcx>,
+        sig: FnSigBinder<'tcx>,
+    ) -> CreusotResult<Self> {
+        Ok(PreCtx { base: BaseCtx::new(interned, sig, true)? })
     }
 
-    pub(super) fn home_to_state(&mut self, s: Symbol) -> State {
-        if let Some(x) = self.try_home_to_state(s) {
-            return x;
+    fn try_home_to_state(&self, s: Symbol, span: Span) -> CreusotResult<Option<State>> {
+        if let Some(s) = self.builtin_state(s, span)? {
+            return Ok(Some(s));
+        }
+
+        for (idx, reg) in self.base_states.iter_enumerated() {
+            if Some(s) == reg.get_name() {
+                return Ok(Some(idx));
+            }
+        }
+        Ok(None)
+    }
+
+    pub(super) fn home_to_state(&mut self, s: Symbol, span: Span) -> CreusotResult<State> {
+        if let Some(x) = self.try_home_to_state(s, span)? {
+            return Ok(x);
         }
         // homes that are not declared
-        self.base.base_states.push(dummy_region(self.tcx, s))
+        Ok(self.base.base_states.push(dummy_region(self.tcx, s)))
     }
 
     /// Fixes an external region by converting it into a singleton set
@@ -257,7 +327,7 @@ impl<'a, 'tcx> PreCtx<'a, 'tcx> {
         iter: impl Iterator<Item = (State, Ty<'tcx>)>,
         bounds: impl Iterator<Item = Outlives>,
     ) -> Ctx<'a, 'tcx> {
-        let mut valid_states = StateSet::singleton(CURR_STATE.into());
+        let mut valid_states = StateSet::singleton(NOW_STATE.into());
         let reg_to_idx = |r| StateSet::from(r).try_into_singleton().unwrap();
         let iter = iter
             .flat_map(|(state, ty)| {
@@ -265,8 +335,8 @@ impl<'a, 'tcx> PreCtx<'a, 'tcx> {
                 ty_regions(ty.ty).into_iter().map(move |r| (reg_to_idx(r), state))
             })
             .chain(bounds.filter_map(|b| {
-                let long = self.try_home_to_state(b.long)?;
-                let short = self.try_home_to_state(b.short)?;
+                let long = self.try_home_to_state(b.long, DUMMY_SP).ok().flatten()?;
+                let short = self.try_home_to_state(b.short, DUMMY_SP).ok().flatten()?;
                 Some((long, short))
             }));
         let relation = self.base.make_relation(iter);
@@ -281,46 +351,49 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
         sig: FnSigBinder<'tcx>,
     ) -> CreusotResult<Self> {
         let tcx = interned.tcx;
-        let mut res = BaseCtx::new(interned, sig);
-        res.fn_type = FnType::Program;
+        let res = BaseCtx::new(interned, sig, false)?;
         let constraints = super::variance::constraints_of_fn(tcx, sig);
+
+        if regions_in_arg(sig.ty(tcx)).any(|x| x.get_name() == Some(interned.pre_sym)) {
+            return Err(Error::new(
+                tcx.def_ident_span(sig.def_id()).unwrap(),
+                format!("{PRE_STR} region must not appear in program function signature types"),
+            ));
+        }
 
         let mut failed = false;
         let reg_to_idx = |r| index_of(&res.base_states, &r);
         let mut assert_not_curr = |r: Region<'tcx>| {
-            if r.get_name() == Some(res.curr_sym) {
+            if r.get_name() == Some(res.post_sym) {
                 failed = true;
             };
             r
         };
         let constraints = constraints
             .map(|c| match c {
-                Constraint::VarSubReg(_, r1) => (reg_to_idx(assert_not_curr(r1)), CURR_STATE),
+                Constraint::VarSubReg(_, r1) => (reg_to_idx(assert_not_curr(r1)), POST_STATE),
                 Constraint::RegSubReg(r2, r1) => (reg_to_idx(assert_not_curr(r1)), reg_to_idx(r2)),
-                _ => (CURR_STATE, CURR_STATE),
+                _ => (POST_STATE, POST_STATE),
             })
-            .chain(iter::once((CURR_STATE, OLD_STATE)));
+            .chain(iter::once((POST_STATE, PRE_STATE)));
         let relation = res.make_relation(constraints);
         if failed {
             return Err(Error::new(
                 tcx.def_ident_span(sig.def_id()).unwrap(),
-                format!("{CURR_STR} region must not be blocked"),
+                format!("{POST_STR} region must not be blocked"),
             ));
         }
         Ok(Ctx { base: res, relation })
     }
 
-    pub(super) fn curr_home(&self) -> Home {
-        self.curr_sym.into()
-    }
-
     pub(super) fn normalize_state(&self, s: State) -> State {
         let res = StateSet::singleton(s);
-        if self.relation.outlives_state(res, CURR_STATE.into()) || self.is_logic() {
+        if self.is_logic() || self.relation.outlives_state(res, POST_STATE.into()) || s == PRE_STATE
+        {
             s
         } else {
             // s was not blocked
-            self.curr_state()
+            POST_STATE
         }
     }
 

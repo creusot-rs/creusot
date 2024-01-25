@@ -7,19 +7,24 @@ use rustc_infer::{
 use rustc_middle::{
     traits::ObligationCause,
     ty::{
-        walk::TypeWalker, Binder, BoundVariableKind, ClauseKind, GenericPredicates, ParamEnv,
-        PredicateKind, Region, TyCtxt,
+        walk::TypeWalker, Binder, BoundVariableKind, ClauseKind, GenericArg, GenericPredicates,
+        ParamEnv, PredicateKind, Region, TyCtxt,
     },
 };
 use rustc_trait_selection::traits::ObligationCtxt;
+
+pub(super) fn regions_in_arg<'tcx>(
+    arg: impl Into<GenericArg<'tcx>>,
+) -> impl Iterator<Item = Region<'tcx>> {
+    TypeWalker::new(arg.into()).filter_map(|x| x.as_region())
+}
 
 /// Returns a set of all regions in a function and an iterator over there constraints
 pub(super) fn regions_of_fn<'tcx>(
     tcx: TyCtxt<'tcx>,
     sig: FnSigBinder<'tcx>,
 ) -> impl Iterator<Item = Region<'tcx>> {
-    let eb_regions =
-        sig.subst().iter().flat_map(|x| TypeWalker::new(x).filter_map(|x| x.as_region()));
+    let eb_regions = sig.subst().iter().flat_map(regions_in_arg);
     let lb_regions = sig.sig().bound_vars().iter().filter_map(move |x| match x {
         BoundVariableKind::Region(r) => Some(Region::new_free(tcx, sig.def_id().to_def_id(), r)),
         _ => None,
@@ -36,8 +41,7 @@ pub(super) fn constraints_of_fn<'tcx>(
 ) -> impl Iterator<Item = Constraint<'tcx>> {
     let infcx = tcx.infer_ctxt().build();
 
-    let fn_sig = tcx.liberate_late_bound_regions(sig.def_id().to_def_id(), sig.sig());
-    let fn_ty = tcx.mk_fn_ptr(Binder::dummy(fn_sig));
+    let fn_ty = sig.ty(tcx);
 
     // Try to call this function in a hypothetical context with the same types but where all the regions are generalized
 

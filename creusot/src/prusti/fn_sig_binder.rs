@@ -1,4 +1,4 @@
-use rustc_middle::ty::{Binder, FnSig, InternalSubsts, ParamEnv, SubstsRef, TyCtxt};
+use rustc_middle::ty::{Binder, FnSig, InternalSubsts, ParamEnv, SubstsRef, Ty, TyCtxt};
 use rustc_span::def_id::{DefId, LocalDefId};
 
 #[derive(Copy, Clone, Debug)]
@@ -45,5 +45,10 @@ impl<'tcx> FnSigBinder<'tcx> {
 
     pub(super) fn param_env(self) -> ParamEnv<'tcx> {
         self.param_env
+    }
+
+    pub(super) fn ty(self, tcx: TyCtxt<'tcx>) -> Ty<'tcx> {
+        let fn_sig = tcx.liberate_late_bound_regions(self.def_id().to_def_id(), self.sig());
+        tcx.mk_fn_ptr(Binder::dummy(fn_sig))
     }
 }

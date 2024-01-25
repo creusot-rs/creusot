@@ -10,7 +10,7 @@ struct MyStruct;
 
 impl MyTrait for MyStruct {
     #[logic]
-    fn test<'curr, Y>(x: &'curr mut Y) -> &'curr mut Y {
+    fn test<'now, Y>(x: &'now mut Y) -> &'now mut Y {
         x
     }
 }

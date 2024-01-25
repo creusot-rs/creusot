@@ -1,13 +1,15 @@
 use base_macros::*;
 
+/// Equivalent to `at::<'post>`
 #[ghost] // avoid triggering error since this is prusti specific
 #[open]
 #[creusot::no_translate]
-#[rustc_diagnostic_item = "prusti_curr"]
-pub fn curr<T>(_: T) -> T {
+#[rustc_diagnostic_item = "prusti_at_post"]
+pub fn at_post<T>(_: T) -> T {
     absurd
 }
 
+/// Evaluate an expression at a specific state eg `at::<'state>(exp)`
 #[ghost] // avoid triggering error since this is prusti specific
 #[open]
 #[creusot::no_translate]
@@ -16,12 +18,15 @@ pub fn at<'a: 'a, T>(_: T) -> T {
     absurd
 }
 
+/// Types that do not depend on the program state (e.g. the heap) for validity
 #[trusted]
 #[rustc_diagnostic_item = "prusti_plain"]
 pub trait Plain: Copy {}
 
-#[rustc_diagnostic_item = "prusti_snap_eq"]
 /// Trait representing types that can be checked for equality when using Prusti contracts
+/// It should be thought of as an auto trait that is implemented for all runtime types
+/// but not for [`Zombie`]
+#[rustc_diagnostic_item = "prusti_snap_eq"]
 pub trait SnapEq {}
 
 impl<X> SnapEq for X {}
@@ -62,8 +67,10 @@ macro_rules! tuple_impl_all_plain {
 
 tuple_impl_all_plain! {A B C D E F G H I J K L}
 
+/// Data that would have been a valid `T` in an earlier state but may not be anymore.
+/// Inside Prusti a type will automatically be cast to a `Zombie` if it moved to a state where it is no longer valid
 #[rustc_diagnostic_item = "prusti_zombie_internal"]
-pub struct Zombie<T>(core::marker::PhantomData<T>);
+struct Zombie<T>(core::marker::PhantomData<T>);
 
 impl<T> Copy for Zombie<T> {}
 

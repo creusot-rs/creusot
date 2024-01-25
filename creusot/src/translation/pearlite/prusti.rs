@@ -343,8 +343,8 @@ fn convert<'tcx>(
         TermKind::Call { args, fun, id, .. } => {
             let ty = convert_sdt(fun, tenv, state, ctx)?;
             let TyKind::FnDef(_, subst) = ty.ty.kind() else {unreachable!()};
-            let new_reg = if tcx.is_diagnostic_item(Symbol::intern("prusti_curr"), *id) {
-                Some(ctx.curr_state())
+            let new_reg = if tcx.is_diagnostic_item(Symbol::intern("prusti_at_post"), *id) {
+                Some(ctx.post_state(outer_term.span)?)
             } else if tcx.is_diagnostic_item(Symbol::intern("prusti_at"), *id) {
                 let r = subst.regions().next().unwrap();
                 let s = ctx.try_move_rstate(r, fun.span)?;
@@ -440,8 +440,9 @@ fn convert<'tcx>(
             res.unwrap()
         }
         TermKind::Old { term } => {
-            let res = convert_sdt(term, tenv, ctx.old_state(), ctx)?;
-            res_state = ctx.old_state();
+            let pre_state = ctx.pre_state(outer_term.span)?;
+            let res = convert_sdt(term, tenv, pre_state, ctx)?;
+            res_state = pre_state;
             res
         }
         TermKind::Closure { .. } => todo!(),

@@ -6,7 +6,7 @@ pub fn project_deref_bad<'a>(x: &u32, y: &'a u32) -> &'a u32 {
     y
 }
 
-#[logic('x where 'curr: 'x)]
+#[logic('x where 'now: 'x)]
 fn move_state<'x, T: Copy>(t: T) -> T {
     at::<'x>(t)
 }

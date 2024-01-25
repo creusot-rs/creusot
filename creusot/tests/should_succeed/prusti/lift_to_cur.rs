@@ -9,7 +9,7 @@ fn deref(x: &Box<u32>) -> u32 {
 
 #[open]
 #[logic('x)]
-pub fn in_logic2<'x, 'curr, T>(x: &'curr u32) -> &'curr u32 {
+pub fn in_logic2<'x, 'now, T>(x: &'now u32) -> &'now u32 {
     x
 }
 

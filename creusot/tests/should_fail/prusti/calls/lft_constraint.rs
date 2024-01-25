@@ -6,7 +6,7 @@ fn test<'a, 'b>(x: &'a u32, y: &'b u32) -> (&'a u32, &'b u32) {
     (x, y)
 }
 
-#[logic('curr where 'a: 'b)]
+#[logic('now where 'a: 'b)]
 fn strange_constraint<'a, 'b>(t: (&'a u32, &'b u32)) -> bool {
     true
 }
