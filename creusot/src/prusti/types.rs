@@ -93,7 +93,7 @@ impl<'tcx> Ty<'tcx> {
                 let adt: AdtDef = *adt;
                 let field_defs = &adt.variants()[variant].fields;
                 Either::Left(
-                    field_defs.iter().map(move |def| normalize(ctx, def.ty(ctx.tcx, *subst_ref))),
+                    field_defs.iter().map(move |def| normalize(ctx, def.ty(ctx.tcx, subst_ref))),
                 )
             }
             TyKind::Tuple(tup) => {
@@ -143,7 +143,7 @@ pub(super) fn make_region_for_display<'tcx>(
                 write!(f, "|{x}").unwrap();
             }
             write!(f, "}}").unwrap();
-            dummy_region(tcx, Symbol::intern(&*f))
+            dummy_region(tcx, Symbol::intern(&f))
         }
     }
 }
@@ -175,6 +175,6 @@ pub(crate) fn prepare_display<'a, 'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
     DisplayFoldable(t, &ctx.base)
 }
 
-pub(crate) fn display_state<'a, 'tcx>(t: State, ctx: CtxRef<'a, 'tcx>) -> impl Display + 'tcx {
+pub(crate) fn display_state<'tcx>(t: State, ctx: CtxRef<'_, 'tcx>) -> impl Display + 'tcx {
     ctx.base_states()[t]
 }

@@ -24,7 +24,7 @@ impl Idx for State {
 
 impl State {
     pub(super) fn range(n: usize) -> impl Iterator<Item = State> {
-        (0..n).map(|i| State::new(i))
+        (0..n).map(State::new)
     }
 }
 

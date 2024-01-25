@@ -13,11 +13,13 @@ pub struct BitVec {
     extra_len: u8,
 }
 
-impl BitVec {
-    pub fn new() -> Self {
+impl Default for BitVec {
+    fn default() -> Self {
         BitVec { data: SmallVec::new(), extra_len: BITS }
     }
+}
 
+impl BitVec {
     pub fn push(&mut self, b: bool) {
         if self.extra_len == BITS {
             self.data.push(0);

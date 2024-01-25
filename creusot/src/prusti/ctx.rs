@@ -68,7 +68,7 @@ impl<'a, 'tcx> Deref for BaseCtx<'a, 'tcx> {
     type Target = InternedInfo<'tcx>;
 
     fn deref(&self) -> &Self::Target {
-        &self.interned
+        self.interned
     }
 }
 
@@ -121,7 +121,7 @@ fn try_index_of<I: Idx, T: Eq>(s: &IndexVec<I, T>, x: &T) -> Option<I> {
 }
 
 fn index_of<I: Idx, T: Eq + Debug>(s: &IndexVec<I, T>, x: &T) -> I {
-    try_index_of(s, x).expect(&format!("{s:?} did not contain {x:?}"))
+    try_index_of(s, x).unwrap_or_else(|| panic!("{s:?} did not contain {x:?}"))
 }
 
 fn ty_regions<'tcx>(ty: ty::Ty<'tcx>) -> impl Iterator<Item = Region<'tcx>> {
@@ -319,7 +319,7 @@ impl<'a, 'tcx> PreCtx<'a, 'tcx> {
 
     pub(crate) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(&self, t: T) -> T {
         let t = fixing_replace(self.interned, |r| self.fix_region(r), t);
-        normalize(&*self, t)
+        normalize(self, t)
     }
 
     pub(super) fn finish_for_logic(
@@ -327,12 +327,12 @@ impl<'a, 'tcx> PreCtx<'a, 'tcx> {
         iter: impl Iterator<Item = (State, Ty<'tcx>)>,
         bounds: impl Iterator<Item = Outlives>,
     ) -> Ctx<'a, 'tcx> {
-        let mut valid_states = StateSet::singleton(NOW_STATE.into());
+        let mut valid_states = StateSet::singleton(NOW_STATE);
         let reg_to_idx = |r| StateSet::from(r).try_into_singleton().unwrap();
         let iter = iter
             .flat_map(|(state, ty)| {
                 valid_states = valid_states.union(StateSet::singleton(state));
-                ty_regions(ty.ty).into_iter().map(move |r| (reg_to_idx(r), state))
+                ty_regions(ty.ty).map(move |r| (reg_to_idx(r), state))
             })
             .chain(bounds.filter_map(|b| {
                 let long = self.try_home_to_state(b.long, DUMMY_SP).ok().flatten()?;
@@ -388,8 +388,7 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
 
     pub(super) fn normalize_state(&self, s: State) -> State {
         let res = StateSet::singleton(s);
-        if self.is_logic() || self.relation.outlives_state(res, POST_STATE.into()) || s == PRE_STATE
-        {
+        if self.is_logic() || self.relation.outlives_state(res, POST_STATE) || s == PRE_STATE {
             s
         } else {
             // s was not blocked
@@ -412,7 +411,7 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
         or: impl Fn() -> Region<'tcx>,
     ) -> T {
         let t = fixing_replace(self.interned, |r| self.fix_region(r, &or), t);
-        normalize(&*self, t)
+        normalize(self, t)
     }
 
     pub(crate) fn fix_ty(&self, ty: ty::Ty<'tcx>, or: impl Fn() -> Region<'tcx>) -> Ty<'tcx> {

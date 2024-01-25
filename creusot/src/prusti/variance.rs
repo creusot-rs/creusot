@@ -74,5 +74,5 @@ pub(super) fn constraints_of_fn<'tcx>(
     infcx.process_registered_region_obligations(&outlives);
 
     let constraints = infcx.take_and_reset_region_constraints();
-    constraints.constraints.into_iter().map(move |(x, _)| x)
+    constraints.constraints.into_keys()
 }

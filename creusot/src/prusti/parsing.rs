@@ -79,7 +79,7 @@ fn parse_lit(rest: &mut &str, lit: &str) -> Option<()> {
 
 fn parse_home(rest: &mut &str, mut handle_blank: impl FnMut() -> Option<Home>) -> Option<Home> {
     skip_space(rest);
-    let after = rest.strip_prefix("'")?;
+    let after = rest.strip_prefix('\'')?;
     let idx =
         after.find(|c: char| !(c.is_ascii_alphanumeric() || c == '_')).unwrap_or(after.len()) + 1;
     let home = match &rest[..idx] {

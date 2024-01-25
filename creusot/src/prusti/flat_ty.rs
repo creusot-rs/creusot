@@ -67,8 +67,8 @@ where
     }
 }
 
-fn state_zombie_visit<'a, 'tcx, Z: Copy, E, FS, FZ>(
-    ctx: CtxRef<'a, 'tcx>,
+fn state_zombie_visit<'tcx, Z: Copy, E, FS, FZ>(
+    ctx: CtxRef<'_, 'tcx>,
     ty: Ty<'tcx>,
     mut fs: FS,
     mut fz: FZ,
@@ -112,7 +112,7 @@ pub(super) fn into_ok<T>(r: Result<T, Infallible>) -> T {
 
 pub(super) fn flatten_ty<'tcx>(ctx: CtxRef<'_, 'tcx>, ty: Ty<'tcx>) -> FlatTy {
     let mut states = SmallVec::new();
-    let mut zombies = BitVec::new();
+    let mut zombies = BitVec::default();
     into_ok(state_zombie_visit(
         ctx,
         ty,
@@ -149,10 +149,10 @@ where
             let status1 = ZombieStatus::from_bit(zombies.get(zombie_count));
             zombies.set(zombie_count, fz(in_zombie, status1, status)?.into_bit());
             zombie_count += 1;
-            let in_zombie = match (in_zombie, status1, status) {
-                (false, ZombieStatus::NonZombie, ZombieStatus::NonZombie) => false,
-                _ => true,
-            };
+            let in_zombie = !matches!(
+                (in_zombie, status1, status),
+                (false, ZombieStatus::NonZombie, ZombieStatus::NonZombie)
+            );
             Ok(in_zombie)
         },
         false,
@@ -183,8 +183,8 @@ pub(super) enum CheckSupError {
     StateMismatch { expected: StateSet, found: StateSet },
 }
 
-pub(super) fn check_sup<'a, 'tcx>(
-    ctx: CtxRef<'a, 'tcx>,
+pub(super) fn check_sup<'tcx>(
+    ctx: CtxRef<'_, 'tcx>,
     mut expected: FlatTy,
     actual: Ty<'tcx>,
 ) -> Result<(), CheckSupError> {

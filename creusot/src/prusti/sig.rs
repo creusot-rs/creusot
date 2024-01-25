@@ -28,7 +28,8 @@ fn make_state<'tcx>(l: &Lit, ctx: CtxRef<'_, 'tcx>) -> CreusotResult<State> {
         "old" => Ok(pre_region),
         "curr" => Ok(post_region),
         "'_" => {
-            let mut candiates = (&mut regions).filter(|(r, fix)| *r == None && *fix != post_region);
+            let mut candiates =
+                (&mut regions).filter(|(r, fix)| r.is_none() && *fix != post_region);
             match (candiates.next(), candiates.next()) {
                 (None, _) => Err(Error::new(l.span, "function has no blocked anonymous regions")),
                 (Some(_), Some(_)) => {
@@ -50,7 +51,7 @@ fn make_state<'tcx>(l: &Lit, ctx: CtxRef<'_, 'tcx>) -> CreusotResult<State> {
 }
 
 /// Returns region corresponding to `l` in a logical context
-fn make_state_logic<'a, 'tcx>(l: &Lit, ctx: &mut PreCtx<'a, 'tcx>) -> CreusotResult<State> {
+fn make_state_logic<'tcx>(l: &Lit, ctx: &mut PreCtx<'_, 'tcx>) -> CreusotResult<State> {
     let now_state = ctx.now_state(DUMMY_SP).unwrap();
     let sym = l.as_token_lit().symbol;
     match sym.as_str() {

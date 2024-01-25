@@ -182,7 +182,7 @@ impl RegVarInfo {
         ctx.mk_region(ss)
     }
 
-    fn get_exact_stateset<'tcx>(&self, vid: RegionVid) -> Option<StateSet> {
+    fn get_exact_stateset(&self, vid: RegionVid) -> Option<StateSet> {
         match self.0[vid] {
             ReVarStatus::Bound(_) => None,
             ReVarStatus::Exact(ss) => Some(ss),
@@ -501,7 +501,7 @@ pub(crate) fn check_constructor<'tcx>(
     fields
         .zip(fields_gen)
         .try_for_each(|((ty, span), ty_gen)| check_gen(ctx, span, ty, ty_gen, &mut var_info))?;
-    Ok(var_info.fold_ty(tcx.mk_adt(adt, var_info.subst), ctx, span)?)
+    var_info.fold_ty(tcx.mk_adt(adt, var_info.subst), ctx, span)
 }
 
 pub(crate) fn check_tuple_constructor<'tcx>(
@@ -510,7 +510,7 @@ pub(crate) fn check_tuple_constructor<'tcx>(
 ) -> CreusotResult<Ty<'tcx>> {
     let tcx = ctx.tcx;
     let fields = fields.map(|x| Ok(x?.0.ty)).collect::<CreusotResult<SmallVec<_>>>()?;
-    Ok(Ty { ty: tcx.mk_tup(&*fields) }.pack(ZombieStatus::NonZombie, ctx))
+    Ok(Ty { ty: tcx.mk_tup(&fields) }.pack(ZombieStatus::NonZombie, ctx))
 }
 
 pub(crate) fn union<'tcx>(
@@ -561,7 +561,7 @@ pub(crate) fn try_resolve<'tcx>(
     subst: SubstsRef<'tcx>,
 ) -> (DefId, SubstsRef<'tcx>) {
     match Instance::resolve(ctx.tcx, ctx.param_env(), def_id, subst) {
-        Err(_) | Ok(None) => return (def_id, subst), // Can't specialize
+        Err(_) | Ok(None) => (def_id, subst), // Can't specialize
         Ok(Some(inst)) => (inst.def.def_id(), inst.substs),
     }
 }
@@ -650,7 +650,7 @@ pub(crate) fn check_move_state<'tcx>(
         if is_zombie && !ty.ty.is_mutable_ptr() {
             let rty = prepare_display(rty, ctx);
             let msg = format!("`{dty}` cannot be moved from `{d_from_ts}` to `{d_to_ts}` without becoming a zombie `{rty}`");
-            ctx.lint(&PRUSTI_ZOMBIE, span, msg)
+            ctx.lint(PRUSTI_ZOMBIE, span, msg)
         }
         Ok(rty)
     }
@@ -677,8 +677,8 @@ pub(crate) fn mut_deref<'tcx>(
                     Ok((Cur, nty))
                 }
                 (false, ZombieStatus::Zombie) => {
-                    let end = prepare_display(end, &ctx);
-                    let state = display_state(state, &ctx);
+                    let end = prepare_display(end, ctx);
+                    let state = display_state(state, ctx);
                     Err(Error::new(span, format!("invalid mut dereference of zombie expression with lifetime `{end}` in state `{state}`")))
                 }
             }
@@ -703,8 +703,8 @@ pub(crate) fn shr_deref<'tcx>(
     if ctx.relation.outlives_state(end.into(), state) {
         Ok((nty, end))
     } else {
-        let end = prepare_display(end, &ctx);
-        let ts = display_state(state, &ctx);
+        let end = prepare_display(end, ctx);
+        let ts = display_state(state, ctx);
         span_bug!(span, "invalid shr reference with lifetime `{end}` existed in state `{ts}`");
     }
 }
@@ -723,7 +723,7 @@ pub(crate) fn box_deref<'tcx>(
             _ => span_bug!(span, "bug"),
         },
         (ZombieStatus::Zombie, _) => {
-            Err(Error::new(span, format!("invalid box dereference of zombie expression")))
+            Err(Error::new(span, "invalid box dereference of zombie expression".to_string()))
         }
     }
 }
