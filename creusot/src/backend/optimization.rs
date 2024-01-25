@@ -5,12 +5,12 @@ use rustc_span::Symbol;
 use std::collections::HashSet;
 
 use crate::translation::{
-    fmir,
+    fmir::*,
     pearlite::{super_visit_term, Term, TermKind, TermVisitor},
 };
 
 pub(crate) struct LocalUsage<'a, 'tcx> {
-    locals: &'a fmir::LocalDecls<'tcx>,
+    locals: &'a LocalDecls<'tcx>,
     pub(crate) usages: HashMap<Symbol, Usage>,
 }
 
@@ -47,7 +47,7 @@ pub(crate) struct Usage {
     used_in_pure_ctx: bool,
 }
 
-pub(crate) fn gather_usage(b: &fmir::Body) -> HashMap<Symbol, Usage> {
+pub(crate) fn gather_usage(b: &Body) -> HashMap<Symbol, Usage> {
     let mut usage = LocalUsage { locals: &b.locals, usages: HashMap::new() };
 
     usage.visit_body(b);
@@ -55,19 +55,21 @@ pub(crate) fn gather_usage(b: &fmir::Body) -> HashMap<Symbol, Usage> {
 }
 
 impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
-    pub(crate) fn visit_body(&mut self, b: &fmir::Body<'tcx>) {
+    pub(crate) fn visit_body(&mut self, b: &Body<'tcx>) {
         b.blocks.values().for_each(|b| self.visit_block(b));
     }
 
-    fn visit_block(&mut self, b: &fmir::Block<'tcx>) {
+    fn visit_block(&mut self, b: &Block<'tcx>) {
+        b.invariants.iter().for_each(|t| self.visit_term(t));
+        b.variant.iter().for_each(|t| self.visit_term(t));
         b.stmts.iter().for_each(|s| self.visit_statement(s));
         self.visit_terminator(&b.terminator);
     }
 
-    fn visit_terminator(&mut self, t: &fmir::Terminator<'tcx>) {
+    fn visit_terminator(&mut self, t: &Terminator<'tcx>) {
         match t {
-            fmir::Terminator::Switch(e, _) => self.visit_expr(e),
-            fmir::Terminator::Return => {
+            Terminator::Switch(e, _) => self.visit_expr(e),
+            Terminator::Return => {
                 self.read(Symbol::intern("_0"), true);
                 self.read(Symbol::intern("_0"), true);
             }
@@ -75,65 +77,63 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
         }
     }
 
-    fn visit_statement(&mut self, b: &fmir::Statement<'tcx>) {
+    fn visit_statement(&mut self, b: &Statement<'tcx>) {
         match b {
-            fmir::Statement::Assignment(p, r) => {
+            Statement::Assignment(p, r, _) => {
                 self.write_place(p);
                 self.visit_rvalue(r)
             }
-            fmir::Statement::Resolve(_, _, p) => {
+            Statement::Resolve(_, _, p) => {
                 self.read_place(p);
                 self.read_place(p)
             }
-            fmir::Statement::Assertion { cond, msg: _ } => {
+            Statement::Assertion { cond, msg: _ } => {
                 // Make assertions stop propagation because it would require Expr -> Term translation
                 self.visit_term(cond);
                 self.visit_term(cond);
             }
-            fmir::Statement::Invariant(t) => self.visit_term(t),
-            fmir::Statement::Variant(t) => self.visit_term(t),
-            fmir::Statement::AssumeTyInv(_, p) => self.read_place(p),
-            fmir::Statement::AssertTyInv(_, p) => self.read_place(p),
+            Statement::AssumeBorrowInv(p) => self.read_place(p),
+            Statement::AssertTyInv(p) => self.read_place(p),
         }
     }
 
-    fn visit_rvalue(&mut self, r: &fmir::RValue<'tcx>) {
+    fn visit_rvalue(&mut self, r: &RValue<'tcx>) {
         match r {
-            fmir::RValue::Ghost(t) => self.visit_term(t),
-            fmir::RValue::Borrow(p) => {
+            RValue::Ghost(t) => self.visit_term(t),
+            RValue::Borrow(p) => {
                 self.read_place(p);
                 self.read_place(p)
             }
-            fmir::RValue::Expr(e) => self.visit_expr(e),
+            RValue::Expr(e) => self.visit_expr(e),
         }
     }
 
     // fn visit_term(&mut self, t: &Term<'tcx>) {}
 
-    fn visit_expr(&mut self, e: &fmir::Expr<'tcx>) {
+    fn visit_expr(&mut self, e: &Expr<'tcx>) {
         match &e.kind {
-            fmir::ExprKind::Move(p) => self.read_place(p),
-            fmir::ExprKind::Copy(p) => self.read_place(p),
-            fmir::ExprKind::BinOp(_, _, l, r) => {
+            ExprKind::Move(p) => self.read_place(p),
+            ExprKind::Copy(p) => self.read_place(p),
+            ExprKind::BinOp(_, l, r) => {
                 self.visit_expr(l);
                 self.visit_expr(r)
             }
-            fmir::ExprKind::UnaryOp(_, _, e) => self.visit_expr(e),
-            fmir::ExprKind::Constructor(_, _, es) => es.iter().for_each(|e| self.visit_expr(e)),
-            fmir::ExprKind::Call(_, _, es) => es.iter().for_each(|e| self.visit_expr(e)),
-            fmir::ExprKind::Constant(t) => self.visit_term(t),
-            fmir::ExprKind::Cast(e, _, _) => self.visit_expr(e),
-            fmir::ExprKind::Tuple(es) => es.iter().for_each(|e| self.visit_expr(e)),
-            fmir::ExprKind::Len(e) => self.visit_expr(e),
-            fmir::ExprKind::Array(es) => es.iter().for_each(|e| self.visit_expr(e)),
-            fmir::ExprKind::Repeat(l, r) => {
+            ExprKind::UnaryOp(_, e) => self.visit_expr(e),
+            ExprKind::Constructor(_, _, es) => es.iter().for_each(|e| self.visit_expr(e)),
+            ExprKind::Call(_, _, es) => es.iter().for_each(|e| self.visit_expr(e)),
+            ExprKind::Constant(t) => self.visit_term(t),
+            ExprKind::Cast(e, _, _) => self.visit_expr(e),
+            ExprKind::Tuple(es) => es.iter().for_each(|e| self.visit_expr(e)),
+            ExprKind::Len(e) => self.visit_expr(e),
+            ExprKind::Array(es) => es.iter().for_each(|e| self.visit_expr(e)),
+            ExprKind::Repeat(l, r) => {
                 self.visit_expr(l);
                 self.visit_expr(r)
             }
         }
     }
 
-    fn read_place(&mut self, p: &fmir::Place<'tcx>) {
+    fn read_place(&mut self, p: &Place<'tcx>) {
         self.read(p.local, p.projection.is_empty());
         p.projection.iter().for_each(|p| match p {
             mir::ProjectionElem::Index(l) => self.read(*l, true),
@@ -141,7 +141,7 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
         })
     }
 
-    fn write_place(&mut self, p: &fmir::Place<'tcx>) {
+    fn write_place(&mut self, p: &Place<'tcx>) {
         self.write(p.local, p.projection.is_empty());
         p.projection.iter().for_each(|p| match p {
             mir::ProjectionElem::Index(l) => self.read(*l, true),
@@ -194,15 +194,15 @@ impl<'a, 'tcx> TermVisitor<'tcx> for LocalUsage<'a, 'tcx> {
 
 struct SimplePropagator<'tcx> {
     usage: HashMap<Symbol, Usage>,
-    prop: HashMap<Symbol, fmir::Expr<'tcx>>,
+    prop: HashMap<Symbol, Expr<'tcx>>,
     dead: HashSet<Symbol>,
 }
 
-pub(crate) fn simplify_fmir<'tcx>(usage: HashMap<Symbol, Usage>, body: &mut fmir::Body) {
+pub(crate) fn simplify_fmir<'tcx>(usage: HashMap<Symbol, Usage>, body: &mut Body) {
     SimplePropagator { usage, prop: HashMap::new(), dead: HashSet::new() }.visit_body(body);
 }
 impl<'tcx> SimplePropagator<'tcx> {
-    fn visit_body(&mut self, b: &mut fmir::Body<'tcx>) {
+    fn visit_body(&mut self, b: &mut Body<'tcx>) {
         for b in b.blocks.values_mut() {
             self.visit_block(b)
         }
@@ -212,22 +212,22 @@ impl<'tcx> SimplePropagator<'tcx> {
         assert!(self.prop.is_empty(), "some values were not properly propagated {:?}", self.prop)
     }
 
-    fn visit_block(&mut self, b: &mut fmir::Block<'tcx>) {
+    fn visit_block(&mut self, b: &mut Block<'tcx>) {
         let mut out_stmts = Vec::with_capacity(b.stmts.len());
 
         for mut s in std::mem::take(&mut b.stmts) {
             self.visit_statement(&mut s);
             match s {
-                fmir::Statement::Assignment(l, fmir::RValue::Expr(r))
+                Statement::Assignment(l, RValue::Expr(r), _)
                     // we do not propagate calls to avoid moving them after the resolve of their arguments
                     if self.should_propagate(l.local) && !self.usage[&l.local].used_in_pure_ctx && !r.is_call() => {
                       self.prop.insert(l.local, r);
                       self.dead.insert(l.local);
                     }
-                fmir::Statement::Assignment(ref l, fmir::RValue::Expr(ref r)) if self.should_erase(l.local)  && !r.is_call() && r.is_pure() => {
+                Statement::Assignment(ref l, RValue::Expr(ref r), _) if self.should_erase(l.local)  && !r.is_call() && r.is_pure() => {
                       self.dead.insert(l.local);
                 }
-                fmir::Statement::Resolve(_,_, ref p) => {
+                Statement::Resolve(_,_, ref p) => {
                   if let Some(l) = p.as_symbol() && self.dead.contains(&l) {
                   } else {
                     out_stmts.push(s)
@@ -239,59 +239,57 @@ impl<'tcx> SimplePropagator<'tcx> {
         b.stmts = out_stmts;
 
         match &mut b.terminator {
-            fmir::Terminator::Goto(_) => {}
-            fmir::Terminator::Switch(e, _) => self.visit_expr(e),
-            fmir::Terminator::Return => {}
-            fmir::Terminator::Abort => {}
+            Terminator::Goto(_) => {}
+            Terminator::Switch(e, _) => self.visit_expr(e),
+            Terminator::Return => {}
+            Terminator::Abort(_) => {}
         }
     }
 
-    fn visit_statement(&mut self, s: &mut fmir::Statement<'tcx>) {
+    fn visit_statement(&mut self, s: &mut Statement<'tcx>) {
         match s {
-            fmir::Statement::Assignment(_, r) => self.visit_rvalue(r),
-            fmir::Statement::Resolve(_, _, p) => {
+            Statement::Assignment(_, r, _) => self.visit_rvalue(r),
+            Statement::Resolve(_, _, p) => {
               if let Some(l) = p.as_symbol() && self.dead.contains(&l) {
 
               }
             }
-            fmir::Statement::Assertion { cond, msg: _ } => self.visit_term(cond),
-            fmir::Statement::Invariant(t) => self.visit_term(t),
-            fmir::Statement::Variant(t) => self.visit_term(t),
-            fmir::Statement::AssumeTyInv(_, _) => {},
-            fmir::Statement::AssertTyInv(_, _) => {},
+            Statement::Assertion { cond, msg: _ } => self.visit_term(cond),
+            Statement::AssumeBorrowInv(_) => {},
+            Statement::AssertTyInv( _) => {},
         }
     }
 
-    fn visit_rvalue(&mut self, r: &mut fmir::RValue<'tcx>) {
+    fn visit_rvalue(&mut self, r: &mut RValue<'tcx>) {
         match r {
-            fmir::RValue::Ghost(t) => self.visit_term(t),
-            fmir::RValue::Borrow(p) => {
+            RValue::Ghost(t) => self.visit_term(t),
+            RValue::Borrow(p) => {
                 assert!(self.prop.get(&p.local).is_none(), "Trying to propagate borrowed variable")
             }
-            fmir::RValue::Expr(e) => self.visit_expr(e),
+            RValue::Expr(e) => self.visit_expr(e),
         }
     }
 
-    fn visit_expr(&mut self, e: &mut fmir::Expr<'tcx>) {
+    fn visit_expr(&mut self, e: &mut Expr<'tcx>) {
         match &mut e.kind {
-            fmir::ExprKind::Move(p) | fmir::ExprKind::Copy(p) => {
+            ExprKind::Move(p) | ExprKind::Copy(p) => {
               if let Some(l) = p.as_symbol() && let Some(v) = self.prop.remove(&l) {
                 *e = v;
               }
             },
-            fmir::ExprKind::BinOp(_, _, l, r) => {
+            ExprKind::BinOp(_, l, r) => {
                 self.visit_expr(l);
                 self.visit_expr(r)
             }
-            fmir::ExprKind::UnaryOp(_, _, e) => self.visit_expr(e),
-            fmir::ExprKind::Constructor(_, _, es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
-            fmir::ExprKind::Call(_, _, es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
-            fmir::ExprKind::Constant(t) => self.visit_term(t),
-            fmir::ExprKind::Cast(e, _, _) => self.visit_expr(e),
-            fmir::ExprKind::Tuple(es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
-            fmir::ExprKind::Len(e) => self.visit_expr(e),
-            fmir::ExprKind::Array(es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
-            fmir::ExprKind::Repeat(l, r) => {
+            ExprKind::UnaryOp(_, e) => self.visit_expr(e),
+            ExprKind::Constructor(_, _, es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
+            ExprKind::Call(_, _, es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
+            ExprKind::Constant(t) => self.visit_term(t),
+            ExprKind::Cast(e, _, _) => self.visit_expr(e),
+            ExprKind::Tuple(es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
+            ExprKind::Len(e) => self.visit_expr(e),
+            ExprKind::Array(es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
+            ExprKind::Repeat(l, r) => {
                 self.visit_expr(l);
                 self.visit_expr(r)
             }

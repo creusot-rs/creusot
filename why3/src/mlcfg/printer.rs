@@ -46,8 +46,6 @@ pub trait Print {
     }
 }
 
-use itertools::*;
-
 // TODO: replace with functions
 macro_rules! parens {
     ($alloc:ident, $env:ident, $parent:ident, $child:ident) => {
@@ -648,7 +646,7 @@ impl Print for Exp {
                 .text("let ")
                 .append(pattern.pretty(alloc, env))
                 .append(" = ")
-                .append(parens!(alloc, env, self, arg))
+                .append(arg.pretty(alloc, env))
                 .append(" in ")
                 .append(body.pretty(alloc, env)),
             Exp::Var(v, _) => v.pretty(alloc, env),
@@ -659,16 +657,16 @@ impl Print for Exp {
                 .append(" with ")
                 .append(alloc.text(label))
                 .append(" = ")
-                .append(parens!(alloc, env, self, val))
+                .append(parens!(alloc, env, Precedence::Attr.next(), val))
                 .append(alloc.space())
                 .braces(),
             Exp::RecField { box record, label } => {
                 record.pretty(alloc, env).append(".").append(label)
             }
 
-            Exp::Tuple(args) => {
-                alloc.intersperse(args.iter().map(|a| a.pretty(alloc, env)), ", ").parens()
-            }
+            Exp::Tuple(args) => alloc
+                .intersperse(args.iter().map(|a| parens!(alloc, env, Precedence::Cast, a)), ", ")
+                .parens(),
 
             Exp::Constructor { ctor, args } => ctor.pretty(alloc, env).append(if args.is_empty() {
                 alloc.nil()
@@ -687,7 +685,9 @@ impl Print for Exp {
             Exp::UnaryOp(UnOp::Neg, box op) => {
                 alloc.text("- ").append(parens!(alloc, env, self, op))
             }
-            Exp::UnaryOp(UnOp::FloatNeg, box op) => alloc.text(".- ").append(op.pretty(alloc, env)),
+            Exp::UnaryOp(UnOp::FloatNeg, box op) => {
+                alloc.text(".- ").append(parens!(alloc, env, self, op))
+            }
             Exp::BinaryOp(op, box l, box r) => match self.associativity() {
                 Some(AssocDir::Left) => parens!(alloc, env, self, l),
                 Some(AssocDir::Right) | None => parens!(alloc, env, self.precedence().next(), l),
@@ -720,7 +720,7 @@ impl Print for Exp {
 
             Exp::Match(box scrut, brs) => alloc
                 .text("match ")
-                .append(scrut.pretty(alloc, env).parens())
+                .append(scrut.pretty(alloc, env))
                 .append(" with")
                 .append(alloc.hardline())
                 .append(
@@ -772,7 +772,7 @@ impl Print for Exp {
                 parens!(alloc, env, self, hyp).append(" -> ").append(parens!(alloc, env, self, exp))
             }
             Exp::Ascribe(e, t) => {
-                e.pretty(alloc, env).append(" : ").append(t.pretty(alloc, env)).group()
+                parens!(alloc, env, self, e).append(" : ").append(t.pretty(alloc, env)).group()
             }
             Exp::Pure(e) => alloc.text("pure ").append(e.pretty(alloc, env).braces()),
             Exp::Ghost(e) => {
@@ -782,9 +782,14 @@ impl Print for Exp {
             Exp::Old(e) => alloc.text("old").append(e.pretty(alloc, env).parens()),
             Exp::Record { fields } => alloc
                 .intersperse(
-                    fields
-                        .iter()
-                        .map(|(nm, a)| alloc.text(nm).append(" = ").append(a.pretty(alloc, env))),
+                    fields.iter().map(|(nm, a)| {
+                        alloc.text(nm).append(" = ").append(parens!(
+                            alloc,
+                            env,
+                            Precedence::Attr.next(),
+                            a
+                        ))
+                    }),
                     "; ",
                 )
                 .braces(),
@@ -825,6 +830,20 @@ impl Print for Binder {
     }
 }
 
+fn pretty_attr<'b, 'a: 'b, A: DocAllocator<'a>>(
+    attr: &'a Option<Attribute>,
+    alloc: &'a A,
+    env: &mut PrintEnv,
+) -> DocBuilder<'a, A>
+where
+    A::Doc: Clone,
+{
+    match attr {
+        Some(attr) => attr.pretty(alloc, env).append(" "),
+        None => alloc.nil(),
+    }
+}
+
 impl Print for Statement {
     fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
@@ -835,8 +854,8 @@ impl Print for Statement {
         A::Doc: Clone,
     {
         match self {
-            Statement::Assign { lhs, rhs } => lhs
-                .pretty(alloc, env)
+            Statement::Assign { attr, lhs, rhs } => pretty_attr(attr, alloc, env)
+                .append(lhs.pretty(alloc, env))
                 .append(" <- ")
                 .append(parens!(alloc, env, Precedence::Impl, rhs)),
             Statement::Invariant(e) => {
@@ -1226,28 +1245,12 @@ impl Print for QName {
     fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
-        env: &mut PrintEnv,
+        _: &mut PrintEnv,
     ) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
-        use itertools::EitherOrBoth::*;
-        // Strip the shared prefix between currently open scope and the identifier we are printing
-        let module_path = env
-            .scopes
-            .iter()
-            .zip_longest(self.module.iter())
-            // Skip the common prefix, and keep everything else.
-            .skip_while(|e| match e {
-                // Skip common prefix
-                Both(p, m) => p == m,
-                _ => false,
-            })
-            // If the opened scopes were longer, drop them
-            .filter(|e| !e.is_left())
-            .map(|t| t.reduce(|_, f| f))
-            // TODO investigate if this clone can be removed :/
-            .map(|t| alloc.text(t.0.clone()));
+        let module_path = self.module.iter().map(|t| alloc.text(&t.0));
 
         alloc.intersperse(module_path.chain(std::iter::once(alloc.text(self.name().0))), ".")
     }

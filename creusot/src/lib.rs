@@ -1,11 +1,11 @@
 #![feature(rustc_private, register_tool)]
 #![feature(box_patterns, control_flow_enum, extract_if)]
 #![feature(let_chains, never_type, try_blocks)]
-#![feature(type_changing_struct_update)]
 
 #[macro_use]
 extern crate log;
 extern crate rustc_ast;
+extern crate rustc_ast_pretty;
 extern crate rustc_borrowck;
 extern crate rustc_data_structures;
 extern crate rustc_driver;
@@ -50,5 +50,6 @@ mod error;
 pub(crate) mod lints;
 pub(crate) mod metadata;
 mod prusti;
+mod run_why3;
 mod translated_item;
 mod validate;

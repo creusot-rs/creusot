@@ -35,6 +35,9 @@ pub struct CreusotArgs {
     /// Use `result` as the trigger of definition and specification axioms of logic/ghost/predicate functions
     #[clap(long, default_value_t = false, action = clap::ArgAction::Set)]
     pub simple_triggers: bool,
+    /// Run why3 with the following configuration (Should start with "prove" or "ide")
+    #[clap(long)]
+    why3: Option<String>,
 }
 
 /// Parse a single key-value pair

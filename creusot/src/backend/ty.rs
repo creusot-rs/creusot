@@ -70,8 +70,14 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
             names.import_prelude_module(PreludeModule::Char);
             MlT::Char
         }
-        Int(ity) => intty_to_ty(names, ity),
-        Uint(uity) => uintty_to_ty(names, uity),
+        Int(ity) => {
+            // names.real_ty(ty);
+            intty_to_ty(names, ity)
+        }
+        Uint(uity) => {
+            // names.real_ty(ty);
+            uintty_to_ty(names, uity)
+        }
         Float(flty) => floatty_to_ty(names, flty),
         Adt(def, s) => {
             if def.is_box() {
@@ -86,7 +92,8 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
             let cons = if let Some(builtin) =
                 get_builtin(ctx.tcx, def.did()).and_then(|a| QName::from_string(&a.as_str()))
             {
-                names.import_builtin_module(builtin.clone().module_qname());
+                names.ty(def.did(), s);
+                // names.import_builtin_module(builtin.clone().module_qname());
                 MlT::TConstructor(builtin.without_search_path())
             } else {
                 ctx.translate(def.did());
@@ -610,7 +617,7 @@ pub(crate) fn build_accessor(
 }
 
 pub(crate) fn closure_accessors<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     closure: DefId,
 ) -> Vec<(Symbol, PreSignature<'tcx>, Term<'tcx>)> {
     let TyKind::Closure(_, substs) = ctx.type_of(closure).subst_identity().kind() else { unreachable!() };
@@ -626,7 +633,7 @@ pub(crate) fn closure_accessors<'tcx>(
 }
 
 pub(crate) fn build_closure_accessor<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     closure: DefId,
     ix: usize,
 ) -> (PreSignature<'tcx>, Term<'tcx>) {
@@ -672,7 +679,6 @@ pub(crate) fn intty_to_ty<'tcx, N: Namer<'tcx>>(
 ) -> MlT {
     use rustc_middle::ty::IntTy::*;
     names.import_prelude_module(PreludeModule::Int);
-
     match ity {
         Isize => {
             names.import_prelude_module(PreludeModule::Isize);

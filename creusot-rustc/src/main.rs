@@ -21,7 +21,7 @@ use rustc_session::{config::ErrorOutputType, EarlyErrorHandler};
 use std::{backtrace, env, panic, panic::PanicInfo, process::Command};
 
 const BUG_REPORT_URL: &'static str = &"https://github.com/xldenis/creusot/issues/new";
-const WHY3_VERSION: &'static str = &"1.6.0+git";
+const WHY3_VERSION: &'static str = &"1.7.0+git";
 
 lazy_static::lazy_static! {
     static ref ICE_HOOK: Box<dyn Fn(&panic::PanicInfo<'_>) + Sync + Send + 'static> = {

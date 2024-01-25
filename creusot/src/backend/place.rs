@@ -1,4 +1,5 @@
 use crate::{
+    backend::Namer,
     ctx::CloneMap,
     translation::fmir::{self, LocalDecls},
 };
@@ -6,7 +7,7 @@ use rustc_middle::{
     mir::{self, tcx::PlaceTy, ProjectionElem},
     ty::{self, Ty, TyCtxt, TyKind},
 };
-use rustc_span::Symbol;
+use rustc_span::{Span, Symbol};
 use why3::{
     exp::{
         Exp::{self, *},
@@ -38,6 +39,7 @@ pub(crate) fn create_assign_inner<'tcx>(
     locals: &LocalDecls<'tcx>,
     lhs: &fmir::Place<'tcx>,
     rhs: Exp,
+    span: Span,
 ) -> mlcfg::Statement {
     let inner = create_assign_rec(
         ctx,
@@ -50,7 +52,7 @@ pub(crate) fn create_assign_inner<'tcx>(
         rhs,
     );
 
-    Assign { lhs: Ident::build(lhs.local.as_str()), rhs: inner }
+    Assign { lhs: Ident::build(lhs.local.as_str()), rhs: inner, attr: ctx.span_attr(span) }
 }
 
 fn create_assign_rec<'tcx>(
@@ -77,6 +79,8 @@ fn create_assign_rec<'tcx>(
         proj_ix + 1,
         rhs,
     );
+    let fvs = inner.fvs();
+    let freshvars = (0..).map(|i| format!("x{i}").into()).filter(|x| !fvs.contains(x));
     use ProjectionElem::*;
     match &proj[proj_ix] {
         Deref => {
@@ -97,12 +101,11 @@ fn create_assign_rec<'tcx>(
             TyKind::Adt(def, subst) => {
                 let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
                 let variant = &def.variants()[variant_id];
-                let var_size = variant.fields.len();
 
-                let field_pats =
-                    ('a'..).map(|c| VarP(c.to_string().into())).take(var_size).collect();
+                let varnames = freshvars.take(variant.fields.len()).collect::<Vec<Ident>>();
+                let field_pats = varnames.clone().into_iter().map(|x| VarP(x)).collect();
                 let mut varexps: Vec<Exp> =
-                    ('a'..).map(|c| Exp::impure_var(c.to_string().into())).take(var_size).collect();
+                    varnames.into_iter().map(|x| Exp::impure_var(x)).collect();
 
                 varexps[ix.as_usize()] = inner;
 
@@ -114,12 +117,10 @@ fn create_assign_rec<'tcx>(
                 }
             }
             TyKind::Tuple(fields) => {
-                let var_size = fields.len();
-
-                let field_pats =
-                    ('a'..).map(|c| VarP(c.to_string().into())).take(var_size).collect();
+                let varnames = freshvars.take(fields.len()).collect::<Vec<Ident>>();
+                let field_pats = varnames.clone().into_iter().map(|x| VarP(x.into())).collect();
                 let mut varexps: Vec<Exp> =
-                    ('a'..).map(|c| Exp::impure_var(c.to_string().into())).take(var_size).collect();
+                    varnames.into_iter().map(|x| Exp::impure_var(x.into())).collect();
 
                 varexps[ix.as_usize()] = inner;
 
@@ -130,11 +131,11 @@ fn create_assign_rec<'tcx>(
                 }
             }
             TyKind::Closure(id, subst) => {
-                let count = subst.as_closure().upvar_tys().count();
-                let field_pats = ('a'..).map(|c| VarP(c.to_string().into())).take(count).collect();
-
+                let varnames =
+                    freshvars.take(subst.as_closure().upvar_tys().count()).collect::<Vec<Ident>>();
+                let field_pats = varnames.clone().into_iter().map(|x| VarP(x.into())).collect();
                 let mut varexps: Vec<Exp> =
-                    ('a'..).map(|c| Exp::impure_var(c.to_string().into())).take(count).collect();
+                    varnames.into_iter().map(|x| Exp::impure_var(x.into())).collect();
 
                 varexps[ix.as_usize()] = inner;
                 let cons = names.constructor(*id, subst);
@@ -166,9 +167,9 @@ fn create_assign_rec<'tcx>(
 // [(P as Some)]   ---> [_1]
 // [(P as Some).0] ---> let Some(a) = [_1] in a
 // [(* P)] ---> * [P]
-pub(crate) fn translate_rplace<'tcx>(
+pub(crate) fn translate_rplace<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut N,
     locals: &LocalDecls<'tcx>,
     loc: Symbol,
     proj: &[mir::ProjectionElem<Symbol, Ty<'tcx>>],

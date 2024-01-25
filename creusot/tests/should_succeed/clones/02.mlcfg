@@ -1,52 +1,18 @@
 
-module C02_Simple_Stub
-  function simple [#"../02.rs" 9 0 9 19] (_1 : ()) : bool
-end
-module C02_Simple_Interface
-  function simple [#"../02.rs" 9 0 9 19] (_1 : ()) : bool
-  val simple [#"../02.rs" 9 0 9 19] (_1 : ()) : bool
-    ensures { result = simple _1 }
-    
-end
-module C02_Simple
-  function simple [#"../02.rs" 9 0 9 19] (_1 : ()) : bool =
-    [#"../02.rs" 10 4 10 8] true
-  val simple [#"../02.rs" 9 0 9 19] (_1 : ()) : bool
-    ensures { result = simple _1 }
-    
-end
-module C02_UsesSimple_Stub
-  function uses_simple [#"../02.rs" 14 0 14 24] (_1 : ()) : bool
-end
-module C02_UsesSimple_Interface
-  function uses_simple [#"../02.rs" 14 0 14 24] (_1 : ()) : bool
-  val uses_simple [#"../02.rs" 14 0 14 24] (_1 : ()) : bool
-    ensures { result = uses_simple _1 }
-    
-end
-module C02_UsesSimple
-  clone C02_Simple_Stub as Simple0
-  function uses_simple [#"../02.rs" 14 0 14 24] (_1 : ()) : bool =
-    [#"../02.rs" 15 4 15 12] Simple0.simple ()
-  val uses_simple [#"../02.rs" 14 0 14 24] (_1 : ()) : bool
-    ensures { result = uses_simple _1 }
-    
-end
-module C02_Program_Interface
-  clone C02_Simple_Stub as Simple0
-  clone C02_UsesSimple_Stub as UsesSimple0
-  val program [#"../02.rs" 20 0 20 16] (_1 : ()) : ()
-    requires {[#"../02.rs" 18 11 18 24] UsesSimple0.uses_simple ()}
-    ensures { [#"../02.rs" 19 10 19 18] Simple0.simple () }
-    
-end
 module C02_Program
-  clone C02_Simple as Simple0
-  clone C02_UsesSimple as UsesSimple0 with
-    function Simple0.simple = Simple0.simple
+  function simple0 [#"../02.rs" 9 0 9 19] (_1 : ()) : bool =
+    [#"../02.rs" 10 4 10 8] true
+  val simple0 [#"../02.rs" 9 0 9 19] (_1 : ()) : bool
+    ensures { result = simple0 _1 }
+    
+  function uses_simple0 [#"../02.rs" 14 0 14 24] (_1 : ()) : bool =
+    [#"../02.rs" 15 4 15 12] simple0 ()
+  val uses_simple0 [#"../02.rs" 14 0 14 24] (_1 : ()) : bool
+    ensures { result = uses_simple0 _1 }
+    
   let rec cfg program [#"../02.rs" 20 0 20 16] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
-    requires {[#"../02.rs" 18 11 18 24] UsesSimple0.uses_simple ()}
-    ensures { [#"../02.rs" 19 10 19 18] Simple0.simple () }
+    requires {[#"../02.rs" 18 11 18 24] uses_simple0 ()}
+    ensures { [#"../02.rs" 19 10 19 18] simple0 () }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -54,7 +20,7 @@ module C02_Program
     goto BB0
   }
   BB0 {
-    _0 <- ([#"../02.rs" 20 17 20 19] ());
+    [#"../02.rs" 20 17 20 19] _0 <- ([#"../02.rs" 20 17 20 19] ());
     return _0
   }
   

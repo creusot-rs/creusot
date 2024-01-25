@@ -67,14 +67,14 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
     ) {
         let ty = rvalue.ty(self.body, self.tcx);
         let span = si.span;
-        let rval: Expr<'tcx> = match rvalue {
+        let rval: ExprKind<'tcx> = match rvalue {
             Rvalue::Use(op) => match op {
-                Move(_pl) | Copy(_pl) => self.translate_operand(op),
+                Move(_pl) | Copy(_pl) => self.translate_operand(op).kind,
                 Constant(box c) => {
                     if ghost_closure_id(self.tcx, c.literal.ty()).is_some() {
                         return;
                     };
-                    crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
+                    crate::constant::from_mir_constant(self.param_env(), self.ctx, c).kind
                 }
             },
             Rvalue::Ref(_, ss, pl) => match ss {
@@ -83,20 +83,14 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         return;
                     }
 
-                    Expr {
-                        kind: ExprKind::Copy(
-                            self.translate_place(self.compute_ref_place(*pl, loc)),
-                        ),
-                        span,
-                        ty,
-                    }
+                    ExprKind::Copy(self.translate_place(self.compute_ref_place(*pl, loc)))
                 }
                 Mut { .. } => {
                     if self.erased_locals.contains(pl.local) {
                         return;
                     }
 
-                    self.emit_borrow(place, pl);
+                    self.emit_borrow(place, pl, span);
                     return;
                 }
             },
@@ -105,28 +99,18 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 self.ctx.crash_and_error(si.span, "bitwise operations are currently unsupported")
             }
             Rvalue::BinaryOp(op, box (l, r)) | Rvalue::CheckedBinaryOp(op, box (l, r)) => {
-                let kind = ExprKind::BinOp(
+                ExprKind::BinOp(
                     *op,
-                    l.ty(self.body, self.tcx),
                     Box::new(self.translate_operand(l)),
                     Box::new(self.translate_operand(r)),
-                );
-
-                Expr { kind, ty, span }
+                )
             }
-            Rvalue::UnaryOp(op, v) => {
-                let kind = ExprKind::UnaryOp(
-                    *op,
-                    v.ty(self.body, self.tcx),
-                    Box::new(self.translate_operand(v)),
-                );
-                Expr { kind, ty, span }
-            }
+            Rvalue::UnaryOp(op, v) => ExprKind::UnaryOp(*op, Box::new(self.translate_operand(v))),
             Rvalue::Aggregate(box kind, ops) => {
                 use rustc_middle::mir::AggregateKind::*;
                 let fields = ops.iter().map(|op| self.translate_operand(op)).collect();
 
-                let kind = match kind {
+                match kind {
                     Tuple => ExprKind::Tuple(fields),
                     Adt(adt, varix, subst, _, _) => {
                         // self.ctx.translate(*adt);
@@ -162,9 +146,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         si.span,
                         &format!("the rvalue {:?} is not currently supported", kind),
                     ),
-                };
-
-                Expr { kind, ty, span }
+                }
             }
             Rvalue::Len(pl) => {
                 let e = Expr {
@@ -172,33 +154,21 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     ty: pl.ty(self.body, self.tcx).ty,
                     span: DUMMY_SP,
                 };
-                let kind = ExprKind::Len(Box::new(e));
-
-                Expr { kind, ty, span }
+                ExprKind::Len(Box::new(e))
             }
             Rvalue::Cast(CastKind::IntToInt | CastKind::PtrToPtr, op, cast_ty) => {
                 let op_ty = op.ty(self.body, self.tcx);
-                let kind = ExprKind::Cast(Box::new(self.translate_operand(op)), op_ty, *cast_ty);
-                Expr { kind, ty, span }
+                ExprKind::Cast(Box::new(self.translate_operand(op)), op_ty, *cast_ty)
             }
-            Rvalue::Repeat(op, len) => {
-                let kind = ExprKind::Repeat(
-                    Box::new(self.translate_operand(op)),
-                    Box::new(crate::constant::from_ty_const(
-                        self.ctx,
-                        *len,
-                        self.param_env(),
-                        si.span,
-                    )),
-                );
-
-                Expr { kind, ty, span }
-            }
+            Rvalue::Repeat(op, len) => ExprKind::Repeat(
+                Box::new(self.translate_operand(op)),
+                Box::new(crate::constant::from_ty_const(self.ctx, *len, self.param_env(), si.span)),
+            ),
 
             Rvalue::Cast(CastKind::Pointer(PointerCast::Unsize), op, ty) => {
                 if let Some(t) = ty.builtin_deref(true) && t.ty.is_slice() {
                     // treat &[T; N] to &[T] casts as normal assignments
-                    self.translate_operand(op)
+                    self.translate_operand(op).kind
                 } else {
                     // TODO: Since we don't do anything with casts into `dyn` objects, just ignore them
                     return;
@@ -229,6 +199,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 &format!("MIR code used an unsupported Rvalue {:?}", rvalue),
             ),
         };
+        let rval = Expr { span, ty, kind: rval };
 
         if let Some(resolver) = &mut self.resolver {
             let need_resolve_before = resolver.need_resolve_locals_before(loc);
@@ -238,7 +209,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 self.emit_resolve(*place);
             }
 
-            self.emit_assignment(place, RValue::Expr(rval));
+            self.emit_assignment(place, RValue::Expr(rval), span);
 
             // Check if the local is a zombie:
             // if lhs local is dead after the assignment, emit resolve
@@ -246,7 +217,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 self.emit_resolve(*place);
             }
         } else {
-            self.emit_assignment(place, RValue::Expr(rval));
+            self.emit_assignment(place, RValue::Expr(rval), span);
         }
     }
 

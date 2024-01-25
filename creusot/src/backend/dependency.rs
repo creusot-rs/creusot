@@ -1,3 +1,4 @@
+use heck::ToSnakeCase;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{EarlyBinder, InternalSubsts, ParamEnv, SubstsRef, Ty, TyCtxt, TyKind};
@@ -7,10 +8,10 @@ use rustc_type_ir::AliasKind;
 use crate::{
     ctx::TranslationCtx,
     translation::traits,
-    util::{self, ItemType},
+    util::{self, inv_module_name, ItemType},
 };
 
-use super::{ty_inv::TyInvKind, TransId};
+use super::{ty_inv::TyInvKind, PreludeModule, TransId};
 
 /// Dependencies between items and the resolution logic to find the 'monomorphic' forms accounting
 /// for various Creusot hacks like the handling of closures.
@@ -23,6 +24,19 @@ pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
     Item(DefId, SubstsRef<'tcx>),
     TyInv(Ty<'tcx>, TyInvKind),
+    Hacked(HackedId, DefId, SubstsRef<'tcx>),
+    Buitlin(PreludeModule),
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash, PartialOrd, Ord, TypeVisitable, TypeFoldable)]
+pub(crate) enum HackedId {
+    PostconditionOnce,
+    PostconditionMut,
+    Postcondition,
+    Precondition,
+    Unnest,
+    Resolve,
+    Accessor(u8),
 }
 
 impl<'tcx> Dependency<'tcx> {
@@ -48,6 +62,26 @@ impl<'tcx> Dependency<'tcx> {
                 Dependency::new(tcx, (self_id, subst)).erase_regions(tcx)
             }
             TransId::TyInv(inv_kind) => Dependency::TyInv(inv_kind.to_skeleton_ty(tcx), inv_kind),
+            TransId::Hacked(h, self_id) => {
+                let subst = match tcx.def_kind(self_id) {
+                    DefKind::Closure => match tcx.type_of(self_id).subst_identity().kind() {
+                        TyKind::Closure(_, subst) => subst,
+                        _ => unreachable!(),
+                    },
+                    _ => unreachable!(),
+                };
+                Dependency::Hacked(h, self_id, subst).erase_regions(tcx)
+            }
+        }
+    }
+
+    pub(crate) fn to_trans_id(self) -> Option<TransId> {
+        match self {
+            Dependency::Type(_) => None,
+            Dependency::Item(id, _) => Some(TransId::Item(id)),
+            Dependency::TyInv(_, k) => Some(TransId::TyInv(k)),
+            Dependency::Hacked(h, id, _) => Some(TransId::Hacked(h, id)),
+            Dependency::Buitlin(_) => None,
         }
     }
 
@@ -72,11 +106,13 @@ impl<'tcx> Dependency<'tcx> {
                 TyKind::Alias(AliasKind::Projection, aty) => Some((aty.def_id, aty.substs)),
                 _ => None,
             },
+            Dependency::Hacked(_, id, substs) => Some((id, substs)),
+            Dependency::Buitlin(_) => None,
         }
     }
 
-    pub(crate) fn is_inv(&self) -> bool {
-        matches!(self, Dependency::TyInv(_, _))
+    pub(crate) fn is_hacked(&self) -> bool {
+        matches!(self, Dependency::Hacked(_, _, _))
     }
 
     #[inline]
@@ -100,8 +136,53 @@ impl<'tcx> Dependency<'tcx> {
     #[inline]
     pub(crate) fn closure_hack(self, tcx: TyCtxt<'tcx>) -> Self {
         match self {
-            Dependency::Item(did, subst) => Dependency::new(tcx, closure_hack(tcx, did, subst)),
+            Dependency::Item(did, subst) => {
+                let (hacked_id, id, subst) = closure_hack(tcx, did, subst);
+                if let Some(hacked_id) = hacked_id {
+                    Dependency::Hacked(hacked_id, id, subst)
+                } else {
+                    Dependency::new(tcx, (id, subst))
+                }
+            }
+
             _ => self,
+        }
+    }
+
+    pub(crate) fn base_ident(self, tcx: TyCtxt<'tcx>) -> Symbol {
+        match self {
+            Dependency::Type(ty) => {
+                let nm = match ty.kind() {
+                    TyKind::Adt(def, _) => tcx.item_name(def.did()),
+                    TyKind::Alias(_, aty) => tcx.item_name(aty.def_id),
+                    TyKind::Closure(_, _) => Symbol::intern("debug_closure_type"),
+                    _ => Symbol::intern("debug_ty_name"),
+                };
+                Symbol::intern(&nm.as_str().to_snake_case())
+            }
+            Dependency::Item(_, _) => {
+                let did = self.did().unwrap().0;
+                let base = match util::item_type(tcx, did) {
+                    ItemType::Impl => tcx.item_name(tcx.trait_id_of_impl(did).unwrap()),
+                    ItemType::Closure => Symbol::intern(&format!(
+                        "closure{}",
+                        tcx.def_path(did).data.last().unwrap().disambiguator
+                    )),
+                    _ => tcx.item_name(did),
+                };
+                Symbol::intern(&base.as_str().to_snake_case())
+            }
+            Dependency::TyInv(_, inv_kind) => Symbol::intern(&*inv_module_name(tcx, inv_kind)),
+            Dependency::Hacked(hacked_id, _, _) => match hacked_id {
+                HackedId::PostconditionOnce => Symbol::intern("postcondition_once"),
+                HackedId::PostconditionMut => Symbol::intern("postcondition_mut"),
+                HackedId::Postcondition => Symbol::intern("postcondition"),
+                HackedId::Precondition => Symbol::intern("precondition"),
+                HackedId::Unnest => Symbol::intern("unnest"),
+                HackedId::Resolve => Symbol::intern("resolve"),
+                HackedId::Accessor(ix) => Symbol::intern(&format!("field_{ix}")),
+            },
+            Dependency::Buitlin(_) => Symbol::intern("builtin_should_not_appear"),
         }
     }
 }
@@ -119,25 +200,39 @@ fn resolve_item<'tcx>(
         (item, substs)
     };
 
-    let resolved = closure_hack(tcx, resolved.0, resolved.1);
-    Dependency::new(tcx, resolved)
+    let (hacked_id, id, subst) = closure_hack(tcx, resolved.0, resolved.1);
+    if let Some(hacked_id) = hacked_id {
+        Dependency::Hacked(hacked_id, id, subst)
+    } else {
+        Dependency::new(tcx, (id, subst))
+    }
 }
 
 pub(crate) fn closure_hack<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
     subst: SubstsRef<'tcx>,
-) -> (DefId, SubstsRef<'tcx>) {
-    if tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_precond"), def_id)
-        || tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_postcond"), def_id)
-        || tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_postcond"), def_id)
-        || tcx.is_diagnostic_item(Symbol::intern("fn_impl_postcond"), def_id)
-        || tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_unnest"), def_id)
-        || tcx.is_diagnostic_item(Symbol::intern("fn_impl_resolve"), def_id)
-    {
+) -> (Option<HackedId>, DefId, SubstsRef<'tcx>) {
+    let hacked = if tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_precond"), def_id) {
+        Some(HackedId::Precondition)
+    } else if tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_postcond"), def_id) {
+        Some(HackedId::PostconditionOnce)
+    } else if tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_postcond"), def_id) {
+        Some(HackedId::PostconditionMut)
+    } else if tcx.is_diagnostic_item(Symbol::intern("fn_impl_postcond"), def_id) {
+        Some(HackedId::Postcondition)
+    } else if tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_unnest"), def_id) {
+        Some(HackedId::Unnest)
+    } else if tcx.is_diagnostic_item(Symbol::intern("fn_impl_resolve"), def_id) {
+        Some(HackedId::Resolve)
+    } else {
+        None
+    };
+
+    if hacked.is_some() {
         let self_ty = subst.types().nth(1).unwrap();
         if let TyKind::Closure(id, csubst) = self_ty.kind() {
-            return (*id, csubst);
+            return (hacked, *id, csubst);
         }
     };
 
@@ -146,9 +241,9 @@ pub(crate) fn closure_hack<'tcx>(
     {
         let self_ty = subst.types().nth(0).unwrap();
         if let TyKind::Closure(id, csubst) = self_ty.kind() {
-            return (*id, csubst);
+            return (Some(HackedId::Resolve), *id, csubst);
         }
     }
 
-    (def_id, subst)
+    (None, def_id, subst)
 }

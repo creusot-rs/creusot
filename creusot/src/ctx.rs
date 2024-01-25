@@ -7,11 +7,12 @@ use crate::{
     creusot_items::{self, CreusotItems},
     error::{CrErr, CreusotResult, Error},
     metadata::{BinaryMetadata, Metadata},
-    options::{Options, SpanMode},
+    options::Options,
     translation::{
         self,
         external::{extract_extern_specs_from_item, ExternSpec},
         fmir,
+        function::ClosureContract,
         pearlite::{self, Term},
         specification::{ContractClauses, Purity, PurityVisitor},
         traits::TraitImpl,
@@ -34,10 +35,9 @@ use rustc_middle::{
         Visibility,
     },
 };
-use rustc_span::{RealFileName, Span, Symbol, DUMMY_SP};
+use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::SelectionContext;
 pub(crate) use util::{module_name, ItemType};
-use why3::exp::Exp;
 
 pub(crate) use crate::translated_item::*;
 
@@ -97,6 +97,7 @@ pub struct TranslationCtx<'tcx> {
     sig: HashMap<DefId, PreSignature<'tcx>>,
     bodies: HashMap<LocalDefId, BodyWithBorrowckFacts<'tcx>>,
     opacity: HashMap<DefId, Opacity>,
+    closure_contract: HashMap<DefId, ClosureContract<'tcx>>,
 }
 
 #[derive(Copy, Clone)]
@@ -139,6 +140,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             sig: Default::default(),
             bodies: Default::default(),
             opacity: Default::default(),
+            closure_contract: Default::default(),
         }
     }
 
@@ -147,6 +149,8 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     queryish!(trait_impl, &TraitImpl<'tcx>, translate_impl);
+
+    queryish!(closure_contract, &ClosureContract<'tcx>, build_closure_contract);
 
     pub(crate) fn fmir_body(&mut self, body_id: BodyId) -> Option<&fmir::Body<'tcx>> {
         if !self.fmir_body.contains_key(&body_id) {
@@ -383,54 +387,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             )
         } else {
             self.tcx.param_env(def_id)
-        }
-    }
-
-    pub(crate) fn span_attr(&self, span: Span) -> Option<why3::declaration::Attribute> {
-        let lo = self.sess.source_map().lookup_char_pos(span.lo());
-        let hi = self.sess.source_map().lookup_char_pos(span.hi());
-
-        let rustc_span::FileName::Real(path) = &lo.file.name else { return None };
-
-        // If we ask for relative paths and the paths comes from the standard library, then we prefer returning
-        // None, since the relative path of the stdlib is not stable.
-        let path = match (&self.opts.span_mode, path) {
-            (SpanMode::Relative, RealFileName::Remapped { .. }) => return None,
-            _ => path.local_path_if_available(),
-        };
-
-        let mut buf;
-        let path = if path.is_relative() {
-            buf = std::env::current_dir().unwrap();
-            buf.push(path);
-            buf.as_path()
-        } else {
-            path
-        };
-
-        let filename = match self.opts.span_mode {
-            SpanMode::Absolute => path.to_string_lossy().into_owned(),
-            SpanMode::Relative => {
-                // Why3 treats the spans as relative to the session not the source file??
-                format!("{}", self.opts.relative_to_output(&path).to_string_lossy())
-            }
-            _ => return None,
-        };
-
-        Some(why3::declaration::Attribute::Span(
-            filename,
-            lo.line,
-            lo.col_display,
-            hi.line,
-            hi.col_display,
-        ))
-    }
-
-    pub(crate) fn attach_span(&self, span: Span, exp: Exp) -> Exp {
-        if let Some(attr) = self.span_attr(span) {
-            Exp::Attr(attr, Box::new(exp))
-        } else {
-            exp
         }
     }
 
