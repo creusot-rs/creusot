@@ -1,11 +1,9 @@
-use cargo_creusot::options::Args;
 use clap::*;
+use creusot_args::options::Args;
 use std::{
     env,
     process::{exit, Command},
 };
-
-mod options;
 
 fn main() {
     let args = Args::parse_from(std::env::args().skip(1));

@@ -9,26 +9,26 @@ pub struct CreusotArgs {
     /// [Absolute] means the files can easily be moved around your system and still work.
     /// [None] provides the clearest diffs.
     #[clap(long, value_enum, default_value_t=SpanMode::Relative)]
-    span_mode: SpanMode,
+    pub span_mode: SpanMode,
     #[clap(long)]
     /// Only generate proofs for items matching the provided string. The string is treated
     /// as a Rust qualified path.
-    focus_on: Option<String>,
+    pub focus_on: Option<String>,
     #[clap(long)]
     /// Location that Creusot metadata for this crate should be emitted to.
-    metadata_path: Option<String>,
+    pub metadata_path: Option<String>,
     /// Tell creusot to disable metadata exports.
     #[arg(long, default_value_t = true, action = clap::ArgAction::Set)]
-    export_metadata: bool,
+    pub export_metadata: bool,
     /// Print to stdout.
     #[clap(group = "output", long)]
-    stdout: bool,
+    pub stdout: bool,
     /// Print to a file.
     #[clap(group = "output", long, env)]
-    output_file: Option<String>,
+    pub output_file: Option<String>,
     /// Specify locations of metadata for external crates. The format is the same as rustc's `--extern` flag.
     #[clap(long = "creusot-extern", value_parser= parse_key_val::<String, String>, required=false)]
-    extern_paths: Vec<(String, String)>,
+    pub extern_paths: Vec<(String, String)>,
     /// Check the installed why3 version.
     #[clap(long, default_value_t = true, action = clap::ArgAction::Set)]
     pub check_why3: bool,
@@ -37,7 +37,7 @@ pub struct CreusotArgs {
     pub simple_triggers: bool,
     /// Run why3 with the following configuration (Should start with "prove" or "ide")
     #[clap(long)]
-    why3: Option<String>,
+    pub why3: Option<String>,
 }
 
 /// Parse a single key-value pair

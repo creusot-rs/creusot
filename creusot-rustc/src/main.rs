@@ -6,7 +6,7 @@ extern crate rustc_interface;
 extern crate rustc_session;
 
 mod options;
-use options::Args;
+use options::{Args, CreusotArgsExt as _};
 
 #[macro_use]
 extern crate log;
