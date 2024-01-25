@@ -10,10 +10,12 @@ impl T for () {
     type Output = (u32, u32);
 }
 
-pub struct S{f: <() as T>::Output}
+pub struct S {
+    f: <() as T>::Output,
+}
 
 #[ensures(result == x.0)]
-pub fn test_arg<X: T<Output=(u32, u32)>>(x: X::Output) -> u32 {
+pub fn test_arg<X: T<Output = (u32, u32)>>(x: X::Output) -> u32 {
     x.0
 }
 

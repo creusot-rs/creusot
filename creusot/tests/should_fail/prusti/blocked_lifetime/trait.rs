@@ -2,7 +2,6 @@ extern crate creusot_contracts;
 use creusot_contracts::prusti_prelude::*;
 
 trait MyTrait<'x> {
-
     #[ensures(*x == 5u32)]
     fn test(x: &'x mut u32);
 }

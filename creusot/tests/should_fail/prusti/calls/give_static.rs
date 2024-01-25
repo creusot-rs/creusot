@@ -9,6 +9,4 @@ fn give_static() -> &'static mut u32 {
 }
 
 #[ensures(*old(give_static()) == 42u32)]
-fn test() {
-
-}
+fn test() {}

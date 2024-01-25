@@ -21,7 +21,6 @@ pub fn deref3<T>() -> Box<T> {
     absurd
 }
 
-
 pub trait MkRef {
     #[open]
     #[logic]
