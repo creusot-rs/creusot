@@ -1,0 +1,47 @@
+
+module PartialZombie_TestTuple
+  use prelude.UInt32
+  use prelude.Borrow
+  function f10 [#"../partial_zombie.rs" 16 0 16 27] (t : (borrowed uint32, uint32)) : uint32 =
+    [#"../partial_zombie.rs" 17 4 17 7] let (_, a) = t in a
+  val f10 [#"../partial_zombie.rs" 16 0 16 27] (t : (borrowed uint32, uint32)) : uint32
+    ensures { result = f10 t }
+    
+  function f00 [#"../partial_zombie.rs" 11 0 11 27] (t : (borrowed uint32, uint32)) : borrowed uint32 =
+    [#"../partial_zombie.rs" 12 4 12 7] let (a, _) = t in a
+  val f00 [#"../partial_zombie.rs" 11 0 11 27] (t : (borrowed uint32, uint32)) : borrowed uint32
+    ensures { result = f00 t }
+    
+  use prelude.Int
+  predicate resolve2 (self : uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 47 8 47 12] true
+  val resolve2 (self : uint32) : bool
+    ensures { result = resolve2 self }
+    
+  predicate resolve1 (self : borrowed uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+  val resolve1 (self : borrowed uint32) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : (borrowed uint32, uint32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 18 8 18 60] resolve1 (let (a, _) = self in a) /\ resolve2 (let (_, a) = self in a)
+  val resolve0 (self : (borrowed uint32, uint32)) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg test_tuple [#"../partial_zombie.rs" 6 0 6 37] [@cfg:stackify] [@cfg:subregion_analysis] (x : (borrowed uint32, uint32)) : ()
+    ensures { [#"../partial_zombie.rs" 5 10 5 25]  ^ f00 x = f10 x }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var x : (borrowed uint32, uint32) = x;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../partial_zombie.rs" 7 4 7 14] x <- (let (x0, x1) = x in ({ (let (a, _) = x in a) with current = ([#"../partial_zombie.rs" 7 11 7 14] let (_, a) = x in a) }, x1));
+    assume { resolve0 x };
+    [#"../partial_zombie.rs" 7 4 7 14] _0 <- ([#"../partial_zombie.rs" 7 4 7 14] ());
+    return _0
+  }
+  
+end

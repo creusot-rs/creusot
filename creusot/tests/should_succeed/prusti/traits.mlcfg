@@ -1,111 +1,23 @@
 
-module Traits_MyModel_Model_Stub
-  type self
-  type t
-  function model [#"../traits.rs" 7 4 7 24] (self : self) : t
-end
-module Traits_MyModel_Model_Interface
-  type self
-  type t
-  function model [#"../traits.rs" 7 4 7 24] (self : self) : t
-  val model [#"../traits.rs" 7 4 7 24] (self : self) : t
-    ensures { result = model self }
-    
-end
-module Traits_MyModel_Model
-  type self
-  type t
-  function model [#"../traits.rs" 7 4 7 24] (self : self) : t
-  val model [#"../traits.rs" 7 4 7 24] (self : self) : t
-    ensures { result = model self }
-    
-end
-module Traits_Impl0_Model_Stub
-  type x
-  type y
-  use prelude.Borrow
-  function model [#"../traits.rs" 12 4 12 23] (self : borrowed x) : y
-end
-module Traits_Impl0_Model_Interface
-  type x
-  type y
-  use prelude.Borrow
-  function model [#"../traits.rs" 12 4 12 23] (self : borrowed x) : y
-  val model [#"../traits.rs" 12 4 12 23] (self : borrowed x) : y
-    ensures { result = model self }
-    
-end
-module Traits_Impl0_Model
-  type x
-  type y
-  use prelude.Borrow
-  clone Traits_MyModel_Model_Stub as Model0 with
-    type self = x,
-    type t = y
-  function model [#"../traits.rs" 12 4 12 23] (self : borrowed x) : y =
-    [#"../traits.rs" 13 8 13 23] Model0.model ( * self)
-  val model [#"../traits.rs" 12 4 12 23] (self : borrowed x) : y
-    ensures { result = model self }
-    
-end
-module Traits_Impl1_Model_Stub
-  function model [#"../traits.rs" 19 4 19 26] (self : bool) : bool
-end
-module Traits_Impl1_Model_Interface
-  function model [#"../traits.rs" 19 4 19 26] (self : bool) : bool
-  val model [#"../traits.rs" 19 4 19 26] (self : bool) : bool
-    ensures { result = model self }
-    
-end
-module Traits_Impl1_Model
-  function model [#"../traits.rs" 19 4 19 26] (self : bool) : bool
-  val model [#"../traits.rs" 19 4 19 26] (self : bool) : bool
-    ensures { result = model self }
-    
-end
-module CreusotContracts_Resolve_Impl1_Resolve_Stub
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-end
-module CreusotContracts_Resolve_Impl1_Resolve_Interface
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl1_Resolve
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
-module Traits_Test_Interface
-  use prelude.Borrow
-  clone Traits_Impl0_Model_Stub as Model1 with
-    type x = bool,
-    type y = bool
-  clone Traits_Impl1_Model_Stub as Model0
-  val test [#"../traits.rs" 25 0 25 33] (x : borrowed bool) : bool
-    ensures { [#"../traits.rs" 24 10 24 42] Model0.model result = old(Model1.model x) }
-    
-end
 module Traits_Test
+  function model0 [#"../traits.rs" 19 4 19 26] (self : bool) : bool =
+    [#"../traits.rs" 20 8 20 12] self
+  val model0 [#"../traits.rs" 19 4 19 26] (self : bool) : bool
+    ensures { result = model0 self }
+    
   use prelude.Borrow
-  clone Traits_Impl1_Model as Model0
-  clone Traits_Impl0_Model as Model1 with
-    type x = bool,
-    type y = bool,
-    function Model0.model = Model0.model
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = bool
+  function model1 [#"../traits.rs" 12 4 12 23] (self : borrowed bool) : bool =
+    [#"../traits.rs" 13 8 13 23] model0 ( * self)
+  val model1 [#"../traits.rs" 12 4 12 23] (self : borrowed bool) : bool
+    ensures { result = model1 self }
+    
+  predicate resolve0 (self : borrowed bool) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+  val resolve0 (self : borrowed bool) : bool
+    ensures { result = resolve0 self }
+    
   let rec cfg test [#"../traits.rs" 25 0 25 33] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed bool) : bool
-    ensures { [#"../traits.rs" 24 10 24 42] Model0.model result = old(Model1.model x) }
+    ensures { [#"../traits.rs" 24 10 24 42] model0 result = old(model1 x) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : bool;
@@ -115,10 +27,10 @@ module Traits_Test
     goto BB0
   }
   BB0 {
-    res <-  * x;
-    x <- { x with current = (not res) };
-    assume { Resolve0.resolve x };
-    _0 <- res;
+    [#"../traits.rs" 26 14 26 16] res <- ([#"../traits.rs" 26 14 26 16]  * x);
+    [#"../traits.rs" 27 4 27 13] x <- { x with current = ([#"../traits.rs" 27 4 27 13] not ([#"../traits.rs" 27 10 27 13] res)) };
+    assume { resolve0 x };
+    [#"../traits.rs" 28 4 28 7] _0 <- ([#"../traits.rs" 28 4 28 7] res);
     return _0
   }
   
@@ -128,56 +40,30 @@ module Traits_Wrapper_Type
     | C_Wrapper 't
     
   let function wrapper_0 (self : t_wrapper 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_Wrapper a -> a
       end
 end
-module Traits_Impl2_Model_Stub
-  type t
-  use Traits_Wrapper_Type as Traits_Wrapper_Type
-  function model [#"../traits.rs" 35 4 35 23] (self : Traits_Wrapper_Type.t_wrapper t) : t
-end
-module Traits_Impl2_Model_Interface
-  type t
-  use Traits_Wrapper_Type as Traits_Wrapper_Type
-  function model [#"../traits.rs" 35 4 35 23] (self : Traits_Wrapper_Type.t_wrapper t) : t
-  val model [#"../traits.rs" 35 4 35 23] (self : Traits_Wrapper_Type.t_wrapper t) : t
-    ensures { result = model self }
-    
-end
-module Traits_Impl2_Model
-  type t
-  use Traits_Wrapper_Type as Traits_Wrapper_Type
-  function model [#"../traits.rs" 35 4 35 23] (self : Traits_Wrapper_Type.t_wrapper t) : t =
-    [#"../traits.rs" 36 8 36 14] Traits_Wrapper_Type.wrapper_0 self
-  val model [#"../traits.rs" 35 4 35 23] (self : Traits_Wrapper_Type.t_wrapper t) : t
-    ensures { result = model self }
-    
-end
-module Traits_Test2_Interface
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  use Traits_Wrapper_Type as Traits_Wrapper_Type
-  clone Traits_Impl2_Model_Stub as Model0 with
-    type t = borrowed uint32
-  val test2 [#"../traits.rs" 42 0 42 46] (x : Traits_Wrapper_Type.t_wrapper (borrowed uint32)) : borrowed uint32
-    ensures { [#"../traits.rs" 40 10 40 36]  * result = old( * Model0.model x) }
-    ensures { [#"../traits.rs" 41 15 41 41]  ^ (old(Model0.model x)) =  ^ result }
-    
-end
 module Traits_Test2
-  use prelude.Borrow
-  use prelude.Int
   use prelude.UInt32
+  use prelude.Borrow
   use Traits_Wrapper_Type as Traits_Wrapper_Type
-  clone Traits_Impl2_Model as Model0 with
-    type t = borrowed uint32
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = uint32
+  function model0 [#"../traits.rs" 35 4 35 23] (self : Traits_Wrapper_Type.t_wrapper (borrowed uint32)) : borrowed uint32
+    
+   =
+    [#"../traits.rs" 36 8 36 14] Traits_Wrapper_Type.wrapper_0 self
+  val model0 [#"../traits.rs" 35 4 35 23] (self : Traits_Wrapper_Type.t_wrapper (borrowed uint32)) : borrowed uint32
+    ensures { result = model0 self }
+    
+  use prelude.Int
+  predicate resolve0 (self : borrowed uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+  val resolve0 (self : borrowed uint32) : bool
+    ensures { result = resolve0 self }
+    
   let rec cfg test2 [#"../traits.rs" 42 0 42 46] [@cfg:stackify] [@cfg:subregion_analysis] (x : Traits_Wrapper_Type.t_wrapper (borrowed uint32)) : borrowed uint32
-    ensures { [#"../traits.rs" 40 10 40 36]  * result = old( * Model0.model x) }
-    ensures { [#"../traits.rs" 41 15 41 41]  ^ (old(Model0.model x)) =  ^ result }
+    ensures { [#"../traits.rs" 40 10 40 36]  * result = old( * model0 x) }
+    ensures { [#"../traits.rs" 41 15 41 41]  ^ (old(model0 x)) =  ^ result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : borrowed uint32;
@@ -187,11 +73,11 @@ module Traits_Test2
     goto BB0
   }
   BB0 {
-    _2 <- Borrow.borrow_mut ( * Traits_Wrapper_Type.wrapper_0 x);
-    x <- (let Traits_Wrapper_Type.C_Wrapper a = x in Traits_Wrapper_Type.C_Wrapper ({ (Traits_Wrapper_Type.wrapper_0 x) with current = ( ^ _2) }));
-    _0 <- Borrow.borrow_mut ( * _2);
-    _2 <- { _2 with current = ( ^ _0) };
-    assume { Resolve0.resolve _2 };
+    [#"../traits.rs" 43 4 43 7] _2 <- Borrow.borrow_mut ( * Traits_Wrapper_Type.wrapper_0 x);
+    [#"../traits.rs" 43 4 43 7] x <- (let Traits_Wrapper_Type.C_Wrapper x0 = x in Traits_Wrapper_Type.C_Wrapper ({ (Traits_Wrapper_Type.wrapper_0 x) with current =  ^ _2 }));
+    [#"../traits.rs" 43 4 43 7] _0 <- Borrow.borrow_mut ( * _2);
+    [#"../traits.rs" 43 4 43 7] _2 <- { _2 with current =  ^ _0 };
+    assume { resolve0 _2 };
     return _0
   }
   

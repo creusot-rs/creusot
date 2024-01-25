@@ -1,0 +1,33 @@
+
+module Old_Test
+  use prelude.UInt32
+  use prelude.Int
+  predicate resolve1 (self : uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 47 8 47 12] true
+  val resolve1 (self : uint32) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 36 8 36 31] resolve1 self
+  val resolve0 (self : uint32) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg test [#"../old.rs" 7 0 7 30] [@cfg:stackify] [@cfg:subregion_analysis] (x : uint32) : ()
+    ensures { [#"../old.rs" 6 10 6 32] (0 : uint32) = x }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var x : uint32 = x;
+  {
+    goto BB0
+  }
+  BB0 {
+    assume { resolve0 x };
+    [#"../old.rs" 7 31 7 33] _0 <- ([#"../old.rs" 7 31 7 33] ());
+    goto BB1
+  }
+  BB1 {
+    return _0
+  }
+  
+end

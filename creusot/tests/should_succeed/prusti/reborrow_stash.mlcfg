@@ -1,57 +1,30 @@
 
 module ReborrowStash_Test_Type
-  use prelude.Int
   use prelude.UInt32
+  use prelude.Int
   type t_test  =
     | C_Test uint32
     
   let function test_x (self : t_test) : uint32 = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
+    match self with
       | C_Test a -> a
       end
 end
-module CreusotContracts_Resolve_Impl1_Resolve_Stub
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-end
-module CreusotContracts_Resolve_Impl1_Resolve_Interface
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl1_Resolve
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
-module ReborrowStash_Impl0_Test_Interface
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  use ReborrowStash_Test_Type as ReborrowStash_Test_Type
-  val test [#"../reborrow_stash.rs" 13 4 13 51] (self : borrowed (ReborrowStash_Test_Type.t_test)) (stash : borrowed uint32) : borrowed uint32
-    ensures { [#"../reborrow_stash.rs" 10 14 10 35]  ^ stash = old(ReborrowStash_Test_Type.test_x ( * self)) }
-    ensures { [#"../reborrow_stash.rs" 11 14 11 36]  * result = old(ReborrowStash_Test_Type.test_x ( * self)) }
-    ensures { [#"../reborrow_stash.rs" 12 19 12 36] ReborrowStash_Test_Type.test_x ( ^ self) =  ^ result }
-    
-end
 module ReborrowStash_Impl0_Test
-  use prelude.Borrow
-  use prelude.Int
   use prelude.UInt32
+  use prelude.Int
+  use prelude.Borrow
   use ReborrowStash_Test_Type as ReborrowStash_Test_Type
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
-    type t = ReborrowStash_Test_Type.t_test
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = uint32
+  predicate resolve1 (self : borrowed (ReborrowStash_Test_Type.t_test)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+  val resolve1 (self : borrowed (ReborrowStash_Test_Type.t_test)) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : borrowed uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+  val resolve0 (self : borrowed uint32) : bool
+    ensures { result = resolve0 self }
+    
   let rec cfg test [#"../reborrow_stash.rs" 13 4 13 51] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (ReborrowStash_Test_Type.t_test)) (stash : borrowed uint32) : borrowed uint32
     ensures { [#"../reborrow_stash.rs" 10 14 10 35]  ^ stash = old(ReborrowStash_Test_Type.test_x ( * self)) }
     ensures { [#"../reborrow_stash.rs" 11 14 11 36]  * result = old(ReborrowStash_Test_Type.test_x ( * self)) }
@@ -67,17 +40,17 @@ module ReborrowStash_Impl0_Test
     goto BB0
   }
   BB0 {
-    stash <- { stash with current = ReborrowStash_Test_Type.test_x ( * self) };
-    assume { Resolve0.resolve stash };
-    _8 <- Borrow.borrow_mut (ReborrowStash_Test_Type.test_x ( * self));
-    self <- { self with current = (let ReborrowStash_Test_Type.C_Test a =  * self in ReborrowStash_Test_Type.C_Test ( ^ _8)) };
-    _3 <- Borrow.borrow_mut ( * _8);
-    _8 <- { _8 with current = ( ^ _3) };
-    _0 <- Borrow.borrow_mut ( * _3);
-    _3 <- { _3 with current = ( ^ _0) };
-    assume { Resolve0.resolve _8 };
-    assume { Resolve0.resolve _3 };
-    assume { Resolve1.resolve self };
+    [#"../reborrow_stash.rs" 14 8 14 23] stash <- { stash with current = ([#"../reborrow_stash.rs" 14 17 14 23] ReborrowStash_Test_Type.test_x ( * self)) };
+    assume { resolve0 stash };
+    [#"../reborrow_stash.rs" 15 8 15 19] _8 <- Borrow.borrow_mut (ReborrowStash_Test_Type.test_x ( * self));
+    [#"../reborrow_stash.rs" 15 8 15 19] self <- { self with current = (let ReborrowStash_Test_Type.C_Test x0 =  * self in ReborrowStash_Test_Type.C_Test ( ^ _8)) };
+    [#"../reborrow_stash.rs" 15 8 15 19] _3 <- Borrow.borrow_mut ( * _8);
+    [#"../reborrow_stash.rs" 15 8 15 19] _8 <- { _8 with current =  ^ _3 };
+    [#"../reborrow_stash.rs" 15 8 15 19] _0 <- Borrow.borrow_mut ( * _3);
+    [#"../reborrow_stash.rs" 15 8 15 19] _3 <- { _3 with current =  ^ _0 };
+    assume { resolve0 _8 };
+    assume { resolve0 _3 };
+    assume { resolve1 self };
     return _0
   }
   

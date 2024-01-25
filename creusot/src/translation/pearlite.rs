@@ -31,8 +31,8 @@ use rustc_middle::{
         AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
     },
     ty::{
-        int_ty, subst::SubstsRef, uint_ty, GenericArg, CanonicalUserType, Ty, TyCtxt, TyKind, TypeFoldable,
-        TypeVisitable, TypeVisitableExt, UpvarSubsts, UserType,
+        int_ty, subst::SubstsRef, uint_ty, CanonicalUserType, GenericArg, Ty, TyCtxt, TyKind,
+        TypeFoldable, TypeVisitable, TypeVisitableExt, UpvarSubsts, UserType,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};

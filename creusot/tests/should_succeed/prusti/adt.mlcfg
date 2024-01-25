@@ -1,90 +1,18 @@
 
-module CreusotContracts_Resolve_Resolve_Resolve_Stub
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Resolve_Resolve_Resolve_Interface
-  type self
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Resolve_Resolve
-  type self
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl0_Resolve_Stub
-  type t1
-  type t2
-  predicate resolve (self : (t1, t2))
-end
-module CreusotContracts_Resolve_Impl0_Resolve_Interface
-  type t1
-  type t2
-  predicate resolve (self : (t1, t2))
-  val resolve (self : (t1, t2)) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl0_Resolve
-  type t1
-  type t2
-  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve1 with
-    type self = t2
-  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
-    type self = t1
-  predicate resolve (self : (t1, t2)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] Resolve0.resolve (let (a, _) = self in a) /\ Resolve1.resolve (let (_, a) = self in a)
-  val resolve (self : (t1, t2)) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl1_Resolve_Stub
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-end
-module CreusotContracts_Resolve_Impl1_Resolve_Interface
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl1_Resolve
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
-module Adt_Test_Interface
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  val test [#"../adt.rs" 7 0 7 36] (x : (borrowed uint32, borrowed uint32)) : ()
-    requires {[#"../adt.rs" 5 11 5 25]  * (let (a, _) = x in a) = (0 : uint32)}
-    ensures { [#"../adt.rs" 6 0 6 38] let (a, b) = x in  ^ a =  ^ b }
-    
-end
 module Adt_Test
-  use prelude.Borrow
-  use prelude.Int
   use prelude.UInt32
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
-    type t = uint32
-  clone CreusotContracts_Resolve_Impl0_Resolve as Resolve0 with
-    type t1 = borrowed uint32,
-    type t2 = borrowed uint32,
-    predicate Resolve0.resolve = Resolve1.resolve,
-    predicate Resolve1.resolve = Resolve1.resolve
+  use prelude.Int
+  use prelude.Borrow
+  predicate resolve1 (self : borrowed uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+  val resolve1 (self : borrowed uint32) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : (borrowed uint32, borrowed uint32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 18 8 18 60] resolve1 (let (a, _) = self in a) /\ resolve1 (let (_, a) = self in a)
+  val resolve0 (self : (borrowed uint32, borrowed uint32)) : bool
+    ensures { result = resolve0 self }
+    
   let rec cfg test [#"../adt.rs" 7 0 7 36] [@cfg:stackify] [@cfg:subregion_analysis] (x : (borrowed uint32, borrowed uint32)) : ()
     requires {[#"../adt.rs" 5 11 5 25]  * (let (a, _) = x in a) = (0 : uint32)}
     ensures { [#"../adt.rs" 6 0 6 38] let (a, b) = x in  ^ a =  ^ b }
@@ -96,76 +24,20 @@ module Adt_Test
     goto BB0
   }
   BB0 {
-    x <- (let (a, b) = x in (a, { (let (_, a) = x in a) with current = ( * (let (a, _) = x in a)) }));
-    assume { Resolve0.resolve x };
-    _0 <- ();
+    [#"../adt.rs" 8 4 8 19] x <- (let (x0, x1) = x in (x0, { (let (_, a) = x in a) with current = ([#"../adt.rs" 8 13 8 19]  * (let (a, _) = x in a)) }));
+    assume { resolve0 x };
+    [#"../adt.rs" 8 4 8 19] _0 <- ([#"../adt.rs" 8 4 8 19] ());
     return _0
   }
   
-end
-module Adt_TestConstructor_Stub
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  function test_constructor [#"../adt.rs" 13 0 13 93] (x : borrowed uint32) (y : borrowed uint32) : (borrowed uint32, borrowed uint32)
-    
-end
-module Adt_TestConstructor_Interface
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  function test_constructor [#"../adt.rs" 13 0 13 93] (x : borrowed uint32) (y : borrowed uint32) : (borrowed uint32, borrowed uint32)
-    
-  val test_constructor [#"../adt.rs" 13 0 13 93] (x : borrowed uint32) (y : borrowed uint32) : (borrowed uint32, borrowed uint32)
-    ensures { result = test_constructor x y }
-    
-end
-module Adt_TestConstructor
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  function test_constructor [#"../adt.rs" 13 0 13 93] (x : borrowed uint32) (y : borrowed uint32) : (borrowed uint32, borrowed uint32)
-    
-   =
-    [#"../adt.rs" 14 4 14 10] (x, y)
-  val test_constructor [#"../adt.rs" 13 0 13 93] (x : borrowed uint32) (y : borrowed uint32) : (borrowed uint32, borrowed uint32)
-    ensures { result = test_constructor x y }
-    
 end
 module Adt_SamePair_Type
   type t_samepair 'x =
     | C_SamePair 'x 'x
     
 end
-module Adt_TestConstructor2_Stub
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  use Adt_SamePair_Type as Adt_SamePair_Type
-  function test_constructor2 [#"../adt.rs" 21 0 21 85] (x : borrowed uint32) (y : borrowed uint32) : Adt_SamePair_Type.t_samepair (borrowed uint32)
-    
-end
-module Adt_TestConstructor2_Interface
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  use Adt_SamePair_Type as Adt_SamePair_Type
-  function test_constructor2 [#"../adt.rs" 21 0 21 85] (x : borrowed uint32) (y : borrowed uint32) : Adt_SamePair_Type.t_samepair (borrowed uint32)
-    
-  val test_constructor2 [#"../adt.rs" 21 0 21 85] (x : borrowed uint32) (y : borrowed uint32) : Adt_SamePair_Type.t_samepair (borrowed uint32)
-    ensures { result = test_constructor2 x y }
-    
-end
-module Adt_TestConstructor2
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  use Adt_SamePair_Type as Adt_SamePair_Type
-  function test_constructor2 [#"../adt.rs" 21 0 21 85] (x : borrowed uint32) (y : borrowed uint32) : Adt_SamePair_Type.t_samepair (borrowed uint32)
-    
-   =
-    [#"../adt.rs" 22 4 22 18] Adt_SamePair_Type.C_SamePair x y
-  val test_constructor2 [#"../adt.rs" 21 0 21 85] (x : borrowed uint32) (y : borrowed uint32) : Adt_SamePair_Type.t_samepair (borrowed uint32)
-    ensures { result = test_constructor2 x y }
+module Adt_HasModel_Type
+  type t_hasmodel 't 'proj0 =
+    | C_HasModel 'proj0
     
 end

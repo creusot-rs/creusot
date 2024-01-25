@@ -1,40 +1,13 @@
 
-module CreusotContracts_Resolve_Impl1_Resolve_Stub
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-end
-module CreusotContracts_Resolve_Impl1_Resolve_Interface
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl1_Resolve
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
-module BlockedLifetime_Impl0_Test_Interface
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  val test [#"../blocked_lifetime.rs" 13 4 13 27] (x : borrowed uint32) : ()
-    ensures { [#"../blocked_lifetime.rs" 12 14 12 24]  ^ x = (5 : uint32) }
-    
-end
 module BlockedLifetime_Impl0_Test
-  use prelude.Int
-  use prelude.UInt32
   use prelude.Borrow
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = uint32
+  use prelude.UInt32
+  predicate resolve0 (self : borrowed uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+  val resolve0 (self : borrowed uint32) : bool
+    ensures { result = resolve0 self }
+    
+  use prelude.Int
   let rec cfg test [#"../blocked_lifetime.rs" 13 4 13 27] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed uint32) : ()
     ensures { [#"../blocked_lifetime.rs" 12 14 12 24]  ^ x = (5 : uint32) }
     
@@ -45,9 +18,9 @@ module BlockedLifetime_Impl0_Test
     goto BB0
   }
   BB0 {
-    x <- { x with current = ([#"../blocked_lifetime.rs" 14 13 14 14] (5 : uint32)) };
-    assume { Resolve0.resolve x };
-    _0 <- ();
+    [#"../blocked_lifetime.rs" 14 8 14 14] x <- { x with current = ([#"../blocked_lifetime.rs" 14 8 14 14] [#"../blocked_lifetime.rs" 14 13 14 14] (5 : uint32)) };
+    assume { resolve0 x };
+    [#"../blocked_lifetime.rs" 13 28 15 5] _0 <- ([#"../blocked_lifetime.rs" 13 28 15 5] ());
     return _0
   }
   

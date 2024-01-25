@@ -5,99 +5,15 @@ module Core_Result_Result_Type
     | C_Err 'e
     
 end
-module Match_Test1_Stub
-  type x
-  use prelude.Borrow
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  function test1 [#"../match.rs" 8 0 8 65] (x : Core_Result_Result_Type.t_result (borrowed x) (borrowed x)) : borrowed x
-end
-module Match_Test1_Interface
-  type x
-  use prelude.Borrow
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  function test1 [#"../match.rs" 8 0 8 65] (x : Core_Result_Result_Type.t_result (borrowed x) (borrowed x)) : borrowed x
-  val test1 [#"../match.rs" 8 0 8 65] (x : Core_Result_Result_Type.t_result (borrowed x) (borrowed x)) : borrowed x
-    ensures { result = test1 x }
-    
-end
-module Match_Test1
-  type x
-  use prelude.Borrow
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  function test1 [#"../match.rs" 8 0 8 65] (x : Core_Result_Result_Type.t_result (borrowed x) (borrowed x)) : borrowed x
-   =
-    [#"../match.rs" 7 0 7 8] match (x) with
-      | Core_Result_Result_Type.C_Ok ok -> ok
-      | Core_Result_Result_Type.C_Err err -> err
-      end
-  val test1 [#"../match.rs" 8 0 8 65] (x : Core_Result_Result_Type.t_result (borrowed x) (borrowed x)) : borrowed x
-    ensures { result = test1 x }
-    
-end
-module Match_TestCur_Stub
-  type x
-  use prelude.Borrow
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  function test_cur [#"../match.rs" 17 0 17 57] (x : Core_Result_Result_Type.t_result (borrowed x) (borrowed x)) : x
-end
-module Match_TestCur_Interface
-  type x
-  use prelude.Borrow
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  function test_cur [#"../match.rs" 17 0 17 57] (x : Core_Result_Result_Type.t_result (borrowed x) (borrowed x)) : x
-  val test_cur [#"../match.rs" 17 0 17 57] (x : Core_Result_Result_Type.t_result (borrowed x) (borrowed x)) : x
-    ensures { result = test_cur x }
-    
-end
-module Match_TestCur
-  type x
-  use prelude.Borrow
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  function test_cur [#"../match.rs" 17 0 17 57] (x : Core_Result_Result_Type.t_result (borrowed x) (borrowed x)) : x =
-    [#"../match.rs" 16 0 16 8] let r = match (x) with
-      | Core_Result_Result_Type.C_Ok ok -> ok
-      | Core_Result_Result_Type.C_Err err -> err
-      end in  * r
-  val test_cur [#"../match.rs" 17 0 17 57] (x : Core_Result_Result_Type.t_result (borrowed x) (borrowed x)) : x
-    ensures { result = test_cur x }
-    
-end
-module CreusotContracts_Resolve_Impl1_Resolve_Stub
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-end
-module CreusotContracts_Resolve_Impl1_Resolve_Interface
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl1_Resolve
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
-module Match_TestProcCur_Interface
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  val test_proc_cur [#"../match.rs" 31 0 31 69] (x : borrowed uint32) (y : borrowed uint32) (b : bool) : ()
-    requires {[#"../match.rs" 30 11 30 39]  * (if b then x else y) = (5 : uint32)}
-    
-end
 module Match_TestProcCur
-  use prelude.Borrow
-  use prelude.Int
   use prelude.UInt32
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = uint32
+  use prelude.Int
+  use prelude.Borrow
+  predicate resolve0 (self : borrowed uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+  val resolve0 (self : borrowed uint32) : bool
+    ensures { result = resolve0 self }
+    
   let rec cfg test_proc_cur [#"../match.rs" 31 0 31 69] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed uint32) (y : borrowed uint32) (b : bool) : ()
     requires {[#"../match.rs" 30 11 30 39]  * (if b then x else y) = (5 : uint32)}
     
@@ -112,55 +28,33 @@ module Match_TestProcCur
     goto BB0
   }
   BB0 {
-    switch (b)
+    switch ([#"../match.rs" 32 15 32 16] b)
       | False -> goto BB2
       | True -> goto BB1
       end
   }
   BB1 {
-    assume { Resolve0.resolve y };
-    r <- x;
-    x <- any borrowed uint32;
+    assume { resolve0 y };
+    [#"../match.rs" 32 18 32 19] r <- ([#"../match.rs" 32 18 32 19] x);
+    [#"../match.rs" 32 18 32 19] x <- any borrowed uint32;
     goto BB3
   }
   BB2 {
-    assume { Resolve0.resolve x };
-    _7 <- y;
-    y <- any borrowed uint32;
-    r <- Borrow.borrow_mut ( * _7);
-    _7 <- { _7 with current = ( ^ r) };
-    assume { Resolve0.resolve _7 };
+    assume { resolve0 x };
+    [#"../match.rs" 32 27 32 28] _7 <- ([#"../match.rs" 32 27 32 28] y);
+    [#"../match.rs" 32 27 32 28] y <- any borrowed uint32;
+    [#"../match.rs" 32 27 32 28] r <- Borrow.borrow_mut ( * _7);
+    [#"../match.rs" 32 27 32 28] _7 <- { _7 with current =  ^ r };
+    assume { resolve0 _7 };
     goto BB3
   }
   BB3 {
-    r <- { r with current = ([#"../match.rs" 33 9 33 10] (5 : uint32)) };
-    assume { Resolve0.resolve r };
-    _0 <- ();
+    [#"../match.rs" 33 4 33 10] r <- { r with current = ([#"../match.rs" 33 4 33 10] [#"../match.rs" 33 9 33 10] (5 : uint32)) };
+    assume { resolve0 r };
+    [#"../match.rs" 31 70 34 1] _0 <- ([#"../match.rs" 31 70 34 1] ());
     return _0
   }
   
-end
-module Match_Id_Stub
-  type x
-  use prelude.Borrow
-  function id [#"../match.rs" 38 0 38 43] (x : borrowed x) : borrowed x
-end
-module Match_Id_Interface
-  type x
-  use prelude.Borrow
-  function id [#"../match.rs" 38 0 38 43] (x : borrowed x) : borrowed x
-  val id [#"../match.rs" 38 0 38 43] (x : borrowed x) : borrowed x
-    ensures { result = id x }
-    
-end
-module Match_Id
-  type x
-  use prelude.Borrow
-  function id [#"../match.rs" 38 0 38 43] (x : borrowed x) : borrowed x =
-    [#"../match.rs" 37 0 37 8] x
-  val id [#"../match.rs" 38 0 38 43] (x : borrowed x) : borrowed x
-    ensures { result = id x }
-    
 end
 module Core_Option_Option_Type
   type t_option 't =
@@ -168,72 +62,32 @@ module Core_Option_Option_Type
     | C_Some 't
     
 end
-module Match_Unwrap_Stub
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  function unwrap [#"../match.rs" 45 0 45 60] (x : Core_Option_Option_Type.t_option (borrowed uint32)) : borrowed uint32
-end
-module Match_Unwrap_Interface
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  function unwrap [#"../match.rs" 45 0 45 60] (x : Core_Option_Option_Type.t_option (borrowed uint32)) : borrowed uint32
-  val unwrap [#"../match.rs" 45 0 45 60] (x : Core_Option_Option_Type.t_option (borrowed uint32)) : borrowed uint32
-    requires {[#"../match.rs" 44 11 44 20] x <> Core_Option_Option_Type.C_None}
-    ensures { result = unwrap x }
-    
-end
-module Match_Unwrap
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  clone Match_Id_Stub as Id0 with
-    type x = uint32
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  function unwrap [#"../match.rs" 45 0 45 60] (x : Core_Option_Option_Type.t_option (borrowed uint32)) : borrowed uint32
-  val unwrap [#"../match.rs" 45 0 45 60] (x : Core_Option_Option_Type.t_option (borrowed uint32)) : borrowed uint32
-    requires {[#"../match.rs" 44 11 44 20] x <> Core_Option_Option_Type.C_None}
-    ensures { result = unwrap x }
-    
-end
 module Match_Unwrap_Impl
   use prelude.Borrow
-  use prelude.Int
   use prelude.UInt32
-  clone Match_Id as Id0 with
-    type x = uint32
+  function id0 [#"../match.rs" 38 0 38 43] (x : borrowed uint32) : borrowed uint32 =
+    [#"../match.rs" 37 0 37 8] x
+  val id0 [#"../match.rs" 38 0 38 43] (x : borrowed uint32) : borrowed uint32
+    ensures { result = id0 x }
+    
+  use prelude.Int
   use Core_Option_Option_Type as Core_Option_Option_Type
   let rec ghost function unwrap [#"../match.rs" 45 0 45 60] (x : Core_Option_Option_Type.t_option (borrowed uint32)) : borrowed uint32
     requires {[#"../match.rs" 44 11 44 20] x <> Core_Option_Option_Type.C_None}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../match.rs" 43 0 43 8] match (x) with
+    [#"../match.rs" 43 0 43 8] match x with
       | Core_Option_Option_Type.C_Some x -> x
-      | Core_Option_Option_Type.C_None -> let a' = absurd in Id0.id a'
+      | Core_Option_Option_Type.C_None -> let a' = absurd in id0 a'
       end
 end
-module Match_TestNever_Interface
-  use prelude.Borrow
-  use prelude.Int
-  use prelude.UInt32
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  val test_never [#"../match.rs" 54 0 54 53] (x : Core_Result_Result_Type.t_result (borrowed uint32, borrowed uint32) ()) : ()
-    requires {[#"../match.rs" 52 0 52 72] let x = match (x) with
-      | Core_Result_Result_Type.C_Ok x -> x
-      | Core_Result_Result_Type.C_Err x -> absurd
-      end in  * (let (a, _) = x in a) = (0 : uint32)}
-    
-end
 module Match_TestNever
-  use prelude.Borrow
-  use prelude.Int
   use prelude.UInt32
+  use prelude.Int
+  use prelude.Borrow
   use Core_Result_Result_Type as Core_Result_Result_Type
   let rec cfg test_never [#"../match.rs" 54 0 54 53] [@cfg:stackify] [@cfg:subregion_analysis] (x : Core_Result_Result_Type.t_result (borrowed uint32, borrowed uint32) ()) : ()
-    requires {[#"../match.rs" 52 0 52 72] let x = match (x) with
+    requires {[#"../match.rs" 52 0 52 72] let x = match x with
       | Core_Result_Result_Type.C_Ok x -> x
       | Core_Result_Result_Type.C_Err x -> absurd
       end in  * (let (a, _) = x in a) = (0 : uint32)}
@@ -244,7 +98,7 @@ module Match_TestNever
     goto BB0
   }
   BB0 {
-    _0 <- ();
+    [#"../match.rs" 54 55 54 57] _0 <- ([#"../match.rs" 54 55 54 57] ());
     return _0
   }
   

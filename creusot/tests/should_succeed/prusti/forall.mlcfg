@@ -1,30 +1,12 @@
 
-module Forall_CheckBool_Stub
-  function check_bool [#"../forall.rs" 7 0 7 34] (_1 : bool) : bool
-end
-module Forall_CheckBool_Interface
-  function check_bool [#"../forall.rs" 7 0 7 34] (_1 : bool) : bool
-  val check_bool [#"../forall.rs" 7 0 7 34] (_1 : bool) : bool
-    ensures { result = check_bool _1 }
-    
-end
-module Forall_CheckBool
-  function check_bool [#"../forall.rs" 7 0 7 34] (_1 : bool) : bool =
-    [#"../forall.rs" 8 4 8 8] true
-  val check_bool [#"../forall.rs" 7 0 7 34] (_1 : bool) : bool
-    ensures { result = check_bool _1 }
-    
-end
-module Forall_Test1_Interface
-  clone Forall_CheckBool_Stub as CheckBool0
-  val test1 [#"../forall.rs" 12 0 12 14] (_1 : ()) : ()
-    requires {[#"../forall.rs" 11 0 11 72] forall b2 : bool . forall b1 : bool . CheckBool0.check_bool b1 /\ CheckBool0.check_bool b2}
-    
-end
 module Forall_Test1
-  clone Forall_CheckBool as CheckBool0
+  function check_bool0 [#"../forall.rs" 7 0 7 34] (_1 : bool) : bool =
+    [#"../forall.rs" 8 4 8 8] true
+  val check_bool0 [#"../forall.rs" 7 0 7 34] (_1 : bool) : bool
+    ensures { result = check_bool0 _1 }
+    
   let rec cfg test1 [#"../forall.rs" 12 0 12 14] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
-    requires {[#"../forall.rs" 11 0 11 72] forall b2 : bool . forall b1 : bool . CheckBool0.check_bool b1 /\ CheckBool0.check_bool b2}
+    requires {[#"../forall.rs" 11 0 11 72] forall b2 : bool . forall b1 : bool . check_bool0 b1 /\ check_bool0 b2}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -32,76 +14,28 @@ module Forall_Test1
     goto BB0
   }
   BB0 {
-    _0 <- ();
+    [#"../forall.rs" 12 15 12 17] _0 <- ([#"../forall.rs" 12 15 12 17] ());
     return _0
   }
   
 end
-module CreusotContracts_Invariant_Inv_Stub
-  type t
-  predicate inv (_x : t)
-end
-module CreusotContracts_Invariant_Inv_Interface
-  type t
-  predicate inv (_x : t)
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
-module CreusotContracts_Invariant_Inv
-  type t
-  predicate inv (_x : t) =
-    [#"../../../../../creusot-contracts/src/invariant.rs" 16 4 16 8] true
-  val inv (_x : t) : bool
-    ensures { result = inv _x }
-    
-end
-module Forall_Check_Check_Stub
-  type self
-  function check' [#"../forall.rs" 16 4 16 27] (self : self) : bool
-end
-module Forall_Check_Check_Interface
-  type self
-  function check' [#"../forall.rs" 16 4 16 27] (self : self) : bool
-  val check' [#"../forall.rs" 16 4 16 27] (self : self) : bool
-    ensures { result = check' self }
-    
-end
-module Forall_Check_Check
-  type self
-  function check' [#"../forall.rs" 16 4 16 27] (self : self) : bool
-  val check' [#"../forall.rs" 16 4 16 27] (self : self) : bool
-    ensures { result = check' self }
-    
-end
-module TyInv_Trivial
-  type t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = t
-  axiom inv_trivial : forall self : t . Inv0.inv self = true
-end
-module Forall_Test2_Interface
-  type t
-  clone Forall_Check_Check_Stub as Check0 with
-    type self = t
-  clone CreusotContracts_Invariant_Inv_Stub as Inv0 with
-    type t = t
-  val test2 [#"../forall.rs" 20 0 20 24] (_1 : ()) : ()
-    requires {[#"../forall.rs" 19 0 19 35] forall t : t . Inv0.inv t -> Check0.check' t}
-    
-end
 module Forall_Test2
   type t
-  clone CreusotContracts_Invariant_Inv_Interface as Inv0 with
-    type t = t
-  clone TyInv_Trivial as TyInv_Trivial0 with
-    type t = t,
-    predicate Inv0.inv = Inv0.inv,
-    axiom .
-  clone Forall_Check_Check_Interface as Check0 with
-    type self = t
+  predicate invariant0 (self : t)
+  val invariant0 (self : t) : bool
+    ensures { result = invariant0 self }
+    
+  predicate inv0 (_x : t)
+  val inv0 (_x : t) : bool
+    ensures { result = inv0 _x }
+    
+  axiom inv0 : forall x : t . inv0 x = true
+  function check0 [#"../forall.rs" 16 4 16 27] (self : t) : bool
+  val check0 [#"../forall.rs" 16 4 16 27] (self : t) : bool
+    ensures { result = check0 self }
+    
   let rec cfg test2 [#"../forall.rs" 20 0 20 24] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
-    requires {[#"../forall.rs" 19 0 19 35] forall t : t . Inv0.inv t -> Check0.check' t}
+    requires {[#"../forall.rs" 19 0 19 35] forall t : t . inv0 t -> check0 t}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -109,7 +43,7 @@ module Forall_Test2
     goto BB0
   }
   BB0 {
-    _0 <- ();
+    [#"../forall.rs" 20 25 20 27] _0 <- ([#"../forall.rs" 20 25 20 27] ());
     return _0
   }
   

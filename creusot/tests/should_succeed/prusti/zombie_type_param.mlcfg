@@ -1,0 +1,103 @@
+
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
+    
+end
+module ZombieTypeParam_TestOp
+  use prelude.UInt32
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use prelude.Int
+  predicate resolve1 (self : uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 47 8 47 12] true
+  val resolve1 (self : uint32) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 36 8 36 31] resolve1 self
+  val resolve0 (self : uint32) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg test_op [#"../zombie_type_param.rs" 6 0 6 27] [@cfg:stackify] [@cfg:subregion_analysis] (x : uint32) : ()
+    ensures { [#"../zombie_type_param.rs" 5 10 5 57] match Core_Option_Option_Type.C_Some x with
+      | Core_Option_Option_Type.C_None -> false
+      | Core_Option_Option_Type.C_Some _ -> true
+      end }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var x : uint32 = x;
+  {
+    goto BB0
+  }
+  BB0 {
+    assume { resolve0 x };
+    goto BB1
+  }
+  BB1 {
+    [#"../zombie_type_param.rs" 6 28 6 30] _0 <- ([#"../zombie_type_param.rs" 6 28 6 30] ());
+    goto BB2
+  }
+  BB2 {
+    return _0
+  }
+  
+end
+module ZombieTypeParam_TestId
+  use prelude.UInt32
+  use prelude.Borrow
+  function id0 [#"../zombie_type_param.rs" 9 0 9 19] (x : borrowed uint32) : borrowed uint32 =
+    [#"../zombie_type_param.rs" 10 4 10 5] x
+  val id0 [#"../zombie_type_param.rs" 9 0 9 19] (x : borrowed uint32) : borrowed uint32
+    ensures { result = id0 x }
+    
+  predicate resolve0 (self : borrowed uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+  val resolve0 (self : borrowed uint32) : bool
+    ensures { result = resolve0 self }
+    
+  use prelude.Int
+  let rec cfg test_id [#"../zombie_type_param.rs" 14 0 14 27] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed uint32) : ()
+    ensures { [#"../zombie_type_param.rs" 13 10 13 24]  ^ id0 x = (5 : uint32) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var x : borrowed uint32 = x;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../zombie_type_param.rs" 15 4 15 10] x <- { x with current = ([#"../zombie_type_param.rs" 15 4 15 10] [#"../zombie_type_param.rs" 15 9 15 10] (5 : uint32)) };
+    assume { resolve0 x };
+    [#"../zombie_type_param.rs" 15 4 15 10] _0 <- ([#"../zombie_type_param.rs" 15 4 15 10] ());
+    return _0
+  }
+  
+end
+module ZombieTypeParam_TestTuple
+  use prelude.Borrow
+  use prelude.UInt32
+  predicate resolve0 (self : borrowed uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+  val resolve0 (self : borrowed uint32) : bool
+    ensures { result = resolve0 self }
+    
+  use prelude.Int
+  let rec cfg test_tuple [#"../zombie_type_param.rs" 19 0 19 30] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed uint32) : ()
+    ensures { [#"../zombie_type_param.rs" 18 10 18 29]  ^ (let (a, _) = (x, 3) in a) = (5 : uint32) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var x : borrowed uint32 = x;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../zombie_type_param.rs" 20 4 20 10] x <- { x with current = ([#"../zombie_type_param.rs" 20 4 20 10] [#"../zombie_type_param.rs" 20 9 20 10] (5 : uint32)) };
+    assume { resolve0 x };
+    [#"../zombie_type_param.rs" 20 4 20 10] _0 <- ([#"../zombie_type_param.rs" 20 4 20 10] ());
+    return _0
+  }
+  
+end

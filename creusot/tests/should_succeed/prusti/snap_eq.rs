@@ -7,7 +7,7 @@ fn my_eq<X: SnapEq>(x: X, y: X) -> bool {
 }
 
 #[ensures(my_eq(x, x))]
-fn test(x: u32) {}
+pub fn test(x: u32) {}
 
-#[ensures(my_eq(x, x))]
-fn test2(x: u32) {}
+#[ensures(old(my_eq(x, x)))]
+pub fn test2<X>(x: X) {}
