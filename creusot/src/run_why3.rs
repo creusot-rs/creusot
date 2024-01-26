@@ -1,4 +1,7 @@
-use crate::{backend::Why3Generator, options::Options};
+use crate::{
+    backend::Why3Generator,
+    options::{Options, Why3Sub},
+};
 use include_dir::{include_dir, Dir};
 use rustc_ast::{
     mut_visit::DummyAstNode,
@@ -14,7 +17,7 @@ use rustc_span::{
 use serde_json::Deserializer;
 use std::{
     collections::{hash_map::Entry, HashMap},
-    fmt::Write,
+    fmt::{Display, Formatter, Write},
     io::BufReader,
     path::PathBuf,
     process::{Command, Stdio},
@@ -24,12 +27,20 @@ use why3::ce_models::{ConcreteTerm, FunLitElt, Goal, Loc, ProverResult, TBool, T
 
 static PRELUDE: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/../prelude");
 
+impl Display for Why3Sub {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Why3Sub::Prove => f.write_str("prove"),
+            Why3Sub::Ide => f.write_str("ide"),
+            Why3Sub::Replay => f.write_str("replay"),
+        }
+    }
+}
+
 pub(super) fn run_why3<'tcx>(ctx: &Why3Generator<'tcx>, file: Option<PathBuf>) {
     let Some(why3_cmd) = &ctx.opts.why3_cmd else {
         return
     };
-    let mut why3_cmd = why3_cmd.split_ascii_whitespace();
-    let Some(base_cmd) = why3_cmd.next() else {ctx.crash_and_error(DUMMY_SP, "why3 command must not be empty")};
     let Some(output_file) = file else {ctx.crash_and_error(DUMMY_SP, "cannot run why3 without file")};
     let prelude_dir = TempDir::new("creusot_why3_prelude").expect("could not create temp dir");
     PRELUDE.extract(prelude_dir.path()).expect("could extract prelude into temp dir");
@@ -39,14 +50,14 @@ pub(super) fn run_why3<'tcx>(ctx: &Why3Generator<'tcx>, file: Option<PathBuf>) {
             "--warn-off=unused_variable",
             "--warn-off=clone_not_abstract",
             "--warn-off=axiom_abstract",
-            base_cmd,
+            &why3_cmd.sub.to_string(),
             "-L",
         ])
         .arg(prelude_dir.path().as_os_str())
         .arg(&output_file)
-        .args(why3_cmd);
+        .args(why3_cmd.args.split_ascii_whitespace());
 
-    if base_cmd == "prove" {
+    if matches!(why3_cmd.sub, Why3Sub::Prove) {
         command.arg("--json");
         let span_map = &ctx.span_map;
         let mut child = command.stdout(Stdio::piped()).spawn().expect("could not run why3");
@@ -124,7 +135,7 @@ impl SpanMap {
         opts: &Options,
         span: Span,
     ) -> Option<why3::declaration::Attribute> {
-        if let Some(cmd) = &opts.why3_cmd && cmd.starts_with("prove") {
+        if let Some(cmd) = &opts.why3_cmd && matches!(cmd.sub, Why3Sub::Prove) {
             let data = span.data();
             Some(why3::declaration::Attribute::Span(
                 "rustc_span".into(),

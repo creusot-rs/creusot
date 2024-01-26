@@ -11,7 +11,6 @@ use options::{Args, CreusotArgsExt as _};
 #[macro_use]
 extern crate log;
 
-use clap::*;
 use creusot::callbacks::*;
 use options::CreusotArgs;
 use rustc_driver::{RunCompiler, DEFAULT_LOCALE_RESOURCES};

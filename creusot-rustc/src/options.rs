@@ -4,6 +4,16 @@ pub use creusot_args::options::*;
 pub trait CreusotArgsExt {
     fn to_options(self) -> Options;
 }
+
+fn why3_command(cmd: CreusotSubCommand) -> options::Why3Command {
+    let CreusotSubCommand::Why3 { command, args, .. } = cmd;
+    let sub = match command {
+        Why3SubCommand::Prove => options::Why3Sub::Prove,
+        Why3SubCommand::Ide => options::Why3Sub::Ide,
+        Why3SubCommand::Replay => options::Why3Sub::Replay,
+    };
+    options::Why3Command { sub, args }
+}
 impl CreusotArgsExt for CreusotArgs {
     fn to_options(self) -> Options {
         let metadata_path = self.metadata_path;
@@ -34,7 +44,7 @@ impl CreusotArgsExt for CreusotArgs {
             span_mode: span_mode,
             match_str: self.focus_on,
             simple_triggers: self.simple_triggers,
-            why3_cmd: self.why3,
+            why3_cmd: self.subcommand.map(why3_command),
         }
     }
 }

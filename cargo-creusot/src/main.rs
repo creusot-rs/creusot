@@ -1,4 +1,3 @@
-use clap::*;
 use creusot_args::options::Args;
 use std::{
     env,

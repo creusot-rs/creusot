@@ -1,6 +1,6 @@
 use clap::*;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
+use std::{error::Error, ffi::OsString};
 
 #[derive(Parser, Serialize, Deserialize)]
 pub struct CreusotArgs {
@@ -35,9 +35,30 @@ pub struct CreusotArgs {
     /// Use `result` as the trigger of definition and specification axioms of logic/ghost/predicate functions
     #[clap(long, default_value_t = false, action = clap::ArgAction::Set)]
     pub simple_triggers: bool,
-    /// Run why3 with the following configuration (Should start with "prove" or "ide")
-    #[clap(long)]
-    pub why3: Option<String>,
+    /// Run why3
+    #[command(subcommand)]
+    pub subcommand: Option<CreusotSubCommand>,
+}
+
+#[derive(Subcommand, Serialize, Deserialize)]
+pub enum CreusotSubCommand {
+    Why3 {
+        /// Why3 subcommand to run
+        #[clap(value_enum)]
+        command: Why3SubCommand,
+        /// Extra arguments to pass to why3
+        #[clap(default_value_t = String::default())]
+        args: String,
+        #[clap(last = true)]
+        rust_flags: Vec<String>,
+    },
+}
+
+#[derive(ValueEnum, Serialize, Deserialize, Clone)]
+pub enum Why3SubCommand {
+    Prove,
+    Ide,
+    Replay,
 }
 
 /// Parse a single key-value pair
@@ -60,9 +81,30 @@ pub struct Args {
     pub rust_flags: Vec<String>,
 }
 
+impl Args {
+    fn move_rust_flags(&mut self) {
+        let rust_flags = match &mut self.creusot.subcommand {
+            None => return,
+            Some(CreusotSubCommand::Why3 { rust_flags, .. }) => rust_flags,
+        };
+        let rust_flags = std::mem::take(rust_flags);
+        assert!(self.rust_flags.is_empty());
+        self.rust_flags = rust_flags
+    }
+
+    pub fn parse_from<I: Into<OsString> + Clone>(it: impl IntoIterator<Item = I>) -> Self {
+        let mut res: Self = Parser::parse_from(it);
+        res.move_rust_flags();
+        res
+    }
+}
+
 #[derive(clap::ValueEnum, Clone, Deserialize, Serialize)]
 pub enum SpanMode {
     Relative,
     Absolute,
     Off,
 }
+
+#[test]
+fn test() {}
