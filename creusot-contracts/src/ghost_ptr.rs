@@ -132,7 +132,7 @@ impl<T: ?Sized> GhostPtrExt<T> for GhostPtr<T> {
     #[open(self)]
     #[ghost]
     #[ensures(forall<t: GhostPtrToken<T>> !t@.contains(result))]
-    // #[ensures(result.addr_logic() == 0@)]
+    #[ensures(result.addr_logic() == 0@)]
     #[ensures(forall<ptr: GhostPtr<T>> ptr.addr_logic() == result.addr_logic() ==> ptr == result)]
     fn null_logic() -> Self {
         absurd
