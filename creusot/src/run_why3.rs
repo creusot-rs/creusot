@@ -182,7 +182,7 @@ fn ident(name: &str) -> Ident {
 }
 
 fn name_to_path(name: &str) -> Expr {
-    let segments = name.split(".").into_iter().map(|x| PathSegment::from_ident(ident(x))).collect();
+    let segments = name.split('.').map(|x| PathSegment::from_ident(ident(x))).collect();
     exp(ExprKind::Path(None, rustc_ast::Path { span: DUMMY_SP, segments, tokens: None }))
 }
 
@@ -222,7 +222,7 @@ fn fun<'a>(args: impl IntoIterator<Item = &'a str>, body: Expr) -> Expr {
 }
 
 fn app(f: &str, args: impl IntoIterator<Item = Expr>) -> Expr {
-    let mut v: Vec<_> = args.into_iter().map(|x| P(x)).collect();
+    let mut v: Vec<_> = args.into_iter().map(P).collect();
 
     let take = |x: &mut P<Expr>| std::mem::replace(&mut **x, Expr::dummy());
     match (f, &mut *v) {
@@ -287,14 +287,14 @@ fn not(t: Expr) -> Expr {
 
 fn term_to_ast(t: &Term) -> Expr {
     match t {
-        Term::Var(v) => name_to_path(&*v.vs_name),
+        Term::Var(v) => name_to_path(&v.vs_name),
         Term::Const { ty: _ty, val } => lit(val, LitKind::Integer, None),
-        Term::App { ls, args } => app(ls, args.into_iter().map(|x| term_to_ast(x))),
+        Term::App { ls, args } => app(ls, args.iter().map(term_to_ast)),
         Term::If { ift, then, elset } => ite([ift, then, elset].map(|x| term_to_ast(x))),
-        Term::Eps { vs, t } => app("eps!", [fun([&*vs.vs_name], term_to_ast(&*t))]),
+        Term::Eps { vs, t } => app("eps!", [fun([&*vs.vs_name], term_to_ast(t))]),
         Term::Fun { args, body } => fun(args.iter().map(|x| &*x.vs_name), term_to_ast(body)),
         Term::Quant { quant, vs, t } => {
-            app(quant, [fun(vs.iter().map(|x| &*x.vs_name), term_to_ast(&*t))])
+            app(quant, [fun(vs.iter().map(|x| &*x.vs_name), term_to_ast(t))])
         }
         Term::Binop { binop: op, t1, t2 } => binop(op, [t1, t2].map(|x| term_to_ast(x))),
         Term::Not(t) => not(term_to_ast(t)),
@@ -314,21 +314,21 @@ fn fun_lit_elt_to_ast(elt: &FunLitElt) -> P<Expr> {
 
 fn cterm_to_ast(t: &ConcreteTerm) -> Expr {
     match t {
-        ConcreteTerm::Var(v) => name_to_path(&*v),
+        ConcreteTerm::Var(v) => name_to_path(v),
         ConcreteTerm::Integer(n) => lit(&n.int_value, LitKind::Integer, None),
         ConcreteTerm::Boolean(b) => lit(&b.to_string(), LitKind::Bool, None),
-        ConcreteTerm::App { ls, args } => app(ls, args.into_iter().map(|x| cterm_to_ast(x))),
+        ConcreteTerm::App { ls, args } => app(ls, args.iter().map(cterm_to_ast)),
         ConcreteTerm::If { ift, then, elset } => ite([ift, then, elset].map(|x| cterm_to_ast(x))),
         ConcreteTerm::String(s) => lit(&format!("{s:?}"), LitKind::Str, None),
-        ConcreteTerm::Eps { var, t } => app("eps!", [fun([&**var], cterm_to_ast(&*t))]),
+        ConcreteTerm::Eps { var, t } => app("eps!", [fun([&**var], cterm_to_ast(t))]),
         ConcreteTerm::Fun { args, body } => fun(args.iter().map(|x| &**x), cterm_to_ast(body)),
         ConcreteTerm::Quant { quant, vs, t } => {
-            app(quant, [fun(vs.iter().map(|x| &**x), cterm_to_ast(&*t))])
+            app(quant, [fun(vs.iter().map(|x| &**x), cterm_to_ast(t))])
         }
         ConcreteTerm::Binop { binop: op, t1, t2 } => binop(op, [t1, t2].map(|x| cterm_to_ast(x))),
         ConcreteTerm::Not(t) => not(cterm_to_ast(t)),
         ConcreteTerm::FunctionLiteral { elts, other } => {
-            let arr = exp(ExprKind::Array(elts.into_iter().map(fun_lit_elt_to_ast).collect()));
+            let arr = exp(ExprKind::Array(elts.iter().map(fun_lit_elt_to_ast).collect()));
             app("funlit!", [arr, cterm_to_ast(other)])
         }
         ConcreteTerm::Proj { name, value } => match (&**name, &**value) {
