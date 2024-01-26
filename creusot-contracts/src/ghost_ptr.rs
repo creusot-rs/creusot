@@ -1,5 +1,5 @@
 // Inspired by https://plv.mpi-sws.org/rustbelt/ghostcell/ https://rust-unofficial.github.io/too-many-lists/fifth.html
-use crate::{logic::FMap, *};
+use crate::{logic::FMap, Clone, *};
 use ::std::{
     marker::PhantomData,
     ops::{Deref, DerefMut},
@@ -120,8 +120,8 @@ impl<T: ?Sized> GhostPtrToken<T> {
 
     /// Convert a mutable reference in an equivalent ZST
     #[trusted]
-    #[ensures(result.curr() == (*result)@)]
-    #[ensures(result.fin() == (^result)@)]
+    #[ensures(result.curr() == (*self)@)]
+    #[ensures(result.fin() == (^self)@)]
     pub fn borrow_mut(&mut self) -> GhostPtrTokenMut<'_, T> {
         GhostPtrTokenMut(PhantomData)
     }
@@ -132,7 +132,7 @@ impl<T: ?Sized> GhostPtrExt<T> for GhostPtr<T> {
     #[open(self)]
     #[ghost]
     #[ensures(forall<t: GhostPtrToken<T>> !t@.contains(result))]
-    #[ensures(result.addr_logic() == 0@)]
+    #[ensures(result.addr_logic() == 0)]
     #[ensures(forall<ptr: GhostPtr<T>> ptr.addr_logic() == result.addr_logic() ==> ptr == result)]
     fn null_logic() -> Self {
         absurd
@@ -192,8 +192,8 @@ impl<'a, T: ?Sized> GhostPtrTokenMut<'a, T> {
         absurd
     }
 
-    #[ensures(self.fin() == self.cur())]
-    #[ensures(result@ == self.cur())]
+    #[ensures(self.fin() == self.curr())]
+    #[ensures(result@ == self.curr())]
     pub fn shr(self) -> GhostPtrTokenRef<'a, T> {
         GhostPtrTokenRef(PhantomData)
     }
@@ -233,7 +233,7 @@ impl<'a, T> DerefMut for GhostPtrTokenMut<'a, T> {
 
 #[trusted]
 impl<'a, T> Resolve for GhostPtrTokenMut<'a, T> {
-    #[logic]
+    #[predicate]
     #[open]
     fn resolve(self) -> bool {
         self.curr() == self.fin()
