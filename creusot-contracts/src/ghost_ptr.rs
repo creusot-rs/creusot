@@ -198,9 +198,31 @@ impl<'a, T: ?Sized> GhostPtrTokenMut<'a, T> {
         GhostPtrTokenRef(PhantomData)
     }
 
-    /// Mutably borrows `ptr` and shrinks `t` so that it can no longer be used to access `ptr`
+    /// Mutably borrows `ptr` and shrinks `self` so that it can no longer be used to access `ptr`
+    ///
+    /// This function can be used to get multiple mutable references to non-aliasing pointers at the same time
+    ///
+    /// ```
+    /// use creusot_contracts::ghost_ptr::GhostPtrToken;
+    ///
+    /// let mut token = GhostPtrToken::new();
+    /// let ptr1 = token.ptr_from_box(Box::new(1));
+    /// let ptr2 = token.ptr_from_box(Box::new(2));
+    ///
+    /// let mut token_mut = token.borrow_mut();
+    /// let m1 = token_mut.take_mut(ptr1);
+    /// // let m1_alias = token_mut.take_mut(ptr1); // Verification Error
+    /// let m2 = token_mut.take_mut(ptr2);
+    ///
+    /// assert_eq!(*m1, 1);
+    /// assert_eq!(*m2, 2);
+    ///
+    /// core::mem::swap(m1, m2);
+    /// assert_eq!(*token.ptr_as_ref(ptr1), 2);
+    /// assert_eq!(*token.ptr_as_ref(ptr2), 1);
+    /// ```
     // Safety no other token has permission to `self`
-    // `t` can no longer be used to access `ptr`
+    // `self` can no longer be used to access `ptr`
     #[trusted]
     #[requires((*self).curr().contains(ptr))]
     #[ensures(*result == *(*self).curr().lookup_unsized(ptr))]
