@@ -120,7 +120,7 @@ impl<T: ?Sized> GhostPtrToken<T> {
 
     /// Convert a mutable reference in an equivalent ZST
     #[trusted]
-    #[ensures(result.curr() == (*self)@)]
+    #[ensures(result.cur() == (*self)@)]
     #[ensures(result.fin() == (^self)@)]
     pub fn borrow_mut(&mut self) -> GhostPtrTokenMut<'_, T> {
         GhostPtrTokenMut(PhantomData)
@@ -181,7 +181,7 @@ impl<'a, T: ?Sized> GhostPtrTokenMut<'a, T> {
     #[trusted]
     #[ghost]
     #[open(self)]
-    pub fn curr(self) -> FMap<GhostPtr<T>, T> {
+    pub fn cur(self) -> FMap<GhostPtr<T>, T> {
         absurd
     }
 
@@ -192,8 +192,8 @@ impl<'a, T: ?Sized> GhostPtrTokenMut<'a, T> {
         absurd
     }
 
-    #[ensures(self.fin() == self.curr())]
-    #[ensures(result@ == self.curr())]
+    #[ensures(self.fin() == self.cur())]
+    #[ensures(result@ == self.cur())]
     pub fn shr(self) -> GhostPtrTokenRef<'a, T> {
         GhostPtrTokenRef(PhantomData)
     }
@@ -224,9 +224,9 @@ impl<'a, T: ?Sized> GhostPtrTokenMut<'a, T> {
     // Safety no other token has permission to `self`
     // `self` can no longer be used to access `ptr`
     #[trusted]
-    #[requires((*self).curr().contains(ptr))]
-    #[ensures(*result == *(*self).curr().lookup_unsized(ptr))]
-    #[ensures((^self).curr() == (*self).curr().remove(ptr))]
+    #[requires((*self).cur().contains(ptr))]
+    #[ensures(*result == *(*self).cur().lookup_unsized(ptr))]
+    #[ensures((^self).cur() == (*self).cur().remove(ptr))]
     #[ensures((*self).fin() == (^self).fin().insert(ptr, ^result))]
     #[ensures(!(^self).fin().contains(ptr))]
     pub fn take_mut(&mut self, ptr: *const T) -> &'a mut T {
@@ -238,7 +238,7 @@ impl<'a, T> Deref for GhostPtrTokenMut<'a, T> {
     type Target = GhostPtrToken<T>;
 
     #[trusted]
-    #[ensures(result@ == self.curr())]
+    #[ensures(result@ == self.cur())]
     fn deref(&self) -> &Self::Target {
         &GhostPtrToken(PhantomData)
     }
@@ -246,8 +246,8 @@ impl<'a, T> Deref for GhostPtrTokenMut<'a, T> {
 
 impl<'a, T> DerefMut for GhostPtrTokenMut<'a, T> {
     #[trusted]
-    #[ensures((*result)@ == (*self).curr())]
-    #[ensures((^self).curr() == (^result)@)]
+    #[ensures((*result)@ == (*self).cur())]
+    #[ensures((^self).cur() == (^result)@)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         Box::leak(Box::new(GhostPtrToken(PhantomData)))
     }
@@ -258,7 +258,7 @@ impl<'a, T> Resolve for GhostPtrTokenMut<'a, T> {
     #[predicate]
     #[open]
     fn resolve(self) -> bool {
-        self.curr() == self.fin()
+        self.cur() == self.fin()
     }
 }
 
