@@ -88,6 +88,7 @@ module TakeFirstMut_TakeFirstMut
     ensures { result = inv0 _x }
     
   axiom inv0 : forall x : borrowed (slice t) . inv0 x = true
+  use seq.Seq
   use seq_ext.SeqExt
   use seq.Seq
   function tail0 (self : Seq.seq t) : Seq.seq t =
@@ -132,7 +133,6 @@ module TakeFirstMut_TakeFirstMut
   val resolve0 (self : Core_Option_Option_Type.t_option (borrowed t, borrowed (slice t))) : bool
     ensures { result = resolve0 self }
     
-  use seq.Seq
   function shallow_model1 (self : borrowed (slice t)) : Seq.seq t =
     [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model0 ( * self)
   val shallow_model1 (self : borrowed (slice t)) : Seq.seq t
@@ -161,7 +161,7 @@ module TakeFirstMut_TakeFirstMut
     requires {[#"../take_first_mut.rs" 14 29 14 34] inv3 self_}
     ensures { [#"../take_first_mut.rs" 6 10 13 1] match result with
       | Core_Option_Option_Type.C_Some r ->  * r = index_logic0 ( *  * self_) 0 /\  ^ r = index_logic0 ( ^  * self_) 0 /\ Seq.length (shallow_model0 ( *  * self_)) > 0 /\ Seq.length (shallow_model0 ( ^  * self_)) > 0 /\ shallow_model0 ( *  ^ self_) = tail0 (shallow_model0 ( *  * self_)) /\ shallow_model0 ( ^  ^ self_) = tail0 (shallow_model0 ( ^  * self_))
-      | Core_Option_Option_Type.C_None ->  ^ self_ =  * self_ /\ Seq.length (shallow_model0 ( *  * self_)) = 0
+      | Core_Option_Option_Type.C_None -> shallow_model0 ( *  ^ self_) = Seq.empty  /\ shallow_model0 ( ^  * self_) = Seq.empty  /\ shallow_model0 ( *  * self_) = Seq.empty  /\ shallow_model0 ( ^  ^ self_) = Seq.empty 
       end }
     ensures { [#"../take_first_mut.rs" 14 57 14 74] inv6 result }
     
@@ -180,16 +180,16 @@ module TakeFirstMut_TakeFirstMut
     goto BB0
   }
   BB0 {
-    [#"../take_first_mut.rs" 15 20 15 25] _6 <- Borrow.borrow_mut ( * self_);
-    [#"../take_first_mut.rs" 15 20 15 25] self_ <- { self_ with current =  ^ _6 };
+    [#"../take_first_mut.rs" 15 20 15 25] _6 <- Borrow.borrow_final ( * self_) (Borrow.get_id self_);
+    [#"../take_first_mut.rs" 15 20 15 25] self_ <- { self_ with current = ( ^ _6) ; };
     assume { inv0 ( ^ _6) };
     [#"../take_first_mut.rs" 15 10 15 26] _5 <- ([#"../take_first_mut.rs" 15 10 15 26] take0 _6);
     _6 <- any borrowed (borrowed (slice t));
     goto BB1
   }
   BB1 {
-    [#"../take_first_mut.rs" 15 10 15 44] _4 <- Borrow.borrow_mut ( * _5);
-    [#"../take_first_mut.rs" 15 10 15 44] _5 <- { _5 with current =  ^ _4 };
+    [#"../take_first_mut.rs" 15 10 15 44] _4 <- Borrow.borrow_final ( * _5) (Borrow.get_id _5);
+    [#"../take_first_mut.rs" 15 10 15 44] _5 <- { _5 with current = ( ^ _4) ; };
     assume { inv1 ( ^ _4) };
     [#"../take_first_mut.rs" 15 10 15 44] _3 <- ([#"../take_first_mut.rs" 15 10 15 44] split_first_mut0 _4);
     _4 <- any borrowed (slice t);
@@ -211,17 +211,17 @@ module TakeFirstMut_TakeFirstMut
     [#"../take_first_mut.rs" 17 21 17 24] _3 <- (let Core_Option_Option_Type.C_Some x0 = _3 in Core_Option_Option_Type.C_Some (let (x0, x1) = Core_Option_Option_Type.some_0 _3 in (x0, any borrowed (slice t))));
     assert { [@expl:type invariant] inv2 _3 };
     assume { resolve0 _3 };
-    [#"../take_first_mut.rs" 18 21 18 24] _11 <- Borrow.borrow_mut ( * rem);
-    [#"../take_first_mut.rs" 18 21 18 24] rem <- { rem with current =  ^ _11 };
+    [#"../take_first_mut.rs" 18 21 18 24] _11 <- Borrow.borrow_final ( * rem) (Borrow.get_id rem);
+    [#"../take_first_mut.rs" 18 21 18 24] rem <- { rem with current = ( ^ _11) ; };
     assume { inv1 ( ^ _11) };
-    [#"../take_first_mut.rs" 18 12 18 24] self_ <- { self_ with current = ([#"../take_first_mut.rs" 18 12 18 24] _11) };
+    [#"../take_first_mut.rs" 18 12 18 24] self_ <- { self_ with current = ([#"../take_first_mut.rs" 18 12 18 24] _11) ; };
     [#"../take_first_mut.rs" 18 12 18 24] _11 <- any borrowed (slice t);
     assert { [@expl:type invariant] inv0 ( * self_) };
     assume { resolve2 ( * self_) };
     assert { [@expl:type invariant] inv3 self_ };
     assume { resolve1 self_ };
-    [#"../take_first_mut.rs" 19 17 19 22] _12 <- Borrow.borrow_mut ( * first);
-    [#"../take_first_mut.rs" 19 17 19 22] first <- { first with current =  ^ _12 };
+    [#"../take_first_mut.rs" 19 17 19 22] _12 <- Borrow.borrow_final ( * first) (Borrow.get_id first);
+    [#"../take_first_mut.rs" 19 17 19 22] first <- { first with current = ( ^ _12) ; };
     assume { inv4 ( ^ _12) };
     [#"../take_first_mut.rs" 19 12 19 23] _0 <- ([#"../take_first_mut.rs" 19 12 19 23] Core_Option_Option_Type.C_Some _12);
     _12 <- any borrowed t;

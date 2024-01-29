@@ -51,6 +51,12 @@ pub enum Statement<'tcx> {
 pub enum RValue<'tcx> {
     Ghost(Term<'tcx>),
     Borrow(Place<'tcx>),
+    /// The source of this borrow is not used after the reborrow, and thus we can
+    /// inherit the prophecy identifier.
+    ///
+    /// The second field is an index in `place.projection`: see
+    /// [`NotFinalPlaces::is_final_at`](crate::analysis::NotFinalPlaces::is_final_at).
+    FinalBorrow(Place<'tcx>, usize),
     Expr(Expr<'tcx>),
 }
 

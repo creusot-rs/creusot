@@ -4,6 +4,7 @@ use super::{
     specification::inv_subst,
 };
 use crate::{
+    analysis::NotFinalPlaces,
     backend::ty::closure_accessors,
     ctx::*,
     fmir::{self, Expr},
@@ -32,6 +33,7 @@ use rustc_middle::{
         EarlyBinder, ParamEnv, Ty, TyCtxt, TyKind, UpvarCapture,
     },
 };
+use rustc_mir_dataflow::Analysis as _;
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use std::{collections::HashMap, iter, rc::Rc};
 // use why3::declaration::*;
@@ -156,6 +158,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn translate_body(&mut self) {
+        let mut not_final_places = NotFinalPlaces::new(self.tcx, self.body)
+            .into_engine(self.tcx, self.body)
+            .iterate_to_fixpoint()
+            .into_results_cursor(self.body);
+
         for (bb, bbd) in reverse_postorder(self.body) {
             self.current_block = (vec![], None);
             if bbd.is_cleanup {
@@ -193,7 +200,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             let mut loc = bb.start_location();
 
             for statement in &bbd.statements {
-                self.translate_statement(statement, loc);
+                self.translate_statement(&mut not_final_places, statement, loc);
                 loc = loc.successor_within_block();
             }
 
@@ -243,9 +250,26 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         self.current_block.1 = Some(t);
     }
 
-    fn emit_borrow(&mut self, lhs: &Place<'tcx>, rhs: &Place<'tcx>, span: Span) {
+    /// # Parameters
+    ///
+    /// `is_final` signals that the emitted borrow should be final: see [`NotFinalPlaces`].
+    fn emit_borrow(
+        &mut self,
+        lhs: &Place<'tcx>,
+        rhs: &Place<'tcx>,
+        is_final: Option<usize>,
+        span: Span,
+    ) {
         let p = self.translate_place(*rhs);
-        self.emit_assignment(lhs, fmir::RValue::Borrow(p), span);
+        self.emit_assignment(
+            lhs,
+            if let Some(deref_index) = is_final {
+                fmir::RValue::FinalBorrow(p, deref_index)
+            } else {
+                fmir::RValue::Borrow(p)
+            },
+            span,
+        );
 
         let rhs_ty = rhs.ty(self.body, self.ctx.tcx).ty;
         if let Some(_) = self.ctx.type_invariant(self.body_id.def_id(), rhs_ty) {

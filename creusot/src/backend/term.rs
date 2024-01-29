@@ -1,3 +1,4 @@
+use super::{program::borrow_generated_id, Why3Generator};
 use crate::{
     backend::ty::{floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty},
     ctx::*,
@@ -5,7 +6,8 @@ use crate::{
     util,
     util::get_builtin,
 };
-use rustc_middle::ty::{EarlyBinder, Ty, TyKind};
+use rustc_hir::def_id::DefId;
+use rustc_middle::ty::{subst::SubstsRef, EarlyBinder, Ty, TyCtxt, TyKind};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
     ty::Type,
@@ -254,12 +256,14 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::Abs(binders, Box::new(body))
             }
             TermKind::Absurd => Exp::Absurd,
-            TermKind::Reborrow { cur, fin } => Exp::Record {
-                fields: vec![
-                    ("current".into(), self.lower_term(&*cur)),
-                    ("final".into(), self.lower_term(&*fin)),
-                ],
-            },
+            TermKind::Reborrow { cur, fin, term, projection } => {
+                let inner = self.lower_term(&*term);
+                let borrow_id = borrow_generated_id(inner, &projection);
+                Exp::Call(
+                    Box::new(Exp::QVar("Borrow.borrow_logic".into(), Purity::Logic)),
+                    vec![self.lower_term(&*cur), self.lower_term(&*fin), borrow_id],
+                )
+            }
             TermKind::Assert { cond } => {
                 let cond = self.lower_term(&*cond);
                 if self.pure == Purity::Program && !cond.is_pure() {
@@ -341,11 +345,6 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         None
     }
 }
-
-use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
-
-use super::Why3Generator;
 
 pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
     _: &mut TranslationCtx<'tcx>,

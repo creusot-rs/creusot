@@ -125,17 +125,13 @@ pub enum Exp {
     },
     Var(Ident, Purity),
     QVar(QName, Purity),
-    /// Record construction
     Record {
         fields: Vec<(String, Exp)>,
     },
-    /// Record update
     RecUp {
         record: Box<Exp>,
-        label: String,
-        val: Box<Exp>,
+        updates: Vec<(String, Exp)>,
     },
-    /// Record access
     RecField {
         record: Box<Exp>,
         label: String,
@@ -200,9 +196,9 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
         }
         Exp::Var(_, _) => {}
         Exp::QVar(_, _) => {}
-        Exp::RecUp { record, label: _, val } => {
+        Exp::RecUp { record, updates } => {
             f.visit_mut(record);
-            f.visit_mut(val)
+            updates.iter_mut().for_each(|(_, val)| f.visit_mut(val));
         }
         Exp::RecField { record, label: _ } => f.visit_mut(record),
         Exp::Tuple(exps) => exps.iter_mut().for_each(|e| f.visit_mut(e)),
@@ -282,9 +278,9 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
         }
         Exp::Var(_, _) => {}
         Exp::QVar(_, _) => {}
-        Exp::RecUp { record, label: _, val } => {
+        Exp::RecUp { record, updates } => {
             f.visit(record);
-            f.visit(val)
+            updates.iter().for_each(|(_, val)| f.visit(val));
         }
         Exp::RecField { record, label: _ } => f.visit(record),
         Exp::Tuple(exps) => exps.iter().for_each(|e| f.visit(e)),

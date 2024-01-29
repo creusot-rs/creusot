@@ -9,7 +9,7 @@ use std::mem;
         (**self_)@.len() > 0 && (^*self_)@.len() > 0 &&
         (*^self_)@ == (**self_)@.tail() && (^^self_)@ == (^*self_)@.tail()
     }
-    None => ^self_ == * self_ && (**self_)@.len() == 0
+    None => (*^self_)@ == Seq::EMPTY && (^*self_)@ == Seq::EMPTY && (**self_)@ == Seq::EMPTY && (^^self_)@ == Seq::EMPTY
 })]
 pub fn take_first_mut<'a, T>(self_: &mut &'a mut [T]) -> Option<&'a mut T> {
     match mem::take(self_).split_first_mut() {
