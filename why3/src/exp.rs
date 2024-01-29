@@ -125,9 +125,17 @@ pub enum Exp {
     },
     Var(Ident, Purity),
     QVar(QName, Purity),
-    Record { fields: Vec<(String, Exp)> },
-    RecUp { record: Box<Exp>, updates: Vec<(String, Exp)> },
-    RecField { record: Box<Exp>, label: String },
+    Record {
+        fields: Vec<(String, Exp)>,
+    },
+    RecUp {
+        record: Box<Exp>,
+        updates: Vec<(String, Exp)>,
+    },
+    RecField {
+        record: Box<Exp>,
+        label: String,
+    },
     Tuple(Vec<Exp>),
     Constructor {
         ctor: QName,
