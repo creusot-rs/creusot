@@ -90,8 +90,7 @@ fn create_assign_rec<'tcx>(
             if mutability == Mut {
                 RecUp {
                     record: Box::new(translate_rplace(ctx, names, locals, base, &proj[..proj_ix])),
-                    label: "current".into(),
-                    val: Box::new(inner),
+                    updates: vec![("current".into(), inner)],
                 }
             } else {
                 inner

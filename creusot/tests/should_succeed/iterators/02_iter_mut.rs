@@ -29,13 +29,19 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     #[open]
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && self.inner@.ext_eq(Seq::EMPTY) }
+        pearlite! { self.inner.resolve() && self.inner@.ext_eq(Seq::EMPTY) }
     }
 
     #[open]
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
-        self.inner.to_mut_seq().ext_eq(visited.concat(tl.inner.to_mut_seq()))
+        pearlite! {
+            self.inner@.len() == visited.len() + tl.inner@.len() &&
+            (forall<i:Int> 0 <= i && i < self.inner@.len() ==>
+                *self.inner.to_mut_seq()[i] == *visited.concat(tl.inner.to_mut_seq())[i] &&
+                ^self.inner.to_mut_seq()[i] == ^visited.concat(tl.inner.to_mut_seq())[i]
+            )
+        }
     }
 
     #[law]

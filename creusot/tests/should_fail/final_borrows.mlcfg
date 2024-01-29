@@ -1,0 +1,394 @@
+
+module FinalBorrows_NotFinalBorrow
+  type t
+  use prelude.Borrow
+  predicate invariant1 (self : borrowed t)
+  val invariant1 (self : borrowed t) : bool
+    ensures { result = invariant1 self }
+    
+  predicate inv1 (_x : borrowed t)
+  val inv1 (_x : borrowed t) : bool
+    ensures { result = inv1 _x }
+    
+  axiom inv1 : forall x : borrowed t . inv1 x = true
+  predicate invariant0 (self : t)
+  val invariant0 (self : t) : bool
+    ensures { result = invariant0 self }
+    
+  predicate inv0 (_x : t)
+  val inv0 (_x : t) : bool
+    ensures { result = inv0 _x }
+    
+  axiom inv0 : forall x : t . inv0 x = true
+  predicate resolve0 (self : borrowed t) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve0 (self : borrowed t) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg not_final_borrow [#"../final_borrows.rs" 5 0 5 39] [@cfg:stackify] [@cfg:subregion_analysis] (bor : borrowed t) : ()
+    requires {[#"../final_borrows.rs" 5 27 5 30] inv1 bor}
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var bor : borrowed t = bor;
+  var b1 : borrowed t;
+  var _b2 : borrowed t;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../final_borrows.rs" 6 13 6 22] b1 <- Borrow.borrow_mut ( * bor);
+    [#"../final_borrows.rs" 6 13 6 22] bor <- { bor with current = ( ^ b1) ; };
+    assume { inv0 ( ^ b1) };
+    assert { [@expl:type invariant] inv1 b1 };
+    assume { resolve0 b1 };
+    assert { [@expl:assertion] [#"../final_borrows.rs" 7 18 7 27] b1 = bor };
+    [#"../final_borrows.rs" 8 14 8 23] _b2 <- Borrow.borrow_final ( * bor) (Borrow.get_id bor);
+    [#"../final_borrows.rs" 8 14 8 23] bor <- { bor with current = ( ^ _b2) ; };
+    assume { inv0 ( ^ _b2) };
+    assert { [@expl:type invariant] inv1 _b2 };
+    assume { resolve0 _b2 };
+    [#"../final_borrows.rs" 5 40 9 1] _0 <- ([#"../final_borrows.rs" 5 40 9 1] ());
+    assert { [@expl:type invariant] inv1 bor };
+    assume { resolve0 bor };
+    return _0
+  }
+  
+end
+module FinalBorrows_StoreChangesProphecy
+  type t
+  use prelude.Borrow
+  predicate invariant1 (self : borrowed t)
+  val invariant1 (self : borrowed t) : bool
+    ensures { result = invariant1 self }
+    
+  predicate inv1 (_x : borrowed t)
+  val inv1 (_x : borrowed t) : bool
+    ensures { result = inv1 _x }
+    
+  axiom inv1 : forall x : borrowed t . inv1 x = true
+  predicate invariant0 (self : t)
+  val invariant0 (self : t) : bool
+    ensures { result = invariant0 self }
+    
+  predicate inv0 (_x : t)
+  val inv0 (_x : t) : bool
+    ensures { result = inv0 _x }
+    
+  axiom inv0 : forall x : t . inv0 x = true
+  predicate resolve1 (self : t)
+  val resolve1 (self : t) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : borrowed t) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve0 (self : borrowed t) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg store_changes_prophecy [#"../final_borrows.rs" 11 0 11 51] [@cfg:stackify] [@cfg:subregion_analysis] (bor : borrowed t) (x : t) : ()
+    requires {[#"../final_borrows.rs" 11 33 11 36] inv1 bor}
+    requires {[#"../final_borrows.rs" 11 46 11 47] inv0 x}
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var bor : borrowed t = bor;
+  var x : t = x;
+  var b1 : borrowed t;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../final_borrows.rs" 12 13 12 22] b1 <- Borrow.borrow_final ( * bor) (Borrow.get_id bor);
+    [#"../final_borrows.rs" 12 13 12 22] bor <- { bor with current = ( ^ b1) ; };
+    assume { inv0 ( ^ b1) };
+    assert { [@expl:type invariant] inv1 b1 };
+    assume { resolve0 b1 };
+    goto BB1
+  }
+  BB1 {
+    [#"../final_borrows.rs" 14 4 14 8] bor <- { bor with current = ([#"../final_borrows.rs" 14 11 14 12] x) ; };
+    [#"../final_borrows.rs" 14 11 14 12] x <- any t;
+    assert { [@expl:type invariant] inv0 ( * bor) };
+    assume { resolve1 ( * bor) };
+    assert { [@expl:type invariant] inv1 bor };
+    assume { resolve0 bor };
+    goto BB3
+  }
+  BB3 {
+    assert { [@expl:assertion] [#"../final_borrows.rs" 15 18 15 27] b1 = bor };
+    [#"../final_borrows.rs" 11 52 16 1] _0 <- ([#"../final_borrows.rs" 11 52 16 1] ());
+    goto BB4
+  }
+  BB4 {
+    return _0
+  }
+  
+end
+module FinalBorrows_CallChangesProphecy_Inner
+  use prelude.Int32
+  use prelude.Int
+  let rec cfg inner [#"../final_borrows.rs" 19 4 19 21] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : int32
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : int32;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../final_borrows.rs" 20 8 20 9] _0 <- ([#"../final_borrows.rs" 20 8 20 9] [#"../final_borrows.rs" 20 8 20 9] (2 : int32));
+    return _0
+  }
+  
+end
+module FinalBorrows_CallChangesProphecy
+  use prelude.Borrow
+  use prelude.Int32
+  use prelude.Int
+  val inner0 [#"../final_borrows.rs" 19 4 19 21] (_1 : ()) : int32
+  predicate resolve0 (self : borrowed int32) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve0 (self : borrowed int32) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg call_changes_prophecy [#"../final_borrows.rs" 18 0 18 43] [@cfg:stackify] [@cfg:subregion_analysis] (bor : borrowed int32) : ()
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var bor : borrowed int32 = bor;
+  var b1 : borrowed int32;
+  var _3 : int32;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../final_borrows.rs" 22 13 22 22] b1 <- Borrow.borrow_final ( * bor) (Borrow.get_id bor);
+    [#"../final_borrows.rs" 22 13 22 22] bor <- { bor with current = ( ^ b1) ; };
+    assume { resolve0 b1 };
+    [#"../final_borrows.rs" 24 11 24 18] _3 <- ([#"../final_borrows.rs" 24 11 24 18] inner0 ());
+    goto BB1
+  }
+  BB1 {
+    [#"../final_borrows.rs" 24 4 24 18] bor <- { bor with current = ([#"../final_borrows.rs" 24 4 24 18] _3) ; };
+    [#"../final_borrows.rs" 24 4 24 18] _3 <- any int32;
+    assume { resolve0 bor };
+    assert { [@expl:assertion] [#"../final_borrows.rs" 25 18 25 27] b1 = bor };
+    [#"../final_borrows.rs" 18 44 26 1] _0 <- ([#"../final_borrows.rs" 18 44 26 1] ());
+    return _0
+  }
+  
+end
+module FinalBorrows_UnnestingFails
+  type t
+  use prelude.Borrow
+  predicate invariant2 (self : borrowed (borrowed (t, t)))
+  val invariant2 (self : borrowed (borrowed (t, t))) : bool
+    ensures { result = invariant2 self }
+    
+  predicate inv2 (_x : borrowed (borrowed (t, t)))
+  val inv2 (_x : borrowed (borrowed (t, t))) : bool
+    ensures { result = inv2 _x }
+    
+  axiom inv2 : forall x : borrowed (borrowed (t, t)) . inv2 x = true
+  predicate invariant1 (self : borrowed t)
+  val invariant1 (self : borrowed t) : bool
+    ensures { result = invariant1 self }
+    
+  predicate inv1 (_x : borrowed t)
+  val inv1 (_x : borrowed t) : bool
+    ensures { result = inv1 _x }
+    
+  axiom inv1 : forall x : borrowed t . inv1 x = true
+  predicate invariant0 (self : t)
+  val invariant0 (self : t) : bool
+    ensures { result = invariant0 self }
+    
+  predicate inv0 (_x : t)
+  val inv0 (_x : t) : bool
+    ensures { result = inv0 _x }
+    
+  axiom inv0 : forall x : t . inv0 x = true
+  predicate resolve1 (self : borrowed (borrowed (t, t))) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve1 (self : borrowed (borrowed (t, t))) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : borrowed t) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve0 (self : borrowed t) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg unnesting_fails [#"../final_borrows.rs" 30 0 30 77] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed (borrowed (t, t))) : borrowed t
+    requires {[#"../final_borrows.rs" 30 38 30 39] inv2 x}
+    ensures { [#"../final_borrows.rs" 29 10 29 32] result = Borrow.borrow_logic (let (a, _) =  *  * x in a) (let (a, _) =  ^  * x in a) (Borrow.inherit_id (Borrow.get_id ( * x)) 1) }
+    ensures { [#"../final_borrows.rs" 30 68 30 77] inv1 result }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : borrowed t;
+  var x : borrowed (borrowed (t, t)) = x;
+  var _2 : borrowed t;
+  var _4 : borrowed t;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../final_borrows.rs" 31 4 31 16] _4 <- Borrow.borrow_mut (let (a, _) =  *  * x in a);
+    [#"../final_borrows.rs" 31 4 31 16] x <- { x with current = { ( * x) with current = (let (x0, x1) =  *  * x in ( ^ _4, x1)) ; } ; };
+    assume { inv0 ( ^ _4) };
+    [#"../final_borrows.rs" 31 4 31 16] _2 <- Borrow.borrow_final ( * _4) (Borrow.get_id _4);
+    [#"../final_borrows.rs" 31 4 31 16] _4 <- { _4 with current = ( ^ _2) ; };
+    assume { inv0 ( ^ _2) };
+    [#"../final_borrows.rs" 31 4 31 16] _0 <- Borrow.borrow_final ( * _2) (Borrow.get_id _2);
+    [#"../final_borrows.rs" 31 4 31 16] _2 <- { _2 with current = ( ^ _0) ; };
+    assume { inv0 ( ^ _0) };
+    assert { [@expl:type invariant] inv1 _4 };
+    assume { resolve0 _4 };
+    assert { [@expl:type invariant] inv1 _2 };
+    assume { resolve0 _2 };
+    assert { [@expl:type invariant] inv2 x };
+    assume { resolve1 x };
+    return _0
+  }
+  
+end
+module FinalBorrows_Indexing
+  type t
+  use seq.Seq
+  predicate invariant5 (self : Seq.seq t)
+  val invariant5 (self : Seq.seq t) : bool
+    ensures { result = invariant5 self }
+    
+  predicate inv5 (_x : Seq.seq t)
+  val inv5 (_x : Seq.seq t) : bool
+    ensures { result = inv5 _x }
+    
+  axiom inv5 : forall x : Seq.seq t . inv5 x = true
+  use prelude.Slice
+  predicate invariant4 (self : slice t)
+  val invariant4 (self : slice t) : bool
+    ensures { result = invariant4 self }
+    
+  predicate inv4 (_x : slice t)
+  val inv4 (_x : slice t) : bool
+    ensures { result = inv4 _x }
+    
+  axiom inv4 : forall x : slice t . inv4 x = true
+  use prelude.Borrow
+  predicate invariant3 (self : Seq.seq (borrowed t))
+  val invariant3 (self : Seq.seq (borrowed t)) : bool
+    ensures { result = invariant3 self }
+    
+  predicate inv3 (_x : Seq.seq (borrowed t))
+  val inv3 (_x : Seq.seq (borrowed t)) : bool
+    ensures { result = inv3 _x }
+    
+  axiom inv3 : forall x : Seq.seq (borrowed t) . inv3 x = true
+  predicate invariant2 (self : borrowed (slice t))
+  val invariant2 (self : borrowed (slice t)) : bool
+    ensures { result = invariant2 self }
+    
+  predicate inv2 (_x : borrowed (slice t))
+  val inv2 (_x : borrowed (slice t)) : bool
+    ensures { result = inv2 _x }
+    
+  axiom inv2 : forall x : borrowed (slice t) . inv2 x = true
+  predicate invariant1 (self : borrowed t)
+  val invariant1 (self : borrowed t) : bool
+    ensures { result = invariant1 self }
+    
+  predicate inv1 (_x : borrowed t)
+  val inv1 (_x : borrowed t) : bool
+    ensures { result = inv1 _x }
+    
+  axiom inv1 : forall x : borrowed t . inv1 x = true
+  predicate invariant0 (self : t)
+  val invariant0 (self : t) : bool
+    ensures { result = invariant0 self }
+    
+  predicate inv0 (_x : t)
+  val inv0 (_x : t) : bool
+    ensures { result = inv0 _x }
+    
+  axiom inv0 : forall x : t . inv0 x = true
+  use seq.Seq
+  use seq.Seq
+  use prelude.UIntSize
+  use prelude.Slice
+  use prelude.Int
+  use prelude.UIntSize
+  let constant max0  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+  use seq.Seq
+  function shallow_model1 (self : slice t) : Seq.seq t
+  val shallow_model1 (self : slice t) : Seq.seq t
+    requires {[#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv4 self}
+    ensures { result = shallow_model1 self }
+    
+  axiom shallow_model1_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv4 self) -> ([#"../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv5 (shallow_model1 self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41] shallow_model1 self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max0)
+  function index_logic1 [@inline:trivial] (self : slice t) (ix : int) : t =
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (shallow_model1 self) ix
+  val index_logic1 [@inline:trivial] (self : slice t) (ix : int) : t
+    ensures { result = index_logic1 self ix }
+    
+  function shallow_model0 (self : borrowed (slice t)) : Seq.seq t =
+    [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model1 ( * self)
+  val shallow_model0 (self : borrowed (slice t)) : Seq.seq t
+    ensures { result = shallow_model0 self }
+    
+  use seq.Seq
+  function to_mut_seq0 (self : borrowed (slice t)) : Seq.seq (borrowed t)
+  val to_mut_seq0 (self : borrowed (slice t)) : Seq.seq (borrowed t)
+    requires {[#"../../../../creusot-contracts/src/std/slice.rs" 82 23 82 27] inv2 self}
+    ensures { result = to_mut_seq0 self }
+    
+  axiom to_mut_seq0_spec : forall self : borrowed (slice t) . ([#"../../../../creusot-contracts/src/std/slice.rs" 82 23 82 27] inv2 self) -> ([#"../../../../creusot-contracts/src/std/slice.rs" 82 4 82 43] inv3 (to_mut_seq0 self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 81 4 81 85] forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq0 self) ->  ^ Seq.get (to_mut_seq0 self) i = index_logic1 ( ^ self) i) && ([#"../../../../creusot-contracts/src/std/slice.rs" 80 4 80 82] forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq0 self) ->  * Seq.get (to_mut_seq0 self) i = index_logic1 ( * self) i) && ([#"../../../../creusot-contracts/src/std/slice.rs" 79 14 79 41] Seq.length (to_mut_seq0 self) = Seq.length (shallow_model0 self))
+  predicate resolve1 (self : borrowed (slice t)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve1 (self : borrowed (slice t)) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : borrowed t) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve0 (self : borrowed t) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg indexing [#"../final_borrows.rs" 37 0 37 41] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed (slice t)) : borrowed t
+    requires {[#"../final_borrows.rs" 35 11 35 24] Seq.length (shallow_model0 x) >= 1}
+    requires {[#"../final_borrows.rs" 37 19 37 20] inv2 x}
+    ensures { [#"../final_borrows.rs" 36 10 36 37] result = Seq.get (to_mut_seq0 x) 0 }
+    ensures { [#"../final_borrows.rs" 37 35 37 41] inv1 result }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : borrowed t;
+  var x : borrowed (slice t) = x;
+  var _2 : borrowed t;
+  var _5 : borrowed t;
+  var _6 : usize;
+  var _8 : bool;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../final_borrows.rs" 38 11 38 12] _6 <- ([#"../final_borrows.rs" 38 11 38 12] [#"../final_borrows.rs" 38 11 38 12] (0 : usize));
+    [#"../final_borrows.rs" 38 9 38 13] _8 <- ([#"../final_borrows.rs" 38 9 38 13] _6 < ([#"../final_borrows.rs" 38 9 38 13] Slice.length ( * x)));
+    assert { [@expl:index in bounds] [#"../final_borrows.rs" 38 9 38 13] _8 };
+    goto BB1
+  }
+  BB1 {
+    [#"../final_borrows.rs" 38 4 38 13] _5 <- Borrow.borrow_mut (Slice.get ( * x) _6);
+    [#"../final_borrows.rs" 38 4 38 13] x <- { x with current = Slice.set ( * x) _6 ( ^ _5) ; };
+    assume { inv0 ( ^ _5) };
+    [#"../final_borrows.rs" 38 4 38 13] _2 <- Borrow.borrow_final ( * _5) (Borrow.get_id _5);
+    [#"../final_borrows.rs" 38 4 38 13] _5 <- { _5 with current = ( ^ _2) ; };
+    assume { inv0 ( ^ _2) };
+    [#"../final_borrows.rs" 38 4 38 13] _0 <- Borrow.borrow_final ( * _2) (Borrow.get_id _2);
+    [#"../final_borrows.rs" 38 4 38 13] _2 <- { _2 with current = ( ^ _0) ; };
+    assume { inv0 ( ^ _0) };
+    assert { [@expl:type invariant] inv1 _5 };
+    assume { resolve0 _5 };
+    assert { [@expl:type invariant] inv1 _2 };
+    assume { resolve0 _2 };
+    assert { [@expl:type invariant] inv2 x };
+    assume { resolve1 x };
+    return _0
+  }
+  
+end

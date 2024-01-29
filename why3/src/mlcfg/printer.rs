@@ -651,15 +651,20 @@ impl Print for Exp {
                 .append(body.pretty(alloc, env)),
             Exp::Var(v, _) => v.pretty(alloc, env),
             Exp::QVar(v, _) => v.pretty(alloc, env),
-            Exp::RecUp { box record, label, box val } => alloc
-                .space()
-                .append(parens!(alloc, env, self.precedence().next(), record))
-                .append(" with ")
-                .append(alloc.text(label))
-                .append(" = ")
-                .append(parens!(alloc, env, Precedence::Attr.next(), val))
-                .append(alloc.space())
-                .braces(),
+            Exp::RecUp { box record, updates } => {
+                let mut res = alloc
+                    .space()
+                    .append(parens!(alloc, env, self.precedence().next(), record))
+                    .append(" with ");
+                for (label, val) in updates {
+                    res = res
+                        .append(alloc.text(label))
+                        .append(" = ")
+                        .append(parens!(alloc, env, self, val))
+                        .append(" ; ");
+                }
+                res.braces()
+            }
             Exp::RecField { box record, label } => {
                 record.pretty(alloc, env).append(".").append(label)
             }

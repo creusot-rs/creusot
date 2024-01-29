@@ -281,7 +281,7 @@ extern_spec! {
                 (**self)@.len() > 0 && (^*self)@.len() > 0 &&
                 (*^self)@ == (**self)@.tail() && (^^self)@ == (^*self)@.tail()
             }
-            None => ^self == * self && (**self)@.len() == 0
+            None => (*^self)@ == Seq::EMPTY && (^*self)@ == Seq::EMPTY && (**self)@ == Seq::EMPTY && (^^self)@ == Seq::EMPTY
         })]
         fn take_first_mut<'a>(self_: &mut &'a mut [T]) -> Option<&'a mut T>;
 

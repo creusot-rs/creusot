@@ -43,11 +43,17 @@ module Bool
     i = 1
 end
 module Borrow
-  type borrowed 'a = { current : 'a ; final : 'a; }
+  type borrowed 'a = { current : 'a; final : 'a; id : int }
   let function ( *_ ) x = x.current
   let function ( ^_ ) x = x.final
+  let function get_id (x : borrowed 'a) = x.id
+  let function borrow_logic (cur fin : 'a) (id : int) = { current = cur; final = fin; id = id; }
   val borrow_mut (a : 'a) : borrowed 'a
-  ensures { *result = a }
+    ensures { *result = a }
+  val function inherit_id (old_id inherit_path: int) : int
+  val borrow_final (a: 'a) (id: int) : borrowed 'a
+    ensures { *result = a }
+    ensures { result.id = id }
 end
 
 module Real

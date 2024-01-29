@@ -24,7 +24,7 @@ use crate::{
 };
 use rustc_hir::{def_id::DefId, Unsafety};
 use rustc_middle::{
-    mir::{BasicBlock, BinOp},
+    mir::{BasicBlock, BinOp, ProjectionElem},
     ty::TyKind,
 };
 use rustc_span::{Span, DUMMY_SP};
@@ -644,6 +644,39 @@ impl<'tcx> Place<'tcx> {
     }
 }
 
+pub(crate) fn borrow_generated_id<V: std::fmt::Debug, T: std::fmt::Debug>(
+    original_borrow: Exp,
+    projection: &[ProjectionElem<V, T>],
+) -> Exp {
+    let mut borrow_id = Exp::Call(
+        Box::new(Exp::pure_qvar(QName::from_string("Borrow.get_id").unwrap())),
+        vec![original_borrow],
+    );
+    for proj in projection {
+        match proj {
+            ProjectionElem::Deref => {
+                // Deref of a box
+            }
+            ProjectionElem::Field(idx, _) => {
+                borrow_id = Exp::Call(
+                    Box::new(Exp::pure_qvar(QName::from_string("Borrow.inherit_id").unwrap())),
+                    vec![borrow_id, Exp::Const(Constant::Int(idx.as_u32() as i128 + 1, None))],
+                );
+            }
+            ProjectionElem::Downcast(_, _) => {
+                // since only one variant can be active at a time, there is no need to change the borrow index further
+            }
+            ProjectionElem::Index(_)
+            | ProjectionElem::ConstantIndex { .. }
+            | ProjectionElem::Subslice { .. }
+            | ProjectionElem::OpaqueCast(_) => {
+                // Should only appear in logic, so we can ignore them.
+            }
+        }
+    }
+    borrow_id
+}
+
 impl<'tcx> Statement<'tcx> {
     pub(crate) fn to_why(
         self,
@@ -664,9 +697,27 @@ impl<'tcx> Statement<'tcx> {
                     place::create_assign_inner(ctx, names, locals, &rhs, reassign, span),
                 ]
             }
+            Statement::Assignment(lhs, RValue::FinalBorrow(rhs, deref_index), span) => {
+                let original_borrow = Place {
+                    local: rhs.local.clone(),
+                    projection: rhs.projection[..deref_index].to_vec(),
+                }
+                .as_rplace(ctx, names, locals);
+                let borrow_id =
+                    borrow_generated_id(original_borrow, &rhs.projection[deref_index + 1..]);
+                let borrow = Exp::Call(
+                    Box::new(Exp::impure_qvar(QName::from_string("Borrow.borrow_final").unwrap())),
+                    vec![rhs.as_rplace(ctx, names, locals), borrow_id],
+                );
+                let reassign = Exp::Final(Box::new(lhs.as_rplace(ctx, names, locals)));
+
+                vec![
+                    place::create_assign_inner(ctx, names, locals, &lhs, borrow, span),
+                    place::create_assign_inner(ctx, names, locals, &rhs, reassign, span),
+                ]
+            }
             Statement::Assignment(lhs, RValue::Ghost(rhs), span) => {
                 let ghost = lower_pure(ctx, names, &rhs);
-
                 vec![place::create_assign_inner(ctx, names, locals, &lhs, ghost, span)]
             }
             Statement::Assignment(lhs, RValue::Expr(rhs), span) => {
