@@ -245,12 +245,12 @@ extern_spec! {
         mod ops {
             trait IndexMut<Idx>  where Idx : ?Sized, Self : ?Sized {
                 #[requires(false)]
-                fn index_mut(&mut self, _ix : Idx) -> &mut Self::Output;
+                fn index_mut(&mut self, ix : Idx) -> &mut Self::Output;
             }
 
             trait Index<Idx>  where Idx : ?Sized,  Self : ?Sized {
                 #[requires(false)]
-                fn index(&self, _ix : Idx) -> &Self::Output;
+                fn index(&self, ix : Idx) -> &Self::Output;
             }
         }
     }
