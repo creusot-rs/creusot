@@ -101,7 +101,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
                 let crate_name = why3.crate_name(LOCAL_CRATE);
 
                 let libname =
-                    format!("{}-{}.mlcfg", crate_name.as_str(), why3.sess.crate_types()[0]);
+                    format!("{}-{}.mlcfg", crate_name.as_str(), why3.crate_types()[0]);
 
                 let directory = if why3.opts.in_cargo {
                     let mut dir = outputs.out_directory.clone();

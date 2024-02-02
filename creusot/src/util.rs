@@ -466,7 +466,7 @@ pub(crate) fn pre_sig_of<'tcx>(
         if kind == ClosureKind::FnMut {
             let args = subst.as_closure().sig().inputs().skip_binder()[0];
             let unnest_subst =
-                ctx.mk_substs(&[GenericArg::from(args), GenericArg::from(env_ty.peel_refs())]);
+                ctx.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty.peel_refs())]);
 
             let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
 
@@ -528,7 +528,7 @@ fn elaborate_type_invariants<'tcx>(
 
     for (name, span, ty) in pre_sig.inputs.iter() {
         if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
-            let term = EarlyBinder::bind(term).subst(ctx.tcx, subst);
+            let term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
             pre_sig.contract.requires.push(term);
         }
     }
@@ -541,7 +541,7 @@ fn elaborate_type_invariants<'tcx>(
         ret_ty_span.unwrap_or_else(|| ctx.tcx.def_span(def_id)),
         pre_sig.output,
     ) {
-        let term = EarlyBinder::bind(term).subst(ctx.tcx, subst);
+        let term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
         pre_sig.contract.ensures.push(term);
     }
 }
@@ -748,10 +748,10 @@ pub(crate) fn closure_capture_subst<'tcx>(
 
     let ty = match ck {
         Some(ClosureKind::Fn) => {
-            tcx.mk_imm_ref(tcx.lifetimes.re_erased, tcx.type_of(def_id).instantiate_identity())
+            Ty::new_imm_ref(tcx, tcx.lifetimes.re_erased, tcx.type_of(def_id).instantiate_identity())
         }
         Some(ClosureKind::FnMut) => {
-            tcx.mk_mut_ref(tcx.lifetimes.re_erased, tcx.type_of(def_id).instantiate_identity())
+            Ty::new_mut_ref(tcx, tcx.lifetimes.re_erased, tcx.type_of(def_id).instantiate_identity())
         }
         Some(ClosureKind::FnOnce) | None => tcx.type_of(def_id).instantiate_identity(),
     };

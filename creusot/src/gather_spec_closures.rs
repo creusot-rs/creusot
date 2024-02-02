@@ -59,7 +59,7 @@ impl<'tcx> Visitor<'tcx> for Closures<'tcx> {
                 self.closures.insert(*id);
             }
             Rvalue::Use(Operand::Constant(box ck)) => {
-                if let Some(def_id) = ghost_closure_id(self.tcx, ck.literal.ty()) {
+                if let Some(def_id) = ghost_closure_id(self.tcx, ck.const_.ty()) {
                     self.closures.insert(def_id);
                 }
             }

@@ -3,10 +3,7 @@ use crate::{
     util::get_builtin,
 };
 use rustc_middle::{
-    mir::{
-        interpret::{AllocRange, ConstValue},
-        ConstantKind, UnevaluatedConst,
-    },
+    mir::{self, interpret::AllocRange, ConstValue, UnevaluatedConst},
     ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt},
 };
 use rustc_span::{Span, Symbol};
@@ -20,18 +17,18 @@ use super::{
 pub(crate) fn from_mir_constant<'tcx>(
     env: ParamEnv<'tcx>,
     ctx: &mut TranslationCtx<'tcx>,
-    c: &rustc_middle::mir::Constant<'tcx>,
+    c: &rustc_middle::mir::ConstOperand<'tcx>,
 ) -> Expr<'tcx> {
-    from_mir_constant_kind(ctx, c.literal, env, c.span)
+    from_mir_constant_kind(ctx, c.const_, env, c.span)
 }
 
 pub(crate) fn from_mir_constant_kind<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    ck: ConstantKind<'tcx>,
+    ck: mir::Const<'tcx>,
     env: ParamEnv<'tcx>,
     span: Span,
 ) -> Expr<'tcx> {
-    if let ConstantKind::Ty(c) = ck {
+    if let mir::Const::Ty(c) = ck {
         return from_ty_const(ctx, c, env, span);
     }
 
@@ -39,10 +36,12 @@ pub(crate) fn from_mir_constant_kind<'tcx>(
         return Expr { kind: ExprKind::Tuple(Vec::new()), ty: ck.ty(), span };
     }
 
+    let ck = ck.normalize(ctx.tcx, env);
+
     if ck.ty().peel_refs().is_str() {
-        if let Some(ConstValue::Slice { data, start, end }) = ck.try_to_value(ctx.tcx) {
-            let start = Size::from_bytes(start);
-            let size = Size::from_bytes(end);
+        if let mir::Const::Val(ConstValue::Slice { data, meta }, _) = ck {
+            let start = Size::from_bytes(0);
+            let size = Size::from_bytes(meta);
             let bytes = data
                 .inner()
                 .get_bytes_strip_provenance(&ctx.tcx, AllocRange { start, size })
@@ -61,7 +60,7 @@ pub(crate) fn from_mir_constant_kind<'tcx>(
         }
     }
 
-    if let ConstantKind::Unevaluated(UnevaluatedConst { promoted: Some(p), .. }, _) = ck {
+    if let mir::Const::Unevaluated(UnevaluatedConst { promoted: Some(p), .. }, _) = ck {
         return Expr {
             kind: ExprKind::Constant(Term {
                 kind: TermKind::Var(Symbol::intern(&format!("promoted{:?}", p.as_usize()))),
@@ -94,7 +93,7 @@ pub(crate) fn from_ty_const<'tcx>(
     // Builtin constants are given a body which panics
     if let ConstKind::Unevaluated(u) = c.kind() &&
        let Some(_) = get_builtin(ctx.tcx, u.def) {
-            return Expr { kind: ExprKind::Constant(Term { kind: TermKind::Lit(Literal::Function(u.def, u.substs)), ty: c.ty(), span}), ty: c.ty(), span }
+            return Expr { kind: ExprKind::Constant(Term { kind: TermKind::Lit(Literal::Function(u.def, u.args)), ty: c.ty(), span}), ty: c.ty(), span }
     };
 
     if let ConstKind::Param(_) = c.kind() {
@@ -183,12 +182,12 @@ trait ToBits<'tcx> {
 }
 
 impl<'tcx> ToBits<'tcx> for Const<'tcx> {
-    fn get_bits(&self, tcx: TyCtxt<'tcx>, env: ParamEnv<'tcx>, ty: Ty<'tcx>) -> Option<u128> {
-        self.try_eval_bits(tcx, env, ty)
+    fn get_bits(&self, tcx: TyCtxt<'tcx>, env: ParamEnv<'tcx>, _: Ty<'tcx>) -> Option<u128> {
+        self.try_eval_bits(tcx, env)
     }
 }
-impl<'tcx> ToBits<'tcx> for ConstantKind<'tcx> {
-    fn get_bits(&self, tcx: TyCtxt<'tcx>, env: ParamEnv<'tcx>, ty: Ty<'tcx>) -> Option<u128> {
-        self.try_eval_bits(tcx, env, ty)
+impl<'tcx> ToBits<'tcx> for mir::Const<'tcx> {
+    fn get_bits(&self, tcx: TyCtxt<'tcx>, env: ParamEnv<'tcx>, _: Ty<'tcx>) -> Option<u128> {
+        self.try_eval_bits(tcx, env)
     }
 }

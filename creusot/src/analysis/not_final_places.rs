@@ -2,8 +2,8 @@ use crate::extended_location::ExtendedLocation;
 use rustc_index::bit_set::BitSet;
 use rustc_middle::{
     mir::{
-        self, visit::Visitor, BasicBlock, Body, Location, Place, PlaceElem, PlaceRef,
-        ProjectionElem, Statement, Terminator,
+        self, visit::Visitor, BasicBlock, Body, CallReturnPlaces, Location, Place, PlaceElem,
+        PlaceRef, ProjectionElem, Statement, Terminator, TerminatorEdges,
     },
     ty::TyCtxt,
 };
@@ -466,20 +466,21 @@ impl<'tcx> GenKillAnalysis<'tcx> for NotFinalPlaces<'tcx> {
         PlaceVisitorKill { mapping: self, trans }.visit_statement(statement, location)
     }
 
-    fn terminator_effect(
+    fn terminator_effect<'mir>(
         &mut self,
-        trans: &mut impl GenKill<Self::Idx>,
-        terminator: &Terminator<'tcx>,
+        trans: &mut Self::Domain,
+        terminator: &'mir Terminator<'tcx>,
         location: Location,
-    ) {
-        PlaceVisitorKill { mapping: self, trans }.visit_terminator(terminator, location)
+    ) -> TerminatorEdges<'mir, 'tcx> {
+        PlaceVisitorKill { mapping: self, trans }.visit_terminator(terminator, location);
+        terminator.edges()
     }
 
     fn call_return_effect(
         &mut self,
         _trans: &mut impl GenKill<Self::Idx>,
         _block: BasicBlock,
-        _return_places: rustc_mir_dataflow::CallReturnPlaces<'_, 'tcx>,
+        _return_places: CallReturnPlaces<'_, 'tcx>,
     ) {
     }
 
@@ -500,6 +501,10 @@ impl<'tcx> GenKillAnalysis<'tcx> for NotFinalPlaces<'tcx> {
         location: Location,
     ) {
         PlaceVisitorGen { mapping: self, trans }.visit_terminator(terminator, location)
+    }
+
+    fn domain_size(&self, _: &mir::Body<'tcx>) -> usize {
+        self.places.len()
     }
 }
 

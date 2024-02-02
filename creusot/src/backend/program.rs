@@ -43,8 +43,8 @@ fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
     let mut names = CloneMap::new(ctx.tcx, def_id.into());
     let mut decls = Vec::new();
 
-    let TyKind::Closure(_, subst) = ctx.type_of(def_id).subst_identity().kind() else { unreachable!() };
-    names.insert_hidden_type(ctx.type_of(def_id).subst_identity());
+    let TyKind::Closure(_, subst) = ctx.type_of(def_id).instantiate_identity().kind() else { unreachable!() };
+    names.insert_hidden_type(ctx.type_of(def_id).instantiate_identity());
     let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
 
     let (clones, _) = names.to_clones(ctx, CloneDepth::Deep);

@@ -12,7 +12,7 @@ use petgraph::Direction;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::Mutability,
-    ty::{subst::SubstsRef, AliasKind, ParamEnv, Ty, TyKind},
+    ty::{GenericArgsRef, AliasKind, ParamEnv, Ty, TyKind},
 };
 
 use super::*;
@@ -131,7 +131,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
         for p in ctx.projections_in_ty(id).to_owned() {
             let node = self
-                .resolve_dep(ctx, DepNode::new(ctx.tcx, (p.def_id, p.substs)).subst(ctx.tcx, key));
+                .resolve_dep(ctx, DepNode::new(ctx.tcx, (p.def_id, p.args)).subst(ctx.tcx, key));
 
             let is_type = self
                 .self_did()
@@ -152,7 +152,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         walk_types(key_subst, |t| {
             let node = match t.kind() {
                 TyKind::Alias(AliasKind::Projection, pty) => {
-                    let node = DepNode::new(ctx.tcx, (pty.def_id, pty.substs));
+                    let node = DepNode::new(ctx.tcx, (pty.def_id, pty.args));
                     Some(self.resolve_dep(ctx, node))
                 }
                 TyKind::Closure(_, _) => Some(DepNode::Type(t)),
@@ -218,7 +218,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         &mut self,
         ctx: &mut TranslationCtx<'tcx>,
         key_did: DefId,
-        key_subst: SubstsRef<'tcx>,
+        key_subst: GenericArgsRef<'tcx>,
         depth: CloneDepth,
     ) {
         let Some(item) = ctx.tcx.opt_associated_item(key_did) else { return };

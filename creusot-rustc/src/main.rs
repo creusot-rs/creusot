@@ -14,7 +14,7 @@ extern crate log;
 use creusot::callbacks::*;
 use options::CreusotArgs;
 use rustc_driver::{RunCompiler, DEFAULT_LOCALE_RESOURCES};
-use rustc_errors::{emitter::EmitterWriter, TerminalUrl};
+use rustc_errors::emitter::EmitterWriter;
 use rustc_interface::interface::try_print_query_stack;
 use rustc_session::{config::ErrorOutputType, EarlyErrorHandler};
 use std::{env, panic, panic::PanicInfo, process::Command};
@@ -38,19 +38,8 @@ fn report_panic(info: &PanicInfo) {
     let fallback_bundle =
         rustc_errors::fallback_fluent_bundle(DEFAULT_LOCALE_RESOURCES.to_vec(), false);
 
-    let emitter = Box::new(EmitterWriter::stderr(
-        rustc_errors::ColorConfig::Auto,
-        None,
-        None,
-        fallback_bundle,
-        false,
-        false,
-        None,
-        false,
-        false,
-        TerminalUrl::Auto,
-    ));
-    let handler = rustc_errors::Handler::with_emitter(true, None, emitter);
+    let emitter = Box::new(EmitterWriter::stderr(rustc_errors::ColorConfig::Auto, fallback_bundle));
+    let handler = rustc_errors::Handler::with_emitter(emitter);
 
     let mut diagnostic = handler.struct_note_without_error("Creusot has panic-ed!");
     diagnostic.note("Oops, that shouldn't have happened, sorry about that.");
@@ -62,7 +51,7 @@ fn report_panic(info: &PanicInfo) {
     let backtrace = env::var_os("RUST_BACKTRACE").map_or(false, |x| &x != "0");
 
     if backtrace {
-        try_print_query_stack(&handler, None);
+        try_print_query_stack(&handler, None, None);
     }
 }
 
@@ -171,18 +160,7 @@ fn emit_warning(text: String) {
     let fallback_bundle =
         rustc_errors::fallback_fluent_bundle(DEFAULT_LOCALE_RESOURCES.to_vec(), false);
 
-    let emitter = Box::new(EmitterWriter::stderr(
-        rustc_errors::ColorConfig::Auto,
-        None,
-        None,
-        fallback_bundle,
-        false,
-        false,
-        None,
-        false,
-        false,
-        TerminalUrl::Auto,
-    ));
-    let handler = rustc_errors::Handler::with_emitter(true, None, emitter);
+    let emitter = Box::new(EmitterWriter::stderr(rustc_errors::ColorConfig::Auto, fallback_bundle));
+    let handler = rustc_errors::Handler::with_emitter( emitter);
     handler.warn(text);
 }

@@ -131,7 +131,7 @@ fn create_assign_rec<'tcx>(
             }
             TyKind::Closure(id, subst) => {
                 let varnames =
-                    freshvars.take(subst.as_closure().upvar_tys().count()).collect::<Vec<Ident>>();
+                    freshvars.take(subst.as_closure().upvar_tys().len()).collect::<Vec<Ident>>();
                 let field_pats = varnames.clone().into_iter().map(|x| VarP(x.into())).collect();
                 let mut varexps: Vec<Exp> =
                     varnames.into_iter().map(|x| Exp::impure_var(x.into())).collect();

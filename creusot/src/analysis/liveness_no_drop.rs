@@ -2,12 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-use dataflow::{Backward, CallReturnPlaces};
+use dataflow::Backward;
 use rustc_index::bit_set::ChunkedBitSet;
 use rustc_middle::mir::{
-    self,
-    visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor},
-    Local, Location, Place,
+    self, visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor}, CallReturnPlaces, Local, Location, Place, TerminatorEdges
 };
 use rustc_mir_dataflow::{self as dataflow, AnalysisDomain, GenKill, GenKillAnalysis};
 
@@ -43,13 +41,14 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeLiveExceptDrop {
         TransferFunction(trans).visit_statement(statement, location);
     }
 
-    fn terminator_effect(
+    fn terminator_effect<'mir>(
         &mut self,
-        trans: &mut impl GenKill<Self::Idx>,
-        terminator: &mir::Terminator<'tcx>,
+        trans: &mut Self::Domain,
+        terminator: &'mir mir::Terminator<'tcx>,
         location: Location,
-    ) {
+    ) -> TerminatorEdges<'mir, 'tcx> {
         TransferFunction(trans).visit_terminator(terminator, location);
+        terminator.edges()
     }
 
     fn call_return_effect(
@@ -65,17 +64,8 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeLiveExceptDrop {
         });
     }
 
-    fn yield_resume_effect(
-        &mut self,
-        trans: &mut impl GenKill<Self::Idx>,
-        _resume_block: mir::BasicBlock,
-        resume_place: mir::Place<'tcx>,
-    ) {
-        YieldResumeEffect(trans).visit_place(
-            &resume_place,
-            PlaceContext::MutatingUse(MutatingUseContext::Yield),
-            Location::START,
-        )
+    fn domain_size(&self, body: &mir::Body<'tcx>) -> usize {
+        body.local_decls.len()
     }
 }
 

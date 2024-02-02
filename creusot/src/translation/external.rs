@@ -9,7 +9,7 @@ use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
     thir::{self, visit::Visitor, Expr, ExprKind, Thir},
     ty::{
-        subst::{GenericArgKind, InternalSubsts, SubstsRef},
+        GenericArgKind, GenericArgs, GenericArgsRef,
         Clause, EarlyBinder, Predicate, TyCtxt, TyKind,
     },
 };
@@ -19,7 +19,7 @@ use rustc_span::Symbol;
 pub(crate) struct ExternSpec<'tcx> {
     // The contract we are attaching
     pub contract: ContractClauses,
-    pub subst: SubstsRef<'tcx>,
+    pub subst: GenericArgsRef<'tcx>,
     pub arg_subst: Vec<(Symbol, Term<'tcx>)>,
     // Additional predicates we must verify to call this function
     pub additional_predicates: Vec<Predicate<'tcx>>,
@@ -29,9 +29,9 @@ impl<'tcx> ExternSpec<'tcx> {
     pub(crate) fn predicates_for(
         &self,
         tcx: TyCtxt<'tcx>,
-        sub: SubstsRef<'tcx>,
+        sub: GenericArgsRef<'tcx>,
     ) -> Vec<Predicate<'tcx>> {
-        EarlyBinder::bind(self.additional_predicates.clone()).subst(tcx, sub)
+        EarlyBinder::bind(self.additional_predicates.clone()).instantiate(tcx, sub)
     }
 }
 
@@ -67,9 +67,10 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         (id, subst)
     };
 
-    let mut inner_subst = InternalSubsts::identity_for_item(ctx.tcx, id).to_vec();
-    let outer_subst = InternalSubsts::identity_for_item(ctx.tcx, def_id.to_def_id());
+    let mut inner_subst = GenericArgs::identity_for_item(ctx.tcx, id).to_vec();
+    let outer_subst = GenericArgs::identity_for_item(ctx.tcx, def_id.to_def_id());
 
+    // FIXME(xavier): I don't remember the original reason for introducing this...
     let extra_parameters = inner_subst.len() - outer_subst.len();
 
     // Move Self_ to the front of the list like rustc does for real trait impls (not expressible in surface rust).
@@ -86,18 +87,23 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         inner_subst.insert(0, self_);
     };
 
+    eprintln!("{def_id:?} {id:?} {outer_subst:?} {inner_subst:?}");
+
     let mut subst = Vec::new();
     let mut errors = Vec::new();
     for i in 0..outer_subst.len() {
         let span = ctx.def_span(def_id.to_def_id());
+        eprintln!("{i:?}");
         match (inner_subst[i + extra_parameters].unpack(), outer_subst[i].unpack()) {
             (GenericArgKind::Type(t1), GenericArgKind::Type(t2)) => match (t1.kind(), t2.kind()) {
                 (TyKind::Param(param1), TyKind::Param(param2))
                     if param1.name == param2.name || param1.name.as_str().starts_with("Self") =>
                 {
+                    eprintln!("good!");
                     subst.push(inner_subst[i + extra_parameters]);
                 }
                 _ => {
+                    eprintln!("bad {t1:?} {t2:?}");
                     let mut err = ctx.fatal_error(span, "mismatched parameters in `extern_spec!`");
                     err.warn(format!("expected parameter `{:?}` to be called `{:?}`", t2, t1));
                     errors.push(err);
@@ -125,12 +131,15 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         }
     }
 
+    assert!(errors.is_empty());
+
     errors.into_iter().for_each(|mut e| e.emit());
 
-    let subst = ctx.mk_substs(&subst);
+    let subst = ctx.mk_args(&subst);
 
     let contract = crate::specification::contract_clauses_of(ctx, def_id.to_def_id()).unwrap();
 
+    eprintln!("{outer_subst:?} {subst:?}");
     let additional_predicates = ctx
         .predicates_of(def_id)
         .instantiate(ctx.tcx, subst)
@@ -151,7 +160,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 // We shouldn't need a full visitor... or an index set, there should be a single item per extern spec method.
 struct ExtractExternItems<'a, 'tcx> {
     thir: &'a Thir<'tcx>,
-    pub items: IndexSet<(DefId, SubstsRef<'tcx>)>,
+    pub items: IndexSet<(DefId, GenericArgsRef<'tcx>)>,
 }
 
 impl<'a, 'tcx> ExtractExternItems<'a, 'tcx> {

@@ -1,5 +1,5 @@
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{self, InternalSubsts};
+use rustc_middle::ty::{self, Const, GenericArgs};
 
 use crate::{
     ctx::TranslatedItem,
@@ -17,10 +17,10 @@ impl<'tcx> Why3Generator<'tcx> {
         &mut self,
         def_id: DefId,
     ) -> (TranslatedItem, CloneSummary<'tcx>) {
-        let subst = InternalSubsts::identity_for_item(self.tcx, def_id);
+        let subst = GenericArgs::identity_for_item(self.tcx, def_id);
         let uneval = ty::UnevaluatedConst::new(def_id, subst);
-        let constant = self
-            .mk_const(ty::ConstKind::Unevaluated(uneval), self.type_of(def_id).subst_identity());
+        let constant = Const
+            ::new(self.tcx, ty::ConstKind::Unevaluated(uneval), self.type_of(def_id).instantiate_identity());
 
         let param_env = self.param_env(def_id);
         let span = self.def_span(def_id);

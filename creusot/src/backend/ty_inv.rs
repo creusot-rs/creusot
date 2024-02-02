@@ -15,7 +15,7 @@ use indexmap::IndexSet;
 use rustc_ast::Mutability;
 use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
-use rustc_middle::ty::{subst::SubstsRef, GenericArg, ParamEnv, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{GenericArgsRef, GenericArg, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
 use why3::{
     declaration::{Axiom, Decl, Module, TyDecl},
@@ -58,17 +58,17 @@ impl TyInvKind {
     }
 
     pub(crate) fn to_skeleton_ty<'tcx>(self, tcx: TyCtxt<'tcx>) -> Ty<'tcx> {
-        let param = tcx.mk_ty_param(0, Symbol::intern("T"));
+        let param = Ty::new_param(tcx, 0, Symbol::intern("T"));
         match self {
             TyInvKind::Trivial => param,
-            TyInvKind::Borrow(Mutability::Not) => tcx.mk_imm_ref(tcx.lifetimes.re_erased, param),
-            TyInvKind::Borrow(Mutability::Mut) => tcx.mk_mut_ref(tcx.lifetimes.re_erased, param),
-            TyInvKind::Box => tcx.mk_box(param),
-            TyInvKind::Adt(did) => tcx.type_of(did).subst_identity(),
-            TyInvKind::Tuple(arity) => tcx.mk_tup_from_iter(
-                (0..arity).map(|i| tcx.mk_ty_param(i as _, Symbol::intern(&format!("T{i}")))),
+            TyInvKind::Borrow(Mutability::Not) => Ty::new_imm_ref(tcx, tcx.lifetimes.re_erased, param),
+            TyInvKind::Borrow(Mutability::Mut) => Ty::new_mut_ref(tcx, tcx.lifetimes.re_erased, param),
+            TyInvKind::Box => Ty::new_box(tcx, param),
+            TyInvKind::Adt(did) => tcx.type_of(did).instantiate_identity(),
+            TyInvKind::Tuple(arity) => Ty::new_tup_from_iter(tcx,
+                (0..arity).map(|i| Ty::new_param(tcx, i as _, Symbol::intern(&format!("T{i}")))),
             ),
-            TyInvKind::Slice => tcx.mk_slice(param),
+            TyInvKind::Slice => Ty::new_slice(tcx, param),
         }
     }
 
@@ -82,15 +82,15 @@ impl TyInvKind {
         }
     }
 
-    pub(crate) fn tyinv_substs<'tcx>(self, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> SubstsRef<'tcx> {
+    pub(crate) fn tyinv_substs<'tcx>(self, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> GenericArgsRef<'tcx> {
         match (self, ty.kind()) {
-            (TyInvKind::Trivial, _) => tcx.mk_substs(&[GenericArg::from(ty)]),
+            (TyInvKind::Trivial, _) => tcx.mk_args(&[GenericArg::from(ty)]),
             (TyInvKind::Borrow(_), TyKind::Ref(_, ty, _))
-            | (TyInvKind::Slice, TyKind::Slice(ty)) => tcx.mk_substs(&[GenericArg::from(*ty)]),
-            (TyInvKind::Box, TyKind::Adt(_, adt_substs)) => tcx.mk_substs(&adt_substs[..1]),
+            | (TyInvKind::Slice, TyKind::Slice(ty)) => tcx.mk_args(&[GenericArg::from(*ty)]),
+            (TyInvKind::Box, TyKind::Adt(_, adt_substs)) => tcx.mk_args(&adt_substs[..1]),
             (TyInvKind::Adt(_), TyKind::Adt(_, adt_substs)) => adt_substs,
             (TyInvKind::Tuple(_), TyKind::Tuple(tys)) => {
-                tcx.mk_substs_from_iter(tys.iter().map(GenericArg::from))
+                tcx.mk_args_from_iter(tys.iter().map(GenericArg::from))
             }
             (TyInvKind::Slice, TyKind::Adt(_, subst)) => subst,
             a => unreachable!("{a:?}"),
@@ -166,7 +166,7 @@ impl<'tcx> InvariantElaborator<'tcx> {
         let term = self.inv_rhs(ctx, ty, kind);
 
         let inv_id = ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
-        let subst = ctx.mk_substs(&[GenericArg::from(subject.ty)]);
+        let subst = ctx.mk_args(&[GenericArg::from(subject.ty)]);
 
         let lhs = Term::call(ctx.tcx, inv_id, subst, vec![subject]);
 
@@ -268,7 +268,7 @@ impl<'tcx> InvariantElaborator<'tcx> {
         }
 
         let inv_id = ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
-        let subst = ctx.mk_substs(&[GenericArg::from(term.ty)]);
+        let subst = ctx.mk_args(&[GenericArg::from(term.ty)]);
         let call_term = Term::call(ctx.tcx, inv_id, subst, vec![term]);
         call_term
     }
@@ -357,7 +357,7 @@ impl<'tcx> InvariantElaborator<'tcx> {
 
         let index = Term::var(Symbol::intern("i"), int_ty);
 
-        let subst = ctx.mk_substs(&[GenericArg::from(elt_ty)]);
+        let subst = ctx.mk_args(&[GenericArg::from(elt_ty)]);
 
         let mut index_call = Term::call(ctx.tcx, seq_get, subst, vec![term.clone(), index.clone()]);
         index_call.ty = elt_ty;
@@ -475,17 +475,17 @@ fn build_inv_axiom<'tcx>(
 }
 
 // TODO: Handle missing defid gracefully
-fn user_inv_item<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(DefId, SubstsRef<'tcx>)> {
+fn user_inv_item<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(DefId, GenericArgsRef<'tcx>)> {
     let trait_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user"))?;
 
-    Some((trait_did, tcx.mk_substs(&[GenericArg::from(ty)])))
+    Some((trait_did, tcx.mk_args(&[GenericArg::from(ty)])))
 }
 
 fn resolve_user_inv<'tcx>(
     tcx: TyCtxt<'tcx>,
     ty: Ty<'tcx>,
     param_env: ParamEnv<'tcx>,
-) -> Option<(DefId, SubstsRef<'tcx>)> {
+) -> Option<(DefId, GenericArgsRef<'tcx>)> {
     let (trait_did, subst) = user_inv_item(tcx, ty)?;
 
     // eprintln!("resolving inv for {ty}, {param_env:?}");

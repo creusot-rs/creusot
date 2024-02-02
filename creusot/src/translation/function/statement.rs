@@ -8,13 +8,10 @@ use crate::{
     util::{self, ghost_closure_id},
 };
 use rustc_borrowck::borrow_set::TwoPhaseActivation;
-use rustc_middle::{
-    mir::{
-        BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
-        StatementKind,
-    },
-    ty::adjustment::PointerCast,
-};
+use rustc_middle::{mir::{
+    BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
+    StatementKind,
+}, ty::adjustment::PointerCoercion};
 use rustc_mir_dataflow::ResultsCursor;
 use rustc_span::DUMMY_SP;
 
@@ -78,7 +75,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Rvalue::Use(op) => match op {
                 Move(_pl) | Copy(_pl) => self.translate_operand(op).kind,
                 Constant(box c) => {
-                    if ghost_closure_id(self.tcx, c.literal.ty()).is_some() {
+                    if ghost_closure_id(self.tcx, c.const_.ty()).is_some() {
                         return;
                     };
                     crate::constant::from_mir_constant(self.param_env(), self.ctx, c).kind
@@ -173,7 +170,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 Box::new(crate::constant::from_ty_const(self.ctx, *len, self.param_env(), si.span)),
             ),
 
-            Rvalue::Cast(CastKind::Pointer(PointerCast::Unsize), op, ty) => {
+            Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize), op, ty) => {
                 if let Some(t) = ty.builtin_deref(true) && t.ty.is_slice() {
                     // treat &[T; N] to &[T] casts as normal assignments
                     self.translate_operand(op).kind
@@ -183,7 +180,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
             }
             Rvalue::Cast(
-                CastKind::Pointer(_)
+                CastKind::PointerCoercion(_)
                 | CastKind::PointerExposeAddress
                 | CastKind::PointerFromExposedAddress
                 | CastKind::DynStar
