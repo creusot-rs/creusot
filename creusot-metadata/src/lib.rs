@@ -71,28 +71,8 @@ impl EncodedSourceFileId {
         StableSourceFileId { file_name_hash: self.file_name_hash, cnum }
     }
 
+    #[inline]
     fn new(tcx: TyCtxt<'_>, file: &SourceFile) -> EncodedSourceFileId {
-        if file.cnum == LOCAL_CRATE {
-            /* Cf rustc_metadata::rmeta::encode_source_map */
-            if let FileName::Real(ref original_file_name) = file.name {
-                let adapted_file_name =
-                    tcx.sess.source_map().path_mapping().to_embeddable_absolute_path(
-                        original_file_name.clone(),
-                        &tcx.sess.opts.working_dir,
-                    );
-                if adapted_file_name != *original_file_name {
-                    let file_name_hash = {
-                        let mut hasher = StableHasher::new();
-                        FileName::Real(adapted_file_name).hash(&mut hasher);
-                        hasher.finish::<_>()
-                    };
-                    return EncodedSourceFileId {
-                        file_name_hash,
-                        stable_crate_id: tcx.sess.local_stable_crate_id(),
-                    };
-                }
-            }
-        }
         let source_file_id = StableSourceFileId::new(file);
         EncodedSourceFileId {
             file_name_hash: source_file_id.file_name_hash,

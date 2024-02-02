@@ -19,7 +19,7 @@ use rustc_hir::{
 };
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
-    self, subst::SubstsRef, BorrowKind, ClosureKind, EarlyBinder, GenericArg, InternalSubsts, Ty,
+    self, GenericArgsRef, BorrowKind, ClosureKind, EarlyBinder, GenericArg, GenericArgs, Ty,
     TyCtxt, TyKind, UpvarCapture,
 };
 use rustc_span::{symbol, symbol::kw, Span, Symbol, DUMMY_SP};
@@ -382,11 +382,11 @@ pub(crate) fn inputs_and_output<'tcx>(
 ) -> (impl Iterator<Item = (symbol::Ident, Ty<'tcx>)>, Ty<'tcx>) {
     let (inputs, output): (Box<dyn Iterator<Item = (rustc_span::symbol::Ident, _)>>, _) = match tcx
         .type_of(def_id)
-        .subst_identity()
+        .instantiate_identity()
         .kind()
     {
         TyKind::FnDef(..) => {
-            let gen_sig = tcx.fn_sig(def_id).subst_identity();
+            let gen_sig = tcx.fn_sig(def_id).instantiate_identity();
             let sig = tcx.normalize_erasing_late_bound_regions(tcx.param_env(def_id), gen_sig);
             let iter = tcx.fn_arg_names(def_id).iter().cloned().zip(sig.inputs().iter().cloned());
             (Box::new(iter), sig.output())
@@ -408,7 +408,7 @@ pub(crate) fn inputs_and_output<'tcx>(
                 sig.output(),
             )
         }
-        _ => (Box::new(iter::empty()), tcx.type_of(def_id).subst_identity()),
+        _ => (Box::new(iter::empty()), tcx.type_of(def_id).instantiate_identity()),
     };
     (inputs, output)
 }
@@ -445,7 +445,7 @@ pub(crate) fn pre_sig_of<'tcx>(
         });
     }
 
-    if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).subst_identity().kind() {
+    if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).instantiate_identity().kind() {
         let self_ = Symbol::intern("_1");
         let mut pre_subst = closure_capture_subst(ctx.tcx, def_id, subst, None, self_);
 
@@ -502,7 +502,7 @@ pub(crate) fn pre_sig_of<'tcx>(
             (name, ident.span, ty)
         })
         .collect();
-    if ctx.type_of(def_id).subst_identity().is_fn() && inputs.is_empty() {
+    if ctx.type_of(def_id).instantiate_identity().is_fn() && inputs.is_empty() {
         inputs.push((kw::Empty, DUMMY_SP, ctx.tcx.types.unit));
     };
 
@@ -524,7 +524,7 @@ fn elaborate_type_invariants<'tcx>(
         return;
     }
 
-    let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
+    let subst = GenericArgs::identity_for_item(ctx.tcx, def_id);
 
     for (name, span, ty) in pre_sig.inputs.iter() {
         if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
@@ -734,7 +734,7 @@ impl<'tcx> TermVisitorMut<'tcx> for ClosureSubst<'tcx> {
 pub(crate) fn closure_capture_subst<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
-    cs: SubstsRef<'tcx>,
+    cs: GenericArgsRef<'tcx>,
     // What kind of substitution we should generate. The same precondition can be used in several ways
     ck: Option<ty::ClosureKind>,
     self_name: Symbol,
@@ -748,12 +748,12 @@ pub(crate) fn closure_capture_subst<'tcx>(
 
     let ty = match ck {
         Some(ClosureKind::Fn) => {
-            tcx.mk_imm_ref(tcx.lifetimes.re_erased, tcx.type_of(def_id).subst_identity())
+            tcx.mk_imm_ref(tcx.lifetimes.re_erased, tcx.type_of(def_id).instantiate_identity())
         }
         Some(ClosureKind::FnMut) => {
-            tcx.mk_mut_ref(tcx.lifetimes.re_erased, tcx.type_of(def_id).subst_identity())
+            tcx.mk_mut_ref(tcx.lifetimes.re_erased, tcx.type_of(def_id).instantiate_identity())
         }
-        Some(ClosureKind::FnOnce) | None => tcx.type_of(def_id).subst_identity(),
+        Some(ClosureKind::FnOnce) | None => tcx.type_of(def_id).instantiate_identity(),
     };
 
     let self_ = Term::var(self_name, ty);
