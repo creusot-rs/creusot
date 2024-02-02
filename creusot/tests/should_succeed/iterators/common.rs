@@ -5,14 +5,14 @@ pub trait Iterator {
     type Item;
 
     #[predicate]
-    fn produces(self, visited: Seq<Self::Item>, _o: Self) -> bool;
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool;
 
     #[predicate]
     fn completed(&mut self) -> bool;
 
     #[law]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self);
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self);
 
     #[law]
     #[requires(a.produces(ab, b))]

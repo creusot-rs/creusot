@@ -25,8 +25,8 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, B, F> {
 
     #[law]
     #[open]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self) {}
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
 
     #[law]
     #[open]

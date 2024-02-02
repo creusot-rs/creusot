@@ -25,14 +25,14 @@ pub use zip::ZipExt;
 
 pub trait Iterator: ::std::iter::Iterator {
     #[predicate]
-    fn produces(self, visited: Seq<Self::Item>, _o: Self) -> bool;
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool;
 
     #[predicate]
     fn completed(&mut self) -> bool;
 
     #[law]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self);
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self);
 
     #[law]
     #[requires(a.produces(ab, b))]
@@ -127,8 +127,8 @@ extern_spec! {
                     where U::IntoIter: Iterator;
 
                 // TODO: Investigate why Self_ needed
-                #[ensures(exists<done_ : &mut Self_, prod: Seq<_>> (^done_).resolve() && done_.completed() &&
-                    self.produces(prod, *done_) && B::from_iter_post(prod, result))]
+                #[ensures(exists<done : &mut Self_, prod: Seq<_>> (^done).resolve() && done.completed() &&
+                    self.produces(prod, *done) && B::from_iter_post(prod, result))]
                 fn collect<B>(self) -> B
                     where B: FromIterator<Self::Item>;
             }
@@ -146,9 +146,9 @@ extern_spec! {
                 where Self: FromIterator<A> {
 
                 #[requires(iter.into_iter_pre())]
-                #[ensures(exists<into_iter: T::IntoIter, done_: &mut T::IntoIter, prod: Seq<A>>
+                #[ensures(exists<into_iter: T::IntoIter, done: &mut T::IntoIter, prod: Seq<A>>
                               iter.into_iter_post(into_iter) &&
-                              into_iter.produces(prod, *done_) && done_.completed() && (^done_).resolve() &&
+                              into_iter.produces(prod, *done) && done.completed() && (^done).resolve() &&
                               Self_::from_iter_post(prod, result))]
                 fn from_iter<T>(iter: T) -> Self
                     where T: IntoIterator<Item = A>, T::IntoIter: Iterator;

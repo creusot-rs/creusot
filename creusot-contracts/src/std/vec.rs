@@ -119,9 +119,9 @@ extern_spec! {
 
             impl<T, A : Allocator> Extend<T> for Vec<T, A> {
                 #[requires(iter.into_iter_pre())]
-                #[ensures(exists<start_ : I::IntoIter, done_ : &mut I::IntoIter, prod: Seq<T>>
+                #[ensures(exists<start_ : I::IntoIter, done : &mut I::IntoIter, prod: Seq<T>>
                     iter.into_iter_post(start_) &&
-                    done_.completed() && start_.produces(prod, *done_) && (^self)@ == self@.concat(prod)
+                    done.completed() && start_.produces(prod, *done) && (^self)@ == self@.concat(prod)
                 )]
                 fn extend<I>(&mut self, iter: I)
                 where
@@ -240,8 +240,8 @@ impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
 
     #[law]
     #[open]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self) {}
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
 
     #[law]
     #[open]
