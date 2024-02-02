@@ -87,23 +87,18 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         inner_subst.insert(0, self_);
     };
 
-    eprintln!("{def_id:?} {id:?} {outer_subst:?} {inner_subst:?}");
-
     let mut subst = Vec::new();
     let mut errors = Vec::new();
     for i in 0..outer_subst.len() {
         let span = ctx.def_span(def_id.to_def_id());
-        eprintln!("{i:?}");
         match (inner_subst[i + extra_parameters].unpack(), outer_subst[i].unpack()) {
             (GenericArgKind::Type(t1), GenericArgKind::Type(t2)) => match (t1.kind(), t2.kind()) {
                 (TyKind::Param(param1), TyKind::Param(param2))
                     if param1.name == param2.name || param1.name.as_str().starts_with("Self") =>
                 {
-                    eprintln!("good!");
                     subst.push(inner_subst[i + extra_parameters]);
                 }
                 _ => {
-                    eprintln!("bad {t1:?} {t2:?}");
                     let mut err = ctx.fatal_error(span, "mismatched parameters in `extern_spec!`");
                     err.warn(format!("expected parameter `{:?}` to be called `{:?}`", t2, t1));
                     errors.push(err);
@@ -131,15 +126,12 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         }
     }
 
-    assert!(errors.is_empty());
-
     errors.into_iter().for_each(|mut e| e.emit());
 
     let subst = ctx.mk_args(&subst);
 
     let contract = crate::specification::contract_clauses_of(ctx, def_id.to_def_id()).unwrap();
 
-    eprintln!("{outer_subst:?} {subst:?}");
     let additional_predicates = ctx
         .predicates_of(def_id)
         .instantiate(ctx.tcx, subst)

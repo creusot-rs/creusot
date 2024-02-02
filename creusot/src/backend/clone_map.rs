@@ -515,6 +515,7 @@ impl<'tcx> CloneMap<'tcx> {
             graph.add_root(*r, self.dep_info[r])
         }
 
+        eprintln!("Expanding graph of {:?}", self.self_id);
         // Update the clone graph with any new entries.
         let clone_graph = graph.update_graph(ctx, depth);
 
@@ -531,6 +532,8 @@ impl<'tcx> CloneMap<'tcx> {
                 i += 1
             }
         }
+
+        eprintln!("Done expanding graph of {:?}", self.self_id);
 
         let mut elab = SymbolElaborator::new(param_env);
         let mut cloned = IndexSet::new();

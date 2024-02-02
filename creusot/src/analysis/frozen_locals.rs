@@ -220,7 +220,7 @@ impl<'tcx> dataflow::GenKillAnalysis<'tcx> for Borrows<'_, 'tcx> {
     }
 
     fn domain_size(&self, _: &mir::Body<'tcx>) -> usize {
-        self.borrow_set.len()
+        self.borrow_set.len() * 2
     }
 }
 

@@ -160,6 +160,7 @@ fn create_assign_rec<'tcx>(
         ConstantIndex { .. } => unimplemented!("ConstantIndex"),
         Subslice { .. } => unimplemented!("Subslice"),
         OpaqueCast(_) => unimplemented!("OpaqueCast"),
+        Subtype(_) => unimplemented!("Subtype"),
     }
 }
 
@@ -230,6 +231,7 @@ pub(crate) fn translate_rplace<'tcx, N: Namer<'tcx>>(
             ConstantIndex { .. } => unimplemented!("constant index projection"),
             Subslice { .. } => unimplemented!("subslice projection"),
             OpaqueCast(_) => unimplemented!("opaque cast projection"),
+            Subtype(_) => unimplemented!("Subtype"),
         }
         place_ty = projection_ty(place_ty, ctx.tcx, *elem);
     }

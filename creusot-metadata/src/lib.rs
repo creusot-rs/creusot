@@ -26,9 +26,16 @@ mod encoder;
 
 pub use decoder::decode_metadata;
 pub use encoder::encode_metadata;
-use rustc_data_structures::{fx::FxHashMap, stable_hasher::Hash64};
+use rustc_data_structures::{
+    fx::FxHashMap,
+    stable_hasher::{Hash64, StableHasher},
+};
 use rustc_middle::ty::TyCtxt;
-use rustc_span::{def_id::StableCrateId, source_map::StableSourceFileId, SourceFile};
+use rustc_span::{
+    def_id::{StableCrateId, LOCAL_CRATE},
+    source_map::StableSourceFileId,
+    FileName, SourceFile,
+};
 use std::hash::Hash;
 
 #[derive(Encodable, Decodable, Eq, PartialEq, Hash, Clone, Copy)]
@@ -64,8 +71,28 @@ impl EncodedSourceFileId {
         StableSourceFileId { file_name_hash: self.file_name_hash, cnum }
     }
 
-    #[inline]
     fn new(tcx: TyCtxt<'_>, file: &SourceFile) -> EncodedSourceFileId {
+        if file.cnum == LOCAL_CRATE {
+            /* Cf rustc_metadata::rmeta::encode_source_map */
+            if let FileName::Real(ref original_file_name) = file.name {
+                let adapted_file_name =
+                    tcx.sess.source_map().path_mapping().to_embeddable_absolute_path(
+                        original_file_name.clone(),
+                        &tcx.sess.opts.working_dir,
+                    );
+                if adapted_file_name != *original_file_name {
+                    let file_name_hash = {
+                        let mut hasher = StableHasher::new();
+                        FileName::Real(adapted_file_name).hash(&mut hasher);
+                        hasher.finish::<_>()
+                    };
+                    return EncodedSourceFileId {
+                        file_name_hash,
+                        stable_crate_id: tcx.stable_crate_id(LOCAL_CRATE),
+                    };
+                }
+            }
+        }
         let source_file_id = StableSourceFileId::new(file);
         EncodedSourceFileId {
             file_name_hash: source_file_id.file_name_hash,

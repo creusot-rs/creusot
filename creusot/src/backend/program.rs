@@ -672,6 +672,7 @@ pub(crate) fn borrow_generated_id<V: std::fmt::Debug, T: std::fmt::Debug>(
             | ProjectionElem::OpaqueCast(_) => {
                 // Should only appear in logic, so we can ignore them.
             }
+            ProjectionElem::Subtype(_) =>  { },
         }
     }
     borrow_id

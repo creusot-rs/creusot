@@ -373,6 +373,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 }
                 mir::ProjectionElem::Downcast(s, ix) => mir::ProjectionElem::Downcast(s, ix),
                 mir::ProjectionElem::OpaqueCast(ty) => mir::ProjectionElem::OpaqueCast(ty),
+                mir::ProjectionElem::Subtype(ty) => mir::ProjectionElem::Subtype(ty),
             })
             .collect();
         fmir::Place { local: self.locals[&_pl.local], projection }

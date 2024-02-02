@@ -390,24 +390,24 @@ module Hashmap_Impl5_Add
     ensures { result = inv11 _x }
     
   axiom inv11 : forall x : borrowed (Hashmap_List_Type.t_list (k, v)) . inv11 x = true
-  predicate invariant10 (self : borrowed v)
-  val invariant10 (self : borrowed v) : bool
+  predicate invariant10 (self : borrowed k)
+  val invariant10 (self : borrowed k) : bool
     ensures { result = invariant10 self }
     
-  predicate inv10 (_x : borrowed v)
-  val inv10 (_x : borrowed v) : bool
+  predicate inv10 (_x : borrowed k)
+  val inv10 (_x : borrowed k) : bool
     ensures { result = inv10 _x }
     
-  axiom inv10 : forall x : borrowed v . inv10 x = true
-  predicate invariant9 (self : borrowed k)
-  val invariant9 (self : borrowed k) : bool
+  axiom inv10 : forall x : borrowed k . inv10 x = true
+  predicate invariant9 (self : borrowed v)
+  val invariant9 (self : borrowed v) : bool
     ensures { result = invariant9 self }
     
-  predicate inv9 (_x : borrowed k)
-  val inv9 (_x : borrowed k) : bool
+  predicate inv9 (_x : borrowed v)
+  val inv9 (_x : borrowed v) : bool
     ensures { result = inv9 _x }
     
-  axiom inv9 : forall x : borrowed k . inv9 x = true
+  axiom inv9 : forall x : borrowed v . inv9 x = true
   predicate invariant8 (self : Hashmap_List_Type.t_list (k, v))
   val invariant8 (self : Hashmap_List_Type.t_list (k, v)) : bool
     ensures { result = invariant8 self }
@@ -611,14 +611,14 @@ module Hashmap_Impl5_Add
   val resolve5 (self : borrowed (Hashmap_List_Type.t_list (k, v))) : bool
     ensures { result = resolve5 self }
     
-  predicate resolve4 (self : borrowed v) =
+  predicate resolve4 (self : borrowed k) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve4 (self : borrowed v) : bool
+  val resolve4 (self : borrowed k) : bool
     ensures { result = resolve4 self }
     
-  predicate resolve3 (self : borrowed k) =
+  predicate resolve3 (self : borrowed v) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve3 (self : borrowed k) : bool
+  val resolve3 (self : borrowed v) : bool
     ensures { result = resolve3 self }
     
   function deep_model1 (self : k) : deep_model_ty0 =
@@ -748,11 +748,11 @@ module Hashmap_Impl5_Add
   BB1 {
     assert { [@expl:type invariant] inv0 old_self };
     assume { resolve0 old_self };
-    [#"../hashmap.rs" 109 21 109 39] length <- ([#"../hashmap.rs" 109 21 109 39] len0 ([#"../hashmap.rs" 109 21 109 39] Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)));
+    [#"../hashmap.rs" 109 21 109 39] length <- ([#"../hashmap.rs" 109 21 109 39] len0 ([#"../hashmap.rs" 109 21 109 33] Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)));
     goto BB2
   }
   BB2 {
-    [#"../hashmap.rs" 110 27 110 37] _13 <- ([#"../hashmap.rs" 110 27 110 37] hash0 ([#"../hashmap.rs" 110 27 110 37] key));
+    [#"../hashmap.rs" 110 27 110 37] _13 <- ([#"../hashmap.rs" 110 27 110 37] hash0 ([#"../hashmap.rs" 110 27 110 30] key));
     goto BB3
   }
   BB3 {
@@ -768,7 +768,7 @@ module Hashmap_Impl5_Add
     [#"../hashmap.rs" 111 39 111 51] _20 <- Borrow.borrow_final (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)) (Borrow.inherit_id (Borrow.get_id self) 1);
     [#"../hashmap.rs" 111 39 111 51] self <- { self with current = (let Hashmap_MyHashMap_Type.C_MyHashMap x0 =  * self in Hashmap_MyHashMap_Type.C_MyHashMap ( ^ _20)) ; };
     assume { inv1 ( ^ _20) };
-    [#"../hashmap.rs" 111 39 111 58] _19 <- ([#"../hashmap.rs" 111 39 111 58] index_mut0 _20 ([#"../hashmap.rs" 111 52 111 57] index));
+    [#"../hashmap.rs" 111 51 111 58] _19 <- ([#"../hashmap.rs" 111 51 111 58] index_mut0 _20 ([#"../hashmap.rs" 111 52 111 57] index));
     _20 <- any borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global));
     goto BB5
   }
@@ -823,8 +823,6 @@ module Hashmap_Impl5_Add
     goto BB11
   }
   BB11 {
-    assert { [@expl:type invariant] inv9 k };
-    assume { resolve3 k };
     switch (_38)
       | False -> goto BB13
       | True -> goto BB12
@@ -833,6 +831,8 @@ module Hashmap_Impl5_Add
   BB12 {
     assert { [@expl:type invariant] inv11 tl1 };
     assume { resolve5 tl1 };
+    assert { [@expl:type invariant] inv10 k };
+    assume { resolve4 k };
     assert { [@expl:type invariant] inv6 key };
     assume { resolve6 key };
     assert { [@expl:type invariant] inv7 val' };
@@ -840,8 +840,8 @@ module Hashmap_Impl5_Add
     [#"../hashmap.rs" 124 16 124 24] v <- { v with current = ([#"../hashmap.rs" 124 21 124 24] val') ; };
     assert { [@expl:type invariant] inv7 ( * v) };
     assume { resolve7 ( * v) };
-    assert { [@expl:type invariant] inv10 v };
-    assume { resolve4 v };
+    assert { [@expl:type invariant] inv9 v };
+    assume { resolve3 v };
     assert { [@expl:type invariant] inv3 _19 };
     assume { resolve1 _19 };
     assert { [@expl:type invariant] inv3 l };
@@ -853,8 +853,10 @@ module Hashmap_Impl5_Add
     goto BB20
   }
   BB13 {
-    assert { [@expl:type invariant] inv10 v };
-    assume { resolve4 v };
+    assert { [@expl:type invariant] inv9 v };
+    assume { resolve3 v };
+    assert { [@expl:type invariant] inv10 k };
+    assume { resolve4 k };
     [#"../hashmap.rs" 128 16 128 25] _46 <- Borrow.borrow_mut ( * tl1);
     [#"../hashmap.rs" 128 16 128 25] tl1 <- { tl1 with current = ( ^ _46) ; };
     assume { inv2 ( ^ _46) };
@@ -1234,11 +1236,11 @@ module Hashmap_Impl5_Get
     goto BB0
   }
   BB0 {
-    [#"../hashmap.rs" 142 27 142 37] _8 <- ([#"../hashmap.rs" 142 27 142 37] hash0 ([#"../hashmap.rs" 142 27 142 37] key));
+    [#"../hashmap.rs" 142 27 142 37] _8 <- ([#"../hashmap.rs" 142 27 142 37] hash0 ([#"../hashmap.rs" 142 27 142 30] key));
     goto BB1
   }
   BB1 {
-    [#"../hashmap.rs" 142 49 142 67] _10 <- ([#"../hashmap.rs" 142 49 142 67] len0 ([#"../hashmap.rs" 142 49 142 67] Hashmap_MyHashMap_Type.myhashmap_buckets self));
+    [#"../hashmap.rs" 142 49 142 67] _10 <- ([#"../hashmap.rs" 142 49 142 67] len0 ([#"../hashmap.rs" 142 49 142 61] Hashmap_MyHashMap_Type.myhashmap_buckets self));
     goto BB2
   }
   BB2 {
@@ -1252,7 +1254,7 @@ module Hashmap_Impl5_Get
     _10 <- any usize;
     assert { [@expl:type invariant] inv0 self };
     assume { resolve0 self };
-    [#"../hashmap.rs" 143 21 143 40] _14 <- ([#"../hashmap.rs" 143 21 143 40] index0 ([#"../hashmap.rs" 143 21 143 33] Hashmap_MyHashMap_Type.myhashmap_buckets self) ([#"../hashmap.rs" 143 34 143 39] index));
+    [#"../hashmap.rs" 143 33 143 40] _14 <- ([#"../hashmap.rs" 143 33 143 40] index0 ([#"../hashmap.rs" 143 21 143 33] Hashmap_MyHashMap_Type.myhashmap_buckets self) ([#"../hashmap.rs" 143 34 143 39] index));
     goto BB4
   }
   BB4 {
@@ -1726,7 +1728,7 @@ module Hashmap_Impl5_Resize
   BB1 {
     assert { [@expl:type invariant] inv0 old_self };
     assume { resolve0 old_self };
-    [#"../hashmap.rs" 163 32 163 50] _10 <- ([#"../hashmap.rs" 163 32 163 50] len0 ([#"../hashmap.rs" 163 32 163 50] Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)));
+    [#"../hashmap.rs" 163 32 163 50] _10 <- ([#"../hashmap.rs" 163 32 163 50] len0 ([#"../hashmap.rs" 163 32 163 44] Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)));
     goto BB2
   }
   BB2 {
@@ -1755,7 +1757,7 @@ module Hashmap_Impl5_Resize
     goto BB7
   }
   BB7 {
-    [#"../hashmap.rs" 176 18 176 36] _24 <- ([#"../hashmap.rs" 176 18 176 36] len0 ([#"../hashmap.rs" 176 18 176 36] Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)));
+    [#"../hashmap.rs" 176 18 176 36] _24 <- ([#"../hashmap.rs" 176 18 176 36] len0 ([#"../hashmap.rs" 176 18 176 30] Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)));
     goto BB8
   }
   BB8 {
@@ -1768,7 +1770,7 @@ module Hashmap_Impl5_Resize
     [#"../hashmap.rs" 177 56 177 68] _30 <- Borrow.borrow_mut (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self));
     [#"../hashmap.rs" 177 56 177 68] self <- { self with current = (let Hashmap_MyHashMap_Type.C_MyHashMap x0 =  * self in Hashmap_MyHashMap_Type.C_MyHashMap ( ^ _30)) ; };
     assume { inv4 ( ^ _30) };
-    [#"../hashmap.rs" 177 56 177 71] _29 <- ([#"../hashmap.rs" 177 56 177 71] index_mut0 _30 ([#"../hashmap.rs" 177 69 177 70] i));
+    [#"../hashmap.rs" 177 68 177 71] _29 <- ([#"../hashmap.rs" 177 68 177 71] index_mut0 _30 ([#"../hashmap.rs" 177 69 177 70] i));
     _30 <- any borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global));
     goto BB10
   }
@@ -1833,8 +1835,8 @@ module Hashmap_Impl5_Resize
     [#"../hashmap.rs" 188 41 188 43] l <- (let Hashmap_List_Type.C_Cons x0 x1 = l in Hashmap_List_Type.C_Cons x0 (any Hashmap_List_Type.t_list (k, v)));
     assert { [@expl:type invariant] inv5 l };
     assume { resolve4 l };
-    [#"../hashmap.rs" 189 16 189 29] _45 <- Borrow.borrow_mut new;
-    [#"../hashmap.rs" 189 16 189 29] new <-  ^ _45;
+    [#"../hashmap.rs" 189 16 189 19] _45 <- Borrow.borrow_mut new;
+    [#"../hashmap.rs" 189 16 189 19] new <-  ^ _45;
     assume { inv2 ( ^ _45) };
     assert { [@expl:type invariant] inv7 k };
     assume { resolve5 k };
@@ -2164,79 +2166,79 @@ module Hashmap_Main
     goto BB2
   }
   BB2 {
-    [#"../hashmap.rs" 226 17 226 26] _x <- ([#"../hashmap.rs" 226 17 226 26] get0 ([#"../hashmap.rs" 226 17 226 26] h1) ([#"../hashmap.rs" 226 24 226 25] [#"../hashmap.rs" 226 24 226 25] (1 : usize)));
+    [#"../hashmap.rs" 226 17 226 26] _x <- ([#"../hashmap.rs" 226 17 226 26] get0 ([#"../hashmap.rs" 226 17 226 19] h1) ([#"../hashmap.rs" 226 24 226 25] [#"../hashmap.rs" 226 24 226 25] (1 : usize)));
     goto BB3
   }
   BB3 {
-    [#"../hashmap.rs" 227 17 227 26] _y <- ([#"../hashmap.rs" 227 17 227 26] get0 ([#"../hashmap.rs" 227 17 227 26] h1) ([#"../hashmap.rs" 227 24 227 25] [#"../hashmap.rs" 227 24 227 25] (2 : usize)));
+    [#"../hashmap.rs" 227 17 227 26] _y <- ([#"../hashmap.rs" 227 17 227 26] get0 ([#"../hashmap.rs" 227 17 227 19] h1) ([#"../hashmap.rs" 227 24 227 25] [#"../hashmap.rs" 227 24 227 25] (2 : usize)));
     goto BB4
   }
   BB4 {
-    [#"../hashmap.rs" 228 17 228 26] _z <- ([#"../hashmap.rs" 228 17 228 26] get0 ([#"../hashmap.rs" 228 17 228 26] h2) ([#"../hashmap.rs" 228 24 228 25] [#"../hashmap.rs" 228 24 228 25] (1 : usize)));
+    [#"../hashmap.rs" 228 17 228 26] _z <- ([#"../hashmap.rs" 228 17 228 26] get0 ([#"../hashmap.rs" 228 17 228 19] h2) ([#"../hashmap.rs" 228 24 228 25] [#"../hashmap.rs" 228 24 228 25] (1 : usize)));
     goto BB5
   }
   BB5 {
-    [#"../hashmap.rs" 229 17 229 26] _t <- ([#"../hashmap.rs" 229 17 229 26] get0 ([#"../hashmap.rs" 229 17 229 26] h2) ([#"../hashmap.rs" 229 24 229 25] [#"../hashmap.rs" 229 24 229 25] (2 : usize)));
+    [#"../hashmap.rs" 229 17 229 26] _t <- ([#"../hashmap.rs" 229 17 229 26] get0 ([#"../hashmap.rs" 229 17 229 19] h2) ([#"../hashmap.rs" 229 24 229 25] [#"../hashmap.rs" 229 24 229 25] (2 : usize)));
     goto BB6
   }
   BB6 {
-    [#"../hashmap.rs" 233 4 233 17] _12 <- Borrow.borrow_mut h1;
-    [#"../hashmap.rs" 233 4 233 17] h1 <-  ^ _12;
+    [#"../hashmap.rs" 233 4 233 6] _12 <- Borrow.borrow_mut h1;
+    [#"../hashmap.rs" 233 4 233 6] h1 <-  ^ _12;
     [#"../hashmap.rs" 233 4 233 17] _11 <- ([#"../hashmap.rs" 233 4 233 17] add0 _12 ([#"../hashmap.rs" 233 11 233 12] [#"../hashmap.rs" 233 11 233 12] (1 : usize)) ([#"../hashmap.rs" 233 14 233 16] [#"../hashmap.rs" 233 14 233 16] (17 : isize)));
     _12 <- any borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize);
     goto BB7
   }
   BB7 {
-    [#"../hashmap.rs" 234 9 234 18] _13 <- ([#"../hashmap.rs" 234 9 234 18] get0 ([#"../hashmap.rs" 234 9 234 18] h1) ([#"../hashmap.rs" 234 16 234 17] [#"../hashmap.rs" 234 16 234 17] (1 : usize)));
+    [#"../hashmap.rs" 234 9 234 18] _13 <- ([#"../hashmap.rs" 234 9 234 18] get0 ([#"../hashmap.rs" 234 9 234 11] h1) ([#"../hashmap.rs" 234 16 234 17] [#"../hashmap.rs" 234 16 234 17] (1 : usize)));
     goto BB8
   }
   BB8 {
     [#"../hashmap.rs" 234 4 234 18] _x <- ([#"../hashmap.rs" 234 4 234 18] _13);
     [#"../hashmap.rs" 234 4 234 18] _13 <- any Core_Option_Option_Type.t_option isize;
-    [#"../hashmap.rs" 235 9 235 18] _15 <- ([#"../hashmap.rs" 235 9 235 18] get0 ([#"../hashmap.rs" 235 9 235 18] h1) ([#"../hashmap.rs" 235 16 235 17] [#"../hashmap.rs" 235 16 235 17] (2 : usize)));
+    [#"../hashmap.rs" 235 9 235 18] _15 <- ([#"../hashmap.rs" 235 9 235 18] get0 ([#"../hashmap.rs" 235 9 235 11] h1) ([#"../hashmap.rs" 235 16 235 17] [#"../hashmap.rs" 235 16 235 17] (2 : usize)));
     goto BB9
   }
   BB9 {
     [#"../hashmap.rs" 235 4 235 18] _y <- ([#"../hashmap.rs" 235 4 235 18] _15);
     [#"../hashmap.rs" 235 4 235 18] _15 <- any Core_Option_Option_Type.t_option isize;
-    [#"../hashmap.rs" 236 9 236 18] _17 <- ([#"../hashmap.rs" 236 9 236 18] get0 ([#"../hashmap.rs" 236 9 236 18] h2) ([#"../hashmap.rs" 236 16 236 17] [#"../hashmap.rs" 236 16 236 17] (1 : usize)));
+    [#"../hashmap.rs" 236 9 236 18] _17 <- ([#"../hashmap.rs" 236 9 236 18] get0 ([#"../hashmap.rs" 236 9 236 11] h2) ([#"../hashmap.rs" 236 16 236 17] [#"../hashmap.rs" 236 16 236 17] (1 : usize)));
     goto BB10
   }
   BB10 {
     [#"../hashmap.rs" 236 4 236 18] _z <- ([#"../hashmap.rs" 236 4 236 18] _17);
     [#"../hashmap.rs" 236 4 236 18] _17 <- any Core_Option_Option_Type.t_option isize;
-    [#"../hashmap.rs" 237 9 237 18] _19 <- ([#"../hashmap.rs" 237 9 237 18] get0 ([#"../hashmap.rs" 237 9 237 18] h2) ([#"../hashmap.rs" 237 16 237 17] [#"../hashmap.rs" 237 16 237 17] (2 : usize)));
+    [#"../hashmap.rs" 237 9 237 18] _19 <- ([#"../hashmap.rs" 237 9 237 18] get0 ([#"../hashmap.rs" 237 9 237 11] h2) ([#"../hashmap.rs" 237 16 237 17] [#"../hashmap.rs" 237 16 237 17] (2 : usize)));
     goto BB11
   }
   BB11 {
     [#"../hashmap.rs" 237 4 237 18] _t <- ([#"../hashmap.rs" 237 4 237 18] _19);
     [#"../hashmap.rs" 237 4 237 18] _19 <- any Core_Option_Option_Type.t_option isize;
-    [#"../hashmap.rs" 240 4 240 17] _22 <- Borrow.borrow_mut h2;
-    [#"../hashmap.rs" 240 4 240 17] h2 <-  ^ _22;
+    [#"../hashmap.rs" 240 4 240 6] _22 <- Borrow.borrow_mut h2;
+    [#"../hashmap.rs" 240 4 240 6] h2 <-  ^ _22;
     [#"../hashmap.rs" 240 4 240 17] _21 <- ([#"../hashmap.rs" 240 4 240 17] add0 _22 ([#"../hashmap.rs" 240 11 240 12] [#"../hashmap.rs" 240 11 240 12] (1 : usize)) ([#"../hashmap.rs" 240 14 240 16] [#"../hashmap.rs" 240 14 240 16] (42 : isize)));
     _22 <- any borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize);
     goto BB12
   }
   BB12 {
-    [#"../hashmap.rs" 241 9 241 18] _23 <- ([#"../hashmap.rs" 241 9 241 18] get0 ([#"../hashmap.rs" 241 9 241 18] h1) ([#"../hashmap.rs" 241 16 241 17] [#"../hashmap.rs" 241 16 241 17] (1 : usize)));
+    [#"../hashmap.rs" 241 9 241 18] _23 <- ([#"../hashmap.rs" 241 9 241 18] get0 ([#"../hashmap.rs" 241 9 241 11] h1) ([#"../hashmap.rs" 241 16 241 17] [#"../hashmap.rs" 241 16 241 17] (1 : usize)));
     goto BB13
   }
   BB13 {
     [#"../hashmap.rs" 241 4 241 18] _x <- ([#"../hashmap.rs" 241 4 241 18] _23);
     [#"../hashmap.rs" 241 4 241 18] _23 <- any Core_Option_Option_Type.t_option isize;
-    [#"../hashmap.rs" 242 9 242 18] _25 <- ([#"../hashmap.rs" 242 9 242 18] get0 ([#"../hashmap.rs" 242 9 242 18] h1) ([#"../hashmap.rs" 242 16 242 17] [#"../hashmap.rs" 242 16 242 17] (2 : usize)));
+    [#"../hashmap.rs" 242 9 242 18] _25 <- ([#"../hashmap.rs" 242 9 242 18] get0 ([#"../hashmap.rs" 242 9 242 11] h1) ([#"../hashmap.rs" 242 16 242 17] [#"../hashmap.rs" 242 16 242 17] (2 : usize)));
     goto BB14
   }
   BB14 {
     [#"../hashmap.rs" 242 4 242 18] _y <- ([#"../hashmap.rs" 242 4 242 18] _25);
     [#"../hashmap.rs" 242 4 242 18] _25 <- any Core_Option_Option_Type.t_option isize;
-    [#"../hashmap.rs" 243 9 243 18] _27 <- ([#"../hashmap.rs" 243 9 243 18] get0 ([#"../hashmap.rs" 243 9 243 18] h2) ([#"../hashmap.rs" 243 16 243 17] [#"../hashmap.rs" 243 16 243 17] (1 : usize)));
+    [#"../hashmap.rs" 243 9 243 18] _27 <- ([#"../hashmap.rs" 243 9 243 18] get0 ([#"../hashmap.rs" 243 9 243 11] h2) ([#"../hashmap.rs" 243 16 243 17] [#"../hashmap.rs" 243 16 243 17] (1 : usize)));
     goto BB15
   }
   BB15 {
     [#"../hashmap.rs" 243 4 243 18] _z <- ([#"../hashmap.rs" 243 4 243 18] _27);
     [#"../hashmap.rs" 243 4 243 18] _27 <- any Core_Option_Option_Type.t_option isize;
-    [#"../hashmap.rs" 244 9 244 18] _29 <- ([#"../hashmap.rs" 244 9 244 18] get0 ([#"../hashmap.rs" 244 9 244 18] h2) ([#"../hashmap.rs" 244 16 244 17] [#"../hashmap.rs" 244 16 244 17] (2 : usize)));
+    [#"../hashmap.rs" 244 9 244 18] _29 <- ([#"../hashmap.rs" 244 9 244 18] get0 ([#"../hashmap.rs" 244 9 244 11] h2) ([#"../hashmap.rs" 244 16 244 17] [#"../hashmap.rs" 244 16 244 17] (2 : usize)));
     goto BB16
   }
   BB16 {
