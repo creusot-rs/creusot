@@ -3,7 +3,7 @@ use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{tcx::PlaceTy, BasicBlock, BinOp, Local, ProjectionElem, UnOp},
-    ty::{subst::SubstsRef, AdtDef, Ty, TyCtxt},
+    ty::{AdtDef, GenericArgsRef, Ty, TyCtxt},
 };
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::VariantIdx;
@@ -39,7 +39,7 @@ impl<'tcx> Place<'tcx> {
 #[derive(Clone, Debug)]
 pub enum Statement<'tcx> {
     Assignment(Place<'tcx>, RValue<'tcx>, Span),
-    Resolve(DefId, SubstsRef<'tcx>, Place<'tcx>),
+    Resolve(DefId, GenericArgsRef<'tcx>, Place<'tcx>),
     Assertion { cond: Term<'tcx>, msg: String },
     AssumeBorrowInv(Place<'tcx>),
     AssertTyInv(Place<'tcx>),
@@ -75,9 +75,9 @@ pub enum ExprKind<'tcx> {
     // Revisit whether this is a good idea to allow general expression trees.
     BinOp(BinOp, Box<Expr<'tcx>>, Box<Expr<'tcx>>),
     UnaryOp(UnOp, Box<Expr<'tcx>>),
-    Constructor(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
+    Constructor(DefId, GenericArgsRef<'tcx>, Vec<Expr<'tcx>>),
     // Should this be a statement?
-    Call(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
+    Call(DefId, GenericArgsRef<'tcx>, Vec<Expr<'tcx>>),
     Constant(Term<'tcx>),
     Cast(Box<Expr<'tcx>>, Ty<'tcx>, Ty<'tcx>),
     Tuple(Vec<Expr<'tcx>>),
@@ -140,7 +140,7 @@ pub enum Terminator<'tcx> {
 pub enum Branches<'tcx> {
     Int(Vec<(i128, BasicBlock)>, BasicBlock),
     Uint(Vec<(u128, BasicBlock)>, BasicBlock),
-    Constructor(AdtDef<'tcx>, SubstsRef<'tcx>, Vec<(VariantIdx, BasicBlock)>, BasicBlock),
+    Constructor(AdtDef<'tcx>, GenericArgsRef<'tcx>, Vec<(VariantIdx, BasicBlock)>, BasicBlock),
     Bool(BasicBlock, BasicBlock),
 }
 

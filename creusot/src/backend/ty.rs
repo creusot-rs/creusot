@@ -11,10 +11,8 @@ use indexmap::IndexSet;
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
 use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_middle::ty::{
-    self,
-    subst::{InternalSubsts, SubstsRef},
-    AliasKind, AliasTy, EarlyBinder, FieldDef, GenericArg, GenericArgKind, ParamEnv, Ty, TyCtxt,
-    TyKind,
+    self, AliasKind, AliasTy, EarlyBinder, FieldDef, GenericArg, GenericArgKind, GenericArgs,
+    GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_type_ir::sty::TyKind::*;
@@ -106,7 +104,7 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
             let adt_projs: Vec<_> = ctx.projections_in_ty(def.did()).to_owned();
             let tcx = ctx.tcx;
             args.extend(adt_projs.iter().map(|t| {
-                let ty = EarlyBinder::bind(t.to_ty(tcx)).subst(tcx, s);
+                let ty = EarlyBinder::bind(t.to_ty(tcx)).instantiate(tcx, s);
                 translate_ty_inner(trans, ctx, names, span, ty)
             }));
             MlT::TApp(Box::new(cons), args)
@@ -164,7 +162,7 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
 
             let args = subst
                 .as_closure()
-                .parent_substs()
+                .parent_args()
                 .iter()
                 .filter_map(|t| match t.unpack() {
                     GenericArgKind::Type(t) => Some(translate_ty_inner(trans, ctx, names, span, t)),
@@ -209,10 +207,10 @@ fn translate_projection_ty<'tcx, N: Namer<'tcx>>(
         let ix = ctx.projections_in_ty(id).iter().position(|t| t == pty).unwrap();
         return MlT::TVar(Ident::build(&format!("proj{ix}")));
     } else {
-        let ty = ctx.mk_alias(AliasKind::Projection, *pty);
+        let ty = Ty::new_alias(ctx.tcx, AliasKind::Projection, *pty);
         let proj_ty = names.normalize(ctx, ty);
         if let TyKind::Alias(AliasKind::Projection, aty) = proj_ty.kind() {
-            return MlT::TConstructor(names.ty(aty.def_id, aty.substs));
+            return MlT::TConstructor(names.ty(aty.def_id, aty.args));
         };
         translate_ty(ctx, names, DUMMY_SP, proj_ty)
     }
@@ -222,12 +220,13 @@ pub(crate) fn translate_closure_ty<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     did: DefId,
-    subst: SubstsRef<'tcx>,
+    subst: GenericArgsRef<'tcx>,
 ) -> TyDecl {
     let ty_name = names.ty(did, subst).name;
     let closure_subst = subst.as_closure();
     let fields: Vec<_> = closure_subst
         .upvar_tys()
+        .iter()
         .map(|uv| Field {
             ty: translate_ty_inner(TyTranslation::Declaration(did), ctx, names, DUMMY_SP, uv),
             ghost: false,
@@ -254,14 +253,14 @@ pub(crate) fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> IndexSe
     // Construct graph of type dependencies
     while let Some(next) = to_visit.pop_front() {
         let def = tcx.adt_def(next);
-        let substs = InternalSubsts::identity_for_item(tcx, def.did());
+        let substs = GenericArgs::identity_for_item(tcx, def.did());
 
         // TODO: Look up a more efficient way of getting this info
         for variant in def.variants() {
             for field in &variant.fields {
                 for ty in field.ty(tcx, substs).walk() {
                     let k = match ty.unpack() {
-                        rustc_middle::ty::subst::GenericArgKind::Type(ty) => ty,
+                        GenericArgKind::Type(ty) => ty,
                         _ => continue,
                     };
                     if let Adt(def, _) = k.kind() {
@@ -289,7 +288,7 @@ impl<'tcx> Why3Generator<'tcx> {
         let param_env = self.param_env(def_id);
 
         // FIXME: Make this a proper BFS / DFS
-        let subst = InternalSubsts::identity_for_item(self.tcx, def_id);
+        let subst = GenericArgs::identity_for_item(self.tcx, def_id);
         for f in self.adt_def(def_id).all_fields() {
             let ty = f.ty(self.tcx, subst);
             let ty = self.try_normalize_erasing_regions(param_env, ty).unwrap_or(ty);
@@ -298,7 +297,7 @@ impl<'tcx> Why3Generator<'tcx> {
                 TyKind::Adt(adt, substs) => {
                     let tcx = self.tcx;
                     for proj in self.projections_in_ty(adt.did()) {
-                        let proj = EarlyBinder::bind(proj.to_ty(tcx)).subst(tcx, substs);
+                        let proj = EarlyBinder::bind(proj.to_ty(tcx)).instantiate(tcx, substs);
                         if let TyKind::Alias(AliasKind::Projection, aty) = proj.kind() {
                             v.push(*aty)
                         }
@@ -374,11 +373,11 @@ pub(crate) fn translate_tydecl(
 
     // UGLY hack to ensure that we don't explicitly use/clone the members of a binding group
     for did in bg {
-        let substs = InternalSubsts::identity_for_item(ctx.tcx, *did);
+        let substs = GenericArgs::identity_for_item(ctx.tcx, *did);
         for field in ctx.adt_def(did).all_fields() {
             for ty in field.ty(ctx.tcx, substs).walk() {
                 let k = match ty.unpack() {
-                    rustc_middle::ty::subst::GenericArgKind::Type(ty) => ty,
+                    GenericArgKind::Type(ty) => ty,
                     _ => continue,
                 };
                 if let Adt(def, sub) = k.kind() {
@@ -428,7 +427,7 @@ fn build_ty_decl<'tcx>(
 
     let param_env = ctx.param_env(did);
     let kind = {
-        let substs = InternalSubsts::identity_for_item(ctx.tcx, did);
+        let substs = GenericArgs::identity_for_item(ctx.tcx, did);
         let mut ml_ty_def = Vec::new();
 
         for var_def in adt.variants().iter() {
@@ -476,7 +475,7 @@ fn field_ty<'tcx>(
     param_env: ParamEnv<'tcx>,
     did: DefId,
     field: &FieldDef,
-    substs: SubstsRef<'tcx>,
+    substs: GenericArgsRef<'tcx>,
 ) -> MlT {
     let ty = field.ty(ctx.tcx, substs);
     let ty = ctx.try_normalize_erasing_regions(param_env, ty).unwrap_or(ty);
@@ -514,18 +513,18 @@ pub(crate) fn translate_accessor(
     let ix = variant.fields.iter().position(|f| f.did == field_id).unwrap();
     let field = &variant.fields[ix.into()];
 
-    let substs = InternalSubsts::identity_for_item(ctx.tcx, adt_did);
+    let substs = GenericArgs::identity_for_item(ctx.tcx, adt_did);
     let repr = ctx.representative_type(adt_did);
     let mut names = CloneMap::new(ctx.tcx, repr.into());
 
     // UGLY hack to ensure that we don't explicitly use/clone the members of a binding group
     let bg = ctx.binding_group(repr).clone();
     for did in &bg {
-        let substs = InternalSubsts::identity_for_item(ctx.tcx, *did);
+        let substs = GenericArgs::identity_for_item(ctx.tcx, *did);
         for field in ctx.adt_def(did).all_fields() {
             for ty in field.ty(ctx.tcx, substs).walk() {
                 let k = match ty.unpack() {
-                    rustc_middle::ty::subst::GenericArgKind::Type(ty) => ty,
+                    GenericArgKind::Type(ty) => ty,
                     _ => continue,
                 };
                 if let Adt(def, sub) = k.kind() {
@@ -554,7 +553,7 @@ pub(crate) fn translate_accessor(
         ctx,
         &mut names,
         DUMMY_SP,
-        ctx.type_of(adt_did).subst_identity(),
+        ctx.type_of(adt_did).instantiate_identity(),
     );
 
     let _ = names.to_clones(ctx, CloneDepth::Shallow);
@@ -620,9 +619,11 @@ pub(crate) fn closure_accessors<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     closure: DefId,
 ) -> Vec<(Symbol, PreSignature<'tcx>, Term<'tcx>)> {
-    let TyKind::Closure(_, substs) = ctx.type_of(closure).subst_identity().kind() else { unreachable!() };
+    let TyKind::Closure(_, substs) = ctx.type_of(closure).instantiate_identity().kind() else {
+        unreachable!()
+    };
 
-    let count = substs.as_closure().upvar_tys().count();
+    let count = substs.as_closure().upvar_tys().len();
 
     (0..count)
         .map(|i| {
@@ -637,14 +638,20 @@ pub(crate) fn build_closure_accessor<'tcx>(
     closure: DefId,
     ix: usize,
 ) -> (PreSignature<'tcx>, Term<'tcx>) {
-    let TyKind::Closure(_, substs) = ctx.type_of(closure).subst_identity().kind() else { unreachable!() };
+    let TyKind::Closure(_, substs) = ctx.type_of(closure).instantiate_identity().kind() else {
+        unreachable!()
+    };
 
-    let out_ty = substs.as_closure().upvar_tys().nth(ix).unwrap();
+    let out_ty = substs.as_closure().upvar_tys()[ix];
 
-    let self_ = Term::var(Symbol::intern("self"), ctx.type_of(closure).subst_identity());
+    let self_ = Term::var(Symbol::intern("self"), ctx.type_of(closure).instantiate_identity());
 
     let pre_sig = PreSignature {
-        inputs: vec![(Symbol::intern("self"), DUMMY_SP, ctx.type_of(closure).subst_identity())],
+        inputs: vec![(
+            Symbol::intern("self"),
+            DUMMY_SP,
+            ctx.type_of(closure).instantiate_identity(),
+        )],
         output: out_ty,
         contract: PreContract::default(),
     };
@@ -652,7 +659,7 @@ pub(crate) fn build_closure_accessor<'tcx>(
     let res = Term::var(Symbol::intern("a"), out_ty);
 
     let mut fields: Vec<_> =
-        substs.as_closure().upvar_tys().map(|_| pearlite::Pattern::Wildcard).collect();
+        substs.as_closure().upvar_tys().iter().map(|_| pearlite::Pattern::Wildcard).collect();
     fields[ix] = pearlite::Pattern::Binder(Symbol::intern("a"));
 
     let term = Term {

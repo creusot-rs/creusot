@@ -32,8 +32,8 @@ use rustc_middle::{
         AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
     },
     ty::{
-        int_ty, subst::SubstsRef, uint_ty, GenericArg, Ty, TyCtxt, TyKind, TypeFoldable,
-        TypeVisitable, UpvarSubsts,
+        int_ty, uint_ty, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypeFoldable,
+        TypeVisitable, UpvarArgs,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
@@ -79,7 +79,7 @@ pub struct Term<'tcx> {
 pub enum TermKind<'tcx> {
     Var(Symbol),
     Lit(Literal<'tcx>),
-    Item(DefId, SubstsRef<'tcx>),
+    Item(DefId, GenericArgsRef<'tcx>),
     Assert {
         cond: Box<Term<'tcx>>,
     },
@@ -103,7 +103,7 @@ pub enum TermKind<'tcx> {
     // TODO: Get rid of (id, subst).
     Call {
         id: DefId,
-        subst: SubstsRef<'tcx>,
+        subst: GenericArgsRef<'tcx>,
         fun: Box<Term<'tcx>>,
         args: Vec<Term<'tcx>>,
     },
@@ -207,14 +207,14 @@ pub enum Literal<'tcx> {
     Float(Float, FloatTy),
     String(String),
     ZST,
-    Function(DefId, SubstsRef<'tcx>),
+    Function(DefId, GenericArgsRef<'tcx>),
 }
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum Pattern<'tcx> {
     Constructor {
         adt: DefId,
-        substs: SubstsRef<'tcx>,
+        substs: GenericArgsRef<'tcx>,
         variant: VariantIdx,
         fields: Vec<Pattern<'tcx>>,
     },
@@ -506,7 +506,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 variant_index,
                 ref fields,
                 ref base,
-                substs,
+                args,
                 ..
             }) => {
                 let mut fields: Vec<_> = fields
@@ -526,7 +526,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         fields.push((
                             missing_field.into(),
                             Term {
-                                ty: variant.fields[missing_field.into()].ty(self.ctx.tcx, substs),
+                                ty: variant.fields[missing_field.into()].ty(self.ctx.tcx, args),
                                 span: DUMMY_SP,
                                 kind: self.mk_projection(base.clone(), missing_field.into())?,
                             },
@@ -558,7 +558,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     Ok(Term { ty, span, kind: TermKind::Cur { term: Box::new(arg_trans) } })
                 }
             }
-            ExprKind::Match { scrutinee, ref arms } => {
+            ExprKind::Match { scrutinee, ref arms, .. } => {
                 let scrutinee = self.expr_term(scrutinee)?;
                 let arms = arms.iter().map(|arm| self.arm_term(*arm)).collect::<Result<_, _>>()?;
 
@@ -605,8 +605,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 }
                 _ => Err(Error::new(thir_term.span, "unhandled literal expression")),
             },
-            ExprKind::NamedConst { def_id, substs, .. } => {
-                Ok(Term { ty, span, kind: TermKind::Item(def_id, substs) })
+            ExprKind::NamedConst { def_id, args, .. } => {
+                Ok(Term { ty, span, kind: TermKind::Item(def_id, args) })
             }
             ExprKind::ZstLiteral { .. } => match ty.kind() {
                 TyKind::FnDef(def_id, subst) => {
@@ -645,7 +645,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         match &pat.kind {
             PatKind::Wild => Ok(Pattern::Wildcard),
             PatKind::Binding { name, .. } => Ok(Pattern::Binder(*name)),
-            PatKind::Variant { subpatterns, adt_def, variant_index, substs, .. } => {
+            PatKind::Variant { subpatterns, adt_def, variant_index, args, .. } => {
                 let mut fields: Vec<_> = subpatterns
                     .iter()
                     .map(|pat| Ok((pat.field, self.pattern_term(&pat.pattern)?)))
@@ -662,7 +662,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
                 Ok(Pattern::Constructor {
                     adt: adt_def.variants()[*variant_index].def_id,
-                    substs,
+                    substs: args,
                     variant: *variant_index,
                     fields,
                 })
@@ -773,9 +773,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         trace!("{:?}", self.thir[body].kind);
         match self.thir[body].kind {
             ExprKind::Scope { value, .. } => self.quant_term(value),
-            ExprKind::Closure(box ClosureExpr { closure_id, substs, .. }) => {
-                let sig = match substs {
-                    UpvarSubsts::Closure(subst) => subst.as_closure().sig(),
+            ExprKind::Closure(box ClosureExpr { closure_id, args, .. }) => {
+                let sig = match args {
+                    UpvarArgs::Closure(subst) => subst.as_closure().sig(),
                     _ => unreachable!(),
                 };
 
@@ -872,7 +872,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     let index = self.expr_term(args[1])?;
 
                     let subst =
-                        self.ctx.mk_substs(&[GenericArg::from(cur.ty), GenericArg::from(index.ty)]);
+                        self.ctx.mk_args(&[GenericArg::from(cur.ty), GenericArg::from(index.ty)]);
 
                     Ok((
                         Term::call(
@@ -957,7 +957,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     }
 
     pub(crate) fn is_ghost_deref(&self, expr_id: ExprId) -> bool {
-        let ExprKind::Call { ty, .. } = &self.thir[expr_id].kind else {return false};
+        let ExprKind::Call { ty, .. } = &self.thir[expr_id].kind else { return false };
 
         let TyKind::FnDef(id, sub) = ty.kind() else { panic!("expected function type") };
 
@@ -1001,7 +1001,7 @@ pub(crate) fn type_invariant_term<'tcx>(
     let arg = Term { ty, span, kind: TermKind::Var(name) };
 
     let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(env_did, ty)?;
-    let inv_fn_ty = ctx.type_of(inv_fn_did).subst(ctx.tcx, inv_fn_substs);
+    let inv_fn_ty = ctx.type_of(inv_fn_did).instantiate(ctx.tcx, inv_fn_substs);
     assert!(matches!(inv_fn_ty.kind(), TyKind::FnDef(id, _) if id == &inv_fn_did));
 
     let fun = Term { ty: inv_fn_ty, span, kind: TermKind::Item(inv_fn_did, inv_fn_substs) };
@@ -1258,13 +1258,13 @@ impl<'tcx> Term<'tcx> {
     pub(crate) fn call(
         tcx: TyCtxt<'tcx>,
         def_id: DefId,
-        subst: SubstsRef<'tcx>,
+        subst: GenericArgsRef<'tcx>,
         args: Vec<Term<'tcx>>,
     ) -> Self {
-        let ty = tcx.type_of(def_id).subst(tcx, subst);
+        let ty = tcx.type_of(def_id).instantiate(tcx, subst);
         let result = ty.fn_sig(tcx).skip_binder().output();
         let fun = Term {
-            ty: tcx.type_of(def_id).subst(tcx, subst),
+            ty: tcx.type_of(def_id).instantiate(tcx, subst),
             kind: TermKind::Item(def_id, subst),
             span: DUMMY_SP,
         };
@@ -1324,9 +1324,9 @@ impl<'tcx> Term<'tcx> {
         }
     }
 
-    pub(crate) fn item(tcx: TyCtxt<'tcx>, id: DefId, subst: SubstsRef<'tcx>) -> Self {
+    pub(crate) fn item(tcx: TyCtxt<'tcx>, id: DefId, subst: GenericArgsRef<'tcx>) -> Self {
         Term {
-            ty: tcx.type_of(id).subst(tcx, subst),
+            ty: tcx.type_of(id).instantiate(tcx, subst),
             kind: TermKind::Item(id, subst),
             span: DUMMY_SP,
         }

@@ -6,9 +6,9 @@ use rustc_index::bit_set::ChunkedBitSet;
 use rustc_middle::mir::{
     self,
     visit::{PlaceContext, Visitor},
-    BasicBlock, Local, Location, Terminator,
+    BasicBlock, CallReturnPlaces, Local, Location, Terminator, TerminatorEdges,
 };
-use rustc_mir_dataflow::{self as dataflow, AnalysisDomain, GenKill, GenKillAnalysis};
+use rustc_mir_dataflow::{AnalysisDomain, GenKill, GenKillAnalysis};
 
 pub struct MaybeUninitializedLocals;
 
@@ -43,20 +43,21 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeUninitializedLocals {
         TransferFunction { trans }.visit_statement(statement, loc)
     }
 
-    fn terminator_effect(
+    fn terminator_effect<'mir>(
         &mut self,
-        trans: &mut impl GenKill<Self::Idx>,
-        terminator: &Terminator<'tcx>,
+        trans: &mut Self::Domain,
+        terminator: &'mir Terminator<'tcx>,
         loc: Location,
-    ) {
-        TransferFunction { trans }.visit_terminator(terminator, loc)
+    ) -> TerminatorEdges<'mir, 'tcx> {
+        TransferFunction { trans }.visit_terminator(terminator, loc);
+        terminator.edges()
     }
 
     fn call_return_effect(
         &mut self,
         trans: &mut impl GenKill<Self::Idx>,
         _block: BasicBlock,
-        return_places: dataflow::CallReturnPlaces<'_, 'tcx>,
+        return_places: CallReturnPlaces<'_, 'tcx>,
     ) {
         return_places.for_each(|place| {
             if let Some(local) = place.as_local() {
@@ -65,14 +66,8 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeUninitializedLocals {
         });
     }
 
-    /// See `Analysis::apply_yield_resume_effect`.
-    fn yield_resume_effect(
-        &mut self,
-        trans: &mut impl GenKill<Self::Idx>,
-        _resume_block: BasicBlock,
-        resume_place: mir::Place<'tcx>,
-    ) {
-        trans.kill(resume_place.local)
+    fn domain_size(&self, body: &mir::Body<'tcx>) -> usize {
+        body.local_decls.len()
     }
 }
 

@@ -10,7 +10,7 @@ use crate::{
     util::{self, item_name, module_name},
 };
 use rustc_hir::{def::Namespace, def_id::DefId};
-use rustc_middle::ty::{InternalSubsts, SubstsRef};
+use rustc_middle::ty::{GenericArgs, GenericArgsRef};
 use why3::declaration::{Decl, Goal, Module, TyDecl};
 
 pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
@@ -49,7 +49,7 @@ impl<'tcx> Why3Generator<'tcx> {
         let ty_decl = self.assoc_ty_decl(
             &mut names,
             def_id,
-            InternalSubsts::identity_for_item(self.tcx, def_id),
+            GenericArgs::identity_for_item(self.tcx, def_id),
         );
 
         decls.push(ty_decl);
@@ -65,13 +65,13 @@ impl<'tcx> Why3Generator<'tcx> {
         &mut self,
         names: &mut N,
         def_id: DefId,
-        substs: SubstsRef<'tcx>,
+        substs: GenericArgsRef<'tcx>,
     ) -> Decl {
         let name = names.ty(def_id, substs).name;
 
         let ty_decl = match self.tcx.associated_item(def_id).container {
             rustc_middle::ty::ImplContainer => names.with_vis(CloneLevel::Signature, |names| {
-                let assoc_ty = self.tcx.type_of(def_id).subst_identity();
+                let assoc_ty = self.tcx.type_of(def_id).instantiate_identity();
                 TyDecl::Alias {
                     ty_name: name,
                     ty_params: vec![],

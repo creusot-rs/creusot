@@ -8,7 +8,7 @@ use rustc_hir::{
     def_id::DefId,
 };
 use rustc_middle::ty::{
-    self, subst::SubstsRef, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable,
+    self, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable,
     TypeVisitor,
 };
 use rustc_span::Symbol;
@@ -94,13 +94,13 @@ impl PreludeModule {
 }
 
 pub(crate) trait Namer<'tcx> {
-    fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName;
+    fn value(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName;
 
-    fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName;
+    fn ty(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName;
 
     fn real_ty(&mut self, ty: Ty<'tcx>) -> QName;
 
-    fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName;
+    fn constructor(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName;
 
     fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName;
 
@@ -114,7 +114,7 @@ pub(crate) trait Namer<'tcx> {
     fn accessor(
         &mut self,
         def_id: DefId,
-        subst: SubstsRef<'tcx>,
+        subst: GenericArgsRef<'tcx>,
         variant: usize,
         ix: FieldIdx,
     ) -> QName;
@@ -129,7 +129,7 @@ pub(crate) trait Namer<'tcx> {
 }
 
 impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
-    fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+    fn value(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let node = DepNode::new(self.tcx, (def_id, subst));
         match self.insert(node) {
             Kind::Hidden(nm) => nm.as_str().to_snake_case().into(),
@@ -137,11 +137,11 @@ impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
         }
     }
 
-    fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+    fn ty(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let mut node = DepNode::new(self.tcx, (def_id, subst));
 
         if self.tcx.is_closure(def_id) {
-            node = DepNode::Type(self.tcx.mk_closure(def_id, subst));
+            node = DepNode::Type(Ty::new_closure(self.tcx, def_id, subst));
         }
 
         let name = item_name(self.tcx, def_id, Namespace::TypeNS);
@@ -156,7 +156,7 @@ impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
         self.insert(node).ident().into()
     }
 
-    fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+    fn constructor(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let type_id = match self.tcx.def_kind(def_id) {
             DefKind::Closure | DefKind::Struct | DefKind::Enum | DefKind::Union => def_id,
             DefKind::Variant => self.tcx.parent(def_id),
@@ -179,7 +179,7 @@ impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
     fn accessor(
         &mut self,
         def_id: DefId,
-        subst: SubstsRef<'tcx>,
+        subst: GenericArgsRef<'tcx>,
         variant: usize,
         ix: FieldIdx,
     ) -> QName {
@@ -212,7 +212,7 @@ impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
     fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName {
         let def_id =
             self.tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
-        let subst = self.tcx.mk_substs(&[ty::GenericArg::from(ty)]);
+        let subst = self.tcx.mk_args(&[ty::GenericArg::from(ty)]);
         self.value(def_id, subst)
     }
 
@@ -453,7 +453,7 @@ impl<'tcx> CloneMap<'tcx> {
     }
 
     /// Internal: only meant for mutually recursive type declaration
-    pub(crate) fn insert_hidden(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) {
+    pub(crate) fn insert_hidden(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) {
         let node = DepNode::new(self.tcx, (def_id, subst)).erase_regions(self.tcx);
         self.names.names.insert(node, Kind::Hidden(node.base_ident(self.tcx)));
         self.dep_info.insert(node, CloneLevel::Body);

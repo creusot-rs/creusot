@@ -335,60 +335,59 @@ module SparseArray_Impl2_Get
   var i : usize = i;
   var index : usize;
   var _7 : usize;
-  var _10 : bool;
-  var _16 : usize;
+  var _15 : usize;
+  var _20 : t;
   var _21 : t;
-  var _22 : t;
   {
     goto BB0
   }
   BB0 {
-    [#"../sparse_array.rs" 90 20 90 31] _7 <- ([#"../sparse_array.rs" 90 20 90 31] index0 ([#"../sparse_array.rs" 90 20 90 28] SparseArray_Sparse_Type.sparse_idx self) ([#"../sparse_array.rs" 90 29 90 30] i));
+    [#"../sparse_array.rs" 90 28 90 31] _7 <- ([#"../sparse_array.rs" 90 28 90 31] index0 ([#"../sparse_array.rs" 90 20 90 28] SparseArray_Sparse_Type.sparse_idx self) ([#"../sparse_array.rs" 90 29 90 30] i));
     goto BB1
   }
   BB1 {
     [#"../sparse_array.rs" 90 20 90 31] index <- ([#"../sparse_array.rs" 90 20 90 31] _7);
     switch ([#"../sparse_array.rs" 91 11 91 25] ([#"../sparse_array.rs" 91 11 91 16] index) < ([#"../sparse_array.rs" 91 19 91 25] SparseArray_Sparse_Type.sparse_n self))
-      | False -> goto BB2
-      | True -> goto BB3
+      | False -> goto BB7
+      | True -> goto BB2
       end
   }
   BB2 {
-    [#"../sparse_array.rs" 91 11 91 50] _10 <- ([#"../sparse_array.rs" 91 11 91 50] [#"../sparse_array.rs" 91 11 91 50] false);
-    goto BB4
+    [#"../sparse_array.rs" 91 38 91 45] _15 <- ([#"../sparse_array.rs" 91 38 91 45] index0 ([#"../sparse_array.rs" 91 29 91 38] SparseArray_Sparse_Type.sparse_back self) ([#"../sparse_array.rs" 91 39 91 44] index));
+    goto BB3
   }
   BB3 {
-    [#"../sparse_array.rs" 91 29 91 45] _16 <- ([#"../sparse_array.rs" 91 29 91 45] index0 ([#"../sparse_array.rs" 91 29 91 38] SparseArray_Sparse_Type.sparse_back self) ([#"../sparse_array.rs" 91 39 91 44] index));
-    goto BB5
-  }
-  BB4 {
-    switch (_10)
-      | False -> goto BB8
-      | True -> goto BB6
+    switch ([#"../sparse_array.rs" 91 29 91 50] ([#"../sparse_array.rs" 91 29 91 45] _15) = ([#"../sparse_array.rs" 91 49 91 50] i))
+      | False -> goto BB6
+      | True -> goto BB4
       end
   }
+  BB4 {
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
+    [#"../sparse_array.rs" 92 29 92 32] _21 <- ([#"../sparse_array.rs" 92 29 92 32] index1 ([#"../sparse_array.rs" 92 18 92 29] SparseArray_Sparse_Type.sparse_values self) ([#"../sparse_array.rs" 92 30 92 31] i));
+    goto BB5
+  }
   BB5 {
-    [#"../sparse_array.rs" 91 11 91 50] _10 <- ([#"../sparse_array.rs" 91 29 91 50] ([#"../sparse_array.rs" 91 29 91 45] _16) = ([#"../sparse_array.rs" 91 49 91 50] i));
-    goto BB4
+    [#"../sparse_array.rs" 92 17 92 32] _20 <- ([#"../sparse_array.rs" 92 17 92 32] _21);
+    assert { [@expl:type invariant] inv1 _21 };
+    assume { resolve1 _21 };
+    assert { [@expl:type invariant] inv1 _20 };
+    assume { resolve1 _20 };
+    [#"../sparse_array.rs" 92 12 92 33] _0 <- ([#"../sparse_array.rs" 92 12 92 33] Core_Option_Option_Type.C_Some ([#"../sparse_array.rs" 92 17 92 32] _20));
+    goto BB9
   }
   BB6 {
     assert { [@expl:type invariant] inv0 self };
     assume { resolve0 self };
-    [#"../sparse_array.rs" 92 18 92 32] _22 <- ([#"../sparse_array.rs" 92 18 92 32] index1 ([#"../sparse_array.rs" 92 18 92 29] SparseArray_Sparse_Type.sparse_values self) ([#"../sparse_array.rs" 92 30 92 31] i));
-    goto BB7
+    goto BB8
   }
   BB7 {
-    [#"../sparse_array.rs" 92 17 92 32] _21 <- ([#"../sparse_array.rs" 92 17 92 32] _22);
-    assert { [@expl:type invariant] inv1 _22 };
-    assume { resolve1 _22 };
-    assert { [@expl:type invariant] inv1 _21 };
-    assume { resolve1 _21 };
-    [#"../sparse_array.rs" 92 12 92 33] _0 <- ([#"../sparse_array.rs" 92 12 92 33] Core_Option_Option_Type.C_Some ([#"../sparse_array.rs" 92 17 92 32] _21));
-    goto BB9
-  }
-  BB8 {
     assert { [@expl:type invariant] inv0 self };
     assume { resolve0 self };
+    goto BB8
+  }
+  BB8 {
     [#"../sparse_array.rs" 94 12 94 16] _0 <- ([#"../sparse_array.rs" 94 12 94 16] Core_Option_Option_Type.C_None);
     goto BB9
   }
@@ -731,10 +730,15 @@ module SparseArray_Impl2_Set
     ensures { result = shallow_model1 self }
     
   use prelude.Ghost
-  predicate resolve4 (self : borrowed usize) =
+  predicate resolve4 (self : borrowed (SparseArray_Sparse_Type.t_sparse t)) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve4 (self : borrowed usize) : bool
+  val resolve4 (self : borrowed (SparseArray_Sparse_Type.t_sparse t)) : bool
     ensures { result = resolve4 self }
+    
+  predicate resolve3 (self : borrowed usize) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve3 (self : borrowed usize) : bool
+    ensures { result = resolve3 self }
     
   use prelude.Slice
   predicate resolve_elswhere1 [@inline:trivial] (self : usize) (old' : Seq.seq usize) (fin : Seq.seq usize) =
@@ -769,9 +773,9 @@ module SparseArray_Impl2_Set
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 136 26 136 55] Seq.length (shallow_model7 ( ^ self)) = Seq.length (shallow_model6 self) }
     ensures { inv10 result }
     
-  predicate resolve3 (self : Ghost.ghost_ty ())
-  val resolve3 (self : Ghost.ghost_ty ()) : bool
-    ensures { result = resolve3 self }
+  predicate resolve2 (self : Ghost.ghost_ty ())
+  val resolve2 (self : Ghost.ghost_ty ()) : bool
+    ensures { result = resolve2 self }
     
   use prelude.Ghost
   function lemma_permutation0 [#"../sparse_array.rs" 104 4 104 38] (self : SparseArray_Sparse_Type.t_sparse t) (i : int) : ()
@@ -785,11 +789,6 @@ module SparseArray_Impl2_Set
     ensures { result = lemma_permutation0 self i }
     
   axiom lemma_permutation0_spec : forall self : SparseArray_Sparse_Type.t_sparse t, i : int . ([#"../sparse_array.rs" 101 15 101 34] SparseArray_Sparse_Type.sparse_n self = SparseArray_Sparse_Type.sparse_size self) -> ([#"../sparse_array.rs" 102 15 102 39] 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self)) -> ([#"../sparse_array.rs" 104 25 104 29] inv8 self) -> ([#"../sparse_array.rs" 103 14 103 28] is_elt0 self i)
-  predicate resolve2 (self : borrowed (SparseArray_Sparse_Type.t_sparse t)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve2 (self : borrowed (SparseArray_Sparse_Type.t_sparse t)) : bool
-    ensures { result = resolve2 self }
-    
   function shallow_model5 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize =
     [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model7 self
   val shallow_model5 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
@@ -859,13 +858,12 @@ module SparseArray_Impl2_Set
   var _10 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var index : usize;
   var _13 : usize;
-  var _17 : bool;
-  var _23 : usize;
-  var _27 : Ghost.ghost_ty ();
-  var _32 : borrowed usize;
-  var _33 : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
-  var _36 : borrowed usize;
-  var _37 : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
+  var _21 : usize;
+  var _25 : Ghost.ghost_ty ();
+  var _30 : borrowed usize;
+  var _31 : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
+  var _34 : borrowed usize;
+  var _35 : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
   {
     goto BB0
   }
@@ -876,7 +874,7 @@ module SparseArray_Impl2_Set
     [#"../sparse_array.rs" 113 8 113 19] _10 <- Borrow.borrow_final (SparseArray_Sparse_Type.sparse_values ( * self)) (Borrow.inherit_id (Borrow.get_id self) 3);
     [#"../sparse_array.rs" 113 8 113 19] self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 x4 =  * self in SparseArray_Sparse_Type.C_Sparse x0 x1 ( ^ _10) x3 x4) ; };
     assume { inv0 ( ^ _10) };
-    [#"../sparse_array.rs" 113 8 113 22] _9 <- ([#"../sparse_array.rs" 113 8 113 22] index_mut0 _10 ([#"../sparse_array.rs" 113 20 113 21] i));
+    [#"../sparse_array.rs" 113 19 113 22] _9 <- ([#"../sparse_array.rs" 113 19 113 22] index_mut0 _10 ([#"../sparse_array.rs" 113 20 113 21] i));
     _10 <- any borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
     goto BB2
   }
@@ -893,69 +891,67 @@ module SparseArray_Impl2_Set
     goto BB5
   }
   BB5 {
-    [#"../sparse_array.rs" 114 20 114 31] _13 <- ([#"../sparse_array.rs" 114 20 114 31] index0 ([#"../sparse_array.rs" 114 20 114 28] SparseArray_Sparse_Type.sparse_idx ( * self)) ([#"../sparse_array.rs" 114 29 114 30] i));
+    [#"../sparse_array.rs" 114 28 114 31] _13 <- ([#"../sparse_array.rs" 114 28 114 31] index0 ([#"../sparse_array.rs" 114 20 114 28] SparseArray_Sparse_Type.sparse_idx ( * self)) ([#"../sparse_array.rs" 114 29 114 30] i));
     goto BB6
   }
   BB6 {
     [#"../sparse_array.rs" 114 20 114 31] index <- ([#"../sparse_array.rs" 114 20 114 31] _13);
     switch ([#"../sparse_array.rs" 115 13 115 27] ([#"../sparse_array.rs" 115 13 115 18] index) < ([#"../sparse_array.rs" 115 21 115 27] SparseArray_Sparse_Type.sparse_n ( * self)))
-      | False -> goto BB7
-      | True -> goto BB8
+      | False -> goto BB11
+      | True -> goto BB7
       end
   }
   BB7 {
-    [#"../sparse_array.rs" 115 12 115 53] _17 <- ([#"../sparse_array.rs" 115 12 115 53] [#"../sparse_array.rs" 115 12 115 53] false);
-    goto BB9
+    [#"../sparse_array.rs" 115 40 115 47] _21 <- ([#"../sparse_array.rs" 115 40 115 47] index0 ([#"../sparse_array.rs" 115 31 115 40] SparseArray_Sparse_Type.sparse_back ( * self)) ([#"../sparse_array.rs" 115 41 115 46] index));
+    goto BB8
   }
   BB8 {
-    [#"../sparse_array.rs" 115 31 115 47] _23 <- ([#"../sparse_array.rs" 115 31 115 47] index0 ([#"../sparse_array.rs" 115 31 115 40] SparseArray_Sparse_Type.sparse_back ( * self)) ([#"../sparse_array.rs" 115 41 115 46] index));
-    goto BB10
-  }
-  BB9 {
-    switch ([#"../sparse_array.rs" 115 11 115 53] not _17)
-      | False -> goto BB15
-      | True -> goto BB11
+    switch ([#"../sparse_array.rs" 115 31 115 52] ([#"../sparse_array.rs" 115 31 115 47] _21) = ([#"../sparse_array.rs" 115 51 115 52] i))
+      | False -> goto BB10
+      | True -> goto BB9
       end
   }
+  BB9 {
+    assert { [@expl:type invariant] inv3 self };
+    assume { resolve4 self };
+    [#"../sparse_array.rs" 123 9 123 9] _0 <- ([#"../sparse_array.rs" 123 9 123 9] ());
+    goto BB16
+  }
   BB10 {
-    [#"../sparse_array.rs" 115 12 115 53] _17 <- ([#"../sparse_array.rs" 115 31 115 52] ([#"../sparse_array.rs" 115 31 115 47] _23) = ([#"../sparse_array.rs" 115 51 115 52] i));
-    goto BB9
+    goto BB12
   }
   BB11 {
-    [#"../sparse_array.rs" 117 12 117 40] _27 <- ([#"../sparse_array.rs" 117 12 117 40] Ghost.new ());
     goto BB12
   }
   BB12 {
-    assume { resolve3 _27 };
-    assert { [@expl:assertion] [#"../sparse_array.rs" 118 26 118 46] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n ( * self)) < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size ( * self)) };
-    [#"../sparse_array.rs" 120 12 120 20] _33 <- Borrow.borrow_final (SparseArray_Sparse_Type.sparse_idx ( * self)) (Borrow.inherit_id (Borrow.get_id self) 4);
-    [#"../sparse_array.rs" 120 12 120 20] self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 x4 =  * self in SparseArray_Sparse_Type.C_Sparse x0 x1 x2 ( ^ _33) x4) ; };
-    [#"../sparse_array.rs" 120 12 120 23] _32 <- ([#"../sparse_array.rs" 120 12 120 23] index_mut1 _33 ([#"../sparse_array.rs" 120 21 120 22] i));
-    _33 <- any borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
+    [#"../sparse_array.rs" 117 12 117 40] _25 <- ([#"../sparse_array.rs" 117 12 117 40] Ghost.new ());
     goto BB13
   }
   BB13 {
-    [#"../sparse_array.rs" 120 12 120 32] _32 <- { _32 with current = ([#"../sparse_array.rs" 120 26 120 32] SparseArray_Sparse_Type.sparse_n ( * self)) ; };
-    assume { resolve4 _32 };
-    [#"../sparse_array.rs" 121 12 121 21] _37 <- Borrow.borrow_final (SparseArray_Sparse_Type.sparse_back ( * self)) (Borrow.inherit_id (Borrow.get_id self) 5);
-    [#"../sparse_array.rs" 121 12 121 21] self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 x4 =  * self in SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 ( ^ _37)) ; };
-    [#"../sparse_array.rs" 121 12 121 29] _36 <- ([#"../sparse_array.rs" 121 12 121 29] index_mut1 _37 ([#"../sparse_array.rs" 121 22 121 28] SparseArray_Sparse_Type.sparse_n ( * self)));
-    _37 <- any borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
+    assume { resolve2 _25 };
+    assert { [@expl:assertion] [#"../sparse_array.rs" 118 26 118 46] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n ( * self)) < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size ( * self)) };
+    [#"../sparse_array.rs" 120 12 120 20] _31 <- Borrow.borrow_final (SparseArray_Sparse_Type.sparse_idx ( * self)) (Borrow.inherit_id (Borrow.get_id self) 4);
+    [#"../sparse_array.rs" 120 12 120 20] self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 x4 =  * self in SparseArray_Sparse_Type.C_Sparse x0 x1 x2 ( ^ _31) x4) ; };
+    [#"../sparse_array.rs" 120 20 120 23] _30 <- ([#"../sparse_array.rs" 120 20 120 23] index_mut1 _31 ([#"../sparse_array.rs" 120 21 120 22] i));
+    _31 <- any borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
     goto BB14
   }
   BB14 {
-    [#"../sparse_array.rs" 121 12 121 33] _36 <- { _36 with current = ([#"../sparse_array.rs" 121 32 121 33] i) ; };
-    assume { resolve4 _36 };
-    [#"../sparse_array.rs" 122 12 122 23] self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 x4 =  * self in SparseArray_Sparse_Type.C_Sparse x0 ([#"../sparse_array.rs" 122 12 122 23] SparseArray_Sparse_Type.sparse_n ( * self) + ([#"../sparse_array.rs" 122 22 122 23] [#"../sparse_array.rs" 122 22 122 23] (1 : usize))) x2 x3 x4) ; };
-    assert { [@expl:type invariant] inv3 self };
-    assume { resolve2 self };
-    [#"../sparse_array.rs" 115 54 123 9] _0 <- ([#"../sparse_array.rs" 115 54 123 9] ());
-    goto BB16
+    [#"../sparse_array.rs" 120 12 120 32] _30 <- { _30 with current = ([#"../sparse_array.rs" 120 26 120 32] SparseArray_Sparse_Type.sparse_n ( * self)) ; };
+    assume { resolve3 _30 };
+    [#"../sparse_array.rs" 121 12 121 21] _35 <- Borrow.borrow_final (SparseArray_Sparse_Type.sparse_back ( * self)) (Borrow.inherit_id (Borrow.get_id self) 5);
+    [#"../sparse_array.rs" 121 12 121 21] self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 x4 =  * self in SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 ( ^ _35)) ; };
+    [#"../sparse_array.rs" 121 21 121 29] _34 <- ([#"../sparse_array.rs" 121 21 121 29] index_mut1 _35 ([#"../sparse_array.rs" 121 22 121 28] SparseArray_Sparse_Type.sparse_n ( * self)));
+    _35 <- any borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
+    goto BB15
   }
   BB15 {
+    [#"../sparse_array.rs" 121 12 121 33] _34 <- { _34 with current = ([#"../sparse_array.rs" 121 32 121 33] i) ; };
+    assume { resolve3 _34 };
+    [#"../sparse_array.rs" 122 12 122 23] self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 x4 =  * self in SparseArray_Sparse_Type.C_Sparse x0 ([#"../sparse_array.rs" 122 12 122 23] SparseArray_Sparse_Type.sparse_n ( * self) + ([#"../sparse_array.rs" 122 22 122 23] [#"../sparse_array.rs" 122 22 122 23] (1 : usize))) x2 x3 x4) ; };
     assert { [@expl:type invariant] inv3 self };
-    assume { resolve2 self };
-    [#"../sparse_array.rs" 123 9 123 9] _0 <- ([#"../sparse_array.rs" 123 9 123 9] ());
+    assume { resolve4 self };
+    [#"../sparse_array.rs" 115 54 123 9] _0 <- ([#"../sparse_array.rs" 115 54 123 9] ());
     goto BB16
   }
   BB16 {
@@ -1136,15 +1132,15 @@ module SparseArray_Create
   BB0 {
     assert { [@expl:type invariant] inv0 dummy };
     assume { resolve0 dummy };
-    [#"../../../../creusot-contracts/src/lib.rs" 250 8 250 40] _6 <- ([#"../sparse_array.rs" 135 37 135 52] from_elem0 ([#"../sparse_array.rs" 135 42 135 47] dummy) ([#"../sparse_array.rs" 135 49 135 51] sz));
+    [#"../../../../creusot-contracts/src/lib.rs" 251 8 251 40] _6 <- ([#"../sparse_array.rs" 135 37 135 52] from_elem0 ([#"../sparse_array.rs" 135 42 135 47] dummy) ([#"../sparse_array.rs" 135 49 135 51] sz));
     goto BB1
   }
   BB1 {
-    [#"../../../../creusot-contracts/src/lib.rs" 250 8 250 40] _9 <- ([#"../sparse_array.rs" 135 59 135 70] from_elem1 ([#"../sparse_array.rs" 135 64 135 65] [#"../sparse_array.rs" 135 64 135 65] (0 : usize)) ([#"../sparse_array.rs" 135 67 135 69] sz));
+    [#"../../../../creusot-contracts/src/lib.rs" 251 8 251 40] _9 <- ([#"../sparse_array.rs" 135 59 135 70] from_elem1 ([#"../sparse_array.rs" 135 64 135 65] [#"../sparse_array.rs" 135 64 135 65] (0 : usize)) ([#"../sparse_array.rs" 135 67 135 69] sz));
     goto BB2
   }
   BB2 {
-    [#"../../../../creusot-contracts/src/lib.rs" 250 8 250 40] _11 <- ([#"../sparse_array.rs" 135 78 135 89] from_elem1 ([#"../sparse_array.rs" 135 83 135 84] [#"../sparse_array.rs" 135 83 135 84] (0 : usize)) ([#"../sparse_array.rs" 135 86 135 88] sz));
+    [#"../../../../creusot-contracts/src/lib.rs" 251 8 251 40] _11 <- ([#"../sparse_array.rs" 135 78 135 89] from_elem1 ([#"../sparse_array.rs" 135 83 135 84] [#"../sparse_array.rs" 135 83 135 84] (0 : usize)) ([#"../sparse_array.rs" 135 86 135 88] sz));
     goto BB3
   }
   BB3 {
@@ -1403,38 +1399,38 @@ module SparseArray_F
     goto BB2
   }
   BB2 {
-    [#"../sparse_array.rs" 144 16 144 24] x <- ([#"../sparse_array.rs" 144 16 144 24] get0 ([#"../sparse_array.rs" 144 16 144 24] a) ([#"../sparse_array.rs" 144 22 144 23] [#"../sparse_array.rs" 144 22 144 23] (5 : usize)));
+    [#"../sparse_array.rs" 144 16 144 24] x <- ([#"../sparse_array.rs" 144 16 144 24] get0 ([#"../sparse_array.rs" 144 16 144 17] a) ([#"../sparse_array.rs" 144 22 144 23] [#"../sparse_array.rs" 144 22 144 23] (5 : usize)));
     goto BB3
   }
   BB3 {
-    [#"../sparse_array.rs" 145 16 145 24] y <- ([#"../sparse_array.rs" 145 16 145 24] get0 ([#"../sparse_array.rs" 145 16 145 24] b) ([#"../sparse_array.rs" 145 22 145 23] [#"../sparse_array.rs" 145 22 145 23] (7 : usize)));
+    [#"../sparse_array.rs" 145 16 145 24] y <- ([#"../sparse_array.rs" 145 16 145 24] get0 ([#"../sparse_array.rs" 145 16 145 17] b) ([#"../sparse_array.rs" 145 22 145 23] [#"../sparse_array.rs" 145 22 145 23] (7 : usize)));
     goto BB4
   }
   BB4 {
     assert { [@expl:assertion] [#"../sparse_array.rs" 146 18 146 40] x = Core_Option_Option_Type.C_None /\ y = Core_Option_Option_Type.C_None };
-    [#"../sparse_array.rs" 148 4 148 15] _13 <- Borrow.borrow_mut a;
-    [#"../sparse_array.rs" 148 4 148 15] a <-  ^ _13;
+    [#"../sparse_array.rs" 148 4 148 5] _13 <- Borrow.borrow_mut a;
+    [#"../sparse_array.rs" 148 4 148 5] a <-  ^ _13;
     assume { inv0 ( ^ _13) };
     [#"../sparse_array.rs" 148 4 148 15] _12 <- ([#"../sparse_array.rs" 148 4 148 15] set0 _13 ([#"../sparse_array.rs" 148 10 148 11] [#"../sparse_array.rs" 148 10 148 11] (5 : usize)) ([#"../sparse_array.rs" 148 13 148 14] [#"../sparse_array.rs" 148 13 148 14] (1 : int32)));
     _13 <- any borrowed (SparseArray_Sparse_Type.t_sparse int32);
     goto BB5
   }
   BB5 {
-    [#"../sparse_array.rs" 149 4 149 15] _15 <- Borrow.borrow_mut b;
-    [#"../sparse_array.rs" 149 4 149 15] b <-  ^ _15;
+    [#"../sparse_array.rs" 149 4 149 5] _15 <- Borrow.borrow_mut b;
+    [#"../sparse_array.rs" 149 4 149 5] b <-  ^ _15;
     assume { inv0 ( ^ _15) };
     [#"../sparse_array.rs" 149 4 149 15] _14 <- ([#"../sparse_array.rs" 149 4 149 15] set0 _15 ([#"../sparse_array.rs" 149 10 149 11] [#"../sparse_array.rs" 149 10 149 11] (7 : usize)) ([#"../sparse_array.rs" 149 13 149 14] [#"../sparse_array.rs" 149 13 149 14] (2 : int32)));
     _15 <- any borrowed (SparseArray_Sparse_Type.t_sparse int32);
     goto BB6
   }
   BB6 {
-    [#"../sparse_array.rs" 150 8 150 16] _16 <- ([#"../sparse_array.rs" 150 8 150 16] get0 ([#"../sparse_array.rs" 150 8 150 16] a) ([#"../sparse_array.rs" 150 14 150 15] [#"../sparse_array.rs" 150 14 150 15] (5 : usize)));
+    [#"../sparse_array.rs" 150 8 150 16] _16 <- ([#"../sparse_array.rs" 150 8 150 16] get0 ([#"../sparse_array.rs" 150 8 150 9] a) ([#"../sparse_array.rs" 150 14 150 15] [#"../sparse_array.rs" 150 14 150 15] (5 : usize)));
     goto BB7
   }
   BB7 {
     [#"../sparse_array.rs" 150 4 150 16] x <- ([#"../sparse_array.rs" 150 4 150 16] _16);
     [#"../sparse_array.rs" 150 4 150 16] _16 <- any Core_Option_Option_Type.t_option int32;
-    [#"../sparse_array.rs" 151 8 151 16] _18 <- ([#"../sparse_array.rs" 151 8 151 16] get0 ([#"../sparse_array.rs" 151 8 151 16] b) ([#"../sparse_array.rs" 151 14 151 15] [#"../sparse_array.rs" 151 14 151 15] (7 : usize)));
+    [#"../sparse_array.rs" 151 8 151 16] _18 <- ([#"../sparse_array.rs" 151 8 151 16] get0 ([#"../sparse_array.rs" 151 8 151 9] b) ([#"../sparse_array.rs" 151 14 151 15] [#"../sparse_array.rs" 151 14 151 15] (7 : usize)));
     goto BB8
   }
   BB8 {
@@ -1448,39 +1444,39 @@ module SparseArray_F
       | Core_Option_Option_Type.C_None -> false
       | Core_Option_Option_Type.C_Some z -> shallow_model0 z = 2
       end };
-    [#"../sparse_array.rs" 161 8 161 16] _24 <- ([#"../sparse_array.rs" 161 8 161 16] get0 ([#"../sparse_array.rs" 161 8 161 16] a) ([#"../sparse_array.rs" 161 14 161 15] [#"../sparse_array.rs" 161 14 161 15] (7 : usize)));
+    [#"../sparse_array.rs" 161 8 161 16] _24 <- ([#"../sparse_array.rs" 161 8 161 16] get0 ([#"../sparse_array.rs" 161 8 161 9] a) ([#"../sparse_array.rs" 161 14 161 15] [#"../sparse_array.rs" 161 14 161 15] (7 : usize)));
     goto BB9
   }
   BB9 {
     [#"../sparse_array.rs" 161 4 161 16] x <- ([#"../sparse_array.rs" 161 4 161 16] _24);
     [#"../sparse_array.rs" 161 4 161 16] _24 <- any Core_Option_Option_Type.t_option int32;
-    [#"../sparse_array.rs" 162 8 162 16] _26 <- ([#"../sparse_array.rs" 162 8 162 16] get0 ([#"../sparse_array.rs" 162 8 162 16] b) ([#"../sparse_array.rs" 162 14 162 15] [#"../sparse_array.rs" 162 14 162 15] (5 : usize)));
+    [#"../sparse_array.rs" 162 8 162 16] _26 <- ([#"../sparse_array.rs" 162 8 162 16] get0 ([#"../sparse_array.rs" 162 8 162 9] b) ([#"../sparse_array.rs" 162 14 162 15] [#"../sparse_array.rs" 162 14 162 15] (5 : usize)));
     goto BB10
   }
   BB10 {
     [#"../sparse_array.rs" 162 4 162 16] y <- ([#"../sparse_array.rs" 162 4 162 16] _26);
     [#"../sparse_array.rs" 162 4 162 16] _26 <- any Core_Option_Option_Type.t_option int32;
     assert { [@expl:assertion] [#"../sparse_array.rs" 163 18 163 40] x = Core_Option_Option_Type.C_None /\ y = Core_Option_Option_Type.C_None };
-    [#"../sparse_array.rs" 165 8 165 16] _30 <- ([#"../sparse_array.rs" 165 8 165 16] get0 ([#"../sparse_array.rs" 165 8 165 16] a) ([#"../sparse_array.rs" 165 14 165 15] [#"../sparse_array.rs" 165 14 165 15] (0 : usize)));
+    [#"../sparse_array.rs" 165 8 165 16] _30 <- ([#"../sparse_array.rs" 165 8 165 16] get0 ([#"../sparse_array.rs" 165 8 165 9] a) ([#"../sparse_array.rs" 165 14 165 15] [#"../sparse_array.rs" 165 14 165 15] (0 : usize)));
     goto BB11
   }
   BB11 {
     [#"../sparse_array.rs" 165 4 165 16] x <- ([#"../sparse_array.rs" 165 4 165 16] _30);
     [#"../sparse_array.rs" 165 4 165 16] _30 <- any Core_Option_Option_Type.t_option int32;
-    [#"../sparse_array.rs" 166 8 166 16] _32 <- ([#"../sparse_array.rs" 166 8 166 16] get0 ([#"../sparse_array.rs" 166 8 166 16] b) ([#"../sparse_array.rs" 166 14 166 15] [#"../sparse_array.rs" 166 14 166 15] (0 : usize)));
+    [#"../sparse_array.rs" 166 8 166 16] _32 <- ([#"../sparse_array.rs" 166 8 166 16] get0 ([#"../sparse_array.rs" 166 8 166 9] b) ([#"../sparse_array.rs" 166 14 166 15] [#"../sparse_array.rs" 166 14 166 15] (0 : usize)));
     goto BB12
   }
   BB12 {
     [#"../sparse_array.rs" 166 4 166 16] y <- ([#"../sparse_array.rs" 166 4 166 16] _32);
     [#"../sparse_array.rs" 166 4 166 16] _32 <- any Core_Option_Option_Type.t_option int32;
     assert { [@expl:assertion] [#"../sparse_array.rs" 167 18 167 40] x = Core_Option_Option_Type.C_None /\ y = Core_Option_Option_Type.C_None };
-    [#"../sparse_array.rs" 169 8 169 16] _36 <- ([#"../sparse_array.rs" 169 8 169 16] get0 ([#"../sparse_array.rs" 169 8 169 16] a) ([#"../sparse_array.rs" 169 14 169 15] [#"../sparse_array.rs" 169 14 169 15] (9 : usize)));
+    [#"../sparse_array.rs" 169 8 169 16] _36 <- ([#"../sparse_array.rs" 169 8 169 16] get0 ([#"../sparse_array.rs" 169 8 169 9] a) ([#"../sparse_array.rs" 169 14 169 15] [#"../sparse_array.rs" 169 14 169 15] (9 : usize)));
     goto BB13
   }
   BB13 {
     [#"../sparse_array.rs" 169 4 169 16] x <- ([#"../sparse_array.rs" 169 4 169 16] _36);
     [#"../sparse_array.rs" 169 4 169 16] _36 <- any Core_Option_Option_Type.t_option int32;
-    [#"../sparse_array.rs" 170 8 170 16] _38 <- ([#"../sparse_array.rs" 170 8 170 16] get0 ([#"../sparse_array.rs" 170 8 170 16] b) ([#"../sparse_array.rs" 170 14 170 15] [#"../sparse_array.rs" 170 14 170 15] (9 : usize)));
+    [#"../sparse_array.rs" 170 8 170 16] _38 <- ([#"../sparse_array.rs" 170 8 170 16] get0 ([#"../sparse_array.rs" 170 8 170 9] b) ([#"../sparse_array.rs" 170 14 170 15] [#"../sparse_array.rs" 170 14 170 15] (9 : usize)));
     goto BB14
   }
   BB14 {

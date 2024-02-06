@@ -17,6 +17,18 @@ impl<T: DeepModel> DeepModel for Option<T> {
 extern_spec! {
     mod std {
         mod option {
+            impl<T : PartialEq + DeepModel> PartialEq for Option<T> {
+                #[allow(unstable_name_collisions)]
+                #[ensures(result == (self.deep_model() == rhs.deep_model()))]
+                fn eq(&self, rhs: &Self) -> bool;
+            }
+        }
+    }
+}
+
+extern_spec! {
+    mod std {
+        mod option {
             impl<T> Option<T> {
                 #[ensures(result == (*self != None))]
                 fn is_some(&self) -> bool;
