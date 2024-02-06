@@ -35,7 +35,7 @@ pub(crate) fn from_mir_constant_kind<'tcx>(
     if ck.ty().is_unit() {
         return Expr { kind: ExprKind::Tuple(Vec::new()), ty: ck.ty(), span };
     }
-//
+    //
     // let ck = ck.normalize(ctx.tcx, env);
 
     if ck.ty().peel_refs().is_str() {

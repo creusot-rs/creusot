@@ -35,8 +35,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[ensures(result.view() == self.view().set(k, Some(v.make_sized())))]
     #[ensures(self.contains(k) ==> result.len() == self.len())]
     #[ensures(!self.contains(k) ==> result.len() == self.len() + 1)]
-    pub fn insert(self, k: K, v: V) -> Self
-    {
+    pub fn insert(self, k: K, v: V) -> Self {
         absurd
     }
 

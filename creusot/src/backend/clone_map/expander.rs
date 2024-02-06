@@ -12,7 +12,7 @@ use petgraph::Direction;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::Mutability,
-    ty::{GenericArgsRef, AliasKind, ParamEnv, Ty, TyKind},
+    ty::{AliasKind, GenericArgsRef, ParamEnv, Ty, TyKind},
 };
 
 use super::*;
@@ -69,7 +69,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         }
 
         while let Some(key) = self.expansion_queue.pop_front() {
-            eprintln!("update graph with {:?} (public={:?})", key, self.clone_graph.info(key).level);
+            trace!("update graph with {:?} (public={:?})", key, self.clone_graph.info(key).level);
             if depth == CloneDepth::Shallow && !self.clone_graph.is_root(key) {
                 // If there is a Signature level edge from a pre-existing root node, mark this one as root as well as it must be an associated type in
                 // a root signature
@@ -124,8 +124,12 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     }
 
     fn expand_projections(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
-        let Some((id, _)) = key.did() else { return; };
-        let ItemType::Type = util::item_type(ctx.tcx, id) else {return; };
+        let Some((id, _)) = key.did() else {
+            return;
+        };
+        let ItemType::Type = util::item_type(ctx.tcx, id) else {
+            return;
+        };
 
         let key_public = self.clone_graph.info(key).level;
 
@@ -146,7 +150,9 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     }
 
     fn expand_subst(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
-        let Some((_, key_subst)) = key.did() else { return; };
+        let Some((_, key_subst)) = key.did() else {
+            return;
+        };
         let key_public = self.clone_graph.info(key).level;
         // Check the substitution for node dependencies on closures
         walk_types(key_subst, |t| {
@@ -178,12 +184,12 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             // eprintln!("deps of{key:?} {:#?} ", ctx.dependencies(key));
         }
         for (dep, info) in ctx.dependencies(key).iter().flat_map(|i| i.iter()) {
-            eprintln!("adding dependency {:?} {:?}", dep, info.level);
+            trace!("adding dependency {:?} {:?}", dep, info.level);
 
-            eprintln!("substituted {:?}", dep.subst(ctx.tcx, key));
+            // eprintln!("substituted {:?}", dep.subst(ctx.tcx, key));
             let dep = self.resolve_dep(ctx, dep.subst(ctx.tcx, key));
 
-            eprintln!("inserting dependency {:?} {:?}", key, dep);
+            // eprintln!("inserting dependency {:?} {:?}", key, dep);
             self.add_node(dep, key_public.max(info.level));
 
             // Skip reflexive edges

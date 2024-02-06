@@ -10,11 +10,7 @@ use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{Body, Local, SourceInfo, SourceScope, OUTERMOST_SOURCE_SCOPE},
     thir::{self, ClosureExpr, ExprKind, Thir},
-    ty::{
-        self,
-        GenericArgs, GenericArgsRef,
-        EarlyBinder, ParamEnv, TyCtxt,
-    },
+    ty::{self, EarlyBinder, GenericArgs, GenericArgsRef, ParamEnv, TyCtxt},
 };
 use rustc_span::Symbol;
 use std::collections::{HashMap, HashSet};
@@ -268,7 +264,8 @@ pub(crate) fn contract_of<'tcx>(
     def_id: DefId,
 ) -> PreContract<'tcx> {
     if let Some(extern_spec) = ctx.extern_spec(def_id).cloned() {
-        let mut contract = extern_spec.contract.get_pre(ctx).instantiate(ctx.tcx, extern_spec.subst);
+        let mut contract =
+            extern_spec.contract.get_pre(ctx).instantiate(ctx.tcx, extern_spec.subst);
         contract.subst(&extern_spec.arg_subst.iter().cloned().collect());
         contract.normalize(ctx.tcx, ctx.param_env(def_id))
     } else if let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id) {

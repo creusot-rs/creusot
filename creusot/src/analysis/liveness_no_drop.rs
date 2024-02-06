@@ -5,7 +5,9 @@
 use dataflow::Backward;
 use rustc_index::bit_set::ChunkedBitSet;
 use rustc_middle::mir::{
-    self, visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor}, CallReturnPlaces, Local, Location, Place, TerminatorEdges
+    self,
+    visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor},
+    CallReturnPlaces, Local, Location, Place, TerminatorEdges,
 };
 use rustc_mir_dataflow::{self as dataflow, AnalysisDomain, GenKill, GenKillAnalysis};
 

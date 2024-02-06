@@ -36,9 +36,11 @@ impl<'a, 'tcx> MetadataDecoder<'a, 'tcx> {
             .or_insert_with(|| {
                 let stable_id = self.file_index_to_stable_id[&index].translate(self.tcx);
                 self.tcx.cstore_untracked().import_source_files(self.tcx.sess, stable_id.cnum);
-                self.tcx.sess.source_map().source_file_by_stable_id(stable_id)
-                                    .expect("failed to lookup `SourceFile` in new context")
-
+                self.tcx
+                    .sess
+                    .source_map()
+                    .source_file_by_stable_id(stable_id)
+                    .expect("failed to lookup `SourceFile` in new context")
             })
             .clone()
     }

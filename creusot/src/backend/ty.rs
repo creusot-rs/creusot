@@ -11,10 +11,8 @@ use indexmap::IndexSet;
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
 use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_middle::ty::{
-    self,
-    GenericArgs, GenericArgsRef,
-    AliasKind, AliasTy, EarlyBinder, FieldDef, GenericArg, GenericArgKind, ParamEnv, Ty, TyCtxt,
-    TyKind,
+    self, AliasKind, AliasTy, EarlyBinder, FieldDef, GenericArg, GenericArgKind, GenericArgs,
+    GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_type_ir::sty::TyKind::*;
@@ -621,7 +619,9 @@ pub(crate) fn closure_accessors<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     closure: DefId,
 ) -> Vec<(Symbol, PreSignature<'tcx>, Term<'tcx>)> {
-    let TyKind::Closure(_, substs) = ctx.type_of(closure).instantiate_identity().kind() else { unreachable!() };
+    let TyKind::Closure(_, substs) = ctx.type_of(closure).instantiate_identity().kind() else {
+        unreachable!()
+    };
 
     let count = substs.as_closure().upvar_tys().len();
 
@@ -638,14 +638,20 @@ pub(crate) fn build_closure_accessor<'tcx>(
     closure: DefId,
     ix: usize,
 ) -> (PreSignature<'tcx>, Term<'tcx>) {
-    let TyKind::Closure(_, substs) = ctx.type_of(closure).instantiate_identity().kind() else { unreachable!() };
+    let TyKind::Closure(_, substs) = ctx.type_of(closure).instantiate_identity().kind() else {
+        unreachable!()
+    };
 
     let out_ty = substs.as_closure().upvar_tys()[ix];
 
     let self_ = Term::var(Symbol::intern("self"), ctx.type_of(closure).instantiate_identity());
 
     let pre_sig = PreSignature {
-        inputs: vec![(Symbol::intern("self"), DUMMY_SP, ctx.type_of(closure).instantiate_identity())],
+        inputs: vec![(
+            Symbol::intern("self"),
+            DUMMY_SP,
+            ctx.type_of(closure).instantiate_identity(),
+        )],
         output: out_ty,
         contract: PreContract::default(),
     };

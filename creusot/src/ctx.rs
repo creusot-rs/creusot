@@ -31,7 +31,7 @@ use rustc_middle::{
     mir::{Body, Promoted},
     thir,
     ty::{
-        GenericArgs, Clause, GenericArg, ParamEnv, Predicate, GenericArgsRef, Ty, TyCtxt,
+        Clause, GenericArg, GenericArgs, GenericArgsRef, ParamEnv, Predicate, Ty, TyCtxt,
         Visibility,
     },
 };

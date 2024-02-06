@@ -28,9 +28,8 @@ use rustc_index::bit_set::BitSet;
 use rustc_middle::{
     mir::{self, traversal::reverse_postorder, BasicBlock, Body, Local, Location, Operand, Place},
     ty::{
-        GenericArg, GenericArgsRef,
-        ClosureKind::*,
-        EarlyBinder, ParamEnv, Ty, TyCtxt, TyKind, UpvarCapture,
+        ClosureKind::*, EarlyBinder, GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
+        UpvarCapture,
     },
 };
 use rustc_mir_dataflow::Analysis as _;
@@ -289,7 +288,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     // Inserts resolves for locals which died over the course of a goto or switch
     fn resolve_locals_between_blocks(&mut self, bb: BasicBlock) {
-        let Some(resolver) = &mut self.resolver else { return; };
+        let Some(resolver) = &mut self.resolver else {
+            return;
+        };
         let pred_blocks = &self.body.basic_blocks.predecessors()[bb];
 
         if pred_blocks.is_empty() {
@@ -467,7 +468,9 @@ pub(crate) fn closure_contract<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> ClosureContract<'tcx> {
-    let TyKind::Closure(_, subst) =  ctx.tcx.type_of(def_id).instantiate_identity().kind() else { unreachable!() };
+    let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).instantiate_identity().kind() else {
+        unreachable!()
+    };
 
     let kind = subst.as_closure().kind();
     let mut pre_clos_sig = ctx.sig(def_id).clone();
@@ -607,16 +610,23 @@ pub(crate) fn closure_contract<'tcx>(
             unnest_id,
             unnest_subst,
             vec![
-                Term::var(Symbol::intern("self"), Ty::new_mut_ref(ctx.tcx, ctx.lifetimes.re_erased, self_ty))
-                    .cur(),
-                Term::var(Symbol::intern("self"), Ty::new_mut_ref(ctx.tcx, ctx.lifetimes.re_erased, self_ty))
-                    .fin(),
+                Term::var(
+                    Symbol::intern("self"),
+                    Ty::new_mut_ref(ctx.tcx, ctx.lifetimes.re_erased, self_ty),
+                )
+                .cur(),
+                Term::var(
+                    Symbol::intern("self"),
+                    Ty::new_mut_ref(ctx.tcx, ctx.lifetimes.re_erased, self_ty),
+                )
+                .fin(),
             ],
         ));
 
         normalize(ctx.tcx, ctx.param_env(def_id), &mut postcondition);
 
-        let unnest_sig = EarlyBinder::bind(ctx.sig(unnest_id).clone()).instantiate(ctx.tcx, unnest_subst);
+        let unnest_sig =
+            EarlyBinder::bind(ctx.sig(unnest_id).clone()).instantiate(ctx.tcx, unnest_subst);
 
         let mut unnest = closure_unnest(ctx.tcx, def_id, subst);
         normalize(ctx.tcx, ctx.param_env(def_id), &mut unnest);

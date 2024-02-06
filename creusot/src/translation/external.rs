@@ -9,8 +9,7 @@ use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
     thir::{self, visit::Visitor, Expr, ExprKind, Thir},
     ty::{
-        GenericArgKind, GenericArgs, GenericArgsRef,
-        Clause, EarlyBinder, Predicate, TyCtxt, TyKind,
+        Clause, EarlyBinder, GenericArgKind, GenericArgs, GenericArgsRef, Predicate, TyCtxt, TyKind,
     },
 };
 use rustc_span::Symbol;

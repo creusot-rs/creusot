@@ -19,7 +19,7 @@ use rustc_hir::{
 };
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
-    self, GenericArgsRef, BorrowKind, ClosureKind, EarlyBinder, GenericArg, GenericArgs, Ty,
+    self, BorrowKind, ClosureKind, EarlyBinder, GenericArg, GenericArgs, GenericArgsRef, Ty,
     TyCtxt, TyKind, UpvarCapture,
 };
 use rustc_span::{symbol, symbol::kw, Span, Symbol, DUMMY_SP};
@@ -121,7 +121,9 @@ pub(crate) fn is_user_tyinv(tcx: TyCtxt, def_id: DefId) -> bool {
     let Some(trait_item_did) = (match assoc_item.container {
         ty::AssocItemContainer::TraitContainer => Some(def_id),
         ty::AssocItemContainer::ImplContainer => assoc_item.trait_item_def_id,
-    }) else { return false };
+    }) else {
+        return false;
+    };
 
     tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user"))
         .is_some_and(|inv_did| inv_did == trait_item_did)
@@ -747,12 +749,16 @@ pub(crate) fn closure_capture_subst<'tcx>(
     let captures = tcx.closure_captures(def_id.expect_local());
 
     let ty = match ck {
-        Some(ClosureKind::Fn) => {
-            Ty::new_imm_ref(tcx, tcx.lifetimes.re_erased, tcx.type_of(def_id).instantiate_identity())
-        }
-        Some(ClosureKind::FnMut) => {
-            Ty::new_mut_ref(tcx, tcx.lifetimes.re_erased, tcx.type_of(def_id).instantiate_identity())
-        }
+        Some(ClosureKind::Fn) => Ty::new_imm_ref(
+            tcx,
+            tcx.lifetimes.re_erased,
+            tcx.type_of(def_id).instantiate_identity(),
+        ),
+        Some(ClosureKind::FnMut) => Ty::new_mut_ref(
+            tcx,
+            tcx.lifetimes.re_erased,
+            tcx.type_of(def_id).instantiate_identity(),
+        ),
         Some(ClosureKind::FnOnce) | None => tcx.type_of(def_id).instantiate_identity(),
     };
 

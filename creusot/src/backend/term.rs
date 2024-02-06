@@ -7,7 +7,7 @@ use crate::{
     util::get_builtin,
 };
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{GenericArgsRef, EarlyBinder, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
     ty::Type,
@@ -242,7 +242,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::pure_qvar(accessor).app(vec![lhs])
             }
             TermKind::Closure { body } => {
-                let TyKind::Closure(id, subst) = term.ty.kind() else { unreachable!("closure has non closure type")};
+                let TyKind::Closure(id, subst) = term.ty.kind() else {
+                    unreachable!("closure has non closure type")
+                };
                 let body = self.lower_term(&*body);
 
                 let mut binders = Vec::new();

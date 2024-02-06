@@ -4,7 +4,9 @@
 //
 use rustc_index::bit_set::ChunkedBitSet;
 use rustc_middle::mir::{
-    self, visit::{PlaceContext, Visitor}, BasicBlock, CallReturnPlaces, Local, Location, Terminator, TerminatorEdges
+    self,
+    visit::{PlaceContext, Visitor},
+    BasicBlock, CallReturnPlaces, Local, Location, Terminator, TerminatorEdges,
 };
 use rustc_mir_dataflow::{AnalysisDomain, GenKill, GenKillAnalysis};
 

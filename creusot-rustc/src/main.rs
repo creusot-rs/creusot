@@ -20,7 +20,7 @@ use rustc_session::{config::ErrorOutputType, EarlyErrorHandler};
 use std::{env, panic, panic::PanicInfo, process::Command};
 
 const BUG_REPORT_URL: &'static str = &"https://github.com/xldenis/creusot/issues/new";
-const WHY3_VERSION: &'static str = &"1.7.1+git";
+const WHY3_VERSION: &[&'static str] = &["1", "7", "1"];
 
 lazy_static::lazy_static! {
     static ref ICE_HOOK: Box<dyn Fn(&panic::PanicInfo<'_>) + Sync + Send + 'static> = {
@@ -86,9 +86,11 @@ fn setup_plugin() {
 
     if creusot.check_why3 {
         if let Some(why3_vers) = why3_version() {
-            if why3_vers != WHY3_VERSION {
+            let parts: Vec<_> = why3_vers.split(|c| c == '.' || c == '+').collect();
+            if &parts[..2] < WHY3_VERSION {
                 emit_warning(format!(
-                    "the recommended version of why3 is {WHY3_VERSION} (installed: {why3_vers})"
+                    "the recommended version of why3 is at least {} (installed: {why3_vers})",
+                    WHY3_VERSION.join(".")
                 ));
             }
         } else {
@@ -117,8 +119,9 @@ fn setup_plugin() {
         args.push("-Zcrate-attr=register_tool(why3)".to_owned());
         args.push("-Zcrate-attr=feature(stmt_expr_attributes)".to_owned());
         args.push("-Zcrate-attr=feature(proc_macro_hygiene)".to_owned());
-        // args.push("-Zcrate-attr=feature(rustc_attrs)".to_owned());
+        args.push("-Zcrate-attr=feature(rustc_attrs)".to_owned());
         args.push("-Zcrate-attr=feature(unsized_fn_params)".to_owned());
+        args.push("--allow=internal_features".to_owned());
         args.extend(["--cfg", "creusot"].into_iter().map(str::to_owned));
         debug!("creusot args={:?}", args);
 
@@ -161,6 +164,6 @@ fn emit_warning(text: String) {
         rustc_errors::fallback_fluent_bundle(DEFAULT_LOCALE_RESOURCES.to_vec(), false);
 
     let emitter = Box::new(EmitterWriter::stderr(rustc_errors::ColorConfig::Auto, fallback_bundle));
-    let handler = rustc_errors::Handler::with_emitter( emitter);
+    let handler = rustc_errors::Handler::with_emitter(emitter);
     handler.warn(text);
 }

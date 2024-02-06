@@ -15,7 +15,7 @@ use indexmap::IndexSet;
 use rustc_ast::Mutability;
 use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
-use rustc_middle::ty::{GenericArgsRef, GenericArg, ParamEnv, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
 use why3::{
     declaration::{Axiom, Decl, Module, TyDecl},
@@ -61,11 +61,16 @@ impl TyInvKind {
         let param = Ty::new_param(tcx, 0, Symbol::intern("T"));
         match self {
             TyInvKind::Trivial => param,
-            TyInvKind::Borrow(Mutability::Not) => Ty::new_imm_ref(tcx, tcx.lifetimes.re_erased, param),
-            TyInvKind::Borrow(Mutability::Mut) => Ty::new_mut_ref(tcx, tcx.lifetimes.re_erased, param),
+            TyInvKind::Borrow(Mutability::Not) => {
+                Ty::new_imm_ref(tcx, tcx.lifetimes.re_erased, param)
+            }
+            TyInvKind::Borrow(Mutability::Mut) => {
+                Ty::new_mut_ref(tcx, tcx.lifetimes.re_erased, param)
+            }
             TyInvKind::Box => Ty::new_box(tcx, param),
             TyInvKind::Adt(did) => tcx.type_of(did).instantiate_identity(),
-            TyInvKind::Tuple(arity) => Ty::new_tup_from_iter(tcx,
+            TyInvKind::Tuple(arity) => Ty::new_tup_from_iter(
+                tcx,
                 (0..arity).map(|i| Ty::new_param(tcx, i as _, Symbol::intern(&format!("T{i}")))),
             ),
             TyInvKind::Slice => Ty::new_slice(tcx, param),
@@ -82,7 +87,11 @@ impl TyInvKind {
         }
     }
 
-    pub(crate) fn tyinv_substs<'tcx>(self, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> GenericArgsRef<'tcx> {
+    pub(crate) fn tyinv_substs<'tcx>(
+        self,
+        tcx: TyCtxt<'tcx>,
+        ty: Ty<'tcx>,
+    ) -> GenericArgsRef<'tcx> {
         match (self, ty.kind()) {
             (TyInvKind::Trivial, _) => tcx.mk_args(&[GenericArg::from(ty)]),
             (TyInvKind::Borrow(_), TyKind::Ref(_, ty, _))
@@ -181,8 +190,8 @@ impl<'tcx> InvariantElaborator<'tcx> {
     ) -> Term<'tcx> {
         let tcx = ctx.tcx;
         let Some(inv_kind) = inv_kind else {
-        return self.mk_inv_call(ctx, term);
-    };
+            return self.mk_inv_call(ctx, term);
+        };
 
         match inv_kind {
             TyInvKind::Trivial => Term::mk_true(tcx),
@@ -278,7 +287,9 @@ impl<'tcx> InvariantElaborator<'tcx> {
         ctx: &mut Why3Generator<'tcx>,
         term: Term<'tcx>,
     ) -> Option<Term<'tcx>> {
-        let TyKind::Adt(adt_def, subst) = term.ty.kind() else { unreachable!("asked to build ADT invariant for non-ADT type {:?}", term.ty) };
+        let TyKind::Adt(adt_def, subst) = term.ty.kind() else {
+            unreachable!("asked to build ADT invariant for non-ADT type {:?}", term.ty)
+        };
 
         use crate::pearlite::*;
         // trusted types are opaque and thus have no structual invariant

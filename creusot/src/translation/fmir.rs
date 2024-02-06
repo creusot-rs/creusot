@@ -3,7 +3,7 @@ use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{tcx::PlaceTy, BasicBlock, BinOp, Local, ProjectionElem, UnOp},
-    ty::{GenericArgsRef, AdtDef, Ty, TyCtxt},
+    ty::{AdtDef, GenericArgsRef, Ty, TyCtxt},
 };
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::VariantIdx;

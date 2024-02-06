@@ -32,7 +32,7 @@ use rustc_middle::{
         AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
     },
     ty::{
-        int_ty, GenericArgsRef, uint_ty, GenericArg, Ty, TyCtxt, TyKind, TypeFoldable,
+        int_ty, uint_ty, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypeFoldable,
         TypeVisitable, UpvarArgs,
     },
 };
@@ -957,7 +957,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     }
 
     pub(crate) fn is_ghost_deref(&self, expr_id: ExprId) -> bool {
-        let ExprKind::Call { ty, .. } = &self.thir[expr_id].kind else {return false};
+        let ExprKind::Call { ty, .. } = &self.thir[expr_id].kind else { return false };
 
         let TyKind::FnDef(id, sub) = ty.kind() else { panic!("expected function type") };
 

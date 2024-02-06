@@ -8,10 +8,13 @@ use crate::{
     util::{self, ghost_closure_id},
 };
 use rustc_borrowck::borrow_set::TwoPhaseActivation;
-use rustc_middle::{mir::{
-    BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
-    StatementKind,
-}, ty::adjustment::PointerCoercion};
+use rustc_middle::{
+    mir::{
+        BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
+        StatementKind,
+    },
+    ty::adjustment::PointerCoercion,
+};
 use rustc_mir_dataflow::ResultsCursor;
 use rustc_span::DUMMY_SP;
 
