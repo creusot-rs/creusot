@@ -27,8 +27,8 @@ impl<T> Iterator for Once<T> {
 
     #[law]
     #[open]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self) {}
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
 
     #[law]
     #[open]

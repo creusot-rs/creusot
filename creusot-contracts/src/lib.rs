@@ -8,6 +8,7 @@
 #![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns))]
 #![feature(step_trait, allocator_api, unboxed_closures, tuple_trait, strict_provenance)]
 #![cfg_attr(not(creusot), feature(rustc_attrs))]
+#![cfg_attr(not(creusot), allow(internal_features))]
 
 extern crate self as creusot_contracts;
 

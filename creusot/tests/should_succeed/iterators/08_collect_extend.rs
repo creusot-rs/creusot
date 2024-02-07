@@ -19,8 +19,8 @@ use creusot_contracts::{
 //
 // Here we prove the specific instance of `extend` for `Vec<T>`.
 #[ensures(
-  exists<done_ : &mut I, prod: Seq<_>>
-    done_.completed() && iter.produces(prod, *done_) && (^vec)@ == vec@.concat(prod)
+  exists<done : &mut I, prod: Seq<_>>
+    done.completed() && iter.produces(prod, *done) && (^vec)@ == vec@.concat(prod)
 )]
 pub fn extend<T, I: Iterator<Item = T>>(vec: &mut Vec<T>, iter: I) {
     let old_vec = gh! { vec };
@@ -36,8 +36,8 @@ pub fn extend<T, I: Iterator<Item = T>>(vec: &mut Vec<T>, iter: I) {
 //
 //  We prove the specific instance for vector
 #[ensures(
-  exists<done_ : &mut I, prod: Seq<_>>
-    done_.completed() && iter.produces(prod, *done_) && result@ == prod
+  exists<done : &mut I, prod: Seq<_>>
+    done.completed() && iter.produces(prod, *done) && result@ == prod
 )]
 pub fn collect<I: Iterator>(iter: I) -> Vec<I::Item> {
     let mut res = Vec::new();

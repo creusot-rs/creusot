@@ -28,9 +28,8 @@ use rustc_index::bit_set::BitSet;
 use rustc_middle::{
     mir::{self, traversal::reverse_postorder, BasicBlock, Body, Local, Location, Operand, Place},
     ty::{
-        subst::{GenericArg, SubstsRef},
-        ClosureKind::*,
-        EarlyBinder, ParamEnv, Ty, TyCtxt, TyKind, UpvarCapture,
+        ClosureKind::*, EarlyBinder, GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
+        UpvarCapture,
     },
 };
 use rustc_mir_dataflow::Analysis as _;
@@ -289,7 +288,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     // Inserts resolves for locals which died over the course of a goto or switch
     fn resolve_locals_between_blocks(&mut self, bb: BasicBlock) {
-        let Some(resolver) = &mut self.resolver else { return; };
+        let Some(resolver) = &mut self.resolver else {
+            return;
+        };
         let pred_blocks = &self.body.basic_blocks.predecessors()[bb];
 
         if pred_blocks.is_empty() {
@@ -373,6 +374,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 }
                 mir::ProjectionElem::Downcast(s, ix) => mir::ProjectionElem::Downcast(s, ix),
                 mir::ProjectionElem::OpaqueCast(ty) => mir::ProjectionElem::OpaqueCast(ty),
+                mir::ProjectionElem::Subtype(ty) => mir::ProjectionElem::Subtype(ty),
             })
             .collect();
         fmir::Place { local: self.locals[&_pl.local], projection }
@@ -466,7 +468,9 @@ pub(crate) fn closure_contract<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> ClosureContract<'tcx> {
-    let TyKind::Closure(_, subst) =  ctx.tcx.type_of(def_id).subst_identity().kind() else { unreachable!() };
+    let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).instantiate_identity().kind() else {
+        unreachable!()
+    };
 
     let kind = subst.as_closure().kind();
     let mut pre_clos_sig = ctx.sig(def_id).clone();
@@ -483,10 +487,10 @@ pub(crate) fn closure_contract<'tcx>(
     let args: Vec<_> = pre_clos_sig.inputs.drain(1..).collect();
 
     if args.len() == 0 {
-        pre_clos_sig.inputs.push((Symbol::intern("_"), DUMMY_SP, ctx.tcx.mk_unit()))
+        pre_clos_sig.inputs.push((Symbol::intern("_"), DUMMY_SP, Ty::new_unit(ctx.tcx)))
     } else {
         let arg_tys: Vec<_> = args.iter().map(|(_, _, ty)| *ty).collect();
-        let arg_ty = ctx.tcx.mk_tup(&arg_tys);
+        let arg_ty = Ty::new_tup(ctx.tcx, &arg_tys);
 
         pre_clos_sig.inputs.push((Symbol::intern("args"), DUMMY_SP, arg_ty));
 
@@ -582,7 +586,7 @@ pub(crate) fn closure_contract<'tcx>(
         // post_sig.name = Ident::build("postcondition_mut");
 
         post_sig.inputs[0].0 = Symbol::intern("self");
-        post_sig.inputs[0].2 = ctx.mk_mut_ref(ctx.lifetimes.re_erased, self_ty);
+        post_sig.inputs[0].2 = Ty::new_mut_ref(ctx.tcx, ctx.lifetimes.re_erased, self_ty);
 
         let mut csubst = util::closure_capture_subst(
             ctx.tcx,
@@ -596,7 +600,7 @@ pub(crate) fn closure_contract<'tcx>(
         csubst.visit_mut_term(&mut postcondition);
 
         let args = subst.as_closure().sig().inputs().skip_binder()[0];
-        let unnest_subst = ctx.mk_substs(&[GenericArg::from(args), GenericArg::from(env_ty)]);
+        let unnest_subst = ctx.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty)]);
 
         let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
 
@@ -606,16 +610,23 @@ pub(crate) fn closure_contract<'tcx>(
             unnest_id,
             unnest_subst,
             vec![
-                Term::var(Symbol::intern("self"), ctx.mk_mut_ref(ctx.lifetimes.re_erased, self_ty))
-                    .cur(),
-                Term::var(Symbol::intern("self"), ctx.mk_mut_ref(ctx.lifetimes.re_erased, self_ty))
-                    .fin(),
+                Term::var(
+                    Symbol::intern("self"),
+                    Ty::new_mut_ref(ctx.tcx, ctx.lifetimes.re_erased, self_ty),
+                )
+                .cur(),
+                Term::var(
+                    Symbol::intern("self"),
+                    Ty::new_mut_ref(ctx.tcx, ctx.lifetimes.re_erased, self_ty),
+                )
+                .fin(),
             ],
         ));
 
         normalize(ctx.tcx, ctx.param_env(def_id), &mut postcondition);
 
-        let unnest_sig = EarlyBinder::bind(ctx.sig(unnest_id).clone()).subst(ctx.tcx, unnest_subst);
+        let unnest_sig =
+            EarlyBinder::bind(ctx.sig(unnest_id).clone()).instantiate(ctx.tcx, unnest_subst);
 
         let mut unnest = closure_unnest(ctx.tcx, def_id, subst);
         normalize(ctx.tcx, ctx.param_env(def_id), &mut unnest);
@@ -649,14 +660,14 @@ pub(crate) fn closure_contract<'tcx>(
 fn closure_resolve<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
-    subst: SubstsRef<'tcx>,
+    subst: GenericArgsRef<'tcx>,
 ) -> (PreSignature<'tcx>, Term<'tcx>) {
     let mut resolve = Term::mk_true(ctx.tcx);
 
-    let self_ = Term::var(Symbol::intern("_1"), ctx.type_of(def_id).subst_identity());
+    let self_ = Term::var(Symbol::intern("_1"), ctx.type_of(def_id).instantiate_identity());
     let csubst = subst.as_closure();
     let param_env = ctx.param_env(def_id);
-    for (ix, ty) in csubst.upvar_tys().enumerate() {
+    for (ix, ty) in csubst.upvar_tys().iter().enumerate() {
         let proj = Term {
             ty,
             kind: TermKind::Projection { lhs: Box::new(self_.clone()), name: ix.into() },
@@ -682,7 +693,7 @@ fn closure_resolve<'tcx>(
         inputs: vec![(
             Symbol::intern("_1"),
             ctx.def_span(def_id),
-            ctx.type_of(def_id).subst_identity(),
+            ctx.type_of(def_id).instantiate_identity(),
         )],
         output: ctx.types.bool,
         contract: PreContract::default(),
@@ -694,7 +705,7 @@ fn closure_resolve<'tcx>(
 pub(crate) fn closure_unnest<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
-    subst: SubstsRef<'tcx>,
+    subst: GenericArgsRef<'tcx>,
 ) -> Term<'tcx> {
     let env_ty = tcx.closure_env_ty(def_id, subst, tcx.lifetimes.re_erased).unwrap().peel_refs();
 
@@ -737,9 +748,9 @@ pub(crate) fn resolve_predicate_of<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     param_env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,
-) -> Option<(DefId, SubstsRef<'tcx>)> {
+) -> Option<(DefId, GenericArgsRef<'tcx>)> {
     let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method"))?;
-    let subst = ctx.mk_substs(&[GenericArg::from(ty)]);
+    let subst = ctx.mk_args(&[GenericArg::from(ty)]);
 
     let resolve_impl = traits::resolve_opt(ctx.tcx, param_env, trait_meth_id, subst)?;
     use rustc_middle::ty::TypeVisitableExt;

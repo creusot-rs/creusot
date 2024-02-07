@@ -70,9 +70,10 @@ impl<T: ?Sized> GhostPtrToken<T> {
 
     /// Shrinks the view of the `self` so that it's model is now new-model
     #[trusted]
-    #[requires(_new_model.subset(self@))]
-    #[ensures(result@ == *_new_model)]
-    pub fn shrink_token_ref(&self, _new_model: Ghost<FMap<*const T, T>>) -> &GhostPtrToken<T> {
+    #[requires(new_model.subset(self@))]
+    #[ensures(result@ == *new_model)]
+    #[allow(unused_variables)]
+    pub fn shrink_token_ref(&self, new_model: Ghost<FMap<*const T, T>>) -> &GhostPtrToken<T> {
         self
     }
 
@@ -110,11 +111,12 @@ impl<T: ?Sized> GhostPtrToken<T> {
     }
 
     #[trusted]
-    #[ensures((*self)@.disjoint(_other@))]
+    #[ensures((*self)@.disjoint(other@))]
     // Since we had full permission to and all of the entries in `self` and `other` simultaneously,
     // no pointer could have been in both
-    #[ensures((^self)@ == (*self)@.union(_other@))]
-    pub fn merge(&mut self, _other: GhostPtrToken<T>) {}
+    #[ensures((^self)@ == (*self)@.union(other@))]
+    #[allow(unused_variables)]
+    pub fn merge(&mut self, other: GhostPtrToken<T>) {}
 
     /// Leaks memory iff the precondition fails
     #[requires(self@.is_empty())]

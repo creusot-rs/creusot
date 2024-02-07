@@ -31,7 +31,7 @@ use rustc_middle::{
     mir::{Body, Promoted},
     thir,
     ty::{
-        subst::InternalSubsts, Clause, GenericArg, ParamEnv, Predicate, SubstsRef, Ty, TyCtxt,
+        Clause, GenericArg, GenericArgs, GenericArgsRef, ParamEnv, Predicate, Ty, TyCtxt,
         Visibility,
     },
 };
@@ -213,7 +213,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         &self,
         def_id: DefId,
         ty: Ty<'tcx>,
-    ) -> Option<(DefId, SubstsRef<'tcx>)> {
+    ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
         let param_env = self.param_env(def_id);
         let ty = self.try_normalize_erasing_regions(param_env, ty).ok()?;
 
@@ -222,7 +222,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         } else {
             debug!("resolving type invariant of {ty:?} in {def_id:?}");
             let inv_did = self.get_diagnostic_item(Symbol::intern("creusot_invariant_internal"))?;
-            let substs = self.mk_substs(&[GenericArg::from(ty)]);
+            let substs = self.mk_args(&[GenericArg::from(ty)]);
             Some((inv_did, substs))
         }
     }
@@ -346,7 +346,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
     pub(crate) fn param_env(&self, def_id: DefId) -> ParamEnv<'tcx> {
         let (id, subst) = crate::specification::inherited_extern_spec(self, def_id)
-            .unwrap_or_else(|| (def_id, InternalSubsts::identity_for_item(self.tcx, def_id)));
+            .unwrap_or_else(|| (def_id, GenericArgs::identity_for_item(self.tcx, def_id)));
         if let Some(es) = self.extern_spec(id) {
             let mut additional_predicates = Vec::new();
 
@@ -383,7 +383,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                         .as_slice()),
                 ),
                 rustc_infer::traits::Reveal::UserFacing,
-                rustc_hir::Constness::NotConst,
             )
         } else {
             self.tcx.param_env(def_id)
@@ -458,7 +457,7 @@ pub(crate) fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
             def_id,
             ExternSpec {
                 contract: ContractClauses::new(),
-                subst: InternalSubsts::identity_for_item(ctx.tcx, def_id),
+                subst: GenericArgs::identity_for_item(ctx.tcx, def_id),
                 arg_subst: Vec::new(),
                 additional_predicates,
             },

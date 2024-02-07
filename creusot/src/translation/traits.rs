@@ -7,10 +7,8 @@ use crate::{
 use rustc_hir::def_id::DefId;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::ty::{
-    subst::{InternalSubsts, SubstsRef},
-    AssocItem, AssocItemContainer,
-    AssocItemContainer::*,
-    Binder, EarlyBinder, ParamEnv, TraitRef, TyCtxt, TypeVisitableExt,
+    AssocItem, AssocItemContainer, AssocItemContainer::*, EarlyBinder, GenericArgs, GenericArgsRef,
+    ParamEnv, TraitRef, TyCtxt, TypeVisitableExt,
 };
 use rustc_span::Symbol;
 use rustc_trait_selection::traits::ImplSource;
@@ -19,8 +17,8 @@ use std::collections::HashMap;
 #[derive(Clone)]
 pub(crate) struct Refinement<'tcx> {
     #[allow(dead_code)]
-    pub(crate) trait_: (DefId, SubstsRef<'tcx>),
-    pub(crate) impl_: (DefId, SubstsRef<'tcx>),
+    pub(crate) trait_: (DefId, GenericArgsRef<'tcx>),
+    pub(crate) impl_: (DefId, GenericArgsRef<'tcx>),
     pub(crate) refn: Term<'tcx>,
 }
 
@@ -68,7 +66,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 continue;
             }
 
-            let subst = InternalSubsts::identity_for_item(self.tcx, impl_item);
+            let subst = GenericArgs::identity_for_item(self.tcx, impl_item);
 
             let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.skip_binder().substs);
 
@@ -103,7 +101,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             );
             use rustc_trait_selection::traits::error_reporting::TypeErrCtxtExt;
             if let Err(errs) = res {
-                infcx.err_ctxt().report_fulfillment_errors(&errs);
+                infcx.err_ctxt().report_fulfillment_errors(errs);
                 self.crash_and_error(rustc_span::DUMMY_SP, "error above");
             }
 
@@ -123,13 +121,13 @@ fn logic_refinement_term<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     impl_item_id: DefId,
     trait_item_id: DefId,
-    refn_subst: SubstsRef<'tcx>,
+    refn_subst: GenericArgsRef<'tcx>,
 ) -> Term<'tcx> {
     // Get the contract of the trait version
     let trait_sig = {
         let pre_sig = ctx.sig(trait_item_id).clone();
         let param_env = ctx.param_env(impl_item_id);
-        EarlyBinder::bind(pre_sig).subst(ctx.tcx, refn_subst).normalize(ctx.tcx, param_env)
+        EarlyBinder::bind(pre_sig).instantiate(ctx.tcx, refn_subst).normalize(ctx.tcx, param_env)
     };
 
     let impl_sig = ctx.sig(impl_item_id).clone();
@@ -182,14 +180,14 @@ pub(crate) fn resolve_impl_source_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
-    substs: SubstsRef<'tcx>,
+    substs: GenericArgsRef<'tcx>,
 ) -> Option<&'tcx ImplSource<'tcx, ()>> {
     trace!("resolve_impl_source_opt={def_id:?} {substs:?}");
     let substs = tcx.normalize_erasing_regions(param_env, substs);
 
     let trait_ref = if let Some(assoc) = tcx.opt_associated_item(def_id) {
         match assoc.container {
-            ImplContainer => tcx.impl_trait_ref(assoc.container_id(tcx))?.subst(tcx, substs),
+            ImplContainer => tcx.impl_trait_ref(assoc.container_id(tcx))?.instantiate(tcx, substs),
             TraitContainer => TraitRef::new(tcx, assoc.container_id(tcx), substs),
         }
     } else {
@@ -200,7 +198,6 @@ pub(crate) fn resolve_impl_source_opt<'tcx>(
         }
     };
 
-    let trait_ref = Binder::dummy(trait_ref);
     let source = tcx.codegen_select_candidate((param_env, trait_ref));
 
     match source {
@@ -217,8 +214,8 @@ pub(crate) fn resolve_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
-    substs: SubstsRef<'tcx>,
-) -> Option<(DefId, SubstsRef<'tcx>)> {
+    substs: GenericArgsRef<'tcx>,
+) -> Option<(DefId, GenericArgsRef<'tcx>)> {
     trace!("resolve_opt={def_id:?} {substs:?}");
     if tcx.is_trait(def_id) {
         resolve_trait_opt(tcx, param_env, def_id, substs)
@@ -231,15 +228,15 @@ pub(crate) fn resolve_trait_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
-    substs: SubstsRef<'tcx>,
-) -> Option<(DefId, SubstsRef<'tcx>)> {
+    substs: GenericArgsRef<'tcx>,
+) -> Option<(DefId, GenericArgsRef<'tcx>)> {
     trace!("resolve_trait_opt={def_id:?} {substs:?}");
     if tcx.is_trait(def_id) {
         let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs);
         debug!("impl_source={:?}", impl_source);
         match resolve_impl_source_opt(tcx, param_env, def_id, substs)? {
-            ImplSource::UserDefined(impl_data) => Some((impl_data.impl_def_id, impl_data.substs)),
-            ImplSource::Param(_, _) => Some((def_id, substs)),
+            ImplSource::UserDefined(impl_data) => Some((impl_data.impl_def_id, impl_data.args)),
+            ImplSource::Param(_) => Some((def_id, substs)),
             _ => None,
         }
     } else {
@@ -251,8 +248,8 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
-    substs: SubstsRef<'tcx>,
-) -> Option<(DefId, SubstsRef<'tcx>)> {
+    substs: GenericArgsRef<'tcx>,
+) -> Option<(DefId, GenericArgsRef<'tcx>)> {
     trace!("resolve_assoc_item_opt {:?} {:?}", def_id, substs);
     let assoc = tcx.opt_associated_item(def_id)?;
 
@@ -291,8 +288,8 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
             let infcx = tcx.infer_ctxt().build();
 
             let param_env = param_env.with_reveal_all_normalized(tcx);
-            let substs = substs.rebase_onto(tcx, trait_def_id, impl_data.substs);
-            let substs = rustc_trait_selection::traits::translate_substs(
+            let substs = substs.rebase_onto(tcx, trait_def_id, impl_data.args);
+            let substs = rustc_trait_selection::traits::translate_args(
                 &infcx,
                 param_env,
                 impl_data.impl_def_id,
@@ -303,14 +300,13 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
 
             Some((leaf_def.item.def_id, leaf_substs))
         }
-        ImplSource::Param(_, _) => Some((def_id, substs)),
-        ImplSource::Builtin(_) => match *substs.type_at(0).kind() {
+        ImplSource::Param(_) => Some((def_id, substs)),
+        ImplSource::Builtin(_, _) => match *substs.type_at(0).kind() {
             rustc_middle::ty::Closure(closure_def_id, closure_substs) => {
                 Some((closure_def_id, closure_substs))
             }
             _ => unimplemented!(),
         },
-        _ => unimplemented!(),
     }
 }
 
@@ -324,7 +320,7 @@ pub(crate) fn still_specializable<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
-    substs: SubstsRef<'tcx>,
+    substs: GenericArgsRef<'tcx>,
 ) -> bool {
     if let Some(trait_id) = tcx.trait_of_item(def_id) {
         let is_final = if let Some(ImplSource::UserDefined(ud)) = resolve_impl_source_opt(tcx, param_env, def_id, substs) {
@@ -341,7 +337,7 @@ pub(crate) fn still_specializable<'tcx>(
     } else if let Some(impl_id) = tcx.impl_of_method(def_id) && tcx.trait_id_of_impl(impl_id).is_some() {
         let is_final = tcx.defaultness(def_id).is_final();
         let trait_ref = tcx.impl_trait_ref(impl_id).unwrap();
-        !is_final && trait_ref.subst(tcx, substs).still_further_specializable()
+        !is_final && trait_ref.instantiate(tcx, substs).still_further_specializable()
     } else {
         false
     }

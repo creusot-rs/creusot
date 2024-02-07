@@ -10,11 +10,7 @@ use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{Body, Local, SourceInfo, SourceScope, OUTERMOST_SOURCE_SCOPE},
     thir::{self, ClosureExpr, ExprKind, Thir},
-    ty::{
-        self,
-        subst::{InternalSubsts, SubstsRef},
-        EarlyBinder, ParamEnv, TyCtxt,
-    },
+    ty::{self, EarlyBinder, GenericArgs, GenericArgsRef, ParamEnv, TyCtxt},
 };
 use rustc_span::Symbol;
 use std::collections::{HashMap, HashSet};
@@ -245,8 +241,8 @@ pub(crate) fn contract_clauses_of(
 pub(crate) fn inherited_extern_spec<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     def_id: DefId,
-) -> Option<(DefId, SubstsRef<'tcx>)> {
-    let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
+) -> Option<(DefId, GenericArgsRef<'tcx>)> {
+    let subst = GenericArgs::identity_for_item(ctx.tcx, def_id);
     try {
         if def_id.is_local() || ctx.extern_spec(def_id).is_some() {
             return None;
@@ -259,7 +255,7 @@ pub(crate) fn inherited_extern_spec<'tcx>(
         if ctx.extern_spec(id).is_none() {
             return None;
         }
-        (id, trait_ref.subst(ctx.tcx, subst).substs)
+        (id, trait_ref.instantiate(ctx.tcx, subst).args)
     }
 }
 
@@ -268,18 +264,19 @@ pub(crate) fn contract_of<'tcx>(
     def_id: DefId,
 ) -> PreContract<'tcx> {
     if let Some(extern_spec) = ctx.extern_spec(def_id).cloned() {
-        let mut contract = extern_spec.contract.get_pre(ctx).subst(ctx.tcx, extern_spec.subst);
+        let mut contract =
+            extern_spec.contract.get_pre(ctx).instantiate(ctx.tcx, extern_spec.subst);
         contract.subst(&extern_spec.arg_subst.iter().cloned().collect());
         contract.normalize(ctx.tcx, ctx.param_env(def_id))
     } else if let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id) {
         let spec = ctx.extern_spec(parent_id).cloned().unwrap();
-        let mut contract = spec.contract.get_pre(ctx).subst(ctx.tcx, subst);
+        let mut contract = spec.contract.get_pre(ctx).instantiate(ctx.tcx, subst);
         contract.subst(&spec.arg_subst.iter().cloned().collect());
         contract.normalize(ctx.tcx, ctx.param_env(def_id))
     } else {
-        let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
+        let subst = GenericArgs::identity_for_item(ctx.tcx, def_id);
         let mut contract =
-            contract_clauses_of(ctx, def_id).unwrap().get_pre(ctx).subst(ctx.tcx, subst);
+            contract_clauses_of(ctx, def_id).unwrap().get_pre(ctx).instantiate(ctx.tcx, subst);
 
         if contract.is_empty()
             && ctx.externs.get(def_id.krate).is_some()

@@ -47,9 +47,9 @@ module C10Once_Impl0_ProducesRefl_Impl
   val produces0 [#"../10_once.rs" 21 4 21 64] (self : C10Once_Once_Type.t_once t) (visited : Seq.seq t) (o : C10Once_Once_Type.t_once t) : bool
     ensures { result = produces0 self visited o }
     
-  let rec ghost function produces_refl [#"../10_once.rs" 31 4 31 29] (a : C10Once_Once_Type.t_once t) : ()
-    requires {[#"../10_once.rs" 31 21 31 22] inv0 a}
-    ensures { [#"../10_once.rs" 30 14 30 39] produces0 a (Seq.empty ) a }
+  let rec ghost function produces_refl [#"../10_once.rs" 31 4 31 26] (self : C10Once_Once_Type.t_once t) : ()
+    requires {[#"../10_once.rs" 31 21 31 25] inv0 self}
+    ensures { [#"../10_once.rs" 30 14 30 45] produces0 self (Seq.empty ) self }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../10_once.rs" 28 4 28 10] ()
@@ -172,7 +172,7 @@ module C10Once_Impl0_Next
     
   val take0 (self : borrowed (Core_Option_Option_Type.t_option t)) : Core_Option_Option_Type.t_option t
     requires {inv2 self}
-    ensures { [#"../../../../../creusot-contracts/src/std/option.rs" 17 0 114 1] result =  * self /\  ^ self = Core_Option_Option_Type.C_None }
+    ensures { [#"../../../../../creusot-contracts/src/std/option.rs" 29 0 126 1] result =  * self /\  ^ self = Core_Option_Option_Type.C_None }
     ensures { inv0 result }
     
   let rec cfg next [#"../10_once.rs" 44 4 44 35] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (C10Once_Once_Type.t_once t)) : Core_Option_Option_Type.t_option t
@@ -191,8 +191,8 @@ module C10Once_Impl0_Next
     goto BB0
   }
   BB0 {
-    [#"../10_once.rs" 45 8 45 21] _3 <- Borrow.borrow_final (C10Once_Once_Type.once_0 ( * self)) (Borrow.inherit_id (Borrow.get_id self) 1);
-    [#"../10_once.rs" 45 8 45 21] self <- { self with current = (let C10Once_Once_Type.C_Once x0 =  * self in C10Once_Once_Type.C_Once ( ^ _3)) ; };
+    [#"../10_once.rs" 45 8 45 14] _3 <- Borrow.borrow_final (C10Once_Once_Type.once_0 ( * self)) (Borrow.inherit_id (Borrow.get_id self) 1);
+    [#"../10_once.rs" 45 8 45 14] self <- { self with current = (let C10Once_Once_Type.C_Once x0 =  * self in C10Once_Once_Type.C_Once ( ^ _3)) ; };
     assume { inv0 ( ^ _3) };
     [#"../10_once.rs" 45 8 45 21] _0 <- ([#"../10_once.rs" 45 8 45 21] take0 _3);
     _3 <- any borrowed (Core_Option_Option_Type.t_option t);
@@ -277,7 +277,7 @@ module C10Once_Impl0
   val produces0 [#"../10_once.rs" 21 4 21 64] (self : C10Once_Once_Type.t_once t) (visited : Seq.seq t) (o : C10Once_Once_Type.t_once t) : bool
     ensures { result = produces0 self visited o }
     
-  goal produces_refl_refn : [#"../10_once.rs" 31 4 31 29] forall a : C10Once_Once_Type.t_once t . inv0 a -> inv0 a /\ (forall result : () . produces0 a (Seq.empty ) a -> produces0 a (Seq.empty ) a)
+  goal produces_refl_refn : [#"../10_once.rs" 31 4 31 26] forall self : C10Once_Once_Type.t_once t . inv0 self -> inv0 self /\ (forall result : () . produces0 self (Seq.empty ) self -> produces0 self (Seq.empty ) self)
   goal next_refn : [#"../10_once.rs" 44 4 44 35] forall self : borrowed (C10Once_Once_Type.t_once t) . inv1 self -> inv1 self /\ (forall result : Core_Option_Option_Type.t_option t . inv2 result /\ match result with
     | Core_Option_Option_Type.C_None -> completed0 self
     | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)

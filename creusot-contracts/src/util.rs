@@ -5,15 +5,15 @@ pub type SizedW<T> = Box<T>;
 pub trait MakeSized {
     #[ghost]
     #[why3::attr = "inline:trivial"]
-    fn make_sized(self) -> SizedW<Self>;
+    fn make_sized(&self) -> SizedW<Self>;
 }
 
 impl<T: ?Sized> MakeSized for T {
     #[trusted]
     #[ghost]
     #[open(self)]
-    #[ensures(*result == self)]
-    fn make_sized(self) -> SizedW<Self> {
+    #[ensures(*result == *self)]
+    fn make_sized(&self) -> SizedW<Self> {
         absurd
     }
 }

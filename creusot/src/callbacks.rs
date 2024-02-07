@@ -27,7 +27,7 @@ thread_local! {
 
 impl Callbacks for ToWhy {
     fn config(&mut self, config: &mut Config) {
-        config.override_queries = Some(|_sess, providers, _external_providers| {
+        config.override_queries = Some(|_sess, providers| {
             providers.mir_built = |tcx, def_id| {
                 let mir = (rustc_interface::DEFAULT_QUERY_PROVIDERS.mir_built)(tcx, def_id);
                 let mut mir = mir.steal();

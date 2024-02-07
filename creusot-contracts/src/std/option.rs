@@ -17,6 +17,18 @@ impl<T: DeepModel> DeepModel for Option<T> {
 extern_spec! {
     mod std {
         mod option {
+            impl<T : PartialEq + DeepModel> PartialEq for Option<T> {
+                #[allow(unstable_name_collisions)]
+                #[ensures(result == (self.deep_model() == rhs.deep_model()))]
+                fn eq(&self, rhs: &Self) -> bool;
+            }
+        }
+    }
+}
+
+extern_spec! {
+    mod std {
+        mod option {
             impl<T> Option<T> {
                 #[ensures(result == (*self != None))]
                 fn is_some(&self) -> bool;
@@ -150,8 +162,8 @@ impl<T> Iterator for IntoIter<T> {
 
     #[law]
     #[open(self)]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self) {}
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
 
     #[law]
     #[open(self)]
@@ -204,8 +216,8 @@ impl<'a, T> Iterator for Iter<'a, T> {
 
     #[law]
     #[open(self)]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self) {}
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
 
     #[law]
     #[open(self)]
@@ -261,8 +273,8 @@ impl<'a, T> Iterator for IterMut<'a, T> {
 
     #[law]
     #[open(self)]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self) {}
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
 
     #[law]
     #[open(self)]

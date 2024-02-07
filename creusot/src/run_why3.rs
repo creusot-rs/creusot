@@ -38,10 +38,10 @@ impl Display for Why3Sub {
 }
 
 pub(super) fn run_why3<'tcx>(ctx: &Why3Generator<'tcx>, file: Option<PathBuf>) {
-    let Some(why3_cmd) = &ctx.opts.why3_cmd else {
-        return
+    let Some(why3_cmd) = &ctx.opts.why3_cmd else { return };
+    let Some(mut output_file) = file else {
+        ctx.crash_and_error(DUMMY_SP, "cannot run why3 without file")
     };
-    let Some(mut output_file) = file else {ctx.crash_and_error(DUMMY_SP, "cannot run why3 without file")};
     if matches!(why3_cmd.sub, Why3Sub::Replay) {
         output_file.set_extension("");
     }
