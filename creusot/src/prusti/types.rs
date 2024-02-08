@@ -117,7 +117,7 @@ impl<'tcx> Ty<'tcx> {
     }
 
     pub(super) fn make_ref(ts: Region<'tcx>, ty: Ty<'tcx>, ctx: CtxRef<'_, 'tcx>) -> Self {
-        Ty { ty: ctx.tcx.mk_imm_ref(ts, ty.ty) }.pack(ZombieStatus::NonZombie, ctx)
+        Ty { ty: ty::Ty::new_imm_ref(ctx.tcx, ts, ty.ty) }.pack(ZombieStatus::NonZombie, ctx)
     }
 }
 

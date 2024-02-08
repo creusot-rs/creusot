@@ -1,10 +1,10 @@
-use rustc_middle::ty::{Binder, FnSig, InternalSubsts, ParamEnv, SubstsRef, Ty, TyCtxt};
+use rustc_middle::ty::{Binder, FnSig, GenericArgs, GenericArgsRef, ParamEnv, Ty, TyCtxt};
 use rustc_span::def_id::{DefId, LocalDefId};
 
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct FnSigBinder<'tcx> {
     def_id: LocalDefId,
-    subst: SubstsRef<'tcx>,
+    subst: GenericArgsRef<'tcx>,
     sig: Binder<'tcx, FnSig<'tcx>>,
     param_env: ParamEnv<'tcx>,
 }
@@ -14,8 +14,8 @@ impl<'tcx> FnSigBinder<'tcx> {
         let def_id = def_id.expect_local();
         FnSigBinder {
             def_id,
-            subst: InternalSubsts::identity_for_item(tcx, def_id),
-            sig: tcx.fn_sig(def_id).subst_identity(),
+            subst: GenericArgs::identity_for_item(tcx, def_id),
+            sig: tcx.fn_sig(def_id).instantiate_identity(),
             param_env: tcx.param_env(def_id),
         }
     }
@@ -24,10 +24,10 @@ impl<'tcx> FnSigBinder<'tcx> {
         tcx: TyCtxt<'tcx>,
         trait_id: DefId,
         impl_id: DefId,
-        subst: SubstsRef<'tcx>,
+        subst: GenericArgsRef<'tcx>,
     ) -> Self {
         let def_id = impl_id.expect_local();
-        let sig = tcx.fn_sig(trait_id).subst(tcx, subst);
+        let sig = tcx.fn_sig(trait_id).instantiate(tcx, subst);
         FnSigBinder { def_id, subst, sig, param_env: tcx.param_env(impl_id) }
     }
 
@@ -35,7 +35,7 @@ impl<'tcx> FnSigBinder<'tcx> {
         self.def_id
     }
 
-    pub(super) fn subst(self) -> SubstsRef<'tcx> {
+    pub(super) fn subst(self) -> GenericArgsRef<'tcx> {
         self.subst
     }
 
@@ -49,6 +49,6 @@ impl<'tcx> FnSigBinder<'tcx> {
 
     pub(super) fn ty(self, tcx: TyCtxt<'tcx>) -> Ty<'tcx> {
         let fn_sig = tcx.liberate_late_bound_regions(self.def_id().to_def_id(), self.sig());
-        tcx.mk_fn_ptr(Binder::dummy(fn_sig))
+        Ty::new_fn_ptr(tcx, Binder::dummy(fn_sig))
     }
 }

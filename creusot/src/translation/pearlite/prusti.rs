@@ -309,7 +309,7 @@ fn convert<'tcx>(
         }
         TermKind::Lit(_) => ctx.fix_ty_with_absurd(outer_term.ty),
         TermKind::Item(id, subst) => {
-            let ty = tcx.mk_fn_def(*id, subst.iter());
+            let ty = ty::Ty::new_fn_def(ctx.tcx, *id, subst.iter());
             ctx.fix_ty_with_erased(ty)
         }
         TermKind::Binary { lhs, rhs, op: BinOp::Eq | BinOp::Ne, .. } => {
@@ -342,7 +342,7 @@ fn convert<'tcx>(
         }
         TermKind::Call { args, fun, id, .. } => {
             let ty = convert_sdt(fun, tenv, state, ctx)?;
-            let TyKind::FnDef(_, subst) = ty.ty.kind() else {unreachable!()};
+            let TyKind::FnDef(_, subst) = ty.ty.kind() else { unreachable!() };
             let new_reg = if tcx.is_diagnostic_item(Symbol::intern("prusti_at_post"), *id) {
                 Some(ctx.post_state(outer_term.span)?)
             } else if tcx.is_diagnostic_item(Symbol::intern("prusti_at"), *id) {
@@ -465,7 +465,7 @@ fn convert_sdb1<'tcx>(
 ) -> CreusotResult<Ty<'tcx>> {
     let sty @ (_, ty) = convert(term, tenv, state, ctx)?;
     let target = if ty.ty.ref_mutability() == Some(Not) {
-        ctx.tcx.mk_imm_ref(ctx.tcx.lifetimes.re_erased, term.ty)
+        ty::Ty::new_imm_ref(ctx.tcx, ctx.tcx.lifetimes.re_erased, term.ty)
     } else {
         term.ty
     };

@@ -29,7 +29,7 @@ impl<'tcx, F: FnMut(Region<'tcx>) -> Region<'tcx>> TypeFolder<TyCtxt<'tcx>>
 
     fn fold_ty(&mut self, t: Ty<'tcx>) -> Ty<'tcx> {
         match t.kind() {
-            TyKind::Infer(InferTy::FreshTy(x)) => self.tcx.mk_ty_var(TyVid::from(*x)),
+            TyKind::Infer(InferTy::FreshTy(x)) => Ty::new_var(self.tcx, TyVid::from(*x)),
             _ => t.super_fold_with(self),
         }
     }

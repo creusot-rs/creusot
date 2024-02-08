@@ -32,8 +32,8 @@ use rustc_middle::{
         AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
     },
     ty::{
-        int_ty, uint_ty, CanonicalUserType, GenericArg, Ty, TyCtxt, TyKind, TypeFoldable,
-        TypeVisitable, TypeVisitableExt, UpvarArgs, UserType
+        int_ty, uint_ty, CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, Ty, TyCtxt,
+        TyKind, TypeFoldable, TypeVisitable, TypeVisitableExt, UpvarArgs, UserType,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
@@ -166,23 +166,24 @@ impl<'tcx> TermKind<'tcx> {
         user_ty: &Option<Box<CanonicalUserType<'tcx>>>,
         tcx: TyCtxt<'tcx>,
     ) -> Self {
-        let Some(user_ty) = user_ty else {
-            return Self::Item(def_id, subst)
-        };
+        let Some(user_ty) = user_ty else { return Self::Item(def_id, subst) };
 
         match user_ty.value {
             UserType::Ty(_) => Self::Item(def_id, subst),
             UserType::TypeOf(def_id2, u_subst) => {
                 assert_eq!(def_id, def_id2);
-                if u_subst.substs.len() != subst.len() {
+                if u_subst.args.len() != subst.len() {
                     return Self::Item(def_id, subst);
                 }
-                let subst: Vec<_> = subst
-                    .iter()
-                    .zip(u_subst.substs.iter())
-                    .map(|(s, us)| if us.has_escaping_bound_vars() { s } else { us })
-                    .collect();
-                let subst = tcx.mk_substs(&*subst);
+                let subst = GenericArgs::for_item(tcx, def_id, |x, _| {
+                    let s = subst[x.index as usize];
+                    let us = u_subst.args[x.index as usize];
+                    if us.has_escaping_bound_vars() {
+                        s
+                    } else {
+                        us
+                    }
+                });
                 Self::Item(def_id, subst)
             }
         }
@@ -639,7 +640,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 _ => Err(Error::new(thir_term.span, "unhandled literal expression")),
             },
             ExprKind::NamedConst { def_id, args, ref user_ty, .. } => {
-                Ok(Term { ty, span, kind: TermKind::item(def_id, args) })
+                Ok(Term { ty, span, kind: TermKind::item(def_id, args, user_ty, self.ctx.tcx) })
             }
             ExprKind::ZstLiteral { ref user_ty, .. } => match ty.kind() {
                 TyKind::FnDef(def_id, subst) => Ok(Term {

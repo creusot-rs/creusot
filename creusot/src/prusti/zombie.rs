@@ -5,8 +5,8 @@ use crate::prusti::{
 };
 use rustc_index::bit_set::BitSet;
 use rustc_middle::ty::{
-    ParamEnv, Region, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable, TypeVisitable,
-    TypeVisitor,
+    GenericArgs, ParamEnv, Region, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable,
+    TypeVisitable, TypeVisitor,
 };
 use rustc_span::def_id::DefId;
 use std::ops::ControlFlow;
@@ -48,7 +48,7 @@ impl ZombieDefIds {
 
     pub(super) fn mk_zombie_raw<'tcx>(&self, ty: Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Ty<'tcx> {
         let did = self.internal;
-        tcx.mk_adt(tcx.adt_def(did), tcx.mk_substs(&[ty.into()]))
+        Ty::new_adt(tcx, tcx.adt_def(did), GenericArgs::for_item(tcx, did, |_, _| ty.into()))
     }
 
     pub(super) fn as_zombie<'tcx>(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {

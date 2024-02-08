@@ -2,7 +2,7 @@ use super::{program::borrow_generated_id, Why3Generator};
 use crate::{
     backend::ty::{floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty},
     ctx::*,
-    pearlite::{self, Literal, Pattern, Term, TermKind},
+    pearlite::{self, prusti::strip_all_refs, Literal, Pattern, Term, TermKind},
     util,
     util::get_builtin,
 };

@@ -35,9 +35,9 @@ use rustc_infer::{
 use rustc_middle::{
     bug, span_bug, ty,
     ty::{
-        AdtDef, Binder, BoundRegionKind, ClauseKind, GenericArg, GenericParamDefKind,
-        GenericPredicates, InferTy, Instance, InstantiatedPredicates, InternalSubsts, PolyFnSig,
-        PredicateKind, Region, RegionKind, RegionVid, SubstsRef, TyCtxt, TyKind, TyVid,
+        AdtDef, Binder, BoundRegionKind, ClauseKind, GenericArg, GenericArgs, GenericArgsRef,
+        GenericParamDefKind, GenericPredicates, InferTy, Instance, InstantiatedPredicates,
+        PolyFnSig, PredicateKind, Region, RegionKind, RegionVid, TyCtxt, TyKind, TyVid,
         TypeFoldable, TypeFolder, TypeSuperFoldable, TypeSuperVisitable, TypeVisitable,
         TypeVisitor,
     },
@@ -63,7 +63,7 @@ pub fn def_id_to_span(tcx: TyCtxt<'_>, id: DefId) -> Span {
 
 fn bound_reg_to_span(tcx: TyCtxt<'_>, r: BoundRegionKind) -> Span {
     match r {
-        BoundRegionKind::BrAnon(span) => span.unwrap_or(DUMMY_SP),
+        BoundRegionKind::BrAnon => DUMMY_SP,
         BoundRegionKind::BrNamed(x, _) => def_id_to_span(tcx, x),
         BoundRegionKind::BrEnv => DUMMY_SP,
     }
@@ -194,7 +194,7 @@ impl RegVarInfo {
 struct VarInfo<'tcx> {
     reg: RegVarInfo,
     ty: TyVarInfo<'tcx>,
-    subst: SubstsRef<'tcx>,
+    subst: GenericArgsRef<'tcx>,
     def_id: DefId,
 }
 
@@ -312,7 +312,7 @@ impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for AliasTyVarVisitor {
     type BreakTy = Infallible;
     fn visit_ty(&mut self, ty: ty::Ty<'tcx>) -> ControlFlow<Self::BreakTy> {
         match ty.kind() {
-            TyKind::Alias(_, ty) => ty.substs.visit_with(&mut TypeVarVisitor(&mut self.0)),
+            TyKind::Alias(_, ty) => ty.args.visit_with(&mut TypeVarVisitor(&mut self.0)),
             _ => ty.super_visit_with(self),
         }
     }
@@ -320,25 +320,25 @@ impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for AliasTyVarVisitor {
 
 fn generalize<'tcx, I: Iterator<Item = ty::Ty<'tcx>>>(
     ctx: CtxRef<'_, 'tcx>,
-    subst: SubstsRef<'tcx>,
+    subst: GenericArgsRef<'tcx>,
     def_id: DefId,
-    check_tys: impl Fn(SubstsRef<'tcx>) -> I,
+    check_tys: impl Fn(GenericArgsRef<'tcx>) -> I,
 ) -> VarInfo<'tcx> {
     let tcx = ctx.tcx;
     let mut reg = RegVarInfo(IndexVec::new());
     let mut ty = TyVarInfo(IndexVec::new());
     let mut constrained_vars = AliasTyVarVisitor(BitSet::new_empty(subst.len()));
-    for check_ty in check_tys(InternalSubsts::identity_for_item(tcx, def_id)) {
+    for check_ty in check_tys(GenericArgs::identity_for_item(tcx, def_id)) {
         let _ = check_ty.visit_with(&mut constrained_vars);
     }
-    let res = InternalSubsts::for_item(tcx, def_id, |param, _| {
+    let res = GenericArgs::for_item(tcx, def_id, |param, _| {
         let elt: GenericArg<'tcx> = subst[param.index as usize];
         match param.kind {
             GenericParamDefKind::Type { .. } if !constrained_vars.0.contains(param.index) => {
                 let elt = elt.as_type().unwrap();
                 let elt = ctx.fix_ty(elt, || ctx.interned.mk_region(StateSet::EMPTY));
                 let flat = flatten_ty(ctx, elt);
-                tcx.mk_fresh_ty(ty.0.push((flat, elt))).into()
+                ty::Ty::new_fresh(tcx, ty.0.push((flat, elt))).into()
             }
             _ => elt.fold_with(&mut RegionReplacer {
                 tcx,
@@ -372,13 +372,13 @@ fn generalize_fn_def<'tcx>(
     def_id: DefId,
     var_info: &mut VarInfo<'tcx>,
 ) -> (ty::Ty<'tcx>, impl Iterator<Item = (Region<'tcx>, Region<'tcx>)>) {
-    let fn_ty_gen = tcx.mk_fn_def(def_id, var_info.subst);
+    let fn_ty_gen = ty::Ty::new_fn_def(tcx, def_id, var_info.subst);
     let (fn_sig_gen, map) = tcx.replace_late_bound_regions(fn_ty_gen.fn_sig(tcx), |_| {
         Region::new_var(tcx, var_info.reg.0.push(ReVarStatus::Bound(StateSet::EMPTY)))
     });
-    let fn_ty_gen = tcx.mk_fn_ptr(Binder::dummy(fn_sig_gen));
+    let fn_ty_gen = ty::Ty::new_fn_ptr(tcx, Binder::dummy(fn_sig_gen));
 
-    let id_subst = InternalSubsts::identity_for_item(tcx, def_id);
+    let id_subst = GenericArgs::identity_for_item(tcx, def_id);
     let iter1 = id_subst.regions().zip(var_info.subst.regions());
     let iter2 = map.into_iter().map(move |(br, reg_gen)| {
         let reg = Region::new_free(tcx, def_id, br.kind);
@@ -392,7 +392,7 @@ pub(crate) fn check_call<'tcx>(
     ctx: CtxRef<'_, 'tcx>,
     state: State,
     def_id: DefId,
-    subst_ref: SubstsRef<'tcx>,
+    subst_ref: GenericArgsRef<'tcx>,
     args: impl Iterator<Item = CreusotResult<((State, Ty<'tcx>), Span)>>,
     call_span: Span,
 ) -> CreusotResult<Ty<'tcx>> {
@@ -406,7 +406,7 @@ pub(crate) fn check_call<'tcx>(
     };
 
     let mut var_info = generalize(ctx, subst_ref, def_id, |s| {
-        let x = tcx.mk_fn_def(def_id, s).fn_sig(tcx).skip_binder();
+        let x = ty::Ty::new_fn_def(tcx, def_id, s).fn_sig(tcx).skip_binder();
         x.inputs().iter().copied().chain([x.output()])
     });
     let (fn_ty_gen, iter) = generalize_fn_def(tcx, def_id, &mut var_info);
@@ -484,7 +484,7 @@ pub(crate) fn check_call<'tcx>(
 pub(crate) fn check_constructor<'tcx>(
     ctx: CtxRef<'_, 'tcx>,
     fields: impl Iterator<Item = CreusotResult<(Ty<'tcx>, Span)>>,
-    subst: SubstsRef<'tcx>,
+    subst: GenericArgsRef<'tcx>,
     adt: AdtDef<'tcx>,
     variant: VariantIdx,
     span: Span,
@@ -501,7 +501,7 @@ pub(crate) fn check_constructor<'tcx>(
     fields
         .zip(fields_gen)
         .try_for_each(|((ty, span), ty_gen)| check_gen(ctx, span, ty, ty_gen, &mut var_info))?;
-    var_info.fold_ty(tcx.mk_adt(adt, var_info.subst), ctx, span)
+    var_info.fold_ty(ty::Ty::new_adt(tcx, adt, var_info.subst), ctx, span)
 }
 
 pub(crate) fn check_tuple_constructor<'tcx>(
@@ -510,7 +510,7 @@ pub(crate) fn check_tuple_constructor<'tcx>(
 ) -> CreusotResult<Ty<'tcx>> {
     let tcx = ctx.tcx;
     let fields = fields.map(|x| Ok(x?.0.ty)).collect::<CreusotResult<SmallVec<_>>>()?;
-    Ok(Ty { ty: tcx.mk_tup(&fields) }.pack(ZombieStatus::NonZombie, ctx))
+    Ok(Ty { ty: ty::Ty::new_tup(tcx, &fields) }.pack(ZombieStatus::NonZombie, ctx))
 }
 
 pub(crate) fn union<'tcx>(
@@ -524,12 +524,12 @@ pub(crate) fn union<'tcx>(
         Some(ty) => match elts.next() {
             None => Ok(ty),
             Some(ty2) => {
-                let mut flat = flat_ty::flatten_ty(ctx, ty);
+                let mut flat = flatten_ty(ctx, ty);
                 flat_ty::union(ctx, &mut flat, ty2);
                 for ty2 in elts {
                     flat_ty::union(ctx, &mut flat, ty2)
                 }
-                Ok(flat_ty::flat_to_ty(ctx, &flat, ty))
+                Ok(flat_to_ty(ctx, &flat, ty))
             }
         },
     }
@@ -558,11 +558,11 @@ pub(crate) fn check_sup<'tcx>(
 pub(crate) fn try_resolve<'tcx>(
     ctx: CtxRef<'_, 'tcx>,
     def_id: DefId,
-    subst: SubstsRef<'tcx>,
-) -> (DefId, SubstsRef<'tcx>) {
-    match Instance::resolve(ctx.tcx, ctx.param_env(), def_id, subst) {
-        Err(_) | Ok(None) => (def_id, subst), // Can't specialize
-        Ok(Some(inst)) => (inst.def.def_id(), inst.substs),
+    args: GenericArgsRef<'tcx>,
+) -> (DefId, GenericArgsRef<'tcx>) {
+    match Instance::resolve(ctx.tcx, ctx.param_env(), def_id, args) {
+        Err(_) | Ok(None) => (def_id, args), // Can't specialize
+        Ok(Some(inst)) => (inst.def.def_id(), inst.args),
     }
 }
 
@@ -698,7 +698,7 @@ pub(crate) fn shr_deref<'tcx>(
     ty: Ty<'tcx>,
     span: Span,
 ) -> CreusotResult<(Ty<'tcx>, Region<'tcx>)> {
-    let Some((end, nty, _, Mutability::Not)) = ty.as_ref(ctx) else {span_bug!(span, "bug")};
+    let Some((end, nty, _, Mutability::Not)) = ty.as_ref(ctx) else { span_bug!(span, "bug") };
     // if ts has it's home in the current state we should know it's lifetime is longer than it's home
     if ctx.relation.outlives_state(end.into(), state) {
         Ok((nty, end))
@@ -742,14 +742,14 @@ pub(crate) fn check_signature_agreement<'tcx>(
     tcx: TyCtxt<'tcx>,
     impl_id: DefId,
     trait_id: DefId,
-    refn_subst: SubstsRef<'tcx>,
+    refn_subst: GenericArgsRef<'tcx>,
 ) -> CreusotResult<()> {
     use rustc_ast::{token, MetaItemLit as Lit};
     let trait_home_sig = util::get_attr_lit(tcx, trait_id, &["creusot", "prusti", "home_sig"]);
     let Some(trait_home_sig) = trait_home_sig else {
         return Ok(()); // We're not specializing a home signature
     };
-    let impl_id_subst = InternalSubsts::identity_for_item(tcx, impl_id);
+    let impl_id_subst = GenericArgs::identity_for_item(tcx, impl_id);
     let impl_span: Span = tcx.def_span(impl_id);
     let ts = Lit::from_token_lit(
         token::Lit { kind: token::Err, symbol: Symbol::intern("curr"), suffix: None },
@@ -822,7 +822,7 @@ pub(super) fn mk_zombie<'tcx>(ty: ty::Ty<'tcx>, ctx: CtxRef<'_, 'tcx>) -> (ty::T
         }
         for i in 0..need_copy.domain_size() {
             let vid = TyVid::from(i);
-            if !infcx.resolve_vars_if_possible(tcx.mk_ty_var(vid)).is_ty_var() {
+            if !infcx.resolve_vars_if_possible(ty::Ty::new_var(tcx, vid)).is_ty_var() {
                 // Store all marked type variables in set
                 // (This needs to be done in two steps since the FulfillmentErrors may contain
                 // equivalent but not identical type variables)

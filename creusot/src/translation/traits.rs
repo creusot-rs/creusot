@@ -68,7 +68,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
             let subst = GenericArgs::identity_for_item(self.tcx, impl_item);
 
-            let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.skip_binder().substs);
+            let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.skip_binder().args);
 
             match crate::prusti::check_signature_agreement(
                 self.tcx, impl_item, trait_item, refn_subst,
