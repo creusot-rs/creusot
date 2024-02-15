@@ -6,7 +6,7 @@ Defining a type invariant allows you to constrain a data type's set of valid val
 During verification, Creusot enforces that all type invariants are preserved across functions.
 Inside a function, values subject to type invariants may temporarily break their invariants as long as each value's invariant is restored before the value can be observed by another function.
 
-Type invariant were added to Creusot as part of a Master's thesis available [here](https://mediatum.ub.tum.de/1726472).
+Type invariants were added to Creusot as part of a Master's thesis available [here](https://mediatum.ub.tum.de/1726472).
 
 ## Defining Type Invariants
 
