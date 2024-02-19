@@ -87,7 +87,7 @@ fn setup_plugin() {
     if creusot.check_why3 {
         if let Some(why3_vers) = why3_version() {
             let parts: Vec<_> = why3_vers.split(|c| c == '.' || c == '+').collect();
-            if &parts[..2] < WHY3_VERSION {
+            if &parts[..3] < WHY3_VERSION {
                 emit_warning(format!(
                     "the recommended version of why3 is at least {} (installed: {why3_vers})",
                     WHY3_VERSION.join(".")
