@@ -42,6 +42,7 @@ impl CreusotArgsExt for CreusotArgs {
             output_file,
             in_cargo: cargo_creusot,
             span_mode: span_mode,
+            root_path_relative_from_output: self.root_path_relative_from_output,
             match_str: self.focus_on,
             simple_triggers: self.simple_triggers,
             why3_cmd: self.subcommand.map(why3_command),

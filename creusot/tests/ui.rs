@@ -91,6 +91,7 @@ fn run_creusot(
         "--stdout",
         "--export-metadata=false",
         "--span-mode=relative",
+        "--root-path-relative-from-output=.",
         "--check-why3=false",
     ]);
     cmd.args(&[
