@@ -236,12 +236,12 @@ fn print_crate<W, I: Iterator<Item = Module>>(
 where
     W: Write,
 {
-    let (alloc, mut pe) = mlcfg::printer::PrintEnv::new();
+    let alloc = mlcfg::printer::ALLOC;
 
     writeln!(out)?;
 
     for modl in functions {
-        modl.pretty(&alloc, &mut pe).1.render(120, out)?;
+        modl.pretty(&alloc).1.render(120, out)?;
         writeln!(out)?;
     }
 
