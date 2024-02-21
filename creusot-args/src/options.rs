@@ -1,6 +1,6 @@
 use clap::*;
 use serde::{Deserialize, Serialize};
-use std::{error::Error, ffi::OsString};
+use std::{error::Error, ffi::OsString, path::PathBuf};
 
 #[derive(Parser, Serialize, Deserialize)]
 pub struct CreusotArgs {
@@ -10,6 +10,11 @@ pub struct CreusotArgs {
     /// [None] provides the clearest diffs.
     #[clap(long, value_enum, default_value_t=SpanMode::Relative)]
     pub span_mode: SpanMode,
+    #[clap(long, default_value_os_t = get_default_root_path_relative_from_output())]
+    /// Relative path of the root of the Rust project relative to the output files
+    /// of Creusot. This is used when producing [Relative] spans, to know the location
+    /// of Rust files corresponding to the generated Why3 files.
+    pub root_path_relative_from_output: PathBuf,
     #[clap(long)]
     /// Only generate proofs for items matching the provided string. The string is treated
     /// as a Rust qualified path.
@@ -59,6 +64,13 @@ pub enum Why3SubCommand {
     Prove,
     Ide,
     Replay,
+}
+
+/// Default relative path of the root project wrt the output.
+/// This corresponds to the default scenario where the user invokes "cargo creusot"
+/// which writes its output in target/debug/
+fn get_default_root_path_relative_from_output() -> PathBuf {
+    ["..", ".."].iter().collect()
 }
 
 /// Parse a single key-value pair

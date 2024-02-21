@@ -32,6 +32,7 @@ pub struct Options {
     pub output_file: Option<OutputFile>,
     pub in_cargo: bool,
     pub span_mode: SpanMode,
+    pub root_path_relative_from_output: PathBuf,
     pub match_str: Option<String>,
     pub simple_triggers: bool,
     pub why3_cmd: Option<Why3Command>,
@@ -65,8 +66,18 @@ impl Options {
         let output_components = other.components().count();
         let mut buf = PathBuf::new();
 
-        (0..(output_components - same)).for_each(|_| buf.push(".."));
+        (0..(output_components - same)).for_each(|_| {
+            // Why3 treats the spans as relative to the session, not the source file,
+            // and the session is in a subdirectory next to the mlcfg file, so we need
+            // to add ..
+            buf.push("..");
+            // then add the relative path of the root project with respect to the output
+            // directory (typically some amount of ..)
+            buf.extend(&self.root_path_relative_from_output)
+        });
         buf.extend(p.components().skip(same));
-        buf
+        // the roundtrip through [components()] gives us some basic (syntactic)
+        // normalization of the path (e.g. remove /./)
+        buf.components().collect()
     }
 }
