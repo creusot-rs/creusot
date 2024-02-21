@@ -221,7 +221,7 @@ impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
     }
 
     fn import_prelude_module(&mut self, module: PreludeModule) {
-        self.insert(DepNode::Buitlin(module));
+        self.insert(DepNode::Builtin(module));
     }
 
     fn with_vis<F, A>(&mut self, vis: CloneLevel, f: F) -> A
