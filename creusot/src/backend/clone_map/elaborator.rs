@@ -64,7 +64,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
 
         match item {
             DepNode::Type(ty) => return self.elaborate_ty(ctx, names, ty),
-            DepNode::Buitlin(b) => {
+            DepNode::Builtin(b) => {
                 return vec![Decl::UseDecl(Use { name: b.qname(), as_: None, export: false })]
             }
             DepNode::TyInv(ty, kind) => {

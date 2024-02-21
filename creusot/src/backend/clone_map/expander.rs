@@ -162,10 +162,11 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                     Some(self.resolve_dep(ctx, node))
                 }
                 TyKind::Closure(_, _) => Some(DepNode::Type(t)),
-                TyKind::Ref(_, _, Mutability::Mut) => Some(DepNode::Buitlin(PreludeModule::Borrow)),
-                TyKind::Int(ity) => Some(DepNode::Buitlin(int_to_prelude(*ity))),
-                TyKind::Uint(uty) => Some(DepNode::Buitlin(uint_to_prelude(*uty))),
-                TyKind::Slice(_) => Some(DepNode::Buitlin(PreludeModule::Slice)),
+                TyKind::Ref(_, _, Mutability::Mut) => Some(DepNode::Builtin(PreludeModule::Borrow)),
+                TyKind::Int(ity) => Some(DepNode::Builtin(int_to_prelude(*ity))),
+                TyKind::Uint(uty) => Some(DepNode::Builtin(uint_to_prelude(*uty))),
+                TyKind::Slice(_) => Some(DepNode::Builtin(PreludeModule::Slice)),
+                TyKind::RawPtr(_) => Some(DepNode::Builtin(PreludeModule::Opaque)),
                 TyKind::Adt(_, _) => Some(DepNode::Type(t)),
                 _ => None,
             };

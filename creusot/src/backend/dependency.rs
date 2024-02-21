@@ -25,7 +25,7 @@ pub(crate) enum Dependency<'tcx> {
     Item(DefId, GenericArgsRef<'tcx>),
     TyInv(Ty<'tcx>, TyInvKind),
     Hacked(HackedId, DefId, GenericArgsRef<'tcx>),
-    Buitlin(PreludeModule),
+    Builtin(PreludeModule),
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash, PartialOrd, Ord)]
@@ -99,7 +99,7 @@ impl<'tcx> Dependency<'tcx> {
             Dependency::Item(id, _) => Some(TransId::Item(id)),
             Dependency::TyInv(_, k) => Some(TransId::TyInv(k)),
             Dependency::Hacked(h, id, _) => Some(TransId::Hacked(h, id)),
-            Dependency::Buitlin(_) => None,
+            Dependency::Builtin(_) => None,
         }
     }
 
@@ -125,7 +125,7 @@ impl<'tcx> Dependency<'tcx> {
                 _ => None,
             },
             Dependency::Hacked(_, id, substs) => Some((id, substs)),
-            Dependency::Buitlin(_) => None,
+            Dependency::Builtin(_) => None,
         }
     }
 
@@ -200,7 +200,7 @@ impl<'tcx> Dependency<'tcx> {
                 HackedId::Resolve => Symbol::intern("resolve"),
                 HackedId::Accessor(ix) => Symbol::intern(&format!("field_{ix}")),
             },
-            Dependency::Buitlin(_) => Symbol::intern("builtin_should_not_appear"),
+            Dependency::Builtin(_) => Symbol::intern("builtin_should_not_appear"),
         }
     }
 }
