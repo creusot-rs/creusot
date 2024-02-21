@@ -42,7 +42,9 @@ pub enum Statement<'tcx> {
     Resolve(DefId, GenericArgsRef<'tcx>, Place<'tcx>),
     Assertion { cond: Term<'tcx>, msg: String },
     AssumeBorrowInv(Place<'tcx>),
+    // Todo: fold into `Assertion`
     AssertTyInv(Place<'tcx>),
+    Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Vec<Expr<'tcx>>, Span),
 }
 
 // Re-organize this completely
@@ -68,16 +70,18 @@ pub struct Expr<'tcx> {
 }
 
 #[derive(Clone, Debug)]
-pub enum ExprKind<'tcx> {
-    // Extract this into a standalone `Operand` type
+pub enum Operand<'tcx> {
     Move(Place<'tcx>),
     Copy(Place<'tcx>),
+}
+
+#[derive(Clone, Debug)]
+pub enum ExprKind<'tcx> {
+    Operand(Operand<'tcx>),
     // Revisit whether this is a good idea to allow general expression trees.
     BinOp(BinOp, Box<Expr<'tcx>>, Box<Expr<'tcx>>),
     UnaryOp(UnOp, Box<Expr<'tcx>>),
     Constructor(DefId, GenericArgsRef<'tcx>, Vec<Expr<'tcx>>),
-    // Should this be a statement?
-    Call(DefId, GenericArgsRef<'tcx>, Vec<Expr<'tcx>>),
     Constant(Term<'tcx>),
     Cast(Box<Expr<'tcx>>, Ty<'tcx>, Ty<'tcx>),
     Tuple(Vec<Expr<'tcx>>),
@@ -89,12 +93,10 @@ pub enum ExprKind<'tcx> {
 impl<'tcx> Expr<'tcx> {
     pub fn is_call(&self) -> bool {
         match &self.kind {
-            ExprKind::Move(_) => false,
-            ExprKind::Copy(_) => false,
+            ExprKind::Operand(_) => false,
             ExprKind::BinOp(_, _, _) => false,
             ExprKind::UnaryOp(_, _) => false,
             ExprKind::Constructor(_, _, _) => false,
-            ExprKind::Call(_, _, _) => true,
             ExprKind::Constant(_) => false,
             ExprKind::Cast(_, _, _) => false,
             ExprKind::Tuple(_) => false,
@@ -106,8 +108,7 @@ impl<'tcx> Expr<'tcx> {
 
     pub fn is_pure(&self) -> bool {
         match &self.kind {
-            ExprKind::Move(_) => true,
-            ExprKind::Copy(_) => true,
+            ExprKind::Operand(_) => true,
             ExprKind::BinOp(
                 BinOp::Add | BinOp::Mul | BinOp::Rem | BinOp::Div | BinOp::Sub,
                 _,
@@ -117,7 +118,6 @@ impl<'tcx> Expr<'tcx> {
             ExprKind::UnaryOp(UnOp::Neg, _) => false,
             ExprKind::UnaryOp(_, _) => true,
             ExprKind::Constructor(_, _, es) => es.iter().all(|e| e.is_pure()),
-            ExprKind::Call(_, _, es) => es.iter().all(|e| e.is_pure()),
             ExprKind::Constant(_) => true,
             ExprKind::Cast(_, _, _) => false,
             ExprKind::Tuple(es) => es.iter().all(|e| e.is_pure()),
