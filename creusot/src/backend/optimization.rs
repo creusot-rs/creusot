@@ -94,6 +94,10 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
             }
             Statement::AssumeBorrowInv(p) => self.read_place(p),
             Statement::AssertTyInv(p) => self.read_place(p),
+            Statement::Call(dest, _, _, args, _) => {
+                self.write_place(dest);
+                args.iter().for_each(|a| self.visit_expr(a));
+            }
         }
     }
 
@@ -110,17 +114,22 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
 
     // fn visit_term(&mut self, t: &Term<'tcx>) {}
 
+    fn visit_operand(&mut self, op: &Operand<'tcx>) {
+        match op {
+            Operand::Move(p) => self.read_place(p),
+            Operand::Copy(p) => self.read_place(p),
+        }
+    }
+
     fn visit_expr(&mut self, e: &Expr<'tcx>) {
         match &e.kind {
-            ExprKind::Move(p) => self.read_place(p),
-            ExprKind::Copy(p) => self.read_place(p),
+            ExprKind::Operand(op) => self.visit_operand(op),
             ExprKind::BinOp(_, l, r) => {
                 self.visit_expr(l);
                 self.visit_expr(r)
             }
             ExprKind::UnaryOp(_, e) => self.visit_expr(e),
             ExprKind::Constructor(_, _, es) => es.iter().for_each(|e| self.visit_expr(e)),
-            ExprKind::Call(_, _, es) => es.iter().for_each(|e| self.visit_expr(e)),
             ExprKind::Constant(t) => self.visit_term(t),
             ExprKind::Cast(e, _, _) => self.visit_expr(e),
             ExprKind::Tuple(es) => es.iter().for_each(|e| self.visit_expr(e)),
@@ -220,11 +229,11 @@ impl<'tcx> SimplePropagator<'tcx> {
             match s {
                 Statement::Assignment(l, RValue::Expr(r), _)
                     // we do not propagate calls to avoid moving them after the resolve of their arguments
-                    if self.should_propagate(l.local) && !self.usage[&l.local].used_in_pure_ctx && !r.is_call() => {
+                    if self.should_propagate(l.local) && !self.usage[&l.local].used_in_pure_ctx => {
                       self.prop.insert(l.local, r);
                       self.dead.insert(l.local);
                     }
-                Statement::Assignment(ref l, RValue::Expr(ref r), _) if self.should_erase(l.local)  && !r.is_call() && r.is_pure() => {
+                Statement::Assignment(ref l, RValue::Expr(ref r), _) if self.should_erase(l.local) && r.is_pure() => {
                       self.dead.insert(l.local);
                 }
                 Statement::Resolve(_,_, ref p) => {
@@ -255,6 +264,7 @@ impl<'tcx> SimplePropagator<'tcx> {
               }
             }
             Statement::Assertion { cond, msg: _ } => self.visit_term(cond),
+            Statement::Call(_, _, _, args, _) => args.iter_mut().for_each(|a| self.visit_expr(a)),
             Statement::AssumeBorrowInv(_) => {},
             Statement::AssertTyInv( _) => {},
         }
@@ -272,7 +282,7 @@ impl<'tcx> SimplePropagator<'tcx> {
 
     fn visit_expr(&mut self, e: &mut Expr<'tcx>) {
         match &mut e.kind {
-            ExprKind::Move(p) | ExprKind::Copy(p) => {
+            ExprKind::Operand(Operand::Move(p) | Operand::Copy(p)) => {
               if let Some(l) = p.as_symbol() && let Some(v) = self.prop.remove(&l) {
                 *e = v;
               }
@@ -283,7 +293,6 @@ impl<'tcx> SimplePropagator<'tcx> {
             }
             ExprKind::UnaryOp(_, e) => self.visit_expr(e),
             ExprKind::Constructor(_, _, es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
-            ExprKind::Call(_, _, es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
             ExprKind::Constant(t) => self.visit_term(t),
             ExprKind::Cast(e, _, _) => self.visit_expr(e),
             ExprKind::Tuple(es) => es.iter_mut().for_each(|e| self.visit_expr(e)),

@@ -106,10 +106,12 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         ty: self.ctx.types.unit,
                     })
                 }
-                let call_exp = if self.is_box_new(fun_def_id) {
+                let (loc, bb) = (destination, target.unwrap());
+
+                if self.is_box_new(fun_def_id) {
                     assert_eq!(func_args.len(), 1);
 
-                    func_args.remove(0)
+                    self.emit_assignment(&loc, RValue::Expr(func_args.remove(0)), span);
                 } else {
                     let (fun_def_id, subst) =
                         resolve_function(self.ctx, self.param_env(), fun_def_id, subst, span);
@@ -118,16 +120,15 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         .try_normalize_erasing_regions(self.param_env(), subst)
                         .unwrap_or(subst);
 
-                    let exp = Expr {
-                        span: span.source_callsite(),
-                        kind: ExprKind::Call(fun_def_id, subst, func_args),
-                        ty: destination.ty(self.body, self.tcx).ty,
-                    };
-                    exp
+                    self.emit_statement(Statement::Call(
+                        self.translate_place(*loc),
+                        fun_def_id,
+                        subst,
+                        func_args,
+                        span.source_callsite(),
+                    ));
                 };
 
-                let (loc, bb) = (destination, target.unwrap());
-                self.emit_assignment(&loc, RValue::Expr(call_exp), span);
                 self.emit_terminator(Terminator::Goto(bb));
             }
             Assert { cond, expected, msg, target, unwind: _ } => {

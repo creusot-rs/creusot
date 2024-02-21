@@ -235,16 +235,6 @@ impl Print for Expr {
     }
 }
 
-fn braces<'a, A: pretty::DocAllocator<'a>>(
-    doc: pretty::DocBuilder<'a, A>,
-) -> pretty::DocBuilder<'a, A> {
-    if !matches!(&*doc.1, pretty::Doc::Nil) {
-        doc.braces()
-    } else {
-        doc
-    }
-}
-
 fn brackets<'a, A: pretty::DocAllocator<'a>>(
     doc: pretty::DocBuilder<'a, A>,
 ) -> pretty::DocBuilder<'a, A> {

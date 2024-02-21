@@ -1,6 +1,7 @@
 use super::BodyTranslator;
 use crate::{
     analysis::NotFinalPlaces,
+    fmir::Operand,
     translation::{
         fmir::{self, Expr, ExprKind, RValue},
         specification::inv_subst,
@@ -90,7 +91,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         return;
                     }
 
-                    ExprKind::Copy(self.translate_place(self.compute_ref_place(*pl, loc)))
+                    let op = Operand::Copy(self.translate_place(self.compute_ref_place(*pl, loc)));
+                    ExprKind::Operand(op)
                 }
                 Mut { .. } => {
                     if self.erased_locals.contains(pl.local) {
@@ -158,7 +160,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Rvalue::Len(pl) => {
                 let e = Expr {
-                    kind: ExprKind::Copy(self.translate_place(*pl)),
+                    kind: ExprKind::Operand(Operand::Copy(self.translate_place(*pl))),
                     ty: pl.ty(self.body, self.tcx).ty,
                     span: DUMMY_SP,
                 };

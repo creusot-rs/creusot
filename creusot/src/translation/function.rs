@@ -348,8 +348,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     // Useful helper to translate an operand
     pub(crate) fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Expr<'tcx> {
         let kind = match operand {
-            Operand::Copy(pl) => ExprKind::Copy(self.translate_place(*pl)),
-            Operand::Move(pl) => ExprKind::Move(self.translate_place(*pl)),
+            Operand::Copy(pl) => ExprKind::Operand(fmir::Operand::Copy(self.translate_place(*pl))),
+            Operand::Move(pl) => ExprKind::Operand(fmir::Operand::Move(self.translate_place(*pl))),
             Operand::Constant(c) => {
                 return crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
             }
