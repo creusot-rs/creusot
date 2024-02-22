@@ -52,7 +52,6 @@ module Alloc_Alloc_Global_Type
 end
 module GhostPtrToken_Test
   use prelude.Int32
-  use prelude.Opaque
   use Core_Option_Option_Type as Core_Option_Option_Type
   predicate invariant7 (self : Core_Option_Option_Type.t_option int32) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
@@ -64,6 +63,7 @@ module GhostPtrToken_Test
     ensures { result = inv7 _x }
     
   axiom inv7 : forall x : Core_Option_Option_Type.t_option int32 . inv7 x = true
+  use prelude.Opaque
   use map.Map
   predicate invariant6 (self : Map.map opaque_ptr (Core_Option_Option_Type.t_option int32)) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
@@ -138,8 +138,6 @@ module GhostPtrToken_Test
     
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   axiom inv0 : forall x : int32 . inv0 x = true
-  use prelude.Opaque
-  use Core_Panicking_AssertKind_Type as Core_Panicking_AssertKind_Type
   use CreusotContracts_GhostPtr_GhostPtrToken_Type as CreusotContracts_GhostPtr_GhostPtrToken_Type
   function unreachable0 (_1 : ()) : int32
   val unreachable0 (_1 : ()) : int32
@@ -205,16 +203,17 @@ module GhostPtrToken_Test
     ensures { [#"../../../../creusot-contracts/src/ghost_ptr.rs" 80 14 80 51] result = lookup_unsized0 (shallow_model1 self) ptr }
     ensures { [#"../../../../creusot-contracts/src/ghost_ptr.rs" 81 4 81 49] inv2 result }
     
-  predicate resolve2 (self : borrowed int32) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve2 (self : borrowed int32) : bool
-    ensures { result = resolve2 self }
-    
   val swap0 (x : borrowed int32) (y : borrowed int32) : ()
     requires {inv1 x}
     requires {inv1 y}
     ensures { [#"../../../../creusot-contracts/src/std/mem.rs" 11 22 11 30]  ^ x =  * y }
     ensures { [#"../../../../creusot-contracts/src/std/mem.rs" 12 22 12 30]  ^ y =  * x }
+    
+  use Core_Panicking_AssertKind_Type as Core_Panicking_AssertKind_Type
+  predicate resolve2 (self : borrowed int32) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve2 (self : borrowed int32) : bool
+    ensures { result = resolve2 self }
     
   predicate resolve3 (self : int32) =
     [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
@@ -238,7 +237,7 @@ module GhostPtrToken_Test
     ensures { result = cur0 self }
     
   predicate resolve0 (self : CreusotContracts_GhostPtr_GhostPtrTokenMut_Type.t_ghostptrtokenmut int32) =
-    [#"../../../../creusot-contracts/src/ghost_ptr.rs" 261 8 261 32] cur0 self = fin0 self
+    [#"../../../../creusot-contracts/src/ghost_ptr.rs" 263 8 263 32] cur0 self = fin0 self
   val resolve0 (self : CreusotContracts_GhostPtr_GhostPtrTokenMut_Type.t_ghostptrtokenmut int32) : bool
     ensures { result = resolve0 self }
     
@@ -252,10 +251,10 @@ module GhostPtrToken_Test
   use map.Map
   function make_sized0 (self : int32) : int32
   val make_sized0 (self : int32) : int32
-    requires {[#"../../../../creusot-contracts/src/util.rs" 16 18 16 22] inv5 self}
+    requires {[#"../../../../creusot-contracts/src/util.rs" 16 19 16 23] inv2 self}
     ensures { result = make_sized0 self }
     
-  axiom make_sized0_spec : forall self : int32 . ([#"../../../../creusot-contracts/src/util.rs" 16 18 16 22] inv5 self) -> ([#"../../../../creusot-contracts/src/util.rs" 16 4 16 39] inv0 (make_sized0 self)) && ([#"../../../../creusot-contracts/src/util.rs" 15 14 15 29] make_sized0 self = self)
+  axiom make_sized0_spec : forall self : int32 . ([#"../../../../creusot-contracts/src/util.rs" 16 19 16 23] inv2 self) -> ([#"../../../../creusot-contracts/src/util.rs" 16 4 16 40] inv0 (make_sized0 self)) && ([#"../../../../creusot-contracts/src/util.rs" 15 14 15 30] make_sized0 self = self)
   function insert0 (self : CreusotContracts_Logic_Fmap_FMap_Type.t_fmap opaque_ptr int32) (k : opaque_ptr) (v : int32) : CreusotContracts_Logic_Fmap_FMap_Type.t_fmap opaque_ptr int32
     
   val insert0 (self : CreusotContracts_Logic_Fmap_FMap_Type.t_fmap opaque_ptr int32) (k : opaque_ptr) (v : int32) : CreusotContracts_Logic_Fmap_FMap_Type.t_fmap opaque_ptr int32
@@ -278,16 +277,16 @@ module GhostPtrToken_Test
     len0 self
   )) && ([#"../../../../creusot-contracts/src/logic/fmap.rs" 45 14 45 55] view0 (remove0 self k) = Map.set (view0 self) k (Core_Option_Option_Type.C_None))
   val take_mut0 (self : borrowed (CreusotContracts_GhostPtr_GhostPtrTokenMut_Type.t_ghostptrtokenmut int32)) (ptr : opaque_ptr) : borrowed int32
-    requires {[#"../../../../creusot-contracts/src/ghost_ptr.rs" 227 15 227 42] contains0 (cur0 ( * self)) ptr}
-    ensures { [#"../../../../creusot-contracts/src/ghost_ptr.rs" 228 14 228 59]  * result = lookup_unsized0 (cur0 ( * self)) ptr }
-    ensures { [#"../../../../creusot-contracts/src/ghost_ptr.rs" 229 14 229 56] cur0 ( ^ self) = remove0 (cur0 ( * self)) ptr }
-    ensures { [#"../../../../creusot-contracts/src/ghost_ptr.rs" 230 14 230 65] fin0 ( * self) = insert0 (fin0 ( ^ self)) ptr ( ^ result) }
-    ensures { [#"../../../../creusot-contracts/src/ghost_ptr.rs" 231 14 231 42] not contains0 (fin0 ( ^ self)) ptr }
-    ensures { [#"../../../../creusot-contracts/src/ghost_ptr.rs" 232 4 232 58] inv1 result }
+    requires {[#"../../../../creusot-contracts/src/ghost_ptr.rs" 229 15 229 42] contains0 (cur0 ( * self)) ptr}
+    ensures { [#"../../../../creusot-contracts/src/ghost_ptr.rs" 230 14 230 59]  * result = lookup_unsized0 (cur0 ( * self)) ptr }
+    ensures { [#"../../../../creusot-contracts/src/ghost_ptr.rs" 231 14 231 56] cur0 ( ^ self) = remove0 (cur0 ( * self)) ptr }
+    ensures { [#"../../../../creusot-contracts/src/ghost_ptr.rs" 232 14 232 65] fin0 ( * self) = insert0 (fin0 ( ^ self)) ptr ( ^ result) }
+    ensures { [#"../../../../creusot-contracts/src/ghost_ptr.rs" 233 14 233 42] not contains0 (fin0 ( ^ self)) ptr }
+    ensures { [#"../../../../creusot-contracts/src/ghost_ptr.rs" 234 4 234 58] inv1 result }
     
   val borrow_mut0 (self : borrowed (CreusotContracts_GhostPtr_GhostPtrToken_Type.t_ghostptrtoken int32)) : CreusotContracts_GhostPtr_GhostPtrTokenMut_Type.t_ghostptrtokenmut int32
-    ensures { [#"../../../../creusot-contracts/src/ghost_ptr.rs" 123 14 123 38] cur0 result = shallow_model0 ( * self) }
-    ensures { [#"../../../../creusot-contracts/src/ghost_ptr.rs" 124 14 124 38] fin0 result = shallow_model0 ( ^ self) }
+    ensures { [#"../../../../creusot-contracts/src/ghost_ptr.rs" 124 14 124 38] cur0 result = shallow_model0 ( * self) }
+    ensures { [#"../../../../creusot-contracts/src/ghost_ptr.rs" 125 14 125 38] fin0 result = shallow_model0 ( ^ self) }
     
   val ptr_from_box0 (self : borrowed (CreusotContracts_GhostPtr_GhostPtrToken_Type.t_ghostptrtoken int32)) (val' : int32) : opaque_ptr
     requires {[#"../../../../creusot-contracts/src/ghost_ptr.rs" 71 35 71 38] inv0 val'}
@@ -329,35 +328,35 @@ module GhostPtrToken_Test
   var left_val : int32;
   var right_val : int32;
   var kind : Core_Panicking_AssertKind_Type.t_assertkind;
-  var _32 : int32;
-  var _34 : int32;
-  var _37 : (int32, int32);
+  var _31 : int32;
+  var _33 : int32;
+  var _36 : (int32, int32);
   var left_val1 : int32;
   var right_val1 : int32;
   var kind1 : Core_Panicking_AssertKind_Type.t_assertkind;
+  var _50 : int32;
   var _52 : int32;
-  var _54 : int32;
-  var _56 : ();
-  var _57 : borrowed int32;
-  var _58 : borrowed int32;
-  var _60 : (int32, int32);
-  var _62 : int32;
+  var _54 : ();
+  var _55 : borrowed int32;
+  var _56 : borrowed int32;
+  var _58 : (int32, int32);
+  var _60 : int32;
   var left_val2 : int32;
   var right_val2 : int32;
   var kind2 : Core_Panicking_AssertKind_Type.t_assertkind;
-  var _78 : int32;
-  var _80 : int32;
-  var _83 : (int32, int32);
-  var _85 : int32;
+  var _75 : int32;
+  var _77 : int32;
+  var _80 : (int32, int32);
+  var _82 : int32;
   var left_val3 : int32;
   var right_val3 : int32;
   var kind3 : Core_Panicking_AssertKind_Type.t_assertkind;
+  var _97 : int32;
+  var _99 : int32;
   var _101 : int32;
+  var _102 : int32;
   var _103 : int32;
-  var _105 : int32;
-  var _106 : int32;
-  var _107 : int32;
-  var _108 : int32;
+  var _104 : int32;
   {
     goto BB0
   }
@@ -366,8 +365,8 @@ module GhostPtrToken_Test
     goto BB1
   }
   BB1 {
-    [#"../ghost_ptr_token.rs" 5 15 5 46] _3 <- Borrow.borrow_mut token;
-    [#"../ghost_ptr_token.rs" 5 15 5 46] token <-  ^ _3;
+    [#"../ghost_ptr_token.rs" 5 15 5 20] _3 <- Borrow.borrow_mut token;
+    [#"../ghost_ptr_token.rs" 5 15 5 20] token <-  ^ _3;
     goto BB2
   }
   BB2 {
@@ -376,8 +375,8 @@ module GhostPtrToken_Test
     goto BB3
   }
   BB3 {
-    [#"../ghost_ptr_token.rs" 6 15 6 46] _6 <- Borrow.borrow_mut token;
-    [#"../ghost_ptr_token.rs" 6 15 6 46] token <-  ^ _6;
+    [#"../ghost_ptr_token.rs" 6 15 6 20] _6 <- Borrow.borrow_mut token;
+    [#"../ghost_ptr_token.rs" 6 15 6 20] token <-  ^ _6;
     goto BB4
   }
   BB4 {
@@ -386,124 +385,124 @@ module GhostPtrToken_Test
     goto BB5
   }
   BB5 {
-    [#"../ghost_ptr_token.rs" 8 24 8 42] _9 <- Borrow.borrow_mut token;
-    [#"../ghost_ptr_token.rs" 8 24 8 42] token <-  ^ _9;
+    [#"../ghost_ptr_token.rs" 8 24 8 29] _9 <- Borrow.borrow_mut token;
+    [#"../ghost_ptr_token.rs" 8 24 8 29] token <-  ^ _9;
     [#"../ghost_ptr_token.rs" 8 24 8 42] token_mut <- ([#"../ghost_ptr_token.rs" 8 24 8 42] borrow_mut0 _9);
     _9 <- any borrowed (CreusotContracts_GhostPtr_GhostPtrToken_Type.t_ghostptrtoken int32);
     goto BB6
   }
   BB6 {
-    [#"../ghost_ptr_token.rs" 9 13 9 37] _11 <- Borrow.borrow_mut token_mut;
-    [#"../ghost_ptr_token.rs" 9 13 9 37] token_mut <-  ^ _11;
+    [#"../ghost_ptr_token.rs" 9 13 9 22] _11 <- Borrow.borrow_mut token_mut;
+    [#"../ghost_ptr_token.rs" 9 13 9 22] token_mut <-  ^ _11;
     [#"../ghost_ptr_token.rs" 9 13 9 37] m1 <- ([#"../ghost_ptr_token.rs" 9 13 9 37] take_mut0 _11 ([#"../ghost_ptr_token.rs" 9 32 9 36] ptr1));
     _11 <- any borrowed (CreusotContracts_GhostPtr_GhostPtrTokenMut_Type.t_ghostptrtokenmut int32);
     goto BB7
   }
   BB7 {
-    [#"../ghost_ptr_token.rs" 10 13 10 37] _14 <- Borrow.borrow_mut token_mut;
-    [#"../ghost_ptr_token.rs" 10 13 10 37] token_mut <-  ^ _14;
+    [#"../ghost_ptr_token.rs" 10 13 10 22] _14 <- Borrow.borrow_mut token_mut;
+    [#"../ghost_ptr_token.rs" 10 13 10 22] token_mut <-  ^ _14;
     [#"../ghost_ptr_token.rs" 10 13 10 37] m2 <- ([#"../ghost_ptr_token.rs" 10 13 10 37] take_mut0 _14 ([#"../ghost_ptr_token.rs" 10 32 10 36] ptr2));
     _14 <- any borrowed (CreusotContracts_GhostPtr_GhostPtrTokenMut_Type.t_ghostptrtokenmut int32);
     goto BB8
   }
   BB8 {
     assume { resolve0 token_mut };
-    _108 <- promoted3;
-    _17 <- ( * m1, _108);
+    _104 <- promoted3;
+    _17 <- ( * m1, _104);
     left_val <- (let (a, _) = _17 in a);
     right_val <- (let (_, a) = _17 in a);
     assume { resolve1 _17 };
-    switch (not left_val = right_val)
+    switch (left_val = right_val)
       | False -> goto BB10
       | True -> goto BB9
       end
   }
   BB9 {
-    assume { resolve2 m2 };
-    kind <- Core_Panicking_AssertKind_Type.C_Eq;
-    _32 <- left_val;
-    _34 <- right_val;
-    assert { false };
-    absurd
-  }
-  BB10 {
-    _107 <- promoted2;
-    _37 <- ( * m2, _107);
-    left_val1 <- (let (a, _) = _37 in a);
-    right_val1 <- (let (_, a) = _37 in a);
-    assume { resolve1 _37 };
-    switch (not left_val1 = right_val1)
+    _103 <- promoted2;
+    _36 <- ( * m2, _103);
+    left_val1 <- (let (a, _) = _36 in a);
+    right_val1 <- (let (_, a) = _36 in a);
+    assume { resolve1 _36 };
+    switch (left_val1 = right_val1)
       | False -> goto BB12
       | True -> goto BB11
       end
   }
-  BB11 {
-    assume { resolve2 m1 };
-    kind1 <- Core_Panicking_AssertKind_Type.C_Eq;
-    _52 <- left_val1;
-    _54 <- right_val1;
+  BB10 {
+    assume { resolve2 m2 };
+    kind <- Core_Panicking_AssertKind_Type.C_Eq;
+    _31 <- left_val;
+    _33 <- right_val;
     assert { false };
     absurd
   }
-  BB12 {
-    [#"../ghost_ptr_token.rs" 15 20 15 22] _57 <- Borrow.borrow_mut ( * m1);
-    [#"../ghost_ptr_token.rs" 15 20 15 22] m1 <- { m1 with current =  ^ _57 };
-    [#"../ghost_ptr_token.rs" 15 24 15 26] _58 <- Borrow.borrow_mut ( * m2);
-    [#"../ghost_ptr_token.rs" 15 24 15 26] m2 <- { m2 with current =  ^ _58 };
-    [#"../ghost_ptr_token.rs" 15 4 15 27] _56 <- ([#"../ghost_ptr_token.rs" 15 4 15 27] swap0 _57 _58);
-    _57 <- any borrowed int32;
-    _58 <- any borrowed int32;
+  BB11 {
+    [#"../ghost_ptr_token.rs" 15 20 15 22] _55 <- Borrow.borrow_final ( * m1) (Borrow.get_id m1);
+    [#"../ghost_ptr_token.rs" 15 20 15 22] m1 <- { m1 with current = ( ^ _55) ; };
+    [#"../ghost_ptr_token.rs" 15 24 15 26] _56 <- Borrow.borrow_final ( * m2) (Borrow.get_id m2);
+    [#"../ghost_ptr_token.rs" 15 24 15 26] m2 <- { m2 with current = ( ^ _56) ; };
+    [#"../ghost_ptr_token.rs" 15 4 15 27] _54 <- ([#"../ghost_ptr_token.rs" 15 4 15 27] swap0 _55 _56);
+    _55 <- any borrowed int32;
+    _56 <- any borrowed int32;
     goto BB13
+  }
+  BB12 {
+    assume { resolve2 m1 };
+    kind1 <- Core_Panicking_AssertKind_Type.C_Eq;
+    _50 <- left_val1;
+    _52 <- right_val1;
+    assert { false };
+    absurd
   }
   BB13 {
     assume { resolve2 m2 };
     assume { resolve2 m1 };
-    [#"../ghost_ptr_token.rs" 16 16 16 38] _62 <- ([#"../ghost_ptr_token.rs" 16 16 16 38] ptr_as_ref0 ([#"../ghost_ptr_token.rs" 16 16 16 38] token) ([#"../ghost_ptr_token.rs" 16 33 16 37] ptr1));
+    [#"../ghost_ptr_token.rs" 16 16 16 38] _60 <- ([#"../ghost_ptr_token.rs" 16 16 16 38] ptr_as_ref0 ([#"../ghost_ptr_token.rs" 16 16 16 21] token) ([#"../ghost_ptr_token.rs" 16 33 16 37] ptr1));
     goto BB14
   }
   BB14 {
-    _106 <- promoted1;
-    _60 <- (_62, _106);
-    left_val2 <- (let (a, _) = _60 in a);
-    right_val2 <- (let (_, a) = _60 in a);
-    assume { resolve1 _60 };
-    switch (not left_val2 = right_val2)
+    _102 <- promoted1;
+    _58 <- (_60, _102);
+    left_val2 <- (let (a, _) = _58 in a);
+    right_val2 <- (let (_, a) = _58 in a);
+    assume { resolve1 _58 };
+    switch (left_val2 = right_val2)
       | False -> goto BB16
       | True -> goto BB15
       end
   }
   BB15 {
+    [#"../ghost_ptr_token.rs" 17 16 17 38] _82 <- ([#"../ghost_ptr_token.rs" 17 16 17 38] ptr_as_ref0 ([#"../ghost_ptr_token.rs" 17 16 17 21] token) ([#"../ghost_ptr_token.rs" 17 33 17 37] ptr2));
+    goto BB17
+  }
+  BB16 {
     kind2 <- Core_Panicking_AssertKind_Type.C_Eq;
-    _78 <- left_val2;
-    _80 <- right_val2;
+    _75 <- left_val2;
+    _77 <- right_val2;
     assert { false };
     absurd
   }
-  BB16 {
-    [#"../ghost_ptr_token.rs" 17 16 17 38] _85 <- ([#"../ghost_ptr_token.rs" 17 16 17 38] ptr_as_ref0 ([#"../ghost_ptr_token.rs" 17 16 17 38] token) ([#"../ghost_ptr_token.rs" 17 33 17 37] ptr2));
-    goto BB17
-  }
   BB17 {
-    _105 <- promoted0;
-    _83 <- (_85, _105);
-    left_val3 <- (let (a, _) = _83 in a);
-    right_val3 <- (let (_, a) = _83 in a);
-    assume { resolve1 _83 };
-    switch (not left_val3 = right_val3)
+    _101 <- promoted0;
+    _80 <- (_82, _101);
+    left_val3 <- (let (a, _) = _80 in a);
+    right_val3 <- (let (_, a) = _80 in a);
+    assume { resolve1 _80 };
+    switch (left_val3 = right_val3)
       | False -> goto BB19
       | True -> goto BB18
       end
   }
   BB18 {
-    kind3 <- Core_Panicking_AssertKind_Type.C_Eq;
-    _101 <- left_val3;
-    _103 <- right_val3;
-    assert { false };
-    absurd
-  }
-  BB19 {
     [#"../ghost_ptr_token.rs" 3 14 18 1] _0 <- ([#"../ghost_ptr_token.rs" 3 14 18 1] ());
     return _0
+  }
+  BB19 {
+    kind3 <- Core_Panicking_AssertKind_Type.C_Eq;
+    _97 <- left_val3;
+    _99 <- right_val3;
+    assert { false };
+    absurd
   }
   
 end
