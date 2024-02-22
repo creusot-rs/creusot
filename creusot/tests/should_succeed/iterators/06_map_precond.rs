@@ -27,8 +27,8 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator for M
 
     #[law]
     #[open]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self) {}
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
 
     #[law]
     #[open]
@@ -68,7 +68,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator for M
                 let r = (self.func)(v, self.produced);
                 self.produced = produced;
                 gh! { Self::produces_one_invariant };
-                let _ = self; // Make sure self is not resolve until here.
                 Some(r)
             }
             None => {
@@ -179,7 +178,7 @@ pub fn identity<I: Iterator>(iter: I) {
     map(iter, |x, _| x);
 }
 
-#[requires(forall<done_ : &mut U> done_.completed() ==> forall<next : U, steps: Seq<_>> (^done_).produces(steps, next) ==> steps == Seq::EMPTY && ^done_ == next)]
+#[requires(forall<done : &mut U> done.completed() ==> forall<next : U, steps: Seq<_>> (^done).produces(steps, next) ==> steps == Seq::EMPTY && ^done == next)]
 #[requires(forall<prod : _, fin: U> iter.produces(prod, fin) ==>
     forall<x : _> 0 <= x && x < prod.len() ==> prod[x] <= 10u32
 )]
@@ -197,7 +196,7 @@ pub fn increment<U: Iterator<Item = u32>>(iter: U) {
     };
 }
 
-#[requires(forall<done_ : &mut I> done_.completed() ==> forall<next : I, steps: Seq<_>> (^done_).produces(steps, next) ==> steps == Seq::EMPTY && ^done_ == next)]
+#[requires(forall<done : &mut I> done.completed() ==> forall<next : I, steps: Seq<_>> (^done).produces(steps, next) ==> steps == Seq::EMPTY && ^done == next)]
 #[requires(forall<prod : _, fin: I> iter.produces(prod, fin) ==> prod.len() <= usize::MAX@)]
 pub fn counter<I: Iterator<Item = u32>>(iter: I) {
     let mut cnt = 0;

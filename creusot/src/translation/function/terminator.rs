@@ -19,11 +19,7 @@ use rustc_middle::{
         self, AssertKind, BasicBlock, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo,
         StatementKind, SwitchTargets, TerminatorKind, TerminatorKind::*,
     },
-    ty::{
-        self,
-        subst::{GenericArgKind, SubstsRef},
-        ParamEnv, Predicate, Ty, TyKind,
-    },
+    ty::{self, GenericArgKind, GenericArgsRef, ParamEnv, Predicate, Ty, TyKind},
 };
 use rustc_span::{Span, Symbol};
 use rustc_trait_selection::traits::{error_reporting::TypeErrCtxtExt, TraitEngineExt};
@@ -60,7 +56,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
                 self.emit_terminator(switch);
             }
-            Terminate => self.emit_terminator(Terminator::Abort(terminator.source_info.span)),
+            UnwindTerminate(_) => {
+                self.emit_terminator(Terminator::Abort(terminator.source_info.span))
+            }
             Return => self.emit_terminator(Terminator::Return),
             Unreachable => self.emit_terminator(Terminator::Abort(terminator.source_info.span)),
             Call { func, args, destination, target, .. } => {
@@ -93,7 +91,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 let res =
                     evaluate_additional_predicates(&infcx, predicates, self.param_env(), span);
                 if let Err(errs) = res {
-                    infcx.err_ctxt().report_fulfillment_errors(&errs);
+                    infcx.err_ctxt().report_fulfillment_errors(errs);
                 }
 
                 let mut func_args: Vec<_> =
@@ -108,10 +106,12 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         ty: self.ctx.types.unit,
                     })
                 }
-                let call_exp = if self.is_box_new(fun_def_id) {
+                let (loc, bb) = (destination, target.unwrap());
+
+                if self.is_box_new(fun_def_id) {
                     assert_eq!(func_args.len(), 1);
 
-                    func_args.remove(0)
+                    self.emit_assignment(&loc, RValue::Expr(func_args.remove(0)), span);
                 } else {
                     let (fun_def_id, subst) =
                         resolve_function(self.ctx, self.param_env(), fun_def_id, subst, span);
@@ -120,16 +120,15 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         .try_normalize_erasing_regions(self.param_env(), subst)
                         .unwrap_or(subst);
 
-                    let exp = Expr {
-                        span: span.source_callsite(),
-                        kind: ExprKind::Call(fun_def_id, subst, func_args),
-                        ty: destination.ty(self.body, self.tcx).ty,
-                    };
-                    exp
+                    self.emit_statement(Statement::Call(
+                        self.translate_place(*loc),
+                        fun_def_id,
+                        subst,
+                        func_args,
+                        span.source_callsite(),
+                    ));
                 };
 
-                let (loc, bb) = (destination, target.unwrap());
-                self.emit_assignment(&loc, RValue::Expr(call_exp), span);
                 self.emit_terminator(Terminator::Goto(bb));
             }
             Assert { cond, expected, msg, target, unwind: _ } => {
@@ -168,7 +167,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             FalseUnwind { real_target, .. } => {
                 self.emit_terminator(mk_goto(*real_target));
             }
-            Yield { .. } | GeneratorDrop | InlineAsm { .. } | Resume => {
+            UnwindResume | Yield { .. } | GeneratorDrop | InlineAsm { .. } => {
                 unreachable!("{:?}", terminator.kind)
             }
         }
@@ -194,9 +193,9 @@ pub(crate) fn resolve_function<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
-    subst: SubstsRef<'tcx>,
+    subst: GenericArgsRef<'tcx>,
     sp: Span,
-) -> (DefId, SubstsRef<'tcx>) {
+) -> (DefId, GenericArgsRef<'tcx>) {
     if let Some(it) = ctx.opt_associated_item(def_id) {
         if let ty::TraitContainer = it.container {
             let method = traits::resolve_assoc_item_opt(ctx.tcx, param_env, def_id, subst)
@@ -222,8 +221,8 @@ pub(crate) fn resolve_function<'tcx>(
 }
 
 // Try to extract a function defid from an operand
-fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<(DefId, SubstsRef<'tcx>)> {
-    let fun_ty = op.constant().unwrap().literal.ty();
+fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<(DefId, GenericArgsRef<'tcx>)> {
+    let fun_ty = op.constant().unwrap().const_.ty();
     if let ty::TyKind::FnDef(def_id, subst) = fun_ty.kind() {
         Some((*def_id, subst))
     } else {

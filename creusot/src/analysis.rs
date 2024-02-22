@@ -12,11 +12,13 @@ use rustc_middle::mir::{
 mod frozen_locals;
 mod init_locals;
 mod liveness_no_drop;
+mod not_final_places;
 mod uninit_locals;
 
 pub use frozen_locals::*;
 pub use init_locals::*;
 pub use liveness_no_drop::*;
+pub use not_final_places::NotFinalPlaces;
 pub use uninit_locals::*;
 
 pub struct NeverLive(BitSet<Local>);

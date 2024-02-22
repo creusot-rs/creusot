@@ -88,7 +88,7 @@ impl EncodedSourceFileId {
                     };
                     return EncodedSourceFileId {
                         file_name_hash,
-                        stable_crate_id: tcx.sess.local_stable_crate_id(),
+                        stable_crate_id: tcx.stable_crate_id(LOCAL_CRATE),
                     };
                 }
             }

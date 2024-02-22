@@ -12,7 +12,7 @@ use petgraph::Direction;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::Mutability,
-    ty::{subst::SubstsRef, AliasKind, ParamEnv, Ty, TyKind},
+    ty::{AliasKind, GenericArgsRef, ParamEnv, Ty, TyKind},
 };
 
 use super::*;
@@ -124,14 +124,18 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     }
 
     fn expand_projections(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
-        let Some((id, _)) = key.did() else { return; };
-        let ItemType::Type = util::item_type(ctx.tcx, id) else {return; };
+        let Some((id, _)) = key.did() else {
+            return;
+        };
+        let ItemType::Type = util::item_type(ctx.tcx, id) else {
+            return;
+        };
 
         let key_public = self.clone_graph.info(key).level;
 
         for p in ctx.projections_in_ty(id).to_owned() {
             let node = self
-                .resolve_dep(ctx, DepNode::new(ctx.tcx, (p.def_id, p.substs)).subst(ctx.tcx, key));
+                .resolve_dep(ctx, DepNode::new(ctx.tcx, (p.def_id, p.args)).subst(ctx.tcx, key));
 
             let is_type = self
                 .self_did()
@@ -146,20 +150,23 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     }
 
     fn expand_subst(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
-        let Some((_, key_subst)) = key.did() else { return; };
+        let Some((_, key_subst)) = key.did() else {
+            return;
+        };
         let key_public = self.clone_graph.info(key).level;
         // Check the substitution for node dependencies on closures
         walk_types(key_subst, |t| {
             let node = match t.kind() {
                 TyKind::Alias(AliasKind::Projection, pty) => {
-                    let node = DepNode::new(ctx.tcx, (pty.def_id, pty.substs));
+                    let node = DepNode::new(ctx.tcx, (pty.def_id, pty.args));
                     Some(self.resolve_dep(ctx, node))
                 }
                 TyKind::Closure(_, _) => Some(DepNode::Type(t)),
-                TyKind::Ref(_, _, Mutability::Mut) => Some(DepNode::Buitlin(PreludeModule::Borrow)),
-                TyKind::Int(ity) => Some(DepNode::Buitlin(int_to_prelude(*ity))),
-                TyKind::Uint(uty) => Some(DepNode::Buitlin(uint_to_prelude(*uty))),
-                TyKind::Slice(_) => Some(DepNode::Buitlin(PreludeModule::Slice)),
+                TyKind::Ref(_, _, Mutability::Mut) => Some(DepNode::Builtin(PreludeModule::Borrow)),
+                TyKind::Int(ity) => Some(DepNode::Builtin(int_to_prelude(*ity))),
+                TyKind::Uint(uty) => Some(DepNode::Builtin(uint_to_prelude(*uty))),
+                TyKind::Slice(_) => Some(DepNode::Builtin(PreludeModule::Slice)),
+                TyKind::RawPtr(_) => Some(DepNode::Builtin(PreludeModule::Opaque)),
                 TyKind::Adt(_, _) => Some(DepNode::Type(t)),
                 _ => None,
             };
@@ -180,9 +187,10 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         for (dep, info) in ctx.dependencies(key).iter().flat_map(|i| i.iter()) {
             trace!("adding dependency {:?} {:?}", dep, info.level);
 
+            // eprintln!("substituted {:?}", dep.subst(ctx.tcx, key));
             let dep = self.resolve_dep(ctx, dep.subst(ctx.tcx, key));
 
-            trace!("inserting dependency {:?} {:?}", key, dep);
+            // eprintln!("inserting dependency {:?} {:?}", key, dep);
             self.add_node(dep, key_public.max(info.level));
 
             // Skip reflexive edges
@@ -218,7 +226,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         &mut self,
         ctx: &mut TranslationCtx<'tcx>,
         key_did: DefId,
-        key_subst: SubstsRef<'tcx>,
+        key_subst: GenericArgsRef<'tcx>,
         depth: CloneDepth,
     ) {
         let Some(item) = ctx.tcx.opt_associated_item(key_did) else { return };

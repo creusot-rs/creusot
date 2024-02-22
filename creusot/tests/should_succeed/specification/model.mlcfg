@@ -43,20 +43,26 @@ module Alloc_Sync_Arc_Type
   use Alloc_Sync_ArcInner_Type as Alloc_Sync_ArcInner_Type
   use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
   use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
-  type t_arc 't =
-    | C_Arc (Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Sync_ArcInner_Type.t_arcinner 't)) (Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Sync_ArcInner_Type.t_arcinner 't))
+  type t_arc 't 'a =
+    | C_Arc (Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Sync_ArcInner_Type.t_arcinner 't)) (Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Sync_ArcInner_Type.t_arcinner 't)) 'a
+    
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
     
 end
 module Model_TestArc
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use prelude.UIntSize
   use prelude.Int
   use Alloc_Sync_Arc_Type as Alloc_Sync_Arc_Type
   use prelude.UIntSize
-  function shallow_model0 (self : Alloc_Sync_Arc_Type.t_arc usize) : usize
-  val shallow_model0 (self : Alloc_Sync_Arc_Type.t_arc usize) : usize
+  function shallow_model0 (self : Alloc_Sync_Arc_Type.t_arc usize (Alloc_Alloc_Global_Type.t_global)) : usize
+  val shallow_model0 (self : Alloc_Sync_Arc_Type.t_arc usize (Alloc_Alloc_Global_Type.t_global)) : usize
     ensures { result = shallow_model0 self }
     
-  let rec cfg test_arc [#"../model.rs" 43 0 43 41] [@cfg:stackify] [@cfg:subregion_analysis] (a : Alloc_Sync_Arc_Type.t_arc usize) : ()
+  let rec cfg test_arc [#"../model.rs" 43 0 43 41] [@cfg:stackify] [@cfg:subregion_analysis] (a : Alloc_Sync_Arc_Type.t_arc usize (Alloc_Alloc_Global_Type.t_global)) : ()
     requires {[#"../model.rs" 42 11 42 19] UIntSize.to_int (shallow_model0 a) = 0}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -94,20 +100,21 @@ module Alloc_Rc_Rc_Type
   use Alloc_Rc_RcBox_Type as Alloc_Rc_RcBox_Type
   use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
   use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
-  type t_rc 't =
-    | C_Rc (Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Rc_RcBox_Type.t_rcbox 't)) (Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Rc_RcBox_Type.t_rcbox 't))
+  type t_rc 't 'a =
+    | C_Rc (Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Rc_RcBox_Type.t_rcbox 't)) (Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Rc_RcBox_Type.t_rcbox 't)) 'a
     
 end
 module Model_TestRc
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use prelude.UIntSize
   use prelude.Int
   use Alloc_Rc_Rc_Type as Alloc_Rc_Rc_Type
   use prelude.UIntSize
-  function shallow_model0 (self : Alloc_Rc_Rc_Type.t_rc usize) : usize
-  val shallow_model0 (self : Alloc_Rc_Rc_Type.t_rc usize) : usize
+  function shallow_model0 (self : Alloc_Rc_Rc_Type.t_rc usize (Alloc_Alloc_Global_Type.t_global)) : usize
+  val shallow_model0 (self : Alloc_Rc_Rc_Type.t_rc usize (Alloc_Alloc_Global_Type.t_global)) : usize
     ensures { result = shallow_model0 self }
     
-  let rec cfg test_rc [#"../model.rs" 46 0 46 37] [@cfg:stackify] [@cfg:subregion_analysis] (v : Alloc_Rc_Rc_Type.t_rc usize) : ()
+  let rec cfg test_rc [#"../model.rs" 46 0 46 37] [@cfg:stackify] [@cfg:subregion_analysis] (v : Alloc_Rc_Rc_Type.t_rc usize (Alloc_Alloc_Global_Type.t_global)) : ()
     requires {[#"../model.rs" 45 11 45 19] UIntSize.to_int (shallow_model0 v) = 0}
     
    = [@vc:do_not_keep_trace] [@vc:sp]

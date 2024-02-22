@@ -162,6 +162,7 @@ const RESERVED: &[&str] = &[
     "continue",
     "diverges",
     "do",
+    "done",
     "else",
     "end",
     "ensures",

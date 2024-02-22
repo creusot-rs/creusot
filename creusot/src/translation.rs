@@ -4,6 +4,7 @@ pub(crate) mod external;
 pub(crate) mod fmir;
 pub(crate) mod function;
 pub(crate) mod pearlite;
+pub(crate) mod projection_vec;
 pub(crate) mod specification;
 pub(crate) mod traits;
 
@@ -99,8 +100,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
                 let outputs = why3.output_filenames(());
                 let crate_name = why3.crate_name(LOCAL_CRATE);
 
-                let libname =
-                    format!("{}-{}.mlcfg", crate_name.as_str(), why3.sess.crate_types()[0]);
+                let libname = format!("{}-{}.mlcfg", crate_name.as_str(), why3.crate_types()[0]);
 
                 let directory = if why3.opts.in_cargo {
                     let mut dir = outputs.out_directory.clone();
@@ -236,12 +236,12 @@ fn print_crate<W, I: Iterator<Item = Module>>(
 where
     W: Write,
 {
-    let (alloc, mut pe) = mlcfg::printer::PrintEnv::new();
+    let alloc = mlcfg::printer::ALLOC;
 
     writeln!(out)?;
 
     for modl in functions {
-        modl.pretty(&alloc, &mut pe).1.render(120, out)?;
+        modl.pretty(&alloc).1.render(120, out)?;
         writeln!(out)?;
     }
 

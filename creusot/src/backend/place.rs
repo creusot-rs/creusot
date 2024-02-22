@@ -90,8 +90,7 @@ fn create_assign_rec<'tcx>(
             if mutability == Mut {
                 RecUp {
                     record: Box::new(translate_rplace(ctx, names, locals, base, &proj[..proj_ix])),
-                    label: "current".into(),
-                    val: Box::new(inner),
+                    updates: vec![("current".into(), inner)],
                 }
             } else {
                 inner
@@ -132,7 +131,7 @@ fn create_assign_rec<'tcx>(
             }
             TyKind::Closure(id, subst) => {
                 let varnames =
-                    freshvars.take(subst.as_closure().upvar_tys().count()).collect::<Vec<Ident>>();
+                    freshvars.take(subst.as_closure().upvar_tys().len()).collect::<Vec<Ident>>();
                 let field_pats = varnames.clone().into_iter().map(|x| VarP(x.into())).collect();
                 let mut varexps: Vec<Exp> =
                     varnames.into_iter().map(|x| Exp::impure_var(x.into())).collect();
@@ -161,6 +160,7 @@ fn create_assign_rec<'tcx>(
         ConstantIndex { .. } => unimplemented!("ConstantIndex"),
         Subslice { .. } => unimplemented!("Subslice"),
         OpaqueCast(_) => unimplemented!("OpaqueCast"),
+        Subtype(_) => unimplemented!("Subtype"),
     }
 }
 
@@ -231,6 +231,7 @@ pub(crate) fn translate_rplace<'tcx, N: Namer<'tcx>>(
             ConstantIndex { .. } => unimplemented!("constant index projection"),
             Subslice { .. } => unimplemented!("subslice projection"),
             OpaqueCast(_) => unimplemented!("opaque cast projection"),
+            Subtype(_) => unimplemented!("Subtype"),
         }
         place_ty = projection_ty(place_ty, ctx.tcx, *elem);
     }

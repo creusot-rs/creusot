@@ -15,7 +15,7 @@ impl<T> ShallowModel for [T] {
     #[open(self)]
     #[trusted]
     #[ensures(result.len() <= usize::MAX@)]
-    #[ensures(result == slice_model(self))]
+    #[ensures(result == slice_model(&self))]
     fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! { absurd }
     }
@@ -27,8 +27,8 @@ impl<T: DeepModel> DeepModel for [T] {
     #[ghost]
     #[open(self)]
     #[trusted]
-    #[ensures(self@.len() == result.len())]
-    #[ensures(forall<i: Int> 0 <= i && i < result.len() ==> result[i] == self[i].deep_model())]
+    #[ensures((&self)@.len() == result.len())]
+    #[ensures(forall<i: Int> 0 <= i && i < result.len() ==> result[i] == (&self)[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { absurd }
     }
@@ -37,7 +37,7 @@ impl<T: DeepModel> DeepModel for [T] {
 #[ghost]
 #[trusted]
 #[creusot::builtins = "prelude.Slice.id"]
-fn slice_model<T>(_: [T]) -> Seq<T> {
+fn slice_model<T>(_: &[T]) -> Seq<T> {
     pearlite! { absurd }
 }
 
@@ -281,7 +281,7 @@ extern_spec! {
                 (**self)@.len() > 0 && (^*self)@.len() > 0 &&
                 (*^self)@ == (**self)@.tail() && (^^self)@ == (^*self)@.tail()
             }
-            None => ^self == * self && (**self)@.len() == 0
+            None => (*^self)@ == Seq::EMPTY && (^*self)@ == Seq::EMPTY && (**self)@ == Seq::EMPTY && (^^self)@ == Seq::EMPTY
         })]
         fn take_first_mut<'a>(self_: &mut &'a mut [T]) -> Option<&'a mut T>;
 
@@ -389,8 +389,8 @@ impl<'a, T> Iterator for Iter<'a, T> {
 
     #[law]
     #[open]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self) {}
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
 
     #[law]
     #[open]
@@ -438,8 +438,8 @@ impl<'a, T> Iterator for IterMut<'a, T> {
 
     #[law]
     #[open]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self) {}
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
 
     #[law]
     #[open]

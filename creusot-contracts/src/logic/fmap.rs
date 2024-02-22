@@ -2,7 +2,7 @@ use crate::{logic::Mapping, util::*, *};
 
 type PMap<K, V> = Mapping<K, Option<SizedW<V>>>;
 
-#[trusted] //opauqe
+#[trusted] //opaque
 pub struct FMap<K, V: ?Sized>(PMap<K, V>);
 
 impl<K, V: ?Sized> FMap<K, V> {

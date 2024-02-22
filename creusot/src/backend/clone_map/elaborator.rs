@@ -4,7 +4,7 @@ use rustc_hir::{
     def::{DefKind, Namespace},
     def_id::DefId,
 };
-use rustc_middle::ty::{self, EarlyBinder, ParamEnv, SubstsRef, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{self, Const, EarlyBinder, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::Symbol;
 use rustc_target::abi::FieldIdx;
 
@@ -64,7 +64,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
 
         match item {
             DepNode::Type(ty) => return self.elaborate_ty(ctx, names, ty),
-            DepNode::Buitlin(b) => {
+            DepNode::Builtin(b) => {
                 return vec![Decl::UseDecl(Use { name: b.qname(), as_: None, export: false })]
             }
             DepNode::TyInv(ty, kind) => {
@@ -129,7 +129,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
             })];
         }
 
-        let mut pre_sig = EarlyBinder::bind(sig(ctx, item)).subst(ctx.tcx, subst);
+        let mut pre_sig = EarlyBinder::bind(sig(ctx, item)).instantiate(ctx.tcx, subst);
         pre_sig = pre_sig.normalize(ctx.tcx, param_env);
 
         let is_accessor = item.to_trans_id().is_some_and(|i| ctx.is_accessor(i));
@@ -164,7 +164,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
 
         if item.is_hacked() || ctx.is_logical(def_id) {
             let Some(term) = term(ctx, item) else { return Vec::new() };
-            let mut term = EarlyBinder::bind(term).subst(ctx.tcx, subst);
+            let mut term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
             normalize(ctx.tcx, param_env, &mut term);
             if is_accessor {
                 lower_logical_defn(ctx, names, sig, kind, term)
@@ -176,8 +176,11 @@ impl<'tcx> SymbolElaborator<'tcx> {
             }
         } else if util::item_type(ctx.tcx, def_id) == ItemType::Constant {
             let uneval = ty::UnevaluatedConst::new(def_id, subst);
-            let constant = ctx
-                .mk_const(ty::ConstKind::Unevaluated(uneval), ctx.type_of(def_id).subst_identity());
+            let constant = Const::new(
+                ctx.tcx,
+                ty::ConstKind::Unevaluated(uneval),
+                ctx.type_of(def_id).instantiate_identity(),
+            );
 
             let span = ctx.def_span(def_id);
             let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, param_env, span);
@@ -276,7 +279,7 @@ impl<'tcx> SymNamer<'tcx> {
 }
 
 impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
-    fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+    fn value(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let node = DepNode::new(self.tcx, (def_id, subst));
         match self.get(node) {
             Kind::Hidden(id) => id.as_str().into(),
@@ -284,11 +287,11 @@ impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
         }
     }
 
-    fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+    fn ty(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let mut node = DepNode::new(self.tcx, (def_id, subst));
 
         if self.tcx.is_closure(def_id) {
-            node = DepNode::Type(self.tcx.mk_closure(def_id, subst));
+            node = DepNode::Type(Ty::new_closure(self.tcx, def_id, subst));
         }
 
         let name = item_name(self.tcx, def_id, Namespace::TypeNS);
@@ -303,7 +306,7 @@ impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
         self.insert(node).ident().into()
     }
 
-    fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+    fn constructor(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let type_id = match self.tcx.def_kind(def_id) {
             DefKind::Closure | DefKind::Struct | DefKind::Enum | DefKind::Union => def_id,
             DefKind::Variant => self.tcx.parent(def_id),
@@ -326,7 +329,7 @@ impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
     fn accessor(
         &mut self,
         def_id: DefId,
-        subst: SubstsRef<'tcx>,
+        subst: GenericArgsRef<'tcx>,
         variant: usize,
         ix: FieldIdx,
     ) -> QName {
@@ -359,7 +362,7 @@ impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
     fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName {
         let def_id =
             self.tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
-        let subst = self.tcx.mk_substs(&[ty::GenericArg::from(ty)]);
+        let subst = self.tcx.mk_args(&[ty::GenericArg::from(ty)]);
         self.value(def_id, subst)
     }
 

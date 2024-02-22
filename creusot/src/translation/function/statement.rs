@@ -1,30 +1,37 @@
-use rustc_borrowck::borrow_set::TwoPhaseActivation;
-use rustc_middle::{
-    mir::{
-        BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
-        StatementKind,
-    },
-    ty::adjustment::PointerCast,
-};
-use rustc_span::DUMMY_SP;
-
 use super::BodyTranslator;
 use crate::{
+    analysis::NotFinalPlaces,
+    fmir::Operand,
     translation::{
         fmir::{self, Expr, ExprKind, RValue},
         specification::inv_subst,
     },
     util::{self, ghost_closure_id},
 };
+use rustc_borrowck::borrow_set::TwoPhaseActivation;
+use rustc_middle::{
+    mir::{
+        BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
+        StatementKind,
+    },
+    ty::adjustment::PointerCoercion,
+};
+use rustc_mir_dataflow::ResultsCursor;
+use rustc_span::DUMMY_SP;
 
 impl<'tcx> BodyTranslator<'_, 'tcx> {
-    pub(crate) fn translate_statement(&mut self, statement: &'_ Statement<'tcx>, loc: Location) {
+    pub(crate) fn translate_statement(
+        &mut self,
+        not_final_borrows: &mut ResultsCursor<'_, 'tcx, NotFinalPlaces<'tcx>>,
+        statement: &'_ Statement<'tcx>,
+        loc: Location,
+    ) {
         let mut resolved_during = self.resolver.as_mut().map(|r| r.resolved_locals_during(loc));
 
         use StatementKind::*;
         match statement.kind {
             Assign(box (ref pl, ref rv)) => {
-                self.translate_assign(statement.source_info, pl, rv, loc);
+                self.translate_assign(not_final_borrows, statement.source_info, pl, rv, loc);
 
                 // if the lhs local becomes resolved during the assignment,
                 // we cannot resolve it afterwards.
@@ -60,6 +67,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
     fn translate_assign(
         &mut self,
+        not_final_borrows: &mut ResultsCursor<'_, 'tcx, NotFinalPlaces<'tcx>>,
         si: SourceInfo,
         place: &'_ Place<'tcx>,
         rvalue: &'_ Rvalue<'tcx>,
@@ -71,7 +79,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Rvalue::Use(op) => match op {
                 Move(_pl) | Copy(_pl) => self.translate_operand(op).kind,
                 Constant(box c) => {
-                    if ghost_closure_id(self.tcx, c.literal.ty()).is_some() {
+                    if ghost_closure_id(self.tcx, c.const_.ty()).is_some() {
                         return;
                     };
                     crate::constant::from_mir_constant(self.param_env(), self.ctx, c).kind
@@ -83,14 +91,16 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         return;
                     }
 
-                    ExprKind::Copy(self.translate_place(self.compute_ref_place(*pl, loc)))
+                    let op = Operand::Copy(self.translate_place(self.compute_ref_place(*pl, loc)));
+                    ExprKind::Operand(op)
                 }
                 Mut { .. } => {
                     if self.erased_locals.contains(pl.local) {
                         return;
                     }
 
-                    self.emit_borrow(place, pl, span);
+                    let is_final = NotFinalPlaces::is_final_at(not_final_borrows, pl, loc);
+                    self.emit_borrow(place, pl, is_final, span);
                     return;
                 }
             },
@@ -150,7 +160,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Rvalue::Len(pl) => {
                 let e = Expr {
-                    kind: ExprKind::Copy(self.translate_place(*pl)),
+                    kind: ExprKind::Operand(Operand::Copy(self.translate_place(*pl))),
                     ty: pl.ty(self.body, self.tcx).ty,
                     span: DUMMY_SP,
                 };
@@ -165,7 +175,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 Box::new(crate::constant::from_ty_const(self.ctx, *len, self.param_env(), si.span)),
             ),
 
-            Rvalue::Cast(CastKind::Pointer(PointerCast::Unsize), op, ty) => {
+            Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize), op, ty) => {
                 if let Some(t) = ty.builtin_deref(true) && t.ty.is_slice() {
                     // treat &[T; N] to &[T] casts as normal assignments
                     self.translate_operand(op).kind
@@ -175,7 +185,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
             }
             Rvalue::Cast(
-                CastKind::Pointer(_)
+                CastKind::PointerCoercion(_)
                 | CastKind::PointerExposeAddress
                 | CastKind::PointerFromExposedAddress
                 | CastKind::DynStar

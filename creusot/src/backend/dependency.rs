@@ -1,9 +1,9 @@
 use heck::ToSnakeCase;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
-use rustc_middle::ty::{EarlyBinder, InternalSubsts, ParamEnv, SubstsRef, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{EarlyBinder, GenericArgs, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::Symbol;
-use rustc_type_ir::AliasKind;
+use rustc_type_ir::{fold::TypeFoldable, visit::TypeVisitable, AliasKind, Interner};
 
 use crate::{
     ctx::TranslationCtx,
@@ -22,13 +22,13 @@ use super::{ty_inv::TyInvKind, PreludeModule, TransId};
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash, PartialOrd, Ord, TypeVisitable, TypeFoldable)]
 pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
-    Item(DefId, SubstsRef<'tcx>),
+    Item(DefId, GenericArgsRef<'tcx>),
     TyInv(Ty<'tcx>, TyInvKind),
-    Hacked(HackedId, DefId, SubstsRef<'tcx>),
-    Buitlin(PreludeModule),
+    Hacked(HackedId, DefId, GenericArgsRef<'tcx>),
+    Builtin(PreludeModule),
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash, PartialOrd, Ord, TypeVisitable, TypeFoldable)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash, PartialOrd, Ord)]
 pub(crate) enum HackedId {
     PostconditionOnce,
     PostconditionMut,
@@ -39,11 +39,29 @@ pub(crate) enum HackedId {
     Accessor(u8),
 }
 
+impl<'tcx, I: Interner> TypeVisitable<I> for HackedId {
+    fn visit_with<V: rustc_type_ir::visit::TypeVisitor<I>>(
+        &self,
+        _: &mut V,
+    ) -> std::ops::ControlFlow<V::BreakTy> {
+        std::ops::ControlFlow::Continue(())
+    }
+}
+
+impl<'tcx, I: Interner> TypeFoldable<I> for HackedId {
+    fn try_fold_with<F: rustc_type_ir::fold::FallibleTypeFolder<I>>(
+        self,
+        _: &mut F,
+    ) -> Result<Self, F::Error> {
+        Ok(self)
+    }
+}
+
 impl<'tcx> Dependency<'tcx> {
-    pub(crate) fn new(tcx: TyCtxt<'tcx>, (did, subst): (DefId, SubstsRef<'tcx>)) -> Self {
+    pub(crate) fn new(tcx: TyCtxt<'tcx>, (did, subst): (DefId, GenericArgsRef<'tcx>)) -> Self {
         match util::item_type(tcx, did) {
-            ItemType::Type => Dependency::Type(tcx.mk_adt(tcx.adt_def(did), subst)),
-            ItemType::AssocTy => Dependency::Type(tcx.mk_projection(did, subst)),
+            ItemType::Type => Dependency::Type(Ty::new_adt(tcx, tcx.adt_def(did), subst)),
+            ItemType::AssocTy => Dependency::Type(Ty::new_projection(tcx, did, subst)),
             _ => Dependency::Item(did, subst),
         }
     }
@@ -52,11 +70,11 @@ impl<'tcx> Dependency<'tcx> {
         match trans_id {
             TransId::Item(self_id) => {
                 let subst = match tcx.def_kind(self_id) {
-                    DefKind::Closure => match tcx.type_of(self_id).subst_identity().kind() {
+                    DefKind::Closure => match tcx.type_of(self_id).instantiate_identity().kind() {
                         TyKind::Closure(_, subst) => subst,
                         _ => unreachable!(),
                     },
-                    _ => InternalSubsts::identity_for_item(tcx, self_id),
+                    _ => GenericArgs::identity_for_item(tcx, self_id),
                 };
 
                 Dependency::new(tcx, (self_id, subst)).erase_regions(tcx)
@@ -64,7 +82,7 @@ impl<'tcx> Dependency<'tcx> {
             TransId::TyInv(inv_kind) => Dependency::TyInv(inv_kind.to_skeleton_ty(tcx), inv_kind),
             TransId::Hacked(h, self_id) => {
                 let subst = match tcx.def_kind(self_id) {
-                    DefKind::Closure => match tcx.type_of(self_id).subst_identity().kind() {
+                    DefKind::Closure => match tcx.type_of(self_id).instantiate_identity().kind() {
                         TyKind::Closure(_, subst) => subst,
                         _ => unreachable!(),
                     },
@@ -81,7 +99,7 @@ impl<'tcx> Dependency<'tcx> {
             Dependency::Item(id, _) => Some(TransId::Item(id)),
             Dependency::TyInv(_, k) => Some(TransId::TyInv(k)),
             Dependency::Hacked(h, id, _) => Some(TransId::Hacked(h, id)),
-            Dependency::Buitlin(_) => None,
+            Dependency::Builtin(_) => None,
         }
     }
 
@@ -97,17 +115,17 @@ impl<'tcx> Dependency<'tcx> {
         ctx.try_normalize_erasing_regions(param_env, self).ok()
     }
 
-    pub(crate) fn did(self) -> Option<(DefId, SubstsRef<'tcx>)> {
+    pub(crate) fn did(self) -> Option<(DefId, GenericArgsRef<'tcx>)> {
         match self {
             Dependency::Item(def_id, subst) => Some((def_id, subst)),
             Dependency::Type(t) | Dependency::TyInv(t, _) => match t.kind() {
                 TyKind::Adt(def, substs) => Some((def.did(), substs)),
                 TyKind::Closure(id, substs) => Some((*id, substs)),
-                TyKind::Alias(AliasKind::Projection, aty) => Some((aty.def_id, aty.substs)),
+                TyKind::Alias(AliasKind::Projection, aty) => Some((aty.def_id, aty.args)),
                 _ => None,
             },
             Dependency::Hacked(_, id, substs) => Some((id, substs)),
-            Dependency::Buitlin(_) => None,
+            Dependency::Builtin(_) => None,
         }
     }
 
@@ -130,7 +148,7 @@ impl<'tcx> Dependency<'tcx> {
             return self;
         };
 
-        EarlyBinder::bind(self).subst(tcx, substs)
+        EarlyBinder::bind(self).instantiate(tcx, substs)
     }
 
     #[inline]
@@ -182,14 +200,14 @@ impl<'tcx> Dependency<'tcx> {
                 HackedId::Resolve => Symbol::intern("resolve"),
                 HackedId::Accessor(ix) => Symbol::intern(&format!("field_{ix}")),
             },
-            Dependency::Buitlin(_) => Symbol::intern("builtin_should_not_appear"),
+            Dependency::Builtin(_) => Symbol::intern("builtin_should_not_appear"),
         }
     }
 }
 
 fn resolve_item<'tcx>(
     item: DefId,
-    substs: SubstsRef<'tcx>,
+    substs: GenericArgsRef<'tcx>,
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
 ) -> Dependency<'tcx> {
@@ -211,8 +229,8 @@ fn resolve_item<'tcx>(
 pub(crate) fn closure_hack<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
-    subst: SubstsRef<'tcx>,
-) -> (Option<HackedId>, DefId, SubstsRef<'tcx>) {
+    subst: GenericArgsRef<'tcx>,
+) -> (Option<HackedId>, DefId, GenericArgsRef<'tcx>) {
     let hacked = if tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_precond"), def_id) {
         Some(HackedId::Precondition)
     } else if tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_postcond"), def_id) {

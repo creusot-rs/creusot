@@ -383,7 +383,6 @@ impl<'tcx> Why3Generator<'tcx> {
         let filename = match self.opts.span_mode {
             SpanMode::Absolute => path.to_string_lossy().into_owned(),
             SpanMode::Relative => {
-                // Why3 treats the spans as relative to the session not the source file??
                 format!("{}", self.opts.relative_to_output(&path).to_string_lossy())
             }
             _ => return None,

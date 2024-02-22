@@ -1,3 +1,4 @@
+use super::{program::borrow_generated_id, Why3Generator};
 use crate::{
     backend::ty::{floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty},
     ctx::*,
@@ -5,7 +6,8 @@ use crate::{
     util,
     util::get_builtin,
 };
-use rustc_middle::ty::{EarlyBinder, Ty, TyKind};
+use rustc_hir::def_id::DefId;
+use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
     ty::Type,
@@ -54,7 +56,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 self.lookup_builtin(method, &Vec::new()).unwrap_or_else(|| {
                     // eprintln!("{id:?} {subst:?}");
                     let clone = self.names.value(*id, subst);
-                    match self.ctx.type_of(id).subst_identity().kind() {
+                    match self.ctx.type_of(id).instantiate_identity().kind() {
                         TyKind::FnDef(_, _) => Exp::Tuple(Vec::new()),
                         _ => Exp::pure_qvar(clone),
                     }
@@ -240,12 +242,14 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::pure_qvar(accessor).app(vec![lhs])
             }
             TermKind::Closure { body } => {
-                let TyKind::Closure(id, subst) = term.ty.kind() else { unreachable!("closure has non closure type")};
+                let TyKind::Closure(id, subst) = term.ty.kind() else {
+                    unreachable!("closure has non closure type")
+                };
                 let body = self.lower_term(&*body);
 
                 let mut binders = Vec::new();
                 let sig = self.ctx.sig(*id).clone();
-                let sig = EarlyBinder::bind(sig).subst(self.ctx.tcx, subst);
+                let sig = EarlyBinder::bind(sig).instantiate(self.ctx.tcx, subst);
                 for arg in sig.inputs.iter().skip(1) {
                     binders
                         .push(Binder::typed(Ident::build(&arg.0.to_string()), self.lower_ty(arg.2)))
@@ -254,12 +258,14 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::Abs(binders, Box::new(body))
             }
             TermKind::Absurd => Exp::Absurd,
-            TermKind::Reborrow { cur, fin } => Exp::Record {
-                fields: vec![
-                    ("current".into(), self.lower_term(&*cur)),
-                    ("final".into(), self.lower_term(&*fin)),
-                ],
-            },
+            TermKind::Reborrow { cur, fin, term, projection } => {
+                let inner = self.lower_term(&*term);
+                let borrow_id = borrow_generated_id(inner, &projection);
+                Exp::Call(
+                    Box::new(Exp::QVar("Borrow.borrow_logic".into(), Purity::Logic)),
+                    vec![self.lower_term(&*cur), self.lower_term(&*fin), borrow_id],
+                )
+            }
             TermKind::Assert { cond } => {
                 let cond = self.lower_term(&*cond);
                 if self.pure == Purity::Program && !cond.is_pure() {
@@ -316,7 +322,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
     pub(crate) fn lookup_builtin(
         &mut self,
-        method: (DefId, SubstsRef<'tcx>),
+        method: (DefId, GenericArgsRef<'tcx>),
         args: &Vec<Exp>,
     ) -> Option<Exp> {
         let def_id = method.0;
@@ -341,11 +347,6 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         None
     }
 }
-
-use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
-
-use super::Why3Generator;
 
 pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
     _: &mut TranslationCtx<'tcx>,
@@ -423,10 +424,10 @@ pub(super) fn mk_binders(func: Exp, args: Vec<Exp>) -> Exp {
     })
 }
 
-fn is_identity_from<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, subst: SubstsRef<'tcx>) -> bool {
+fn is_identity_from<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, subst: GenericArgsRef<'tcx>) -> bool {
     if tcx.def_path_str(id) == "std::convert::From::from" && subst.len() == 1 {
         let out_ty: Ty<'tcx> = tcx.fn_sig(id).no_bound_vars().unwrap().output().skip_binder();
-        return subst[0].expect_ty() == EarlyBinder::bind(out_ty).subst(tcx, subst);
+        return subst[0].expect_ty() == EarlyBinder::bind(out_ty).instantiate(tcx, subst);
     }
     false
 }

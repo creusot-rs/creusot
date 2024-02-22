@@ -7,11 +7,12 @@ use super::{
 };
 use crate::{
     backend::{
-        closure_generic_decls, optimization, place,
-        place::translate_rplace,
+        closure_generic_decls, optimization,
+        place::{self, translate_rplace},
         ty::{self, translate_closure_ty, translate_ty},
     },
     ctx::{BodyId, CloneMap, TranslationCtx},
+    fmir::Operand,
     translation::{
         binop_to_binop,
         fmir::{
@@ -24,8 +25,8 @@ use crate::{
 };
 use rustc_hir::{def_id::DefId, Unsafety};
 use rustc_middle::{
-    mir::{BasicBlock, BinOp},
-    ty::TyKind,
+    mir::{BasicBlock, BinOp, ProjectionElem},
+    ty::{GenericArgsRef, TyKind},
 };
 use rustc_span::{Span, DUMMY_SP};
 use rustc_type_ir::{IntTy, UintTy};
@@ -43,8 +44,10 @@ fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
     let mut names = CloneMap::new(ctx.tcx, def_id.into());
     let mut decls = Vec::new();
 
-    let TyKind::Closure(_, subst) = ctx.type_of(def_id).subst_identity().kind() else { unreachable!() };
-    names.insert_hidden_type(ctx.type_of(def_id).subst_identity());
+    let TyKind::Closure(_, subst) = ctx.type_of(def_id).instantiate_identity().kind() else {
+        unreachable!()
+    };
+    names.insert_hidden_type(ctx.type_of(def_id).instantiate_identity());
     let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
 
     let (clones, _) = names.to_clones(ctx, CloneDepth::Deep);
@@ -299,11 +302,11 @@ impl<'tcx> Expr<'tcx> {
         locals: &LocalDecls<'tcx>,
     ) -> Exp {
         let e = match self.kind {
-            ExprKind::Move(pl) => {
+            ExprKind::Operand(Operand::Move(pl)) => {
                 // TODO invalidate original place
                 pl.as_rplace(ctx, names, locals)
             }
-            ExprKind::Copy(pl) => pl.as_rplace(ctx, names, locals),
+            ExprKind::Operand(Operand::Copy(pl)) => pl.as_rplace(ctx, names, locals),
             ExprKind::BinOp(BinOp::BitAnd, l, r) if l.ty.is_bool() => {
                 l.to_why(ctx, names, locals).lazy_and(r.to_why(ctx, names, locals))
             }
@@ -335,36 +338,6 @@ impl<'tcx> Expr<'tcx> {
 
                 let ctor = names.constructor(id, subst);
                 Exp::Constructor { ctor, args }
-            }
-            ExprKind::Call(id, subst, args) => {
-                let mut args: Vec<_> =
-                    args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
-                let fname = names.value(id, subst);
-
-                let exp = if ctx.is_closure(id) {
-                    assert!(args.len() == 2, "closures should only have two arguments (env, args)");
-
-                    let real_sig =
-                        ctx.signature_unclosure(subst.as_closure().sig(), Unsafety::Normal);
-                    let closure_arg_count = real_sig.inputs().skip_binder().len();
-                    let names = ('a'..).take(closure_arg_count);
-
-                    let mut closure_args = vec![args.remove(0)];
-
-                    closure_args
-                        .extend(names.clone().map(|nm| Exp::impure_var(nm.to_string().into())));
-
-                    Exp::Let {
-                        pattern: Pattern::TupleP(
-                            names.map(|nm| Pattern::VarP(nm.to_string().into())).collect(),
-                        ),
-                        arg: Box::new(args.remove(0)),
-                        body: Box::new(Exp::impure_qvar(fname).app(closure_args)),
-                    }
-                } else {
-                    Exp::impure_qvar(fname).app(args)
-                };
-                exp
             }
             ExprKind::Constant(c) => lower_impure(ctx, names, &c),
             ExprKind::Tuple(f) => {
@@ -453,15 +426,14 @@ impl<'tcx> Expr<'tcx> {
 
     fn invalidated_places(&self, places: &mut Vec<(fmir::Place<'tcx>, Span)>) {
         match &self.kind {
-            ExprKind::Move(p) => places.push((p.clone(), self.span)),
-            ExprKind::Copy(_) => {}
+            ExprKind::Operand(Operand::Move(p)) => places.push((p.clone(), self.span)),
+            ExprKind::Operand(_) => {}
             ExprKind::BinOp(_, l, r) => {
                 l.invalidated_places(places);
                 r.invalidated_places(places)
             }
             ExprKind::UnaryOp(_, e) => e.invalidated_places(places),
             ExprKind::Constructor(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
-            ExprKind::Call(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
             ExprKind::Constant(_) => {}
             ExprKind::Cast(e, _, _) => e.invalidated_places(places),
             ExprKind::Tuple(es) => es.iter().for_each(|e| e.invalidated_places(places)),
@@ -644,6 +616,40 @@ impl<'tcx> Place<'tcx> {
     }
 }
 
+pub(crate) fn borrow_generated_id<V: std::fmt::Debug, T: std::fmt::Debug>(
+    original_borrow: Exp,
+    projection: &[ProjectionElem<V, T>],
+) -> Exp {
+    let mut borrow_id = Exp::Call(
+        Box::new(Exp::pure_qvar(QName::from_string("Borrow.get_id").unwrap())),
+        vec![original_borrow],
+    );
+    for proj in projection {
+        match proj {
+            ProjectionElem::Deref => {
+                // Deref of a box
+            }
+            ProjectionElem::Field(idx, _) => {
+                borrow_id = Exp::Call(
+                    Box::new(Exp::pure_qvar(QName::from_string("Borrow.inherit_id").unwrap())),
+                    vec![borrow_id, Exp::Const(Constant::Int(idx.as_u32() as i128 + 1, None))],
+                );
+            }
+            ProjectionElem::Downcast(_, _) => {
+                // since only one variant can be active at a time, there is no need to change the borrow index further
+            }
+            ProjectionElem::Index(_)
+            | ProjectionElem::ConstantIndex { .. }
+            | ProjectionElem::Subslice { .. }
+            | ProjectionElem::OpaqueCast(_) => {
+                // Should only appear in logic, so we can ignore them.
+            }
+            ProjectionElem::Subtype(_) => {}
+        }
+    }
+    borrow_id
+}
+
 impl<'tcx> Statement<'tcx> {
     pub(crate) fn to_why(
         self,
@@ -664,9 +670,27 @@ impl<'tcx> Statement<'tcx> {
                     place::create_assign_inner(ctx, names, locals, &rhs, reassign, span),
                 ]
             }
+            Statement::Assignment(lhs, RValue::FinalBorrow(rhs, deref_index), span) => {
+                let original_borrow = Place {
+                    local: rhs.local.clone(),
+                    projection: rhs.projection[..deref_index].to_vec(),
+                }
+                .as_rplace(ctx, names, locals);
+                let borrow_id =
+                    borrow_generated_id(original_borrow, &rhs.projection[deref_index + 1..]);
+                let borrow = Exp::Call(
+                    Box::new(Exp::impure_qvar(QName::from_string("Borrow.borrow_final").unwrap())),
+                    vec![rhs.as_rplace(ctx, names, locals), borrow_id],
+                );
+                let reassign = Exp::Final(Box::new(lhs.as_rplace(ctx, names, locals)));
+
+                vec![
+                    place::create_assign_inner(ctx, names, locals, &lhs, borrow, span),
+                    place::create_assign_inner(ctx, names, locals, &rhs, reassign, span),
+                ]
+            }
             Statement::Assignment(lhs, RValue::Ghost(rhs), span) => {
                 let ghost = lower_pure(ctx, names, &rhs);
-
                 vec![place::create_assign_inner(ctx, names, locals, &lhs, ghost, span)]
             }
             Statement::Assignment(lhs, RValue::Expr(rhs), span) => {
@@ -675,18 +699,24 @@ impl<'tcx> Statement<'tcx> {
                 let rhs = rhs.to_why(ctx, names, locals);
                 let mut exps =
                     vec![place::create_assign_inner(ctx, names, locals, &lhs, rhs, span)];
-                for (pl, pl_span) in invalid {
-                    let ty = pl.ty(ctx.tcx, locals);
-                    let ty = translate_ty(ctx, names, pl_span.substitute_dummy(span), ty);
-                    exps.push(place::create_assign_inner(
-                        ctx,
-                        names,
-                        locals,
-                        &pl,
-                        Exp::Any(ty),
-                        pl_span,
-                    ));
+                invalidate_places(ctx, names, locals, span, invalid, &mut exps);
+
+                exps
+            }
+            Statement::Call(dest, fun_id, subst, args, span) => {
+                let mut invalid = Vec::new();
+                args.iter().for_each(|a| a.invalidated_places(&mut invalid));
+
+                let mut exp = func_call_to_why3(ctx, names, locals, fun_id, subst, args);
+
+                if let Some(attr) = ctx.span_attr(span) {
+                    exp = Exp::Attr(attr, Box::new(exp));
                 }
+
+                let mut exps =
+                    vec![place::create_assign_inner(ctx, names, locals, &dest, exp, span)];
+                invalidate_places(ctx, names, locals, span, invalid, &mut exps);
+
                 exps
             }
             Statement::Resolve(id, subst, pl) => {
@@ -723,6 +753,56 @@ impl<'tcx> Statement<'tcx> {
             }
         }
     }
+}
+
+fn invalidate_places<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    locals: &LocalDecls<'tcx>,
+    span: Span,
+    invalid: Vec<(Place<'tcx>, Span)>,
+    out: &mut Vec<mlcfg::Statement>,
+) {
+    for (pl, pl_span) in invalid {
+        let ty = pl.ty(ctx.tcx, locals);
+        let ty = translate_ty(ctx, names, pl_span.substitute_dummy(span), ty);
+        out.push(place::create_assign_inner(ctx, names, locals, &pl, Exp::Any(ty), pl_span));
+    }
+}
+
+fn func_call_to_why3<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    locals: &LocalDecls<'tcx>,
+    id: DefId,
+    subst: GenericArgsRef<'tcx>,
+    args: Vec<Expr<'tcx>>,
+) -> Exp {
+    let mut args: Vec<_> = args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
+    let fname = names.value(id, subst);
+
+    let exp = if ctx.is_closure(id) {
+        assert!(args.len() == 2, "closures should only have two arguments (env, args)");
+
+        let real_sig = ctx.signature_unclosure(subst.as_closure().sig(), Unsafety::Normal);
+        let closure_arg_count = real_sig.inputs().skip_binder().len();
+        let names = ('a'..).take(closure_arg_count);
+
+        let mut closure_args = vec![args.remove(0)];
+
+        closure_args.extend(names.clone().map(|nm| Exp::impure_var(nm.to_string().into())));
+
+        Exp::Let {
+            pattern: Pattern::TupleP(
+                names.map(|nm| Pattern::VarP(nm.to_string().into())).collect(),
+            ),
+            arg: Box::new(args.remove(0)),
+            body: Box::new(Exp::impure_qvar(fname).app(closure_args)),
+        }
+    } else {
+        Exp::impure_qvar(fname).app(args)
+    };
+    exp
 }
 
 pub(crate) fn int_to_prelude(ity: IntTy) -> PreludeModule {
