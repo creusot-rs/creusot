@@ -52,6 +52,9 @@ pub enum BinOp {
     Mul,
     Div,
     Rem,
+    BitXor,
+    BitAnd,
+    BitOr,
     Lt,
     Le,
     Ge,
@@ -304,15 +307,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     mir::BinOp::Mul | mir::BinOp::MulUnchecked => BinOp::Mul,
                     mir::BinOp::Div => BinOp::Div,
                     mir::BinOp::Rem => BinOp::Rem,
-                    mir::BinOp::BitXor => {
-                        return Err(Error::new(self.thir[expr].span, "unsupported operation"))
-                    }
-                    mir::BinOp::BitAnd => {
-                        return Err(Error::new(self.thir[expr].span, "unsupported operation"))
-                    }
-                    mir::BinOp::BitOr => {
-                        return Err(Error::new(self.thir[expr].span, "unsupported operation"))
-                    }
+                    mir::BinOp::BitXor => BinOp::BitXor,
+                    mir::BinOp::BitAnd => BinOp::BitAnd,
+                    mir::BinOp::BitOr => BinOp::BitOr,
                     mir::BinOp::Shl | mir::BinOp::ShlUnchecked => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }

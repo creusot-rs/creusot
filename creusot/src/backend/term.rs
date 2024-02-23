@@ -117,6 +117,15 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                         inner
                     }
+                    (BitXor, _) => {
+                        Exp::impure_qvar(QName::from_string("bw_xor").unwrap()).app(vec![lhs, rhs])
+                    }
+                    (BitAnd, _) => {
+                        Exp::impure_qvar(QName::from_string("bw_and").unwrap()).app(vec![lhs, rhs])
+                    }
+                    (BitOr, _) => {
+                        Exp::impure_qvar(QName::from_string("bw_or").unwrap()).app(vec![lhs, rhs])
+                    }
                     _ => {
                         Exp::BinaryOp(binop_to_binop(*op, self.pure), Box::new(lhs), Box::new(rhs))
                     }

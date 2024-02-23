@@ -63,48 +63,24 @@ end
 
 (* Signed Integer *)
 module IntSize
-  use export mach.int.Int64
-  type isize = int64
+  use export mach.bv.BVCheck64
+  type isize = t
 end
 module Int8
-  use int.Int
-
-  type int8 = < range -0x80 0x7f >
-
-  let constant min_int8 : int = - 0x80
-  let constant max_int8 : int =   0x7f
-  function to_int (x : int8) : int = int8'int x
-
-  clone export mach.int.Bounded_int with
-    type t = int8,
-    constant min = int8'minInt,
-    constant max = int8'maxInt,
-    function to_int = int8'int,
-    lemma to_int_in_bounds,
-    lemma extensionality
+  use export mach.bv.BVCheck8
+  type int8 = t
 end
 module Int16
-  use int.Int
-
-  type int16 = < range -0x8000 0x7fff >
-
-  let constant min_int16 : int = - 0x8000
-  let constant max_int16 : int =   0x7fff
-  function to_int (x : int16) : int = int16'int x
-
-  clone export mach.int.Bounded_int with
-    type t = int16,
-    constant min = int16'minInt,
-    constant max = int16'maxInt,
-    function to_int = int16'int,
-    lemma to_int_in_bounds,
-    lemma extensionality
+  use export mach.bv.BVCheck16
+  type int16 = t
 end
 module Int32
-  use export mach.int.Int32
+  use export mach.bv.BVCheck32
+  type int32 = t
 end
 module Int64
-  use export mach.int.Int64
+  use export mach.bv.BVCheck64
+  type int64 = t
 end
 module Int128
   use int.Int
@@ -126,48 +102,34 @@ end
 
 (* Unsigned Integers *)
 module UIntSize
-  use export mach.int.UInt64
-  type usize = uint64
+  use export mach.bv.BVCheck64
+  type usize = t
+
+  function to_uint (x : t) : int = t'int x
 end
 module UInt8
-  use int.Int
+  use export mach.bv.BVCheck8
+  type uint8 = t
 
-  type uint8 = < range 0x0 0xff >
-
-  let constant min_uint8 : int =  0x00
-  let constant max_uint8 : int =  0xff
-  function to_int (x : uint8) : int = uint8'int x
-
-  clone export mach.int.Bounded_int with
-    type t = uint8,
-    constant min = uint8'minInt,
-    constant max = uint8'maxInt,
-    function to_int = uint8'int,
-    lemma to_int_in_bounds,
-    lemma extensionality
+  function to_uint (x : t) : int = t'int x
 end
 module UInt16
-  use int.Int
+  use export mach.bv.BVCheck16
+  type uint16 = t
 
-  type uint16 = < range 0x0 0xffff >
-
-  let constant min_uint16 : int =  0x00
-  let constant max_uint16 : int =  0xffff
-  function to_int (x : uint16) : int = uint16'int x
-
-  clone export mach.int.Bounded_int with
-    type t = uint16,
-    constant min = uint16'minInt,
-    constant max = uint16'maxInt,
-    function to_int = uint16'int,
-    lemma to_int_in_bounds,
-    lemma extensionality
+  function to_uint (x : t) : int = t'int x
 end
 module UInt32
-  use export mach.int.UInt32
+  use export mach.bv.BVCheck32
+  type uint32 = t
+
+  function to_uint (x : t) : int = t'int x
 end
 module UInt64
-  use export mach.int.UInt64
+  use export mach.bv.BVCheck64
+  type uint64 = t
+
+  function to_uint (x : t) : int = t'int x
 end
 module UInt128
   use int.Int
@@ -229,26 +191,26 @@ module Slice
 
   type slice 'a =
     { elts : seq 'a }
-    invariant { Seq.length elts <= max_uint64 }
+    invariant { Seq.length elts <= UIntSize.two_power_size - 1 }
   axiom slice_ext :
     forall x y: slice 'a. x.elts = y.elts -> x = y
 
   type array 'a = slice 'a
 
-  let create (len : uint64) (f : int -> 'a) : slice 'a =
+  let create (len : UIntSize.t) (f : int -> 'a) : slice 'a =
     { elts = Seq.create (to_int len) f}
 
-  let function length (s : slice 'a) : uint64 = of_int (Seq.length s.elts)
+  let function length (s : slice 'a) : UIntSize.t = of_int (Seq.length s.elts)
 
-  let function get (s : slice 'a) (ix : uint64) : 'a =
-    requires { ix < Seq.length s.elts }
+  let function get (s : slice 'a) (ix : UIntSize.t) : 'a =
+    requires { to_int ix < Seq.length s.elts }
     Seq.get s.elts (to_int ix)
 
-  let set (s : slice 'a) (ix : uint64) (v : 'a) : slice 'a =
-    requires { 0 <= ix < Seq.length s.elts }
+  let set (s : slice 'a) (ix : UIntSize.t) (v : 'a) : slice 'a =
+    requires { 0 <= to_int ix < Seq.length s.elts }
     ensures { Seq.length result.elts = Seq.length s.elts }
-    ensures { result.elts[ix] = v }
-    ensures { forall j. 0 <= j < Seq.length s.elts /\ j <> ix -> result.elts[j] = s.elts[j] }
+    ensures { result.elts[to_int ix] = v }
+    ensures { forall j. 0 <= j < Seq.length s.elts /\ j <> to_int ix -> result.elts[j] = s.elts[j] }
     { elts = Seq.set s.elts (to_int ix) v }
 
   function id (s : slice 'a) : seq 'a = s.elts

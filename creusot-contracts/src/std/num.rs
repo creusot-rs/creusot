@@ -2,13 +2,13 @@ use crate::{Default, *};
 pub use ::std::num::*;
 
 macro_rules! mach_int {
-    ($t:ty, $ty_nm:expr, $zero:expr) => {
+    ($t:ty, $ty_nm:literal, $zero:expr) => {
         impl ShallowModel for $t {
             type ShallowModelTy = Int;
             #[ghost]
             #[open]
             #[trusted]
-            #[creusot::builtins = concat!($ty_nm, ".to_int")]
+            #[creusot::builtins = $ty_nm]
             fn shallow_model(self) -> Self::ShallowModelTy {
                 pearlite! { absurd }
             }
@@ -33,19 +33,19 @@ macro_rules! mach_int {
     };
 }
 
-mach_int!(u8, "prelude.UInt8", 0u8);
-mach_int!(u16, "prelude.UInt16", 0u16);
-mach_int!(u32, "prelude.UInt32", 0u32);
-mach_int!(u64, "prelude.UInt64", 0u64);
-mach_int!(u128, "prelude.UInt128", 0u128);
-mach_int!(usize, "prelude.UIntSize", 0usize);
+mach_int!(u8, "prelude.UInt8.to_uint", 0u8);
+mach_int!(u16, "prelude.UInt16.to_uint", 0u16);
+mach_int!(u32, "prelude.UInt32.to_uint", 0u32);
+mach_int!(u64, "prelude.UInt64.to_uint", 0u64);
+mach_int!(u128, "prelude.UInt128.to_uint", 0u128);
+mach_int!(usize, "prelude.UIntSize.to_uint", 0usize);
 
-mach_int!(i8, "prelude.Int8", 0i8);
-mach_int!(i16, "prelude.Int16", 0i16);
-mach_int!(i32, "prelude.Int32", 0i32);
-mach_int!(i64, "prelude.Int64", 0i64);
-mach_int!(i128, "prelude.Int128", 0i128);
-mach_int!(isize, "prelude.IntSize", 9isize);
+mach_int!(i8, "prelude.Int8.to_int", 0i8);
+mach_int!(i16, "prelude.Int16.to_int", 0i16);
+mach_int!(i32, "prelude.Int32.to_int", 0i32);
+mach_int!(i64, "prelude.Int64.to_int", 0i64);
+mach_int!(i128, "prelude.Int128.to_int", 0i128);
+mach_int!(isize, "prelude.IntSize.to_int", 9isize);
 
 /// Adds specifications for checked, wrapping, saturating, and overflowing operations on the given
 /// integer type
