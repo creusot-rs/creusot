@@ -57,6 +57,7 @@ impl<K, V: ?Sized> FMap<K, V> {
 
     #[ghost]
     #[open]
+    #[why3::attr = "inline:trivial"]
     pub fn lookup_unsized(self, k: K) -> SizedW<V> {
         unwrap(self.get(k))
     }
@@ -73,6 +74,7 @@ impl<K, V: ?Sized> FMap<K, V> {
 
     #[ghost]
     #[open]
+    #[why3::attr = "inline:trivial"]
     pub fn contains(self, k: K) -> bool {
         self.get(k) != None
     }
@@ -129,10 +131,11 @@ impl<K, V: ?Sized> FMap<K, V> {
     }
 
     #[ghost]
-    #[open]
+    #[open(self)]
     #[requires(other.subset(self))]
     #[ensures(result.disjoint(other))]
     #[ensures(other.union(result).ext_eq(self))]
+    #[ensures(forall<k: K> result.get(k) == if other.contains(k) {None} else {self.get(k)})]
     pub fn subtract(self, other: Self) -> Self {
         self.subtract_keys(other)
     }
