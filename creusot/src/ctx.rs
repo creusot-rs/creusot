@@ -243,16 +243,20 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         )
     }
 
-    pub(crate) fn error(&self, span: Span, msg: &str) {
-        self.tcx.sess.span_err_with_code(
+    pub(crate) fn error(
+        &self,
+        span: Span,
+        msg: &str,
+    ) -> DiagnosticBuilder<'tcx, rustc_errors::ErrorGuaranteed> {
+        self.tcx.sess.struct_span_err_with_code(
             span,
             msg.to_string(),
             DiagnosticId::Error(String::from("creusot")),
         )
     }
 
-    pub(crate) fn warn(&self, span: Span, msg: &str) {
-        self.tcx.sess.span_warn_with_code(
+    pub(crate) fn warn(&self, span: Span, msg: &str) -> DiagnosticBuilder<'tcx, ()> {
+        self.tcx.sess.struct_span_warn_with_code(
             span,
             msg.to_string(),
             DiagnosticId::Lint {
