@@ -202,7 +202,7 @@ pub(crate) fn resolve_function<'tcx>(
                 .expect("could not find instance");
 
             if !method.0.is_local() && ctx.sig(method.0).contract.is_false() {
-                ctx.warn(sp, "calling an external function with no contract will yield an impossible precondition");
+                ctx.warn(sp, "calling an external function with no contract will yield an impossible precondition").emit();
             }
 
             return method;
@@ -213,7 +213,8 @@ pub(crate) fn resolve_function<'tcx>(
         ctx.warn(
             sp,
             "calling an external function with no contract will yield an impossible precondition",
-        );
+        )
+        .emit();
     }
     // ctx.translate(def_id);
 
