@@ -6,7 +6,7 @@ use crate::{
         fmir::{self, Expr, ExprKind, RValue},
         specification::inv_subst,
     },
-    util::{self, ghost_closure_id},
+    util::{self, snapshot_closure_id},
 };
 use rustc_borrowck::borrow_set::TwoPhaseActivation;
 use rustc_middle::{
@@ -79,7 +79,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Rvalue::Use(op) => match op {
                 Move(_pl) | Copy(_pl) => self.translate_operand(op).kind,
                 Constant(box c) => {
-                    if ghost_closure_id(self.tcx, c.const_.ty()).is_some() {
+                    if snapshot_closure_id(self.tcx, c.const_.ty()).is_some() {
                         return;
                     };
                     crate::constant::from_mir_constant(self.param_env(), self.ctx, c).kind

@@ -3,10 +3,10 @@ use crate::{invariant::Invariant, *};
 pub struct MapInv<I, B, F> {
     pub iter: I,
     pub func: F,
-    pub produced: Ghost<Seq<B>>,
+    pub produced: Snapshot<Seq<B>>,
 }
 
-impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
+impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator
     for MapInv<I, I::Item, F>
 {
     #[open]
@@ -44,8 +44,8 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
                else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
             && forall<i : Int> 0 <= i && i < visited.len() ==>
                  self.func.unnest(*fs[i])
-                 && (*fs[i]).precondition((s[i], Ghost::new(self.produced.concat(s.subsequence(0, i)))))
-                 && fs[i].postcondition_mut((s[i], Ghost::new(self.produced.concat(s.subsequence(0, i)))), visited[i])
+                 && (*fs[i]).precondition((s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))))
+                 && fs[i].postcondition_mut((s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), visited[i])
         }
     }
 }
@@ -59,7 +59,7 @@ impl<I, B, F> Resolve for MapInv<I, B, F> {
     }
 }
 
-impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Invariant
+impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invariant
     for MapInv<I, I::Item, F>
 {
     // Should not quantify over self or the `invariant` cannot be made into a type invariant
@@ -74,7 +74,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Invariant
     }
 }
 
-impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> ::std::iter::Iterator
+impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> ::std::iter::Iterator
     for MapInv<I, I::Item, F>
 {
     type Item = B;
@@ -84,35 +84,35 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> ::std::iter::I
       Some(v) => (*self).produces_one(v, ^self)
     })]
     fn next(&mut self) -> Option<Self::Item> {
-        let old_self: Ghost<Self> = gh! { *self };
+        let old_self: Snapshot<Self> = snapshot! { *self };
         match self.iter.next() {
             Some(v) => {
                 proof_assert! { self.func.precondition((v, self.produced)) };
-                let produced = gh! { self.produced.push(v) };
+                let produced = snapshot! { self.produced.push(v) };
                 let r = (self.func)(v, self.produced);
                 self.produced = produced;
                 #[allow(path_statements)]
-                let _: Ghost<()> = gh! { { Self::produces_one_invariant; () } };
+                let _: Snapshot<()> = snapshot! { { Self::produces_one_invariant; () } };
                 proof_assert! { old_self.produces_one(r, *self) };
                 let _ = self; // Make sure self is not resolve until here.
                 Some(r)
             }
             None => {
-                self.produced = gh! { Seq::EMPTY };
+                self.produced = snapshot! { Seq::EMPTY };
                 None
             }
         }
     }
 }
 
-impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::Item, F> {
+impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I::Item, F> {
     #[open]
     #[predicate]
     pub fn next_precondition(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {
             forall<e: I::Item, i: I>
                 iter.produces(Seq::singleton(e), i) ==>
-                func.precondition((e, Ghost::new(produced)))
+                func.precondition((e, Snapshot::new(produced)))
         }
     }
 
@@ -123,9 +123,9 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::I
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 func.unnest(*f) ==>
                 iter.produces(s.push(e1).push(e2), i) ==>
-                (*f).precondition((e1, Ghost::new(produced.concat(s)))) ==>
-                f.postcondition_mut((e1, Ghost::new(produced.concat(s))), b) ==>
-                (^f).precondition((e2, Ghost::new(produced.concat(s).push(e1))))
+                (*f).precondition((e1, Snapshot::new(produced.concat(s)))) ==>
+                f.postcondition_mut((e1, Snapshot::new(produced.concat(s))), b) ==>
+                (^f).precondition((e2, Snapshot::new(produced.concat(s).push(e1))))
         }
     }
 
@@ -136,9 +136,9 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::I
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 func.unnest(*f) ==>
                 iter.produces(s.push(e1).push(e2), i) ==>
-                (*f).precondition((e1, Ghost::new(s))) ==>
-                f.postcondition_mut((e1, Ghost::new(s)), b) ==>
-                (^f).precondition((e2, Ghost::new(s.push(e1))))
+                (*f).precondition((e1, Snapshot::new(s))) ==>
+                f.postcondition_mut((e1, Snapshot::new(s)), b) ==>
+                (^f).precondition((e2, Snapshot::new(s.push(e1))))
         }
     }
 

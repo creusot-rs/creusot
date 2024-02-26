@@ -20,7 +20,7 @@ mod macros {
     /// A post-condition of a function or trait item
     pub use creusot_contracts_proc::ensures;
 
-    pub use creusot_contracts_proc::gh;
+    pub use creusot_contracts_proc::snapshot;
 
     /// A loop invariant
     /// The first argument should be a name for the invariant
@@ -97,7 +97,7 @@ mod macros {
     /// A post-condition of a function or trait item
     pub use creusot_contracts_dummy::ensures;
 
-    pub use creusot_contracts_dummy::gh;
+    pub use creusot_contracts_dummy::snapshot;
 
     /// A loop invariant
     /// The first argument should be a name for the invariant
@@ -179,27 +179,27 @@ pub mod std;
 pub mod num_rational;
 
 #[cfg(creusot)]
-pub mod ghost;
+pub mod snapshot;
 
 #[cfg(not(creusot))]
-pub mod ghost {
-    pub struct Ghost<T>(std::marker::PhantomData<T>)
+pub mod snapshot {
+    pub struct Snapshot<T>(std::marker::PhantomData<T>)
     where
         T: ?Sized;
 
-    impl<T: ?Sized> Ghost<T> {
+    impl<T: ?Sized> Snapshot<T> {
         pub fn from_fn(_: fn() -> T) -> Self {
-            Ghost(std::marker::PhantomData)
+            Snapshot(std::marker::PhantomData)
         }
     }
 
-    impl<T: ?Sized> Clone for Ghost<T> {
+    impl<T: ?Sized> Clone for Snapshot<T> {
         fn clone(&self) -> Self {
-            Ghost(std::marker::PhantomData)
+            Snapshot(std::marker::PhantomData)
         }
     }
 
-    impl<T: ?Sized> Copy for Ghost<T> {}
+    impl<T: ?Sized> Copy for Snapshot<T> {}
 }
 
 pub mod ghost_ptr;
@@ -211,11 +211,11 @@ pub mod well_founded;
 
 // We add some common things at the root of the creusot-contracts library
 pub use crate::{
-    ghost::Ghost,
     logic::{IndexLogic as _, Int, OrdLogic, Seq},
     macros::*,
     model::{DeepModel, ShallowModel},
     resolve::Resolve,
+    snapshot::Snapshot,
     std::{
         // Shadow std::prelude by our version.
         // For Clone and PartialEq, this is important for the derive macro.

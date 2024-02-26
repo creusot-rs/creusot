@@ -69,11 +69,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
 
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
-                if Some(fun_def_id) == self.tcx.get_diagnostic_item(Symbol::intern("ghost_from_fn"))
-                {
+                if self.tcx.is_diagnostic_item(Symbol::intern("snapshot_from_fn"), fun_def_id) {
                     let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() else { panic!() };
                     let TyKind::Closure(def_id, _) = ty.kind() else { panic!() };
-                    let mut assertion = self.assertions.remove(def_id).unwrap();
+                    let mut assertion = self.snapshots.remove(def_id).unwrap();
                     assertion.subst(&inv_subst(self.body, &self.locals, terminator.source_info));
                     self.check_ghost_term(&assertion, location);
                     self.emit_ghost_assign(*destination, assertion, span);

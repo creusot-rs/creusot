@@ -77,7 +77,7 @@ impl<T, const N: usize> IndexLogic<usize> for [T; N] {
     }
 }
 
-impl<T> IndexLogic<Int> for Ghost<Seq<T>> {
+impl<T> IndexLogic<Int> for Snapshot<Seq<T>> {
     type Item = T;
 
     #[ghost]

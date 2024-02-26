@@ -481,7 +481,7 @@ fn field_ty<'tcx>(
     let ty = ctx.try_normalize_erasing_regions(param_env, ty).unwrap_or(ty);
 
     if !validate_field_ty(ctx, did, ty) {
-        ctx.crash_and_error(ctx.def_span(field.did), "Illegal use of the Ghost type")
+        ctx.crash_and_error(ctx.def_span(field.did), "Illegal use of the Snapshot type")
     }
 
     translate_ty_inner(TyTranslation::Declaration(did), ctx, names, ctx.def_span(field.did), ty)
@@ -492,7 +492,7 @@ fn validate_field_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, adt_did: DefId, ty: Ty
     let bg = ctx.binding_group(adt_did);
 
     !ty.walk().filter_map(ty::GenericArg::as_type).any(|ty| {
-        util::is_ghost_ty(tcx, ty)
+        util::is_snap_ty(tcx, ty)
             && ty.walk().filter_map(ty::GenericArg::as_type).any(|ty| match ty.kind() {
                 TyKind::Adt(adt_def, _) => bg.contains(&adt_def.did()),
                 // TyKind::Param(_) => true,

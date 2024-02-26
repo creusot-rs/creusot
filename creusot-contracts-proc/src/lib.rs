@@ -405,17 +405,17 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
 }
 
 #[proc_macro]
-pub fn gh(assertion: TS1) -> TS1 {
+pub fn snapshot(assertion: TS1) -> TS1 {
     let assert = parse_macro_input!(assertion as Assertion);
     let assert_body = pretyping::encode_block(&assert.0).unwrap();
 
     TS1::from(quote! {
         {
-            ::creusot_contracts::__stubs::ghost_from_fn(
+            ::creusot_contracts::__stubs::snapshot_from_fn(
                 #[creusot::no_translate]
                 #[creusot::spec]
-                #[creusot::spec::ghost]
-                || { ::creusot_contracts::ghost::Ghost::new (#assert_body) }
+                #[creusot::spec::snapshot]
+                || { ::creusot_contracts::snapshot::Snapshot::new (#assert_body) }
             )
         }
     })

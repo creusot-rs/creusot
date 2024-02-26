@@ -155,7 +155,7 @@ Contracts and logic functions are written in Pearlite, a specification language 
 We also provide three new attributes on Rust functions: `ghost`, `logic` and `predicate`.
 
 A ghost function is marked with `#[ghost]`. It can be used in ghost code, to assign ghost
-variables of the `Ghost<T>` type.
+variables of the `Snapshot<T>` type.
 
 Marked  `#[logic]` or `#[predicate]`, a function can be used in specs and other logical conditions (`requires`/`ensures` and `invariant`). They can use ghost functions.
 The two attributes have the following difference.

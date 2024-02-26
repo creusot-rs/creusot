@@ -81,7 +81,7 @@ impl<'tcx> MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
         match rvalue {
             Rvalue::Aggregate(box AggregateKind::Closure(def_id, _), substs) => {
                 if util::is_no_translate(self.tcx, *def_id)
-                    || util::is_ghost_closure(self.tcx, *def_id)
+                    || util::is_snapshot_closure(self.tcx, *def_id)
                 {
                     substs.iter_mut().for_each(|p| {
                         if p.is_move() {

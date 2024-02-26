@@ -65,21 +65,23 @@ pub(crate) fn is_assertion(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "assert"]).is_some()
 }
 
-pub(crate) fn is_ghost_closure(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "ghost"]).is_some()
+pub(crate) fn is_snapshot_closure(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "snapshot"]).is_some()
 }
 
-pub(crate) fn ghost_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
-    if let TyKind::Closure(def_id, _) = ty.peel_refs().kind() && is_ghost_closure(tcx, *def_id)  {
+pub(crate) fn snapshot_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
+    if let TyKind::Closure(def_id, _) = ty.peel_refs().kind() && is_snapshot_closure(tcx, *def_id) {
         Some(*def_id)
-    } else { None }
+    } else {
+        None
+    }
 }
 
-pub(crate) fn is_ghost_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+pub(crate) fn is_snap_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     let r: Option<bool> = try {
         let adt = ty.ty_adt_def()?;
         let builtin = get_builtin(tcx, adt.did())?;
-        builtin.as_str() == "prelude.Ghost.ghost_ty"
+        builtin.as_str() == "prelude.Snapshot.snap_ty"
     };
     r.unwrap_or(false)
 }
