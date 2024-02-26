@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::{error::Error, ffi::OsString, path::PathBuf};
 
 #[derive(Parser, Serialize, Deserialize)]
-pub struct CreusotArgs {
+pub struct CommonOptions {
     /// Determines how to format the spans in generated code to loading in Why3.
     /// [Relative] is better if the generated code is meant to be checked into VCS.
     /// [Absolute] means the files can easily be moved around your system and still work.
@@ -34,15 +34,25 @@ pub struct CreusotArgs {
     /// Specify locations of metadata for external crates. The format is the same as rustc's `--extern` flag.
     #[clap(long = "creusot-extern", value_parser= parse_key_val::<String, String>, required=false)]
     pub extern_paths: Vec<(String, String)>,
-    /// Check the installed why3 version.
-    #[clap(long, default_value_t = true, action = clap::ArgAction::Set)]
-    pub check_why3: bool,
     /// Use `result` as the trigger of definition and specification axioms of logic/ghost/predicate functions
     #[clap(long, default_value_t = false, action = clap::ArgAction::Set)]
     pub simple_triggers: bool,
-    /// Run why3
+}
+
+#[derive(Parser, Serialize, Deserialize)]
+pub struct CreusotArgs {
+    #[clap(flatten)]
+    pub options: CommonOptions,
+    /// Path to the Why3 binary
+    #[arg(long, default_value_os_t = PathBuf::from("why3"))]
+    pub why3_path: PathBuf,
+    /// Specify an alternative location for Why3's configuration
+    #[arg(long)]
+    pub why3_config_file: Option<PathBuf>,
     #[command(subcommand)]
     pub subcommand: Option<CreusotSubCommand>,
+    #[clap(last = true)]
+    pub rust_flags: Vec<String>,
 }
 
 #[derive(Subcommand, Serialize, Deserialize)]
@@ -59,11 +69,44 @@ pub enum CreusotSubCommand {
     },
 }
 
+#[derive(Parser)]
+pub struct CargoCreusotArgs {
+    #[clap(flatten)]
+    pub options: CommonOptions,
+    /// Subcommand: why3, setup
+    #[command(subcommand)]
+    pub subcommand: Option<CargoCreusotSubCommand>,
+    #[clap(last = true)]
+    pub rust_flags: Vec<String>,
+}
+
+#[derive(Subcommand)]
+pub enum CargoCreusotSubCommand {
+    /// Setup and manage Creusot's installation
+    #[command(arg_required_else_help(true))]
+    Setup {
+        #[command(subcommand)]
+        command: SetupSubCommand,
+    },
+    #[command(flatten)]
+    Creusot(CreusotSubCommand),
+}
+
 #[derive(ValueEnum, Serialize, Deserialize, Clone)]
 pub enum Why3SubCommand {
     Prove,
     Ide,
     Replay,
+}
+
+#[derive(Parser, Clone)]
+pub enum SetupSubCommand {
+    /// Show the current status of the Creusot installation
+    Status,
+    /// Setup Creusot or update an existing installation
+    Install,
+    /// Setup Creusot but use external tools configured manually (not recommended, for experts)
+    InstallExternal,
 }
 
 /// Default relative path of the root project wrt the output.
@@ -85,19 +128,31 @@ where
     Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
 }
 
-#[derive(Parser)]
-pub struct Args {
-    #[clap(flatten)]
-    pub creusot: CreusotArgs,
-    #[clap(last = true)]
-    pub rust_flags: Vec<String>,
-}
-
-impl Args {
+impl CreusotArgs {
     fn move_rust_flags(&mut self) {
-        let rust_flags = match &mut self.creusot.subcommand {
+        let rust_flags = match &mut self.subcommand {
             None => return,
             Some(CreusotSubCommand::Why3 { rust_flags, .. }) => rust_flags,
+        };
+        let rust_flags = std::mem::take(rust_flags);
+        assert!(self.rust_flags.is_empty());
+        self.rust_flags = rust_flags
+    }
+
+    pub fn parse_from<I: Into<OsString> + Clone>(it: impl IntoIterator<Item = I>) -> Self {
+        let mut res: Self = Parser::parse_from(it);
+        res.move_rust_flags();
+        res
+    }
+}
+
+impl CargoCreusotArgs {
+    fn move_rust_flags(&mut self) {
+        let rust_flags = match &mut self.subcommand {
+            Some(CargoCreusotSubCommand::Creusot(CreusotSubCommand::Why3 {
+                rust_flags, ..
+            })) => rust_flags,
+            _ => return,
         };
         let rust_flags = std::mem::take(rust_flags);
         assert!(self.rust_flags.is_empty());

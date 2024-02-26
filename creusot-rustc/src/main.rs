@@ -6,7 +6,7 @@ extern crate rustc_interface;
 extern crate rustc_session;
 
 mod options;
-use options::{Args, CreusotArgsExt as _};
+use options::CreusotArgsExt as _;
 
 #[macro_use]
 extern crate log;
@@ -20,7 +20,6 @@ use rustc_session::{config::ErrorOutputType, EarlyErrorHandler};
 use std::{env, panic, panic::PanicInfo, process::Command};
 
 const BUG_REPORT_URL: &'static str = &"https://github.com/xldenis/creusot/issues/new";
-const WHY3_VERSION: &[&'static str] = &["1", "7", "1"];
 
 lazy_static::lazy_static! {
     static ref ICE_HOOK: Box<dyn Fn(&panic::PanicInfo<'_>) + Sync + Send + 'static> = {
@@ -79,24 +78,10 @@ fn setup_plugin() {
     let creusot: CreusotArgs = if is_wrapper {
         serde_json::from_str(&std::env::var("CREUSOT_ARGS").unwrap()).unwrap()
     } else {
-        let all_args = Args::parse_from(&args);
-        args = all_args.rust_flags;
-        all_args.creusot
+        let mut all_args = CreusotArgs::parse_from(&args);
+        args = std::mem::take(&mut all_args.rust_flags);
+        all_args
     };
-
-    if creusot.check_why3 {
-        if let Some(why3_vers) = why3_version() {
-            let parts: Vec<_> = why3_vers.split(|c| c == '.' || c == '+').collect();
-            if &parts[..3] < WHY3_VERSION {
-                emit_warning(format!(
-                    "the recommended version of why3 is at least {} (installed: {why3_vers})",
-                    WHY3_VERSION.join(".")
-                ));
-            }
-        } else {
-            emit_warning("could not determine installed why3 version".to_string());
-        }
-    }
 
     let sysroot = sysroot_path();
     args.push(format!("--sysroot={}", sysroot));
@@ -148,18 +133,7 @@ fn sysroot_path() -> String {
     String::from_utf8(output.stdout).unwrap().trim().to_owned()
 }
 
-fn why3_version() -> Option<String> {
-    let output = Command::new("why3").arg("--version").output().ok()?;
-
-    let version = String::from_utf8(output.stdout).ok()?;
-    if version.trim().starts_with("Why3 platform, version ") {
-        Some(version.trim()[23..].to_owned())
-    } else {
-        None
-    }
-}
-
-fn emit_warning(text: String) {
+fn _emit_warning(text: String) {
     let fallback_bundle =
         rustc_errors::fallback_fluent_bundle(DEFAULT_LOCALE_RESOURCES.to_vec(), false);
 
