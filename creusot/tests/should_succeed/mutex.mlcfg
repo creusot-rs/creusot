@@ -16,12 +16,12 @@ module Mutex_GuardInner_Type
   type t_guardinner 't
 end
 module Mutex_MutexGuard_Type
-  use prelude.Ghost
+  use prelude.Snapshot
   use Mutex_GuardInner_Type as Mutex_GuardInner_Type
   type t_mutexguard 't 'i =
-    | C_MutexGuard (Mutex_GuardInner_Type.t_guardinner 't) (Ghost.ghost_ty 'i)
+    | C_MutexGuard (Mutex_GuardInner_Type.t_guardinner 't) (Snapshot.snap_ty 'i)
     
-  let function mutexguard_1 (self : t_mutexguard 't 'i) : Ghost.ghost_ty 'i = [@vc:do_not_keep_trace] [@vc:sp]
+  let function mutexguard_1 (self : t_mutexguard 't 'i) : Snapshot.snap_ty 'i = [@vc:do_not_keep_trace] [@vc:sp]
     match self with
       | C_MutexGuard _ a -> a
       end
@@ -118,20 +118,20 @@ module Mutex_Impl3_Call
   val inv3 [#"../mutex.rs" 66 4 66 33] (self : Mutex_Even_Type.t_even) (x : uint32) : bool
     ensures { result = inv3 self x }
     
-  use prelude.Ghost
+  use prelude.Snapshot
   val set0 [#"../mutex.rs" 56 4 56 27] (self : borrowed (Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even))) (v : uint32) : ()
-    requires {[#"../mutex.rs" 55 4 55 30] inv3 (Ghost.inner (Mutex_MutexGuard_Type.mutexguard_1 ( * self))) v}
+    requires {[#"../mutex.rs" 55 4 55 30] inv3 (Snapshot.inner (Mutex_MutexGuard_Type.mutexguard_1 ( * self))) v}
     requires {[#"../mutex.rs" 56 16 56 20] inv5 self}
     requires {[#"../mutex.rs" 56 22 56 23] inv6 v}
     
   val deref0 [#"../mutex.rs" 50 4 50 25] (self : Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even)) : uint32
     requires {[#"../mutex.rs" 50 14 50 18] inv2 self}
-    ensures { [#"../mutex.rs" 49 4 49 35] inv3 (Ghost.inner (Mutex_MutexGuard_Type.mutexguard_1 self)) result }
+    ensures { [#"../mutex.rs" 49 4 49 35] inv3 (Snapshot.inner (Mutex_MutexGuard_Type.mutexguard_1 self)) result }
     ensures { [#"../mutex.rs" 50 23 50 25] inv4 result }
     
   val lock0 [#"../mutex.rs" 37 4 37 46] (self : Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even)) : Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even)
     requires {[#"../mutex.rs" 37 17 37 21] inv0 self}
-    ensures { [#"../mutex.rs" 36 14 36 33] Mutex_Mutex_Type.mutex_1 self = Ghost.inner (Mutex_MutexGuard_Type.mutexguard_1 result) }
+    ensures { [#"../mutex.rs" 36 14 36 33] Mutex_Mutex_Type.mutex_1 self = Snapshot.inner (Mutex_MutexGuard_Type.mutexguard_1 result) }
     ensures { [#"../mutex.rs" 37 26 37 46] inv1 result }
     
   use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
@@ -205,12 +205,12 @@ module Mutex_JoinHandleInner_Type
   type t_joinhandleinner 't
 end
 module Mutex_JoinHandle_Type
-  use prelude.Ghost
+  use prelude.Snapshot
   use Mutex_JoinHandleInner_Type as Mutex_JoinHandleInner_Type
   type t_joinhandle 't 'i =
-    | C_JoinHandle (Mutex_JoinHandleInner_Type.t_joinhandleinner 't) (Ghost.ghost_ty 'i)
+    | C_JoinHandle (Mutex_JoinHandleInner_Type.t_joinhandleinner 't) (Snapshot.snap_ty 'i)
     
-  let function joinhandle_1 (self : t_joinhandle 't 'i) : Ghost.ghost_ty 'i = [@vc:do_not_keep_trace] [@vc:sp]
+  let function joinhandle_1 (self : t_joinhandle 't 'i) : Snapshot.snap_ty 'i = [@vc:do_not_keep_trace] [@vc:sp]
     match self with
       | C_JoinHandle _ a -> a
       end
@@ -358,11 +358,11 @@ module Mutex_Concurrent
   val inv8 [#"../mutex.rs" 150 4 150 39] (self : Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo)) (v : ()) : bool
     ensures { result = inv8 self v }
     
-  use prelude.Ghost
+  use prelude.Snapshot
   val join0 [#"../mutex.rs" 121 4 121 34] (self : Mutex_JoinHandle_Type.t_joinhandle () (Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo))) : Core_Result_Result_Type.t_result () ()
     requires {[#"../mutex.rs" 121 12 121 16] inv7 self}
     ensures { [#"../mutex.rs" 117 14 120 5] match result with
-      | Core_Result_Result_Type.C_Ok v -> inv8 (Ghost.inner (Mutex_JoinHandle_Type.joinhandle_1 self)) v
+      | Core_Result_Result_Type.C_Ok v -> inv8 (Snapshot.inner (Mutex_JoinHandle_Type.joinhandle_1 self)) v
       | _ -> true
       end }
     ensures { [#"../mutex.rs" 121 21 121 34] inv9 result }

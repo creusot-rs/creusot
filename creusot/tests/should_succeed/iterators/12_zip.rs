@@ -14,7 +14,7 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
     type Item = (A::Item, B::Item);
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
              (self.a.completed() && (*self).b == (^self).b)
@@ -24,7 +24,7 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
     }
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             // Using an `unzip` definition doesn't work well because of issues related to datatypes and `match`

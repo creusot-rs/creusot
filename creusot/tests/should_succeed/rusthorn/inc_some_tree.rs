@@ -17,7 +17,7 @@ fn random() -> bool {
 }
 
 impl Tree {
-    #[ghost]
+    #[logic]
     fn sum(self) -> Int {
         pearlite! {
             match self {
@@ -27,7 +27,7 @@ impl Tree {
         }
     }
 
-    #[ghost]
+    #[logic]
     #[variant(*self)]
     #[ensures(self.sum() >= 0)]
     fn lemma_sum_nonneg(&self) {

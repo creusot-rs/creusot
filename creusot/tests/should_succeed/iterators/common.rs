@@ -4,10 +4,10 @@ use creusot_contracts::{logic::Seq, *};
 pub trait Iterator {
     type Item;
 
-    #[predicate]
+    #[predicate(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool;
 
-    #[predicate]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool;
 
     #[law]

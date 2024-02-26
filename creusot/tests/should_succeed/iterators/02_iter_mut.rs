@@ -16,7 +16,7 @@ struct IterMut<'a, T> {
 
 impl<'a, T> Invariant for IterMut<'a, T> {
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn invariant(self) -> bool {
         // Property that is always true but we must carry around..
         pearlite! { (^self.inner)@.len() == (*self.inner)@.len() }
@@ -27,13 +27,13 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     type Item = &'a mut T;
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.inner.resolve() && self.inner@.ext_eq(Seq::EMPTY) }
     }
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             self.inner@.len() == visited.len() + tl.inner@.len() &&
@@ -83,15 +83,15 @@ fn iter_mut<'a, T>(v: &'a mut Vec<T>) -> IterMut<'a, T> {
 #[ensures(forall<i : _> 0 <= i && i < v@.len() ==> (^v)[i]@ == 0)]
 pub fn all_zero(v: &mut Vec<usize>) {
     let mut it = iter_mut(v).into_iter();
-    let iter_old = gh! { it };
-    let mut produced = gh! { Seq::EMPTY };
+    let iter_old = snapshot! { it };
+    let mut produced = snapshot! { Seq::EMPTY };
     #[invariant(inv(it))]
     #[invariant(iter_old.produces(produced.inner(), it))]
     #[invariant(forall<i : Int> 0 <= i && i < produced.len() ==> (^produced[i])@ == 0)]
     loop {
         match it.next() {
             Some(x) => {
-                produced = gh! { produced.concat(Seq::singleton(x)) };
+                produced = snapshot! { produced.concat(Seq::singleton(x)) };
                 *x = 0;
             }
             None => break,

@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 #[open]
-#[ghost]
+#[logic]
 pub fn test_logic((x, _): (u32, u32)) -> u32 {
     x
 }

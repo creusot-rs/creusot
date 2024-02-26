@@ -43,7 +43,7 @@ pub fn uses3<T: Tr>(_: Nested<T>) {}
 
 // pub struct Map<I: Tr> {
 //     pub iter: I,
-//     pub produced: Ghost<Seq<I::A>>,
+//     pub produced: Snapshot<Seq<I::A>>,
 // }
 
 // pub fn use_map<I: Tr>(_: Map<I>) {}

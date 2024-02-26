@@ -17,7 +17,7 @@ pub enum List<T> {
 use List::*;
 
 impl<T> List<T> {
-    #[ghost]
+    #[logic]
     #[ensures(result >= 0)]
     fn len_logic(self) -> Int {
         match self {
@@ -26,7 +26,7 @@ impl<T> List<T> {
         }
     }
 
-    #[ghost]
+    #[logic]
     fn get(self, ix: Int) -> Option<T> {
         match self {
             Cons(t, ls) => {
@@ -74,7 +74,7 @@ impl<T> List<T> {
         len
     }
 
-    #[ghost]
+    #[logic]
     fn get_default(self, ix: Int, def: T) -> T {
         match self.get(ix) {
             Some(v) => v,

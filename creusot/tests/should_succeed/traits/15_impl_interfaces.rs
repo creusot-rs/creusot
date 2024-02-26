@@ -14,7 +14,7 @@ impl Tr for () {
 }
 
 #[trusted]
-#[ghost]
+#[logic]
 fn x<T: Tr>(_x: T) -> T::A {
     absurd
 }

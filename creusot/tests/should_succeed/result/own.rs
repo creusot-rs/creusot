@@ -11,7 +11,7 @@ pub enum OwnResult<T, E> {
 #[trusted]
 impl<T, E> Resolve for OwnResult<T, E> {
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn resolve(self) -> bool {
         match self {
             OwnResult::Ok(t) => t.resolve(),

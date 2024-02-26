@@ -773,11 +773,11 @@ module Bdd_Context_Type
   use prelude.Int
   use Bdd_Node_Type as Bdd_Node_Type
   use map.Map
-  use prelude.Ghost
+  use prelude.Snapshot
   use Bdd_Bumpalo_Bump_Type as Bdd_Bumpalo_Bump_Type
   use prelude.Borrow
   type t_context  =
-    | C_Context (Bdd_Bumpalo_Bump_Type.t_bump) (Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd)) (Ghost.ghost_ty (Map.map uint64 (Bdd_Node_Type.t_node))) (Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd)) (Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd)) uint64
+    | C_Context (Bdd_Bumpalo_Bump_Type.t_bump) (Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd)) (Snapshot.snap_ty (Map.map uint64 (Bdd_Node_Type.t_node))) (Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd)) (Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd)) uint64
     
   let function context_hashcons (self : t_context) : Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd)
     
@@ -789,7 +789,7 @@ module Bdd_Context_Type
     match self with
       | C_Context _ _ _ _ _ a -> a
       end
-  let function context_hashcons_ghost (self : t_context) : Ghost.ghost_ty (Map.map uint64 (Bdd_Node_Type.t_node))
+  let function context_hashcons_ghost (self : t_context) : Snapshot.snap_ty (Map.map uint64 (Bdd_Node_Type.t_node))
    = [@vc:do_not_keep_trace] [@vc:sp]
     match self with
       | C_Context _ _ a _ _ _ -> a
@@ -897,7 +897,7 @@ module Bdd_Impl10_GrowsIsValidBdd_Impl
     ensures { result = is_valid_bdd0 self b }
     
   use map.Map
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate is_valid_node0 [#"../bdd.rs" 316 4 316 51] (self : Bdd_Context_Type.t_context) (n : Bdd_Node_Type.t_node) =
     [#"../bdd.rs" 318 12 327 13] match n with
       | Bdd_Node_Type.C_True -> true
@@ -909,14 +909,14 @@ module Bdd_Impl10_GrowsIsValidBdd_Impl
     
   predicate invariant1 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) =
     [#"../bdd.rs" 264 12 288 19] (forall n : Bdd_NodeLog_Type.t_nodelog . match Map.get (shallow_model1 (Bdd_Context_Type.context_hashcons self)) n with
-      | Core_Option_Option_Type.C_Some b -> shallow_model2 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
+      | Core_Option_Option_Type.C_Some b -> shallow_model2 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
       | Core_Option_Option_Type.C_None -> true
       end) /\ (forall bm : uint64 . match Map.get (shallow_model4 (Bdd_Context_Type.context_not_memo self)) bm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
+      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
       end) /\ (forall abm : (uint64, uint64) . match Map.get (shallow_model5 (Bdd_Context_Type.context_and_memo self)) abm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
+      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
       end)
   val invariant1 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) : bool
     ensures { result = invariant1 self }
@@ -1041,7 +1041,7 @@ module Bdd_Impl10_GrowsTrans_Impl
     ensures { result = is_valid_bdd0 self b }
     
   use map.Map
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate is_valid_node0 [#"../bdd.rs" 316 4 316 51] (self : Bdd_Context_Type.t_context) (n : Bdd_Node_Type.t_node) =
     [#"../bdd.rs" 318 12 327 13] match n with
       | Bdd_Node_Type.C_True -> true
@@ -1053,14 +1053,14 @@ module Bdd_Impl10_GrowsTrans_Impl
     
   predicate invariant1 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) =
     [#"../bdd.rs" 264 12 288 19] (forall n : Bdd_NodeLog_Type.t_nodelog . match Map.get (shallow_model1 (Bdd_Context_Type.context_hashcons self)) n with
-      | Core_Option_Option_Type.C_Some b -> shallow_model2 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
+      | Core_Option_Option_Type.C_Some b -> shallow_model2 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
       | Core_Option_Option_Type.C_None -> true
       end) /\ (forall bm : uint64 . match Map.get (shallow_model3 (Bdd_Context_Type.context_not_memo self)) bm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
+      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
       end) /\ (forall abm : (uint64, uint64) . match Map.get (shallow_model4 (Bdd_Context_Type.context_and_memo self)) abm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
+      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
       end)
   val invariant1 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) : bool
     ensures { result = invariant1 self }
@@ -1189,7 +1189,7 @@ module Bdd_Impl10_SetIrreleventVar_Impl
     ensures { result = is_valid_bdd0 self b }
     
   use map.Map
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate is_valid_node0 [#"../bdd.rs" 316 4 316 51] (self : Bdd_Context_Type.t_context) (n : Bdd_Node_Type.t_node) =
     [#"../bdd.rs" 318 12 327 13] match n with
       | Bdd_Node_Type.C_True -> true
@@ -1201,14 +1201,14 @@ module Bdd_Impl10_SetIrreleventVar_Impl
     
   predicate invariant0 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) =
     [#"../bdd.rs" 264 12 288 19] (forall n : Bdd_NodeLog_Type.t_nodelog . match Map.get (shallow_model1 (Bdd_Context_Type.context_hashcons self)) n with
-      | Core_Option_Option_Type.C_Some b -> shallow_model2 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
+      | Core_Option_Option_Type.C_Some b -> shallow_model2 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
       | Core_Option_Option_Type.C_None -> true
       end) /\ (forall bm : uint64 . match Map.get (shallow_model5 (Bdd_Context_Type.context_not_memo self)) bm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
+      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
       end) /\ (forall abm : (uint64, uint64) . match Map.get (shallow_model6 (Bdd_Context_Type.context_and_memo self)) abm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
+      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
       end)
   val invariant0 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) : bool
     ensures { result = invariant0 self }
@@ -1319,7 +1319,7 @@ module Bdd_Impl10_DiscrValuation_Impl
     ensures { result = is_valid_bdd0 self b }
     
   use map.Map
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate is_valid_node0 [#"../bdd.rs" 316 4 316 51] (self : Bdd_Context_Type.t_context) (n : Bdd_Node_Type.t_node) =
     [#"../bdd.rs" 318 12 327 13] match n with
       | Bdd_Node_Type.C_True -> true
@@ -1331,14 +1331,14 @@ module Bdd_Impl10_DiscrValuation_Impl
     
   predicate invariant0 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) =
     [#"../bdd.rs" 264 12 288 19] (forall n : Bdd_NodeLog_Type.t_nodelog . match Map.get (shallow_model0 (Bdd_Context_Type.context_hashcons self)) n with
-      | Core_Option_Option_Type.C_Some b -> shallow_model1 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
+      | Core_Option_Option_Type.C_Some b -> shallow_model1 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
       | Core_Option_Option_Type.C_None -> true
       end) /\ (forall bm : uint64 . match Map.get (shallow_model5 (Bdd_Context_Type.context_not_memo self)) bm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
+      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
       end) /\ (forall abm : (uint64, uint64) . match Map.get (shallow_model6 (Bdd_Context_Type.context_and_memo self)) abm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
+      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
       end)
   val invariant0 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) : bool
     ensures { result = invariant0 self }
@@ -1505,7 +1505,7 @@ module Bdd_Impl10_BddCanonical_Impl
     ensures { result = is_valid_bdd0 self b }
     
   use map.Map
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate is_valid_node0 [#"../bdd.rs" 316 4 316 51] (self : Bdd_Context_Type.t_context) (n : Bdd_Node_Type.t_node) =
     [#"../bdd.rs" 318 12 327 13] match n with
       | Bdd_Node_Type.C_True -> true
@@ -1517,14 +1517,14 @@ module Bdd_Impl10_BddCanonical_Impl
     
   predicate invariant0 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) =
     [#"../bdd.rs" 264 12 288 19] (forall n : Bdd_NodeLog_Type.t_nodelog . match Map.get (shallow_model0 (Bdd_Context_Type.context_hashcons self)) n with
-      | Core_Option_Option_Type.C_Some b -> shallow_model1 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
+      | Core_Option_Option_Type.C_Some b -> shallow_model1 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
       | Core_Option_Option_Type.C_None -> true
       end) /\ (forall bm : uint64 . match Map.get (shallow_model5 (Bdd_Context_Type.context_not_memo self)) bm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
+      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
       end) /\ (forall abm : (uint64, uint64) . match Map.get (shallow_model6 (Bdd_Context_Type.context_and_memo self)) abm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
+      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
       end)
   val invariant0 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) : bool
     ensures { result = invariant0 self }
@@ -1701,7 +1701,7 @@ module Bdd_Impl11_New
     ensures { result = is_valid_bdd0 self b }
     
   use map.Map
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate is_valid_node0 [#"../bdd.rs" 316 4 316 51] (self : Bdd_Context_Type.t_context) (n : Bdd_Node_Type.t_node) =
     [#"../bdd.rs" 318 12 327 13] match n with
       | Bdd_Node_Type.C_True -> true
@@ -1713,14 +1713,14 @@ module Bdd_Impl11_New
     
   predicate invariant0 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) =
     [#"../bdd.rs" 264 12 288 19] (forall n : Bdd_NodeLog_Type.t_nodelog . match Map.get (shallow_model0 (Bdd_Context_Type.context_hashcons self)) n with
-      | Core_Option_Option_Type.C_Some b -> shallow_model3 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
+      | Core_Option_Option_Type.C_Some b -> shallow_model3 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
       | Core_Option_Option_Type.C_None -> true
       end) /\ (forall bm : uint64 . match Map.get (shallow_model1 (Bdd_Context_Type.context_not_memo self)) bm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
+      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
       end) /\ (forall abm : (uint64, uint64) . match Map.get (shallow_model2 (Bdd_Context_Type.context_and_memo self)) abm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
+      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
       end)
   val invariant0 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) : bool
     ensures { result = invariant0 self }
@@ -1733,7 +1733,7 @@ module Bdd_Impl11_New
     | Bdd_Context_Type.C_Context alloc hashcons hashcons_ghost not_memo and_memo cnt -> true
     end)
   use Bdd_Bumpalo_Bump_Type as Bdd_Bumpalo_Bump_Type
-  use prelude.Ghost
+  use prelude.Snapshot
   use map.Const
   val new3 [#"../bdd.rs" 69 8 69 28] (_1 : ()) : Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd)
     ensures { [#"../bdd.rs" 67 18 67 47] shallow_model2 result = Const.const (Core_Option_Option_Type.C_None) }
@@ -1742,7 +1742,7 @@ module Bdd_Impl11_New
   val new2 [#"../bdd.rs" 69 8 69 28] (_1 : ()) : Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd)
     ensures { [#"../bdd.rs" 67 18 67 47] shallow_model1 result = Const.const (Core_Option_Option_Type.C_None) }
     
-  use prelude.Ghost
+  use prelude.Snapshot
   use map.Const
   use map.Const
   val new0 [#"../bdd.rs" 69 8 69 28] (_1 : ()) : Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd)
@@ -1758,7 +1758,7 @@ module Bdd_Impl11_New
   var alloc : Bdd_Bumpalo_Bump_Type.t_bump = alloc;
   var t : Bdd_Node_Type.t_node;
   var _5 : Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd);
-  var _6 : Ghost.ghost_ty (Map.map uint64 (Bdd_Node_Type.t_node));
+  var _6 : Snapshot.snap_ty (Map.map uint64 (Bdd_Node_Type.t_node));
   var _8 : Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd);
   var _9 : Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd);
   var _10 : Bdd_Node_Type.t_node;
@@ -1772,7 +1772,7 @@ module Bdd_Impl11_New
     goto BB1
   }
   BB1 {
-    [#"../bdd.rs" 429 28 429 51] _6 <- ([#"../bdd.rs" 429 28 429 51] Ghost.new (Const.const t));
+    [#"../bdd.rs" 429 28 429 57] _6 <- ([#"../bdd.rs" 429 28 429 57] Snapshot.new (Const.const t));
     goto BB2
   }
   BB2 {
@@ -1786,7 +1786,7 @@ module Bdd_Impl11_New
   BB4 {
     [#"../bdd.rs" 426 8 433 9] _0 <- ([#"../bdd.rs" 426 8 433 9] Bdd_Context_Type.C_Context ([#"../bdd.rs" 427 12 427 17] alloc) _5 _6 _8 _9 ([#"../bdd.rs" 432 17 432 18] [#"../bdd.rs" 432 17 432 18] (0 : uint64)));
     _5 <- any Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd);
-    _6 <- any Ghost.ghost_ty (Map.map uint64 (Bdd_Node_Type.t_node));
+    _6 <- any Snapshot.snap_ty (Map.map uint64 (Bdd_Node_Type.t_node));
     _8 <- any Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd);
     _9 <- any Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Bdd_Type.t_bdd, Bdd_Bdd_Type.t_bdd) (Bdd_Bdd_Type.t_bdd);
     return _0
@@ -1879,7 +1879,7 @@ module Bdd_Impl11_Hashcons
     ensures { result = is_valid_bdd0 self b }
     
   use map.Map
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate is_valid_node0 [#"../bdd.rs" 316 4 316 51] (self : Bdd_Context_Type.t_context) (n : Bdd_Node_Type.t_node) =
     [#"../bdd.rs" 318 12 327 13] match n with
       | Bdd_Node_Type.C_True -> true
@@ -1891,14 +1891,14 @@ module Bdd_Impl11_Hashcons
     
   predicate invariant7 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) =
     [#"../bdd.rs" 264 12 288 19] (forall n : Bdd_NodeLog_Type.t_nodelog . match Map.get (shallow_model3 (Bdd_Context_Type.context_hashcons self)) n with
-      | Core_Option_Option_Type.C_Some b -> shallow_model0 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
+      | Core_Option_Option_Type.C_Some b -> shallow_model0 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
       | Core_Option_Option_Type.C_None -> true
       end) /\ (forall bm : uint64 . match Map.get (shallow_model7 (Bdd_Context_Type.context_not_memo self)) bm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
+      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
       end) /\ (forall abm : (uint64, uint64) . match Map.get (shallow_model8 (Bdd_Context_Type.context_and_memo self)) abm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
+      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
       end)
   val invariant7 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) : bool
     ensures { result = invariant7 self }
@@ -1988,8 +1988,8 @@ module Bdd_Impl11_Hashcons
   val grows0 [#"../bdd.rs" 296 4 296 35] (self : borrowed (Bdd_Context_Type.t_context)) : bool
     ensures { result = grows0 self }
     
-  use prelude.Ghost
-  use prelude.Ghost
+  use prelude.Snapshot
+  use prelude.Snapshot
   use map.Map
   function shallow_model4 (self : borrowed (Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd))) : Map.map (Bdd_NodeLog_Type.t_nodelog) (Core_Option_Option_Type.t_option (Bdd_Bdd_Type.t_bdd))
     
@@ -2061,7 +2061,7 @@ module Bdd_Impl11_Hashcons
   var _19 : borrowed (Bdd_Node_Type.t_node);
   var _23 : ();
   var _24 : borrowed (Bdd_Hashmap_MyHashMap_Type.t_myhashmap (Bdd_Node_Type.t_node) (Bdd_Bdd_Type.t_bdd));
-  var _27 : Ghost.ghost_ty (Map.map uint64 (Bdd_Node_Type.t_node));
+  var _27 : Snapshot.snap_ty (Map.map uint64 (Bdd_Node_Type.t_node));
   {
     goto BB0
   }
@@ -2101,12 +2101,12 @@ module Bdd_Impl11_Hashcons
     goto BB6
   }
   BB6 {
-    [#"../bdd.rs" 447 30 447 71] _27 <- ([#"../bdd.rs" 447 30 447 71] Ghost.new (Map.set (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost ( * self))) (Bdd_Bdd_Type.bdd_1 r1) (Bdd_Bdd_Type.bdd_0 r1)));
+    [#"../bdd.rs" 447 30 447 77] _27 <- ([#"../bdd.rs" 447 30 447 77] Snapshot.new (Map.set (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost ( * self))) (Bdd_Bdd_Type.bdd_1 r1) (Bdd_Bdd_Type.bdd_0 r1)));
     goto BB7
   }
   BB7 {
-    [#"../bdd.rs" 447 8 447 71] self <- { self with current = (let Bdd_Context_Type.C_Context x0 x1 x2 x3 x4 x5 =  * self in Bdd_Context_Type.C_Context x0 x1 ([#"../bdd.rs" 447 8 447 71] _27) x3 x4 x5) ; };
-    [#"../bdd.rs" 447 8 447 71] _27 <- any Ghost.ghost_ty (Map.map uint64 (Bdd_Node_Type.t_node));
+    [#"../bdd.rs" 447 8 447 77] self <- { self with current = (let Bdd_Context_Type.C_Context x0 x1 x2 x3 x4 x5 =  * self in Bdd_Context_Type.C_Context x0 x1 ([#"../bdd.rs" 447 8 447 77] _27) x3 x4 x5) ; };
+    [#"../bdd.rs" 447 8 447 77] _27 <- any Snapshot.snap_ty (Map.map uint64 (Bdd_Node_Type.t_node));
     switch ([#"../bdd.rs" 448 11 448 34] ([#"../bdd.rs" 448 11 448 19] Bdd_Context_Type.context_cnt ( * self)) > ([#"../bdd.rs" 448 22 448 34] ([#"../bdd.rs" 448 22 448 30] [#"../bdd.rs" 448 22 448 30] (18446744073709551615 : uint64)) - ([#"../bdd.rs" 448 33 448 34] [#"../bdd.rs" 448 33 448 34] (1 : uint64))))
       | False -> goto BB11
       | True -> goto BB8
@@ -2234,7 +2234,7 @@ module Bdd_Impl11_Node
     ensures { result = is_valid_bdd0 self b }
     
   use map.Map
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate is_valid_node0 [#"../bdd.rs" 316 4 316 51] (self : Bdd_Context_Type.t_context) (n : Bdd_Node_Type.t_node) =
     [#"../bdd.rs" 318 12 327 13] match n with
       | Bdd_Node_Type.C_True -> true
@@ -2246,14 +2246,14 @@ module Bdd_Impl11_Node
     
   predicate invariant0 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) =
     [#"../bdd.rs" 264 12 288 19] (forall n : Bdd_NodeLog_Type.t_nodelog . match Map.get (shallow_model2 (Bdd_Context_Type.context_hashcons self)) n with
-      | Core_Option_Option_Type.C_Some b -> shallow_model3 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
+      | Core_Option_Option_Type.C_Some b -> shallow_model3 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
       | Core_Option_Option_Type.C_None -> true
       end) /\ (forall bm : uint64 . match Map.get (shallow_model7 (Bdd_Context_Type.context_not_memo self)) bm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
+      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
       end) /\ (forall abm : (uint64, uint64) . match Map.get (shallow_model8 (Bdd_Context_Type.context_and_memo self)) abm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
+      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
       end)
   val invariant0 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) : bool
     ensures { result = invariant0 self }
@@ -2458,7 +2458,7 @@ module Bdd_Impl11_True
     ensures { result = is_valid_bdd0 self b }
     
   use map.Map
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate is_valid_node0 [#"../bdd.rs" 316 4 316 51] (self : Bdd_Context_Type.t_context) (n : Bdd_Node_Type.t_node) =
     [#"../bdd.rs" 318 12 327 13] match n with
       | Bdd_Node_Type.C_True -> true
@@ -2470,14 +2470,14 @@ module Bdd_Impl11_True
     
   predicate invariant0 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) =
     [#"../bdd.rs" 264 12 288 19] (forall n : Bdd_NodeLog_Type.t_nodelog . match Map.get (shallow_model1 (Bdd_Context_Type.context_hashcons self)) n with
-      | Core_Option_Option_Type.C_Some b -> shallow_model2 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
+      | Core_Option_Option_Type.C_Some b -> shallow_model2 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
       | Core_Option_Option_Type.C_None -> true
       end) /\ (forall bm : uint64 . match Map.get (shallow_model5 (Bdd_Context_Type.context_not_memo self)) bm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
+      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
       end) /\ (forall abm : (uint64, uint64) . match Map.get (shallow_model6 (Bdd_Context_Type.context_and_memo self)) abm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
+      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
       end)
   val invariant0 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) : bool
     ensures { result = invariant0 self }
@@ -2634,7 +2634,7 @@ module Bdd_Impl11_False
     ensures { result = is_valid_bdd0 self b }
     
   use map.Map
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate is_valid_node0 [#"../bdd.rs" 316 4 316 51] (self : Bdd_Context_Type.t_context) (n : Bdd_Node_Type.t_node) =
     [#"../bdd.rs" 318 12 327 13] match n with
       | Bdd_Node_Type.C_True -> true
@@ -2646,14 +2646,14 @@ module Bdd_Impl11_False
     
   predicate invariant0 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) =
     [#"../bdd.rs" 264 12 288 19] (forall n : Bdd_NodeLog_Type.t_nodelog . match Map.get (shallow_model1 (Bdd_Context_Type.context_hashcons self)) n with
-      | Core_Option_Option_Type.C_Some b -> shallow_model2 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
+      | Core_Option_Option_Type.C_Some b -> shallow_model2 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
       | Core_Option_Option_Type.C_None -> true
       end) /\ (forall bm : uint64 . match Map.get (shallow_model5 (Bdd_Context_Type.context_not_memo self)) bm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
+      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
       end) /\ (forall abm : (uint64, uint64) . match Map.get (shallow_model6 (Bdd_Context_Type.context_and_memo self)) abm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
+      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
       end)
   val invariant0 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) : bool
     ensures { result = invariant0 self }
@@ -2810,7 +2810,7 @@ module Bdd_Impl11_V
     ensures { result = is_valid_bdd0 self b }
     
   use map.Map
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate is_valid_node0 [#"../bdd.rs" 316 4 316 51] (self : Bdd_Context_Type.t_context) (n : Bdd_Node_Type.t_node) =
     [#"../bdd.rs" 318 12 327 13] match n with
       | Bdd_Node_Type.C_True -> true
@@ -2822,14 +2822,14 @@ module Bdd_Impl11_V
     
   predicate invariant0 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) =
     [#"../bdd.rs" 264 12 288 19] (forall n : Bdd_NodeLog_Type.t_nodelog . match Map.get (shallow_model1 (Bdd_Context_Type.context_hashcons self)) n with
-      | Core_Option_Option_Type.C_Some b -> shallow_model2 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
+      | Core_Option_Option_Type.C_Some b -> shallow_model2 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
       | Core_Option_Option_Type.C_None -> true
       end) /\ (forall bm : uint64 . match Map.get (shallow_model5 (Bdd_Context_Type.context_not_memo self)) bm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
+      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
       end) /\ (forall abm : (uint64, uint64) . match Map.get (shallow_model6 (Bdd_Context_Type.context_and_memo self)) abm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
+      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
       end)
   val invariant0 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) : bool
     ensures { result = invariant0 self }
@@ -3053,7 +3053,7 @@ module Bdd_Impl11_Not
     ensures { result = is_valid_bdd0 self b }
     
   use map.Map
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate is_valid_node0 [#"../bdd.rs" 316 4 316 51] (self : Bdd_Context_Type.t_context) (n : Bdd_Node_Type.t_node) =
     [#"../bdd.rs" 318 12 327 13] match n with
       | Bdd_Node_Type.C_True -> true
@@ -3065,14 +3065,14 @@ module Bdd_Impl11_Not
     
   predicate invariant1 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) =
     [#"../bdd.rs" 264 12 288 19] (forall n : Bdd_NodeLog_Type.t_nodelog . match Map.get (shallow_model4 (Bdd_Context_Type.context_hashcons self)) n with
-      | Core_Option_Option_Type.C_Some b -> shallow_model5 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
+      | Core_Option_Option_Type.C_Some b -> shallow_model5 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
       | Core_Option_Option_Type.C_None -> true
       end) /\ (forall bm : uint64 . match Map.get (shallow_model2 (Bdd_Context_Type.context_not_memo self)) bm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
+      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
       end) /\ (forall abm : (uint64, uint64) . match Map.get (shallow_model8 (Bdd_Context_Type.context_and_memo self)) abm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
+      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
       end)
   val invariant1 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) : bool
     ensures { result = invariant1 self }
@@ -3508,7 +3508,7 @@ module Bdd_Impl11_And
     ensures { result = is_valid_bdd0 self b }
     
   use map.Map
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate is_valid_node0 [#"../bdd.rs" 316 4 316 51] (self : Bdd_Context_Type.t_context) (n : Bdd_Node_Type.t_node) =
     [#"../bdd.rs" 318 12 327 13] match n with
       | Bdd_Node_Type.C_True -> true
@@ -3520,14 +3520,14 @@ module Bdd_Impl11_And
     
   predicate invariant1 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) =
     [#"../bdd.rs" 264 12 288 19] (forall n : Bdd_NodeLog_Type.t_nodelog . match Map.get (shallow_model4 (Bdd_Context_Type.context_hashcons self)) n with
-      | Core_Option_Option_Type.C_Some b -> shallow_model5 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
+      | Core_Option_Option_Type.C_Some b -> shallow_model5 (Bdd_Bdd_Type.bdd_0 b) = n /\ is_valid_node0 self (Bdd_Bdd_Type.bdd_0 b) /\ Bdd_Bdd_Type.bdd_1 b < Bdd_Context_Type.context_cnt self /\ Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (Bdd_Bdd_Type.bdd_1 b) = Bdd_Bdd_Type.bdd_0 b
       | Core_Option_Option_Type.C_None -> true
       end) /\ (forall bm : uint64 . match Map.get (shallow_model8 (Bdd_Context_Type.context_not_memo self)) bm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
+      | Core_Option_Option_Type.C_Some n -> let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) bm) bm in is_valid_bdd0 self n /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (not interp0 b v)) /\ leastvar0 b <= leastvar0 n
       end) /\ (forall abm : (uint64, uint64) . match Map.get (shallow_model2 (Bdd_Context_Type.context_and_memo self)) abm with
       | Core_Option_Option_Type.C_None -> true
-      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Ghost.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
+      | Core_Option_Option_Type.C_Some n -> let a = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (a, _) = abm in a)) (let (a, _) = abm in a) in let b = Bdd_Bdd_Type.C_Bdd (Map.get (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self)) (let (_, a) = abm in a)) (let (_, a) = abm in a) in is_valid_bdd0 self n /\ is_valid_bdd0 self a /\ is_valid_bdd0 self b /\ (forall v : Map.map uint64 bool . interp0 n v = (interp0 a v /\ interp0 b v)) /\ (leastvar0 a <= leastvar0 n \/ leastvar0 b <= leastvar0 n)
       end)
   val invariant1 [#"../bdd.rs" 262 4 262 30] (self : Bdd_Context_Type.t_context) : bool
     ensures { result = invariant1 self }

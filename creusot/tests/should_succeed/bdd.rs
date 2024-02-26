@@ -30,7 +30,7 @@ mod hashmap {
         #[ensures(result@ == Self::hash_log(self.deep_model()))]
         fn hash(&self) -> u64;
 
-        #[ghost]
+        #[logic]
         fn hash_log(_: Self::DeepModelTy) -> Int;
     }
 
@@ -40,7 +40,7 @@ mod hashmap {
     impl<K: Hash, V> ShallowModel for MyHashMap<K, V> {
         type ShallowModelTy = Mapping<K::DeepModelTy, Option<V>>;
 
-        #[ghost]
+        #[logic]
         #[open(self)]
         #[trusted]
         fn shallow_model(self) -> Self::ShallowModelTy {
@@ -78,7 +78,7 @@ mod hashmap {
         }
 
         #[open(self)]
-        #[ghost]
+        #[logic]
         fn hash_log(x: Self::DeepModelTy) -> Int {
             pearlite! { (U::hash_log(x.0) + V::hash_log(x.1) * 17) % (u64::MAX@ + 1) }
         }
@@ -124,7 +124,7 @@ impl<'arena> hashmap::Hash for Node<'arena> {
     }
 
     #[open(self)]
-    #[ghost]
+    #[logic]
     fn hash_log(x: Self::DeepModelTy) -> Int {
         pearlite! {
             match x {
@@ -144,7 +144,7 @@ impl<'arena> hashmap::Hash for Bdd<'arena> {
     }
 
     #[open(self)]
-    #[ghost]
+    #[logic]
     fn hash_log(x: Self::DeepModelTy) -> Int {
         pearlite! { x@ }
     }
@@ -154,7 +154,7 @@ impl<'arena> DeepModel for Node<'arena> {
     type DeepModelTy = NodeLog;
 
     #[open(self)]
-    #[ghost]
+    #[logic]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! {
             match self {
@@ -171,7 +171,7 @@ impl<'arena> ShallowModel for Node<'arena> {
     type ShallowModelTy = NodeLog;
 
     #[open(self)]
-    #[ghost]
+    #[logic]
     fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! { self.deep_model() }
     }
@@ -181,7 +181,7 @@ impl<'arena> DeepModel for Bdd<'arena> {
     type DeepModelTy = u64;
 
     #[open(self)]
-    #[ghost]
+    #[logic]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { self.1 }
     }
@@ -191,7 +191,7 @@ impl<'arena> ShallowModel for Bdd<'arena> {
     type ShallowModelTy = u64;
 
     #[open(self)]
-    #[ghost]
+    #[logic]
     fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! { self.deep_model() }
     }
@@ -205,7 +205,7 @@ impl<'arena> PartialEq for Bdd<'arena> {
 }
 
 impl<'arena> Bdd<'arena> {
-    #[ghost]
+    #[logic]
     fn interp(self, vars: Mapping<u64, bool>) -> bool {
         pearlite! {
             match self {
@@ -219,7 +219,7 @@ impl<'arena> Bdd<'arena> {
         }
     }
 
-    #[ghost]
+    #[logic]
     #[ensures(result >= 0)]
     fn size(self) -> Int {
         pearlite! {
@@ -235,7 +235,7 @@ impl<'arena> Bdd<'arena> {
         }
     }
 
-    #[ghost]
+    #[logic]
     fn leastvar(self) -> Int {
         pearlite! {
             match self {
@@ -250,7 +250,7 @@ impl<'arena> Bdd<'arena> {
 pub struct Context<'arena> {
     alloc: &'arena bumpalo::Bump,
     hashcons: hashmap::MyHashMap<Node<'arena>, Bdd<'arena>>,
-    hashcons_ghost: Ghost<Mapping<u64, &'arena Node<'arena>>>,
+    hashcons_ghost: Snapshot<Mapping<u64, &'arena Node<'arena>>>,
     not_memo: hashmap::MyHashMap<Bdd<'arena>, Bdd<'arena>>,
     and_memo: hashmap::MyHashMap<(Bdd<'arena>, Bdd<'arena>), Bdd<'arena>>,
     cnt: u64,
@@ -292,7 +292,7 @@ impl<'arena> Invariant for Context<'arena> {
 
 impl<'arena> Context<'arena> {
     #[open(self)]
-    #[predicate]
+    #[predicate(prophetic)]
     pub fn grows(&mut self) -> bool {
         pearlite! {
             self.cnt@ <= (^self).cnt@ &&
@@ -328,14 +328,14 @@ impl<'arena> Context<'arena> {
         }
     }
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[requires(self.grows())]
     #[requires(self.is_valid_bdd(b))]
     #[ensures((^self).is_valid_bdd(b))]
     pub fn grows_is_valid_bdd(&mut self, b: Bdd<'arena>) {}
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[requires(self.grows())]
     #[requires(o.grows())]
@@ -344,7 +344,7 @@ impl<'arena> Context<'arena> {
     #[ensures(oo.grows())]
     pub fn grows_trans(&mut self, o: &mut Self, oo: &mut Self) {}
 
-    #[ghost]
+    #[logic]
     #[requires(self.is_valid_bdd(a))]
     #[requires(x@ < a.leastvar())]
     #[ensures(a.interp(v) == a.interp(v.set(x, b)))]
@@ -360,7 +360,7 @@ impl<'arena> Context<'arena> {
         }
     }
 
-    #[ghost]
+    #[logic]
     #[requires(self.is_valid_bdd(a))]
     #[requires(self.is_valid_bdd(b))]
     #[requires(a != b)]
@@ -408,7 +408,7 @@ impl<'arena> Context<'arena> {
         }
     }
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[requires(self.is_valid_bdd(a))]
     #[requires(self.is_valid_bdd(b))]
@@ -426,7 +426,7 @@ impl<'arena> Context<'arena> {
         Context {
             alloc,
             hashcons: hashmap::MyHashMap::new(),
-            hashcons_ghost: gh! { Mapping::cst(t) },
+            hashcons_ghost: snapshot! { Mapping::cst(t) },
             not_memo: hashmap::MyHashMap::new(),
             and_memo: hashmap::MyHashMap::new(),
             cnt: 0,
@@ -444,7 +444,7 @@ impl<'arena> Context<'arena> {
         }
         let r = Bdd(self.alloc.alloc(n), self.cnt);
         self.hashcons.add(n, r);
-        self.hashcons_ghost = gh! { self.hashcons_ghost.set(r.1, r.0) };
+        self.hashcons_ghost = snapshot! { self.hashcons_ghost.set(r.1, r.0) };
         if self.cnt > u64::MAX - 1 {
             loop {
                 // prevent self from being resolved
