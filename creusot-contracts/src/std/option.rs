@@ -4,7 +4,7 @@ pub use ::std::option::*;
 impl<T: DeepModel> DeepModel for Option<T> {
     type DeepModelTy = Option<T::DeepModelTy>;
 
-    #[ghost]
+    #[logic]
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
         match self {
@@ -137,7 +137,7 @@ impl<T> ShallowModel for IntoIter<T> {
     type ShallowModelTy = Option<T>;
 
     #[open(self)]
-    #[ghost]
+    #[logic]
     #[trusted]
     fn shallow_model(self) -> Option<T> {
         pearlite! { absurd }
@@ -145,7 +145,7 @@ impl<T> ShallowModel for IntoIter<T> {
 }
 
 impl<T> Iterator for IntoIter<T> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && self.resolve() }
@@ -191,7 +191,7 @@ impl<'a, T> ShallowModel for Iter<'a, T> {
     type ShallowModelTy = Option<&'a T>;
 
     #[open(self)]
-    #[ghost]
+    #[logic]
     #[trusted]
     fn shallow_model(self) -> Option<&'a T> {
         pearlite! { absurd }
@@ -199,7 +199,7 @@ impl<'a, T> ShallowModel for Iter<'a, T> {
 }
 
 impl<'a, T> Iterator for Iter<'a, T> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && self.resolve() }
@@ -247,7 +247,7 @@ impl<'a, T> IntoIterator for &'a Option<T> {
 impl<'a, T> ShallowModel for IterMut<'a, T> {
     type ShallowModelTy = Option<&'a mut T>;
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     fn shallow_model(self) -> Option<&'a mut T> {
@@ -256,7 +256,7 @@ impl<'a, T> ShallowModel for IterMut<'a, T> {
 }
 
 impl<'a, T> Iterator for IterMut<'a, T> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && self.resolve() }
@@ -291,7 +291,7 @@ impl<'a, T> IntoIterator for &'a mut Option<T> {
         pearlite! { true }
     }
 
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn into_iter_post(self, res: Self::IntoIter) -> bool {
         pearlite! {

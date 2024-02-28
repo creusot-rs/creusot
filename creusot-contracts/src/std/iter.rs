@@ -24,10 +24,10 @@ pub use take::TakeExt;
 pub use zip::ZipExt;
 
 pub trait Iterator: ::std::iter::Iterator {
-    #[predicate]
+    #[predicate(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool;
 
-    #[predicate]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool;
 
     #[law]
@@ -63,7 +63,7 @@ where
         pearlite! { true }
     }
 
-    #[predicate]
+    #[predicate(prophetic)]
     fn into_iter_post(self, res: Self::IntoIter) -> bool;
 }
 

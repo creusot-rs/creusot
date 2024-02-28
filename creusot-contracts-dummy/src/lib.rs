@@ -44,11 +44,6 @@ pub fn pearlite(_: TS1) -> TS1 {
 }
 
 #[proc_macro_attribute]
-pub fn ghost(_: TS1, _: TS1) -> TS1 {
-    TS1::new()
-}
-
-#[proc_macro_attribute]
 pub fn predicate(_: TS1, _: TS1) -> TS1 {
     TS1::new()
 }

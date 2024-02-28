@@ -334,11 +334,11 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
     decls.extend(clones);
 
     let kind = match util::item_type(ctx.tcx, def_id) {
-        ItemType::Predicate => {
+        ItemType::Predicate { .. } => {
             sig.retty = None;
             Some(LetKind::Predicate)
         }
-        ItemType::Ghost | ItemType::Logic => Some(LetKind::Function),
+        ItemType::Logic { .. } => Some(LetKind::Function),
         _ => unreachable!(),
     };
 

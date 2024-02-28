@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{ghost, open, pearlite, trusted, DeepModel, Int, OrdLogic};
+use crate::{logic, open, pearlite, trusted, DeepModel, Int, OrdLogic};
 use num_rational::BigRational;
 use std::cmp::Ordering;
 
@@ -12,7 +12,7 @@ pub struct Real(PhantomData<*mut ()>);
 impl DeepModel for BigRational {
     type DeepModelTy = Real;
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     fn deep_model(self) -> Self::DeepModelTy {
@@ -21,7 +21,7 @@ impl DeepModel for BigRational {
 }
 
 impl Real {
-    #[ghost]
+    #[logic]
     #[trusted]
     #[open(self)]
     pub fn from_int(_: Int) -> Self {
@@ -30,7 +30,7 @@ impl Real {
 }
 
 impl OrdLogic for Real {
-    #[ghost]
+    #[logic]
     #[open]
     fn cmp_log(self, o: Self) -> Ordering {
         if self < o {
@@ -44,7 +44,7 @@ impl OrdLogic for Real {
 
     #[trusted]
     #[open]
-    #[ghost]
+    #[logic]
     #[creusot::builtins = "prelude.Real.(<=)"]
     fn le_log(self, _: Self) -> bool {
         true
@@ -52,7 +52,7 @@ impl OrdLogic for Real {
 
     #[trusted]
     #[open]
-    #[ghost]
+    #[logic]
     #[creusot::builtins = "prelude.Real.(<)"]
     fn lt_log(self, _: Self) -> bool {
         true
@@ -60,7 +60,7 @@ impl OrdLogic for Real {
 
     #[trusted]
     #[open]
-    #[ghost]
+    #[logic]
     #[creusot::builtins = "prelude.Real.(>=)"]
     fn ge_log(self, _: Self) -> bool {
         true
@@ -68,7 +68,7 @@ impl OrdLogic for Real {
 
     #[trusted]
     #[open]
-    #[ghost]
+    #[logic]
     #[creusot::builtins = "prelude.Real.(>)"]
     fn gt_log(self, _: Self) -> bool {
         true

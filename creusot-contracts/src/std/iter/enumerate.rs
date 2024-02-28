@@ -1,23 +1,23 @@
 use crate::{invariant::Invariant, std::iter::Enumerate, *};
 
 pub trait EnumerateExt<I> {
-    #[ghost]
+    #[logic]
     fn iter(self) -> I;
 
-    #[ghost]
+    #[logic]
     fn n(self) -> Int;
 }
 
 impl<I> EnumerateExt<I> for Enumerate<I> {
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     fn iter(self) -> I {
         absurd
     }
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     fn n(self) -> Int {
         absurd
@@ -27,7 +27,7 @@ impl<I> EnumerateExt<I> for Enumerate<I> {
 #[trusted]
 impl<I> Resolve for Enumerate<I> {
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
             self.iter().resolve()
@@ -37,7 +37,7 @@ impl<I> Resolve for Enumerate<I> {
 
 impl<I: Iterator> Invariant for Enumerate<I> {
     #[open(self)]
-    #[predicate]
+    #[predicate(prophetic)]
     fn invariant(self) -> bool {
         pearlite! {
             (forall<s: Seq<I::Item>, i: I> self.iter().produces(s, i) ==> self.n() + s.len() < std::usize::MAX@)
@@ -51,13 +51,13 @@ where
     I: Iterator,
 {
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { exists<inner : &mut _> *inner == self.iter() && ^inner == (^self).iter() && inner.completed() }
     }
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited.len() == o.n() - self.n()

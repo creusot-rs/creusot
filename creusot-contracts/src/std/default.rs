@@ -2,7 +2,7 @@ use crate::*;
 pub use ::std::default::*;
 
 pub trait Default: ::std::default::Default {
-    #[predicate]
+    #[predicate(prophetic)]
     fn is_default(self) -> bool;
 }
 

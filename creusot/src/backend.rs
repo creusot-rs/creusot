@@ -140,9 +140,8 @@ impl<'tcx> Why3Generator<'tcx> {
                     self.finish(def_id);
                 }
             }
-            ItemType::Ghost
-            | ItemType::Logic
-            | ItemType::Predicate
+            ItemType::Logic { .. }
+            | ItemType::Predicate { .. }
             | ItemType::Program
             | ItemType::Closure => {
                 self.start(def_id);
@@ -200,7 +199,7 @@ impl<'tcx> Why3Generator<'tcx> {
         }
 
         let translated = match util::item_type(self.tcx, def_id) {
-            ItemType::Ghost | ItemType::Logic | ItemType::Predicate => {
+            ItemType::Logic { .. } | ItemType::Predicate { .. } => {
                 debug!("translating {:?} as logical", def_id);
                 let (proof_modl, deps) = logic::translate_logic_or_predicate(self, def_id);
                 self.dependencies.insert(def_id.into(), deps);
@@ -340,7 +339,7 @@ impl<'tcx> Why3Generator<'tcx> {
     fn is_logical(&self, item: DefId) -> bool {
         matches!(
             util::item_type(self.tcx, item),
-            ItemType::Logic | ItemType::Predicate | ItemType::Ghost
+            ItemType::Logic { .. } | ItemType::Predicate { .. }
         )
     }
 

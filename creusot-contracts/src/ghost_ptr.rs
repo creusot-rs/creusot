@@ -29,7 +29,7 @@ impl<T: ?Sized> ShallowModel for GhostPtrToken<T> {
     type ShallowModelTy = FMap<GhostPtr<T>, T>;
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     fn shallow_model(self) -> Self::ShallowModelTy {
         absurd
@@ -131,7 +131,7 @@ impl<T: ?Sized> GhostPtrToken<T> {
 impl<T: ?Sized> GhostPtrExt<T> for GhostPtr<T> {
     #[trusted]
     #[open(self)]
-    #[ghost]
+    #[logic]
     #[ensures(forall<t: GhostPtrToken<T>> !t@.contains(result))]
     #[ensures(result.addr_logic() == 0)]
     #[ensures(forall<ptr: GhostPtr<T>> ptr.addr_logic() == result.addr_logic() ==> ptr == result)]
@@ -140,7 +140,7 @@ impl<T: ?Sized> GhostPtrExt<T> for GhostPtr<T> {
     }
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     fn addr_logic(self) -> Int {
         absurd
@@ -151,7 +151,7 @@ impl<'a, T: ?Sized> ShallowModel for GhostPtrTokenRef<'a, T> {
     type ShallowModelTy = FMap<GhostPtr<T>, T>;
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     fn shallow_model(self) -> Self::ShallowModelTy {
         absurd
@@ -174,14 +174,14 @@ impl<'a, T: ?Sized> GhostPtrTokenRef<'a, T> {
     #[requires(new_model.subset(self@))]
     #[ensures(result@ == *new_model)]
     #[allow(unused_variables)]
-    pub fn shrink_token_ref(self, new_model: Ghost<FMap<*const T, T>>) -> Self {
+    pub fn shrink_token_ref(self, new_model: Snapshot<FMap<*const T, T>>) -> Self {
         self
     }
 }
 
 impl<'a, T: ?Sized> GhostPtrTokenMut<'a, T> {
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     pub fn cur(self) -> FMap<GhostPtr<T>, T> {
         absurd
@@ -265,9 +265,9 @@ impl<'a, T> Resolve for GhostPtrTokenMut<'a, T> {
 }
 
 pub trait GhostPtrExt<T: ?Sized>: Sized {
-    #[ghost]
+    #[logic]
     fn null_logic() -> Self;
-    #[ghost]
+    #[logic]
     fn addr_logic(self) -> Int;
 }
 

@@ -13,14 +13,14 @@ impl<T> Seq<T> {
     pub const EMPTY: Self = { Seq(std::marker::PhantomData) };
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[creusot::builtins = "seq.Seq.create"]
     pub fn new(_: Int, _: Mapping<Int, T>) -> Self {
         absurd
     }
 
-    #[ghost]
+    #[logic]
     #[open]
     pub fn get(self, ix: Int) -> Option<T> {
         if 0 <= ix && ix < self.len() {
@@ -31,7 +31,7 @@ impl<T> Seq<T> {
     }
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[creusot::builtins = "seq_ext.SeqExt.subsequence"]
     pub fn subsequence(self, _: Int, _: Int) -> Self {
@@ -39,21 +39,21 @@ impl<T> Seq<T> {
     }
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[creusot::builtins = "seq.Seq.singleton"]
     pub fn singleton(_: T) -> Self {
         absurd
     }
 
-    #[ghost]
+    #[logic]
     #[open]
     pub fn tail(self) -> Self {
         self.subsequence(1, self.len())
     }
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[rustc_diagnostic_item = "seq_len"]
     #[creusot::builtins = "seq.Seq.length"]
@@ -62,7 +62,7 @@ impl<T> Seq<T> {
     }
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[creusot::builtins = "seq.Seq.set"]
     pub fn set(self, _: Int, _: T) -> Self {
@@ -78,7 +78,7 @@ impl<T> Seq<T> {
     }
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[creusot::builtins = "seq.Seq.snoc"]
     pub fn push(self, _: T) -> Self {
@@ -86,7 +86,7 @@ impl<T> Seq<T> {
     }
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[creusot::builtins = "seq.Seq.(++)"]
     pub fn concat(self, _: Self) -> Self {
@@ -94,7 +94,7 @@ impl<T> Seq<T> {
     }
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[creusot::builtins = "seq.Reverse.reverse"]
     pub fn reverse(self) -> Self {
@@ -163,7 +163,7 @@ impl<T> Seq<&T> {
 impl<T> IndexLogic<Int> for Seq<T> {
     type Item = T;
 
-    #[ghost]
+    #[logic]
     #[trusted]
     #[open(self)]
     #[rustc_diagnostic_item = "seq_index"]
