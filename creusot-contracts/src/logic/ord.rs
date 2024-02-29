@@ -2,10 +2,10 @@ use crate::{std::cmp::Ordering, *};
 
 #[allow(unused)]
 pub trait OrdLogic {
-    #[ghost]
+    #[logic]
     fn cmp_log(self, _: Self) -> Ordering;
 
-    #[ghost]
+    #[logic]
     #[open]
     fn le_log(self, o: Self) -> bool {
         pearlite! { self.cmp_log(o) != Ordering::Greater }
@@ -15,7 +15,7 @@ pub trait OrdLogic {
     #[ensures(x.le_log(y) == (x.cmp_log(y) != Ordering::Greater))]
     fn cmp_le_log(x: Self, y: Self);
 
-    #[ghost]
+    #[logic]
     #[open]
     fn lt_log(self, o: Self) -> bool {
         pearlite! { self.cmp_log(o) == Ordering::Less }
@@ -25,7 +25,7 @@ pub trait OrdLogic {
     #[ensures(x.lt_log(y) == (x.cmp_log(y) == Ordering::Less))]
     fn cmp_lt_log(x: Self, y: Self);
 
-    #[ghost]
+    #[logic]
     #[open]
     fn ge_log(self, o: Self) -> bool {
         pearlite! { self.cmp_log(o) != Ordering::Less }
@@ -35,7 +35,7 @@ pub trait OrdLogic {
     #[ensures(x.ge_log(y) == (x.cmp_log(y) != Ordering::Less))]
     fn cmp_ge_log(x: Self, y: Self);
 
-    #[ghost]
+    #[logic]
     #[open]
     fn gt_log(self, o: Self) -> bool {
         pearlite! { self.cmp_log(o) == Ordering::Greater }
@@ -134,7 +134,7 @@ pub use ord_laws_impl;
 macro_rules! ord_logic_impl {
     ($t:ty) => {
         impl OrdLogic for $t {
-            #[ghost]
+            #[logic]
             #[open]
             fn cmp_log(self, o: Self) -> Ordering {
                 if self < o {
@@ -148,7 +148,7 @@ macro_rules! ord_logic_impl {
 
             #[trusted]
             #[open]
-            #[ghost]
+            #[logic]
             #[creusot::builtins = "int.Int.(<=)"]
             fn le_log(self, _: Self) -> bool {
                 true
@@ -156,7 +156,7 @@ macro_rules! ord_logic_impl {
 
             #[trusted]
             #[open]
-            #[ghost]
+            #[logic]
             #[creusot::builtins = "int.Int.(<)"]
             fn lt_log(self, _: Self) -> bool {
                 true
@@ -164,7 +164,7 @@ macro_rules! ord_logic_impl {
 
             #[trusted]
             #[open]
-            #[ghost]
+            #[logic]
             #[creusot::builtins = "int.Int.(>=)"]
             fn ge_log(self, _: Self) -> bool {
                 true
@@ -172,7 +172,7 @@ macro_rules! ord_logic_impl {
 
             #[trusted]
             #[open]
-            #[ghost]
+            #[logic]
             #[creusot::builtins = "int.Int.(>)"]
             fn gt_log(self, _: Self) -> bool {
                 true
@@ -201,7 +201,7 @@ ord_logic_impl!(isize);
 
 impl OrdLogic for bool {
     #[open]
-    #[ghost]
+    #[logic]
     fn cmp_log(self, o: Self) -> Ordering {
         match (self, o) {
             (false, false) => Ordering::Equal,
@@ -215,7 +215,7 @@ impl OrdLogic for bool {
 }
 
 impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
-    #[ghost]
+    #[logic]
     #[open]
     fn cmp_log(self, o: Self) -> Ordering {
         pearlite! { {
@@ -228,25 +228,25 @@ impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
         } }
     }
 
-    #[ghost]
+    #[logic]
     #[open]
     fn le_log(self, o: Self) -> bool {
         pearlite! { (self.0 == o.0 && self.1 <= o.1) || self.0 <= o.0 }
     }
 
-    #[ghost]
+    #[logic]
     #[open]
     fn lt_log(self, o: Self) -> bool {
         pearlite! { (self.0 == o.0 && self.1 < o.1) || self.0 < o.0 }
     }
 
-    #[ghost]
+    #[logic]
     #[open]
     fn ge_log(self, o: Self) -> bool {
         pearlite! { (self.0 == o.0 && self.1 >= o.1) || self.0 >= o.0 }
     }
 
-    #[ghost]
+    #[logic]
     #[open]
     fn gt_log(self, o: Self) -> bool {
         pearlite! { (self.0 == o.0 && self.1 > o.1) || self.0 > o.0 }
@@ -256,7 +256,7 @@ impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
 }
 
 impl<T: OrdLogic> OrdLogic for Option<T> {
-    #[ghost]
+    #[logic]
     #[open]
     fn cmp_log(self, o: Self) -> Ordering {
         match (self, o) {

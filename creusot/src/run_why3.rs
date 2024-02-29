@@ -76,7 +76,7 @@ pub(super) fn run_why3<'tcx>(ctx: &Why3Generator<'tcx>, file: Option<PathBuf>) {
                             "Prover reported {answer:?} (time: {time:?}, steps: {step:?}) when trying to solve goal {:?} {:?}",
                             x.term.goal_name, x.term.explanations
                         );
-                        ctx.error(span.unwrap_or_default(), &msg);
+                        ctx.error(span.unwrap_or_default(), &msg).emit();
                         for model in x.prover_result.model_elems() {
                             let span = span_map.decode_span(&model.location);
                             let mut msg = format!("Model Element for {}\n", model.lsymbol.name);
@@ -94,7 +94,7 @@ pub(super) fn run_why3<'tcx>(ctx: &Why3Generator<'tcx>, file: Option<PathBuf>) {
                 }
                 Err(err) => {
                     let msg = format!("error parsing why3 output {err:?}");
-                    ctx.error(DUMMY_SP, &msg)
+                    ctx.error(DUMMY_SP, &msg).emit();
                 }
             }
         }

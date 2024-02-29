@@ -7,7 +7,7 @@ pub use ::std::{
 impl ShallowModel for Duration {
     type ShallowModelTy = Int;
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     #[ensures(result >= 0 && result <= secs_to_nanos(u64::MAX@) + 999_999_999)]
@@ -19,7 +19,7 @@ impl ShallowModel for Duration {
 impl DeepModel for Duration {
     type DeepModelTy = Int;
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     #[ensures(result >= 0 && result <= secs_to_nanos(u64::MAX@) + 999_999_999)]
@@ -29,21 +29,21 @@ impl DeepModel for Duration {
     }
 }
 
-#[ghost]
+#[logic]
 fn nanos_to_micros(nanos: Int) -> Int {
     nanos / 1_000
 }
-#[ghost]
+#[logic]
 fn nanos_to_millis(nanos: Int) -> Int {
     nanos / 1_000_000
 }
 
-#[ghost]
+#[logic]
 fn nanos_to_secs(nanos: Int) -> Int {
     nanos / 1_000_000_000
 }
 
-#[ghost]
+#[logic]
 fn secs_to_nanos(secs: Int) -> Int {
     secs * 1_000_000_000
 }
@@ -51,7 +51,7 @@ fn secs_to_nanos(secs: Int) -> Int {
 impl ShallowModel for Instant {
     type ShallowModelTy = Int;
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     #[ensures(result >= 0)]
@@ -63,7 +63,7 @@ impl ShallowModel for Instant {
 impl DeepModel for Instant {
     type DeepModelTy = Int;
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     #[ensures(result >= 0)]

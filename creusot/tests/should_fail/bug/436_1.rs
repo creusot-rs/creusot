@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 struct S {
-    g: Ghost<bool>,
+    g: Snapshot<bool>,
 }
 
 #[predicate]
@@ -11,7 +11,7 @@ fn prophecy(x: &mut S) -> bool {
 }
 
 pub fn f() {
-    let b = &mut S { g: gh! { true } };
-    b.g = gh! { !prophecy(b) };
+    let b = &mut S { g: snapshot! { true } };
+    b.g = snapshot! { !prophecy(b) };
     proof_assert! { false }
 }

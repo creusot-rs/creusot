@@ -903,7 +903,7 @@ module C02IterMut_AllZero
   val shallow_model2 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : Seq.seq usize
     ensures { result = shallow_model2 self }
     
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate resolve1 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve1 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : bool
@@ -935,17 +935,18 @@ module C02IterMut_AllZero
       end }
     ensures { [#"../02_iter_mut.rs" 63 26 63 44] inv3 result }
     
-  use prelude.Ghost
-  function index_logic0 [@inline:trivial] (self : Ghost.ghost_ty (Seq.seq (borrowed usize))) (ix : int) : borrowed usize
+  use prelude.Snapshot
+  function index_logic0 [@inline:trivial] (self : Snapshot.snap_ty (Seq.seq (borrowed usize))) (ix : int) : borrowed usize
+    
    =
-    [#"../../../../../creusot-contracts/src/logic/ops.rs" 87 8 87 33] Seq.get (Ghost.inner self) ix
-  val index_logic0 [@inline:trivial] (self : Ghost.ghost_ty (Seq.seq (borrowed usize))) (ix : int) : borrowed usize
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 87 8 87 33] Seq.get (Snapshot.inner self) ix
+  val index_logic0 [@inline:trivial] (self : Snapshot.snap_ty (Seq.seq (borrowed usize))) (ix : int) : borrowed usize
     ensures { result = index_logic0 self ix }
     
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
   val into_iter0 [#"../02_iter_mut.rs" 70 4 70 30] (self : C02IterMut_IterMut_Type.t_itermut usize) : C02IterMut_IterMut_Type.t_itermut usize
     requires {[#"../02_iter_mut.rs" 70 17 70 21] inv0 self}
     ensures { [#"../02_iter_mut.rs" 69 14 69 28] result = self }
@@ -968,12 +969,12 @@ module C02IterMut_AllZero
   var it : C02IterMut_IterMut_Type.t_itermut usize;
   var _5 : C02IterMut_IterMut_Type.t_itermut usize;
   var _6 : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
-  var iter_old : Ghost.ghost_ty (C02IterMut_IterMut_Type.t_itermut usize);
-  var produced : Ghost.ghost_ty (Seq.seq (borrowed usize));
+  var iter_old : Snapshot.snap_ty (C02IterMut_IterMut_Type.t_itermut usize);
+  var produced : Snapshot.snap_ty (Seq.seq (borrowed usize));
   var _15 : Core_Option_Option_Type.t_option (borrowed usize);
   var _16 : borrowed (C02IterMut_IterMut_Type.t_itermut usize);
   var x : borrowed usize;
-  var _19 : Ghost.ghost_ty (Seq.seq (borrowed usize));
+  var _19 : Snapshot.snap_ty (Seq.seq (borrowed usize));
   {
     goto BB0
   }
@@ -990,11 +991,11 @@ module C02IterMut_AllZero
     goto BB2
   }
   BB2 {
-    [#"../02_iter_mut.rs" 86 19 86 29] iter_old <- ([#"../02_iter_mut.rs" 86 19 86 29] Ghost.new it);
+    [#"../02_iter_mut.rs" 86 19 86 35] iter_old <- ([#"../02_iter_mut.rs" 86 19 86 35] Snapshot.new it);
     goto BB3
   }
   BB3 {
-    [#"../02_iter_mut.rs" 87 23 87 41] produced <- ([#"../02_iter_mut.rs" 87 23 87 41] Ghost.new (Seq.empty ));
+    [#"../02_iter_mut.rs" 87 23 87 47] produced <- ([#"../02_iter_mut.rs" 87 23 87 47] Snapshot.new (Seq.empty ));
     goto BB4
   }
   BB4 {
@@ -1002,8 +1003,8 @@ module C02IterMut_AllZero
   }
   BB5 {
     invariant { [#"../02_iter_mut.rs" 88 16 88 23] inv0 it };
-    invariant { [#"../02_iter_mut.rs" 89 16 89 55] produces0 (Ghost.inner iter_old) (Ghost.inner produced) it };
-    invariant { [#"../02_iter_mut.rs" 88 4 88 25] forall i : int . 0 <= i /\ i < Seq.length (Ghost.inner produced) -> UIntSize.to_int ( ^ index_logic0 produced i) = 0 };
+    invariant { [#"../02_iter_mut.rs" 89 16 89 55] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) it };
+    invariant { [#"../02_iter_mut.rs" 88 4 88 25] forall i : int . 0 <= i /\ i < Seq.length (Snapshot.inner produced) -> UIntSize.to_int ( ^ index_logic0 produced i) = 0 };
     goto BB6
   }
   BB6 {
@@ -1036,12 +1037,12 @@ module C02IterMut_AllZero
   BB11 {
     [#"../02_iter_mut.rs" 93 17 93 18] x <- ([#"../02_iter_mut.rs" 93 17 93 18] Core_Option_Option_Type.some_0 _15);
     [#"../02_iter_mut.rs" 93 17 93 18] _15 <- (let Core_Option_Option_Type.C_Some x0 = _15 in Core_Option_Option_Type.C_Some (any borrowed usize));
-    [#"../02_iter_mut.rs" 94 27 94 69] _19 <- ([#"../02_iter_mut.rs" 94 27 94 69] Ghost.new (Seq.(++) (Ghost.inner produced) (Seq.singleton x)));
+    [#"../02_iter_mut.rs" 94 27 94 75] _19 <- ([#"../02_iter_mut.rs" 94 27 94 75] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton x)));
     goto BB12
   }
   BB12 {
-    [#"../02_iter_mut.rs" 94 16 94 69] produced <- ([#"../02_iter_mut.rs" 94 16 94 69] _19);
-    [#"../02_iter_mut.rs" 94 16 94 69] _19 <- any Ghost.ghost_ty (Seq.seq (borrowed usize));
+    [#"../02_iter_mut.rs" 94 16 94 75] produced <- ([#"../02_iter_mut.rs" 94 16 94 75] _19);
+    [#"../02_iter_mut.rs" 94 16 94 75] _19 <- any Snapshot.snap_ty (Seq.seq (borrowed usize));
     [#"../02_iter_mut.rs" 95 16 95 22] x <- { x with current = ([#"../02_iter_mut.rs" 95 16 95 22] [#"../02_iter_mut.rs" 95 21 95 22] (0 : usize)) ; };
     assume { resolve0 x };
     goto BB5

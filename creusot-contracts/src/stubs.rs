@@ -58,8 +58,8 @@ pub fn variant_check<R: crate::well_founded::WellFounded + ?Sized>(_: R) -> Box<
 pub fn closure_result<R: ?Sized>(_: R, _: R) {}
 
 #[creusot::no_translate]
-#[rustc_diagnostic_item = "ghost_from_fn"]
-pub fn ghost_from_fn<T: ?Sized, F: Fn() -> crate::Ghost<T>>(_: F) -> crate::Ghost<T> {
+#[rustc_diagnostic_item = "snapshot_from_fn"]
+pub fn snapshot_from_fn<T: ?Sized, F: Fn() -> crate::Snapshot<T>>(_: F) -> crate::Snapshot<T> {
     panic!()
 }
 

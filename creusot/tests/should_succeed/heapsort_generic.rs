@@ -6,7 +6,7 @@ use creusot_contracts::{
     *,
 };
 
-#[ghost]
+#[logic]
 fn parent(i: Int) -> Int {
     (i + 1) / 2 - 1
 }
@@ -17,7 +17,7 @@ fn heap_frag<T: OrdLogic>(s: Seq<T>, start: Int, end: Int) -> bool {
     s[i] <= s[parent(i)] }
 }
 
-#[ghost]
+#[logic]
 #[requires(heap_frag(s, 0, end))]
 #[requires(0 <= i && i < end)]
 #[ensures(s[i] <= s[0])]
@@ -42,7 +42,7 @@ fn sift_down<T: Ord + DeepModel>(v: &mut Vec<T>, start: usize, end: usize)
 where
     T::DeepModelTy: OrdLogic,
 {
-    let old_v = gh! { v };
+    let old_v = snapshot! { v };
     let mut i = start;
 
     #[invariant(v@.permutation_of(old_v@))]
@@ -94,7 +94,7 @@ pub fn heap_sort<T: Ord + DeepModel>(v: &mut Vec<T>)
 where
     T::DeepModelTy: OrdLogic,
 {
-    let old_v = gh! { v };
+    let old_v = snapshot! { v };
 
     let mut start = v.len() / 2;
     #[invariant(v@.permutation_of(old_v@))]

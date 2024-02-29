@@ -34,7 +34,6 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
 
         let def_id = def_id.to_def_id();
         if crate::util::is_spec(ctx.tcx, def_id)
-            || crate::util::is_ghost(ctx.tcx, def_id)
             || crate::util::is_predicate(ctx.tcx, def_id)
             || crate::util::is_logic(ctx.tcx, def_id)
         {

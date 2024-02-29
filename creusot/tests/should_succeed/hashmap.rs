@@ -23,7 +23,7 @@ impl<T: Clone> Clone for List<T> {
 }
 
 impl<K: DeepModel, V> List<(K, V)> {
-    #[ghost]
+    #[logic]
     #[open]
     pub fn get(self, index: K::DeepModelTy) -> Option<V> {
         pearlite! {
@@ -50,7 +50,7 @@ trait Hash: DeepModel {
     #[ensures(result@ == Self::hash_log(self.deep_model()))]
     fn hash(&self) -> u64;
 
-    #[ghost]
+    #[logic]
     fn hash_log(_: Self::DeepModelTy) -> Int;
 }
 
@@ -60,7 +60,7 @@ impl Hash for usize {
         *self as u64
     }
 
-    #[ghost]
+    #[logic]
     fn hash_log(x: Int) -> Int {
         pearlite! { x }
     }
@@ -74,18 +74,18 @@ impl<K: Hash, V> ShallowModel for MyHashMap<K, V> {
     type ShallowModelTy = Mapping<K::DeepModelTy, Option<V>>;
 
     #[open(self)]
-    #[ghost]
+    #[logic]
     fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! { |k| self.bucket(k).get(k) }
     }
 }
 impl<K: Hash, V> MyHashMap<K, V> {
-    #[ghost]
+    #[logic]
     fn bucket(self, k: K::DeepModelTy) -> List<(K, V)> {
         pearlite! { self.buckets[self.bucket_ix(k)] }
     }
 
-    #[ghost]
+    #[logic]
     fn bucket_ix(self, k: K::DeepModelTy) -> Int {
         pearlite! { K::hash_log(k).rem_euclid(self.buckets@.len()) }
     }
@@ -105,11 +105,11 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
     #[ensures(forall<i: K::DeepModelTy> (^self)@.get(i) == (if i == key.deep_model() { Some(val) } else { self@.get(i) } ))]
     pub fn add(&mut self, key: K, val: V) {
         use List::*;
-        let old_self = gh! { self };
+        let old_self = snapshot! { self };
         let length = self.buckets.len();
         let index: usize = key.hash() as usize % length;
         let mut l: &mut List<_> = &mut self.buckets[index];
-        let old_l = gh! { l };
+        let old_l = snapshot! { l };
 
         #[invariant(old_self.good_bucket(*l, index@))]
         #[invariant(old_self.good_bucket(^l, index@) ==> old_self.good_bucket(^old_l.inner(), index@))]
@@ -159,7 +159,7 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
     #[ensures(forall<k : K::DeepModelTy> (^self)@.get(k) == self@.get(k))] // lets prove the extensional version for now
     #[allow(dead_code)]
     fn resize(&mut self) {
-        let old_self = gh! { self };
+        let old_self = snapshot! { self };
         let mut new = Self::new(self.buckets.len() * 2);
 
         let mut i: usize = 0;

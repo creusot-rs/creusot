@@ -32,17 +32,17 @@ module MappingTest_Incr
   val shallow_model3 (self : borrowed (MappingTest_T_Type.t_t)) : Map.map int int
     ensures { result = shallow_model3 self }
     
-  use prelude.Ghost
+  use prelude.Snapshot
   use map.Map
-  use prelude.Ghost
+  use prelude.Snapshot
   function shallow_model4 (self : borrowed (MappingTest_T_Type.t_t)) : Map.map int int =
     [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model3 self
   val shallow_model4 (self : borrowed (MappingTest_T_Type.t_t)) : Map.map int int
     ensures { result = shallow_model4 self }
     
-  function shallow_model1 (self : Ghost.ghost_ty (borrowed (MappingTest_T_Type.t_t))) : Map.map int int =
-    [#"../../../../creusot-contracts/src/ghost.rs" 27 20 27 48] shallow_model4 (Ghost.inner self)
-  val shallow_model1 (self : Ghost.ghost_ty (borrowed (MappingTest_T_Type.t_t))) : Map.map int int
+  function shallow_model1 (self : Snapshot.snap_ty (borrowed (MappingTest_T_Type.t_t))) : Map.map int int =
+    [#"../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48] shallow_model4 (Snapshot.inner self)
+  val shallow_model1 (self : Snapshot.snap_ty (borrowed (MappingTest_T_Type.t_t))) : Map.map int int
     ensures { result = shallow_model1 self }
     
   predicate resolve0 (self : borrowed (MappingTest_T_Type.t_t)) =
@@ -51,7 +51,7 @@ module MappingTest_Incr
     ensures { result = resolve0 self }
     
   use prelude.Int32
-  use prelude.Ghost
+  use prelude.Snapshot
   let rec cfg incr [#"../mapping_test.rs" 30 0 30 18] [@cfg:stackify] [@cfg:subregion_analysis] (t : borrowed (MappingTest_T_Type.t_t)) : ()
     requires {[#"../mapping_test.rs" 27 12 27 24] 0 <= Int32.to_int (MappingTest_T_Type.t_a ( * t))}
     requires {[#"../mapping_test.rs" 28 12 28 26] Int32.to_int (MappingTest_T_Type.t_a ( * t)) < 1000}
@@ -60,18 +60,18 @@ module MappingTest_Incr
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var t : borrowed (MappingTest_T_Type.t_t) = t;
-  var old_t : Ghost.ghost_ty (borrowed (MappingTest_T_Type.t_t));
+  var old_t : Snapshot.snap_ty (borrowed (MappingTest_T_Type.t_t));
   {
     goto BB0
   }
   BB0 {
-    [#"../mapping_test.rs" 31 16 31 25] old_t <- ([#"../mapping_test.rs" 31 16 31 25] Ghost.new t);
+    [#"../mapping_test.rs" 31 16 31 31] old_t <- ([#"../mapping_test.rs" 31 16 31 31] Snapshot.new t);
     goto BB1
   }
   BB1 {
     [#"../mapping_test.rs" 32 4 32 15] t <- { t with current = (let MappingTest_T_Type.C_T x0 =  * t in MappingTest_T_Type.C_T ([#"../mapping_test.rs" 32 4 32 15] MappingTest_T_Type.t_a ( * t) + ([#"../mapping_test.rs" 32 14 32 15] [#"../mapping_test.rs" 32 14 32 15] (1 : int32)))) ; };
     assume { resolve0 t };
-    assert { [@expl:assertion] [#"../mapping_test.rs" 35 19 35 50] shallow_model0 ( ^ t) = Map.set (shallow_model1 old_t) (Int32.to_int (MappingTest_T_Type.t_a ( * Ghost.inner old_t))) 1 };
+    assert { [@expl:assertion] [#"../mapping_test.rs" 35 19 35 50] shallow_model0 ( ^ t) = Map.set (shallow_model1 old_t) (Int32.to_int (MappingTest_T_Type.t_a ( * Snapshot.inner old_t))) 1 };
     [#"../mapping_test.rs" 30 19 36 1] _0 <- ([#"../mapping_test.rs" 30 19 36 1] ());
     return _0
   }

@@ -13,7 +13,7 @@ impl<T, A: Allocator> ShallowModel for Vec<T, A> {
     type ShallowModelTy = Seq<T>;
 
     #[open(self)]
-    #[ghost]
+    #[logic]
     #[trusted]
     #[ensures(result.len() <= usize::MAX@)]
     fn shallow_model(self) -> Seq<T> {
@@ -24,7 +24,7 @@ impl<T, A: Allocator> ShallowModel for Vec<T, A> {
 impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     #[ensures(self.shallow_model().len() == result.len())]
@@ -45,7 +45,7 @@ impl<T> Default for Vec<T> {
 
 #[trusted]
 impl<T> Resolve for Vec<T> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn resolve(self) -> bool {
         pearlite! { forall<i : Int> 0 <= i && i < self@.len() ==> self[i].resolve() }
@@ -207,7 +207,7 @@ impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
     type ShallowModelTy = Seq<T>;
 
     #[open(self)]
-    #[ghost]
+    #[logic]
     #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
         absurd
@@ -216,7 +216,7 @@ impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
 
 #[trusted]
 impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn resolve(self) -> bool {
         pearlite! { forall<i: Int> 0 <= i && i < self@.len() ==> self@[i].resolve() }
@@ -224,7 +224,7 @@ impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
 }
 
 impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && self@ == Seq::EMPTY }

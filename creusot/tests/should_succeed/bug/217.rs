@@ -6,7 +6,7 @@ use creusot_contracts::{
 };
 
 #[open]
-#[ghost]
+#[logic]
 #[variant(c.len())]
 pub fn ex(c: Seq<Int>, a: Int) -> Int {
     if c.len() == 0 {

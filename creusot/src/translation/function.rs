@@ -8,9 +8,7 @@ use crate::{
     backend::ty::closure_accessors,
     ctx::*,
     fmir::{self, Expr},
-    gather_spec_closures::{
-        assertions_and_ghosts, corrected_invariant_names_and_locations, LoopSpecKind,
-    },
+    gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind, SpecClosures},
     resolve::EagerResolver,
     translation::{
         fmir::LocalDecl,
@@ -61,7 +59,7 @@ pub struct BodyTranslator<'body, 'tcx> {
 
     resolver: Option<EagerResolver<'body, 'tcx>>,
 
-    // Spec / Ghost variables
+    // Spec / Snapshot variables
     erased_locals: BitSet<Local>,
 
     // Current block being generated
@@ -77,7 +75,10 @@ pub struct BodyTranslator<'body, 'tcx> {
 
     invariants: IndexMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>,
 
+    /// Map of the `proof_assert!` blocks to their translated version.
     assertions: IndexMap<DefId, Term<'tcx>>,
+    /// Map of the `snapshot!` blocks to their translated version.
+    snapshots: IndexMap<DefId, Term<'tcx>>,
 
     borrows: Option<Rc<BorrowSet<'tcx>>>,
 
@@ -95,12 +96,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         body_id: BodyId,
     ) -> Self {
         let invariants = corrected_invariant_names_and_locations(ctx, &body);
-        let assertions = assertions_and_ghosts(ctx, &body);
+        let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, &body);
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if crate::util::is_spec(tcx, *def_id) || util::is_ghost_closure(tcx, *def_id) {
+                if crate::util::is_spec(tcx, *def_id) || util::is_snapshot_closure(tcx, *def_id) {
                     erased_locals.insert(local);
                 }
             }
@@ -116,9 +117,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     borrows.clone(),
                     with_facts.region_inference_context.clone(),
                 );
-
-                // eprintln!("body of {}", tcx.def_path_str(body_id.def_id()));
-                // resolver.debug(with_facts.regioncx.clone());
 
                 (Some(resolver), Some(borrows))
             }
@@ -141,6 +139,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             fresh_id: body.basic_blocks.len(),
             invariants,
             assertions,
+            snapshots,
             borrows,
         }
     }
@@ -151,6 +150,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let arg_count = self.body.arg_count;
 
         assert!(self.assertions.is_empty(), "unused assertions");
+        assert!(self.snapshots.is_empty(), "unused snapshots");
         assert!(self.invariants.is_empty(), "unused invariants");
 
         fmir::Body { locals: self.vars, arg_count, blocks: self.past_blocks }

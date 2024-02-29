@@ -144,8 +144,8 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
 
     quote! { {
         let mut #it = ::std::iter::IntoIterator::into_iter(#iter);
-        let #iter_old = gh! { #it };
-        let mut #produced = gh! { ::creusot_contracts::logic::Seq::EMPTY };
+        let #iter_old = snapshot! { #it };
+        let mut #produced = snapshot! { ::creusot_contracts::logic::Seq::EMPTY };
         #(#invariants;)*
         #(#outer)*
         #lbl
@@ -153,7 +153,7 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
             #(#inner)*
             match ::std::iter::Iterator::next(&mut #it) {
                 Some(#elem) => {
-                    #produced = gh! { #produced.inner().concat(::creusot_contracts::logic::Seq::singleton(#elem)) };
+                    #produced = snapshot! { #produced.inner().concat(::creusot_contracts::logic::Seq::singleton(#elem)) };
                     let #pat = #elem;
                     #body
                 },
