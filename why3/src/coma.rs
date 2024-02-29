@@ -1,6 +1,8 @@
+use crate::{declaration::Use, ty::Type, Ident, Print, QName};
 use pretty::docs;
 
-use crate::{declaration::Use, ty::Type, Ident, Print};
+#[cfg(feature = "serialize")]
+use serde::{Deserialize, Serialize};
 
 type Term = crate::Exp;
 
@@ -18,9 +20,10 @@ type Term = crate::Exp;
 /// 3. CPS structure
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Expr {
     /// Variables eg: `x`
-    Symbol(Ident),
+    Symbol(QName),
     /// Generic application for type lambdas, terms, references and continuations
     /// e <ty>... t... | e...
     App(Box<Expr>, Box<Arg>),
@@ -39,6 +42,8 @@ pub enum Expr {
     Let(Box<Expr>, Vec<Var>),
     /// Asserts that the term holds before evaluating the expression
     Assert(Box<Term>, Box<Expr>),
+    /// Syntactic sugar for assuming that a term holds before evaluating the inner expression
+    Assume(Box<Term>, Box<Expr>),
     /// The core operator of coma is the "black box" or *abstraction barrier* operator.
     /// This operator distinguishes the responsibility between the caller and callee for
     /// verification. Everything under an abstraction is opaque to the outside world, whereas from the inside,
@@ -55,9 +60,11 @@ pub enum Expr {
 }
 
 #[derive(Clone, Debug)]
-pub struct Var(Ident, Type, Term, IsRef);
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct Var(pub Ident, pub Type, pub Term, pub IsRef);
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum IsRef {
     Ref,
     NotRef,
@@ -65,6 +72,7 @@ pub enum IsRef {
 
 /// Parameter declarations
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Param {
     // Can only be type parameters
     Ty(Type),
@@ -75,6 +83,7 @@ pub enum Param {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Arg {
     /// Type application
     Ty(Type),
@@ -87,6 +96,7 @@ pub enum Arg {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Defn {
     pub name: Ident,
     /// Only relevant if using references
@@ -96,6 +106,7 @@ pub struct Defn {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Decl {
     /// Coma definitions
     Defn(Vec<Defn>),
@@ -107,6 +118,22 @@ pub enum Decl {
 #[derive(Clone, Debug)]
 pub struct Module(pub Vec<Decl>);
 
+impl Expr {
+    pub fn app(self, args: Vec<Arg>) -> Self {
+        args.into_iter().fold(self, |acc, a| Expr::App(Box::new(acc), Box::new(a)))
+    }
+
+    pub fn assign(mut self, lhs: Ident, rhs: Term) -> Self {
+        match &mut self {
+            Expr::Assign(_, asgns) => {
+                asgns.push((lhs, rhs));
+                self
+            }
+            _ => Expr::Assign(Box::new(self), vec![(lhs, rhs)]),
+        }
+    }
+}
+
 impl Print for Param {
     fn pretty<'b, 'a: 'b, A: pretty::DocAllocator<'a>>(
         &'a self,
@@ -117,7 +144,7 @@ impl Print for Param {
     {
         match self {
             Param::Ty(ty) => ty.pretty(alloc),
-            Param::Term(id, ty) => docs![alloc, id.pretty(alloc), ":", ty.pretty(alloc)],
+            Param::Term(id, ty) => docs![alloc, id.pretty(alloc), ":", ty.pretty(alloc)].parens(),
             Param::Reference(id, ty) => docs![alloc, "&", id.pretty(alloc), ":", ty.pretty(alloc)],
             Param::Cont(id, writes, params) => docs![
                 alloc,
@@ -163,6 +190,7 @@ impl Print for Arg {
             Arg::Ty(ty) => ty.pretty(alloc).enclose("<", ">"),
             Arg::Term(t) => t.pretty(alloc).braces(),
             Arg::Ref(r) => alloc.text("& ").append(r.pretty(alloc)),
+            Arg::Cont(e @ Expr::Lambda(_, _)) => e.pretty(alloc),
             Arg::Cont(c) => c.pretty(alloc).parens(),
         }
     }
@@ -186,48 +214,68 @@ impl Print for Expr {
 
                 let doc = e.pretty(alloc);
 
-                if needs_paren { doc.parens() } else { doc }.append(arg.pretty(alloc))
+                docs![
+                    alloc,
+                    if needs_paren { doc.parens() } else { doc },
+                    alloc.softline(),
+                    arg.pretty(alloc)
+                ]
             }
             Expr::Lambda(params, body) => {
                 let header = if params.is_empty() {
-                    alloc.text("->")
+                    alloc.text("-> ")
                 } else {
                     docs![
                         alloc,
                         "fun ",
-                        alloc.intersperse(params.iter().map(|p| p.pretty(alloc)), alloc.text(" "))
+                        alloc.intersperse(params.iter().map(|p| p.pretty(alloc)), alloc.text(" ")),
+                        alloc.text(" -> ")
                     ]
                 };
 
-                header.append(body.pretty(alloc)).parens()
+                header.append(body.pretty(alloc).nest(2)).parens()
             }
             Expr::Defn(cont, rec, handlers) => {
                 let handlers =
                     handlers.iter().map(|d| print_defn(d, if *rec { "=" } else { "->" }, alloc));
-                cont.pretty(alloc).append(alloc.intersperse(handlers, alloc.text(" | ")).brackets())
+                cont.pretty(alloc).append(alloc.softline()).append(bracket_list(
+                    alloc,
+                    handlers,
+                    alloc.line().append(alloc.text("| ")),
+                ))
             }
             Expr::Let(cont, lets) => docs![
                 alloc,
                 cont.pretty(alloc),
-                alloc.intersperse(lets.iter().map(|l| l.pretty(alloc)), alloc.text(" | "))
+                bracket_list(
+                    alloc,
+                    lets.iter().map(|l| l.pretty(alloc)),
+                    alloc.line().append(alloc.text("| "))
+                )
             ],
             Expr::Assign(cont, asgns) => docs![
                 alloc,
-                alloc
-                    .intersperse(
-                        asgns.iter().map(|(id, t)| docs![
-                            alloc,
-                            "&",
-                            id.pretty(alloc),
-                            "<-",
-                            t.pretty(alloc).braces()
-                        ]),
-                        alloc.text(" | ")
-                    )
-                    .brackets(),
+                bracket_list(
+                    alloc,
+                    asgns.iter().map(|(id, t)| docs![
+                        alloc,
+                        "&",
+                        id.pretty(alloc),
+                        alloc.space(),
+                        "<-",
+                        alloc.space(),
+                        t.pretty(alloc)
+                    ]),
+                    alloc.line().append(alloc.text("| "))
+                ),
                 cont.pretty(alloc)
             ],
-            Expr::Assert(t, e) => docs![alloc, t.pretty(alloc).braces(), e.pretty(alloc)],
+            Expr::Assert(t, e) => {
+                docs![alloc, t.pretty(alloc).braces(), alloc.space(), e.pretty(alloc)]
+            }
+            Expr::Assume(t, e) => {
+                docs![alloc, t.pretty(alloc).enclose("-{", "}-"), alloc.space(), e.pretty(alloc)]
+            }
             Expr::BlackBox(e) => docs![alloc, "!", alloc.space(), e.pretty(alloc)].parens(),
             Expr::WhiteBox(e) => docs![alloc, "?", alloc.space(), e.pretty(alloc)].parens(),
             Expr::Any => alloc.text("any"),
@@ -237,12 +285,37 @@ impl Print for Expr {
 
 fn brackets<'a, A: pretty::DocAllocator<'a>>(
     doc: pretty::DocBuilder<'a, A>,
-) -> pretty::DocBuilder<'a, A> {
+) -> pretty::DocBuilder<'a, A>
+where
+    A::Doc: Clone,
+{
     if !matches!(&*doc.1, pretty::Doc::Nil) {
-        doc.brackets()
+        doc.brackets().nest(2)
     } else {
         doc
     }
+}
+
+fn bracket_list<'a, S, A: pretty::DocAllocator<'a>>(
+    alloc: &'a A,
+    docs: impl Iterator<Item = pretty::DocBuilder<'a, A>>,
+    sep: S,
+) -> pretty::DocBuilder<'a, A>
+where
+    S: pretty::Pretty<'a, A> + Clone,
+{
+    let body = alloc.intersperse(docs, sep).group();
+    if matches!(&*body.1, pretty::Doc::Nil) {
+        return body;
+    }
+
+    docs![
+        alloc,
+        alloc.line_(),
+        alloc.space().append(body).append(alloc.space()).brackets().nest(0),
+        alloc.line_()
+    ]
+    .group()
 }
 
 fn print_defn<'a, A: pretty::DocAllocator<'a>>(
@@ -257,11 +330,12 @@ where
         alloc,
         defn.name.pretty(alloc),
         alloc.space(),
-        brackets(alloc.intersperse(defn.writes.iter().map(|a| a.pretty(alloc)), " ")),
-        alloc.space(),
+        bracket_list(alloc, defn.writes.iter().map(|a| a.pretty(alloc)), " "),
+        if defn.writes.is_empty() { alloc.nil() } else { alloc.space() },
         alloc.intersperse(defn.params.iter().map(|a| a.pretty(alloc)), " "),
         arrow_kind,
-        defn.body.pretty(alloc),
+        alloc.space(),
+        defn.body.pretty(alloc).nest(2),
     ]
 }
 
