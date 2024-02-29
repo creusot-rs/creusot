@@ -45,6 +45,8 @@ pub(crate) struct Usage {
     temp_var: bool,
     // Is this local used in a place where we need a `Term`?
     used_in_pure_ctx: bool,
+    // Is this local being used in a move chain as in: _x = _y
+    is_move_chain: bool,
 }
 
 pub(crate) fn gather_usage(b: &Body) -> HashMap<Symbol, Usage> {
@@ -68,7 +70,7 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
 
     fn visit_terminator(&mut self, t: &Terminator<'tcx>) {
         match t {
-            Terminator::Switch(e, _) => self.visit_expr(e),
+            Terminator::Switch(e, _) => self.visit_operand(e),
             Terminator::Return => {
                 self.read(Symbol::intern("_0"), true);
                 self.read(Symbol::intern("_0"), true);
@@ -81,6 +83,9 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
         match b {
             Statement::Assignment(p, r, _) => {
                 self.write_place(p);
+                if let RValue::Expr(Expr { kind: ExprKind::Operand(_), .. }) = r {
+                    self.move_chain(p.local);
+                }
                 self.visit_rvalue(r)
             }
             Statement::Resolve(_, _, p) => {
@@ -96,7 +101,7 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
             Statement::AssertTyInv(p) => self.read_place(p),
             Statement::Call(dest, _, _, args, _) => {
                 self.write_place(dest);
-                args.iter().for_each(|a| self.visit_expr(a));
+                args.iter().for_each(|a| self.visit_operand(a));
             }
         }
     }
@@ -118,26 +123,32 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
         match op {
             Operand::Move(p) => self.read_place(p),
             Operand::Copy(p) => self.read_place(p),
+            Operand::Constant(t) => self.visit_term(t),
         }
     }
 
     fn visit_expr(&mut self, e: &Expr<'tcx>) {
         match &e.kind {
-            ExprKind::Operand(op) => self.visit_operand(op),
+            ExprKind::Operand(op) => match op {
+                Operand::Move(p) | Operand::Copy(p) => {
+                    self.read_place(p);
+                    // self.move_chain(p.local);
+                }
+                Operand::Constant(t) => self.visit_term(t),
+            },
             ExprKind::BinOp(_, l, r) => {
-                self.visit_expr(l);
-                self.visit_expr(r)
+                self.visit_operand(l);
+                self.visit_operand(r)
             }
-            ExprKind::UnaryOp(_, e) => self.visit_expr(e),
-            ExprKind::Constructor(_, _, es) => es.iter().for_each(|e| self.visit_expr(e)),
-            ExprKind::Constant(t) => self.visit_term(t),
-            ExprKind::Cast(e, _, _) => self.visit_expr(e),
-            ExprKind::Tuple(es) => es.iter().for_each(|e| self.visit_expr(e)),
-            ExprKind::Len(e) => self.visit_expr(e),
-            ExprKind::Array(es) => es.iter().for_each(|e| self.visit_expr(e)),
+            ExprKind::UnaryOp(_, e) => self.visit_operand(e),
+            ExprKind::Constructor(_, _, es) => es.iter().for_each(|e| self.visit_operand(e)),
+            ExprKind::Cast(e, _, _) => self.visit_operand(e),
+            ExprKind::Tuple(es) => es.iter().for_each(|e| self.visit_operand(e)),
+            ExprKind::Len(e) => self.visit_operand(e),
+            ExprKind::Array(es) => es.iter().for_each(|e| self.visit_operand(e)),
             ExprKind::Repeat(l, r) => {
-                self.visit_expr(l);
-                self.visit_expr(r)
+                self.visit_operand(l);
+                self.visit_operand(r)
             }
         }
     }
@@ -156,6 +167,12 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
             mir::ProjectionElem::Index(l) => self.read(*l, true),
             _ => {}
         })
+    }
+
+    fn move_chain(&mut self, local: Symbol) {
+        if let Some(usage) = self.get(local) {
+            usage.is_move_chain = true;
+        }
     }
 
     fn read(&mut self, local: Symbol, whole: bool) {
@@ -203,7 +220,7 @@ impl<'a, 'tcx> TermVisitor<'tcx> for LocalUsage<'a, 'tcx> {
 
 struct SimplePropagator<'tcx> {
     usage: HashMap<Symbol, Usage>,
-    prop: HashMap<Symbol, Expr<'tcx>>,
+    prop: HashMap<Symbol, Operand<'tcx>>,
     dead: HashSet<Symbol>,
 }
 
@@ -230,7 +247,8 @@ impl<'tcx> SimplePropagator<'tcx> {
                 Statement::Assignment(l, RValue::Expr(r), _)
                     // we do not propagate calls to avoid moving them after the resolve of their arguments
                     if self.should_propagate(l.local) && !self.usage[&l.local].used_in_pure_ctx => {
-                      self.prop.insert(l.local, r);
+                        let Expr { kind: ExprKind::Operand(op), .. } = r else { panic!() };
+                      self.prop.insert(l.local, op);
                       self.dead.insert(l.local);
                     }
                 Statement::Assignment(ref l, RValue::Expr(ref r), _) if self.should_erase(l.local) && r.is_pure() => {
@@ -249,7 +267,7 @@ impl<'tcx> SimplePropagator<'tcx> {
 
         match &mut b.terminator {
             Terminator::Goto(_) => {}
-            Terminator::Switch(e, _) => self.visit_expr(e),
+            Terminator::Switch(e, _) => self.visit_operand(e),
             Terminator::Return => {}
             Terminator::Abort(_) => {}
         }
@@ -264,7 +282,7 @@ impl<'tcx> SimplePropagator<'tcx> {
               }
             }
             Statement::Assertion { cond, msg: _ } => self.visit_term(cond),
-            Statement::Call(_, _, _, args, _) => args.iter_mut().for_each(|a| self.visit_expr(a)),
+            Statement::Call(_, _, _, args, _) => args.iter_mut().for_each(|a| self.visit_operand(a)),
             Statement::AssumeBorrowInv(_) => {},
             Statement::AssertTyInv( _) => {},
         }
@@ -280,27 +298,33 @@ impl<'tcx> SimplePropagator<'tcx> {
         }
     }
 
-    fn visit_expr(&mut self, e: &mut Expr<'tcx>) {
-        match &mut e.kind {
-            ExprKind::Operand(Operand::Move(p) | Operand::Copy(p)) => {
+    fn visit_operand(&mut self, op: &mut Operand<'tcx>) {
+        match op {
+            Operand::Move(p) | Operand::Copy(p) => {
               if let Some(l) = p.as_symbol() && let Some(v) = self.prop.remove(&l) {
-                *e = v;
+                *op = v;
               }
             },
+            Operand::Constant(_) => {}
+        }
+    }
+
+    fn visit_expr(&mut self, e: &mut Expr<'tcx>) {
+        match &mut e.kind {
+            ExprKind::Operand(op) => self.visit_operand(op),
             ExprKind::BinOp(_, l, r) => {
-                self.visit_expr(l);
-                self.visit_expr(r)
+                self.visit_operand(l);
+                self.visit_operand(r)
             }
-            ExprKind::UnaryOp(_, e) => self.visit_expr(e),
-            ExprKind::Constructor(_, _, es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
-            ExprKind::Constant(t) => self.visit_term(t),
-            ExprKind::Cast(e, _, _) => self.visit_expr(e),
-            ExprKind::Tuple(es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
-            ExprKind::Len(e) => self.visit_expr(e),
-            ExprKind::Array(es) => es.iter_mut().for_each(|e| self.visit_expr(e)),
+            ExprKind::UnaryOp(_, e) => self.visit_operand(e),
+            ExprKind::Constructor(_, _, es) => es.iter_mut().for_each(|e| self.visit_operand(e)),
+            ExprKind::Cast(e, _, _) => self.visit_operand(e),
+            ExprKind::Tuple(es) => es.iter_mut().for_each(|e| self.visit_operand(e)),
+            ExprKind::Len(e) => self.visit_operand(e),
+            ExprKind::Array(es) => es.iter_mut().for_each(|e| self.visit_operand(e)),
             ExprKind::Repeat(l, r) => {
-                self.visit_expr(l);
-                self.visit_expr(r)
+                self.visit_operand(l);
+                self.visit_operand(r)
             }
         }
     }
@@ -321,6 +345,7 @@ impl<'tcx> SimplePropagator<'tcx> {
                 u.read == ZeroOneMany::One(Whole::Whole)
                     && u.write == ZeroOneMany::One(Whole::Whole)
                     && u.temp_var
+                    && u.is_move_chain
             })
             .unwrap_or(false)
     }

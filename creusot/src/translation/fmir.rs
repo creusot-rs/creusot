@@ -44,7 +44,7 @@ pub enum Statement<'tcx> {
     AssumeBorrowInv(Place<'tcx>),
     // Todo: fold into `Assertion`
     AssertTyInv(Place<'tcx>),
-    Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Vec<Expr<'tcx>>, Span),
+    Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Vec<Operand<'tcx>>, Span),
 }
 
 // Re-organize this completely
@@ -73,21 +73,31 @@ pub struct Expr<'tcx> {
 pub enum Operand<'tcx> {
     Move(Place<'tcx>),
     Copy(Place<'tcx>),
+    Constant(Term<'tcx>),
+}
+
+impl<'tcx> Operand<'tcx> {
+    pub fn ty(&self, tcx: TyCtxt<'tcx>, locals: &LocalDecls<'tcx>) -> Ty<'tcx> {
+        match self {
+            Operand::Move(pl) => pl.ty(tcx, locals),
+            Operand::Copy(pl) => pl.ty(tcx, locals),
+            Operand::Constant(t) => t.ty,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
 pub enum ExprKind<'tcx> {
     Operand(Operand<'tcx>),
     // Revisit whether this is a good idea to allow general expression trees.
-    BinOp(BinOp, Box<Expr<'tcx>>, Box<Expr<'tcx>>),
-    UnaryOp(UnOp, Box<Expr<'tcx>>),
-    Constructor(DefId, GenericArgsRef<'tcx>, Vec<Expr<'tcx>>),
-    Constant(Term<'tcx>),
-    Cast(Box<Expr<'tcx>>, Ty<'tcx>, Ty<'tcx>),
-    Tuple(Vec<Expr<'tcx>>),
-    Len(Box<Expr<'tcx>>),
-    Array(Vec<Expr<'tcx>>),
-    Repeat(Box<Expr<'tcx>>, Box<Expr<'tcx>>),
+    BinOp(BinOp, Box<Operand<'tcx>>, Box<Operand<'tcx>>),
+    UnaryOp(UnOp, Box<Operand<'tcx>>),
+    Constructor(DefId, GenericArgsRef<'tcx>, Vec<Operand<'tcx>>),
+    Cast(Box<Operand<'tcx>>, Ty<'tcx>, Ty<'tcx>),
+    Tuple(Vec<Operand<'tcx>>),
+    Len(Box<Operand<'tcx>>),
+    Array(Vec<Operand<'tcx>>),
+    Repeat(Box<Operand<'tcx>>, Box<Operand<'tcx>>),
 }
 
 impl<'tcx> Expr<'tcx> {
@@ -97,7 +107,6 @@ impl<'tcx> Expr<'tcx> {
             ExprKind::BinOp(_, _, _) => false,
             ExprKind::UnaryOp(_, _) => false,
             ExprKind::Constructor(_, _, _) => false,
-            ExprKind::Constant(_) => false,
             ExprKind::Cast(_, _, _) => false,
             ExprKind::Tuple(_) => false,
             ExprKind::Len(_) => false,
@@ -117,13 +126,12 @@ impl<'tcx> Expr<'tcx> {
             ExprKind::BinOp(_, _, _) => true,
             ExprKind::UnaryOp(UnOp::Neg, _) => false,
             ExprKind::UnaryOp(_, _) => true,
-            ExprKind::Constructor(_, _, es) => es.iter().all(|e| e.is_pure()),
-            ExprKind::Constant(_) => true,
+            ExprKind::Constructor(_, _, _) => true,
             ExprKind::Cast(_, _, _) => false,
-            ExprKind::Tuple(es) => es.iter().all(|e| e.is_pure()),
-            ExprKind::Len(e) => e.is_pure(),
-            ExprKind::Array(es) => es.iter().all(|e| e.is_pure()),
-            ExprKind::Repeat(l, r) => l.is_pure() && r.is_pure(),
+            ExprKind::Tuple(_) => true,
+            ExprKind::Len(_) => true,
+            ExprKind::Array(_) => true,
+            ExprKind::Repeat(_, _) => true,
         }
     }
 }
@@ -131,9 +139,33 @@ impl<'tcx> Expr<'tcx> {
 #[derive(Clone)]
 pub enum Terminator<'tcx> {
     Goto(BasicBlock),
-    Switch(Expr<'tcx>, Branches<'tcx>),
+    Switch(self::Operand<'tcx>, Branches<'tcx>),
     Return,
     Abort(Span),
+}
+
+impl<'tcx> Terminator<'tcx> {
+    pub fn targets(&self) -> impl Iterator<Item = BasicBlock> + '_ {
+        use std::iter::*;
+        match self {
+            Terminator::Goto(bb) => Box::new(once(*bb)) as Box<dyn Iterator<Item = BasicBlock>>,
+            Terminator::Switch(_, brs) => match brs {
+                Branches::Int(brs, def) => Box::new(brs.iter().map(|(_, b)| *b).chain(once(*def)))
+                    as Box<dyn Iterator<Item = BasicBlock>>,
+                Branches::Uint(brs, def) => Box::new(brs.iter().map(|(_, b)| *b).chain(once(*def)))
+                    as Box<dyn Iterator<Item = BasicBlock>>,
+                Branches::Constructor(_, _, brs, def) => {
+                    Box::new(brs.iter().map(|(_, b)| *b).chain(once(*def)))
+                        as Box<dyn Iterator<Item = BasicBlock>>
+                }
+                Branches::Bool(f, t) => {
+                    Box::new([*f, *t].into_iter()) as Box<dyn Iterator<Item = BasicBlock>>
+                }
+            },
+            Terminator::Return => Box::new(empty()) as Box<dyn Iterator<Item = BasicBlock>>,
+            Terminator::Abort(_) => Box::new(empty()) as Box<dyn Iterator<Item = BasicBlock>>,
+        }
+    }
 }
 
 #[derive(Clone)]

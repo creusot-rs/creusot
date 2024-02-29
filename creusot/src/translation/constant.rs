@@ -9,16 +9,13 @@ use rustc_middle::{
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::Size;
 
-use super::{
-    fmir::{Expr, ExprKind},
-    pearlite::{Term, TermKind},
-};
+use super::pearlite::{Term, TermKind};
 
 pub(crate) fn from_mir_constant<'tcx>(
     env: ParamEnv<'tcx>,
     ctx: &mut TranslationCtx<'tcx>,
     c: &rustc_middle::mir::ConstOperand<'tcx>,
-) -> Expr<'tcx> {
+) -> Term<'tcx> {
     from_mir_constant_kind(ctx, c.const_, env, c.span)
 }
 
@@ -27,13 +24,13 @@ pub(crate) fn from_mir_constant_kind<'tcx>(
     ck: mir::Const<'tcx>,
     env: ParamEnv<'tcx>,
     span: Span,
-) -> Expr<'tcx> {
+) -> Term<'tcx> {
     if let mir::Const::Ty(c) = ck {
         return from_ty_const(ctx, c, env, span);
     }
 
     if ck.ty().is_unit() {
-        return Expr { kind: ExprKind::Tuple(Vec::new()), ty: ck.ty(), span };
+        return Term { kind: TermKind::Tuple { fields: Vec::new() }, ty: ck.ty(), span };
     }
     //
     // let ck = ck.normalize(ctx.tcx, env);
@@ -48,36 +45,20 @@ pub(crate) fn from_mir_constant_kind<'tcx>(
                 .unwrap();
             let string = std::str::from_utf8(bytes).unwrap();
 
-            return Expr {
-                ty: ck.ty(),
-                span,
-                kind: ExprKind::Constant(Term {
-                    kind: TermKind::Lit(Literal::String(string.into())),
-                    ty: ck.ty(),
-                    span,
-                }),
-            };
+            return Term { kind: TermKind::Lit(Literal::String(string.into())), ty: ck.ty(), span };
         }
     }
 
     if let mir::Const::Unevaluated(UnevaluatedConst { promoted: Some(p), .. }, _) = ck {
-        return Expr {
-            kind: ExprKind::Constant(Term {
-                kind: TermKind::Var(Symbol::intern(&format!("promoted{:?}", p.as_usize()))),
-                ty: ck.ty(),
-                span,
-            }),
+        return Term {
+            kind: TermKind::Var(Symbol::intern(&format!("promoted{:?}", p.as_usize()))),
             ty: ck.ty(),
             span,
         };
     }
 
-    return Expr {
-        kind: ExprKind::Constant(Term {
-            kind: TermKind::Lit(try_to_bits(ctx, env, ck.ty(), span, ck)),
-            ty: ck.ty(),
-            span,
-        }),
+    return Term {
+        kind: TermKind::Lit(try_to_bits(ctx, env, ck.ty(), span, ck)),
         ty: ck.ty(),
         span,
     };
@@ -88,27 +69,19 @@ pub(crate) fn from_ty_const<'tcx>(
     c: Const<'tcx>,
     env: ParamEnv<'tcx>,
     span: Span,
-) -> Expr<'tcx> {
+) -> Term<'tcx> {
     // Check if a constant is builtin and thus should not be evaluated further
     // Builtin constants are given a body which panics
     if let ConstKind::Unevaluated(u) = c.kind() &&
        let Some(_) = get_builtin(ctx.tcx, u.def) {
-            return Expr { kind: ExprKind::Constant(Term { kind: TermKind::Lit(Literal::Function(u.def, u.args)), ty: c.ty(), span}), ty: c.ty(), span }
+            return Term { kind: TermKind::Lit(Literal::Function(u.def, u.args)), ty: c.ty(), span}
     };
 
     if let ConstKind::Param(_) = c.kind() {
         ctx.crash_and_error(span, "const generic parameters are not yet supported");
     }
 
-    return Expr {
-        kind: ExprKind::Constant(Term {
-            kind: TermKind::Lit(try_to_bits(ctx, env, c.ty(), span, c)),
-            ty: c.ty(),
-            span,
-        }),
-        ty: c.ty(),
-        span,
-    };
+    return Term { kind: TermKind::Lit(try_to_bits(ctx, env, c.ty(), span, c)), ty: c.ty(), span };
 }
 
 fn try_to_bits<'tcx, C: ToBits<'tcx>>(

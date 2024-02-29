@@ -294,6 +294,26 @@ pub fn to_why<'tcx>(
     Decl::CfgDecl(CfgFunction { sig, rec: true, constant: false, entry, blocks, vars })
 }
 
+impl<'tcx> Operand<'tcx> {
+    pub(crate) fn to_why<N: Namer<'tcx>>(
+        self,
+        ctx: &mut Why3Generator<'tcx>,
+        names: &mut N,
+        locals: &LocalDecls<'tcx>,
+    ) -> Exp {
+        match self {
+            Operand::Move(pl) => pl.as_rplace(ctx, names, locals),
+            Operand::Copy(pl) => pl.as_rplace(ctx, names, locals),
+            Operand::Constant(c) => lower_impure(ctx, names, &c),
+        }
+    }
+    fn invalidated_places(&self, places: &mut Vec<fmir::Place<'tcx>>) {
+        if let Operand::Move(pl) = self {
+            places.push(pl.clone())
+        }
+    }
+}
+
 impl<'tcx> Expr<'tcx> {
     pub(crate) fn to_why<N: Namer<'tcx>>(
         self,
@@ -302,44 +322,41 @@ impl<'tcx> Expr<'tcx> {
         locals: &LocalDecls<'tcx>,
     ) -> Exp {
         let e = match self.kind {
-            ExprKind::Operand(Operand::Move(pl)) => {
-                // TODO invalidate original place
-                pl.as_rplace(ctx, names, locals)
-            }
-            ExprKind::Operand(Operand::Copy(pl)) => pl.as_rplace(ctx, names, locals),
-            ExprKind::BinOp(BinOp::BitAnd, l, r) if l.ty.is_bool() => {
+            ExprKind::Operand(op) => op.to_why(ctx, names, locals),
+            ExprKind::BinOp(BinOp::BitAnd, l, r) if l.ty(ctx.tcx, locals).is_bool() => {
                 l.to_why(ctx, names, locals).lazy_and(r.to_why(ctx, names, locals))
             }
-            ExprKind::BinOp(BinOp::Eq, l, r) if l.ty.is_bool() => {
+            ExprKind::BinOp(BinOp::Eq, l, r) if l.ty(ctx.tcx, locals).is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
                 Exp::impure_qvar(QName::from_string("Bool.eqb").unwrap())
                     .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
-            ExprKind::BinOp(BinOp::Ne, l, r) if l.ty.is_bool() => {
+            ExprKind::BinOp(BinOp::Ne, l, r) if l.ty(ctx.tcx, locals).is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
                 Exp::impure_qvar(QName::from_string("Bool.neqb").unwrap())
                     .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
             ExprKind::BinOp(op, l, r) => {
+                let ty = l.ty(ctx.tcx, locals);
                 // Hack
-                translate_ty(ctx, names, DUMMY_SP, l.ty);
+                translate_ty(ctx, names, DUMMY_SP, ty);
 
                 Exp::BinaryOp(
-                    binop_to_binop(ctx, l.ty, op),
+                    binop_to_binop(ctx, ty, op),
                     Box::new(l.to_why(ctx, names, locals)),
                     Box::new(r.to_why(ctx, names, locals)),
                 )
             }
-            ExprKind::UnaryOp(op, arg) => {
-                Exp::UnaryOp(unop_to_unop(arg.ty, op), Box::new(arg.to_why(ctx, names, locals)))
-            }
+            ExprKind::UnaryOp(op, arg) => Exp::UnaryOp(
+                unop_to_unop(arg.ty(ctx.tcx, locals), op),
+                Box::new(arg.to_why(ctx, names, locals)),
+            ),
             ExprKind::Constructor(id, subst, args) => {
                 let args = args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
 
                 let ctor = names.constructor(id, subst);
                 Exp::Constructor { ctor, args }
             }
-            ExprKind::Constant(c) => lower_impure(ctx, names, &c),
             ExprKind::Tuple(f) => {
                 Exp::Tuple(f.into_iter().map(|f| f.to_why(ctx, names, locals)).collect())
             }
@@ -424,9 +441,9 @@ impl<'tcx> Expr<'tcx> {
         }
     }
 
-    fn invalidated_places(&self, places: &mut Vec<(fmir::Place<'tcx>, Span)>) {
+    fn invalidated_places(&self, places: &mut Vec<fmir::Place<'tcx>>) {
         match &self.kind {
-            ExprKind::Operand(Operand::Move(p)) => places.push((p.clone(), self.span)),
+            ExprKind::Operand(Operand::Move(p)) => places.push(p.clone()),
             ExprKind::Operand(_) => {}
             ExprKind::BinOp(_, l, r) => {
                 l.invalidated_places(places);
@@ -434,7 +451,6 @@ impl<'tcx> Expr<'tcx> {
             }
             ExprKind::UnaryOp(_, e) => e.invalidated_places(places),
             ExprKind::Constructor(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
-            ExprKind::Constant(_) => {}
             ExprKind::Cast(e, _, _) => e.invalidated_places(places),
             ExprKind::Tuple(es) => es.iter().for_each(|e| e.invalidated_places(places)),
             ExprKind::Len(e) => e.invalidated_places(places),
@@ -760,13 +776,13 @@ fn invalidate_places<'tcx>(
     names: &mut CloneMap<'tcx>,
     locals: &LocalDecls<'tcx>,
     span: Span,
-    invalid: Vec<(Place<'tcx>, Span)>,
+    invalid: Vec<Place<'tcx>>,
     out: &mut Vec<mlcfg::Statement>,
 ) {
-    for (pl, pl_span) in invalid {
+    for pl in invalid {
         let ty = pl.ty(ctx.tcx, locals);
-        let ty = translate_ty(ctx, names, pl_span.substitute_dummy(span), ty);
-        out.push(place::create_assign_inner(ctx, names, locals, &pl, Exp::Any(ty), pl_span));
+        let ty = translate_ty(ctx, names, DUMMY_SP.substitute_dummy(span), ty);
+        out.push(place::create_assign_inner(ctx, names, locals, &pl, Exp::Any(ty), DUMMY_SP));
     }
 }
 
@@ -776,7 +792,7 @@ fn func_call_to_why3<'tcx>(
     locals: &LocalDecls<'tcx>,
     id: DefId,
     subst: GenericArgsRef<'tcx>,
-    args: Vec<Expr<'tcx>>,
+    args: Vec<Operand<'tcx>>,
 ) -> Exp {
     let mut args: Vec<_> = args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
     let fname = names.value(id, subst);

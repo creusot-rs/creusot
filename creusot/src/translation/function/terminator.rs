@@ -1,6 +1,7 @@
 use super::BodyTranslator;
 use crate::{
     ctx::TranslationCtx,
+    fmir,
     translation::{
         fmir::*,
         pearlite::{Term, TermKind, UnOp},
@@ -99,18 +100,27 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 if func_args.is_empty() {
                     // TODO: Remove this, push the 0-ary handling down to why3 backend
                     // We use tuple as a dummy argument for 0-ary functions
-                    func_args.push(Expr {
-                        span: DUMMY_SP,
-                        kind: ExprKind::Tuple(vec![]),
+                    func_args.push(fmir::Operand::Constant(Term {
+                        kind: TermKind::Tuple { fields: Vec::new() },
                         ty: self.ctx.types.unit,
-                    })
+                        span,
+                    }))
                 }
                 let (loc, bb) = (destination, target.unwrap());
 
                 if self.is_box_new(fun_def_id) {
                     assert_eq!(func_args.len(), 1);
 
-                    self.emit_assignment(&loc, RValue::Expr(func_args.remove(0)), span);
+                    let arg_ty = func_args[0].ty(self.tcx, &self.vars);
+                    self.emit_assignment(
+                        &loc,
+                        RValue::Expr(Expr {
+                            kind: ExprKind::Operand(func_args.remove(0)),
+                            ty: arg_ty,
+                            span,
+                        }),
+                        span,
+                    );
                 } else {
                     let (fun_def_id, subst) =
                         resolve_function(self.ctx, self.param_env(), fun_def_id, subst, span);
@@ -279,7 +289,7 @@ pub(crate) fn make_switch<'tcx>(
     si: SourceInfo,
     switch_ty: Ty<'tcx>,
     targets: &SwitchTargets,
-    discr: Expr<'tcx>,
+    discr: fmir::Operand<'tcx>,
 ) -> Terminator<'tcx> {
     match switch_ty.kind() {
         TyKind::Adt(def, substs) => {

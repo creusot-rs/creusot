@@ -17,7 +17,6 @@ use rustc_middle::{
     ty::adjustment::PointerCoercion,
 };
 use rustc_mir_dataflow::ResultsCursor;
-use rustc_span::DUMMY_SP;
 
 impl<'tcx> BodyTranslator<'_, 'tcx> {
     pub(crate) fn translate_statement(
@@ -77,12 +76,12 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         let span = si.span;
         let rval: ExprKind<'tcx> = match rvalue {
             Rvalue::Use(op) => match op {
-                Move(_pl) | Copy(_pl) => self.translate_operand(op).kind,
+                Move(_pl) | Copy(_pl) => ExprKind::Operand(self.translate_operand(op)),
                 Constant(box c) => {
                     if snapshot_closure_id(self.tcx, c.const_.ty()).is_some() {
                         return;
                     };
-                    crate::constant::from_mir_constant(self.param_env(), self.ctx, c).kind
+                    ExprKind::Operand(self.translate_operand(op))
                 }
             },
             Rvalue::Ref(_, ss, pl) => match ss {
@@ -159,11 +158,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
             }
             Rvalue::Len(pl) => {
-                let e = Expr {
-                    kind: ExprKind::Operand(Operand::Copy(self.translate_place(*pl))),
-                    ty: pl.ty(self.body, self.tcx).ty,
-                    span: DUMMY_SP,
-                };
+                let e = Operand::Copy(self.translate_place(*pl));
                 ExprKind::Len(Box::new(e))
             }
             Rvalue::Cast(CastKind::IntToInt | CastKind::PtrToPtr, op, cast_ty) => {
@@ -172,13 +167,18 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Rvalue::Repeat(op, len) => ExprKind::Repeat(
                 Box::new(self.translate_operand(op)),
-                Box::new(crate::constant::from_ty_const(self.ctx, *len, self.param_env(), si.span)),
+                Box::new(Operand::Constant(crate::constant::from_ty_const(
+                    self.ctx,
+                    *len,
+                    self.param_env(),
+                    si.span,
+                ))),
             ),
 
             Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize), op, ty) => {
                 if let Some(t) = ty.builtin_deref(true) && t.ty.is_slice() {
                     // treat &[T; N] to &[T] casts as normal assignments
-                    self.translate_operand(op).kind
+                    ExprKind::Operand(self.translate_operand(op))
                 } else {
                     // TODO: Since we don't do anything with casts into `dyn` objects, just ignore them
                     return;
