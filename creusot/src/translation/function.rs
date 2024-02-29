@@ -1,5 +1,5 @@
 use super::{
-    fmir::{ExprKind, LocalDecls, LocalIdent, RValue},
+    fmir::{LocalDecls, LocalIdent, RValue},
     pearlite::{normalize, Term},
     specification::inv_subst,
 };
@@ -7,7 +7,7 @@ use crate::{
     analysis::NotFinalPlaces,
     backend::ty::closure_accessors,
     ctx::*,
-    fmir::{self, Expr},
+    fmir::{self},
     gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind, SpecClosures},
     resolve::EagerResolver,
     translation::{
@@ -346,16 +346,16 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     // Useful helper to translate an operand
-    pub(crate) fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Expr<'tcx> {
-        let kind = match operand {
-            Operand::Copy(pl) => ExprKind::Operand(fmir::Operand::Copy(self.translate_place(*pl))),
-            Operand::Move(pl) => ExprKind::Operand(fmir::Operand::Move(self.translate_place(*pl))),
-            Operand::Constant(c) => {
-                return crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
-            }
-        };
-
-        Expr { kind, span: DUMMY_SP, ty: operand.ty(self.body, self.tcx) }
+    pub(crate) fn translate_operand(&mut self, operand: &Operand<'tcx>) -> fmir::Operand<'tcx> {
+        let kind =
+            match operand {
+                Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(*pl)),
+                Operand::Move(pl) => fmir::Operand::Move(self.translate_place(*pl)),
+                Operand::Constant(c) => fmir::Operand::Constant(
+                    crate::constant::from_mir_constant(self.param_env(), self.ctx, c),
+                ),
+            };
+        kind
     }
 
     fn translate_place(&self, _pl: mir::Place<'tcx>) -> fmir::Place<'tcx> {
@@ -654,7 +654,7 @@ pub(crate) fn closure_contract<'tcx>(
         contracts.postcond_once = Some((post_sig, postcondition));
     }
 
-    return contracts;
+    contracts
 }
 
 fn closure_resolve<'tcx>(
