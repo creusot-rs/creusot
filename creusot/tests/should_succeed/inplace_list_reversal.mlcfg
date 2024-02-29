@@ -42,15 +42,6 @@ module InplaceListReversal_Rev
     ensures { result = inv0 _x }
     
   axiom inv0 : forall x : Snapshot.snap_ty (borrowed (InplaceListReversal_List_Type.t_list t)) . inv0 x = true
-  predicate resolve2 (self : borrowed (InplaceListReversal_List_Type.t_list t)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve2 (self : borrowed (InplaceListReversal_List_Type.t_list t)) : bool
-    ensures { result = resolve2 self }
-    
-  predicate resolve1 (self : InplaceListReversal_List_Type.t_list t)
-  val resolve1 (self : InplaceListReversal_List_Type.t_list t) : bool
-    ensures { result = resolve1 self }
-    
   use prelude.Snapshot
   function rev_append0 [#"../inplace_list_reversal.rs" 16 0 16 55] (n : InplaceListReversal_List_Type.t_list t) (o : InplaceListReversal_List_Type.t_list t) : InplaceListReversal_List_Type.t_list t
     
@@ -61,6 +52,15 @@ module InplaceListReversal_Rev
       end
   val rev_append0 [#"../inplace_list_reversal.rs" 16 0 16 55] (n : InplaceListReversal_List_Type.t_list t) (o : InplaceListReversal_List_Type.t_list t) : InplaceListReversal_List_Type.t_list t
     ensures { result = rev_append0 n o }
+    
+  predicate resolve2 (self : borrowed (InplaceListReversal_List_Type.t_list t)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve2 (self : borrowed (InplaceListReversal_List_Type.t_list t)) : bool
+    ensures { result = resolve2 self }
+    
+  predicate resolve1 (self : InplaceListReversal_List_Type.t_list t)
+  val resolve1 (self : InplaceListReversal_List_Type.t_list t) : bool
+    ensures { result = resolve1 self }
     
   val replace0 (dest : borrowed (InplaceListReversal_List_Type.t_list t)) (src : InplaceListReversal_List_Type.t_list t) : InplaceListReversal_List_Type.t_list t
     requires {inv2 dest}
@@ -107,93 +107,42 @@ module InplaceListReversal_Rev
     [#"../inplace_list_reversal.rs" 27 19 27 34] head <- ([#"../inplace_list_reversal.rs" 27 19 27 34] replace0 _7 _8);
     _7 <- any borrowed (InplaceListReversal_List_Type.t_list t);
     _8 <- any InplaceListReversal_List_Type.t_list t;
-    goto BB2
-  }
-  BB2 {
-    goto BB3
-  }
-  BB3 {
     goto BB4
   }
   BB4 {
     invariant { [#"../inplace_list_reversal.rs" 28 16 28 73] rev_append0 head prev = rev_append0 ( * Snapshot.inner old_l) (InplaceListReversal_List_Type.C_Nil) };
-    goto BB5
-  }
-  BB5 {
     switch (head)
       | InplaceListReversal_List_Type.C_Cons _ -> goto BB6
       | _ -> goto BB19
       end
   }
   BB6 {
-    goto BB7
-  }
-  BB7 {
     [#"../inplace_list_reversal.rs" 29 19 29 27] curr <- ([#"../inplace_list_reversal.rs" 29 19 29 27] InplaceListReversal_List_Type.cons_0 head);
     head <- (let InplaceListReversal_List_Type.C_Cons x0 = head in InplaceListReversal_List_Type.C_Cons (any (t, InplaceListReversal_List_Type.t_list t)));
     assert { [@expl:type invariant] inv1 head };
     assume { resolve1 head };
     [#"../inplace_list_reversal.rs" 30 19 30 25] next <- ([#"../inplace_list_reversal.rs" 30 19 30 25] let (_, a) = curr in a);
     curr <- (let (x0, x1) = curr in (x0, any InplaceListReversal_List_Type.t_list t));
-    goto BB8
-  }
-  BB8 {
     [#"../inplace_list_reversal.rs" 31 8 31 14] curr <- (let (x0, x1) = curr in (x0, ([#"../inplace_list_reversal.rs" 31 8 31 14] prev)));
     prev <- any InplaceListReversal_List_Type.t_list t;
-    goto BB10
-  }
-  BB10 {
     [#"../inplace_list_reversal.rs" 32 15 32 25] _16 <- ([#"../inplace_list_reversal.rs" 32 15 32 25] InplaceListReversal_List_Type.C_Cons curr);
     curr <- any (t, InplaceListReversal_List_Type.t_list t);
-    goto BB11
-  }
-  BB11 {
-    goto BB12
-  }
-  BB12 {
     [#"../inplace_list_reversal.rs" 32 8 32 12] prev <- ([#"../inplace_list_reversal.rs" 32 8 32 12] _16);
     _16 <- any InplaceListReversal_List_Type.t_list t;
-    goto BB14
-  }
-  BB14 {
-    goto BB15
-  }
-  BB15 {
     [#"../inplace_list_reversal.rs" 33 8 33 12] head <- ([#"../inplace_list_reversal.rs" 33 8 33 12] next);
     next <- any InplaceListReversal_List_Type.t_list t;
-    goto BB17
-  }
-  BB17 {
-    goto BB18
-  }
-  BB18 {
-    goto BB20
+    goto BB4
   }
   BB19 {
     assert { [@expl:type invariant] inv1 head };
     assume { resolve1 head };
-    goto BB21
-  }
-  BB20 {
-    goto BB4
-  }
-  BB21 {
     [#"../inplace_list_reversal.rs" 35 4 35 6] l <- { l with current = ([#"../inplace_list_reversal.rs" 35 4 35 6] prev) ; };
     prev <- any InplaceListReversal_List_Type.t_list t;
     assert { [@expl:type invariant] inv1 ( * l) };
     assume { resolve1 ( * l) };
     assert { [@expl:type invariant] inv2 l };
     assume { resolve2 l };
-    goto BB23
-  }
-  BB23 {
     [#"../inplace_list_reversal.rs" 24 31 36 1] _0 <- ([#"../inplace_list_reversal.rs" 24 31 36 1] ());
-    goto BB24
-  }
-  BB24 {
-    goto BB25
-  }
-  BB25 {
     return _0
   }
   

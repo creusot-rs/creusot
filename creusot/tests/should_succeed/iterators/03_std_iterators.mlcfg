@@ -61,25 +61,6 @@ module C03StdIterators_SliceIter
     ensures { result = inv5 _x }
     
   axiom inv5 : forall x : Seq.seq t . inv5 x = true
-  predicate invariant4 (self : t)
-  val invariant4 (self : t) : bool
-    ensures { result = invariant4 self }
-    
-  predicate inv4 (_x : t)
-  val inv4 (_x : t) : bool
-    ensures { result = inv4 _x }
-    
-  axiom inv4 : forall x : t . inv4 x = true
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  predicate invariant3 (self : Core_Option_Option_Type.t_option t)
-  val invariant3 (self : Core_Option_Option_Type.t_option t) : bool
-    ensures { result = invariant3 self }
-    
-  predicate inv3 (_x : Core_Option_Option_Type.t_option t)
-  val inv3 (_x : Core_Option_Option_Type.t_option t) : bool
-    ensures { result = inv3 _x }
-    
-  axiom inv3 : forall x : Core_Option_Option_Type.t_option t . inv3 x = true
   use prelude.Borrow
   use Core_Slice_Iter_Iter_Type as Core_Slice_Iter_Iter_Type
   use seq.Seq
@@ -149,15 +130,34 @@ module C03StdIterators_SliceIter
     ensures { result = produces_refl0 self }
     
   axiom produces_refl0_spec : forall self : Core_Slice_Iter_Iter_Type.t_iter t . [#"../../../../../creusot-contracts/src/std/slice.rs" 392 14 392 45] produces0 self (Seq.empty ) self
-  predicate invariant2 (self : Core_Slice_Iter_Iter_Type.t_iter t)
-  val invariant2 (self : Core_Slice_Iter_Iter_Type.t_iter t) : bool
+  predicate invariant4 (self : Core_Slice_Iter_Iter_Type.t_iter t)
+  val invariant4 (self : Core_Slice_Iter_Iter_Type.t_iter t) : bool
+    ensures { result = invariant4 self }
+    
+  predicate inv4 (_x : Core_Slice_Iter_Iter_Type.t_iter t)
+  val inv4 (_x : Core_Slice_Iter_Iter_Type.t_iter t) : bool
+    ensures { result = inv4 _x }
+    
+  axiom inv4 : forall x : Core_Slice_Iter_Iter_Type.t_iter t . inv4 x = true
+  predicate invariant3 (self : t)
+  val invariant3 (self : t) : bool
+    ensures { result = invariant3 self }
+    
+  predicate inv3 (_x : t)
+  val inv3 (_x : t) : bool
+    ensures { result = inv3 _x }
+    
+  axiom inv3 : forall x : t . inv3 x = true
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant2 (self : Core_Option_Option_Type.t_option t)
+  val invariant2 (self : Core_Option_Option_Type.t_option t) : bool
     ensures { result = invariant2 self }
     
-  predicate inv2 (_x : Core_Slice_Iter_Iter_Type.t_iter t)
-  val inv2 (_x : Core_Slice_Iter_Iter_Type.t_iter t) : bool
+  predicate inv2 (_x : Core_Option_Option_Type.t_option t)
+  val inv2 (_x : Core_Option_Option_Type.t_option t) : bool
     ensures { result = inv2 _x }
     
-  axiom inv2 : forall x : Core_Slice_Iter_Iter_Type.t_iter t . inv2 x = true
+  axiom inv2 : forall x : Core_Option_Option_Type.t_option t . inv2 x = true
   use prelude.Snapshot
   predicate invariant1 (self : Snapshot.snap_ty (Seq.seq t))
   val invariant1 (self : Snapshot.snap_ty (Seq.seq t)) : bool
@@ -173,24 +173,12 @@ module C03StdIterators_SliceIter
     ensures { result = invariant0 self }
     
   axiom inv0 : forall x : slice t . inv0 x = true
-  predicate resolve6 (self : Core_Slice_Iter_Iter_Type.t_iter t)
-  val resolve6 (self : Core_Slice_Iter_Iter_Type.t_iter t) : bool
+  predicate resolve6 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve6 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) : bool
     ensures { result = resolve6 self }
     
-  predicate resolve5 (self : t)
-  val resolve5 (self : t) : bool
-    ensures { result = resolve5 self }
-    
   use seq.Seq
-  predicate resolve4 (self : Core_Option_Option_Type.t_option t)
-  val resolve4 (self : Core_Option_Option_Type.t_option t) : bool
-    ensures { result = resolve4 self }
-    
-  predicate resolve3 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve3 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) : bool
-    ensures { result = resolve3 self }
-    
   use seq.Seq
   function shallow_model4 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) : slice t =
     [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model2 ( * self)
@@ -198,7 +186,7 @@ module C03StdIterators_SliceIter
     ensures { result = shallow_model4 self }
     
   predicate completed0 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) =
-    [#"../../../../../creusot-contracts/src/std/slice.rs" 379 20 379 61] resolve3 self /\ shallow_model3 (shallow_model4 self) = Seq.empty 
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 379 20 379 61] resolve6 self /\ shallow_model3 (shallow_model4 self) = Seq.empty 
   val completed0 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) : bool
     ensures { result = completed0 self }
     
@@ -207,11 +195,23 @@ module C03StdIterators_SliceIter
       | Core_Option_Option_Type.C_None -> completed0 self
       | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
       end }
-    ensures { inv3 result }
+    ensures { inv2 result }
     
   use prelude.Snapshot
   use prelude.Snapshot
+  predicate resolve5 (self : t)
+  val resolve5 (self : t) : bool
+    ensures { result = resolve5 self }
+    
   use prelude.Snapshot
+  predicate resolve4 (self : Core_Slice_Iter_Iter_Type.t_iter t)
+  val resolve4 (self : Core_Slice_Iter_Iter_Type.t_iter t) : bool
+    ensures { result = resolve4 self }
+    
+  predicate resolve3 (self : Core_Option_Option_Type.t_option t)
+  val resolve3 (self : Core_Option_Option_Type.t_option t) : bool
+    ensures { result = resolve3 self }
+    
   predicate resolve2 (self : Snapshot.snap_ty (Seq.seq t))
   val resolve2 (self : Snapshot.snap_ty (Seq.seq t)) : bool
     ensures { result = resolve2 self }
@@ -234,9 +234,9 @@ module C03StdIterators_SliceIter
     
   val into_iter0 (self : Core_Slice_Iter_Iter_Type.t_iter t) : Core_Slice_Iter_Iter_Type.t_iter t
     requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 89 0 166 1] into_iter_pre0 self}
-    requires {inv2 self}
+    requires {inv4 self}
     ensures { [#"../../../../../creusot-contracts/src/std/iter.rs" 89 0 166 1] into_iter_post0 self result }
-    ensures { inv2 result }
+    ensures { inv4 result }
     
   val iter0 (self : slice t) : Core_Slice_Iter_Iter_Type.t_iter t
     requires {inv0 self}
@@ -277,77 +277,56 @@ module C03StdIterators_SliceIter
   BB1 {
     [#"../03_std_iterators.rs" 8 4 8 38] iter <- ([#"../03_std_iterators.rs" 8 4 8 38] into_iter0 _7);
     _7 <- any Core_Slice_Iter_Iter_Type.t_iter t;
-    goto BB2
-  }
-  BB2 {
     [#"../03_std_iterators.rs" 8 4 8 38] iter_old <- ([#"../03_std_iterators.rs" 8 4 8 38] Snapshot.new iter);
-    goto BB3
-  }
-  BB3 {
     assume { resolve1 iter_old };
     [#"../03_std_iterators.rs" 8 4 8 38] produced <- ([#"../03_std_iterators.rs" 8 4 8 38] Snapshot.new (Seq.empty ));
-    goto BB4
-  }
-  BB4 {
     assert { [@expl:type invariant] inv1 produced };
     assume { resolve2 produced };
     goto BB5
   }
   BB5 {
-    invariant { [#"../03_std_iterators.rs" 8 4 8 38] inv2 iter };
+    invariant { [#"../03_std_iterators.rs" 8 4 8 38] inv4 iter };
     invariant { [#"../03_std_iterators.rs" 8 4 8 38] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter };
     invariant { [#"../03_std_iterators.rs" 8 16 8 36] UIntSize.to_int i = Seq.length (Snapshot.inner produced) };
-    goto BB6
-  }
-  BB6 {
     [#"../03_std_iterators.rs" 8 4 8 38] _19 <- Borrow.borrow_mut iter;
     [#"../03_std_iterators.rs" 8 4 8 38] iter <-  ^ _19;
     [#"../03_std_iterators.rs" 8 4 8 38] _18 <- Borrow.borrow_final ( * _19) (Borrow.get_id _19);
     [#"../03_std_iterators.rs" 8 4 8 38] _19 <- { _19 with current = ( ^ _18) ; };
     [#"../03_std_iterators.rs" 8 4 8 38] _17 <- ([#"../03_std_iterators.rs" 8 4 8 38] next0 _18);
     _18 <- any borrowed (Core_Slice_Iter_Iter_Type.t_iter t);
-    goto BB7
-  }
-  BB7 {
-    assume { resolve3 _19 };
+    assume { resolve6 _19 };
     switch (_17)
       | Core_Option_Option_Type.C_None -> goto BB8
       | Core_Option_Option_Type.C_Some _ -> goto BB9
       end
   }
   BB8 {
-    assert { [@expl:type invariant] inv3 _17 };
-    assume { resolve4 _17 };
-    assume { resolve6 iter };
+    assert { [@expl:type invariant] inv2 _17 };
+    assume { resolve3 _17 };
+    assume { resolve4 iter };
     [#"../03_std_iterators.rs" 12 4 12 5] _0 <- ([#"../03_std_iterators.rs" 12 4 12 5] i);
     return _0
   }
   BB9 {
-    goto BB11
-  }
-  BB10 {
-    assert { [@expl:type invariant] inv3 _17 };
-    assume { resolve4 _17 };
-    assume { resolve6 iter };
-    assert { [#"../03_std_iterators.rs" 8 4 8 38] false };
-    absurd
-  }
-  BB11 {
     [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] Core_Option_Option_Type.some_0 _17);
-    assert { [@expl:type invariant] inv3 _17 };
-    assume { resolve4 _17 };
+    assert { [@expl:type invariant] inv2 _17 };
+    assume { resolve3 _17 };
     [#"../03_std_iterators.rs" 8 4 8 38] _22 <- ([#"../03_std_iterators.rs" 8 4 8 38] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
-    goto BB12
-  }
-  BB12 {
     [#"../03_std_iterators.rs" 8 4 8 38] produced <- ([#"../03_std_iterators.rs" 8 4 8 38] _22);
     _22 <- any Snapshot.snap_ty (Seq.seq t);
     assert { [@expl:type invariant] inv1 produced };
     assume { resolve2 produced };
-    assert { [@expl:type invariant] inv4 __creusot_proc_iter_elem };
+    assert { [@expl:type invariant] inv3 __creusot_proc_iter_elem };
     assume { resolve5 __creusot_proc_iter_elem };
     [#"../03_std_iterators.rs" 10 8 10 14] i <- ([#"../03_std_iterators.rs" 10 8 10 14] i + (1 : usize));
     goto BB5
+  }
+  BB10 {
+    assert { [@expl:type invariant] inv2 _17 };
+    assume { resolve3 _17 };
+    assume { resolve4 iter };
+    assert { [#"../03_std_iterators.rs" 8 4 8 38] false };
+    absurd
   }
   
 end
@@ -452,16 +431,6 @@ module C03StdIterators_VecIter
     ensures { result = inv4 _x }
     
   axiom inv4 : forall x : t . inv4 x = true
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  predicate invariant3 (self : Core_Option_Option_Type.t_option t)
-  val invariant3 (self : Core_Option_Option_Type.t_option t) : bool
-    ensures { result = invariant3 self }
-    
-  predicate inv3 (_x : Core_Option_Option_Type.t_option t)
-  val inv3 (_x : Core_Option_Option_Type.t_option t) : bool
-    ensures { result = inv3 _x }
-    
-  axiom inv3 : forall x : Core_Option_Option_Type.t_option t . inv3 x = true
   use prelude.Borrow
   use Core_Slice_Iter_Iter_Type as Core_Slice_Iter_Iter_Type
   use seq.Seq
@@ -521,15 +490,25 @@ module C03StdIterators_VecIter
     ensures { result = produces_refl0 self }
     
   axiom produces_refl0_spec : forall self : Core_Slice_Iter_Iter_Type.t_iter t . [#"../../../../../creusot-contracts/src/std/slice.rs" 392 14 392 45] produces0 self (Seq.empty ) self
-  predicate invariant2 (self : Core_Slice_Iter_Iter_Type.t_iter t)
-  val invariant2 (self : Core_Slice_Iter_Iter_Type.t_iter t) : bool
+  predicate invariant3 (self : Core_Slice_Iter_Iter_Type.t_iter t)
+  val invariant3 (self : Core_Slice_Iter_Iter_Type.t_iter t) : bool
+    ensures { result = invariant3 self }
+    
+  predicate inv3 (_x : Core_Slice_Iter_Iter_Type.t_iter t)
+  val inv3 (_x : Core_Slice_Iter_Iter_Type.t_iter t) : bool
+    ensures { result = inv3 _x }
+    
+  axiom inv3 : forall x : Core_Slice_Iter_Iter_Type.t_iter t . inv3 x = true
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant2 (self : Core_Option_Option_Type.t_option t)
+  val invariant2 (self : Core_Option_Option_Type.t_option t) : bool
     ensures { result = invariant2 self }
     
-  predicate inv2 (_x : Core_Slice_Iter_Iter_Type.t_iter t)
-  val inv2 (_x : Core_Slice_Iter_Iter_Type.t_iter t) : bool
+  predicate inv2 (_x : Core_Option_Option_Type.t_option t)
+  val inv2 (_x : Core_Option_Option_Type.t_option t) : bool
     ensures { result = inv2 _x }
     
-  axiom inv2 : forall x : Core_Slice_Iter_Iter_Type.t_iter t . inv2 x = true
+  axiom inv2 : forall x : Core_Option_Option_Type.t_option t . inv2 x = true
   use prelude.Snapshot
   predicate invariant1 (self : Snapshot.snap_ty (Seq.seq t))
   val invariant1 (self : Snapshot.snap_ty (Seq.seq t)) : bool
@@ -554,23 +533,15 @@ module C03StdIterators_VecIter
   val shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
     ensures { result = shallow_model1 self }
     
-  predicate resolve6 (self : Core_Slice_Iter_Iter_Type.t_iter t)
-  val resolve6 (self : Core_Slice_Iter_Iter_Type.t_iter t) : bool
+  predicate resolve6 (self : t)
+  val resolve6 (self : t) : bool
     ensures { result = resolve6 self }
     
-  predicate resolve5 (self : t)
-  val resolve5 (self : t) : bool
-    ensures { result = resolve5 self }
-    
   use seq.Seq
-  predicate resolve4 (self : Core_Option_Option_Type.t_option t)
-  val resolve4 (self : Core_Option_Option_Type.t_option t) : bool
-    ensures { result = resolve4 self }
-    
-  predicate resolve3 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) =
+  predicate resolve5 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve3 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) : bool
-    ensures { result = resolve3 self }
+  val resolve5 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) : bool
+    ensures { result = resolve5 self }
     
   use seq.Seq
   function shallow_model5 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) : slice t =
@@ -579,7 +550,7 @@ module C03StdIterators_VecIter
     ensures { result = shallow_model5 self }
     
   predicate completed0 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) =
-    [#"../../../../../creusot-contracts/src/std/slice.rs" 379 20 379 61] resolve3 self /\ shallow_model6 (shallow_model5 self) = Seq.empty 
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 379 20 379 61] resolve5 self /\ shallow_model6 (shallow_model5 self) = Seq.empty 
   val completed0 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) : bool
     ensures { result = completed0 self }
     
@@ -588,11 +559,19 @@ module C03StdIterators_VecIter
       | Core_Option_Option_Type.C_None -> completed0 self
       | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
       end }
-    ensures { inv3 result }
+    ensures { inv2 result }
     
   use prelude.Snapshot
   use prelude.Snapshot
   use prelude.Snapshot
+  predicate resolve4 (self : Core_Slice_Iter_Iter_Type.t_iter t)
+  val resolve4 (self : Core_Slice_Iter_Iter_Type.t_iter t) : bool
+    ensures { result = resolve4 self }
+    
+  predicate resolve3 (self : Core_Option_Option_Type.t_option t)
+  val resolve3 (self : Core_Option_Option_Type.t_option t) : bool
+    ensures { result = resolve3 self }
+    
   predicate resolve2 (self : Snapshot.snap_ty (Seq.seq t))
   val resolve2 (self : Snapshot.snap_ty (Seq.seq t)) : bool
     ensures { result = resolve2 self }
@@ -653,73 +632,55 @@ module C03StdIterators_VecIter
   }
   BB1 {
     [#"../03_std_iterators.rs" 19 4 19 38] iter_old <- ([#"../03_std_iterators.rs" 19 4 19 38] Snapshot.new iter);
-    goto BB2
-  }
-  BB2 {
     assume { resolve1 iter_old };
     [#"../03_std_iterators.rs" 19 4 19 38] produced <- ([#"../03_std_iterators.rs" 19 4 19 38] Snapshot.new (Seq.empty ));
-    goto BB3
-  }
-  BB3 {
     assert { [@expl:type invariant] inv1 produced };
     assume { resolve2 produced };
     goto BB4
   }
   BB4 {
-    invariant { [#"../03_std_iterators.rs" 19 4 19 38] inv2 iter };
+    invariant { [#"../03_std_iterators.rs" 19 4 19 38] inv3 iter };
     invariant { [#"../03_std_iterators.rs" 19 4 19 38] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter };
     invariant { [#"../03_std_iterators.rs" 19 16 19 36] UIntSize.to_int i = Seq.length (Snapshot.inner produced) };
-    goto BB5
-  }
-  BB5 {
     [#"../03_std_iterators.rs" 19 4 19 38] _18 <- Borrow.borrow_mut iter;
     [#"../03_std_iterators.rs" 19 4 19 38] iter <-  ^ _18;
     [#"../03_std_iterators.rs" 19 4 19 38] _17 <- Borrow.borrow_final ( * _18) (Borrow.get_id _18);
     [#"../03_std_iterators.rs" 19 4 19 38] _18 <- { _18 with current = ( ^ _17) ; };
     [#"../03_std_iterators.rs" 19 4 19 38] _16 <- ([#"../03_std_iterators.rs" 19 4 19 38] next0 _17);
     _17 <- any borrowed (Core_Slice_Iter_Iter_Type.t_iter t);
-    goto BB6
-  }
-  BB6 {
-    assume { resolve3 _18 };
+    assume { resolve5 _18 };
     switch (_16)
       | Core_Option_Option_Type.C_None -> goto BB7
       | Core_Option_Option_Type.C_Some _ -> goto BB8
       end
   }
   BB7 {
-    assert { [@expl:type invariant] inv3 _16 };
-    assume { resolve4 _16 };
-    assume { resolve6 iter };
+    assert { [@expl:type invariant] inv2 _16 };
+    assume { resolve3 _16 };
+    assume { resolve4 iter };
     [#"../03_std_iterators.rs" 23 4 23 5] _0 <- ([#"../03_std_iterators.rs" 23 4 23 5] i);
     return _0
   }
   BB8 {
-    goto BB10
-  }
-  BB9 {
-    assert { [@expl:type invariant] inv3 _16 };
-    assume { resolve4 _16 };
-    assume { resolve6 iter };
-    assert { [#"../03_std_iterators.rs" 19 4 19 38] false };
-    absurd
-  }
-  BB10 {
     [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] Core_Option_Option_Type.some_0 _16);
-    assert { [@expl:type invariant] inv3 _16 };
-    assume { resolve4 _16 };
+    assert { [@expl:type invariant] inv2 _16 };
+    assume { resolve3 _16 };
     [#"../03_std_iterators.rs" 19 4 19 38] _21 <- ([#"../03_std_iterators.rs" 19 4 19 38] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
-    goto BB11
-  }
-  BB11 {
     [#"../03_std_iterators.rs" 19 4 19 38] produced <- ([#"../03_std_iterators.rs" 19 4 19 38] _21);
     _21 <- any Snapshot.snap_ty (Seq.seq t);
     assert { [@expl:type invariant] inv1 produced };
     assume { resolve2 produced };
     assert { [@expl:type invariant] inv4 __creusot_proc_iter_elem };
-    assume { resolve5 __creusot_proc_iter_elem };
+    assume { resolve6 __creusot_proc_iter_elem };
     [#"../03_std_iterators.rs" 21 8 21 14] i <- ([#"../03_std_iterators.rs" 21 8 21 14] i + (1 : usize));
     goto BB4
+  }
+  BB9 {
+    assert { [@expl:type invariant] inv2 _16 };
+    assume { resolve3 _16 };
+    assume { resolve4 iter };
+    assert { [#"../03_std_iterators.rs" 19 4 19 38] false };
+    absurd
   }
   
 end
@@ -905,26 +866,16 @@ module C03StdIterators_AllZero
     ensures { result = shallow_model2 self }
     
   use prelude.Snapshot
-  predicate resolve4 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) =
+  predicate resolve4 (self : borrowed usize) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve4 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : bool
+  val resolve4 (self : borrowed usize) : bool
     ensures { result = resolve4 self }
     
-  predicate resolve3 (self : Core_Slice_Iter_IterMut_Type.t_itermut usize) =
-    [#"../../../../../creusot-contracts/src/std/slice.rs" 420 20 420 36]  * shallow_model5 self =  ^ shallow_model5 self
-  val resolve3 (self : Core_Slice_Iter_IterMut_Type.t_itermut usize) : bool
-    ensures { result = resolve3 self }
-    
-  predicate resolve2 (self : borrowed usize) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve2 (self : borrowed usize) : bool
-    ensures { result = resolve2 self }
-    
   use seq.Seq
-  predicate resolve1 (self : borrowed (Core_Slice_Iter_IterMut_Type.t_itermut usize)) =
+  predicate resolve3 (self : borrowed (Core_Slice_Iter_IterMut_Type.t_itermut usize)) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve1 (self : borrowed (Core_Slice_Iter_IterMut_Type.t_itermut usize)) : bool
-    ensures { result = resolve1 self }
+  val resolve3 (self : borrowed (Core_Slice_Iter_IterMut_Type.t_itermut usize)) : bool
+    ensures { result = resolve3 self }
     
   use seq.Seq
   function shallow_model6 (self : borrowed (Core_Slice_Iter_IterMut_Type.t_itermut usize)) : borrowed (slice usize) =
@@ -933,7 +884,7 @@ module C03StdIterators_AllZero
     ensures { result = shallow_model6 self }
     
   predicate completed0 (self : borrowed (Core_Slice_Iter_IterMut_Type.t_itermut usize)) =
-    [#"../../../../../creusot-contracts/src/std/slice.rs" 428 20 428 61] resolve1 self /\ shallow_model4 ( * shallow_model6 self) = Seq.empty 
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 428 20 428 61] resolve3 self /\ shallow_model4 ( * shallow_model6 self) = Seq.empty 
   val completed0 (self : borrowed (Core_Slice_Iter_IterMut_Type.t_itermut usize)) : bool
     ensures { result = completed0 self }
     
@@ -954,6 +905,16 @@ module C03StdIterators_AllZero
     
   use prelude.Snapshot
   use prelude.Snapshot
+  predicate resolve2 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve2 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : bool
+    ensures { result = resolve2 self }
+    
+  predicate resolve1 (self : Core_Slice_Iter_IterMut_Type.t_itermut usize) =
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 420 20 420 36]  * shallow_model5 self =  ^ shallow_model5 self
+  val resolve1 (self : Core_Slice_Iter_IterMut_Type.t_itermut usize) : bool
+    ensures { result = resolve1 self }
+    
   use prelude.Snapshot
   use prelude.Snapshot
   predicate resolve0 (self : borrowed (slice usize)) =
@@ -1024,76 +985,52 @@ module C03StdIterators_AllZero
     [#"../03_std_iterators.rs" 30 13 30 14] _7 <- { _7 with current = ( ^ _6) ; };
     [#"../03_std_iterators.rs" 30 13 30 25] _5 <- ([#"../03_std_iterators.rs" 30 13 30 25] iter_mut0 _6);
     _6 <- any borrowed (slice usize);
-    goto BB2
-  }
-  BB2 {
     [#"../03_std_iterators.rs" 29 4 29 87] iter <- ([#"../03_std_iterators.rs" 29 4 29 87] into_iter0 _5);
     _5 <- any Core_Slice_Iter_IterMut_Type.t_itermut usize;
-    goto BB3
-  }
-  BB3 {
     assume { resolve0 _7 };
     [#"../03_std_iterators.rs" 29 4 29 87] iter_old <- ([#"../03_std_iterators.rs" 29 4 29 87] Snapshot.new iter);
-    goto BB4
-  }
-  BB4 {
     [#"../03_std_iterators.rs" 29 4 29 87] produced <- ([#"../03_std_iterators.rs" 29 4 29 87] Snapshot.new (Seq.empty ));
-    goto BB5
-  }
-  BB5 {
     goto BB6
   }
   BB6 {
     invariant { [#"../03_std_iterators.rs" 29 4 29 87] inv0 iter };
     invariant { [#"../03_std_iterators.rs" 29 4 29 87] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter };
     invariant { [#"../03_std_iterators.rs" 29 4 29 87] forall i : int . 0 <= i /\ i < Seq.length (Snapshot.inner produced) -> UIntSize.to_int ( ^ index_logic0 produced i) = 0 };
-    goto BB7
-  }
-  BB7 {
     [#"../03_std_iterators.rs" 29 4 29 87] _19 <- Borrow.borrow_mut iter;
     [#"../03_std_iterators.rs" 29 4 29 87] iter <-  ^ _19;
     [#"../03_std_iterators.rs" 29 4 29 87] _18 <- Borrow.borrow_final ( * _19) (Borrow.get_id _19);
     [#"../03_std_iterators.rs" 29 4 29 87] _19 <- { _19 with current = ( ^ _18) ; };
     [#"../03_std_iterators.rs" 29 4 29 87] _17 <- ([#"../03_std_iterators.rs" 29 4 29 87] next0 _18);
     _18 <- any borrowed (Core_Slice_Iter_IterMut_Type.t_itermut usize);
-    goto BB8
-  }
-  BB8 {
-    assume { resolve1 _19 };
+    assume { resolve3 _19 };
     switch (_17)
       | Core_Option_Option_Type.C_None -> goto BB9
       | Core_Option_Option_Type.C_Some _ -> goto BB10
       end
   }
   BB9 {
-    assume { resolve3 iter };
+    assume { resolve1 iter };
     [#"../03_std_iterators.rs" 29 4 29 87] _0 <- ([#"../03_std_iterators.rs" 29 4 29 87] ());
-    assume { resolve4 v };
+    assume { resolve2 v };
     return _0
   }
   BB10 {
-    goto BB12
-  }
-  BB11 {
-    assume { resolve3 iter };
-    assume { resolve4 v };
-    assert { [#"../03_std_iterators.rs" 29 4 29 87] false };
-    absurd
-  }
-  BB12 {
     [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] Core_Option_Option_Type.some_0 _17);
     _17 <- (let Core_Option_Option_Type.C_Some x0 = _17 in Core_Option_Option_Type.C_Some (any borrowed usize));
     [#"../03_std_iterators.rs" 29 4 29 87] _22 <- ([#"../03_std_iterators.rs" 29 4 29 87] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
-    goto BB13
-  }
-  BB13 {
     [#"../03_std_iterators.rs" 29 4 29 87] produced <- ([#"../03_std_iterators.rs" 29 4 29 87] _22);
     _22 <- any Snapshot.snap_ty (Seq.seq (borrowed usize));
     [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] x <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem);
     __creusot_proc_iter_elem <- any borrowed usize;
     [#"../03_std_iterators.rs" 31 8 31 14] x <- { x with current = ([#"../03_std_iterators.rs" 31 8 31 14] (0 : usize)) ; };
-    assume { resolve2 x };
+    assume { resolve4 x };
     goto BB6
+  }
+  BB11 {
+    assume { resolve1 iter };
+    assume { resolve2 v };
+    assert { [#"../03_std_iterators.rs" 29 4 29 87] false };
+    absurd
   }
   
 end
@@ -1387,35 +1324,17 @@ module C03StdIterators_SkipTake
   BB1 {
     [#"../03_std_iterators.rs" 36 14 36 34] _5 <- ([#"../03_std_iterators.rs" 36 14 36 34] skip0 _6 n);
     _6 <- any Core_Iter_Adapters_Take_Take_Type.t_take i;
-    goto BB2
-  }
-  BB2 {
     [#"../03_std_iterators.rs" 36 14 36 34] _4 <- Borrow.borrow_mut _5;
     [#"../03_std_iterators.rs" 36 14 36 34] _5 <-  ^ _4;
     assume { inv0 ( ^ _4) };
     [#"../03_std_iterators.rs" 36 14 36 41] res <- ([#"../03_std_iterators.rs" 36 14 36 41] next0 _4);
     _4 <- any borrowed (Core_Iter_Adapters_Skip_Skip_Type.t_skip (Core_Iter_Adapters_Take_Take_Type.t_take i));
-    goto BB3
-  }
-  BB3 {
     assert { [@expl:type invariant] inv0 _5 };
     assume { resolve0 _5 };
     assert { [@expl:type invariant] inv1 res };
     assume { resolve1 res };
-    goto BB4
-  }
-  BB4 {
     assert { [@expl:assertion] [#"../03_std_iterators.rs" 38 20 38 31] res = Core_Option_Option_Type.C_None };
-    goto BB5
-  }
-  BB5 {
     [#"../03_std_iterators.rs" 35 49 39 1] _0 <- ([#"../03_std_iterators.rs" 35 49 39 1] ());
-    goto BB6
-  }
-  BB6 {
-    goto BB7
-  }
-  BB7 {
     return _0
   }
   
@@ -1978,9 +1897,6 @@ module C03StdIterators_Counter
   }
   BB1 {
     [#"../03_std_iterators.rs" 44 22 45 15] _5 <- ([#"../03_std_iterators.rs" 44 22 45 15] iter0 _7);
-    goto BB2
-  }
-  BB2 {
     [#"../03_std_iterators.rs" 48 12 48 91] _10 <- Borrow.borrow_mut cnt;
     [#"../03_std_iterators.rs" 48 12 48 91] cnt <-  ^ _10;
     [#"../03_std_iterators.rs" 48 12 48 91] _9 <- ([#"../03_std_iterators.rs" 48 12 48 91] C03StdIterators_Counter_Closure0.C03StdIterators_Counter_Closure0 _10);
@@ -1988,35 +1904,14 @@ module C03StdIterators_Counter
     [#"../03_std_iterators.rs" 44 22 53 9] _4 <- ([#"../03_std_iterators.rs" 44 22 53 9] map_inv0 _5 _9);
     _5 <- any Core_Slice_Iter_Iter_Type.t_iter uint32;
     _9 <- any C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0;
-    goto BB3
-  }
-  BB3 {
     [#"../03_std_iterators.rs" 44 22 54 18] x <- ([#"../03_std_iterators.rs" 44 22 54 18] collect0 _4);
     _4 <- any CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Slice_Iter_Iter_Type.t_iter uint32) uint32 C03StdIterators_Counter_Closure0.c03stditerators_counter_closure0;
-    goto BB4
-  }
-  BB4 {
     assume { resolve0 v };
     assume { resolve0 x };
     assert { [@expl:assertion] [#"../03_std_iterators.rs" 56 20 56 40] Seq.length (shallow_model0 x) = Seq.length (shallow_model0 v) };
-    goto BB5
-  }
-  BB5 {
     assert { [@expl:assertion] [#"../03_std_iterators.rs" 57 4 57 35] Seq.(==) (shallow_model0 x) (shallow_model0 v) };
-    goto BB6
-  }
-  BB6 {
     assert { [@expl:assertion] [#"../03_std_iterators.rs" 58 20 58 36] UIntSize.to_int cnt = Seq.length (shallow_model0 x) };
-    goto BB7
-  }
-  BB7 {
     [#"../03_std_iterators.rs" 41 28 59 1] _0 <- ([#"../03_std_iterators.rs" 41 28 59 1] ());
-    goto BB8
-  }
-  BB8 {
-    goto BB9
-  }
-  BB9 {
     return _0
   }
   
@@ -2190,31 +2085,19 @@ module C03StdIterators_SumRange
   }
   BB1 {
     [#"../03_std_iterators.rs" 65 4 65 48] iter_old <- ([#"../03_std_iterators.rs" 65 4 65 48] Snapshot.new iter);
-    goto BB2
-  }
-  BB2 {
     [#"../03_std_iterators.rs" 65 4 65 48] produced <- ([#"../03_std_iterators.rs" 65 4 65 48] Snapshot.new (Seq.empty ));
-    goto BB3
-  }
-  BB3 {
     goto BB4
   }
   BB4 {
     invariant { [#"../03_std_iterators.rs" 65 4 65 48] inv0 iter };
     invariant { [#"../03_std_iterators.rs" 65 4 65 48] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter };
     invariant { [#"../03_std_iterators.rs" 65 16 65 46] IntSize.to_int i = Seq.length (Snapshot.inner produced) /\ i <= n };
-    goto BB5
-  }
-  BB5 {
     [#"../03_std_iterators.rs" 65 4 65 48] _19 <- Borrow.borrow_mut iter;
     [#"../03_std_iterators.rs" 65 4 65 48] iter <-  ^ _19;
     [#"../03_std_iterators.rs" 65 4 65 48] _18 <- Borrow.borrow_final ( * _19) (Borrow.get_id _19);
     [#"../03_std_iterators.rs" 65 4 65 48] _19 <- { _19 with current = ( ^ _18) ; };
     [#"../03_std_iterators.rs" 65 4 65 48] _17 <- ([#"../03_std_iterators.rs" 65 4 65 48] next0 _18);
     _18 <- any borrowed (Core_Ops_Range_Range_Type.t_range isize);
-    goto BB6
-  }
-  BB6 {
     assume { resolve0 _19 };
     switch (_17)
       | Core_Option_Option_Type.C_None -> goto BB7
@@ -2226,22 +2109,16 @@ module C03StdIterators_SumRange
     return _0
   }
   BB8 {
-    goto BB10
-  }
-  BB9 {
-    assert { [#"../03_std_iterators.rs" 65 4 65 48] false };
-    absurd
-  }
-  BB10 {
     [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] Core_Option_Option_Type.some_0 _17);
     [#"../03_std_iterators.rs" 65 4 65 48] _22 <- ([#"../03_std_iterators.rs" 65 4 65 48] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
-    goto BB11
-  }
-  BB11 {
     [#"../03_std_iterators.rs" 65 4 65 48] produced <- ([#"../03_std_iterators.rs" 65 4 65 48] _22);
     _22 <- any Snapshot.snap_ty (Seq.seq isize);
     [#"../03_std_iterators.rs" 67 8 67 14] i <- ([#"../03_std_iterators.rs" 67 8 67 14] i + (1 : isize));
     goto BB4
+  }
+  BB9 {
+    assert { [#"../03_std_iterators.rs" 65 4 65 48] false };
+    absurd
   }
   
 end
@@ -2427,36 +2304,14 @@ module C03StdIterators_EnumerateRange
     | Core_Iter_Adapters_Enumerate_Enumerate_Type.C_Enumerate iter count -> true
     end)
   use prelude.Snapshot
-  predicate resolve4 (self : Core_Ops_Range_Range_Type.t_range usize) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
-  val resolve4 (self : Core_Ops_Range_Range_Type.t_range usize) : bool
-    ensures { result = resolve4 self }
-    
-  predicate resolve2 (self : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize))
-    
-   =
-    [#"../../../../../creusot-contracts/src/std/iter/enumerate.rs" 33 12 33 33] resolve4 (iter0 self)
-  val resolve2 (self : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize)) : bool
-    ensures { result = resolve2 self }
-    
-  predicate resolve3 (self : usize) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
-  val resolve3 (self : usize) : bool
-    ensures { result = resolve3 self }
-    
-  predicate resolve1 (self : (usize, usize)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve3 (let (a, _) = self in a) /\ resolve3 (let (_, a) = self in a)
-  val resolve1 (self : (usize, usize)) : bool
-    ensures { result = resolve1 self }
-    
-  use seq.Seq
-  predicate resolve0 (self : borrowed (Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize)))
+  predicate resolve2 (self : borrowed (Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize)))
     
    =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve0 (self : borrowed (Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize))) : bool
-    ensures { result = resolve0 self }
+  val resolve2 (self : borrowed (Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize))) : bool
+    ensures { result = resolve2 self }
     
+  use seq.Seq
   predicate completed0 (self : borrowed (Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize)))
     
    =
@@ -2480,7 +2335,29 @@ module C03StdIterators_EnumerateRange
     ensures { result = index_logic0 self ix }
     
   use prelude.Snapshot
+  predicate resolve4 (self : usize) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
+  val resolve4 (self : usize) : bool
+    ensures { result = resolve4 self }
+    
+  predicate resolve1 (self : (usize, usize)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve4 (let (a, _) = self in a) /\ resolve4 (let (_, a) = self in a)
+  val resolve1 (self : (usize, usize)) : bool
+    ensures { result = resolve1 self }
+    
   use prelude.Snapshot
+  predicate resolve3 (self : Core_Ops_Range_Range_Type.t_range usize) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
+  val resolve3 (self : Core_Ops_Range_Range_Type.t_range usize) : bool
+    ensures { result = resolve3 self }
+    
+  predicate resolve0 (self : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize))
+    
+   =
+    [#"../../../../../creusot-contracts/src/std/iter/enumerate.rs" 33 12 33 33] resolve3 (iter0 self)
+  val resolve0 (self : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize)) : bool
+    ensures { result = resolve0 self }
+    
   use prelude.Snapshot
   use prelude.Snapshot
   predicate into_iter_post0 (self : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize)) (res : Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize))
@@ -2537,26 +2414,14 @@ module C03StdIterators_EnumerateRange
   BB1 {
     [#"../03_std_iterators.rs" 73 4 73 96] iter <- ([#"../03_std_iterators.rs" 73 4 73 96] into_iter0 _2);
     _2 <- any Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize);
-    goto BB2
-  }
-  BB2 {
     [#"../03_std_iterators.rs" 73 4 73 96] iter_old <- ([#"../03_std_iterators.rs" 73 4 73 96] Snapshot.new iter);
-    goto BB3
-  }
-  BB3 {
     [#"../03_std_iterators.rs" 73 4 73 96] produced <- ([#"../03_std_iterators.rs" 73 4 73 96] Snapshot.new (Seq.empty ));
-    goto BB4
-  }
-  BB4 {
     goto BB5
   }
   BB5 {
     invariant { [#"../03_std_iterators.rs" 73 4 73 96] inv0 iter };
     invariant { [#"../03_std_iterators.rs" 73 4 73 96] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter };
     invariant { [#"../03_std_iterators.rs" 73 4 73 96] forall i : int . 0 <= i /\ i < Seq.length (Snapshot.inner produced) -> (let (a, _) = index_logic0 produced i in a) = (let (_, a) = index_logic0 produced i in a) };
-    goto BB6
-  }
-  BB6 {
     [#"../03_std_iterators.rs" 73 4 73 96] _14 <- Borrow.borrow_mut iter;
     [#"../03_std_iterators.rs" 73 4 73 96] iter <-  ^ _14;
     assume { inv0 ( ^ _14) };
@@ -2565,11 +2430,8 @@ module C03StdIterators_EnumerateRange
     assume { inv0 ( ^ _13) };
     [#"../03_std_iterators.rs" 73 4 73 96] _12 <- ([#"../03_std_iterators.rs" 73 4 73 96] next0 _13);
     _13 <- any borrowed (Core_Iter_Adapters_Enumerate_Enumerate_Type.t_enumerate (Core_Ops_Range_Range_Type.t_range usize));
-    goto BB7
-  }
-  BB7 {
     assert { [@expl:type invariant] inv1 _14 };
-    assume { resolve0 _14 };
+    assume { resolve2 _14 };
     switch (_12)
       | Core_Option_Option_Type.C_None -> goto BB8
       | Core_Option_Option_Type.C_Some _ -> goto BB9
@@ -2577,25 +2439,13 @@ module C03StdIterators_EnumerateRange
   }
   BB8 {
     assert { [@expl:type invariant] inv0 iter };
-    assume { resolve2 iter };
+    assume { resolve0 iter };
     [#"../03_std_iterators.rs" 73 4 73 96] _0 <- ([#"../03_std_iterators.rs" 73 4 73 96] ());
     return _0
   }
   BB9 {
-    goto BB11
-  }
-  BB10 {
-    assert { [@expl:type invariant] inv0 iter };
-    assume { resolve2 iter };
-    assert { [#"../03_std_iterators.rs" 73 4 73 96] false };
-    absurd
-  }
-  BB11 {
     [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] Core_Option_Option_Type.some_0 _12);
     [#"../03_std_iterators.rs" 73 4 73 96] _17 <- ([#"../03_std_iterators.rs" 73 4 73 96] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
-    goto BB12
-  }
-  BB12 {
     [#"../03_std_iterators.rs" 73 4 73 96] produced <- ([#"../03_std_iterators.rs" 73 4 73 96] _17);
     _17 <- any Snapshot.snap_ty (Seq.seq (usize, usize));
     [#"../03_std_iterators.rs" 74 9 74 11] ix <- ([#"../03_std_iterators.rs" 74 9 74 11] let (a, _) = __creusot_proc_iter_elem in a);
@@ -2604,6 +2454,12 @@ module C03StdIterators_EnumerateRange
     [#"../03_std_iterators.rs" 75 16 75 23] _21 <- ([#"../03_std_iterators.rs" 75 16 75 23] (ix, x));
     assume { resolve1 _21 };
     goto BB5
+  }
+  BB10 {
+    assert { [@expl:type invariant] inv0 iter };
+    assume { resolve0 iter };
+    assert { [#"../03_std_iterators.rs" 73 4 73 96] false };
+    absurd
   }
   
 end
@@ -2752,29 +2608,20 @@ module C03StdIterators_MyReverse
     ensures { result = inv4 _x }
     
   axiom inv4 : forall x : slice t . inv4 x = true
-  predicate invariant3 (self : borrowed (slice t))
-  val invariant3 (self : borrowed (slice t)) : bool
+  predicate invariant3 (self : slice t)
+  val invariant3 (self : slice t) : bool
     ensures { result = invariant3 self }
     
-  predicate inv3 (_x : borrowed (slice t))
-  val inv3 (_x : borrowed (slice t)) : bool
+  predicate inv3 (_x : slice t)
+  val inv3 (_x : slice t) : bool
     ensures { result = inv3 _x }
     
-  axiom inv3 : forall x : borrowed (slice t) . inv3 x = true
-  predicate invariant2 (self : slice t)
-  val invariant2 (self : slice t) : bool
-    ensures { result = invariant2 self }
-    
-  predicate inv2 (_x : slice t)
-  val inv2 (_x : slice t) : bool
-    ensures { result = inv2 _x }
-    
-  axiom inv2 : forall x : slice t . inv2 x = true
+  axiom inv3 : forall x : slice t . inv3 x = true
   use seq.Seq
-  predicate inv1 (_x : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize))
+  predicate inv2 (_x : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize))
     
-  val inv1 (_x : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)) : bool
-    ensures { result = inv1 _x }
+  val inv2 (_x : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)) : bool
+    ensures { result = inv2 _x }
     
   function iterb0 (self : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)) : Core_Ops_Range_Range_Type.t_range usize
     
@@ -2800,30 +2647,39 @@ module C03StdIterators_MyReverse
   val produces_trans0 (a : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)) (ab : Seq.seq (usize, usize)) (b : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)) (bc : Seq.seq (usize, usize)) (c : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)) : ()
     requires {[#"../../../../../creusot-contracts/src/std/iter/zip.rs" 60 15 60 32] produces0 a ab b}
     requires {[#"../../../../../creusot-contracts/src/std/iter/zip.rs" 61 15 61 32] produces0 b bc c}
-    requires {[#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 22 63 23] inv1 a}
+    requires {[#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 22 63 23] inv2 a}
     requires {[#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 31 63 33] inv10 ab}
-    requires {[#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 52 63 53] inv1 b}
+    requires {[#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 52 63 53] inv2 b}
     requires {[#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 61 63 63] inv10 bc}
-    requires {[#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 82 63 83] inv1 c}
+    requires {[#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 82 63 83] inv2 c}
     ensures { result = produces_trans0 a ab b bc c }
     
-  axiom produces_trans0_spec : forall a : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize), ab : Seq.seq (usize, usize), b : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize), bc : Seq.seq (usize, usize), c : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize) . ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 60 15 60 32] produces0 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 61 15 61 32] produces0 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 22 63 23] inv1 a) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 31 63 33] inv10 ab) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 52 63 53] inv1 b) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 61 63 63] inv10 bc) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 82 63 83] inv1 c) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 62 14 62 42] produces0 a (Seq.(++) ab bc) c)
+  axiom produces_trans0_spec : forall a : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize), ab : Seq.seq (usize, usize), b : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize), bc : Seq.seq (usize, usize), c : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize) . ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 60 15 60 32] produces0 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 61 15 61 32] produces0 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 22 63 23] inv2 a) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 31 63 33] inv10 ab) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 52 63 53] inv2 b) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 61 63 63] inv10 bc) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 63 82 63 83] inv2 c) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 62 14 62 42] produces0 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl0 (self : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)) : ()
     
   val produces_refl0 (self : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)) : ()
-    requires {[#"../../../../../creusot-contracts/src/std/iter/zip.rs" 56 21 56 25] inv1 self}
+    requires {[#"../../../../../creusot-contracts/src/std/iter/zip.rs" 56 21 56 25] inv2 self}
     ensures { result = produces_refl0 self }
     
-  axiom produces_refl0_spec : forall self : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize) . ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 56 21 56 25] inv1 self) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 55 14 55 45] produces0 self (Seq.empty ) self)
-  predicate invariant1 (self : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize))
+  axiom produces_refl0_spec : forall self : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize) . ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 56 21 56 25] inv2 self) -> ([#"../../../../../creusot-contracts/src/std/iter/zip.rs" 55 14 55 45] produces0 self (Seq.empty ) self)
+  predicate invariant2 (self : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize))
     
    =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  val invariant1 (self : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)) : bool
+  val invariant2 (self : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)) : bool
+    ensures { result = invariant2 self }
+    
+  axiom inv2 : forall x : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize) . inv2 x = true
+  predicate invariant1 (self : borrowed (slice t))
+  val invariant1 (self : borrowed (slice t)) : bool
     ensures { result = invariant1 self }
     
-  axiom inv1 : forall x : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize) . inv1 x = true
+  predicate inv1 (_x : borrowed (slice t))
+  val inv1 (_x : borrowed (slice t)) : bool
+    ensures { result = inv1 _x }
+    
+  axiom inv1 : forall x : borrowed (slice t) . inv1 x = true
   use prelude.Snapshot
   predicate invariant0 (self : Snapshot.snap_ty (borrowed (slice t)))
   val invariant0 (self : Snapshot.snap_ty (borrowed (slice t))) : bool
@@ -2842,15 +2698,10 @@ module C03StdIterators_MyReverse
   use seq.Seq
   function shallow_model3 (self : slice t) : Seq.seq t
   val shallow_model3 (self : slice t) : Seq.seq t
-    requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv2 self}
+    requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv3 self}
     ensures { result = shallow_model3 self }
     
-  axiom shallow_model3_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv2 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv9 (shallow_model3 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model3 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
-  predicate resolve3 (self : borrowed (slice t)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve3 (self : borrowed (slice t)) : bool
-    ensures { result = resolve3 self }
-    
+  axiom shallow_model3_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv3 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv9 (shallow_model3 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model3 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
   use seq.Permut
   function shallow_model1 (self : borrowed (slice t)) : Seq.seq t =
     [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model3 ( * self)
@@ -2860,7 +2711,7 @@ module C03StdIterators_MyReverse
   val swap0 (self : borrowed (slice t)) (a : usize) (b : usize) : ()
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 247 19 247 35] UIntSize.to_int a < Seq.length (shallow_model1 self)}
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 248 19 248 35] UIntSize.to_int b < Seq.length (shallow_model1 self)}
-    requires {inv3 self}
+    requires {inv1 self}
     ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 249 8 249 52] Permut.exchange (shallow_model3 ( ^ self)) (shallow_model1 self) (UIntSize.to_int a) (UIntSize.to_int b) }
     
   predicate resolve4 (self : usize) =
@@ -2868,18 +2719,18 @@ module C03StdIterators_MyReverse
   val resolve4 (self : usize) : bool
     ensures { result = resolve4 self }
     
-  predicate resolve2 (self : (usize, usize)) =
+  predicate resolve3 (self : (usize, usize)) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve4 (let (a, _) = self in a) /\ resolve4 (let (_, a) = self in a)
-  val resolve2 (self : (usize, usize)) : bool
-    ensures { result = resolve2 self }
+  val resolve3 (self : (usize, usize)) : bool
+    ensures { result = resolve3 self }
     
   use seq.Seq
-  predicate resolve1 (self : borrowed (Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)))
+  predicate resolve2 (self : borrowed (Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)))
     
    =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve1 (self : borrowed (Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize))) : bool
-    ensures { result = resolve1 self }
+  val resolve2 (self : borrowed (Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize))) : bool
+    ensures { result = resolve2 self }
     
   use seq.Seq
   predicate resolve5 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
@@ -2934,6 +2785,11 @@ module C03StdIterators_MyReverse
     
   use prelude.Snapshot
   use prelude.Snapshot
+  predicate resolve1 (self : borrowed (slice t)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve1 (self : borrowed (slice t)) : bool
+    ensures { result = resolve1 self }
+    
   use prelude.Snapshot
   use prelude.Snapshot
   predicate into_iter_post1 (self : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)) (res : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize))
@@ -2952,9 +2808,9 @@ module C03StdIterators_MyReverse
     
   val into_iter0 (self : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)) : Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize)
     requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 89 0 166 1] into_iter_pre1 self}
-    requires {inv1 self}
+    requires {inv2 self}
     ensures { [#"../../../../../creusot-contracts/src/std/iter.rs" 89 0 166 1] into_iter_post1 self result }
-    ensures { inv1 result }
+    ensures { inv2 result }
     
   predicate into_iter_post0 (self : Core_Ops_Range_Range_Type.t_range usize) (res : Core_Ops_Range_Range_Type.t_range usize)
     
@@ -2974,7 +2830,7 @@ module C03StdIterators_MyReverse
     requires {inv5 other}
     ensures { [#"../../../../../creusot-contracts/src/std/iter.rs" 89 0 166 1] itera0 result = self }
     ensures { [#"../../../../../creusot-contracts/src/std/iter.rs" 125 26 125 62] into_iter_post0 other (iterb0 result) }
-    ensures { inv1 result }
+    ensures { inv2 result }
     
   predicate resolve0 (self : Snapshot.snap_ty (borrowed (slice t)))
   val resolve0 (self : Snapshot.snap_ty (borrowed (slice t))) : bool
@@ -2991,7 +2847,7 @@ module C03StdIterators_MyReverse
     ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 238 0 334 1] Seq.length (shallow_model4 self) = UIntSize.to_int result }
     
   let rec cfg my_reverse [#"../03_std_iterators.rs" 94 0 94 37] [@cfg:stackify] [@cfg:subregion_analysis] (slice : borrowed (slice t)) : ()
-    requires {[#"../03_std_iterators.rs" 94 21 94 26] inv3 slice}
+    requires {[#"../03_std_iterators.rs" 94 21 94 26] inv1 slice}
     ensures { [#"../03_std_iterators.rs" 93 0 93 46] Seq.(==) (shallow_model3 ( ^ slice)) (Reverse.reverse (shallow_model1 slice)) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -3029,112 +2885,76 @@ module C03StdIterators_MyReverse
   }
   BB1 {
     [#"../03_std_iterators.rs" 96 36 96 55] old_v <- ([#"../03_std_iterators.rs" 96 36 96 55] Snapshot.new slice);
-    goto BB2
-  }
-  BB2 {
     assert { [@expl:type invariant] inv0 old_v };
     assume { resolve0 old_v };
     [#"../03_std_iterators.rs" 101 22 101 27] _12 <- ([#"../03_std_iterators.rs" 101 22 101 27] (2 : usize) = (0 : usize));
     assert { [@expl:division by zero] [#"../03_std_iterators.rs" 101 22 101 27] not _12 };
-    goto BB3
-  }
-  BB3 {
     [#"../03_std_iterators.rs" 101 22 101 27] _10 <- ([#"../03_std_iterators.rs" 101 22 101 27] n / (2 : usize));
     [#"../03_std_iterators.rs" 101 18 101 28] _9 <- ([#"../03_std_iterators.rs" 101 18 101 28] Core_Ops_Range_Range_Type.C_Range (0 : usize) _10);
     _10 <- any usize;
     [#"../03_std_iterators.rs" 101 36 101 41] _16 <- ([#"../03_std_iterators.rs" 101 36 101 41] (2 : usize) = (0 : usize));
     assert { [@expl:division by zero] [#"../03_std_iterators.rs" 101 36 101 41] not _16 };
-    goto BB4
-  }
-  BB4 {
     [#"../03_std_iterators.rs" 101 36 101 41] _14 <- ([#"../03_std_iterators.rs" 101 36 101 41] n / (2 : usize));
     [#"../03_std_iterators.rs" 101 33 101 41] _13 <- ([#"../03_std_iterators.rs" 101 33 101 41] Core_Ops_Range_Range_Type.C_Range (0 : usize) _14);
     _14 <- any usize;
     [#"../03_std_iterators.rs" 101 18 101 42] _8 <- ([#"../03_std_iterators.rs" 101 18 101 42] zip0 _9 _13);
     _9 <- any Core_Ops_Range_Range_Type.t_range usize;
     _13 <- any Core_Ops_Range_Range_Type.t_range usize;
-    goto BB5
-  }
-  BB5 {
     [#"../03_std_iterators.rs" 97 4 97 36] iter <- ([#"../03_std_iterators.rs" 97 4 97 36] into_iter0 _8);
     _8 <- any Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize);
-    goto BB6
-  }
-  BB6 {
     [#"../03_std_iterators.rs" 97 4 97 36] iter_old <- ([#"../03_std_iterators.rs" 97 4 97 36] Snapshot.new iter);
-    goto BB7
-  }
-  BB7 {
     [#"../03_std_iterators.rs" 97 4 97 36] produced <- ([#"../03_std_iterators.rs" 97 4 97 36] Snapshot.new (Seq.empty ));
-    goto BB8
-  }
-  BB8 {
     goto BB9
   }
   BB9 {
-    invariant { [#"../03_std_iterators.rs" 97 4 97 36] inv1 iter };
+    invariant { [#"../03_std_iterators.rs" 97 4 97 36] inv2 iter };
     invariant { [#"../03_std_iterators.rs" 97 4 97 36] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter };
     invariant { [#"../03_std_iterators.rs" 97 16 97 34] UIntSize.to_int n = Seq.length (shallow_model1 slice) };
     invariant { [#"../03_std_iterators.rs" 98 16 98 78] equiv_range0 (shallow_model1 slice) (shallow_model2 old_v) (Seq.length (Snapshot.inner produced)) (UIntSize.to_int n - Seq.length (Snapshot.inner produced)) };
     invariant { [#"../03_std_iterators.rs" 99 16 99 76] equiv_reverse_range0 (shallow_model1 slice) (shallow_model2 old_v) 0 (Seq.length (Snapshot.inner produced)) (UIntSize.to_int n - 1) };
     invariant { [#"../03_std_iterators.rs" 100 16 100 80] equiv_reverse_range0 (shallow_model1 slice) (shallow_model2 old_v) (UIntSize.to_int n - Seq.length (Snapshot.inner produced)) (UIntSize.to_int n) (UIntSize.to_int n - 1) };
-    goto BB10
-  }
-  BB10 {
     [#"../03_std_iterators.rs" 97 4 97 36] _30 <- Borrow.borrow_mut iter;
     [#"../03_std_iterators.rs" 97 4 97 36] iter <-  ^ _30;
     [#"../03_std_iterators.rs" 97 4 97 36] _29 <- Borrow.borrow_final ( * _30) (Borrow.get_id _30);
     [#"../03_std_iterators.rs" 97 4 97 36] _30 <- { _30 with current = ( ^ _29) ; };
     [#"../03_std_iterators.rs" 97 4 97 36] _28 <- ([#"../03_std_iterators.rs" 97 4 97 36] next0 _29);
     _29 <- any borrowed (Core_Iter_Adapters_Zip_Zip_Type.t_zip (Core_Ops_Range_Range_Type.t_range usize) (Core_Ops_Range_Range_Type.t_range usize));
-    goto BB11
-  }
-  BB11 {
-    assume { resolve1 _30 };
+    assume { resolve2 _30 };
     switch (_28)
       | Core_Option_Option_Type.C_None -> goto BB12
       | Core_Option_Option_Type.C_Some _ -> goto BB13
       end
   }
   BB12 {
-    assert { [@expl:type invariant] inv3 slice };
-    assume { resolve3 slice };
+    assert { [@expl:type invariant] inv1 slice };
+    assume { resolve1 slice };
     [#"../03_std_iterators.rs" 97 4 97 36] _0 <- ([#"../03_std_iterators.rs" 97 4 97 36] ());
     return _0
   }
   BB13 {
-    goto BB15
-  }
-  BB14 {
-    assert { [@expl:type invariant] inv3 slice };
-    assume { resolve3 slice };
-    assert { [#"../03_std_iterators.rs" 97 4 97 36] false };
-    absurd
-  }
-  BB15 {
     [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] Core_Option_Option_Type.some_0 _28);
     [#"../03_std_iterators.rs" 97 4 97 36] _33 <- ([#"../03_std_iterators.rs" 97 4 97 36] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
-    goto BB16
-  }
-  BB16 {
     [#"../03_std_iterators.rs" 97 4 97 36] produced <- ([#"../03_std_iterators.rs" 97 4 97 36] _33);
     _33 <- any Snapshot.snap_ty (Seq.seq (usize, usize));
     [#"../03_std_iterators.rs" 101 9 101 10] i <- ([#"../03_std_iterators.rs" 101 9 101 10] let (a, _) = __creusot_proc_iter_elem in a);
     [#"../03_std_iterators.rs" 101 12 101 13] j <- ([#"../03_std_iterators.rs" 101 12 101 13] let (_, a) = __creusot_proc_iter_elem in a);
-    assume { resolve2 __creusot_proc_iter_elem };
+    assume { resolve3 __creusot_proc_iter_elem };
     [#"../03_std_iterators.rs" 102 8 102 13] _38 <- Borrow.borrow_mut ( * slice);
     [#"../03_std_iterators.rs" 102 8 102 13] slice <- { slice with current = ( ^ _38) ; };
-    assume { inv2 ( ^ _38) };
+    assume { inv3 ( ^ _38) };
     [#"../03_std_iterators.rs" 102 22 102 27] _41 <- ([#"../03_std_iterators.rs" 102 22 102 27] n - j);
     [#"../03_std_iterators.rs" 102 22 102 31] _40 <- ([#"../03_std_iterators.rs" 102 22 102 31] _41 - (1 : usize));
     _41 <- any usize;
     [#"../03_std_iterators.rs" 102 8 102 32] _37 <- ([#"../03_std_iterators.rs" 102 8 102 32] swap0 _38 i _40);
     _38 <- any borrowed (slice t);
     _40 <- any usize;
-    goto BB17
-  }
-  BB17 {
     goto BB9
+  }
+  BB14 {
+    assert { [@expl:type invariant] inv1 slice };
+    assume { resolve1 slice };
+    assert { [#"../03_std_iterators.rs" 97 4 97 36] false };
+    absurd
   }
   
 end

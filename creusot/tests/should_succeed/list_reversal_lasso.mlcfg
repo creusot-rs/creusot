@@ -399,12 +399,17 @@ module ListReversalLasso_Impl4_ListReversalSafe
     
   axiom inv0 : forall x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . inv0 x = true
   use prelude.Borrow
-  predicate resolve1 (self : borrowed usize) =
+  use ListReversalLasso_Memory_Type as ListReversalLasso_Memory_Type
+  predicate resolve1 (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve1 (self : borrowed usize) : bool
+  val resolve1 (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) : bool
     ensures { result = resolve1 self }
     
-  use ListReversalLasso_Memory_Type as ListReversalLasso_Memory_Type
+  predicate resolve0 (self : borrowed usize) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve0 (self : borrowed usize) : bool
+    ensures { result = resolve0 self }
+    
   use seq.Seq
   function index_logic1 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix : usize) : usize
     
@@ -437,11 +442,6 @@ module ListReversalLasso_Impl4_ListReversalSafe
   val index0 [#"../list_reversal_lasso.rs" 30 4 30 35] (self : ListReversalLasso_Memory_Type.t_memory) (i : usize) : usize
     requires {[#"../list_reversal_lasso.rs" 28 15 28 34] nonnull_ptr0 self i}
     ensures { [#"../list_reversal_lasso.rs" 29 14 29 44] result = index_logic0 self i }
-    
-  predicate resolve0 (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve0 (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) : bool
-    ensures { result = resolve0 self }
     
   let constant null0 [#"../list_reversal_lasso.rs" 13 0 13 15]  : usize = [@vc:do_not_keep_trace] [@vc:sp]
     (18446744073709551615 : usize)
@@ -477,9 +477,6 @@ module ListReversalLasso_Impl4_ListReversalSafe
     invariant { [#"../list_reversal_lasso.rs" 68 20 68 52] r = null0 \/ nonnull_ptr0 ( * self) r };
     invariant { [#"../list_reversal_lasso.rs" 69 20 69 52] l = null0 \/ nonnull_ptr0 ( * self) l };
     invariant { [#"../list_reversal_lasso.rs" 70 20 70 45] mem_is_well_formed0 ( * self) };
-    goto BB2
-  }
-  BB2 {
     [#"../list_reversal_lasso.rs" 71 14 71 23] _12 <- ([#"../list_reversal_lasso.rs" 71 14 71 23] l <> (18446744073709551615 : usize));
     switch (_12)
       | False -> goto BB6
@@ -489,24 +486,18 @@ module ListReversalLasso_Impl4_ListReversalSafe
   BB3 {
     [#"../list_reversal_lasso.rs" 72 22 72 23] tmp <- ([#"../list_reversal_lasso.rs" 72 22 72 23] l);
     [#"../list_reversal_lasso.rs" 73 20 73 23] _16 <- ([#"../list_reversal_lasso.rs" 73 20 73 23] index0 ( * self) l);
-    goto BB4
-  }
-  BB4 {
     [#"../list_reversal_lasso.rs" 73 12 73 23] l <- ([#"../list_reversal_lasso.rs" 73 12 73 23] _16);
     [#"../list_reversal_lasso.rs" 74 12 74 16] _21 <- Borrow.borrow_mut ( * self);
     [#"../list_reversal_lasso.rs" 74 12 74 16] self <- { self with current = ( ^ _21) ; };
     [#"../list_reversal_lasso.rs" 74 16 74 21] _20 <- ([#"../list_reversal_lasso.rs" 74 16 74 21] index_mut0 _21 tmp);
     _21 <- any borrowed (ListReversalLasso_Memory_Type.t_memory);
-    goto BB5
-  }
-  BB5 {
     [#"../list_reversal_lasso.rs" 74 12 74 25] _20 <- { _20 with current = ([#"../list_reversal_lasso.rs" 74 12 74 25] r) ; };
-    assume { resolve1 _20 };
+    assume { resolve0 _20 };
     [#"../list_reversal_lasso.rs" 75 12 75 19] r <- ([#"../list_reversal_lasso.rs" 75 12 75 19] tmp);
     goto BB1
   }
   BB6 {
-    assume { resolve0 self };
+    assume { resolve1 self };
     [#"../list_reversal_lasso.rs" 77 15 77 16] _0 <- ([#"../list_reversal_lasso.rs" 77 15 77 16] r);
     return _0
   }
@@ -617,11 +608,16 @@ module ListReversalLasso_Impl4_ListReversalList
     ensures { result = list0 self first s }
     
   use prelude.Snapshot
-  use prelude.Int
-  predicate resolve1 (self : borrowed usize) =
+  predicate resolve1 (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve1 (self : borrowed usize) : bool
+  val resolve1 (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) : bool
     ensures { result = resolve1 self }
+    
+  use prelude.Int
+  predicate resolve0 (self : borrowed usize) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve0 (self : borrowed usize) : bool
+    ensures { result = resolve0 self }
     
   val replace0 (dest : borrowed usize) (src : usize) : usize
     requires {inv0 dest}
@@ -636,11 +632,6 @@ module ListReversalLasso_Impl4_ListReversalList
     ensures { [#"../list_reversal_lasso.rs" 38 14 38 47]  ^ result = index_logic1 ( ^ self) i }
     ensures { [#"../list_reversal_lasso.rs" 39 14 39 47] Seq.length (shallow_model0 (ListReversalLasso_Memory_Type.memory_0 ( * self))) = Seq.length (shallow_model0 (ListReversalLasso_Memory_Type.memory_0 ( ^ self))) }
     ensures { [#"../list_reversal_lasso.rs" 40 4 40 113] forall j : usize . nonnull_ptr0 ( * self) j /\ i <> j -> index_logic1 ( ^ self) j = index_logic1 ( * self) j }
-    
-  predicate resolve0 (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve0 (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) : bool
-    ensures { result = resolve0 self }
     
   use seq.Reverse
   use prelude.Snapshot
@@ -682,9 +673,6 @@ module ListReversalLasso_Impl4_ListReversalList
     invariant { [#"../list_reversal_lasso.rs" 103 20 103 44] 0 <= Snapshot.inner n /\ Snapshot.inner n <= Seq.length (Snapshot.inner s) };
     invariant { [#"../list_reversal_lasso.rs" 104 20 104 59] list_seg0 ( * self) l (Snapshot.inner s) null0 (Snapshot.inner n) (Seq.length (Snapshot.inner s)) };
     invariant { [#"../list_reversal_lasso.rs" 105 20 105 76] list_seg0 ( * self) r (Reverse.reverse (Snapshot.inner s)) null0 (Seq.length (Snapshot.inner s) - Snapshot.inner n) (Seq.length (Snapshot.inner s)) };
-    goto BB3
-  }
-  BB3 {
     [#"../list_reversal_lasso.rs" 107 14 107 23] _15 <- ([#"../list_reversal_lasso.rs" 107 14 107 23] l <> (18446744073709551615 : usize));
     switch (_15)
       | False -> goto BB9
@@ -696,9 +684,6 @@ module ListReversalLasso_Impl4_ListReversalList
     [#"../list_reversal_lasso.rs" 108 39 108 43] self <- { self with current = ( ^ _21) ; };
     [#"../list_reversal_lasso.rs" 108 43 108 46] _20 <- ([#"../list_reversal_lasso.rs" 108 43 108 46] index_mut0 _21 l);
     _21 <- any borrowed (ListReversalLasso_Memory_Type.t_memory);
-    goto BB5
-  }
-  BB5 {
     [#"../list_reversal_lasso.rs" 108 34 108 46] _19 <- Borrow.borrow_final ( * _20) (Borrow.get_id _20);
     [#"../list_reversal_lasso.rs" 108 34 108 46] _20 <- { _20 with current = ( ^ _19) ; };
     [#"../list_reversal_lasso.rs" 108 34 108 46] _18 <- Borrow.borrow_final ( * _19) (Borrow.get_id _19);
@@ -709,30 +694,21 @@ module ListReversalLasso_Impl4_ListReversalList
     [#"../list_reversal_lasso.rs" 108 66 108 72] _25 <- { _25 with current = ( ^ _24) ; };
     [#"../list_reversal_lasso.rs" 108 48 108 76] _23 <- ([#"../list_reversal_lasso.rs" 108 48 108 76] replace0 _24 l);
     _24 <- any borrowed usize;
-    goto BB6
-  }
-  BB6 {
-    assume { resolve1 _25 };
+    assume { resolve0 _25 };
     [#"../list_reversal_lasso.rs" 108 16 108 77] _17 <- ([#"../list_reversal_lasso.rs" 108 16 108 77] replace0 _18 _23);
     _18 <- any borrowed usize;
     _23 <- any usize;
-    goto BB7
-  }
-  BB7 {
-    assume { resolve1 _20 };
-    assume { resolve1 _19 };
+    assume { resolve0 _20 };
+    assume { resolve0 _19 };
     [#"../list_reversal_lasso.rs" 108 12 108 77] l <- ([#"../list_reversal_lasso.rs" 108 12 108 77] _17);
     _17 <- any usize;
     [#"../list_reversal_lasso.rs" 109 16 109 36] _27 <- ([#"../list_reversal_lasso.rs" 109 16 109 36] Snapshot.new (Snapshot.inner n + 1));
-    goto BB8
-  }
-  BB8 {
     [#"../list_reversal_lasso.rs" 109 12 109 36] n <- ([#"../list_reversal_lasso.rs" 109 12 109 36] _27);
     _27 <- any Snapshot.snap_ty int;
     goto BB2
   }
   BB9 {
-    assume { resolve0 self };
+    assume { resolve1 self };
     [#"../list_reversal_lasso.rs" 111 15 111 16] _0 <- ([#"../list_reversal_lasso.rs" 111 15 111 16] r);
     return _0
   }
@@ -841,11 +817,19 @@ module ListReversalLasso_Impl4_ListReversalLoop
     ensures { result = loop0 self first s }
     
   use prelude.Snapshot
-  use prelude.Int
-  predicate resolve1 (self : borrowed usize) =
+  use seq.Seq
+  use seq_ext.SeqExt
+  use seq.Seq
+  predicate resolve1 (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve1 (self : borrowed usize) : bool
+  val resolve1 (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) : bool
     ensures { result = resolve1 self }
+    
+  use prelude.Int
+  predicate resolve0 (self : borrowed usize) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve0 (self : borrowed usize) : bool
+    ensures { result = resolve0 self }
     
   val replace0 (dest : borrowed usize) (src : usize) : usize
     requires {inv0 dest}
@@ -860,14 +844,6 @@ module ListReversalLasso_Impl4_ListReversalLoop
     ensures { [#"../list_reversal_lasso.rs" 38 14 38 47]  ^ result = index_logic1 ( ^ self) i }
     ensures { [#"../list_reversal_lasso.rs" 39 14 39 47] Seq.length (shallow_model0 (ListReversalLasso_Memory_Type.memory_0 ( * self))) = Seq.length (shallow_model0 (ListReversalLasso_Memory_Type.memory_0 ( ^ self))) }
     ensures { [#"../list_reversal_lasso.rs" 40 4 40 113] forall j : usize . nonnull_ptr0 ( * self) j /\ i <> j -> index_logic1 ( ^ self) j = index_logic1 ( * self) j }
-    
-  use seq.Seq
-  use seq_ext.SeqExt
-  use seq.Seq
-  predicate resolve0 (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve0 (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) : bool
-    ensures { result = resolve0 self }
     
   use seq.Reverse
   use prelude.Snapshot
@@ -918,9 +894,6 @@ module ListReversalLasso_Impl4_ListReversalLoop
     invariant { [#"../list_reversal_lasso.rs" 129 8 129 50] Snapshot.inner n = Seq.length (Snapshot.inner s) + 1 -> l = null0 /\ r = index_logic0 s 0 /\ nonnull_ptr0 ( * self) r /\ index_logic1 ( * self) r = index_logic0 s (Seq.length (Snapshot.inner s) - 1) /\ list_seg0 ( * self) (index_logic0 s (Seq.length (Snapshot.inner s) - 1)) (Reverse.reverse (Snapshot.inner s)) (index_logic0 s 0) 0 (Seq.length (Snapshot.inner s) - 1) };
     invariant { [#"../list_reversal_lasso.rs" 129 8 129 50] Snapshot.inner n <= Seq.length (Snapshot.inner s) -> list_seg0 ( * self) l (Snapshot.inner s) (index_logic0 s 0) (Snapshot.inner n) (Seq.length (Snapshot.inner s)) };
     invariant { [#"../list_reversal_lasso.rs" 129 8 129 50] Snapshot.inner n <= Seq.length (Snapshot.inner s) -> list_seg0 ( * self) r (Reverse.reverse (Snapshot.inner s)) null0 (Seq.length (Snapshot.inner s) - Snapshot.inner n) (Seq.length (Snapshot.inner s)) };
-    goto BB3
-  }
-  BB3 {
     [#"../list_reversal_lasso.rs" 137 14 137 23] _17 <- ([#"../list_reversal_lasso.rs" 137 14 137 23] l <> (18446744073709551615 : usize));
     switch (_17)
       | False -> goto BB9
@@ -933,9 +906,6 @@ module ListReversalLasso_Impl4_ListReversalLoop
     [#"../list_reversal_lasso.rs" 139 39 139 43] self <- { self with current = ( ^ _25) ; };
     [#"../list_reversal_lasso.rs" 139 43 139 46] _24 <- ([#"../list_reversal_lasso.rs" 139 43 139 46] index_mut0 _25 l);
     _25 <- any borrowed (ListReversalLasso_Memory_Type.t_memory);
-    goto BB5
-  }
-  BB5 {
     [#"../list_reversal_lasso.rs" 139 34 139 46] _23 <- Borrow.borrow_final ( * _24) (Borrow.get_id _24);
     [#"../list_reversal_lasso.rs" 139 34 139 46] _24 <- { _24 with current = ( ^ _23) ; };
     [#"../list_reversal_lasso.rs" 139 34 139 46] _22 <- Borrow.borrow_final ( * _23) (Borrow.get_id _23);
@@ -946,30 +916,21 @@ module ListReversalLasso_Impl4_ListReversalLoop
     [#"../list_reversal_lasso.rs" 139 66 139 72] _29 <- { _29 with current = ( ^ _28) ; };
     [#"../list_reversal_lasso.rs" 139 48 139 76] _27 <- ([#"../list_reversal_lasso.rs" 139 48 139 76] replace0 _28 l);
     _28 <- any borrowed usize;
-    goto BB6
-  }
-  BB6 {
-    assume { resolve1 _29 };
+    assume { resolve0 _29 };
     [#"../list_reversal_lasso.rs" 139 16 139 77] _21 <- ([#"../list_reversal_lasso.rs" 139 16 139 77] replace0 _22 _27);
     _22 <- any borrowed usize;
     _27 <- any usize;
-    goto BB7
-  }
-  BB7 {
-    assume { resolve1 _24 };
-    assume { resolve1 _23 };
+    assume { resolve0 _24 };
+    assume { resolve0 _23 };
     [#"../list_reversal_lasso.rs" 139 12 139 77] l <- ([#"../list_reversal_lasso.rs" 139 12 139 77] _21);
     _21 <- any usize;
     [#"../list_reversal_lasso.rs" 140 16 140 36] _31 <- ([#"../list_reversal_lasso.rs" 140 16 140 36] Snapshot.new (Snapshot.inner n + 1));
-    goto BB8
-  }
-  BB8 {
     [#"../list_reversal_lasso.rs" 140 12 140 36] n <- ([#"../list_reversal_lasso.rs" 140 12 140 36] _31);
     _31 <- any Snapshot.snap_ty int;
     goto BB2
   }
   BB9 {
-    assume { resolve0 self };
+    assume { resolve1 self };
     assert { [@expl:assertion] [#"../list_reversal_lasso.rs" 143 8 145 54] forall i : int . 0 <= i /\ i < Seq.length (Snapshot.inner s) -> Seq.get (Seq.(++) (Seq.singleton (index_logic0 s 0)) (Reverse.reverse (SeqExt.subsequence (Snapshot.inner s) 1 (Seq.length (Snapshot.inner s))))) i = (if i = 0 then
       index_logic0 s 0
     else
@@ -1087,11 +1048,16 @@ module ListReversalLasso_Impl4_ListReversalLasso
     ensures { result = lasso0 self first s1 s2 }
     
   use prelude.Snapshot
-  use prelude.Int
-  predicate resolve1 (self : borrowed usize) =
+  predicate resolve1 (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve1 (self : borrowed usize) : bool
+  val resolve1 (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) : bool
     ensures { result = resolve1 self }
+    
+  use prelude.Int
+  predicate resolve0 (self : borrowed usize) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve0 (self : borrowed usize) : bool
+    ensures { result = resolve0 self }
     
   val replace0 (dest : borrowed usize) (src : usize) : usize
     requires {inv0 dest}
@@ -1106,11 +1072,6 @@ module ListReversalLasso_Impl4_ListReversalLasso
     ensures { [#"../list_reversal_lasso.rs" 38 14 38 47]  ^ result = index_logic2 ( ^ self) i }
     ensures { [#"../list_reversal_lasso.rs" 39 14 39 47] Seq.length (shallow_model0 (ListReversalLasso_Memory_Type.memory_0 ( * self))) = Seq.length (shallow_model0 (ListReversalLasso_Memory_Type.memory_0 ( ^ self))) }
     ensures { [#"../list_reversal_lasso.rs" 40 4 40 113] forall j : usize . nonnull_ptr0 ( * self) j /\ i <> j -> index_logic2 ( ^ self) j = index_logic2 ( * self) j }
-    
-  predicate resolve0 (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve0 (self : borrowed (ListReversalLasso_Memory_Type.t_memory)) : bool
-    ensures { result = resolve0 self }
     
   let constant null0 [#"../list_reversal_lasso.rs" 13 0 13 15]  : usize = [@vc:do_not_keep_trace] [@vc:sp]
     (18446744073709551615 : usize)
@@ -1169,9 +1130,6 @@ module ListReversalLasso_Impl4_ListReversalLasso
     else
       index_logic0 s2 (Seq.length (Snapshot.inner s2) - 1)
      in Seq.length (Snapshot.inner s1) + Seq.length (Snapshot.inner s2) < Snapshot.inner n -> list_seg0 ( * self) l (Reverse.reverse (Snapshot.inner s1)) null0 (Snapshot.inner n - Seq.length (Snapshot.inner s1) - Seq.length (Snapshot.inner s2)) (Seq.length (Snapshot.inner s1)) /\ list_seg0 ( * self) r (Snapshot.inner s1) mid (2 * Seq.length (Snapshot.inner s1) + Seq.length (Snapshot.inner s2) - Snapshot.inner n) (Seq.length (Snapshot.inner s1)) /\ list_seg0 ( * self) mid (Reverse.reverse (Snapshot.inner s2)) (index_logic0 s1 (Seq.length (Snapshot.inner s1) - 1)) 0 (Seq.length (Snapshot.inner s2)) };
-    goto BB3
-  }
-  BB3 {
     [#"../list_reversal_lasso.rs" 190 14 190 23] _17 <- ([#"../list_reversal_lasso.rs" 190 14 190 23] l <> (18446744073709551615 : usize));
     switch (_17)
       | False -> goto BB9
@@ -1183,9 +1141,6 @@ module ListReversalLasso_Impl4_ListReversalLasso
     [#"../list_reversal_lasso.rs" 191 39 191 43] self <- { self with current = ( ^ _23) ; };
     [#"../list_reversal_lasso.rs" 191 43 191 46] _22 <- ([#"../list_reversal_lasso.rs" 191 43 191 46] index_mut0 _23 l);
     _23 <- any borrowed (ListReversalLasso_Memory_Type.t_memory);
-    goto BB5
-  }
-  BB5 {
     [#"../list_reversal_lasso.rs" 191 34 191 46] _21 <- Borrow.borrow_final ( * _22) (Borrow.get_id _22);
     [#"../list_reversal_lasso.rs" 191 34 191 46] _22 <- { _22 with current = ( ^ _21) ; };
     [#"../list_reversal_lasso.rs" 191 34 191 46] _20 <- Borrow.borrow_final ( * _21) (Borrow.get_id _21);
@@ -1196,30 +1151,21 @@ module ListReversalLasso_Impl4_ListReversalLasso
     [#"../list_reversal_lasso.rs" 191 66 191 72] _27 <- { _27 with current = ( ^ _26) ; };
     [#"../list_reversal_lasso.rs" 191 48 191 76] _25 <- ([#"../list_reversal_lasso.rs" 191 48 191 76] replace0 _26 l);
     _26 <- any borrowed usize;
-    goto BB6
-  }
-  BB6 {
-    assume { resolve1 _27 };
+    assume { resolve0 _27 };
     [#"../list_reversal_lasso.rs" 191 16 191 77] _19 <- ([#"../list_reversal_lasso.rs" 191 16 191 77] replace0 _20 _25);
     _20 <- any borrowed usize;
     _25 <- any usize;
-    goto BB7
-  }
-  BB7 {
-    assume { resolve1 _22 };
-    assume { resolve1 _21 };
+    assume { resolve0 _22 };
+    assume { resolve0 _21 };
     [#"../list_reversal_lasso.rs" 191 12 191 77] l <- ([#"../list_reversal_lasso.rs" 191 12 191 77] _19);
     _19 <- any usize;
     [#"../list_reversal_lasso.rs" 192 16 192 36] _29 <- ([#"../list_reversal_lasso.rs" 192 16 192 36] Snapshot.new (Snapshot.inner n + 1));
-    goto BB8
-  }
-  BB8 {
     [#"../list_reversal_lasso.rs" 192 12 192 36] n <- ([#"../list_reversal_lasso.rs" 192 12 192 36] _29);
     _29 <- any Snapshot.snap_ty int;
     goto BB2
   }
   BB9 {
-    assume { resolve0 self };
+    assume { resolve1 self };
     [#"../list_reversal_lasso.rs" 194 15 194 16] _0 <- ([#"../list_reversal_lasso.rs" 194 15 194 16] r);
     return _0
   }

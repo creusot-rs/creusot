@@ -61,14 +61,11 @@ module Own_Impl0_IsOk
       end
   }
   BB1 {
-    goto BB3
+    _0 <- true;
+    goto BB4
   }
   BB2 {
     _0 <- false;
-    goto BB4
-  }
-  BB3 {
-    _0 <- true;
     goto BB4
   }
   BB4 {
@@ -226,16 +223,19 @@ module Own_Impl0_Ok
     goto BB1
   }
   BB1 {
-    goto BB2
-  }
-  BB2 {
     switch (self)
       | Own_OwnResult_Type.C_Ok _ -> goto BB3
       | Own_OwnResult_Type.C_Err _ -> goto BB4
       end
   }
   BB3 {
-    goto BB6
+    [#"../own.rs" 38 26 38 27] x <- ([#"../own.rs" 38 26 38 27] Own_OwnResult_Type.ok_0 self);
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
+    [#"../own.rs" 38 32 38 39] _0 <- ([#"../own.rs" 38 32 38 39] Core_Option_Option_Type.C_Some x);
+    x <- any t;
+    goto BB10
   }
   BB4 {
     [#"../own.rs" 40 27 40 28] x1 <- ([#"../own.rs" 40 27 40 28] Own_OwnResult_Type.err_0 self);
@@ -245,7 +245,7 @@ module Own_Impl0_Ok
     assert { [@expl:type invariant] inv0 self };
     assume { resolve0 self };
     [#"../own.rs" 40 33 40 37] _0 <- ([#"../own.rs" 40 33 40 37] Core_Option_Option_Type.C_None);
-    goto BB9
+    goto BB10
   }
   BB5 {
     assert { [@expl:type invariant] inv0 self };
@@ -253,28 +253,7 @@ module Own_Impl0_Ok
     assert { [#"../own.rs" 37 14 37 18] false };
     absurd
   }
-  BB6 {
-    [#"../own.rs" 38 26 38 27] x <- ([#"../own.rs" 38 26 38 27] Own_OwnResult_Type.ok_0 self);
-    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
-    assert { [@expl:type invariant] inv0 self };
-    assume { resolve0 self };
-    [#"../own.rs" 38 32 38 39] _0 <- ([#"../own.rs" 38 32 38 39] Core_Option_Option_Type.C_Some x);
-    x <- any t;
-    goto BB7
-  }
-  BB7 {
-    goto BB8
-  }
-  BB8 {
-    goto BB10
-  }
-  BB9 {
-    goto BB10
-  }
   BB10 {
-    goto BB11
-  }
-  BB11 {
     return _0
   }
   
@@ -301,44 +280,44 @@ module Own_Impl0_Err
     ensures { result = inv2 _x }
     
   axiom inv2 : forall x : e . inv2 x = true
-  use Own_OwnResult_Type as Own_OwnResult_Type
-  predicate invariant1 (self : Own_OwnResult_Type.t_ownresult t e)
-  val invariant1 (self : Own_OwnResult_Type.t_ownresult t e) : bool
+  predicate invariant1 (self : t)
+  val invariant1 (self : t) : bool
     ensures { result = invariant1 self }
     
-  predicate inv1 (_x : Own_OwnResult_Type.t_ownresult t e)
-  val inv1 (_x : Own_OwnResult_Type.t_ownresult t e) : bool
+  predicate inv1 (_x : t)
+  val inv1 (_x : t) : bool
     ensures { result = inv1 _x }
     
-  axiom inv1 : forall x : Own_OwnResult_Type.t_ownresult t e . inv1 x = true
-  predicate invariant0 (self : t)
-  val invariant0 (self : t) : bool
+  axiom inv1 : forall x : t . inv1 x = true
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  predicate invariant0 (self : Own_OwnResult_Type.t_ownresult t e)
+  val invariant0 (self : Own_OwnResult_Type.t_ownresult t e) : bool
     ensures { result = invariant0 self }
     
-  predicate inv0 (_x : t)
-  val inv0 (_x : t) : bool
+  predicate inv0 (_x : Own_OwnResult_Type.t_ownresult t e)
+  val inv0 (_x : Own_OwnResult_Type.t_ownresult t e) : bool
     ensures { result = inv0 _x }
     
-  axiom inv0 : forall x : t . inv0 x = true
+  axiom inv0 : forall x : Own_OwnResult_Type.t_ownresult t e . inv0 x = true
+  predicate resolve1 (self : t)
+  val resolve1 (self : t) : bool
+    ensures { result = resolve1 self }
+    
   predicate resolve2 (self : e)
   val resolve2 (self : e) : bool
     ensures { result = resolve2 self }
     
-  predicate resolve0 (self : t)
-  val resolve0 (self : t) : bool
-    ensures { result = resolve0 self }
-    
-  predicate resolve1 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
+  predicate resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
     [#"../own.rs" 16 8 19 9] match self with
-      | Own_OwnResult_Type.C_Ok t -> resolve0 t
+      | Own_OwnResult_Type.C_Ok t -> resolve1 t
       | Own_OwnResult_Type.C_Err e -> resolve2 e
       end
-  val resolve1 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) : bool
-    ensures { result = resolve1 self }
+  val resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) : bool
+    ensures { result = resolve0 self }
     
   let rec cfg err [#"../own.rs" 46 4 46 33] [@cfg:stackify] [@cfg:subregion_analysis] (self : Own_OwnResult_Type.t_ownresult t e) : Core_Option_Option_Type.t_option e
-    requires {[#"../own.rs" 46 15 46 19] inv1 self}
-    ensures { [#"../own.rs" 44 4 44 74] (exists t : t . inv0 t /\ self = Own_OwnResult_Type.C_Ok t) -> result = Core_Option_Option_Type.C_None }
+    requires {[#"../own.rs" 46 15 46 19] inv0 self}
+    ensures { [#"../own.rs" 44 4 44 74] (exists t : t . inv1 t /\ self = Own_OwnResult_Type.C_Ok t) -> result = Core_Option_Option_Type.C_None }
     ensures { [#"../own.rs" 45 4 45 76] forall e : e . inv2 e -> self = Own_OwnResult_Type.C_Err e -> result = Core_Option_Option_Type.C_Some e }
     ensures { [#"../own.rs" 46 24 46 33] inv3 result }
     
@@ -354,55 +333,37 @@ module Own_Impl0_Err
     goto BB1
   }
   BB1 {
-    goto BB2
-  }
-  BB2 {
     switch (self)
       | Own_OwnResult_Type.C_Ok _ -> goto BB3
       | Own_OwnResult_Type.C_Err _ -> goto BB4
       end
   }
   BB3 {
-    goto BB6
+    [#"../own.rs" 49 26 49 27] x <- ([#"../own.rs" 49 26 49 27] Own_OwnResult_Type.ok_0 self);
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
+    assert { [@expl:type invariant] inv1 x };
+    assume { resolve1 x };
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
+    [#"../own.rs" 49 32 49 36] _0 <- ([#"../own.rs" 49 32 49 36] Core_Option_Option_Type.C_None);
+    goto BB10
   }
   BB4 {
     [#"../own.rs" 50 27 50 28] x1 <- ([#"../own.rs" 50 27 50 28] Own_OwnResult_Type.err_0 self);
     self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
-    assert { [@expl:type invariant] inv1 self };
-    assume { resolve1 self };
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
     [#"../own.rs" 50 33 50 40] _0 <- ([#"../own.rs" 50 33 50 40] Core_Option_Option_Type.C_Some x1);
     x1 <- any e;
-    goto BB8
+    goto BB10
   }
   BB5 {
-    assert { [@expl:type invariant] inv1 self };
-    assume { resolve1 self };
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
     assert { [#"../own.rs" 47 14 47 18] false };
     absurd
   }
-  BB6 {
-    [#"../own.rs" 49 26 49 27] x <- ([#"../own.rs" 49 26 49 27] Own_OwnResult_Type.ok_0 self);
-    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
-    assert { [@expl:type invariant] inv0 x };
-    assume { resolve0 x };
-    assert { [@expl:type invariant] inv1 self };
-    assume { resolve1 self };
-    [#"../own.rs" 49 32 49 36] _0 <- ([#"../own.rs" 49 32 49 36] Core_Option_Option_Type.C_None);
-    goto BB7
-  }
-  BB7 {
-    goto BB10
-  }
-  BB8 {
-    goto BB9
-  }
-  BB9 {
-    goto BB10
-  }
   BB10 {
-    goto BB11
-  }
-  BB11 {
     return _0
   }
   
@@ -481,7 +442,13 @@ module Own_Impl0_AsRef
       end
   }
   BB1 {
-    goto BB4
+    [#"../own.rs" 58 26 58 31] x <- ([#"../own.rs" 58 26 58 31] Own_OwnResult_Type.ok_0 self);
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
+    assert { [@expl:type invariant] inv1 x };
+    assume { resolve1 x };
+    [#"../own.rs" 58 36 58 52] _0 <- ([#"../own.rs" 58 36 58 52] Own_OwnResult_Type.C_Ok x);
+    goto BB5
   }
   BB2 {
     [#"../own.rs" 59 27 59 32] x1 <- ([#"../own.rs" 59 27 59 32] Own_OwnResult_Type.err_0 self);
@@ -497,15 +464,6 @@ module Own_Impl0_AsRef
     assume { resolve0 self };
     assert { [#"../own.rs" 57 14 57 19] false };
     absurd
-  }
-  BB4 {
-    [#"../own.rs" 58 26 58 31] x <- ([#"../own.rs" 58 26 58 31] Own_OwnResult_Type.ok_0 self);
-    assert { [@expl:type invariant] inv0 self };
-    assume { resolve0 self };
-    assert { [@expl:type invariant] inv1 x };
-    assume { resolve1 x };
-    [#"../own.rs" 58 36 58 52] _0 <- ([#"../own.rs" 58 36 58 52] Own_OwnResult_Type.C_Ok x);
-    goto BB5
   }
   BB5 {
     return _0
@@ -526,33 +484,33 @@ module Own_Impl0_AsMut
     ensures { result = inv5 _x }
     
   axiom inv5 : forall x : Own_OwnResult_Type.t_ownresult (borrowed t) (borrowed e) . inv5 x = true
-  predicate invariant4 (self : borrowed (Own_OwnResult_Type.t_ownresult t e))
-  val invariant4 (self : borrowed (Own_OwnResult_Type.t_ownresult t e)) : bool
+  predicate invariant4 (self : borrowed e)
+  val invariant4 (self : borrowed e) : bool
     ensures { result = invariant4 self }
     
-  predicate inv4 (_x : borrowed (Own_OwnResult_Type.t_ownresult t e))
-  val inv4 (_x : borrowed (Own_OwnResult_Type.t_ownresult t e)) : bool
+  predicate inv4 (_x : borrowed e)
+  val inv4 (_x : borrowed e) : bool
     ensures { result = inv4 _x }
     
-  axiom inv4 : forall x : borrowed (Own_OwnResult_Type.t_ownresult t e) . inv4 x = true
-  predicate invariant3 (self : borrowed e)
-  val invariant3 (self : borrowed e) : bool
+  axiom inv4 : forall x : borrowed e . inv4 x = true
+  predicate invariant3 (self : e)
+  val invariant3 (self : e) : bool
     ensures { result = invariant3 self }
     
-  predicate inv3 (_x : borrowed e)
-  val inv3 (_x : borrowed e) : bool
+  predicate inv3 (_x : e)
+  val inv3 (_x : e) : bool
     ensures { result = inv3 _x }
     
-  axiom inv3 : forall x : borrowed e . inv3 x = true
-  predicate invariant2 (self : e)
-  val invariant2 (self : e) : bool
+  axiom inv3 : forall x : e . inv3 x = true
+  predicate invariant2 (self : borrowed (Own_OwnResult_Type.t_ownresult t e))
+  val invariant2 (self : borrowed (Own_OwnResult_Type.t_ownresult t e)) : bool
     ensures { result = invariant2 self }
     
-  predicate inv2 (_x : e)
-  val inv2 (_x : e) : bool
+  predicate inv2 (_x : borrowed (Own_OwnResult_Type.t_ownresult t e))
+  val inv2 (_x : borrowed (Own_OwnResult_Type.t_ownresult t e)) : bool
     ensures { result = inv2 _x }
     
-  axiom inv2 : forall x : e . inv2 x = true
+  axiom inv2 : forall x : borrowed (Own_OwnResult_Type.t_ownresult t e) . inv2 x = true
   predicate invariant1 (self : borrowed t)
   val invariant1 (self : borrowed t) : bool
     ensures { result = invariant1 self }
@@ -571,14 +529,14 @@ module Own_Impl0_AsMut
     ensures { result = inv0 _x }
     
   axiom inv0 : forall x : t . inv0 x = true
-  predicate resolve2 (self : borrowed (Own_OwnResult_Type.t_ownresult t e)) =
+  predicate resolve2 (self : borrowed e) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve2 (self : borrowed (Own_OwnResult_Type.t_ownresult t e)) : bool
+  val resolve2 (self : borrowed e) : bool
     ensures { result = resolve2 self }
     
-  predicate resolve1 (self : borrowed e) =
+  predicate resolve1 (self : borrowed (Own_OwnResult_Type.t_ownresult t e)) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve1 (self : borrowed e) : bool
+  val resolve1 (self : borrowed (Own_OwnResult_Type.t_ownresult t e)) : bool
     ensures { result = resolve1 self }
     
   predicate resolve0 (self : borrowed t) =
@@ -587,8 +545,8 @@ module Own_Impl0_AsMut
     ensures { result = resolve0 self }
     
   let rec cfg as_mut [#"../own.rs" 71 4 71 57] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (Own_OwnResult_Type.t_ownresult t e)) : Own_OwnResult_Type.t_ownresult (borrowed t) (borrowed e)
-    requires {[#"../own.rs" 71 23 71 27] inv4 self}
-    ensures { [#"../own.rs" 63 4 70 6] exists t : borrowed t . inv1 t /\ ( * self = Own_OwnResult_Type.C_Ok ( * t) /\  ^ self = Own_OwnResult_Type.C_Ok ( ^ t) /\ result = Own_OwnResult_Type.C_Ok t \/ (exists e : borrowed e . inv3 e /\  * self = Own_OwnResult_Type.C_Err ( * e) /\  ^ self = Own_OwnResult_Type.C_Err ( ^ e) /\ result = Own_OwnResult_Type.C_Err e)) }
+    requires {[#"../own.rs" 71 23 71 27] inv2 self}
+    ensures { [#"../own.rs" 63 4 70 6] exists t : borrowed t . inv1 t /\ ( * self = Own_OwnResult_Type.C_Ok ( * t) /\  ^ self = Own_OwnResult_Type.C_Ok ( ^ t) /\ result = Own_OwnResult_Type.C_Ok t \/ (exists e : borrowed e . inv4 e /\  * self = Own_OwnResult_Type.C_Err ( * e) /\  ^ self = Own_OwnResult_Type.C_Err ( ^ e) /\ result = Own_OwnResult_Type.C_Err e)) }
     ensures { [#"../own.rs" 71 32 71 57] inv5 result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -608,28 +566,6 @@ module Own_Impl0_AsMut
       end
   }
   BB1 {
-    goto BB4
-  }
-  BB2 {
-    [#"../own.rs" 74 27 74 36] x1 <- Borrow.borrow_final (Own_OwnResult_Type.err_0 ( * self)) (Borrow.inherit_id (Borrow.get_id self) 1);
-    [#"../own.rs" 74 27 74 36] self <- { self with current = (let Own_OwnResult_Type.C_Err x0 =  * self in Own_OwnResult_Type.C_Err ( ^ x1)) ; };
-    assume { inv2 ( ^ x1) };
-    [#"../own.rs" 74 56 74 57] _7 <- Borrow.borrow_final ( * x1) (Borrow.get_id x1);
-    [#"../own.rs" 74 56 74 57] x1 <- { x1 with current = ( ^ _7) ; };
-    assume { inv2 ( ^ _7) };
-    [#"../own.rs" 74 41 74 58] _0 <- ([#"../own.rs" 74 41 74 58] Own_OwnResult_Type.C_Err _7);
-    _7 <- any borrowed e;
-    assert { [@expl:type invariant] inv3 x1 };
-    assume { resolve1 x1 };
-    goto BB5
-  }
-  BB3 {
-    assert { [@expl:type invariant] inv4 self };
-    assume { resolve2 self };
-    assert { [#"../own.rs" 72 14 72 19] false };
-    absurd
-  }
-  BB4 {
     [#"../own.rs" 73 26 73 35] x <- Borrow.borrow_final (Own_OwnResult_Type.ok_0 ( * self)) (Borrow.inherit_id (Borrow.get_id self) 1);
     [#"../own.rs" 73 26 73 35] self <- { self with current = (let Own_OwnResult_Type.C_Ok x0 =  * self in Own_OwnResult_Type.C_Ok ( ^ x)) ; };
     assume { inv0 ( ^ x) };
@@ -642,9 +578,28 @@ module Own_Impl0_AsMut
     assume { resolve0 x };
     goto BB5
   }
+  BB2 {
+    [#"../own.rs" 74 27 74 36] x1 <- Borrow.borrow_final (Own_OwnResult_Type.err_0 ( * self)) (Borrow.inherit_id (Borrow.get_id self) 1);
+    [#"../own.rs" 74 27 74 36] self <- { self with current = (let Own_OwnResult_Type.C_Err x0 =  * self in Own_OwnResult_Type.C_Err ( ^ x1)) ; };
+    assume { inv3 ( ^ x1) };
+    [#"../own.rs" 74 56 74 57] _7 <- Borrow.borrow_final ( * x1) (Borrow.get_id x1);
+    [#"../own.rs" 74 56 74 57] x1 <- { x1 with current = ( ^ _7) ; };
+    assume { inv3 ( ^ _7) };
+    [#"../own.rs" 74 41 74 58] _0 <- ([#"../own.rs" 74 41 74 58] Own_OwnResult_Type.C_Err _7);
+    _7 <- any borrowed e;
+    assert { [@expl:type invariant] inv4 x1 };
+    assume { resolve2 x1 };
+    goto BB5
+  }
+  BB3 {
+    assert { [@expl:type invariant] inv2 self };
+    assume { resolve1 self };
+    assert { [#"../own.rs" 72 14 72 19] false };
+    absurd
+  }
   BB5 {
-    assert { [@expl:type invariant] inv4 self };
-    assume { resolve2 self };
+    assert { [@expl:type invariant] inv2 self };
+    assume { resolve1 self };
     return _0
   }
   
@@ -714,16 +669,19 @@ module Own_Impl0_Unwrap
     goto BB1
   }
   BB1 {
-    goto BB2
-  }
-  BB2 {
     switch (self)
       | Own_OwnResult_Type.C_Ok _ -> goto BB3
       | Own_OwnResult_Type.C_Err _ -> goto BB4
       end
   }
   BB3 {
-    goto BB6
+    [#"../own.rs" 85 26 85 27] t <- ([#"../own.rs" 85 26 85 27] Own_OwnResult_Type.ok_0 self);
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
+    [#"../own.rs" 85 32 85 33] _0 <- ([#"../own.rs" 85 32 85 33] t);
+    t <- any t;
+    return _0
   }
   BB4 {
     [#"../own.rs" 86 27 86 29] _e <- ([#"../own.rs" 86 27 86 29] Own_OwnResult_Type.err_0 self);
@@ -740,21 +698,6 @@ module Own_Impl0_Unwrap
     assume { resolve0 self };
     assert { [#"../own.rs" 84 14 84 18] false };
     absurd
-  }
-  BB6 {
-    [#"../own.rs" 85 26 85 27] t <- ([#"../own.rs" 85 26 85 27] Own_OwnResult_Type.ok_0 self);
-    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
-    assert { [@expl:type invariant] inv0 self };
-    assume { resolve0 self };
-    [#"../own.rs" 85 32 85 33] _0 <- ([#"../own.rs" 85 32 85 33] t);
-    t <- any t;
-    goto BB7
-  }
-  BB7 {
-    goto BB8
-  }
-  BB8 {
-    return _0
   }
   
 end
@@ -824,16 +767,19 @@ module Own_Impl0_Expect
     goto BB1
   }
   BB1 {
-    goto BB2
-  }
-  BB2 {
     switch (self)
       | Own_OwnResult_Type.C_Ok _ -> goto BB3
       | Own_OwnResult_Type.C_Err _ -> goto BB4
       end
   }
   BB3 {
-    goto BB6
+    [#"../own.rs" 97 26 97 27] t <- ([#"../own.rs" 97 26 97 27] Own_OwnResult_Type.ok_0 self);
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
+    [#"../own.rs" 97 32 97 33] _0 <- ([#"../own.rs" 97 32 97 33] t);
+    t <- any t;
+    return _0
   }
   BB4 {
     [#"../own.rs" 98 27 98 29] _e <- ([#"../own.rs" 98 27 98 29] Own_OwnResult_Type.err_0 self);
@@ -851,21 +797,6 @@ module Own_Impl0_Expect
     assert { [#"../own.rs" 96 14 96 18] false };
     absurd
   }
-  BB6 {
-    [#"../own.rs" 97 26 97 27] t <- ([#"../own.rs" 97 26 97 27] Own_OwnResult_Type.ok_0 self);
-    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
-    assert { [@expl:type invariant] inv0 self };
-    assume { resolve0 self };
-    [#"../own.rs" 97 32 97 33] _0 <- ([#"../own.rs" 97 32 97 33] t);
-    t <- any t;
-    goto BB7
-  }
-  BB7 {
-    goto BB8
-  }
-  BB8 {
-    return _0
-  }
   
 end
 module Own_Impl0_UnwrapErr
@@ -880,44 +811,44 @@ module Own_Impl0_UnwrapErr
     ensures { result = inv2 _x }
     
   axiom inv2 : forall x : e . inv2 x = true
-  use Own_OwnResult_Type as Own_OwnResult_Type
-  predicate invariant1 (self : Own_OwnResult_Type.t_ownresult t e)
-  val invariant1 (self : Own_OwnResult_Type.t_ownresult t e) : bool
+  predicate invariant1 (self : t)
+  val invariant1 (self : t) : bool
     ensures { result = invariant1 self }
     
-  predicate inv1 (_x : Own_OwnResult_Type.t_ownresult t e)
-  val inv1 (_x : Own_OwnResult_Type.t_ownresult t e) : bool
+  predicate inv1 (_x : t)
+  val inv1 (_x : t) : bool
     ensures { result = inv1 _x }
     
-  axiom inv1 : forall x : Own_OwnResult_Type.t_ownresult t e . inv1 x = true
-  predicate invariant0 (self : t)
-  val invariant0 (self : t) : bool
+  axiom inv1 : forall x : t . inv1 x = true
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  predicate invariant0 (self : Own_OwnResult_Type.t_ownresult t e)
+  val invariant0 (self : Own_OwnResult_Type.t_ownresult t e) : bool
     ensures { result = invariant0 self }
     
-  predicate inv0 (_x : t)
-  val inv0 (_x : t) : bool
+  predicate inv0 (_x : Own_OwnResult_Type.t_ownresult t e)
+  val inv0 (_x : Own_OwnResult_Type.t_ownresult t e) : bool
     ensures { result = inv0 _x }
     
-  axiom inv0 : forall x : t . inv0 x = true
+  axiom inv0 : forall x : Own_OwnResult_Type.t_ownresult t e . inv0 x = true
+  predicate resolve1 (self : t)
+  val resolve1 (self : t) : bool
+    ensures { result = resolve1 self }
+    
   predicate resolve2 (self : e)
   val resolve2 (self : e) : bool
     ensures { result = resolve2 self }
     
-  predicate resolve0 (self : t)
-  val resolve0 (self : t) : bool
-    ensures { result = resolve0 self }
-    
-  predicate resolve1 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
+  predicate resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
     [#"../own.rs" 16 8 19 9] match self with
-      | Own_OwnResult_Type.C_Ok t -> resolve0 t
+      | Own_OwnResult_Type.C_Ok t -> resolve1 t
       | Own_OwnResult_Type.C_Err e -> resolve2 e
       end
-  val resolve1 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) : bool
-    ensures { result = resolve1 self }
+  val resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) : bool
+    ensures { result = resolve0 self }
     
   let rec cfg unwrap_err [#"../own.rs" 104 4 106 29] [@cfg:stackify] [@cfg:subregion_analysis] (self : Own_OwnResult_Type.t_ownresult t e) : e
     requires {[#"../own.rs" 102 4 102 55] exists e : e . inv2 e /\ self = Own_OwnResult_Type.C_Err e}
-    requires {[#"../own.rs" 104 22 104 26] inv1 self}
+    requires {[#"../own.rs" 104 22 104 26] inv0 self}
     ensures { [#"../own.rs" 103 14 103 44] Own_OwnResult_Type.C_Err result = self }
     ensures { [#"../own.rs" 104 31 104 32] inv2 result }
     
@@ -933,47 +864,35 @@ module Own_Impl0_UnwrapErr
     goto BB1
   }
   BB1 {
-    goto BB2
-  }
-  BB2 {
     switch (self)
       | Own_OwnResult_Type.C_Ok _ -> goto BB3
       | Own_OwnResult_Type.C_Err _ -> goto BB4
       end
   }
   BB3 {
-    goto BB6
+    [#"../own.rs" 109 26 109 28] _t <- ([#"../own.rs" 109 26 109 28] Own_OwnResult_Type.ok_0 self);
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
+    assert { [@expl:type invariant] inv1 _t };
+    assume { resolve1 _t };
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
+    assert { false };
+    absurd
   }
   BB4 {
     [#"../own.rs" 110 27 110 28] e <- ([#"../own.rs" 110 27 110 28] Own_OwnResult_Type.err_0 self);
     self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
-    assert { [@expl:type invariant] inv1 self };
-    assume { resolve1 self };
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
     [#"../own.rs" 110 33 110 34] _0 <- ([#"../own.rs" 110 33 110 34] e);
     e <- any e;
-    goto BB7
+    return _0
   }
   BB5 {
-    assert { [@expl:type invariant] inv1 self };
-    assume { resolve1 self };
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
     assert { [#"../own.rs" 108 14 108 18] false };
     absurd
-  }
-  BB6 {
-    [#"../own.rs" 109 26 109 28] _t <- ([#"../own.rs" 109 26 109 28] Own_OwnResult_Type.ok_0 self);
-    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
-    assert { [@expl:type invariant] inv0 _t };
-    assume { resolve0 _t };
-    assert { [@expl:type invariant] inv1 self };
-    assume { resolve1 self };
-    assert { false };
-    absurd
-  }
-  BB7 {
-    goto BB8
-  }
-  BB8 {
-    return _0
   }
   
 end
@@ -1044,16 +963,21 @@ module Own_Impl0_UnwrapOr
     goto BB1
   }
   BB1 {
-    goto BB2
-  }
-  BB2 {
     switch (self)
       | Own_OwnResult_Type.C_Ok _ -> goto BB3
       | Own_OwnResult_Type.C_Err _ -> goto BB4
       end
   }
   BB3 {
-    goto BB6
+    assert { [@expl:type invariant] inv0 default };
+    assume { resolve0 default };
+    [#"../own.rs" 118 26 118 27] t <- ([#"../own.rs" 118 26 118 27] Own_OwnResult_Type.ok_0 self);
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
+    assert { [@expl:type invariant] inv1 self };
+    assume { resolve1 self };
+    [#"../own.rs" 118 32 118 33] _0 <- ([#"../own.rs" 118 32 118 33] t);
+    t <- any t;
+    goto BB9
   }
   BB4 {
     [#"../own.rs" 120 27 120 28] e <- ([#"../own.rs" 120 27 120 28] Own_OwnResult_Type.err_0 self);
@@ -1064,7 +988,7 @@ module Own_Impl0_UnwrapOr
     assume { resolve1 self };
     [#"../own.rs" 120 33 120 40] _0 <- ([#"../own.rs" 120 33 120 40] default);
     default <- any t;
-    goto BB8
+    goto BB9
   }
   BB5 {
     assert { [@expl:type invariant] inv0 default };
@@ -1074,30 +998,7 @@ module Own_Impl0_UnwrapOr
     assert { [#"../own.rs" 117 14 117 18] false };
     absurd
   }
-  BB6 {
-    assert { [@expl:type invariant] inv0 default };
-    assume { resolve0 default };
-    [#"../own.rs" 118 26 118 27] t <- ([#"../own.rs" 118 26 118 27] Own_OwnResult_Type.ok_0 self);
-    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
-    assert { [@expl:type invariant] inv1 self };
-    assume { resolve1 self };
-    [#"../own.rs" 118 32 118 33] _0 <- ([#"../own.rs" 118 32 118 33] t);
-    t <- any t;
-    goto BB7
-  }
-  BB7 {
-    goto BB9
-  }
-  BB8 {
-    goto BB9
-  }
   BB9 {
-    goto BB10
-  }
-  BB10 {
-    goto BB11
-  }
-  BB11 {
     return _0
   }
   
@@ -1174,16 +1075,19 @@ module Own_Impl0_UnwrapOrDefault
     goto BB1
   }
   BB1 {
-    goto BB2
-  }
-  BB2 {
     switch (self)
       | Own_OwnResult_Type.C_Ok _ -> goto BB3
       | Own_OwnResult_Type.C_Err _ -> goto BB4
       end
   }
   BB3 {
-    goto BB6
+    [#"../own.rs" 131 26 131 27] x <- ([#"../own.rs" 131 26 131 27] Own_OwnResult_Type.ok_0 self);
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
+    [#"../own.rs" 131 32 131 33] _0 <- ([#"../own.rs" 131 32 131 33] x);
+    x <- any t;
+    goto BB8
   }
   BB4 {
     assert { [@expl:type invariant] inv0 self };
@@ -1197,22 +1101,7 @@ module Own_Impl0_UnwrapOrDefault
     assert { [#"../own.rs" 130 14 130 18] false };
     absurd
   }
-  BB6 {
-    [#"../own.rs" 131 26 131 27] x <- ([#"../own.rs" 131 26 131 27] Own_OwnResult_Type.ok_0 self);
-    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
-    assert { [@expl:type invariant] inv0 self };
-    assume { resolve0 self };
-    [#"../own.rs" 131 32 131 33] _0 <- ([#"../own.rs" 131 32 131 33] x);
-    x <- any t;
-    goto BB7
-  }
-  BB7 {
-    goto BB8
-  }
   BB8 {
-    goto BB9
-  }
-  BB9 {
     return _0
   }
   
@@ -1230,16 +1119,16 @@ module Own_Impl0_And
     ensures { result = inv3 _x }
     
   axiom inv3 : forall x : e . inv3 x = true
-  use Own_OwnResult_Type as Own_OwnResult_Type
-  predicate invariant2 (self : Own_OwnResult_Type.t_ownresult u e)
-  val invariant2 (self : Own_OwnResult_Type.t_ownresult u e) : bool
+  predicate invariant2 (self : t)
+  val invariant2 (self : t) : bool
     ensures { result = invariant2 self }
     
-  predicate inv2 (_x : Own_OwnResult_Type.t_ownresult u e)
-  val inv2 (_x : Own_OwnResult_Type.t_ownresult u e) : bool
+  predicate inv2 (_x : t)
+  val inv2 (_x : t) : bool
     ensures { result = inv2 _x }
     
-  axiom inv2 : forall x : Own_OwnResult_Type.t_ownresult u e . inv2 x = true
+  axiom inv2 : forall x : t . inv2 x = true
+  use Own_OwnResult_Type as Own_OwnResult_Type
   predicate invariant1 (self : Own_OwnResult_Type.t_ownresult t e)
   val invariant1 (self : Own_OwnResult_Type.t_ownresult t e) : bool
     ensures { result = invariant1 self }
@@ -1249,49 +1138,49 @@ module Own_Impl0_And
     ensures { result = inv1 _x }
     
   axiom inv1 : forall x : Own_OwnResult_Type.t_ownresult t e . inv1 x = true
-  predicate invariant0 (self : t)
-  val invariant0 (self : t) : bool
+  predicate invariant0 (self : Own_OwnResult_Type.t_ownresult u e)
+  val invariant0 (self : Own_OwnResult_Type.t_ownresult u e) : bool
     ensures { result = invariant0 self }
     
-  predicate inv0 (_x : t)
-  val inv0 (_x : t) : bool
+  predicate inv0 (_x : Own_OwnResult_Type.t_ownresult u e)
+  val inv0 (_x : Own_OwnResult_Type.t_ownresult u e) : bool
     ensures { result = inv0 _x }
     
-  axiom inv0 : forall x : t . inv0 x = true
-  predicate resolve3 (self : e)
-  val resolve3 (self : e) : bool
-    ensures { result = resolve3 self }
-    
-  predicate resolve4 (self : u)
-  val resolve4 (self : u) : bool
-    ensures { result = resolve4 self }
-    
-  predicate resolve2 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult u e) =
-    [#"../own.rs" 16 8 19 9] match self with
-      | Own_OwnResult_Type.C_Ok t -> resolve4 t
-      | Own_OwnResult_Type.C_Err e -> resolve3 e
-      end
-  val resolve2 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult u e) : bool
+  axiom inv0 : forall x : Own_OwnResult_Type.t_ownresult u e . inv0 x = true
+  predicate resolve2 (self : t)
+  val resolve2 (self : t) : bool
     ensures { result = resolve2 self }
     
-  predicate resolve0 (self : t)
-  val resolve0 (self : t) : bool
-    ensures { result = resolve0 self }
+  predicate resolve4 (self : e)
+  val resolve4 (self : e) : bool
+    ensures { result = resolve4 self }
     
   predicate resolve1 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
     [#"../own.rs" 16 8 19 9] match self with
-      | Own_OwnResult_Type.C_Ok t -> resolve0 t
-      | Own_OwnResult_Type.C_Err e -> resolve3 e
+      | Own_OwnResult_Type.C_Ok t -> resolve2 t
+      | Own_OwnResult_Type.C_Err e -> resolve4 e
       end
   val resolve1 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) : bool
     ensures { result = resolve1 self }
     
+  predicate resolve3 (self : u)
+  val resolve3 (self : u) : bool
+    ensures { result = resolve3 self }
+    
+  predicate resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult u e) =
+    [#"../own.rs" 16 8 19 9] match self with
+      | Own_OwnResult_Type.C_Ok t -> resolve3 t
+      | Own_OwnResult_Type.C_Err e -> resolve4 e
+      end
+  val resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult u e) : bool
+    ensures { result = resolve0 self }
+    
   let rec cfg and [#"../own.rs" 138 4 138 64] [@cfg:stackify] [@cfg:subregion_analysis] (self : Own_OwnResult_Type.t_ownresult t e) (res : Own_OwnResult_Type.t_ownresult u e) : Own_OwnResult_Type.t_ownresult u e
     requires {[#"../own.rs" 138 18 138 22] inv1 self}
-    requires {[#"../own.rs" 138 24 138 27] inv2 res}
-    ensures { [#"../own.rs" 136 4 136 73] (exists t : t . inv0 t /\ self = Own_OwnResult_Type.C_Ok t) -> result = res }
+    requires {[#"../own.rs" 138 24 138 27] inv0 res}
+    ensures { [#"../own.rs" 136 4 136 73] (exists t : t . inv2 t /\ self = Own_OwnResult_Type.C_Ok t) -> result = res }
     ensures { [#"../own.rs" 137 4 137 86] forall e : e . inv3 e -> self = Own_OwnResult_Type.C_Err e -> result = Own_OwnResult_Type.C_Err e }
-    ensures { [#"../own.rs" 138 49 138 64] inv2 result }
+    ensures { [#"../own.rs" 138 49 138 64] inv0 result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Own_OwnResult_Type.t_ownresult u e;
@@ -1306,63 +1195,42 @@ module Own_Impl0_And
     goto BB1
   }
   BB1 {
-    goto BB2
-  }
-  BB2 {
     switch (self)
       | Own_OwnResult_Type.C_Ok _ -> goto BB3
       | Own_OwnResult_Type.C_Err _ -> goto BB4
       end
   }
   BB3 {
-    goto BB6
+    [#"../own.rs" 141 26 141 27] x <- ([#"../own.rs" 141 26 141 27] Own_OwnResult_Type.ok_0 self);
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
+    assert { [@expl:type invariant] inv2 x };
+    assume { resolve2 x };
+    assert { [@expl:type invariant] inv1 self };
+    assume { resolve1 self };
+    [#"../own.rs" 141 32 141 35] _0 <- ([#"../own.rs" 141 32 141 35] res);
+    res <- any Own_OwnResult_Type.t_ownresult u e;
+    goto BB10
   }
   BB4 {
-    assert { [@expl:type invariant] inv2 res };
-    assume { resolve2 res };
+    assert { [@expl:type invariant] inv0 res };
+    assume { resolve0 res };
     [#"../own.rs" 142 27 142 28] e <- ([#"../own.rs" 142 27 142 28] Own_OwnResult_Type.err_0 self);
     self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
     assert { [@expl:type invariant] inv1 self };
     assume { resolve1 self };
     [#"../own.rs" 142 33 142 50] _0 <- ([#"../own.rs" 142 33 142 50] Own_OwnResult_Type.C_Err e);
     e <- any e;
-    goto BB8
+    goto BB10
   }
   BB5 {
-    assert { [@expl:type invariant] inv2 res };
-    assume { resolve2 res };
+    assert { [@expl:type invariant] inv0 res };
+    assume { resolve0 res };
     assert { [@expl:type invariant] inv1 self };
     assume { resolve1 self };
     assert { [#"../own.rs" 139 14 139 18] false };
     absurd
   }
-  BB6 {
-    [#"../own.rs" 141 26 141 27] x <- ([#"../own.rs" 141 26 141 27] Own_OwnResult_Type.ok_0 self);
-    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
-    assert { [@expl:type invariant] inv0 x };
-    assume { resolve0 x };
-    assert { [@expl:type invariant] inv1 self };
-    assume { resolve1 self };
-    [#"../own.rs" 141 32 141 35] _0 <- ([#"../own.rs" 141 32 141 35] res);
-    res <- any Own_OwnResult_Type.t_ownresult u e;
-    goto BB7
-  }
-  BB7 {
-    goto BB10
-  }
-  BB8 {
-    goto BB9
-  }
-  BB9 {
-    goto BB10
-  }
   BB10 {
-    goto BB11
-  }
-  BB11 {
-    goto BB12
-  }
-  BB12 {
     return _0
   }
   
@@ -1456,16 +1324,21 @@ module Own_Impl0_Or
     goto BB1
   }
   BB1 {
-    goto BB2
-  }
-  BB2 {
     switch (self)
       | Own_OwnResult_Type.C_Ok _ -> goto BB3
       | Own_OwnResult_Type.C_Err _ -> goto BB4
       end
   }
   BB3 {
-    goto BB6
+    assert { [@expl:type invariant] inv0 res };
+    assume { resolve0 res };
+    [#"../own.rs" 150 26 150 27] v <- ([#"../own.rs" 150 26 150 27] Own_OwnResult_Type.ok_0 self);
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
+    assert { [@expl:type invariant] inv1 self };
+    assume { resolve1 self };
+    [#"../own.rs" 150 32 150 48] _0 <- ([#"../own.rs" 150 32 150 48] Own_OwnResult_Type.C_Ok v);
+    v <- any t;
+    goto BB10
   }
   BB4 {
     [#"../own.rs" 152 27 152 28] e <- ([#"../own.rs" 152 27 152 28] Own_OwnResult_Type.err_0 self);
@@ -1476,7 +1349,7 @@ module Own_Impl0_Or
     assume { resolve1 self };
     [#"../own.rs" 152 33 152 36] _0 <- ([#"../own.rs" 152 33 152 36] res);
     res <- any Own_OwnResult_Type.t_ownresult t f;
-    goto BB9
+    goto BB10
   }
   BB5 {
     assert { [@expl:type invariant] inv0 res };
@@ -1486,33 +1359,7 @@ module Own_Impl0_Or
     assert { [#"../own.rs" 149 14 149 18] false };
     absurd
   }
-  BB6 {
-    assert { [@expl:type invariant] inv0 res };
-    assume { resolve0 res };
-    [#"../own.rs" 150 26 150 27] v <- ([#"../own.rs" 150 26 150 27] Own_OwnResult_Type.ok_0 self);
-    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any t));
-    assert { [@expl:type invariant] inv1 self };
-    assume { resolve1 self };
-    [#"../own.rs" 150 32 150 48] _0 <- ([#"../own.rs" 150 32 150 48] Own_OwnResult_Type.C_Ok v);
-    v <- any t;
-    goto BB7
-  }
-  BB7 {
-    goto BB8
-  }
-  BB8 {
-    goto BB10
-  }
-  BB9 {
-    goto BB10
-  }
   BB10 {
-    goto BB11
-  }
-  BB11 {
-    goto BB12
-  }
-  BB12 {
     return _0
   }
   
@@ -1592,33 +1439,12 @@ module Own_Impl1_Copied
     goto BB1
   }
   BB1 {
-    goto BB2
-  }
-  BB2 {
     switch (self)
       | Own_OwnResult_Type.C_Ok _ -> goto BB3
       | Own_OwnResult_Type.C_Err _ -> goto BB4
       end
   }
   BB3 {
-    goto BB6
-  }
-  BB4 {
-    [#"../own.rs" 167 27 167 28] e <- ([#"../own.rs" 167 27 167 28] Own_OwnResult_Type.err_0 self);
-    self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
-    assert { [@expl:type invariant] inv0 self };
-    assume { resolve0 self };
-    [#"../own.rs" 167 33 167 50] _0 <- ([#"../own.rs" 167 33 167 50] Own_OwnResult_Type.C_Err e);
-    e <- any e;
-    goto BB7
-  }
-  BB5 {
-    assert { [@expl:type invariant] inv0 self };
-    assume { resolve0 self };
-    assert { [#"../own.rs" 165 14 165 18] false };
-    absurd
-  }
-  BB6 {
     [#"../own.rs" 166 26 166 27] t <- ([#"../own.rs" 166 26 166 27] Own_OwnResult_Type.ok_0 self);
     assert { [@expl:type invariant] inv0 self };
     assume { resolve0 self };
@@ -1627,16 +1453,22 @@ module Own_Impl1_Copied
     [#"../own.rs" 166 32 166 49] _0 <- ([#"../own.rs" 166 32 166 49] Own_OwnResult_Type.C_Ok t);
     goto BB9
   }
-  BB7 {
-    goto BB8
-  }
-  BB8 {
+  BB4 {
+    [#"../own.rs" 167 27 167 28] e <- ([#"../own.rs" 167 27 167 28] Own_OwnResult_Type.err_0 self);
+    self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
+    [#"../own.rs" 167 33 167 50] _0 <- ([#"../own.rs" 167 33 167 50] Own_OwnResult_Type.C_Err e);
+    e <- any e;
     goto BB9
   }
-  BB9 {
-    goto BB10
+  BB5 {
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
+    assert { [#"../own.rs" 165 14 165 18] false };
+    absurd
   }
-  BB10 {
+  BB9 {
     return _0
   }
   
@@ -1731,16 +1563,21 @@ module Own_Impl1_Cloned
     goto BB1
   }
   BB1 {
-    goto BB2
-  }
-  BB2 {
     switch (self)
       | Own_OwnResult_Type.C_Ok _ -> goto BB3
       | Own_OwnResult_Type.C_Err _ -> goto BB4
       end
   }
   BB3 {
-    goto BB6
+    [#"../own.rs" 179 26 179 27] t <- ([#"../own.rs" 179 26 179 27] Own_OwnResult_Type.ok_0 self);
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
+    assert { [@expl:type invariant] inv1 t };
+    assume { resolve1 t };
+    [#"../own.rs" 179 46 179 55] _6 <- ([#"../own.rs" 179 46 179 55] clone0 t);
+    [#"../own.rs" 179 32 179 56] _0 <- ([#"../own.rs" 179 32 179 56] Own_OwnResult_Type.C_Ok _6);
+    _6 <- any t;
+    goto BB11
   }
   BB4 {
     [#"../own.rs" 180 27 180 28] e <- ([#"../own.rs" 180 27 180 28] Own_OwnResult_Type.err_0 self);
@@ -1749,7 +1586,7 @@ module Own_Impl1_Cloned
     assume { resolve0 self };
     [#"../own.rs" 180 33 180 50] _0 <- ([#"../own.rs" 180 33 180 50] Own_OwnResult_Type.C_Err e);
     e <- any e;
-    goto BB9
+    goto BB11
   }
   BB5 {
     assert { [@expl:type invariant] inv0 self };
@@ -1757,33 +1594,7 @@ module Own_Impl1_Cloned
     assert { [#"../own.rs" 178 14 178 18] false };
     absurd
   }
-  BB6 {
-    [#"../own.rs" 179 26 179 27] t <- ([#"../own.rs" 179 26 179 27] Own_OwnResult_Type.ok_0 self);
-    assert { [@expl:type invariant] inv0 self };
-    assume { resolve0 self };
-    assert { [@expl:type invariant] inv1 t };
-    assume { resolve1 t };
-    [#"../own.rs" 179 46 179 55] _6 <- ([#"../own.rs" 179 46 179 55] clone0 t);
-    goto BB7
-  }
-  BB7 {
-    [#"../own.rs" 179 32 179 56] _0 <- ([#"../own.rs" 179 32 179 56] Own_OwnResult_Type.C_Ok _6);
-    _6 <- any t;
-    goto BB8
-  }
-  BB8 {
-    goto BB11
-  }
-  BB9 {
-    goto BB10
-  }
-  BB10 {
-    goto BB11
-  }
   BB11 {
-    goto BB12
-  }
-  BB12 {
     return _0
   }
   
@@ -1864,33 +1675,12 @@ module Own_Impl2_Copied
     goto BB1
   }
   BB1 {
-    goto BB2
-  }
-  BB2 {
     switch (self)
       | Own_OwnResult_Type.C_Ok _ -> goto BB3
       | Own_OwnResult_Type.C_Err _ -> goto BB4
       end
   }
   BB3 {
-    goto BB6
-  }
-  BB4 {
-    [#"../own.rs" 195 27 195 28] e <- ([#"../own.rs" 195 27 195 28] Own_OwnResult_Type.err_0 self);
-    self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
-    assert { [@expl:type invariant] inv0 self };
-    assume { resolve0 self };
-    [#"../own.rs" 195 33 195 50] _0 <- ([#"../own.rs" 195 33 195 50] Own_OwnResult_Type.C_Err e);
-    e <- any e;
-    goto BB7
-  }
-  BB5 {
-    assert { [@expl:type invariant] inv0 self };
-    assume { resolve0 self };
-    assert { [#"../own.rs" 193 14 193 18] false };
-    absurd
-  }
-  BB6 {
     [#"../own.rs" 194 26 194 27] t <- ([#"../own.rs" 194 26 194 27] Own_OwnResult_Type.ok_0 self);
     self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any borrowed t));
     assert { [@expl:type invariant] inv0 self };
@@ -1900,16 +1690,22 @@ module Own_Impl2_Copied
     [#"../own.rs" 194 32 194 49] _0 <- ([#"../own.rs" 194 32 194 49] Own_OwnResult_Type.C_Ok ( * t));
     goto BB9
   }
-  BB7 {
-    goto BB8
-  }
-  BB8 {
+  BB4 {
+    [#"../own.rs" 195 27 195 28] e <- ([#"../own.rs" 195 27 195 28] Own_OwnResult_Type.err_0 self);
+    self <- (let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err (any e));
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
+    [#"../own.rs" 195 33 195 50] _0 <- ([#"../own.rs" 195 33 195 50] Own_OwnResult_Type.C_Err e);
+    e <- any e;
     goto BB9
   }
-  BB9 {
-    goto BB10
+  BB5 {
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
+    assert { [#"../own.rs" 193 14 193 18] false };
+    absurd
   }
-  BB10 {
+  BB9 {
     return _0
   }
   
@@ -2014,16 +1810,22 @@ module Own_Impl2_Cloned
     goto BB1
   }
   BB1 {
-    goto BB2
-  }
-  BB2 {
     switch (self)
       | Own_OwnResult_Type.C_Ok _ -> goto BB3
       | Own_OwnResult_Type.C_Err _ -> goto BB4
       end
   }
   BB3 {
-    goto BB6
+    [#"../own.rs" 207 26 207 27] t <- ([#"../own.rs" 207 26 207 27] Own_OwnResult_Type.ok_0 self);
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any borrowed t));
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
+    [#"../own.rs" 207 46 207 55] _6 <- ([#"../own.rs" 207 46 207 55] clone0 ( * t));
+    assert { [@expl:type invariant] inv1 t };
+    assume { resolve1 t };
+    [#"../own.rs" 207 32 207 56] _0 <- ([#"../own.rs" 207 32 207 56] Own_OwnResult_Type.C_Ok _6);
+    _6 <- any t;
+    goto BB11
   }
   BB4 {
     [#"../own.rs" 208 27 208 28] e <- ([#"../own.rs" 208 27 208 28] Own_OwnResult_Type.err_0 self);
@@ -2032,7 +1834,7 @@ module Own_Impl2_Cloned
     assume { resolve0 self };
     [#"../own.rs" 208 33 208 50] _0 <- ([#"../own.rs" 208 33 208 50] Own_OwnResult_Type.C_Err e);
     e <- any e;
-    goto BB9
+    goto BB11
   }
   BB5 {
     assert { [@expl:type invariant] inv0 self };
@@ -2040,34 +1842,7 @@ module Own_Impl2_Cloned
     assert { [#"../own.rs" 206 14 206 18] false };
     absurd
   }
-  BB6 {
-    [#"../own.rs" 207 26 207 27] t <- ([#"../own.rs" 207 26 207 27] Own_OwnResult_Type.ok_0 self);
-    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (any borrowed t));
-    assert { [@expl:type invariant] inv0 self };
-    assume { resolve0 self };
-    [#"../own.rs" 207 46 207 55] _6 <- ([#"../own.rs" 207 46 207 55] clone0 ( * t));
-    goto BB7
-  }
-  BB7 {
-    assert { [@expl:type invariant] inv1 t };
-    assume { resolve1 t };
-    [#"../own.rs" 207 32 207 56] _0 <- ([#"../own.rs" 207 32 207 56] Own_OwnResult_Type.C_Ok _6);
-    _6 <- any t;
-    goto BB8
-  }
-  BB8 {
-    goto BB11
-  }
-  BB9 {
-    goto BB10
-  }
-  BB10 {
-    goto BB11
-  }
   BB11 {
-    goto BB12
-  }
-  BB12 {
     return _0
   }
   
@@ -2152,12 +1927,6 @@ module Own_Impl3_Transpose
     goto BB1
   }
   BB1 {
-    goto BB2
-  }
-  BB2 {
-    goto BB3
-  }
-  BB3 {
     switch (self)
       | Own_OwnResult_Type.C_Ok _ -> goto BB4
       | Own_OwnResult_Type.C_Err _ -> goto BB8
@@ -2170,10 +1939,21 @@ module Own_Impl3_Transpose
       end
   }
   BB5 {
-    goto BB13
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
+    [#"../own.rs" 220 35 220 39] _0 <- ([#"../own.rs" 220 35 220 39] Core_Option_Option_Type.C_None);
+    goto BB17
   }
   BB6 {
-    goto BB9
+    [#"../own.rs" 219 31 219 32] x <- ([#"../own.rs" 219 31 219 32] Core_Option_Option_Type.some_0 (Own_OwnResult_Type.ok_0 self));
+    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (let Core_Option_Option_Type.C_Some x0 = Own_OwnResult_Type.ok_0 self in Core_Option_Option_Type.C_Some (any t)));
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
+    [#"../own.rs" 219 43 219 59] _8 <- ([#"../own.rs" 219 43 219 59] Own_OwnResult_Type.C_Ok x);
+    x <- any t;
+    [#"../own.rs" 219 38 219 60] _0 <- ([#"../own.rs" 219 38 219 60] Core_Option_Option_Type.C_Some _8);
+    _8 <- any Own_OwnResult_Type.t_ownresult t e;
+    goto BB17
   }
   BB7 {
     assert { [@expl:type invariant] inv0 self };
@@ -2188,49 +1968,11 @@ module Own_Impl3_Transpose
     assume { resolve0 self };
     [#"../own.rs" 221 38 221 55] _11 <- ([#"../own.rs" 221 38 221 55] Own_OwnResult_Type.C_Err e);
     e <- any e;
-    goto BB14
-  }
-  BB9 {
-    [#"../own.rs" 219 31 219 32] x <- ([#"../own.rs" 219 31 219 32] Core_Option_Option_Type.some_0 (Own_OwnResult_Type.ok_0 self));
-    self <- (let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (let Core_Option_Option_Type.C_Some x0 = Own_OwnResult_Type.ok_0 self in Core_Option_Option_Type.C_Some (any t)));
-    assert { [@expl:type invariant] inv0 self };
-    assume { resolve0 self };
-    [#"../own.rs" 219 43 219 59] _8 <- ([#"../own.rs" 219 43 219 59] Own_OwnResult_Type.C_Ok x);
-    x <- any t;
-    goto BB10
-  }
-  BB10 {
-    [#"../own.rs" 219 38 219 60] _0 <- ([#"../own.rs" 219 38 219 60] Core_Option_Option_Type.C_Some _8);
-    _8 <- any Own_OwnResult_Type.t_ownresult t e;
-    goto BB11
-  }
-  BB11 {
-    goto BB12
-  }
-  BB12 {
-    goto BB17
-  }
-  BB13 {
-    assert { [@expl:type invariant] inv0 self };
-    assume { resolve0 self };
-    [#"../own.rs" 220 35 220 39] _0 <- ([#"../own.rs" 220 35 220 39] Core_Option_Option_Type.C_None);
-    goto BB17
-  }
-  BB14 {
     [#"../own.rs" 221 33 221 56] _0 <- ([#"../own.rs" 221 33 221 56] Core_Option_Option_Type.C_Some _11);
     _11 <- any Own_OwnResult_Type.t_ownresult t e;
-    goto BB15
-  }
-  BB15 {
-    goto BB16
-  }
-  BB16 {
     goto BB17
   }
   BB17 {
-    goto BB18
-  }
-  BB18 {
     return _0
   }
   

@@ -234,3 +234,27 @@ pub struct Body<'tcx> {
     pub(crate) arg_count: usize,
     pub(crate) blocks: IndexMap<BasicBlock, Block<'tcx>>,
 }
+
+// Introduce finer grained methods as needed
+pub trait MutableVisitor<'tcx>: Sized {
+    fn visit_body(&mut self, body: &mut Body<'tcx>) {
+        super_visit_body(self, body);
+    }
+
+    fn visit_block(&mut self, block: &mut Block<'tcx>) {
+        super_visit_block(self, block);
+    }
+
+    fn visit_statement(&mut self, _stmt: &mut Statement<'tcx>) {}
+
+    fn visit_terminator(&mut self, _term: &mut Terminator<'tcx>) {}
+}
+
+fn super_visit_body<'tcx, V: MutableVisitor<'tcx>>(visit: &mut V, body: &mut Body<'tcx>) {
+    body.blocks.iter_mut().for_each(|(_, b)| visit.visit_block(b));
+}
+
+fn super_visit_block<'tcx, V: MutableVisitor<'tcx>>(visit: &mut V, block: &mut Block<'tcx>) {
+    block.stmts.iter_mut().for_each(|stmt| visit.visit_statement(stmt));
+    visit.visit_terminator(&mut block.terminator);
+}

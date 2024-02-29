@@ -46,6 +46,11 @@ module Alloc_Vec_Vec_Type
     | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
 end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+    
+end
 module Core_Option_Option_Type
   type t_option 't =
     | C_None
@@ -56,11 +61,6 @@ module Core_Option_Option_Type
       | C_None -> any 't
       | C_Some a -> a
       end
-end
-module Alloc_Alloc_Global_Type
-  type t_global  =
-    | C_Global
-    
 end
 module C100doors_F
   use prelude.UIntSize
@@ -238,30 +238,13 @@ module C100doors_F
     
   axiom inv0 : forall x : Core_Ops_Range_Range_Type.t_range usize . inv0 x = true
   use prelude.Snapshot
-  predicate resolve3 (self : bool) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
-  val resolve3 (self : bool) : bool
-    ensures { result = resolve3 self }
-    
-  use seq.Seq
-  function index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (ix : int) : bool
-    
-   =
-    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model0 self) ix
-  val index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (ix : int) : bool
-    ensures { result = index_logic0 self ix }
-    
-  predicate resolve2 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model0 self) -> resolve3 (index_logic0 self i)
-  val resolve2 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) : bool
+  predicate resolve2 (self : borrowed bool) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  val resolve2 (self : borrowed bool) : bool
     ensures { result = resolve2 self }
     
-  predicate resolve1 (self : borrowed bool) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve1 (self : borrowed bool) : bool
-    ensures { result = resolve1 self }
-    
   use prelude.Slice
+  use seq.Seq
   predicate resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq bool) (fin : Seq.seq bool) =
     [#"../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
   val resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq bool) (fin : Seq.seq bool) : bool
@@ -306,14 +289,14 @@ module C100doors_F
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 142 26 142 54] has_value0 index (shallow_model2 self) result }
     ensures { inv8 result }
     
-  use seq.Seq
-  predicate resolve0 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
+  predicate resolve1 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  val resolve0 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
-    ensures { result = resolve0 self }
+  val resolve1 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
+    ensures { result = resolve1 self }
     
+  use seq.Seq
   predicate completed0 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve0 self /\ deep_model0 (Core_Ops_Range_Range_Type.range_start ( * self)) >= deep_model0 (Core_Ops_Range_Range_Type.range_end ( * self))
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve1 self /\ deep_model0 (Core_Ops_Range_Range_Type.range_start ( * self)) >= deep_model0 (Core_Ops_Range_Range_Type.range_end ( * self))
   val completed0 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
     ensures { result = completed0 self }
     
@@ -327,6 +310,23 @@ module C100doors_F
     
   use prelude.Snapshot
   use prelude.Snapshot
+  predicate resolve3 (self : bool) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
+  val resolve3 (self : bool) : bool
+    ensures { result = resolve3 self }
+    
+  function index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (ix : int) : bool
+    
+   =
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model0 self) ix
+  val index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (ix : int) : bool
+    ensures { result = index_logic0 self ix }
+    
+  predicate resolve0 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model0 self) -> resolve3 (index_logic0 self i)
+  val resolve0 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) : bool
+    ensures { result = resolve0 self }
+    
   use prelude.Snapshot
   use prelude.Snapshot
   predicate into_iter_post0 (self : Core_Ops_Range_Range_Type.t_range usize) (res : Core_Ops_Range_Range_Type.t_range usize)
@@ -386,78 +386,48 @@ module C100doors_F
     [#"../100doors.rs" 21 16 21 22] _3 <- ([#"../100doors.rs" 21 16 21 22] Core_Ops_Range_Range_Type.C_Range (1 : usize) (101 : usize));
     [#"../100doors.rs" 20 4 20 41] iter <- ([#"../100doors.rs" 20 4 20 41] into_iter0 _3);
     _3 <- any Core_Ops_Range_Range_Type.t_range usize;
-    goto BB2
-  }
-  BB2 {
     [#"../100doors.rs" 20 4 20 41] iter_old <- ([#"../100doors.rs" 20 4 20 41] Snapshot.new iter);
-    goto BB3
-  }
-  BB3 {
     [#"../100doors.rs" 20 4 20 41] produced <- ([#"../100doors.rs" 20 4 20 41] Snapshot.new (Seq.empty ));
-    goto BB4
-  }
-  BB4 {
-    goto BB5
-  }
-  BB5 {
     goto BB6
   }
   BB6 {
     invariant { [#"../100doors.rs" 20 4 20 41] inv0 iter };
     invariant { [#"../100doors.rs" 20 4 20 41] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter };
     invariant { [#"../100doors.rs" 20 16 20 39] Seq.length (shallow_model0 door_open) = 100 };
-    goto BB7
-  }
-  BB7 {
     [#"../100doors.rs" 20 4 20 41] _14 <- Borrow.borrow_mut iter;
     [#"../100doors.rs" 20 4 20 41] iter <-  ^ _14;
     [#"../100doors.rs" 20 4 20 41] _13 <- Borrow.borrow_final ( * _14) (Borrow.get_id _14);
     [#"../100doors.rs" 20 4 20 41] _14 <- { _14 with current = ( ^ _13) ; };
     [#"../100doors.rs" 20 4 20 41] _12 <- ([#"../100doors.rs" 20 4 20 41] next0 _13);
     _13 <- any borrowed (Core_Ops_Range_Range_Type.t_range usize);
-    goto BB8
-  }
-  BB8 {
-    assume { resolve0 _14 };
+    assume { resolve1 _14 };
     switch (_12)
       | Core_Option_Option_Type.C_None -> goto BB9
       | Core_Option_Option_Type.C_Some _ -> goto BB10
       end
   }
   BB9 {
-    assume { resolve2 door_open };
+    assume { resolve0 door_open };
     [#"../100doors.rs" 20 4 20 41] _0 <- ([#"../100doors.rs" 20 4 20 41] ());
-    goto BB21
+    return _0
   }
   BB10 {
-    goto BB12
-  }
-  BB11 {
-    assume { resolve2 door_open };
-    assert { [#"../100doors.rs" 20 4 20 41] false };
-    absurd
-  }
-  BB12 {
     [#"../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem <- ([#"../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] Core_Option_Option_Type.some_0 _12);
     [#"../100doors.rs" 20 4 20 41] _17 <- ([#"../100doors.rs" 20 4 20 41] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
-    goto BB13
-  }
-  BB13 {
     [#"../100doors.rs" 20 4 20 41] produced <- ([#"../100doors.rs" 20 4 20 41] _17);
     _17 <- any Snapshot.snap_ty (Seq.seq usize);
     [#"../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] pass <- ([#"../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem);
     [#"../100doors.rs" 22 30 22 34] door <- ([#"../100doors.rs" 22 30 22 34] pass);
-    goto BB14
-  }
-  BB14 {
     goto BB15
+  }
+  BB11 {
+    assume { resolve0 door_open };
+    assert { [#"../100doors.rs" 20 4 20 41] false };
+    absurd
   }
   BB15 {
     invariant { [#"../100doors.rs" 23 20 23 54] 1 <= UIntSize.to_int door /\ UIntSize.to_int door <= 100 + UIntSize.to_int pass };
     invariant { [#"../100doors.rs" 24 20 24 43] Seq.length (shallow_model0 door_open) = 100 };
-    goto BB16
-  }
-  BB16 {
     [#"../100doors.rs" 25 14 25 25] _23 <- ([#"../100doors.rs" 25 14 25 25] door <= (100 : usize));
     switch (_23)
       | False -> goto BB20
@@ -468,20 +438,14 @@ module C100doors_F
     [#"../100doors.rs" 26 45 26 53] _28 <- ([#"../100doors.rs" 26 45 26 53] door - (1 : usize));
     [#"../100doors.rs" 26 44 26 54] _26 <- ([#"../100doors.rs" 26 44 26 54] index0 door_open _28);
     _28 <- any usize;
-    goto BB18
-  }
-  BB18 {
     [#"../100doors.rs" 26 12 26 21] _31 <- Borrow.borrow_mut door_open;
     [#"../100doors.rs" 26 12 26 21] door_open <-  ^ _31;
     [#"../100doors.rs" 26 22 26 30] _32 <- ([#"../100doors.rs" 26 22 26 30] door - (1 : usize));
     [#"../100doors.rs" 26 21 26 31] _30 <- ([#"../100doors.rs" 26 21 26 31] index_mut0 _31 _32);
     _31 <- any borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global));
     _32 <- any usize;
-    goto BB19
-  }
-  BB19 {
     [#"../100doors.rs" 26 12 26 54] _30 <- { _30 with current = ([#"../100doors.rs" 26 12 26 54] not _26) ; };
-    assume { resolve1 _30 };
+    assume { resolve2 _30 };
     [#"../100doors.rs" 27 12 27 24] door <- ([#"../100doors.rs" 27 12 27 24] door + pass);
     [#"../100doors.rs" 25 26 28 9] _11 <- ([#"../100doors.rs" 25 26 28 9] ());
     goto BB15
@@ -489,9 +453,6 @@ module C100doors_F
   BB20 {
     [#"../100doors.rs" 25 8 28 9] _11 <- ([#"../100doors.rs" 25 8 28 9] ());
     goto BB6
-  }
-  BB21 {
-    return _0
   }
   
 end

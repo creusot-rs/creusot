@@ -38,22 +38,6 @@ module CheckedOps_TestU8AddExample
     ensures { result = inv0 _x }
     
   axiom inv0 : forall x : Core_Option_Option_Type.t_option uint8 . inv0 x = true
-  use prelude.Bool
-  predicate resolve2 (self : bool) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
-  val resolve2 (self : bool) : bool
-    ensures { result = resolve2 self }
-    
-  predicate resolve1 (self : uint8) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
-  val resolve1 (self : uint8) : bool
-    ensures { result = resolve1 self }
-    
-  predicate resolve0 (self : (uint8, bool)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve2 (let (_, a) = self in a)
-  val resolve0 (self : (uint8, bool)) : bool
-    ensures { result = resolve0 self }
-    
   use prelude.UInt32
   use prelude.Int
   let constant max0  : uint8 = [@vc:do_not_keep_trace] [@vc:sp]
@@ -77,6 +61,22 @@ module CheckedOps_TestU8AddExample
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] UInt8.to_int self + UInt8.to_int rhs >= UInt8.to_int min0 /\ UInt8.to_int self + UInt8.to_int rhs <= UInt8.to_int max0 -> UInt8.to_int result = UInt8.to_int self + UInt8.to_int rhs }
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] UInt8.to_int self + UInt8.to_int rhs < UInt8.to_int min0 -> UInt8.to_int result = UInt8.to_int min0 }
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int max0 -> UInt8.to_int result = UInt8.to_int max0 }
+    
+  use prelude.Bool
+  predicate resolve2 (self : bool) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
+  val resolve2 (self : bool) : bool
+    ensures { result = resolve2 self }
+    
+  predicate resolve1 (self : uint8) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
+  val resolve1 (self : uint8) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : (uint8, bool)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve2 (let (_, a) = self in a)
+  val resolve0 (self : (uint8, bool)) : bool
+    ensures { result = resolve0 self }
     
   val wrapping_add0 (self : uint8) (rhs : uint8) : uint8
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] UInt8.to_int result = EuclideanDivision.mod (UInt8.to_int self + UInt8.to_int rhs) (Power.power 2 (UInt32.to_int bits0)) + UInt8.to_int min0 }
@@ -132,9 +132,6 @@ module CheckedOps_TestU8AddExample
   BB1 {
     [#"../checked_ops.rs" 6 12 6 40] _3 <- ([#"../checked_ops.rs" 6 12 6 40] unwrap0 _4);
     _4 <- any Core_Option_Option_Type.t_option uint8;
-    goto BB2
-  }
-  BB2 {
     [#"../checked_ops.rs" 6 12 6 46] _2 <- ([#"../checked_ops.rs" 6 12 6 46] _3 = (15 : uint8));
     _3 <- any uint8;
     switch (_2)
@@ -144,31 +141,18 @@ module CheckedOps_TestU8AddExample
   }
   BB3 {
     [#"../checked_ops.rs" 7 12 7 33] _9 <- ([#"../checked_ops.rs" 7 12 7 33] checked_add0 (250 : uint8) (10 : uint8));
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 6 4 6 47] false };
-    absurd
-  }
-  BB5 {
     [#"../checked_ops.rs" 7 12 7 43] _7 <- ([#"../checked_ops.rs" 7 12 7 43] is_none0 _9);
-    goto BB6
-  }
-  BB6 {
     switch (_7)
       | False -> goto BB8
       | True -> goto BB7
       end
   }
-  BB7 {
-    [#"../checked_ops.rs" 9 12 9 32] _13 <- ([#"../checked_ops.rs" 9 12 9 32] wrapping_add0 (5 : uint8) (10 : uint8));
-    goto BB9
-  }
-  BB8 {
-    assert { [#"../checked_ops.rs" 7 4 7 44] false };
+  BB4 {
+    assert { [#"../checked_ops.rs" 6 4 6 47] false };
     absurd
   }
-  BB9 {
+  BB7 {
+    [#"../checked_ops.rs" 9 12 9 32] _13 <- ([#"../checked_ops.rs" 9 12 9 32] wrapping_add0 (5 : uint8) (10 : uint8));
     [#"../checked_ops.rs" 9 12 9 38] _12 <- ([#"../checked_ops.rs" 9 12 9 38] _13 = (15 : uint8));
     _13 <- any uint8;
     switch (_12)
@@ -176,15 +160,12 @@ module CheckedOps_TestU8AddExample
       | True -> goto BB10
       end
   }
-  BB10 {
-    [#"../checked_ops.rs" 10 12 10 34] _17 <- ([#"../checked_ops.rs" 10 12 10 34] wrapping_add0 (250 : uint8) (10 : uint8));
-    goto BB12
-  }
-  BB11 {
-    assert { [#"../checked_ops.rs" 9 4 9 39] false };
+  BB8 {
+    assert { [#"../checked_ops.rs" 7 4 7 44] false };
     absurd
   }
-  BB12 {
+  BB10 {
+    [#"../checked_ops.rs" 10 12 10 34] _17 <- ([#"../checked_ops.rs" 10 12 10 34] wrapping_add0 (250 : uint8) (10 : uint8));
     [#"../checked_ops.rs" 10 12 10 39] _16 <- ([#"../checked_ops.rs" 10 12 10 39] _17 = (4 : uint8));
     _17 <- any uint8;
     switch (_16)
@@ -192,15 +173,12 @@ module CheckedOps_TestU8AddExample
       | True -> goto BB13
       end
   }
-  BB13 {
-    [#"../checked_ops.rs" 12 12 12 34] _21 <- ([#"../checked_ops.rs" 12 12 12 34] saturating_add0 (5 : uint8) (10 : uint8));
-    goto BB15
-  }
-  BB14 {
-    assert { [#"../checked_ops.rs" 10 4 10 40] false };
+  BB11 {
+    assert { [#"../checked_ops.rs" 9 4 9 39] false };
     absurd
   }
-  BB15 {
+  BB13 {
+    [#"../checked_ops.rs" 12 12 12 34] _21 <- ([#"../checked_ops.rs" 12 12 12 34] saturating_add0 (5 : uint8) (10 : uint8));
     [#"../checked_ops.rs" 12 12 12 40] _20 <- ([#"../checked_ops.rs" 12 12 12 40] _21 = (15 : uint8));
     _21 <- any uint8;
     switch (_20)
@@ -208,15 +186,12 @@ module CheckedOps_TestU8AddExample
       | True -> goto BB16
       end
   }
-  BB16 {
-    [#"../checked_ops.rs" 13 12 13 36] _25 <- ([#"../checked_ops.rs" 13 12 13 36] saturating_add0 (250 : uint8) (10 : uint8));
-    goto BB18
-  }
-  BB17 {
-    assert { [#"../checked_ops.rs" 12 4 12 41] false };
+  BB14 {
+    assert { [#"../checked_ops.rs" 10 4 10 40] false };
     absurd
   }
-  BB18 {
+  BB16 {
+    [#"../checked_ops.rs" 13 12 13 36] _25 <- ([#"../checked_ops.rs" 13 12 13 36] saturating_add0 (250 : uint8) (10 : uint8));
     [#"../checked_ops.rs" 13 12 13 43] _24 <- ([#"../checked_ops.rs" 13 12 13 43] _25 = (255 : uint8));
     _25 <- any uint8;
     switch (_24)
@@ -224,20 +199,21 @@ module CheckedOps_TestU8AddExample
       | True -> goto BB19
       end
   }
-  BB19 {
-    [#"../checked_ops.rs" 15 14 15 37] res <- ([#"../checked_ops.rs" 15 14 15 37] overflowing_add0 (5 : uint8) (10 : uint8));
-    goto BB21
-  }
-  BB20 {
-    assert { [#"../checked_ops.rs" 13 4 13 44] false };
+  BB17 {
+    assert { [#"../checked_ops.rs" 12 4 12 41] false };
     absurd
   }
-  BB21 {
+  BB19 {
+    [#"../checked_ops.rs" 15 14 15 37] res <- ([#"../checked_ops.rs" 15 14 15 37] overflowing_add0 (5 : uint8) (10 : uint8));
     [#"../checked_ops.rs" 16 12 16 23] _29 <- ([#"../checked_ops.rs" 16 12 16 23] (let (a, _) = res in a) = (15 : uint8));
     switch (_29)
       | False -> goto BB25
       | True -> goto BB22
       end
+  }
+  BB20 {
+    assert { [#"../checked_ops.rs" 13 4 13 44] false };
+    absurd
   }
   BB22 {
     assume { resolve0 res };
@@ -249,7 +225,11 @@ module CheckedOps_TestU8AddExample
   }
   BB23 {
     [#"../checked_ops.rs" 17 14 17 39] res1 <- ([#"../checked_ops.rs" 17 14 17 39] overflowing_add0 (250 : uint8) (10 : uint8));
-    goto BB27
+    [#"../checked_ops.rs" 18 12 18 22] _36 <- ([#"../checked_ops.rs" 18 12 18 22] (let (a, _) = res1 in a) = (4 : uint8));
+    switch (_36)
+      | False -> goto BB31
+      | True -> goto BB28
+      end
   }
   BB24 {
     goto BB26
@@ -261,13 +241,6 @@ module CheckedOps_TestU8AddExample
   BB26 {
     assert { [#"../checked_ops.rs" 16 4 16 42] false };
     absurd
-  }
-  BB27 {
-    [#"../checked_ops.rs" 18 12 18 22] _36 <- ([#"../checked_ops.rs" 18 12 18 22] (let (a, _) = res1 in a) = (4 : uint8));
-    switch (_36)
-      | False -> goto BB31
-      | True -> goto BB28
-      end
   }
   BB28 {
     assume { resolve0 res1 };
@@ -388,9 +361,6 @@ module CheckedOps_TestU8AddOverflow
   }
   BB1 {
     [#"../checked_ops.rs" 24 12 24 42] _4 <- ([#"../checked_ops.rs" 24 12 24 42] is_none0 _6);
-    goto BB2
-  }
-  BB2 {
     switch (_4)
       | False -> goto BB4
       | True -> goto BB3
@@ -398,13 +368,6 @@ module CheckedOps_TestU8AddOverflow
   }
   BB3 {
     [#"../checked_ops.rs" 25 12 25 33] _11 <- ([#"../checked_ops.rs" 25 12 25 33] wrapping_add0 (255 : uint8) a);
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 24 4 24 43] false };
-    absurd
-  }
-  BB5 {
     [#"../checked_ops.rs" 25 37 25 42] _13 <- ([#"../checked_ops.rs" 25 37 25 42] a - (1 : uint8));
     [#"../checked_ops.rs" 25 12 25 42] _10 <- ([#"../checked_ops.rs" 25 12 25 42] _11 = _13);
     _11 <- any uint8;
@@ -414,15 +377,12 @@ module CheckedOps_TestU8AddOverflow
       | True -> goto BB6
       end
   }
-  BB6 {
-    [#"../checked_ops.rs" 26 12 26 35] _18 <- ([#"../checked_ops.rs" 26 12 26 35] saturating_add0 (255 : uint8) a);
-    goto BB8
-  }
-  BB7 {
-    assert { [#"../checked_ops.rs" 25 4 25 43] false };
+  BB4 {
+    assert { [#"../checked_ops.rs" 24 4 24 43] false };
     absurd
   }
-  BB8 {
+  BB6 {
+    [#"../checked_ops.rs" 26 12 26 35] _18 <- ([#"../checked_ops.rs" 26 12 26 35] saturating_add0 (255 : uint8) a);
     [#"../checked_ops.rs" 26 12 26 42] _17 <- ([#"../checked_ops.rs" 26 12 26 42] _18 = (255 : uint8));
     _18 <- any uint8;
     switch (_17)
@@ -430,15 +390,12 @@ module CheckedOps_TestU8AddOverflow
       | True -> goto BB9
       end
   }
-  BB9 {
-    [#"../checked_ops.rs" 27 14 27 38] res <- ([#"../checked_ops.rs" 27 14 27 38] overflowing_add0 (255 : uint8) a);
-    goto BB11
-  }
-  BB10 {
-    assert { [#"../checked_ops.rs" 26 4 26 43] false };
+  BB7 {
+    assert { [#"../checked_ops.rs" 25 4 25 43] false };
     absurd
   }
-  BB11 {
+  BB9 {
+    [#"../checked_ops.rs" 27 14 27 38] res <- ([#"../checked_ops.rs" 27 14 27 38] overflowing_add0 (255 : uint8) a);
     [#"../checked_ops.rs" 28 21 28 26] _26 <- ([#"../checked_ops.rs" 28 21 28 26] a - (1 : uint8));
     [#"../checked_ops.rs" 28 12 28 26] _24 <- ([#"../checked_ops.rs" 28 12 28 26] (let (a, _) = res in a) = _26);
     _26 <- any uint8;
@@ -446,6 +403,10 @@ module CheckedOps_TestU8AddOverflow
       | False -> goto BB15
       | True -> goto BB12
       end
+  }
+  BB10 {
+    assert { [#"../checked_ops.rs" 26 4 26 43] false };
+    absurd
   }
   BB12 {
     assume { resolve0 res };
@@ -597,9 +558,6 @@ module CheckedOps_TestU8OverflowingAdd
   BB1 {
     assume { resolve0 _6 };
     [#"../checked_ops.rs" 40 38 40 55] _9 <- ([#"../checked_ops.rs" 40 38 40 55] wrapping_add0 a b);
-    goto BB2
-  }
-  BB2 {
     [#"../checked_ops.rs" 40 12 40 55] _4 <- ([#"../checked_ops.rs" 40 12 40 55] (let (a, _) = _6 in a) = _9);
     _9 <- any uint8;
     switch (_4)
@@ -609,28 +567,19 @@ module CheckedOps_TestU8OverflowingAdd
   }
   BB3 {
     [#"../checked_ops.rs" 41 12 41 32] _16 <- ([#"../checked_ops.rs" 41 12 41 32] overflowing_add0 a b);
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 40 4 40 56] false };
-    absurd
-  }
-  BB5 {
     assume { resolve0 _16 };
     [#"../checked_ops.rs" 41 38 41 54] _21 <- ([#"../checked_ops.rs" 41 38 41 54] checked_add0 a b);
-    goto BB6
-  }
-  BB6 {
     [#"../checked_ops.rs" 41 38 41 64] _19 <- ([#"../checked_ops.rs" 41 38 41 64] is_none0 _21);
-    goto BB7
-  }
-  BB7 {
     [#"../checked_ops.rs" 41 12 41 64] _14 <- ([#"../checked_ops.rs" 41 12 41 64] Bool.eqb (let (_, a) = _16 in a) _19);
     _19 <- any bool;
     switch (_14)
       | False -> goto BB9
       | True -> goto BB8
       end
+  }
+  BB4 {
+    assert { [#"../checked_ops.rs" 40 4 40 56] false };
+    absurd
   }
   BB8 {
     [#"../checked_ops.rs" 39 45 42 1] _0 <- ([#"../checked_ops.rs" 39 45 42 1] ());
@@ -675,22 +624,6 @@ module CheckedOps_TestU8SubExample
     ensures { result = inv0 _x }
     
   axiom inv0 : forall x : Core_Option_Option_Type.t_option uint8 . inv0 x = true
-  use prelude.Bool
-  predicate resolve2 (self : bool) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
-  val resolve2 (self : bool) : bool
-    ensures { result = resolve2 self }
-    
-  predicate resolve1 (self : uint8) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
-  val resolve1 (self : uint8) : bool
-    ensures { result = resolve1 self }
-    
-  predicate resolve0 (self : (uint8, bool)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve2 (let (_, a) = self in a)
-  val resolve0 (self : (uint8, bool)) : bool
-    ensures { result = resolve0 self }
-    
   use prelude.UInt32
   use prelude.Int
   let constant max0  : uint8 = [@vc:do_not_keep_trace] [@vc:sp]
@@ -714,6 +647,22 @@ module CheckedOps_TestU8SubExample
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] UInt8.to_int self - UInt8.to_int rhs >= UInt8.to_int min0 /\ UInt8.to_int self - UInt8.to_int rhs <= UInt8.to_int max0 -> UInt8.to_int result = UInt8.to_int self - UInt8.to_int rhs }
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] UInt8.to_int self - UInt8.to_int rhs < UInt8.to_int min0 -> UInt8.to_int result = UInt8.to_int min0 }
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] UInt8.to_int self - UInt8.to_int rhs > UInt8.to_int max0 -> UInt8.to_int result = UInt8.to_int max0 }
+    
+  use prelude.Bool
+  predicate resolve2 (self : bool) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
+  val resolve2 (self : bool) : bool
+    ensures { result = resolve2 self }
+    
+  predicate resolve1 (self : uint8) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
+  val resolve1 (self : uint8) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : (uint8, bool)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve2 (let (_, a) = self in a)
+  val resolve0 (self : (uint8, bool)) : bool
+    ensures { result = resolve0 self }
     
   val wrapping_sub0 (self : uint8) (rhs : uint8) : uint8
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] UInt8.to_int result = EuclideanDivision.mod (UInt8.to_int self - UInt8.to_int rhs) (Power.power 2 (UInt32.to_int bits0)) + UInt8.to_int min0 }
@@ -768,9 +717,6 @@ module CheckedOps_TestU8SubExample
   }
   BB1 {
     [#"../checked_ops.rs" 46 12 46 41] _2 <- ([#"../checked_ops.rs" 46 12 46 41] is_none0 _4);
-    goto BB2
-  }
-  BB2 {
     switch (_2)
       | False -> goto BB4
       | True -> goto BB3
@@ -778,18 +724,8 @@ module CheckedOps_TestU8SubExample
   }
   BB3 {
     [#"../checked_ops.rs" 47 12 47 33] _9 <- ([#"../checked_ops.rs" 47 12 47 33] checked_sub0 (250 : uint8) (10 : uint8));
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 46 4 46 42] false };
-    absurd
-  }
-  BB5 {
     [#"../checked_ops.rs" 47 12 47 42] _8 <- ([#"../checked_ops.rs" 47 12 47 42] unwrap0 _9);
     _9 <- any Core_Option_Option_Type.t_option uint8;
-    goto BB6
-  }
-  BB6 {
     [#"../checked_ops.rs" 47 12 47 49] _7 <- ([#"../checked_ops.rs" 47 12 47 49] _8 = (240 : uint8));
     _8 <- any uint8;
     switch (_7)
@@ -797,15 +733,12 @@ module CheckedOps_TestU8SubExample
       | True -> goto BB7
       end
   }
-  BB7 {
-    [#"../checked_ops.rs" 49 12 49 32] _13 <- ([#"../checked_ops.rs" 49 12 49 32] wrapping_sub0 (5 : uint8) (10 : uint8));
-    goto BB9
-  }
-  BB8 {
-    assert { [#"../checked_ops.rs" 47 4 47 50] false };
+  BB4 {
+    assert { [#"../checked_ops.rs" 46 4 46 42] false };
     absurd
   }
-  BB9 {
+  BB7 {
+    [#"../checked_ops.rs" 49 12 49 32] _13 <- ([#"../checked_ops.rs" 49 12 49 32] wrapping_sub0 (5 : uint8) (10 : uint8));
     [#"../checked_ops.rs" 49 12 49 39] _12 <- ([#"../checked_ops.rs" 49 12 49 39] _13 = (251 : uint8));
     _13 <- any uint8;
     switch (_12)
@@ -813,15 +746,12 @@ module CheckedOps_TestU8SubExample
       | True -> goto BB10
       end
   }
-  BB10 {
-    [#"../checked_ops.rs" 50 12 50 34] _17 <- ([#"../checked_ops.rs" 50 12 50 34] wrapping_sub0 (250 : uint8) (10 : uint8));
-    goto BB12
-  }
-  BB11 {
-    assert { [#"../checked_ops.rs" 49 4 49 40] false };
+  BB8 {
+    assert { [#"../checked_ops.rs" 47 4 47 50] false };
     absurd
   }
-  BB12 {
+  BB10 {
+    [#"../checked_ops.rs" 50 12 50 34] _17 <- ([#"../checked_ops.rs" 50 12 50 34] wrapping_sub0 (250 : uint8) (10 : uint8));
     [#"../checked_ops.rs" 50 12 50 41] _16 <- ([#"../checked_ops.rs" 50 12 50 41] _17 = (240 : uint8));
     _17 <- any uint8;
     switch (_16)
@@ -829,15 +759,12 @@ module CheckedOps_TestU8SubExample
       | True -> goto BB13
       end
   }
-  BB13 {
-    [#"../checked_ops.rs" 52 12 52 34] _21 <- ([#"../checked_ops.rs" 52 12 52 34] saturating_sub0 (5 : uint8) (10 : uint8));
-    goto BB15
-  }
-  BB14 {
-    assert { [#"../checked_ops.rs" 50 4 50 42] false };
+  BB11 {
+    assert { [#"../checked_ops.rs" 49 4 49 40] false };
     absurd
   }
-  BB15 {
+  BB13 {
+    [#"../checked_ops.rs" 52 12 52 34] _21 <- ([#"../checked_ops.rs" 52 12 52 34] saturating_sub0 (5 : uint8) (10 : uint8));
     [#"../checked_ops.rs" 52 12 52 39] _20 <- ([#"../checked_ops.rs" 52 12 52 39] _21 = (0 : uint8));
     _21 <- any uint8;
     switch (_20)
@@ -845,15 +772,12 @@ module CheckedOps_TestU8SubExample
       | True -> goto BB16
       end
   }
-  BB16 {
-    [#"../checked_ops.rs" 53 12 53 36] _25 <- ([#"../checked_ops.rs" 53 12 53 36] saturating_sub0 (250 : uint8) (10 : uint8));
-    goto BB18
-  }
-  BB17 {
-    assert { [#"../checked_ops.rs" 52 4 52 40] false };
+  BB14 {
+    assert { [#"../checked_ops.rs" 50 4 50 42] false };
     absurd
   }
-  BB18 {
+  BB16 {
+    [#"../checked_ops.rs" 53 12 53 36] _25 <- ([#"../checked_ops.rs" 53 12 53 36] saturating_sub0 (250 : uint8) (10 : uint8));
     [#"../checked_ops.rs" 53 12 53 43] _24 <- ([#"../checked_ops.rs" 53 12 53 43] _25 = (240 : uint8));
     _25 <- any uint8;
     switch (_24)
@@ -861,20 +785,21 @@ module CheckedOps_TestU8SubExample
       | True -> goto BB19
       end
   }
-  BB19 {
-    [#"../checked_ops.rs" 55 14 55 37] res <- ([#"../checked_ops.rs" 55 14 55 37] overflowing_sub0 (5 : uint8) (10 : uint8));
-    goto BB21
-  }
-  BB20 {
-    assert { [#"../checked_ops.rs" 53 4 53 44] false };
+  BB17 {
+    assert { [#"../checked_ops.rs" 52 4 52 40] false };
     absurd
   }
-  BB21 {
+  BB19 {
+    [#"../checked_ops.rs" 55 14 55 37] res <- ([#"../checked_ops.rs" 55 14 55 37] overflowing_sub0 (5 : uint8) (10 : uint8));
     [#"../checked_ops.rs" 56 12 56 24] _29 <- ([#"../checked_ops.rs" 56 12 56 24] (let (a, _) = res in a) = (251 : uint8));
     switch (_29)
       | False -> goto BB25
       | True -> goto BB22
       end
+  }
+  BB20 {
+    assert { [#"../checked_ops.rs" 53 4 53 44] false };
+    absurd
   }
   BB22 {
     assume { resolve0 res };
@@ -886,7 +811,11 @@ module CheckedOps_TestU8SubExample
   }
   BB23 {
     [#"../checked_ops.rs" 57 14 57 39] res1 <- ([#"../checked_ops.rs" 57 14 57 39] overflowing_sub0 (250 : uint8) (10 : uint8));
-    goto BB27
+    [#"../checked_ops.rs" 58 12 58 24] _36 <- ([#"../checked_ops.rs" 58 12 58 24] (let (a, _) = res1 in a) = (240 : uint8));
+    switch (_36)
+      | False -> goto BB31
+      | True -> goto BB28
+      end
   }
   BB24 {
     goto BB26
@@ -898,13 +827,6 @@ module CheckedOps_TestU8SubExample
   BB26 {
     assert { [#"../checked_ops.rs" 56 4 56 42] false };
     absurd
-  }
-  BB27 {
-    [#"../checked_ops.rs" 58 12 58 24] _36 <- ([#"../checked_ops.rs" 58 12 58 24] (let (a, _) = res1 in a) = (240 : uint8));
-    switch (_36)
-      | False -> goto BB31
-      | True -> goto BB28
-      end
   }
   BB28 {
     assume { resolve0 res1 };
@@ -1027,9 +949,6 @@ module CheckedOps_TestU8SubOverflow
   }
   BB1 {
     [#"../checked_ops.rs" 64 12 64 40] _4 <- ([#"../checked_ops.rs" 64 12 64 40] is_none0 _6);
-    goto BB2
-  }
-  BB2 {
     switch (_4)
       | False -> goto BB4
       | True -> goto BB3
@@ -1037,13 +956,6 @@ module CheckedOps_TestU8SubOverflow
   }
   BB3 {
     [#"../checked_ops.rs" 65 12 65 31] _11 <- ([#"../checked_ops.rs" 65 12 65 31] wrapping_sub0 (0 : uint8) a);
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 64 4 64 41] false };
-    absurd
-  }
-  BB5 {
     [#"../checked_ops.rs" 65 35 65 42] _14 <- ([#"../checked_ops.rs" 65 35 65 42] (255 : uint8) - a);
     [#"../checked_ops.rs" 65 35 65 46] _13 <- ([#"../checked_ops.rs" 65 35 65 46] _14 + (1 : uint8));
     _14 <- any uint8;
@@ -1055,15 +967,12 @@ module CheckedOps_TestU8SubOverflow
       | True -> goto BB6
       end
   }
-  BB6 {
-    [#"../checked_ops.rs" 66 12 66 33] _19 <- ([#"../checked_ops.rs" 66 12 66 33] saturating_sub0 (0 : uint8) a);
-    goto BB8
-  }
-  BB7 {
-    assert { [#"../checked_ops.rs" 65 4 65 47] false };
+  BB4 {
+    assert { [#"../checked_ops.rs" 64 4 64 41] false };
     absurd
   }
-  BB8 {
+  BB6 {
+    [#"../checked_ops.rs" 66 12 66 33] _19 <- ([#"../checked_ops.rs" 66 12 66 33] saturating_sub0 (0 : uint8) a);
     [#"../checked_ops.rs" 66 12 66 38] _18 <- ([#"../checked_ops.rs" 66 12 66 38] _19 = (0 : uint8));
     _19 <- any uint8;
     switch (_18)
@@ -1071,15 +980,12 @@ module CheckedOps_TestU8SubOverflow
       | True -> goto BB9
       end
   }
-  BB9 {
-    [#"../checked_ops.rs" 67 14 67 36] res <- ([#"../checked_ops.rs" 67 14 67 36] overflowing_sub0 (0 : uint8) a);
-    goto BB11
-  }
-  BB10 {
-    assert { [#"../checked_ops.rs" 66 4 66 39] false };
+  BB7 {
+    assert { [#"../checked_ops.rs" 65 4 65 47] false };
     absurd
   }
-  BB11 {
+  BB9 {
+    [#"../checked_ops.rs" 67 14 67 36] res <- ([#"../checked_ops.rs" 67 14 67 36] overflowing_sub0 (0 : uint8) a);
     [#"../checked_ops.rs" 68 21 68 28] _28 <- ([#"../checked_ops.rs" 68 21 68 28] (255 : uint8) - a);
     [#"../checked_ops.rs" 68 21 68 32] _27 <- ([#"../checked_ops.rs" 68 21 68 32] _28 + (1 : uint8));
     _28 <- any uint8;
@@ -1089,6 +995,10 @@ module CheckedOps_TestU8SubOverflow
       | False -> goto BB15
       | True -> goto BB12
       end
+  }
+  BB10 {
+    assert { [#"../checked_ops.rs" 66 4 66 39] false };
+    absurd
   }
   BB12 {
     assume { resolve0 res };
@@ -1240,9 +1150,6 @@ module CheckedOps_TestU8OverflowingSub
   BB1 {
     assume { resolve0 _6 };
     [#"../checked_ops.rs" 80 38 80 55] _9 <- ([#"../checked_ops.rs" 80 38 80 55] wrapping_sub0 a b);
-    goto BB2
-  }
-  BB2 {
     [#"../checked_ops.rs" 80 12 80 55] _4 <- ([#"../checked_ops.rs" 80 12 80 55] (let (a, _) = _6 in a) = _9);
     _9 <- any uint8;
     switch (_4)
@@ -1252,28 +1159,19 @@ module CheckedOps_TestU8OverflowingSub
   }
   BB3 {
     [#"../checked_ops.rs" 81 12 81 32] _16 <- ([#"../checked_ops.rs" 81 12 81 32] overflowing_sub0 a b);
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 80 4 80 56] false };
-    absurd
-  }
-  BB5 {
     assume { resolve0 _16 };
     [#"../checked_ops.rs" 81 38 81 54] _21 <- ([#"../checked_ops.rs" 81 38 81 54] checked_sub0 a b);
-    goto BB6
-  }
-  BB6 {
     [#"../checked_ops.rs" 81 38 81 64] _19 <- ([#"../checked_ops.rs" 81 38 81 64] is_none0 _21);
-    goto BB7
-  }
-  BB7 {
     [#"../checked_ops.rs" 81 12 81 64] _14 <- ([#"../checked_ops.rs" 81 12 81 64] Bool.eqb (let (_, a) = _16 in a) _19);
     _19 <- any bool;
     switch (_14)
       | False -> goto BB9
       | True -> goto BB8
       end
+  }
+  BB4 {
+    assert { [#"../checked_ops.rs" 80 4 80 56] false };
+    absurd
   }
   BB8 {
     [#"../checked_ops.rs" 79 45 82 1] _0 <- ([#"../checked_ops.rs" 79 45 82 1] ());
@@ -1318,22 +1216,6 @@ module CheckedOps_TestU8MulExample
     ensures { result = inv0 _x }
     
   axiom inv0 : forall x : Core_Option_Option_Type.t_option uint8 . inv0 x = true
-  use prelude.Bool
-  predicate resolve2 (self : bool) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
-  val resolve2 (self : bool) : bool
-    ensures { result = resolve2 self }
-    
-  predicate resolve1 (self : uint8) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
-  val resolve1 (self : uint8) : bool
-    ensures { result = resolve1 self }
-    
-  predicate resolve0 (self : (uint8, bool)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve2 (let (_, a) = self in a)
-  val resolve0 (self : (uint8, bool)) : bool
-    ensures { result = resolve0 self }
-    
   use prelude.UInt32
   use prelude.Int
   let constant max0  : uint8 = [@vc:do_not_keep_trace] [@vc:sp]
@@ -1357,6 +1239,22 @@ module CheckedOps_TestU8MulExample
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] UInt8.to_int self * UInt8.to_int rhs >= UInt8.to_int min0 /\ UInt8.to_int self * UInt8.to_int rhs <= UInt8.to_int max0 -> UInt8.to_int result = UInt8.to_int self * UInt8.to_int rhs }
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] UInt8.to_int self * UInt8.to_int rhs < UInt8.to_int min0 -> UInt8.to_int result = UInt8.to_int min0 }
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] UInt8.to_int self * UInt8.to_int rhs > UInt8.to_int max0 -> UInt8.to_int result = UInt8.to_int max0 }
+    
+  use prelude.Bool
+  predicate resolve2 (self : bool) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
+  val resolve2 (self : bool) : bool
+    ensures { result = resolve2 self }
+    
+  predicate resolve1 (self : uint8) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
+  val resolve1 (self : uint8) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : (uint8, bool)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve2 (let (_, a) = self in a)
+  val resolve0 (self : (uint8, bool)) : bool
+    ensures { result = resolve0 self }
     
   val wrapping_mul0 (self : uint8) (rhs : uint8) : uint8
     ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] UInt8.to_int result = EuclideanDivision.mod (UInt8.to_int self * UInt8.to_int rhs) (Power.power 2 (UInt32.to_int bits0)) + UInt8.to_int min0 }
@@ -1412,9 +1310,6 @@ module CheckedOps_TestU8MulExample
   BB1 {
     [#"../checked_ops.rs" 86 12 86 40] _3 <- ([#"../checked_ops.rs" 86 12 86 40] unwrap0 _4);
     _4 <- any Core_Option_Option_Type.t_option uint8;
-    goto BB2
-  }
-  BB2 {
     [#"../checked_ops.rs" 86 12 86 46] _2 <- ([#"../checked_ops.rs" 86 12 86 46] _3 = (50 : uint8));
     _3 <- any uint8;
     switch (_2)
@@ -1424,31 +1319,18 @@ module CheckedOps_TestU8MulExample
   }
   BB3 {
     [#"../checked_ops.rs" 87 12 87 32] _9 <- ([#"../checked_ops.rs" 87 12 87 32] checked_mul0 (50 : uint8) (10 : uint8));
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 86 4 86 47] false };
-    absurd
-  }
-  BB5 {
     [#"../checked_ops.rs" 87 12 87 42] _7 <- ([#"../checked_ops.rs" 87 12 87 42] is_none0 _9);
-    goto BB6
-  }
-  BB6 {
     switch (_7)
       | False -> goto BB8
       | True -> goto BB7
       end
   }
-  BB7 {
-    [#"../checked_ops.rs" 89 12 89 32] _13 <- ([#"../checked_ops.rs" 89 12 89 32] wrapping_mul0 (5 : uint8) (10 : uint8));
-    goto BB9
-  }
-  BB8 {
-    assert { [#"../checked_ops.rs" 87 4 87 43] false };
+  BB4 {
+    assert { [#"../checked_ops.rs" 86 4 86 47] false };
     absurd
   }
-  BB9 {
+  BB7 {
+    [#"../checked_ops.rs" 89 12 89 32] _13 <- ([#"../checked_ops.rs" 89 12 89 32] wrapping_mul0 (5 : uint8) (10 : uint8));
     [#"../checked_ops.rs" 89 12 89 38] _12 <- ([#"../checked_ops.rs" 89 12 89 38] _13 = (50 : uint8));
     _13 <- any uint8;
     switch (_12)
@@ -1456,15 +1338,12 @@ module CheckedOps_TestU8MulExample
       | True -> goto BB10
       end
   }
-  BB10 {
-    [#"../checked_ops.rs" 90 12 90 33] _17 <- ([#"../checked_ops.rs" 90 12 90 33] wrapping_mul0 (50 : uint8) (10 : uint8));
-    goto BB12
-  }
-  BB11 {
-    assert { [#"../checked_ops.rs" 89 4 89 39] false };
+  BB8 {
+    assert { [#"../checked_ops.rs" 87 4 87 43] false };
     absurd
   }
-  BB12 {
+  BB10 {
+    [#"../checked_ops.rs" 90 12 90 33] _17 <- ([#"../checked_ops.rs" 90 12 90 33] wrapping_mul0 (50 : uint8) (10 : uint8));
     [#"../checked_ops.rs" 90 12 90 40] _16 <- ([#"../checked_ops.rs" 90 12 90 40] _17 = (244 : uint8));
     _17 <- any uint8;
     switch (_16)
@@ -1472,15 +1351,12 @@ module CheckedOps_TestU8MulExample
       | True -> goto BB13
       end
   }
-  BB13 {
-    [#"../checked_ops.rs" 92 12 92 34] _21 <- ([#"../checked_ops.rs" 92 12 92 34] saturating_mul0 (5 : uint8) (10 : uint8));
-    goto BB15
-  }
-  BB14 {
-    assert { [#"../checked_ops.rs" 90 4 90 41] false };
+  BB11 {
+    assert { [#"../checked_ops.rs" 89 4 89 39] false };
     absurd
   }
-  BB15 {
+  BB13 {
+    [#"../checked_ops.rs" 92 12 92 34] _21 <- ([#"../checked_ops.rs" 92 12 92 34] saturating_mul0 (5 : uint8) (10 : uint8));
     [#"../checked_ops.rs" 92 12 92 40] _20 <- ([#"../checked_ops.rs" 92 12 92 40] _21 = (50 : uint8));
     _21 <- any uint8;
     switch (_20)
@@ -1488,15 +1364,12 @@ module CheckedOps_TestU8MulExample
       | True -> goto BB16
       end
   }
-  BB16 {
-    [#"../checked_ops.rs" 93 12 93 35] _25 <- ([#"../checked_ops.rs" 93 12 93 35] saturating_mul0 (50 : uint8) (10 : uint8));
-    goto BB18
-  }
-  BB17 {
-    assert { [#"../checked_ops.rs" 92 4 92 41] false };
+  BB14 {
+    assert { [#"../checked_ops.rs" 90 4 90 41] false };
     absurd
   }
-  BB18 {
+  BB16 {
+    [#"../checked_ops.rs" 93 12 93 35] _25 <- ([#"../checked_ops.rs" 93 12 93 35] saturating_mul0 (50 : uint8) (10 : uint8));
     [#"../checked_ops.rs" 93 12 93 42] _24 <- ([#"../checked_ops.rs" 93 12 93 42] _25 = (255 : uint8));
     _25 <- any uint8;
     switch (_24)
@@ -1504,20 +1377,21 @@ module CheckedOps_TestU8MulExample
       | True -> goto BB19
       end
   }
-  BB19 {
-    [#"../checked_ops.rs" 95 14 95 37] res <- ([#"../checked_ops.rs" 95 14 95 37] overflowing_mul0 (5 : uint8) (10 : uint8));
-    goto BB21
-  }
-  BB20 {
-    assert { [#"../checked_ops.rs" 93 4 93 43] false };
+  BB17 {
+    assert { [#"../checked_ops.rs" 92 4 92 41] false };
     absurd
   }
-  BB21 {
+  BB19 {
+    [#"../checked_ops.rs" 95 14 95 37] res <- ([#"../checked_ops.rs" 95 14 95 37] overflowing_mul0 (5 : uint8) (10 : uint8));
     [#"../checked_ops.rs" 96 12 96 23] _29 <- ([#"../checked_ops.rs" 96 12 96 23] (let (a, _) = res in a) = (50 : uint8));
     switch (_29)
       | False -> goto BB25
       | True -> goto BB22
       end
+  }
+  BB20 {
+    assert { [#"../checked_ops.rs" 93 4 93 43] false };
+    absurd
   }
   BB22 {
     assume { resolve0 res };
@@ -1529,7 +1403,11 @@ module CheckedOps_TestU8MulExample
   }
   BB23 {
     [#"../checked_ops.rs" 97 14 97 38] res1 <- ([#"../checked_ops.rs" 97 14 97 38] overflowing_mul0 (50 : uint8) (10 : uint8));
-    goto BB27
+    [#"../checked_ops.rs" 98 12 98 24] _36 <- ([#"../checked_ops.rs" 98 12 98 24] (let (a, _) = res1 in a) = (244 : uint8));
+    switch (_36)
+      | False -> goto BB31
+      | True -> goto BB28
+      end
   }
   BB24 {
     goto BB26
@@ -1541,13 +1419,6 @@ module CheckedOps_TestU8MulExample
   BB26 {
     assert { [#"../checked_ops.rs" 96 4 96 42] false };
     absurd
-  }
-  BB27 {
-    [#"../checked_ops.rs" 98 12 98 24] _36 <- ([#"../checked_ops.rs" 98 12 98 24] (let (a, _) = res1 in a) = (244 : uint8));
-    switch (_36)
-      | False -> goto BB31
-      | True -> goto BB28
-      end
   }
   BB28 {
     assume { resolve0 res1 };
@@ -1678,9 +1549,6 @@ module CheckedOps_TestU8MulZero
   BB1 {
     [#"../checked_ops.rs" 103 12 103 39] _4 <- ([#"../checked_ops.rs" 103 12 103 39] unwrap0 _5);
     _5 <- any Core_Option_Option_Type.t_option uint8;
-    goto BB2
-  }
-  BB2 {
     [#"../checked_ops.rs" 103 12 103 44] _3 <- ([#"../checked_ops.rs" 103 12 103 44] _4 = (0 : uint8));
     _4 <- any uint8;
     switch (_3)
@@ -1690,13 +1558,6 @@ module CheckedOps_TestU8MulZero
   }
   BB3 {
     [#"../checked_ops.rs" 104 12 104 31] _10 <- ([#"../checked_ops.rs" 104 12 104 31] wrapping_mul0 (0 : uint8) a);
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 103 4 103 45] false };
-    absurd
-  }
-  BB5 {
     [#"../checked_ops.rs" 104 12 104 36] _9 <- ([#"../checked_ops.rs" 104 12 104 36] _10 = (0 : uint8));
     _10 <- any uint8;
     switch (_9)
@@ -1704,15 +1565,12 @@ module CheckedOps_TestU8MulZero
       | True -> goto BB6
       end
   }
-  BB6 {
-    [#"../checked_ops.rs" 105 12 105 33] _15 <- ([#"../checked_ops.rs" 105 12 105 33] saturating_mul0 (0 : uint8) a);
-    goto BB8
-  }
-  BB7 {
-    assert { [#"../checked_ops.rs" 104 4 104 37] false };
+  BB4 {
+    assert { [#"../checked_ops.rs" 103 4 103 45] false };
     absurd
   }
-  BB8 {
+  BB6 {
+    [#"../checked_ops.rs" 105 12 105 33] _15 <- ([#"../checked_ops.rs" 105 12 105 33] saturating_mul0 (0 : uint8) a);
     [#"../checked_ops.rs" 105 12 105 38] _14 <- ([#"../checked_ops.rs" 105 12 105 38] _15 = (0 : uint8));
     _15 <- any uint8;
     switch (_14)
@@ -1720,20 +1578,21 @@ module CheckedOps_TestU8MulZero
       | True -> goto BB9
       end
   }
-  BB9 {
-    [#"../checked_ops.rs" 106 14 106 36] res <- ([#"../checked_ops.rs" 106 14 106 36] overflowing_mul0 (0 : uint8) a);
-    goto BB11
-  }
-  BB10 {
-    assert { [#"../checked_ops.rs" 105 4 105 39] false };
+  BB7 {
+    assert { [#"../checked_ops.rs" 104 4 104 37] false };
     absurd
   }
-  BB11 {
+  BB9 {
+    [#"../checked_ops.rs" 106 14 106 36] res <- ([#"../checked_ops.rs" 106 14 106 36] overflowing_mul0 (0 : uint8) a);
     [#"../checked_ops.rs" 107 12 107 22] _21 <- ([#"../checked_ops.rs" 107 12 107 22] (let (a, _) = res in a) = (0 : uint8));
     switch (_21)
       | False -> goto BB15
       | True -> goto BB12
       end
+  }
+  BB10 {
+    assert { [#"../checked_ops.rs" 105 4 105 39] false };
+    absurd
   }
   BB12 {
     assume { resolve0 res };
@@ -1846,9 +1705,6 @@ module CheckedOps_TestU8OverflowingMul
   BB1 {
     assume { resolve0 _6 };
     [#"../checked_ops.rs" 112 38 112 55] _9 <- ([#"../checked_ops.rs" 112 38 112 55] wrapping_mul0 a b);
-    goto BB2
-  }
-  BB2 {
     [#"../checked_ops.rs" 112 12 112 55] _4 <- ([#"../checked_ops.rs" 112 12 112 55] (let (a, _) = _6 in a) = _9);
     _9 <- any uint8;
     switch (_4)
@@ -1858,28 +1714,19 @@ module CheckedOps_TestU8OverflowingMul
   }
   BB3 {
     [#"../checked_ops.rs" 113 12 113 32] _16 <- ([#"../checked_ops.rs" 113 12 113 32] overflowing_mul0 a b);
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 112 4 112 56] false };
-    absurd
-  }
-  BB5 {
     assume { resolve0 _16 };
     [#"../checked_ops.rs" 113 38 113 54] _21 <- ([#"../checked_ops.rs" 113 38 113 54] checked_mul0 a b);
-    goto BB6
-  }
-  BB6 {
     [#"../checked_ops.rs" 113 38 113 64] _19 <- ([#"../checked_ops.rs" 113 38 113 64] is_none0 _21);
-    goto BB7
-  }
-  BB7 {
     [#"../checked_ops.rs" 113 12 113 64] _14 <- ([#"../checked_ops.rs" 113 12 113 64] Bool.eqb (let (_, a) = _16 in a) _19);
     _19 <- any bool;
     switch (_14)
       | False -> goto BB9
       | True -> goto BB8
       end
+  }
+  BB4 {
+    assert { [#"../checked_ops.rs" 112 4 112 56] false };
+    absurd
   }
   BB8 {
     [#"../checked_ops.rs" 111 45 114 1] _0 <- ([#"../checked_ops.rs" 111 45 114 1] ());
@@ -1924,6 +1771,21 @@ module CheckedOps_TestU8DivExample
     ensures { result = inv0 _x }
     
   axiom inv0 : forall x : Core_Option_Option_Type.t_option uint8 . inv0 x = true
+  use prelude.Int
+  let constant min0  : uint8 = [@vc:do_not_keep_trace] [@vc:sp]
+    (0 : uint8)
+  use prelude.UInt8
+  val overflowing_div0 (self : uint8) (rhs : uint8) : (uint8, bool)
+    requires {[#"../../../../creusot-contracts/src/std/num.rs" 91 27 91 36] UInt8.to_int rhs <> 0}
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 93 16 93 87] UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1 -> UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 95 26 95 91] UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int (let (a, _) = result in a) = div (UInt8.to_int self) (UInt8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 97 26 97 74] (let (_, a) = result in a) = (UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1) }
+    
+  val saturating_div0 (self : uint8) (rhs : uint8) : uint8
+    requires {[#"../../../../creusot-contracts/src/std/num.rs" 82 27 82 36] UInt8.to_int rhs <> 0}
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 84 16 84 91] UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1 -> UInt8.to_int result = UInt8.to_int min0 }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 86 26 86 89] UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int result = div (UInt8.to_int self) (UInt8.to_int rhs) }
+    
   use prelude.Bool
   predicate resolve2 (self : bool) =
     [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
@@ -1939,21 +1801,6 @@ module CheckedOps_TestU8DivExample
     [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve2 (let (_, a) = self in a)
   val resolve0 (self : (uint8, bool)) : bool
     ensures { result = resolve0 self }
-    
-  use prelude.Int
-  let constant min0  : uint8 = [@vc:do_not_keep_trace] [@vc:sp]
-    (0 : uint8)
-  use prelude.UInt8
-  val overflowing_div0 (self : uint8) (rhs : uint8) : (uint8, bool)
-    requires {[#"../../../../creusot-contracts/src/std/num.rs" 91 27 91 36] UInt8.to_int rhs <> 0}
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 93 16 93 87] UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1 -> UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 95 26 95 91] UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int (let (a, _) = result in a) = div (UInt8.to_int self) (UInt8.to_int rhs) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 97 26 97 74] (let (_, a) = result in a) = (UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1) }
-    
-  val saturating_div0 (self : uint8) (rhs : uint8) : uint8
-    requires {[#"../../../../creusot-contracts/src/std/num.rs" 82 27 82 36] UInt8.to_int rhs <> 0}
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 84 16 84 91] UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1 -> UInt8.to_int result = UInt8.to_int min0 }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 86 26 86 89] UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int result = div (UInt8.to_int self) (UInt8.to_int rhs) }
     
   val wrapping_div0 (self : uint8) (rhs : uint8) : uint8
     requires {[#"../../../../creusot-contracts/src/std/num.rs" 73 27 73 36] UInt8.to_int rhs <> 0}
@@ -2000,9 +1847,6 @@ module CheckedOps_TestU8DivExample
   }
   BB1 {
     [#"../checked_ops.rs" 118 12 118 40] _2 <- ([#"../checked_ops.rs" 118 12 118 40] is_none0 _4);
-    goto BB2
-  }
-  BB2 {
     switch (_2)
       | False -> goto BB4
       | True -> goto BB3
@@ -2010,18 +1854,8 @@ module CheckedOps_TestU8DivExample
   }
   BB3 {
     [#"../checked_ops.rs" 119 12 119 30] _9 <- ([#"../checked_ops.rs" 119 12 119 30] checked_div0 (5 : uint8) (2 : uint8));
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 118 4 118 41] false };
-    absurd
-  }
-  BB5 {
     [#"../checked_ops.rs" 119 12 119 39] _8 <- ([#"../checked_ops.rs" 119 12 119 39] unwrap0 _9);
     _9 <- any Core_Option_Option_Type.t_option uint8;
-    goto BB6
-  }
-  BB6 {
     [#"../checked_ops.rs" 119 12 119 44] _7 <- ([#"../checked_ops.rs" 119 12 119 44] _8 = (2 : uint8));
     _8 <- any uint8;
     switch (_7)
@@ -2029,15 +1863,12 @@ module CheckedOps_TestU8DivExample
       | True -> goto BB7
       end
   }
-  BB7 {
-    [#"../checked_ops.rs" 120 12 120 31] _13 <- ([#"../checked_ops.rs" 120 12 120 31] wrapping_div0 (5 : uint8) (2 : uint8));
-    goto BB9
-  }
-  BB8 {
-    assert { [#"../checked_ops.rs" 119 4 119 45] false };
+  BB4 {
+    assert { [#"../checked_ops.rs" 118 4 118 41] false };
     absurd
   }
-  BB9 {
+  BB7 {
+    [#"../checked_ops.rs" 120 12 120 31] _13 <- ([#"../checked_ops.rs" 120 12 120 31] wrapping_div0 (5 : uint8) (2 : uint8));
     [#"../checked_ops.rs" 120 12 120 36] _12 <- ([#"../checked_ops.rs" 120 12 120 36] _13 = (2 : uint8));
     _13 <- any uint8;
     switch (_12)
@@ -2045,15 +1876,12 @@ module CheckedOps_TestU8DivExample
       | True -> goto BB10
       end
   }
-  BB10 {
-    [#"../checked_ops.rs" 121 12 121 33] _17 <- ([#"../checked_ops.rs" 121 12 121 33] saturating_div0 (5 : uint8) (2 : uint8));
-    goto BB12
-  }
-  BB11 {
-    assert { [#"../checked_ops.rs" 120 4 120 37] false };
+  BB8 {
+    assert { [#"../checked_ops.rs" 119 4 119 45] false };
     absurd
   }
-  BB12 {
+  BB10 {
+    [#"../checked_ops.rs" 121 12 121 33] _17 <- ([#"../checked_ops.rs" 121 12 121 33] saturating_div0 (5 : uint8) (2 : uint8));
     [#"../checked_ops.rs" 121 12 121 38] _16 <- ([#"../checked_ops.rs" 121 12 121 38] _17 = (2 : uint8));
     _17 <- any uint8;
     switch (_16)
@@ -2061,20 +1889,21 @@ module CheckedOps_TestU8DivExample
       | True -> goto BB13
       end
   }
-  BB13 {
-    [#"../checked_ops.rs" 122 14 122 36] res <- ([#"../checked_ops.rs" 122 14 122 36] overflowing_div0 (5 : uint8) (2 : uint8));
-    goto BB15
-  }
-  BB14 {
-    assert { [#"../checked_ops.rs" 121 4 121 39] false };
+  BB11 {
+    assert { [#"../checked_ops.rs" 120 4 120 37] false };
     absurd
   }
-  BB15 {
+  BB13 {
+    [#"../checked_ops.rs" 122 14 122 36] res <- ([#"../checked_ops.rs" 122 14 122 36] overflowing_div0 (5 : uint8) (2 : uint8));
     [#"../checked_ops.rs" 123 12 123 22] _21 <- ([#"../checked_ops.rs" 123 12 123 22] (let (a, _) = res in a) = (2 : uint8));
     switch (_21)
       | False -> goto BB19
       | True -> goto BB16
       end
+  }
+  BB14 {
+    assert { [#"../checked_ops.rs" 121 4 121 39] false };
+    absurd
   }
   BB16 {
     assume { resolve0 res };
@@ -2125,6 +1954,20 @@ module CheckedOps_TestU8DivNoOverflow
     
   axiom inv0 : forall x : Core_Option_Option_Type.t_option uint8 . inv0 x = true
   use prelude.UInt8
+  use prelude.Int
+  let constant min0  : uint8 = [@vc:do_not_keep_trace] [@vc:sp]
+    (0 : uint8)
+  val overflowing_div0 (self : uint8) (rhs : uint8) : (uint8, bool)
+    requires {[#"../../../../creusot-contracts/src/std/num.rs" 91 27 91 36] UInt8.to_int rhs <> 0}
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 93 16 93 87] UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1 -> UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 95 26 95 91] UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int (let (a, _) = result in a) = div (UInt8.to_int self) (UInt8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 97 26 97 74] (let (_, a) = result in a) = (UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1) }
+    
+  val saturating_div0 (self : uint8) (rhs : uint8) : uint8
+    requires {[#"../../../../creusot-contracts/src/std/num.rs" 82 27 82 36] UInt8.to_int rhs <> 0}
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 84 16 84 91] UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1 -> UInt8.to_int result = UInt8.to_int min0 }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 86 26 86 89] UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int result = div (UInt8.to_int self) (UInt8.to_int rhs) }
+    
   use prelude.Bool
   predicate resolve2 (self : bool) =
     [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
@@ -2140,20 +1983,6 @@ module CheckedOps_TestU8DivNoOverflow
     [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve2 (let (_, a) = self in a)
   val resolve0 (self : (uint8, bool)) : bool
     ensures { result = resolve0 self }
-    
-  use prelude.Int
-  let constant min0  : uint8 = [@vc:do_not_keep_trace] [@vc:sp]
-    (0 : uint8)
-  val overflowing_div0 (self : uint8) (rhs : uint8) : (uint8, bool)
-    requires {[#"../../../../creusot-contracts/src/std/num.rs" 91 27 91 36] UInt8.to_int rhs <> 0}
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 93 16 93 87] UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1 -> UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 95 26 95 91] UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int (let (a, _) = result in a) = div (UInt8.to_int self) (UInt8.to_int rhs) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 97 26 97 74] (let (_, a) = result in a) = (UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1) }
-    
-  val saturating_div0 (self : uint8) (rhs : uint8) : uint8
-    requires {[#"../../../../creusot-contracts/src/std/num.rs" 82 27 82 36] UInt8.to_int rhs <> 0}
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 84 16 84 91] UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1 -> UInt8.to_int result = UInt8.to_int min0 }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 86 26 86 89] UInt8.to_int self = UInt8.to_int min0 /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int result = div (UInt8.to_int self) (UInt8.to_int rhs) }
     
   val wrapping_div0 (self : uint8) (rhs : uint8) : uint8
     requires {[#"../../../../creusot-contracts/src/std/num.rs" 73 27 73 36] UInt8.to_int rhs <> 0}
@@ -2209,15 +2038,9 @@ module CheckedOps_TestU8DivNoOverflow
   BB1 {
     [#"../checked_ops.rs" 129 12 129 37] _6 <- ([#"../checked_ops.rs" 129 12 129 37] unwrap0 _7);
     _7 <- any Core_Option_Option_Type.t_option uint8;
-    goto BB2
-  }
-  BB2 {
     [#"../checked_ops.rs" 129 45 129 46] _12 <- ([#"../checked_ops.rs" 129 45 129 46] b);
     [#"../checked_ops.rs" 129 41 129 46] _13 <- ([#"../checked_ops.rs" 129 41 129 46] _12 = (0 : uint8));
     assert { [@expl:division by zero] [#"../checked_ops.rs" 129 41 129 46] not _13 };
-    goto BB3
-  }
-  BB3 {
     [#"../checked_ops.rs" 129 41 129 46] _10 <- ([#"../checked_ops.rs" 129 41 129 46] a / _12);
     _12 <- any uint8;
     [#"../checked_ops.rs" 129 12 129 46] _5 <- ([#"../checked_ops.rs" 129 12 129 46] _6 = _10);
@@ -2230,19 +2053,9 @@ module CheckedOps_TestU8DivNoOverflow
   }
   BB4 {
     [#"../checked_ops.rs" 130 12 130 29] _17 <- ([#"../checked_ops.rs" 130 12 130 29] wrapping_div0 a b);
-    goto BB6
-  }
-  BB5 {
-    assert { [#"../checked_ops.rs" 129 4 129 47] false };
-    absurd
-  }
-  BB6 {
     [#"../checked_ops.rs" 130 37 130 38] _22 <- ([#"../checked_ops.rs" 130 37 130 38] b);
     [#"../checked_ops.rs" 130 33 130 38] _23 <- ([#"../checked_ops.rs" 130 33 130 38] _22 = (0 : uint8));
     assert { [@expl:division by zero] [#"../checked_ops.rs" 130 33 130 38] not _23 };
-    goto BB7
-  }
-  BB7 {
     [#"../checked_ops.rs" 130 33 130 38] _20 <- ([#"../checked_ops.rs" 130 33 130 38] a / _22);
     _22 <- any uint8;
     [#"../checked_ops.rs" 130 12 130 38] _16 <- ([#"../checked_ops.rs" 130 12 130 38] _17 = _20);
@@ -2253,21 +2066,15 @@ module CheckedOps_TestU8DivNoOverflow
       | True -> goto BB8
       end
   }
-  BB8 {
-    [#"../checked_ops.rs" 131 12 131 31] _27 <- ([#"../checked_ops.rs" 131 12 131 31] saturating_div0 a b);
-    goto BB10
-  }
-  BB9 {
-    assert { [#"../checked_ops.rs" 130 4 130 39] false };
+  BB5 {
+    assert { [#"../checked_ops.rs" 129 4 129 47] false };
     absurd
   }
-  BB10 {
+  BB8 {
+    [#"../checked_ops.rs" 131 12 131 31] _27 <- ([#"../checked_ops.rs" 131 12 131 31] saturating_div0 a b);
     [#"../checked_ops.rs" 131 39 131 40] _32 <- ([#"../checked_ops.rs" 131 39 131 40] b);
     [#"../checked_ops.rs" 131 35 131 40] _33 <- ([#"../checked_ops.rs" 131 35 131 40] _32 = (0 : uint8));
     assert { [@expl:division by zero] [#"../checked_ops.rs" 131 35 131 40] not _33 };
-    goto BB11
-  }
-  BB11 {
     [#"../checked_ops.rs" 131 35 131 40] _30 <- ([#"../checked_ops.rs" 131 35 131 40] a / _32);
     _32 <- any uint8;
     [#"../checked_ops.rs" 131 12 131 40] _26 <- ([#"../checked_ops.rs" 131 12 131 40] _27 = _30);
@@ -2278,21 +2085,15 @@ module CheckedOps_TestU8DivNoOverflow
       | True -> goto BB12
       end
   }
-  BB12 {
-    [#"../checked_ops.rs" 132 14 132 34] res <- ([#"../checked_ops.rs" 132 14 132 34] overflowing_div0 a b);
-    goto BB14
-  }
-  BB13 {
-    assert { [#"../checked_ops.rs" 131 4 131 41] false };
+  BB9 {
+    assert { [#"../checked_ops.rs" 130 4 130 39] false };
     absurd
   }
-  BB14 {
+  BB12 {
+    [#"../checked_ops.rs" 132 14 132 34] res <- ([#"../checked_ops.rs" 132 14 132 34] overflowing_div0 a b);
     [#"../checked_ops.rs" 133 25 133 26] _43 <- ([#"../checked_ops.rs" 133 25 133 26] b);
     [#"../checked_ops.rs" 133 21 133 26] _44 <- ([#"../checked_ops.rs" 133 21 133 26] _43 = (0 : uint8));
     assert { [@expl:division by zero] [#"../checked_ops.rs" 133 21 133 26] not _44 };
-    goto BB15
-  }
-  BB15 {
     [#"../checked_ops.rs" 133 21 133 26] _41 <- ([#"../checked_ops.rs" 133 21 133 26] a / _43);
     _43 <- any uint8;
     [#"../checked_ops.rs" 133 12 133 26] _39 <- ([#"../checked_ops.rs" 133 12 133 26] (let (a, _) = res in a) = _41);
@@ -2301,6 +2102,10 @@ module CheckedOps_TestU8DivNoOverflow
       | False -> goto BB19
       | True -> goto BB16
       end
+  }
+  BB13 {
+    assert { [#"../checked_ops.rs" 131 4 131 41] false };
+    absurd
   }
   BB16 {
     assume { resolve0 res };
@@ -2369,9 +2174,6 @@ module CheckedOps_TestU8DivZero
   }
   BB1 {
     [#"../checked_ops.rs" 138 12 138 38] _3 <- ([#"../checked_ops.rs" 138 12 138 38] is_none0 _5);
-    goto BB2
-  }
-  BB2 {
     switch (_3)
       | False -> goto BB4
       | True -> goto BB3
@@ -2420,6 +2222,36 @@ module CheckedOps_TestI8AddExample
     ensures { result = inv0 _x }
     
   axiom inv0 : forall x : Core_Option_Option_Type.t_option int8 . inv0 x = true
+  use prelude.Int
+  let constant max0  : int8 = [@vc:do_not_keep_trace] [@vc:sp]
+    (127 : int8)
+  let constant min0  : int8 = [@vc:do_not_keep_trace] [@vc:sp]
+    (-128 : int8)
+  use prelude.Int8
+  val saturating_add0 (self : int8) (rhs : int8) : int8
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] Int8.to_int self + Int8.to_int rhs >= Int8.to_int min0 /\ Int8.to_int self + Int8.to_int rhs <= Int8.to_int max0 -> Int8.to_int result = Int8.to_int self + Int8.to_int rhs }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] Int8.to_int self + Int8.to_int rhs < Int8.to_int min0 -> Int8.to_int result = Int8.to_int min0 }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] Int8.to_int self + Int8.to_int rhs > Int8.to_int max0 -> Int8.to_int result = Int8.to_int max0 }
+    
+  use prelude.UInt32
+  use int.EuclideanDivision
+  use int.Power
+  use prelude.UInt32
+  let constant bits0  : uint32 = [@vc:do_not_keep_trace] [@vc:sp]
+    (8 : uint32)
+  val overflowing_add0 (self : int8) (rhs : int8) : (int8, bool)
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 175 20 175 95] Int8.to_int (let (a, _) = result in a) = EuclideanDivision.mod (Int8.to_int self + Int8.to_int rhs) (Power.power 2 (UInt32.to_int bits0)) + Int8.to_int min0 }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 178 16 181 18] Int8.to_int self + Int8.to_int rhs >= Int8.to_int min0 /\ Int8.to_int self + Int8.to_int rhs <= Int8.to_int max0 -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self + Int8.to_int rhs }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 185 16 189 18] Int8.to_int self + Int8.to_int rhs < Int8.to_int min0 -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self + Int8.to_int rhs + k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 190 16 194 18] Int8.to_int self + Int8.to_int rhs > Int8.to_int max0 -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self + Int8.to_int rhs - k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (Int8.to_int self + Int8.to_int rhs < Int8.to_int min0 \/ Int8.to_int self + Int8.to_int rhs > Int8.to_int max0) }
+    
+  val wrapping_add0 (self : int8) (rhs : int8) : int8
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] Int8.to_int result = EuclideanDivision.mod (Int8.to_int self + Int8.to_int rhs) (Power.power 2 (UInt32.to_int bits0)) + Int8.to_int min0 }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] Int8.to_int self + Int8.to_int rhs >= Int8.to_int min0 /\ Int8.to_int self + Int8.to_int rhs <= Int8.to_int max0 -> Int8.to_int result = Int8.to_int self + Int8.to_int rhs }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] Int8.to_int self + Int8.to_int rhs < Int8.to_int min0 -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self + Int8.to_int rhs + k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] Int8.to_int self + Int8.to_int rhs > Int8.to_int max0 -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self + Int8.to_int rhs - k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
+    
   use prelude.Bool
   predicate resolve2 (self : bool) =
     [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
@@ -2435,36 +2267,6 @@ module CheckedOps_TestI8AddExample
     [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve2 (let (_, a) = self in a)
   val resolve0 (self : (int8, bool)) : bool
     ensures { result = resolve0 self }
-    
-  use prelude.UInt32
-  use prelude.Int
-  let constant max0  : int8 = [@vc:do_not_keep_trace] [@vc:sp]
-    (127 : int8)
-  let constant min0  : int8 = [@vc:do_not_keep_trace] [@vc:sp]
-    (-128 : int8)
-  use int.EuclideanDivision
-  use int.Power
-  use prelude.UInt32
-  let constant bits0  : uint32 = [@vc:do_not_keep_trace] [@vc:sp]
-    (8 : uint32)
-  use prelude.Int8
-  val overflowing_add0 (self : int8) (rhs : int8) : (int8, bool)
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 175 20 175 95] Int8.to_int (let (a, _) = result in a) = EuclideanDivision.mod (Int8.to_int self + Int8.to_int rhs) (Power.power 2 (UInt32.to_int bits0)) + Int8.to_int min0 }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 178 16 181 18] Int8.to_int self + Int8.to_int rhs >= Int8.to_int min0 /\ Int8.to_int self + Int8.to_int rhs <= Int8.to_int max0 -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self + Int8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 185 16 189 18] Int8.to_int self + Int8.to_int rhs < Int8.to_int min0 -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self + Int8.to_int rhs + k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 190 16 194 18] Int8.to_int self + Int8.to_int rhs > Int8.to_int max0 -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self + Int8.to_int rhs - k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (Int8.to_int self + Int8.to_int rhs < Int8.to_int min0 \/ Int8.to_int self + Int8.to_int rhs > Int8.to_int max0) }
-    
-  val saturating_add0 (self : int8) (rhs : int8) : int8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] Int8.to_int self + Int8.to_int rhs >= Int8.to_int min0 /\ Int8.to_int self + Int8.to_int rhs <= Int8.to_int max0 -> Int8.to_int result = Int8.to_int self + Int8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] Int8.to_int self + Int8.to_int rhs < Int8.to_int min0 -> Int8.to_int result = Int8.to_int min0 }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] Int8.to_int self + Int8.to_int rhs > Int8.to_int max0 -> Int8.to_int result = Int8.to_int max0 }
-    
-  val wrapping_add0 (self : int8) (rhs : int8) : int8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] Int8.to_int result = EuclideanDivision.mod (Int8.to_int self + Int8.to_int rhs) (Power.power 2 (UInt32.to_int bits0)) + Int8.to_int min0 }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] Int8.to_int self + Int8.to_int rhs >= Int8.to_int min0 /\ Int8.to_int self + Int8.to_int rhs <= Int8.to_int max0 -> Int8.to_int result = Int8.to_int self + Int8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] Int8.to_int self + Int8.to_int rhs < Int8.to_int min0 -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self + Int8.to_int rhs + k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] Int8.to_int self + Int8.to_int rhs > Int8.to_int max0 -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self + Int8.to_int rhs - k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
     
   use prelude.Borrow
   val is_none0 (self : Core_Option_Option_Type.t_option int8) : bool
@@ -2523,9 +2325,6 @@ module CheckedOps_TestI8AddExample
   BB1 {
     [#"../checked_ops.rs" 143 12 143 40] _3 <- ([#"../checked_ops.rs" 143 12 143 40] unwrap0 _4);
     _4 <- any Core_Option_Option_Type.t_option int8;
-    goto BB2
-  }
-  BB2 {
     [#"../checked_ops.rs" 143 12 143 46] _2 <- ([#"../checked_ops.rs" 143 12 143 46] _3 = (15 : int8));
     _3 <- any int8;
     switch (_2)
@@ -2535,49 +2334,30 @@ module CheckedOps_TestI8AddExample
   }
   BB3 {
     [#"../checked_ops.rs" 144 12 144 33] _9 <- ([#"../checked_ops.rs" 144 12 144 33] checked_add0 (120 : int8) (10 : int8));
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 143 4 143 47] false };
-    absurd
-  }
-  BB5 {
     [#"../checked_ops.rs" 144 12 144 43] _7 <- ([#"../checked_ops.rs" 144 12 144 43] is_none0 _9);
-    goto BB6
-  }
-  BB6 {
     switch (_7)
       | False -> goto BB8
       | True -> goto BB7
       end
   }
-  BB7 {
-    [#"../checked_ops.rs" 145 12 145 37] _14 <- ([#"../checked_ops.rs" 145 12 145 37] checked_add0 (-120 : int8) (-10 : int8));
-    goto BB9
-  }
-  BB8 {
-    assert { [#"../checked_ops.rs" 144 4 144 44] false };
+  BB4 {
+    assert { [#"../checked_ops.rs" 143 4 143 47] false };
     absurd
   }
-  BB9 {
+  BB7 {
+    [#"../checked_ops.rs" 145 12 145 37] _14 <- ([#"../checked_ops.rs" 145 12 145 37] checked_add0 (-120 : int8) (-10 : int8));
     [#"../checked_ops.rs" 145 12 145 47] _12 <- ([#"../checked_ops.rs" 145 12 145 47] is_none0 _14);
-    goto BB10
-  }
-  BB10 {
     switch (_12)
       | False -> goto BB12
       | True -> goto BB11
       end
   }
-  BB11 {
-    [#"../checked_ops.rs" 147 12 147 32] _18 <- ([#"../checked_ops.rs" 147 12 147 32] wrapping_add0 (5 : int8) (10 : int8));
-    goto BB13
-  }
-  BB12 {
-    assert { [#"../checked_ops.rs" 145 4 145 48] false };
+  BB8 {
+    assert { [#"../checked_ops.rs" 144 4 144 44] false };
     absurd
   }
-  BB13 {
+  BB11 {
+    [#"../checked_ops.rs" 147 12 147 32] _18 <- ([#"../checked_ops.rs" 147 12 147 32] wrapping_add0 (5 : int8) (10 : int8));
     [#"../checked_ops.rs" 147 12 147 38] _17 <- ([#"../checked_ops.rs" 147 12 147 38] _18 = (15 : int8));
     _18 <- any int8;
     switch (_17)
@@ -2585,15 +2365,12 @@ module CheckedOps_TestI8AddExample
       | True -> goto BB14
       end
   }
-  BB14 {
-    [#"../checked_ops.rs" 148 12 148 34] _22 <- ([#"../checked_ops.rs" 148 12 148 34] wrapping_add0 (120 : int8) (10 : int8));
-    goto BB16
-  }
-  BB15 {
-    assert { [#"../checked_ops.rs" 147 4 147 39] false };
+  BB12 {
+    assert { [#"../checked_ops.rs" 145 4 145 48] false };
     absurd
   }
-  BB16 {
+  BB14 {
+    [#"../checked_ops.rs" 148 12 148 34] _22 <- ([#"../checked_ops.rs" 148 12 148 34] wrapping_add0 (120 : int8) (10 : int8));
     [#"../checked_ops.rs" 148 12 148 42] _21 <- ([#"../checked_ops.rs" 148 12 148 42] _22 = (-126 : int8));
     _22 <- any int8;
     switch (_21)
@@ -2601,15 +2378,12 @@ module CheckedOps_TestI8AddExample
       | True -> goto BB17
       end
   }
-  BB17 {
-    [#"../checked_ops.rs" 149 12 149 38] _26 <- ([#"../checked_ops.rs" 149 12 149 38] wrapping_add0 (-120 : int8) (-10 : int8));
-    goto BB19
-  }
-  BB18 {
-    assert { [#"../checked_ops.rs" 148 4 148 43] false };
+  BB15 {
+    assert { [#"../checked_ops.rs" 147 4 147 39] false };
     absurd
   }
-  BB19 {
+  BB17 {
+    [#"../checked_ops.rs" 149 12 149 38] _26 <- ([#"../checked_ops.rs" 149 12 149 38] wrapping_add0 (-120 : int8) (-10 : int8));
     [#"../checked_ops.rs" 149 12 149 45] _25 <- ([#"../checked_ops.rs" 149 12 149 45] _26 = (126 : int8));
     _26 <- any int8;
     switch (_25)
@@ -2617,15 +2391,12 @@ module CheckedOps_TestI8AddExample
       | True -> goto BB20
       end
   }
-  BB20 {
-    [#"../checked_ops.rs" 151 12 151 34] _30 <- ([#"../checked_ops.rs" 151 12 151 34] saturating_add0 (5 : int8) (10 : int8));
-    goto BB22
-  }
-  BB21 {
-    assert { [#"../checked_ops.rs" 149 4 149 46] false };
+  BB18 {
+    assert { [#"../checked_ops.rs" 148 4 148 43] false };
     absurd
   }
-  BB22 {
+  BB20 {
+    [#"../checked_ops.rs" 151 12 151 34] _30 <- ([#"../checked_ops.rs" 151 12 151 34] saturating_add0 (5 : int8) (10 : int8));
     [#"../checked_ops.rs" 151 12 151 40] _29 <- ([#"../checked_ops.rs" 151 12 151 40] _30 = (15 : int8));
     _30 <- any int8;
     switch (_29)
@@ -2633,15 +2404,12 @@ module CheckedOps_TestI8AddExample
       | True -> goto BB23
       end
   }
-  BB23 {
-    [#"../checked_ops.rs" 152 12 152 36] _34 <- ([#"../checked_ops.rs" 152 12 152 36] saturating_add0 (120 : int8) (10 : int8));
-    goto BB25
-  }
-  BB24 {
-    assert { [#"../checked_ops.rs" 151 4 151 41] false };
+  BB21 {
+    assert { [#"../checked_ops.rs" 149 4 149 46] false };
     absurd
   }
-  BB25 {
+  BB23 {
+    [#"../checked_ops.rs" 152 12 152 36] _34 <- ([#"../checked_ops.rs" 152 12 152 36] saturating_add0 (120 : int8) (10 : int8));
     [#"../checked_ops.rs" 152 12 152 43] _33 <- ([#"../checked_ops.rs" 152 12 152 43] _34 = (127 : int8));
     _34 <- any int8;
     switch (_33)
@@ -2649,15 +2417,12 @@ module CheckedOps_TestI8AddExample
       | True -> goto BB26
       end
   }
-  BB26 {
-    [#"../checked_ops.rs" 153 12 153 40] _38 <- ([#"../checked_ops.rs" 153 12 153 40] saturating_add0 (-120 : int8) (-10 : int8));
-    goto BB28
-  }
-  BB27 {
-    assert { [#"../checked_ops.rs" 152 4 152 44] false };
+  BB24 {
+    assert { [#"../checked_ops.rs" 151 4 151 41] false };
     absurd
   }
-  BB28 {
+  BB26 {
+    [#"../checked_ops.rs" 153 12 153 40] _38 <- ([#"../checked_ops.rs" 153 12 153 40] saturating_add0 (-120 : int8) (-10 : int8));
     [#"../checked_ops.rs" 153 12 153 48] _37 <- ([#"../checked_ops.rs" 153 12 153 48] _38 = (-128 : int8));
     _38 <- any int8;
     switch (_37)
@@ -2665,20 +2430,21 @@ module CheckedOps_TestI8AddExample
       | True -> goto BB29
       end
   }
-  BB29 {
-    [#"../checked_ops.rs" 155 14 155 37] res <- ([#"../checked_ops.rs" 155 14 155 37] overflowing_add0 (5 : int8) (10 : int8));
-    goto BB31
-  }
-  BB30 {
-    assert { [#"../checked_ops.rs" 153 4 153 49] false };
+  BB27 {
+    assert { [#"../checked_ops.rs" 152 4 152 44] false };
     absurd
   }
-  BB31 {
+  BB29 {
+    [#"../checked_ops.rs" 155 14 155 37] res <- ([#"../checked_ops.rs" 155 14 155 37] overflowing_add0 (5 : int8) (10 : int8));
     [#"../checked_ops.rs" 156 12 156 23] _42 <- ([#"../checked_ops.rs" 156 12 156 23] (let (a, _) = res in a) = (15 : int8));
     switch (_42)
       | False -> goto BB35
       | True -> goto BB32
       end
+  }
+  BB30 {
+    assert { [#"../checked_ops.rs" 153 4 153 49] false };
+    absurd
   }
   BB32 {
     assume { resolve0 res };
@@ -2690,7 +2456,11 @@ module CheckedOps_TestI8AddExample
   }
   BB33 {
     [#"../checked_ops.rs" 157 14 157 39] res1 <- ([#"../checked_ops.rs" 157 14 157 39] overflowing_add0 (120 : int8) (10 : int8));
-    goto BB37
+    [#"../checked_ops.rs" 158 12 158 25] _49 <- ([#"../checked_ops.rs" 158 12 158 25] (let (a, _) = res1 in a) = (-126 : int8));
+    switch (_49)
+      | False -> goto BB41
+      | True -> goto BB38
+      end
   }
   BB34 {
     goto BB36
@@ -2703,13 +2473,6 @@ module CheckedOps_TestI8AddExample
     assert { [#"../checked_ops.rs" 156 4 156 42] false };
     absurd
   }
-  BB37 {
-    [#"../checked_ops.rs" 158 12 158 25] _49 <- ([#"../checked_ops.rs" 158 12 158 25] (let (a, _) = res1 in a) = (-126 : int8));
-    switch (_49)
-      | False -> goto BB41
-      | True -> goto BB38
-      end
-  }
   BB38 {
     assume { resolve0 res1 };
     [#"../checked_ops.rs" 158 29 158 42] _51 <- ([#"../checked_ops.rs" 158 29 158 42] Bool.eqb (let (_, a) = res1 in a) true);
@@ -2720,7 +2483,11 @@ module CheckedOps_TestI8AddExample
   }
   BB39 {
     [#"../checked_ops.rs" 159 14 159 43] res2 <- ([#"../checked_ops.rs" 159 14 159 43] overflowing_add0 (-120 : int8) (-10 : int8));
-    goto BB43
+    [#"../checked_ops.rs" 160 12 160 24] _56 <- ([#"../checked_ops.rs" 160 12 160 24] (let (a, _) = res2 in a) = (126 : int8));
+    switch (_56)
+      | False -> goto BB47
+      | True -> goto BB44
+      end
   }
   BB40 {
     goto BB42
@@ -2732,13 +2499,6 @@ module CheckedOps_TestI8AddExample
   BB42 {
     assert { [#"../checked_ops.rs" 158 4 158 43] false };
     absurd
-  }
-  BB43 {
-    [#"../checked_ops.rs" 160 12 160 24] _56 <- ([#"../checked_ops.rs" 160 12 160 24] (let (a, _) = res2 in a) = (126 : int8));
-    switch (_56)
-      | False -> goto BB47
-      | True -> goto BB44
-      end
   }
   BB44 {
     assume { resolve0 res2 };
@@ -2861,9 +2621,6 @@ module CheckedOps_TestI8AddOverflowPos
   }
   BB1 {
     [#"../checked_ops.rs" 166 12 166 42] _4 <- ([#"../checked_ops.rs" 166 12 166 42] is_none0 _6);
-    goto BB2
-  }
-  BB2 {
     switch (_4)
       | False -> goto BB4
       | True -> goto BB3
@@ -2871,13 +2628,6 @@ module CheckedOps_TestI8AddOverflowPos
   }
   BB3 {
     [#"../checked_ops.rs" 167 12 167 33] _11 <- ([#"../checked_ops.rs" 167 12 167 33] wrapping_add0 (127 : int8) a);
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 166 4 166 43] false };
-    absurd
-  }
-  BB5 {
     [#"../checked_ops.rs" 167 37 167 44] _14 <- ([#"../checked_ops.rs" 167 37 167 44] a - (127 : int8));
     [#"../checked_ops.rs" 167 37 167 48] _13 <- ([#"../checked_ops.rs" 167 37 167 48] _14 - (2 : int8));
     _14 <- any int8;
@@ -2889,15 +2639,12 @@ module CheckedOps_TestI8AddOverflowPos
       | True -> goto BB6
       end
   }
-  BB6 {
-    [#"../checked_ops.rs" 168 12 168 35] _19 <- ([#"../checked_ops.rs" 168 12 168 35] saturating_add0 (127 : int8) a);
-    goto BB8
-  }
-  BB7 {
-    assert { [#"../checked_ops.rs" 167 4 167 49] false };
+  BB4 {
+    assert { [#"../checked_ops.rs" 166 4 166 43] false };
     absurd
   }
-  BB8 {
+  BB6 {
+    [#"../checked_ops.rs" 168 12 168 35] _19 <- ([#"../checked_ops.rs" 168 12 168 35] saturating_add0 (127 : int8) a);
     [#"../checked_ops.rs" 168 12 168 42] _18 <- ([#"../checked_ops.rs" 168 12 168 42] _19 = (127 : int8));
     _19 <- any int8;
     switch (_18)
@@ -2905,15 +2652,12 @@ module CheckedOps_TestI8AddOverflowPos
       | True -> goto BB9
       end
   }
-  BB9 {
-    [#"../checked_ops.rs" 169 14 169 38] res <- ([#"../checked_ops.rs" 169 14 169 38] overflowing_add0 (127 : int8) a);
-    goto BB11
-  }
-  BB10 {
-    assert { [#"../checked_ops.rs" 168 4 168 43] false };
+  BB7 {
+    assert { [#"../checked_ops.rs" 167 4 167 49] false };
     absurd
   }
-  BB11 {
+  BB9 {
+    [#"../checked_ops.rs" 169 14 169 38] res <- ([#"../checked_ops.rs" 169 14 169 38] overflowing_add0 (127 : int8) a);
     [#"../checked_ops.rs" 170 21 170 28] _28 <- ([#"../checked_ops.rs" 170 21 170 28] a - (127 : int8));
     [#"../checked_ops.rs" 170 21 170 32] _27 <- ([#"../checked_ops.rs" 170 21 170 32] _28 - (2 : int8));
     _28 <- any int8;
@@ -2923,6 +2667,10 @@ module CheckedOps_TestI8AddOverflowPos
       | False -> goto BB15
       | True -> goto BB12
       end
+  }
+  BB10 {
+    assert { [#"../checked_ops.rs" 168 4 168 43] false };
+    absurd
   }
   BB12 {
     assume { resolve0 res };
@@ -3045,9 +2793,6 @@ module CheckedOps_TestI8AddOverflowNeg
   }
   BB1 {
     [#"../checked_ops.rs" 176 12 176 45] _4 <- ([#"../checked_ops.rs" 176 12 176 45] is_none0 _6);
-    goto BB2
-  }
-  BB2 {
     switch (_4)
       | False -> goto BB4
       | True -> goto BB3
@@ -3055,13 +2800,6 @@ module CheckedOps_TestI8AddOverflowNeg
   }
   BB3 {
     [#"../checked_ops.rs" 177 12 177 36] _11 <- ([#"../checked_ops.rs" 177 12 177 36] wrapping_add0 (-128 : int8) a);
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 176 4 176 46] false };
-    absurd
-  }
-  BB5 {
     [#"../checked_ops.rs" 177 40 177 47] _14 <- ([#"../checked_ops.rs" 177 40 177 47] a + (127 : int8));
     [#"../checked_ops.rs" 177 40 177 51] _13 <- ([#"../checked_ops.rs" 177 40 177 51] _14 + (1 : int8));
     _14 <- any int8;
@@ -3073,15 +2811,12 @@ module CheckedOps_TestI8AddOverflowNeg
       | True -> goto BB6
       end
   }
-  BB6 {
-    [#"../checked_ops.rs" 178 12 178 38] _19 <- ([#"../checked_ops.rs" 178 12 178 38] saturating_add0 (-128 : int8) a);
-    goto BB8
-  }
-  BB7 {
-    assert { [#"../checked_ops.rs" 177 4 177 52] false };
+  BB4 {
+    assert { [#"../checked_ops.rs" 176 4 176 46] false };
     absurd
   }
-  BB8 {
+  BB6 {
+    [#"../checked_ops.rs" 178 12 178 38] _19 <- ([#"../checked_ops.rs" 178 12 178 38] saturating_add0 (-128 : int8) a);
     [#"../checked_ops.rs" 178 12 178 46] _18 <- ([#"../checked_ops.rs" 178 12 178 46] _19 = (-128 : int8));
     _19 <- any int8;
     switch (_18)
@@ -3089,15 +2824,12 @@ module CheckedOps_TestI8AddOverflowNeg
       | True -> goto BB9
       end
   }
-  BB9 {
-    [#"../checked_ops.rs" 179 14 179 41] res <- ([#"../checked_ops.rs" 179 14 179 41] overflowing_add0 (-128 : int8) a);
-    goto BB11
-  }
-  BB10 {
-    assert { [#"../checked_ops.rs" 178 4 178 47] false };
+  BB7 {
+    assert { [#"../checked_ops.rs" 177 4 177 52] false };
     absurd
   }
-  BB11 {
+  BB9 {
+    [#"../checked_ops.rs" 179 14 179 41] res <- ([#"../checked_ops.rs" 179 14 179 41] overflowing_add0 (-128 : int8) a);
     [#"../checked_ops.rs" 180 21 180 28] _28 <- ([#"../checked_ops.rs" 180 21 180 28] a + (127 : int8));
     [#"../checked_ops.rs" 180 21 180 32] _27 <- ([#"../checked_ops.rs" 180 21 180 32] _28 + (1 : int8));
     _28 <- any int8;
@@ -3107,6 +2839,10 @@ module CheckedOps_TestI8AddOverflowNeg
       | False -> goto BB15
       | True -> goto BB12
       end
+  }
+  BB10 {
+    assert { [#"../checked_ops.rs" 178 4 178 47] false };
+    absurd
   }
   BB12 {
     assume { resolve0 res };
@@ -3258,9 +2994,6 @@ module CheckedOps_TestI8OverflowingAdd
   BB1 {
     assume { resolve0 _6 };
     [#"../checked_ops.rs" 192 38 192 55] _9 <- ([#"../checked_ops.rs" 192 38 192 55] wrapping_add0 a b);
-    goto BB2
-  }
-  BB2 {
     [#"../checked_ops.rs" 192 12 192 55] _4 <- ([#"../checked_ops.rs" 192 12 192 55] (let (a, _) = _6 in a) = _9);
     _9 <- any int8;
     switch (_4)
@@ -3270,28 +3003,19 @@ module CheckedOps_TestI8OverflowingAdd
   }
   BB3 {
     [#"../checked_ops.rs" 193 12 193 32] _16 <- ([#"../checked_ops.rs" 193 12 193 32] overflowing_add0 a b);
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 192 4 192 56] false };
-    absurd
-  }
-  BB5 {
     assume { resolve0 _16 };
     [#"../checked_ops.rs" 193 38 193 54] _21 <- ([#"../checked_ops.rs" 193 38 193 54] checked_add0 a b);
-    goto BB6
-  }
-  BB6 {
     [#"../checked_ops.rs" 193 38 193 64] _19 <- ([#"../checked_ops.rs" 193 38 193 64] is_none0 _21);
-    goto BB7
-  }
-  BB7 {
     [#"../checked_ops.rs" 193 12 193 64] _14 <- ([#"../checked_ops.rs" 193 12 193 64] Bool.eqb (let (_, a) = _16 in a) _19);
     _19 <- any bool;
     switch (_14)
       | False -> goto BB9
       | True -> goto BB8
       end
+  }
+  BB4 {
+    assert { [#"../checked_ops.rs" 192 4 192 56] false };
+    absurd
   }
   BB8 {
     [#"../checked_ops.rs" 191 45 194 1] _0 <- ([#"../checked_ops.rs" 191 45 194 1] ());
@@ -3336,6 +3060,36 @@ module CheckedOps_TestI8SubExample
     ensures { result = inv0 _x }
     
   axiom inv0 : forall x : Core_Option_Option_Type.t_option int8 . inv0 x = true
+  use prelude.Int
+  let constant max0  : int8 = [@vc:do_not_keep_trace] [@vc:sp]
+    (127 : int8)
+  let constant min0  : int8 = [@vc:do_not_keep_trace] [@vc:sp]
+    (-128 : int8)
+  use prelude.Int8
+  val saturating_sub0 (self : int8) (rhs : int8) : int8
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] Int8.to_int self - Int8.to_int rhs >= Int8.to_int min0 /\ Int8.to_int self - Int8.to_int rhs <= Int8.to_int max0 -> Int8.to_int result = Int8.to_int self - Int8.to_int rhs }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] Int8.to_int self - Int8.to_int rhs < Int8.to_int min0 -> Int8.to_int result = Int8.to_int min0 }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] Int8.to_int self - Int8.to_int rhs > Int8.to_int max0 -> Int8.to_int result = Int8.to_int max0 }
+    
+  use prelude.UInt32
+  use int.EuclideanDivision
+  use int.Power
+  use prelude.UInt32
+  let constant bits0  : uint32 = [@vc:do_not_keep_trace] [@vc:sp]
+    (8 : uint32)
+  val overflowing_sub0 (self : int8) (rhs : int8) : (int8, bool)
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 175 20 175 95] Int8.to_int (let (a, _) = result in a) = EuclideanDivision.mod (Int8.to_int self - Int8.to_int rhs) (Power.power 2 (UInt32.to_int bits0)) + Int8.to_int min0 }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 178 16 181 18] Int8.to_int self - Int8.to_int rhs >= Int8.to_int min0 /\ Int8.to_int self - Int8.to_int rhs <= Int8.to_int max0 -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self - Int8.to_int rhs }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 185 16 189 18] Int8.to_int self - Int8.to_int rhs < Int8.to_int min0 -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self - Int8.to_int rhs + k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 190 16 194 18] Int8.to_int self - Int8.to_int rhs > Int8.to_int max0 -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self - Int8.to_int rhs - k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (Int8.to_int self - Int8.to_int rhs < Int8.to_int min0 \/ Int8.to_int self - Int8.to_int rhs > Int8.to_int max0) }
+    
+  val wrapping_sub0 (self : int8) (rhs : int8) : int8
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] Int8.to_int result = EuclideanDivision.mod (Int8.to_int self - Int8.to_int rhs) (Power.power 2 (UInt32.to_int bits0)) + Int8.to_int min0 }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] Int8.to_int self - Int8.to_int rhs >= Int8.to_int min0 /\ Int8.to_int self - Int8.to_int rhs <= Int8.to_int max0 -> Int8.to_int result = Int8.to_int self - Int8.to_int rhs }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] Int8.to_int self - Int8.to_int rhs < Int8.to_int min0 -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self - Int8.to_int rhs + k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] Int8.to_int self - Int8.to_int rhs > Int8.to_int max0 -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self - Int8.to_int rhs - k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
+    
   use prelude.Bool
   predicate resolve2 (self : bool) =
     [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
@@ -3351,36 +3105,6 @@ module CheckedOps_TestI8SubExample
     [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve2 (let (_, a) = self in a)
   val resolve0 (self : (int8, bool)) : bool
     ensures { result = resolve0 self }
-    
-  use prelude.UInt32
-  use prelude.Int
-  let constant max0  : int8 = [@vc:do_not_keep_trace] [@vc:sp]
-    (127 : int8)
-  let constant min0  : int8 = [@vc:do_not_keep_trace] [@vc:sp]
-    (-128 : int8)
-  use int.EuclideanDivision
-  use int.Power
-  use prelude.UInt32
-  let constant bits0  : uint32 = [@vc:do_not_keep_trace] [@vc:sp]
-    (8 : uint32)
-  use prelude.Int8
-  val overflowing_sub0 (self : int8) (rhs : int8) : (int8, bool)
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 175 20 175 95] Int8.to_int (let (a, _) = result in a) = EuclideanDivision.mod (Int8.to_int self - Int8.to_int rhs) (Power.power 2 (UInt32.to_int bits0)) + Int8.to_int min0 }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 178 16 181 18] Int8.to_int self - Int8.to_int rhs >= Int8.to_int min0 /\ Int8.to_int self - Int8.to_int rhs <= Int8.to_int max0 -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self - Int8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 185 16 189 18] Int8.to_int self - Int8.to_int rhs < Int8.to_int min0 -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self - Int8.to_int rhs + k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 190 16 194 18] Int8.to_int self - Int8.to_int rhs > Int8.to_int max0 -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self - Int8.to_int rhs - k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (Int8.to_int self - Int8.to_int rhs < Int8.to_int min0 \/ Int8.to_int self - Int8.to_int rhs > Int8.to_int max0) }
-    
-  val saturating_sub0 (self : int8) (rhs : int8) : int8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] Int8.to_int self - Int8.to_int rhs >= Int8.to_int min0 /\ Int8.to_int self - Int8.to_int rhs <= Int8.to_int max0 -> Int8.to_int result = Int8.to_int self - Int8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] Int8.to_int self - Int8.to_int rhs < Int8.to_int min0 -> Int8.to_int result = Int8.to_int min0 }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] Int8.to_int self - Int8.to_int rhs > Int8.to_int max0 -> Int8.to_int result = Int8.to_int max0 }
-    
-  val wrapping_sub0 (self : int8) (rhs : int8) : int8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] Int8.to_int result = EuclideanDivision.mod (Int8.to_int self - Int8.to_int rhs) (Power.power 2 (UInt32.to_int bits0)) + Int8.to_int min0 }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] Int8.to_int self - Int8.to_int rhs >= Int8.to_int min0 /\ Int8.to_int self - Int8.to_int rhs <= Int8.to_int max0 -> Int8.to_int result = Int8.to_int self - Int8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] Int8.to_int self - Int8.to_int rhs < Int8.to_int min0 -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self - Int8.to_int rhs + k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] Int8.to_int self - Int8.to_int rhs > Int8.to_int max0 -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self - Int8.to_int rhs - k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
     
   use prelude.Borrow
   val is_none0 (self : Core_Option_Option_Type.t_option int8) : bool
@@ -3440,9 +3164,6 @@ module CheckedOps_TestI8SubExample
   BB1 {
     [#"../checked_ops.rs" 198 12 198 40] _3 <- ([#"../checked_ops.rs" 198 12 198 40] unwrap0 _4);
     _4 <- any Core_Option_Option_Type.t_option int8;
-    goto BB2
-  }
-  BB2 {
     [#"../checked_ops.rs" 198 12 198 46] _2 <- ([#"../checked_ops.rs" 198 12 198 46] _3 = (-5 : int8));
     _3 <- any int8;
     switch (_2)
@@ -3452,18 +3173,8 @@ module CheckedOps_TestI8SubExample
   }
   BB3 {
     [#"../checked_ops.rs" 199 12 199 33] _9 <- ([#"../checked_ops.rs" 199 12 199 33] checked_sub0 (120 : int8) (10 : int8));
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 198 4 198 47] false };
-    absurd
-  }
-  BB5 {
     [#"../checked_ops.rs" 199 12 199 42] _8 <- ([#"../checked_ops.rs" 199 12 199 42] unwrap0 _9);
     _9 <- any Core_Option_Option_Type.t_option int8;
-    goto BB6
-  }
-  BB6 {
     [#"../checked_ops.rs" 199 12 199 49] _7 <- ([#"../checked_ops.rs" 199 12 199 49] _8 = (110 : int8));
     _8 <- any int8;
     switch (_7)
@@ -3471,33 +3182,24 @@ module CheckedOps_TestI8SubExample
       | True -> goto BB7
       end
   }
-  BB7 {
-    [#"../checked_ops.rs" 200 12 200 36] _14 <- ([#"../checked_ops.rs" 200 12 200 36] checked_sub0 (-120 : int8) (10 : int8));
-    goto BB9
-  }
-  BB8 {
-    assert { [#"../checked_ops.rs" 199 4 199 50] false };
+  BB4 {
+    assert { [#"../checked_ops.rs" 198 4 198 47] false };
     absurd
   }
-  BB9 {
+  BB7 {
+    [#"../checked_ops.rs" 200 12 200 36] _14 <- ([#"../checked_ops.rs" 200 12 200 36] checked_sub0 (-120 : int8) (10 : int8));
     [#"../checked_ops.rs" 200 12 200 46] _12 <- ([#"../checked_ops.rs" 200 12 200 46] is_none0 _14);
-    goto BB10
-  }
-  BB10 {
     switch (_12)
       | False -> goto BB12
       | True -> goto BB11
       end
   }
-  BB11 {
-    [#"../checked_ops.rs" 202 12 202 32] _18 <- ([#"../checked_ops.rs" 202 12 202 32] wrapping_sub0 (5 : int8) (10 : int8));
-    goto BB13
-  }
-  BB12 {
-    assert { [#"../checked_ops.rs" 200 4 200 47] false };
+  BB8 {
+    assert { [#"../checked_ops.rs" 199 4 199 50] false };
     absurd
   }
-  BB13 {
+  BB11 {
+    [#"../checked_ops.rs" 202 12 202 32] _18 <- ([#"../checked_ops.rs" 202 12 202 32] wrapping_sub0 (5 : int8) (10 : int8));
     [#"../checked_ops.rs" 202 12 202 38] _17 <- ([#"../checked_ops.rs" 202 12 202 38] _18 = (-5 : int8));
     _18 <- any int8;
     switch (_17)
@@ -3505,15 +3207,12 @@ module CheckedOps_TestI8SubExample
       | True -> goto BB14
       end
   }
-  BB14 {
-    [#"../checked_ops.rs" 203 12 203 34] _22 <- ([#"../checked_ops.rs" 203 12 203 34] wrapping_sub0 (120 : int8) (10 : int8));
-    goto BB16
-  }
-  BB15 {
-    assert { [#"../checked_ops.rs" 202 4 202 39] false };
+  BB12 {
+    assert { [#"../checked_ops.rs" 200 4 200 47] false };
     absurd
   }
-  BB16 {
+  BB14 {
+    [#"../checked_ops.rs" 203 12 203 34] _22 <- ([#"../checked_ops.rs" 203 12 203 34] wrapping_sub0 (120 : int8) (10 : int8));
     [#"../checked_ops.rs" 203 12 203 41] _21 <- ([#"../checked_ops.rs" 203 12 203 41] _22 = (110 : int8));
     _22 <- any int8;
     switch (_21)
@@ -3521,15 +3220,12 @@ module CheckedOps_TestI8SubExample
       | True -> goto BB17
       end
   }
-  BB17 {
-    [#"../checked_ops.rs" 204 12 204 37] _26 <- ([#"../checked_ops.rs" 204 12 204 37] wrapping_sub0 (-120 : int8) (10 : int8));
-    goto BB19
-  }
-  BB18 {
-    assert { [#"../checked_ops.rs" 203 4 203 42] false };
+  BB15 {
+    assert { [#"../checked_ops.rs" 202 4 202 39] false };
     absurd
   }
-  BB19 {
+  BB17 {
+    [#"../checked_ops.rs" 204 12 204 37] _26 <- ([#"../checked_ops.rs" 204 12 204 37] wrapping_sub0 (-120 : int8) (10 : int8));
     [#"../checked_ops.rs" 204 12 204 44] _25 <- ([#"../checked_ops.rs" 204 12 204 44] _26 = (126 : int8));
     _26 <- any int8;
     switch (_25)
@@ -3537,15 +3233,12 @@ module CheckedOps_TestI8SubExample
       | True -> goto BB20
       end
   }
-  BB20 {
-    [#"../checked_ops.rs" 206 12 206 34] _30 <- ([#"../checked_ops.rs" 206 12 206 34] saturating_sub0 (5 : int8) (10 : int8));
-    goto BB22
-  }
-  BB21 {
-    assert { [#"../checked_ops.rs" 204 4 204 45] false };
+  BB18 {
+    assert { [#"../checked_ops.rs" 203 4 203 42] false };
     absurd
   }
-  BB22 {
+  BB20 {
+    [#"../checked_ops.rs" 206 12 206 34] _30 <- ([#"../checked_ops.rs" 206 12 206 34] saturating_sub0 (5 : int8) (10 : int8));
     [#"../checked_ops.rs" 206 12 206 40] _29 <- ([#"../checked_ops.rs" 206 12 206 40] _30 = (-5 : int8));
     _30 <- any int8;
     switch (_29)
@@ -3553,15 +3246,12 @@ module CheckedOps_TestI8SubExample
       | True -> goto BB23
       end
   }
-  BB23 {
-    [#"../checked_ops.rs" 207 12 207 36] _34 <- ([#"../checked_ops.rs" 207 12 207 36] saturating_sub0 (120 : int8) (10 : int8));
-    goto BB25
-  }
-  BB24 {
-    assert { [#"../checked_ops.rs" 206 4 206 41] false };
+  BB21 {
+    assert { [#"../checked_ops.rs" 204 4 204 45] false };
     absurd
   }
-  BB25 {
+  BB23 {
+    [#"../checked_ops.rs" 207 12 207 36] _34 <- ([#"../checked_ops.rs" 207 12 207 36] saturating_sub0 (120 : int8) (10 : int8));
     [#"../checked_ops.rs" 207 12 207 43] _33 <- ([#"../checked_ops.rs" 207 12 207 43] _34 = (110 : int8));
     _34 <- any int8;
     switch (_33)
@@ -3569,15 +3259,12 @@ module CheckedOps_TestI8SubExample
       | True -> goto BB26
       end
   }
-  BB26 {
-    [#"../checked_ops.rs" 208 12 208 39] _38 <- ([#"../checked_ops.rs" 208 12 208 39] saturating_sub0 (-120 : int8) (10 : int8));
-    goto BB28
-  }
-  BB27 {
-    assert { [#"../checked_ops.rs" 207 4 207 44] false };
+  BB24 {
+    assert { [#"../checked_ops.rs" 206 4 206 41] false };
     absurd
   }
-  BB28 {
+  BB26 {
+    [#"../checked_ops.rs" 208 12 208 39] _38 <- ([#"../checked_ops.rs" 208 12 208 39] saturating_sub0 (-120 : int8) (10 : int8));
     [#"../checked_ops.rs" 208 12 208 47] _37 <- ([#"../checked_ops.rs" 208 12 208 47] _38 = (-128 : int8));
     _38 <- any int8;
     switch (_37)
@@ -3585,20 +3272,21 @@ module CheckedOps_TestI8SubExample
       | True -> goto BB29
       end
   }
-  BB29 {
-    [#"../checked_ops.rs" 210 14 210 37] res <- ([#"../checked_ops.rs" 210 14 210 37] overflowing_sub0 (5 : int8) (10 : int8));
-    goto BB31
-  }
-  BB30 {
-    assert { [#"../checked_ops.rs" 208 4 208 48] false };
+  BB27 {
+    assert { [#"../checked_ops.rs" 207 4 207 44] false };
     absurd
   }
-  BB31 {
+  BB29 {
+    [#"../checked_ops.rs" 210 14 210 37] res <- ([#"../checked_ops.rs" 210 14 210 37] overflowing_sub0 (5 : int8) (10 : int8));
     [#"../checked_ops.rs" 211 12 211 23] _42 <- ([#"../checked_ops.rs" 211 12 211 23] (let (a, _) = res in a) = (-5 : int8));
     switch (_42)
       | False -> goto BB35
       | True -> goto BB32
       end
+  }
+  BB30 {
+    assert { [#"../checked_ops.rs" 208 4 208 48] false };
+    absurd
   }
   BB32 {
     assume { resolve0 res };
@@ -3610,7 +3298,11 @@ module CheckedOps_TestI8SubExample
   }
   BB33 {
     [#"../checked_ops.rs" 212 14 212 39] res1 <- ([#"../checked_ops.rs" 212 14 212 39] overflowing_sub0 (120 : int8) (10 : int8));
-    goto BB37
+    [#"../checked_ops.rs" 213 12 213 24] _49 <- ([#"../checked_ops.rs" 213 12 213 24] (let (a, _) = res1 in a) = (110 : int8));
+    switch (_49)
+      | False -> goto BB41
+      | True -> goto BB38
+      end
   }
   BB34 {
     goto BB36
@@ -3623,13 +3315,6 @@ module CheckedOps_TestI8SubExample
     assert { [#"../checked_ops.rs" 211 4 211 42] false };
     absurd
   }
-  BB37 {
-    [#"../checked_ops.rs" 213 12 213 24] _49 <- ([#"../checked_ops.rs" 213 12 213 24] (let (a, _) = res1 in a) = (110 : int8));
-    switch (_49)
-      | False -> goto BB41
-      | True -> goto BB38
-      end
-  }
   BB38 {
     assume { resolve0 res1 };
     [#"../checked_ops.rs" 213 28 213 42] _51 <- ([#"../checked_ops.rs" 213 28 213 42] Bool.eqb (let (_, a) = res1 in a) false);
@@ -3640,7 +3325,11 @@ module CheckedOps_TestI8SubExample
   }
   BB39 {
     [#"../checked_ops.rs" 214 14 214 42] res2 <- ([#"../checked_ops.rs" 214 14 214 42] overflowing_sub0 (-120 : int8) (10 : int8));
-    goto BB43
+    [#"../checked_ops.rs" 215 12 215 24] _56 <- ([#"../checked_ops.rs" 215 12 215 24] (let (a, _) = res2 in a) = (126 : int8));
+    switch (_56)
+      | False -> goto BB47
+      | True -> goto BB44
+      end
   }
   BB40 {
     goto BB42
@@ -3652,13 +3341,6 @@ module CheckedOps_TestI8SubExample
   BB42 {
     assert { [#"../checked_ops.rs" 213 4 213 43] false };
     absurd
-  }
-  BB43 {
-    [#"../checked_ops.rs" 215 12 215 24] _56 <- ([#"../checked_ops.rs" 215 12 215 24] (let (a, _) = res2 in a) = (126 : int8));
-    switch (_56)
-      | False -> goto BB47
-      | True -> goto BB44
-      end
   }
   BB44 {
     assume { resolve0 res2 };
@@ -3781,9 +3463,6 @@ module CheckedOps_TestI8SubOverflowPos
   }
   BB1 {
     [#"../checked_ops.rs" 221 12 221 45] _4 <- ([#"../checked_ops.rs" 221 12 221 45] is_none0 _6);
-    goto BB2
-  }
-  BB2 {
     switch (_4)
       | False -> goto BB4
       | True -> goto BB3
@@ -3791,13 +3470,6 @@ module CheckedOps_TestI8SubOverflowPos
   }
   BB3 {
     [#"../checked_ops.rs" 222 12 222 36] _11 <- ([#"../checked_ops.rs" 222 12 222 36] wrapping_sub0 (-128 : int8) a);
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 221 4 221 46] false };
-    absurd
-  }
-  BB5 {
     [#"../checked_ops.rs" 222 40 222 47] _14 <- ([#"../checked_ops.rs" 222 40 222 47] (127 : int8) - a);
     [#"../checked_ops.rs" 222 40 222 51] _13 <- ([#"../checked_ops.rs" 222 40 222 51] _14 + (1 : int8));
     _14 <- any int8;
@@ -3809,15 +3481,12 @@ module CheckedOps_TestI8SubOverflowPos
       | True -> goto BB6
       end
   }
-  BB6 {
-    [#"../checked_ops.rs" 223 12 223 38] _19 <- ([#"../checked_ops.rs" 223 12 223 38] saturating_sub0 (-128 : int8) a);
-    goto BB8
-  }
-  BB7 {
-    assert { [#"../checked_ops.rs" 222 4 222 52] false };
+  BB4 {
+    assert { [#"../checked_ops.rs" 221 4 221 46] false };
     absurd
   }
-  BB8 {
+  BB6 {
+    [#"../checked_ops.rs" 223 12 223 38] _19 <- ([#"../checked_ops.rs" 223 12 223 38] saturating_sub0 (-128 : int8) a);
     [#"../checked_ops.rs" 223 12 223 46] _18 <- ([#"../checked_ops.rs" 223 12 223 46] _19 = (-128 : int8));
     _19 <- any int8;
     switch (_18)
@@ -3825,15 +3494,12 @@ module CheckedOps_TestI8SubOverflowPos
       | True -> goto BB9
       end
   }
-  BB9 {
-    [#"../checked_ops.rs" 224 14 224 41] res <- ([#"../checked_ops.rs" 224 14 224 41] overflowing_sub0 (-128 : int8) a);
-    goto BB11
-  }
-  BB10 {
-    assert { [#"../checked_ops.rs" 223 4 223 47] false };
+  BB7 {
+    assert { [#"../checked_ops.rs" 222 4 222 52] false };
     absurd
   }
-  BB11 {
+  BB9 {
+    [#"../checked_ops.rs" 224 14 224 41] res <- ([#"../checked_ops.rs" 224 14 224 41] overflowing_sub0 (-128 : int8) a);
     [#"../checked_ops.rs" 225 21 225 28] _28 <- ([#"../checked_ops.rs" 225 21 225 28] (127 : int8) - a);
     [#"../checked_ops.rs" 225 21 225 32] _27 <- ([#"../checked_ops.rs" 225 21 225 32] _28 + (1 : int8));
     _28 <- any int8;
@@ -3843,6 +3509,10 @@ module CheckedOps_TestI8SubOverflowPos
       | False -> goto BB15
       | True -> goto BB12
       end
+  }
+  BB10 {
+    assert { [#"../checked_ops.rs" 223 4 223 47] false };
+    absurd
   }
   BB12 {
     assume { resolve0 res };
@@ -3967,9 +3637,6 @@ module CheckedOps_TestI8SubOverflowNeg
   }
   BB1 {
     [#"../checked_ops.rs" 231 12 231 42] _4 <- ([#"../checked_ops.rs" 231 12 231 42] is_none0 _6);
-    goto BB2
-  }
-  BB2 {
     switch (_4)
       | False -> goto BB4
       | True -> goto BB3
@@ -3977,13 +3644,6 @@ module CheckedOps_TestI8SubOverflowNeg
   }
   BB3 {
     [#"../checked_ops.rs" 232 12 232 33] _11 <- ([#"../checked_ops.rs" 232 12 232 33] wrapping_sub0 (127 : int8) a);
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 231 4 231 43] false };
-    absurd
-  }
-  BB5 {
     [#"../checked_ops.rs" 232 38 232 45] _15 <- ([#"../checked_ops.rs" 232 38 232 45] (2 : int8) + a);
     [#"../checked_ops.rs" 232 37 232 45] _14 <- ([#"../checked_ops.rs" 232 37 232 45] - _15);
     _15 <- any int8;
@@ -3997,15 +3657,12 @@ module CheckedOps_TestI8SubOverflowNeg
       | True -> goto BB6
       end
   }
-  BB6 {
-    [#"../checked_ops.rs" 233 12 233 35] _20 <- ([#"../checked_ops.rs" 233 12 233 35] saturating_sub0 (127 : int8) a);
-    goto BB8
-  }
-  BB7 {
-    assert { [#"../checked_ops.rs" 232 4 232 52] false };
+  BB4 {
+    assert { [#"../checked_ops.rs" 231 4 231 43] false };
     absurd
   }
-  BB8 {
+  BB6 {
+    [#"../checked_ops.rs" 233 12 233 35] _20 <- ([#"../checked_ops.rs" 233 12 233 35] saturating_sub0 (127 : int8) a);
     [#"../checked_ops.rs" 233 12 233 42] _19 <- ([#"../checked_ops.rs" 233 12 233 42] _20 = (127 : int8));
     _20 <- any int8;
     switch (_19)
@@ -4013,15 +3670,12 @@ module CheckedOps_TestI8SubOverflowNeg
       | True -> goto BB9
       end
   }
-  BB9 {
-    [#"../checked_ops.rs" 234 14 234 38] res <- ([#"../checked_ops.rs" 234 14 234 38] overflowing_sub0 (127 : int8) a);
-    goto BB11
-  }
-  BB10 {
-    assert { [#"../checked_ops.rs" 233 4 233 43] false };
+  BB7 {
+    assert { [#"../checked_ops.rs" 232 4 232 52] false };
     absurd
   }
-  BB11 {
+  BB9 {
+    [#"../checked_ops.rs" 234 14 234 38] res <- ([#"../checked_ops.rs" 234 14 234 38] overflowing_sub0 (127 : int8) a);
     [#"../checked_ops.rs" 235 22 235 29] _30 <- ([#"../checked_ops.rs" 235 22 235 29] (2 : int8) + a);
     [#"../checked_ops.rs" 235 21 235 29] _29 <- ([#"../checked_ops.rs" 235 21 235 29] - _30);
     _30 <- any int8;
@@ -4033,6 +3687,10 @@ module CheckedOps_TestI8SubOverflowNeg
       | False -> goto BB15
       | True -> goto BB12
       end
+  }
+  BB10 {
+    assert { [#"../checked_ops.rs" 233 4 233 43] false };
+    absurd
   }
   BB12 {
     assume { resolve0 res };
@@ -4184,9 +3842,6 @@ module CheckedOps_TestI8OverflowingSub
   BB1 {
     assume { resolve0 _6 };
     [#"../checked_ops.rs" 247 38 247 55] _9 <- ([#"../checked_ops.rs" 247 38 247 55] wrapping_sub0 a b);
-    goto BB2
-  }
-  BB2 {
     [#"../checked_ops.rs" 247 12 247 55] _4 <- ([#"../checked_ops.rs" 247 12 247 55] (let (a, _) = _6 in a) = _9);
     _9 <- any int8;
     switch (_4)
@@ -4196,28 +3851,19 @@ module CheckedOps_TestI8OverflowingSub
   }
   BB3 {
     [#"../checked_ops.rs" 248 12 248 32] _16 <- ([#"../checked_ops.rs" 248 12 248 32] overflowing_sub0 a b);
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 247 4 247 56] false };
-    absurd
-  }
-  BB5 {
     assume { resolve0 _16 };
     [#"../checked_ops.rs" 248 38 248 54] _21 <- ([#"../checked_ops.rs" 248 38 248 54] checked_sub0 a b);
-    goto BB6
-  }
-  BB6 {
     [#"../checked_ops.rs" 248 38 248 64] _19 <- ([#"../checked_ops.rs" 248 38 248 64] is_none0 _21);
-    goto BB7
-  }
-  BB7 {
     [#"../checked_ops.rs" 248 12 248 64] _14 <- ([#"../checked_ops.rs" 248 12 248 64] Bool.eqb (let (_, a) = _16 in a) _19);
     _19 <- any bool;
     switch (_14)
       | False -> goto BB9
       | True -> goto BB8
       end
+  }
+  BB4 {
+    assert { [#"../checked_ops.rs" 247 4 247 56] false };
+    absurd
   }
   BB8 {
     [#"../checked_ops.rs" 246 45 249 1] _0 <- ([#"../checked_ops.rs" 246 45 249 1] ());
@@ -4262,6 +3908,36 @@ module CheckedOps_TestI8MulExample
     ensures { result = inv0 _x }
     
   axiom inv0 : forall x : Core_Option_Option_Type.t_option int8 . inv0 x = true
+  use prelude.Int
+  let constant max0  : int8 = [@vc:do_not_keep_trace] [@vc:sp]
+    (127 : int8)
+  let constant min0  : int8 = [@vc:do_not_keep_trace] [@vc:sp]
+    (-128 : int8)
+  use prelude.Int8
+  val saturating_mul0 (self : int8) (rhs : int8) : int8
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] Int8.to_int self * Int8.to_int rhs >= Int8.to_int min0 /\ Int8.to_int self * Int8.to_int rhs <= Int8.to_int max0 -> Int8.to_int result = Int8.to_int self * Int8.to_int rhs }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] Int8.to_int self * Int8.to_int rhs < Int8.to_int min0 -> Int8.to_int result = Int8.to_int min0 }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] Int8.to_int self * Int8.to_int rhs > Int8.to_int max0 -> Int8.to_int result = Int8.to_int max0 }
+    
+  use prelude.UInt32
+  use int.EuclideanDivision
+  use int.Power
+  use prelude.UInt32
+  let constant bits0  : uint32 = [@vc:do_not_keep_trace] [@vc:sp]
+    (8 : uint32)
+  val overflowing_mul0 (self : int8) (rhs : int8) : (int8, bool)
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 175 20 175 95] Int8.to_int (let (a, _) = result in a) = EuclideanDivision.mod (Int8.to_int self * Int8.to_int rhs) (Power.power 2 (UInt32.to_int bits0)) + Int8.to_int min0 }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 178 16 181 18] Int8.to_int self * Int8.to_int rhs >= Int8.to_int min0 /\ Int8.to_int self * Int8.to_int rhs <= Int8.to_int max0 -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self * Int8.to_int rhs }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 185 16 189 18] Int8.to_int self * Int8.to_int rhs < Int8.to_int min0 -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self * Int8.to_int rhs + k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 190 16 194 18] Int8.to_int self * Int8.to_int rhs > Int8.to_int max0 -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self * Int8.to_int rhs - k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (Int8.to_int self * Int8.to_int rhs < Int8.to_int min0 \/ Int8.to_int self * Int8.to_int rhs > Int8.to_int max0) }
+    
+  val wrapping_mul0 (self : int8) (rhs : int8) : int8
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] Int8.to_int result = EuclideanDivision.mod (Int8.to_int self * Int8.to_int rhs) (Power.power 2 (UInt32.to_int bits0)) + Int8.to_int min0 }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] Int8.to_int self * Int8.to_int rhs >= Int8.to_int min0 /\ Int8.to_int self * Int8.to_int rhs <= Int8.to_int max0 -> Int8.to_int result = Int8.to_int self * Int8.to_int rhs }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] Int8.to_int self * Int8.to_int rhs < Int8.to_int min0 -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self * Int8.to_int rhs + k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] Int8.to_int self * Int8.to_int rhs > Int8.to_int max0 -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self * Int8.to_int rhs - k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
+    
   use prelude.Bool
   predicate resolve2 (self : bool) =
     [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
@@ -4277,36 +3953,6 @@ module CheckedOps_TestI8MulExample
     [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve2 (let (_, a) = self in a)
   val resolve0 (self : (int8, bool)) : bool
     ensures { result = resolve0 self }
-    
-  use prelude.UInt32
-  use prelude.Int
-  let constant max0  : int8 = [@vc:do_not_keep_trace] [@vc:sp]
-    (127 : int8)
-  let constant min0  : int8 = [@vc:do_not_keep_trace] [@vc:sp]
-    (-128 : int8)
-  use int.EuclideanDivision
-  use int.Power
-  use prelude.UInt32
-  let constant bits0  : uint32 = [@vc:do_not_keep_trace] [@vc:sp]
-    (8 : uint32)
-  use prelude.Int8
-  val overflowing_mul0 (self : int8) (rhs : int8) : (int8, bool)
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 175 20 175 95] Int8.to_int (let (a, _) = result in a) = EuclideanDivision.mod (Int8.to_int self * Int8.to_int rhs) (Power.power 2 (UInt32.to_int bits0)) + Int8.to_int min0 }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 178 16 181 18] Int8.to_int self * Int8.to_int rhs >= Int8.to_int min0 /\ Int8.to_int self * Int8.to_int rhs <= Int8.to_int max0 -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self * Int8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 185 16 189 18] Int8.to_int self * Int8.to_int rhs < Int8.to_int min0 -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self * Int8.to_int rhs + k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 190 16 194 18] Int8.to_int self * Int8.to_int rhs > Int8.to_int max0 -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self * Int8.to_int rhs - k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 197 20 197 98] (let (_, a) = result in a) = (Int8.to_int self * Int8.to_int rhs < Int8.to_int min0 \/ Int8.to_int self * Int8.to_int rhs > Int8.to_int max0) }
-    
-  val saturating_mul0 (self : int8) (rhs : int8) : int8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 161 16 164 18] Int8.to_int self * Int8.to_int rhs >= Int8.to_int min0 /\ Int8.to_int self * Int8.to_int rhs <= Int8.to_int max0 -> Int8.to_int result = Int8.to_int self * Int8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 166 16 166 85] Int8.to_int self * Int8.to_int rhs < Int8.to_int min0 -> Int8.to_int result = Int8.to_int min0 }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 167 16 167 85] Int8.to_int self * Int8.to_int rhs > Int8.to_int max0 -> Int8.to_int result = Int8.to_int max0 }
-    
-  val wrapping_mul0 (self : int8) (rhs : int8) : int8
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 135 20 135 93] Int8.to_int result = EuclideanDivision.mod (Int8.to_int self * Int8.to_int rhs) (Power.power 2 (UInt32.to_int bits0)) + Int8.to_int min0 }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 138 16 141 18] Int8.to_int self * Int8.to_int rhs >= Int8.to_int min0 /\ Int8.to_int self * Int8.to_int rhs <= Int8.to_int max0 -> Int8.to_int result = Int8.to_int self * Int8.to_int rhs }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 145 16 149 18] Int8.to_int self * Int8.to_int rhs < Int8.to_int min0 -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self * Int8.to_int rhs + k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 150 16 154 18] Int8.to_int self * Int8.to_int rhs > Int8.to_int max0 -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self * Int8.to_int rhs - k * (Int8.to_int max0 - Int8.to_int min0 + 1)) }
     
   use prelude.Borrow
   val is_none0 (self : Core_Option_Option_Type.t_option int8) : bool
@@ -4365,9 +4011,6 @@ module CheckedOps_TestI8MulExample
   BB1 {
     [#"../checked_ops.rs" 253 12 253 40] _3 <- ([#"../checked_ops.rs" 253 12 253 40] unwrap0 _4);
     _4 <- any Core_Option_Option_Type.t_option int8;
-    goto BB2
-  }
-  BB2 {
     [#"../checked_ops.rs" 253 12 253 46] _2 <- ([#"../checked_ops.rs" 253 12 253 46] _3 = (50 : int8));
     _3 <- any int8;
     switch (_2)
@@ -4377,49 +4020,30 @@ module CheckedOps_TestI8MulExample
   }
   BB3 {
     [#"../checked_ops.rs" 254 12 254 32] _9 <- ([#"../checked_ops.rs" 254 12 254 32] checked_mul0 (50 : int8) (10 : int8));
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 253 4 253 47] false };
-    absurd
-  }
-  BB5 {
     [#"../checked_ops.rs" 254 12 254 42] _7 <- ([#"../checked_ops.rs" 254 12 254 42] is_none0 _9);
-    goto BB6
-  }
-  BB6 {
     switch (_7)
       | False -> goto BB8
       | True -> goto BB7
       end
   }
-  BB7 {
-    [#"../checked_ops.rs" 255 12 255 33] _14 <- ([#"../checked_ops.rs" 255 12 255 33] checked_mul0 (50 : int8) (-10 : int8));
-    goto BB9
-  }
-  BB8 {
-    assert { [#"../checked_ops.rs" 254 4 254 43] false };
+  BB4 {
+    assert { [#"../checked_ops.rs" 253 4 253 47] false };
     absurd
   }
-  BB9 {
+  BB7 {
+    [#"../checked_ops.rs" 255 12 255 33] _14 <- ([#"../checked_ops.rs" 255 12 255 33] checked_mul0 (50 : int8) (-10 : int8));
     [#"../checked_ops.rs" 255 12 255 43] _12 <- ([#"../checked_ops.rs" 255 12 255 43] is_none0 _14);
-    goto BB10
-  }
-  BB10 {
     switch (_12)
       | False -> goto BB12
       | True -> goto BB11
       end
   }
-  BB11 {
-    [#"../checked_ops.rs" 257 12 257 32] _18 <- ([#"../checked_ops.rs" 257 12 257 32] wrapping_mul0 (5 : int8) (10 : int8));
-    goto BB13
-  }
-  BB12 {
-    assert { [#"../checked_ops.rs" 255 4 255 44] false };
+  BB8 {
+    assert { [#"../checked_ops.rs" 254 4 254 43] false };
     absurd
   }
-  BB13 {
+  BB11 {
+    [#"../checked_ops.rs" 257 12 257 32] _18 <- ([#"../checked_ops.rs" 257 12 257 32] wrapping_mul0 (5 : int8) (10 : int8));
     [#"../checked_ops.rs" 257 12 257 38] _17 <- ([#"../checked_ops.rs" 257 12 257 38] _18 = (50 : int8));
     _18 <- any int8;
     switch (_17)
@@ -4427,15 +4051,12 @@ module CheckedOps_TestI8MulExample
       | True -> goto BB14
       end
   }
-  BB14 {
-    [#"../checked_ops.rs" 258 12 258 33] _22 <- ([#"../checked_ops.rs" 258 12 258 33] wrapping_mul0 (50 : int8) (10 : int8));
-    goto BB16
-  }
-  BB15 {
-    assert { [#"../checked_ops.rs" 257 4 257 39] false };
+  BB12 {
+    assert { [#"../checked_ops.rs" 255 4 255 44] false };
     absurd
   }
-  BB16 {
+  BB14 {
+    [#"../checked_ops.rs" 258 12 258 33] _22 <- ([#"../checked_ops.rs" 258 12 258 33] wrapping_mul0 (50 : int8) (10 : int8));
     [#"../checked_ops.rs" 258 12 258 40] _21 <- ([#"../checked_ops.rs" 258 12 258 40] _22 = (-12 : int8));
     _22 <- any int8;
     switch (_21)
@@ -4443,15 +4064,12 @@ module CheckedOps_TestI8MulExample
       | True -> goto BB17
       end
   }
-  BB17 {
-    [#"../checked_ops.rs" 259 12 259 34] _26 <- ([#"../checked_ops.rs" 259 12 259 34] wrapping_mul0 (50 : int8) (-10 : int8));
-    goto BB19
-  }
-  BB18 {
-    assert { [#"../checked_ops.rs" 258 4 258 41] false };
+  BB15 {
+    assert { [#"../checked_ops.rs" 257 4 257 39] false };
     absurd
   }
-  BB19 {
+  BB17 {
+    [#"../checked_ops.rs" 259 12 259 34] _26 <- ([#"../checked_ops.rs" 259 12 259 34] wrapping_mul0 (50 : int8) (-10 : int8));
     [#"../checked_ops.rs" 259 12 259 40] _25 <- ([#"../checked_ops.rs" 259 12 259 40] _26 = (12 : int8));
     _26 <- any int8;
     switch (_25)
@@ -4459,15 +4077,12 @@ module CheckedOps_TestI8MulExample
       | True -> goto BB20
       end
   }
-  BB20 {
-    [#"../checked_ops.rs" 261 12 261 34] _30 <- ([#"../checked_ops.rs" 261 12 261 34] saturating_mul0 (5 : int8) (10 : int8));
-    goto BB22
-  }
-  BB21 {
-    assert { [#"../checked_ops.rs" 259 4 259 41] false };
+  BB18 {
+    assert { [#"../checked_ops.rs" 258 4 258 41] false };
     absurd
   }
-  BB22 {
+  BB20 {
+    [#"../checked_ops.rs" 261 12 261 34] _30 <- ([#"../checked_ops.rs" 261 12 261 34] saturating_mul0 (5 : int8) (10 : int8));
     [#"../checked_ops.rs" 261 12 261 40] _29 <- ([#"../checked_ops.rs" 261 12 261 40] _30 = (50 : int8));
     _30 <- any int8;
     switch (_29)
@@ -4475,15 +4090,12 @@ module CheckedOps_TestI8MulExample
       | True -> goto BB23
       end
   }
-  BB23 {
-    [#"../checked_ops.rs" 262 12 262 35] _34 <- ([#"../checked_ops.rs" 262 12 262 35] saturating_mul0 (50 : int8) (10 : int8));
-    goto BB25
-  }
-  BB24 {
-    assert { [#"../checked_ops.rs" 261 4 261 41] false };
+  BB21 {
+    assert { [#"../checked_ops.rs" 259 4 259 41] false };
     absurd
   }
-  BB25 {
+  BB23 {
+    [#"../checked_ops.rs" 262 12 262 35] _34 <- ([#"../checked_ops.rs" 262 12 262 35] saturating_mul0 (50 : int8) (10 : int8));
     [#"../checked_ops.rs" 262 12 262 42] _33 <- ([#"../checked_ops.rs" 262 12 262 42] _34 = (127 : int8));
     _34 <- any int8;
     switch (_33)
@@ -4491,15 +4103,12 @@ module CheckedOps_TestI8MulExample
       | True -> goto BB26
       end
   }
-  BB26 {
-    [#"../checked_ops.rs" 263 12 263 36] _38 <- ([#"../checked_ops.rs" 263 12 263 36] saturating_mul0 (50 : int8) (-10 : int8));
-    goto BB28
-  }
-  BB27 {
-    assert { [#"../checked_ops.rs" 262 4 262 43] false };
+  BB24 {
+    assert { [#"../checked_ops.rs" 261 4 261 41] false };
     absurd
   }
-  BB28 {
+  BB26 {
+    [#"../checked_ops.rs" 263 12 263 36] _38 <- ([#"../checked_ops.rs" 263 12 263 36] saturating_mul0 (50 : int8) (-10 : int8));
     [#"../checked_ops.rs" 263 12 263 44] _37 <- ([#"../checked_ops.rs" 263 12 263 44] _38 = (-128 : int8));
     _38 <- any int8;
     switch (_37)
@@ -4507,20 +4116,21 @@ module CheckedOps_TestI8MulExample
       | True -> goto BB29
       end
   }
-  BB29 {
-    [#"../checked_ops.rs" 265 14 265 37] res <- ([#"../checked_ops.rs" 265 14 265 37] overflowing_mul0 (5 : int8) (10 : int8));
-    goto BB31
-  }
-  BB30 {
-    assert { [#"../checked_ops.rs" 263 4 263 45] false };
+  BB27 {
+    assert { [#"../checked_ops.rs" 262 4 262 43] false };
     absurd
   }
-  BB31 {
+  BB29 {
+    [#"../checked_ops.rs" 265 14 265 37] res <- ([#"../checked_ops.rs" 265 14 265 37] overflowing_mul0 (5 : int8) (10 : int8));
     [#"../checked_ops.rs" 266 12 266 23] _42 <- ([#"../checked_ops.rs" 266 12 266 23] (let (a, _) = res in a) = (50 : int8));
     switch (_42)
       | False -> goto BB35
       | True -> goto BB32
       end
+  }
+  BB30 {
+    assert { [#"../checked_ops.rs" 263 4 263 45] false };
+    absurd
   }
   BB32 {
     assume { resolve0 res };
@@ -4532,7 +4142,11 @@ module CheckedOps_TestI8MulExample
   }
   BB33 {
     [#"../checked_ops.rs" 267 14 267 38] res1 <- ([#"../checked_ops.rs" 267 14 267 38] overflowing_mul0 (50 : int8) (10 : int8));
-    goto BB37
+    [#"../checked_ops.rs" 268 12 268 24] _49 <- ([#"../checked_ops.rs" 268 12 268 24] (let (a, _) = res1 in a) = (-12 : int8));
+    switch (_49)
+      | False -> goto BB41
+      | True -> goto BB38
+      end
   }
   BB34 {
     goto BB36
@@ -4545,13 +4159,6 @@ module CheckedOps_TestI8MulExample
     assert { [#"../checked_ops.rs" 266 4 266 42] false };
     absurd
   }
-  BB37 {
-    [#"../checked_ops.rs" 268 12 268 24] _49 <- ([#"../checked_ops.rs" 268 12 268 24] (let (a, _) = res1 in a) = (-12 : int8));
-    switch (_49)
-      | False -> goto BB41
-      | True -> goto BB38
-      end
-  }
   BB38 {
     assume { resolve0 res1 };
     [#"../checked_ops.rs" 268 28 268 41] _51 <- ([#"../checked_ops.rs" 268 28 268 41] Bool.eqb (let (_, a) = res1 in a) true);
@@ -4562,7 +4169,11 @@ module CheckedOps_TestI8MulExample
   }
   BB39 {
     [#"../checked_ops.rs" 269 14 269 39] res2 <- ([#"../checked_ops.rs" 269 14 269 39] overflowing_mul0 (50 : int8) (-10 : int8));
-    goto BB43
+    [#"../checked_ops.rs" 270 12 270 23] _56 <- ([#"../checked_ops.rs" 270 12 270 23] (let (a, _) = res2 in a) = (12 : int8));
+    switch (_56)
+      | False -> goto BB47
+      | True -> goto BB44
+      end
   }
   BB40 {
     goto BB42
@@ -4574,13 +4185,6 @@ module CheckedOps_TestI8MulExample
   BB42 {
     assert { [#"../checked_ops.rs" 268 4 268 42] false };
     absurd
-  }
-  BB43 {
-    [#"../checked_ops.rs" 270 12 270 23] _56 <- ([#"../checked_ops.rs" 270 12 270 23] (let (a, _) = res2 in a) = (12 : int8));
-    switch (_56)
-      | False -> goto BB47
-      | True -> goto BB44
-      end
   }
   BB44 {
     assume { resolve0 res2 };
@@ -4711,9 +4315,6 @@ module CheckedOps_TestI8MulZero
   BB1 {
     [#"../checked_ops.rs" 275 12 275 39] _4 <- ([#"../checked_ops.rs" 275 12 275 39] unwrap0 _5);
     _5 <- any Core_Option_Option_Type.t_option int8;
-    goto BB2
-  }
-  BB2 {
     [#"../checked_ops.rs" 275 12 275 44] _3 <- ([#"../checked_ops.rs" 275 12 275 44] _4 = (0 : int8));
     _4 <- any int8;
     switch (_3)
@@ -4723,13 +4324,6 @@ module CheckedOps_TestI8MulZero
   }
   BB3 {
     [#"../checked_ops.rs" 276 12 276 31] _10 <- ([#"../checked_ops.rs" 276 12 276 31] wrapping_mul0 (0 : int8) a);
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 275 4 275 45] false };
-    absurd
-  }
-  BB5 {
     [#"../checked_ops.rs" 276 12 276 36] _9 <- ([#"../checked_ops.rs" 276 12 276 36] _10 = (0 : int8));
     _10 <- any int8;
     switch (_9)
@@ -4737,15 +4331,12 @@ module CheckedOps_TestI8MulZero
       | True -> goto BB6
       end
   }
-  BB6 {
-    [#"../checked_ops.rs" 277 12 277 33] _15 <- ([#"../checked_ops.rs" 277 12 277 33] saturating_mul0 (0 : int8) a);
-    goto BB8
-  }
-  BB7 {
-    assert { [#"../checked_ops.rs" 276 4 276 37] false };
+  BB4 {
+    assert { [#"../checked_ops.rs" 275 4 275 45] false };
     absurd
   }
-  BB8 {
+  BB6 {
+    [#"../checked_ops.rs" 277 12 277 33] _15 <- ([#"../checked_ops.rs" 277 12 277 33] saturating_mul0 (0 : int8) a);
     [#"../checked_ops.rs" 277 12 277 38] _14 <- ([#"../checked_ops.rs" 277 12 277 38] _15 = (0 : int8));
     _15 <- any int8;
     switch (_14)
@@ -4753,20 +4344,21 @@ module CheckedOps_TestI8MulZero
       | True -> goto BB9
       end
   }
-  BB9 {
-    [#"../checked_ops.rs" 278 14 278 36] res <- ([#"../checked_ops.rs" 278 14 278 36] overflowing_mul0 (0 : int8) a);
-    goto BB11
-  }
-  BB10 {
-    assert { [#"../checked_ops.rs" 277 4 277 39] false };
+  BB7 {
+    assert { [#"../checked_ops.rs" 276 4 276 37] false };
     absurd
   }
-  BB11 {
+  BB9 {
+    [#"../checked_ops.rs" 278 14 278 36] res <- ([#"../checked_ops.rs" 278 14 278 36] overflowing_mul0 (0 : int8) a);
     [#"../checked_ops.rs" 279 12 279 22] _21 <- ([#"../checked_ops.rs" 279 12 279 22] (let (a, _) = res in a) = (0 : int8));
     switch (_21)
       | False -> goto BB15
       | True -> goto BB12
       end
+  }
+  BB10 {
+    assert { [#"../checked_ops.rs" 277 4 277 39] false };
+    absurd
   }
   BB12 {
     assume { resolve0 res };
@@ -4879,9 +4471,6 @@ module CheckedOps_TestI8OverflowingMul
   BB1 {
     assume { resolve0 _6 };
     [#"../checked_ops.rs" 284 38 284 55] _9 <- ([#"../checked_ops.rs" 284 38 284 55] wrapping_mul0 a b);
-    goto BB2
-  }
-  BB2 {
     [#"../checked_ops.rs" 284 12 284 55] _4 <- ([#"../checked_ops.rs" 284 12 284 55] (let (a, _) = _6 in a) = _9);
     _9 <- any int8;
     switch (_4)
@@ -4891,28 +4480,19 @@ module CheckedOps_TestI8OverflowingMul
   }
   BB3 {
     [#"../checked_ops.rs" 285 12 285 32] _16 <- ([#"../checked_ops.rs" 285 12 285 32] overflowing_mul0 a b);
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 284 4 284 56] false };
-    absurd
-  }
-  BB5 {
     assume { resolve0 _16 };
     [#"../checked_ops.rs" 285 38 285 54] _21 <- ([#"../checked_ops.rs" 285 38 285 54] checked_mul0 a b);
-    goto BB6
-  }
-  BB6 {
     [#"../checked_ops.rs" 285 38 285 64] _19 <- ([#"../checked_ops.rs" 285 38 285 64] is_none0 _21);
-    goto BB7
-  }
-  BB7 {
     [#"../checked_ops.rs" 285 12 285 64] _14 <- ([#"../checked_ops.rs" 285 12 285 64] Bool.eqb (let (_, a) = _16 in a) _19);
     _19 <- any bool;
     switch (_14)
       | False -> goto BB9
       | True -> goto BB8
       end
+  }
+  BB4 {
+    assert { [#"../checked_ops.rs" 284 4 284 56] false };
+    absurd
   }
   BB8 {
     [#"../checked_ops.rs" 283 45 286 1] _0 <- ([#"../checked_ops.rs" 283 45 286 1] ());
@@ -4957,6 +4537,26 @@ module CheckedOps_TestI8DivExample
     ensures { result = inv0 _x }
     
   axiom inv0 : forall x : Core_Option_Option_Type.t_option int8 . inv0 x = true
+  use prelude.Int
+  let constant min0  : int8 = [@vc:do_not_keep_trace] [@vc:sp]
+    (-128 : int8)
+  use prelude.Int8
+  val saturating_div0 (self : int8) (rhs : int8) : int8
+    requires {[#"../../../../creusot-contracts/src/std/num.rs" 82 27 82 36] Int8.to_int rhs <> 0}
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 84 16 84 91] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 -> Int8.to_int result = Int8.to_int min0 }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 86 26 86 89] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 \/ Int8.to_int result = div (Int8.to_int self) (Int8.to_int rhs) }
+    
+  val wrapping_div0 (self : int8) (rhs : int8) : int8
+    requires {[#"../../../../creusot-contracts/src/std/num.rs" 73 27 73 36] Int8.to_int rhs <> 0}
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 75 16 75 85] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 -> Int8.to_int result = Int8.to_int self }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 77 26 77 89] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 \/ Int8.to_int result = div (Int8.to_int self) (Int8.to_int rhs) }
+    
+  val overflowing_div0 (self : int8) (rhs : int8) : (int8, bool)
+    requires {[#"../../../../creusot-contracts/src/std/num.rs" 91 27 91 36] Int8.to_int rhs <> 0}
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 93 16 93 87] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 95 26 95 91] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 \/ Int8.to_int (let (a, _) = result in a) = div (Int8.to_int self) (Int8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 97 26 97 74] (let (_, a) = result in a) = (Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1) }
+    
   use prelude.Bool
   predicate resolve2 (self : bool) =
     [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
@@ -4972,26 +4572,6 @@ module CheckedOps_TestI8DivExample
     [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve2 (let (_, a) = self in a)
   val resolve0 (self : (int8, bool)) : bool
     ensures { result = resolve0 self }
-    
-  use prelude.Int
-  let constant min0  : int8 = [@vc:do_not_keep_trace] [@vc:sp]
-    (-128 : int8)
-  use prelude.Int8
-  val overflowing_div0 (self : int8) (rhs : int8) : (int8, bool)
-    requires {[#"../../../../creusot-contracts/src/std/num.rs" 91 27 91 36] Int8.to_int rhs <> 0}
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 93 16 93 87] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 95 26 95 91] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 \/ Int8.to_int (let (a, _) = result in a) = div (Int8.to_int self) (Int8.to_int rhs) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 97 26 97 74] (let (_, a) = result in a) = (Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1) }
-    
-  val saturating_div0 (self : int8) (rhs : int8) : int8
-    requires {[#"../../../../creusot-contracts/src/std/num.rs" 82 27 82 36] Int8.to_int rhs <> 0}
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 84 16 84 91] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 -> Int8.to_int result = Int8.to_int min0 }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 86 26 86 89] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 \/ Int8.to_int result = div (Int8.to_int self) (Int8.to_int rhs) }
-    
-  val wrapping_div0 (self : int8) (rhs : int8) : int8
-    requires {[#"../../../../creusot-contracts/src/std/num.rs" 73 27 73 36] Int8.to_int rhs <> 0}
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 75 16 75 85] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 -> Int8.to_int result = Int8.to_int self }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 77 26 77 89] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 \/ Int8.to_int result = div (Int8.to_int self) (Int8.to_int rhs) }
     
   val unwrap0 (self : Core_Option_Option_Type.t_option int8) : int8
     requires {[#"../../../../creusot-contracts/src/std/option.rs" 29 0 126 1] self <> Core_Option_Option_Type.C_None}
@@ -5052,9 +4632,6 @@ module CheckedOps_TestI8DivExample
   }
   BB1 {
     [#"../checked_ops.rs" 290 12 290 40] _2 <- ([#"../checked_ops.rs" 290 12 290 40] is_none0 _4);
-    goto BB2
-  }
-  BB2 {
     switch (_2)
       | False -> goto BB4
       | True -> goto BB3
@@ -5062,18 +4639,8 @@ module CheckedOps_TestI8DivExample
   }
   BB3 {
     [#"../checked_ops.rs" 291 12 291 30] _9 <- ([#"../checked_ops.rs" 291 12 291 30] checked_div0 (5 : int8) (2 : int8));
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../checked_ops.rs" 290 4 290 41] false };
-    absurd
-  }
-  BB5 {
     [#"../checked_ops.rs" 291 12 291 39] _8 <- ([#"../checked_ops.rs" 291 12 291 39] unwrap0 _9);
     _9 <- any Core_Option_Option_Type.t_option int8;
-    goto BB6
-  }
-  BB6 {
     [#"../checked_ops.rs" 291 12 291 44] _7 <- ([#"../checked_ops.rs" 291 12 291 44] _8 = (2 : int8));
     _8 <- any int8;
     switch (_7)
@@ -5081,20 +4648,14 @@ module CheckedOps_TestI8DivExample
       | True -> goto BB7
       end
   }
-  BB7 {
-    [#"../checked_ops.rs" 292 12 292 31] _14 <- ([#"../checked_ops.rs" 292 12 292 31] checked_div0 (5 : int8) (-2 : int8));
-    goto BB9
-  }
-  BB8 {
-    assert { [#"../checked_ops.rs" 291 4 291 45] false };
+  BB4 {
+    assert { [#"../checked_ops.rs" 290 4 290 41] false };
     absurd
   }
-  BB9 {
+  BB7 {
+    [#"../checked_ops.rs" 292 12 292 31] _14 <- ([#"../checked_ops.rs" 292 12 292 31] checked_div0 (5 : int8) (-2 : int8));
     [#"../checked_ops.rs" 292 12 292 40] _13 <- ([#"../checked_ops.rs" 292 12 292 40] unwrap0 _14);
     _14 <- any Core_Option_Option_Type.t_option int8;
-    goto BB10
-  }
-  BB10 {
     [#"../checked_ops.rs" 292 12 292 46] _12 <- ([#"../checked_ops.rs" 292 12 292 46] _13 = (-2 : int8));
     _13 <- any int8;
     switch (_12)
@@ -5102,33 +4663,24 @@ module CheckedOps_TestI8DivExample
       | True -> goto BB11
       end
   }
-  BB11 {
-    [#"../checked_ops.rs" 293 12 293 36] _19 <- ([#"../checked_ops.rs" 293 12 293 36] checked_div0 (-128 : int8) (-1 : int8));
-    goto BB13
-  }
-  BB12 {
-    assert { [#"../checked_ops.rs" 292 4 292 47] false };
+  BB8 {
+    assert { [#"../checked_ops.rs" 291 4 291 45] false };
     absurd
   }
-  BB13 {
+  BB11 {
+    [#"../checked_ops.rs" 293 12 293 36] _19 <- ([#"../checked_ops.rs" 293 12 293 36] checked_div0 (-128 : int8) (-1 : int8));
     [#"../checked_ops.rs" 293 12 293 46] _17 <- ([#"../checked_ops.rs" 293 12 293 46] is_none0 _19);
-    goto BB14
-  }
-  BB14 {
     switch (_17)
       | False -> goto BB16
       | True -> goto BB15
       end
   }
-  BB15 {
-    [#"../checked_ops.rs" 295 12 295 31] _23 <- ([#"../checked_ops.rs" 295 12 295 31] wrapping_div0 (5 : int8) (2 : int8));
-    goto BB17
-  }
-  BB16 {
-    assert { [#"../checked_ops.rs" 293 4 293 47] false };
+  BB12 {
+    assert { [#"../checked_ops.rs" 292 4 292 47] false };
     absurd
   }
-  BB17 {
+  BB15 {
+    [#"../checked_ops.rs" 295 12 295 31] _23 <- ([#"../checked_ops.rs" 295 12 295 31] wrapping_div0 (5 : int8) (2 : int8));
     [#"../checked_ops.rs" 295 12 295 36] _22 <- ([#"../checked_ops.rs" 295 12 295 36] _23 = (2 : int8));
     _23 <- any int8;
     switch (_22)
@@ -5136,15 +4688,12 @@ module CheckedOps_TestI8DivExample
       | True -> goto BB18
       end
   }
-  BB18 {
-    [#"../checked_ops.rs" 296 12 296 32] _27 <- ([#"../checked_ops.rs" 296 12 296 32] wrapping_div0 (5 : int8) (-2 : int8));
-    goto BB20
-  }
-  BB19 {
-    assert { [#"../checked_ops.rs" 295 4 295 37] false };
+  BB16 {
+    assert { [#"../checked_ops.rs" 293 4 293 47] false };
     absurd
   }
-  BB20 {
+  BB18 {
+    [#"../checked_ops.rs" 296 12 296 32] _27 <- ([#"../checked_ops.rs" 296 12 296 32] wrapping_div0 (5 : int8) (-2 : int8));
     [#"../checked_ops.rs" 296 12 296 38] _26 <- ([#"../checked_ops.rs" 296 12 296 38] _27 = (-2 : int8));
     _27 <- any int8;
     switch (_26)
@@ -5152,15 +4701,12 @@ module CheckedOps_TestI8DivExample
       | True -> goto BB21
       end
   }
-  BB21 {
-    [#"../checked_ops.rs" 297 12 297 37] _31 <- ([#"../checked_ops.rs" 297 12 297 37] wrapping_div0 (-128 : int8) (-1 : int8));
-    goto BB23
-  }
-  BB22 {
-    assert { [#"../checked_ops.rs" 296 4 296 39] false };
+  BB19 {
+    assert { [#"../checked_ops.rs" 295 4 295 37] false };
     absurd
   }
-  BB23 {
+  BB21 {
+    [#"../checked_ops.rs" 297 12 297 37] _31 <- ([#"../checked_ops.rs" 297 12 297 37] wrapping_div0 (-128 : int8) (-1 : int8));
     [#"../checked_ops.rs" 297 12 297 45] _30 <- ([#"../checked_ops.rs" 297 12 297 45] _31 = (-128 : int8));
     _31 <- any int8;
     switch (_30)
@@ -5168,15 +4714,12 @@ module CheckedOps_TestI8DivExample
       | True -> goto BB24
       end
   }
-  BB24 {
-    [#"../checked_ops.rs" 299 12 299 33] _35 <- ([#"../checked_ops.rs" 299 12 299 33] saturating_div0 (5 : int8) (2 : int8));
-    goto BB26
-  }
-  BB25 {
-    assert { [#"../checked_ops.rs" 297 4 297 46] false };
+  BB22 {
+    assert { [#"../checked_ops.rs" 296 4 296 39] false };
     absurd
   }
-  BB26 {
+  BB24 {
+    [#"../checked_ops.rs" 299 12 299 33] _35 <- ([#"../checked_ops.rs" 299 12 299 33] saturating_div0 (5 : int8) (2 : int8));
     [#"../checked_ops.rs" 299 12 299 38] _34 <- ([#"../checked_ops.rs" 299 12 299 38] _35 = (2 : int8));
     _35 <- any int8;
     switch (_34)
@@ -5184,15 +4727,12 @@ module CheckedOps_TestI8DivExample
       | True -> goto BB27
       end
   }
-  BB27 {
-    [#"../checked_ops.rs" 300 12 300 34] _39 <- ([#"../checked_ops.rs" 300 12 300 34] saturating_div0 (5 : int8) (-2 : int8));
-    goto BB29
-  }
-  BB28 {
-    assert { [#"../checked_ops.rs" 299 4 299 39] false };
+  BB25 {
+    assert { [#"../checked_ops.rs" 297 4 297 46] false };
     absurd
   }
-  BB29 {
+  BB27 {
+    [#"../checked_ops.rs" 300 12 300 34] _39 <- ([#"../checked_ops.rs" 300 12 300 34] saturating_div0 (5 : int8) (-2 : int8));
     [#"../checked_ops.rs" 300 12 300 40] _38 <- ([#"../checked_ops.rs" 300 12 300 40] _39 = (-2 : int8));
     _39 <- any int8;
     switch (_38)
@@ -5200,15 +4740,12 @@ module CheckedOps_TestI8DivExample
       | True -> goto BB30
       end
   }
-  BB30 {
-    [#"../checked_ops.rs" 301 12 301 39] _43 <- ([#"../checked_ops.rs" 301 12 301 39] saturating_div0 (-128 : int8) (-1 : int8));
-    goto BB32
-  }
-  BB31 {
-    assert { [#"../checked_ops.rs" 300 4 300 41] false };
+  BB28 {
+    assert { [#"../checked_ops.rs" 299 4 299 39] false };
     absurd
   }
-  BB32 {
+  BB30 {
+    [#"../checked_ops.rs" 301 12 301 39] _43 <- ([#"../checked_ops.rs" 301 12 301 39] saturating_div0 (-128 : int8) (-1 : int8));
     [#"../checked_ops.rs" 301 12 301 47] _42 <- ([#"../checked_ops.rs" 301 12 301 47] _43 = (-128 : int8));
     _43 <- any int8;
     switch (_42)
@@ -5216,20 +4753,21 @@ module CheckedOps_TestI8DivExample
       | True -> goto BB33
       end
   }
-  BB33 {
-    [#"../checked_ops.rs" 303 14 303 36] res <- ([#"../checked_ops.rs" 303 14 303 36] overflowing_div0 (5 : int8) (2 : int8));
-    goto BB35
-  }
-  BB34 {
-    assert { [#"../checked_ops.rs" 301 4 301 48] false };
+  BB31 {
+    assert { [#"../checked_ops.rs" 300 4 300 41] false };
     absurd
   }
-  BB35 {
+  BB33 {
+    [#"../checked_ops.rs" 303 14 303 36] res <- ([#"../checked_ops.rs" 303 14 303 36] overflowing_div0 (5 : int8) (2 : int8));
     [#"../checked_ops.rs" 304 12 304 22] _47 <- ([#"../checked_ops.rs" 304 12 304 22] (let (a, _) = res in a) = (2 : int8));
     switch (_47)
       | False -> goto BB39
       | True -> goto BB36
       end
+  }
+  BB34 {
+    assert { [#"../checked_ops.rs" 301 4 301 48] false };
+    absurd
   }
   BB36 {
     assume { resolve0 res };
@@ -5241,7 +4779,11 @@ module CheckedOps_TestI8DivExample
   }
   BB37 {
     [#"../checked_ops.rs" 305 14 305 37] res1 <- ([#"../checked_ops.rs" 305 14 305 37] overflowing_div0 (5 : int8) (-2 : int8));
-    goto BB41
+    [#"../checked_ops.rs" 306 12 306 23] _54 <- ([#"../checked_ops.rs" 306 12 306 23] (let (a, _) = res1 in a) = (-2 : int8));
+    switch (_54)
+      | False -> goto BB45
+      | True -> goto BB42
+      end
   }
   BB38 {
     goto BB40
@@ -5254,13 +4796,6 @@ module CheckedOps_TestI8DivExample
     assert { [#"../checked_ops.rs" 304 4 304 41] false };
     absurd
   }
-  BB41 {
-    [#"../checked_ops.rs" 306 12 306 23] _54 <- ([#"../checked_ops.rs" 306 12 306 23] (let (a, _) = res1 in a) = (-2 : int8));
-    switch (_54)
-      | False -> goto BB45
-      | True -> goto BB42
-      end
-  }
   BB42 {
     assume { resolve0 res1 };
     [#"../checked_ops.rs" 306 27 306 41] _56 <- ([#"../checked_ops.rs" 306 27 306 41] Bool.eqb (let (_, a) = res1 in a) false);
@@ -5271,7 +4806,11 @@ module CheckedOps_TestI8DivExample
   }
   BB43 {
     [#"../checked_ops.rs" 307 14 307 42] res2 <- ([#"../checked_ops.rs" 307 14 307 42] overflowing_div0 (-128 : int8) (-1 : int8));
-    goto BB47
+    [#"../checked_ops.rs" 308 12 308 25] _61 <- ([#"../checked_ops.rs" 308 12 308 25] (let (a, _) = res2 in a) = (-128 : int8));
+    switch (_61)
+      | False -> goto BB51
+      | True -> goto BB48
+      end
   }
   BB44 {
     goto BB46
@@ -5283,13 +4822,6 @@ module CheckedOps_TestI8DivExample
   BB46 {
     assert { [#"../checked_ops.rs" 306 4 306 42] false };
     absurd
-  }
-  BB47 {
-    [#"../checked_ops.rs" 308 12 308 25] _61 <- ([#"../checked_ops.rs" 308 12 308 25] (let (a, _) = res2 in a) = (-128 : int8));
-    switch (_61)
-      | False -> goto BB51
-      | True -> goto BB48
-      end
   }
   BB48 {
     assume { resolve0 res2 };
@@ -5340,6 +4872,20 @@ module CheckedOps_TestI8DivNoOverflow
     
   axiom inv0 : forall x : Core_Option_Option_Type.t_option int8 . inv0 x = true
   use prelude.Int8
+  use prelude.Int
+  let constant min0  : int8 = [@vc:do_not_keep_trace] [@vc:sp]
+    (-128 : int8)
+  val overflowing_div0 (self : int8) (rhs : int8) : (int8, bool)
+    requires {[#"../../../../creusot-contracts/src/std/num.rs" 91 27 91 36] Int8.to_int rhs <> 0}
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 93 16 93 87] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 95 26 95 91] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 \/ Int8.to_int (let (a, _) = result in a) = div (Int8.to_int self) (Int8.to_int rhs) }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 97 26 97 74] (let (_, a) = result in a) = (Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1) }
+    
+  val saturating_div0 (self : int8) (rhs : int8) : int8
+    requires {[#"../../../../creusot-contracts/src/std/num.rs" 82 27 82 36] Int8.to_int rhs <> 0}
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 84 16 84 91] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 -> Int8.to_int result = Int8.to_int min0 }
+    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 86 26 86 89] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 \/ Int8.to_int result = div (Int8.to_int self) (Int8.to_int rhs) }
+    
   use prelude.Bool
   predicate resolve2 (self : bool) =
     [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
@@ -5355,20 +4901,6 @@ module CheckedOps_TestI8DivNoOverflow
     [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve2 (let (_, a) = self in a)
   val resolve0 (self : (int8, bool)) : bool
     ensures { result = resolve0 self }
-    
-  use prelude.Int
-  let constant min0  : int8 = [@vc:do_not_keep_trace] [@vc:sp]
-    (-128 : int8)
-  val overflowing_div0 (self : int8) (rhs : int8) : (int8, bool)
-    requires {[#"../../../../creusot-contracts/src/std/num.rs" 91 27 91 36] Int8.to_int rhs <> 0}
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 93 16 93 87] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 95 26 95 91] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 \/ Int8.to_int (let (a, _) = result in a) = div (Int8.to_int self) (Int8.to_int rhs) }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 97 26 97 74] (let (_, a) = result in a) = (Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1) }
-    
-  val saturating_div0 (self : int8) (rhs : int8) : int8
-    requires {[#"../../../../creusot-contracts/src/std/num.rs" 82 27 82 36] Int8.to_int rhs <> 0}
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 84 16 84 91] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 -> Int8.to_int result = Int8.to_int min0 }
-    ensures { [#"../../../../creusot-contracts/src/std/num.rs" 86 26 86 89] Int8.to_int self = Int8.to_int min0 /\ Int8.to_int rhs = - 1 \/ Int8.to_int result = div (Int8.to_int self) (Int8.to_int rhs) }
     
   val wrapping_div0 (self : int8) (rhs : int8) : int8
     requires {[#"../../../../creusot-contracts/src/std/num.rs" 73 27 73 36] Int8.to_int rhs <> 0}
@@ -5440,25 +4972,16 @@ module CheckedOps_TestI8DivNoOverflow
   BB1 {
     [#"../checked_ops.rs" 314 12 314 37] _6 <- ([#"../checked_ops.rs" 314 12 314 37] unwrap0 _7);
     _7 <- any Core_Option_Option_Type.t_option int8;
-    goto BB2
-  }
-  BB2 {
     [#"../checked_ops.rs" 314 41 314 42] _11 <- ([#"../checked_ops.rs" 314 41 314 42] a);
     [#"../checked_ops.rs" 314 45 314 46] _12 <- ([#"../checked_ops.rs" 314 45 314 46] b);
     [#"../checked_ops.rs" 314 41 314 46] _13 <- ([#"../checked_ops.rs" 314 41 314 46] _12 = (0 : int8));
     assert { [@expl:division by zero] [#"../checked_ops.rs" 314 41 314 46] not _13 };
-    goto BB3
-  }
-  BB3 {
     [#"../checked_ops.rs" 314 41 314 46] _14 <- ([#"../checked_ops.rs" 314 41 314 46] _12 = (-1 : int8));
     [#"../checked_ops.rs" 314 41 314 46] _15 <- ([#"../checked_ops.rs" 314 41 314 46] _11 = (-128 : int8));
     [#"../checked_ops.rs" 314 41 314 46] _16 <- ([#"../checked_ops.rs" 314 41 314 46] _14 && _15);
     _14 <- any bool;
     _15 <- any bool;
     assert { [@expl:Div overflow] [#"../checked_ops.rs" 314 41 314 46] not _16 };
-    goto BB4
-  }
-  BB4 {
     [#"../checked_ops.rs" 314 41 314 46] _10 <- ([#"../checked_ops.rs" 314 41 314 46] _11 / _12);
     _11 <- any int8;
     _12 <- any int8;
@@ -5472,29 +4995,16 @@ module CheckedOps_TestI8DivNoOverflow
   }
   BB5 {
     [#"../checked_ops.rs" 315 12 315 29] _20 <- ([#"../checked_ops.rs" 315 12 315 29] wrapping_div0 a b);
-    goto BB7
-  }
-  BB6 {
-    assert { [#"../checked_ops.rs" 314 4 314 47] false };
-    absurd
-  }
-  BB7 {
     [#"../checked_ops.rs" 315 33 315 34] _24 <- ([#"../checked_ops.rs" 315 33 315 34] a);
     [#"../checked_ops.rs" 315 37 315 38] _25 <- ([#"../checked_ops.rs" 315 37 315 38] b);
     [#"../checked_ops.rs" 315 33 315 38] _26 <- ([#"../checked_ops.rs" 315 33 315 38] _25 = (0 : int8));
     assert { [@expl:division by zero] [#"../checked_ops.rs" 315 33 315 38] not _26 };
-    goto BB8
-  }
-  BB8 {
     [#"../checked_ops.rs" 315 33 315 38] _27 <- ([#"../checked_ops.rs" 315 33 315 38] _25 = (-1 : int8));
     [#"../checked_ops.rs" 315 33 315 38] _28 <- ([#"../checked_ops.rs" 315 33 315 38] _24 = (-128 : int8));
     [#"../checked_ops.rs" 315 33 315 38] _29 <- ([#"../checked_ops.rs" 315 33 315 38] _27 && _28);
     _27 <- any bool;
     _28 <- any bool;
     assert { [@expl:Div overflow] [#"../checked_ops.rs" 315 33 315 38] not _29 };
-    goto BB9
-  }
-  BB9 {
     [#"../checked_ops.rs" 315 33 315 38] _23 <- ([#"../checked_ops.rs" 315 33 315 38] _24 / _25);
     _24 <- any int8;
     _25 <- any int8;
@@ -5506,31 +5016,22 @@ module CheckedOps_TestI8DivNoOverflow
       | True -> goto BB10
       end
   }
-  BB10 {
-    [#"../checked_ops.rs" 316 12 316 31] _33 <- ([#"../checked_ops.rs" 316 12 316 31] saturating_div0 a b);
-    goto BB12
-  }
-  BB11 {
-    assert { [#"../checked_ops.rs" 315 4 315 39] false };
+  BB6 {
+    assert { [#"../checked_ops.rs" 314 4 314 47] false };
     absurd
   }
-  BB12 {
+  BB10 {
+    [#"../checked_ops.rs" 316 12 316 31] _33 <- ([#"../checked_ops.rs" 316 12 316 31] saturating_div0 a b);
     [#"../checked_ops.rs" 316 35 316 36] _37 <- ([#"../checked_ops.rs" 316 35 316 36] a);
     [#"../checked_ops.rs" 316 39 316 40] _38 <- ([#"../checked_ops.rs" 316 39 316 40] b);
     [#"../checked_ops.rs" 316 35 316 40] _39 <- ([#"../checked_ops.rs" 316 35 316 40] _38 = (0 : int8));
     assert { [@expl:division by zero] [#"../checked_ops.rs" 316 35 316 40] not _39 };
-    goto BB13
-  }
-  BB13 {
     [#"../checked_ops.rs" 316 35 316 40] _40 <- ([#"../checked_ops.rs" 316 35 316 40] _38 = (-1 : int8));
     [#"../checked_ops.rs" 316 35 316 40] _41 <- ([#"../checked_ops.rs" 316 35 316 40] _37 = (-128 : int8));
     [#"../checked_ops.rs" 316 35 316 40] _42 <- ([#"../checked_ops.rs" 316 35 316 40] _40 && _41);
     _40 <- any bool;
     _41 <- any bool;
     assert { [@expl:Div overflow] [#"../checked_ops.rs" 316 35 316 40] not _42 };
-    goto BB14
-  }
-  BB14 {
     [#"../checked_ops.rs" 316 35 316 40] _36 <- ([#"../checked_ops.rs" 316 35 316 40] _37 / _38);
     _37 <- any int8;
     _38 <- any int8;
@@ -5542,31 +5043,22 @@ module CheckedOps_TestI8DivNoOverflow
       | True -> goto BB15
       end
   }
-  BB15 {
-    [#"../checked_ops.rs" 317 14 317 34] res <- ([#"../checked_ops.rs" 317 14 317 34] overflowing_div0 a b);
-    goto BB17
-  }
-  BB16 {
-    assert { [#"../checked_ops.rs" 316 4 316 41] false };
+  BB11 {
+    assert { [#"../checked_ops.rs" 315 4 315 39] false };
     absurd
   }
-  BB17 {
+  BB15 {
+    [#"../checked_ops.rs" 317 14 317 34] res <- ([#"../checked_ops.rs" 317 14 317 34] overflowing_div0 a b);
     [#"../checked_ops.rs" 318 21 318 22] _51 <- ([#"../checked_ops.rs" 318 21 318 22] a);
     [#"../checked_ops.rs" 318 25 318 26] _52 <- ([#"../checked_ops.rs" 318 25 318 26] b);
     [#"../checked_ops.rs" 318 21 318 26] _53 <- ([#"../checked_ops.rs" 318 21 318 26] _52 = (0 : int8));
     assert { [@expl:division by zero] [#"../checked_ops.rs" 318 21 318 26] not _53 };
-    goto BB18
-  }
-  BB18 {
     [#"../checked_ops.rs" 318 21 318 26] _54 <- ([#"../checked_ops.rs" 318 21 318 26] _52 = (-1 : int8));
     [#"../checked_ops.rs" 318 21 318 26] _55 <- ([#"../checked_ops.rs" 318 21 318 26] _51 = (-128 : int8));
     [#"../checked_ops.rs" 318 21 318 26] _56 <- ([#"../checked_ops.rs" 318 21 318 26] _54 && _55);
     _54 <- any bool;
     _55 <- any bool;
     assert { [@expl:Div overflow] [#"../checked_ops.rs" 318 21 318 26] not _56 };
-    goto BB19
-  }
-  BB19 {
     [#"../checked_ops.rs" 318 21 318 26] _50 <- ([#"../checked_ops.rs" 318 21 318 26] _51 / _52);
     _51 <- any int8;
     _52 <- any int8;
@@ -5576,6 +5068,10 @@ module CheckedOps_TestI8DivNoOverflow
       | False -> goto BB23
       | True -> goto BB20
       end
+  }
+  BB16 {
+    assert { [#"../checked_ops.rs" 316 4 316 41] false };
+    absurd
   }
   BB20 {
     assume { resolve0 res };
@@ -5644,9 +5140,6 @@ module CheckedOps_TestI8DivZero
   }
   BB1 {
     [#"../checked_ops.rs" 323 12 323 38] _3 <- ([#"../checked_ops.rs" 323 12 323 38] is_none0 _5);
-    goto BB2
-  }
-  BB2 {
     switch (_3)
       | False -> goto BB4
       | True -> goto BB3

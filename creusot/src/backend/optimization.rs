@@ -1,6 +1,9 @@
-use std::collections::HashMap;
+use std::{
+    collections::{BTreeSet, HashMap},
+    ops::Add,
+};
 
-use rustc_middle::mir::{self};
+use rustc_middle::mir::{self, BasicBlock};
 use rustc_span::Symbol;
 use std::collections::HashSet;
 
@@ -357,5 +360,75 @@ impl<'tcx> SimplePropagator<'tcx> {
                 u.read == ZeroOneMany::Zero && matches!(u.write, ZeroOneMany::One(_)) && u.temp_var
             })
             .unwrap_or(false)
+    }
+}
+
+struct CfgSimplifier<'a, 'tcx> {
+    pred_count: HashMap<BasicBlock, u32>,
+    body: &'a mut Body<'tcx>,
+}
+
+pub fn simplify_cfg<'tcx>(body: &mut Body<'tcx>) {
+    let mut simplifier = CfgSimplifier::new(body);
+    simplifier.simplify();
+}
+
+impl<'tcx, 'a> CfgSimplifier<'a, 'tcx> {
+    fn new(body: &'a mut Body<'tcx>) -> Self {
+        let mut pred_count = HashMap::default();
+
+        for (bb, bbd) in &body.blocks {
+            pred_count.entry(*bb).or_insert(0);
+
+            for tgt in bbd.terminator.targets() {
+                *pred_count.entry(tgt).or_insert(0) += 1;
+            }
+        }
+
+        Self { pred_count, body }
+    }
+
+    fn simplify(&mut self) {
+        let mut to_visit: BTreeSet<BasicBlock> = self.body.blocks.keys().copied().collect();
+
+        while let Some(start) = to_visit.pop_first() {
+            let mut group = vec![];
+            let mut cur = start;
+
+            if self.pred_count[&start] == 0 {
+                continue;
+            }
+
+            while let Terminator::Goto(bb) = self.body.blocks[&cur].terminator {
+                if self.pred_count[&bb] != 1 {
+                    break;
+                }
+
+                if !to_visit.remove(&bb) {
+                    break;
+                }
+                group.push(bb);
+                cur = bb;
+            }
+
+            if group.len() == 0 {
+                continue;
+            }
+
+            let end = group[group.len() - 1];
+            let mut new_stmts = std::mem::take(&mut self.body.blocks[&start].stmts);
+
+            self.body.blocks[&start].terminator = std::mem::replace(
+                &mut self.body.blocks[&end].terminator,
+                Terminator::Abort(DUMMY_SP),
+            );
+
+            group.into_iter().for_each(|id| {
+                new_stmts.extend(std::mem::take(&mut self.body.blocks[&id].stmts));
+                self.body.blocks.remove(&id);
+            });
+
+            self.body.blocks[&start].stmts = new_stmts;
+        }
     }
 }

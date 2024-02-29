@@ -146,34 +146,48 @@ module Vecdeque_TestDeque
     ensures { [#"../../../../creusot-contracts/src/std/deque.rs" 71 26 71 45] Seq.length (shallow_model0 ( ^ self)) = 0 }
     
   use seq.Seq
-  function shallow_model3 (self : borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global))) : Seq.seq uint32
+  use seq.Seq
+  use seq_ext.SeqExt
+  function shallow_model2 (self : borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global))) : Seq.seq uint32
     
    =
     [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model0 ( * self)
-  val shallow_model3 (self : borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global))) : Seq.seq uint32
-    ensures { result = shallow_model3 self }
+  val shallow_model2 (self : borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global))) : Seq.seq uint32
+    ensures { result = shallow_model2 self }
     
+  val pop_front0 (self : borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global))) : Core_Option_Option_Type.t_option uint32
+    requires {inv1 self}
+    ensures { [#"../../../../creusot-contracts/src/std/deque.rs" 74 26 79 17] match result with
+      | Core_Option_Option_Type.C_Some t -> shallow_model0 ( ^ self) = SeqExt.subsequence (shallow_model2 self) 1 (Seq.length (shallow_model2 self)) /\ shallow_model2 self = Seq.(++) (Seq.singleton t) (shallow_model0 ( ^ self))
+      | Core_Option_Option_Type.C_None ->  * self =  ^ self /\ Seq.length (shallow_model2 self) = 0
+      end }
+    ensures { inv2 result }
+    
+  use seq.Seq
   val push_back0 (self : borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global))) (value : uint32) : ()
     requires {inv1 self}
     requires {inv4 value}
-    ensures { [#"../../../../creusot-contracts/src/std/deque.rs" 94 26 94 55] shallow_model0 ( ^ self) = Seq.snoc (shallow_model3 self) value }
+    ensures { [#"../../../../creusot-contracts/src/std/deque.rs" 94 26 94 55] shallow_model0 ( ^ self) = Seq.snoc (shallow_model2 self) value }
     
-  use seq.Seq
-  use seq.Seq
   val push_front0 (self : borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global))) (value : uint32) : ()
     requires {inv1 self}
     requires {inv4 value}
-    ensures { [#"../../../../creusot-contracts/src/std/deque.rs" 90 26 90 59] Seq.length (shallow_model0 ( ^ self)) = Seq.length (shallow_model3 self) + 1 }
-    ensures { [#"../../../../creusot-contracts/src/std/deque.rs" 91 26 91 73] shallow_model0 ( ^ self) = Seq.(++) (Seq.singleton value) (shallow_model3 self) }
+    ensures { [#"../../../../creusot-contracts/src/std/deque.rs" 90 26 90 59] Seq.length (shallow_model0 ( ^ self)) = Seq.length (shallow_model2 self) + 1 }
+    ensures { [#"../../../../creusot-contracts/src/std/deque.rs" 91 26 91 73] shallow_model0 ( ^ self) = Seq.(++) (Seq.singleton value) (shallow_model2 self) }
     
-  use seq_ext.SeqExt
-  val pop_back0 (self : borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global))) : Core_Option_Option_Type.t_option uint32
-    requires {inv1 self}
-    ensures { [#"../../../../creusot-contracts/src/std/deque.rs" 82 26 87 17] match result with
-      | Core_Option_Option_Type.C_Some t -> shallow_model0 ( ^ self) = SeqExt.subsequence (shallow_model3 self) 0 (Seq.length (shallow_model3 self) - 1) /\ shallow_model3 self = Seq.snoc (shallow_model0 ( ^ self)) t
-      | Core_Option_Option_Type.C_None ->  * self =  ^ self /\ Seq.length (shallow_model3 self) = 0
-      end }
-    ensures { inv2 result }
+  val new0 (_1 : ()) : Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global)
+    ensures { [#"../../../../creusot-contracts/src/std/deque.rs" 57 26 57 44] Seq.length (shallow_model0 result) = 0 }
+    
+  function shallow_model1 (self : Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
+    
+   =
+    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model0 self
+  val shallow_model1 (self : Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
+    ensures { result = shallow_model1 self }
+    
+  val len0 (self : Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global)) : usize
+    requires {inv0 self}
+    ensures { [#"../../../../creusot-contracts/src/std/deque.rs" 65 26 65 48] UIntSize.to_int result = Seq.length (shallow_model1 self) }
     
   use prelude.Int
   use prelude.UInt32
@@ -200,27 +214,13 @@ module Vecdeque_TestDeque
     requires {inv3 other}
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 22 26 22 75] result = (deep_model0 self = deep_model0 other) }
     
-  val pop_front0 (self : borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global))) : Core_Option_Option_Type.t_option uint32
+  val pop_back0 (self : borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global))) : Core_Option_Option_Type.t_option uint32
     requires {inv1 self}
-    ensures { [#"../../../../creusot-contracts/src/std/deque.rs" 74 26 79 17] match result with
-      | Core_Option_Option_Type.C_Some t -> shallow_model0 ( ^ self) = SeqExt.subsequence (shallow_model3 self) 1 (Seq.length (shallow_model3 self)) /\ shallow_model3 self = Seq.(++) (Seq.singleton t) (shallow_model0 ( ^ self))
-      | Core_Option_Option_Type.C_None ->  * self =  ^ self /\ Seq.length (shallow_model3 self) = 0
+    ensures { [#"../../../../creusot-contracts/src/std/deque.rs" 82 26 87 17] match result with
+      | Core_Option_Option_Type.C_Some t -> shallow_model0 ( ^ self) = SeqExt.subsequence (shallow_model2 self) 0 (Seq.length (shallow_model2 self) - 1) /\ shallow_model2 self = Seq.snoc (shallow_model0 ( ^ self)) t
+      | Core_Option_Option_Type.C_None ->  * self =  ^ self /\ Seq.length (shallow_model2 self) = 0
       end }
     ensures { inv2 result }
-    
-  val new0 (_1 : ()) : Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global)
-    ensures { [#"../../../../creusot-contracts/src/std/deque.rs" 57 26 57 44] Seq.length (shallow_model0 result) = 0 }
-    
-  function shallow_model1 (self : Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
-    
-   =
-    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model0 self
-  val shallow_model1 (self : Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
-    ensures { result = shallow_model1 self }
-    
-  val len0 (self : Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global)) : usize
-    requires {inv0 self}
-    ensures { [#"../../../../creusot-contracts/src/std/deque.rs" 65 26 65 48] UIntSize.to_int result = Seq.length (shallow_model1 self) }
     
   val is_empty0 (self : Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global)) : bool
     requires {inv0 self}
@@ -286,9 +286,6 @@ module Vecdeque_TestDeque
   }
   BB1 {
     [#"../vecdeque.rs" 8 12 8 28] _3 <- ([#"../vecdeque.rs" 8 12 8 28] is_empty0 deque);
-    goto BB2
-  }
-  BB2 {
     switch (_3)
       | False -> goto BB4
       | True -> goto BB3
@@ -296,13 +293,6 @@ module Vecdeque_TestDeque
   }
   BB3 {
     [#"../vecdeque.rs" 9 12 9 23] _8 <- ([#"../vecdeque.rs" 9 12 9 23] len0 deque);
-    goto BB5
-  }
-  BB4 {
-    assert { [#"../vecdeque.rs" 8 4 8 29] false };
-    absurd
-  }
-  BB5 {
     [#"../vecdeque.rs" 9 12 9 28] _7 <- ([#"../vecdeque.rs" 9 12 9 28] _8 = (0 : usize));
     _8 <- any usize;
     switch (_7)
@@ -310,33 +300,24 @@ module Vecdeque_TestDeque
       | True -> goto BB6
       end
   }
-  BB6 {
-    [#"../vecdeque.rs" 11 35 11 50] deque1 <- ([#"../vecdeque.rs" 11 35 11 50] new0 ());
-    goto BB8
-  }
-  BB7 {
-    assert { [#"../vecdeque.rs" 9 4 9 29] false };
+  BB4 {
+    assert { [#"../vecdeque.rs" 8 4 8 29] false };
     absurd
   }
-  BB8 {
+  BB6 {
+    [#"../vecdeque.rs" 11 35 11 50] deque1 <- ([#"../vecdeque.rs" 11 35 11 50] new0 ());
     [#"../vecdeque.rs" 13 12 13 28] _13 <- ([#"../vecdeque.rs" 13 12 13 28] is_empty0 deque1);
-    goto BB9
-  }
-  BB9 {
     switch (_13)
       | False -> goto BB11
       | True -> goto BB10
       end
   }
-  BB10 {
-    [#"../vecdeque.rs" 14 12 14 23] _18 <- ([#"../vecdeque.rs" 14 12 14 23] len0 deque1);
-    goto BB12
-  }
-  BB11 {
-    assert { [#"../vecdeque.rs" 13 4 13 29] false };
+  BB7 {
+    assert { [#"../vecdeque.rs" 9 4 9 29] false };
     absurd
   }
-  BB12 {
+  BB10 {
+    [#"../vecdeque.rs" 14 12 14 23] _18 <- ([#"../vecdeque.rs" 14 12 14 23] len0 deque1);
     [#"../vecdeque.rs" 14 12 14 28] _17 <- ([#"../vecdeque.rs" 14 12 14 28] _18 = (0 : usize));
     _18 <- any usize;
     switch (_17)
@@ -344,149 +325,108 @@ module Vecdeque_TestDeque
       | True -> goto BB13
       end
   }
+  BB11 {
+    assert { [#"../vecdeque.rs" 13 4 13 29] false };
+    absurd
+  }
   BB13 {
     [#"../vecdeque.rs" 16 12 16 17] _25 <- Borrow.borrow_mut deque1;
     [#"../vecdeque.rs" 16 12 16 17] deque1 <-  ^ _25;
     [#"../vecdeque.rs" 16 12 16 29] _24 <- ([#"../vecdeque.rs" 16 12 16 29] pop_front0 _25);
     _25 <- any borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global));
-    goto BB15
-  }
-  BB14 {
-    assert { [#"../vecdeque.rs" 14 4 14 29] false };
-    absurd
-  }
-  BB15 {
     [#"../vecdeque.rs" 16 33 16 37] _68 <- ([#"../vecdeque.rs" 16 33 16 37] promoted3);
     [#"../vecdeque.rs" 16 12 16 37] _22 <- ([#"../vecdeque.rs" 16 12 16 37] eq0 _24 _68);
-    goto BB16
-  }
-  BB16 {
     switch (_22)
       | False -> goto BB18
       | True -> goto BB17
       end
+  }
+  BB14 {
+    assert { [#"../vecdeque.rs" 14 4 14 29] false };
+    absurd
   }
   BB17 {
     [#"../vecdeque.rs" 17 12 17 17] _33 <- Borrow.borrow_mut deque1;
     [#"../vecdeque.rs" 17 12 17 17] deque1 <-  ^ _33;
     [#"../vecdeque.rs" 17 12 17 28] _32 <- ([#"../vecdeque.rs" 17 12 17 28] pop_back0 _33);
     _33 <- any borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global));
-    goto BB19
-  }
-  BB18 {
-    assert { [#"../vecdeque.rs" 16 4 16 38] false };
-    absurd
-  }
-  BB19 {
     [#"../vecdeque.rs" 17 32 17 36] _67 <- ([#"../vecdeque.rs" 17 32 17 36] promoted2);
     [#"../vecdeque.rs" 17 12 17 36] _30 <- ([#"../vecdeque.rs" 17 12 17 36] eq0 _32 _67);
-    goto BB20
-  }
-  BB20 {
     switch (_30)
       | False -> goto BB22
       | True -> goto BB21
       end
+  }
+  BB18 {
+    assert { [#"../vecdeque.rs" 16 4 16 38] false };
+    absurd
   }
   BB21 {
     [#"../vecdeque.rs" 19 4 19 9] _38 <- Borrow.borrow_mut deque1;
     [#"../vecdeque.rs" 19 4 19 9] deque1 <-  ^ _38;
     [#"../vecdeque.rs" 19 4 19 23] _37 <- ([#"../vecdeque.rs" 19 4 19 23] push_front0 _38 (1 : uint32));
     _38 <- any borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global));
-    goto BB23
-  }
-  BB22 {
-    assert { [#"../vecdeque.rs" 17 4 17 37] false };
-    absurd
-  }
-  BB23 {
     [#"../vecdeque.rs" 20 4 20 9] _40 <- Borrow.borrow_mut deque1;
     [#"../vecdeque.rs" 20 4 20 9] deque1 <-  ^ _40;
     [#"../vecdeque.rs" 20 4 20 23] _39 <- ([#"../vecdeque.rs" 20 4 20 23] push_front0 _40 (2 : uint32));
     _40 <- any borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global));
-    goto BB24
-  }
-  BB24 {
     [#"../vecdeque.rs" 21 4 21 9] _42 <- Borrow.borrow_mut deque1;
     [#"../vecdeque.rs" 21 4 21 9] deque1 <-  ^ _42;
     [#"../vecdeque.rs" 21 4 21 22] _41 <- ([#"../vecdeque.rs" 21 4 21 22] push_back0 _42 (3 : uint32));
     _42 <- any borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global));
-    goto BB25
-  }
-  BB25 {
     [#"../vecdeque.rs" 23 12 23 17] _47 <- Borrow.borrow_mut deque1;
     [#"../vecdeque.rs" 23 12 23 17] deque1 <-  ^ _47;
     [#"../vecdeque.rs" 23 12 23 29] _46 <- ([#"../vecdeque.rs" 23 12 23 29] pop_front0 _47);
     _47 <- any borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global));
-    goto BB26
-  }
-  BB26 {
     [#"../vecdeque.rs" 23 33 23 40] _66 <- ([#"../vecdeque.rs" 23 33 23 40] promoted1);
     [#"../vecdeque.rs" 23 12 23 40] _44 <- ([#"../vecdeque.rs" 23 12 23 40] eq0 _46 _66);
-    goto BB27
-  }
-  BB27 {
     switch (_44)
       | False -> goto BB29
       | True -> goto BB28
       end
+  }
+  BB22 {
+    assert { [#"../vecdeque.rs" 17 4 17 37] false };
+    absurd
   }
   BB28 {
     [#"../vecdeque.rs" 24 12 24 17] _55 <- Borrow.borrow_mut deque1;
     [#"../vecdeque.rs" 24 12 24 17] deque1 <-  ^ _55;
     [#"../vecdeque.rs" 24 12 24 28] _54 <- ([#"../vecdeque.rs" 24 12 24 28] pop_back0 _55);
     _55 <- any borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global));
-    goto BB30
-  }
-  BB29 {
-    assert { [#"../vecdeque.rs" 23 4 23 41] false };
-    absurd
-  }
-  BB30 {
     [#"../vecdeque.rs" 24 32 24 39] _65 <- ([#"../vecdeque.rs" 24 32 24 39] promoted0);
     [#"../vecdeque.rs" 24 12 24 39] _52 <- ([#"../vecdeque.rs" 24 12 24 39] eq0 _54 _65);
-    goto BB31
-  }
-  BB31 {
     switch (_52)
       | False -> goto BB33
       | True -> goto BB32
       end
+  }
+  BB29 {
+    assert { [#"../vecdeque.rs" 23 4 23 41] false };
+    absurd
   }
   BB32 {
     [#"../vecdeque.rs" 25 4 25 9] _60 <- Borrow.borrow_mut deque1;
     [#"../vecdeque.rs" 25 4 25 9] deque1 <-  ^ _60;
     [#"../vecdeque.rs" 25 4 25 17] _59 <- ([#"../vecdeque.rs" 25 4 25 17] clear0 _60);
     _60 <- any borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global));
-    goto BB34
-  }
-  BB33 {
-    assert { [#"../vecdeque.rs" 24 4 24 40] false };
-    absurd
-  }
-  BB34 {
     [#"../vecdeque.rs" 26 12 26 28] _62 <- ([#"../vecdeque.rs" 26 12 26 28] is_empty0 deque1);
-    goto BB35
-  }
-  BB35 {
     switch (_62)
       | False -> goto BB37
       | True -> goto BB36
       end
   }
+  BB33 {
+    assert { [#"../vecdeque.rs" 24 4 24 40] false };
+    absurd
+  }
   BB36 {
     [#"../vecdeque.rs" 5 20 27 1] _0 <- ([#"../vecdeque.rs" 5 20 27 1] ());
-    goto BB38
+    return _0
   }
   BB37 {
     assert { [#"../vecdeque.rs" 26 4 26 29] false };
     absurd
-  }
-  BB38 {
-    goto BB39
-  }
-  BB39 {
-    return _0
   }
   
 end

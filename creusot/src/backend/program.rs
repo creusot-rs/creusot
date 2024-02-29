@@ -260,6 +260,7 @@ pub fn to_why<'tcx>(
 
     let usage = optimization::gather_usage(&body);
     optimization::simplify_fmir(usage, &mut body);
+    optimization::simplify_cfg(&mut body);
 
     let blocks = body
         .blocks
