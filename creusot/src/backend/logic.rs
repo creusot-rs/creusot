@@ -326,7 +326,8 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
         return None;
     }
     let term = ctx.term(def_id).unwrap().clone();
-    let body = lower_impure(ctx, &mut names, &term);
+    let mut body = lower_impure(ctx, &mut names, &term);
+    body = ctx.attach_span(term.span, body);
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));

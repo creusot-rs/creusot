@@ -33,7 +33,8 @@ pub(crate) fn lower_impure<'tcx, N: Namer<'tcx>>(
     let span = term.span;
     let mut term = Lower { ctx, names, pure: Purity::Program }.lower_term(term);
     term.reassociate();
-    ctx.attach_span(span, term)
+    term
+    // ctx.attach_span(span, term)
 }
 
 pub(super) struct Lower<'a, 'tcx, N: Namer<'tcx>> {
