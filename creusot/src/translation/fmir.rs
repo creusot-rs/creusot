@@ -96,14 +96,14 @@ impl<'tcx> Operand<'tcx> {
 pub enum ExprKind<'tcx> {
     Operand(Operand<'tcx>),
     // Revisit whether this is a good idea to allow general expression trees.
-    BinOp(BinOp, Box<Operand<'tcx>>, Box<Operand<'tcx>>),
-    UnaryOp(UnOp, Box<Operand<'tcx>>),
+    BinOp(BinOp, Operand<'tcx>, Operand<'tcx>),
+    UnaryOp(UnOp, Operand<'tcx>),
     Constructor(DefId, GenericArgsRef<'tcx>, Vec<Operand<'tcx>>),
-    Cast(Box<Operand<'tcx>>, Ty<'tcx>, Ty<'tcx>),
+    Cast(Operand<'tcx>, Ty<'tcx>, Ty<'tcx>),
     Tuple(Vec<Operand<'tcx>>),
-    Len(Box<Operand<'tcx>>),
+    Len(Operand<'tcx>),
     Array(Vec<Operand<'tcx>>),
-    Repeat(Box<Operand<'tcx>>, Box<Operand<'tcx>>),
+    Repeat(Operand<'tcx>, Operand<'tcx>),
 }
 
 impl<'tcx> Expr<'tcx> {

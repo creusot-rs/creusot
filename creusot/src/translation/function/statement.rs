@@ -108,13 +108,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 self.ctx.crash_and_error(si.span, "bitwise operations are currently unsupported")
             }
             Rvalue::BinaryOp(op, box (l, r)) | Rvalue::CheckedBinaryOp(op, box (l, r)) => {
-                ExprKind::BinOp(
-                    *op,
-                    Box::new(self.translate_operand(l)),
-                    Box::new(self.translate_operand(r)),
-                )
+                ExprKind::BinOp(*op, self.translate_operand(l), self.translate_operand(r))
             }
-            Rvalue::UnaryOp(op, v) => ExprKind::UnaryOp(*op, Box::new(self.translate_operand(v))),
+            Rvalue::UnaryOp(op, v) => ExprKind::UnaryOp(*op, self.translate_operand(v)),
             Rvalue::Aggregate(box kind, ops) => {
                 use rustc_middle::mir::AggregateKind::*;
                 let fields = ops.iter().map(|op| self.translate_operand(op)).collect();
@@ -159,20 +155,20 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Rvalue::Len(pl) => {
                 let e = Operand::Copy(self.translate_place(*pl));
-                ExprKind::Len(Box::new(e))
+                ExprKind::Len(e)
             }
             Rvalue::Cast(CastKind::IntToInt | CastKind::PtrToPtr, op, cast_ty) => {
                 let op_ty = op.ty(self.body, self.tcx);
-                ExprKind::Cast(Box::new(self.translate_operand(op)), op_ty, *cast_ty)
+                ExprKind::Cast(self.translate_operand(op), op_ty, *cast_ty)
             }
             Rvalue::Repeat(op, len) => ExprKind::Repeat(
-                Box::new(self.translate_operand(op)),
-                Box::new(Operand::Constant(crate::constant::from_ty_const(
+                self.translate_operand(op),
+                Operand::Constant(crate::constant::from_ty_const(
                     self.ctx,
                     *len,
                     self.param_env(),
                     si.span,
-                ))),
+                )),
             ),
 
             Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize), op, ty) => {
