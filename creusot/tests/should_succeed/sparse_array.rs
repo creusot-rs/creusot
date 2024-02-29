@@ -33,7 +33,7 @@ pub struct Sparse<T> {
 impl<T> ShallowModel for Sparse<T> {
     type ShallowModelTy = Seq<Option<T>>;
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! {
@@ -68,7 +68,7 @@ impl<T> Sparse<T> {
      *   (1) check that array `idx` maps `i` to a index `j` between 0 and `n` (excluded)
      *   (2) check that `back[j]` is `i`
      */
-    #[ghost]
+    #[logic]
     fn is_elt(&self, i: Int) -> bool {
         pearlite! { self.idx[i]@ < self.n@
                     && self.back[self.idx[i]@]@ == i
@@ -97,7 +97,7 @@ impl<T> Sparse<T> {
 
     /* A key lemma to prove for safety of access in `set()`
      */
-    #[ghost]
+    #[logic]
     #[requires(self.n == self.size)]
     #[requires(0 <= i && i < self.size@)]
     #[ensures(self.is_elt(i))]
@@ -114,7 +114,7 @@ impl<T> Sparse<T> {
         let index = self.idx[i];
         if !(index < self.n && self.back[index] == i) {
             // the hard assertion!
-            gh!(Self::lemma_permutation);
+            snapshot!(Self::lemma_permutation);
             proof_assert!(self.n@ < self.size@);
             // assert!(self.n < self.size);
             self.idx[i] = self.n;

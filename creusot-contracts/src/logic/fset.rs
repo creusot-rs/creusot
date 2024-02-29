@@ -17,7 +17,7 @@ impl<T: ?Sized> FSet<T> {
     }
 
     #[doc(hidden)]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[creusot::builtins = "set.Fset.mem"]
     pub fn mem(_: T, _: Self) -> bool {
@@ -25,14 +25,14 @@ impl<T: ?Sized> FSet<T> {
     }
 
     #[open]
-    #[ghost]
+    #[logic]
     #[why3::attr = "inline:trivial"]
     pub fn insert(self, e: T) -> Self {
         Self::add(e, self)
     }
 
     #[doc(hidden)]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[creusot::builtins = "set.Fset.add"]
     pub fn add(_: T, _: Self) -> Self {
@@ -47,21 +47,21 @@ impl<T: ?Sized> FSet<T> {
     }
 
     #[open]
-    #[ghost]
+    #[logic]
     #[why3::attr = "inline:trivial"]
     pub fn remove(self, a: T) -> Self {
         Self::rem(a, self)
     }
 
     #[doc(hidden)]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[creusot::builtins = "set.Fset.remove"]
     pub fn rem(_: T, _: Self) -> Self {
         pearlite! { absurd }
     }
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[creusot::builtins = "set.Fset.union"]
     pub fn union(self, _: Self) -> Self {
@@ -82,14 +82,14 @@ impl<T: ?Sized> FSet<T> {
         Self::is_subset(other, self)
     }
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[creusot::builtins = "set.Fset.cardinal"]
     pub fn len(self) -> Int {
         pearlite! { absurd }
     }
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[creusot::builtins = "set.Fset.pick"]
     pub fn peek(self) -> T

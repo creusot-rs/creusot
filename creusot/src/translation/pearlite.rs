@@ -1,6 +1,6 @@
 // A poorly named module.
 //
-// Entrypoint for translation of all Pearlite specifications and code: #[ghost] / #[logic], contracts, proof_assert!
+// Entrypoint for translation of all Pearlite specifications and code: #[logic], contracts, proof_assert!
 //
 // Transforms THIR into a Term which may be serialized in Creusot metadata files for usage by dependent crates
 // The `lower` module then transforms a `Term` into a WhyML expression.
@@ -15,7 +15,7 @@ use crate::{
     error::{CrErr, CreusotResult, Error},
     projection_vec::{visit_projections, visit_projections_mut, ProjectionVec},
     translation::TranslationCtx,
-    util::{self, is_ghost_ty},
+    util::{self, is_snap_ty},
 };
 use itertools::Itertools;
 use log::*;
@@ -840,16 +840,16 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 ))
             }
             ExprKind::Deref { arg } => {
-                // Detect * ghost_deref & and treat that as a single 'projection'
-                if self.is_ghost_deref(*arg) {
+                // Detect * snapshot_deref & and treat that as a single 'projection'
+                if self.is_snapshot_deref(*arg) {
                     let ExprKind::Call { args, .. } = &self.thir[*arg].kind else { unreachable!() };
                     let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } = self.thir[args[0]].kind else { unreachable!() };
 
                     let (cur, fin) = self.logical_reborrow_inner(arg)?;
                     let deref_method =
-                        self.ctx.get_diagnostic_item(Symbol::intern("ghost_inner")).unwrap();
-                    // Extract the `T` from `Ghost<T>`
-                    let TyKind::Adt(_, subst) = self.thir[arg].ty.peel_refs().kind() else {unreachable!()};
+                        self.ctx.get_diagnostic_item(Symbol::intern("snapshot_inner")).unwrap();
+                    // Extract the `T` from `Snapshot<T>`
+                    let TyKind::Adt(_, subst) = self.thir[arg].ty.peel_refs().kind() else { unreachable!() };
                     return Ok((
                         Term::call(self.ctx.tcx, deref_method, subst, vec![cur]),
                         Term::call(self.ctx.tcx, deref_method, subst, vec![fin]),
@@ -918,8 +918,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 Ok(res)
             }
             ExprKind::Deref { arg } => {
-                // Detect * ghost_deref & and treat that as a single 'projection'
-                if self.is_ghost_deref(*arg) {
+                // Detect * snapshot_deref & and treat that as a single 'projection'
+                if self.is_snapshot_deref(*arg) {
                     let ExprKind::Call { args, .. } = &self.thir[*arg].kind else { unreachable!() };
                     let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } = self.thir[args[0]].kind else { unreachable!() };
 
@@ -956,7 +956,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         }
     }
 
-    pub(crate) fn is_ghost_deref(&self, expr_id: ExprId) -> bool {
+    pub(crate) fn is_snapshot_deref(&self, expr_id: ExprId) -> bool {
         let ExprKind::Call { ty, .. } = &self.thir[expr_id].kind else { return false };
 
         let TyKind::FnDef(id, sub) = ty.kind() else { panic!("expected function type") };
@@ -965,7 +965,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             return false;
         }
 
-        sub[0].as_type().map(|ty| is_ghost_ty(self.ctx.tcx, ty)).unwrap_or(false)
+        sub[0].as_type().map(|ty| is_snap_ty(self.ctx.tcx, ty)).unwrap_or(false)
     }
 
     fn mk_projection(&self, lhs: Term<'tcx>, name: FieldIdx) -> Result<TermKind<'tcx>, Error> {

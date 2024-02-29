@@ -5,7 +5,7 @@ pub use ::std::collections::VecDeque;
 impl<T, A: Allocator> ShallowModel for VecDeque<T, A> {
     type ShallowModelTy = Seq<T>;
 
-    #[ghost]
+    #[logic]
     #[trusted]
     #[open(self)]
     #[ensures(result.len() <= usize::MAX@)]
@@ -17,7 +17,7 @@ impl<T, A: Allocator> ShallowModel for VecDeque<T, A> {
 impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
-    #[ghost]
+    #[logic]
     #[trusted]
     #[open(self)]
     #[ensures(self.shallow_model().len() == result.len())]
@@ -31,7 +31,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
 impl<T, A: Allocator> IndexLogic<Int> for VecDeque<T, A> {
     type Item = T;
 
-    #[ghost]
+    #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
@@ -42,7 +42,7 @@ impl<T, A: Allocator> IndexLogic<Int> for VecDeque<T, A> {
 impl<T, A: Allocator> IndexLogic<usize> for VecDeque<T, A> {
     type Item = T;
 
-    #[ghost]
+    #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
@@ -115,7 +115,7 @@ impl<T, A: Allocator> IntoIterator for &VecDeque<T, A> {
 impl<'a, T> ShallowModel for Iter<'a, T> {
     type ShallowModelTy = &'a [T];
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
@@ -126,7 +126,7 @@ impl<'a, T> ShallowModel for Iter<'a, T> {
 impl<'a, T> Invariant for Iter<'a, T> {}
 
 impl<'a, T> Iterator for Iter<'a, T> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && (*self@)@ == Seq::EMPTY }

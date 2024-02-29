@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 
 use creusot_contracts::*;
 
-#[ghost]
+#[logic]
 fn reflexive<T: PartialEq>(x: T) -> bool {
     pearlite! { x == x }
 }

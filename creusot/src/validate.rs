@@ -132,18 +132,15 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                 continue;
             };
 
-            if util::item_type(ctx.tcx, *trait_item) != util::item_type(ctx.tcx, *impl_item) {
-                eprintln!(
-                    "{:?} != {:?}",
-                    util::item_type(ctx.tcx, *trait_item),
-                    util::item_type(ctx.tcx, *impl_item)
-                );
+            let item_type = util::item_type(ctx.tcx, *impl_item);
+            let trait_type = util::item_type(ctx.tcx, *trait_item);
+            if !item_type.can_implement(trait_type) {
                 ctx.error(
                     ctx.def_span(impl_item),
                     &format!(
                         "Expected `{}` to be a {} as specified by the trait declaration",
                         ctx.item_name(*impl_item),
-                        util::item_type(ctx.tcx, *impl_item).to_str()
+                        trait_type.to_str()
                     ),
                 )
                 .emit();

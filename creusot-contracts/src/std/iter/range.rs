@@ -7,7 +7,7 @@ use crate::{
 };
 
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! {
@@ -40,7 +40,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-#[ghost]
+#[logic]
 #[open]
 #[ensures(r.is_empty_log() == (result == 0))]
 pub fn range_inclusive_len<Idx: DeepModel<DeepModelTy = Int>>(r: RangeInclusive<Idx>) -> Int {
@@ -51,7 +51,7 @@ pub fn range_inclusive_len<Idx: DeepModel<DeepModelTy = Int>>(r: RangeInclusive<
 }
 
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! {

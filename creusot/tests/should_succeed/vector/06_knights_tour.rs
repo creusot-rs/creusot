@@ -125,7 +125,7 @@ fn min(v: &Vec<(usize, Point)>) -> Option<&(usize, Point)> {
     min
 }
 
-#[ghost]
+#[logic]
 #[requires(a@ <= 1_000)]
 #[ensures(a@ * a@ <= 1_000_000)]
 fn dumb_nonlinear_arith(a: usize) {}
@@ -138,7 +138,7 @@ pub fn knights_tour(size: usize, x: usize, y: usize) -> Option<Board> {
     let mut p = Point { x: x as isize, y: y as isize };
     board.set(p, 1);
 
-    gh! { dumb_nonlinear_arith(size) };
+    snapshot! { dumb_nonlinear_arith(size) };
     #[invariant(board.size == size)]
     #[invariant(board.wf())]
     #[invariant(board.in_bounds(p))]

@@ -18,13 +18,13 @@ where
     type Item = T;
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.iter.completed() }
     }
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             exists<s: Seq<&'a T>> self.iter.produces(s, o.iter)

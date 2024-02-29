@@ -1,25 +1,25 @@
 use crate::{std::iter::Take, *};
 
 pub trait TakeExt<I> {
-    #[ghost]
+    #[logic]
     fn iter(self) -> I;
 
-    #[ghost]
+    #[logic]
     fn iter_mut(&mut self) -> &mut I;
 
-    #[ghost]
+    #[logic]
     fn n(self) -> Int;
 }
 
 impl<I> TakeExt<I> for Take<I> {
-    #[ghost]
+    #[logic]
     #[trusted]
     #[open(self)]
     fn iter(self) -> I {
         pearlite! { absurd }
     }
 
-    #[ghost]
+    #[logic]
     #[trusted]
     #[open(self)]
     #[ensures((*self).iter() == *result && (^self).iter() == ^result)]
@@ -27,7 +27,7 @@ impl<I> TakeExt<I> for Take<I> {
         pearlite! { absurd }
     }
 
-    #[ghost]
+    #[logic]
     #[trusted]
     #[open(self)]
     #[ensures(result >= 0 && result <= usize::MAX@)]
@@ -39,7 +39,7 @@ impl<I> TakeExt<I> for Take<I> {
 #[trusted]
 impl<I> Resolve for Take<I> {
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
             self.iter().resolve()
@@ -49,7 +49,7 @@ impl<I> Resolve for Take<I> {
 
 impl<I: Iterator> Iterator for Take<I> {
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             self.n() == 0 && self.resolve() ||
@@ -58,7 +58,7 @@ impl<I: Iterator> Iterator for Take<I> {
     }
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.n() == o.n() + visited.len() && self.iter().produces(visited, o.iter())

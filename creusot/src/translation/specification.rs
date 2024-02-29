@@ -302,26 +302,25 @@ pub(crate) fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
         || def_path.ends_with("::boxed::Box::<T>::new")
         || def_path.ends_with("::ops::Deref::deref")
         || def_path.ends_with("::ops::DerefMut::deref_mut")
-        || def_path.ends_with("Ghost::<T>::from_fn")
+        || def_path.ends_with("Snapshot::<T>::from_fn")
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Purity {
     Program,
-    Ghost,
-    Logic,
+    Logic { prophetic: bool },
 }
 
 impl Purity {
     pub(crate) fn of_def_id<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Self {
-        let is_ghost = util::is_ghost_closure(tcx, def_id);
-        if util::is_predicate(tcx, def_id)
-            || util::is_logic(tcx, def_id)
-            || (util::is_spec(tcx, def_id) && !is_ghost)
+        let is_snapshot = util::is_snapshot_closure(tcx, def_id);
+        if (util::is_predicate(tcx, def_id) && util::is_prophetic(tcx, def_id))
+            || (util::is_logic(tcx, def_id) && util::is_prophetic(tcx, def_id))
+            || (util::is_spec(tcx, def_id) && !is_snapshot)
         {
-            Purity::Logic
-        } else if util::is_ghost(tcx, def_id) || is_ghost {
-            Purity::Ghost
+            Purity::Logic { prophetic: true }
+        } else if util::is_predicate(tcx, def_id) || util::is_logic(tcx, def_id) || is_snapshot {
+            Purity::Logic { prophetic: false }
         } else {
             Purity::Program
         }
@@ -329,9 +328,19 @@ impl Purity {
 
     fn can_call(self, other: Purity) -> bool {
         match (self, other) {
-            (Purity::Logic, Purity::Ghost) => true,
+            (Purity::Logic { prophetic: true }, Purity::Logic { prophetic: false }) => true,
             (ctx, call) => ctx == call,
         }
+    }
+}
+
+impl std::fmt::Display for Purity {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str(match self {
+            Purity::Program => "program",
+            Purity::Logic { prophetic: false } => "logic",
+            Purity::Logic { prophetic: true } => "prophetic logic",
+        })
     }
 }
 
@@ -346,15 +355,16 @@ impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
         let stub = pearlite_stub(self.tcx, self.thir[fun].ty);
 
         if matches!(stub, Some(Stub::Fin))
-            || util::is_predicate(self.tcx, func_did)
-            || util::is_logic(self.tcx, func_did)
+            || (util::is_predicate(self.tcx, func_did) && util::is_prophetic(self.tcx, func_did))
+            || (util::is_logic(self.tcx, func_did) && util::is_prophetic(self.tcx, func_did))
         {
-            Purity::Logic
-        } else if util::is_ghost(self.tcx, func_did)
+            Purity::Logic { prophetic: true }
+        } else if util::is_predicate(self.tcx, func_did)
+            || util::is_logic(self.tcx, func_did)
             || util::get_builtin(self.tcx, func_did).is_some()
             || stub.is_some()
         {
-            Purity::Ghost
+            Purity::Logic { prophetic: false }
         } else {
             Purity::Program
         }
@@ -373,11 +383,13 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                     let fn_purity = self.purity(fun, func_did);
                     if !self.context.can_call(fn_purity) && !is_overloaded_item(self.tcx, func_did)
                     {
-                        let msg =
-                            format!("called {fn_purity:?} function in {:?} context", self.context);
                         self.tcx.sess.span_err_with_code(
                             self.thir[fun].span,
-                            format!("{} {:?}", msg, self.tcx.def_path_str(func_did)),
+                            format!(
+                                "called {fn_purity} function {:?} in {} context",
+                                self.tcx.def_path_str(func_did),
+                                self.context,
+                            ),
                             rustc_errors::DiagnosticId::Error(String::from("creusot")),
                         );
                     }

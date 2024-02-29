@@ -28,8 +28,9 @@ pub fn proof_assert(_: TS1) -> TS1 {
 }
 
 #[proc_macro]
-pub fn gh(_: TS1) -> TS1 {
-    quote::quote! { creusot_contracts::ghost::Ghost::from_fn(|| std::process::abort()) }.into()
+pub fn snapshot(_: TS1) -> TS1 {
+    quote::quote! { creusot_contracts::snapshot::Snapshot::from_fn(|| std::process::abort()) }
+        .into()
 }
 
 #[proc_macro_attribute]
@@ -39,11 +40,6 @@ pub fn logic(_: TS1, _: TS1) -> TS1 {
 
 #[proc_macro]
 pub fn pearlite(_: TS1) -> TS1 {
-    TS1::new()
-}
-
-#[proc_macro_attribute]
-pub fn ghost(_: TS1, _: TS1) -> TS1 {
     TS1::new()
 }
 

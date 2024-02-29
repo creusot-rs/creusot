@@ -18,7 +18,7 @@ where
     type Item = I::Item;
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             (^self).n@ == 0 &&
@@ -32,7 +32,7 @@ where
     }
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::EMPTY && self == o ||
@@ -61,9 +61,9 @@ where
       Some(v) => (*self).produces(Seq::singleton(v), ^self)
     })]
     fn next(&mut self) -> Option<I::Item> {
-        let old_self = gh! { self };
+        let old_self = snapshot! { self };
         let mut n = std::mem::take(&mut self.n);
-        let mut skipped = gh! { Seq::EMPTY };
+        let mut skipped = snapshot! { Seq::EMPTY };
         #[invariant(skipped.len() + n@ == old_self.n@)]
         #[invariant(old_self.iter.produces(skipped.inner(), self.iter))]
         #[invariant(forall<i: Int> 0 <= i && i < skipped.len() ==> skipped[i].resolve())]
@@ -75,7 +75,7 @@ where
                 return r;
             }
             if let Some(x) = r {
-                skipped = gh! { skipped.concat(Seq::singleton(x)) };
+                skipped = snapshot! { skipped.concat(Seq::singleton(x)) };
                 n -= 1
             } else {
                 return r;

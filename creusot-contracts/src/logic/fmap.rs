@@ -7,7 +7,7 @@ pub struct FMap<K, V: ?Sized>(PMap<K, V>);
 
 impl<K, V: ?Sized> FMap<K, V> {
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[ensures(result >= 0)]
     pub fn len(self) -> Int {
@@ -15,7 +15,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     }
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     pub fn mk(_m: PMap<K, V>) -> Self {
         absurd
@@ -23,7 +23,7 @@ impl<K, V: ?Sized> FMap<K, V> {
 
     #[trusted]
     #[open(self)]
-    #[ghost]
+    #[logic]
     #[ensures(Self::mk(result) == self)] // injectivity
     pub fn view(self) -> PMap<K, V> {
         absurd
@@ -31,7 +31,7 @@ impl<K, V: ?Sized> FMap<K, V> {
 
     #[trusted]
     #[open(self)]
-    #[ghost]
+    #[logic]
     #[ensures(result.view() == self.view().set(k, Some(v.make_sized())))]
     #[ensures(self.contains(k) ==> result.len() == self.len())]
     #[ensures(!self.contains(k) ==> result.len() == self.len() + 1)]
@@ -41,28 +41,28 @@ impl<K, V: ?Sized> FMap<K, V> {
 
     #[trusted]
     #[open(self)]
-    #[ghost]
+    #[logic]
     #[ensures(result.view() == self.view().set(k, None))]
     #[ensures(result.len() == if self.contains(k) {self.len() - 1} else {self.len()})]
     pub fn remove(self, k: K) -> Self {
         absurd
     }
 
-    #[ghost]
+    #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
     pub fn get(self, k: K) -> Option<SizedW<V>> {
         self.view().get(k)
     }
 
-    #[ghost]
+    #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
     pub fn lookup_unsized(self, k: K) -> SizedW<V> {
         unwrap(self.get(k))
     }
 
-    #[ghost]
+    #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
     pub fn lookup(self, k: K) -> V
@@ -72,7 +72,7 @@ impl<K, V: ?Sized> FMap<K, V> {
         *self.lookup_unsized(k)
     }
 
-    #[ghost]
+    #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
     pub fn contains(self, k: K) -> bool {
@@ -80,7 +80,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     }
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[ensures(result.len() == 0)]
     #[ensures(result.view() == Mapping::cst(None))]
@@ -88,26 +88,26 @@ impl<K, V: ?Sized> FMap<K, V> {
         absurd
     }
 
-    #[ghost]
+    #[logic]
     #[open]
     pub fn is_empty(self) -> bool {
         self.ext_eq(FMap::empty())
     }
 
-    #[ghost]
+    #[logic]
     #[open]
     pub fn disjoint(self, other: Self) -> bool {
         pearlite! {forall<k: K> !self.contains(k) || !other.contains(k)}
     }
 
-    #[ghost]
+    #[logic]
     #[open]
     pub fn subset(self, other: Self) -> bool {
         pearlite! {forall<k: K> self.contains(k) ==> other.get(k) == self.get(k)}
     }
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[requires(self.disjoint(other))]
     #[ensures(forall<k: K> result.get(k) == if self.contains(k) {
@@ -123,15 +123,15 @@ impl<K, V: ?Sized> FMap<K, V> {
     }
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[ensures(forall<k: K> result.get(k) == if other.contains(k) {None} else {self.get(k)})]
     pub fn subtract_keys(self, other: Self) -> Self {
         absurd
     }
 
-    #[ghost]
-    #[open(self)]
+    #[logic]
+    #[open]
     #[requires(other.subset(self))]
     #[ensures(result.disjoint(other))]
     #[ensures(other.union(result).ext_eq(self))]
@@ -140,7 +140,7 @@ impl<K, V: ?Sized> FMap<K, V> {
         self.subtract_keys(other)
     }
 
-    #[ghost]
+    #[logic]
     #[open]
     #[ensures(result ==> self == other)]
     #[ensures((forall<k: K> self.get(k) == other.get(k)) ==> result)]

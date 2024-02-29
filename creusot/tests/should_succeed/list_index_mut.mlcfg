@@ -57,7 +57,7 @@ module ListIndexMut_IndexMut
   axiom inv0 : forall x : borrowed (Core_Option_Option_Type.t_option (ListIndexMut_List_Type.t_list)) . inv0 x = true
   use prelude.UInt32
   use prelude.UIntSize
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate resolve2 (self : borrowed (ListIndexMut_List_Type.t_list)) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve2 (self : borrowed (ListIndexMut_List_Type.t_list)) : bool
@@ -92,13 +92,13 @@ module ListIndexMut_IndexMut
   val shallow_model2 (self : usize) : int
     ensures { result = shallow_model2 self }
     
-  use prelude.Ghost
-  function shallow_model1 (self : Ghost.ghost_ty usize) : int =
-    [#"../../../../creusot-contracts/src/ghost.rs" 27 20 27 48] shallow_model2 (Ghost.inner self)
-  val shallow_model1 (self : Ghost.ghost_ty usize) : int
+  use prelude.Snapshot
+  function shallow_model1 (self : Snapshot.snap_ty usize) : int =
+    [#"../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48] shallow_model2 (Snapshot.inner self)
+  val shallow_model1 (self : Snapshot.snap_ty usize) : int
     ensures { result = shallow_model1 self }
     
-  use prelude.Ghost
+  use prelude.Snapshot
   use prelude.Int
   function get0 [#"../list_index_mut.rs" 18 4 18 46] (self : ListIndexMut_List_Type.t_list) (ix : int) : Core_Option_Option_Type.t_option uint32
     
@@ -122,8 +122,8 @@ module ListIndexMut_IndexMut
   val len0 [#"../list_index_mut.rs" 7 4 7 29] (self : ListIndexMut_List_Type.t_list) : int
     ensures { result = len0 self }
     
-  use prelude.Ghost
-  use prelude.Ghost
+  use prelude.Snapshot
+  use prelude.Snapshot
   let rec cfg index_mut [#"../list_index_mut.rs" 37 0 37 61] [@cfg:stackify] [@cfg:subregion_analysis] (l : borrowed (ListIndexMut_List_Type.t_list)) (ix : usize) : borrowed uint32
     requires {[#"../list_index_mut.rs" 32 11 32 24] UIntSize.to_int ix < len0 ( * l)}
     ensures { [#"../list_index_mut.rs" 33 10 33 37] Core_Option_Option_Type.C_Some ( * result) = get0 ( * l) (UIntSize.to_int ix) }
@@ -136,8 +136,8 @@ module ListIndexMut_IndexMut
   var l : borrowed (ListIndexMut_List_Type.t_list) = l;
   var ix : usize = ix;
   var _3 : borrowed uint32;
-  var old_l : Ghost.ghost_ty (borrowed (ListIndexMut_List_Type.t_list));
-  var old_ix : Ghost.ghost_ty usize;
+  var old_l : Snapshot.snap_ty (borrowed (ListIndexMut_List_Type.t_list));
+  var old_ix : Snapshot.snap_ty usize;
   var _22 : borrowed (ListIndexMut_List_Type.t_list);
   var _23 : borrowed (ListIndexMut_List_Type.t_list);
   var _24 : Core_Option_Option_Type.t_option (borrowed (ListIndexMut_List_Type.t_list));
@@ -147,11 +147,11 @@ module ListIndexMut_IndexMut
     goto BB0
   }
   BB0 {
-    [#"../list_index_mut.rs" 38 16 38 25] old_l <- ([#"../list_index_mut.rs" 38 16 38 25] Ghost.new l);
+    [#"../list_index_mut.rs" 38 16 38 31] old_l <- ([#"../list_index_mut.rs" 38 16 38 31] Snapshot.new l);
     goto BB1
   }
   BB1 {
-    [#"../list_index_mut.rs" 39 17 39 27] old_ix <- ([#"../list_index_mut.rs" 39 17 39 27] Ghost.new ix);
+    [#"../list_index_mut.rs" 39 17 39 33] old_ix <- ([#"../list_index_mut.rs" 39 17 39 33] Snapshot.new ix);
     goto BB2
   }
   BB2 {
@@ -159,10 +159,10 @@ module ListIndexMut_IndexMut
   }
   BB3 {
     invariant { [#"../list_index_mut.rs" 40 16 40 45] (0 : usize) <= ix /\ UIntSize.to_int ix < len0 ( * l) };
-    invariant { [#"../list_index_mut.rs" 41 16 41 52] get0 ( * l) (UIntSize.to_int ix) = get0 ( * Ghost.inner old_l) (shallow_model1 old_ix) };
-    invariant { [#"../list_index_mut.rs" 42 16 42 55] get0 ( ^ l) (UIntSize.to_int ix) = get0 ( ^ Ghost.inner old_l) (shallow_model1 old_ix) };
-    invariant { [#"../list_index_mut.rs" 40 4 40 47] len0 ( ^ l) = len0 ( * l) -> len0 ( ^ Ghost.inner old_l) = len0 ( * Ghost.inner old_l) };
-    invariant { [#"../list_index_mut.rs" 40 4 40 47] (forall i : int . 0 <= i /\ i < len0 ( * l) /\ i <> UIntSize.to_int ix -> get0 ( ^ l) i = get0 ( * l) i) -> (forall i : int . 0 <= i /\ i < len0 ( * Ghost.inner old_l) /\ i <> shallow_model1 old_ix -> get0 ( ^ Ghost.inner old_l) i = get0 ( * Ghost.inner old_l) i) };
+    invariant { [#"../list_index_mut.rs" 41 16 41 52] get0 ( * l) (UIntSize.to_int ix) = get0 ( * Snapshot.inner old_l) (shallow_model1 old_ix) };
+    invariant { [#"../list_index_mut.rs" 42 16 42 55] get0 ( ^ l) (UIntSize.to_int ix) = get0 ( ^ Snapshot.inner old_l) (shallow_model1 old_ix) };
+    invariant { [#"../list_index_mut.rs" 40 4 40 47] len0 ( ^ l) = len0 ( * l) -> len0 ( ^ Snapshot.inner old_l) = len0 ( * Snapshot.inner old_l) };
+    invariant { [#"../list_index_mut.rs" 40 4 40 47] (forall i : int . 0 <= i /\ i < len0 ( * l) /\ i <> UIntSize.to_int ix -> get0 ( ^ l) i = get0 ( * l) i) -> (forall i : int . 0 <= i /\ i < len0 ( * Snapshot.inner old_l) /\ i <> shallow_model1 old_ix -> get0 ( ^ Snapshot.inner old_l) i = get0 ( * Snapshot.inner old_l) i) };
     goto BB4
   }
   BB4 {

@@ -152,15 +152,14 @@ Contracts and logic functions are written in Pearlite, a specification language 
 - Logical Expressions: quantifiers (`forall` and `exists`), logical implication `==>`, *logical* equality `a == b`, labels
 - Rust specific logical expressions: access to the **final** value of a mutable reference `^`, access to the *model* of an object `@`
 
-We also provide three new attributes on Rust functions: `ghost`, `logic` and `predicate`.
-
-A ghost function is marked with `#[ghost]`. It can be used in ghost code, to assign ghost
-variables of the `Ghost<T>` type.
+We also provide two new attributes on Rust functions: `logic` and `predicate`.
 
 Marked  `#[logic]` or `#[predicate]`, a function can be used in specs and other logical conditions (`requires`/`ensures` and `invariant`). They can use ghost functions.
 The two attributes have the following difference.
 - A `logic` function can freely have logical, non-executable operations, such as quantifiers, logic equalities, etc. Instead, this function can't be called in normal Rust code (the function body of a `logic` function is replaced with a panic).
   You can use pearlite syntax for any part in the logic function by marking that part with the `pearlite! { ... }` macro.
+
+  If you need to use the prophecy operator `^` on a mutable reference, you need to mark the function `#[logic(prophetic)]`.
 - A `predicate` is a logical function which returns a proposition (in practice, returns a boolean value).
 
 When you write *recursive* `ghost`, `logic` or `predicate` functions, you have to show that the function terminates.

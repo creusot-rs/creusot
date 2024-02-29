@@ -1,13 +1,13 @@
 use crate::{std::iter::Cloned, *};
 
 pub trait ClonedExt<I> {
-    #[ghost]
+    #[logic]
     fn iter(self) -> I;
 }
 
 impl<I> ClonedExt<I> for Cloned<I> {
     #[open(self)]
-    #[ghost]
+    #[logic]
     #[trusted]
     fn iter(self) -> I {
         pearlite! { absurd }
@@ -17,7 +17,7 @@ impl<I> ClonedExt<I> for Cloned<I> {
 #[trusted]
 impl<I> Resolve for Cloned<I> {
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
             self.iter().resolve()
@@ -31,13 +31,13 @@ where
     T: Clone,
 {
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { exists<inner : &mut _> *inner == self.iter() && ^inner == (^self).iter() && inner.completed() }
     }
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             exists<s: Seq<&'a T>> self.iter().produces(s, o.iter())

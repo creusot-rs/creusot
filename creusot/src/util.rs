@@ -35,10 +35,7 @@ use why3::{
 };
 
 pub(crate) fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
-    crate::util::is_no_translate(tcx, def_id)
-        || crate::util::is_ghost(tcx, def_id)
-        || crate::util::is_predicate(tcx, def_id)
-        || crate::util::is_logic(tcx, def_id)
+    is_no_translate(tcx, def_id) || is_predicate(tcx, def_id) || is_logic(tcx, def_id)
 }
 
 pub(crate) fn is_no_translate(tcx: TyCtxt, def_id: DefId) -> bool {
@@ -65,21 +62,23 @@ pub(crate) fn is_assertion(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "assert"]).is_some()
 }
 
-pub(crate) fn is_ghost_closure(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "ghost"]).is_some()
+pub(crate) fn is_snapshot_closure(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "snapshot"]).is_some()
 }
 
-pub(crate) fn ghost_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
-    if let TyKind::Closure(def_id, _) = ty.peel_refs().kind() && is_ghost_closure(tcx, *def_id)  {
+pub(crate) fn snapshot_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
+    if let TyKind::Closure(def_id, _) = ty.peel_refs().kind() && is_snapshot_closure(tcx, *def_id) {
         Some(*def_id)
-    } else { None }
+    } else {
+        None
+    }
 }
 
-pub(crate) fn is_ghost_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+pub(crate) fn is_snap_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     let r: Option<bool> = try {
         let adt = ty.ty_adt_def()?;
         let builtin = get_builtin(tcx, adt.did())?;
-        builtin.as_str() == "prelude.Ghost.ghost_ty"
+        builtin.as_str() == "prelude.Snapshot.snap_ty"
     };
     r.unwrap_or(false)
 }
@@ -88,12 +87,12 @@ pub(crate) fn is_logic(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "logic"]).is_some()
 }
 
-pub(crate) fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "predicate"]).is_some()
+pub(crate) fn is_prophetic(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "logic", "prophetic"]).is_some()
 }
 
-pub(crate) fn is_ghost(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "ghost"]).is_some()
+pub(crate) fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "predicate"]).is_some()
 }
 
 pub(crate) fn is_trusted(tcx: TyCtxt, def_id: DefId) -> bool {
@@ -178,7 +177,7 @@ pub(crate) fn has_body(ctx: &mut TranslationCtx, def_id: DefId) -> bool {
         ctx.tcx.hir().maybe_body_owned_by(local_id).is_some()
     } else {
         match item_type(ctx.tcx, def_id) {
-            ItemType::Ghost | ItemType::Logic | ItemType::Predicate => ctx.term(def_id).is_some(),
+            ItemType::Logic { .. } | ItemType::Predicate { .. } => ctx.term(def_id).is_some(),
             _ => false,
         }
     }
@@ -294,9 +293,8 @@ fn ident_path(tcx: TyCtxt, def_id: DefId) -> Ident {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ItemType {
-    Logic,
-    Predicate,
-    Ghost,
+    Logic { prophetic: bool },
+    Predicate { prophetic: bool },
     Program,
     Closure,
     Trait,
@@ -310,8 +308,8 @@ pub enum ItemType {
 impl ItemType {
     pub(crate) fn let_kind(&self) -> Option<LetKind> {
         match self {
-            ItemType::Logic | ItemType::Ghost => Some(LetKind::Function),
-            ItemType::Predicate => Some(LetKind::Predicate),
+            ItemType::Logic { .. } => Some(LetKind::Function),
+            ItemType::Predicate { .. } => Some(LetKind::Predicate),
             ItemType::Program | ItemType::Closure => None,
             ItemType::Constant => Some(LetKind::Constant),
             _ => None,
@@ -320,10 +318,10 @@ impl ItemType {
 
     pub(crate) fn val(&self, mut sig: Signature) -> ValDecl {
         match self {
-            ItemType::Logic | ItemType::Ghost => {
+            ItemType::Logic { .. } => {
                 ValDecl { sig, ghost: false, val: false, kind: Some(LetKind::Function) }
             }
-            ItemType::Predicate => {
+            ItemType::Predicate { .. } => {
                 sig.retty = None;
                 ValDecl { sig, ghost: false, val: false, kind: Some(LetKind::Predicate) }
             }
@@ -339,9 +337,10 @@ impl ItemType {
 
     pub(crate) fn to_str(&self) -> &str {
         match self {
-            ItemType::Logic => "logic function",
-            ItemType::Predicate => "predicate",
-            ItemType::Ghost => "ghost function",
+            ItemType::Logic { prophetic: false } => "logic function",
+            ItemType::Logic { prophetic: true } => "prophetic logic function",
+            ItemType::Predicate { prophetic: false } => "predicate",
+            ItemType::Predicate { prophetic: true } => "prophetic predicate",
             ItemType::Program => "program function",
             ItemType::Closure => "closure",
             ItemType::Trait => "trait declaration",
@@ -352,6 +351,16 @@ impl ItemType {
             ItemType::Unsupported(_) => "[OTHER]",
         }
     }
+
+    pub(crate) fn can_implement(self, trait_type: Self) -> bool {
+        match (self, trait_type) {
+            (ItemType::Logic { prophetic: false }, ItemType::Logic { prophetic: true }) => true,
+            (ItemType::Predicate { prophetic: false }, ItemType::Predicate { prophetic: true }) => {
+                true
+            }
+            _ => self == trait_type,
+        }
+    }
 }
 
 pub(crate) fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
@@ -360,11 +369,9 @@ pub(crate) fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
         DefKind::Impl { .. } => ItemType::Impl,
         DefKind::Fn | DefKind::AssocFn => {
             if is_predicate(tcx, def_id) {
-                ItemType::Predicate
-            } else if is_ghost(tcx, def_id) {
-                ItemType::Ghost
+                ItemType::Predicate { prophetic: is_prophetic(tcx, def_id) }
             } else if is_logic(tcx, def_id) {
-                ItemType::Logic
+                ItemType::Logic { prophetic: is_prophetic(tcx, def_id) }
             } else {
                 ItemType::Program
             }
@@ -520,7 +527,7 @@ fn elaborate_type_invariants<'tcx>(
 ) {
     if is_user_tyinv(ctx.tcx, def_id)
         || is_inv_internal(ctx.tcx, def_id)
-        || (is_predicate(ctx.tcx, def_id) || is_ghost(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
+        || (is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
             && pre_sig.contract.ensures.is_empty()
     {
         return;

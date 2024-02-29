@@ -5,7 +5,7 @@ use crate::*;
 pub trait IndexLogic<I> {
     type Item;
 
-    #[ghost]
+    #[logic]
     #[rustc_diagnostic_item = "index_logic_method"]
     fn index_logic(self, idx: I) -> Self::Item;
 }
@@ -13,7 +13,7 @@ pub trait IndexLogic<I> {
 impl<T, A: Allocator> IndexLogic<Int> for Vec<T, A> {
     type Item = T;
 
-    #[ghost]
+    #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
@@ -24,7 +24,7 @@ impl<T, A: Allocator> IndexLogic<Int> for Vec<T, A> {
 impl<T, A: Allocator> IndexLogic<usize> for Vec<T, A> {
     type Item = T;
 
-    #[ghost]
+    #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
@@ -35,7 +35,7 @@ impl<T, A: Allocator> IndexLogic<usize> for Vec<T, A> {
 impl<T> IndexLogic<Int> for [T] {
     type Item = T;
 
-    #[ghost]
+    #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
     #[rustc_diagnostic_item = "slice_index_logic"]
@@ -47,7 +47,7 @@ impl<T> IndexLogic<Int> for [T] {
 impl<T> IndexLogic<usize> for [T] {
     type Item = T;
 
-    #[ghost]
+    #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
@@ -58,7 +58,7 @@ impl<T> IndexLogic<usize> for [T] {
 impl<T, const N: usize> IndexLogic<Int> for [T; N] {
     type Item = T;
 
-    #[ghost]
+    #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
@@ -69,7 +69,7 @@ impl<T, const N: usize> IndexLogic<Int> for [T; N] {
 impl<T, const N: usize> IndexLogic<usize> for [T; N] {
     type Item = T;
 
-    #[ghost]
+    #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
@@ -77,10 +77,10 @@ impl<T, const N: usize> IndexLogic<usize> for [T; N] {
     }
 }
 
-impl<T> IndexLogic<Int> for Ghost<Seq<T>> {
+impl<T> IndexLogic<Int> for Snapshot<Seq<T>> {
     type Item = T;
 
-    #[ghost]
+    #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
