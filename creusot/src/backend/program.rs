@@ -12,7 +12,7 @@ use crate::{
         ty::{self, translate_closure_ty, translate_ty},
     },
     ctx::{BodyId, CloneMap, TranslationCtx},
-    fmir::Operand,
+    fmir::{BorrowKind, Operand},
     translation::{
         binop_to_binop,
         fmir::{
@@ -674,7 +674,7 @@ impl<'tcx> Statement<'tcx> {
         locals: &LocalDecls<'tcx>,
     ) -> Vec<mlcfg::Statement> {
         match self {
-            Statement::Assignment(lhs, RValue::Borrow(rhs), span) => {
+            Statement::Assignment(lhs, RValue::Borrow(BorrowKind::Mut, rhs), span) => {
                 let borrow = Exp::Call(
                     Box::new(Exp::impure_qvar(QName::from_string("Borrow.borrow_mut").unwrap())),
                     vec![rhs.as_rplace(ctx, names, locals)],
@@ -686,7 +686,11 @@ impl<'tcx> Statement<'tcx> {
                     place::create_assign_inner(ctx, names, locals, &rhs, reassign, span),
                 ]
             }
-            Statement::Assignment(lhs, RValue::FinalBorrow(rhs, deref_index), span) => {
+            Statement::Assignment(
+                lhs,
+                RValue::Borrow(BorrowKind::Final(deref_index), rhs),
+                span,
+            ) => {
                 let original_borrow = Place {
                     local: rhs.local.clone(),
                     projection: rhs.projection[..deref_index].to_vec(),
