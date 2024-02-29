@@ -109,7 +109,7 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
     fn visit_rvalue(&mut self, r: &RValue<'tcx>) {
         match r {
             RValue::Ghost(t) => self.visit_term(t),
-            RValue::FinalBorrow(p, _) | RValue::Borrow(p) => {
+            RValue::Borrow(_, p) => {
                 self.read_place(p);
                 self.read_place(p)
             }
@@ -291,7 +291,7 @@ impl<'tcx> SimplePropagator<'tcx> {
     fn visit_rvalue(&mut self, r: &mut RValue<'tcx>) {
         match r {
             RValue::Ghost(t) => self.visit_term(t),
-            RValue::FinalBorrow(p, _) | RValue::Borrow(p) => {
+            RValue::Borrow(_, p) => {
                 assert!(self.prop.get(&p.local).is_none(), "Trying to propagate borrowed variable")
             }
             RValue::Expr(e) => self.visit_expr(e),

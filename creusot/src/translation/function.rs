@@ -263,9 +263,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         self.emit_assignment(
             lhs,
             if let Some(deref_index) = is_final {
-                fmir::RValue::FinalBorrow(p, deref_index)
+                fmir::RValue::Borrow(fmir::BorrowKind::Final(deref_index), p)
             } else {
-                fmir::RValue::Borrow(p)
+                fmir::RValue::Borrow(fmir::BorrowKind::Mut, p)
             },
             span,
         );

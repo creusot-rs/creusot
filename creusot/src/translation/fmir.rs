@@ -47,21 +47,27 @@ pub enum Statement<'tcx> {
     Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Vec<Operand<'tcx>>, Span),
 }
 
-// Re-organize this completely
-// Get rid of Expr and reimpose a more traditional statement-rvalue-operand setup
-#[derive(Clone, Debug)]
-pub enum RValue<'tcx> {
-    Ghost(Term<'tcx>),
-    Borrow(Place<'tcx>),
+// TODO: Add shared borrows?
+#[derive(Clone, Copy, Debug)]
+pub enum BorrowKind {
+    /// Ordinary mutable borrows
+    Mut,
     /// The source of this borrow is not used after the reborrow, and thus we can
     /// inherit the prophecy identifier.
     ///
     /// The second field is an index in `place.projection`: see
     /// [`NotFinalPlaces::is_final_at`](crate::analysis::NotFinalPlaces::is_final_at).
-    FinalBorrow(Place<'tcx>, usize),
+    Final(usize),
+}
+
+#[derive(Clone, Debug)]
+pub enum RValue<'tcx> {
+    Ghost(Term<'tcx>),
+    Borrow(BorrowKind, Place<'tcx>),
     Expr(Expr<'tcx>),
 }
 
+// TODO Inline `Expr` in to `RValue`
 #[derive(Clone, Debug)]
 pub struct Expr<'tcx> {
     pub kind: ExprKind<'tcx>,
