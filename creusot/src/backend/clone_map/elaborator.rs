@@ -24,7 +24,6 @@ use crate::{
     },
     ctx::*,
     translation::{
-        fmir::LocalDecls,
         pearlite::{normalize, Term},
         specification::PreContract,
     },
