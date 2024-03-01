@@ -12,9 +12,7 @@ use crate::{
     fmir::{BorrowKind, Operand},
     translation::{
         binop_to_binop,
-        fmir::{
-            self, Block, Branches, Expr, ExprKind, LocalDecls, Place, RValue, Statement, Terminator,
-        },
+        fmir::{self, Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
         function::promoted,
         unop_to_unop,
     },
@@ -23,7 +21,7 @@ use crate::{
 use rustc_hir::{def_id::DefId, Unsafety};
 use rustc_middle::{
     mir::{BasicBlock, BinOp, ProjectionElem},
-    ty::{GenericArgsRef, TyKind},
+    ty::{GenericArgsRef, Ty, TyKind},
 };
 use rustc_span::{Span, DUMMY_SP};
 use rustc_type_ir::{IntTy, UintTy};
@@ -310,29 +308,30 @@ impl<'tcx> Operand<'tcx> {
     }
 }
 
-impl<'tcx> Expr<'tcx> {
+impl<'tcx> RValue<'tcx> {
     pub(crate) fn to_why<N: Namer<'tcx>>(
         self,
         ctx: &mut Why3Generator<'tcx>,
         names: &mut N,
         locals: &LocalDecls<'tcx>,
+        ty: Ty<'tcx>,
     ) -> Exp {
-        let e = match self.kind {
-            ExprKind::Operand(op) => op.to_why(ctx, names, locals),
-            ExprKind::BinOp(BinOp::BitAnd, l, r) if l.ty(ctx.tcx, locals).is_bool() => {
+        let e = match self {
+            RValue::Operand(op) => op.to_why(ctx, names, locals),
+            RValue::BinOp(BinOp::BitAnd, l, r) if l.ty(ctx.tcx, locals).is_bool() => {
                 l.to_why(ctx, names, locals).lazy_and(r.to_why(ctx, names, locals))
             }
-            ExprKind::BinOp(BinOp::Eq, l, r) if l.ty(ctx.tcx, locals).is_bool() => {
+            RValue::BinOp(BinOp::Eq, l, r) if l.ty(ctx.tcx, locals).is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
                 Exp::qvar(QName::from_string("Bool.eqb").unwrap())
                     .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
-            ExprKind::BinOp(BinOp::Ne, l, r) if l.ty(ctx.tcx, locals).is_bool() => {
+            RValue::BinOp(BinOp::Ne, l, r) if l.ty(ctx.tcx, locals).is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
                 Exp::qvar(QName::from_string("Bool.neqb").unwrap())
                     .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
-            ExprKind::BinOp(op, l, r) => {
+            RValue::BinOp(op, l, r) => {
                 let ty = l.ty(ctx.tcx, locals);
                 // Hack
                 translate_ty(ctx, names, DUMMY_SP, ty);
@@ -343,20 +342,20 @@ impl<'tcx> Expr<'tcx> {
                     Box::new(r.to_why(ctx, names, locals)),
                 )
             }
-            ExprKind::UnaryOp(op, arg) => Exp::UnaryOp(
+            RValue::UnaryOp(op, arg) => Exp::UnaryOp(
                 unop_to_unop(arg.ty(ctx.tcx, locals), op),
                 Box::new(arg.to_why(ctx, names, locals)),
             ),
-            ExprKind::Constructor(id, subst, args) => {
+            RValue::Constructor(id, subst, args) => {
                 let args = args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
 
                 let ctor = names.constructor(id, subst);
                 Exp::Constructor { ctor, args }
             }
-            ExprKind::Tuple(f) => {
+            RValue::Tuple(f) => {
                 Exp::Tuple(f.into_iter().map(|f| f.to_why(ctx, names, locals)).collect())
             }
-            ExprKind::Cast(e, source, target) => {
+            RValue::Cast(e, source, target) => {
                 let to_int = match source.kind() {
                     TyKind::Int(ity) => {
                         names.import_prelude_module(int_to_prelude(*ity));
@@ -387,14 +386,14 @@ impl<'tcx> Expr<'tcx> {
 
                 from_int.app_to(to_int.app_to(e.to_why(ctx, names, locals)))
             }
-            ExprKind::Len(pl) => {
+            RValue::Len(pl) => {
                 let len_call = Exp::qvar(QName::from_string("Slice.length").unwrap())
                     .app_to(pl.to_why(ctx, names, locals));
                 len_call
             }
-            ExprKind::Array(fields) => {
+            RValue::Array(fields) => {
                 let id = Ident::build("__arr_temp");
-                let ty = translate_ty(ctx, names, DUMMY_SP, self.ty);
+                let ty = translate_ty(ctx, names, DUMMY_SP, ty);
 
                 let len = fields.len();
 
@@ -423,36 +422,37 @@ impl<'tcx> Expr<'tcx> {
                     )),
                 }
             }
-            ExprKind::Repeat(e, len) => Exp::qvar(QName::from_string("Slice.create").unwrap())
+            RValue::Repeat(e, len) => Exp::qvar(QName::from_string("Slice.create").unwrap())
                 .app_to(len.to_why(ctx, names, locals))
                 .app_to(Exp::FnLit(Box::new(e.to_why(ctx, names, locals)))),
+            RValue::Ghost(t) => lower_pure(ctx, names, &t),
+            RValue::Borrow(_, _) => todo!(),
         };
 
-        if self.span != DUMMY_SP {
-            ctx.attach_span(self.span, e)
-        } else {
-            e
-        }
+        e
     }
 
+    /// Gather the set of places which are moved out of by an expression
     fn invalidated_places(&self, places: &mut Vec<fmir::Place<'tcx>>) {
-        match &self.kind {
-            ExprKind::Operand(Operand::Move(p)) => places.push(p.clone()),
-            ExprKind::Operand(_) => {}
-            ExprKind::BinOp(_, l, r) => {
+        match &self {
+            RValue::Operand(Operand::Move(p)) => places.push(p.clone()),
+            RValue::Operand(_) => {}
+            RValue::BinOp(_, l, r) => {
                 l.invalidated_places(places);
                 r.invalidated_places(places)
             }
-            ExprKind::UnaryOp(_, e) => e.invalidated_places(places),
-            ExprKind::Constructor(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
-            ExprKind::Cast(e, _, _) => e.invalidated_places(places),
-            ExprKind::Tuple(es) => es.iter().for_each(|e| e.invalidated_places(places)),
-            ExprKind::Len(e) => e.invalidated_places(places),
-            ExprKind::Array(f) => f.iter().for_each(|f| f.invalidated_places(places)),
-            ExprKind::Repeat(e, len) => {
+            RValue::UnaryOp(_, e) => e.invalidated_places(places),
+            RValue::Constructor(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
+            RValue::Cast(e, _, _) => e.invalidated_places(places),
+            RValue::Tuple(es) => es.iter().for_each(|e| e.invalidated_places(places)),
+            RValue::Len(e) => e.invalidated_places(places),
+            RValue::Array(f) => f.iter().for_each(|f| f.invalidated_places(places)),
+            RValue::Repeat(e, len) => {
                 e.invalidated_places(places);
                 len.invalidated_places(places)
             }
+            RValue::Ghost(_) => {}
+            RValue::Borrow(_, _) => {}
         }
     }
 }
@@ -703,14 +703,10 @@ impl<'tcx> Statement<'tcx> {
                     place::create_assign_inner(ctx, names, locals, &rhs, reassign, span),
                 ]
             }
-            Statement::Assignment(lhs, RValue::Ghost(rhs), span) => {
-                let ghost = lower_pure(ctx, names, &rhs);
-                vec![place::create_assign_inner(ctx, names, locals, &lhs, ghost, span)]
-            }
-            Statement::Assignment(lhs, RValue::Expr(rhs), span) => {
+            Statement::Assignment(lhs, rhs, span) => {
                 let mut invalid = Vec::new();
                 rhs.invalidated_places(&mut invalid);
-                let rhs = rhs.to_why(ctx, names, locals);
+                let rhs = rhs.to_why(ctx, names, locals, lhs.ty(ctx.tcx, locals));
                 let mut exps =
                     vec![place::create_assign_inner(ctx, names, locals, &lhs, rhs, span)];
                 invalidate_places(ctx, names, locals, span, invalid, &mut exps);

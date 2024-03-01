@@ -111,16 +111,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 if self.is_box_new(fun_def_id) {
                     assert_eq!(func_args.len(), 1);
 
-                    let arg_ty = func_args[0].ty(self.tcx, &self.vars);
-                    self.emit_assignment(
-                        &loc,
-                        RValue::Expr(Expr {
-                            kind: ExprKind::Operand(func_args.remove(0)),
-                            ty: arg_ty,
-                            span,
-                        }),
-                        span,
-                    );
+                    self.emit_assignment(&loc, RValue::Operand(func_args.remove(0)), span);
                 } else {
                     let (fun_def_id, subst) =
                         resolve_function(self.ctx, self.param_env(), fun_def_id, subst, span);
