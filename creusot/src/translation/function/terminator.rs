@@ -1,4 +1,4 @@
-use super::BodyTranslator;
+use super::{BodyId, BodyTranslator};
 use crate::{
     ctx::TranslationCtx,
     fmir,
@@ -18,7 +18,8 @@ use rustc_infer::{
 use rustc_middle::{
     mir::{
         self, AssertKind, BasicBlock, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo,
-        StatementKind, SwitchTargets, TerminatorKind, TerminatorKind::*,
+        StatementKind, SwitchTargets,
+        TerminatorKind::{self, *},
     },
     ty::{self, GenericArgKind, GenericArgsRef, ParamEnv, Predicate, Ty, TyKind},
 };
@@ -32,7 +33,7 @@ use std::collections::HashMap;
 // rather than switching on discriminant since WhyML doesn't have integer
 // patterns in match expressions.
 
-impl<'tcx> BodyTranslator<'_, 'tcx> {
+impl<'tcx> BodyTranslator<'_, 'tcx, '_> {
     pub(crate) fn translate_terminator(
         &mut self,
         terminator: &mir::Terminator<'tcx>,
@@ -40,7 +41,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
     ) {
         let span = terminator.source_info.span;
         match &terminator.kind {
-            Goto { target } => self.emit_terminator(mk_goto(*target)),
+            Goto { target } => self.emit_goto(*target),
             SwitchInt { discr, targets, .. } => {
                 let real_discr = discriminator_for_switch(&self.body.basic_blocks[location.block])
                     .map(Operand::Move)
@@ -60,7 +61,24 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             UnwindTerminate(_) => {
                 self.emit_terminator(Terminator::Abort(terminator.source_info.span))
             }
-            Return => self.emit_terminator(Terminator::Return),
+            Return => {
+                if let Some((bb, dest_place)) = self.ghost_closure_return.take() {
+                    let return_value =
+                        self.translate_operand(&Operand::Move(Place::return_place()));
+                    let return_type = return_value.ty(self.tcx, &self.vars);
+                    let return_value =
+                        Expr { kind: ExprKind::Operand(return_value), ty: return_type, span };
+                    self.emit_statement(fmir::Statement::Assignment(
+                        dest_place,
+                        RValue::Expr(Expr::from(return_value)),
+                        span,
+                    ));
+                    assert!(self.current_block.1.is_none());
+                    self.current_block.1 = Some(fmir::Terminator::Goto(bb))
+                } else {
+                    self.emit_terminator(Terminator::Return)
+                }
+            }
             Unreachable => self.emit_terminator(Terminator::Abort(terminator.source_info.span)),
             Call { func, args, destination, target, .. } => {
                 if target.is_none() {
@@ -77,7 +95,89 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     assertion.subst(&inv_subst(self.body, &self.locals, terminator.source_info));
                     self.check_ghost_term(&assertion, location);
                     self.emit_ghost_assign(*destination, assertion, span);
-                    self.emit_terminator(Terminator::Goto(target.unwrap()));
+                    self.emit_goto(target.unwrap());
+                    return;
+                }
+
+                if self.tcx.is_diagnostic_item(Symbol::intern("ghost_from_fn"), fun_def_id) {
+                    let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() else { panic!() };
+                    let TyKind::Closure(def_id, _) = ty.kind() else { panic!() };
+                    debug_assert!(self.ghosts.remove(def_id));
+
+                    // Check that all captures implement `Ghost`
+                    let ghost_trait_id =
+                        self.tcx.get_diagnostic_item(Symbol::intern("ghost_trait")).unwrap();
+                    let param_env = self.tcx.param_env(def_id);
+                    let captures = self.ctx.closure_captures(def_id.expect_local());
+                    for capture in captures.into_iter().rev() {
+                        let copy_allowed = match capture.info.capture_kind {
+                            ty::UpvarCapture::ByRef(
+                                ty::BorrowKind::MutBorrow | ty::BorrowKind::UniqueImmBorrow,
+                            ) => false,
+                            _ => true,
+                        };
+                        let place_ty = capture.place.ty();
+                        let ghost_trait: ty::TraitRef<'tcx> =
+                            ty::TraitRef::new(self.tcx, ghost_trait_id, std::iter::once(place_ty));
+                        let selection = self.ctx.codegen_select_candidate((param_env, ghost_trait));
+
+                        let is_copy =
+                            copy_allowed && place_ty.is_copy_modulo_regions(self.tcx, param_env);
+
+                        if selection.is_err() && !is_copy {
+                            self.ctx
+                                .error(
+                                    capture.get_path_span(self.tcx),
+                                    &format!(
+                                        "not a ghost variable: {}",
+                                        capture.var_ident.as_str()
+                                    ),
+                                )
+                                .span_note(
+                                    capture.var_ident.span,
+                                    String::from("variable defined here"),
+                                )
+                                .emit();
+                        }
+                    }
+
+                    // Inlines the ghost closure's body
+
+                    let ghost_closure_expr = self.translate_operand(&args[0]);
+                    let ghost_body_id = BodyId { def_id: def_id.expect_local(), promoted: None };
+                    let ghost_body = self.ctx.body(ghost_body_id).clone();
+                    let ghost_closure_ty = ghost_closure_expr.ty(self.tcx, &self.vars);
+                    let ghost_return = Some((target.unwrap(), self.translate_place(*destination)));
+
+                    let mut new_translator = BodyTranslator::build_context(
+                        self.ctx.tcx,
+                        self.ctx,
+                        &ghost_body,
+                        ghost_body_id,
+                        self.vars,
+                        self.fresh_id,
+                        self.past_blocks,
+                        ghost_return,
+                        *self.fresh_id,
+                    );
+                    let entry_point = BasicBlock::from_usize(*new_translator.fresh_id);
+                    *new_translator.fresh_id += ghost_body.basic_blocks.len();
+
+                    // TODO: Use the `destination` place variable rather than `_0`
+                    new_translator.translate_body();
+                    let ghost_closure_arg = new_translator.ghost_closure_arg.unwrap();
+                    // TODO: Use `ghost_closure_expr` directly in the closure's translation
+                    self.emit_statement(fmir::Statement::Assignment(
+                        fmir::Place { local: ghost_closure_arg, projection: Vec::new() },
+                        RValue::Expr(Expr {
+                            kind: ExprKind::Operand(ghost_closure_expr),
+                            ty: ghost_closure_ty,
+                            span,
+                        }),
+                        span,
+                    ));
+                    self.emit_goto(entry_point);
+
                     return;
                 }
 
@@ -138,7 +238,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     ));
                 };
 
-                self.emit_terminator(Terminator::Goto(bb));
+                self.emit_goto(bb);
             }
             Assert { cond, expected, msg, target, unwind: _ } => {
                 let msg = self.get_explanation(msg);
@@ -166,16 +266,14 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     };
                 }
                 self.emit_statement(Statement::Assertion { cond, msg });
-                self.emit_terminator(mk_goto(*target))
+                self.emit_goto(*target)
             }
 
-            FalseEdge { real_target, .. } => self.emit_terminator(mk_goto(*real_target)),
+            FalseEdge { real_target, .. } => self.emit_goto(*real_target),
 
             // TODO: Do we really need to do anything more?
-            Drop { target, .. } => self.emit_terminator(mk_goto(*target)),
-            FalseUnwind { real_target, .. } => {
-                self.emit_terminator(mk_goto(*real_target));
-            }
+            Drop { target, .. } => self.emit_goto(*target),
+            FalseUnwind { real_target, .. } => self.emit_goto(*real_target),
             UnwindResume | Yield { .. } | GeneratorDrop | InlineAsm { .. } => {
                 unreachable!("{:?}", terminator.kind)
             }
@@ -332,8 +430,4 @@ pub(crate) fn make_switch<'tcx>(
         }
         ty => unimplemented!("{ty:?}"),
     }
-}
-
-fn mk_goto<'tcx>(bb: BasicBlock) -> Terminator<'tcx> {
-    Terminator::Goto(bb)
 }

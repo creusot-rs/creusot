@@ -421,6 +421,18 @@ pub fn snapshot(assertion: TS1) -> TS1 {
     })
 }
 
+#[proc_macro]
+pub fn ghost(body: TS1) -> TS1 {
+    let body = proc_macro2::TokenStream::from(body);
+    TS1::from(quote! {
+        {
+            ::creusot_contracts::__stubs::ghost_from_fn({
+                #[creusot::spec::ghost] || { #body }
+            })
+        }
+    })
+}
+
 struct LogicItem {
     vis: Visibility,
     defaultness: Option<Token![default]>,

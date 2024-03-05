@@ -26,8 +26,7 @@ pub(crate) fn translate_promoted<'tcx>(
     body_id: BodyId,
 ) -> CreusotResult<(PreSignature<'tcx>, fmir::Body<'tcx>)> {
     let body = ctx.body(body_id).clone();
-    let func_translator = BodyTranslator::build_context(ctx.tcx, ctx, &body, body_id);
-    let fmir = func_translator.translate();
+    let fmir = BodyTranslator::to_fmir(ctx.tcx, ctx, &body, body_id);
 
     let sig = promoted_signature(&body);
 

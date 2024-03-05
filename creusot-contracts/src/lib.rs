@@ -20,7 +20,7 @@ mod macros {
     /// A post-condition of a function or trait item
     pub use creusot_contracts_proc::ensures;
 
-    pub use creusot_contracts_proc::snapshot;
+    pub use creusot_contracts_proc::{ghost, snapshot};
 
     /// A loop invariant
     /// The first argument should be a name for the invariant
@@ -118,7 +118,7 @@ mod macros {
     /// A post-condition of a function or trait item
     pub use creusot_contracts_dummy::ensures;
 
-    pub use creusot_contracts_dummy::snapshot;
+    pub use creusot_contracts_dummy::{ghost, snapshot};
 
     /// A loop invariant
     /// The first argument should be a name for the invariant
@@ -221,7 +221,15 @@ pub mod std;
 pub mod num_rational;
 
 #[cfg(creusot)]
+pub mod ghost;
+
+#[cfg(creusot)]
 pub mod snapshot;
+
+#[cfg(not(creusot))]
+pub mod ghost {
+    pub trait Ghost: std::ops::Deref {}
+}
 
 #[cfg(not(creusot))]
 pub mod snapshot {
@@ -253,6 +261,7 @@ pub mod well_founded;
 
 // We add some common things at the root of the creusot-contracts library
 pub use crate::{
+    ghost::Ghost,
     logic::{IndexLogic as _, Int, OrdLogic, Seq},
     macros::*,
     model::{DeepModel, ShallowModel},
