@@ -34,7 +34,7 @@ mod macros {
     /// A post-condition of a function or trait item
     pub use base_macros::ensures;
 
-    pub use base_macros::snapshot;
+    pub use base_macros::{ghost, snapshot};
 
     /// Indicate that the function terminates: fullfilling the `requires` clauses
     /// ensures that this function will not loop indefinitively.
@@ -167,7 +167,15 @@ pub mod std;
 pub mod num_rational;
 
 #[cfg(creusot)]
+pub mod ghost;
+
+#[cfg(creusot)]
 pub mod snapshot;
+
+#[cfg(not(creusot))]
+pub mod ghost {
+    pub trait Ghost: std::ops::Deref {}
+}
 
 #[cfg(not(creusot))]
 pub mod snapshot {
@@ -200,6 +208,7 @@ pub mod well_founded;
 // We add some common things at the root of the creusot-contracts library
 mod base_prelude {
     pub use crate::{
+        ghost::Ghost,
         logic::{IndexLogic as _, Int, OrdLogic, Seq},
         model::{DeepModel, ShallowModel},
         resolve::Resolve,

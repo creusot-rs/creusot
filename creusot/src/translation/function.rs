@@ -19,7 +19,7 @@ use crate::{
     },
     util::{self, PreSignature},
 };
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use rustc_borrowck::borrow_set::BorrowSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
@@ -39,18 +39,15 @@ use std::{collections::HashMap, iter, rc::Rc};
 mod statement;
 pub(crate) mod terminator;
 
+/// Translate a function from rustc's MIR to fMIR.
 pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, body_id: BodyId) -> fmir::Body<'tcx> {
     let body = ctx.body(body_id).clone();
 
-    // crate::debug::debug(ctx.tcx, ctx.tcx.optimized_mir(def_id));
-    // crate::debug::debug(ctx.tcx, &body);
-
-    let func_translator = BodyTranslator::build_context(ctx.tcx, ctx, &body, body_id);
-    func_translator.translate()
+    BodyTranslator::to_fmir(ctx.tcx, ctx, &body, body_id)
 }
 
 // Split this into several sub-contexts: Core, Analysis, Results?
-pub struct BodyTranslator<'body, 'tcx> {
+pub struct BodyTranslator<'body, 'tcx, 'temp> {
     pub tcx: TyCtxt<'tcx>,
 
     body_id: BodyId,
@@ -59,19 +56,19 @@ pub struct BodyTranslator<'body, 'tcx> {
 
     resolver: Option<EagerResolver<'body, 'tcx>>,
 
-    // Spec / Snapshot variables
+    /// Spec / Snapshot variables
     erased_locals: BitSet<Local>,
 
-    // Current block being generated
+    /// Current block being generated
     current_block: (Vec<fmir::Statement<'tcx>>, Option<fmir::Terminator<'tcx>>),
 
-    past_blocks: IndexMap<BasicBlock, fmir::Block<'tcx>>,
+    past_blocks: &'temp mut IndexMap<BasicBlock, fmir::Block<'tcx>>,
 
     // Type translation context
     ctx: &'body mut TranslationCtx<'tcx>,
 
     // Fresh BlockId
-    fresh_id: usize,
+    fresh_id: &'temp mut usize,
 
     invariants: IndexMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>,
 
@@ -79,24 +76,71 @@ pub struct BodyTranslator<'body, 'tcx> {
     assertions: IndexMap<DefId, Term<'tcx>>,
     /// Map of the `snapshot!` blocks to their translated version.
     snapshots: IndexMap<DefId, Term<'tcx>>,
+    /// All of the `ghost!` blocks.
+    ghosts: IndexSet<DefId>,
+    /// If the current function is a `ghost!` closure, it needs to be inlined.
+    ///
+    /// So we keep
+    /// - the return address at the call site, so that we can replace
+    /// `Terminator::Return` with this.
+    /// - the name (in the parent function) of the return place, so that we can assign
+    /// the return value to it.
+    ghost_closure_return: Option<(BasicBlock, fmir::Place<'tcx>)>,
+    /// If the current function is a `ghost!` closure, this is the (fmir) symbol
+    /// of its argument.
+    ghost_closure_arg: Option<Symbol>,
+    /// Offset to add to each use of a `BasicBlock`
+    ///
+    /// This exists to allow the inlining of ghost closures.
+    basic_block_offset: usize,
 
     borrows: Option<Rc<BorrowSet<'tcx>>>,
 
     // Translated locals
     locals: HashMap<Local, Symbol>,
 
-    vars: LocalDecls<'tcx>,
+    vars: &'temp mut LocalDecls<'tcx>,
 }
 
-impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
+impl<'body, 'tcx, 'vars> BodyTranslator<'body, 'tcx, 'vars> {
+    /// Translate a function body to fmir
+    fn to_fmir(
+        tcx: TyCtxt<'tcx>,
+        ctx: &'body mut TranslationCtx<'tcx>,
+        body: &'body Body<'tcx>,
+        body_id: BodyId,
+    ) -> fmir::Body<'tcx> {
+        let mut vars = LocalDecls::with_capacity(body.local_decls.len());
+        let ghost_closure_return = None;
+        let mut fresh_id = body.basic_blocks.len();
+        let mut past_blocks = IndexMap::new();
+        let this = BodyTranslator::build_context(
+            tcx,
+            ctx,
+            body,
+            body_id,
+            &mut vars,
+            &mut fresh_id,
+            &mut past_blocks,
+            ghost_closure_return,
+            0,
+        );
+        this.translate()
+    }
+
     fn build_context(
         tcx: TyCtxt<'tcx>,
         ctx: &'body mut TranslationCtx<'tcx>,
         body: &'body Body<'tcx>,
         body_id: BodyId,
+        vars: &'vars mut IndexMap<Symbol, LocalDecl<'tcx>>,
+        fresh_id: &'vars mut usize,
+        past_blocks: &'vars mut IndexMap<BasicBlock, fmir::Block<'tcx>>,
+        ghost_closure_return: Option<(BasicBlock, fmir::Place<'tcx>)>,
+        basic_block_offset: usize,
     ) -> Self {
         let invariants = corrected_invariant_names_and_locations(ctx, &body);
-        let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, &body);
+        let SpecClosures { assertions, snapshots, ghosts } = SpecClosures::collect(ctx, &body);
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
@@ -123,7 +167,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             Some(_) => (None, None),
         };
 
-        let (vars, locals) = translate_vars(&body, &erased_locals);
+        let (locals, ghost_closure_arg) =
+            translate_vars(&body, &erased_locals, vars, ghost_closure_return.is_some());
 
         BodyTranslator {
             tcx,
@@ -134,12 +179,16 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             vars,
             erased_locals,
             current_block: (Vec::new(), None),
-            past_blocks: Default::default(),
+            past_blocks,
             ctx,
-            fresh_id: body.basic_blocks.len(),
+            fresh_id,
             invariants,
             assertions,
             snapshots,
+            ghosts,
+            ghost_closure_return,
+            ghost_closure_arg,
+            basic_block_offset,
             borrows,
         }
     }
@@ -151,9 +200,14 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         assert!(self.assertions.is_empty(), "unused assertions");
         assert!(self.snapshots.is_empty(), "unused snapshots");
+        assert!(self.ghosts.is_empty(), "unused ghosts");
         assert!(self.invariants.is_empty(), "unused invariants");
 
-        fmir::Body { locals: self.vars, arg_count, blocks: self.past_blocks }
+        fmir::Body {
+            locals: std::mem::take(self.vars),
+            arg_count,
+            blocks: std::mem::take(self.past_blocks),
+        }
     }
 
     fn translate_body(&mut self) {
@@ -220,7 +274,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 terminator: std::mem::replace(&mut self.current_block.1, None).unwrap(),
             };
 
-            self.past_blocks.insert(bb, block);
+            self.past_blocks.insert(bb + self.basic_block_offset, block);
         }
     }
 
@@ -249,6 +303,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         assert!(self.current_block.1.is_none());
 
         self.current_block.1 = Some(t);
+    }
+
+    fn emit_goto(&mut self, bb: BasicBlock) {
+        assert!(self.current_block.1.is_none());
+        self.current_block.1 = Some(fmir::Terminator::Goto(bb + self.basic_block_offset))
     }
 
     /// # Parameters
@@ -332,8 +391,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn fresh_block_id(&mut self) -> BasicBlock {
-        let id = BasicBlock::from_usize(self.fresh_id);
-        self.fresh_id += 1;
+        let id = BasicBlock::from_usize(*self.fresh_id);
+        *self.fresh_id += 1;
         id
     }
 
@@ -393,16 +452,24 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 }
 
+/// # Returns
+/// - The mapping of mir locals to the symbol used in fmir.
+/// - If `is_inlined` is `true`, the symbol of the inlined function argument (only
+/// functions with 1 arg are inlined).
+///
+/// Additionally, this adds [`LocalDecl`] information about the new fmir symbols to `vars`.
 fn translate_vars<'tcx>(
     body: &Body<'tcx>,
     erased_locals: &BitSet<Local>,
-) -> (LocalDecls<'tcx>, HashMap<Local, Symbol>) {
-    let mut vars = LocalDecls::with_capacity(body.local_decls.len());
+    vars: &mut LocalDecls<'tcx>,
+    is_inlined: bool,
+) -> (HashMap<Local, Symbol>, Option<Symbol>) {
     let mut locals = HashMap::new();
 
     use mir::VarDebugInfoContents::Place;
 
     let mut names = HashMap::new();
+    let mut inlined_arg = None;
     for (loc, d) in body.local_decls.iter_enumerated() {
         if erased_locals.contains(loc) {
             continue;
@@ -431,18 +498,32 @@ fn translate_vars<'tcx>(
             sym
         };
 
-        locals.insert(loc, sym.symbol());
+        let symbol = sym.symbol();
+        let mut i = 0;
+        let mut s = symbol;
+        while vars.contains_key(&s) {
+            s = Symbol::intern(&format!("{}_{i}", symbol.as_str()));
+            i += 1;
+        }
+        locals.insert(loc, s);
+        let is_arg = 0 < loc.index() && loc.index() <= body.arg_count;
+        if is_arg && is_inlined {
+            if inlined_arg.is_some() {
+                unreachable!()
+            }
+            inlined_arg = Some(s);
+        }
         vars.insert(
-            sym.symbol(),
+            s,
             LocalDecl {
                 span: d.source_info.span,
                 ty: d.ty,
                 temp: !d.is_user_variable(),
-                arg: 0 < loc.index() && loc.index() <= body.arg_count,
+                arg: !is_inlined && is_arg,
             },
         );
     }
-    (vars, locals)
+    (locals, inlined_arg)
 }
 
 #[derive(Clone)]

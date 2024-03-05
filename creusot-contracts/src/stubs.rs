@@ -63,6 +63,11 @@ pub fn snapshot_from_fn<T: ?Sized, F: Fn() -> crate::Snapshot<T>>(_: F) -> crate
     panic!()
 }
 
+#[rustc_diagnostic_item = "ghost_from_fn"]
+pub fn ghost_from_fn<T: crate::Ghost, F: FnOnce() -> T>(_: F) -> T {
+    panic!()
+}
+
 #[creusot::no_translate]
 #[creusot::builtins = "prelude.prelude.Mapping.from_fn"]
 pub fn mapping_from_fn<A, B, F: FnOnce(A) -> B>(_: F) -> crate::logic::Mapping<A, B> {
