@@ -203,8 +203,6 @@ pub type LocalDecls<'tcx> = IndexMap<Symbol, LocalDecl<'tcx>>;
 
 #[derive(Clone, Debug)]
 pub struct LocalDecl<'tcx> {
-    // Original MIR local
-    pub(crate) mir_local: Local,
     pub(crate) span: Span,
     pub(crate) ty: Ty<'tcx>,
     // Is this a MIR temporary?
