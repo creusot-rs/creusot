@@ -70,6 +70,8 @@ mod macros {
     /// - `Deque::push_front`, `Deque::push_back`, `Deque::with_capacity`
     pub use base_macros::pure;
 
+    pub use base_macros::Ghost;
+
     /// A loop invariant
     /// The first argument should be a name for the invariant
     /// The second argument is the Pearlite expression for the loop invariant
