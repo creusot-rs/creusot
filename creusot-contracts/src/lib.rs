@@ -22,6 +22,8 @@ mod macros {
 
     pub use creusot_contracts_proc::{ghost, snapshot};
 
+    pub use creusot_contracts_proc::Ghost;
+
     /// A loop invariant
     /// The first argument should be a name for the invariant
     /// The second argument is the Pearlite expression for the loop invariant
@@ -119,6 +121,8 @@ mod macros {
     pub use creusot_contracts_dummy::ensures;
 
     pub use creusot_contracts_dummy::{ghost, snapshot};
+
+    pub use creusot_contracts_dummy::Ghost;
 
     /// A loop invariant
     /// The first argument should be a name for the invariant
