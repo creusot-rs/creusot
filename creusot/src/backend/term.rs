@@ -128,13 +128,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 };
                 Exp::UnaryOp(op, Box::new(self.lower_term(arg)))
             }
-            TermKind::Call {
-                id,
-                subst,
-                // fun: box Term { kind: TermKind::Item(id, subst), .. },
-                args,
-                ..
-            } => {
+            TermKind::Call { id, subst, args, .. } => {
                 let mut args: Vec<_> = args.into_iter().map(|arg| self.lower_term(arg)).collect();
 
                 if args.is_empty() {

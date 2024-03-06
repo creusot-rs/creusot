@@ -677,12 +677,7 @@ fn closure_resolve<'tcx>(
         if let Some((id, subst)) = resolve_predicate_of(ctx, param_env, ty) {
             resolve = Term {
                 ty: ctx.types.bool,
-                kind: TermKind::Call {
-                    id: id.into(),
-                    subst,
-                    fun: Box::new(Term::item(ctx.tcx, id, subst)),
-                    args: vec![proj],
-                },
+                kind: TermKind::Call { id: id.into(), subst, args: vec![proj] },
                 span: DUMMY_SP,
             }
             .conj(resolve);
