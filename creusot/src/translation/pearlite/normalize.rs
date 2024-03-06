@@ -22,15 +22,17 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
     fn visit_mut_term(&mut self, term: &mut Term<'tcx>) {
         super_visit_mut_term(term, self);
         match &mut term.kind {
-            TermKind::Call {
-                id,
-                subst,
-                fun: box Term { kind: TermKind::Item(fid, fsubst), .. },
-                args,
-            } => {
-                *id = *fid;
-                *subst = fsubst;
-
+            TermKind::Call { id, subst, args } => {
+                let method = if self.tcx.trait_of_item(*id).is_some() {
+                    resolve_opt(self.tcx, self.param_env, *id, subst).unwrap_or_else(|| {
+                        panic!("could not resolve trait instance {:?}", (*id, *subst))
+                    })
+                } else {
+                    // TODO dont' do this
+                    (*id, *subst)
+                };
+                *id = method.0;
+                *subst = method.1;
                 *subst = self.tcx.normalize_erasing_regions(self.param_env, *subst);
 
                 if self.tcx.def_path_str(*id) == "std::boxed::Box::<T>::new" {

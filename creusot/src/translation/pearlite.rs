@@ -104,7 +104,6 @@ pub enum TermKind<'tcx> {
     Call {
         id: DefId,
         subst: GenericArgsRef<'tcx>,
-        fun: Box<Term<'tcx>>,
         args: Vec<Term<'tcx>>,
     },
     Constructor {
@@ -388,7 +387,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 };
                 Ok(Term { ty, span, kind: TermKind::Lit(lit) })
             }
-            ExprKind::Call { ty: f_ty, fun, ref args, .. } => {
+            ExprKind::Call { ty: f_ty, ref args, .. } => {
                 use Stub::*;
                 match pearlite_stub(self.ctx.tcx, f_ty) {
                     Some(Forall) => {
@@ -473,7 +472,6 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     }
                     Some(Absurd) => Ok(Term { ty, span, kind: TermKind::Absurd }),
                     None => {
-                        let fun = self.expr_term(fun)?;
                         let args = args
                             .iter()
                             .map(|arg| self.expr_term(*arg))
@@ -484,11 +482,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                             unreachable!("Call on non-function type");
                         };
 
-                        Ok(Term {
-                            ty,
-                            span,
-                            kind: TermKind::Call { id, subst, fun: Box::new(fun), args },
-                        })
+                        Ok(Term { ty, span, kind: TermKind::Call { id, subst, args } })
                     }
                 }
             }
@@ -1004,16 +998,10 @@ pub(crate) fn type_invariant_term<'tcx>(
     let inv_fn_ty = ctx.type_of(inv_fn_did).instantiate(ctx.tcx, inv_fn_substs);
     assert!(matches!(inv_fn_ty.kind(), TyKind::FnDef(id, _) if id == &inv_fn_did));
 
-    let fun = Term { ty: inv_fn_ty, span, kind: TermKind::Item(inv_fn_did, inv_fn_substs) };
     Some(Term {
         ty: ctx.fn_sig(inv_fn_did).skip_binder().output().skip_binder(),
         span,
-        kind: TermKind::Call {
-            id: inv_fn_did,
-            subst: inv_fn_substs,
-            fun: Box::new(fun),
-            args: vec![arg],
-        },
+        kind: TermKind::Call { id: inv_fn_did, subst: inv_fn_substs, args: vec![arg] },
     })
 }
 
@@ -1153,8 +1141,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         TermKind::Unary { op: _, arg } => visitor.visit_term(&*arg),
         TermKind::Forall { binder: _, body } => visitor.visit_term(&*body),
         TermKind::Exists { binder: _, body } => visitor.visit_term(&*body),
-        TermKind::Call { id: _, subst: _, fun, args } => {
-            visitor.visit_term(&*fun);
+        TermKind::Call { id: _, subst: _, args } => {
             args.iter().for_each(|a| visitor.visit_term(&*a))
         }
         TermKind::Constructor { typ: _, variant: _, fields } => {
@@ -1208,8 +1195,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         TermKind::Unary { op: _, arg } => visitor.visit_mut_term(&mut *arg),
         TermKind::Forall { binder: _, body } => visitor.visit_mut_term(&mut *body),
         TermKind::Exists { binder: _, body } => visitor.visit_mut_term(&mut *body),
-        TermKind::Call { id: _, subst: _, fun, args } => {
-            visitor.visit_mut_term(&mut *fun);
+        TermKind::Call { id: _, subst: _, args } => {
             args.iter_mut().for_each(|a| visitor.visit_mut_term(&mut *a))
         }
         TermKind::Constructor { typ: _, variant: _, fields } => {
@@ -1263,17 +1249,8 @@ impl<'tcx> Term<'tcx> {
     ) -> Self {
         let ty = tcx.type_of(def_id).instantiate(tcx, subst);
         let result = ty.fn_sig(tcx).skip_binder().output();
-        let fun = Term {
-            ty: tcx.type_of(def_id).instantiate(tcx, subst),
-            kind: TermKind::Item(def_id, subst),
-            span: DUMMY_SP,
-        };
 
-        Term {
-            ty: result,
-            span: DUMMY_SP,
-            kind: TermKind::Call { id: def_id, subst, fun: Box::new(fun.clone()), args },
-        }
+        Term { ty: result, span: DUMMY_SP, kind: TermKind::Call { id: def_id, subst, args } }
     }
 
     pub(crate) fn var(sym: Symbol, ty: Ty<'tcx>) -> Self {
@@ -1321,14 +1298,6 @@ impl<'tcx> Term<'tcx> {
                     span: DUMMY_SP,
                 },
             },
-        }
-    }
-
-    pub(crate) fn item(tcx: TyCtxt<'tcx>, id: DefId, subst: GenericArgsRef<'tcx>) -> Self {
-        Term {
-            ty: tcx.type_of(id).instantiate(tcx, subst),
-            kind: TermKind::Item(id, subst),
-            span: DUMMY_SP,
         }
     }
 
@@ -1477,8 +1446,7 @@ impl<'tcx> Term<'tcx> {
 
                 body.subst_with_inner(&bound, inv_subst);
             }
-            TermKind::Call { fun, args, .. } => {
-                fun.subst_with_inner(bound, inv_subst);
+            TermKind::Call { args, .. } => {
                 args.iter_mut().for_each(|f| f.subst_with_inner(bound, inv_subst))
             }
             TermKind::Constructor { fields, .. } => {
@@ -1556,8 +1524,7 @@ impl<'tcx> Term<'tcx> {
 
                 body.free_vars_inner(&bound, free);
             }
-            TermKind::Call { fun, args, .. } => {
-                fun.free_vars_inner(bound, free);
+            TermKind::Call { args, .. } => {
                 for arg in args {
                     arg.free_vars_inner(bound, free);
                 }
