@@ -1,10 +1,9 @@
 use creusot_args::options::*;
+use creusot_setup as setup;
 use std::{
     env,
     process::{exit, Command},
 };
-
-pub mod setup;
 
 enum Subcommand {
     // subcommand to pass on to creusot-rustc
