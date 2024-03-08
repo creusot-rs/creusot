@@ -82,7 +82,7 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
                 return translate_ty_inner(trans, ctx, names, span, s[0].expect_ty());
             }
 
-            if Some(def.did()) == ctx.tcx.get_diagnostic_item(Symbol::intern("creusot_int")) {
+            if is_int(ctx.tcx, ty) {
                 names.import_prelude_module(PreludeModule::Int);
                 return MlT::Integer;
             }
@@ -598,13 +598,13 @@ pub(crate) fn build_accessor(
             let mut exp = Exp::Any(field_ty.clone());
             if ix == variant_ix {
                 pat[field_ix] = Pattern::VarP("a".into());
-                exp = Exp::pure_var("a".into());
+                exp = Exp::pure_var("a");
             };
             (Pattern::ConsP(name.clone(), pat), exp)
         })
         .collect();
 
-    let discr_exp = Exp::Match(Box::new(Exp::pure_var("self".into())), branches);
+    let discr_exp = Exp::Match(Box::new(Exp::pure_var("self")), branches);
 
     Decl::Let(LetDecl {
         sig,
@@ -764,6 +764,14 @@ pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(
             names.import_prelude_module(PreludeModule::Float64);
             double_ty()
         }
+    }
+}
+
+pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
+    if let TyKind::Adt(def, _) = ty.kind() {
+        Some(def.did()) == tcx.get_diagnostic_item(Symbol::intern("creusot_int"))
+    } else {
+        false
     }
 }
 
