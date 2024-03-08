@@ -62,8 +62,9 @@ jobs:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
+          ~/.cache/creusot
           target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-cargo-creusot-${{ hashFiles('**/Cargo.lock', 'creusot-setup/src/tools_versions_urls.rs') }}
     - uses: dawidd6/action-download-artifact@v2
       with:
         workflow: why3.yml
@@ -81,9 +82,9 @@ jobs:
     - name: run cargo creusot setup install
       run: |
         cargo run --bin cargo-creusot creusot setup install
-        echo -e "~/.config/creusot/Config.toml:\n"
+        echo -e "\n>> ~/.config/creusot/Config.toml:\n"
         cat ~/.config/creusot/Config.toml
-        echo -e "~/.config/creusot/.why3.conf:\n"
+        echo -e "\n>> ~/.config/creusot/.why3.conf:\n"
         cat ~/.config/creusot/.why3.conf
     - run: cargo test --test why3 "" -- --replay=none --diff-from=origin/master
     - run: cargo test --test why3 "" -- --skip-unstable

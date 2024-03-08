@@ -7,8 +7,10 @@ use std::{
 
 mod config;
 mod tools;
+mod tools_versions_urls;
 use config::{Error::*, *};
 use tools::*;
+use tools_versions_urls::*;
 use ToolsConfig::*;
 
 struct CfgPaths {
