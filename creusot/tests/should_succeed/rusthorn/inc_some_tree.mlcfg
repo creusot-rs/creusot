@@ -35,15 +35,12 @@ module IncSomeTree_Impl0_LemmaSumNonneg_Impl
   val sum0 [#"../inc_some_tree.rs" 21 4 21 23] (self : IncSomeTree_Tree_Type.t_tree) : int
     ensures { result = sum0 self }
     
-  let rec ghost function lemma_sum_nonneg [#"../inc_some_tree.rs" 33 4 33 30] (self : IncSomeTree_Tree_Type.t_tree) : ()
-    ensures { [#"../inc_some_tree.rs" 32 14 32 29] sum0 self >= 0 }
-    variant {[#"../inc_some_tree.rs" 31 15 31 19] self}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../inc_some_tree.rs" 34 8 40 9] match self with
-      | IncSomeTree_Tree_Type.C_Node tl _ tr -> let _ = lemma_sum_nonneg tl in let _ = lemma_sum_nonneg tr in ()
-      | IncSomeTree_Tree_Type.C_Leaf -> ()
-      end
+  constant self  : IncSomeTree_Tree_Type.t_tree
+  function lemma_sum_nonneg [#"../inc_some_tree.rs" 33 4 33 30] (self : IncSomeTree_Tree_Type.t_tree) : ()
+  goal vc_lemma_sum_nonneg : match self with
+    | IncSomeTree_Tree_Type.C_Node tl _ tr -> ([#"../inc_some_tree.rs" 32 14 32 29] sum0 tl >= 0) -> (let _ = lemma_sum_nonneg tl in ([#"../inc_some_tree.rs" 32 14 32 29] sum0 tr >= 0) -> (let _ = lemma_sum_nonneg tr in [#"../inc_some_tree.rs" 32 14 32 29] sum0 self >= 0))
+    | IncSomeTree_Tree_Type.C_Leaf -> [#"../inc_some_tree.rs" 32 14 32 29] sum0 self >= 0
+    end
 end
 module IncSomeTree_Impl0_SumX
   use prelude.UInt32

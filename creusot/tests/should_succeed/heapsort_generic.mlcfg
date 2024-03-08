@@ -127,15 +127,14 @@ module HeapsortGeneric_HeapFragMax_Impl
   val heap_frag0 [#"../heapsort_generic.rs" 15 0 15 66] (s : Seq.seq t) (start : int) (end' : int) : bool
     ensures { result = heap_frag0 s start end' }
     
-  let rec ghost function heap_frag_max [#"../heapsort_generic.rs" 25 0 25 58] (s : Seq.seq t) (i : int) (end' : int) : ()
-    requires {[#"../heapsort_generic.rs" 21 11 21 31] heap_frag0 s 0 end'}
-    requires {[#"../heapsort_generic.rs" 22 11 22 28] 0 <= i /\ i < end'}
-    requires {[#"../heapsort_generic.rs" 25 30 25 31] inv0 s}
-    ensures { [#"../heapsort_generic.rs" 23 10 23 22] le_log0 (Seq.get s i) (Seq.get s 0) }
-    variant {[#"../heapsort_generic.rs" 24 10 24 11] i}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../heapsort_generic.rs" 26 4 28 5] if pure {i > 0} then let b' = parent0 i in heap_frag_max s b' end' else ()
+  constant s  : Seq.seq t
+  constant i  : int
+  constant end'  : int
+  function heap_frag_max [#"../heapsort_generic.rs" 25 0 25 58] (s : Seq.seq t) (i : int) (end' : int) : ()
+  goal vc_heap_frag_max : ([#"../heapsort_generic.rs" 25 30 25 31] inv0 s) -> ([#"../heapsort_generic.rs" 22 11 22 28] 0 <= i /\ i < end') -> ([#"../heapsort_generic.rs" 21 11 21 31] heap_frag0 s 0 end') -> match i > 0 with
+    | True -> ((([#"../heapsort_generic.rs" 25 30 25 31] inv0 s) && ([#"../heapsort_generic.rs" 22 11 22 28] 0 <= parent0 i /\ parent0 i < end') && ([#"../heapsort_generic.rs" 21 11 21 31] heap_frag0 s 0 end')) /\ 0 <= ([#"../heapsort_generic.rs" 24 10 24 11] i) /\ ([#"../heapsort_generic.rs" 24 10 24 11] parent0 i) < ([#"../heapsort_generic.rs" 24 10 24 11] i)) /\ (([#"../heapsort_generic.rs" 23 10 23 22] le_log0 (Seq.get s (parent0 i)) (Seq.get s 0)) -> ([#"../heapsort_generic.rs" 23 10 23 22] le_log0 (Seq.get s i) (Seq.get s 0)))
+    | False -> [#"../heapsort_generic.rs" 23 10 23 22] le_log0 (Seq.get s i) (Seq.get s 0)
+    end
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque

@@ -177,14 +177,11 @@ module C06MapPrecond_Impl1_PreservationInv_Impl
   val preservation0 [#"../06_map_precond.rs" 105 4 105 45] (iter : i) (func : f) : bool
     ensures { result = preservation0 iter func }
     
-  let rec ghost predicate preservation_inv [#"../06_map_precond.rs" 93 4 93 73] (iter : i) (func : f) (produced : Seq.seq item0)
-    requires {[#"../06_map_precond.rs" 93 24 93 28] inv0 iter}
-    requires {[#"../06_map_precond.rs" 93 33 93 37] inv1 func}
-    requires {[#"../06_map_precond.rs" 93 42 93 50] inv2 produced}
-    ensures { [#"../06_map_precond.rs" 92 4 92 83] produced = Seq.empty  -> result = preservation0 iter func }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../06_map_precond.rs" 94 8 101 9] pure {forall i : i . forall b : b . forall f : borrowed f . forall e2 : item0 . forall e1 : item0 . forall s : Seq.seq item0 . inv0 i -> inv3 b -> inv4 f -> inv5 e2 -> inv5 e1 -> inv2 s -> unnest0 func ( * f) -> produces0 iter (Seq.snoc (Seq.snoc s e1) e2) i -> precondition0 ( * f) (e1, Snapshot.new (Seq.(++) produced s)) -> postcondition_mut0 f (e1, Snapshot.new (Seq.(++) produced s)) b -> precondition0 ( ^ f) (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))}
+  constant iter  : i
+  constant func  : f
+  constant produced  : Seq.seq item0
+  predicate preservation_inv [#"../06_map_precond.rs" 93 4 93 73] (iter : i) (func : f) (produced : Seq.seq item0)
+  goal vc_preservation_inv : ([#"../06_map_precond.rs" 93 42 93 50] inv2 produced) -> ([#"../06_map_precond.rs" 93 33 93 37] inv1 func) -> ([#"../06_map_precond.rs" 93 24 93 28] inv0 iter) -> (forall i : i . forall b : b . forall f : borrowed f . forall e2 : item0 . forall e1 : item0 . forall s : Seq.seq item0 . true) /\ ([#"../06_map_precond.rs" 92 4 92 83] produced = Seq.empty  -> ([#"../06_map_precond.rs" 94 8 101 9] forall i : i . forall b : b . forall f : borrowed f . forall e2 : item0 . forall e1 : item0 . forall s : Seq.seq item0 . inv0 i -> inv3 b -> inv4 f -> inv5 e2 -> inv5 e1 -> inv2 s -> unnest0 func ( * f) -> produces0 iter (Seq.snoc (Seq.snoc s e1) e2) i -> precondition0 ( * f) (e1, Snapshot.new (Seq.(++) produced s)) -> postcondition_mut0 f (e1, Snapshot.new (Seq.(++) produced s)) b -> precondition0 ( ^ f) (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))) = preservation0 iter func)
 end
 module C06MapPrecond_Impl0_ProducesRefl_Impl
   type i
@@ -429,12 +426,9 @@ module C06MapPrecond_Impl0_ProducesRefl_Impl
     ensures { result = produces0 self visited succ }
     
   use seq.Seq
-  let rec ghost function produces_refl [#"../06_map_precond.rs" 31 4 31 26] (self : C06MapPrecond_Map_Type.t_map i b f item0) : ()
-    requires {[#"../06_map_precond.rs" 31 21 31 25] inv0 self}
-    ensures { [#"../06_map_precond.rs" 30 14 30 45] produces0 self (Seq.empty ) self }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../06_map_precond.rs" 28 4 28 10] ()
+  constant self  : C06MapPrecond_Map_Type.t_map i b f item0
+  function produces_refl [#"../06_map_precond.rs" 31 4 31 26] (self : C06MapPrecond_Map_Type.t_map i b f item0) : ()
+  goal vc_produces_refl : ([#"../06_map_precond.rs" 31 21 31 25] inv0 self) -> ([#"../06_map_precond.rs" 30 14 30 45] produces0 self (Seq.empty ) self)
 end
 module C06MapPrecond_Impl0_ProducesTrans_Impl
   type i
@@ -688,18 +682,14 @@ module C06MapPrecond_Impl0_ProducesTrans_Impl
   val produces0 [@inline:trivial] [#"../06_map_precond.rs" 43 4 43 67] (self : C06MapPrecond_Map_Type.t_map i b f item0) (visited : Seq.seq b) (succ : C06MapPrecond_Map_Type.t_map i b f item0) : bool
     ensures { result = produces0 self visited succ }
     
-  let rec ghost function produces_trans [#"../06_map_precond.rs" 38 4 38 90] (a : C06MapPrecond_Map_Type.t_map i b f item0) (ab : Seq.seq b) (b : C06MapPrecond_Map_Type.t_map i b f item0) (bc : Seq.seq b) (c : C06MapPrecond_Map_Type.t_map i b f item0) : ()
-    requires {[#"../06_map_precond.rs" 35 15 35 32] produces0 a ab b}
-    requires {[#"../06_map_precond.rs" 36 15 36 32] produces0 b bc c}
-    requires {[#"../06_map_precond.rs" 38 22 38 23] inv0 a}
-    requires {[#"../06_map_precond.rs" 38 31 38 33] inv1 ab}
-    requires {[#"../06_map_precond.rs" 38 52 38 53] inv0 b}
-    requires {[#"../06_map_precond.rs" 38 61 38 63] inv1 bc}
-    requires {[#"../06_map_precond.rs" 38 82 38 83] inv0 c}
-    ensures { [#"../06_map_precond.rs" 37 14 37 42] produces0 a (Seq.(++) ab bc) c }
+  constant a  : C06MapPrecond_Map_Type.t_map i b f item0
+  constant ab  : Seq.seq b
+  constant b  : C06MapPrecond_Map_Type.t_map i b f item0
+  constant bc  : Seq.seq b
+  constant c  : C06MapPrecond_Map_Type.t_map i b f item0
+  function produces_trans [#"../06_map_precond.rs" 38 4 38 90] (a : C06MapPrecond_Map_Type.t_map i b f item0) (ab : Seq.seq b) (b : C06MapPrecond_Map_Type.t_map i b f item0) (bc : Seq.seq b) (c : C06MapPrecond_Map_Type.t_map i b f item0) : ()
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../06_map_precond.rs" 33 4 33 10] ()
+  goal vc_produces_trans : ([#"../06_map_precond.rs" 38 82 38 83] inv0 c) -> ([#"../06_map_precond.rs" 38 61 38 63] inv1 bc) -> ([#"../06_map_precond.rs" 38 52 38 53] inv0 b) -> ([#"../06_map_precond.rs" 38 31 38 33] inv1 ab) -> ([#"../06_map_precond.rs" 38 22 38 23] inv0 a) -> ([#"../06_map_precond.rs" 36 15 36 32] produces0 b bc c) -> ([#"../06_map_precond.rs" 35 15 35 32] produces0 a ab b) -> ([#"../06_map_precond.rs" 37 14 37 42] produces0 a (Seq.(++) ab bc) c)
 end
 module Core_Option_Option_Type
   type t_option 't =
@@ -988,14 +978,12 @@ module C06MapPrecond_Impl1_ProducesOne_Impl
     | C06MapPrecond_Map_Type.C_Map iter func produced -> true
     end)
   use seq.Seq
-  let rec ghost predicate produces_one [#"../06_map_precond.rs" 142 4 142 57] (self : C06MapPrecond_Map_Type.t_map i b f item0) (visited : b) (succ : C06MapPrecond_Map_Type.t_map i b f item0)
-    requires {[#"../06_map_precond.rs" 142 20 142 24] inv0 self}
-    requires {[#"../06_map_precond.rs" 142 26 142 33] inv1 visited}
-    requires {[#"../06_map_precond.rs" 142 38 142 42] inv0 succ}
-    ensures { [#"../06_map_precond.rs" 141 14 141 68] result = produces0 self (Seq.singleton visited) succ }
+  constant self  : C06MapPrecond_Map_Type.t_map i b f item0
+  constant visited  : b
+  constant succ  : C06MapPrecond_Map_Type.t_map i b f item0
+  predicate produces_one [#"../06_map_precond.rs" 142 4 142 57] (self : C06MapPrecond_Map_Type.t_map i b f item0) (visited : b) (succ : C06MapPrecond_Map_Type.t_map i b f item0)
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../06_map_precond.rs" 143 8 149 9] pure {exists f : borrowed f . inv2 f /\  * f = C06MapPrecond_Map_Type.map_func self /\  ^ f = C06MapPrecond_Map_Type.map_func succ /\ (exists e : item0 . inv3 e /\ produces1 (C06MapPrecond_Map_Type.map_iter self) (Seq.singleton e) (C06MapPrecond_Map_Type.map_iter succ) /\ Snapshot.inner (C06MapPrecond_Map_Type.map_produced succ) = Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e /\ precondition0 ( * f) (e, C06MapPrecond_Map_Type.map_produced self) /\ postcondition_mut0 f (e, C06MapPrecond_Map_Type.map_produced self) visited)}
+  goal vc_produces_one : ([#"../06_map_precond.rs" 142 38 142 42] inv0 succ) -> ([#"../06_map_precond.rs" 142 26 142 33] inv1 visited) -> ([#"../06_map_precond.rs" 142 20 142 24] inv0 self) -> (forall f : borrowed f . inv2 f -> ( * f = C06MapPrecond_Map_Type.map_func self ->  ^ f = C06MapPrecond_Map_Type.map_func succ -> (forall e : item0 . true)) /\ (not  * f = C06MapPrecond_Map_Type.map_func self -> false -> (forall e : item0 . true))) /\ ([#"../06_map_precond.rs" 141 14 141 68] ([#"../06_map_precond.rs" 143 8 149 9] exists f : borrowed f . inv2 f /\  * f = C06MapPrecond_Map_Type.map_func self /\  ^ f = C06MapPrecond_Map_Type.map_func succ /\ (exists e : item0 . inv3 e /\ produces1 (C06MapPrecond_Map_Type.map_iter self) (Seq.singleton e) (C06MapPrecond_Map_Type.map_iter succ) /\ Snapshot.inner (C06MapPrecond_Map_Type.map_produced succ) = Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e /\ precondition0 ( * f) (e, C06MapPrecond_Map_Type.map_produced self) /\ postcondition_mut0 f (e, C06MapPrecond_Map_Type.map_produced self) visited)) = produces0 self (Seq.singleton visited) succ)
 end
 module C06MapPrecond_Impl1_ProducesOneInvariant_Impl
   type i
@@ -1210,20 +1198,14 @@ module C06MapPrecond_Impl1_ProducesOneInvariant_Impl
     ensures { result = produces_refl0 self }
     
   axiom produces_refl0_spec : forall self : i . ([#"../common.rs" 15 21 15 25] inv4 self) -> ([#"../common.rs" 14 14 14 45] produces0 self (Seq.empty ) self)
-  let rec ghost function produces_one_invariant [#"../06_map_precond.rs" 132 4 132 73] (self : C06MapPrecond_Map_Type.t_map i b f item0) (e : item0) (r : b) (f : borrowed f) (iter : i) : ()
-    requires {[#"../06_map_precond.rs" 127 4 127 60] produces0 (C06MapPrecond_Map_Type.map_iter self) (Seq.singleton e) iter}
-    requires {[#"../06_map_precond.rs" 128 15 128 30]  * f = C06MapPrecond_Map_Type.map_func self}
-    requires {[#"../06_map_precond.rs" 129 15 129 57] postcondition_mut0 f (e, C06MapPrecond_Map_Type.map_produced self) r}
-    requires {[#"../06_map_precond.rs" 132 30 132 34] inv0 self}
-    requires {[#"../06_map_precond.rs" 132 36 132 37] inv1 e}
-    requires {[#"../06_map_precond.rs" 132 48 132 49] inv2 r}
-    requires {[#"../06_map_precond.rs" 132 54 132 55] inv3 f}
-    requires {[#"../06_map_precond.rs" 132 65 132 69] inv4 iter}
-    ensures { [#"../06_map_precond.rs" 130 14 130 69] preservation_inv0 iter ( ^ f) (Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e) }
-    ensures { [#"../06_map_precond.rs" 131 14 131 70] next_precondition0 iter ( ^ f) (Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e) }
+  constant self  : C06MapPrecond_Map_Type.t_map i b f item0
+  constant e  : item0
+  constant r  : b
+  constant f  : borrowed f
+  constant iter  : i
+  function produces_one_invariant [#"../06_map_precond.rs" 132 4 132 73] (self : C06MapPrecond_Map_Type.t_map i b f item0) (e : item0) (r : b) (f : borrowed f) (iter : i) : ()
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../06_map_precond.rs" 126 4 126 12] let _ = let a = pure {forall i : i . forall e2 : item0 . forall e1 : item0 . forall s : Seq.seq item0 . inv4 i -> inv1 e2 -> inv1 e1 -> inv5 s -> produces0 iter (Seq.snoc (Seq.snoc s e1) e2) i -> produces0 (C06MapPrecond_Map_Type.map_iter self) (Seq.snoc (Seq.snoc (Seq.(++) (Seq.singleton e) s) e1) e2) i} in assert {a} in ()
+  goal vc_produces_one_invariant : ([#"../06_map_precond.rs" 132 65 132 69] inv4 iter) -> ([#"../06_map_precond.rs" 132 54 132 55] inv3 f) -> ([#"../06_map_precond.rs" 132 48 132 49] inv2 r) -> ([#"../06_map_precond.rs" 132 36 132 37] inv1 e) -> ([#"../06_map_precond.rs" 132 30 132 34] inv0 self) -> ([#"../06_map_precond.rs" 129 15 129 57] postcondition_mut0 f (e, C06MapPrecond_Map_Type.map_produced self) r) -> ([#"../06_map_precond.rs" 128 15 128 30]  * f = C06MapPrecond_Map_Type.map_func self) -> ([#"../06_map_precond.rs" 127 4 127 60] produces0 (C06MapPrecond_Map_Type.map_iter self) (Seq.singleton e) iter) -> (forall i : i . forall e2 : item0 . forall e1 : item0 . forall s : Seq.seq item0 . true) /\ ([#"../06_map_precond.rs" 126 4 126 12] forall i : i . forall e2 : item0 . forall e1 : item0 . forall s : Seq.seq item0 . inv4 i -> inv1 e2 -> inv1 e1 -> inv5 s -> produces0 iter (Seq.snoc (Seq.snoc s e1) e2) i -> produces0 (C06MapPrecond_Map_Type.map_iter self) (Seq.snoc (Seq.snoc (Seq.(++) (Seq.singleton e) s) e1) e2) i) && (let _ = () in ([#"../06_map_precond.rs" 131 14 131 70] next_precondition0 iter ( ^ f) (Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e)) && ([#"../06_map_precond.rs" 130 14 130 69] preservation_inv0 iter ( ^ f) (Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e)))
 end
 module C06MapPrecond_Impl0_Next
   type i

@@ -161,17 +161,15 @@ module RedBlackTree_Impl0_ModelAccHasMapping_Impl
   val model_acc0 [#"../red_black_tree.rs" 49 4 52 47] (self : RedBlackTree_Tree_Type.t_tree k v) (accu : Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v)) : Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v)
     ensures { result = model_acc0 self accu }
     
-  let rec ghost function model_acc_has_mapping [#"../red_black_tree.rs" 68 4 72 5] (self : RedBlackTree_Tree_Type.t_tree k v) (accu : Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v)) (k : deep_model_ty0) : ()
-    requires {[#"../red_black_tree.rs" 69 8 69 12] inv0 self}
-    requires {[#"../red_black_tree.rs" 70 8 70 12] inv1 accu}
-    requires {[#"../red_black_tree.rs" 71 8 71 9] inv2 k}
-    ensures { [#"../red_black_tree.rs" 66 4 67 93] Map.get (model_acc0 self accu) k = Map.get accu k \/ (exists v : v . inv3 v /\ Map.get (model_acc0 self accu) k = Core_Option_Option_Type.C_Some v /\ has_mapping0 self k v) }
+  constant self  : RedBlackTree_Tree_Type.t_tree k v
+  constant accu  : Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v)
+  constant k  : deep_model_ty0
+  function model_acc_has_mapping [#"../red_black_tree.rs" 68 4 72 5] (self : RedBlackTree_Tree_Type.t_tree k v) (accu : Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v)) (k : deep_model_ty0) : ()
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../red_black_tree.rs" 74 12 82 13] match self with
-      | RedBlackTree_Tree_Type.C_Tree (Core_Option_Option_Type.C_None) -> ()
-      | RedBlackTree_Tree_Type.C_Tree (Core_Option_Option_Type.C_Some (RedBlackTree_Node_Type.C_Node left _ key val' right)) -> let _ = model_acc_has_mapping left accu k in let accu1 = model_acc0 left accu in let accu2 = let b' = deep_model0 key in Map.set accu1 b' (Core_Option_Option_Type.C_Some val') in model_acc_has_mapping right accu2 k
-      end
+  goal vc_model_acc_has_mapping : ([#"../red_black_tree.rs" 71 8 71 9] inv2 k) -> ([#"../red_black_tree.rs" 70 8 70 12] inv1 accu) -> ([#"../red_black_tree.rs" 69 8 69 12] inv0 self) -> match self with
+    | RedBlackTree_Tree_Type.C_Tree (Core_Option_Option_Type.C_None) -> [#"../red_black_tree.rs" 66 4 67 93] Map.get (model_acc0 self accu) k = Map.get accu k \/ (exists v : v . inv3 v /\ Map.get (model_acc0 self accu) k = Core_Option_Option_Type.C_Some v /\ has_mapping0 self k v)
+    | RedBlackTree_Tree_Type.C_Tree (Core_Option_Option_Type.C_Some (RedBlackTree_Node_Type.C_Node left _ key val' right)) -> (([#"../red_black_tree.rs" 71 8 71 9] inv2 k) && ([#"../red_black_tree.rs" 70 8 70 12] inv1 accu) && ([#"../red_black_tree.rs" 69 8 69 12] inv0 left)) /\ (([#"../red_black_tree.rs" 66 4 67 93] Map.get (model_acc0 left accu) k = Map.get accu k \/ (exists v : v . inv3 v /\ Map.get (model_acc0 left accu) k = Core_Option_Option_Type.C_Some v /\ has_mapping0 left k v)) -> (let _ = model_acc_has_mapping left accu k in let accu1 = model_acc0 left accu in let accu2 = Map.set accu1 (deep_model0 key) (Core_Option_Option_Type.C_Some val') in (([#"../red_black_tree.rs" 71 8 71 9] inv2 k) && ([#"../red_black_tree.rs" 70 8 70 12] inv1 accu2) && ([#"../red_black_tree.rs" 69 8 69 12] inv0 right)) /\ (([#"../red_black_tree.rs" 66 4 67 93] Map.get (model_acc0 right accu2) k = Map.get accu2 k \/ (exists v : v . inv3 v /\ Map.get (model_acc0 right accu2) k = Core_Option_Option_Type.C_Some v /\ has_mapping0 right k v)) -> ([#"../red_black_tree.rs" 66 4 67 93] Map.get (model_acc0 self accu) k = Map.get accu k \/ (exists v : v . inv3 v /\ Map.get (model_acc0 self accu) k = Core_Option_Option_Type.C_Some v /\ has_mapping0 self k v)))))
+    end
 end
 module Core_Cmp_Ordering_Type
   type t_ordering  =
@@ -366,18 +364,15 @@ module RedBlackTree_Impl0_HasMappingModelAcc_Impl
   val bst_invariant0 [#"../red_black_tree.rs" 204 4 204 34] (self : RedBlackTree_Tree_Type.t_tree k v) : bool
     ensures { result = bst_invariant0 self }
     
-  let rec ghost function has_mapping_model_acc [#"../red_black_tree.rs" 89 4 91 33] (self : RedBlackTree_Tree_Type.t_tree k v) (accu : Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v)) (k : deep_model_ty0) : ()
-    requires {[#"../red_black_tree.rs" 87 15 87 35] bst_invariant0 self}
-    requires {[#"../red_black_tree.rs" 89 29 89 33] inv0 self}
-    requires {[#"../red_black_tree.rs" 89 35 89 39] inv1 accu}
-    requires {[#"../red_black_tree.rs" 89 81 89 82] inv2 k}
-    ensures { [#"../red_black_tree.rs" 88 4 88 94] forall v : v . inv3 v -> has_mapping0 self k v -> Map.get (model_acc0 self accu) k = Core_Option_Option_Type.C_Some v }
+  constant self  : RedBlackTree_Tree_Type.t_tree k v
+  constant accu  : Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v)
+  constant k  : deep_model_ty0
+  function has_mapping_model_acc [#"../red_black_tree.rs" 89 4 91 33] (self : RedBlackTree_Tree_Type.t_tree k v) (accu : Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v)) (k : deep_model_ty0) : ()
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../red_black_tree.rs" 94 12 103 13] match self with
-      | RedBlackTree_Tree_Type.C_Tree (Core_Option_Option_Type.C_None) -> ()
-      | RedBlackTree_Tree_Type.C_Tree (Core_Option_Option_Type.C_Some (RedBlackTree_Node_Type.C_Node left _ key val' right)) -> let _ = has_mapping_model_acc left accu k in let accu1 = model_acc0 left accu in let accu2 = let b' = deep_model0 key in Map.set accu1 b' (Core_Option_Option_Type.C_Some val') in let _ = has_mapping_model_acc right accu2 k in model_acc_has_mapping0 right accu2 k
-      end
+  goal vc_has_mapping_model_acc : ([#"../red_black_tree.rs" 89 81 89 82] inv2 k) -> ([#"../red_black_tree.rs" 89 35 89 39] inv1 accu) -> ([#"../red_black_tree.rs" 89 29 89 33] inv0 self) -> ([#"../red_black_tree.rs" 87 15 87 35] bst_invariant0 self) -> match self with
+    | RedBlackTree_Tree_Type.C_Tree (Core_Option_Option_Type.C_None) -> [#"../red_black_tree.rs" 88 4 88 94] forall v : v . inv3 v -> has_mapping0 self k v -> Map.get (model_acc0 self accu) k = Core_Option_Option_Type.C_Some v
+    | RedBlackTree_Tree_Type.C_Tree (Core_Option_Option_Type.C_Some (RedBlackTree_Node_Type.C_Node left _ key val' right)) -> (([#"../red_black_tree.rs" 89 81 89 82] inv2 k) && ([#"../red_black_tree.rs" 89 35 89 39] inv1 accu) && ([#"../red_black_tree.rs" 89 29 89 33] inv0 left) && ([#"../red_black_tree.rs" 87 15 87 35] bst_invariant0 left)) /\ (([#"../red_black_tree.rs" 88 4 88 94] forall v : v . inv3 v -> has_mapping0 left k v -> Map.get (model_acc0 left accu) k = Core_Option_Option_Type.C_Some v) -> (let _ = has_mapping_model_acc left accu k in let accu1 = model_acc0 left accu in let accu2 = Map.set accu1 (deep_model0 key) (Core_Option_Option_Type.C_Some val') in (([#"../red_black_tree.rs" 89 81 89 82] inv2 k) && ([#"../red_black_tree.rs" 89 35 89 39] inv1 accu2) && ([#"../red_black_tree.rs" 89 29 89 33] inv0 right) && ([#"../red_black_tree.rs" 87 15 87 35] bst_invariant0 right)) /\ (([#"../red_black_tree.rs" 88 4 88 94] forall v : v . inv3 v -> has_mapping0 right k v -> Map.get (model_acc0 right accu2) k = Core_Option_Option_Type.C_Some v) -> (let _ = has_mapping_model_acc right accu2 k in (([#"../red_black_tree.rs" 71 8 71 9] inv2 k) && ([#"../red_black_tree.rs" 70 8 70 12] inv1 accu2) && ([#"../red_black_tree.rs" 69 8 69 12] inv0 right)) /\ (([#"../red_black_tree.rs" 66 4 67 93] Map.get (model_acc0 right accu2) k = Map.get accu2 k \/ (exists v : v . inv3 v /\ Map.get (model_acc0 right accu2) k = Core_Option_Option_Type.C_Some v /\ has_mapping0 right k v)) -> ([#"../red_black_tree.rs" 88 4 88 94] forall v : v . inv3 v -> has_mapping0 self k v -> Map.get (model_acc0 self accu) k = Core_Option_Option_Type.C_Some v))))))
+    end
 end
 module RedBlackTree_Impl0_HasMappingModel_Impl
   type k
@@ -588,14 +583,11 @@ module RedBlackTree_Impl0_HasMappingModel_Impl
   val shallow_model0 [#"../red_black_tree.rs" 172 4 172 50] (self : RedBlackTree_Tree_Type.t_tree k v) : Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v)
     ensures { result = shallow_model0 self }
     
-  let rec ghost function has_mapping_model [#"../red_black_tree.rs" 110 4 112 33] (self : RedBlackTree_Tree_Type.t_tree k v) (k : deep_model_ty0) : ()
-    requires {[#"../red_black_tree.rs" 108 15 108 35] bst_invariant0 self}
-    requires {[#"../red_black_tree.rs" 110 25 110 29] inv0 self}
-    requires {[#"../red_black_tree.rs" 110 31 110 32] inv1 k}
-    ensures { [#"../red_black_tree.rs" 109 4 109 80] forall v : v . inv2 v -> has_mapping0 self k v = (Map.get (shallow_model0 self) k = Core_Option_Option_Type.C_Some v) }
+  constant self  : RedBlackTree_Tree_Type.t_tree k v
+  constant k  : deep_model_ty0
+  function has_mapping_model [#"../red_black_tree.rs" 110 4 112 33] (self : RedBlackTree_Tree_Type.t_tree k v) (k : deep_model_ty0) : ()
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../red_black_tree.rs" 115 12 115 61] let _ = model_acc_has_mapping0 self (Const.const (Core_Option_Option_Type.C_None)) k in has_mapping_model_acc0 self (Const.const (Core_Option_Option_Type.C_None)) k
+  goal vc_has_mapping_model : ([#"../red_black_tree.rs" 110 31 110 32] inv1 k) -> ([#"../red_black_tree.rs" 110 25 110 29] inv0 self) -> ([#"../red_black_tree.rs" 108 15 108 35] bst_invariant0 self) -> (([#"../red_black_tree.rs" 71 8 71 9] inv1 k) && ([#"../red_black_tree.rs" 70 8 70 12] inv3 (Const.const (Core_Option_Option_Type.C_None))) && ([#"../red_black_tree.rs" 69 8 69 12] inv0 self)) /\ (([#"../red_black_tree.rs" 66 4 67 93] Map.get (model_acc0 self (Const.const (Core_Option_Option_Type.C_None))) k = Map.get (Const.const (Core_Option_Option_Type.C_None)) k \/ (exists v : v . inv2 v /\ Map.get (model_acc0 self (Const.const (Core_Option_Option_Type.C_None))) k = Core_Option_Option_Type.C_Some v /\ has_mapping0 self k v)) -> (let _ = model_acc_has_mapping0 self (Const.const (Core_Option_Option_Type.C_None)) k in (([#"../red_black_tree.rs" 89 81 89 82] inv1 k) && ([#"../red_black_tree.rs" 89 35 89 39] inv3 (Const.const (Core_Option_Option_Type.C_None))) && ([#"../red_black_tree.rs" 89 29 89 33] inv0 self) && ([#"../red_black_tree.rs" 87 15 87 35] bst_invariant0 self)) /\ (([#"../red_black_tree.rs" 88 4 88 94] forall v : v . inv2 v -> has_mapping0 self k v -> Map.get (model_acc0 self (Const.const (Core_Option_Option_Type.C_None))) k = Core_Option_Option_Type.C_Some v) -> ([#"../red_black_tree.rs" 109 4 109 80] forall v : v . inv2 v -> has_mapping0 self k v = (Map.get (shallow_model0 self) k = Core_Option_Option_Type.C_Some v)))))
 end
 module RedBlackTree_Impl0_HasMappingInj_Impl
   type k
@@ -817,21 +809,16 @@ module RedBlackTree_Impl0_HasMappingInj_Impl
     ensures { result = has_mapping_model0 self k }
     
   axiom has_mapping_model0_spec : forall self : RedBlackTree_Tree_Type.t_tree k v, k : deep_model_ty0 . ([#"../red_black_tree.rs" 108 15 108 35] bst_invariant0 self) -> ([#"../red_black_tree.rs" 110 25 110 29] inv0 self) -> ([#"../red_black_tree.rs" 110 31 110 32] inv1 k) -> ([#"../red_black_tree.rs" 109 4 109 80] forall v : v . inv2 v -> has_mapping0 self k v = (Map.get (shallow_model0 self) k = Core_Option_Option_Type.C_Some v))
-  let rec ghost function has_mapping_inj [#"../red_black_tree.rs" 125 4 127 33] (self : RedBlackTree_Tree_Type.t_tree k v) (k : deep_model_ty0) (v1 : v) (v2 : v) : ()
-    requires {[#"../red_black_tree.rs" 121 15 121 35] bst_invariant0 self}
-    requires {[#"../red_black_tree.rs" 122 15 122 38] has_mapping0 self k v1}
-    requires {[#"../red_black_tree.rs" 123 15 123 38] has_mapping0 self k v2}
-    requires {[#"../red_black_tree.rs" 125 23 125 27] inv0 self}
-    requires {[#"../red_black_tree.rs" 125 29 125 30] inv1 k}
-    requires {[#"../red_black_tree.rs" 125 48 125 50] inv2 v1}
-    requires {[#"../red_black_tree.rs" 125 55 125 57] inv2 v2}
-    ensures { [#"../red_black_tree.rs" 124 14 124 22] v1 = v2 }
+  constant self  : RedBlackTree_Tree_Type.t_tree k v
+  constant k  : deep_model_ty0
+  constant v1  : v
+  constant v2  : v
+  function has_mapping_inj [#"../red_black_tree.rs" 125 4 127 33] (self : RedBlackTree_Tree_Type.t_tree k v) (k : deep_model_ty0) (v1 : v) (v2 : v) : ()
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../red_black_tree.rs" 130 12 130 37] let _ = has_mapping_model0 self k in match let a' = shallow_model0 self in Map.get a' k with
-      | Core_Option_Option_Type.C_None -> ()
-      | Core_Option_Option_Type.C_Some _v -> ()
-      end
+  goal vc_has_mapping_inj : ([#"../red_black_tree.rs" 125 55 125 57] inv2 v2) -> ([#"../red_black_tree.rs" 125 48 125 50] inv2 v1) -> ([#"../red_black_tree.rs" 125 29 125 30] inv1 k) -> ([#"../red_black_tree.rs" 125 23 125 27] inv0 self) -> ([#"../red_black_tree.rs" 123 15 123 38] has_mapping0 self k v2) -> ([#"../red_black_tree.rs" 122 15 122 38] has_mapping0 self k v1) -> ([#"../red_black_tree.rs" 121 15 121 35] bst_invariant0 self) -> (([#"../red_black_tree.rs" 110 31 110 32] inv1 k) && ([#"../red_black_tree.rs" 110 25 110 29] inv0 self) && ([#"../red_black_tree.rs" 108 15 108 35] bst_invariant0 self)) /\ (([#"../red_black_tree.rs" 109 4 109 80] forall v : v . inv2 v -> has_mapping0 self k v = (Map.get (shallow_model0 self) k = Core_Option_Option_Type.C_Some v)) -> (let _ = has_mapping_model0 self k in match Map.get (shallow_model0 self) k with
+    | Core_Option_Option_Type.C_None -> [#"../red_black_tree.rs" 124 14 124 22] v1 = v2
+    | Core_Option_Option_Type.C_Some _v -> [#"../red_black_tree.rs" 124 14 124 22] v1 = v2
+    end))
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
@@ -920,14 +907,12 @@ module RedBlackTree_Impl1_HasMapping_Impl
   val has_mapping0 [#"../red_black_tree.rs" 31 4 31 57] (self : RedBlackTree_Tree_Type.t_tree k v) (k : deep_model_ty0) (v : v) : bool
     ensures { result = has_mapping0 self k v }
     
-  let rec ghost predicate has_mapping [#"../red_black_tree.rs" 140 4 140 57] (self : RedBlackTree_Node_Type.t_node k v) (k : deep_model_ty0) (v : v)
-    requires {[#"../red_black_tree.rs" 140 19 140 23] inv0 self}
-    requires {[#"../red_black_tree.rs" 140 25 140 26] inv1 k}
-    requires {[#"../red_black_tree.rs" 140 44 140 45] inv2 v}
-    ensures { [#"../red_black_tree.rs" 138 4 139 86] forall node : RedBlackTree_Node_Type.t_node k v . inv3 node -> self = node -> result = has_mapping0 (RedBlackTree_Tree_Type.C_Tree (Core_Option_Option_Type.C_Some node)) k v }
+  constant self  : RedBlackTree_Node_Type.t_node k v
+  constant k  : deep_model_ty0
+  constant v  : v
+  predicate has_mapping [#"../red_black_tree.rs" 140 4 140 57] (self : RedBlackTree_Node_Type.t_node k v) (k : deep_model_ty0) (v : v)
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../red_black_tree.rs" 141 8 144 9] has_mapping0 (RedBlackTree_Node_Type.node_left self) k v || has_mapping0 (RedBlackTree_Node_Type.node_right self) k v || (let x0 = deep_model0 (RedBlackTree_Node_Type.node_key self) in pure {k = x0}) && pure {v = RedBlackTree_Node_Type.node_val self}
+  goal vc_has_mapping : ([#"../red_black_tree.rs" 140 44 140 45] inv2 v) -> ([#"../red_black_tree.rs" 140 25 140 26] inv1 k) -> ([#"../red_black_tree.rs" 140 19 140 23] inv0 self) -> (k = deep_model0 (RedBlackTree_Node_Type.node_key self) -> ([#"../red_black_tree.rs" 138 4 139 86] forall node : RedBlackTree_Node_Type.t_node k v . inv3 node -> self = node -> ((has_mapping0 (RedBlackTree_Node_Type.node_left self) k v \/ has_mapping0 (RedBlackTree_Node_Type.node_right self) k v) \/ v = RedBlackTree_Node_Type.node_val self) = has_mapping0 (RedBlackTree_Tree_Type.C_Tree (Core_Option_Option_Type.C_Some node)) k v)) /\ (not k = deep_model0 (RedBlackTree_Node_Type.node_key self) -> ([#"../red_black_tree.rs" 138 4 139 86] forall node : RedBlackTree_Node_Type.t_node k v . inv3 node -> self = node -> ((has_mapping0 (RedBlackTree_Node_Type.node_left self) k v \/ has_mapping0 (RedBlackTree_Node_Type.node_right self) k v) \/ false) = has_mapping0 (RedBlackTree_Tree_Type.C_Tree (Core_Option_Option_Type.C_Some node)) k v))
 end
 module RedBlackTree_Cp_Type
   use RedBlackTree_Color_Type as RedBlackTree_Color_Type
@@ -953,18 +938,15 @@ module RedBlackTree_Impl9_Height_Impl
   use RedBlackTree_Node_Type as RedBlackTree_Node_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
   use prelude.Int
-  let rec ghost function height [#"../red_black_tree.rs" 296 4 296 26] (self : RedBlackTree_Tree_Type.t_tree k v) : int
-    requires {[#"../red_black_tree.rs" 296 14 296 18] inv0 self}
-    ensures { [#"../red_black_tree.rs" 295 14 295 25] result >= 0 }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../red_black_tree.rs" 298 12 306 13] match self with
-      | RedBlackTree_Tree_Type.C_Tree (Core_Option_Option_Type.C_None) -> 0
-      | RedBlackTree_Tree_Type.C_Tree (Core_Option_Option_Type.C_Some (RedBlackTree_Node_Type.C_Node left color _ _ _)) -> match color with
-        | RedBlackTree_Color_Type.C_Red -> height left
-        | RedBlackTree_Color_Type.C_Black -> height left + 1
-        end
+  constant self  : RedBlackTree_Tree_Type.t_tree k v
+  function height [#"../red_black_tree.rs" 296 4 296 26] (self : RedBlackTree_Tree_Type.t_tree k v) : int
+  goal vc_height : ([#"../red_black_tree.rs" 296 14 296 18] inv0 self) -> match self with
+    | RedBlackTree_Tree_Type.C_Tree (Core_Option_Option_Type.C_None) -> [#"../red_black_tree.rs" 295 14 295 25] 0 >= 0
+    | RedBlackTree_Tree_Type.C_Tree (Core_Option_Option_Type.C_Some (RedBlackTree_Node_Type.C_Node left color _ _ _)) -> match color with
+      | RedBlackTree_Color_Type.C_Red -> ([#"../red_black_tree.rs" 296 14 296 18] inv0 left) /\ (([#"../red_black_tree.rs" 295 14 295 25] height left >= 0) -> ([#"../red_black_tree.rs" 295 14 295 25] height left >= 0))
+      | RedBlackTree_Color_Type.C_Black -> ([#"../red_black_tree.rs" 296 14 296 18] inv0 left) /\ (([#"../red_black_tree.rs" 295 14 295 25] height left >= 0) -> ([#"../red_black_tree.rs" 295 14 295 25] height left + 1 >= 0))
       end
+    end
 end
 module RedBlackTree_Impl10_Height_Impl
   type k
@@ -1015,15 +997,12 @@ module RedBlackTree_Impl10_Height_Impl
     ensures { result = height0 self }
     
   axiom height0_spec : forall self : RedBlackTree_Tree_Type.t_tree k v . ([#"../red_black_tree.rs" 296 14 296 18] inv2 self) -> ([#"../red_black_tree.rs" 295 14 295 25] height0 self >= 0)
-  let rec ghost function height [#"../red_black_tree.rs" 328 4 328 26] (self : RedBlackTree_Node_Type.t_node k v) : int
-    requires {[#"../red_black_tree.rs" 328 14 328 18] inv0 self}
-    ensures { [#"../red_black_tree.rs" 326 4 327 77] forall node : RedBlackTree_Node_Type.t_node k v . inv1 node -> self = node -> result = height0 (RedBlackTree_Tree_Type.C_Tree (Core_Option_Option_Type.C_Some node)) }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../red_black_tree.rs" 330 12 333 13] match RedBlackTree_Node_Type.node_color self with
-      | RedBlackTree_Color_Type.C_Red -> height0 (RedBlackTree_Node_Type.node_left self)
-      | RedBlackTree_Color_Type.C_Black -> height0 (RedBlackTree_Node_Type.node_left self) + 1
-      end
+  constant self  : RedBlackTree_Node_Type.t_node k v
+  function height [#"../red_black_tree.rs" 328 4 328 26] (self : RedBlackTree_Node_Type.t_node k v) : int
+  goal vc_height : ([#"../red_black_tree.rs" 328 14 328 18] inv0 self) -> match RedBlackTree_Node_Type.node_color self with
+    | RedBlackTree_Color_Type.C_Red -> ([#"../red_black_tree.rs" 296 14 296 18] inv2 (RedBlackTree_Node_Type.node_left self)) /\ (([#"../red_black_tree.rs" 295 14 295 25] height0 (RedBlackTree_Node_Type.node_left self) >= 0) -> ([#"../red_black_tree.rs" 326 4 327 77] forall node : RedBlackTree_Node_Type.t_node k v . inv1 node -> self = node -> height0 (RedBlackTree_Node_Type.node_left self) = height0 (RedBlackTree_Tree_Type.C_Tree (Core_Option_Option_Type.C_Some node))))
+    | RedBlackTree_Color_Type.C_Black -> ([#"../red_black_tree.rs" 296 14 296 18] inv2 (RedBlackTree_Node_Type.node_left self)) /\ (([#"../red_black_tree.rs" 295 14 295 25] height0 (RedBlackTree_Node_Type.node_left self) >= 0) -> ([#"../red_black_tree.rs" 326 4 327 77] forall node : RedBlackTree_Node_Type.t_node k v . inv1 node -> self = node -> height0 (RedBlackTree_Node_Type.node_left self) + 1 = height0 (RedBlackTree_Tree_Type.C_Tree (Core_Option_Option_Type.C_Some node))))
+    end
 end
 module RedBlackTree_Impl13_IsRed
   type k

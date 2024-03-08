@@ -511,13 +511,10 @@ module Hillel_SubsetPush_Impl
     ensures { result = is_subset0 sub sup }
     
   use seq.Seq
-  let rec ghost function subset_push [#"../hillel.rs" 72 0 72 37] (s : Seq.seq t) (elem : t) : ()
-    requires {[#"../hillel.rs" 72 18 72 19] inv0 s}
-    requires {[#"../hillel.rs" 72 29 72 33] inv1 elem}
-    ensures { [#"../hillel.rs" 71 10 71 36] is_subset0 s (Seq.snoc s elem) }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../hillel.rs" 70 0 70 8] ()
+  constant s  : Seq.seq t
+  constant elem  : t
+  function subset_push [#"../hillel.rs" 72 0 72 37] (s : Seq.seq t) (elem : t) : ()
+  goal vc_subset_push : ([#"../hillel.rs" 72 29 72 33] inv1 elem) -> ([#"../hillel.rs" 72 18 72 19] inv0 s) -> ([#"../hillel.rs" 71 10 71 36] is_subset0 s (Seq.snoc s elem))
 end
 module Core_Slice_Iter_Iter_Type
   use prelude.Borrow
@@ -1667,17 +1664,14 @@ module Hillel_SumRange_Impl
   use seq.Seq
   use seq.Seq
   use prelude.Int
-  let rec ghost function sum_range [#"../hillel.rs" 122 0 122 54] (seq : Seq.seq uint32) (from : int) (to' : int) : int
-    requires {[#"../hillel.rs" 120 11 120 53] 0 <= from /\ from <= to' /\ to' <= Seq.length seq}
-    ensures { [#"../hillel.rs" 121 10 121 21] result >= 0 }
-    variant {[#"../hillel.rs" 119 10 119 19] to' - from}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../hillel.rs" 118 0 118 8] if pure {to' - from > 0} then
-      UInt32.to_int (Seq.get seq from) + sum_range seq (from + 1) to'
-    else
-      0
-    
+  constant seq  : Seq.seq uint32
+  constant from  : int
+  constant to'  : int
+  function sum_range [#"../hillel.rs" 122 0 122 54] (seq : Seq.seq uint32) (from : int) (to' : int) : int
+  goal vc_sum_range : ([#"../hillel.rs" 120 11 120 53] 0 <= from /\ from <= to' /\ to' <= Seq.length seq) -> match to' - from > 0 with
+    | True -> (([#"../hillel.rs" 120 11 120 53] 0 <= from + 1 /\ from + 1 <= to' /\ to' <= Seq.length seq) /\ 0 <= ([#"../hillel.rs" 119 10 119 19] to' - from) /\ ([#"../hillel.rs" 119 10 119 19] to' - (from + 1)) < ([#"../hillel.rs" 119 10 119 19] to' - from)) /\ (([#"../hillel.rs" 121 10 121 21] sum_range seq (from + 1) to' >= 0) -> ([#"../hillel.rs" 121 10 121 21] UInt32.to_int (Seq.get seq from) + sum_range seq (from + 1) to' >= 0))
+    | False -> [#"../hillel.rs" 121 10 121 21] 0 >= 0
+    end
 end
 module Hillel_SumRangeSplit_Impl
   use prelude.UInt32
@@ -1697,13 +1691,15 @@ module Hillel_SumRangeSplit_Impl
     ensures { result = sum_range0 seq from to' }
     
   axiom sum_range0_spec : forall seq : Seq.seq uint32, from : int, to' : int . ([#"../hillel.rs" 120 11 120 53] 0 <= from /\ from <= to' /\ to' <= Seq.length seq) -> ([#"../hillel.rs" 121 10 121 21] sum_range0 seq from to' >= 0)
-  let rec ghost function sum_range_split [#"../hillel.rs" 134 0 134 61] (seq : Seq.seq uint32) (from : int) (to' : int) (i : int) : ()
-    requires {[#"../hillel.rs" 132 11 132 63] 0 <= from /\ from <= i /\ i <= to' /\ to' <= Seq.length seq}
-    ensures { [#"../hillel.rs" 133 10 133 85] sum_range0 seq from to' = sum_range0 seq from i + sum_range0 seq i to' }
-    variant {[#"../hillel.rs" 131 10 131 18] i - from}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../hillel.rs" 135 4 137 5] if pure {i > from} then let _ = sum_range_split seq (from + 1) to' i in () else ()
+  constant seq  : Seq.seq uint32
+  constant from  : int
+  constant to'  : int
+  constant i  : int
+  function sum_range_split [#"../hillel.rs" 134 0 134 61] (seq : Seq.seq uint32) (from : int) (to' : int) (i : int) : ()
+  goal vc_sum_range_split : ([#"../hillel.rs" 132 11 132 63] 0 <= from /\ from <= i /\ i <= to' /\ to' <= Seq.length seq) -> match i > from with
+    | True -> (([#"../hillel.rs" 132 11 132 63] 0 <= from + 1 /\ from + 1 <= i /\ i <= to' /\ to' <= Seq.length seq) /\ 0 <= ([#"../hillel.rs" 131 10 131 18] i - from) /\ ([#"../hillel.rs" 131 10 131 18] i - (from + 1)) < ([#"../hillel.rs" 131 10 131 18] i - from)) /\ (([#"../hillel.rs" 133 10 133 85] sum_range0 seq (from + 1) to' = sum_range0 seq (from + 1) i + sum_range0 seq i to') -> (let _ = sum_range_split seq (from + 1) to' i in [#"../hillel.rs" 133 10 133 85] sum_range0 seq from to' = sum_range0 seq from i + sum_range0 seq i to'))
+    | False -> [#"../hillel.rs" 133 10 133 85] sum_range0 seq from to' = sum_range0 seq from i + sum_range0 seq i to'
+    end
 end
 module Hillel_Score_Impl
   use prelude.Int
@@ -1740,13 +1736,10 @@ module Hillel_Score_Impl
     ensures { result = sum_range_split0 seq from to' i }
     
   axiom sum_range_split0_spec : forall seq : Seq.seq uint32, from : int, to' : int, i : int . ([#"../hillel.rs" 132 11 132 63] 0 <= from /\ from <= i /\ i <= to' /\ to' <= Seq.length seq) -> ([#"../hillel.rs" 133 10 133 85] sum_range0 seq from to' = sum_range0 seq from i + sum_range0 seq i to')
-  let rec ghost function score [#"../hillel.rs" 144 0 144 38] (seq : Seq.seq uint32) (i : int) : int
-    requires {[#"../hillel.rs" 141 11 141 35] 0 <= i /\ i <= Seq.length seq}
-    ensures { [#"../hillel.rs" 142 10 142 64] 0 <= result /\ result <= sum_range0 seq 0 (Seq.length seq) }
-    ensures { [#"../hillel.rs" 143 0 143 79] 0 = i \/ i = Seq.length seq -> result = sum_range0 seq 0 (Seq.length seq) }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../hillel.rs" 145 4 145 41] let _ = sum_range_split0 seq 0 (Seq.length seq) i in let a' = sum_range0 seq 0 i in let b' = sum_range0 seq i (Seq.length seq) in abs_diff0 a' b'
+  constant seq  : Seq.seq uint32
+  constant i  : int
+  function score [#"../hillel.rs" 144 0 144 38] (seq : Seq.seq uint32) (i : int) : int
+  goal vc_score : ([#"../hillel.rs" 141 11 141 35] 0 <= i /\ i <= Seq.length seq) -> ([#"../hillel.rs" 132 11 132 63] 0 <= 0 /\ 0 <= i /\ i <= Seq.length seq /\ Seq.length seq <= Seq.length seq) /\ (([#"../hillel.rs" 133 10 133 85] sum_range0 seq 0 (Seq.length seq) = sum_range0 seq 0 i + sum_range0 seq i (Seq.length seq)) -> (let _ = sum_range_split0 seq 0 (Seq.length seq) i in ([#"../hillel.rs" 120 11 120 53] 0 <= 0 /\ 0 <= i /\ i <= Seq.length seq) /\ (([#"../hillel.rs" 121 10 121 21] sum_range0 seq 0 i >= 0) -> ([#"../hillel.rs" 120 11 120 53] 0 <= i /\ i <= Seq.length seq /\ Seq.length seq <= Seq.length seq) /\ (([#"../hillel.rs" 121 10 121 21] sum_range0 seq i (Seq.length seq) >= 0) -> (let result = abs_diff0 (sum_range0 seq 0 i) (sum_range0 seq i (Seq.length seq)) in ([#"../hillel.rs" 143 0 143 79] 0 = i \/ i = Seq.length seq -> result = sum_range0 seq 0 (Seq.length seq)) && ([#"../hillel.rs" 142 10 142 64] 0 <= result /\ result <= sum_range0 seq 0 (Seq.length seq)))))))
 end
 module Hillel_Fulcrum
   use prelude.UIntSize

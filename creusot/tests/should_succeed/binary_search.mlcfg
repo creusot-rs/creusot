@@ -28,15 +28,12 @@ module BinarySearch_Impl0_LenLogic_Impl
     
   axiom inv0 : forall x : BinarySearch_List_Type.t_list t . inv0 x = true
   use prelude.Int
-  let rec ghost function len_logic [#"../binary_search.rs" 22 4 22 29] (self : BinarySearch_List_Type.t_list t) : int
-    requires {[#"../binary_search.rs" 22 17 22 21] inv0 self}
-    ensures { [#"../binary_search.rs" 21 14 21 25] result >= 0 }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../binary_search.rs" 23 8 26 9] match self with
-      | BinarySearch_List_Type.C_Cons _ ls -> 1 + len_logic ls
-      | BinarySearch_List_Type.C_Nil -> 0
-      end
+  constant self  : BinarySearch_List_Type.t_list t
+  function len_logic [#"../binary_search.rs" 22 4 22 29] (self : BinarySearch_List_Type.t_list t) : int
+  goal vc_len_logic : ([#"../binary_search.rs" 22 17 22 21] inv0 self) -> match self with
+    | BinarySearch_List_Type.C_Cons _ ls -> ([#"../binary_search.rs" 22 17 22 21] inv0 ls) /\ (([#"../binary_search.rs" 21 14 21 25] len_logic ls >= 0) -> ([#"../binary_search.rs" 21 14 21 25] 1 + len_logic ls >= 0))
+    | BinarySearch_List_Type.C_Nil -> [#"../binary_search.rs" 21 14 21 25] 0 >= 0
+    end
 end
 module Core_Option_Option_Type
   type t_option 't =
