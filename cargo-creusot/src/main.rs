@@ -36,8 +36,10 @@ fn main() -> anyhow::Result<()> {
             Ok(invoke_cargo(&creusot_args))
         }
         Setup(SetupSubCommand::Status) => setup::status(),
-        Setup(SetupSubCommand::Install) => setup::install(false),
-        Setup(SetupSubCommand::InstallExternal) => setup::install(true),
+        Setup(SetupSubCommand::Install) => setup::install(setup::InstallMode::Managed),
+        Setup(SetupSubCommand::InstallExternal { no_absolute_paths }) => {
+            setup::install(setup::InstallMode::External { no_absolute_paths })
+        }
     }
 }
 

@@ -185,40 +185,39 @@ pub fn status_for_creusot() -> anyhow::Result<CreusotFlags> {
     }
 }
 
-pub fn install(use_external_tools: bool) -> anyhow::Result<()> {
+pub enum InstallMode {
+    Managed,
+    External { no_absolute_paths: bool },
+}
+
+pub fn install(mode: InstallMode) -> anyhow::Result<()> {
     let paths = get_config_paths()?;
 
     // figure out whether we're installing a new configuration from scratch, or
     // updating an existing configuration
-    let previous_config = match Config::read_from_file(&paths.config_file) {
-        Err(NotFound) => None,
-        Err(Invalid(_) | WrongVersion(_)) => {
+    let previous_config = match (Config::read_from_file(&paths.config_file), &mode) {
+        (Err(NotFound), _) => None,
+        (Err(Invalid(_) | WrongVersion(_)), _) => {
             println!("Removing invalid or outdated config...");
             None
         }
-        Ok(cfg @ Config { tools: Managed { .. } }) => {
-            if use_external_tools {
-                println!(
-                    "Switching to an installation using external tools. \
-                          Erasing current installation..."
-                );
-                None
-            } else {
-                println!("Existing configuration found. Updating.");
-                Some(cfg)
-            }
+        (Ok(Config { tools: Managed { .. } }), InstallMode::External { .. }) => {
+            println!(
+                "Switching to an installation using external tools. \
+                 Erasing current installation..."
+            );
+            None
         }
-        Ok(cfg @ Config { tools: External { .. } }) => {
-            if !use_external_tools {
-                println!(
-                    "Switching to an installation using managed tools. \
-                          Erasing current installation..."
-                );
-                None
-            } else {
-                println!("Existing configuration found. Updating.");
-                Some(cfg)
-            }
+        (Ok(Config { tools: External { .. } }), InstallMode::Managed) => {
+            println!(
+                "Switching to an installation using managed tools. \
+                 Erasing current installation..."
+            );
+            None
+        }
+        (Ok(cfg), _) => {
+            println!("Existing configuration found. Updating.");
+            Some(cfg)
         }
     };
 
@@ -232,20 +231,27 @@ pub fn install(use_external_tools: bool) -> anyhow::Result<()> {
     fs::create_dir_all(&paths.bin_subdir)?;
     fs::create_dir_all(&paths.cache_dir)?;
 
-    if use_external_tools {
-        install_external(&paths)?;
-    } else {
-        install_managed(&paths, previous_config)?;
-    }
+    match mode {
+        InstallMode::Managed => install_managed(&paths, previous_config)?,
+        InstallMode::External { no_absolute_paths } => install_external(&paths, no_absolute_paths)?,
+    };
     Ok(println!("Done."))
 }
 
-fn install_external(paths: &CfgPaths) -> anyhow::Result<()> {
+fn install_external(paths: &CfgPaths, no_absolute_paths: bool) -> anyhow::Result<()> {
     // in external mode, upgrades and fresh installs are equivalent: we
-    // rereading the paths of external binaries.
+    // write the paths of external binaries.
     let mut issues = Vec::new();
-    let why3_path = diagnostic_extbinary(WHY3, &mut issues)?;
-    let altergo_path = diagnostic_extbinary(ALTERGO, &mut issues)?;
+    let why3_path = if no_absolute_paths {
+        PathBuf::from(WHY3.binary_name)
+    } else {
+        diagnostic_extbinary(WHY3, &mut issues)?
+    };
+    let altergo_path = if no_absolute_paths {
+        PathBuf::from(ALTERGO.binary_name)
+    } else {
+        diagnostic_extbinary(ALTERGO, &mut issues)?
+    };
     // in external mode, only warn about issues
     for issue in issues {
         println!("Warning: {issue}")
