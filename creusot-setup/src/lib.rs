@@ -19,13 +19,17 @@ struct CfgPaths {
     cache_dir: PathBuf,
 }
 
-fn get_config_paths() -> anyhow::Result<CfgPaths> {
+fn get_config_paths(custom_config_dir: &Option<PathBuf>) -> anyhow::Result<CfgPaths> {
     // arguments: qualifier, organization, application
     let dirs = ProjectDirs::from("", "creusot", "creusot")
         .context("failed to compute configuration paths")?;
+    let config_dir = match custom_config_dir {
+        Some(dir) => dir,
+        None => dirs.config_dir(),
+    };
     Ok(CfgPaths {
-        config_dir: PathBuf::from(dirs.config_dir()),
-        config_file: dirs.config_dir().join("Config.toml"),
+        config_dir: PathBuf::from(config_dir),
+        config_file: config_dir.join("Config.toml"),
         data_dir: PathBuf::from(dirs.data_dir()),
         bin_subdir: dirs.data_dir().join("bin"),
         cache_dir: PathBuf::from(dirs.cache_dir()),
@@ -105,8 +109,8 @@ fn diagnostic_extbinary(bin: ExtBinary, issues: &mut Vec<Issue>) -> anyhow::Resu
 }
 
 // display the status of the creusot installation to the user
-pub fn status() -> anyhow::Result<()> {
-    let paths = get_config_paths()?;
+pub fn status(custom_config_dir: &Option<PathBuf>) -> anyhow::Result<()> {
+    let paths = get_config_paths(custom_config_dir)?;
     match Config::read_from_file(&paths.config_file) {
         Err(err) => {
             println!("{err}");
@@ -146,11 +150,11 @@ pub struct CreusotFlags {
     pub why3_config: Option<PathBuf>,
 }
 
-// compute the flags to pass to creusot-rustc.
-// fail if the installation is not in an acceptable state, which means we will
-// stop there and do not attempt launching creusot-rustc.
-pub fn status_for_creusot() -> anyhow::Result<CreusotFlags> {
-    let paths = get_config_paths()?;
+/// compute the flags to pass to creusot-rustc.
+/// fail if the installation is not in an acceptable state, which means we will
+/// stop there and do not attempt launching creusot-rustc.
+pub fn status_for_creusot(custom_config_dir: &Option<PathBuf>) -> anyhow::Result<CreusotFlags> {
+    let paths = get_config_paths(custom_config_dir)?;
     match Config::read_from_file(&paths.config_file) {
         Err(err) => bail!(
             "{err}\n\
@@ -190,8 +194,8 @@ pub enum InstallMode {
     External { no_absolute_paths: bool },
 }
 
-pub fn install(mode: InstallMode) -> anyhow::Result<()> {
-    let paths = get_config_paths()?;
+pub fn install(custom_config_dir: &Option<PathBuf>, mode: InstallMode) -> anyhow::Result<()> {
+    let paths = get_config_paths(custom_config_dir)?;
 
     // figure out whether we're installing a new configuration from scratch, or
     // updating an existing configuration

@@ -24,7 +24,7 @@ fn main() -> anyhow::Result<()> {
 
     match subcommand {
         Creusot(subcmd) => {
-            let config_args = setup::status_for_creusot()?;
+            let config_args = setup::status_for_creusot(&cargs.config_dir)?;
             let creusot_args = CreusotArgs {
                 options: cargs.options,
                 why3_path: config_args.why3_path,
@@ -34,10 +34,12 @@ fn main() -> anyhow::Result<()> {
             };
             Ok(invoke_cargo(&creusot_args))
         }
-        Setup(SetupSubCommand::Status) => setup::status(),
-        Setup(SetupSubCommand::Install) => setup::install(setup::InstallMode::Managed),
+        Setup(SetupSubCommand::Status) => setup::status(&cargs.config_dir),
+        Setup(SetupSubCommand::Install) => {
+            setup::install(&cargs.config_dir, setup::InstallMode::Managed)
+        }
         Setup(SetupSubCommand::InstallExternal { no_absolute_paths }) => {
-            setup::install(setup::InstallMode::External { no_absolute_paths })
+            setup::install(&cargs.config_dir, setup::InstallMode::External { no_absolute_paths })
         }
     }
 }
