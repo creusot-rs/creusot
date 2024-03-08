@@ -15,7 +15,7 @@ use std::{
 
 // tools without binary releases
 pub const WHY3_VERSION: &'static str = "1.7.1";
-pub const ALTERGO_VERSION: &'static str = "2.5.2";
+pub const ALTERGO_VERSION: &'static str = "2.4.3";
 // tools with binary releases
 pub const Z3_VERSION: &'static str = "4.12.4";
 pub const CVC4_VERSION: &'static str = "1.8";
@@ -267,7 +267,9 @@ pub fn generate_why3_conf(why3_path: &Path, bin_dir: &Path, dest_dir: &Path) -> 
 fn detect_altergo_version(altergo: &Path) -> Option<String> {
     let output = Command::new(&altergo).arg("--version").output().ok()?;
     let out_s = String::from_utf8(output.stdout).ok()?;
-    out_s.trim_end_matches(char::is_whitespace).strip_prefix("v").map(String::from)
+    // will be needed for more recent altergo versions
+    // out_s.trim_end_matches(char::is_whitespace).strip_prefix("v").map(String::from)
+    Some(out_s.trim_end_matches(char::is_whitespace).to_owned())
 }
 
 // helpers: Z3
