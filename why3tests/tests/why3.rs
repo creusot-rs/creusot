@@ -43,16 +43,22 @@ fn main() {
     // directory.
     let custom_config_dir = {
         let local_config = PathBuf::from("../.creusot-config");
-        if local_config.is_dir() { Some(std::fs::canonicalize(local_config).unwrap()) } else { None }
+        if local_config.is_dir() {
+            Some(std::fs::canonicalize(local_config).unwrap())
+        } else {
+            None
+        }
     };
     let (why3_path, config_path) = {
         let paths = creusot_setup::status_for_creusot(&custom_config_dir).unwrap();
-        eprintln!("Using why3 (path: {}) with {}",
-                  paths.why3_path.display(),
-                  match paths.why3_config {
-                      Some(ref cfg) => format!("config file {}", cfg.display()),
-                      None => "its globally available config".to_owned()
-                  });
+        eprintln!(
+            "Using why3 (path: {}) with {}",
+            paths.why3_path.display(),
+            match paths.why3_config {
+                Some(ref cfg) => format!("config file {}", cfg.display()),
+                None => "its globally available config".to_owned(),
+            }
+        );
         (paths.why3_path, paths.why3_config)
     };
 

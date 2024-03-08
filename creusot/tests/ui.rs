@@ -36,7 +36,11 @@ fn main() {
     // repo) if it exists, or from the global config directory.
     let custom_config_dir = {
         let local_config = PathBuf::from("../.creusot-config");
-        if local_config.is_dir() { Some(std::fs::canonicalize(local_config).unwrap()) } else { None }
+        if local_config.is_dir() {
+            Some(std::fs::canonicalize(local_config).unwrap())
+        } else {
+            None
+        }
     };
 
     let mut base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -49,19 +53,15 @@ fn main() {
 
     let mut metadata_file = cargo_creusot;
     metadata_file.current_dir(base_path);
-    metadata_file
-        .arg("creusot")
-        .args(&[
-            "--metadata-path".as_ref(),
-            temp_file.as_os_str(),
-            "--output-file=/dev/null".as_ref(),
-        ]);
+    metadata_file.arg("creusot").args(&[
+        "--metadata-path".as_ref(),
+        temp_file.as_os_str(),
+        "--output-file=/dev/null".as_ref(),
+    ]);
     if let Some(ref dir) = custom_config_dir {
         metadata_file.arg("--config-dir").arg(&dir);
     }
-    metadata_file
-        .args(&["--", "--package", "creusot-contracts"])
-        .env("CREUSOT_CONTINUE", "true");
+    metadata_file.args(&["--", "--package", "creusot-contracts"]).env("CREUSOT_CONTINUE", "true");
 
     if !metadata_file.status().expect("could not dump metadata for `creusot_contracts`").success() {
         // eprintln!("{}", String::from_utf8_lossy(&metadata_file.output().unwrap().stderr));
