@@ -37,8 +37,25 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    let why3_path = std::env::var("WHY3_PATH").unwrap_or_else(|_| "why3".into());
-    let config_path = std::env::var("WHY3_CONFIG");
+
+    // load Why3 paths from Creusot's config, either from .creusot-config (at
+    // the root of the git repo) if it exists, or from the global config
+    // directory.
+    let custom_config_dir = {
+        let local_config = PathBuf::from("../.creusot-config");
+        if local_config.is_dir() { Some(std::fs::canonicalize(local_config).unwrap()) } else { None }
+    };
+    let (why3_path, config_path) = {
+        let paths = creusot_setup::status_for_creusot(&custom_config_dir).unwrap();
+        eprintln!("Using why3 (path: {}) with {}",
+                  paths.why3_path.display(),
+                  match paths.why3_config {
+                      Some(ref cfg) => format!("config file {}", cfg.display()),
+                      None => "its globally available config".to_owned()
+                  });
+        (paths.why3_path, paths.why3_config)
+    };
+
     let mut out = StandardStream::stdout(ColorChoice::Always);
     let orange = Color::Ansi256(214);
 
@@ -139,8 +156,8 @@ fn main() {
                 ReplayLevel::All => {}
             };
 
-            if let Ok(ref config) = config_path {
-                command.args(&["-C", config]);
+            if let Some(ref config) = config_path {
+                command.arg("-C").arg(config);
                 // command.arg(&format!("--extra-config={config}"));
             }
             command.arg(sessiondir);
