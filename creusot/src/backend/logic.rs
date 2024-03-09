@@ -10,7 +10,7 @@ use rustc_hir::def_id::DefId;
 use why3::{
     declaration::*,
     exp::{super_visit_mut, BinOp, Binder, Exp, ExpMutVisitor, Trigger},
-    Ident, QName,
+    Ident, Print as _, QName,
 };
 
 mod vcgen;
@@ -377,6 +377,7 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
+
     let (clones, _) = names.to_clones(ctx, CloneDepth::Deep);
     decls.extend(clones);
     decls.extend(body_decls);

@@ -4,7 +4,7 @@ use std::{
 };
 
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyKind};
+use rustc_middle::ty::{EarlyBinder, GenericArgsRef, ParamEnv, Ty, TyKind};
 use rustc_span::{Span, Symbol};
 use why3::{declaration::Signature, exp::Purity, ty::Type, Exp, Ident, QName};
 
@@ -40,6 +40,7 @@ struct VCGen<'a, 'tcx> {
     names: RefCell<&'a mut CloneMap<'tcx>>,
     self_id: DefId,
     structurally_recursive: bool,
+    param_env: ParamEnv<'tcx>,
 }
 
 pub(super) fn vc<'tcx>(
@@ -51,8 +52,14 @@ pub(super) fn vc<'tcx>(
     post: Exp,
 ) -> Result<Exp, VCError<'tcx>> {
     let structurally_recursive = is_structurally_recursive(ctx, self_id, &t);
-    VCGen { ctx: RefCell::new(ctx), names: RefCell::new(names), self_id, structurally_recursive }
-        .build_vc(&t, &|exp| Ok(Exp::let_(dest.clone(), exp, post.clone())))
+    VCGen {
+        param_env: ctx.param_env(self_id),
+        ctx: RefCell::new(ctx),
+        names: RefCell::new(names),
+        self_id,
+        structurally_recursive,
+    }
+    .build_vc(&t, &|exp| Ok(Exp::let_(dest.clone(), exp, post.clone())))
 }
 
 /// Verifies whether a given term is structurally recursive: that is, each recursive call is made to
@@ -217,6 +224,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             TermKind::Item(id, sub) => {
                 let item_name =
                     get_func_name(*self.ctx.borrow_mut(), *self.names.borrow_mut(), *id, sub);
+
                 if get_builtin(self.ctx.borrow().tcx, *id).is_some() {
                     // Builtins can leverage Why3 polymorphism and sometimes can cause typeck errors in why3 due to ambiguous type variables so lets fix the type now.
                     k(Exp::pure_qvar(item_name).ascribe(self.ty(t.ty)))
@@ -235,6 +243,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let tcx = self.ctx.borrow().tcx;
                 let pre_sig = EarlyBinder::bind(self.ctx.borrow_mut().sig(*id).clone())
                     .instantiate(tcx, subst);
+
+                let pre_sig = pre_sig.normalize(tcx, self.param_env);
                 let arg_subst = pre_sig
                     .inputs
                     .iter()
