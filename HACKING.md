@@ -49,6 +49,10 @@ cargo test --test ui -- "optional-string" --bless
 cargo test --test why3
 ```
 
+Additional useful parameters, to avoid replaying *every* proof in development:
+- `--diff-from=GIT_REF`
+- `--replay=<none|obsolete|all>`
+
 ## Inspecting/fixing the proof of a test
 
 If the proof of a test is broken (e.g.
