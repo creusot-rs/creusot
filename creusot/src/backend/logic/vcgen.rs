@@ -283,7 +283,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 //     Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_vc(rhs, k)?,))
                 // }),
                 BinOp::Div => self.build_vc(&lhs, &|lhs| {
-                    self.build_vc(rhs, &|rhs| Ok(Exp::pure_var("div").app(vec![lhs.clone(), rhs])))
+                    self.build_vc(rhs, &|rhs| k(Exp::pure_var("div").app(vec![lhs.clone(), rhs])))
                 }),
                 _ => self.build_vc(&lhs, &|lhs| {
                     self.build_vc(rhs, &|rhs| {
