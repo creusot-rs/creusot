@@ -61,7 +61,6 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
     ```
     this will build the `cargo-creusot` and `creusot-rustc` executables and place them in `~/.cargo/bin`.
 5. Set up **Creusot**
-   Run:
    ```
    $ cargo creusot setup install
    ```

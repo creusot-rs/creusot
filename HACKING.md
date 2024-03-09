@@ -5,17 +5,18 @@ working on the Creusot codebase.
 
 ## Setup
 
-On top of the usual Rust/Cargo workflow, running the Creusot testsuite requires
-a working Why3 setup. You have two choices:
+On top of the usual Rust/Cargo workflow, the "Creusot developer setup" requires
+a working Why3 in order to run the testsuite and update tests proofs. You have
+two choices:
 
 - **By default** the testsuite will use the global Creusot configuration managed
   by `cargo creusot setup`. You first need to have successfully run `cargo
   creusot setup install` (or `cargo creusot setup install-external`).
-- **Alternatively** you can set a custom Creusot configuration for the
-  testsuite in `.creusot-config/` at the root of the git repo. Start by running
-  `cp -r .creusot-config.sample .creusot-config`. This will tell the testsuite
-  to use whichever `why3` binary is in the PATH, but you can also tweak
-  `.creusot-config/Config.toml` to point to a specific why3 binary.
+- **Alternatively** you can set a custom "developer" Creusot configuration in
+  `.creusot-config/` at the root of the git repo. Start by running `cp -r
+  .creusot-config.sample .creusot-config`. This will tell the testsuite to use
+  whichever `why3` binary is in the PATH, but you can also tweak
+  `.creusot-config/Config.toml` to point to a specific binary.
 
 The first option is recommended if you simply want a working setup to run the
 testsuite.
@@ -24,10 +25,11 @@ The second option is useful if you need to try custom versions of Why3 or the
 solvers.
 
 Notes:
-- to avoid first installing the `cargo-creusot` binary, one can directly run it
-  from the git repository: e.g. `cargo run --bin cargo-creusot creusot setup`
+- to avoid first installing the `cargo-creusot` binary before running `cargo
+  creusot setup`, one can directly call it from the git repository: `cargo run
+  --bin cargo-creusot creusot setup`
 - the format of the `.creusot-config/` directory is simply the same as
-  `~/.config/creusot` which is where `cargo creusot setup` writes its
+  `~/.config/creusot`, which is where `cargo creusot setup` writes its
   configuration.
 
 ## Running the testsuite
@@ -54,9 +56,9 @@ If the proof of a test is broken (e.g.
 
 ## Calling why3
 
-In order to invoke why3 robustly (manually or in scripts), we provide a wrapper
-that will lookup the why3 path and config according to the logic described in
-**Setup** above.
+To invoke why3 robustly (manually or in scripts), we provide a wrapper that will
+lookup the why3 path and config according to the logic described in **Setup**
+above.
 
 To invoke why3 this way, run:
 ```
