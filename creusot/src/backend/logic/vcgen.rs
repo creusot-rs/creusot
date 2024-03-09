@@ -272,7 +272,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                         .implies(self.build_vc(rhs, k)?)
                         .log_and(lhs.not().implies(k(Exp::mk_false())?)))
                 }),
-
+                BinOp::Div => self.build_vc(&lhs, &|lhs| {
+                    self.build_vc(rhs, &|rhs| Ok(Exp::pure_var("div").app(vec![lhs.clone(), rhs])))
+                }),
                 _ => self.build_vc(&lhs, &|lhs| {
                     self.build_vc(rhs, &|rhs| {
                         k(Exp::BinaryOp(
