@@ -11,7 +11,7 @@ a working Why3 setup. You have two choices:
 - **By default** the testsuite will use the global Creusot configuration managed
   by `cargo creusot setup`. You first need to have successfully run `cargo
   creusot setup install` (or `cargo creusot setup install-external`).
-- **Alternatively:** you can set a custom Creusot configuration for the
+- **Alternatively** you can set a custom Creusot configuration for the
   testsuite in `.creusot-config/` at the root of the git repo. Start by running
   `cp -r .creusot-config.sample .creusot-config`. This will tell the testsuite
   to use whichever `why3` binary is in the PATH, but you can also tweak
@@ -52,3 +52,13 @@ If the proof of a test is broken (e.g.
 ./ide creusot/tests/should_succeed/cell/01
 ```
 
+## Calling why3
+
+In order to invoke why3 robustly (manually or in scripts), we provide a wrapper
+that will lookup the why3 path and config according to the logic described in
+**Setup** above.
+
+To invoke why3 this way, run:
+```
+cargo run --bin dev-why3 -- <arguments_to_why3...>
+```

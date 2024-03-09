@@ -32,17 +32,6 @@ fn main() {
         .unwrap()
         .command();
 
-    // load Creusot's config either from .creusot-config (at the root of the git
-    // repo) if it exists, or from the global config directory.
-    let custom_config_dir = {
-        let local_config = PathBuf::from("../.creusot-config");
-        if local_config.is_dir() {
-            Some(std::fs::canonicalize(local_config).unwrap())
-        } else {
-            None
-        }
-    };
-
     let mut base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     base_path.pop();
 
@@ -58,7 +47,7 @@ fn main() {
         temp_file.as_os_str(),
         "--output-file=/dev/null".as_ref(),
     ]);
-    if let Some(ref dir) = custom_config_dir {
+    if let Some(ref dir) = creusot_dev_config::custom_config_dir() {
         metadata_file.arg("--config-dir").arg(&dir);
     }
     metadata_file.args(&["--", "--package", "creusot-contracts"]).env("CREUSOT_CONTINUE", "true");
@@ -69,16 +58,15 @@ fn main() {
     }
 
     should_fail("tests/should_fail/**/*.rs", |p| {
-        run_creusot(creusot_rustc.path(), &custom_config_dir, p, &temp_file.to_string_lossy())
+        run_creusot(creusot_rustc.path(), p, &temp_file.to_string_lossy())
     });
     should_succeed("tests/should_succeed/**/*.rs", |p| {
-        run_creusot(creusot_rustc.path(), &custom_config_dir, p, &temp_file.to_string_lossy())
+        run_creusot(creusot_rustc.path(), p, &temp_file.to_string_lossy())
     });
 }
 
 fn run_creusot(
     creusot_rustc: &Path,
-    custom_config_dir: &Option<PathBuf>,
     file: &Path,
     contracts: &str,
 ) -> Option<std::process::Command> {
@@ -94,7 +82,7 @@ fn run_creusot(
     base_path.push("target");
     base_path.push("debug");
 
-    let creusot_args = creusot_setup::status_for_creusot(&custom_config_dir).unwrap();
+    let config_paths = creusot_dev_config::paths().unwrap();
 
     let creusot_contract_path = base_path.join("libcreusot_contracts.rlib");
     let creusot_contract_path =
@@ -111,8 +99,8 @@ fn run_creusot(
         "--creusot-extern",
         &format!("creusot_contracts={}", normalize_file_path(contracts)),
     ]);
-    cmd.arg("--why3-path").arg(&creusot_args.why3_path);
-    if let Some(why3_config) = &creusot_args.why3_config {
+    cmd.arg("--why3-path").arg(&config_paths.why3);
+    if let Some(why3_config) = &config_paths.why3_config {
         cmd.arg("--why3-config-file").arg(why3_config);
     }
 
