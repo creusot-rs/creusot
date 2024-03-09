@@ -193,7 +193,7 @@ pub fn status_for_creusot(custom_config_dir: &Option<PathBuf>) -> anyhow::Result
 
 pub enum InstallMode {
     Managed,
-    External { no_absolute_paths: bool },
+    External { no_resolve_paths: bool },
 }
 
 pub fn install(custom_config_dir: &Option<PathBuf>, mode: InstallMode) -> anyhow::Result<()> {
@@ -239,21 +239,21 @@ pub fn install(custom_config_dir: &Option<PathBuf>, mode: InstallMode) -> anyhow
 
     match mode {
         InstallMode::Managed => install_managed(&paths, previous_config)?,
-        InstallMode::External { no_absolute_paths } => install_external(&paths, no_absolute_paths)?,
+        InstallMode::External { no_resolve_paths } => install_external(&paths, no_resolve_paths)?,
     };
     Ok(println!("Done."))
 }
 
-fn install_external(paths: &CfgPaths, no_absolute_paths: bool) -> anyhow::Result<()> {
+fn install_external(paths: &CfgPaths, no_resolve_paths: bool) -> anyhow::Result<()> {
     // in external mode, upgrades and fresh installs are equivalent: we
     // write the paths of external binaries.
     let mut issues = Vec::new();
-    let why3_path = if no_absolute_paths {
+    let why3_path = if no_resolve_paths {
         PathBuf::from(WHY3.binary_name)
     } else {
         diagnostic_extbinary(WHY3, &mut issues)?
     };
-    let altergo_path = if no_absolute_paths {
+    let altergo_path = if no_resolve_paths {
         PathBuf::from(ALTERGO.binary_name)
     } else {
         diagnostic_extbinary(ALTERGO, &mut issues)?

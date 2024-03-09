@@ -38,8 +38,8 @@ fn main() -> anyhow::Result<()> {
         Setup(SetupSubCommand::Install) => {
             setup::install(&cargs.config_dir, setup::InstallMode::Managed)
         }
-        Setup(SetupSubCommand::InstallExternal { no_absolute_paths }) => {
-            setup::install(&cargs.config_dir, setup::InstallMode::External { no_absolute_paths })
+        Setup(SetupSubCommand::InstallExternal { no_resolve_paths }) => {
+            setup::install(&cargs.config_dir, setup::InstallMode::External { no_resolve_paths })
         }
     }
 }

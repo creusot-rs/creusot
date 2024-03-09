@@ -110,10 +110,10 @@ pub enum SetupSubCommand {
     Install,
     /// Setup Creusot but use external tools configured manually (not recommended, for experts)
     InstallExternal {
-        /// Do not record absolute paths to the external binaries (the binaries
-        /// will instead be looked up in PATH at each Creusot invocation)
+        /// Do not lookup and resolve paths to the external binaries (they will
+        /// instead be looked up in PATH at each Creusot invocation)
         #[arg(long, default_value_t = false)]
-        no_absolute_paths: bool,
+        no_resolve_paths: bool,
     },
 }
 
