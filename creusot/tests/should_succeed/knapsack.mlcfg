@@ -66,26 +66,21 @@ module Knapsack_M_Impl
   axiom inv0 : forall x : Seq.seq (Knapsack_Item_Type.t_item name) . inv0 x = true
   use int.MinMax
   use prelude.UIntSize
+  use prelude.UIntSize
   use seq.Seq
   use seq.Seq
   use prelude.Int
-  let rec ghost function m [#"../knapsack.rs" 34 0 34 57] (items : Seq.seq (Knapsack_Item_Type.t_item name)) (i : int) (w : int) : int
-    requires {[#"../knapsack.rs" 31 11 31 37] 0 <= i /\ i <= Seq.length items}
-    requires {[#"../knapsack.rs" 32 11 32 17] 0 <= w}
-    requires {[#"../knapsack.rs" 34 11 34 16] inv0 items}
-    ensures { [#"../knapsack.rs" 33 10 33 21] result >= 0 }
-    variant {[#"../knapsack.rs" 30 10 30 11] i}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../knapsack.rs" 35 4 42 5] if pure {i = 0} then
-      0
-    else
-      if pure {UIntSize.to_int (Knapsack_Item_Type.item_weight (Seq.get items (i - 1))) > w} then
-        m items (i - 1) w
-      else
-        let a' = m items (i - 1) w in let b' = m items (i - 1) (w - UIntSize.to_int (Knapsack_Item_Type.item_weight (Seq.get items (i - 1)))) + UIntSize.to_int (Knapsack_Item_Type.item_value (Seq.get items (i - 1))) in MinMax.max a' b'
-      
-    
+  constant items  : Seq.seq (Knapsack_Item_Type.t_item name)
+  constant i  : int
+  constant w  : int
+  function m [#"../knapsack.rs" 34 0 34 57] (items : Seq.seq (Knapsack_Item_Type.t_item name)) (i : int) (w : int) : int
+  goal vc_m : ([#"../knapsack.rs" 34 11 34 16] inv0 items) -> ([#"../knapsack.rs" 32 11 32 17] 0 <= w) -> ([#"../knapsack.rs" 31 11 31 37] 0 <= i /\ i <= Seq.length items) -> match i = 0 with
+    | True -> [#"../knapsack.rs" 33 10 33 21] 0 >= 0
+    | False -> match UIntSize.to_int (Knapsack_Item_Type.item_weight (Seq.get items (i - 1))) > w with
+      | True -> ((([#"../knapsack.rs" 34 11 34 16] inv0 items) && ([#"../knapsack.rs" 32 11 32 17] 0 <= w) && ([#"../knapsack.rs" 31 11 31 37] 0 <= i - 1 /\ i - 1 <= Seq.length items)) /\ 0 <= ([#"../knapsack.rs" 30 10 30 11] i) /\ ([#"../knapsack.rs" 30 10 30 11] i - 1) < ([#"../knapsack.rs" 30 10 30 11] i)) /\ (([#"../knapsack.rs" 33 10 33 21] m items (i - 1) w >= 0) -> ([#"../knapsack.rs" 33 10 33 21] m items (i - 1) w >= 0))
+      | False -> ((([#"../knapsack.rs" 34 11 34 16] inv0 items) && ([#"../knapsack.rs" 32 11 32 17] 0 <= w) && ([#"../knapsack.rs" 31 11 31 37] 0 <= i - 1 /\ i - 1 <= Seq.length items)) /\ 0 <= ([#"../knapsack.rs" 30 10 30 11] i) /\ ([#"../knapsack.rs" 30 10 30 11] i - 1) < ([#"../knapsack.rs" 30 10 30 11] i)) /\ (([#"../knapsack.rs" 33 10 33 21] m items (i - 1) w >= 0) -> ((([#"../knapsack.rs" 34 11 34 16] inv0 items) && ([#"../knapsack.rs" 32 11 32 17] 0 <= w - UIntSize.to_int (Knapsack_Item_Type.item_weight (Seq.get items (i - 1)))) && ([#"../knapsack.rs" 31 11 31 37] 0 <= i - 1 /\ i - 1 <= Seq.length items)) /\ 0 <= ([#"../knapsack.rs" 30 10 30 11] i) /\ ([#"../knapsack.rs" 30 10 30 11] i - 1) < ([#"../knapsack.rs" 30 10 30 11] i)) /\ (([#"../knapsack.rs" 33 10 33 21] m items (i - 1) (w - UIntSize.to_int (Knapsack_Item_Type.item_weight (Seq.get items (i - 1)))) >= 0) -> ([#"../knapsack.rs" 33 10 33 21] MinMax.max (m items (i - 1) w) (m items (i - 1) (w - UIntSize.to_int (Knapsack_Item_Type.item_weight (Seq.get items (i - 1)))) + UIntSize.to_int (Knapsack_Item_Type.item_value (Seq.get items (i - 1)))) >= 0)))
+      end
+    end
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque

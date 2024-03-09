@@ -40,7 +40,7 @@ pub enum Decl {
     UseDecl(Use),
     Axiom(Axiom),
     Goal(Goal),
-    // ConstantDecl(Constant),
+    ConstantDecl(Constant),
 }
 
 impl Decl {
@@ -336,4 +336,12 @@ pub enum LetKind {
     Function,
     Predicate,
     Constant,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct Constant {
+    pub name: Ident,
+    pub type_: Type,
+    pub body: Exp,
 }

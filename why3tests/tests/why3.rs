@@ -95,6 +95,7 @@ fn main() {
         let mut command = creusot_dev_config::why3_command().unwrap();
         command.arg("--warn-off=unused_variable");
         command.arg("--warn-off=clone_not_abstract");
+        command.arg("--warn-off=axiom_abstract");
 
         if sessionfile.is_file() {
             let proved = BufReader::new(File::open(&sessionfile).unwrap())

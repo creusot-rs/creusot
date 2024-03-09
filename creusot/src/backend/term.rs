@@ -72,8 +72,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
 
                 match (op, self.pure) {
-                    (Div, _) => Exp::pure_var("div".into()).app(vec![lhs, rhs]),
-                    (Rem, _) => Exp::pure_var("mod".into()).app(vec![lhs, rhs]),
+                    (Div, _) => Exp::pure_var("div").app(vec![lhs, rhs]),
+                    (Rem, _) => Exp::pure_var("mod").app(vec![lhs, rhs]),
                     (Eq | Ne | Lt | Le | Gt | Ge, Purity::Program) => {
                         let (lfvs, rfvs) = (lhs.fvs(), rhs.fvs());
                         let mut freshvars = (0..)
@@ -289,9 +289,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     fn lower_pat(&mut self, pat: &Pattern<'tcx>) -> Pat {
         match pat {
             Pattern::Constructor { adt, variant: _, fields, substs } => {
-                // let variant = &adt.variants()[variant];
                 let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
-                // eprintln!("{adt:?}");
                 Pat::ConsP(self.names.constructor(*adt, substs), fields)
             }
             Pattern::Wildcard => Pat::Wildcard,
@@ -377,7 +375,7 @@ pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
     }
 }
 
-fn binop_to_binop(op: pearlite::BinOp, purity: Purity) -> why3::exp::BinOp {
+pub(crate) fn binop_to_binop(op: pearlite::BinOp, purity: Purity) -> why3::exp::BinOp {
     match (op, purity) {
         (pearlite::BinOp::Add, _) => BinOp::Add,
         (pearlite::BinOp::Sub, _) => BinOp::Sub,
@@ -392,7 +390,7 @@ fn binop_to_binop(op: pearlite::BinOp, purity: Purity) -> why3::exp::BinOp {
         (pearlite::BinOp::And, Purity::Program) => BinOp::LazyAnd,
         (pearlite::BinOp::Or, Purity::Logic) => BinOp::LogOr,
         (pearlite::BinOp::Or, Purity::Program) => BinOp::LazyOr,
-        _ => unreachable!(),
+        _ => unreachable!("{op:?} {purity:?}"),
     }
 }
 

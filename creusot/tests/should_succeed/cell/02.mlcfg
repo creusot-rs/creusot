@@ -22,11 +22,15 @@ module C02_Cell_Type
 end
 module C02_Fib_Impl
   use prelude.Int
-  let rec ghost function fib [#"../02.rs" 32 0 32 25] (i : int) : int
-    variant {[#"../02.rs" 31 10 31 11] i}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../02.rs" 29 0 29 8] if pure {i <= 0} then 0 else if pure {i = 1} then 1 else fib (i - 1) + fib (i - 2)
+  constant i  : int
+  function fib [#"../02.rs" 32 0 32 25] (i : int) : int
+  goal vc_fib : match i <= 0 with
+    | True -> true
+    | False -> match i = 1 with
+      | True -> true
+      | False -> (0 <= ([#"../02.rs" 31 10 31 11] i) /\ ([#"../02.rs" 31 10 31 11] i - 1) < ([#"../02.rs" 31 10 31 11] i)) /\ 0 <= ([#"../02.rs" 31 10 31 11] i) /\ ([#"../02.rs" 31 10 31 11] i - 2) < ([#"../02.rs" 31 10 31 11] i)
+      end
+    end
 end
 module C02_LemmaFibBound_Impl
   use int.Power
@@ -40,17 +44,15 @@ module C02_LemmaFibBound_Impl
   val fib0 [#"../02.rs" 32 0 32 25] (i : int) : int
     ensures { result = fib0 i }
     
-  let rec ghost function lemma_fib_bound [#"../02.rs" 47 0 47 30] (i : int) : ()
-    requires {[#"../02.rs" 44 11 44 17] 0 <= i}
-    ensures { [#"../02.rs" 45 10 45 28] fib0 i <= Power.power 2 i }
-    variant {[#"../02.rs" 46 10 46 11] i}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../02.rs" 43 0 43 8] if pure {i = 0} then
-      ()
-    else
-      if pure {i = 1} then () else let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
-    
+  constant i  : int
+  function lemma_fib_bound [#"../02.rs" 47 0 47 30] (i : int) : ()
+  goal vc_lemma_fib_bound : ([#"../02.rs" 44 11 44 17] 0 <= i) -> match i = 0 with
+    | True -> [#"../02.rs" 45 10 45 28] fib0 i <= Power.power 2 i
+    | False -> match i = 1 with
+      | True -> [#"../02.rs" 45 10 45 28] fib0 i <= Power.power 2 i
+      | False -> (([#"../02.rs" 44 11 44 17] 0 <= i - 2) /\ 0 <= ([#"../02.rs" 46 10 46 11] i) /\ ([#"../02.rs" 46 10 46 11] i - 2) < ([#"../02.rs" 46 10 46 11] i)) /\ (([#"../02.rs" 45 10 45 28] fib0 (i - 2) <= Power.power 2 (i - 2)) -> (let _ = lemma_fib_bound (i - 2) in (([#"../02.rs" 44 11 44 17] 0 <= i - 1) /\ 0 <= ([#"../02.rs" 46 10 46 11] i) /\ ([#"../02.rs" 46 10 46 11] i - 1) < ([#"../02.rs" 46 10 46 11] i)) /\ (([#"../02.rs" 45 10 45 28] fib0 (i - 1) <= Power.power 2 (i - 1)) -> ([#"../02.rs" 45 10 45 28] fib0 i <= Power.power 2 i))))
+      end
+    end
 end
 module C02_Fib_Type
   use prelude.UIntSize

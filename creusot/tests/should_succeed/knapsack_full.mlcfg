@@ -64,25 +64,23 @@ module KnapsackFull_SumWeights_Impl
     
   axiom inv0 : forall x : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv0 x = true
   use prelude.UIntSize
+  use prelude.UIntSize
   use seq.Seq
   use prelude.Borrow
   use seq.Seq
   use prelude.Int
-  let rec ghost function sum_weights [#"../knapsack_full.rs" 27 0 27 56] (s : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) : int
-    requires {[#"../knapsack_full.rs" 25 11 25 33] 0 <= i /\ i <= Seq.length s}
-    requires {[#"../knapsack_full.rs" 27 21 27 22] inv0 s}
-    ensures { [#"../knapsack_full.rs" 26 10 26 21] result >= 0 }
-    variant {[#"../knapsack_full.rs" 24 10 24 19] Seq.length s - i}
+  constant s  : Seq.seq (KnapsackFull_Item_Type.t_item name)
+  constant i  : int
+  function sum_weights [#"../knapsack_full.rs" 27 0 27 56] (s : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) : int
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../knapsack_full.rs" 28 4 31 5] if pure {i = Seq.length s} then
-      0
-    else
-      UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get s i)) + sum_weights s (i + 1)
-    
+  goal vc_sum_weights : ([#"../knapsack_full.rs" 27 21 27 22] inv0 s) -> ([#"../knapsack_full.rs" 25 11 25 33] 0 <= i /\ i <= Seq.length s) -> match i = Seq.length s with
+    | True -> [#"../knapsack_full.rs" 26 10 26 21] 0 >= 0
+    | False -> ((([#"../knapsack_full.rs" 27 21 27 22] inv0 s) && ([#"../knapsack_full.rs" 25 11 25 33] 0 <= i + 1 /\ i + 1 <= Seq.length s)) /\ 0 <= ([#"../knapsack_full.rs" 24 10 24 19] Seq.length s - i) /\ ([#"../knapsack_full.rs" 24 10 24 19] Seq.length s - (i + 1)) < ([#"../knapsack_full.rs" 24 10 24 19] Seq.length s - i)) /\ (([#"../knapsack_full.rs" 26 10 26 21] sum_weights s (i + 1) >= 0) -> ([#"../knapsack_full.rs" 26 10 26 21] UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get s i)) + sum_weights s (i + 1) >= 0))
+    end
 end
 module KnapsackFull_SumValues_Impl
   type name
+  use prelude.UIntSize
   use prelude.UIntSize
   use seq.Seq
   use KnapsackFull_Item_Type as KnapsackFull_Item_Type
@@ -90,16 +88,14 @@ module KnapsackFull_SumValues_Impl
   use seq.Seq
   use seq.Seq
   use prelude.Int
-  let rec ghost function sum_values [#"../knapsack_full.rs" 37 0 37 55] (s : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) : int
-    requires {[#"../knapsack_full.rs" 36 11 36 33] i >= 0 /\ i <= Seq.length s}
-    variant {[#"../knapsack_full.rs" 35 10 35 19] Seq.length s - i}
+  constant s  : Seq.seq (KnapsackFull_Item_Type.t_item name)
+  constant i  : int
+  function sum_values [#"../knapsack_full.rs" 37 0 37 55] (s : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) : int
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../knapsack_full.rs" 38 4 41 5] if pure {i = Seq.length s} then
-      0
-    else
-      UIntSize.to_int (KnapsackFull_Item_Type.item_value (Seq.get s i)) + sum_values s (i + 1)
-    
+  goal vc_sum_values : ([#"../knapsack_full.rs" 36 11 36 33] i >= 0 /\ i <= Seq.length s) -> match i = Seq.length s with
+    | True -> true
+    | False -> ([#"../knapsack_full.rs" 36 11 36 33] i + 1 >= 0 /\ i + 1 <= Seq.length s) /\ 0 <= ([#"../knapsack_full.rs" 35 10 35 19] Seq.length s - i) /\ ([#"../knapsack_full.rs" 35 10 35 19] Seq.length s - (i + 1)) < ([#"../knapsack_full.rs" 35 10 35 19] Seq.length s - i)
+    end
 end
 module KnapsackFull_SubseqRev_Impl
   type t
@@ -110,17 +106,23 @@ module KnapsackFull_SubseqRev_Impl
   use seq.Seq
   use seq.Seq
   use prelude.Int
-  let rec ghost predicate subseq_rev [#"../knapsack_full.rs" 48 0 48 67] (s1 : Seq.seq t) (i1 : int) (s2 : Seq.seq t) (i2 : int)
-    requires {[#"../knapsack_full.rs" 46 11 46 36] 0 <= i1 /\ i1 <= Seq.length s1}
-    requires {[#"../knapsack_full.rs" 47 11 47 36] 0 <= i2 /\ i2 <= Seq.length s2}
-    variant {[#"../knapsack_full.rs" 45 10 45 12] i2}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../knapsack_full.rs" 49 4 55 5] if pure {i2 = 0} then
-      pure {i1 = Seq.length s1}
+  constant s1  : Seq.seq t
+  constant i1  : int
+  constant s2  : Seq.seq t
+  constant i2  : int
+  predicate subseq_rev [#"../knapsack_full.rs" 48 0 48 67] (s1 : Seq.seq t) (i1 : int) (s2 : Seq.seq t) (i2 : int)
+  goal vc_subseq_rev : ([#"../knapsack_full.rs" 47 11 47 36] 0 <= i2 /\ i2 <= Seq.length s2) -> ([#"../knapsack_full.rs" 46 11 46 36] 0 <= i1 /\ i1 <= Seq.length s1) -> match i2 = 0 with
+    | True -> true
+    | False -> if i1 < Seq.length s1 then
+      if Seq.get s1 i1 = Seq.get s2 (i2 - 1) then
+        ((([#"../knapsack_full.rs" 47 11 47 36] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2) && ([#"../knapsack_full.rs" 46 11 46 36] 0 <= i1 + 1 /\ i1 + 1 <= Seq.length s1)) /\ 0 <= ([#"../knapsack_full.rs" 45 10 45 12] i2) /\ ([#"../knapsack_full.rs" 45 10 45 12] i2 - 1) < ([#"../knapsack_full.rs" 45 10 45 12] i2)) /\ (([#"../knapsack_full.rs" 47 11 47 36] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2) && ([#"../knapsack_full.rs" 46 11 46 36] 0 <= i1 /\ i1 <= Seq.length s1)) /\ 0 <= ([#"../knapsack_full.rs" 45 10 45 12] i2) /\ ([#"../knapsack_full.rs" 45 10 45 12] i2 - 1) < ([#"../knapsack_full.rs" 45 10 45 12] i2)
+      else
+        (([#"../knapsack_full.rs" 47 11 47 36] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2) && ([#"../knapsack_full.rs" 46 11 46 36] 0 <= i1 /\ i1 <= Seq.length s1)) /\ 0 <= ([#"../knapsack_full.rs" 45 10 45 12] i2) /\ ([#"../knapsack_full.rs" 45 10 45 12] i2 - 1) < ([#"../knapsack_full.rs" 45 10 45 12] i2)
+      
     else
-      pure {i1 < Seq.length s1} && pure {Seq.get s1 i1 = Seq.get s2 (i2 - 1)} && subseq_rev s1 (i1 + 1) s2 (i2 - 1) || subseq_rev s1 i1 s2 (i2 - 1)
+      (([#"../knapsack_full.rs" 47 11 47 36] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2) && ([#"../knapsack_full.rs" 46 11 46 36] 0 <= i1 /\ i1 <= Seq.length s1)) /\ 0 <= ([#"../knapsack_full.rs" 45 10 45 12] i2) /\ ([#"../knapsack_full.rs" 45 10 45 12] i2 - 1) < ([#"../knapsack_full.rs" 45 10 45 12] i2)
     
+    end
 end
 module KnapsackFull_M_Impl
   type name
@@ -145,6 +147,7 @@ module KnapsackFull_M_Impl
     
   axiom inv0 : forall x : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv0 x = true
   use int.MinMax
+  use prelude.UIntSize
   use prelude.UIntSize
   use seq.Seq
   use seq.Seq
@@ -188,24 +191,18 @@ module KnapsackFull_M_Impl
     requires {[#"../knapsack_full.rs" 47 11 47 36] 0 <= i2 /\ i2 <= Seq.length s2}
     ensures { result = subseq_rev0 s1 i1 s2 i2 }
     
-  let rec ghost function m [#"../knapsack_full.rs" 66 0 66 57] (items : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) (w : int) : int
-    requires {[#"../knapsack_full.rs" 60 11 60 37] 0 <= i /\ i <= Seq.length items}
-    requires {[#"../knapsack_full.rs" 61 11 61 17] 0 <= w}
-    requires {[#"../knapsack_full.rs" 66 11 66 16] inv0 items}
-    ensures { [#"../knapsack_full.rs" 62 10 62 21] result >= 0 }
-    ensures { [#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv1 s -> 0 <= j /\ j <= Seq.length s /\ subseq_rev0 s j items i /\ sum_weights0 s j <= w -> sum_values0 s j <= result }
-    variant {[#"../knapsack_full.rs" 59 10 59 11] i}
+  constant items  : Seq.seq (KnapsackFull_Item_Type.t_item name)
+  constant i  : int
+  constant w  : int
+  function m [#"../knapsack_full.rs" 66 0 66 57] (items : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) (w : int) : int
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../knapsack_full.rs" 67 4 74 5] if pure {i = 0} then
-      0
-    else
-      if pure {UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1))) > w} then
-        m items (i - 1) w
-      else
-        let a' = m items (i - 1) w in let b' = m items (i - 1) (w - UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1)))) + UIntSize.to_int (KnapsackFull_Item_Type.item_value (Seq.get items (i - 1))) in MinMax.max a' b'
-      
-    
+  goal vc_m : ([#"../knapsack_full.rs" 66 11 66 16] inv0 items) -> ([#"../knapsack_full.rs" 61 11 61 17] 0 <= w) -> ([#"../knapsack_full.rs" 60 11 60 37] 0 <= i /\ i <= Seq.length items) -> match i = 0 with
+    | True -> let result = 0 in ([#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv1 s -> 0 <= j /\ j <= Seq.length s /\ subseq_rev0 s j items i /\ sum_weights0 s j <= w -> sum_values0 s j <= result) && ([#"../knapsack_full.rs" 62 10 62 21] result >= 0)
+    | False -> match UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1))) > w with
+      | True -> ((([#"../knapsack_full.rs" 66 11 66 16] inv0 items) && ([#"../knapsack_full.rs" 61 11 61 17] 0 <= w) && ([#"../knapsack_full.rs" 60 11 60 37] 0 <= i - 1 /\ i - 1 <= Seq.length items)) /\ 0 <= ([#"../knapsack_full.rs" 59 10 59 11] i) /\ ([#"../knapsack_full.rs" 59 10 59 11] i - 1) < ([#"../knapsack_full.rs" 59 10 59 11] i)) /\ (([#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv1 s -> 0 <= j /\ j <= Seq.length s /\ subseq_rev0 s j items (i - 1) /\ sum_weights0 s j <= w -> sum_values0 s j <= m items (i - 1) w) && ([#"../knapsack_full.rs" 62 10 62 21] m items (i - 1) w >= 0) -> (let result = m items (i - 1) w in ([#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv1 s -> 0 <= j /\ j <= Seq.length s /\ subseq_rev0 s j items i /\ sum_weights0 s j <= w -> sum_values0 s j <= result) && ([#"../knapsack_full.rs" 62 10 62 21] result >= 0)))
+      | False -> ((([#"../knapsack_full.rs" 66 11 66 16] inv0 items) && ([#"../knapsack_full.rs" 61 11 61 17] 0 <= w) && ([#"../knapsack_full.rs" 60 11 60 37] 0 <= i - 1 /\ i - 1 <= Seq.length items)) /\ 0 <= ([#"../knapsack_full.rs" 59 10 59 11] i) /\ ([#"../knapsack_full.rs" 59 10 59 11] i - 1) < ([#"../knapsack_full.rs" 59 10 59 11] i)) /\ (([#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv1 s -> 0 <= j /\ j <= Seq.length s /\ subseq_rev0 s j items (i - 1) /\ sum_weights0 s j <= w -> sum_values0 s j <= m items (i - 1) w) && ([#"../knapsack_full.rs" 62 10 62 21] m items (i - 1) w >= 0) -> ((([#"../knapsack_full.rs" 66 11 66 16] inv0 items) && ([#"../knapsack_full.rs" 61 11 61 17] 0 <= w - UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1)))) && ([#"../knapsack_full.rs" 60 11 60 37] 0 <= i - 1 /\ i - 1 <= Seq.length items)) /\ 0 <= ([#"../knapsack_full.rs" 59 10 59 11] i) /\ ([#"../knapsack_full.rs" 59 10 59 11] i - 1) < ([#"../knapsack_full.rs" 59 10 59 11] i)) /\ (([#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv1 s -> 0 <= j /\ j <= Seq.length s /\ subseq_rev0 s j items (i - 1) /\ sum_weights0 s j <= w - UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1))) -> sum_values0 s j <= m items (i - 1) (w - UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1))))) && ([#"../knapsack_full.rs" 62 10 62 21] m items (i - 1) (w - UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1)))) >= 0) -> (let result = MinMax.max (m items (i - 1) w) (m items (i - 1) (w - UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1)))) + UIntSize.to_int (KnapsackFull_Item_Type.item_value (Seq.get items (i - 1)))) in ([#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv1 s -> 0 <= j /\ j <= Seq.length s /\ subseq_rev0 s j items i /\ sum_weights0 s j <= w -> sum_values0 s j <= result) && ([#"../knapsack_full.rs" 62 10 62 21] result >= 0))))
+      end
+    end
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque

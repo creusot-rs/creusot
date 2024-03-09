@@ -756,15 +756,13 @@ module Bdd_Impl8_Size_Impl
   use Bdd_Node_Type as Bdd_Node_Type
   use Bdd_Bdd_Type as Bdd_Bdd_Type
   use prelude.Int
-  let rec ghost function size [#"../bdd.rs" 224 4 224 24] (self : Bdd_Bdd_Type.t_bdd) : int
-    ensures { [#"../bdd.rs" 223 14 223 25] result >= 0 }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../bdd.rs" 226 12 234 13] match self with
-      | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_True) _ -> 0
-      | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_False) _ -> 0
-      | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If _ childt childf) _ -> let ht = size childt in let hf = size childf in 1 + ht + hf
-      end
+  constant self  : Bdd_Bdd_Type.t_bdd
+  function size [#"../bdd.rs" 224 4 224 24] (self : Bdd_Bdd_Type.t_bdd) : int
+  goal vc_size : match self with
+    | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_True) _ -> [#"../bdd.rs" 223 14 223 25] 0 >= 0
+    | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_False) _ -> [#"../bdd.rs" 223 14 223 25] 0 >= 0
+    | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If _ childt childf) _ -> ([#"../bdd.rs" 223 14 223 25] size childt >= 0) -> (let ht = size childt in ([#"../bdd.rs" 223 14 223 25] size childf >= 0) -> (let hf = size childf in [#"../bdd.rs" 223 14 223 25] 1 + ht + hf >= 0))
+    end
 end
 module Bdd_Context_Type
   use Bdd_Bdd_Type as Bdd_Bdd_Type
@@ -946,14 +944,11 @@ module Bdd_Impl10_GrowsIsValidBdd_Impl
   val grows0 [#"../bdd.rs" 296 4 296 35] (self : borrowed (Bdd_Context_Type.t_context)) : bool
     ensures { result = grows0 self }
     
-  let rec ghost function grows_is_valid_bdd [#"../bdd.rs" 336 4 336 56] (self : borrowed (Bdd_Context_Type.t_context)) (b : Bdd_Bdd_Type.t_bdd) : ()
-    requires {[#"../bdd.rs" 333 15 333 27] grows0 self}
-    requires {[#"../bdd.rs" 334 15 334 35] is_valid_bdd0 ( * self) b}
-    requires {[#"../bdd.rs" 336 35 336 39] inv0 self}
-    ensures { [#"../bdd.rs" 335 14 335 37] is_valid_bdd0 ( ^ self) b }
+  constant self  : borrowed (Bdd_Context_Type.t_context)
+  constant b  : Bdd_Bdd_Type.t_bdd
+  function grows_is_valid_bdd [#"../bdd.rs" 336 4 336 56] (self : borrowed (Bdd_Context_Type.t_context)) (b : Bdd_Bdd_Type.t_bdd) : ()
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../bdd.rs" 331 4 331 12] ()
+  goal vc_grows_is_valid_bdd : ([#"../bdd.rs" 336 35 336 39] inv0 self) -> ([#"../bdd.rs" 334 15 334 35] is_valid_bdd0 ( * self) b) -> ([#"../bdd.rs" 333 15 333 27] grows0 self) -> ([#"../bdd.rs" 335 14 335 37] is_valid_bdd0 ( ^ self) b)
 end
 module Bdd_Impl10_GrowsTrans_Impl
   use Bdd_Bdd_Type as Bdd_Bdd_Type
@@ -1090,18 +1085,12 @@ module Bdd_Impl10_GrowsTrans_Impl
   val grows0 [#"../bdd.rs" 296 4 296 35] (self : borrowed (Bdd_Context_Type.t_context)) : bool
     ensures { result = grows0 self }
     
-  let rec ghost function grows_trans [#"../bdd.rs" 345 4 345 62] (self : borrowed (Bdd_Context_Type.t_context)) (o : borrowed (Bdd_Context_Type.t_context)) (oo : borrowed (Bdd_Context_Type.t_context)) : ()
-    requires {[#"../bdd.rs" 340 15 340 27] grows0 self}
-    requires {[#"../bdd.rs" 341 15 341 24] grows0 o}
-    requires {[#"../bdd.rs" 342 15 342 26]  ^ self =  * o}
-    requires {[#"../bdd.rs" 343 15 343 43]  * self =  * oo /\  ^ self =  ^ oo}
-    requires {[#"../bdd.rs" 345 28 345 32] inv0 self}
-    requires {[#"../bdd.rs" 345 34 345 35] inv0 o}
-    requires {[#"../bdd.rs" 345 48 345 50] inv0 oo}
-    ensures { [#"../bdd.rs" 344 14 344 24] grows0 oo }
+  constant self  : borrowed (Bdd_Context_Type.t_context)
+  constant o  : borrowed (Bdd_Context_Type.t_context)
+  constant oo  : borrowed (Bdd_Context_Type.t_context)
+  function grows_trans [#"../bdd.rs" 345 4 345 62] (self : borrowed (Bdd_Context_Type.t_context)) (o : borrowed (Bdd_Context_Type.t_context)) (oo : borrowed (Bdd_Context_Type.t_context)) : ()
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../bdd.rs" 338 4 338 12] ()
+  goal vc_grows_trans : ([#"../bdd.rs" 345 48 345 50] inv0 oo) -> ([#"../bdd.rs" 345 34 345 35] inv0 o) -> ([#"../bdd.rs" 345 28 345 32] inv0 self) -> ([#"../bdd.rs" 343 15 343 43]  * self =  * oo /\  ^ self =  ^ oo) -> ([#"../bdd.rs" 342 15 342 26]  ^ self =  * o) -> ([#"../bdd.rs" 341 15 341 24] grows0 o) -> ([#"../bdd.rs" 340 15 340 27] grows0 self) -> ([#"../bdd.rs" 344 14 344 24] grows0 oo)
 end
 module Bdd_Impl10_SetIrreleventVar_Impl
   use Bdd_Bdd_Type as Bdd_Bdd_Type
@@ -1221,17 +1210,17 @@ module Bdd_Impl10_SetIrreleventVar_Impl
     | Bdd_Context_Type.C_Context alloc hashcons hashcons_ghost not_memo and_memo cnt -> true
     end)
   use map.Map
-  let rec ghost function set_irrelevent_var [#"../bdd.rs" 351 4 351 87] (self : Bdd_Context_Type.t_context) (a : Bdd_Bdd_Type.t_bdd) (x : uint64) (v : Map.map uint64 bool) (b : bool) : ()
-    requires {[#"../bdd.rs" 348 15 348 35] is_valid_bdd0 self a}
-    requires {[#"../bdd.rs" 349 15 349 32] UInt64.to_int x < leastvar0 a}
-    requires {[#"../bdd.rs" 351 26 351 30] inv0 self}
-    ensures { [#"../bdd.rs" 350 14 350 50] interp0 a v = interp0 a (Map.set v x b) }
+  constant self  : Bdd_Context_Type.t_context
+  constant a  : Bdd_Bdd_Type.t_bdd
+  constant x  : uint64
+  constant v  : Map.map uint64 bool
+  constant b  : bool
+  function set_irrelevent_var [#"../bdd.rs" 351 4 351 87] (self : Bdd_Context_Type.t_context) (a : Bdd_Bdd_Type.t_bdd) (x : uint64) (v : Map.map uint64 bool) (b : bool) : ()
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../bdd.rs" 353 12 359 13] match a with
-      | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If _ childt childf) _ -> let _ = set_irrelevent_var self childt x v b in let _ = set_irrelevent_var self childf x v b in ()
-      | _ -> ()
-      end
+  goal vc_set_irrelevent_var : ([#"../bdd.rs" 351 26 351 30] inv0 self) -> ([#"../bdd.rs" 349 15 349 32] UInt64.to_int x < leastvar0 a) -> ([#"../bdd.rs" 348 15 348 35] is_valid_bdd0 self a) -> match a with
+    | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If _ childt childf) _ -> (([#"../bdd.rs" 351 26 351 30] inv0 self) && ([#"../bdd.rs" 349 15 349 32] UInt64.to_int x < leastvar0 childt) && ([#"../bdd.rs" 348 15 348 35] is_valid_bdd0 self childt)) /\ (([#"../bdd.rs" 350 14 350 50] interp0 childt v = interp0 childt (Map.set v x b)) -> (let _ = set_irrelevent_var self childt x v b in (([#"../bdd.rs" 351 26 351 30] inv0 self) && ([#"../bdd.rs" 349 15 349 32] UInt64.to_int x < leastvar0 childf) && ([#"../bdd.rs" 348 15 348 35] is_valid_bdd0 self childf)) /\ (([#"../bdd.rs" 350 14 350 50] interp0 childf v = interp0 childf (Map.set v x b)) -> (let _ = set_irrelevent_var self childf x v b in [#"../bdd.rs" 350 14 350 50] interp0 a v = interp0 a (Map.set v x b)))))
+    | _ -> [#"../bdd.rs" 350 14 350 50] interp0 a v = interp0 a (Map.set v x b)
+    end
 end
 module Bdd_Impl10_DiscrValuation_Impl
   use Bdd_Bdd_Type as Bdd_Bdd_Type
@@ -1376,48 +1365,39 @@ module Bdd_Impl10_DiscrValuation_Impl
     ensures { result = size0 self }
     
   axiom size0_spec : forall self : Bdd_Bdd_Type.t_bdd . [#"../bdd.rs" 223 14 223 25] size0 self >= 0
-  let rec ghost function discr_valuation [#"../bdd.rs" 370 4 370 82] (self : Bdd_Context_Type.t_context) (a : Bdd_Bdd_Type.t_bdd) (b : Bdd_Bdd_Type.t_bdd) : Map.map uint64 bool
-    requires {[#"../bdd.rs" 364 15 364 35] is_valid_bdd0 self a}
-    requires {[#"../bdd.rs" 365 15 365 35] is_valid_bdd0 self b}
-    requires {[#"../bdd.rs" 366 15 366 21] a <> b}
-    requires {[#"../bdd.rs" 370 23 370 27] inv0 self}
-    ensures { [#"../bdd.rs" 367 14 367 50] interp0 a result <> interp0 b result }
-    variant {[#"../bdd.rs" 368 14 368 33] size0 a + size0 b}
+  constant self  : Bdd_Context_Type.t_context
+  constant a  : Bdd_Bdd_Type.t_bdd
+  constant b  : Bdd_Bdd_Type.t_bdd
+  function discr_valuation [#"../bdd.rs" 370 4 370 82] (self : Bdd_Context_Type.t_context) (a : Bdd_Bdd_Type.t_bdd) (b : Bdd_Bdd_Type.t_bdd) : Map.map uint64 bool
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../bdd.rs" 372 12 372 36] let _ = () in if let x1 = leastvar0 b in let x0 = leastvar0 a in pure {x0 < x1} then
-      match a with
-        | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If v childt childf) _ -> if pure {childf <> b} then
-          let a' = discr_valuation self childf b in Map.set a' v false
-        else
-          let a' = discr_valuation self childt b in Map.set a' v true
-        
-        | _ -> Const.const true
+  goal vc_discr_valuation : ([#"../bdd.rs" 370 23 370 27] inv0 self) -> ([#"../bdd.rs" 366 15 366 21] a <> b) -> ([#"../bdd.rs" 365 15 365 35] is_valid_bdd0 self b) -> ([#"../bdd.rs" 364 15 364 35] is_valid_bdd0 self a) -> (let _ = set_irrelevent_var0 in match leastvar0 a < leastvar0 b with
+    | True -> match a with
+      | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If v childt childf) _ -> match childf <> b with
+        | True -> ((([#"../bdd.rs" 370 23 370 27] inv0 self) && ([#"../bdd.rs" 366 15 366 21] childf <> b) && ([#"../bdd.rs" 365 15 365 35] is_valid_bdd0 self b) && ([#"../bdd.rs" 364 15 364 35] is_valid_bdd0 self childf)) /\ 0 <= ([#"../bdd.rs" 368 14 368 33] size0 a + size0 b) /\ ([#"../bdd.rs" 368 14 368 33] size0 childf + size0 b) < ([#"../bdd.rs" 368 14 368 33] size0 a + size0 b)) /\ (([#"../bdd.rs" 367 14 367 50] interp0 childf (discr_valuation self childf b) <> interp0 b (discr_valuation self childf b)) -> (let result = Map.set (discr_valuation self childf b) v false in [#"../bdd.rs" 367 14 367 50] interp0 a result <> interp0 b result))
+        | False -> ((([#"../bdd.rs" 370 23 370 27] inv0 self) && ([#"../bdd.rs" 366 15 366 21] childt <> b) && ([#"../bdd.rs" 365 15 365 35] is_valid_bdd0 self b) && ([#"../bdd.rs" 364 15 364 35] is_valid_bdd0 self childt)) /\ 0 <= ([#"../bdd.rs" 368 14 368 33] size0 a + size0 b) /\ ([#"../bdd.rs" 368 14 368 33] size0 childt + size0 b) < ([#"../bdd.rs" 368 14 368 33] size0 a + size0 b)) /\ (([#"../bdd.rs" 367 14 367 50] interp0 childt (discr_valuation self childt b) <> interp0 b (discr_valuation self childt b)) -> (let result = Map.set (discr_valuation self childt b) v true in [#"../bdd.rs" 367 14 367 50] interp0 a result <> interp0 b result))
         end
-    else
-      if let x1 = leastvar0 b in let x0 = leastvar0 a in pure {x0 > x1} then
-        match b with
-          | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If v childt childf) _ -> if pure {childf <> a} then
-            let a' = discr_valuation self a childf in Map.set a' v false
-          else
-            let a' = discr_valuation self a childt in Map.set a' v true
-          
-          | _ -> Const.const true
+      | _ -> let result = Const.const true in [#"../bdd.rs" 367 14 367 50] interp0 a result <> interp0 b result
+      end
+    | False -> match leastvar0 a > leastvar0 b with
+      | True -> match b with
+        | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If v childt childf) _ -> match childf <> a with
+          | True -> ((([#"../bdd.rs" 370 23 370 27] inv0 self) && ([#"../bdd.rs" 366 15 366 21] a <> childf) && ([#"../bdd.rs" 365 15 365 35] is_valid_bdd0 self childf) && ([#"../bdd.rs" 364 15 364 35] is_valid_bdd0 self a)) /\ 0 <= ([#"../bdd.rs" 368 14 368 33] size0 a + size0 b) /\ ([#"../bdd.rs" 368 14 368 33] size0 a + size0 childf) < ([#"../bdd.rs" 368 14 368 33] size0 a + size0 b)) /\ (([#"../bdd.rs" 367 14 367 50] interp0 a (discr_valuation self a childf) <> interp0 childf (discr_valuation self a childf)) -> (let result = Map.set (discr_valuation self a childf) v false in [#"../bdd.rs" 367 14 367 50] interp0 a result <> interp0 b result))
+          | False -> ((([#"../bdd.rs" 370 23 370 27] inv0 self) && ([#"../bdd.rs" 366 15 366 21] a <> childt) && ([#"../bdd.rs" 365 15 365 35] is_valid_bdd0 self childt) && ([#"../bdd.rs" 364 15 364 35] is_valid_bdd0 self a)) /\ 0 <= ([#"../bdd.rs" 368 14 368 33] size0 a + size0 b) /\ ([#"../bdd.rs" 368 14 368 33] size0 a + size0 childt) < ([#"../bdd.rs" 368 14 368 33] size0 a + size0 b)) /\ (([#"../bdd.rs" 367 14 367 50] interp0 a (discr_valuation self a childt) <> interp0 childt (discr_valuation self a childt)) -> (let result = Map.set (discr_valuation self a childt) v true in [#"../bdd.rs" 367 14 367 50] interp0 a result <> interp0 b result))
           end
-      else
-        match a with
-          | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If v childta childfa) _ -> match b with
-            | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If _ childtb childfb) _ -> if pure {childfa <> childfb} then
-              let a' = discr_valuation self childfa childfb in Map.set a' v false
-            else
-              let a' = discr_valuation self childta childtb in Map.set a' v true
-            
-            | _ -> Const.const true
+        | _ -> let result = Const.const true in [#"../bdd.rs" 367 14 367 50] interp0 a result <> interp0 b result
+        end
+      | False -> match a with
+        | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If v childta childfa) _ -> match b with
+          | Bdd_Bdd_Type.C_Bdd (Bdd_Node_Type.C_If _ childtb childfb) _ -> match childfa <> childfb with
+            | True -> ((([#"../bdd.rs" 370 23 370 27] inv0 self) && ([#"../bdd.rs" 366 15 366 21] childfa <> childfb) && ([#"../bdd.rs" 365 15 365 35] is_valid_bdd0 self childfb) && ([#"../bdd.rs" 364 15 364 35] is_valid_bdd0 self childfa)) /\ 0 <= ([#"../bdd.rs" 368 14 368 33] size0 a + size0 b) /\ ([#"../bdd.rs" 368 14 368 33] size0 childfa + size0 childfb) < ([#"../bdd.rs" 368 14 368 33] size0 a + size0 b)) /\ (([#"../bdd.rs" 367 14 367 50] interp0 childfa (discr_valuation self childfa childfb) <> interp0 childfb (discr_valuation self childfa childfb)) -> (let result = Map.set (discr_valuation self childfa childfb) v false in [#"../bdd.rs" 367 14 367 50] interp0 a result <> interp0 b result))
+            | False -> ((([#"../bdd.rs" 370 23 370 27] inv0 self) && ([#"../bdd.rs" 366 15 366 21] childta <> childtb) && ([#"../bdd.rs" 365 15 365 35] is_valid_bdd0 self childtb) && ([#"../bdd.rs" 364 15 364 35] is_valid_bdd0 self childta)) /\ 0 <= ([#"../bdd.rs" 368 14 368 33] size0 a + size0 b) /\ ([#"../bdd.rs" 368 14 368 33] size0 childta + size0 childtb) < ([#"../bdd.rs" 368 14 368 33] size0 a + size0 b)) /\ (([#"../bdd.rs" 367 14 367 50] interp0 childta (discr_valuation self childta childtb) <> interp0 childtb (discr_valuation self childta childtb)) -> (let result = Map.set (discr_valuation self childta childtb) v true in [#"../bdd.rs" 367 14 367 50] interp0 a result <> interp0 b result))
             end
-          | _ -> Const.const true
+          | _ -> let result = Const.const true in [#"../bdd.rs" 367 14 367 50] interp0 a result <> interp0 b result
           end
-      
-    
+        | _ -> let result = Const.const true in [#"../bdd.rs" 367 14 367 50] interp0 a result <> interp0 b result
+        end
+      end
+    end)
 end
 module Bdd_Impl10_BddCanonical_Impl
   use Bdd_Bdd_Type as Bdd_Bdd_Type
@@ -1605,15 +1585,12 @@ module Bdd_Impl10_BddCanonical_Impl
     ensures { result = discr_valuation0 self a b }
     
   axiom discr_valuation0_spec : forall self : Bdd_Context_Type.t_context, a : Bdd_Bdd_Type.t_bdd, b : Bdd_Bdd_Type.t_bdd . ([#"../bdd.rs" 364 15 364 35] is_valid_bdd0 self a) -> ([#"../bdd.rs" 365 15 365 35] is_valid_bdd0 self b) -> ([#"../bdd.rs" 366 15 366 21] a <> b) -> ([#"../bdd.rs" 370 23 370 27] inv0 self) -> ([#"../bdd.rs" 367 14 367 50] interp0 a (discr_valuation0 self a b) <> interp0 b (discr_valuation0 self a b))
-  let rec ghost function bdd_canonical [#"../bdd.rs" 418 4 418 62] (self : Bdd_Context_Type.t_context) (a : Bdd_Bdd_Type.t_bdd) (b : Bdd_Bdd_Type.t_bdd) : ()
-    requires {[#"../bdd.rs" 413 15 413 35] is_valid_bdd0 self a}
-    requires {[#"../bdd.rs" 414 15 414 35] is_valid_bdd0 self b}
-    requires {[#"../bdd.rs" 415 4 415 56] forall v : Map.map uint64 bool . interp0 a v = interp0 b v}
-    requires {[#"../bdd.rs" 418 25 418 29] inv0 self}
-    ensures { [#"../bdd.rs" 416 14 416 20] a = b }
+  constant self  : Bdd_Context_Type.t_context
+  constant a  : Bdd_Bdd_Type.t_bdd
+  constant b  : Bdd_Bdd_Type.t_bdd
+  function bdd_canonical [#"../bdd.rs" 418 4 418 62] (self : Bdd_Context_Type.t_context) (a : Bdd_Bdd_Type.t_bdd) (b : Bdd_Bdd_Type.t_bdd) : ()
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../bdd.rs" 419 8 419 29] let _ = () in ()
+  goal vc_bdd_canonical : ([#"../bdd.rs" 418 25 418 29] inv0 self) -> ([#"../bdd.rs" 415 4 415 56] forall v : Map.map uint64 bool . interp0 a v = interp0 b v) -> ([#"../bdd.rs" 414 15 414 35] is_valid_bdd0 self b) -> ([#"../bdd.rs" 413 15 413 35] is_valid_bdd0 self a) -> (let _ = discr_valuation0 in [#"../bdd.rs" 416 14 416 20] a = b)
 end
 module Bdd_Impl11_New
   use Bdd_Bdd_Type as Bdd_Bdd_Type

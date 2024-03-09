@@ -2,7 +2,7 @@ use std::{fmt::Display, iter::once};
 
 use super::*;
 use crate::{
-    declaration::*,
+    declaration::{self, *},
     exp::{AssocDir, BinOp, Binder, Constant, Precedence, Trigger, UnOp},
 };
 use num::{Float, Zero};
@@ -81,6 +81,7 @@ impl Print for Decl {
             Decl::Axiom(a) => a.pretty(alloc),
             Decl::Goal(g) => g.pretty(alloc),
             Decl::Let(l) => l.pretty(alloc),
+            Decl::ConstantDecl(c) => c.pretty(alloc),
         }
     }
 }
@@ -149,6 +150,21 @@ impl Print for Goal {
             .append(self.name.pretty(alloc))
             .append(" : ")
             .append(self.goal.pretty(alloc))
+    }
+}
+
+impl Print for declaration::Constant {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        alloc
+            .text("constant ")
+            .append(self.name.pretty(alloc))
+            .append(" : ")
+            .append(self.type_.pretty(alloc))
+            .append(" = ")
+            .append(self.body.pretty(alloc))
     }
 }
 
