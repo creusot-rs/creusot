@@ -10,7 +10,7 @@ use rustc_hir::def_id::DefId;
 use why3::{
     declaration::*,
     exp::{super_visit_mut, BinOp, Binder, Exp, ExpMutVisitor, Trigger},
-    Ident, Print as _, QName,
+    Ident, QName,
 };
 
 mod vcgen;

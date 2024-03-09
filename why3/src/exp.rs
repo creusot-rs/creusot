@@ -433,6 +433,23 @@ impl Exp {
         }
     }
 
+    pub fn if_(cond: Self, then: Self, else_: Self) -> Self {
+        if then.is_true() && else_.is_true() {
+            then
+        } else if cond.is_true() {
+            then
+        } else if cond.is_false() {
+            else_
+        } else {
+            Exp::IfThenElse(Box::new(cond), Box::new(then), Box::new(else_))
+        }
+    }
+
+    /// Build an implication
+    ///
+    /// Performs the following simplifications
+    /// - True -> A <-> A
+    /// - A -> True <-> True
     pub fn implies(self, other: Self) -> Self {
         if self.is_true() {
             other
@@ -443,10 +460,20 @@ impl Exp {
         }
     }
 
+    /// Builds a quantifier with explicit trigger
+    ///
+    /// Simplfies ∀ x, True into True
     pub fn forall_trig(bound: Vec<(Ident, Type)>, trigger: Trigger, body: Exp) -> Self {
-        Exp::Forall(bound, trigger, Box::new(body))
+        if body.is_true() {
+            body
+        } else {
+            Exp::Forall(bound, trigger, Box::new(body))
+        }
     }
 
+    /// Builds a quantifier
+    ///
+    /// Simplfies ∀ x, True into True
     pub fn forall(bound: Vec<(Ident, Type)>, body: Exp) -> Self {
         Exp::forall_trig(bound, Trigger::NONE, body)
     }
@@ -464,6 +491,16 @@ impl Exp {
             true
         } else if let Exp::Attr(_, e) = self {
             e.is_true()
+        } else {
+            false
+        }
+    }
+
+    pub fn is_false(&self) -> bool {
+        if let Exp::Const(Constant::Bool(false)) = self {
+            true
+        } else if let Exp::Attr(_, e) = self {
+            e.is_false()
         } else {
             false
         }

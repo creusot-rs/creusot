@@ -273,15 +273,15 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 Ok(post)
             }),
 
-            // VC(A && B, Q) = VC(A, |a| VC(B, |b| a -> Q(b) /\ ~a -> Q(false)))
+            // VC(A && B, Q) = VC(A, |a| if a then VC(B, Q) else Q(false))
             // VC(A OP B, Q) = VC(A, |a| VC(B, |b| Q(a OP B)))
             TermKind::Binary { op, lhs, rhs } => match op {
                 BinOp::And => self.build_vc(lhs, &|lhs| {
-                    Ok(lhs
-                        .clone()
-                        .implies(self.build_vc(rhs, k)?)
-                        .log_and(lhs.not().implies(k(Exp::mk_false())?)))
+                    Ok(Exp::if_(lhs, self.build_vc(rhs, k)?, k(Exp::mk_false())?))
                 }),
+                // BinOp::Or => self.build_vc(lhs, &|lhs| {
+                //     Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_vc(rhs, k)?,))
+                // }),
                 BinOp::Div => self.build_vc(&lhs, &|lhs| {
                     self.build_vc(rhs, &|rhs| Ok(Exp::pure_var("div").app(vec![lhs.clone(), rhs])))
                 }),
@@ -344,9 +344,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // VC( ^ T, Q) = VC(T, |t| Q(^t))
             TermKind::Fin { term } => self.build_vc(&term, &|term| k(Exp::Final(Box::new(term)))),
             // VC(A -> B, Q) = VC(A, VC(B, Q(A -> B)))
-            TermKind::Impl { lhs, rhs } => {
-                self.build_vc(lhs, &|lhs| self.build_vc(rhs, &|rhs| k(lhs.clone().implies(rhs))))
-            }
+            TermKind::Impl { lhs, rhs } => self.build_vc(lhs, &|lhs| {
+                Ok(Exp::if_(lhs, self.build_vc(rhs, k)?, k(Exp::mk_true())?))
+            }),
             // VC(match A {P -> E}, Q) = VC(A, |a| match a {P -> VC(E, Q)})
             TermKind::Match { scrutinee, arms } => self.build_vc(scrutinee, &|scrut| {
                 let arms: Vec<_> = arms
