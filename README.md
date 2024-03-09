@@ -33,25 +33,43 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
 
 # Installing Creusot as a user
 
-. Set up **Rust**
+1. Set up **Rust**
     - [Install `rustup`](https://www.rust-lang.org/tools/install), to get the suitable Rust toolchain
-1. Set up **Why3**
+2. Set up **Why3** and **Alt-Ergo**
     - [Get `opam`](https://opam.ocaml.org/doc/Install.html), the package manager for OCaml
-    - Pin `why3` to `master` :
+    - Create an opam switch with OCaml 4.14.1:
     ```
-    $ opam pin add why3 https://gitlab.inria.fr/why3/why3.git
-    $ opam pin add why3-ide https://gitlab.inria.fr/why3/why3.git
+    $ opam switch create creusot ocaml.4.14.1
+    $ eval $(opam env --switch=creusot)
     ```
-    - Install `why3` and `why3-ide`: `$ opam install lablgtk3 lablgtk3-sourceview3 ocamlgraph why3 why3-ide`
-    - Get some SMT solvers: [Z3](https://github.com/Z3Prover/z3) (available by `brew`, `apt`, etc.), [CVC4](https://cvc4.github.io/) (`brew`, `apt`, etc.), [Alt-Ergo](https://alt-ergo.ocamlpro.com/) (`opam`, `apt`, etc.)
-    - Configure Why3: `$ why3 config detect`
-      * Troubleshoot:
-        When your `z3` is a bit too new (e.g., Why3 supports up to ver. 4.8.10 but yours is 4.8.12), Why3 refuses `z3`.
-        Then you can try hacking Why3 to make it consider your `z3` be of an older version (e.g., 4.8.10), by updating the relevant field of `~/.why3.conf`.
-2. Clone the [creusot](https://github.com/xldenis/creusot/) repo at any directory you like
-3. Build **Creusot**
-    - Enter the cloned directory and run `$ cargo install --path cargo-creusot`, and `$ cargo install --path creusot-rustc` this will build the `cargo-creusot` and `creusot-rustc` executables and place them in `~/.cargo/bin`.
+    - Pin `why3` to `master` and install it:
+    ```
+    $ opam pin -n why3 --dev-repo
+    $ opam pin -n why3-ide --dev-repo
+    $ opam install zarith ocamlgraph camlzip why3 why3-ide
+    ```
+    - Pin `alt-ergo` to version 2.4.3 and install it:
+    ```
+    $ opam pin alt-ergo 2.4.3
+    ```
+3. Clone the [creusot](https://github.com/xldenis/creusot/) repo at any directory you like
+4. Build **Creusot**
+    - Enter the cloned directory and run:
+    ```
+    $ cargo install --path creusot-rustc
+    $ cargo install --path cargo-creusot
+    ```
+    this will build the `cargo-creusot` and `creusot-rustc` executables and place them in `~/.cargo/bin`.
+5. Set up **Creusot**
+   ```
+   $ cargo creusot setup install
+   ```
+   This will download additional solvers (Z3, CVC4, CVC5) and configure Why3 to use them.
 
+# Hacking on Creusot
+
+See [HACKING.md](HACKING.md) for information on the developer workflow for
+hacking on the Creusot codebase.
 
 # Verifying with Creusot and Why3
 

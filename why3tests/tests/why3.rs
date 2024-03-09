@@ -5,7 +5,7 @@ use std::{
     fs::File,
     io::{BufRead, BufReader, Write},
     path::PathBuf,
-    process::{exit, Command},
+    process::exit,
 };
 use termcolor::*;
 
@@ -37,8 +37,7 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    let why3_path = std::env::var("WHY3_PATH").unwrap_or_else(|_| "why3".into());
-    let config_path = std::env::var("WHY3_CONFIG");
+
     let mut out = StandardStream::stdout(ColorChoice::Always);
     let orange = Color::Ansi256(214);
 
@@ -93,7 +92,7 @@ fn main() {
         sessionfile.push("why3session.xml");
 
         let output;
-        let mut command = Command::new(why3_path.clone());
+        let mut command = creusot_dev_config::why3_command().unwrap();
         command.arg("--warn-off=unused_variable");
         command.arg("--warn-off=clone_not_abstract");
 
@@ -139,10 +138,6 @@ fn main() {
                 ReplayLevel::All => {}
             };
 
-            if let Ok(ref config) = config_path {
-                command.args(&["-C", config]);
-                // command.arg(&format!("--extra-config={config}"));
-            }
             command.arg(sessiondir);
             output = command.ok();
             if output.is_ok() {
