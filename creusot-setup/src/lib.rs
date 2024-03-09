@@ -13,9 +13,11 @@ use tools::*;
 use tools_versions_urls::*;
 use ToolsConfig::*;
 
+// CAUTION: on MacOS, [config_dir] and [data_dir] are in fact the same directory
 struct CfgPaths {
     config_dir: PathBuf,
     config_file: PathBuf,
+    why3_config_file: PathBuf,
     data_dir: PathBuf,
     bin_subdir: PathBuf,
     cache_dir: PathBuf,
@@ -32,6 +34,7 @@ fn get_config_paths(custom_config_dir: &Option<PathBuf>) -> anyhow::Result<CfgPa
     Ok(CfgPaths {
         config_dir: PathBuf::from(config_dir),
         config_file: config_dir.join("Config.toml"),
+        why3_config_file: config_dir.join("why3.conf"),
         data_dir: PathBuf::from(dirs.data_dir()),
         bin_subdir: dirs.data_dir().join("bin"),
         cache_dir: PathBuf::from(dirs.cache_dir()),
@@ -183,7 +186,7 @@ pub fn status_for_creusot(custom_config_dir: &Option<PathBuf>) -> anyhow::Result
                     }
                     Ok(CreusotFlags {
                         why3_path: why3_path.to_path_buf(),
-                        why3_config: Some(paths.config_dir.join(".why3.conf")),
+                        why3_config: Some(paths.why3_config_file),
                     })
                 }
             }
@@ -307,7 +310,7 @@ fn managed_download_and_generate_config(
     symlink_file(altergo_path, &paths.bin_subdir.join(ALTERGO.binary_name))?;
 
     // generate the corresponding .why3.conf
-    generate_why3_conf(why3_path, &paths.bin_subdir, &paths.config_dir)?;
+    generate_why3_conf(why3_path, &paths.bin_subdir, &paths.why3_config_file)?;
 
     // write the config file
     let config = Config {
