@@ -39,7 +39,10 @@ Notes:
 cargo test --test ui
 ```
 
-TODO: how to update an out-of-date reference file?
+Then, to update an out-of-date reference file:
+```
+cargo test --test ui -- "optional-string" --bless
+```
 
 - Replay proofs:
 ```
