@@ -64,7 +64,7 @@ pub enum PreludeModule {
 }
 
 impl PreludeModule {
-    fn qname(&self) -> QName {
+    pub fn qname(&self) -> QName {
         match self {
             PreludeModule::Float32 => QName::from_string("prelude.Float32").unwrap(),
             PreludeModule::Float64 => QName::from_string("prelude.Float64").unwrap(),

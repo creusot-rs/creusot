@@ -13,10 +13,6 @@ use why3::{
         Exp::{self, *},
         Pattern::*,
     },
-    mlcfg::{
-        Statement::*,
-        {self},
-    },
     Ident, QName,
 };
 
@@ -39,8 +35,8 @@ pub(crate) fn create_assign_inner<'tcx>(
     locals: &LocalDecls<'tcx>,
     lhs: &fmir::Place<'tcx>,
     rhs: Exp,
-    span: Span,
-) -> mlcfg::Statement {
+    _: Span,
+) -> (Ident, Exp) {
     let inner = create_assign_rec(
         ctx,
         names,
@@ -52,7 +48,7 @@ pub(crate) fn create_assign_inner<'tcx>(
         rhs,
     );
 
-    Assign { lhs: Ident::build(lhs.local.as_str()), rhs: inner, attr: ctx.span_attr(span) }
+    (Ident::build(lhs.local.as_str()), inner)
 }
 
 fn create_assign_rec<'tcx>(
