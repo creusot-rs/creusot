@@ -545,8 +545,8 @@ impl Print for Exp {
                 .append(arg.pretty(alloc))
                 .append(" in ")
                 .append(body.pretty(alloc)),
-            Exp::Var(v, _) => v.pretty(alloc),
-            Exp::QVar(v, _) => v.pretty(alloc),
+            Exp::Var(v) => v.pretty(alloc),
+            Exp::QVar(v) => v.pretty(alloc),
             Exp::RecUp { box record, updates } => {
                 let mut res = alloc
                     .space()

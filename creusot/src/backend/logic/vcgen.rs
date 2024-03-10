@@ -6,7 +6,7 @@ use std::{
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, ParamEnv, Ty, TyKind};
 use rustc_span::{Span, Symbol};
-use why3::{declaration::Signature, exp::Purity, ty::Type, Exp, Ident, QName};
+use why3::{declaration::Signature, ty::Type, Exp, Ident, QName};
 
 use crate::{
     backend::{
@@ -287,11 +287,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 }),
                 _ => self.build_vc(&lhs, &|lhs| {
                     self.build_vc(rhs, &|rhs| {
-                        k(Exp::BinaryOp(
-                            binop_to_binop(*op, Purity::Logic),
-                            Box::new(lhs.clone()),
-                            Box::new(rhs),
-                        ))
+                        k(Exp::BinaryOp(binop_to_binop(*op), Box::new(lhs.clone()), Box::new(rhs)))
                     })
                 }),
             },
