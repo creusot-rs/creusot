@@ -1,8 +1,5 @@
 use super::{
-    clone_map::PreludeModule,
-    dependency::HackedId,
-    signature::signature_of,
-    term::{lower_impure, lower_pure},
+    clone_map::PreludeModule, dependency::HackedId, signature::signature_of, term::lower_pure,
     CloneDepth, CloneSummary, Namer, TransId, Why3Generator,
 };
 use crate::{
@@ -304,7 +301,7 @@ impl<'tcx> Operand<'tcx> {
         match self {
             Operand::Move(pl) => pl.as_rplace(ctx, names, locals),
             Operand::Copy(pl) => pl.as_rplace(ctx, names, locals),
-            Operand::Constant(c) => lower_impure(ctx, names, &c),
+            Operand::Constant(c) => lower_pure(ctx, names, &c),
         }
     }
     fn invalidated_places(&self, places: &mut Vec<fmir::Place<'tcx>>) {

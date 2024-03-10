@@ -25,16 +25,6 @@ pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
     ctx.attach_span(span, term)
 }
 
-pub(crate) fn lower_impure<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
-    term: &Term<'tcx>,
-) -> Exp {
-    let mut term = Lower { ctx, names, pure: Purity::Program }.lower_term(term);
-    term.reassociate();
-    term
-}
-
 pub(super) struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     pub(super) ctx: &'a mut Why3Generator<'tcx>,
     pub(super) names: &'a mut N,
