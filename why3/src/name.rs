@@ -55,7 +55,7 @@ impl From<String> for Ident {
 
 impl From<QName> for Exp {
     fn from(q: QName) -> Self {
-        Exp::impure_qvar(q)
+        Exp::qvar(q)
     }
 }
 

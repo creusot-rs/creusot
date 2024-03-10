@@ -9,7 +9,7 @@ use crate::{
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};
 use why3::{
-    exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
+    exp::{BinOp, Binder, Constant, Exp, Pattern as Pat},
     ty::Type,
     Ident, QName,
 };
@@ -20,34 +20,19 @@ pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
     term: &Term<'tcx>,
 ) -> Exp {
     let span = term.span;
-    let mut term = Lower { ctx, names, pure: Purity::Logic }.lower_term(term);
+    let mut term = Lower { ctx, names }.lower_term(term);
     term.reassociate();
     ctx.attach_span(span, term)
-}
-
-pub(crate) fn lower_impure<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
-    term: &Term<'tcx>,
-) -> Exp {
-    let mut term = Lower { ctx, names, pure: Purity::Program }.lower_term(term);
-    term.reassociate();
-    term
 }
 
 pub(super) struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     pub(super) ctx: &'a mut Why3Generator<'tcx>,
     pub(super) names: &'a mut N,
-    // true when we are translating a purely logical term
-    pub(super) pure: Purity,
 }
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     pub(crate) fn lower_term(&mut self, term: &Term<'tcx>) -> Exp {
         match &term.kind {
-            TermKind::Lit(l) => {
-                let c = lower_literal(self.ctx, self.names, l);
-                c
-            }
+            TermKind::Lit(l) => lower_literal(self.ctx, self.names, l),
             // FIXME: this is a weird dance.
             TermKind::Item(id, subst) => {
                 let method = (*id, *subst);
@@ -57,11 +42,11 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     let clone = self.names.value(*id, subst);
                     match self.ctx.type_of(id).instantiate_identity().kind() {
                         TyKind::FnDef(_, _) => Exp::Tuple(Vec::new()),
-                        _ => Exp::pure_qvar(clone),
+                        _ => Exp::qvar(clone),
                     }
                 })
             }
-            TermKind::Var(v) => Exp::pure_var(util::ident_of(*v)),
+            TermKind::Var(v) => Exp::var(util::ident_of(*v)),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -71,54 +56,10 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     self.names.import_prelude_module(PreludeModule::Int);
                 }
 
-                match (op, self.pure) {
-                    (Div, _) => Exp::pure_var("div").app(vec![lhs, rhs]),
-                    (Rem, _) => Exp::pure_var("mod").app(vec![lhs, rhs]),
-                    (Eq | Ne | Lt | Le | Gt | Ge, Purity::Program) => {
-                        let (lfvs, rfvs) = (lhs.fvs(), rhs.fvs());
-                        let mut freshvars = (0..)
-                            .map(|i| format!("x{i}").into())
-                            .filter(|x: &Ident| !(lfvs.contains(x) || rfvs.contains(x)));
-
-                        let (a, lhs) = if lhs.is_pure() {
-                            (lhs, None)
-                        } else {
-                            let v = freshvars.next().unwrap();
-                            (Exp::Var(v.clone(), self.pure), Some((v, lhs)))
-                        };
-
-                        let (b, rhs) = if rhs.is_pure() {
-                            (rhs, None)
-                        } else {
-                            let v = freshvars.next().unwrap();
-                            (Exp::Var(v.clone(), self.pure), Some((v, rhs)))
-                        };
-
-                        let op = binop_to_binop(*op, Purity::Logic);
-                        let mut inner =
-                            Exp::Pure(Box::new(Exp::BinaryOp(op, Box::new(a), Box::new(b))));
-
-                        if let Some((a, lhs)) = lhs {
-                            inner = Exp::Let {
-                                pattern: Pat::VarP(a),
-                                arg: Box::new(lhs),
-                                body: Box::new(inner),
-                            }
-                        };
-
-                        if let Some((b, rhs)) = rhs {
-                            inner = Exp::Let {
-                                pattern: Pat::VarP(b),
-                                arg: Box::new(rhs),
-                                body: Box::new(inner),
-                            }
-                        };
-
-                        inner
-                    }
-                    _ => {
-                        Exp::BinaryOp(binop_to_binop(*op, self.pure), Box::new(lhs), Box::new(rhs))
-                    }
+                match op {
+                    Div => Exp::var("div").app(vec![lhs, rhs]),
+                    Rem => Exp::var("mod").app(vec![lhs, rhs]),
+                    _ => Exp::BinaryOp(binop_to_binop(*op), Box::new(lhs), Box::new(rhs)),
                 }
             }
             TermKind::Unary { op, box arg } => {
@@ -145,24 +86,17 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     self.ctx.translate(method.0);
 
                     let clone = self.names.value(method.0, method.1);
-                    if self.pure == Purity::Program {
-                        mk_binders(Exp::QVar(clone, self.pure), args)
-                    } else {
-                        Exp::QVar(clone, self.pure).app(args)
-                    }
+                    Exp::qvar(clone).app(args)
                 })
             }
             TermKind::Forall { binder, box body } => {
-                let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, binder.1);
-                self.pure_exp(|this| {
-                    Exp::forall(vec![(binder.0.to_string().into(), ty)], this.lower_term(body))
-                })
+                let ty = self.lower_ty(binder.1);
+
+                Exp::forall(vec![(binder.0.to_string().into(), ty)], self.lower_term(body))
             }
             TermKind::Exists { binder, box body } => {
-                let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, binder.1);
-                self.pure_exp(|this| {
-                    Exp::exists(vec![(binder.0.to_string().into(), ty)], this.lower_term(body))
-                })
+                let ty = self.lower_ty(binder.1);
+                Exp::exists(vec![(binder.0.to_string().into(), ty)], self.lower_term(body))
             }
             TermKind::Constructor { typ, variant, fields } => {
                 self.ctx.translate(*typ);
@@ -187,7 +121,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::Final(Box::new(self.lower_term(term)))
             }
             TermKind::Impl { box lhs, box rhs } => {
-                self.pure_exp(|this| this.lower_term(lhs).implies(this.lower_term(rhs)))
+                self.lower_term(lhs).implies(self.lower_term(rhs))
             }
             TermKind::Old { box term } => Exp::Old(Box::new(self.lower_term(term))),
             TermKind::Match { box scrutinee, arms } => {
@@ -197,13 +131,13 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     } else {
                         (&arms[1].1, &arms[0].1)
                     };
-                    Exp::IfThenElse(
-                        Box::new(self.lower_term(scrutinee)),
-                        Box::new(self.lower_term(true_br)),
-                        Box::new(self.lower_term(false_br)),
+                    Exp::if_(
+                        self.lower_term(scrutinee),
+                        self.lower_term(true_br),
+                        self.lower_term(false_br),
                     )
                 } else {
-                    let _ = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, scrutinee.ty);
+                    let _ = self.lower_ty(scrutinee.ty);
                     let arms = arms
                         .iter()
                         .map(|(pat, body)| (self.lower_pat(pat), self.lower_term(body)))
@@ -232,7 +166,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                Exp::pure_qvar(accessor).app(vec![lhs])
+                Exp::qvar(accessor).app(vec![lhs])
             }
             TermKind::Closure { body } => {
                 let TyKind::Closure(id, subst) = term.ty.kind() else {
@@ -254,34 +188,17 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Reborrow { cur, fin, term, projection } => {
                 let inner = self.lower_term(&*term);
                 let borrow_id = borrow_generated_id(inner, &projection);
-                Exp::Call(
-                    Box::new(Exp::QVar("Borrow.borrow_logic".into(), Purity::Logic)),
-                    vec![self.lower_term(&*cur), self.lower_term(&*fin), borrow_id],
-                )
+
+                Exp::qvar("Borrow.borrow_logic".into()).app(vec![
+                    self.lower_term(&*cur),
+                    self.lower_term(&*fin),
+                    borrow_id,
+                ])
             }
             TermKind::Assert { cond } => {
                 let cond = self.lower_term(&*cond);
-                if self.pure == Purity::Program && !cond.is_pure() {
-                    Exp::Let {
-                        pattern: Pat::VarP("a".into()),
-                        arg: Box::new(cond),
-                        body: Box::new(Exp::Assert(Box::new(Exp::impure_var("a".into())))),
-                    }
-                } else {
-                    Exp::Assert(Box::new(cond))
-                }
-            }
-        }
-    }
 
-    fn pure_exp(&mut self, f: impl FnOnce(&mut Self) -> Exp) -> Exp {
-        match self.pure {
-            Purity::Logic => f(self),
-            Purity::Program => {
-                self.pure = Purity::Logic;
-                let ret = f(self);
-                self.pure = Purity::Program;
-                Exp::Pure(Box::new(ret))
+                Exp::Assert(Box::new(cond))
             }
         }
     }
@@ -326,14 +243,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             self.names.value(def_id.unwrap(), _substs);
             // self.names.import_builtin_module(builtin.clone().module_qname());
 
-            if let Purity::Program = self.pure {
-                return Some(mk_binders(
-                    Exp::pure_qvar(builtin.without_search_path()),
-                    args.clone(),
-                ));
-            } else {
-                return Some(Exp::pure_qvar(builtin.without_search_path()).app(args.clone()));
-            }
+            return Some(Exp::qvar(builtin.without_search_path()).app(args.clone()));
         }
         None
     }
@@ -375,44 +285,22 @@ pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
     }
 }
 
-pub(crate) fn binop_to_binop(op: pearlite::BinOp, purity: Purity) -> why3::exp::BinOp {
-    match (op, purity) {
-        (pearlite::BinOp::Add, _) => BinOp::Add,
-        (pearlite::BinOp::Sub, _) => BinOp::Sub,
-        (pearlite::BinOp::Mul, _) => BinOp::Mul,
-        (pearlite::BinOp::Lt, _) => BinOp::Lt,
-        (pearlite::BinOp::Le, _) => BinOp::Le,
-        (pearlite::BinOp::Gt, _) => BinOp::Gt,
-        (pearlite::BinOp::Ge, _) => BinOp::Ge,
-        (pearlite::BinOp::Eq, Purity::Logic) => BinOp::Eq,
-        (pearlite::BinOp::Ne, Purity::Logic) => BinOp::Ne,
-        (pearlite::BinOp::And, Purity::Logic) => BinOp::LogAnd,
-        (pearlite::BinOp::And, Purity::Program) => BinOp::LazyAnd,
-        (pearlite::BinOp::Or, Purity::Logic) => BinOp::LogOr,
-        (pearlite::BinOp::Or, Purity::Program) => BinOp::LazyOr,
-        _ => unreachable!("{op:?} {purity:?}"),
+pub(crate) fn binop_to_binop(op: pearlite::BinOp) -> why3::exp::BinOp {
+    match op {
+        pearlite::BinOp::Add => BinOp::Add,
+        pearlite::BinOp::Sub => BinOp::Sub,
+        pearlite::BinOp::Mul => BinOp::Mul,
+        pearlite::BinOp::Lt => BinOp::Lt,
+        pearlite::BinOp::Le => BinOp::Le,
+        pearlite::BinOp::Gt => BinOp::Gt,
+        pearlite::BinOp::Ge => BinOp::Ge,
+        pearlite::BinOp::Eq => BinOp::Eq,
+        pearlite::BinOp::Ne => BinOp::Ne,
+        pearlite::BinOp::And => BinOp::LogAnd,
+        pearlite::BinOp::Or => BinOp::LogOr,
+        pearlite::BinOp::Div => todo!("Refactor binop_to_binop to support Div"),
+        pearlite::BinOp::Rem => todo!("Refactor binop_to_binop to support Rem"),
     }
-}
-
-pub(super) fn mk_binders(func: Exp, args: Vec<Exp>) -> Exp {
-    let mut impure_args = Vec::with_capacity(args.len());
-    let mut call_args = Vec::with_capacity(args.len());
-    for (nm, arg) in ('a'..).zip(args.into_iter()) {
-        if arg.is_pure() {
-            call_args.push(arg);
-        } else {
-            call_args.push(Exp::impure_var(format!("{}'", nm).into()));
-            impure_args.push((format!("{}'", nm), arg));
-        }
-    }
-
-    let call = func.app(call_args);
-
-    impure_args.into_iter().rfold(call, |acc, arg| Exp::Let {
-        pattern: Pat::VarP(arg.0.into()),
-        arg: Box::new(arg.1),
-        body: Box::new(acc),
-    })
 }
 
 fn is_identity_from<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, subst: GenericArgsRef<'tcx>) -> bool {

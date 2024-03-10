@@ -598,13 +598,13 @@ pub(crate) fn build_accessor(
             let mut exp = Exp::Any(field_ty.clone());
             if ix == variant_ix {
                 pat[field_ix] = Pattern::VarP("a".into());
-                exp = Exp::pure_var("a");
+                exp = Exp::var("a");
             };
             (Pattern::ConsP(name.clone(), pat), exp)
         })
         .collect();
 
-    let discr_exp = Exp::Match(Box::new(Exp::pure_var("self")), branches);
+    let discr_exp = Exp::Match(Box::new(Exp::var("self")), branches);
 
     Decl::Let(LetDecl {
         sig,

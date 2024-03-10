@@ -89,7 +89,7 @@ pub enum UnOp {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub enum Purity {
+pub(crate) enum Purity {
     Logic,
     Program,
 }
@@ -123,8 +123,8 @@ pub enum Exp {
         arg: Box<Exp>,
         body: Box<Exp>,
     },
-    Var(Ident, Purity),
-    QVar(QName, Purity),
+    Var(Ident),
+    QVar(QName),
     Record {
         fields: Vec<(String, Exp)>,
     },
@@ -194,8 +194,8 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
             f.visit_mut(arg);
             f.visit_mut(body)
         }
-        Exp::Var(_, _) => {}
-        Exp::QVar(_, _) => {}
+        Exp::Var(_) => {}
+        Exp::QVar(_) => {}
         Exp::RecUp { record, updates } => {
             f.visit_mut(record);
             updates.iter_mut().for_each(|(_, val)| f.visit_mut(val));
@@ -276,8 +276,8 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
             f.visit(arg);
             f.visit(body)
         }
-        Exp::Var(_, _) => {}
-        Exp::QVar(_, _) => {}
+        Exp::Var(_) => {}
+        Exp::QVar(_) => {}
         Exp::RecUp { record, updates } => {
             f.visit(record);
             updates.iter().for_each(|(_, val)| f.visit(val));
@@ -340,20 +340,12 @@ pub fn super_visit_trigger<T: ExpVisitor>(f: &mut T, trigger: &Trigger) {
 }
 
 impl Exp {
-    pub fn impure_qvar(q: QName) -> Self {
-        Exp::QVar(q, Purity::Program)
+    pub fn qvar(q: QName) -> Self {
+        Exp::QVar(q)
     }
 
-    pub fn impure_var(v: Ident) -> Self {
-        Exp::Var(v, Purity::Program)
-    }
-
-    pub fn pure_qvar(q: QName) -> Self {
-        Exp::QVar(q, Purity::Logic)
-    }
-
-    pub fn pure_var(v: impl Into<Ident>) -> Self {
-        Exp::Var(v.into(), Purity::Logic)
+    pub fn var(v: impl Into<Ident>) -> Self {
+        Exp::Var(v.into())
     }
 
     pub fn lazy_conj(l: Exp, r: Exp) -> Self {
@@ -545,8 +537,6 @@ impl Exp {
         impl ExpVisitor for IsPure {
             fn visit(&mut self, exp: &Exp) {
                 match exp {
-                    Exp::Var(_, Purity::Program) => self.pure &= false,
-                    Exp::QVar(_, Purity::Program) => self.pure &= false,
                     Exp::Verbatim(_) => self.pure &= false,
                     Exp::Absurd => self.pure &= false,
                     // This is a bit absurd, but you can't put "pure {...}"
@@ -701,8 +691,8 @@ impl Exp {
             Exp::Final(_) => Prefix,
             Exp::Let { .. } => IfLet,
             Exp::Abs(_, _) => Abs,
-            Exp::Var(_, _) => Atom,
-            Exp::QVar(_, _) => Atom,
+            Exp::Var(_) => Atom,
+            Exp::QVar(_) => Atom,
             Exp::RecUp { .. } => App,
             Exp::RecField { .. } => Infix4,
             Exp::Tuple(_) => Atom,
@@ -751,7 +741,7 @@ impl Exp {
         impl ExpVisitor for Occurs {
             fn visit(&mut self, exp: &Exp) {
                 match exp {
-                    Exp::Var(v, _) => {
+                    Exp::Var(v) => {
                         *self.occurs.entry(v.clone()).or_insert(0) += 1;
                     }
                     Exp::Let { pattern, arg, body } => {
@@ -804,7 +794,7 @@ impl Exp {
         impl ExpVisitor for QFvs {
             fn visit(&mut self, exp: &Exp) {
                 match exp {
-                    Exp::QVar(v, _) => {
+                    Exp::QVar(v) => {
                         self.qfvs.insert(v.clone());
                     }
                     _ => super_visit(self, exp),
@@ -823,7 +813,7 @@ impl Exp {
         impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
             fn visit_mut(&mut self, exp: &mut Exp) {
                 match exp {
-                    Exp::Var(v, _) => {
+                    Exp::Var(v) => {
                         if let Some(e) = self.get(v) {
                             *exp = e.clone()
                         }
@@ -874,7 +864,7 @@ impl Exp {
                         let mut extended = HashMap::new();
                         for (_, exp) in &mut subst {
                             for id in &bnds & &exp.fvs() {
-                                extended.insert(id.clone(), Exp::pure_var(format!("{}'", &*id)));
+                                extended.insert(id.clone(), Exp::var(format!("{}'", &*id)));
                             }
                         }
                         binders.iter_mut().for_each(|(id, _)| {
@@ -897,7 +887,7 @@ impl Exp {
                         let mut extended = HashMap::new();
                         for (_, exp) in &mut subst {
                             for id in &bnds & &exp.fvs() {
-                                extended.insert(id.clone(), Exp::pure_var(format!("{}'", &*id)));
+                                extended.insert(id.clone(), Exp::var(format!("{}'", &*id)));
                             }
                         }
                         binders.iter_mut().for_each(|(id, _)| {

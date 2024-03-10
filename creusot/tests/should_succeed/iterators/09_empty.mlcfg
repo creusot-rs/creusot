@@ -55,7 +55,11 @@ module C09Empty_Impl0_ProducesTrans_Impl
   constant c  : C09Empty_Empty_Type.t_empty t
   function produces_trans [#"../09_empty.rs" 35 4 35 90] (a : C09Empty_Empty_Type.t_empty t) (ab : Seq.seq t) (b : C09Empty_Empty_Type.t_empty t) (bc : Seq.seq t) (c : C09Empty_Empty_Type.t_empty t) : ()
     
-  goal vc_produces_trans : ([#"../09_empty.rs" 35 61 35 63] inv0 bc) -> ([#"../09_empty.rs" 35 31 35 33] inv0 ab) -> ([#"../09_empty.rs" 33 15 33 32] produces0 b bc c) -> ([#"../09_empty.rs" 32 15 32 32] produces0 a ab b) -> ([#"../09_empty.rs" 34 14 34 42] produces0 a (Seq.(++) ab bc) c)
+  goal vc_produces_trans : ([#"../09_empty.rs" 35 61 35 63] inv0 bc)
+   -> ([#"../09_empty.rs" 35 31 35 33] inv0 ab)
+   -> ([#"../09_empty.rs" 33 15 33 32] produces0 b bc c)
+   -> ([#"../09_empty.rs" 32 15 32 32] produces0 a ab b)
+   -> ([#"../09_empty.rs" 34 14 34 42] produces0 a (Seq.(++) ab bc) c)
 end
 module Core_Option_Option_Type
   type t_option 't =
@@ -180,12 +184,17 @@ module C09Empty_Impl0
   val produces0 [#"../09_empty.rs" 21 4 21 64] (self : C09Empty_Empty_Type.t_empty t) (visited : Seq.seq t) (o : C09Empty_Empty_Type.t_empty t) : bool
     ensures { result = produces0 self visited o }
     
-  goal produces_trans_refn : [#"../09_empty.rs" 35 4 35 90] forall a : C09Empty_Empty_Type.t_empty t . forall ab : Seq.seq t . forall b : C09Empty_Empty_Type.t_empty t . forall bc : Seq.seq t . forall c : C09Empty_Empty_Type.t_empty t . inv0 c /\ inv1 bc /\ inv0 b /\ inv1 ab /\ inv0 a /\ produces0 b bc c /\ produces0 a ab b -> inv1 bc /\ inv1 ab /\ produces0 b bc c /\ produces0 a ab b /\ (forall result : () . produces0 a (Seq.(++) ab bc) c -> produces0 a (Seq.(++) ab bc) c)
-  goal produces_refl_refn : [#"../09_empty.rs" 28 4 28 26] forall self : C09Empty_Empty_Type.t_empty t . inv0 self -> (forall result : () . produces0 self (Seq.empty ) self -> produces0 self (Seq.empty ) self)
-  goal next_refn : [#"../09_empty.rs" 41 4 41 35] forall self : borrowed (C09Empty_Empty_Type.t_empty t) . inv2 self -> (forall result : Core_Option_Option_Type.t_option t . inv3 result /\ match result with
+  goal produces_trans_refn : [#"../09_empty.rs" 35 4 35 90] forall a : C09Empty_Empty_Type.t_empty t . forall ab : Seq.seq t . forall b : C09Empty_Empty_Type.t_empty t . forall bc : Seq.seq t . forall c : C09Empty_Empty_Type.t_empty t . inv0 c /\ inv1 bc /\ inv0 b /\ inv1 ab /\ inv0 a /\ produces0 b bc c /\ produces0 a ab b
+   -> inv1 bc /\ inv1 ab /\ produces0 b bc c /\ produces0 a ab b /\ (forall result : () . produces0 a (Seq.(++) ab bc) c
+   -> produces0 a (Seq.(++) ab bc) c)
+  goal produces_refl_refn : [#"../09_empty.rs" 28 4 28 26] forall self : C09Empty_Empty_Type.t_empty t . inv0 self
+   -> (forall result : () . produces0 self (Seq.empty ) self  -> produces0 self (Seq.empty ) self)
+  goal next_refn : [#"../09_empty.rs" 41 4 41 35] forall self : borrowed (C09Empty_Empty_Type.t_empty t) . inv2 self
+   -> (forall result : Core_Option_Option_Type.t_option t . inv3 result /\ match result with
     | Core_Option_Option_Type.C_None -> completed0 self
     | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
-    end -> inv3 result /\ match result with
+    end
+   -> inv3 result /\ match result with
     | Core_Option_Option_Type.C_None -> completed0 self
     | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
     end)

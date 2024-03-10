@@ -102,7 +102,8 @@ module C01_AllZero
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self}
     ensures { result = shallow_model2 self }
     
-  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv8 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
+  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv8 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
   predicate invariant7 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv8 (shallow_model2 self)
   val invariant7 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : bool
@@ -188,7 +189,9 @@ module C01_AllZero
   predicate produces0 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize)
     
    =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0 -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> deep_model0 (Seq.get visited i) = deep_model0 (Core_Ops_Range_Range_Type.range_start self) + i)
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0
+     -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> deep_model0 (Seq.get visited i) = deep_model0 (Core_Ops_Range_Range_Type.range_start self) + i)
   val produces0 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize) : bool
     ensures { result = produces0 self visited o }
     
@@ -204,14 +207,22 @@ module C01_AllZero
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv0 c}
     ensures { result = produces_trans0 a ab b bc c }
     
-  axiom produces_trans0_spec : forall a : Core_Ops_Range_Range_Type.t_range usize, ab : Seq.seq usize, b : Core_Ops_Range_Range_Type.t_range usize, bc : Seq.seq usize, c : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces0 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces0 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv0 a) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv9 ab) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv0 b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv9 bc) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv0 c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] produces0 a (Seq.(++) ab bc) c)
+  axiom produces_trans0_spec : forall a : Core_Ops_Range_Range_Type.t_range usize, ab : Seq.seq usize, b : Core_Ops_Range_Range_Type.t_range usize, bc : Seq.seq usize, c : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces0 a ab b)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces0 b bc c)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv0 a)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv9 ab)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv0 b)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv9 bc)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv0 c)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] produces0 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl0 (self : Core_Ops_Range_Range_Type.t_range usize) : ()
   val produces_refl0 (self : Core_Ops_Range_Range_Type.t_range usize) : ()
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv0 self}
     ensures { result = produces_refl0 self }
     
-  axiom produces_refl0_spec : forall self : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 45] produces0 self (Seq.empty ) self)
+  axiom produces_refl0_spec : forall self : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 45] produces0 self (Seq.empty ) self)
   predicate invariant0 (self : Core_Ops_Range_Range_Type.t_range usize) =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
   val invariant0 (self : Core_Ops_Range_Range_Type.t_range usize) : bool
@@ -232,7 +243,8 @@ module C01_AllZero
   use prelude.Slice
   use seq.Seq
   predicate resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq uint32) (fin : Seq.seq uint32) =
-    [#"../../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
+     -> Seq.get old' i = Seq.get fin i
   val resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq uint32) (fin : Seq.seq uint32) : bool
     ensures { result = resolve_elswhere0 self old' fin }
     
@@ -338,7 +350,8 @@ module C01_AllZero
     
   use prelude.Snapshot
   let rec cfg all_zero [#"../01.rs" 7 0 7 33] [@cfg:stackify] [@cfg:subregion_analysis] (v : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) : ()
-    ensures { [#"../01.rs" 5 0 5 73] forall i : int . 0 <= i /\ i < Seq.length (shallow_model2 ( ^ v)) -> index_logic0 ( ^ v) i = (0 : uint32) }
+    ensures { [#"../01.rs" 5 0 5 73] forall i : int . 0 <= i /\ i < Seq.length (shallow_model2 ( ^ v))
+     -> index_logic0 ( ^ v) i = (0 : uint32) }
     ensures { [#"../01.rs" 6 10 6 33] Seq.length (shallow_model0 v) = Seq.length (shallow_model2 ( ^ v)) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -370,7 +383,7 @@ module C01_AllZero
     goto BB2
   }
   BB2 {
-    [#"../01.rs" 11 13 11 23] _7 <- ([#"../01.rs" 11 13 11 23] Core_Ops_Range_Range_Type.C_Range (0 : usize) _8);
+    [#"../01.rs" 11 13 11 23] _7 <- ([#"../01.rs" 11 13 11 23] Core_Ops_Range_Range_Type.C_Range ([#"../01.rs" 11 13 11 14] (0 : usize)) _8);
     _8 <- any usize;
     [#"../01.rs" 9 4 9 42] iter <- ([#"../01.rs" 9 4 9 42] into_iter0 _7);
     _7 <- any Core_Ops_Range_Range_Type.t_range usize;
@@ -391,7 +404,8 @@ module C01_AllZero
     invariant { [#"../01.rs" 9 4 9 42] inv0 iter };
     invariant { [#"../01.rs" 9 4 9 42] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter };
     invariant { [#"../01.rs" 9 16 9 40] Seq.length (shallow_model0 v) = Seq.length (shallow_model1 old_v) };
-    invariant { [#"../01.rs" 9 4 9 42] forall j : int . 0 <= j /\ j < Seq.length (Snapshot.inner produced) -> index_logic0 ( * v) j = (0 : uint32) };
+    invariant { [#"../01.rs" 9 4 9 42] forall j : int . 0 <= j /\ j < Seq.length (Snapshot.inner produced)
+     -> index_logic0 ( * v) j = (0 : uint32) };
     goto BB7
   }
   BB7 {
@@ -412,7 +426,7 @@ module C01_AllZero
   }
   BB9 {
     assume { resolve2 v };
-    [#"../01.rs" 9 4 9 42] _0 <- ([#"../01.rs" 9 4 9 42] ());
+    [#"../01.rs" 9 4 9 42] _0 <- ([#"../01.rs" 9 4 9 42] [#"../01.rs" 9 4 9 42] ());
     return _0
   }
   BB10 {
@@ -439,7 +453,7 @@ module C01_AllZero
     goto BB14
   }
   BB14 {
-    [#"../01.rs" 12 8 12 16] _27 <- { _27 with current = ([#"../01.rs" 12 8 12 16] (0 : uint32)) ; };
+    [#"../01.rs" 12 8 12 16] _27 <- { _27 with current = ([#"../01.rs" 12 8 12 16] [#"../01.rs" 12 15 12 16] (0 : uint32)) ; };
     assume { resolve1 _27 };
     goto BB6
   }

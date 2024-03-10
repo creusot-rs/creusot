@@ -103,8 +103,7 @@ fn create_assign_rec<'tcx>(
 
                 let varnames = freshvars.take(variant.fields.len()).collect::<Vec<Ident>>();
                 let field_pats = varnames.clone().into_iter().map(|x| VarP(x)).collect();
-                let mut varexps: Vec<Exp> =
-                    varnames.into_iter().map(|x| Exp::impure_var(x)).collect();
+                let mut varexps: Vec<Exp> = varnames.into_iter().map(|x| Exp::var(x)).collect();
 
                 varexps[ix.as_usize()] = inner;
 
@@ -118,8 +117,7 @@ fn create_assign_rec<'tcx>(
             TyKind::Tuple(fields) => {
                 let varnames = freshvars.take(fields.len()).collect::<Vec<Ident>>();
                 let field_pats = varnames.clone().into_iter().map(|x| VarP(x.into())).collect();
-                let mut varexps: Vec<Exp> =
-                    varnames.into_iter().map(|x| Exp::impure_var(x.into())).collect();
+                let mut varexps: Vec<Exp> = varnames.into_iter().map(|x| Exp::var(x)).collect();
 
                 varexps[ix.as_usize()] = inner;
 
@@ -133,8 +131,7 @@ fn create_assign_rec<'tcx>(
                 let varnames =
                     freshvars.take(subst.as_closure().upvar_tys().len()).collect::<Vec<Ident>>();
                 let field_pats = varnames.clone().into_iter().map(|x| VarP(x.into())).collect();
-                let mut varexps: Vec<Exp> =
-                    varnames.into_iter().map(|x| Exp::impure_var(x.into())).collect();
+                let mut varexps: Vec<Exp> = varnames.into_iter().map(|x| Exp::var(x)).collect();
 
                 varexps[ix.as_usize()] = inner;
                 let cons = names.constructor(*id, subst);
@@ -149,8 +146,8 @@ fn create_assign_rec<'tcx>(
         },
         Downcast(_, _) => inner,
         Index(ix) => {
-            let set = Exp::impure_qvar(QName::from_string("Slice.set").unwrap());
-            let ix_exp = Exp::impure_var(Ident::build(ix.as_str()));
+            let set = Exp::qvar(QName::from_string("Slice.set").unwrap());
+            let ix_exp = Exp::var(Ident::build(ix.as_str()));
 
             Call(
                 Box::new(set),
@@ -174,7 +171,7 @@ pub(crate) fn translate_rplace<'tcx, N: Namer<'tcx>>(
     loc: Symbol,
     proj: &[mir::ProjectionElem<Symbol, Ty<'tcx>>],
 ) -> Exp {
-    let mut inner = Exp::impure_var(Ident::build(loc.as_str()));
+    let mut inner = Exp::var(Ident::build(loc.as_str()));
     if proj.is_empty() {
         return inner;
     }
@@ -199,7 +196,7 @@ pub(crate) fn translate_rplace<'tcx, N: Namer<'tcx>>(
                     ctx.translate_accessor(def.variants()[variant_id].fields[*ix].did);
 
                     let acc = names.accessor(def.did(), subst, variant_id.as_usize(), *ix);
-                    inner = Call(Box::new(Exp::impure_qvar(acc)), vec![inner]);
+                    inner = Call(Box::new(Exp::qvar(acc)), vec![inner]);
                 }
                 TyKind::Tuple(fields) => {
                     let mut pat = vec![Wildcard; fields.len()];
@@ -208,23 +205,21 @@ pub(crate) fn translate_rplace<'tcx, N: Namer<'tcx>>(
                     inner = Let {
                         pattern: TupleP(pat),
                         arg: Box::new(inner),
-                        body: Box::new(Exp::impure_var("a".into())),
+                        body: Box::new(Exp::var("a")),
                     }
                 }
                 TyKind::Closure(id, subst) => {
-                    inner = Call(
-                        Box::new(Exp::impure_qvar(names.accessor(*id, subst, 0, *ix))),
-                        vec![inner],
-                    );
+                    inner =
+                        Call(Box::new(Exp::qvar(names.accessor(*id, subst, 0, *ix))), vec![inner]);
                 }
                 e => unreachable!("{:?}", e),
             },
             Downcast(_, _) => {}
             Index(ix) => {
                 // TODO: Use [_] syntax
-                let ix_exp = Exp::impure_var(Ident::build(ix.as_str()));
+                let ix_exp = Exp::var(Ident::build(ix.as_str()));
                 inner = Call(
-                    Box::new(Exp::impure_qvar(QName::from_string("Slice.get").unwrap())),
+                    Box::new(Exp::qvar(QName::from_string("Slice.get").unwrap())),
                     vec![inner, ix_exp],
                 )
             }

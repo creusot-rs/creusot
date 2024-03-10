@@ -18,7 +18,7 @@ use crate::{
         dependency::HackedId,
         logic::{lower_logical_defn, lower_pure_defn, sigs, spec_axiom},
         signature::sig_to_why3,
-        term::{lower_impure, lower_pure},
+        term::lower_pure,
         ty_inv::InvariantElaborator,
         TransId, Why3Generator,
     },
@@ -183,7 +183,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
 
             let span = ctx.def_span(def_id);
             let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, param_env, span);
-            let res = lower_impure(ctx, names, &res);
+            let res = lower_pure(ctx, names, &res);
 
             vec![Decl::Let(LetDecl {
                 kind: Some(LetKind::Constant),

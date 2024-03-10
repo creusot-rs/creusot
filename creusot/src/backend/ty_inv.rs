@@ -465,7 +465,7 @@ fn build_inv_axiom<'tcx>(
     let ty = inv_kind.to_skeleton_ty(ctx.tcx);
     let kind = TyInvKind::from_ty(ctx.tcx, ty);
     // TODO : Refactor and push binding down
-    let lhs: Exp = Exp::impure_qvar(names.ty_inv(ty)).app_to(Exp::pure_var("x"));
+    let lhs: Exp = Exp::qvar(names.ty_inv(ty)).app_to(Exp::var("x"));
     let rhs = if TyInvKind::Trivial == inv_kind {
         Exp::mk_true()
     } else {

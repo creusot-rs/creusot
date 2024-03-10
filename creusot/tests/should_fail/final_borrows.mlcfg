@@ -48,7 +48,7 @@ module FinalBorrows_NotFinalBorrow
     assume { inv0 ( ^ _b2) };
     assert { [@expl:type invariant] inv1 _b2 };
     assume { resolve0 _b2 };
-    [#"../final_borrows.rs" 5 40 9 1] _0 <- ([#"../final_borrows.rs" 5 40 9 1] ());
+    [#"../final_borrows.rs" 5 40 9 1] _0 <- ([#"../final_borrows.rs" 5 40 9 1] [#"../final_borrows.rs" 5 40 9 1] ());
     assert { [@expl:type invariant] inv1 bor };
     assume { resolve0 bor };
     return _0
@@ -116,7 +116,7 @@ module FinalBorrows_StoreChangesProphecy
   }
   BB3 {
     assert { [@expl:assertion] [#"../final_borrows.rs" 15 18 15 27] b1 = bor };
-    [#"../final_borrows.rs" 11 52 16 1] _0 <- ([#"../final_borrows.rs" 11 52 16 1] ());
+    [#"../final_borrows.rs" 11 52 16 1] _0 <- ([#"../final_borrows.rs" 11 52 16 1] [#"../final_borrows.rs" 11 52 16 1] ());
     goto BB4
   }
   BB4 {
@@ -134,7 +134,7 @@ module FinalBorrows_CallChangesProphecy_Inner
     goto BB0
   }
   BB0 {
-    [#"../final_borrows.rs" 20 8 20 9] _0 <- ([#"../final_borrows.rs" 20 8 20 9] (2 : int32));
+    [#"../final_borrows.rs" 20 8 20 9] _0 <- ([#"../final_borrows.rs" 20 8 20 9] [#"../final_borrows.rs" 20 8 20 9] (2 : int32));
     return _0
   }
   
@@ -163,7 +163,7 @@ module FinalBorrows_CallChangesProphecy
     [#"../final_borrows.rs" 22 13 22 22] b1 <- Borrow.borrow_final ( * bor) (Borrow.get_id bor);
     [#"../final_borrows.rs" 22 13 22 22] bor <- { bor with current = ( ^ b1) ; };
     assume { resolve0 b1 };
-    [#"../final_borrows.rs" 24 11 24 18] _3 <- ([#"../final_borrows.rs" 24 11 24 18] inner0 ());
+    [#"../final_borrows.rs" 24 11 24 18] _3 <- ([#"../final_borrows.rs" 24 11 24 18] inner0 ([#"../final_borrows.rs" 24 11 24 18] ()));
     goto BB1
   }
   BB1 {
@@ -171,7 +171,7 @@ module FinalBorrows_CallChangesProphecy
     _3 <- any int32;
     assume { resolve0 bor };
     assert { [@expl:assertion] [#"../final_borrows.rs" 25 18 25 27] b1 = bor };
-    [#"../final_borrows.rs" 18 44 26 1] _0 <- ([#"../final_borrows.rs" 18 44 26 1] ());
+    [#"../final_borrows.rs" 18 44 26 1] _0 <- ([#"../final_borrows.rs" 18 44 26 1] [#"../final_borrows.rs" 18 44 26 1] ());
     return _0
   }
   
@@ -322,7 +322,8 @@ module FinalBorrows_Indexing
     requires {[#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv4 self}
     ensures { result = shallow_model1 self }
     
-  axiom shallow_model1_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv4 self) -> ([#"../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv5 (shallow_model1 self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model1 self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max0)
+  axiom shallow_model1_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv4 self)
+   -> ([#"../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv5 (shallow_model1 self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model1 self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max0)
   function index_logic1 [@inline:trivial] (self : slice t) (ix : int) : t =
     [#"../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (shallow_model1 self) ix
   val index_logic1 [@inline:trivial] (self : slice t) (ix : int) : t
@@ -339,7 +340,10 @@ module FinalBorrows_Indexing
     requires {[#"../../../../creusot-contracts/src/std/slice.rs" 82 23 82 27] inv2 self}
     ensures { result = to_mut_seq0 self }
     
-  axiom to_mut_seq0_spec : forall self : borrowed (slice t) . ([#"../../../../creusot-contracts/src/std/slice.rs" 82 23 82 27] inv2 self) -> ([#"../../../../creusot-contracts/src/std/slice.rs" 82 4 82 43] inv3 (to_mut_seq0 self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 81 4 81 85] forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq0 self) ->  ^ Seq.get (to_mut_seq0 self) i = index_logic1 ( ^ self) i) && ([#"../../../../creusot-contracts/src/std/slice.rs" 80 4 80 82] forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq0 self) ->  * Seq.get (to_mut_seq0 self) i = index_logic1 ( * self) i) && ([#"../../../../creusot-contracts/src/std/slice.rs" 79 14 79 41] Seq.length (to_mut_seq0 self) = Seq.length (shallow_model0 self))
+  axiom to_mut_seq0_spec : forall self : borrowed (slice t) . ([#"../../../../creusot-contracts/src/std/slice.rs" 82 23 82 27] inv2 self)
+   -> ([#"../../../../creusot-contracts/src/std/slice.rs" 82 4 82 43] inv3 (to_mut_seq0 self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 81 4 81 85] forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq0 self)
+   ->  ^ Seq.get (to_mut_seq0 self) i = index_logic1 ( ^ self) i) && ([#"../../../../creusot-contracts/src/std/slice.rs" 80 4 80 82] forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq0 self)
+   ->  * Seq.get (to_mut_seq0 self) i = index_logic1 ( * self) i) && ([#"../../../../creusot-contracts/src/std/slice.rs" 79 14 79 41] Seq.length (to_mut_seq0 self) = Seq.length (shallow_model0 self))
   predicate resolve1 (self : borrowed (slice t)) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve1 (self : borrowed (slice t)) : bool
@@ -368,7 +372,7 @@ module FinalBorrows_Indexing
     goto BB0
   }
   BB0 {
-    [#"../final_borrows.rs" 38 11 38 12] _6 <- ([#"../final_borrows.rs" 38 11 38 12] (0 : usize));
+    [#"../final_borrows.rs" 38 11 38 12] _6 <- ([#"../final_borrows.rs" 38 11 38 12] [#"../final_borrows.rs" 38 11 38 12] (0 : usize));
     [#"../final_borrows.rs" 38 9 38 13] _7 <- ([#"../final_borrows.rs" 38 9 38 13] Slice.length ( * x));
     [#"../final_borrows.rs" 38 9 38 13] _8 <- ([#"../final_borrows.rs" 38 9 38 13] _6 < _7);
     assert { [@expl:index in bounds] [#"../final_borrows.rs" 38 9 38 13] _8 };

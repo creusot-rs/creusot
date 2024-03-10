@@ -6,7 +6,7 @@ use std::{
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, ParamEnv, Ty, TyKind};
 use rustc_span::{Span, Symbol};
-use why3::{declaration::Signature, exp::Purity, ty::Type, Exp, Ident, QName};
+use why3::{declaration::Signature, ty::Type, Exp, Ident, QName};
 
 use crate::{
     backend::{
@@ -216,7 +216,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         use crate::pearlite::*;
         match &t.kind {
             // VC(v, Q) = Q(v)
-            TermKind::Var(v) => k(Exp::pure_var(util::ident_of(*v))),
+            TermKind::Var(v) => k(Exp::var(util::ident_of(*v))),
             // VC(l, Q) = Q(l)
             TermKind::Lit(l) => k(self.lower_literal(l)),
             // Items are just global names so
@@ -227,9 +227,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
                 if get_builtin(self.ctx.borrow().tcx, *id).is_some() {
                     // Builtins can leverage Why3 polymorphism and sometimes can cause typeck errors in why3 due to ambiguous type variables so lets fix the type now.
-                    k(Exp::pure_qvar(item_name).ascribe(self.ty(t.ty)))
+                    k(Exp::qvar(item_name).ascribe(self.ty(t.ty)))
                 } else {
-                    k(Exp::pure_qvar(item_name))
+                    k(Exp::qvar(item_name))
                 }
             }
             // VC(assert { C }, Q) => VC(C, |c| c && Q(()))
@@ -259,7 +259,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let variant =
                     if *id == self.self_id { self.build_variant(&args)? } else { Exp::mk_true() };
 
-                let call = Exp::pure_qvar(fname).app(args);
+                let call = Exp::qvar(fname).app(args);
                 sig.contract.subst(&[("result".into(), call.clone())].into_iter().collect());
 
                 let inner = k(call)?;
@@ -283,15 +283,11 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 //     Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_vc(rhs, k)?,))
                 // }),
                 BinOp::Div => self.build_vc(&lhs, &|lhs| {
-                    self.build_vc(rhs, &|rhs| k(Exp::pure_var("div").app(vec![lhs.clone(), rhs])))
+                    self.build_vc(rhs, &|rhs| k(Exp::var("div").app(vec![lhs.clone(), rhs])))
                 }),
                 _ => self.build_vc(&lhs, &|lhs| {
                     self.build_vc(rhs, &|rhs| {
-                        k(Exp::BinaryOp(
-                            binop_to_binop(*op, Purity::Logic),
-                            Box::new(lhs.clone()),
-                            Box::new(rhs),
-                        ))
+                        k(Exp::BinaryOp(binop_to_binop(*op), Box::new(lhs.clone()), Box::new(rhs)))
                     })
                 }),
             },
@@ -383,7 +379,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                self.build_vc(lhs, &|lhs| k(Exp::pure_qvar(accessor.clone()).app(vec![lhs])))
+                self.build_vc(lhs, &|lhs| k(Exp::qvar(accessor.clone()).app(vec![lhs])))
             }
             // TODO: lol
             TermKind::Absurd => todo!("absrd"),

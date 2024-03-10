@@ -545,8 +545,8 @@ impl Print for Exp {
                 .append(arg.pretty(alloc))
                 .append(" in ")
                 .append(body.pretty(alloc)),
-            Exp::Var(v, _) => v.pretty(alloc),
-            Exp::QVar(v, _) => v.pretty(alloc),
+            Exp::Var(v) => v.pretty(alloc),
+            Exp::QVar(v) => v.pretty(alloc),
             Exp::RecUp { box record, updates } => {
                 let mut res = alloc
                     .space()
@@ -666,7 +666,14 @@ impl Print for Exp {
                 .append(" . ")
                 .append(exp.pretty(alloc)),
             Exp::Impl(box hyp, box exp) => {
-                parens!(alloc, self, hyp).append(" -> ").append(parens!(alloc, self, exp))
+                let hyp = parens!(alloc, self, hyp);
+                let impl_ = alloc
+                    .line()
+                    .append(alloc.text(" -> "))
+                    .append(parens!(alloc, self, exp))
+                    .group();
+
+                hyp.append(impl_)
             }
             Exp::Ascribe(e, t) => {
                 parens!(alloc, self, e).append(" : ").append(t.pretty(alloc)).group()
