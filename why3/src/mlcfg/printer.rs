@@ -82,6 +82,7 @@ impl Print for Decl {
             Decl::Goal(g) => g.pretty(alloc),
             Decl::Let(l) => l.pretty(alloc),
             Decl::ConstantDecl(c) => c.pretty(alloc),
+            Decl::Coma(d) => d.pretty(alloc),
         }
     }
 }

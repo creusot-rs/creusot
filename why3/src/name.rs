@@ -96,6 +96,12 @@ impl QName {
         self.module.last()
     }
 
+    /// Returns the name for symbol `id` contianed in `self`.
+    pub fn push_ident(&mut self, id: impl Into<Ident>) {
+        let old = std::mem::replace(&mut self.name, id.into());
+        self.module.push(old);
+    }
+
     pub fn module_qname(mut self) -> QName {
         assert!(!self.module.is_empty(), "ident has no module {:?}", self);
         let id = self.module.pop().unwrap();
