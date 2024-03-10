@@ -56,7 +56,7 @@ impl Options {
                 }
             }
             _ => {
-                other.push("dummy.mlcfg");
+                other.push("dummy.coma");
             }
         };
 

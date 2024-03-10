@@ -9,7 +9,7 @@ use rustc_span::{Symbol, DUMMY_SP};
 use rustc_target::abi::FieldIdx;
 
 use why3::{
-    declaration::{Axiom, Decl, LetDecl, LetKind, Signature, Use, ValDecl},
+    declaration::{Axiom, Constant, Decl, LetDecl, LetKind, Signature, Use, ValDecl},
     Ident, QName,
 };
 
@@ -185,13 +185,11 @@ impl<'tcx> SymbolElaborator<'tcx> {
 
             let span = ctx.def_span(def_id);
             let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, param_env, span);
-            let res = lower_pure(ctx, names, &res);
 
-            vec![Decl::Let(LetDecl {
-                kind: Some(LetKind::Constant),
-                sig: sig.clone(),
-                rec: false,
-                ghost: false,
+            let res = lower_pure(ctx, names, &res);
+            vec![Decl::ConstantDecl(Constant {
+                type_: sig.retty.unwrap(),
+                name: sig.name,
                 body: res,
             })]
         } else {

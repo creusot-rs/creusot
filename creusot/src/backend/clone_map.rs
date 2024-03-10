@@ -61,6 +61,7 @@ pub enum PreludeModule {
     Ref,
     Seq,
     Type,
+    Intrinsic,
 }
 
 impl PreludeModule {
@@ -89,6 +90,7 @@ impl PreludeModule {
             PreludeModule::Bool => QName::from_string("prelude.Bool").unwrap(),
             PreludeModule::Borrow => QName::from_string("prelude.Borrow").unwrap(),
             PreludeModule::Slice => QName::from_string("prelude.Slice").unwrap(),
+            PreludeModule::Intrinsic => QName::from_string("prelude.Intrinsic").unwrap(),
         }
     }
 }

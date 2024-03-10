@@ -269,6 +269,7 @@ pub fn val<'tcx>(_: &mut Why3Generator<'tcx>, sig: Signature) -> Decl {
         .into_iter()
         .fold(body, |acc, ensures| Expr::Assert(Box::new(ensures), Box::new(acc)));
 
+
     let mut postcond = Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("result"))]);
     postcond = Expr::BlackBox(Box::new(postcond));
     postcond = sig
@@ -345,6 +346,8 @@ pub fn to_why<'tcx>(
             let init = if decl.arg {
                 Exp::var(Ident::build(id.as_str()))
             } else {
+
+                names.import_prelude_module(PreludeModule::Intrinsic);
                 Exp::var("any_l").app_to(Exp::Tuple(Vec::new())).ascribe(ty.clone())
             };
             coma::Var(Ident::build(id.as_str()), ty.clone(), init, coma::IsRef::Ref)
@@ -355,6 +358,7 @@ pub fn to_why<'tcx>(
     let sig = signature_of(ctx, names, body_id.def_id());
 
     let mut postcond = Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("_0"))]);
+
     postcond = Expr::BlackBox(Box::new(postcond));
     postcond = sig
         .contract
@@ -735,6 +739,7 @@ fn mk_adt_switch<'tcx>(
             .collect();
 
         let cons = names.constructor(var.def_id, subst);
+
         let filter = Exp::qvar(cons)
             .app(params.iter().zip('a'..).map(|(_, nm)| Exp::var(nm.to_string())).collect());
         let filter = coma::Expr::Assert(
@@ -1070,6 +1075,7 @@ fn invalidate_places<'tcx>(
     for pl in invalid {
         let ty = pl.ty(ctx.tcx, locals);
         let ty = translate_ty(ctx, names, DUMMY_SP.substitute_dummy(span), ty);
+
         let (lhs, rhs) =
             place::create_assign_inner(ctx, names, locals, &pl, Exp::var("_any"), DUMMY_SP);
         out.push(IntermediateStmt::Any("_any".into(), ty));
@@ -1158,7 +1164,7 @@ pub(crate) fn binop_to_binop(ty: Ty, op: mir::BinOp) -> QName {
 //             module.push_ident("neg");
 
 //             module = module.without_search_path();
-//             Exp::impure_qvar(module).app_to(e)
+//             Exp::imqvar(module).app_to(e)
 //         }
 //     }
 // }
