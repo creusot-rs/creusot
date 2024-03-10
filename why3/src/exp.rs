@@ -340,19 +340,11 @@ pub fn super_visit_trigger<T: ExpVisitor>(f: &mut T, trigger: &Trigger) {
 }
 
 impl Exp {
-    pub fn impure_qvar(q: QName) -> Self {
+    pub fn qvar(q: QName) -> Self {
         Exp::QVar(q)
     }
 
-    pub fn impure_var(v: Ident) -> Self {
-        Exp::Var(v)
-    }
-
-    pub fn pure_qvar(q: QName) -> Self {
-        Exp::QVar(q)
-    }
-
-    pub fn pure_var(v: impl Into<Ident>) -> Self {
+    pub fn var(v: impl Into<Ident>) -> Self {
         Exp::Var(v.into())
     }
 
@@ -872,7 +864,7 @@ impl Exp {
                         let mut extended = HashMap::new();
                         for (_, exp) in &mut subst {
                             for id in &bnds & &exp.fvs() {
-                                extended.insert(id.clone(), Exp::pure_var(format!("{}'", &*id)));
+                                extended.insert(id.clone(), Exp::var(format!("{}'", &*id)));
                             }
                         }
                         binders.iter_mut().for_each(|(id, _)| {
@@ -895,7 +887,7 @@ impl Exp {
                         let mut extended = HashMap::new();
                         for (_, exp) in &mut subst {
                             for id in &bnds & &exp.fvs() {
-                                extended.insert(id.clone(), Exp::pure_var(format!("{}'", &*id)));
+                                extended.insert(id.clone(), Exp::var(format!("{}'", &*id)));
                             }
                         }
                         binders.iter_mut().for_each(|(id, _)| {

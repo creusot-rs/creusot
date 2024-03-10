@@ -161,7 +161,8 @@ module C03KnuthShuffle_KnuthShuffle
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv2 self}
     ensures { result = shallow_model2 self }
     
-  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv2 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv9 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
+  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv2 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv9 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
   predicate invariant2 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv9 (shallow_model2 self)
   val invariant2 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
@@ -184,7 +185,9 @@ module C03KnuthShuffle_KnuthShuffle
   predicate produces0 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize)
     
    =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0 -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> deep_model0 (Seq.get visited i) = deep_model0 (Core_Ops_Range_Range_Type.range_start self) + i)
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0
+     -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> deep_model0 (Seq.get visited i) = deep_model0 (Core_Ops_Range_Range_Type.range_start self) + i)
   val produces0 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize) : bool
     ensures { result = produces0 self visited o }
     
@@ -200,14 +203,22 @@ module C03KnuthShuffle_KnuthShuffle
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv1 c}
     ensures { result = produces_trans0 a ab b bc c }
     
-  axiom produces_trans0_spec : forall a : Core_Ops_Range_Range_Type.t_range usize, ab : Seq.seq usize, b : Core_Ops_Range_Range_Type.t_range usize, bc : Seq.seq usize, c : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces0 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces0 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv1 a) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv10 ab) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv1 b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv10 bc) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv1 c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] produces0 a (Seq.(++) ab bc) c)
+  axiom produces_trans0_spec : forall a : Core_Ops_Range_Range_Type.t_range usize, ab : Seq.seq usize, b : Core_Ops_Range_Range_Type.t_range usize, bc : Seq.seq usize, c : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces0 a ab b)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces0 b bc c)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv1 a)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv10 ab)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv1 b)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv10 bc)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv1 c)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] produces0 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl0 (self : Core_Ops_Range_Range_Type.t_range usize) : ()
   val produces_refl0 (self : Core_Ops_Range_Range_Type.t_range usize) : ()
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv1 self}
     ensures { result = produces_refl0 self }
     
-  axiom produces_refl0_spec : forall self : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv1 self) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 45] produces0 self (Seq.empty ) self)
+  axiom produces_refl0_spec : forall self : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv1 self)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 45] produces0 self (Seq.empty ) self)
   predicate invariant1 (self : Core_Ops_Range_Range_Type.t_range usize) =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
   val invariant1 (self : Core_Ops_Range_Range_Type.t_range usize) : bool
@@ -242,7 +253,8 @@ module C03KnuthShuffle_KnuthShuffle
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv3 self}
     ensures { result = shallow_model7 self }
     
-  axiom shallow_model7_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv3 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv9 (shallow_model7 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model7 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model7 self) <= UIntSize.to_int max0)
+  axiom shallow_model7_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv3 self)
+   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv9 (shallow_model7 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model7 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model7 self) <= UIntSize.to_int max0)
   function shallow_model6 (self : borrowed (slice t)) : Seq.seq t =
     [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model7 ( * self)
   val shallow_model6 (self : borrowed (slice t)) : Seq.seq t

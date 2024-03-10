@@ -49,7 +49,8 @@ module C10Once_Impl0_ProducesRefl_Impl
     
   constant self  : C10Once_Once_Type.t_once t
   function produces_refl [#"../10_once.rs" 31 4 31 26] (self : C10Once_Once_Type.t_once t) : ()
-  goal vc_produces_refl : ([#"../10_once.rs" 31 21 31 25] inv0 self) -> ([#"../10_once.rs" 30 14 30 45] produces0 self (Seq.empty ) self)
+  goal vc_produces_refl : ([#"../10_once.rs" 31 21 31 25] inv0 self)
+   -> ([#"../10_once.rs" 30 14 30 45] produces0 self (Seq.empty ) self)
 end
 module C10Once_Impl0_ProducesTrans_Impl
   type t
@@ -100,7 +101,14 @@ module C10Once_Impl0_ProducesTrans_Impl
   constant c  : C10Once_Once_Type.t_once t
   function produces_trans [#"../10_once.rs" 38 4 38 90] (a : C10Once_Once_Type.t_once t) (ab : Seq.seq t) (b : C10Once_Once_Type.t_once t) (bc : Seq.seq t) (c : C10Once_Once_Type.t_once t) : ()
     
-  goal vc_produces_trans : ([#"../10_once.rs" 38 82 38 83] inv0 c) -> ([#"../10_once.rs" 38 61 38 63] inv1 bc) -> ([#"../10_once.rs" 38 52 38 53] inv0 b) -> ([#"../10_once.rs" 38 31 38 33] inv1 ab) -> ([#"../10_once.rs" 38 22 38 23] inv0 a) -> ([#"../10_once.rs" 36 15 36 32] produces0 b bc c) -> ([#"../10_once.rs" 35 15 35 32] produces0 a ab b) -> ([#"../10_once.rs" 37 14 37 42] produces0 a (Seq.(++) ab bc) c)
+  goal vc_produces_trans : ([#"../10_once.rs" 38 82 38 83] inv0 c)
+   -> ([#"../10_once.rs" 38 61 38 63] inv1 bc)
+   -> ([#"../10_once.rs" 38 52 38 53] inv0 b)
+   -> ([#"../10_once.rs" 38 31 38 33] inv1 ab)
+   -> ([#"../10_once.rs" 38 22 38 23] inv0 a)
+   -> ([#"../10_once.rs" 36 15 36 32] produces0 b bc c)
+   -> ([#"../10_once.rs" 35 15 35 32] produces0 a ab b)
+   -> ([#"../10_once.rs" 37 14 37 42] produces0 a (Seq.(++) ab bc) c)
 end
 module C10Once_Impl0_Next
   type t
@@ -270,13 +278,18 @@ module C10Once_Impl0
   val produces0 [#"../10_once.rs" 21 4 21 64] (self : C10Once_Once_Type.t_once t) (visited : Seq.seq t) (o : C10Once_Once_Type.t_once t) : bool
     ensures { result = produces0 self visited o }
     
-  goal produces_refl_refn : [#"../10_once.rs" 31 4 31 26] forall self : C10Once_Once_Type.t_once t . inv0 self -> inv0 self /\ (forall result : () . produces0 self (Seq.empty ) self -> produces0 self (Seq.empty ) self)
-  goal next_refn : [#"../10_once.rs" 44 4 44 35] forall self : borrowed (C10Once_Once_Type.t_once t) . inv1 self -> inv1 self /\ (forall result : Core_Option_Option_Type.t_option t . inv2 result /\ match result with
+  goal produces_refl_refn : [#"../10_once.rs" 31 4 31 26] forall self : C10Once_Once_Type.t_once t . inv0 self
+   -> inv0 self /\ (forall result : () . produces0 self (Seq.empty ) self  -> produces0 self (Seq.empty ) self)
+  goal next_refn : [#"../10_once.rs" 44 4 44 35] forall self : borrowed (C10Once_Once_Type.t_once t) . inv1 self
+   -> inv1 self /\ (forall result : Core_Option_Option_Type.t_option t . inv2 result /\ match result with
     | Core_Option_Option_Type.C_None -> completed0 self
     | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
-    end -> inv2 result /\ match result with
+    end
+   -> inv2 result /\ match result with
     | Core_Option_Option_Type.C_None -> completed0 self
     | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
     end)
-  goal produces_trans_refn : [#"../10_once.rs" 38 4 38 90] forall a : C10Once_Once_Type.t_once t . forall ab : Seq.seq t . forall b : C10Once_Once_Type.t_once t . forall bc : Seq.seq t . forall c : C10Once_Once_Type.t_once t . inv0 c /\ inv3 bc /\ inv0 b /\ inv3 ab /\ inv0 a /\ produces0 b bc c /\ produces0 a ab b -> inv0 c /\ inv3 bc /\ inv0 b /\ inv3 ab /\ inv0 a /\ produces0 b bc c /\ produces0 a ab b /\ (forall result : () . produces0 a (Seq.(++) ab bc) c -> produces0 a (Seq.(++) ab bc) c)
+  goal produces_trans_refn : [#"../10_once.rs" 38 4 38 90] forall a : C10Once_Once_Type.t_once t . forall ab : Seq.seq t . forall b : C10Once_Once_Type.t_once t . forall bc : Seq.seq t . forall c : C10Once_Once_Type.t_once t . inv0 c /\ inv3 bc /\ inv0 b /\ inv3 ab /\ inv0 a /\ produces0 b bc c /\ produces0 a ab b
+   -> inv0 c /\ inv3 bc /\ inv0 b /\ inv3 ab /\ inv0 a /\ produces0 b bc c /\ produces0 a ab b /\ (forall result : () . produces0 a (Seq.(++) ab bc) c
+   -> produces0 a (Seq.(++) ab bc) c)
 end

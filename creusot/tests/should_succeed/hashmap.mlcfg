@@ -153,7 +153,8 @@ module Hashmap_Impl5_New
     requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self}
     ensures { result = shallow_model2 self }
     
-  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv4 (shallow_model2 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
+  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv4 (shallow_model2 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
   predicate invariant3 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -258,26 +259,30 @@ module Hashmap_Impl5_New
   predicate good_bucket0 [#"../hashmap.rs" 200 4 200 57] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (l : Hashmap_List_Type.t_list (k, v)) (h : int)
     
    =
-    [#"../hashmap.rs" 201 8 203 9] forall v : v . forall k : deep_model_ty0 . inv5 v -> inv0 k -> get1 l k = Core_Option_Option_Type.C_Some v -> bucket_ix0 self k = h
+    [#"../hashmap.rs" 201 8 203 9] forall v : v . forall k : deep_model_ty0 . inv5 v
+     -> inv0 k  -> get1 l k = Core_Option_Option_Type.C_Some v  -> bucket_ix0 self k = h
   val good_bucket0 [#"../hashmap.rs" 200 4 200 57] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (l : Hashmap_List_Type.t_list (k, v)) (h : int) : bool
     ensures { result = good_bucket0 self l h }
     
   use prelude.Borrow
   predicate hashmap_inv0 [#"../hashmap.rs" 209 4 209 33] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) =
-    [#"../hashmap.rs" 210 8 213 9] 0 < Seq.length (shallow_model2 (Hashmap_MyHashMap_Type.myhashmap_buckets self)) /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model2 (Hashmap_MyHashMap_Type.myhashmap_buckets self)) -> good_bucket0 self (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i) i /\ no_double_binding0 (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i))
+    [#"../hashmap.rs" 210 8 213 9] 0 < Seq.length (shallow_model2 (Hashmap_MyHashMap_Type.myhashmap_buckets self)) /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model2 (Hashmap_MyHashMap_Type.myhashmap_buckets self))
+     -> good_bucket0 self (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i) i /\ no_double_binding0 (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i))
   val hashmap_inv0 [#"../hashmap.rs" 209 4 209 33] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) : bool
     ensures { result = hashmap_inv0 self }
     
   val from_elem0 (elem : Hashmap_List_Type.t_list (k, v)) (n : usize) : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)
     requires {inv2 elem}
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 157 22 157 41] Seq.length (shallow_model2 result) = UIntSize.to_int n }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 158 12 158 78] forall i : int . 0 <= i /\ i < UIntSize.to_int n -> index_logic0 result i = elem }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 158 12 158 78] forall i : int . 0 <= i /\ i < UIntSize.to_int n
+     -> index_logic0 result i = elem }
     ensures { inv3 result }
     
   let rec cfg new [#"../hashmap.rs" 98 4 98 46] [@cfg:stackify] [@cfg:subregion_analysis] (size : usize) : Hashmap_MyHashMap_Type.t_myhashmap k v
     requires {[#"../hashmap.rs" 95 15 95 24] 0 < UIntSize.to_int size}
     ensures { [#"../hashmap.rs" 96 14 96 34] hashmap_inv0 result }
-    ensures { [#"../hashmap.rs" 97 4 97 64] forall i : deep_model_ty0 . inv0 i -> Map.get (shallow_model1 result) i = Core_Option_Option_Type.C_None }
+    ensures { [#"../hashmap.rs" 97 4 97 64] forall i : deep_model_ty0 . inv0 i
+     -> Map.get (shallow_model1 result) i = Core_Option_Option_Type.C_None }
     ensures { [#"../hashmap.rs" 98 31 98 46] inv1 result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -491,7 +496,8 @@ module Hashmap_Impl5_Add
     requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv1 self}
     ensures { result = shallow_model6 self }
     
-  axiom shallow_model6_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv1 self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv17 (shallow_model6 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model6 self) <= UIntSize.to_int max0)
+  axiom shallow_model6_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv1 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv17 (shallow_model6 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model6 self) <= UIntSize.to_int max0)
   predicate invariant1 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -587,12 +593,14 @@ module Hashmap_Impl5_Add
   predicate good_bucket0 [#"../hashmap.rs" 200 4 200 57] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (l : Hashmap_List_Type.t_list (k, v)) (h : int)
     
    =
-    [#"../hashmap.rs" 201 8 203 9] forall v : v . forall k : deep_model_ty0 . inv7 v -> inv5 k -> get0 l k = Core_Option_Option_Type.C_Some v -> bucket_ix0 self k = h
+    [#"../hashmap.rs" 201 8 203 9] forall v : v . forall k : deep_model_ty0 . inv7 v
+     -> inv5 k  -> get0 l k = Core_Option_Option_Type.C_Some v  -> bucket_ix0 self k = h
   val good_bucket0 [#"../hashmap.rs" 200 4 200 57] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (l : Hashmap_List_Type.t_list (k, v)) (h : int) : bool
     ensures { result = good_bucket0 self l h }
     
   predicate hashmap_inv0 [#"../hashmap.rs" 209 4 209 33] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) =
-    [#"../hashmap.rs" 210 8 213 9] 0 < Seq.length (shallow_model6 (Hashmap_MyHashMap_Type.myhashmap_buckets self)) /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model6 (Hashmap_MyHashMap_Type.myhashmap_buckets self)) -> good_bucket0 self (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i) i /\ no_double_binding0 (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i))
+    [#"../hashmap.rs" 210 8 213 9] 0 < Seq.length (shallow_model6 (Hashmap_MyHashMap_Type.myhashmap_buckets self)) /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model6 (Hashmap_MyHashMap_Type.myhashmap_buckets self))
+     -> good_bucket0 self (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i) i /\ no_double_binding0 (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i))
   val hashmap_inv0 [#"../hashmap.rs" 209 4 209 33] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) : bool
     ensures { result = hashmap_inv0 self }
     
@@ -651,7 +659,8 @@ module Hashmap_Impl5_Add
   predicate resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq (Hashmap_List_Type.t_list (k, v))) (fin : Seq.seq (Hashmap_List_Type.t_list (k, v)))
     
    =
-    [#"../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+    [#"../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
+     -> Seq.get old' i = Seq.get fin i
   val resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq (Hashmap_List_Type.t_list (k, v))) (fin : Seq.seq (Hashmap_List_Type.t_list (k, v))) : bool
     ensures { result = resolve_elswhere0 self old' fin }
     
@@ -712,7 +721,8 @@ module Hashmap_Impl5_Add
     requires {[#"../hashmap.rs" 106 26 106 29] inv6 key}
     requires {[#"../hashmap.rs" 106 34 106 37] inv7 val'}
     ensures { [#"../hashmap.rs" 104 14 104 35] hashmap_inv0 ( ^ self) }
-    ensures { [#"../hashmap.rs" 105 4 105 124] forall i : deep_model_ty0 . inv5 i -> Map.get (shallow_model1 ( ^ self)) i = (if i = deep_model0 key then
+    ensures { [#"../hashmap.rs" 105 4 105 124] forall i : deep_model_ty0 . inv5 i
+     -> Map.get (shallow_model1 ( ^ self)) i = (if i = deep_model0 key then
       Core_Option_Option_Type.C_Some val'
     else
       Map.get (shallow_model2 self) i
@@ -800,11 +810,16 @@ module Hashmap_Impl5_Add
   }
   BB7 {
     invariant { [#"../hashmap.rs" 114 20 114 52] good_bucket0 ( * Snapshot.inner old_self) ( * l) (UIntSize.to_int index) };
-    invariant { [#"../hashmap.rs" 114 8 114 54] good_bucket0 ( * Snapshot.inner old_self) ( ^ l) (UIntSize.to_int index) -> good_bucket0 ( * Snapshot.inner old_self) ( ^ Snapshot.inner old_l) (UIntSize.to_int index) };
-    invariant { [#"../hashmap.rs" 114 8 114 54] get0 ( ^ l) (deep_model0 key) = Core_Option_Option_Type.C_Some val' -> get0 ( ^ Snapshot.inner old_l) (deep_model0 key) = Core_Option_Option_Type.C_Some val' };
-    invariant { [#"../hashmap.rs" 114 8 114 54] forall i : deep_model_ty0 . inv5 i -> get0 ( ^ l) i = get0 ( * l) i -> get0 ( ^ Snapshot.inner old_l) i = get0 ( * Snapshot.inner old_l) i };
+    invariant { [#"../hashmap.rs" 114 8 114 54] good_bucket0 ( * Snapshot.inner old_self) ( ^ l) (UIntSize.to_int index)
+     -> good_bucket0 ( * Snapshot.inner old_self) ( ^ Snapshot.inner old_l) (UIntSize.to_int index) };
+    invariant { [#"../hashmap.rs" 114 8 114 54] get0 ( ^ l) (deep_model0 key) = Core_Option_Option_Type.C_Some val'
+     -> get0 ( ^ Snapshot.inner old_l) (deep_model0 key) = Core_Option_Option_Type.C_Some val' };
+    invariant { [#"../hashmap.rs" 114 8 114 54] forall i : deep_model_ty0 . inv5 i
+     -> get0 ( ^ l) i = get0 ( * l) i  -> get0 ( ^ Snapshot.inner old_l) i = get0 ( * Snapshot.inner old_l) i };
     invariant { [#"../hashmap.rs" 118 20 118 44] no_double_binding0 ( * l) };
-    invariant { [#"../hashmap.rs" 114 8 114 54] (forall i : deep_model_ty0 . inv5 i -> get0 ( * l) i = get0 ( ^ l) i \/ i = deep_model0 key) /\ no_double_binding0 ( ^ l) -> no_double_binding0 ( ^ Snapshot.inner old_l) };
+    invariant { [#"../hashmap.rs" 114 8 114 54] (forall i : deep_model_ty0 . inv5 i
+     -> get0 ( * l) i = get0 ( ^ l) i \/ i = deep_model0 key) /\ no_double_binding0 ( ^ l)
+     -> no_double_binding0 ( ^ Snapshot.inner old_l) };
     goto BB8
   }
   BB8 {
@@ -974,7 +989,8 @@ module Hashmap_Impl5_Get
     requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv9 self}
     ensures { result = shallow_model4 self }
     
-  axiom shallow_model4_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv9 self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv10 (shallow_model4 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model4 self) <= UIntSize.to_int max0)
+  axiom shallow_model4_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv9 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv10 (shallow_model4 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model4 self) <= UIntSize.to_int max0)
   predicate invariant9 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -1142,12 +1158,14 @@ module Hashmap_Impl5_Get
   predicate good_bucket0 [#"../hashmap.rs" 200 4 200 57] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (l : Hashmap_List_Type.t_list (k, v)) (h : int)
     
    =
-    [#"../hashmap.rs" 201 8 203 9] forall v : v . forall k : deep_model_ty0 . inv11 v -> inv12 k -> get0 l k = Core_Option_Option_Type.C_Some v -> bucket_ix0 self k = h
+    [#"../hashmap.rs" 201 8 203 9] forall v : v . forall k : deep_model_ty0 . inv11 v
+     -> inv12 k  -> get0 l k = Core_Option_Option_Type.C_Some v  -> bucket_ix0 self k = h
   val good_bucket0 [#"../hashmap.rs" 200 4 200 57] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (l : Hashmap_List_Type.t_list (k, v)) (h : int) : bool
     ensures { result = good_bucket0 self l h }
     
   predicate hashmap_inv0 [#"../hashmap.rs" 209 4 209 33] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) =
-    [#"../hashmap.rs" 210 8 213 9] 0 < Seq.length (shallow_model4 (Hashmap_MyHashMap_Type.myhashmap_buckets self)) /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model4 (Hashmap_MyHashMap_Type.myhashmap_buckets self)) -> good_bucket0 self (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i) i /\ no_double_binding0 (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i))
+    [#"../hashmap.rs" 210 8 213 9] 0 < Seq.length (shallow_model4 (Hashmap_MyHashMap_Type.myhashmap_buckets self)) /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model4 (Hashmap_MyHashMap_Type.myhashmap_buckets self))
+     -> good_bucket0 self (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i) i /\ no_double_binding0 (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i))
   val hashmap_inv0 [#"../hashmap.rs" 209 4 209 33] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) : bool
     ensures { result = hashmap_inv0 self }
     
@@ -1454,7 +1472,8 @@ module Hashmap_Impl5_Resize
     requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self}
     ensures { result = shallow_model3 self }
     
-  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv11 (shallow_model3 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
+  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv11 (shallow_model3 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
   predicate invariant4 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -1585,12 +1604,14 @@ module Hashmap_Impl5_Resize
   predicate good_bucket0 [#"../hashmap.rs" 200 4 200 57] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (l : Hashmap_List_Type.t_list (k, v)) (h : int)
     
    =
-    [#"../hashmap.rs" 201 8 203 9] forall v : v . forall k : deep_model_ty0 . inv8 v -> inv1 k -> get1 l k = Core_Option_Option_Type.C_Some v -> bucket_ix0 self k = h
+    [#"../hashmap.rs" 201 8 203 9] forall v : v . forall k : deep_model_ty0 . inv8 v
+     -> inv1 k  -> get1 l k = Core_Option_Option_Type.C_Some v  -> bucket_ix0 self k = h
   val good_bucket0 [#"../hashmap.rs" 200 4 200 57] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (l : Hashmap_List_Type.t_list (k, v)) (h : int) : bool
     ensures { result = good_bucket0 self l h }
     
   predicate hashmap_inv0 [#"../hashmap.rs" 209 4 209 33] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) =
-    [#"../hashmap.rs" 210 8 213 9] 0 < Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets self)) /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets self)) -> good_bucket0 self (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i) i /\ no_double_binding0 (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i))
+    [#"../hashmap.rs" 210 8 213 9] 0 < Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets self)) /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets self))
+     -> good_bucket0 self (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i) i /\ no_double_binding0 (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i))
   val hashmap_inv0 [#"../hashmap.rs" 209 4 209 33] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) : bool
     ensures { result = hashmap_inv0 self }
     
@@ -1600,7 +1621,8 @@ module Hashmap_Impl5_Resize
     requires {[#"../hashmap.rs" 106 26 106 29] inv7 key}
     requires {[#"../hashmap.rs" 106 34 106 37] inv8 val'}
     ensures { [#"../hashmap.rs" 104 14 104 35] hashmap_inv0 ( ^ self) }
-    ensures { [#"../hashmap.rs" 105 4 105 124] forall i : deep_model_ty0 . inv1 i -> Map.get (shallow_model2 ( ^ self)) i = (if i = deep_model0 key then
+    ensures { [#"../hashmap.rs" 105 4 105 124] forall i : deep_model_ty0 . inv1 i
+     -> Map.get (shallow_model2 ( ^ self)) i = (if i = deep_model0 key then
       Core_Option_Option_Type.C_Some val'
     else
       Map.get (shallow_model4 self) i
@@ -1630,7 +1652,8 @@ module Hashmap_Impl5_Resize
   predicate resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq (Hashmap_List_Type.t_list (k, v))) (fin : Seq.seq (Hashmap_List_Type.t_list (k, v)))
     
    =
-    [#"../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+    [#"../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
+     -> Seq.get old' i = Seq.get fin i
   val resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq (Hashmap_List_Type.t_list (k, v))) (fin : Seq.seq (Hashmap_List_Type.t_list (k, v))) : bool
     ensures { result = resolve_elswhere0 self old' fin }
     
@@ -1691,7 +1714,8 @@ module Hashmap_Impl5_Resize
   val new1 [#"../hashmap.rs" 98 4 98 46] (size : usize) : Hashmap_MyHashMap_Type.t_myhashmap k v
     requires {[#"../hashmap.rs" 95 15 95 24] 0 < UIntSize.to_int size}
     ensures { [#"../hashmap.rs" 96 14 96 34] hashmap_inv0 result }
-    ensures { [#"../hashmap.rs" 97 4 97 64] forall i : deep_model_ty0 . inv1 i -> Map.get (shallow_model2 result) i = Core_Option_Option_Type.C_None }
+    ensures { [#"../hashmap.rs" 97 4 97 64] forall i : deep_model_ty0 . inv1 i
+     -> Map.get (shallow_model2 result) i = Core_Option_Option_Type.C_None }
     ensures { [#"../hashmap.rs" 98 31 98 46] inv2 result }
     
   function shallow_model5 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
@@ -1715,7 +1739,8 @@ module Hashmap_Impl5_Resize
     requires {[#"../hashmap.rs" 157 15 157 36] hashmap_inv0 ( * self)}
     requires {[#"../hashmap.rs" 161 19 161 23] inv3 self}
     ensures { [#"../hashmap.rs" 158 14 158 35] hashmap_inv0 ( ^ self) }
-    ensures { [#"../hashmap.rs" 159 4 159 74] forall k : deep_model_ty0 . inv1 k -> Map.get (shallow_model2 ( ^ self)) k = Map.get (shallow_model4 self) k }
+    ensures { [#"../hashmap.rs" 159 4 159 74] forall k : deep_model_ty0 . inv1 k
+     -> Map.get (shallow_model2 ( ^ self)) k = Map.get (shallow_model4 self) k }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -1770,9 +1795,14 @@ module Hashmap_Impl5_Resize
     goto BB6
   }
   BB6 {
-    invariant { [#"../hashmap.rs" 166 8 166 111] forall k : deep_model_ty0 . inv1 k -> bucket_ix0 ( * Snapshot.inner old_self) k < UIntSize.to_int i -> Map.get (shallow_model1 old_self) k = Map.get (shallow_model2 new) k };
-    invariant { [#"../hashmap.rs" 166 8 166 111] forall k : deep_model_ty0 . inv1 k -> UIntSize.to_int i <= bucket_ix0 ( * Snapshot.inner old_self) k /\ bucket_ix0 ( * Snapshot.inner old_self) k <= Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self))) -> Map.get (shallow_model2 new) k = Core_Option_Option_Type.C_None };
-    invariant { [#"../hashmap.rs" 166 8 166 111] forall j : int . UIntSize.to_int i <= j /\ j < Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self))) -> index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)) j = index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self)) j };
+    invariant { [#"../hashmap.rs" 166 8 166 111] forall k : deep_model_ty0 . inv1 k
+     -> bucket_ix0 ( * Snapshot.inner old_self) k < UIntSize.to_int i
+     -> Map.get (shallow_model1 old_self) k = Map.get (shallow_model2 new) k };
+    invariant { [#"../hashmap.rs" 166 8 166 111] forall k : deep_model_ty0 . inv1 k
+     -> UIntSize.to_int i <= bucket_ix0 ( * Snapshot.inner old_self) k /\ bucket_ix0 ( * Snapshot.inner old_self) k <= Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self)))
+     -> Map.get (shallow_model2 new) k = Core_Option_Option_Type.C_None };
+    invariant { [#"../hashmap.rs" 166 8 166 111] forall j : int . UIntSize.to_int i <= j /\ j < Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self)))
+     -> index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)) j = index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self)) j };
     invariant { [#"../hashmap.rs" 172 20 172 37] hashmap_inv0 new };
     invariant { [#"../hashmap.rs" 173 20 173 46]  ^ Snapshot.inner old_self =  ^ self };
     invariant { [#"../hashmap.rs" 174 20 174 66] Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self))) = Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self))) };
@@ -1836,9 +1866,15 @@ module Hashmap_Impl5_Resize
   }
   BB17 {
     invariant { [#"../hashmap.rs" 179 24 179 41] hashmap_inv0 new };
-    invariant { [#"../hashmap.rs" 179 12 179 43] forall k : deep_model_ty0 . inv1 k -> bucket_ix0 ( * Snapshot.inner old_self) k < UIntSize.to_int i -> Map.get (shallow_model1 old_self) k = Map.get (shallow_model2 new) k };
-    invariant { [#"../hashmap.rs" 179 12 179 43] forall k : deep_model_ty0 . inv1 k -> UIntSize.to_int i < bucket_ix0 ( * Snapshot.inner old_self) k /\ bucket_ix0 ( * Snapshot.inner old_self) k <= Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self))) -> Map.get (shallow_model2 new) k = Core_Option_Option_Type.C_None };
-    invariant { [#"../hashmap.rs" 179 12 179 43] forall k : deep_model_ty0 . inv1 k -> bucket_ix0 ( * Snapshot.inner old_self) k = UIntSize.to_int i -> Map.get (shallow_model1 old_self) k = match get1 l k with
+    invariant { [#"../hashmap.rs" 179 12 179 43] forall k : deep_model_ty0 . inv1 k
+     -> bucket_ix0 ( * Snapshot.inner old_self) k < UIntSize.to_int i
+     -> Map.get (shallow_model1 old_self) k = Map.get (shallow_model2 new) k };
+    invariant { [#"../hashmap.rs" 179 12 179 43] forall k : deep_model_ty0 . inv1 k
+     -> UIntSize.to_int i < bucket_ix0 ( * Snapshot.inner old_self) k /\ bucket_ix0 ( * Snapshot.inner old_self) k <= Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self)))
+     -> Map.get (shallow_model2 new) k = Core_Option_Option_Type.C_None };
+    invariant { [#"../hashmap.rs" 179 12 179 43] forall k : deep_model_ty0 . inv1 k
+     -> bucket_ix0 ( * Snapshot.inner old_self) k = UIntSize.to_int i
+     -> Map.get (shallow_model1 old_self) k = match get1 l k with
       | Core_Option_Option_Type.C_None -> Map.get (shallow_model2 new) k
       | Core_Option_Option_Type.C_Some v -> Core_Option_Option_Type.C_Some v
       end };
@@ -1890,7 +1926,9 @@ module Hashmap_Impl5_Resize
   BB25 {
     assert { [@expl:type invariant] inv5 l };
     assume { resolve4 l };
-    assert { [@expl:assertion] [#"../hashmap.rs" 192 12 192 121] forall k : deep_model_ty0 . inv1 k -> bucket_ix0 ( * Snapshot.inner old_self) k = UIntSize.to_int i -> Map.get (shallow_model1 old_self) k = Map.get (shallow_model2 new) k };
+    assert { [@expl:assertion] [#"../hashmap.rs" 192 12 192 121] forall k : deep_model_ty0 . inv1 k
+     -> bucket_ix0 ( * Snapshot.inner old_self) k = UIntSize.to_int i
+     -> Map.get (shallow_model1 old_self) k = Map.get (shallow_model2 new) k };
     goto BB27
   }
   BB26 {
@@ -1958,7 +1996,8 @@ module Hashmap_Main
     requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self}
     ensures { result = shallow_model4 self }
     
-  axiom shallow_model4_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (usize, isize)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv8 (shallow_model4 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model4 self) <= UIntSize.to_int max0)
+  axiom shallow_model4_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (usize, isize)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv8 (shallow_model4 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model4 self) <= UIntSize.to_int max0)
   predicate invariant7 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (usize, isize)) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -2116,12 +2155,14 @@ module Hashmap_Main
   predicate good_bucket0 [#"../hashmap.rs" 200 4 200 57] (self : Hashmap_MyHashMap_Type.t_myhashmap usize isize) (l : Hashmap_List_Type.t_list (usize, isize)) (h : int)
     
    =
-    [#"../hashmap.rs" 201 8 203 9] forall v : isize . forall k : int . inv6 v -> inv0 k -> get2 l k = Core_Option_Option_Type.C_Some v -> bucket_ix0 self k = h
+    [#"../hashmap.rs" 201 8 203 9] forall v : isize . forall k : int . inv6 v
+     -> inv0 k  -> get2 l k = Core_Option_Option_Type.C_Some v  -> bucket_ix0 self k = h
   val good_bucket0 [#"../hashmap.rs" 200 4 200 57] (self : Hashmap_MyHashMap_Type.t_myhashmap usize isize) (l : Hashmap_List_Type.t_list (usize, isize)) (h : int) : bool
     ensures { result = good_bucket0 self l h }
     
   predicate hashmap_inv0 [#"../hashmap.rs" 209 4 209 33] (self : Hashmap_MyHashMap_Type.t_myhashmap usize isize) =
-    [#"../hashmap.rs" 210 8 213 9] 0 < Seq.length (shallow_model4 (Hashmap_MyHashMap_Type.myhashmap_buckets self)) /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model4 (Hashmap_MyHashMap_Type.myhashmap_buckets self)) -> good_bucket0 self (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i) i /\ no_double_binding0 (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i))
+    [#"../hashmap.rs" 210 8 213 9] 0 < Seq.length (shallow_model4 (Hashmap_MyHashMap_Type.myhashmap_buckets self)) /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model4 (Hashmap_MyHashMap_Type.myhashmap_buckets self))
+     -> good_bucket0 self (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i) i /\ no_double_binding0 (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i))
   val hashmap_inv0 [#"../hashmap.rs" 209 4 209 33] (self : Hashmap_MyHashMap_Type.t_myhashmap usize isize) : bool
     ensures { result = hashmap_inv0 self }
     
@@ -2131,7 +2172,8 @@ module Hashmap_Main
     requires {[#"../hashmap.rs" 106 26 106 29] inv3 key}
     requires {[#"../hashmap.rs" 106 34 106 37] inv6 val'}
     ensures { [#"../hashmap.rs" 104 14 104 35] hashmap_inv0 ( ^ self) }
-    ensures { [#"../hashmap.rs" 105 4 105 124] forall i : int . inv0 i -> Map.get (shallow_model1 ( ^ self)) i = (if i = deep_model0 key then
+    ensures { [#"../hashmap.rs" 105 4 105 124] forall i : int . inv0 i
+     -> Map.get (shallow_model1 ( ^ self)) i = (if i = deep_model0 key then
       Core_Option_Option_Type.C_Some val'
     else
       Map.get (shallow_model3 self) i
@@ -2157,7 +2199,8 @@ module Hashmap_Main
   val new0 [#"../hashmap.rs" 98 4 98 46] (size : usize) : Hashmap_MyHashMap_Type.t_myhashmap usize isize
     requires {[#"../hashmap.rs" 95 15 95 24] 0 < UIntSize.to_int size}
     ensures { [#"../hashmap.rs" 96 14 96 34] hashmap_inv0 result }
-    ensures { [#"../hashmap.rs" 97 4 97 64] forall i : int . inv0 i -> Map.get (shallow_model1 result) i = Core_Option_Option_Type.C_None }
+    ensures { [#"../hashmap.rs" 97 4 97 64] forall i : int . inv0 i
+     -> Map.get (shallow_model1 result) i = Core_Option_Option_Type.C_None }
     ensures { [#"../hashmap.rs" 98 31 98 46] inv1 result }
     
   let rec cfg main [#"../hashmap.rs" 217 0 217 13] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
@@ -2304,7 +2347,9 @@ module Hashmap_Impl0
     
   axiom inv0 : forall x : Hashmap_List_Type.t_list t . inv0 x = true
   use prelude.Borrow
-  goal clone'_refn : [#"../hashmap.rs" 16 4 16 27] forall self : Hashmap_List_Type.t_list t . inv0 self -> inv0 self /\ (forall result : Hashmap_List_Type.t_list t . inv1 result /\ result = self -> inv1 result /\ result = self)
+  goal clone'_refn : [#"../hashmap.rs" 16 4 16 27] forall self : Hashmap_List_Type.t_list t . inv0 self
+   -> inv0 self /\ (forall result : Hashmap_List_Type.t_list t . inv1 result /\ result = self
+   -> inv1 result /\ result = self)
 end
 module Hashmap_Impl2
   use prelude.UIntSize
@@ -2339,7 +2384,9 @@ module Hashmap_Impl2
     
   use prelude.UInt64
   use prelude.UInt64
-  goal hash_refn : [#"../hashmap.rs" 59 4 59 25] forall self : usize . inv0 self -> (forall result : uint64 . UInt64.to_int result = hash_log0 (deep_model0 self) -> UInt64.to_int result = hash_log0 (deep_model0 self))
+  goal hash_refn : [#"../hashmap.rs" 59 4 59 25] forall self : usize . inv0 self
+   -> (forall result : uint64 . UInt64.to_int result = hash_log0 (deep_model0 self)
+   -> UInt64.to_int result = hash_log0 (deep_model0 self))
 end
 module Hashmap_Impl3
   type k

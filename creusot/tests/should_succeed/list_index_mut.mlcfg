@@ -71,7 +71,8 @@ module ListIndexMut_IndexMut
     
   val as_mut0 (self : borrowed (Core_Option_Option_Type.t_option (ListIndexMut_List_Type.t_list))) : Core_Option_Option_Type.t_option (borrowed (ListIndexMut_List_Type.t_list))
     requires {inv0 self}
-    ensures { [#"../../../../creusot-contracts/src/std/option.rs" 51 16 51 77]  * self = Core_Option_Option_Type.C_None -> result = Core_Option_Option_Type.C_None /\  ^ self = Core_Option_Option_Type.C_None }
+    ensures { [#"../../../../creusot-contracts/src/std/option.rs" 51 16 51 77]  * self = Core_Option_Option_Type.C_None
+     -> result = Core_Option_Option_Type.C_None /\  ^ self = Core_Option_Option_Type.C_None }
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 52 16 55 18]  * self = Core_Option_Option_Type.C_None \/ (exists r : borrowed (ListIndexMut_List_Type.t_list) . inv1 r /\ result = Core_Option_Option_Type.C_Some r /\  * self = Core_Option_Option_Type.C_Some ( * r) /\  ^ self = Core_Option_Option_Type.C_Some ( ^ r)) }
     ensures { inv2 result }
     
@@ -129,7 +130,8 @@ module ListIndexMut_IndexMut
     ensures { [#"../list_index_mut.rs" 33 10 33 37] Core_Option_Option_Type.C_Some ( * result) = get0 ( * l) (UIntSize.to_int ix) }
     ensures { [#"../list_index_mut.rs" 34 10 34 40] Core_Option_Option_Type.C_Some ( ^ result) = get0 ( ^ l) (UIntSize.to_int ix) }
     ensures { [#"../list_index_mut.rs" 35 10 35 34] len0 ( ^ l) = len0 ( * l) }
-    ensures { [#"../list_index_mut.rs" 36 0 36 87] forall i : int . 0 <= i /\ i < len0 ( * l) /\ i <> UIntSize.to_int ix -> get0 ( * l) i = get0 ( ^ l) i }
+    ensures { [#"../list_index_mut.rs" 36 0 36 87] forall i : int . 0 <= i /\ i < len0 ( * l) /\ i <> UIntSize.to_int ix
+     -> get0 ( * l) i = get0 ( ^ l) i }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : borrowed uint32;
@@ -162,8 +164,12 @@ module ListIndexMut_IndexMut
     invariant { [#"../list_index_mut.rs" 40 16 40 45] (0 : usize) <= ix /\ UIntSize.to_int ix < len0 ( * l) };
     invariant { [#"../list_index_mut.rs" 41 16 41 52] get0 ( * l) (UIntSize.to_int ix) = get0 ( * Snapshot.inner old_l) (shallow_model1 old_ix) };
     invariant { [#"../list_index_mut.rs" 42 16 42 55] get0 ( ^ l) (UIntSize.to_int ix) = get0 ( ^ Snapshot.inner old_l) (shallow_model1 old_ix) };
-    invariant { [#"../list_index_mut.rs" 40 4 40 47] len0 ( ^ l) = len0 ( * l) -> len0 ( ^ Snapshot.inner old_l) = len0 ( * Snapshot.inner old_l) };
-    invariant { [#"../list_index_mut.rs" 40 4 40 47] (forall i : int . 0 <= i /\ i < len0 ( * l) /\ i <> UIntSize.to_int ix -> get0 ( ^ l) i = get0 ( * l) i) -> (forall i : int . 0 <= i /\ i < len0 ( * Snapshot.inner old_l) /\ i <> shallow_model1 old_ix -> get0 ( ^ Snapshot.inner old_l) i = get0 ( * Snapshot.inner old_l) i) };
+    invariant { [#"../list_index_mut.rs" 40 4 40 47] len0 ( ^ l) = len0 ( * l)
+     -> len0 ( ^ Snapshot.inner old_l) = len0 ( * Snapshot.inner old_l) };
+    invariant { [#"../list_index_mut.rs" 40 4 40 47] (forall i : int . 0 <= i /\ i < len0 ( * l) /\ i <> UIntSize.to_int ix
+     -> get0 ( ^ l) i = get0 ( * l) i)
+     -> (forall i : int . 0 <= i /\ i < len0 ( * Snapshot.inner old_l) /\ i <> shallow_model1 old_ix
+     -> get0 ( ^ Snapshot.inner old_l) i = get0 ( * Snapshot.inner old_l) i) };
     goto BB4
   }
   BB4 {
@@ -254,13 +260,15 @@ module ListIndexMut_Write
     ensures { [#"../list_index_mut.rs" 33 10 33 37] Core_Option_Option_Type.C_Some ( * result) = get0 ( * l) (UIntSize.to_int ix) }
     ensures { [#"../list_index_mut.rs" 34 10 34 40] Core_Option_Option_Type.C_Some ( ^ result) = get0 ( ^ l) (UIntSize.to_int ix) }
     ensures { [#"../list_index_mut.rs" 35 10 35 34] len0 ( ^ l) = len0 ( * l) }
-    ensures { [#"../list_index_mut.rs" 36 0 36 87] forall i : int . 0 <= i /\ i < len0 ( * l) /\ i <> UIntSize.to_int ix -> get0 ( * l) i = get0 ( ^ l) i }
+    ensures { [#"../list_index_mut.rs" 36 0 36 87] forall i : int . 0 <= i /\ i < len0 ( * l) /\ i <> UIntSize.to_int ix
+     -> get0 ( * l) i = get0 ( ^ l) i }
     
   let rec cfg write [#"../list_index_mut.rs" 63 0 63 45] [@cfg:stackify] [@cfg:subregion_analysis] (l : borrowed (ListIndexMut_List_Type.t_list)) (ix : usize) (v : uint32) : ()
     requires {[#"../list_index_mut.rs" 59 11 59 24] UIntSize.to_int ix < len0 ( * l)}
     ensures { [#"../list_index_mut.rs" 60 10 60 34] Core_Option_Option_Type.C_Some v = get0 ( ^ l) (UIntSize.to_int ix) }
     ensures { [#"../list_index_mut.rs" 61 10 61 31] len0 ( ^ l) = len0 ( * l) }
-    ensures { [#"../list_index_mut.rs" 62 0 62 87] forall i : int . 0 <= i /\ i < len0 ( * l) /\ i <> UIntSize.to_int ix -> get0 ( * l) i = get0 ( ^ l) i }
+    ensures { [#"../list_index_mut.rs" 62 0 62 87] forall i : int . 0 <= i /\ i < len0 ( * l) /\ i <> UIntSize.to_int ix
+     -> get0 ( * l) i = get0 ( ^ l) i }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -327,7 +335,8 @@ module ListIndexMut_F
     requires {[#"../list_index_mut.rs" 59 11 59 24] UIntSize.to_int ix < len0 ( * l)}
     ensures { [#"../list_index_mut.rs" 60 10 60 34] Core_Option_Option_Type.C_Some v = get0 ( ^ l) (UIntSize.to_int ix) }
     ensures { [#"../list_index_mut.rs" 61 10 61 31] len0 ( ^ l) = len0 ( * l) }
-    ensures { [#"../list_index_mut.rs" 62 0 62 87] forall i : int . 0 <= i /\ i < len0 ( * l) /\ i <> UIntSize.to_int ix -> get0 ( * l) i = get0 ( ^ l) i }
+    ensures { [#"../list_index_mut.rs" 62 0 62 87] forall i : int . 0 <= i /\ i < len0 ( * l) /\ i <> UIntSize.to_int ix
+     -> get0 ( * l) i = get0 ( ^ l) i }
     
   let rec cfg f [#"../list_index_mut.rs" 67 0 67 10] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]

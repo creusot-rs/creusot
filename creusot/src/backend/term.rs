@@ -42,11 +42,11 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     let clone = self.names.value(*id, subst);
                     match self.ctx.type_of(id).instantiate_identity().kind() {
                         TyKind::FnDef(_, _) => Exp::Tuple(Vec::new()),
-                        _ => Exp::pure_qvar(clone),
+                        _ => Exp::qvar(clone),
                     }
                 })
             }
-            TermKind::Var(v) => Exp::pure_var(util::ident_of(*v)),
+            TermKind::Var(v) => Exp::var(util::ident_of(*v)),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -57,8 +57,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
 
                 match op {
-                    Div => Exp::pure_var("div").app(vec![lhs, rhs]),
-                    Rem => Exp::pure_var("mod").app(vec![lhs, rhs]),
+                    Div => Exp::var("div").app(vec![lhs, rhs]),
+                    Rem => Exp::var("mod").app(vec![lhs, rhs]),
                     _ => Exp::BinaryOp(binop_to_binop(*op), Box::new(lhs), Box::new(rhs)),
                 }
             }
@@ -86,7 +86,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     self.ctx.translate(method.0);
 
                     let clone = self.names.value(method.0, method.1);
-                    Exp::pure_qvar(clone).app(args)
+                    Exp::qvar(clone).app(args)
                 })
             }
             TermKind::Forall { binder, box body } => {
@@ -131,10 +131,10 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     } else {
                         (&arms[1].1, &arms[0].1)
                     };
-                    Exp::IfThenElse(
-                        Box::new(self.lower_term(scrutinee)),
-                        Box::new(self.lower_term(true_br)),
-                        Box::new(self.lower_term(false_br)),
+                    Exp::if_(
+                        self.lower_term(scrutinee),
+                        self.lower_term(true_br),
+                        self.lower_term(false_br),
                     )
                 } else {
                     let _ = self.lower_ty(scrutinee.ty);
@@ -166,7 +166,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                Exp::pure_qvar(accessor).app(vec![lhs])
+                Exp::qvar(accessor).app(vec![lhs])
             }
             TermKind::Closure { body } => {
                 let TyKind::Closure(id, subst) = term.ty.kind() else {
@@ -188,10 +188,12 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Reborrow { cur, fin, term, projection } => {
                 let inner = self.lower_term(&*term);
                 let borrow_id = borrow_generated_id(inner, &projection);
-                Exp::Call(
-                    Box::new(Exp::pure_qvar("Borrow.borrow_logic".into())),
-                    vec![self.lower_term(&*cur), self.lower_term(&*fin), borrow_id],
-                )
+
+                Exp::qvar("Borrow.borrow_logic".into()).app(vec![
+                    self.lower_term(&*cur),
+                    self.lower_term(&*fin),
+                    borrow_id,
+                ])
             }
             TermKind::Assert { cond } => {
                 let cond = self.lower_term(&*cond);
@@ -241,7 +243,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             self.names.value(def_id.unwrap(), _substs);
             // self.names.import_builtin_module(builtin.clone().module_qname());
 
-            return Some(Exp::pure_qvar(builtin.without_search_path()).app(args.clone()));
+            return Some(Exp::qvar(builtin.without_search_path()).app(args.clone()));
         }
         None
     }

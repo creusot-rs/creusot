@@ -666,7 +666,14 @@ impl Print for Exp {
                 .append(" . ")
                 .append(exp.pretty(alloc)),
             Exp::Impl(box hyp, box exp) => {
-                parens!(alloc, self, hyp).append(" -> ").append(parens!(alloc, self, exp))
+                let hyp = parens!(alloc, self, hyp);
+                let impl_ = alloc
+                    .line()
+                    .append(alloc.text(" -> "))
+                    .append(parens!(alloc, self, exp))
+                    .group();
+
+                hyp.append(impl_)
             }
             Exp::Ascribe(e, t) => {
                 parens!(alloc, self, e).append(" : ").append(t.pretty(alloc)).group()
