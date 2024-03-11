@@ -1,0 +1,119 @@
+
+module AllZero_List_Type
+  use prelude.UInt32
+  use prelude.Int
+  type t_list  =
+    | C_Cons uint32 (t_list)
+    | C_Nil
+    
+  function any_l (_ : 'b) : 'a
+  function cons_1 (self : t_list) : t_list =
+    match self with
+      | C_Cons _ a -> a
+      | C_Nil -> any_l self
+      end
+  function cons_0 (self : t_list) : uint32 =
+    match self with
+      | C_Cons a _ -> a
+      | C_Nil -> any_l self
+      end
+end
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
+    
+  function any_l (_ : 'b) : 'a
+end
+module AllZero_AllZero
+  use AllZero_List_Type as AllZero_List_Type
+  use prelude.Borrow
+  use prelude.Snapshot
+  use prelude.Intrinsic
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.UInt32
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use prelude.Int
+  function get0 [#"../all_zero.rs" 21 4 21 40] (self : AllZero_List_Type.t_list) (ix : int) : Core_Option_Option_Type.t_option uint32
+    
+   =
+    [#"../all_zero.rs" 22 8 28 9] match self with
+      | AllZero_List_Type.C_Cons x ls -> if ix = 0 then Core_Option_Option_Type.C_Some x else get0 ls (ix - 1)
+      | AllZero_List_Type.C_Nil -> Core_Option_Option_Type.C_None
+      end
+  let rec get0 (self:AllZero_List_Type.t_list) (ix:int) (return'  (ret:Core_Option_Option_Type.t_option uint32))= any 
+    [ return' (result:Core_Option_Option_Type.t_option uint32)-> {result = get0 self ix} (! return' {result}) ]
+    
+  function len0 [#"../all_zero.rs" 13 4 13 23] (self : AllZero_List_Type.t_list) : int =
+    [#"../all_zero.rs" 14 8 17 9] match self with
+      | AllZero_List_Type.C_Cons _ ls -> 1 + len0 ls
+      | AllZero_List_Type.C_Nil -> 0
+      end
+  let rec len0 (self:AllZero_List_Type.t_list) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = len0 self} (! return' {result}) ]
+    
+  predicate resolve2 (self : borrowed uint32) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve2 (self:borrowed uint32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
+    
+  predicate resolve1 (self : borrowed (AllZero_List_Type.t_list)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed (AllZero_List_Type.t_list)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : borrowed (AllZero_List_Type.t_list)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed (AllZero_List_Type.t_list)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec all_zero (l:borrowed (AllZero_List_Type.t_list)) (return'  (ret:()))= (! bb0 
+    [ bb6 = -{resolve0 loop_l}- [ &_0 <- [#"../all_zero.rs" 43 4 46 5] () ] return' {_0} 
+    | bb2 = {[#"../all_zero.rs" 39 4 41 88] len0 ( ^ loop_l) = len0 ( * loop_l)
+       -> len0 ( ^ Snapshot.inner old_l) = len0 ( * Snapshot.inner old_l)}
+      {[#"../all_zero.rs" 39 4 41 88] (forall i : int . 0 <= i /\ i < len0 ( * loop_l)
+       -> get0 ( ^ loop_l) i = Core_Option_Option_Type.C_Some (0 : uint32))
+       -> (forall i : int . 0 <= i /\ i < len0 ( * Snapshot.inner old_l)
+       -> get0 ( ^ Snapshot.inner old_l) i = Core_Option_Option_Type.C_Some (0 : uint32))}
+      (! bb3) 
+      [ bb5 = Borrow.borrow_final <uint32> {AllZero_List_Type.cons_0 ( * loop_l)}
+        {Borrow.inherit_id (Borrow.get_id loop_l) 1} (fun (_ret':borrowed uint32) -> [ &value <- _ret' ] 
+          [ &loop_l <- { loop_l with current = (let AllZero_List_Type.C_Cons x0 x1 =  * loop_l in AllZero_List_Type.C_Cons ( ^ value) x1) ; } ]
+          Borrow.borrow_final <AllZero_List_Type.t_list> {AllZero_List_Type.cons_1 ( * loop_l)}
+          {Borrow.inherit_id (Borrow.get_id loop_l) 2} (fun (_ret':borrowed (AllZero_List_Type.t_list)) -> 
+            [ &next <- _ret' ]
+            
+            [ &loop_l <- { loop_l with current = (let AllZero_List_Type.C_Cons x0 x1 =  * loop_l in AllZero_List_Type.C_Cons x0 ( ^ next)) ; } ]
+            
+            [ &value <- { value with current = ([#"../all_zero.rs" 44 17 44 18] (0 : uint32)) ; } ]
+            -{resolve2 value}- Borrow.borrow_mut <AllZero_List_Type.t_list> { * next}
+            (fun (_ret':borrowed (AllZero_List_Type.t_list)) -> [ &_13 <- _ret' ] 
+              [ &next <- { next with current = ( ^ _13) ; } ]
+              -{resolve0 loop_l}- [ &loop_l <- _13 ] any 
+              [ any_ (_any:borrowed (AllZero_List_Type.t_list))-> [ &_13 <- _any ] -{resolve1 next}- bb2 ]
+              )))
+      | bb4 = bb5
+      | bb3 = any 
+        [ br0 (a:uint32) (b:AllZero_List_Type.t_list)-> { * loop_l = AllZero_List_Type.C_Cons a b}
+          (! bb4)
+        | default -> (! bb6) ]
+         ]
+      
+    | bb1 = [ &loop_l <- l ] any [ any_ (_any:borrowed (AllZero_List_Type.t_list))-> [ &l <- _any ] bb2 ]  
+    | bb0 = [ &old_l <- [#"../all_zero.rs" 36 16 36 31] Snapshot.new l ] bb1  ]
+    ) 
+    [ return' (result:())-> {[#"../all_zero.rs" 33 10 33 34] len0 ( * l) = len0 ( ^ l)}
+      {[#"../all_zero.rs" 32 0 32 77] forall i : int . 0 <= i /\ i < len0 ( * l)
+       -> get0 ( ^ l) i = Core_Option_Option_Type.C_Some (0 : uint32)}
+      (! return' {_0}) ]
+    
+    [ & _0 : () = any_l () : ()
+    | & l : borrowed (AllZero_List_Type.t_list) = l
+    | & old_l : Snapshot.snap_ty (borrowed (AllZero_List_Type.t_list)) = any_l () : Snapshot.snap_ty (borrowed (AllZero_List_Type.t_list))
+    | & loop_l : borrowed (AllZero_List_Type.t_list) = any_l () : borrowed (AllZero_List_Type.t_list)
+    | & value : borrowed uint32 = any_l () : borrowed uint32
+    | & next : borrowed (AllZero_List_Type.t_list) = any_l () : borrowed (AllZero_List_Type.t_list)
+    | & _13 : borrowed (AllZero_List_Type.t_list) = any_l () : borrowed (AllZero_List_Type.t_list) ]
+    
+end

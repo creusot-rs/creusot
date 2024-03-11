@@ -1,0 +1,22 @@
+
+module C11_Test
+  type t
+  predicate invariant0 (self : t)
+  let rec invariant0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : t)
+  let rec inv0 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : t . inv0 x = true
+  use prelude.Intrinsic
+  predicate resolve0 (self : t)
+  let rec resolve0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec test (_1:t) (return'  (ret:()))= {inv0 _1}
+    (! bb0 
+    [ bb1 = return' {_0} 
+    | bb0 = [ &_0 <- [#"../11.rs" 18 24 18 26] () ] {[@expl:type invariant] inv0 _1}
+      -{resolve0 _1}- bb1  ]
+    ) [ return' (result:())-> (! return' {_0}) ] [ & _0 : () = any_l () : () | & _1 : t = _1 ] 
+end

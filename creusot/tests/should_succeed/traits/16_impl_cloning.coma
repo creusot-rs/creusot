@@ -1,0 +1,102 @@
+
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.Opaque
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+    
+  function any_l (_ : 'b) : 'a
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+    
+  function any_l (_ : 'b) : 'a
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_RawVec_Cap_Type
+  use prelude.UIntSize
+  use prelude.Int
+  type t_cap  =
+    | C_Cap usize
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_Vec_Vec_Type
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+    
+  function any_l (_ : 'b) : 'a
+end
+module C16ImplCloning_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  type t_vec 't =
+    | C_Vec (Alloc_Vec_Vec_Type.t_vec 't (Alloc_Alloc_Global_Type.t_global))
+    
+  function any_l (_ : 'b) : 'a
+end
+module C16ImplCloning_Test
+  type t
+  use C16ImplCloning_Vec_Type as C16ImplCloning_Vec_Type
+  use prelude.Borrow
+  predicate invariant0 (self : borrowed (C16ImplCloning_Vec_Type.t_vec t))
+  let rec invariant0 (self:borrowed (C16ImplCloning_Vec_Type.t_vec t)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : borrowed (C16ImplCloning_Vec_Type.t_vec t))
+  let rec inv0 (_x:borrowed (C16ImplCloning_Vec_Type.t_vec t)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : borrowed (C16ImplCloning_Vec_Type.t_vec t) . inv0 x = true
+  use seq.Seq
+  function shallow_model1 [#"../16_impl_cloning.rs" 11 4 11 50] (self : C16ImplCloning_Vec_Type.t_vec t) : Seq.seq t
+  let rec shallow_model1 (self:C16ImplCloning_Vec_Type.t_vec t) (return'  (ret:Seq.seq t))= any 
+    [ return' (result:Seq.seq t)-> {result = shallow_model1 self} (! return' {result}) ]
+    
+  function shallow_model0 (self : borrowed (C16ImplCloning_Vec_Type.t_vec t)) : Seq.seq t =
+    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model1 ( * self)
+  let rec shallow_model0 (self:borrowed (C16ImplCloning_Vec_Type.t_vec t)) (return'  (ret:Seq.seq t))= any 
+    [ return' (result:Seq.seq t)-> {result = shallow_model0 self} (! return' {result}) ]
+    
+  use prelude.Intrinsic
+  predicate resolve0 (self : borrowed (C16ImplCloning_Vec_Type.t_vec t)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed (C16ImplCloning_Vec_Type.t_vec t)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec test (x:borrowed (C16ImplCloning_Vec_Type.t_vec t)) (return'  (ret:()))= {[#"../16_impl_cloning.rs" 17 15 17 16] inv0 x}
+    (! bb0 
+    [ bb0 = {[@expl:type invariant] inv0 x}
+      -{resolve0 x}- [ &_0 <- [#"../16_impl_cloning.rs" 17 31 17 33] () ] return' {_0}  ]
+    ) 
+    [ return' (result:())-> {[#"../16_impl_cloning.rs" 16 10 16 21] shallow_model0 x = shallow_model1 ( * x)}
+      (! return' {_0}) ]
+    [ & _0 : () = any_l () : () | & x : borrowed (C16ImplCloning_Vec_Type.t_vec t) = x ] 
+end
+module C16ImplCloning_Impl0
+  type t
+end

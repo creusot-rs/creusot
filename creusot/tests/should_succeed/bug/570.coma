@@ -1,0 +1,43 @@
+
+module C570_S1_Type
+  use prelude.Int32
+  use prelude.Int
+  type t_s1  =
+    | C_S1 int32
+    
+  function any_l (_ : 'b) : 'a
+  function s1_f (self : t_s1) : int32 =
+    match self with
+      | C_S1 a -> a
+      end
+end
+module C570_S2_Type
+  use C570_S1_Type as C570_S1_Type
+  type t_s2  =
+    | C_S2 (C570_S1_Type.t_s1)
+    
+  function any_l (_ : 'b) : 'a
+  function s2_s1 (self : t_s2) : C570_S1_Type.t_s1 =
+    match self with
+      | C_S2 a -> a
+      end
+end
+module C570_TestProgram
+  use C570_S2_Type as C570_S2_Type
+  use prelude.Intrinsic
+  let rec test_program (s:C570_S2_Type.t_s2) (return'  (ret:()))= (! bb0 
+    [ bb0 = [ &_0 <- [#"../570.rs" 12 27 14 1] () ] return' {_0}  ]
+    ) [ return' (result:())-> (! return' {_0}) ] [ & _0 : () = any_l () : () | & s : C570_S2_Type.t_s2 = s ] 
+end
+module C570_TestAssign
+  use prelude.Intrinsic
+  use C570_S2_Type as C570_S2_Type
+  use C570_S1_Type as C570_S1_Type
+  use prelude.Int32
+  use prelude.Int
+  let rec test_assign (s:C570_S2_Type.t_s2) (return'  (ret:()))= (! bb0 
+    [ bb0 = 
+      [ &s <- let C570_S2_Type.C_S2 x0 = s in C570_S2_Type.C_S2 (let C570_S1_Type.C_S1 x0 = C570_S2_Type.s2_s1 s in C570_S1_Type.C_S1 ([#"../570.rs" 17 13 17 14] (2 : int32))) ]
+      [ &_0 <- [#"../570.rs" 16 30 18 1] () ] return' {_0}  ]
+    ) [ return' (result:())-> (! return' {_0}) ] [ & _0 : () = any_l () : () | & s : C570_S2_Type.t_s2 = s ] 
+end

@@ -1,0 +1,47 @@
+
+module Trait_UsesCustom
+  type a
+  type b
+  type t
+  predicate invariant0 (self : t)
+  let rec invariant0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : t)
+  let rec inv0 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : t . inv0 x = true
+  use prelude.Intrinsic
+  predicate resolve0 (self : t)
+  let rec resolve0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec uses_custom (_t:t) (return'  (ret:()))= {[#"../trait.rs" 9 48 9 50] inv0 _t}
+    (! bb0 
+    [ bb1 = return' {_0} 
+    | bb0 = [ &_0 <- [#"../trait.rs" 9 55 9 57] () ] {[@expl:type invariant] inv0 _t}
+      -{resolve0 _t}- bb1  ]
+    ) [ return' (result:())-> (! return' {_0}) ] [ & _0 : () = any_l () : () | & _t : t = _t ] 
+end
+module Trait_UsesCustom2
+  type a
+  type b
+  type t
+  predicate invariant0 (self : t)
+  let rec invariant0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : t)
+  let rec inv0 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : t . inv0 x = true
+  use prelude.Intrinsic
+  predicate resolve0 (self : t)
+  let rec resolve0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec uses_custom2 (_t:t) (return'  (ret:()))= {[#"../trait.rs" 13 55 13 57] inv0 _t}
+    (! bb0 
+    [ bb1 = return' {_0} 
+    | bb0 = [ &_0 <- [#"../trait.rs" 13 62 13 64] () ] {[@expl:type invariant] inv0 _t}
+      -{resolve0 _t}- bb1  ]
+    ) [ return' (result:())-> (! return' {_0}) ] [ & _0 : () = any_l () : () | & _t : t = _t ] 
+end

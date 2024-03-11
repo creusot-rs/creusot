@@ -1,0 +1,24 @@
+
+module C05Annotations_Assertion
+  type t
+  predicate invariant0 (self : t)
+  let rec invariant0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : t)
+  let rec inv0 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : t . inv0 x = true
+  use prelude.Intrinsic
+  predicate resolve0 (self : t)
+  let rec resolve0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec assertion (x:t) (return'  (ret:()))= {[#"../05_annotations.rs" 5 20 5 21] inv0 x}
+    (! bb0 
+    [ bb2 = return' {_0} 
+    | bb1 = [ &_0 <- [#"../05_annotations.rs" 5 26 7 1] () ] bb2 
+    | bb0 = {[@expl:type invariant] inv0 x}
+      -{resolve0 x}- {[@expl:assertion] [#"../05_annotations.rs" 6 20 6 26] x = x}
+      bb1  ]
+    ) [ return' (result:())-> (! return' {_0}) ] [ & _0 : () = any_l () : () | & x : t = x ] 
+end

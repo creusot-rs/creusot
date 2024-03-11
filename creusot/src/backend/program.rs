@@ -938,17 +938,6 @@ impl<'tcx> Statement<'tcx> {
                     IntermediateStmt::Assign(dest, rhs),
                 ]
             }
-            Statement::Assignment(lhs, e, span) => {
-                let mut invalid = Vec::new();
-                e.invalidated_places(&mut invalid);
-
-                let rhs = e.to_why(ctx, names, locals, lhs.ty(ctx.tcx, locals));
-                let (lender, rhs) = place::create_assign_inner(ctx, names, locals, &lhs, rhs, span);
-                let mut exps = vec![IntermediateStmt::Assign(lender, rhs)];
-                invalidate_places(ctx, names, locals, span, invalid, &mut exps);
-
-                exps
-            }
             Statement::Assignment(lhs, RValue::Borrow(BorrowKind::Mut, rhs), span) => {
                 let borrow_mut =
                     coma::Expr::Symbol(QName::from_string("Borrow.borrow_mut").unwrap());
@@ -1028,6 +1017,17 @@ impl<'tcx> Statement<'tcx> {
                 );
 
                 vec![borrow_call, assign1, assign2]
+            }
+            Statement::Assignment(lhs, e, span) => {
+                let mut invalid = Vec::new();
+                e.invalidated_places(&mut invalid);
+
+                let rhs = e.to_why(ctx, names, locals, lhs.ty(ctx.tcx, locals));
+                let (lender, rhs) = place::create_assign_inner(ctx, names, locals, &lhs, rhs, span);
+                let mut exps = vec![IntermediateStmt::Assign(lender, rhs)];
+                invalidate_places(ctx, names, locals, span, invalid, &mut exps);
+
+                exps
             }
             Statement::Call(dest, fun_id, subst, args, span) => {
                 let (fun_exp, args) = func_call_to_why3(ctx, names, locals, fun_id, subst, args);

@@ -1,0 +1,37 @@
+
+module C06_Test
+  type t
+  type tgt0
+  predicate invariant1 (self : tgt0)
+  let rec invariant1 (self:tgt0) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  predicate inv1 (_x : tgt0)
+  let rec inv1 (_x:tgt0) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ] 
+  axiom inv1 : forall x : tgt0 . inv1 x = true
+  predicate invariant0 (self : t)
+  let rec invariant0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : t)
+  let rec inv0 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : t . inv0 x = true
+  use prelude.Borrow
+  use prelude.Intrinsic
+  predicate resolve0 (self : t)
+  let rec resolve0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  use prelude.UIntSize
+  use prelude.Int
+  let rec ix0 (self:t) (ix:usize) (return'  (ret:tgt0))= {[#"../06.rs" 6 11 6 15] inv0 self}
+    any [ return' (result:tgt0)-> {[#"../06.rs" 6 31 6 40] inv1 result} (! return' {result}) ] 
+  let rec test (a:t) (return'  (ret:tgt0))= {[#"../06.rs" 9 19 9 20] inv0 a}
+    (! bb0 
+    [ bb1 = return' {_0} 
+    | bb0 = {[@expl:type invariant] inv0 a}
+      -{resolve0 a}- ix0 {a} {[#"../06.rs" 13 9 13 10] (0 : usize)} (fun (_ret':tgt0) -> [ &_0 <- _ret' ] bb1)  ]
+    ) [ return' (result:tgt0)-> {[#"../06.rs" 9 29 9 35] inv1 result} (! return' {_0}) ] 
+    [ & _0 : tgt0 = any_l () : tgt0 | & a : t = a ]
+    
+end

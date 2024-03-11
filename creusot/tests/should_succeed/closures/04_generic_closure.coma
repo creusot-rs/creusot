@@ -1,0 +1,239 @@
+
+module C04GenericClosure_GenericClosure
+  type a
+  type b
+  type f
+  predicate resolve0 (self : f)
+  let rec resolve0 (self:f) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  use prelude.Borrow
+  predicate postcondition_mut0 (self : borrowed f) (_2 : a) (_3 : b)
+  let rec postcondition_mut0 (self:borrowed f) (_2:a) (_3:b) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = postcondition_mut0 self _2 _3} (! return' {result}) ]
+    
+  predicate inv5 (_x : borrowed f)
+  let rec inv5 (_x:borrowed f) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ]
+    
+  predicate postcondition_once0 (self : f) (_2 : a) (_3 : b)
+  let rec postcondition_once0 (self:f) (_2:a) (_3:b) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = postcondition_once0 self _2 _3} (! return' {result}) ]
+    
+  predicate inv2 (_x : b)
+  let rec inv2 (_x:b) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ] 
+  predicate inv4 (_x : a)
+  let rec inv4 (_x:a) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ] 
+  predicate inv0 (_x : f)
+  let rec inv0 (_x:f) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  function fn_mut_once0 (self : f) (args : a) (res : b) : ()
+  let rec fn_mut_once0 (self:f) (args:a) (res:b) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] inv2 res}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 123 25 123 29] inv4 args}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 123 19 123 23] inv0 self}
+    any [ return' (result:())-> {result = fn_mut_once0 self args res} (! return' {result}) ] 
+  axiom fn_mut_once0_spec : forall self : f, args : a, res : b . ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 19 123 23] inv0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 25 123 29] inv4 args)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] inv2 res)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] postcondition_once0 self args res = (exists s : borrowed f . inv5 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve0 ( ^ s)))
+  predicate unnest0 (self : f) (_2 : f)
+  let rec unnest0 (self:f) (_2:f) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = unnest0 self _2} (! return' {result}) ]
+    
+  function unnest_trans0 (self : f) (b : f) (c : f) : ()
+  let rec unnest_trans0 (self:f) (b:f) (c:f) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/std/ops.rs" 117 35 117 36] inv0 c}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 117 26 117 27] inv0 b}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 117 20 117 24] inv0 self}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 115 15 115 26] unnest0 b c}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 114 15 114 29] unnest0 self b}
+    any [ return' (result:())-> {result = unnest_trans0 self b c} (! return' {result}) ] 
+  axiom unnest_trans0_spec : forall self : f, b : f, c : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 114 15 114 29] unnest0 self b)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 115 15 115 26] unnest0 b c)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 20 117 24] inv0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 26 117 27] inv0 b)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 35 117 36] inv0 c)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 116 14 116 28] unnest0 self c)
+  function unnest_refl0 (self : f) : ()
+  let rec unnest_refl0 (self:f) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/std/ops.rs" 110 19 110 23] inv0 self}
+    any [ return' (result:())-> {result = unnest_refl0 self} (! return' {result}) ] 
+  axiom unnest_refl0_spec : forall self : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 110 19 110 23] inv0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 109 14 109 31] unnest0 self self)
+  function postcondition_mut_unnest0 (self : borrowed f) (args : a) (res : b) : ()
+  let rec postcondition_mut_unnest0 (self:borrowed f) (args:a) (res:b) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/std/ops.rs" 105 55 105 58] inv2 res}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 105 43 105 47] inv4 args}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 105 37 105 41] inv5 self}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 103 15 103 48] postcondition_mut0 self args res}
+    any [ return' (result:())-> {result = postcondition_mut_unnest0 self args res} (! return' {result}) ] 
+  axiom postcondition_mut_unnest0_spec : forall self : borrowed f, args : a, res : b . ([#"../../../../../creusot-contracts/src/std/ops.rs" 103 15 103 48] postcondition_mut0 self args res)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 105 37 105 41] inv5 self)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 105 43 105 47] inv4 args)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 105 55 105 58] inv2 res)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 104 14 104 35] unnest0 ( * self) ( ^ self))
+  predicate invariant5 (self : borrowed f)
+  let rec invariant5 (self:borrowed f) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant5 self} (! return' {result}) ]
+    
+  axiom inv5 : forall x : borrowed f . inv5 x = true
+  predicate postcondition0 (self : f) (_2 : a) (_3 : b)
+  let rec postcondition0 (self:f) (_2:a) (_3:b) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = postcondition0 self _2 _3} (! return' {result}) ]
+    
+  function fn_once0 (self : f) (args : a) (res : b) : ()
+  let rec fn_once0 (self:f) (args:a) (res:b) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/std/ops.rs" 145 33 145 36] inv2 res}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 145 21 145 25] inv4 args}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 145 15 145 19] inv0 self}
+    any [ return' (result:())-> {result = fn_once0 self args res} (! return' {result}) ] 
+  axiom fn_once0_spec : forall self : f, args : a, res : b . ([#"../../../../../creusot-contracts/src/std/ops.rs" 145 15 145 19] inv0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 145 21 145 25] inv4 args)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 145 33 145 36] inv2 res)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 144 14 144 101] postcondition_once0 self args res = (resolve0 self /\ postcondition0 self args res))
+  predicate resolve1 (self : borrowed f) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed f) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  function fn_mut0 (self : borrowed f) (args : a) (res : b) : ()
+  let rec fn_mut0 (self:borrowed f) (args:a) (res:b) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/std/ops.rs" 139 37 139 40] inv2 res}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 139 25 139 29] inv4 args}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 139 19 139 23] inv5 self}
+    any [ return' (result:())-> {result = fn_mut0 self args res} (! return' {result}) ] 
+  axiom fn_mut0_spec : forall self : borrowed f, args : a, res : b . ([#"../../../../../creusot-contracts/src/std/ops.rs" 139 19 139 23] inv5 self)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 139 25 139 29] inv4 args)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 139 37 139 40] inv2 res)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 138 14 138 100] postcondition_mut0 self args res = (resolve1 self /\ postcondition0 ( * self) args res))
+  predicate invariant4 (self : a)
+  let rec invariant4 (self:a) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ]
+    
+  axiom inv4 : forall x : a . inv4 x = true
+  predicate invariant3 (self : f)
+  let rec invariant3 (self:f) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
+    
+  predicate inv3 (_x : f)
+  let rec inv3 (_x:f) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ] 
+  axiom inv3 : forall x : f . inv3 x = true
+  predicate invariant2 (self : b)
+  let rec invariant2 (self:b) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
+    
+  axiom inv2 : forall x : b . inv2 x = true
+  predicate invariant1 (self : a)
+  let rec invariant1 (self:a) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  predicate inv1 (_x : a)
+  let rec inv1 (_x:a) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ] 
+  axiom inv1 : forall x : a . inv1 x = true
+  predicate invariant0 (self : f)
+  let rec invariant0 (self:f) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  axiom inv0 : forall x : f . inv0 x = true
+  use prelude.Intrinsic
+  predicate precondition0 (self : f) (_2 : a)
+  let rec precondition0 (self:f) (_2:a) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = precondition0 self _2} (! return' {result}) ]
+    
+  let rec call0 (self:f) (args:a) (return'  (ret:b))= {inv4 args}
+    {inv3 self}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 166 27 166 52] precondition0 self args}
+    any 
+    [ return' (result:b)-> {inv2 result}
+      {[#"../../../../../creusot-contracts/src/std/ops.rs" 148 0 172 1] postcondition0 self args result}
+      (! return' {result}) ]
+    
+  let rec generic_closure (f:f) (a:a) (return'  (ret:b))= {[#"../04_generic_closure.rs" 3 46 3 47] inv1 a}
+    {[#"../04_generic_closure.rs" 3 40 3 41] inv0 f}
+    (! bb0 
+    [ bb4 = return' {_0} 
+    | bb3 = bb4 
+    | bb2 = {[@expl:type invariant] inv0 f}
+      -{resolve0 f}- bb3 
+    | bb1 = bb2 
+    | bb0 = [ &_4 <- (a) ] any 
+      [ any_ (_any:a)-> [ &a <- _any ] call0 {f} {_4} (fun (_ret':b) -> [ &_0 <- _ret' ] bb1) ]
+        ]
+    ) [ return' (result:b)-> {[#"../04_generic_closure.rs" 3 55 3 56] inv2 result} (! return' {_0}) ] 
+    [ & _0 : b = any_l () : b | & f : f = f | & a : a = a | & _4 : a = any_l () : a ]
+    
+end
+module C04GenericClosure_Mapper_Closure0_Type
+  use prelude.Int8
+  type c04genericclosure_mapper_closure0 'a =
+    | C04GenericClosure_Mapper_Closure0
+    
+end
+module C04GenericClosure_Mapper_Closure0
+  type a
+  predicate invariant0 (self : a)
+  let rec invariant0 (self:a) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : a)
+  let rec inv0 (_x:a) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : a . inv0 x = true
+  use prelude.Int8
+  use C04GenericClosure_Mapper_Closure0_Type as C04GenericClosure_Mapper_Closure0
+  use prelude.Borrow
+  use prelude.Intrinsic
+  predicate resolve1 (self : a)
+  let rec resolve1 (self:a) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : C04GenericClosure_Mapper_Closure0.c04genericclosure_mapper_closure0 a)
+  let rec resolve0 (self:C04GenericClosure_Mapper_Closure0.c04genericclosure_mapper_closure0 a) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ] 
+  let rec c04GenericClosure_Mapper_Closure0 (_1:C04GenericClosure_Mapper_Closure0.c04genericclosure_mapper_closure0 a) (_a:a) (return'  (ret:()))= {[#"../04_generic_closure.rs" 8 29 8 31] inv0 _a}
+    (! bb0 
+    [ bb1 = return' {_0}  | bb0 = [ &_0 <- () ] {[@expl:type invariant] inv0 _a} -{resolve1 _a}- -{resolve0 _1}- bb1  ]
+    ) [ return' (result:())-> (! return' {_0}) ] 
+    [ & _0 : () = any_l () : ()
+    | & _1 : C04GenericClosure_Mapper_Closure0.c04genericclosure_mapper_closure0 a = _1
+    | & _a : a = _a ]
+    
+end
+module C04GenericClosure_Mapper
+  type a
+  predicate invariant2 (self : ()) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant2 (self:()) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
+    
+  predicate inv2 (_x : ())
+  let rec inv2 (_x:()) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ] 
+  axiom inv2 : forall x : () . inv2 x = true
+  use prelude.Int8
+  use C04GenericClosure_Mapper_Closure0_Type as C04GenericClosure_Mapper_Closure0
+  predicate invariant1 (self : C04GenericClosure_Mapper_Closure0.c04genericclosure_mapper_closure0 a)
+  let rec invariant1 (self:C04GenericClosure_Mapper_Closure0.c04genericclosure_mapper_closure0 a) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ] 
+  predicate inv1 (_x : C04GenericClosure_Mapper_Closure0.c04genericclosure_mapper_closure0 a)
+  let rec inv1 (_x:C04GenericClosure_Mapper_Closure0.c04genericclosure_mapper_closure0 a) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  axiom inv1 : forall x : C04GenericClosure_Mapper_Closure0.c04genericclosure_mapper_closure0 a . inv1 x = true
+  predicate invariant0 (self : a)
+  let rec invariant0 (self:a) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : a)
+  let rec inv0 (_x:a) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : a . inv0 x = true
+  use prelude.Intrinsic
+  let rec generic_closure0 (f:C04GenericClosure_Mapper_Closure0.c04genericclosure_mapper_closure0 a) (a:a) (return'  (ret:()))= {[#"../04_generic_closure.rs" 3 46 3 47] inv0 a}
+    {[#"../04_generic_closure.rs" 3 40 3 41] inv1 f}
+    any [ return' (result:())-> {[#"../04_generic_closure.rs" 3 55 3 56] inv2 result} (! return' {result}) ] 
+  let rec mapper (x:a) (return'  (ret:()))= {[#"../04_generic_closure.rs" 7 17 7 18] inv0 x}
+    (! bb0 
+    [ bb2 = return' {_0} 
+    | bb1 = [ &_0 <- [#"../04_generic_closure.rs" 7 23 9 1] () ] bb2 
+    | bb0 = 
+      [ &_3 <- C04GenericClosure_Mapper_Closure0.C04GenericClosure_Mapper_Closure0 : C04GenericClosure_Mapper_Closure0.c04genericclosure_mapper_closure0 a ]
+      generic_closure0 {_3} {x} (fun (_ret':()) -> [ &_2 <- _ret' ] bb1)  ]
+    ) [ return' (result:())-> (! return' {_0}) ] 
+    [ & _0 : () = any_l () : ()
+    | & x : a = x
+    | & _2 : () = any_l () : ()
+    | & _3 : C04GenericClosure_Mapper_Closure0.c04genericclosure_mapper_closure0 a = any_l () : C04GenericClosure_Mapper_Closure0.c04genericclosure_mapper_closure0 a ]
+    
+end

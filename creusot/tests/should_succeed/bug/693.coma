@@ -1,0 +1,42 @@
+
+module C693_F
+  type ifc
+  predicate invariant0 (self : ifc)
+  let rec invariant0 (self:ifc) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : ifc)
+  let rec inv0 (_x:ifc) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : ifc . inv0 x = true
+  use prelude.Intrinsic
+  predicate resolve0 (self : ifc)
+  let rec resolve0 (self:ifc) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec f (_1:ifc) (return'  (ret:()))= {inv0 _1}
+    (! bb0 
+    [ bb1 = return' {_0} 
+    | bb0 = [ &_0 <- [#"../693.rs" 3 22 3 24] () ] {[@expl:type invariant] inv0 _1}
+      -{resolve0 _1}- bb1  ]
+    ) [ return' (result:())-> (! return' {_0}) ] [ & _0 : () = any_l () : () | & _1 : ifc = _1 ] 
+end
+module C693_G
+  use prelude.Int32
+  predicate invariant0 (self : int32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant0 (self:int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : int32)
+  let rec inv0 (_x:int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : int32 . inv0 x = true
+  use prelude.Intrinsic
+  let rec f0 (_1:int32) (return'  (ret:()))= {inv0 _1}
+    any [ return' (result:())-> (! return' {result}) ] 
+  use prelude.Int
+  let rec g (_1:()) (return'  (ret:()))= (! bb0 
+    [ bb1 = return' {_0}  | bb0 = f0 {[#"../693.rs" 6 6 6 7] (0 : int32)} (fun (_ret':()) -> [ &_0 <- _ret' ] bb1)  ]
+    ) [ return' (result:())-> (! return' {_0}) ] [ & _0 : () = any_l () : () ] 
+end

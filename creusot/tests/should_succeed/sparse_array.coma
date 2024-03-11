@@ -1,0 +1,1396 @@
+
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.Opaque
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+    
+  function any_l (_ : 'b) : 'a
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+    
+  function any_l (_ : 'b) : 'a
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_RawVec_Cap_Type
+  use prelude.UIntSize
+  use prelude.Int
+  type t_cap  =
+    | C_Cap usize
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_Vec_Vec_Type
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+    
+  function any_l (_ : 'b) : 'a
+end
+module SparseArray_Sparse_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use prelude.UIntSize
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use prelude.Int
+  type t_sparse 't =
+    | C_Sparse usize usize (Alloc_Vec_Vec_Type.t_vec 't (Alloc_Alloc_Global_Type.t_global)) (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
+    
+  function any_l (_ : 'b) : 'a
+  function sparse_size (self : t_sparse 't) : usize =
+    match self with
+      | C_Sparse a _ _ _ _ -> a
+      end
+  function sparse_idx (self : t_sparse 't) : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) =
+    match self with
+      | C_Sparse _ _ _ a _ -> a
+      end
+  function sparse_n (self : t_sparse 't) : usize =
+    match self with
+      | C_Sparse _ a _ _ _ -> a
+      end
+  function sparse_back (self : t_sparse 't) : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) =
+    match self with
+      | C_Sparse _ _ _ _ a -> a
+      end
+  function sparse_values (self : t_sparse 't) : Alloc_Vec_Vec_Type.t_vec 't (Alloc_Alloc_Global_Type.t_global) =
+    match self with
+      | C_Sparse _ _ a _ _ -> a
+      end
+end
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
+    
+  function any_l (_ : 'b) : 'a
+end
+module SparseArray_Impl2_Get
+  type t
+  use prelude.UIntSize
+  use seq.Seq
+  predicate invariant11 (self : Seq.seq usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant11 (self:Seq.seq usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant11 self} (! return' {result}) ]
+    
+  predicate inv11 (_x : Seq.seq usize)
+  let rec inv11 (_x:Seq.seq usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv11 _x} (! return' {result}) ]
+    
+  axiom inv11 : forall x : Seq.seq usize . inv11 x = true
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use prelude.UIntSize
+  use prelude.Int
+  constant max0 : usize = (18446744073709551615 : usize)
+  use seq.Seq
+  predicate inv10 (_x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
+  let rec inv10 (_x:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv10 _x} (! return' {result}) ]
+    
+  function shallow_model6 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
+  let rec shallow_model6 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq usize))= {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv10 self}
+    any [ return' (result:Seq.seq usize)-> {result = shallow_model6 self} (! return' {result}) ] 
+  axiom shallow_model6_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv10 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv11 (shallow_model6 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model6 self) <= UIntSize.to_int (max0 : usize))
+  predicate invariant10 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv11 (shallow_model6 self)
+  let rec invariant10 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant10 self} (! return' {result}) ] 
+  axiom inv10 : forall x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . inv10 x = true
+  predicate invariant9 (self : Seq.seq t)
+  let rec invariant9 (self:Seq.seq t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant9 self} (! return' {result}) ]
+    
+  predicate inv9 (_x : Seq.seq t)
+  let rec inv9 (_x:Seq.seq t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv9 _x} (! return' {result}) ]
+    
+  axiom inv9 : forall x : Seq.seq t . inv9 x = true
+  use seq.Seq
+  predicate inv8 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  let rec inv8 (_x:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv8 _x} (! return' {result}) ]
+    
+  function shallow_model5 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
+  let rec shallow_model5 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv8 self}
+    any [ return' (result:Seq.seq t)-> {result = shallow_model5 self} (! return' {result}) ] 
+  axiom shallow_model5_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv8 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv9 (shallow_model5 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model5 self) <= UIntSize.to_int (max0 : usize))
+  predicate invariant8 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv9 (shallow_model5 self)
+  let rec invariant8 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant8 self} (! return' {result}) ]
+    
+  axiom inv8 : forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv8 x = true
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use seq.Seq
+  function index_logic4 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix : int) : usize
+    
+   =
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model6 self) ix
+  let rec index_logic4 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:usize))= any
+    [ return' (result:usize)-> {result = index_logic4 self ix} (! return' {result}) ] 
+  use seq.Seq
+  use prelude.Borrow
+  use seq.Seq
+  use prelude.Mapping
+  use seq.Seq
+  function index_logic3 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (ix : int) : t
+    
+   =
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model5 self) ix
+  let rec index_logic3 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:t))= any
+    [ return' (result:t)-> {result = index_logic3 self ix} (! return' {result}) ] 
+  use SparseArray_Sparse_Type as SparseArray_Sparse_Type
+  function is_elt0 [#"../sparse_array.rs" 72 4 72 36] (self : SparseArray_Sparse_Type.t_sparse t) (i : int) : bool =
+    [#"../sparse_array.rs" 73 20 74 52] UIntSize.to_int (index_logic4 (SparseArray_Sparse_Type.sparse_idx self) i) < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) /\ UIntSize.to_int (index_logic4 (SparseArray_Sparse_Type.sparse_back self) (UIntSize.to_int (index_logic4 (SparseArray_Sparse_Type.sparse_idx self) i))) = i
+  let rec is_elt0 (self:SparseArray_Sparse_Type.t_sparse t) (i:int) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = is_elt0 self i} (! return' {result}) ]
+    
+  function shallow_model4 [#"../sparse_array.rs" 38 4 38 50] (self : SparseArray_Sparse_Type.t_sparse t) : Seq.seq (Core_Option_Option_Type.t_option t)
+    
+   =
+    [#"../sparse_array.rs" 40 12 41 82] Seq.create (UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self)) (Mapping.from_fn (fun (i : int) -> if is_elt0 self i then
+      Core_Option_Option_Type.C_Some (index_logic3 (SparseArray_Sparse_Type.sparse_values self) i)
+    else
+      Core_Option_Option_Type.C_None
+    ))
+  let rec shallow_model4 (self:SparseArray_Sparse_Type.t_sparse t) (return'  (ret:Seq.seq (Core_Option_Option_Type.t_option t)))= any
+    
+    [ return' (result:Seq.seq (Core_Option_Option_Type.t_option t))-> {result = shallow_model4 self}
+      (! return' {result}) ]
+    
+  predicate invariant7 [#"../sparse_array.rs" 49 4 49 30] (self : SparseArray_Sparse_Type.t_sparse t) =
+    [#"../sparse_array.rs" 50 8 61 9] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) <= UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model4 self) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model5 (SparseArray_Sparse_Type.sparse_values self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model6 (SparseArray_Sparse_Type.sparse_idx self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model6 (SparseArray_Sparse_Type.sparse_back self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self)
+     -> match index_logic4 (SparseArray_Sparse_Type.sparse_back self) i with
+      | j -> 0 <= UIntSize.to_int j /\ UIntSize.to_int j < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ UIntSize.to_int (index_logic4 (SparseArray_Sparse_Type.sparse_idx self) (UIntSize.to_int j)) = i
+      end)
+  let rec invariant7 (self:SparseArray_Sparse_Type.t_sparse t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant7 self} (! return' {result}) ]
+    
+  predicate inv7 (_x : SparseArray_Sparse_Type.t_sparse t)
+  let rec inv7 (_x:SparseArray_Sparse_Type.t_sparse t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv7 _x} (! return' {result}) ]
+    
+  axiom inv7 : forall x : SparseArray_Sparse_Type.t_sparse t . inv7 x = (invariant7 x /\ match x with
+    | SparseArray_Sparse_Type.C_Sparse size n values idx back -> true
+    end)
+  predicate invariant6 (self : usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant6 (self:usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant6 self} (! return' {result}) ]
+    
+  predicate inv6 (_x : usize)
+  let rec inv6 (_x:usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv6 _x} (! return' {result}) ]
+    
+  axiom inv6 : forall x : usize . inv6 x = true
+  predicate invariant5 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant5 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant5 self} (! return' {result}) ] 
+  predicate inv5 (_x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
+  let rec inv5 (_x:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ]
+    
+  axiom inv5 : forall x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . inv5 x = true
+  predicate invariant4 (self : usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant4 (self:usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ]
+    
+  predicate inv4 (_x : usize)
+  let rec inv4 (_x:usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ]
+    
+  axiom inv4 : forall x : usize . inv4 x = true
+  predicate invariant3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  let rec invariant3 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
+    
+  predicate inv3 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  let rec inv3 (_x:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
+    
+  axiom inv3 : forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv3 x = true
+  predicate invariant2 (self : Core_Option_Option_Type.t_option t)
+  let rec invariant2 (self:Core_Option_Option_Type.t_option t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
+    
+  predicate inv2 (_x : Core_Option_Option_Type.t_option t)
+  let rec inv2 (_x:Core_Option_Option_Type.t_option t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
+    
+  axiom inv2 : forall x : Core_Option_Option_Type.t_option t . inv2 x = true
+  predicate invariant1 (self : t)
+  let rec invariant1 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  predicate inv1 (_x : t)
+  let rec inv1 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ] 
+  axiom inv1 : forall x : t . inv1 x = true
+  predicate invariant0 (self : SparseArray_Sparse_Type.t_sparse t)
+  let rec invariant0 (self:SparseArray_Sparse_Type.t_sparse t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : SparseArray_Sparse_Type.t_sparse t)
+  let rec inv0 (_x:SparseArray_Sparse_Type.t_sparse t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : SparseArray_Sparse_Type.t_sparse t . inv0 x = inv7 x
+  use seq.Seq
+  function shallow_model1 (self : SparseArray_Sparse_Type.t_sparse t) : Seq.seq (Core_Option_Option_Type.t_option t) =
+    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model4 self
+  let rec shallow_model1 (self:SparseArray_Sparse_Type.t_sparse t) (return'  (ret:Seq.seq (Core_Option_Option_Type.t_option t)))= any
+    
+    [ return' (result:Seq.seq (Core_Option_Option_Type.t_option t))-> {result = shallow_model1 self}
+      (! return' {result}) ]
+    
+  use prelude.Intrinsic
+  use prelude.Slice
+  predicate has_value1 [@inline:trivial] (self : usize) (seq : Seq.seq usize) (out : usize) =
+    [#"../../../../creusot-contracts/src/std/slice.rs" 122 20 122 37] Seq.get seq (UIntSize.to_int self) = out
+  let rec has_value1 (self:usize) (seq:Seq.seq usize) (out:usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = has_value1 self seq out} (! return' {result}) ]
+    
+  predicate in_bounds1 [@inline:trivial] (self : usize) (seq : Seq.seq usize) =
+    [#"../../../../creusot-contracts/src/std/slice.rs" 115 20 115 37] UIntSize.to_int self < Seq.length seq
+  let rec in_bounds1 (self:usize) (seq:Seq.seq usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = in_bounds1 self seq} (! return' {result}) ]
+    
+  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize =
+    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model6 self
+  let rec shallow_model3 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq usize))= any
+    [ return' (result:Seq.seq usize)-> {result = shallow_model3 self} (! return' {result}) ] 
+  let rec index1 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (index:usize) (return'  (ret:usize))= {inv4 index}
+    {inv5 self}
+    {[#"../../../../creusot-contracts/src/std/vec.rs" 141 27 141 46] in_bounds1 index (shallow_model3 self)}
+    any 
+    [ return' (result:usize)-> {inv6 result}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 142 26 142 54] has_value1 index (shallow_model3 self) result}
+      (! return' {result}) ]
+    
+  predicate has_value0 [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
+    [#"../../../../creusot-contracts/src/std/slice.rs" 122 20 122 37] Seq.get seq (UIntSize.to_int self) = out
+  let rec has_value0 (self:usize) (seq:Seq.seq t) (out:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = has_value0 self seq out} (! return' {result}) ]
+    
+  predicate in_bounds0 [@inline:trivial] (self : usize) (seq : Seq.seq t) =
+    [#"../../../../creusot-contracts/src/std/slice.rs" 115 20 115 37] UIntSize.to_int self < Seq.length seq
+  let rec in_bounds0 (self:usize) (seq:Seq.seq t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = in_bounds0 self seq} (! return' {result}) ]
+    
+  function shallow_model2 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t =
+    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model5 self
+  let rec shallow_model2 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= any
+    [ return' (result:Seq.seq t)-> {result = shallow_model2 self} (! return' {result}) ] 
+  let rec index0 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (index:usize) (return'  (ret:t))= {inv4 index}
+    {inv3 self}
+    {[#"../../../../creusot-contracts/src/std/vec.rs" 141 27 141 46] in_bounds0 index (shallow_model2 self)}
+    any 
+    [ return' (result:t)-> {inv1 result}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 142 26 142 54] has_value0 index (shallow_model2 self) result}
+      (! return' {result}) ]
+    
+  predicate resolve1 (self : t)
+  let rec resolve1 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : SparseArray_Sparse_Type.t_sparse t)
+  let rec resolve0 (self:SparseArray_Sparse_Type.t_sparse t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec get (self:SparseArray_Sparse_Type.t_sparse t) (i:usize) (return'  (ret:Core_Option_Option_Type.t_option t))= {[#"../sparse_array.rs" 89 16 89 20] inv0 self}
+    {[#"../sparse_array.rs" 80 15 80 31] UIntSize.to_int i < Seq.length (shallow_model1 self)}
+    (! bb0 
+    [ bb9 = return' {_0} 
+    | bb8 = [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option t ] bb9 
+    | bb7 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- bb8 
+    | bb6 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- bb8 
+    | bb5 = [ &_20 <- _21 ] {[@expl:type invariant] inv1 _21}
+      -{resolve1 _21}- {[@expl:type invariant] inv1 _20}
+      -{resolve1 _20}- [ &_0 <- Core_Option_Option_Type.C_Some _20 ] bb9 
+    | bb4 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- index0 {SparseArray_Sparse_Type.sparse_values self} {i} (fun (_ret':t) -> [ &_21 <- _ret' ] bb5)
+      
+    | bb3 = UIntSize.eq {_15} {i} (fun (_ret':bool) -> [ &_13 <- _ret' ] any 
+        [ br0 -> {_13 = false} (! bb6) | br1 -> {_13} (! bb4) ]
+        ) 
+    | bb2 = index1 {SparseArray_Sparse_Type.sparse_back self} {index} (fun (_ret':usize) -> [ &_15 <- _ret' ] bb3) 
+    | bb1 = [ &index <- _7 ] UIntSize.lt {index} {SparseArray_Sparse_Type.sparse_n self} (fun (_ret':bool) -> 
+        [ &_10 <- _ret' ]
+        any [ br0 -> {_10 = false} (! bb7) | br1 -> {_10} (! bb2) ] ) 
+    | bb0 = index1 {SparseArray_Sparse_Type.sparse_idx self} {i} (fun (_ret':usize) -> [ &_7 <- _ret' ] bb1)  ]
+    ) 
+    [ return' (result:Core_Option_Option_Type.t_option t)-> {[#"../sparse_array.rs" 89 35 89 45] inv2 result}
+      {[#"../sparse_array.rs" 85 14 88 5] match Seq.get (shallow_model1 self) (UIntSize.to_int i) with
+        | Core_Option_Option_Type.C_None -> result = Core_Option_Option_Type.C_None
+        | Core_Option_Option_Type.C_Some _ -> true
+        end}
+      {[#"../sparse_array.rs" 81 14 84 5] match result with
+        | Core_Option_Option_Type.C_None -> Seq.get (shallow_model1 self) (UIntSize.to_int i) = Core_Option_Option_Type.C_None
+        | Core_Option_Option_Type.C_Some x -> Seq.get (shallow_model1 self) (UIntSize.to_int i) = Core_Option_Option_Type.C_Some x
+        end}
+      (! return' {_0}) ]
+    
+    [ & _0 : Core_Option_Option_Type.t_option t = any_l () : Core_Option_Option_Type.t_option t
+    | & self : SparseArray_Sparse_Type.t_sparse t = self
+    | & i : usize = i
+    | & index : usize = any_l () : usize
+    | & _7 : usize = any_l () : usize
+    | & _10 : bool = any_l () : bool
+    | & _13 : bool = any_l () : bool
+    | & _15 : usize = any_l () : usize
+    | & _20 : t = any_l () : t
+    | & _21 : t = any_l () : t ]
+    
+end
+module SparseArray_Impl2_LemmaPermutation_Impl
+  type t
+  use seq.Seq
+  predicate invariant4 (self : Seq.seq t)
+  let rec invariant4 (self:Seq.seq t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ]
+    
+  predicate inv4 (_x : Seq.seq t)
+  let rec inv4 (_x:Seq.seq t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ]
+    
+  axiom inv4 : forall x : Seq.seq t . inv4 x = true
+  use prelude.UIntSize
+  predicate invariant3 (self : Seq.seq usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant3 (self:Seq.seq usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
+    
+  predicate inv3 (_x : Seq.seq usize)
+  let rec inv3 (_x:Seq.seq usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
+    
+  axiom inv3 : forall x : Seq.seq usize . inv3 x = true
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use prelude.UIntSize
+  use prelude.Int
+  constant max0 : usize = (18446744073709551615 : usize)
+  use seq.Seq
+  predicate inv2 (_x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
+  let rec inv2 (_x:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
+    
+  function shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
+  let rec shallow_model1 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq usize))= {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv2 self}
+    any [ return' (result:Seq.seq usize)-> {result = shallow_model1 self} (! return' {result}) ] 
+  axiom shallow_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv2 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv3 (shallow_model1 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model1 self) <= UIntSize.to_int (max0 : usize))
+  predicate invariant2 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv3 (shallow_model1 self)
+  let rec invariant2 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ] 
+  axiom inv2 : forall x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . inv2 x = true
+  use seq.Seq
+  predicate inv1 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  let rec inv1 (_x:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
+  let rec shallow_model3 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv1 self}
+    any [ return' (result:Seq.seq t)-> {result = shallow_model3 self} (! return' {result}) ] 
+  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv1 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv4 (shallow_model3 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int (max0 : usize))
+  predicate invariant1 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv4 (shallow_model3 self)
+  let rec invariant1 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  axiom inv1 : forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv1 x = true
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use seq.Seq
+  function index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix : int) : usize
+    
+   =
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model1 self) ix
+  let rec index_logic0 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:usize))= any
+    [ return' (result:usize)-> {result = index_logic0 self ix} (! return' {result}) ] 
+  use seq.Seq
+  use prelude.Borrow
+  use seq.Seq
+  use prelude.Mapping
+  use seq.Seq
+  function index_logic2 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (ix : int) : t
+    
+   =
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model3 self) ix
+  let rec index_logic2 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:t))= any
+    [ return' (result:t)-> {result = index_logic2 self ix} (! return' {result}) ] 
+  use SparseArray_Sparse_Type as SparseArray_Sparse_Type
+  function is_elt0 [#"../sparse_array.rs" 72 4 72 36] (self : SparseArray_Sparse_Type.t_sparse t) (i : int) : bool =
+    [#"../sparse_array.rs" 73 20 74 52] UIntSize.to_int (index_logic0 (SparseArray_Sparse_Type.sparse_idx self) i) < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) /\ UIntSize.to_int (index_logic0 (SparseArray_Sparse_Type.sparse_back self) (UIntSize.to_int (index_logic0 (SparseArray_Sparse_Type.sparse_idx self) i))) = i
+  let rec is_elt0 (self:SparseArray_Sparse_Type.t_sparse t) (i:int) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = is_elt0 self i} (! return' {result}) ]
+    
+  function shallow_model2 [#"../sparse_array.rs" 38 4 38 50] (self : SparseArray_Sparse_Type.t_sparse t) : Seq.seq (Core_Option_Option_Type.t_option t)
+    
+   =
+    [#"../sparse_array.rs" 40 12 41 82] Seq.create (UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self)) (Mapping.from_fn (fun (i : int) -> if is_elt0 self i then
+      Core_Option_Option_Type.C_Some (index_logic2 (SparseArray_Sparse_Type.sparse_values self) i)
+    else
+      Core_Option_Option_Type.C_None
+    ))
+  let rec shallow_model2 (self:SparseArray_Sparse_Type.t_sparse t) (return'  (ret:Seq.seq (Core_Option_Option_Type.t_option t)))= any
+    
+    [ return' (result:Seq.seq (Core_Option_Option_Type.t_option t))-> {result = shallow_model2 self}
+      (! return' {result}) ]
+    
+  predicate invariant0 [#"../sparse_array.rs" 49 4 49 30] (self : SparseArray_Sparse_Type.t_sparse t) =
+    [#"../sparse_array.rs" 50 8 61 9] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) <= UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model2 self) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model3 (SparseArray_Sparse_Type.sparse_values self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model1 (SparseArray_Sparse_Type.sparse_idx self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model1 (SparseArray_Sparse_Type.sparse_back self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self)
+     -> match index_logic0 (SparseArray_Sparse_Type.sparse_back self) i with
+      | j -> 0 <= UIntSize.to_int j /\ UIntSize.to_int j < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ UIntSize.to_int (index_logic0 (SparseArray_Sparse_Type.sparse_idx self) (UIntSize.to_int j)) = i
+      end)
+  let rec invariant0 (self:SparseArray_Sparse_Type.t_sparse t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : SparseArray_Sparse_Type.t_sparse t)
+  let rec inv0 (_x:SparseArray_Sparse_Type.t_sparse t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : SparseArray_Sparse_Type.t_sparse t . inv0 x = (invariant0 x /\ match x with
+    | SparseArray_Sparse_Type.C_Sparse size n values idx back -> true
+    end)
+  constant self  : SparseArray_Sparse_Type.t_sparse t
+  constant i  : int
+  function lemma_permutation [#"../sparse_array.rs" 104 4 104 38] (self : SparseArray_Sparse_Type.t_sparse t) (i : int) : ()
+    
+  goal vc_lemma_permutation : ([#"../sparse_array.rs" 104 25 104 29] inv0 self)
+   -> ([#"../sparse_array.rs" 102 15 102 39] 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self))
+   -> ([#"../sparse_array.rs" 101 15 101 34] SparseArray_Sparse_Type.sparse_n self = SparseArray_Sparse_Type.sparse_size self)
+   -> ([#"../sparse_array.rs" 103 14 103 28] is_elt0 self i)
+end
+module SparseArray_Impl2_Set
+  type t
+  use seq.Seq
+  predicate invariant13 (self : Seq.seq t)
+  let rec invariant13 (self:Seq.seq t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant13 self} (! return' {result}) ]
+    
+  predicate inv13 (_x : Seq.seq t)
+  let rec inv13 (_x:Seq.seq t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv13 _x} (! return' {result}) ]
+    
+  axiom inv13 : forall x : Seq.seq t . inv13 x = true
+  use prelude.UIntSize
+  predicate invariant12 (self : Seq.seq usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant12 (self:Seq.seq usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant12 self} (! return' {result}) ]
+    
+  predicate inv12 (_x : Seq.seq usize)
+  let rec inv12 (_x:Seq.seq usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv12 _x} (! return' {result}) ]
+    
+  axiom inv12 : forall x : Seq.seq usize . inv12 x = true
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use prelude.UIntSize
+  use prelude.Int
+  constant max0 : usize = (18446744073709551615 : usize)
+  use seq.Seq
+  predicate inv11 (_x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
+  let rec inv11 (_x:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv11 _x} (! return' {result}) ]
+    
+  function shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
+  let rec shallow_model4 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq usize))= {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv11 self}
+    any [ return' (result:Seq.seq usize)-> {result = shallow_model4 self} (! return' {result}) ] 
+  axiom shallow_model4_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv11 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv12 (shallow_model4 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model4 self) <= UIntSize.to_int (max0 : usize))
+  predicate invariant11 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv12 (shallow_model4 self)
+  let rec invariant11 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant11 self} (! return' {result}) ] 
+  axiom inv11 : forall x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . inv11 x = true
+  use prelude.Borrow
+  predicate invariant10 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
+  let rec invariant10 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant10 self} (! return' {result}) ] 
+  predicate inv10 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
+  let rec inv10 (_x:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv10 _x} (! return' {result}) ] 
+  axiom inv10 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) . inv10 x = true
+  predicate invariant9 (self : usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant9 (self:usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant9 self} (! return' {result}) ]
+    
+  predicate inv9 (_x : usize)
+  let rec inv9 (_x:usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv9 _x} (! return' {result}) ]
+    
+  axiom inv9 : forall x : usize . inv9 x = true
+  predicate invariant8 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant8 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant8 self} (! return' {result}) ] 
+  predicate inv8 (_x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
+  let rec inv8 (_x:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv8 _x} (! return' {result}) ]
+    
+  axiom inv8 : forall x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . inv8 x = true
+  predicate inv3 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  let rec inv3 (_x:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
+    
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use seq.Seq
+  function index_logic3 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix : int) : usize
+    
+   =
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model4 self) ix
+  let rec index_logic3 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:usize))= any
+    [ return' (result:usize)-> {result = index_logic3 self ix} (! return' {result}) ] 
+  use seq.Seq
+  function shallow_model7 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
+  let rec shallow_model7 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self}
+    any [ return' (result:Seq.seq t)-> {result = shallow_model7 self} (! return' {result}) ] 
+  axiom shallow_model7_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv13 (shallow_model7 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model7 self) <= UIntSize.to_int (max0 : usize))
+  use seq.Seq
+  use seq.Seq
+  use prelude.Mapping
+  use seq.Seq
+  function index_logic1 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (ix : int) : t
+    
+   =
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model7 self) ix
+  let rec index_logic1 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:t))= any
+    [ return' (result:t)-> {result = index_logic1 self ix} (! return' {result}) ] 
+  use SparseArray_Sparse_Type as SparseArray_Sparse_Type
+  function is_elt0 [#"../sparse_array.rs" 72 4 72 36] (self : SparseArray_Sparse_Type.t_sparse t) (i : int) : bool =
+    [#"../sparse_array.rs" 73 20 74 52] UIntSize.to_int (index_logic3 (SparseArray_Sparse_Type.sparse_idx self) i) < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) /\ UIntSize.to_int (index_logic3 (SparseArray_Sparse_Type.sparse_back self) (UIntSize.to_int (index_logic3 (SparseArray_Sparse_Type.sparse_idx self) i))) = i
+  let rec is_elt0 (self:SparseArray_Sparse_Type.t_sparse t) (i:int) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = is_elt0 self i} (! return' {result}) ]
+    
+  function shallow_model2 [#"../sparse_array.rs" 38 4 38 50] (self : SparseArray_Sparse_Type.t_sparse t) : Seq.seq (Core_Option_Option_Type.t_option t)
+    
+   =
+    [#"../sparse_array.rs" 40 12 41 82] Seq.create (UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self)) (Mapping.from_fn (fun (i : int) -> if is_elt0 self i then
+      Core_Option_Option_Type.C_Some (index_logic1 (SparseArray_Sparse_Type.sparse_values self) i)
+    else
+      Core_Option_Option_Type.C_None
+    ))
+  let rec shallow_model2 (self:SparseArray_Sparse_Type.t_sparse t) (return'  (ret:Seq.seq (Core_Option_Option_Type.t_option t)))= any
+    
+    [ return' (result:Seq.seq (Core_Option_Option_Type.t_option t))-> {result = shallow_model2 self}
+      (! return' {result}) ]
+    
+  predicate invariant7 [#"../sparse_array.rs" 49 4 49 30] (self : SparseArray_Sparse_Type.t_sparse t) =
+    [#"../sparse_array.rs" 50 8 61 9] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) <= UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model2 self) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model7 (SparseArray_Sparse_Type.sparse_values self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model4 (SparseArray_Sparse_Type.sparse_idx self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model4 (SparseArray_Sparse_Type.sparse_back self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self)
+     -> match index_logic3 (SparseArray_Sparse_Type.sparse_back self) i with
+      | j -> 0 <= UIntSize.to_int j /\ UIntSize.to_int j < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ UIntSize.to_int (index_logic3 (SparseArray_Sparse_Type.sparse_idx self) (UIntSize.to_int j)) = i
+      end)
+  let rec invariant7 (self:SparseArray_Sparse_Type.t_sparse t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant7 self} (! return' {result}) ]
+    
+  predicate inv7 (_x : SparseArray_Sparse_Type.t_sparse t)
+  let rec inv7 (_x:SparseArray_Sparse_Type.t_sparse t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv7 _x} (! return' {result}) ]
+    
+  axiom inv7 : forall x : SparseArray_Sparse_Type.t_sparse t . inv7 x = (invariant7 x /\ match x with
+    | SparseArray_Sparse_Type.C_Sparse size n values idx back -> true
+    end)
+  predicate invariant6 (self : borrowed usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant6 (self:borrowed usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant6 self} (! return' {result}) ]
+    
+  predicate inv6 (_x : borrowed usize)
+  let rec inv6 (_x:borrowed usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv6 _x} (! return' {result}) ]
+    
+  axiom inv6 : forall x : borrowed usize . inv6 x = true
+  predicate invariant5 (self : usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant5 (self:usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant5 self} (! return' {result}) ]
+    
+  predicate inv5 (_x : usize)
+  let rec inv5 (_x:usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ]
+    
+  axiom inv5 : forall x : usize . inv5 x = true
+  predicate invariant4 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant4 (self:borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ] 
+  predicate inv4 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)))
+  let rec inv4 (_x:borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ] 
+  axiom inv4 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) . inv4 x = true
+  predicate invariant3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv13 (shallow_model7 self)
+  let rec invariant3 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
+    
+  axiom inv3 : forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv3 x = true
+  predicate invariant2 (self : t)
+  let rec invariant2 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
+    
+  predicate inv2 (_x : t)
+  let rec inv2 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ] 
+  axiom inv2 : forall x : t . inv2 x = true
+  predicate invariant1 (self : borrowed t)
+  let rec invariant1 (self:borrowed t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  predicate inv1 (_x : borrowed t)
+  let rec inv1 (_x:borrowed t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  axiom inv1 : forall x : borrowed t . inv1 x = true
+  predicate invariant0 (self : borrowed (SparseArray_Sparse_Type.t_sparse t))
+  let rec invariant0 (self:borrowed (SparseArray_Sparse_Type.t_sparse t)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : borrowed (SparseArray_Sparse_Type.t_sparse t))
+  let rec inv0 (_x:borrowed (SparseArray_Sparse_Type.t_sparse t)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : borrowed (SparseArray_Sparse_Type.t_sparse t) . inv0 x = (inv7 ( * x) /\ inv7 ( ^ x))
+  use seq.Seq
+  function shallow_model1 (self : borrowed (SparseArray_Sparse_Type.t_sparse t)) : Seq.seq (Core_Option_Option_Type.t_option t)
+    
+   =
+    [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model2 ( * self)
+  let rec shallow_model1 (self:borrowed (SparseArray_Sparse_Type.t_sparse t)) (return'  (ret:Seq.seq (Core_Option_Option_Type.t_option t)))= any
+    
+    [ return' (result:Seq.seq (Core_Option_Option_Type.t_option t))-> {result = shallow_model1 self}
+      (! return' {result}) ]
+    
+  use prelude.Snapshot
+  use prelude.Intrinsic
+  use prelude.Slice
+  predicate resolve_elswhere1 [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t) =
+    [#"../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
+     -> Seq.get old' i = Seq.get fin i
+  let rec resolve_elswhere1 (self:usize) (old':Seq.seq t) (fin:Seq.seq t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve_elswhere1 self old' fin} (! return' {result}) ]
+    
+  predicate has_value1 [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
+    [#"../../../../creusot-contracts/src/std/slice.rs" 122 20 122 37] Seq.get seq (UIntSize.to_int self) = out
+  let rec has_value1 (self:usize) (seq:Seq.seq t) (out:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = has_value1 self seq out} (! return' {result}) ]
+    
+  predicate in_bounds1 [@inline:trivial] (self : usize) (seq : Seq.seq t) =
+    [#"../../../../creusot-contracts/src/std/slice.rs" 115 20 115 37] UIntSize.to_int self < Seq.length seq
+  let rec in_bounds1 (self:usize) (seq:Seq.seq t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = in_bounds1 self seq} (! return' {result}) ]
+    
+  function shallow_model6 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : Seq.seq t
+   =
+    [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model7 ( * self)
+  let rec shallow_model6 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq t))= any
+    [ return' (result:Seq.seq t)-> {result = shallow_model6 self} (! return' {result}) ] 
+  let rec index_mut1 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (index:usize) (return'  (ret:borrowed t))= {inv5 index}
+    {inv10 self}
+    {[#"../../../../creusot-contracts/src/std/vec.rs" 132 27 132 46] in_bounds1 index (shallow_model6 self)}
+    any 
+    [ return' (result:borrowed t)-> {inv1 result}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 136 26 136 55] Seq.length (shallow_model7 ( ^ self)) = Seq.length (shallow_model6 self)}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 135 26 135 62] resolve_elswhere1 index (shallow_model6 self) (shallow_model7 ( ^ self))}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 134 26 134 57] has_value1 index (shallow_model7 ( ^ self)) ( ^ result)}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 133 26 133 54] has_value1 index (shallow_model6 self) ( * result)}
+      (! return' {result}) ]
+    
+  predicate resolve4 (self : t)
+  let rec resolve4 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve4 self} (! return' {result}) ]
+    
+  predicate resolve3 (self : borrowed t) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve3 (self:borrowed t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve3 self} (! return' {result}) ]
+    
+  predicate has_value0 [@inline:trivial] (self : usize) (seq : Seq.seq usize) (out : usize) =
+    [#"../../../../creusot-contracts/src/std/slice.rs" 122 20 122 37] Seq.get seq (UIntSize.to_int self) = out
+  let rec has_value0 (self:usize) (seq:Seq.seq usize) (out:usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = has_value0 self seq out} (! return' {result}) ]
+    
+  predicate in_bounds0 [@inline:trivial] (self : usize) (seq : Seq.seq usize) =
+    [#"../../../../creusot-contracts/src/std/slice.rs" 115 20 115 37] UIntSize.to_int self < Seq.length seq
+  let rec in_bounds0 (self:usize) (seq:Seq.seq usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = in_bounds0 self seq} (! return' {result}) ]
+    
+  function shallow_model5 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize =
+    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model4 self
+  let rec shallow_model5 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq usize))= any
+    [ return' (result:Seq.seq usize)-> {result = shallow_model5 self} (! return' {result}) ] 
+  let rec index0 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (index:usize) (return'  (ret:usize))= {inv5 index}
+    {inv8 self}
+    {[#"../../../../creusot-contracts/src/std/vec.rs" 141 27 141 46] in_bounds0 index (shallow_model5 self)}
+    any 
+    [ return' (result:usize)-> {inv9 result}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 142 26 142 54] has_value0 index (shallow_model5 self) result}
+      (! return' {result}) ]
+    
+  use prelude.Snapshot
+  function lemma_permutation0 [#"../sparse_array.rs" 104 4 104 38] (self : SparseArray_Sparse_Type.t_sparse t) (i : int) : ()
+    
+   =
+    [#"../sparse_array.rs" 100 4 100 12] ()
+  let rec lemma_permutation0 (self:SparseArray_Sparse_Type.t_sparse t) (i:int) (return'  (ret:()))= {[#"../sparse_array.rs" 104 25 104 29] inv7 self}
+    {[#"../sparse_array.rs" 102 15 102 39] 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self)}
+    {[#"../sparse_array.rs" 101 15 101 34] SparseArray_Sparse_Type.sparse_n self = SparseArray_Sparse_Type.sparse_size self}
+    any [ return' (result:())-> {result = lemma_permutation0 self i} (! return' {result}) ] 
+  axiom lemma_permutation0_spec : forall self : SparseArray_Sparse_Type.t_sparse t, i : int . ([#"../sparse_array.rs" 101 15 101 34] SparseArray_Sparse_Type.sparse_n self = SparseArray_Sparse_Type.sparse_size self)
+   -> ([#"../sparse_array.rs" 102 15 102 39] 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self))
+   -> ([#"../sparse_array.rs" 104 25 104 29] inv7 self)  -> ([#"../sparse_array.rs" 103 14 103 28] is_elt0 self i)
+  predicate resolve2 (self : Snapshot.snap_ty ())
+  let rec resolve2 (self:Snapshot.snap_ty ()) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
+    
+  predicate resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq usize) (fin : Seq.seq usize) =
+    [#"../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
+     -> Seq.get old' i = Seq.get fin i
+  let rec resolve_elswhere0 (self:usize) (old':Seq.seq usize) (fin:Seq.seq usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve_elswhere0 self old' fin} (! return' {result}) ]
+    
+  function shallow_model3 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : Seq.seq usize
+    
+   =
+    [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model4 ( * self)
+  let rec shallow_model3 (self:borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq usize))= any
+    [ return' (result:Seq.seq usize)-> {result = shallow_model3 self} (! return' {result}) ] 
+  let rec index_mut0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (index:usize) (return'  (ret:borrowed usize))= {inv5 index}
+    {inv4 self}
+    {[#"../../../../creusot-contracts/src/std/vec.rs" 132 27 132 46] in_bounds0 index (shallow_model3 self)}
+    any 
+    [ return' (result:borrowed usize)-> {inv6 result}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 136 26 136 55] Seq.length (shallow_model4 ( ^ self)) = Seq.length (shallow_model3 self)}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 135 26 135 62] resolve_elswhere0 index (shallow_model3 self) (shallow_model4 ( ^ self))}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 134 26 134 57] has_value0 index (shallow_model4 ( ^ self)) ( ^ result)}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 133 26 133 54] has_value0 index (shallow_model3 self) ( * result)}
+      (! return' {result}) ]
+    
+  predicate resolve1 (self : borrowed usize) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : borrowed (SparseArray_Sparse_Type.t_sparse t)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed (SparseArray_Sparse_Type.t_sparse t)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec set (self:borrowed (SparseArray_Sparse_Type.t_sparse t)) (i:usize) (v:t) (return'  (ret:()))= {[#"../sparse_array.rs" 112 36 112 37] inv2 v}
+    {[#"../sparse_array.rs" 112 20 112 24] inv0 self}
+    {[#"../sparse_array.rs" 108 15 108 31] UIntSize.to_int i < Seq.length (shallow_model1 self)}
+    (! bb0 
+    [ bb17 = return' {_0} 
+    | bb16 = bb17 
+    | bb15 = [ &_34 <- { _34 with current = i ; } ] -{resolve1 _34}- UIntSize.add
+      {SparseArray_Sparse_Type.sparse_n ( * self)} {[#"../sparse_array.rs" 122 22 122 23] (1 : usize)}
+      (fun (_ret':usize) -> 
+        [ &self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 x4 =  * self in SparseArray_Sparse_Type.C_Sparse x0 _ret' x2 x3 x4) ; } ]
+        {[@expl:type invariant] inv0 self}
+        -{resolve0 self}- [ &_0 <- [#"../sparse_array.rs" 115 54 123 9] () ] bb16) 
+    | bb14 = 
+      [ &_30 <- { _30 with current = SparseArray_Sparse_Type.sparse_n ( * self) ; } ]
+      -{resolve1 _30}- Borrow.borrow_final <Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)>
+      {SparseArray_Sparse_Type.sparse_back ( * self)} {Borrow.inherit_id (Borrow.get_id self) 5}
+      (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) -> [ &_35 <- _ret' ] 
+        [ &self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 x4 =  * self in SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 ( ^ _35)) ; } ]
+        index_mut0 {_35} {SparseArray_Sparse_Type.sparse_n ( * self)} (fun (_ret':borrowed usize) -> 
+          [ &_34 <- _ret' ]
+          bb15)) 
+    | bb13 = -{resolve2 _25}- {[@expl:assertion] [#"../sparse_array.rs" 118 26 118 46] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n ( * self)) < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size ( * self))}
+      Borrow.borrow_final <Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)>
+      {SparseArray_Sparse_Type.sparse_idx ( * self)} {Borrow.inherit_id (Borrow.get_id self) 4}
+      (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) -> [ &_31 <- _ret' ] 
+        [ &self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 x4 =  * self in SparseArray_Sparse_Type.C_Sparse x0 x1 x2 ( ^ _31) x4) ; } ]
+        index_mut0 {_31} {i} (fun (_ret':borrowed usize) -> [ &_30 <- _ret' ] bb14)) 
+    | bb12 = [ &_25 <- [#"../sparse_array.rs" 117 12 117 46] Snapshot.new () ] bb13 
+    | bb11 = bb12 
+    | bb10 = bb12 
+    | bb9 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- [ &_0 <- [#"../sparse_array.rs" 123 9 123 9] () ] bb16 
+    | bb8 = UIntSize.eq {_21} {i} (fun (_ret':bool) -> [ &_19 <- _ret' ] any 
+        [ br0 -> {_19 = false} (! bb10) | br1 -> {_19} (! bb9) ]
+        ) 
+    | bb7 = index0 {SparseArray_Sparse_Type.sparse_back ( * self)} {index} (fun (_ret':usize) -> [ &_21 <- _ret' ] bb8) 
+    | bb6 = [ &index <- _13 ] UIntSize.lt {index} {SparseArray_Sparse_Type.sparse_n ( * self)} (fun (_ret':bool) -> 
+        [ &_16 <- _ret' ]
+        any [ br0 -> {_16 = false} (! bb11) | br1 -> {_16} (! bb7) ] ) 
+    | bb5 = index0 {SparseArray_Sparse_Type.sparse_idx ( * self)} {i} (fun (_ret':usize) -> [ &_13 <- _ret' ] bb6) 
+    | bb3 = [ &_9 <- { _9 with current = v ; } ] any 
+      [ any_ (_any:t)-> [ &v <- _any ] {[@expl:type invariant] inv2 ( * _9)}
+        -{resolve4 ( * _9)}- {[@expl:type invariant] inv1 _9}
+        -{resolve3 _9}- bb5 ]
+       
+    | bb2 = bb3 
+    | bb1 = Borrow.borrow_final <Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)>
+      {SparseArray_Sparse_Type.sparse_values ( * self)} {Borrow.inherit_id (Borrow.get_id self) 3}
+      (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) -> [ &_10 <- _ret' ] 
+        [ &self <- { self with current = (let SparseArray_Sparse_Type.C_Sparse x0 x1 x2 x3 x4 =  * self in SparseArray_Sparse_Type.C_Sparse x0 x1 ( ^ _10) x3 x4) ; } ]
+        -{inv3 ( ^ _10)}- index_mut1 {_10} {i} (fun (_ret':borrowed t) -> [ &_9 <- _ret' ] bb2)) 
+    | bb0 = bb1  ]
+    ) 
+    [ return' (result:())-> {[#"../sparse_array.rs" 111 14 111 37] Seq.get (shallow_model2 ( ^ self)) (UIntSize.to_int i) = Core_Option_Option_Type.C_Some v}
+      {[#"../sparse_array.rs" 110 4 110 95] forall j : int . 0 <= j /\ j < Seq.length (shallow_model1 self) /\ j <> UIntSize.to_int i
+       -> Seq.get (shallow_model2 ( ^ self)) j = Seq.get (shallow_model1 self) j}
+      {[#"../sparse_array.rs" 109 14 109 43] Seq.length (shallow_model2 ( ^ self)) = Seq.length (shallow_model1 self)}
+      (! return' {_0}) ]
+    
+    [ & _0 : () = any_l () : ()
+    | & self : borrowed (SparseArray_Sparse_Type.t_sparse t) = self
+    | & i : usize = i
+    | & v : t = v
+    | & _9 : borrowed t = any_l () : borrowed t
+    | & _10 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) = any_l () : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+    | & index : usize = any_l () : usize
+    | & _13 : usize = any_l () : usize
+    | & _16 : bool = any_l () : bool
+    | & _19 : bool = any_l () : bool
+    | & _21 : usize = any_l () : usize
+    | & _25 : Snapshot.snap_ty () = any_l () : Snapshot.snap_ty ()
+    | & _30 : borrowed usize = any_l () : borrowed usize
+    | & _31 : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) = any_l () : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
+    | & _34 : borrowed usize = any_l () : borrowed usize
+    | & _35 : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) = any_l () : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) ]
+    
+end
+module SparseArray_Create
+  type t
+  use seq.Seq
+  predicate invariant6 (self : Seq.seq t)
+  let rec invariant6 (self:Seq.seq t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant6 self} (! return' {result}) ]
+    
+  predicate inv6 (_x : Seq.seq t)
+  let rec inv6 (_x:Seq.seq t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv6 _x} (! return' {result}) ]
+    
+  axiom inv6 : forall x : Seq.seq t . inv6 x = true
+  use prelude.UIntSize
+  predicate invariant5 (self : Seq.seq usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant5 (self:Seq.seq usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant5 self} (! return' {result}) ]
+    
+  predicate inv5 (_x : Seq.seq usize)
+  let rec inv5 (_x:Seq.seq usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ]
+    
+  axiom inv5 : forall x : Seq.seq usize . inv5 x = true
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use prelude.UIntSize
+  use prelude.Int
+  constant max0 : usize = (18446744073709551615 : usize)
+  use seq.Seq
+  predicate inv4 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  let rec inv4 (_x:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ]
+    
+  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
+  let rec shallow_model3 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self}
+    any [ return' (result:Seq.seq t)-> {result = shallow_model3 self} (! return' {result}) ] 
+  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv6 (shallow_model3 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int (max0 : usize))
+  predicate invariant4 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv6 (shallow_model3 self)
+  let rec invariant4 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ]
+    
+  axiom inv4 : forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv4 x = true
+  use seq.Seq
+  predicate inv3 (_x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
+  let rec inv3 (_x:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
+    
+  function shallow_model2 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
+  let rec shallow_model2 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq usize))= {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self}
+    any [ return' (result:Seq.seq usize)-> {result = shallow_model2 self} (! return' {result}) ] 
+  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv5 (shallow_model2 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int (max0 : usize))
+  predicate invariant3 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv5 (shallow_model2 self)
+  let rec invariant3 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ] 
+  axiom inv3 : forall x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . inv3 x = true
+  predicate invariant2 (self : usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant2 (self:usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
+    
+  predicate inv2 (_x : usize)
+  let rec inv2 (_x:usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
+    
+  axiom inv2 : forall x : usize . inv2 x = true
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use seq.Seq
+  function index_logic1 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix : int) : usize
+    
+   =
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model2 self) ix
+  let rec index_logic1 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:usize))= any
+    [ return' (result:usize)-> {result = index_logic1 self ix} (! return' {result}) ] 
+  use seq.Seq
+  use prelude.Borrow
+  use seq.Seq
+  use prelude.Mapping
+  use seq.Seq
+  function index_logic2 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (ix : int) : t
+    
+   =
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model3 self) ix
+  let rec index_logic2 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:t))= any
+    [ return' (result:t)-> {result = index_logic2 self ix} (! return' {result}) ] 
+  use SparseArray_Sparse_Type as SparseArray_Sparse_Type
+  function is_elt0 [#"../sparse_array.rs" 72 4 72 36] (self : SparseArray_Sparse_Type.t_sparse t) (i : int) : bool =
+    [#"../sparse_array.rs" 73 20 74 52] UIntSize.to_int (index_logic1 (SparseArray_Sparse_Type.sparse_idx self) i) < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) /\ UIntSize.to_int (index_logic1 (SparseArray_Sparse_Type.sparse_back self) (UIntSize.to_int (index_logic1 (SparseArray_Sparse_Type.sparse_idx self) i))) = i
+  let rec is_elt0 (self:SparseArray_Sparse_Type.t_sparse t) (i:int) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = is_elt0 self i} (! return' {result}) ]
+    
+  function shallow_model1 [#"../sparse_array.rs" 38 4 38 50] (self : SparseArray_Sparse_Type.t_sparse t) : Seq.seq (Core_Option_Option_Type.t_option t)
+    
+   =
+    [#"../sparse_array.rs" 40 12 41 82] Seq.create (UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self)) (Mapping.from_fn (fun (i : int) -> if is_elt0 self i then
+      Core_Option_Option_Type.C_Some (index_logic2 (SparseArray_Sparse_Type.sparse_values self) i)
+    else
+      Core_Option_Option_Type.C_None
+    ))
+  let rec shallow_model1 (self:SparseArray_Sparse_Type.t_sparse t) (return'  (ret:Seq.seq (Core_Option_Option_Type.t_option t)))= any
+    
+    [ return' (result:Seq.seq (Core_Option_Option_Type.t_option t))-> {result = shallow_model1 self}
+      (! return' {result}) ]
+    
+  predicate invariant1 [#"../sparse_array.rs" 49 4 49 30] (self : SparseArray_Sparse_Type.t_sparse t) =
+    [#"../sparse_array.rs" 50 8 61 9] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) <= UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model1 self) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model3 (SparseArray_Sparse_Type.sparse_values self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model2 (SparseArray_Sparse_Type.sparse_idx self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model2 (SparseArray_Sparse_Type.sparse_back self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self)
+     -> match index_logic1 (SparseArray_Sparse_Type.sparse_back self) i with
+      | j -> 0 <= UIntSize.to_int j /\ UIntSize.to_int j < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ UIntSize.to_int (index_logic1 (SparseArray_Sparse_Type.sparse_idx self) (UIntSize.to_int j)) = i
+      end)
+  let rec invariant1 (self:SparseArray_Sparse_Type.t_sparse t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  predicate inv1 (_x : SparseArray_Sparse_Type.t_sparse t)
+  let rec inv1 (_x:SparseArray_Sparse_Type.t_sparse t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  axiom inv1 : forall x : SparseArray_Sparse_Type.t_sparse t . inv1 x = (invariant1 x /\ match x with
+    | SparseArray_Sparse_Type.C_Sparse size n values idx back -> true
+    end)
+  predicate invariant0 (self : t)
+  let rec invariant0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : t)
+  let rec inv0 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : t . inv0 x = true
+  use seq.Seq
+  use prelude.Intrinsic
+  predicate resolve0 (self : t)
+  let rec resolve0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec from_elem1 (elem:t) (n:usize) (return'  (ret:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))= {inv0 elem}
+    any 
+    [ return' (result:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))-> {inv4 result}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 158 12 158 78] forall i : int . 0 <= i /\ i < UIntSize.to_int n
+       -> index_logic2 result i = elem}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 157 22 157 41] Seq.length (shallow_model3 result) = UIntSize.to_int n}
+      (! return' {result}) ]
+    
+  let rec from_elem0 (elem:usize) (n:usize) (return'  (ret:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)))= {inv2 elem}
+    any 
+    [ return' (result:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))-> {inv3 result}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 158 12 158 78] forall i : int . 0 <= i /\ i < UIntSize.to_int n
+       -> index_logic1 result i = elem}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 157 22 157 41] Seq.length (shallow_model2 result) = UIntSize.to_int n}
+      (! return' {result}) ]
+    
+  let rec create (sz:usize) (dummy:t) (return'  (ret:SparseArray_Sparse_Type.t_sparse t))= {[#"../sparse_array.rs" 134 42 134 47] inv0 dummy}
+    (! bb0 
+    [ bb6 = return' {_0} 
+    | bb5 = bb6 
+    | bb4 = bb5 
+    | bb3 = 
+      [ &_0 <- SparseArray_Sparse_Type.C_Sparse sz ([#"../sparse_array.rs" 135 26 135 27] (0 : usize)) _6 _9 _11 ]
+      any 
+      [ any_ (_any:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))-> [ &_6 <- _any ] any 
+        [ any_ (_any:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))-> [ &_9 <- _any ] any 
+          [ any_ (_any:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))-> [ &_11 <- _any ] bb4 ]
+           ]
+         ]
+       
+    | bb2 = from_elem0 {[#"../sparse_array.rs" 135 83 135 84] (0 : usize)} {sz}
+      (fun (_ret':Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) -> [ &_11 <- _ret' ] bb3) 
+    | bb1 = from_elem0 {[#"../sparse_array.rs" 135 64 135 65] (0 : usize)} {sz}
+      (fun (_ret':Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) -> [ &_9 <- _ret' ] bb2) 
+    | bb0 = {[@expl:type invariant] inv0 dummy}
+      -{resolve0 dummy}- from_elem1 {dummy} {sz}
+      (fun (_ret':Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) -> [ &_6 <- _ret' ] bb1)  ]
+    ) 
+    [ return' (result:SparseArray_Sparse_Type.t_sparse t)-> {[#"../sparse_array.rs" 134 55 134 64] inv1 result}
+      {[#"../sparse_array.rs" 133 0 133 67] forall i : int . 0 <= i /\ i < UIntSize.to_int sz
+       -> Seq.get (shallow_model1 result) i = Core_Option_Option_Type.C_None}
+      {[#"../sparse_array.rs" 132 10 132 27] SparseArray_Sparse_Type.sparse_size result = sz}
+      (! return' {_0}) ]
+    
+    [ & _0 : SparseArray_Sparse_Type.t_sparse t = any_l () : SparseArray_Sparse_Type.t_sparse t
+    | & sz : usize = sz
+    | & dummy : t = dummy
+    | & _6 : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) = any_l () : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+    | & _9 : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) = any_l () : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
+    | & _11 : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) = any_l () : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) ]
+    
+end
+module SparseArray_F
+  use prelude.UIntSize
+  use seq.Seq
+  predicate invariant8 (self : Seq.seq usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant8 (self:Seq.seq usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant8 self} (! return' {result}) ]
+    
+  predicate inv8 (_x : Seq.seq usize)
+  let rec inv8 (_x:Seq.seq usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv8 _x} (! return' {result}) ]
+    
+  axiom inv8 : forall x : Seq.seq usize . inv8 x = true
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use prelude.UIntSize
+  use prelude.Int
+  constant max0 : usize = (18446744073709551615 : usize)
+  use seq.Seq
+  predicate inv7 (_x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
+  let rec inv7 (_x:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv7 _x} (! return' {result}) ]
+    
+  function shallow_model7 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
+  let rec shallow_model7 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq usize))= {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self}
+    any [ return' (result:Seq.seq usize)-> {result = shallow_model7 self} (! return' {result}) ] 
+  axiom shallow_model7_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv8 (shallow_model7 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model7 self) <= UIntSize.to_int (max0 : usize))
+  predicate invariant7 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv8 (shallow_model7 self)
+  let rec invariant7 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant7 self} (! return' {result}) ] 
+  axiom inv7 : forall x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . inv7 x = true
+  use prelude.Int32
+  predicate invariant6 (self : Seq.seq int32) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant6 (self:Seq.seq int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant6 self} (! return' {result}) ]
+    
+  predicate inv6 (_x : Seq.seq int32)
+  let rec inv6 (_x:Seq.seq int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv6 _x} (! return' {result}) ]
+    
+  axiom inv6 : forall x : Seq.seq int32 . inv6 x = true
+  use seq.Seq
+  predicate inv5 (_x : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global))
+  let rec inv5 (_x:Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ]
+    
+  function shallow_model6 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq int32
+  let rec shallow_model6 (self:Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq int32))= {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv5 self}
+    any [ return' (result:Seq.seq int32)-> {result = shallow_model6 self} (! return' {result}) ] 
+  axiom shallow_model6_spec : forall self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv5 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv6 (shallow_model6 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model6 self) <= UIntSize.to_int (max0 : usize))
+  predicate invariant5 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv6 (shallow_model6 self)
+  let rec invariant5 (self:Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant5 self} (! return' {result}) ] 
+  axiom inv5 : forall x : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global) . inv5 x = true
+  predicate invariant4 (self : int32) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant4 (self:int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ]
+    
+  predicate inv4 (_x : int32)
+  let rec inv4 (_x:int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ]
+    
+  axiom inv4 : forall x : int32 . inv4 x = true
+  use SparseArray_Sparse_Type as SparseArray_Sparse_Type
+  use prelude.Borrow
+  predicate invariant3 (self : borrowed (SparseArray_Sparse_Type.t_sparse int32)) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant3 (self:borrowed (SparseArray_Sparse_Type.t_sparse int32)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : SparseArray_Sparse_Type.t_sparse int32)
+  let rec inv0 (_x:SparseArray_Sparse_Type.t_sparse int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  predicate inv3 (_x : borrowed (SparseArray_Sparse_Type.t_sparse int32))
+  let rec inv3 (_x:borrowed (SparseArray_Sparse_Type.t_sparse int32)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
+    
+  axiom inv3 : forall x : borrowed (SparseArray_Sparse_Type.t_sparse int32) . inv3 x = (inv0 ( * x) /\ inv0 ( ^ x))
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant2 (self : Core_Option_Option_Type.t_option int32) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant2 (self:Core_Option_Option_Type.t_option int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
+    
+  predicate inv2 (_x : Core_Option_Option_Type.t_option int32)
+  let rec inv2 (_x:Core_Option_Option_Type.t_option int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
+    
+  axiom inv2 : forall x : Core_Option_Option_Type.t_option int32 . inv2 x = true
+  predicate invariant1 (self : SparseArray_Sparse_Type.t_sparse int32) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant1 (self:SparseArray_Sparse_Type.t_sparse int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  predicate inv1 (_x : SparseArray_Sparse_Type.t_sparse int32)
+  let rec inv1 (_x:SparseArray_Sparse_Type.t_sparse int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  axiom inv1 : forall x : SparseArray_Sparse_Type.t_sparse int32 . inv1 x = inv0 x
+  use seq.Seq
+  function index_logic2 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix : int) : usize
+    
+   =
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model7 self) ix
+  let rec index_logic2 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:usize))= any
+    [ return' (result:usize)-> {result = index_logic2 self ix} (! return' {result}) ] 
+  use seq.Seq
+  use seq.Seq
+  use prelude.Mapping
+  use seq.Seq
+  function index_logic1 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) (ix : int) : int32
+    
+   =
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model6 self) ix
+  let rec index_logic1 (self:Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:int32))= any
+    [ return' (result:int32)-> {result = index_logic1 self ix} (! return' {result}) ] 
+  function is_elt0 [#"../sparse_array.rs" 72 4 72 36] (self : SparseArray_Sparse_Type.t_sparse int32) (i : int) : bool =
+    [#"../sparse_array.rs" 73 20 74 52] UIntSize.to_int (index_logic2 (SparseArray_Sparse_Type.sparse_idx self) i) < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) /\ UIntSize.to_int (index_logic2 (SparseArray_Sparse_Type.sparse_back self) (UIntSize.to_int (index_logic2 (SparseArray_Sparse_Type.sparse_idx self) i))) = i
+  let rec is_elt0 (self:SparseArray_Sparse_Type.t_sparse int32) (i:int) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = is_elt0 self i} (! return' {result}) ]
+    
+  function shallow_model5 [#"../sparse_array.rs" 38 4 38 50] (self : SparseArray_Sparse_Type.t_sparse int32) : Seq.seq (Core_Option_Option_Type.t_option int32)
+    
+   =
+    [#"../sparse_array.rs" 40 12 41 82] Seq.create (UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self)) (Mapping.from_fn (fun (i : int) -> if is_elt0 self i then
+      Core_Option_Option_Type.C_Some (index_logic1 (SparseArray_Sparse_Type.sparse_values self) i)
+    else
+      Core_Option_Option_Type.C_None
+    ))
+  let rec shallow_model5 (self:SparseArray_Sparse_Type.t_sparse int32) (return'  (ret:Seq.seq (Core_Option_Option_Type.t_option int32)))= any
+    
+    [ return' (result:Seq.seq (Core_Option_Option_Type.t_option int32))-> {result = shallow_model5 self}
+      (! return' {result}) ]
+    
+  predicate invariant0 [#"../sparse_array.rs" 49 4 49 30] (self : SparseArray_Sparse_Type.t_sparse int32) =
+    [#"../sparse_array.rs" 50 8 61 9] UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self) <= UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model5 self) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model6 (SparseArray_Sparse_Type.sparse_values self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model7 (SparseArray_Sparse_Type.sparse_idx self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (shallow_model7 (SparseArray_Sparse_Type.sparse_back self)) = UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (SparseArray_Sparse_Type.sparse_n self)
+     -> match index_logic2 (SparseArray_Sparse_Type.sparse_back self) i with
+      | j -> 0 <= UIntSize.to_int j /\ UIntSize.to_int j < UIntSize.to_int (SparseArray_Sparse_Type.sparse_size self) /\ UIntSize.to_int (index_logic2 (SparseArray_Sparse_Type.sparse_idx self) (UIntSize.to_int j)) = i
+      end)
+  let rec invariant0 (self:SparseArray_Sparse_Type.t_sparse int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  axiom inv0 : forall x : SparseArray_Sparse_Type.t_sparse int32 . inv0 x = (invariant0 x /\ match x with
+    | SparseArray_Sparse_Type.C_Sparse size n values idx back -> true
+    end)
+  use prelude.Intrinsic
+  use seq.Seq
+  let rec create0 (sz:usize) (dummy:int32) (return'  (ret:SparseArray_Sparse_Type.t_sparse int32))= {[#"../sparse_array.rs" 134 42 134 47] inv4 dummy}
+    any 
+    [ return' (result:SparseArray_Sparse_Type.t_sparse int32)-> {[#"../sparse_array.rs" 134 55 134 64] inv0 result}
+      {[#"../sparse_array.rs" 133 0 133 67] forall i : int . 0 <= i /\ i < UIntSize.to_int sz
+       -> Seq.get (shallow_model5 result) i = Core_Option_Option_Type.C_None}
+      {[#"../sparse_array.rs" 132 10 132 27] SparseArray_Sparse_Type.sparse_size result = sz}
+      (! return' {result}) ]
+    
+  function shallow_model4 (self : borrowed (SparseArray_Sparse_Type.t_sparse int32)) : Seq.seq (Core_Option_Option_Type.t_option int32)
+    
+   =
+    [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model5 ( * self)
+  let rec shallow_model4 (self:borrowed (SparseArray_Sparse_Type.t_sparse int32)) (return'  (ret:Seq.seq (Core_Option_Option_Type.t_option int32)))= any
+    
+    [ return' (result:Seq.seq (Core_Option_Option_Type.t_option int32))-> {result = shallow_model4 self}
+      (! return' {result}) ]
+    
+  let rec set0 (self:borrowed (SparseArray_Sparse_Type.t_sparse int32)) (i:usize) (v:int32) (return'  (ret:()))= {[#"../sparse_array.rs" 112 36 112 37] inv4 v}
+    {[#"../sparse_array.rs" 112 20 112 24] inv3 self}
+    {[#"../sparse_array.rs" 108 15 108 31] UIntSize.to_int i < Seq.length (shallow_model4 self)}
+    any 
+    [ return' (result:())-> {[#"../sparse_array.rs" 111 14 111 37] Seq.get (shallow_model5 ( ^ self)) (UIntSize.to_int i) = Core_Option_Option_Type.C_Some v}
+      {[#"../sparse_array.rs" 110 4 110 95] forall j : int . 0 <= j /\ j < Seq.length (shallow_model4 self) /\ j <> UIntSize.to_int i
+       -> Seq.get (shallow_model5 ( ^ self)) j = Seq.get (shallow_model4 self) j}
+      {[#"../sparse_array.rs" 109 14 109 43] Seq.length (shallow_model5 ( ^ self)) = Seq.length (shallow_model4 self)}
+      (! return' {result}) ]
+    
+  use prelude.Int32
+  use prelude.Int
+  function shallow_model0 (self : int32) : int =
+    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] Int32.to_int self
+  let rec shallow_model0 (self:int32) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = shallow_model0 self} (! return' {result}) ]
+    
+  function shallow_model2 (self : SparseArray_Sparse_Type.t_sparse int32) : Seq.seq (Core_Option_Option_Type.t_option int32)
+    
+   =
+    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model5 self
+  let rec shallow_model2 (self:SparseArray_Sparse_Type.t_sparse int32) (return'  (ret:Seq.seq (Core_Option_Option_Type.t_option int32)))= any
+    
+    [ return' (result:Seq.seq (Core_Option_Option_Type.t_option int32))-> {result = shallow_model2 self}
+      (! return' {result}) ]
+    
+  let rec get0 (self:SparseArray_Sparse_Type.t_sparse int32) (i:usize) (return'  (ret:Core_Option_Option_Type.t_option int32))= {[#"../sparse_array.rs" 89 16 89 20] inv1 self}
+    {[#"../sparse_array.rs" 80 15 80 31] UIntSize.to_int i < Seq.length (shallow_model2 self)}
+    any 
+    [ return' (result:Core_Option_Option_Type.t_option int32)-> {[#"../sparse_array.rs" 89 35 89 45] inv2 result}
+      {[#"../sparse_array.rs" 85 14 88 5] match Seq.get (shallow_model2 self) (UIntSize.to_int i) with
+        | Core_Option_Option_Type.C_None -> result = Core_Option_Option_Type.C_None
+        | Core_Option_Option_Type.C_Some _ -> true
+        end}
+      {[#"../sparse_array.rs" 81 14 84 5] match result with
+        | Core_Option_Option_Type.C_None -> Seq.get (shallow_model2 self) (UIntSize.to_int i) = Core_Option_Option_Type.C_None
+        | Core_Option_Option_Type.C_Some x -> Seq.get (shallow_model2 self) (UIntSize.to_int i) = Core_Option_Option_Type.C_Some x
+        end}
+      (! return' {result}) ]
+    
+  let rec f (_1:()) (return'  (ret:()))= (! bb0 
+    [ bb16 = return' {_0} 
+    | bb15 = bb16 
+    | bb14 = [ &y <- _38 ] any 
+      [ any_ (_any:Core_Option_Option_Type.t_option int32)-> 
+        [ &_38 <- _any ]
+        {[@expl:assertion] [#"../sparse_array.rs" 171 18 171 40] x = Core_Option_Option_Type.C_None /\ y = Core_Option_Option_Type.C_None}
+        [ &_0 <- [#"../sparse_array.rs" 171 4 171 41] () ] bb15 ]
+       
+    | bb13 = [ &x <- _36 ] any 
+      [ any_ (_any:Core_Option_Option_Type.t_option int32)-> [ &_36 <- _any ] get0 {b}
+        {[#"../sparse_array.rs" 170 14 170 15] (9 : usize)} (fun (_ret':Core_Option_Option_Type.t_option int32) -> 
+          [ &_38 <- _ret' ]
+          bb14) ]
+       
+    | bb12 = [ &y <- _32 ] any 
+      [ any_ (_any:Core_Option_Option_Type.t_option int32)-> 
+        [ &_32 <- _any ]
+        {[@expl:assertion] [#"../sparse_array.rs" 167 18 167 40] x = Core_Option_Option_Type.C_None /\ y = Core_Option_Option_Type.C_None}
+        get0 {a} {[#"../sparse_array.rs" 169 14 169 15] (9 : usize)}
+        (fun (_ret':Core_Option_Option_Type.t_option int32) -> [ &_36 <- _ret' ] bb13) ]
+       
+    | bb11 = [ &x <- _30 ] any 
+      [ any_ (_any:Core_Option_Option_Type.t_option int32)-> [ &_30 <- _any ] get0 {b}
+        {[#"../sparse_array.rs" 166 14 166 15] (0 : usize)} (fun (_ret':Core_Option_Option_Type.t_option int32) -> 
+          [ &_32 <- _ret' ]
+          bb12) ]
+       
+    | bb10 = [ &y <- _26 ] any 
+      [ any_ (_any:Core_Option_Option_Type.t_option int32)-> 
+        [ &_26 <- _any ]
+        {[@expl:assertion] [#"../sparse_array.rs" 163 18 163 40] x = Core_Option_Option_Type.C_None /\ y = Core_Option_Option_Type.C_None}
+        get0 {a} {[#"../sparse_array.rs" 165 14 165 15] (0 : usize)}
+        (fun (_ret':Core_Option_Option_Type.t_option int32) -> [ &_30 <- _ret' ] bb11) ]
+       
+    | bb9 = [ &x <- _24 ] any 
+      [ any_ (_any:Core_Option_Option_Type.t_option int32)-> [ &_24 <- _any ] get0 {b}
+        {[#"../sparse_array.rs" 162 14 162 15] (5 : usize)} (fun (_ret':Core_Option_Option_Type.t_option int32) -> 
+          [ &_26 <- _ret' ]
+          bb10) ]
+       
+    | bb8 = [ &y <- _18 ] any 
+      [ any_ (_any:Core_Option_Option_Type.t_option int32)-> 
+        [ &_18 <- _any ]
+        {[@expl:assertion] [#"../sparse_array.rs" 152 18 155 5] match x with
+          | Core_Option_Option_Type.C_None -> false
+          | Core_Option_Option_Type.C_Some z -> shallow_model0 z = 1
+          end}
+        {[@expl:assertion] [#"../sparse_array.rs" 156 18 159 5] match y with
+          | Core_Option_Option_Type.C_None -> false
+          | Core_Option_Option_Type.C_Some z -> shallow_model0 z = 2
+          end}
+        get0 {a} {[#"../sparse_array.rs" 161 14 161 15] (7 : usize)}
+        (fun (_ret':Core_Option_Option_Type.t_option int32) -> [ &_24 <- _ret' ] bb9) ]
+       
+    | bb7 = [ &x <- _16 ] any 
+      [ any_ (_any:Core_Option_Option_Type.t_option int32)-> [ &_16 <- _any ] get0 {b}
+        {[#"../sparse_array.rs" 151 14 151 15] (7 : usize)} (fun (_ret':Core_Option_Option_Type.t_option int32) -> 
+          [ &_18 <- _ret' ]
+          bb8) ]
+       
+    | bb6 = get0 {a} {[#"../sparse_array.rs" 150 14 150 15] (5 : usize)}
+      (fun (_ret':Core_Option_Option_Type.t_option int32) -> [ &_16 <- _ret' ] bb7) 
+    | bb5 = Borrow.borrow_mut <SparseArray_Sparse_Type.t_sparse int32> {b}
+      (fun (_ret':borrowed (SparseArray_Sparse_Type.t_sparse int32)) -> [ &_15 <- _ret' ] 
+        [ &b <-  ^ _15 ]
+        -{inv0 ( ^ _15)}- set0 {_15} {[#"../sparse_array.rs" 149 10 149 11] (7 : usize)}
+        {[#"../sparse_array.rs" 149 13 149 14] (2 : int32)} (fun (_ret':()) -> [ &_14 <- _ret' ] bb6)) 
+    | bb4 = {[@expl:assertion] [#"../sparse_array.rs" 146 18 146 40] x = Core_Option_Option_Type.C_None /\ y = Core_Option_Option_Type.C_None}
+      Borrow.borrow_mut <SparseArray_Sparse_Type.t_sparse int32> {a}
+      (fun (_ret':borrowed (SparseArray_Sparse_Type.t_sparse int32)) -> [ &_13 <- _ret' ] 
+        [ &a <-  ^ _13 ]
+        -{inv0 ( ^ _13)}- set0 {_13} {[#"../sparse_array.rs" 148 10 148 11] (5 : usize)}
+        {[#"../sparse_array.rs" 148 13 148 14] (1 : int32)} (fun (_ret':()) -> [ &_12 <- _ret' ] bb5)) 
+    | bb3 = get0 {b} {[#"../sparse_array.rs" 145 22 145 23] (7 : usize)}
+      (fun (_ret':Core_Option_Option_Type.t_option int32) -> [ &y <- _ret' ] bb4) 
+    | bb2 = get0 {a} {[#"../sparse_array.rs" 144 22 144 23] (5 : usize)}
+      (fun (_ret':Core_Option_Option_Type.t_option int32) -> [ &x <- _ret' ] bb3) 
+    | bb1 = create0 {[#"../sparse_array.rs" 143 23 143 25] (20 : usize)} {default}
+      (fun (_ret':SparseArray_Sparse_Type.t_sparse int32) -> [ &b <- _ret' ] bb2) 
+    | bb0 = [ &default <- [#"../sparse_array.rs" 141 18 141 19] (0 : int32) ] create0
+      {[#"../sparse_array.rs" 142 23 142 25] (10 : usize)} {default}
+      (fun (_ret':SparseArray_Sparse_Type.t_sparse int32) -> [ &a <- _ret' ] bb1)  ]
+    ) [ return' (result:())-> (! return' {_0}) ] 
+    [ & _0 : () = any_l () : ()
+    | & default : int32 = any_l () : int32
+    | & a : SparseArray_Sparse_Type.t_sparse int32 = any_l () : SparseArray_Sparse_Type.t_sparse int32
+    | & b : SparseArray_Sparse_Type.t_sparse int32 = any_l () : SparseArray_Sparse_Type.t_sparse int32
+    | & x : Core_Option_Option_Type.t_option int32 = any_l () : Core_Option_Option_Type.t_option int32
+    | & y : Core_Option_Option_Type.t_option int32 = any_l () : Core_Option_Option_Type.t_option int32
+    | & _12 : () = any_l () : ()
+    | & _13 : borrowed (SparseArray_Sparse_Type.t_sparse int32) = any_l () : borrowed (SparseArray_Sparse_Type.t_sparse int32)
+    | & _14 : () = any_l () : ()
+    | & _15 : borrowed (SparseArray_Sparse_Type.t_sparse int32) = any_l () : borrowed (SparseArray_Sparse_Type.t_sparse int32)
+    | & _16 : Core_Option_Option_Type.t_option int32 = any_l () : Core_Option_Option_Type.t_option int32
+    | & _18 : Core_Option_Option_Type.t_option int32 = any_l () : Core_Option_Option_Type.t_option int32
+    | & _24 : Core_Option_Option_Type.t_option int32 = any_l () : Core_Option_Option_Type.t_option int32
+    | & _26 : Core_Option_Option_Type.t_option int32 = any_l () : Core_Option_Option_Type.t_option int32
+    | & _30 : Core_Option_Option_Type.t_option int32 = any_l () : Core_Option_Option_Type.t_option int32
+    | & _32 : Core_Option_Option_Type.t_option int32 = any_l () : Core_Option_Option_Type.t_option int32
+    | & _36 : Core_Option_Option_Type.t_option int32 = any_l () : Core_Option_Option_Type.t_option int32
+    | & _38 : Core_Option_Option_Type.t_option int32 = any_l () : Core_Option_Option_Type.t_option int32 ]
+    
+end
+module SparseArray_Impl0
+  type t
+end
+module SparseArray_Impl1
+  type t
+end

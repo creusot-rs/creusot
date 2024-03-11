@@ -1,0 +1,778 @@
+
+module Borrows_NonZero_Type
+  use prelude.Int32
+  use prelude.Int
+  type t_nonzero  =
+    | C_NonZero int32
+    
+  function any_l (_ : 'b) : 'a
+  function nonzero_0 (self : t_nonzero) : int32 =
+    match self with
+      | C_NonZero a -> a
+      end
+end
+module Borrows_Impl1_New
+  use prelude.Int32
+  use Borrows_NonZero_Type as Borrows_NonZero_Type
+  predicate invariant0 [#"../borrows.rs" 9 4 9 30] (self : Borrows_NonZero_Type.t_nonzero) =
+    [#"../borrows.rs" 10 20 10 32] Int32.to_int (Borrows_NonZero_Type.nonzero_0 self) <> 0
+  let rec invariant0 (self:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : Borrows_NonZero_Type.t_nonzero)
+  let rec inv0 (_x:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : Borrows_NonZero_Type.t_nonzero . inv0 x = (invariant0 x /\ match x with
+    | Borrows_NonZero_Type.C_NonZero a_0 -> true
+    end)
+  use prelude.Int32
+  use prelude.Int
+  use prelude.Intrinsic
+  let rec new (n:int32) (return'  (ret:Borrows_NonZero_Type.t_nonzero))= {[#"../borrows.rs" 15 15 15 22] Int32.to_int n <> 0}
+    (! bb0 [ bb0 = [ &_0 <- Borrows_NonZero_Type.C_NonZero n ] return' {_0}  ] ) 
+    [ return' (result:Borrows_NonZero_Type.t_nonzero)-> {[#"../borrows.rs" 17 26 17 30] inv0 result}
+      {[#"../borrows.rs" 16 14 16 27] Borrows_NonZero_Type.nonzero_0 result = n}
+      (! return' {_0}) ]
+    [ & _0 : Borrows_NonZero_Type.t_nonzero = any_l () : Borrows_NonZero_Type.t_nonzero | & n : int32 = n ] 
+end
+module Borrows_Impl1_InnerMut
+  use prelude.Int32
+  use Borrows_NonZero_Type as Borrows_NonZero_Type
+  predicate invariant1 [#"../borrows.rs" 9 4 9 30] (self : Borrows_NonZero_Type.t_nonzero) =
+    [#"../borrows.rs" 10 20 10 32] Int32.to_int (Borrows_NonZero_Type.nonzero_0 self) <> 0
+  let rec invariant1 (self:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  predicate inv1 (_x : Borrows_NonZero_Type.t_nonzero)
+  let rec inv1 (_x:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  axiom inv1 : forall x : Borrows_NonZero_Type.t_nonzero . inv1 x = (invariant1 x /\ match x with
+    | Borrows_NonZero_Type.C_NonZero a_0 -> true
+    end)
+  use prelude.Borrow
+  predicate invariant0 (self : borrowed (Borrows_NonZero_Type.t_nonzero)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant0 (self:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : borrowed (Borrows_NonZero_Type.t_nonzero))
+  let rec inv0 (_x:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : borrowed (Borrows_NonZero_Type.t_nonzero) . inv0 x = (inv1 ( * x) /\ inv1 ( ^ x))
+  use prelude.Intrinsic
+  use prelude.Int32
+  use prelude.Int
+  predicate resolve1 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : borrowed (Borrows_NonZero_Type.t_nonzero)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec inner_mut (self:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:borrowed int32))= {[#"../borrows.rs" 23 26 23 30] inv0 self}
+    (! bb0 
+    [ bb0 = Borrow.borrow_final <int32> {Borrows_NonZero_Type.nonzero_0 ( * self)}
+      {Borrow.inherit_id (Borrow.get_id self) 1} (fun (_ret':borrowed int32) -> [ &_5 <- _ret' ] 
+        [ &self <- { self with current = (let Borrows_NonZero_Type.C_NonZero x0 =  * self in Borrows_NonZero_Type.C_NonZero ( ^ _5)) ; } ]
+        Borrow.borrow_final <int32> { * _5} {Borrow.get_id _5} (fun (_ret':borrowed int32) -> [ &_2 <- _ret' ] 
+          [ &_5 <- { _5 with current = ( ^ _2) ; } ]
+          Borrow.borrow_final <int32> { * _2} {Borrow.get_id _2} (fun (_ret':borrowed int32) -> [ &_0 <- _ret' ] 
+            [ &_2 <- { _2 with current = ( ^ _0) ; } ]
+            -{resolve1 _5}- -{resolve1 _2}- {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- return' {_0})))  ]
+    ) 
+    [ return' (result:borrowed int32)-> {[#"../borrows.rs" 22 14 22 38] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( ^ self)) = Int32.to_int ( ^ result)}
+      {[#"../borrows.rs" 21 14 21 38] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * self)) = Int32.to_int ( * result)}
+      (! return' {_0}) ]
+    
+    [ & _0 : borrowed int32 = any_l () : borrowed int32
+    | & self : borrowed (Borrows_NonZero_Type.t_nonzero) = self
+    | & _2 : borrowed int32 = any_l () : borrowed int32
+    | & _5 : borrowed int32 = any_l () : borrowed int32 ]
+    
+end
+module Borrows_Inc
+  use prelude.Int32
+  use prelude.Int32
+  use prelude.Int
+  constant max0 : int32 = (2147483647 : int32)
+  use prelude.Int
+  use prelude.Borrow
+  function shallow_model0 (self : borrowed int32) : int =
+    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] Int32.to_int ( * self)
+  let rec shallow_model0 (self:borrowed int32) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = shallow_model0 self} (! return' {result}) ]
+    
+  use prelude.Intrinsic
+  predicate resolve0 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec inc (x:borrowed int32) (return'  (ret:()))= {[#"../borrows.rs" 99 11 99 25] shallow_model0 x < Int32.to_int (max0 : int32)}
+    (! bb0 
+    [ bb0 = Int32.add { * x} {[#"../borrows.rs" 102 10 102 11] (1 : int32)} (fun (_ret':int32) -> 
+        [ &x <- { x with current = _ret' ; } ]
+        -{resolve0 x}- [ &_0 <- [#"../borrows.rs" 101 24 103 1] () ] return' {_0})  ]
+    ) 
+    [ return' (result:())-> {[#"../borrows.rs" 100 10 100 25] Int32.to_int ( ^ x) = shallow_model0 x + 1}
+      (! return' {_0}) ]
+    [ & _0 : () = any_l () : () | & x : borrowed int32 = x ] 
+end
+module Borrows_Simple
+  use prelude.Int32
+  use Borrows_NonZero_Type as Borrows_NonZero_Type
+  predicate invariant1 [#"../borrows.rs" 9 4 9 30] (self : Borrows_NonZero_Type.t_nonzero) =
+    [#"../borrows.rs" 10 20 10 32] Int32.to_int (Borrows_NonZero_Type.nonzero_0 self) <> 0
+  let rec invariant1 (self:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  predicate inv1 (_x : Borrows_NonZero_Type.t_nonzero)
+  let rec inv1 (_x:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  axiom inv1 : forall x : Borrows_NonZero_Type.t_nonzero . inv1 x = (invariant1 x /\ match x with
+    | Borrows_NonZero_Type.C_NonZero a_0 -> true
+    end)
+  use prelude.Borrow
+  predicate invariant0 (self : borrowed (Borrows_NonZero_Type.t_nonzero)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant0 (self:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : borrowed (Borrows_NonZero_Type.t_nonzero))
+  let rec inv0 (_x:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : borrowed (Borrows_NonZero_Type.t_nonzero) . inv0 x = (inv1 ( * x) /\ inv1 ( ^ x))
+  use prelude.Int32
+  use prelude.Int
+  constant max0 : int32 = (2147483647 : int32)
+  use prelude.Intrinsic
+  use prelude.Int
+  function shallow_model1 (self : borrowed int32) : int =
+    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] Int32.to_int ( * self)
+  let rec shallow_model1 (self:borrowed int32) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = shallow_model1 self} (! return' {result}) ]
+    
+  let rec inc0 (x:borrowed int32) (return'  (ret:()))= {[#"../borrows.rs" 99 11 99 25] shallow_model1 x < Int32.to_int (max0 : int32)}
+    any 
+    [ return' (result:())-> {[#"../borrows.rs" 100 10 100 25] Int32.to_int ( ^ x) = shallow_model1 x + 1}
+      (! return' {result}) ]
+    
+  predicate resolve1 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : borrowed (Borrows_NonZero_Type.t_nonzero)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec simple (x:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:()))= {[#"../borrows.rs" 31 14 31 15] inv0 x}
+    {[#"../borrows.rs" 30 11 30 21] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) <> - 1}
+    {[#"../borrows.rs" 29 11 29 27] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) < Int32.to_int (max0 : int32)}
+    (! bb0 
+    [ bb1 = -{resolve1 _6}- {[@expl:type invariant] inv0 x}
+      -{resolve0 x}- [ &_0 <- [#"../borrows.rs" 31 31 34 1] () ] return' {_0} 
+    | bb0 = Borrow.borrow_final <int32> {Borrows_NonZero_Type.nonzero_0 ( * x)} {Borrow.inherit_id (Borrow.get_id x) 1}
+      (fun (_ret':borrowed int32) -> [ &_6 <- _ret' ] 
+        [ &x <- { x with current = (let Borrows_NonZero_Type.C_NonZero x0 =  * x in Borrows_NonZero_Type.C_NonZero ( ^ _6)) ; } ]
+        Borrow.borrow_final <int32> { * _6} {Borrow.get_id _6} (fun (_ret':borrowed int32) -> [ &_5 <- _ret' ] 
+          [ &_6 <- { _6 with current = ( ^ _5) ; } ]
+          inc0 {_5} (fun (_ret':()) -> [ &_4 <- _ret' ] bb1)))  ]
+    ) [ return' (result:())-> (! return' {_0}) ] 
+    [ & _0 : () = any_l () : ()
+    | & x : borrowed (Borrows_NonZero_Type.t_nonzero) = x
+    | & _4 : () = any_l () : ()
+    | & _5 : borrowed int32 = any_l () : borrowed int32
+    | & _6 : borrowed int32 = any_l () : borrowed int32 ]
+    
+end
+module Borrows_Hard
+  use prelude.Int32
+  use Borrows_NonZero_Type as Borrows_NonZero_Type
+  predicate invariant1 [#"../borrows.rs" 9 4 9 30] (self : Borrows_NonZero_Type.t_nonzero) =
+    [#"../borrows.rs" 10 20 10 32] Int32.to_int (Borrows_NonZero_Type.nonzero_0 self) <> 0
+  let rec invariant1 (self:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  predicate inv1 (_x : Borrows_NonZero_Type.t_nonzero)
+  let rec inv1 (_x:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  axiom inv1 : forall x : Borrows_NonZero_Type.t_nonzero . inv1 x = (invariant1 x /\ match x with
+    | Borrows_NonZero_Type.C_NonZero a_0 -> true
+    end)
+  use prelude.Borrow
+  predicate invariant0 (self : borrowed (Borrows_NonZero_Type.t_nonzero)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant0 (self:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : borrowed (Borrows_NonZero_Type.t_nonzero))
+  let rec inv0 (_x:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : borrowed (Borrows_NonZero_Type.t_nonzero) . inv0 x = (inv1 ( * x) /\ inv1 ( ^ x))
+  use prelude.Int32
+  use prelude.Int
+  constant max0 : int32 = (2147483647 : int32)
+  use prelude.Intrinsic
+  let rec inner_mut0 (self:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:borrowed int32))= {[#"../borrows.rs" 23 26 23 30] inv0 self}
+    any 
+    [ return' (result:borrowed int32)-> {[#"../borrows.rs" 22 14 22 38] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( ^ self)) = Int32.to_int ( ^ result)}
+      {[#"../borrows.rs" 21 14 21 38] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * self)) = Int32.to_int ( * result)}
+      (! return' {result}) ]
+    
+  use prelude.Int
+  function shallow_model1 (self : borrowed int32) : int =
+    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] Int32.to_int ( * self)
+  let rec shallow_model1 (self:borrowed int32) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = shallow_model1 self} (! return' {result}) ]
+    
+  let rec inc0 (x:borrowed int32) (return'  (ret:()))= {[#"../borrows.rs" 99 11 99 25] shallow_model1 x < Int32.to_int (max0 : int32)}
+    any 
+    [ return' (result:())-> {[#"../borrows.rs" 100 10 100 25] Int32.to_int ( ^ x) = shallow_model1 x + 1}
+      (! return' {result}) ]
+    
+  predicate resolve1 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : borrowed (Borrows_NonZero_Type.t_nonzero)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec hard (x:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:()))= {[#"../borrows.rs" 38 12 38 13] inv0 x}
+    {[#"../borrows.rs" 37 11 37 21] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) <> - 1}
+    {[#"../borrows.rs" 36 11 36 27] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) < Int32.to_int (max0 : int32)}
+    (! bb0 
+    [ bb2 = -{resolve1 _6}- {[@expl:type invariant] inv0 x}
+      -{resolve0 x}- [ &_0 <- [#"../borrows.rs" 38 29 41 1] () ] return' {_0} 
+    | bb1 = Borrow.borrow_final <int32> { * _6} {Borrow.get_id _6} (fun (_ret':borrowed int32) -> [ &_5 <- _ret' ] 
+        [ &_6 <- { _6 with current = ( ^ _5) ; } ]
+        inc0 {_5} (fun (_ret':()) -> [ &_4 <- _ret' ] bb2)) 
+    | bb0 = Borrow.borrow_final <Borrows_NonZero_Type.t_nonzero> { * x} {Borrow.get_id x}
+      (fun (_ret':borrowed (Borrows_NonZero_Type.t_nonzero)) -> [ &_7 <- _ret' ] 
+        [ &x <- { x with current = ( ^ _7) ; } ]
+        -{inv1 ( ^ _7)}- inner_mut0 {_7} (fun (_ret':borrowed int32) -> [ &_6 <- _ret' ] bb1))  ]
+    ) [ return' (result:())-> (! return' {_0}) ] 
+    [ & _0 : () = any_l () : ()
+    | & x : borrowed (Borrows_NonZero_Type.t_nonzero) = x
+    | & _4 : () = any_l () : ()
+    | & _5 : borrowed int32 = any_l () : borrowed int32
+    | & _6 : borrowed int32 = any_l () : borrowed int32
+    | & _7 : borrowed (Borrows_NonZero_Type.t_nonzero) = any_l () : borrowed (Borrows_NonZero_Type.t_nonzero) ]
+    
+end
+module Borrows_Tuple
+  use Borrows_NonZero_Type as Borrows_NonZero_Type
+  use prelude.Borrow
+  predicate invariant2 (self : borrowed (Borrows_NonZero_Type.t_nonzero)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant2 (self:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
+    
+  predicate inv1 (_x : Borrows_NonZero_Type.t_nonzero)
+  let rec inv1 (_x:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  predicate inv2 (_x : borrowed (Borrows_NonZero_Type.t_nonzero))
+  let rec inv2 (_x:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
+    
+  axiom inv2 : forall x : borrowed (Borrows_NonZero_Type.t_nonzero) . inv2 x = (inv1 ( * x) /\ inv1 ( ^ x))
+  use prelude.Int32
+  predicate invariant1 [#"../borrows.rs" 9 4 9 30] (self : Borrows_NonZero_Type.t_nonzero) =
+    [#"../borrows.rs" 10 20 10 32] Int32.to_int (Borrows_NonZero_Type.nonzero_0 self) <> 0
+  let rec invariant1 (self:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  axiom inv1 : forall x : Borrows_NonZero_Type.t_nonzero . inv1 x = (invariant1 x /\ match x with
+    | Borrows_NonZero_Type.C_NonZero a_0 -> true
+    end)
+  predicate invariant0 (self : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant0 (self:(Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ] 
+  predicate inv0 (_x : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero)))
+  let rec inv0 (_x:(Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero)) . inv0 x = (let (a, b) = x in inv1 a /\ inv2 b)
+  use prelude.Int32
+  use prelude.Int
+  constant max0 : int32 = (2147483647 : int32)
+  use prelude.Intrinsic
+  use prelude.Int
+  function shallow_model1 (self : borrowed int32) : int =
+    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] Int32.to_int ( * self)
+  let rec shallow_model1 (self:borrowed int32) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = shallow_model1 self} (! return' {result}) ]
+    
+  let rec inc0 (x:borrowed int32) (return'  (ret:()))= {[#"../borrows.rs" 99 11 99 25] shallow_model1 x < Int32.to_int (max0 : int32)}
+    any 
+    [ return' (result:())-> {[#"../borrows.rs" 100 10 100 25] Int32.to_int ( ^ x) = shallow_model1 x + 1}
+      (! return' {result}) ]
+    
+  predicate resolve1 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve3 (self : borrowed (Borrows_NonZero_Type.t_nonzero)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve3 (self:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve3 self} (! return' {result}) ]
+    
+  predicate resolve2 (self : Borrows_NonZero_Type.t_nonzero) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
+  let rec resolve2 (self:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve2 (let (a, _) = self in a) /\ resolve3 (let (_, a) = self in a)
+  let rec resolve0 (self:(Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ] 
+  let rec tuple (x:(Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) (return'  (ret:()))= {[#"../borrows.rs" 45 17 45 18] inv0 x}
+    {[#"../borrows.rs" 44 11 44 23] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) <> - 1}
+    {[#"../borrows.rs" 43 11 43 29] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) < Int32.to_int (max0 : int32)}
+    (! bb0 
+    [ bb1 = -{resolve1 _6}- {[@expl:type invariant] inv0 x}
+      -{resolve0 x}- [ &_0 <- [#"../borrows.rs" 45 45 49 1] () ] return' {_0} 
+    | bb0 = 
+      [ &x <- let (x0, x1) = x in ((let Borrows_NonZero_Type.C_NonZero x0 = let (a, _) = x in a in Borrows_NonZero_Type.C_NonZero ([#"../borrows.rs" 46 13 46 14] (0 : int32))), x1) ]
+      Borrow.borrow_final <int32> {Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))}
+      {Borrow.inherit_id (Borrow.get_id (let (_, a) = x in a)) 1} (fun (_ret':borrowed int32) -> [ &_6 <- _ret' ] 
+        [ &x <- let (x0, x1) = x in (x0, { (let (_, a) = x in a) with current = (let Borrows_NonZero_Type.C_NonZero x0 =  * (let (_, a) = x in a) in Borrows_NonZero_Type.C_NonZero ( ^ _6)) ; }) ]
+        Borrow.borrow_final <int32> { * _6} {Borrow.get_id _6} (fun (_ret':borrowed int32) -> [ &_5 <- _ret' ] 
+          [ &_6 <- { _6 with current = ( ^ _5) ; } ]
+          inc0 {_5} (fun (_ret':()) -> [ &_4 <- _ret' ] bb1)))  ]
+    ) [ return' (result:())-> (! return' {_0}) ] 
+    [ & _0 : () = any_l () : ()
+    | & x : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero)) = x
+    | & _4 : () = any_l () : ()
+    | & _5 : borrowed int32 = any_l () : borrowed int32
+    | & _6 : borrowed int32 = any_l () : borrowed int32 ]
+    
+end
+module Borrows_PartialMove
+  use Borrows_NonZero_Type as Borrows_NonZero_Type
+  use prelude.Borrow
+  predicate invariant2 (self : borrowed (Borrows_NonZero_Type.t_nonzero)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant2 (self:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
+    
+  predicate inv1 (_x : Borrows_NonZero_Type.t_nonzero)
+  let rec inv1 (_x:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  predicate inv2 (_x : borrowed (Borrows_NonZero_Type.t_nonzero))
+  let rec inv2 (_x:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
+    
+  axiom inv2 : forall x : borrowed (Borrows_NonZero_Type.t_nonzero) . inv2 x = (inv1 ( * x) /\ inv1 ( ^ x))
+  use prelude.Int32
+  predicate invariant1 [#"../borrows.rs" 9 4 9 30] (self : Borrows_NonZero_Type.t_nonzero) =
+    [#"../borrows.rs" 10 20 10 32] Int32.to_int (Borrows_NonZero_Type.nonzero_0 self) <> 0
+  let rec invariant1 (self:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  axiom inv1 : forall x : Borrows_NonZero_Type.t_nonzero . inv1 x = (invariant1 x /\ match x with
+    | Borrows_NonZero_Type.C_NonZero a_0 -> true
+    end)
+  predicate invariant0 (self : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant0 (self:(Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ] 
+  predicate inv0 (_x : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero)))
+  let rec inv0 (_x:(Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero)) . inv0 x = (let (a, b) = x in inv1 a /\ inv2 b)
+  use prelude.Int32
+  use prelude.Int
+  constant max0 : int32 = (2147483647 : int32)
+  use prelude.Intrinsic
+  use prelude.Int
+  function shallow_model1 (self : borrowed int32) : int =
+    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] Int32.to_int ( * self)
+  let rec shallow_model1 (self:borrowed int32) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = shallow_model1 self} (! return' {result}) ]
+    
+  let rec inc0 (x:borrowed int32) (return'  (ret:()))= {[#"../borrows.rs" 99 11 99 25] shallow_model1 x < Int32.to_int (max0 : int32)}
+    any 
+    [ return' (result:())-> {[#"../borrows.rs" 100 10 100 25] Int32.to_int ( ^ x) = shallow_model1 x + 1}
+      (! return' {result}) ]
+    
+  predicate resolve1 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve3 (self : borrowed (Borrows_NonZero_Type.t_nonzero)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve3 (self:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve3 self} (! return' {result}) ]
+    
+  predicate resolve2 (self : Borrows_NonZero_Type.t_nonzero) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
+  let rec resolve2 (self:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve2 (let (a, _) = self in a) /\ resolve3 (let (_, a) = self in a)
+  let rec resolve0 (self:(Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ] 
+  let rec partial_move (x:(Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) (return'  (ret:()))= {[#"../borrows.rs" 53 20 53 21] inv0 x}
+    {[#"../borrows.rs" 52 11 52 23] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) <> - 1}
+    {[#"../borrows.rs" 51 11 51 29] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) < Int32.to_int (max0 : int32)}
+    (! bb0 
+    [ bb1 = -{resolve1 _7}- {[@expl:type invariant] inv0 x}
+      -{resolve0 x}- 
+      [ &a <- let Borrows_NonZero_Type.C_NonZero x0 = a in Borrows_NonZero_Type.C_NonZero ([#"../borrows.rs" 56 10 56 11] (0 : int32)) ]
+      [ &_0 <- [#"../borrows.rs" 53 48 57 1] () ] return' {_0} 
+    | bb0 = [ &a <- let (a, _) = x in a ] any 
+      [ any_ (_any:Borrows_NonZero_Type.t_nonzero)-> [ &x <- let (x0, x1) = x in (_any, x1) ] Borrow.borrow_final
+        <int32> {Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))}
+        {Borrow.inherit_id (Borrow.get_id (let (_, a) = x in a)) 1} (fun (_ret':borrowed int32) -> [ &_7 <- _ret' ] 
+          [ &x <- let (x0, x1) = x in (x0, { (let (_, a) = x in a) with current = (let Borrows_NonZero_Type.C_NonZero x0 =  * (let (_, a) = x in a) in Borrows_NonZero_Type.C_NonZero ( ^ _7)) ; }) ]
+          Borrow.borrow_final <int32> { * _7} {Borrow.get_id _7} (fun (_ret':borrowed int32) -> [ &_6 <- _ret' ] 
+            [ &_7 <- { _7 with current = ( ^ _6) ; } ]
+            inc0 {_6} (fun (_ret':()) -> [ &_5 <- _ret' ] bb1))) ]
+        ]
+    ) [ return' (result:())-> (! return' {_0}) ] 
+    [ & _0 : () = any_l () : ()
+    | & x : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero)) = x
+    | & a : Borrows_NonZero_Type.t_nonzero = any_l () : Borrows_NonZero_Type.t_nonzero
+    | & _5 : () = any_l () : ()
+    | & _6 : borrowed int32 = any_l () : borrowed int32
+    | & _7 : borrowed int32 = any_l () : borrowed int32 ]
+    
+end
+module Borrows_Destruct
+  use prelude.Int32
+  use Borrows_NonZero_Type as Borrows_NonZero_Type
+  predicate invariant2 [#"../borrows.rs" 9 4 9 30] (self : Borrows_NonZero_Type.t_nonzero) =
+    [#"../borrows.rs" 10 20 10 32] Int32.to_int (Borrows_NonZero_Type.nonzero_0 self) <> 0
+  let rec invariant2 (self:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
+    
+  predicate inv2 (_x : Borrows_NonZero_Type.t_nonzero)
+  let rec inv2 (_x:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
+    
+  axiom inv2 : forall x : Borrows_NonZero_Type.t_nonzero . inv2 x = (invariant2 x /\ match x with
+    | Borrows_NonZero_Type.C_NonZero a_0 -> true
+    end)
+  use prelude.Borrow
+  predicate invariant1 (self : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant1 (self:(Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ] 
+  predicate inv0 (_x : borrowed (Borrows_NonZero_Type.t_nonzero))
+  let rec inv0 (_x:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  predicate inv1 (_x : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero)))
+  let rec inv1 (_x:(Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ] 
+  axiom inv1 : forall x : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero)) . inv1 x = (let (a, b) = x in inv2 a /\ inv0 b)
+  predicate invariant0 (self : borrowed (Borrows_NonZero_Type.t_nonzero)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant0 (self:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  axiom inv0 : forall x : borrowed (Borrows_NonZero_Type.t_nonzero) . inv0 x = (inv2 ( * x) /\ inv2 ( ^ x))
+  use prelude.Int32
+  use prelude.Int
+  constant max0 : int32 = (2147483647 : int32)
+  use prelude.Intrinsic
+  predicate resolve0 (self : borrowed (Borrows_NonZero_Type.t_nonzero)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  predicate resolve3 (self : Borrows_NonZero_Type.t_nonzero) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
+  let rec resolve3 (self:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve3 self} (! return' {result}) ]
+    
+  predicate resolve2 (self : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve3 (let (a, _) = self in a) /\ resolve0 (let (_, a) = self in a)
+  let rec resolve2 (self:(Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ] 
+  use prelude.Int
+  function shallow_model1 (self : borrowed int32) : int =
+    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] Int32.to_int ( * self)
+  let rec shallow_model1 (self:borrowed int32) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = shallow_model1 self} (! return' {result}) ]
+    
+  let rec inc0 (x:borrowed int32) (return'  (ret:()))= {[#"../borrows.rs" 99 11 99 25] shallow_model1 x < Int32.to_int (max0 : int32)}
+    any 
+    [ return' (result:())-> {[#"../borrows.rs" 100 10 100 25] Int32.to_int ( ^ x) = shallow_model1 x + 1}
+      (! return' {result}) ]
+    
+  predicate resolve1 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  let rec destruct (x:(Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero))) (return'  (ret:()))= {[#"../borrows.rs" 61 16 61 17] inv1 x}
+    {[#"../borrows.rs" 60 11 60 23] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) <> - 1}
+    {[#"../borrows.rs" 59 11 59 29] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) < Int32.to_int (max0 : int32)}
+    (! bb0 
+    [ bb1 = -{resolve1 _8}- {[@expl:type invariant] inv0 b}
+      -{resolve0 b}- [ &_0 <- [#"../borrows.rs" 61 44 65 1] () ] return' {_0} 
+    | bb0 = [ &a <- let (a, _) = x in a ] any 
+      [ any_ (_any:Borrows_NonZero_Type.t_nonzero)-> [ &x <- let (x0, x1) = x in (_any, x1) ] 
+        [ &b <- let (_, a) = x in a ]
+        any 
+        [ any_ (_any:borrowed (Borrows_NonZero_Type.t_nonzero))-> 
+          [ &x <- let (x0, x1) = x in (x0, _any) ]
+          {[@expl:type invariant] inv1 x}
+          -{resolve2 x}- 
+          [ &a <- let Borrows_NonZero_Type.C_NonZero x0 = a in Borrows_NonZero_Type.C_NonZero ([#"../borrows.rs" 63 10 63 11] (0 : int32)) ]
+          Borrow.borrow_final <int32> {Borrows_NonZero_Type.nonzero_0 ( * b)} {Borrow.inherit_id (Borrow.get_id b) 1}
+          (fun (_ret':borrowed int32) -> [ &_8 <- _ret' ] 
+            [ &b <- { b with current = (let Borrows_NonZero_Type.C_NonZero x0 =  * b in Borrows_NonZero_Type.C_NonZero ( ^ _8)) ; } ]
+            Borrow.borrow_final <int32> { * _8} {Borrow.get_id _8} (fun (_ret':borrowed int32) -> [ &_7 <- _ret' ] 
+              [ &_8 <- { _8 with current = ( ^ _7) ; } ]
+              inc0 {_7} (fun (_ret':()) -> [ &_6 <- _ret' ] bb1))) ]
+         ]
+        ]
+    ) [ return' (result:())-> (! return' {_0}) ] 
+    [ & _0 : () = any_l () : ()
+    | & x : (Borrows_NonZero_Type.t_nonzero, borrowed (Borrows_NonZero_Type.t_nonzero)) = x
+    | & a : Borrows_NonZero_Type.t_nonzero = any_l () : Borrows_NonZero_Type.t_nonzero
+    | & b : borrowed (Borrows_NonZero_Type.t_nonzero) = any_l () : borrowed (Borrows_NonZero_Type.t_nonzero)
+    | & _6 : () = any_l () : ()
+    | & _7 : borrowed int32 = any_l () : borrowed int32
+    | & _8 : borrowed int32 = any_l () : borrowed int32 ]
+    
+end
+module Borrows_FrozenDead
+  use prelude.Int32
+  use Borrows_NonZero_Type as Borrows_NonZero_Type
+  predicate invariant1 [#"../borrows.rs" 9 4 9 30] (self : Borrows_NonZero_Type.t_nonzero) =
+    [#"../borrows.rs" 10 20 10 32] Int32.to_int (Borrows_NonZero_Type.nonzero_0 self) <> 0
+  let rec invariant1 (self:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  predicate inv1 (_x : Borrows_NonZero_Type.t_nonzero)
+  let rec inv1 (_x:Borrows_NonZero_Type.t_nonzero) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  axiom inv1 : forall x : Borrows_NonZero_Type.t_nonzero . inv1 x = (invariant1 x /\ match x with
+    | Borrows_NonZero_Type.C_NonZero a_0 -> true
+    end)
+  use prelude.Borrow
+  predicate invariant0 (self : borrowed (Borrows_NonZero_Type.t_nonzero)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant0 (self:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : borrowed (Borrows_NonZero_Type.t_nonzero))
+  let rec inv0 (_x:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : borrowed (Borrows_NonZero_Type.t_nonzero) . inv0 x = (inv1 ( * x) /\ inv1 ( ^ x))
+  use prelude.Int32
+  use prelude.Int
+  constant max0 : int32 = (2147483647 : int32)
+  use prelude.Intrinsic
+  use prelude.Int
+  function shallow_model1 (self : borrowed int32) : int =
+    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] Int32.to_int ( * self)
+  let rec shallow_model1 (self:borrowed int32) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = shallow_model1 self} (! return' {result}) ]
+    
+  let rec inc0 (x:borrowed int32) (return'  (ret:()))= {[#"../borrows.rs" 99 11 99 25] shallow_model1 x < Int32.to_int (max0 : int32)}
+    any 
+    [ return' (result:())-> {[#"../borrows.rs" 100 10 100 25] Int32.to_int ( ^ x) = shallow_model1 x + 1}
+      (! return' {result}) ]
+    
+  predicate resolve1 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : borrowed (Borrows_NonZero_Type.t_nonzero)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec frozen_dead (x:borrowed (Borrows_NonZero_Type.t_nonzero)) (y:borrowed (Borrows_NonZero_Type.t_nonzero)) (return'  (ret:()))= {[#"../borrows.rs" 69 47 69 48] inv0 y}
+    {[#"../borrows.rs" 69 27 69 28] inv0 x}
+    {[#"../borrows.rs" 68 11 68 21] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) <> - 1}
+    {[#"../borrows.rs" 67 11 67 27] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) < Int32.to_int (max0 : int32)}
+    (! bb0 
+    [ bb1 = -{resolve1 _a}- [ &_0 <- [#"../borrows.rs" 69 67 76 1] () ] {[@expl:type invariant] inv0 y}
+      -{resolve0 y}- return' {_0} 
+    | bb0 = Borrow.borrow_final <int32> {Borrows_NonZero_Type.nonzero_0 ( * x)} {Borrow.inherit_id (Borrow.get_id x) 1}
+      (fun (_ret':borrowed int32) -> [ &_a <- _ret' ] 
+        [ &x <- { x with current = (let Borrows_NonZero_Type.C_NonZero x0 =  * x in Borrows_NonZero_Type.C_NonZero ( ^ _a)) ; } ]
+        Borrow.borrow_final <Borrows_NonZero_Type.t_nonzero> { * y} {Borrow.get_id y}
+        (fun (_ret':borrowed (Borrows_NonZero_Type.t_nonzero)) -> [ &_6 <- _ret' ] 
+          [ &y <- { y with current = ( ^ _6) ; } ]
+          -{inv1 ( ^ _6)}- {[@expl:type invariant] inv0 x}
+          -{resolve0 x}- [ &x <- _6 ] any 
+          [ any_ (_any:borrowed (Borrows_NonZero_Type.t_nonzero))-> [ &_6 <- _any ] {[@expl:type invariant] inv0 x}
+            -{resolve0 x}- Borrow.borrow_final <int32> { * _a} {Borrow.get_id _a} (fun (_ret':borrowed int32) -> 
+              [ &_8 <- _ret' ]
+              [ &_a <- { _a with current = ( ^ _8) ; } ] inc0 {_8} (fun (_ret':()) -> [ &_7 <- _ret' ] bb1)) ]
+          ))  ]
+    ) [ return' (result:())-> (! return' {_0}) ] 
+    [ & _0 : () = any_l () : ()
+    | & x : borrowed (Borrows_NonZero_Type.t_nonzero) = x
+    | & y : borrowed (Borrows_NonZero_Type.t_nonzero) = y
+    | & _a : borrowed int32 = any_l () : borrowed int32
+    | & _6 : borrowed (Borrows_NonZero_Type.t_nonzero) = any_l () : borrowed (Borrows_NonZero_Type.t_nonzero)
+    | & _7 : () = any_l () : ()
+    | & _8 : borrowed int32 = any_l () : borrowed int32 ]
+    
+end
+module Borrows_SumTo10_Type
+  use prelude.Int32
+  use prelude.Int
+  type t_sumto10  =
+    | C_SumTo10 int32 int32
+    
+  function any_l (_ : 'b) : 'a
+  function sumto10_a (self : t_sumto10) : int32 =
+    match self with
+      | C_SumTo10 a _ -> a
+      end
+  function sumto10_b (self : t_sumto10) : int32 =
+    match self with
+      | C_SumTo10 _ a -> a
+      end
+end
+module Borrows_Dec
+  use prelude.Int32
+  use prelude.Int32
+  use prelude.Int
+  constant min0 : int32 = (-2147483648 : int32)
+  use prelude.Int
+  use prelude.Borrow
+  function shallow_model0 (self : borrowed int32) : int =
+    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] Int32.to_int ( * self)
+  let rec shallow_model0 (self:borrowed int32) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = shallow_model0 self} (! return' {result}) ]
+    
+  use prelude.Intrinsic
+  predicate resolve0 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec dec (x:borrowed int32) (return'  (ret:()))= {[#"../borrows.rs" 105 11 105 25] shallow_model0 x > Int32.to_int (min0 : int32)}
+    (! bb0 
+    [ bb0 = Int32.sub { * x} {[#"../borrows.rs" 108 10 108 11] (1 : int32)} (fun (_ret':int32) -> 
+        [ &x <- { x with current = _ret' ; } ]
+        -{resolve0 x}- [ &_0 <- [#"../borrows.rs" 107 24 109 1] () ] return' {_0})  ]
+    ) 
+    [ return' (result:())-> {[#"../borrows.rs" 106 10 106 25] Int32.to_int ( ^ x) = shallow_model0 x - 1}
+      (! return' {_0}) ]
+    [ & _0 : () = any_l () : () | & x : borrowed int32 = x ] 
+end
+module Borrows_Impl3_Foo
+  use prelude.Int
+  use prelude.Int32
+  use Borrows_SumTo10_Type as Borrows_SumTo10_Type
+  predicate invariant1 [#"../borrows.rs" 86 4 86 30] (self : Borrows_SumTo10_Type.t_sumto10) =
+    [#"../borrows.rs" 87 20 87 43] Int32.to_int (Borrows_SumTo10_Type.sumto10_a self) + Int32.to_int (Borrows_SumTo10_Type.sumto10_b self) = 10
+  let rec invariant1 (self:Borrows_SumTo10_Type.t_sumto10) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  predicate inv1 (_x : Borrows_SumTo10_Type.t_sumto10)
+  let rec inv1 (_x:Borrows_SumTo10_Type.t_sumto10) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  axiom inv1 : forall x : Borrows_SumTo10_Type.t_sumto10 . inv1 x = (invariant1 x /\ match x with
+    | Borrows_SumTo10_Type.C_SumTo10 a b -> true
+    end)
+  use prelude.Borrow
+  predicate invariant0 (self : borrowed (Borrows_SumTo10_Type.t_sumto10)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant0 (self:borrowed (Borrows_SumTo10_Type.t_sumto10)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : borrowed (Borrows_SumTo10_Type.t_sumto10))
+  let rec inv0 (_x:borrowed (Borrows_SumTo10_Type.t_sumto10)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : borrowed (Borrows_SumTo10_Type.t_sumto10) . inv0 x = (inv1 ( * x) /\ inv1 ( ^ x))
+  use prelude.Int32
+  constant max0 : int32 = (2147483647 : int32)
+  use prelude.Intrinsic
+  use prelude.Int
+  function shallow_model1 (self : borrowed int32) : int =
+    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] Int32.to_int ( * self)
+  let rec shallow_model1 (self:borrowed int32) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = shallow_model1 self} (! return' {result}) ]
+    
+  let rec inc0 (x:borrowed int32) (return'  (ret:()))= {[#"../borrows.rs" 99 11 99 25] shallow_model1 x < Int32.to_int (max0 : int32)}
+    any 
+    [ return' (result:())-> {[#"../borrows.rs" 100 10 100 25] Int32.to_int ( ^ x) = shallow_model1 x + 1}
+      (! return' {result}) ]
+    
+  constant min0 : int32 = (-2147483648 : int32)
+  let rec dec0 (x:borrowed int32) (return'  (ret:()))= {[#"../borrows.rs" 105 11 105 25] shallow_model1 x > Int32.to_int (min0 : int32)}
+    any 
+    [ return' (result:())-> {[#"../borrows.rs" 106 10 106 25] Int32.to_int ( ^ x) = shallow_model1 x - 1}
+      (! return' {result}) ]
+    
+  predicate resolve1 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : borrowed (Borrows_SumTo10_Type.t_sumto10)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed (Borrows_SumTo10_Type.t_sumto10)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec foo (self:borrowed (Borrows_SumTo10_Type.t_sumto10)) (return'  (ret:()))= {[#"../borrows.rs" 93 20 93 24] inv0 self}
+    {[#"../borrows.rs" 92 15 92 34] Int32.to_int (Borrows_SumTo10_Type.sumto10_a ( * self)) < Int32.to_int (max0 : int32)}
+    (! bb0 
+    [ bb2 = -{resolve1 _8}- {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- [ &_0 <- [#"../borrows.rs" 93 26 96 5] () ] return' {_0} 
+    | bb1 = -{resolve1 _5}- Borrow.borrow_final <int32> {Borrows_SumTo10_Type.sumto10_b ( * self)}
+      {Borrow.inherit_id (Borrow.get_id self) 2} (fun (_ret':borrowed int32) -> [ &_8 <- _ret' ] 
+        [ &self <- { self with current = (let Borrows_SumTo10_Type.C_SumTo10 x0 x1 =  * self in Borrows_SumTo10_Type.C_SumTo10 x0 ( ^ _8)) ; } ]
+        Borrow.borrow_final <int32> { * _8} {Borrow.get_id _8} (fun (_ret':borrowed int32) -> [ &_7 <- _ret' ] 
+          [ &_8 <- { _8 with current = ( ^ _7) ; } ]
+          dec0 {_7} (fun (_ret':()) -> [ &_6 <- _ret' ] bb2))) 
+    | bb0 = Borrow.borrow_final <int32> {Borrows_SumTo10_Type.sumto10_a ( * self)}
+      {Borrow.inherit_id (Borrow.get_id self) 1} (fun (_ret':borrowed int32) -> [ &_5 <- _ret' ] 
+        [ &self <- { self with current = (let Borrows_SumTo10_Type.C_SumTo10 x0 x1 =  * self in Borrows_SumTo10_Type.C_SumTo10 ( ^ _5) x1) ; } ]
+        Borrow.borrow_final <int32> { * _5} {Borrow.get_id _5} (fun (_ret':borrowed int32) -> [ &_4 <- _ret' ] 
+          [ &_5 <- { _5 with current = ( ^ _4) ; } ]
+          inc0 {_4} (fun (_ret':()) -> [ &_3 <- _ret' ] bb1)))  ]
+    ) [ return' (result:())-> (! return' {_0}) ] 
+    [ & _0 : () = any_l () : ()
+    | & self : borrowed (Borrows_SumTo10_Type.t_sumto10) = self
+    | & _3 : () = any_l () : ()
+    | & _4 : borrowed int32 = any_l () : borrowed int32
+    | & _5 : borrowed int32 = any_l () : borrowed int32
+    | & _6 : () = any_l () : ()
+    | & _7 : borrowed int32 = any_l () : borrowed int32
+    | & _8 : borrowed int32 = any_l () : borrowed int32 ]
+    
+end
+module Borrows_Impl0
+  
+end
+module Borrows_Impl2
+  
+end

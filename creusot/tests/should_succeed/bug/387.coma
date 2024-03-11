@@ -1,0 +1,123 @@
+
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
+    
+  function any_l (_ : 'b) : 'a
+  function some_0 (self : t_option 't) : 't =
+    match self with
+      | C_None -> any_l self
+      | C_Some a -> a
+      end
+end
+module C387_Node_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use prelude.UInt32
+  use prelude.Int
+  type t_node  =
+    | C_Node (t_tree) uint32 (t_tree)
+    with t_tree  =
+    | C_Tree (Core_Option_Option_Type.t_option (t_node))
+    
+  function any_l (_ : 'b) : 'a
+  function node_right (self : t_node) : t_tree =
+    match self with
+      | C_Node _ _ a -> a
+      end
+  function node_left (self : t_node) : t_tree =
+    match self with
+      | C_Node a _ _ -> a
+      end
+  function tree_0 (self : t_tree) : Core_Option_Option_Type.t_option (t_node) =
+    match self with
+      | C_Tree a -> a
+      end
+end
+module C387_Tree_Type
+  use export C387_Node_Type
+end
+module C387_UseTree
+  use C387_Tree_Type as C387_Tree_Type
+  use prelude.Borrow
+  use prelude.Intrinsic
+  let rec use_tree (_1:C387_Tree_Type.t_tree) (return'  (ret:()))= (! bb0 
+    [ bb0 = [ &_0 <- [#"../387.rs" 13 26 13 28] () ] return' {_0}  ]
+    ) [ return' (result:())-> (! return' {_0}) ] [ & _0 : () = any_l () : () ] 
+end
+module Core_Cmp_Ordering_Type
+  type t_ordering  =
+    | C_Less
+    | C_Equal
+    | C_Greater
+    
+  function any_l (_ : 'b) : 'a
+end
+module C387_Impl0_Height
+  use prelude.UInt64
+  predicate invariant0 (self : uint64) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant0 (self:uint64) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : uint64)
+  let rec inv0 (_x:uint64) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : uint64 . inv0 x = true
+  use prelude.Borrow
+  use prelude.Intrinsic
+  use C387_Node_Type as C387_Node_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use C387_Tree_Type as C387_Tree_Type
+  use prelude.Int
+  use int.Int
+  use int.Int
+  use int.Int
+  use prelude.UInt64
+  use prelude.Int
+  function deep_model0 (self : uint64) : int =
+    [#"../../../../../creusot-contracts/src/std/num.rs" 22 16 22 35] UInt64.to_int self
+  let rec deep_model0 (self:uint64) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = deep_model0 self} (! return' {result}) ]
+    
+  let rec max0 (self:uint64) (other:uint64) (return'  (ret:uint64))= {inv0 other}
+    {inv0 self}
+    any 
+    [ return' (result:uint64)-> {inv0 result}
+      {[#"../../../../../creusot-contracts/src/std/cmp.rs" 57 16 57 81] deep_model0 other < deep_model0 self
+       -> result = self}
+      {[#"../../../../../creusot-contracts/src/std/cmp.rs" 56 16 56 79] deep_model0 self <= deep_model0 other
+       -> result = other}
+      {[#"../../../../../creusot-contracts/src/std/cmp.rs" 7 0 62 1] result = self \/ result = other}
+      {[#"../../../../../creusot-contracts/src/std/cmp.rs" 54 26 54 63] deep_model0 result >= deep_model0 other}
+      {[#"../../../../../creusot-contracts/src/std/cmp.rs" 53 26 53 66] deep_model0 result >= deep_model0 self}
+      (! return' {result}) ]
+    
+  let rec height (self:C387_Tree_Type.t_tree) (return'  (ret:uint64))= (! bb0 
+    [ bb8 = return' {_0} 
+    | bb4 = [ &_0 <- [#"../387.rs" 18 26 18 27] (0 : uint64) ] bb8 
+    | bb1 = bb4 
+    | bb7 = UInt64.add {_4} {[#"../387.rs" 19 69 19 70] (1 : uint64)} (fun (_ret':uint64) -> [ &_0 <- _ret' ] bb8) 
+    | bb6 = max0 {_5} {_7} (fun (_ret':uint64) -> [ &_4 <- _ret' ] bb7) 
+    | bb5 = height {C387_Node_Type.node_right n} (fun (_ret':uint64) -> [ &_7 <- _ret' ] bb6) 
+    | bb2 = [ &n <- Core_Option_Option_Type.some_0 (C387_Tree_Type.tree_0 self) ] height {C387_Node_Type.node_left n}
+      (fun (_ret':uint64) -> [ &_5 <- _ret' ] bb5) 
+    | bb3 = {[#"../387.rs" 17 14 17 18] false}
+      any 
+    | bb0 = any 
+      [ br0 -> {C387_Tree_Type.tree_0 self = Core_Option_Option_Type.C_None }
+        (! bb1)
+      | br1 (a:C387_Node_Type.t_node)-> {C387_Tree_Type.tree_0 self = Core_Option_Option_Type.C_Some a}
+        (! bb2)
+      | default -> (! bb3) ]
+        ]
+    ) [ return' (result:uint64)-> (! return' {_0}) ] 
+    [ & _0 : uint64 = any_l () : uint64
+    | & self : C387_Tree_Type.t_tree = self
+    | & n : C387_Node_Type.t_node = any_l () : C387_Node_Type.t_node
+    | & _4 : uint64 = any_l () : uint64
+    | & _5 : uint64 = any_l () : uint64
+    | & _7 : uint64 = any_l () : uint64 ]
+    
+end
