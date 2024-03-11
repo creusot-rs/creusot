@@ -173,13 +173,22 @@ fn detect_why3_version(why3: &Path) -> Option<String> {
     })
 }
 
-pub fn generate_why3_conf(why3_path: &Path, bin_dir: &Path, dest_dir: &Path) -> anyhow::Result<()> {
+pub fn generate_why3_conf(
+    why3_path: &Path,
+    bin_dir: &Path,
+    dest_file: &Path,
+) -> anyhow::Result<()> {
     println!("Generating a fresh why3 configuration...");
-    let dest_file = dest_dir.join(".why3.conf");
-    let _ = fs::remove_file(dest_file);
+    // create or empty the destination file to avoid getting a warning from why3
+    // because it doesn't exist
+    {
+        let _ = fs::File::create(&dest_file);
+    }
     let status = Command::new(why3_path)
+        .arg("-C")
+        .arg(&dest_file)
         .args(["config", "detect"])
-        .envs([("PATH", bin_dir), ("HOME", dest_dir)])
+        .envs([("PATH", bin_dir)])
         .status()
         .context("launching 'why3 config detect' on downloaded solvers")?;
     if !status.success() {
