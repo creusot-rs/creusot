@@ -64,13 +64,44 @@ pub enum BorrowKind {
 pub enum RValue<'tcx> {
     Ghost(Term<'tcx>),
     Borrow(BorrowKind, Place<'tcx>),
-    Expr(Expr<'tcx>),
+    Operand(Operand<'tcx>),
+    BinOp(BinOp, Operand<'tcx>, Operand<'tcx>),
+    UnaryOp(UnOp, Operand<'tcx>),
+    Constructor(DefId, GenericArgsRef<'tcx>, Vec<Operand<'tcx>>),
+    Cast(Operand<'tcx>, Ty<'tcx>, Ty<'tcx>),
+    Tuple(Vec<Operand<'tcx>>),
+    Len(Operand<'tcx>),
+    Array(Vec<Operand<'tcx>>),
+    Repeat(Operand<'tcx>, Operand<'tcx>),
+}
+
+impl<'tcx> RValue<'tcx> {
+    /// Returns true if the expression generates verification conditions
+    pub fn is_pure(&self) -> bool {
+        match &self {
+            RValue::Operand(_) => true,
+            RValue::BinOp(BinOp::Add | BinOp::Mul | BinOp::Rem | BinOp::Div | BinOp::Sub, _, _) => {
+                false
+            }
+            RValue::BinOp(_, _, _) => true,
+            RValue::UnaryOp(UnOp::Neg, _) => false,
+            RValue::UnaryOp(_, _) => true,
+            RValue::Constructor(_, _, _) => true,
+            RValue::Cast(_, _, _) => false,
+            RValue::Tuple(_) => true,
+            RValue::Len(_) => true,
+            RValue::Array(_) => true,
+            RValue::Repeat(_, _) => true,
+            RValue::Ghost(_) => true,
+            RValue::Borrow(_, _) => false,
+        }
+    }
 }
 
 // TODO Inline `Expr` in to `RValue`
 #[derive(Clone, Debug)]
 pub struct Expr<'tcx> {
-    pub kind: ExprKind<'tcx>,
+    pub kind: (),
     pub ty: Ty<'tcx>,
     pub span: Span,
 }
@@ -88,56 +119,6 @@ impl<'tcx> Operand<'tcx> {
             Operand::Move(pl) => pl.ty(tcx, locals),
             Operand::Copy(pl) => pl.ty(tcx, locals),
             Operand::Constant(t) => t.ty,
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum ExprKind<'tcx> {
-    Operand(Operand<'tcx>),
-    // Revisit whether this is a good idea to allow general expression trees.
-    BinOp(BinOp, Box<Operand<'tcx>>, Box<Operand<'tcx>>),
-    UnaryOp(UnOp, Box<Operand<'tcx>>),
-    Constructor(DefId, GenericArgsRef<'tcx>, Vec<Operand<'tcx>>),
-    Cast(Box<Operand<'tcx>>, Ty<'tcx>, Ty<'tcx>),
-    Tuple(Vec<Operand<'tcx>>),
-    Len(Box<Operand<'tcx>>),
-    Array(Vec<Operand<'tcx>>),
-    Repeat(Box<Operand<'tcx>>, Box<Operand<'tcx>>),
-}
-
-impl<'tcx> Expr<'tcx> {
-    pub fn is_call(&self) -> bool {
-        match &self.kind {
-            ExprKind::Operand(_) => false,
-            ExprKind::BinOp(_, _, _) => false,
-            ExprKind::UnaryOp(_, _) => false,
-            ExprKind::Constructor(_, _, _) => false,
-            ExprKind::Cast(_, _, _) => false,
-            ExprKind::Tuple(_) => false,
-            ExprKind::Len(_) => false,
-            ExprKind::Array(_) => false,
-            ExprKind::Repeat(_, _) => false,
-        }
-    }
-
-    pub fn is_pure(&self) -> bool {
-        match &self.kind {
-            ExprKind::Operand(_) => true,
-            ExprKind::BinOp(
-                BinOp::Add | BinOp::Mul | BinOp::Rem | BinOp::Div | BinOp::Sub,
-                _,
-                _,
-            ) => false,
-            ExprKind::BinOp(_, _, _) => true,
-            ExprKind::UnaryOp(UnOp::Neg, _) => false,
-            ExprKind::UnaryOp(_, _) => true,
-            ExprKind::Constructor(_, _, _) => true,
-            ExprKind::Cast(_, _, _) => false,
-            ExprKind::Tuple(_) => true,
-            ExprKind::Len(_) => true,
-            ExprKind::Array(_) => true,
-            ExprKind::Repeat(_, _) => true,
         }
     }
 }
