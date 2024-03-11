@@ -289,7 +289,7 @@ impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
     fn ty(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let mut node = DepNode::new(self.tcx, (def_id, subst));
 
-        if self.tcx.is_closure(def_id) {
+        if self.tcx.is_closure_or_coroutine(def_id) {
             node = DepNode::Type(Ty::new_closure(self.tcx, def_id, subst));
         }
 

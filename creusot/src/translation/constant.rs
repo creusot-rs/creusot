@@ -72,9 +72,10 @@ pub(crate) fn from_ty_const<'tcx>(
 ) -> Term<'tcx> {
     // Check if a constant is builtin and thus should not be evaluated further
     // Builtin constants are given a body which panics
-    if let ConstKind::Unevaluated(u) = c.kind() &&
-       let Some(_) = get_builtin(ctx.tcx, u.def) {
-            return Term { kind: TermKind::Lit(Literal::Function(u.def, u.args)), ty: c.ty(), span}
+    if let ConstKind::Unevaluated(u) = c.kind()
+        && let Some(_) = get_builtin(ctx.tcx, u.def)
+    {
+        return Term { kind: TermKind::Lit(Literal::Function(u.def, u.args)), ty: c.ty(), span };
     };
 
     if let ConstKind::Param(_) = c.kind() {
@@ -93,7 +94,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
     c: C,
 ) -> Literal<'tcx> {
     use rustc_middle::ty::{FloatTy, IntTy, UintTy};
-    use rustc_type_ir::sty::TyKind::{Bool, Float, FnDef, Int, Uint};
+    use rustc_type_ir::TyKind::{Bool, Float, FnDef, Int, Uint};
     match ty.kind() {
         Int(ity) => {
             let bits = c.get_bits(ctx.tcx, env, ty).unwrap();

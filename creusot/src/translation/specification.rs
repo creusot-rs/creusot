@@ -376,29 +376,24 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
         self.thir
     }
 
-    fn visit_expr(&mut self, expr: &thir::Expr<'tcx>) {
+    fn visit_expr(&mut self, expr: &'a thir::Expr<'tcx>) {
         match expr.kind {
             ExprKind::Call { fun, .. } => {
                 if let &ty::FnDef(func_did, _) = self.thir[fun].ty.kind() {
                     let fn_purity = self.purity(fun, func_did);
                     if !self.context.can_call(fn_purity) && !is_overloaded_item(self.tcx, func_did)
                     {
-                        self.tcx.sess.span_err_with_code(
+                        let msg =
+                            format!("called {fn_purity:?} function in {:?} context", self.context);
+
+                        self.tcx.dcx().span_err(
                             self.thir[fun].span,
-                            format!(
-                                "called {fn_purity} function {:?} in {} context",
-                                self.tcx.def_path_str(func_did),
-                                self.context,
-                            ),
-                            rustc_errors::DiagnosticId::Error(String::from("creusot")),
+                            format!("{} {:?}", msg, self.tcx.def_path_str(func_did)),
                         );
                     }
                 } else if self.context != Purity::Program {
-                    self.tcx.sess.span_fatal_with_code(
-                        expr.span,
-                        "non function call in logical context",
-                        rustc_errors::DiagnosticId::Error(String::from("creusot")),
-                    )
+                    // TODO Add a "code" back in
+                    self.tcx.dcx().span_fatal(expr.span, "non function call in logical context")
                 }
             }
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
@@ -409,7 +404,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                 let (thir, expr) = self
                     .tcx
                     .thir_body(closure_id)
-                    .unwrap_or_else(|_| Error::from(CrErr).emit(self.tcx.sess));
+                    .unwrap_or_else(|_| Error::from(CrErr).emit(self.tcx));
                 let thir = thir.borrow();
 
                 thir::visit::walk_expr(

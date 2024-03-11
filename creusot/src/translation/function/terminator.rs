@@ -95,7 +95,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
 
                 let mut func_args: Vec<_> =
-                    args.iter().map(|arg| self.translate_operand(arg)).collect();
+                    args.iter().map(|arg| self.translate_operand(&arg.node)).collect();
 
                 if func_args.is_empty() {
                     // TODO: Remove this, push the 0-ary handling down to why3 backend
@@ -167,7 +167,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             FalseUnwind { real_target, .. } => {
                 self.emit_terminator(mk_goto(*real_target));
             }
-            UnwindResume | Yield { .. } | GeneratorDrop | InlineAsm { .. } => {
+            CoroutineDrop | UnwindResume | Yield { .. } | InlineAsm { .. } => {
                 unreachable!("{:?}", terminator.kind)
             }
         }

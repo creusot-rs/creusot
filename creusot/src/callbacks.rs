@@ -2,7 +2,7 @@ use rustc_borrowck::consumers::{BodyWithBorrowckFacts, ConsumerOptions};
 use rustc_driver::{Callbacks, Compilation};
 use rustc_hir::def_id::LocalDefId;
 use rustc_interface::{interface::Compiler, Config, Queries};
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::{mir::dump_mir, ty::TyCtxt};
 
 use std::{cell::RefCell, collections::HashMap, thread_local};
 
@@ -32,6 +32,14 @@ impl Callbacks for ToWhy {
                 let mir = (rustc_interface::DEFAULT_QUERY_PROVIDERS.mir_built)(tcx, def_id);
                 let mut mir = mir.steal();
                 cleanup_spec_closures(tcx, def_id.to_def_id(), &mut mir);
+                tcx.alloc_steal_mir(mir)
+            };
+
+            providers.mir_drops_elaborated_and_const_checked = |tcx, def_id| {
+                let mir = (rustc_interface::DEFAULT_QUERY_PROVIDERS
+                    .mir_drops_elaborated_and_const_checked)(tcx, def_id);
+                let mut mir = mir.steal();
+                remove_ghost_closures(tcx, &mut mir);
                 tcx.alloc_steal_mir(mir)
             };
 
@@ -74,7 +82,7 @@ impl Callbacks for ToWhy {
             let _ = crate::translation::after_analysis(ctx);
         });
 
-        c.session().abort_if_errors();
+        c.sess.dcx().abort_if_errors();
 
         if self.opts.in_cargo {
             Compilation::Continue

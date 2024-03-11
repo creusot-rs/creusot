@@ -203,8 +203,6 @@ mod macros {
     /// This means you cannot `#[open]` a body which refers to a `pub(crate)` symbol.
     pub use creusot_contracts_dummy::open;
 
-    pub use creusot_contracts_proc::DeepModel;
-
     pub use creusot_contracts_proc::Resolve;
 }
 
@@ -251,6 +249,7 @@ pub mod resolve;
 pub mod util;
 pub mod well_founded;
 
+pub use macros::*;
 // We add some common things at the root of the creusot-contracts library
 pub use crate::{
     logic::{IndexLogic as _, Int, OrdLogic, Seq},
@@ -297,3 +296,7 @@ macro_rules! vec {
     );
     ($($x:expr,)*) => (vec![$($x),*])
 }
+
+// #[logic]
+// #[open]
+// pub fn foo() -> bool { true }

@@ -112,7 +112,7 @@ pub(crate) fn categorize(context: PlaceContext) -> Option<DefUse> {
         // cross suspension points so this behavior is unproblematic.
         PlaceContext::MutatingUse(MutatingUseContext::Borrow) |
         PlaceContext::NonMutatingUse(NonMutatingUseContext::SharedBorrow) |
-        PlaceContext::NonMutatingUse(NonMutatingUseContext::ShallowBorrow) |
+        PlaceContext::NonMutatingUse(NonMutatingUseContext::FakeBorrow) |
         PlaceContext::NonMutatingUse(NonMutatingUseContext::PlaceMention) |
         PlaceContext::MutatingUse(MutatingUseContext::AddressOf) |
         PlaceContext::NonMutatingUse(NonMutatingUseContext::AddressOf) |

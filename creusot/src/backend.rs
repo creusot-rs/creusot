@@ -258,9 +258,9 @@ impl<'tcx> Why3Generator<'tcx> {
             self.translate(adt_did);
         }
 
-        let (modl, deps) = ty_inv::build_inv_module(self, inv_kind);
+        let deps = ty_inv::build_inv_module(self, inv_kind);
         self.dependencies.insert(tid, deps);
-        self.functions.insert(tid, TranslatedItem::TyInv { modl });
+        self.functions.insert(tid, TranslatedItem::TyInv {});
     }
 
     // pub(crate) fn item(&self, def_id: DefId) -> Option<&TranslatedItem> {
@@ -413,7 +413,7 @@ pub(crate) fn closure_generic_decls(
     mut def_id: DefId,
 ) -> impl Iterator<Item = Decl> + '_ {
     loop {
-        if tcx.is_closure(def_id) {
+        if tcx.is_closure_or_coroutine(def_id) {
             def_id = tcx.parent(def_id);
         } else {
             break;

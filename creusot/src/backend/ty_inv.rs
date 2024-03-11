@@ -18,7 +18,7 @@ use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
 use why3::{
-    declaration::{Axiom, Decl, Module, TyDecl},
+    declaration::{Axiom, Decl, TyDecl},
     exp::{Exp, Trigger},
     Ident,
 };
@@ -403,7 +403,7 @@ impl<'tcx> InvariantElaborator<'tcx> {
 pub(crate) fn build_inv_module<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     inv_kind: TyInvKind,
-) -> (Module, CloneSummary<'tcx>) {
+) -> CloneSummary<'tcx> {
     let mut names = CloneMap::new(ctx.tcx, TransId::TyInv(inv_kind));
     let generics = inv_kind.generics(ctx.tcx);
     let inv_axiom =
@@ -434,7 +434,7 @@ pub(crate) fn build_inv_module<'tcx>(
 
     decls.push(Decl::Axiom(inv_axiom));
 
-    (Module { name: util::inv_module_name(ctx.tcx, inv_kind), decls }, summary)
+    summary
 }
 
 fn axiom_name(ctx: &Why3Generator<'_>, inv_kind: TyInvKind) -> Ident {

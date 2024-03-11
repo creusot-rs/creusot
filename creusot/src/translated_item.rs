@@ -26,9 +26,7 @@ pub enum TranslatedItem {
         modl: Vec<Module>,
         accessors: IndexMap<DefId, IndexMap<DefId, Decl>>,
     },
-    TyInv {
-        modl: Module,
-    },
+    TyInv {},
 }
 
 impl<'a> TranslatedItem {

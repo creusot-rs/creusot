@@ -40,20 +40,20 @@ impl<'tcx> LateLintPass<'tcx> for Experimental {
         }
 
         if is_str_ty(cx, e) {
-            cx.struct_span_lint(
+            cx.opt_span_lint(
                 EXPERIMENTAL,
-                e.span,
+                Some(e.span),
                 "support for string types is limited and experimental",
-                |lint| lint,
+                |_lint| (),
             );
         }
 
         if is_dyn_ty(cx, e) {
-            cx.struct_span_lint(
+            cx.opt_span_lint(
                 EXPERIMENTAL,
-                e.span,
+                Some(e.span),
                 "support for trait objects (dyn) is limited and experimental",
-                |lint| lint,
+                |_lint| (),
             );
         }
     }

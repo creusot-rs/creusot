@@ -274,14 +274,16 @@ impl<'tcx> SimplePropagator<'tcx> {
         match s {
             Statement::Assignment(_, r, _) => self.visit_rvalue(r),
             Statement::Resolve(_, _, p) => {
-              if let Some(l) = p.as_symbol() && self.dead.contains(&l) {
-
-              }
+                if let Some(l) = p.as_symbol()
+                    && self.dead.contains(&l)
+                {}
             }
             Statement::Assertion { cond, msg: _ } => self.visit_term(cond),
-            Statement::Call(_, _, _, args, _) => args.iter_mut().for_each(|a| self.visit_operand(a)),
-            Statement::AssumeBorrowInv(_) => {},
-            Statement::AssertTyInv( _) => {},
+            Statement::Call(_, _, _, args, _) => {
+                args.iter_mut().for_each(|a| self.visit_operand(a))
+            }
+            Statement::AssumeBorrowInv(_) => {}
+            Statement::AssertTyInv(_) => {}
         }
     }
 
@@ -312,10 +314,12 @@ impl<'tcx> SimplePropagator<'tcx> {
     fn visit_operand(&mut self, op: &mut Operand<'tcx>) {
         match op {
             Operand::Move(p) | Operand::Copy(p) => {
-              if let Some(l) = p.as_symbol() && let Some(v) = self.prop.remove(&l) {
-                *op = v;
-              }
-            },
+                if let Some(l) = p.as_symbol()
+                    && let Some(v) = self.prop.remove(&l)
+                {
+                    *op = v;
+                }
+            }
             Operand::Constant(_) => {}
         }
     }

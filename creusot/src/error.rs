@@ -1,5 +1,4 @@
-use rustc_errors::DiagnosticId;
-use rustc_session::Session;
+use rustc_middle::ty::TyCtxt;
 use rustc_span::{Span, DUMMY_SP};
 
 pub type CreusotResult<T> = Result<T, Error>;
@@ -16,8 +15,9 @@ impl Error {
         Error { span, msg: msg.into() }
     }
 
-    pub(crate) fn emit(self, sess: &Session) -> ! {
-        sess.span_fatal_with_code(self.span, self.msg, DiagnosticId::Error(String::from("creusot")))
+    pub(crate) fn emit(self, tcx: TyCtxt) -> ! {
+        // TODO: try to add a code back in
+        tcx.dcx().span_fatal(self.span, self.msg)
     }
 }
 

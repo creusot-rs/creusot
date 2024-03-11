@@ -55,7 +55,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeUninitializedLocals {
 
     fn call_return_effect(
         &mut self,
-        trans: &mut impl GenKill<Self::Idx>,
+        trans: &mut Self::Domain,
         _block: BasicBlock,
         return_places: CallReturnPlaces<'_, 'tcx>,
     ) {
@@ -106,7 +106,7 @@ where
                 NonMutatingUseContext::Inspect
                 | NonMutatingUseContext::Copy
                 | NonMutatingUseContext::SharedBorrow
-                | NonMutatingUseContext::ShallowBorrow
+                | NonMutatingUseContext::FakeBorrow
                 | NonMutatingUseContext::AddressOf
                 | NonMutatingUseContext::PlaceMention
                 | NonMutatingUseContext::Projection,

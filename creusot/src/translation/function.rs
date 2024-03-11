@@ -205,7 +205,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
             self.translate_terminator(bbd.terminator(), loc);
 
-            if let Some(resolver) = &mut self.resolver && bbd.terminator().successors().next().is_none() {
+            if let Some(resolver) = &mut self.resolver
+                && bbd.terminator().successors().next().is_none()
+            {
                 let mut resolved = resolver.need_resolve_locals_before(loc);
                 resolved.remove(Local::from_usize(0)); // do not resolve return local
                 self.resolve_locals(resolved);
@@ -336,7 +338,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn resolve_locals(&mut self, mut locals: BitSet<Local>) {
-        locals.subtract(&self.erased_locals.to_hybrid());
+        locals.subtract(&self.erased_locals);
 
         // TODO determine resolution order based on outlives relation
         let locals = locals.iter().collect::<Vec<_>>();
@@ -468,7 +470,7 @@ pub(crate) fn closure_contract<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> ClosureContract<'tcx> {
-    let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).instantiate_identity().kind() else {
+    let TyKind::Closure(_, subst) = ctx.type_of(def_id).instantiate_identity().kind() else {
         unreachable!()
     };
 
@@ -535,7 +537,9 @@ pub(crate) fn closure_contract<'tcx>(
 
     post_sig.inputs.push((Symbol::intern("result"), DUMMY_SP, result_ty));
 
-    let env_ty = ctx.closure_env_ty(def_id, subst, ctx.lifetimes.re_erased).unwrap().peel_refs();
+    let env_ty = ctx
+        .closure_env_ty(ctx.type_of(def_id).instantiate_identity(), kind, ctx.lifetimes.re_erased)
+        .peel_refs();
     let self_ty = env_ty;
 
     let precond = {
@@ -702,7 +706,9 @@ pub(crate) fn closure_unnest<'tcx>(
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Term<'tcx> {
-    let env_ty = tcx.closure_env_ty(def_id, subst, tcx.lifetimes.re_erased).unwrap().peel_refs();
+    let ty = Ty::new_closure(tcx, def_id, subst);
+    let kind = subst.as_closure().kind();
+    let env_ty = tcx.closure_env_ty(ty, kind, tcx.lifetimes.re_erased).peel_refs();
 
     let self_ = Term::var(Symbol::intern("self"), env_ty);
 
