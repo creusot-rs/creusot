@@ -212,8 +212,8 @@ fn lower_promoted<'tcx>(
     sig.name = format!("promoted{:?}", body_id.promoted.unwrap().as_usize()).into();
 
     let mut previous_block = None;
-    let mut exp = Exp::var("_0");
 
+    let mut exp = Exp::var("_0");
     for (id, bbd) in fmir.blocks.into_iter().rev() {
         // Safety check
         match bbd.terminator {
@@ -228,23 +228,36 @@ fn lower_promoted<'tcx>(
 
         previous_block = Some(id);
 
-        // // FIXME
-        // let exps: Vec<_> =
-        //     bbd.stmts.into_iter().map(|s| s.to_why(ctx, names, &fmir.locals)).flatten().collect();
-        // exp = exps.into_iter().rfold(exp, |acc, asgn| match asgn {
-        //     why3::mlcfg::Statement::Assign { lhs, rhs, attr: _ } => {
-        //         Exp::Let { pattern: Pattern::VarP(lhs), arg: Box::new(rhs), body: Box::new(acc) }
-        //     }
-        //     why3::mlcfg::Statement::Assume(_) => acc,
-        //     why3::mlcfg::Statement::Invariant(_)
-        //     | why3::mlcfg::Statement::Variant(_)
-        //     | why3::mlcfg::Statement::Assert(_) => {
-        //         ctx.crash_and_error(ctx.def_span(body_id.def_id()), "unsupported promoted constant")
-        //     }
-        // });
+        // FIXME
+        let exps: Vec<_> =
+            bbd.stmts.into_iter().map(|s| s.to_why(ctx, names, &fmir.locals)).flatten().collect();
+        exp = exps.into_iter().rfold(exp, |acc, asgn| match asgn {
+            IntermediateStmt::Assign(ident, exp) => {
+                Exp::Let { pattern: Pattern::VarP(ident), arg: Box::new(exp), body: Box::new(acc) }
+            }
+            IntermediateStmt::Call(_, _, _, _) => todo!("promoted call"),
+            IntermediateStmt::Assume(_) => acc,
+            IntermediateStmt::Assert(_) => {
+                ctx.crash_and_error(ctx.def_span(body_id.def_id()), "unsupported promoted constant")
+            }
+            IntermediateStmt::Any(_, _) => todo!(),
+            // why3::mlcfg::Statement::Assign { lhs, rhs, attr: _ } => {
+            //     Exp::Let { pattern: Pattern::VarP(lhs), arg: Box::new(rhs), body: Box::new(acc) }
+            // }
+            // why3::mlcfg::Statement::Assume(_) => acc,
+            // why3::mlcfg::Statement::Invariant(_)
+            // | why3::mlcfg::Statement::Variant(_)
+            // | why3::mlcfg::Statement::Assert(_) => {
+            //     ctx.crash_and_error(ctx.def_span(body_id.def_id()), "unsupported promoted constant")
+            // }
+        });
     }
 
-    Decl::Let(LetDecl { sig, rec: false, kind: Some(LetKind::Constant), body: exp, ghost: false })
+    Decl::ConstantDecl(why3::declaration::Constant {
+        name: sig.name,
+        type_: sig.retty.unwrap(),
+        body: exp,
+    })
 }
 
 pub fn val<'tcx>(_: &mut Why3Generator<'tcx>, sig: Signature) -> Decl {
@@ -268,7 +281,6 @@ pub fn val<'tcx>(_: &mut Why3Generator<'tcx>, sig: Signature) -> Decl {
         .requires
         .into_iter()
         .fold(body, |acc, ensures| Expr::Assert(Box::new(ensures), Box::new(acc)));
-
 
     let mut postcond = Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("result"))]);
     postcond = Expr::BlackBox(Box::new(postcond));
@@ -346,7 +358,6 @@ pub fn to_why<'tcx>(
             let init = if decl.arg {
                 Exp::var(Ident::build(id.as_str()))
             } else {
-
                 names.import_prelude_module(PreludeModule::Intrinsic);
                 Exp::var("any_l").app_to(Exp::Tuple(Vec::new())).ascribe(ty.clone())
             };
@@ -436,12 +447,14 @@ impl<'tcx> RValue<'tcx> {
             }
             RValue::BinOp(BinOp::Eq, l, r) if l.ty(ctx.tcx, locals).is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
-                Exp::qvar(QName::from_string("Bool.eqb").unwrap())
+
+                Exp::qvar(QName::from_string("Bool.eq").unwrap())
                     .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
             RValue::BinOp(BinOp::Ne, l, r) if l.ty(ctx.tcx, locals).is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
-                Exp::qvar(QName::from_string("Bool.neqb").unwrap())
+
+                Exp::qvar(QName::from_string("Bool.ne").unwrap())
                     .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
             RValue::BinOp(_, _, _) => {
@@ -457,11 +470,18 @@ impl<'tcx> RValue<'tcx> {
                 unop_to_unop(arg.ty(ctx.tcx, locals), op),
                 Box::new(arg.to_why(ctx, names, locals)),
             ),
+
             RValue::Constructor(id, subst, args) => {
+                let needs_ty = ctx.generics_of(id).count() > 0 && args.len() == 0;
                 let args = args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
 
                 let ctor = names.constructor(id, subst);
-                Exp::Constructor { ctor, args }
+                let cons = Exp::Constructor { ctor, args };
+                if needs_ty {
+                    cons.ascribe(translate_ty(ctx, names, DUMMY_SP, ty))
+                } else {
+                    cons
+                }
             }
             RValue::Tuple(f) => {
                 Exp::Tuple(f.into_iter().map(|f| f.to_why(ctx, names, locals)).collect())
@@ -901,7 +921,7 @@ impl<'tcx> Statement<'tcx> {
             Statement::Assignment(lhs, RValue::BinOp(op, l, r), span) => {
                 let (dest, rhs) =
                     place::create_assign_inner(ctx, names, locals, &lhs, Exp::var("_ret'"), span);
-                let fname = binop_to_binop(l.ty(ctx.tcx, locals), op);
+                let fname = binop_to_binop(names, l.ty(ctx.tcx, locals), op);
                 // TODO Switch coma ast to QNames
                 let call = coma::Expr::Symbol(fname);
 
@@ -1102,7 +1122,7 @@ fn func_call_to_why3<'tcx>(
     (coma::Expr::Symbol(fname), args)
 }
 
-pub(crate) fn binop_to_binop(ty: Ty, op: mir::BinOp) -> QName {
+pub(crate) fn binop_to_binop(names: &mut CloneMap<'_>, ty: Ty, op: mir::BinOp) -> QName {
     let prelude: PreludeModule = match ty.kind() {
         TyKind::Int(ity) => int_to_prelude(*ity),
         TyKind::Uint(uty) => uint_to_prelude(*uty),
@@ -1112,6 +1132,7 @@ pub(crate) fn binop_to_binop(ty: Ty, op: mir::BinOp) -> QName {
         _ => unreachable!("non-primitive type for binary operation {op:?} {ty:?}"),
     };
 
+    names.import_prelude_module(prelude);
     let mut module = prelude.qname();
 
     match op {

@@ -346,6 +346,6 @@ impl Print for Defn {
     where
         A::Doc: Clone,
     {
-        docs![alloc, "let ", print_defn(self, "=", alloc),]
+        docs![alloc, "let rec ", print_defn(self, "=", alloc),]
     }
 }
