@@ -245,6 +245,9 @@ impl<'tcx> SimplePropagator<'tcx> {
                       self.prop.insert(l.local, op);
                       self.dead.insert(l.local);
                     }
+                Statement::Assignment(_, RValue::Ghost(_), _) => {
+                    out_stmts.push(s)
+                }
                 Statement::Assignment(ref l, ref r, _) if self.should_erase(l.local) && r.is_pure() => {
                       self.dead.insert(l.local);
                 }
