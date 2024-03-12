@@ -17,12 +17,18 @@ module Core_Ptr_Unique_Unique_Type
     | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
-module Alloc_RawVec_RawVec_Type
+module Alloc_RawVec_Cap_Type
   use prelude.UIntSize
   use prelude.Int
+  type t_cap  =
+    | C_Cap usize
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
   use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
   type t_rawvec 't 'a =
-    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
     
 end
 module Alloc_Vec_Vec_Type
@@ -555,7 +561,7 @@ module C08Haystack_Search
   }
   BB10 {
     [#"../08_haystack.rs" 33 11 33 25] _0 <- ([#"../08_haystack.rs" 33 11 33 25] len0 haystack);
-    goto BB30
+    goto BB31
   }
   BB11 {
     goto BB13
@@ -618,53 +624,51 @@ module C08Haystack_Search
   }
   BB22 {
     [#"../08_haystack.rs" 31 15 31 16] _0 <- i;
-    goto BB31
+    goto BB32
   }
   BB23 {
-    goto BB24
-  }
-  BB24 {
-    [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem1 <- Core_Option_Option_Type.some_0 _45;
-    [#"../08_haystack.rs" 24 8 24 68] _50 <- ([#"../08_haystack.rs" 24 8 24 68] Snapshot.new (Seq.(++) (Snapshot.inner produced1) (Seq.singleton __creusot_proc_iter_elem1)));
     goto BB25
   }
+  BB24 {
+    assert { [#"../08_haystack.rs" 24 8 24 68] false };
+    absurd
+  }
   BB25 {
+    [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem1 <- Core_Option_Option_Type.some_0 _45;
+    [#"../08_haystack.rs" 24 8 24 68] _50 <- ([#"../08_haystack.rs" 24 8 24 68] Snapshot.new (Seq.(++) (Snapshot.inner produced1) (Seq.singleton __creusot_proc_iter_elem1)));
+    goto BB26
+  }
+  BB26 {
     [#"../08_haystack.rs" 24 8 24 68] produced1 <- _50;
     _50 <- any Snapshot.snap_ty (Seq.seq usize);
     [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] j <- __creusot_proc_iter_elem1;
     [#"../08_haystack.rs" 26 21 26 24] _55 <- ([#"../08_haystack.rs" 26 21 26 24] index0 needle j);
-    goto BB26
-  }
-  BB26 {
-    [#"../08_haystack.rs" 26 37 26 42] _61 <- i + j;
-    [#"../08_haystack.rs" 26 36 26 43] _59 <- ([#"../08_haystack.rs" 26 36 26 43] index0 haystack _61);
-    _61 <- any usize;
     goto BB27
   }
   BB27 {
-    [#"../08_haystack.rs" 26 15 26 43] _53 <- _55 <> _59;
-    switch (_53)
-      | False -> goto BB29
-      | True -> goto BB28
-      end
+    [#"../08_haystack.rs" 26 37 26 42] _61 <- i + j;
+    [#"../08_haystack.rs" 26 36 26 43] _59 <- ([#"../08_haystack.rs" 26 36 26 43] index0 haystack _61);
+    _61 <- any usize;
+    goto BB28
   }
   BB28 {
-    goto BB7
+    [#"../08_haystack.rs" 26 15 26 43] _53 <- _55 <> _59;
+    switch (_53)
+      | False -> goto BB30
+      | True -> goto BB29
+      end
   }
   BB29 {
-    goto BB19
+    goto BB7
   }
   BB30 {
-    goto BB31
+    goto BB19
   }
   BB31 {
+    goto BB32
+  }
+  BB32 {
     return _0
-  }
-  BB33 {
-    goto BB12
-  }
-  BB34 {
-    goto BB12
   }
   
 end

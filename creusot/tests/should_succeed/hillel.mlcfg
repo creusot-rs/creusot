@@ -17,12 +17,18 @@ module Core_Ptr_Unique_Unique_Type
     | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
-module Alloc_RawVec_RawVec_Type
+module Alloc_RawVec_Cap_Type
   use prelude.UIntSize
   use prelude.Int
+  type t_cap  =
+    | C_Cap usize
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
   use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
   type t_rawvec 't 'a =
-    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
     
 end
 module Alloc_Vec_Vec_Type
@@ -1097,11 +1103,11 @@ module Hillel_InsertUnique
     goto BB18
   }
   BB17 {
-    assert { [@expl:type invariant] inv4 _28 };
-    assume { resolve6 _28 };
     assume { resolve8 iter };
     assert { [@expl:type invariant] inv6 elem };
     assume { resolve9 elem };
+    assert { [@expl:type invariant] inv4 _28 };
+    assume { resolve6 _28 };
     assert { [@expl:type invariant] inv7 vec };
     assume { resolve10 vec };
     assert { [#"../hillel.rs" 84 4 84 111] false };
@@ -1759,7 +1765,7 @@ end
 module Hillel_Score_Impl
   use prelude.Int
   function abs_diff0 (self : int) (other : int) : int =
-    [#"../../../../creusot-contracts/src/logic/int.rs" 50 4 50 12] if self < other then other - self else self - other
+    [#"../../../../creusot-contracts/src/logic/int.rs" 51 4 51 12] if self < other then other - self else self - other
   val abs_diff0 (self : int) (other : int) : int
     ensures { result = abs_diff0 self other }
     
@@ -2029,7 +2035,7 @@ module Hillel_Fulcrum
   axiom inv0 : forall x : Core_Slice_Iter_Iter_Type.t_iter uint32 . inv0 x = true
   use prelude.Snapshot
   function abs_diff1 (self : int) (other : int) : int =
-    [#"../../../../creusot-contracts/src/logic/int.rs" 50 4 50 12] if self < other then other - self else self - other
+    [#"../../../../creusot-contracts/src/logic/int.rs" 51 4 51 12] if self < other then other - self else self - other
   val abs_diff1 (self : int) (other : int) : int
     ensures { result = abs_diff1 self other }
     
@@ -2323,56 +2329,54 @@ module Hillel_Fulcrum
     return _0
   }
   BB20 {
-    goto BB21
-  }
-  BB21 {
-    [#"../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem1 <- Core_Option_Option_Type.some_0 _50;
-    [#"../hillel.rs" 171 4 171 58] _55 <- ([#"../hillel.rs" 171 4 171 58] Snapshot.new (Seq.(++) (Snapshot.inner produced1) (Seq.singleton __creusot_proc_iter_elem1)));
     goto BB22
   }
+  BB21 {
+    assert { [#"../hillel.rs" 171 4 171 58] false };
+    absurd
+  }
   BB22 {
+    [#"../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem1 <- Core_Option_Option_Type.some_0 _50;
+    [#"../hillel.rs" 171 4 171 58] _55 <- ([#"../hillel.rs" 171 4 171 58] Snapshot.new (Seq.(++) (Snapshot.inner produced1) (Seq.singleton __creusot_proc_iter_elem1)));
+    goto BB23
+  }
+  BB23 {
     [#"../hillel.rs" 171 4 171 58] produced1 <- _55;
     _55 <- any Snapshot.snap_ty (Seq.seq usize);
     [#"../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] i <- __creusot_proc_iter_elem1;
     [#"../hillel.rs" 177 32 177 43] _60 <- total - sum;
     [#"../hillel.rs" 177 19 177 44] dist <- ([#"../hillel.rs" 177 19 177 44] abs_diff0 sum _60);
     _60 <- any uint32;
-    goto BB23
-  }
-  BB23 {
-    [#"../hillel.rs" 178 11 178 26] _64 <- dist < min_dist;
-    switch (_64)
-      | False -> goto BB25
-      | True -> goto BB24
-      end
+    goto BB24
   }
   BB24 {
+    [#"../hillel.rs" 178 11 178 26] _64 <- dist < min_dist;
+    switch (_64)
+      | False -> goto BB26
+      | True -> goto BB25
+      end
+  }
+  BB25 {
     [#"../hillel.rs" 179 12 179 21] min_i <- i;
     [#"../hillel.rs" 180 12 180 27] min_dist <- dist;
     [#"../hillel.rs" 178 27 181 9] _63 <- ([#"../hillel.rs" 178 27 181 9] ());
-    goto BB26
-  }
-  BB25 {
-    [#"../hillel.rs" 181 9 181 9] _63 <- ([#"../hillel.rs" 181 9 181 9] ());
-    goto BB26
+    goto BB27
   }
   BB26 {
+    [#"../hillel.rs" 181 9 181 9] _63 <- ([#"../hillel.rs" 181 9 181 9] ());
+    goto BB27
+  }
+  BB27 {
     [#"../hillel.rs" 183 17 183 18] _70 <- i;
     [#"../hillel.rs" 183 15 183 19] _71 <- Slice.length s;
     [#"../hillel.rs" 183 15 183 19] _72 <- _70 < _71;
     assert { [@expl:index in bounds] [#"../hillel.rs" 183 15 183 19] _72 };
-    goto BB27
+    goto BB28
   }
-  BB27 {
+  BB28 {
     [#"../hillel.rs" 183 8 183 19] sum <- sum + Slice.get s _70;
     [#"../hillel.rs" 176 24 184 5] _18 <- ([#"../hillel.rs" 176 24 184 5] ());
     goto BB16
-  }
-  BB29 {
-    goto BB9
-  }
-  BB30 {
-    goto BB9
   }
   
 end

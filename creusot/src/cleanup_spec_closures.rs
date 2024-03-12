@@ -159,7 +159,8 @@ pub fn remove_ghost_closures<'tcx>(tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
             let Rvalue::Aggregate(box AggregateKind::Closure(def_id, _), _) = rhs else {
                 return;
             };
-            if util::is_no_translate(self.tcx, *def_id) || util::is_snapshot_closure(self.tcx, *def_id)
+            if util::is_no_translate(self.tcx, *def_id)
+                || util::is_snapshot_closure(self.tcx, *def_id)
             {
                 statement.kind = StatementKind::Nop
             }

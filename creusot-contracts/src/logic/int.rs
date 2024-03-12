@@ -4,6 +4,7 @@ use crate::{
 };
 
 #[cfg_attr(creusot, rustc_diagnostic_item = "creusot_int", creusot::builtins = "prelude.Int.int")]
+#[allow(dead_code)]
 pub struct Int(*mut ());
 
 impl Int {

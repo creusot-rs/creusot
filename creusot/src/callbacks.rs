@@ -2,7 +2,7 @@ use rustc_borrowck::consumers::{BodyWithBorrowckFacts, ConsumerOptions};
 use rustc_driver::{Callbacks, Compilation};
 use rustc_hir::def_id::LocalDefId;
 use rustc_interface::{interface::Compiler, Config, Queries};
-use rustc_middle::{mir::dump_mir, ty::TyCtxt};
+use rustc_middle::ty::TyCtxt;
 
 use std::{cell::RefCell, collections::HashMap, thread_local};
 
