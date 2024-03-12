@@ -128,7 +128,7 @@ pub(crate) fn translate_closure<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
 ) -> (CloneSummary<'tcx>, Module, Option<Module>) {
-    assert!(ctx.is_closure(def_id));
+    assert!(ctx.is_closure_or_coroutine(def_id));
     let (summary, func) = translate_function(ctx, def_id);
     (summary, closure_ty(ctx, def_id), func)
 }
@@ -146,7 +146,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     };
     let body = to_why(ctx, &mut names, body_ids[0]);
 
-    if ctx.tcx.is_closure(def_id) {
+    if ctx.tcx.is_closure_or_coroutine(def_id) {
         closure_aux_defs(ctx, def_id)
     };
 
@@ -206,7 +206,7 @@ fn lower_promoted<'tcx>(
     body_id: BodyId,
 ) -> Decl {
     let promoted = promoted::translate_promoted(ctx, body_id);
-    let (sig, fmir) = promoted.unwrap_or_else(|e| e.emit(ctx.tcx.sess));
+    let (sig, fmir) = promoted.unwrap_or_else(|e| e.emit(ctx.tcx));
 
     let mut sig = sig_to_why3(ctx, names, &sig, body_id.def_id());
     sig.name = format!("promoted{:?}", body_id.promoted.unwrap().as_usize()).into();
@@ -791,7 +791,7 @@ fn func_call_to_why3<'tcx>(
     let mut args: Vec<_> = args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
     let fname = names.value(id, subst);
 
-    let exp = if ctx.is_closure(id) {
+    let exp = if ctx.is_closure_or_coroutine(id) {
         assert!(args.len() == 2, "closures should only have two arguments (env, args)");
 
         let real_sig = ctx.signature_unclosure(subst.as_closure().sig(), Unsafety::Normal);

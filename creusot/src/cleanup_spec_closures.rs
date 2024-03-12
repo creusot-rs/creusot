@@ -3,8 +3,8 @@ use rustc_hir::def_id::DefId;
 use rustc_index::{Idx, IndexVec};
 use rustc_middle::{
     mir::{
-        visit::MutVisitor, AggregateKind, BasicBlock, BasicBlockData, Body, Local, Location,
-        Rvalue, SourceInfo, Terminator, TerminatorKind,
+        dump_mir, visit::MutVisitor, AggregateKind, BasicBlock, BasicBlockData, Body, Local,
+        Location, Rvalue, SourceInfo, StatementKind, Terminator, TerminatorKind,
     },
     ty::TyCtxt,
 };
@@ -18,11 +18,13 @@ use crate::util;
 /// To prevent the closures from intererring with the borrow checking of the surrounding environment, we replace the MIR body of the closure with an empty loop and remove all of the arguments to the closure in the surrounding MIR.
 pub(crate) fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body: &mut Body<'tcx>) {
     trace!("cleanup_spec_closures: {:?}", def_id);
+
     if util::no_mir(tcx, def_id) {
         trace!("replacing function body");
         *body.basic_blocks_mut() = make_loop(tcx);
         body.var_debug_info = Vec::new();
     } else {
+        // dump_mir(tcx, false, "speccleanup", &"before", &body, |_, _| Ok(()));
         let mut cleanup = NoTranslateNoMoves { tcx, unused: IndexSet::new() };
         cleanup.visit_body(body);
 
@@ -32,12 +34,11 @@ pub(crate) fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body
         updater.visit_body(body);
 
         body.local_decls.shrink_to_fit();
+        dump_mir(tcx, false, "speccleanup", &"after", &body, |_, _| Ok(()));
     }
 }
 
 fn cleanup_statements<'tcx>(body: &mut Body<'tcx>, unused: &IndexSet<Local>) {
-    use rustc_middle::mir::StatementKind;
-
     for data in body.basic_blocks_mut() {
         data.statements.retain(|statement| match &statement.kind {
             StatementKind::StorageLive(local) | StatementKind::StorageDead(local) => {
@@ -89,6 +90,7 @@ impl<'tcx> MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
                             if let Some(loc) = place.as_local() {
                                 self.unused.insert(loc);
                             }
+                            // *p = Operand::Copy(place);
                         }
                     });
                     *substs = IndexVec::new();
@@ -136,4 +138,34 @@ impl<'tcx> MutVisitor<'tcx> for LocalUpdater<'tcx> {
     fn visit_local(&mut self, l: &mut Local, _: PlaceContext, _: Location) {
         *l = self.map[*l].unwrap();
     }
+}
+
+pub fn remove_ghost_closures<'tcx>(tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
+    struct RemoveGhostItems<'tcx> {
+        tcx: TyCtxt<'tcx>,
+    }
+
+    impl<'tcx> MutVisitor<'tcx> for RemoveGhostItems<'tcx> {
+        fn tcx<'a>(&'a self) -> TyCtxt<'tcx> {
+            self.tcx
+        }
+
+        fn visit_statement(
+            &mut self,
+            statement: &mut rustc_middle::mir::Statement<'tcx>,
+            _: Location,
+        ) {
+            let StatementKind::Assign(box (_, rhs)) = &statement.kind else { return };
+            let Rvalue::Aggregate(box AggregateKind::Closure(def_id, _), _) = rhs else {
+                return;
+            };
+            if util::is_no_translate(self.tcx, *def_id)
+                || util::is_snapshot_closure(self.tcx, *def_id)
+            {
+                statement.kind = StatementKind::Nop
+            }
+        }
+    }
+
+    RemoveGhostItems { tcx }.visit_body(body);
 }

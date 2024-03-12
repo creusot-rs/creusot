@@ -34,7 +34,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
                 // if the lhs local becomes resolved during the assignment,
                 // we cannot resolve it afterwards.
-                if let Some(resolved_during) = &mut resolved_during && !pl.is_indirect() {
+                if let Some(resolved_during) = &mut resolved_during
+                    && !pl.is_indirect()
+                {
                     resolved_during.remove(pl.local);
                 }
             }
@@ -52,11 +54,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Deinit(_) => unreachable!("Deinit unsupported"),
             PlaceMention(_) => {}
-            ConstEvalCounter => {}
-            // No assembly!
-            // LlvmInlineAsm(_) => self
-            //     .ctx
-            //     .crash_and_error(statement.source_info.span, "inline assembly is not supported"),
+            ConstEvalCounter => {} // No assembly!
+                                   // LlvmInlineAsm(_) => self
+                                   //     .ctx
+                                   //     .crash_and_error(statement.source_info.span, "inline assembly is not supported"),
         }
 
         if let Some(resolved_during) = resolved_during {
@@ -85,7 +86,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
             },
             Rvalue::Ref(_, ss, pl) => match ss {
-                Shared | Shallow => {
+                Shared | Fake => {
                     if self.erased_locals.contains(pl.local) {
                         return;
                     }
@@ -172,7 +173,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             ),
 
             Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize), op, ty) => {
-                if let Some(t) = ty.builtin_deref(true) && t.ty.is_slice() {
+                if let Some(t) = ty.builtin_deref(true)
+                    && t.ty.is_slice()
+                {
                     // treat &[T; N] to &[T] casts as normal assignments
                     RValue::Operand(self.translate_operand(op))
                 } else {

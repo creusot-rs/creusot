@@ -15,7 +15,7 @@ use rustc_middle::ty::{
     GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
-use rustc_type_ir::sty::TyKind::*;
+use rustc_type_ir::TyKind::*;
 use std::collections::VecDeque;
 use why3::{
     declaration::{
@@ -455,7 +455,7 @@ pub(crate) fn ty_param_names(
     mut def_id: DefId,
 ) -> impl Iterator<Item = Ident> + '_ {
     loop {
-        if tcx.is_closure(def_id) {
+        if tcx.is_closure_or_coroutine(def_id) {
             def_id = tcx.parent(def_id);
         } else {
             break;

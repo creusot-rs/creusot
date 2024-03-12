@@ -8,8 +8,6 @@ use rustc_middle::{
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::VariantIdx;
 
-pub use rustc_span::DUMMY_SP;
-
 #[derive(Clone, Debug)]
 pub struct Place<'tcx> {
     pub(crate) local: Symbol,

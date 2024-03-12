@@ -55,7 +55,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeLiveExceptDrop {
 
     fn call_return_effect(
         &mut self,
-        trans: &mut impl GenKill<Self::Idx>,
+        trans: &mut Self::Domain,
         _block: mir::BasicBlock,
         return_places: CallReturnPlaces<'_, 'tcx>,
     ) {
@@ -186,7 +186,7 @@ impl DefUse {
                 | NonMutatingUseContext::Copy
                 | NonMutatingUseContext::Inspect
                 | NonMutatingUseContext::Move
-                | NonMutatingUseContext::ShallowBorrow
+                | NonMutatingUseContext::FakeBorrow
                 | NonMutatingUseContext::SharedBorrow
                 | NonMutatingUseContext::PlaceMention,
             ) => Some(DefUse::Use),

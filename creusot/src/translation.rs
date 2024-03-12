@@ -81,7 +81,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
     debug!("after_analysis_translate: {:?}", start.elapsed());
     let start = Instant::now();
 
-    if why3.sess.has_errors().is_some() {
+    if why3.dcx().has_errors().is_some() {
         return Err(Box::new(CrErr));
     }
 
@@ -121,7 +121,9 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
         let tcx = why3.tcx;
         let modules = why3.modules();
         let modules = modules.flat_map(|(id, item)| {
-            if let TransId::Item(did) = id && tcx.def_path_str(did).contains(matcher) {
+            if let TransId::Item(did) = id
+                && tcx.def_path_str(did).contains(matcher)
+            {
                 item.modules()
             } else {
                 Box::new(std::iter::empty())

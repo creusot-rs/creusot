@@ -67,7 +67,9 @@ pub(crate) fn is_snapshot_closure(tcx: TyCtxt, def_id: DefId) -> bool {
 }
 
 pub(crate) fn snapshot_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
-    if let TyKind::Closure(def_id, _) = ty.peel_refs().kind() && is_snapshot_closure(tcx, *def_id) {
+    if let TyKind::Closure(def_id, _) = ty.peel_refs().kind()
+        && is_snapshot_closure(tcx, *def_id)
+    {
         Some(*def_id)
     } else {
         None
@@ -151,7 +153,7 @@ pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::A
 }
 
 pub(crate) fn param_def_id(tcx: TyCtxt, def_id: LocalDefId) -> LocalDefId {
-    if is_spec(tcx, def_id.to_def_id()) && tcx.is_closure(def_id.to_def_id()) {
+    if is_spec(tcx, def_id.to_def_id()) && tcx.is_closure_or_coroutine(def_id.to_def_id()) {
         tcx.parent(def_id.to_def_id()).expect_local()
     } else {
         def_id
@@ -164,7 +166,7 @@ pub(crate) fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
             return false;
         }
 
-        if tcx.is_closure(def_id) {
+        if tcx.is_closure_or_coroutine(def_id) {
             def_id = tcx.parent(def_id);
         } else {
             return true;
@@ -389,9 +391,8 @@ pub(crate) fn inputs_and_output<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
 ) -> (impl Iterator<Item = (symbol::Ident, Ty<'tcx>)>, Ty<'tcx>) {
-    let (inputs, output): (Box<dyn Iterator<Item = (rustc_span::symbol::Ident, _)>>, _) = match tcx
-        .type_of(def_id)
-        .instantiate_identity()
+    let ty = tcx.type_of(def_id).instantiate_identity();
+    let (inputs, output): (Box<dyn Iterator<Item = (rustc_span::symbol::Ident, _)>>, _) = match ty
         .kind()
     {
         TyKind::FnDef(..) => {
@@ -403,7 +404,7 @@ pub(crate) fn inputs_and_output<'tcx>(
         TyKind::Closure(_, subst) => {
             let sig = tcx.signature_unclosure(subst.as_closure().sig(), Unsafety::Normal);
             let sig = tcx.normalize_erasing_late_bound_regions(tcx.param_env(def_id), sig);
-            let env_ty = tcx.closure_env_ty(def_id, subst, tcx.lifetimes.re_erased).unwrap();
+            let env_ty = tcx.closure_env_ty(ty, subst.as_closure().kind(), tcx.lifetimes.re_erased);
 
             // I wish this could be called "self"
             let closure_env = (symbol::Ident::empty(), env_ty);
@@ -454,12 +455,16 @@ pub(crate) fn pre_sig_of<'tcx>(
         });
     }
 
-    if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).instantiate_identity().kind() {
+    let fn_ty = ctx.tcx.type_of(def_id).instantiate_identity();
+
+    if let TyKind::Closure(_, subst) = fn_ty.kind() {
         let self_ = Symbol::intern("_1");
         let mut pre_subst = closure_capture_subst(ctx.tcx, def_id, subst, None, self_);
 
         let mut s = HashMap::new();
-        let env_ty = ctx.closure_env_ty(def_id, subst, ctx.lifetimes.re_erased).unwrap();
+        let kind = subst.as_closure().kind();
+
+        let env_ty = ctx.closure_env_ty(fn_ty, kind, ctx.lifetimes.re_erased);
         s.insert(
             self_,
             if env_ty.is_ref() { Term::var(self_, env_ty).cur() } else { Term::var(self_, env_ty) },
@@ -469,8 +474,6 @@ pub(crate) fn pre_sig_of<'tcx>(
 
             pre.subst(&s);
         }
-
-        let kind = subst.as_closure().kind();
 
         if kind == ClosureKind::FnMut {
             let args = subst.as_closure().sig().inputs().skip_binder()[0];
@@ -749,7 +752,7 @@ pub(crate) fn closure_capture_subst<'tcx>(
     self_name: Symbol,
 ) -> ClosureSubst<'tcx> {
     let mut fun_def_id = def_id;
-    while tcx.is_closure(fun_def_id) {
+    while tcx.is_closure_or_coroutine(fun_def_id) {
         fun_def_id = tcx.parent(fun_def_id);
     }
 

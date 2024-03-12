@@ -368,21 +368,25 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Literal { lit, neg } => {
                 let lit = match lit.node {
                     LitKind::Bool(b) => Literal::Bool(b),
-                    LitKind::Int(u, lty) => match lty {
-                        LitIntType::Signed(ity) => {
-                            let val = if neg { (u as i128).wrapping_neg() } else { u as i128 };
-                            Literal::MachSigned(val, int_ty(ity))
-                        }
-                        LitIntType::Unsigned(uty) => Literal::MachUnsigned(u, uint_ty(uty)),
-                        LitIntType::Unsuffixed => match ty.kind() {
-                            TyKind::Int(ity) => {
+                    LitKind::Int(u, lty) => {
+                        let u = u.get();
+                        match lty {
+                            LitIntType::Signed(ity) => {
                                 let val = if neg { (u as i128).wrapping_neg() } else { u as i128 };
-                                Literal::MachSigned(val, *ity)
+                                Literal::MachSigned(val, int_ty(ity))
                             }
-                            TyKind::Uint(uty) => Literal::MachUnsigned(u, *uty),
-                            _ => unreachable!(),
-                        },
-                    },
+                            LitIntType::Unsigned(uty) => Literal::MachUnsigned(u, uint_ty(uty)),
+                            LitIntType::Unsuffixed => match ty.kind() {
+                                TyKind::Int(ity) => {
+                                    let val =
+                                        if neg { (u as i128).wrapping_neg() } else { u as i128 };
+                                    Literal::MachSigned(val, *ity)
+                                }
+                                TyKind::Uint(uty) => Literal::MachUnsigned(u, *uty),
+                                _ => unreachable!(),
+                            },
+                        }
+                    }
                     _ => unimplemented!("Unsupported literal"),
                 };
                 Ok(Term { ty, span, kind: TermKind::Lit(lit) })
@@ -1607,7 +1611,7 @@ fn print_thir_expr<'tcx>(
         ExprKind::Borrow { borrow_kind, arg } => {
             match borrow_kind {
                 BorrowKind::Shared => write!(fmt, "& ")?,
-                BorrowKind::Shallow => write!(fmt, "&shallow ")?,
+                BorrowKind::Fake => write!(fmt, "&fake ")?,
                 BorrowKind::Mut { .. } => write!(fmt, "&mut ")?,
             };
 

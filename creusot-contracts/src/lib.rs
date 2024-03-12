@@ -203,9 +203,9 @@ mod macros {
     /// This means you cannot `#[open]` a body which refers to a `pub(crate)` symbol.
     pub use creusot_contracts_dummy::open;
 
-    pub use creusot_contracts_proc::DeepModel;
+    pub use creusot_contracts_dummy::DeepModel;
 
-    pub use creusot_contracts_proc::Resolve;
+    pub use creusot_contracts_dummy::Resolve;
 }
 
 #[cfg(creusot)]

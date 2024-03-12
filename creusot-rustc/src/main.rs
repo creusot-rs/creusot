@@ -14,9 +14,9 @@ extern crate log;
 use creusot::callbacks::*;
 use options::CreusotArgs;
 use rustc_driver::{RunCompiler, DEFAULT_LOCALE_RESOURCES};
-use rustc_errors::emitter::EmitterWriter;
+use rustc_errors::emitter::HumanEmitter;
 use rustc_interface::interface::try_print_query_stack;
-use rustc_session::{config::ErrorOutputType, EarlyErrorHandler};
+use rustc_session::{config::ErrorOutputType, EarlyDiagCtxt};
 use std::{env, panic, panic::PanicInfo, process::Command};
 
 const BUG_REPORT_URL: &'static str = &"https://github.com/xldenis/creusot/issues/new";
@@ -37,10 +37,10 @@ fn report_panic(info: &PanicInfo) {
     let fallback_bundle =
         rustc_errors::fallback_fluent_bundle(DEFAULT_LOCALE_RESOURCES.to_vec(), false);
 
-    let emitter = Box::new(EmitterWriter::stderr(rustc_errors::ColorConfig::Auto, fallback_bundle));
-    let handler = rustc_errors::Handler::with_emitter(emitter);
+    let emitter = Box::new(HumanEmitter::stderr(rustc_errors::ColorConfig::Auto, fallback_bundle));
+    let handler = rustc_errors::DiagCtxt::with_emitter(emitter);
 
-    let mut diagnostic = handler.struct_note_without_error("Creusot has panic-ed!");
+    let mut diagnostic = handler.struct_note("Creusot has panic-ed!");
     diagnostic.note("Oops, that shouldn't have happened, sorry about that.");
     diagnostic.note(format!("Please report this bug over here: {}", BUG_REPORT_URL));
 
@@ -58,7 +58,7 @@ struct DefaultCallbacks;
 impl rustc_driver::Callbacks for DefaultCallbacks {}
 
 fn main() {
-    let handler = EarlyErrorHandler::new(ErrorOutputType::default());
+    let handler = EarlyDiagCtxt::new(ErrorOutputType::default());
     rustc_driver::init_rustc_env_logger(&handler);
     env_logger::init();
     lazy_static::initialize(&ICE_HOOK);
@@ -107,6 +107,7 @@ fn setup_plugin() {
         args.push("-Zcrate-attr=feature(rustc_attrs)".to_owned());
         args.push("-Zcrate-attr=feature(unsized_fn_params)".to_owned());
         args.push("--allow=internal_features".to_owned());
+        args.push("-Zdump-mir=speccleanup".to_owned());
         args.extend(["--cfg", "creusot"].into_iter().map(str::to_owned));
         debug!("creusot args={:?}", args);
 
@@ -137,7 +138,7 @@ fn _emit_warning(text: String) {
     let fallback_bundle =
         rustc_errors::fallback_fluent_bundle(DEFAULT_LOCALE_RESOURCES.to_vec(), false);
 
-    let emitter = Box::new(EmitterWriter::stderr(rustc_errors::ColorConfig::Auto, fallback_bundle));
-    let handler = rustc_errors::Handler::with_emitter(emitter);
+    let emitter = Box::new(HumanEmitter::stderr(rustc_errors::ColorConfig::Auto, fallback_bundle));
+    let handler = rustc_errors::DiagCtxt::with_emitter(emitter);
     handler.warn(text);
 }
