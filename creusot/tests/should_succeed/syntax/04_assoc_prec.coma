@@ -1,0 +1,33 @@
+
+module C04AssocPrec_RespectPrec
+  use prelude.UInt32
+  use prelude.Int
+  use prelude.Intrinsic
+  predicate resolve1 (self : uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
+  let rec resolve1 (self:uint32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : (uint32, uint32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve1 (let (_, a) = self in a)
+  let rec resolve0 (self:(uint32, uint32)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec respect_prec (x:(uint32, uint32)) (return'  (ret:()))= (! bb0 
+    [ bb0 = -{resolve0 x}- [ &_0 <- [#"../04_assoc_prec.rs" 10 35 10 37] () ] return' {_0}  ]
+    ) 
+    [ return' (result:())-> {[#"../04_assoc_prec.rs" 9 10 9 20] (let (a, _) = x in a) = (let (_, a) = x in a)}
+      {[#"../04_assoc_prec.rs" 8 10 8 35] div (5 * 3) 2 <> 4 * (40 + 1)}
+      {[#"../04_assoc_prec.rs" 7 0 7 33] 5 = 3  -> 2 + 1 = 3}
+      (! return' {_0}) ]
+    [ & _0 : () = any_l () : () | & x : (uint32, uint32) = x ] 
+end
+module C04AssocPrec_RespectAssoc
+  use prelude.Int
+  use prelude.Intrinsic
+  let rec respect_assoc (_1:()) (return'  (ret:()))= (! bb0 
+    [ bb0 = [ &_0 <- [#"../04_assoc_prec.rs" 13 23 13 25] () ] return' {_0}  ]
+    ) [ return' (result:())-> {[#"../04_assoc_prec.rs" 12 10 12 28] 0 + 1 = 0} (! return' {_0}) ] 
+    [ & _0 : () = any_l () : () ]
+    
+end

@@ -1,0 +1,218 @@
+
+module VecInv_SumTo10_Type
+  use prelude.Int32
+  use prelude.Int
+  type t_sumto10  =
+    | C_SumTo10 int32 int32
+    
+  function any_l (_ : 'b) : 'a
+  function sumto10_a (self : t_sumto10) : int32 =
+    match self with
+      | C_SumTo10 a _ -> a
+      end
+  function sumto10_b (self : t_sumto10) : int32 =
+    match self with
+      | C_SumTo10 _ a -> a
+      end
+end
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.Opaque
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+    
+  function any_l (_ : 'b) : 'a
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+    
+  function any_l (_ : 'b) : 'a
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_RawVec_Cap_Type
+  use prelude.UIntSize
+  use prelude.Int
+  type t_cap  =
+    | C_Cap usize
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_Vec_Vec_Type
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+    
+  function any_l (_ : 'b) : 'a
+end
+module VecInv_Vec
+  use prelude.Int
+  use prelude.Int32
+  use VecInv_SumTo10_Type as VecInv_SumTo10_Type
+  predicate invariant4 [#"../vec_inv.rs" 12 4 12 30] (self : VecInv_SumTo10_Type.t_sumto10) =
+    [#"../vec_inv.rs" 13 20 13 43] Int32.to_int (VecInv_SumTo10_Type.sumto10_a self) + Int32.to_int (VecInv_SumTo10_Type.sumto10_b self) = 10
+  let rec invariant4 (self:VecInv_SumTo10_Type.t_sumto10) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ]
+    
+  predicate inv5 (_x : VecInv_SumTo10_Type.t_sumto10)
+  let rec inv5 (_x:VecInv_SumTo10_Type.t_sumto10) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ]
+    
+  axiom inv5 : forall x : VecInv_SumTo10_Type.t_sumto10 . inv5 x = (invariant4 x /\ match x with
+    | VecInv_SumTo10_Type.C_SumTo10 a b -> true
+    end)
+  use prelude.Borrow
+  predicate invariant3 (self : borrowed (VecInv_SumTo10_Type.t_sumto10)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant3 (self:borrowed (VecInv_SumTo10_Type.t_sumto10)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
+    
+  predicate inv4 (_x : borrowed (VecInv_SumTo10_Type.t_sumto10))
+  let rec inv4 (_x:borrowed (VecInv_SumTo10_Type.t_sumto10)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ]
+    
+  axiom inv4 : forall x : borrowed (VecInv_SumTo10_Type.t_sumto10) . inv4 x = (inv5 ( * x) /\ inv5 ( ^ x))
+  use prelude.Slice
+  predicate invariant1 (self : slice (borrowed (VecInv_SumTo10_Type.t_sumto10))) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant1 (self:slice (borrowed (VecInv_SumTo10_Type.t_sumto10))) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  use seq.Seq
+  use seq.Seq
+  predicate inv1 (_x : Seq.seq (borrowed (VecInv_SumTo10_Type.t_sumto10)))
+  let rec inv1 (_x:Seq.seq (borrowed (VecInv_SumTo10_Type.t_sumto10))) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  use prelude.Slice
+  use prelude.UIntSize
+  use prelude.UIntSize
+  constant max0 : usize = (18446744073709551615 : usize)
+  use seq.Seq
+  predicate inv3 (_x : slice (borrowed (VecInv_SumTo10_Type.t_sumto10)))
+  let rec inv3 (_x:slice (borrowed (VecInv_SumTo10_Type.t_sumto10))) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
+    
+  function shallow_model3 (self : slice (borrowed (VecInv_SumTo10_Type.t_sumto10))) : Seq.seq (borrowed (VecInv_SumTo10_Type.t_sumto10))
+    
+  let rec shallow_model3 (self:slice (borrowed (VecInv_SumTo10_Type.t_sumto10))) (return'  (ret:Seq.seq (borrowed (VecInv_SumTo10_Type.t_sumto10))))= {[#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv3 self}
+    any 
+    [ return' (result:Seq.seq (borrowed (VecInv_SumTo10_Type.t_sumto10)))-> {result = shallow_model3 self}
+      (! return' {result}) ]
+    
+  axiom shallow_model3_spec : forall self : slice (borrowed (VecInv_SumTo10_Type.t_sumto10)) . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv3 self)
+   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv1 (shallow_model3 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model3 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model3 self) <= UIntSize.to_int (max0 : usize))
+  function index_logic2 [@inline:trivial] (self : slice (borrowed (VecInv_SumTo10_Type.t_sumto10))) (ix : int) : borrowed (VecInv_SumTo10_Type.t_sumto10)
+    
+   =
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (shallow_model3 self) ix
+  let rec index_logic2 (self:slice (borrowed (VecInv_SumTo10_Type.t_sumto10))) (ix:int) (return'  (ret:borrowed (VecInv_SumTo10_Type.t_sumto10)))= any
+    
+    [ return' (result:borrowed (VecInv_SumTo10_Type.t_sumto10))-> {result = index_logic2 self ix} (! return' {result}) ]
+    
+  function slice_len0 (x : slice (borrowed (VecInv_SumTo10_Type.t_sumto10))) : int =
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 48 4 48 26] Seq.length (shallow_model3 x)
+  let rec slice_len0 (x:slice (borrowed (VecInv_SumTo10_Type.t_sumto10))) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = slice_len0 x} (! return' {result}) ]
+    
+  use prelude.UInt64
+  axiom inv3 : forall x : slice (borrowed (VecInv_SumTo10_Type.t_sumto10)) . inv3 x = (forall i : uint64 . 0 <= i
+   -> i < slice_len0 x  -> inv4 (index_logic2 x i))
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  predicate invariant2 (self : Alloc_RawVec_RawVec_Type.t_rawvec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global))
+    
+   =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant2 (self:Alloc_RawVec_RawVec_Type.t_rawvec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ] 
+  predicate inv2 (_x : Alloc_RawVec_RawVec_Type.t_rawvec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global))
+    
+  let rec inv2 (_x:Alloc_RawVec_RawVec_Type.t_rawvec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ] 
+  axiom inv2 : forall x : Alloc_RawVec_RawVec_Type.t_rawvec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global) . inv2 x = true
+  axiom inv1 : forall x : Seq.seq (borrowed (VecInv_SumTo10_Type.t_sumto10)) . inv1 x = (forall i : int . 0 <= i
+   -> i < Seq.length x  -> inv4 (Seq.get x i))
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate inv0 (_x : Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global))
+    
+  let rec inv0 (_x:Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  function shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (borrowed (VecInv_SumTo10_Type.t_sumto10))
+    
+  let rec shallow_model1 (self:Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq (borrowed (VecInv_SumTo10_Type.t_sumto10))))= {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self}
+    any 
+    [ return' (result:Seq.seq (borrowed (VecInv_SumTo10_Type.t_sumto10)))-> {result = shallow_model1 self}
+      (! return' {result}) ]
+    
+  axiom shallow_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv1 (shallow_model1 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model1 self) <= UIntSize.to_int (max0 : usize))
+  predicate invariant0 (self : Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global))
+    
+   =
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv1 (shallow_model1 self)
+  let rec invariant0 (self:Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ] 
+  axiom inv0 : forall x : Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global) . inv0 x = (invariant0 x /\ match x with
+    | Alloc_Vec_Vec_Type.C_Vec buf len -> true
+    end)
+  use prelude.Intrinsic
+  predicate resolve1 (self : borrowed (VecInv_SumTo10_Type.t_sumto10)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed (VecInv_SumTo10_Type.t_sumto10)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  function index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global)) (ix : int) : borrowed (VecInv_SumTo10_Type.t_sumto10)
+    
+   =
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model1 self) ix
+  let rec index_logic0 (self:Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:borrowed (VecInv_SumTo10_Type.t_sumto10)))= any
+    
+    [ return' (result:borrowed (VecInv_SumTo10_Type.t_sumto10))-> {result = index_logic0 self ix} (! return' {result}) ]
+    
+  predicate resolve0 (self : Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global))
+    
+   =
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model1 self)
+     -> resolve1 (index_logic0 self i)
+  let rec resolve0 (self:Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ] 
+  let rec vec (x:Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:()))= {[#"../vec_inv.rs" 18 11 18 12] inv0 x}
+    {[#"../vec_inv.rs" 17 11 17 23] Seq.length (shallow_model1 x) > 0}
+    (! bb0 
+    [ bb3 = return' {_0} 
+    | bb2 = [ &_0 <- [#"../vec_inv.rs" 18 33 20 1] () ] bb3 
+    | bb1 = {[@expl:assertion] [#"../vec_inv.rs" 19 20 19 43] Int32.to_int (VecInv_SumTo10_Type.sumto10_a ( * index_logic0 x 0)) + Int32.to_int (VecInv_SumTo10_Type.sumto10_b ( * index_logic0 x 0)) = 10}
+      bb2 
+    | bb0 = {[@expl:type invariant] inv0 x}
+      -{resolve0 x}- bb1  ]
+    ) [ return' (result:())-> (! return' {_0}) ] 
+    [ & _0 : () = any_l () : ()
+    | & x : Alloc_Vec_Vec_Type.t_vec (borrowed (VecInv_SumTo10_Type.t_sumto10)) (Alloc_Alloc_Global_Type.t_global) = x ]
+    
+end
+module VecInv_Impl0
+  
+end

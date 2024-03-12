@@ -9,27 +9,27 @@ use crate::{
         ty::{self, translate_closure_ty, translate_ty},
     },
     ctx::{BodyId, CloneMap, TranslationCtx},
-    fmir::{BorrowKind, Operand},
+    fmir::{Body, BorrowKind, Operand},
     translation::{
-        binop_to_binop,
         fmir::{self, Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
         function::promoted,
         unop_to_unop,
     },
-    util::{self, module_name, ItemType},
+    util::{self, module_name},
 };
-use rustc_hir::{def_id::DefId, Unsafety};
+use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{BasicBlock, BinOp, ProjectionElem},
-    ty::{GenericArgsRef, Ty, TyKind},
+    mir::{self, BasicBlock, BinOp, ProjectionElem},
+    ty::{AdtDef, GenericArgsRef, Ty, TyKind},
 };
 use rustc_span::{Span, DUMMY_SP};
-use rustc_type_ir::{IntTy, UintTy};
+use rustc_target::abi::VariantIdx;
+use rustc_type_ir::{FloatTy, IntTy, UintTy};
 use why3::{
-    declaration::{self, Attribute, CfgFunction, Decl, LetDecl, LetKind, Module},
+    coma::{self, Arg, Defn, Param},
+    declaration::{Attribute, Decl, LetDecl, LetKind, Module, Signature},
     exp::{Constant, Exp, Pattern},
-    mlcfg,
-    mlcfg::BlockId,
+    ty::Type,
     Ident, QName,
 };
 
@@ -212,6 +212,7 @@ fn lower_promoted<'tcx>(
     sig.name = format!("promoted{:?}", body_id.promoted.unwrap().as_usize()).into();
 
     let mut previous_block = None;
+
     let mut exp = Exp::var("_0");
     for (id, bbd) in fmir.blocks.into_iter().rev() {
         // Safety check
@@ -231,19 +232,75 @@ fn lower_promoted<'tcx>(
         let exps: Vec<_> =
             bbd.stmts.into_iter().map(|s| s.to_why(ctx, names, &fmir.locals)).flatten().collect();
         exp = exps.into_iter().rfold(exp, |acc, asgn| match asgn {
-            why3::mlcfg::Statement::Assign { lhs, rhs, attr: _ } => {
-                Exp::Let { pattern: Pattern::VarP(lhs), arg: Box::new(rhs), body: Box::new(acc) }
+            IntermediateStmt::Assign(ident, exp) => {
+                Exp::Let { pattern: Pattern::VarP(ident), arg: Box::new(exp), body: Box::new(acc) }
             }
-            why3::mlcfg::Statement::Assume(_) => acc,
-            why3::mlcfg::Statement::Invariant(_)
-            | why3::mlcfg::Statement::Variant(_)
-            | why3::mlcfg::Statement::Assert(_) => {
+            IntermediateStmt::Call(_, _, _, _) => todo!("promoted call"),
+            IntermediateStmt::Assume(_) => acc,
+            IntermediateStmt::Assert(_) => {
                 ctx.crash_and_error(ctx.def_span(body_id.def_id()), "unsupported promoted constant")
             }
+            IntermediateStmt::Any(_, _) => todo!(),
+            // why3::mlcfg::Statement::Assign { lhs, rhs, attr: _ } => {
+            //     Exp::Let { pattern: Pattern::VarP(lhs), arg: Box::new(rhs), body: Box::new(acc) }
+            // }
+            // why3::mlcfg::Statement::Assume(_) => acc,
+            // why3::mlcfg::Statement::Invariant(_)
+            // | why3::mlcfg::Statement::Variant(_)
+            // | why3::mlcfg::Statement::Assert(_) => {
+            //     ctx.crash_and_error(ctx.def_span(body_id.def_id()), "unsupported promoted constant")
+            // }
         });
     }
 
-    Decl::Let(LetDecl { sig, rec: false, kind: Some(LetKind::Constant), body: exp, ghost: false })
+    Decl::ConstantDecl(why3::declaration::Constant {
+        name: sig.name,
+        type_: sig.retty.unwrap(),
+        body: exp,
+    })
+}
+
+pub fn val<'tcx>(_: &mut Why3Generator<'tcx>, sig: Signature) -> Decl {
+    let params = sig
+        .args
+        .into_iter()
+        .flat_map(|b| b.var_type_pairs())
+        .map(|(v, ty)| Param::Term(v, ty))
+        .chain([Param::Cont(
+            "return".into(),
+            Vec::new(),
+            vec![Param::Term("ret".into(), sig.retty.clone().unwrap())],
+        )])
+        .collect();
+
+    use coma::*;
+    let mut body = Expr::Any;
+
+    body = sig
+        .contract
+        .requires
+        .into_iter()
+        .fold(body, |acc, ensures| Expr::Assert(Box::new(ensures), Box::new(acc)));
+
+    let mut postcond = Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("result"))]);
+    postcond = Expr::BlackBox(Box::new(postcond));
+    postcond = sig
+        .contract
+        .ensures
+        .into_iter()
+        .fold(postcond, |acc, ensures| Expr::Assert(Box::new(ensures), Box::new(acc)));
+
+    let body = Expr::Defn(
+        Box::new(body),
+        false,
+        vec![Defn {
+            name: "return".into(),
+            writes: Vec::new(),
+            params: vec![Param::Term("result".into(), sig.retty.clone().unwrap())],
+            body: postcond,
+        }],
+    );
+    why3::declaration::Decl::Coma(Defn { name: sig.name, writes: Vec::new(), params, body })
 }
 
 pub fn to_why<'tcx>(
@@ -256,36 +313,103 @@ pub fn to_why<'tcx>(
     let usage = optimization::gather_usage(&body);
     optimization::simplify_fmir(usage, &mut body);
 
-    let blocks = body
-        .blocks
+    use petgraph::graphmap::DiGraphMap;
+
+    fn node_graph(x: &Body) -> petgraph::graphmap::DiGraphMap<BasicBlock, ()> {
+        let mut graph = DiGraphMap::default();
+        for (bb, data) in &x.blocks {
+            graph.add_node(*bb);
+            for tgt in data.terminator.targets() {
+                graph.add_edge(*bb, tgt, ());
+            }
+        }
+
+        graph
+    }
+
+    let sccs = petgraph::algo::tarjan_scc(&node_graph(&body));
+
+    let blocks: Vec<Defn> = sccs
         .into_iter()
-        .map(|(bb, bbd)| (BlockId(bb.into()), bbd.to_why(ctx, names, &body.locals)))
+        .map(|mut scc| {
+            let id = scc.remove(scc.len() - 1);
+            let block = body.blocks.remove(&id).unwrap();
+            let defns = scc
+                .into_iter()
+                .map(|id| body.blocks.remove(&id).unwrap().to_why(ctx, names, &body.locals, id))
+                .collect();
+
+            let block = block.to_why(ctx, names, &body.locals, id);
+            Defn {
+                name: format!("bb{}", id.as_u32()).into(),
+                writes: Vec::new(),
+                params: Vec::new(),
+                body: Expr::Defn(Box::new(block.body), true, defns),
+            }
+        })
         .collect();
 
     let vars: Vec<_> = body
         .locals
         .into_iter()
         .map(|(id, decl)| {
-            let init = if decl.arg { Some(Exp::var(Ident::build(id.as_str()))) } else { None };
-            (
-                false,
-                Ident::build(id.as_str()),
-                ty::translate_ty(ctx, names, decl.span, decl.ty),
-                init,
-            )
+            let ty = ty::translate_ty(ctx, names, decl.span, decl.ty);
+
+            let init = if decl.arg {
+                Exp::var(Ident::build(id.as_str()))
+            } else {
+                names.import_prelude_module(PreludeModule::Intrinsic);
+                Exp::var("any_l").app_to(Exp::Tuple(Vec::new())).ascribe(ty.clone())
+            };
+            coma::Var(Ident::build(id.as_str()), ty.clone(), init, coma::IsRef::Ref)
         })
         .collect();
+    use coma::Expr;
+    let body = Expr::Defn(Box::new(Expr::Symbol("bb0".into())), true, blocks);
+    let sig = signature_of(ctx, names, body_id.def_id());
 
-    let entry =
-        mlcfg::Block { statements: Vec::new(), terminator: mlcfg::Terminator::Goto(BlockId(0)) };
+    let mut postcond = Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("_0"))]);
 
-    let mut sig = signature_of(ctx, names, body_id.def_id());
-    if matches!(util::item_type(ctx.tcx, body_id.def_id()), ItemType::Program | ItemType::Closure) {
-        sig.attrs.push(declaration::Attribute::Attr("cfg:stackify".into()));
-        sig.attrs.push(declaration::Attribute::Attr("cfg:subregion_analysis".into()));
-    };
+    postcond = Expr::BlackBox(Box::new(postcond));
+    postcond = sig
+        .contract
+        .ensures
+        .into_iter()
+        .fold(postcond, |acc, ensures| Expr::Assert(Box::new(ensures), Box::new(acc)));
 
-    Decl::CfgDecl(CfgFunction { sig, rec: true, constant: false, entry, blocks, vars })
+    let mut body = Expr::Defn(
+        Box::new(Expr::BlackBox(Box::new(body))),
+        false,
+        vec![Defn {
+            name: "return".into(),
+            writes: Vec::new(),
+            params: vec![Param::Term("result".into(), sig.retty.clone().unwrap())],
+            body: postcond,
+        }],
+    );
+
+    body = sig
+        .contract
+        .requires
+        .into_iter()
+        .fold(body, |acc, req| Expr::Assert(Box::new(req), Box::new(acc)));
+
+    let body = Expr::Let(Box::new(body), vars);
+
+    let params = sig
+        .args
+        .into_iter()
+        .flat_map(|b| b.var_type_pairs())
+        .map(|(v, ty)| Param::Term(v, ty))
+        .chain([Param::Cont(
+            "return".into(),
+            Vec::new(),
+            vec![Param::Term("ret".into(), sig.retty.unwrap())],
+        )])
+        .collect();
+    Decl::Coma(coma::Defn { name: sig.name, writes: Vec::new(), params, body })
+
+    // Decl::CfgDecl(CfgFunction { sig, rec: true, constant: false, entry, blocks, vars })
 }
 
 impl<'tcx> Operand<'tcx> {
@@ -323,34 +447,41 @@ impl<'tcx> RValue<'tcx> {
             }
             RValue::BinOp(BinOp::Eq, l, r) if l.ty(ctx.tcx, locals).is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
-                Exp::qvar(QName::from_string("Bool.eqb").unwrap())
+
+                Exp::qvar(QName::from_string("Bool.eq").unwrap())
                     .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
             RValue::BinOp(BinOp::Ne, l, r) if l.ty(ctx.tcx, locals).is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
-                Exp::qvar(QName::from_string("Bool.neqb").unwrap())
+
+                Exp::qvar(QName::from_string("Bool.ne").unwrap())
                     .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
-            RValue::BinOp(op, l, r) => {
-                let ty = l.ty(ctx.tcx, locals);
-                // Hack
-                translate_ty(ctx, names, DUMMY_SP, ty);
-
-                Exp::BinaryOp(
-                    binop_to_binop(ctx, ty, op),
-                    Box::new(l.to_why(ctx, names, locals)),
-                    Box::new(r.to_why(ctx, names, locals)),
-                )
+            RValue::BinOp(_, _, _) => {
+                // let ty = l.ty(ctx.tcx, locals);
+                // // Hack
+                // translate_ty(ctx, names, DUMMY_SP, ty);
+                unreachable!()
+                // let op_ty = l.ty(ctx.tcx, locals);
+                // // Hack
+                // translate_ty(ctx, names, DUMMY_SP, op_ty);
             }
             RValue::UnaryOp(op, arg) => Exp::UnaryOp(
                 unop_to_unop(arg.ty(ctx.tcx, locals), op),
                 Box::new(arg.to_why(ctx, names, locals)),
             ),
+
             RValue::Constructor(id, subst, args) => {
+                let needs_ty = ctx.generics_of(id).count() > 0 && args.len() == 0;
                 let args = args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
 
                 let ctor = names.constructor(id, subst);
-                Exp::Constructor { ctor, args }
+                let cons = Exp::Constructor { ctor, args };
+                if needs_ty {
+                    cons.ascribe(translate_ty(ctx, names, DUMMY_SP, ty))
+                } else {
+                    cons
+                }
             }
             RValue::Tuple(f) => {
                 Exp::Tuple(f.into_iter().map(|f| f.to_why(ctx, names, locals)).collect())
@@ -435,8 +566,7 @@ impl<'tcx> RValue<'tcx> {
     /// Gather the set of places which are moved out of by an expression
     fn invalidated_places(&self, places: &mut Vec<fmir::Place<'tcx>>) {
         match &self {
-            RValue::Operand(Operand::Move(p)) => places.push(p.clone()),
-            RValue::Operand(_) => {}
+            RValue::Operand(op) => op.invalidated_places(places),
             RValue::BinOp(_, l, r) => {
                 l.invalidated_places(places);
                 r.invalidated_places(places)
@@ -515,20 +645,20 @@ impl<'tcx> Terminator<'tcx> {
         ctx: &mut Why3Generator<'tcx>,
         names: &mut CloneMap<'tcx>,
         locals: &LocalDecls<'tcx>,
-        statements: &mut Vec<mlcfg::Statement>,
-    ) -> why3::mlcfg::Terminator {
-        use why3::mlcfg::Terminator::*;
+    ) -> coma::Expr {
+        use coma::*;
         match self {
-            Terminator::Goto(bb) => Goto(BlockId(bb.into())),
+            Terminator::Goto(bb) => Expr::Symbol(format!("bb{}", bb.as_usize()).into()),
             Terminator::Switch(switch, branches) => {
                 let discr = switch.to_why(ctx, names, locals);
                 branches.to_why(ctx, names, discr)
             }
-            Terminator::Return => Return,
+            Terminator::Return => {
+                Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("_0"))])
+            }
             Terminator::Abort(span) => {
                 let exp = ctx.attach_span(span, Exp::mk_false());
-                statements.push(mlcfg::Statement::Assert(exp));
-                Absurd
+                Expr::Assert(Box::new(exp), Box::new(Expr::Any))
             }
         }
     }
@@ -540,56 +670,127 @@ impl<'tcx> Branches<'tcx> {
         _ctx: &mut Why3Generator<'tcx>,
         names: &mut CloneMap<'tcx>,
         discr: Exp,
-    ) -> mlcfg::Terminator {
-        use why3::mlcfg::Terminator::*;
-
+    ) -> coma::Expr {
+        use coma::Expr;
         match self {
             Branches::Int(brs, def) => {
-                brs.into_iter().rfold(Goto(BlockId(def.into())), |acc, (val, bb)| {
-                    Switch(
-                        discr.clone().eq(Exp::Const(why3::exp::Constant::Int(val, None))),
-                        vec![
-                            (Pattern::mk_true(), Goto(BlockId(bb.into()))),
-                            (Pattern::mk_false(), acc),
-                        ],
-                    )
-                })
+                let mut brs = mk_switch_branches(
+                    discr,
+                    brs.into_iter().map(|(val, tgt)| (Exp::int(val), mk_goto(tgt))).collect(),
+                );
+
+                brs.push(Defn {
+                    name: "default".into(),
+                    writes: Vec::new(),
+                    params: Vec::new(),
+                    body: Expr::BlackBox(Box::new(mk_goto(def))),
+                });
+                Expr::Defn(Box::new(Expr::Any), false, brs)
             }
             Branches::Uint(brs, def) => {
-                brs.into_iter().rfold(Goto(BlockId(def.into())), |acc, (val, bb)| {
-                    Switch(
-                        discr.clone().eq(Exp::Const(why3::exp::Constant::Uint(val, None))),
-                        vec![
-                            (Pattern::mk_true(), Goto(BlockId(bb.into()))),
-                            (Pattern::mk_false(), acc),
-                        ],
-                    )
-                })
-            }
-            Branches::Constructor(adt, substs, vars, def) => {
-                let count = adt.variants().len();
-                let brs = vars
-                    .into_iter()
-                    .map(|(var, bb)| {
-                        let variant = &adt.variant(var);
-                        let wilds = variant.fields.iter().map(|_| Pattern::Wildcard).collect();
-                        let cons_name = names.constructor(variant.def_id, substs);
-                        (Pattern::ConsP(cons_name, wilds), Goto(BlockId(bb.into())))
-                    })
-                    .chain(std::iter::once((Pattern::Wildcard, Goto(BlockId(def.into())))))
-                    .take(count);
+                let mut brs = mk_switch_branches(
+                    discr,
+                    brs.into_iter().map(|(val, tgt)| (Exp::uint(val), mk_goto(tgt))).collect(),
+                );
 
-                Switch(discr, brs.collect())
+                brs.push(Defn {
+                    name: "default".into(),
+                    writes: Vec::new(),
+                    params: Vec::new(),
+                    body: Expr::BlackBox(Box::new(mk_goto(def))),
+                });
+                Expr::Defn(Box::new(Expr::Any), false, brs)
             }
-            Branches::Bool(f, t) => Switch(
-                discr,
-                vec![
-                    (Pattern::mk_false(), Goto(BlockId(f.into()))),
-                    (Pattern::mk_true(), Goto(BlockId(t.into()))),
-                ],
-            ),
+            Branches::Constructor(adt, _substs, vars, def) => {
+                let mut brs = mk_adt_switch(
+                    _ctx,
+                    names,
+                    adt,
+                    _substs,
+                    discr,
+                    vars.into_iter().map(|(var, bb)| (var, mk_goto(bb))).collect(),
+                );
+
+                brs.push(Defn {
+                    name: "default".into(),
+                    writes: Vec::new(),
+                    params: Vec::new(),
+                    body: Expr::BlackBox(Box::new(mk_goto(def))),
+                });
+                Expr::Defn(Box::new(Expr::Any), false, brs)
+            }
+            Branches::Bool(f, t) => {
+                let brs = mk_switch_branches(
+                    discr,
+                    vec![(Exp::mk_false(), mk_goto(f)), (Exp::mk_true(), mk_goto(t))],
+                );
+
+                Expr::Defn(Box::new(Expr::Any), false, brs)
+            }
         }
     }
+}
+
+fn mk_goto(bb: BasicBlock) -> coma::Expr {
+    coma::Expr::Symbol(format!("bb{}", bb.as_u32()).into())
+}
+
+fn mk_adt_switch<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    adt: AdtDef<'tcx>,
+    subst: GenericArgsRef<'tcx>,
+    discr: Exp,
+    brch: Vec<(VariantIdx, coma::Expr)>,
+) -> Vec<coma::Defn> {
+    let mut out = Vec::new();
+
+    for (c, (ix, tgt)) in brch.into_iter().enumerate() {
+        let var = &adt.variants()[ix];
+
+        let params: Vec<coma::Param> = ('a'..)
+            .zip(var.fields.iter())
+            .map(|(nm, field)| {
+                Param::Term(
+                    nm.to_string().into(),
+                    translate_ty(ctx, names, DUMMY_SP, field.ty(ctx.tcx, subst)),
+                )
+            })
+            .collect();
+
+        let cons = names.constructor(var.def_id, subst);
+
+        let filter = Exp::qvar(cons)
+            .app(params.iter().zip('a'..).map(|(_, nm)| Exp::var(nm.to_string())).collect());
+        let filter = coma::Expr::Assert(
+            Box::new(discr.clone().eq(filter)),
+            Box::new(coma::Expr::BlackBox(Box::new(tgt))),
+        );
+
+        let branch =
+            coma::Defn { name: format!("br{c}").into(), writes: Vec::new(), params, body: filter };
+        out.push(branch)
+    }
+    out
+}
+
+fn mk_switch_branches(discr: Exp, brch: Vec<(Exp, coma::Expr)>) -> Vec<coma::Defn> {
+    let mut out = Vec::new();
+    for (ix, (cond, tgt)) in brch.into_iter().enumerate() {
+        let filter = coma::Expr::Assert(
+            Box::new(discr.clone().eq(cond)),
+            Box::new(coma::Expr::BlackBox(Box::new(tgt))),
+        );
+
+        let branch = coma::Defn {
+            name: format!("br{ix}").into(),
+            writes: Vec::new(),
+            params: Vec::new(),
+            body: filter,
+        };
+        out.push(branch)
+    }
+    out
 }
 
 impl<'tcx> Block<'tcx> {
@@ -598,20 +799,56 @@ impl<'tcx> Block<'tcx> {
         ctx: &mut Why3Generator<'tcx>,
         names: &mut CloneMap<'tcx>,
         locals: &LocalDecls<'tcx>,
-    ) -> why3::mlcfg::Block {
-        let mut statements = Vec::new();
+        id: BasicBlock,
+    ) -> coma::Defn {
+        // for v in self.variant.into_iter() {
+        //     statements.push(mlcfg::Statement::Variant(lower_pure(ctx, names, &v)));
+        // }
 
-        for v in self.variant.into_iter() {
-            statements.push(mlcfg::Statement::Variant(lower_pure(ctx, names, &v)));
+        let terminator = self.terminator.to_why(ctx, names, locals);
+        let statements = self.stmts.into_iter().flat_map(|s| s.to_why(ctx, names, locals));
+        use coma::*;
+        let mut body = statements.rfold(terminator, |tail, stmt| match stmt {
+            IntermediateStmt::Assign(id, exp) => tail.assign(id, exp),
+            IntermediateStmt::Call(dest, ty, fun, args) => {
+                let c = Expr::Lambda(vec![coma::Param::Term(dest, ty)], Box::new(tail));
+
+                args.into_iter()
+                    .chain(std::iter::once(Arg::Cont(c)))
+                    .fold(fun, |acc, arg| Expr::App(Box::new(acc), Box::new(arg)))
+            }
+            IntermediateStmt::Assume(e) => {
+                use coma::*;
+                let assume = Expr::Assume(Box::new(e), Box::new(tail));
+                assume
+            }
+            IntermediateStmt::Assert(e) => Expr::Assert(Box::new(e), Box::new(tail)),
+            IntermediateStmt::Any(id, ty) => Expr::Defn(
+                Box::new(Expr::Any),
+                false,
+                vec![Defn {
+                    name: "any_".into(),
+                    writes: vec![],
+                    params: vec![Param::Term(id, ty)],
+                    body: tail,
+                }],
+            ),
+        });
+
+        if !self.invariants.is_empty() {
+            body = Expr::BlackBox(Box::new(body));
         }
 
         for i in self.invariants {
-            statements.push(mlcfg::Statement::Invariant(lower_pure(ctx, names, &i)));
+            body = Expr::Assert(Box::new(lower_pure(ctx, names, &i)), Box::new(body));
         }
 
-        statements.extend(self.stmts.into_iter().flat_map(|s| s.to_why(ctx, names, locals)));
-        let terminator = self.terminator.to_why(ctx, names, locals, &mut statements);
-        mlcfg::Block { statements, terminator }
+        coma::Defn {
+            name: format!("bb{}", id.as_usize()).into(),
+            writes: Vec::new(),
+            params: Vec::new(),
+            body,
+        }
     }
 }
 
@@ -660,24 +897,72 @@ pub(crate) fn borrow_generated_id<V: std::fmt::Debug, T: std::fmt::Debug>(
     borrow_id
 }
 
+pub(crate) enum IntermediateStmt {
+    // [ id = E] K
+    Assign(Ident, Exp),
+    // E [ARGS] (id : ty -> K)
+    Call(Ident, Type, coma::Expr, Vec<coma::Arg>),
+    // -{ E }- K
+    Assume(Exp),
+    // { E } K
+    Assert(Exp),
+
+    Any(Ident, Type),
+}
+
 impl<'tcx> Statement<'tcx> {
     pub(crate) fn to_why(
         self,
         ctx: &mut Why3Generator<'tcx>,
         names: &mut CloneMap<'tcx>,
         locals: &LocalDecls<'tcx>,
-    ) -> Vec<mlcfg::Statement> {
+    ) -> Vec<IntermediateStmt> {
         match self {
-            Statement::Assignment(lhs, RValue::Borrow(BorrowKind::Mut, rhs), span) => {
-                let borrow = Exp::Call(
-                    Box::new(Exp::qvar(QName::from_string("Borrow.borrow_mut").unwrap())),
-                    vec![rhs.as_rplace(ctx, names, locals)],
-                );
-                let reassign = Exp::Final(Box::new(lhs.as_rplace(ctx, names, locals)));
+            Statement::Assignment(lhs, RValue::BinOp(op, l, r), span) => {
+                let (dest, rhs) =
+                    place::create_assign_inner(ctx, names, locals, &lhs, Exp::var("_ret'"), span);
+                let fname = binop_to_binop(names, l.ty(ctx.tcx, locals), op);
+                // TODO Switch coma ast to QNames
+                let call = coma::Expr::Symbol(fname);
 
                 vec![
-                    place::create_assign_inner(ctx, names, locals, &lhs, borrow, span),
-                    place::create_assign_inner(ctx, names, locals, &rhs, reassign, span),
+                    IntermediateStmt::Call(
+                        "_ret'".into(),
+                        translate_ty(ctx, names, DUMMY_SP, lhs.ty(ctx.tcx, locals)),
+                        call,
+                        vec![
+                            Arg::Term(l.to_why(ctx, names, locals)),
+                            Arg::Term(r.to_why(ctx, names, locals)),
+                        ],
+                    ),
+                    IntermediateStmt::Assign(dest, rhs),
+                ]
+            }
+            Statement::Assignment(lhs, RValue::Borrow(BorrowKind::Mut, rhs), span) => {
+                let borrow_mut =
+                    coma::Expr::Symbol(QName::from_string("Borrow.borrow_mut").unwrap());
+                let args = vec![
+                    Arg::Ty(translate_ty(ctx, names, DUMMY_SP, rhs.ty(ctx.tcx, locals))),
+                    Arg::Term(rhs.as_rplace(ctx, names, locals)),
+                ];
+                let reassign = Exp::Final(Box::new(lhs.as_rplace(ctx, names, locals)));
+
+                let ty = lhs.ty(ctx.tcx, locals);
+                let (lender, rhs2) =
+                    place::create_assign_inner(ctx, names, locals, &rhs, reassign, span);
+                let (dest, rhs) =
+                    place::create_assign_inner(ctx, names, locals, &lhs, Exp::var("_ret'"), span);
+                let borrow_call = IntermediateStmt::Call(
+                    "_ret'".into(),
+                    translate_ty(ctx, names, DUMMY_SP, ty),
+                    borrow_mut,
+                    args,
+                );
+
+                vec![
+                    borrow_call,
+                    IntermediateStmt::Assign(dest, rhs),
+                    IntermediateStmt::Assign(lender, rhs2),
                 ]
             }
             Statement::Assignment(
@@ -690,44 +975,71 @@ impl<'tcx> Statement<'tcx> {
                     projection: rhs.projection[..deref_index].to_vec(),
                 }
                 .as_rplace(ctx, names, locals);
+
+                let ty = lhs.ty(ctx.tcx, locals);
+
                 let borrow_id =
                     borrow_generated_id(original_borrow, &rhs.projection[deref_index + 1..]);
-                let borrow = Exp::Call(
-                    Box::new(Exp::qvar(QName::from_string("Borrow.borrow_final").unwrap())),
-                    vec![rhs.as_rplace(ctx, names, locals), borrow_id],
-                );
                 let reassign = Exp::Final(Box::new(lhs.as_rplace(ctx, names, locals)));
 
-                vec![
-                    place::create_assign_inner(ctx, names, locals, &lhs, borrow, span),
-                    place::create_assign_inner(ctx, names, locals, &rhs, reassign, span),
-                ]
+                let assign1 = {
+                    let (dest, rhs) = place::create_assign_inner(
+                        ctx,
+                        names,
+                        locals,
+                        &lhs,
+                        Exp::var("_ret'"),
+                        span,
+                    );
+                    IntermediateStmt::Assign(dest, rhs)
+                };
+
+                let assign2 = {
+                    let (lhs, rhs) =
+                        place::create_assign_inner(ctx, names, locals, &rhs, reassign, span);
+                    IntermediateStmt::Assign(lhs, rhs)
+                };
+
+                let borrow_mut =
+                    coma::Expr::Symbol(QName::from_string("Borrow.borrow_final").unwrap());
+
+                let args = vec![
+                    Arg::Ty(translate_ty(ctx, names, DUMMY_SP, rhs.ty(ctx.tcx, locals))),
+                    Arg::Term(rhs.as_rplace(ctx, names, locals)),
+                    Arg::Term(borrow_id),
+                ];
+
+                let borrow_call = IntermediateStmt::Call(
+                    "_ret'".into(),
+                    translate_ty(ctx, names, DUMMY_SP, ty),
+                    borrow_mut,
+                    args,
+                );
+
+                vec![borrow_call, assign1, assign2]
             }
-            Statement::Assignment(lhs, rhs, span) => {
+            Statement::Assignment(lhs, e, span) => {
                 let mut invalid = Vec::new();
-                rhs.invalidated_places(&mut invalid);
-                let rhs = rhs.to_why(ctx, names, locals, lhs.ty(ctx.tcx, locals));
-                let mut exps =
-                    vec![place::create_assign_inner(ctx, names, locals, &lhs, rhs, span)];
+                e.invalidated_places(&mut invalid);
+
+                let rhs = e.to_why(ctx, names, locals, lhs.ty(ctx.tcx, locals));
+                let (lender, rhs) = place::create_assign_inner(ctx, names, locals, &lhs, rhs, span);
+                let mut exps = vec![IntermediateStmt::Assign(lender, rhs)];
                 invalidate_places(ctx, names, locals, span, invalid, &mut exps);
 
                 exps
             }
             Statement::Call(dest, fun_id, subst, args, span) => {
-                let mut invalid = Vec::new();
-                args.iter().for_each(|a| a.invalidated_places(&mut invalid));
+                let (fun_exp, args) = func_call_to_why3(ctx, names, locals, fun_id, subst, args);
+                let ty = dest.ty(ctx.tcx, locals);
+                let ty = translate_ty(ctx, names, span, ty);
+                let (dest, rhs) =
+                    place::create_assign_inner(ctx, names, locals, &dest, Exp::var("_ret'"), span);
 
-                let mut exp = func_call_to_why3(ctx, names, locals, fun_id, subst, args);
-
-                if let Some(attr) = ctx.span_attr(span) {
-                    exp = Exp::Attr(attr, Box::new(exp));
-                }
-
-                let mut exps =
-                    vec![place::create_assign_inner(ctx, names, locals, &dest, exp, span)];
-                invalidate_places(ctx, names, locals, span, invalid, &mut exps);
-
-                exps
+                vec![
+                    IntermediateStmt::Call("_ret'".into(), ty, fun_exp, args),
+                    IntermediateStmt::Assign(dest, rhs),
+                ]
             }
             Statement::Resolve(id, subst, pl) => {
                 ctx.translate(id);
@@ -735,10 +1047,10 @@ impl<'tcx> Statement<'tcx> {
                 let rp = Exp::qvar(names.value(id, subst));
 
                 let assume = rp.app_to(pl.as_rplace(ctx, names, locals));
-                vec![mlcfg::Statement::Assume(assume)]
+                vec![IntermediateStmt::Assume(assume)]
             }
             Statement::Assertion { cond, msg } => {
-                vec![mlcfg::Statement::Assert(Exp::Attr(
+                vec![IntermediateStmt::Assert(Exp::Attr(
                     Attribute::Attr(format!("expl:{msg}")),
                     Box::new(lower_pure(ctx, names, &cond)),
                 ))]
@@ -749,7 +1061,7 @@ impl<'tcx> Statement<'tcx> {
                 );
                 let arg = Exp::Final(Box::new(pl.as_rplace(ctx, names, locals)));
 
-                vec![mlcfg::Statement::Assume(inv_fun.app_to(arg))]
+                vec![IntermediateStmt::Assume(inv_fun.app_to(arg))]
             }
             Statement::AssertTyInv(pl) => {
                 let inv_fun = Exp::qvar(names.ty_inv(pl.ty(ctx.tcx, locals)));
@@ -759,7 +1071,13 @@ impl<'tcx> Statement<'tcx> {
                     Box::new(inv_fun.app_to(arg)),
                 );
 
-                vec![mlcfg::Statement::Assert(exp)]
+                vec![IntermediateStmt::Assert(exp)]
+            }
+            Statement::Assignment(lhs, RValue::Ghost(rhs), span) => {
+                let ghost = lower_pure(ctx, names, &rhs);
+                let (lhs, rhs) = place::create_assign_inner(ctx, names, locals, &lhs, ghost, span);
+
+                vec![IntermediateStmt::Assign(lhs, rhs)]
             }
         }
     }
@@ -771,12 +1089,17 @@ fn invalidate_places<'tcx>(
     locals: &LocalDecls<'tcx>,
     span: Span,
     invalid: Vec<Place<'tcx>>,
-    out: &mut Vec<mlcfg::Statement>,
+    out: &mut Vec<IntermediateStmt>,
 ) {
+    // any (x -> lhs = x )
     for pl in invalid {
         let ty = pl.ty(ctx.tcx, locals);
         let ty = translate_ty(ctx, names, DUMMY_SP.substitute_dummy(span), ty);
-        out.push(place::create_assign_inner(ctx, names, locals, &pl, Exp::Any(ty), DUMMY_SP));
+
+        let (lhs, rhs) =
+            place::create_assign_inner(ctx, names, locals, &pl, Exp::var("_any"), DUMMY_SP);
+        out.push(IntermediateStmt::Any("_any".into(), ty));
+        out.push(IntermediateStmt::Assign(lhs, rhs));
     }
 }
 
@@ -787,33 +1110,85 @@ fn func_call_to_why3<'tcx>(
     id: DefId,
     subst: GenericArgsRef<'tcx>,
     args: Vec<Operand<'tcx>>,
-) -> Exp {
-    let mut args: Vec<_> = args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
+) -> (coma::Expr, Vec<coma::Arg>) {
+    let args: Vec<_> = args
+        .into_iter()
+        .map(|a| a.to_why(ctx, names, locals))
+        .map(|a| coma::Arg::Term(a))
+        .collect();
+
     let fname = names.value(id, subst);
 
-    let exp = if ctx.is_closure_or_coroutine(id) {
-        assert!(args.len() == 2, "closures should only have two arguments (env, args)");
-
-        let real_sig = ctx.signature_unclosure(subst.as_closure().sig(), Unsafety::Normal);
-        let closure_arg_count = real_sig.inputs().skip_binder().len();
-        let names = ('a'..).take(closure_arg_count);
-
-        let mut closure_args = vec![args.remove(0)];
-
-        closure_args.extend(names.clone().map(|nm| Exp::var(nm.to_string())));
-
-        Exp::Let {
-            pattern: Pattern::TupleP(
-                names.map(|nm| Pattern::VarP(nm.to_string().into())).collect(),
-            ),
-            arg: Box::new(args.remove(0)),
-            body: Box::new(Exp::qvar(fname).app(closure_args)),
-        }
-    } else {
-        Exp::qvar(fname).app(args)
-    };
-    exp
+    (coma::Expr::Symbol(fname), args)
 }
+
+pub(crate) fn binop_to_binop(names: &mut CloneMap<'_>, ty: Ty, op: mir::BinOp) -> QName {
+    let prelude: PreludeModule = match ty.kind() {
+        TyKind::Int(ity) => int_to_prelude(*ity),
+        TyKind::Uint(uty) => uint_to_prelude(*uty),
+        TyKind::Float(FloatTy::F32) => PreludeModule::Float32,
+        TyKind::Float(FloatTy::F64) => PreludeModule::Float64,
+        TyKind::Bool => PreludeModule::Bool,
+        _ => unreachable!("non-primitive type for binary operation {op:?} {ty:?}"),
+    };
+
+    names.import_prelude_module(prelude);
+    let mut module = prelude.qname();
+
+    match op {
+        BinOp::Add => module.push_ident("add"),
+        BinOp::AddUnchecked => module.push_ident("add"),
+        BinOp::Sub => module.push_ident("sub"),
+        BinOp::SubUnchecked => module.push_ident("sub"),
+        BinOp::Mul => module.push_ident("mul"),
+        BinOp::MulUnchecked => module.push_ident("mul"),
+        BinOp::Div => module.push_ident("div"),
+        BinOp::Rem => module.push_ident("rem"),
+        BinOp::BitXor => module.push_ident("bw_xor"),
+        BinOp::BitAnd => module.push_ident("bw_and"),
+        BinOp::BitOr => module.push_ident("bw_or"),
+        BinOp::Shl => module.push_ident("shl"),
+        BinOp::ShlUnchecked => module.push_ident("shl"),
+        BinOp::Shr => module.push_ident("shr"),
+        BinOp::ShrUnchecked => module.push_ident("shr"),
+        BinOp::Eq => module.push_ident("eq"),
+        BinOp::Lt => module.push_ident("lt"),
+        BinOp::Le => module.push_ident("le"),
+        BinOp::Ne => module.push_ident("ne"),
+        BinOp::Ge => module.push_ident("ge"),
+        BinOp::Gt => module.push_ident("gt"),
+        BinOp::Offset => unimplemented!("pointer offsets are unsupported"),
+    };
+
+    module = module.without_search_path();
+    module
+}
+
+// pub(crate) fn unop_to_unop(ty: Ty, op: rustc_middle::mir::UnOp, e: Exp) -> Exp {
+//     let prelude: PreludeModule = match ty.kind() {
+//         TyKind::Int(ity) => int_to_prelude(*ity),
+//         TyKind::Uint(uty) => uint_to_prelude(*uty),
+//         TyKind::Float(FloatTy::F32) => PreludeModule::Float32,
+//         TyKind::Float(FloatTy::F64) => PreludeModule::Float64,
+//         TyKind::Bool => {
+//             assert_eq!(op, mir::UnOp::Not);
+//             PreludeModule::Bool
+//         }
+//         _ => unreachable!("non-primitive type for unary operation"),
+//     };
+
+//     let mut module = prelude.qname();
+
+//     match op {
+//         mir::UnOp::Not => Exp::UnaryOp(UnOp::Not, Box::new(e)),
+//         mir::UnOp::Neg => {
+//             module.push_ident("neg");
+
+//             module = module.without_search_path();
+//             Exp::imqvar(module).app_to(e)
+//         }
+//     }
+// }
 
 pub(crate) fn int_to_prelude(ity: IntTy) -> PreludeModule {
     match ity {

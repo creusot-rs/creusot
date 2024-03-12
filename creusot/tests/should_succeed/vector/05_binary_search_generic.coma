@@ -1,0 +1,453 @@
+
+module Core_Cmp_Ordering_Type
+  type t_ordering  =
+    | C_Less
+    | C_Equal
+    | C_Greater
+    
+  function any_l (_ : 'b) : 'a
+end
+module Core_Result_Result_Type
+  type t_result 't 'e =
+    | C_Ok 't
+    | C_Err 'e
+    
+  function any_l (_ : 'b) : 'a
+end
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.Opaque
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+    
+  function any_l (_ : 'b) : 'a
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+    
+  function any_l (_ : 'b) : 'a
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_RawVec_Cap_Type
+  use prelude.UIntSize
+  use prelude.Int
+  type t_cap  =
+    | C_Cap usize
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_Vec_Vec_Type
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+    
+  function any_l (_ : 'b) : 'a
+end
+module C05BinarySearchGeneric_BinarySearch
+  type t
+  type deep_model_ty0
+  predicate invariant7 (self : deep_model_ty0)
+  let rec invariant7 (self:deep_model_ty0) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant7 self} (! return' {result}) ]
+    
+  predicate inv7 (_x : deep_model_ty0)
+  let rec inv7 (_x:deep_model_ty0) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv7 _x} (! return' {result}) ]
+    
+  axiom inv7 : forall x : deep_model_ty0 . inv7 x = true
+  use seq.Seq
+  predicate invariant6 (self : Seq.seq deep_model_ty0)
+  let rec invariant6 (self:Seq.seq deep_model_ty0) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant6 self} (! return' {result}) ]
+    
+  predicate inv6 (_x : Seq.seq deep_model_ty0)
+  let rec inv6 (_x:Seq.seq deep_model_ty0) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv6 _x} (! return' {result}) ]
+    
+  axiom inv6 : forall x : Seq.seq deep_model_ty0 . inv6 x = true
+  predicate invariant5 (self : Seq.seq t)
+  let rec invariant5 (self:Seq.seq t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant5 self} (! return' {result}) ]
+    
+  predicate inv5 (_x : Seq.seq t)
+  let rec inv5 (_x:Seq.seq t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ]
+    
+  axiom inv5 : forall x : Seq.seq t . inv5 x = true
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use prelude.UIntSize
+  use prelude.UIntSize
+  use prelude.Int
+  constant max0 : usize = (18446744073709551615 : usize)
+  use seq.Seq
+  predicate inv4 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  let rec inv4 (_x:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ]
+    
+  function shallow_model2 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
+  let rec shallow_model2 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self}
+    any [ return' (result:Seq.seq t)-> {result = shallow_model2 self} (! return' {result}) ] 
+  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv5 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int (max0 : usize))
+  predicate invariant4 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv5 (shallow_model2 self)
+  let rec invariant4 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ]
+    
+  axiom inv4 : forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv4 x = true
+  predicate invariant3 (self : usize) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant3 (self:usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
+    
+  predicate inv3 (_x : usize)
+  let rec inv3 (_x:usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
+    
+  axiom inv3 : forall x : usize . inv3 x = true
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
+  function cmp_log0 (self : deep_model_ty0) (_2 : deep_model_ty0) : Core_Cmp_Ordering_Type.t_ordering
+  let rec cmp_log0 (self:deep_model_ty0) (_2:deep_model_ty0) (return'  (ret:Core_Cmp_Ordering_Type.t_ordering))= any 
+    [ return' (result:Core_Cmp_Ordering_Type.t_ordering)-> {result = cmp_log0 self _2} (! return' {result}) ]
+    
+  function eq_cmp0 (x : deep_model_ty0) (y : deep_model_ty0) : ()
+  let rec eq_cmp0 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/logic/ord.rs" 70 23 70 24] inv7 y}
+    {[#"../../../../../creusot-contracts/src/logic/ord.rs" 70 14 70 15] inv7 x}
+    any [ return' (result:())-> {result = eq_cmp0 x y} (! return' {result}) ] 
+  axiom eq_cmp0_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../../creusot-contracts/src/logic/ord.rs" 70 14 70 15] inv7 x)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 70 23 70 24] inv7 y)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 69 14 69 59] (x = y) = (cmp_log0 x y = Core_Cmp_Ordering_Type.C_Equal))
+  function antisym20 (x : deep_model_ty0) (y : deep_model_ty0) : ()
+  let rec antisym20 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/logic/ord.rs" 66 25 66 26] inv7 y}
+    {[#"../../../../../creusot-contracts/src/logic/ord.rs" 66 16 66 17] inv7 x}
+    {[#"../../../../../creusot-contracts/src/logic/ord.rs" 64 15 64 48] cmp_log0 x y = Core_Cmp_Ordering_Type.C_Greater}
+    any [ return' (result:())-> {result = antisym20 x y} (! return' {result}) ] 
+  axiom antisym20_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../../creusot-contracts/src/logic/ord.rs" 64 15 64 48] cmp_log0 x y = Core_Cmp_Ordering_Type.C_Greater)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 66 16 66 17] inv7 x)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 66 25 66 26] inv7 y)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 65 14 65 44] cmp_log0 y x = Core_Cmp_Ordering_Type.C_Less)
+  function antisym10 (x : deep_model_ty0) (y : deep_model_ty0) : ()
+  let rec antisym10 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/logic/ord.rs" 61 25 61 26] inv7 y}
+    {[#"../../../../../creusot-contracts/src/logic/ord.rs" 61 16 61 17] inv7 x}
+    {[#"../../../../../creusot-contracts/src/logic/ord.rs" 59 15 59 45] cmp_log0 x y = Core_Cmp_Ordering_Type.C_Less}
+    any [ return' (result:())-> {result = antisym10 x y} (! return' {result}) ] 
+  axiom antisym10_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../../creusot-contracts/src/logic/ord.rs" 59 15 59 45] cmp_log0 x y = Core_Cmp_Ordering_Type.C_Less)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 61 16 61 17] inv7 x)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 61 25 61 26] inv7 y)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 60 14 60 47] cmp_log0 y x = Core_Cmp_Ordering_Type.C_Greater)
+  function trans0 (x : deep_model_ty0) (y : deep_model_ty0) (z : deep_model_ty0) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
+    
+  let rec trans0 (x:deep_model_ty0) (y:deep_model_ty0) (z:deep_model_ty0) (o:Core_Cmp_Ordering_Type.t_ordering) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/logic/ord.rs" 56 31 56 32] inv7 z}
+    {[#"../../../../../creusot-contracts/src/logic/ord.rs" 56 22 56 23] inv7 y}
+    {[#"../../../../../creusot-contracts/src/logic/ord.rs" 56 13 56 14] inv7 x}
+    {[#"../../../../../creusot-contracts/src/logic/ord.rs" 54 15 54 32] cmp_log0 y z = o}
+    {[#"../../../../../creusot-contracts/src/logic/ord.rs" 53 15 53 32] cmp_log0 x y = o}
+    any [ return' (result:())-> {result = trans0 x y z o} (! return' {result}) ] 
+  axiom trans0_spec : forall x : deep_model_ty0, y : deep_model_ty0, z : deep_model_ty0, o : Core_Cmp_Ordering_Type.t_ordering . ([#"../../../../../creusot-contracts/src/logic/ord.rs" 53 15 53 32] cmp_log0 x y = o)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 54 15 54 32] cmp_log0 y z = o)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 56 13 56 14] inv7 x)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 56 22 56 23] inv7 y)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 56 31 56 32] inv7 z)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 55 14 55 31] cmp_log0 x z = o)
+  function refl0 (x : deep_model_ty0) : ()
+  let rec refl0 (x:deep_model_ty0) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/logic/ord.rs" 50 12 50 13] inv7 x}
+    any [ return' (result:())-> {result = refl0 x} (! return' {result}) ] 
+  axiom refl0_spec : forall x : deep_model_ty0 . ([#"../../../../../creusot-contracts/src/logic/ord.rs" 50 12 50 13] inv7 x)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 49 14 49 45] cmp_log0 x x = Core_Cmp_Ordering_Type.C_Equal)
+  function gt_log0 (self : deep_model_ty0) (o : deep_model_ty0) : bool
+  let rec gt_log0 (self:deep_model_ty0) (o:deep_model_ty0) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = gt_log0 self o} (! return' {result}) ]
+    
+  function cmp_gt_log0 (x : deep_model_ty0) (y : deep_model_ty0) : ()
+  let rec cmp_gt_log0 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/logic/ord.rs" 46 27 46 28] inv7 y}
+    {[#"../../../../../creusot-contracts/src/logic/ord.rs" 46 18 46 19] inv7 x}
+    any [ return' (result:())-> {result = cmp_gt_log0 x y} (! return' {result}) ] 
+  axiom cmp_gt_log0_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../../creusot-contracts/src/logic/ord.rs" 46 18 46 19] inv7 x)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 46 27 46 28] inv7 y)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 45 14 45 64] gt_log0 x y = (cmp_log0 x y = Core_Cmp_Ordering_Type.C_Greater))
+  function ge_log0 (self : deep_model_ty0) (o : deep_model_ty0) : bool
+  let rec ge_log0 (self:deep_model_ty0) (o:deep_model_ty0) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = ge_log0 self o} (! return' {result}) ]
+    
+  function cmp_ge_log0 (x : deep_model_ty0) (y : deep_model_ty0) : ()
+  let rec cmp_ge_log0 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/logic/ord.rs" 36 27 36 28] inv7 y}
+    {[#"../../../../../creusot-contracts/src/logic/ord.rs" 36 18 36 19] inv7 x}
+    any [ return' (result:())-> {result = cmp_ge_log0 x y} (! return' {result}) ] 
+  axiom cmp_ge_log0_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../../creusot-contracts/src/logic/ord.rs" 36 18 36 19] inv7 x)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 36 27 36 28] inv7 y)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 35 14 35 61] ge_log0 x y = (cmp_log0 x y <> Core_Cmp_Ordering_Type.C_Less))
+  function lt_log0 (self : deep_model_ty0) (o : deep_model_ty0) : bool
+  let rec lt_log0 (self:deep_model_ty0) (o:deep_model_ty0) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = lt_log0 self o} (! return' {result}) ]
+    
+  function cmp_lt_log0 (x : deep_model_ty0) (y : deep_model_ty0) : ()
+  let rec cmp_lt_log0 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/logic/ord.rs" 26 27 26 28] inv7 y}
+    {[#"../../../../../creusot-contracts/src/logic/ord.rs" 26 18 26 19] inv7 x}
+    any [ return' (result:())-> {result = cmp_lt_log0 x y} (! return' {result}) ] 
+  axiom cmp_lt_log0_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../../creusot-contracts/src/logic/ord.rs" 26 18 26 19] inv7 x)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 26 27 26 28] inv7 y)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 25 14 25 61] lt_log0 x y = (cmp_log0 x y = Core_Cmp_Ordering_Type.C_Less))
+  function le_log0 (self : deep_model_ty0) (o : deep_model_ty0) : bool
+  let rec le_log0 (self:deep_model_ty0) (o:deep_model_ty0) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = le_log0 self o} (! return' {result}) ]
+    
+  function cmp_le_log0 (x : deep_model_ty0) (y : deep_model_ty0) : ()
+  let rec cmp_le_log0 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/logic/ord.rs" 16 27 16 28] inv7 y}
+    {[#"../../../../../creusot-contracts/src/logic/ord.rs" 16 18 16 19] inv7 x}
+    any [ return' (result:())-> {result = cmp_le_log0 x y} (! return' {result}) ] 
+  axiom cmp_le_log0_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../../creusot-contracts/src/logic/ord.rs" 16 18 16 19] inv7 x)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 16 27 16 28] inv7 y)
+   -> ([#"../../../../../creusot-contracts/src/logic/ord.rs" 15 14 15 64] le_log0 x y = (cmp_log0 x y <> Core_Cmp_Ordering_Type.C_Greater))
+  predicate invariant2 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  let rec invariant2 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
+    
+  predicate inv2 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  let rec inv2 (_x:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
+    
+  axiom inv2 : forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv2 x = true
+  predicate invariant1 (self : t)
+  let rec invariant1 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  predicate inv1 (_x : t)
+  let rec inv1 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ] 
+  axiom inv1 : forall x : t . inv1 x = true
+  predicate invariant0 (self : t)
+  let rec invariant0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : t)
+  let rec inv0 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : t . inv0 x = true
+  use seq.Seq
+  predicate sorted_range0 [#"../05_binary_search_generic.rs" 9 0 9 63] (s : Seq.seq deep_model_ty0) (l : int) (u : int)
+   =
+    [#"../05_binary_search_generic.rs" 10 4 12 5] forall j : int . forall i : int . l <= i /\ i <= j /\ j < u
+     -> le_log0 (Seq.get s i) (Seq.get s j)
+  let rec sorted_range0 (s:Seq.seq deep_model_ty0) (l:int) (u:int) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = sorted_range0 s l u} (! return' {result}) ]
+    
+  use seq.Seq
+  predicate sorted0 [#"../05_binary_search_generic.rs" 16 0 16 41] (s : Seq.seq deep_model_ty0) =
+    [#"../05_binary_search_generic.rs" 17 4 17 31] sorted_range0 s 0 (Seq.length s)
+  let rec sorted0 (s:Seq.seq deep_model_ty0) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = sorted0 s} (! return' {result}) ]
+    
+  use prelude.Intrinsic
+  use prelude.Borrow
+  function shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t =
+    [#"../../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model2 self
+  let rec shallow_model1 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= any
+    [ return' (result:Seq.seq t)-> {result = shallow_model1 self} (! return' {result}) ] 
+  let rec len1 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:usize))= {inv2 self}
+    any 
+    [ return' (result:usize)-> {[#"../../../../../creusot-contracts/src/std/vec.rs" 75 26 75 48] UIntSize.to_int result = Seq.length (shallow_model1 self)}
+      (! return' {result}) ]
+    
+  function deep_model1 (self : t) : deep_model_ty0
+  let rec deep_model1 (self:t) (return'  (ret:deep_model_ty0))= any 
+    [ return' (result:deep_model_ty0)-> {result = deep_model1 self} (! return' {result}) ]
+    
+  use seq.Seq
+  function index_logic2 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (ix : int) : t
+    
+   =
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model2 self) ix
+  let rec index_logic2 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:t))= any
+    [ return' (result:t)-> {result = index_logic2 self ix} (! return' {result}) ] 
+  function deep_model3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq deep_model_ty0
+  let rec deep_model3 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq deep_model_ty0))= {[#"../../../../../creusot-contracts/src/std/vec.rs" 33 18 33 22] inv4 self}
+    any [ return' (result:Seq.seq deep_model_ty0)-> {result = deep_model3 self} (! return' {result}) ] 
+  axiom deep_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 33 18 33 22] inv4 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 33 4 33 44] inv6 (deep_model3 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (shallow_model2 self)
+   -> Seq.get (deep_model3 self) i = deep_model1 (index_logic2 self i)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56] Seq.length (shallow_model2 self) = Seq.length (deep_model3 self))
+  function deep_model0 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq deep_model_ty0 =
+    [#"../../../../../creusot-contracts/src/model.rs" 74 8 74 28] deep_model3 self
+  let rec deep_model0 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq deep_model_ty0))= any
+    [ return' (result:Seq.seq deep_model_ty0)-> {result = deep_model0 self} (! return' {result}) ] 
+  function deep_model2 (self : t) : deep_model_ty0 =
+    [#"../../../../../creusot-contracts/src/model.rs" 74 8 74 28] deep_model1 self
+  let rec deep_model2 (self:t) (return'  (ret:deep_model_ty0))= any 
+    [ return' (result:deep_model_ty0)-> {result = deep_model2 self} (! return' {result}) ]
+    
+  let rec gt0 (self:t) (other:t) (return'  (ret:bool))= {inv1 other}
+    {inv1 self}
+    any 
+    [ return' (result:bool)-> {[#"../../../../../creusot-contracts/src/std/cmp.rs" 39 26 39 76] result = gt_log0 (deep_model2 self) (deep_model2 other)}
+      (! return' {result}) ]
+    
+  predicate resolve2 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  let rec resolve2 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
+    
+  use prelude.Slice
+  predicate has_value0 [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 122 20 122 37] Seq.get seq (UIntSize.to_int self) = out
+  let rec has_value0 (self:usize) (seq:Seq.seq t) (out:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = has_value0 self seq out} (! return' {result}) ]
+    
+  predicate in_bounds0 [@inline:trivial] (self : usize) (seq : Seq.seq t) =
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 115 20 115 37] UIntSize.to_int self < Seq.length seq
+  let rec in_bounds0 (self:usize) (seq:Seq.seq t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = in_bounds0 self seq} (! return' {result}) ]
+    
+  let rec index0 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (index:usize) (return'  (ret:t))= {inv3 index}
+    {inv2 self}
+    {[#"../../../../../creusot-contracts/src/std/vec.rs" 141 27 141 46] in_bounds0 index (shallow_model1 self)}
+    any 
+    [ return' (result:t)-> {inv1 result}
+      {[#"../../../../../creusot-contracts/src/std/vec.rs" 142 26 142 54] has_value0 index (shallow_model1 self) result}
+      (! return' {result}) ]
+    
+  predicate resolve1 (self : t)
+  let rec resolve1 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  let rec cmp0 (self:t) (other:t) (return'  (ret:Core_Cmp_Ordering_Type.t_ordering))= {inv1 other}
+    {inv1 self}
+    any 
+    [ return' (result:Core_Cmp_Ordering_Type.t_ordering)-> {[#"../../../../../creusot-contracts/src/std/cmp.rs" 50 26 50 85] result = cmp_log0 (deep_model1 self) (deep_model1 other)}
+      (! return' {result}) ]
+    
+  predicate resolve0 (self : t)
+  let rec resolve0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  let rec binary_search (arr:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (elem:t) (return'  (ret:Core_Result_Result_Type.t_result usize usize))= {[#"../05_binary_search_generic.rs" 27 55 27 59] inv0 elem}
+    {[#"../05_binary_search_generic.rs" 27 41 27 44] inv2 arr}
+    {[#"../05_binary_search_generic.rs" 21 11 21 35] sorted0 (deep_model0 arr)}
+    {[#"../05_binary_search_generic.rs" 20 11 20 36] Seq.length (shallow_model1 arr) <= UIntSize.to_int (max0 : usize)}
+    (! bb0 
+    [ bb29 = return' {_0} 
+    | bb28 = bb29 
+    | bb27 = UIntSize.add {base} {[#"../05_binary_search_generic.rs" 53 37 53 38] (1 : usize)} (fun (_ret':usize) -> 
+        [ &_50 <- _ret' ]
+        [ &_0 <- Core_Result_Result_Type.C_Err _50 ] any [ any_ (_any:usize)-> [ &_50 <- _any ] bb28 ] ) 
+    | bb22 = bb27 
+    | bb26 = [ &_0 <- Core_Result_Result_Type.C_Ok base ] bb28 
+    | bb23 = bb26 
+    | bb24 = [ &_0 <- Core_Result_Result_Type.C_Err base ] bb28 
+    | bb25 = {[#"../05_binary_search_generic.rs" 51 10 51 24] false}
+      any 
+    | bb21 = {[@expl:type invariant] inv0 elem}
+      -{resolve0 elem}- any 
+      [ br0 -> {_44 = Core_Cmp_Ordering_Type.C_Less }
+        (! bb22)
+      | br1 -> {_44 = Core_Cmp_Ordering_Type.C_Equal }
+        (! bb23)
+      | br2 -> {_44 = Core_Cmp_Ordering_Type.C_Greater }
+        (! bb24)
+      | default -> (! bb25) ]
+       
+    | bb20 = [ &cmp <- _41 ] {[@expl:type invariant] inv1 _41}
+      -{resolve1 _41}- {[@expl:type invariant] inv1 cmp}
+      -{resolve1 cmp}- [ &_47 <- elem ] {[@expl:type invariant] inv1 _47}
+      -{resolve1 _47}- cmp0 {cmp} {_47} (fun (_ret':Core_Cmp_Ordering_Type.t_ordering) -> [ &_44 <- _ret' ] bb21) 
+    | bb19 = {[@expl:type invariant] inv2 arr}
+      -{resolve2 arr}- index0 {arr} {base} (fun (_ret':t) -> [ &_41 <- _ret' ] bb20) 
+    | bb10 = {[#"../05_binary_search_generic.rs" 37 4 37 58] forall i : usize . UIntSize.to_int base + UIntSize.to_int size <= UIntSize.to_int i /\ UIntSize.to_int i < Seq.length (shallow_model1 arr)
+       -> lt_log0 (deep_model1 elem) (Seq.get (deep_model0 arr) (UIntSize.to_int i))}
+      {[#"../05_binary_search_generic.rs" 37 4 37 58] forall i : usize . i < base
+       -> le_log0 (Seq.get (deep_model0 arr) (UIntSize.to_int i)) (deep_model1 elem)}
+      {[#"../05_binary_search_generic.rs" 37 16 37 56] 0 < UIntSize.to_int size /\ UIntSize.to_int size + UIntSize.to_int base <= Seq.length (shallow_model1 arr)}
+      (! bb11) 
+      [ bb18 = [ &base <- _29 ] any 
+        [ any_ (_any:usize)-> [ &_29 <- _any ] UIntSize.sub {size} {half} (fun (_ret':usize) -> 
+            [ &size <- _ret' ]
+            bb10) ]
+        
+      | bb17 = [ &_29 <- mid ] bb18
+      | bb16 = [ &_29 <- base ] bb18
+      | bb15 = any [ br0 -> {_30 = false} (! bb17) | br1 -> {_30} (! bb16) ] 
+      | bb14 = {[@expl:type invariant] inv1 _32}
+        -{resolve1 _32}- gt0 {_32} {elem} (fun (_ret':bool) -> [ &_30 <- _ret' ] bb15)
+      | bb13 = UIntSize.div {size} {[#"../05_binary_search_generic.rs" 41 26 41 27] (2 : usize)} (fun (_ret':usize) -> 
+          [ &half <- _ret' ]
+          UIntSize.add {base} {half} (fun (_ret':usize) -> [ &mid <- _ret' ] index0 {arr} {mid} (fun (_ret':t) -> 
+              [ &_32 <- _ret' ]
+              bb14)))
+      | bb12 = UIntSize.eq {[#"../05_binary_search_generic.rs" 41 26 41 27] (2 : usize)}
+        {[#"../05_binary_search_generic.rs" 41 19 41 27] (0 : usize)} (fun (_ret':bool) -> 
+          [ &_25 <- _ret' ]
+          {[@expl:division by zero] [#"../05_binary_search_generic.rs" 41 19 41 27] not _25}
+          bb13)
+      | bb11 = UIntSize.gt {size} {[#"../05_binary_search_generic.rs" 40 17 40 18] (1 : usize)} (fun (_ret':bool) -> 
+          [ &_21 <- _ret' ]
+          any [ br0 -> {_21 = false} (! bb19) | br1 -> {_21} (! bb12) ] ) ]
+      
+    | bb9 = bb10 
+    | bb8 = bb9 
+    | bb7 = [ &base <- [#"../05_binary_search_generic.rs" 35 26 35 27] (0 : usize) ] bb8 
+    | bb6 = len1 {arr} (fun (_ret':usize) -> [ &size <- _ret' ] bb7) 
+    | bb5 = {[@expl:type invariant] inv0 elem}
+      -{resolve0 elem}- {[@expl:type invariant] inv2 arr}
+      -{resolve2 arr}- 
+      [ &_0 <- Core_Result_Result_Type.C_Err ([#"../05_binary_search_generic.rs" 32 19 32 20] (0 : usize)) ]
+      bb29 
+    | bb4 = UIntSize.eq {_10} {[#"../05_binary_search_generic.rs" 31 20 31 21] (0 : usize)} (fun (_ret':bool) -> 
+        [ &_9 <- _ret' ]
+        any [ br0 -> {_9 = false} (! bb6) | br1 -> {_9} (! bb5) ] ) 
+    | bb3 = len1 {arr} (fun (_ret':usize) -> [ &_10 <- _ret' ] bb4) 
+    | bb2 = bb3 
+    | bb1 = bb2 
+    | bb0 = bb1 
+    | bb32 = bb22 
+    | bb33 = bb24  ]
+    ) 
+    [ return' (result:Core_Result_Result_Type.t_result usize usize)-> {[#"../05_binary_search_generic.rs" 25 0 26 92] forall x : usize . result = Core_Result_Result_Type.C_Err x
+       -> (forall i : usize . x <= i /\ UIntSize.to_int i < Seq.length (shallow_model1 arr)
+       -> lt_log0 (deep_model1 elem) (Seq.get (deep_model0 arr) (UIntSize.to_int i)))}
+      {[#"../05_binary_search_generic.rs" 23 0 24 74] forall x : usize . result = Core_Result_Result_Type.C_Err x
+       -> (forall i : usize . i < x  -> le_log0 (Seq.get (deep_model0 arr) (UIntSize.to_int i)) (deep_model1 elem))}
+      {[#"../05_binary_search_generic.rs" 22 0 22 89] forall x : usize . result = Core_Result_Result_Type.C_Ok x
+       -> Seq.get (deep_model0 arr) (UIntSize.to_int x) = deep_model1 elem}
+      (! return' {_0}) ]
+    
+    [ & _0 : Core_Result_Result_Type.t_result usize usize = any_l () : Core_Result_Result_Type.t_result usize usize
+    | & arr : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) = arr
+    | & elem : t = elem
+    | & _9 : bool = any_l () : bool
+    | & _10 : usize = any_l () : usize
+    | & size : usize = any_l () : usize
+    | & base : usize = any_l () : usize
+    | & _21 : bool = any_l () : bool
+    | & half : usize = any_l () : usize
+    | & _25 : bool = any_l () : bool
+    | & mid : usize = any_l () : usize
+    | & _29 : usize = any_l () : usize
+    | & _30 : bool = any_l () : bool
+    | & _32 : t = any_l () : t
+    | & cmp : t = any_l () : t
+    | & _41 : t = any_l () : t
+    | & _44 : Core_Cmp_Ordering_Type.t_ordering = any_l () : Core_Cmp_Ordering_Type.t_ordering
+    | & _47 : t = any_l () : t
+    | & _50 : usize = any_l () : usize ]
+    
+end

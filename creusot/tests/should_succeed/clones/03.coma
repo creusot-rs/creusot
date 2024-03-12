@@ -1,0 +1,72 @@
+
+module C03_Prog
+  type t
+  predicate invariant0 (self : t)
+  let rec invariant0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : t)
+  let rec inv0 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : t . inv0 x = true
+  function omg0 [#"../03.rs" 6 0 6 24] (_x : t) : bool =
+    [#"../03.rs" 7 4 7 8] true
+  let rec omg0 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = omg0 _x} (! return' {result}) ] 
+  use prelude.Intrinsic
+  predicate resolve0 (self : t)
+  let rec resolve0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec prog (x:t) (return'  (ret:()))= {[#"../03.rs" 11 11 11 12] inv0 x}
+    (! bb0 
+    [ bb2 = return' {_0} 
+    | bb1 = [ &_0 <- [#"../03.rs" 11 17 11 19] () ] bb2 
+    | bb0 = {[@expl:type invariant] inv0 x}
+      -{resolve0 x}- bb1  ]
+    ) [ return' (result:())-> {[#"../03.rs" 10 10 10 16] omg0 x} (! return' {_0}) ] 
+    [ & _0 : () = any_l () : () | & x : t = x ]
+    
+end
+module C03_Prog2
+  use prelude.Int32
+  predicate invariant0 (self : int32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant0 (self:int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : int32)
+  let rec inv0 (_x:int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : int32 . inv0 x = true
+  use prelude.Int
+  function omg0 [#"../03.rs" 6 0 6 24] (_x : int) : bool =
+    [#"../03.rs" 7 4 7 8] true
+  let rec omg0 (_x:int) (return'  (ret:bool))= any [ return' (result:bool)-> {result = omg0 _x} (! return' {result}) ] 
+  use prelude.Intrinsic
+  function omg1 [#"../03.rs" 6 0 6 24] (_x : int32) : bool =
+    [#"../03.rs" 7 4 7 8] true
+  let rec omg1 (_x:int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = omg1 _x} (! return' {result}) ]
+    
+  let rec prog0 (x:int32) (return'  (ret:()))= {[#"../03.rs" 11 11 11 12] inv0 x}
+    any [ return' (result:())-> {[#"../03.rs" 10 10 10 16] omg1 x} (! return' {result}) ] 
+  use prelude.Int
+  let rec prog2 (_1:()) (return'  (ret:()))= (! bb0 
+    [ bb1 = [ &_0 <- [#"../03.rs" 14 15 16 1] () ] return' {_0} 
+    | bb0 = prog0 {[#"../03.rs" 15 9 15 10] (0 : int32)} (fun (_ret':()) -> [ &_2 <- _ret' ] bb1)  ]
+    ) [ return' (result:())-> {[#"../03.rs" 13 10 13 16] omg0 0} (! return' {_0}) ] 
+    [ & _0 : () = any_l () : () | & _2 : () = any_l () : () ]
+    
+end
+module C03_Prog3
+  use prelude.Int
+  function omg0 [#"../03.rs" 6 0 6 24] (_x : (int, int)) : bool =
+    [#"../03.rs" 7 4 7 8] true
+  let rec omg0 (_x:(int, int)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = omg0 _x} (! return' {result}) ]
+    
+  use prelude.Intrinsic
+  let rec prog3 (_1:()) (return'  (ret:()))= (! bb0 [ bb0 = [ &_0 <- [#"../03.rs" 19 15 19 17] () ] return' {_0}  ] ) 
+    [ return' (result:())-> {[#"../03.rs" 18 10 18 21] omg0 (0, 0)} (! return' {_0}) ]
+    [ & _0 : () = any_l () : () ] 
+end

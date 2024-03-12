@@ -1,0 +1,32 @@
+
+module BoxBorrowResolve_BorrowInBox
+  use prelude.Intrinsic
+  use prelude.Borrow
+  use prelude.Int32
+  use prelude.Int
+  predicate resolve1 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 34 8 34 31] resolve1 self
+  let rec resolve0 (self:borrowed int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec borrow_in_box (x:borrowed int32) (return'  (ret:borrowed int32))= (! bb0 
+    [ bb1 = -{resolve0 x}- return' {_0} 
+    | bb0 = Borrow.borrow_final <int32> { * x} {Borrow.get_id x} (fun (_ret':borrowed int32) -> [ &_4 <- _ret' ] 
+        [ &x <- { x with current = ( ^ _4) ; } ]
+        Borrow.borrow_final <int32> { * _4} {Borrow.get_id _4} (fun (_ret':borrowed int32) -> [ &_2 <- _ret' ] 
+          [ &_4 <- { _4 with current = ( ^ _2) ; } ]
+          Borrow.borrow_final <int32> { * _2} {Borrow.get_id _2} (fun (_ret':borrowed int32) -> [ &_0 <- _ret' ] 
+            [ &_2 <- { _2 with current = ( ^ _0) ; } ]
+            -{resolve1 _4}- -{resolve1 _2}- bb1)))  ]
+    ) [ return' (result:borrowed int32)-> {[#"../box_borrow_resolve.rs" 5 10 5 22] result = x} (! return' {_0}) ] 
+    [ & _0 : borrowed int32 = any_l () : borrowed int32
+    | & x : borrowed int32 = x
+    | & _2 : borrowed int32 = any_l () : borrowed int32
+    | & _4 : borrowed int32 = any_l () : borrowed int32 ]
+    
+end

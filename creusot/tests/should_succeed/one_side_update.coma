@@ -1,0 +1,43 @@
+
+module OneSideUpdate_MyInt_Type
+  use prelude.UIntSize
+  use prelude.Int
+  type t_myint  =
+    | C_MyInt usize
+    
+  function any_l (_ : 'b) : 'a
+end
+module OneSideUpdate_F
+  use prelude.Intrinsic
+  use prelude.Borrow
+  use prelude.UIntSize
+  use prelude.Int
+  use OneSideUpdate_MyInt_Type as OneSideUpdate_MyInt_Type
+  predicate resolve0 (self : borrowed (OneSideUpdate_MyInt_Type.t_myint)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed (OneSideUpdate_MyInt_Type.t_myint)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec f (_1:()) (return'  (ret:()))= (! bb0 
+    [ bb3 = return' {_0} 
+    | bb2 = [ &_6 <- OneSideUpdate_MyInt_Type.C_MyInt ([#"../one_side_update.rs" 11 19 11 20] (5 : usize)) ] 
+      [ &b <- { b with current = _6 ; } ]
+      any 
+      [ any_ (_any:OneSideUpdate_MyInt_Type.t_myint)-> [ &_6 <- _any ] -{resolve0 b}- 
+        [ &_0 <- [#"../one_side_update.rs" 10 11 12 5] () ]
+        bb3 ]
+       
+    | bb1 = -{resolve0 b}- [ &_0 <- [#"../one_side_update.rs" 8 12 10 5] () ] bb3 
+    | bb0 = 
+      [ &a <- OneSideUpdate_MyInt_Type.C_MyInt ([#"../one_side_update.rs" 6 22 6 24] (10 : usize)) ]
+      Borrow.borrow_mut <OneSideUpdate_MyInt_Type.t_myint> {a}
+      (fun (_ret':borrowed (OneSideUpdate_MyInt_Type.t_myint)) -> [ &b <- _ret' ] [ &a <-  ^ b ] any 
+        [ br0 -> {false} (! bb2) | br1 -> {true} (! bb1) ]
+        )  ]
+    ) [ return' (result:())-> (! return' {_0}) ] 
+    [ & _0 : () = any_l () : ()
+    | & a : OneSideUpdate_MyInt_Type.t_myint = any_l () : OneSideUpdate_MyInt_Type.t_myint
+    | & b : borrowed (OneSideUpdate_MyInt_Type.t_myint) = any_l () : borrowed (OneSideUpdate_MyInt_Type.t_myint)
+    | & _6 : OneSideUpdate_MyInt_Type.t_myint = any_l () : OneSideUpdate_MyInt_Type.t_myint ]
+    
+end

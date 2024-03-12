@@ -41,6 +41,7 @@ pub enum Decl {
     Axiom(Axiom),
     Goal(Goal),
     ConstantDecl(Constant),
+    Coma(coma::Defn),
 }
 
 impl Decl {

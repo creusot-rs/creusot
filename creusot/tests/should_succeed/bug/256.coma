@@ -1,0 +1,82 @@
+
+module C256_U8Safe
+  use prelude.Intrinsic
+  use prelude.Int
+  use prelude.UInt8
+  let rec u8_safe (u:uint8) (return'  (ret:()))= (! bb0 
+    [ bb0 = UInt8.add {u} {[#"../256.rs" 4 16 4 17] (0 : uint8)} (fun (_ret':uint8) -> [ &_2 <- _ret' ] 
+        [ &_0 <- [#"../256.rs" 3 22 5 1] () ]
+        return' {_0})  ]
+    ) [ return' (result:())-> (! return' {_0}) ] 
+    [ & _0 : () = any_l () : () | & u : uint8 = u | & _2 : uint8 = any_l () : uint8 ]
+    
+end
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.Opaque
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+    
+  function any_l (_ : 'b) : 'a
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+    
+  function any_l (_ : 'b) : 'a
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_RawVec_Cap_Type
+  use prelude.UIntSize
+  use prelude.Int
+  type t_cap  =
+    | C_Cap usize
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_Vec_Vec_Type
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_String_String_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use prelude.UInt8
+  use prelude.Int
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  type t_string  =
+    | C_String (Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global))
+    
+  function any_l (_ : 'b) : 'a
+end
+module C256_Bug256
+  use Alloc_String_String_Type as Alloc_String_String_Type
+  use prelude.Intrinsic
+  let rec bug_256 (_x:Alloc_String_String_Type.t_string) (return'  (ret:()))= (! bb0 
+    [ bb1 = return' {_0}  | bb0 = [ &_0 <- [#"../256.rs" 8 27 8 29] () ] bb1  ]
+    ) [ return' (result:())-> (! return' {_0}) ] [ & _0 : () = any_l () : () ] 
+end

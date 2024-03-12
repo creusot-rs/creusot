@@ -1,0 +1,19 @@
+
+module Opaque_Test
+  use prelude.Intrinsic
+  predicate transparent0 [#"../opaque.rs" 9 4 9 32] (_1 : ()) =
+    [#"../opaque.rs" 10 8 10 12] true
+  let rec transparent0 (_1:()) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = transparent0 _1} (! return' {result}) ]
+    
+  predicate transparent_crate0 [#"../opaque.rs" 15 4 15 38] (_1 : ()) =
+    [#"../opaque.rs" 16 8 16 12] true
+  let rec transparent_crate0 (_1:()) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = transparent_crate0 _1} (! return' {result}) ]
+    
+  let rec test (_1:()) (return'  (ret:()))= (! bb0 
+    [ bb0 = {[@expl:assertion] [#"../opaque.rs" 21 18 21 34] transparent0 ()}
+      {[@expl:assertion] [#"../opaque.rs" 22 18 22 40] transparent_crate0 ()}
+      [ &_0 <- [#"../opaque.rs" 20 14 23 1] () ] return' {_0}  ]
+    ) [ return' (result:())-> (! return' {_0}) ] [ & _0 : () = any_l () : () ] 
+end

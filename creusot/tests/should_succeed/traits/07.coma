@@ -1,0 +1,56 @@
+
+module C07_Impl0_Ix
+  use prelude.Int32
+  use prelude.Int
+  use prelude.Borrow
+  use prelude.Intrinsic
+  let rec ix (self:int32) (return'  (ret:()))= (! bb0 [ bb0 = [ &_0 <- () ] return' {_0}  ] ) 
+    [ return' (result:())-> (! return' {_0}) ]
+    [ & _0 : () = any_l () : () ] 
+end
+module C07_Test
+  type g
+  type t
+  use prelude.UInt64
+  use prelude.UInt32
+  use prelude.Int
+  use prelude.Borrow
+  use prelude.Intrinsic
+  let rec test (_a:uint32) (_b:uint64) (return'  (ret:bool))= (! bb0 
+    [ bb0 = [ &_0 <- [#"../07.rs" 17 4 17 8] true ] return' {_0}  ]
+    ) [ return' (result:bool)-> (! return' {_0}) ] [ & _0 : bool = any_l () : bool ] 
+end
+module C07_Test2
+  use prelude.Int32
+  use prelude.Int
+  use prelude.Borrow
+  use prelude.Intrinsic
+  let rec ix0 (self:int32) (return'  (ret:()))= any [ return' (result:())-> (! return' {result}) ] 
+  let rec test2 (a:int32) (return'  (ret:()))= (! bb0 
+    [ bb1 = return' {_0}  | bb0 = ix0 {a} (fun (_ret':()) -> [ &_0 <- _ret' ] bb1)  ]
+    ) [ return' (result:())-> (! return' {_0}) ] [ & _0 : () = any_l () : () | & a : int32 = a ] 
+end
+module C07_Impl0
+  predicate invariant1 (self : ()) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant1 (self:()) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  predicate inv1 (_x : ())
+  let rec inv1 (_x:()) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ] 
+  axiom inv1 : forall x : () . inv1 x = true
+  use prelude.Int32
+  predicate invariant0 (self : int32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant0 (self:int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : int32)
+  let rec inv0 (_x:int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : int32 . inv0 x = true
+  use prelude.Int
+  use prelude.Borrow
+  goal ix_refn : [#"../07.rs" 11 4 11 36] forall self : int32 . inv0 self  -> (forall result : () . inv1 result)
+end

@@ -108,7 +108,7 @@ You may also copy both this script and the `prelude` directory in your project t
 To load your proofs in Why3, run:
 
 ```
-REPO/ide PATH/TO/OUTPUT.mlcfg
+REPO/ide PATH/TO/OUTPUT.coma
 ```
 
 From there standard proof strategies of Why3 work. We recommend section 2.3 of this [thesis](https://sarsko.github.io/_pages/SarekSkot%C3%A5m_thesis.pdf) for a brief overview of Why3 and Creusot proofs.

@@ -1,0 +1,107 @@
+
+module ResolveUninit_MaybeUninit
+  type t
+  predicate invariant0 (self : t)
+  let rec invariant0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : t)
+  let rec inv0 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : t . inv0 x = true
+  use prelude.Intrinsic
+  predicate is_default0 (self : t)
+  let rec is_default0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = is_default0 self} (! return' {result}) ]
+    
+  let rec default0 (_1:()) (return'  (ret:t))= any 
+    [ return' (result:t)-> {inv0 result}
+      {[#"../../../../creusot-contracts/src/std/default.rs" 13 26 13 45] is_default0 result}
+      (! return' {result}) ]
+    
+  predicate resolve0 (self : t)
+  let rec resolve0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec maybe_uninit (b:bool) (y:t) (return'  (ret:t))= {[#"../resolve_uninit.rs" 5 41 5 42] inv0 y}
+    (! bb0 
+    [ bb12 = return' {_0} 
+    | bb11 = bb12 
+    | bb10 = [ &_0 <- x ] any [ any_ (_any:t)-> [ &x <- _any ] bb11 ]  
+    | bb8 = [ &x <- y ] any [ any_ (_any:t)-> [ &y <- _any ] bb10 ]  
+    | bb7 = bb8 
+    | bb6 = [ &_4 <- [#"../resolve_uninit.rs" 9 5 9 5] () ] bb7 
+    | bb5 = [ &_4 <- [#"../resolve_uninit.rs" 7 9 9 5] () ] bb7 
+    | bb3 = [ &x <- _6 ] any [ any_ (_any:t)-> [ &_6 <- _any ] {[@expl:type invariant] inv0 x} -{resolve0 x}- bb5 ]  
+    | bb2 = bb3 
+    | bb1 = default0 {[#"../resolve_uninit.rs" 8 12 8 24] ()} (fun (_ret':t) -> [ &_6 <- _ret' ] bb2) 
+    | bb0 = any [ br0 -> {b = false} (! bb6) | br1 -> {b} (! bb1) ]   ]
+    ) [ return' (result:t)-> {[#"../resolve_uninit.rs" 5 50 5 51] inv0 result} (! return' {_0}) ] 
+    [ & _0 : t = any_l () : t
+    | & b : bool = b
+    | & y : t = y
+    | & x : t = any_l () : t
+    | & _4 : () = any_l () : ()
+    | & _6 : t = any_l () : t ]
+    
+end
+module ResolveUninit_InitJoin
+  use prelude.Intrinsic
+  use prelude.Borrow
+  use prelude.Int32
+  predicate resolve0 (self : borrowed int32) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  use prelude.Int
+  let rec init_join (b:bool) (x:int32) (return'  (ret:()))= (! bb0 
+    [ bb5 = {[#"../resolve_uninit.rs" 28 4 28 19] false}
+      any 
+    | bb4 = [ &_0 <- [#"../resolve_uninit.rs" 15 38 29 1] () ] return' {_0} 
+    | bb3 = [ &y <- { y with current = ([#"../resolve_uninit.rs" 27 9 27 10] (5 : int32)) ; } ] -{resolve0 y}- Int32.eq
+      {x} {[#"../resolve_uninit.rs" 28 17 28 18] (5 : int32)} (fun (_ret':bool) -> [ &_14 <- _ret' ] any 
+        [ br0 -> {_14 = false} (! bb5) | br1 -> {_14} (! bb4) ]
+        ) 
+    | bb2 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) -> [ &_12 <- _ret' ] 
+        [ &x <-  ^ _12 ]
+        Borrow.borrow_final <int32> { * _12} {Borrow.get_id _12} (fun (_ret':borrowed int32) -> [ &_11 <- _ret' ] 
+          [ &_12 <- { _12 with current = ( ^ _11) ; } ]
+          [ &y <- _11 ] any 
+          [ any_ (_any:borrowed int32)-> [ &_11 <- _any ] -{resolve0 _12}- 
+            [ &_5 <- [#"../resolve_uninit.rs" 23 11 25 5] () ]
+            bb3 ]
+          )) 
+    | bb7 = -{resolve0 z}- bb3 
+    | bb1 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) -> [ &_8 <- _ret' ] 
+        [ &x <-  ^ _8 ]
+        Borrow.borrow_final <int32> { * _8} {Borrow.get_id _8} (fun (_ret':borrowed int32) -> [ &_7 <- _ret' ] 
+          [ &_8 <- { _8 with current = ( ^ _7) ; } ]
+          [ &z <- _7 ] any 
+          [ any_ (_any:borrowed int32)-> [ &_7 <- _any ] -{resolve0 _8}- Borrow.borrow_final <int32> { * z}
+            {Borrow.get_id z} (fun (_ret':borrowed int32) -> [ &_10 <- _ret' ] 
+              [ &z <- { z with current = ( ^ _10) ; } ]
+              Borrow.borrow_final <int32> { * _10} {Borrow.get_id _10} (fun (_ret':borrowed int32) -> [ &_9 <- _ret' ] 
+                [ &_10 <- { _10 with current = ( ^ _9) ; } ]
+                [ &y <- _9 ] any 
+                [ any_ (_any:borrowed int32)-> [ &_9 <- _any ] -{resolve0 _10}- 
+                  [ &_5 <- [#"../resolve_uninit.rs" 19 9 23 5] () ]
+                  bb7 ]
+                )) ]
+          )) 
+    | bb0 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ]   ]
+    ) [ return' (result:())-> (! return' {_0}) ] 
+    [ & _0 : () = any_l () : ()
+    | & b : bool = b
+    | & x : int32 = x
+    | & y : borrowed int32 = any_l () : borrowed int32
+    | & z : borrowed int32 = any_l () : borrowed int32
+    | & _5 : () = any_l () : ()
+    | & _7 : borrowed int32 = any_l () : borrowed int32
+    | & _8 : borrowed int32 = any_l () : borrowed int32
+    | & _9 : borrowed int32 = any_l () : borrowed int32
+    | & _10 : borrowed int32 = any_l () : borrowed int32
+    | & _11 : borrowed int32 = any_l () : borrowed int32
+    | & _12 : borrowed int32 = any_l () : borrowed int32
+    | & _14 : bool = any_l () : bool ]
+    
+end

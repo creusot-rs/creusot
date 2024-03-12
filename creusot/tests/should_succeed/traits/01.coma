@@ -1,0 +1,30 @@
+
+module C01_UsesGeneric
+  type t
+  use prelude.UInt32
+  predicate invariant1 (self : uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant1 (self:uint32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  predicate inv1 (_x : uint32)
+  let rec inv1 (_x:uint32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  axiom inv1 : forall x : uint32 . inv1 x = true
+  predicate invariant0 (self : t)
+  let rec invariant0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : t)
+  let rec inv0 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : t . inv0 x = true
+  use prelude.Intrinsic
+  use prelude.Int
+  let rec from_b0 (x:t) (return'  (ret:uint32))= {[#"../01.rs" 5 17 5 18] inv0 x}
+    any [ return' (result:uint32)-> {[#"../01.rs" 5 29 5 30] inv1 result} (! return' {result}) ] 
+  let rec uses_generic (b:t) (return'  (ret:uint32))= {[#"../01.rs" 8 26 8 27] inv0 b}
+    (! bb0 [ bb2 = return' {_0}  | bb1 = bb2  | bb0 = from_b0 {b} (fun (_ret':uint32) -> [ &_0 <- _ret' ] bb1)  ] ) 
+    [ return' (result:uint32)-> (! return' {_0}) ]
+    [ & _0 : uint32 = any_l () : uint32 | & b : t = b ] 
+end

@@ -5,11 +5,11 @@ use rustc_hir::{
     def_id::DefId,
 };
 use rustc_middle::ty::{self, Const, EarlyBinder, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
-use rustc_span::Symbol;
+use rustc_span::{Symbol, DUMMY_SP};
 use rustc_target::abi::FieldIdx;
 
 use why3::{
-    declaration::{Axiom, Decl, LetDecl, LetKind, Signature, Use, ValDecl},
+    declaration::{Axiom, Constant, Decl, LetDecl, LetKind, Signature, Use, ValDecl},
     Ident, QName,
 };
 
@@ -17,8 +17,10 @@ use crate::{
     backend::{
         dependency::HackedId,
         logic::{lower_logical_defn, lower_pure_defn, sigs, spec_axiom},
+        program,
         signature::sig_to_why3,
         term::lower_pure,
+        ty::translate_ty,
         ty_inv::InvariantElaborator,
         TransId, Why3Generator,
     },
@@ -183,13 +185,11 @@ impl<'tcx> SymbolElaborator<'tcx> {
 
             let span = ctx.def_span(def_id);
             let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, param_env, span);
-            let res = lower_pure(ctx, names, &res);
 
-            vec![Decl::Let(LetDecl {
-                kind: Some(LetKind::Constant),
-                sig: sig.clone(),
-                rec: false,
-                ghost: false,
+            let res = lower_pure(ctx, names, &res);
+            vec![Decl::ConstantDecl(Constant {
+                type_: sig.retty.unwrap(),
+                name: sig.name,
                 body: res,
             })]
         } else {
@@ -204,7 +204,6 @@ fn val<'tcx>(
     kind: Option<LetKind>,
 ) -> Vec<Decl> {
     sig.contract.variant = Vec::new();
-
     if let Some(k) = kind {
         let ax = if !sig.contract.is_empty() { Some(spec_axiom(&sig)) } else { None };
 
@@ -219,7 +218,7 @@ fn val<'tcx>(
 
         let mut d = vec![
             Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig }),
-            Decl::ValDecl(ValDecl { ghost: false, val: true, kind: None, sig: prog_sig }),
+            program::val(ctx, prog_sig),
         ];
 
         if let Some(ax) = ax {
@@ -227,7 +226,7 @@ fn val<'tcx>(
         }
         d
     } else {
-        vec![Decl::ValDecl(ValDecl { ghost: false, val: true, kind, sig })]
+        vec![program::val(ctx, sig)]
     }
 }
 

@@ -99,7 +99,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
                 let outputs = why3.output_filenames(());
                 let crate_name = why3.crate_name(LOCAL_CRATE);
 
-                let libname = format!("{}-{}.mlcfg", crate_name.as_str(), why3.crate_types()[0]);
+                let libname = format!("{}-{}.coma", crate_name.as_str(), why3.crate_types()[0]);
 
                 let directory = if why3.opts.in_cargo {
                     let mut dir = outputs.out_directory.clone();
@@ -138,82 +138,6 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
     debug!("after_analysis_dump: {:?}", start.elapsed());
 
     Ok(())
-}
-use rustc_middle::mir;
-
-pub(crate) fn binop_to_binop(ctx: &mut TranslationCtx, ty: Ty, op: mir::BinOp) -> why3::exp::BinOp {
-    use why3::exp::BinOp;
-    match op {
-        mir::BinOp::Add => {
-            if ty.is_floating_point() {
-                BinOp::FloatAdd
-            } else {
-                BinOp::Add
-            }
-        }
-        mir::BinOp::Sub => {
-            if ty.is_floating_point() {
-                BinOp::FloatSub
-            } else {
-                BinOp::Sub
-            }
-        }
-        mir::BinOp::Mul => {
-            if ty.is_floating_point() {
-                BinOp::FloatMul
-            } else {
-                BinOp::Mul
-            }
-        }
-        mir::BinOp::Div => {
-            if ty.is_floating_point() {
-                BinOp::FloatDiv
-            } else {
-                BinOp::Div
-            }
-        }
-        mir::BinOp::Eq => {
-            if ty.is_floating_point() {
-                BinOp::FloatEq
-            } else {
-                BinOp::Eq
-            }
-        }
-        mir::BinOp::Lt => {
-            if ty.is_floating_point() {
-                BinOp::FloatLt
-            } else {
-                BinOp::Lt
-            }
-        }
-        mir::BinOp::Le => {
-            if ty.is_floating_point() {
-                BinOp::FloatLe
-            } else {
-                BinOp::Le
-            }
-        }
-        mir::BinOp::Gt => {
-            if ty.is_floating_point() {
-                BinOp::FloatGt
-            } else {
-                BinOp::Gt
-            }
-        }
-        mir::BinOp::Ge => {
-            if ty.is_floating_point() {
-                BinOp::FloatGe
-            } else {
-                BinOp::Ge
-            }
-        }
-        mir::BinOp::Ne => BinOp::Ne,
-        mir::BinOp::Rem => BinOp::Mod,
-        _ => ctx.crash_and_error(
-            rustc_span::DUMMY_SP,
-            &format!("unsupported binary operation: {:?}", op),
-        ),
-    }
 }
 
 pub(crate) fn unop_to_unop(ty: Ty, op: rustc_middle::mir::UnOp) -> why3::exp::UnOp {

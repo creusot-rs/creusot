@@ -1,0 +1,63 @@
+
+module TraitImpl_Impl0_X
+  type b
+  type t2
+  type t1
+  predicate invariant0 (self : (t1, t2))
+  let rec invariant0 (self:(t1, t2)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : (t1, t2))
+  let rec inv0 (_x:(t1, t2)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : (t1, t2) . inv0 x = true
+  use prelude.Intrinsic
+  predicate resolve2 (self : t2)
+  let rec resolve2 (self:t2) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
+    
+  predicate resolve1 (self : t1)
+  let rec resolve1 (self:t1) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : (t1, t2)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve2 (let (_, a) = self in a)
+  let rec resolve0 (self:(t1, t2)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec x (self:(t1, t2)) (return'  (ret:()))= {[#"../trait_impl.rs" 25 9 25 13] inv0 self}
+    (! bb0 
+    [ bb1 = return' {_0} 
+    | bb0 = [ &_0 <- [#"../trait_impl.rs" 25 15 25 17] () ] {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- bb1  ]
+    ) [ return' (result:())-> (! return' {_0}) ] [ & _0 : () = any_l () : () | & self : (t1, t2) = self ] 
+end
+module TraitImpl_Impl1_X
+  type b
+  use prelude.UInt32
+  use prelude.Int
+  use prelude.Intrinsic
+  let rec x (self:uint32) (return'  (ret:()))= (! bb0 
+    [ bb0 = [ &_0 <- [#"../trait_impl.rs" 29 15 29 17] () ] return' {_0}  ]
+    ) [ return' (result:())-> (! return' {_0}) ] [ & _0 : () = any_l () : () ] 
+end
+module TraitImpl_Impl0
+  type b
+  type t2
+  type t1
+  predicate invariant0 (self : (t1, t2))
+  let rec invariant0 (self:(t1, t2)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : (t1, t2))
+  let rec inv0 (_x:(t1, t2)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : (t1, t2) . inv0 x = true
+  goal x_refn : [#"../trait_impl.rs" 25 4 25 14] forall self : (t1, t2) . inv0 self  -> inv0 self
+end
+module TraitImpl_Impl1
+  type b
+  goal x_refn : [#"../trait_impl.rs" 29 4 29 14] true
+end

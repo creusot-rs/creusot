@@ -19,8 +19,8 @@ use rustc_type_ir::TyKind::*;
 use std::collections::VecDeque;
 use why3::{
     declaration::{
-        AdtDecl, ConstructorDecl, Contract, Decl, Field, LetDecl, LetKind, Module, Signature,
-        TyDecl, Use,
+        AdtDecl, ConstructorDecl, Contract, Decl, Field, Logic, Module, Signature, TyDecl, Use,
+        ValDecl,
     },
     exp::{Binder, Exp, Pattern, Trigger},
     ty::Type as MlT,
@@ -394,7 +394,20 @@ pub(crate) fn translate_tydecl(
 
     let (mut decls, _) = names.to_clones(ctx, CloneDepth::Shallow);
     decls.push(Decl::TyDecl(ty_decl));
-
+    use why3::{declaration::LetKind, ty::*};
+    decls.push(Decl::ValDecl(ValDecl {
+        ghost: false,
+        val: false,
+        kind: Some(LetKind::Function),
+        sig: Signature {
+            name: "any_l".into(),
+            trigger: None,
+            attrs: vec![],
+            retty: Some(Type::TVar("a".into())),
+            args: vec![Binder::wild(Type::TVar("b".into()))],
+            contract: Default::default(),
+        },
+    }));
     let mut modls = vec![Module { name: name.clone(), decls }];
 
     modls.extend(bg.iter().filter(|did| **did != repr).map(|did| Module {
@@ -595,7 +608,8 @@ pub(crate) fn build_accessor(
         .enumerate()
         .map(|(ix, (name, arity))| {
             let mut pat = vec![Pattern::Wildcard; *arity];
-            let mut exp = Exp::Any(field_ty.clone());
+            let mut exp = Exp::var("any_l").app_to(Exp::var("self"));
+
             if ix == variant_ix {
                 pat[field_ix] = Pattern::VarP("a".into());
                 exp = Exp::var("a");
@@ -606,13 +620,7 @@ pub(crate) fn build_accessor(
 
     let discr_exp = Exp::Match(Box::new(Exp::var("self")), branches);
 
-    Decl::Let(LetDecl {
-        sig,
-        rec: false,
-        ghost: target_field.2,
-        body: discr_exp,
-        kind: Some(LetKind::Function),
-    })
+    Decl::LogicDefn(Logic { sig, body: discr_exp })
 }
 
 pub(crate) fn closure_accessors<'tcx>(

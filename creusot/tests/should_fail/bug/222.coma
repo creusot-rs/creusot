@@ -1,0 +1,109 @@
+
+module C222_A_IsTrue_Impl
+  type self
+  use prelude.Int
+  function mktrue0 [#"../222.rs" 7 4 7 22] (_1 : ()) : int
+  let rec mktrue0 (_1:()) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = mktrue0 _1} (! return' {result}) ]
+    
+  constant _1  : ()
+  function is_true [#"../222.rs" 14 4 14 16] (_1 : ()) : ()
+  goal vc_is_true : [#"../222.rs" 13 14 13 34] mktrue0 () <= 10
+end
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
+    
+  function any_l (_ : 'b) : 'a
+end
+module C222_Once_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  type t_once 't =
+    | C_Once (Core_Option_Option_Type.t_option 't)
+    
+  function any_l (_ : 'b) : 'a
+  function once_0 (self : t_once 't) : Core_Option_Option_Type.t_option 't =
+    match self with
+      | C_Once a -> a
+      end
+end
+module C222_UsesInvariant
+  type t
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use prelude.Borrow
+  predicate invariant3 (self : borrowed (Core_Option_Option_Type.t_option t))
+  let rec invariant3 (self:borrowed (Core_Option_Option_Type.t_option t)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
+    
+  predicate inv2 (_x : borrowed (Core_Option_Option_Type.t_option t))
+  let rec inv2 (_x:borrowed (Core_Option_Option_Type.t_option t)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
+    
+  axiom inv2 : forall x : borrowed (Core_Option_Option_Type.t_option t) . inv2 x = true
+  predicate invariant2 (self : Core_Option_Option_Type.t_option t)
+  let rec invariant2 (self:Core_Option_Option_Type.t_option t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
+    
+  predicate inv1 (_x : Core_Option_Option_Type.t_option t)
+  let rec inv1 (_x:Core_Option_Option_Type.t_option t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  axiom inv1 : forall x : Core_Option_Option_Type.t_option t . inv1 x = true
+  use C222_Once_Type as C222_Once_Type
+  predicate invariant1 (self : borrowed (C222_Once_Type.t_once t))
+  let rec invariant1 (self:borrowed (C222_Once_Type.t_once t)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  predicate inv0 (_x : borrowed (C222_Once_Type.t_once t))
+  let rec inv0 (_x:borrowed (C222_Once_Type.t_once t)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : borrowed (C222_Once_Type.t_once t) . inv0 x = true
+  predicate invariant0 [#"../222.rs" 29 4 29 30] (self : C222_Once_Type.t_once t) =
+    [#"../222.rs" 30 8 30 12] true
+  let rec invariant0 (self:C222_Once_Type.t_once t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+    
+  use prelude.Intrinsic
+  let rec take0 (self:borrowed (Core_Option_Option_Type.t_option t)) (return'  (ret:Core_Option_Option_Type.t_option t))= {inv2 self}
+    any 
+    [ return' (result:Core_Option_Option_Type.t_option t)-> {inv1 result}
+      {[#"../../../../../creusot-contracts/src/std/option.rs" 29 0 126 1] result =  * self /\  ^ self = Core_Option_Option_Type.C_None}
+      (! return' {result}) ]
+    
+  predicate resolve1 (self : Core_Option_Option_Type.t_option t)
+  let rec resolve1 (self:Core_Option_Option_Type.t_option t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : borrowed (C222_Once_Type.t_once t)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed (C222_Once_Type.t_once t)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec uses_invariant (x:borrowed (C222_Once_Type.t_once t)) (return'  (ret:()))= {[#"../222.rs" 40 25 40 26] inv0 x}
+    {[#"../222.rs" 38 11 38 24] invariant0 ( * x)}
+    (! bb0 
+    [ bb2 = [ &_0 <- [#"../222.rs" 40 42 42 1] () ] return' {_0} 
+    | bb1 = {[@expl:type invariant] inv1 _4}
+      -{resolve1 _4}- {[@expl:type invariant] inv0 x}
+      -{resolve0 x}- bb2 
+    | bb0 = Borrow.borrow_final <Core_Option_Option_Type.t_option t> {C222_Once_Type.once_0 ( * x)}
+      {Borrow.inherit_id (Borrow.get_id x) 1} (fun (_ret':borrowed (Core_Option_Option_Type.t_option t)) -> 
+        [ &_5 <- _ret' ]
+        
+        [ &x <- { x with current = (let C222_Once_Type.C_Once x0 =  * x in C222_Once_Type.C_Once ( ^ _5)) ; } ]
+        -{inv1 ( ^ _5)}- take0 {_5} (fun (_ret':Core_Option_Option_Type.t_option t) -> [ &_4 <- _ret' ] bb1))  ]
+    ) [ return' (result:())-> {[#"../222.rs" 39 10 39 26] invariant0 ( ^ x)} (! return' {_0}) ] 
+    [ & _0 : () = any_l () : ()
+    | & x : borrowed (C222_Once_Type.t_once t) = x
+    | & _4 : Core_Option_Option_Type.t_option t = any_l () : Core_Option_Option_Type.t_option t
+    | & _5 : borrowed (Core_Option_Option_Type.t_option t) = any_l () : borrowed (Core_Option_Option_Type.t_option t) ]
+    
+end
+module C222_Impl0
+  
+end
+module C222_Impl1
+  type t
+end

@@ -125,10 +125,10 @@ impl Expr {
 
     pub fn assign(mut self, lhs: Ident, rhs: Term) -> Self {
         match &mut self {
-            Expr::Assign(_, asgns) => {
-                asgns.push((lhs, rhs));
-                self
-            }
+            // Expr::Assign(_, asgns) => {
+            //     asgns.push((lhs, rhs));
+            //     self
+            // }
             _ => Expr::Assign(Box::new(self), vec![(lhs, rhs)]),
         }
     }
@@ -232,7 +232,6 @@ impl Print for Expr {
                         alloc.text(" -> ")
                     ]
                 };
-
                 header.append(body.pretty(alloc).nest(2)).parens()
             }
             Expr::Defn(cont, rec, handlers) => {
@@ -271,7 +270,7 @@ impl Print for Expr {
                 cont.pretty(alloc)
             ],
             Expr::Assert(t, e) => {
-                docs![alloc, t.pretty(alloc).braces(), alloc.space(), e.pretty(alloc)]
+                docs![alloc, t.pretty(alloc).braces().group(), alloc.line(), e.pretty(alloc)]
             }
             Expr::Assume(t, e) => {
                 docs![alloc, t.pretty(alloc).enclose("-{", "}-"), alloc.space(), e.pretty(alloc)]
@@ -313,7 +312,7 @@ where
         alloc,
         alloc.line_(),
         alloc.space().append(body).append(alloc.space()).brackets().nest(0),
-        alloc.line_()
+        alloc.line()
     ]
     .group()
 }
@@ -347,6 +346,6 @@ impl Print for Defn {
     where
         A::Doc: Clone,
     {
-        docs![alloc, "let ", print_defn(self, "=", alloc),]
+        docs![alloc, "let rec ", print_defn(self, "=", alloc),]
     }
 }

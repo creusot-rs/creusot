@@ -1,0 +1,258 @@
+
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.Opaque
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+    
+  function any_l (_ : 'b) : 'a
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+    
+  function any_l (_ : 'b) : 'a
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_RawVec_Cap_Type
+  use prelude.UIntSize
+  use prelude.Int
+  type t_cap  =
+    | C_Cap usize
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_Vec_Vec_Type
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
+    
+  function any_l (_ : 'b) : 'a
+end
+module Core_Result_Result_Type
+  type t_result 't 'e =
+    | C_Ok 't
+    | C_Err 'e
+    
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+    
+  function any_l (_ : 'b) : 'a
+end
+module C04BinarySearch_BinarySearch
+  use prelude.UInt32
+  use seq.Seq
+  predicate invariant4 (self : Seq.seq uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant4 (self:Seq.seq uint32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ]
+    
+  predicate inv4 (_x : Seq.seq uint32)
+  let rec inv4 (_x:Seq.seq uint32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ]
+    
+  axiom inv4 : forall x : Seq.seq uint32 . inv4 x = true
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use prelude.UIntSize
+  use prelude.UIntSize
+  use prelude.Int
+  constant max0 : usize = (18446744073709551615 : usize)
+  use seq.Seq
+  predicate inv3 (_x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))
+  let rec inv3 (_x:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
+    
+  function shallow_model2 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
+  let rec shallow_model2 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq uint32))= {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self}
+    any [ return' (result:Seq.seq uint32)-> {result = shallow_model2 self} (! return' {result}) ] 
+  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv4 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int (max0 : usize))
+  predicate invariant3 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv4 (shallow_model2 self)
+  let rec invariant3 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ] 
+  axiom inv3 : forall x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . inv3 x = true
+  predicate invariant2 (self : uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant2 (self:uint32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
+    
+  predicate inv2 (_x : uint32)
+  let rec inv2 (_x:uint32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
+    
+  axiom inv2 : forall x : uint32 . inv2 x = true
+  predicate invariant1 (self : usize) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant1 (self:usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+    
+  predicate inv1 (_x : usize)
+  let rec inv1 (_x:usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  axiom inv1 : forall x : usize . inv1 x = true
+  predicate invariant0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant0 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ] 
+  predicate inv0 (_x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))
+  let rec inv0 (_x:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . inv0 x = true
+  use seq.Seq
+  predicate sorted_range0 [#"../04_binary_search.rs" 8 0 8 52] (s : Seq.seq uint32) (l : int) (u : int) =
+    [#"../04_binary_search.rs" 9 4 11 5] forall j : int . forall i : int . l <= i /\ i < j /\ j < u
+     -> Seq.get s i <= Seq.get s j
+  let rec sorted_range0 (s:Seq.seq uint32) (l:int) (u:int) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = sorted_range0 s l u} (! return' {result}) ]
+    
+  predicate sorted0 [#"../04_binary_search.rs" 15 0 15 30] (s : Seq.seq uint32) =
+    [#"../04_binary_search.rs" 16 4 16 31] sorted_range0 s 0 (Seq.length s)
+  let rec sorted0 (s:Seq.seq uint32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = sorted0 s} (! return' {result}) ]
+    
+  use prelude.Intrinsic
+  use prelude.Borrow
+  function shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32 =
+    [#"../../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model2 self
+  let rec shallow_model1 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq uint32))= any
+    [ return' (result:Seq.seq uint32)-> {result = shallow_model1 self} (! return' {result}) ] 
+  let rec len1 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:usize))= {inv0 self}
+    any 
+    [ return' (result:usize)-> {[#"../../../../../creusot-contracts/src/std/vec.rs" 75 26 75 48] UIntSize.to_int result = Seq.length (shallow_model1 self)}
+      (! return' {result}) ]
+    
+  function index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (ix : int) : uint32
+    
+   =
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model2 self) ix
+  let rec index_logic0 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:uint32))= any
+    [ return' (result:uint32)-> {result = index_logic0 self ix} (! return' {result}) ] 
+  use prelude.Slice
+  predicate has_value0 [@inline:trivial] (self : usize) (seq : Seq.seq uint32) (out : uint32) =
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 122 20 122 37] Seq.get seq (UIntSize.to_int self) = out
+  let rec has_value0 (self:usize) (seq:Seq.seq uint32) (out:uint32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = has_value0 self seq out} (! return' {result}) ]
+    
+  predicate in_bounds0 [@inline:trivial] (self : usize) (seq : Seq.seq uint32) =
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 115 20 115 37] UIntSize.to_int self < Seq.length seq
+  let rec in_bounds0 (self:usize) (seq:Seq.seq uint32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = in_bounds0 self seq} (! return' {result}) ]
+    
+  let rec index0 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (index:usize) (return'  (ret:uint32))= {inv1 index}
+    {inv0 self}
+    {[#"../../../../../creusot-contracts/src/std/vec.rs" 141 27 141 46] in_bounds0 index (shallow_model1 self)}
+    any 
+    [ return' (result:uint32)-> {inv2 result}
+      {[#"../../../../../creusot-contracts/src/std/vec.rs" 142 26 142 54] has_value0 index (shallow_model1 self) result}
+      (! return' {result}) ]
+    
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  let rec binary_search (arr:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (elem:uint32) (return'  (ret:Core_Result_Result_Type.t_result usize usize))= {[#"../04_binary_search.rs" 20 11 20 23] sorted0 (shallow_model1 arr)}
+    {[#"../04_binary_search.rs" 19 11 19 36] Seq.length (shallow_model1 arr) <= UIntSize.to_int (max0 : usize)}
+    (! bb0 
+    [ bb21 = return' {_0} 
+    | bb20 = bb21 
+    | bb19 = bb20 
+    | bb18 = [ &_0 <- Core_Result_Result_Type.C_Err base ] bb19 
+    | bb17 = UIntSize.add {base} {[#"../04_binary_search.rs" 48 19 48 20] (1 : usize)} (fun (_ret':usize) -> 
+        [ &_51 <- _ret' ]
+        [ &_0 <- Core_Result_Result_Type.C_Err _51 ] any [ any_ (_any:usize)-> [ &_51 <- _any ] bb19 ] ) 
+    | bb16 = UInt32.lt {cmp} {elem} (fun (_ret':bool) -> [ &_48 <- _ret' ] any 
+        [ br0 -> {_48 = false} (! bb18) | br1 -> {_48} (! bb17) ]
+        ) 
+    | bb15 = [ &_0 <- Core_Result_Result_Type.C_Ok base ] bb20 
+    | bb14 = [ &cmp <- _41 ] UInt32.eq {cmp} {elem} (fun (_ret':bool) -> [ &_44 <- _ret' ] any 
+        [ br0 -> {_44 = false} (! bb16) | br1 -> {_44} (! bb15) ]
+        ) 
+    | bb13 = index0 {arr} {base} (fun (_ret':uint32) -> [ &_41 <- _ret' ] bb14) 
+    | bb5 = {[#"../04_binary_search.rs" 33 4 33 58] forall i : usize . UIntSize.to_int base + UIntSize.to_int size < UIntSize.to_int i /\ UIntSize.to_int i < Seq.length (shallow_model1 arr)
+       -> elem < index_logic0 arr (UIntSize.to_int i)}
+      {[#"../04_binary_search.rs" 33 4 33 58] forall i : usize . i < base
+       -> index_logic0 arr (UIntSize.to_int i) <= elem}
+      {[#"../04_binary_search.rs" 33 16 33 56] 0 < UIntSize.to_int size /\ UIntSize.to_int size + UIntSize.to_int base <= Seq.length (shallow_model1 arr)}
+      (! bb6) 
+      [ bb12 = [ &base <- _29 ] any 
+        [ any_ (_any:usize)-> [ &_29 <- _any ] UIntSize.sub {size} {half} (fun (_ret':usize) -> 
+            [ &size <- _ret' ]
+            bb5) ]
+        
+      | bb11 = [ &_29 <- mid ] bb12
+      | bb10 = [ &_29 <- base ] bb12
+      | bb9 = UInt32.gt {_32} {elem} (fun (_ret':bool) -> [ &_30 <- _ret' ] any 
+          [ br0 -> {_30 = false} (! bb11) | br1 -> {_30} (! bb10) ]
+          )
+      | bb8 = UIntSize.div {size} {[#"../04_binary_search.rs" 37 26 37 27] (2 : usize)} (fun (_ret':usize) -> 
+          [ &half <- _ret' ]
+          UIntSize.add {base} {half} (fun (_ret':usize) -> [ &mid <- _ret' ] index0 {arr} {mid} (fun (_ret':uint32) -> 
+              [ &_32 <- _ret' ]
+              bb9)))
+      | bb7 = UIntSize.eq {[#"../04_binary_search.rs" 37 26 37 27] (2 : usize)}
+        {[#"../04_binary_search.rs" 37 19 37 27] (0 : usize)} (fun (_ret':bool) -> 
+          [ &_25 <- _ret' ]
+          {[@expl:division by zero] [#"../04_binary_search.rs" 37 19 37 27] not _25}
+          bb8)
+      | bb6 = UIntSize.gt {size} {[#"../04_binary_search.rs" 36 17 36 18] (1 : usize)} (fun (_ret':bool) -> 
+          [ &_21 <- _ret' ]
+          any [ br0 -> {_21 = false} (! bb13) | br1 -> {_21} (! bb7) ] ) ]
+      
+    | bb4 = [ &base <- [#"../04_binary_search.rs" 31 19 31 20] (0 : usize) ] bb5 
+    | bb3 = len1 {arr} (fun (_ret':usize) -> [ &size <- _ret' ] bb4) 
+    | bb2 = [ &_0 <- Core_Result_Result_Type.C_Err ([#"../04_binary_search.rs" 28 19 28 20] (0 : usize)) ] bb21 
+    | bb1 = UIntSize.eq {_10} {[#"../04_binary_search.rs" 27 20 27 21] (0 : usize)} (fun (_ret':bool) -> 
+        [ &_9 <- _ret' ]
+        any [ br0 -> {_9 = false} (! bb3) | br1 -> {_9} (! bb2) ] ) 
+    | bb0 = len1 {arr} (fun (_ret':usize) -> [ &_10 <- _ret' ] bb1)  ]
+    ) 
+    [ return' (result:Core_Result_Result_Type.t_result usize usize)-> {[#"../04_binary_search.rs" 24 0 25 65] forall x : usize . result = Core_Result_Result_Type.C_Err x
+       -> (forall i : usize . x < i /\ UIntSize.to_int i < Seq.length (shallow_model1 arr)
+       -> elem < index_logic0 arr (UIntSize.to_int i))}
+      {[#"../04_binary_search.rs" 22 0 23 48] forall x : usize . result = Core_Result_Result_Type.C_Err x
+       -> (forall i : usize . i < x  -> index_logic0 arr (UIntSize.to_int i) <= elem)}
+      {[#"../04_binary_search.rs" 21 0 21 63] forall x : usize . result = Core_Result_Result_Type.C_Ok x
+       -> index_logic0 arr (UIntSize.to_int x) = elem}
+      (! return' {_0}) ]
+    
+    [ & _0 : Core_Result_Result_Type.t_result usize usize = any_l () : Core_Result_Result_Type.t_result usize usize
+    | & arr : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) = arr
+    | & elem : uint32 = elem
+    | & _9 : bool = any_l () : bool
+    | & _10 : usize = any_l () : usize
+    | & size : usize = any_l () : usize
+    | & base : usize = any_l () : usize
+    | & _21 : bool = any_l () : bool
+    | & half : usize = any_l () : usize
+    | & _25 : bool = any_l () : bool
+    | & mid : usize = any_l () : usize
+    | & _29 : usize = any_l () : usize
+    | & _30 : bool = any_l () : bool
+    | & _32 : uint32 = any_l () : uint32
+    | & cmp : uint32 = any_l () : uint32
+    | & _41 : uint32 = any_l () : uint32
+    | & _44 : bool = any_l () : bool
+    | & _48 : bool = any_l () : bool
+    | & _51 : usize = any_l () : usize ]
+    
+end
