@@ -67,6 +67,7 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
 2. Upgrade Why3 and Alt-Ergo if needed:
    ```
    $ eval $(opam env)
+   $ opam update
    $ opam install .
    ```
 3. Rebuild and reinstall Creusot:
