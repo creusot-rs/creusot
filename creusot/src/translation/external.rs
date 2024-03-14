@@ -69,16 +69,26 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let mut inner_subst = GenericArgs::identity_for_item(ctx.tcx, id).to_vec();
     let outer_subst = GenericArgs::identity_for_item(ctx.tcx, def_id.to_def_id());
 
+    // FIXME(xavier): Handle this better.
+    // "Host effects" are related to the wip effects feature of Rust. For the moment let's just ignore them.
+    let has_host_effect = ctx.generics_of(id).host_effect_index.is_some();
+    if has_host_effect {
+        inner_subst.pop();
+    }
     // FIXME(xavier): I don't remember the original reason for introducing this...
     let extra_parameters = inner_subst.len() - outer_subst.len();
 
     // Move Self_ to the front of the list like rustc does for real trait impls (not expressible in surface rust).
     // This only matters when we also have lifetime parameters.
     let self_pos = outer_subst.iter().position(|e| {
-        if
-        let GenericArgKind::Type(t) = e.unpack() &&
-        let TyKind::Param(t) = t.kind() &&
-        t.name.as_str().starts_with("Self") { true } else { false }
+        if let GenericArgKind::Type(t) = e.unpack()
+            && let TyKind::Param(t) = t.kind()
+            && t.name.as_str().starts_with("Self")
+        {
+            true
+        } else {
+            false
+        }
     });
 
     if let Some(ix) = self_pos {
@@ -125,7 +135,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         }
     }
 
-    errors.into_iter().for_each(|mut e| e.emit());
+    errors.into_iter().for_each(|e| e.emit());
 
     let subst = ctx.mk_args(&subst);
 
@@ -165,7 +175,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItems<'a, 'tcx> {
         self.thir
     }
 
-    fn visit_expr(&mut self, expr: &Expr<'tcx>) {
+    fn visit_expr(&mut self, expr: &'a Expr<'tcx>) {
         if let ExprKind::Call { ty, .. } = expr.kind {
             if let TyKind::FnDef(id, subst) = ty.kind() {
                 self.items.insert((*id, subst));

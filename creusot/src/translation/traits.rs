@@ -323,9 +323,12 @@ pub(crate) fn still_specializable<'tcx>(
     substs: GenericArgsRef<'tcx>,
 ) -> bool {
     if let Some(trait_id) = tcx.trait_of_item(def_id) {
-        let is_final = if let Some(ImplSource::UserDefined(ud)) = resolve_impl_source_opt(tcx, param_env, def_id, substs) {
-            let trait_def =  tcx.trait_def(trait_id);
-            let leaf = trait_def.ancestors(tcx, ud.impl_def_id).unwrap().leaf_def(tcx, def_id).unwrap();
+        let is_final = if let Some(ImplSource::UserDefined(ud)) =
+            resolve_impl_source_opt(tcx, param_env, def_id, substs)
+        {
+            let trait_def = tcx.trait_def(trait_id);
+            let leaf =
+                trait_def.ancestors(tcx, ud.impl_def_id).unwrap().leaf_def(tcx, def_id).unwrap();
 
             leaf.is_final()
         } else {
@@ -334,7 +337,9 @@ pub(crate) fn still_specializable<'tcx>(
 
         let trait_generics = substs.truncate_to(tcx, tcx.generics_of(trait_id));
         !is_final && trait_generics.still_further_specializable()
-    } else if let Some(impl_id) = tcx.impl_of_method(def_id) && tcx.trait_id_of_impl(impl_id).is_some() {
+    } else if let Some(impl_id) = tcx.impl_of_method(def_id)
+        && tcx.trait_id_of_impl(impl_id).is_some()
+    {
         let is_final = tcx.defaultness(def_id).is_final();
         let trait_ref = tcx.impl_trait_ref(impl_id).unwrap();
         !is_final && trait_ref.instantiate(tcx, substs).still_further_specializable()

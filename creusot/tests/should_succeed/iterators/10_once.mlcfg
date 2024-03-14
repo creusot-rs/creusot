@@ -47,12 +47,10 @@ module C10Once_Impl0_ProducesRefl_Impl
   val produces0 [#"../10_once.rs" 21 4 21 64] (self : C10Once_Once_Type.t_once t) (visited : Seq.seq t) (o : C10Once_Once_Type.t_once t) : bool
     ensures { result = produces0 self visited o }
     
-  let rec ghost function produces_refl [#"../10_once.rs" 31 4 31 26] (self : C10Once_Once_Type.t_once t) : ()
-    requires {[#"../10_once.rs" 31 21 31 25] inv0 self}
-    ensures { [#"../10_once.rs" 30 14 30 45] produces0 self (Seq.empty ) self }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../10_once.rs" 28 4 28 10] ()
+  constant self  : C10Once_Once_Type.t_once t
+  function produces_refl [#"../10_once.rs" 31 4 31 26] (self : C10Once_Once_Type.t_once t) : ()
+  goal vc_produces_refl : ([#"../10_once.rs" 31 21 31 25] inv0 self)
+   -> ([#"../10_once.rs" 30 14 30 45] produces0 self (Seq.empty ) self)
 end
 module C10Once_Impl0_ProducesTrans_Impl
   type t
@@ -96,18 +94,21 @@ module C10Once_Impl0_ProducesTrans_Impl
   val produces0 [#"../10_once.rs" 21 4 21 64] (self : C10Once_Once_Type.t_once t) (visited : Seq.seq t) (o : C10Once_Once_Type.t_once t) : bool
     ensures { result = produces0 self visited o }
     
-  let rec ghost function produces_trans [#"../10_once.rs" 38 4 38 90] (a : C10Once_Once_Type.t_once t) (ab : Seq.seq t) (b : C10Once_Once_Type.t_once t) (bc : Seq.seq t) (c : C10Once_Once_Type.t_once t) : ()
-    requires {[#"../10_once.rs" 35 15 35 32] produces0 a ab b}
-    requires {[#"../10_once.rs" 36 15 36 32] produces0 b bc c}
-    requires {[#"../10_once.rs" 38 22 38 23] inv0 a}
-    requires {[#"../10_once.rs" 38 31 38 33] inv1 ab}
-    requires {[#"../10_once.rs" 38 52 38 53] inv0 b}
-    requires {[#"../10_once.rs" 38 61 38 63] inv1 bc}
-    requires {[#"../10_once.rs" 38 82 38 83] inv0 c}
-    ensures { [#"../10_once.rs" 37 14 37 42] produces0 a (Seq.(++) ab bc) c }
+  constant a  : C10Once_Once_Type.t_once t
+  constant ab  : Seq.seq t
+  constant b  : C10Once_Once_Type.t_once t
+  constant bc  : Seq.seq t
+  constant c  : C10Once_Once_Type.t_once t
+  function produces_trans [#"../10_once.rs" 38 4 38 90] (a : C10Once_Once_Type.t_once t) (ab : Seq.seq t) (b : C10Once_Once_Type.t_once t) (bc : Seq.seq t) (c : C10Once_Once_Type.t_once t) : ()
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../10_once.rs" 33 4 33 10] ()
+  goal vc_produces_trans : ([#"../10_once.rs" 38 82 38 83] inv0 c)
+   -> ([#"../10_once.rs" 38 61 38 63] inv1 bc)
+   -> ([#"../10_once.rs" 38 52 38 53] inv0 b)
+   -> ([#"../10_once.rs" 38 31 38 33] inv1 ab)
+   -> ([#"../10_once.rs" 38 22 38 23] inv0 a)
+   -> ([#"../10_once.rs" 36 15 36 32] produces0 b bc c)
+   -> ([#"../10_once.rs" 35 15 35 32] produces0 a ab b)
+   -> ([#"../10_once.rs" 37 14 37 42] produces0 a (Seq.(++) ab bc) c)
 end
 module C10Once_Impl0_Next
   type t
@@ -161,7 +162,7 @@ module C10Once_Impl0_Next
     ensures { result = produces0 self visited o }
     
   predicate resolve0 (self : borrowed (C10Once_Once_Type.t_once t)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve0 (self : borrowed (C10Once_Once_Type.t_once t)) : bool
     ensures { result = resolve0 self }
     
@@ -257,8 +258,10 @@ module C10Once_Impl0
     
   axiom inv0 : forall x : C10Once_Once_Type.t_once t . inv0 x = true
   use seq.Seq
+  use seq.Seq
+  use seq.Seq
   predicate resolve0 (self : borrowed (C10Once_Once_Type.t_once t)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve0 (self : borrowed (C10Once_Once_Type.t_once t)) : bool
     ensures { result = resolve0 self }
     
@@ -268,8 +271,6 @@ module C10Once_Impl0
     ensures { result = completed0 self }
     
   use seq.Seq
-  use seq.Seq
-  use seq.Seq
   predicate produces0 [#"../10_once.rs" 21 4 21 64] (self : C10Once_Once_Type.t_once t) (visited : Seq.seq t) (o : C10Once_Once_Type.t_once t)
     
    =
@@ -277,13 +278,18 @@ module C10Once_Impl0
   val produces0 [#"../10_once.rs" 21 4 21 64] (self : C10Once_Once_Type.t_once t) (visited : Seq.seq t) (o : C10Once_Once_Type.t_once t) : bool
     ensures { result = produces0 self visited o }
     
-  goal produces_trans_refn : [#"../10_once.rs" 38 4 38 90] forall a : C10Once_Once_Type.t_once t . forall ab : Seq.seq t . forall b : C10Once_Once_Type.t_once t . forall bc : Seq.seq t . forall c : C10Once_Once_Type.t_once t . inv0 c /\ inv1 bc /\ inv0 b /\ inv1 ab /\ inv0 a /\ produces0 b bc c /\ produces0 a ab b -> inv0 c /\ inv1 bc /\ inv0 b /\ inv1 ab /\ inv0 a /\ produces0 b bc c /\ produces0 a ab b /\ (forall result : () . produces0 a (Seq.(++) ab bc) c -> produces0 a (Seq.(++) ab bc) c)
-  goal produces_refl_refn : [#"../10_once.rs" 31 4 31 26] forall self : C10Once_Once_Type.t_once t . inv0 self -> inv0 self /\ (forall result : () . produces0 self (Seq.empty ) self -> produces0 self (Seq.empty ) self)
-  goal next_refn : [#"../10_once.rs" 44 4 44 35] forall self : borrowed (C10Once_Once_Type.t_once t) . inv2 self -> inv2 self /\ (forall result : Core_Option_Option_Type.t_option t . inv3 result /\ match result with
+  goal produces_trans_refn : [#"../10_once.rs" 38 4 38 90] forall a : C10Once_Once_Type.t_once t . forall ab : Seq.seq t . forall b : C10Once_Once_Type.t_once t . forall bc : Seq.seq t . forall c : C10Once_Once_Type.t_once t . inv0 c /\ inv1 bc /\ inv0 b /\ inv1 ab /\ inv0 a /\ produces0 b bc c /\ produces0 a ab b
+   -> inv0 c /\ inv1 bc /\ inv0 b /\ inv1 ab /\ inv0 a /\ produces0 b bc c /\ produces0 a ab b /\ (forall result : () . produces0 a (Seq.(++) ab bc) c
+   -> produces0 a (Seq.(++) ab bc) c)
+  goal next_refn : [#"../10_once.rs" 44 4 44 35] forall self : borrowed (C10Once_Once_Type.t_once t) . inv2 self
+   -> inv2 self /\ (forall result : Core_Option_Option_Type.t_option t . inv3 result /\ match result with
     | Core_Option_Option_Type.C_None -> completed0 self
     | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
-    end -> inv3 result /\ match result with
+    end
+   -> inv3 result /\ match result with
     | Core_Option_Option_Type.C_None -> completed0 self
     | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
     end)
+  goal produces_refl_refn : [#"../10_once.rs" 31 4 31 26] forall self : C10Once_Once_Type.t_once t . inv0 self
+   -> inv0 self /\ (forall result : () . produces0 self (Seq.empty ) self  -> produces0 self (Seq.empty ) self)
 end

@@ -140,9 +140,8 @@ impl<'tcx> Why3Generator<'tcx> {
                     self.finish(def_id);
                 }
             }
-            ItemType::Ghost
-            | ItemType::Logic
-            | ItemType::Predicate
+            ItemType::Logic { .. }
+            | ItemType::Predicate { .. }
             | ItemType::Program
             | ItemType::Closure => {
                 self.start(def_id);
@@ -200,7 +199,7 @@ impl<'tcx> Why3Generator<'tcx> {
         }
 
         let translated = match util::item_type(self.tcx, def_id) {
-            ItemType::Ghost | ItemType::Logic | ItemType::Predicate => {
+            ItemType::Logic { .. } | ItemType::Predicate { .. } => {
                 debug!("translating {:?} as logical", def_id);
                 let (proof_modl, deps) = logic::translate_logic_or_predicate(self, def_id);
                 self.dependencies.insert(def_id.into(), deps);
@@ -259,9 +258,9 @@ impl<'tcx> Why3Generator<'tcx> {
             self.translate(adt_did);
         }
 
-        let (modl, deps) = ty_inv::build_inv_module(self, inv_kind);
+        let deps = ty_inv::build_inv_module(self, inv_kind);
         self.dependencies.insert(tid, deps);
-        self.functions.insert(tid, TranslatedItem::TyInv { modl });
+        self.functions.insert(tid, TranslatedItem::TyInv {});
     }
 
     // pub(crate) fn item(&self, def_id: DefId) -> Option<&TranslatedItem> {
@@ -340,7 +339,7 @@ impl<'tcx> Why3Generator<'tcx> {
     fn is_logical(&self, item: DefId) -> bool {
         matches!(
             util::item_type(self.tcx, item),
-            ItemType::Logic | ItemType::Predicate | ItemType::Ghost
+            ItemType::Logic { .. } | ItemType::Predicate { .. }
         )
     }
 
@@ -383,7 +382,6 @@ impl<'tcx> Why3Generator<'tcx> {
         let filename = match self.opts.span_mode {
             SpanMode::Absolute => path.to_string_lossy().into_owned(),
             SpanMode::Relative => {
-                // Why3 treats the spans as relative to the session not the source file??
                 format!("{}", self.opts.relative_to_output(&path).to_string_lossy())
             }
             _ => return None,
@@ -415,7 +413,7 @@ pub(crate) fn closure_generic_decls(
     mut def_id: DefId,
 ) -> impl Iterator<Item = Decl> + '_ {
     loop {
-        if tcx.is_closure(def_id) {
+        if tcx.is_closure_or_coroutine(def_id) {
             def_id = tcx.parent(def_id);
         } else {
             break;

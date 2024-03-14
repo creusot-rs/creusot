@@ -6,7 +6,7 @@ extern crate rustc_interface;
 extern crate rustc_session;
 
 mod options;
-use options::{Args, CreusotArgsExt as _};
+use options::CreusotArgsExt as _;
 
 #[macro_use]
 extern crate log;
@@ -14,13 +14,12 @@ extern crate log;
 use creusot::callbacks::*;
 use options::CreusotArgs;
 use rustc_driver::{RunCompiler, DEFAULT_LOCALE_RESOURCES};
-use rustc_errors::emitter::EmitterWriter;
+use rustc_errors::emitter::HumanEmitter;
 use rustc_interface::interface::try_print_query_stack;
-use rustc_session::{config::ErrorOutputType, EarlyErrorHandler};
-use std::{backtrace, env, panic, panic::PanicInfo, process::Command};
+use rustc_session::{config::ErrorOutputType, EarlyDiagCtxt};
+use std::{env, panic, panic::PanicInfo, process::Command};
 
 const BUG_REPORT_URL: &'static str = &"https://github.com/xldenis/creusot/issues/new";
-const WHY3_VERSION: &[&'static str] = &["1", "7", "1"];
 
 lazy_static::lazy_static! {
     static ref ICE_HOOK: Box<dyn Fn(&panic::PanicInfo<'_>) + Sync + Send + 'static> = {
@@ -38,10 +37,10 @@ fn report_panic(info: &PanicInfo) {
     let fallback_bundle =
         rustc_errors::fallback_fluent_bundle(DEFAULT_LOCALE_RESOURCES.to_vec(), false);
 
-    let emitter = Box::new(EmitterWriter::stderr(rustc_errors::ColorConfig::Auto, fallback_bundle));
-    let handler = rustc_errors::Handler::with_emitter(emitter);
+    let emitter = Box::new(HumanEmitter::stderr(rustc_errors::ColorConfig::Auto, fallback_bundle));
+    let handler = rustc_errors::DiagCtxt::with_emitter(emitter);
 
-    let mut diagnostic = handler.struct_note_without_error("Creusot has panic-ed!");
+    let mut diagnostic = handler.struct_note("Creusot has panic-ed!");
     diagnostic.note("Oops, that shouldn't have happened, sorry about that.");
     diagnostic.note(format!("Please report this bug over here: {}", BUG_REPORT_URL));
 
@@ -52,7 +51,6 @@ fn report_panic(info: &PanicInfo) {
 
     if backtrace {
         try_print_query_stack(&handler, None, None);
-        eprintln!("{}", backtrace::Backtrace::capture());
     }
 }
 
@@ -60,7 +58,7 @@ struct DefaultCallbacks;
 impl rustc_driver::Callbacks for DefaultCallbacks {}
 
 fn main() {
-    let handler = EarlyErrorHandler::new(ErrorOutputType::default());
+    let handler = EarlyDiagCtxt::new(ErrorOutputType::default());
     rustc_driver::init_rustc_env_logger(&handler);
     env_logger::init();
     lazy_static::initialize(&ICE_HOOK);
@@ -80,24 +78,10 @@ fn setup_plugin() {
     let creusot: CreusotArgs = if is_wrapper {
         serde_json::from_str(&std::env::var("CREUSOT_ARGS").unwrap()).unwrap()
     } else {
-        let all_args = Args::parse_from(&args);
-        args = all_args.rust_flags;
-        all_args.creusot
+        let mut all_args = CreusotArgs::parse_from(&args);
+        args = std::mem::take(&mut all_args.rust_flags);
+        all_args
     };
-
-    if creusot.check_why3 {
-        if let Some(why3_vers) = why3_version() {
-            let parts: Vec<_> = why3_vers.split(|c| c == '.' || c == '+').collect();
-            if &parts[..2] < WHY3_VERSION {
-                emit_warning(format!(
-                    "the recommended version of why3 is at least {} (installed: {why3_vers})",
-                    WHY3_VERSION.join(".")
-                ));
-            }
-        } else {
-            emit_warning("could not determine installed why3 version".to_string());
-        }
-    }
 
     let sysroot = sysroot_path();
     args.push(format!("--sysroot={}", sysroot));
@@ -123,6 +107,7 @@ fn setup_plugin() {
         args.push("-Zcrate-attr=feature(rustc_attrs)".to_owned());
         args.push("-Zcrate-attr=feature(unsized_fn_params)".to_owned());
         args.push("--allow=internal_features".to_owned());
+        args.push("-Zdump-mir=speccleanup".to_owned());
         args.extend(["--cfg", "creusot"].into_iter().map(str::to_owned));
         debug!("creusot args={:?}", args);
 
@@ -149,22 +134,11 @@ fn sysroot_path() -> String {
     String::from_utf8(output.stdout).unwrap().trim().to_owned()
 }
 
-fn why3_version() -> Option<String> {
-    let output = Command::new("why3").arg("--version").output().ok()?;
-
-    let version = String::from_utf8(output.stdout).ok()?;
-    if version.trim().starts_with("Why3 platform, version ") {
-        Some(version.trim()[23..].to_owned())
-    } else {
-        None
-    }
-}
-
-fn emit_warning(text: String) {
+fn _emit_warning(text: String) {
     let fallback_bundle =
         rustc_errors::fallback_fluent_bundle(DEFAULT_LOCALE_RESOURCES.to_vec(), false);
 
-    let emitter = Box::new(EmitterWriter::stderr(rustc_errors::ColorConfig::Auto, fallback_bundle));
-    let handler = rustc_errors::Handler::with_emitter(emitter);
+    let emitter = Box::new(HumanEmitter::stderr(rustc_errors::ColorConfig::Auto, fallback_bundle));
+    let handler = rustc_errors::DiagCtxt::with_emitter(emitter);
     handler.warn(text);
 }

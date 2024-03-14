@@ -1,5 +1,5 @@
 use super::{
-    fmir::{ExprKind, LocalDecls, LocalIdent, RValue},
+    fmir::{LocalDecls, LocalIdent, RValue},
     pearlite::{normalize, Term},
     specification::inv_subst,
 };
@@ -7,10 +7,8 @@ use crate::{
     analysis::NotFinalPlaces,
     backend::ty::closure_accessors,
     ctx::*,
-    fmir::{self, Expr},
-    gather_spec_closures::{
-        assertions_and_ghosts, corrected_invariant_names_and_locations, LoopSpecKind,
-    },
+    fmir::{self},
+    gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind, SpecClosures},
     resolve::EagerResolver,
     translation::{
         fmir::LocalDecl,
@@ -61,7 +59,7 @@ pub struct BodyTranslator<'body, 'tcx> {
 
     resolver: Option<EagerResolver<'body, 'tcx>>,
 
-    // Spec / Ghost variables
+    // Spec / Snapshot variables
     erased_locals: BitSet<Local>,
 
     // Current block being generated
@@ -77,7 +75,10 @@ pub struct BodyTranslator<'body, 'tcx> {
 
     invariants: IndexMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>,
 
+    /// Map of the `proof_assert!` blocks to their translated version.
     assertions: IndexMap<DefId, Term<'tcx>>,
+    /// Map of the `snapshot!` blocks to their translated version.
+    snapshots: IndexMap<DefId, Term<'tcx>>,
 
     borrows: Option<Rc<BorrowSet<'tcx>>>,
 
@@ -95,12 +96,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         body_id: BodyId,
     ) -> Self {
         let invariants = corrected_invariant_names_and_locations(ctx, &body);
-        let assertions = assertions_and_ghosts(ctx, &body);
+        let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, &body);
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if crate::util::is_spec(tcx, *def_id) || util::is_ghost_closure(tcx, *def_id) {
+                if crate::util::is_spec(tcx, *def_id) || util::is_snapshot_closure(tcx, *def_id) {
                     erased_locals.insert(local);
                 }
             }
@@ -116,9 +117,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     borrows.clone(),
                     with_facts.region_inference_context.clone(),
                 );
-
-                // eprintln!("body of {}", tcx.def_path_str(body_id.def_id()));
-                // resolver.debug(with_facts.regioncx.clone());
 
                 (Some(resolver), Some(borrows))
             }
@@ -141,6 +139,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             fresh_id: body.basic_blocks.len(),
             invariants,
             assertions,
+            snapshots,
             borrows,
         }
     }
@@ -151,6 +150,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let arg_count = self.body.arg_count;
 
         assert!(self.assertions.is_empty(), "unused assertions");
+        assert!(self.snapshots.is_empty(), "unused snapshots");
         assert!(self.invariants.is_empty(), "unused invariants");
 
         fmir::Body { locals: self.vars, arg_count, blocks: self.past_blocks }
@@ -205,7 +205,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
             self.translate_terminator(bbd.terminator(), loc);
 
-            if let Some(resolver) = &mut self.resolver && bbd.terminator().successors().next().is_none() {
+            if let Some(resolver) = &mut self.resolver
+                && bbd.terminator().successors().next().is_none()
+            {
                 let mut resolved = resolver.need_resolve_locals_before(loc);
                 resolved.remove(Local::from_usize(0)); // do not resolve return local
                 self.resolve_locals(resolved);
@@ -263,9 +265,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         self.emit_assignment(
             lhs,
             if let Some(deref_index) = is_final {
-                fmir::RValue::FinalBorrow(p, deref_index)
+                fmir::RValue::Borrow(fmir::BorrowKind::Final(deref_index), p)
             } else {
-                fmir::RValue::Borrow(p)
+                fmir::RValue::Borrow(fmir::BorrowKind::Mut, p)
             },
             span,
         );
@@ -336,7 +338,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn resolve_locals(&mut self, mut locals: BitSet<Local>) {
-        locals.subtract(&self.erased_locals.to_hybrid());
+        locals.subtract(&self.erased_locals);
 
         // TODO determine resolution order based on outlives relation
         let locals = locals.iter().collect::<Vec<_>>();
@@ -346,16 +348,16 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     // Useful helper to translate an operand
-    pub(crate) fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Expr<'tcx> {
-        let kind = match operand {
-            Operand::Copy(pl) => ExprKind::Copy(self.translate_place(*pl)),
-            Operand::Move(pl) => ExprKind::Move(self.translate_place(*pl)),
-            Operand::Constant(c) => {
-                return crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
-            }
-        };
-
-        Expr { kind, span: DUMMY_SP, ty: operand.ty(self.body, self.tcx) }
+    pub(crate) fn translate_operand(&mut self, operand: &Operand<'tcx>) -> fmir::Operand<'tcx> {
+        let kind =
+            match operand {
+                Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(*pl)),
+                Operand::Move(pl) => fmir::Operand::Move(self.translate_place(*pl)),
+                Operand::Constant(c) => fmir::Operand::Constant(
+                    crate::constant::from_mir_constant(self.param_env(), self.ctx, c),
+                ),
+            };
+        kind
     }
 
     fn translate_place(&self, _pl: mir::Place<'tcx>) -> fmir::Place<'tcx> {
@@ -468,7 +470,7 @@ pub(crate) fn closure_contract<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> ClosureContract<'tcx> {
-    let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).instantiate_identity().kind() else {
+    let TyKind::Closure(_, subst) = ctx.type_of(def_id).instantiate_identity().kind() else {
         unreachable!()
     };
 
@@ -535,7 +537,9 @@ pub(crate) fn closure_contract<'tcx>(
 
     post_sig.inputs.push((Symbol::intern("result"), DUMMY_SP, result_ty));
 
-    let env_ty = ctx.closure_env_ty(def_id, subst, ctx.lifetimes.re_erased).unwrap().peel_refs();
+    let env_ty = ctx
+        .closure_env_ty(ctx.type_of(def_id).instantiate_identity(), kind, ctx.lifetimes.re_erased)
+        .peel_refs();
     let self_ty = env_ty;
 
     let precond = {
@@ -654,7 +658,7 @@ pub(crate) fn closure_contract<'tcx>(
         contracts.postcond_once = Some((post_sig, postcondition));
     }
 
-    return contracts;
+    contracts
 }
 
 fn closure_resolve<'tcx>(
@@ -677,12 +681,7 @@ fn closure_resolve<'tcx>(
         if let Some((id, subst)) = resolve_predicate_of(ctx, param_env, ty) {
             resolve = Term {
                 ty: ctx.types.bool,
-                kind: TermKind::Call {
-                    id: id.into(),
-                    subst,
-                    fun: Box::new(Term::item(ctx.tcx, id, subst)),
-                    args: vec![proj],
-                },
+                kind: TermKind::Call { id: id.into(), subst, args: vec![proj] },
                 span: DUMMY_SP,
             }
             .conj(resolve);
@@ -707,7 +706,9 @@ pub(crate) fn closure_unnest<'tcx>(
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Term<'tcx> {
-    let env_ty = tcx.closure_env_ty(def_id, subst, tcx.lifetimes.re_erased).unwrap().peel_refs();
+    let ty = Ty::new_closure(tcx, def_id, subst);
+    let kind = subst.as_closure().kind();
+    let env_ty = tcx.closure_env_ty(ty, kind, tcx.lifetimes.re_erased).peel_refs();
 
     let self_ = Term::var(Symbol::intern("self"), env_ty);
 

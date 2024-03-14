@@ -3,7 +3,7 @@ module IncMaxRepeat_TakeMax
   use prelude.Borrow
   use prelude.UInt32
   predicate resolve0 (self : borrowed uint32) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve0 (self : borrowed uint32) : bool
     ensures { result = resolve0 self }
     
@@ -21,12 +21,14 @@ module IncMaxRepeat_TakeMax
   var mb : borrowed uint32 = mb;
   var _3 : borrowed uint32;
   var _5 : borrowed uint32;
+  var _6 : bool;
   var _9 : borrowed uint32;
   {
     goto BB0
   }
   BB0 {
-    switch ([#"../inc_max_repeat.rs" 7 7 7 17] ([#"../inc_max_repeat.rs" 7 7 7 10]  * ma) >= ([#"../inc_max_repeat.rs" 7 14 7 17]  * mb))
+    [#"../inc_max_repeat.rs" 7 7 7 17] _6 <-  * ma >=  * mb;
+    switch (_6)
       | False -> goto BB2
       | True -> goto BB1
       end
@@ -137,7 +139,9 @@ module IncMaxRepeat_IncMaxRepeat
   predicate produces0 (self : Core_Ops_Range_Range_Type.t_range uint32) (visited : Seq.seq uint32) (o : Core_Ops_Range_Range_Type.t_range uint32)
     
    =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0 -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> deep_model0 (Seq.get visited i) = deep_model0 (Core_Ops_Range_Range_Type.range_start self) + i)
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0
+     -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> deep_model0 (Seq.get visited i) = deep_model0 (Core_Ops_Range_Range_Type.range_start self) + i)
   val produces0 (self : Core_Ops_Range_Range_Type.t_range uint32) (visited : Seq.seq uint32) (o : Core_Ops_Range_Range_Type.t_range uint32) : bool
     ensures { result = produces0 self visited o }
     
@@ -153,23 +157,31 @@ module IncMaxRepeat_IncMaxRepeat
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv0 c}
     ensures { result = produces_trans0 a ab b bc c }
     
-  axiom produces_trans0_spec : forall a : Core_Ops_Range_Range_Type.t_range uint32, ab : Seq.seq uint32, b : Core_Ops_Range_Range_Type.t_range uint32, bc : Seq.seq uint32, c : Core_Ops_Range_Range_Type.t_range uint32 . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces0 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces0 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv0 a) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv3 ab) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv0 b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv3 bc) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv0 c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] produces0 a (Seq.(++) ab bc) c)
+  axiom produces_trans0_spec : forall a : Core_Ops_Range_Range_Type.t_range uint32, ab : Seq.seq uint32, b : Core_Ops_Range_Range_Type.t_range uint32, bc : Seq.seq uint32, c : Core_Ops_Range_Range_Type.t_range uint32 . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces0 a ab b)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces0 b bc c)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv0 a)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv3 ab)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv0 b)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv3 bc)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv0 c)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] produces0 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl0 (self : Core_Ops_Range_Range_Type.t_range uint32) : ()
   val produces_refl0 (self : Core_Ops_Range_Range_Type.t_range uint32) : ()
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv0 self}
     ensures { result = produces_refl0 self }
     
-  axiom produces_refl0_spec : forall self : Core_Ops_Range_Range_Type.t_range uint32 . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 45] produces0 self (Seq.empty ) self)
+  axiom produces_refl0_spec : forall self : Core_Ops_Range_Range_Type.t_range uint32 . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 45] produces0 self (Seq.empty ) self)
   predicate invariant0 (self : Core_Ops_Range_Range_Type.t_range uint32) =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
   val invariant0 (self : Core_Ops_Range_Range_Type.t_range uint32) : bool
     ensures { result = invariant0 self }
     
   axiom inv0 : forall x : Core_Ops_Range_Range_Type.t_range uint32 . inv0 x = true
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate resolve1 (self : borrowed uint32) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve1 (self : borrowed uint32) : bool
     ensures { result = resolve1 self }
     
@@ -182,7 +194,7 @@ module IncMaxRepeat_IncMaxRepeat
     
   use seq.Seq
   predicate resolve0 (self : borrowed (Core_Ops_Range_Range_Type.t_range uint32)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve0 (self : borrowed (Core_Ops_Range_Range_Type.t_range uint32)) : bool
     ensures { result = resolve0 self }
     
@@ -199,11 +211,11 @@ module IncMaxRepeat_IncMaxRepeat
       end }
     ensures { inv2 result }
     
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
   predicate into_iter_post0 (self : Core_Ops_Range_Range_Type.t_range uint32) (res : Core_Ops_Range_Range_Type.t_range uint32)
     
    =
@@ -231,31 +243,38 @@ module IncMaxRepeat_IncMaxRepeat
   var b : uint32 = b;
   var n : uint32 = n;
   var iter : Core_Ops_Range_Range_Type.t_range uint32;
-  var iter_old : Ghost.ghost_ty (Core_Ops_Range_Range_Type.t_range uint32);
-  var produced : Ghost.ghost_ty (Seq.seq uint32);
+  var _7 : Core_Ops_Range_Range_Type.t_range uint32;
+  var iter_old : Snapshot.snap_ty (Core_Ops_Range_Range_Type.t_range uint32);
+  var produced : Snapshot.snap_ty (Seq.seq uint32);
   var _18 : Core_Option_Option_Type.t_option uint32;
   var _19 : borrowed (Core_Ops_Range_Range_Type.t_range uint32);
   var _20 : borrowed (Core_Ops_Range_Range_Type.t_range uint32);
   var __creusot_proc_iter_elem : uint32;
-  var _23 : Ghost.ghost_ty (Seq.seq uint32);
+  var _23 : Snapshot.snap_ty (Seq.seq uint32);
   var mc : borrowed uint32;
   var _26 : borrowed uint32;
   var _27 : borrowed uint32;
   var _28 : borrowed uint32;
   var _29 : borrowed uint32;
+  var _32 : bool;
+  var _34 : uint32;
+  var _37 : bool;
+  var _39 : uint32;
   {
     goto BB0
   }
   BB0 {
-    [#"../inc_max_repeat.rs" 16 4 16 86] iter <- ([#"../inc_max_repeat.rs" 16 4 16 86] into_iter0 ([#"../inc_max_repeat.rs" 18 13 18 17] Core_Ops_Range_Range_Type.C_Range ([#"../inc_max_repeat.rs" 18 13 18 14] [#"../inc_max_repeat.rs" 18 13 18 14] (0 : uint32)) ([#"../inc_max_repeat.rs" 18 16 18 17] n)));
+    [#"../inc_max_repeat.rs" 18 13 18 17] _7 <- Core_Ops_Range_Range_Type.C_Range ([#"../inc_max_repeat.rs" 18 13 18 14] (0 : uint32)) n;
+    [#"../inc_max_repeat.rs" 16 4 16 86] iter <- ([#"../inc_max_repeat.rs" 16 4 16 86] into_iter0 _7);
+    _7 <- any Core_Ops_Range_Range_Type.t_range uint32;
     goto BB1
   }
   BB1 {
-    [#"../inc_max_repeat.rs" 16 4 16 86] iter_old <- ([#"../inc_max_repeat.rs" 16 4 16 86] Ghost.new iter);
+    [#"../inc_max_repeat.rs" 16 4 16 86] iter_old <- ([#"../inc_max_repeat.rs" 16 4 16 86] Snapshot.new iter);
     goto BB2
   }
   BB2 {
-    [#"../inc_max_repeat.rs" 16 4 16 86] produced <- ([#"../inc_max_repeat.rs" 16 4 16 86] Ghost.new (Seq.empty ));
+    [#"../inc_max_repeat.rs" 16 4 16 86] produced <- ([#"../inc_max_repeat.rs" 16 4 16 86] Snapshot.new (Seq.empty ));
     goto BB3
   }
   BB3 {
@@ -263,9 +282,9 @@ module IncMaxRepeat_IncMaxRepeat
   }
   BB4 {
     invariant { [#"../inc_max_repeat.rs" 16 4 16 86] inv0 iter };
-    invariant { [#"../inc_max_repeat.rs" 16 4 16 86] produces0 (Ghost.inner iter_old) (Ghost.inner produced) iter };
-    invariant { [#"../inc_max_repeat.rs" 16 16 16 84] UInt32.to_int a <= 1000000 + Seq.length (Ghost.inner produced) /\ UInt32.to_int b <= 1000000 + Seq.length (Ghost.inner produced) };
-    invariant { [#"../inc_max_repeat.rs" 17 16 17 70] UInt32.to_int a >= UInt32.to_int b + Seq.length (Ghost.inner produced) \/ UInt32.to_int b >= UInt32.to_int a + Seq.length (Ghost.inner produced) };
+    invariant { [#"../inc_max_repeat.rs" 16 4 16 86] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter };
+    invariant { [#"../inc_max_repeat.rs" 16 16 16 84] UInt32.to_int a <= 1000000 + Seq.length (Snapshot.inner produced) /\ UInt32.to_int b <= 1000000 + Seq.length (Snapshot.inner produced) };
+    invariant { [#"../inc_max_repeat.rs" 17 16 17 70] UInt32.to_int a >= UInt32.to_int b + Seq.length (Snapshot.inner produced) \/ UInt32.to_int b >= UInt32.to_int a + Seq.length (Snapshot.inner produced) };
     goto BB5
   }
   BB5 {
@@ -285,7 +304,10 @@ module IncMaxRepeat_IncMaxRepeat
       end
   }
   BB7 {
-    switch ([#"../inc_max_repeat.rs" 22 12 22 22] ([#"../inc_max_repeat.rs" 22 12 22 13] a) >= ([#"../inc_max_repeat.rs" 22 17 22 22] ([#"../inc_max_repeat.rs" 22 17 22 18] b) + ([#"../inc_max_repeat.rs" 22 21 22 22] n)))
+    [#"../inc_max_repeat.rs" 22 17 22 22] _34 <- b + n;
+    [#"../inc_max_repeat.rs" 22 12 22 22] _32 <- a >= _34;
+    _34 <- any uint32;
+    switch (_32)
       | False -> goto BB14
       | True -> goto BB13
       end
@@ -298,13 +320,13 @@ module IncMaxRepeat_IncMaxRepeat
     absurd
   }
   BB10 {
-    [#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] __creusot_proc_iter_elem <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] Core_Option_Option_Type.some_0 _18);
-    [#"../inc_max_repeat.rs" 16 4 16 86] _23 <- ([#"../inc_max_repeat.rs" 16 4 16 86] Ghost.new (Seq.(++) (Ghost.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
+    [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem <- Core_Option_Option_Type.some_0 _18;
+    [#"../inc_max_repeat.rs" 16 4 16 86] _23 <- ([#"../inc_max_repeat.rs" 16 4 16 86] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
     goto BB11
   }
   BB11 {
-    [#"../inc_max_repeat.rs" 16 4 16 86] produced <- ([#"../inc_max_repeat.rs" 16 4 16 86] _23);
-    [#"../inc_max_repeat.rs" 16 4 16 86] _23 <- any Ghost.ghost_ty (Seq.seq uint32);
+    [#"../inc_max_repeat.rs" 16 4 16 86] produced <- _23;
+    _23 <- any Snapshot.snap_ty (Seq.seq uint32);
     [#"../inc_max_repeat.rs" 19 26 19 32] _27 <- Borrow.borrow_mut a;
     [#"../inc_max_repeat.rs" 19 26 19 32] a <-  ^ _27;
     [#"../inc_max_repeat.rs" 19 26 19 32] _26 <- Borrow.borrow_final ( * _27) (Borrow.get_id _27);
@@ -321,7 +343,7 @@ module IncMaxRepeat_IncMaxRepeat
   BB12 {
     assume { resolve1 _29 };
     assume { resolve1 _27 };
-    [#"../inc_max_repeat.rs" 20 8 20 16] mc <- { mc with current = ([#"../inc_max_repeat.rs" 20 8 20 16]  * mc + ([#"../inc_max_repeat.rs" 20 15 20 16] [#"../inc_max_repeat.rs" 20 15 20 16] (1 : uint32))) ; };
+    [#"../inc_max_repeat.rs" 20 8 20 16] mc <- { mc with current = ( * mc + ([#"../inc_max_repeat.rs" 20 15 20 16] (1 : uint32))) ; };
     assume { resolve1 mc };
     goto BB4
   }
@@ -329,7 +351,10 @@ module IncMaxRepeat_IncMaxRepeat
     goto BB15
   }
   BB14 {
-    switch ([#"../inc_max_repeat.rs" 22 26 22 36] ([#"../inc_max_repeat.rs" 22 26 22 27] b) >= ([#"../inc_max_repeat.rs" 22 31 22 36] ([#"../inc_max_repeat.rs" 22 31 22 32] a) + ([#"../inc_max_repeat.rs" 22 35 22 36] n)))
+    [#"../inc_max_repeat.rs" 22 31 22 36] _39 <- a + n;
+    [#"../inc_max_repeat.rs" 22 26 22 36] _37 <- b >= _39;
+    _39 <- any uint32;
+    switch (_37)
       | False -> goto BB16
       | True -> goto BB15
       end

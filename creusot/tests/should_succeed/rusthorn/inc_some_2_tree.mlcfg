@@ -35,15 +35,14 @@ module IncSome2Tree_Impl0_LemmaSumNonneg_Impl
   val sum0 [#"../inc_some_2_tree.rs" 21 4 21 23] (self : IncSome2Tree_Tree_Type.t_tree) : int
     ensures { result = sum0 self }
     
-  let rec ghost function lemma_sum_nonneg [#"../inc_some_2_tree.rs" 33 4 33 30] (self : IncSome2Tree_Tree_Type.t_tree) : ()
-    ensures { [#"../inc_some_2_tree.rs" 32 14 32 29] sum0 self >= 0 }
-    variant {[#"../inc_some_2_tree.rs" 31 15 31 19] self}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../inc_some_2_tree.rs" 34 8 40 9] match self with
-      | IncSome2Tree_Tree_Type.C_Node tl _ tr -> let _ = lemma_sum_nonneg tl in let _ = lemma_sum_nonneg tr in ()
-      | IncSome2Tree_Tree_Type.C_Leaf -> ()
-      end
+  constant self  : IncSome2Tree_Tree_Type.t_tree
+  function lemma_sum_nonneg [#"../inc_some_2_tree.rs" 33 4 33 30] (self : IncSome2Tree_Tree_Type.t_tree) : ()
+  goal vc_lemma_sum_nonneg : match self with
+    | IncSome2Tree_Tree_Type.C_Node tl _ tr -> ([#"../inc_some_2_tree.rs" 32 14 32 29] sum0 tl >= 0)
+     -> (let _ = lemma_sum_nonneg tl in ([#"../inc_some_2_tree.rs" 32 14 32 29] sum0 tr >= 0)
+     -> (let _ = lemma_sum_nonneg tr in [#"../inc_some_2_tree.rs" 32 14 32 29] sum0 self >= 0))
+    | IncSome2Tree_Tree_Type.C_Leaf -> [#"../inc_some_2_tree.rs" 32 14 32 29] sum0 self >= 0
+    end
 end
 module IncSome2Tree_Impl0_SumX
   use prelude.UInt32
@@ -78,6 +77,7 @@ module IncSome2Tree_Impl0_SumX
   var tl : IncSome2Tree_Tree_Type.t_tree;
   var a : uint32;
   var tr : IncSome2Tree_Tree_Type.t_tree;
+  var _10 : uint32;
   var _11 : uint32;
   var _14 : uint32;
   {
@@ -93,7 +93,7 @@ module IncSome2Tree_Impl0_SumX
     goto BB4
   }
   BB2 {
-    [#"../inc_some_2_tree.rs" 55 20 55 21] _0 <- ([#"../inc_some_2_tree.rs" 55 20 55 21] [#"../inc_some_2_tree.rs" 55 20 55 21] (0 : uint32));
+    [#"../inc_some_2_tree.rs" 55 20 55 21] _0 <- ([#"../inc_some_2_tree.rs" 55 20 55 21] (0 : uint32));
     goto BB7
   }
   BB3 {
@@ -101,20 +101,22 @@ module IncSome2Tree_Impl0_SumX
     absurd
   }
   BB4 {
-    [#"../inc_some_2_tree.rs" 47 17 47 19] tl <- ([#"../inc_some_2_tree.rs" 47 17 47 19] IncSome2Tree_Tree_Type.node_0 self);
-    [#"../inc_some_2_tree.rs" 47 21 47 22] a <- ([#"../inc_some_2_tree.rs" 47 21 47 22] IncSome2Tree_Tree_Type.node_1 self);
-    [#"../inc_some_2_tree.rs" 47 24 47 26] tr <- ([#"../inc_some_2_tree.rs" 47 24 47 26] IncSome2Tree_Tree_Type.node_2 self);
+    [#"../inc_some_2_tree.rs" 47 17 47 19] tl <- IncSome2Tree_Tree_Type.node_0 self;
+    [#"../inc_some_2_tree.rs" 47 21 47 22] a <- IncSome2Tree_Tree_Type.node_1 self;
+    [#"../inc_some_2_tree.rs" 47 24 47 26] tr <- IncSome2Tree_Tree_Type.node_2 self;
     assert { [@expl:assertion] [#"../inc_some_2_tree.rs" 49 20 49 41] let _ = lemma_sum_nonneg0 tl in let _ = lemma_sum_nonneg0 tr in true };
-    [#"../inc_some_2_tree.rs" 53 16 53 26] _11 <- ([#"../inc_some_2_tree.rs" 53 16 53 26] sum_x ([#"../inc_some_2_tree.rs" 53 16 53 18] tl));
+    [#"../inc_some_2_tree.rs" 53 16 53 26] _11 <- ([#"../inc_some_2_tree.rs" 53 16 53 26] sum_x tl);
     goto BB5
   }
   BB5 {
-    [#"../inc_some_2_tree.rs" 53 34 53 44] _14 <- ([#"../inc_some_2_tree.rs" 53 34 53 44] sum_x ([#"../inc_some_2_tree.rs" 53 34 53 36] tr));
+    [#"../inc_some_2_tree.rs" 53 16 53 31] _10 <- _11 + a;
+    _11 <- any uint32;
+    [#"../inc_some_2_tree.rs" 53 34 53 44] _14 <- ([#"../inc_some_2_tree.rs" 53 34 53 44] sum_x tr);
     goto BB6
   }
   BB6 {
-    [#"../inc_some_2_tree.rs" 53 16 53 44] _0 <- ([#"../inc_some_2_tree.rs" 53 16 53 44] ([#"../inc_some_2_tree.rs" 53 16 53 31] _11 + ([#"../inc_some_2_tree.rs" 53 29 53 31] a)) + _14);
-    _11 <- any uint32;
+    [#"../inc_some_2_tree.rs" 53 16 53 44] _0 <- _10 + _14;
+    _10 <- any uint32;
     _14 <- any uint32;
     goto BB7
   }
@@ -217,7 +219,7 @@ module IncSome2Tree_Impl0_TakeSomeRest
     [#"../inc_some_2_tree.rs" 65 26 65 29] mtr <- Borrow.borrow_final (IncSome2Tree_Tree_Type.node_2 ( * self)) (Borrow.inherit_id (Borrow.get_id self) 3);
     [#"../inc_some_2_tree.rs" 65 26 65 29] self <- { self with current = (let IncSome2Tree_Tree_Type.C_Node x0 x1 x2 =  * self in IncSome2Tree_Tree_Type.C_Node x0 x1 ( ^ mtr)) ; };
     assert { [@expl:assertion] [#"../inc_some_2_tree.rs" 67 20 67 42] let _ = lemma_sum_nonneg0 ( * mtl) in let _ = lemma_sum_nonneg0 ( * mtr) in true };
-    [#"../inc_some_2_tree.rs" 71 19 71 27] _11 <- ([#"../inc_some_2_tree.rs" 71 19 71 27] random0 ());
+    [#"../inc_some_2_tree.rs" 71 19 71 27] _11 <- ([#"../inc_some_2_tree.rs" 71 19 71 27] random0 ([#"../inc_some_2_tree.rs" 71 19 71 27] ()));
     goto BB5
   }
   BB5 {
@@ -229,7 +231,7 @@ module IncSome2Tree_Impl0_TakeSomeRest
   BB6 {
     [#"../inc_some_2_tree.rs" 72 21 72 23] _12 <- Borrow.borrow_final ( * ma) (Borrow.get_id ma);
     [#"../inc_some_2_tree.rs" 72 21 72 23] ma <- { ma with current = ( ^ _12) ; };
-    [#"../inc_some_2_tree.rs" 72 28 72 36] _15 <- ([#"../inc_some_2_tree.rs" 72 28 72 36] random0 ());
+    [#"../inc_some_2_tree.rs" 72 28 72 36] _15 <- ([#"../inc_some_2_tree.rs" 72 28 72 36] random0 ([#"../inc_some_2_tree.rs" 72 28 72 36] ()));
     goto BB7
   }
   BB7 {
@@ -256,7 +258,7 @@ module IncSome2Tree_Impl0_TakeSomeRest
   BB10 {
     [#"../inc_some_2_tree.rs" 72 25 72 57] _13 <- Borrow.borrow_final ( * _14) (Borrow.get_id _14);
     [#"../inc_some_2_tree.rs" 72 25 72 57] _14 <- { _14 with current = ( ^ _13) ; };
-    [#"../inc_some_2_tree.rs" 72 20 72 58] _0 <- ([#"../inc_some_2_tree.rs" 72 20 72 58] (_12, _13));
+    [#"../inc_some_2_tree.rs" 72 20 72 58] _0 <- (_12, _13);
     _12 <- any borrowed uint32;
     _13 <- any borrowed (IncSome2Tree_Tree_Type.t_tree);
     assume { resolve2 _14 };
@@ -264,7 +266,7 @@ module IncSome2Tree_Impl0_TakeSomeRest
   }
   BB11 {
     assume { resolve0 ma };
-    [#"../inc_some_2_tree.rs" 73 26 73 34] _17 <- ([#"../inc_some_2_tree.rs" 73 26 73 34] random0 ());
+    [#"../inc_some_2_tree.rs" 73 26 73 34] _17 <- ([#"../inc_some_2_tree.rs" 73 26 73 34] random0 ([#"../inc_some_2_tree.rs" 73 26 73 34] ()));
     goto BB12
   }
   BB12 {
@@ -373,7 +375,10 @@ module IncSome2Tree_IncSome2Tree
   var mb : borrowed uint32;
   var _12 : (borrowed uint32, borrowed (IncSome2Tree_Tree_Type.t_tree));
   var _13 : borrowed (IncSome2Tree_Tree_Type.t_tree);
+  var _17 : bool;
   var _18 : uint32;
+  var _20 : uint32;
+  var _21 : uint32;
   {
     goto BB0
   }
@@ -381,7 +386,7 @@ module IncSome2Tree_IncSome2Tree
     goto BB1
   }
   BB1 {
-    [#"../inc_some_2_tree.rs" 86 15 86 24] sum0 <- ([#"../inc_some_2_tree.rs" 86 15 86 24] sum_x0 ([#"../inc_some_2_tree.rs" 86 15 86 16] t));
+    [#"../inc_some_2_tree.rs" 86 15 86 24] sum0 <- ([#"../inc_some_2_tree.rs" 86 15 86 24] sum_x0 t);
     goto BB2
   }
   BB2 {
@@ -392,10 +397,10 @@ module IncSome2Tree_IncSome2Tree
     goto BB3
   }
   BB3 {
-    [#"../inc_some_2_tree.rs" 87 9 87 11] ma <- ([#"../inc_some_2_tree.rs" 87 9 87 11] let (a, _) = _9 in a);
-    [#"../inc_some_2_tree.rs" 87 9 87 11] _9 <- (let (x0, x1) = _9 in (any borrowed uint32, x1));
-    [#"../inc_some_2_tree.rs" 87 13 87 15] mt <- ([#"../inc_some_2_tree.rs" 87 13 87 15] let (_, a) = _9 in a);
-    [#"../inc_some_2_tree.rs" 87 13 87 15] _9 <- (let (x0, x1) = _9 in (x0, any borrowed (IncSome2Tree_Tree_Type.t_tree)));
+    [#"../inc_some_2_tree.rs" 87 9 87 11] ma <- (let (a, _) = _9 in a);
+    _9 <- (let (x0, x1) = _9 in (any borrowed uint32, x1));
+    [#"../inc_some_2_tree.rs" 87 13 87 15] mt <- (let (_, a) = _9 in a);
+    _9 <- (let (x0, x1) = _9 in (x0, any borrowed (IncSome2Tree_Tree_Type.t_tree)));
     assume { resolve0 _9 };
     [#"../inc_some_2_tree.rs" 88 18 88 20] _13 <- Borrow.borrow_final ( * mt) (Borrow.get_id mt);
     [#"../inc_some_2_tree.rs" 88 18 88 20] mt <- { mt with current = ( ^ _13) ; };
@@ -404,19 +409,25 @@ module IncSome2Tree_IncSome2Tree
     goto BB4
   }
   BB4 {
-    [#"../inc_some_2_tree.rs" 88 9 88 11] mb <- ([#"../inc_some_2_tree.rs" 88 9 88 11] let (a, _) = _12 in a);
-    [#"../inc_some_2_tree.rs" 88 9 88 11] _12 <- (let (x0, x1) = _12 in (any borrowed uint32, x1));
+    [#"../inc_some_2_tree.rs" 88 9 88 11] mb <- (let (a, _) = _12 in a);
+    _12 <- (let (x0, x1) = _12 in (any borrowed uint32, x1));
     assume { resolve0 _12 };
-    [#"../inc_some_2_tree.rs" 89 4 89 12] ma <- { ma with current = ([#"../inc_some_2_tree.rs" 89 4 89 12]  * ma + ([#"../inc_some_2_tree.rs" 89 11 89 12] j)) ; };
+    [#"../inc_some_2_tree.rs" 89 4 89 12] ma <- { ma with current = ( * ma + j) ; };
     assume { resolve1 ma };
-    [#"../inc_some_2_tree.rs" 90 4 90 12] mb <- { mb with current = ([#"../inc_some_2_tree.rs" 90 4 90 12]  * mb + ([#"../inc_some_2_tree.rs" 90 11 90 12] k)) ; };
+    [#"../inc_some_2_tree.rs" 90 4 90 12] mb <- { mb with current = ( * mb + k) ; };
     assume { resolve1 mb };
     assume { resolve2 mt };
-    [#"../inc_some_2_tree.rs" 91 12 91 21] _18 <- ([#"../inc_some_2_tree.rs" 91 12 91 21] sum_x0 ([#"../inc_some_2_tree.rs" 91 12 91 13] t));
+    [#"../inc_some_2_tree.rs" 91 12 91 21] _18 <- ([#"../inc_some_2_tree.rs" 91 12 91 21] sum_x0 t);
     goto BB5
   }
   BB5 {
-    switch ([#"../inc_some_2_tree.rs" 91 12 91 37] _18 = ([#"../inc_some_2_tree.rs" 91 25 91 37] ([#"../inc_some_2_tree.rs" 91 25 91 33] ([#"../inc_some_2_tree.rs" 91 25 91 29] sum0) + ([#"../inc_some_2_tree.rs" 91 32 91 33] j)) + ([#"../inc_some_2_tree.rs" 91 36 91 37] k)))
+    [#"../inc_some_2_tree.rs" 91 25 91 33] _21 <- sum0 + j;
+    [#"../inc_some_2_tree.rs" 91 25 91 37] _20 <- _21 + k;
+    _21 <- any uint32;
+    [#"../inc_some_2_tree.rs" 91 12 91 37] _17 <- _18 = _20;
+    _18 <- any uint32;
+    _20 <- any uint32;
+    switch (_17)
       | False -> goto BB7
       | True -> goto BB6
       end

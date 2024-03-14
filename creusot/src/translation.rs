@@ -34,7 +34,6 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
 
         let def_id = def_id.to_def_id();
         if crate::util::is_spec(ctx.tcx, def_id)
-            || crate::util::is_ghost(ctx.tcx, def_id)
             || crate::util::is_predicate(ctx.tcx, def_id)
             || crate::util::is_logic(ctx.tcx, def_id)
         {
@@ -82,7 +81,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
     debug!("after_analysis_translate: {:?}", start.elapsed());
     let start = Instant::now();
 
-    if why3.sess.has_errors().is_some() {
+    if why3.dcx().has_errors().is_some() {
         return Err(Box::new(CrErr));
     }
 
@@ -122,7 +121,9 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
         let tcx = why3.tcx;
         let modules = why3.modules();
         let modules = modules.flat_map(|(id, item)| {
-            if let TransId::Item(did) = id && tcx.def_path_str(did).contains(matcher) {
+            if let TransId::Item(did) = id
+                && tcx.def_path_str(did).contains(matcher)
+            {
                 item.modules()
             } else {
                 Box::new(std::iter::empty())
@@ -236,12 +237,12 @@ fn print_crate<W, I: Iterator<Item = Module>>(
 where
     W: Write,
 {
-    let (alloc, mut pe) = mlcfg::printer::PrintEnv::new();
+    let alloc = mlcfg::printer::ALLOC;
 
     writeln!(out)?;
 
     for modl in functions {
-        modl.pretty(&alloc, &mut pe).1.render(120, out)?;
+        modl.pretty(&alloc).1.render(120, out)?;
         writeln!(out)?;
     }
 

@@ -5,15 +5,17 @@ module FilterPositive_NumOfPos_Impl
   use prelude.Int32
   use seq.Seq
   use prelude.Int
-  let rec ghost function num_of_pos [#"../filter_positive.rs" 37 0 37 49] (i : int) (j : int) (t : Seq.seq int32) : int
-    variant {[#"../filter_positive.rs" 36 10 36 13] j - i}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../filter_positive.rs" 38 4 46 5] if pure {i >= j} then
-      0
-    else
-      if pure {Int32.to_int (Seq.get t (j - 1)) > 0} then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
-    
+  constant i  : int
+  constant j  : int
+  constant t  : Seq.seq int32
+  function num_of_pos [#"../filter_positive.rs" 37 0 37 49] (i : int) (j : int) (t : Seq.seq int32) : int
+  goal vc_num_of_pos : match i >= j with
+    | True -> true
+    | False -> match Int32.to_int (Seq.get t (j - 1)) > 0 with
+      | True -> 0 <= ([#"../filter_positive.rs" 36 10 36 13] j - i) /\ ([#"../filter_positive.rs" 36 10 36 13] j - 1 - i) < ([#"../filter_positive.rs" 36 10 36 13] j - i)
+      | False -> 0 <= ([#"../filter_positive.rs" 36 10 36 13] j - i) /\ ([#"../filter_positive.rs" 36 10 36 13] j - 1 - i) < ([#"../filter_positive.rs" 36 10 36 13] j - i)
+      end
+    end
 end
 module FilterPositive_LemmaNumOfPosIncreasing_Impl
   use prelude.Int32
@@ -30,13 +32,18 @@ module FilterPositive_LemmaNumOfPosIncreasing_Impl
   val num_of_pos0 [#"../filter_positive.rs" 37 0 37 49] (i : int) (j : int) (t : Seq.seq int32) : int
     ensures { result = num_of_pos0 i j t }
     
-  let rec ghost function lemma_num_of_pos_increasing [#"../filter_positive.rs" 65 0 65 67] (i : int) (j : int) (k : int) (t : Seq.seq int32) : ()
-    requires {[#"../filter_positive.rs" 62 11 62 17] j <= k}
-    ensures { [#"../filter_positive.rs" 63 10 63 48] num_of_pos0 i j t <= num_of_pos0 i k t }
-    variant {[#"../filter_positive.rs" 64 10 64 13] k - j}
+  constant i  : int
+  constant j  : int
+  constant k  : int
+  constant t  : Seq.seq int32
+  function lemma_num_of_pos_increasing [#"../filter_positive.rs" 65 0 65 67] (i : int) (j : int) (k : int) (t : Seq.seq int32) : ()
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../filter_positive.rs" 67 8 69 9] if pure {j < k} then lemma_num_of_pos_increasing i (j + 1) k t else ()
+  goal vc_lemma_num_of_pos_increasing : ([#"../filter_positive.rs" 62 11 62 17] j <= k)
+   -> match j < k with
+    | True -> (([#"../filter_positive.rs" 62 11 62 17] j + 1 <= k) /\ 0 <= ([#"../filter_positive.rs" 64 10 64 13] k - j) /\ ([#"../filter_positive.rs" 64 10 64 13] k - (j + 1)) < ([#"../filter_positive.rs" 64 10 64 13] k - j)) /\ (([#"../filter_positive.rs" 63 10 63 48] num_of_pos0 i (j + 1) t <= num_of_pos0 i k t)
+     -> ([#"../filter_positive.rs" 63 10 63 48] num_of_pos0 i j t <= num_of_pos0 i k t))
+    | False -> [#"../filter_positive.rs" 63 10 63 48] num_of_pos0 i j t <= num_of_pos0 i k t
+    end
 end
 module FilterPositive_LemmaNumOfPosStrictlyIncreasing_Impl
   use prelude.Int32
@@ -54,13 +61,12 @@ module FilterPositive_LemmaNumOfPosStrictlyIncreasing_Impl
     ensures { result = num_of_pos0 i j t }
     
   use seq.Seq
-  let rec ghost function lemma_num_of_pos_strictly_increasing [#"../filter_positive.rs" 79 0 79 60] (i : int) (t : Seq.seq int32) : ()
-    requires {[#"../filter_positive.rs" 76 11 76 32] 0 <= i /\ i < Seq.length t}
-    requires {[#"../filter_positive.rs" 77 11 77 20] Int32.to_int (Seq.get t i) > 0}
-    ensures { [#"../filter_positive.rs" 78 10 78 49] num_of_pos0 0 i t < num_of_pos0 0 (i + 1) t }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../filter_positive.rs" 75 0 75 8] ()
+  constant i  : int
+  constant t  : Seq.seq int32
+  function lemma_num_of_pos_strictly_increasing [#"../filter_positive.rs" 79 0 79 60] (i : int) (t : Seq.seq int32) : ()
+  goal vc_lemma_num_of_pos_strictly_increasing : ([#"../filter_positive.rs" 77 11 77 20] Int32.to_int (Seq.get t i) > 0)
+   -> ([#"../filter_positive.rs" 76 11 76 32] 0 <= i /\ i < Seq.length t)
+   -> ([#"../filter_positive.rs" 78 10 78 49] num_of_pos0 0 i t < num_of_pos0 0 (i + 1) t)
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
@@ -80,12 +86,18 @@ module Core_Ptr_Unique_Unique_Type
     | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
-module Alloc_RawVec_RawVec_Type
+module Alloc_RawVec_Cap_Type
   use prelude.UIntSize
   use prelude.Int
+  type t_cap  =
+    | C_Cap usize
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
   use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
   type t_rawvec 't 'a =
-    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
     
 end
 module Alloc_Vec_Vec_Type
@@ -192,7 +204,8 @@ module FilterPositive_M
     requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self}
     ensures { result = shallow_model1 self }
     
-  axiom shallow_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self) -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv1 (shallow_model1 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max0)
+  axiom shallow_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv1 (shallow_model1 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max0)
   predicate invariant0 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv1 (shallow_model1 self)
   val invariant0 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) : bool
@@ -200,14 +213,15 @@ module FilterPositive_M
     
   axiom inv0 : forall x : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global) . inv0 x = true
   predicate resolve1 (self : borrowed int32) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve1 (self : borrowed int32) : bool
     ensures { result = resolve1 self }
     
   use prelude.Slice
   use seq.Seq
   predicate resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq int32) (fin : Seq.seq int32) =
-    [#"../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+    [#"../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
+     -> Seq.get old' i = Seq.get fin i
   val resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq int32) (fin : Seq.seq int32) : bool
     ensures { result = resolve_elswhere0 self old' fin }
     
@@ -224,7 +238,7 @@ module FilterPositive_M
   function shallow_model4 (self : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global))) : Seq.seq int32
     
    =
-    [#"../../../../creusot-contracts/src/model.rs" 97 8 97 31] shallow_model1 ( * self)
+    [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model1 ( * self)
   val shallow_model4 (self : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global))) : Seq.seq int32
     ensures { result = shallow_model4 self }
     
@@ -259,7 +273,8 @@ module FilterPositive_M
     requires {[#"../filter_positive.rs" 62 11 62 17] j <= k}
     ensures { result = lemma_num_of_pos_increasing0 i j k t }
     
-  axiom lemma_num_of_pos_increasing0_spec : forall i : int, j : int, k : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 62 11 62 17] j <= k) -> ([#"../filter_positive.rs" 63 10 63 48] num_of_pos0 i j t <= num_of_pos0 i k t)
+  axiom lemma_num_of_pos_increasing0_spec : forall i : int, j : int, k : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 62 11 62 17] j <= k)
+   -> ([#"../filter_positive.rs" 63 10 63 48] num_of_pos0 i j t <= num_of_pos0 i k t)
   function lemma_num_of_pos_strictly_increasing0 [#"../filter_positive.rs" 79 0 79 60] (i : int) (t : Seq.seq int32) : ()
     
    =
@@ -269,9 +284,11 @@ module FilterPositive_M
     requires {[#"../filter_positive.rs" 77 11 77 20] Int32.to_int (Seq.get t i) > 0}
     ensures { result = lemma_num_of_pos_strictly_increasing0 i t }
     
-  axiom lemma_num_of_pos_strictly_increasing0_spec : forall i : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 76 11 76 32] 0 <= i /\ i < Seq.length t) -> ([#"../filter_positive.rs" 77 11 77 20] Int32.to_int (Seq.get t i) > 0) -> ([#"../filter_positive.rs" 78 10 78 49] num_of_pos0 0 i t < num_of_pos0 0 (i + 1) t)
+  axiom lemma_num_of_pos_strictly_increasing0_spec : forall i : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 76 11 76 32] 0 <= i /\ i < Seq.length t)
+   -> ([#"../filter_positive.rs" 77 11 77 20] Int32.to_int (Seq.get t i) > 0)
+   -> ([#"../filter_positive.rs" 78 10 78 49] num_of_pos0 0 i t < num_of_pos0 0 (i + 1) t)
   function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq int32 =
-    [#"../../../../creusot-contracts/src/model.rs" 79 8 79 31] shallow_model1 self
+    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model1 self
   val shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq int32
     ensures { result = shallow_model3 self }
     
@@ -283,7 +300,7 @@ module FilterPositive_M
     ensures { inv5 result }
     
   predicate resolve2 (self : int32) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 47 8 47 12] true
+    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
   val resolve2 (self : int32) : bool
     ensures { result = resolve2 self }
     
@@ -295,14 +312,16 @@ module FilterPositive_M
     ensures { result = index_logic1 self ix }
     
   predicate resolve0 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model1 self) -> resolve2 (index_logic1 self i)
+    [#"../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model1 self)
+     -> resolve2 (index_logic1 self i)
   val resolve0 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve0 self }
     
   val from_elem0 (elem : int32) (n : usize) : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)
     requires {inv3 elem}
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 157 22 157 41] Seq.length (shallow_model1 result) = UIntSize.to_int n }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 158 12 158 78] forall i : int . 0 <= i /\ i < UIntSize.to_int n -> index_logic1 result i = elem }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 158 12 158 78] forall i : int . 0 <= i /\ i < UIntSize.to_int n
+     -> index_logic1 result i = elem }
     ensures { inv0 result }
     
   val len1 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) : usize
@@ -317,12 +336,16 @@ module FilterPositive_M
   var count : usize;
   var i : usize;
   var _9 : ();
+  var _10 : bool;
   var _12 : usize;
   var _14 : ();
+  var _15 : bool;
   var _17 : int32;
   var u : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _28 : bool;
   var _30 : usize;
   var _32 : ();
+  var _33 : bool;
   var _35 : int32;
   var _43 : int32;
   var _46 : borrowed int32;
@@ -331,8 +354,8 @@ module FilterPositive_M
     goto BB0
   }
   BB0 {
-    [#"../filter_positive.rs" 83 27 83 28] count <- ([#"../filter_positive.rs" 83 27 83 28] [#"../filter_positive.rs" 83 27 83 28] (0 : usize));
-    [#"../filter_positive.rs" 84 23 84 24] i <- ([#"../filter_positive.rs" 84 23 84 24] [#"../filter_positive.rs" 84 23 84 24] (0 : usize));
+    [#"../filter_positive.rs" 83 27 83 28] count <- ([#"../filter_positive.rs" 83 27 83 28] (0 : usize));
+    [#"../filter_positive.rs" 84 23 84 24] i <- ([#"../filter_positive.rs" 84 23 84 24] (0 : usize));
     goto BB1
   }
   BB1 {
@@ -348,27 +371,30 @@ module FilterPositive_M
     goto BB4
   }
   BB4 {
-    [#"../filter_positive.rs" 89 14 89 21] _12 <- ([#"../filter_positive.rs" 89 14 89 21] len1 ([#"../filter_positive.rs" 89 14 89 15] t));
+    [#"../filter_positive.rs" 89 14 89 21] _12 <- ([#"../filter_positive.rs" 89 14 89 21] len1 t);
     goto BB5
   }
   BB5 {
-    switch ([#"../filter_positive.rs" 89 10 89 21] ([#"../filter_positive.rs" 89 10 89 11] i) < _12)
+    [#"../filter_positive.rs" 89 10 89 21] _10 <- i < _12;
+    _12 <- any usize;
+    switch (_10)
       | False -> goto BB11
       | True -> goto BB6
       end
   }
   BB6 {
-    [#"../filter_positive.rs" 90 12 90 15] _17 <- ([#"../filter_positive.rs" 90 12 90 15] index0 ([#"../filter_positive.rs" 90 11 90 12] t) ([#"../filter_positive.rs" 90 13 90 14] i));
+    [#"../filter_positive.rs" 90 12 90 15] _17 <- ([#"../filter_positive.rs" 90 12 90 15] index0 t i);
     goto BB7
   }
   BB7 {
-    switch ([#"../filter_positive.rs" 90 11 90 19] ([#"../filter_positive.rs" 90 11 90 15] _17) > ([#"../filter_positive.rs" 90 18 90 19] [#"../filter_positive.rs" 90 18 90 19] (0 : int32)))
+    [#"../filter_positive.rs" 90 11 90 19] _15 <- _17 > ([#"../filter_positive.rs" 90 18 90 19] (0 : int32));
+    switch (_15)
       | False -> goto BB9
       | True -> goto BB8
       end
   }
   BB8 {
-    [#"../filter_positive.rs" 91 12 91 22] count <- ([#"../filter_positive.rs" 91 12 91 22] count + ([#"../filter_positive.rs" 91 21 91 22] [#"../filter_positive.rs" 91 21 91 22] (1 : usize)));
+    [#"../filter_positive.rs" 91 12 91 22] count <- count + ([#"../filter_positive.rs" 91 21 91 22] (1 : usize));
     [#"../filter_positive.rs" 91 12 91 22] _14 <- ([#"../filter_positive.rs" 91 12 91 22] ());
     goto BB10
   }
@@ -377,17 +403,17 @@ module FilterPositive_M
     goto BB10
   }
   BB10 {
-    [#"../filter_positive.rs" 93 8 93 14] i <- ([#"../filter_positive.rs" 93 8 93 14] i + ([#"../filter_positive.rs" 93 13 93 14] [#"../filter_positive.rs" 93 13 93 14] (1 : usize)));
+    [#"../filter_positive.rs" 93 8 93 14] i <- i + ([#"../filter_positive.rs" 93 13 93 14] (1 : usize));
     [#"../filter_positive.rs" 89 22 94 5] _9 <- ([#"../filter_positive.rs" 89 22 94 5] ());
     goto BB3
   }
   BB11 {
-    [#"../../../../creusot-contracts/src/lib.rs" 196 8 196 40] u <- ([#"../filter_positive.rs" 95 26 95 40] from_elem0 ([#"../filter_positive.rs" 95 31 95 32] [#"../filter_positive.rs" 95 31 95 32] (0 : int32)) ([#"../filter_positive.rs" 95 34 95 39] count));
+    [#"../filter_positive.rs" 95 26 95 40] u <- ([#"../filter_positive.rs" 95 26 95 40] from_elem0 ([#"../filter_positive.rs" 95 31 95 32] (0 : int32)) count);
     goto BB12
   }
   BB12 {
-    [#"../filter_positive.rs" 96 4 96 13] count <- ([#"../filter_positive.rs" 96 4 96 13] [#"../filter_positive.rs" 96 12 96 13] (0 : usize));
-    [#"../filter_positive.rs" 98 4 98 9] i <- ([#"../filter_positive.rs" 98 4 98 9] [#"../filter_positive.rs" 98 8 98 9] (0 : usize));
+    [#"../filter_positive.rs" 96 4 96 13] count <- ([#"../filter_positive.rs" 96 12 96 13] (0 : usize));
+    [#"../filter_positive.rs" 98 4 98 9] i <- ([#"../filter_positive.rs" 98 8 98 9] (0 : usize));
     goto BB13
   }
   BB13 {
@@ -402,21 +428,24 @@ module FilterPositive_M
     goto BB16
   }
   BB16 {
-    [#"../filter_positive.rs" 102 14 102 21] _30 <- ([#"../filter_positive.rs" 102 14 102 21] len1 ([#"../filter_positive.rs" 102 14 102 15] t));
+    [#"../filter_positive.rs" 102 14 102 21] _30 <- ([#"../filter_positive.rs" 102 14 102 21] len1 t);
     goto BB17
   }
   BB17 {
-    switch ([#"../filter_positive.rs" 102 10 102 21] ([#"../filter_positive.rs" 102 10 102 11] i) < _30)
+    [#"../filter_positive.rs" 102 10 102 21] _28 <- i < _30;
+    _30 <- any usize;
+    switch (_28)
       | False -> goto BB27
       | True -> goto BB18
       end
   }
   BB18 {
-    [#"../filter_positive.rs" 103 12 103 15] _35 <- ([#"../filter_positive.rs" 103 12 103 15] index0 ([#"../filter_positive.rs" 103 11 103 12] t) ([#"../filter_positive.rs" 103 13 103 14] i));
+    [#"../filter_positive.rs" 103 12 103 15] _35 <- ([#"../filter_positive.rs" 103 12 103 15] index0 t i);
     goto BB19
   }
   BB19 {
-    switch ([#"../filter_positive.rs" 103 11 103 19] ([#"../filter_positive.rs" 103 11 103 15] _35) > ([#"../filter_positive.rs" 103 18 103 19] [#"../filter_positive.rs" 103 18 103 19] (0 : int32)))
+    [#"../filter_positive.rs" 103 11 103 19] _33 <- _35 > ([#"../filter_positive.rs" 103 18 103 19] (0 : int32));
+    switch (_33)
       | False -> goto BB25
       | True -> goto BB20
       end
@@ -430,20 +459,20 @@ module FilterPositive_M
     goto BB22
   }
   BB22 {
-    [#"../filter_positive.rs" 113 24 113 27] _43 <- ([#"../filter_positive.rs" 113 24 113 27] index0 ([#"../filter_positive.rs" 113 23 113 24] t) ([#"../filter_positive.rs" 113 25 113 26] i));
+    [#"../filter_positive.rs" 113 24 113 27] _43 <- ([#"../filter_positive.rs" 113 24 113 27] index0 t i);
     goto BB23
   }
   BB23 {
     [#"../filter_positive.rs" 113 12 113 13] _47 <- Borrow.borrow_mut u;
     [#"../filter_positive.rs" 113 12 113 13] u <-  ^ _47;
-    [#"../filter_positive.rs" 113 13 113 20] _46 <- ([#"../filter_positive.rs" 113 13 113 20] index_mut0 _47 ([#"../filter_positive.rs" 113 14 113 19] count));
+    [#"../filter_positive.rs" 113 13 113 20] _46 <- ([#"../filter_positive.rs" 113 13 113 20] index_mut0 _47 count);
     _47 <- any borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
     goto BB24
   }
   BB24 {
-    [#"../filter_positive.rs" 113 12 113 27] _46 <- { _46 with current = ([#"../filter_positive.rs" 113 23 113 27] _43) ; };
+    [#"../filter_positive.rs" 113 12 113 27] _46 <- { _46 with current = _43 ; };
     assume { resolve1 _46 };
-    [#"../filter_positive.rs" 114 12 114 22] count <- ([#"../filter_positive.rs" 114 12 114 22] count + ([#"../filter_positive.rs" 114 21 114 22] [#"../filter_positive.rs" 114 21 114 22] (1 : usize)));
+    [#"../filter_positive.rs" 114 12 114 22] count <- count + ([#"../filter_positive.rs" 114 21 114 22] (1 : usize));
     [#"../filter_positive.rs" 103 20 115 9] _32 <- ([#"../filter_positive.rs" 103 20 115 9] ());
     goto BB26
   }
@@ -452,14 +481,14 @@ module FilterPositive_M
     goto BB26
   }
   BB26 {
-    [#"../filter_positive.rs" 116 8 116 14] i <- ([#"../filter_positive.rs" 116 8 116 14] i + ([#"../filter_positive.rs" 116 13 116 14] [#"../filter_positive.rs" 116 13 116 14] (1 : usize)));
+    [#"../filter_positive.rs" 116 8 116 14] i <- i + ([#"../filter_positive.rs" 116 13 116 14] (1 : usize));
     [#"../filter_positive.rs" 102 22 117 5] _9 <- ([#"../filter_positive.rs" 102 22 117 5] ());
     goto BB15
   }
   BB27 {
     assume { resolve0 t };
-    [#"../filter_positive.rs" 118 11 118 12] _0 <- ([#"../filter_positive.rs" 118 11 118 12] u);
-    [#"../filter_positive.rs" 118 11 118 12] u <- any Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+    [#"../filter_positive.rs" 118 11 118 12] _0 <- u;
+    u <- any Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
     goto BB28
   }
   BB28 {

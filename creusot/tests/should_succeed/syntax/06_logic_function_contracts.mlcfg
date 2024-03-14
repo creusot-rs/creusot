@@ -6,15 +6,12 @@ module C06LogicFunctionContracts_Sum_Impl
   use prelude.Int
   use seq.Seq
   use seq.Seq
-  let rec ghost function sum [#"../06_logic_function_contracts.rs" 10 0 10 32] (seq : Seq.seq int) : int
-    variant {[#"../06_logic_function_contracts.rs" 9 10 9 19] Seq.length seq}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../06_logic_function_contracts.rs" 11 4 16 5] if pure {Seq.length seq = 0} then
-      0
-    else
-      Seq.get seq (Seq.length seq - 1) + sum (SeqExt.subsequence seq 0 (Seq.length seq - 1))
-    
+  constant seq  : Seq.seq int
+  function sum [#"../06_logic_function_contracts.rs" 10 0 10 32] (seq : Seq.seq int) : int
+  goal vc_sum : match Seq.length seq = 0 with
+    | True -> true
+    | False -> 0 <= ([#"../06_logic_function_contracts.rs" 9 10 9 19] Seq.length seq) /\ ([#"../06_logic_function_contracts.rs" 9 10 9 19] Seq.length (SeqExt.subsequence seq 0 (Seq.length seq - 1))) < ([#"../06_logic_function_contracts.rs" 9 10 9 19] Seq.length seq)
+    end
 end
 module C06LogicFunctionContracts_AllZero_Impl
   use seq_ext.SeqExt
@@ -23,26 +20,28 @@ module C06LogicFunctionContracts_AllZero_Impl
   use prelude.Int
   use seq.Seq
   use seq.Seq
-  let rec ghost predicate all_zero [#"../06_logic_function_contracts.rs" 22 0 22 38] (seq : Seq.seq int)
-    variant {[#"../06_logic_function_contracts.rs" 21 10 21 19] Seq.length seq}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../06_logic_function_contracts.rs" 23 4 28 5] if pure {Seq.length seq = 0} then
-      true
+  constant seq  : Seq.seq int
+  predicate all_zero [#"../06_logic_function_contracts.rs" 22 0 22 38] (seq : Seq.seq int)
+  goal vc_all_zero : match Seq.length seq = 0 with
+    | True -> true
+    | False -> if Seq.get seq (Seq.length seq - 1) = 0 then
+      0 <= ([#"../06_logic_function_contracts.rs" 21 10 21 19] Seq.length seq) /\ ([#"../06_logic_function_contracts.rs" 21 10 21 19] Seq.length (SeqExt.subsequence seq 0 (Seq.length seq - 1))) < ([#"../06_logic_function_contracts.rs" 21 10 21 19] Seq.length seq)
     else
-      pure {Seq.get seq (Seq.length seq - 1) = 0} && all_zero (SeqExt.subsequence seq 0 (Seq.length seq - 1))
+      true
     
+    end
 end
 module C06LogicFunctionContracts_Stupid_Impl
   type t
   use prelude.Int
-  let rec ghost predicate stupid [#"../06_logic_function_contracts.rs" 34 0 34 38] (x : t) (i : int)
-    variant {[#"../06_logic_function_contracts.rs" 33 10 33 11] i}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../06_logic_function_contracts.rs" 35 4 43 5] if pure {i <= 0} then
-      true
-    else
-      if pure {x = x} then stupid x 0 else false
-    
+  constant x  : t
+  constant i  : int
+  predicate stupid [#"../06_logic_function_contracts.rs" 34 0 34 38] (x : t) (i : int)
+  goal vc_stupid : match i <= 0 with
+    | True -> true
+    | False -> match x = x with
+      | True -> 0 <= ([#"../06_logic_function_contracts.rs" 33 10 33 11] i) /\ ([#"../06_logic_function_contracts.rs" 33 10 33 11] 0) < ([#"../06_logic_function_contracts.rs" 33 10 33 11] i)
+      | False -> true
+      end
+    end
 end

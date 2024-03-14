@@ -47,7 +47,10 @@ pub(super) fn run_why3<'tcx>(ctx: &Why3Generator<'tcx>, file: Option<PathBuf>) {
     }
     let prelude_dir = TempDir::new("creusot_why3_prelude").expect("could not create temp dir");
     PRELUDE.extract(prelude_dir.path()).expect("could extract prelude into temp dir");
-    let mut command = Command::new("why3");
+    let mut command = Command::new(&why3_cmd.path);
+    if let Some(cfg) = &why3_cmd.config_file {
+        command.arg("-C").arg(cfg);
+    }
     command
         .args([
             "--warn-off=unused_variable",
@@ -76,7 +79,7 @@ pub(super) fn run_why3<'tcx>(ctx: &Why3Generator<'tcx>, file: Option<PathBuf>) {
                             "Prover reported {answer:?} (time: {time:?}, steps: {step:?}) when trying to solve goal {:?} {:?}",
                             x.term.goal_name, x.term.explanations
                         );
-                        ctx.error(span.unwrap_or_default(), &msg);
+                        ctx.error(span.unwrap_or_default(), &msg).emit();
                         for model in x.prover_result.model_elems() {
                             let span = span_map.decode_span(&model.location);
                             let mut msg = format!("Model Element for {}\n", model.lsymbol.name);
@@ -88,13 +91,13 @@ pub(super) fn run_why3<'tcx>(ctx: &Why3Generator<'tcx>, file: Option<PathBuf>) {
                             writeln!(msg, "Term: {}", expr_to_string(&term)).unwrap();
                             let cterm = cterm_to_ast(&model.value.value_concrete_term);
                             writeln!(msg, "Concrete Term: {}", expr_to_string(&cterm)).unwrap();
-                            ctx.sess.span_note_without_error(span.unwrap_or_default(), msg)
+                            ctx.dcx().span_note(span.unwrap_or_default(), msg)
                         }
                     }
                 }
                 Err(err) => {
                     let msg = format!("error parsing why3 output {err:?}");
-                    ctx.error(DUMMY_SP, &msg)
+                    ctx.error(DUMMY_SP, &msg).emit();
                 }
             }
         }
@@ -138,14 +141,16 @@ impl SpanMap {
         opts: &Options,
         span: Span,
     ) -> Option<why3::declaration::Attribute> {
-        if let Some(cmd) = &opts.why3_cmd && matches!(cmd.sub, Why3Sub::Prove) {
+        if let Some(cmd) = &opts.why3_cmd
+            && matches!(cmd.sub, Why3Sub::Prove)
+        {
             let data = span.data();
             Some(why3::declaration::Attribute::Span(
                 "rustc_span".into(),
                 data.lo.0 as usize,
                 data.hi.0 as usize,
                 self.encode_span_data((data.ctxt, data.parent)),
-                0
+                0,
             ))
         } else {
             None
@@ -199,7 +204,6 @@ fn fun<'a>(args: impl IntoIterator<Item = &'a str>, body: Expr) -> Expr {
         binder: rustc_ast::ClosureBinder::NotPresent,
         capture_clause: rustc_ast::CaptureBy::Ref,
         constness: rustc_ast::Const::No,
-        asyncness: rustc_ast::Async::No,
         movability: rustc_ast::Movability::Movable,
         fn_decl: P(rustc_ast::FnDecl {
             inputs: args
@@ -218,6 +222,7 @@ fn fun<'a>(args: impl IntoIterator<Item = &'a str>, body: Expr) -> Expr {
         body: P(body),
         fn_decl_span: DUMMY_SP,
         fn_arg_span: DUMMY_SP,
+        coroutine_kind: None,
     })))
 }
 

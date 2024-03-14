@@ -162,10 +162,11 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                     Some(self.resolve_dep(ctx, node))
                 }
                 TyKind::Closure(_, _) => Some(DepNode::Type(t)),
-                TyKind::Ref(_, _, Mutability::Mut) => Some(DepNode::Buitlin(PreludeModule::Borrow)),
-                TyKind::Int(ity) => Some(DepNode::Buitlin(int_to_prelude(*ity))),
-                TyKind::Uint(uty) => Some(DepNode::Buitlin(uint_to_prelude(*uty))),
-                TyKind::Slice(_) => Some(DepNode::Buitlin(PreludeModule::Slice)),
+                TyKind::Ref(_, _, Mutability::Mut) => Some(DepNode::Builtin(PreludeModule::Borrow)),
+                TyKind::Int(ity) => Some(DepNode::Builtin(int_to_prelude(*ity))),
+                TyKind::Uint(uty) => Some(DepNode::Builtin(uint_to_prelude(*uty))),
+                TyKind::Slice(_) => Some(DepNode::Builtin(PreludeModule::Slice)),
+                TyKind::RawPtr(_) => Some(DepNode::Builtin(PreludeModule::Opaque)),
                 TyKind::Adt(_, _) => Some(DepNode::Type(t)),
                 _ => None,
             };
@@ -213,7 +214,9 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             TyInvKind::from_ty(ctx.tcx, ty).unwrap_or(TyInvKind::Trivial)
         };
 
-        if let TransId::TyInv(self_kind) = self.self_id && self_kind == inv_kind {
+        if let TransId::TyInv(self_kind) = self.self_id
+            && self_kind == inv_kind
+        {
             return;
         }
 
@@ -237,7 +240,8 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
         // Dont clone laws into the trait / impl which defines them.
         if let Some(self_item) = ctx.tcx.opt_associated_item(self_did)
-            && self_item.container_id(ctx.tcx) == item.container_id(ctx.tcx) {
+            && self_item.container_id(ctx.tcx) == item.container_id(ctx.tcx)
+        {
             return;
         }
 

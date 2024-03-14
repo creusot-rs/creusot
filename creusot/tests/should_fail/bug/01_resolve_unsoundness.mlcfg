@@ -17,12 +17,18 @@ module Core_Ptr_Unique_Unique_Type
     | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
-module Alloc_RawVec_RawVec_Type
+module Alloc_RawVec_Cap_Type
   use prelude.UIntSize
   use prelude.Int
+  type t_cap  =
+    | C_Cap usize
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
   use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
   type t_rawvec 't 'a =
-    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
     
 end
 module Alloc_Vec_Vec_Type
@@ -88,7 +94,8 @@ module C01ResolveUnsoundness_MakeVecOfSize
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self}
     ensures { result = shallow_model0 self }
     
-  axiom shallow_model0_spec : forall self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv3 (shallow_model0 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model0 self) <= UIntSize.to_int max0)
+  axiom shallow_model0_spec : forall self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv3 (shallow_model0 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model0 self) <= UIntSize.to_int max0)
   predicate invariant0 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv3 (shallow_model0 self)
   val invariant0 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) : bool
@@ -120,17 +127,18 @@ module C01ResolveUnsoundness_MakeVecOfSize
   var n : usize = n;
   var out : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global);
   var i : usize;
+  var _9 : bool;
   var _12 : ();
   var _13 : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global));
   {
     goto BB0
   }
   BB0 {
-    [#"../01_resolve_unsoundness.rs" 10 29 10 39] out <- ([#"../01_resolve_unsoundness.rs" 10 29 10 39] new0 ());
+    [#"../01_resolve_unsoundness.rs" 10 29 10 39] out <- ([#"../01_resolve_unsoundness.rs" 10 29 10 39] new0 ([#"../01_resolve_unsoundness.rs" 10 29 10 39] ()));
     goto BB1
   }
   BB1 {
-    [#"../01_resolve_unsoundness.rs" 11 16 11 17] i <- ([#"../01_resolve_unsoundness.rs" 11 16 11 17] [#"../01_resolve_unsoundness.rs" 11 16 11 17] (0 : usize));
+    [#"../01_resolve_unsoundness.rs" 11 16 11 17] i <- ([#"../01_resolve_unsoundness.rs" 11 16 11 17] (0 : usize));
     goto BB2
   }
   BB2 {
@@ -138,7 +146,8 @@ module C01ResolveUnsoundness_MakeVecOfSize
     goto BB3
   }
   BB3 {
-    switch ([#"../01_resolve_unsoundness.rs" 13 10 13 16] ([#"../01_resolve_unsoundness.rs" 13 10 13 11] i) <= ([#"../01_resolve_unsoundness.rs" 13 15 13 16] n))
+    [#"../01_resolve_unsoundness.rs" 13 10 13 16] _9 <- i <= n;
+    switch (_9)
       | False -> goto BB6
       | True -> goto BB4
       end
@@ -146,17 +155,17 @@ module C01ResolveUnsoundness_MakeVecOfSize
   BB4 {
     [#"../01_resolve_unsoundness.rs" 14 8 14 11] _13 <- Borrow.borrow_mut out;
     [#"../01_resolve_unsoundness.rs" 14 8 14 11] out <-  ^ _13;
-    [#"../01_resolve_unsoundness.rs" 14 8 14 23] _12 <- ([#"../01_resolve_unsoundness.rs" 14 8 14 23] push0 _13 ([#"../01_resolve_unsoundness.rs" 14 17 14 22] [#"../01_resolve_unsoundness.rs" 14 17 14 22] false));
+    [#"../01_resolve_unsoundness.rs" 14 8 14 23] _12 <- ([#"../01_resolve_unsoundness.rs" 14 8 14 23] push0 _13 ([#"../01_resolve_unsoundness.rs" 14 17 14 22] false));
     _13 <- any borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global));
     goto BB5
   }
   BB5 {
-    [#"../01_resolve_unsoundness.rs" 15 8 15 14] i <- ([#"../01_resolve_unsoundness.rs" 15 8 15 14] i + ([#"../01_resolve_unsoundness.rs" 15 13 15 14] [#"../01_resolve_unsoundness.rs" 15 13 15 14] (1 : usize)));
+    [#"../01_resolve_unsoundness.rs" 15 8 15 14] i <- i + ([#"../01_resolve_unsoundness.rs" 15 13 15 14] (1 : usize));
     goto BB2
   }
   BB6 {
-    [#"../01_resolve_unsoundness.rs" 17 11 17 14] _0 <- ([#"../01_resolve_unsoundness.rs" 17 11 17 14] out);
-    [#"../01_resolve_unsoundness.rs" 17 11 17 14] out <- any Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global);
+    [#"../01_resolve_unsoundness.rs" 17 11 17 14] _0 <- out;
+    out <- any Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global);
     goto BB7
   }
   BB7 {

@@ -36,17 +36,17 @@ module C06KnightsTour_Impl3_Clone
     goto BB0
   }
   BB0 {
-    [#"../06_knights_tour.rs" 6 4 6 12] _5 <- ([#"../06_knights_tour.rs" 6 4 6 12] C06KnightsTour_Point_Type.point_x self);
-    [#"../06_knights_tour.rs" 6 4 6 12] _3 <- ([#"../06_knights_tour.rs" 6 4 6 12] clone0 ([#"../06_knights_tour.rs" 6 4 6 12] _5));
+    [#"../06_knights_tour.rs" 6 4 6 12] _5 <- C06KnightsTour_Point_Type.point_x self;
+    [#"../06_knights_tour.rs" 6 4 6 12] _3 <- ([#"../06_knights_tour.rs" 6 4 6 12] clone0 _5);
     goto BB1
   }
   BB1 {
-    [#"../06_knights_tour.rs" 7 4 7 12] _8 <- ([#"../06_knights_tour.rs" 7 4 7 12] C06KnightsTour_Point_Type.point_y self);
-    [#"../06_knights_tour.rs" 7 4 7 12] _6 <- ([#"../06_knights_tour.rs" 7 4 7 12] clone0 ([#"../06_knights_tour.rs" 7 4 7 12] _8));
+    [#"../06_knights_tour.rs" 7 4 7 12] _8 <- C06KnightsTour_Point_Type.point_y self;
+    [#"../06_knights_tour.rs" 7 4 7 12] _6 <- ([#"../06_knights_tour.rs" 7 4 7 12] clone0 _8);
     goto BB2
   }
   BB2 {
-    [#"../06_knights_tour.rs" 4 15 4 20] _0 <- ([#"../06_knights_tour.rs" 4 15 4 20] C06KnightsTour_Point_Type.C_Point _3 _6);
+    [#"../06_knights_tour.rs" 4 15 4 20] _0 <- C06KnightsTour_Point_Type.C_Point _3 _6;
     _3 <- any isize;
     _6 <- any isize;
     return _0
@@ -71,11 +71,17 @@ module C06KnightsTour_Impl0_Mov
   var _0 : C06KnightsTour_Point_Type.t_point;
   var self : C06KnightsTour_Point_Type.t_point = self;
   var p : (isize, isize) = p;
+  var _9 : isize;
+  var _12 : isize;
   {
     goto BB0
   }
   BB0 {
-    [#"../06_knights_tour.rs" 19 8 19 53] _0 <- ([#"../06_knights_tour.rs" 19 8 19 53] C06KnightsTour_Point_Type.C_Point ([#"../06_knights_tour.rs" 19 18 19 32] ([#"../06_knights_tour.rs" 19 19 19 25] C06KnightsTour_Point_Type.point_x self) + ([#"../06_knights_tour.rs" 19 28 19 31] let (a, _) = p in a)) ([#"../06_knights_tour.rs" 19 37 19 51] ([#"../06_knights_tour.rs" 19 38 19 44] C06KnightsTour_Point_Type.point_y self) + ([#"../06_knights_tour.rs" 19 47 19 50] let (_, a) = p in a)));
+    [#"../06_knights_tour.rs" 19 18 19 32] _9 <- C06KnightsTour_Point_Type.point_x self + (let (a, _) = p in a);
+    [#"../06_knights_tour.rs" 19 37 19 51] _12 <- C06KnightsTour_Point_Type.point_y self + (let (_, a) = p in a);
+    [#"../06_knights_tour.rs" 19 8 19 53] _0 <- C06KnightsTour_Point_Type.C_Point _9 _12;
+    _9 <- any isize;
+    _12 <- any isize;
     return _0
   }
   
@@ -98,12 +104,18 @@ module Core_Ptr_Unique_Unique_Type
     | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
-module Alloc_RawVec_RawVec_Type
+module Alloc_RawVec_Cap_Type
   use prelude.UIntSize
   use prelude.Int
+  type t_cap  =
+    | C_Cap usize
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
   use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
   type t_rawvec 't 'a =
-    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
     
 end
 module Alloc_Vec_Vec_Type
@@ -138,26 +150,6 @@ module C06KnightsTour_Board_Type
       | C_Board _ a -> a
       end
 end
-module CreusotContracts_Std1_Iter_MapInv_MapInv_Type
-  use seq.Seq
-  use prelude.Ghost
-  type t_mapinv 'i 'b 'f =
-    | C_MapInv 'i 'f (Ghost.ghost_ty (Seq.seq 'b))
-    
-  let function mapinv_iter (self : t_mapinv 'i 'b 'f) : 'i = [@vc:do_not_keep_trace] [@vc:sp]
-    match self with
-      | C_MapInv a _ _ -> a
-      end
-  let function mapinv_func (self : t_mapinv 'i 'b 'f) : 'f = [@vc:do_not_keep_trace] [@vc:sp]
-    match self with
-      | C_MapInv _ a _ -> a
-      end
-  let function mapinv_produced (self : t_mapinv 'i 'b 'f) : Ghost.ghost_ty (Seq.seq 'b)
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    match self with
-      | C_MapInv _ _ a -> a
-      end
-end
 module Core_Ops_Range_Range_Type
   type t_range 'idx =
     | C_Range 'idx 'idx
@@ -176,7 +168,7 @@ module C06KnightsTour_Impl1_New_Closure3_Type
   use prelude.UIntSize
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use seq.Seq
-  use prelude.Ghost
+  use prelude.Snapshot
   use prelude.Int16
   use prelude.Int
   use prelude.Borrow
@@ -213,7 +205,8 @@ module C06KnightsTour_Impl1_New_Closure3
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv1 self}
     ensures { result = shallow_model0 self }
     
-  axiom shallow_model0_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv1 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv2 (shallow_model0 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model0 self) <= UIntSize.to_int max0)
+  axiom shallow_model0_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv1 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv2 (shallow_model0 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model0 self) <= UIntSize.to_int max0)
   predicate invariant1 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv2 (shallow_model0 self)
   val invariant1 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : bool
@@ -231,7 +224,7 @@ module C06KnightsTour_Impl1_New_Closure3
     
   axiom inv0 : forall x : usize . inv0 x = true
   use prelude.Int16
-  use prelude.Ghost
+  use prelude.Snapshot
   use prelude.Borrow
   use C06KnightsTour_Impl1_New_Closure3_Type as C06KnightsTour_Impl1_New_Closure3
   function field_00 [#"../06_knights_tour.rs" 43 16 43 50] (self : C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) : usize
@@ -256,15 +249,16 @@ module C06KnightsTour_Impl1_New_Closure3
   val from_elem0 (elem : usize) (n : usize) : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
     requires {inv0 elem}
     ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 157 22 157 41] Seq.length (shallow_model0 result) = UIntSize.to_int n }
-    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 158 12 158 78] forall i : int . 0 <= i /\ i < UIntSize.to_int n -> index_logic0 result i = elem }
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 158 12 158 78] forall i : int . 0 <= i /\ i < UIntSize.to_int n
+     -> index_logic0 result i = elem }
     ensures { inv1 result }
     
   predicate resolve0 (self : borrowed C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve0 (self : borrowed C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) : bool
     ensures { result = resolve0 self }
     
-  let rec cfg c06KnightsTour_Impl1_New_Closure3 [#"../06_knights_tour.rs" 43 16 43 50] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : borrowed C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) (_2 : usize) (_3 : Ghost.ghost_ty (Seq.seq usize)) : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
+  let rec cfg c06KnightsTour_Impl1_New_Closure3 [#"../06_knights_tour.rs" 43 16 43 50] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : borrowed C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) (_2 : usize) (_3 : Snapshot.snap_ty (Seq.seq usize)) : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
     ensures { [#"../06_knights_tour.rs" 43 26 43 48] Seq.length (shallow_model0 result) = UIntSize.to_int (field_00 ( ^ _1)) }
     ensures { unnest0 ( * _1) ( ^ _1) }
     
@@ -277,15 +271,15 @@ module C06KnightsTour_Impl1_New_Closure3
   }
   BB0 {
     assume { resolve0 _1 };
-    [#"../../../../../creusot-contracts/src/lib.rs" 196 8 196 40] res <- ([#"../06_knights_tour.rs" 44 23 44 36] from_elem0 ([#"../06_knights_tour.rs" 44 28 44 29] [#"../06_knights_tour.rs" 44 28 44 29] (0 : usize)) ([#"../06_knights_tour.rs" 44 31 44 35] field_00 ( * _1)));
+    [#"../06_knights_tour.rs" 44 23 44 36] res <- ([#"../06_knights_tour.rs" 44 23 44 36] from_elem0 ([#"../06_knights_tour.rs" 44 28 44 29] (0 : usize)) (field_00 ( * _1)));
     goto BB1
   }
   BB1 {
     goto BB2
   }
   BB2 {
-    [#"../06_knights_tour.rs" 43 16 43 50] _0 <- ([#"../06_knights_tour.rs" 43 16 43 50] res);
-    [#"../06_knights_tour.rs" 43 16 43 50] res <- any Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global);
+    [#"../06_knights_tour.rs" 43 16 43 50] _0 <- res;
+    res <- any Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global);
     goto BB3
   }
   BB3 {
@@ -293,20 +287,40 @@ module C06KnightsTour_Impl1_New_Closure3
   }
   
 end
+module CreusotContracts_Std1_Iter_MapInv_MapInv_Type
+  use seq.Seq
+  use prelude.Snapshot
+  type t_mapinv 'i 'b 'f =
+    | C_MapInv 'i 'f (Snapshot.snap_ty (Seq.seq 'b))
+    
+  let function mapinv_iter (self : t_mapinv 'i 'b 'f) : 'i = [@vc:do_not_keep_trace] [@vc:sp]
+    match self with
+      | C_MapInv a _ _ -> a
+      end
+  let function mapinv_func (self : t_mapinv 'i 'b 'f) : 'f = [@vc:do_not_keep_trace] [@vc:sp]
+    match self with
+      | C_MapInv _ a _ -> a
+      end
+  let function mapinv_produced (self : t_mapinv 'i 'b 'f) : Snapshot.snap_ty (Seq.seq 'b)
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match self with
+      | C_MapInv _ _ a -> a
+      end
+end
 module C06KnightsTour_Impl1_New
   use prelude.UIntSize
   use seq.Seq
-  use prelude.Ghost
-  predicate invariant12 (self : Ghost.ghost_ty (Seq.seq usize)) =
+  use prelude.Snapshot
+  predicate invariant12 (self : Snapshot.snap_ty (Seq.seq usize)) =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  val invariant12 (self : Ghost.ghost_ty (Seq.seq usize)) : bool
+  val invariant12 (self : Snapshot.snap_ty (Seq.seq usize)) : bool
     ensures { result = invariant12 self }
     
-  predicate inv12 (_x : Ghost.ghost_ty (Seq.seq usize))
-  val inv12 (_x : Ghost.ghost_ty (Seq.seq usize)) : bool
+  predicate inv12 (_x : Snapshot.snap_ty (Seq.seq usize))
+  val inv12 (_x : Snapshot.snap_ty (Seq.seq usize)) : bool
     ensures { result = inv12 _x }
     
-  axiom inv12 : forall x : Ghost.ghost_ty (Seq.seq usize) . inv12 x = true
+  axiom inv12 : forall x : Snapshot.snap_ty (Seq.seq usize) . inv12 x = true
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use prelude.Int16
@@ -351,7 +365,8 @@ module C06KnightsTour_Impl1_New
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv9 self}
     ensures { result = shallow_model2 self }
     
-  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv9 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv7 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
+  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv9 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv7 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
   predicate invariant9 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv7 (shallow_model2 self)
   val invariant9 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : bool
@@ -391,7 +406,8 @@ module C06KnightsTour_Impl1_New
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv6 self}
     ensures { result = shallow_model1 self }
     
-  axiom shallow_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv6 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv4 (shallow_model1 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max0)
+  axiom shallow_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv6 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv4 (shallow_model1 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max0)
   predicate invariant6 (self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -418,23 +434,23 @@ module C06KnightsTour_Impl1_New
     
    =
     field_00 _2 = field_00 self
-  predicate postcondition_mut0 [#"../06_knights_tour.rs" 43 16 43 50] (self : borrowed C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) (args : (usize, Ghost.ghost_ty (Seq.seq usize))) (result : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
+  predicate postcondition_mut0 [#"../06_knights_tour.rs" 43 16 43 50] (self : borrowed C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) (args : (usize, Snapshot.snap_ty (Seq.seq usize))) (result : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
     
    =
     (let (_2, _3) = args in Seq.length (shallow_model2 result) = UIntSize.to_int (field_00 ( ^ self))) /\ unnest0 ( * self) ( ^ self)
   use seq.Seq
-  predicate precondition0 [#"../06_knights_tour.rs" 43 16 43 50] (self : C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) (args : (usize, Ghost.ghost_ty (Seq.seq usize)))
+  predicate precondition0 [#"../06_knights_tour.rs" 43 16 43 50] (self : C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) (args : (usize, Snapshot.snap_ty (Seq.seq usize)))
     
    =
     let (_2, _3) = args in true
-  use prelude.Ghost
+  use prelude.Snapshot
   use seq_ext.SeqExt
   use seq.Seq
   use seq.Seq
   use seq.Seq
   use seq.Seq
-  use prelude.Ghost
-  use prelude.Ghost
+  use prelude.Snapshot
+  use prelude.Snapshot
   use prelude.Int
   function deep_model0 (self : usize) : int =
     [#"../../../../../creusot-contracts/src/std/num.rs" 22 16 22 35] UIntSize.to_int self
@@ -444,18 +460,22 @@ module C06KnightsTour_Impl1_New
   predicate produces0 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize)
     
    =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0 -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> deep_model0 (Seq.get visited i) = deep_model0 (Core_Ops_Range_Range_Type.range_start self) + i)
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0
+     -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> deep_model0 (Seq.get visited i) = deep_model0 (Core_Ops_Range_Range_Type.range_start self) + i)
   val produces0 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize) : bool
     ensures { result = produces0 self visited o }
     
   predicate produces1 [@inline:trivial] (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) (visited : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (succ : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3)
     
    =
-    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 37 8 49 9] unnest0 (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self) (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func succ) /\ (exists s : Seq.seq usize . inv7 s /\ Seq.length s = Seq.length visited /\ produces0 (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self) s (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter succ) /\ Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced succ) = Seq.(++) (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) s /\ (exists fs : Seq.seq (borrowed C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) . inv11 fs /\ Seq.length fs = Seq.length visited /\ (forall i : int . 1 <= i /\ i < Seq.length fs ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i) /\ (if Seq.length visited = 0 then
+    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 37 8 49 9] unnest0 (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self) (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func succ) /\ (exists s : Seq.seq usize . inv7 s /\ Seq.length s = Seq.length visited /\ produces0 (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self) s (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter succ) /\ Snapshot.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced succ) = Seq.(++) (Snapshot.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) s /\ (exists fs : Seq.seq (borrowed C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) . inv11 fs /\ Seq.length fs = Seq.length visited /\ (forall i : int . 1 <= i /\ i < Seq.length fs
+     ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i) /\ (if Seq.length visited = 0 then
       CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func succ
     else
        * Seq.get fs 0 = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self /\  ^ Seq.get fs (Seq.length visited - 1) = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func succ
-    ) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> unnest0 (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self) ( * Seq.get fs i) /\ precondition0 ( * Seq.get fs i) (Seq.get s i, Ghost.new (Seq.(++) (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) (SeqExt.subsequence s 0 i))) /\ postcondition_mut0 (Seq.get fs i) (Seq.get s i, Ghost.new (Seq.(++) (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) (SeqExt.subsequence s 0 i))) (Seq.get visited i))))
+    ) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> unnest0 (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self) ( * Seq.get fs i) /\ precondition0 ( * Seq.get fs i) (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) (SeqExt.subsequence s 0 i))) /\ postcondition_mut0 (Seq.get fs i) (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) (SeqExt.subsequence s 0 i))) (Seq.get visited i))))
   val produces1 [@inline:trivial] (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) (visited : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (succ : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) : bool
     ensures { result = produces1 self visited succ }
     
@@ -471,7 +491,14 @@ module C06KnightsTour_Impl1_New
     requires {[#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 31 82 31 83] inv3 c}
     ensures { result = produces_trans2 a ab b bc c }
     
-  axiom produces_trans2_spec : forall a : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3, ab : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)), b : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3, bc : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)), c : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3 . ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 28 15 28 32] produces1 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 29 15 29 32] produces1 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 31 22 31 23] inv3 a) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 31 31 31 33] inv4 ab) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 31 52 31 53] inv3 b) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 31 61 31 63] inv4 bc) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 31 82 31 83] inv3 c) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 30 14 30 42] produces1 a (Seq.(++) ab bc) c)
+  axiom produces_trans2_spec : forall a : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3, ab : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)), b : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3, bc : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)), c : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3 . ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 28 15 28 32] produces1 a ab b)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 29 15 29 32] produces1 b bc c)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 31 22 31 23] inv3 a)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 31 31 31 33] inv4 ab)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 31 52 31 53] inv3 b)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 31 61 31 63] inv4 bc)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 31 82 31 83] inv3 c)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 30 14 30 42] produces1 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl2 (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) : ()
     
@@ -479,7 +506,8 @@ module C06KnightsTour_Impl1_New
     requires {[#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 24 21 24 25] inv3 self}
     ensures { result = produces_refl2 self }
     
-  axiom produces_refl2_spec : forall self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3 . ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 24 21 24 25] inv3 self) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 23 14 23 45] produces1 self (Seq.empty ) self)
+  axiom produces_refl2_spec : forall self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3 . ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 24 21 24 25] inv3 self)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 23 14 23 45] produces1 self (Seq.empty ) self)
   predicate invariant5 (self : borrowed (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3))
     
    =
@@ -511,7 +539,8 @@ module C06KnightsTour_Impl1_New
   predicate next_precondition0 (iter : Core_Ops_Range_Range_Type.t_range usize) (func : C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) (produced : Seq.seq usize)
     
    =
-    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 112 8 116 9] forall i : Core_Ops_Range_Range_Type.t_range usize . forall e : usize . inv0 i -> inv1 e -> produces0 iter (Seq.singleton e) i -> precondition0 func (e, Ghost.new produced)
+    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 112 8 116 9] forall i : Core_Ops_Range_Range_Type.t_range usize . forall e : usize . inv0 i
+     -> inv1 e  -> produces0 iter (Seq.singleton e) i  -> precondition0 func (e, Snapshot.new produced)
   val next_precondition0 (iter : Core_Ops_Range_Range_Type.t_range usize) (func : C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) (produced : Seq.seq usize) : bool
     ensures { result = next_precondition0 iter func produced }
     
@@ -519,7 +548,16 @@ module C06KnightsTour_Impl1_New
   predicate preservation0 (iter : Core_Ops_Range_Range_Type.t_range usize) (func : C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3)
     
    =
-    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 135 8 142 9] forall i : Core_Ops_Range_Range_Type.t_range usize . forall b : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . forall f : borrowed C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3 . forall e2 : usize . forall e1 : usize . forall s : Seq.seq usize . inv0 i -> inv9 b -> inv10 f -> inv1 e2 -> inv1 e1 -> inv7 s -> unnest0 func ( * f) -> produces0 iter (Seq.snoc (Seq.snoc s e1) e2) i -> precondition0 ( * f) (e1, Ghost.new s) -> postcondition_mut0 f (e1, Ghost.new s) b -> precondition0 ( ^ f) (e2, Ghost.new (Seq.snoc s e1))
+    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 135 8 142 9] forall i : Core_Ops_Range_Range_Type.t_range usize . forall b : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . forall f : borrowed C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3 . forall e2 : usize . forall e1 : usize . forall s : Seq.seq usize . inv0 i
+     -> inv9 b
+     -> inv10 f
+     -> inv1 e2
+     -> inv1 e1
+     -> inv7 s
+     -> unnest0 func ( * f)
+     -> produces0 iter (Seq.snoc (Seq.snoc s e1) e2) i
+     -> precondition0 ( * f) (e1, Snapshot.new s)
+     -> postcondition_mut0 f (e1, Snapshot.new s) b  -> precondition0 ( ^ f) (e2, Snapshot.new (Seq.snoc s e1))
   val preservation0 (iter : Core_Ops_Range_Range_Type.t_range usize) (func : C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) : bool
     ensures { result = preservation0 iter func }
     
@@ -536,9 +574,13 @@ module C06KnightsTour_Impl1_New
     requires {[#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 121 42 121 50] inv7 produced}
     ensures { result = preservation_inv0 iter func produced }
     
-  axiom preservation_inv0_spec : forall iter : Core_Ops_Range_Range_Type.t_range usize, func : C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3, produced : Seq.seq usize . ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 121 24 121 28] inv0 iter) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 121 33 121 37] inv2 func) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 121 42 121 50] inv7 produced) -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 120 4 120 83] produced = Seq.empty  -> preservation_inv0 iter func produced = preservation0 iter func)
+  axiom preservation_inv0_spec : forall iter : Core_Ops_Range_Range_Type.t_range usize, func : C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3, produced : Seq.seq usize . ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 121 24 121 28] inv0 iter)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 121 33 121 37] inv2 func)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 121 42 121 50] inv7 produced)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 120 4 120 83] produced = Seq.empty 
+   -> preservation_inv0 iter func produced = preservation0 iter func)
   predicate resolve3 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve3 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
     ensures { result = resolve3 self }
     
@@ -548,7 +590,8 @@ module C06KnightsTour_Impl1_New
     ensures { result = completed1 self }
     
   predicate reinitialize0 (_1 : ()) =
-    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 148 8 153 9] forall func : C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3 . forall iter : borrowed (Core_Ops_Range_Range_Type.t_range usize) . inv2 func -> inv8 iter -> completed1 iter -> next_precondition0 ( ^ iter) func (Seq.empty ) /\ preservation0 ( ^ iter) func
+    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 148 8 153 9] forall func : C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3 . forall iter : borrowed (Core_Ops_Range_Range_Type.t_range usize) . inv2 func
+     -> inv8 iter  -> completed1 iter  -> next_precondition0 ( ^ iter) func (Seq.empty ) /\ preservation0 ( ^ iter) func
   val reinitialize0 (_1 : ()) : bool
     ensures { result = reinitialize0 _1 }
     
@@ -578,13 +621,21 @@ module C06KnightsTour_Impl1_New
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv0 c}
     ensures { result = produces_trans1 a ab b bc c }
     
-  axiom produces_trans1_spec : forall a : Core_Ops_Range_Range_Type.t_range usize, ab : Seq.seq usize, b : Core_Ops_Range_Range_Type.t_range usize, bc : Seq.seq usize, c : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces0 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces0 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv0 a) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv7 ab) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv0 b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv7 bc) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv0 c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] produces0 a (Seq.(++) ab bc) c)
+  axiom produces_trans1_spec : forall a : Core_Ops_Range_Range_Type.t_range usize, ab : Seq.seq usize, b : Core_Ops_Range_Range_Type.t_range usize, bc : Seq.seq usize, c : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces0 a ab b)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces0 b bc c)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv0 a)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv7 ab)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv0 b)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv7 bc)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv0 c)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] produces0 a (Seq.(++) ab bc) c)
   function produces_refl1 (self : Core_Ops_Range_Range_Type.t_range usize) : ()
   val produces_refl1 (self : Core_Ops_Range_Range_Type.t_range usize) : ()
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv0 self}
     ensures { result = produces_refl1 self }
     
-  axiom produces_refl1_spec : forall self : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 45] produces0 self (Seq.empty ) self)
+  axiom produces_refl1_spec : forall self : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 45] produces0 self (Seq.empty ) self)
   predicate invariant1 (self : usize) =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
   val invariant1 (self : usize) : bool
@@ -609,13 +660,21 @@ module C06KnightsTour_Impl1_New
     requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 41 82 41 83] inv0 c}
     ensures { result = produces_trans0 a ab b bc c }
     
-  axiom produces_trans0_spec : forall a : Core_Ops_Range_Range_Type.t_range usize, ab : Seq.seq usize, b : Core_Ops_Range_Range_Type.t_range usize, bc : Seq.seq usize, c : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter.rs" 38 15 38 32] produces0 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 39 15 39 32] produces0 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 22 41 23] inv0 a) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 31 41 33] inv7 ab) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 52 41 53] inv0 b) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 61 41 63] inv7 bc) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 82 41 83] inv0 c) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 40 14 40 42] produces0 a (Seq.(++) ab bc) c)
+  axiom produces_trans0_spec : forall a : Core_Ops_Range_Range_Type.t_range usize, ab : Seq.seq usize, b : Core_Ops_Range_Range_Type.t_range usize, bc : Seq.seq usize, c : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter.rs" 38 15 38 32] produces0 a ab b)
+   -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 39 15 39 32] produces0 b bc c)
+   -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 22 41 23] inv0 a)
+   -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 31 41 33] inv7 ab)
+   -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 52 41 53] inv0 b)
+   -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 61 41 63] inv7 bc)
+   -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 41 82 41 83] inv0 c)
+   -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 40 14 40 42] produces0 a (Seq.(++) ab bc) c)
   function produces_refl0 (self : Core_Ops_Range_Range_Type.t_range usize) : ()
   val produces_refl0 (self : Core_Ops_Range_Range_Type.t_range usize) : ()
     requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 35 21 35 25] inv0 self}
     ensures { result = produces_refl0 self }
     
-  axiom produces_refl0_spec : forall self : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter.rs" 35 21 35 25] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 34 14 34 45] produces0 self (Seq.empty ) self)
+  axiom produces_refl0_spec : forall self : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter.rs" 35 21 35 25] inv0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/iter.rs" 34 14 34 45] produces0 self (Seq.empty ) self)
   function index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global)) (ix : int) : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
     
    =
@@ -625,7 +684,8 @@ module C06KnightsTour_Impl1_New
     
   use C06KnightsTour_Board_Type as C06KnightsTour_Board_Type
   predicate wf0 [#"../06_knights_tour.rs" 30 4 30 23] (self : C06KnightsTour_Board_Type.t_board) =
-    [#"../06_knights_tour.rs" 31 8 35 9] UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) <= 1000 /\ Seq.length (shallow_model1 (C06KnightsTour_Board_Type.board_field self)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) -> Seq.length (shallow_model2 (index_logic0 (C06KnightsTour_Board_Type.board_field self) i)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self))
+    [#"../06_knights_tour.rs" 31 8 35 9] UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) <= 1000 /\ Seq.length (shallow_model1 (C06KnightsTour_Board_Type.board_field self)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (C06KnightsTour_Board_Type.board_size self)
+     -> Seq.length (shallow_model2 (index_logic0 (C06KnightsTour_Board_Type.board_field self) i)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self))
   val wf0 [#"../06_knights_tour.rs" 30 4 30 23] (self : C06KnightsTour_Board_Type.t_board) : bool
     ensures { result = wf0 self }
     
@@ -639,7 +699,7 @@ module C06KnightsTour_Impl1_New
   predicate completed0 (self : borrowed (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3))
     
    =
-    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 15 8 18 9] Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced ( ^ self)) = Seq.empty  /\ completed1 (Borrow.borrow_logic (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter ( * self)) (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1)) /\ CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func ( * self) = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func ( ^ self)
+    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 15 8 18 9] Snapshot.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced ( ^ self)) = Seq.empty  /\ completed1 (Borrow.borrow_logic (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter ( * self)) (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1)) /\ CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func ( * self) = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func ( ^ self)
   val completed0 (self : borrowed (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3)) : bool
     ensures { result = completed0 self }
     
@@ -648,14 +708,14 @@ module C06KnightsTour_Impl1_New
    =
     true
   predicate resolve1 (self : Core_Ops_Range_Range_Type.t_range usize) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 47 8 47 12] true
+    [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
   val resolve1 (self : Core_Ops_Range_Range_Type.t_range usize) : bool
     ensures { result = resolve1 self }
     
   predicate resolve0 (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3)
     
    =
-    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 56 4 56 16] resolve1 (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self) /\ resolve2 (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self)
+    [#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 56 4 56 27] resolve1 (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self) /\ resolve2 (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self)
   val resolve0 (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) : bool
     ensures { result = resolve0 self }
     
@@ -665,13 +725,14 @@ module C06KnightsTour_Impl1_New
     ensures { inv6 result }
     
   val map_inv0 (self : Core_Ops_Range_Range_Type.t_range usize) (func : C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3) : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3
-    requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 43 4 43 138] forall i2 : Core_Ops_Range_Range_Type.t_range usize . forall e : usize . inv0 i2 -> inv1 e -> produces0 self (Seq.singleton e) i2 -> precondition0 func (e, Ghost.new (Seq.empty ))}
+    requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 43 4 43 141] forall i2 : Core_Ops_Range_Range_Type.t_range usize . forall e : usize . inv0 i2
+     -> inv1 e  -> produces0 self (Seq.singleton e) i2  -> precondition0 func (e, Snapshot.new (Seq.empty ))}
     requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 44 15 44 51] reinitialize0 ()}
     requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 45 15 45 70] preservation0 self func}
     requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 47 21 47 25] inv0 self}
     requires {[#"../../../../../creusot-contracts/src/std/iter.rs" 47 27 47 31] inv2 func}
-    ensures { [#"../../../../../creusot-contracts/src/std/iter.rs" 46 14 46 85] result = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.C_MapInv self func (Ghost.new (Seq.empty )) }
-    ensures { [#"../../../../../creusot-contracts/src/std/iter.rs" 47 4 50 58] inv3 result }
+    ensures { [#"../../../../../creusot-contracts/src/std/iter.rs" 46 14 46 88] result = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.C_MapInv self func (Snapshot.new (Seq.empty )) }
+    ensures { [#"../../../../../creusot-contracts/src/std/iter.rs" 47 4 50 61] inv3 result }
     
   let rec cfg new [#"../06_knights_tour.rs" 40 4 40 31] [@cfg:stackify] [@cfg:subregion_analysis] (size : usize) : C06KnightsTour_Board_Type.t_board
     requires {[#"../06_knights_tour.rs" 37 15 37 28] UIntSize.to_int size <= 1000}
@@ -683,11 +744,17 @@ module C06KnightsTour_Impl1_New
   var size : usize = size;
   var rows : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global);
   var _6 : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv (Core_Ops_Range_Range_Type.t_range usize) usize C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3;
+  var _7 : Core_Ops_Range_Range_Type.t_range usize;
+  var _9 : C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3;
   {
     goto BB0
   }
   BB0 {
-    [#"../06_knights_tour.rs" 41 19 45 13] _6 <- ([#"../06_knights_tour.rs" 41 19 45 13] map_inv0 ([#"../06_knights_tour.rs" 41 19 41 28] Core_Ops_Range_Range_Type.C_Range ([#"../06_knights_tour.rs" 41 20 41 21] [#"../06_knights_tour.rs" 41 20 41 21] (0 : usize)) ([#"../06_knights_tour.rs" 41 23 41 27] size)) ([#"../06_knights_tour.rs" 43 16 43 50] C06KnightsTour_Impl1_New_Closure3.C06KnightsTour_Impl1_New_Closure3 ([#"../06_knights_tour.rs" 43 16 43 50] size)));
+    [#"../06_knights_tour.rs" 41 19 41 28] _7 <- Core_Ops_Range_Range_Type.C_Range ([#"../06_knights_tour.rs" 41 20 41 21] (0 : usize)) size;
+    [#"../06_knights_tour.rs" 43 16 43 50] _9 <- C06KnightsTour_Impl1_New_Closure3.C06KnightsTour_Impl1_New_Closure3 size;
+    [#"../06_knights_tour.rs" 41 19 45 13] _6 <- ([#"../06_knights_tour.rs" 41 19 45 13] map_inv0 _7 _9);
+    _7 <- any Core_Ops_Range_Range_Type.t_range usize;
+    _9 <- any C06KnightsTour_Impl1_New_Closure3.c06knightstour_impl1_new_closure3;
     goto BB1
   }
   BB1 {
@@ -696,8 +763,8 @@ module C06KnightsTour_Impl1_New
     goto BB2
   }
   BB2 {
-    [#"../06_knights_tour.rs" 47 8 47 34] _0 <- ([#"../06_knights_tour.rs" 47 8 47 34] C06KnightsTour_Board_Type.C_Board ([#"../06_knights_tour.rs" 47 15 47 19] size) ([#"../06_knights_tour.rs" 47 28 47 32] rows));
-    [#"../06_knights_tour.rs" 47 28 47 32] rows <- any Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global);
+    [#"../06_knights_tour.rs" 47 8 47 34] _0 <- C06KnightsTour_Board_Type.C_Board size rows;
+    rows <- any Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global);
     goto BB3
   }
   BB3 {
@@ -737,7 +804,8 @@ module C06KnightsTour_Impl1_Available
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv6 self}
     ensures { result = shallow_model4 self }
     
-  axiom shallow_model4_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv6 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv7 (shallow_model4 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model4 self) <= UIntSize.to_int max0)
+  axiom shallow_model4_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv6 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv7 (shallow_model4 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model4 self) <= UIntSize.to_int max0)
   predicate invariant6 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv7 (shallow_model4 self)
   val invariant6 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : bool
@@ -766,7 +834,8 @@ module C06KnightsTour_Impl1_Available
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self}
     ensures { result = shallow_model3 self }
     
-  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv5 (shallow_model3 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
+  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv5 (shallow_model3 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
   predicate invariant4 (self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -837,7 +906,8 @@ module C06KnightsTour_Impl1_Available
     ensures { result = index_logic0 self ix }
     
   predicate wf0 [#"../06_knights_tour.rs" 30 4 30 23] (self : C06KnightsTour_Board_Type.t_board) =
-    [#"../06_knights_tour.rs" 31 8 35 9] UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) <= 1000 /\ Seq.length (shallow_model3 (C06KnightsTour_Board_Type.board_field self)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) -> Seq.length (shallow_model4 (index_logic0 (C06KnightsTour_Board_Type.board_field self) i)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self))
+    [#"../06_knights_tour.rs" 31 8 35 9] UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) <= 1000 /\ Seq.length (shallow_model3 (C06KnightsTour_Board_Type.board_field self)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (C06KnightsTour_Board_Type.board_size self)
+     -> Seq.length (shallow_model4 (index_logic0 (C06KnightsTour_Board_Type.board_field self) i)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self))
   val wf0 [#"../06_knights_tour.rs" 30 4 30 23] (self : C06KnightsTour_Board_Type.t_board) : bool
     ensures { result = wf0 self }
     
@@ -855,7 +925,7 @@ module C06KnightsTour_Impl1_Available
     ensures { result = in_bounds2 self seq }
     
   function shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize =
-    [#"../../../../../creusot-contracts/src/model.rs" 79 8 79 31] shallow_model4 self
+    [#"../../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model4 self
   val shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
     ensures { result = shallow_model1 self }
     
@@ -883,7 +953,7 @@ module C06KnightsTour_Impl1_Available
   function shallow_model0 (self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
     
    =
-    [#"../../../../../creusot-contracts/src/model.rs" 79 8 79 31] shallow_model3 self
+    [#"../../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model3 self
   val shallow_model0 (self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
     ensures { result = shallow_model0 self }
     
@@ -897,43 +967,61 @@ module C06KnightsTour_Impl1_Available
   use prelude.IntSize
   let rec cfg available [#"../06_knights_tour.rs" 52 4 52 41] [@cfg:stackify] [@cfg:subregion_analysis] (self : C06KnightsTour_Board_Type.t_board) (p : C06KnightsTour_Point_Type.t_point) : bool
     requires {[#"../06_knights_tour.rs" 50 15 50 24] wf0 self}
-    ensures { [#"../06_knights_tour.rs" 51 4 51 44] result -> in_bounds0 self p }
+    ensures { [#"../06_knights_tour.rs" 51 4 51 44] result  -> in_bounds0 self p }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : bool;
   var self : C06KnightsTour_Board_Type.t_board = self;
   var p : C06KnightsTour_Point_Type.t_point = p;
+  var _5 : bool;
+  var _7 : bool;
+  var _8 : usize;
+  var _11 : bool;
+  var _13 : bool;
+  var _14 : usize;
   var _18 : usize;
   var _20 : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global);
+  var _22 : usize;
+  var _24 : usize;
   {
     goto BB0
   }
   BB0 {
-    switch ([#"../06_knights_tour.rs" 53 8 53 16] ([#"../06_knights_tour.rs" 53 8 53 9] [#"../06_knights_tour.rs" 53 8 53 9] (0 : isize)) <= ([#"../06_knights_tour.rs" 53 13 53 16] C06KnightsTour_Point_Type.point_x p))
+    [#"../06_knights_tour.rs" 53 8 53 16] _5 <- ([#"../06_knights_tour.rs" 53 8 53 9] (0 : isize)) <= C06KnightsTour_Point_Type.point_x p;
+    switch (_5)
       | False -> goto BB8
       | True -> goto BB1
       end
   }
   BB1 {
-    switch ([#"../06_knights_tour.rs" 54 15 54 41] ([#"../06_knights_tour.rs" 54 15 54 29] UIntSize.of_int (IntSize.to_int ([#"../06_knights_tour.rs" 54 16 54 19] C06KnightsTour_Point_Type.point_x p))) < ([#"../06_knights_tour.rs" 54 32 54 41] C06KnightsTour_Board_Type.board_size self))
+    [#"../06_knights_tour.rs" 54 15 54 29] _8 <- UIntSize.of_int (IntSize.to_int (C06KnightsTour_Point_Type.point_x p));
+    [#"../06_knights_tour.rs" 54 15 54 41] _7 <- _8 < C06KnightsTour_Board_Type.board_size self;
+    _8 <- any usize;
+    switch (_7)
       | False -> goto BB7
       | True -> goto BB2
       end
   }
   BB2 {
-    switch ([#"../06_knights_tour.rs" 55 15 55 23] ([#"../06_knights_tour.rs" 55 15 55 16] [#"../06_knights_tour.rs" 55 15 55 16] (0 : isize)) <= ([#"../06_knights_tour.rs" 55 20 55 23] C06KnightsTour_Point_Type.point_y p))
+    [#"../06_knights_tour.rs" 55 15 55 23] _11 <- ([#"../06_knights_tour.rs" 55 15 55 16] (0 : isize)) <= C06KnightsTour_Point_Type.point_y p;
+    switch (_11)
       | False -> goto BB6
       | True -> goto BB3
       end
   }
   BB3 {
-    switch ([#"../06_knights_tour.rs" 56 15 56 41] ([#"../06_knights_tour.rs" 56 15 56 29] UIntSize.of_int (IntSize.to_int ([#"../06_knights_tour.rs" 56 16 56 19] C06KnightsTour_Point_Type.point_y p))) < ([#"../06_knights_tour.rs" 56 32 56 41] C06KnightsTour_Board_Type.board_size self))
+    [#"../06_knights_tour.rs" 56 15 56 29] _14 <- UIntSize.of_int (IntSize.to_int (C06KnightsTour_Point_Type.point_y p));
+    [#"../06_knights_tour.rs" 56 15 56 41] _13 <- _14 < C06KnightsTour_Board_Type.board_size self;
+    _14 <- any usize;
+    switch (_13)
       | False -> goto BB5
       | True -> goto BB4
       end
   }
   BB4 {
-    [#"../06_knights_tour.rs" 57 25 57 39] _20 <- ([#"../06_knights_tour.rs" 57 25 57 39] index0 ([#"../06_knights_tour.rs" 57 15 57 25] C06KnightsTour_Board_Type.board_field self) ([#"../06_knights_tour.rs" 57 26 57 38] UIntSize.of_int (IntSize.to_int ([#"../06_knights_tour.rs" 57 26 57 29] C06KnightsTour_Point_Type.point_x p))));
+    [#"../06_knights_tour.rs" 57 26 57 38] _22 <- UIntSize.of_int (IntSize.to_int (C06KnightsTour_Point_Type.point_x p));
+    [#"../06_knights_tour.rs" 57 25 57 39] _20 <- ([#"../06_knights_tour.rs" 57 25 57 39] index0 (C06KnightsTour_Board_Type.board_field self) _22);
+    _22 <- any usize;
     goto BB10
   }
   BB5 {
@@ -949,15 +1037,17 @@ module C06KnightsTour_Impl1_Available
     goto BB9
   }
   BB9 {
-    [#"../06_knights_tour.rs" 53 8 57 58] _0 <- ([#"../06_knights_tour.rs" 53 8 57 58] [#"../06_knights_tour.rs" 53 8 57 58] false);
+    [#"../06_knights_tour.rs" 53 8 57 58] _0 <- ([#"../06_knights_tour.rs" 53 8 57 58] false);
     goto BB12
   }
   BB10 {
-    [#"../06_knights_tour.rs" 57 39 57 53] _18 <- ([#"../06_knights_tour.rs" 57 39 57 53] index1 ([#"../06_knights_tour.rs" 57 15 57 39] _20) ([#"../06_knights_tour.rs" 57 40 57 52] UIntSize.of_int (IntSize.to_int ([#"../06_knights_tour.rs" 57 40 57 43] C06KnightsTour_Point_Type.point_y p))));
+    [#"../06_knights_tour.rs" 57 40 57 52] _24 <- UIntSize.of_int (IntSize.to_int (C06KnightsTour_Point_Type.point_y p));
+    [#"../06_knights_tour.rs" 57 39 57 53] _18 <- ([#"../06_knights_tour.rs" 57 39 57 53] index1 _20 _24);
+    _24 <- any usize;
     goto BB11
   }
   BB11 {
-    [#"../06_knights_tour.rs" 57 15 57 58] _0 <- ([#"../06_knights_tour.rs" 57 15 57 58] ([#"../06_knights_tour.rs" 57 15 57 53] _18) = ([#"../06_knights_tour.rs" 57 57 57 58] [#"../06_knights_tour.rs" 57 57 57 58] (0 : usize)));
+    [#"../06_knights_tour.rs" 57 15 57 58] _0 <- _18 = ([#"../06_knights_tour.rs" 57 57 57 58] (0 : usize));
     goto BB12
   }
   BB12 {
@@ -978,7 +1068,7 @@ module Alloc_Vec_IntoIter_IntoIter_Type
   use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
   use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
   type t_intoiter 't 'a =
-    | C_IntoIter (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't) usize (Core_Mem_ManuallyDrop_ManuallyDrop_Type.t_manuallydrop 'a) opaque_ptr opaque_ptr
+    | C_IntoIter (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't) usize (Core_Mem_ManuallyDrop_ManuallyDrop_Type.t_manuallydrop 'a) (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) opaque_ptr
     
 end
 module Core_Option_Option_Type
@@ -1021,7 +1111,8 @@ module C06KnightsTour_Impl1_CountDegree
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self}
     ensures { result = shallow_model5 self }
     
-  axiom shallow_model5_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv8 (shallow_model5 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model5 self) <= UIntSize.to_int max0)
+  axiom shallow_model5_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv8 (shallow_model5 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model5 self) <= UIntSize.to_int max0)
   predicate invariant7 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv8 (shallow_model5 self)
   val invariant7 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : bool
@@ -1050,7 +1141,8 @@ module C06KnightsTour_Impl1_CountDegree
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv5 self}
     ensures { result = shallow_model4 self }
     
-  axiom shallow_model4_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv5 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv6 (shallow_model4 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model4 self) <= UIntSize.to_int max0)
+  axiom shallow_model4_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv5 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv6 (shallow_model4 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model4 self) <= UIntSize.to_int max0)
   predicate invariant5 (self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -1107,7 +1199,8 @@ module C06KnightsTour_Impl1_CountDegree
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv1 self}
     ensures { result = shallow_model1 self }
     
-  axiom shallow_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec (isize, isize) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv1 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv4 (shallow_model1 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max0)
+  axiom shallow_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec (isize, isize) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv1 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv4 (shallow_model1 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max0)
   predicate invariant1 (self : Alloc_Vec_Vec_Type.t_vec (isize, isize) (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv4 (shallow_model1 self)
   val invariant1 (self : Alloc_Vec_Vec_Type.t_vec (isize, isize) (Alloc_Alloc_Global_Type.t_global)) : bool
@@ -1145,7 +1238,14 @@ module C06KnightsTour_Impl1_CountDegree
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 251 64 251 65] inv0 c}
     ensures { result = produces_trans0 a ab b bc c }
     
-  axiom produces_trans0_spec : forall a : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global), ab : Seq.seq (isize, isize), b : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global), bc : Seq.seq (isize, isize), c : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 248 15 248 32] produces0 a ab b) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 249 15 249 32] produces0 b bc c) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 22 251 23] inv0 a) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 31 251 33] inv4 ab) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 43 251 44] inv0 b) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 52 251 54] inv4 bc) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 64 251 65] inv0 c) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 250 14 250 42] produces0 a (Seq.(++) ab bc) c)
+  axiom produces_trans0_spec : forall a : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global), ab : Seq.seq (isize, isize), b : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global), bc : Seq.seq (isize, isize), c : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 248 15 248 32] produces0 a ab b)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 249 15 249 32] produces0 b bc c)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 22 251 23] inv0 a)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 31 251 33] inv4 ab)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 43 251 44] inv0 b)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 52 251 54] inv4 bc)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 64 251 65] inv0 c)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 250 14 250 42] produces0 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl0 (self : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global)) : ()
     
@@ -1155,7 +1255,8 @@ module C06KnightsTour_Impl1_CountDegree
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 244 21 244 25] inv0 self}
     ensures { result = produces_refl0 self }
     
-  axiom produces_refl0_spec : forall self : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 244 21 244 25] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 243 14 243 45] produces0 self (Seq.empty ) self)
+  axiom produces_refl0_spec : forall self : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 244 21 244 25] inv0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 243 14 243 45] produces0 self (Seq.empty ) self)
   predicate invariant0 (self : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -1183,18 +1284,19 @@ module C06KnightsTour_Impl1_CountDegree
     ensures { result = index_logic2 self ix }
     
   predicate wf0 [#"../06_knights_tour.rs" 30 4 30 23] (self : C06KnightsTour_Board_Type.t_board) =
-    [#"../06_knights_tour.rs" 31 8 35 9] UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) <= 1000 /\ Seq.length (shallow_model4 (C06KnightsTour_Board_Type.board_field self)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) -> Seq.length (shallow_model5 (index_logic2 (C06KnightsTour_Board_Type.board_field self) i)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self))
+    [#"../06_knights_tour.rs" 31 8 35 9] UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) <= 1000 /\ Seq.length (shallow_model4 (C06KnightsTour_Board_Type.board_field self)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (C06KnightsTour_Board_Type.board_size self)
+     -> Seq.length (shallow_model5 (index_logic2 (C06KnightsTour_Board_Type.board_field self) i)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self))
   val wf0 [#"../06_knights_tour.rs" 30 4 30 23] (self : C06KnightsTour_Board_Type.t_board) : bool
     ensures { result = wf0 self }
     
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate resolve3 (self : isize) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 47 8 47 12] true
+    [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
   val resolve3 (self : isize) : bool
     ensures { result = resolve3 self }
     
   predicate resolve1 (self : (isize, isize)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 18 8 18 60] resolve3 (let (a, _) = self in a) /\ resolve3 (let (_, a) = self in a)
+    [#"../../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve3 (let (a, _) = self in a) /\ resolve3 (let (_, a) = self in a)
   val resolve1 (self : (isize, isize)) : bool
     ensures { result = resolve1 self }
     
@@ -1202,13 +1304,14 @@ module C06KnightsTour_Impl1_CountDegree
   predicate resolve2 (self : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global))
     
    =
-    [#"../../../../../creusot-contracts/src/std/vec.rs" 222 8 222 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model3 self) -> resolve1 (Seq.get (shallow_model3 self) i)
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 222 8 222 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model3 self)
+     -> resolve1 (Seq.get (shallow_model3 self) i)
   val resolve2 (self : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve2 self }
     
   val available0 [#"../06_knights_tour.rs" 52 4 52 41] (self : C06KnightsTour_Board_Type.t_board) (p : C06KnightsTour_Point_Type.t_point) : bool
     requires {[#"../06_knights_tour.rs" 50 15 50 24] wf0 self}
-    ensures { [#"../06_knights_tour.rs" 51 4 51 44] result -> in_bounds0 self p }
+    ensures { [#"../06_knights_tour.rs" 51 4 51 44] result  -> in_bounds0 self p }
     
   val mov0 [#"../06_knights_tour.rs" 18 4 18 45] (self : C06KnightsTour_Point_Type.t_point) (p : (isize, isize)) : C06KnightsTour_Point_Type.t_point
     requires {[#"../06_knights_tour.rs" 12 15 12 52] - 10000 <= IntSize.to_int (C06KnightsTour_Point_Type.point_x self) /\ IntSize.to_int (C06KnightsTour_Point_Type.point_x self) <= 10000}
@@ -1222,14 +1325,14 @@ module C06KnightsTour_Impl1_CountDegree
   predicate resolve0 (self : borrowed (Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global)))
     
    =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve0 (self : borrowed (Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global))) : bool
     ensures { result = resolve0 self }
     
   function shallow_model6 (self : borrowed (Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global))) : Seq.seq (isize, isize)
     
    =
-    [#"../../../../../creusot-contracts/src/model.rs" 97 8 97 31] shallow_model3 ( * self)
+    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model3 ( * self)
   val shallow_model6 (self : borrowed (Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global))) : Seq.seq (isize, isize)
     ensures { result = shallow_model6 self }
     
@@ -1248,11 +1351,11 @@ module C06KnightsTour_Impl1_CountDegree
       end }
     ensures { inv3 result }
     
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
   predicate into_iter_post0 (self : Alloc_Vec_Vec_Type.t_vec (isize, isize) (Alloc_Alloc_Global_Type.t_global)) (res : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -1280,7 +1383,8 @@ module C06KnightsTour_Impl1_CountDegree
     
   val moves0 [#"../06_knights_tour.rs" 95 0 95 33] (_1 : ()) : Alloc_Vec_Vec_Type.t_vec (isize, isize) (Alloc_Alloc_Global_Type.t_global)
     ensures { [#"../06_knights_tour.rs" 93 10 93 28] Seq.length (shallow_model1 result) = 8 }
-    ensures { [#"../06_knights_tour.rs" 94 0 94 130] forall i : int . 0 <= i /\ i < 8 -> - 2 <= IntSize.to_int (let (a, _) = index_logic0 result i in a) /\ IntSize.to_int (let (a, _) = index_logic0 result i in a) <= 2 /\ - 2 <= IntSize.to_int (let (_, a) = index_logic0 result i in a) /\ IntSize.to_int (let (_, a) = index_logic0 result i in a) <= 2 }
+    ensures { [#"../06_knights_tour.rs" 94 0 94 130] forall i : int . 0 <= i /\ i < 8
+     -> - 2 <= IntSize.to_int (let (a, _) = index_logic0 result i in a) /\ IntSize.to_int (let (a, _) = index_logic0 result i in a) <= 2 /\ - 2 <= IntSize.to_int (let (_, a) = index_logic0 result i in a) /\ IntSize.to_int (let (_, a) = index_logic0 result i in a) <= 2 }
     
   let rec cfg count_degree [#"../06_knights_tour.rs" 70 4 70 45] [@cfg:stackify] [@cfg:subregion_analysis] (self : C06KnightsTour_Board_Type.t_board) (p : C06KnightsTour_Point_Type.t_point) : usize
     requires {[#"../06_knights_tour.rs" 68 15 68 24] wf0 self}
@@ -1293,14 +1397,14 @@ module C06KnightsTour_Impl1_CountDegree
   var count : usize;
   var iter : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global);
   var _8 : Alloc_Vec_Vec_Type.t_vec (isize, isize) (Alloc_Alloc_Global_Type.t_global);
-  var iter_old : Ghost.ghost_ty (Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global));
-  var produced : Ghost.ghost_ty (Seq.seq (isize, isize));
+  var iter_old : Snapshot.snap_ty (Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global));
+  var produced : Snapshot.snap_ty (Seq.seq (isize, isize));
   var _16 : ();
   var _17 : Core_Option_Option_Type.t_option (isize, isize);
   var _18 : borrowed (Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global));
   var _19 : borrowed (Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global));
   var __creusot_proc_iter_elem : (isize, isize);
-  var _22 : Ghost.ghost_ty (Seq.seq (isize, isize));
+  var _22 : Snapshot.snap_ty (Seq.seq (isize, isize));
   var m : (isize, isize);
   var next : C06KnightsTour_Point_Type.t_point;
   var _28 : (isize, isize);
@@ -1309,8 +1413,8 @@ module C06KnightsTour_Impl1_CountDegree
     goto BB0
   }
   BB0 {
-    [#"../06_knights_tour.rs" 71 24 71 25] count <- ([#"../06_knights_tour.rs" 71 24 71 25] [#"../06_knights_tour.rs" 71 24 71 25] (0 : usize));
-    [#"../06_knights_tour.rs" 74 17 74 24] _8 <- ([#"../06_knights_tour.rs" 74 17 74 24] moves0 ());
+    [#"../06_knights_tour.rs" 71 24 71 25] count <- ([#"../06_knights_tour.rs" 71 24 71 25] (0 : usize));
+    [#"../06_knights_tour.rs" 74 17 74 24] _8 <- ([#"../06_knights_tour.rs" 74 17 74 24] moves0 ([#"../06_knights_tour.rs" 74 17 74 24] ()));
     goto BB1
   }
   BB1 {
@@ -1319,11 +1423,11 @@ module C06KnightsTour_Impl1_CountDegree
     goto BB2
   }
   BB2 {
-    [#"../06_knights_tour.rs" 73 8 73 46] iter_old <- ([#"../06_knights_tour.rs" 73 8 73 46] Ghost.new iter);
+    [#"../06_knights_tour.rs" 73 8 73 46] iter_old <- ([#"../06_knights_tour.rs" 73 8 73 46] Snapshot.new iter);
     goto BB3
   }
   BB3 {
-    [#"../06_knights_tour.rs" 73 8 73 46] produced <- ([#"../06_knights_tour.rs" 73 8 73 46] Ghost.new (Seq.empty ));
+    [#"../06_knights_tour.rs" 73 8 73 46] produced <- ([#"../06_knights_tour.rs" 73 8 73 46] Snapshot.new (Seq.empty ));
     goto BB4
   }
   BB4 {
@@ -1337,8 +1441,8 @@ module C06KnightsTour_Impl1_CountDegree
   }
   BB7 {
     invariant { [#"../06_knights_tour.rs" 73 8 73 46] inv0 iter };
-    invariant { [#"../06_knights_tour.rs" 73 8 73 46] produces0 (Ghost.inner iter_old) (Ghost.inner produced) iter };
-    invariant { [#"../06_knights_tour.rs" 73 20 73 44] UIntSize.to_int count <= Seq.length (Ghost.inner produced) };
+    invariant { [#"../06_knights_tour.rs" 73 8 73 46] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter };
+    invariant { [#"../06_knights_tour.rs" 73 20 73 44] UIntSize.to_int count <= Seq.length (Snapshot.inner produced) };
     goto BB8
   }
   BB8 {
@@ -1370,22 +1474,22 @@ module C06KnightsTour_Impl1_CountDegree
     absurd
   }
   BB13 {
-    [#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] __creusot_proc_iter_elem <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] Core_Option_Option_Type.some_0 _17);
-    [#"../06_knights_tour.rs" 73 8 73 46] _22 <- ([#"../06_knights_tour.rs" 73 8 73 46] Ghost.new (Seq.(++) (Ghost.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
+    [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem <- Core_Option_Option_Type.some_0 _17;
+    [#"../06_knights_tour.rs" 73 8 73 46] _22 <- ([#"../06_knights_tour.rs" 73 8 73 46] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
     goto BB14
   }
   BB14 {
-    [#"../06_knights_tour.rs" 73 8 73 46] produced <- ([#"../06_knights_tour.rs" 73 8 73 46] _22);
-    [#"../06_knights_tour.rs" 73 8 73 46] _22 <- any Ghost.ghost_ty (Seq.seq (isize, isize));
-    [#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] m <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] __creusot_proc_iter_elem);
+    [#"../06_knights_tour.rs" 73 8 73 46] produced <- _22;
+    _22 <- any Snapshot.snap_ty (Seq.seq (isize, isize));
+    [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] m <- __creusot_proc_iter_elem;
     assume { resolve1 __creusot_proc_iter_elem };
-    [#"../06_knights_tour.rs" 75 29 75 31] _28 <- ([#"../06_knights_tour.rs" 75 29 75 31] m);
-    [#"../06_knights_tour.rs" 75 23 75 32] next <- ([#"../06_knights_tour.rs" 75 23 75 32] mov0 ([#"../06_knights_tour.rs" 75 23 75 24] p) ([#"../06_knights_tour.rs" 75 29 75 31] _28));
+    [#"../06_knights_tour.rs" 75 29 75 31] _28 <- m;
+    [#"../06_knights_tour.rs" 75 23 75 32] next <- ([#"../06_knights_tour.rs" 75 23 75 32] mov0 p _28);
     goto BB15
   }
   BB15 {
     assume { resolve1 m };
-    [#"../06_knights_tour.rs" 76 15 76 35] _29 <- ([#"../06_knights_tour.rs" 76 15 76 35] available0 ([#"../06_knights_tour.rs" 76 15 76 19] self) ([#"../06_knights_tour.rs" 76 30 76 34] next));
+    [#"../06_knights_tour.rs" 76 15 76 35] _29 <- ([#"../06_knights_tour.rs" 76 15 76 35] available0 self next);
     goto BB16
   }
   BB16 {
@@ -1395,7 +1499,7 @@ module C06KnightsTour_Impl1_CountDegree
       end
   }
   BB17 {
-    [#"../06_knights_tour.rs" 77 16 77 26] count <- ([#"../06_knights_tour.rs" 77 16 77 26] count + ([#"../06_knights_tour.rs" 77 25 77 26] [#"../06_knights_tour.rs" 77 25 77 26] (1 : usize)));
+    [#"../06_knights_tour.rs" 77 16 77 26] count <- count + ([#"../06_knights_tour.rs" 77 25 77 26] (1 : usize));
     [#"../06_knights_tour.rs" 76 36 78 13] _16 <- ([#"../06_knights_tour.rs" 76 36 78 13] ());
     goto BB19
   }
@@ -1407,7 +1511,7 @@ module C06KnightsTour_Impl1_CountDegree
     goto BB7
   }
   BB20 {
-    [#"../06_knights_tour.rs" 80 8 80 13] _0 <- ([#"../06_knights_tour.rs" 80 8 80 13] count);
+    [#"../06_knights_tour.rs" 80 8 80 13] _0 <- count;
     return _0
   }
   
@@ -1441,7 +1545,8 @@ module C06KnightsTour_Impl1_Set
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv6 self}
     ensures { result = shallow_model3 self }
     
-  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv6 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv7 (shallow_model3 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
+  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv6 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv7 (shallow_model3 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
   predicate invariant6 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv7 (shallow_model3 self)
   val invariant6 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : bool
@@ -1470,7 +1575,8 @@ module C06KnightsTour_Impl1_Set
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self}
     ensures { result = shallow_model1 self }
     
-  axiom shallow_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv5 (shallow_model1 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max0)
+  axiom shallow_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv5 (shallow_model1 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max0)
   predicate invariant4 (self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -1542,29 +1648,31 @@ module C06KnightsTour_Impl1_Set
     ensures { result = index_logic0 self ix }
     
   predicate wf0 [#"../06_knights_tour.rs" 30 4 30 23] (self : C06KnightsTour_Board_Type.t_board) =
-    [#"../06_knights_tour.rs" 31 8 35 9] UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) <= 1000 /\ Seq.length (shallow_model1 (C06KnightsTour_Board_Type.board_field self)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) -> Seq.length (shallow_model3 (index_logic0 (C06KnightsTour_Board_Type.board_field self) i)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self))
+    [#"../06_knights_tour.rs" 31 8 35 9] UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) <= 1000 /\ Seq.length (shallow_model1 (C06KnightsTour_Board_Type.board_field self)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (C06KnightsTour_Board_Type.board_size self)
+     -> Seq.length (shallow_model3 (index_logic0 (C06KnightsTour_Board_Type.board_field self) i)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self))
   val wf0 [#"../06_knights_tour.rs" 30 4 30 23] (self : C06KnightsTour_Board_Type.t_board) : bool
     ensures { result = wf0 self }
     
   predicate resolve2 (self : borrowed (C06KnightsTour_Board_Type.t_board)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve2 (self : borrowed (C06KnightsTour_Board_Type.t_board)) : bool
     ensures { result = resolve2 self }
     
   predicate resolve1 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve1 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : bool
     ensures { result = resolve1 self }
     
   predicate resolve0 (self : borrowed usize) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve0 (self : borrowed usize) : bool
     ensures { result = resolve0 self }
     
   use prelude.Slice
   use seq.Seq
   predicate resolve_elswhere1 [@inline:trivial] (self : usize) (old' : Seq.seq usize) (fin : Seq.seq usize) =
-    [#"../../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
+     -> Seq.get old' i = Seq.get fin i
   val resolve_elswhere1 [@inline:trivial] (self : usize) (old' : Seq.seq usize) (fin : Seq.seq usize) : bool
     ensures { result = resolve_elswhere1 self old' fin }
     
@@ -1581,7 +1689,7 @@ module C06KnightsTour_Impl1_Set
   function shallow_model2 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : Seq.seq usize
     
    =
-    [#"../../../../../creusot-contracts/src/model.rs" 97 8 97 31] shallow_model3 ( * self)
+    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model3 ( * self)
   val shallow_model2 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : Seq.seq usize
     ensures { result = shallow_model2 self }
     
@@ -1598,7 +1706,8 @@ module C06KnightsTour_Impl1_Set
   predicate resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (fin : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)))
     
    =
-    [#"../../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
+     -> Seq.get old' i = Seq.get fin i
   val resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (fin : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : bool
     ensures { result = resolve_elswhere0 self old' fin }
     
@@ -1619,7 +1728,7 @@ module C06KnightsTour_Impl1_Set
   function shallow_model0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global))) : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
     
    =
-    [#"../../../../../creusot-contracts/src/model.rs" 97 8 97 31] shallow_model1 ( * self)
+    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model1 ( * self)
   val shallow_model0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global))) : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
     ensures { result = shallow_model0 self }
     
@@ -1649,25 +1758,31 @@ module C06KnightsTour_Impl1_Set
   var _10 : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
   var _11 : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
   var _12 : borrowed (Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global));
+  var _13 : usize;
+  var _15 : usize;
   {
     goto BB0
   }
   BB0 {
     [#"../06_knights_tour.rs" 88 8 88 18] _12 <- Borrow.borrow_final (C06KnightsTour_Board_Type.board_field ( * self)) (Borrow.inherit_id (Borrow.get_id self) 2);
     [#"../06_knights_tour.rs" 88 8 88 18] self <- { self with current = (let C06KnightsTour_Board_Type.C_Board x0 x1 =  * self in C06KnightsTour_Board_Type.C_Board x0 ( ^ _12)) ; };
-    [#"../06_knights_tour.rs" 88 18 88 32] _11 <- ([#"../06_knights_tour.rs" 88 18 88 32] index_mut0 _12 ([#"../06_knights_tour.rs" 88 19 88 31] UIntSize.of_int (IntSize.to_int ([#"../06_knights_tour.rs" 88 19 88 22] C06KnightsTour_Point_Type.point_x p))));
+    [#"../06_knights_tour.rs" 88 19 88 31] _13 <- UIntSize.of_int (IntSize.to_int (C06KnightsTour_Point_Type.point_x p));
+    [#"../06_knights_tour.rs" 88 18 88 32] _11 <- ([#"../06_knights_tour.rs" 88 18 88 32] index_mut0 _12 _13);
     _12 <- any borrowed (Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global));
+    _13 <- any usize;
     goto BB1
   }
   BB1 {
     [#"../06_knights_tour.rs" 88 8 88 32] _10 <- Borrow.borrow_final ( * _11) (Borrow.get_id _11);
     [#"../06_knights_tour.rs" 88 8 88 32] _11 <- { _11 with current = ( ^ _10) ; };
-    [#"../06_knights_tour.rs" 88 32 88 46] _9 <- ([#"../06_knights_tour.rs" 88 32 88 46] index_mut1 _10 ([#"../06_knights_tour.rs" 88 33 88 45] UIntSize.of_int (IntSize.to_int ([#"../06_knights_tour.rs" 88 33 88 36] C06KnightsTour_Point_Type.point_y p))));
+    [#"../06_knights_tour.rs" 88 33 88 45] _15 <- UIntSize.of_int (IntSize.to_int (C06KnightsTour_Point_Type.point_y p));
+    [#"../06_knights_tour.rs" 88 32 88 46] _9 <- ([#"../06_knights_tour.rs" 88 32 88 46] index_mut1 _10 _15);
     _10 <- any borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
+    _15 <- any usize;
     goto BB2
   }
   BB2 {
-    [#"../06_knights_tour.rs" 88 8 88 50] _9 <- { _9 with current = ([#"../06_knights_tour.rs" 88 49 88 50] v) ; };
+    [#"../06_knights_tour.rs" 88 8 88 50] _9 <- { _9 with current = v ; };
     assume { resolve0 _9 };
     [#"../06_knights_tour.rs" 88 8 88 50] _0 <- ([#"../06_knights_tour.rs" 88 8 88 50] ());
     assume { resolve1 _11 };
@@ -1728,7 +1843,8 @@ module C06KnightsTour_Min
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv5 self}
     ensures { result = shallow_model2 self }
     
-  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv5 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv6 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
+  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv5 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv6 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
   predicate invariant5 (self : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -1792,7 +1908,8 @@ module C06KnightsTour_Min
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv7 self}
     ensures { result = shallow_model6 self }
     
-  axiom shallow_model6_spec : forall self : slice (usize, C06KnightsTour_Point_Type.t_point) . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv7 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv6 (shallow_model6 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model6 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model6 self) <= UIntSize.to_int max0)
+  axiom shallow_model6_spec : forall self : slice (usize, C06KnightsTour_Point_Type.t_point) . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv7 self)
+   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv6 (shallow_model6 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model6 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model6 self) <= UIntSize.to_int max0)
   function index_logic3 [@inline:trivial] (self : slice (usize, C06KnightsTour_Point_Type.t_point)) (ix : int) : (usize, C06KnightsTour_Point_Type.t_point)
     
    =
@@ -1804,7 +1921,7 @@ module C06KnightsTour_Min
   function shallow_model3 (self : slice (usize, C06KnightsTour_Point_Type.t_point)) : Seq.seq (usize, C06KnightsTour_Point_Type.t_point)
     
    =
-    [#"../../../../../creusot-contracts/src/model.rs" 79 8 79 31] shallow_model6 self
+    [#"../../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model6 self
   val shallow_model3 (self : slice (usize, C06KnightsTour_Point_Type.t_point)) : Seq.seq (usize, C06KnightsTour_Point_Type.t_point)
     ensures { result = shallow_model3 self }
     
@@ -1815,7 +1932,9 @@ module C06KnightsTour_Min
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 91 19 91 23] inv4 self}
     ensures { result = to_ref_seq0 self }
     
-  axiom to_ref_seq0_spec : forall self : slice (usize, C06KnightsTour_Point_Type.t_point) . ([#"../../../../../creusot-contracts/src/std/slice.rs" 91 19 91 23] inv4 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 91 4 91 35] inv3 (to_ref_seq0 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 90 4 90 82] forall i : int . 0 <= i /\ i < Seq.length (to_ref_seq0 self) -> Seq.get (to_ref_seq0 self) i = index_logic3 self i) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 89 14 89 41] Seq.length (to_ref_seq0 self) = Seq.length (shallow_model3 self))
+  axiom to_ref_seq0_spec : forall self : slice (usize, C06KnightsTour_Point_Type.t_point) . ([#"../../../../../creusot-contracts/src/std/slice.rs" 91 19 91 23] inv4 self)
+   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 91 4 91 35] inv3 (to_ref_seq0 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 90 4 90 82] forall i : int . 0 <= i /\ i < Seq.length (to_ref_seq0 self)
+   -> Seq.get (to_ref_seq0 self) i = index_logic3 self i) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 89 14 89 41] Seq.length (to_ref_seq0 self) = Seq.length (shallow_model3 self))
   function shallow_model1 (self : Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point)) : slice (usize, C06KnightsTour_Point_Type.t_point)
     
   val shallow_model1 (self : Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point)) : slice (usize, C06KnightsTour_Point_Type.t_point)
@@ -1839,7 +1958,11 @@ module C06KnightsTour_Min
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 400 61 400 63] inv3 bc}
     ensures { result = produces_trans0 a ab b bc c }
     
-  axiom produces_trans0_spec : forall a : Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point), ab : Seq.seq (usize, C06KnightsTour_Point_Type.t_point), b : Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point), bc : Seq.seq (usize, C06KnightsTour_Point_Type.t_point), c : Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point) . ([#"../../../../../creusot-contracts/src/std/slice.rs" 397 15 397 32] produces0 a ab b) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 398 15 398 32] produces0 b bc c) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 400 31 400 33] inv3 ab) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 400 61 400 63] inv3 bc) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 399 14 399 42] produces0 a (Seq.(++) ab bc) c)
+  axiom produces_trans0_spec : forall a : Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point), ab : Seq.seq (usize, C06KnightsTour_Point_Type.t_point), b : Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point), bc : Seq.seq (usize, C06KnightsTour_Point_Type.t_point), c : Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point) . ([#"../../../../../creusot-contracts/src/std/slice.rs" 397 15 397 32] produces0 a ab b)
+   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 398 15 398 32] produces0 b bc c)
+   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 400 31 400 33] inv3 ab)
+   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 400 61 400 63] inv3 bc)
+   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 399 14 399 42] produces0 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl0 (self : Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point)) : () =
     [#"../../../../../creusot-contracts/src/std/slice.rs" 390 4 390 10] ()
@@ -1857,10 +1980,10 @@ module C06KnightsTour_Min
     ensures { result = inv0 _x }
     
   axiom inv0 : forall x : Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point) . inv0 x = true
-  use prelude.Ghost
+  use prelude.Snapshot
   use seq.Seq
   predicate resolve0 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point))) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve0 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point))) : bool
     ensures { result = resolve0 self }
     
@@ -1868,7 +1991,7 @@ module C06KnightsTour_Min
   function shallow_model5 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point))) : slice (usize, C06KnightsTour_Point_Type.t_point)
     
    =
-    [#"../../../../../creusot-contracts/src/model.rs" 97 8 97 31] shallow_model1 ( * self)
+    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model1 ( * self)
   val shallow_model5 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point))) : slice (usize, C06KnightsTour_Point_Type.t_point)
     ensures { result = shallow_model5 self }
     
@@ -1894,14 +2017,14 @@ module C06KnightsTour_Min
   function shallow_model0 (self : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (usize, C06KnightsTour_Point_Type.t_point)
     
    =
-    [#"../../../../../creusot-contracts/src/model.rs" 79 8 79 31] shallow_model2 self
+    [#"../../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model2 self
   val shallow_model0 (self : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (usize, C06KnightsTour_Point_Type.t_point)
     ensures { result = shallow_model0 self }
     
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
   predicate into_iter_post0 (self : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global)) (res : Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point))
     
    =
@@ -1922,37 +2045,41 @@ module C06KnightsTour_Min
     ensures { [#"../../../../../creusot-contracts/src/std/iter.rs" 89 0 166 1] into_iter_post0 self result }
     
   let rec cfg min [#"../06_knights_tour.rs" 111 0 111 58] [@cfg:stackify] [@cfg:subregion_analysis] (v : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global)) : Core_Option_Option_Type.t_option (usize, C06KnightsTour_Point_Type.t_point)
-    ensures { [#"../06_knights_tour.rs" 109 0 110 62] forall r : (usize, C06KnightsTour_Point_Type.t_point) . result = Core_Option_Option_Type.C_Some r -> (exists i : int . 0 <= i /\ i < Seq.length (shallow_model0 v) /\ index_logic0 v i = r) }
+    ensures { [#"../06_knights_tour.rs" 109 0 110 62] forall r : (usize, C06KnightsTour_Point_Type.t_point) . result = Core_Option_Option_Type.C_Some r
+     -> (exists i : int . 0 <= i /\ i < Seq.length (shallow_model0 v) /\ index_logic0 v i = r) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Option_Option_Type.t_option (usize, C06KnightsTour_Point_Type.t_point);
   var v : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global) = v;
   var min : Core_Option_Option_Type.t_option (usize, C06KnightsTour_Point_Type.t_point);
   var iter : Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point);
-  var iter_old : Ghost.ghost_ty (Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point));
-  var produced : Ghost.ghost_ty (Seq.seq (usize, C06KnightsTour_Point_Type.t_point));
+  var iter_old : Snapshot.snap_ty (Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point));
+  var produced : Snapshot.snap_ty (Seq.seq (usize, C06KnightsTour_Point_Type.t_point));
   var _15 : Core_Option_Option_Type.t_option (usize, C06KnightsTour_Point_Type.t_point);
   var _16 : borrowed (Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point));
   var _17 : borrowed (Core_Slice_Iter_Iter_Type.t_iter (usize, C06KnightsTour_Point_Type.t_point));
   var __creusot_proc_iter_elem : (usize, C06KnightsTour_Point_Type.t_point);
-  var _20 : Ghost.ghost_ty (Seq.seq (usize, C06KnightsTour_Point_Type.t_point));
+  var _20 : Snapshot.snap_ty (Seq.seq (usize, C06KnightsTour_Point_Type.t_point));
   var x : (usize, C06KnightsTour_Point_Type.t_point);
   var _23 : ();
+  var _25 : Core_Option_Option_Type.t_option (usize, C06KnightsTour_Point_Type.t_point);
   var m : (usize, C06KnightsTour_Point_Type.t_point);
+  var _28 : bool;
+  var _31 : Core_Option_Option_Type.t_option (usize, C06KnightsTour_Point_Type.t_point);
   {
     goto BB0
   }
   BB0 {
-    [#"../06_knights_tour.rs" 112 18 112 22] min <- ([#"../06_knights_tour.rs" 112 18 112 22] Core_Option_Option_Type.C_None);
-    [#"../06_knights_tour.rs" 113 4 114 74] iter <- ([#"../06_knights_tour.rs" 113 4 114 74] into_iter0 ([#"../06_knights_tour.rs" 115 13 115 14] v));
+    [#"../06_knights_tour.rs" 112 18 112 22] min <- Core_Option_Option_Type.C_None;
+    [#"../06_knights_tour.rs" 113 4 114 74] iter <- ([#"../06_knights_tour.rs" 113 4 114 74] into_iter0 v);
     goto BB1
   }
   BB1 {
-    [#"../06_knights_tour.rs" 113 4 114 74] iter_old <- ([#"../06_knights_tour.rs" 113 4 114 74] Ghost.new iter);
+    [#"../06_knights_tour.rs" 113 4 114 74] iter_old <- ([#"../06_knights_tour.rs" 113 4 114 74] Snapshot.new iter);
     goto BB2
   }
   BB2 {
-    [#"../06_knights_tour.rs" 113 4 114 74] produced <- ([#"../06_knights_tour.rs" 113 4 114 74] Ghost.new (Seq.empty ));
+    [#"../06_knights_tour.rs" 113 4 114 74] produced <- ([#"../06_knights_tour.rs" 113 4 114 74] Snapshot.new (Seq.empty ));
     goto BB3
   }
   BB3 {
@@ -1960,8 +2087,9 @@ module C06KnightsTour_Min
   }
   BB4 {
     invariant { [#"../06_knights_tour.rs" 113 4 114 74] inv0 iter };
-    invariant { [#"../06_knights_tour.rs" 113 4 114 74] produces0 (Ghost.inner iter_old) (Ghost.inner produced) iter };
-    invariant { [#"../06_knights_tour.rs" 113 4 114 74] forall r : (usize, C06KnightsTour_Point_Type.t_point) . min = Core_Option_Option_Type.C_Some r -> (exists i : int . 0 <= i /\ i < Seq.length (shallow_model0 v) /\ index_logic0 v i = r) };
+    invariant { [#"../06_knights_tour.rs" 113 4 114 74] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter };
+    invariant { [#"../06_knights_tour.rs" 113 4 114 74] forall r : (usize, C06KnightsTour_Point_Type.t_point) . min = Core_Option_Option_Type.C_Some r
+     -> (exists i : int . 0 <= i /\ i < Seq.length (shallow_model0 v) /\ index_logic0 v i = r) };
     goto BB5
   }
   BB5 {
@@ -1981,7 +2109,7 @@ module C06KnightsTour_Min
       end
   }
   BB7 {
-    [#"../06_knights_tour.rs" 125 4 125 7] _0 <- ([#"../06_knights_tour.rs" 125 4 125 7] min);
+    [#"../06_knights_tour.rs" 125 4 125 7] _0 <- min;
     return _0
   }
   BB8 {
@@ -1992,54 +2120,57 @@ module C06KnightsTour_Min
     absurd
   }
   BB10 {
-    [#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] __creusot_proc_iter_elem <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] Core_Option_Option_Type.some_0 _15);
-    [#"../06_knights_tour.rs" 113 4 114 74] _20 <- ([#"../06_knights_tour.rs" 113 4 114 74] Ghost.new (Seq.(++) (Ghost.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
+    [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem <- Core_Option_Option_Type.some_0 _15;
+    [#"../06_knights_tour.rs" 113 4 114 74] _20 <- ([#"../06_knights_tour.rs" 113 4 114 74] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
     goto BB11
   }
   BB11 {
-    [#"../06_knights_tour.rs" 113 4 114 74] produced <- ([#"../06_knights_tour.rs" 113 4 114 74] _20);
-    [#"../06_knights_tour.rs" 113 4 114 74] _20 <- any Ghost.ghost_ty (Seq.seq (usize, C06KnightsTour_Point_Type.t_point));
-    [#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] x <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] __creusot_proc_iter_elem);
+    [#"../06_knights_tour.rs" 113 4 114 74] produced <- _20;
+    _20 <- any Snapshot.snap_ty (Seq.seq (usize, C06KnightsTour_Point_Type.t_point));
+    [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] x <- __creusot_proc_iter_elem;
     switch (min)
       | Core_Option_Option_Type.C_None -> goto BB12
       | Core_Option_Option_Type.C_Some _ -> goto BB13
       end
   }
   BB12 {
-    goto BB14
+    goto BB15
   }
   BB13 {
-    [#"../06_knights_tour.rs" 118 17 118 18] m <- ([#"../06_knights_tour.rs" 118 17 118 18] Core_Option_Option_Type.some_0 min);
-    switch ([#"../06_knights_tour.rs" 119 19 119 28] ([#"../06_knights_tour.rs" 119 19 119 22] let (a, _) = x in a) < ([#"../06_knights_tour.rs" 119 25 119 28] let (a, _) = m in a))
-      | False -> goto BB16
-      | True -> goto BB15
+    [#"../06_knights_tour.rs" 118 17 118 18] m <- Core_Option_Option_Type.some_0 min;
+    [#"../06_knights_tour.rs" 119 19 119 28] _28 <- (let (a, _) = x in a) < (let (a, _) = m in a);
+    switch (_28)
+      | False -> goto BB17
+      | True -> goto BB16
       end
   }
   BB14 {
-    [#"../06_knights_tour.rs" 117 20 117 33] min <- ([#"../06_knights_tour.rs" 117 26 117 33] Core_Option_Option_Type.C_Some ([#"../06_knights_tour.rs" 117 31 117 32] x));
-    [#"../06_knights_tour.rs" 117 20 117 33] _23 <- ([#"../06_knights_tour.rs" 117 20 117 33] ());
-    goto BB18
+    assert { [#"../06_knights_tour.rs" 116 14 116 17] false };
+    absurd
   }
   BB15 {
-    [#"../06_knights_tour.rs" 120 20 120 33] min <- ([#"../06_knights_tour.rs" 120 26 120 33] Core_Option_Option_Type.C_Some ([#"../06_knights_tour.rs" 120 31 120 32] x));
-    [#"../06_knights_tour.rs" 120 20 120 33] _23 <- ([#"../06_knights_tour.rs" 120 20 120 33] ());
-    goto BB17
+    [#"../06_knights_tour.rs" 117 26 117 33] _25 <- Core_Option_Option_Type.C_Some x;
+    [#"../06_knights_tour.rs" 117 20 117 33] min <- _25;
+    _25 <- any Core_Option_Option_Type.t_option (usize, C06KnightsTour_Point_Type.t_point);
+    [#"../06_knights_tour.rs" 117 20 117 33] _23 <- ([#"../06_knights_tour.rs" 117 20 117 33] ());
+    goto BB19
   }
   BB16 {
-    [#"../06_knights_tour.rs" 121 17 121 17] _23 <- ([#"../06_knights_tour.rs" 121 17 121 17] ());
-    goto BB17
+    [#"../06_knights_tour.rs" 120 26 120 33] _31 <- Core_Option_Option_Type.C_Some x;
+    [#"../06_knights_tour.rs" 120 20 120 33] min <- _31;
+    _31 <- any Core_Option_Option_Type.t_option (usize, C06KnightsTour_Point_Type.t_point);
+    [#"../06_knights_tour.rs" 120 20 120 33] _23 <- ([#"../06_knights_tour.rs" 120 20 120 33] ());
+    goto BB18
   }
   BB17 {
+    [#"../06_knights_tour.rs" 121 17 121 17] _23 <- ([#"../06_knights_tour.rs" 121 17 121 17] ());
     goto BB18
   }
   BB18 {
+    goto BB19
+  }
+  BB19 {
     goto BB4
-  }
-  BB20 {
-    goto BB9
-  }
-  BB21 {
-    goto BB9
   }
   
 end
@@ -2047,12 +2178,10 @@ module C06KnightsTour_DumbNonlinearArith_Impl
   use prelude.UIntSize
   use prelude.Int
   use prelude.UIntSize
-  let rec ghost function dumb_nonlinear_arith [#"../06_knights_tour.rs" 131 0 131 33] (a : usize) : ()
-    requires {[#"../06_knights_tour.rs" 129 11 129 22] UIntSize.to_int a <= 1000}
-    ensures { [#"../06_knights_tour.rs" 130 10 130 30] UIntSize.to_int a * UIntSize.to_int a <= 1000000 }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../06_knights_tour.rs" 128 0 128 8] ()
+  constant a  : usize
+  function dumb_nonlinear_arith [#"../06_knights_tour.rs" 131 0 131 33] (a : usize) : ()
+  goal vc_dumb_nonlinear_arith : ([#"../06_knights_tour.rs" 129 11 129 22] UIntSize.to_int a <= 1000)
+   -> ([#"../06_knights_tour.rs" 130 10 130 30] UIntSize.to_int a * UIntSize.to_int a <= 1000000)
 end
 module C06KnightsTour_KnightsTour
   use prelude.IntSize
@@ -2088,7 +2217,8 @@ module C06KnightsTour_KnightsTour
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv14 self}
     ensures { result = shallow_model3 self }
     
-  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv14 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv11 (shallow_model3 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
+  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv14 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv11 (shallow_model3 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
   predicate invariant14 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv11 (shallow_model3 self)
   val invariant14 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : bool
@@ -2117,7 +2247,8 @@ module C06KnightsTour_KnightsTour
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv12 self}
     ensures { result = shallow_model2 self }
     
-  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv12 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv13 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
+  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv12 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv13 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
   predicate invariant12 (self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -2203,7 +2334,8 @@ module C06KnightsTour_KnightsTour
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv5 self}
     ensures { result = shallow_model5 self }
     
-  axiom shallow_model5_spec : forall self : Alloc_Vec_Vec_Type.t_vec (isize, isize) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv5 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv15 (shallow_model5 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model5 self) <= UIntSize.to_int max0)
+  axiom shallow_model5_spec : forall self : Alloc_Vec_Vec_Type.t_vec (isize, isize) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv5 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv15 (shallow_model5 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model5 self) <= UIntSize.to_int max0)
   predicate invariant5 (self : Alloc_Vec_Vec_Type.t_vec (isize, isize) (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv15 (shallow_model5 self)
   val invariant5 (self : Alloc_Vec_Vec_Type.t_vec (isize, isize) (Alloc_Alloc_Global_Type.t_global)) : bool
@@ -2222,7 +2354,8 @@ module C06KnightsTour_KnightsTour
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self}
     ensures { result = shallow_model0 self }
     
-  axiom shallow_model0_spec : forall self : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv6 (shallow_model0 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model0 self) <= UIntSize.to_int max0)
+  axiom shallow_model0_spec : forall self : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv4 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv6 (shallow_model0 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model0 self) <= UIntSize.to_int max0)
   predicate invariant4 (self : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -2283,7 +2416,14 @@ module C06KnightsTour_KnightsTour
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 251 64 251 65] inv1 c}
     ensures { result = produces_trans1 a ab b bc c }
     
-  axiom produces_trans1_spec : forall a : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global), ab : Seq.seq (isize, isize), b : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global), bc : Seq.seq (isize, isize), c : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 248 15 248 32] produces1 a ab b) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 249 15 249 32] produces1 b bc c) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 22 251 23] inv1 a) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 31 251 33] inv15 ab) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 43 251 44] inv1 b) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 52 251 54] inv15 bc) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 64 251 65] inv1 c) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 250 14 250 42] produces1 a (Seq.(++) ab bc) c)
+  axiom produces_trans1_spec : forall a : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global), ab : Seq.seq (isize, isize), b : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global), bc : Seq.seq (isize, isize), c : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 248 15 248 32] produces1 a ab b)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 249 15 249 32] produces1 b bc c)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 22 251 23] inv1 a)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 31 251 33] inv15 ab)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 43 251 44] inv1 b)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 52 251 54] inv15 bc)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 251 64 251 65] inv1 c)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 250 14 250 42] produces1 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl1 (self : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global)) : ()
     
@@ -2293,7 +2433,8 @@ module C06KnightsTour_KnightsTour
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 244 21 244 25] inv1 self}
     ensures { result = produces_refl1 self }
     
-  axiom produces_refl1_spec : forall self : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 244 21 244 25] inv1 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 243 14 243 45] produces1 self (Seq.empty ) self)
+  axiom produces_refl1_spec : forall self : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 244 21 244 25] inv1 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 243 14 243 45] produces1 self (Seq.empty ) self)
   predicate invariant1 (self : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -2317,7 +2458,9 @@ module C06KnightsTour_KnightsTour
   predicate produces0 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize)
     
    =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0 -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> deep_model0 (Seq.get visited i) = deep_model0 (Core_Ops_Range_Range_Type.range_start self) + i)
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0
+     -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> deep_model0 (Seq.get visited i) = deep_model0 (Core_Ops_Range_Range_Type.range_start self) + i)
   val produces0 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize) : bool
     ensures { result = produces0 self visited o }
     
@@ -2333,34 +2476,42 @@ module C06KnightsTour_KnightsTour
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv0 c}
     ensures { result = produces_trans0 a ab b bc c }
     
-  axiom produces_trans0_spec : forall a : Core_Ops_Range_Range_Type.t_range usize, ab : Seq.seq usize, b : Core_Ops_Range_Range_Type.t_range usize, bc : Seq.seq usize, c : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces0 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces0 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv0 a) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv11 ab) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv0 b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv11 bc) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv0 c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] produces0 a (Seq.(++) ab bc) c)
+  axiom produces_trans0_spec : forall a : Core_Ops_Range_Range_Type.t_range usize, ab : Seq.seq usize, b : Core_Ops_Range_Range_Type.t_range usize, bc : Seq.seq usize, c : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces0 a ab b)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces0 b bc c)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv0 a)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv11 ab)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv0 b)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv11 bc)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv0 c)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] produces0 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl0 (self : Core_Ops_Range_Range_Type.t_range usize) : ()
   val produces_refl0 (self : Core_Ops_Range_Range_Type.t_range usize) : ()
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv0 self}
     ensures { result = produces_refl0 self }
     
-  axiom produces_refl0_spec : forall self : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 45] produces0 self (Seq.empty ) self)
+  axiom produces_refl0_spec : forall self : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 45] produces0 self (Seq.empty ) self)
   predicate invariant0 (self : Core_Ops_Range_Range_Type.t_range usize) =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
   val invariant0 (self : Core_Ops_Range_Range_Type.t_range usize) : bool
     ensures { result = invariant0 self }
     
   axiom inv0 : forall x : Core_Ops_Range_Range_Type.t_range usize . inv0 x = true
-  use prelude.Ghost
+  use prelude.Snapshot
   use C06KnightsTour_Board_Type as C06KnightsTour_Board_Type
   predicate resolve8 (self : C06KnightsTour_Point_Type.t_point) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 47 8 47 12] true
+    [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
   val resolve8 (self : C06KnightsTour_Point_Type.t_point) : bool
     ensures { result = resolve8 self }
     
   predicate resolve7 (self : usize) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 47 8 47 12] true
+    [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
   val resolve7 (self : usize) : bool
     ensures { result = resolve7 self }
     
   predicate resolve6 (self : (usize, C06KnightsTour_Point_Type.t_point)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 18 8 18 60] resolve7 (let (a, _) = self in a) /\ resolve8 (let (_, a) = self in a)
+    [#"../../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve7 (let (a, _) = self in a) /\ resolve8 (let (_, a) = self in a)
   val resolve6 (self : (usize, C06KnightsTour_Point_Type.t_point)) : bool
     ensures { result = resolve6 self }
     
@@ -2375,27 +2526,29 @@ module C06KnightsTour_KnightsTour
   predicate resolve4 (self : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global))
     
    =
-    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model0 self) -> resolve6 (index_logic0 self i)
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model0 self)
+     -> resolve6 (index_logic0 self i)
   val resolve4 (self : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve4 self }
     
   function shallow_model8 (self : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (usize, C06KnightsTour_Point_Type.t_point)
     
    =
-    [#"../../../../../creusot-contracts/src/model.rs" 79 8 79 31] shallow_model0 self
+    [#"../../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model0 self
   val shallow_model8 (self : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (usize, C06KnightsTour_Point_Type.t_point)
     ensures { result = shallow_model8 self }
     
   val min0 [#"../06_knights_tour.rs" 111 0 111 58] (v : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global)) : Core_Option_Option_Type.t_option (usize, C06KnightsTour_Point_Type.t_point)
-    ensures { [#"../06_knights_tour.rs" 109 0 110 62] forall r : (usize, C06KnightsTour_Point_Type.t_point) . result = Core_Option_Option_Type.C_Some r -> (exists i : int . 0 <= i /\ i < Seq.length (shallow_model8 v) /\ index_logic0 v i = r) }
+    ensures { [#"../06_knights_tour.rs" 109 0 110 62] forall r : (usize, C06KnightsTour_Point_Type.t_point) . result = Core_Option_Option_Type.C_Some r
+     -> (exists i : int . 0 <= i /\ i < Seq.length (shallow_model8 v) /\ index_logic0 v i = r) }
     
   predicate resolve5 (self : isize) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 47 8 47 12] true
+    [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
   val resolve5 (self : isize) : bool
     ensures { result = resolve5 self }
     
   predicate resolve2 (self : (isize, isize)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 18 8 18 60] resolve5 (let (a, _) = self in a) /\ resolve5 (let (_, a) = self in a)
+    [#"../../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve5 (let (a, _) = self in a) /\ resolve5 (let (_, a) = self in a)
   val resolve2 (self : (isize, isize)) : bool
     ensures { result = resolve2 self }
     
@@ -2403,7 +2556,8 @@ module C06KnightsTour_KnightsTour
   predicate resolve3 (self : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global))
     
    =
-    [#"../../../../../creusot-contracts/src/std/vec.rs" 222 8 222 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model6 self) -> resolve2 (Seq.get (shallow_model6 self) i)
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 222 8 222 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model6 self)
+     -> resolve2 (Seq.get (shallow_model6 self) i)
   val resolve3 (self : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve3 self }
     
@@ -2411,7 +2565,7 @@ module C06KnightsTour_KnightsTour
   function shallow_model7 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global))) : Seq.seq (usize, C06KnightsTour_Point_Type.t_point)
     
    =
-    [#"../../../../../creusot-contracts/src/model.rs" 97 8 97 31] shallow_model0 ( * self)
+    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model0 ( * self)
   val shallow_model7 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global))) : Seq.seq (usize, C06KnightsTour_Point_Type.t_point)
     ensures { result = shallow_model7 self }
     
@@ -2437,7 +2591,8 @@ module C06KnightsTour_KnightsTour
     ensures { result = index_logic2 self ix }
     
   predicate wf0 [#"../06_knights_tour.rs" 30 4 30 23] (self : C06KnightsTour_Board_Type.t_board) =
-    [#"../06_knights_tour.rs" 31 8 35 9] UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) <= 1000 /\ Seq.length (shallow_model2 (C06KnightsTour_Board_Type.board_field self)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) -> Seq.length (shallow_model3 (index_logic2 (C06KnightsTour_Board_Type.board_field self) i)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self))
+    [#"../06_knights_tour.rs" 31 8 35 9] UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) <= 1000 /\ Seq.length (shallow_model2 (C06KnightsTour_Board_Type.board_field self)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (C06KnightsTour_Board_Type.board_size self)
+     -> Seq.length (shallow_model3 (index_logic2 (C06KnightsTour_Board_Type.board_field self) i)) = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self))
   val wf0 [#"../06_knights_tour.rs" 30 4 30 23] (self : C06KnightsTour_Board_Type.t_board) : bool
     ensures { result = wf0 self }
     
@@ -2447,7 +2602,7 @@ module C06KnightsTour_KnightsTour
     
   val available0 [#"../06_knights_tour.rs" 52 4 52 41] (self : C06KnightsTour_Board_Type.t_board) (p : C06KnightsTour_Point_Type.t_point) : bool
     requires {[#"../06_knights_tour.rs" 50 15 50 24] wf0 self}
-    ensures { [#"../06_knights_tour.rs" 51 4 51 44] result -> in_bounds0 self p }
+    ensures { [#"../06_knights_tour.rs" 51 4 51 44] result  -> in_bounds0 self p }
     
   val mov0 [#"../06_knights_tour.rs" 18 4 18 45] (self : C06KnightsTour_Point_Type.t_point) (p : (isize, isize)) : C06KnightsTour_Point_Type.t_point
     requires {[#"../06_knights_tour.rs" 12 15 12 52] - 10000 <= IntSize.to_int (C06KnightsTour_Point_Type.point_x self) /\ IntSize.to_int (C06KnightsTour_Point_Type.point_x self) <= 10000}
@@ -2461,14 +2616,14 @@ module C06KnightsTour_KnightsTour
   predicate resolve1 (self : borrowed (Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global)))
     
    =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve1 (self : borrowed (Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global))) : bool
     ensures { result = resolve1 self }
     
   function shallow_model9 (self : borrowed (Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global))) : Seq.seq (isize, isize)
     
    =
-    [#"../../../../../creusot-contracts/src/model.rs" 97 8 97 31] shallow_model6 ( * self)
+    [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model6 ( * self)
   val shallow_model9 (self : borrowed (Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global))) : Seq.seq (isize, isize)
     ensures { result = shallow_model9 self }
     
@@ -2487,10 +2642,10 @@ module C06KnightsTour_KnightsTour
       end }
     ensures { inv8 result }
     
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
   predicate into_iter_post1 (self : Alloc_Vec_Vec_Type.t_vec (isize, isize) (Alloc_Alloc_Global_Type.t_global)) (res : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -2518,7 +2673,8 @@ module C06KnightsTour_KnightsTour
     
   val moves0 [#"../06_knights_tour.rs" 95 0 95 33] (_1 : ()) : Alloc_Vec_Vec_Type.t_vec (isize, isize) (Alloc_Alloc_Global_Type.t_global)
     ensures { [#"../06_knights_tour.rs" 93 10 93 28] Seq.length (shallow_model5 result) = 8 }
-    ensures { [#"../06_knights_tour.rs" 94 0 94 130] forall i : int . 0 <= i /\ i < 8 -> - 2 <= IntSize.to_int (let (a, _) = index_logic3 result i in a) /\ IntSize.to_int (let (a, _) = index_logic3 result i in a) <= 2 /\ - 2 <= IntSize.to_int (let (_, a) = index_logic3 result i in a) /\ IntSize.to_int (let (_, a) = index_logic3 result i in a) <= 2 }
+    ensures { [#"../06_knights_tour.rs" 94 0 94 130] forall i : int . 0 <= i /\ i < 8
+     -> - 2 <= IntSize.to_int (let (a, _) = index_logic3 result i in a) /\ IntSize.to_int (let (a, _) = index_logic3 result i in a) <= 2 /\ - 2 <= IntSize.to_int (let (_, a) = index_logic3 result i in a) /\ IntSize.to_int (let (_, a) = index_logic3 result i in a) <= 2 }
     
   val new4 (_1 : ()) : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global)
     ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 68 26 68 44] Seq.length (shallow_model0 result) = 0 }
@@ -2526,7 +2682,7 @@ module C06KnightsTour_KnightsTour
     
   use seq.Seq
   predicate resolve0 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve0 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
     ensures { result = resolve0 self }
     
@@ -2543,10 +2699,10 @@ module C06KnightsTour_KnightsTour
       end }
     ensures { inv3 result }
     
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
   predicate into_iter_post0 (self : Core_Ops_Range_Range_Type.t_range usize) (res : Core_Ops_Range_Range_Type.t_range usize)
     
    =
@@ -2565,14 +2721,15 @@ module C06KnightsTour_KnightsTour
     ensures { [#"../../../../../creusot-contracts/src/std/iter.rs" 89 0 166 1] into_iter_post0 self result }
     ensures { inv0 result }
     
-  use prelude.Ghost
+  use prelude.Snapshot
   function dumb_nonlinear_arith0 [#"../06_knights_tour.rs" 131 0 131 33] (a : usize) : () =
     [#"../06_knights_tour.rs" 128 0 128 8] ()
   val dumb_nonlinear_arith0 [#"../06_knights_tour.rs" 131 0 131 33] (a : usize) : ()
     requires {[#"../06_knights_tour.rs" 129 11 129 22] UIntSize.to_int a <= 1000}
     ensures { result = dumb_nonlinear_arith0 a }
     
-  axiom dumb_nonlinear_arith0_spec : forall a : usize . ([#"../06_knights_tour.rs" 129 11 129 22] UIntSize.to_int a <= 1000) -> ([#"../06_knights_tour.rs" 130 10 130 30] UIntSize.to_int a * UIntSize.to_int a <= 1000000)
+  axiom dumb_nonlinear_arith0_spec : forall a : usize . ([#"../06_knights_tour.rs" 129 11 129 22] UIntSize.to_int a <= 1000)
+   -> ([#"../06_knights_tour.rs" 130 10 130 30] UIntSize.to_int a * UIntSize.to_int a <= 1000000)
   val set0 [#"../06_knights_tour.rs" 87 4 87 41] (self : borrowed (C06KnightsTour_Board_Type.t_board)) (p : C06KnightsTour_Point_Type.t_point) (v : usize) : ()
     requires {[#"../06_knights_tour.rs" 83 15 83 24] wf0 ( * self)}
     requires {[#"../06_knights_tour.rs" 84 15 84 32] in_bounds0 ( * self) p}
@@ -2596,29 +2753,33 @@ module C06KnightsTour_KnightsTour
   var y : usize = y;
   var board : C06KnightsTour_Board_Type.t_board;
   var p : C06KnightsTour_Point_Type.t_point;
+  var _10 : isize;
+  var _12 : isize;
   var _14 : ();
   var _15 : borrowed (C06KnightsTour_Board_Type.t_board);
-  var _17 : Ghost.ghost_ty ();
+  var _17 : Snapshot.snap_ty ();
   var iter : Core_Ops_Range_Range_Type.t_range usize;
-  var iter_old : Ghost.ghost_ty (Core_Ops_Range_Range_Type.t_range usize);
-  var produced : Ghost.ghost_ty (Seq.seq usize);
+  var _21 : Core_Ops_Range_Range_Type.t_range usize;
+  var _22 : usize;
+  var iter_old : Snapshot.snap_ty (Core_Ops_Range_Range_Type.t_range usize);
+  var produced : Snapshot.snap_ty (Seq.seq usize);
   var _34 : ();
   var _35 : Core_Option_Option_Type.t_option usize;
   var _36 : borrowed (Core_Ops_Range_Range_Type.t_range usize);
   var _37 : borrowed (Core_Ops_Range_Range_Type.t_range usize);
   var __creusot_proc_iter_elem : usize;
-  var _40 : Ghost.ghost_ty (Seq.seq usize);
+  var _40 : Snapshot.snap_ty (Seq.seq usize);
   var step : usize;
   var candidates : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global);
   var iter1 : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global);
   var _46 : Alloc_Vec_Vec_Type.t_vec (isize, isize) (Alloc_Alloc_Global_Type.t_global);
-  var iter_old1 : Ghost.ghost_ty (Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global));
-  var produced1 : Ghost.ghost_ty (Seq.seq (isize, isize));
+  var iter_old1 : Snapshot.snap_ty (Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global));
+  var produced1 : Snapshot.snap_ty (Seq.seq (isize, isize));
   var _54 : Core_Option_Option_Type.t_option (isize, isize);
   var _55 : borrowed (Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global));
   var _56 : borrowed (Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter (isize, isize) (Alloc_Alloc_Global_Type.t_global));
   var __creusot_proc_iter_elem1 : (isize, isize);
-  var _59 : Ghost.ghost_ty (Seq.seq (isize, isize));
+  var _59 : Snapshot.snap_ty (Seq.seq (isize, isize));
   var m : (isize, isize);
   var adj : C06KnightsTour_Point_Type.t_point;
   var _65 : (isize, isize);
@@ -2626,6 +2787,7 @@ module C06KnightsTour_KnightsTour
   var degree : usize;
   var _72 : ();
   var _73 : borrowed (Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global));
+  var _74 : (usize, C06KnightsTour_Point_Type.t_point);
   var _79 : Core_Option_Option_Type.t_option (usize, C06KnightsTour_Point_Type.t_point);
   var _81 : Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global);
   var adj1 : C06KnightsTour_Point_Type.t_point;
@@ -2635,31 +2797,39 @@ module C06KnightsTour_KnightsTour
     goto BB0
   }
   BB0 {
-    [#"../06_knights_tour.rs" 137 20 137 36] board <- ([#"../06_knights_tour.rs" 137 20 137 36] new0 ([#"../06_knights_tour.rs" 137 31 137 35] size));
+    [#"../06_knights_tour.rs" 137 20 137 36] board <- ([#"../06_knights_tour.rs" 137 20 137 36] new0 size);
     goto BB1
   }
   BB1 {
-    [#"../06_knights_tour.rs" 138 16 138 54] p <- ([#"../06_knights_tour.rs" 138 16 138 54] C06KnightsTour_Point_Type.C_Point ([#"../06_knights_tour.rs" 138 27 138 37] IntSize.of_int (UIntSize.to_int ([#"../06_knights_tour.rs" 138 27 138 28] x))) ([#"../06_knights_tour.rs" 138 42 138 52] IntSize.of_int (UIntSize.to_int ([#"../06_knights_tour.rs" 138 42 138 43] y))));
+    [#"../06_knights_tour.rs" 138 27 138 37] _10 <- IntSize.of_int (UIntSize.to_int x);
+    [#"../06_knights_tour.rs" 138 42 138 52] _12 <- IntSize.of_int (UIntSize.to_int y);
+    [#"../06_knights_tour.rs" 138 16 138 54] p <- C06KnightsTour_Point_Type.C_Point _10 _12;
+    _10 <- any isize;
+    _12 <- any isize;
     [#"../06_knights_tour.rs" 139 4 139 9] _15 <- Borrow.borrow_mut board;
     [#"../06_knights_tour.rs" 139 4 139 9] board <-  ^ _15;
-    [#"../06_knights_tour.rs" 139 4 139 19] _14 <- ([#"../06_knights_tour.rs" 139 4 139 19] set0 _15 ([#"../06_knights_tour.rs" 139 14 139 15] p) ([#"../06_knights_tour.rs" 139 17 139 18] [#"../06_knights_tour.rs" 139 17 139 18] (1 : usize)));
+    [#"../06_knights_tour.rs" 139 4 139 19] _14 <- ([#"../06_knights_tour.rs" 139 4 139 19] set0 _15 p ([#"../06_knights_tour.rs" 139 17 139 18] (1 : usize)));
     _15 <- any borrowed (C06KnightsTour_Board_Type.t_board);
     goto BB2
   }
   BB2 {
-    [#"../06_knights_tour.rs" 141 4 141 38] _17 <- ([#"../06_knights_tour.rs" 141 4 141 38] Ghost.new (dumb_nonlinear_arith0 size));
+    [#"../06_knights_tour.rs" 141 4 141 44] _17 <- ([#"../06_knights_tour.rs" 141 4 141 44] Snapshot.new (dumb_nonlinear_arith0 size));
     goto BB3
   }
   BB3 {
-    [#"../06_knights_tour.rs" 142 4 142 36] iter <- ([#"../06_knights_tour.rs" 142 4 142 36] into_iter0 ([#"../06_knights_tour.rs" 145 16 145 32] Core_Ops_Range_Range_Type.C_Range ([#"../06_knights_tour.rs" 145 16 145 17] [#"../06_knights_tour.rs" 145 16 145 17] (2 : usize)) ([#"../06_knights_tour.rs" 145 19 145 32] ([#"../06_knights_tour.rs" 145 20 145 24] size) * ([#"../06_knights_tour.rs" 145 27 145 31] size))));
+    [#"../06_knights_tour.rs" 145 19 145 32] _22 <- size * size;
+    [#"../06_knights_tour.rs" 145 16 145 32] _21 <- Core_Ops_Range_Range_Type.C_Range ([#"../06_knights_tour.rs" 145 16 145 17] (2 : usize)) _22;
+    _22 <- any usize;
+    [#"../06_knights_tour.rs" 142 4 142 36] iter <- ([#"../06_knights_tour.rs" 142 4 142 36] into_iter0 _21);
+    _21 <- any Core_Ops_Range_Range_Type.t_range usize;
     goto BB4
   }
   BB4 {
-    [#"../06_knights_tour.rs" 142 4 142 36] iter_old <- ([#"../06_knights_tour.rs" 142 4 142 36] Ghost.new iter);
+    [#"../06_knights_tour.rs" 142 4 142 36] iter_old <- ([#"../06_knights_tour.rs" 142 4 142 36] Snapshot.new iter);
     goto BB5
   }
   BB5 {
-    [#"../06_knights_tour.rs" 142 4 142 36] produced <- ([#"../06_knights_tour.rs" 142 4 142 36] Ghost.new (Seq.empty ));
+    [#"../06_knights_tour.rs" 142 4 142 36] produced <- ([#"../06_knights_tour.rs" 142 4 142 36] Snapshot.new (Seq.empty ));
     goto BB6
   }
   BB6 {
@@ -2673,7 +2843,7 @@ module C06KnightsTour_KnightsTour
   }
   BB9 {
     invariant { [#"../06_knights_tour.rs" 142 4 142 36] inv0 iter };
-    invariant { [#"../06_knights_tour.rs" 142 4 142 36] produces0 (Ghost.inner iter_old) (Ghost.inner produced) iter };
+    invariant { [#"../06_knights_tour.rs" 142 4 142 36] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter };
     invariant { [#"../06_knights_tour.rs" 142 16 142 34] C06KnightsTour_Board_Type.board_size board = size };
     invariant { [#"../06_knights_tour.rs" 143 16 143 26] wf0 board };
     invariant { [#"../06_knights_tour.rs" 144 16 144 34] in_bounds0 board p };
@@ -2696,9 +2866,9 @@ module C06KnightsTour_KnightsTour
       end
   }
   BB12 {
-    [#"../06_knights_tour.rs" 163 4 163 15] _0 <- ([#"../06_knights_tour.rs" 163 4 163 15] Core_Option_Option_Type.C_Some ([#"../06_knights_tour.rs" 163 9 163 14] board));
-    [#"../06_knights_tour.rs" 163 9 163 14] board <- any C06KnightsTour_Board_Type.t_board;
-    goto BB46
+    [#"../06_knights_tour.rs" 163 4 163 15] _0 <- Core_Option_Option_Type.C_Some board;
+    board <- any C06KnightsTour_Board_Type.t_board;
+    goto BB48
   }
   BB13 {
     goto BB15
@@ -2708,19 +2878,19 @@ module C06KnightsTour_KnightsTour
     absurd
   }
   BB15 {
-    [#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] __creusot_proc_iter_elem <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] Core_Option_Option_Type.some_0 _35);
-    [#"../06_knights_tour.rs" 142 4 142 36] _40 <- ([#"../06_knights_tour.rs" 142 4 142 36] Ghost.new (Seq.(++) (Ghost.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
+    [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem <- Core_Option_Option_Type.some_0 _35;
+    [#"../06_knights_tour.rs" 142 4 142 36] _40 <- ([#"../06_knights_tour.rs" 142 4 142 36] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
     goto BB16
   }
   BB16 {
-    [#"../06_knights_tour.rs" 142 4 142 36] produced <- ([#"../06_knights_tour.rs" 142 4 142 36] _40);
-    [#"../06_knights_tour.rs" 142 4 142 36] _40 <- any Ghost.ghost_ty (Seq.seq usize);
-    [#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] step <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] __creusot_proc_iter_elem);
-    [#"../06_knights_tour.rs" 147 50 147 60] candidates <- ([#"../06_knights_tour.rs" 147 50 147 60] new4 ());
+    [#"../06_knights_tour.rs" 142 4 142 36] produced <- _40;
+    _40 <- any Snapshot.snap_ty (Seq.seq usize);
+    [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] step <- __creusot_proc_iter_elem;
+    [#"../06_knights_tour.rs" 147 50 147 60] candidates <- ([#"../06_knights_tour.rs" 147 50 147 60] new4 ([#"../06_knights_tour.rs" 147 50 147 60] ()));
     goto BB17
   }
   BB17 {
-    [#"../06_knights_tour.rs" 150 17 150 24] _46 <- ([#"../06_knights_tour.rs" 150 17 150 24] moves0 ());
+    [#"../06_knights_tour.rs" 150 17 150 24] _46 <- ([#"../06_knights_tour.rs" 150 17 150 24] moves0 ([#"../06_knights_tour.rs" 150 17 150 24] ()));
     goto BB18
   }
   BB18 {
@@ -2729,11 +2899,11 @@ module C06KnightsTour_KnightsTour
     goto BB19
   }
   BB19 {
-    [#"../06_knights_tour.rs" 148 8 149 54] iter_old1 <- ([#"../06_knights_tour.rs" 148 8 149 54] Ghost.new iter1);
+    [#"../06_knights_tour.rs" 148 8 149 54] iter_old1 <- ([#"../06_knights_tour.rs" 148 8 149 54] Snapshot.new iter1);
     goto BB20
   }
   BB20 {
-    [#"../06_knights_tour.rs" 148 8 149 54] produced1 <- ([#"../06_knights_tour.rs" 148 8 149 54] Ghost.new (Seq.empty ));
+    [#"../06_knights_tour.rs" 148 8 149 54] produced1 <- ([#"../06_knights_tour.rs" 148 8 149 54] Snapshot.new (Seq.empty ));
     goto BB21
   }
   BB21 {
@@ -2750,8 +2920,9 @@ module C06KnightsTour_KnightsTour
   }
   BB25 {
     invariant { [#"../06_knights_tour.rs" 148 8 149 54] inv1 iter1 };
-    invariant { [#"../06_knights_tour.rs" 148 8 149 54] produces1 (Ghost.inner iter_old1) (Ghost.inner produced1) iter1 };
-    invariant { [#"../06_knights_tour.rs" 148 8 149 54] forall i : int . 0 <= i /\ i < Seq.length (shallow_model0 candidates) -> in_bounds0 board (let (_, a) = index_logic0 candidates i in a) };
+    invariant { [#"../06_knights_tour.rs" 148 8 149 54] produces1 (Snapshot.inner iter_old1) (Snapshot.inner produced1) iter1 };
+    invariant { [#"../06_knights_tour.rs" 148 8 149 54] forall i : int . 0 <= i /\ i < Seq.length (shallow_model0 candidates)
+     -> in_bounds0 board (let (_, a) = index_logic0 candidates i in a) };
     goto BB26
   }
   BB26 {
@@ -2772,120 +2943,121 @@ module C06KnightsTour_KnightsTour
   }
   BB28 {
     assume { resolve3 iter1 };
-    goto BB39
+    goto BB40
   }
   BB29 {
-    goto BB30
-  }
-  BB30 {
-    [#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] __creusot_proc_iter_elem1 <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] Core_Option_Option_Type.some_0 _54);
-    [#"../06_knights_tour.rs" 148 8 149 54] _59 <- ([#"../06_knights_tour.rs" 148 8 149 54] Ghost.new (Seq.(++) (Ghost.inner produced1) (Seq.singleton __creusot_proc_iter_elem1)));
     goto BB31
   }
+  BB30 {
+    assume { resolve3 iter1 };
+    assume { resolve4 candidates };
+    assert { [#"../06_knights_tour.rs" 148 8 149 54] false };
+    absurd
+  }
   BB31 {
-    [#"../06_knights_tour.rs" 148 8 149 54] produced1 <- ([#"../06_knights_tour.rs" 148 8 149 54] _59);
-    [#"../06_knights_tour.rs" 148 8 149 54] _59 <- any Ghost.ghost_ty (Seq.seq (isize, isize));
-    [#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] m <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] __creusot_proc_iter_elem1);
-    assume { resolve2 __creusot_proc_iter_elem1 };
-    [#"../06_knights_tour.rs" 151 28 151 30] _65 <- ([#"../06_knights_tour.rs" 151 28 151 30] m);
-    [#"../06_knights_tour.rs" 151 22 151 31] adj <- ([#"../06_knights_tour.rs" 151 22 151 31] mov0 ([#"../06_knights_tour.rs" 151 22 151 23] p) ([#"../06_knights_tour.rs" 151 28 151 30] _65));
+    [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem1 <- Core_Option_Option_Type.some_0 _54;
+    [#"../06_knights_tour.rs" 148 8 149 54] _59 <- ([#"../06_knights_tour.rs" 148 8 149 54] Snapshot.new (Seq.(++) (Snapshot.inner produced1) (Seq.singleton __creusot_proc_iter_elem1)));
     goto BB32
   }
   BB32 {
-    assume { resolve2 m };
-    [#"../06_knights_tour.rs" 152 15 152 35] _66 <- ([#"../06_knights_tour.rs" 152 15 152 35] available0 ([#"../06_knights_tour.rs" 152 15 152 20] board) ([#"../06_knights_tour.rs" 152 31 152 34] adj));
+    [#"../06_knights_tour.rs" 148 8 149 54] produced1 <- _59;
+    _59 <- any Snapshot.snap_ty (Seq.seq (isize, isize));
+    [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] m <- __creusot_proc_iter_elem1;
+    assume { resolve2 __creusot_proc_iter_elem1 };
+    [#"../06_knights_tour.rs" 151 28 151 30] _65 <- m;
+    [#"../06_knights_tour.rs" 151 22 151 31] adj <- ([#"../06_knights_tour.rs" 151 22 151 31] mov0 p _65);
     goto BB33
   }
   BB33 {
-    switch (_66)
-      | False -> goto BB37
-      | True -> goto BB34
-      end
+    assume { resolve2 m };
+    [#"../06_knights_tour.rs" 152 15 152 35] _66 <- ([#"../06_knights_tour.rs" 152 15 152 35] available0 board adj);
+    goto BB34
   }
   BB34 {
-    [#"../06_knights_tour.rs" 153 29 153 52] degree <- ([#"../06_knights_tour.rs" 153 29 153 52] count_degree0 ([#"../06_knights_tour.rs" 153 29 153 34] board) ([#"../06_knights_tour.rs" 153 48 153 51] adj));
-    goto BB35
+    switch (_66)
+      | False -> goto BB38
+      | True -> goto BB35
+      end
   }
   BB35 {
-    [#"../06_knights_tour.rs" 154 16 154 26] _73 <- Borrow.borrow_mut candidates;
-    [#"../06_knights_tour.rs" 154 16 154 26] candidates <-  ^ _73;
-    [#"../06_knights_tour.rs" 154 16 154 46] _72 <- ([#"../06_knights_tour.rs" 154 16 154 46] push0 _73 ([#"../06_knights_tour.rs" 154 32 154 45] (([#"../06_knights_tour.rs" 154 33 154 39] degree), ([#"../06_knights_tour.rs" 154 41 154 44] adj))));
-    _73 <- any borrowed (Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global));
+    [#"../06_knights_tour.rs" 153 29 153 52] degree <- ([#"../06_knights_tour.rs" 153 29 153 52] count_degree0 board adj);
     goto BB36
   }
   BB36 {
-    [#"../06_knights_tour.rs" 152 36 155 13] _34 <- ([#"../06_knights_tour.rs" 152 36 155 13] ());
-    goto BB38
+    [#"../06_knights_tour.rs" 154 16 154 26] _73 <- Borrow.borrow_mut candidates;
+    [#"../06_knights_tour.rs" 154 16 154 26] candidates <-  ^ _73;
+    [#"../06_knights_tour.rs" 154 32 154 45] _74 <- (degree, adj);
+    [#"../06_knights_tour.rs" 154 16 154 46] _72 <- ([#"../06_knights_tour.rs" 154 16 154 46] push0 _73 _74);
+    _73 <- any borrowed (Alloc_Vec_Vec_Type.t_vec (usize, C06KnightsTour_Point_Type.t_point) (Alloc_Alloc_Global_Type.t_global));
+    _74 <- any (usize, C06KnightsTour_Point_Type.t_point);
+    goto BB37
   }
   BB37 {
-    [#"../06_knights_tour.rs" 155 13 155 13] _34 <- ([#"../06_knights_tour.rs" 155 13 155 13] ());
-    goto BB38
+    [#"../06_knights_tour.rs" 152 36 155 13] _34 <- ([#"../06_knights_tour.rs" 152 36 155 13] ());
+    goto BB39
   }
   BB38 {
-    goto BB25
+    [#"../06_knights_tour.rs" 155 13 155 13] _34 <- ([#"../06_knights_tour.rs" 155 13 155 13] ());
+    goto BB39
   }
   BB39 {
-    [#"../06_knights_tour.rs" 157 18 157 29] _81 <- ([#"../06_knights_tour.rs" 157 18 157 29] candidates);
-    [#"../06_knights_tour.rs" 157 14 157 30] _79 <- ([#"../06_knights_tour.rs" 157 14 157 30] min0 ([#"../06_knights_tour.rs" 157 18 157 29] _81));
-    goto BB40
+    goto BB25
   }
   BB40 {
-    switch (_79)
-      | Core_Option_Option_Type.C_None -> goto BB41
-      | Core_Option_Option_Type.C_Some _ -> goto BB42
-      end
+    [#"../06_knights_tour.rs" 157 18 157 29] _81 <- candidates;
+    [#"../06_knights_tour.rs" 157 14 157 30] _79 <- ([#"../06_knights_tour.rs" 157 14 157 30] min0 _81);
+    goto BB41
   }
   BB41 {
-    [#"../06_knights_tour.rs" 159 27 159 31] _0 <- ([#"../06_knights_tour.rs" 159 27 159 31] Core_Option_Option_Type.C_None);
-    assume { resolve4 candidates };
-    goto BB48
+    switch (_79)
+      | Core_Option_Option_Type.C_None -> goto BB42
+      | Core_Option_Option_Type.C_Some _ -> goto BB43
+      end
   }
   BB42 {
-    goto BB43
+    [#"../06_knights_tour.rs" 159 27 159 31] _0 <- Core_Option_Option_Type.C_None;
+    assume { resolve4 candidates };
+    goto BB50
   }
   BB43 {
-    [#"../06_knights_tour.rs" 158 22 158 25] adj1 <- ([#"../06_knights_tour.rs" 158 22 158 25] let (_, a) = Core_Option_Option_Type.some_0 _79 in a);
-    assume { resolve4 candidates };
-    [#"../06_knights_tour.rs" 158 31 158 38] p <- ([#"../06_knights_tour.rs" 158 35 158 38] adj1);
-    [#"../06_knights_tour.rs" 161 8 161 13] _87 <- Borrow.borrow_mut board;
-    [#"../06_knights_tour.rs" 161 8 161 13] board <-  ^ _87;
-    [#"../06_knights_tour.rs" 161 8 161 26] _86 <- ([#"../06_knights_tour.rs" 161 8 161 26] set0 _87 ([#"../06_knights_tour.rs" 161 18 161 19] p) ([#"../06_knights_tour.rs" 161 21 161 25] step));
-    _87 <- any borrowed (C06KnightsTour_Board_Type.t_board);
-    goto BB44
-  }
-  BB44 {
-    [#"../06_knights_tour.rs" 145 33 162 5] _34 <- ([#"../06_knights_tour.rs" 145 33 162 5] ());
     goto BB45
   }
+  BB44 {
+    assume { resolve4 candidates };
+    assert { [#"../06_knights_tour.rs" 157 14 157 30] false };
+    absurd
+  }
   BB45 {
-    goto BB9
+    [#"../06_knights_tour.rs" 158 22 158 25] adj1 <- (let (_, a) = Core_Option_Option_Type.some_0 _79 in a);
+    assume { resolve4 candidates };
+    [#"../06_knights_tour.rs" 158 31 158 38] p <- adj1;
+    [#"../06_knights_tour.rs" 161 8 161 13] _87 <- Borrow.borrow_mut board;
+    [#"../06_knights_tour.rs" 161 8 161 13] board <-  ^ _87;
+    [#"../06_knights_tour.rs" 161 8 161 26] _86 <- ([#"../06_knights_tour.rs" 161 8 161 26] set0 _87 p step);
+    _87 <- any borrowed (C06KnightsTour_Board_Type.t_board);
+    goto BB46
   }
   BB46 {
+    [#"../06_knights_tour.rs" 145 33 162 5] _34 <- ([#"../06_knights_tour.rs" 145 33 162 5] ());
     goto BB47
   }
   BB47 {
-    goto BB50
+    goto BB9
   }
   BB48 {
     goto BB49
   }
   BB49 {
-    goto BB50
+    goto BB52
   }
   BB50 {
+    goto BB51
+  }
+  BB51 {
+    goto BB52
+  }
+  BB52 {
     return _0
-  }
-  BB57 {
-    goto BB14
-  }
-  BB58 {
-    assume { resolve3 iter1 };
-    assume { resolve4 candidates };
-    goto BB14
-  }
-  BB59 {
-    assume { resolve4 candidates };
-    goto BB14
   }
   
 end
@@ -2915,5 +3087,6 @@ module C06KnightsTour_Impl3
     
   axiom inv0 : forall x : C06KnightsTour_Point_Type.t_point . inv0 x = true
   use prelude.Borrow
-  goal clone'_refn : [#"../06_knights_tour.rs" 4 15 4 20] forall self : C06KnightsTour_Point_Type.t_point . inv0 self -> (forall result : C06KnightsTour_Point_Type.t_point . result = self -> inv1 result /\ result = self)
+  goal clone'_refn : [#"../06_knights_tour.rs" 4 15 4 20] forall self : C06KnightsTour_Point_Type.t_point . inv0 self
+   -> (forall result : C06KnightsTour_Point_Type.t_point . result = self  -> inv1 result /\ result = self)
 end

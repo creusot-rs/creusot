@@ -5,31 +5,31 @@ module Core_Option_Option_Type
     | C_Some 't
     
 end
-module Std_Sys_Unix_Time_Nanoseconds_Type
+module Std_Sys_Pal_Unix_Time_Nanoseconds_Type
   use prelude.UInt32
   use prelude.Int
   type t_nanoseconds  =
     | C_Nanoseconds uint32
     
 end
-module Std_Sys_Unix_Time_Timespec_Type
-  use Std_Sys_Unix_Time_Nanoseconds_Type as Std_Sys_Unix_Time_Nanoseconds_Type
+module Std_Sys_Pal_Unix_Time_Timespec_Type
+  use Std_Sys_Pal_Unix_Time_Nanoseconds_Type as Std_Sys_Pal_Unix_Time_Nanoseconds_Type
   use prelude.Int64
   use prelude.Int
   type t_timespec  =
-    | C_Timespec int64 (Std_Sys_Unix_Time_Nanoseconds_Type.t_nanoseconds)
+    | C_Timespec int64 (Std_Sys_Pal_Unix_Time_Nanoseconds_Type.t_nanoseconds)
     
 end
-module Std_Sys_Unix_Time_Inner_Instant_Type
-  use Std_Sys_Unix_Time_Timespec_Type as Std_Sys_Unix_Time_Timespec_Type
+module Std_Sys_Pal_Unix_Time_Instant_Type
+  use Std_Sys_Pal_Unix_Time_Timespec_Type as Std_Sys_Pal_Unix_Time_Timespec_Type
   type t_instant  =
-    | C_Instant (Std_Sys_Unix_Time_Timespec_Type.t_timespec)
+    | C_Instant (Std_Sys_Pal_Unix_Time_Timespec_Type.t_timespec)
     
 end
 module Std_Time_Instant_Type
-  use Std_Sys_Unix_Time_Inner_Instant_Type as Std_Sys_Unix_Time_Inner_Instant_Type
+  use Std_Sys_Pal_Unix_Time_Instant_Type as Std_Sys_Pal_Unix_Time_Instant_Type
   type t_instant  =
-    | C_Instant (Std_Sys_Unix_Time_Inner_Instant_Type.t_instant)
+    | C_Instant (Std_Sys_Pal_Unix_Time_Instant_Type.t_instant)
     
 end
 module Core_Time_Nanoseconds_Type
@@ -175,7 +175,7 @@ module Instant_TestInstant
     
   axiom inv1 : forall x : Core_Option_Option_Type.t_option (Std_Time_Instant_Type.t_instant) . inv1 x = true
   function cmp_log1 (self : int) (o : int) : Core_Cmp_Ordering_Type.t_ordering =
-    [#"../../../../creusot-contracts/src/logic/ord.rs" 137 12 146 17] if self < o then
+    [#"../../../../creusot-contracts/src/logic/ord.rs" 140 16 146 17] if self < o then
       Core_Cmp_Ordering_Type.C_Less
     else
       if self = o then Core_Cmp_Ordering_Type.C_Equal else Core_Cmp_Ordering_Type.C_Greater
@@ -201,7 +201,9 @@ module Instant_TestInstant
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 70 23 70 24] inv4 y}
     ensures { result = eq_cmp0 x y }
     
-  axiom eq_cmp0_spec : forall x : Core_Option_Option_Type.t_option int, y : Core_Option_Option_Type.t_option int . ([#"../../../../creusot-contracts/src/logic/ord.rs" 70 14 70 15] inv4 x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 70 23 70 24] inv4 y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 69 14 69 59] (x = y) = (cmp_log0 x y = Core_Cmp_Ordering_Type.C_Equal))
+  axiom eq_cmp0_spec : forall x : Core_Option_Option_Type.t_option int, y : Core_Option_Option_Type.t_option int . ([#"../../../../creusot-contracts/src/logic/ord.rs" 70 14 70 15] inv4 x)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 70 23 70 24] inv4 y)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 69 14 69 59] (x = y) = (cmp_log0 x y = Core_Cmp_Ordering_Type.C_Equal))
   function antisym20 (x : Core_Option_Option_Type.t_option int) (y : Core_Option_Option_Type.t_option int) : ()
   val antisym20 (x : Core_Option_Option_Type.t_option int) (y : Core_Option_Option_Type.t_option int) : ()
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 64 15 64 48] cmp_log0 x y = Core_Cmp_Ordering_Type.C_Greater}
@@ -209,7 +211,10 @@ module Instant_TestInstant
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 66 25 66 26] inv4 y}
     ensures { result = antisym20 x y }
     
-  axiom antisym20_spec : forall x : Core_Option_Option_Type.t_option int, y : Core_Option_Option_Type.t_option int . ([#"../../../../creusot-contracts/src/logic/ord.rs" 64 15 64 48] cmp_log0 x y = Core_Cmp_Ordering_Type.C_Greater) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 66 16 66 17] inv4 x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 66 25 66 26] inv4 y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 65 14 65 44] cmp_log0 y x = Core_Cmp_Ordering_Type.C_Less)
+  axiom antisym20_spec : forall x : Core_Option_Option_Type.t_option int, y : Core_Option_Option_Type.t_option int . ([#"../../../../creusot-contracts/src/logic/ord.rs" 64 15 64 48] cmp_log0 x y = Core_Cmp_Ordering_Type.C_Greater)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 66 16 66 17] inv4 x)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 66 25 66 26] inv4 y)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 65 14 65 44] cmp_log0 y x = Core_Cmp_Ordering_Type.C_Less)
   function antisym10 (x : Core_Option_Option_Type.t_option int) (y : Core_Option_Option_Type.t_option int) : ()
   val antisym10 (x : Core_Option_Option_Type.t_option int) (y : Core_Option_Option_Type.t_option int) : ()
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 59 15 59 45] cmp_log0 x y = Core_Cmp_Ordering_Type.C_Less}
@@ -217,7 +222,10 @@ module Instant_TestInstant
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 61 25 61 26] inv4 y}
     ensures { result = antisym10 x y }
     
-  axiom antisym10_spec : forall x : Core_Option_Option_Type.t_option int, y : Core_Option_Option_Type.t_option int . ([#"../../../../creusot-contracts/src/logic/ord.rs" 59 15 59 45] cmp_log0 x y = Core_Cmp_Ordering_Type.C_Less) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 61 16 61 17] inv4 x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 61 25 61 26] inv4 y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 60 14 60 47] cmp_log0 y x = Core_Cmp_Ordering_Type.C_Greater)
+  axiom antisym10_spec : forall x : Core_Option_Option_Type.t_option int, y : Core_Option_Option_Type.t_option int . ([#"../../../../creusot-contracts/src/logic/ord.rs" 59 15 59 45] cmp_log0 x y = Core_Cmp_Ordering_Type.C_Less)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 61 16 61 17] inv4 x)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 61 25 61 26] inv4 y)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 60 14 60 47] cmp_log0 y x = Core_Cmp_Ordering_Type.C_Greater)
   function trans0 (x : Core_Option_Option_Type.t_option int) (y : Core_Option_Option_Type.t_option int) (z : Core_Option_Option_Type.t_option int) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
     
   val trans0 (x : Core_Option_Option_Type.t_option int) (y : Core_Option_Option_Type.t_option int) (z : Core_Option_Option_Type.t_option int) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
@@ -228,13 +236,19 @@ module Instant_TestInstant
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 56 31 56 32] inv4 z}
     ensures { result = trans0 x y z o }
     
-  axiom trans0_spec : forall x : Core_Option_Option_Type.t_option int, y : Core_Option_Option_Type.t_option int, z : Core_Option_Option_Type.t_option int, o : Core_Cmp_Ordering_Type.t_ordering . ([#"../../../../creusot-contracts/src/logic/ord.rs" 53 15 53 32] cmp_log0 x y = o) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 54 15 54 32] cmp_log0 y z = o) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 56 13 56 14] inv4 x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 56 22 56 23] inv4 y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 56 31 56 32] inv4 z) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 55 14 55 31] cmp_log0 x z = o)
+  axiom trans0_spec : forall x : Core_Option_Option_Type.t_option int, y : Core_Option_Option_Type.t_option int, z : Core_Option_Option_Type.t_option int, o : Core_Cmp_Ordering_Type.t_ordering . ([#"../../../../creusot-contracts/src/logic/ord.rs" 53 15 53 32] cmp_log0 x y = o)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 54 15 54 32] cmp_log0 y z = o)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 56 13 56 14] inv4 x)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 56 22 56 23] inv4 y)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 56 31 56 32] inv4 z)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 55 14 55 31] cmp_log0 x z = o)
   function refl0 (x : Core_Option_Option_Type.t_option int) : ()
   val refl0 (x : Core_Option_Option_Type.t_option int) : ()
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 50 12 50 13] inv4 x}
     ensures { result = refl0 x }
     
-  axiom refl0_spec : forall x : Core_Option_Option_Type.t_option int . ([#"../../../../creusot-contracts/src/logic/ord.rs" 50 12 50 13] inv4 x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 49 14 49 45] cmp_log0 x x = Core_Cmp_Ordering_Type.C_Equal)
+  axiom refl0_spec : forall x : Core_Option_Option_Type.t_option int . ([#"../../../../creusot-contracts/src/logic/ord.rs" 50 12 50 13] inv4 x)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 49 14 49 45] cmp_log0 x x = Core_Cmp_Ordering_Type.C_Equal)
   function gt_log0 (self : Core_Option_Option_Type.t_option int) (o : Core_Option_Option_Type.t_option int) : bool =
     [#"../../../../creusot-contracts/src/logic/ord.rs" 41 20 41 56] cmp_log0 self o = Core_Cmp_Ordering_Type.C_Greater
   val gt_log0 (self : Core_Option_Option_Type.t_option int) (o : Core_Option_Option_Type.t_option int) : bool
@@ -246,7 +260,9 @@ module Instant_TestInstant
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 46 27 46 28] inv4 y}
     ensures { result = cmp_gt_log0 x y }
     
-  axiom cmp_gt_log0_spec : forall x : Core_Option_Option_Type.t_option int, y : Core_Option_Option_Type.t_option int . ([#"../../../../creusot-contracts/src/logic/ord.rs" 46 18 46 19] inv4 x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 46 27 46 28] inv4 y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 45 14 45 64] gt_log0 x y = (cmp_log0 x y = Core_Cmp_Ordering_Type.C_Greater))
+  axiom cmp_gt_log0_spec : forall x : Core_Option_Option_Type.t_option int, y : Core_Option_Option_Type.t_option int . ([#"../../../../creusot-contracts/src/logic/ord.rs" 46 18 46 19] inv4 x)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 46 27 46 28] inv4 y)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 45 14 45 64] gt_log0 x y = (cmp_log0 x y = Core_Cmp_Ordering_Type.C_Greater))
   function ge_log1 (self : Core_Option_Option_Type.t_option int) (o : Core_Option_Option_Type.t_option int) : bool =
     [#"../../../../creusot-contracts/src/logic/ord.rs" 31 20 31 53] cmp_log0 self o <> Core_Cmp_Ordering_Type.C_Less
   val ge_log1 (self : Core_Option_Option_Type.t_option int) (o : Core_Option_Option_Type.t_option int) : bool
@@ -258,7 +274,9 @@ module Instant_TestInstant
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 36 27 36 28] inv4 y}
     ensures { result = cmp_ge_log0 x y }
     
-  axiom cmp_ge_log0_spec : forall x : Core_Option_Option_Type.t_option int, y : Core_Option_Option_Type.t_option int . ([#"../../../../creusot-contracts/src/logic/ord.rs" 36 18 36 19] inv4 x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 36 27 36 28] inv4 y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 35 14 35 61] ge_log1 x y = (cmp_log0 x y <> Core_Cmp_Ordering_Type.C_Less))
+  axiom cmp_ge_log0_spec : forall x : Core_Option_Option_Type.t_option int, y : Core_Option_Option_Type.t_option int . ([#"../../../../creusot-contracts/src/logic/ord.rs" 36 18 36 19] inv4 x)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 36 27 36 28] inv4 y)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 35 14 35 61] ge_log1 x y = (cmp_log0 x y <> Core_Cmp_Ordering_Type.C_Less))
   function lt_log0 (self : Core_Option_Option_Type.t_option int) (o : Core_Option_Option_Type.t_option int) : bool =
     [#"../../../../creusot-contracts/src/logic/ord.rs" 21 20 21 53] cmp_log0 self o = Core_Cmp_Ordering_Type.C_Less
   val lt_log0 (self : Core_Option_Option_Type.t_option int) (o : Core_Option_Option_Type.t_option int) : bool
@@ -270,7 +288,9 @@ module Instant_TestInstant
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 26 27 26 28] inv4 y}
     ensures { result = cmp_lt_log0 x y }
     
-  axiom cmp_lt_log0_spec : forall x : Core_Option_Option_Type.t_option int, y : Core_Option_Option_Type.t_option int . ([#"../../../../creusot-contracts/src/logic/ord.rs" 26 18 26 19] inv4 x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 26 27 26 28] inv4 y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 25 14 25 61] lt_log0 x y = (cmp_log0 x y = Core_Cmp_Ordering_Type.C_Less))
+  axiom cmp_lt_log0_spec : forall x : Core_Option_Option_Type.t_option int, y : Core_Option_Option_Type.t_option int . ([#"../../../../creusot-contracts/src/logic/ord.rs" 26 18 26 19] inv4 x)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 26 27 26 28] inv4 y)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 25 14 25 61] lt_log0 x y = (cmp_log0 x y = Core_Cmp_Ordering_Type.C_Less))
   function le_log0 (self : Core_Option_Option_Type.t_option int) (o : Core_Option_Option_Type.t_option int) : bool =
     [#"../../../../creusot-contracts/src/logic/ord.rs" 11 20 11 56] cmp_log0 self o <> Core_Cmp_Ordering_Type.C_Greater
   val le_log0 (self : Core_Option_Option_Type.t_option int) (o : Core_Option_Option_Type.t_option int) : bool
@@ -282,7 +302,9 @@ module Instant_TestInstant
     requires {[#"../../../../creusot-contracts/src/logic/ord.rs" 16 27 16 28] inv4 y}
     ensures { result = cmp_le_log0 x y }
     
-  axiom cmp_le_log0_spec : forall x : Core_Option_Option_Type.t_option int, y : Core_Option_Option_Type.t_option int . ([#"../../../../creusot-contracts/src/logic/ord.rs" 16 18 16 19] inv4 x) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 16 27 16 28] inv4 y) -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 15 14 15 64] le_log0 x y = (cmp_log0 x y <> Core_Cmp_Ordering_Type.C_Greater))
+  axiom cmp_le_log0_spec : forall x : Core_Option_Option_Type.t_option int, y : Core_Option_Option_Type.t_option int . ([#"../../../../creusot-contracts/src/logic/ord.rs" 16 18 16 19] inv4 x)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 16 27 16 28] inv4 y)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 15 14 15 64] le_log0 x y = (cmp_log0 x y <> Core_Cmp_Ordering_Type.C_Greater))
   predicate invariant0 (self : Core_Time_Duration_Type.t_duration) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
   val invariant0 (self : Core_Time_Duration_Type.t_duration) : bool
@@ -318,8 +340,10 @@ module Instant_TestInstant
     ensures { result = shallow_model3 self }
     
   val saturating_duration_since0 (self : Std_Time_Instant_Type.t_instant) (earlier : Std_Time_Instant_Type.t_instant) : Core_Time_Duration_Type.t_duration
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 157 16 157 60] shallow_model3 self > shallow_model0 earlier -> shallow_model1 result > 0 }
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 158 16 158 62] shallow_model3 self <= shallow_model0 earlier -> shallow_model1 result = 0 }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 157 16 157 60] shallow_model3 self > shallow_model0 earlier
+     -> shallow_model1 result > 0 }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 158 16 158 62] shallow_model3 self <= shallow_model0 earlier
+     -> shallow_model1 result = 0 }
     
   val is_none0 (self : Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) : bool
     requires {inv3 self}
@@ -330,12 +354,16 @@ module Instant_TestInstant
     ensures { [#"../../../../creusot-contracts/src/std/option.rs" 33 26 33 51] result = (self <> Core_Option_Option_Type.C_None) }
     
   val checked_duration_since0 (self : Std_Time_Instant_Type.t_instant) (earlier : Std_Time_Instant_Type.t_instant) : Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 153 16 153 64] shallow_model3 self >= shallow_model0 earlier -> result <> Core_Option_Option_Type.C_None }
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 154 16 154 63] shallow_model3 self < shallow_model0 earlier -> result = Core_Option_Option_Type.C_None }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 153 16 153 64] shallow_model3 self >= shallow_model0 earlier
+     -> result <> Core_Option_Option_Type.C_None }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 154 16 154 63] shallow_model3 self < shallow_model0 earlier
+     -> result = Core_Option_Option_Type.C_None }
     
   val duration_since0 (self : Std_Time_Instant_Type.t_instant) (earlier : Std_Time_Instant_Type.t_instant) : Core_Time_Duration_Type.t_duration
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 149 16 149 60] shallow_model3 self > shallow_model0 earlier -> shallow_model1 result > 0 }
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 150 16 150 62] shallow_model3 self <= shallow_model0 earlier -> shallow_model1 result = 0 }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 149 16 149 60] shallow_model3 self > shallow_model0 earlier
+     -> shallow_model1 result > 0 }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 150 16 150 62] shallow_model3 self <= shallow_model0 earlier
+     -> shallow_model1 result = 0 }
     
   use int.Int
   function deep_model3 (self : Core_Time_Duration_Type.t_duration) : int
@@ -357,12 +385,16 @@ module Instant_TestInstant
     ensures { [#"../../../../creusot-contracts/src/std/cmp.rs" 11 26 11 75] result = (deep_model0 self = deep_model0 other) }
     
   val sub1 (self : Std_Time_Instant_Type.t_instant) (other : Std_Time_Instant_Type.t_instant) : Core_Time_Duration_Type.t_duration
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 199 8 199 50] shallow_model0 self > shallow_model0 other -> shallow_model1 result > 0 }
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 200 8 200 52] shallow_model0 self <= shallow_model0 other -> shallow_model1 result = 0 }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 199 8 199 50] shallow_model0 self > shallow_model0 other
+     -> shallow_model1 result > 0 }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 200 8 200 52] shallow_model0 self <= shallow_model0 other
+     -> shallow_model1 result = 0 }
     
   val sub0 (self : Std_Time_Instant_Type.t_instant) (other : Core_Time_Duration_Type.t_duration) : Std_Time_Instant_Type.t_instant
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 193 8 193 50] shallow_model1 other = 0 -> shallow_model0 self = shallow_model0 result }
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 194 8 194 48] shallow_model1 other > 0 -> shallow_model0 self > shallow_model0 result }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 193 8 193 50] shallow_model1 other = 0
+     -> shallow_model0 self = shallow_model0 result }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 194 8 194 48] shallow_model1 other > 0
+     -> shallow_model0 self > shallow_model0 result }
     
   function deep_model4 (self : Std_Time_Instant_Type.t_instant) : int
   val deep_model4 (self : Std_Time_Instant_Type.t_instant) : int
@@ -380,12 +412,16 @@ module Instant_TestInstant
     ensures { result = deep_model1 self }
     
   val checked_sub0 (self : Std_Time_Instant_Type.t_instant) (duration : Core_Time_Duration_Type.t_duration) : Core_Option_Option_Type.t_option (Std_Time_Instant_Type.t_instant)
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 165 16 165 81] shallow_model1 duration = 0 -> deep_model1 result = Core_Option_Option_Type.C_Some (shallow_model3 self) }
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 166 16 166 97] shallow_model1 duration > 0 /\ result <> Core_Option_Option_Type.C_None -> gt_log0 (Core_Option_Option_Type.C_Some (shallow_model3 self)) (deep_model1 result) }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 165 16 165 81] shallow_model1 duration = 0
+     -> deep_model1 result = Core_Option_Option_Type.C_Some (shallow_model3 self) }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 166 16 166 97] shallow_model1 duration > 0 /\ result <> Core_Option_Option_Type.C_None
+     -> gt_log0 (Core_Option_Option_Type.C_Some (shallow_model3 self)) (deep_model1 result) }
     
   val add0 (self : Std_Time_Instant_Type.t_instant) (other : Core_Time_Duration_Type.t_duration) : Std_Time_Instant_Type.t_instant
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 187 8 187 50] shallow_model1 other = 0 -> shallow_model0 self = shallow_model0 result }
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 188 8 188 48] shallow_model1 other > 0 -> shallow_model0 self < shallow_model0 result }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 187 8 187 50] shallow_model1 other = 0
+     -> shallow_model0 self = shallow_model0 result }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 188 8 188 48] shallow_model1 other > 0
+     -> shallow_model0 self < shallow_model0 result }
     
   function deep_model2 (self : Std_Time_Instant_Type.t_instant) : int =
     [#"../../../../creusot-contracts/src/model.rs" 70 8 70 28] deep_model4 self
@@ -402,8 +438,10 @@ module Instant_TestInstant
     ensures { inv2 result }
     
   val checked_add0 (self : Std_Time_Instant_Type.t_instant) (duration : Core_Time_Duration_Type.t_duration) : Core_Option_Option_Type.t_option (Std_Time_Instant_Type.t_instant)
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 161 16 161 81] shallow_model1 duration = 0 -> deep_model1 result = Core_Option_Option_Type.C_Some (shallow_model3 self) }
-    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 162 16 162 97] shallow_model1 duration > 0 /\ result <> Core_Option_Option_Type.C_None -> lt_log0 (Core_Option_Option_Type.C_Some (shallow_model3 self)) (deep_model1 result) }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 161 16 161 81] shallow_model1 duration = 0
+     -> deep_model1 result = Core_Option_Option_Type.C_Some (shallow_model3 self) }
+    ensures { [#"../../../../creusot-contracts/src/std/time.rs" 162 16 162 97] shallow_model1 duration > 0 /\ result <> Core_Option_Option_Type.C_None
+     -> lt_log0 (Core_Option_Option_Type.C_Some (shallow_model3 self)) (deep_model1 result) }
     
   use int.Int
   val ge0 (self : Core_Time_Duration_Type.t_duration) (other : Core_Time_Duration_Type.t_duration) : bool
@@ -463,19 +501,19 @@ module Instant_TestInstant
     goto BB0
   }
   BB0 {
-    [#"../instant.rs" 8 18 8 32] instant <- ([#"../instant.rs" 8 18 8 32] now0 ());
+    [#"../instant.rs" 8 18 8 32] instant <- ([#"../instant.rs" 8 18 8 32] now0 ([#"../instant.rs" 8 18 8 32] ()));
     goto BB1
   }
   BB1 {
-    [#"../instant.rs" 9 19 9 41] zero_dur <- ([#"../instant.rs" 9 19 9 41] from_secs0 ([#"../instant.rs" 9 39 9 40] [#"../instant.rs" 9 39 9 40] (0 : uint64)));
+    [#"../instant.rs" 9 19 9 41] zero_dur <- ([#"../instant.rs" 9 19 9 41] from_secs0 ([#"../instant.rs" 9 39 9 40] (0 : uint64)));
     goto BB2
   }
   BB2 {
-    [#"../instant.rs" 10 12 10 29] _6 <- ([#"../instant.rs" 10 12 10 29] elapsed0 ([#"../instant.rs" 10 12 10 19] instant));
+    [#"../instant.rs" 10 12 10 29] _6 <- ([#"../instant.rs" 10 12 10 29] elapsed0 instant);
     goto BB3
   }
   BB3 {
-    [#"../instant.rs" 10 12 10 41] _4 <- ([#"../instant.rs" 10 12 10 41] ge0 ([#"../instant.rs" 10 12 10 29] _6) ([#"../instant.rs" 10 33 10 41] zero_dur));
+    [#"../instant.rs" 10 12 10 41] _4 <- ([#"../instant.rs" 10 12 10 41] ge0 _6 zero_dur);
     goto BB4
   }
   BB4 {
@@ -485,7 +523,7 @@ module Instant_TestInstant
       end
   }
   BB5 {
-    [#"../instant.rs" 12 12 12 41] _14 <- ([#"../instant.rs" 12 12 12 41] checked_add0 ([#"../instant.rs" 12 12 12 19] instant) ([#"../instant.rs" 12 32 12 40] zero_dur));
+    [#"../instant.rs" 12 12 12 41] _14 <- ([#"../instant.rs" 12 12 12 41] checked_add0 instant zero_dur);
     goto BB7
   }
   BB6 {
@@ -498,7 +536,7 @@ module Instant_TestInstant
     goto BB8
   }
   BB8 {
-    [#"../instant.rs" 12 12 12 61] _11 <- ([#"../instant.rs" 12 12 12 61] eq0 ([#"../instant.rs" 12 12 12 50] _13) ([#"../instant.rs" 12 54 12 61] instant));
+    [#"../instant.rs" 12 12 12 61] _11 <- ([#"../instant.rs" 12 12 12 61] eq0 _13 instant);
     goto BB9
   }
   BB9 {
@@ -508,7 +546,7 @@ module Instant_TestInstant
       end
   }
   BB10 {
-    [#"../instant.rs" 13 12 13 30] _22 <- ([#"../instant.rs" 13 12 13 30] add0 ([#"../instant.rs" 13 12 13 19] instant) ([#"../instant.rs" 13 22 13 30] zero_dur));
+    [#"../instant.rs" 13 12 13 30] _22 <- ([#"../instant.rs" 13 12 13 30] add0 instant zero_dur);
     goto BB12
   }
   BB11 {
@@ -516,7 +554,7 @@ module Instant_TestInstant
     absurd
   }
   BB12 {
-    [#"../instant.rs" 13 12 13 41] _20 <- ([#"../instant.rs" 13 12 13 41] eq0 ([#"../instant.rs" 13 12 13 30] _22) ([#"../instant.rs" 13 34 13 41] instant));
+    [#"../instant.rs" 13 12 13 41] _20 <- ([#"../instant.rs" 13 12 13 41] eq0 _22 instant);
     goto BB13
   }
   BB13 {
@@ -526,7 +564,7 @@ module Instant_TestInstant
       end
   }
   BB14 {
-    [#"../instant.rs" 14 24 14 46] three_seconds <- ([#"../instant.rs" 14 24 14 46] from_secs0 ([#"../instant.rs" 14 44 14 45] [#"../instant.rs" 14 44 14 45] (3 : uint64)));
+    [#"../instant.rs" 14 24 14 46] three_seconds <- ([#"../instant.rs" 14 24 14 46] from_secs0 ([#"../instant.rs" 14 44 14 45] (3 : uint64)));
     goto BB16
   }
   BB15 {
@@ -534,17 +572,17 @@ module Instant_TestInstant
     absurd
   }
   BB16 {
-    [#"../instant.rs" 15 26 15 49] greater_instant <- ([#"../instant.rs" 15 26 15 49] add0 ([#"../instant.rs" 15 26 15 33] instant) ([#"../instant.rs" 15 36 15 49] three_seconds));
+    [#"../instant.rs" 15 26 15 49] greater_instant <- ([#"../instant.rs" 15 26 15 49] add0 instant three_seconds);
     goto BB17
   }
   BB17 {
     assert { [@expl:assertion] [#"../instant.rs" 16 18 16 45] shallow_model0 instant < shallow_model0 greater_instant };
-    [#"../instant.rs" 17 31 17 62] even_greater_instant <- ([#"../instant.rs" 17 31 17 62] add0 ([#"../instant.rs" 17 31 17 46] greater_instant) ([#"../instant.rs" 17 49 17 62] three_seconds));
+    [#"../instant.rs" 17 31 17 62] even_greater_instant <- ([#"../instant.rs" 17 31 17 62] add0 greater_instant three_seconds);
     goto BB18
   }
   BB18 {
     assert { [@expl:assertion] [#"../instant.rs" 18 18 18 50] shallow_model0 instant < shallow_model0 even_greater_instant };
-    [#"../instant.rs" 20 12 20 41] _42 <- ([#"../instant.rs" 20 12 20 41] checked_sub0 ([#"../instant.rs" 20 12 20 19] instant) ([#"../instant.rs" 20 32 20 40] zero_dur));
+    [#"../instant.rs" 20 12 20 41] _42 <- ([#"../instant.rs" 20 12 20 41] checked_sub0 instant zero_dur);
     goto BB19
   }
   BB19 {
@@ -553,7 +591,7 @@ module Instant_TestInstant
     goto BB20
   }
   BB20 {
-    [#"../instant.rs" 20 12 20 61] _39 <- ([#"../instant.rs" 20 12 20 61] eq0 ([#"../instant.rs" 20 12 20 50] _41) ([#"../instant.rs" 20 54 20 61] instant));
+    [#"../instant.rs" 20 12 20 61] _39 <- ([#"../instant.rs" 20 12 20 61] eq0 _41 instant);
     goto BB21
   }
   BB21 {
@@ -563,7 +601,7 @@ module Instant_TestInstant
       end
   }
   BB22 {
-    [#"../instant.rs" 21 12 21 30] _50 <- ([#"../instant.rs" 21 12 21 30] sub0 ([#"../instant.rs" 21 12 21 19] instant) ([#"../instant.rs" 21 22 21 30] zero_dur));
+    [#"../instant.rs" 21 12 21 30] _50 <- ([#"../instant.rs" 21 12 21 30] sub0 instant zero_dur);
     goto BB24
   }
   BB23 {
@@ -571,7 +609,7 @@ module Instant_TestInstant
     absurd
   }
   BB24 {
-    [#"../instant.rs" 21 12 21 41] _48 <- ([#"../instant.rs" 21 12 21 41] eq0 ([#"../instant.rs" 21 12 21 30] _50) ([#"../instant.rs" 21 34 21 41] instant));
+    [#"../instant.rs" 21 12 21 41] _48 <- ([#"../instant.rs" 21 12 21 41] eq0 _50 instant);
     goto BB25
   }
   BB25 {
@@ -581,7 +619,7 @@ module Instant_TestInstant
       end
   }
   BB26 {
-    [#"../instant.rs" 22 25 22 48] lesser_instant <- ([#"../instant.rs" 22 25 22 48] sub0 ([#"../instant.rs" 22 25 22 32] instant) ([#"../instant.rs" 22 35 22 48] three_seconds));
+    [#"../instant.rs" 22 25 22 48] lesser_instant <- ([#"../instant.rs" 22 25 22 48] sub0 instant three_seconds);
     goto BB28
   }
   BB27 {
@@ -590,11 +628,11 @@ module Instant_TestInstant
   }
   BB28 {
     assert { [@expl:assertion] [#"../instant.rs" 23 18 23 44] shallow_model0 instant > shallow_model0 lesser_instant };
-    [#"../instant.rs" 24 12 24 29] _63 <- ([#"../instant.rs" 24 12 24 29] sub1 ([#"../instant.rs" 24 12 24 19] instant) ([#"../instant.rs" 24 22 24 29] instant));
+    [#"../instant.rs" 24 12 24 29] _63 <- ([#"../instant.rs" 24 12 24 29] sub1 instant instant);
     goto BB29
   }
   BB29 {
-    [#"../instant.rs" 24 12 24 41] _61 <- ([#"../instant.rs" 24 12 24 41] eq1 ([#"../instant.rs" 24 12 24 29] _63) ([#"../instant.rs" 24 33 24 41] zero_dur));
+    [#"../instant.rs" 24 12 24 41] _61 <- ([#"../instant.rs" 24 12 24 41] eq1 _63 zero_dur);
     goto BB30
   }
   BB30 {
@@ -604,7 +642,7 @@ module Instant_TestInstant
       end
   }
   BB31 {
-    [#"../instant.rs" 25 12 25 37] _71 <- ([#"../instant.rs" 25 12 25 37] sub1 ([#"../instant.rs" 25 12 25 19] instant) ([#"../instant.rs" 25 22 25 37] greater_instant));
+    [#"../instant.rs" 25 12 25 37] _71 <- ([#"../instant.rs" 25 12 25 37] sub1 instant greater_instant);
     goto BB33
   }
   BB32 {
@@ -612,7 +650,7 @@ module Instant_TestInstant
     absurd
   }
   BB33 {
-    [#"../instant.rs" 25 12 25 49] _69 <- ([#"../instant.rs" 25 12 25 49] eq1 ([#"../instant.rs" 25 12 25 37] _71) ([#"../instant.rs" 25 41 25 49] zero_dur));
+    [#"../instant.rs" 25 12 25 49] _69 <- ([#"../instant.rs" 25 12 25 49] eq1 _71 zero_dur);
     goto BB34
   }
   BB34 {
@@ -622,7 +660,7 @@ module Instant_TestInstant
       end
   }
   BB35 {
-    [#"../instant.rs" 26 12 26 37] _79 <- ([#"../instant.rs" 26 12 26 37] sub1 ([#"../instant.rs" 26 12 26 27] greater_instant) ([#"../instant.rs" 26 30 26 37] instant));
+    [#"../instant.rs" 26 12 26 37] _79 <- ([#"../instant.rs" 26 12 26 37] sub1 greater_instant instant);
     goto BB37
   }
   BB36 {
@@ -630,7 +668,7 @@ module Instant_TestInstant
     absurd
   }
   BB37 {
-    [#"../instant.rs" 26 12 26 48] _77 <- ([#"../instant.rs" 26 12 26 48] gt0 ([#"../instant.rs" 26 12 26 37] _79) ([#"../instant.rs" 26 40 26 48] zero_dur));
+    [#"../instant.rs" 26 12 26 48] _77 <- ([#"../instant.rs" 26 12 26 48] gt0 _79 zero_dur);
     goto BB38
   }
   BB38 {
@@ -640,7 +678,7 @@ module Instant_TestInstant
       end
   }
   BB39 {
-    [#"../instant.rs" 28 12 28 51] _87 <- ([#"../instant.rs" 28 12 28 51] duration_since0 ([#"../instant.rs" 28 12 28 27] greater_instant) ([#"../instant.rs" 28 43 28 50] instant));
+    [#"../instant.rs" 28 12 28 51] _87 <- ([#"../instant.rs" 28 12 28 51] duration_since0 greater_instant instant);
     goto BB41
   }
   BB40 {
@@ -648,7 +686,7 @@ module Instant_TestInstant
     absurd
   }
   BB41 {
-    [#"../instant.rs" 28 12 28 62] _85 <- ([#"../instant.rs" 28 12 28 62] gt0 ([#"../instant.rs" 28 12 28 51] _87) ([#"../instant.rs" 28 54 28 62] zero_dur));
+    [#"../instant.rs" 28 12 28 62] _85 <- ([#"../instant.rs" 28 12 28 62] gt0 _87 zero_dur);
     goto BB42
   }
   BB42 {
@@ -658,7 +696,7 @@ module Instant_TestInstant
       end
   }
   BB43 {
-    [#"../instant.rs" 29 12 29 51] _95 <- ([#"../instant.rs" 29 12 29 51] duration_since0 ([#"../instant.rs" 29 12 29 19] instant) ([#"../instant.rs" 29 35 29 50] greater_instant));
+    [#"../instant.rs" 29 12 29 51] _95 <- ([#"../instant.rs" 29 12 29 51] duration_since0 instant greater_instant);
     goto BB45
   }
   BB44 {
@@ -666,7 +704,7 @@ module Instant_TestInstant
     absurd
   }
   BB45 {
-    [#"../instant.rs" 29 12 29 63] _93 <- ([#"../instant.rs" 29 12 29 63] eq1 ([#"../instant.rs" 29 12 29 51] _95) ([#"../instant.rs" 29 55 29 63] zero_dur));
+    [#"../instant.rs" 29 12 29 63] _93 <- ([#"../instant.rs" 29 12 29 63] eq1 _95 zero_dur);
     goto BB46
   }
   BB46 {
@@ -676,7 +714,7 @@ module Instant_TestInstant
       end
   }
   BB47 {
-    [#"../instant.rs" 30 12 30 59] _103 <- ([#"../instant.rs" 30 12 30 59] checked_duration_since0 ([#"../instant.rs" 30 12 30 27] greater_instant) ([#"../instant.rs" 30 51 30 58] instant));
+    [#"../instant.rs" 30 12 30 59] _103 <- ([#"../instant.rs" 30 12 30 59] checked_duration_since0 greater_instant instant);
     goto BB49
   }
   BB48 {
@@ -684,7 +722,7 @@ module Instant_TestInstant
     absurd
   }
   BB49 {
-    [#"../instant.rs" 30 12 30 69] _101 <- ([#"../instant.rs" 30 12 30 69] is_some0 ([#"../instant.rs" 30 12 30 59] _103));
+    [#"../instant.rs" 30 12 30 69] _101 <- ([#"../instant.rs" 30 12 30 69] is_some0 _103);
     goto BB50
   }
   BB50 {
@@ -694,7 +732,7 @@ module Instant_TestInstant
       end
   }
   BB51 {
-    [#"../instant.rs" 31 12 31 59] _110 <- ([#"../instant.rs" 31 12 31 59] checked_duration_since0 ([#"../instant.rs" 31 12 31 19] instant) ([#"../instant.rs" 31 43 31 58] greater_instant));
+    [#"../instant.rs" 31 12 31 59] _110 <- ([#"../instant.rs" 31 12 31 59] checked_duration_since0 instant greater_instant);
     goto BB53
   }
   BB52 {
@@ -702,7 +740,7 @@ module Instant_TestInstant
     absurd
   }
   BB53 {
-    [#"../instant.rs" 31 12 31 69] _108 <- ([#"../instant.rs" 31 12 31 69] is_none0 ([#"../instant.rs" 31 12 31 59] _110));
+    [#"../instant.rs" 31 12 31 69] _108 <- ([#"../instant.rs" 31 12 31 69] is_none0 _110);
     goto BB54
   }
   BB54 {
@@ -712,7 +750,7 @@ module Instant_TestInstant
       end
   }
   BB55 {
-    [#"../instant.rs" 32 12 32 62] _117 <- ([#"../instant.rs" 32 12 32 62] saturating_duration_since0 ([#"../instant.rs" 32 12 32 27] greater_instant) ([#"../instant.rs" 32 54 32 61] instant));
+    [#"../instant.rs" 32 12 32 62] _117 <- ([#"../instant.rs" 32 12 32 62] saturating_duration_since0 greater_instant instant);
     goto BB57
   }
   BB56 {
@@ -720,7 +758,7 @@ module Instant_TestInstant
     absurd
   }
   BB57 {
-    [#"../instant.rs" 32 12 32 73] _115 <- ([#"../instant.rs" 32 12 32 73] gt0 ([#"../instant.rs" 32 12 32 62] _117) ([#"../instant.rs" 32 65 32 73] zero_dur));
+    [#"../instant.rs" 32 12 32 73] _115 <- ([#"../instant.rs" 32 12 32 73] gt0 _117 zero_dur);
     goto BB58
   }
   BB58 {
@@ -730,7 +768,7 @@ module Instant_TestInstant
       end
   }
   BB59 {
-    [#"../instant.rs" 33 12 33 62] _125 <- ([#"../instant.rs" 33 12 33 62] saturating_duration_since0 ([#"../instant.rs" 33 12 33 19] instant) ([#"../instant.rs" 33 46 33 61] greater_instant));
+    [#"../instant.rs" 33 12 33 62] _125 <- ([#"../instant.rs" 33 12 33 62] saturating_duration_since0 instant greater_instant);
     goto BB61
   }
   BB60 {
@@ -738,7 +776,7 @@ module Instant_TestInstant
     absurd
   }
   BB61 {
-    [#"../instant.rs" 33 12 33 74] _123 <- ([#"../instant.rs" 33 12 33 74] eq1 ([#"../instant.rs" 33 12 33 62] _125) ([#"../instant.rs" 33 66 33 74] zero_dur));
+    [#"../instant.rs" 33 12 33 74] _123 <- ([#"../instant.rs" 33 12 33 74] eq1 _125 zero_dur);
     goto BB62
   }
   BB62 {

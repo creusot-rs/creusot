@@ -24,7 +24,6 @@ use crate::{
     },
     ctx::*,
     translation::{
-        fmir::LocalDecls,
         pearlite::{normalize, Term},
         specification::PreContract,
     },
@@ -63,21 +62,21 @@ impl<'tcx> SymbolElaborator<'tcx> {
         let param_env = old_names.param_env(ctx);
 
         match item {
-            DepNode::Type(ty) => return self.elaborate_ty(ctx, names, ty),
-            DepNode::Buitlin(b) => {
-                return vec![Decl::UseDecl(Use { name: b.qname(), as_: None, export: false })]
+            DepNode::Type(ty) => self.elaborate_ty(ctx, names, ty),
+            DepNode::Builtin(b) => {
+                vec![Decl::UseDecl(Use { name: b.qname(), as_: None, export: false })]
             }
             DepNode::TyInv(ty, kind) => {
                 let term =
                     InvariantElaborator::new(param_env, true).elaborate_inv(ctx, ty, Some(kind));
                 let exp = lower_pure(ctx, names, &term);
                 let axiom = Axiom { name: names.ty_inv(ty).name, rewrite: false, axiom: exp };
-                return vec![Decl::Axiom(axiom)];
+                vec![Decl::Axiom(axiom)]
             }
             DepNode::Item(_, _) | DepNode::Hacked(_, _, _) => {
-                return self.elaborate_item(ctx, names, param_env, level_of_item, item)
+                self.elaborate_item(ctx, names, param_env, level_of_item, item)
             }
-        };
+        }
     }
 
     fn elaborate_ty<N: Namer<'tcx>>(
@@ -184,7 +183,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
 
             let span = ctx.def_span(def_id);
             let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, param_env, span);
-            let res = res.to_why(ctx, names, &LocalDecls::new());
+            let res = lower_pure(ctx, names, &res);
 
             vec![Decl::Let(LetDecl {
                 kind: Some(LetKind::Constant),
@@ -290,7 +289,7 @@ impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
     fn ty(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let mut node = DepNode::new(self.tcx, (def_id, subst));
 
-        if self.tcx.is_closure(def_id) {
+        if self.tcx.is_closure_or_coroutine(def_id) {
             node = DepNode::Type(Ty::new_closure(self.tcx, def_id, subst));
         }
 

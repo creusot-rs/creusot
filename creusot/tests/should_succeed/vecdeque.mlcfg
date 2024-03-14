@@ -17,12 +17,18 @@ module Core_Ptr_Unique_Unique_Type
     | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
-module Alloc_RawVec_RawVec_Type
+module Alloc_RawVec_Cap_Type
   use prelude.UIntSize
   use prelude.Int
+  type t_cap  =
+    | C_Cap usize
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
   use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
   type t_rawvec 't 'a =
-    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
     
 end
 module Alloc_Collections_VecDeque_VecDeque_Type
@@ -140,7 +146,8 @@ module Vecdeque_TestDeque
     requires {[#"../../../../creusot-contracts/src/std/deque.rs" 12 21 12 25] inv5 self}
     ensures { result = shallow_model0 self }
     
-  axiom shallow_model0_spec : forall self : Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/deque.rs" 12 21 12 25] inv5 self) -> ([#"../../../../creusot-contracts/src/std/deque.rs" 12 4 12 36] inv6 (shallow_model0 self)) && ([#"../../../../creusot-contracts/src/std/deque.rs" 11 14 11 41] Seq.length (shallow_model0 self) <= UIntSize.to_int max0)
+  axiom shallow_model0_spec : forall self : Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/deque.rs" 12 21 12 25] inv5 self)
+   -> ([#"../../../../creusot-contracts/src/std/deque.rs" 12 4 12 36] inv6 (shallow_model0 self)) && ([#"../../../../creusot-contracts/src/std/deque.rs" 11 14 11 41] Seq.length (shallow_model0 self) <= UIntSize.to_int max0)
   val clear0 (self : borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global))) : ()
     requires {inv1 self}
     ensures { [#"../../../../creusot-contracts/src/std/deque.rs" 71 26 71 45] Seq.length (shallow_model0 ( ^ self)) = 0 }
@@ -231,24 +238,26 @@ module Vecdeque_TestDeque
     
   let constant promoted0 [#"../vecdeque.rs" 5 0 5 19]  : Core_Option_Option_Type.t_option uint32
    = [@vc:do_not_keep_trace] [@vc:sp]
-    let _1 = [#"../vecdeque.rs" 24 32 24 39] Core_Option_Option_Type.C_Some ([#"../vecdeque.rs" 24 37 24 38] [#"../vecdeque.rs" 24 37 24 38] (3 : uint32)) in let _0 = [#"../vecdeque.rs" 24 32 24 39] _1 in _0
+    let _1 = Core_Option_Option_Type.C_Some ([#"../vecdeque.rs" 24 37 24 38] (3 : uint32)) in let _0 = _1 in _0
   let constant promoted1 [#"../vecdeque.rs" 5 0 5 19]  : Core_Option_Option_Type.t_option uint32
    = [@vc:do_not_keep_trace] [@vc:sp]
-    let _1 = [#"../vecdeque.rs" 23 33 23 40] Core_Option_Option_Type.C_Some ([#"../vecdeque.rs" 23 38 23 39] [#"../vecdeque.rs" 23 38 23 39] (2 : uint32)) in let _0 = [#"../vecdeque.rs" 23 33 23 40] _1 in _0
+    let _1 = Core_Option_Option_Type.C_Some ([#"../vecdeque.rs" 23 38 23 39] (2 : uint32)) in let _0 = _1 in _0
   let constant promoted2 [#"../vecdeque.rs" 5 0 5 19]  : Core_Option_Option_Type.t_option uint32
    = [@vc:do_not_keep_trace] [@vc:sp]
-    let _1 = [#"../vecdeque.rs" 17 32 17 36] Core_Option_Option_Type.C_None in let _0 = [#"../vecdeque.rs" 17 32 17 36] _1 in _0
+    let _1 = Core_Option_Option_Type.C_None in let _0 = _1 in _0
   let constant promoted3 [#"../vecdeque.rs" 5 0 5 19]  : Core_Option_Option_Type.t_option uint32
    = [@vc:do_not_keep_trace] [@vc:sp]
-    let _1 = [#"../vecdeque.rs" 16 33 16 37] Core_Option_Option_Type.C_None in let _0 = [#"../vecdeque.rs" 16 33 16 37] _1 in _0
+    let _1 = Core_Option_Option_Type.C_None in let _0 = _1 in _0
   let rec cfg test_deque [#"../vecdeque.rs" 5 0 5 19] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var deque : Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global);
   var _3 : bool;
+  var _7 : bool;
   var _8 : usize;
   var deque1 : Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global);
   var _13 : bool;
+  var _17 : bool;
   var _18 : usize;
   var _22 : bool;
   var _24 : Core_Option_Option_Type.t_option uint32;
@@ -279,11 +288,11 @@ module Vecdeque_TestDeque
     goto BB0
   }
   BB0 {
-    [#"../vecdeque.rs" 6 31 6 57] deque <- ([#"../vecdeque.rs" 6 31 6 57] with_capacity0 ([#"../vecdeque.rs" 6 55 6 56] [#"../vecdeque.rs" 6 55 6 56] (5 : usize)));
+    [#"../vecdeque.rs" 6 31 6 57] deque <- ([#"../vecdeque.rs" 6 31 6 57] with_capacity0 ([#"../vecdeque.rs" 6 55 6 56] (5 : usize)));
     goto BB1
   }
   BB1 {
-    [#"../vecdeque.rs" 8 12 8 28] _3 <- ([#"../vecdeque.rs" 8 12 8 28] is_empty0 ([#"../vecdeque.rs" 8 12 8 17] deque));
+    [#"../vecdeque.rs" 8 12 8 28] _3 <- ([#"../vecdeque.rs" 8 12 8 28] is_empty0 deque);
     goto BB2
   }
   BB2 {
@@ -293,7 +302,7 @@ module Vecdeque_TestDeque
       end
   }
   BB3 {
-    [#"../vecdeque.rs" 9 12 9 23] _8 <- ([#"../vecdeque.rs" 9 12 9 23] len0 ([#"../vecdeque.rs" 9 12 9 17] deque));
+    [#"../vecdeque.rs" 9 12 9 23] _8 <- ([#"../vecdeque.rs" 9 12 9 23] len0 deque);
     goto BB5
   }
   BB4 {
@@ -301,13 +310,15 @@ module Vecdeque_TestDeque
     absurd
   }
   BB5 {
-    switch ([#"../vecdeque.rs" 9 12 9 28] _8 = ([#"../vecdeque.rs" 9 27 9 28] [#"../vecdeque.rs" 9 27 9 28] (0 : usize)))
+    [#"../vecdeque.rs" 9 12 9 28] _7 <- _8 = ([#"../vecdeque.rs" 9 27 9 28] (0 : usize));
+    _8 <- any usize;
+    switch (_7)
       | False -> goto BB7
       | True -> goto BB6
       end
   }
   BB6 {
-    [#"../vecdeque.rs" 11 35 11 50] deque1 <- ([#"../vecdeque.rs" 11 35 11 50] new0 ());
+    [#"../vecdeque.rs" 11 35 11 50] deque1 <- ([#"../vecdeque.rs" 11 35 11 50] new0 ([#"../vecdeque.rs" 11 35 11 50] ()));
     goto BB8
   }
   BB7 {
@@ -315,7 +326,7 @@ module Vecdeque_TestDeque
     absurd
   }
   BB8 {
-    [#"../vecdeque.rs" 13 12 13 28] _13 <- ([#"../vecdeque.rs" 13 12 13 28] is_empty0 ([#"../vecdeque.rs" 13 12 13 17] deque1));
+    [#"../vecdeque.rs" 13 12 13 28] _13 <- ([#"../vecdeque.rs" 13 12 13 28] is_empty0 deque1);
     goto BB9
   }
   BB9 {
@@ -325,7 +336,7 @@ module Vecdeque_TestDeque
       end
   }
   BB10 {
-    [#"../vecdeque.rs" 14 12 14 23] _18 <- ([#"../vecdeque.rs" 14 12 14 23] len0 ([#"../vecdeque.rs" 14 12 14 17] deque1));
+    [#"../vecdeque.rs" 14 12 14 23] _18 <- ([#"../vecdeque.rs" 14 12 14 23] len0 deque1);
     goto BB12
   }
   BB11 {
@@ -333,7 +344,9 @@ module Vecdeque_TestDeque
     absurd
   }
   BB12 {
-    switch ([#"../vecdeque.rs" 14 12 14 28] _18 = ([#"../vecdeque.rs" 14 27 14 28] [#"../vecdeque.rs" 14 27 14 28] (0 : usize)))
+    [#"../vecdeque.rs" 14 12 14 28] _17 <- _18 = ([#"../vecdeque.rs" 14 27 14 28] (0 : usize));
+    _18 <- any usize;
+    switch (_17)
       | False -> goto BB14
       | True -> goto BB13
       end
@@ -350,8 +363,8 @@ module Vecdeque_TestDeque
     absurd
   }
   BB15 {
-    [#"../vecdeque.rs" 16 33 16 37] _68 <- ([#"../vecdeque.rs" 16 33 16 37] [#"../vecdeque.rs" 16 33 16 37] promoted3);
-    [#"../vecdeque.rs" 16 12 16 37] _22 <- ([#"../vecdeque.rs" 16 12 16 37] eq0 ([#"../vecdeque.rs" 16 12 16 29] _24) ([#"../vecdeque.rs" 16 33 16 37] _68));
+    [#"../vecdeque.rs" 16 33 16 37] _68 <- ([#"../vecdeque.rs" 16 33 16 37] promoted3);
+    [#"../vecdeque.rs" 16 12 16 37] _22 <- ([#"../vecdeque.rs" 16 12 16 37] eq0 _24 _68);
     goto BB16
   }
   BB16 {
@@ -372,8 +385,8 @@ module Vecdeque_TestDeque
     absurd
   }
   BB19 {
-    [#"../vecdeque.rs" 17 32 17 36] _67 <- ([#"../vecdeque.rs" 17 32 17 36] [#"../vecdeque.rs" 17 32 17 36] promoted2);
-    [#"../vecdeque.rs" 17 12 17 36] _30 <- ([#"../vecdeque.rs" 17 12 17 36] eq0 ([#"../vecdeque.rs" 17 12 17 28] _32) ([#"../vecdeque.rs" 17 32 17 36] _67));
+    [#"../vecdeque.rs" 17 32 17 36] _67 <- ([#"../vecdeque.rs" 17 32 17 36] promoted2);
+    [#"../vecdeque.rs" 17 12 17 36] _30 <- ([#"../vecdeque.rs" 17 12 17 36] eq0 _32 _67);
     goto BB20
   }
   BB20 {
@@ -385,7 +398,7 @@ module Vecdeque_TestDeque
   BB21 {
     [#"../vecdeque.rs" 19 4 19 9] _38 <- Borrow.borrow_mut deque1;
     [#"../vecdeque.rs" 19 4 19 9] deque1 <-  ^ _38;
-    [#"../vecdeque.rs" 19 4 19 23] _37 <- ([#"../vecdeque.rs" 19 4 19 23] push_front0 _38 ([#"../vecdeque.rs" 19 21 19 22] [#"../vecdeque.rs" 19 21 19 22] (1 : uint32)));
+    [#"../vecdeque.rs" 19 4 19 23] _37 <- ([#"../vecdeque.rs" 19 4 19 23] push_front0 _38 ([#"../vecdeque.rs" 19 21 19 22] (1 : uint32)));
     _38 <- any borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global));
     goto BB23
   }
@@ -396,14 +409,14 @@ module Vecdeque_TestDeque
   BB23 {
     [#"../vecdeque.rs" 20 4 20 9] _40 <- Borrow.borrow_mut deque1;
     [#"../vecdeque.rs" 20 4 20 9] deque1 <-  ^ _40;
-    [#"../vecdeque.rs" 20 4 20 23] _39 <- ([#"../vecdeque.rs" 20 4 20 23] push_front0 _40 ([#"../vecdeque.rs" 20 21 20 22] [#"../vecdeque.rs" 20 21 20 22] (2 : uint32)));
+    [#"../vecdeque.rs" 20 4 20 23] _39 <- ([#"../vecdeque.rs" 20 4 20 23] push_front0 _40 ([#"../vecdeque.rs" 20 21 20 22] (2 : uint32)));
     _40 <- any borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global));
     goto BB24
   }
   BB24 {
     [#"../vecdeque.rs" 21 4 21 9] _42 <- Borrow.borrow_mut deque1;
     [#"../vecdeque.rs" 21 4 21 9] deque1 <-  ^ _42;
-    [#"../vecdeque.rs" 21 4 21 22] _41 <- ([#"../vecdeque.rs" 21 4 21 22] push_back0 _42 ([#"../vecdeque.rs" 21 20 21 21] [#"../vecdeque.rs" 21 20 21 21] (3 : uint32)));
+    [#"../vecdeque.rs" 21 4 21 22] _41 <- ([#"../vecdeque.rs" 21 4 21 22] push_back0 _42 ([#"../vecdeque.rs" 21 20 21 21] (3 : uint32)));
     _42 <- any borrowed (Alloc_Collections_VecDeque_VecDeque_Type.t_vecdeque uint32 (Alloc_Alloc_Global_Type.t_global));
     goto BB25
   }
@@ -415,8 +428,8 @@ module Vecdeque_TestDeque
     goto BB26
   }
   BB26 {
-    [#"../vecdeque.rs" 23 33 23 40] _66 <- ([#"../vecdeque.rs" 23 33 23 40] [#"../vecdeque.rs" 23 33 23 40] promoted1);
-    [#"../vecdeque.rs" 23 12 23 40] _44 <- ([#"../vecdeque.rs" 23 12 23 40] eq0 ([#"../vecdeque.rs" 23 12 23 29] _46) ([#"../vecdeque.rs" 23 33 23 40] _66));
+    [#"../vecdeque.rs" 23 33 23 40] _66 <- ([#"../vecdeque.rs" 23 33 23 40] promoted1);
+    [#"../vecdeque.rs" 23 12 23 40] _44 <- ([#"../vecdeque.rs" 23 12 23 40] eq0 _46 _66);
     goto BB27
   }
   BB27 {
@@ -437,8 +450,8 @@ module Vecdeque_TestDeque
     absurd
   }
   BB30 {
-    [#"../vecdeque.rs" 24 32 24 39] _65 <- ([#"../vecdeque.rs" 24 32 24 39] [#"../vecdeque.rs" 24 32 24 39] promoted0);
-    [#"../vecdeque.rs" 24 12 24 39] _52 <- ([#"../vecdeque.rs" 24 12 24 39] eq0 ([#"../vecdeque.rs" 24 12 24 28] _54) ([#"../vecdeque.rs" 24 32 24 39] _65));
+    [#"../vecdeque.rs" 24 32 24 39] _65 <- ([#"../vecdeque.rs" 24 32 24 39] promoted0);
+    [#"../vecdeque.rs" 24 12 24 39] _52 <- ([#"../vecdeque.rs" 24 12 24 39] eq0 _54 _65);
     goto BB31
   }
   BB31 {
@@ -459,7 +472,7 @@ module Vecdeque_TestDeque
     absurd
   }
   BB34 {
-    [#"../vecdeque.rs" 26 12 26 28] _62 <- ([#"../vecdeque.rs" 26 12 26 28] is_empty0 ([#"../vecdeque.rs" 26 12 26 17] deque1));
+    [#"../vecdeque.rs" 26 12 26 28] _62 <- ([#"../vecdeque.rs" 26 12 26 28] is_empty0 deque1);
     goto BB35
   }
   BB35 {

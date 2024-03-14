@@ -63,14 +63,21 @@ module C15Enumerate_Impl0_ProducesRefl_Impl
     requires {[#"../common.rs" 21 82 21 83] inv2 c}
     ensures { result = produces_trans0 a ab b bc c }
     
-  axiom produces_trans0_spec : forall a : i, ab : Seq.seq item0, b : i, bc : Seq.seq item0, c : i . ([#"../common.rs" 18 15 18 32] produces1 a ab b) -> ([#"../common.rs" 19 15 19 32] produces1 b bc c) -> ([#"../common.rs" 21 22 21 23] inv2 a) -> ([#"../common.rs" 21 31 21 33] inv1 ab) -> ([#"../common.rs" 21 52 21 53] inv2 b) -> ([#"../common.rs" 21 61 21 63] inv1 bc) -> ([#"../common.rs" 21 82 21 83] inv2 c) -> ([#"../common.rs" 20 14 20 42] produces1 a (Seq.(++) ab bc) c)
+  axiom produces_trans0_spec : forall a : i, ab : Seq.seq item0, b : i, bc : Seq.seq item0, c : i . ([#"../common.rs" 18 15 18 32] produces1 a ab b)
+   -> ([#"../common.rs" 19 15 19 32] produces1 b bc c)
+   -> ([#"../common.rs" 21 22 21 23] inv2 a)
+   -> ([#"../common.rs" 21 31 21 33] inv1 ab)
+   -> ([#"../common.rs" 21 52 21 53] inv2 b)
+   -> ([#"../common.rs" 21 61 21 63] inv1 bc)
+   -> ([#"../common.rs" 21 82 21 83] inv2 c)  -> ([#"../common.rs" 20 14 20 42] produces1 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl0 [#"../common.rs" 15 4 15 27] (self : i) : ()
   val produces_refl0 [#"../common.rs" 15 4 15 27] (self : i) : ()
     requires {[#"../common.rs" 15 21 15 25] inv2 self}
     ensures { result = produces_refl0 self }
     
-  axiom produces_refl0_spec : forall self : i . ([#"../common.rs" 15 21 15 25] inv2 self) -> ([#"../common.rs" 14 14 14 45] produces1 self (Seq.empty ) self)
+  axiom produces_refl0_spec : forall self : i . ([#"../common.rs" 15 21 15 25] inv2 self)
+   -> ([#"../common.rs" 14 14 14 45] produces1 self (Seq.empty ) self)
   use prelude.UIntSize
   predicate completed0 [#"../common.rs" 11 4 11 36] (self : borrowed i)
   val completed0 [#"../common.rs" 11 4 11 36] (self : borrowed i) : bool
@@ -83,7 +90,11 @@ module C15Enumerate_Impl0_ProducesRefl_Impl
   use prelude.UIntSize
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
   predicate invariant0 [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) =
-    [#"../15_enumerate.rs" 73 12 74 79] (forall i : i . forall s : Seq.seq item0 . inv2 i -> inv1 s -> produces1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s i -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int max0) /\ (forall i : borrowed i . inv3 i -> completed0 i -> produces1 ( * i) (Seq.empty ) ( ^ i))
+    [#"../15_enumerate.rs" 73 12 74 79] (forall i : i . forall s : Seq.seq item0 . inv2 i
+     -> inv1 s
+     -> produces1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s i
+     -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int max0) /\ (forall i : borrowed i . inv3 i
+     -> completed0 i  -> produces1 ( * i) (Seq.empty ) ( ^ i))
   val invariant0 [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) : bool
     ensures { result = invariant0 self }
     
@@ -100,17 +111,16 @@ module C15Enumerate_Impl0_ProducesRefl_Impl
   predicate produces0 [#"../15_enumerate.rs" 28 4 28 64] (self : C15Enumerate_Enumerate_Type.t_enumerate i) (visited : Seq.seq (usize, item0)) (o : C15Enumerate_Enumerate_Type.t_enumerate i)
     
    =
-    [#"../15_enumerate.rs" 29 8 34 9] Seq.length visited = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count o) - UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) /\ (exists s : Seq.seq item0 . inv1 s /\ produces1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s (C15Enumerate_Enumerate_Type.enumerate_iter o) /\ Seq.length visited = Seq.length s /\ (forall i : int . 0 <= i /\ i < Seq.length s -> UIntSize.to_int (let (a, _) = Seq.get visited i in a) = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + i /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
+    [#"../15_enumerate.rs" 29 8 34 9] Seq.length visited = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count o) - UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) /\ (exists s : Seq.seq item0 . inv1 s /\ produces1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s (C15Enumerate_Enumerate_Type.enumerate_iter o) /\ Seq.length visited = Seq.length s /\ (forall i : int . 0 <= i /\ i < Seq.length s
+     -> UIntSize.to_int (let (a, _) = Seq.get visited i in a) = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + i /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
   val produces0 [#"../15_enumerate.rs" 28 4 28 64] (self : C15Enumerate_Enumerate_Type.t_enumerate i) (visited : Seq.seq (usize, item0)) (o : C15Enumerate_Enumerate_Type.t_enumerate i) : bool
     ensures { result = produces0 self visited o }
     
   use seq.Seq
-  let rec ghost function produces_refl [#"../15_enumerate.rs" 40 4 40 26] (self : C15Enumerate_Enumerate_Type.t_enumerate i) : ()
-    requires {[#"../15_enumerate.rs" 40 21 40 25] inv0 self}
-    ensures { [#"../15_enumerate.rs" 39 14 39 45] produces0 self (Seq.empty ) self }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../15_enumerate.rs" 37 4 37 10] ()
+  constant self  : C15Enumerate_Enumerate_Type.t_enumerate i
+  function produces_refl [#"../15_enumerate.rs" 40 4 40 26] (self : C15Enumerate_Enumerate_Type.t_enumerate i) : ()
+  goal vc_produces_refl : ([#"../15_enumerate.rs" 40 21 40 25] inv0 self)
+   -> ([#"../15_enumerate.rs" 39 14 39 45] produces0 self (Seq.empty ) self)
 end
 module C15Enumerate_Impl0_ProducesTrans_Impl
   type i
@@ -161,14 +171,21 @@ module C15Enumerate_Impl0_ProducesTrans_Impl
     requires {[#"../common.rs" 21 82 21 83] inv3 c}
     ensures { result = produces_trans0 a ab b bc c }
     
-  axiom produces_trans0_spec : forall a : i, ab : Seq.seq item0, b : i, bc : Seq.seq item0, c : i . ([#"../common.rs" 18 15 18 32] produces1 a ab b) -> ([#"../common.rs" 19 15 19 32] produces1 b bc c) -> ([#"../common.rs" 21 22 21 23] inv3 a) -> ([#"../common.rs" 21 31 21 33] inv2 ab) -> ([#"../common.rs" 21 52 21 53] inv3 b) -> ([#"../common.rs" 21 61 21 63] inv2 bc) -> ([#"../common.rs" 21 82 21 83] inv3 c) -> ([#"../common.rs" 20 14 20 42] produces1 a (Seq.(++) ab bc) c)
+  axiom produces_trans0_spec : forall a : i, ab : Seq.seq item0, b : i, bc : Seq.seq item0, c : i . ([#"../common.rs" 18 15 18 32] produces1 a ab b)
+   -> ([#"../common.rs" 19 15 19 32] produces1 b bc c)
+   -> ([#"../common.rs" 21 22 21 23] inv3 a)
+   -> ([#"../common.rs" 21 31 21 33] inv2 ab)
+   -> ([#"../common.rs" 21 52 21 53] inv3 b)
+   -> ([#"../common.rs" 21 61 21 63] inv2 bc)
+   -> ([#"../common.rs" 21 82 21 83] inv3 c)  -> ([#"../common.rs" 20 14 20 42] produces1 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl0 [#"../common.rs" 15 4 15 27] (self : i) : ()
   val produces_refl0 [#"../common.rs" 15 4 15 27] (self : i) : ()
     requires {[#"../common.rs" 15 21 15 25] inv3 self}
     ensures { result = produces_refl0 self }
     
-  axiom produces_refl0_spec : forall self : i . ([#"../common.rs" 15 21 15 25] inv3 self) -> ([#"../common.rs" 14 14 14 45] produces1 self (Seq.empty ) self)
+  axiom produces_refl0_spec : forall self : i . ([#"../common.rs" 15 21 15 25] inv3 self)
+   -> ([#"../common.rs" 14 14 14 45] produces1 self (Seq.empty ) self)
   use prelude.UIntSize
   predicate invariant1 (self : Seq.seq (usize, item0))
   val invariant1 (self : Seq.seq (usize, item0)) : bool
@@ -190,7 +207,11 @@ module C15Enumerate_Impl0_ProducesTrans_Impl
   use prelude.UIntSize
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
   predicate invariant0 [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) =
-    [#"../15_enumerate.rs" 73 12 74 79] (forall i : i . forall s : Seq.seq item0 . inv3 i -> inv2 s -> produces1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s i -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int max0) /\ (forall i : borrowed i . inv4 i -> completed0 i -> produces1 ( * i) (Seq.empty ) ( ^ i))
+    [#"../15_enumerate.rs" 73 12 74 79] (forall i : i . forall s : Seq.seq item0 . inv3 i
+     -> inv2 s
+     -> produces1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s i
+     -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int max0) /\ (forall i : borrowed i . inv4 i
+     -> completed0 i  -> produces1 ( * i) (Seq.empty ) ( ^ i))
   val invariant0 [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) : bool
     ensures { result = invariant0 self }
     
@@ -208,22 +229,26 @@ module C15Enumerate_Impl0_ProducesTrans_Impl
   predicate produces0 [#"../15_enumerate.rs" 28 4 28 64] (self : C15Enumerate_Enumerate_Type.t_enumerate i) (visited : Seq.seq (usize, item0)) (o : C15Enumerate_Enumerate_Type.t_enumerate i)
     
    =
-    [#"../15_enumerate.rs" 29 8 34 9] Seq.length visited = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count o) - UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) /\ (exists s : Seq.seq item0 . inv2 s /\ produces1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s (C15Enumerate_Enumerate_Type.enumerate_iter o) /\ Seq.length visited = Seq.length s /\ (forall i : int . 0 <= i /\ i < Seq.length s -> UIntSize.to_int (let (a, _) = Seq.get visited i in a) = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + i /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
+    [#"../15_enumerate.rs" 29 8 34 9] Seq.length visited = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count o) - UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) /\ (exists s : Seq.seq item0 . inv2 s /\ produces1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s (C15Enumerate_Enumerate_Type.enumerate_iter o) /\ Seq.length visited = Seq.length s /\ (forall i : int . 0 <= i /\ i < Seq.length s
+     -> UIntSize.to_int (let (a, _) = Seq.get visited i in a) = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + i /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
   val produces0 [#"../15_enumerate.rs" 28 4 28 64] (self : C15Enumerate_Enumerate_Type.t_enumerate i) (visited : Seq.seq (usize, item0)) (o : C15Enumerate_Enumerate_Type.t_enumerate i) : bool
     ensures { result = produces0 self visited o }
     
-  let rec ghost function produces_trans [#"../15_enumerate.rs" 47 4 47 90] (a : C15Enumerate_Enumerate_Type.t_enumerate i) (ab : Seq.seq (usize, item0)) (b : C15Enumerate_Enumerate_Type.t_enumerate i) (bc : Seq.seq (usize, item0)) (c : C15Enumerate_Enumerate_Type.t_enumerate i) : ()
-    requires {[#"../15_enumerate.rs" 44 15 44 32] produces0 a ab b}
-    requires {[#"../15_enumerate.rs" 45 15 45 32] produces0 b bc c}
-    requires {[#"../15_enumerate.rs" 47 22 47 23] inv0 a}
-    requires {[#"../15_enumerate.rs" 47 31 47 33] inv1 ab}
-    requires {[#"../15_enumerate.rs" 47 52 47 53] inv0 b}
-    requires {[#"../15_enumerate.rs" 47 61 47 63] inv1 bc}
-    requires {[#"../15_enumerate.rs" 47 82 47 83] inv0 c}
-    ensures { [#"../15_enumerate.rs" 46 14 46 42] produces0 a (Seq.(++) ab bc) c }
+  constant a  : C15Enumerate_Enumerate_Type.t_enumerate i
+  constant ab  : Seq.seq (usize, item0)
+  constant b  : C15Enumerate_Enumerate_Type.t_enumerate i
+  constant bc  : Seq.seq (usize, item0)
+  constant c  : C15Enumerate_Enumerate_Type.t_enumerate i
+  function produces_trans [#"../15_enumerate.rs" 47 4 47 90] (a : C15Enumerate_Enumerate_Type.t_enumerate i) (ab : Seq.seq (usize, item0)) (b : C15Enumerate_Enumerate_Type.t_enumerate i) (bc : Seq.seq (usize, item0)) (c : C15Enumerate_Enumerate_Type.t_enumerate i) : ()
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../15_enumerate.rs" 42 4 42 10] ()
+  goal vc_produces_trans : ([#"../15_enumerate.rs" 47 82 47 83] inv0 c)
+   -> ([#"../15_enumerate.rs" 47 61 47 63] inv1 bc)
+   -> ([#"../15_enumerate.rs" 47 52 47 53] inv0 b)
+   -> ([#"../15_enumerate.rs" 47 31 47 33] inv1 ab)
+   -> ([#"../15_enumerate.rs" 47 22 47 23] inv0 a)
+   -> ([#"../15_enumerate.rs" 45 15 45 32] produces0 b bc c)
+   -> ([#"../15_enumerate.rs" 44 15 44 32] produces0 a ab b)
+   -> ([#"../15_enumerate.rs" 46 14 46 42] produces0 a (Seq.(++) ab bc) c)
 end
 module Core_Option_Option_Type
   type t_option 't =
@@ -270,7 +295,11 @@ module C15Enumerate_Impl0_Next
     
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
   predicate invariant6 [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) =
-    [#"../15_enumerate.rs" 73 12 74 79] (forall i : i . forall s : Seq.seq item0 . inv0 i -> inv5 s -> produces1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s i -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int max0) /\ (forall i : borrowed i . inv4 i -> completed1 i -> produces1 ( * i) (Seq.empty ) ( ^ i))
+    [#"../15_enumerate.rs" 73 12 74 79] (forall i : i . forall s : Seq.seq item0 . inv0 i
+     -> inv5 s
+     -> produces1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s i
+     -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int max0) /\ (forall i : borrowed i . inv4 i
+     -> completed1 i  -> produces1 ( * i) (Seq.empty ) ( ^ i))
   val invariant6 [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) : bool
     ensures { result = invariant6 self }
     
@@ -332,13 +361,20 @@ module C15Enumerate_Impl0_Next
     requires {[#"../common.rs" 21 82 21 83] inv0 c}
     ensures { result = produces_trans0 a ab b bc c }
     
-  axiom produces_trans0_spec : forall a : i, ab : Seq.seq item0, b : i, bc : Seq.seq item0, c : i . ([#"../common.rs" 18 15 18 32] produces1 a ab b) -> ([#"../common.rs" 19 15 19 32] produces1 b bc c) -> ([#"../common.rs" 21 22 21 23] inv0 a) -> ([#"../common.rs" 21 31 21 33] inv5 ab) -> ([#"../common.rs" 21 52 21 53] inv0 b) -> ([#"../common.rs" 21 61 21 63] inv5 bc) -> ([#"../common.rs" 21 82 21 83] inv0 c) -> ([#"../common.rs" 20 14 20 42] produces1 a (Seq.(++) ab bc) c)
+  axiom produces_trans0_spec : forall a : i, ab : Seq.seq item0, b : i, bc : Seq.seq item0, c : i . ([#"../common.rs" 18 15 18 32] produces1 a ab b)
+   -> ([#"../common.rs" 19 15 19 32] produces1 b bc c)
+   -> ([#"../common.rs" 21 22 21 23] inv0 a)
+   -> ([#"../common.rs" 21 31 21 33] inv5 ab)
+   -> ([#"../common.rs" 21 52 21 53] inv0 b)
+   -> ([#"../common.rs" 21 61 21 63] inv5 bc)
+   -> ([#"../common.rs" 21 82 21 83] inv0 c)  -> ([#"../common.rs" 20 14 20 42] produces1 a (Seq.(++) ab bc) c)
   function produces_refl0 [#"../common.rs" 15 4 15 27] (self : i) : ()
   val produces_refl0 [#"../common.rs" 15 4 15 27] (self : i) : ()
     requires {[#"../common.rs" 15 21 15 25] inv0 self}
     ensures { result = produces_refl0 self }
     
-  axiom produces_refl0_spec : forall self : i . ([#"../common.rs" 15 21 15 25] inv0 self) -> ([#"../common.rs" 14 14 14 45] produces1 self (Seq.empty ) self)
+  axiom produces_refl0_spec : forall self : i . ([#"../common.rs" 15 21 15 25] inv0 self)
+   -> ([#"../common.rs" 14 14 14 45] produces1 self (Seq.empty ) self)
   predicate invariant0 (self : i)
   val invariant0 (self : i) : bool
     ensures { result = invariant0 self }
@@ -350,7 +386,8 @@ module C15Enumerate_Impl0_Next
   predicate produces0 [#"../15_enumerate.rs" 28 4 28 64] (self : C15Enumerate_Enumerate_Type.t_enumerate i) (visited : Seq.seq (usize, item0)) (o : C15Enumerate_Enumerate_Type.t_enumerate i)
     
    =
-    [#"../15_enumerate.rs" 29 8 34 9] Seq.length visited = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count o) - UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) /\ (exists s : Seq.seq item0 . inv5 s /\ produces1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s (C15Enumerate_Enumerate_Type.enumerate_iter o) /\ Seq.length visited = Seq.length s /\ (forall i : int . 0 <= i /\ i < Seq.length s -> UIntSize.to_int (let (a, _) = Seq.get visited i in a) = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + i /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
+    [#"../15_enumerate.rs" 29 8 34 9] Seq.length visited = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count o) - UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) /\ (exists s : Seq.seq item0 . inv5 s /\ produces1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s (C15Enumerate_Enumerate_Type.enumerate_iter o) /\ Seq.length visited = Seq.length s /\ (forall i : int . 0 <= i /\ i < Seq.length s
+     -> UIntSize.to_int (let (a, _) = Seq.get visited i in a) = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + i /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
   val produces0 [#"../15_enumerate.rs" 28 4 28 64] (self : C15Enumerate_Enumerate_Type.t_enumerate i) (visited : Seq.seq (usize, item0)) (o : C15Enumerate_Enumerate_Type.t_enumerate i) : bool
     ensures { result = produces0 self visited o }
     
@@ -362,7 +399,7 @@ module C15Enumerate_Impl0_Next
     ensures { result = completed0 self }
     
   predicate resolve1 (self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve1 (self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) : bool
     ensures { result = resolve1 self }
     
@@ -394,6 +431,7 @@ module C15Enumerate_Impl0_Next
   var _4 : borrowed i;
   var x : item0;
   var n : usize;
+  var _8 : (usize, item0);
   {
     goto BB0
   }
@@ -415,21 +453,23 @@ module C15Enumerate_Impl0_Next
     goto BB5
   }
   BB3 {
-    [#"../15_enumerate.rs" 56 17 56 18] x <- ([#"../15_enumerate.rs" 56 17 56 18] Core_Option_Option_Type.some_0 _3);
-    [#"../15_enumerate.rs" 56 17 56 18] _3 <- (let Core_Option_Option_Type.C_Some x0 = _3 in Core_Option_Option_Type.C_Some (any item0));
+    [#"../15_enumerate.rs" 56 17 56 18] x <- Core_Option_Option_Type.some_0 _3;
+    _3 <- (let Core_Option_Option_Type.C_Some x0 = _3 in Core_Option_Option_Type.C_Some (any item0));
     assert { [@expl:type invariant] inv1 _3 };
     assume { resolve0 _3 };
-    [#"../15_enumerate.rs" 57 24 57 34] n <- ([#"../15_enumerate.rs" 57 24 57 34] C15Enumerate_Enumerate_Type.enumerate_count ( * self));
-    [#"../15_enumerate.rs" 58 16 58 31] self <- { self with current = (let C15Enumerate_Enumerate_Type.C_Enumerate x0 x1 =  * self in C15Enumerate_Enumerate_Type.C_Enumerate x0 ([#"../15_enumerate.rs" 58 16 58 31] C15Enumerate_Enumerate_Type.enumerate_count ( * self) + ([#"../15_enumerate.rs" 58 30 58 31] [#"../15_enumerate.rs" 58 30 58 31] (1 : usize)))) ; };
+    [#"../15_enumerate.rs" 57 24 57 34] n <- C15Enumerate_Enumerate_Type.enumerate_count ( * self);
+    [#"../15_enumerate.rs" 58 16 58 31] self <- { self with current = (let C15Enumerate_Enumerate_Type.C_Enumerate x0 x1 =  * self in C15Enumerate_Enumerate_Type.C_Enumerate x0 (C15Enumerate_Enumerate_Type.enumerate_count ( * self) + ([#"../15_enumerate.rs" 58 30 58 31] (1 : usize)))) ; };
     assert { [@expl:type invariant] inv2 self };
     assume { resolve1 self };
+    [#"../15_enumerate.rs" 59 21 59 27] _8 <- (n, x);
+    x <- any item0;
     goto BB6
   }
   BB4 {
-    assert { [@expl:type invariant] inv1 _3 };
-    assume { resolve0 _3 };
     assert { [@expl:type invariant] inv2 self };
     assume { resolve1 self };
+    assert { [@expl:type invariant] inv1 _3 };
+    assume { resolve0 _3 };
     assert { [#"../15_enumerate.rs" 54 14 54 30] false };
     absurd
   }
@@ -438,12 +478,12 @@ module C15Enumerate_Impl0_Next
     assume { resolve0 _3 };
     assert { [@expl:type invariant] inv2 self };
     assume { resolve1 self };
-    [#"../15_enumerate.rs" 55 20 55 24] _0 <- ([#"../15_enumerate.rs" 55 20 55 24] Core_Option_Option_Type.C_None);
+    [#"../15_enumerate.rs" 55 20 55 24] _0 <- Core_Option_Option_Type.C_None;
     goto BB9
   }
   BB6 {
-    [#"../15_enumerate.rs" 59 16 59 28] _0 <- ([#"../15_enumerate.rs" 59 16 59 28] Core_Option_Option_Type.C_Some ([#"../15_enumerate.rs" 59 21 59 27] (([#"../15_enumerate.rs" 59 22 59 23] n), ([#"../15_enumerate.rs" 59 25 59 26] x))));
-    [#"../15_enumerate.rs" 59 25 59 26] x <- any item0;
+    [#"../15_enumerate.rs" 59 16 59 28] _0 <- Core_Option_Option_Type.C_Some _8;
+    _8 <- any (usize, item0);
     goto BB7
   }
   BB7 {
@@ -494,7 +534,11 @@ module C15Enumerate_Enumerate
     
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
   predicate invariant3 [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) =
-    [#"../15_enumerate.rs" 73 12 74 79] (forall i : i . forall s : Seq.seq item0 . inv1 i -> inv2 s -> produces0 (C15Enumerate_Enumerate_Type.enumerate_iter self) s i -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int max0) /\ (forall i : borrowed i . inv0 i -> completed0 i -> produces0 ( * i) (Seq.empty ) ( ^ i))
+    [#"../15_enumerate.rs" 73 12 74 79] (forall i : i . forall s : Seq.seq item0 . inv1 i
+     -> inv2 s
+     -> produces0 (C15Enumerate_Enumerate_Type.enumerate_iter self) s i
+     -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int max0) /\ (forall i : borrowed i . inv0 i
+     -> completed0 i  -> produces0 ( * i) (Seq.empty ) ( ^ i))
   val invariant3 [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) : bool
     ensures { result = invariant3 self }
     
@@ -528,21 +572,30 @@ module C15Enumerate_Enumerate
     requires {[#"../common.rs" 21 82 21 83] inv1 c}
     ensures { result = produces_trans0 a ab b bc c }
     
-  axiom produces_trans0_spec : forall a : i, ab : Seq.seq item0, b : i, bc : Seq.seq item0, c : i . ([#"../common.rs" 18 15 18 32] produces0 a ab b) -> ([#"../common.rs" 19 15 19 32] produces0 b bc c) -> ([#"../common.rs" 21 22 21 23] inv1 a) -> ([#"../common.rs" 21 31 21 33] inv2 ab) -> ([#"../common.rs" 21 52 21 53] inv1 b) -> ([#"../common.rs" 21 61 21 63] inv2 bc) -> ([#"../common.rs" 21 82 21 83] inv1 c) -> ([#"../common.rs" 20 14 20 42] produces0 a (Seq.(++) ab bc) c)
+  axiom produces_trans0_spec : forall a : i, ab : Seq.seq item0, b : i, bc : Seq.seq item0, c : i . ([#"../common.rs" 18 15 18 32] produces0 a ab b)
+   -> ([#"../common.rs" 19 15 19 32] produces0 b bc c)
+   -> ([#"../common.rs" 21 22 21 23] inv1 a)
+   -> ([#"../common.rs" 21 31 21 33] inv2 ab)
+   -> ([#"../common.rs" 21 52 21 53] inv1 b)
+   -> ([#"../common.rs" 21 61 21 63] inv2 bc)
+   -> ([#"../common.rs" 21 82 21 83] inv1 c)  -> ([#"../common.rs" 20 14 20 42] produces0 a (Seq.(++) ab bc) c)
   function produces_refl0 [#"../common.rs" 15 4 15 27] (self : i) : ()
   val produces_refl0 [#"../common.rs" 15 4 15 27] (self : i) : ()
     requires {[#"../common.rs" 15 21 15 25] inv1 self}
     ensures { result = produces_refl0 self }
     
-  axiom produces_refl0_spec : forall self : i . ([#"../common.rs" 15 21 15 25] inv1 self) -> ([#"../common.rs" 14 14 14 45] produces0 self (Seq.empty ) self)
+  axiom produces_refl0_spec : forall self : i . ([#"../common.rs" 15 21 15 25] inv1 self)
+   -> ([#"../common.rs" 14 14 14 45] produces0 self (Seq.empty ) self)
   predicate invariant0 (self : borrowed i)
   val invariant0 (self : borrowed i) : bool
     ensures { result = invariant0 self }
     
   axiom inv0 : forall x : borrowed i . inv0 x = true
   let rec cfg enumerate [#"../15_enumerate.rs" 81 0 81 54] [@cfg:stackify] [@cfg:subregion_analysis] (iter : i) : C15Enumerate_Enumerate_Type.t_enumerate i
-    requires {[#"../15_enumerate.rs" 79 0 79 75] forall i : borrowed i . inv0 i -> completed0 i -> produces0 ( * i) (Seq.empty ) ( ^ i)}
-    requires {[#"../15_enumerate.rs" 80 0 80 93] forall i : i . forall s : Seq.seq item0 . inv1 i -> inv2 s -> produces0 iter s i -> Seq.length s < UIntSize.to_int max0}
+    requires {[#"../15_enumerate.rs" 79 0 79 75] forall i : borrowed i . inv0 i
+     -> completed0 i  -> produces0 ( * i) (Seq.empty ) ( ^ i)}
+    requires {[#"../15_enumerate.rs" 80 0 80 93] forall i : i . forall s : Seq.seq item0 . inv1 i
+     -> inv2 s  -> produces0 iter s i  -> Seq.length s < UIntSize.to_int max0}
     requires {[#"../15_enumerate.rs" 81 30 81 34] inv1 iter}
     ensures { [#"../15_enumerate.rs" 81 42 81 54] inv3 result }
     
@@ -556,8 +609,8 @@ module C15Enumerate_Enumerate
     goto BB1
   }
   BB1 {
-    [#"../15_enumerate.rs" 82 4 82 32] _0 <- ([#"../15_enumerate.rs" 82 4 82 32] C15Enumerate_Enumerate_Type.C_Enumerate ([#"../15_enumerate.rs" 82 16 82 20] iter) ([#"../15_enumerate.rs" 82 29 82 30] [#"../15_enumerate.rs" 82 29 82 30] (0 : usize)));
-    [#"../15_enumerate.rs" 82 16 82 20] iter <- any i;
+    [#"../15_enumerate.rs" 82 4 82 32] _0 <- C15Enumerate_Enumerate_Type.C_Enumerate iter ([#"../15_enumerate.rs" 82 29 82 30] (0 : usize));
+    iter <- any i;
     goto BB2
   }
   BB2 {
@@ -610,30 +663,6 @@ module C15Enumerate_Impl0
     ensures { result = inv3 _x }
     
   axiom inv3 : forall x : Seq.seq (usize, item0) . inv3 x = true
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  predicate invariant2 (self : Core_Option_Option_Type.t_option (usize, item0))
-  val invariant2 (self : Core_Option_Option_Type.t_option (usize, item0)) : bool
-    ensures { result = invariant2 self }
-    
-  predicate inv2 (_x : Core_Option_Option_Type.t_option (usize, item0))
-  val inv2 (_x : Core_Option_Option_Type.t_option (usize, item0)) : bool
-    ensures { result = inv2 _x }
-    
-  axiom inv2 : forall x : Core_Option_Option_Type.t_option (usize, item0) . inv2 x = true
-  use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
-  predicate invariant1 (self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i))
-  val invariant1 (self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) : bool
-    ensures { result = invariant1 self }
-    
-  predicate inv0 (_x : C15Enumerate_Enumerate_Type.t_enumerate i)
-  val inv0 (_x : C15Enumerate_Enumerate_Type.t_enumerate i) : bool
-    ensures { result = inv0 _x }
-    
-  predicate inv1 (_x : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i))
-  val inv1 (_x : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) : bool
-    ensures { result = inv1 _x }
-    
-  axiom inv1 : forall x : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i) . inv1 x = (inv0 ( * x) /\ inv0 ( ^ x))
   use seq.Seq
   predicate completed1 [#"../common.rs" 11 4 11 36] (self : borrowed i)
   val completed1 [#"../common.rs" 11 4 11 36] (self : borrowed i) : bool
@@ -648,22 +677,44 @@ module C15Enumerate_Impl0
   val produces1 [#"../common.rs" 8 4 8 65] (self : i) (visited : Seq.seq item0) (o : i) : bool
     ensures { result = produces1 self visited o }
     
-  predicate invariant0 [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) =
-    [#"../15_enumerate.rs" 73 12 74 79] (forall i : i . forall s : Seq.seq item0 . inv5 i -> inv4 s -> produces1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s i -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int max0) /\ (forall i : borrowed i . inv6 i -> completed1 i -> produces1 ( * i) (Seq.empty ) ( ^ i))
-  val invariant0 [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) : bool
-    ensures { result = invariant0 self }
+  use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
+  predicate invariant2 [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) =
+    [#"../15_enumerate.rs" 73 12 74 79] (forall i : i . forall s : Seq.seq item0 . inv5 i
+     -> inv4 s
+     -> produces1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s i
+     -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int max0) /\ (forall i : borrowed i . inv6 i
+     -> completed1 i  -> produces1 ( * i) (Seq.empty ) ( ^ i))
+  val invariant2 [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) : bool
+    ensures { result = invariant2 self }
     
-  axiom inv0 : forall x : C15Enumerate_Enumerate_Type.t_enumerate i . inv0 x = (invariant0 x /\ match x with
+  predicate inv2 (_x : C15Enumerate_Enumerate_Type.t_enumerate i)
+  val inv2 (_x : C15Enumerate_Enumerate_Type.t_enumerate i) : bool
+    ensures { result = inv2 _x }
+    
+  axiom inv2 : forall x : C15Enumerate_Enumerate_Type.t_enumerate i . inv2 x = (invariant2 x /\ match x with
     | C15Enumerate_Enumerate_Type.C_Enumerate iter count -> true
     end)
-  use seq.Seq
-  use seq.Seq
-  predicate completed0 [#"../15_enumerate.rs" 22 4 22 35] (self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i))
-   =
-    [#"../15_enumerate.rs" 23 8 23 43] completed1 (Borrow.borrow_logic (C15Enumerate_Enumerate_Type.enumerate_iter ( * self)) (C15Enumerate_Enumerate_Type.enumerate_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1))
-  val completed0 [#"../15_enumerate.rs" 22 4 22 35] (self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) : bool
-    ensures { result = completed0 self }
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant1 (self : Core_Option_Option_Type.t_option (usize, item0))
+  val invariant1 (self : Core_Option_Option_Type.t_option (usize, item0)) : bool
+    ensures { result = invariant1 self }
     
+  predicate inv1 (_x : Core_Option_Option_Type.t_option (usize, item0))
+  val inv1 (_x : Core_Option_Option_Type.t_option (usize, item0)) : bool
+    ensures { result = inv1 _x }
+    
+  axiom inv1 : forall x : Core_Option_Option_Type.t_option (usize, item0) . inv1 x = true
+  predicate invariant0 (self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i))
+  val invariant0 (self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) : bool
+    ensures { result = invariant0 self }
+    
+  predicate inv0 (_x : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i))
+  val inv0 (_x : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) : bool
+    ensures { result = inv0 _x }
+    
+  axiom inv0 : forall x : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i) . inv0 x = (inv2 ( * x) /\ inv2 ( ^ x))
+  use seq.Seq
+  use seq.Seq
   use seq.Seq
   use seq.Seq
   use seq.Seq
@@ -671,20 +722,32 @@ module C15Enumerate_Impl0
   predicate produces0 [#"../15_enumerate.rs" 28 4 28 64] (self : C15Enumerate_Enumerate_Type.t_enumerate i) (visited : Seq.seq (usize, item0)) (o : C15Enumerate_Enumerate_Type.t_enumerate i)
     
    =
-    [#"../15_enumerate.rs" 29 8 34 9] Seq.length visited = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count o) - UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) /\ (exists s : Seq.seq item0 . inv4 s /\ produces1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s (C15Enumerate_Enumerate_Type.enumerate_iter o) /\ Seq.length visited = Seq.length s /\ (forall i : int . 0 <= i /\ i < Seq.length s -> UIntSize.to_int (let (a, _) = Seq.get visited i in a) = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + i /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
+    [#"../15_enumerate.rs" 29 8 34 9] Seq.length visited = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count o) - UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) /\ (exists s : Seq.seq item0 . inv4 s /\ produces1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s (C15Enumerate_Enumerate_Type.enumerate_iter o) /\ Seq.length visited = Seq.length s /\ (forall i : int . 0 <= i /\ i < Seq.length s
+     -> UIntSize.to_int (let (a, _) = Seq.get visited i in a) = UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + i /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
   val produces0 [#"../15_enumerate.rs" 28 4 28 64] (self : C15Enumerate_Enumerate_Type.t_enumerate i) (visited : Seq.seq (usize, item0)) (o : C15Enumerate_Enumerate_Type.t_enumerate i) : bool
     ensures { result = produces0 self visited o }
     
   use seq.Seq
-  goal produces_refl_refn : [#"../15_enumerate.rs" 40 4 40 26] forall self : C15Enumerate_Enumerate_Type.t_enumerate i . inv0 self -> inv0 self /\ (forall result : () . produces0 self (Seq.empty ) self -> produces0 self (Seq.empty ) self)
-  goal next_refn : [#"../15_enumerate.rs" 53 4 53 44] forall self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i) . inv1 self -> inv1 self /\ (forall result : Core_Option_Option_Type.t_option (usize, item0) . inv2 result /\ match result with
+  predicate completed0 [#"../15_enumerate.rs" 22 4 22 35] (self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i))
+   =
+    [#"../15_enumerate.rs" 23 8 23 43] completed1 (Borrow.borrow_logic (C15Enumerate_Enumerate_Type.enumerate_iter ( * self)) (C15Enumerate_Enumerate_Type.enumerate_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1))
+  val completed0 [#"../15_enumerate.rs" 22 4 22 35] (self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) : bool
+    ensures { result = completed0 self }
+    
+  goal next_refn : [#"../15_enumerate.rs" 53 4 53 44] forall self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i) . inv0 self
+   -> inv0 self /\ (forall result : Core_Option_Option_Type.t_option (usize, item0) . inv1 result /\ match result with
     | Core_Option_Option_Type.C_None -> completed0 self
     | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
-    end -> inv2 result /\ match result with
+    end
+   -> inv1 result /\ match result with
     | Core_Option_Option_Type.C_None -> completed0 self
     | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
     end)
-  goal produces_trans_refn : [#"../15_enumerate.rs" 47 4 47 90] forall a : C15Enumerate_Enumerate_Type.t_enumerate i . forall ab : Seq.seq (usize, item0) . forall b : C15Enumerate_Enumerate_Type.t_enumerate i . forall bc : Seq.seq (usize, item0) . forall c : C15Enumerate_Enumerate_Type.t_enumerate i . inv0 c /\ inv3 bc /\ inv0 b /\ inv3 ab /\ inv0 a /\ produces0 b bc c /\ produces0 a ab b -> inv0 c /\ inv3 bc /\ inv0 b /\ inv3 ab /\ inv0 a /\ produces0 b bc c /\ produces0 a ab b /\ (forall result : () . produces0 a (Seq.(++) ab bc) c -> produces0 a (Seq.(++) ab bc) c)
+  goal produces_trans_refn : [#"../15_enumerate.rs" 47 4 47 90] forall a : C15Enumerate_Enumerate_Type.t_enumerate i . forall ab : Seq.seq (usize, item0) . forall b : C15Enumerate_Enumerate_Type.t_enumerate i . forall bc : Seq.seq (usize, item0) . forall c : C15Enumerate_Enumerate_Type.t_enumerate i . inv2 c /\ inv3 bc /\ inv2 b /\ inv3 ab /\ inv2 a /\ produces0 b bc c /\ produces0 a ab b
+   -> inv2 c /\ inv3 bc /\ inv2 b /\ inv3 ab /\ inv2 a /\ produces0 b bc c /\ produces0 a ab b /\ (forall result : () . produces0 a (Seq.(++) ab bc) c
+   -> produces0 a (Seq.(++) ab bc) c)
+  goal produces_refl_refn : [#"../15_enumerate.rs" 40 4 40 26] forall self : C15Enumerate_Enumerate_Type.t_enumerate i . inv2 self
+   -> inv2 self /\ (forall result : () . produces0 self (Seq.empty ) self  -> produces0 self (Seq.empty ) self)
 end
 module C15Enumerate_Impl1
   type i

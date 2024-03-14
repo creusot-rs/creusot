@@ -22,11 +22,15 @@ module C02_Cell_Type
 end
 module C02_Fib_Impl
   use prelude.Int
-  let rec ghost function fib [#"../02.rs" 32 0 32 25] (i : int) : int
-    variant {[#"../02.rs" 31 10 31 11] i}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../02.rs" 29 0 29 8] if pure {i <= 0} then 0 else if pure {i = 1} then 1 else fib (i - 1) + fib (i - 2)
+  constant i  : int
+  function fib [#"../02.rs" 32 0 32 25] (i : int) : int
+  goal vc_fib : match i <= 0 with
+    | True -> true
+    | False -> match i = 1 with
+      | True -> true
+      | False -> (0 <= ([#"../02.rs" 31 10 31 11] i) /\ ([#"../02.rs" 31 10 31 11] i - 1) < ([#"../02.rs" 31 10 31 11] i)) /\ 0 <= ([#"../02.rs" 31 10 31 11] i) /\ ([#"../02.rs" 31 10 31 11] i - 2) < ([#"../02.rs" 31 10 31 11] i)
+      end
+    end
 end
 module C02_LemmaFibBound_Impl
   use int.Power
@@ -40,17 +44,18 @@ module C02_LemmaFibBound_Impl
   val fib0 [#"../02.rs" 32 0 32 25] (i : int) : int
     ensures { result = fib0 i }
     
-  let rec ghost function lemma_fib_bound [#"../02.rs" 47 0 47 30] (i : int) : ()
-    requires {[#"../02.rs" 44 11 44 17] 0 <= i}
-    ensures { [#"../02.rs" 45 10 45 28] fib0 i <= Power.power 2 i }
-    variant {[#"../02.rs" 46 10 46 11] i}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../02.rs" 43 0 43 8] if pure {i = 0} then
-      ()
-    else
-      if pure {i = 1} then () else let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
-    
+  constant i  : int
+  function lemma_fib_bound [#"../02.rs" 47 0 47 30] (i : int) : ()
+  goal vc_lemma_fib_bound : ([#"../02.rs" 44 11 44 17] 0 <= i)
+   -> match i = 0 with
+    | True -> [#"../02.rs" 45 10 45 28] fib0 i <= Power.power 2 i
+    | False -> match i = 1 with
+      | True -> [#"../02.rs" 45 10 45 28] fib0 i <= Power.power 2 i
+      | False -> (([#"../02.rs" 44 11 44 17] 0 <= i - 2) /\ 0 <= ([#"../02.rs" 46 10 46 11] i) /\ ([#"../02.rs" 46 10 46 11] i - 2) < ([#"../02.rs" 46 10 46 11] i)) /\ (([#"../02.rs" 45 10 45 28] fib0 (i - 2) <= Power.power 2 (i - 2))
+       -> (let _ = lemma_fib_bound (i - 2) in (([#"../02.rs" 44 11 44 17] 0 <= i - 1) /\ 0 <= ([#"../02.rs" 46 10 46 11] i) /\ ([#"../02.rs" 46 10 46 11] i - 1) < ([#"../02.rs" 46 10 46 11] i)) /\ (([#"../02.rs" 45 10 45 28] fib0 (i - 1) <= Power.power 2 (i - 1))
+       -> ([#"../02.rs" 45 10 45 28] fib0 i <= Power.power 2 i))))
+      end
+    end
 end
 module C02_Fib_Type
   use prelude.UIntSize
@@ -92,12 +97,18 @@ module Core_Ptr_Unique_Unique_Type
     | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
-module Alloc_RawVec_RawVec_Type
+module Alloc_RawVec_Cap_Type
   use prelude.UIntSize
   use prelude.Int
+  type t_cap  =
+    | C_Cap usize
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
   use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
   type t_rawvec 't 'a =
-    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
     
 end
 module Alloc_Vec_Vec_Type
@@ -149,7 +160,8 @@ module C02_FibMemo
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv5 self}
     ensures { result = shallow_model2 self }
     
-  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv5 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv6 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
+  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv5 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv6 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
   predicate invariant4 (self : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -224,7 +236,7 @@ module C02_FibMemo
   val fib_cell0 [#"../02.rs" 84 0 84 32] (v : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = fib_cell0 v }
     
-  use prelude.Ghost
+  use prelude.Snapshot
   function fib0 [#"../02.rs" 32 0 32 25] (i : int) : int
   axiom fib0_def : forall i : int . fib0 i = ([#"../02.rs" 29 0 29 8] if i <= 0 then
     0
@@ -247,7 +259,7 @@ module C02_FibMemo
     requires {[#"../02.rs" 24 16 24 20] inv2 self}
     requires {[#"../02.rs" 24 22 24 23] inv4 v}
     
-  use prelude.Ghost
+  use prelude.Snapshot
   use int.Power
   function lemma_fib_bound0 [#"../02.rs" 47 0 47 30] (i : int) : ()
   axiom lemma_fib_bound0_def : forall i : int . lemma_fib_bound0 i = ([#"../02.rs" 43 0 43 8] if i = 0 then
@@ -259,8 +271,9 @@ module C02_FibMemo
     requires {[#"../02.rs" 44 11 44 17] 0 <= i}
     ensures { result = lemma_fib_bound0 i }
     
-  axiom lemma_fib_bound0_spec : forall i : int . ([#"../02.rs" 44 11 44 17] 0 <= i) -> ([#"../02.rs" 45 10 45 28] fib0 i <= Power.power 2 i)
-  use prelude.Ghost
+  axiom lemma_fib_bound0_spec : forall i : int . ([#"../02.rs" 44 11 44 17] 0 <= i)
+   -> ([#"../02.rs" 45 10 45 28] fib0 i <= Power.power 2 i)
+  use prelude.Snapshot
   function lemma_max_int0 [#"../02.rs" 62 0 62 22] (_1 : ()) : () =
     [#"../02.rs" 60 0 60 8] ()
   val lemma_max_int0 [#"../02.rs" 62 0 62 22] (_1 : ()) : ()
@@ -308,21 +321,26 @@ module C02_FibMemo
   var _9 : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib);
   var v : usize;
   var fib_i : usize;
-  var _19 : Ghost.ghost_ty ();
-  var _21 : Ghost.ghost_ty ();
+  var _15 : bool;
+  var _17 : bool;
+  var _19 : Snapshot.snap_ty ();
+  var _21 : Snapshot.snap_ty ();
   var _23 : usize;
+  var _25 : usize;
   var _27 : usize;
+  var _29 : usize;
   var _33 : ();
   var _35 : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib);
+  var _38 : Core_Option_Option_Type.t_option usize;
   {
     goto BB0
   }
   BB0 {
-    [#"../02.rs" 96 13 96 16] _9 <- ([#"../02.rs" 96 13 96 16] index0 ([#"../02.rs" 96 10 96 13] mem) ([#"../02.rs" 96 14 96 15] i));
+    [#"../02.rs" 96 13 96 16] _9 <- ([#"../02.rs" 96 13 96 16] index0 mem i);
     goto BB1
   }
   BB1 {
-    [#"../02.rs" 96 10 96 22] _7 <- ([#"../02.rs" 96 10 96 22] get0 ([#"../02.rs" 96 10 96 16] _9));
+    [#"../02.rs" 96 10 96 22] _7 <- ([#"../02.rs" 96 10 96 22] get0 _9);
     goto BB2
   }
   BB2 {
@@ -332,7 +350,8 @@ module C02_FibMemo
       end
   }
   BB3 {
-    switch ([#"../02.rs" 99 27 99 33] ([#"../02.rs" 99 27 99 28] i) = ([#"../02.rs" 99 32 99 33] [#"../02.rs" 99 32 99 33] (0 : usize)))
+    [#"../02.rs" 99 27 99 33] _15 <- i = ([#"../02.rs" 99 32 99 33] (0 : usize));
+    switch (_15)
       | False -> goto BB8
       | True -> goto BB7
       end
@@ -345,42 +364,47 @@ module C02_FibMemo
     absurd
   }
   BB6 {
-    [#"../02.rs" 97 13 97 14] v <- ([#"../02.rs" 97 13 97 14] Core_Option_Option_Type.some_0 _7);
-    [#"../02.rs" 97 19 97 20] _0 <- ([#"../02.rs" 97 19 97 20] v);
+    [#"../02.rs" 97 13 97 14] v <- Core_Option_Option_Type.some_0 _7;
+    [#"../02.rs" 97 19 97 20] _0 <- v;
     goto BB19
   }
   BB7 {
-    [#"../02.rs" 100 16 100 17] fib_i <- ([#"../02.rs" 100 16 100 17] [#"../02.rs" 100 16 100 17] (0 : usize));
+    [#"../02.rs" 100 16 100 17] fib_i <- ([#"../02.rs" 100 16 100 17] (0 : usize));
     goto BB16
   }
   BB8 {
-    switch ([#"../02.rs" 101 22 101 28] ([#"../02.rs" 101 22 101 23] i) = ([#"../02.rs" 101 27 101 28] [#"../02.rs" 101 27 101 28] (1 : usize)))
+    [#"../02.rs" 101 22 101 28] _17 <- i = ([#"../02.rs" 101 27 101 28] (1 : usize));
+    switch (_17)
       | False -> goto BB10
       | True -> goto BB9
       end
   }
   BB9 {
-    [#"../02.rs" 102 16 102 17] fib_i <- ([#"../02.rs" 102 16 102 17] [#"../02.rs" 102 16 102 17] (1 : usize));
+    [#"../02.rs" 102 16 102 17] fib_i <- ([#"../02.rs" 102 16 102 17] (1 : usize));
     goto BB15
   }
   BB10 {
-    [#"../02.rs" 104 16 104 37] _19 <- ([#"../02.rs" 104 16 104 37] Ghost.new ());
+    [#"../02.rs" 104 16 104 43] _19 <- ([#"../02.rs" 104 16 104 43] Snapshot.new ());
     goto BB11
   }
   BB11 {
-    [#"../02.rs" 105 16 105 39] _21 <- ([#"../02.rs" 105 16 105 39] Ghost.new ());
+    [#"../02.rs" 105 16 105 45] _21 <- ([#"../02.rs" 105 16 105 45] Snapshot.new ());
     goto BB12
   }
   BB12 {
-    [#"../02.rs" 106 16 106 36] _23 <- ([#"../02.rs" 106 16 106 36] fib_memo ([#"../02.rs" 106 25 106 28] mem) ([#"../02.rs" 106 30 106 35] ([#"../02.rs" 106 30 106 31] i) - ([#"../02.rs" 106 34 106 35] [#"../02.rs" 106 34 106 35] (1 : usize))));
+    [#"../02.rs" 106 30 106 35] _25 <- i - ([#"../02.rs" 106 34 106 35] (1 : usize));
+    [#"../02.rs" 106 16 106 36] _23 <- ([#"../02.rs" 106 16 106 36] fib_memo mem _25);
+    _25 <- any usize;
     goto BB13
   }
   BB13 {
-    [#"../02.rs" 106 39 106 59] _27 <- ([#"../02.rs" 106 39 106 59] fib_memo ([#"../02.rs" 106 48 106 51] mem) ([#"../02.rs" 106 53 106 58] ([#"../02.rs" 106 53 106 54] i) - ([#"../02.rs" 106 57 106 58] [#"../02.rs" 106 57 106 58] (2 : usize))));
+    [#"../02.rs" 106 53 106 58] _29 <- i - ([#"../02.rs" 106 57 106 58] (2 : usize));
+    [#"../02.rs" 106 39 106 59] _27 <- ([#"../02.rs" 106 39 106 59] fib_memo mem _29);
+    _29 <- any usize;
     goto BB14
   }
   BB14 {
-    [#"../02.rs" 106 16 106 59] fib_i <- ([#"../02.rs" 106 16 106 59] _23 + _27);
+    [#"../02.rs" 106 16 106 59] fib_i <- _23 + _27;
     _23 <- any usize;
     _27 <- any usize;
     goto BB15
@@ -390,15 +414,17 @@ module C02_FibMemo
   }
   BB16 {
     assert { [@expl:assertion] [#"../02.rs" 108 28 108 45] UIntSize.to_int fib_i = fib0 (UIntSize.to_int i) };
-    [#"../02.rs" 109 15 109 18] _35 <- ([#"../02.rs" 109 15 109 18] index0 ([#"../02.rs" 109 12 109 15] mem) ([#"../02.rs" 109 16 109 17] i));
+    [#"../02.rs" 109 15 109 18] _35 <- ([#"../02.rs" 109 15 109 18] index0 mem i);
     goto BB17
   }
   BB17 {
-    [#"../02.rs" 109 12 109 35] _33 <- ([#"../02.rs" 109 12 109 35] set0 ([#"../02.rs" 109 12 109 18] _35) ([#"../02.rs" 109 23 109 34] Core_Option_Option_Type.C_Some ([#"../02.rs" 109 28 109 33] fib_i)));
+    [#"../02.rs" 109 23 109 34] _38 <- Core_Option_Option_Type.C_Some fib_i;
+    [#"../02.rs" 109 12 109 35] _33 <- ([#"../02.rs" 109 12 109 35] set0 _35 _38);
+    _38 <- any Core_Option_Option_Type.t_option usize;
     goto BB18
   }
   BB18 {
-    [#"../02.rs" 110 12 110 17] _0 <- ([#"../02.rs" 110 12 110 17] fib_i);
+    [#"../02.rs" 110 12 110 17] _0 <- fib_i;
     goto BB19
   }
   BB19 {

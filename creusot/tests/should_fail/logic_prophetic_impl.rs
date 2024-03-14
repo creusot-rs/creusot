@@ -7,7 +7,7 @@ trait T {
 }
 
 impl T for () {
-    #[ghost]
+    #[logic(prophetic)]
     fn f() {
         ()
     }

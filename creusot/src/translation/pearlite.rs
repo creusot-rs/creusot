@@ -1,6 +1,6 @@
 // A poorly named module.
 //
-// Entrypoint for translation of all Pearlite specifications and code: #[ghost] / #[logic], contracts, proof_assert!
+// Entrypoint for translation of all Pearlite specifications and code: #[logic], contracts, proof_assert!
 //
 // Transforms THIR into a Term which may be serialized in Creusot metadata files for usage by dependent crates
 // The `lower` module then transforms a `Term` into a WhyML expression.
@@ -15,7 +15,7 @@ use crate::{
     error::{CrErr, CreusotResult, Error},
     projection_vec::{visit_projections, visit_projections_mut, ProjectionVec},
     translation::TranslationCtx,
-    util::{self, is_ghost_ty},
+    util::{self, is_snap_ty},
 };
 use itertools::Itertools;
 use log::*;
@@ -105,7 +105,6 @@ pub enum TermKind<'tcx> {
     Call {
         id: DefId,
         subst: GenericArgsRef<'tcx>,
-        fun: Box<Term<'tcx>>,
         args: Vec<Term<'tcx>>,
     },
     Constructor {
@@ -403,26 +402,30 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Literal { lit, neg } => {
                 let lit = match lit.node {
                     LitKind::Bool(b) => Literal::Bool(b),
-                    LitKind::Int(u, lty) => match lty {
-                        LitIntType::Signed(ity) => {
-                            let val = if neg { (u as i128).wrapping_neg() } else { u as i128 };
-                            Literal::MachSigned(val, int_ty(ity))
-                        }
-                        LitIntType::Unsigned(uty) => Literal::MachUnsigned(u, uint_ty(uty)),
-                        LitIntType::Unsuffixed => match ty.kind() {
-                            TyKind::Int(ity) => {
+                    LitKind::Int(u, lty) => {
+                        let u = u.get();
+                        match lty {
+                            LitIntType::Signed(ity) => {
                                 let val = if neg { (u as i128).wrapping_neg() } else { u as i128 };
-                                Literal::MachSigned(val, *ity)
+                                Literal::MachSigned(val, int_ty(ity))
                             }
-                            TyKind::Uint(uty) => Literal::MachUnsigned(u, *uty),
-                            _ => unreachable!(),
-                        },
-                    },
+                            LitIntType::Unsigned(uty) => Literal::MachUnsigned(u, uint_ty(uty)),
+                            LitIntType::Unsuffixed => match ty.kind() {
+                                TyKind::Int(ity) => {
+                                    let val =
+                                        if neg { (u as i128).wrapping_neg() } else { u as i128 };
+                                    Literal::MachSigned(val, *ity)
+                                }
+                                TyKind::Uint(uty) => Literal::MachUnsigned(u, *uty),
+                                _ => unreachable!(),
+                            },
+                        }
+                    }
                     _ => unimplemented!("Unsupported literal"),
                 };
                 Ok(Term { ty, span, kind: TermKind::Lit(lit) })
             }
-            ExprKind::Call { ty: f_ty, fun, ref args, .. } => {
+            ExprKind::Call { ty: f_ty, ref args, .. } => {
                 use Stub::*;
                 match pearlite_stub(self.ctx.tcx, f_ty) {
                     Some(Forall) => {
@@ -507,7 +510,6 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     }
                     Some(Absurd) => Ok(Term { ty, span, kind: TermKind::Absurd }),
                     None => {
-                        let fun = self.expr_term(fun)?;
                         let args = args
                             .iter()
                             .map(|arg| self.expr_term(*arg))
@@ -518,11 +520,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                             unreachable!("Call on non-function type");
                         };
 
-                        Ok(Term {
-                            ty,
-                            span,
-                            kind: TermKind::Call { id, subst, fun: Box::new(fun), args },
-                        })
+                        Ok(Term { ty, span, kind: TermKind::Call { id, subst, args } })
                     }
                 }
             }
@@ -877,16 +875,16 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 ))
             }
             ExprKind::Deref { arg } => {
-                // Detect * ghost_deref & and treat that as a single 'projection'
-                if self.is_ghost_deref(*arg) {
+                // Detect * snapshot_deref & and treat that as a single 'projection'
+                if self.is_snapshot_deref(*arg) {
                     let ExprKind::Call { args, .. } = &self.thir[*arg].kind else { unreachable!() };
                     let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } = self.thir[args[0]].kind else { unreachable!() };
 
                     let (cur, fin) = self.logical_reborrow_inner(arg)?;
                     let deref_method =
-                        self.ctx.get_diagnostic_item(Symbol::intern("ghost_inner")).unwrap();
-                    // Extract the `T` from `Ghost<T>`
-                    let TyKind::Adt(_, subst) = self.thir[arg].ty.peel_refs().kind() else {unreachable!()};
+                        self.ctx.get_diagnostic_item(Symbol::intern("snapshot_inner")).unwrap();
+                    // Extract the `T` from `Snapshot<T>`
+                    let TyKind::Adt(_, subst) = self.thir[arg].ty.peel_refs().kind() else { unreachable!() };
                     return Ok((
                         Term::call(self.ctx.tcx, deref_method, subst, vec![cur]),
                         Term::call(self.ctx.tcx, deref_method, subst, vec![fin]),
@@ -955,8 +953,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 Ok(res)
             }
             ExprKind::Deref { arg } => {
-                // Detect * ghost_deref & and treat that as a single 'projection'
-                if self.is_ghost_deref(*arg) {
+                // Detect * snapshot_deref & and treat that as a single 'projection'
+                if self.is_snapshot_deref(*arg) {
                     let ExprKind::Call { args, .. } = &self.thir[*arg].kind else { unreachable!() };
                     let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } = self.thir[args[0]].kind else { unreachable!() };
 
@@ -993,7 +991,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         }
     }
 
-    pub(crate) fn is_ghost_deref(&self, expr_id: ExprId) -> bool {
+    pub(crate) fn is_snapshot_deref(&self, expr_id: ExprId) -> bool {
         let ExprKind::Call { ty, .. } = &self.thir[expr_id].kind else { return false };
 
         let TyKind::FnDef(id, sub) = ty.kind() else { panic!("expected function type") };
@@ -1002,7 +1000,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             return false;
         }
 
-        sub[0].as_type().map(|ty| is_ghost_ty(self.ctx.tcx, ty)).unwrap_or(false)
+        sub[0].as_type().map(|ty| is_snap_ty(self.ctx.tcx, ty)).unwrap_or(false)
     }
 
     fn mk_projection(&self, lhs: Term<'tcx>, name: FieldIdx) -> Result<TermKind<'tcx>, Error> {
@@ -1041,16 +1039,10 @@ pub(crate) fn type_invariant_term<'tcx>(
     let inv_fn_ty = ctx.type_of(inv_fn_did).instantiate(ctx.tcx, inv_fn_substs);
     assert!(matches!(inv_fn_ty.kind(), TyKind::FnDef(id, _) if id == &inv_fn_did));
 
-    let fun = Term { ty: inv_fn_ty, span, kind: TermKind::Item(inv_fn_did, inv_fn_substs) };
     Some(Term {
         ty: ctx.fn_sig(inv_fn_did).skip_binder().output().skip_binder(),
         span,
-        kind: TermKind::Call {
-            id: inv_fn_did,
-            subst: inv_fn_substs,
-            fun: Box::new(fun),
-            args: vec![arg],
-        },
+        kind: TermKind::Call { id: inv_fn_did, subst: inv_fn_substs, args: vec![arg] },
     })
 }
 
@@ -1190,8 +1182,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         TermKind::Unary { op: _, arg } => visitor.visit_term(&*arg),
         TermKind::Forall { binder: _, body } => visitor.visit_term(&*body),
         TermKind::Exists { binder: _, body } => visitor.visit_term(&*body),
-        TermKind::Call { id: _, subst: _, fun, args } => {
-            visitor.visit_term(&*fun);
+        TermKind::Call { id: _, subst: _, args } => {
             args.iter().for_each(|a| visitor.visit_term(&*a))
         }
         TermKind::Constructor { typ: _, variant: _, fields } => {
@@ -1245,8 +1236,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         TermKind::Unary { op: _, arg } => visitor.visit_mut_term(&mut *arg),
         TermKind::Forall { binder: _, body } => visitor.visit_mut_term(&mut *body),
         TermKind::Exists { binder: _, body } => visitor.visit_mut_term(&mut *body),
-        TermKind::Call { id: _, subst: _, fun, args } => {
-            visitor.visit_mut_term(&mut *fun);
+        TermKind::Call { id: _, subst: _, args } => {
             args.iter_mut().for_each(|a| visitor.visit_mut_term(&mut *a))
         }
         TermKind::Constructor { typ: _, variant: _, fields } => {
@@ -1300,17 +1290,8 @@ impl<'tcx> Term<'tcx> {
     ) -> Self {
         let ty = tcx.type_of(def_id).instantiate(tcx, subst);
         let result = ty.fn_sig(tcx).skip_binder().output();
-        let fun = Term {
-            ty: tcx.type_of(def_id).instantiate(tcx, subst),
-            kind: TermKind::Item(def_id, subst),
-            span: DUMMY_SP,
-        };
 
-        Term {
-            ty: result,
-            span: DUMMY_SP,
-            kind: TermKind::Call { id: def_id, subst, fun: Box::new(fun.clone()), args },
-        }
+        Term { ty: result, span: DUMMY_SP, kind: TermKind::Call { id: def_id, subst, args } }
     }
 
     pub(crate) fn var(sym: Symbol, ty: Ty<'tcx>) -> Self {
@@ -1358,14 +1339,6 @@ impl<'tcx> Term<'tcx> {
                     span: DUMMY_SP,
                 },
             },
-        }
-    }
-
-    pub(crate) fn item(tcx: TyCtxt<'tcx>, id: DefId, subst: GenericArgsRef<'tcx>) -> Self {
-        Term {
-            ty: tcx.type_of(id).instantiate(tcx, subst),
-            kind: TermKind::Item(id, subst),
-            span: DUMMY_SP,
         }
     }
 
@@ -1514,8 +1487,7 @@ impl<'tcx> Term<'tcx> {
 
                 body.subst_with_inner(&bound, inv_subst);
             }
-            TermKind::Call { fun, args, .. } => {
-                fun.subst_with_inner(bound, inv_subst);
+            TermKind::Call { args, .. } => {
                 args.iter_mut().for_each(|f| f.subst_with_inner(bound, inv_subst))
             }
             TermKind::Constructor { fields, .. } => {
@@ -1593,8 +1565,7 @@ impl<'tcx> Term<'tcx> {
 
                 body.free_vars_inner(&bound, free);
             }
-            TermKind::Call { fun, args, .. } => {
-                fun.free_vars_inner(bound, free);
+            TermKind::Call { args, .. } => {
                 for arg in args {
                     arg.free_vars_inner(bound, free);
                 }
@@ -1677,7 +1648,7 @@ fn print_thir_expr<'tcx>(
         ExprKind::Borrow { borrow_kind, arg } => {
             match borrow_kind {
                 BorrowKind::Shared => write!(fmt, "& ")?,
-                BorrowKind::Shallow => write!(fmt, "&shallow ")?,
+                BorrowKind::Fake => write!(fmt, "&fake ")?,
                 BorrowKind::Mut { .. } => write!(fmt, "&mut ")?,
             };
 

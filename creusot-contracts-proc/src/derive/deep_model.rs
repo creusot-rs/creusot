@@ -47,7 +47,7 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
         impl #impl_generics ::creusot_contracts::DeepModel for #name #ty_generics #where_clause {
             type DeepModelTy = #deep_model_ty_name #ty_generics;
 
-            #[ghost]
+            #[logic]
             #open
             fn deep_model(self) -> Self::DeepModelTy {
                 #eq

@@ -25,7 +25,7 @@ mod macros {
     /// A post-condition of a function or trait item
     pub use base_macros::ensures;
 
-    pub use base_macros::gh;
+    pub use base_macros::snapshot;
 
     /// A loop invariant
     /// The first argument should be a name for the invariant
@@ -37,20 +37,41 @@ mod macros {
     pub use base_macros::law;
 
     /// Declare a function as being a logical function, this declaration must be pure and
-    /// total. It cannot be called from Rust programs as it is *ghost*, in exchange it can
-    /// use logical operations and syntax with the help of the [pearlite] macro.
+    /// total. It cannot be called from Rust programs, but in exchange it can use logical
+    /// operations and syntax with the help of the [`pearlite!`] macro.
+    ///
+    /// # `prophetic`
+    ///
+    /// If you wish to use the `^` operator on mutable borrows to get the final value, you need to
+    /// specify that the function is _prophetic_, like so:
+    /// ```ignore
+    /// #[logic(prophetic)]
+    /// fn uses_prophecies(x: &mut Int) -> Int {
+    ///     pearlite! { if ^x == 0 { 0 } else { 1 } }
+    /// }
+    /// ```
+    /// Such a logic function cannot be used in [`snapshot!`] anymore, and cannot be
+    /// called from a regular [`logic`] or [`predicate`] function.
     pub use base_macros::logic;
-
-    /// Declare a function as being a ghost function, this declaration must be pure and
-    /// total. It cannot be called from Rust programs as it is *ghost*, in exchange it can
-    /// use logical operations and syntax with the help of the [pearlite] macro.
-    /// Unlike functions marked with the `[logic]` attribute, `[ghost]` functions cannot
-    /// use the final value operator (^), nor call other `[predicate]` or `[logic]` functions.
-    pub use base_macros::ghost;
 
     /// Declare a function as being a logical function, this declaration must be pure and
     /// total. It cannot be called from Rust programs as it is *ghost*, in exchange it can
-    /// use logical operations and syntax with the help of the [pearlite] macro.
+    /// use logical operations and syntax with the help of the [`pearlite!`] macro.
+    ///
+    /// It **must** return a boolean.
+    ///
+    /// # `prophetic`
+    ///
+    /// If you wish to use the `^` operator on mutable borrows to get the final value, you need to
+    /// specify that the function is _prophetic_, like so:
+    /// ```ignore
+    /// #[predicate(prophetic)]
+    /// fn uses_prophecies(x: &mut Int) -> bool {
+    ///     pearlite! { ^x == 0 }
+    /// }
+    /// ```
+    /// Such a predicate function cannot be used in [`snapshot!`] anymore, and cannot be
+    /// called from a regular [`logic`] or [`predicate`] function.
     pub use base_macros::predicate;
 
     /// Inserts a *logical* assertion into the code. This assertion will not be checked at runtime
@@ -88,6 +109,10 @@ mod macros {
     /// A body can only be visible in contexts where all the symbols used in the body are also visible.
     /// This means you cannot `#[open]` a body which refers to a `pub(crate)` symbol.
     pub use base_macros::open;
+
+    pub use base_macros::DeepModel;
+
+    pub use base_macros::Resolve;
 }
 
 #[cfg(creusot)]
@@ -103,27 +128,27 @@ pub mod std;
 pub mod num_rational;
 
 #[cfg(creusot)]
-pub mod ghost;
+pub mod snapshot;
 
 #[cfg(not(creusot))]
-pub mod ghost {
-    pub struct Ghost<T>(std::marker::PhantomData<T>)
+pub mod snapshot {
+    pub struct Snapshot<T>(std::marker::PhantomData<T>)
     where
         T: ?Sized;
 
-    impl<T: ?Sized> Ghost<T> {
+    impl<T: ?Sized> Snapshot<T> {
         pub fn from_fn(_: fn() -> T) -> Self {
-            Ghost(std::marker::PhantomData)
+            Snapshot(std::marker::PhantomData)
         }
     }
 
-    impl<T: ?Sized> Clone for Ghost<T> {
+    impl<T: ?Sized> Clone for Snapshot<T> {
         fn clone(&self) -> Self {
-            Ghost(std::marker::PhantomData)
+            Snapshot(std::marker::PhantomData)
         }
     }
 
-    impl<T: ?Sized> Copy for Ghost<T> {}
+    impl<T: ?Sized> Copy for Snapshot<T> {}
 }
 
 pub mod ghost_ptr;
@@ -137,10 +162,10 @@ pub mod well_founded;
 // We add some common things at the root of the creusot-contracts library
 mod base_prelude {
     pub use crate::{
-        ghost::Ghost,
         logic::{IndexLogic as _, Int, OrdLogic, Seq},
         model::{DeepModel, ShallowModel},
         resolve::Resolve,
+        snapshot::Snapshot,
         std::{
             // Shadow std::prelude by our version.
             // For Clone and PartialEq, this is important for the derive macro.
@@ -168,7 +193,7 @@ mod base_prelude {
 pub mod prusti_macros {
     pub use base_macros::{
         invariant, open, pearlite, proof_assert, prusti_ensures as ensures,
-        prusti_ensures_expiry as after_expiry, prusti_ghost as ghost, prusti_law as law,
+        prusti_ensures_expiry as after_expiry, prusti_law as law,
         prusti_logic as logic, prusti_predicate as predicate, prusti_requires as requires, trusted,
         variant,
     };

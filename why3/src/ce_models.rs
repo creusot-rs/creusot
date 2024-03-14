@@ -1,17 +1,18 @@
+#[cfg(feature = "serde")]
 use serde::Deserialize;
 use serde_json::Value as Json;
 use std::fmt::{Debug, Formatter};
 
-#[derive(Deserialize)]
-#[serde(untagged)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(untagged))]
 pub enum Loc {
     Span(Why3Span),
     Other(Json),
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize)]
-#[serde(rename_all = "kebab-case")]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 pub struct Why3Span {
     pub file_name: String,
     pub start_line: u32,
@@ -31,41 +32,47 @@ impl Debug for Loc {
     }
 }
 
-#[derive(Deserialize, Debug)]
-#[serde(untagged)]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(untagged))]
 pub enum Fallible<T> {
     Ok(T),
     Err(Json),
 }
 
-#[derive(Deserialize, Debug)]
-#[serde(untagged)]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(untagged))]
 pub enum Model {
     Model { answer: String, model: Vec<Fallible<Model2>> },
     Unknown(Json),
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub struct Model2 {
     pub filename: String,
     pub model: Vec<Fallible<Model3>>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub struct Model3 {
     pub is_vc_line: bool,
     pub line: String,
     pub model_elements: Vec<Fallible<ModelElem>>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub struct LSymbol {
     pub name: String,
     pub attrs: Vec<String>,
     pub loc: Loc,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub struct ModelElem {
     pub attrs: Vec<String>,
     pub kind: String,
@@ -74,20 +81,21 @@ pub struct ModelElem {
     pub value: Value,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub struct Value {
     pub value_concrete_term: ConcreteTerm,
     pub value_term: Term,
     pub value_type: Type,
 }
 
-#[derive(Deserialize)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum Type {
-    #[serde(rename = "Tyvar")]
+    #[cfg_attr(feature = "serde", serde(rename = "Tyvar"))]
     Var(String),
-    #[serde(rename = "Tyapp")]
+    #[cfg_attr(feature = "serde", serde(rename = "Tyapp"))]
     App { ty_symbol: String, ty_args: Vec<Type> },
-    #[serde(untagged)]
+    #[cfg_attr(feature = "serde", serde(untagged))]
     Unknown(Json),
 }
 
@@ -107,102 +115,107 @@ impl Debug for Type {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub struct VSymbol {
     pub vs_name: String,
     pub vs_type: Type,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum TBool {
-    #[serde(rename = "Ttrue")]
+    #[cfg_attr(feature = "serde", serde(rename = "Ttrue"))]
     True,
-    #[serde(rename = "Tfalse")]
+    #[cfg_attr(feature = "serde", serde(rename = "Tfalse"))]
     False,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum Term {
-    #[serde(rename = "Tvar")]
+    #[cfg_attr(feature = "serde", serde(rename = "Tvar"))]
     Var(VSymbol),
-    #[serde(rename = "Tconst")]
+    #[cfg_attr(feature = "serde", serde(rename = "Tconst"))]
     Const {
-        #[serde(rename = "const_type")]
+        #[cfg_attr(feature = "serde", serde(rename = "const_type"))]
         ty: String,
-        #[serde(rename = "const_value")]
+        #[cfg_attr(feature = "serde", serde(rename = "const_value"))]
         val: String,
     },
-    #[serde(rename = "Tapp")]
+    #[cfg_attr(feature = "serde", serde(rename = "Tapp"))]
     App {
-        #[serde(rename = "app_ls")]
+        #[cfg_attr(feature = "serde", serde(rename = "app_ls"))]
         ls: String,
-        #[serde(rename = "app_args")]
+        #[cfg_attr(feature = "serde", serde(rename = "app_args"))]
         args: Vec<Term>,
     },
-    #[serde(rename = "Tif")]
+    #[cfg_attr(feature = "serde", serde(rename = "Tif"))]
     If {
-        #[serde(rename = "if")]
+        #[cfg_attr(feature = "serde", serde(rename = "if"))]
         ift: Box<Term>,
         then: Box<Term>,
-        #[serde(rename = "else")]
+        #[cfg_attr(feature = "serde", serde(rename = "else"))]
         elset: Box<Term>,
     },
-    #[serde(rename = "Teps")]
+    #[cfg_attr(feature = "serde", serde(rename = "Teps"))]
     Eps {
-        #[serde(rename = "eps_vs")]
+        #[cfg_attr(feature = "serde", serde(rename = "eps_vs"))]
         vs: VSymbol,
-        #[serde(rename = "eps_t")]
+        #[cfg_attr(feature = "serde", serde(rename = "eps_t"))]
         t: Box<Term>,
     },
-    #[serde(rename = "Tfun")]
+    #[cfg_attr(feature = "serde", serde(rename = "Tfun"))]
     Fun {
-        #[serde(rename = "fun_args")]
+        #[cfg_attr(feature = "serde", serde(rename = "fun_args"))]
         args: Vec<VSymbol>,
-        #[serde(rename = "fun_body")]
+        #[cfg_attr(feature = "serde", serde(rename = "fun_body"))]
         body: Box<Term>,
     },
-    #[serde(rename = "Tquant")]
+    #[cfg_attr(feature = "serde", serde(rename = "Tquant"))]
     Quant {
         quant: String,
-        #[serde(rename = "quant_vs")]
+        #[cfg_attr(feature = "serde", serde(rename = "quant_vs"))]
         vs: Vec<VSymbol>,
-        #[serde(rename = "quant_t")]
+        #[cfg_attr(feature = "serde", serde(rename = "quant_t"))]
         t: Box<Term>,
     },
-    #[serde(rename = "Tbinop")]
+    #[cfg_attr(feature = "serde", serde(rename = "Tbinop"))]
     Binop {
         binop: String,
-        #[serde(rename = "binop_t1")]
+        #[cfg_attr(feature = "serde", serde(rename = "binop_t1"))]
         t1: Box<Term>,
-        #[serde(rename = "binop_t2")]
+        #[cfg_attr(feature = "serde", serde(rename = "binop_t2"))]
         t2: Box<Term>,
     },
-    #[serde(rename = "Tnot")]
+    #[cfg_attr(feature = "serde", serde(rename = "Tnot"))]
     Not(Box<Term>),
-    #[serde(rename = "Tlet")]
+    #[cfg_attr(feature = "serde", serde(rename = "Tlet"))]
     Let(String),
-    #[serde(rename = "Tcase")]
+    #[cfg_attr(feature = "serde", serde(rename = "Tcase"))]
     Case(String),
-    #[serde(untagged)]
+    #[cfg_attr(feature = "serde", serde(untagged))]
     Bool(TBool),
-    #[serde(untagged)]
+    #[cfg_attr(feature = "serde", serde(untagged))]
     Unknown(Json),
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub struct BitVector {
     pub bv_value_as_decimal: String,
     pub bv_length: u32,
     pub bv_verbatim: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub struct Real {
     pub real_value: String,
     pub real_verbatim: String,
 }
 
-#[derive(Deserialize)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub struct Integer {
     pub int_value: String,
     pub int_verbatim: String,
@@ -231,28 +244,31 @@ impl Debug for Integer {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum Float {
     Infinity,
-    #[serde(rename = "Plus_zero")]
+    #[cfg_attr(feature = "serde", serde(rename = "Plus_zero"))]
     PlusZero,
-    #[serde(rename = "Minus_zero")]
+    #[cfg_attr(feature = "serde", serde(rename = "Minus_zero"))]
     MinusZero,
-    #[serde(rename = "Float_value")]
+    #[cfg_attr(feature = "serde", serde(rename = "Float_value"))]
     Value {
         float_hex: String,
     },
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub struct FunLitElt {
     pub indice: ConcreteTerm,
     pub value: ConcreteTerm,
 }
 
-#[derive(Deserialize, Debug)]
-#[serde(tag = "type", content = "val")]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "val"))]
 pub enum ConcreteTerm {
     Var(String),
     Boolean(bool),
@@ -261,92 +277,95 @@ pub enum ConcreteTerm {
     Real(Real),
     BitVector(BitVector),
     Fraction {
-        #[serde(rename = "frac_num")]
+        #[cfg_attr(feature = "serde", serde(rename = "frac_num"))]
         num: Real,
-        #[serde(rename = "frac_num")]
+        #[cfg_attr(feature = "serde", serde(rename = "frac_num"))]
         denom: Real,
-        #[serde(rename = "frac_verbatim")]
+        #[cfg_attr(feature = "serde", serde(rename = "frac_verbatim"))]
         verbatim: String,
     },
     Float(Float),
-    #[serde(rename = "Apply")]
+    #[cfg_attr(feature = "serde", serde(rename = "Apply"))]
     App {
-        #[serde(rename = "app_ls")]
+        #[cfg_attr(feature = "serde", serde(rename = "app_ls"))]
         ls: String,
-        #[serde(rename = "app_args")]
+        #[cfg_attr(feature = "serde", serde(rename = "app_args"))]
         args: Vec<ConcreteTerm>,
     },
     If {
-        #[serde(rename = "if")]
+        #[cfg_attr(feature = "serde", serde(rename = "if"))]
         ift: Box<ConcreteTerm>,
         then: Box<ConcreteTerm>,
-        #[serde(rename = "else")]
+        #[cfg_attr(feature = "serde", serde(rename = "else"))]
         elset: Box<ConcreteTerm>,
     },
-    #[serde(rename = "Epsilon")]
+    #[cfg_attr(feature = "serde", serde(rename = "Epsilon"))]
     Eps {
-        #[serde(rename = "eps_var")]
+        #[cfg_attr(feature = "serde", serde(rename = "eps_var"))]
         var: String,
-        #[serde(rename = "eps_t")]
+        #[cfg_attr(feature = "serde", serde(rename = "eps_t"))]
         t: Box<ConcreteTerm>,
     },
-    #[serde(rename = "Function")]
+    #[cfg_attr(feature = "serde", serde(rename = "Function"))]
     Fun {
-        #[serde(rename = "fun_args")]
+        #[cfg_attr(feature = "serde", serde(rename = "fun_args"))]
         args: Vec<String>,
-        #[serde(rename = "fun_body")]
+        #[cfg_attr(feature = "serde", serde(rename = "fun_body"))]
         body: Box<ConcreteTerm>,
     },
     Quant {
         quant: String,
-        #[serde(rename = "quant_vs")]
+        #[cfg_attr(feature = "serde", serde(rename = "quant_vs"))]
         vs: Vec<String>,
-        #[serde(rename = "quant_t")]
+        #[cfg_attr(feature = "serde", serde(rename = "quant_t"))]
         t: Box<ConcreteTerm>,
     },
     Binop {
         binop: String,
-        #[serde(rename = "binop_t1")]
+        #[cfg_attr(feature = "serde", serde(rename = "binop_t1"))]
         t1: Box<ConcreteTerm>,
-        #[serde(rename = "binop_t2")]
+        #[cfg_attr(feature = "serde", serde(rename = "binop_t2"))]
         t2: Box<ConcreteTerm>,
     },
     Not(Box<ConcreteTerm>),
     FunctionLiteral {
-        #[serde(rename = "funliteral_elts")]
+        #[cfg_attr(feature = "serde", serde(rename = "funliteral_elts"))]
         elts: Vec<FunLitElt>,
-        #[serde(rename = "funliteral_others")]
+        #[cfg_attr(feature = "serde", serde(rename = "funliteral_others"))]
         other: Box<ConcreteTerm>,
     },
     Proj {
-        #[serde(rename = "proj_name")]
+        #[cfg_attr(feature = "serde", serde(rename = "proj_name"))]
         name: String,
-        #[serde(rename = "proj_value")]
+        #[cfg_attr(feature = "serde", serde(rename = "proj_value"))]
         value: Box<ConcreteTerm>,
     },
-    #[serde(untagged)]
+    #[cfg_attr(feature = "serde", serde(untagged))]
     Unknown(Json),
 }
 
-#[derive(Deserialize)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub struct Goal {
     pub term: GoalTerm,
-    #[serde(alias = "prover-result")]
+    #[cfg_attr(feature = "serde", serde(alias = "prover-result"))]
     pub prover_result: ProverResult,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub struct GoalTerm {
     pub loc: Loc,
-    #[serde(alias = "goal-name")] //Why3 doesn't currently use kebab-case but this might change
+    #[cfg_attr(feature = "serde", serde(alias = "goal-name"))]
+    //Why3 doesn't currently use kebab-case but this might change
     pub goal_name: String,
     pub explanations: Vec<String>,
 }
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub struct ProverResult {
     pub answer: String,
-    #[serde(rename = "ce-models")]
+    #[cfg_attr(feature = "serde", serde(rename = "ce-models"))]
     pub ce_models: Vec<Model>,
     pub time: f32,
     pub step: i32,

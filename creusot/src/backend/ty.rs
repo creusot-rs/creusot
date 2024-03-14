@@ -15,7 +15,7 @@ use rustc_middle::ty::{
     GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
-use rustc_type_ir::sty::TyKind::*;
+use rustc_type_ir::TyKind::*;
 use std::collections::VecDeque;
 use why3::{
     declaration::{
@@ -82,7 +82,7 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
                 return translate_ty_inner(trans, ctx, names, span, s[0].expect_ty());
             }
 
-            if Some(def.did()) == ctx.tcx.get_diagnostic_item(Symbol::intern("creusot_int")) {
+            if is_int(ctx.tcx, ty) {
                 names.import_prelude_module(PreludeModule::Int);
                 return MlT::Integer;
             }
@@ -156,7 +156,7 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
         Closure(id, subst) => {
             ctx.translate(*id);
 
-            if util::is_ghost(ctx.tcx, *id) {
+            if util::is_logic(ctx.tcx, *id) {
                 return MlT::Tuple(Vec::new());
             }
 
@@ -455,7 +455,7 @@ pub(crate) fn ty_param_names(
     mut def_id: DefId,
 ) -> impl Iterator<Item = Ident> + '_ {
     loop {
-        if tcx.is_closure(def_id) {
+        if tcx.is_closure_or_coroutine(def_id) {
             def_id = tcx.parent(def_id);
         } else {
             break;
@@ -481,7 +481,7 @@ fn field_ty<'tcx>(
     let ty = ctx.try_normalize_erasing_regions(param_env, ty).unwrap_or(ty);
 
     if !validate_field_ty(ctx, did, ty) {
-        ctx.crash_and_error(ctx.def_span(field.did), "Illegal use of the Ghost type")
+        ctx.crash_and_error(ctx.def_span(field.did), "Illegal use of the Snapshot type")
     }
 
     translate_ty_inner(TyTranslation::Declaration(did), ctx, names, ctx.def_span(field.did), ty)
@@ -492,7 +492,7 @@ fn validate_field_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, adt_did: DefId, ty: Ty
     let bg = ctx.binding_group(adt_did);
 
     !ty.walk().filter_map(ty::GenericArg::as_type).any(|ty| {
-        util::is_ghost_ty(tcx, ty)
+        util::is_snap_ty(tcx, ty)
             && ty.walk().filter_map(ty::GenericArg::as_type).any(|ty| match ty.kind() {
                 TyKind::Adt(adt_def, _) => bg.contains(&adt_def.did()),
                 // TyKind::Param(_) => true,
@@ -598,13 +598,13 @@ pub(crate) fn build_accessor(
             let mut exp = Exp::Any(field_ty.clone());
             if ix == variant_ix {
                 pat[field_ix] = Pattern::VarP("a".into());
-                exp = Exp::pure_var("a".into());
+                exp = Exp::var("a");
             };
             (Pattern::ConsP(name.clone(), pat), exp)
         })
         .collect();
 
-    let discr_exp = Exp::Match(Box::new(Exp::pure_var("self".into())), branches);
+    let discr_exp = Exp::Match(Box::new(Exp::var("self")), branches);
 
     Decl::Let(LetDecl {
         sig,
@@ -764,6 +764,14 @@ pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(
             names.import_prelude_module(PreludeModule::Float64);
             double_ty()
         }
+    }
+}
+
+pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
+    if let TyKind::Adt(def, _) = ty.kind() {
+        Some(def.did()) == tcx.get_diagnostic_item(Symbol::intern("creusot_int"))
+    } else {
+        false
     }
 }
 

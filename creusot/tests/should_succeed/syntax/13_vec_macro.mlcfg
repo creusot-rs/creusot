@@ -17,12 +17,18 @@ module Core_Ptr_Unique_Unique_Type
     | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
-module Alloc_RawVec_RawVec_Type
+module Alloc_RawVec_Cap_Type
   use prelude.UIntSize
   use prelude.Int
+  type t_cap  =
+    | C_Cap usize
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
   use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
   type t_rawvec 't 'a =
-    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
     
 end
 module Alloc_Vec_Vec_Type
@@ -95,7 +101,8 @@ module C13VecMacro_X
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self}
     ensures { result = shallow_model1 self }
     
-  axiom shallow_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv4 (shallow_model1 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max0)
+  axiom shallow_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv4 (shallow_model1 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max0)
   predicate invariant3 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv4 (shallow_model1 self)
   val invariant3 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) : bool
@@ -133,7 +140,8 @@ module C13VecMacro_X
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self}
     ensures { result = shallow_model0 self }
     
-  axiom shallow_model0_spec : forall self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv1 (shallow_model0 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model0 self) <= UIntSize.to_int max0)
+  axiom shallow_model0_spec : forall self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv1 (shallow_model0 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model0 self) <= UIntSize.to_int max0)
   predicate invariant0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv1 (shallow_model0 self)
   val invariant0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : bool
@@ -146,7 +154,8 @@ module C13VecMacro_X
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv6 self}
     ensures { result = shallow_model4 self }
     
-  axiom shallow_model4_spec : forall self : slice int32 . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv6 self) -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv4 (shallow_model4 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model4 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model4 self) <= UIntSize.to_int max0)
+  axiom shallow_model4_spec : forall self : slice int32 . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv6 self)
+   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv4 (shallow_model4 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model4 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model4 self) <= UIntSize.to_int max0)
   function shallow_model3 (self : slice int32) : Seq.seq int32 =
     [#"../../../../../creusot-contracts/src/std/boxed.rs" 20 8 20 31] shallow_model4 self
   val shallow_model3 (self : slice int32) : Seq.seq int32
@@ -158,7 +167,7 @@ module C13VecMacro_X
     ensures { inv3 result }
     
   predicate resolve3 (self : int32) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 47 8 47 12] true
+    [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
   val resolve3 (self : int32) : bool
     ensures { result = resolve3 self }
     
@@ -171,18 +180,20 @@ module C13VecMacro_X
     ensures { result = index_logic1 self ix }
     
   predicate resolve1 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model1 self) -> resolve3 (index_logic1 self i)
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model1 self)
+     -> resolve3 (index_logic1 self i)
   val resolve1 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve1 self }
     
   val from_elem0 (elem : int32) (n : usize) : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)
     requires {inv2 elem}
     ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 157 22 157 41] Seq.length (shallow_model1 result) = UIntSize.to_int n }
-    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 158 12 158 78] forall i : int . 0 <= i /\ i < UIntSize.to_int n -> index_logic1 result i = elem }
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 158 12 158 78] forall i : int . 0 <= i /\ i < UIntSize.to_int n
+     -> index_logic1 result i = elem }
     ensures { inv3 result }
     
   predicate resolve2 (self : uint32) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 47 8 47 12] true
+    [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
   val resolve2 (self : uint32) : bool
     ensures { result = resolve2 self }
     
@@ -195,7 +206,8 @@ module C13VecMacro_X
     ensures { result = index_logic0 self ix }
     
   predicate resolve0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model0 self) -> resolve2 (index_logic0 self i)
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model0 self)
+     -> resolve2 (index_logic0 self i)
   val resolve0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve0 self }
     
@@ -209,11 +221,12 @@ module C13VecMacro_X
   var v0 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global);
   var v1 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var v2 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _10 : array int32;
   {
     goto BB0
   }
   BB0 {
-    [#"../../../../../creusot-contracts/src/lib.rs" 193 8 193 30] v0 <- ([#"../13_vec_macro.rs" 6 23 6 29] new0 ());
+    [#"../13_vec_macro.rs" 6 23 6 29] v0 <- ([#"../13_vec_macro.rs" 6 23 6 29] new0 ([#"../../../../../creusot-contracts/src/lib.rs" 290 8 290 30] ()));
     goto BB1
   }
   BB1 {
@@ -222,7 +235,7 @@ module C13VecMacro_X
     goto BB2
   }
   BB2 {
-    [#"../../../../../creusot-contracts/src/lib.rs" 196 8 196 40] v1 <- ([#"../13_vec_macro.rs" 9 13 9 23] from_elem0 ([#"../13_vec_macro.rs" 9 18 9 19] [#"../13_vec_macro.rs" 9 18 9 19] (0 : int32)) ([#"../13_vec_macro.rs" 9 21 9 22] [#"../13_vec_macro.rs" 9 21 9 22] (2 : usize)));
+    [#"../13_vec_macro.rs" 9 13 9 23] v1 <- ([#"../13_vec_macro.rs" 9 13 9 23] from_elem0 ([#"../13_vec_macro.rs" 9 18 9 19] (0 : int32)) ([#"../13_vec_macro.rs" 9 21 9 22] (2 : usize)));
     goto BB3
   }
   BB3 {
@@ -231,13 +244,15 @@ module C13VecMacro_X
     goto BB4
   }
   BB4 {
+    [#"../../../../../creusot-contracts/src/lib.rs" 296 47 296 56] _10 <- (let __arr_temp = any array int32 in assume {Seq.get (__arr_temp.elts) 0 = ([#"../13_vec_macro.rs" 12 18 12 19] (1 : int32))}; assume {Seq.get (__arr_temp.elts) 1 = ([#"../13_vec_macro.rs" 12 21 12 22] (2 : int32))}; assume {Seq.get (__arr_temp.elts) 2 = ([#"../13_vec_macro.rs" 12 24 12 25] (3 : int32))}; assume {Slice.length __arr_temp = 3}; __arr_temp);
     goto BB5
   }
   BB5 {
     goto BB6
   }
   BB6 {
-    [#"../../../../../creusot-contracts/src/lib.rs" 199 8 199 58] v2 <- ([#"../13_vec_macro.rs" 12 13 12 26] into_vec0 ([#"../../../../../creusot-contracts/src/lib.rs" 199 47 199 56] let __arr_temp = any array int32 in assume {Seq.get (__arr_temp.elts) 0 = ([#"../13_vec_macro.rs" 12 18 12 19] [#"../13_vec_macro.rs" 12 18 12 19] (1 : int32))}; assume {Seq.get (__arr_temp.elts) 1 = ([#"../13_vec_macro.rs" 12 21 12 22] [#"../13_vec_macro.rs" 12 21 12 22] (2 : int32))}; assume {Seq.get (__arr_temp.elts) 2 = ([#"../13_vec_macro.rs" 12 24 12 25] [#"../13_vec_macro.rs" 12 24 12 25] (3 : int32))}; assume {Slice.length __arr_temp = 3}; __arr_temp));
+    [#"../13_vec_macro.rs" 12 13 12 26] v2 <- ([#"../13_vec_macro.rs" 12 13 12 26] into_vec0 _10);
+    _10 <- any array int32;
     goto BB7
   }
   BB7 {

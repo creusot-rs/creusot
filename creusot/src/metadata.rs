@@ -154,7 +154,7 @@ pub(crate) fn dump_exports(ctx: &TranslationCtx, out: &Option<String>) {
     debug!("dump_exports={:?}", out_filename);
 
     dump_binary_metadata(ctx.tcx, &out_filename, ctx.metadata()).unwrap_or_else(|err| {
-        panic!("could not save metadata path=`{:?}` error={}", out_filename, err)
+        panic!("could not save metadata path=`{:?}` error={}", out_filename, err.1)
     });
 }
 
@@ -162,7 +162,7 @@ fn dump_binary_metadata<'tcx>(
     tcx: TyCtxt<'tcx>,
     path: &Path,
     dep_info: BinaryMetadata<'tcx>,
-) -> Result<(), std::io::Error> {
+) -> Result<(), (PathBuf, std::io::Error)> {
     encode_metadata(tcx, path, dep_info)
 }
 

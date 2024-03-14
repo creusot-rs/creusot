@@ -2,11 +2,11 @@ extern crate creusot_contracts;
 
 use creusot_contracts::{logic::Seq, *};
 
-pub struct Vec<T>(std::vec::Vec<T>);
+pub struct Vec<T>(pub std::vec::Vec<T>);
 impl<T> ShallowModel for Vec<T> {
     type ShallowModelTy = Seq<T>;
     #[open]
-    #[ghost]
+    #[logic]
     #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
         absurd

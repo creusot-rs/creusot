@@ -30,15 +30,13 @@ module IncSome2List_Impl0_LemmaSumNonneg_Impl
   val sum0 [#"../inc_some_2_list.rs" 21 4 21 23] (self : IncSome2List_List_Type.t_list) : int
     ensures { result = sum0 self }
     
-  let rec ghost function lemma_sum_nonneg [#"../inc_some_2_list.rs" 34 4 34 30] (self : IncSome2List_List_Type.t_list) : ()
-    ensures { [#"../inc_some_2_list.rs" 33 14 33 29] sum0 self >= 0 }
-    variant {[#"../inc_some_2_list.rs" 32 15 32 19] self}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../inc_some_2_list.rs" 35 8 38 9] match self with
-      | IncSome2List_List_Type.C_Cons _ l -> lemma_sum_nonneg l
-      | IncSome2List_List_Type.C_Nil -> ()
-      end
+  constant self  : IncSome2List_List_Type.t_list
+  function lemma_sum_nonneg [#"../inc_some_2_list.rs" 34 4 34 30] (self : IncSome2List_List_Type.t_list) : ()
+  goal vc_lemma_sum_nonneg : match self with
+    | IncSome2List_List_Type.C_Cons _ l -> ([#"../inc_some_2_list.rs" 33 14 33 29] sum0 l >= 0)
+     -> ([#"../inc_some_2_list.rs" 33 14 33 29] sum0 self >= 0)
+    | IncSome2List_List_Type.C_Nil -> [#"../inc_some_2_list.rs" 33 14 33 29] sum0 self >= 0
+    end
 end
 module IncSome2List_Impl0_SumX
   use prelude.UInt32
@@ -77,7 +75,7 @@ module IncSome2List_Impl0_SumX
     goto BB4
   }
   BB2 {
-    [#"../inc_some_2_list.rs" 46 19 46 20] _0 <- ([#"../inc_some_2_list.rs" 46 19 46 20] [#"../inc_some_2_list.rs" 46 19 46 20] (0 : uint32));
+    [#"../inc_some_2_list.rs" 46 19 46 20] _0 <- ([#"../inc_some_2_list.rs" 46 19 46 20] (0 : uint32));
     goto BB6
   }
   BB3 {
@@ -85,13 +83,13 @@ module IncSome2List_Impl0_SumX
     absurd
   }
   BB4 {
-    [#"../inc_some_2_list.rs" 45 17 45 18] a <- ([#"../inc_some_2_list.rs" 45 17 45 18] IncSome2List_List_Type.cons_0 self);
-    [#"../inc_some_2_list.rs" 45 20 45 21] l <- ([#"../inc_some_2_list.rs" 45 20 45 21] IncSome2List_List_Type.cons_1 self);
-    [#"../inc_some_2_list.rs" 45 31 45 40] _8 <- ([#"../inc_some_2_list.rs" 45 31 45 40] sum_x ([#"../inc_some_2_list.rs" 45 31 45 32] l));
+    [#"../inc_some_2_list.rs" 45 17 45 18] a <- IncSome2List_List_Type.cons_0 self;
+    [#"../inc_some_2_list.rs" 45 20 45 21] l <- IncSome2List_List_Type.cons_1 self;
+    [#"../inc_some_2_list.rs" 45 31 45 40] _8 <- ([#"../inc_some_2_list.rs" 45 31 45 40] sum_x l);
     goto BB5
   }
   BB5 {
-    [#"../inc_some_2_list.rs" 45 26 45 40] _0 <- ([#"../inc_some_2_list.rs" 45 26 45 40] ([#"../inc_some_2_list.rs" 45 26 45 28] a) + _8);
+    [#"../inc_some_2_list.rs" 45 26 45 40] _0 <- a + _8;
     _8 <- any uint32;
     goto BB6
   }
@@ -120,7 +118,7 @@ module IncSome2List_Impl0_TakeSomeRest
   val sum0 [#"../inc_some_2_list.rs" 21 4 21 23] (self : IncSome2List_List_Type.t_list) : int
     ensures { result = sum0 self }
     
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate resolve2 (self : borrowed (IncSome2List_List_Type.t_list)) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
   val resolve2 (self : borrowed (IncSome2List_List_Type.t_list)) : bool
@@ -137,7 +135,7 @@ module IncSome2List_Impl0_TakeSomeRest
     ensures { result = resolve0 self }
     
   val random0 [#"../inc_some_2_list.rs" 15 0 15 19] (_1 : ()) : bool
-  use prelude.Ghost
+  use prelude.Snapshot
   function lemma_sum_nonneg0 [#"../inc_some_2_list.rs" 34 4 34 30] (self : IncSome2List_List_Type.t_list) : ()
   axiom lemma_sum_nonneg0_def : forall self : IncSome2List_List_Type.t_list . lemma_sum_nonneg0 self = ([#"../inc_some_2_list.rs" 35 8 38 9] match self with
     | IncSome2List_List_Type.C_Cons _ l -> lemma_sum_nonneg0 l
@@ -157,7 +155,7 @@ module IncSome2List_Impl0_TakeSomeRest
   var self : borrowed (IncSome2List_List_Type.t_list) = self;
   var ma : borrowed uint32;
   var ml : borrowed (IncSome2List_List_Type.t_list);
-  var _8 : Ghost.ghost_ty ();
+  var _8 : Snapshot.snap_ty ();
   var _10 : bool;
   var _11 : borrowed uint32;
   var _12 : borrowed (IncSome2List_List_Type.t_list);
@@ -188,11 +186,11 @@ module IncSome2List_Impl0_TakeSomeRest
     [#"../inc_some_2_list.rs" 56 17 56 19] self <- { self with current = (let IncSome2List_List_Type.C_Cons x0 x1 =  * self in IncSome2List_List_Type.C_Cons ( ^ ma) x1) ; };
     [#"../inc_some_2_list.rs" 56 21 56 23] ml <- Borrow.borrow_final (IncSome2List_List_Type.cons_1 ( * self)) (Borrow.inherit_id (Borrow.get_id self) 2);
     [#"../inc_some_2_list.rs" 56 21 56 23] self <- { self with current = (let IncSome2List_List_Type.C_Cons x0 x1 =  * self in IncSome2List_List_Type.C_Cons x0 ( ^ ml)) ; };
-    [#"../inc_some_2_list.rs" 57 16 57 45] _8 <- ([#"../inc_some_2_list.rs" 57 16 57 45] Ghost.new (lemma_sum_nonneg0 ( * ml)));
+    [#"../inc_some_2_list.rs" 57 16 57 51] _8 <- ([#"../inc_some_2_list.rs" 57 16 57 51] Snapshot.new (lemma_sum_nonneg0 ( * ml)));
     goto BB5
   }
   BB5 {
-    [#"../inc_some_2_list.rs" 58 19 58 27] _10 <- ([#"../inc_some_2_list.rs" 58 19 58 27] random0 ());
+    [#"../inc_some_2_list.rs" 58 19 58 27] _10 <- ([#"../inc_some_2_list.rs" 58 19 58 27] random0 ([#"../inc_some_2_list.rs" 58 19 58 27] ()));
     goto BB6
   }
   BB6 {
@@ -206,7 +204,7 @@ module IncSome2List_Impl0_TakeSomeRest
     [#"../inc_some_2_list.rs" 59 21 59 23] ma <- { ma with current = ( ^ _11) ; };
     [#"../inc_some_2_list.rs" 59 25 59 27] _12 <- Borrow.borrow_mut ( * ml);
     [#"../inc_some_2_list.rs" 59 25 59 27] ml <- { ml with current = ( ^ _12) ; };
-    [#"../inc_some_2_list.rs" 59 20 59 28] _0 <- ([#"../inc_some_2_list.rs" 59 20 59 28] (_11, _12));
+    [#"../inc_some_2_list.rs" 59 20 59 28] _0 <- (_11, _12);
     _11 <- any borrowed uint32;
     _12 <- any borrowed (IncSome2List_List_Type.t_list);
     goto BB10
@@ -296,7 +294,10 @@ module IncSome2List_IncSome2List
   var mb : borrowed uint32;
   var _12 : (borrowed uint32, borrowed (IncSome2List_List_Type.t_list));
   var _13 : borrowed (IncSome2List_List_Type.t_list);
+  var _17 : bool;
   var _18 : uint32;
+  var _20 : uint32;
+  var _21 : uint32;
   {
     goto BB0
   }
@@ -304,7 +305,7 @@ module IncSome2List_IncSome2List
     goto BB1
   }
   BB1 {
-    [#"../inc_some_2_list.rs" 71 15 71 24] sum0 <- ([#"../inc_some_2_list.rs" 71 15 71 24] sum_x0 ([#"../inc_some_2_list.rs" 71 15 71 16] l));
+    [#"../inc_some_2_list.rs" 71 15 71 24] sum0 <- ([#"../inc_some_2_list.rs" 71 15 71 24] sum_x0 l);
     goto BB2
   }
   BB2 {
@@ -315,10 +316,10 @@ module IncSome2List_IncSome2List
     goto BB3
   }
   BB3 {
-    [#"../inc_some_2_list.rs" 72 9 72 11] ma <- ([#"../inc_some_2_list.rs" 72 9 72 11] let (a, _) = _9 in a);
-    [#"../inc_some_2_list.rs" 72 9 72 11] _9 <- (let (x0, x1) = _9 in (any borrowed uint32, x1));
-    [#"../inc_some_2_list.rs" 72 13 72 15] ml <- ([#"../inc_some_2_list.rs" 72 13 72 15] let (_, a) = _9 in a);
-    [#"../inc_some_2_list.rs" 72 13 72 15] _9 <- (let (x0, x1) = _9 in (x0, any borrowed (IncSome2List_List_Type.t_list)));
+    [#"../inc_some_2_list.rs" 72 9 72 11] ma <- (let (a, _) = _9 in a);
+    _9 <- (let (x0, x1) = _9 in (any borrowed uint32, x1));
+    [#"../inc_some_2_list.rs" 72 13 72 15] ml <- (let (_, a) = _9 in a);
+    _9 <- (let (x0, x1) = _9 in (x0, any borrowed (IncSome2List_List_Type.t_list)));
     assume { resolve0 _9 };
     [#"../inc_some_2_list.rs" 73 18 73 20] _13 <- Borrow.borrow_final ( * ml) (Borrow.get_id ml);
     [#"../inc_some_2_list.rs" 73 18 73 20] ml <- { ml with current = ( ^ _13) ; };
@@ -327,19 +328,25 @@ module IncSome2List_IncSome2List
     goto BB4
   }
   BB4 {
-    [#"../inc_some_2_list.rs" 73 9 73 11] mb <- ([#"../inc_some_2_list.rs" 73 9 73 11] let (a, _) = _12 in a);
-    [#"../inc_some_2_list.rs" 73 9 73 11] _12 <- (let (x0, x1) = _12 in (any borrowed uint32, x1));
+    [#"../inc_some_2_list.rs" 73 9 73 11] mb <- (let (a, _) = _12 in a);
+    _12 <- (let (x0, x1) = _12 in (any borrowed uint32, x1));
     assume { resolve0 _12 };
-    [#"../inc_some_2_list.rs" 74 4 74 12] ma <- { ma with current = ([#"../inc_some_2_list.rs" 74 4 74 12]  * ma + ([#"../inc_some_2_list.rs" 74 11 74 12] j)) ; };
+    [#"../inc_some_2_list.rs" 74 4 74 12] ma <- { ma with current = ( * ma + j) ; };
     assume { resolve1 ma };
-    [#"../inc_some_2_list.rs" 75 4 75 12] mb <- { mb with current = ([#"../inc_some_2_list.rs" 75 4 75 12]  * mb + ([#"../inc_some_2_list.rs" 75 11 75 12] k)) ; };
+    [#"../inc_some_2_list.rs" 75 4 75 12] mb <- { mb with current = ( * mb + k) ; };
     assume { resolve1 mb };
     assume { resolve2 ml };
-    [#"../inc_some_2_list.rs" 76 12 76 21] _18 <- ([#"../inc_some_2_list.rs" 76 12 76 21] sum_x0 ([#"../inc_some_2_list.rs" 76 12 76 13] l));
+    [#"../inc_some_2_list.rs" 76 12 76 21] _18 <- ([#"../inc_some_2_list.rs" 76 12 76 21] sum_x0 l);
     goto BB5
   }
   BB5 {
-    switch ([#"../inc_some_2_list.rs" 76 12 76 37] _18 = ([#"../inc_some_2_list.rs" 76 25 76 37] ([#"../inc_some_2_list.rs" 76 25 76 33] ([#"../inc_some_2_list.rs" 76 25 76 29] sum0) + ([#"../inc_some_2_list.rs" 76 32 76 33] j)) + ([#"../inc_some_2_list.rs" 76 36 76 37] k)))
+    [#"../inc_some_2_list.rs" 76 25 76 33] _21 <- sum0 + j;
+    [#"../inc_some_2_list.rs" 76 25 76 37] _20 <- _21 + k;
+    _21 <- any uint32;
+    [#"../inc_some_2_list.rs" 76 12 76 37] _17 <- _18 = _20;
+    _18 <- any uint32;
+    _20 <- any uint32;
+    switch (_17)
       | False -> goto BB7
       | True -> goto BB6
       end

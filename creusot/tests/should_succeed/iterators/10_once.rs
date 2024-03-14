@@ -11,7 +11,7 @@ impl<T> Iterator for Once<T> {
     type Item = T;
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { *self == Once(None) && self.resolve() }
     }

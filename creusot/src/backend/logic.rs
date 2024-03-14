@@ -1,7 +1,10 @@
 use std::borrow::Cow;
 
 use crate::{
-    backend::all_generic_decls_for, ctx::*, translation::pearlite::Term, util, util::get_builtin,
+    backend::all_generic_decls_for,
+    ctx::*,
+    translation::pearlite::Term,
+    util::{self, get_builtin},
 };
 use rustc_hir::def_id::DefId;
 use why3::{
@@ -10,29 +13,29 @@ use why3::{
     Ident, QName,
 };
 
-use super::{
-    signature::signature_of,
-    term::{lower_impure, lower_pure},
-    CloneSummary, Why3Generator,
-};
+mod vcgen;
+
+use self::vcgen::vc;
+
+use super::{signature::signature_of, term::lower_pure, CloneSummary, Why3Generator};
 
 pub(crate) fn binders_to_args(
     ctx: &mut Why3Generator,
     binders: Vec<Binder>,
-) -> (Vec<why3::Exp>, Vec<Binder>) {
+) -> (Vec<Ident>, Vec<Binder>) {
     let mut args = Vec::new();
     let mut out_binders = Vec::new();
     let mut fresh = 0;
     for b in binders {
         match b {
             Binder::Wild => {
-                args.push(Exp::pure_var(format!("_wild{fresh}").into()));
+                args.push(format!("_wild{fresh}").into());
                 out_binders.push(Binder::Named(format!("_wild{fresh}").into()));
                 fresh += 1;
             }
             Binder::UnNamed(_) => unreachable!("unnamed parameter in logical function signature"),
             Binder::Named(ref nm) => {
-                args.push(Exp::pure_var(nm.clone()));
+                args.push(nm.clone().into());
                 out_binders.push(b);
             }
             Binder::Typed(ghost, binders, ty) => {
@@ -78,8 +81,10 @@ fn builtin_body<'tcx>(
 
     // Program symbol (for proofs)
     let mut val_sig = sig.clone();
-    val_sig.contract.ensures = vec![Exp::pure_var("result".into())
-        .eq(Exp::pure_var(val_sig.name.clone()).app(val_args.clone()))];
+
+    let val_args: Vec<_> = val_args.into_iter().map(|id| Exp::var(id)).collect();
+    val_sig.contract.ensures =
+        vec![Exp::var("result").eq(Exp::var(val_sig.name.clone()).app(val_args.clone()))];
 
     if util::is_predicate(ctx.tcx, def_id) {
         sig.retty = None;
@@ -96,7 +101,7 @@ fn builtin_body<'tcx>(
 
     decls.extend(clones);
     if !builtin.module.is_empty() {
-        let body = Exp::pure_qvar(builtin.without_search_path()).app(val_args);
+        let body = Exp::qvar(builtin.without_search_path()).app(val_args);
 
         if util::is_predicate(ctx.tcx, def_id) {
             decls.push(Decl::PredDecl(Predicate { sig, body }));
@@ -122,10 +127,12 @@ pub(crate) fn val_decl<'tcx, N: Namer<'tcx>>(
     sig.contract.variant = Vec::new();
 
     let (val_args, val_binders) = binders_to_args(ctx, sig.args);
+    let val_args: Vec<_> = val_args.into_iter().map(|id| Exp::var(id)).collect();
+
     sig.contract
         .ensures
         // = vec!(Exp::pure_var("result".into()).eq(Exp::pure_var(sig.name.clone()).app(val_args)));
-        .push(Exp::pure_var("result".into()).eq(Exp::pure_var(sig.name.clone()).app(val_args)));
+        .push(Exp::var("result").eq(Exp::var(sig.name.clone()).app(val_args)));
     sig.args = val_binders;
     Decl::ValDecl(ValDecl { sig, ghost: false, val: true, kind: None })
 }
@@ -248,10 +255,12 @@ pub fn sigs<'tcx>(ctx: &mut Why3Generator<'tcx>, mut sig: Signature) -> (Signatu
     contract.variant = Vec::new();
     prog_sig.contract = contract;
     let (val_args, val_binders) = binders_to_args(ctx, prog_sig.args);
+    let val_args: Vec<_> = val_args.into_iter().map(|id| Exp::var(id)).collect();
+
     prog_sig.args = val_binders;
 
     prog_sig.contract.ensures =
-        vec![Exp::pure_var("result".into()).eq(Exp::pure_var(sig.name.clone()).app(val_args))];
+        vec![Exp::var("result").eq(Exp::var(sig.name.clone()).app(val_args))];
 
     (sig, prog_sig)
 }
@@ -272,8 +281,8 @@ fn subst_qname(body: &mut Exp, name: &Ident, lim_name: &Ident) {
     impl<'a> ExpMutVisitor for QNameSubst<'a> {
         fn visit_mut(&mut self, exp: &mut Exp) {
             match exp {
-                Exp::QVar(qname, _) if qname.module.is_empty() && &qname.name == self.0 => {
-                    *exp = Exp::pure_var(self.1.clone())
+                Exp::QVar(qname) if qname.module.is_empty() && &qname.name == self.0 => {
+                    *exp = Exp::var(self.1.clone())
                 }
                 _ => super_visit_mut(self, exp),
             }
@@ -326,23 +335,52 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
         return None;
     }
     let term = ctx.term(def_id).unwrap().clone();
-    let body = lower_impure(ctx, &mut names, &term);
+
+    let mut body_decls = Vec::new();
+
+    let (arg_names, new_binders) = binders_to_args(ctx, sig.args);
+
+    let param_decls = arg_names.iter().zip(new_binders.iter()).map(|(nm, binder)| {
+        Decl::ValDecl(ValDecl {
+            ghost: false,
+            val: false,
+            kind: Some(LetKind::Constant),
+            sig: Signature {
+                name: nm.clone(),
+                trigger: None,
+                attrs: Vec::new(),
+                retty: binder.type_of().cloned(),
+                args: Vec::new(),
+                contract: Default::default(),
+            },
+        })
+    });
+    body_decls.extend(param_decls);
+    sig.args = new_binders;
+
+    let mut val_sig = sig.clone();
+    val_sig.contract = Default::default();
+    body_decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(val_sig)));
+
+    let postcondition = sig.contract.ensures_conj();
+    let body = vc(ctx, &mut names, def_id, term, "result".into(), postcondition.clone());
+
+    let body = match body {
+        Ok(body) => body,
+        Err(e) => ctx.fatal_error(e.span(), &format!("{e:?}")).emit(),
+    };
+
+    let body = sig.contract.requires.into_iter().fold(body, |acc, pre| pre.implies(acc));
+
+    body_decls
+        .extend([Decl::Goal(Goal { name: format!("vc_{}", (&*sig.name)).into(), goal: body })]);
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
+
     let (clones, _) = names.to_clones(ctx, CloneDepth::Deep);
     decls.extend(clones);
-
-    let kind = match util::item_type(ctx.tcx, def_id) {
-        ItemType::Predicate => {
-            sig.retty = None;
-            Some(LetKind::Predicate)
-        }
-        ItemType::Ghost | ItemType::Logic => Some(LetKind::Function),
-        _ => unreachable!(),
-    };
-
-    decls.push(Decl::Let(LetDecl { sig, rec: true, ghost: true, body, kind }));
+    decls.extend(body_decls);
 
     let name = impl_name(ctx, def_id);
     Some(Module { name, decls })
@@ -382,13 +420,13 @@ fn function_call(sig: &Signature) -> Exp {
         .cloned()
         .flat_map(|b| b.var_type_pairs())
         .filter(|arg| &*arg.0 != "_")
-        .map(|arg| Exp::pure_var(arg.0))
+        .map(|arg| Exp::var(arg.0))
         .collect();
     if args.is_empty() {
         args = vec![Exp::Tuple(vec![])];
     }
 
-    Exp::pure_var(sig.name.clone()).app(args)
+    Exp::var(sig.name.clone()).app(args)
 }
 
 fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {

@@ -18,13 +18,13 @@ where
     type Item = (usize, I::Item);
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.iter.completed() }
     }
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited.len() == o.count@ - self.count@
@@ -67,7 +67,7 @@ where
     I: Iterator,
 {
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn invariant(self) -> bool {
         pearlite! {
             (forall<s: Seq<I::Item>, i: I> self.iter.produces(s, i) ==> self.count@ + s.len() < std::usize::MAX@)

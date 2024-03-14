@@ -3,7 +3,7 @@ use crate::{std::iter::Once, *};
 impl<T> ShallowModel for Once<T> {
     type ShallowModelTy = Option<T>;
 
-    #[ghost]
+    #[logic]
     #[trusted]
     #[open(self)]
     fn shallow_model(self) -> Option<T> {
@@ -13,7 +13,7 @@ impl<T> ShallowModel for Once<T> {
 
 impl<T> Iterator for Once<T> {
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && self.resolve() }
     }

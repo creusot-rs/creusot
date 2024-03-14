@@ -2,24 +2,24 @@
 module C12GhostCode_GhostArg
   use prelude.UInt32
   use prelude.Int
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
-  let rec cfg ghost_arg [#"../12_ghost_code.rs" 4 0 4 31] [@cfg:stackify] [@cfg:subregion_analysis] (g : Ghost.ghost_ty uint32) : ()
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
+  let rec cfg ghost_arg [#"../12_ghost_code.rs" 4 0 4 34] [@cfg:stackify] [@cfg:subregion_analysis] (g : Snapshot.snap_ty uint32) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var g : Ghost.ghost_ty uint32 = g;
-  var _x : Ghost.ghost_ty uint32;
+  var g : Snapshot.snap_ty uint32 = g;
+  var _x : Snapshot.snap_ty uint32;
   {
     goto BB0
   }
   BB0 {
-    [#"../12_ghost_code.rs" 5 25 5 35] _x <- ([#"../12_ghost_code.rs" 5 25 5 35] Ghost.new (Ghost.inner g));
+    [#"../12_ghost_code.rs" 5 28 5 44] _x <- ([#"../12_ghost_code.rs" 5 28 5 44] Snapshot.new (Snapshot.inner g));
     goto BB1
   }
   BB1 {
-    [#"../12_ghost_code.rs" 4 32 6 1] _0 <- ([#"../12_ghost_code.rs" 4 32 6 1] ());
+    [#"../12_ghost_code.rs" 4 35 6 1] _0 <- ([#"../12_ghost_code.rs" 4 35 6 1] ());
     return _0
   }
   
@@ -42,12 +42,18 @@ module Core_Ptr_Unique_Unique_Type
     | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
-module Alloc_RawVec_RawVec_Type
+module Alloc_RawVec_Cap_Type
   use prelude.UIntSize
   use prelude.Int
+  type t_cap  =
+    | C_Cap usize
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
   use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
   type t_rawvec 't 'a =
-    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
     
 end
 module Alloc_Vec_Vec_Type
@@ -93,15 +99,16 @@ module C12GhostCode_GhostVec
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self}
     ensures { result = shallow_model0 self }
     
-  axiom shallow_model0_spec : forall self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv1 (shallow_model0 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model0 self) <= UIntSize.to_int max0)
+  axiom shallow_model0_spec : forall self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv1 (shallow_model0 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model0 self) <= UIntSize.to_int max0)
   predicate invariant0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv1 (shallow_model0 self)
   val invariant0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = invariant0 self }
     
   axiom inv0 : forall x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . inv0 x = true
-  use prelude.Ghost
-  use prelude.Ghost
+  use prelude.Snapshot
+  use prelude.Snapshot
   predicate resolve1 (self : uint32) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 47 8 47 12] true
   val resolve1 (self : uint32) : bool
@@ -116,7 +123,8 @@ module C12GhostCode_GhostVec
     ensures { result = index_logic0 self ix }
     
   predicate resolve0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model0 self) -> resolve1 (index_logic0 self i)
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model0 self)
+     -> resolve1 (index_logic0 self i)
   val resolve0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve0 self }
     
@@ -128,17 +136,17 @@ module C12GhostCode_GhostVec
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global);
-  var _s : Ghost.ghost_ty (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global));
+  var _s : Snapshot.snap_ty (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global));
   {
     goto BB0
   }
   BB0 {
-    [#"../12_ghost_code.rs" 9 22 9 32] x <- ([#"../12_ghost_code.rs" 9 22 9 32] new0 ());
+    [#"../12_ghost_code.rs" 9 22 9 32] x <- ([#"../12_ghost_code.rs" 9 22 9 32] new0 ([#"../12_ghost_code.rs" 9 22 9 32] ()));
     goto BB1
   }
   BB1 {
     assume { resolve0 x };
-    [#"../12_ghost_code.rs" 10 32 10 41] _s <- ([#"../12_ghost_code.rs" 10 32 10 41] Ghost.new x);
+    [#"../12_ghost_code.rs" 10 35 10 50] _s <- ([#"../12_ghost_code.rs" 10 35 10 50] Snapshot.new x);
     goto BB2
   }
   BB2 {
@@ -153,9 +161,9 @@ end
 module C12GhostCode_GhostCopy
   use prelude.Int32
   use seq.Seq
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
   use seq.Seq
   use seq.Seq
   use prelude.Int
@@ -163,23 +171,23 @@ module C12GhostCode_GhostCopy
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var a : int32;
-  var _s : Ghost.ghost_ty (Seq.seq int32);
-  var _4 : Ghost.ghost_ty (Seq.seq int32);
+  var _s : Snapshot.snap_ty (Seq.seq int32);
+  var _4 : Snapshot.snap_ty (Seq.seq int32);
   {
     goto BB0
   }
   BB0 {
-    [#"../12_ghost_code.rs" 18 12 18 13] a <- ([#"../12_ghost_code.rs" 18 12 18 13] [#"../12_ghost_code.rs" 18 12 18 13] (0 : int32));
-    [#"../12_ghost_code.rs" 19 17 19 46] _s <- ([#"../12_ghost_code.rs" 19 17 19 46] Ghost.new (Seq.snoc (Seq.empty ) (0 : int32)));
+    [#"../12_ghost_code.rs" 18 12 18 13] a <- ([#"../12_ghost_code.rs" 18 12 18 13] (0 : int32));
+    [#"../12_ghost_code.rs" 19 17 19 52] _s <- ([#"../12_ghost_code.rs" 19 17 19 52] Snapshot.new (Seq.snoc (Seq.empty ) (0 : int32)));
     goto BB1
   }
   BB1 {
-    [#"../12_ghost_code.rs" 20 9 20 27] _4 <- ([#"../12_ghost_code.rs" 20 9 20 27] Ghost.new (Seq.snoc (Ghost.inner _s) a));
+    [#"../12_ghost_code.rs" 20 9 20 33] _4 <- ([#"../12_ghost_code.rs" 20 9 20 33] Snapshot.new (Seq.snoc (Snapshot.inner _s) a));
     goto BB2
   }
   BB2 {
-    [#"../12_ghost_code.rs" 20 4 20 27] _s <- ([#"../12_ghost_code.rs" 20 4 20 27] _4);
-    [#"../12_ghost_code.rs" 20 4 20 27] _4 <- any Ghost.ghost_ty (Seq.seq int32);
+    [#"../12_ghost_code.rs" 20 4 20 33] _s <- _4;
+    _4 <- any Snapshot.snap_ty (Seq.seq int32);
     [#"../12_ghost_code.rs" 17 20 21 1] _0 <- ([#"../12_ghost_code.rs" 17 20 21 1] ());
     return _0
   }
@@ -188,8 +196,8 @@ end
 module C12GhostCode_GhostIsCopy
   use prelude.Int32
   use prelude.Borrow
-  use prelude.Ghost
-  use prelude.Ghost
+  use prelude.Snapshot
+  use prelude.Snapshot
   predicate resolve0 (self : borrowed int32) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
   val resolve0 (self : borrowed int32) : bool
@@ -201,23 +209,23 @@ module C12GhostCode_GhostIsCopy
   var _0 : ();
   var x : int32;
   var r : borrowed int32;
-  var g : Ghost.ghost_ty (borrowed int32);
-  var g1 : Ghost.ghost_ty (borrowed int32);
-  var g2 : Ghost.ghost_ty (borrowed int32);
+  var g : Snapshot.snap_ty (borrowed int32);
+  var g1 : Snapshot.snap_ty (borrowed int32);
+  var g2 : Snapshot.snap_ty (borrowed int32);
   {
     goto BB0
   }
   BB0 {
-    [#"../12_ghost_code.rs" 24 16 24 17] x <- ([#"../12_ghost_code.rs" 24 16 24 17] [#"../12_ghost_code.rs" 24 16 24 17] (0 : int32));
+    [#"../12_ghost_code.rs" 24 16 24 17] x <- ([#"../12_ghost_code.rs" 24 16 24 17] (0 : int32));
     [#"../12_ghost_code.rs" 25 12 25 18] r <- Borrow.borrow_mut x;
     [#"../12_ghost_code.rs" 25 12 25 18] x <-  ^ r;
     assume { resolve0 r };
-    [#"../12_ghost_code.rs" 26 12 26 21] g <- ([#"../12_ghost_code.rs" 26 12 26 21] Ghost.new r);
+    [#"../12_ghost_code.rs" 26 12 26 27] g <- ([#"../12_ghost_code.rs" 26 12 26 27] Snapshot.new r);
     goto BB1
   }
   BB1 {
-    [#"../12_ghost_code.rs" 27 13 27 14] g1 <- ([#"../12_ghost_code.rs" 27 13 27 14] g);
-    [#"../12_ghost_code.rs" 28 13 28 14] g2 <- ([#"../12_ghost_code.rs" 28 13 28 14] g);
+    [#"../12_ghost_code.rs" 27 13 27 14] g1 <- g;
+    [#"../12_ghost_code.rs" 28 13 28 14] g2 <- g;
     assert { [@expl:assertion] [#"../12_ghost_code.rs" 29 18 29 26] g1 = g2 };
     [#"../12_ghost_code.rs" 23 23 30 1] _0 <- ([#"../12_ghost_code.rs" 23 23 30 1] ());
     return _0
@@ -285,14 +293,15 @@ module C12GhostCode_GhostCheck
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self}
     ensures { result = shallow_model0 self }
     
-  axiom shallow_model0_spec : forall self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv4 (shallow_model0 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model0 self) <= UIntSize.to_int max0)
+  axiom shallow_model0_spec : forall self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv4 (shallow_model0 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model0 self) <= UIntSize.to_int max0)
   predicate invariant0 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv4 (shallow_model0 self)
   val invariant0 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = invariant0 self }
     
   axiom inv0 : forall x : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global) . inv0 x = true
-  use prelude.Ghost
+  use prelude.Snapshot
   predicate resolve1 (self : int32) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 47 8 47 12] true
   val resolve1 (self : int32) : bool
@@ -307,7 +316,8 @@ module C12GhostCode_GhostCheck
     ensures { result = index_logic0 self ix }
     
   predicate resolve0 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model0 self) -> resolve1 (index_logic0 self i)
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model0 self)
+     -> resolve1 (index_logic0 self i)
   val resolve0 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve0 self }
     
@@ -333,7 +343,7 @@ module C12GhostCode_GhostCheck
     requires {inv2 value}
     ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 78 26 78 51] shallow_model0 ( ^ self) = Seq.snoc (shallow_model1 self) value }
     
-  use prelude.Ghost
+  use prelude.Snapshot
   function logi_drop0 [#"../12_ghost_code.rs" 33 0 33 21] (_1 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) : ()
     
    =
@@ -349,35 +359,38 @@ module C12GhostCode_GhostCheck
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var x : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
-  var _2 : Ghost.ghost_ty ();
+  var _2 : Snapshot.snap_ty ();
   var _4 : ();
   var _5 : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
+  var _7 : bool;
   var _8 : usize;
   {
     goto BB0
   }
   BB0 {
-    [#"../12_ghost_code.rs" 36 16 36 26] x <- ([#"../12_ghost_code.rs" 36 16 36 26] new0 ());
+    [#"../12_ghost_code.rs" 36 16 36 26] x <- ([#"../12_ghost_code.rs" 36 16 36 26] new0 ([#"../12_ghost_code.rs" 36 16 36 26] ()));
     goto BB1
   }
   BB1 {
-    [#"../12_ghost_code.rs" 39 4 39 25] _2 <- ([#"../12_ghost_code.rs" 39 4 39 25] Ghost.new (let _ = logi_drop0 x in ()));
+    [#"../12_ghost_code.rs" 39 4 39 31] _2 <- ([#"../12_ghost_code.rs" 39 4 39 31] Snapshot.new (let _ = logi_drop0 x in ()));
     goto BB2
   }
   BB2 {
     [#"../12_ghost_code.rs" 41 4 41 5] _5 <- Borrow.borrow_mut x;
     [#"../12_ghost_code.rs" 41 4 41 5] x <-  ^ _5;
-    [#"../12_ghost_code.rs" 41 4 41 13] _4 <- ([#"../12_ghost_code.rs" 41 4 41 13] push0 _5 ([#"../12_ghost_code.rs" 41 11 41 12] [#"../12_ghost_code.rs" 41 11 41 12] (0 : int32)));
+    [#"../12_ghost_code.rs" 41 4 41 13] _4 <- ([#"../12_ghost_code.rs" 41 4 41 13] push0 _5 ([#"../12_ghost_code.rs" 41 11 41 12] (0 : int32)));
     _5 <- any borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
     goto BB3
   }
   BB3 {
-    [#"../12_ghost_code.rs" 43 12 43 19] _8 <- ([#"../12_ghost_code.rs" 43 12 43 19] len0 ([#"../12_ghost_code.rs" 43 12 43 13] x));
+    [#"../12_ghost_code.rs" 43 12 43 19] _8 <- ([#"../12_ghost_code.rs" 43 12 43 19] len0 x);
     goto BB4
   }
   BB4 {
     assume { resolve0 x };
-    switch ([#"../12_ghost_code.rs" 43 12 43 24] _8 = ([#"../12_ghost_code.rs" 43 23 43 24] [#"../12_ghost_code.rs" 43 23 43 24] (1 : usize)))
+    [#"../12_ghost_code.rs" 43 12 43 24] _7 <- _8 = ([#"../12_ghost_code.rs" 43 23 43 24] (1 : usize));
+    _8 <- any usize;
+    switch (_7)
       | False -> goto BB6
       | True -> goto BB5
       end
@@ -397,16 +410,16 @@ module C12GhostCode_GhostCheck
 end
 module C12GhostCode_MyStruct_Type
   use prelude.UInt32
-  use prelude.Ghost
+  use prelude.Snapshot
   use prelude.Int
   type t_mystruct  =
-    | C_MyStruct uint32 (Ghost.ghost_ty uint32)
+    | C_MyStruct uint32 (Snapshot.snap_ty uint32)
     
   let function mystruct_f (self : t_mystruct) : uint32 = [@vc:do_not_keep_trace] [@vc:sp]
     match self with
       | C_MyStruct a _ -> a
       end
-  let function mystruct_g (self : t_mystruct) : Ghost.ghost_ty uint32 = [@vc:do_not_keep_trace] [@vc:sp]
+  let function mystruct_g (self : t_mystruct) : Snapshot.snap_ty uint32 = [@vc:do_not_keep_trace] [@vc:sp]
     match self with
       | C_MyStruct _ a -> a
       end
@@ -421,15 +434,15 @@ module C12GhostCode_TakesStruct
   val shallow_model1 (self : uint32) : int
     ensures { result = shallow_model1 self }
     
-  use prelude.Ghost
-  use prelude.Ghost
-  function shallow_model0 (self : Ghost.ghost_ty uint32) : int =
-    [#"../../../../../creusot-contracts/src/ghost.rs" 27 20 27 48] shallow_model1 (Ghost.inner self)
-  val shallow_model0 (self : Ghost.ghost_ty uint32) : int
+  use prelude.Snapshot
+  use prelude.Snapshot
+  function shallow_model0 (self : Snapshot.snap_ty uint32) : int =
+    [#"../../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48] shallow_model1 (Snapshot.inner self)
+  val shallow_model0 (self : Snapshot.snap_ty uint32) : int
     ensures { result = shallow_model0 self }
     
   use prelude.Int
-  use prelude.Ghost
+  use prelude.Snapshot
   use C12GhostCode_MyStruct_Type as C12GhostCode_MyStruct_Type
   let rec cfg takes_struct [#"../12_ghost_code.rs" 52 0 52 36] [@cfg:stackify] [@cfg:subregion_analysis] (x : C12GhostCode_MyStruct_Type.t_mystruct) : ()
     requires {[#"../12_ghost_code.rs" 51 11 51 20] shallow_model0 (C12GhostCode_MyStruct_Type.mystruct_g x) = 0}
@@ -437,17 +450,17 @@ module C12GhostCode_TakesStruct
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var x : C12GhostCode_MyStruct_Type.t_mystruct = x;
-  var _3 : Ghost.ghost_ty uint32;
+  var _3 : Snapshot.snap_ty uint32;
   {
     goto BB0
   }
   BB0 {
-    [#"../12_ghost_code.rs" 53 10 53 21] _3 <- ([#"../12_ghost_code.rs" 53 10 53 21] Ghost.new (C12GhostCode_MyStruct_Type.mystruct_f x));
+    [#"../12_ghost_code.rs" 53 10 53 27] _3 <- ([#"../12_ghost_code.rs" 53 10 53 27] Snapshot.new (C12GhostCode_MyStruct_Type.mystruct_f x));
     goto BB1
   }
   BB1 {
-    [#"../12_ghost_code.rs" 53 4 53 21] x <- (let C12GhostCode_MyStruct_Type.C_MyStruct x0 x1 = x in C12GhostCode_MyStruct_Type.C_MyStruct x0 ([#"../12_ghost_code.rs" 53 4 53 21] _3));
-    [#"../12_ghost_code.rs" 53 4 53 21] _3 <- any Ghost.ghost_ty uint32;
+    [#"../12_ghost_code.rs" 53 4 53 27] x <- (let C12GhostCode_MyStruct_Type.C_MyStruct x0 x1 = x in C12GhostCode_MyStruct_Type.C_MyStruct x0 _3);
+    _3 <- any Snapshot.snap_ty uint32;
     [#"../12_ghost_code.rs" 52 37 54 1] _0 <- ([#"../12_ghost_code.rs" 52 37 54 1] ());
     return _0
   }

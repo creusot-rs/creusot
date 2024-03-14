@@ -17,12 +17,18 @@ module Core_Ptr_Unique_Unique_Type
     | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
-module Alloc_RawVec_RawVec_Type
+module Alloc_RawVec_Cap_Type
   use prelude.UIntSize
   use prelude.Int
+  type t_cap  =
+    | C_Cap usize
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
   use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
   type t_rawvec 't 'a =
-    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
     
 end
 module Alloc_Vec_Vec_Type
@@ -104,7 +110,8 @@ module C08Haystack_Search
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv9 self}
     ensures { result = shallow_model2 self }
     
-  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv9 self) -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv10 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
+  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv9 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv10 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
   predicate invariant9 (self : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv10 (shallow_model2 self)
   val invariant9 (self : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) : bool
@@ -201,7 +208,9 @@ module C08Haystack_Search
   predicate produces1 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize)
     
    =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0 -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> deep_model0 (Seq.get visited i) = deep_model0 (Core_Ops_Range_Range_Type.range_start self) + i)
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0
+     -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> deep_model0 (Seq.get visited i) = deep_model0 (Core_Ops_Range_Range_Type.range_start self) + i)
   val produces1 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize) : bool
     ensures { result = produces1 self visited o }
     
@@ -217,14 +226,22 @@ module C08Haystack_Search
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv1 c}
     ensures { result = produces_trans1 a ab b bc c }
     
-  axiom produces_trans1_spec : forall a : Core_Ops_Range_Range_Type.t_range usize, ab : Seq.seq usize, b : Core_Ops_Range_Range_Type.t_range usize, bc : Seq.seq usize, c : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces1 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces1 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv1 a) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv8 ab) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv1 b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv8 bc) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv1 c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] produces1 a (Seq.(++) ab bc) c)
+  axiom produces_trans1_spec : forall a : Core_Ops_Range_Range_Type.t_range usize, ab : Seq.seq usize, b : Core_Ops_Range_Range_Type.t_range usize, bc : Seq.seq usize, c : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces1 a ab b)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces1 b bc c)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv1 a)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv8 ab)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv1 b)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv8 bc)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv1 c)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] produces1 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl1 (self : Core_Ops_Range_Range_Type.t_range usize) : ()
   val produces_refl1 (self : Core_Ops_Range_Range_Type.t_range usize) : ()
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv1 self}
     ensures { result = produces_refl1 self }
     
-  axiom produces_refl1_spec : forall self : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv1 self) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 45] produces1 self (Seq.empty ) self)
+  axiom produces_refl1_spec : forall self : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv1 self)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 45] produces1 self (Seq.empty ) self)
   predicate invariant1 (self : Core_Ops_Range_Range_Type.t_range usize) =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
   val invariant1 (self : Core_Ops_Range_Range_Type.t_range usize) : bool
@@ -249,7 +266,9 @@ module C08Haystack_Search
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 207 20 207 24] inv0 self}
     ensures { result = is_empty_log0 self }
     
-  axiom is_empty_log0_spec : forall self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize . ([#"../../../../../creusot-contracts/src/std/ops.rs" 207 20 207 24] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 206 4 206 88] not is_empty_log0 self -> deep_model0 (start_log0 self) <= deep_model0 (end_log0 self))
+  axiom is_empty_log0_spec : forall self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize . ([#"../../../../../creusot-contracts/src/std/ops.rs" 207 20 207 24] inv0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 206 4 206 88] not is_empty_log0 self
+   -> deep_model0 (start_log0 self) <= deep_model0 (end_log0 self))
   function range_inclusive_len0 (r : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) : int =
     [#"../../../../../creusot-contracts/src/std/iter/range.rs" 47 4 50 5] if is_empty_log0 r then
       0
@@ -260,11 +279,14 @@ module C08Haystack_Search
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 46 62 46 63] inv0 r}
     ensures { result = range_inclusive_len0 r }
     
-  axiom range_inclusive_len0_spec : forall r : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 46 62 46 63] inv0 r) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 45 10 45 43] is_empty_log0 r = (range_inclusive_len0 r = 0))
+  axiom range_inclusive_len0_spec : forall r : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 46 62 46 63] inv0 r)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 45 10 45 43] is_empty_log0 r = (range_inclusive_len0 r = 0))
   predicate produces0 (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) (visited : Seq.seq usize) (o : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)
     
    =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 65 8 71 9] Seq.length visited = range_inclusive_len0 self - range_inclusive_len0 o /\ (is_empty_log0 self -> is_empty_log0 o) /\ (is_empty_log0 o \/ end_log0 self = end_log0 o) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> deep_model0 (Seq.get visited i) = deep_model0 (start_log0 self) + i)
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 65 8 71 9] Seq.length visited = range_inclusive_len0 self - range_inclusive_len0 o /\ (is_empty_log0 self
+     -> is_empty_log0 o) /\ (is_empty_log0 o \/ end_log0 self = end_log0 o) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> deep_model0 (Seq.get visited i) = deep_model0 (start_log0 self) + i)
   val produces0 (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) (visited : Seq.seq usize) (o : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) : bool
     ensures { result = produces0 self visited o }
     
@@ -282,21 +304,29 @@ module C08Haystack_Search
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 84 82 84 83] inv0 c}
     ensures { result = produces_trans0 a ab b bc c }
     
-  axiom produces_trans0_spec : forall a : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize, ab : Seq.seq usize, b : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize, bc : Seq.seq usize, c : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 81 15 81 32] produces0 a ab b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 82 15 82 32] produces0 b bc c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 84 22 84 23] inv0 a) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 84 31 84 33] inv8 ab) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 84 52 84 53] inv0 b) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 84 61 84 63] inv8 bc) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 84 82 84 83] inv0 c) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 83 14 83 42] produces0 a (Seq.(++) ab bc) c)
+  axiom produces_trans0_spec : forall a : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize, ab : Seq.seq usize, b : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize, bc : Seq.seq usize, c : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 81 15 81 32] produces0 a ab b)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 82 15 82 32] produces0 b bc c)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 84 22 84 23] inv0 a)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 84 31 84 33] inv8 ab)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 84 52 84 53] inv0 b)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 84 61 84 63] inv8 bc)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 84 82 84 83] inv0 c)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 83 14 83 42] produces0 a (Seq.(++) ab bc) c)
   function produces_refl0 (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) : () =
     [#"../../../../../creusot-contracts/src/std/iter/range.rs" 74 4 74 10] ()
   val produces_refl0 (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) : ()
     requires {[#"../../../../../creusot-contracts/src/std/iter/range.rs" 77 21 77 25] inv0 self}
     ensures { result = produces_refl0 self }
     
-  axiom produces_refl0_spec : forall self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 77 21 77 25] inv0 self) -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 76 14 76 45] produces0 self (Seq.empty ) self)
+  axiom produces_refl0_spec : forall self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize . ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 77 21 77 25] inv0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/iter/range.rs" 76 14 76 45] produces0 self (Seq.empty ) self)
   predicate invariant0 (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
   val invariant0 (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) : bool
     ensures { result = invariant0 self }
     
   axiom inv0 : forall x : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize . inv0 x = true
-  use prelude.Ghost
+  use prelude.Snapshot
   use prelude.Slice
   use seq.Seq
   predicate has_value0 [@inline:trivial] (self : usize) (seq : Seq.seq uint8) (out : uint8) =
@@ -310,7 +340,7 @@ module C08Haystack_Search
     ensures { result = in_bounds0 self seq }
     
   function shallow_model0 (self : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint8 =
-    [#"../../../../../creusot-contracts/src/model.rs" 79 8 79 31] shallow_model2 self
+    [#"../../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model2 self
   val shallow_model0 (self : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint8
     ensures { result = shallow_model0 self }
     
@@ -322,7 +352,7 @@ module C08Haystack_Search
     ensures { inv7 result }
     
   predicate resolve1 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve1 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
     ensures { result = resolve1 self }
     
@@ -340,8 +370,8 @@ module C08Haystack_Search
       end }
     ensures { inv5 result }
     
-  use prelude.Ghost
-  use prelude.Ghost
+  use prelude.Snapshot
+  use prelude.Snapshot
   predicate into_iter_post1 (self : Core_Ops_Range_Range_Type.t_range usize) (res : Core_Ops_Range_Range_Type.t_range usize)
     
    =
@@ -361,7 +391,7 @@ module C08Haystack_Search
     ensures { inv1 result }
     
   predicate resolve0 (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 27 20 27 34]  ^ self =  * self
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   val resolve0 (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) : bool
     ensures { result = resolve0 self }
     
@@ -388,15 +418,16 @@ module C08Haystack_Search
   predicate match_at0 [#"../08_haystack.rs" 7 0 7 77] (needle : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (haystack : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (pos : int) (len : int)
     
    =
-    [#"../08_haystack.rs" 8 4 12 5] len <= Seq.length (shallow_model0 needle) /\ pos <= Seq.length (shallow_model0 haystack) - len /\ (forall i : int . 0 <= i /\ i < len -> index_logic1 needle i = index_logic1 haystack (pos + i))
+    [#"../08_haystack.rs" 8 4 12 5] len <= Seq.length (shallow_model0 needle) /\ pos <= Seq.length (shallow_model0 haystack) - len /\ (forall i : int . 0 <= i /\ i < len
+     -> index_logic1 needle i = index_logic1 haystack (pos + i))
   val match_at0 [#"../08_haystack.rs" 7 0 7 77] (needle : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (haystack : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (pos : int) (len : int) : bool
     ensures { result = match_at0 needle haystack pos len }
     
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
-  use prelude.Ghost
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
   predicate into_iter_post0 (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) (res : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)
     
    =
@@ -420,7 +451,8 @@ module C08Haystack_Search
     requires {inv3 end'}
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 220 26 220 53] start_log0 result = start }
     ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 221 26 221 49] end_log0 result = end' }
-    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 222 16 222 93] deep_model0 start <= deep_model0 end' -> not is_empty_log0 result }
+    ensures { [#"../../../../../creusot-contracts/src/std/ops.rs" 222 16 222 93] deep_model0 start <= deep_model0 end'
+     -> not is_empty_log0 result }
     ensures { inv0 result }
     
   val len0 (self : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) : usize
@@ -430,8 +462,12 @@ module C08Haystack_Search
   let rec cfg search [#"../08_haystack.rs" 21 0 21 60] [@cfg:stackify] [@cfg:subregion_analysis] (needle : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (haystack : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) : usize
     requires {[#"../08_haystack.rs" 15 11 15 65] Seq.length (shallow_model0 needle) >= 1 /\ Seq.length (shallow_model0 needle) <= Seq.length (shallow_model0 haystack)}
     ensures { [#"../08_haystack.rs" 16 10 16 85] UIntSize.to_int result = Seq.length (shallow_model0 haystack) \/ UIntSize.to_int result < Seq.length (shallow_model0 haystack) - Seq.length (shallow_model0 needle) + 1 }
-    ensures { [#"../08_haystack.rs" 17 0 19 108] UIntSize.to_int result < Seq.length (shallow_model0 haystack) -> match_at0 needle haystack (UIntSize.to_int result) (Seq.length (shallow_model0 needle)) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int result -> not match_at0 needle haystack i (Seq.length (shallow_model0 needle))) }
-    ensures { [#"../08_haystack.rs" 20 0 20 139] UIntSize.to_int result = Seq.length (shallow_model0 haystack) -> (forall i : int . 0 <= i /\ i < Seq.length (shallow_model0 haystack) -> not match_at0 needle haystack i (Seq.length (shallow_model0 needle))) }
+    ensures { [#"../08_haystack.rs" 17 0 19 108] UIntSize.to_int result < Seq.length (shallow_model0 haystack)
+     -> match_at0 needle haystack (UIntSize.to_int result) (Seq.length (shallow_model0 needle)) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int result
+     -> not match_at0 needle haystack i (Seq.length (shallow_model0 needle))) }
+    ensures { [#"../08_haystack.rs" 20 0 20 139] UIntSize.to_int result = Seq.length (shallow_model0 haystack)
+     -> (forall i : int . 0 <= i /\ i < Seq.length (shallow_model0 haystack)
+     -> not match_at0 needle haystack i (Seq.length (shallow_model0 needle))) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : usize;
@@ -439,43 +475,49 @@ module C08Haystack_Search
   var haystack : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global) = haystack;
   var iter : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize;
   var _10 : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize;
+  var _11 : usize;
   var _12 : usize;
   var _14 : usize;
-  var iter_old : Ghost.ghost_ty (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize);
-  var produced : Ghost.ghost_ty (Seq.seq usize);
+  var iter_old : Snapshot.snap_ty (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize);
+  var produced : Snapshot.snap_ty (Seq.seq usize);
   var _24 : Core_Option_Option_Type.t_option usize;
   var _25 : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize);
   var _26 : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize);
   var __creusot_proc_iter_elem : usize;
-  var _29 : Ghost.ghost_ty (Seq.seq usize);
+  var _29 : Snapshot.snap_ty (Seq.seq usize);
   var i : usize;
   var iter1 : Core_Ops_Range_Range_Type.t_range usize;
+  var _35 : Core_Ops_Range_Range_Type.t_range usize;
   var _36 : usize;
-  var iter_old1 : Ghost.ghost_ty (Core_Ops_Range_Range_Type.t_range usize);
-  var produced1 : Ghost.ghost_ty (Seq.seq usize);
+  var iter_old1 : Snapshot.snap_ty (Core_Ops_Range_Range_Type.t_range usize);
+  var produced1 : Snapshot.snap_ty (Seq.seq usize);
   var _45 : Core_Option_Option_Type.t_option usize;
   var _46 : borrowed (Core_Ops_Range_Range_Type.t_range usize);
   var _47 : borrowed (Core_Ops_Range_Range_Type.t_range usize);
   var __creusot_proc_iter_elem1 : usize;
-  var _50 : Ghost.ghost_ty (Seq.seq usize);
+  var _50 : Snapshot.snap_ty (Seq.seq usize);
   var j : usize;
+  var _53 : bool;
   var _55 : uint8;
   var _59 : uint8;
+  var _61 : usize;
   {
     goto BB0
   }
   BB0 {
-    [#"../08_haystack.rs" 23 21 23 35] _12 <- ([#"../08_haystack.rs" 23 21 23 35] len0 ([#"../08_haystack.rs" 23 21 23 29] haystack));
+    [#"../08_haystack.rs" 23 21 23 35] _12 <- ([#"../08_haystack.rs" 23 21 23 35] len0 haystack);
     goto BB1
   }
   BB1 {
-    [#"../08_haystack.rs" 23 38 23 50] _14 <- ([#"../08_haystack.rs" 23 38 23 50] len0 ([#"../08_haystack.rs" 23 38 23 44] needle));
+    [#"../08_haystack.rs" 23 38 23 50] _14 <- ([#"../08_haystack.rs" 23 38 23 50] len0 needle);
     goto BB2
   }
   BB2 {
-    [#"../08_haystack.rs" 23 17 23 50] _10 <- ([#"../08_haystack.rs" 23 17 23 50] new0 ([#"../08_haystack.rs" 23 17 23 18] [#"../08_haystack.rs" 23 17 23 18] (0 : usize)) ([#"../08_haystack.rs" 23 21 23 50] _12 - _14));
+    [#"../08_haystack.rs" 23 21 23 50] _11 <- _12 - _14;
     _12 <- any usize;
     _14 <- any usize;
+    [#"../08_haystack.rs" 23 17 23 50] _10 <- ([#"../08_haystack.rs" 23 17 23 50] new0 ([#"../08_haystack.rs" 23 17 23 18] (0 : usize)) _11);
+    _11 <- any usize;
     goto BB3
   }
   BB3 {
@@ -484,11 +526,11 @@ module C08Haystack_Search
     goto BB4
   }
   BB4 {
-    [#"../08_haystack.rs" 22 4 22 112] iter_old <- ([#"../08_haystack.rs" 22 4 22 112] Ghost.new iter);
+    [#"../08_haystack.rs" 22 4 22 112] iter_old <- ([#"../08_haystack.rs" 22 4 22 112] Snapshot.new iter);
     goto BB5
   }
   BB5 {
-    [#"../08_haystack.rs" 22 4 22 112] produced <- ([#"../08_haystack.rs" 22 4 22 112] Ghost.new (Seq.empty ));
+    [#"../08_haystack.rs" 22 4 22 112] produced <- ([#"../08_haystack.rs" 22 4 22 112] Snapshot.new (Seq.empty ));
     goto BB6
   }
   BB6 {
@@ -496,8 +538,9 @@ module C08Haystack_Search
   }
   BB7 {
     invariant { [#"../08_haystack.rs" 22 4 22 112] inv0 iter };
-    invariant { [#"../08_haystack.rs" 22 4 22 112] produces0 (Ghost.inner iter_old) (Ghost.inner produced) iter };
-    invariant { [#"../08_haystack.rs" 22 4 22 112] forall k : int . 0 <= k /\ k < Seq.length (Ghost.inner produced) -> not match_at0 needle haystack k (Seq.length (shallow_model0 needle)) };
+    invariant { [#"../08_haystack.rs" 22 4 22 112] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter };
+    invariant { [#"../08_haystack.rs" 22 4 22 112] forall k : int . 0 <= k /\ k < Seq.length (Snapshot.inner produced)
+     -> not match_at0 needle haystack k (Seq.length (shallow_model0 needle)) };
     goto BB8
   }
   BB8 {
@@ -517,8 +560,8 @@ module C08Haystack_Search
       end
   }
   BB10 {
-    [#"../08_haystack.rs" 33 11 33 25] _0 <- ([#"../08_haystack.rs" 33 11 33 25] len0 ([#"../08_haystack.rs" 33 11 33 19] haystack));
-    goto BB30
+    [#"../08_haystack.rs" 33 11 33 25] _0 <- ([#"../08_haystack.rs" 33 11 33 25] len0 haystack);
+    goto BB31
   }
   BB11 {
     goto BB13
@@ -528,28 +571,30 @@ module C08Haystack_Search
     absurd
   }
   BB13 {
-    [#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] __creusot_proc_iter_elem <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] Core_Option_Option_Type.some_0 _24);
-    [#"../08_haystack.rs" 22 4 22 112] _29 <- ([#"../08_haystack.rs" 22 4 22 112] Ghost.new (Seq.(++) (Ghost.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
+    [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem <- Core_Option_Option_Type.some_0 _24;
+    [#"../08_haystack.rs" 22 4 22 112] _29 <- ([#"../08_haystack.rs" 22 4 22 112] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
     goto BB14
   }
   BB14 {
-    [#"../08_haystack.rs" 22 4 22 112] produced <- ([#"../08_haystack.rs" 22 4 22 112] _29);
-    [#"../08_haystack.rs" 22 4 22 112] _29 <- any Ghost.ghost_ty (Seq.seq usize);
-    [#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] i <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] __creusot_proc_iter_elem);
-    [#"../08_haystack.rs" 25 20 25 32] _36 <- ([#"../08_haystack.rs" 25 20 25 32] len0 ([#"../08_haystack.rs" 25 20 25 26] needle));
+    [#"../08_haystack.rs" 22 4 22 112] produced <- _29;
+    _29 <- any Snapshot.snap_ty (Seq.seq usize);
+    [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] i <- __creusot_proc_iter_elem;
+    [#"../08_haystack.rs" 25 20 25 32] _36 <- ([#"../08_haystack.rs" 25 20 25 32] len0 needle);
     goto BB15
   }
   BB15 {
-    [#"../08_haystack.rs" 24 8 24 68] iter1 <- ([#"../08_haystack.rs" 24 8 24 68] into_iter1 ([#"../08_haystack.rs" 25 17 25 32] Core_Ops_Range_Range_Type.C_Range ([#"../08_haystack.rs" 25 17 25 18] [#"../08_haystack.rs" 25 17 25 18] (0 : usize)) _36));
+    [#"../08_haystack.rs" 25 17 25 32] _35 <- Core_Ops_Range_Range_Type.C_Range ([#"../08_haystack.rs" 25 17 25 18] (0 : usize)) _36;
     _36 <- any usize;
+    [#"../08_haystack.rs" 24 8 24 68] iter1 <- ([#"../08_haystack.rs" 24 8 24 68] into_iter1 _35);
+    _35 <- any Core_Ops_Range_Range_Type.t_range usize;
     goto BB16
   }
   BB16 {
-    [#"../08_haystack.rs" 24 8 24 68] iter_old1 <- ([#"../08_haystack.rs" 24 8 24 68] Ghost.new iter1);
+    [#"../08_haystack.rs" 24 8 24 68] iter_old1 <- ([#"../08_haystack.rs" 24 8 24 68] Snapshot.new iter1);
     goto BB17
   }
   BB17 {
-    [#"../08_haystack.rs" 24 8 24 68] produced1 <- ([#"../08_haystack.rs" 24 8 24 68] Ghost.new (Seq.empty ));
+    [#"../08_haystack.rs" 24 8 24 68] produced1 <- ([#"../08_haystack.rs" 24 8 24 68] Snapshot.new (Seq.empty ));
     goto BB18
   }
   BB18 {
@@ -557,8 +602,8 @@ module C08Haystack_Search
   }
   BB19 {
     invariant { [#"../08_haystack.rs" 24 8 24 68] inv1 iter1 };
-    invariant { [#"../08_haystack.rs" 24 8 24 68] produces1 (Ghost.inner iter_old1) (Ghost.inner produced1) iter1 };
-    invariant { [#"../08_haystack.rs" 24 20 24 66] match_at0 needle haystack (UIntSize.to_int i) (Seq.length (Ghost.inner produced1)) };
+    invariant { [#"../08_haystack.rs" 24 8 24 68] produces1 (Snapshot.inner iter_old1) (Snapshot.inner produced1) iter1 };
+    invariant { [#"../08_haystack.rs" 24 20 24 66] match_at0 needle haystack (UIntSize.to_int i) (Seq.length (Snapshot.inner produced1)) };
     goto BB20
   }
   BB20 {
@@ -578,51 +623,52 @@ module C08Haystack_Search
       end
   }
   BB22 {
-    [#"../08_haystack.rs" 31 15 31 16] _0 <- ([#"../08_haystack.rs" 31 15 31 16] i);
-    goto BB31
+    [#"../08_haystack.rs" 31 15 31 16] _0 <- i;
+    goto BB32
   }
   BB23 {
-    goto BB24
-  }
-  BB24 {
-    [#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] __creusot_proc_iter_elem1 <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] Core_Option_Option_Type.some_0 _45);
-    [#"../08_haystack.rs" 24 8 24 68] _50 <- ([#"../08_haystack.rs" 24 8 24 68] Ghost.new (Seq.(++) (Ghost.inner produced1) (Seq.singleton __creusot_proc_iter_elem1)));
     goto BB25
   }
+  BB24 {
+    assert { [#"../08_haystack.rs" 24 8 24 68] false };
+    absurd
+  }
   BB25 {
-    [#"../08_haystack.rs" 24 8 24 68] produced1 <- ([#"../08_haystack.rs" 24 8 24 68] _50);
-    [#"../08_haystack.rs" 24 8 24 68] _50 <- any Ghost.ghost_ty (Seq.seq usize);
-    [#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] j <- ([#"../../../../../creusot-contracts-proc/src/lib.rs" 674 0 674 51] __creusot_proc_iter_elem1);
-    [#"../08_haystack.rs" 26 21 26 24] _55 <- ([#"../08_haystack.rs" 26 21 26 24] index0 ([#"../08_haystack.rs" 26 15 26 21] needle) ([#"../08_haystack.rs" 26 22 26 23] j));
+    [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] __creusot_proc_iter_elem1 <- Core_Option_Option_Type.some_0 _45;
+    [#"../08_haystack.rs" 24 8 24 68] _50 <- ([#"../08_haystack.rs" 24 8 24 68] Snapshot.new (Seq.(++) (Snapshot.inner produced1) (Seq.singleton __creusot_proc_iter_elem1)));
     goto BB26
   }
   BB26 {
-    [#"../08_haystack.rs" 26 36 26 43] _59 <- ([#"../08_haystack.rs" 26 36 26 43] index0 ([#"../08_haystack.rs" 26 28 26 36] haystack) ([#"../08_haystack.rs" 26 37 26 42] ([#"../08_haystack.rs" 26 37 26 38] i) + ([#"../08_haystack.rs" 26 41 26 42] j)));
+    [#"../08_haystack.rs" 24 8 24 68] produced1 <- _50;
+    _50 <- any Snapshot.snap_ty (Seq.seq usize);
+    [#"../../../../../creusot-contracts-proc/src/lib.rs" 654 0 654 51] j <- __creusot_proc_iter_elem1;
+    [#"../08_haystack.rs" 26 21 26 24] _55 <- ([#"../08_haystack.rs" 26 21 26 24] index0 needle j);
     goto BB27
   }
   BB27 {
-    switch ([#"../08_haystack.rs" 26 15 26 43] ([#"../08_haystack.rs" 26 15 26 24] _55) <> ([#"../08_haystack.rs" 26 28 26 43] _59))
-      | False -> goto BB29
-      | True -> goto BB28
-      end
+    [#"../08_haystack.rs" 26 37 26 42] _61 <- i + j;
+    [#"../08_haystack.rs" 26 36 26 43] _59 <- ([#"../08_haystack.rs" 26 36 26 43] index0 haystack _61);
+    _61 <- any usize;
+    goto BB28
   }
   BB28 {
-    goto BB7
+    [#"../08_haystack.rs" 26 15 26 43] _53 <- _55 <> _59;
+    switch (_53)
+      | False -> goto BB30
+      | True -> goto BB29
+      end
   }
   BB29 {
-    goto BB19
+    goto BB7
   }
   BB30 {
-    goto BB31
+    goto BB19
   }
   BB31 {
+    goto BB32
+  }
+  BB32 {
     return _0
-  }
-  BB33 {
-    goto BB12
-  }
-  BB34 {
-    goto BB12
   }
   
 end

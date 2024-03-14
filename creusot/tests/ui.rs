@@ -42,15 +42,15 @@ fn main() {
 
     let mut metadata_file = cargo_creusot;
     metadata_file.current_dir(base_path);
-    metadata_file
-        .arg("creusot")
-        .args(&[
-            "--metadata-path".as_ref(),
-            temp_file.as_os_str(),
-            "--output-file=/dev/null".as_ref(),
-        ])
-        .args(&["--", "--package", "creusot-contracts"])
-        .env("CREUSOT_CONTINUE", "true");
+    metadata_file.arg("creusot").args(&[
+        "--metadata-path".as_ref(),
+        temp_file.as_os_str(),
+        "--output-file=/dev/null".as_ref(),
+    ]);
+    if let Some(ref dir) = creusot_dev_config::custom_config_dir() {
+        metadata_file.arg("--config-dir").arg(&dir);
+    }
+    metadata_file.args(&["--", "--package", "creusot-contracts"]).env("CREUSOT_CONTINUE", "true");
 
     if !metadata_file.status().expect("could not dump metadata for `creusot_contracts`").success() {
         // eprintln!("{}", String::from_utf8_lossy(&metadata_file.output().unwrap().stderr));
@@ -91,6 +91,8 @@ fn run_creusot(
     base_path.push("target");
     base_path.push("debug");
 
+    let config_paths = creusot_dev_config::paths().unwrap();
+
     let creusot_contract_path = base_path.join("libcreusot_contracts.rlib");
     let creusot_contract_path =
         creusot_contract_path.to_str().expect("invalid utf-8 in contract path");
@@ -100,12 +102,16 @@ fn run_creusot(
         "--stdout",
         "--export-metadata=false",
         "--span-mode=relative",
-        "--check-why3=false",
+        "--root-path-relative-from-output=.",
     ]);
     cmd.args(&[
         "--creusot-extern",
         &format!("creusot_contracts={}", normalize_file_path(contracts)),
     ]);
+    cmd.arg("--why3-path").arg(&config_paths.why3);
+    if let Some(why3_config) = &config_paths.why3_config {
+        cmd.arg("--why3-config-file").arg(why3_config);
+    }
 
     cmd.args(&["--", "-Zno-codegen", "--crate-type=lib"]);
     cmd.args(&["--extern", &format!("creusot_contracts={}", creusot_contract_path)]);

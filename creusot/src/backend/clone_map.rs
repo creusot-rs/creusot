@@ -140,7 +140,7 @@ impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
     fn ty(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let mut node = DepNode::new(self.tcx, (def_id, subst));
 
-        if self.tcx.is_closure(def_id) {
+        if self.tcx.is_closure_or_coroutine(def_id) {
             node = DepNode::Type(Ty::new_closure(self.tcx, def_id, subst));
         }
 
@@ -221,7 +221,7 @@ impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
     }
 
     fn import_prelude_module(&mut self, module: PreludeModule) {
-        self.insert(DepNode::Buitlin(module));
+        self.insert(DepNode::Builtin(module));
     }
 
     fn with_vis<F, A>(&mut self, vis: CloneLevel, f: F) -> A
@@ -282,8 +282,10 @@ impl<'tcx> CloneNames<'tcx> {
     }
     fn insert(&mut self, key: DepNode<'tcx>) -> Kind {
         *self.names.entry(key).or_insert_with(|| {
-            if let DepNode::Type(ty) = key && !matches!(ty.kind(), TyKind::Alias(_, _)) {
-                let kind =  if let Some((did, _)) = key.did() {
+            if let DepNode::Type(ty) = key
+                && !matches!(ty.kind(), TyKind::Alias(_, _))
+            {
+                let kind = if let Some((did, _)) = key.did() {
                     let name = Symbol::intern(&*module_name(self.tcx, did));
                     Kind::Named(name)
                 } else {
