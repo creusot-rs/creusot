@@ -304,6 +304,7 @@ pub enum ItemType {
     Type,
     AssocTy,
     Constant,
+    Variant,
     Unsupported(DefKind),
 }
 
@@ -351,6 +352,7 @@ impl ItemType {
             ItemType::AssocTy => "associated type",
             ItemType::Constant => "constant",
             ItemType::Unsupported(_) => "[OTHER]",
+            ItemType::Variant => "constructor",
         }
     }
 
@@ -383,6 +385,7 @@ pub(crate) fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
         DefKind::Struct | DefKind::Enum | DefKind::Union => ItemType::Type,
         DefKind::AssocTy => ItemType::AssocTy,
         DefKind::AnonConst => panic!(),
+        DefKind::Variant => ItemType::Variant,
         dk => ItemType::Unsupported(dk),
     }
 }

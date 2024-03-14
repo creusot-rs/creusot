@@ -1,6 +1,6 @@
 use super::{
-    clone_map::PreludeModule, dependency::HackedId, signature::signature_of, term::lower_pure,
-    CloneDepth, CloneSummary, Namer, TransId, Why3Generator,
+    clone_map::PreludeModule, dependency::HackedId, place::rplace_to_expr, signature::signature_of,
+    term::lower_pure, CloneDepth, CloneSummary, Namer, TransId, Why3Generator,
 };
 use crate::{
     backend::{
@@ -235,7 +235,7 @@ fn lower_promoted<'tcx>(
             IntermediateStmt::Assign(ident, exp) => {
                 Exp::Let { pattern: Pattern::VarP(ident), arg: Box::new(exp), body: Box::new(acc) }
             }
-            IntermediateStmt::Call(_, _, _, _) => todo!("promoted call"),
+            IntermediateStmt::Call(_, _, _) => todo!("promoted call"),
             IntermediateStmt::Assume(_) => acc,
             IntermediateStmt::Assert(_) => {
                 ctx.crash_and_error(ctx.def_span(body_id.def_id()), "unsupported promoted constant")
@@ -418,10 +418,11 @@ impl<'tcx> Operand<'tcx> {
         ctx: &mut Why3Generator<'tcx>,
         names: &mut N,
         locals: &LocalDecls<'tcx>,
+        istmts: &mut Vec<IntermediateStmt>,
     ) -> Exp {
         match self {
-            Operand::Move(pl) => pl.as_rplace(ctx, names, locals),
-            Operand::Copy(pl) => pl.as_rplace(ctx, names, locals),
+            Operand::Move(pl) => pl.as_rplace(ctx, names, locals, istmts),
+            Operand::Copy(pl) => pl.as_rplace(ctx, names, locals, istmts),
             Operand::Constant(c) => lower_pure(ctx, names, &c),
         }
     }
@@ -439,23 +440,28 @@ impl<'tcx> RValue<'tcx> {
         names: &mut N,
         locals: &LocalDecls<'tcx>,
         ty: Ty<'tcx>,
+        istmts: &mut Vec<IntermediateStmt>,
     ) -> Exp {
         let e = match self {
-            RValue::Operand(op) => op.to_why(ctx, names, locals),
+            RValue::Operand(op) => op.to_why(ctx, names, locals, istmts),
             RValue::BinOp(BinOp::BitAnd, l, r) if l.ty(ctx.tcx, locals).is_bool() => {
-                l.to_why(ctx, names, locals).lazy_and(r.to_why(ctx, names, locals))
+                l.to_why(ctx, names, locals, istmts).lazy_and(r.to_why(ctx, names, locals, istmts))
             }
             RValue::BinOp(BinOp::Eq, l, r) if l.ty(ctx.tcx, locals).is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
 
-                Exp::qvar(QName::from_string("Bool.eq").unwrap())
-                    .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
+                Exp::qvar(QName::from_string("Bool.eq").unwrap()).app(vec![
+                    l.to_why(ctx, names, locals, istmts),
+                    r.to_why(ctx, names, locals, istmts),
+                ])
             }
             RValue::BinOp(BinOp::Ne, l, r) if l.ty(ctx.tcx, locals).is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
 
-                Exp::qvar(QName::from_string("Bool.ne").unwrap())
-                    .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
+                Exp::qvar(QName::from_string("Bool.ne").unwrap()).app(vec![
+                    l.to_why(ctx, names, locals, istmts),
+                    r.to_why(ctx, names, locals, istmts),
+                ])
             }
             RValue::BinOp(_, _, _) => {
                 // let ty = l.ty(ctx.tcx, locals);
@@ -468,12 +474,12 @@ impl<'tcx> RValue<'tcx> {
             }
             RValue::UnaryOp(op, arg) => Exp::UnaryOp(
                 unop_to_unop(arg.ty(ctx.tcx, locals), op),
-                Box::new(arg.to_why(ctx, names, locals)),
+                Box::new(arg.to_why(ctx, names, locals, istmts)),
             ),
 
             RValue::Constructor(id, subst, args) => {
                 let needs_ty = ctx.generics_of(id).count() > 0 && args.len() == 0;
-                let args = args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
+                let args = args.into_iter().map(|a| a.to_why(ctx, names, locals, istmts)).collect();
 
                 let ctor = names.constructor(id, subst);
                 let cons = Exp::Constructor { ctor, args };
@@ -484,7 +490,7 @@ impl<'tcx> RValue<'tcx> {
                 }
             }
             RValue::Tuple(f) => {
-                Exp::Tuple(f.into_iter().map(|f| f.to_why(ctx, names, locals)).collect())
+                Exp::Tuple(f.into_iter().map(|f| f.to_why(ctx, names, locals, istmts)).collect())
             }
             RValue::Cast(e, source, target) => {
                 let to_int = match source.kind() {
@@ -515,11 +521,11 @@ impl<'tcx> RValue<'tcx> {
                         .crash_and_error(DUMMY_SP, "Non integral casts are currently unsupported"),
                 };
 
-                from_int.app_to(to_int.app_to(e.to_why(ctx, names, locals)))
+                from_int.app_to(to_int.app_to(e.to_why(ctx, names, locals, istmts)))
             }
             RValue::Len(pl) => {
                 let len_call = Exp::qvar(QName::from_string("Slice.length").unwrap())
-                    .app_to(pl.to_why(ctx, names, locals));
+                    .app_to(pl.to_why(ctx, names, locals, istmts));
                 len_call
             }
             RValue::Array(fields) => {
@@ -534,7 +540,7 @@ impl<'tcx> RValue<'tcx> {
                 let fields = fields.into_iter().enumerate().map(|(ix, f)| {
                     Exp::qvar(QName::from_string("Seq.get").unwrap())
                         .app(vec![arr_elts.clone(), Exp::Const(Constant::Int(ix as i128, None))])
-                        .eq(f.to_why(ctx, names, locals))
+                        .eq(f.to_why(ctx, names, locals, istmts))
                 });
 
                 Exp::Let {
@@ -554,8 +560,8 @@ impl<'tcx> RValue<'tcx> {
                 }
             }
             RValue::Repeat(e, len) => Exp::qvar(QName::from_string("Slice.create").unwrap())
-                .app_to(len.to_why(ctx, names, locals))
-                .app_to(Exp::FnLit(Box::new(e.to_why(ctx, names, locals)))),
+                .app_to(len.to_why(ctx, names, locals, istmts))
+                .app_to(Exp::FnLit(Box::new(e.to_why(ctx, names, locals, istmts)))),
             RValue::Ghost(t) => lower_pure(ctx, names, &t),
             RValue::Borrow(_, _) => todo!(),
         };
@@ -650,7 +656,7 @@ impl<'tcx> Terminator<'tcx> {
         match self {
             Terminator::Goto(bb) => Expr::Symbol(format!("bb{}", bb.as_usize()).into()),
             Terminator::Switch(switch, branches) => {
-                let discr = switch.to_why(ctx, names, locals);
+                let discr = switch.to_why(ctx, names, locals, &mut vec![]);
                 branches.to_why(ctx, names, discr)
             }
             Terminator::Return => {
@@ -810,8 +816,8 @@ impl<'tcx> Block<'tcx> {
         use coma::*;
         let mut body = statements.rfold(terminator, |tail, stmt| match stmt {
             IntermediateStmt::Assign(id, exp) => tail.assign(id, exp),
-            IntermediateStmt::Call(dest, ty, fun, args) => {
-                let c = Expr::Lambda(vec![coma::Param::Term(dest, ty)], Box::new(tail));
+            IntermediateStmt::Call(params, fun, args) => {
+                let c = Expr::Lambda(params, Box::new(tail));
 
                 args.into_iter()
                     .chain(std::iter::once(Arg::Cont(c)))
@@ -858,8 +864,11 @@ impl<'tcx> Place<'tcx> {
         ctx: &mut Why3Generator<'tcx>,
         names: &mut N,
         locals: &LocalDecls<'tcx>,
+        istmts: &mut Vec<IntermediateStmt>,
     ) -> why3::Exp {
-        translate_rplace(ctx, names, locals, self.local, &self.projection)
+        let (e, t) = rplace_to_expr(ctx, names, locals, self.local, &self.projection);
+        istmts.extend(t);
+        e
     }
 }
 
@@ -901,13 +910,19 @@ pub(crate) enum IntermediateStmt {
     // [ id = E] K
     Assign(Ident, Exp),
     // E [ARGS] (id : ty -> K)
-    Call(Ident, Type, coma::Expr, Vec<coma::Arg>),
+    Call(Vec<coma::Param>, coma::Expr, Vec<coma::Arg>),
     // -{ E }- K
     Assume(Exp),
     // { E } K
     Assert(Exp),
 
     Any(Ident, Type),
+}
+
+impl IntermediateStmt {
+    fn call(id: Ident, exp: Type, f: coma::Expr, args: Vec<coma::Arg>) -> Self {
+        IntermediateStmt::Call(vec![Param::Term(id, exp)], f, args)
+    }
 }
 
 impl<'tcx> Statement<'tcx> {
@@ -919,134 +934,141 @@ impl<'tcx> Statement<'tcx> {
     ) -> Vec<IntermediateStmt> {
         match self {
             Statement::Assignment(lhs, RValue::BinOp(op, l, r), span) => {
-                let (dest, rhs) =
+                let mut istmts = Vec::new();
+                let assign =
                     place::create_assign_inner(ctx, names, locals, &lhs, Exp::var("_ret'"), span);
                 let fname = binop_to_binop(names, l.ty(ctx.tcx, locals), op);
                 // TODO Switch coma ast to QNames
                 let call = coma::Expr::Symbol(fname);
 
-                vec![
-                    IntermediateStmt::Call(
+                let args = vec![
+                    Arg::Term(l.to_why(ctx, names, locals, &mut istmts)),
+                    Arg::Term(r.to_why(ctx, names, locals, &mut istmts)),
+                ];
+                istmts.extend([
+                    IntermediateStmt::call(
                         "_ret'".into(),
                         translate_ty(ctx, names, DUMMY_SP, lhs.ty(ctx.tcx, locals)),
                         call,
-                        vec![
-                            Arg::Term(l.to_why(ctx, names, locals)),
-                            Arg::Term(r.to_why(ctx, names, locals)),
-                        ],
-                    ),
-                    IntermediateStmt::Assign(dest, rhs),
-                ]
+                        args,
+                    )]);
+                istmts.extend(assign);
+                istmts
             }
             Statement::Assignment(lhs, RValue::Borrow(BorrowKind::Mut, rhs), span) => {
                 let borrow_mut =
                     coma::Expr::Symbol(QName::from_string("Borrow.borrow_mut").unwrap());
+
+                let mut istmts = Vec::new();
                 let args = vec![
                     Arg::Ty(translate_ty(ctx, names, DUMMY_SP, rhs.ty(ctx.tcx, locals))),
-                    Arg::Term(rhs.as_rplace(ctx, names, locals)),
+                    Arg::Term(rhs.as_rplace(ctx, names, locals, &mut istmts)),
                 ];
-                let reassign = Exp::Final(Box::new(lhs.as_rplace(ctx, names, locals)));
+                let reassign = Exp::Final(Box::new(lhs.as_rplace(ctx, names, locals, &mut istmts)));
 
                 let ty = lhs.ty(ctx.tcx, locals);
-                let (lender, rhs2) =
-                    place::create_assign_inner(ctx, names, locals, &rhs, reassign, span);
-                let (dest, rhs) =
-                    place::create_assign_inner(ctx, names, locals, &lhs, Exp::var("_ret'"), span);
-                let borrow_call = IntermediateStmt::Call(
+
+                let borrow_call = IntermediateStmt::call(
                     "_ret'".into(),
                     translate_ty(ctx, names, DUMMY_SP, ty),
                     borrow_mut,
                     args,
                 );
 
-                vec![
-                    borrow_call,
-                    IntermediateStmt::Assign(dest, rhs),
-                    IntermediateStmt::Assign(lender, rhs2),
-                ]
+                istmts.extend([borrow_call]);
+
+                istmts.extend(place::create_assign_inner(ctx, names, locals, &rhs, reassign, span));
+                istmts.extend(place::create_assign_inner(
+                    ctx,
+                    names,
+                    locals,
+                    &lhs,
+                    Exp::var("_ret'"),
+                    span,
+                ));
+                istmts
             }
             Statement::Assignment(
                 lhs,
                 RValue::Borrow(BorrowKind::Final(deref_index), rhs),
                 span,
             ) => {
+                let mut istmts = Vec::new();
+
                 let original_borrow = Place {
                     local: rhs.local.clone(),
                     projection: rhs.projection[..deref_index].to_vec(),
                 }
-                .as_rplace(ctx, names, locals);
+                .as_rplace(ctx, names, locals, &mut istmts);
 
                 let ty = lhs.ty(ctx.tcx, locals);
 
                 let borrow_id =
                     borrow_generated_id(original_borrow, &rhs.projection[deref_index + 1..]);
-                let reassign = Exp::Final(Box::new(lhs.as_rplace(ctx, names, locals)));
+                let reassign = Exp::Final(Box::new(lhs.as_rplace(ctx, names, locals, &mut istmts)));
 
                 let assign1 = {
-                    let (dest, rhs) = place::create_assign_inner(
-                        ctx,
-                        names,
-                        locals,
-                        &lhs,
-                        Exp::var("_ret'"),
-                        span,
-                    );
-                    IntermediateStmt::Assign(dest, rhs)
+                    place::create_assign_inner(ctx, names, locals, &lhs, Exp::var("_ret'"), span)
                 };
 
-                let assign2 = {
-                    let (lhs, rhs) =
-                        place::create_assign_inner(ctx, names, locals, &rhs, reassign, span);
-                    IntermediateStmt::Assign(lhs, rhs)
-                };
+                let assign2 =
+                    { place::create_assign_inner(ctx, names, locals, &rhs, reassign, span) };
 
                 let borrow_mut =
                     coma::Expr::Symbol(QName::from_string("Borrow.borrow_final").unwrap());
 
                 let args = vec![
                     Arg::Ty(translate_ty(ctx, names, DUMMY_SP, rhs.ty(ctx.tcx, locals))),
-                    Arg::Term(rhs.as_rplace(ctx, names, locals)),
+                    Arg::Term(rhs.as_rplace(ctx, names, locals, &mut istmts)),
                     Arg::Term(borrow_id),
                 ];
 
-                let borrow_call = IntermediateStmt::Call(
+                let borrow_call = IntermediateStmt::call(
                     "_ret'".into(),
                     translate_ty(ctx, names, DUMMY_SP, ty),
                     borrow_mut,
                     args,
                 );
 
-                vec![borrow_call, assign1, assign2]
+                istmts.extend([borrow_call]);
+                istmts.extend(assign1);
+                istmts.extend(assign2);
+                istmts
             }
             Statement::Assignment(lhs, e, span) => {
+                let mut istmts = Vec::new();
+
                 let mut invalid = Vec::new();
                 e.invalidated_places(&mut invalid);
 
-                let rhs = e.to_why(ctx, names, locals, lhs.ty(ctx.tcx, locals));
-                let (lender, rhs) = place::create_assign_inner(ctx, names, locals, &lhs, rhs, span);
-                let mut exps = vec![IntermediateStmt::Assign(lender, rhs)];
-                invalidate_places(ctx, names, locals, span, invalid, &mut exps);
+                let rhs = e.to_why(ctx, names, locals, lhs.ty(ctx.tcx, locals), &mut istmts);
+                let assign = place::create_assign_inner(ctx, names, locals, &lhs, rhs, span);
+                istmts.extend(assign);
+                invalidate_places(ctx, names, locals, span, invalid, &mut istmts);
 
-                exps
+                istmts
             }
             Statement::Call(dest, fun_id, subst, args, span) => {
-                let (fun_exp, args) = func_call_to_why3(ctx, names, locals, fun_id, subst, args);
+                let mut istmts = Vec::new();
+
+                let (fun_exp, args) =
+                    func_call_to_why3(ctx, names, locals, fun_id, subst, args, &mut istmts);
                 let ty = dest.ty(ctx.tcx, locals);
                 let ty = translate_ty(ctx, names, span, ty);
-                let (dest, rhs) =
+                let assign =
                     place::create_assign_inner(ctx, names, locals, &dest, Exp::var("_ret'"), span);
 
-                vec![
-                    IntermediateStmt::Call("_ret'".into(), ty, fun_exp, args),
-                    IntermediateStmt::Assign(dest, rhs),
-                ]
+                istmts.extend([IntermediateStmt::call("_ret'".into(), ty, fun_exp, args)]);
+                istmts.extend(assign);
+                istmts
             }
             Statement::Resolve(id, subst, pl) => {
                 ctx.translate(id);
+                let mut istmts = Vec::new();
 
                 let rp = Exp::qvar(names.value(id, subst));
 
-                let assume = rp.app_to(pl.as_rplace(ctx, names, locals));
+                let assume = rp.app_to(pl.as_rplace(ctx, names, locals, &mut istmts));
                 vec![IntermediateStmt::Assume(assume)]
             }
             Statement::Assertion { cond, msg } => {
@@ -1059,25 +1081,31 @@ impl<'tcx> Statement<'tcx> {
                 let inv_fun = Exp::qvar(
                     names.ty_inv(pl.ty(ctx.tcx, locals).builtin_deref(false).unwrap().ty),
                 );
-                let arg = Exp::Final(Box::new(pl.as_rplace(ctx, names, locals)));
+                let mut istmts = Vec::new();
 
-                vec![IntermediateStmt::Assume(inv_fun.app_to(arg))]
+                let arg = Exp::Final(Box::new(pl.as_rplace(ctx, names, locals, &mut istmts)));
+
+                istmts.extend(vec![IntermediateStmt::Assume(inv_fun.app_to(arg))]);
+                istmts
             }
             Statement::AssertTyInv(pl) => {
                 let inv_fun = Exp::qvar(names.ty_inv(pl.ty(ctx.tcx, locals)));
-                let arg = pl.as_rplace(ctx, names, locals);
+                let mut istmts = Vec::new();
+
+                let arg = pl.as_rplace(ctx, names, locals, &mut istmts);
                 let exp = Exp::Attr(
                     Attribute::Attr(format!("expl:type invariant")),
                     Box::new(inv_fun.app_to(arg)),
                 );
 
-                vec![IntermediateStmt::Assert(exp)]
+                istmts.extend(vec![IntermediateStmt::Assert(exp)]);
+                istmts
             }
             Statement::Assignment(lhs, RValue::Ghost(rhs), span) => {
                 let ghost = lower_pure(ctx, names, &rhs);
-                let (lhs, rhs) = place::create_assign_inner(ctx, names, locals, &lhs, ghost, span);
+                let assign = place::create_assign_inner(ctx, names, locals, &lhs, ghost, span);
 
-                vec![IntermediateStmt::Assign(lhs, rhs)]
+                assign
             }
         }
     }
@@ -1096,10 +1124,10 @@ fn invalidate_places<'tcx>(
         let ty = pl.ty(ctx.tcx, locals);
         let ty = translate_ty(ctx, names, DUMMY_SP.substitute_dummy(span), ty);
 
-        let (lhs, rhs) =
+        let assign =
             place::create_assign_inner(ctx, names, locals, &pl, Exp::var("_any"), DUMMY_SP);
         out.push(IntermediateStmt::Any("_any".into(), ty));
-        out.push(IntermediateStmt::Assign(lhs, rhs));
+        out.extend(assign);
     }
 }
 
@@ -1110,10 +1138,11 @@ fn func_call_to_why3<'tcx>(
     id: DefId,
     subst: GenericArgsRef<'tcx>,
     args: Vec<Operand<'tcx>>,
+    istmts: &mut Vec<IntermediateStmt>,
 ) -> (coma::Expr, Vec<coma::Arg>) {
     let args: Vec<_> = args
         .into_iter()
-        .map(|a| a.to_why(ctx, names, locals))
+        .map(|a| a.to_why(ctx, names, locals, istmts))
         .map(|a| coma::Arg::Term(a))
         .collect();
 

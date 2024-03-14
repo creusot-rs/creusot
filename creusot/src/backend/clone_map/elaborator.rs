@@ -383,4 +383,20 @@ impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
         // self.dep_level = public;
         ret
     }
+
+    fn eliminator(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
+        let tcx = self.tcx;
+
+        match util::item_type(tcx, def_id) {
+            ItemType::Variant => {
+                let clone = self.insert(DepNode::new(tcx, (tcx.parent(def_id), subst)));
+
+                let name: Ident = tcx.item_name(def_id).as_str().to_snake_case().into();
+
+                clone.qname_ident(name.into())
+            }
+            ItemType::Closure => self.insert(DepNode::new(tcx, (def_id, subst))).ident().into(),
+            _ => unreachable!(),
+        }
+    }
 }

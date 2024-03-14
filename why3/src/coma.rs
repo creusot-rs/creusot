@@ -4,7 +4,7 @@ use pretty::docs;
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
 
-type Term = crate::Exp;
+pub type Term = crate::Exp;
 
 /// The Coma Intermediate Verification Language
 ///
@@ -80,6 +80,16 @@ pub enum Param {
     Reference(Ident, Type),
     /// Continuations accept a set of handlers and a set of ordinary parameters
     Cont(Ident, Vec<Ident>, Vec<Param>),
+}
+
+impl Param {
+    pub fn as_term(&self) -> (&Ident, &Type) {
+        if let Param::Term(id, ty) = self {
+            (&id, &ty)
+        } else {
+            unreachable!()
+        }
+    }
 }
 
 #[derive(Clone, Debug)]

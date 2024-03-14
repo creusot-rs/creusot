@@ -1,14 +1,16 @@
 use crate::{
-    backend::Namer,
+    backend::{ty::translate_ty, Namer},
     ctx::CloneMap,
     translation::fmir::{self, LocalDecls},
+    util,
 };
 use rustc_middle::{
     mir::{self, tcx::PlaceTy, ProjectionElem},
     ty::{self, Ty, TyCtxt, TyKind},
 };
-use rustc_span::{Span, Symbol};
+use rustc_span::{Span, Symbol, DUMMY_SP};
 use why3::{
+    coma::{self, Arg, Expr, Param},
     exp::{
         Exp::{self, *},
         Pattern::*,
@@ -16,7 +18,7 @@ use why3::{
     Ident, QName,
 };
 
-use super::Why3Generator;
+use super::{program::IntermediateStmt, Why3Generator};
 
 /// Correctly translate an assignment from one place to another. The challenge here is correctly
 /// construction the expression that assigns deep inside a structure.
@@ -36,7 +38,7 @@ pub(crate) fn create_assign_inner<'tcx>(
     lhs: &fmir::Place<'tcx>,
     rhs: Exp,
     _: Span,
-) -> (Ident, Exp) {
+) -> Vec<IntermediateStmt> {
     let inner = create_assign_rec(
         ctx,
         names,
@@ -45,10 +47,14 @@ pub(crate) fn create_assign_inner<'tcx>(
         lhs.local,
         &lhs.projection,
         0,
-        rhs,
+        rhs.clone(),
     );
 
-    (Ident::build(lhs.local.as_str()), inner)
+    let (rhs, mut stmts) = lplace_to_expr(ctx, names, locals, lhs.local, &lhs.projection, rhs);
+
+
+    stmts.push(IntermediateStmt::Assign(Ident::build(lhs.local.as_str()), rhs));
+    stmts
 }
 
 fn create_assign_rec<'tcx>(
@@ -155,6 +161,151 @@ fn create_assign_rec<'tcx>(
         OpaqueCast(_) => unimplemented!("OpaqueCast"),
         Subtype(_) => unimplemented!("Subtype"),
     }
+}
+
+pub(crate) fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut N,
+    locals: &LocalDecls<'tcx>,
+    loc: Symbol,
+    proj: &[mir::ProjectionElem<Symbol, Ty<'tcx>>],
+    rhs: coma::Term,
+) -> (Exp, Vec<IntermediateStmt>) {
+    let mut focus = Exp::var(util::ident_of(loc));
+    use rustc_middle::mir::ProjectionElem::*;
+    let mut place_ty = PlaceTy::from_ty(locals[&loc].ty);
+    let mut constructor: Box<dyn FnOnce(coma::Term) -> coma::Term> = Box::new(|x| x);
+    let mut istmts = Vec::new();
+
+    for elem in proj {
+        match elem {
+            Deref => {
+                use rustc_hir::Mutability::*;
+                let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
+                if mutability == Mut {
+                    let f = focus.clone();
+                    constructor = Box::new(|t| {
+                        constructor(RecUp {
+                            record: Box::new(f),
+                            updates: vec![("current".into(), t)],
+                        })
+                    });
+                    focus = Exp::Current(Box::new(focus))
+                }
+            }
+            Field(ix, _) => match place_ty.ty.kind() {
+                TyKind::Adt(def, subst) => {
+                    let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
+                    let variant = &def.variants()[variant_id];
+                    let acc_name = names.eliminator(variant.def_id, subst);
+                    let fields: Vec<_> = variant
+                        .fields
+                        .iter()
+                        .map(|f| {
+                            Param::Term(
+                                format!("_{}", f.name).into(),
+                                translate_ty(ctx, names, DUMMY_SP, f.ty(ctx.tcx, subst)),
+                            )
+                        })
+                        .collect();
+
+                    let new_focus = Exp::var(fields[ix.as_usize()].as_term().0.clone());
+                    istmts.push(IntermediateStmt::Call(
+                        fields,
+                        Expr::Symbol(acc_name),
+                        vec![Arg::Term(focus)],
+                    ));
+                    let constr = Exp::qvar(names.constructor(variant.def_id, subst));
+                    constructor = Box::new(|t| {
+                        let mut fields: Vec<_> = variant
+                            .fields
+                            .iter()
+                            .map(|f| Exp::var(format!("_{}", f.name)))
+                            .collect();
+                        fields[ix.as_usize()] = t;
+                        constructor(constr.app(fields))
+                    });
+                    focus = new_focus;
+                }
+                _ => todo!("{:?}", place_ty.ty.kind()),
+            },
+            Index(_) => todo!("Index"),
+            Downcast(_, _) => {}
+            // UNSUPPORTED
+            ConstantIndex { offset, min_length, from_end } => todo!(),
+            Subslice { from, to, from_end } => todo!(),
+            OpaqueCast(_) => todo!(),
+            Subtype(_) => todo!(),
+        }
+        place_ty = projection_ty(place_ty, ctx.tcx, *elem);
+    }
+    (constructor(rhs), istmts)
+}
+
+pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut N,
+    locals: &LocalDecls<'tcx>,
+    loc: Symbol,
+    proj: &[mir::ProjectionElem<Symbol, Ty<'tcx>>],
+) -> (Exp, Vec<IntermediateStmt>) {
+    let mut istmts = Vec::new();
+
+    // The term holding the currently 'focused' portion of the place
+    let mut focus = Exp::var(util::ident_of(loc));
+    use rustc_middle::mir::ProjectionElem::*;
+    let mut place_ty = PlaceTy::from_ty(locals[&loc].ty);
+
+    // TODO: name hygiene
+    for elem in proj {
+        match elem {
+            Deref => {
+                use rustc_hir::Mutability::*;
+                let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
+                if mutability == Mut {
+                    focus = Exp::Current(Box::new(focus))
+                }
+            }
+            Field(ix, _) => match place_ty.ty.kind() {
+                TyKind::Adt(def, subst) => {
+                    let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
+                    let variant = &def.variants()[variant_id];
+                    let acc_name = names.eliminator(variant.def_id, subst);
+                    let fields: Vec<_> = variant
+                        .fields
+                        .iter()
+                        .map(|f| {
+                            Param::Term(
+                                format!("_{}", f.name).into(),
+                                translate_ty(ctx, names, DUMMY_SP, f.ty(ctx.tcx, subst)),
+                            )
+                        })
+                        .collect();
+
+                    let new_focus = Exp::var(fields[ix.as_usize()].as_term().0.clone());
+                    istmts.push(IntermediateStmt::Call(
+                        fields,
+                        Expr::Symbol(acc_name),
+                        vec![Arg::Term(focus)],
+                    ));
+                    focus = new_focus;
+                }
+                _ => todo!(),
+            },
+            Index(_) => todo!(),
+            // Skip, always followed by a *field* where we do the real translation
+            Downcast(_, _) => {}
+            // Unusued
+            Subslice { from, to, from_end } => unimplemented!("Subslice"),
+            ConstantIndex { offset, min_length, from_end } => unimplemented!("ConstantIndex"),
+            OpaqueCast(_) => unimplemented!("OpaqueCast"),
+            Subtype(_) => unimplemented!("Subtype"),
+        }
+
+        place_ty = projection_ty(place_ty, ctx.tcx, *elem);
+    }
+
+    (focus, istmts)
 }
 
 // [(P as Some)]   ---> [_1]

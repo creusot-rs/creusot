@@ -98,6 +98,8 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
                 MlT::TConstructor(names.ty(def.did(), s))
             };
 
+
+
             let mut args: Vec<_> =
                 s.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
 

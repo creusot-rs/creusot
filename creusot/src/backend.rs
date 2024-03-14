@@ -179,6 +179,9 @@ impl<'tcx> Why3Generator<'tcx> {
                         .insert(repr, TranslatedItem::Type { modl, accessors: Default::default() });
                 }
             }
+            ItemType::Variant => {
+                self.translate(self.ctx.parent(def_id));
+            }
             ItemType::Unsupported(dk) => self.crash_and_error(
                 self.tcx.def_span(def_id),
                 &format!("unsupported definition kind {:?} {:?}", def_id, dk),

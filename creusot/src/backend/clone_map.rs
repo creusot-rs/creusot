@@ -121,6 +121,8 @@ pub(crate) trait Namer<'tcx> {
         ix: FieldIdx,
     ) -> QName;
 
+    fn eliminator(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName;
+
     fn normalize(&self, ctx: &TranslationCtx<'tcx>, ty: Ty<'tcx>) -> Ty<'tcx>;
 
     fn import_prelude_module(&mut self, _: PreludeModule);
@@ -208,6 +210,22 @@ impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
                 clone.qname_ident(name.into())
             }
             _ => panic!("accessor: invalid item kind"),
+        }
+    }
+
+    fn eliminator(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
+        let tcx = self.tcx;
+
+        match tcx.def_kind(def_id) {
+            DefKind::Variant => {
+                let clone = self.insert(DepNode::new(tcx, (tcx.parent(def_id), subst)));
+
+                let name: Ident = tcx.item_name(def_id).as_str().to_snake_case().into();
+
+                clone.qname_ident(name.into())
+            }
+            DefKind::Closure | DefKind::Struct => self.insert(DepNode::new(tcx, (def_id, subst))).ident().into(),
+            _ => unreachable!(),
         }
     }
 
