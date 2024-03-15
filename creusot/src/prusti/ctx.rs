@@ -15,7 +15,9 @@ use rustc_infer::infer::region_constraints::Constraint;
 use rustc_lint::Lint;
 use rustc_middle::{
     bug, ty,
-    ty::{walk::TypeWalker, BoundRegionKind, ParamEnv, Region, TyCtxt, TypeFoldable},
+    ty::{
+        walk::TypeWalker, BoundRegionKind, GenericArgsRef, ParamEnv, Region, TyCtxt, TypeFoldable,
+    },
 };
 use rustc_span::{
     def_id::{DefId, LocalDefId, CRATE_DEF_ID},
@@ -113,7 +115,7 @@ impl<'a, 'tcx> Debug for BaseCtx<'a, 'tcx> {
 
 pub(super) fn dummy_region(tcx: TyCtxt<'_>, sym: Symbol) -> Region<'_> {
     let def_id = CRATE_DEF_ID.to_def_id();
-    Region::new_free(tcx, def_id, BoundRegionKind::BrNamed(def_id, sym))
+    Region::new_late_param(tcx, def_id, BoundRegionKind::BrNamed(def_id, sym))
 }
 
 fn try_index_of<I: Idx, T: Eq>(s: &IndexVec<I, T>, x: &T) -> Option<I> {
@@ -170,7 +172,7 @@ impl<'a, 'tcx> BaseCtx<'a, 'tcx> {
 
     pub(crate) fn lint(&self, lint: &'static Lint, span: Span, msg: impl Into<String>) {
         let hir_id = self.tcx.local_def_id_to_hir_id(self.owner_id);
-        self.tcx.struct_span_lint_hir(lint, hir_id, span, msg.into(), |x| x)
+        self.tcx.node_span_lint(lint, hir_id, span, msg.into(), |_| {});
     }
 
     fn new(
@@ -311,9 +313,7 @@ impl<'a, 'tcx> PreCtx<'a, 'tcx> {
 
     /// Fixes an external region by converting it into a singleton set
     fn fix_region(&self, r: Region<'tcx>) -> Region<'tcx> {
-        let Some(state) = try_index_of(&self.base_states, &r) else {
-            bug!()
-        };
+        let Some(state) = try_index_of(&self.base_states, &r) else { bug!() };
         self.state_to_reg(state)
     }
 
@@ -398,11 +398,13 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
 
     /// Fixes an external region by converting it into a singleton set
     fn fix_region(&self, r: Region<'tcx>, or: impl Fn() -> Region<'tcx>) -> Region<'tcx> {
-        let Some(base_state) = try_index_of(&self.base_states, &r) else {
-            return or()
-        };
+        let Some(base_state) = try_index_of(&self.base_states, &r) else { return or() };
         let state = self.normalize_state(base_state);
         self.state_to_reg(state)
+    }
+
+    pub fn fix_subst_with_erased(&self, subst: GenericArgsRef<'tcx>) -> GenericArgsRef<'tcx> {
+        self.fix_regions(subst, || self.tcx.lifetimes.re_erased)
     }
 
     pub(super) fn fix_regions<T: TypeFoldable<TyCtxt<'tcx>>>(

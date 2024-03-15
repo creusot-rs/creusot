@@ -71,9 +71,9 @@ fn bound_reg_to_span(tcx: TyCtxt<'_>, r: BoundRegionKind) -> Span {
 
 pub fn reg_to_span<'tcx>(tcx: TyCtxt<'tcx>, r: Region<'tcx>) -> Span {
     match r.kind() {
-        RegionKind::ReEarlyBound(x) => def_id_to_span(tcx, x.def_id),
-        RegionKind::ReLateBound(_, x) => bound_reg_to_span(tcx, x.kind),
-        RegionKind::ReFree(x) => bound_reg_to_span(tcx, x.bound_region),
+        RegionKind::ReEarlyParam(x) => def_id_to_span(tcx, x.def_id),
+        RegionKind::ReBound(_, x) => bound_reg_to_span(tcx, x.kind),
+        RegionKind::ReLateParam(x) => bound_reg_to_span(tcx, x.bound_region),
         RegionKind::RePlaceholder(x) => bound_reg_to_span(tcx, x.bound.kind),
         _ => DUMMY_SP,
     }
@@ -373,7 +373,7 @@ fn generalize_fn_def<'tcx>(
     var_info: &mut VarInfo<'tcx>,
 ) -> (ty::Ty<'tcx>, impl Iterator<Item = (Region<'tcx>, Region<'tcx>)>) {
     let fn_ty_gen = ty::Ty::new_fn_def(tcx, def_id, var_info.subst);
-    let (fn_sig_gen, map) = tcx.replace_late_bound_regions(fn_ty_gen.fn_sig(tcx), |_| {
+    let (fn_sig_gen, map) = tcx.instantiate_bound_regions(fn_ty_gen.fn_sig(tcx), |_| {
         Region::new_var(tcx, var_info.reg.0.push(ReVarStatus::Bound(StateSet::EMPTY)))
     });
     let fn_ty_gen = ty::Ty::new_fn_ptr(tcx, Binder::dummy(fn_sig_gen));
@@ -381,7 +381,7 @@ fn generalize_fn_def<'tcx>(
     let id_subst = GenericArgs::identity_for_item(tcx, def_id);
     let iter1 = id_subst.regions().zip(var_info.subst.regions());
     let iter2 = map.into_iter().map(move |(br, reg_gen)| {
-        let reg = Region::new_free(tcx, def_id, br.kind);
+        let reg = Region::new_late_param(tcx, def_id, br.kind);
         (reg, reg_gen)
     });
     let iter = iter1.chain(iter2);
@@ -603,7 +603,7 @@ fn check_predicates<'tcx>(
     for (pred, _) in ctx.tcx.erase_regions(predicates) {
         let ok = match pred.as_trait_clause() {
             Some(x) if x.def_id() == ctx.zombie_info.snap_eq() => {
-                let ty = ctx.tcx.erase_late_bound_regions(x.self_ty());
+                let ty = ctx.tcx.normalize_erasing_late_bound_regions(ctx.param_env(), x.self_ty());
                 Ty { ty }.is_snap_eq(ctx)
             }
             _ => {
@@ -767,7 +767,7 @@ pub(crate) fn check_signature_agreement<'tcx>(
     let args = arg_tys.into_iter().map(|(_, ty)| Ok((ty, impl_span)));
     // lifetimes bound from the impl block that aren't used in the Self type are excluded
     // we can erase these lifetimes since they will disappear after substitution
-    let subst_ref = ctx.fix_regions(impl_id_subst, || ctx.tcx.lifetimes.re_erased);
+    let subst_ref = ctx.fix_subst_with_erased(impl_id_subst);
     let actual_res_ty = check_call(&ctx, ts, impl_id, subst_ref, args, impl_span)?;
     debug!(
         "{impl_id:?}: expected {}, found {}",

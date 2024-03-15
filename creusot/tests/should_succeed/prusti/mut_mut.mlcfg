@@ -11,13 +11,10 @@ module MutMut_V1_Impl
     ensures { result = inv0 _x }
     
   axiom inv0 : forall x : borrowed (borrowed x) . inv0 x = true
-  let rec ghost function v1 [#"../mut_mut.rs" 8 0 8 76] (x : borrowed (borrowed x)) (y : borrowed (borrowed x)) : bool
-    requires {[#"../mut_mut.rs" 8 25 8 26] inv0 x}
-    requires {[#"../mut_mut.rs" 8 47 8 48] inv0 y}
-    ensures { [#"../mut_mut.rs" 7 10 7 16] result }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../mut_mut.rs" 9 4 9 8] true
+  constant x  : borrowed (borrowed x)
+  constant y  : borrowed (borrowed x)
+  function v1 [#"../mut_mut.rs" 8 0 8 76] (x : borrowed (borrowed x)) (y : borrowed (borrowed x)) : bool
+  goal vc_v1 : [#"../mut_mut.rs" 7 10 7 16] true
 end
 module MutMut_V2_Impl
   type x
@@ -38,12 +35,13 @@ module MutMut_V2_Impl
     requires {[#"../mut_mut.rs" 8 47 8 48] inv0 y}
     ensures { result = v10 x y }
     
-  axiom v10_spec : forall x : borrowed (borrowed x), y : borrowed (borrowed x) . ([#"../mut_mut.rs" 8 25 8 26] inv0 x) -> ([#"../mut_mut.rs" 8 47 8 48] inv0 y) -> ([#"../mut_mut.rs" 7 10 7 16] v10 x y)
-  let rec ghost function v2 [#"../mut_mut.rs" 15 0 15 80] (x : borrowed (borrowed x)) (y : borrowed (borrowed x)) : bool
-    requires {[#"../mut_mut.rs" 15 29 15 30] inv0 x}
-    requires {[#"../mut_mut.rs" 15 51 15 52] inv0 y}
-    ensures { [#"../mut_mut.rs" 14 10 14 16] result }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../mut_mut.rs" 16 4 16 32] v10 x y
+  axiom v10_spec : forall x : borrowed (borrowed x), y : borrowed (borrowed x) . ([#"../mut_mut.rs" 8 25 8 26] inv0 x)
+   -> ([#"../mut_mut.rs" 8 47 8 48] inv0 y)  -> ([#"../mut_mut.rs" 7 10 7 16] v10 x y)
+  constant x  : borrowed (borrowed x)
+  constant y  : borrowed (borrowed x)
+  function v2 [#"../mut_mut.rs" 15 0 15 80] (x : borrowed (borrowed x)) (y : borrowed (borrowed x)) : bool
+  goal vc_v2 : ([#"../mut_mut.rs" 15 51 15 52] inv0 y)
+   -> ([#"../mut_mut.rs" 15 29 15 30] inv0 x)
+   -> (([#"../mut_mut.rs" 8 47 8 48] inv0 y) && ([#"../mut_mut.rs" 8 25 8 26] inv0 x)) /\ (([#"../mut_mut.rs" 7 10 7 16] v10 x y)
+   -> ([#"../mut_mut.rs" 14 10 14 16] v10 x y))
 end

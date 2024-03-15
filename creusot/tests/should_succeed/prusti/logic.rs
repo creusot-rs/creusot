@@ -23,7 +23,7 @@ pub fn cur<'a, X: SnapEq>(x: &'a mut X) -> X {
 }
 
 #[open]
-#[logic('x)]
+#[logic_prophetic('x)]
 #[ensures(result == *x)]
 pub fn fin<'now, X: SnapEq>(x: &'now mut X) -> X {
     *x

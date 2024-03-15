@@ -1,21 +1,21 @@
 use base_macros::*;
 
 /// Equivalent to `at::<'post>`
-#[ghost] // avoid triggering error since this is prusti specific
+#[logic] // avoid triggering error since this is prusti specific
 #[open]
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "prusti_at_post"]
-pub fn at_post<T>(_: T) -> T {
-    absurd
+pub fn at_post<T>(t: T) -> T {
+    t
 }
 
 /// Evaluate an expression at a specific state eg `at::<'state>(exp)`
-#[ghost] // avoid triggering error since this is prusti specific
+#[logic] // avoid triggering error since this is prusti specific
 #[open]
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "prusti_at"]
-pub fn at<'a: 'a, T>(_: T) -> T {
-    absurd
+pub fn at<'a: 'a, T>(t: T) -> T {
+    t
 }
 
 /// Types that do not depend on the program state (e.g. the heap) for validity
@@ -80,7 +80,7 @@ impl<T> Clone for Zombie<T> {
     }
 }
 
-#[ghost] // avoid triggering error since this is prusti specific
+#[logic] // avoid triggering error since this is prusti specific
 #[open]
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "prusti_dbg_ty"]

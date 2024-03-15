@@ -116,7 +116,7 @@ pub(super) fn prusti_to_creusot<'tcx>(
         Some(attr) => attr,
     };
 
-    if tcx.is_closure(owner_id) {
+    if tcx.is_closure_or_coroutine(owner_id) {
         return Err(Error::new(term.span, "Prusti specs on closures aren't supported"));
     }
 
@@ -201,11 +201,13 @@ fn strip_derefs_target<'tcx>(
 ) -> CreusotResult<(State, Ty<'tcx>)> {
     let (mut depth, mut target_depth) = (deref_depth_local(ty, ctx), deref_depth_extern(target));
     loop {
-        if let (Some(x), Some(y)) = (depth.last(), target_depth.last()) && x == y {
+        if let (Some(x), Some(y)) = (depth.last(), target_depth.last())
+            && x == y
+        {
             depth.pop();
             target_depth.pop();
         } else {
-            break
+            break;
         }
     }
     let (mut valid_state, mut ty) = (valid_state, ty);
@@ -340,14 +342,13 @@ fn convert<'tcx>(
             let ty = ctx.fix_ty(ty, || state_r); // TODO handle lifetimes annotations in ty
             convert_sdt(&mut *body, &mut tenv.insert(binder.0, (state, ty)), state, ctx)?
         }
-        TermKind::Call { args, fun, id, .. } => {
-            let ty = convert_sdt(fun, tenv, state, ctx)?;
-            let TyKind::FnDef(_, subst) = ty.ty.kind() else { unreachable!() };
+        TermKind::Call { args, id, subst } => {
+            let subst = ctx.fix_subst_with_erased(subst);
             let new_reg = if tcx.is_diagnostic_item(Symbol::intern("prusti_at_post"), *id) {
                 Some(ctx.post_state(outer_term.span)?)
             } else if tcx.is_diagnostic_item(Symbol::intern("prusti_at"), *id) {
                 let r = subst.regions().next().unwrap();
-                let s = ctx.try_move_rstate(r, fun.span)?;
+                let s = ctx.try_move_rstate(r, outer_term.span)?;
                 Some(s)
             } else if tcx.is_diagnostic_item(Symbol::intern("prusti_dbg_ty"), *id) {
                 let mut arg = args.pop().unwrap();
@@ -493,14 +494,3 @@ fn convert_sdt_state<'tcx>(
 }
 
 impl<'tcx> Term<'tcx> {}
-
-pub(crate) fn strip_all_refs(ty: ty::Ty) -> ty::Ty {
-    let mut ty = ty;
-    loop {
-        if ty.ref_mutability() == Some(Not) || ty.is_box() {
-            ty = ty.builtin_deref(true).unwrap().ty;
-        } else {
-            return ty;
-        }
-    }
-}

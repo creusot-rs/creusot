@@ -26,7 +26,9 @@ pub(super) fn regions_of_fn<'tcx>(
 ) -> impl Iterator<Item = Region<'tcx>> {
     let eb_regions = sig.subst().iter().flat_map(regions_in_arg);
     let lb_regions = sig.sig().bound_vars().iter().filter_map(move |x| match x {
-        BoundVariableKind::Region(r) => Some(Region::new_free(tcx, sig.def_id().to_def_id(), r)),
+        BoundVariableKind::Region(r) => {
+            Some(Region::new_late_param(tcx, sig.def_id().to_def_id(), r))
+        }
         _ => None,
     });
     eb_regions.chain(lb_regions)
@@ -62,7 +64,7 @@ pub(super) fn constraints_of_fn<'tcx>(
     let obligations = predicates.into_iter().map(|x| mk_obligation(x.as_predicate()));
     ocx.register_obligations(obligations);
 
-    // well formedness constraints
+    // well-formedness constraints
     ocx.register_obligation(mk_obligation(
         tcx.mk_predicate(Binder::dummy(PredicateKind::Clause(ClauseKind::WellFormed(
             fn_ty.into(),
@@ -71,8 +73,10 @@ pub(super) fn constraints_of_fn<'tcx>(
 
     assert!(ocx.select_all_or_error().is_empty());
     let outlives = OutlivesEnvironment::new(param_env);
-    infcx.process_registered_region_obligations(&outlives);
+    let _ = infcx.process_registered_region_obligations(&outlives, |ty, _| {
+        Ok::<_, !>(ocx.normalize(&ObligationCause::dummy(), param_env, ty))
+    });
 
     let constraints = infcx.take_and_reset_region_constraints();
-    constraints.constraints.into_keys()
+    constraints.constraints.into_iter().map(|(c, _)| c)
 }

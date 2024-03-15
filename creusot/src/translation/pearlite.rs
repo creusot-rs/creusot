@@ -425,7 +425,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 };
                 Ok(Term { ty, span, kind: TermKind::Lit(lit) })
             }
-            ExprKind::Call { ty: f_ty, ref args, .. } => {
+            ExprKind::Call { ty: f_ty, ref args, fun, .. } => {
                 use Stub::*;
                 match pearlite_stub(self.ctx.tcx, f_ty) {
                     Some(Forall) => {
@@ -514,8 +514,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                             .iter()
                             .map(|arg| self.expr_term(*arg))
                             .collect::<Result<Vec<_>, _>>()?;
-                        let (id, subst) = if let TyKind::FnDef(id, subst) = f_ty.kind() {
-                            (*id, subst)
+                        let fun = self.expr_term(fun)?;
+                        let (id, subst) = if let TermKind::Item(id, subst) = fun.kind {
+                            (id, subst)
                         } else {
                             unreachable!("Call on non-function type");
                         };
@@ -1616,6 +1617,10 @@ impl<'tcx> Term<'tcx> {
             TermKind::Assert { cond } => cond.free_vars_inner(bound, free),
         }
     }
+
+    pub fn creusot_ty(&self) -> Ty<'tcx> {
+        strip_all_refs(self.ty)
+    }
 }
 
 struct PrintExpr<'a, 'tcx>(&'a Thir<'tcx>, ExprId);
@@ -1697,4 +1702,15 @@ fn print_thir_expr<'tcx>(
         }
     }
     Ok(())
+}
+
+fn strip_all_refs(ty: Ty) -> Ty {
+    let mut ty = ty;
+    loop {
+        if ty.ref_mutability() == Some(Not) || ty.is_box() {
+            ty = ty.builtin_deref(true).unwrap().ty;
+        } else {
+            return ty;
+        }
+    }
 }

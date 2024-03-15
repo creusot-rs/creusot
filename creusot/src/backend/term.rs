@@ -2,7 +2,7 @@ use super::{program::borrow_generated_id, Why3Generator};
 use crate::{
     backend::ty::{floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty},
     ctx::*,
-    pearlite::{self, prusti::strip_all_refs, Literal, Pattern, Term, TermKind},
+    pearlite::{self, Literal, Pattern, Term, TermKind},
     util,
     util::get_builtin,
 };
@@ -100,7 +100,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Constructor { typ, variant, fields } => {
                 self.ctx.translate(*typ);
-                let TyKind::Adt(_, subst) = strip_all_refs(term.ty).kind() else { unreachable!() };
+                let TyKind::Adt(_, subst) = term.creusot_ty().kind() else { unreachable!() };
                 let args = fields.into_iter().map(|f| self.lower_term(f)).collect();
 
                 let ctor = self
@@ -109,7 +109,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::Constructor { ctor, args }
             }
             TermKind::Cur { box term } => {
-                if strip_all_refs(term.ty).is_mutable_ptr() {
+                if term.creusot_ty().is_mutable_ptr() {
                     self.names.import_prelude_module(PreludeModule::Borrow);
                     Exp::Current(Box::new(self.lower_term(term)))
                 } else {
@@ -169,7 +169,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::qvar(accessor).app(vec![lhs])
             }
             TermKind::Closure { body } => {
-                let TyKind::Closure(id, subst) = strip_all_refs(term.ty).kind() else {
+                let TyKind::Closure(id, subst) = term.creusot_ty().kind() else {
                     unreachable!("closure has non closure type")
                 };
                 let body = self.lower_term(&*body);

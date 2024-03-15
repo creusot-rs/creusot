@@ -777,47 +777,39 @@ pub fn prusti_ensures_expiry(attr: TS1, tokens: TS1) -> TS1 {
     ensures_helper(rest.into(), tokens, prusti_info)
 }
 
-#[proc_macro_attribute]
-pub fn prusti_logic(attr: TS1, tokens: TS1) -> TS1 {
+fn prusti_logic_gen(attr: TS1, tokens: TS1, creusot_macro: TokenStream, allow_final: bool) -> TS1 {
     let attr = TokenStream::from(attr);
     let tokens = TokenStream::from(tokens);
     let sig = format!("{attr}");
     let sig = LitStr::new(&sig, attr.span());
+    let forbid = if allow_final { None } else { Some(quote!(#[forbid(creusot::prusti_final)])) };
     TS1::from(quote! {
+        #forbid
         #[creusot::prusti::ts="curr"]
         #[creusot::prusti::home_sig=#sig]
-        #[::creusot_contracts::logic]
+        #[::creusot_contracts::#creusot_macro]
         #tokens
     })
 }
 
 #[proc_macro_attribute]
-pub fn prusti_ghost(attr: TS1, tokens: TS1) -> TS1 {
-    let attr = TokenStream::from(attr);
-    let tokens = TokenStream::from(tokens);
-    let sig = format!("{attr}");
-    let sig = LitStr::new(&sig, attr.span());
-    TS1::from(quote! {
-        #[forbid(creusot::prusti_final)]
-        #[creusot::prusti::ts="curr"]
-        #[creusot::prusti::home_sig=#sig]
-        #[::creusot_contracts::ghost]
-        #tokens
-    })
+pub fn prusti_logic(attr: TS1, tokens: TS1) -> TS1 {
+    prusti_logic_gen(attr, tokens, quote!(logic), false)
+}
+
+#[proc_macro_attribute]
+pub fn prusti_logic_prophetic(attr: TS1, tokens: TS1) -> TS1 {
+    prusti_logic_gen(attr, tokens, quote!(logic(prophectic)), true)
 }
 
 #[proc_macro_attribute]
 pub fn prusti_predicate(attr: TS1, tokens: TS1) -> TS1 {
-    let attr = TokenStream::from(attr);
-    let tokens = TokenStream::from(tokens);
-    let sig = format!("{attr}");
-    let sig = LitStr::new(&sig, attr.span());
-    TS1::from(quote! {
-        #[creusot::prusti::ts="curr"]
-        #[creusot::prusti::home_sig=#sig]
-        #[::creusot_contracts::predicate]
-        #tokens
-    })
+    prusti_logic_gen(attr, tokens, quote!(predicate), false)
+}
+
+#[proc_macro_attribute]
+pub fn prusti_predicate_prophetic(attr: TS1, tokens: TS1) -> TS1 {
+    prusti_logic_gen(attr, tokens, quote!(predicate(prophectic)), true)
 }
 
 #[proc_macro_attribute]

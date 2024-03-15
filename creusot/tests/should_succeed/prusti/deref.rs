@@ -48,7 +48,7 @@ pub fn deref7<'a, 'b, T>(x: &'a &'b mut T) -> &'a T {
     x.mk_ref()
 }
 
-pub struct X(u32, u32);
+pub struct X(u32, ());
 
 #[ensures(result == *old(x.0.mk_ref()))]
 pub fn project_ref<'a>(x: &'a X) -> u32 {

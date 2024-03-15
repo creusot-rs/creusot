@@ -2,7 +2,7 @@ use itertools::Itertools;
 use rustc_index::Idx;
 use rustc_middle::{
     bug,
-    ty::{EarlyBoundRegion, Region, RegionKind, TyCtxt},
+    ty::{EarlyParamRegion, Region, RegionKind, TyCtxt},
 };
 use rustc_span::{def_id::CRATE_DEF_ID, symbol::kw};
 use std::fmt::{Debug, Formatter};
@@ -54,8 +54,8 @@ impl StateSet {
 
     pub fn into_region(self, tcx: TyCtxt<'_>) -> Region<'_> {
         let reg =
-            EarlyBoundRegion { index: self.0, def_id: CRATE_DEF_ID.to_def_id(), name: kw::In };
-        Region::new_early_bound(tcx, reg)
+            EarlyParamRegion { index: self.0, def_id: CRATE_DEF_ID.to_def_id(), name: kw::In };
+        Region::new_early_param(tcx, reg)
     }
 
     pub fn try_into_singleton(self) -> Option<State> {
@@ -72,8 +72,8 @@ impl StateSet {
 impl<'tcx> From<Region<'tcx>> for StateSet {
     fn from(value: Region<'tcx>) -> Self {
         match value.kind() {
-            RegionKind::ReEarlyBound(EarlyBoundRegion { index, .. }) => StateSet(index),
-            _ => bug!(),
+            RegionKind::ReEarlyParam(EarlyParamRegion { index, .. }) => StateSet(index),
+            _ => bug!("{value:?} does not represent a state set"),
         }
     }
 }

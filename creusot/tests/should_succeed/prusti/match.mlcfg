@@ -28,28 +28,28 @@ module Match_TestProcCur
     goto BB0
   }
   BB0 {
-    switch ([#"../match.rs" 32 15 32 16] b)
+    switch (b)
       | False -> goto BB2
       | True -> goto BB1
       end
   }
   BB1 {
     assume { resolve0 y };
-    [#"../match.rs" 32 19 32 20] r <- ([#"../match.rs" 32 19 32 20] x);
-    [#"../match.rs" 32 19 32 20] x <- any borrowed uint32;
+    [#"../match.rs" 32 19 32 20] r <- x;
+    x <- any borrowed uint32;
     goto BB3
   }
   BB2 {
     assume { resolve0 x };
-    [#"../match.rs" 32 30 32 31] _7 <- ([#"../match.rs" 32 30 32 31] y);
-    [#"../match.rs" 32 30 32 31] y <- any borrowed uint32;
+    [#"../match.rs" 32 30 32 31] _7 <- y;
+    y <- any borrowed uint32;
     [#"../match.rs" 32 30 32 31] r <- Borrow.borrow_final ( * _7) (Borrow.get_id _7);
     [#"../match.rs" 32 30 32 31] _7 <- { _7 with current = ( ^ r) ; };
     assume { resolve0 _7 };
     goto BB3
   }
   BB3 {
-    [#"../match.rs" 33 4 33 10] r <- { r with current = ([#"../match.rs" 33 4 33 10] [#"../match.rs" 33 9 33 10] (5 : uint32)) ; };
+    [#"../match.rs" 33 4 33 10] r <- { r with current = ([#"../match.rs" 33 9 33 10] (5 : uint32)) ; };
     assume { resolve0 r };
     [#"../match.rs" 31 70 34 1] _0 <- ([#"../match.rs" 31 70 34 1] ());
     return _0
@@ -63,23 +63,39 @@ module Core_Option_Option_Type
     
 end
 module Match_Unwrap_Impl
-  use prelude.Borrow
   use prelude.UInt32
+  use prelude.Borrow
+  predicate invariant0 (self : borrowed uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant0 (self : borrowed uint32) : bool
+    ensures { result = invariant0 self }
+    
+  predicate inv0 (_x : borrowed uint32)
+  val inv0 (_x : borrowed uint32) : bool
+    ensures { result = inv0 _x }
+    
+  axiom inv0 : forall x : borrowed uint32 . inv0 x = true
   function id0 [#"../match.rs" 38 0 38 43] (x : borrowed uint32) : borrowed uint32 =
     [#"../match.rs" 37 0 37 8] x
   val id0 [#"../match.rs" 38 0 38 43] (x : borrowed uint32) : borrowed uint32
     ensures { result = id0 x }
     
+  function unreachable0 (_1 : ()) : borrowed uint32
+  val unreachable0 (_1 : ()) : borrowed uint32
+    requires {[#"../../../../../creusot-contracts/src/util.rs" 24 11 24 16] false}
+    ensures { result = unreachable0 _1 }
+    
+  axiom unreachable0_spec : forall _1 : () . ([#"../../../../../creusot-contracts/src/util.rs" 24 11 24 16] false)
+   -> ([#"../../../../../creusot-contracts/src/util.rs" 27 0 27 28] inv0 (unreachable0 _1)) && ([#"../../../../../creusot-contracts/src/util.rs" 25 10 25 15] false)
   use prelude.Int
   use Core_Option_Option_Type as Core_Option_Option_Type
-  let rec ghost function unwrap [#"../match.rs" 45 0 45 60] (x : Core_Option_Option_Type.t_option (borrowed uint32)) : borrowed uint32
-    requires {[#"../match.rs" 44 11 44 20] x <> Core_Option_Option_Type.C_None}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../match.rs" 43 0 43 8] match x with
-      | Core_Option_Option_Type.C_Some x -> x
-      | Core_Option_Option_Type.C_None -> let a' = absurd in id0 a'
-      end
+  constant x  : Core_Option_Option_Type.t_option (borrowed uint32)
+  function unwrap [#"../match.rs" 45 0 45 60] (x : Core_Option_Option_Type.t_option (borrowed uint32)) : borrowed uint32
+  goal vc_unwrap : ([#"../match.rs" 44 11 44 20] x <> Core_Option_Option_Type.C_None)
+   -> match x with
+    | Core_Option_Option_Type.C_Some x -> true
+    | Core_Option_Option_Type.C_None -> [#"../../../../../creusot-contracts/src/util.rs" 24 11 24 16] false
+    end
 end
 module Match_TestNever
   use prelude.UInt32

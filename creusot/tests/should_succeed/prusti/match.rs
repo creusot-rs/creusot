@@ -1,7 +1,7 @@
 #![warn(creusot::prusti_final)]
 #![feature(never_type)]
 extern crate creusot_contracts;
-use creusot_contracts::prusti_prelude::*;
+use creusot_contracts::{prusti_prelude::*, util::unreachable};
 
 #[open]
 #[logic]
@@ -45,7 +45,7 @@ pub fn id<'a, X>(x: &'a mut X) -> &'a mut X {
 pub fn unwrap<'a, 'b>(x: Option<&'a mut u32>) -> &'a mut u32 {
     match x {
         Some(x) => x,
-        None => id(absurd),
+        None => id(unreachable()),
     }
 }
 

@@ -74,7 +74,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 self.tcx, impl_item, trait_item, refn_subst,
             ) {
                 Ok(()) => {}
-                Err(e) => e.emit(self.tcx.sess),
+                Err(e) => e.emit(self.tcx),
             }
 
             // If there is no contract to refine, skip this item

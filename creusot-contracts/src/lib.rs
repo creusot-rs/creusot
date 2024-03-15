@@ -104,15 +104,11 @@ mod macros {
 
     /// Allows the body of a logical definition to be made visible to provers. An optional visibility modifier can be
     /// provided to restrict the context in whcih the obdy is opened.
-    /// By default bodies are *opaque*: they are only visible to definitions in the same module (like `pub(self)` for visibility).
+    /// By default, bodies are *opaque*: they are only visible to definitions in the same module (like `pub(self)` for visibility).
     ///
     /// A body can only be visible in contexts where all the symbols used in the body are also visible.
     /// This means you cannot `#[open]` a body which refers to a `pub(crate)` symbol.
     pub use base_macros::open;
-
-    pub use base_macros::DeepModel;
-
-    pub use base_macros::Resolve;
 }
 
 #[cfg(creusot)]
@@ -193,8 +189,9 @@ mod base_prelude {
 pub mod prusti_macros {
     pub use base_macros::{
         invariant, open, pearlite, proof_assert, prusti_ensures as ensures,
-        prusti_ensures_expiry as after_expiry, prusti_law as law,
-        prusti_logic as logic, prusti_predicate as predicate, prusti_requires as requires, trusted,
+        prusti_ensures_expiry as after_expiry, prusti_law as law, prusti_logic as logic,
+        prusti_logic_prophetic as logic_prophetic, prusti_predicate as predicate,
+        prusti_predicate_prophetic as predicate_prophetic, prusti_requires as requires, trusted,
         variant,
     };
 }
