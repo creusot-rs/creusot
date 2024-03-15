@@ -1,3 +1,4 @@
+pub use crate::base_macros::Resolve;
 use crate::*;
 
 #[cfg_attr(creusot, rustc_diagnostic_item = "creusot_resolve")]
