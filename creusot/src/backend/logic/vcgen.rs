@@ -325,7 +325,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // Same as for tuples
             TermKind::Constructor { typ, variant, fields } => {
                 self.build_vc_slice(fields, &|args| {
-                    let TyKind::Adt(_, subst) = t.ty.kind() else { unreachable!() };
+                    let TyKind::Adt(_, subst) = t.creusot_ty().kind() else { unreachable!() };
 
                     let ctor = self.names.borrow_mut().constructor(
                         self.ctx.borrow().adt_def(typ).variants()[*variant].def_id,
@@ -366,7 +366,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             }),
             // VC(A.f, Q) = VC(A, |a| Q(a.f))
             TermKind::Projection { lhs, name } => {
-                let accessor = match lhs.ty.kind() {
+                let accessor = match lhs.creusot_ty().kind() {
                     TyKind::Closure(did, substs) => {
                         self.names.borrow_mut().accessor(*did, substs, 0, *name)
                     }
@@ -464,10 +464,10 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         let orig_variant = self.self_sig().contract.variant.remove(0);
         let mut rec_var_exp = orig_variant.clone();
         rec_var_exp.subst(&subst);
-        if is_int(self.ctx.borrow().tcx, variant.ty) {
+        if is_int(self.ctx.borrow().tcx, variant.creusot_ty()) {
             Ok(Exp::int(0).leq(orig_variant.clone()).log_and(rec_var_exp.lt(orig_variant)))
         } else {
-            Err(VCError::UnsupportedVariant(variant.ty, variant.span))
+            Err(VCError::UnsupportedVariant(variant.creusot_ty(), variant.span))
         }
     }
 

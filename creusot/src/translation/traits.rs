@@ -66,6 +66,10 @@ impl<'tcx> TranslationCtx<'tcx> {
                 continue;
             }
 
+            let subst = GenericArgs::identity_for_item(self.tcx, impl_item);
+
+            let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.skip_binder().args);
+
             // If there is no contract to refine, skip this item
             if !self.tcx.def_kind(trait_item).is_fn_like()
                 || (self.sig(trait_item).contract.is_empty()
@@ -73,10 +77,6 @@ impl<'tcx> TranslationCtx<'tcx> {
             {
                 continue;
             }
-
-            let subst = GenericArgs::identity_for_item(self.tcx, impl_item);
-
-            let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.skip_binder().args);
 
             // TODO: Clean up and abstract
             let predicates = self

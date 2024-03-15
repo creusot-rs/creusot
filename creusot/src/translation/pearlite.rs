@@ -32,8 +32,8 @@ use rustc_middle::{
         AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
     },
     ty::{
-        int_ty, uint_ty, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypeFoldable,
-        TypeVisitable, UpvarArgs,
+        int_ty, uint_ty, CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, Ty, TyCtxt,
+        TyKind, TypeFoldable, TypeVisitable, TypeVisitableExt, UpvarArgs, UserType,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
@@ -156,6 +156,38 @@ pub enum TermKind<'tcx> {
     },
     Absurd,
 }
+
+impl<'tcx> TermKind<'tcx> {
+    pub fn item(
+        def_id: DefId,
+        subst: GenericArgsRef<'tcx>,
+        user_ty: &Option<Box<CanonicalUserType<'tcx>>>,
+        tcx: TyCtxt<'tcx>,
+    ) -> Self {
+        let Some(user_ty) = user_ty else { return Self::Item(def_id, subst) };
+
+        match user_ty.value {
+            UserType::Ty(_) => Self::Item(def_id, subst),
+            UserType::TypeOf(def_id2, u_subst) => {
+                assert_eq!(def_id, def_id2);
+                if u_subst.args.len() != subst.len() {
+                    return Self::Item(def_id, subst);
+                }
+                let subst = GenericArgs::for_item(tcx, def_id, |x, _| {
+                    let s = subst[x.index as usize];
+                    let us = u_subst.args[x.index as usize];
+                    if us.has_escaping_bound_vars() {
+                        s
+                    } else {
+                        us
+                    }
+                });
+                Self::Item(def_id, subst)
+            }
+        }
+    }
+}
+
 impl<'tcx, I: Interner> TypeFoldable<I> for Literal<'tcx> {
     fn try_fold_with<F: rustc_middle::ty::FallibleTypeFolder<I>>(
         self,
@@ -277,7 +309,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         let ty = self.thir[expr].ty;
         let thir_term = &self.thir[expr];
         let span = self.thir[expr].span;
-        match thir_term.kind {
+        let res = match thir_term.kind {
             ExprKind::Scope { value, .. } => self.expr_term(value),
             ExprKind::Block { block } => {
                 let Block { ref stmts, expr, .. } = self.thir[block];
@@ -391,7 +423,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 };
                 Ok(Term { ty, span, kind: TermKind::Lit(lit) })
             }
-            ExprKind::Call { ty: f_ty, ref args, .. } => {
+            ExprKind::Call { ty: f_ty, ref args, fun, .. } => {
                 use Stub::*;
                 match pearlite_stub(self.ctx.tcx, f_ty) {
                     Some(Forall) => {
@@ -480,8 +512,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                             .iter()
                             .map(|arg| self.expr_term(*arg))
                             .collect::<Result<Vec<_>, _>>()?;
-                        let (id, subst) = if let TyKind::FnDef(id, subst) = f_ty.kind() {
-                            (*id, subst)
+                        let fun = self.expr_term(fun)?;
+                        let (id, subst) = if let TermKind::Item(id, subst) = fun.kind {
+                            (id, subst)
                         } else {
                             unreachable!("Call on non-function type");
                         };
@@ -597,19 +630,21 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::ValueTypeAscription { source, .. } => self.expr_term(source),
             ExprKind::Box { value } => self.expr_term(value),
             // ExprKind::Array { ref fields } => todo!("Array {:?}", fields),
-            ExprKind::NonHirLiteral { .. } => match ty.kind() {
+            ExprKind::NonHirLiteral { ref user_ty, .. } => match ty.kind() {
                 TyKind::FnDef(id, substs) => {
-                    Ok(Term { ty, span, kind: TermKind::Item(*id, substs) })
+                    Ok(Term { ty, span, kind: TermKind::item(*id, substs, user_ty, self.ctx.tcx) })
                 }
                 _ => Err(Error::new(thir_term.span, "unhandled literal expression")),
             },
-            ExprKind::NamedConst { def_id, args, .. } => {
-                Ok(Term { ty, span, kind: TermKind::Item(def_id, args) })
+            ExprKind::NamedConst { def_id, args, ref user_ty, .. } => {
+                Ok(Term { ty, span, kind: TermKind::item(def_id, args, user_ty, self.ctx.tcx) })
             }
-            ExprKind::ZstLiteral { .. } => match ty.kind() {
-                TyKind::FnDef(def_id, subst) => {
-                    Ok(Term { ty, span, kind: TermKind::Item(*def_id, subst) })
-                }
+            ExprKind::ZstLiteral { ref user_ty, .. } => match ty.kind() {
+                TyKind::FnDef(def_id, subst) => Ok(Term {
+                    ty,
+                    span,
+                    kind: TermKind::item(*def_id, subst, user_ty, self.ctx.tcx),
+                }),
                 _ => Ok(Term { ty, span, kind: TermKind::Lit(Literal::ZST) }),
             },
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
@@ -622,7 +657,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 }
             }
             ref ek => todo!("lower_expr: {:?}", ek),
-        }
+        };
+        Ok(Term { ty, ..res? })
     }
 
     fn arm_term(&self, arm: ArmId) -> CreusotResult<(Pattern<'tcx>, Term<'tcx>)> {
@@ -1579,6 +1615,10 @@ impl<'tcx> Term<'tcx> {
             TermKind::Assert { cond } => cond.free_vars_inner(bound, free),
         }
     }
+
+    pub fn creusot_ty(&self) -> Ty<'tcx> {
+        strip_all_refs(self.ty)
+    }
 }
 
 struct PrintExpr<'a, 'tcx>(&'a Thir<'tcx>, ExprId);
@@ -1660,4 +1700,15 @@ fn print_thir_expr<'tcx>(
         }
     }
     Ok(())
+}
+
+fn strip_all_refs(ty: Ty) -> Ty {
+    let mut ty = ty;
+    loop {
+        if ty.ref_mutability() == Some(Not) || ty.is_box() {
+            ty = ty.builtin_deref(true).unwrap().ty;
+        } else {
+            return ty;
+        }
+    }
 }
