@@ -1,4 +1,8 @@
-use crate::*;
+use crate::{
+    std::ops::{Deref, DerefMut},
+    *,
+};
+use ::std::marker::PhantomData;
 
 // FIXME: better doc
 /// Any item that implements `Ghost` must **not** be able to break the ownership rules,
@@ -32,3 +36,61 @@ impl_ghost_tuple! { T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12 }
 
 #[trusted]
 impl<T> Ghost for Snapshot<T> {}
+
+pub struct GhostBox<T: ?Sized>(PhantomData<T>);
+
+impl<T: ?Sized> Deref for GhostBox<T> {
+    type Target = T;
+
+    #[trusted]
+    #[logic]
+    #[open(self)]
+    fn deref(&self) -> &Self::Target {
+        pearlite! { absurd }
+    }
+}
+impl<T: ?Sized> DerefMut for GhostBox<T> {
+    #[trusted]
+    #[logic]
+    #[open(self)]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        pearlite! { absurd }
+    }
+}
+#[trusted]
+impl<T: ?Sized> Ghost for GhostBox<T> {}
+
+impl<T: ShallowModel + ?Sized> ShallowModel for GhostBox<T> {
+    type ShallowModelTy = T::ShallowModelTy;
+
+    #[logic]
+    #[open]
+    fn shallow_model(self) -> Self::ShallowModelTy {
+        pearlite! { self.deref().shallow_model() }
+    }
+}
+
+impl<T> GhostBox<T> {
+    #[trusted]
+    #[ensures(*result == x)]
+    pub fn new(x: T) -> Self {
+        Self(PhantomData)
+    }
+
+    #[trusted]
+    #[requires(true)]
+    #[ensures(true)]
+    pub fn uninit() -> Self {
+        Self(PhantomData)
+    }
+
+    #[trusted]
+    #[logic]
+    #[open(self)]
+    pub fn inner(self) -> T
+    where
+        T: Sized, // TODO: don't require T: Sized here. Problem: return type is T.
+    {
+        pearlite! { absurd }
+    }
+}
