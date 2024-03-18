@@ -177,6 +177,29 @@ pub mod snapshot;
 #[cfg(not(creusot))]
 pub mod ghost {
     pub trait Ghost: std::ops::Deref {}
+    pub struct GhostBox<T>(std::marker::PhantomData<T>)
+    where
+        T: ?Sized;
+
+    impl<T: ?Sized> GhostBox<T> {
+        pub fn from_fn(_: fn() -> T) -> Self {
+            GhostBox(std::marker::PhantomData)
+        }
+    }
+
+    impl<T: ?Sized> Clone for GhostBox<T> {
+        fn clone(&self) -> Self {
+            GhostBox(std::marker::PhantomData)
+        }
+    }
+
+    impl<T: ?Sized> Copy for GhostBox<T> {}
+
+    impl<T: ?Sized> GhostBox<T> {
+        pub fn uninit() -> Self {
+            Self(std::marker::PhantomData)
+        }
+    }
 }
 
 #[cfg(not(creusot))]
@@ -210,7 +233,7 @@ pub mod well_founded;
 // We add some common things at the root of the creusot-contracts library
 mod base_prelude {
     pub use crate::{
-        ghost::Ghost,
+        ghost::{Ghost, GhostBox},
         logic::{IndexLogic as _, Int, OrdLogic, Seq},
         model::{DeepModel, ShallowModel},
         resolve::Resolve,
