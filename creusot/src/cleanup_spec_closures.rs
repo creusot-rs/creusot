@@ -22,7 +22,6 @@ pub(crate) fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body
     if util::no_mir(tcx, def_id) {
         trace!("replacing function body");
         *body.basic_blocks_mut() = make_loop(tcx);
-        body.var_debug_info = Vec::new();
     } else {
         let mut cleanup = NoTranslateNoMoves { tcx, unused: IndexSet::new() };
         cleanup.visit_body(body);
