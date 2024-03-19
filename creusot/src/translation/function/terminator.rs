@@ -24,7 +24,10 @@ use rustc_middle::{
     ty::{self, GenericArgKind, GenericArgsRef, ParamEnv, Predicate, Ty, TyKind},
 };
 use rustc_span::{Span, Symbol};
-use rustc_trait_selection::traits::{error_reporting::TypeErrCtxtExt, TraitEngineExt};
+use rustc_trait_selection::{
+    infer::InferCtxtExt,
+    traits::{error_reporting::TypeErrCtxtExt, TraitEngineExt},
+};
 use std::collections::HashMap;
 
 // Translate the terminator of a basic block.
@@ -62,7 +65,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx, '_> {
                 self.emit_terminator(Terminator::Abort(terminator.source_info.span))
             }
             Return => {
-                if let Some((bb, dest_place)) = self.ghost_closure_return.take() {
+                if let Some((bb, dest_place)) = self.ghost_closure_return.clone() {
                     let return_value =
                         self.translate_operand(&Operand::Move(Place::return_place()));
                     let return_type = return_value.ty(self.tcx, &self.vars);
@@ -80,7 +83,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx, '_> {
                 }
             }
             Unreachable => self.emit_terminator(Terminator::Abort(terminator.source_info.span)),
-            Call { func, args, destination, target, .. } => {
+            Call { func, args, destination, target, fn_span, .. } => {
                 if target.is_none() {
                     // If we have no target block after the call, then we cannot move past it.
                     self.emit_terminator(Terminator::Abort(terminator.source_info.span));
@@ -105,8 +108,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx, '_> {
                     debug_assert!(self.ghosts.remove(def_id));
 
                     // Check that all captures implement `Ghost`
-                    let ghost_trait_id =
-                        self.tcx.get_diagnostic_item(Symbol::intern("ghost_trait")).unwrap();
                     let param_env = self.tcx.param_env(def_id);
                     let captures = self.ctx.closure_captures(def_id.expect_local());
                     for capture in captures.into_iter().rev() {
@@ -117,14 +118,12 @@ impl<'tcx> BodyTranslator<'_, 'tcx, '_> {
                             _ => true,
                         };
                         let place_ty = capture.place.ty();
-                        let ghost_trait: ty::TraitRef<'tcx> =
-                            ty::TraitRef::new(self.tcx, ghost_trait_id, std::iter::once(place_ty));
-                        let selection = self.ctx.codegen_select_candidate((param_env, ghost_trait));
 
+                        let implements_ghost = self.implements_ghost(place_ty, param_env);
                         let is_copy =
                             copy_allowed && place_ty.is_copy_modulo_regions(self.tcx, param_env);
 
-                        if selection.is_err() && !is_copy {
+                        if !implements_ghost && !is_copy {
                             self.ctx
                                 .error(
                                     capture.get_path_span(self.tcx),
@@ -179,6 +178,73 @@ impl<'tcx> BodyTranslator<'_, 'tcx, '_> {
                     self.emit_goto(entry_point);
 
                     return;
+                }
+
+                if self.ghost_closure_arg.is_none() {
+                    // We are indeed in program code.
+                    // TODO: this check is pretty bad, we should probably keep the purity of the
+                    // current function around.
+                    let param_env = self.param_env();
+                    let func_param_env = self.tcx.param_env(fun_def_id);
+
+                    // Check that we do not dereference a ghost variable in normal code.
+                    if self.tcx.is_diagnostic_item(Symbol::intern("deref_method"), fun_def_id) {
+                        if self.ghost_closure_arg.is_none() {
+                            let GenericArgKind::Type(ty) = subst.get(0).unwrap().unpack() else {
+                                panic!()
+                            };
+                            let is_ghost = self.implements_ghost(ty, param_env);
+                            if is_ghost {
+                                self.ctx
+                                    .error(
+                                        *fn_span,
+                                        "dereference of a ghost variable in program context",
+                                    )
+                                    .emit();
+                            }
+                        }
+                    } else {
+                        // Check and reject instantiation of a <T: Deref> with a ghost parameter.
+                        let deref_trait_id =
+                            self.tcx.get_diagnostic_item(Symbol::intern("Deref")).unwrap();
+                        let ghost_trait_id =
+                            self.tcx.get_diagnostic_item(Symbol::intern("ghost_trait")).unwrap();
+                        let infer_ctx = self.tcx.infer_ctxt().build();
+                        for bound in func_param_env.caller_bounds() {
+                            let Some(trait_clause) = bound.as_trait_clause() else { continue };
+                            if trait_clause.def_id() != deref_trait_id {
+                                continue;
+                            }
+                            let ty = trait_clause.self_ty().skip_binder();
+                            let caller_ty = ty::EarlyBinder::bind(trait_clause.self_ty())
+                                .instantiate(self.tcx, subst)
+                                .skip_binder();
+                            let deref_in_callee = infer_ctx
+                                .type_implements_trait(
+                                    deref_trait_id,
+                                    std::iter::once(ty),
+                                    func_param_env,
+                                )
+                                .may_apply();
+                            let ghost_in_caller = infer_ctx
+                                .type_implements_trait(
+                                    ghost_trait_id,
+                                    std::iter::once(caller_ty),
+                                    param_env,
+                                )
+                                .may_apply();
+                            let ghost_in_callee = infer_ctx
+                                .type_implements_trait(
+                                    ghost_trait_id,
+                                    std::iter::once(ty),
+                                    func_param_env,
+                                )
+                                .may_apply();
+                            if deref_in_callee && ghost_in_caller && !ghost_in_callee {
+                                self.ctx.error(*fn_span, &format!("Cannot instantiate a generic type {ty} implementing `Deref` with the ghost type {caller_ty}")).emit();
+                            }
+                        }
+                    }
                 }
 
                 let predicates = self
@@ -282,6 +348,16 @@ impl<'tcx> BodyTranslator<'_, 'tcx, '_> {
 
     fn is_box_new(&self, def_id: DefId) -> bool {
         self.tcx.def_path_str(def_id) == "std::boxed::Box::<T>::new"
+    }
+
+    /// Determine if the given type `ty` implements the `Ghost` trait.
+    fn implements_ghost(&self, ty: Ty<'tcx>, param_env: ParamEnv<'tcx>) -> bool {
+        let ghost_trait_id = self.tcx.get_diagnostic_item(Symbol::intern("ghost_trait")).unwrap();
+        self.tcx
+            .infer_ctxt()
+            .build()
+            .type_implements_trait(ghost_trait_id, std::iter::once(ty), param_env)
+            .may_apply()
     }
 
     fn get_explanation(&mut self, msg: &mir::AssertKind<Operand<'tcx>>) -> String {
