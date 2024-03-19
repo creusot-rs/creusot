@@ -431,7 +431,9 @@ pub fn ghost(body: TS1) -> TS1 {
     TS1::from(quote! {
         {
             ::creusot_contracts::__stubs::ghost_from_fn({
-                #[creusot::spec::ghost] || { #body }
+                #[creusot::spec::ghost] 
+                #[creusot::no_translate]
+                || { #body }
             })
         }
     })
