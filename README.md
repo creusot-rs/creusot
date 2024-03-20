@@ -35,26 +35,17 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
 
 1. Set up **Rust**
     - [Install `rustup`](https://www.rust-lang.org/tools/install), to get the suitable Rust toolchain
-2. Set up **Why3** and **Alt-Ergo**
-    - [Get `opam`](https://opam.ocaml.org/doc/Install.html), the package manager for OCaml
-    - Create an opam switch with OCaml 4.14.1:
-    ```
-    $ opam switch create creusot ocaml.4.14.1
-    $ eval $(opam env --switch=creusot)
-    ```
-    - Pin `why3` to `master` and install it:
-    ```
-    $ opam pin -n why3 --dev-repo
-    $ opam pin -n why3-ide --dev-repo
-    $ opam install zarith ocamlgraph camlzip why3 why3-ide
-    ```
-    - Pin `alt-ergo` to version 2.4.3 and install it:
-    ```
-    $ opam pin alt-ergo 2.4.3
-    ```
-3. Clone the [creusot](https://github.com/xldenis/creusot/) repo at any directory you like
+2. Clone the [creusot](https://github.com/xldenis/creusot/) repo at any directory you like
+3. Set up **Why3** and **Alt-Ergo**
+   - [Get `opam`](https://opam.ocaml.org/doc/Install.html), the package manager for OCaml
+   - Enter the cloned Creusot directory and create a local `opam` switch with why3 and alt-ergo:
+   ```
+   $ opam switch create -y . ocaml.4.14.1
+   $ eval $(opam env)
+   ```
+   This will build why3, alt-ergo and their ocaml dependencies in a local `_opam` directory.
 4. Build **Creusot**
-    - Enter the cloned directory and run:
+    - In the cloned Creusot directory, run:
     ```
     $ cargo install --path creusot-rustc
     $ cargo install --path cargo-creusot
@@ -65,6 +56,29 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
    $ cargo creusot setup install
    ```
    This will download additional solvers (Z3, CVC4, CVC5) and configure Why3 to use them.
+
+# Upgrading Creusot 
+
+1. Enter the cloned Creusot git repository used previously to install Creusot
+2. Update Creusot's sources:
+   ```
+   $ git pull
+   ```
+2. Upgrade Why3 and Alt-Ergo if needed:
+   ```
+   $ eval $(opam env)
+   $ opam update
+   $ opam install .
+   ```
+3. Rebuild and reinstall Creusot:
+   ```
+   $ cargo install --path creusot-rustc
+   $ cargo install --path cargo-creusot
+   ```
+4. Re-run Creusot's setup:
+   ```
+   $ cargo creusot setup install
+   ```
 
 # Hacking on Creusot
 

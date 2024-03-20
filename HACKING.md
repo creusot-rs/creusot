@@ -71,3 +71,12 @@ To invoke why3 this way, run:
 ```
 cargo run --bin dev-why3 -- <arguments_to_why3...>
 ```
+
+## Upgrading the revision of Why3 used by Creusot
+
+Edit `creusot-deps.opam` to use the hash of the git commit of the latest commit
+in Why3's master branch. (But first make sure that the Nightly CI job passes.)
+
+There are several places to edit in the file: the `pin-depends` field at the end
+of the file (URLs and `git-XXXX` versions), and the `git-XXXX` versions in the
+`depends:` field.
