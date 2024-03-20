@@ -82,8 +82,7 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
 
 # Verifying with Creusot and Why3
 
-<!-- FIXME: build the guide in CI -->
-See the [guide](./guide/).
+See the [guide](https://creusot-rs.github.io/creusot/).
 
 
 # Hacking on Creusot
