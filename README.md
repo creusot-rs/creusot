@@ -35,7 +35,7 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
 
 1. Set up **Rust**
     - [Install `rustup`](https://www.rust-lang.org/tools/install), to get the suitable Rust toolchain
-2. Clone the [creusot](https://github.com/xldenis/creusot/) repo at any directory you like
+2. Clone the [creusot](https://github.com/creusot-rs/creusot/) repo at any directory you like
 3. Set up **Why3** and **Alt-Ergo**
    - [Get `opam`](https://opam.ocaml.org/doc/Install.html), the package manager for OCaml
    - Enter the cloned Creusot directory and create a local `opam` switch with why3 and alt-ergo:
