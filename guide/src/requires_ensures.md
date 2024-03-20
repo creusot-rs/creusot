@@ -33,7 +33,7 @@ Additionally, we cannot use most functions that we are accustomed to, like `Vec:
 
 In this case, the model of `&[i32]` is a sequence `Seq<i32>`: we access this model by using the `@` suffix operator.
 
-To learn more, see the chapters on [models](TODO) and [Pearlite](./pearlite.md).
+To learn more, see the chapters on [models](./model.md) and [Pearlite](./pearlite.md).
 
 ## Postconditions with `ensures`
 
