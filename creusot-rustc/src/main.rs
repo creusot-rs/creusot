@@ -19,7 +19,7 @@ use rustc_interface::interface::try_print_query_stack;
 use rustc_session::{config::ErrorOutputType, EarlyDiagCtxt};
 use std::{env, panic, panic::PanicInfo, process::Command};
 
-const BUG_REPORT_URL: &'static str = &"https://github.com/xldenis/creusot/issues/new";
+const BUG_REPORT_URL: &'static str = &"https://github.com/creusot-rs/creusot/issues/new";
 
 lazy_static::lazy_static! {
     static ref ICE_HOOK: Box<dyn Fn(&panic::PanicInfo<'_>) + Sync + Send + 'static> = {
