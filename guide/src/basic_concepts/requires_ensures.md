@@ -23,17 +23,9 @@ fn head(v: &[i32]) -> i32 {
 }
 ```
 
-## An aside on models
+Note the **shallow model** (`@`) operator: it is needed to convert the Rust type `&[i32]` to a logical type `Seq<i32>`. Else, we could not call `[T]::len`, which is a program function (and not a logical one).
 
-When writing specifications, the language used is similar to, but not exactly Rust. It is called _Pearlite_.
-
-In Pearlite, types are the _logical_ types: we don't have `i32`, `Vec` or `HashMap`, but `Int` (mathematical integer, unbounded), `Seq` (sequence of objects) and `Map` (mapping of objects).
-
-Additionally, we cannot use most functions that we are accustomed to, like `Vec::len`, because they are not purely logical functions. To get around this, types can define their **model**, which is their equivalent in the logical world : we can then call functions and methods on these logical types.
-
-In this case, the model of `&[i32]` is a sequence `Seq<i32>`: we access this model by using the `@` suffix operator.
-
-To learn more, see the chapters on [models](./model.md) and [Pearlite](./pearlite.md).
+To learn more, see the chapter on [Pearlite](../pearlite.md) and [ShallowModel](../shallow_model.md).
 
 ## Postconditions with `ensures`
 
@@ -49,4 +41,6 @@ fn head(v: &[i32]) -> i32 {
 }
 ```
 
-Note that we can index a `Seq<i32>` to get a `i32`.
+Note that we:
+- use the `@` operator on the slice to get a `Seq<i32>`
+- we can then index this `Seq<i32>` to get a `i32`.

@@ -1,7 +1,7 @@
-# Model
+# Shallow model
 
-You can give a custom _model_ to your type.
-To do that, you just implement the `creusot_contracts::ShallowModel` trait specifying the associated type `ShallowModelTy`. It can then be accessed with the `@` operator.
+You can implement the `@` operator for your type.
+To do that, you just implement the `creusot_contracts::ShallowModel` trait specifying the associated type `ShallowModelTy`.
 
 For example, the following gives a spooky data type `MyPair<T, U>` a nice pair model.
 
@@ -23,3 +23,8 @@ fn my_pair<T, U>(a: T, b: U) -> MyPair<T, U> {
     MyPair(a, b)
 }
 ```
+
+<!-- TODO:
+- Shallow model for base types
+- explain DeepModel
+ -->

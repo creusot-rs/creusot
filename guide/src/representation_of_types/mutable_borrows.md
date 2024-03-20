@@ -1,6 +1,14 @@
 # Mutable borrows
 
-TODO: Model of a mutable borrow
+In Creusot, mutable borrows are handled via **prophecies**. A mutable borrow `&mut T` contains:
+
+- The current value (of type `T`) written in the borrow.
+- The _last_ value written in the borrow, called the **prophecy**.
+
+This works in the underlying logic by performing two key steps:
+
+- When the borrow is created, the prophecy is given a special `any` value. We don't know it yet, we will trust the logic solvers to find its actual value based on later operations.
+- When dropping the borrow, Creusot adds the assumption `current == prophecy`. We call that **resolving the prophecy**.
 
 ## Final reborrows
 
