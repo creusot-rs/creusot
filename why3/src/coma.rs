@@ -262,7 +262,12 @@ impl Print for Expr {
                     alloc.line().append(alloc.text("| "))
                 )
             ],
-            Expr::Assign(cont, asgns) => docs![
+            Expr::Assign(cont, asgns) => {
+                let needs_parens = matches!(
+                    &**cont,
+                    Expr::Let(_, _) | Expr::Defn(_, _, _)
+                );
+                docs![
                 alloc,
                 bracket_list(
                     alloc,
@@ -277,8 +282,9 @@ impl Print for Expr {
                     ]),
                     alloc.line().append(alloc.text("| "))
                 ),
-                cont.pretty(alloc)
-            ],
+                if needs_parens { cont.pretty(alloc).parens() } else { cont.pretty(alloc) }
+            ]
+            },
             Expr::Assert(t, e) => {
                 docs![alloc, t.pretty(alloc).braces().group(), alloc.line(), e.pretty(alloc)]
             }

@@ -11,10 +11,11 @@ use indexmap::IndexSet;
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
 use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_middle::ty::{
-    self, AliasKind, AliasTy, EarlyBinder, FieldDef, GenericArg, GenericArgKind, GenericArgs,
-    GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
+    self, AdtDef, AliasKind, AliasTy, EarlyBinder, FieldDef, GenericArg, GenericArgKind,
+    GenericArgs, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_target::abi::VariantIdx;
 use rustc_type_ir::TyKind::*;
 use std::collections::VecDeque;
 use why3::{
@@ -97,8 +98,6 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
                 ctx.translate(def.did());
                 MlT::TConstructor(names.ty(def.did(), s))
             };
-
-
 
             let mut args: Vec<_> =
                 s.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
@@ -394,6 +393,25 @@ pub(crate) fn translate_tydecl(
     let ty_decl =
         TyDecl::Adt { tys: bg.iter().map(|did| build_ty_decl(ctx, &mut names, *did)).collect() };
 
+    let mut destructors = vec![];
+    bg.iter().for_each(|did| {
+        let subst = GenericArgs::identity_for_item(ctx.tcx, *did);
+        let adt_def = ctx.adt_def(*did);
+
+        adt_def.variants().indices().for_each(|vix| {
+            let d = destructor(
+                ctx,
+                &mut names,
+                ctx.type_of(*did).skip_binder(),
+                ctx.adt_def(*did),
+                subst,
+                vix,
+            );
+
+            destructors.push(d)
+        })
+    });
+
     let (mut decls, _) = names.to_clones(ctx, CloneDepth::Shallow);
     decls.push(Decl::TyDecl(ty_decl));
     use why3::{declaration::LetKind, ty::*};
@@ -410,6 +428,9 @@ pub(crate) fn translate_tydecl(
             contract: Default::default(),
         },
     }));
+
+    decls.extend(destructors);
+
     let mut modls = vec![Module { name: name.clone(), decls }];
 
     modls.extend(bg.iter().filter(|did| **did != repr).map(|did| Module {
@@ -418,6 +439,82 @@ pub(crate) fn translate_tydecl(
     }));
 
     Some(modls)
+}
+
+fn destructor<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    base_ty: Ty<'tcx>,
+    adt_def: AdtDef<'tcx>,
+    subst: GenericArgsRef<'tcx>,
+    variant: VariantIdx,
+) -> Decl {
+    use why3::coma::{self, Arg, Defn, Expr, Param};
+
+    let variant = &adt_def.variants()[variant];
+
+    let field_tys: Vec<_> = variant
+        .fields
+        .iter()
+        .map(|fld| {
+            translate_ty_inner(
+                TyTranslation::Declaration(adt_def.did()),
+                ctx,
+                names,
+                DUMMY_SP,
+                fld.ty(ctx.tcx, subst),
+            )
+        })
+        .collect();
+
+    let field_names: Vec<Ident> =
+        (0..field_tys.len()).map(|ix| format!("field_{ix}").into()).collect();
+    let field_args: Vec<coma::Param> = field_tys
+        .iter()
+        .cloned()
+        .zip(field_names.iter().cloned())
+        .map(|(ty, nm)| Param::Term(nm, ty))
+        .collect();
+
+    let constr = names.constructor(variant.def_id, subst);
+    let cons_test = Exp::qvar(constr).app(field_names.iter().cloned().map(Exp::var).collect());
+
+    let ret = Expr::Symbol("ret".into())
+        .app(field_names.into_iter().map(Exp::var).map(Arg::Term).collect());
+
+    let good_branch: coma::Defn = coma::Defn {
+        name: format!("good").into(),
+        writes: vec![],
+        params: field_args.clone(),
+        body: Expr::Assert(Box::new(cons_test.clone().eq(Exp::var("input"))), Box::new(ret)),
+    };
+
+    let fail = Expr::Assert(Box::new(Exp::mk_false()), Box::new(Expr::Any));
+    let bad_branch: Defn = coma::Defn {
+        name: format!("bad").into(),
+        writes: vec![],
+        params: field_args.clone(),
+        body: Expr::Assert(Box::new(cons_test.neq(Exp::var("input"))), Box::new(fail)),
+    };
+
+    let ret_cont = Param::Cont("ret".into(), Vec::new(), field_args);
+
+    let input = Param::Term(
+        "input".into(),
+        translate_ty_inner(
+            TyTranslation::Declaration(adt_def.did()),
+            ctx,
+            names,
+            DUMMY_SP,
+            base_ty,
+        ),
+    );
+    Decl::Coma(Defn {
+        name: names.eliminator(variant.def_id, subst).name,
+        writes: vec![],
+        params: vec![input, ret_cont],
+        body: Expr::Defn(Box::new(Expr::Any), false, vec![good_branch, bad_branch]),
+    })
 }
 
 fn build_ty_decl<'tcx>(

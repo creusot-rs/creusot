@@ -24,6 +24,7 @@ use self::{
     ty_inv::TyInvKind,
 };
 
+mod wto;
 pub(crate) mod clone_map;
 pub(crate) mod constant;
 pub(crate) mod dependency;

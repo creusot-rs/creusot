@@ -7,6 +7,7 @@ use crate::{
         closure_generic_decls, optimization,
         place::{self, translate_rplace},
         ty::{self, translate_closure_ty, translate_ty},
+        wto::weak_topological_order,
     },
     ctx::{BodyId, CloneMap, TranslationCtx},
     fmir::{Body, BorrowKind, Operand},
@@ -19,14 +20,14 @@ use crate::{
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{self, BasicBlock, BinOp, ProjectionElem},
+    mir::{self, BasicBlock, BinOp, ProjectionElem, START_BLOCK},
     ty::{AdtDef, GenericArgsRef, Ty, TyKind},
 };
 use rustc_span::{Span, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, UintTy};
 use why3::{
-    coma::{self, Arg, Defn, Param},
+    coma::{self, Arg, Defn, Expr, Param},
     declaration::{Attribute, Decl, LetDecl, LetKind, Module, Signature},
     exp::{Constant, Exp, Pattern},
     ty::Type,
@@ -327,27 +328,10 @@ pub fn to_why<'tcx>(
         graph
     }
 
-    let sccs = petgraph::algo::tarjan_scc(&node_graph(&body));
+    let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
 
-    let blocks: Vec<Defn> = sccs
-        .into_iter()
-        .map(|mut scc| {
-            let id = scc.remove(scc.len() - 1);
-            let block = body.blocks.remove(&id).unwrap();
-            let defns = scc
-                .into_iter()
-                .map(|id| body.blocks.remove(&id).unwrap().to_why(ctx, names, &body.locals, id))
-                .collect();
-
-            let block = block.to_why(ctx, names, &body.locals, id);
-            Defn {
-                name: format!("bb{}", id.as_u32()).into(),
-                writes: Vec::new(),
-                params: Vec::new(),
-                body: Expr::Defn(Box::new(block.body), true, defns),
-            }
-        })
-        .collect();
+    let blocks: Vec<Defn> =
+        wto.into_iter().map(|c| component_to_defn(&mut body, ctx, names, c)).collect();
 
     let vars: Vec<_> = body
         .locals
@@ -364,7 +348,7 @@ pub fn to_why<'tcx>(
             coma::Var(Ident::build(id.as_str()), ty.clone(), init, coma::IsRef::Ref)
         })
         .collect();
-    use coma::Expr;
+
     let body = Expr::Defn(Box::new(Expr::Symbol("bb0".into())), true, blocks);
     let sig = signature_of(ctx, names, body_id.def_id());
 
@@ -410,6 +394,32 @@ pub fn to_why<'tcx>(
     Decl::Coma(coma::Defn { name: sig.name, writes: Vec::new(), params, body })
 
     // Decl::CfgDecl(CfgFunction { sig, rec: true, constant: false, entry, blocks, vars })
+}
+
+use super::wto::Component;
+
+fn component_to_defn<'tcx>(
+    body: &mut Body<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    c: Component<BasicBlock>,
+) -> coma::Defn {
+    let (head, tl) = match c {
+        Component::Vertex(v) => {
+            let block = body.blocks.remove(&v).unwrap();
+            return block.to_why(ctx, names, &body.locals, v);
+        }
+        Component::Component(v, tls) => (v, tls),
+    };
+
+    let defns = tl.into_iter().map(|id| component_to_defn(body, ctx, names, id)).collect();
+
+    let block = body.blocks.remove(&head).unwrap();
+    let mut block = block.to_why(ctx, names, &body.locals, head);
+
+    block.body = Expr::Defn(Box::new(block.body), true, defns);
+
+    block
 }
 
 impl<'tcx> Operand<'tcx> {
@@ -945,13 +955,12 @@ impl<'tcx> Statement<'tcx> {
                     Arg::Term(l.to_why(ctx, names, locals, &mut istmts)),
                     Arg::Term(r.to_why(ctx, names, locals, &mut istmts)),
                 ];
-                istmts.extend([
-                    IntermediateStmt::call(
-                        "_ret'".into(),
-                        translate_ty(ctx, names, DUMMY_SP, lhs.ty(ctx.tcx, locals)),
-                        call,
-                        args,
-                    )]);
+                istmts.extend([IntermediateStmt::call(
+                    "_ret'".into(),
+                    translate_ty(ctx, names, DUMMY_SP, lhs.ty(ctx.tcx, locals)),
+                    call,
+                    args,
+                )]);
                 istmts.extend(assign);
                 istmts
             }
