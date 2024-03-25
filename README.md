@@ -10,6 +10,10 @@ Creusot works by translating Rust code to WhyML, the verification and specificat
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for technical details.
 
+## Help and Discussions
+
+If you need help using Creusot or would like to discuss, you can post on the [discussions forum](https://github.com/creusot-rs/creusot/discussions) or join our [Zulip chat](https://why3.zulipchat.com/#narrow/stream/341707-creusot)!
+
 ## Citing Creusot
 
 If you would like to cite Creusot in academic contexts, we encourage you to use our [ICFEM'22 publication](https://hal.inria.fr/hal-03737878/file/main.pdf).
