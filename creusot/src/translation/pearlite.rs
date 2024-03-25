@@ -42,6 +42,7 @@ use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
 
 mod normalize;
+pub mod prusti;
 
 pub(crate) use normalize::*;
 
@@ -267,7 +268,8 @@ pub(crate) fn pearlite<'tcx>(
 
     let lower = ThirTerm { ctx, item_id: id, thir: &thir };
 
-    lower.body_term(expr)
+    let res = lower.body_term(expr)?;
+    prusti::prusti_to_creusot(&lower, res)
 }
 
 struct ThirTerm<'a, 'tcx> {

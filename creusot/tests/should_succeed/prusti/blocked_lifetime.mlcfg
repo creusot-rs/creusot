@@ -1,0 +1,30 @@
+
+module BlockedLifetime_Impl0_Test
+  use prelude.Borrow
+  use prelude.UInt32
+  predicate resolve0 (self : borrowed uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  val resolve0 (self : borrowed uint32) : bool
+    ensures { result = resolve0 self }
+    
+  use prelude.Int
+  let rec cfg test [#"../blocked_lifetime.rs" 13 4 13 27] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed uint32) : ()
+    ensures { [#"../blocked_lifetime.rs" 12 14 12 24]  ^ x = (5 : uint32) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var x : borrowed uint32 = x;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../blocked_lifetime.rs" 14 8 14 14] x <- { x with current = ([#"../blocked_lifetime.rs" 14 13 14 14] (5 : uint32)) ; };
+    assume { resolve0 x };
+    [#"../blocked_lifetime.rs" 13 28 15 5] _0 <- ([#"../blocked_lifetime.rs" 13 28 15 5] ());
+    return _0
+  }
+  
+end
+module BlockedLifetime_Impl0
+  
+end

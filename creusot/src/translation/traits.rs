@@ -70,6 +70,13 @@ impl<'tcx> TranslationCtx<'tcx> {
 
             let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.skip_binder().args);
 
+            match crate::prusti::check_signature_agreement(
+                self.tcx, impl_item, trait_item, refn_subst,
+            ) {
+                Ok(()) => {}
+                Err(e) => e.emit(self.tcx),
+            }
+
             // If there is no contract to refine, skip this item
             if !self.tcx.def_kind(trait_item).is_fn_like()
                 || (self.sig(trait_item).contract.is_empty()

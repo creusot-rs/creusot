@@ -1,0 +1,70 @@
+
+module Logic_Cur_Impl
+  type x
+  predicate invariant1 (self : x)
+  val invariant1 (self : x) : bool
+    ensures { result = invariant1 self }
+    
+  predicate inv1 (_x : x)
+  val inv1 (_x : x) : bool
+    ensures { result = inv1 _x }
+    
+  axiom inv1 : forall x : x . inv1 x = true
+  use prelude.Borrow
+  predicate invariant0 (self : borrowed x)
+  val invariant0 (self : borrowed x) : bool
+    ensures { result = invariant0 self }
+    
+  predicate inv0 (_x : borrowed x)
+  val inv0 (_x : borrowed x) : bool
+    ensures { result = inv0 _x }
+    
+  axiom inv0 : forall x : borrowed x . inv0 x = true
+  constant x  : borrowed x
+  function cur [#"../logic.rs" 21 0 21 44] (x : borrowed x) : x
+  goal vc_cur : ([#"../logic.rs" 21 26 21 27] inv0 x)
+   -> (let result =  * x in ([#"../logic.rs" 21 43 21 44] inv1 result) && ([#"../logic.rs" 20 10 20 22] result =  * x))
+end
+module Logic_Fin_Impl
+  type x
+  predicate invariant1 (self : x)
+  val invariant1 (self : x) : bool
+    ensures { result = invariant1 self }
+    
+  predicate inv1 (_x : x)
+  val inv1 (_x : x) : bool
+    ensures { result = inv1 _x }
+    
+  axiom inv1 : forall x : x . inv1 x = true
+  use prelude.Borrow
+  predicate invariant0 (self : borrowed x)
+  val invariant0 (self : borrowed x) : bool
+    ensures { result = invariant0 self }
+    
+  predicate inv0 (_x : borrowed x)
+  val inv0 (_x : borrowed x) : bool
+    ensures { result = inv0 _x }
+    
+  axiom inv0 : forall x : borrowed x . inv0 x = true
+  constant x  : borrowed x
+  function fin [#"../logic.rs" 28 0 28 48] (x : borrowed x) : x
+  goal vc_fin : ([#"../logic.rs" 28 28 28 29] inv0 x)
+   -> (let result =  ^ x in ([#"../logic.rs" 28 47 28 48] inv1 result) && ([#"../logic.rs" 27 10 27 22] result =  ^ x))
+end
+module Logic_Expiry_Impl
+  type x
+  use prelude.Borrow
+  predicate invariant0 (self : borrowed x)
+  val invariant0 (self : borrowed x) : bool
+    ensures { result = invariant0 self }
+    
+  predicate inv0 (_x : borrowed x)
+  val inv0 (_x : borrowed x) : bool
+    ensures { result = inv0 _x }
+    
+  axiom inv0 : forall x : borrowed x . inv0 x = true
+  constant x  : borrowed x
+  function expiry [#"../logic.rs" 35 0 35 55] (x : borrowed x) : borrowed x
+  goal vc_expiry : ([#"../logic.rs" 35 29 35 30] inv0 x)
+   -> (let result = x in ([#"../logic.rs" 35 46 35 55] inv0 result) && ([#"../logic.rs" 34 21 34 34]  * result =  * x))
+end

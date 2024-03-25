@@ -1,0 +1,57 @@
+
+module ReborrowStash_Test_Type
+  use prelude.UInt32
+  use prelude.Int
+  type t_test  =
+    | C_Test uint32
+    
+  let function test_x (self : t_test) : uint32 = [@vc:do_not_keep_trace] [@vc:sp]
+    match self with
+      | C_Test a -> a
+      end
+end
+module ReborrowStash_Impl0_Test
+  use prelude.UInt32
+  use prelude.Int
+  use prelude.Borrow
+  use ReborrowStash_Test_Type as ReborrowStash_Test_Type
+  predicate resolve1 (self : borrowed (ReborrowStash_Test_Type.t_test)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  val resolve1 (self : borrowed (ReborrowStash_Test_Type.t_test)) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : borrowed uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  val resolve0 (self : borrowed uint32) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg test [#"../reborrow_stash.rs" 15 4 15 51] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (ReborrowStash_Test_Type.t_test)) (stash : borrowed uint32) : borrowed uint32
+    ensures { [#"../reborrow_stash.rs" 12 14 12 35]  ^ stash = old(ReborrowStash_Test_Type.test_x ( * self)) }
+    ensures { [#"../reborrow_stash.rs" 13 14 13 36]  * result = old(ReborrowStash_Test_Type.test_x ( * self)) }
+    ensures { [#"../reborrow_stash.rs" 14 19 14 36] ReborrowStash_Test_Type.test_x ( ^ self) =  ^ result }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : borrowed uint32;
+  var self : borrowed (ReborrowStash_Test_Type.t_test) = self;
+  var stash : borrowed uint32 = stash;
+  var _3 : borrowed uint32;
+  var _8 : borrowed uint32;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../reborrow_stash.rs" 16 8 16 23] stash <- { stash with current = ReborrowStash_Test_Type.test_x ( * self) ; };
+    assume { resolve0 stash };
+    [#"../reborrow_stash.rs" 17 8 17 19] _8 <- Borrow.borrow_final (ReborrowStash_Test_Type.test_x ( * self)) (Borrow.inherit_id (Borrow.get_id self) 1);
+    [#"../reborrow_stash.rs" 17 8 17 19] self <- { self with current = (let ReborrowStash_Test_Type.C_Test x0 =  * self in ReborrowStash_Test_Type.C_Test ( ^ _8)) ; };
+    [#"../reborrow_stash.rs" 17 8 17 19] _3 <- Borrow.borrow_final ( * _8) (Borrow.get_id _8);
+    [#"../reborrow_stash.rs" 17 8 17 19] _8 <- { _8 with current = ( ^ _3) ; };
+    [#"../reborrow_stash.rs" 17 8 17 19] _0 <- Borrow.borrow_final ( * _3) (Borrow.get_id _3);
+    [#"../reborrow_stash.rs" 17 8 17 19] _3 <- { _3 with current = ( ^ _0) ; };
+    assume { resolve0 _8 };
+    assume { resolve0 _3 };
+    assume { resolve1 self };
+    return _0
+  }
+  
+end

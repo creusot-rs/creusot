@@ -1,0 +1,43 @@
+
+module Adt_Test
+  use prelude.UInt32
+  use prelude.Int
+  use prelude.Borrow
+  predicate resolve1 (self : borrowed uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  val resolve1 (self : borrowed uint32) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : (borrowed uint32, borrowed uint32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60] resolve1 (let (a, _) = self in a) /\ resolve1 (let (_, a) = self in a)
+  val resolve0 (self : (borrowed uint32, borrowed uint32)) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg test [#"../adt.rs" 7 0 7 36] [@cfg:stackify] [@cfg:subregion_analysis] (x : (borrowed uint32, borrowed uint32)) : ()
+    requires {[#"../adt.rs" 5 11 5 25]  * (let (a, _) = x in a) = (0 : uint32)}
+    ensures { [#"../adt.rs" 6 0 6 38] let (a, b) = x in  ^ a =  ^ b }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var x : (borrowed uint32, borrowed uint32) = x;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../adt.rs" 8 4 8 19] x <- (let (x0, x1) = x in (x0, { (let (_, a) = x in a) with current = ( * (let (a, _) = x in a)) ; }));
+    assume { resolve0 x };
+    [#"../adt.rs" 8 4 8 19] _0 <- ([#"../adt.rs" 8 4 8 19] ());
+    return _0
+  }
+  
+end
+module Adt_SamePair_Type
+  type t_samepair 'x =
+    | C_SamePair 'x 'x
+    
+end
+module Adt_HasModel_Type
+  type t_hasmodel 't 'proj0 =
+    | C_HasModel 'proj0
+    
+end

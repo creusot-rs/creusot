@@ -150,6 +150,7 @@ pub mod snapshot {
 pub mod ghost_ptr;
 pub mod invariant;
 pub mod model;
+mod prusti;
 pub mod resolve;
 pub mod util;
 pub mod well_founded;
@@ -184,8 +185,23 @@ mod base_prelude {
         slice::SliceExt as _,
     };
 }
+
+pub mod prusti_macros {
+    pub use base_macros::{
+        invariant, open, pearlite, proof_assert, prusti_ensures as ensures,
+        prusti_ensures_expiry as after_expiry, prusti_law as law, prusti_logic as logic,
+        prusti_logic_prophetic as logic_prophetic, prusti_predicate as predicate,
+        prusti_predicate_prophetic as predicate_prophetic, prusti_requires as requires, trusted,
+        variant,
+    };
+}
+
 pub mod prelude {
     pub use crate::{base_prelude::*, macros::*};
+}
+
+pub mod prusti_prelude {
+    pub use crate::{base_prelude::*, prusti::*, prusti_macros::*};
 }
 
 pub use prelude::*;
