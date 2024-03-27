@@ -13,7 +13,7 @@ use why3::{
     coma::{self, Arg, Expr, Param},
     exp::{
         Exp::{self, *},
-        Pattern::*,
+        Pattern::{self, *},
     },
     Ident, QName,
 };
@@ -39,128 +39,10 @@ pub(crate) fn create_assign_inner<'tcx>(
     rhs: Exp,
     _: Span,
 ) -> Vec<IntermediateStmt> {
-    let inner = create_assign_rec(
-        ctx,
-        names,
-        locals,
-        PlaceTy::from_ty(locals[&lhs.local].ty),
-        lhs.local,
-        &lhs.projection,
-        0,
-        rhs.clone(),
-    );
-
     let (rhs, mut stmts) = lplace_to_expr(ctx, names, locals, lhs.local, &lhs.projection, rhs);
-
 
     stmts.push(IntermediateStmt::Assign(Ident::build(lhs.local.as_str()), rhs));
     stmts
-}
-
-fn create_assign_rec<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
-    locals: &LocalDecls<'tcx>,
-    place_ty: PlaceTy<'tcx>,
-    base: Symbol,
-    proj: &[ProjectionElem<Symbol, Ty<'tcx>>],
-    proj_ix: usize,
-    rhs: Exp,
-) -> Exp {
-    if proj_ix >= proj.len() {
-        return rhs;
-    }
-
-    let inner = create_assign_rec(
-        ctx,
-        names,
-        locals,
-        projection_ty(place_ty, ctx.tcx, proj[proj_ix]),
-        base,
-        proj,
-        proj_ix + 1,
-        rhs,
-    );
-    let fvs = inner.fvs();
-    let freshvars = (0..).map(|i| format!("x{i}").into()).filter(|x| !fvs.contains(x));
-    use ProjectionElem::*;
-    match &proj[proj_ix] {
-        Deref => {
-            use rustc_hir::Mutability::*;
-
-            let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
-            if mutability == Mut {
-                RecUp {
-                    record: Box::new(translate_rplace(ctx, names, locals, base, &proj[..proj_ix])),
-                    updates: vec![("current".into(), inner)],
-                }
-            } else {
-                inner
-            }
-        }
-        Field(ix, _) => match place_ty.ty.kind() {
-            TyKind::Adt(def, subst) => {
-                let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
-                let variant = &def.variants()[variant_id];
-
-                let varnames = freshvars.take(variant.fields.len()).collect::<Vec<Ident>>();
-                let field_pats = varnames.clone().into_iter().map(|x| VarP(x)).collect();
-                let mut varexps: Vec<Exp> = varnames.into_iter().map(|x| Exp::var(x)).collect();
-
-                varexps[ix.as_usize()] = inner;
-
-                let ctor = names.constructor(variant.def_id, subst);
-                Let {
-                    pattern: ConsP(ctor.clone(), field_pats),
-                    arg: Box::new(translate_rplace(ctx, names, locals, base, &proj[..proj_ix])),
-                    body: Box::new(Constructor { ctor, args: varexps }),
-                }
-            }
-            TyKind::Tuple(fields) => {
-                let varnames = freshvars.take(fields.len()).collect::<Vec<Ident>>();
-                let field_pats = varnames.clone().into_iter().map(|x| VarP(x.into())).collect();
-                let mut varexps: Vec<Exp> = varnames.into_iter().map(|x| Exp::var(x)).collect();
-
-                varexps[ix.as_usize()] = inner;
-
-                Let {
-                    pattern: TupleP(field_pats),
-                    arg: Box::new(translate_rplace(ctx, names, locals, base, &proj[..proj_ix])),
-                    body: Box::new(Tuple(varexps)),
-                }
-            }
-            TyKind::Closure(id, subst) => {
-                let varnames =
-                    freshvars.take(subst.as_closure().upvar_tys().len()).collect::<Vec<Ident>>();
-                let field_pats = varnames.clone().into_iter().map(|x| VarP(x.into())).collect();
-                let mut varexps: Vec<Exp> = varnames.into_iter().map(|x| Exp::var(x)).collect();
-
-                varexps[ix.as_usize()] = inner;
-                let cons = names.constructor(*id, subst);
-
-                Let {
-                    pattern: ConsP(cons.clone(), field_pats),
-                    arg: Box::new(translate_rplace(ctx, names, locals, base, &proj[..proj_ix])),
-                    body: Box::new(Exp::Constructor { ctor: cons, args: varexps }),
-                }
-            }
-            _ => unreachable!(),
-        },
-        Downcast(_, _) => inner,
-        Index(ix) => {
-            let set = Exp::qvar(QName::from_string("Slice.set").unwrap());
-            let ix_exp = Exp::var(Ident::build(ix.as_str()));
-
-            Call(
-                Box::new(set),
-                vec![translate_rplace(ctx, names, locals, base, &proj[..proj_ix]), ix_exp, inner],
-            )
-        }
-        ConstantIndex { .. } => unimplemented!("ConstantIndex"),
-        Subslice { .. } => unimplemented!("Subslice"),
-        OpaqueCast(_) => unimplemented!("OpaqueCast"),
-        Subtype(_) => unimplemented!("Subtype"),
-    }
 }
 
 pub(crate) fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
@@ -174,8 +56,11 @@ pub(crate) fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
     let mut focus = Exp::var(util::ident_of(loc));
     use rustc_middle::mir::ProjectionElem::*;
     let mut place_ty = PlaceTy::from_ty(locals[&loc].ty);
-    let mut constructor: Box<dyn FnOnce(coma::Term) -> coma::Term> = Box::new(|x| x);
+    let mut constructor: Box<dyn FnOnce(&mut Vec<IntermediateStmt>, coma::Term) -> coma::Term> =
+        Box::new(|_, x| x);
     let mut istmts = Vec::new();
+
+    let freshvars = &mut (0..).map(|i| -> Ident { format!("r{i}'").into() });
 
     for elem in proj {
         match elem {
@@ -184,11 +69,11 @@ pub(crate) fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
                 let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
                 if mutability == Mut {
                     let f = focus.clone();
-                    constructor = Box::new(|t| {
-                        constructor(RecUp {
-                            record: Box::new(f),
-                            updates: vec![("current".into(), t)],
-                        })
+                    constructor = Box::new(|is, t| {
+                        constructor(
+                            is,
+                            RecUp { record: Box::new(f), updates: vec![("current".into(), t)] },
+                        )
                     });
                     focus = Exp::Current(Box::new(focus))
                 }
@@ -203,43 +88,116 @@ pub(crate) fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
                         .iter()
                         .map(|f| {
                             Param::Term(
-                                format!("_{}", f.name).into(),
+                                format!("f_{}'", f.name).into(),
                                 translate_ty(ctx, names, DUMMY_SP, f.ty(ctx.tcx, subst)),
                             )
                         })
                         .collect();
+                    let params = subst
+                        .iter()
+                        .flat_map(|ty| ty.as_type())
+                        .map(|ty| translate_ty(ctx, names, DUMMY_SP, ty))
+                        .map(Arg::Ty)
+                        .chain(std::iter::once(Arg::Term(focus)))
+                        .collect();
 
                     let new_focus = Exp::var(fields[ix.as_usize()].as_term().0.clone());
-                    istmts.push(IntermediateStmt::Call(
-                        fields,
-                        Expr::Symbol(acc_name),
-                        vec![Arg::Term(focus)],
-                    ));
+                    istmts.push(IntermediateStmt::Call(fields, Expr::Symbol(acc_name), params));
                     let constr = Exp::qvar(names.constructor(variant.def_id, subst));
-                    constructor = Box::new(|t| {
+                    constructor = Box::new(|is, t| {
                         let mut fields: Vec<_> = variant
                             .fields
                             .iter()
-                            .map(|f| Exp::var(format!("_{}", f.name)))
+                            .map(|f| Exp::var(format!("f_{}'", f.name)))
                             .collect();
                         fields[ix.as_usize()] = t;
-                        constructor(constr.app(fields))
+                        constructor(is, constr.app(fields))
                     });
                     focus = new_focus;
                 }
-                _ => todo!("{:?}", place_ty.ty.kind()),
+                // TODO(xavier): refactor to use a local let binding instead of recalculating hte tuple path each time
+                TyKind::Tuple(fields) => {
+                    let ix_name = freshvars.next().map(Ident::from).unwrap();
+                    let mut field_pats: Vec<_> = (0..fields.len()).map(|_| Wildcard).collect();
+                    field_pats[ix.as_usize()] = VarP(ix_name.clone());
+                    let old_focus = focus.clone();
+                    focus = Let {
+                        pattern: TupleP(field_pats.clone()),
+                        arg: Box::new(focus),
+                        body: Box::new(Exp::var(ix_name)),
+                    };
+
+                    let var_names = freshvars.take(fields.len()).collect::<Vec<Ident>>();
+                    let mut field_pats = var_names.clone().into_iter().map(VarP).collect::<Vec<_>>();
+                    field_pats[ix.as_usize()] = Wildcard;
+
+                    let mut varexps = var_names.into_iter().map(Exp::var).collect::<Vec<_>>();
+                    constructor = Box::new(|is, t| {
+                        varexps[ix.as_usize()] = t;
+                        let tuple = Let {
+                            pattern: TupleP(field_pats),
+                            arg: Box::new(old_focus),
+                            body: Box::new(Exp::Tuple(varexps)),
+                        };
+
+                        constructor(is, tuple)
+                    });
+                }
+                _ => todo!("place: {:?}", place_ty.ty.kind()),
             },
-            Index(_) => todo!("Index"),
+            Index(ix) => {
+                let elt_ty = projection_ty(place_ty, ctx.tcx, *elem);
+
+                let elt_ty = translate_ty(ctx, names, DUMMY_SP, elt_ty.ty);
+                let ty = translate_ty(ctx, names, DUMMY_SP, place_ty.ty);
+                // TODO: Use [_] syntax
+                let ix_exp = Exp::var(Ident::build(ix.as_str()));
+                let result = freshvars.next().unwrap();
+                istmts.push(IntermediateStmt::Call(
+                    vec![Param::Term(result.clone(), elt_ty.clone())],
+                    Expr::Symbol(QName::from_string("Slice.get").unwrap()),
+                    vec![
+                        Arg::Ty(elt_ty.clone()),
+                        Arg::Term(focus.clone()),
+                        Arg::Term(ix_exp.clone()),
+                    ],
+                ));
+
+                let old_focus = focus;
+                focus = Exp::qvar(result.into());
+                let set = QName::from_string("Slice.set").unwrap();
+
+                let out = freshvars.next().unwrap();
+                constructor = Box::new(|is, t| {
+                    let rhs = t;
+
+                    is.push(IntermediateStmt::Call(
+                        vec![Param::Term(out.clone(), ty)],
+                        Expr::Symbol(set),
+                        vec![
+                            Arg::Ty(elt_ty),
+                            Arg::Term(old_focus),
+                            Arg::Term(ix_exp),
+                            Arg::Term(rhs),
+                        ],
+                    ));
+                    constructor(is, Exp::qvar(out.into()))
+                });
+            }
             Downcast(_, _) => {}
             // UNSUPPORTED
-            ConstantIndex { offset, min_length, from_end } => todo!(),
-            Subslice { from, to, from_end } => todo!(),
+            ConstantIndex { .. } => todo!(),
+            Subslice { .. } => todo!(),
             OpaqueCast(_) => todo!(),
             Subtype(_) => todo!(),
         }
         place_ty = projection_ty(place_ty, ctx.tcx, *elem);
     }
-    (constructor(rhs), istmts)
+    let mut rhs_stmts = Vec::new();
+    let term = constructor(&mut rhs_stmts, rhs);
+    // rhs_stmts.reverse();
+    istmts.extend(rhs_stmts.into_iter());
+    (term, istmts)
 }
 
 pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
@@ -255,6 +213,8 @@ pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
     let mut focus = Exp::var(util::ident_of(loc));
     use rustc_middle::mir::ProjectionElem::*;
     let mut place_ty = PlaceTy::from_ty(locals[&loc].ty);
+
+    let freshvars = &mut (0..).map(|i| -> Ident { format!("l{i}'").into() });
 
     // TODO: name hygiene
     for elem in proj {
@@ -276,28 +236,56 @@ pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
                         .iter()
                         .map(|f| {
                             Param::Term(
-                                format!("_{}", f.name).into(),
+                                format!("f_{}'", f.name).into(),
                                 translate_ty(ctx, names, DUMMY_SP, f.ty(ctx.tcx, subst)),
                             )
                         })
                         .collect();
 
+                    let params = subst
+                        .iter()
+                        .flat_map(|ty| ty.as_type())
+                        .map(|ty| translate_ty(ctx, names, DUMMY_SP, ty))
+                        .map(Arg::Ty)
+                        .chain(std::iter::once(Arg::Term(focus)))
+                        .collect();
+
                     let new_focus = Exp::var(fields[ix.as_usize()].as_term().0.clone());
-                    istmts.push(IntermediateStmt::Call(
-                        fields,
-                        Expr::Symbol(acc_name),
-                        vec![Arg::Term(focus)],
-                    ));
+                    istmts.push(IntermediateStmt::Call(fields, Expr::Symbol(acc_name), params));
                     focus = new_focus;
                 }
+                TyKind::Tuple(fields) => {
+                    let var = freshvars.next().unwrap();
+                    let mut pat = vec![Wildcard; fields.len()];
+                    pat[ix.as_usize()] = VarP(var.clone());
+
+                    focus = Let {
+                        pattern: TupleP(pat),
+                        arg: Box::new(focus),
+                        body: Box::new(Exp::var(var)),
+                    }
+                }
+                TyKind::Closure(_, _) => todo!("closure"),
                 _ => todo!(),
             },
-            Index(_) => todo!(),
+            Index(ix) => {
+                let elt_ty = projection_ty(place_ty, ctx.tcx, *elem);
+                let elt_ty = translate_ty(ctx, names, DUMMY_SP, elt_ty.ty);
+                // TODO: Use [_] syntax
+                let ix_exp = Exp::var(Ident::build(ix.as_str()));
+                let res = freshvars.next().unwrap();
+                istmts.push(IntermediateStmt::Call(
+                    vec![Param::Term(res.clone(), elt_ty.clone())],
+                    Expr::Symbol(QName::from_string("Slice.get").unwrap()),
+                    vec![Arg::Ty(elt_ty.clone()), Arg::Term(focus), Arg::Term(ix_exp)],
+                ));
+                focus = Exp::qvar(res.into());
+            }
             // Skip, always followed by a *field* where we do the real translation
             Downcast(_, _) => {}
-            // Unusued
-            Subslice { from, to, from_end } => unimplemented!("Subslice"),
-            ConstantIndex { offset, min_length, from_end } => unimplemented!("ConstantIndex"),
+            // Unused
+            Subslice { .. } => unimplemented!("Subslice"),
+            ConstantIndex { .. } => unimplemented!("ConstantIndex"),
             OpaqueCast(_) => unimplemented!("OpaqueCast"),
             Subtype(_) => unimplemented!("Subtype"),
         }
@@ -306,79 +294,6 @@ pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
     }
 
     (focus, istmts)
-}
-
-// [(P as Some)]   ---> [_1]
-// [(P as Some).0] ---> let Some(a) = [_1] in a
-// [(* P)] ---> * [P]
-pub(crate) fn translate_rplace<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
-    locals: &LocalDecls<'tcx>,
-    loc: Symbol,
-    proj: &[mir::ProjectionElem<Symbol, Ty<'tcx>>],
-) -> Exp {
-    let mut inner = Exp::var(Ident::build(loc.as_str()));
-    if proj.is_empty() {
-        return inner;
-    }
-
-    use rustc_middle::mir::ProjectionElem::*;
-    let mut place_ty = PlaceTy::from_ty(locals[&loc].ty);
-
-    for elem in proj {
-        match elem {
-            Deref => {
-                use rustc_hir::Mutability::*;
-                let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
-                if mutability == Mut {
-                    inner = Current(Box::new(inner))
-                }
-            }
-            Field(ix, _) => match place_ty.ty.kind() {
-                TyKind::Adt(def, subst) => {
-                    let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
-                    let _variant = &def.variants()[variant_id];
-
-                    ctx.translate_accessor(def.variants()[variant_id].fields[*ix].did);
-
-                    let acc = names.accessor(def.did(), subst, variant_id.as_usize(), *ix);
-                    inner = Call(Box::new(Exp::qvar(acc)), vec![inner]);
-                }
-                TyKind::Tuple(fields) => {
-                    let mut pat = vec![Wildcard; fields.len()];
-                    pat[ix.as_usize()] = VarP("a".into());
-
-                    inner = Let {
-                        pattern: TupleP(pat),
-                        arg: Box::new(inner),
-                        body: Box::new(Exp::var("a")),
-                    }
-                }
-                TyKind::Closure(id, subst) => {
-                    inner =
-                        Call(Box::new(Exp::qvar(names.accessor(*id, subst, 0, *ix))), vec![inner]);
-                }
-                e => unreachable!("{:?}", e),
-            },
-            Downcast(_, _) => {}
-            Index(ix) => {
-                // TODO: Use [_] syntax
-                let ix_exp = Exp::var(Ident::build(ix.as_str()));
-                inner = Call(
-                    Box::new(Exp::qvar(QName::from_string("Slice.get").unwrap())),
-                    vec![inner, ix_exp],
-                )
-            }
-            ConstantIndex { .. } => unimplemented!("constant index projection"),
-            Subslice { .. } => unimplemented!("subslice projection"),
-            OpaqueCast(_) => unimplemented!("opaque cast projection"),
-            Subtype(_) => unimplemented!("Subtype"),
-        }
-        place_ty = projection_ty(place_ty, ctx.tcx, *elem);
-    }
-
-    inner
 }
 
 pub fn projection_ty<'tcx>(

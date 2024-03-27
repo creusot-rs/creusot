@@ -394,23 +394,25 @@ pub(crate) fn translate_tydecl(
         TyDecl::Adt { tys: bg.iter().map(|did| build_ty_decl(ctx, &mut names, *did)).collect() };
 
     let mut destructors = vec![];
-    bg.iter().for_each(|did| {
-        let subst = GenericArgs::identity_for_item(ctx.tcx, *did);
-        let adt_def = ctx.adt_def(*did);
+    if !ctx.type_of(bg[0]).skip_binder().is_box() {
+        bg.iter().for_each(|did| {
+            let subst = GenericArgs::identity_for_item(ctx.tcx, *did);
+            let adt_def = ctx.adt_def(*did);
 
-        adt_def.variants().indices().for_each(|vix| {
-            let d = destructor(
-                ctx,
-                &mut names,
-                ctx.type_of(*did).skip_binder(),
-                ctx.adt_def(*did),
-                subst,
-                vix,
-            );
+            adt_def.variants().indices().for_each(|vix| {
+                let d = destructor(
+                    ctx,
+                    &mut names,
+                    ctx.type_of(*did).skip_binder(),
+                    ctx.adt_def(*did),
+                    subst,
+                    vix,
+                );
 
-            destructors.push(d)
-        })
-    });
+                destructors.push(d)
+            })
+        });
+    }
 
     let (mut decls, _) = names.to_clones(ctx, CloneDepth::Shallow);
     decls.push(Decl::TyDecl(ty_decl));
@@ -509,10 +511,16 @@ fn destructor<'tcx>(
             base_ty,
         ),
     );
+    use why3::ty::Type;
+
+    let params = ty_param_names(ctx.tcx, adt_def.did())
+        .map(|ty| Param::Ty(Type::TVar(ty)))
+        .chain([input, ret_cont]);
+
     Decl::Coma(Defn {
         name: names.eliminator(variant.def_id, subst).name,
         writes: vec![],
-        params: vec![input, ret_cont],
+        params: params.collect(),
         body: Expr::Defn(Box::new(Expr::Any), false, vec![good_branch, bad_branch]),
     })
 }

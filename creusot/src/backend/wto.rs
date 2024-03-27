@@ -36,18 +36,12 @@ where
     todo!()
 }
 
-
 pub fn weak_topological_order<G>(g: G, root: G::NodeId) -> Vec<Component<G::NodeId>>
 where
     G: IntoNeighborsDirected + Visitable,
     <G as GraphBase>::NodeId: Eq + Hash,
 {
-    let mut wto = Wto {
-      stack: Vec::new(),
-      graph: g,
-      num: 0,
-      dfn: HashMap::new(),
-    };
+    let mut wto = Wto { stack: Vec::new(), graph: g, num: 0, dfn: HashMap::new() };
     let mut partition = Vec::new();
     visit(&mut wto, root, &mut partition);
     partition.reverse();
@@ -107,15 +101,15 @@ where
         let mut element = state.stack.pop().unwrap();
 
         if loop_ {
-          while element != v {
-            state.dfn.insert(element, 0);
-            element = state.stack.pop().unwrap();
-          }
-          partition.push(component(state, v));
+            while element != v {
+                state.dfn.insert(element, 0);
+                element = state.stack.pop().unwrap();
+            }
+            partition.push(component(state, v));
         } else {
-          partition.push(Component::Vertex(v));
+            partition.push(Component::Vertex(v));
         }
     }
 
-    return head
+    return head;
 }

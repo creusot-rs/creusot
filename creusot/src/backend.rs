@@ -24,7 +24,6 @@ use self::{
     ty_inv::TyInvKind,
 };
 
-mod wto;
 pub(crate) mod clone_map;
 pub(crate) mod constant;
 pub(crate) mod dependency;
@@ -38,6 +37,7 @@ pub(crate) mod term;
 pub(crate) mod traits;
 pub(crate) mod ty;
 pub(crate) mod ty_inv;
+mod wto;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 pub(crate) enum TransId {

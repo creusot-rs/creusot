@@ -224,7 +224,13 @@ impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
 
                 clone.qname_ident(name.into())
             }
-            DefKind::Closure | DefKind::Struct => self.insert(DepNode::new(tcx, (def_id, subst))).ident().into(),
+            DefKind::Closure | DefKind::Struct => {
+                let clone = self.insert(DepNode::new(tcx, (def_id, subst)));
+
+                let name: Ident = tcx.item_name(def_id).as_str().to_snake_case().into();
+
+                clone.qname_ident(name.into())
+            }
             _ => unreachable!(),
         }
     }

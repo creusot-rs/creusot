@@ -5,11 +5,11 @@ use rustc_hir::{
     def_id::DefId,
 };
 use rustc_middle::ty::{self, Const, EarlyBinder, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
-use rustc_span::{Symbol, DUMMY_SP};
+use rustc_span::Symbol;
 use rustc_target::abi::FieldIdx;
 
 use why3::{
-    declaration::{Axiom, Constant, Decl, LetDecl, LetKind, Signature, Use, ValDecl},
+    declaration::{Axiom, Constant, Decl, LetKind, Signature, Use, ValDecl},
     Ident, QName,
 };
 
@@ -20,7 +20,6 @@ use crate::{
         program,
         signature::sig_to_why3,
         term::lower_pure,
-        ty::translate_ty,
         ty_inv::InvariantElaborator,
         TransId, Why3Generator,
     },

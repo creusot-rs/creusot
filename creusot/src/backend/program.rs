@@ -5,7 +5,7 @@ use super::{
 use crate::{
     backend::{
         closure_generic_decls, optimization,
-        place::{self, translate_rplace},
+        place::{self},
         ty::{self, translate_closure_ty, translate_ty},
         wto::weak_topological_order,
     },
@@ -18,6 +18,7 @@ use crate::{
     },
     util::{self, module_name},
 };
+use itertools::Itertools;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{self, BasicBlock, BinOp, ProjectionElem, START_BLOCK},
@@ -28,7 +29,7 @@ use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, UintTy};
 use why3::{
     coma::{self, Arg, Defn, Expr, Param},
-    declaration::{Attribute, Decl, LetDecl, LetKind, Module, Signature},
+    declaration::{Attribute, Decl, Module, Signature},
     exp::{Constant, Exp, Pattern},
     ty::Type,
     Ident, QName,
@@ -352,7 +353,7 @@ pub fn to_why<'tcx>(
     let body = Expr::Defn(Box::new(Expr::Symbol("bb0".into())), true, blocks);
     let sig = signature_of(ctx, names, body_id.def_id());
 
-    let mut postcond = Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("_0"))]);
+    let mut postcond = Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("result"))]);
 
     postcond = Expr::BlackBox(Box::new(postcond));
     postcond = sig
@@ -361,8 +362,12 @@ pub fn to_why<'tcx>(
         .into_iter()
         .fold(postcond, |acc, ensures| Expr::Assert(Box::new(ensures), Box::new(acc)));
 
-    let mut body = Expr::Defn(
-        Box::new(Expr::BlackBox(Box::new(body))),
+    let mut body = Expr::BlackBox(Box::new(body));
+
+    body = Expr::Let(Box::new(body), vars);
+
+    body = Expr::Defn(
+        Box::new(body),
         false,
         vec![Defn {
             name: "return".into(),
@@ -377,8 +382,6 @@ pub fn to_why<'tcx>(
         .requires
         .into_iter()
         .fold(body, |acc, req| Expr::Assert(Box::new(req), Box::new(acc)));
-
-    let body = Expr::Let(Box::new(body), vars);
 
     let params = sig
         .args
@@ -417,8 +420,12 @@ fn component_to_defn<'tcx>(
     let block = body.blocks.remove(&head).unwrap();
     let mut block = block.to_why(ctx, names, &body.locals, head);
 
-    block.body = Expr::Defn(Box::new(block.body), true, defns);
-
+    let inner = Expr::Defn(Box::new(block.body), true, defns);
+    block.body = Expr::Defn(
+        Box::new(Expr::Symbol(block.name.clone().into())),
+        true,
+        vec![Defn::simple(block.name.clone(), inner)],
+    );
     block
 }
 
@@ -547,27 +554,27 @@ impl<'tcx> RValue<'tcx> {
                 let arr_var = Exp::var(id.clone());
                 let arr_elts =
                     Exp::RecField { record: Box::new(arr_var.clone()), label: "elts".into() };
-                let fields = fields.into_iter().enumerate().map(|(ix, f)| {
-                    Exp::qvar(QName::from_string("Seq.get").unwrap())
-                        .app(vec![arr_elts.clone(), Exp::Const(Constant::Int(ix as i128, None))])
-                        .eq(f.to_why(ctx, names, locals, istmts))
-                });
 
-                Exp::Let {
-                    pattern: Pattern::VarP(id.clone()),
-                    arg: Box::new(Exp::Any(ty)),
-                    body: Box::new(Exp::Chain(
-                        fields
-                            .map(|e| Exp::Assume(Box::new(e)))
-                            .chain(std::iter::once(Exp::Assume(Box::new(
-                                Exp::qvar(QName::from_string("Slice.length").unwrap())
-                                    .app_to(arr_var.clone())
-                                    .eq(Exp::Const(Constant::Int(len as i128, None))),
-                            ))))
-                            .chain(std::iter::once(arr_var.clone()))
-                            .collect(),
-                    )),
-                }
+                istmts.push(IntermediateStmt::Any(id.clone(), ty.clone()));
+                let assumptions = fields
+                    .into_iter()
+                    .enumerate()
+                    .map(|(ix, f)| {
+                        Exp::qvar(QName::from_string("Seq.get").unwrap())
+                            .app(vec![
+                                arr_elts.clone(),
+                                Exp::Const(Constant::Int(ix as i128, None)),
+                            ])
+                            .eq(f.to_why(ctx, names, locals, istmts))
+                    })
+                    .chain([Exp::qvar(QName::from_string("Slice.length").unwrap())
+                        .app_to(arr_var.clone())
+                        .eq(Exp::Const(Constant::Int(len as i128, None)))])
+                    .reduce(Exp::log_and)
+                    .expect("array literal missing assumption");
+
+                istmts.push(IntermediateStmt::Assume(assumptions));
+                Exp::var(id)
             }
             RValue::Repeat(e, len) => Exp::qvar(QName::from_string("Slice.create").unwrap())
                 .app_to(len.to_why(ctx, names, locals, istmts))
@@ -687,7 +694,6 @@ impl<'tcx> Branches<'tcx> {
         names: &mut CloneMap<'tcx>,
         discr: Exp,
     ) -> coma::Expr {
-        use coma::Expr;
         match self {
             Branches::Int(brs, def) => {
                 let mut brs = mk_switch_branches(
@@ -695,12 +701,7 @@ impl<'tcx> Branches<'tcx> {
                     brs.into_iter().map(|(val, tgt)| (Exp::int(val), mk_goto(tgt))).collect(),
                 );
 
-                brs.push(Defn {
-                    name: "default".into(),
-                    writes: Vec::new(),
-                    params: Vec::new(),
-                    body: Expr::BlackBox(Box::new(mk_goto(def))),
-                });
+                brs.push(Defn::simple("default", Expr::BlackBox(Box::new(mk_goto(def)))));
                 Expr::Defn(Box::new(Expr::Any), false, brs)
             }
             Branches::Uint(brs, def) => {
@@ -709,30 +710,20 @@ impl<'tcx> Branches<'tcx> {
                     brs.into_iter().map(|(val, tgt)| (Exp::uint(val), mk_goto(tgt))).collect(),
                 );
 
-                brs.push(Defn {
-                    name: "default".into(),
-                    writes: Vec::new(),
-                    params: Vec::new(),
-                    body: Expr::BlackBox(Box::new(mk_goto(def))),
-                });
+                brs.push(Defn::simple("default", Expr::BlackBox(Box::new(mk_goto(def)))));
                 Expr::Defn(Box::new(Expr::Any), false, brs)
             }
             Branches::Constructor(adt, _substs, vars, def) => {
-                let mut brs = mk_adt_switch(
+                let brs = mk_adt_switch(
                     _ctx,
                     names,
                     adt,
                     _substs,
                     discr,
                     vars.into_iter().map(|(var, bb)| (var, mk_goto(bb))).collect(),
+                    mk_goto(def),
                 );
 
-                brs.push(Defn {
-                    name: "default".into(),
-                    writes: Vec::new(),
-                    params: Vec::new(),
-                    body: Expr::BlackBox(Box::new(mk_goto(def))),
-                });
                 Expr::Defn(Box::new(Expr::Any), false, brs)
             }
             Branches::Bool(f, t) => {
@@ -757,9 +748,23 @@ fn mk_adt_switch<'tcx>(
     adt: AdtDef<'tcx>,
     subst: GenericArgsRef<'tcx>,
     discr: Exp,
-    brch: Vec<(VariantIdx, coma::Expr)>,
+    mut brch: Vec<(VariantIdx, coma::Expr)>,
+    default: coma::Expr,
 ) -> Vec<coma::Defn> {
     let mut out = Vec::new();
+
+    let mut branches = Vec::new();
+    for ix in 0..adt.variants().len() {
+        if let Some((vix, _)) = brch.get(0)
+            && *vix == VariantIdx::from(ix)
+        {
+            branches.push(brch.remove(0));
+        } else {
+            branches.push((VariantIdx::from(ix), default.clone()))
+        }
+    }
+
+    let brch = branches;
 
     for (c, (ix, tgt)) in brch.into_iter().enumerate() {
         let var = &adt.variants()[ix];
@@ -784,7 +789,7 @@ fn mk_adt_switch<'tcx>(
         );
 
         let branch =
-            coma::Defn { name: format!("br{c}").into(), writes: Vec::new(), params, body: filter };
+            coma::Defn { name: format!("br{c}").into(), body: filter, params, writes: Vec::new() };
         out.push(branch)
     }
     out
@@ -798,12 +803,7 @@ fn mk_switch_branches(discr: Exp, brch: Vec<(Exp, coma::Expr)>) -> Vec<coma::Def
             Box::new(coma::Expr::BlackBox(Box::new(tgt))),
         );
 
-        let branch = coma::Defn {
-            name: format!("br{ix}").into(),
-            writes: Vec::new(),
-            params: Vec::new(),
-            body: filter,
-        };
+        let branch = coma::Defn::simple(format!("br{ix}"), filter);
         out.push(branch)
     }
     out
@@ -846,7 +846,7 @@ impl<'tcx> Block<'tcx> {
                     name: "any_".into(),
                     writes: vec![],
                     params: vec![Param::Term(id, ty)],
-                    body: tail,
+                    body: Expr::BlackBox(Box::new(tail)),
                 }],
             ),
         });
@@ -859,12 +859,7 @@ impl<'tcx> Block<'tcx> {
             body = Expr::Assert(Box::new(lower_pure(ctx, names, &i)), Box::new(body));
         }
 
-        coma::Defn {
-            name: format!("bb{}", id.as_usize()).into(),
-            writes: Vec::new(),
-            params: Vec::new(),
-            body,
-        }
+        coma::Defn::simple(format!("bb{}", id.as_usize()), body)
     }
 }
 

@@ -128,6 +128,12 @@ pub enum Decl {
 #[derive(Clone, Debug)]
 pub struct Module(pub Vec<Decl>);
 
+impl Defn {
+    pub fn simple(name: impl Into<Ident>, body: Expr) -> Self {
+        Defn { name: name.into(), writes: vec![], params: vec![], body }
+    }
+}
+
 impl Expr {
     pub fn app(self, args: Vec<Arg>) -> Self {
         args.into_iter().fold(self, |acc, a| Expr::App(Box::new(acc), Box::new(a)))
@@ -142,6 +148,17 @@ impl Expr {
             _ => Expr::Assign(Box::new(self), vec![(lhs, rhs)]),
         }
     }
+
+    /// Checks whether the expression is protected by a black box.
+    ///
+    /// It allows the box to be surrounded by assertions
+    pub fn is_guarded(&self) -> bool {
+        match self {
+            Expr::Assert(_, e) => e.is_guarded(),
+            Expr::BlackBox(_) => true,
+            _ => false,
+        }
+    }
 }
 
 impl Print for Param {
@@ -153,7 +170,7 @@ impl Print for Param {
         A::Doc: Clone,
     {
         match self {
-            Param::Ty(ty) => ty.pretty(alloc),
+            Param::Ty(ty) => docs![alloc, "< ", ty.pretty(alloc), " >"],
             Param::Term(id, ty) => docs![alloc, id.pretty(alloc), ":", ty.pretty(alloc)].parens(),
             Param::Reference(id, ty) => docs![alloc, "&", id.pretty(alloc), ":", ty.pretty(alloc)],
             Param::Cont(id, writes, params) => docs![
@@ -263,28 +280,25 @@ impl Print for Expr {
                 )
             ],
             Expr::Assign(cont, asgns) => {
-                let needs_parens = matches!(
-                    &**cont,
-                    Expr::Let(_, _) | Expr::Defn(_, _, _)
-                );
+                let needs_parens = matches!(&**cont, Expr::Let(_, _) | Expr::Defn(_, _, _));
                 docs![
-                alloc,
-                bracket_list(
                     alloc,
-                    asgns.iter().map(|(id, t)| docs![
+                    bracket_list(
                         alloc,
-                        "&",
-                        id.pretty(alloc),
-                        alloc.space(),
-                        "<-",
-                        alloc.space(),
-                        t.pretty(alloc)
-                    ]),
-                    alloc.line().append(alloc.text("| "))
-                ),
-                if needs_parens { cont.pretty(alloc).parens() } else { cont.pretty(alloc) }
-            ]
-            },
+                        asgns.iter().map(|(id, t)| docs![
+                            alloc,
+                            "&",
+                            id.pretty(alloc),
+                            alloc.space(),
+                            "<-",
+                            alloc.space(),
+                            t.pretty(alloc)
+                        ]),
+                        alloc.line().append(alloc.text("| "))
+                    ),
+                    if needs_parens { cont.pretty(alloc).parens() } else { cont.pretty(alloc) }
+                ]
+            }
             Expr::Assert(t, e) => {
                 docs![alloc, t.pretty(alloc).braces().group(), alloc.line(), e.pretty(alloc)]
             }
