@@ -26,12 +26,12 @@ module C08MultipleCalls_MultiUse_Closure0
   use prelude.Int
   let rec c08MultipleCalls_MultiUse_Closure0 (_1:C08MultipleCalls_MultiUse_Closure0.c08multiplecalls_multiuse_closure0 t) (return'  (ret:uint32))= {[#"../08_multiple_calls.rs" 5 23 5 29] field_00 _1 = field_00 _1}
     (! bb0 
-    [ bb0 = -{resolve0 _1}- [ &res <- [#"../08_multiple_calls.rs" 8 8 8 9] (0 : uint32) ] [ &_0 <- res ] return' {_0}  ]
-    ) [ return' (result:uint32)-> (! return' {_0}) ] 
+    [ bb0 = -{resolve0 _1}- [ &res <- [#"../08_multiple_calls.rs" 8 8 8 9] (0 : uint32) ] [ &_0 <- res ] return' {_0} ]
+    )
     [ & _0 : uint32 = any_l () : uint32
     | & _1 : C08MultipleCalls_MultiUse_Closure0.c08multiplecalls_multiuse_closure0 t = _1
     | & res : uint32 = any_l () : uint32 ]
-    
+     [ return' (result:uint32)-> (! return' {result}) ] 
 end
 module C08MultipleCalls_MultiUse
   type t
@@ -63,6 +63,10 @@ module C08MultipleCalls_MultiUse
   axiom inv0 : forall x : t . inv0 x = true
   use prelude.Borrow
   use prelude.Intrinsic
+  predicate resolve1 (self : t)
+  let rec resolve1 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
   predicate resolve2 (self : t)
   let rec resolve2 (self:t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
@@ -73,7 +77,7 @@ module C08MultipleCalls_MultiUse
     let C08MultipleCalls_MultiUse_Closure0.C08MultipleCalls_MultiUse_Closure0 a = self in a
   let rec field_00 (self:C08MultipleCalls_MultiUse_Closure0.c08multiplecalls_multiuse_closure0 t) (return'  (ret:t))= any
     [ return' (result:t)-> {result = field_00 self} (! return' {result}) ] 
-  predicate resolve1 [#"../08_multiple_calls.rs" 5 12 5 31] (_1 : C08MultipleCalls_MultiUse_Closure0.c08multiplecalls_multiuse_closure0 t)
+  predicate resolve0 [#"../08_multiple_calls.rs" 5 12 5 31] (_1 : C08MultipleCalls_MultiUse_Closure0.c08multiplecalls_multiuse_closure0 t)
     
    =
     resolve2 (field_00 _1)
@@ -92,20 +96,17 @@ module C08MultipleCalls_MultiUse
     [ return' (result:())-> {[#"../08_multiple_calls.rs" 18 0 18 70] exists r : uint32 . exists f2 : C08MultipleCalls_MultiUse_Closure0.c08multiplecalls_multiuse_closure0 t . inv2 f2 /\ f2 = f /\ postcondition0 f2 () r}
       (! return' {result}) ]
     
-  predicate resolve0 (self : t)
-  let rec resolve0 (self:t) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
   let rec multi_use (x:t) (return'  (ret:()))= {[#"../08_multiple_calls.rs" 4 20 4 21] inv0 x}
     (! bb0 
-    [ bb1 = {[@expl:type invariant] inv0 x}
-      -{resolve0 x}- [ &_0 <- [#"../08_multiple_calls.rs" 4 27 14 1] () ] return' {_0} 
-    | bb0 = [ &c <- C08MultipleCalls_MultiUse_Closure0.C08MultipleCalls_MultiUse_Closure0 x ] -{resolve1 c}- uses_fn0
-      {c} (fun (_ret':()) -> [ &_4 <- _ret' ] bb1)  ]
-    ) [ return' (result:())-> (! return' {_0}) ] 
+    [ bb0 = 
+      [ &c <- C08MultipleCalls_MultiUse_Closure0.C08MultipleCalls_MultiUse_Closure0 x : C08MultipleCalls_MultiUse_Closure0.c08multiplecalls_multiuse_closure0 t ]
+      -{resolve0 c}- uses_fn0 {c} (fun (_ret':()) -> [ &_4 <- _ret' ] bb1)
+    | bb1 = {[@expl:type invariant] inv0 x}
+      -{resolve1 x}- [ &_0 <- [#"../08_multiple_calls.rs" 4 27 14 1] () ] return' {_0} ]
+    )
     [ & _0 : () = any_l () : ()
     | & x : t = x
     | & c : C08MultipleCalls_MultiUse_Closure0.c08multiplecalls_multiuse_closure0 t = any_l () : C08MultipleCalls_MultiUse_Closure0.c08multiplecalls_multiuse_closure0 t
     | & _4 : () = any_l () : () ]
-    
+     [ return' (result:())-> (! return' {result}) ] 
 end

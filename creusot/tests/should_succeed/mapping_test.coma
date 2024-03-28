@@ -6,6 +6,13 @@ module MappingTest_T_Type
     | C_T int32
     
   function any_l (_ : 'b) : 'a
+  let rec t (input:t_t) (ret  (field_0:int32))= any 
+    [ good (field_0:int32)-> {C_T field_0 = input}
+      ret {field_0}
+    | bad (field_0:int32)-> {C_T field_0 <> input}
+      {false}
+      any ]
+    
   function t_a (self : t_t) : int32 =
     match self with
       | C_T a -> a
@@ -35,7 +42,6 @@ module MappingTest_Incr
     
   use prelude.Snapshot
   use prelude.Intrinsic
-  use prelude.Snapshot
   use prelude.Int32
   predicate resolve0 (self : borrowed (MappingTest_T_Type.t_t)) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
@@ -53,35 +59,41 @@ module MappingTest_Incr
     [#"../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48] shallow_model4 (Snapshot.inner self)
   let rec shallow_model1 (self:Snapshot.snap_ty (borrowed (MappingTest_T_Type.t_t))) (return'  (ret:Map.map int int))= any
     [ return' (result:Map.map int int)-> {result = shallow_model1 self} (! return' {result}) ] 
+  use prelude.Snapshot
   let rec incr (t:borrowed (MappingTest_T_Type.t_t)) (return'  (ret:()))= {[#"../mapping_test.rs" 28 12 28 26] Int32.to_int (MappingTest_T_Type.t_a ( * t)) < 1000}
     {[#"../mapping_test.rs" 27 12 27 24] 0 <= Int32.to_int (MappingTest_T_Type.t_a ( * t))}
     (! bb0 
-    [ bb1 = Int32.add {MappingTest_T_Type.t_a ( * t)} {[#"../mapping_test.rs" 32 14 32 15] (1 : int32)}
-      (fun (_ret':int32) -> 
-        [ &t <- { t with current = (let MappingTest_T_Type.C_T x0 =  * t in MappingTest_T_Type.C_T _ret') ; } ]
-        -{resolve0 t}- {[@expl:assertion] [#"../mapping_test.rs" 35 19 35 50] shallow_model0 ( ^ t) = Map.set (shallow_model1 old_t) (Int32.to_int (MappingTest_T_Type.t_a ( * Snapshot.inner old_t))) 1}
-        [ &_0 <- [#"../mapping_test.rs" 30 19 36 1] () ] return' {_0}) 
-    | bb0 = [ &old_t <- [#"../mapping_test.rs" 31 16 31 31] Snapshot.new t ] bb1  ]
-    ) 
-    [ return' (result:())-> {[#"../mapping_test.rs" 29 11 29 37] shallow_model0 ( ^ t) = Map.set (shallow_model3 t) (Int32.to_int (MappingTest_T_Type.t_a ( * t))) 1}
-      (! return' {_0}) ]
-    
+    [ bb0 = [ &old_t <- [#"../mapping_test.rs" 31 16 31 31] Snapshot.new t ] bb1
+    | bb1 = MappingTest_T_Type.t { * t} (fun (rf_a':int32) -> Int32.add {rf_a'}
+        {[#"../mapping_test.rs" 32 14 32 15] (1 : int32)} (fun (_ret':int32) -> MappingTest_T_Type.t { * t}
+          (fun (f_a':int32) -> 
+            [ &t <- { t with current = MappingTest_T_Type.C_T _ret' ; } ]
+            -{resolve0 t}- {[@expl:assertion] [#"../mapping_test.rs" 35 19 35 50] shallow_model0 ( ^ t) = Map.set (shallow_model1 old_t) (Int32.to_int (MappingTest_T_Type.t_a ( * Snapshot.inner old_t))) 1}
+            [ &_0 <- [#"../mapping_test.rs" 30 19 36 1] () ] return' {_0}))) ]
+    )
     [ & _0 : () = any_l () : ()
     | & t : borrowed (MappingTest_T_Type.t_t) = t
     | & old_t : Snapshot.snap_ty (borrowed (MappingTest_T_Type.t_t)) = any_l () : Snapshot.snap_ty (borrowed (MappingTest_T_Type.t_t)) ]
+     
+    [ return' (result:())-> {[#"../mapping_test.rs" 29 11 29 37] shallow_model0 ( ^ t) = Map.set (shallow_model3 t) (Int32.to_int (MappingTest_T_Type.t_a ( * t))) 1}
+      (! return' {result}) ]
     
 end
 module MappingTest_F
   use prelude.Intrinsic
-  use prelude.Int32
-  use prelude.Int
   use prelude.Borrow
   use MappingTest_T_Type as MappingTest_T_Type
+  predicate resolve0 (self : borrowed (MappingTest_T_Type.t_t)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed (MappingTest_T_Type.t_t)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  use prelude.Int32
   use prelude.Int
   use map.Map
+  use prelude.Int
   use map.Map
   use prelude.Int32
-  use map.Map
   function shallow_model0 [#"../mapping_test.rs" 22 4 22 50] (self : MappingTest_T_Type.t_t) : Map.map int int
   let rec shallow_model0 (self:MappingTest_T_Type.t_t) (return'  (ret:Map.map int int))= any 
     [ return' (result:Map.map int int)-> {result = shallow_model0 self} (! return' {result}) ]
@@ -91,6 +103,7 @@ module MappingTest_F
   else
     0
   )
+  use map.Map
   function shallow_model2 (self : borrowed (MappingTest_T_Type.t_t)) : Map.map int int =
     [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model0 ( * self)
   let rec shallow_model2 (self:borrowed (MappingTest_T_Type.t_t)) (return'  (ret:Map.map int int))= any 
@@ -102,32 +115,27 @@ module MappingTest_F
     [ return' (result:())-> {[#"../mapping_test.rs" 29 11 29 37] shallow_model0 ( ^ t) = Map.set (shallow_model2 t) (Int32.to_int (MappingTest_T_Type.t_a ( * t))) 1}
       (! return' {result}) ]
     
-  predicate resolve0 (self : borrowed (MappingTest_T_Type.t_t)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve0 (self:borrowed (MappingTest_T_Type.t_t)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
   let rec f (_1:()) (return'  (ret:()))= (! bb0 
-    [ bb1 = -{resolve0 _8}- {[@expl:assertion] [#"../mapping_test.rs" 43 19 43 34] Map.get (shallow_model0 x) 13 = 1}
-      {[@expl:assertion] [#"../mapping_test.rs" 44 19 44 34] Map.get (shallow_model0 x) 42 = 1}
-      [ &_0 <- [#"../mapping_test.rs" 38 11 45 1] () ] return' {_0} 
-    | bb0 = 
+    [ bb0 = 
       [ &x <- MappingTest_T_Type.C_T ([#"../mapping_test.rs" 39 23 39 25] (42 : int32)) ]
       {[@expl:assertion] [#"../mapping_test.rs" 40 19 40 34] Map.get (shallow_model0 x) 13 = 1}
       {[@expl:assertion] [#"../mapping_test.rs" 41 19 41 34] Map.get (shallow_model0 x) 42 = 0}
-      Borrow.borrow_mut <MappingTest_T_Type.t_t> {x} (fun (_ret':borrowed (MappingTest_T_Type.t_t)) -> [ &_8 <- _ret' ] 
-        [ &x <-  ^ _8 ]
+      Borrow.borrow_mut <MappingTest_T_Type.t_t> {x} (fun (_ret':borrowed (MappingTest_T_Type.t_t)) -> [ &x <-  ^ _8 ] 
+        [ &_8 <- _ret' ]
         Borrow.borrow_final <MappingTest_T_Type.t_t> { * _8} {Borrow.get_id _8}
         (fun (_ret':borrowed (MappingTest_T_Type.t_t)) -> [ &_7 <- _ret' ] 
           [ &_8 <- { _8 with current = ( ^ _7) ; } ]
-          incr0 {_7} (fun (_ret':()) -> [ &_6 <- _ret' ] bb1)))  ]
-    ) [ return' (result:())-> (! return' {_0}) ] 
+          incr0 {_7} (fun (_ret':()) -> [ &_6 <- _ret' ] bb1)))
+    | bb1 = -{resolve0 _8}- {[@expl:assertion] [#"../mapping_test.rs" 43 19 43 34] Map.get (shallow_model0 x) 13 = 1}
+      {[@expl:assertion] [#"../mapping_test.rs" 44 19 44 34] Map.get (shallow_model0 x) 42 = 1}
+      [ &_0 <- [#"../mapping_test.rs" 38 11 45 1] () ] return' {_0} ]
+    )
     [ & _0 : () = any_l () : ()
     | & x : MappingTest_T_Type.t_t = any_l () : MappingTest_T_Type.t_t
     | & _6 : () = any_l () : ()
     | & _7 : borrowed (MappingTest_T_Type.t_t) = any_l () : borrowed (MappingTest_T_Type.t_t)
     | & _8 : borrowed (MappingTest_T_Type.t_t) = any_l () : borrowed (MappingTest_T_Type.t_t) ]
-    
+     [ return' (result:())-> (! return' {result}) ] 
 end
 module MappingTest_Impl0
   

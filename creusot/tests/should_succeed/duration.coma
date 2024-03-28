@@ -6,6 +6,13 @@ module Core_Time_Nanoseconds_Type
     | C_Nanoseconds uint32
     
   function any_l (_ : 'b) : 'a
+  let rec nanoseconds (input:t_nanoseconds) (ret  (field_0:uint32))= any 
+    [ good (field_0:uint32)-> {C_Nanoseconds field_0 = input}
+      ret {field_0}
+    | bad (field_0:uint32)-> {C_Nanoseconds field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Core_Time_Duration_Type
   use Core_Time_Nanoseconds_Type as Core_Time_Nanoseconds_Type
@@ -15,6 +22,13 @@ module Core_Time_Duration_Type
     | C_Duration uint64 (Core_Time_Nanoseconds_Type.t_nanoseconds)
     
   function any_l (_ : 'b) : 'a
+  let rec duration (input:t_duration) (ret  (field_0:uint64) (field_1:Core_Time_Nanoseconds_Type.t_nanoseconds))= any 
+    [ good (field_0:uint64) (field_1:Core_Time_Nanoseconds_Type.t_nanoseconds)-> {C_Duration field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:uint64) (field_1:Core_Time_Nanoseconds_Type.t_nanoseconds)-> {C_Duration field_0 field_1 <> input}
+      {false}
+      any ]
+    
 end
 module Core_Option_Option_Type
   type t_option 't =
@@ -22,6 +36,16 @@ module Core_Option_Option_Type
     | C_Some 't
     
   function any_l (_ : 'b) : 'a
+  let rec none < 't > (input:t_option 't) (ret  )= any 
+    [ good -> {C_None  = input} ret | bad -> {C_None  <> input} {false} any ]
+    
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Some field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Some field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Duration_TestDuration
   use Core_Time_Duration_Type as Core_Time_Duration_Type
@@ -36,7 +60,6 @@ module Duration_TestDuration
     
   axiom inv0 : forall x : Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration) . inv0 x = true
   use prelude.Intrinsic
-  use prelude.UInt32
   use prelude.Int
   function secs_to_nanos0 (secs : int) : int
   let rec secs_to_nanos0 (secs:int) (return'  (ret:int))= any 
@@ -50,87 +73,18 @@ module Duration_TestDuration
     [ return' (result:int)-> {result = shallow_model0 self} (! return' {result}) ]
     
   axiom shallow_model0_spec : forall self : Core_Time_Duration_Type.t_duration . [#"../../../../creusot-contracts/src/std/time.rs" 13 14 13 77] shallow_model0 self >= 0 /\ shallow_model0 self <= secs_to_nanos0 (UInt64.to_int (max0 : uint64)) + 999999999
-  function nanos_to_secs0 (nanos : int) : int
-  let rec nanos_to_secs0 (nanos:int) (return'  (ret:int))= any 
-    [ return' (result:int)-> {result = nanos_to_secs0 nanos} (! return' {result}) ]
-    
-  use prelude.UInt32
-  let rec new0 (secs:uint64) (nanos:uint32) (return'  (ret:Core_Time_Duration_Type.t_duration))= {[#"../../../../creusot-contracts/src/std/time.rs" 80 27 80 69] UInt64.to_int secs + nanos_to_secs0 (UInt32.to_int nanos) <= UInt64.to_int (max0 : uint64)}
+  let rec sub0 (self:Core_Time_Duration_Type.t_duration) (rhs:Core_Time_Duration_Type.t_duration) (return'  (ret:Core_Time_Duration_Type.t_duration))= {[#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] shallow_model0 self - shallow_model0 rhs >= 0}
     any 
-    [ return' (result:Core_Time_Duration_Type.t_duration)-> {[#"../../../../creusot-contracts/src/std/time.rs" 81 26 81 66] shallow_model0 result = secs_to_nanos0 (UInt64.to_int secs) + UInt32.to_int nanos}
+    [ return' (result:Core_Time_Duration_Type.t_duration)-> {[#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] shallow_model0 self - shallow_model0 rhs = shallow_model0 result}
       (! return' {result}) ]
     
-  let rec from_secs0 (secs:uint64) (return'  (ret:Core_Time_Duration_Type.t_duration))= any 
-    [ return' (result:Core_Time_Duration_Type.t_duration)-> {[#"../../../../creusot-contracts/src/std/time.rs" 84 26 84 57] shallow_model0 result = secs_to_nanos0 (UInt64.to_int secs)}
-      (! return' {result}) ]
-    
-  let rec from_millis0 (millis:uint64) (return'  (ret:Core_Time_Duration_Type.t_duration))= any 
-    [ return' (result:Core_Time_Duration_Type.t_duration)-> {[#"../../../../creusot-contracts/src/std/time.rs" 87 26 87 58] shallow_model0 result = UInt64.to_int millis * 1000000}
-      (! return' {result}) ]
-    
-  let rec from_micros0 (micros:uint64) (return'  (ret:Core_Time_Duration_Type.t_duration))= any 
-    [ return' (result:Core_Time_Duration_Type.t_duration)-> {[#"../../../../creusot-contracts/src/std/time.rs" 90 26 90 54] shallow_model0 result = UInt64.to_int micros * 1000}
-      (! return' {result}) ]
-    
-  let rec from_nanos0 (nanos:uint64) (return'  (ret:Core_Time_Duration_Type.t_duration))= any 
-    [ return' (result:Core_Time_Duration_Type.t_duration)-> {[#"../../../../creusot-contracts/src/std/time.rs" 93 26 93 43] shallow_model0 result = UInt64.to_int nanos}
+  let rec add0 (self:Core_Time_Duration_Type.t_duration) (rhs:Core_Time_Duration_Type.t_duration) (return'  (ret:Core_Time_Duration_Type.t_duration))= {[#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] shallow_model0 self + shallow_model0 rhs <= secs_to_nanos0 (UInt64.to_int (max0 : uint64)) + 999999999}
+    any 
+    [ return' (result:Core_Time_Duration_Type.t_duration)-> {[#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] shallow_model0 self + shallow_model0 rhs = shallow_model0 result}
       (! return' {result}) ]
     
   use prelude.Int
-  use prelude.Borrow
-  function shallow_model4 (self : Core_Time_Duration_Type.t_duration) : int =
-    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model0 self
-  let rec shallow_model4 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:int))= any 
-    [ return' (result:int)-> {result = shallow_model4 self} (! return' {result}) ]
-    
-  let rec is_zero0 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {[#"../../../../creusot-contracts/src/std/time.rs" 97 16 97 58] shallow_model4 self <> 0
-       -> result = false}
-      {[#"../../../../creusot-contracts/src/std/time.rs" 96 16 96 57] shallow_model4 self = 0  -> result = true}
-      (! return' {result}) ]
-    
-  let rec as_secs0 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:uint64))= any 
-    [ return' (result:uint64)-> {[#"../../../../creusot-contracts/src/std/time.rs" 100 26 100 57] UInt64.to_int result = nanos_to_secs0 (shallow_model4 self)}
-      (! return' {result}) ]
-    
-  function nanos_to_millis0 (nanos : int) : int
-  let rec nanos_to_millis0 (nanos:int) (return'  (ret:int))= any 
-    [ return' (result:int)-> {result = nanos_to_millis0 nanos} (! return' {result}) ]
-    
-  let rec subsec_millis0 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:uint32))= any 
-    [ return' (result:uint32)-> {[#"../../../../creusot-contracts/src/std/time.rs" 104 26 104 44] result < (1000 : uint32)}
-      {[#"../../../../creusot-contracts/src/std/time.rs" 103 26 103 67] UInt32.to_int result = mod (nanos_to_millis0 (shallow_model4 self)) 1000}
-      (! return' {result}) ]
-    
-  use prelude.UInt128
-  use prelude.UInt128
-  let rec as_millis0 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:uint128))= any 
-    [ return' (result:uint128)-> {[#"../../../../creusot-contracts/src/std/time.rs" 115 26 115 59] UInt128.to_int result = nanos_to_millis0 (shallow_model4 self)}
-      (! return' {result}) ]
-    
-  function nanos_to_micros0 (nanos : int) : int
-  let rec nanos_to_micros0 (nanos:int) (return'  (ret:int))= any 
-    [ return' (result:int)-> {result = nanos_to_micros0 nanos} (! return' {result}) ]
-    
-  let rec subsec_micros0 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:uint32))= any 
-    [ return' (result:uint32)-> {[#"../../../../creusot-contracts/src/std/time.rs" 108 26 108 48] result < (1000000 : uint32)}
-      {[#"../../../../creusot-contracts/src/std/time.rs" 107 26 107 71] UInt32.to_int result = mod (nanos_to_micros0 (shallow_model4 self)) 1000000}
-      (! return' {result}) ]
-    
-  let rec as_micros0 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:uint128))= any 
-    [ return' (result:uint128)-> {[#"../../../../creusot-contracts/src/std/time.rs" 118 26 118 59] UInt128.to_int result = nanos_to_micros0 (shallow_model4 self)}
-      (! return' {result}) ]
-    
-  let rec subsec_nanos0 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:uint32))= any 
-    [ return' (result:uint32)-> {[#"../../../../creusot-contracts/src/std/time.rs" 112 26 112 52] result < (1000000000 : uint32)}
-      {[#"../../../../creusot-contracts/src/std/time.rs" 111 26 111 60] UInt32.to_int result = mod (shallow_model4 self) 1000000000}
-      (! return' {result}) ]
-    
-  let rec as_nanos0 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:uint128))= any 
-    [ return' (result:uint128)-> {[#"../../../../creusot-contracts/src/std/time.rs" 122 26 122 75] UInt128.to_int result <= secs_to_nanos0 (UInt64.to_int (max0 : uint64)) + 999999999}
-      {[#"../../../../creusot-contracts/src/std/time.rs" 121 26 121 42] UInt128.to_int result = shallow_model4 self}
-      (! return' {result}) ]
-    
+  use prelude.UInt32
   function deep_model1 (self : Core_Time_Duration_Type.t_duration) : int
   let rec deep_model1 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:int))= any 
     [ return' (result:int)-> {result = deep_model1 self} (! return' {result}) ]
@@ -145,11 +99,24 @@ module Duration_TestDuration
       end
   let rec deep_model0 (self:Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) (return'  (ret:Core_Option_Option_Type.t_option int))= any
     [ return' (result:Core_Option_Option_Type.t_option int)-> {result = deep_model0 self} (! return' {result}) ] 
-  let rec checked_add0 (self:Core_Time_Duration_Type.t_duration) (rhs:Core_Time_Duration_Type.t_duration) (return'  (ret:Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)))= any
+  use prelude.UInt32
+  let rec checked_div0 (self:Core_Time_Duration_Type.t_duration) (rhs:uint32) (return'  (ret:Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)))= any
     
-    [ return' (result:Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration))-> {[#"../../../../creusot-contracts/src/std/time.rs" 126 16 126 114] nanos_to_secs0 (shallow_model0 self + shallow_model0 rhs) <= UInt64.to_int (max0 : uint64)
-       -> deep_model0 result = Core_Option_Option_Type.C_Some (shallow_model0 self + shallow_model0 rhs)}
-      {[#"../../../../creusot-contracts/src/std/time.rs" 125 16 125 86] nanos_to_secs0 (shallow_model0 self + shallow_model0 rhs) > UInt64.to_int (max0 : uint64)
+    [ return' (result:Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration))-> {[#"../../../../creusot-contracts/src/std/time.rs" 138 16 138 85] rhs <> (0 : uint32)
+       -> deep_model0 result = Core_Option_Option_Type.C_Some (div (shallow_model0 self) (UInt32.to_int rhs))}
+      {[#"../../../../creusot-contracts/src/std/time.rs" 137 16 137 58] rhs = (0 : uint32)
+       -> result = Core_Option_Option_Type.C_None}
+      (! return' {result}) ]
+    
+  function nanos_to_secs0 (nanos : int) : int
+  let rec nanos_to_secs0 (nanos:int) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = nanos_to_secs0 nanos} (! return' {result}) ]
+    
+  let rec checked_mul0 (self:Core_Time_Duration_Type.t_duration) (rhs:uint32) (return'  (ret:Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)))= any
+    
+    [ return' (result:Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration))-> {[#"../../../../creusot-contracts/src/std/time.rs" 134 16 134 114] nanos_to_secs0 (shallow_model0 self * UInt32.to_int rhs) <= UInt64.to_int (max0 : uint64)
+       -> deep_model0 result = Core_Option_Option_Type.C_Some (shallow_model0 self * UInt32.to_int rhs)}
+      {[#"../../../../creusot-contracts/src/std/time.rs" 133 16 133 86] nanos_to_secs0 (shallow_model0 self * UInt32.to_int rhs) > UInt64.to_int (max0 : uint64)
        -> result = Core_Option_Option_Type.C_None}
       (! return' {result}) ]
     
@@ -161,12 +128,10 @@ module Duration_TestDuration
        -> result = Core_Option_Option_Type.C_None}
       (! return' {result}) ]
     
-  let rec checked_mul0 (self:Core_Time_Duration_Type.t_duration) (rhs:uint32) (return'  (ret:Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)))= any
-    
-    [ return' (result:Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration))-> {[#"../../../../creusot-contracts/src/std/time.rs" 134 16 134 114] nanos_to_secs0 (shallow_model0 self * UInt32.to_int rhs) <= UInt64.to_int (max0 : uint64)
-       -> deep_model0 result = Core_Option_Option_Type.C_Some (shallow_model0 self * UInt32.to_int rhs)}
-      {[#"../../../../creusot-contracts/src/std/time.rs" 133 16 133 86] nanos_to_secs0 (shallow_model0 self * UInt32.to_int rhs) > UInt64.to_int (max0 : uint64)
-       -> result = Core_Option_Option_Type.C_None}
+  use prelude.Borrow
+  let rec is_some0 (self:Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) (return'  (ret:bool))= {inv0 self}
+    any 
+    [ return' (result:bool)-> {[#"../../../../creusot-contracts/src/std/option.rs" 33 26 33 51] result = (self <> Core_Option_Option_Type.C_None)}
       (! return' {result}) ]
     
   let rec is_none0 (self:Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) (return'  (ret:bool))= {inv0 self}
@@ -174,173 +139,250 @@ module Duration_TestDuration
     [ return' (result:bool)-> {[#"../../../../creusot-contracts/src/std/option.rs" 36 26 36 51] result = (self = Core_Option_Option_Type.C_None)}
       (! return' {result}) ]
     
-  let rec checked_div0 (self:Core_Time_Duration_Type.t_duration) (rhs:uint32) (return'  (ret:Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)))= any
+  let rec checked_add0 (self:Core_Time_Duration_Type.t_duration) (rhs:Core_Time_Duration_Type.t_duration) (return'  (ret:Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)))= any
     
-    [ return' (result:Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration))-> {[#"../../../../creusot-contracts/src/std/time.rs" 138 16 138 85] rhs <> (0 : uint32)
-       -> deep_model0 result = Core_Option_Option_Type.C_Some (div (shallow_model0 self) (UInt32.to_int rhs))}
-      {[#"../../../../creusot-contracts/src/std/time.rs" 137 16 137 58] rhs = (0 : uint32)
+    [ return' (result:Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration))-> {[#"../../../../creusot-contracts/src/std/time.rs" 126 16 126 114] nanos_to_secs0 (shallow_model0 self + shallow_model0 rhs) <= UInt64.to_int (max0 : uint64)
+       -> deep_model0 result = Core_Option_Option_Type.C_Some (shallow_model0 self + shallow_model0 rhs)}
+      {[#"../../../../creusot-contracts/src/std/time.rs" 125 16 125 86] nanos_to_secs0 (shallow_model0 self + shallow_model0 rhs) > UInt64.to_int (max0 : uint64)
        -> result = Core_Option_Option_Type.C_None}
       (! return' {result}) ]
     
-  let rec is_some0 (self:Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) (return'  (ret:bool))= {inv0 self}
-    any 
-    [ return' (result:bool)-> {[#"../../../../creusot-contracts/src/std/option.rs" 33 26 33 51] result = (self <> Core_Option_Option_Type.C_None)}
+  use prelude.UInt128
+  function nanos_to_micros0 (nanos : int) : int
+  let rec nanos_to_micros0 (nanos:int) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = nanos_to_micros0 nanos} (! return' {result}) ]
+    
+  function shallow_model4 (self : Core_Time_Duration_Type.t_duration) : int =
+    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model0 self
+  let rec shallow_model4 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = shallow_model4 self} (! return' {result}) ]
+    
+  use prelude.UInt128
+  let rec as_micros0 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:uint128))= any 
+    [ return' (result:uint128)-> {[#"../../../../creusot-contracts/src/std/time.rs" 118 26 118 59] UInt128.to_int result = nanos_to_micros0 (shallow_model4 self)}
       (! return' {result}) ]
     
-  let rec add0 (self:Core_Time_Duration_Type.t_duration) (rhs:Core_Time_Duration_Type.t_duration) (return'  (ret:Core_Time_Duration_Type.t_duration))= {[#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] shallow_model0 self + shallow_model0 rhs <= secs_to_nanos0 (UInt64.to_int (max0 : uint64)) + 999999999}
-    any 
-    [ return' (result:Core_Time_Duration_Type.t_duration)-> {[#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] shallow_model0 self + shallow_model0 rhs = shallow_model0 result}
+  function nanos_to_millis0 (nanos : int) : int
+  let rec nanos_to_millis0 (nanos:int) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = nanos_to_millis0 nanos} (! return' {result}) ]
+    
+  let rec as_millis0 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:uint128))= any 
+    [ return' (result:uint128)-> {[#"../../../../creusot-contracts/src/std/time.rs" 115 26 115 59] UInt128.to_int result = nanos_to_millis0 (shallow_model4 self)}
       (! return' {result}) ]
     
-  let rec sub0 (self:Core_Time_Duration_Type.t_duration) (rhs:Core_Time_Duration_Type.t_duration) (return'  (ret:Core_Time_Duration_Type.t_duration))= {[#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] shallow_model0 self - shallow_model0 rhs >= 0}
+  let rec subsec_nanos0 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:uint32))= any 
+    [ return' (result:uint32)-> {[#"../../../../creusot-contracts/src/std/time.rs" 112 26 112 52] result < (1000000000 : uint32)}
+      {[#"../../../../creusot-contracts/src/std/time.rs" 111 26 111 60] UInt32.to_int result = mod (shallow_model4 self) 1000000000}
+      (! return' {result}) ]
+    
+  let rec subsec_micros0 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:uint32))= any 
+    [ return' (result:uint32)-> {[#"../../../../creusot-contracts/src/std/time.rs" 108 26 108 48] result < (1000000 : uint32)}
+      {[#"../../../../creusot-contracts/src/std/time.rs" 107 26 107 71] UInt32.to_int result = mod (nanos_to_micros0 (shallow_model4 self)) 1000000}
+      (! return' {result}) ]
+    
+  let rec subsec_millis0 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:uint32))= any 
+    [ return' (result:uint32)-> {[#"../../../../creusot-contracts/src/std/time.rs" 104 26 104 44] result < (1000 : uint32)}
+      {[#"../../../../creusot-contracts/src/std/time.rs" 103 26 103 67] UInt32.to_int result = mod (nanos_to_millis0 (shallow_model4 self)) 1000}
+      (! return' {result}) ]
+    
+  let rec as_secs0 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:uint64))= any 
+    [ return' (result:uint64)-> {[#"../../../../creusot-contracts/src/std/time.rs" 100 26 100 57] UInt64.to_int result = nanos_to_secs0 (shallow_model4 self)}
+      (! return' {result}) ]
+    
+  let rec is_zero0 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {[#"../../../../creusot-contracts/src/std/time.rs" 97 16 97 58] shallow_model4 self <> 0
+       -> result = false}
+      {[#"../../../../creusot-contracts/src/std/time.rs" 96 16 96 57] shallow_model4 self = 0  -> result = true}
+      (! return' {result}) ]
+    
+  let rec from_nanos0 (nanos:uint64) (return'  (ret:Core_Time_Duration_Type.t_duration))= any 
+    [ return' (result:Core_Time_Duration_Type.t_duration)-> {[#"../../../../creusot-contracts/src/std/time.rs" 93 26 93 43] shallow_model0 result = UInt64.to_int nanos}
+      (! return' {result}) ]
+    
+  let rec from_micros0 (micros:uint64) (return'  (ret:Core_Time_Duration_Type.t_duration))= any 
+    [ return' (result:Core_Time_Duration_Type.t_duration)-> {[#"../../../../creusot-contracts/src/std/time.rs" 90 26 90 54] shallow_model0 result = UInt64.to_int micros * 1000}
+      (! return' {result}) ]
+    
+  let rec from_millis0 (millis:uint64) (return'  (ret:Core_Time_Duration_Type.t_duration))= any 
+    [ return' (result:Core_Time_Duration_Type.t_duration)-> {[#"../../../../creusot-contracts/src/std/time.rs" 87 26 87 58] shallow_model0 result = UInt64.to_int millis * 1000000}
+      (! return' {result}) ]
+    
+  let rec from_secs0 (secs:uint64) (return'  (ret:Core_Time_Duration_Type.t_duration))= any 
+    [ return' (result:Core_Time_Duration_Type.t_duration)-> {[#"../../../../creusot-contracts/src/std/time.rs" 84 26 84 57] shallow_model0 result = secs_to_nanos0 (UInt64.to_int secs)}
+      (! return' {result}) ]
+    
+  let rec as_nanos0 (self:Core_Time_Duration_Type.t_duration) (return'  (ret:uint128))= any 
+    [ return' (result:uint128)-> {[#"../../../../creusot-contracts/src/std/time.rs" 122 26 122 75] UInt128.to_int result <= secs_to_nanos0 (UInt64.to_int (max0 : uint64)) + 999999999}
+      {[#"../../../../creusot-contracts/src/std/time.rs" 121 26 121 42] UInt128.to_int result = shallow_model4 self}
+      (! return' {result}) ]
+    
+  let rec new0 (secs:uint64) (nanos:uint32) (return'  (ret:Core_Time_Duration_Type.t_duration))= {[#"../../../../creusot-contracts/src/std/time.rs" 80 27 80 69] UInt64.to_int secs + nanos_to_secs0 (UInt32.to_int nanos) <= UInt64.to_int (max0 : uint64)}
     any 
-    [ return' (result:Core_Time_Duration_Type.t_duration)-> {[#"../../../../creusot-contracts/src/std/time.rs" 173 0 203 1] shallow_model0 self - shallow_model0 rhs = shallow_model0 result}
+    [ return' (result:Core_Time_Duration_Type.t_duration)-> {[#"../../../../creusot-contracts/src/std/time.rs" 81 26 81 66] shallow_model0 result = secs_to_nanos0 (UInt64.to_int secs) + UInt32.to_int nanos}
       (! return' {result}) ]
     
   let rec test_duration (_1:()) (return'  (ret:()))= (! bb0 
-    [ bb4 = {[#"../duration.rs" 10 4 10 33] false}
-      any 
-    | bb12 = {[#"../duration.rs" 26 4 26 27] false}
-      any 
-    | bb18 = {[#"../duration.rs" 29 4 29 34] false}
-      any 
-    | bb21 = {[#"../duration.rs" 30 4 30 40] false}
-      any 
-    | bb24 = {[#"../duration.rs" 31 4 31 40] false}
-      any 
-    | bb27 = {[#"../duration.rs" 32 4 32 39] false}
-      any 
-    | bb31 = {[#"../duration.rs" 34 4 34 69] false}
-      any 
-    | bb35 = {[#"../duration.rs" 35 4 35 69] false}
-      any 
-    | bb39 = {[#"../duration.rs" 36 4 36 65] false}
-      any 
-    | bb43 = {[#"../duration.rs" 38 4 38 46] false}
-      any 
-    | bb47 = {[#"../duration.rs" 39 4 39 49] false}
-      any 
-    | bb51 = {[#"../duration.rs" 41 4 41 46] false}
-      any 
-    | bb55 = {[#"../duration.rs" 42 4 42 51] false}
-      any 
-    | bb59 = {[#"../duration.rs" 44 4 44 41] false}
-      any 
-    | bb63 = {[#"../duration.rs" 45 4 45 45] false}
-      any 
-    | bb67 = {[#"../duration.rs" 47 4 47 44] false}
-      any 
-    | bb71 = {[#"../duration.rs" 48 4 48 45] false}
-      any 
-    | bb73 = {[@expl:assertion] [#"../duration.rs" 52 18 52 35] shallow_model0 sum = 1001000}
-      {[@expl:assertion] [#"../duration.rs" 53 18 53 39] shallow_model0 difference = 999000}
-      [ &_0 <- [#"../duration.rs" 7 23 54 1] () ] return' {_0} 
-    | bb72 = sub0 {d_millis} {d_micros} (fun (_ret':Core_Time_Duration_Type.t_duration) -> 
-        [ &difference <- _ret' ]
-        bb73) 
-    | bb70 = add0 {d_millis} {d_micros} (fun (_ret':Core_Time_Duration_Type.t_duration) -> [ &sum <- _ret' ] bb72) 
-    | bb69 = any [ br0 -> {_121 = false} (! bb71) | br1 -> {_121} (! bb70) ]  
-    | bb68 = is_some0 {_123} (fun (_ret':bool) -> [ &_121 <- _ret' ] bb69) 
-    | bb66 = checked_div0 {d_secs} {[#"../duration.rs" 48 31 48 33] (10 : uint32)}
-      (fun (_ret':Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) -> [ &_123 <- _ret' ] bb68) 
-    | bb65 = any [ br0 -> {_115 = false} (! bb67) | br1 -> {_115} (! bb66) ]  
-    | bb64 = is_none0 {_117} (fun (_ret':bool) -> [ &_115 <- _ret' ] bb65) 
-    | bb62 = checked_div0 {d_secs} {[#"../duration.rs" 47 31 47 32] (0 : uint32)}
-      (fun (_ret':Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) -> [ &_117 <- _ret' ] bb64) 
-    | bb61 = any [ br0 -> {_109 = false} (! bb63) | br1 -> {_109} (! bb62) ]  
-    | bb60 = is_some0 {_111} (fun (_ret':bool) -> [ &_109 <- _ret' ] bb61) 
-    | bb58 = checked_mul0 {d_secs} {[#"../duration.rs" 45 31 45 33] (10 : uint32)}
-      (fun (_ret':Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) -> [ &_111 <- _ret' ] bb60) 
-    | bb57 = any [ br0 -> {_103 = false} (! bb59) | br1 -> {_103} (! bb58) ]  
-    | bb56 = is_none0 {_105} (fun (_ret':bool) -> [ &_103 <- _ret' ] bb57) 
-    | bb54 = checked_mul0 {max} {[#"../duration.rs" 44 28 44 29] (2 : uint32)}
-      (fun (_ret':Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) -> [ &_105 <- _ret' ] bb56) 
-    | bb53 = any [ br0 -> {_96 = false} (! bb55) | br1 -> {_96} (! bb54) ]  
-    | bb52 = is_some0 {_98} (fun (_ret':bool) -> [ &_96 <- _ret' ] bb53) 
-    | bb50 = checked_sub0 {d_secs} {d_millis}
-      (fun (_ret':Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) -> [ &_98 <- _ret' ] bb52) 
-    | bb49 = any [ br0 -> {_89 = false} (! bb51) | br1 -> {_89} (! bb50) ]  
-    | bb48 = is_none0 {_91} (fun (_ret':bool) -> [ &_89 <- _ret' ] bb49) 
-    | bb46 = checked_sub0 {d_secs} {max}
-      (fun (_ret':Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) -> [ &_91 <- _ret' ] bb48) 
-    | bb45 = any [ br0 -> {_82 = false} (! bb47) | br1 -> {_82} (! bb46) ]  
-    | bb44 = is_some0 {_84} (fun (_ret':bool) -> [ &_82 <- _ret' ] bb45) 
-    | bb42 = checked_add0 {d_secs} {d_secs}
-      (fun (_ret':Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) -> [ &_84 <- _ret' ] bb44) 
-    | bb41 = any [ br0 -> {_75 = false} (! bb43) | br1 -> {_75} (! bb42) ]  
-    | bb40 = is_none0 {_77} (fun (_ret':bool) -> [ &_75 <- _ret' ] bb41) 
-    | bb38 = checked_add0 {d_secs} {max}
-      (fun (_ret':Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) -> [ &_77 <- _ret' ] bb40) 
-    | bb37 = UInt128.eq {_68} {_71} (fun (_ret':bool) -> [ &_67 <- _ret' ] any 
-        [ br0 -> {_67 = false} (! bb39) | br1 -> {_67} (! bb38) ]
-        ) 
-    | bb36 = [ &_68 <- UInt128.of_int (UInt32.to_int _69) ] any 
-      [ any_ (_any:uint32)-> [ &_69 <- _any ] as_nanos0 {d_nanos} (fun (_ret':uint128) -> [ &_71 <- _ret' ] bb37) ]
-       
-    | bb34 = subsec_nanos0 {d_nanos} (fun (_ret':uint32) -> [ &_69 <- _ret' ] bb36) 
-    | bb33 = UInt128.eq {_60} {_63} (fun (_ret':bool) -> [ &_59 <- _ret' ] any 
-        [ br0 -> {_59 = false} (! bb35) | br1 -> {_59} (! bb34) ]
-        ) 
-    | bb32 = [ &_60 <- UInt128.of_int (UInt32.to_int _61) ] any 
-      [ any_ (_any:uint32)-> [ &_61 <- _any ] as_micros0 {d_micros} (fun (_ret':uint128) -> [ &_63 <- _ret' ] bb33) ]
-       
-    | bb30 = subsec_micros0 {d_micros} (fun (_ret':uint32) -> [ &_61 <- _ret' ] bb32) 
-    | bb29 = UInt128.eq {_52} {_55} (fun (_ret':bool) -> [ &_51 <- _ret' ] any 
-        [ br0 -> {_51 = false} (! bb31) | br1 -> {_51} (! bb30) ]
-        ) 
-    | bb28 = [ &_52 <- UInt128.of_int (UInt32.to_int _53) ] any 
-      [ any_ (_any:uint32)-> [ &_53 <- _any ] as_millis0 {d_millis} (fun (_ret':uint128) -> [ &_55 <- _ret' ] bb29) ]
-       
-    | bb26 = subsec_millis0 {d_millis} (fun (_ret':uint32) -> [ &_53 <- _ret' ] bb28) 
-    | bb25 = UInt32.eq {[#"../duration.rs" 32 12 32 13] (0 : uint32)} {_47} (fun (_ret':bool) -> [ &_46 <- _ret' ] any 
-        [ br0 -> {_46 = false} (! bb27) | br1 -> {_46} (! bb26) ]
-        ) 
-    | bb23 = subsec_nanos0 {d_secs} (fun (_ret':uint32) -> [ &_47 <- _ret' ] bb25) 
-    | bb22 = UInt32.eq {[#"../duration.rs" 31 12 31 13] (0 : uint32)} {_42} (fun (_ret':bool) -> [ &_41 <- _ret' ] any 
-        [ br0 -> {_41 = false} (! bb24) | br1 -> {_41} (! bb23) ]
-        ) 
-    | bb20 = subsec_micros0 {d_secs} (fun (_ret':uint32) -> [ &_42 <- _ret' ] bb22) 
-    | bb19 = UInt32.eq {[#"../duration.rs" 30 12 30 13] (0 : uint32)} {_37} (fun (_ret':bool) -> [ &_36 <- _ret' ] any 
-        [ br0 -> {_36 = false} (! bb21) | br1 -> {_36} (! bb20) ]
-        ) 
-    | bb17 = subsec_millis0 {d_secs} (fun (_ret':uint32) -> [ &_37 <- _ret' ] bb19) 
-    | bb16 = UInt64.eq {[#"../duration.rs" 29 12 29 13] (1 : uint64)} {_32} (fun (_ret':bool) -> [ &_31 <- _ret' ] any 
-        [ br0 -> {_31 = false} (! bb18) | br1 -> {_31} (! bb17) ]
-        ) 
-    | bb15 = as_secs0 {d_secs} (fun (_ret':uint64) -> [ &_32 <- _ret' ] bb16) 
-    | bb14 = {[#"../duration.rs" 27 4 27 30] false}
-      any 
-    | bb13 = any [ br0 -> {_27 = false} (! bb15) | br1 -> {_27} (! bb14) ]  
-    | bb11 = is_zero0 {d_secs} (fun (_ret':bool) -> [ &_27 <- _ret' ] bb13) 
-    | bb10 = any [ br0 -> {_23 = false} (! bb12) | br1 -> {_23} (! bb11) ]  
-    | bb9 = {[@expl:assertion] [#"../duration.rs" 24 18 24 31] shallow_model0 d_nanos = 1}
-      is_zero0 {zero} (fun (_ret':bool) -> [ &_23 <- _ret' ] bb10) 
-    | bb8 = {[@expl:assertion] [#"../duration.rs" 21 18 21 36] shallow_model0 d_micros = 1000}
-      from_nanos0 {[#"../duration.rs" 23 39 23 40] (1 : uint64)} (fun (_ret':Core_Time_Duration_Type.t_duration) -> 
-        [ &d_nanos <- _ret' ]
-        bb9) 
-    | bb7 = {[@expl:assertion] [#"../duration.rs" 18 18 18 40] shallow_model0 d_millis = 1000000}
-      from_micros0 {[#"../duration.rs" 20 41 20 42] (1 : uint64)} (fun (_ret':Core_Time_Duration_Type.t_duration) -> 
-        [ &d_micros <- _ret' ]
-        bb8) 
-    | bb6 = {[@expl:assertion] [#"../duration.rs" 15 18 15 42] shallow_model0 d_secs = 1000000000}
-      from_millis0 {[#"../duration.rs" 17 41 17 42] (1 : uint64)} (fun (_ret':Core_Time_Duration_Type.t_duration) -> 
-        [ &d_millis <- _ret' ]
-        bb7) 
-    | bb5 = from_secs0 {[#"../duration.rs" 14 37 14 38] (1 : uint64)}
-      (fun (_ret':Core_Time_Duration_Type.t_duration) -> [ &d_secs <- _ret' ] bb6) 
+    [ bb0 = new0 {[#"../duration.rs" 8 29 8 30] (0 : uint64)} {[#"../duration.rs" 8 32 8 33] (0 : uint32)}
+      (fun (_ret':Core_Time_Duration_Type.t_duration) -> [ &zero <- _ret' ] bb1)
+    | bb1 = {[@expl:assertion] [#"../duration.rs" 9 18 9 28] shallow_model0 zero = 0}
+      as_nanos0 {zero} (fun (_ret':uint128) -> [ &_6 <- _ret' ] bb2)
+    | bb2 = UInt128.eq {_6} {[#"../duration.rs" 10 31 10 32] (0 : uint128)} (fun (_ret':bool) -> [ &_5 <- _ret' ] (any 
+        [ any_ (_any:uint128)-> (! [ &_6 <- _any ] (any [ br0 -> {_5 = false} (! bb4) | br1 -> {_5} (! bb3) ] )) ]
+        ))
     | bb3 = new0 {[#"../duration.rs" 12 28 12 36] (18446744073709551615 : uint64)}
       {[#"../duration.rs" 12 38 12 49] (999999999 : uint32)} (fun (_ret':Core_Time_Duration_Type.t_duration) -> 
         [ &max <- _ret' ]
-        bb5) 
-    | bb2 = UInt128.eq {_6} {[#"../duration.rs" 10 31 10 32] (0 : uint128)} (fun (_ret':bool) -> [ &_5 <- _ret' ] any 
-        [ br0 -> {_5 = false} (! bb4) | br1 -> {_5} (! bb3) ]
-        ) 
-    | bb1 = {[@expl:assertion] [#"../duration.rs" 9 18 9 28] shallow_model0 zero = 0}
-      as_nanos0 {zero} (fun (_ret':uint128) -> [ &_6 <- _ret' ] bb2) 
-    | bb0 = new0 {[#"../duration.rs" 8 29 8 30] (0 : uint64)} {[#"../duration.rs" 8 32 8 33] (0 : uint32)}
-      (fun (_ret':Core_Time_Duration_Type.t_duration) -> [ &zero <- _ret' ] bb1)  ]
-    ) [ return' (result:())-> (! return' {_0}) ] 
+        bb5)
+    | bb5 = from_secs0 {[#"../duration.rs" 14 37 14 38] (1 : uint64)}
+      (fun (_ret':Core_Time_Duration_Type.t_duration) -> [ &d_secs <- _ret' ] bb6)
+    | bb6 = {[@expl:assertion] [#"../duration.rs" 15 18 15 42] shallow_model0 d_secs = 1000000000}
+      from_millis0 {[#"../duration.rs" 17 41 17 42] (1 : uint64)} (fun (_ret':Core_Time_Duration_Type.t_duration) -> 
+        [ &d_millis <- _ret' ]
+        bb7)
+    | bb7 = {[@expl:assertion] [#"../duration.rs" 18 18 18 40] shallow_model0 d_millis = 1000000}
+      from_micros0 {[#"../duration.rs" 20 41 20 42] (1 : uint64)} (fun (_ret':Core_Time_Duration_Type.t_duration) -> 
+        [ &d_micros <- _ret' ]
+        bb8)
+    | bb8 = {[@expl:assertion] [#"../duration.rs" 21 18 21 36] shallow_model0 d_micros = 1000}
+      from_nanos0 {[#"../duration.rs" 23 39 23 40] (1 : uint64)} (fun (_ret':Core_Time_Duration_Type.t_duration) -> 
+        [ &d_nanos <- _ret' ]
+        bb9)
+    | bb9 = {[@expl:assertion] [#"../duration.rs" 24 18 24 31] shallow_model0 d_nanos = 1}
+      is_zero0 {zero} (fun (_ret':bool) -> [ &_23 <- _ret' ] bb10)
+    | bb10 = any [ br0 -> {_23 = false} (! bb12) | br1 -> {_23} (! bb11) ] 
+    | bb11 = is_zero0 {d_secs} (fun (_ret':bool) -> [ &_27 <- _ret' ] bb13)
+    | bb13 = any [ br0 -> {_27 = false} (! bb15) | br1 -> {_27} (! bb14) ] 
+    | bb14 = {[#"../duration.rs" 27 4 27 30] false}
+      any
+    | bb15 = as_secs0 {d_secs} (fun (_ret':uint64) -> [ &_32 <- _ret' ] bb16)
+    | bb16 = UInt64.eq {[#"../duration.rs" 29 12 29 13] (1 : uint64)} {_32} (fun (_ret':bool) -> [ &_31 <- _ret' ] (any 
+        [ any_ (_any:uint64)-> (! [ &_32 <- _any ] (any [ br0 -> {_31 = false} (! bb18) | br1 -> {_31} (! bb17) ] )) ]
+        ))
+    | bb17 = subsec_millis0 {d_secs} (fun (_ret':uint32) -> [ &_37 <- _ret' ] bb19)
+    | bb19 = UInt32.eq {[#"../duration.rs" 30 12 30 13] (0 : uint32)} {_37} (fun (_ret':bool) -> [ &_36 <- _ret' ] (any 
+        [ any_ (_any:uint32)-> (! [ &_37 <- _any ] (any [ br0 -> {_36 = false} (! bb21) | br1 -> {_36} (! bb20) ] )) ]
+        ))
+    | bb20 = subsec_micros0 {d_secs} (fun (_ret':uint32) -> [ &_42 <- _ret' ] bb22)
+    | bb22 = UInt32.eq {[#"../duration.rs" 31 12 31 13] (0 : uint32)} {_42} (fun (_ret':bool) -> [ &_41 <- _ret' ] (any 
+        [ any_ (_any:uint32)-> (! [ &_42 <- _any ] (any [ br0 -> {_41 = false} (! bb24) | br1 -> {_41} (! bb23) ] )) ]
+        ))
+    | bb23 = subsec_nanos0 {d_secs} (fun (_ret':uint32) -> [ &_47 <- _ret' ] bb25)
+    | bb25 = UInt32.eq {[#"../duration.rs" 32 12 32 13] (0 : uint32)} {_47} (fun (_ret':bool) -> [ &_46 <- _ret' ] (any 
+        [ any_ (_any:uint32)-> (! [ &_47 <- _any ] (any [ br0 -> {_46 = false} (! bb27) | br1 -> {_46} (! bb26) ] )) ]
+        ))
+    | bb26 = subsec_millis0 {d_millis} (fun (_ret':uint32) -> [ &_53 <- _ret' ] bb28)
+    | bb28 = UInt128.of_int {UInt32.to_int _53} (fun (_res:uint128) -> [ &_52 <- _res ] (any 
+        [ any_ (_any:uint32)-> (! [ &_53 <- _any ] as_millis0 {d_millis} (fun (_ret':uint128) -> 
+            [ &_55 <- _ret' ]
+            bb29)) ]
+        ))
+    | bb29 = UInt128.eq {_52} {_55} (fun (_ret':bool) -> [ &_51 <- _ret' ] (any 
+        [ any_ (_any:uint128)-> (! [ &_52 <- _any ] (any 
+          [ any_ (_any:uint128)-> (! [ &_55 <- _any ] (any 
+            [ br0 -> {_51 = false} (! bb31) | br1 -> {_51} (! bb30) ]
+            )) ]
+          )) ]
+        ))
+    | bb30 = subsec_micros0 {d_micros} (fun (_ret':uint32) -> [ &_61 <- _ret' ] bb32)
+    | bb32 = UInt128.of_int {UInt32.to_int _61} (fun (_res:uint128) -> [ &_60 <- _res ] (any 
+        [ any_ (_any:uint32)-> (! [ &_61 <- _any ] as_micros0 {d_micros} (fun (_ret':uint128) -> 
+            [ &_63 <- _ret' ]
+            bb33)) ]
+        ))
+    | bb33 = UInt128.eq {_60} {_63} (fun (_ret':bool) -> [ &_59 <- _ret' ] (any 
+        [ any_ (_any:uint128)-> (! [ &_60 <- _any ] (any 
+          [ any_ (_any:uint128)-> (! [ &_63 <- _any ] (any 
+            [ br0 -> {_59 = false} (! bb35) | br1 -> {_59} (! bb34) ]
+            )) ]
+          )) ]
+        ))
+    | bb34 = subsec_nanos0 {d_nanos} (fun (_ret':uint32) -> [ &_69 <- _ret' ] bb36)
+    | bb36 = UInt128.of_int {UInt32.to_int _69} (fun (_res:uint128) -> [ &_68 <- _res ] (any 
+        [ any_ (_any:uint32)-> (! [ &_69 <- _any ] as_nanos0 {d_nanos} (fun (_ret':uint128) -> 
+            [ &_71 <- _ret' ]
+            bb37)) ]
+        ))
+    | bb37 = UInt128.eq {_68} {_71} (fun (_ret':bool) -> [ &_67 <- _ret' ] (any 
+        [ any_ (_any:uint128)-> (! [ &_68 <- _any ] (any 
+          [ any_ (_any:uint128)-> (! [ &_71 <- _any ] (any 
+            [ br0 -> {_67 = false} (! bb39) | br1 -> {_67} (! bb38) ]
+            )) ]
+          )) ]
+        ))
+    | bb38 = checked_add0 {d_secs} {max}
+      (fun (_ret':Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) -> [ &_77 <- _ret' ] bb40)
+    | bb40 = is_none0 {_77} (fun (_ret':bool) -> [ &_75 <- _ret' ] bb41)
+    | bb41 = any [ br0 -> {_75 = false} (! bb43) | br1 -> {_75} (! bb42) ] 
+    | bb42 = checked_add0 {d_secs} {d_secs}
+      (fun (_ret':Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) -> [ &_84 <- _ret' ] bb44)
+    | bb44 = is_some0 {_84} (fun (_ret':bool) -> [ &_82 <- _ret' ] bb45)
+    | bb45 = any [ br0 -> {_82 = false} (! bb47) | br1 -> {_82} (! bb46) ] 
+    | bb46 = checked_sub0 {d_secs} {max}
+      (fun (_ret':Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) -> [ &_91 <- _ret' ] bb48)
+    | bb48 = is_none0 {_91} (fun (_ret':bool) -> [ &_89 <- _ret' ] bb49)
+    | bb49 = any [ br0 -> {_89 = false} (! bb51) | br1 -> {_89} (! bb50) ] 
+    | bb50 = checked_sub0 {d_secs} {d_millis}
+      (fun (_ret':Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) -> [ &_98 <- _ret' ] bb52)
+    | bb52 = is_some0 {_98} (fun (_ret':bool) -> [ &_96 <- _ret' ] bb53)
+    | bb53 = any [ br0 -> {_96 = false} (! bb55) | br1 -> {_96} (! bb54) ] 
+    | bb54 = checked_mul0 {max} {[#"../duration.rs" 44 28 44 29] (2 : uint32)}
+      (fun (_ret':Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) -> [ &_105 <- _ret' ] bb56)
+    | bb56 = is_none0 {_105} (fun (_ret':bool) -> [ &_103 <- _ret' ] bb57)
+    | bb57 = any [ br0 -> {_103 = false} (! bb59) | br1 -> {_103} (! bb58) ] 
+    | bb58 = checked_mul0 {d_secs} {[#"../duration.rs" 45 31 45 33] (10 : uint32)}
+      (fun (_ret':Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) -> [ &_111 <- _ret' ] bb60)
+    | bb60 = is_some0 {_111} (fun (_ret':bool) -> [ &_109 <- _ret' ] bb61)
+    | bb61 = any [ br0 -> {_109 = false} (! bb63) | br1 -> {_109} (! bb62) ] 
+    | bb62 = checked_div0 {d_secs} {[#"../duration.rs" 47 31 47 32] (0 : uint32)}
+      (fun (_ret':Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) -> [ &_117 <- _ret' ] bb64)
+    | bb64 = is_none0 {_117} (fun (_ret':bool) -> [ &_115 <- _ret' ] bb65)
+    | bb65 = any [ br0 -> {_115 = false} (! bb67) | br1 -> {_115} (! bb66) ] 
+    | bb66 = checked_div0 {d_secs} {[#"../duration.rs" 48 31 48 33] (10 : uint32)}
+      (fun (_ret':Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)) -> [ &_123 <- _ret' ] bb68)
+    | bb68 = is_some0 {_123} (fun (_ret':bool) -> [ &_121 <- _ret' ] bb69)
+    | bb69 = any [ br0 -> {_121 = false} (! bb71) | br1 -> {_121} (! bb70) ] 
+    | bb70 = add0 {d_millis} {d_micros} (fun (_ret':Core_Time_Duration_Type.t_duration) -> [ &sum <- _ret' ] bb72)
+    | bb72 = sub0 {d_millis} {d_micros} (fun (_ret':Core_Time_Duration_Type.t_duration) -> 
+        [ &difference <- _ret' ]
+        bb73)
+    | bb73 = {[@expl:assertion] [#"../duration.rs" 52 18 52 35] shallow_model0 sum = 1001000}
+      {[@expl:assertion] [#"../duration.rs" 53 18 53 39] shallow_model0 difference = 999000}
+      [ &_0 <- [#"../duration.rs" 7 23 54 1] () ] return' {_0}
+    | bb71 = {[#"../duration.rs" 48 4 48 45] false}
+      any
+    | bb67 = {[#"../duration.rs" 47 4 47 44] false}
+      any
+    | bb63 = {[#"../duration.rs" 45 4 45 45] false}
+      any
+    | bb59 = {[#"../duration.rs" 44 4 44 41] false}
+      any
+    | bb55 = {[#"../duration.rs" 42 4 42 51] false}
+      any
+    | bb51 = {[#"../duration.rs" 41 4 41 46] false}
+      any
+    | bb47 = {[#"../duration.rs" 39 4 39 49] false}
+      any
+    | bb43 = {[#"../duration.rs" 38 4 38 46] false}
+      any
+    | bb39 = {[#"../duration.rs" 36 4 36 65] false}
+      any
+    | bb35 = {[#"../duration.rs" 35 4 35 69] false}
+      any
+    | bb31 = {[#"../duration.rs" 34 4 34 69] false}
+      any
+    | bb27 = {[#"../duration.rs" 32 4 32 39] false}
+      any
+    | bb24 = {[#"../duration.rs" 31 4 31 40] false}
+      any
+    | bb21 = {[#"../duration.rs" 30 4 30 40] false}
+      any
+    | bb18 = {[#"../duration.rs" 29 4 29 34] false}
+      any
+    | bb12 = {[#"../duration.rs" 26 4 26 27] false}
+      any
+    | bb4 = {[#"../duration.rs" 10 4 10 33] false}
+      any ]
+    )
     [ & _0 : () = any_l () : ()
     | & zero : Core_Time_Duration_Type.t_duration = any_l () : Core_Time_Duration_Type.t_duration
     | & _5 : bool = any_l () : bool
@@ -390,5 +432,5 @@ module Duration_TestDuration
     | & _123 : Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration) = any_l () : Core_Option_Option_Type.t_option (Core_Time_Duration_Type.t_duration)
     | & sum : Core_Time_Duration_Type.t_duration = any_l () : Core_Time_Duration_Type.t_duration
     | & difference : Core_Time_Duration_Type.t_duration = any_l () : Core_Time_Duration_Type.t_duration ]
-    
+     [ return' (result:())-> (! return' {result}) ] 
 end

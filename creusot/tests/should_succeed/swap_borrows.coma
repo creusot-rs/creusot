@@ -22,21 +22,21 @@ module SwapBorrows_Swap
     
   let rec swap (x:(t, t)) (return'  (ret:(t, t)))= {[#"../swap_borrows.rs" 5 11 5 12] inv0 x}
     (! bb0 
-    [ bb4 = return' {_0} 
-    | bb3 = bb4 
-    | bb2 = bb3 
+    [ bb0 = bb1
     | bb1 = {[@expl:type invariant] inv0 x}
-      -{resolve0 x}- [ &_0 <- ((let (_, a) = x in a), (let (a, _) = x in a)) ] any 
-      [ any_ (_any:t)-> [ &x <- let (x0, x1) = x in (x0, _any) ] any 
-        [ any_ (_any:t)-> [ &x <- let (x0, x1) = x in (_any, x1) ] bb2 ]
-         ]
-       
-    | bb0 = bb1  ]
-    ) 
+      -{resolve0 x}- [ &_0 <- ((let (_, l0') = x in l0'), (let (l0', _) = x in l0')) ] (any 
+      [ any_ (_any:t)-> (! [ &x <- let (r1', _) = x in (r1', _any) ] (any 
+        [ any_ (_any:t)-> (! [ &x <- let (_, r2') = x in (_any, r2') ] bb2) ]
+        )) ]
+      )
+    | bb2 = bb3
+    | bb3 = bb4
+    | bb4 = return' {_0} ]
+    )[ & _0 : (t, t) = any_l () : (t, t) | & x : (t, t) = x ]  
     [ return' (result:(t, t))-> {[#"../swap_borrows.rs" 5 25 5 31] inv0 result}
       {[#"../swap_borrows.rs" 4 10 4 30] result = ((let (_, a) = x in a), (let (a, _) = x in a))}
-      (! return' {_0}) ]
-    [ & _0 : (t, t) = any_l () : (t, t) | & x : (t, t) = x ] 
+      (! return' {result}) ]
+    
 end
 module SwapBorrows_F
   use prelude.UInt32
@@ -52,53 +52,53 @@ module SwapBorrows_F
     
   axiom inv0 : forall x : (borrowed uint32, borrowed uint32) . inv0 x = true
   use prelude.Intrinsic
+  predicate resolve2 (self : borrowed uint32) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve2 (self:borrowed uint32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
+    
+  predicate resolve1 (self : (borrowed uint32, borrowed uint32)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve2 (let (a, _) = self in a) /\ resolve2 (let (_, a) = self in a)
+  let rec resolve1 (self:(borrowed uint32, borrowed uint32)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
   predicate resolve3 (self : uint32) =
     [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
   let rec resolve3 (self:uint32) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve3 self} (! return' {result}) ]
     
-  predicate resolve2 (self : (uint32, uint32)) =
+  predicate resolve0 (self : (uint32, uint32)) =
     [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve3 (let (a, _) = self in a) /\ resolve3 (let (_, a) = self in a)
-  let rec resolve2 (self:(uint32, uint32)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
+  let rec resolve0 (self:(uint32, uint32)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
     
+  use prelude.Int
   let rec swap0 (x:(borrowed uint32, borrowed uint32)) (return'  (ret:(borrowed uint32, borrowed uint32)))= {[#"../swap_borrows.rs" 5 11 5 12] inv0 x}
     any 
     [ return' (result:(borrowed uint32, borrowed uint32))-> {[#"../swap_borrows.rs" 5 25 5 31] inv0 result}
       {[#"../swap_borrows.rs" 4 10 4 30] result = ((let (_, a) = x in a), (let (a, _) = x in a))}
       (! return' {result}) ]
     
-  predicate resolve1 (self : borrowed uint32) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve1 (self:borrowed uint32) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
-    
-  predicate resolve0 (self : (borrowed uint32, borrowed uint32)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve1 (let (_, a) = self in a)
-  let rec resolve0 (self:(borrowed uint32, borrowed uint32)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
-  use prelude.Int
   let rec f (_1:()) (return'  (ret:()))= (! bb0 
-    [ bb1 = -{resolve1 _8}- 
-      [ &p <- let (x0, x1) = p in ({ (let (a, _) = p in a) with current = ([#"../swap_borrows.rs" 13 11 13 13] (10 : uint32)) ; }, x1) ]
-      -{resolve0 p}- {[@expl:assertion] [#"../swap_borrows.rs" 15 20 15 30] b = (10 : uint32)}
-      {[@expl:assertion] [#"../swap_borrows.rs" 16 20 16 29] a = (0 : uint32)}
-      [ &_0 <- [#"../swap_borrows.rs" 10 11 17 1] () ] return' {_0} 
-    | bb0 = 
+    [ bb0 = 
       [ &_3 <- (([#"../swap_borrows.rs" 11 26 11 27] (0 : uint32)), ([#"../swap_borrows.rs" 11 29 11 30] (0 : uint32))) ]
-      [ &a <- let (a, _) = _3 in a ] [ &b <- let (_, a) = _3 in a ] -{resolve2 _3}- Borrow.borrow_mut <uint32> {a}
-      (fun (_ret':borrowed uint32) -> [ &_6 <- _ret' ] [ &a <-  ^ _6 ] Borrow.borrow_mut <uint32> {b}
-        (fun (_ret':borrowed uint32) -> [ &_8 <- _ret' ] [ &b <-  ^ _8 ] Borrow.borrow_final <uint32> { * _8}
+      [ &a <- let (l0', _) = _3 in l0' ] [ &b <- let (_, l0') = _3 in l0' ] -{resolve0 _3}- Borrow.borrow_mut <uint32>
+      {a} (fun (_ret':borrowed uint32) -> [ &a <-  ^ _6 ] [ &_6 <- _ret' ] Borrow.borrow_mut <uint32> {b}
+        (fun (_ret':borrowed uint32) -> [ &b <-  ^ _8 ] [ &_8 <- _ret' ] Borrow.borrow_final <uint32> { * _8}
           {Borrow.get_id _8} (fun (_ret':borrowed uint32) -> [ &_7 <- _ret' ] 
             [ &_8 <- { _8 with current = ( ^ _7) ; } ]
-            [ &_5 <- (_6, _7) ] any 
-            [ any_ (_any:borrowed uint32)-> [ &_6 <- _any ] any 
-              [ any_ (_any:borrowed uint32)-> [ &_7 <- _any ] swap0 {_5}
-                (fun (_ret':(borrowed uint32, borrowed uint32)) -> [ &p <- _ret' ] bb1) ]
-               ]
-            )))  ]
-    ) [ return' (result:())-> (! return' {_0}) ] 
+            [ &_5 <- (_6, _7) ] (any 
+            [ any_ (_any:borrowed uint32)-> (! [ &_6 <- _any ] (any 
+              [ any_ (_any:borrowed uint32)-> (! [ &_7 <- _any ] swap0 {_5}
+                (fun (_ret':(borrowed uint32, borrowed uint32)) -> [ &p <- _ret' ] bb1)) ]
+              )) ]
+            ))))
+    | bb1 = -{resolve2 _8}- 
+      [ &p <- let (_, r2') = p in ({ (let (r0', _) = p in r0') with current = ([#"../swap_borrows.rs" 13 11 13 13] (10 : uint32)) ; }, r2') ]
+      -{resolve1 p}- {[@expl:assertion] [#"../swap_borrows.rs" 15 20 15 30] b = (10 : uint32)}
+      {[@expl:assertion] [#"../swap_borrows.rs" 16 20 16 29] a = (0 : uint32)}
+      [ &_0 <- [#"../swap_borrows.rs" 10 11 17 1] () ] return' {_0} ]
+    )
     [ & _0 : () = any_l () : ()
     | & a : uint32 = any_l () : uint32
     | & b : uint32 = any_l () : uint32
@@ -108,5 +108,5 @@ module SwapBorrows_F
     | & _6 : borrowed uint32 = any_l () : borrowed uint32
     | & _7 : borrowed uint32 = any_l () : borrowed uint32
     | & _8 : borrowed uint32 = any_l () : borrowed uint32 ]
-    
+     [ return' (result:())-> (! return' {result}) ] 
 end

@@ -6,6 +6,15 @@ module Core_Cmp_Ordering_Type
     | C_Greater
     
   function any_l (_ : 'b) : 'a
+  let rec less (input:t_ordering) (ret  )= any 
+    [ good -> {C_Less  = input} ret | bad -> {C_Less  <> input} {false} any ]
+    
+  let rec equal (input:t_ordering) (ret  )= any 
+    [ good -> {C_Equal  = input} ret | bad -> {C_Equal  <> input} {false} any ]
+    
+  let rec greater (input:t_ordering) (ret  )= any 
+    [ good -> {C_Greater  = input} ret | bad -> {C_Greater  <> input} {false} any ]
+    
 end
 module HeapsortGeneric_HeapFragMax_Impl
   type t
@@ -150,12 +159,22 @@ module Core_Ptr_NonNull_NonNull_Type
     | C_NonNull opaque_ptr
     
   function any_l (_ : 'b) : 'a
+  let rec non_null < 't > (input:t_nonnull 't) (ret  (field_0:opaque_ptr))= any 
+    [ good (field_0:opaque_ptr)-> {C_NonNull field_0 = input}
+      ret {field_0}
+    | bad (field_0:opaque_ptr)-> {C_NonNull field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Core_Marker_PhantomData_Type
   type t_phantomdata 't =
     | C_PhantomData
     
   function any_l (_ : 'b) : 'a
+  let rec phantom_data < 't > (input:t_phantomdata 't) (ret  )= any 
+    [ good -> {C_PhantomData  = input} ret | bad -> {C_PhantomData  <> input} {false} any ]
+    
 end
 module Core_Ptr_Unique_Unique_Type
   use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
@@ -164,6 +183,14 @@ module Core_Ptr_Unique_Unique_Type
     | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
   function any_l (_ : 'b) : 'a
+  let rec unique < 't > (input:t_unique 't) (ret  (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't))= any
+    
+    [ good (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique field_0 field_1 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_RawVec_Cap_Type
   use prelude.UIntSize
@@ -172,6 +199,13 @@ module Alloc_RawVec_Cap_Type
     | C_Cap usize
     
   function any_l (_ : 'b) : 'a
+  let rec cap (input:t_cap) (ret  (field_0:usize))= any 
+    [ good (field_0:usize)-> {C_Cap field_0 = input}
+      ret {field_0}
+    | bad (field_0:usize)-> {C_Cap field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_RawVec_RawVec_Type
   use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
@@ -180,6 +214,14 @@ module Alloc_RawVec_RawVec_Type
     | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
     
   function any_l (_ : 'b) : 'a
+  let rec raw_vec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (field_0:Core_Ptr_Unique_Unique_Type.t_unique 't) (field_1:Alloc_RawVec_Cap_Type.t_cap) (field_2:'a))= any
+    
+    [ good (field_0:Core_Ptr_Unique_Unique_Type.t_unique 't) (field_1:Alloc_RawVec_Cap_Type.t_cap) (field_2:'a)-> {C_RawVec field_0 field_1 field_2 = input}
+      ret {field_0} {field_1} {field_2}
+    | bad (field_0:Core_Ptr_Unique_Unique_Type.t_unique 't) (field_1:Alloc_RawVec_Cap_Type.t_cap) (field_2:'a)-> {C_RawVec field_0 field_1 field_2 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_Vec_Vec_Type
   use prelude.UIntSize
@@ -189,12 +231,23 @@ module Alloc_Vec_Vec_Type
     | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
   function any_l (_ : 'b) : 'a
+  let rec vec < 't > < 'a > (input:t_vec 't 'a) (ret  (field_0:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (field_1:usize))= any
+    
+    [ good (field_0:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (field_1:usize)-> {C_Vec field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (field_1:usize)-> {C_Vec field_0 field_1 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_Alloc_Global_Type
   type t_global  =
     | C_Global
     
   function any_l (_ : 'b) : 'a
+  let rec global (input:t_global) (ret  )= any 
+    [ good -> {C_Global  = input} ret | bad -> {C_Global  <> input} {false} any ]
+    
 end
 module HeapsortGeneric_SiftDown
   type t
@@ -241,15 +294,14 @@ module HeapsortGeneric_SiftDown
     
   axiom inv7 : forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv7 x = true
   use prelude.Borrow
-  use prelude.Snapshot
-  predicate invariant6 (self : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))))
-    
-  let rec invariant6 (self:Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) (return'  (ret:bool))= any
+  predicate invariant6 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
+  let rec invariant6 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = invariant6 self} (! return' {result}) ] 
-  predicate inv6 (_x : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))))
-  let rec inv6 (_x:Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv6 _x} (! return' {result}) ] 
-  axiom inv6 : forall x : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) . inv6 x = true
+  predicate inv6 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
+  let rec inv6 (_x:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv6 _x} (! return' {result}) ]
+    
+  axiom inv6 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) . inv6 x = true
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   function cmp_log0 (self : deep_model_ty0) (_2 : deep_model_ty0) : Core_Cmp_Ordering_Type.t_ordering
   let rec cmp_log0 (self:deep_model_ty0) (_2:deep_model_ty0) (return'  (ret:Core_Cmp_Ordering_Type.t_ordering))= any 
@@ -352,59 +404,60 @@ module HeapsortGeneric_SiftDown
     [ return' (result:bool)-> {result = invariant5 self} (! return' {result}) ]
     
   axiom inv5 : forall x : deep_model_ty0 . inv5 x = true
-  predicate invariant4 (self : t)
-  let rec invariant4 (self:t) (return'  (ret:bool))= any 
+  use prelude.Slice
+  predicate invariant4 (self : borrowed (slice t))
+  let rec invariant4 (self:borrowed (slice t)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ]
     
-  predicate inv4 (_x : t)
-  let rec inv4 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ] 
-  axiom inv4 : forall x : t . inv4 x = true
+  predicate inv4 (_x : borrowed (slice t))
+  let rec inv4 (_x:borrowed (slice t)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ]
+    
+  axiom inv4 : forall x : borrowed (slice t) . inv4 x = true
+  predicate invariant3 (self : slice t)
+  let rec invariant3 (self:slice t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
+    
+  predicate inv3 (_x : slice t)
+  let rec inv3 (_x:slice t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
+    
+  axiom inv3 : forall x : slice t . inv3 x = true
   use prelude.UIntSize
   use prelude.Int
   constant max0 : usize = (18446744073709551615 : usize)
   use seq.Seq
-  predicate inv3 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
-  let rec inv3 (_x:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
-    
-  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
-  let rec shallow_model3 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self}
-    any [ return' (result:Seq.seq t)-> {result = shallow_model3 self} (! return' {result}) ] 
-  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self)
-   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv10 (shallow_model3 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int (max0 : usize))
-  predicate invariant3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv10 (shallow_model3 self)
-  let rec invariant3 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
-    
-  axiom inv3 : forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv3 x = true
-  use prelude.Slice
-  predicate invariant2 (self : slice t)
-  let rec invariant2 (self:slice t) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
-    
-  predicate inv2 (_x : slice t)
-  let rec inv2 (_x:slice t) (return'  (ret:bool))= any 
+  predicate inv2 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  let rec inv2 (_x:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
     
-  axiom inv2 : forall x : slice t . inv2 x = true
-  predicate invariant1 (self : borrowed (slice t))
-  let rec invariant1 (self:borrowed (slice t)) (return'  (ret:bool))= any 
+  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
+  let rec shallow_model3 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv2 self}
+    any [ return' (result:Seq.seq t)-> {result = shallow_model3 self} (! return' {result}) ] 
+  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv2 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv10 (shallow_model3 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int (max0 : usize))
+  predicate invariant2 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv10 (shallow_model3 self)
+  let rec invariant2 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
+    
+  axiom inv2 : forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv2 x = true
+  predicate invariant1 (self : t)
+  let rec invariant1 (self:t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
     
-  predicate inv1 (_x : borrowed (slice t))
-  let rec inv1 (_x:borrowed (slice t)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+  predicate inv1 (_x : t)
+  let rec inv1 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ] 
+  axiom inv1 : forall x : t . inv1 x = true
+  use prelude.Snapshot
+  predicate invariant0 (self : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))))
     
-  axiom inv1 : forall x : borrowed (slice t) . inv1 x = true
-  predicate invariant0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
-  let rec invariant0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
+  let rec invariant0 (self:Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ] 
-  predicate inv0 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
-  let rec inv0 (_x:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
-    
-  axiom inv0 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) . inv0 x = true
+  predicate inv0 (_x : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))))
+  let rec inv0 (_x:Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) . inv0 x = true
   function deep_model3 (self : t) : deep_model_ty0
   let rec deep_model3 (self:t) (return'  (ret:deep_model_ty0))= any 
     [ return' (result:deep_model_ty0)-> {result = deep_model3 self} (! return' {result}) ]
@@ -419,9 +472,9 @@ module HeapsortGeneric_SiftDown
   use seq.Seq
   use seq.Seq
   function deep_model1 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq deep_model_ty0
-  let rec deep_model1 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq deep_model_ty0))= {[#"../../../../creusot-contracts/src/std/vec.rs" 33 18 33 22] inv3 self}
+  let rec deep_model1 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq deep_model_ty0))= {[#"../../../../creusot-contracts/src/std/vec.rs" 33 18 33 22] inv2 self}
     any [ return' (result:Seq.seq deep_model_ty0)-> {result = deep_model1 self} (! return' {result}) ] 
-  axiom deep_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 33 18 33 22] inv3 self)
+  axiom deep_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 33 18 33 22] inv2 self)
    -> ([#"../../../../creusot-contracts/src/std/vec.rs" 33 4 33 44] inv9 (deep_model1 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (shallow_model3 self)
    -> Seq.get (deep_model1 self) i = deep_model3 (index_logic0 self i)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56] Seq.length (shallow_model3 self) = Seq.length (deep_model1 self))
   function parent0 [#"../heapsort_generic.rs" 10 0 10 24] (i : int) : int =
@@ -436,10 +489,9 @@ module HeapsortGeneric_SiftDown
     [ return' (result:bool)-> {result = heap_frag0 s start end'} (! return' {result}) ]
     
   use prelude.Intrinsic
-  use prelude.Snapshot
-  predicate resolve3 (self : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))))
-    
-  let rec resolve3 (self:Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) (return'  (ret:bool))= any
+  predicate resolve3 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve3 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = resolve3 self} (! return' {result}) ] 
   function deep_model0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : Seq.seq deep_model_ty0
     
@@ -470,16 +522,57 @@ module HeapsortGeneric_SiftDown
     [#"../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48] shallow_model7 (Snapshot.inner self)
   let rec shallow_model1 (self:Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) (return'  (ret:Seq.seq t))= any
     [ return' (result:Seq.seq t)-> {result = shallow_model1 self} (! return' {result}) ] 
+  predicate resolve2 (self : borrowed (slice t)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve2 (self:borrowed (slice t)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
+    
+  use seq.Permut
+  use prelude.Slice
+  function shallow_model6 (self : slice t) : Seq.seq t
+  let rec shallow_model6 (self:slice t) (return'  (ret:Seq.seq t))= {[#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv3 self}
+    any [ return' (result:Seq.seq t)-> {result = shallow_model6 self} (! return' {result}) ] 
+  axiom shallow_model6_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv3 self)
+   -> ([#"../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv10 (shallow_model6 self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model6 self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model6 self) <= UIntSize.to_int (max0 : usize))
+  function shallow_model5 (self : borrowed (slice t)) : Seq.seq t =
+    [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model6 ( * self)
+  let rec shallow_model5 (self:borrowed (slice t)) (return'  (ret:Seq.seq t))= any 
+    [ return' (result:Seq.seq t)-> {result = shallow_model5 self} (! return' {result}) ]
+    
+  let rec swap0 (self:borrowed (slice t)) (a:usize) (b:usize) (return'  (ret:()))= {inv4 self}
+    {[#"../../../../creusot-contracts/src/std/slice.rs" 248 19 248 35] UIntSize.to_int b < Seq.length (shallow_model5 self)}
+    {[#"../../../../creusot-contracts/src/std/slice.rs" 247 19 247 35] UIntSize.to_int a < Seq.length (shallow_model5 self)}
+    any 
+    [ return' (result:())-> {[#"../../../../creusot-contracts/src/std/slice.rs" 249 8 249 52] Permut.exchange (shallow_model6 ( ^ self)) (shallow_model5 self) (UIntSize.to_int a) (UIntSize.to_int b)}
+      (! return' {result}) ]
+    
+  let rec deref_mut0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:borrowed (slice t)))= {inv6 self}
+    any 
+    [ return' (result:borrowed (slice t))-> {inv4 result}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 153 26 153 48] shallow_model6 ( ^ result) = shallow_model3 ( ^ self)}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 152 26 152 42] shallow_model5 result = shallow_model0 self}
+      (! return' {result}) ]
+    
   function deep_model2 (self : t) : deep_model_ty0 =
     [#"../../../../creusot-contracts/src/model.rs" 74 8 74 28] deep_model3 self
   let rec deep_model2 (self:t) (return'  (ret:deep_model_ty0))= any 
     [ return' (result:deep_model_ty0)-> {result = deep_model2 self} (! return' {result}) ]
     
-  let rec lt0 (self:t) (other:t) (return'  (ret:bool))= {inv4 other}
-    {inv4 self}
+  let rec le0 (self:t) (other:t) (return'  (ret:bool))= {inv1 other}
+    {inv1 self}
+    any 
+    [ return' (result:bool)-> {[#"../../../../creusot-contracts/src/std/cmp.rs" 36 26 36 77] result = le_log0 (deep_model2 self) (deep_model2 other)}
+      (! return' {result}) ]
+    
+  let rec lt0 (self:t) (other:t) (return'  (ret:bool))= {inv1 other}
+    {inv1 self}
     any 
     [ return' (result:bool)-> {[#"../../../../creusot-contracts/src/std/cmp.rs" 33 26 33 76] result = lt_log0 (deep_model2 self) (deep_model2 other)}
       (! return' {result}) ]
+    
+  predicate resolve1 (self : t)
+  let rec resolve1 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
     
   predicate has_value0 [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
     [#"../../../../creusot-contracts/src/std/slice.rs" 122 20 122 37] Seq.get seq (UIntSize.to_int self) = out
@@ -491,154 +584,114 @@ module HeapsortGeneric_SiftDown
   let rec in_bounds0 (self:usize) (seq:Seq.seq t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = in_bounds0 self seq} (! return' {result}) ]
     
-  function shallow_model6 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t =
+  function shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t =
     [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model3 self
-  let rec shallow_model6 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= any
-    [ return' (result:Seq.seq t)-> {result = shallow_model6 self} (! return' {result}) ] 
+  let rec shallow_model4 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= any
+    [ return' (result:Seq.seq t)-> {result = shallow_model4 self} (! return' {result}) ] 
   let rec index0 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (index:usize) (return'  (ret:t))= {inv8 index}
     {inv7 self}
-    {[#"../../../../creusot-contracts/src/std/vec.rs" 141 27 141 46] in_bounds0 index (shallow_model6 self)}
+    {[#"../../../../creusot-contracts/src/std/vec.rs" 141 27 141 46] in_bounds0 index (shallow_model4 self)}
     any 
-    [ return' (result:t)-> {inv4 result}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 142 26 142 54] has_value0 index (shallow_model6 self) result}
+    [ return' (result:t)-> {inv1 result}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 142 26 142 54] has_value0 index (shallow_model4 self) result}
       (! return' {result}) ]
     
-  predicate resolve2 (self : t)
-  let rec resolve2 (self:t) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
+  predicate resolve0 (self : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))))
     
-  let rec le0 (self:t) (other:t) (return'  (ret:bool))= {inv4 other}
-    {inv4 self}
-    any 
-    [ return' (result:bool)-> {[#"../../../../creusot-contracts/src/std/cmp.rs" 36 26 36 77] result = le_log0 (deep_model2 self) (deep_model2 other)}
-      (! return' {result}) ]
-    
-  use prelude.Slice
-  function shallow_model5 (self : slice t) : Seq.seq t
-  let rec shallow_model5 (self:slice t) (return'  (ret:Seq.seq t))= {[#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv2 self}
-    any [ return' (result:Seq.seq t)-> {result = shallow_model5 self} (! return' {result}) ] 
-  axiom shallow_model5_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv2 self)
-   -> ([#"../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv10 (shallow_model5 self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model5 self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model5 self) <= UIntSize.to_int (max0 : usize))
-  function shallow_model4 (self : borrowed (slice t)) : Seq.seq t =
-    [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model5 ( * self)
-  let rec shallow_model4 (self:borrowed (slice t)) (return'  (ret:Seq.seq t))= any 
-    [ return' (result:Seq.seq t)-> {result = shallow_model4 self} (! return' {result}) ]
-    
-  let rec deref_mut0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:borrowed (slice t)))= {inv0 self}
-    any 
-    [ return' (result:borrowed (slice t))-> {inv1 result}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 153 26 153 48] shallow_model5 ( ^ result) = shallow_model3 ( ^ self)}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 152 26 152 42] shallow_model4 result = shallow_model0 self}
-      (! return' {result}) ]
-    
-  use seq.Permut
-  let rec swap0 (self:borrowed (slice t)) (a:usize) (b:usize) (return'  (ret:()))= {inv1 self}
-    {[#"../../../../creusot-contracts/src/std/slice.rs" 248 19 248 35] UIntSize.to_int b < Seq.length (shallow_model4 self)}
-    {[#"../../../../creusot-contracts/src/std/slice.rs" 247 19 247 35] UIntSize.to_int a < Seq.length (shallow_model4 self)}
-    any 
-    [ return' (result:())-> {[#"../../../../creusot-contracts/src/std/slice.rs" 249 8 249 52] Permut.exchange (shallow_model5 ( ^ self)) (shallow_model4 self) (UIntSize.to_int a) (UIntSize.to_int b)}
-      (! return' {result}) ]
-    
-  predicate resolve1 (self : borrowed (slice t)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve1 (self:borrowed (slice t)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
-    
-  predicate resolve0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
+  let rec resolve0 (self:Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ] 
-  let rec sift_down (v:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (start:usize) (end':usize) (return'  (ret:()))= {[#"../heapsort_generic.rs" 41 33 41 34] inv0 v}
+  use prelude.Snapshot
+  let rec sift_down (v:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (start:usize) (end':usize) (return'  (ret:()))= {[#"../heapsort_generic.rs" 41 33 41 34] inv6 v}
     {[#"../heapsort_generic.rs" 33 11 33 27] UIntSize.to_int end' <= Seq.length (shallow_model0 v)}
     {[#"../heapsort_generic.rs" 32 11 32 24] UIntSize.to_int start < UIntSize.to_int end'}
     {[#"../heapsort_generic.rs" 31 11 31 54] heap_frag0 (deep_model0 v) (UIntSize.to_int start + 1) (UIntSize.to_int end')}
     (! bb0 
-    [ bb23 = return' {_0} 
-    | bb19 = {[@expl:type invariant] inv0 v}
-      -{resolve0 v}- [ &_0 <- [#"../heapsort_generic.rs" 69 12 69 18] () ] bb23 
-    | bb5 = {[@expl:type invariant] inv0 v}
-      -{resolve0 v}- [ &_0 <- [#"../heapsort_generic.rs" 61 12 61 18] () ] bb23 
-    | bb2 = {[#"../heapsort_generic.rs" 48 4 48 43] let c = 2 * UIntSize.to_int i + 2 in c < UIntSize.to_int end' /\ UIntSize.to_int start <= parent0 (UIntSize.to_int i)
-       -> le_log0 (Seq.get (deep_model0 v) c) (Seq.get (deep_model0 v) (parent0 (parent0 c)))}
-      {[#"../heapsort_generic.rs" 48 4 48 43] let c = 2 * UIntSize.to_int i + 1 in c < UIntSize.to_int end' /\ UIntSize.to_int start <= parent0 (UIntSize.to_int i)
-       -> le_log0 (Seq.get (deep_model0 v) c) (Seq.get (deep_model0 v) (parent0 (parent0 c)))}
-      {[#"../heapsort_generic.rs" 48 4 48 43] forall j : int . UIntSize.to_int start <= parent0 j /\ j < UIntSize.to_int end' /\ UIntSize.to_int i <> parent0 j
-       -> le_log0 (Seq.get (deep_model0 v) j) (Seq.get (deep_model0 v) (parent0 j))}
-      {[#"../heapsort_generic.rs" 48 4 48 43] forall m : deep_model_ty0 . inv5 m
-       -> (forall j : int . UIntSize.to_int start <= j /\ j < UIntSize.to_int end'
-       -> le_log0 (Seq.get (deep_model0 (Snapshot.inner old_v)) j) m)
-       -> (forall j : int . UIntSize.to_int start <= j /\ j < UIntSize.to_int end'
-       -> le_log0 (Seq.get (deep_model0 v) j) m)}
-      {[#"../heapsort_generic.rs" 48 4 48 43] forall j : int . 0 <= j /\ j < UIntSize.to_int start \/ UIntSize.to_int end' <= j /\ j < Seq.length (shallow_model0 v)
-       -> index_logic0 ( * Snapshot.inner old_v) j = index_logic0 ( * v) j}
-      {[#"../heapsort_generic.rs" 49 16 49 41] UIntSize.to_int start <= UIntSize.to_int i /\ UIntSize.to_int i < UIntSize.to_int end'}
-      {[#"../heapsort_generic.rs" 48 4 48 43] permutation_of0 (shallow_model0 v) (shallow_model1 old_v)}
-      (! bb3) 
-      [ bb22 = {[@expl:type invariant] inv1 _61}
-        -{resolve1 _61}- [ &i <- child ] bb2
-      | bb21 = Borrow.borrow_final <slice t> { * _61} {Borrow.get_id _61} (fun (_ret':borrowed (slice t)) -> 
-          [ &_60 <- _ret' ]
-          [ &_61 <- { _61 with current = ( ^ _60) ; } ] -{inv2 ( ^ _60)}- swap0 {_60} {i} {child} (fun (_ret':()) -> 
-            [ &_59 <- _ret' ]
-            bb22))
-      | bb20 = Borrow.borrow_mut <Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)> { * v}
-        (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) -> [ &_62 <- _ret' ] 
-          [ &v <- { v with current = ( ^ _62) ; } ]
-          -{inv3 ( ^ _62)}- deref_mut0 {_62} (fun (_ret':borrowed (slice t)) -> [ &_61 <- _ret' ] bb21))
-      | bb18 = any [ br0 -> {_49 = false} (! bb20) | br1 -> {_49} (! bb19) ] 
-      | bb17 = {[@expl:type invariant] inv4 _55}
-        -{resolve2 _55}- le0 {_51} {_55} (fun (_ret':bool) -> [ &_49 <- _ret' ] bb18)
-      | bb16 = {[@expl:type invariant] inv4 _51}
-        -{resolve2 _51}- index0 { * v} {i} (fun (_ret':t) -> [ &_55 <- _ret' ] bb17)
-      | bb15 = index0 { * v} {child} (fun (_ret':t) -> [ &_51 <- _ret' ] bb16)
-      | bb14 = [ &_33 <- [#"../heapsort_generic.rs" 67 9 67 9] () ] bb15
-      | bb8 = bb14
-      | bb13 = bb14
-      | bb12 = UIntSize.add {child} {[#"../heapsort_generic.rs" 66 21 66 22] (1 : usize)} (fun (_ret':usize) -> 
-          [ &child <- _ret' ]
-          [ &_33 <- [#"../heapsort_generic.rs" 66 12 66 22] () ] bb15)
-      | bb11 = any [ br0 -> {_38 = false} (! bb13) | br1 -> {_38} (! bb12) ] 
-      | bb10 = {[@expl:type invariant] inv4 _44}
-        -{resolve2 _44}- lt0 {_40} {_44} (fun (_ret':bool) -> [ &_38 <- _ret' ] bb11)
-      | bb9 = {[@expl:type invariant] inv4 _40}
-        -{resolve2 _40}- UIntSize.add {child} {[#"../heapsort_generic.rs" 65 51 65 52] (1 : usize)}
-        (fun (_ret':usize) -> [ &_46 <- _ret' ] index0 { * v} {_46} (fun (_ret':t) -> [ &_44 <- _ret' ] bb10))
-      | bb7 = index0 { * v} {child} (fun (_ret':t) -> [ &_40 <- _ret' ] bb9)
-      | bb6 = UIntSize.mul {[#"../heapsort_generic.rs" 64 24 64 25] (2 : usize)} {i} (fun (_ret':usize) -> 
-          [ &_31 <- _ret' ]
-          UIntSize.add {_31} {[#"../heapsort_generic.rs" 64 32 64 33] (1 : usize)} (fun (_ret':usize) -> 
+    [ bb0 = [ &old_v <- [#"../heapsort_generic.rs" 45 16 45 31] Snapshot.new v ] bb1
+    | bb1 = {[@expl:type invariant] inv0 old_v}
+      -{resolve0 old_v}- [ &i <- start ] bb2
+    | bb2 = bb2 
+      [ bb2 = {[#"../heapsort_generic.rs" 48 4 48 43] let c = 2 * UIntSize.to_int i + 2 in c < UIntSize.to_int end' /\ UIntSize.to_int start <= parent0 (UIntSize.to_int i)
+         -> le_log0 (Seq.get (deep_model0 v) c) (Seq.get (deep_model0 v) (parent0 (parent0 c)))}
+        {[#"../heapsort_generic.rs" 48 4 48 43] let c = 2 * UIntSize.to_int i + 1 in c < UIntSize.to_int end' /\ UIntSize.to_int start <= parent0 (UIntSize.to_int i)
+         -> le_log0 (Seq.get (deep_model0 v) c) (Seq.get (deep_model0 v) (parent0 (parent0 c)))}
+        {[#"../heapsort_generic.rs" 48 4 48 43] forall j : int . UIntSize.to_int start <= parent0 j /\ j < UIntSize.to_int end' /\ UIntSize.to_int i <> parent0 j
+         -> le_log0 (Seq.get (deep_model0 v) j) (Seq.get (deep_model0 v) (parent0 j))}
+        {[#"../heapsort_generic.rs" 48 4 48 43] forall m : deep_model_ty0 . inv5 m
+         -> (forall j : int . UIntSize.to_int start <= j /\ j < UIntSize.to_int end'
+         -> le_log0 (Seq.get (deep_model0 (Snapshot.inner old_v)) j) m)
+         -> (forall j : int . UIntSize.to_int start <= j /\ j < UIntSize.to_int end'
+         -> le_log0 (Seq.get (deep_model0 v) j) m)}
+        {[#"../heapsort_generic.rs" 48 4 48 43] forall j : int . 0 <= j /\ j < UIntSize.to_int start \/ UIntSize.to_int end' <= j /\ j < Seq.length (shallow_model0 v)
+         -> index_logic0 ( * Snapshot.inner old_v) j = index_logic0 ( * v) j}
+        {[#"../heapsort_generic.rs" 49 16 49 41] UIntSize.to_int start <= UIntSize.to_int i /\ UIntSize.to_int i < UIntSize.to_int end'}
+        {[#"../heapsort_generic.rs" 48 4 48 43] permutation_of0 (shallow_model0 v) (shallow_model1 old_v)}
+        (! bb3) 
+        [ bb3 = UIntSize.eq {[#"../heapsort_generic.rs" 60 22 60 23] (2 : usize)}
+          {[#"../heapsort_generic.rs" 60 16 60 23] (0 : usize)} (fun (_ret':bool) -> 
+            [ &_28 <- _ret' ]
+            {[@expl:division by zero] [#"../heapsort_generic.rs" 60 16 60 23] not _28}
+            bb4)
+        | bb4 = UIntSize.div {end'} {[#"../heapsort_generic.rs" 60 22 60 23] (2 : usize)} (fun (_ret':usize) -> 
+            [ &_26 <- _ret' ]
+            UIntSize.ge {i} {_26} (fun (_ret':bool) -> [ &_24 <- _ret' ] (any 
+              [ any_ (_any:usize)-> (! [ &_26 <- _any ] (any 
+                [ br0 -> {_24 = false} (! bb6) | br1 -> {_24} (! bb5) ]
+                )) ]
+              )))
+        | bb6 = UIntSize.mul {[#"../heapsort_generic.rs" 64 24 64 25] (2 : usize)} {i} (fun (_ret':usize) -> 
+            [ &_31 <- _ret' ]
+            UIntSize.add {_31} {[#"../heapsort_generic.rs" 64 32 64 33] (1 : usize)} (fun (_ret':usize) -> 
+              [ &child <- _ret' ]
+              (any 
+              [ any_ (_any:usize)-> (! [ &_31 <- _any ] UIntSize.add {child}
+                {[#"../heapsort_generic.rs" 65 19 65 20] (1 : usize)} (fun (_ret':usize) -> 
+                  [ &_35 <- _ret' ]
+                  UIntSize.lt {_35} {end'} (fun (_ret':bool) -> [ &_34 <- _ret' ] (any 
+                    [ any_ (_any:usize)-> (! [ &_35 <- _any ] (any 
+                      [ br0 -> {_34 = false} (! bb8) | br1 -> {_34} (! bb7) ]
+                      )) ]
+                    )))) ]
+              )))
+        | bb7 = index0 { * v} {child} (fun (_ret':t) -> [ &_40 <- _ret' ] bb9)
+        | bb9 = {[@expl:type invariant] inv1 _40}
+          -{resolve1 _40}- UIntSize.add {child} {[#"../heapsort_generic.rs" 65 51 65 52] (1 : usize)}
+          (fun (_ret':usize) -> [ &_46 <- _ret' ] index0 { * v} {_46} (fun (_ret':t) -> [ &_44 <- _ret' ] bb10))
+        | bb10 = {[@expl:type invariant] inv1 _44}
+          -{resolve1 _44}- lt0 {_40} {_44} (fun (_ret':bool) -> [ &_38 <- _ret' ] bb11)
+        | bb11 = any [ br0 -> {_38 = false} (! bb13) | br1 -> {_38} (! bb12) ] 
+        | bb12 = UIntSize.add {child} {[#"../heapsort_generic.rs" 66 21 66 22] (1 : usize)} (fun (_ret':usize) -> 
             [ &child <- _ret' ]
-            UIntSize.add {child} {[#"../heapsort_generic.rs" 65 19 65 20] (1 : usize)} (fun (_ret':usize) -> 
-              [ &_35 <- _ret' ]
-              UIntSize.lt {_35} {end'} (fun (_ret':bool) -> [ &_34 <- _ret' ] any 
-                [ br0 -> {_34 = false} (! bb8) | br1 -> {_34} (! bb7) ]
-                ))))
-      | bb4 = UIntSize.div {end'} {[#"../heapsort_generic.rs" 60 22 60 23] (2 : usize)} (fun (_ret':usize) -> 
-          [ &_26 <- _ret' ]
-          UIntSize.ge {i} {_26} (fun (_ret':bool) -> [ &_24 <- _ret' ] any 
-            [ br0 -> {_24 = false} (! bb6) | br1 -> {_24} (! bb5) ]
-            ))
-      | bb3 = UIntSize.eq {[#"../heapsort_generic.rs" 60 22 60 23] (2 : usize)}
-        {[#"../heapsort_generic.rs" 60 16 60 23] (0 : usize)} (fun (_ret':bool) -> 
-          [ &_28 <- _ret' ]
-          {[@expl:division by zero] [#"../heapsort_generic.rs" 60 16 60 23] not _28}
-          bb4) ]
+            [ &_33 <- [#"../heapsort_generic.rs" 66 12 66 22] () ] bb15)
+        | bb13 = bb14
+        | bb8 = bb14
+        | bb14 = [ &_33 <- [#"../heapsort_generic.rs" 67 9 67 9] () ] bb15
+        | bb15 = index0 { * v} {child} (fun (_ret':t) -> [ &_51 <- _ret' ] bb16)
+        | bb16 = {[@expl:type invariant] inv1 _51}
+          -{resolve1 _51}- index0 { * v} {i} (fun (_ret':t) -> [ &_55 <- _ret' ] bb17)
+        | bb17 = {[@expl:type invariant] inv1 _55}
+          -{resolve1 _55}- le0 {_51} {_55} (fun (_ret':bool) -> [ &_49 <- _ret' ] bb18)
+        | bb18 = any [ br0 -> {_49 = false} (! bb20) | br1 -> {_49} (! bb19) ] 
+        | bb20 = Borrow.borrow_mut <Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)> { * v}
+          (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) -> 
+            [ &v <- { v with current = ( ^ _62) ; } ]
+            [ &_62 <- _ret' ] -{inv2 ( ^ _62)}- deref_mut0 {_62} (fun (_ret':borrowed (slice t)) -> 
+              [ &_61 <- _ret' ]
+              bb21))
+        | bb21 = Borrow.borrow_final <slice t> { * _61} {Borrow.get_id _61} (fun (_ret':borrowed (slice t)) -> 
+            [ &_60 <- _ret' ]
+            [ &_61 <- { _61 with current = ( ^ _60) ; } ] -{inv3 ( ^ _60)}- swap0 {_60} {i} {child} (fun (_ret':()) -> 
+              [ &_59 <- _ret' ]
+              bb22))
+        | bb22 = {[@expl:type invariant] inv4 _61}
+          -{resolve2 _61}- [ &i <- child ] bb2 ]
+         ]
       
-    | bb1 = {[@expl:type invariant] inv6 old_v}
-      -{resolve3 old_v}- [ &i <- start ] bb2 
-    | bb0 = [ &old_v <- [#"../heapsort_generic.rs" 45 16 45 31] Snapshot.new v ] bb1  ]
-    ) 
-    [ return' (result:())-> {[#"../heapsort_generic.rs" 38 0 40 80] forall m : deep_model_ty0 . inv5 m
-       -> (forall j : int . UIntSize.to_int start <= j /\ j < UIntSize.to_int end'
-       -> le_log0 (Seq.get (deep_model0 v) j) m)
-       -> (forall j : int . UIntSize.to_int start <= j /\ j < UIntSize.to_int end'
-       -> le_log0 (Seq.get (deep_model1 ( ^ v)) j) m)}
-      {[#"../heapsort_generic.rs" 36 0 37 43] forall i : int . 0 <= i /\ i < UIntSize.to_int start \/ UIntSize.to_int end' <= i /\ i < Seq.length (shallow_model0 v)
-       -> index_logic0 ( * v) i = index_logic0 ( ^ v) i}
-      {[#"../heapsort_generic.rs" 35 0 35 36] permutation_of0 (shallow_model3 ( ^ v)) (shallow_model0 v)}
-      {[#"../heapsort_generic.rs" 34 10 34 52] heap_frag0 (deep_model1 ( ^ v)) (UIntSize.to_int start) (UIntSize.to_int end')}
-      (! return' {_0}) ]
-    
+    | bb5 = {[@expl:type invariant] inv6 v}
+      -{resolve3 v}- [ &_0 <- [#"../heapsort_generic.rs" 61 12 61 18] () ] bb23
+    | bb19 = {[@expl:type invariant] inv6 v}
+      -{resolve3 v}- [ &_0 <- [#"../heapsort_generic.rs" 69 12 69 18] () ] bb23
+    | bb23 = return' {_0} ]
+    )
     [ & _0 : () = any_l () : ()
     | & v : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) = v
     | & start : usize = start
@@ -664,6 +717,17 @@ module HeapsortGeneric_SiftDown
     | & _60 : borrowed (slice t) = any_l () : borrowed (slice t)
     | & _61 : borrowed (slice t) = any_l () : borrowed (slice t)
     | & _62 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) = any_l () : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) ]
+     
+    [ return' (result:())-> {[#"../heapsort_generic.rs" 38 0 40 80] forall m : deep_model_ty0 . inv5 m
+       -> (forall j : int . UIntSize.to_int start <= j /\ j < UIntSize.to_int end'
+       -> le_log0 (Seq.get (deep_model0 v) j) m)
+       -> (forall j : int . UIntSize.to_int start <= j /\ j < UIntSize.to_int end'
+       -> le_log0 (Seq.get (deep_model1 ( ^ v)) j) m)}
+      {[#"../heapsort_generic.rs" 36 0 37 43] forall i : int . 0 <= i /\ i < UIntSize.to_int start \/ UIntSize.to_int end' <= i /\ i < Seq.length (shallow_model0 v)
+       -> index_logic0 ( * v) i = index_logic0 ( ^ v) i}
+      {[#"../heapsort_generic.rs" 35 0 35 36] permutation_of0 (shallow_model3 ( ^ v)) (shallow_model0 v)}
+      {[#"../heapsort_generic.rs" 34 10 34 52] heap_frag0 (deep_model1 ( ^ v)) (UIntSize.to_int start) (UIntSize.to_int end')}
+      (! return' {result}) ]
     
 end
 module HeapsortGeneric_HeapSort
@@ -678,158 +742,157 @@ module HeapsortGeneric_HeapSort
     [ return' (result:bool)-> {result = inv8 _x} (! return' {result}) ]
     
   axiom inv8 : forall x : Seq.seq t . inv8 x = true
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  predicate invariant7 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
-  let rec invariant7 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+  type deep_model_ty0
+  predicate invariant7 (self : Seq.seq deep_model_ty0)
+  let rec invariant7 (self:Seq.seq deep_model_ty0) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant7 self} (! return' {result}) ]
     
-  predicate inv7 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
-  let rec inv7 (_x:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+  predicate inv7 (_x : Seq.seq deep_model_ty0)
+  let rec inv7 (_x:Seq.seq deep_model_ty0) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv7 _x} (! return' {result}) ]
     
-  axiom inv7 : forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv7 x = true
-  type deep_model_ty0
-  predicate invariant6 (self : Seq.seq deep_model_ty0)
-  let rec invariant6 (self:Seq.seq deep_model_ty0) (return'  (ret:bool))= any 
+  axiom inv7 : forall x : Seq.seq deep_model_ty0 . inv7 x = true
+  predicate invariant6 (self : deep_model_ty0)
+  let rec invariant6 (self:deep_model_ty0) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant6 self} (! return' {result}) ]
     
-  predicate inv6 (_x : Seq.seq deep_model_ty0)
-  let rec inv6 (_x:Seq.seq deep_model_ty0) (return'  (ret:bool))= any 
+  predicate inv6 (_x : deep_model_ty0)
+  let rec inv6 (_x:deep_model_ty0) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv6 _x} (! return' {result}) ]
     
-  axiom inv6 : forall x : Seq.seq deep_model_ty0 . inv6 x = true
-  predicate invariant5 (self : deep_model_ty0)
-  let rec invariant5 (self:deep_model_ty0) (return'  (ret:bool))= any 
+  axiom inv6 : forall x : deep_model_ty0 . inv6 x = true
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate invariant5 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  let rec invariant5 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant5 self} (! return' {result}) ]
     
-  predicate inv5 (_x : deep_model_ty0)
-  let rec inv5 (_x:deep_model_ty0) (return'  (ret:bool))= any 
+  predicate inv5 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  let rec inv5 (_x:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ]
     
-  axiom inv5 : forall x : deep_model_ty0 . inv5 x = true
+  axiom inv5 : forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv5 x = true
   use prelude.Borrow
-  use prelude.Snapshot
-  predicate invariant4 (self : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))))
-    
-  let rec invariant4 (self:Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) (return'  (ret:bool))= any
+  predicate invariant4 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
+  let rec invariant4 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ] 
-  predicate inv4 (_x : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))))
-  let rec inv4 (_x:Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ] 
-  axiom inv4 : forall x : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) . inv4 x = true
+  predicate inv4 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
+  let rec inv4 (_x:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ]
+    
+  axiom inv4 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) . inv4 x = true
   use prelude.Slice
-  predicate invariant3 (self : slice t)
-  let rec invariant3 (self:slice t) (return'  (ret:bool))= any 
+  predicate invariant3 (self : borrowed (slice t))
+  let rec invariant3 (self:borrowed (slice t)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
     
-  predicate inv3 (_x : slice t)
-  let rec inv3 (_x:slice t) (return'  (ret:bool))= any 
+  predicate inv3 (_x : borrowed (slice t))
+  let rec inv3 (_x:borrowed (slice t)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
     
-  axiom inv3 : forall x : slice t . inv3 x = true
-  predicate invariant2 (self : borrowed (slice t))
-  let rec invariant2 (self:borrowed (slice t)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
-    
-  predicate inv2 (_x : borrowed (slice t))
-  let rec inv2 (_x:borrowed (slice t)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
-    
-  axiom inv2 : forall x : borrowed (slice t) . inv2 x = true
+  axiom inv3 : forall x : borrowed (slice t) . inv3 x = true
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   function cmp_log0 (self : deep_model_ty0) (_2 : deep_model_ty0) : Core_Cmp_Ordering_Type.t_ordering
   let rec cmp_log0 (self:deep_model_ty0) (_2:deep_model_ty0) (return'  (ret:Core_Cmp_Ordering_Type.t_ordering))= any 
     [ return' (result:Core_Cmp_Ordering_Type.t_ordering)-> {result = cmp_log0 self _2} (! return' {result}) ]
     
   function eq_cmp0 (x : deep_model_ty0) (y : deep_model_ty0) : ()
-  let rec eq_cmp0 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../creusot-contracts/src/logic/ord.rs" 70 23 70 24] inv5 y}
-    {[#"../../../../creusot-contracts/src/logic/ord.rs" 70 14 70 15] inv5 x}
+  let rec eq_cmp0 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../creusot-contracts/src/logic/ord.rs" 70 23 70 24] inv6 y}
+    {[#"../../../../creusot-contracts/src/logic/ord.rs" 70 14 70 15] inv6 x}
     any [ return' (result:())-> {result = eq_cmp0 x y} (! return' {result}) ] 
-  axiom eq_cmp0_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../creusot-contracts/src/logic/ord.rs" 70 14 70 15] inv5 x)
-   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 70 23 70 24] inv5 y)
+  axiom eq_cmp0_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../creusot-contracts/src/logic/ord.rs" 70 14 70 15] inv6 x)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 70 23 70 24] inv6 y)
    -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 69 14 69 59] (x = y) = (cmp_log0 x y = Core_Cmp_Ordering_Type.C_Equal))
   function antisym20 (x : deep_model_ty0) (y : deep_model_ty0) : ()
-  let rec antisym20 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../creusot-contracts/src/logic/ord.rs" 66 25 66 26] inv5 y}
-    {[#"../../../../creusot-contracts/src/logic/ord.rs" 66 16 66 17] inv5 x}
+  let rec antisym20 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../creusot-contracts/src/logic/ord.rs" 66 25 66 26] inv6 y}
+    {[#"../../../../creusot-contracts/src/logic/ord.rs" 66 16 66 17] inv6 x}
     {[#"../../../../creusot-contracts/src/logic/ord.rs" 64 15 64 48] cmp_log0 x y = Core_Cmp_Ordering_Type.C_Greater}
     any [ return' (result:())-> {result = antisym20 x y} (! return' {result}) ] 
   axiom antisym20_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../creusot-contracts/src/logic/ord.rs" 64 15 64 48] cmp_log0 x y = Core_Cmp_Ordering_Type.C_Greater)
-   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 66 16 66 17] inv5 x)
-   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 66 25 66 26] inv5 y)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 66 16 66 17] inv6 x)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 66 25 66 26] inv6 y)
    -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 65 14 65 44] cmp_log0 y x = Core_Cmp_Ordering_Type.C_Less)
   function antisym10 (x : deep_model_ty0) (y : deep_model_ty0) : ()
-  let rec antisym10 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../creusot-contracts/src/logic/ord.rs" 61 25 61 26] inv5 y}
-    {[#"../../../../creusot-contracts/src/logic/ord.rs" 61 16 61 17] inv5 x}
+  let rec antisym10 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../creusot-contracts/src/logic/ord.rs" 61 25 61 26] inv6 y}
+    {[#"../../../../creusot-contracts/src/logic/ord.rs" 61 16 61 17] inv6 x}
     {[#"../../../../creusot-contracts/src/logic/ord.rs" 59 15 59 45] cmp_log0 x y = Core_Cmp_Ordering_Type.C_Less}
     any [ return' (result:())-> {result = antisym10 x y} (! return' {result}) ] 
   axiom antisym10_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../creusot-contracts/src/logic/ord.rs" 59 15 59 45] cmp_log0 x y = Core_Cmp_Ordering_Type.C_Less)
-   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 61 16 61 17] inv5 x)
-   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 61 25 61 26] inv5 y)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 61 16 61 17] inv6 x)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 61 25 61 26] inv6 y)
    -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 60 14 60 47] cmp_log0 y x = Core_Cmp_Ordering_Type.C_Greater)
   function trans0 (x : deep_model_ty0) (y : deep_model_ty0) (z : deep_model_ty0) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
     
-  let rec trans0 (x:deep_model_ty0) (y:deep_model_ty0) (z:deep_model_ty0) (o:Core_Cmp_Ordering_Type.t_ordering) (return'  (ret:()))= {[#"../../../../creusot-contracts/src/logic/ord.rs" 56 31 56 32] inv5 z}
-    {[#"../../../../creusot-contracts/src/logic/ord.rs" 56 22 56 23] inv5 y}
-    {[#"../../../../creusot-contracts/src/logic/ord.rs" 56 13 56 14] inv5 x}
+  let rec trans0 (x:deep_model_ty0) (y:deep_model_ty0) (z:deep_model_ty0) (o:Core_Cmp_Ordering_Type.t_ordering) (return'  (ret:()))= {[#"../../../../creusot-contracts/src/logic/ord.rs" 56 31 56 32] inv6 z}
+    {[#"../../../../creusot-contracts/src/logic/ord.rs" 56 22 56 23] inv6 y}
+    {[#"../../../../creusot-contracts/src/logic/ord.rs" 56 13 56 14] inv6 x}
     {[#"../../../../creusot-contracts/src/logic/ord.rs" 54 15 54 32] cmp_log0 y z = o}
     {[#"../../../../creusot-contracts/src/logic/ord.rs" 53 15 53 32] cmp_log0 x y = o}
     any [ return' (result:())-> {result = trans0 x y z o} (! return' {result}) ] 
   axiom trans0_spec : forall x : deep_model_ty0, y : deep_model_ty0, z : deep_model_ty0, o : Core_Cmp_Ordering_Type.t_ordering . ([#"../../../../creusot-contracts/src/logic/ord.rs" 53 15 53 32] cmp_log0 x y = o)
    -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 54 15 54 32] cmp_log0 y z = o)
-   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 56 13 56 14] inv5 x)
-   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 56 22 56 23] inv5 y)
-   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 56 31 56 32] inv5 z)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 56 13 56 14] inv6 x)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 56 22 56 23] inv6 y)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 56 31 56 32] inv6 z)
    -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 55 14 55 31] cmp_log0 x z = o)
   function refl0 (x : deep_model_ty0) : ()
-  let rec refl0 (x:deep_model_ty0) (return'  (ret:()))= {[#"../../../../creusot-contracts/src/logic/ord.rs" 50 12 50 13] inv5 x}
+  let rec refl0 (x:deep_model_ty0) (return'  (ret:()))= {[#"../../../../creusot-contracts/src/logic/ord.rs" 50 12 50 13] inv6 x}
     any [ return' (result:())-> {result = refl0 x} (! return' {result}) ] 
-  axiom refl0_spec : forall x : deep_model_ty0 . ([#"../../../../creusot-contracts/src/logic/ord.rs" 50 12 50 13] inv5 x)
+  axiom refl0_spec : forall x : deep_model_ty0 . ([#"../../../../creusot-contracts/src/logic/ord.rs" 50 12 50 13] inv6 x)
    -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 49 14 49 45] cmp_log0 x x = Core_Cmp_Ordering_Type.C_Equal)
   function gt_log0 (self : deep_model_ty0) (o : deep_model_ty0) : bool
   let rec gt_log0 (self:deep_model_ty0) (o:deep_model_ty0) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = gt_log0 self o} (! return' {result}) ]
     
   function cmp_gt_log0 (x : deep_model_ty0) (y : deep_model_ty0) : ()
-  let rec cmp_gt_log0 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../creusot-contracts/src/logic/ord.rs" 46 27 46 28] inv5 y}
-    {[#"../../../../creusot-contracts/src/logic/ord.rs" 46 18 46 19] inv5 x}
+  let rec cmp_gt_log0 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../creusot-contracts/src/logic/ord.rs" 46 27 46 28] inv6 y}
+    {[#"../../../../creusot-contracts/src/logic/ord.rs" 46 18 46 19] inv6 x}
     any [ return' (result:())-> {result = cmp_gt_log0 x y} (! return' {result}) ] 
-  axiom cmp_gt_log0_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../creusot-contracts/src/logic/ord.rs" 46 18 46 19] inv5 x)
-   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 46 27 46 28] inv5 y)
+  axiom cmp_gt_log0_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../creusot-contracts/src/logic/ord.rs" 46 18 46 19] inv6 x)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 46 27 46 28] inv6 y)
    -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 45 14 45 64] gt_log0 x y = (cmp_log0 x y = Core_Cmp_Ordering_Type.C_Greater))
   function ge_log0 (self : deep_model_ty0) (o : deep_model_ty0) : bool
   let rec ge_log0 (self:deep_model_ty0) (o:deep_model_ty0) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = ge_log0 self o} (! return' {result}) ]
     
   function cmp_ge_log0 (x : deep_model_ty0) (y : deep_model_ty0) : ()
-  let rec cmp_ge_log0 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../creusot-contracts/src/logic/ord.rs" 36 27 36 28] inv5 y}
-    {[#"../../../../creusot-contracts/src/logic/ord.rs" 36 18 36 19] inv5 x}
+  let rec cmp_ge_log0 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../creusot-contracts/src/logic/ord.rs" 36 27 36 28] inv6 y}
+    {[#"../../../../creusot-contracts/src/logic/ord.rs" 36 18 36 19] inv6 x}
     any [ return' (result:())-> {result = cmp_ge_log0 x y} (! return' {result}) ] 
-  axiom cmp_ge_log0_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../creusot-contracts/src/logic/ord.rs" 36 18 36 19] inv5 x)
-   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 36 27 36 28] inv5 y)
+  axiom cmp_ge_log0_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../creusot-contracts/src/logic/ord.rs" 36 18 36 19] inv6 x)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 36 27 36 28] inv6 y)
    -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 35 14 35 61] ge_log0 x y = (cmp_log0 x y <> Core_Cmp_Ordering_Type.C_Less))
   function lt_log0 (self : deep_model_ty0) (o : deep_model_ty0) : bool
   let rec lt_log0 (self:deep_model_ty0) (o:deep_model_ty0) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = lt_log0 self o} (! return' {result}) ]
     
   function cmp_lt_log0 (x : deep_model_ty0) (y : deep_model_ty0) : ()
-  let rec cmp_lt_log0 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../creusot-contracts/src/logic/ord.rs" 26 27 26 28] inv5 y}
-    {[#"../../../../creusot-contracts/src/logic/ord.rs" 26 18 26 19] inv5 x}
+  let rec cmp_lt_log0 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../creusot-contracts/src/logic/ord.rs" 26 27 26 28] inv6 y}
+    {[#"../../../../creusot-contracts/src/logic/ord.rs" 26 18 26 19] inv6 x}
     any [ return' (result:())-> {result = cmp_lt_log0 x y} (! return' {result}) ] 
-  axiom cmp_lt_log0_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../creusot-contracts/src/logic/ord.rs" 26 18 26 19] inv5 x)
-   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 26 27 26 28] inv5 y)
+  axiom cmp_lt_log0_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../creusot-contracts/src/logic/ord.rs" 26 18 26 19] inv6 x)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 26 27 26 28] inv6 y)
    -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 25 14 25 61] lt_log0 x y = (cmp_log0 x y = Core_Cmp_Ordering_Type.C_Less))
   function le_log0 (self : deep_model_ty0) (o : deep_model_ty0) : bool
   let rec le_log0 (self:deep_model_ty0) (o:deep_model_ty0) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = le_log0 self o} (! return' {result}) ]
     
   function cmp_le_log0 (x : deep_model_ty0) (y : deep_model_ty0) : ()
-  let rec cmp_le_log0 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../creusot-contracts/src/logic/ord.rs" 16 27 16 28] inv5 y}
-    {[#"../../../../creusot-contracts/src/logic/ord.rs" 16 18 16 19] inv5 x}
+  let rec cmp_le_log0 (x:deep_model_ty0) (y:deep_model_ty0) (return'  (ret:()))= {[#"../../../../creusot-contracts/src/logic/ord.rs" 16 27 16 28] inv6 y}
+    {[#"../../../../creusot-contracts/src/logic/ord.rs" 16 18 16 19] inv6 x}
     any [ return' (result:())-> {result = cmp_le_log0 x y} (! return' {result}) ] 
-  axiom cmp_le_log0_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../creusot-contracts/src/logic/ord.rs" 16 18 16 19] inv5 x)
-   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 16 27 16 28] inv5 y)
+  axiom cmp_le_log0_spec : forall x : deep_model_ty0, y : deep_model_ty0 . ([#"../../../../creusot-contracts/src/logic/ord.rs" 16 18 16 19] inv6 x)
+   -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 16 27 16 28] inv6 y)
    -> ([#"../../../../creusot-contracts/src/logic/ord.rs" 15 14 15 64] le_log0 x y = (cmp_log0 x y <> Core_Cmp_Ordering_Type.C_Greater))
+  predicate invariant2 (self : slice t)
+  let rec invariant2 (self:slice t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
+    
+  predicate inv2 (_x : slice t)
+  let rec inv2 (_x:slice t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
+    
+  axiom inv2 : forall x : slice t . inv2 x = true
   use prelude.UIntSize
   use prelude.UIntSize
   use prelude.Int
@@ -850,14 +913,15 @@ module HeapsortGeneric_HeapSort
     [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
     
   axiom inv1 : forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv1 x = true
-  predicate invariant0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
-  let rec invariant0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ] 
-  predicate inv0 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
-  let rec inv0 (_x:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+  use prelude.Snapshot
+  predicate invariant0 (self : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))))
     
-  axiom inv0 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) . inv0 x = true
+  let rec invariant0 (self:Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ] 
+  predicate inv0 (_x : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))))
+  let rec inv0 (_x:Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) . inv0 x = true
   use seq.Seq
   predicate sorted_range0 [#"../heapsort_generic.rs" 77 0 77 63] (s : Seq.seq deep_model_ty0) (l : int) (u : int) =
     [#"../heapsort_generic.rs" 78 4 80 5] forall j : int . forall i : int . l <= i /\ i < j /\ j < u
@@ -886,23 +950,18 @@ module HeapsortGeneric_HeapSort
   let rec deep_model1 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq deep_model_ty0))= {[#"../../../../creusot-contracts/src/std/vec.rs" 33 18 33 22] inv1 self}
     any [ return' (result:Seq.seq deep_model_ty0)-> {result = deep_model1 self} (! return' {result}) ] 
   axiom deep_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 33 18 33 22] inv1 self)
-   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 33 4 33 44] inv6 (deep_model1 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (shallow_model3 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 33 4 33 44] inv7 (deep_model1 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53] forall i : int . 0 <= i /\ i < Seq.length (shallow_model3 self)
    -> Seq.get (deep_model1 self) i = deep_model2 (index_logic1 self i)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56] Seq.length (shallow_model3 self) = Seq.length (deep_model1 self))
   constant max0 : usize = (18446744073709551615 : usize)
   use prelude.Intrinsic
-  use prelude.Snapshot
-  predicate resolve2 (self : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))))
-    
-  let rec resolve2 (self:Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) (return'  (ret:bool))= any
+  predicate resolve2 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve2 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ] 
-  function shallow_model7 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t =
-    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model3 self
-  let rec shallow_model7 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= any
-    [ return' (result:Seq.seq t)-> {result = shallow_model7 self} (! return' {result}) ] 
-  let rec len1 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:usize))= {inv7 self}
-    any 
-    [ return' (result:usize)-> {[#"../../../../creusot-contracts/src/std/vec.rs" 75 26 75 48] UIntSize.to_int result = Seq.length (shallow_model7 self)}
-      (! return' {result}) ]
+  predicate resolve1 (self : borrowed (slice t)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed (slice t)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
     
   function parent0 [#"../heapsort_generic.rs" 10 0 10 24] (i : int) : int =
     [#"../heapsort_generic.rs" 11 4 11 19] div (i + 1) 2 - 1
@@ -915,60 +974,6 @@ module HeapsortGeneric_HeapSort
   let rec heap_frag0 (s:Seq.seq deep_model_ty0) (start:int) (end':int) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = heap_frag0 s start end'} (! return' {result}) ]
     
-  use seq.Permut
-  predicate permutation_of0 (self : Seq.seq t) (o : Seq.seq t) =
-    [#"../../../../creusot-contracts/src/logic/seq.rs" 107 8 107 37] Permut.permut self o 0 (Seq.length self)
-  let rec permutation_of0 (self:Seq.seq t) (o:Seq.seq t) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = permutation_of0 self o} (! return' {result}) ]
-    
-  function shallow_model1 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : Seq.seq t
-   =
-    [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model3 ( * self)
-  let rec shallow_model1 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq t))= any
-    [ return' (result:Seq.seq t)-> {result = shallow_model1 self} (! return' {result}) ] 
-  function shallow_model6 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : Seq.seq t
-   =
-    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model1 self
-  let rec shallow_model6 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq t))= any
-    [ return' (result:Seq.seq t)-> {result = shallow_model6 self} (! return' {result}) ] 
-  use prelude.Snapshot
-  function shallow_model2 (self : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) : Seq.seq t
-    
-   =
-    [#"../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48] shallow_model6 (Snapshot.inner self)
-  let rec shallow_model2 (self:Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) (return'  (ret:Seq.seq t))= any
-    [ return' (result:Seq.seq t)-> {result = shallow_model2 self} (! return' {result}) ] 
-  use prelude.Slice
-  function shallow_model5 (self : slice t) : Seq.seq t
-  let rec shallow_model5 (self:slice t) (return'  (ret:Seq.seq t))= {[#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv3 self}
-    any [ return' (result:Seq.seq t)-> {result = shallow_model5 self} (! return' {result}) ] 
-  axiom shallow_model5_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv3 self)
-   -> ([#"../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv8 (shallow_model5 self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model5 self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model5 self) <= UIntSize.to_int (max1 : usize))
-  function shallow_model4 (self : borrowed (slice t)) : Seq.seq t =
-    [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model5 ( * self)
-  let rec shallow_model4 (self:borrowed (slice t)) (return'  (ret:Seq.seq t))= any 
-    [ return' (result:Seq.seq t)-> {result = shallow_model4 self} (! return' {result}) ]
-    
-  let rec deref_mut0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:borrowed (slice t)))= {inv0 self}
-    any 
-    [ return' (result:borrowed (slice t))-> {inv2 result}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 153 26 153 48] shallow_model5 ( ^ result) = shallow_model3 ( ^ self)}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 152 26 152 42] shallow_model4 result = shallow_model1 self}
-      (! return' {result}) ]
-    
-  use seq.Permut
-  let rec swap0 (self:borrowed (slice t)) (a:usize) (b:usize) (return'  (ret:()))= {inv2 self}
-    {[#"../../../../creusot-contracts/src/std/slice.rs" 248 19 248 35] UIntSize.to_int b < Seq.length (shallow_model4 self)}
-    {[#"../../../../creusot-contracts/src/std/slice.rs" 247 19 247 35] UIntSize.to_int a < Seq.length (shallow_model4 self)}
-    any 
-    [ return' (result:())-> {[#"../../../../creusot-contracts/src/std/slice.rs" 249 8 249 52] Permut.exchange (shallow_model5 ( ^ self)) (shallow_model4 self) (UIntSize.to_int a) (UIntSize.to_int b)}
-      (! return' {result}) ]
-    
-  predicate resolve1 (self : borrowed (slice t)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve1 (self:borrowed (slice t)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
-    
   function heap_frag_max0 [#"../heapsort_generic.rs" 25 0 25 58] (s : Seq.seq deep_model_ty0) (i : int) (end' : int) : ()
     
   axiom heap_frag_max0_def : forall s : Seq.seq deep_model_ty0, i : int, end' : int . heap_frag_max0 s i end' = ([#"../heapsort_generic.rs" 26 4 28 5] if i > 0 then
@@ -976,109 +981,170 @@ module HeapsortGeneric_HeapSort
   else
     ()
   )
-  let rec heap_frag_max0 (s:Seq.seq deep_model_ty0) (i:int) (end':int) (return'  (ret:()))= {[#"../heapsort_generic.rs" 25 30 25 31] inv6 s}
+  let rec heap_frag_max0 (s:Seq.seq deep_model_ty0) (i:int) (end':int) (return'  (ret:()))= {[#"../heapsort_generic.rs" 25 30 25 31] inv7 s}
     {[#"../heapsort_generic.rs" 22 11 22 28] 0 <= i /\ i < end'}
     {[#"../heapsort_generic.rs" 21 11 21 31] heap_frag0 s 0 end'}
     any [ return' (result:())-> {result = heap_frag_max0 s i end'} (! return' {result}) ] 
   axiom heap_frag_max0_spec : forall s : Seq.seq deep_model_ty0, i : int, end' : int . ([#"../heapsort_generic.rs" 21 11 21 31] heap_frag0 s 0 end')
    -> ([#"../heapsort_generic.rs" 22 11 22 28] 0 <= i /\ i < end')
-   -> ([#"../heapsort_generic.rs" 25 30 25 31] inv6 s)
+   -> ([#"../heapsort_generic.rs" 25 30 25 31] inv7 s)
    -> ([#"../heapsort_generic.rs" 23 10 23 22] le_log0 (Seq.get s i) (Seq.get s 0))
+  use seq.Permut
+  use prelude.Slice
+  function shallow_model7 (self : slice t) : Seq.seq t
+  let rec shallow_model7 (self:slice t) (return'  (ret:Seq.seq t))= {[#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv2 self}
+    any [ return' (result:Seq.seq t)-> {result = shallow_model7 self} (! return' {result}) ] 
+  axiom shallow_model7_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv2 self)
+   -> ([#"../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv8 (shallow_model7 self)) && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model7 self = Slice.id self) && ([#"../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model7 self) <= UIntSize.to_int (max1 : usize))
+  function shallow_model6 (self : borrowed (slice t)) : Seq.seq t =
+    [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model7 ( * self)
+  let rec shallow_model6 (self:borrowed (slice t)) (return'  (ret:Seq.seq t))= any 
+    [ return' (result:Seq.seq t)-> {result = shallow_model6 self} (! return' {result}) ]
+    
+  let rec swap0 (self:borrowed (slice t)) (a:usize) (b:usize) (return'  (ret:()))= {inv3 self}
+    {[#"../../../../creusot-contracts/src/std/slice.rs" 248 19 248 35] UIntSize.to_int b < Seq.length (shallow_model6 self)}
+    {[#"../../../../creusot-contracts/src/std/slice.rs" 247 19 247 35] UIntSize.to_int a < Seq.length (shallow_model6 self)}
+    any 
+    [ return' (result:())-> {[#"../../../../creusot-contracts/src/std/slice.rs" 249 8 249 52] Permut.exchange (shallow_model7 ( ^ self)) (shallow_model6 self) (UIntSize.to_int a) (UIntSize.to_int b)}
+      (! return' {result}) ]
+    
+  function shallow_model0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : Seq.seq t
+   =
+    [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model3 ( * self)
+  let rec shallow_model0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq t))= any
+    [ return' (result:Seq.seq t)-> {result = shallow_model0 self} (! return' {result}) ] 
+  let rec deref_mut0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:borrowed (slice t)))= {inv4 self}
+    any 
+    [ return' (result:borrowed (slice t))-> {inv3 result}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 153 26 153 48] shallow_model7 ( ^ result) = shallow_model3 ( ^ self)}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 152 26 152 42] shallow_model6 result = shallow_model0 self}
+      (! return' {result}) ]
+    
   function deep_model0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : Seq.seq deep_model_ty0
     
    =
     [#"../../../../creusot-contracts/src/model.rs" 92 8 92 28] deep_model1 ( * self)
   let rec deep_model0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq deep_model_ty0))= any
     [ return' (result:Seq.seq deep_model_ty0)-> {result = deep_model0 self} (! return' {result}) ] 
-  let rec sift_down0 (v:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (start:usize) (end':usize) (return'  (ret:()))= {[#"../heapsort_generic.rs" 41 33 41 34] inv0 v}
-    {[#"../heapsort_generic.rs" 33 11 33 27] UIntSize.to_int end' <= Seq.length (shallow_model1 v)}
+  use seq.Permut
+  predicate permutation_of0 (self : Seq.seq t) (o : Seq.seq t) =
+    [#"../../../../creusot-contracts/src/logic/seq.rs" 107 8 107 37] Permut.permut self o 0 (Seq.length self)
+  let rec permutation_of0 (self:Seq.seq t) (o:Seq.seq t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = permutation_of0 self o} (! return' {result}) ]
+    
+  function shallow_model5 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : Seq.seq t
+   =
+    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model0 self
+  let rec shallow_model5 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq t))= any
+    [ return' (result:Seq.seq t)-> {result = shallow_model5 self} (! return' {result}) ] 
+  use prelude.Snapshot
+  function shallow_model1 (self : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) : Seq.seq t
+    
+   =
+    [#"../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48] shallow_model5 (Snapshot.inner self)
+  let rec shallow_model1 (self:Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) (return'  (ret:Seq.seq t))= any
+    [ return' (result:Seq.seq t)-> {result = shallow_model1 self} (! return' {result}) ] 
+  let rec sift_down0 (v:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (start:usize) (end':usize) (return'  (ret:()))= {[#"../heapsort_generic.rs" 41 33 41 34] inv4 v}
+    {[#"../heapsort_generic.rs" 33 11 33 27] UIntSize.to_int end' <= Seq.length (shallow_model0 v)}
     {[#"../heapsort_generic.rs" 32 11 32 24] UIntSize.to_int start < UIntSize.to_int end'}
     {[#"../heapsort_generic.rs" 31 11 31 54] heap_frag0 (deep_model0 v) (UIntSize.to_int start + 1) (UIntSize.to_int end')}
     any 
-    [ return' (result:())-> {[#"../heapsort_generic.rs" 38 0 40 80] forall m : deep_model_ty0 . inv5 m
+    [ return' (result:())-> {[#"../heapsort_generic.rs" 38 0 40 80] forall m : deep_model_ty0 . inv6 m
        -> (forall j : int . UIntSize.to_int start <= j /\ j < UIntSize.to_int end'
        -> le_log0 (Seq.get (deep_model0 v) j) m)
        -> (forall j : int . UIntSize.to_int start <= j /\ j < UIntSize.to_int end'
        -> le_log0 (Seq.get (deep_model1 ( ^ v)) j) m)}
-      {[#"../heapsort_generic.rs" 36 0 37 43] forall i : int . 0 <= i /\ i < UIntSize.to_int start \/ UIntSize.to_int end' <= i /\ i < Seq.length (shallow_model1 v)
+      {[#"../heapsort_generic.rs" 36 0 37 43] forall i : int . 0 <= i /\ i < UIntSize.to_int start \/ UIntSize.to_int end' <= i /\ i < Seq.length (shallow_model0 v)
        -> index_logic1 ( * v) i = index_logic1 ( ^ v) i}
-      {[#"../heapsort_generic.rs" 35 0 35 36] permutation_of0 (shallow_model3 ( ^ v)) (shallow_model1 v)}
+      {[#"../heapsort_generic.rs" 35 0 35 36] permutation_of0 (shallow_model3 ( ^ v)) (shallow_model0 v)}
       {[#"../heapsort_generic.rs" 34 10 34 52] heap_frag0 (deep_model1 ( ^ v)) (UIntSize.to_int start) (UIntSize.to_int end')}
       (! return' {result}) ]
     
-  predicate resolve0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
+  predicate resolve0 (self : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))))
+    
+  let rec resolve0 (self:Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ] 
-  let rec heap_sort (v:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:()))= {[#"../heapsort_generic.rs" 93 37 93 38] inv0 v}
-    {[#"../heapsort_generic.rs" 90 11 90 40] Seq.length (shallow_model1 v) < div (UIntSize.to_int max0) 2}
+  function shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t =
+    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model3 self
+  let rec shallow_model4 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= any
+    [ return' (result:Seq.seq t)-> {result = shallow_model4 self} (! return' {result}) ] 
+  let rec len0 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:usize))= {inv5 self}
+    any 
+    [ return' (result:usize)-> {[#"../../../../creusot-contracts/src/std/vec.rs" 75 26 75 48] UIntSize.to_int result = Seq.length (shallow_model4 self)}
+      (! return' {result}) ]
+    
+  use prelude.Snapshot
+  let rec heap_sort (v:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:()))= {[#"../heapsort_generic.rs" 93 37 93 38] inv4 v}
+    {[#"../heapsort_generic.rs" 90 11 90 40] Seq.length (shallow_model0 v) < div (UIntSize.to_int max0) 2}
     (! bb0 
-    [ bb17 = {[@expl:type invariant] inv0 v}
-      -{resolve0 v}- [ &_0 <- [#"../heapsort_generic.rs" 115 4 124 5] () ] return' {_0} 
-    | bb11 = {[#"../heapsort_generic.rs" 109 4 109 34] forall j : int . forall i : int . 0 <= i /\ i < UIntSize.to_int end' /\ UIntSize.to_int end' <= j /\ j < Seq.length (shallow_model1 v)
-       -> le_log0 (Seq.get (deep_model0 v) i) (Seq.get (deep_model0 v) j)}
-      {[#"../heapsort_generic.rs" 112 16 112 60] sorted_range0 (deep_model0 v) (UIntSize.to_int end') (Seq.length (shallow_model1 v))}
-      {[#"../heapsort_generic.rs" 111 16 111 50] heap_frag0 (deep_model0 v) 0 (UIntSize.to_int end')}
-      {[#"../heapsort_generic.rs" 109 4 109 34] permutation_of0 (shallow_model1 v) (shallow_model2 old_v)}
-      {[#"../heapsort_generic.rs" 109 16 109 32] UIntSize.to_int end' <= Seq.length (shallow_model1 v)}
-      (! bb12) 
-      [ bb16 = [ &_15 <- [#"../heapsort_generic.rs" 115 18 124 5] () ] bb11
-      | bb15 = {[@expl:type invariant] inv2 _37}
-        -{resolve1 _37}- {[@expl:assertion] [#"../heapsort_generic.rs" 119 12 119 59] let _ = heap_frag_max0 (deep_model0 v) 0 (UIntSize.to_int end') in forall j : int . forall i : int . 0 <= i /\ i < UIntSize.to_int end' /\ UIntSize.to_int end' <= j /\ j < Seq.length (shallow_model1 v)
-         -> le_log0 (Seq.get (deep_model0 v) i) (Seq.get (deep_model0 v) j)}
-        Borrow.borrow_mut <Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)> { * v}
-        (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) -> [ &_43 <- _ret' ] 
-          [ &v <- { v with current = ( ^ _43) ; } ]
-          -{inv1 ( ^ _43)}- sift_down0 {_43} {[#"../heapsort_generic.rs" 123 21 123 22] (0 : usize)} {end'}
-          (fun (_ret':()) -> [ &_42 <- _ret' ] bb16))
-      | bb14 = Borrow.borrow_final <slice t> { * _37} {Borrow.get_id _37} (fun (_ret':borrowed (slice t)) -> 
-          [ &_36 <- _ret' ]
-          [ &_37 <- { _37 with current = ( ^ _36) ; } ] -{inv3 ( ^ _36)}- swap0 {_36}
-          {[#"../heapsort_generic.rs" 117 15 117 16] (0 : usize)} {end'} (fun (_ret':()) -> [ &_35 <- _ret' ] bb15))
-      | bb13 = UIntSize.sub {end'} {[#"../heapsort_generic.rs" 116 15 116 16] (1 : usize)} (fun (_ret':usize) -> 
-          [ &end' <- _ret' ]
-          Borrow.borrow_mut <Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)> { * v}
-          (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) -> [ &_38 <- _ret' ] 
-            [ &v <- { v with current = ( ^ _38) ; } ]
-            -{inv1 ( ^ _38)}- deref_mut0 {_38} (fun (_ret':borrowed (slice t)) -> [ &_37 <- _ret' ] bb14)))
-      | bb12 = UIntSize.gt {end'} {[#"../heapsort_generic.rs" 115 16 115 17] (1 : usize)} (fun (_ret':bool) -> 
-          [ &_33 <- _ret' ]
-          any [ br0 -> {_33 = false} (! bb17) | br1 -> {_33} (! bb13) ] ) ]
-      
-    | bb10 = bb11 
-    | bb9 = len1 { * v} (fun (_ret':usize) -> [ &end' <- _ret' ] bb10) 
-    | bb4 = {[#"../heapsort_generic.rs" 102 16 102 36] UIntSize.to_int start <= div (Seq.length (shallow_model1 v)) 2}
-      {[#"../heapsort_generic.rs" 101 16 101 59] heap_frag0 (deep_model0 v) (UIntSize.to_int start) (Seq.length (shallow_model1 v))}
-      {[#"../heapsort_generic.rs" 100 4 100 43] permutation_of0 (shallow_model1 v) (shallow_model2 old_v)}
-      (! bb5) 
-      [ bb8 = [ &_15 <- [#"../heapsort_generic.rs" 103 20 106 5] () ] bb4
-      | bb7 = sift_down0 {_19} {start} {_21} (fun (_ret':()) -> [ &_18 <- _ret' ] bb8)
-      | bb6 = UIntSize.sub {start} {[#"../heapsort_generic.rs" 104 17 104 18] (1 : usize)} (fun (_ret':usize) -> 
-          [ &start <- _ret' ]
-          Borrow.borrow_mut <Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)> { * v}
-          (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) -> [ &_19 <- _ret' ] 
-            [ &v <- { v with current = ( ^ _19) ; } ]
-            -{inv1 ( ^ _19)}- len1 { * _19} (fun (_ret':usize) -> [ &_21 <- _ret' ] bb7)))
-      | bb5 = UIntSize.gt {start} {[#"../heapsort_generic.rs" 103 18 103 19] (0 : usize)} (fun (_ret':bool) -> 
-          [ &_16 <- _ret' ]
-          any [ br0 -> {_16 = false} (! bb9) | br1 -> {_16} (! bb6) ] ) ]
-      
-    | bb3 = UIntSize.div {_8} {[#"../heapsort_generic.rs" 99 30 99 31] (2 : usize)} (fun (_ret':usize) -> 
-        [ &start <- _ret' ]
-        bb4) 
+    [ bb0 = [ &old_v <- [#"../heapsort_generic.rs" 97 16 97 31] Snapshot.new v ] bb1
+    | bb1 = {[@expl:type invariant] inv0 old_v}
+      -{resolve0 old_v}- len0 { * v} (fun (_ret':usize) -> [ &_8 <- _ret' ] bb2)
     | bb2 = UIntSize.eq {[#"../heapsort_generic.rs" 99 30 99 31] (2 : usize)}
       {[#"../heapsort_generic.rs" 99 20 99 31] (0 : usize)} (fun (_ret':bool) -> 
         [ &_10 <- _ret' ]
         {[@expl:division by zero] [#"../heapsort_generic.rs" 99 20 99 31] not _10}
-        bb3) 
-    | bb1 = {[@expl:type invariant] inv4 old_v}
-      -{resolve2 old_v}- len1 { * v} (fun (_ret':usize) -> [ &_8 <- _ret' ] bb2) 
-    | bb0 = [ &old_v <- [#"../heapsort_generic.rs" 97 16 97 31] Snapshot.new v ] bb1  ]
-    ) 
-    [ return' (result:())-> {[#"../heapsort_generic.rs" 92 0 92 36] permutation_of0 (shallow_model3 ( ^ v)) (shallow_model1 v)}
-      {[#"../heapsort_generic.rs" 91 10 91 35] sorted0 (deep_model1 ( ^ v))}
-      (! return' {_0}) ]
-    
+        bb3)
+    | bb3 = UIntSize.div {_8} {[#"../heapsort_generic.rs" 99 30 99 31] (2 : usize)} (fun (_ret':usize) -> 
+        [ &start <- _ret' ]
+        (any [ any_ (_any:usize)-> (! [ &_8 <- _any ] bb4) ] ))
+    | bb4 = bb4 
+      [ bb4 = {[#"../heapsort_generic.rs" 102 16 102 36] UIntSize.to_int start <= div (Seq.length (shallow_model0 v)) 2}
+        {[#"../heapsort_generic.rs" 101 16 101 59] heap_frag0 (deep_model0 v) (UIntSize.to_int start) (Seq.length (shallow_model0 v))}
+        {[#"../heapsort_generic.rs" 100 4 100 43] permutation_of0 (shallow_model0 v) (shallow_model1 old_v)}
+        (! bb5) 
+        [ bb5 = UIntSize.gt {start} {[#"../heapsort_generic.rs" 103 18 103 19] (0 : usize)} (fun (_ret':bool) -> 
+            [ &_16 <- _ret' ]
+            (any [ br0 -> {_16 = false} (! bb9) | br1 -> {_16} (! bb6) ] ))
+        | bb6 = UIntSize.sub {start} {[#"../heapsort_generic.rs" 104 17 104 18] (1 : usize)} (fun (_ret':usize) -> 
+            [ &start <- _ret' ]
+            Borrow.borrow_mut <Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)> { * v}
+            (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) -> 
+              [ &v <- { v with current = ( ^ _19) ; } ]
+              [ &_19 <- _ret' ] -{inv1 ( ^ _19)}- len0 { * _19} (fun (_ret':usize) -> [ &_21 <- _ret' ] bb7)))
+        | bb7 = sift_down0 {_19} {start} {_21} (fun (_ret':()) -> [ &_18 <- _ret' ] bb8)
+        | bb8 = [ &_15 <- [#"../heapsort_generic.rs" 103 20 106 5] () ] bb4 ]
+         ]
+      
+    | bb9 = len0 { * v} (fun (_ret':usize) -> [ &end' <- _ret' ] bb10)
+    | bb10 = bb11
+    | bb11 = bb11 
+      [ bb11 = {[#"../heapsort_generic.rs" 109 4 109 34] forall j : int . forall i : int . 0 <= i /\ i < UIntSize.to_int end' /\ UIntSize.to_int end' <= j /\ j < Seq.length (shallow_model0 v)
+         -> le_log0 (Seq.get (deep_model0 v) i) (Seq.get (deep_model0 v) j)}
+        {[#"../heapsort_generic.rs" 112 16 112 60] sorted_range0 (deep_model0 v) (UIntSize.to_int end') (Seq.length (shallow_model0 v))}
+        {[#"../heapsort_generic.rs" 111 16 111 50] heap_frag0 (deep_model0 v) 0 (UIntSize.to_int end')}
+        {[#"../heapsort_generic.rs" 109 4 109 34] permutation_of0 (shallow_model0 v) (shallow_model1 old_v)}
+        {[#"../heapsort_generic.rs" 109 16 109 32] UIntSize.to_int end' <= Seq.length (shallow_model0 v)}
+        (! bb12) 
+        [ bb12 = UIntSize.gt {end'} {[#"../heapsort_generic.rs" 115 16 115 17] (1 : usize)} (fun (_ret':bool) -> 
+            [ &_33 <- _ret' ]
+            (any [ br0 -> {_33 = false} (! bb17) | br1 -> {_33} (! bb13) ] ))
+        | bb13 = UIntSize.sub {end'} {[#"../heapsort_generic.rs" 116 15 116 16] (1 : usize)} (fun (_ret':usize) -> 
+            [ &end' <- _ret' ]
+            Borrow.borrow_mut <Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)> { * v}
+            (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) -> 
+              [ &v <- { v with current = ( ^ _38) ; } ]
+              [ &_38 <- _ret' ] -{inv1 ( ^ _38)}- deref_mut0 {_38} (fun (_ret':borrowed (slice t)) -> 
+                [ &_37 <- _ret' ]
+                bb14)))
+        | bb14 = Borrow.borrow_final <slice t> { * _37} {Borrow.get_id _37} (fun (_ret':borrowed (slice t)) -> 
+            [ &_36 <- _ret' ]
+            [ &_37 <- { _37 with current = ( ^ _36) ; } ] -{inv2 ( ^ _36)}- swap0 {_36}
+            {[#"../heapsort_generic.rs" 117 15 117 16] (0 : usize)} {end'} (fun (_ret':()) -> [ &_35 <- _ret' ] bb15))
+        | bb15 = {[@expl:type invariant] inv3 _37}
+          -{resolve1 _37}- {[@expl:assertion] [#"../heapsort_generic.rs" 119 12 119 59] let _ = heap_frag_max0 (deep_model0 v) 0 (UIntSize.to_int end') in forall j : int . forall i : int . 0 <= i /\ i < UIntSize.to_int end' /\ UIntSize.to_int end' <= j /\ j < Seq.length (shallow_model0 v)
+           -> le_log0 (Seq.get (deep_model0 v) i) (Seq.get (deep_model0 v) j)}
+          Borrow.borrow_mut <Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)> { * v}
+          (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) -> 
+            [ &v <- { v with current = ( ^ _43) ; } ]
+            [ &_43 <- _ret' ] -{inv1 ( ^ _43)}- sift_down0 {_43} {[#"../heapsort_generic.rs" 123 21 123 22] (0 : usize)}
+            {end'} (fun (_ret':()) -> [ &_42 <- _ret' ] bb16))
+        | bb16 = [ &_15 <- [#"../heapsort_generic.rs" 115 18 124 5] () ] bb11 ]
+         ]
+      
+    | bb17 = {[@expl:type invariant] inv4 v}
+      -{resolve2 v}- [ &_0 <- [#"../heapsort_generic.rs" 115 4 124 5] () ] return' {_0} ]
+    )
     [ & _0 : () = any_l () : ()
     | & v : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) = v
     | & old_v : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) = any_l () : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
@@ -1098,5 +1164,9 @@ module HeapsortGeneric_HeapSort
     | & _38 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) = any_l () : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
     | & _42 : () = any_l () : ()
     | & _43 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) = any_l () : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) ]
+     
+    [ return' (result:())-> {[#"../heapsort_generic.rs" 92 0 92 36] permutation_of0 (shallow_model3 ( ^ v)) (shallow_model0 v)}
+      {[#"../heapsort_generic.rs" 91 10 91 35] sorted0 (deep_model1 ( ^ v))}
+      (! return' {result}) ]
     
 end

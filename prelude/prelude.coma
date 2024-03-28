@@ -28,9 +28,13 @@ end
 
 module Bool
   let eq (a : bool) (b : bool) (ret (result : bool) { a = b}) = any
+  function eq (a : bool) (b : bool) : bool = (a = b)
 
-  let neq (a : bool) (b : bool) (ret (result : bool) { a <> b}) = any
+  let ne (a : bool) (b : bool) (ret (result : bool) { a <> b}) = any
+  function ne (a : bool) (b : bool) : bool = a <> b
 
+  function to_int (b : bool) : int =
+    if b then 1 else 0
 end
 
 module Borrow
@@ -746,17 +750,40 @@ module Slice
 
   type array 'a = slice 'a
 
+  function length (s : slice 'a) : usize
+
   (*
-  let create (len : uint64) (f : int -> 'a) : slice 'a =
-    { elts = Seq.create (to_int len) f}
+  : usize = of_int (Seq.length s.elts)
+  *)
 
-  let function length (s : slice 'a) : uint64 = of_int (Seq.length s.elts)
+  let get < 'a > (s : slice 'a) (ix : usize) (ret (res : 'a)) =
+    { ix < Seq.length s.elts }
+    ret {Seq.get s.elts (to_int ix)}
 
-  let function get (s : slice 'a) (ix : uint64) : 'a =
+
+  let set < 'a > (s : slice 'a) (ix : usize) (v : 'a)
+    { 0 <= ix < Seq.length s.elts }
+    (ret (result : slice 'a)
+      { Seq.length result.elts = Seq.length s.elts }
+      { result.elts[ix] = v }
+      { forall j. 0 <= j < Seq.length s.elts /\ j <> ix -> result.elts[j] = s.elts[j] }
+    ) = any
+
+
+  let create (len : usize) (f : int -> 'a)
+    { 0 <= len }
+  (ret (result : slice 'a )
+    { Seq.length result.elts = len }
+    { forall i . 0 <= i < len -> result.elts[i] = f i }
+  ) = any
+
+
+  (*
+  let function get < 'a > (s : slice 'a) (ix : usize) : 'a =
     requires { ix < Seq.length s.elts }
     Seq.get s.elts (to_int ix)
 
-  let set (s : slice 'a) (ix : uint64) (v : 'a) : slice 'a =
+  let set (s : slice 'a) (ix : usize) (v : 'a) : slice 'a =
     requires { 0 <= ix < Seq.length s.elts }
     ensures { Seq.length result.elts = Seq.length s.elts }
     ensures { result.elts[ix] = v }

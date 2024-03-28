@@ -4,6 +4,13 @@ module Core_Cell_UnsafeCell_Type
     | C_UnsafeCell 't
     
   function any_l (_ : 'b) : 'a
+  let rec unsafe_cell < 't > (input:t_unsafecell 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_UnsafeCell field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_UnsafeCell field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Core_Cell_Cell_Type
   use Core_Cell_UnsafeCell_Type as Core_Cell_UnsafeCell_Type
@@ -11,12 +18,22 @@ module Core_Cell_Cell_Type
     | C_Cell (Core_Cell_UnsafeCell_Type.t_unsafecell 't)
     
   function any_l (_ : 'b) : 'a
+  let rec cell < 't > (input:t_cell 't) (ret  (field_0:Core_Cell_UnsafeCell_Type.t_unsafecell 't))= any 
+    [ good (field_0:Core_Cell_UnsafeCell_Type.t_unsafecell 't)-> {C_Cell field_0 = input}
+      ret {field_0}
+    | bad (field_0:Core_Cell_UnsafeCell_Type.t_unsafecell 't)-> {C_Cell field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Core_Marker_PhantomData_Type
   type t_phantomdata 't =
     | C_PhantomData
     
   function any_l (_ : 'b) : 'a
+  let rec phantom_data < 't > (input:t_phantomdata 't) (ret  )= any 
+    [ good -> {C_PhantomData  = input} ret | bad -> {C_PhantomData  <> input} {false} any ]
+    
 end
 module C01_Cell_Type
   use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
@@ -25,12 +42,21 @@ module C01_Cell_Type
     | C_Cell (Core_Cell_Cell_Type.t_cell 't) (Core_Marker_PhantomData_Type.t_phantomdata 'i)
     
   function any_l (_ : 'b) : 'a
+  let rec cell < 't > < 'i > (input:t_cell 't 'i) (ret  (field_0:Core_Cell_Cell_Type.t_cell 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 'i))= any
+    
+    [ good (field_0:Core_Cell_Cell_Type.t_cell 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 'i)-> {C_Cell field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:Core_Cell_Cell_Type.t_cell 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 'i)-> {C_Cell field_0 field_1 <> input}
+      {false}
+      any ]
+    
 end
 module C01_Even_Type
   type t_even  =
     | C_Even
     
   function any_l (_ : 'b) : 'a
+  let rec even (input:t_even) (ret  )= any [ good -> {C_Even  = input} ret | bad -> {C_Even  <> input} {false} any ] 
 end
 module C01_AddsTwo
   use prelude.UInt32
@@ -51,39 +77,39 @@ module C01_AddsTwo
   let rec invariant0 (self:C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
     
-  predicate inv1 (_x : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even))
-  let rec inv1 (_x:C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+  predicate inv0 (_x : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even))
+  let rec inv0 (_x:C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
     
-  axiom inv1 : forall x : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even) . inv1 x = true
+  axiom inv0 : forall x : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even) . inv0 x = true
   use prelude.Borrow
   use prelude.Intrinsic
   use prelude.Int
-  predicate inv0 [#"../01.rs" 35 4 35 26] (x : uint32) =
+  predicate inv1 [#"../01.rs" 35 4 35 26] (x : uint32) =
     [#"../01.rs" 36 8 36 24] mod x (2 : uint32) = (0 : uint32)
-  let rec inv0 (x:uint32) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 x} (! return' {result}) ] 
-  let rec get0 (self:C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) (return'  (ret:uint32))= {[#"../01.rs" 19 16 19 20] inv1 self}
+  let rec inv1 (x:uint32) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv1 x} (! return' {result}) ] 
+  let rec set0 (self:C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) (v:uint32) (return'  (ret:()))= {[#"../01.rs" 25 22 25 23] inv2 v}
+    {[#"../01.rs" 25 16 25 20] inv0 self}
+    {[#"../01.rs" 24 15 24 24] inv1 v}
+    any [ return' (result:())-> (! return' {result}) ] 
+  let rec get0 (self:C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) (return'  (ret:uint32))= {[#"../01.rs" 19 16 19 20] inv0 self}
     any 
     [ return' (result:uint32)-> {[#"../01.rs" 19 25 19 26] inv2 result}
-      {[#"../01.rs" 18 14 18 28] inv0 result}
+      {[#"../01.rs" 18 14 18 28] inv1 result}
       (! return' {result}) ]
     
-  let rec set0 (self:C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) (v:uint32) (return'  (ret:()))= {[#"../01.rs" 25 22 25 23] inv2 v}
-    {[#"../01.rs" 25 16 25 20] inv1 self}
-    {[#"../01.rs" 24 15 24 24] inv0 v}
-    any [ return' (result:())-> (! return' {result}) ] 
   let rec adds_two (c:C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) (return'  (ret:()))= (! bb0 
-    [ bb6 = return' {_0} 
-    | bb5 = [ &_0 <- [#"../01.rs" 45 11 47 5] () ] bb6 
-    | bb4 = set0 {c} {[#"../01.rs" 46 14 46 15] (0 : uint32)} (fun (_ret':()) -> [ &_10 <- _ret' ] bb5) 
-    | bb3 = [ &_0 <- [#"../01.rs" 43 18 45 5] () ] bb6 
-    | bb2 = UInt32.add {v} {[#"../01.rs" 44 18 44 19] (2 : uint32)} (fun (_ret':uint32) -> [ &_8 <- _ret' ] set0 {c}
-        {_8} (fun (_ret':()) -> [ &_6 <- _ret' ] bb3)) 
-    | bb1 = UInt32.lt {v} {[#"../01.rs" 43 11 43 17] (100000 : uint32)} (fun (_ret':bool) -> [ &_4 <- _ret' ] any 
+    [ bb0 = get0 {c} (fun (_ret':uint32) -> [ &v <- _ret' ] bb1)
+    | bb1 = UInt32.lt {v} {[#"../01.rs" 43 11 43 17] (100000 : uint32)} (fun (_ret':bool) -> [ &_4 <- _ret' ] (any 
         [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb2) ]
-        ) 
-    | bb0 = get0 {c} (fun (_ret':uint32) -> [ &v <- _ret' ] bb1)  ]
-    ) [ return' (result:())-> (! return' {_0}) ] 
+        ))
+    | bb2 = UInt32.add {v} {[#"../01.rs" 44 18 44 19] (2 : uint32)} (fun (_ret':uint32) -> [ &_8 <- _ret' ] set0 {c}
+        {_8} (fun (_ret':()) -> [ &_6 <- _ret' ] bb3))
+    | bb3 = [ &_0 <- [#"../01.rs" 43 18 45 5] () ] bb6
+    | bb4 = set0 {c} {[#"../01.rs" 46 14 46 15] (0 : uint32)} (fun (_ret':()) -> [ &_10 <- _ret' ] bb5)
+    | bb5 = [ &_0 <- [#"../01.rs" 45 11 47 5] () ] bb6
+    | bb6 = return' {_0} ]
+    )
     [ & _0 : () = any_l () : ()
     | & c : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even) = c
     | & v : uint32 = any_l () : uint32
@@ -91,7 +117,7 @@ module C01_AddsTwo
     | & _6 : () = any_l () : ()
     | & _8 : uint32 = any_l () : uint32
     | & _10 : () = any_l () : () ]
-    
+     [ return' (result:())-> (! return' {result}) ] 
 end
 module C01_Impl1
   

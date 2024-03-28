@@ -2,8 +2,8 @@
 module SplitBorrow_Z
   use prelude.Intrinsic
   let rec z (_1:()) (return'  (ret:bool))= (! bb0 
-    [ bb0 = [ &_0 <- [#"../split_borrow.rs" 6 4 6 8] true ] return' {_0}  ]
-    ) [ return' (result:bool)-> (! return' {_0}) ] [ & _0 : bool = any_l () : bool ] 
+    [ bb0 = [ &_0 <- [#"../split_borrow.rs" 6 4 6 8] true ] return' {_0} ]
+    )[ & _0 : bool = any_l () : bool ]  [ return' (result:bool)-> (! return' {result}) ] 
 end
 module SplitBorrow_MyInt_Type
   use prelude.UIntSize
@@ -12,13 +12,17 @@ module SplitBorrow_MyInt_Type
     | C_MyInt usize
     
   function any_l (_ : 'b) : 'a
+  let rec my_int (input:t_myint) (ret  (field_0:usize))= any 
+    [ good (field_0:usize)-> {C_MyInt field_0 = input}
+      ret {field_0}
+    | bad (field_0:usize)-> {C_MyInt field_0 <> input}
+      {false}
+      any ]
+    
 end
 module SplitBorrow_F
   use prelude.Intrinsic
   use prelude.Borrow
-  let rec z0 (_1:()) (return'  (ret:bool))= any [ return' (result:bool)-> (! return' {result}) ] 
-  use prelude.UIntSize
-  use prelude.Int
   use SplitBorrow_MyInt_Type as SplitBorrow_MyInt_Type
   predicate resolve1 (self : borrowed (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint)) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
@@ -34,35 +38,38 @@ module SplitBorrow_F
   let rec resolve0 (self:(SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
     
+  use prelude.UIntSize
+  use prelude.Int
+  let rec z0 (_1:()) (return'  (ret:bool))= any [ return' (result:bool)-> (! return' {result}) ] 
   let rec f (_1:()) (return'  (ret:()))= (! bb0 
-    [ bb4 = -{resolve1 y}- -{resolve0 x}- [ &_0 <- [#"../split_borrow.rs" 9 11 21 1] () ] return' {_0} 
-    | bb3 = [ &_8 <- SplitBorrow_MyInt_Type.C_MyInt ([#"../split_borrow.rs" 16 23 16 25] (10 : usize)) ] 
-      [ &y <- { y with current = (let (x0, x1) =  * y in (_8, x1)) ; } ]
-      any 
-      [ any_ (_any:SplitBorrow_MyInt_Type.t_myint)-> [ &_8 <- _any ] 
-        [ &_5 <- [#"../split_borrow.rs" 15 11 17 5] () ]
-        bb4 ]
-       
-    | bb2 = [ &_7 <- SplitBorrow_MyInt_Type.C_MyInt ([#"../split_borrow.rs" 14 23 14 24] (4 : usize)) ] 
-      [ &y <- { y with current = (let (x0, x1) =  * y in (x0, _7)) ; } ]
-      any 
-      [ any_ (_any:SplitBorrow_MyInt_Type.t_myint)-> [ &_7 <- _any ] 
-        [ &_5 <- [#"../split_borrow.rs" 13 11 15 5] () ]
-        bb4 ]
-       
-    | bb1 = any [ br0 -> {_6 = false} (! bb3) | br1 -> {_6} (! bb2) ]  
-    | bb0 = [ &_2 <- SplitBorrow_MyInt_Type.C_MyInt ([#"../split_borrow.rs" 10 23 10 24] (1 : usize)) ] 
+    [ bb0 = [ &_2 <- SplitBorrow_MyInt_Type.C_MyInt ([#"../split_borrow.rs" 10 23 10 24] (1 : usize)) ] 
       [ &_3 <- SplitBorrow_MyInt_Type.C_MyInt ([#"../split_borrow.rs" 10 33 10 34] (2 : usize)) ]
-      [ &x <- (_2, _3) ] any 
-      [ any_ (_any:SplitBorrow_MyInt_Type.t_myint)-> [ &_2 <- _any ] any 
-        [ any_ (_any:SplitBorrow_MyInt_Type.t_myint)-> [ &_3 <- _any ] Borrow.borrow_mut
+      [ &x <- (_2, _3) ] (any 
+      [ any_ (_any:SplitBorrow_MyInt_Type.t_myint)-> (! [ &_2 <- _any ] (any 
+        [ any_ (_any:SplitBorrow_MyInt_Type.t_myint)-> (! [ &_3 <- _any ] Borrow.borrow_mut
           <(SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint)> {x}
-          (fun (_ret':borrowed (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint)) -> [ &y <- _ret' ] 
-            [ &x <-  ^ y ]
-            z0 {[#"../split_borrow.rs" 13 7 13 10] ()} (fun (_ret':bool) -> [ &_6 <- _ret' ] bb1)) ]
-         ]
-        ]
-    ) [ return' (result:())-> (! return' {_0}) ] 
+          (fun (_ret':borrowed (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint)) -> [ &x <-  ^ y ] 
+            [ &y <- _ret' ]
+            z0 {[#"../split_borrow.rs" 13 7 13 10] ()} (fun (_ret':bool) -> [ &_6 <- _ret' ] bb1))) ]
+        )) ]
+      )
+    | bb1 = any [ br0 -> {_6 = false} (! bb3) | br1 -> {_6} (! bb2) ] 
+    | bb2 = [ &_7 <- SplitBorrow_MyInt_Type.C_MyInt ([#"../split_borrow.rs" 14 23 14 24] (4 : usize)) ] 
+      [ &y <- { y with current = (let (r1', _) =  * y in (r1', _7)) ; } ]
+      (any 
+      [ any_ (_any:SplitBorrow_MyInt_Type.t_myint)-> (! [ &_7 <- _any ] 
+        [ &_5 <- [#"../split_borrow.rs" 13 11 15 5] () ]
+        bb4) ]
+      )
+    | bb3 = [ &_8 <- SplitBorrow_MyInt_Type.C_MyInt ([#"../split_borrow.rs" 16 23 16 25] (10 : usize)) ] 
+      [ &y <- { y with current = (let (_, r2') =  * y in (_8, r2')) ; } ]
+      (any 
+      [ any_ (_any:SplitBorrow_MyInt_Type.t_myint)-> (! [ &_8 <- _any ] 
+        [ &_5 <- [#"../split_borrow.rs" 15 11 17 5] () ]
+        bb4) ]
+      )
+    | bb4 = -{resolve1 y}- -{resolve0 x}- [ &_0 <- [#"../split_borrow.rs" 9 11 21 1] () ] return' {_0} ]
+    )
     [ & _0 : () = any_l () : ()
     | & x : (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint) = any_l () : (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint)
     | & _2 : SplitBorrow_MyInt_Type.t_myint = any_l () : SplitBorrow_MyInt_Type.t_myint
@@ -72,7 +79,7 @@ module SplitBorrow_F
     | & _6 : bool = any_l () : bool
     | & _7 : SplitBorrow_MyInt_Type.t_myint = any_l () : SplitBorrow_MyInt_Type.t_myint
     | & _8 : SplitBorrow_MyInt_Type.t_myint = any_l () : SplitBorrow_MyInt_Type.t_myint ]
-    
+     [ return' (result:())-> (! return' {result}) ] 
 end
 module SplitBorrow_G
   use prelude.Intrinsic
@@ -102,25 +109,25 @@ module SplitBorrow_G
   let rec g (_1:()) (return'  (ret:()))= (! bb0 
     [ bb0 = [ &_2 <- SplitBorrow_MyInt_Type.C_MyInt ([#"../split_borrow.rs" 24 23 24 24] (1 : usize)) ] 
       [ &_3 <- SplitBorrow_MyInt_Type.C_MyInt ([#"../split_borrow.rs" 24 33 24 34] (2 : usize)) ]
-      [ &a <- (_2, _3) ] any 
-      [ any_ (_any:SplitBorrow_MyInt_Type.t_myint)-> [ &_2 <- _any ] any 
-        [ any_ (_any:SplitBorrow_MyInt_Type.t_myint)-> [ &_3 <- _any ] Borrow.borrow_mut
+      [ &a <- (_2, _3) ] (any 
+      [ any_ (_any:SplitBorrow_MyInt_Type.t_myint)-> (! [ &_2 <- _any ] (any 
+        [ any_ (_any:SplitBorrow_MyInt_Type.t_myint)-> (! [ &_3 <- _any ] Borrow.borrow_mut
           <(SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint)> {a}
-          (fun (_ret':borrowed (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint)) -> [ &x <- _ret' ] 
-            [ &a <-  ^ x ]
-            Borrow.borrow_final <SplitBorrow_MyInt_Type.t_myint> {let (_, a) =  * x in a}
+          (fun (_ret':borrowed (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint)) -> [ &a <-  ^ x ] 
+            [ &x <- _ret' ]
+            Borrow.borrow_final <SplitBorrow_MyInt_Type.t_myint> {let (_, l0') =  * x in l0'}
             {Borrow.inherit_id (Borrow.get_id x) 2} (fun (_ret':borrowed (SplitBorrow_MyInt_Type.t_myint)) -> 
               [ &_z <- _ret' ]
-              [ &x <- { x with current = (let (x0, x1) =  * x in (x0,  ^ _z)) ; } ] -{resolve2 _z}- 
+              [ &x <- { x with current = (let (r1', _) =  * x in (r1',  ^ _z)) ; } ] -{resolve2 _z}- 
               [ &_6 <- SplitBorrow_MyInt_Type.C_MyInt ([#"../split_borrow.rs" 29 19 29 20] (3 : usize)) ]
-              [ &x <- { x with current = (let (x0, x1) =  * x in (_6, x1)) ; } ] any 
-              [ any_ (_any:SplitBorrow_MyInt_Type.t_myint)-> [ &_6 <- _any ] -{resolve1 x}- -{resolve0 a}- 
+              [ &x <- { x with current = (let (_, r2') =  * x in (_6, r2')) ; } ] (any 
+              [ any_ (_any:SplitBorrow_MyInt_Type.t_myint)-> (! [ &_6 <- _any ] -{resolve1 x}- -{resolve0 a}- 
                 [ &_0 <- [#"../split_borrow.rs" 23 11 32 1] () ]
-                return' {_0} ]
-              )) ]
-         ]
-        ]
-    ) [ return' (result:())-> (! return' {_0}) ] 
+                return' {_0}) ]
+              )))) ]
+        )) ]
+      ) ]
+    )
     [ & _0 : () = any_l () : ()
     | & a : (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint) = any_l () : (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint)
     | & _2 : SplitBorrow_MyInt_Type.t_myint = any_l () : SplitBorrow_MyInt_Type.t_myint
@@ -128,5 +135,5 @@ module SplitBorrow_G
     | & x : borrowed (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint) = any_l () : borrowed (SplitBorrow_MyInt_Type.t_myint, SplitBorrow_MyInt_Type.t_myint)
     | & _z : borrowed (SplitBorrow_MyInt_Type.t_myint) = any_l () : borrowed (SplitBorrow_MyInt_Type.t_myint)
     | & _6 : SplitBorrow_MyInt_Type.t_myint = any_l () : SplitBorrow_MyInt_Type.t_myint ]
-    
+     [ return' (result:())-> (! return' {result}) ] 
 end

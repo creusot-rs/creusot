@@ -5,21 +5,27 @@ module C869_Unsound
   use prelude.Intrinsic
   use prelude.Snapshot
   use prelude.Snapshot
-  use prelude.Snapshot
   predicate resolve0 (self : borrowed (Snapshot.snap_ty bool)) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   let rec resolve0 (self:borrowed (Snapshot.snap_ty bool)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
     
   use prelude.Snapshot
+  use prelude.Snapshot
   let rec unsound (_1:()) (return'  (ret:()))= (! bb0 
-    [ bb3 = [ &evil <- { evil with current = _15 ; } ] any 
-      [ any_ (_any:Snapshot.snap_ty bool)-> 
-        [ &_15 <- _any ]
-        -{resolve0 evil}- -{resolve0 xm}- {[@expl:assertion] [#"../869.rs" 19 20 19 37] Snapshot.inner ( * evil) = (not Snapshot.inner ( ^ evil))}
-        {[@expl:assertion] [#"../869.rs" 20 20 20 37] Snapshot.inner ( * evil) = (not Snapshot.inner ( * evil))}
-        [ &_0 <- [#"../869.rs" 4 17 21 1] () ] return' {_0} ]
-       
+    [ bb0 = [ &x <- [#"../869.rs" 5 32 5 50] Snapshot.new true ] bb1
+    | bb1 = Borrow.borrow_mut <Snapshot.snap_ty bool> {x} (fun (_ret':borrowed (Snapshot.snap_ty bool)) -> 
+        [ &x <-  ^ _4 ]
+        [ &_4 <- _ret' ] Borrow.borrow_final <Snapshot.snap_ty bool> { * _4} {Borrow.get_id _4}
+        (fun (_ret':borrowed (Snapshot.snap_ty bool)) -> [ &xm <- _ret' ] 
+          [ &_4 <- { _4 with current = ( ^ xm) ; } ]
+          -{resolve0 _4}- Borrow.borrow_mut <Snapshot.snap_ty bool> { * xm}
+          (fun (_ret':borrowed (Snapshot.snap_ty bool)) -> [ &xm <- { xm with current = ( ^ _6) ; } ] 
+            [ &_6 <- _ret' ]
+            Borrow.borrow_final <Snapshot.snap_ty bool> { * _6} {Borrow.get_id _6}
+            (fun (_ret':borrowed (Snapshot.snap_ty bool)) -> [ &b <- _ret' ] 
+              [ &_6 <- { _6 with current = ( ^ b) ; } ]
+              -{resolve0 b}- -{resolve0 _6}- [ &bg <- [#"../869.rs" 10 44 10 59] Snapshot.new b ] bb2))))
     | bb2 = {[@expl:assertion] [#"../869.rs" 11 20 11 50] Snapshot.inner ( * Snapshot.inner bg) = true /\ Snapshot.inner ( ^ Snapshot.inner bg) = true}
       Borrow.borrow_final <Snapshot.snap_ty bool> { * xm} {Borrow.get_id xm}
       (fun (_ret':borrowed (Snapshot.snap_ty bool)) -> [ &_12 <- _ret' ] 
@@ -28,21 +34,15 @@ module C869_Unsound
         (fun (_ret':borrowed (Snapshot.snap_ty bool)) -> [ &evil <- _ret' ] 
           [ &_12 <- { _12 with current = ( ^ evil) ; } ]
           -{resolve0 _12}- {[@expl:assertion] [#"../869.rs" 17 20 17 53] (evil = Snapshot.inner bg) = (Snapshot.inner ( ^ evil) = true)}
-          [ &_15 <- [#"../869.rs" 18 12 18 64] Snapshot.new (if evil = Snapshot.inner bg then false else true) ] bb3)) 
-    | bb1 = Borrow.borrow_mut <Snapshot.snap_ty bool> {x} (fun (_ret':borrowed (Snapshot.snap_ty bool)) -> 
-        [ &_4 <- _ret' ]
-        [ &x <-  ^ _4 ] Borrow.borrow_final <Snapshot.snap_ty bool> { * _4} {Borrow.get_id _4}
-        (fun (_ret':borrowed (Snapshot.snap_ty bool)) -> [ &xm <- _ret' ] 
-          [ &_4 <- { _4 with current = ( ^ xm) ; } ]
-          -{resolve0 _4}- Borrow.borrow_mut <Snapshot.snap_ty bool> { * xm}
-          (fun (_ret':borrowed (Snapshot.snap_ty bool)) -> [ &_6 <- _ret' ] 
-            [ &xm <- { xm with current = ( ^ _6) ; } ]
-            Borrow.borrow_final <Snapshot.snap_ty bool> { * _6} {Borrow.get_id _6}
-            (fun (_ret':borrowed (Snapshot.snap_ty bool)) -> [ &b <- _ret' ] 
-              [ &_6 <- { _6 with current = ( ^ b) ; } ]
-              -{resolve0 b}- -{resolve0 _6}- [ &bg <- [#"../869.rs" 10 44 10 59] Snapshot.new b ] bb2)))) 
-    | bb0 = [ &x <- [#"../869.rs" 5 32 5 50] Snapshot.new true ] bb1  ]
-    ) [ return' (result:())-> (! return' {_0}) ] 
+          [ &_15 <- [#"../869.rs" 18 12 18 64] Snapshot.new (if evil = Snapshot.inner bg then false else true) ] bb3))
+    | bb3 = [ &evil <- { evil with current = _15 ; } ] (any 
+      [ any_ (_any:Snapshot.snap_ty bool)-> (! 
+        [ &_15 <- _any ]
+        -{resolve0 evil}- -{resolve0 xm}- {[@expl:assertion] [#"../869.rs" 19 20 19 37] Snapshot.inner ( * evil) = (not Snapshot.inner ( ^ evil))}
+        {[@expl:assertion] [#"../869.rs" 20 20 20 37] Snapshot.inner ( * evil) = (not Snapshot.inner ( * evil))}
+        [ &_0 <- [#"../869.rs" 4 17 21 1] () ] return' {_0}) ]
+      ) ]
+    )
     [ & _0 : () = any_l () : ()
     | & x : Snapshot.snap_ty bool = any_l () : Snapshot.snap_ty bool
     | & xm : borrowed (Snapshot.snap_ty bool) = any_l () : borrowed (Snapshot.snap_ty bool)
@@ -53,5 +53,5 @@ module C869_Unsound
     | & evil : borrowed (Snapshot.snap_ty bool) = any_l () : borrowed (Snapshot.snap_ty bool)
     | & _12 : borrowed (Snapshot.snap_ty bool) = any_l () : borrowed (Snapshot.snap_ty bool)
     | & _15 : Snapshot.snap_ty bool = any_l () : Snapshot.snap_ty bool ]
-    
+     [ return' (result:())-> (! return' {result}) ] 
 end

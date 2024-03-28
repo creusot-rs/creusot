@@ -1,16 +1,43 @@
 
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
+    
+  function any_l (_ : 'b) : 'a
+  let rec none < 't > (input:t_option 't) (ret  )= any 
+    [ good -> {C_None  = input} ret | bad -> {C_None  <> input} {false} any ]
+    
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Some field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Some field_0 <> input}
+      {false}
+      any ]
+    
+end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
   type t_nonnull 't =
     | C_NonNull opaque_ptr
     
   function any_l (_ : 'b) : 'a
+  let rec non_null < 't > (input:t_nonnull 't) (ret  (field_0:opaque_ptr))= any 
+    [ good (field_0:opaque_ptr)-> {C_NonNull field_0 = input}
+      ret {field_0}
+    | bad (field_0:opaque_ptr)-> {C_NonNull field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Core_Marker_PhantomData_Type
   type t_phantomdata 't =
     | C_PhantomData
     
   function any_l (_ : 'b) : 'a
+  let rec phantom_data < 't > (input:t_phantomdata 't) (ret  )= any 
+    [ good -> {C_PhantomData  = input} ret | bad -> {C_PhantomData  <> input} {false} any ]
+    
 end
 module Core_Ptr_Unique_Unique_Type
   use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
@@ -19,6 +46,14 @@ module Core_Ptr_Unique_Unique_Type
     | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
   function any_l (_ : 'b) : 'a
+  let rec unique < 't > (input:t_unique 't) (ret  (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't))= any
+    
+    [ good (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique field_0 field_1 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_RawVec_Cap_Type
   use prelude.UIntSize
@@ -27,6 +62,13 @@ module Alloc_RawVec_Cap_Type
     | C_Cap usize
     
   function any_l (_ : 'b) : 'a
+  let rec cap (input:t_cap) (ret  (field_0:usize))= any 
+    [ good (field_0:usize)-> {C_Cap field_0 = input}
+      ret {field_0}
+    | bad (field_0:usize)-> {C_Cap field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_RawVec_RawVec_Type
   use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
@@ -35,6 +77,14 @@ module Alloc_RawVec_RawVec_Type
     | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
     
   function any_l (_ : 'b) : 'a
+  let rec raw_vec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (field_0:Core_Ptr_Unique_Unique_Type.t_unique 't) (field_1:Alloc_RawVec_Cap_Type.t_cap) (field_2:'a))= any
+    
+    [ good (field_0:Core_Ptr_Unique_Unique_Type.t_unique 't) (field_1:Alloc_RawVec_Cap_Type.t_cap) (field_2:'a)-> {C_RawVec field_0 field_1 field_2 = input}
+      ret {field_0} {field_1} {field_2}
+    | bad (field_0:Core_Ptr_Unique_Unique_Type.t_unique 't) (field_1:Alloc_RawVec_Cap_Type.t_cap) (field_2:'a)-> {C_RawVec field_0 field_1 field_2 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_Vec_Vec_Type
   use prelude.UIntSize
@@ -44,19 +94,23 @@ module Alloc_Vec_Vec_Type
     | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
   function any_l (_ : 'b) : 'a
+  let rec vec < 't > < 'a > (input:t_vec 't 'a) (ret  (field_0:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (field_1:usize))= any
+    
+    [ good (field_0:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (field_1:usize)-> {C_Vec field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (field_1:usize)-> {C_Vec field_0 field_1 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_Alloc_Global_Type
   type t_global  =
     | C_Global
     
   function any_l (_ : 'b) : 'a
-end
-module Core_Option_Option_Type
-  type t_option 't =
-    | C_None
-    | C_Some 't
+  let rec global (input:t_global) (ret  )= any 
+    [ good -> {C_Global  = input} ret | bad -> {C_Global  <> input} {false} any ]
     
-  function any_l (_ : 'b) : 'a
 end
 module InvariantMoves_TestInvariantMove
   use prelude.UInt32
@@ -113,6 +167,28 @@ module InvariantMoves_TestInvariantMove
     [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
   axiom inv0 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) . inv0 x = true
   use prelude.Intrinsic
+  predicate resolve2 (self : uint32) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
+  let rec resolve2 (self:uint32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
+    
+  use seq.Seq
+  function index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (ix : int) : uint32
+    
+   =
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model0 self) ix
+  let rec index_logic0 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:uint32))= any
+    [ return' (result:uint32)-> {result = index_logic0 self ix} (! return' {result}) ] 
+  predicate resolve1 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model0 self)
+     -> resolve2 (index_logic0 self i)
+  let rec resolve1 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ] 
   use seq.Seq
   use seq_ext.SeqExt
   function shallow_model1 (self : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) : Seq.seq uint32
@@ -130,56 +206,39 @@ module InvariantMoves_TestInvariantMove
         end}
       (! return' {result}) ]
     
-  predicate resolve1 (self : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve1 (self:borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ] 
-  predicate resolve2 (self : uint32) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
-  let rec resolve2 (self:uint32) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
-    
-  use seq.Seq
-  function index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (ix : int) : uint32
-    
-   =
-    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model0 self) ix
-  let rec index_logic0 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:uint32))= any
-    [ return' (result:uint32)-> {result = index_logic0 self ix} (! return' {result}) ] 
-  predicate resolve0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model0 self)
-     -> resolve2 (index_logic0 self i)
-  let rec resolve0 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
   let rec test_invariant_move (x:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:()))= (! bb0
     
-    [ bb8 = return' {_0} 
-    | bb7 = -{resolve0 x}- [ &_0 <- [#"../invariant_moves.rs" 7 4 7 45] () ] bb8 
-    | bb2 = {[#"../invariant_moves.rs" 6 16 6 22] x = x}
-      (! bb3) 
-      [ bb6 = bb2
-      | bb5 = bb6
-      | bb4 = -{resolve1 _6}- any 
-        [ br0 (a:uint32)-> {_4 = Core_Option_Option_Type.C_Some a} (! bb5) | default -> (! bb7) ]
-        
-      | bb3 = Borrow.borrow_mut <Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)> {x}
-        (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) -> [ &_6 <- _ret' ] 
-          [ &x <-  ^ _6 ]
-          Borrow.borrow_final <Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)> { * _6}
-          {Borrow.get_id _6}
-          (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) -> 
-            [ &_5 <- _ret' ]
-            [ &_6 <- { _6 with current = ( ^ _5) ; } ] pop0 {_5}
-            (fun (_ret':Core_Option_Option_Type.t_option uint32) -> [ &_4 <- _ret' ] bb4))) ]
+    [ bb0 = bb1
+    | bb1 = bb2
+    | bb2 = bb2 
+      [ bb2 = {[#"../invariant_moves.rs" 6 16 6 22] x = x}
+        (! bb3) 
+        [ bb3 = Borrow.borrow_mut <Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)> {x}
+          (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) -> [ &x <-  ^ _6 ] 
+            [ &_6 <- _ret' ]
+            Borrow.borrow_final <Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)> { * _6}
+            {Borrow.get_id _6}
+            (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) -> 
+              [ &_5 <- _ret' ]
+              [ &_6 <- { _6 with current = ( ^ _5) ; } ] pop0 {_5}
+              (fun (_ret':Core_Option_Option_Type.t_option uint32) -> [ &_4 <- _ret' ] bb4)))
+        | bb4 = -{resolve0 _6}- any 
+          [ br0 -> {_4 = Core_Option_Option_Type.C_None }
+            (! bb7)
+          | br1 (a:uint32)-> {_4 = Core_Option_Option_Type.C_Some a}
+            (! bb5) ]
+          
+        | bb5 = bb6
+        | bb6 = bb2 ]
+         ]
       
-    | bb1 = bb2 
-    | bb0 = bb1  ]
-    ) [ return' (result:())-> (! return' {_0}) ] 
+    | bb7 = -{resolve1 x}- [ &_0 <- [#"../invariant_moves.rs" 7 4 7 45] () ] bb8
+    | bb8 = return' {_0} ]
+    )
     [ & _0 : () = any_l () : ()
     | & x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) = x
     | & _4 : Core_Option_Option_Type.t_option uint32 = any_l () : Core_Option_Option_Type.t_option uint32
     | & _5 : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) = any_l () : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))
     | & _6 : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) = any_l () : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) ]
-    
+     [ return' (result:())-> (! return' {result}) ] 
 end

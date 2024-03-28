@@ -99,14 +99,19 @@ fn main() {
         command.arg("--debug=coma_no_trivial");
 
         if sessionfile.is_file() {
-            let proved = BufReader::new(File::open(&sessionfile).unwrap())
-                .lines()
-                .find_map(|l| match l.unwrap().as_str() {
-                    "<file format=\"coma\">" => Some(false),
-                    "<file format=\"coma\" proved=\"true\">" => Some(true),
-                    _ => None,
+            let Some(proved) =
+                BufReader::new(File::open(&sessionfile).unwrap()).lines().find_map(|l| {
+                    match l.unwrap().as_str() {
+                        "<file format=\"coma\">" => Some(false),
+                        "<file format=\"coma\" proved=\"true\">" => Some(true),
+                        _ => None,
+                    }
                 })
-                .unwrap();
+            else {
+                writeln!(&mut out, "error").unwrap();
+                success = false;
+                continue;
+            };
 
             if !proved {
                 let color = if should_fail { Color::Green } else { orange };

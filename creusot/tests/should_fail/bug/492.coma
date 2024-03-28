@@ -39,17 +39,17 @@ module C492_ReborrowTuple
     (! bb0 
     [ bb0 = Borrow.borrow_final <t> { * x} {Borrow.get_id x} (fun (_ret':borrowed t) -> [ &_3 <- _ret' ] 
         [ &x <- { x with current = ( ^ _3) ; } ]
-        -{inv1 ( ^ _3)}- [ &_0 <- (_3, ([#"../492.rs" 6 8 6 10] (32 : uint32))) ] any 
-        [ any_ (_any:borrowed t)-> [ &_3 <- _any ] {[@expl:type invariant] inv0 x} -{resolve0 x}- return' {_0} ]
-        )  ]
-    ) 
-    [ return' (result:(borrowed t, uint32))-> {[#"../492.rs" 5 39 5 52] inv2 result}
-      {[#"../492.rs" 4 10 4 27]  * (let (a, _) = result in a) =  * x}
-      (! return' {_0}) ]
-    
+        -{inv1 ( ^ _3)}- [ &_0 <- (_3, ([#"../492.rs" 6 8 6 10] (32 : uint32))) ] (any 
+        [ any_ (_any:borrowed t)-> (! [ &_3 <- _any ] {[@expl:type invariant] inv0 x} -{resolve0 x}- return' {_0}) ]
+        )) ]
+    )
     [ & _0 : (borrowed t, uint32) = any_l () : (borrowed t, uint32)
     | & x : borrowed t = x
     | & _3 : borrowed t = any_l () : borrowed t ]
+     
+    [ return' (result:(borrowed t, uint32))-> {[#"../492.rs" 5 39 5 52] inv2 result}
+      {[#"../492.rs" 4 10 4 27]  * (let (a, _) = result in a) =  * x}
+      (! return' {result}) ]
     
 end
 module C492_Test
@@ -77,13 +77,6 @@ module C492_Test
     
   axiom inv0 : forall x : borrowed int32 . inv0 x = true
   use prelude.Intrinsic
-  use prelude.Int
-  let rec reborrow_tuple0 (x:borrowed int32) (return'  (ret:(borrowed int32, uint32)))= {[#"../492.rs" 5 25 5 26] inv0 x}
-    any 
-    [ return' (result:(borrowed int32, uint32))-> {[#"../492.rs" 5 39 5 52] inv1 result}
-      {[#"../492.rs" 4 10 4 27]  * (let (a, _) = result in a) =  * x}
-      (! return' {result}) ]
-    
   predicate resolve2 (self : uint32) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
   let rec resolve2 (self:uint32) (return'  (ret:bool))= any 
@@ -99,26 +92,33 @@ module C492_Test
   let rec resolve1 (self:(borrowed int32, uint32)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
     
+  use prelude.Int
+  let rec reborrow_tuple0 (x:borrowed int32) (return'  (ret:(borrowed int32, uint32)))= {[#"../492.rs" 5 25 5 26] inv0 x}
+    any 
+    [ return' (result:(borrowed int32, uint32))-> {[#"../492.rs" 5 39 5 52] inv1 result}
+      {[#"../492.rs" 4 10 4 27]  * (let (a, _) = result in a) =  * x}
+      (! return' {result}) ]
+    
   let rec test (_1:()) (return'  (ret:()))= (! bb0 
-    [ bb1 = [ &res <- let (a, _) = _4 in a ] any 
-      [ any_ (_any:borrowed int32)-> 
-        [ &_4 <- let (x0, x1) = _4 in (_any, x1) ]
+    [ bb0 = [ &x <- [#"../492.rs" 11 16 11 17] (5 : int32) ] Borrow.borrow_mut <int32> {x}
+      (fun (_ret':borrowed int32) -> [ &x <-  ^ _6 ] [ &_6 <- _ret' ] Borrow.borrow_final <int32> { * _6}
+        {Borrow.get_id _6} (fun (_ret':borrowed int32) -> [ &_5 <- _ret' ] 
+          [ &_6 <- { _6 with current = ( ^ _5) ; } ]
+          reborrow_tuple0 {_5} (fun (_ret':(borrowed int32, uint32)) -> [ &_4 <- _ret' ] bb1)))
+    | bb1 = [ &res <- let (l0', _) = _4 in l0' ] (any 
+      [ any_ (_any:borrowed int32)-> (! 
+        [ &_4 <- let (_, r2') = _4 in (_any, r2') ]
         -{resolve1 _4}- -{resolve0 _6}- {[@expl:assertion] [#"../492.rs" 13 18 13 30]  ^ res = (5 : int32)}
         [ &res <- { res with current = ([#"../492.rs" 14 11 14 13] (10 : int32)) ; } ] -{resolve0 res}- 
         [ &_0 <- [#"../492.rs" 10 14 15 1] () ]
-        return' {_0} ]
-       
-    | bb0 = [ &x <- [#"../492.rs" 11 16 11 17] (5 : int32) ] Borrow.borrow_mut <int32> {x}
-      (fun (_ret':borrowed int32) -> [ &_6 <- _ret' ] [ &x <-  ^ _6 ] Borrow.borrow_final <int32> { * _6}
-        {Borrow.get_id _6} (fun (_ret':borrowed int32) -> [ &_5 <- _ret' ] 
-          [ &_6 <- { _6 with current = ( ^ _5) ; } ]
-          reborrow_tuple0 {_5} (fun (_ret':(borrowed int32, uint32)) -> [ &_4 <- _ret' ] bb1)))  ]
-    ) [ return' (result:())-> {[#"../492.rs" 9 10 9 15] false} (! return' {_0}) ] 
+        return' {_0}) ]
+      ) ]
+    )
     [ & _0 : () = any_l () : ()
     | & x : int32 = any_l () : int32
     | & res : borrowed int32 = any_l () : borrowed int32
     | & _4 : (borrowed int32, uint32) = any_l () : (borrowed int32, uint32)
     | & _5 : borrowed int32 = any_l () : borrowed int32
     | & _6 : borrowed int32 = any_l () : borrowed int32 ]
-    
+     [ return' (result:())-> {[#"../492.rs" 9 10 9 15] false} (! return' {result}) ] 
 end

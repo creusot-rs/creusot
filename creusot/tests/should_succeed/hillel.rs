@@ -32,17 +32,17 @@ fn right_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
 #[ensures(forall<i: Int> 0 <= i && i < str@.len() ==> (^str)[i + ((^str)@.len() - str@.len())] == str[i])]
 fn left_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     let old_str = snapshot! { str };
-    let mut c: Snapshot<usize> = snapshot! { 0usize };
+    let mut c: Snapshot<Int> = snapshot! { 0 };
 
     #[invariant(old_str@.len() <= str@.len())]
     #[invariant(old_str@.len() < len@ ==> str@.len() <= len@)]
     #[invariant(str@.len() > len@ ==> str@.len() == old_str@.len())]
-    #[invariant(c@ == str@.len() - old_str@.len())]
-    #[invariant(forall<i: Int> c@ <= i && i < str@.len() ==> str[i] == old_str[i - c@])]
-    #[invariant(forall<i: Int> 0 <= i && i < c@ ==> str[i] == pad)]
+    #[invariant(*c == str@.len() - old_str@.len())]
+    #[invariant(forall<i: Int> *c <= i && i < str@.len() ==> str[i] == old_str[i - *c])]
+    #[invariant(forall<i: Int> 0 <= i && i < *c ==> str[i] == pad)]
     while str.len() < len {
         str.insert(0, pad);
-        c = snapshot! { 1usize + *c };
+        c = snapshot! { 1 + *c };
     }
 }
 

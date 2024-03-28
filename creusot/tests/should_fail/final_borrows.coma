@@ -26,21 +26,21 @@ module FinalBorrows_NotFinalBorrow
     
   let rec not_final_borrow (bor:borrowed t) (return'  (ret:()))= {[#"../final_borrows.rs" 5 27 5 30] inv0 bor}
     (! bb0 
-    [ bb0 = Borrow.borrow_mut <t> { * bor} (fun (_ret':borrowed t) -> [ &b1 <- _ret' ] 
-        [ &bor <- { bor with current = ( ^ b1) ; } ]
+    [ bb0 = Borrow.borrow_mut <t> { * bor} (fun (_ret':borrowed t) -> [ &bor <- { bor with current = ( ^ b1) ; } ] 
+        [ &b1 <- _ret' ]
         -{inv1 ( ^ b1)}- {[@expl:type invariant] inv0 b1}
         -{resolve0 b1}- {[@expl:assertion] [#"../final_borrows.rs" 7 18 7 27] b1 = bor}
         Borrow.borrow_final <t> { * bor} {Borrow.get_id bor} (fun (_ret':borrowed t) -> [ &_b2 <- _ret' ] 
           [ &bor <- { bor with current = ( ^ _b2) ; } ]
           -{inv1 ( ^ _b2)}- {[@expl:type invariant] inv0 _b2}
           -{resolve0 _b2}- [ &_0 <- [#"../final_borrows.rs" 5 40 9 1] () ] {[@expl:type invariant] inv0 bor}
-          -{resolve0 bor}- return' {_0}))  ]
-    ) [ return' (result:())-> (! return' {_0}) ] 
+          -{resolve0 bor}- return' {_0})) ]
+    )
     [ & _0 : () = any_l () : ()
     | & bor : borrowed t = bor
     | & b1 : borrowed t = any_l () : borrowed t
     | & _b2 : borrowed t = any_l () : borrowed t ]
-    
+     [ return' (result:())-> (! return' {result}) ] 
 end
 module FinalBorrows_StoreChangesProphecy
   type t
@@ -74,57 +74,56 @@ module FinalBorrows_StoreChangesProphecy
   let rec store_changes_prophecy (bor:borrowed t) (x:t) (return'  (ret:()))= {[#"../final_borrows.rs" 11 46 11 47] inv1 x}
     {[#"../final_borrows.rs" 11 33 11 36] inv0 bor}
     (! bb0 
-    [ bb4 = return' {_0} 
-    | bb3 = {[@expl:assertion] [#"../final_borrows.rs" 15 18 15 27] b1 = bor}
-      [ &_0 <- [#"../final_borrows.rs" 11 52 16 1] () ] bb4 
-    | bb1 = [ &bor <- { bor with current = x ; } ] any 
-      [ any_ (_any:t)-> [ &x <- _any ] {[@expl:type invariant] inv1 ( * bor)}
-        -{resolve1 ( * bor)}- {[@expl:type invariant] inv0 bor}
-        -{resolve0 bor}- bb3 ]
-       
-    | bb0 = Borrow.borrow_final <t> { * bor} {Borrow.get_id bor} (fun (_ret':borrowed t) -> [ &b1 <- _ret' ] 
+    [ bb0 = Borrow.borrow_final <t> { * bor} {Borrow.get_id bor} (fun (_ret':borrowed t) -> [ &b1 <- _ret' ] 
         [ &bor <- { bor with current = ( ^ b1) ; } ]
         -{inv1 ( ^ b1)}- {[@expl:type invariant] inv0 b1}
-        -{resolve0 b1}- bb1)  ]
-    ) [ return' (result:())-> (! return' {_0}) ] 
-    [ & _0 : () = any_l () : () | & bor : borrowed t = bor | & x : t = x | & b1 : borrowed t = any_l () : borrowed t ]
-    
+        -{resolve0 b1}- bb1)
+    | bb1 = [ &bor <- { bor with current = x ; } ] (any 
+      [ any_ (_any:t)-> (! [ &x <- _any ] {[@expl:type invariant] inv1 ( * bor)}
+        -{resolve1 ( * bor)}- {[@expl:type invariant] inv0 bor}
+        -{resolve0 bor}- bb3) ]
+      )
+    | bb3 = {[@expl:assertion] [#"../final_borrows.rs" 15 18 15 27] b1 = bor}
+      [ &_0 <- [#"../final_borrows.rs" 11 52 16 1] () ] bb4
+    | bb4 = return' {_0} ]
+    )[ & _0 : () = any_l () : () | & bor : borrowed t = bor | & x : t = x | & b1 : borrowed t = any_l () : borrowed t ] 
+    [ return' (result:())-> (! return' {result}) ] 
 end
 module FinalBorrows_CallChangesProphecy_Inner
   use prelude.Intrinsic
   use prelude.Int32
   use prelude.Int
   let rec inner (_1:()) (return'  (ret:int32))= (! bb0 
-    [ bb0 = [ &_0 <- [#"../final_borrows.rs" 20 8 20 9] (2 : int32) ] return' {_0}  ]
-    ) [ return' (result:int32)-> (! return' {_0}) ] [ & _0 : int32 = any_l () : int32 ] 
+    [ bb0 = [ &_0 <- [#"../final_borrows.rs" 20 8 20 9] (2 : int32) ] return' {_0} ]
+    )[ & _0 : int32 = any_l () : int32 ]  [ return' (result:int32)-> (! return' {result}) ] 
 end
 module FinalBorrows_CallChangesProphecy
   use prelude.Intrinsic
   use prelude.Borrow
   use prelude.Int32
-  use prelude.Int
-  let rec inner0 (_1:()) (return'  (ret:int32))= any [ return' (result:int32)-> (! return' {result}) ] 
   predicate resolve0 (self : borrowed int32) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   let rec resolve0 (self:borrowed int32) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
     
+  use prelude.Int
+  let rec inner0 (_1:()) (return'  (ret:int32))= any [ return' (result:int32)-> (! return' {result}) ] 
   let rec call_changes_prophecy (bor:borrowed int32) (return'  (ret:()))= (! bb0 
-    [ bb1 = [ &bor <- { bor with current = _3 ; } ] any 
-      [ any_ (_any:int32)-> 
+    [ bb0 = Borrow.borrow_final <int32> { * bor} {Borrow.get_id bor} (fun (_ret':borrowed int32) -> [ &b1 <- _ret' ] 
+        [ &bor <- { bor with current = ( ^ b1) ; } ]
+        -{resolve0 b1}- inner0 {[#"../final_borrows.rs" 24 11 24 18] ()} (fun (_ret':int32) -> [ &_3 <- _ret' ] bb1))
+    | bb1 = [ &bor <- { bor with current = _3 ; } ] (any 
+      [ any_ (_any:int32)-> (! 
         [ &_3 <- _any ]
         -{resolve0 bor}- {[@expl:assertion] [#"../final_borrows.rs" 25 18 25 27] b1 = bor}
-        [ &_0 <- [#"../final_borrows.rs" 18 44 26 1] () ] return' {_0} ]
-       
-    | bb0 = Borrow.borrow_final <int32> { * bor} {Borrow.get_id bor} (fun (_ret':borrowed int32) -> [ &b1 <- _ret' ] 
-        [ &bor <- { bor with current = ( ^ b1) ; } ]
-        -{resolve0 b1}- inner0 {[#"../final_borrows.rs" 24 11 24 18] ()} (fun (_ret':int32) -> [ &_3 <- _ret' ] bb1))  ]
-    ) [ return' (result:())-> (! return' {_0}) ] 
+        [ &_0 <- [#"../final_borrows.rs" 18 44 26 1] () ] return' {_0}) ]
+      ) ]
+    )
     [ & _0 : () = any_l () : ()
     | & bor : borrowed int32 = bor
     | & b1 : borrowed int32 = any_l () : borrowed int32
     | & _3 : int32 = any_l () : int32 ]
-    
+     [ return' (result:())-> (! return' {result}) ] 
 end
 module FinalBorrows_UnnestingFails
   type t
@@ -167,25 +166,26 @@ module FinalBorrows_UnnestingFails
     
   let rec unnesting_fails (x:borrowed (borrowed (t, t))) (return'  (ret:borrowed t))= {[#"../final_borrows.rs" 30 38 30 39] inv0 x}
     (! bb0 
-    [ bb0 = Borrow.borrow_mut <t> {let (a, _) =  *  * x in a} (fun (_ret':borrowed t) -> [ &_4 <- _ret' ] 
-        [ &x <- { x with current = { ( * x) with current = (let (x0, x1) =  *  * x in ( ^ _4, x1)) ; } ; } ]
-        -{inv2 ( ^ _4)}- Borrow.borrow_final <t> { * _4} {Borrow.get_id _4} (fun (_ret':borrowed t) -> [ &_2 <- _ret' ] 
-          [ &_4 <- { _4 with current = ( ^ _2) ; } ]
-          -{inv2 ( ^ _2)}- Borrow.borrow_final <t> { * _2} {Borrow.get_id _2} (fun (_ret':borrowed t) -> 
-            [ &_0 <- _ret' ]
-            [ &_2 <- { _2 with current = ( ^ _0) ; } ] -{inv2 ( ^ _0)}- {[@expl:type invariant] inv1 _4}
+    [ bb0 = Borrow.borrow_mut <t> {let (l0', _) =  *  * x in l0'} (fun (_ret':borrowed t) -> 
+        [ &x <- { x with current = { ( * x) with current = (let (_, r2') =  *  * x in ( ^ _4, r2')) ; } ; } ]
+        [ &_4 <- _ret' ] -{inv2 ( ^ _4)}- Borrow.borrow_final <t> { * _4} {Borrow.get_id _4} (fun (_ret':borrowed t) -> 
+          [ &_2 <- _ret' ]
+          [ &_4 <- { _4 with current = ( ^ _2) ; } ] -{inv2 ( ^ _2)}- Borrow.borrow_final <t> { * _2} {Borrow.get_id _2}
+          (fun (_ret':borrowed t) -> [ &_0 <- _ret' ] 
+            [ &_2 <- { _2 with current = ( ^ _0) ; } ]
+            -{inv2 ( ^ _0)}- {[@expl:type invariant] inv1 _4}
             -{resolve1 _4}- {[@expl:type invariant] inv1 _2}
             -{resolve1 _2}- {[@expl:type invariant] inv0 x}
-            -{resolve0 x}- return' {_0})))  ]
-    ) 
-    [ return' (result:borrowed t)-> {[#"../final_borrows.rs" 30 68 30 77] inv1 result}
-      {[#"../final_borrows.rs" 29 10 29 32] result = Borrow.borrow_logic (let (a, _) =  *  * x in a) (let (a, _) =  ^  * x in a) (Borrow.inherit_id (Borrow.get_id ( * x)) 1)}
-      (! return' {_0}) ]
-    
+            -{resolve0 x}- return' {_0}))) ]
+    )
     [ & _0 : borrowed t = any_l () : borrowed t
     | & x : borrowed (borrowed (t, t)) = x
     | & _2 : borrowed t = any_l () : borrowed t
     | & _4 : borrowed t = any_l () : borrowed t ]
+     
+    [ return' (result:borrowed t)-> {[#"../final_borrows.rs" 30 68 30 77] inv1 result}
+      {[#"../final_borrows.rs" 29 10 29 32] result = Borrow.borrow_logic (let (a, _) =  *  * x in a) (let (a, _) =  ^  * x in a) (Borrow.inherit_id (Borrow.get_id ( * x)) 1)}
+      (! return' {result}) ]
     
 end
 module FinalBorrows_Indexing
@@ -290,24 +290,22 @@ module FinalBorrows_Indexing
   let rec indexing (x:borrowed (slice t)) (return'  (ret:borrowed t))= {[#"../final_borrows.rs" 37 19 37 20] inv0 x}
     {[#"../final_borrows.rs" 35 11 35 24] Seq.length (shallow_model0 x) >= 1}
     (! bb0 
-    [ bb1 = Borrow.borrow_mut <t> {Slice.get ( * x) _6} (fun (_ret':borrowed t) -> [ &_5 <- _ret' ] 
-        [ &x <- { x with current = Slice.set ( * x) _6 ( ^ _5) ; } ]
-        -{inv2 ( ^ _5)}- Borrow.borrow_final <t> { * _5} {Borrow.get_id _5} (fun (_ret':borrowed t) -> [ &_2 <- _ret' ] 
-          [ &_5 <- { _5 with current = ( ^ _2) ; } ]
-          -{inv2 ( ^ _2)}- Borrow.borrow_final <t> { * _2} {Borrow.get_id _2} (fun (_ret':borrowed t) -> 
-            [ &_0 <- _ret' ]
-            [ &_2 <- { _2 with current = ( ^ _0) ; } ] -{inv2 ( ^ _0)}- {[@expl:type invariant] inv1 _5}
-            -{resolve1 _5}- {[@expl:type invariant] inv1 _2}
-            -{resolve1 _2}- {[@expl:type invariant] inv0 x}
-            -{resolve0 x}- return' {_0}))) 
-    | bb0 = [ &_6 <- [#"../final_borrows.rs" 38 11 38 12] (0 : usize) ] [ &_7 <- Slice.length ( * x) ] UIntSize.lt {_6}
+    [ bb0 = [ &_6 <- [#"../final_borrows.rs" 38 11 38 12] (0 : usize) ] [ &_7 <- Slice.length ( * x) ] UIntSize.lt {_6}
       {_7} (fun (_ret':bool) -> [ &_8 <- _ret' ] {[@expl:index in bounds] [#"../final_borrows.rs" 38 9 38 13] _8}
-        bb1)  ]
-    ) 
-    [ return' (result:borrowed t)-> {[#"../final_borrows.rs" 37 35 37 41] inv1 result}
-      {[#"../final_borrows.rs" 36 10 36 37] result = Seq.get (to_mut_seq0 x) 0}
-      (! return' {_0}) ]
-    
+        bb1)
+    | bb1 = Slice.get <t> { * x} {_6} (fun (l0':t) -> Borrow.borrow_mut <t> {l0'} (fun (_ret':borrowed t) -> Slice.get
+          <t> { * x} {_6} (fun (r0':t) -> Slice.set <t> { * x} {_6} { ^ _5} (fun (r1':slice t) -> 
+              [ &x <- { x with current = r1' ; } ]
+              [ &_5 <- _ret' ] -{inv2 ( ^ _5)}- Borrow.borrow_final <t> { * _5} {Borrow.get_id _5}
+              (fun (_ret':borrowed t) -> [ &_2 <- _ret' ] 
+                [ &_5 <- { _5 with current = ( ^ _2) ; } ]
+                -{inv2 ( ^ _2)}- Borrow.borrow_final <t> { * _2} {Borrow.get_id _2} (fun (_ret':borrowed t) -> 
+                  [ &_0 <- _ret' ]
+                  [ &_2 <- { _2 with current = ( ^ _0) ; } ] -{inv2 ( ^ _0)}- {[@expl:type invariant] inv1 _5}
+                  -{resolve1 _5}- {[@expl:type invariant] inv1 _2}
+                  -{resolve1 _2}- {[@expl:type invariant] inv0 x}
+                  -{resolve0 x}- return' {_0})))))) ]
+    )
     [ & _0 : borrowed t = any_l () : borrowed t
     | & x : borrowed (slice t) = x
     | & _2 : borrowed t = any_l () : borrowed t
@@ -315,5 +313,9 @@ module FinalBorrows_Indexing
     | & _6 : usize = any_l () : usize
     | & _7 : usize = any_l () : usize
     | & _8 : bool = any_l () : bool ]
+     
+    [ return' (result:borrowed t)-> {[#"../final_borrows.rs" 37 35 37 41] inv1 result}
+      {[#"../final_borrows.rs" 36 10 36 37] result = Seq.get (to_mut_seq0 x) 0}
+      (! return' {result}) ]
     
 end

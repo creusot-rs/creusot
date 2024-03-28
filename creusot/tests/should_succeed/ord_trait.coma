@@ -6,6 +6,15 @@ module Core_Cmp_Ordering_Type
     | C_Greater
     
   function any_l (_ : 'b) : 'a
+  let rec less (input:t_ordering) (ret  )= any 
+    [ good -> {C_Less  = input} ret | bad -> {C_Less  <> input} {false} any ]
+    
+  let rec equal (input:t_ordering) (ret  )= any 
+    [ good -> {C_Equal  = input} ret | bad -> {C_Equal  <> input} {false} any ]
+    
+  let rec greater (input:t_ordering) (ret  )= any 
+    [ good -> {C_Greater  = input} ret | bad -> {C_Greater  <> input} {false} any ]
+    
 end
 module OrdTrait_X
   type t
@@ -128,6 +137,10 @@ module OrdTrait_X
   axiom inv0 : forall x : t . inv0 x = true
   use prelude.Borrow
   use prelude.Intrinsic
+  predicate resolve0 (self : t)
+  let rec resolve0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
   function deep_model2 (self : t) : deep_model_ty0
   let rec deep_model2 (self:t) (return'  (ret:deep_model_ty0))= any 
     [ return' (result:deep_model_ty0)-> {result = deep_model2 self} (! return' {result}) ]
@@ -148,18 +161,14 @@ module OrdTrait_X
     [ return' (result:bool)-> {[#"../../../../creusot-contracts/src/std/cmp.rs" 36 26 36 77] result = le_log0 (deep_model0 self) (deep_model0 other)}
       (! return' {result}) ]
     
-  predicate resolve0 (self : t)
-  let rec resolve0 (self:t) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
   let rec x (x:t) (return'  (ret:bool))= {[#"../ord_trait.rs" 5 29 5 30] inv0 x}
     (! bb0 
-    [ bb1 = {[@expl:type invariant] inv0 _5}
+    [ bb0 = [ &_5 <- x ] le0 {x} {_5} (fun (_ret':bool) -> [ &_0 <- _ret' ] bb1)
+    | bb1 = {[@expl:type invariant] inv0 _5}
       -{resolve0 _5}- {[@expl:type invariant] inv0 x}
-      -{resolve0 x}- return' {_0} 
-    | bb0 = [ &_5 <- x ] le0 {x} {_5} (fun (_ret':bool) -> [ &_0 <- _ret' ] bb1)  ]
-    ) [ return' (result:bool)-> {[#"../ord_trait.rs" 4 10 4 24] result = true} (! return' {_0}) ] 
-    [ & _0 : bool = any_l () : bool | & x : t = x | & _5 : t = any_l () : t ]
+      -{resolve0 x}- return' {_0} ]
+    )[ & _0 : bool = any_l () : bool | & x : t = x | & _5 : t = any_l () : t ]  
+    [ return' (result:bool)-> {[#"../ord_trait.rs" 4 10 4 24] result = true} (! return' {result}) ]
     
 end
 module OrdTrait_GtOrLe
@@ -287,6 +296,10 @@ module OrdTrait_GtOrLe
     
   use prelude.Borrow
   use prelude.Intrinsic
+  predicate resolve0 (self : t)
+  let rec resolve0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
   function deep_model2 (self : t) : deep_model_ty0 =
     [#"../../../../creusot-contracts/src/model.rs" 74 8 74 28] deep_model0 self
   let rec deep_model2 (self:t) (return'  (ret:deep_model_ty0))= any 
@@ -303,22 +316,18 @@ module OrdTrait_GtOrLe
     [ return' (result:bool)-> {[#"../../../../creusot-contracts/src/std/cmp.rs" 42 26 42 77] result = ge_log0 (deep_model1 self) (deep_model1 other)}
       (! return' {result}) ]
     
-  predicate resolve0 (self : t)
-  let rec resolve0 (self:t) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
   let rec gt_or_le (x:t) (y:t) (return'  (ret:bool))= {[#"../ord_trait.rs" 13 43 13 44] inv0 y}
     {[#"../ord_trait.rs" 13 36 13 37] inv0 x}
     (! bb0 
-    [ bb1 = {[@expl:type invariant] inv0 _6}
+    [ bb0 = [ &_6 <- y ] {[@expl:type invariant] inv0 y}
+      -{resolve0 y}- ge0 {x} {_6} (fun (_ret':bool) -> [ &_0 <- _ret' ] bb1)
+    | bb1 = {[@expl:type invariant] inv0 _6}
       -{resolve0 _6}- {[@expl:type invariant] inv0 x}
-      -{resolve0 x}- return' {_0} 
-    | bb0 = [ &_6 <- y ] {[@expl:type invariant] inv0 y}
-      -{resolve0 y}- ge0 {x} {_6} (fun (_ret':bool) -> [ &_0 <- _ret' ] bb1)  ]
-    ) 
+      -{resolve0 x}- return' {_0} ]
+    )[ & _0 : bool = any_l () : bool | & x : t = x | & y : t = y | & _6 : t = any_l () : t ]  
     [ return' (result:bool)-> {[#"../ord_trait.rs" 12 10 12 60] result = le_log0 (deep_model0 y) (deep_model0 x)}
-      (! return' {_0}) ]
-    [ & _0 : bool = any_l () : bool | & x : t = x | & y : t = y | & _6 : t = any_l () : t ] 
+      (! return' {result}) ]
+    
 end
 module OrdTrait_GtOrLeInt
   use prelude.UIntSize
@@ -326,9 +335,9 @@ module OrdTrait_GtOrLeInt
   use prelude.Intrinsic
   use prelude.UIntSize
   let rec gt_or_le_int (x:usize) (y:usize) (return'  (ret:bool))= (! bb0 
-    [ bb0 = UIntSize.le {x} {y} (fun (_ret':bool) -> [ &_0 <- _ret' ] return' {_0})  ]
-    ) 
+    [ bb0 = UIntSize.le {x} {y} (fun (_ret':bool) -> [ &_0 <- _ret' ] return' {_0}) ]
+    )[ & _0 : bool = any_l () : bool | & x : usize = x | & y : usize = y ]  
     [ return' (result:bool)-> {[#"../ord_trait.rs" 20 10 20 30] result = (UIntSize.to_int x <= UIntSize.to_int y)}
-      (! return' {_0}) ]
-    [ & _0 : bool = any_l () : bool | & x : usize = x | & y : usize = y ] 
+      (! return' {result}) ]
+    
 end

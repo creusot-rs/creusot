@@ -5,11 +5,16 @@ module Switch_Option_Type
     | C_None
     
   function any_l (_ : 'b) : 'a
-  function some_0 (self : t_option 't) : 't =
-    match self with
-      | C_Some a -> a
-      | C_None -> any_l self
-      end
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Some field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Some field_0 <> input}
+      {false}
+      any ]
+    
+  let rec none < 't > (input:t_option 't) (ret  )= any 
+    [ good -> {C_None  = input} ret | bad -> {C_None  <> input} {false} any ]
+    
 end
 module Switch_Test
   use prelude.Intrinsic
@@ -17,34 +22,29 @@ module Switch_Test
   use Switch_Option_Type as Switch_Option_Type
   use prelude.Int
   let rec test (o:Switch_Option_Type.t_option uint32) (return'  (ret:bool))= (! bb0 
-    [ bb5 = return' {_0} 
-    | bb4 = [ &x <- Switch_Option_Type.some_0 o ] UInt32.gt {x} {[#"../switch.rs" 11 23 11 24] (0 : uint32)}
-      (fun (_ret':bool) -> [ &_0 <- _ret' ] bb5) 
-    | bb1 = bb4 
-    | bb2 = [ &_0 <- [#"../switch.rs" 12 16 12 21] false ] bb5 
+    [ bb0 = any 
+      [ br0 (a:uint32)-> {o = Switch_Option_Type.C_Some a} (! bb1) | br1 -> {o = Switch_Option_Type.C_None } (! bb2) ]
+      
     | bb3 = {[#"../switch.rs" 10 10 10 11] false}
-      any 
-    | bb0 = any 
-      [ br0 (a:uint32)-> {o = Switch_Option_Type.C_Some a}
-        (! bb1)
-      | br1 -> {o = Switch_Option_Type.C_None }
-        (! bb2)
-      | default -> (! bb3) ]
-        ]
-    ) [ return' (result:bool)-> (! return' {_0}) ] 
+      any
+    | bb2 = [ &_0 <- [#"../switch.rs" 12 16 12 21] false ] bb5
+    | bb1 = bb4
+    | bb4 = Switch_Option_Type.some <uint32> {o} (fun (rf_0':uint32) -> [ &x <- rf_0' ] UInt32.gt {x}
+        {[#"../switch.rs" 11 23 11 24] (0 : uint32)} (fun (_ret':bool) -> [ &_0 <- _ret' ] bb5))
+    | bb5 = return' {_0} ]
+    )
     [ & _0 : bool = any_l () : bool | & o : Switch_Option_Type.t_option uint32 = o | & x : uint32 = any_l () : uint32 ]
-    
+     [ return' (result:bool)-> (! return' {result}) ] 
 end
 module Switch_Test2
   use prelude.Intrinsic
   use prelude.UInt32
-  use prelude.Int
-  use Switch_Option_Type as Switch_Option_Type
   predicate resolve2 (self : uint32) =
     [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
   let rec resolve2 (self:uint32) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
     
+  use Switch_Option_Type as Switch_Option_Type
   predicate resolve1 (self : Switch_Option_Type.t_option uint32) =
     [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
   let rec resolve1 (self:Switch_Option_Type.t_option uint32) (return'  (ret:bool))= any 
@@ -55,23 +55,25 @@ module Switch_Test2
   let rec resolve0 (self:(Switch_Option_Type.t_option uint32, uint32)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
     
+  use prelude.Int
   let rec test2 (o:(Switch_Option_Type.t_option uint32, uint32)) (return'  (ret:uint32))= (! bb0 
-    [ bb5 = return' {_0} 
-    | bb4 = [ &x <- Switch_Option_Type.some_0 (let (a, _) = o in a) ] -{resolve0 o}- [ &_0 <- x ] bb5 
-    | bb1 = bb4 
-    | bb2 = [ &_0 <- let (_, a) = o in a ] -{resolve0 o}- bb5 
-    | bb3 = -{resolve0 o}- {[#"../switch.rs" 17 10 17 13] false}
-      any 
-    | bb0 = any 
-      [ br0 (a:uint32)-> {(let (a, _) = o in a) = Switch_Option_Type.C_Some a}
+    [ bb0 = any 
+      [ br0 (a:uint32)-> {(let (l0', _) = o in l0') = Switch_Option_Type.C_Some a}
         (! bb1)
-      | br1 -> {(let (a, _) = o in a) = Switch_Option_Type.C_None }
-        (! bb2)
-      | default -> (! bb3) ]
-        ]
-    ) [ return' (result:uint32)-> (! return' {_0}) ] 
+      | br1 -> {(let (l0', _) = o in l0') = Switch_Option_Type.C_None }
+        (! bb2) ]
+      
+    | bb3 = -{resolve0 o}- {[#"../switch.rs" 17 10 17 13] false}
+      any
+    | bb2 = [ &_0 <- let (_, l0') = o in l0' ] -{resolve0 o}- bb5
+    | bb1 = bb4
+    | bb4 = Switch_Option_Type.some <uint32> {let (l0', _) = o in l0'} (fun (rf_0':uint32) -> 
+        [ &x <- rf_0' ]
+        -{resolve0 o}- [ &_0 <- x ] bb5)
+    | bb5 = return' {_0} ]
+    )
     [ & _0 : uint32 = any_l () : uint32
     | & o : (Switch_Option_Type.t_option uint32, uint32) = o
     | & x : uint32 = any_l () : uint32 ]
-    
+     [ return' (result:uint32)-> (! return' {result}) ] 
 end

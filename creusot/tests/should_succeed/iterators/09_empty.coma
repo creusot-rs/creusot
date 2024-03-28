@@ -4,6 +4,9 @@ module Core_Marker_PhantomData_Type
     | C_PhantomData
     
   function any_l (_ : 'b) : 'a
+  let rec phantom_data < 't > (input:t_phantomdata 't) (ret  )= any 
+    [ good -> {C_PhantomData  = input} ret | bad -> {C_PhantomData  <> input} {false} any ]
+    
 end
 module C09Empty_Empty_Type
   use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
@@ -11,6 +14,13 @@ module C09Empty_Empty_Type
     | C_Empty (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
   function any_l (_ : 'b) : 'a
+  let rec empty < 't > (input:t_empty 't) (ret  (field_0:Core_Marker_PhantomData_Type.t_phantomdata 't))= any 
+    [ good (field_0:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Empty field_0 = input}
+      ret {field_0}
+    | bad (field_0:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Empty field_0 <> input}
+      {false}
+      any ]
+    
 end
 module C09Empty_Impl0_ProducesRefl_Impl
   type t
@@ -67,6 +77,16 @@ module Core_Option_Option_Type
     | C_Some 't
     
   function any_l (_ : 'b) : 'a
+  let rec none < 't > (input:t_option 't) (ret  )= any 
+    [ good -> {C_None  = input} ret | bad -> {C_None  <> input} {false} any ]
+    
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Some field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Some field_0 <> input}
+      {false}
+      any ]
+    
 end
 module C09Empty_Impl0_Next
   type t
@@ -105,17 +125,17 @@ module C09Empty_Impl0_Next
   let rec next (self:borrowed (C09Empty_Empty_Type.t_empty t)) (return'  (ret:Core_Option_Option_Type.t_option t))= (! bb0
     
     [ bb0 = -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option t ] return'
-      {_0}  ]
-    ) 
+      {_0} ]
+    )
+    [ & _0 : Core_Option_Option_Type.t_option t = any_l () : Core_Option_Option_Type.t_option t
+    | & self : borrowed (C09Empty_Empty_Type.t_empty t) = self ]
+     
     [ return' (result:Core_Option_Option_Type.t_option t)-> {[#"../09_empty.rs" 41 26 41 35] inv0 result}
       {[#"../09_empty.rs" 37 14 40 5] match result with
         | Core_Option_Option_Type.C_None -> completed0 self
         | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
         end}
-      (! return' {_0}) ]
-    
-    [ & _0 : Core_Option_Option_Type.t_option t = any_l () : Core_Option_Option_Type.t_option t
-    | & self : borrowed (C09Empty_Empty_Type.t_empty t) = self ]
+      (! return' {result}) ]
     
 end
 module C09Empty_Impl0

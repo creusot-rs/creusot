@@ -4,9 +4,9 @@ module Projections_CopyOutOfRef
   use prelude.Intrinsic
   use prelude.UInt32
   use prelude.Int
-  let rec copy_out_of_ref (x:uint32) (return'  (ret:uint32))= (! bb0 [ bb0 = [ &_0 <- x ] return' {_0}  ] ) 
-    [ return' (result:uint32)-> (! return' {_0}) ]
-    [ & _0 : uint32 = any_l () : uint32 | & x : uint32 = x ] 
+  let rec copy_out_of_ref (x:uint32) (return'  (ret:uint32))= (! bb0 [ bb0 = [ &_0 <- x ] return' {_0} ] )
+    [ & _0 : uint32 = any_l () : uint32 | & x : uint32 = x ]
+     [ return' (result:uint32)-> (! return' {result}) ] 
 end
 module Core_Result_Result_Type
   type t_result 't 'e =
@@ -14,57 +14,66 @@ module Core_Result_Result_Type
     | C_Err 'e
     
   function any_l (_ : 'b) : 'a
-  function ok_0 (self : t_result 't 'e) : 't =
-    match self with
-      | C_Ok a -> a
-      | C_Err _ -> any_l self
-      end
-  function err_0 (self : t_result 't 'e) : 'e =
-    match self with
-      | C_Ok _ -> any_l self
-      | C_Err a -> a
-      end
+  let rec ok < 't > < 'e > (input:t_result 't 'e) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Ok field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Ok field_0 <> input}
+      {false}
+      any ]
+    
+  let rec err < 't > < 'e > (input:t_result 't 'e) (ret  (field_0:'e))= any 
+    [ good (field_0:'e)-> {C_Err field_0 = input}
+      ret {field_0}
+    | bad (field_0:'e)-> {C_Err field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Projections_CopyOutOfSum
   use prelude.Intrinsic
-  use prelude.UInt32
-  use prelude.Int
   use prelude.Borrow
-  use Core_Result_Result_Type as Core_Result_Result_Type
+  use prelude.UInt32
   predicate resolve0 (self : borrowed uint32) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   let rec resolve0 (self:borrowed uint32) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
     
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  use prelude.Int
   let rec copy_out_of_sum (x:Core_Result_Result_Type.t_result (borrowed uint32) (borrowed uint32)) (return'  (ret:uint32))= (! bb0
     
-    [ bb5 = return' {_0} 
-    | bb4 = [ &x1 <- Core_Result_Result_Type.ok_0 x ] any 
-      [ any_ (_any:borrowed uint32)-> 
-        [ &x <- let Core_Result_Result_Type.C_Ok x0 = x in Core_Result_Result_Type.C_Ok _any ]
-        [ &_0 <-  * x1 ] -{resolve0 x1}- bb5 ]
-       
-    | bb1 = bb4 
-    | bb2 = [ &y <- Core_Result_Result_Type.err_0 x ] any 
-      [ any_ (_any:borrowed uint32)-> 
-        [ &x <- let Core_Result_Result_Type.C_Err x0 = x in Core_Result_Result_Type.C_Err _any ]
-        [ &_0 <-  * y ] -{resolve0 y}- bb5 ]
-       
-    | bb3 = {[#"../projections.rs" 10 10 10 11] false}
-      any 
-    | bb0 = any 
+    [ bb0 = any 
       [ br0 (a:borrowed uint32)-> {x = Core_Result_Result_Type.C_Ok a}
         (! bb1)
       | br1 (a:borrowed uint32)-> {x = Core_Result_Result_Type.C_Err a}
-        (! bb2)
-      | default -> (! bb3) ]
-        ]
-    ) [ return' (result:uint32)-> (! return' {_0}) ] 
+        (! bb2) ]
+      
+    | bb3 = {[#"../projections.rs" 10 10 10 11] false}
+      any
+    | bb2 = Core_Result_Result_Type.err <borrowed uint32> <borrowed uint32> {x} (fun (rf_0':borrowed uint32) -> 
+        [ &y <- rf_0' ]
+        (any 
+        [ any_ (_any:borrowed uint32)-> (! Core_Result_Result_Type.err <borrowed uint32> <borrowed uint32> {x}
+          (fun (f_0':borrowed uint32) -> [ &x <- Core_Result_Result_Type.C_Err _any ] 
+            [ &_0 <-  * y ]
+            -{resolve0 y}- bb5)) ]
+        ))
+    | bb1 = bb4
+    | bb4 = Core_Result_Result_Type.ok <borrowed uint32> <borrowed uint32> {x} (fun (rf_0':borrowed uint32) -> 
+        [ &x1 <- rf_0' ]
+        (any 
+        [ any_ (_any:borrowed uint32)-> (! Core_Result_Result_Type.ok <borrowed uint32> <borrowed uint32> {x}
+          (fun (f_0':borrowed uint32) -> [ &x <- Core_Result_Result_Type.C_Ok _any ] 
+            [ &_0 <-  * x1 ]
+            -{resolve0 x1}- bb5)) ]
+        ))
+    | bb5 = return' {_0} ]
+    )
     [ & _0 : uint32 = any_l () : uint32
     | & x : Core_Result_Result_Type.t_result (borrowed uint32) (borrowed uint32) = x
     | & x1 : borrowed uint32 = any_l () : borrowed uint32
     | & y : borrowed uint32 = any_l () : borrowed uint32 ]
-    
+     [ return' (result:uint32)-> (! return' {result}) ] 
 end
 module Core_Option_Option_Type
   type t_option 't =
@@ -72,77 +81,84 @@ module Core_Option_Option_Type
     | C_Some 't
     
   function any_l (_ : 'b) : 'a
-  function some_0 (self : t_option 't) : 't =
-    match self with
-      | C_None -> any_l self
-      | C_Some a -> a
-      end
+  let rec none < 't > (input:t_option 't) (ret  )= any 
+    [ good -> {C_None  = input} ret | bad -> {C_None  <> input} {false} any ]
+    
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Some field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Some field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Projections_WriteIntoSum
   use prelude.Intrinsic
   use prelude.Borrow
   use prelude.UInt32
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  use prelude.Int
   predicate resolve1 (self : borrowed uint32) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   let rec resolve1 (self:borrowed uint32) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
     
+  use Core_Option_Option_Type as Core_Option_Option_Type
   predicate resolve0 (self : borrowed (Core_Option_Option_Type.t_option uint32)) =
     [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   let rec resolve0 (self:borrowed (Core_Option_Option_Type.t_option uint32)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
     
+  use prelude.Int
   let rec write_into_sum (x:borrowed (Core_Option_Option_Type.t_option uint32)) (return'  (ret:()))= (! bb0 
-    [ bb5 = return' {_0} 
-    | bb1 = -{resolve0 x}- [ &_0 <- () ] bb5 
-    | bb4 = Borrow.borrow_final <uint32> {Core_Option_Option_Type.some_0 ( * x)} {Borrow.inherit_id (Borrow.get_id x) 1}
-      (fun (_ret':borrowed uint32) -> [ &y <- _ret' ] 
-        [ &x <- { x with current = (let Core_Option_Option_Type.C_Some x0 =  * x in Core_Option_Option_Type.C_Some ( ^ y)) ; } ]
-        [ &y <- { y with current = ([#"../projections.rs" 18 24 18 26] (10 : uint32)) ; } ] -{resolve1 y}- 
-        [ &_0 <- [#"../projections.rs" 18 19 18 26] () ]
-        -{resolve0 x}- bb5) 
-    | bb2 = bb4 
-    | bb3 = -{resolve0 x}- {[#"../projections.rs" 17 10 17 11] false}
-      any 
-    | bb0 = any 
+    [ bb0 = any 
       [ br0 -> { * x = Core_Option_Option_Type.C_None }
         (! bb1)
       | br1 (a:uint32)-> { * x = Core_Option_Option_Type.C_Some a}
-        (! bb2)
-      | default -> (! bb3) ]
-        ]
-    ) [ return' (result:())-> (! return' {_0}) ] 
+        (! bb2) ]
+      
+    | bb3 = -{resolve0 x}- {[#"../projections.rs" 17 10 17 11] false}
+      any
+    | bb2 = bb4
+    | bb4 = Core_Option_Option_Type.some <uint32> { * x} (fun (rf_0':uint32) -> Borrow.borrow_final <uint32> {rf_0'}
+        {Borrow.inherit_id (Borrow.get_id x) 1} (fun (_ret':borrowed uint32) -> 
+          [ &y <- _ret' ]
+          Core_Option_Option_Type.some <uint32> { * x} (fun (f_0':uint32) -> 
+            [ &x <- { x with current = Core_Option_Option_Type.C_Some ( ^ y) ; } ]
+            [ &y <- { y with current = ([#"../projections.rs" 18 24 18 26] (10 : uint32)) ; } ] -{resolve1 y}- 
+            [ &_0 <- [#"../projections.rs" 18 19 18 26] () ]
+            -{resolve0 x}- bb5)))
+    | bb1 = -{resolve0 x}- [ &_0 <- () ] bb5
+    | bb5 = return' {_0} ]
+    )
     [ & _0 : () = any_l () : ()
     | & x : borrowed (Core_Option_Option_Type.t_option uint32) = x
     | & y : borrowed uint32 = any_l () : borrowed uint32 ]
-    
+     [ return' (result:())-> (! return' {result}) ] 
 end
 module Projections_F
   use prelude.Intrinsic
   use prelude.Int32
-  use Core_Option_Option_Type as Core_Option_Option_Type
   use prelude.Int
+  use Core_Option_Option_Type as Core_Option_Option_Type
   let rec f (_1:()) (return'  (ret:()))= (! bb0 
-    [ bb5 = [ &_0 <- [#"../projections.rs" 23 11 28 1] () ] return' {_0} 
-    | bb1 = [ &_1 <- [#"../projections.rs" 26 16 26 21] false ] bb5 
-    | bb4 = [ &x <- Core_Option_Option_Type.some_0 _2 ] Int32.eq {x} {[#"../projections.rs" 25 24 25 25] (0 : int32)}
-      (fun (_ret':bool) -> [ &_1 <- _ret' ] bb5) 
-    | bb2 = bb4 
-    | bb3 = {[#"../projections.rs" 24 10 24 18] false}
-      any 
-    | bb0 = [ &_2 <- Core_Option_Option_Type.C_Some ([#"../projections.rs" 24 15 24 17] (10 : int32)) ] any 
+    [ bb0 = 
+      [ &_2 <- Core_Option_Option_Type.C_Some ([#"../projections.rs" 24 15 24 17] (10 : int32)) : Core_Option_Option_Type.t_option int32 ]
+      (any 
       [ br0 -> {_2 = Core_Option_Option_Type.C_None }
         (! bb1)
       | br1 (a:int32)-> {_2 = Core_Option_Option_Type.C_Some a}
-        (! bb2)
-      | default -> (! bb3) ]
-        ]
-    ) [ return' (result:())-> (! return' {_0}) ] 
+        (! bb2) ]
+      )
+    | bb3 = {[#"../projections.rs" 24 10 24 18] false}
+      any
+    | bb2 = bb4
+    | bb4 = Core_Option_Option_Type.some <int32> {_2} (fun (rf_0':int32) -> [ &x <- rf_0' ] Int32.eq {x}
+        {[#"../projections.rs" 25 24 25 25] (0 : int32)} (fun (_ret':bool) -> [ &_1 <- _ret' ] bb5))
+    | bb1 = [ &_1 <- [#"../projections.rs" 26 16 26 21] false ] bb5
+    | bb5 = [ &_0 <- [#"../projections.rs" 23 11 28 1] () ] return' {_0} ]
+    )
     [ & _0 : () = any_l () : ()
     | & _1 : bool = any_l () : bool
     | & _2 : Core_Option_Option_Type.t_option int32 = any_l () : Core_Option_Option_Type.t_option int32
     | & x : int32 = any_l () : int32 ]
-    
+     [ return' (result:())-> (! return' {result}) ] 
 end

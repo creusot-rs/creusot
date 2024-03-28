@@ -27,7 +27,19 @@ module ProjectionToggle_ProjToggle
   let rec proj_toggle (toggle:bool) (a:borrowed t) (b:borrowed t) (return'  (ret:borrowed t))= {[#"../projection_toggle.rs" 5 61 5 62] inv0 b}
     {[#"../projection_toggle.rs" 5 47 5 48] inv0 a}
     (! bb0 
-    [ bb3 = Borrow.borrow_final <t> { * _6} {Borrow.get_id _6} (fun (_ret':borrowed t) -> [ &_4 <- _ret' ] 
+    [ bb0 = any [ br0 -> {toggle = false} (! bb2) | br1 -> {toggle} (! bb1) ] 
+    | bb1 = {[@expl:type invariant] inv0 b}
+      -{resolve0 b}- Borrow.borrow_final <t> { * a} {Borrow.get_id a} (fun (_ret':borrowed t) -> [ &_8 <- _ret' ] 
+        [ &a <- { a with current = ( ^ _8) ; } ]
+        -{inv1 ( ^ _8)}- Borrow.borrow_final <t> { * _8} {Borrow.get_id _8} (fun (_ret':borrowed t) -> [ &_6 <- _ret' ] 
+          [ &_8 <- { _8 with current = ( ^ _6) ; } ]
+          -{inv1 ( ^ _6)}- {[@expl:type invariant] inv0 _8}
+          -{resolve0 _8}- bb3))
+    | bb2 = {[@expl:type invariant] inv0 a}
+      -{resolve0 a}- Borrow.borrow_final <t> { * b} {Borrow.get_id b} (fun (_ret':borrowed t) -> [ &_6 <- _ret' ] 
+        [ &b <- { b with current = ( ^ _6) ; } ]
+        -{inv1 ( ^ _6)}- bb3)
+    | bb3 = Borrow.borrow_final <t> { * _6} {Borrow.get_id _6} (fun (_ret':borrowed t) -> [ &_4 <- _ret' ] 
         [ &_6 <- { _6 with current = ( ^ _4) ; } ]
         -{inv1 ( ^ _4)}- Borrow.borrow_final <t> { * _4} {Borrow.get_id _4} (fun (_ret':borrowed t) -> [ &_0 <- _ret' ] 
           [ &_4 <- { _4 with current = ( ^ _0) ; } ]
@@ -35,24 +47,8 @@ module ProjectionToggle_ProjToggle
           -{resolve0 _6}- {[@expl:type invariant] inv0 _4}
           -{resolve0 _4}- {[@expl:type invariant] inv0 b}
           -{resolve0 b}- {[@expl:type invariant] inv0 a}
-          -{resolve0 a}- return' {_0})) 
-    | bb2 = {[@expl:type invariant] inv0 a}
-      -{resolve0 a}- Borrow.borrow_final <t> { * b} {Borrow.get_id b} (fun (_ret':borrowed t) -> [ &_6 <- _ret' ] 
-        [ &b <- { b with current = ( ^ _6) ; } ]
-        -{inv1 ( ^ _6)}- bb3) 
-    | bb1 = {[@expl:type invariant] inv0 b}
-      -{resolve0 b}- Borrow.borrow_final <t> { * a} {Borrow.get_id a} (fun (_ret':borrowed t) -> [ &_8 <- _ret' ] 
-        [ &a <- { a with current = ( ^ _8) ; } ]
-        -{inv1 ( ^ _8)}- Borrow.borrow_final <t> { * _8} {Borrow.get_id _8} (fun (_ret':borrowed t) -> [ &_6 <- _ret' ] 
-          [ &_8 <- { _8 with current = ( ^ _6) ; } ]
-          -{inv1 ( ^ _6)}- {[@expl:type invariant] inv0 _8}
-          -{resolve0 _8}- bb3)) 
-    | bb0 = any [ br0 -> {toggle = false} (! bb2) | br1 -> {toggle} (! bb1) ]   ]
-    ) 
-    [ return' (result:borrowed t)-> {[#"../projection_toggle.rs" 5 78 5 87] inv0 result}
-      {[#"../projection_toggle.rs" 4 0 4 82] if toggle then result = a /\  ^ b =  * b else result = b /\  ^ a =  * a}
-      (! return' {_0}) ]
-    
+          -{resolve0 a}- return' {_0})) ]
+    )
     [ & _0 : borrowed t = any_l () : borrowed t
     | & toggle : bool = toggle
     | & a : borrowed t = a
@@ -60,6 +56,10 @@ module ProjectionToggle_ProjToggle
     | & _4 : borrowed t = any_l () : borrowed t
     | & _6 : borrowed t = any_l () : borrowed t
     | & _8 : borrowed t = any_l () : borrowed t ]
+     
+    [ return' (result:borrowed t)-> {[#"../projection_toggle.rs" 5 78 5 87] inv0 result}
+      {[#"../projection_toggle.rs" 4 0 4 82] if toggle then result = a /\  ^ b =  * b else result = b /\  ^ a =  * a}
+      (! return' {result}) ]
     
 end
 module ProjectionToggle_F
@@ -76,6 +76,12 @@ module ProjectionToggle_F
     
   axiom inv0 : forall x : borrowed int32 . inv0 x = true
   use prelude.Intrinsic
+  predicate resolve0 (self : borrowed int32) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed int32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  use prelude.Int
   let rec proj_toggle0 (toggle:bool) (a:borrowed int32) (b:borrowed int32) (return'  (ret:borrowed int32))= {[#"../projection_toggle.rs" 5 61 5 62] inv0 b}
     {[#"../projection_toggle.rs" 5 47 5 48] inv0 a}
     any 
@@ -83,34 +89,28 @@ module ProjectionToggle_F
       {[#"../projection_toggle.rs" 4 0 4 82] if toggle then result = a /\  ^ b =  * b else result = b /\  ^ a =  * a}
       (! return' {result}) ]
     
-  predicate resolve0 (self : borrowed int32) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve0 (self:borrowed int32) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
-  use prelude.Int
   let rec f (_1:()) (return'  (ret:()))= (! bb0 
-    [ bb3 = {[#"../projection_toggle.rs" 20 4 20 20] false}
-      any 
-    | bb2 = [ &_0 <- [#"../projection_toggle.rs" 13 11 21 1] () ] return' {_0} 
-    | bb1 = -{resolve0 _7}- -{resolve0 _5}- Int32.add { * x} {[#"../projection_toggle.rs" 19 10 19 11] (5 : int32)}
-      (fun (_ret':int32) -> [ &x <- { x with current = _ret' ; } ] -{resolve0 x}- Int32.eq {a}
-        {[#"../projection_toggle.rs" 20 17 20 19] (15 : int32)} (fun (_ret':bool) -> [ &_9 <- _ret' ] any 
-          [ br0 -> {_9 = false} (! bb3) | br1 -> {_9} (! bb2) ]
-          )) 
-    | bb0 = [ &a <- [#"../projection_toggle.rs" 14 16 14 18] (10 : int32) ] 
+    [ bb0 = [ &a <- [#"../projection_toggle.rs" 14 16 14 18] (10 : int32) ] 
       [ &b <- [#"../projection_toggle.rs" 15 16 15 17] (5 : int32) ]
-      Borrow.borrow_mut <int32> {a} (fun (_ret':borrowed int32) -> [ &_5 <- _ret' ] [ &a <-  ^ _5 ] Borrow.borrow_final
+      Borrow.borrow_mut <int32> {a} (fun (_ret':borrowed int32) -> [ &a <-  ^ _5 ] [ &_5 <- _ret' ] Borrow.borrow_final
         <int32> { * _5} {Borrow.get_id _5} (fun (_ret':borrowed int32) -> [ &_4 <- _ret' ] 
           [ &_5 <- { _5 with current = ( ^ _4) ; } ]
-          Borrow.borrow_mut <int32> {b} (fun (_ret':borrowed int32) -> [ &_7 <- _ret' ] 
-            [ &b <-  ^ _7 ]
+          Borrow.borrow_mut <int32> {b} (fun (_ret':borrowed int32) -> [ &b <-  ^ _7 ] 
+            [ &_7 <- _ret' ]
             Borrow.borrow_final <int32> { * _7} {Borrow.get_id _7} (fun (_ret':borrowed int32) -> [ &_6 <- _ret' ] 
               [ &_7 <- { _7 with current = ( ^ _6) ; } ]
               proj_toggle0 {[#"../projection_toggle.rs" 17 24 17 28] true} {_4} {_6} (fun (_ret':borrowed int32) -> 
                 [ &x <- _ret' ]
-                bb1)))))  ]
-    ) [ return' (result:())-> (! return' {_0}) ] 
+                bb1)))))
+    | bb1 = -{resolve0 _7}- -{resolve0 _5}- Int32.add { * x} {[#"../projection_toggle.rs" 19 10 19 11] (5 : int32)}
+      (fun (_ret':int32) -> [ &x <- { x with current = _ret' ; } ] -{resolve0 x}- Int32.eq {a}
+        {[#"../projection_toggle.rs" 20 17 20 19] (15 : int32)} (fun (_ret':bool) -> [ &_9 <- _ret' ] (any 
+          [ br0 -> {_9 = false} (! bb3) | br1 -> {_9} (! bb2) ]
+          )))
+    | bb2 = [ &_0 <- [#"../projection_toggle.rs" 13 11 21 1] () ] return' {_0}
+    | bb3 = {[#"../projection_toggle.rs" 20 4 20 20] false}
+      any ]
+    )
     [ & _0 : () = any_l () : ()
     | & a : int32 = any_l () : int32
     | & b : int32 = any_l () : int32
@@ -120,5 +120,5 @@ module ProjectionToggle_F
     | & _6 : borrowed int32 = any_l () : borrowed int32
     | & _7 : borrowed int32 = any_l () : borrowed int32
     | & _9 : bool = any_l () : bool ]
-    
+     [ return' (result:())-> (! return' {result}) ] 
 end

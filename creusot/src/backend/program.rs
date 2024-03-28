@@ -19,9 +19,10 @@ use crate::{
     util::{self, module_name},
 };
 use itertools::Itertools;
+use rustc_ast::token::TokenKind::Interpolated;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{self, BasicBlock, BinOp, ProjectionElem, START_BLOCK},
+    mir::{self, BasicBlock, BinOp, ProjectionElem, UnOp, START_BLOCK},
     ty::{AdtDef, GenericArgsRef, Ty, TyKind},
 };
 use rustc_span::{Span, DUMMY_SP};
@@ -419,6 +420,9 @@ fn component_to_defn<'tcx>(
 
     let block = body.blocks.remove(&head).unwrap();
     let mut block = block.to_why(ctx, names, &body.locals, head);
+    if !block.body.is_guarded() {
+        block.body = Expr::BlackBox(Box::new(block.body));
+    }
 
     let inner = Expr::Defn(Box::new(block.body), true, defns);
     block.body = Expr::Defn(
@@ -480,22 +484,59 @@ impl<'tcx> RValue<'tcx> {
                     r.to_why(ctx, names, locals, istmts),
                 ])
             }
-            RValue::BinOp(_, _, _) => {
+            RValue::BinOp(op, l, r) => {
+                let l_ty = l.ty(ctx.tcx, locals);
+                let fname = binop_to_binop(names, l_ty, op);
+                let call = coma::Expr::Symbol(fname);
+                let args = vec![
+                    Arg::Term(l.to_why(ctx, names, locals, istmts)),
+                    Arg::Term(r.to_why(ctx, names, locals, istmts)),
+                ];
+                istmts.extend([IntermediateStmt::call(
+                    "_ret'".into(),
+                    translate_ty(ctx, names, DUMMY_SP, ty),
+                    call,
+                    args,
+                )]);
                 // let ty = l.ty(ctx.tcx, locals);
                 // // Hack
                 // translate_ty(ctx, names, DUMMY_SP, ty);
-                unreachable!()
+
+                Exp::var("_ret'")
                 // let op_ty = l.ty(ctx.tcx, locals);
                 // // Hack
                 // translate_ty(ctx, names, DUMMY_SP, op_ty);
             }
-            RValue::UnaryOp(op, arg) => Exp::UnaryOp(
-                unop_to_unop(arg.ty(ctx.tcx, locals), op),
-                Box::new(arg.to_why(ctx, names, locals, istmts)),
-            ),
+            RValue::UnaryOp(UnOp::Not, arg) => arg.to_why(ctx, names, locals, istmts).not(),
+            RValue::UnaryOp(UnOp::Neg, arg) => {
+                let prelude: PreludeModule = match ty.kind() {
+                    TyKind::Int(ity) => int_to_prelude(*ity),
+                    TyKind::Uint(uty) => uint_to_prelude(*uty),
+                    TyKind::Float(FloatTy::F32) => PreludeModule::Float32,
+                    TyKind::Float(FloatTy::F64) => PreludeModule::Float64,
+                    TyKind::Bool => PreludeModule::Bool,
+                    _ => unreachable!("non-primitive type for negation {ty:?}"),
+                };
 
+                names.import_prelude_module(prelude);
+                let mut module = prelude.qname();
+                module = module.without_search_path();
+                module.push_ident("neg");
+
+                let id: Ident = "_ret".into();
+                let ty = translate_ty(ctx, names, DUMMY_SP, ty);
+                let arg = arg.to_why(ctx, names, locals, istmts);
+                istmts.push(IntermediateStmt::call(
+                    id.clone(),
+                    ty,
+                    Expr::Symbol(module),
+                    vec![Arg::Term(arg)],
+                ));
+
+                Exp::var(id)
+            }
             RValue::Constructor(id, subst, args) => {
-                let needs_ty = ctx.generics_of(id).count() > 0 && args.len() == 0;
+                let needs_ty = ctx.generics_of(id).count() > 0;
                 let args = args.into_iter().map(|a| a.to_why(ctx, names, locals, istmts)).collect();
 
                 let ctor = names.constructor(id, subst);
@@ -532,13 +573,22 @@ impl<'tcx> RValue<'tcx> {
                     TyKind::Uint(uty) => uint_from_int(uty),
                     TyKind::Char => {
                         names.import_prelude_module(PreludeModule::Char);
-                        Exp::qvar(QName::from_string("Char.chr").unwrap())
+                        QName::from_string("Char.chr").unwrap()
                     }
                     _ => ctx
                         .crash_and_error(DUMMY_SP, "Non integral casts are currently unsupported"),
                 };
 
-                from_int.app_to(to_int.app_to(e.to_why(ctx, names, locals, istmts)))
+                let int = to_int.app_to(e.to_why(ctx, names, locals, istmts));
+
+                istmts.push(IntermediateStmt::call(
+                    "_res".into(),
+                    translate_ty(ctx, names, DUMMY_SP, target),
+                    Expr::Symbol(from_int),
+                    vec![Arg::Term(int)],
+                ));
+
+                Exp::var("_res")
             }
             RValue::Len(pl) => {
                 let len_call = Exp::qvar(QName::from_string("Slice.length").unwrap())
@@ -610,6 +660,10 @@ impl<'tcx> RValue<'tcx> {
     }
 }
 
+// fn mk_constructor() -> Exp {
+
+// }
+
 impl<'tcx> Terminator<'tcx> {
     pub(crate) fn retarget(&mut self, from: BasicBlock, to: BasicBlock) {
         match self {
@@ -668,20 +722,21 @@ impl<'tcx> Terminator<'tcx> {
         ctx: &mut Why3Generator<'tcx>,
         names: &mut CloneMap<'tcx>,
         locals: &LocalDecls<'tcx>,
-    ) -> coma::Expr {
+    ) -> (Vec<IntermediateStmt>, coma::Expr) {
         use coma::*;
+        let mut istmts = vec![];
         match self {
-            Terminator::Goto(bb) => Expr::Symbol(format!("bb{}", bb.as_usize()).into()),
+            Terminator::Goto(bb) => (istmts, Expr::Symbol(format!("bb{}", bb.as_usize()).into())),
             Terminator::Switch(switch, branches) => {
-                let discr = switch.to_why(ctx, names, locals, &mut vec![]);
-                branches.to_why(ctx, names, discr)
+                let discr = switch.to_why(ctx, names, locals, &mut istmts);
+                (istmts, branches.to_why(ctx, names, discr))
             }
             Terminator::Return => {
-                Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("_0"))])
+                (istmts, Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("_0"))]))
             }
             Terminator::Abort(span) => {
                 let exp = ctx.attach_span(span, Exp::mk_false());
-                Expr::Assert(Box::new(exp), Box::new(Expr::Any))
+                (istmts, Expr::Assert(Box::new(exp), Box::new(Expr::Any)))
             }
         }
     }
@@ -821,8 +876,9 @@ impl<'tcx> Block<'tcx> {
         //     statements.push(mlcfg::Statement::Variant(lower_pure(ctx, names, &v)));
         // }
 
-        let terminator = self.terminator.to_why(ctx, names, locals);
-        let statements = self.stmts.into_iter().flat_map(|s| s.to_why(ctx, names, locals));
+        let (istmts, terminator) = self.terminator.to_why(ctx, names, locals);
+        let statements =
+            self.stmts.into_iter().flat_map(|s| s.to_why(ctx, names, locals)).chain(istmts);
         use coma::*;
         let mut body = statements.rfold(terminator, |tail, stmt| match stmt {
             IntermediateStmt::Assign(id, exp) => tail.assign(id, exp),
@@ -938,27 +994,6 @@ impl<'tcx> Statement<'tcx> {
         locals: &LocalDecls<'tcx>,
     ) -> Vec<IntermediateStmt> {
         match self {
-            Statement::Assignment(lhs, RValue::BinOp(op, l, r), span) => {
-                let mut istmts = Vec::new();
-                let assign =
-                    place::create_assign_inner(ctx, names, locals, &lhs, Exp::var("_ret'"), span);
-                let fname = binop_to_binop(names, l.ty(ctx.tcx, locals), op);
-                // TODO Switch coma ast to QNames
-                let call = coma::Expr::Symbol(fname);
-
-                let args = vec![
-                    Arg::Term(l.to_why(ctx, names, locals, &mut istmts)),
-                    Arg::Term(r.to_why(ctx, names, locals, &mut istmts)),
-                ];
-                istmts.extend([IntermediateStmt::call(
-                    "_ret'".into(),
-                    translate_ty(ctx, names, DUMMY_SP, lhs.ty(ctx.tcx, locals)),
-                    call,
-                    args,
-                )]);
-                istmts.extend(assign);
-                istmts
-            }
             Statement::Assignment(lhs, RValue::Borrow(BorrowKind::Mut, rhs), span) => {
                 let borrow_mut =
                     coma::Expr::Symbol(QName::from_string("Borrow.borrow_mut").unwrap());
@@ -1155,7 +1190,7 @@ fn func_call_to_why3<'tcx>(
     (coma::Expr::Symbol(fname), args)
 }
 
-pub(crate) fn binop_to_binop(names: &mut CloneMap<'_>, ty: Ty, op: mir::BinOp) -> QName {
+pub(crate) fn binop_to_binop<'tcx, N: Namer<'tcx>>(names: &mut N, ty: Ty, op: mir::BinOp) -> QName {
     let prelude: PreludeModule = match ty.kind() {
         TyKind::Int(ity) => int_to_prelude(*ity),
         TyKind::Uint(uty) => uint_to_prelude(*uty),
@@ -1245,25 +1280,25 @@ pub(crate) fn uint_to_prelude(ity: UintTy) -> PreludeModule {
     }
 }
 
-pub(crate) fn int_from_int(ity: &IntTy) -> Exp {
+pub(crate) fn int_from_int(ity: &IntTy) -> QName {
     match ity {
-        IntTy::Isize => Exp::qvar(QName::from_string("IntSize.of_int").unwrap()),
-        IntTy::I8 => Exp::qvar(QName::from_string("Int8.of_int").unwrap()),
-        IntTy::I16 => Exp::qvar(QName::from_string("Int16.of_int").unwrap()),
-        IntTy::I32 => Exp::qvar(QName::from_string("Int32.of_int").unwrap()),
-        IntTy::I64 => Exp::qvar(QName::from_string("Int64.of_int").unwrap()),
-        IntTy::I128 => Exp::qvar(QName::from_string("Int128.of_int").unwrap()),
+        IntTy::Isize => QName::from_string("IntSize.of_int").unwrap(),
+        IntTy::I8 => QName::from_string("Int8.of_int").unwrap(),
+        IntTy::I16 => QName::from_string("Int16.of_int").unwrap(),
+        IntTy::I32 => QName::from_string("Int32.of_int").unwrap(),
+        IntTy::I64 => QName::from_string("Int64.of_int").unwrap(),
+        IntTy::I128 => QName::from_string("Int128.of_int").unwrap(),
     }
 }
 
-pub(crate) fn uint_from_int(uty: &UintTy) -> Exp {
+pub(crate) fn uint_from_int(uty: &UintTy) -> QName {
     match uty {
-        UintTy::Usize => Exp::qvar(QName::from_string("UIntSize.of_int").unwrap()),
-        UintTy::U8 => Exp::qvar(QName::from_string("UInt8.of_int").unwrap()),
-        UintTy::U16 => Exp::qvar(QName::from_string("UInt16.of_int").unwrap()),
-        UintTy::U32 => Exp::qvar(QName::from_string("UInt32.of_int").unwrap()),
-        UintTy::U64 => Exp::qvar(QName::from_string("UInt64.of_int").unwrap()),
-        UintTy::U128 => Exp::qvar(QName::from_string("UInt128.of_int").unwrap()),
+        UintTy::Usize => QName::from_string("UIntSize.of_int").unwrap(),
+        UintTy::U8 => QName::from_string("UInt8.of_int").unwrap(),
+        UintTy::U16 => QName::from_string("UInt16.of_int").unwrap(),
+        UintTy::U32 => QName::from_string("UInt32.of_int").unwrap(),
+        UintTy::U64 => QName::from_string("UInt64.of_int").unwrap(),
+        UintTy::U128 => QName::from_string("UInt128.of_int").unwrap(),
     }
 }
 

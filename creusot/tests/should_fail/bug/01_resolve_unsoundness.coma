@@ -5,12 +5,22 @@ module Core_Ptr_NonNull_NonNull_Type
     | C_NonNull opaque_ptr
     
   function any_l (_ : 'b) : 'a
+  let rec non_null < 't > (input:t_nonnull 't) (ret  (field_0:opaque_ptr))= any 
+    [ good (field_0:opaque_ptr)-> {C_NonNull field_0 = input}
+      ret {field_0}
+    | bad (field_0:opaque_ptr)-> {C_NonNull field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Core_Marker_PhantomData_Type
   type t_phantomdata 't =
     | C_PhantomData
     
   function any_l (_ : 'b) : 'a
+  let rec phantom_data < 't > (input:t_phantomdata 't) (ret  )= any 
+    [ good -> {C_PhantomData  = input} ret | bad -> {C_PhantomData  <> input} {false} any ]
+    
 end
 module Core_Ptr_Unique_Unique_Type
   use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
@@ -19,6 +29,14 @@ module Core_Ptr_Unique_Unique_Type
     | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
   function any_l (_ : 'b) : 'a
+  let rec unique < 't > (input:t_unique 't) (ret  (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't))= any
+    
+    [ good (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique field_0 field_1 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_RawVec_Cap_Type
   use prelude.UIntSize
@@ -27,6 +45,13 @@ module Alloc_RawVec_Cap_Type
     | C_Cap usize
     
   function any_l (_ : 'b) : 'a
+  let rec cap (input:t_cap) (ret  (field_0:usize))= any 
+    [ good (field_0:usize)-> {C_Cap field_0 = input}
+      ret {field_0}
+    | bad (field_0:usize)-> {C_Cap field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_RawVec_RawVec_Type
   use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
@@ -35,6 +60,14 @@ module Alloc_RawVec_RawVec_Type
     | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
     
   function any_l (_ : 'b) : 'a
+  let rec raw_vec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (field_0:Core_Ptr_Unique_Unique_Type.t_unique 't) (field_1:Alloc_RawVec_Cap_Type.t_cap) (field_2:'a))= any
+    
+    [ good (field_0:Core_Ptr_Unique_Unique_Type.t_unique 't) (field_1:Alloc_RawVec_Cap_Type.t_cap) (field_2:'a)-> {C_RawVec field_0 field_1 field_2 = input}
+      ret {field_0} {field_1} {field_2}
+    | bad (field_0:Core_Ptr_Unique_Unique_Type.t_unique 't) (field_1:Alloc_RawVec_Cap_Type.t_cap) (field_2:'a)-> {C_RawVec field_0 field_1 field_2 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_Vec_Vec_Type
   use prelude.UIntSize
@@ -44,12 +77,23 @@ module Alloc_Vec_Vec_Type
     | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
   function any_l (_ : 'b) : 'a
+  let rec vec < 't > < 'a > (input:t_vec 't 'a) (ret  (field_0:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (field_1:usize))= any
+    
+    [ good (field_0:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (field_1:usize)-> {C_Vec field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (field_1:usize)-> {C_Vec field_0 field_1 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_Alloc_Global_Type
   type t_global  =
     | C_Global
     
   function any_l (_ : 'b) : 'a
+  let rec global (input:t_global) (ret  )= any 
+    [ good -> {C_Global  = input} ret | bad -> {C_Global  <> input} {false} any ]
+    
 end
 module C01ResolveUnsoundness_MakeVecOfSize
   use seq.Seq
@@ -63,51 +107,46 @@ module C01ResolveUnsoundness_MakeVecOfSize
     [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
     
   axiom inv3 : forall x : Seq.seq bool . inv3 x = true
+  predicate invariant2 (self : bool) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant2 (self:bool) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
+    
+  predicate inv2 (_x : bool)
+  let rec inv2 (_x:bool) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ] 
+  axiom inv2 : forall x : bool . inv2 x = true
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use prelude.Borrow
+  predicate invariant1 (self : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant1 (self:borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ] 
+  predicate inv1 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)))
+  let rec inv1 (_x:borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ] 
+  axiom inv1 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) . inv1 x = true
   use prelude.UIntSize
   use prelude.UIntSize
   use prelude.Int
   constant max0 : usize = (18446744073709551615 : usize)
   use seq.Seq
-  predicate inv2 (_x : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))
-  let rec inv2 (_x:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
+  predicate inv0 (_x : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))
+  let rec inv0 (_x:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
     
   function shallow_model0 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) : Seq.seq bool
-  let rec shallow_model0 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq bool))= {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv2 self}
+  let rec shallow_model0 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq bool))= {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self}
     any [ return' (result:Seq.seq bool)-> {result = shallow_model0 self} (! return' {result}) ] 
-  axiom shallow_model0_spec : forall self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv2 self)
+  axiom shallow_model0_spec : forall self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv0 self)
    -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv3 (shallow_model0 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model0 self) <= UIntSize.to_int (max0 : usize))
-  predicate invariant2 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) =
+  predicate invariant0 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv3 (shallow_model0 self)
-  let rec invariant2 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
+  let rec invariant0 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
     
-  axiom inv2 : forall x : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global) . inv2 x = true
-  predicate invariant1 (self : bool) =
-    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant1 (self:bool) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
-    
-  predicate inv1 (_x : bool)
-  let rec inv1 (_x:bool) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ] 
-  axiom inv1 : forall x : bool . inv1 x = true
-  use prelude.Borrow
-  predicate invariant0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) =
-    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ] 
-  predicate inv0 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)))
-  let rec inv0 (_x:borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
-  axiom inv0 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) . inv0 x = true
+  axiom inv0 : forall x : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global) . inv0 x = true
   use prelude.Intrinsic
-  let rec new0 (_1:()) (return'  (ret:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)))= any 
-    [ return' (result:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))-> {inv2 result}
-      {[#"../../../../../creusot-contracts/src/std/vec.rs" 68 26 68 44] Seq.length (shallow_model0 result) = 0}
-      (! return' {result}) ]
-    
   use seq.Seq
   function shallow_model2 (self : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) : Seq.seq bool
     
@@ -115,38 +154,44 @@ module C01ResolveUnsoundness_MakeVecOfSize
     [#"../../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model0 ( * self)
   let rec shallow_model2 (self:borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq bool))= any
     [ return' (result:Seq.seq bool)-> {result = shallow_model2 self} (! return' {result}) ] 
-  let rec push0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) (value:bool) (return'  (ret:()))= {inv1 value}
-    {inv0 self}
+  let rec push0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) (value:bool) (return'  (ret:()))= {inv2 value}
+    {inv1 self}
     any 
     [ return' (result:())-> {[#"../../../../../creusot-contracts/src/std/vec.rs" 78 26 78 51] shallow_model0 ( ^ self) = Seq.snoc (shallow_model2 self) value}
       (! return' {result}) ]
     
+  let rec new0 (_1:()) (return'  (ret:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)))= any 
+    [ return' (result:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))-> {inv0 result}
+      {[#"../../../../../creusot-contracts/src/std/vec.rs" 68 26 68 44] Seq.length (shallow_model0 result) = 0}
+      (! return' {result}) ]
+    
   let rec make_vec_of_size (n:usize) (return'  (ret:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)))= (! bb0
     
-    [ bb7 = return' {_0} 
-    | bb6 = [ &_0 <- out ] any 
-      [ any_ (_any:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))-> [ &out <- _any ] bb7 ]
-       
-    | bb2 = {[#"../01_resolve_unsoundness.rs" 12 16 12 37] (0 : usize) <= i /\ i <= n}
-      (! bb3) 
-      [ bb5 = UIntSize.add {i} {[#"../01_resolve_unsoundness.rs" 15 13 15 14] (1 : usize)} (fun (_ret':usize) -> 
-          [ &i <- _ret' ]
-          bb2)
-      | bb4 = Borrow.borrow_mut <Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)> {out}
-        (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) -> [ &_13 <- _ret' ] 
-          [ &out <-  ^ _13 ]
-          push0 {_13} {[#"../01_resolve_unsoundness.rs" 14 17 14 22] false} (fun (_ret':()) -> [ &_12 <- _ret' ] bb5))
-      | bb3 = UIntSize.le {i} {n} (fun (_ret':bool) -> [ &_9 <- _ret' ] any 
-          [ br0 -> {_9 = false} (! bb6) | br1 -> {_9} (! bb4) ]
-          ) ]
+    [ bb0 = new0 {[#"../01_resolve_unsoundness.rs" 10 29 10 39] ()}
+      (fun (_ret':Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) -> [ &out <- _ret' ] bb1)
+    | bb1 = [ &i <- [#"../01_resolve_unsoundness.rs" 11 16 11 17] (0 : usize) ] bb2
+    | bb2 = bb2 
+      [ bb2 = {[#"../01_resolve_unsoundness.rs" 12 16 12 37] (0 : usize) <= i /\ i <= n}
+        (! bb3) 
+        [ bb3 = UIntSize.le {i} {n} (fun (_ret':bool) -> [ &_9 <- _ret' ] (any 
+            [ br0 -> {_9 = false} (! bb6) | br1 -> {_9} (! bb4) ]
+            ))
+        | bb4 = Borrow.borrow_mut <Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)> {out}
+          (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) -> 
+            [ &out <-  ^ _13 ]
+            [ &_13 <- _ret' ] push0 {_13} {[#"../01_resolve_unsoundness.rs" 14 17 14 22] false} (fun (_ret':()) -> 
+              [ &_12 <- _ret' ]
+              bb5))
+        | bb5 = UIntSize.add {i} {[#"../01_resolve_unsoundness.rs" 15 13 15 14] (1 : usize)} (fun (_ret':usize) -> 
+            [ &i <- _ret' ]
+            bb2) ]
+         ]
       
-    | bb1 = [ &i <- [#"../01_resolve_unsoundness.rs" 11 16 11 17] (0 : usize) ] bb2 
-    | bb0 = new0 {[#"../01_resolve_unsoundness.rs" 10 29 10 39] ()}
-      (fun (_ret':Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) -> [ &out <- _ret' ] bb1)  ]
-    ) 
-    [ return' (result:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))-> {[#"../01_resolve_unsoundness.rs" 8 10 8 29] Seq.length (shallow_model0 result) = UIntSize.to_int n}
-      (! return' {_0}) ]
-    
+    | bb6 = [ &_0 <- out ] (any 
+      [ any_ (_any:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))-> (! [ &out <- _any ] bb7) ]
+      )
+    | bb7 = return' {_0} ]
+    )
     [ & _0 : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global) = any_l () : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)
     | & n : usize = n
     | & out : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global) = any_l () : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)
@@ -154,5 +199,8 @@ module C01ResolveUnsoundness_MakeVecOfSize
     | & _9 : bool = any_l () : bool
     | & _12 : () = any_l () : ()
     | & _13 : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) = any_l () : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) ]
+     
+    [ return' (result:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))-> {[#"../01_resolve_unsoundness.rs" 8 10 8 29] Seq.length (shallow_model0 result) = UIntSize.to_int n}
+      (! return' {result}) ]
     
 end

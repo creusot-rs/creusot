@@ -7,6 +7,13 @@ module C11ArrayTypes_UsesArray_Type
     | C_UsesArray (array int64)
     
   function any_l (_ : 'b) : 'a
+  let rec uses_array (input:t_usesarray) (ret  (field_0:array int64))= any 
+    [ good (field_0:array int64)-> {C_UsesArray field_0 = input}
+      ret {field_0}
+    | bad (field_0:array int64)-> {C_UsesArray field_0 <> input}
+      {false}
+      any ]
+    
   function usesarray_0 (self : t_usesarray) : array int64 =
     match self with
       | C_UsesArray a -> a
@@ -21,9 +28,9 @@ module C11ArrayTypes_Omg
   use prelude.Slice
   use prelude.Intrinsic
   use prelude.Int64
-  use prelude.Int64
   use seq.Seq
   use prelude.Slice
+  use prelude.Int64
   function index_logic0 [@inline:trivial] (self : array int64) (ix : int) : int64 =
     [#"../../../../../creusot-contracts/src/logic/ops.rs" 65 8 65 31] Seq.get (Slice.id self) ix
   let rec index_logic0 (self:array int64) (ix:int) (return'  (ret:int64))= any 
@@ -32,23 +39,24 @@ module C11ArrayTypes_Omg
   use C11ArrayTypes_UsesArray_Type as C11ArrayTypes_UsesArray_Type
   let rec omg (x:C11ArrayTypes_UsesArray_Type.t_usesarray) (return'  (ret:()))= {[#"../11_array_types.rs" 7 11 7 53] Seq.length (Slice.id (C11ArrayTypes_UsesArray_Type.usesarray_0 x)) > 0 /\ Seq.length (Slice.id (C11ArrayTypes_UsesArray_Type.usesarray_0 x)) < UIntSize.to_int (max0 : usize)}
     (! bb0 
-    [ bb1 = 
-      [ &x <- let C11ArrayTypes_UsesArray_Type.C_UsesArray x0 = x in C11ArrayTypes_UsesArray_Type.C_UsesArray (Slice.set (C11ArrayTypes_UsesArray_Type.usesarray_0 x) _3 ([#"../11_array_types.rs" 9 13 9 14] (5 : int64))) ]
-      {[@expl:assertion] [#"../11_array_types.rs" 11 20 11 32] Int64.to_int (index_logic0 (C11ArrayTypes_UsesArray_Type.usesarray_0 x) 0) = 5}
-      [ &_0 <- [#"../11_array_types.rs" 8 29 12 1] () ] return' {_0} 
-    | bb0 = [ &_3 <- [#"../11_array_types.rs" 9 8 9 9] (0 : usize) ] 
-      [ &_4 <- Slice.length (C11ArrayTypes_UsesArray_Type.usesarray_0 x) ]
-      UIntSize.lt {_3} {_4} (fun (_ret':bool) -> 
-        [ &_5 <- _ret' ]
-        {[@expl:index in bounds] [#"../11_array_types.rs" 9 4 9 10] _5}
-        bb1)  ]
-    ) [ return' (result:())-> (! return' {_0}) ] 
+    [ bb0 = [ &_3 <- [#"../11_array_types.rs" 9 8 9 9] (0 : usize) ] C11ArrayTypes_UsesArray_Type.uses_array {x}
+      (fun (rf_0':array int64) -> [ &_4 <- Slice.length rf_0' ] UIntSize.lt {_3} {_4} (fun (_ret':bool) -> 
+          [ &_5 <- _ret' ]
+          {[@expl:index in bounds] [#"../11_array_types.rs" 9 4 9 10] _5}
+          bb1))
+    | bb1 = C11ArrayTypes_UsesArray_Type.uses_array {x} (fun (f_0':array int64) -> Slice.get <int64> {f_0'} {_3}
+        (fun (r0':int64) -> Slice.set <int64> {f_0'} {_3} {[#"../11_array_types.rs" 9 13 9 14] (5 : int64)}
+          (fun (r1':array int64) -> 
+            [ &x <- C11ArrayTypes_UsesArray_Type.C_UsesArray r1' ]
+            {[@expl:assertion] [#"../11_array_types.rs" 11 20 11 32] Int64.to_int (index_logic0 (C11ArrayTypes_UsesArray_Type.usesarray_0 x) 0) = 5}
+            [ &_0 <- [#"../11_array_types.rs" 8 29 12 1] () ] return' {_0}))) ]
+    )
     [ & _0 : () = any_l () : ()
     | & x : C11ArrayTypes_UsesArray_Type.t_usesarray = x
     | & _3 : usize = any_l () : usize
     | & _4 : usize = any_l () : usize
     | & _5 : bool = any_l () : bool ]
-    
+     [ return' (result:())-> (! return' {result}) ] 
 end
 module C11ArrayTypes_CallOmg
   use prelude.Slice
@@ -64,13 +72,13 @@ module C11ArrayTypes_CallOmg
   let rec omg0 (x:C11ArrayTypes_UsesArray_Type.t_usesarray) (return'  (ret:()))= {[#"../11_array_types.rs" 7 11 7 53] Seq.length (Slice.id (C11ArrayTypes_UsesArray_Type.usesarray_0 x)) > 0 /\ Seq.length (Slice.id (C11ArrayTypes_UsesArray_Type.usesarray_0 x)) < UIntSize.to_int (max0 : usize)}
     any [ return' (result:())-> (! return' {result}) ] 
   let rec call_omg (_1:()) (return'  (ret:()))= (! bb0 
-    [ bb1 = return' {_0} 
-    | bb0 = 
+    [ bb0 = 
       [ &arr <- Slice.create ([#"../11_array_types.rs" 15 14 15 24] (5 : usize)) (fun _ -> [#"../11_array_types.rs" 15 15 15 20] (3 : int64)) ]
-      [ &_2 <- C11ArrayTypes_UsesArray_Type.C_UsesArray arr ] omg0 {_2} (fun (_ret':()) -> [ &_0 <- _ret' ] bb1)  ]
-    ) [ return' (result:())-> (! return' {_0}) ] 
+      [ &_2 <- C11ArrayTypes_UsesArray_Type.C_UsesArray arr ] omg0 {_2} (fun (_ret':()) -> [ &_0 <- _ret' ] bb1)
+    | bb1 = return' {_0} ]
+    )
     [ & _0 : () = any_l () : ()
     | & arr : array int64 = any_l () : array int64
     | & _2 : C11ArrayTypes_UsesArray_Type.t_usesarray = any_l () : C11ArrayTypes_UsesArray_Type.t_usesarray ]
-    
+     [ return' (result:())-> (! return' {result}) ] 
 end

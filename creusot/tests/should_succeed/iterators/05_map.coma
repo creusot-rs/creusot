@@ -4,6 +4,13 @@ module C05Map_Map_Type
     | C_Map 'i 'f
     
   function any_l (_ : 'b) : 'a
+  let rec map < 'i > < 'b > < 'f > (input:t_map 'i 'b 'f) (ret  (field_0:'i) (field_1:'f))= any 
+    [ good (field_0:'i) (field_1:'f)-> {C_Map field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:'i) (field_1:'f)-> {C_Map field_0 field_1 <> input}
+      {false}
+      any ]
+    
   function map_iter (self : t_map 'i 'b 'f) : 'i =
     match self with
       | C_Map a _ -> a
@@ -513,11 +520,16 @@ module Core_Option_Option_Type
     | C_Some 't
     
   function any_l (_ : 'b) : 'a
-  function some_0 (self : t_option 't) : 't =
-    match self with
-      | C_None -> any_l self
-      | C_Some a -> a
-      end
+  let rec none < 't > (input:t_option 't) (ret  )= any 
+    [ good -> {C_None  = input} ret | bad -> {C_None  <> input} {false} any ]
+    
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Some field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Some field_0 <> input}
+      {false}
+      any ]
+    
 end
 module C05Map_Impl1_ProducesOne_Impl
   type i
@@ -1037,16 +1049,16 @@ module C05Map_Impl0_Next
     [ return' (result:bool)-> {result = inv12 _x} (! return' {result}) ]
     
   axiom inv12 : forall x : Seq.seq (borrowed f) . inv12 x = true
-  predicate invariant11 (self : borrowed i)
-  let rec invariant11 (self:borrowed i) (return'  (ret:bool))= any 
+  type item0
+  predicate invariant11 (self : item0)
+  let rec invariant11 (self:item0) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant11 self} (! return' {result}) ]
     
-  predicate inv11 (_x : borrowed i)
-  let rec inv11 (_x:borrowed i) (return'  (ret:bool))= any 
+  predicate inv11 (_x : item0)
+  let rec inv11 (_x:item0) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv11 _x} (! return' {result}) ]
     
-  axiom inv11 : forall x : borrowed i . inv11 x = true
-  type item0
+  axiom inv11 : forall x : item0 . inv11 x = true
   predicate invariant10 (self : Seq.seq item0)
   let rec invariant10 (self:Seq.seq item0) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant10 self} (! return' {result}) ]
@@ -1056,19 +1068,35 @@ module C05Map_Impl0_Next
     [ return' (result:bool)-> {result = inv10 _x} (! return' {result}) ]
     
   axiom inv10 : forall x : Seq.seq item0 . inv10 x = true
-  predicate invariant9 (self : item0)
-  let rec invariant9 (self:item0) (return'  (ret:bool))= any 
+  predicate invariant9 (self : borrowed f)
+  let rec invariant9 (self:borrowed f) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant9 self} (! return' {result}) ]
     
-  predicate inv9 (_x : item0)
-  let rec inv9 (_x:item0) (return'  (ret:bool))= any 
+  predicate inv9 (_x : borrowed f)
+  let rec inv9 (_x:borrowed f) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv9 _x} (! return' {result}) ]
     
-  axiom inv9 : forall x : item0 . inv9 x = true
-  predicate inv2 (_x : f)
-  let rec inv2 (_x:f) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ] 
-  predicate inv3 (_x : i)
-  let rec inv3 (_x:i) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ] 
+  axiom inv9 : forall x : borrowed f . inv9 x = true
+  predicate invariant8 (self : b)
+  let rec invariant8 (self:b) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant8 self} (! return' {result}) ]
+    
+  predicate inv8 (_x : b)
+  let rec inv8 (_x:b) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv8 _x} (! return' {result}) ] 
+  axiom inv8 : forall x : b . inv8 x = true
+  predicate invariant7 (self : item0)
+  let rec invariant7 (self:item0) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant7 self} (! return' {result}) ]
+    
+  predicate inv7 (_x : item0)
+  let rec inv7 (_x:item0) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv7 _x} (! return' {result}) ]
+    
+  axiom inv7 : forall x : item0 . inv7 x = true
+  predicate inv3 (_x : f)
+  let rec inv3 (_x:f) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ] 
+  predicate inv0 (_x : i)
+  let rec inv0 (_x:i) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
   predicate precondition0 (self : f) (_2 : item0)
   let rec precondition0 (self:f) (_2:item0) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = precondition0 self _2} (! return' {result}) ]
@@ -1079,8 +1107,8 @@ module C05Map_Impl0_Next
     
   use seq.Seq
   predicate next_precondition0 [#"../05_map.rs" 74 4 74 50] (iter : i) (func : f) =
-    [#"../05_map.rs" 75 8 77 9] forall i : i . forall e : item0 . inv3 i
-     -> inv9 e  -> produces0 iter (Seq.singleton e) i  -> precondition0 func (e)
+    [#"../05_map.rs" 75 8 77 9] forall i : i . forall e : item0 . inv0 i
+     -> inv7 e  -> produces0 iter (Seq.singleton e) i  -> precondition0 func (e)
   let rec next_precondition0 (iter:i) (func:f) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = next_precondition0 iter func} (! return' {result}) ]
     
@@ -1093,18 +1121,12 @@ module C05Map_Impl0_Next
   let rec unnest0 (self:f) (_2:f) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = unnest0 self _2} (! return' {result}) ]
     
-  predicate inv5 (_x : borrowed f)
-  let rec inv5 (_x:borrowed f) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ]
-    
-  predicate inv7 (_x : b)
-  let rec inv7 (_x:b) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv7 _x} (! return' {result}) ] 
   predicate preservation0 [#"../05_map.rs" 81 4 81 45] (iter : i) (func : f) =
-    [#"../05_map.rs" 82 8 89 9] forall i : i . forall b : b . forall f : borrowed f . forall e2 : item0 . forall e1 : item0 . forall s : Seq.seq item0 . inv3 i
-     -> inv7 b
-     -> inv5 f
-     -> inv9 e2
-     -> inv9 e1
+    [#"../05_map.rs" 82 8 89 9] forall i : i . forall b : b . forall f : borrowed f . forall e2 : item0 . forall e1 : item0 . forall s : Seq.seq item0 . inv0 i
+     -> inv8 b
+     -> inv9 f
+     -> inv7 e2
+     -> inv7 e1
      -> inv10 s
      -> unnest0 func ( * f)
      -> produces0 iter (Seq.snoc (Seq.snoc s e1) e2) i
@@ -1116,30 +1138,29 @@ module C05Map_Impl0_Next
   let rec completed1 (self:borrowed i) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = completed1 self} (! return' {result}) ]
     
+  predicate inv5 (_x : borrowed i)
+  let rec inv5 (_x:borrowed i) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ]
+    
   predicate reinitialize0 [#"../05_map.rs" 93 4 93 29] (_1 : ()) =
-    [#"../05_map.rs" 94 8 98 9] forall func : f . forall iter : borrowed i . inv2 func
-     -> inv11 iter  -> completed1 iter  -> next_precondition0 ( ^ iter) func /\ preservation0 ( ^ iter) func
+    [#"../05_map.rs" 94 8 98 9] forall func : f . forall iter : borrowed i . inv3 func
+     -> inv5 iter  -> completed1 iter  -> next_precondition0 ( ^ iter) func /\ preservation0 ( ^ iter) func
   let rec reinitialize0 (_1:()) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = reinitialize0 _1} (! return' {result}) ]
     
   use C05Map_Map_Type as C05Map_Map_Type
-  predicate invariant8 [#"../05_map.rs" 131 4 131 30] (self : C05Map_Map_Type.t_map i b f) =
+  predicate invariant6 [#"../05_map.rs" 131 4 131 30] (self : C05Map_Map_Type.t_map i b f) =
     [#"../05_map.rs" 133 12 135 57] reinitialize0 () /\ preservation0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self) /\ next_precondition0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
-  let rec invariant8 (self:C05Map_Map_Type.t_map i b f) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant8 self} (! return' {result}) ]
+  let rec invariant6 (self:C05Map_Map_Type.t_map i b f) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant6 self} (! return' {result}) ]
     
-  predicate inv8 (_x : C05Map_Map_Type.t_map i b f)
-  let rec inv8 (_x:C05Map_Map_Type.t_map i b f) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv8 _x} (! return' {result}) ]
+  predicate inv6 (_x : C05Map_Map_Type.t_map i b f)
+  let rec inv6 (_x:C05Map_Map_Type.t_map i b f) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv6 _x} (! return' {result}) ]
     
-  axiom inv8 : forall x : C05Map_Map_Type.t_map i b f . inv8 x = (invariant8 x /\ match x with
+  axiom inv6 : forall x : C05Map_Map_Type.t_map i b f . inv6 x = (invariant6 x /\ match x with
     | C05Map_Map_Type.C_Map iter func -> true
     end)
-  predicate invariant7 (self : b)
-  let rec invariant7 (self:b) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant7 self} (! return' {result}) ]
-    
-  axiom inv7 : forall x : b . inv7 x = true
   predicate resolve3 (self : f)
   let rec resolve3 (self:f) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve3 self} (! return' {result}) ]
@@ -1148,58 +1169,49 @@ module C05Map_Impl0_Next
   let rec postcondition_once0 (self:f) (_2:item0) (_3:b) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = postcondition_once0 self _2 _3} (! return' {result}) ]
     
-  predicate inv6 (_x : item0)
-  let rec inv6 (_x:item0) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv6 _x} (! return' {result}) ]
-    
   function fn_mut_once0 (self : f) (args : item0) (res : b) : ()
-  let rec fn_mut_once0 (self:f) (args:item0) (res:b) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] inv7 res}
-    {[#"../../../../../creusot-contracts/src/std/ops.rs" 123 25 123 29] inv6 args}
-    {[#"../../../../../creusot-contracts/src/std/ops.rs" 123 19 123 23] inv2 self}
+  let rec fn_mut_once0 (self:f) (args:item0) (res:b) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] inv8 res}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 123 25 123 29] inv11 args}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 123 19 123 23] inv3 self}
     any [ return' (result:())-> {result = fn_mut_once0 self args res} (! return' {result}) ] 
-  axiom fn_mut_once0_spec : forall self : f, args : item0, res : b . ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 19 123 23] inv2 self)
-   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 25 123 29] inv6 args)
-   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] inv7 res)
-   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] postcondition_once0 self args res = (exists s : borrowed f . inv5 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve3 ( ^ s)))
+  axiom fn_mut_once0_spec : forall self : f, args : item0, res : b . ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 19 123 23] inv3 self)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 25 123 29] inv11 args)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] inv8 res)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] postcondition_once0 self args res = (exists s : borrowed f . inv9 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve3 ( ^ s)))
   function unnest_trans0 (self : f) (b : f) (c : f) : ()
-  let rec unnest_trans0 (self:f) (b:f) (c:f) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/std/ops.rs" 117 35 117 36] inv2 c}
-    {[#"../../../../../creusot-contracts/src/std/ops.rs" 117 26 117 27] inv2 b}
-    {[#"../../../../../creusot-contracts/src/std/ops.rs" 117 20 117 24] inv2 self}
+  let rec unnest_trans0 (self:f) (b:f) (c:f) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/std/ops.rs" 117 35 117 36] inv3 c}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 117 26 117 27] inv3 b}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 117 20 117 24] inv3 self}
     {[#"../../../../../creusot-contracts/src/std/ops.rs" 115 15 115 26] unnest0 b c}
     {[#"../../../../../creusot-contracts/src/std/ops.rs" 114 15 114 29] unnest0 self b}
     any [ return' (result:())-> {result = unnest_trans0 self b c} (! return' {result}) ] 
   axiom unnest_trans0_spec : forall self : f, b : f, c : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 114 15 114 29] unnest0 self b)
    -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 115 15 115 26] unnest0 b c)
-   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 20 117 24] inv2 self)
-   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 26 117 27] inv2 b)
-   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 35 117 36] inv2 c)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 20 117 24] inv3 self)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 26 117 27] inv3 b)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 117 35 117 36] inv3 c)
    -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 116 14 116 28] unnest0 self c)
   function unnest_refl0 (self : f) : ()
-  let rec unnest_refl0 (self:f) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/std/ops.rs" 110 19 110 23] inv2 self}
+  let rec unnest_refl0 (self:f) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/std/ops.rs" 110 19 110 23] inv3 self}
     any [ return' (result:())-> {result = unnest_refl0 self} (! return' {result}) ] 
-  axiom unnest_refl0_spec : forall self : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 110 19 110 23] inv2 self)
+  axiom unnest_refl0_spec : forall self : f . ([#"../../../../../creusot-contracts/src/std/ops.rs" 110 19 110 23] inv3 self)
    -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 109 14 109 31] unnest0 self self)
   function postcondition_mut_unnest0 (self : borrowed f) (args : item0) (res : b) : ()
-  let rec postcondition_mut_unnest0 (self:borrowed f) (args:item0) (res:b) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/std/ops.rs" 105 55 105 58] inv7 res}
-    {[#"../../../../../creusot-contracts/src/std/ops.rs" 105 43 105 47] inv6 args}
-    {[#"../../../../../creusot-contracts/src/std/ops.rs" 105 37 105 41] inv5 self}
+  let rec postcondition_mut_unnest0 (self:borrowed f) (args:item0) (res:b) (return'  (ret:()))= {[#"../../../../../creusot-contracts/src/std/ops.rs" 105 55 105 58] inv8 res}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 105 43 105 47] inv11 args}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 105 37 105 41] inv9 self}
     {[#"../../../../../creusot-contracts/src/std/ops.rs" 103 15 103 48] postcondition_mut0 self args res}
     any [ return' (result:())-> {result = postcondition_mut_unnest0 self args res} (! return' {result}) ] 
   axiom postcondition_mut_unnest0_spec : forall self : borrowed f, args : item0, res : b . ([#"../../../../../creusot-contracts/src/std/ops.rs" 103 15 103 48] postcondition_mut0 self args res)
-   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 105 37 105 41] inv5 self)
-   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 105 43 105 47] inv6 args)
-   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 105 55 105 58] inv7 res)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 105 37 105 41] inv9 self)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 105 43 105 47] inv11 args)
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 105 55 105 58] inv8 res)
    -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 104 14 104 35] unnest0 ( * self) ( ^ self))
-  predicate invariant6 (self : item0)
-  let rec invariant6 (self:item0) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant6 self} (! return' {result}) ]
-    
-  axiom inv6 : forall x : item0 . inv6 x = true
-  predicate invariant5 (self : borrowed f)
-  let rec invariant5 (self:borrowed f) (return'  (ret:bool))= any 
+  predicate invariant5 (self : borrowed i)
+  let rec invariant5 (self:borrowed i) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant5 self} (! return' {result}) ]
     
-  axiom inv5 : forall x : borrowed f . inv5 x = true
+  axiom inv5 : forall x : borrowed i . inv5 x = true
   use Core_Option_Option_Type as Core_Option_Option_Type
   predicate invariant4 (self : Core_Option_Option_Type.t_option b)
   let rec invariant4 (self:Core_Option_Option_Type.t_option b) (return'  (ret:bool))= any 
@@ -1210,40 +1222,20 @@ module C05Map_Impl0_Next
     [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ]
     
   axiom inv4 : forall x : Core_Option_Option_Type.t_option b . inv4 x = true
-  predicate invariant3 (self : i)
-  let rec invariant3 (self:i) (return'  (ret:bool))= any 
+  predicate invariant3 (self : f)
+  let rec invariant3 (self:f) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
     
-  axiom inv3 : forall x : i . inv3 x = true
-  predicate invariant2 (self : f)
-  let rec invariant2 (self:f) (return'  (ret:bool))= any 
+  axiom inv3 : forall x : f . inv3 x = true
+  predicate invariant2 (self : borrowed (C05Map_Map_Type.t_map i b f))
+  let rec invariant2 (self:borrowed (C05Map_Map_Type.t_map i b f)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
     
-  axiom inv2 : forall x : f . inv2 x = true
-  use seq.Seq
-  function produces_trans0 [#"../common.rs" 21 4 21 91] (a : i) (ab : Seq.seq item0) (b : i) (bc : Seq.seq item0) (c : i) : ()
+  predicate inv2 (_x : borrowed (C05Map_Map_Type.t_map i b f))
+  let rec inv2 (_x:borrowed (C05Map_Map_Type.t_map i b f)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
     
-  let rec produces_trans0 (a:i) (ab:Seq.seq item0) (b:i) (bc:Seq.seq item0) (c:i) (return'  (ret:()))= {[#"../common.rs" 21 82 21 83] inv3 c}
-    {[#"../common.rs" 21 61 21 63] inv10 bc}
-    {[#"../common.rs" 21 52 21 53] inv3 b}
-    {[#"../common.rs" 21 31 21 33] inv10 ab}
-    {[#"../common.rs" 21 22 21 23] inv3 a}
-    {[#"../common.rs" 19 15 19 32] produces0 b bc c}
-    {[#"../common.rs" 18 15 18 32] produces0 a ab b}
-    any [ return' (result:())-> {result = produces_trans0 a ab b bc c} (! return' {result}) ] 
-  axiom produces_trans0_spec : forall a : i, ab : Seq.seq item0, b : i, bc : Seq.seq item0, c : i . ([#"../common.rs" 18 15 18 32] produces0 a ab b)
-   -> ([#"../common.rs" 19 15 19 32] produces0 b bc c)
-   -> ([#"../common.rs" 21 22 21 23] inv3 a)
-   -> ([#"../common.rs" 21 31 21 33] inv10 ab)
-   -> ([#"../common.rs" 21 52 21 53] inv3 b)
-   -> ([#"../common.rs" 21 61 21 63] inv10 bc)
-   -> ([#"../common.rs" 21 82 21 83] inv3 c)  -> ([#"../common.rs" 20 14 20 42] produces0 a (Seq.(++) ab bc) c)
-  use seq.Seq
-  function produces_refl0 [#"../common.rs" 15 4 15 27] (self : i) : ()
-  let rec produces_refl0 (self:i) (return'  (ret:()))= {[#"../common.rs" 15 21 15 25] inv3 self}
-    any [ return' (result:())-> {result = produces_refl0 self} (! return' {result}) ] 
-  axiom produces_refl0_spec : forall self : i . ([#"../common.rs" 15 21 15 25] inv3 self)
-   -> ([#"../common.rs" 14 14 14 45] produces0 self (Seq.empty  : Seq.seq item0) self)
+  axiom inv2 : forall x : borrowed (C05Map_Map_Type.t_map i b f) . inv2 x = (inv6 ( * x) /\ inv6 ( ^ x))
   predicate invariant1 (self : Core_Option_Option_Type.t_option item0)
   let rec invariant1 (self:Core_Option_Option_Type.t_option item0) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
@@ -1253,15 +1245,35 @@ module C05Map_Impl0_Next
     [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
     
   axiom inv1 : forall x : Core_Option_Option_Type.t_option item0 . inv1 x = true
-  predicate invariant0 (self : borrowed (C05Map_Map_Type.t_map i b f))
-  let rec invariant0 (self:borrowed (C05Map_Map_Type.t_map i b f)) (return'  (ret:bool))= any 
+  predicate invariant0 (self : i)
+  let rec invariant0 (self:i) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
     
-  predicate inv0 (_x : borrowed (C05Map_Map_Type.t_map i b f))
-  let rec inv0 (_x:borrowed (C05Map_Map_Type.t_map i b f)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+  axiom inv0 : forall x : i . inv0 x = true
+  use seq.Seq
+  function produces_trans0 [#"../common.rs" 21 4 21 91] (a : i) (ab : Seq.seq item0) (b : i) (bc : Seq.seq item0) (c : i) : ()
     
-  axiom inv0 : forall x : borrowed (C05Map_Map_Type.t_map i b f) . inv0 x = (inv8 ( * x) /\ inv8 ( ^ x))
+  let rec produces_trans0 (a:i) (ab:Seq.seq item0) (b:i) (bc:Seq.seq item0) (c:i) (return'  (ret:()))= {[#"../common.rs" 21 82 21 83] inv0 c}
+    {[#"../common.rs" 21 61 21 63] inv10 bc}
+    {[#"../common.rs" 21 52 21 53] inv0 b}
+    {[#"../common.rs" 21 31 21 33] inv10 ab}
+    {[#"../common.rs" 21 22 21 23] inv0 a}
+    {[#"../common.rs" 19 15 19 32] produces0 b bc c}
+    {[#"../common.rs" 18 15 18 32] produces0 a ab b}
+    any [ return' (result:())-> {result = produces_trans0 a ab b bc c} (! return' {result}) ] 
+  axiom produces_trans0_spec : forall a : i, ab : Seq.seq item0, b : i, bc : Seq.seq item0, c : i . ([#"../common.rs" 18 15 18 32] produces0 a ab b)
+   -> ([#"../common.rs" 19 15 19 32] produces0 b bc c)
+   -> ([#"../common.rs" 21 22 21 23] inv0 a)
+   -> ([#"../common.rs" 21 31 21 33] inv10 ab)
+   -> ([#"../common.rs" 21 52 21 53] inv0 b)
+   -> ([#"../common.rs" 21 61 21 63] inv10 bc)
+   -> ([#"../common.rs" 21 82 21 83] inv0 c)  -> ([#"../common.rs" 20 14 20 42] produces0 a (Seq.(++) ab bc) c)
+  use seq.Seq
+  function produces_refl0 [#"../common.rs" 15 4 15 27] (self : i) : ()
+  let rec produces_refl0 (self:i) (return'  (ret:()))= {[#"../common.rs" 15 21 15 25] inv0 self}
+    any [ return' (result:())-> {result = produces_refl0 self} (! return' {result}) ] 
+  axiom produces_refl0_spec : forall self : i . ([#"../common.rs" 15 21 15 25] inv0 self)
+   -> ([#"../common.rs" 14 14 14 45] produces0 self (Seq.empty  : Seq.seq item0) self)
   use seq.Seq
   use seq.Seq
   use seq.Seq
@@ -1285,14 +1297,14 @@ module C05Map_Impl0_Next
   predicate produces_one0 [#"../05_map.rs" 117 4 117 57] (self : C05Map_Map_Type.t_map i b f) (visited : b) (succ : C05Map_Map_Type.t_map i b f)
     
    =
-    [#"../05_map.rs" 118 8 123 9] exists f : borrowed f . inv5 f /\  * f = C05Map_Map_Type.map_func self /\  ^ f = C05Map_Map_Type.map_func succ /\ (exists e : item0 . inv9 e /\ produces0 (C05Map_Map_Type.map_iter self) (Seq.singleton e) (C05Map_Map_Type.map_iter succ) /\ precondition0 ( * f) (e) /\ postcondition_mut0 f (e) visited)
-  let rec produces_one0 (self:C05Map_Map_Type.t_map i b f) (visited:b) (succ:C05Map_Map_Type.t_map i b f) (return'  (ret:bool))= {[#"../05_map.rs" 117 38 117 42] inv8 succ}
-    {[#"../05_map.rs" 117 26 117 33] inv7 visited}
-    {[#"../05_map.rs" 117 20 117 24] inv8 self}
+    [#"../05_map.rs" 118 8 123 9] exists f : borrowed f . inv9 f /\  * f = C05Map_Map_Type.map_func self /\  ^ f = C05Map_Map_Type.map_func succ /\ (exists e : item0 . inv7 e /\ produces0 (C05Map_Map_Type.map_iter self) (Seq.singleton e) (C05Map_Map_Type.map_iter succ) /\ precondition0 ( * f) (e) /\ postcondition_mut0 f (e) visited)
+  let rec produces_one0 (self:C05Map_Map_Type.t_map i b f) (visited:b) (succ:C05Map_Map_Type.t_map i b f) (return'  (ret:bool))= {[#"../05_map.rs" 117 38 117 42] inv6 succ}
+    {[#"../05_map.rs" 117 26 117 33] inv8 visited}
+    {[#"../05_map.rs" 117 20 117 24] inv6 self}
     any [ return' (result:bool)-> {result = produces_one0 self visited succ} (! return' {result}) ] 
-  axiom produces_one0_spec : forall self : C05Map_Map_Type.t_map i b f, visited : b, succ : C05Map_Map_Type.t_map i b f . ([#"../05_map.rs" 117 20 117 24] inv8 self)
-   -> ([#"../05_map.rs" 117 26 117 33] inv7 visited)
-   -> ([#"../05_map.rs" 117 38 117 42] inv8 succ)
+  axiom produces_one0_spec : forall self : C05Map_Map_Type.t_map i b f, visited : b, succ : C05Map_Map_Type.t_map i b f . ([#"../05_map.rs" 117 20 117 24] inv6 self)
+   -> ([#"../05_map.rs" 117 26 117 33] inv8 visited)
+   -> ([#"../05_map.rs" 117 38 117 42] inv6 succ)
    -> ([#"../05_map.rs" 116 14 116 68] produces_one0 self visited succ = produces1 self (Seq.singleton visited) succ)
   predicate completed0 [#"../05_map.rs" 22 4 22 35] (self : borrowed (C05Map_Map_Type.t_map i b f)) =
     [#"../05_map.rs" 23 8 23 75] completed1 (Borrow.borrow_logic (C05Map_Map_Type.map_iter ( * self)) (C05Map_Map_Type.map_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1)) /\ C05Map_Map_Type.map_func ( * self) = C05Map_Map_Type.map_func ( ^ self)
@@ -1301,7 +1313,49 @@ module C05Map_Impl0_Next
     
   use prelude.Snapshot
   use prelude.Intrinsic
-  let rec next0 (self:borrowed i) (return'  (ret:Core_Option_Option_Type.t_option item0))= {[#"../common.rs" 27 17 27 21] inv11 self}
+  predicate resolve2 (self : Snapshot.snap_ty ())
+  let rec resolve2 (self:Snapshot.snap_ty ()) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
+    
+  let rec call_mut0 (self:borrowed f) (args:item0) (return'  (ret:b))= {inv11 args}
+    {inv9 self}
+    {[#"../../../../../creusot-contracts/src/std/ops.rs" 160 27 160 52] precondition0 ( * self) args}
+    any 
+    [ return' (result:b)-> {inv8 result}
+      {[#"../../../../../creusot-contracts/src/std/ops.rs" 148 0 172 1] postcondition_mut0 self args result}
+      (! return' {result}) ]
+    
+  use prelude.Snapshot
+  function produces_one_invariant0 [#"../05_map.rs" 107 4 107 73] (self : C05Map_Map_Type.t_map i b f) (e : item0) (r : b) (f : borrowed f) (iter : i) : ()
+    
+  let rec produces_one_invariant0 (self:C05Map_Map_Type.t_map i b f) (e:item0) (r:b) (f:borrowed f) (iter:i) (return'  (ret:()))= {[#"../05_map.rs" 107 65 107 69] inv0 iter}
+    {[#"../05_map.rs" 107 54 107 55] inv9 f}
+    {[#"../05_map.rs" 107 48 107 49] inv8 r}
+    {[#"../05_map.rs" 107 36 107 37] inv7 e}
+    {[#"../05_map.rs" 107 30 107 34] inv6 self}
+    {[#"../05_map.rs" 104 15 104 43] postcondition_mut0 f (e) r}
+    {[#"../05_map.rs" 103 15 103 30]  * f = C05Map_Map_Type.map_func self}
+    {[#"../05_map.rs" 102 4 102 60] produces0 (C05Map_Map_Type.map_iter self) (Seq.singleton e) iter}
+    any [ return' (result:())-> {result = produces_one_invariant0 self e r f iter} (! return' {result}) ] 
+  axiom produces_one_invariant0_spec : forall self : C05Map_Map_Type.t_map i b f, e : item0, r : b, f : borrowed f, iter : i . ([#"../05_map.rs" 102 4 102 60] produces0 (C05Map_Map_Type.map_iter self) (Seq.singleton e) iter)
+   -> ([#"../05_map.rs" 103 15 103 30]  * f = C05Map_Map_Type.map_func self)
+   -> ([#"../05_map.rs" 104 15 104 43] postcondition_mut0 f (e) r)
+   -> ([#"../05_map.rs" 107 30 107 34] inv6 self)
+   -> ([#"../05_map.rs" 107 36 107 37] inv7 e)
+   -> ([#"../05_map.rs" 107 48 107 49] inv8 r)
+   -> ([#"../05_map.rs" 107 54 107 55] inv9 f)
+   -> ([#"../05_map.rs" 107 65 107 69] inv0 iter)
+   -> ([#"../05_map.rs" 106 14 106 47] next_precondition0 iter ( ^ f)) && ([#"../05_map.rs" 105 14 105 42] preservation0 iter ( ^ f))
+  predicate resolve1 (self : borrowed (C05Map_Map_Type.t_map i b f)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed (C05Map_Map_Type.t_map i b f)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : Core_Option_Option_Type.t_option item0)
+  let rec resolve0 (self:Core_Option_Option_Type.t_option item0) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec next0 (self:borrowed i) (return'  (ret:Core_Option_Option_Type.t_option item0))= {[#"../common.rs" 27 17 27 21] inv5 self}
     any 
     [ return' (result:Core_Option_Option_Type.t_option item0)-> {[#"../common.rs" 27 26 27 44] inv1 result}
       {[#"../common.rs" 23 14 26 5] match result with
@@ -1310,98 +1364,54 @@ module C05Map_Impl0_Next
         end}
       (! return' {result}) ]
     
-  use prelude.Snapshot
-  function produces_one_invariant0 [#"../05_map.rs" 107 4 107 73] (self : C05Map_Map_Type.t_map i b f) (e : item0) (r : b) (f : borrowed f) (iter : i) : ()
-    
-  let rec produces_one_invariant0 (self:C05Map_Map_Type.t_map i b f) (e:item0) (r:b) (f:borrowed f) (iter:i) (return'  (ret:()))= {[#"../05_map.rs" 107 65 107 69] inv3 iter}
-    {[#"../05_map.rs" 107 54 107 55] inv5 f}
-    {[#"../05_map.rs" 107 48 107 49] inv7 r}
-    {[#"../05_map.rs" 107 36 107 37] inv9 e}
-    {[#"../05_map.rs" 107 30 107 34] inv8 self}
-    {[#"../05_map.rs" 104 15 104 43] postcondition_mut0 f (e) r}
-    {[#"../05_map.rs" 103 15 103 30]  * f = C05Map_Map_Type.map_func self}
-    {[#"../05_map.rs" 102 4 102 60] produces0 (C05Map_Map_Type.map_iter self) (Seq.singleton e) iter}
-    any [ return' (result:())-> {result = produces_one_invariant0 self e r f iter} (! return' {result}) ] 
-  axiom produces_one_invariant0_spec : forall self : C05Map_Map_Type.t_map i b f, e : item0, r : b, f : borrowed f, iter : i . ([#"../05_map.rs" 102 4 102 60] produces0 (C05Map_Map_Type.map_iter self) (Seq.singleton e) iter)
-   -> ([#"../05_map.rs" 103 15 103 30]  * f = C05Map_Map_Type.map_func self)
-   -> ([#"../05_map.rs" 104 15 104 43] postcondition_mut0 f (e) r)
-   -> ([#"../05_map.rs" 107 30 107 34] inv8 self)
-   -> ([#"../05_map.rs" 107 36 107 37] inv9 e)
-   -> ([#"../05_map.rs" 107 48 107 49] inv7 r)
-   -> ([#"../05_map.rs" 107 54 107 55] inv5 f)
-   -> ([#"../05_map.rs" 107 65 107 69] inv3 iter)
-   -> ([#"../05_map.rs" 106 14 106 47] next_precondition0 iter ( ^ f)) && ([#"../05_map.rs" 105 14 105 42] preservation0 iter ( ^ f))
-  predicate resolve2 (self : Snapshot.snap_ty ())
-  let rec resolve2 (self:Snapshot.snap_ty ()) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
-    
-  let rec call_mut0 (self:borrowed f) (args:item0) (return'  (ret:b))= {inv6 args}
-    {inv5 self}
-    {[#"../../../../../creusot-contracts/src/std/ops.rs" 160 27 160 52] precondition0 ( * self) args}
-    any 
-    [ return' (result:b)-> {inv7 result}
-      {[#"../../../../../creusot-contracts/src/std/ops.rs" 148 0 172 1] postcondition_mut0 self args result}
-      (! return' {result}) ]
-    
-  predicate resolve1 (self : Core_Option_Option_Type.t_option item0)
-  let rec resolve1 (self:Core_Option_Option_Type.t_option item0) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
-    
-  predicate resolve0 (self : borrowed (C05Map_Map_Type.t_map i b f)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve0 (self:borrowed (C05Map_Map_Type.t_map i b f)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
-  let rec next (self:borrowed (C05Map_Map_Type.t_map i b f)) (return'  (ret:Core_Option_Option_Type.t_option b))= {[#"../05_map.rs" 60 17 60 21] inv0 self}
+  let rec next (self:borrowed (C05Map_Map_Type.t_map i b f)) (return'  (ret:Core_Option_Option_Type.t_option b))= {[#"../05_map.rs" 60 17 60 21] inv2 self}
     (! bb0 
-    [ bb13 = return' {_0} 
-    | bb12 = bb13 
-    | bb2 = {[@expl:type invariant] inv1 _3}
-      -{resolve1 _3}- {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option b ] bb12 
-    | bb11 = bb12 
-    | bb10 = bb11 
-    | bb9 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_Some _11 ] any [ any_ (_any:b)-> [ &_11 <- _any ] bb10 ]  
-    | bb8 = bb9 
-    | bb7 = -{resolve2 _9}- Borrow.borrow_final <f> {C05Map_Map_Type.map_func ( * self)}
-      {Borrow.inherit_id (Borrow.get_id self) 2} (fun (_ret':borrowed f) -> [ &_12 <- _ret' ] 
-        [ &self <- { self with current = (let C05Map_Map_Type.C_Map x0 x1 =  * self in C05Map_Map_Type.C_Map x0 ( ^ _12)) ; } ]
-        -{inv2 ( ^ _12)}- [ &_13 <- (v) ] any 
-        [ any_ (_any:item0)-> [ &v <- _any ] call_mut0 {_12} {_13} (fun (_ret':b) -> [ &_11 <- _ret' ] bb8) ]
-        ) 
-    | bb6 = [ &_9 <- [#"../05_map.rs" 64 16 64 58] Snapshot.new () ] bb7 
-    | bb5 = [ &v <- Core_Option_Option_Type.some_0 _3 ] any 
-      [ any_ (_any:item0)-> 
-        [ &_3 <- let Core_Option_Option_Type.C_Some x0 = _3 in Core_Option_Option_Type.C_Some _any ]
-        {[@expl:type invariant] inv1 _3}
-        -{resolve1 _3}- {[@expl:assertion] [#"../05_map.rs" 63 16 63 62] precondition0 (C05Map_Map_Type.map_func ( * self)) (v)}
-        bb6 ]
-       
-    | bb3 = bb5 
-    | bb4 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- {[@expl:type invariant] inv1 _3}
-      -{resolve1 _3}- {[#"../05_map.rs" 61 14 61 30] false}
-      any 
+    [ bb0 = C05Map_Map_Type.map <i> <b> <f> { * self} (fun (rf_iter':i) (rf_func':f) -> Borrow.borrow_final <i>
+        {rf_iter'} {Borrow.inherit_id (Borrow.get_id self) 1} (fun (_ret':borrowed i) -> 
+          [ &_4 <- _ret' ]
+          C05Map_Map_Type.map <i> <b> <f> { * self} (fun (f_iter':i) (f_func':f) -> 
+            [ &self <- { self with current = C05Map_Map_Type.C_Map ( ^ _4) f_func' ; } ]
+            -{inv0 ( ^ _4)}- next0 {_4} (fun (_ret':Core_Option_Option_Type.t_option item0) -> [ &_3 <- _ret' ] bb1))))
     | bb1 = any 
       [ br0 -> {_3 = Core_Option_Option_Type.C_None }
         (! bb2)
       | br1 (a:item0)-> {_3 = Core_Option_Option_Type.C_Some a}
-        (! bb3)
-      | default -> (! bb4) ]
-       
-    | bb0 = Borrow.borrow_final <i> {C05Map_Map_Type.map_iter ( * self)} {Borrow.inherit_id (Borrow.get_id self) 1}
-      (fun (_ret':borrowed i) -> [ &_4 <- _ret' ] 
-        [ &self <- { self with current = (let C05Map_Map_Type.C_Map x0 x1 =  * self in C05Map_Map_Type.C_Map ( ^ _4) x1) ; } ]
-        -{inv3 ( ^ _4)}- next0 {_4} (fun (_ret':Core_Option_Option_Type.t_option item0) -> [ &_3 <- _ret' ] bb1))  ]
-    ) 
-    [ return' (result:Core_Option_Option_Type.t_option b)-> {[#"../05_map.rs" 60 26 60 44] inv4 result}
-      {[#"../05_map.rs" 56 14 59 5] match result with
-        | Core_Option_Option_Type.C_None -> completed0 self
-        | Core_Option_Option_Type.C_Some v -> produces_one0 ( * self) v ( ^ self)
-        end}
-      (! return' {_0}) ]
-    
+        (! bb3) ]
+      
+    | bb4 = {[@expl:type invariant] inv2 self}
+      -{resolve1 self}- {[@expl:type invariant] inv1 _3}
+      -{resolve0 _3}- {[#"../05_map.rs" 61 14 61 30] false}
+      any
+    | bb3 = bb5
+    | bb5 = Core_Option_Option_Type.some <item0> {_3} (fun (rf_0':item0) -> [ &v <- rf_0' ] (any 
+        [ any_ (_any:item0)-> (! Core_Option_Option_Type.some <item0> {_3} (fun (f_0':item0) -> 
+            [ &_3 <- Core_Option_Option_Type.C_Some _any ]
+            {[@expl:type invariant] inv1 _3}
+            -{resolve0 _3}- {[@expl:assertion] [#"../05_map.rs" 63 16 63 62] precondition0 (C05Map_Map_Type.map_func ( * self)) (v)}
+            bb6)) ]
+        ))
+    | bb6 = [ &_9 <- [#"../05_map.rs" 64 16 64 58] Snapshot.new () ] bb7
+    | bb7 = -{resolve2 _9}- C05Map_Map_Type.map <i> <b> <f> { * self}
+      (fun (rf_iter':i) (rf_func':f) -> Borrow.borrow_final <f> {rf_func'} {Borrow.inherit_id (Borrow.get_id self) 2}
+        (fun (_ret':borrowed f) -> [ &_12 <- _ret' ] C05Map_Map_Type.map <i> <b> <f> { * self}
+          (fun (f_iter':i) (f_func':f) -> 
+            [ &self <- { self with current = C05Map_Map_Type.C_Map f_iter' ( ^ _12) ; } ]
+            -{inv3 ( ^ _12)}- [ &_13 <- (v) ] (any 
+            [ any_ (_any:item0)-> (! [ &v <- _any ] call_mut0 {_12} {_13} (fun (_ret':b) -> [ &_11 <- _ret' ] bb8)) ]
+            ))))
+    | bb8 = bb9
+    | bb9 = {[@expl:type invariant] inv2 self}
+      -{resolve1 self}- [ &_0 <- Core_Option_Option_Type.C_Some _11 : Core_Option_Option_Type.t_option b ] (any 
+      [ any_ (_any:b)-> (! [ &_11 <- _any ] bb10) ]
+      )
+    | bb10 = bb11
+    | bb11 = bb12
+    | bb2 = {[@expl:type invariant] inv1 _3}
+      -{resolve0 _3}- {[@expl:type invariant] inv2 self}
+      -{resolve1 self}- [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option b ] bb12
+    | bb12 = bb13
+    | bb13 = return' {_0} ]
+    )
     [ & _0 : Core_Option_Option_Type.t_option b = any_l () : Core_Option_Option_Type.t_option b
     | & self : borrowed (C05Map_Map_Type.t_map i b f) = self
     | & _3 : Core_Option_Option_Type.t_option item0 = any_l () : Core_Option_Option_Type.t_option item0
@@ -1411,6 +1421,13 @@ module C05Map_Impl0_Next
     | & _11 : b = any_l () : b
     | & _12 : borrowed f = any_l () : borrowed f
     | & _13 : item0 = any_l () : item0 ]
+     
+    [ return' (result:Core_Option_Option_Type.t_option b)-> {[#"../05_map.rs" 60 26 60 44] inv4 result}
+      {[#"../05_map.rs" 56 14 59 5] match result with
+        | Core_Option_Option_Type.C_None -> completed0 self
+        | Core_Option_Option_Type.C_Some v -> produces_one0 ( * self) v ( ^ self)
+        end}
+      (! return' {result}) ]
     
 end
 module C05Map_Map
@@ -1624,24 +1641,24 @@ module C05Map_Map
     {[#"../05_map.rs" 140 0 140 105] forall i2 : i . forall e : item0 . inv0 i2
      -> inv1 e  -> produces0 iter (Seq.singleton e) i2  -> precondition0 func (e)}
     (! bb0 
-    [ bb7 = return' {_0} 
-    | bb6 = bb7 
-    | bb5 = bb6 
-    | bb4 = bb5 
-    | bb3 = [ &_0 <- C05Map_Map_Type.C_Map iter func ] any 
-      [ any_ (_any:i)-> [ &iter <- _any ] any [ any_ (_any:f)-> [ &func <- _any ] bb4 ]  ]
-       
-    | bb2 = bb3 
-    | bb1 = bb2 
-    | bb0 = bb1  ]
-    ) 
-    [ return' (result:C05Map_Map_Type.t_map i b f)-> {[#"../05_map.rs" 144 72 144 84] inv3 result}
-      {[#"../05_map.rs" 143 10 143 38] result = C05Map_Map_Type.C_Map iter func}
-      (! return' {_0}) ]
-    
+    [ bb0 = bb1
+    | bb1 = bb2
+    | bb2 = bb3
+    | bb3 = [ &_0 <- C05Map_Map_Type.C_Map iter func : C05Map_Map_Type.t_map i b f ] (any 
+      [ any_ (_any:i)-> (! [ &iter <- _any ] (any [ any_ (_any:f)-> (! [ &func <- _any ] bb4) ] )) ]
+      )
+    | bb4 = bb5
+    | bb5 = bb6
+    | bb6 = bb7
+    | bb7 = return' {_0} ]
+    )
     [ & _0 : C05Map_Map_Type.t_map i b f = any_l () : C05Map_Map_Type.t_map i b f
     | & iter : i = iter
     | & func : f = func ]
+     
+    [ return' (result:C05Map_Map_Type.t_map i b f)-> {[#"../05_map.rs" 144 72 144 84] inv3 result}
+      {[#"../05_map.rs" 143 10 143 38] result = C05Map_Map_Type.C_Map iter func}
+      (! return' {result}) ]
     
 end
 module C05Map_Impl0

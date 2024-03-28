@@ -4,12 +4,18 @@ module C552_Machine_Type
     | C_Machine
     
   function any_l (_ : 'b) : 'a
+  let rec machine (input:t_machine) (ret  )= any 
+    [ good -> {C_Machine  = input} ret | bad -> {C_Machine  <> input} {false} any ]
+    
 end
 module C552_Transition_Type
   type t_transition  =
     | C_Transition
     
   function any_l (_ : 'b) : 'a
+  let rec transition (input:t_transition) (ret  )= any 
+    [ good -> {C_Transition  = input} ret | bad -> {C_Transition  <> input} {false} any ]
+    
 end
 module C552_Impl1_Transition
   use C552_Machine_Type as C552_Machine_Type
@@ -22,9 +28,9 @@ module C552_Impl1_Transition
   use prelude.Intrinsic
   use C552_Transition_Type as C552_Transition_Type
   let rec transition (self:C552_Machine_Type.t_machine) (return'  (ret:C552_Transition_Type.t_transition))= {[#"../552.rs" 30 15 30 32] invariants0 self}
-    (! bb0 [ bb0 = [ &_0 <- C552_Transition_Type.C_Transition ] return' {_0}  ] ) 
-    [ return' (result:C552_Transition_Type.t_transition)-> (! return' {_0}) ]
-    [ & _0 : C552_Transition_Type.t_transition = any_l () : C552_Transition_Type.t_transition ] 
+    (! bb0 [ bb0 = [ &_0 <- C552_Transition_Type.C_Transition ] return' {_0} ] )
+    [ & _0 : C552_Transition_Type.t_transition = any_l () : C552_Transition_Type.t_transition ]
+     [ return' (result:C552_Transition_Type.t_transition)-> (! return' {result}) ] 
 end
 module C552_Impl0_Step
   use C552_Machine_Type as C552_Machine_Type
@@ -35,23 +41,23 @@ module C552_Impl0_Step
     
   use prelude.Borrow
   use prelude.Intrinsic
-  use C552_Transition_Type as C552_Transition_Type
-  let rec transition0 (self:C552_Machine_Type.t_machine) (return'  (ret:C552_Transition_Type.t_transition))= {[#"../552.rs" 30 15 30 32] invariants0 self}
-    any [ return' (result:C552_Transition_Type.t_transition)-> (! return' {result}) ] 
   predicate resolve0 (self : borrowed (C552_Machine_Type.t_machine)) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   let rec resolve0 (self:borrowed (C552_Machine_Type.t_machine)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
     
+  use C552_Transition_Type as C552_Transition_Type
+  let rec transition0 (self:C552_Machine_Type.t_machine) (return'  (ret:C552_Transition_Type.t_transition))= {[#"../552.rs" 30 15 30 32] invariants0 self}
+    any [ return' (result:C552_Transition_Type.t_transition)-> (! return' {result}) ] 
   let rec step (self:borrowed (C552_Machine_Type.t_machine)) (return'  (ret:bool))= {[#"../552.rs" 22 4 22 41] invariants0 ( * self)}
     (! bb0 
-    [ bb1 = -{resolve0 self}- [ &_0 <- [#"../552.rs" 25 8 25 13] false ] return' {_0} 
-    | bb0 = transition0 { * self} (fun (_ret':C552_Transition_Type.t_transition) -> [ &_4 <- _ret' ] bb1)  ]
-    ) [ return' (result:bool)-> {[#"../552.rs" 22 4 22 41] invariants0 ( ^ self)} (! return' {_0}) ] 
+    [ bb0 = transition0 { * self} (fun (_ret':C552_Transition_Type.t_transition) -> [ &_4 <- _ret' ] bb1)
+    | bb1 = -{resolve0 self}- [ &_0 <- [#"../552.rs" 25 8 25 13] false ] return' {_0} ]
+    )
     [ & _0 : bool = any_l () : bool
     | & self : borrowed (C552_Machine_Type.t_machine) = self
     | & _4 : C552_Transition_Type.t_transition = any_l () : C552_Transition_Type.t_transition ]
-    
+     [ return' (result:bool)-> {[#"../552.rs" 22 4 22 41] invariants0 ( ^ self)} (! return' {result}) ] 
 end
 module C552_Impl0
   use C552_Machine_Type as C552_Machine_Type

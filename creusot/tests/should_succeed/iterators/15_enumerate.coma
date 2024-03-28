@@ -6,6 +6,13 @@ module C15Enumerate_Enumerate_Type
     | C_Enumerate 'i usize
     
   function any_l (_ : 'b) : 'a
+  let rec enumerate < 'i > (input:t_enumerate 'i) (ret  (field_0:'i) (field_1:usize))= any 
+    [ good (field_0:'i) (field_1:usize)-> {C_Enumerate field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:'i) (field_1:usize)-> {C_Enumerate field_0 field_1 <> input}
+      {false}
+      any ]
+    
   function enumerate_iter (self : t_enumerate 'i) : 'i =
     match self with
       | C_Enumerate a _ -> a
@@ -241,16 +248,21 @@ module Core_Option_Option_Type
     | C_Some 't
     
   function any_l (_ : 'b) : 'a
-  function some_0 (self : t_option 't) : 't =
-    match self with
-      | C_None -> any_l self
-      | C_Some a -> a
-      end
+  let rec none < 't > (input:t_option 't) (ret  )= any 
+    [ good -> {C_None  = input} ret | bad -> {C_None  <> input} {false} any ]
+    
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Some field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Some field_0 <> input}
+      {false}
+      any ]
+    
 end
 module C15Enumerate_Impl0_Next
   type i
-  predicate inv2 (_x : i)
-  let rec inv2 (_x:i) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ] 
+  predicate inv0 (_x : i)
+  let rec inv0 (_x:i) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
   use prelude.UIntSize
   use seq.Seq
   use prelude.Borrow
@@ -278,7 +290,7 @@ module C15Enumerate_Impl0_Next
     
   use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
   predicate invariant6 [#"../15_enumerate.rs" 71 4 71 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) =
-    [#"../15_enumerate.rs" 73 12 74 79] (forall i : i . forall s : Seq.seq item0 . inv2 i
+    [#"../15_enumerate.rs" 73 12 74 79] (forall i : i . forall s : Seq.seq item0 . inv0 i
      -> inv5 s
      -> produces1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s i
      -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int max0) /\ (forall i : borrowed i . inv4 i
@@ -313,11 +325,15 @@ module C15Enumerate_Impl0_Next
     [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
     
   axiom inv3 : forall x : Core_Option_Option_Type.t_option (usize, item0) . inv3 x = true
-  predicate invariant2 (self : i)
-  let rec invariant2 (self:i) (return'  (ret:bool))= any 
+  predicate invariant2 (self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i))
+  let rec invariant2 (self:borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
     
-  axiom inv2 : forall x : i . inv2 x = true
+  predicate inv2 (_x : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i))
+  let rec inv2 (_x:borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
+    
+  axiom inv2 : forall x : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i) . inv2 x = (inv6 ( * x) /\ inv6 ( ^ x))
   predicate invariant1 (self : Core_Option_Option_Type.t_option item0)
   let rec invariant1 (self:Core_Option_Option_Type.t_option item0) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
@@ -327,37 +343,33 @@ module C15Enumerate_Impl0_Next
     [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
     
   axiom inv1 : forall x : Core_Option_Option_Type.t_option item0 . inv1 x = true
-  predicate invariant0 (self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i))
-  let rec invariant0 (self:borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) (return'  (ret:bool))= any 
+  predicate invariant0 (self : i)
+  let rec invariant0 (self:i) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
     
-  predicate inv0 (_x : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i))
-  let rec inv0 (_x:borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
-    
-  axiom inv0 : forall x : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i) . inv0 x = (inv6 ( * x) /\ inv6 ( ^ x))
+  axiom inv0 : forall x : i . inv0 x = true
   use seq.Seq
   function produces_trans0 [#"../common.rs" 21 4 21 91] (a : i) (ab : Seq.seq item0) (b : i) (bc : Seq.seq item0) (c : i) : ()
     
-  let rec produces_trans0 (a:i) (ab:Seq.seq item0) (b:i) (bc:Seq.seq item0) (c:i) (return'  (ret:()))= {[#"../common.rs" 21 82 21 83] inv2 c}
+  let rec produces_trans0 (a:i) (ab:Seq.seq item0) (b:i) (bc:Seq.seq item0) (c:i) (return'  (ret:()))= {[#"../common.rs" 21 82 21 83] inv0 c}
     {[#"../common.rs" 21 61 21 63] inv5 bc}
-    {[#"../common.rs" 21 52 21 53] inv2 b}
+    {[#"../common.rs" 21 52 21 53] inv0 b}
     {[#"../common.rs" 21 31 21 33] inv5 ab}
-    {[#"../common.rs" 21 22 21 23] inv2 a}
+    {[#"../common.rs" 21 22 21 23] inv0 a}
     {[#"../common.rs" 19 15 19 32] produces1 b bc c}
     {[#"../common.rs" 18 15 18 32] produces1 a ab b}
     any [ return' (result:())-> {result = produces_trans0 a ab b bc c} (! return' {result}) ] 
   axiom produces_trans0_spec : forall a : i, ab : Seq.seq item0, b : i, bc : Seq.seq item0, c : i . ([#"../common.rs" 18 15 18 32] produces1 a ab b)
    -> ([#"../common.rs" 19 15 19 32] produces1 b bc c)
-   -> ([#"../common.rs" 21 22 21 23] inv2 a)
+   -> ([#"../common.rs" 21 22 21 23] inv0 a)
    -> ([#"../common.rs" 21 31 21 33] inv5 ab)
-   -> ([#"../common.rs" 21 52 21 53] inv2 b)
+   -> ([#"../common.rs" 21 52 21 53] inv0 b)
    -> ([#"../common.rs" 21 61 21 63] inv5 bc)
-   -> ([#"../common.rs" 21 82 21 83] inv2 c)  -> ([#"../common.rs" 20 14 20 42] produces1 a (Seq.(++) ab bc) c)
+   -> ([#"../common.rs" 21 82 21 83] inv0 c)  -> ([#"../common.rs" 20 14 20 42] produces1 a (Seq.(++) ab bc) c)
   function produces_refl0 [#"../common.rs" 15 4 15 27] (self : i) : ()
-  let rec produces_refl0 (self:i) (return'  (ret:()))= {[#"../common.rs" 15 21 15 25] inv2 self}
+  let rec produces_refl0 (self:i) (return'  (ret:()))= {[#"../common.rs" 15 21 15 25] inv0 self}
     any [ return' (result:())-> {result = produces_refl0 self} (! return' {result}) ] 
-  axiom produces_refl0_spec : forall self : i . ([#"../common.rs" 15 21 15 25] inv2 self)
+  axiom produces_refl0_spec : forall self : i . ([#"../common.rs" 15 21 15 25] inv0 self)
    -> ([#"../common.rs" 14 14 14 45] produces1 self (Seq.empty  : Seq.seq item0) self)
   use seq.Seq
   use seq.Seq
@@ -377,6 +389,15 @@ module C15Enumerate_Impl0_Next
     [ return' (result:bool)-> {result = completed0 self} (! return' {result}) ]
     
   use prelude.Intrinsic
+  predicate resolve1 (self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : Core_Option_Option_Type.t_option item0)
+  let rec resolve0 (self:Core_Option_Option_Type.t_option item0) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
   use seq.Seq
   let rec next0 (self:borrowed i) (return'  (ret:Core_Option_Option_Type.t_option item0))= {[#"../common.rs" 27 17 27 21] inv4 self}
     any 
@@ -387,60 +408,51 @@ module C15Enumerate_Impl0_Next
         end}
       (! return' {result}) ]
     
-  predicate resolve1 (self : Core_Option_Option_Type.t_option item0)
-  let rec resolve1 (self:Core_Option_Option_Type.t_option item0) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
-    
-  predicate resolve0 (self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve0 (self:borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
-  let rec next (self:borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) (return'  (ret:Core_Option_Option_Type.t_option (usize, item0)))= {[#"../15_enumerate.rs" 53 17 53 21] inv0 self}
+  let rec next (self:borrowed (C15Enumerate_Enumerate_Type.t_enumerate i)) (return'  (ret:Core_Option_Option_Type.t_option (usize, item0)))= {[#"../15_enumerate.rs" 53 17 53 21] inv2 self}
     (! bb0 
-    [ bb10 = return' {_0} 
-    | bb9 = bb10 
-    | bb5 = {[@expl:type invariant] inv1 _3}
-      -{resolve1 _3}- {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option (usize, item0) ] bb9 
-    | bb2 = bb5 
-    | bb8 = bb9 
-    | bb7 = bb8 
-    | bb6 = [ &_0 <- Core_Option_Option_Type.C_Some _8 ] any [ any_ (_any:(usize, item0))-> [ &_8 <- _any ] bb7 ]  
-    | bb3 = [ &x <- Core_Option_Option_Type.some_0 _3 ] any 
-      [ any_ (_any:item0)-> 
-        [ &_3 <- let Core_Option_Option_Type.C_Some x0 = _3 in Core_Option_Option_Type.C_Some _any ]
-        {[@expl:type invariant] inv1 _3}
-        -{resolve1 _3}- [ &n <- C15Enumerate_Enumerate_Type.enumerate_count ( * self) ] UIntSize.add
-        {C15Enumerate_Enumerate_Type.enumerate_count ( * self)} {[#"../15_enumerate.rs" 58 30 58 31] (1 : usize)}
-        (fun (_ret':usize) -> 
-          [ &self <- { self with current = (let C15Enumerate_Enumerate_Type.C_Enumerate x0 x1 =  * self in C15Enumerate_Enumerate_Type.C_Enumerate x0 _ret') ; } ]
-          {[@expl:type invariant] inv0 self}
-          -{resolve0 self}- [ &_8 <- (n, x) ] any [ any_ (_any:item0)-> [ &x <- _any ] bb6 ] ) ]
-       
-    | bb4 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- {[@expl:type invariant] inv1 _3}
-      -{resolve1 _3}- {[#"../15_enumerate.rs" 54 14 54 30] false}
-      any 
+    [ bb0 = C15Enumerate_Enumerate_Type.enumerate <i> { * self}
+      (fun (rf_iter':i) (rf_count':usize) -> Borrow.borrow_final <i> {rf_iter'}
+        {Borrow.inherit_id (Borrow.get_id self) 1} (fun (_ret':borrowed i) -> 
+          [ &_4 <- _ret' ]
+          C15Enumerate_Enumerate_Type.enumerate <i> { * self} (fun (f_iter':i) (f_count':usize) -> 
+            [ &self <- { self with current = C15Enumerate_Enumerate_Type.C_Enumerate ( ^ _4) f_count' ; } ]
+            -{inv0 ( ^ _4)}- next0 {_4} (fun (_ret':Core_Option_Option_Type.t_option item0) -> [ &_3 <- _ret' ] bb1))))
     | bb1 = any 
       [ br0 -> {_3 = Core_Option_Option_Type.C_None }
         (! bb2)
       | br1 (a:item0)-> {_3 = Core_Option_Option_Type.C_Some a}
-        (! bb3)
-      | default -> (! bb4) ]
-       
-    | bb0 = Borrow.borrow_final <i> {C15Enumerate_Enumerate_Type.enumerate_iter ( * self)}
-      {Borrow.inherit_id (Borrow.get_id self) 1} (fun (_ret':borrowed i) -> [ &_4 <- _ret' ] 
-        [ &self <- { self with current = (let C15Enumerate_Enumerate_Type.C_Enumerate x0 x1 =  * self in C15Enumerate_Enumerate_Type.C_Enumerate ( ^ _4) x1) ; } ]
-        -{inv2 ( ^ _4)}- next0 {_4} (fun (_ret':Core_Option_Option_Type.t_option item0) -> [ &_3 <- _ret' ] bb1))  ]
-    ) 
-    [ return' (result:Core_Option_Option_Type.t_option (usize, item0))-> {[#"../15_enumerate.rs" 53 26 53 44] inv3 result}
-      {[#"../15_enumerate.rs" 49 14 52 5] match result with
-        | Core_Option_Option_Type.C_None -> completed0 self
-        | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
-        end}
-      (! return' {_0}) ]
-    
+        (! bb3) ]
+      
+    | bb4 = {[@expl:type invariant] inv2 self}
+      -{resolve1 self}- {[@expl:type invariant] inv1 _3}
+      -{resolve0 _3}- {[#"../15_enumerate.rs" 54 14 54 30] false}
+      any
+    | bb3 = Core_Option_Option_Type.some <item0> {_3} (fun (rf_0':item0) -> [ &x <- rf_0' ] (any 
+        [ any_ (_any:item0)-> (! Core_Option_Option_Type.some <item0> {_3} (fun (f_0':item0) -> 
+            [ &_3 <- Core_Option_Option_Type.C_Some _any ]
+            {[@expl:type invariant] inv1 _3}
+            -{resolve0 _3}- C15Enumerate_Enumerate_Type.enumerate <i> { * self} (fun (rf_iter':i) (rf_count':usize) -> 
+              [ &n <- rf_count' ]
+              C15Enumerate_Enumerate_Type.enumerate <i> { * self} (fun (rf_iter':i) (rf_count':usize) -> UIntSize.add
+                {rf_count'} {[#"../15_enumerate.rs" 58 30 58 31] (1 : usize)}
+                (fun (_ret':usize) -> C15Enumerate_Enumerate_Type.enumerate <i> { * self}
+                  (fun (f_iter':i) (f_count':usize) -> 
+                    [ &self <- { self with current = C15Enumerate_Enumerate_Type.C_Enumerate f_iter' _ret' ; } ]
+                    {[@expl:type invariant] inv2 self}
+                    -{resolve1 self}- [ &_8 <- (n, x) ] (any [ any_ (_any:item0)-> (! [ &x <- _any ] bb6) ] ))))))) ]
+        ))
+    | bb6 = [ &_0 <- Core_Option_Option_Type.C_Some _8 : Core_Option_Option_Type.t_option (usize, item0) ] (any 
+      [ any_ (_any:(usize, item0))-> (! [ &_8 <- _any ] bb7) ]
+      )
+    | bb7 = bb8
+    | bb8 = bb9
+    | bb2 = bb5
+    | bb5 = {[@expl:type invariant] inv1 _3}
+      -{resolve0 _3}- {[@expl:type invariant] inv2 self}
+      -{resolve1 self}- [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option (usize, item0) ] bb9
+    | bb9 = bb10
+    | bb10 = return' {_0} ]
+    )
     [ & _0 : Core_Option_Option_Type.t_option (usize, item0) = any_l () : Core_Option_Option_Type.t_option (usize, item0)
     | & self : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i) = self
     | & _3 : Core_Option_Option_Type.t_option item0 = any_l () : Core_Option_Option_Type.t_option item0
@@ -448,6 +460,13 @@ module C15Enumerate_Impl0_Next
     | & x : item0 = any_l () : item0
     | & n : usize = any_l () : usize
     | & _8 : (usize, item0) = any_l () : (usize, item0) ]
+     
+    [ return' (result:Core_Option_Option_Type.t_option (usize, item0))-> {[#"../15_enumerate.rs" 53 26 53 44] inv3 result}
+      {[#"../15_enumerate.rs" 49 14 52 5] match result with
+        | Core_Option_Option_Type.C_None -> completed0 self
+        | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
+        end}
+      (! return' {result}) ]
     
 end
 module C15Enumerate_Enumerate
@@ -541,18 +560,18 @@ module C15Enumerate_Enumerate
     {[#"../15_enumerate.rs" 79 0 79 75] forall i : borrowed i . inv0 i
      -> completed0 i  -> produces0 ( * i) (Seq.empty  : Seq.seq item0) ( ^ i)}
     (! bb0 
-    [ bb3 = return' {_0} 
-    | bb2 = bb3 
+    [ bb0 = bb1
     | bb1 = 
-      [ &_0 <- C15Enumerate_Enumerate_Type.C_Enumerate iter ([#"../15_enumerate.rs" 82 29 82 30] (0 : usize)) ]
-      any [ any_ (_any:i)-> [ &iter <- _any ] bb2 ]  
-    | bb0 = bb1  ]
-    ) 
-    [ return' (result:C15Enumerate_Enumerate_Type.t_enumerate i)-> {[#"../15_enumerate.rs" 81 42 81 54] inv3 result}
-      (! return' {_0}) ]
-    
+      [ &_0 <- C15Enumerate_Enumerate_Type.C_Enumerate iter ([#"../15_enumerate.rs" 82 29 82 30] (0 : usize)) : C15Enumerate_Enumerate_Type.t_enumerate i ]
+      (any [ any_ (_any:i)-> (! [ &iter <- _any ] bb2) ] )
+    | bb2 = bb3
+    | bb3 = return' {_0} ]
+    )
     [ & _0 : C15Enumerate_Enumerate_Type.t_enumerate i = any_l () : C15Enumerate_Enumerate_Type.t_enumerate i
     | & iter : i = iter ]
+     
+    [ return' (result:C15Enumerate_Enumerate_Type.t_enumerate i)-> {[#"../15_enumerate.rs" 81 42 81 54] inv3 result}
+      (! return' {result}) ]
     
 end
 module C15Enumerate_Impl0

@@ -6,6 +6,13 @@ module C16Take_Take_Type
     | C_Take 'i usize
     
   function any_l (_ : 'b) : 'a
+  let rec take < 'i > (input:t_take 'i) (ret  (field_0:'i) (field_1:usize))= any 
+    [ good (field_0:'i) (field_1:usize)-> {C_Take field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:'i) (field_1:usize)-> {C_Take field_0 field_1 <> input}
+      {false}
+      any ]
+    
   function take_n (self : t_take 'i) : usize =
     match self with
       | C_Take _ a -> a
@@ -176,6 +183,16 @@ module Core_Option_Option_Type
     | C_Some 't
     
   function any_l (_ : 'b) : 'a
+  let rec none < 't > (input:t_option 't) (ret  )= any 
+    [ good -> {C_None  = input} ret | bad -> {C_None  <> input} {false} any ]
+    
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Some field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Some field_0 <> input}
+      {false}
+      any ]
+    
 end
 module C16Take_Impl0_Next
   type i
@@ -210,23 +227,23 @@ module C16Take_Impl0_Next
     [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
     
   axiom inv2 : forall x : Core_Option_Option_Type.t_option item0 . inv2 x = true
-  predicate invariant1 (self : i)
-  let rec invariant1 (self:i) (return'  (ret:bool))= any 
+  use C16Take_Take_Type as C16Take_Take_Type
+  predicate invariant1 (self : borrowed (C16Take_Take_Type.t_take i))
+  let rec invariant1 (self:borrowed (C16Take_Take_Type.t_take i)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
     
-  predicate inv1 (_x : i)
-  let rec inv1 (_x:i) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ] 
-  axiom inv1 : forall x : i . inv1 x = true
-  use C16Take_Take_Type as C16Take_Take_Type
-  predicate invariant0 (self : borrowed (C16Take_Take_Type.t_take i))
-  let rec invariant0 (self:borrowed (C16Take_Take_Type.t_take i)) (return'  (ret:bool))= any 
+  predicate inv1 (_x : borrowed (C16Take_Take_Type.t_take i))
+  let rec inv1 (_x:borrowed (C16Take_Take_Type.t_take i)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  axiom inv1 : forall x : borrowed (C16Take_Take_Type.t_take i) . inv1 x = true
+  predicate invariant0 (self : i)
+  let rec invariant0 (self:i) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
     
-  predicate inv0 (_x : borrowed (C16Take_Take_Type.t_take i))
-  let rec inv0 (_x:borrowed (C16Take_Take_Type.t_take i)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
-    
-  axiom inv0 : forall x : borrowed (C16Take_Take_Type.t_take i) . inv0 x = true
+  predicate inv0 (_x : i)
+  let rec inv0 (_x:i) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : i . inv0 x = true
   use seq.Seq
   predicate produces1 [#"../common.rs" 8 4 8 65] (self : i) (visited : Seq.seq item0) (o : i)
   let rec produces1 (self:i) (visited:Seq.seq item0) (o:i) (return'  (ret:bool))= any 
@@ -234,26 +251,26 @@ module C16Take_Impl0_Next
     
   function produces_trans0 [#"../common.rs" 21 4 21 91] (a : i) (ab : Seq.seq item0) (b : i) (bc : Seq.seq item0) (c : i) : ()
     
-  let rec produces_trans0 (a:i) (ab:Seq.seq item0) (b:i) (bc:Seq.seq item0) (c:i) (return'  (ret:()))= {[#"../common.rs" 21 82 21 83] inv1 c}
+  let rec produces_trans0 (a:i) (ab:Seq.seq item0) (b:i) (bc:Seq.seq item0) (c:i) (return'  (ret:()))= {[#"../common.rs" 21 82 21 83] inv0 c}
     {[#"../common.rs" 21 61 21 63] inv4 bc}
-    {[#"../common.rs" 21 52 21 53] inv1 b}
+    {[#"../common.rs" 21 52 21 53] inv0 b}
     {[#"../common.rs" 21 31 21 33] inv4 ab}
-    {[#"../common.rs" 21 22 21 23] inv1 a}
+    {[#"../common.rs" 21 22 21 23] inv0 a}
     {[#"../common.rs" 19 15 19 32] produces1 b bc c}
     {[#"../common.rs" 18 15 18 32] produces1 a ab b}
     any [ return' (result:())-> {result = produces_trans0 a ab b bc c} (! return' {result}) ] 
   axiom produces_trans0_spec : forall a : i, ab : Seq.seq item0, b : i, bc : Seq.seq item0, c : i . ([#"../common.rs" 18 15 18 32] produces1 a ab b)
    -> ([#"../common.rs" 19 15 19 32] produces1 b bc c)
-   -> ([#"../common.rs" 21 22 21 23] inv1 a)
+   -> ([#"../common.rs" 21 22 21 23] inv0 a)
    -> ([#"../common.rs" 21 31 21 33] inv4 ab)
-   -> ([#"../common.rs" 21 52 21 53] inv1 b)
+   -> ([#"../common.rs" 21 52 21 53] inv0 b)
    -> ([#"../common.rs" 21 61 21 63] inv4 bc)
-   -> ([#"../common.rs" 21 82 21 83] inv1 c)  -> ([#"../common.rs" 20 14 20 42] produces1 a (Seq.(++) ab bc) c)
+   -> ([#"../common.rs" 21 82 21 83] inv0 c)  -> ([#"../common.rs" 20 14 20 42] produces1 a (Seq.(++) ab bc) c)
   use seq.Seq
   function produces_refl0 [#"../common.rs" 15 4 15 27] (self : i) : ()
-  let rec produces_refl0 (self:i) (return'  (ret:()))= {[#"../common.rs" 15 21 15 25] inv1 self}
+  let rec produces_refl0 (self:i) (return'  (ret:()))= {[#"../common.rs" 15 21 15 25] inv0 self}
     any [ return' (result:())-> {result = produces_refl0 self} (! return' {result}) ] 
-  axiom produces_refl0_spec : forall self : i . ([#"../common.rs" 15 21 15 25] inv1 self)
+  axiom produces_refl0_spec : forall self : i . ([#"../common.rs" 15 21 15 25] inv0 self)
    -> ([#"../common.rs" 14 14 14 45] produces1 self (Seq.empty  : Seq.seq item0) self)
   use prelude.Int
   use seq.Seq
@@ -280,7 +297,6 @@ module C16Take_Impl0_Next
     [ return' (result:bool)-> {result = completed0 self} (! return' {result}) ]
     
   use prelude.Intrinsic
-  use prelude.UIntSize
   let rec next0 (self:borrowed i) (return'  (ret:Core_Option_Option_Type.t_option item0))= {[#"../common.rs" 27 17 27 21] inv3 self}
     any 
     [ return' (result:Core_Option_Option_Type.t_option item0)-> {[#"../common.rs" 27 26 27 44] inv2 result}
@@ -290,34 +306,42 @@ module C16Take_Impl0_Next
         end}
       (! return' {result}) ]
     
-  let rec next (self:borrowed (C16Take_Take_Type.t_take i)) (return'  (ret:Core_Option_Option_Type.t_option item0))= {[#"../16_take.rs" 53 17 53 21] inv0 self}
+  use prelude.UIntSize
+  let rec next (self:borrowed (C16Take_Take_Type.t_take i)) (return'  (ret:Core_Option_Option_Type.t_option item0))= {[#"../16_take.rs" 53 17 53 21] inv1 self}
     (! bb0 
-    [ bb4 = return' {_0} 
-    | bb3 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option item0 ] bb4 
-    | bb2 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- bb4 
-    | bb1 = UIntSize.sub {C16Take_Take_Type.take_n ( * self)} {[#"../16_take.rs" 55 22 55 23] (1 : usize)}
-      (fun (_ret':usize) -> 
-        [ &self <- { self with current = (let C16Take_Take_Type.C_Take x0 x1 =  * self in C16Take_Take_Type.C_Take x0 _ret') ; } ]
-        Borrow.borrow_final <i> {C16Take_Take_Type.take_iter ( * self)} {Borrow.inherit_id (Borrow.get_id self) 1}
-        (fun (_ret':borrowed i) -> [ &_5 <- _ret' ] 
-          [ &self <- { self with current = (let C16Take_Take_Type.C_Take x0 x1 =  * self in C16Take_Take_Type.C_Take ( ^ _5) x1) ; } ]
-          -{inv1 ( ^ _5)}- next0 {_5} (fun (_ret':Core_Option_Option_Type.t_option item0) -> [ &_0 <- _ret' ] bb2))) 
-    | bb0 = UIntSize.ne {C16Take_Take_Type.take_n ( * self)} {[#"../16_take.rs" 54 21 54 22] (0 : usize)}
-      (fun (_ret':bool) -> [ &_3 <- _ret' ] any [ br0 -> {_3 = false} (! bb3) | br1 -> {_3} (! bb1) ] )  ]
-    ) 
+    [ bb0 = C16Take_Take_Type.take <i> { * self} (fun (rf_iter':i) (rf_n':usize) -> UIntSize.ne {rf_n'}
+        {[#"../16_take.rs" 54 21 54 22] (0 : usize)} (fun (_ret':bool) -> [ &_3 <- _ret' ] (any 
+          [ br0 -> {_3 = false} (! bb3) | br1 -> {_3} (! bb1) ]
+          )))
+    | bb1 = C16Take_Take_Type.take <i> { * self} (fun (rf_iter':i) (rf_n':usize) -> UIntSize.sub {rf_n'}
+        {[#"../16_take.rs" 55 22 55 23] (1 : usize)} (fun (_ret':usize) -> C16Take_Take_Type.take <i> { * self}
+          (fun (f_iter':i) (f_n':usize) -> 
+            [ &self <- { self with current = C16Take_Take_Type.C_Take f_iter' _ret' ; } ]
+            C16Take_Take_Type.take <i> { * self} (fun (rf_iter':i) (rf_n':usize) -> Borrow.borrow_final <i> {rf_iter'}
+              {Borrow.inherit_id (Borrow.get_id self) 1} (fun (_ret':borrowed i) -> 
+                [ &_5 <- _ret' ]
+                C16Take_Take_Type.take <i> { * self} (fun (f_iter':i) (f_n':usize) -> 
+                  [ &self <- { self with current = C16Take_Take_Type.C_Take ( ^ _5) f_n' ; } ]
+                  -{inv0 ( ^ _5)}- next0 {_5} (fun (_ret':Core_Option_Option_Type.t_option item0) -> 
+                    [ &_0 <- _ret' ]
+                    bb2)))))))
+    | bb2 = {[@expl:type invariant] inv1 self}
+      -{resolve0 self}- bb4
+    | bb3 = {[@expl:type invariant] inv1 self}
+      -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option item0 ] bb4
+    | bb4 = return' {_0} ]
+    )
+    [ & _0 : Core_Option_Option_Type.t_option item0 = any_l () : Core_Option_Option_Type.t_option item0
+    | & self : borrowed (C16Take_Take_Type.t_take i) = self
+    | & _3 : bool = any_l () : bool
+    | & _5 : borrowed i = any_l () : borrowed i ]
+     
     [ return' (result:Core_Option_Option_Type.t_option item0)-> {[#"../16_take.rs" 53 26 53 41] inv2 result}
       {[#"../16_take.rs" 49 14 52 5] match result with
         | Core_Option_Option_Type.C_None -> completed0 self
         | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
         end}
-      (! return' {_0}) ]
-    
-    [ & _0 : Core_Option_Option_Type.t_option item0 = any_l () : Core_Option_Option_Type.t_option item0
-    | & self : borrowed (C16Take_Take_Type.t_take i) = self
-    | & _3 : bool = any_l () : bool
-    | & _5 : borrowed i = any_l () : borrowed i ]
+      (! return' {result}) ]
     
 end
 module C16Take_Impl0

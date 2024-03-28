@@ -6,6 +6,13 @@ module C01Range_Range_Type
     | C_Range isize isize
     
   function any_l (_ : 'b) : 'a
+  let rec range (input:t_range) (ret  (field_0:isize) (field_1:isize))= any 
+    [ good (field_0:isize) (field_1:isize)-> {C_Range field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:isize) (field_1:isize)-> {C_Range field_0 field_1 <> input}
+      {false}
+      any ]
+    
   function range_start (self : t_range) : isize =
     match self with
       | C_Range a _ -> a
@@ -70,11 +77,16 @@ module Core_Option_Option_Type
     | C_Some 't
     
   function any_l (_ : 'b) : 'a
-  function some_0 (self : t_option 't) : 't =
-    match self with
-      | C_None -> any_l self
-      | C_Some a -> a
-      end
+  let rec none < 't > (input:t_option 't) (ret  )= any 
+    [ good -> {C_None  = input} ret | bad -> {C_None  <> input} {false} any ]
+    
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Some field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Some field_0 <> input}
+      {false}
+      any ]
+    
 end
 module C01Range_Impl0_Next
   use seq.Seq
@@ -108,37 +120,45 @@ module C01Range_Impl0_Next
   use Core_Option_Option_Type as Core_Option_Option_Type
   let rec next (self:borrowed (C01Range_Range_Type.t_range)) (return'  (ret:Core_Option_Option_Type.t_option isize))= (! bb0
     
-    [ bb3 = return' {_0} 
-    | bb2 = [ &r <- C01Range_Range_Type.range_start ( * self) ] IntSize.add {C01Range_Range_Type.range_start ( * self)}
-      {[#"../01_range.rs" 62 26 62 27] (1 : isize)} (fun (_ret':isize) -> 
-        [ &self <- { self with current = (let C01Range_Range_Type.C_Range x0 x1 =  * self in C01Range_Range_Type.C_Range _ret' x1) ; } ]
-        -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_Some r ] bb3) 
-    | bb1 = -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option isize ] bb3 
-    | bb0 = IntSize.ge {C01Range_Range_Type.range_start ( * self)} {C01Range_Range_Type.range_end ( * self)}
-      (fun (_ret':bool) -> [ &_3 <- _ret' ] any [ br0 -> {_3 = false} (! bb2) | br1 -> {_3} (! bb1) ] )  ]
-    ) 
-    [ return' (result:Core_Option_Option_Type.t_option isize)-> {[#"../01_range.rs" 53 14 56 5] match result with
-        | Core_Option_Option_Type.C_None -> completed0 self
-        | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
-        end}
-      (! return' {_0}) ]
-    
+    [ bb0 = C01Range_Range_Type.range { * self} (fun (rf_start':isize) (rf_end':isize) -> C01Range_Range_Type.range
+        { * self} (fun (rf_start':isize) (rf_end':isize) -> IntSize.ge {rf_start'} {rf_end'} (fun (_ret':bool) -> 
+            [ &_3 <- _ret' ]
+            (any [ br0 -> {_3 = false} (! bb2) | br1 -> {_3} (! bb1) ] ))))
+    | bb1 = -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option isize ] bb3
+    | bb2 = C01Range_Range_Type.range { * self} (fun (rf_start':isize) (rf_end':isize) -> 
+        [ &r <- rf_start' ]
+        C01Range_Range_Type.range { * self} (fun (rf_start':isize) (rf_end':isize) -> IntSize.add {rf_start'}
+          {[#"../01_range.rs" 62 26 62 27] (1 : isize)} (fun (_ret':isize) -> C01Range_Range_Type.range { * self}
+            (fun (f_start':isize) (f_end':isize) -> 
+              [ &self <- { self with current = C01Range_Range_Type.C_Range _ret' f_end' ; } ]
+              -{resolve0 self}- 
+              [ &_0 <- Core_Option_Option_Type.C_Some r : Core_Option_Option_Type.t_option isize ]
+              bb3))))
+    | bb3 = return' {_0} ]
+    )
     [ & _0 : Core_Option_Option_Type.t_option isize = any_l () : Core_Option_Option_Type.t_option isize
     | & self : borrowed (C01Range_Range_Type.t_range) = self
     | & _3 : bool = any_l () : bool
     | & r : isize = any_l () : isize ]
+     
+    [ return' (result:Core_Option_Option_Type.t_option isize)-> {[#"../01_range.rs" 53 14 56 5] match result with
+        | Core_Option_Option_Type.C_None -> completed0 self
+        | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
+        end}
+      (! return' {result}) ]
     
 end
 module C01Range_Impl1_IntoIter
   use prelude.Intrinsic
   use C01Range_Range_Type as C01Range_Range_Type
   let rec into_iter (self:C01Range_Range_Type.t_range) (return'  (ret:C01Range_Range_Type.t_range))= (! bb0 
-    [ bb0 = [ &_0 <- self ] any [ any_ (_any:C01Range_Range_Type.t_range)-> [ &self <- _any ] return' {_0} ]   ]
-    ) 
-    [ return' (result:C01Range_Range_Type.t_range)-> {[#"../01_range.rs" 69 14 69 28] result = self} (! return' {_0}) ]
-    
+    [ bb0 = [ &_0 <- self ] (any [ any_ (_any:C01Range_Range_Type.t_range)-> (! [ &self <- _any ] return' {_0}) ] ) ]
+    )
     [ & _0 : C01Range_Range_Type.t_range = any_l () : C01Range_Range_Type.t_range
     | & self : C01Range_Range_Type.t_range = self ]
+     
+    [ return' (result:C01Range_Range_Type.t_range)-> {[#"../01_range.rs" 69 14 69 28] result = self}
+      (! return' {result}) ]
     
 end
 module C01Range_SumRange
@@ -187,15 +207,12 @@ module C01Range_SumRange
   axiom produces_refl0_spec : forall self : C01Range_Range_Type.t_range . [#"../01_range.rs" 43 14 43 45] produces0 self (Seq.empty  : Seq.seq isize) self
   use prelude.Snapshot
   use prelude.Intrinsic
-  let rec into_iter0 (self:C01Range_Range_Type.t_range) (return'  (ret:C01Range_Range_Type.t_range))= any 
-    [ return' (result:C01Range_Range_Type.t_range)-> {[#"../01_range.rs" 69 14 69 28] result = self}
-      (! return' {result}) ]
-    
   use prelude.Snapshot
   use prelude.Snapshot
+  use seq.Seq
   use prelude.Snapshot
   use prelude.Borrow
-  use seq.Seq
+  use Core_Option_Option_Type as Core_Option_Option_Type
   predicate resolve0 (self : borrowed (C01Range_Range_Type.t_range)) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
   let rec resolve0 (self:borrowed (C01Range_Range_Type.t_range)) (return'  (ret:bool))= any 
@@ -206,7 +223,6 @@ module C01Range_SumRange
   let rec completed0 (self:borrowed (C01Range_Range_Type.t_range)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = completed0 self} (! return' {result}) ]
     
-  use Core_Option_Option_Type as Core_Option_Option_Type
   let rec next0 (self:borrowed (C01Range_Range_Type.t_range)) (return'  (ret:Core_Option_Option_Type.t_option isize))= any
     
     [ return' (result:Core_Option_Option_Type.t_option isize)-> {[#"../01_range.rs" 53 14 56 5] match result with
@@ -217,41 +233,46 @@ module C01Range_SumRange
     
   use prelude.Snapshot
   use prelude.Snapshot
+  let rec into_iter0 (self:C01Range_Range_Type.t_range) (return'  (ret:C01Range_Range_Type.t_range))= any 
+    [ return' (result:C01Range_Range_Type.t_range)-> {[#"../01_range.rs" 69 14 69 28] result = self}
+      (! return' {result}) ]
+    
   let rec sum_range (n:isize) (return'  (ret:isize))= {[#"../01_range.rs" 75 11 75 18] IntSize.to_int n >= 0}
     (! bb0 
-    [ bb7 = [ &_0 <- i ] return' {_0} 
-    | bb9 = {[#"../01_range.rs" 86 14 86 23] false}
-      any 
-    | bb4 = {[#"../01_range.rs" 84 16 84 46] IntSize.to_int i = Seq.length (Snapshot.inner produced) /\ i <= n}
-      {[#"../01_range.rs" 83 16 83 55] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) it}
-      {[#"../01_range.rs" 82 16 82 23] inv0 it}
-      (! bb5) 
-      [ bb11 = [ &produced <- _21 ] any 
-        [ any_ (_any:Snapshot.snap_ty (Seq.seq isize))-> [ &_21 <- _any ] IntSize.add {i}
-          {[#"../01_range.rs" 89 21 89 22] (1 : isize)} (fun (_ret':isize) -> [ &i <- _ret' ] bb4) ]
-        
-      | bb10 = [ &x <- Core_Option_Option_Type.some_0 _17 ] 
-        [ &_21 <- [#"../01_range.rs" 88 27 88 75] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton x)) ]
-        bb11
-      | bb8 = bb10
-      | bb6 = any 
-        [ br0 -> {_17 = Core_Option_Option_Type.C_None }
-          (! bb7)
-        | br1 (a:isize)-> {_17 = Core_Option_Option_Type.C_Some a}
-          (! bb8)
-        | default -> (! bb9) ]
-        
-      | bb5 = Borrow.borrow_mut <C01Range_Range_Type.t_range> {it}
-        (fun (_ret':borrowed (C01Range_Range_Type.t_range)) -> [ &_18 <- _ret' ] [ &it <-  ^ _18 ] next0 {_18}
-          (fun (_ret':Core_Option_Option_Type.t_option isize) -> [ &_17 <- _ret' ] bb6)) ]
-      
-    | bb3 = bb4 
-    | bb2 = [ &produced <- [#"../01_range.rs" 81 23 81 47] Snapshot.new (Seq.empty  : Seq.seq isize) ] bb3 
-    | bb1 = [ &iter_old <- [#"../01_range.rs" 80 19 80 35] Snapshot.new it ] bb2 
-    | bb0 = [ &i <- [#"../01_range.rs" 78 16 78 17] (0 : isize) ] 
+    [ bb0 = [ &i <- [#"../01_range.rs" 78 16 78 17] (0 : isize) ] 
       [ &_6 <- C01Range_Range_Type.C_Range ([#"../01_range.rs" 79 32 79 33] (0 : isize)) n ]
-      into_iter0 {_6} (fun (_ret':C01Range_Range_Type.t_range) -> [ &it <- _ret' ] bb1)  ]
-    ) [ return' (result:isize)-> {[#"../01_range.rs" 76 10 76 21] result = n} (! return' {_0}) ] 
+      into_iter0 {_6} (fun (_ret':C01Range_Range_Type.t_range) -> [ &it <- _ret' ] bb1)
+    | bb1 = [ &iter_old <- [#"../01_range.rs" 80 19 80 35] Snapshot.new it ] bb2
+    | bb2 = [ &produced <- [#"../01_range.rs" 81 23 81 47] Snapshot.new (Seq.empty  : Seq.seq isize) ] bb3
+    | bb3 = bb4
+    | bb4 = bb4 
+      [ bb4 = {[#"../01_range.rs" 84 16 84 46] IntSize.to_int i = Seq.length (Snapshot.inner produced) /\ i <= n}
+        {[#"../01_range.rs" 83 16 83 55] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) it}
+        {[#"../01_range.rs" 82 16 82 23] inv0 it}
+        (! bb5) 
+        [ bb5 = Borrow.borrow_mut <C01Range_Range_Type.t_range> {it}
+          (fun (_ret':borrowed (C01Range_Range_Type.t_range)) -> [ &it <-  ^ _18 ] [ &_18 <- _ret' ] next0 {_18}
+            (fun (_ret':Core_Option_Option_Type.t_option isize) -> [ &_17 <- _ret' ] bb6))
+        | bb6 = any 
+          [ br0 -> {_17 = Core_Option_Option_Type.C_None }
+            (! bb7)
+          | br1 (a:isize)-> {_17 = Core_Option_Option_Type.C_Some a}
+            (! bb8) ]
+          
+        | bb8 = bb10
+        | bb10 = Core_Option_Option_Type.some <isize> {_17} (fun (rf_0':isize) -> [ &x <- rf_0' ] 
+            [ &_21 <- [#"../01_range.rs" 88 27 88 75] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton x)) ]
+            bb11)
+        | bb11 = [ &produced <- _21 ] (any 
+          [ any_ (_any:Snapshot.snap_ty (Seq.seq isize))-> (! [ &_21 <- _any ] IntSize.add {i}
+            {[#"../01_range.rs" 89 21 89 22] (1 : isize)} (fun (_ret':isize) -> [ &i <- _ret' ] bb4)) ]
+          ) ]
+         ]
+      
+    | bb9 = {[#"../01_range.rs" 86 14 86 23] false}
+      any
+    | bb7 = [ &_0 <- i ] return' {_0} ]
+    )
     [ & _0 : isize = any_l () : isize
     | & n : isize = n
     | & i : isize = any_l () : isize
@@ -263,7 +284,7 @@ module C01Range_SumRange
     | & _18 : borrowed (C01Range_Range_Type.t_range) = any_l () : borrowed (C01Range_Range_Type.t_range)
     | & x : isize = any_l () : isize
     | & _21 : Snapshot.snap_ty (Seq.seq isize) = any_l () : Snapshot.snap_ty (Seq.seq isize) ]
-    
+     [ return' (result:isize)-> {[#"../01_range.rs" 76 10 76 21] result = n} (! return' {result}) ] 
 end
 module C01Range_Impl0
   use prelude.IntSize

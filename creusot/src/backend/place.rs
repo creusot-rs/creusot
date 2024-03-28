@@ -104,14 +104,17 @@ pub(crate) fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
                     let new_focus = Exp::var(fields[ix.as_usize()].as_term().0.clone());
                     istmts.push(IntermediateStmt::Call(fields, Expr::Symbol(acc_name), params));
                     let constr = Exp::qvar(names.constructor(variant.def_id, subst));
+                    let ty = translate_ty(ctx, names, DUMMY_SP, place_ty.ty);
+                    let needs_ty = ctx.generics_of(def.did()).count() > 0;
                     constructor = Box::new(|is, t| {
+
                         let mut fields: Vec<_> = variant
                             .fields
                             .iter()
                             .map(|f| Exp::var(format!("f_{}'", f.name)))
                             .collect();
                         fields[ix.as_usize()] = t;
-                        constructor(is, constr.app(fields))
+                        constructor(is, constr.app(fields).ascribe(ty))
                     });
                     focus = new_focus;
                 }
@@ -236,7 +239,7 @@ pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
                         .iter()
                         .map(|f| {
                             Param::Term(
-                                format!("f_{}'", f.name).into(),
+                                format!("rf_{}'", f.name).into(),
                                 translate_ty(ctx, names, DUMMY_SP, f.ty(ctx.tcx, subst)),
                             )
                         })

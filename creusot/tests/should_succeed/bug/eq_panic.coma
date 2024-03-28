@@ -17,6 +17,10 @@ module EqPanic_Omg
   axiom inv0 : forall x : t . inv0 x = true
   use prelude.Borrow
   use prelude.Intrinsic
+  predicate resolve0 (self : t)
+  let rec resolve0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
   type deep_model_ty0
   function deep_model2 (self : t) : deep_model_ty0
   let rec deep_model2 (self:t) (return'  (ret:deep_model_ty0))= any 
@@ -38,16 +42,12 @@ module EqPanic_Omg
     [ return' (result:bool)-> {[#"../../../../../creusot-contracts/src/std/cmp.rs" 11 26 11 75] result = (deep_model0 self = deep_model0 other)}
       (! return' {result}) ]
     
-  predicate resolve0 (self : t)
-  let rec resolve0 (self:t) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
   let rec omg (x:t) (y:t) (return'  (ret:bool))= {[#"../eq_panic.rs" 6 37 6 38] inv0 y}
     {[#"../eq_panic.rs" 6 30 6 31] inv0 x}
     (! bb0 
-    [ bb1 = {[@expl:type invariant] inv0 y}
+    [ bb0 = eq0 {x} {y} (fun (_ret':bool) -> [ &_0 <- _ret' ] bb1)
+    | bb1 = {[@expl:type invariant] inv0 y}
       -{resolve0 y}- {[@expl:type invariant] inv0 x}
-      -{resolve0 x}- return' {_0} 
-    | bb0 = eq0 {x} {y} (fun (_ret':bool) -> [ &_0 <- _ret' ] bb1)  ]
-    ) [ return' (result:bool)-> (! return' {_0}) ] [ & _0 : bool = any_l () : bool | & x : t = x | & y : t = y ] 
+      -{resolve0 x}- return' {_0} ]
+    )[ & _0 : bool = any_l () : bool | & x : t = x | & y : t = y ]  [ return' (result:bool)-> (! return' {result}) ] 
 end

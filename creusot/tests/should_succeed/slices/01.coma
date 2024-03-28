@@ -43,17 +43,17 @@ module C01_IndexSlice
   use prelude.Intrinsic
   let rec index_slice (a:slice uint32) (return'  (ret:uint32))= {[#"../01.rs" 5 11 5 24] 10 < Seq.length (shallow_model0 a)}
     (! bb0 
-    [ bb1 = [ &_0 <- Slice.get a _3 ] return' {_0} 
-    | bb0 = [ &_3 <- [#"../01.rs" 7 6 7 8] (10 : usize) ] [ &_4 <- Slice.length a ] UIntSize.lt {_3} {_4}
+    [ bb0 = [ &_3 <- [#"../01.rs" 7 6 7 8] (10 : usize) ] [ &_4 <- Slice.length a ] UIntSize.lt {_3} {_4}
       (fun (_ret':bool) -> [ &_5 <- _ret' ] {[@expl:index in bounds] [#"../01.rs" 7 4 7 9] _5}
-        bb1)  ]
-    ) [ return' (result:uint32)-> (! return' {_0}) ] 
+        bb1)
+    | bb1 = Slice.get <uint32> {a} {_3} (fun (l0':uint32) -> [ &_0 <- l0' ] return' {_0}) ]
+    )
     [ & _0 : uint32 = any_l () : uint32
     | & a : slice uint32 = a
     | & _3 : usize = any_l () : usize
     | & _4 : usize = any_l () : usize
     | & _5 : bool = any_l () : bool ]
-    
+     [ return' (result:uint32)-> (! return' {result}) ] 
 end
 module C01_IndexMutSlice
   use prelude.UInt32
@@ -111,18 +111,21 @@ module C01_IndexMutSlice
     
   let rec index_mut_slice (a:borrowed (slice uint32)) (return'  (ret:()))= {[#"../01.rs" 10 11 10 24] Seq.length (shallow_model0 a) = 5}
     (! bb0 
-    [ bb1 = 
-      [ &a <- { a with current = Slice.set ( * a) _4 ([#"../01.rs" 13 11 13 12] (3 : uint32)) ; } ]
-      -{resolve0 a}- [ &_0 <- [#"../01.rs" 12 38 14 1] () ] return' {_0} 
-    | bb0 = [ &_4 <- [#"../01.rs" 13 6 13 7] (2 : usize) ] [ &_5 <- Slice.length ( * a) ] UIntSize.lt {_4} {_5}
+    [ bb0 = [ &_4 <- [#"../01.rs" 13 6 13 7] (2 : usize) ] [ &_5 <- Slice.length ( * a) ] UIntSize.lt {_4} {_5}
       (fun (_ret':bool) -> [ &_6 <- _ret' ] {[@expl:index in bounds] [#"../01.rs" 13 4 13 8] _6}
-        bb1)  ]
-    ) [ return' (result:())-> {[#"../01.rs" 11 10 11 23] UInt32.to_int (index_logic0 ( ^ a) 2) = 3} (! return' {_0}) ] 
+        bb1)
+    | bb1 = Slice.get <uint32> { * a} {_4} (fun (r0':uint32) -> Slice.set <uint32> { * a} {_4}
+        {[#"../01.rs" 13 11 13 12] (3 : uint32)} (fun (r1':slice uint32) -> 
+          [ &a <- { a with current = r1' ; } ]
+          -{resolve0 a}- [ &_0 <- [#"../01.rs" 12 38 14 1] () ] return' {_0})) ]
+    )
     [ & _0 : () = any_l () : ()
     | & a : borrowed (slice uint32) = a
     | & _4 : usize = any_l () : usize
     | & _5 : usize = any_l () : usize
     | & _6 : bool = any_l () : bool ]
+     
+    [ return' (result:())-> {[#"../01.rs" 11 10 11 23] UInt32.to_int (index_logic0 ( ^ a) 2) = 3} (! return' {result}) ]
     
 end
 module Core_Option_Option_Type
@@ -131,6 +134,16 @@ module Core_Option_Option_Type
     | C_Some 't
     
   function any_l (_ : 'b) : 'a
+  let rec none < 't > (input:t_option 't) (ret  )= any 
+    [ good -> {C_None  = input} ret | bad -> {C_None  <> input} {false} any ]
+    
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Some field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Some field_0 <> input}
+      {false}
+      any ]
+    
 end
 module C01_SliceFirst
   type t
@@ -164,22 +177,22 @@ module C01_SliceFirst
     [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
     
   axiom inv2 : forall x : Core_Option_Option_Type.t_option t . inv2 x = true
-  predicate invariant1 (self : t)
-  let rec invariant1 (self:t) (return'  (ret:bool))= any 
+  predicate invariant1 (self : slice t)
+  let rec invariant1 (self:slice t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
     
-  predicate inv1 (_x : t)
-  let rec inv1 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ] 
-  axiom inv1 : forall x : t . inv1 x = true
-  predicate invariant0 (self : slice t)
-  let rec invariant0 (self:slice t) (return'  (ret:bool))= any 
+  predicate inv1 (_x : slice t)
+  let rec inv1 (_x:slice t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  axiom inv1 : forall x : slice t . inv1 x = true
+  predicate invariant0 (self : t)
+  let rec invariant0 (self:t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
     
-  predicate inv0 (_x : slice t)
-  let rec inv0 (_x:slice t) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
-    
-  axiom inv0 : forall x : slice t . inv0 x = true
+  predicate inv0 (_x : t)
+  let rec inv0 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : t . inv0 x = true
   use seq.Seq
   use prelude.Slice
   use prelude.UIntSize
@@ -204,42 +217,35 @@ module C01_SliceFirst
     [ return' (result:t)-> {result = index_logic0 self ix} (! return' {result}) ]
     
   use prelude.Intrinsic
-  let rec len0 (self:slice t) (return'  (ret:usize))= {inv0 self}
+  predicate resolve1 (self : slice t)
+  let rec resolve1 (self:slice t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : t)
+  let rec resolve0 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec len0 (self:slice t) (return'  (ret:usize))= {inv1 self}
     any 
     [ return' (result:usize)-> {[#"../../../../../creusot-contracts/src/std/slice.rs" 238 0 334 1] Seq.length (shallow_model0 self) = UIntSize.to_int result}
       (! return' {result}) ]
     
-  predicate resolve1 (self : t)
-  let rec resolve1 (self:t) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
-    
-  predicate resolve0 (self : slice t)
-  let rec resolve0 (self:slice t) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
-  let rec slice_first (a:slice t) (return'  (ret:Core_Option_Option_Type.t_option t))= {[#"../01.rs" 20 22 20 23] inv0 a}
+  let rec slice_first (a:slice t) (return'  (ret:Core_Option_Option_Type.t_option t))= {[#"../01.rs" 20 22 20 23] inv1 a}
     (! bb0 
-    [ bb5 = return' {_0} 
-    | bb4 = {[@expl:type invariant] inv0 a}
-      -{resolve0 a}- [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option t ] bb5 
-    | bb3 = [ &_7 <- Slice.get a _8 ] {[@expl:type invariant] inv0 a}
-      -{resolve0 a}- {[@expl:type invariant] inv1 _7}
-      -{resolve1 _7}- [ &_0 <- Core_Option_Option_Type.C_Some _7 ] bb5 
+    [ bb0 = len0 {a} (fun (_ret':usize) -> [ &_4 <- _ret' ] bb1)
+    | bb1 = UIntSize.gt {_4} {[#"../01.rs" 21 17 21 18] (0 : usize)} (fun (_ret':bool) -> [ &_3 <- _ret' ] (any 
+        [ any_ (_any:usize)-> (! [ &_4 <- _any ] (any [ br0 -> {_3 = false} (! bb4) | br1 -> {_3} (! bb2) ] )) ]
+        ))
     | bb2 = [ &_8 <- [#"../01.rs" 22 16 22 17] (0 : usize) ] [ &_9 <- Slice.length a ] UIntSize.lt {_8} {_9}
       (fun (_ret':bool) -> [ &_10 <- _ret' ] {[@expl:index in bounds] [#"../01.rs" 22 14 22 18] _10}
-        bb3) 
-    | bb1 = UIntSize.gt {_4} {[#"../01.rs" 21 17 21 18] (0 : usize)} (fun (_ret':bool) -> [ &_3 <- _ret' ] any 
-        [ br0 -> {_3 = false} (! bb4) | br1 -> {_3} (! bb2) ]
-        ) 
-    | bb0 = len0 {a} (fun (_ret':usize) -> [ &_4 <- _ret' ] bb1)  ]
-    ) 
-    [ return' (result:Core_Option_Option_Type.t_option t)-> {[#"../01.rs" 20 34 20 44] inv2 result}
-      {[#"../01.rs" 16 10 19 1] match result with
-        | Core_Option_Option_Type.C_Some v -> v = index_logic0 a 0
-        | Core_Option_Option_Type.C_None -> Seq.length (shallow_model0 a) = 0
-        end}
-      (! return' {_0}) ]
-    
+        bb3)
+    | bb3 = Slice.get <t> {a} {_8} (fun (l0':t) -> [ &_7 <- l0' ] {[@expl:type invariant] inv1 a}
+        -{resolve1 a}- {[@expl:type invariant] inv0 _7}
+        -{resolve0 _7}- [ &_0 <- Core_Option_Option_Type.C_Some _7 : Core_Option_Option_Type.t_option t ] bb5)
+    | bb4 = {[@expl:type invariant] inv1 a}
+      -{resolve1 a}- [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option t ] bb5
+    | bb5 = return' {_0} ]
+    )
     [ & _0 : Core_Option_Option_Type.t_option t = any_l () : Core_Option_Option_Type.t_option t
     | & a : slice t = a
     | & _3 : bool = any_l () : bool
@@ -248,5 +254,12 @@ module C01_SliceFirst
     | & _8 : usize = any_l () : usize
     | & _9 : usize = any_l () : usize
     | & _10 : bool = any_l () : bool ]
+     
+    [ return' (result:Core_Option_Option_Type.t_option t)-> {[#"../01.rs" 20 34 20 44] inv2 result}
+      {[#"../01.rs" 16 10 19 1] match result with
+        | Core_Option_Option_Type.C_Some v -> v = index_logic0 a 0
+        | Core_Option_Option_Type.C_None -> Seq.length (shallow_model0 a) = 0
+        end}
+      (! return' {result}) ]
     
 end

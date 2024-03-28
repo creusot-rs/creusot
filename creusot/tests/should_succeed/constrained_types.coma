@@ -6,6 +6,15 @@ module Core_Cmp_Ordering_Type
     | C_Greater
     
   function any_l (_ : 'b) : 'a
+  let rec less (input:t_ordering) (ret  )= any 
+    [ good -> {C_Less  = input} ret | bad -> {C_Less  <> input} {false} any ]
+    
+  let rec equal (input:t_ordering) (ret  )= any 
+    [ good -> {C_Equal  = input} ret | bad -> {C_Equal  <> input} {false} any ]
+    
+  let rec greater (input:t_ordering) (ret  )= any 
+    [ good -> {C_Greater  = input} ret | bad -> {C_Greater  <> input} {false} any ]
+    
 end
 module ConstrainedTypes_UsesConcreteInstance
   use prelude.Int
@@ -58,6 +67,16 @@ module ConstrainedTypes_UsesConcreteInstance
   axiom inv0 : forall x : (uint32, uint32) . inv0 x = true
   use prelude.Int
   use prelude.Intrinsic
+  predicate resolve1 (self : uint32) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
+  let rec resolve1 (self:uint32) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  predicate resolve0 (self : (uint32, uint32)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve1 (let (_, a) = self in a)
+  let rec resolve0 (self:(uint32, uint32)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
   use prelude.Borrow
   use int.Int
   function lt_log0 (self : (int, int)) (o : (int, int)) : bool =
@@ -87,20 +106,9 @@ module ConstrainedTypes_UsesConcreteInstance
     [ return' (result:bool)-> {[#"../constrained_types.rs" 9 18 9 68] result = lt_log0 (deep_model0 self) (deep_model0 other)}
       (! return' {result}) ]
     
-  predicate resolve1 (self : uint32) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
-  let rec resolve1 (self:uint32) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
-    
-  predicate resolve0 (self : (uint32, uint32)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 16 8 16 60] resolve1 (let (a, _) = self in a) /\ resolve1 (let (_, a) = self in a)
-  let rec resolve0 (self:(uint32, uint32)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
   let rec uses_concrete_instance (x:(uint32, uint32)) (y:(uint32, uint32)) (return'  (ret:bool))= (! bb0 
-    [ bb1 = -{resolve0 y}- -{resolve0 x}- return' {_0} 
-    | bb0 = lt0 {x} {y} (fun (_ret':bool) -> [ &_0 <- _ret' ] bb1)  ]
-    ) [ return' (result:bool)-> (! return' {_0}) ] 
-    [ & _0 : bool = any_l () : bool | & x : (uint32, uint32) = x | & y : (uint32, uint32) = y ]
+    [ bb0 = lt0 {x} {y} (fun (_ret':bool) -> [ &_0 <- _ret' ] bb1) | bb1 = -{resolve0 y}- -{resolve0 x}- return' {_0} ]
+    )[ & _0 : bool = any_l () : bool | & x : (uint32, uint32) = x | & y : (uint32, uint32) = y ]  
+    [ return' (result:bool)-> (! return' {result}) ]
     
 end

@@ -5,12 +5,22 @@ module Core_Ptr_NonNull_NonNull_Type
     | C_NonNull opaque_ptr
     
   function any_l (_ : 'b) : 'a
+  let rec non_null < 't > (input:t_nonnull 't) (ret  (field_0:opaque_ptr))= any 
+    [ good (field_0:opaque_ptr)-> {C_NonNull field_0 = input}
+      ret {field_0}
+    | bad (field_0:opaque_ptr)-> {C_NonNull field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Core_Marker_PhantomData_Type
   type t_phantomdata 't =
     | C_PhantomData
     
   function any_l (_ : 'b) : 'a
+  let rec phantom_data < 't > (input:t_phantomdata 't) (ret  )= any 
+    [ good -> {C_PhantomData  = input} ret | bad -> {C_PhantomData  <> input} {false} any ]
+    
 end
 module Core_Ptr_Unique_Unique_Type
   use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
@@ -19,6 +29,14 @@ module Core_Ptr_Unique_Unique_Type
     | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
   function any_l (_ : 'b) : 'a
+  let rec unique < 't > (input:t_unique 't) (ret  (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't))= any
+    
+    [ good (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique field_0 field_1 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_RawVec_Cap_Type
   use prelude.UIntSize
@@ -27,6 +45,13 @@ module Alloc_RawVec_Cap_Type
     | C_Cap usize
     
   function any_l (_ : 'b) : 'a
+  let rec cap (input:t_cap) (ret  (field_0:usize))= any 
+    [ good (field_0:usize)-> {C_Cap field_0 = input}
+      ret {field_0}
+    | bad (field_0:usize)-> {C_Cap field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_RawVec_RawVec_Type
   use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
@@ -35,6 +60,14 @@ module Alloc_RawVec_RawVec_Type
     | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
     
   function any_l (_ : 'b) : 'a
+  let rec raw_vec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (field_0:Core_Ptr_Unique_Unique_Type.t_unique 't) (field_1:Alloc_RawVec_Cap_Type.t_cap) (field_2:'a))= any
+    
+    [ good (field_0:Core_Ptr_Unique_Unique_Type.t_unique 't) (field_1:Alloc_RawVec_Cap_Type.t_cap) (field_2:'a)-> {C_RawVec field_0 field_1 field_2 = input}
+      ret {field_0} {field_1} {field_2}
+    | bad (field_0:Core_Ptr_Unique_Unique_Type.t_unique 't) (field_1:Alloc_RawVec_Cap_Type.t_cap) (field_2:'a)-> {C_RawVec field_0 field_1 field_2 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_Vec_Vec_Type
   use prelude.UIntSize
@@ -44,12 +77,23 @@ module Alloc_Vec_Vec_Type
     | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
   function any_l (_ : 'b) : 'a
+  let rec vec < 't > < 'a > (input:t_vec 't 'a) (ret  (field_0:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (field_1:usize))= any
+    
+    [ good (field_0:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (field_1:usize)-> {C_Vec field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (field_1:usize)-> {C_Vec field_0 field_1 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_Alloc_Global_Type
   type t_global  =
     | C_Global
     
   function any_l (_ : 'b) : 'a
+  let rec global (input:t_global) (ret  )= any 
+    [ good -> {C_Global  = input} ret | bad -> {C_Global  <> input} {false} any ]
+    
 end
 module C16ImplCloning_Vec_Type
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
@@ -58,6 +102,14 @@ module C16ImplCloning_Vec_Type
     | C_Vec (Alloc_Vec_Vec_Type.t_vec 't (Alloc_Alloc_Global_Type.t_global))
     
   function any_l (_ : 'b) : 'a
+  let rec vec < 't > (input:t_vec 't) (ret  (field_0:Alloc_Vec_Vec_Type.t_vec 't (Alloc_Alloc_Global_Type.t_global)))= any
+    
+    [ good (field_0:Alloc_Vec_Vec_Type.t_vec 't (Alloc_Alloc_Global_Type.t_global))-> {C_Vec field_0 = input}
+      ret {field_0}
+    | bad (field_0:Alloc_Vec_Vec_Type.t_vec 't (Alloc_Alloc_Global_Type.t_global))-> {C_Vec field_0 <> input}
+      {false}
+      any ]
+    
 end
 module C16ImplCloning_Test
   type t
@@ -91,11 +143,11 @@ module C16ImplCloning_Test
   let rec test (x:borrowed (C16ImplCloning_Vec_Type.t_vec t)) (return'  (ret:()))= {[#"../16_impl_cloning.rs" 17 15 17 16] inv0 x}
     (! bb0 
     [ bb0 = {[@expl:type invariant] inv0 x}
-      -{resolve0 x}- [ &_0 <- [#"../16_impl_cloning.rs" 17 31 17 33] () ] return' {_0}  ]
-    ) 
+      -{resolve0 x}- [ &_0 <- [#"../16_impl_cloning.rs" 17 31 17 33] () ] return' {_0} ]
+    )[ & _0 : () = any_l () : () | & x : borrowed (C16ImplCloning_Vec_Type.t_vec t) = x ]  
     [ return' (result:())-> {[#"../16_impl_cloning.rs" 16 10 16 21] shallow_model0 x = shallow_model1 ( * x)}
-      (! return' {_0}) ]
-    [ & _0 : () = any_l () : () | & x : borrowed (C16ImplCloning_Vec_Type.t_vec t) = x ] 
+      (! return' {result}) ]
+    
 end
 module C16ImplCloning_Impl0
   type t

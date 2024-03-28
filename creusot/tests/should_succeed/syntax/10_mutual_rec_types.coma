@@ -5,11 +5,16 @@ module Core_Option_Option_Type
     | C_Some 't
     
   function any_l (_ : 'b) : 'a
-  function some_0 (self : t_option 't) : 't =
-    match self with
-      | C_None -> any_l self
-      | C_Some a -> a
-      end
+  let rec none < 't > (input:t_option 't) (ret  )= any 
+    [ good -> {C_None  = input} ret | bad -> {C_None  <> input} {false} any ]
+    
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Some field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Some field_0 <> input}
+      {false}
+      any ]
+    
 end
 module C10MutualRecTypes_Node_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
@@ -21,18 +26,20 @@ module C10MutualRecTypes_Node_Type
     | C_Tree (Core_Option_Option_Type.t_option (t_node))
     
   function any_l (_ : 'b) : 'a
-  function node_right (self : t_node) : t_tree =
-    match self with
-      | C_Node _ _ a -> a
-      end
-  function node_left (self : t_node) : t_tree =
-    match self with
-      | C_Node a _ _ -> a
-      end
-  function tree_0 (self : t_tree) : Core_Option_Option_Type.t_option (t_node) =
-    match self with
-      | C_Tree a -> a
-      end
+  let rec node (input:t_node) (ret  (field_0:t_tree) (field_1:uint32) (field_2:t_tree))= any 
+    [ good (field_0:t_tree) (field_1:uint32) (field_2:t_tree)-> {C_Node field_0 field_1 field_2 = input}
+      ret {field_0} {field_1} {field_2}
+    | bad (field_0:t_tree) (field_1:uint32) (field_2:t_tree)-> {C_Node field_0 field_1 field_2 <> input}
+      {false}
+      any ]
+    
+  let rec tree (input:t_tree) (ret  (field_0:Core_Option_Option_Type.t_option (t_node)))= any 
+    [ good (field_0:Core_Option_Option_Type.t_option (t_node))-> {C_Tree field_0 = input}
+      ret {field_0}
+    | bad (field_0:Core_Option_Option_Type.t_option (t_node))-> {C_Tree field_0 <> input}
+      {false}
+      any ]
+    
 end
 module C10MutualRecTypes_Tree_Type
   use export C10MutualRecTypes_Node_Type
@@ -42,8 +49,8 @@ module C10MutualRecTypes_UseTree
   use prelude.Borrow
   use prelude.Intrinsic
   let rec use_tree (_1:C10MutualRecTypes_Tree_Type.t_tree) (return'  (ret:()))= (! bb0 
-    [ bb0 = [ &_0 <- [#"../10_mutual_rec_types.rs" 13 26 13 28] () ] return' {_0}  ]
-    ) [ return' (result:())-> (! return' {_0}) ] [ & _0 : () = any_l () : () ] 
+    [ bb0 = [ &_0 <- [#"../10_mutual_rec_types.rs" 13 26 13 28] () ] return' {_0} ]
+    )[ & _0 : () = any_l () : () ]  [ return' (result:())-> (! return' {result}) ] 
 end
 module Core_Cmp_Ordering_Type
   type t_ordering  =
@@ -52,6 +59,15 @@ module Core_Cmp_Ordering_Type
     | C_Greater
     
   function any_l (_ : 'b) : 'a
+  let rec less (input:t_ordering) (ret  )= any 
+    [ good -> {C_Less  = input} ret | bad -> {C_Less  <> input} {false} any ]
+    
+  let rec equal (input:t_ordering) (ret  )= any 
+    [ good -> {C_Equal  = input} ret | bad -> {C_Equal  <> input} {false} any ]
+    
+  let rec greater (input:t_ordering) (ret  )= any 
+    [ good -> {C_Greater  = input} ret | bad -> {C_Greater  <> input} {false} any ]
+    
 end
 module C10MutualRecTypes_Impl0_Height
   use prelude.UInt64
@@ -67,9 +83,6 @@ module C10MutualRecTypes_Impl0_Height
   axiom inv0 : forall x : uint64 . inv0 x = true
   use prelude.Borrow
   use prelude.Intrinsic
-  use C10MutualRecTypes_Node_Type as C10MutualRecTypes_Node_Type
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  use C10MutualRecTypes_Tree_Type as C10MutualRecTypes_Tree_Type
   use prelude.Int
   use int.Int
   use int.Int
@@ -94,32 +107,43 @@ module C10MutualRecTypes_Impl0_Height
       {[#"../../../../../creusot-contracts/src/std/cmp.rs" 53 26 53 66] deep_model0 result >= deep_model0 self}
       (! return' {result}) ]
     
+  use prelude.UInt32
+  use C10MutualRecTypes_Node_Type as C10MutualRecTypes_Node_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use C10MutualRecTypes_Tree_Type as C10MutualRecTypes_Tree_Type
   let rec height (self:C10MutualRecTypes_Tree_Type.t_tree) (return'  (ret:uint64))= (! bb0 
-    [ bb8 = return' {_0} 
-    | bb4 = [ &_0 <- [#"../10_mutual_rec_types.rs" 18 26 18 27] (0 : uint64) ] bb8 
-    | bb1 = bb4 
+    [ bb0 = C10MutualRecTypes_Tree_Type.tree {self}
+      (fun (rf_0':Core_Option_Option_Type.t_option (C10MutualRecTypes_Node_Type.t_node)) -> any 
+        [ br0 -> {rf_0' = Core_Option_Option_Type.C_None }
+          (! bb1)
+        | br1 (a:C10MutualRecTypes_Node_Type.t_node)-> {rf_0' = Core_Option_Option_Type.C_Some a}
+          (! bb2) ]
+        )
+    | bb3 = {[#"../10_mutual_rec_types.rs" 17 14 17 18] false}
+      any
+    | bb2 = C10MutualRecTypes_Tree_Type.tree {self}
+      (fun (rf_0':Core_Option_Option_Type.t_option (C10MutualRecTypes_Node_Type.t_node)) -> Core_Option_Option_Type.some
+        <C10MutualRecTypes_Node_Type.t_node> {rf_0'} (fun (rf_0':C10MutualRecTypes_Node_Type.t_node) -> 
+          [ &n <- rf_0' ]
+          C10MutualRecTypes_Node_Type.node {n}
+          (fun (rf_left':C10MutualRecTypes_Tree_Type.t_tree) (rf_val':uint32) (rf_right':C10MutualRecTypes_Tree_Type.t_tree) -> height
+            {rf_left'} (fun (_ret':uint64) -> [ &_5 <- _ret' ] bb5))))
+    | bb5 = C10MutualRecTypes_Node_Type.node {n}
+      (fun (rf_left':C10MutualRecTypes_Tree_Type.t_tree) (rf_val':uint32) (rf_right':C10MutualRecTypes_Tree_Type.t_tree) -> height
+        {rf_right'} (fun (_ret':uint64) -> [ &_7 <- _ret' ] bb6))
+    | bb6 = max0 {_5} {_7} (fun (_ret':uint64) -> [ &_4 <- _ret' ] bb7)
     | bb7 = UInt64.add {_4} {[#"../10_mutual_rec_types.rs" 19 69 19 70] (1 : uint64)} (fun (_ret':uint64) -> 
         [ &_0 <- _ret' ]
-        bb8) 
-    | bb6 = max0 {_5} {_7} (fun (_ret':uint64) -> [ &_4 <- _ret' ] bb7) 
-    | bb5 = height {C10MutualRecTypes_Node_Type.node_right n} (fun (_ret':uint64) -> [ &_7 <- _ret' ] bb6) 
-    | bb2 = [ &n <- Core_Option_Option_Type.some_0 (C10MutualRecTypes_Tree_Type.tree_0 self) ] height
-      {C10MutualRecTypes_Node_Type.node_left n} (fun (_ret':uint64) -> [ &_5 <- _ret' ] bb5) 
-    | bb3 = {[#"../10_mutual_rec_types.rs" 17 14 17 18] false}
-      any 
-    | bb0 = any 
-      [ br0 -> {C10MutualRecTypes_Tree_Type.tree_0 self = Core_Option_Option_Type.C_None }
-        (! bb1)
-      | br1 (a:C10MutualRecTypes_Node_Type.t_node)-> {C10MutualRecTypes_Tree_Type.tree_0 self = Core_Option_Option_Type.C_Some a}
-        (! bb2)
-      | default -> (! bb3) ]
-        ]
-    ) [ return' (result:uint64)-> (! return' {_0}) ] 
+        (any [ any_ (_any:uint64)-> (! [ &_4 <- _any ] bb8) ] ))
+    | bb1 = bb4
+    | bb4 = [ &_0 <- [#"../10_mutual_rec_types.rs" 18 26 18 27] (0 : uint64) ] bb8
+    | bb8 = return' {_0} ]
+    )
     [ & _0 : uint64 = any_l () : uint64
     | & self : C10MutualRecTypes_Tree_Type.t_tree = self
     | & n : C10MutualRecTypes_Node_Type.t_node = any_l () : C10MutualRecTypes_Node_Type.t_node
     | & _4 : uint64 = any_l () : uint64
     | & _5 : uint64 = any_l () : uint64
     | & _7 : uint64 = any_l () : uint64 ]
-    
+     [ return' (result:uint64)-> (! return' {result}) ] 
 end

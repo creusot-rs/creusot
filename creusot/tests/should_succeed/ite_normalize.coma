@@ -8,11 +8,16 @@ module Core_Option_Option_Type
     | C_Some 't
     
   function any_l (_ : 'b) : 'a
-  function some_0 (self : t_option 't) : 't =
-    match self with
-      | C_None -> any_l self
-      | C_Some a -> a
-      end
+  let rec none < 't > (input:t_option 't) (ret  )= any 
+    [ good -> {C_None  = input} ret | bad -> {C_None  <> input} {false} any ]
+    
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Some field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Some field_0 <> input}
+      {false}
+      any ]
+    
 end
 module IteNormalize_Expr_Type
   use prelude.UIntSize
@@ -24,40 +29,33 @@ module IteNormalize_Expr_Type
     | C_False
     
   function any_l (_ : 'b) : 'a
-  function ifthenelse_e (self : t_expr) : t_expr =
-    match self with
-      | C_IfThenElse _ _ a -> a
-      | C_Var _ -> any_l self
-      | C_True -> any_l self
-      | C_False -> any_l self
-      end
-  function ifthenelse_t (self : t_expr) : t_expr =
-    match self with
-      | C_IfThenElse _ a _ -> a
-      | C_Var _ -> any_l self
-      | C_True -> any_l self
-      | C_False -> any_l self
-      end
-  function ifthenelse_c (self : t_expr) : t_expr =
-    match self with
-      | C_IfThenElse a _ _ -> a
-      | C_Var _ -> any_l self
-      | C_True -> any_l self
-      | C_False -> any_l self
-      end
-  function var_v (self : t_expr) : usize =
-    match self with
-      | C_IfThenElse _ _ _ -> any_l self
-      | C_Var a -> a
-      | C_True -> any_l self
-      | C_False -> any_l self
-      end
+  let rec if_then_else (input:t_expr) (ret  (field_0:t_expr) (field_1:t_expr) (field_2:t_expr))= any 
+    [ good (field_0:t_expr) (field_1:t_expr) (field_2:t_expr)-> {C_IfThenElse field_0 field_1 field_2 = input}
+      ret {field_0} {field_1} {field_2}
+    | bad (field_0:t_expr) (field_1:t_expr) (field_2:t_expr)-> {C_IfThenElse field_0 field_1 field_2 <> input}
+      {false}
+      any ]
+    
+  let rec var' (input:t_expr) (ret  (field_0:usize))= any 
+    [ good (field_0:usize)-> {C_Var field_0 = input}
+      ret {field_0}
+    | bad (field_0:usize)-> {C_Var field_0 <> input}
+      {false}
+      any ]
+    
+  let rec true' (input:t_expr) (ret  )= any [ good -> {C_True  = input} ret | bad -> {C_True  <> input} {false} any ] 
+  let rec false' (input:t_expr) (ret  )= any 
+    [ good -> {C_False  = input} ret | bad -> {C_False  <> input} {false} any ]
+    
 end
 module Alloc_Alloc_Global_Type
   type t_global  =
     | C_Global
     
   function any_l (_ : 'b) : 'a
+  let rec global (input:t_global) (ret  )= any 
+    [ good -> {C_Global  = input} ret | bad -> {C_Global  <> input} {false} any ]
+    
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
@@ -65,12 +63,22 @@ module Core_Ptr_NonNull_NonNull_Type
     | C_NonNull opaque_ptr
     
   function any_l (_ : 'b) : 'a
+  let rec non_null < 't > (input:t_nonnull 't) (ret  (field_0:opaque_ptr))= any 
+    [ good (field_0:opaque_ptr)-> {C_NonNull field_0 = input}
+      ret {field_0}
+    | bad (field_0:opaque_ptr)-> {C_NonNull field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Core_Marker_PhantomData_Type
   type t_phantomdata 't =
     | C_PhantomData
     
   function any_l (_ : 'b) : 'a
+  let rec phantom_data < 't > (input:t_phantomdata 't) (ret  )= any 
+    [ good -> {C_PhantomData  = input} ret | bad -> {C_PhantomData  <> input} {false} any ]
+    
 end
 module Core_Ptr_Unique_Unique_Type
   use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
@@ -79,6 +87,14 @@ module Core_Ptr_Unique_Unique_Type
     | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
   function any_l (_ : 'b) : 'a
+  let rec unique < 't > (input:t_unique 't) (ret  (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't))= any
+    
+    [ good (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique field_0 field_1 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_Boxed_Box_Type
   use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
@@ -112,47 +128,20 @@ module IteNormalize_Impl6_Clone
   axiom inv0 : forall x : IteNormalize_Expr_Type.t_expr . inv0 x = true
   use prelude.Borrow
   use prelude.Intrinsic
-  use prelude.UIntSize
-  use prelude.Int
-  let rec clone1 (self:usize) (return'  (ret:usize))= any 
-    [ return' (result:usize)-> {[#"../../../../creusot-contracts/src/std/clone.rs" 7 0 20 1] result = self}
-      (! return' {result}) ]
-    
-  let rec clone0 (self:IteNormalize_Expr_Type.t_expr) (return'  (ret:IteNormalize_Expr_Type.t_expr))= {inv0 self}
+  let rec clone1 (self:IteNormalize_Expr_Type.t_expr) (return'  (ret:IteNormalize_Expr_Type.t_expr))= {inv0 self}
     any 
     [ return' (result:IteNormalize_Expr_Type.t_expr)-> {inv1 result}
       {[#"../ite_normalize.rs" 68 0 77 1] result = self}
       (! return' {result}) ]
     
+  use prelude.UIntSize
+  use prelude.Int
+  let rec clone0 (self:usize) (return'  (ret:usize))= any 
+    [ return' (result:usize)-> {[#"../../../../creusot-contracts/src/std/clone.rs" 7 0 20 1] result = self}
+      (! return' {result}) ]
+    
   let rec clone' (self:IteNormalize_Expr_Type.t_expr) (return'  (ret:IteNormalize_Expr_Type.t_expr))= (! bb0 
-    [ bb16 = return' {_0} 
-    | bb12 = bb16 
-    | bb11 = bb12 
-    | bb10 = bb11 
-    | bb9 = [ &_0 <- IteNormalize_Expr_Type.C_IfThenElse _7 _10 _13 ] any 
-      [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &_7 <- _any ] any 
-        [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &_10 <- _any ] any 
-          [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &_13 <- _any ] bb10 ]
-           ]
-         ]
-       
-    | bb8 = [ &_15 <- e_1 ] clone0 {_15} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_13 <- _ret' ] bb9) 
-    | bb7 = [ &_12 <- t_1 ] clone0 {_12} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_10 <- _ret' ] bb8) 
-    | bb6 = [ &c_1 <- IteNormalize_Expr_Type.ifthenelse_c self ] [ &t_1 <- IteNormalize_Expr_Type.ifthenelse_t self ] 
-      [ &e_1 <- IteNormalize_Expr_Type.ifthenelse_e self ]
-      [ &_9 <- c_1 ] clone0 {_9} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_7 <- _ret' ] bb7) 
-    | bb1 = bb6 
-    | bb14 = [ &_0 <- IteNormalize_Expr_Type.C_Var _17 ] any [ any_ (_any:usize)-> [ &_17 <- _any ] bb16 ]  
-    | bb13 = [ &v_1 <- IteNormalize_Expr_Type.var_v self ] [ &_19 <- v_1 ] clone1 {_19} (fun (_ret':usize) -> 
-        [ &_17 <- _ret' ]
-        bb14) 
-    | bb2 = bb13 
-    | bb15 = [ &_0 <- IteNormalize_Expr_Type.C_True ] bb16 
-    | bb3 = bb15 
-    | bb4 = [ &_0 <- IteNormalize_Expr_Type.C_False ] bb16 
-    | bb5 = {[#"../ite_normalize.rs" 55 9 55 14] false}
-      any 
-    | bb0 = any 
+    [ bb0 = any 
       [ br0 (a:IteNormalize_Expr_Type.t_expr) (b:IteNormalize_Expr_Type.t_expr) (c:IteNormalize_Expr_Type.t_expr)-> {self = IteNormalize_Expr_Type.C_IfThenElse a b c}
         (! bb1)
       | br1 (a:usize)-> {self = IteNormalize_Expr_Type.C_Var a}
@@ -160,14 +149,42 @@ module IteNormalize_Impl6_Clone
       | br2 -> {self = IteNormalize_Expr_Type.C_True }
         (! bb3)
       | br3 -> {self = IteNormalize_Expr_Type.C_False }
-        (! bb4)
-      | default -> (! bb5) ]
-       
-    | bb20 = bb4  ]
-    ) 
-    [ return' (result:IteNormalize_Expr_Type.t_expr)-> {[#"../ite_normalize.rs" 55 9 55 14] result = self}
-      (! return' {_0}) ]
-    
+        (! bb4) ]
+      
+    | bb5 = {[#"../ite_normalize.rs" 55 9 55 14] false}
+      any
+    | bb4 = [ &_0 <- IteNormalize_Expr_Type.C_False ] bb16
+    | bb3 = bb15
+    | bb15 = [ &_0 <- IteNormalize_Expr_Type.C_True ] bb16
+    | bb2 = bb13
+    | bb13 = IteNormalize_Expr_Type.var' {self} (fun (rf_v':usize) -> [ &v_1 <- rf_v' ] [ &_19 <- v_1 ] clone0 {_19}
+        (fun (_ret':usize) -> [ &_17 <- _ret' ] bb14))
+    | bb14 = [ &_0 <- IteNormalize_Expr_Type.C_Var _17 ] (any [ any_ (_any:usize)-> (! [ &_17 <- _any ] bb16) ] )
+    | bb1 = bb6
+    | bb6 = IteNormalize_Expr_Type.if_then_else {self}
+      (fun (rf_c':IteNormalize_Expr_Type.t_expr) (rf_t':IteNormalize_Expr_Type.t_expr) (rf_e':IteNormalize_Expr_Type.t_expr) -> 
+        [ &c_1 <- rf_c' ]
+        IteNormalize_Expr_Type.if_then_else {self}
+        (fun (rf_c':IteNormalize_Expr_Type.t_expr) (rf_t':IteNormalize_Expr_Type.t_expr) (rf_e':IteNormalize_Expr_Type.t_expr) -> 
+          [ &t_1 <- rf_t' ]
+          IteNormalize_Expr_Type.if_then_else {self}
+          (fun (rf_c':IteNormalize_Expr_Type.t_expr) (rf_t':IteNormalize_Expr_Type.t_expr) (rf_e':IteNormalize_Expr_Type.t_expr) -> 
+            [ &e_1 <- rf_e' ]
+            [ &_9 <- c_1 ] clone1 {_9} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_7 <- _ret' ] bb7))))
+    | bb7 = [ &_12 <- t_1 ] clone1 {_12} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_10 <- _ret' ] bb8)
+    | bb8 = [ &_15 <- e_1 ] clone1 {_15} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_13 <- _ret' ] bb9)
+    | bb9 = [ &_0 <- IteNormalize_Expr_Type.C_IfThenElse _7 _10 _13 ] (any 
+      [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &_7 <- _any ] (any 
+        [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &_10 <- _any ] (any 
+          [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &_13 <- _any ] bb10) ]
+          )) ]
+        )) ]
+      )
+    | bb10 = bb11
+    | bb11 = bb12
+    | bb12 = bb16
+    | bb16 = return' {_0} ]
+    )
     [ & _0 : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr
     | & self : IteNormalize_Expr_Type.t_expr = self
     | & c_1 : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr
@@ -182,6 +199,9 @@ module IteNormalize_Impl6_Clone
     | & v_1 : usize = any_l () : usize
     | & _17 : usize = any_l () : usize
     | & _19 : usize = any_l () : usize ]
+     
+    [ return' (result:IteNormalize_Expr_Type.t_expr)-> {[#"../ite_normalize.rs" 55 9 55 14] result = self}
+      (! return' {result}) ]
     
 end
 module IteNormalize_Impl5_Variable
@@ -190,9 +210,9 @@ module IteNormalize_Impl5_Variable
   use prelude.Intrinsic
   use IteNormalize_Expr_Type as IteNormalize_Expr_Type
   let rec variable (v:usize) (return'  (ret:IteNormalize_Expr_Type.t_expr))= (! bb0 
-    [ bb0 = [ &_0 <- IteNormalize_Expr_Type.C_Var v ] return' {_0}  ]
-    ) [ return' (result:IteNormalize_Expr_Type.t_expr)-> (! return' {_0}) ] 
-    [ & _0 : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr | & v : usize = v ]
+    [ bb0 = [ &_0 <- IteNormalize_Expr_Type.C_Var v ] return' {_0} ]
+    )[ & _0 : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr | & v : usize = v ]  
+    [ return' (result:IteNormalize_Expr_Type.t_expr)-> (! return' {result}) ]
     
 end
 module IteNormalize_Impl3_From
@@ -204,21 +224,21 @@ module IteNormalize_Impl3_From
     [ return' (result:IteNormalize_Expr_Type.t_expr)-> (! return' {result}) ]
     
   let rec from (a:usize) (return'  (ret:IteNormalize_Expr_Type.t_expr))= (! bb0 
-    [ bb1 = return' {_0}  | bb0 = variable0 {a} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_0 <- _ret' ] bb1)  ]
-    ) [ return' (result:IteNormalize_Expr_Type.t_expr)-> (! return' {_0}) ] 
-    [ & _0 : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr | & a : usize = a ]
+    [ bb0 = variable0 {a} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_0 <- _ret' ] bb1) | bb1 = return' {_0} ]
+    )[ & _0 : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr | & a : usize = a ]  
+    [ return' (result:IteNormalize_Expr_Type.t_expr)-> (! return' {result}) ]
     
 end
 module IteNormalize_Impl4_From
   use prelude.Intrinsic
   use IteNormalize_Expr_Type as IteNormalize_Expr_Type
   let rec from (b:bool) (return'  (ret:IteNormalize_Expr_Type.t_expr))= (! bb0 
-    [ bb3 = return' {_0} 
-    | bb2 = [ &_0 <- IteNormalize_Expr_Type.C_False ] bb3 
-    | bb1 = [ &_0 <- IteNormalize_Expr_Type.C_True ] bb3 
-    | bb0 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ]   ]
-    ) [ return' (result:IteNormalize_Expr_Type.t_expr)-> (! return' {_0}) ] 
-    [ & _0 : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr | & b : bool = b ]
+    [ bb0 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ] 
+    | bb1 = [ &_0 <- IteNormalize_Expr_Type.C_True ] bb3
+    | bb2 = [ &_0 <- IteNormalize_Expr_Type.C_False ] bb3
+    | bb3 = return' {_0} ]
+    )[ & _0 : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr | & b : bool = b ]  
+    [ return' (result:IteNormalize_Expr_Type.t_expr)-> (! return' {result}) ]
     
 end
 module IteNormalize_Impl5_Ite
@@ -226,31 +246,31 @@ module IteNormalize_Impl5_Ite
   use IteNormalize_Expr_Type as IteNormalize_Expr_Type
   let rec ite (c:IteNormalize_Expr_Type.t_expr) (t:IteNormalize_Expr_Type.t_expr) (e:IteNormalize_Expr_Type.t_expr) (return'  (ret:IteNormalize_Expr_Type.t_expr))= (! bb0
     
-    [ bb10 = return' {_0} 
-    | bb9 = bb10 
-    | bb8 = bb9 
-    | bb7 = bb8 
-    | bb6 = bb7 
-    | bb5 = bb6 
-    | bb4 = [ &_0 <- IteNormalize_Expr_Type.C_IfThenElse c t e ] any 
-      [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &c <- _any ] any 
-        [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &t <- _any ] any 
-          [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &e <- _any ] bb5 ]
-           ]
-         ]
-       
-    | bb3 = bb4 
-    | bb2 = bb3 
-    | bb1 = bb2 
-    | bb0 = bb1  ]
-    ) 
-    [ return' (result:IteNormalize_Expr_Type.t_expr)-> {[#"../ite_normalize.rs" 96 14 96 91] result = IteNormalize_Expr_Type.C_IfThenElse c t e}
-      (! return' {_0}) ]
-    
+    [ bb0 = bb1
+    | bb1 = bb2
+    | bb2 = bb3
+    | bb3 = bb4
+    | bb4 = [ &_0 <- IteNormalize_Expr_Type.C_IfThenElse c t e ] (any 
+      [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &c <- _any ] (any 
+        [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &t <- _any ] (any 
+          [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &e <- _any ] bb5) ]
+          )) ]
+        )) ]
+      )
+    | bb5 = bb6
+    | bb6 = bb7
+    | bb7 = bb8
+    | bb8 = bb9
+    | bb9 = bb10
+    | bb10 = return' {_0} ]
+    )
     [ & _0 : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr
     | & c : IteNormalize_Expr_Type.t_expr = c
     | & t : IteNormalize_Expr_Type.t_expr = t
     | & e : IteNormalize_Expr_Type.t_expr = e ]
+     
+    [ return' (result:IteNormalize_Expr_Type.t_expr)-> {[#"../ite_normalize.rs" 96 14 96 91] result = IteNormalize_Expr_Type.C_IfThenElse c t e}
+      (! return' {result}) ]
     
 end
 module IteNormalize_Impl5_Transpose
@@ -269,13 +289,6 @@ module IteNormalize_Impl5_Transpose
     [ return' (result:bool)-> {result = is_normalized0 self} (! return' {result}) ]
     
   use prelude.Intrinsic
-  use prelude.UIntSize
-  use prelude.Int
-  use prelude.Borrow
-  let rec clone0 (self:IteNormalize_Expr_Type.t_expr) (return'  (ret:IteNormalize_Expr_Type.t_expr))= any 
-    [ return' (result:IteNormalize_Expr_Type.t_expr)-> {[#"../ite_normalize.rs" 55 9 55 14] result = self}
-      (! return' {result}) ]
-    
   predicate resolve1 (self : IteNormalize_Expr_Type.t_expr) =
     [#"../../../../creusot-contracts/src/resolve.rs" 45 8 45 12] true
   let rec resolve1 (self:IteNormalize_Expr_Type.t_expr) (return'  (ret:bool))= any 
@@ -286,65 +299,21 @@ module IteNormalize_Impl5_Transpose
   let rec resolve0 (self:IteNormalize_Expr_Type.t_expr) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
     
+  use prelude.Borrow
+  let rec clone0 (self:IteNormalize_Expr_Type.t_expr) (return'  (ret:IteNormalize_Expr_Type.t_expr))= any 
+    [ return' (result:IteNormalize_Expr_Type.t_expr)-> {[#"../ite_normalize.rs" 55 9 55 14] result = self}
+      (! return' {result}) ]
+    
+  use prelude.UIntSize
+  use prelude.Int
   let rec transpose (self:IteNormalize_Expr_Type.t_expr) (a:IteNormalize_Expr_Type.t_expr) (b:IteNormalize_Expr_Type.t_expr) (return'  (ret:IteNormalize_Expr_Type.t_expr))= {[#"../ite_normalize.rs" 107 15 107 32] is_normalized0 b}
     {[#"../ite_normalize.rs" 106 15 106 32] is_normalized0 a}
     {[#"../ite_normalize.rs" 105 15 105 35] is_normalized0 self}
     (! bb0 
-    [ bb34 = return' {_0} 
-    | bb33 = bb34 
-    | bb32 = bb33 
-    | bb31 = bb32 
-    | bb22 = bb31 
-    | bb21 = bb22 
-    | bb20 = bb21 
-    | bb19 = bb20 
-    | bb18 = bb19 
-    | bb17 = bb18 
-    | bb16 = [ &_0 <- IteNormalize_Expr_Type.C_IfThenElse c _15 _22 ] any 
-      [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &c <- _any ] any 
-        [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &_15 <- _any ] any 
-          [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &_22 <- _any ] bb17 ]
-           ]
-         ]
-       
-    | bb15 = bb16 
-    | bb14 = -{resolve0 e}- transpose {e} {a} {b} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_22 <- _ret' ] bb15) 
-    | bb13 = bb14 
-    | bb12 = transpose {t} {_17} {_19} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_15 <- _ret' ] bb13) 
-    | bb11 = clone0 {b} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_19 <- _ret' ] bb12) 
-    | bb10 = [ &c <- IteNormalize_Expr_Type.ifthenelse_c self ] any 
-      [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> 
-        [ &self <- let IteNormalize_Expr_Type.C_IfThenElse x0 x1 x2 = self in IteNormalize_Expr_Type.C_IfThenElse _any x1 x2 ]
-        [ &t <- IteNormalize_Expr_Type.ifthenelse_t self ] any 
-        [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> 
-          [ &self <- let IteNormalize_Expr_Type.C_IfThenElse x0 x1 x2 = self in IteNormalize_Expr_Type.C_IfThenElse x0 _any x2 ]
-          [ &e <- IteNormalize_Expr_Type.ifthenelse_e self ] any 
-          [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> 
-            [ &self <- let IteNormalize_Expr_Type.C_IfThenElse x0 x1 x2 = self in IteNormalize_Expr_Type.C_IfThenElse x0 x1 _any ]
-            -{resolve0 t}- clone0 {a} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_17 <- _ret' ] bb11) ]
-           ]
-         ]
-       
-    | bb5 = bb10 
-    | bb29 = bb31 
-    | bb28 = bb29 
-    | bb27 = bb28 
-    | bb26 = [ &_0 <- IteNormalize_Expr_Type.C_IfThenElse self a b ] any 
-      [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &self <- _any ] any 
-        [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &a <- _any ] any 
-          [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &b <- _any ] bb27 ]
-           ]
-         ]
-       
-    | bb25 = bb26 
-    | bb24 = bb25 
-    | bb23 = bb24 
-    | bb6 = bb23 
-    | bb30 = [ &_0 <- a ] any [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &a <- _any ] bb31 ]  
-    | bb7 = bb30 
-    | bb8 = [ &_0 <- b ] any [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &b <- _any ] bb31 ]  
-    | bb9 = {[#"../ite_normalize.rs" 111 14 111 18] false}
-      any 
+    [ bb0 = bb1
+    | bb1 = bb2
+    | bb2 = bb3
+    | bb3 = bb4
     | bb4 = any 
       [ br0 (a:IteNormalize_Expr_Type.t_expr) (b:IteNormalize_Expr_Type.t_expr) (c:IteNormalize_Expr_Type.t_expr)-> {self = IteNormalize_Expr_Type.C_IfThenElse a b c}
         (! bb5)
@@ -353,19 +322,78 @@ module IteNormalize_Impl5_Transpose
       | br2 -> {self = IteNormalize_Expr_Type.C_True }
         (! bb7)
       | br3 -> {self = IteNormalize_Expr_Type.C_False }
-        (! bb8)
-      | default -> (! bb9) ]
-       
-    | bb3 = bb4 
-    | bb2 = bb3 
-    | bb1 = bb2 
-    | bb0 = bb1 
-    | bb57 = bb8 
-    | bb58 = bb8  ]
-    ) 
-    [ return' (result:IteNormalize_Expr_Type.t_expr)-> {[#"../ite_normalize.rs" 108 14 108 36] is_normalized0 result}
-      (! return' {_0}) ]
-    
+        (! bb8) ]
+      
+    | bb9 = {[#"../ite_normalize.rs" 111 14 111 18] false}
+      any
+    | bb8 = [ &_0 <- b ] (any [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &b <- _any ] bb31) ] )
+    | bb7 = bb30
+    | bb30 = [ &_0 <- a ] (any [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &a <- _any ] bb31) ] )
+    | bb6 = bb23
+    | bb23 = bb24
+    | bb24 = bb25
+    | bb25 = bb26
+    | bb26 = [ &_0 <- IteNormalize_Expr_Type.C_IfThenElse self a b ] (any 
+      [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &self <- _any ] (any 
+        [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &a <- _any ] (any 
+          [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &b <- _any ] bb27) ]
+          )) ]
+        )) ]
+      )
+    | bb27 = bb28
+    | bb28 = bb29
+    | bb29 = bb31
+    | bb5 = bb10
+    | bb10 = IteNormalize_Expr_Type.if_then_else {self}
+      (fun (rf_c':IteNormalize_Expr_Type.t_expr) (rf_t':IteNormalize_Expr_Type.t_expr) (rf_e':IteNormalize_Expr_Type.t_expr) -> 
+        [ &c <- rf_c' ]
+        (any 
+        [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! IteNormalize_Expr_Type.if_then_else {self}
+          (fun (f_c':IteNormalize_Expr_Type.t_expr) (f_t':IteNormalize_Expr_Type.t_expr) (f_e':IteNormalize_Expr_Type.t_expr) -> 
+            [ &self <- IteNormalize_Expr_Type.C_IfThenElse _any f_t' f_e' ]
+            IteNormalize_Expr_Type.if_then_else {self}
+            (fun (rf_c':IteNormalize_Expr_Type.t_expr) (rf_t':IteNormalize_Expr_Type.t_expr) (rf_e':IteNormalize_Expr_Type.t_expr) -> 
+              [ &t <- rf_t' ]
+              (any 
+              [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! IteNormalize_Expr_Type.if_then_else {self}
+                (fun (f_c':IteNormalize_Expr_Type.t_expr) (f_t':IteNormalize_Expr_Type.t_expr) (f_e':IteNormalize_Expr_Type.t_expr) -> 
+                  [ &self <- IteNormalize_Expr_Type.C_IfThenElse f_c' _any f_e' ]
+                  IteNormalize_Expr_Type.if_then_else {self}
+                  (fun (rf_c':IteNormalize_Expr_Type.t_expr) (rf_t':IteNormalize_Expr_Type.t_expr) (rf_e':IteNormalize_Expr_Type.t_expr) -> 
+                    [ &e <- rf_e' ]
+                    (any 
+                    [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! IteNormalize_Expr_Type.if_then_else {self}
+                      (fun (f_c':IteNormalize_Expr_Type.t_expr) (f_t':IteNormalize_Expr_Type.t_expr) (f_e':IteNormalize_Expr_Type.t_expr) -> 
+                        [ &self <- IteNormalize_Expr_Type.C_IfThenElse f_c' f_t' _any ]
+                        -{resolve0 t}- clone0 {a} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> 
+                          [ &_17 <- _ret' ]
+                          bb11))) ]
+                    )))) ]
+              )))) ]
+        ))
+    | bb11 = clone0 {b} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_19 <- _ret' ] bb12)
+    | bb12 = transpose {t} {_17} {_19} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_15 <- _ret' ] bb13)
+    | bb13 = bb14
+    | bb14 = -{resolve0 e}- transpose {e} {a} {b} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_22 <- _ret' ] bb15)
+    | bb15 = bb16
+    | bb16 = [ &_0 <- IteNormalize_Expr_Type.C_IfThenElse c _15 _22 ] (any 
+      [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &c <- _any ] (any 
+        [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &_15 <- _any ] (any 
+          [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &_22 <- _any ] bb17) ]
+          )) ]
+        )) ]
+      )
+    | bb17 = bb18
+    | bb18 = bb19
+    | bb19 = bb20
+    | bb20 = bb21
+    | bb21 = bb22
+    | bb22 = bb31
+    | bb31 = bb32
+    | bb32 = bb33
+    | bb33 = bb34
+    | bb34 = return' {_0} ]
+    )
     [ & _0 : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr
     | & self : IteNormalize_Expr_Type.t_expr = self
     | & a : IteNormalize_Expr_Type.t_expr = a
@@ -377,6 +405,9 @@ module IteNormalize_Impl5_Transpose
     | & _17 : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr
     | & _19 : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr
     | & _22 : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr ]
+     
+    [ return' (result:IteNormalize_Expr_Type.t_expr)-> {[#"../ite_normalize.rs" 108 14 108 36] is_normalized0 result}
+      (! return' {result}) ]
     
 end
 module IteNormalize_Impl5_Normalize
@@ -396,10 +427,6 @@ module IteNormalize_Impl5_Normalize
     
   use prelude.Borrow
   use prelude.Intrinsic
-  let rec clone0 (self:IteNormalize_Expr_Type.t_expr) (return'  (ret:IteNormalize_Expr_Type.t_expr))= any 
-    [ return' (result:IteNormalize_Expr_Type.t_expr)-> {[#"../ite_normalize.rs" 55 9 55 14] result = self}
-      (! return' {result}) ]
-    
   let rec transpose0 (self:IteNormalize_Expr_Type.t_expr) (a:IteNormalize_Expr_Type.t_expr) (b:IteNormalize_Expr_Type.t_expr) (return'  (ret:IteNormalize_Expr_Type.t_expr))= {[#"../ite_normalize.rs" 107 15 107 32] is_normalized0 b}
     {[#"../ite_normalize.rs" 106 15 106 32] is_normalized0 a}
     {[#"../ite_normalize.rs" 105 15 105 35] is_normalized0 self}
@@ -407,30 +434,45 @@ module IteNormalize_Impl5_Normalize
     [ return' (result:IteNormalize_Expr_Type.t_expr)-> {[#"../ite_normalize.rs" 108 14 108 36] is_normalized0 result}
       (! return' {result}) ]
     
+  let rec clone0 (self:IteNormalize_Expr_Type.t_expr) (return'  (ret:IteNormalize_Expr_Type.t_expr))= any 
+    [ return' (result:IteNormalize_Expr_Type.t_expr)-> {[#"../ite_normalize.rs" 55 9 55 14] result = self}
+      (! return' {result}) ]
+    
+  use prelude.UIntSize
+  use prelude.Int
   let rec normalize (self:IteNormalize_Expr_Type.t_expr) (return'  (ret:IteNormalize_Expr_Type.t_expr))= (! bb0 
-    [ bb12 = return' {_0} 
-    | bb10 = bb12 
-    | bb9 = bb10 
-    | bb8 = bb9 
-    | bb7 = bb8 
-    | bb6 = transpose0 {cp} {tp} {ep} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_0 <- _ret' ] bb7) 
-    | bb5 = normalize {e} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &ep <- _ret' ] bb6) 
-    | bb4 = normalize {t} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &tp <- _ret' ] bb5) 
-    | bb3 = [ &c <- IteNormalize_Expr_Type.ifthenelse_c self ] [ &t <- IteNormalize_Expr_Type.ifthenelse_t self ] 
-      [ &e <- IteNormalize_Expr_Type.ifthenelse_e self ]
-      normalize {c} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &cp <- _ret' ] bb4) 
-    | bb1 = bb3 
-    | bb11 = bb12 
-    | bb2 = [ &e1 <- self ] clone0 {e1} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_0 <- _ret' ] bb11) 
-    | bb0 = any 
+    [ bb0 = any 
       [ br0 (a:IteNormalize_Expr_Type.t_expr) (b:IteNormalize_Expr_Type.t_expr) (c:IteNormalize_Expr_Type.t_expr)-> {self = IteNormalize_Expr_Type.C_IfThenElse a b c}
         (! bb1)
-      | default -> (! bb2) ]
-        ]
-    ) 
-    [ return' (result:IteNormalize_Expr_Type.t_expr)-> {[#"../ite_normalize.rs" 143 14 143 36] is_normalized0 result}
-      (! return' {_0}) ]
-    
+      | br1 (a:usize)-> {self = IteNormalize_Expr_Type.C_Var a}
+        (! bb2)
+      | br2 -> {self = IteNormalize_Expr_Type.C_True }
+        (! bb2)
+      | br3 -> {self = IteNormalize_Expr_Type.C_False }
+        (! bb2) ]
+      
+    | bb2 = [ &e1 <- self ] clone0 {e1} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_0 <- _ret' ] bb11)
+    | bb11 = bb12
+    | bb1 = bb3
+    | bb3 = IteNormalize_Expr_Type.if_then_else {self}
+      (fun (rf_c':IteNormalize_Expr_Type.t_expr) (rf_t':IteNormalize_Expr_Type.t_expr) (rf_e':IteNormalize_Expr_Type.t_expr) -> 
+        [ &c <- rf_c' ]
+        IteNormalize_Expr_Type.if_then_else {self}
+        (fun (rf_c':IteNormalize_Expr_Type.t_expr) (rf_t':IteNormalize_Expr_Type.t_expr) (rf_e':IteNormalize_Expr_Type.t_expr) -> 
+          [ &t <- rf_t' ]
+          IteNormalize_Expr_Type.if_then_else {self}
+          (fun (rf_c':IteNormalize_Expr_Type.t_expr) (rf_t':IteNormalize_Expr_Type.t_expr) (rf_e':IteNormalize_Expr_Type.t_expr) -> 
+            [ &e <- rf_e' ]
+            normalize {c} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &cp <- _ret' ] bb4))))
+    | bb4 = normalize {t} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &tp <- _ret' ] bb5)
+    | bb5 = normalize {e} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &ep <- _ret' ] bb6)
+    | bb6 = transpose0 {cp} {tp} {ep} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_0 <- _ret' ] bb7)
+    | bb7 = bb8
+    | bb8 = bb9
+    | bb9 = bb10
+    | bb10 = bb12
+    | bb12 = return' {_0} ]
+    )
     [ & _0 : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr
     | & self : IteNormalize_Expr_Type.t_expr = self
     | & c : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr
@@ -440,6 +482,9 @@ module IteNormalize_Impl5_Normalize
     | & tp : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr
     | & ep : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr
     | & e1 : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr ]
+     
+    [ return' (result:IteNormalize_Expr_Type.t_expr)-> {[#"../ite_normalize.rs" 143 14 143 36] is_normalized0 result}
+      (! return' {result}) ]
     
 end
 module IteNormalize_Impl5_SimplifyHelper
@@ -454,44 +499,44 @@ module IteNormalize_Impl5_SimplifyHelper
     [ return' (result:bool)-> {result = inv6 _x} (! return' {result}) ]
     
   axiom inv6 : forall x : Core_Option_Option_Type.t_option bool . inv6 x = true
-  predicate invariant5 (self : bool) =
+  use prelude.Int
+  predicate invariant5 (self : int) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant5 (self:bool) (return'  (ret:bool))= any 
+  let rec invariant5 (self:int) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant5 self} (! return' {result}) ]
     
-  predicate inv5 (_x : bool)
-  let rec inv5 (_x:bool) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ] 
-  axiom inv5 : forall x : bool . inv5 x = true
-  use prelude.UIntSize
-  predicate invariant4 (self : usize) =
+  predicate inv5 (_x : int)
+  let rec inv5 (_x:int) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ] 
+  axiom inv5 : forall x : int . inv5 x = true
+  predicate invariant4 (self : bool) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant4 (self:usize) (return'  (ret:bool))= any 
+  let rec invariant4 (self:bool) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ]
     
-  predicate inv4 (_x : usize)
-  let rec inv4 (_x:usize) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ]
-    
-  axiom inv4 : forall x : usize . inv4 x = true
-  predicate invariant3 (self : Core_Option_Option_Type.t_option bool) =
+  predicate inv4 (_x : bool)
+  let rec inv4 (_x:bool) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ] 
+  axiom inv4 : forall x : bool . inv4 x = true
+  use prelude.UIntSize
+  predicate invariant3 (self : usize) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant3 (self:Core_Option_Option_Type.t_option bool) (return'  (ret:bool))= any 
+  let rec invariant3 (self:usize) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
     
-  predicate inv3 (_x : Core_Option_Option_Type.t_option bool)
-  let rec inv3 (_x:Core_Option_Option_Type.t_option bool) (return'  (ret:bool))= any 
+  predicate inv3 (_x : usize)
+  let rec inv3 (_x:usize) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
     
-  axiom inv3 : forall x : Core_Option_Option_Type.t_option bool . inv3 x = true
-  use prelude.Int
-  predicate invariant2 (self : int) =
+  axiom inv3 : forall x : usize . inv3 x = true
+  predicate invariant2 (self : Core_Option_Option_Type.t_option bool) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant2 (self:int) (return'  (ret:bool))= any 
+  let rec invariant2 (self:Core_Option_Option_Type.t_option bool) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
     
-  predicate inv2 (_x : int)
-  let rec inv2 (_x:int) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ] 
-  axiom inv2 : forall x : int . inv2 x = true
+  predicate inv2 (_x : Core_Option_Option_Type.t_option bool)
+  let rec inv2 (_x:Core_Option_Option_Type.t_option bool) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
+    
+  axiom inv2 : forall x : Core_Option_Option_Type.t_option bool . inv2 x = true
   predicate invariant1 (self : bool) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
   let rec invariant1 (self:bool) (return'  (ret:bool))= any 
@@ -559,59 +604,35 @@ module IteNormalize_Impl5_SimplifyHelper
     
   use prelude.Intrinsic
   use prelude.Borrow
-  function deep_model0 (self : usize) : int =
-    [#"../../../../creusot-contracts/src/std/num.rs" 22 16 22 35] UIntSize.to_int self
-  let rec deep_model0 (self:usize) (return'  (ret:int))= any 
-    [ return' (result:int)-> {result = deep_model0 self} (! return' {result}) ]
-    
-  function deep_model1 (self : usize) : int =
-    [#"../../../../creusot-contracts/src/model.rs" 74 8 74 28] deep_model0 self
-  let rec deep_model1 (self:usize) (return'  (ret:int))= any 
-    [ return' (result:int)-> {result = deep_model1 self} (! return' {result}) ]
-    
-  function shallow_model3 (self : IteNormalize_BTreeMap_Type.t_btreemap usize bool) : Map.map int (Core_Option_Option_Type.t_option bool)
+  function shallow_model3 (self : borrowed (IteNormalize_BTreeMap_Type.t_btreemap usize bool)) : Map.map int (Core_Option_Option_Type.t_option bool)
     
    =
-    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model0 self
-  let rec shallow_model3 (self:IteNormalize_BTreeMap_Type.t_btreemap usize bool) (return'  (ret:Map.map int (Core_Option_Option_Type.t_option bool)))= any
+    [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model0 ( * self)
+  let rec shallow_model3 (self:borrowed (IteNormalize_BTreeMap_Type.t_btreemap usize bool)) (return'  (ret:Map.map int (Core_Option_Option_Type.t_option bool)))= any
     
     [ return' (result:Map.map int (Core_Option_Option_Type.t_option bool))-> {result = shallow_model3 self}
       (! return' {result}) ]
     
-  let rec get0 (self:IteNormalize_BTreeMap_Type.t_btreemap usize bool) (key:usize) (return'  (ret:Core_Option_Option_Type.t_option bool))= {[#"../ite_normalize.rs" 19 25 19 28] inv4 key}
+  function deep_model1 (self : usize) : int =
+    [#"../../../../creusot-contracts/src/std/num.rs" 22 16 22 35] UIntSize.to_int self
+  let rec deep_model1 (self:usize) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = deep_model1 self} (! return' {result}) ]
+    
+  let rec insert0 (self:borrowed (IteNormalize_BTreeMap_Type.t_btreemap usize bool)) (key:usize) (value:bool) (return'  (ret:Core_Option_Option_Type.t_option bool))= {[#"../ite_normalize.rs" 28 33 28 38] inv4 value}
+    {[#"../ite_normalize.rs" 28 25 28 28] inv3 key}
     any 
-    [ return' (result:Core_Option_Option_Type.t_option bool)-> {[#"../ite_normalize.rs" 19 40 19 53] inv6 result}
-      {[#"../ite_normalize.rs" 18 4 18 91] forall v : bool . inv5 v
-       -> result = Core_Option_Option_Type.C_Some v
-       -> Map.get (shallow_model3 self) (deep_model1 key) = Core_Option_Option_Type.C_Some v}
-      {[#"../ite_normalize.rs" 17 4 17 70] result = Core_Option_Option_Type.C_None
-       -> Map.get (shallow_model3 self) (deep_model1 key) = Core_Option_Option_Type.C_None}
+    [ return' (result:Core_Option_Option_Type.t_option bool)-> {[#"../ite_normalize.rs" 28 46 28 55] inv6 result}
+      {[#"../ite_normalize.rs" 27 4 27 125] forall i : int . inv5 i
+       -> Map.get (shallow_model0 ( ^ self)) i = (if i = deep_model1 key then
+        Core_Option_Option_Type.C_Some value
+      else
+        Map.get (shallow_model3 self) i
+      )}
       (! return' {result}) ]
     
   let rec clone0 (self:IteNormalize_BTreeMap_Type.t_btreemap usize bool) (return'  (ret:IteNormalize_BTreeMap_Type.t_btreemap usize bool))= any
     
     [ return' (result:IteNormalize_BTreeMap_Type.t_btreemap usize bool)-> {[#"../ite_normalize.rs" 38 14 38 29] self = result}
-      (! return' {result}) ]
-    
-  function shallow_model2 (self : borrowed (IteNormalize_BTreeMap_Type.t_btreemap usize bool)) : Map.map int (Core_Option_Option_Type.t_option bool)
-    
-   =
-    [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model0 ( * self)
-  let rec shallow_model2 (self:borrowed (IteNormalize_BTreeMap_Type.t_btreemap usize bool)) (return'  (ret:Map.map int (Core_Option_Option_Type.t_option bool)))= any
-    
-    [ return' (result:Map.map int (Core_Option_Option_Type.t_option bool))-> {result = shallow_model2 self}
-      (! return' {result}) ]
-    
-  let rec insert0 (self:borrowed (IteNormalize_BTreeMap_Type.t_btreemap usize bool)) (key:usize) (value:bool) (return'  (ret:Core_Option_Option_Type.t_option bool))= {[#"../ite_normalize.rs" 28 33 28 38] inv1 value}
-    {[#"../ite_normalize.rs" 28 25 28 28] inv0 key}
-    any 
-    [ return' (result:Core_Option_Option_Type.t_option bool)-> {[#"../ite_normalize.rs" 28 46 28 55] inv3 result}
-      {[#"../ite_normalize.rs" 27 4 27 125] forall i : int . inv2 i
-       -> Map.get (shallow_model0 ( ^ self)) i = (if i = deep_model0 key then
-        Core_Option_Option_Type.C_Some value
-      else
-        Map.get (shallow_model2 self) i
-      )}
       (! return' {result}) ]
     
   predicate resolve1 (self : IteNormalize_Expr_Type.t_expr) =
@@ -624,122 +645,175 @@ module IteNormalize_Impl5_SimplifyHelper
   let rec resolve0 (self:IteNormalize_Expr_Type.t_expr) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
     
+  function deep_model0 (self : usize) : int =
+    [#"../../../../creusot-contracts/src/model.rs" 74 8 74 28] deep_model1 self
+  let rec deep_model0 (self:usize) (return'  (ret:int))= any 
+    [ return' (result:int)-> {result = deep_model0 self} (! return' {result}) ]
+    
+  function shallow_model2 (self : IteNormalize_BTreeMap_Type.t_btreemap usize bool) : Map.map int (Core_Option_Option_Type.t_option bool)
+    
+   =
+    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model0 self
+  let rec shallow_model2 (self:IteNormalize_BTreeMap_Type.t_btreemap usize bool) (return'  (ret:Map.map int (Core_Option_Option_Type.t_option bool)))= any
+    
+    [ return' (result:Map.map int (Core_Option_Option_Type.t_option bool))-> {result = shallow_model2 self}
+      (! return' {result}) ]
+    
+  let rec get0 (self:IteNormalize_BTreeMap_Type.t_btreemap usize bool) (key:usize) (return'  (ret:Core_Option_Option_Type.t_option bool))= {[#"../ite_normalize.rs" 19 25 19 28] inv0 key}
+    any 
+    [ return' (result:Core_Option_Option_Type.t_option bool)-> {[#"../ite_normalize.rs" 19 40 19 53] inv2 result}
+      {[#"../ite_normalize.rs" 18 4 18 91] forall v : bool . inv1 v
+       -> result = Core_Option_Option_Type.C_Some v
+       -> Map.get (shallow_model2 self) (deep_model0 key) = Core_Option_Option_Type.C_Some v}
+      {[#"../ite_normalize.rs" 17 4 17 70] result = Core_Option_Option_Type.C_None
+       -> Map.get (shallow_model2 self) (deep_model0 key) = Core_Option_Option_Type.C_None}
+      (! return' {result}) ]
+    
   let rec simplify_helper (self:IteNormalize_Expr_Type.t_expr) (state:IteNormalize_BTreeMap_Type.t_btreemap usize bool) (return'  (ret:IteNormalize_Expr_Type.t_expr))= {[#"../ite_normalize.rs" 185 15 185 35] is_normalized0 self}
     (! bb0 
-    [ bb54 = return' {_0} 
-    | bb53 = bb54 
-    | bb52 = bb53 
-    | bb41 = bb52 
-    | bb40 = bb41 
-    | bb39 = bb40 
-    | bb38 = bb39 
-    | bb35 = bb38 
-    | bb18 = bb35 
-    | bb17 = bb18 
-    | bb16 = -{resolve0 t}- -{resolve0 e}- simplify_helper {e} {state} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> 
-        [ &_0 <- _ret' ]
-        bb17) 
-    | bb15 = bb18 
-    | bb14 = -{resolve0 e}- -{resolve0 t}- simplify_helper {t} {state} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> 
-        [ &_0 <- _ret' ]
-        bb15) 
-    | bb13 = -{resolve0 c}- [ &b <- Core_Option_Option_Type.some_0 _13 ] any 
-      [ br0 -> {b = false} (! bb16) | br1 -> {b} (! bb14) ]
-       
-    | bb12 = bb13 
-    | bb34 = bb35 
-    | bb33 = bb34 
-    | bb32 = bb33 
-    | bb31 = bb32 
-    | bb30 = bb31 
-    | bb29 = bb30 
-    | bb28 = bb29 
-    | bb27 = [ &_0 <- IteNormalize_Expr_Type.C_IfThenElse c tp ep ] any 
-      [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &c <- _any ] any 
-        [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &tp <- _any ] any 
-          [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &ep <- _any ] bb28 ]
-           ]
-         ]
-       
-    | bb26 = bb27 
-    | bb25 = bb26 
-    | bb24 = -{resolve0 e}- simplify_helper {e} {state_e} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> 
-        [ &ep <- _ret' ]
-        bb25) 
-    | bb23 = Borrow.borrow_mut <IteNormalize_BTreeMap_Type.t_btreemap usize bool> {state_e}
-      (fun (_ret':borrowed (IteNormalize_BTreeMap_Type.t_btreemap usize bool)) -> [ &_35 <- _ret' ] 
-        [ &state_e <-  ^ _35 ]
-        insert0 {_35} {v} {[#"../ite_normalize.rs" 208 46 208 51] false}
-        (fun (_ret':Core_Option_Option_Type.t_option bool) -> [ &_34 <- _ret' ] bb24)) 
-    | bb22 = clone0 {state} (fun (_ret':IteNormalize_BTreeMap_Type.t_btreemap usize bool) -> [ &state_e <- _ret' ] bb23)
-      
-    | bb21 = -{resolve0 t}- simplify_helper {t} {state_t} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> 
-        [ &tp <- _ret' ]
-        bb22) 
-    | bb20 = Borrow.borrow_mut <IteNormalize_BTreeMap_Type.t_btreemap usize bool> {state_t}
-      (fun (_ret':borrowed (IteNormalize_BTreeMap_Type.t_btreemap usize bool)) -> [ &_27 <- _ret' ] 
-        [ &state_t <-  ^ _27 ]
-        insert0 {_27} {v} {[#"../ite_normalize.rs" 203 46 203 50] true}
-        (fun (_ret':Core_Option_Option_Type.t_option bool) -> [ &_26 <- _ret' ] bb21)) 
-    | bb19 = clone0 {state} (fun (_ret':IteNormalize_BTreeMap_Type.t_btreemap usize bool) -> [ &state_t <- _ret' ] bb20)
-      
-    | bb11 = any [ br0 (a:bool)-> {_13 = Core_Option_Option_Type.C_Some a} (! bb12) | default -> (! bb19) ]  
-    | bb10 = [ &v <- IteNormalize_Expr_Type.var_v c ] [ &_16 <- v ] get0 {state} {_16}
-      (fun (_ret':Core_Option_Option_Type.t_option bool) -> [ &_13 <- _ret' ] bb11) 
-    | bb9 = bb10 
-    | bb37 = bb38 
-    | bb36 = bb37 
-    | bb8 = -{resolve0 e}- -{resolve0 t}- [ &c1 <- c ] any 
-      [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &c <- _any ] -{resolve0 c}- simplify_helper {c1} {state}
-        (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_0 <- _ret' ] bb36) ]
-       
-    | bb7 = [ &c <- IteNormalize_Expr_Type.ifthenelse_c self ] any 
-      [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> 
-        [ &self <- let IteNormalize_Expr_Type.C_IfThenElse x0 x1 x2 = self in IteNormalize_Expr_Type.C_IfThenElse _any x1 x2 ]
-        [ &t <- IteNormalize_Expr_Type.ifthenelse_t self ] any 
-        [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> 
-          [ &self <- let IteNormalize_Expr_Type.C_IfThenElse x0 x1 x2 = self in IteNormalize_Expr_Type.C_IfThenElse x0 _any x2 ]
-          [ &e <- IteNormalize_Expr_Type.ifthenelse_e self ] any 
-          [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> 
-            [ &self <- let IteNormalize_Expr_Type.C_IfThenElse x0 x1 x2 = self in IteNormalize_Expr_Type.C_IfThenElse x0 x1 _any ]
-            any [ br0 (a:usize)-> {c = IteNormalize_Expr_Type.C_Var a} (! bb9) | default -> (! bb8) ]  ]
-           ]
-         ]
-       
-    | bb4 = bb7 
-    | bb50 = bb52 
-    | bb48 = bb50 
-    | bb47 = [ &_0 <- IteNormalize_Expr_Type.C_False ] bb48 
-    | bb46 = [ &_0 <- IteNormalize_Expr_Type.C_True ] bb48 
-    | bb45 = [ &b1 <- Core_Option_Option_Type.some_0 _49 ] any [ br0 -> {b1 = false} (! bb47) | br1 -> {b1} (! bb46) ]  
-    | bb44 = bb45 
-    | bb49 = [ &_0 <- IteNormalize_Expr_Type.C_Var v1 ] bb50 
-    | bb43 = any [ br0 (a:bool)-> {_49 = Core_Option_Option_Type.C_Some a} (! bb44) | default -> (! bb49) ]  
-    | bb42 = [ &v1 <- IteNormalize_Expr_Type.var_v self ] [ &_52 <- v1 ] get0 {state} {_52}
-      (fun (_ret':Core_Option_Option_Type.t_option bool) -> [ &_49 <- _ret' ] bb43) 
-    | bb5 = bb42 
-    | bb51 = bb52 
-    | bb6 = [ &c2 <- self ] any 
-      [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &self <- _any ] [ &_0 <- c2 ] any 
-        [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> [ &c2 <- _any ] bb51 ]
-         ]
-       
+    [ bb0 = bb1
+    | bb1 = bb2
+    | bb2 = bb3
     | bb3 = any 
       [ br0 (a:IteNormalize_Expr_Type.t_expr) (b:IteNormalize_Expr_Type.t_expr) (c:IteNormalize_Expr_Type.t_expr)-> {self = IteNormalize_Expr_Type.C_IfThenElse a b c}
         (! bb4)
       | br1 (a:usize)-> {self = IteNormalize_Expr_Type.C_Var a}
         (! bb5)
-      | default -> (! bb6) ]
-       
-    | bb2 = bb3 
-    | bb1 = bb2 
-    | bb0 = bb1  ]
-    ) 
-    [ return' (result:IteNormalize_Expr_Type.t_expr)-> {[#"../ite_normalize.rs" 187 14 187 36] is_simplified0 result}
-      {[#"../ite_normalize.rs" 186 4 186 107] forall i : usize . (exists v : bool . Map.get (shallow_model0 state) (UIntSize.to_int i) = Core_Option_Option_Type.C_Some v)
-       -> does_not_contain0 result i}
-      (! return' {_0}) ]
-    
+      | br2 -> {self = IteNormalize_Expr_Type.C_True }
+        (! bb6)
+      | br3 -> {self = IteNormalize_Expr_Type.C_False }
+        (! bb6) ]
+      
+    | bb6 = [ &c2 <- self ] (any 
+      [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &self <- _any ] [ &_0 <- c2 ] (any 
+        [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &c2 <- _any ] bb51) ]
+        )) ]
+      )
+    | bb51 = bb52
+    | bb5 = bb42
+    | bb42 = IteNormalize_Expr_Type.var' {self} (fun (rf_v':usize) -> [ &v1 <- rf_v' ] [ &_52 <- v1 ] get0 {state} {_52}
+        (fun (_ret':Core_Option_Option_Type.t_option bool) -> [ &_49 <- _ret' ] bb43))
+    | bb43 = any 
+      [ br0 -> {_49 = Core_Option_Option_Type.C_None }
+        (! bb49)
+      | br1 (a:bool)-> {_49 = Core_Option_Option_Type.C_Some a}
+        (! bb44) ]
+      
+    | bb49 = [ &_0 <- IteNormalize_Expr_Type.C_Var v1 ] bb50
+    | bb44 = bb45
+    | bb45 = Core_Option_Option_Type.some <bool> {_49} (fun (rf_0':bool) -> [ &b1 <- rf_0' ] (any 
+        [ br0 -> {b1 = false} (! bb47) | br1 -> {b1} (! bb46) ]
+        ))
+    | bb46 = [ &_0 <- IteNormalize_Expr_Type.C_True ] bb48
+    | bb47 = [ &_0 <- IteNormalize_Expr_Type.C_False ] bb48
+    | bb48 = bb50
+    | bb50 = bb52
+    | bb4 = bb7
+    | bb7 = IteNormalize_Expr_Type.if_then_else {self}
+      (fun (rf_c':IteNormalize_Expr_Type.t_expr) (rf_t':IteNormalize_Expr_Type.t_expr) (rf_e':IteNormalize_Expr_Type.t_expr) -> 
+        [ &c <- rf_c' ]
+        (any 
+        [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! IteNormalize_Expr_Type.if_then_else {self}
+          (fun (f_c':IteNormalize_Expr_Type.t_expr) (f_t':IteNormalize_Expr_Type.t_expr) (f_e':IteNormalize_Expr_Type.t_expr) -> 
+            [ &self <- IteNormalize_Expr_Type.C_IfThenElse _any f_t' f_e' ]
+            IteNormalize_Expr_Type.if_then_else {self}
+            (fun (rf_c':IteNormalize_Expr_Type.t_expr) (rf_t':IteNormalize_Expr_Type.t_expr) (rf_e':IteNormalize_Expr_Type.t_expr) -> 
+              [ &t <- rf_t' ]
+              (any 
+              [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! IteNormalize_Expr_Type.if_then_else {self}
+                (fun (f_c':IteNormalize_Expr_Type.t_expr) (f_t':IteNormalize_Expr_Type.t_expr) (f_e':IteNormalize_Expr_Type.t_expr) -> 
+                  [ &self <- IteNormalize_Expr_Type.C_IfThenElse f_c' _any f_e' ]
+                  IteNormalize_Expr_Type.if_then_else {self}
+                  (fun (rf_c':IteNormalize_Expr_Type.t_expr) (rf_t':IteNormalize_Expr_Type.t_expr) (rf_e':IteNormalize_Expr_Type.t_expr) -> 
+                    [ &e <- rf_e' ]
+                    (any 
+                    [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! IteNormalize_Expr_Type.if_then_else {self}
+                      (fun (f_c':IteNormalize_Expr_Type.t_expr) (f_t':IteNormalize_Expr_Type.t_expr) (f_e':IteNormalize_Expr_Type.t_expr) -> 
+                        [ &self <- IteNormalize_Expr_Type.C_IfThenElse f_c' f_t' _any ]
+                        (any 
+                        [ br0 (a:IteNormalize_Expr_Type.t_expr) (b:IteNormalize_Expr_Type.t_expr) (c:IteNormalize_Expr_Type.t_expr)-> {c = IteNormalize_Expr_Type.C_IfThenElse a b c}
+                          (! bb8)
+                        | br1 (a:usize)-> {c = IteNormalize_Expr_Type.C_Var a}
+                          (! bb9)
+                        | br2 -> {c = IteNormalize_Expr_Type.C_True }
+                          (! bb8)
+                        | br3 -> {c = IteNormalize_Expr_Type.C_False }
+                          (! bb8) ]
+                        ))) ]
+                    )))) ]
+              )))) ]
+        ))
+    | bb8 = -{resolve0 e}- -{resolve0 t}- [ &c1 <- c ] (any 
+      [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &c <- _any ] -{resolve0 c}- simplify_helper {c1} {state}
+        (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_0 <- _ret' ] bb36)) ]
+      )
+    | bb36 = bb37
+    | bb37 = bb38
+    | bb9 = bb10
+    | bb10 = IteNormalize_Expr_Type.var' {c} (fun (rf_v':usize) -> [ &v <- rf_v' ] [ &_16 <- v ] get0 {state} {_16}
+        (fun (_ret':Core_Option_Option_Type.t_option bool) -> [ &_13 <- _ret' ] bb11))
+    | bb11 = any 
+      [ br0 -> {_13 = Core_Option_Option_Type.C_None }
+        (! bb19)
+      | br1 (a:bool)-> {_13 = Core_Option_Option_Type.C_Some a}
+        (! bb12) ]
+      
+    | bb19 = clone0 {state} (fun (_ret':IteNormalize_BTreeMap_Type.t_btreemap usize bool) -> [ &state_t <- _ret' ] bb20)
+    | bb20 = Borrow.borrow_mut <IteNormalize_BTreeMap_Type.t_btreemap usize bool> {state_t}
+      (fun (_ret':borrowed (IteNormalize_BTreeMap_Type.t_btreemap usize bool)) -> [ &state_t <-  ^ _27 ] 
+        [ &_27 <- _ret' ]
+        insert0 {_27} {v} {[#"../ite_normalize.rs" 203 46 203 50] true}
+        (fun (_ret':Core_Option_Option_Type.t_option bool) -> [ &_26 <- _ret' ] bb21))
+    | bb21 = -{resolve0 t}- simplify_helper {t} {state_t} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> 
+        [ &tp <- _ret' ]
+        bb22)
+    | bb22 = clone0 {state} (fun (_ret':IteNormalize_BTreeMap_Type.t_btreemap usize bool) -> [ &state_e <- _ret' ] bb23)
+    | bb23 = Borrow.borrow_mut <IteNormalize_BTreeMap_Type.t_btreemap usize bool> {state_e}
+      (fun (_ret':borrowed (IteNormalize_BTreeMap_Type.t_btreemap usize bool)) -> [ &state_e <-  ^ _35 ] 
+        [ &_35 <- _ret' ]
+        insert0 {_35} {v} {[#"../ite_normalize.rs" 208 46 208 51] false}
+        (fun (_ret':Core_Option_Option_Type.t_option bool) -> [ &_34 <- _ret' ] bb24))
+    | bb24 = -{resolve0 e}- simplify_helper {e} {state_e} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> 
+        [ &ep <- _ret' ]
+        bb25)
+    | bb25 = bb26
+    | bb26 = bb27
+    | bb27 = [ &_0 <- IteNormalize_Expr_Type.C_IfThenElse c tp ep ] (any 
+      [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &c <- _any ] (any 
+        [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &tp <- _any ] (any 
+          [ any_ (_any:IteNormalize_Expr_Type.t_expr)-> (! [ &ep <- _any ] bb28) ]
+          )) ]
+        )) ]
+      )
+    | bb28 = bb29
+    | bb29 = bb30
+    | bb30 = bb31
+    | bb31 = bb32
+    | bb32 = bb33
+    | bb33 = bb34
+    | bb34 = bb35
+    | bb12 = bb13
+    | bb13 = -{resolve0 c}- Core_Option_Option_Type.some <bool> {_13} (fun (rf_0':bool) -> [ &b <- rf_0' ] (any 
+        [ br0 -> {b = false} (! bb16) | br1 -> {b} (! bb14) ]
+        ))
+    | bb14 = -{resolve0 e}- -{resolve0 t}- simplify_helper {t} {state} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> 
+        [ &_0 <- _ret' ]
+        bb15)
+    | bb15 = bb18
+    | bb16 = -{resolve0 t}- -{resolve0 e}- simplify_helper {e} {state} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> 
+        [ &_0 <- _ret' ]
+        bb17)
+    | bb17 = bb18
+    | bb18 = bb35
+    | bb35 = bb38
+    | bb38 = bb39
+    | bb39 = bb40
+    | bb40 = bb41
+    | bb41 = bb52
+    | bb52 = bb53
+    | bb53 = bb54
+    | bb54 = return' {_0} ]
+    )
     [ & _0 : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr
     | & self : IteNormalize_Expr_Type.t_expr = self
     | & state : IteNormalize_BTreeMap_Type.t_btreemap usize bool = state
@@ -764,6 +838,11 @@ module IteNormalize_Impl5_SimplifyHelper
     | & _52 : usize = any_l () : usize
     | & b1 : bool = any_l () : bool
     | & c2 : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr ]
+     
+    [ return' (result:IteNormalize_Expr_Type.t_expr)-> {[#"../ite_normalize.rs" 187 14 187 36] is_simplified0 result}
+      {[#"../ite_normalize.rs" 186 4 186 107] forall i : usize . (exists v : bool . Map.get (shallow_model0 state) (UIntSize.to_int i) = Core_Option_Option_Type.C_Some v)
+       -> does_not_contain0 result i}
+      (! return' {result}) ]
     
 end
 module IteNormalize_Impl5_Simplify
@@ -805,13 +884,10 @@ module IteNormalize_Impl5_Simplify
     [ return' (result:bool)-> {result = is_normalized0 self} (! return' {result}) ]
     
   use prelude.Intrinsic
-  use IteNormalize_BTreeMap_Type as IteNormalize_BTreeMap_Type
-  let rec new0 (_1:()) (return'  (ret:IteNormalize_BTreeMap_Type.t_btreemap usize bool))= any 
-    [ return' (result:IteNormalize_BTreeMap_Type.t_btreemap usize bool)-> (! return' {result}) ]
-    
   use prelude.Int
   use Core_Option_Option_Type as Core_Option_Option_Type
   use map.Map
+  use IteNormalize_BTreeMap_Type as IteNormalize_BTreeMap_Type
   use map.Map
   use prelude.UIntSize
   function shallow_model0 [#"../ite_normalize.rs" 50 4 50 50] (self : IteNormalize_BTreeMap_Type.t_btreemap usize bool) : Map.map int (Core_Option_Option_Type.t_option bool)
@@ -828,21 +904,24 @@ module IteNormalize_Impl5_Simplify
        -> does_not_contain0 result i}
       (! return' {result}) ]
     
+  let rec new0 (_1:()) (return'  (ret:IteNormalize_BTreeMap_Type.t_btreemap usize bool))= any 
+    [ return' (result:IteNormalize_BTreeMap_Type.t_btreemap usize bool)-> (! return' {result}) ]
+    
   let rec simplify (self:IteNormalize_Expr_Type.t_expr) (return'  (ret:IteNormalize_Expr_Type.t_expr))= {[#"../ite_normalize.rs" 179 15 179 35] is_normalized0 self}
     (! bb0 
-    [ bb4 = return' {_0} 
-    | bb3 = bb4 
-    | bb2 = simplify_helper0 {self} {_5} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_0 <- _ret' ] bb3) 
+    [ bb0 = bb1
     | bb1 = new0 {[#"../ite_normalize.rs" 182 29 182 44] ()}
-      (fun (_ret':IteNormalize_BTreeMap_Type.t_btreemap usize bool) -> [ &_5 <- _ret' ] bb2) 
-    | bb0 = bb1  ]
-    ) 
-    [ return' (result:IteNormalize_Expr_Type.t_expr)-> {[#"../ite_normalize.rs" 180 14 180 36] is_simplified0 result}
-      (! return' {_0}) ]
-    
+      (fun (_ret':IteNormalize_BTreeMap_Type.t_btreemap usize bool) -> [ &_5 <- _ret' ] bb2)
+    | bb2 = simplify_helper0 {self} {_5} (fun (_ret':IteNormalize_Expr_Type.t_expr) -> [ &_0 <- _ret' ] bb3)
+    | bb3 = bb4
+    | bb4 = return' {_0} ]
+    )
     [ & _0 : IteNormalize_Expr_Type.t_expr = any_l () : IteNormalize_Expr_Type.t_expr
     | & self : IteNormalize_Expr_Type.t_expr = self
     | & _5 : IteNormalize_BTreeMap_Type.t_btreemap usize bool = any_l () : IteNormalize_BTreeMap_Type.t_btreemap usize bool ]
+     
+    [ return' (result:IteNormalize_Expr_Type.t_expr)-> {[#"../ite_normalize.rs" 180 14 180 36] is_simplified0 result}
+      (! return' {result}) ]
     
 end
 module IteNormalize_Impl1

@@ -5,6 +5,16 @@ module Core_Option_Option_Type
     | C_Some 't
     
   function any_l (_ : 'b) : 'a
+  let rec none < 't > (input:t_option 't) (ret  )= any 
+    [ good -> {C_None  = input} ret | bad -> {C_None  <> input} {false} any ]
+    
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Some field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Some field_0 <> input}
+      {false}
+      any ]
+    
 end
 module C10Once_Once_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
@@ -12,10 +22,13 @@ module C10Once_Once_Type
     | C_Once (Core_Option_Option_Type.t_option 't)
     
   function any_l (_ : 'b) : 'a
-  function once_0 (self : t_once 't) : Core_Option_Option_Type.t_option 't =
-    match self with
-      | C_Once a -> a
-      end
+  let rec once < 't > (input:t_once 't) (ret  (field_0:Core_Option_Option_Type.t_option 't))= any 
+    [ good (field_0:Core_Option_Option_Type.t_option 't)-> {C_Once field_0 = input}
+      ret {field_0}
+    | bad (field_0:Core_Option_Option_Type.t_option 't)-> {C_Once field_0 <> input}
+      {false}
+      any ]
+    
 end
 module C10Once_Impl0_ProducesRefl_Impl
   type t
@@ -126,25 +139,25 @@ module C10Once_Impl0_Next
     [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
     
   axiom inv2 : forall x : borrowed (Core_Option_Option_Type.t_option t) . inv2 x = true
-  predicate invariant1 (self : Core_Option_Option_Type.t_option t)
-  let rec invariant1 (self:Core_Option_Option_Type.t_option t) (return'  (ret:bool))= any 
+  use C10Once_Once_Type as C10Once_Once_Type
+  predicate invariant1 (self : borrowed (C10Once_Once_Type.t_once t))
+  let rec invariant1 (self:borrowed (C10Once_Once_Type.t_once t)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
     
-  predicate inv1 (_x : Core_Option_Option_Type.t_option t)
-  let rec inv1 (_x:Core_Option_Option_Type.t_option t) (return'  (ret:bool))= any 
+  predicate inv1 (_x : borrowed (C10Once_Once_Type.t_once t))
+  let rec inv1 (_x:borrowed (C10Once_Once_Type.t_once t)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
     
-  axiom inv1 : forall x : Core_Option_Option_Type.t_option t . inv1 x = true
-  use C10Once_Once_Type as C10Once_Once_Type
-  predicate invariant0 (self : borrowed (C10Once_Once_Type.t_once t))
-  let rec invariant0 (self:borrowed (C10Once_Once_Type.t_once t)) (return'  (ret:bool))= any 
+  axiom inv1 : forall x : borrowed (C10Once_Once_Type.t_once t) . inv1 x = true
+  predicate invariant0 (self : Core_Option_Option_Type.t_option t)
+  let rec invariant0 (self:Core_Option_Option_Type.t_option t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
     
-  predicate inv0 (_x : borrowed (C10Once_Once_Type.t_once t))
-  let rec inv0 (_x:borrowed (C10Once_Once_Type.t_once t)) (return'  (ret:bool))= any 
+  predicate inv0 (_x : Core_Option_Option_Type.t_option t)
+  let rec inv0 (_x:Core_Option_Option_Type.t_option t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
     
-  axiom inv0 : forall x : borrowed (C10Once_Once_Type.t_once t) . inv0 x = true
+  axiom inv0 : forall x : Core_Option_Option_Type.t_option t . inv0 x = true
   use seq.Seq
   use seq.Seq
   use seq.Seq
@@ -167,31 +180,31 @@ module C10Once_Impl0_Next
   use prelude.Intrinsic
   let rec take0 (self:borrowed (Core_Option_Option_Type.t_option t)) (return'  (ret:Core_Option_Option_Type.t_option t))= {inv2 self}
     any 
-    [ return' (result:Core_Option_Option_Type.t_option t)-> {inv1 result}
+    [ return' (result:Core_Option_Option_Type.t_option t)-> {inv0 result}
       {[#"../../../../../creusot-contracts/src/std/option.rs" 29 0 126 1] result =  * self /\  ^ self = Core_Option_Option_Type.C_None}
       (! return' {result}) ]
     
-  let rec next (self:borrowed (C10Once_Once_Type.t_once t)) (return'  (ret:Core_Option_Option_Type.t_option t))= {[#"../10_once.rs" 44 17 44 21] inv0 self}
+  let rec next (self:borrowed (C10Once_Once_Type.t_once t)) (return'  (ret:Core_Option_Option_Type.t_option t))= {[#"../10_once.rs" 44 17 44 21] inv1 self}
     (! bb0 
-    [ bb1 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- return' {_0} 
-    | bb0 = Borrow.borrow_final <Core_Option_Option_Type.t_option t> {C10Once_Once_Type.once_0 ( * self)}
-      {Borrow.inherit_id (Borrow.get_id self) 1} (fun (_ret':borrowed (Core_Option_Option_Type.t_option t)) -> 
-        [ &_3 <- _ret' ]
-        
-        [ &self <- { self with current = (let C10Once_Once_Type.C_Once x0 =  * self in C10Once_Once_Type.C_Once ( ^ _3)) ; } ]
-        -{inv1 ( ^ _3)}- take0 {_3} (fun (_ret':Core_Option_Option_Type.t_option t) -> [ &_0 <- _ret' ] bb1))  ]
-    ) 
-    [ return' (result:Core_Option_Option_Type.t_option t)-> {[#"../10_once.rs" 44 26 44 35] inv1 result}
+    [ bb0 = C10Once_Once_Type.once <t> { * self} (fun (rf_0':Core_Option_Option_Type.t_option t) -> Borrow.borrow_final
+        <Core_Option_Option_Type.t_option t> {rf_0'} {Borrow.inherit_id (Borrow.get_id self) 1}
+        (fun (_ret':borrowed (Core_Option_Option_Type.t_option t)) -> [ &_3 <- _ret' ] C10Once_Once_Type.once <t>
+          { * self} (fun (f_0':Core_Option_Option_Type.t_option t) -> 
+            [ &self <- { self with current = C10Once_Once_Type.C_Once ( ^ _3) ; } ]
+            -{inv0 ( ^ _3)}- take0 {_3} (fun (_ret':Core_Option_Option_Type.t_option t) -> [ &_0 <- _ret' ] bb1))))
+    | bb1 = {[@expl:type invariant] inv1 self}
+      -{resolve0 self}- return' {_0} ]
+    )
+    [ & _0 : Core_Option_Option_Type.t_option t = any_l () : Core_Option_Option_Type.t_option t
+    | & self : borrowed (C10Once_Once_Type.t_once t) = self
+    | & _3 : borrowed (Core_Option_Option_Type.t_option t) = any_l () : borrowed (Core_Option_Option_Type.t_option t) ]
+     
+    [ return' (result:Core_Option_Option_Type.t_option t)-> {[#"../10_once.rs" 44 26 44 35] inv0 result}
       {[#"../10_once.rs" 40 14 43 5] match result with
         | Core_Option_Option_Type.C_None -> completed0 self
         | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
         end}
-      (! return' {_0}) ]
-    
-    [ & _0 : Core_Option_Option_Type.t_option t = any_l () : Core_Option_Option_Type.t_option t
-    | & self : borrowed (C10Once_Once_Type.t_once t) = self
-    | & _3 : borrowed (Core_Option_Option_Type.t_option t) = any_l () : borrowed (Core_Option_Option_Type.t_option t) ]
+      (! return' {result}) ]
     
 end
 module C10Once_Impl0

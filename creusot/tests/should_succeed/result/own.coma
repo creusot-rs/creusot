@@ -5,16 +5,20 @@ module Own_OwnResult_Type
     | C_Err 'e
     
   function any_l (_ : 'b) : 'a
-  function ok_0 (self : t_ownresult 't 'e) : 't =
-    match self with
-      | C_Ok a -> a
-      | C_Err _ -> any_l self
-      end
-  function err_0 (self : t_ownresult 't 'e) : 'e =
-    match self with
-      | C_Ok _ -> any_l self
-      | C_Err a -> a
-      end
+  let rec ok < 't > < 'e > (input:t_ownresult 't 'e) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Ok field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Ok field_0 <> input}
+      {false}
+      any ]
+    
+  let rec err < 't > < 'e > (input:t_ownresult 't 'e) (ret  (field_0:'e))= any 
+    [ good (field_0:'e)-> {C_Err field_0 = input}
+      ret {field_0}
+    | bad (field_0:'e)-> {C_Err field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Own_Impl0_IsOk
   type t
@@ -44,16 +48,21 @@ module Own_Impl0_IsOk
     
   let rec is_ok (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= {[#"../own.rs" 25 18 25 22] inv0 self}
     (! bb0 
-    [ bb4 = return' {_0} 
-    | bb3 = [ &_0 <- true ] bb4 
-    | bb1 = bb3 
-    | bb2 = [ &_0 <- false ] bb4 
-    | bb0 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- any [ br0 (a:t)-> {self = Own_OwnResult_Type.C_Ok a} (! bb1) | default -> (! bb2) ]   ]
-    ) 
+    [ bb0 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- any 
+      [ br0 (a:t)-> {self = Own_OwnResult_Type.C_Ok a}
+        (! bb1)
+      | br1 (a:e)-> {self = Own_OwnResult_Type.C_Err a}
+        (! bb2) ]
+      
+    | bb2 = [ &_0 <- false ] bb4
+    | bb1 = bb3
+    | bb3 = [ &_0 <- true ] bb4
+    | bb4 = return' {_0} ]
+    )[ & _0 : bool = any_l () : bool | & self : Own_OwnResult_Type.t_ownresult t e = self ]  
     [ return' (result:bool)-> {[#"../own.rs" 24 14 24 62] result = (exists t : t . inv1 t /\ self = Own_OwnResult_Type.C_Ok t)}
-      (! return' {_0}) ]
-    [ & _0 : bool = any_l () : bool | & self : Own_OwnResult_Type.t_ownresult t e = self ] 
+      (! return' {result}) ]
+    
 end
 module Own_Impl0_IsErr
   type t
@@ -95,16 +104,16 @@ module Own_Impl0_IsErr
     
   let rec is_err (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= {[#"../own.rs" 30 19 30 23] inv0 self}
     (! bb0 
-    [ bb1 = [ &_0 <- not _3 ] any [ any_ (_any:bool)-> [ &_3 <- _any ] return' {_0} ]  
-    | bb0 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- is_ok0 {self} (fun (_ret':bool) -> [ &_3 <- _ret' ] bb1)  ]
-    ) 
-    [ return' (result:bool)-> {[#"../own.rs" 29 14 29 63] result = (exists e : e . inv1 e /\ self = Own_OwnResult_Type.C_Err e)}
-      (! return' {_0}) ]
-    
+    [ bb0 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- is_ok0 {self} (fun (_ret':bool) -> [ &_3 <- _ret' ] bb1)
+    | bb1 = [ &_0 <- not _3 ] (any [ any_ (_any:bool)-> (! [ &_3 <- _any ] return' {_0}) ] ) ]
+    )
     [ & _0 : bool = any_l () : bool
     | & self : Own_OwnResult_Type.t_ownresult t e = self
     | & _3 : bool = any_l () : bool ]
+     
+    [ return' (result:bool)-> {[#"../own.rs" 29 14 29 63] result = (exists e : e . inv1 e /\ self = Own_OwnResult_Type.C_Err e)}
+      (! return' {result}) ]
     
 end
 module Core_Option_Option_Type
@@ -113,11 +122,16 @@ module Core_Option_Option_Type
     | C_Some 't
     
   function any_l (_ : 'b) : 'a
-  function some_0 (self : t_option 't) : 't =
-    match self with
-      | C_None -> any_l self
-      | C_Some a -> a
-      end
+  let rec none < 't > (input:t_option 't) (ret  )= any 
+    [ good -> {C_None  = input} ret | bad -> {C_None  <> input} {false} any ]
+    
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Some field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Some field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Own_Impl0_Ok
   type t
@@ -175,49 +189,50 @@ module Own_Impl0_Ok
     
   let rec ok (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:Core_Option_Option_Type.t_option t))= {[#"../own.rs" 36 14 36 18] inv0 self}
     (! bb0 
-    [ bb11 = return' {_0} 
-    | bb10 = bb11 
-    | bb8 = bb10 
-    | bb7 = bb8 
-    | bb6 = [ &x <- Own_OwnResult_Type.ok_0 self ] any 
-      [ any_ (_any:t)-> 
-        [ &self <- let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok _any ]
-        {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_Some x ] any [ any_ (_any:t)-> [ &x <- _any ] bb7 ]  ]
-       
-    | bb3 = bb6 
-    | bb9 = bb10 
-    | bb4 = [ &x1 <- Own_OwnResult_Type.err_0 self ] any 
-      [ any_ (_any:e)-> 
-        [ &self <- let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err _any ]
-        {[@expl:type invariant] inv1 x1}
-        -{resolve1 x1}- {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option t ] bb9 ]
-       
-    | bb5 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- {[#"../own.rs" 37 14 37 18] false}
-      any 
+    [ bb0 = bb1
+    | bb1 = bb2
     | bb2 = any 
       [ br0 (a:t)-> {self = Own_OwnResult_Type.C_Ok a}
         (! bb3)
       | br1 (a:e)-> {self = Own_OwnResult_Type.C_Err a}
-        (! bb4)
-      | default -> (! bb5) ]
-       
-    | bb1 = bb2 
-    | bb0 = bb1  ]
-    ) 
+        (! bb4) ]
+      
+    | bb5 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- {[#"../own.rs" 37 14 37 18] false}
+      any
+    | bb4 = Own_OwnResult_Type.err <t> <e> {self} (fun (rf_0':e) -> [ &x1 <- rf_0' ] (any 
+        [ any_ (_any:e)-> (! Own_OwnResult_Type.err <t> <e> {self} (fun (f_0':e) -> 
+            [ &self <- Own_OwnResult_Type.C_Err _any ]
+            {[@expl:type invariant] inv1 x1}
+            -{resolve1 x1}- {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option t ] bb9)) ]
+        ))
+    | bb9 = bb10
+    | bb3 = bb6
+    | bb6 = Own_OwnResult_Type.ok <t> <e> {self} (fun (rf_0':t) -> [ &x <- rf_0' ] (any 
+        [ any_ (_any:t)-> (! Own_OwnResult_Type.ok <t> <e> {self} (fun (f_0':t) -> 
+            [ &self <- Own_OwnResult_Type.C_Ok _any ]
+            {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_Some x : Core_Option_Option_Type.t_option t ] (any 
+            [ any_ (_any:t)-> (! [ &x <- _any ] bb7) ]
+            ))) ]
+        ))
+    | bb7 = bb8
+    | bb8 = bb10
+    | bb10 = bb11
+    | bb11 = return' {_0} ]
+    )
+    [ & _0 : Core_Option_Option_Type.t_option t = any_l () : Core_Option_Option_Type.t_option t
+    | & self : Own_OwnResult_Type.t_ownresult t e = self
+    | & x : t = any_l () : t
+    | & x1 : e = any_l () : e ]
+     
     [ return' (result:Core_Option_Option_Type.t_option t)-> {[#"../own.rs" 36 23 36 32] inv3 result}
       {[#"../own.rs" 35 4 35 75] (exists e : e . inv1 e /\ self = Own_OwnResult_Type.C_Err e)
        -> result = Core_Option_Option_Type.C_None}
       {[#"../own.rs" 34 4 34 75] forall t : t . inv2 t
        -> self = Own_OwnResult_Type.C_Ok t  -> result = Core_Option_Option_Type.C_Some t}
-      (! return' {_0}) ]
-    
-    [ & _0 : Core_Option_Option_Type.t_option t = any_l () : Core_Option_Option_Type.t_option t
-    | & self : Own_OwnResult_Type.t_ownresult t e = self
-    | & x : t = any_l () : t
-    | & x1 : e = any_l () : e ]
+      (! return' {result}) ]
     
 end
 module Own_Impl0_Err
@@ -276,49 +291,50 @@ module Own_Impl0_Err
     
   let rec err (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:Core_Option_Option_Type.t_option e))= {[#"../own.rs" 46 15 46 19] inv0 self}
     (! bb0 
-    [ bb11 = return' {_0} 
-    | bb10 = bb11 
-    | bb7 = bb10 
-    | bb6 = [ &x <- Own_OwnResult_Type.ok_0 self ] any 
-      [ any_ (_any:t)-> 
-        [ &self <- let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok _any ]
-        {[@expl:type invariant] inv1 x}
-        -{resolve1 x}- {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option e ] bb7 ]
-       
-    | bb3 = bb6 
-    | bb9 = bb10 
-    | bb8 = bb9 
-    | bb4 = [ &x1 <- Own_OwnResult_Type.err_0 self ] any 
-      [ any_ (_any:e)-> 
-        [ &self <- let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err _any ]
-        {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_Some x1 ] any [ any_ (_any:e)-> [ &x1 <- _any ] bb8 ]  ]
-       
-    | bb5 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- {[#"../own.rs" 47 14 47 18] false}
-      any 
+    [ bb0 = bb1
+    | bb1 = bb2
     | bb2 = any 
       [ br0 (a:t)-> {self = Own_OwnResult_Type.C_Ok a}
         (! bb3)
       | br1 (a:e)-> {self = Own_OwnResult_Type.C_Err a}
-        (! bb4)
-      | default -> (! bb5) ]
-       
-    | bb1 = bb2 
-    | bb0 = bb1  ]
-    ) 
+        (! bb4) ]
+      
+    | bb5 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- {[#"../own.rs" 47 14 47 18] false}
+      any
+    | bb4 = Own_OwnResult_Type.err <t> <e> {self} (fun (rf_0':e) -> [ &x1 <- rf_0' ] (any 
+        [ any_ (_any:e)-> (! Own_OwnResult_Type.err <t> <e> {self} (fun (f_0':e) -> 
+            [ &self <- Own_OwnResult_Type.C_Err _any ]
+            {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_Some x1 : Core_Option_Option_Type.t_option e ] (any 
+            [ any_ (_any:e)-> (! [ &x1 <- _any ] bb8) ]
+            ))) ]
+        ))
+    | bb8 = bb9
+    | bb9 = bb10
+    | bb3 = bb6
+    | bb6 = Own_OwnResult_Type.ok <t> <e> {self} (fun (rf_0':t) -> [ &x <- rf_0' ] (any 
+        [ any_ (_any:t)-> (! Own_OwnResult_Type.ok <t> <e> {self} (fun (f_0':t) -> 
+            [ &self <- Own_OwnResult_Type.C_Ok _any ]
+            {[@expl:type invariant] inv1 x}
+            -{resolve1 x}- {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option e ] bb7)) ]
+        ))
+    | bb7 = bb10
+    | bb10 = bb11
+    | bb11 = return' {_0} ]
+    )
+    [ & _0 : Core_Option_Option_Type.t_option e = any_l () : Core_Option_Option_Type.t_option e
+    | & self : Own_OwnResult_Type.t_ownresult t e = self
+    | & x : t = any_l () : t
+    | & x1 : e = any_l () : e ]
+     
     [ return' (result:Core_Option_Option_Type.t_option e)-> {[#"../own.rs" 46 24 46 33] inv3 result}
       {[#"../own.rs" 45 4 45 76] forall e : e . inv2 e
        -> self = Own_OwnResult_Type.C_Err e  -> result = Core_Option_Option_Type.C_Some e}
       {[#"../own.rs" 44 4 44 74] (exists t : t . inv1 t /\ self = Own_OwnResult_Type.C_Ok t)
        -> result = Core_Option_Option_Type.C_None}
-      (! return' {_0}) ]
-    
-    [ & _0 : Core_Option_Option_Type.t_option e = any_l () : Core_Option_Option_Type.t_option e
-    | & self : Own_OwnResult_Type.t_ownresult t e = self
-    | & x : t = any_l () : t
-    | & x1 : e = any_l () : e ]
+      (! return' {result}) ]
     
 end
 module Own_Impl0_AsRef
@@ -334,75 +350,74 @@ module Own_Impl0_AsRef
     [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
     
   axiom inv3 : forall x : Own_OwnResult_Type.t_ownresult t e . inv3 x = true
-  predicate invariant2 (self : e)
-  let rec invariant2 (self:e) (return'  (ret:bool))= any 
+  predicate invariant2 (self : t)
+  let rec invariant2 (self:t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
     
-  predicate inv2 (_x : e)
-  let rec inv2 (_x:e) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ] 
-  axiom inv2 : forall x : e . inv2 x = true
-  predicate invariant1 (self : Own_OwnResult_Type.t_ownresult t e)
-  let rec invariant1 (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
+  predicate inv2 (_x : t)
+  let rec inv2 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ] 
+  axiom inv2 : forall x : t . inv2 x = true
+  predicate invariant1 (self : e)
+  let rec invariant1 (self:e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
     
-  predicate inv1 (_x : Own_OwnResult_Type.t_ownresult t e)
-  let rec inv1 (_x:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
-    
-  axiom inv1 : forall x : Own_OwnResult_Type.t_ownresult t e . inv1 x = true
-  predicate invariant0 (self : t)
-  let rec invariant0 (self:t) (return'  (ret:bool))= any 
+  predicate inv1 (_x : e)
+  let rec inv1 (_x:e) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ] 
+  axiom inv1 : forall x : e . inv1 x = true
+  predicate invariant0 (self : Own_OwnResult_Type.t_ownresult t e)
+  let rec invariant0 (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
     
-  predicate inv0 (_x : t)
-  let rec inv0 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
-  axiom inv0 : forall x : t . inv0 x = true
+  predicate inv0 (_x : Own_OwnResult_Type.t_ownresult t e)
+  let rec inv0 (_x:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : Own_OwnResult_Type.t_ownresult t e . inv0 x = true
   use prelude.Intrinsic
-  use prelude.Borrow
-  predicate resolve2 (self : e)
-  let rec resolve2 (self:e) (return'  (ret:bool))= any 
+  predicate resolve2 (self : t)
+  let rec resolve2 (self:t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
     
-  predicate resolve1 (self : Own_OwnResult_Type.t_ownresult t e)
-  let rec resolve1 (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
+  predicate resolve1 (self : e)
+  let rec resolve1 (self:e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
     
-  predicate resolve0 (self : t)
-  let rec resolve0 (self:t) (return'  (ret:bool))= any 
+  use prelude.Borrow
+  predicate resolve0 (self : Own_OwnResult_Type.t_ownresult t e)
+  let rec resolve0 (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
     
-  let rec as_ref (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:Own_OwnResult_Type.t_ownresult t e))= {[#"../own.rs" 56 19 56 23] inv1 self}
+  let rec as_ref (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:Own_OwnResult_Type.t_ownresult t e))= {[#"../own.rs" 56 19 56 23] inv0 self}
     (! bb0 
-    [ bb5 = return' {_0} 
-    | bb4 = [ &x <- Own_OwnResult_Type.ok_0 self ] {[@expl:type invariant] inv1 self}
-      -{resolve1 self}- {[@expl:type invariant] inv0 x}
-      -{resolve0 x}- [ &_0 <- Own_OwnResult_Type.C_Ok x ] bb5 
-    | bb1 = bb4 
-    | bb2 = [ &x1 <- Own_OwnResult_Type.err_0 self ] {[@expl:type invariant] inv1 self}
-      -{resolve1 self}- {[@expl:type invariant] inv2 x1}
-      -{resolve2 x1}- [ &_0 <- Own_OwnResult_Type.C_Err x1 ] bb5 
-    | bb3 = {[@expl:type invariant] inv1 self}
-      -{resolve1 self}- {[#"../own.rs" 57 14 57 19] false}
-      any 
-    | bb0 = any 
+    [ bb0 = any 
       [ br0 (a:t)-> {self = Own_OwnResult_Type.C_Ok a}
         (! bb1)
       | br1 (a:e)-> {self = Own_OwnResult_Type.C_Err a}
-        (! bb2)
-      | default -> (! bb3) ]
-        ]
-    ) 
-    [ return' (result:Own_OwnResult_Type.t_ownresult t e)-> {[#"../own.rs" 56 28 56 45] inv3 result}
-      {[#"../own.rs" 55 4 55 89] forall e : e . inv2 e
-       -> self = Own_OwnResult_Type.C_Err e  -> result = Own_OwnResult_Type.C_Err e}
-      {[#"../own.rs" 54 4 54 87] forall t : t . inv0 t
-       -> self = Own_OwnResult_Type.C_Ok t  -> result = Own_OwnResult_Type.C_Ok t}
-      (! return' {_0}) ]
-    
+        (! bb2) ]
+      
+    | bb3 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- {[#"../own.rs" 57 14 57 19] false}
+      any
+    | bb2 = Own_OwnResult_Type.err <t> <e> {self} (fun (rf_0':e) -> [ &x1 <- rf_0' ] {[@expl:type invariant] inv0 self}
+        -{resolve0 self}- {[@expl:type invariant] inv1 x1}
+        -{resolve1 x1}- [ &_0 <- Own_OwnResult_Type.C_Err x1 : Own_OwnResult_Type.t_ownresult t e ] bb5)
+    | bb1 = bb4
+    | bb4 = Own_OwnResult_Type.ok <t> <e> {self} (fun (rf_0':t) -> [ &x <- rf_0' ] {[@expl:type invariant] inv0 self}
+        -{resolve0 self}- {[@expl:type invariant] inv2 x}
+        -{resolve2 x}- [ &_0 <- Own_OwnResult_Type.C_Ok x : Own_OwnResult_Type.t_ownresult t e ] bb5)
+    | bb5 = return' {_0} ]
+    )
     [ & _0 : Own_OwnResult_Type.t_ownresult t e = any_l () : Own_OwnResult_Type.t_ownresult t e
     | & self : Own_OwnResult_Type.t_ownresult t e = self
     | & x : t = any_l () : t
     | & x1 : e = any_l () : e ]
+     
+    [ return' (result:Own_OwnResult_Type.t_ownresult t e)-> {[#"../own.rs" 56 28 56 45] inv3 result}
+      {[#"../own.rs" 55 4 55 89] forall e : e . inv1 e
+       -> self = Own_OwnResult_Type.C_Err e  -> result = Own_OwnResult_Type.C_Err e}
+      {[#"../own.rs" 54 4 54 87] forall t : t . inv2 t
+       -> self = Own_OwnResult_Type.C_Ok t  -> result = Own_OwnResult_Type.C_Ok t}
+      (! return' {result}) ]
     
 end
 module Own_Impl0_AsMut
@@ -419,38 +434,38 @@ module Own_Impl0_AsMut
     [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ]
     
   axiom inv5 : forall x : Own_OwnResult_Type.t_ownresult (borrowed t) (borrowed e) . inv5 x = true
-  predicate invariant4 (self : e)
-  let rec invariant4 (self:e) (return'  (ret:bool))= any 
+  predicate invariant4 (self : t)
+  let rec invariant4 (self:t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ]
     
-  predicate inv4 (_x : e)
-  let rec inv4 (_x:e) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ] 
-  axiom inv4 : forall x : e . inv4 x = true
-  predicate invariant3 (self : borrowed e)
-  let rec invariant3 (self:borrowed e) (return'  (ret:bool))= any 
+  predicate inv4 (_x : t)
+  let rec inv4 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ] 
+  axiom inv4 : forall x : t . inv4 x = true
+  predicate invariant3 (self : borrowed t)
+  let rec invariant3 (self:borrowed t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
     
-  predicate inv3 (_x : borrowed e)
-  let rec inv3 (_x:borrowed e) (return'  (ret:bool))= any 
+  predicate inv3 (_x : borrowed t)
+  let rec inv3 (_x:borrowed t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
     
-  axiom inv3 : forall x : borrowed e . inv3 x = true
-  predicate invariant2 (self : t)
-  let rec invariant2 (self:t) (return'  (ret:bool))= any 
+  axiom inv3 : forall x : borrowed t . inv3 x = true
+  predicate invariant2 (self : e)
+  let rec invariant2 (self:e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
     
-  predicate inv2 (_x : t)
-  let rec inv2 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ] 
-  axiom inv2 : forall x : t . inv2 x = true
-  predicate invariant1 (self : borrowed t)
-  let rec invariant1 (self:borrowed t) (return'  (ret:bool))= any 
+  predicate inv2 (_x : e)
+  let rec inv2 (_x:e) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ] 
+  axiom inv2 : forall x : e . inv2 x = true
+  predicate invariant1 (self : borrowed e)
+  let rec invariant1 (self:borrowed e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
     
-  predicate inv1 (_x : borrowed t)
-  let rec inv1 (_x:borrowed t) (return'  (ret:bool))= any 
+  predicate inv1 (_x : borrowed e)
+  let rec inv1 (_x:borrowed e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
     
-  axiom inv1 : forall x : borrowed t . inv1 x = true
+  axiom inv1 : forall x : borrowed e . inv1 x = true
   predicate invariant0 (self : borrowed (Own_OwnResult_Type.t_ownresult t e))
   let rec invariant0 (self:borrowed (Own_OwnResult_Type.t_ownresult t e)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
@@ -461,14 +476,14 @@ module Own_Impl0_AsMut
     
   axiom inv0 : forall x : borrowed (Own_OwnResult_Type.t_ownresult t e) . inv0 x = true
   use prelude.Intrinsic
-  predicate resolve2 (self : borrowed e) =
+  predicate resolve2 (self : borrowed t) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve2 (self:borrowed e) (return'  (ret:bool))= any 
+  let rec resolve2 (self:borrowed t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
     
-  predicate resolve1 (self : borrowed t) =
+  predicate resolve1 (self : borrowed e) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve1 (self:borrowed t) (return'  (ret:bool))= any 
+  let rec resolve1 (self:borrowed e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
     
   predicate resolve0 (self : borrowed (Own_OwnResult_Type.t_ownresult t e)) =
@@ -478,46 +493,51 @@ module Own_Impl0_AsMut
     
   let rec as_mut (self:borrowed (Own_OwnResult_Type.t_ownresult t e)) (return'  (ret:Own_OwnResult_Type.t_ownresult (borrowed t) (borrowed e)))= {[#"../own.rs" 71 23 71 27] inv0 self}
     (! bb0 
-    [ bb5 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- return' {_0} 
-    | bb4 = Borrow.borrow_final <t> {Own_OwnResult_Type.ok_0 ( * self)} {Borrow.inherit_id (Borrow.get_id self) 1}
-      (fun (_ret':borrowed t) -> [ &x <- _ret' ] 
-        [ &self <- { self with current = (let Own_OwnResult_Type.C_Ok x0 =  * self in Own_OwnResult_Type.C_Ok ( ^ x)) ; } ]
-        -{inv2 ( ^ x)}- Borrow.borrow_final <t> { * x} {Borrow.get_id x} (fun (_ret':borrowed t) -> [ &_5 <- _ret' ] 
-          [ &x <- { x with current = ( ^ _5) ; } ]
-          -{inv2 ( ^ _5)}- [ &_0 <- Own_OwnResult_Type.C_Ok _5 ] any 
-          [ any_ (_any:borrowed t)-> [ &_5 <- _any ] {[@expl:type invariant] inv1 x} -{resolve1 x}- bb5 ]
-          )) 
-    | bb1 = bb4 
-    | bb2 = Borrow.borrow_final <e> {Own_OwnResult_Type.err_0 ( * self)} {Borrow.inherit_id (Borrow.get_id self) 1}
-      (fun (_ret':borrowed e) -> [ &x1 <- _ret' ] 
-        [ &self <- { self with current = (let Own_OwnResult_Type.C_Err x0 =  * self in Own_OwnResult_Type.C_Err ( ^ x1)) ; } ]
-        -{inv4 ( ^ x1)}- Borrow.borrow_final <e> { * x1} {Borrow.get_id x1} (fun (_ret':borrowed e) -> [ &_7 <- _ret' ] 
-          [ &x1 <- { x1 with current = ( ^ _7) ; } ]
-          -{inv4 ( ^ _7)}- [ &_0 <- Own_OwnResult_Type.C_Err _7 ] any 
-          [ any_ (_any:borrowed e)-> [ &_7 <- _any ] {[@expl:type invariant] inv3 x1} -{resolve2 x1}- bb5 ]
-          )) 
-    | bb3 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- {[#"../own.rs" 72 14 72 19] false}
-      any 
-    | bb0 = any 
+    [ bb0 = any 
       [ br0 (a:t)-> { * self = Own_OwnResult_Type.C_Ok a}
         (! bb1)
       | br1 (a:e)-> { * self = Own_OwnResult_Type.C_Err a}
-        (! bb2)
-      | default -> (! bb3) ]
-        ]
-    ) 
-    [ return' (result:Own_OwnResult_Type.t_ownresult (borrowed t) (borrowed e))-> {[#"../own.rs" 71 32 71 57] inv5 result}
-      {[#"../own.rs" 63 4 70 6] exists t : borrowed t . inv1 t /\ ( * self = Own_OwnResult_Type.C_Ok ( * t) /\  ^ self = Own_OwnResult_Type.C_Ok ( ^ t) /\ result = Own_OwnResult_Type.C_Ok t \/ (exists e : borrowed e . inv3 e /\  * self = Own_OwnResult_Type.C_Err ( * e) /\  ^ self = Own_OwnResult_Type.C_Err ( ^ e) /\ result = Own_OwnResult_Type.C_Err e))}
-      (! return' {_0}) ]
-    
+        (! bb2) ]
+      
+    | bb3 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- {[#"../own.rs" 72 14 72 19] false}
+      any
+    | bb2 = Own_OwnResult_Type.err <t> <e> { * self} (fun (rf_0':e) -> Borrow.borrow_final <e> {rf_0'}
+        {Borrow.inherit_id (Borrow.get_id self) 1} (fun (_ret':borrowed e) -> [ &x1 <- _ret' ] Own_OwnResult_Type.err
+          <t> <e> { * self} (fun (f_0':e) -> 
+            [ &self <- { self with current = Own_OwnResult_Type.C_Err ( ^ x1) ; } ]
+            -{inv2 ( ^ x1)}- Borrow.borrow_final <e> { * x1} {Borrow.get_id x1} (fun (_ret':borrowed e) -> 
+              [ &_7 <- _ret' ]
+              [ &x1 <- { x1 with current = ( ^ _7) ; } ] -{inv2 ( ^ _7)}- 
+              [ &_0 <- Own_OwnResult_Type.C_Err _7 : Own_OwnResult_Type.t_ownresult (borrowed t) (borrowed e) ]
+              (any 
+              [ any_ (_any:borrowed e)-> (! [ &_7 <- _any ] {[@expl:type invariant] inv1 x1} -{resolve1 x1}- bb5) ]
+              )))))
+    | bb1 = bb4
+    | bb4 = Own_OwnResult_Type.ok <t> <e> { * self} (fun (rf_0':t) -> Borrow.borrow_final <t> {rf_0'}
+        {Borrow.inherit_id (Borrow.get_id self) 1} (fun (_ret':borrowed t) -> [ &x <- _ret' ] Own_OwnResult_Type.ok <t>
+          <e> { * self} (fun (f_0':t) -> 
+            [ &self <- { self with current = Own_OwnResult_Type.C_Ok ( ^ x) ; } ]
+            -{inv4 ( ^ x)}- Borrow.borrow_final <t> { * x} {Borrow.get_id x} (fun (_ret':borrowed t) -> 
+              [ &_5 <- _ret' ]
+              [ &x <- { x with current = ( ^ _5) ; } ] -{inv4 ( ^ _5)}- 
+              [ &_0 <- Own_OwnResult_Type.C_Ok _5 : Own_OwnResult_Type.t_ownresult (borrowed t) (borrowed e) ]
+              (any 
+              [ any_ (_any:borrowed t)-> (! [ &_5 <- _any ] {[@expl:type invariant] inv3 x} -{resolve2 x}- bb5) ]
+              )))))
+    | bb5 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- return' {_0} ]
+    )
     [ & _0 : Own_OwnResult_Type.t_ownresult (borrowed t) (borrowed e) = any_l () : Own_OwnResult_Type.t_ownresult (borrowed t) (borrowed e)
     | & self : borrowed (Own_OwnResult_Type.t_ownresult t e) = self
     | & x : borrowed t = any_l () : borrowed t
     | & _5 : borrowed t = any_l () : borrowed t
     | & x1 : borrowed e = any_l () : borrowed e
     | & _7 : borrowed e = any_l () : borrowed e ]
+     
+    [ return' (result:Own_OwnResult_Type.t_ownresult (borrowed t) (borrowed e))-> {[#"../own.rs" 71 32 71 57] inv5 result}
+      {[#"../own.rs" 63 4 70 6] exists t : borrowed t . inv3 t /\ ( * self = Own_OwnResult_Type.C_Ok ( * t) /\  ^ self = Own_OwnResult_Type.C_Ok ( ^ t) /\ result = Own_OwnResult_Type.C_Ok t \/ (exists e : borrowed e . inv1 e /\  * self = Own_OwnResult_Type.C_Err ( * e) /\  ^ self = Own_OwnResult_Type.C_Err ( ^ e) /\ result = Own_OwnResult_Type.C_Err e))}
+      (! return' {result}) ]
     
 end
 module Own_Impl0_Unwrap
@@ -567,44 +587,43 @@ module Own_Impl0_Unwrap
   let rec unwrap (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:t))= {[#"../own.rs" 80 18 80 22] inv0 self}
     {[#"../own.rs" 78 4 78 54] exists t : t . inv2 t /\ self = Own_OwnResult_Type.C_Ok t}
     (! bb0 
-    [ bb8 = return' {_0} 
-    | bb7 = bb8 
-    | bb6 = [ &t <- Own_OwnResult_Type.ok_0 self ] any 
-      [ any_ (_any:t)-> 
-        [ &self <- let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok _any ]
-        {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- [ &_0 <- t ] any [ any_ (_any:t)-> [ &t <- _any ] bb7 ]  ]
-       
-    | bb3 = bb6 
-    | bb4 = [ &_e <- Own_OwnResult_Type.err_0 self ] any 
-      [ any_ (_any:e)-> 
-        [ &self <- let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err _any ]
-        {[@expl:type invariant] inv1 _e}
-        -{resolve1 _e}- {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- {false}
-        any ]
-       
-    | bb5 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- {[#"../own.rs" 84 14 84 18] false}
-      any 
+    [ bb0 = bb1
+    | bb1 = bb2
     | bb2 = any 
       [ br0 (a:t)-> {self = Own_OwnResult_Type.C_Ok a}
         (! bb3)
       | br1 (a:e)-> {self = Own_OwnResult_Type.C_Err a}
-        (! bb4)
-      | default -> (! bb5) ]
-       
-    | bb1 = bb2 
-    | bb0 = bb1  ]
-    ) 
-    [ return' (result:t)-> {[#"../own.rs" 80 27 80 28] inv2 result}
-      {[#"../own.rs" 79 14 79 43] Own_OwnResult_Type.C_Ok result = self}
-      (! return' {_0}) ]
-    
+        (! bb4) ]
+      
+    | bb5 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- {[#"../own.rs" 84 14 84 18] false}
+      any
+    | bb4 = Own_OwnResult_Type.err <t> <e> {self} (fun (rf_0':e) -> [ &_e <- rf_0' ] (any 
+        [ any_ (_any:e)-> (! Own_OwnResult_Type.err <t> <e> {self} (fun (f_0':e) -> 
+            [ &self <- Own_OwnResult_Type.C_Err _any ]
+            {[@expl:type invariant] inv1 _e}
+            -{resolve1 _e}- {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- {false}
+            any)) ]
+        ))
+    | bb3 = bb6
+    | bb6 = Own_OwnResult_Type.ok <t> <e> {self} (fun (rf_0':t) -> [ &t <- rf_0' ] (any 
+        [ any_ (_any:t)-> (! Own_OwnResult_Type.ok <t> <e> {self} (fun (f_0':t) -> 
+            [ &self <- Own_OwnResult_Type.C_Ok _any ]
+            {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_0 <- t ] (any [ any_ (_any:t)-> (! [ &t <- _any ] bb7) ] ))) ]
+        ))
+    | bb7 = bb8
+    | bb8 = return' {_0} ]
+    )
     [ & _0 : t = any_l () : t
     | & self : Own_OwnResult_Type.t_ownresult t e = self
     | & t : t = any_l () : t
     | & _e : e = any_l () : e ]
+     
+    [ return' (result:t)-> {[#"../own.rs" 80 27 80 28] inv2 result}
+      {[#"../own.rs" 79 14 79 43] Own_OwnResult_Type.C_Ok result = self}
+      (! return' {result}) ]
     
 end
 module Own_Impl0_Expect
@@ -655,44 +674,43 @@ module Own_Impl0_Expect
   let rec expect (self:Own_OwnResult_Type.t_ownresult t e) (msg:string) (return'  (ret:t))= {[#"../own.rs" 92 18 92 22] inv0 self}
     {[#"../own.rs" 90 4 90 54] exists t : t . inv2 t /\ self = Own_OwnResult_Type.C_Ok t}
     (! bb0 
-    [ bb8 = return' {_0} 
-    | bb7 = bb8 
-    | bb6 = [ &t <- Own_OwnResult_Type.ok_0 self ] any 
-      [ any_ (_any:t)-> 
-        [ &self <- let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok _any ]
-        {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- [ &_0 <- t ] any [ any_ (_any:t)-> [ &t <- _any ] bb7 ]  ]
-       
-    | bb3 = bb6 
-    | bb4 = [ &_e <- Own_OwnResult_Type.err_0 self ] any 
-      [ any_ (_any:e)-> 
-        [ &self <- let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err _any ]
-        {[@expl:type invariant] inv1 _e}
-        -{resolve1 _e}- {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- {false}
-        any ]
-       
-    | bb5 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- {[#"../own.rs" 96 14 96 18] false}
-      any 
+    [ bb0 = bb1
+    | bb1 = bb2
     | bb2 = any 
       [ br0 (a:t)-> {self = Own_OwnResult_Type.C_Ok a}
         (! bb3)
       | br1 (a:e)-> {self = Own_OwnResult_Type.C_Err a}
-        (! bb4)
-      | default -> (! bb5) ]
-       
-    | bb1 = bb2 
-    | bb0 = bb1  ]
-    ) 
-    [ return' (result:t)-> {[#"../own.rs" 92 38 92 39] inv2 result}
-      {[#"../own.rs" 91 14 91 43] Own_OwnResult_Type.C_Ok result = self}
-      (! return' {_0}) ]
-    
+        (! bb4) ]
+      
+    | bb5 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- {[#"../own.rs" 96 14 96 18] false}
+      any
+    | bb4 = Own_OwnResult_Type.err <t> <e> {self} (fun (rf_0':e) -> [ &_e <- rf_0' ] (any 
+        [ any_ (_any:e)-> (! Own_OwnResult_Type.err <t> <e> {self} (fun (f_0':e) -> 
+            [ &self <- Own_OwnResult_Type.C_Err _any ]
+            {[@expl:type invariant] inv1 _e}
+            -{resolve1 _e}- {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- {false}
+            any)) ]
+        ))
+    | bb3 = bb6
+    | bb6 = Own_OwnResult_Type.ok <t> <e> {self} (fun (rf_0':t) -> [ &t <- rf_0' ] (any 
+        [ any_ (_any:t)-> (! Own_OwnResult_Type.ok <t> <e> {self} (fun (f_0':t) -> 
+            [ &self <- Own_OwnResult_Type.C_Ok _any ]
+            {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_0 <- t ] (any [ any_ (_any:t)-> (! [ &t <- _any ] bb7) ] ))) ]
+        ))
+    | bb7 = bb8
+    | bb8 = return' {_0} ]
+    )
     [ & _0 : t = any_l () : t
     | & self : Own_OwnResult_Type.t_ownresult t e = self
     | & t : t = any_l () : t
     | & _e : e = any_l () : e ]
+     
+    [ return' (result:t)-> {[#"../own.rs" 92 38 92 39] inv2 result}
+      {[#"../own.rs" 91 14 91 43] Own_OwnResult_Type.C_Ok result = self}
+      (! return' {result}) ]
     
 end
 module Own_Impl0_UnwrapErr
@@ -742,44 +760,43 @@ module Own_Impl0_UnwrapErr
   let rec unwrap_err (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:e))= {[#"../own.rs" 104 22 104 26] inv0 self}
     {[#"../own.rs" 102 4 102 55] exists e : e . inv2 e /\ self = Own_OwnResult_Type.C_Err e}
     (! bb0 
-    [ bb6 = [ &_t <- Own_OwnResult_Type.ok_0 self ] any 
-      [ any_ (_any:t)-> 
-        [ &self <- let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok _any ]
-        {[@expl:type invariant] inv1 _t}
-        -{resolve1 _t}- {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- {false}
-        any ]
-       
-    | bb3 = bb6 
-    | bb8 = return' {_0} 
-    | bb7 = bb8 
-    | bb4 = [ &e <- Own_OwnResult_Type.err_0 self ] any 
-      [ any_ (_any:e)-> 
-        [ &self <- let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err _any ]
-        {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- [ &_0 <- e ] any [ any_ (_any:e)-> [ &e <- _any ] bb7 ]  ]
-       
-    | bb5 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- {[#"../own.rs" 108 14 108 18] false}
-      any 
+    [ bb0 = bb1
+    | bb1 = bb2
     | bb2 = any 
       [ br0 (a:t)-> {self = Own_OwnResult_Type.C_Ok a}
         (! bb3)
       | br1 (a:e)-> {self = Own_OwnResult_Type.C_Err a}
-        (! bb4)
-      | default -> (! bb5) ]
-       
-    | bb1 = bb2 
-    | bb0 = bb1  ]
-    ) 
-    [ return' (result:e)-> {[#"../own.rs" 104 31 104 32] inv2 result}
-      {[#"../own.rs" 103 14 103 44] Own_OwnResult_Type.C_Err result = self}
-      (! return' {_0}) ]
-    
+        (! bb4) ]
+      
+    | bb5 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- {[#"../own.rs" 108 14 108 18] false}
+      any
+    | bb4 = Own_OwnResult_Type.err <t> <e> {self} (fun (rf_0':e) -> [ &e <- rf_0' ] (any 
+        [ any_ (_any:e)-> (! Own_OwnResult_Type.err <t> <e> {self} (fun (f_0':e) -> 
+            [ &self <- Own_OwnResult_Type.C_Err _any ]
+            {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_0 <- e ] (any [ any_ (_any:e)-> (! [ &e <- _any ] bb7) ] ))) ]
+        ))
+    | bb7 = bb8
+    | bb8 = return' {_0}
+    | bb3 = bb6
+    | bb6 = Own_OwnResult_Type.ok <t> <e> {self} (fun (rf_0':t) -> [ &_t <- rf_0' ] (any 
+        [ any_ (_any:t)-> (! Own_OwnResult_Type.ok <t> <e> {self} (fun (f_0':t) -> 
+            [ &self <- Own_OwnResult_Type.C_Ok _any ]
+            {[@expl:type invariant] inv1 _t}
+            -{resolve1 _t}- {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- {false}
+            any)) ]
+        )) ]
+    )
     [ & _0 : e = any_l () : e
     | & self : Own_OwnResult_Type.t_ownresult t e = self
     | & _t : t = any_l () : t
     | & e : e = any_l () : e ]
+     
+    [ return' (result:e)-> {[#"../own.rs" 104 31 104 32] inv2 result}
+      {[#"../own.rs" 103 14 103 44] Own_OwnResult_Type.C_Err result = self}
+      (! return' {result}) ]
     
 end
 module Own_Impl0_UnwrapOr
@@ -829,50 +846,49 @@ module Own_Impl0_UnwrapOr
   let rec unwrap_or (self:Own_OwnResult_Type.t_ownresult t e) (default:t) (return'  (ret:t))= {[#"../own.rs" 116 27 116 34] inv1 default}
     {[#"../own.rs" 116 21 116 25] inv0 self}
     (! bb0 
-    [ bb11 = return' {_0} 
-    | bb10 = bb11 
-    | bb9 = bb10 
-    | bb7 = bb9 
-    | bb6 = {[@expl:type invariant] inv1 default}
-      -{resolve1 default}- [ &t <- Own_OwnResult_Type.ok_0 self ] any 
-      [ any_ (_any:t)-> 
-        [ &self <- let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok _any ]
-        {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- [ &_0 <- t ] any [ any_ (_any:t)-> [ &t <- _any ] bb7 ]  ]
-       
-    | bb3 = bb6 
-    | bb8 = bb9 
-    | bb4 = [ &e <- Own_OwnResult_Type.err_0 self ] any 
-      [ any_ (_any:e)-> 
-        [ &self <- let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err _any ]
-        {[@expl:type invariant] inv2 e}
-        -{resolve2 e}- {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- [ &_0 <- default ] any [ any_ (_any:t)-> [ &default <- _any ] bb8 ]  ]
-       
-    | bb5 = {[@expl:type invariant] inv1 default}
-      -{resolve1 default}- {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- {[#"../own.rs" 117 14 117 18] false}
-      any 
+    [ bb0 = bb1
+    | bb1 = bb2
     | bb2 = any 
       [ br0 (a:t)-> {self = Own_OwnResult_Type.C_Ok a}
         (! bb3)
       | br1 (a:e)-> {self = Own_OwnResult_Type.C_Err a}
-        (! bb4)
-      | default -> (! bb5) ]
-       
-    | bb1 = bb2 
-    | bb0 = bb1  ]
-    ) 
-    [ return' (result:t)-> {[#"../own.rs" 116 42 116 43] inv1 result}
-      {[#"../own.rs" 115 4 115 78] (exists e : e . inv2 e /\ self = Own_OwnResult_Type.C_Err e)  -> result = default}
-      {[#"../own.rs" 114 4 114 69] forall t : t . inv1 t  -> self = Own_OwnResult_Type.C_Ok t  -> result = t}
-      (! return' {_0}) ]
-    
+        (! bb4) ]
+      
+    | bb5 = {[@expl:type invariant] inv1 default}
+      -{resolve1 default}- {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- {[#"../own.rs" 117 14 117 18] false}
+      any
+    | bb4 = Own_OwnResult_Type.err <t> <e> {self} (fun (rf_0':e) -> [ &e <- rf_0' ] (any 
+        [ any_ (_any:e)-> (! Own_OwnResult_Type.err <t> <e> {self} (fun (f_0':e) -> 
+            [ &self <- Own_OwnResult_Type.C_Err _any ]
+            {[@expl:type invariant] inv2 e}
+            -{resolve2 e}- {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_0 <- default ] (any [ any_ (_any:t)-> (! [ &default <- _any ] bb8) ] ))) ]
+        ))
+    | bb8 = bb9
+    | bb3 = bb6
+    | bb6 = {[@expl:type invariant] inv1 default}
+      -{resolve1 default}- Own_OwnResult_Type.ok <t> <e> {self} (fun (rf_0':t) -> [ &t <- rf_0' ] (any 
+        [ any_ (_any:t)-> (! Own_OwnResult_Type.ok <t> <e> {self} (fun (f_0':t) -> 
+            [ &self <- Own_OwnResult_Type.C_Ok _any ]
+            {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_0 <- t ] (any [ any_ (_any:t)-> (! [ &t <- _any ] bb7) ] ))) ]
+        ))
+    | bb7 = bb9
+    | bb9 = bb10
+    | bb10 = bb11
+    | bb11 = return' {_0} ]
+    )
     [ & _0 : t = any_l () : t
     | & self : Own_OwnResult_Type.t_ownresult t e = self
     | & default : t = default
     | & t : t = any_l () : t
     | & e : e = any_l () : e ]
+     
+    [ return' (result:t)-> {[#"../own.rs" 116 42 116 43] inv1 result}
+      {[#"../own.rs" 115 4 115 78] (exists e : e . inv2 e /\ self = Own_OwnResult_Type.C_Err e)  -> result = default}
+      {[#"../own.rs" 114 4 114 69] forall t : t . inv1 t  -> self = Own_OwnResult_Type.C_Ok t  -> result = t}
+      (! return' {result}) ]
     
 end
 module Own_Impl0_UnwrapOrDefault
@@ -930,36 +946,35 @@ module Own_Impl0_UnwrapOrDefault
     
   let rec unwrap_or_default (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:t))= {[#"../own.rs" 126 29 126 33] inv0 self}
     (! bb0 
-    [ bb9 = return' {_0} 
-    | bb8 = bb9 
-    | bb7 = bb8 
-    | bb6 = [ &x <- Own_OwnResult_Type.ok_0 self ] any 
-      [ any_ (_any:t)-> 
-        [ &self <- let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok _any ]
-        {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- [ &_0 <- x ] any [ any_ (_any:t)-> [ &x <- _any ] bb7 ]  ]
-       
-    | bb3 = bb6 
-    | bb4 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- default0 {[#"../own.rs" 132 33 132 45] ()} (fun (_ret':t) -> [ &_0 <- _ret' ] bb8) 
-    | bb5 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- {[#"../own.rs" 130 14 130 18] false}
-      any 
+    [ bb0 = bb1
+    | bb1 = bb2
     | bb2 = any 
       [ br0 (a:t)-> {self = Own_OwnResult_Type.C_Ok a}
         (! bb3)
       | br1 (a:e)-> {self = Own_OwnResult_Type.C_Err a}
-        (! bb4)
-      | default -> (! bb5) ]
-       
-    | bb1 = bb2 
-    | bb0 = bb1  ]
-    ) 
+        (! bb4) ]
+      
+    | bb5 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- {[#"../own.rs" 130 14 130 18] false}
+      any
+    | bb4 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- default0 {[#"../own.rs" 132 33 132 45] ()} (fun (_ret':t) -> [ &_0 <- _ret' ] bb8)
+    | bb3 = bb6
+    | bb6 = Own_OwnResult_Type.ok <t> <e> {self} (fun (rf_0':t) -> [ &x <- rf_0' ] (any 
+        [ any_ (_any:t)-> (! Own_OwnResult_Type.ok <t> <e> {self} (fun (f_0':t) -> 
+            [ &self <- Own_OwnResult_Type.C_Ok _any ]
+            {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_0 <- x ] (any [ any_ (_any:t)-> (! [ &x <- _any ] bb7) ] ))) ]
+        ))
+    | bb7 = bb8
+    | bb8 = bb9
+    | bb9 = return' {_0} ]
+    )[ & _0 : t = any_l () : t | & self : Own_OwnResult_Type.t_ownresult t e = self | & x : t = any_l () : t ]  
     [ return' (result:t)-> {[#"../own.rs" 126 38 126 39] inv1 result}
       {[#"../own.rs" 125 4 125 80] (exists e : e . inv2 e /\ self = Own_OwnResult_Type.C_Err e)  -> is_default0 result}
       {[#"../own.rs" 124 4 124 69] forall t : t . inv1 t  -> self = Own_OwnResult_Type.C_Ok t  -> result = t}
-      (! return' {_0}) ]
-    [ & _0 : t = any_l () : t | & self : Own_OwnResult_Type.t_ownresult t e = self | & x : t = any_l () : t ] 
+      (! return' {result}) ]
+    
 end
 module Own_Impl0_And
   type t
@@ -972,23 +987,23 @@ module Own_Impl0_And
   predicate inv3 (_x : e)
   let rec inv3 (_x:e) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ] 
   axiom inv3 : forall x : e . inv3 x = true
-  use Own_OwnResult_Type as Own_OwnResult_Type
-  predicate invariant2 (self : Own_OwnResult_Type.t_ownresult u e)
-  let rec invariant2 (self:Own_OwnResult_Type.t_ownresult u e) (return'  (ret:bool))= any 
+  predicate invariant2 (self : t)
+  let rec invariant2 (self:t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
     
-  predicate inv2 (_x : Own_OwnResult_Type.t_ownresult u e)
-  let rec inv2 (_x:Own_OwnResult_Type.t_ownresult u e) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
-    
-  axiom inv2 : forall x : Own_OwnResult_Type.t_ownresult u e . inv2 x = true
-  predicate invariant1 (self : t)
-  let rec invariant1 (self:t) (return'  (ret:bool))= any 
+  predicate inv2 (_x : t)
+  let rec inv2 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ] 
+  axiom inv2 : forall x : t . inv2 x = true
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  predicate invariant1 (self : Own_OwnResult_Type.t_ownresult u e)
+  let rec invariant1 (self:Own_OwnResult_Type.t_ownresult u e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
     
-  predicate inv1 (_x : t)
-  let rec inv1 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ] 
-  axiom inv1 : forall x : t . inv1 x = true
+  predicate inv1 (_x : Own_OwnResult_Type.t_ownresult u e)
+  let rec inv1 (_x:Own_OwnResult_Type.t_ownresult u e) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  axiom inv1 : forall x : Own_OwnResult_Type.t_ownresult u e . inv1 x = true
   predicate invariant0 (self : Own_OwnResult_Type.t_ownresult t e)
   let rec invariant0 (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
@@ -999,6 +1014,10 @@ module Own_Impl0_And
     
   axiom inv0 : forall x : Own_OwnResult_Type.t_ownresult t e . inv0 x = true
   use prelude.Intrinsic
+  predicate resolve2 (self : t)
+  let rec resolve2 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
+    
   predicate resolve3 (self : e)
   let rec resolve3 (self:e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve3 self} (! return' {result}) ]
@@ -1007,77 +1026,74 @@ module Own_Impl0_And
   let rec resolve4 (self:u) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve4 self} (! return' {result}) ]
     
-  predicate resolve2 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult u e) =
+  predicate resolve1 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult u e) =
     [#"../own.rs" 16 8 19 9] match self with
       | Own_OwnResult_Type.C_Ok t -> resolve4 t
       | Own_OwnResult_Type.C_Err e -> resolve3 e
       end
-  let rec resolve2 (self:Own_OwnResult_Type.t_ownresult u e) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
-    
-  predicate resolve1 (self : t)
-  let rec resolve1 (self:t) (return'  (ret:bool))= any 
+  let rec resolve1 (self:Own_OwnResult_Type.t_ownresult u e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
     
   predicate resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
     [#"../own.rs" 16 8 19 9] match self with
-      | Own_OwnResult_Type.C_Ok t -> resolve1 t
+      | Own_OwnResult_Type.C_Ok t -> resolve2 t
       | Own_OwnResult_Type.C_Err e -> resolve3 e
       end
   let rec resolve0 (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
     
-  let rec and (self:Own_OwnResult_Type.t_ownresult t e) (res:Own_OwnResult_Type.t_ownresult u e) (return'  (ret:Own_OwnResult_Type.t_ownresult u e))= {[#"../own.rs" 138 24 138 27] inv2 res}
+  let rec and (self:Own_OwnResult_Type.t_ownresult t e) (res:Own_OwnResult_Type.t_ownresult u e) (return'  (ret:Own_OwnResult_Type.t_ownresult u e))= {[#"../own.rs" 138 24 138 27] inv1 res}
     {[#"../own.rs" 138 18 138 22] inv0 self}
     (! bb0 
-    [ bb12 = return' {_0} 
-    | bb11 = bb12 
-    | bb10 = bb11 
-    | bb7 = bb10 
-    | bb6 = [ &x <- Own_OwnResult_Type.ok_0 self ] any 
-      [ any_ (_any:t)-> 
-        [ &self <- let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok _any ]
-        {[@expl:type invariant] inv1 x}
-        -{resolve1 x}- {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- [ &_0 <- res ] any 
-        [ any_ (_any:Own_OwnResult_Type.t_ownresult u e)-> [ &res <- _any ] bb7 ]
-         ]
-       
-    | bb3 = bb6 
-    | bb9 = bb10 
-    | bb8 = bb9 
-    | bb4 = {[@expl:type invariant] inv2 res}
-      -{resolve2 res}- [ &e <- Own_OwnResult_Type.err_0 self ] any 
-      [ any_ (_any:e)-> 
-        [ &self <- let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err _any ]
-        {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- [ &_0 <- Own_OwnResult_Type.C_Err e ] any [ any_ (_any:e)-> [ &e <- _any ] bb8 ]  ]
-       
-    | bb5 = {[@expl:type invariant] inv2 res}
-      -{resolve2 res}- {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- {[#"../own.rs" 139 14 139 18] false}
-      any 
+    [ bb0 = bb1
+    | bb1 = bb2
     | bb2 = any 
       [ br0 (a:t)-> {self = Own_OwnResult_Type.C_Ok a}
         (! bb3)
       | br1 (a:e)-> {self = Own_OwnResult_Type.C_Err a}
-        (! bb4)
-      | default -> (! bb5) ]
-       
-    | bb1 = bb2 
-    | bb0 = bb1  ]
-    ) 
-    [ return' (result:Own_OwnResult_Type.t_ownresult u e)-> {[#"../own.rs" 138 49 138 64] inv2 result}
-      {[#"../own.rs" 137 4 137 86] forall e : e . inv3 e
-       -> self = Own_OwnResult_Type.C_Err e  -> result = Own_OwnResult_Type.C_Err e}
-      {[#"../own.rs" 136 4 136 73] (exists t : t . inv1 t /\ self = Own_OwnResult_Type.C_Ok t)  -> result = res}
-      (! return' {_0}) ]
-    
+        (! bb4) ]
+      
+    | bb5 = {[@expl:type invariant] inv1 res}
+      -{resolve1 res}- {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- {[#"../own.rs" 139 14 139 18] false}
+      any
+    | bb4 = {[@expl:type invariant] inv1 res}
+      -{resolve1 res}- Own_OwnResult_Type.err <t> <e> {self} (fun (rf_0':e) -> [ &e <- rf_0' ] (any 
+        [ any_ (_any:e)-> (! Own_OwnResult_Type.err <t> <e> {self} (fun (f_0':e) -> 
+            [ &self <- Own_OwnResult_Type.C_Err _any ]
+            {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_0 <- Own_OwnResult_Type.C_Err e : Own_OwnResult_Type.t_ownresult u e ] (any 
+            [ any_ (_any:e)-> (! [ &e <- _any ] bb8) ]
+            ))) ]
+        ))
+    | bb8 = bb9
+    | bb9 = bb10
+    | bb3 = bb6
+    | bb6 = Own_OwnResult_Type.ok <t> <e> {self} (fun (rf_0':t) -> [ &x <- rf_0' ] (any 
+        [ any_ (_any:t)-> (! Own_OwnResult_Type.ok <t> <e> {self} (fun (f_0':t) -> 
+            [ &self <- Own_OwnResult_Type.C_Ok _any ]
+            {[@expl:type invariant] inv2 x}
+            -{resolve2 x}- {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_0 <- res ] (any 
+            [ any_ (_any:Own_OwnResult_Type.t_ownresult u e)-> (! [ &res <- _any ] bb7) ]
+            ))) ]
+        ))
+    | bb7 = bb10
+    | bb10 = bb11
+    | bb11 = bb12
+    | bb12 = return' {_0} ]
+    )
     [ & _0 : Own_OwnResult_Type.t_ownresult u e = any_l () : Own_OwnResult_Type.t_ownresult u e
     | & self : Own_OwnResult_Type.t_ownresult t e = self
     | & res : Own_OwnResult_Type.t_ownresult u e = res
     | & x : t = any_l () : t
     | & e : e = any_l () : e ]
+     
+    [ return' (result:Own_OwnResult_Type.t_ownresult u e)-> {[#"../own.rs" 138 49 138 64] inv1 result}
+      {[#"../own.rs" 137 4 137 86] forall e : e . inv3 e
+       -> self = Own_OwnResult_Type.C_Err e  -> result = Own_OwnResult_Type.C_Err e}
+      {[#"../own.rs" 136 4 136 73] (exists t : t . inv2 t /\ self = Own_OwnResult_Type.C_Ok t)  -> result = res}
+      (! return' {result}) ]
     
 end
 module Own_Impl0_Or
@@ -1149,54 +1165,55 @@ module Own_Impl0_Or
   let rec or (self:Own_OwnResult_Type.t_ownresult t e) (res:Own_OwnResult_Type.t_ownresult t f) (return'  (ret:Own_OwnResult_Type.t_ownresult t f))= {[#"../own.rs" 148 23 148 26] inv1 res}
     {[#"../own.rs" 148 17 148 21] inv0 self}
     (! bb0 
-    [ bb12 = return' {_0} 
-    | bb11 = bb12 
-    | bb10 = bb11 
-    | bb8 = bb10 
-    | bb7 = bb8 
-    | bb6 = {[@expl:type invariant] inv1 res}
-      -{resolve1 res}- [ &v <- Own_OwnResult_Type.ok_0 self ] any 
-      [ any_ (_any:t)-> 
-        [ &self <- let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok _any ]
-        {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- [ &_0 <- Own_OwnResult_Type.C_Ok v ] any [ any_ (_any:t)-> [ &v <- _any ] bb7 ]  ]
-       
-    | bb3 = bb6 
-    | bb9 = bb10 
-    | bb4 = [ &e <- Own_OwnResult_Type.err_0 self ] any 
-      [ any_ (_any:e)-> 
-        [ &self <- let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err _any ]
-        {[@expl:type invariant] inv2 e}
-        -{resolve2 e}- {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- [ &_0 <- res ] any 
-        [ any_ (_any:Own_OwnResult_Type.t_ownresult t f)-> [ &res <- _any ] bb9 ]
-         ]
-       
-    | bb5 = {[@expl:type invariant] inv1 res}
-      -{resolve1 res}- {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- {[#"../own.rs" 149 14 149 18] false}
-      any 
+    [ bb0 = bb1
+    | bb1 = bb2
     | bb2 = any 
       [ br0 (a:t)-> {self = Own_OwnResult_Type.C_Ok a}
         (! bb3)
       | br1 (a:e)-> {self = Own_OwnResult_Type.C_Err a}
-        (! bb4)
-      | default -> (! bb5) ]
-       
-    | bb1 = bb2 
-    | bb0 = bb1  ]
-    ) 
-    [ return' (result:Own_OwnResult_Type.t_ownresult t f)-> {[#"../own.rs" 148 48 148 63] inv1 result}
-      {[#"../own.rs" 147 4 147 74] (exists e : e . inv2 e /\ self = Own_OwnResult_Type.C_Err e)  -> result = res}
-      {[#"../own.rs" 146 4 146 84] forall t : t . inv3 t
-       -> self = Own_OwnResult_Type.C_Ok t  -> result = Own_OwnResult_Type.C_Ok t}
-      (! return' {_0}) ]
-    
+        (! bb4) ]
+      
+    | bb5 = {[@expl:type invariant] inv1 res}
+      -{resolve1 res}- {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- {[#"../own.rs" 149 14 149 18] false}
+      any
+    | bb4 = Own_OwnResult_Type.err <t> <e> {self} (fun (rf_0':e) -> [ &e <- rf_0' ] (any 
+        [ any_ (_any:e)-> (! Own_OwnResult_Type.err <t> <e> {self} (fun (f_0':e) -> 
+            [ &self <- Own_OwnResult_Type.C_Err _any ]
+            {[@expl:type invariant] inv2 e}
+            -{resolve2 e}- {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_0 <- res ] (any 
+            [ any_ (_any:Own_OwnResult_Type.t_ownresult t f)-> (! [ &res <- _any ] bb9) ]
+            ))) ]
+        ))
+    | bb9 = bb10
+    | bb3 = bb6
+    | bb6 = {[@expl:type invariant] inv1 res}
+      -{resolve1 res}- Own_OwnResult_Type.ok <t> <e> {self} (fun (rf_0':t) -> [ &v <- rf_0' ] (any 
+        [ any_ (_any:t)-> (! Own_OwnResult_Type.ok <t> <e> {self} (fun (f_0':t) -> 
+            [ &self <- Own_OwnResult_Type.C_Ok _any ]
+            {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_0 <- Own_OwnResult_Type.C_Ok v : Own_OwnResult_Type.t_ownresult t f ] (any 
+            [ any_ (_any:t)-> (! [ &v <- _any ] bb7) ]
+            ))) ]
+        ))
+    | bb7 = bb8
+    | bb8 = bb10
+    | bb10 = bb11
+    | bb11 = bb12
+    | bb12 = return' {_0} ]
+    )
     [ & _0 : Own_OwnResult_Type.t_ownresult t f = any_l () : Own_OwnResult_Type.t_ownresult t f
     | & self : Own_OwnResult_Type.t_ownresult t e = self
     | & res : Own_OwnResult_Type.t_ownresult t f = res
     | & v : t = any_l () : t
     | & e : e = any_l () : e ]
+     
+    [ return' (result:Own_OwnResult_Type.t_ownresult t f)-> {[#"../own.rs" 148 48 148 63] inv1 result}
+      {[#"../own.rs" 147 4 147 74] (exists e : e . inv2 e /\ self = Own_OwnResult_Type.C_Err e)  -> result = res}
+      {[#"../own.rs" 146 4 146 84] forall t : t . inv3 t
+       -> self = Own_OwnResult_Type.C_Ok t  -> result = Own_OwnResult_Type.C_Ok t}
+      (! return' {result}) ]
     
 end
 module Own_Impl1_Copied
@@ -1219,80 +1236,81 @@ module Own_Impl1_Copied
   predicate inv2 (_x : e)
   let rec inv2 (_x:e) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ] 
   axiom inv2 : forall x : e . inv2 x = true
-  predicate invariant1 (self : Own_OwnResult_Type.t_ownresult t e)
-  let rec invariant1 (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
+  predicate invariant1 (self : t)
+  let rec invariant1 (self:t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
     
-  predicate inv1 (_x : Own_OwnResult_Type.t_ownresult t e)
-  let rec inv1 (_x:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
-    
-  axiom inv1 : forall x : Own_OwnResult_Type.t_ownresult t e . inv1 x = true
-  predicate invariant0 (self : t)
-  let rec invariant0 (self:t) (return'  (ret:bool))= any 
+  predicate inv1 (_x : t)
+  let rec inv1 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ] 
+  axiom inv1 : forall x : t . inv1 x = true
+  predicate invariant0 (self : Own_OwnResult_Type.t_ownresult t e)
+  let rec invariant0 (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
     
-  predicate inv0 (_x : t)
-  let rec inv0 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
-  axiom inv0 : forall x : t . inv0 x = true
+  predicate inv0 (_x : Own_OwnResult_Type.t_ownresult t e)
+  let rec inv0 (_x:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : Own_OwnResult_Type.t_ownresult t e . inv0 x = true
   use prelude.Intrinsic
-  use prelude.Borrow
+  predicate resolve1 (self : t)
+  let rec resolve1 (self:t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
   predicate resolve2 (self : e)
   let rec resolve2 (self:e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
     
-  predicate resolve0 (self : t)
-  let rec resolve0 (self:t) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
-  predicate resolve1 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
+  predicate resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
     [#"../own.rs" 16 8 19 9] match self with
-      | Own_OwnResult_Type.C_Ok t -> resolve0 t
+      | Own_OwnResult_Type.C_Ok t -> resolve1 t
       | Own_OwnResult_Type.C_Err e -> resolve2 e
       end
-  let rec resolve1 (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+  let rec resolve0 (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
     
-  let rec copied (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:Own_OwnResult_Type.t_ownresult t e))= {[#"../own.rs" 160 18 160 22] inv1 self}
+  use prelude.Borrow
+  let rec copied (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:Own_OwnResult_Type.t_ownresult t e))= {[#"../own.rs" 160 18 160 22] inv0 self}
     (! bb0 
-    [ bb10 = return' {_0} 
-    | bb9 = bb10 
-    | bb6 = [ &t <- Own_OwnResult_Type.ok_0 self ] {[@expl:type invariant] inv1 self}
-      -{resolve1 self}- {[@expl:type invariant] inv0 t}
-      -{resolve0 t}- [ &_0 <- Own_OwnResult_Type.C_Ok t ] bb9 
-    | bb3 = bb6 
-    | bb8 = bb9 
-    | bb7 = bb8 
-    | bb4 = [ &e <- Own_OwnResult_Type.err_0 self ] any 
-      [ any_ (_any:e)-> 
-        [ &self <- let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err _any ]
-        {[@expl:type invariant] inv1 self}
-        -{resolve1 self}- [ &_0 <- Own_OwnResult_Type.C_Err e ] any [ any_ (_any:e)-> [ &e <- _any ] bb7 ]  ]
-       
-    | bb5 = {[@expl:type invariant] inv1 self}
-      -{resolve1 self}- {[#"../own.rs" 165 14 165 18] false}
-      any 
+    [ bb0 = bb1
+    | bb1 = bb2
     | bb2 = any 
       [ br0 (a:t)-> {self = Own_OwnResult_Type.C_Ok a}
         (! bb3)
       | br1 (a:e)-> {self = Own_OwnResult_Type.C_Err a}
-        (! bb4)
-      | default -> (! bb5) ]
-       
-    | bb1 = bb2 
-    | bb0 = bb1  ]
-    ) 
-    [ return' (result:Own_OwnResult_Type.t_ownresult t e)-> {[#"../own.rs" 160 27 160 42] inv3 result}
-      {[#"../own.rs" 159 4 159 86] forall e : e . inv2 e
-       -> self = Own_OwnResult_Type.C_Err e  -> result = Own_OwnResult_Type.C_Err e}
-      {[#"../own.rs" 158 4 158 86] forall t : t . inv0 t
-       -> self = Own_OwnResult_Type.C_Ok t  -> result = Own_OwnResult_Type.C_Ok t}
-      (! return' {_0}) ]
-    
+        (! bb4) ]
+      
+    | bb5 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- {[#"../own.rs" 165 14 165 18] false}
+      any
+    | bb4 = Own_OwnResult_Type.err <t> <e> {self} (fun (rf_0':e) -> [ &e <- rf_0' ] (any 
+        [ any_ (_any:e)-> (! Own_OwnResult_Type.err <t> <e> {self} (fun (f_0':e) -> 
+            [ &self <- Own_OwnResult_Type.C_Err _any ]
+            {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_0 <- Own_OwnResult_Type.C_Err e : Own_OwnResult_Type.t_ownresult t e ] (any 
+            [ any_ (_any:e)-> (! [ &e <- _any ] bb7) ]
+            ))) ]
+        ))
+    | bb7 = bb8
+    | bb8 = bb9
+    | bb3 = bb6
+    | bb6 = Own_OwnResult_Type.ok <t> <e> {self} (fun (rf_0':t) -> [ &t <- rf_0' ] {[@expl:type invariant] inv0 self}
+        -{resolve0 self}- {[@expl:type invariant] inv1 t}
+        -{resolve1 t}- [ &_0 <- Own_OwnResult_Type.C_Ok t : Own_OwnResult_Type.t_ownresult t e ] bb9)
+    | bb9 = bb10
+    | bb10 = return' {_0} ]
+    )
     [ & _0 : Own_OwnResult_Type.t_ownresult t e = any_l () : Own_OwnResult_Type.t_ownresult t e
     | & self : Own_OwnResult_Type.t_ownresult t e = self
     | & t : t = any_l () : t
     | & e : e = any_l () : e ]
+     
+    [ return' (result:Own_OwnResult_Type.t_ownresult t e)-> {[#"../own.rs" 160 27 160 42] inv3 result}
+      {[#"../own.rs" 159 4 159 86] forall e : e . inv2 e
+       -> self = Own_OwnResult_Type.C_Err e  -> result = Own_OwnResult_Type.C_Err e}
+      {[#"../own.rs" 158 4 158 86] forall t : t . inv1 t
+       -> self = Own_OwnResult_Type.C_Ok t  -> result = Own_OwnResult_Type.C_Ok t}
+      (! return' {result}) ]
     
 end
 module Own_Impl1_Cloned
@@ -1322,89 +1340,92 @@ module Own_Impl1_Cloned
   predicate inv2 (_x : e)
   let rec inv2 (_x:e) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ] 
   axiom inv2 : forall x : e . inv2 x = true
-  predicate invariant1 (self : Own_OwnResult_Type.t_ownresult t e)
-  let rec invariant1 (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
+  predicate invariant1 (self : t)
+  let rec invariant1 (self:t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
     
-  predicate inv1 (_x : Own_OwnResult_Type.t_ownresult t e)
-  let rec inv1 (_x:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
-    
-  axiom inv1 : forall x : Own_OwnResult_Type.t_ownresult t e . inv1 x = true
-  predicate invariant0 (self : t)
-  let rec invariant0 (self:t) (return'  (ret:bool))= any 
+  predicate inv1 (_x : t)
+  let rec inv1 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ] 
+  axiom inv1 : forall x : t . inv1 x = true
+  predicate invariant0 (self : Own_OwnResult_Type.t_ownresult t e)
+  let rec invariant0 (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
     
-  predicate inv0 (_x : t)
-  let rec inv0 (_x:t) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
-  axiom inv0 : forall x : t . inv0 x = true
+  predicate inv0 (_x : Own_OwnResult_Type.t_ownresult t e)
+  let rec inv0 (_x:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : Own_OwnResult_Type.t_ownresult t e . inv0 x = true
   use prelude.Intrinsic
-  use prelude.Borrow
-  predicate resolve2 (self : e)
-  let rec resolve2 (self:e) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
-    
-  predicate resolve0 (self : t)
-  let rec resolve0 (self:t) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
-  predicate resolve1 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
-    [#"../own.rs" 16 8 19 9] match self with
-      | Own_OwnResult_Type.C_Ok t -> resolve0 t
-      | Own_OwnResult_Type.C_Err e -> resolve2 e
-      end
-  let rec resolve1 (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
+  predicate resolve1 (self : t)
+  let rec resolve1 (self:t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
     
-  let rec clone0 (self:t) (return'  (ret:t))= {inv0 self}
+  use prelude.Borrow
+  let rec clone0 (self:t) (return'  (ret:t))= {inv1 self}
     any 
     [ return' (result:t)-> {inv4 result}
       {[#"../../../../../creusot-contracts/src/std/clone.rs" 7 0 20 1] result = self}
       (! return' {result}) ]
     
-  let rec cloned (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:Own_OwnResult_Type.t_ownresult t e))= {[#"../own.rs" 173 18 173 22] inv1 self}
+  predicate resolve2 (self : e)
+  let rec resolve2 (self:e) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
+    
+  predicate resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult t e) =
+    [#"../own.rs" 16 8 19 9] match self with
+      | Own_OwnResult_Type.C_Ok t -> resolve1 t
+      | Own_OwnResult_Type.C_Err e -> resolve2 e
+      end
+  let rec resolve0 (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec cloned (self:Own_OwnResult_Type.t_ownresult t e) (return'  (ret:Own_OwnResult_Type.t_ownresult t e))= {[#"../own.rs" 173 18 173 22] inv0 self}
     (! bb0 
-    [ bb12 = return' {_0} 
-    | bb11 = bb12 
-    | bb8 = bb11 
-    | bb7 = [ &_0 <- Own_OwnResult_Type.C_Ok _6 ] any [ any_ (_any:t)-> [ &_6 <- _any ] bb8 ]  
-    | bb6 = [ &t <- Own_OwnResult_Type.ok_0 self ] {[@expl:type invariant] inv1 self}
-      -{resolve1 self}- {[@expl:type invariant] inv0 t}
-      -{resolve0 t}- clone0 {t} (fun (_ret':t) -> [ &_6 <- _ret' ] bb7) 
-    | bb3 = bb6 
-    | bb10 = bb11 
-    | bb9 = bb10 
-    | bb4 = [ &e <- Own_OwnResult_Type.err_0 self ] any 
-      [ any_ (_any:e)-> 
-        [ &self <- let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err _any ]
-        {[@expl:type invariant] inv1 self}
-        -{resolve1 self}- [ &_0 <- Own_OwnResult_Type.C_Err e ] any [ any_ (_any:e)-> [ &e <- _any ] bb9 ]  ]
-       
-    | bb5 = {[@expl:type invariant] inv1 self}
-      -{resolve1 self}- {[#"../own.rs" 178 14 178 18] false}
-      any 
+    [ bb0 = bb1
+    | bb1 = bb2
     | bb2 = any 
       [ br0 (a:t)-> {self = Own_OwnResult_Type.C_Ok a}
         (! bb3)
       | br1 (a:e)-> {self = Own_OwnResult_Type.C_Err a}
-        (! bb4)
-      | default -> (! bb5) ]
-       
-    | bb1 = bb2 
-    | bb0 = bb1  ]
-    ) 
-    [ return' (result:Own_OwnResult_Type.t_ownresult t e)-> {[#"../own.rs" 173 27 173 42] inv3 result}
-      {[#"../own.rs" 172 4 172 86] forall e : e . inv2 e
-       -> self = Own_OwnResult_Type.C_Err e  -> result = Own_OwnResult_Type.C_Err e}
-      {[#"../own.rs" 171 4 171 86] forall t : t . inv0 t
-       -> self = Own_OwnResult_Type.C_Ok t  -> result = Own_OwnResult_Type.C_Ok t}
-      (! return' {_0}) ]
-    
+        (! bb4) ]
+      
+    | bb5 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- {[#"../own.rs" 178 14 178 18] false}
+      any
+    | bb4 = Own_OwnResult_Type.err <t> <e> {self} (fun (rf_0':e) -> [ &e <- rf_0' ] (any 
+        [ any_ (_any:e)-> (! Own_OwnResult_Type.err <t> <e> {self} (fun (f_0':e) -> 
+            [ &self <- Own_OwnResult_Type.C_Err _any ]
+            {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_0 <- Own_OwnResult_Type.C_Err e : Own_OwnResult_Type.t_ownresult t e ] (any 
+            [ any_ (_any:e)-> (! [ &e <- _any ] bb9) ]
+            ))) ]
+        ))
+    | bb9 = bb10
+    | bb10 = bb11
+    | bb3 = bb6
+    | bb6 = Own_OwnResult_Type.ok <t> <e> {self} (fun (rf_0':t) -> [ &t <- rf_0' ] {[@expl:type invariant] inv0 self}
+        -{resolve0 self}- {[@expl:type invariant] inv1 t}
+        -{resolve1 t}- clone0 {t} (fun (_ret':t) -> [ &_6 <- _ret' ] bb7))
+    | bb7 = [ &_0 <- Own_OwnResult_Type.C_Ok _6 : Own_OwnResult_Type.t_ownresult t e ] (any 
+      [ any_ (_any:t)-> (! [ &_6 <- _any ] bb8) ]
+      )
+    | bb8 = bb11
+    | bb11 = bb12
+    | bb12 = return' {_0} ]
+    )
     [ & _0 : Own_OwnResult_Type.t_ownresult t e = any_l () : Own_OwnResult_Type.t_ownresult t e
     | & self : Own_OwnResult_Type.t_ownresult t e = self
     | & t : t = any_l () : t
     | & _6 : t = any_l () : t
     | & e : e = any_l () : e ]
+     
+    [ return' (result:Own_OwnResult_Type.t_ownresult t e)-> {[#"../own.rs" 173 27 173 42] inv3 result}
+      {[#"../own.rs" 172 4 172 86] forall e : e . inv2 e
+       -> self = Own_OwnResult_Type.C_Err e  -> result = Own_OwnResult_Type.C_Err e}
+      {[#"../own.rs" 171 4 171 86] forall t : t . inv1 t
+       -> self = Own_OwnResult_Type.C_Ok t  -> result = Own_OwnResult_Type.C_Ok t}
+      (! return' {result}) ]
     
 end
 module Own_Impl2_Copied
@@ -1428,86 +1449,87 @@ module Own_Impl2_Copied
   let rec inv2 (_x:e) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ] 
   axiom inv2 : forall x : e . inv2 x = true
   use prelude.Borrow
-  predicate invariant1 (self : Own_OwnResult_Type.t_ownresult (borrowed t) e)
-  let rec invariant1 (self:Own_OwnResult_Type.t_ownresult (borrowed t) e) (return'  (ret:bool))= any 
+  predicate invariant1 (self : borrowed t)
+  let rec invariant1 (self:borrowed t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
     
-  predicate inv1 (_x : Own_OwnResult_Type.t_ownresult (borrowed t) e)
-  let rec inv1 (_x:Own_OwnResult_Type.t_ownresult (borrowed t) e) (return'  (ret:bool))= any 
+  predicate inv1 (_x : borrowed t)
+  let rec inv1 (_x:borrowed t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
     
-  axiom inv1 : forall x : Own_OwnResult_Type.t_ownresult (borrowed t) e . inv1 x = true
-  predicate invariant0 (self : borrowed t)
-  let rec invariant0 (self:borrowed t) (return'  (ret:bool))= any 
+  axiom inv1 : forall x : borrowed t . inv1 x = true
+  predicate invariant0 (self : Own_OwnResult_Type.t_ownresult (borrowed t) e)
+  let rec invariant0 (self:Own_OwnResult_Type.t_ownresult (borrowed t) e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
     
-  predicate inv0 (_x : borrowed t)
-  let rec inv0 (_x:borrowed t) (return'  (ret:bool))= any 
+  predicate inv0 (_x : Own_OwnResult_Type.t_ownresult (borrowed t) e)
+  let rec inv0 (_x:Own_OwnResult_Type.t_ownresult (borrowed t) e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
     
-  axiom inv0 : forall x : borrowed t . inv0 x = true
+  axiom inv0 : forall x : Own_OwnResult_Type.t_ownresult (borrowed t) e . inv0 x = true
   use prelude.Intrinsic
+  predicate resolve1 (self : borrowed t) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed t) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
   predicate resolve2 (self : e)
   let rec resolve2 (self:e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
     
-  predicate resolve0 (self : borrowed t) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve0 (self:borrowed t) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
-  predicate resolve1 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult (borrowed t) e) =
+  predicate resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult (borrowed t) e) =
     [#"../own.rs" 16 8 19 9] match self with
-      | Own_OwnResult_Type.C_Ok t -> resolve0 t
+      | Own_OwnResult_Type.C_Ok t -> resolve1 t
       | Own_OwnResult_Type.C_Err e -> resolve2 e
       end
-  let rec resolve1 (self:Own_OwnResult_Type.t_ownresult (borrowed t) e) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+  let rec resolve0 (self:Own_OwnResult_Type.t_ownresult (borrowed t) e) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
     
-  let rec copied (self:Own_OwnResult_Type.t_ownresult (borrowed t) e) (return'  (ret:Own_OwnResult_Type.t_ownresult t e))= {[#"../own.rs" 188 18 188 22] inv1 self}
+  let rec copied (self:Own_OwnResult_Type.t_ownresult (borrowed t) e) (return'  (ret:Own_OwnResult_Type.t_ownresult t e))= {[#"../own.rs" 188 18 188 22] inv0 self}
     (! bb0 
-    [ bb10 = return' {_0} 
-    | bb9 = bb10 
-    | bb6 = [ &t <- Own_OwnResult_Type.ok_0 self ] any 
-      [ any_ (_any:borrowed t)-> 
-        [ &self <- let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok _any ]
-        {[@expl:type invariant] inv1 self}
-        -{resolve1 self}- {[@expl:type invariant] inv0 t}
-        -{resolve0 t}- [ &_0 <- Own_OwnResult_Type.C_Ok ( * t) ] bb9 ]
-       
-    | bb3 = bb6 
-    | bb8 = bb9 
-    | bb7 = bb8 
-    | bb4 = [ &e <- Own_OwnResult_Type.err_0 self ] any 
-      [ any_ (_any:e)-> 
-        [ &self <- let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err _any ]
-        {[@expl:type invariant] inv1 self}
-        -{resolve1 self}- [ &_0 <- Own_OwnResult_Type.C_Err e ] any [ any_ (_any:e)-> [ &e <- _any ] bb7 ]  ]
-       
-    | bb5 = {[@expl:type invariant] inv1 self}
-      -{resolve1 self}- {[#"../own.rs" 193 14 193 18] false}
-      any 
+    [ bb0 = bb1
+    | bb1 = bb2
     | bb2 = any 
       [ br0 (a:borrowed t)-> {self = Own_OwnResult_Type.C_Ok a}
         (! bb3)
       | br1 (a:e)-> {self = Own_OwnResult_Type.C_Err a}
-        (! bb4)
-      | default -> (! bb5) ]
-       
-    | bb1 = bb2 
-    | bb0 = bb1  ]
-    ) 
-    [ return' (result:Own_OwnResult_Type.t_ownresult t e)-> {[#"../own.rs" 188 27 188 42] inv3 result}
-      {[#"../own.rs" 187 4 187 86] forall e : e . inv2 e
-       -> self = Own_OwnResult_Type.C_Err e  -> result = Own_OwnResult_Type.C_Err e}
-      {[#"../own.rs" 186 4 186 105] forall t : borrowed t . inv0 t
-       -> self = Own_OwnResult_Type.C_Ok t  -> result = Own_OwnResult_Type.C_Ok ( * t) /\ resolve0 t}
-      (! return' {_0}) ]
-    
+        (! bb4) ]
+      
+    | bb5 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- {[#"../own.rs" 193 14 193 18] false}
+      any
+    | bb4 = Own_OwnResult_Type.err <borrowed t> <e> {self} (fun (rf_0':e) -> [ &e <- rf_0' ] (any 
+        [ any_ (_any:e)-> (! Own_OwnResult_Type.err <borrowed t> <e> {self} (fun (f_0':e) -> 
+            [ &self <- Own_OwnResult_Type.C_Err _any ]
+            {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_0 <- Own_OwnResult_Type.C_Err e : Own_OwnResult_Type.t_ownresult t e ] (any 
+            [ any_ (_any:e)-> (! [ &e <- _any ] bb7) ]
+            ))) ]
+        ))
+    | bb7 = bb8
+    | bb8 = bb9
+    | bb3 = bb6
+    | bb6 = Own_OwnResult_Type.ok <borrowed t> <e> {self} (fun (rf_0':borrowed t) -> [ &t <- rf_0' ] (any 
+        [ any_ (_any:borrowed t)-> (! Own_OwnResult_Type.ok <borrowed t> <e> {self} (fun (f_0':borrowed t) -> 
+            [ &self <- Own_OwnResult_Type.C_Ok _any ]
+            {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- {[@expl:type invariant] inv1 t}
+            -{resolve1 t}- [ &_0 <- Own_OwnResult_Type.C_Ok ( * t) : Own_OwnResult_Type.t_ownresult t e ] bb9)) ]
+        ))
+    | bb9 = bb10
+    | bb10 = return' {_0} ]
+    )
     [ & _0 : Own_OwnResult_Type.t_ownresult t e = any_l () : Own_OwnResult_Type.t_ownresult t e
     | & self : Own_OwnResult_Type.t_ownresult (borrowed t) e = self
     | & t : borrowed t = any_l () : borrowed t
     | & e : e = any_l () : e ]
+     
+    [ return' (result:Own_OwnResult_Type.t_ownresult t e)-> {[#"../own.rs" 188 27 188 42] inv3 result}
+      {[#"../own.rs" 187 4 187 86] forall e : e . inv2 e
+       -> self = Own_OwnResult_Type.C_Err e  -> result = Own_OwnResult_Type.C_Err e}
+      {[#"../own.rs" 186 4 186 105] forall t : borrowed t . inv1 t
+       -> self = Own_OwnResult_Type.C_Ok t  -> result = Own_OwnResult_Type.C_Ok ( * t) /\ resolve1 t}
+      (! return' {result}) ]
     
 end
 module Own_Impl2_Cloned
@@ -1545,40 +1567,28 @@ module Own_Impl2_Cloned
   let rec inv2 (_x:e) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ] 
   axiom inv2 : forall x : e . inv2 x = true
   use prelude.Borrow
-  predicate invariant1 (self : Own_OwnResult_Type.t_ownresult (borrowed t) e)
-  let rec invariant1 (self:Own_OwnResult_Type.t_ownresult (borrowed t) e) (return'  (ret:bool))= any 
+  predicate invariant1 (self : borrowed t)
+  let rec invariant1 (self:borrowed t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
     
-  predicate inv1 (_x : Own_OwnResult_Type.t_ownresult (borrowed t) e)
-  let rec inv1 (_x:Own_OwnResult_Type.t_ownresult (borrowed t) e) (return'  (ret:bool))= any 
+  predicate inv1 (_x : borrowed t)
+  let rec inv1 (_x:borrowed t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
     
-  axiom inv1 : forall x : Own_OwnResult_Type.t_ownresult (borrowed t) e . inv1 x = true
-  predicate invariant0 (self : borrowed t)
-  let rec invariant0 (self:borrowed t) (return'  (ret:bool))= any 
+  axiom inv1 : forall x : borrowed t . inv1 x = true
+  predicate invariant0 (self : Own_OwnResult_Type.t_ownresult (borrowed t) e)
+  let rec invariant0 (self:Own_OwnResult_Type.t_ownresult (borrowed t) e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
     
-  predicate inv0 (_x : borrowed t)
-  let rec inv0 (_x:borrowed t) (return'  (ret:bool))= any 
+  predicate inv0 (_x : Own_OwnResult_Type.t_ownresult (borrowed t) e)
+  let rec inv0 (_x:Own_OwnResult_Type.t_ownresult (borrowed t) e) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
     
-  axiom inv0 : forall x : borrowed t . inv0 x = true
+  axiom inv0 : forall x : Own_OwnResult_Type.t_ownresult (borrowed t) e . inv0 x = true
   use prelude.Intrinsic
-  predicate resolve2 (self : e)
-  let rec resolve2 (self:e) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
-    
-  predicate resolve0 (self : borrowed t) =
+  predicate resolve1 (self : borrowed t) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve0 (self:borrowed t) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
-  predicate resolve1 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult (borrowed t) e) =
-    [#"../own.rs" 16 8 19 9] match self with
-      | Own_OwnResult_Type.C_Ok t -> resolve0 t
-      | Own_OwnResult_Type.C_Err e -> resolve2 e
-      end
-  let rec resolve1 (self:Own_OwnResult_Type.t_ownresult (borrowed t) e) (return'  (ret:bool))= any 
+  let rec resolve1 (self:borrowed t) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
     
   let rec clone0 (self:t) (return'  (ret:t))= {inv4 self}
@@ -1587,53 +1597,68 @@ module Own_Impl2_Cloned
       {[#"../../../../../creusot-contracts/src/std/clone.rs" 7 0 20 1] result = self}
       (! return' {result}) ]
     
-  let rec cloned (self:Own_OwnResult_Type.t_ownresult (borrowed t) e) (return'  (ret:Own_OwnResult_Type.t_ownresult t e))= {[#"../own.rs" 201 18 201 22] inv1 self}
+  predicate resolve2 (self : e)
+  let rec resolve2 (self:e) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
+    
+  predicate resolve0 [#"../own.rs" 15 4 15 28] (self : Own_OwnResult_Type.t_ownresult (borrowed t) e) =
+    [#"../own.rs" 16 8 19 9] match self with
+      | Own_OwnResult_Type.C_Ok t -> resolve1 t
+      | Own_OwnResult_Type.C_Err e -> resolve2 e
+      end
+  let rec resolve0 (self:Own_OwnResult_Type.t_ownresult (borrowed t) e) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
+  let rec cloned (self:Own_OwnResult_Type.t_ownresult (borrowed t) e) (return'  (ret:Own_OwnResult_Type.t_ownresult t e))= {[#"../own.rs" 201 18 201 22] inv0 self}
     (! bb0 
-    [ bb12 = return' {_0} 
-    | bb11 = bb12 
-    | bb8 = bb11 
-    | bb7 = {[@expl:type invariant] inv0 t}
-      -{resolve0 t}- [ &_0 <- Own_OwnResult_Type.C_Ok _6 ] any [ any_ (_any:t)-> [ &_6 <- _any ] bb8 ]  
-    | bb6 = [ &t <- Own_OwnResult_Type.ok_0 self ] any 
-      [ any_ (_any:borrowed t)-> 
-        [ &self <- let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok _any ]
-        {[@expl:type invariant] inv1 self}
-        -{resolve1 self}- clone0 { * t} (fun (_ret':t) -> [ &_6 <- _ret' ] bb7) ]
-       
-    | bb3 = bb6 
-    | bb10 = bb11 
-    | bb9 = bb10 
-    | bb4 = [ &e <- Own_OwnResult_Type.err_0 self ] any 
-      [ any_ (_any:e)-> 
-        [ &self <- let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err _any ]
-        {[@expl:type invariant] inv1 self}
-        -{resolve1 self}- [ &_0 <- Own_OwnResult_Type.C_Err e ] any [ any_ (_any:e)-> [ &e <- _any ] bb9 ]  ]
-       
-    | bb5 = {[@expl:type invariant] inv1 self}
-      -{resolve1 self}- {[#"../own.rs" 206 14 206 18] false}
-      any 
+    [ bb0 = bb1
+    | bb1 = bb2
     | bb2 = any 
       [ br0 (a:borrowed t)-> {self = Own_OwnResult_Type.C_Ok a}
         (! bb3)
       | br1 (a:e)-> {self = Own_OwnResult_Type.C_Err a}
-        (! bb4)
-      | default -> (! bb5) ]
-       
-    | bb1 = bb2 
-    | bb0 = bb1  ]
-    ) 
-    [ return' (result:Own_OwnResult_Type.t_ownresult t e)-> {[#"../own.rs" 201 27 201 42] inv3 result}
-      {[#"../own.rs" 200 4 200 86] forall e : e . inv2 e
-       -> self = Own_OwnResult_Type.C_Err e  -> result = Own_OwnResult_Type.C_Err e}
-      {[#"../own.rs" 199 4 199 105] forall t : borrowed t . inv0 t
-       -> self = Own_OwnResult_Type.C_Ok t  -> result = Own_OwnResult_Type.C_Ok ( * t) /\ resolve0 t}
-      (! return' {_0}) ]
-    
+        (! bb4) ]
+      
+    | bb5 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- {[#"../own.rs" 206 14 206 18] false}
+      any
+    | bb4 = Own_OwnResult_Type.err <borrowed t> <e> {self} (fun (rf_0':e) -> [ &e <- rf_0' ] (any 
+        [ any_ (_any:e)-> (! Own_OwnResult_Type.err <borrowed t> <e> {self} (fun (f_0':e) -> 
+            [ &self <- Own_OwnResult_Type.C_Err _any ]
+            {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_0 <- Own_OwnResult_Type.C_Err e : Own_OwnResult_Type.t_ownresult t e ] (any 
+            [ any_ (_any:e)-> (! [ &e <- _any ] bb9) ]
+            ))) ]
+        ))
+    | bb9 = bb10
+    | bb10 = bb11
+    | bb3 = bb6
+    | bb6 = Own_OwnResult_Type.ok <borrowed t> <e> {self} (fun (rf_0':borrowed t) -> [ &t <- rf_0' ] (any 
+        [ any_ (_any:borrowed t)-> (! Own_OwnResult_Type.ok <borrowed t> <e> {self} (fun (f_0':borrowed t) -> 
+            [ &self <- Own_OwnResult_Type.C_Ok _any ]
+            {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- clone0 { * t} (fun (_ret':t) -> [ &_6 <- _ret' ] bb7))) ]
+        ))
+    | bb7 = {[@expl:type invariant] inv1 t}
+      -{resolve1 t}- [ &_0 <- Own_OwnResult_Type.C_Ok _6 : Own_OwnResult_Type.t_ownresult t e ] (any 
+      [ any_ (_any:t)-> (! [ &_6 <- _any ] bb8) ]
+      )
+    | bb8 = bb11
+    | bb11 = bb12
+    | bb12 = return' {_0} ]
+    )
     [ & _0 : Own_OwnResult_Type.t_ownresult t e = any_l () : Own_OwnResult_Type.t_ownresult t e
     | & self : Own_OwnResult_Type.t_ownresult (borrowed t) e = self
     | & t : borrowed t = any_l () : borrowed t
     | & _6 : t = any_l () : t
     | & e : e = any_l () : e ]
+     
+    [ return' (result:Own_OwnResult_Type.t_ownresult t e)-> {[#"../own.rs" 201 27 201 42] inv3 result}
+      {[#"../own.rs" 200 4 200 86] forall e : e . inv2 e
+       -> self = Own_OwnResult_Type.C_Err e  -> result = Own_OwnResult_Type.C_Err e}
+      {[#"../own.rs" 199 4 199 105] forall t : borrowed t . inv1 t
+       -> self = Own_OwnResult_Type.C_Ok t  -> result = Own_OwnResult_Type.C_Ok ( * t) /\ resolve1 t}
+      (! return' {result}) ]
     
 end
 module Own_Impl3_Transpose
@@ -1691,57 +1716,73 @@ module Own_Impl3_Transpose
     [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ] 
   let rec transpose (self:Own_OwnResult_Type.t_ownresult (Core_Option_Option_Type.t_option t) e) (return'  (ret:Core_Option_Option_Type.t_option (Own_OwnResult_Type.t_ownresult t e)))= {[#"../own.rs" 217 21 217 25] inv0 self}
     (! bb0 
-    [ bb18 = return' {_0} 
-    | bb17 = bb18 
-    | bb13 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- 
-      [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option (Own_OwnResult_Type.t_ownresult t e) ]
-      bb17 
-    | bb5 = bb13 
-    | bb12 = bb17 
-    | bb11 = bb12 
-    | bb10 = [ &_0 <- Core_Option_Option_Type.C_Some _8 ] any 
-      [ any_ (_any:Own_OwnResult_Type.t_ownresult t e)-> [ &_8 <- _any ] bb11 ]
-       
-    | bb9 = [ &x <- Core_Option_Option_Type.some_0 (Own_OwnResult_Type.ok_0 self) ] any 
-      [ any_ (_any:t)-> 
-        [ &self <- let Own_OwnResult_Type.C_Ok x0 = self in Own_OwnResult_Type.C_Ok (let Core_Option_Option_Type.C_Some x0 = Own_OwnResult_Type.ok_0 self in Core_Option_Option_Type.C_Some _any) ]
-        {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- [ &_8 <- Own_OwnResult_Type.C_Ok x ] any [ any_ (_any:t)-> [ &x <- _any ] bb10 ]  ]
-       
-    | bb6 = bb9 
-    | bb7 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- {[#"../own.rs" 218 14 218 18] false}
-      any 
-    | bb4 = any 
-      [ br0 -> {Own_OwnResult_Type.ok_0 self = Core_Option_Option_Type.C_None }
-        (! bb5)
-      | br1 (a:t)-> {Own_OwnResult_Type.ok_0 self = Core_Option_Option_Type.C_Some a}
-        (! bb6)
-      | default -> (! bb7) ]
-       
-    | bb16 = bb17 
-    | bb15 = bb16 
-    | bb14 = [ &_0 <- Core_Option_Option_Type.C_Some _11 ] any 
-      [ any_ (_any:Own_OwnResult_Type.t_ownresult t e)-> [ &_11 <- _any ] bb15 ]
-       
-    | bb8 = [ &e <- Own_OwnResult_Type.err_0 self ] any 
-      [ any_ (_any:e)-> 
-        [ &self <- let Own_OwnResult_Type.C_Err x0 = self in Own_OwnResult_Type.C_Err _any ]
-        {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- [ &_11 <- Own_OwnResult_Type.C_Err e ] any [ any_ (_any:e)-> [ &e <- _any ] bb14 ]  ]
-       
+    [ bb0 = bb1
+    | bb1 = bb2
+    | bb2 = bb3
     | bb3 = any 
       [ br0 (a:Core_Option_Option_Type.t_option t)-> {self = Own_OwnResult_Type.C_Ok a}
         (! bb4)
       | br1 (a:e)-> {self = Own_OwnResult_Type.C_Err a}
-        (! bb8)
-      | default -> (! bb7) ]
-       
-    | bb2 = bb3 
-    | bb1 = bb2 
-    | bb0 = bb1  ]
-    ) 
+        (! bb8) ]
+      
+    | bb8 = Own_OwnResult_Type.err <Core_Option_Option_Type.t_option t> <e> {self} (fun (rf_0':e) -> 
+        [ &e <- rf_0' ]
+        (any 
+        [ any_ (_any:e)-> (! Own_OwnResult_Type.err <Core_Option_Option_Type.t_option t> <e> {self} (fun (f_0':e) -> 
+            [ &self <- Own_OwnResult_Type.C_Err _any ]
+            {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- [ &_11 <- Own_OwnResult_Type.C_Err e : Own_OwnResult_Type.t_ownresult t e ] (any 
+            [ any_ (_any:e)-> (! [ &e <- _any ] bb14) ]
+            ))) ]
+        ))
+    | bb14 = 
+      [ &_0 <- Core_Option_Option_Type.C_Some _11 : Core_Option_Option_Type.t_option (Own_OwnResult_Type.t_ownresult t e) ]
+      (any [ any_ (_any:Own_OwnResult_Type.t_ownresult t e)-> (! [ &_11 <- _any ] bb15) ] )
+    | bb15 = bb16
+    | bb16 = bb17
+    | bb4 = Own_OwnResult_Type.ok <Core_Option_Option_Type.t_option t> <e> {self}
+      (fun (rf_0':Core_Option_Option_Type.t_option t) -> any 
+        [ br0 -> {rf_0' = Core_Option_Option_Type.C_None }
+          (! bb5)
+        | br1 (a:t)-> {rf_0' = Core_Option_Option_Type.C_Some a}
+          (! bb6) ]
+        )
+    | bb7 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- {[#"../own.rs" 218 14 218 18] false}
+      any
+    | bb6 = bb9
+    | bb9 = Own_OwnResult_Type.ok <Core_Option_Option_Type.t_option t> <e> {self}
+      (fun (rf_0':Core_Option_Option_Type.t_option t) -> Core_Option_Option_Type.some <t> {rf_0'} (fun (rf_0':t) -> 
+          [ &x <- rf_0' ]
+          (any 
+          [ any_ (_any:t)-> (! Own_OwnResult_Type.ok <Core_Option_Option_Type.t_option t> <e> {self}
+            (fun (f_0':Core_Option_Option_Type.t_option t) -> Core_Option_Option_Type.some <t> {f_0'} (fun (f_0':t) -> 
+                [ &self <- Own_OwnResult_Type.C_Ok (Core_Option_Option_Type.C_Some _any) ]
+                {[@expl:type invariant] inv0 self}
+                -{resolve0 self}- [ &_8 <- Own_OwnResult_Type.C_Ok x : Own_OwnResult_Type.t_ownresult t e ] (any 
+                [ any_ (_any:t)-> (! [ &x <- _any ] bb10) ]
+                )))) ]
+          )))
+    | bb10 = 
+      [ &_0 <- Core_Option_Option_Type.C_Some _8 : Core_Option_Option_Type.t_option (Own_OwnResult_Type.t_ownresult t e) ]
+      (any [ any_ (_any:Own_OwnResult_Type.t_ownresult t e)-> (! [ &_8 <- _any ] bb11) ] )
+    | bb11 = bb12
+    | bb12 = bb17
+    | bb5 = bb13
+    | bb13 = {[@expl:type invariant] inv0 self}
+      -{resolve0 self}- 
+      [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option (Own_OwnResult_Type.t_ownresult t e) ]
+      bb17
+    | bb17 = bb18
+    | bb18 = return' {_0} ]
+    )
+    [ & _0 : Core_Option_Option_Type.t_option (Own_OwnResult_Type.t_ownresult t e) = any_l () : Core_Option_Option_Type.t_option (Own_OwnResult_Type.t_ownresult t e)
+    | & self : Own_OwnResult_Type.t_ownresult (Core_Option_Option_Type.t_option t) e = self
+    | & x : t = any_l () : t
+    | & _8 : Own_OwnResult_Type.t_ownresult t e = any_l () : Own_OwnResult_Type.t_ownresult t e
+    | & e : e = any_l () : e
+    | & _11 : Own_OwnResult_Type.t_ownresult t e = any_l () : Own_OwnResult_Type.t_ownresult t e ]
+     
     [ return' (result:Core_Option_Option_Type.t_option (Own_OwnResult_Type.t_ownresult t e))-> {[#"../own.rs" 217 30 217 53] inv3 result}
       {[#"../own.rs" 216 4 216 92] forall e : e . inv2 e
        -> self = Own_OwnResult_Type.C_Err e  -> result = Core_Option_Option_Type.C_Some (Own_OwnResult_Type.C_Err e)}
@@ -1750,14 +1791,7 @@ module Own_Impl3_Transpose
        -> result = Core_Option_Option_Type.C_Some (Own_OwnResult_Type.C_Ok t)}
       {[#"../own.rs" 214 4 214 62] self = Own_OwnResult_Type.C_Ok (Core_Option_Option_Type.C_None)
        -> result = Core_Option_Option_Type.C_None}
-      (! return' {_0}) ]
-    
-    [ & _0 : Core_Option_Option_Type.t_option (Own_OwnResult_Type.t_ownresult t e) = any_l () : Core_Option_Option_Type.t_option (Own_OwnResult_Type.t_ownresult t e)
-    | & self : Own_OwnResult_Type.t_ownresult (Core_Option_Option_Type.t_option t) e = self
-    | & x : t = any_l () : t
-    | & _8 : Own_OwnResult_Type.t_ownresult t e = any_l () : Own_OwnResult_Type.t_ownresult t e
-    | & e : e = any_l () : e
-    | & _11 : Own_OwnResult_Type.t_ownresult t e = any_l () : Own_OwnResult_Type.t_ownresult t e ]
+      (! return' {result}) ]
     
 end
 module Own_Impl4

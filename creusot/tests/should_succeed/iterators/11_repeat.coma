@@ -4,6 +4,13 @@ module C11Repeat_Repeat_Type
     | C_Repeat 'a
     
   function any_l (_ : 'b) : 'a
+  let rec repeat < 'a > (input:t_repeat 'a) (ret  (field_0:'a))= any 
+    [ good (field_0:'a)-> {C_Repeat field_0 = input}
+      ret {field_0}
+    | bad (field_0:'a)-> {C_Repeat field_0 <> input}
+      {false}
+      any ]
+    
   function repeat_element (self : t_repeat 'a) : 'a =
     match self with
       | C_Repeat a -> a
@@ -93,6 +100,16 @@ module Core_Option_Option_Type
     | C_Some 't
     
   function any_l (_ : 'b) : 'a
+  let rec none < 't > (input:t_option 't) (ret  )= any 
+    [ good -> {C_None  = input} ret | bad -> {C_None  <> input} {false} any ]
+    
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Some field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Some field_0 <> input}
+      {false}
+      any ]
+    
 end
 module C11Repeat_Impl0_Next
   type a
@@ -149,34 +166,38 @@ module C11Repeat_Impl0_Next
     [ return' (result:bool)-> {result = completed0 self} (! return' {result}) ]
     
   use prelude.Intrinsic
+  predicate resolve0 (self : borrowed (C11Repeat_Repeat_Type.t_repeat a)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed (C11Repeat_Repeat_Type.t_repeat a)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
+    
   let rec clone0 (self:a) (return'  (ret:a))= {inv2 self}
     any 
     [ return' (result:a)-> {inv3 result}
       {[#"../../../../../creusot-contracts/src/std/clone.rs" 7 0 20 1] result = self}
       (! return' {result}) ]
     
-  predicate resolve0 (self : borrowed (C11Repeat_Repeat_Type.t_repeat a)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve0 (self:borrowed (C11Repeat_Repeat_Type.t_repeat a)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
   let rec next (self:borrowed (C11Repeat_Repeat_Type.t_repeat a)) (return'  (ret:Core_Option_Option_Type.t_option a))= {[#"../11_repeat.rs" 46 17 46 21] inv0 self}
     (! bb0 
-    [ bb2 = return' {_0} 
+    [ bb0 = C11Repeat_Repeat_Type.repeat <a> { * self} (fun (rf_element':a) -> clone0 {rf_element'} (fun (_ret':a) -> 
+          [ &_3 <- _ret' ]
+          bb1))
     | bb1 = {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_Some _3 ] any [ any_ (_any:a)-> [ &_3 <- _any ] bb2 ]  
-    | bb0 = clone0 {C11Repeat_Repeat_Type.repeat_element ( * self)} (fun (_ret':a) -> [ &_3 <- _ret' ] bb1)  ]
-    ) 
+      -{resolve0 self}- [ &_0 <- Core_Option_Option_Type.C_Some _3 : Core_Option_Option_Type.t_option a ] (any 
+      [ any_ (_any:a)-> (! [ &_3 <- _any ] bb2) ]
+      )
+    | bb2 = return' {_0} ]
+    )
+    [ & _0 : Core_Option_Option_Type.t_option a = any_l () : Core_Option_Option_Type.t_option a
+    | & self : borrowed (C11Repeat_Repeat_Type.t_repeat a) = self
+    | & _3 : a = any_l () : a ]
+     
     [ return' (result:Core_Option_Option_Type.t_option a)-> {[#"../11_repeat.rs" 46 26 46 35] inv1 result}
       {[#"../11_repeat.rs" 42 14 45 5] match result with
         | Core_Option_Option_Type.C_None -> completed0 self
         | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
         end}
-      (! return' {_0}) ]
-    
-    [ & _0 : Core_Option_Option_Type.t_option a = any_l () : Core_Option_Option_Type.t_option a
-    | & self : borrowed (C11Repeat_Repeat_Type.t_repeat a) = self
-    | & _3 : a = any_l () : a ]
+      (! return' {result}) ]
     
 end
 module C11Repeat_Impl0

@@ -5,16 +5,16 @@ module Hashmap_List_Type
     | C_Cons 't (t_list 't)
     
   function any_l (_ : 'b) : 'a
-  function cons_1 (self : t_list 't) : t_list 't =
-    match self with
-      | C_Nil -> any_l self
-      | C_Cons _ a -> a
-      end
-  function cons_0 (self : t_list 't) : 't =
-    match self with
-      | C_Nil -> any_l self
-      | C_Cons a _ -> a
-      end
+  let rec nil < 't > (input:t_list 't) (ret  )= any 
+    [ good -> {C_Nil  = input} ret | bad -> {C_Nil  <> input} {false} any ]
+    
+  let rec cons < 't > (input:t_list 't) (ret  (field_0:'t) (field_1:t_list 't))= any 
+    [ good (field_0:'t) (field_1:t_list 't)-> {C_Cons field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:'t) (field_1:t_list 't)-> {C_Cons field_0 field_1 <> input}
+      {false}
+      any ]
+    
 end
 module Core_Option_Option_Type
   type t_option 't =
@@ -22,6 +22,16 @@ module Core_Option_Option_Type
     | C_Some 't
     
   function any_l (_ : 'b) : 'a
+  let rec none < 't > (input:t_option 't) (ret  )= any 
+    [ good -> {C_None  = input} ret | bad -> {C_None  <> input} {false} any ]
+    
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Some field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Some field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Hashmap_Impl2_Hash
   use prelude.Int
@@ -48,11 +58,11 @@ module Hashmap_Impl2_Hash
   use prelude.Intrinsic
   use prelude.UInt64
   let rec hash (self:usize) (return'  (ret:uint64))= (! bb0 
-    [ bb0 = [ &_0 <- UInt64.of_int (UIntSize.to_int self) ] return' {_0}  ]
-    ) 
+    [ bb0 = UInt64.of_int {UIntSize.to_int self} (fun (_res:uint64) -> [ &_0 <- _res ] return' {_0}) ]
+    )[ & _0 : uint64 = any_l () : uint64 | & self : usize = self ]  
     [ return' (result:uint64)-> {[#"../hashmap.rs" 58 14 58 58] UInt64.to_int result = hash_log0 (deep_model0 self)}
-      (! return' {_0}) ]
-    [ & _0 : uint64 = any_l () : uint64 | & self : usize = self ] 
+      (! return' {result}) ]
+    
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
@@ -60,12 +70,22 @@ module Core_Ptr_NonNull_NonNull_Type
     | C_NonNull opaque_ptr
     
   function any_l (_ : 'b) : 'a
+  let rec non_null < 't > (input:t_nonnull 't) (ret  (field_0:opaque_ptr))= any 
+    [ good (field_0:opaque_ptr)-> {C_NonNull field_0 = input}
+      ret {field_0}
+    | bad (field_0:opaque_ptr)-> {C_NonNull field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Core_Marker_PhantomData_Type
   type t_phantomdata 't =
     | C_PhantomData
     
   function any_l (_ : 'b) : 'a
+  let rec phantom_data < 't > (input:t_phantomdata 't) (ret  )= any 
+    [ good -> {C_PhantomData  = input} ret | bad -> {C_PhantomData  <> input} {false} any ]
+    
 end
 module Core_Ptr_Unique_Unique_Type
   use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
@@ -74,6 +94,14 @@ module Core_Ptr_Unique_Unique_Type
     | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
   function any_l (_ : 'b) : 'a
+  let rec unique < 't > (input:t_unique 't) (ret  (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't))= any
+    
+    [ good (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique field_0 field_1 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_RawVec_Cap_Type
   use prelude.UIntSize
@@ -82,6 +110,13 @@ module Alloc_RawVec_Cap_Type
     | C_Cap usize
     
   function any_l (_ : 'b) : 'a
+  let rec cap (input:t_cap) (ret  (field_0:usize))= any 
+    [ good (field_0:usize)-> {C_Cap field_0 = input}
+      ret {field_0}
+    | bad (field_0:usize)-> {C_Cap field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_RawVec_RawVec_Type
   use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
@@ -90,6 +125,14 @@ module Alloc_RawVec_RawVec_Type
     | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
     
   function any_l (_ : 'b) : 'a
+  let rec raw_vec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (field_0:Core_Ptr_Unique_Unique_Type.t_unique 't) (field_1:Alloc_RawVec_Cap_Type.t_cap) (field_2:'a))= any
+    
+    [ good (field_0:Core_Ptr_Unique_Unique_Type.t_unique 't) (field_1:Alloc_RawVec_Cap_Type.t_cap) (field_2:'a)-> {C_RawVec field_0 field_1 field_2 = input}
+      ret {field_0} {field_1} {field_2}
+    | bad (field_0:Core_Ptr_Unique_Unique_Type.t_unique 't) (field_1:Alloc_RawVec_Cap_Type.t_cap) (field_2:'a)-> {C_RawVec field_0 field_1 field_2 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_Vec_Vec_Type
   use prelude.UIntSize
@@ -99,12 +142,23 @@ module Alloc_Vec_Vec_Type
     | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
   function any_l (_ : 'b) : 'a
+  let rec vec < 't > < 'a > (input:t_vec 't 'a) (ret  (field_0:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (field_1:usize))= any
+    
+    [ good (field_0:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (field_1:usize)-> {C_Vec field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (field_1:usize)-> {C_Vec field_0 field_1 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_Alloc_Global_Type
   type t_global  =
     | C_Global
     
   function any_l (_ : 'b) : 'a
+  let rec global (input:t_global) (ret  )= any 
+    [ good -> {C_Global  = input} ret | bad -> {C_Global  <> input} {false} any ]
+    
 end
 module Hashmap_MyHashMap_Type
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
@@ -114,6 +168,14 @@ module Hashmap_MyHashMap_Type
     | C_MyHashMap (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list ('k, 'v)) (Alloc_Alloc_Global_Type.t_global))
     
   function any_l (_ : 'b) : 'a
+  let rec my_hash_map < 'k > < 'v > (input:t_myhashmap 'k 'v) (ret  (field_0:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list ('k, 'v)) (Alloc_Alloc_Global_Type.t_global)))= any
+    
+    [ good (field_0:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list ('k, 'v)) (Alloc_Alloc_Global_Type.t_global))-> {C_MyHashMap field_0 = input}
+      ret {field_0}
+    | bad (field_0:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list ('k, 'v)) (Alloc_Alloc_Global_Type.t_global))-> {C_MyHashMap field_0 <> input}
+      {false}
+      any ]
+    
   function myhashmap_buckets (self : t_myhashmap 'k 'v) : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list ('k, 'v)) (Alloc_Alloc_Global_Type.t_global)
     
    =
@@ -284,29 +346,29 @@ module Hashmap_Impl5_New
     
   let rec new (size:usize) (return'  (ret:Hashmap_MyHashMap_Type.t_myhashmap k v))= {[#"../hashmap.rs" 95 15 95 24] 0 < UIntSize.to_int size}
     (! bb0 
-    [ bb3 = return' {_0} 
-    | bb2 = [ &_0 <- res ] any [ any_ (_any:Hashmap_MyHashMap_Type.t_myhashmap k v)-> [ &res <- _any ] bb3 ]  
-    | bb1 = [ &res <- Hashmap_MyHashMap_Type.C_MyHashMap _6 ] any 
-      [ any_ (_any:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))-> 
-        [ &_6 <- _any ]
-        bb2 ]
-       
-    | bb0 = [ &_7 <- Hashmap_List_Type.C_Nil : Hashmap_List_Type.t_list (k, v) ] from_elem0 {_7} {size}
+    [ bb0 = [ &_7 <- Hashmap_List_Type.C_Nil : Hashmap_List_Type.t_list (k, v) ] from_elem0 {_7} {size}
       (fun (_ret':Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) -> 
         [ &_6 <- _ret' ]
-        bb1)  ]
-    ) 
-    [ return' (result:Hashmap_MyHashMap_Type.t_myhashmap k v)-> {[#"../hashmap.rs" 98 31 98 46] inv1 result}
-      {[#"../hashmap.rs" 97 4 97 64] forall i : deep_model_ty0 . inv0 i
-       -> Map.get (shallow_model1 result) i = Core_Option_Option_Type.C_None}
-      {[#"../hashmap.rs" 96 14 96 34] hashmap_inv0 result}
-      (! return' {_0}) ]
-    
+        bb1)
+    | bb1 = [ &res <- Hashmap_MyHashMap_Type.C_MyHashMap _6 : Hashmap_MyHashMap_Type.t_myhashmap k v ] (any 
+      [ any_ (_any:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))-> (! 
+        [ &_6 <- _any ]
+        bb2) ]
+      )
+    | bb2 = [ &_0 <- res ] (any [ any_ (_any:Hashmap_MyHashMap_Type.t_myhashmap k v)-> (! [ &res <- _any ] bb3) ] )
+    | bb3 = return' {_0} ]
+    )
     [ & _0 : Hashmap_MyHashMap_Type.t_myhashmap k v = any_l () : Hashmap_MyHashMap_Type.t_myhashmap k v
     | & size : usize = size
     | & res : Hashmap_MyHashMap_Type.t_myhashmap k v = any_l () : Hashmap_MyHashMap_Type.t_myhashmap k v
     | & _6 : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) = any_l () : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)
     | & _7 : Hashmap_List_Type.t_list (k, v) = any_l () : Hashmap_List_Type.t_list (k, v) ]
+     
+    [ return' (result:Hashmap_MyHashMap_Type.t_myhashmap k v)-> {[#"../hashmap.rs" 98 31 98 46] inv1 result}
+      {[#"../hashmap.rs" 97 4 97 64] forall i : deep_model_ty0 . inv0 i
+       -> Map.get (shallow_model1 result) i = Core_Option_Option_Type.C_None}
+      {[#"../hashmap.rs" 96 14 96 34] hashmap_inv0 result}
+      (! return' {result}) ]
     
 end
 module Alloc_Boxed_Box_Type
@@ -330,172 +392,172 @@ module Hashmap_Impl5_Add
     [ return' (result:bool)-> {result = inv17 _x} (! return' {result}) ]
     
   axiom inv17 : forall x : Seq.seq (Hashmap_List_Type.t_list (k, v)) . inv17 x = true
+  use prelude.UIntSize
+  predicate invariant16 (self : usize) =
+    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant16 (self:usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant16 self} (! return' {result}) ]
+    
+  predicate inv16 (_x : usize)
+  let rec inv16 (_x:usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv16 _x} (! return' {result}) ]
+    
+  axiom inv16 : forall x : usize . inv16 x = true
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  predicate invariant16 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
-    
-  let rec invariant16 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant16 self} (! return' {result}) ] 
-  predicate inv16 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
-  let rec inv16 (_x:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv16 _x} (! return' {result}) ] 
-  axiom inv16 : forall x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . inv16 x = true
-  use prelude.UIntSize
-  predicate invariant15 (self : usize) =
-    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant15 (self:usize) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant15 self} (! return' {result}) ]
-    
-  predicate inv15 (_x : usize)
-  let rec inv15 (_x:usize) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv15 _x} (! return' {result}) ]
-    
-  axiom inv15 : forall x : usize . inv15 x = true
   use prelude.Borrow
-  predicate invariant14 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)))
+  predicate invariant15 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)))
     
-  let rec invariant14 (self:borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant14 self} (! return' {result}) ] 
-  predicate inv14 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)))
+  let rec invariant15 (self:borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant15 self} (! return' {result}) ] 
+  predicate inv15 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)))
     
-  let rec inv14 (_x:borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv14 _x} (! return' {result}) ] 
-  axiom inv14 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) . inv14 x = true
-  predicate invariant13 (self : k)
-  let rec invariant13 (self:k) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant13 self} (! return' {result}) ]
+  let rec inv15 (_x:borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv15 _x} (! return' {result}) ] 
+  axiom inv15 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) . inv15 x = true
+  predicate invariant14 (self : k)
+  let rec invariant14 (self:k) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant14 self} (! return' {result}) ]
     
-  predicate inv13 (_x : k)
-  let rec inv13 (_x:k) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv13 _x} (! return' {result}) ] 
-  axiom inv13 : forall x : k . inv13 x = true
+  predicate inv14 (_x : k)
+  let rec inv14 (_x:k) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv14 _x} (! return' {result}) ] 
+  axiom inv14 : forall x : k . inv14 x = true
+  predicate invariant13 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
+    
+  let rec invariant13 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant13 self} (! return' {result}) ] 
+  predicate inv13 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
+  let rec inv13 (_x:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv13 _x} (! return' {result}) ] 
+  axiom inv13 : forall x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . inv13 x = true
   use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
-  use prelude.Snapshot
-  predicate invariant12 (self : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)))
-  let rec invariant12 (self:Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant12 self} (! return' {result}) ] 
-  predicate inv12 (_x : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)))
-  let rec inv12 (_x:Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) (return'  (ret:bool))= any 
+  predicate invariant12 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
+  let rec invariant12 (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant12 self} (! return' {result}) ]
+    
+  predicate inv12 (_x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
+  let rec inv12 (_x:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv12 _x} (! return' {result}) ]
     
-  axiom inv12 : forall x : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) . inv12 x = true
+  axiom inv12 : forall x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v) . inv12 x = true
+  type deep_model_ty0
+  predicate invariant11 (self : deep_model_ty0)
+  let rec invariant11 (self:deep_model_ty0) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant11 self} (! return' {result}) ]
+    
+  predicate inv11 (_x : deep_model_ty0)
+  let rec inv11 (_x:deep_model_ty0) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv11 _x} (! return' {result}) ]
+    
+  axiom inv11 : forall x : deep_model_ty0 . inv11 x = true
+  predicate invariant10 (self : borrowed v)
+  let rec invariant10 (self:borrowed v) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant10 self} (! return' {result}) ]
+    
+  predicate inv10 (_x : borrowed v)
+  let rec inv10 (_x:borrowed v) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv10 _x} (! return' {result}) ]
+    
+  axiom inv10 : forall x : borrowed v . inv10 x = true
+  predicate invariant9 (self : borrowed k)
+  let rec invariant9 (self:borrowed k) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant9 self} (! return' {result}) ]
+    
+  predicate inv9 (_x : borrowed k)
+  let rec inv9 (_x:borrowed k) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv9 _x} (! return' {result}) ]
+    
+  axiom inv9 : forall x : borrowed k . inv9 x = true
+  predicate invariant8 (self : borrowed (Hashmap_List_Type.t_list (k, v)))
+  let rec invariant8 (self:borrowed (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant8 self} (! return' {result}) ]
+    
+  predicate inv8 (_x : borrowed (Hashmap_List_Type.t_list (k, v)))
+  let rec inv8 (_x:borrowed (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv8 _x} (! return' {result}) ]
+    
+  axiom inv8 : forall x : borrowed (Hashmap_List_Type.t_list (k, v)) . inv8 x = true
+  predicate invariant7 (self : k)
+  let rec invariant7 (self:k) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant7 self} (! return' {result}) ]
+    
+  predicate inv7 (_x : k)
+  let rec inv7 (_x:k) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv7 _x} (! return' {result}) ] 
+  axiom inv7 : forall x : k . inv7 x = true
+  predicate invariant6 (self : v)
+  let rec invariant6 (self:v) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant6 self} (! return' {result}) ]
+    
+  predicate inv6 (_x : v)
+  let rec inv6 (_x:v) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv6 _x} (! return' {result}) ] 
+  axiom inv6 : forall x : v . inv6 x = true
+  predicate invariant5 (self : Hashmap_List_Type.t_list (k, v))
+  let rec invariant5 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant5 self} (! return' {result}) ]
+    
+  predicate inv5 (_x : Hashmap_List_Type.t_list (k, v))
+  let rec inv5 (_x:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ]
+    
+  axiom inv5 : forall x : Hashmap_List_Type.t_list (k, v) . inv5 x = true
+  use prelude.Snapshot
+  predicate invariant4 (self : Snapshot.snap_ty (borrowed (Hashmap_List_Type.t_list (k, v))))
+  let rec invariant4 (self:Snapshot.snap_ty (borrowed (Hashmap_List_Type.t_list (k, v)))) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ]
+    
+  predicate inv4 (_x : Snapshot.snap_ty (borrowed (Hashmap_List_Type.t_list (k, v))))
+  let rec inv4 (_x:Snapshot.snap_ty (borrowed (Hashmap_List_Type.t_list (k, v)))) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ]
+    
+  axiom inv4 : forall x : Snapshot.snap_ty (borrowed (Hashmap_List_Type.t_list (k, v))) . inv4 x = true
+  predicate invariant3 (self : Hashmap_List_Type.t_list (k, v))
+  let rec invariant3 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
+    
+  predicate inv3 (_x : Hashmap_List_Type.t_list (k, v))
+  let rec inv3 (_x:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
+    
+  axiom inv3 : forall x : Hashmap_List_Type.t_list (k, v) . inv3 x = true
+  predicate invariant2 (self : borrowed (Hashmap_List_Type.t_list (k, v)))
+  let rec invariant2 (self:borrowed (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
+    
+  predicate inv2 (_x : borrowed (Hashmap_List_Type.t_list (k, v)))
+  let rec inv2 (_x:borrowed (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
+    
+  axiom inv2 : forall x : borrowed (Hashmap_List_Type.t_list (k, v)) . inv2 x = true
   use prelude.UIntSize
   use prelude.Int
   constant max0 : usize = (18446744073709551615 : usize)
   use seq.Seq
-  predicate inv11 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
-  let rec inv11 (_x:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv11 _x} (! return' {result}) ] 
-  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
+  predicate inv1 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
+  let rec inv1 (_x:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ] 
+  function shallow_model6 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
     
-  let rec shallow_model3 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq (Hashmap_List_Type.t_list (k, v))))= {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv11 self}
+  let rec shallow_model6 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq (Hashmap_List_Type.t_list (k, v))))= {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv1 self}
     any 
-    [ return' (result:Seq.seq (Hashmap_List_Type.t_list (k, v)))-> {result = shallow_model3 self} (! return' {result}) ]
+    [ return' (result:Seq.seq (Hashmap_List_Type.t_list (k, v)))-> {result = shallow_model6 self} (! return' {result}) ]
     
-  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv11 self)
-   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv17 (shallow_model3 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int (max0 : usize))
-  predicate invariant11 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
+  axiom shallow_model6_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv1 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv17 (shallow_model6 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model6 self) <= UIntSize.to_int (max0 : usize))
+  predicate invariant1 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
     
    =
-    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv17 (shallow_model3 self)
-  let rec invariant11 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant11 self} (! return' {result}) ] 
-  axiom inv11 : forall x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . inv11 x = true
-  predicate invariant10 (self : Snapshot.snap_ty (borrowed (Hashmap_List_Type.t_list (k, v))))
-  let rec invariant10 (self:Snapshot.snap_ty (borrowed (Hashmap_List_Type.t_list (k, v)))) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant10 self} (! return' {result}) ]
-    
-  predicate inv10 (_x : Snapshot.snap_ty (borrowed (Hashmap_List_Type.t_list (k, v))))
-  let rec inv10 (_x:Snapshot.snap_ty (borrowed (Hashmap_List_Type.t_list (k, v)))) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv10 _x} (! return' {result}) ]
-    
-  axiom inv10 : forall x : Snapshot.snap_ty (borrowed (Hashmap_List_Type.t_list (k, v))) . inv10 x = true
-  type deep_model_ty0
-  predicate invariant9 (self : deep_model_ty0)
-  let rec invariant9 (self:deep_model_ty0) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant9 self} (! return' {result}) ]
-    
-  predicate inv9 (_x : deep_model_ty0)
-  let rec inv9 (_x:deep_model_ty0) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv9 _x} (! return' {result}) ]
-    
-  axiom inv9 : forall x : deep_model_ty0 . inv9 x = true
-  predicate invariant8 (self : Hashmap_List_Type.t_list (k, v))
-  let rec invariant8 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant8 self} (! return' {result}) ]
-    
-  predicate inv8 (_x : Hashmap_List_Type.t_list (k, v))
-  let rec inv8 (_x:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv8 _x} (! return' {result}) ]
-    
-  axiom inv8 : forall x : Hashmap_List_Type.t_list (k, v) . inv8 x = true
-  predicate invariant7 (self : Hashmap_List_Type.t_list (k, v))
-  let rec invariant7 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant7 self} (! return' {result}) ]
-    
-  predicate inv7 (_x : Hashmap_List_Type.t_list (k, v))
-  let rec inv7 (_x:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv7 _x} (! return' {result}) ]
-    
-  axiom inv7 : forall x : Hashmap_List_Type.t_list (k, v) . inv7 x = true
-  predicate invariant6 (self : borrowed (Hashmap_List_Type.t_list (k, v)))
-  let rec invariant6 (self:borrowed (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant6 self} (! return' {result}) ]
-    
-  predicate inv6 (_x : borrowed (Hashmap_List_Type.t_list (k, v)))
-  let rec inv6 (_x:borrowed (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv6 _x} (! return' {result}) ]
-    
-  axiom inv6 : forall x : borrowed (Hashmap_List_Type.t_list (k, v)) . inv6 x = true
-  predicate invariant5 (self : borrowed k)
-  let rec invariant5 (self:borrowed k) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant5 self} (! return' {result}) ]
-    
-  predicate inv5 (_x : borrowed k)
-  let rec inv5 (_x:borrowed k) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ]
-    
-  axiom inv5 : forall x : borrowed k . inv5 x = true
-  predicate invariant4 (self : k)
-  let rec invariant4 (self:k) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ]
-    
-  predicate inv4 (_x : k)
-  let rec inv4 (_x:k) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ] 
-  axiom inv4 : forall x : k . inv4 x = true
-  predicate invariant3 (self : v)
-  let rec invariant3 (self:v) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
-    
-  predicate inv3 (_x : v)
-  let rec inv3 (_x:v) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ] 
-  axiom inv3 : forall x : v . inv3 x = true
-  predicate invariant2 (self : borrowed v)
-  let rec invariant2 (self:borrowed v) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
-    
-  predicate inv2 (_x : borrowed v)
-  let rec inv2 (_x:borrowed v) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
-    
-  axiom inv2 : forall x : borrowed v . inv2 x = true
-  predicate invariant1 (self : borrowed (Hashmap_List_Type.t_list (k, v)))
-  let rec invariant1 (self:borrowed (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
-    
-  predicate inv1 (_x : borrowed (Hashmap_List_Type.t_list (k, v)))
-  let rec inv1 (_x:borrowed (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
-    
-  axiom inv1 : forall x : borrowed (Hashmap_List_Type.t_list (k, v)) . inv1 x = true
-  predicate invariant0 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
-  let rec invariant0 (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
-    
-  predicate inv0 (_x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
-  let rec inv0 (_x:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (return'  (ret:bool))= any 
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv17 (shallow_model6 self)
+  let rec invariant1 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ] 
+  axiom inv1 : forall x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . inv1 x = true
+  predicate invariant0 (self : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)))
+  let rec invariant0 (self:Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ] 
+  predicate inv0 (_x : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)))
+  let rec inv0 (_x:Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
     
-  axiom inv0 : forall x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v) . inv0 x = true
+  axiom inv0 : forall x : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) . inv0 x = true
   use prelude.Mapping
   function deep_model0 (self : k) : deep_model_ty0
   let rec deep_model0 (self:k) (return'  (ret:deep_model_ty0))= any 
@@ -519,7 +581,7 @@ module Hashmap_Impl5_Add
   function index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (ix : int) : Hashmap_List_Type.t_list (k, v)
     
    =
-    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model3 self) ix
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model6 self) ix
   let rec index_logic0 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:Hashmap_List_Type.t_list (k, v)))= any
     [ return' (result:Hashmap_List_Type.t_list (k, v))-> {result = index_logic0 self ix} (! return' {result}) ] 
   use int.EuclideanDivision
@@ -530,7 +592,7 @@ module Hashmap_Impl5_Add
   function bucket_ix0 [#"../hashmap.rs" 89 4 89 48] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (k : deep_model_ty0) : int
     
    =
-    [#"../hashmap.rs" 90 20 90 66] EuclideanDivision.mod (hash_log0 k) (Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets self)))
+    [#"../hashmap.rs" 90 20 90 66] EuclideanDivision.mod (hash_log0 k) (Seq.length (shallow_model6 (Hashmap_MyHashMap_Type.myhashmap_buckets self)))
   let rec bucket_ix0 (self:Hashmap_MyHashMap_Type.t_myhashmap k v) (k:deep_model_ty0) (return'  (ret:int))= any 
     [ return' (result:int)-> {result = bucket_ix0 self k} (! return' {result}) ]
     
@@ -561,35 +623,83 @@ module Hashmap_Impl5_Add
     
   use map.Map
   use prelude.Intrinsic
-  use prelude.Snapshot
-  predicate resolve9 (self : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)))
-  let rec resolve9 (self:Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = resolve9 self} (! return' {result}) ] 
-  function shallow_model6 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
+  predicate resolve9 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve9 (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve9 self} (! return' {result}) ]
+    
+  predicate no_double_binding0 [#"../hashmap.rs" 38 4 38 38] (self : Hashmap_List_Type.t_list (k, v)) =
+    [#"../hashmap.rs" 40 12 43 13] match self with
+      | Hashmap_List_Type.C_Nil -> true
+      | Hashmap_List_Type.C_Cons (k, _) tl -> get0 tl (deep_model0 k) = Core_Option_Option_Type.C_None /\ no_double_binding0 tl
+      end
+  let rec no_double_binding0 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = no_double_binding0 self} (! return' {result}) ]
+    
+  predicate good_bucket0 [#"../hashmap.rs" 200 4 200 57] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (l : Hashmap_List_Type.t_list (k, v)) (h : int)
     
    =
-    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model3 self
-  let rec shallow_model6 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq (Hashmap_List_Type.t_list (k, v))))= any
+    [#"../hashmap.rs" 201 8 203 9] forall v : v . forall k : deep_model_ty0 . inv6 v
+     -> inv11 k  -> get0 l k = Core_Option_Option_Type.C_Some v  -> bucket_ix0 self k = h
+  let rec good_bucket0 (self:Hashmap_MyHashMap_Type.t_myhashmap k v) (l:Hashmap_List_Type.t_list (k, v)) (h:int) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = good_bucket0 self l h} (! return' {result}) ] 
+  predicate hashmap_inv0 [#"../hashmap.rs" 209 4 209 33] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) =
+    [#"../hashmap.rs" 210 8 213 9] 0 < Seq.length (shallow_model6 (Hashmap_MyHashMap_Type.myhashmap_buckets self)) /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model6 (Hashmap_MyHashMap_Type.myhashmap_buckets self))
+     -> good_bucket0 self (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i) i /\ no_double_binding0 (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i))
+  let rec hashmap_inv0 (self:Hashmap_MyHashMap_Type.t_myhashmap k v) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = hashmap_inv0 self} (! return' {result}) ]
     
-    [ return' (result:Seq.seq (Hashmap_List_Type.t_list (k, v)))-> {result = shallow_model6 self} (! return' {result}) ]
+  predicate resolve8 (self : Hashmap_List_Type.t_list (k, v))
+  let rec resolve8 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve8 self} (! return' {result}) ]
     
-  let rec len0 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:usize))= {inv16 self}
-    any 
-    [ return' (result:usize)-> {[#"../../../../creusot-contracts/src/std/vec.rs" 75 26 75 48] UIntSize.to_int result = Seq.length (shallow_model6 self)}
-      (! return' {result}) ]
+  predicate resolve7 (self : k)
+  let rec resolve7 (self:k) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve7 self} (! return' {result}) ]
     
-  use prelude.UInt64
+  predicate resolve6 (self : v)
+  let rec resolve6 (self:v) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve6 self} (! return' {result}) ]
+    
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use prelude.Snapshot
+  predicate resolve5 (self : borrowed v) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve5 (self:borrowed v) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve5 self} (! return' {result}) ]
+    
+  predicate resolve4 (self : borrowed k) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve4 (self:borrowed k) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve4 self} (! return' {result}) ]
+    
+  predicate resolve3 (self : borrowed (Hashmap_List_Type.t_list (k, v))) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve3 (self:borrowed (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve3 self} (! return' {result}) ]
+    
   function deep_model1 (self : k) : deep_model_ty0 =
     [#"../../../../creusot-contracts/src/model.rs" 74 8 74 28] deep_model0 self
   let rec deep_model1 (self:k) (return'  (ret:deep_model_ty0))= any 
     [ return' (result:deep_model_ty0)-> {result = deep_model1 self} (! return' {result}) ]
     
-  use prelude.UInt64
-  let rec hash0 (self:k) (return'  (ret:uint64))= {[#"../hashmap.rs" 51 13 51 17] inv13 self}
+  let rec eq0 (self:k) (other:k) (return'  (ret:bool))= {inv14 other}
+    {inv14 self}
     any 
-    [ return' (result:uint64)-> {[#"../hashmap.rs" 50 14 50 58] UInt64.to_int result = hash_log0 (deep_model1 self)}
+    [ return' (result:bool)-> {[#"../../../../creusot-contracts/src/std/cmp.rs" 11 26 11 75] result = (deep_model1 self = deep_model1 other)}
       (! return' {result}) ]
     
+  predicate resolve2 (self : Snapshot.snap_ty (borrowed (Hashmap_List_Type.t_list (k, v))))
+  let rec resolve2 (self:Snapshot.snap_ty (borrowed (Hashmap_List_Type.t_list (k, v)))) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
+    
+  predicate resolve1 (self : borrowed (Hashmap_List_Type.t_list (k, v))) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  use prelude.Snapshot
   use prelude.Slice
   predicate resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq (Hashmap_List_Type.t_list (k, v))) (fin : Seq.seq (Hashmap_List_Type.t_list (k, v)))
     
@@ -609,228 +719,189 @@ module Hashmap_Impl5_Add
   let rec in_bounds0 (self:usize) (seq:Seq.seq (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = in_bounds0 self seq} (! return' {result}) ]
     
-  function shallow_model4 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) : Seq.seq (Hashmap_List_Type.t_list (k, v))
+  function shallow_model5 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) : Seq.seq (Hashmap_List_Type.t_list (k, v))
     
    =
-    [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model3 ( * self)
-  let rec shallow_model4 (self:borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq (Hashmap_List_Type.t_list (k, v))))= any
+    [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model6 ( * self)
+  let rec shallow_model5 (self:borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq (Hashmap_List_Type.t_list (k, v))))= any
     
-    [ return' (result:Seq.seq (Hashmap_List_Type.t_list (k, v)))-> {result = shallow_model4 self} (! return' {result}) ]
+    [ return' (result:Seq.seq (Hashmap_List_Type.t_list (k, v)))-> {result = shallow_model5 self} (! return' {result}) ]
     
-  let rec index_mut0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) (index:usize) (return'  (ret:borrowed (Hashmap_List_Type.t_list (k, v))))= {inv15 index}
-    {inv14 self}
-    {[#"../../../../creusot-contracts/src/std/vec.rs" 132 27 132 46] in_bounds0 index (shallow_model4 self)}
+  let rec index_mut0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) (index:usize) (return'  (ret:borrowed (Hashmap_List_Type.t_list (k, v))))= {inv16 index}
+    {inv15 self}
+    {[#"../../../../creusot-contracts/src/std/vec.rs" 132 27 132 46] in_bounds0 index (shallow_model5 self)}
     any 
-    [ return' (result:borrowed (Hashmap_List_Type.t_list (k, v)))-> {inv1 result}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 136 26 136 55] Seq.length (shallow_model3 ( ^ self)) = Seq.length (shallow_model4 self)}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 135 26 135 62] resolve_elswhere0 index (shallow_model4 self) (shallow_model3 ( ^ self))}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 134 26 134 57] has_value0 index (shallow_model3 ( ^ self)) ( ^ result)}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 133 26 133 54] has_value0 index (shallow_model4 self) ( * result)}
+    [ return' (result:borrowed (Hashmap_List_Type.t_list (k, v)))-> {inv2 result}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 136 26 136 55] Seq.length (shallow_model6 ( ^ self)) = Seq.length (shallow_model5 self)}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 135 26 135 62] resolve_elswhere0 index (shallow_model5 self) (shallow_model6 ( ^ self))}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 134 26 134 57] has_value0 index (shallow_model6 ( ^ self)) ( ^ result)}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 133 26 133 54] has_value0 index (shallow_model5 self) ( * result)}
+      (! return' {result}) ]
+    
+  use prelude.UInt64
+  use prelude.UInt64
+  let rec hash0 (self:k) (return'  (ret:uint64))= {[#"../hashmap.rs" 51 13 51 17] inv14 self}
+    any 
+    [ return' (result:uint64)-> {[#"../hashmap.rs" 50 14 50 58] UInt64.to_int result = hash_log0 (deep_model1 self)}
+      (! return' {result}) ]
+    
+  predicate resolve0 (self : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)))
+  let rec resolve0 (self:Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ] 
+  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
+    
+   =
+    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model6 self
+  let rec shallow_model3 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq (Hashmap_List_Type.t_list (k, v))))= any
+    
+    [ return' (result:Seq.seq (Hashmap_List_Type.t_list (k, v)))-> {result = shallow_model3 self} (! return' {result}) ]
+    
+  let rec len0 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:usize))= {inv13 self}
+    any 
+    [ return' (result:usize)-> {[#"../../../../creusot-contracts/src/std/vec.rs" 75 26 75 48] UIntSize.to_int result = Seq.length (shallow_model3 self)}
       (! return' {result}) ]
     
   use prelude.Snapshot
-  predicate resolve8 (self : Snapshot.snap_ty (borrowed (Hashmap_List_Type.t_list (k, v))))
-  let rec resolve8 (self:Snapshot.snap_ty (borrowed (Hashmap_List_Type.t_list (k, v)))) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve8 self} (! return' {result}) ]
-    
-  predicate no_double_binding0 [#"../hashmap.rs" 38 4 38 38] (self : Hashmap_List_Type.t_list (k, v)) =
-    [#"../hashmap.rs" 40 12 43 13] match self with
-      | Hashmap_List_Type.C_Nil -> true
-      | Hashmap_List_Type.C_Cons (k, _) tl -> get0 tl (deep_model0 k) = Core_Option_Option_Type.C_None /\ no_double_binding0 tl
-      end
-  let rec no_double_binding0 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = no_double_binding0 self} (! return' {result}) ]
-    
-  use prelude.Snapshot
-  use prelude.Snapshot
-  predicate good_bucket0 [#"../hashmap.rs" 200 4 200 57] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (l : Hashmap_List_Type.t_list (k, v)) (h : int)
-    
-   =
-    [#"../hashmap.rs" 201 8 203 9] forall v : v . forall k : deep_model_ty0 . inv3 v
-     -> inv9 k  -> get0 l k = Core_Option_Option_Type.C_Some v  -> bucket_ix0 self k = h
-  let rec good_bucket0 (self:Hashmap_MyHashMap_Type.t_myhashmap k v) (l:Hashmap_List_Type.t_list (k, v)) (h:int) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = good_bucket0 self l h} (! return' {result}) ] 
-  use prelude.Snapshot
-  let rec eq0 (self:k) (other:k) (return'  (ret:bool))= {inv13 other}
-    {inv13 self}
-    any 
-    [ return' (result:bool)-> {[#"../../../../creusot-contracts/src/std/cmp.rs" 11 26 11 75] result = (deep_model1 self = deep_model1 other)}
-      (! return' {result}) ]
-    
-  predicate resolve7 (self : Hashmap_List_Type.t_list (k, v))
-  let rec resolve7 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve7 self} (! return' {result}) ]
-    
-  predicate resolve6 (self : borrowed (Hashmap_List_Type.t_list (k, v))) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve6 (self:borrowed (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve6 self} (! return' {result}) ]
-    
-  predicate resolve5 (self : borrowed k) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve5 (self:borrowed k) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve5 self} (! return' {result}) ]
-    
-  predicate resolve4 (self : k)
-  let rec resolve4 (self:k) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve4 self} (! return' {result}) ]
-    
-  predicate resolve3 (self : v)
-  let rec resolve3 (self:v) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve3 self} (! return' {result}) ]
-    
-  predicate resolve2 (self : borrowed v) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve2 (self:borrowed v) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
-    
-  predicate resolve1 (self : borrowed (Hashmap_List_Type.t_list (k, v))) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve1 (self:borrowed (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
-    
-  predicate resolve0 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve0 (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
-  predicate hashmap_inv0 [#"../hashmap.rs" 209 4 209 33] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) =
-    [#"../hashmap.rs" 210 8 213 9] 0 < Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets self)) /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets self))
-     -> good_bucket0 self (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i) i /\ no_double_binding0 (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i))
-  let rec hashmap_inv0 (self:Hashmap_MyHashMap_Type.t_myhashmap k v) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = hashmap_inv0 self} (! return' {result}) ]
-    
-  let rec add (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (key:k) (val':v) (return'  (ret:()))= {[#"../hashmap.rs" 106 34 106 37] inv3 val'}
-    {[#"../hashmap.rs" 106 26 106 29] inv4 key}
-    {[#"../hashmap.rs" 106 20 106 24] inv0 self}
+  let rec add (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (key:k) (val':v) (return'  (ret:()))= {[#"../hashmap.rs" 106 34 106 37] inv6 val'}
+    {[#"../hashmap.rs" 106 26 106 29] inv7 key}
+    {[#"../hashmap.rs" 106 20 106 24] inv12 self}
     {[#"../hashmap.rs" 103 15 103 36] hashmap_inv0 ( * self)}
     (! bb0 
-    [ bb20 = return' {_0} 
-    | bb12 = {[@expl:type invariant] inv6 tl1}
-      -{resolve6 tl1}- {[@expl:type invariant] inv5 k}
-      -{resolve5 k}- {[@expl:type invariant] inv4 key}
-      -{resolve4 key}- {[@expl:type invariant] inv3 val'}
-      -{resolve3 val'}- [ &v <- { v with current = val' ; } ] {[@expl:type invariant] inv3 ( * v)}
-      -{resolve3 ( * v)}- {[@expl:type invariant] inv2 v}
-      -{resolve2 v}- {[@expl:type invariant] inv1 _19}
-      -{resolve1 _19}- {[@expl:type invariant] inv1 l}
-      -{resolve1 l}- {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- {[@expl:assertion] [#"../hashmap.rs" 125 32 125 52] hashmap_inv0 ( * self)}
-      [ &_0 <- [#"../hashmap.rs" 126 16 126 22] () ] bb20 
-    | bb19 = {[@expl:type invariant] inv1 _19}
-      -{resolve1 _19}- {[@expl:type invariant] inv0 self}
-      -{resolve0 self}- {[@expl:assertion] [#"../hashmap.rs" 133 24 133 44] hashmap_inv0 ( * self)}
-      [ &_0 <- [#"../hashmap.rs" 106 42 134 5] () ] bb20 
-    | bb17 = [ &l <- { l with current = _50 ; } ] any 
-      [ any_ (_any:Hashmap_List_Type.t_list (k, v))-> [ &_50 <- _any ] {[@expl:type invariant] inv7 ( * l)}
-        -{resolve7 ( * l)}- {[@expl:type invariant] inv1 l}
-        -{resolve1 l}- bb19 ]
-       
-    | bb16 = bb17 
-    | bb15 = [ &_50 <- Hashmap_List_Type.C_Cons _51 _55 ] any 
-      [ any_ (_any:(k, v))-> [ &_51 <- _any ] any 
-        [ any_ (_any:Hashmap_List_Type.t_list (k, v))-> [ &_55 <- _any ] bb16 ]
-         ]
-       
-    | bb14 = {[@expl:type invariant] inv4 key}
-      -{resolve4 key}- {[@expl:type invariant] inv3 val'}
-      -{resolve3 val'}- [ &_51 <- (key, val') ] 
-      [ &_55 <- Hashmap_List_Type.C_Nil : Hashmap_List_Type.t_list (k, v) ]
-      bb15 
-    | bb7 = {[#"../hashmap.rs" 114 8 114 54] (forall i : deep_model_ty0 . inv9 i
-       -> get0 ( * l) i = get0 ( ^ l) i \/ i = deep_model0 key) /\ no_double_binding0 ( ^ l)
-       -> no_double_binding0 ( ^ Snapshot.inner old_l)}
-      {[#"../hashmap.rs" 118 20 118 44] no_double_binding0 ( * l)}
-      {[#"../hashmap.rs" 114 8 114 54] forall i : deep_model_ty0 . inv9 i
-       -> get0 ( ^ l) i = get0 ( * l) i  -> get0 ( ^ Snapshot.inner old_l) i = get0 ( * Snapshot.inner old_l) i}
-      {[#"../hashmap.rs" 114 8 114 54] get0 ( ^ l) (deep_model0 key) = Core_Option_Option_Type.C_Some val'
-       -> get0 ( ^ Snapshot.inner old_l) (deep_model0 key) = Core_Option_Option_Type.C_Some val'}
-      {[#"../hashmap.rs" 114 8 114 54] good_bucket0 ( * Snapshot.inner old_self) ( ^ l) (UIntSize.to_int index)
-       -> good_bucket0 ( * Snapshot.inner old_self) ( ^ Snapshot.inner old_l) (UIntSize.to_int index)}
-      {[#"../hashmap.rs" 114 20 114 52] good_bucket0 ( * Snapshot.inner old_self) ( * l) (UIntSize.to_int index)}
-      (! bb8) 
-      [ bb13 = {[@expl:type invariant] inv2 v}
-        -{resolve2 v}- {[@expl:type invariant] inv5 k}
-        -{resolve5 k}- Borrow.borrow_mut <Hashmap_List_Type.t_list (k, v)> { * tl1}
-        (fun (_ret':borrowed (Hashmap_List_Type.t_list (k, v))) -> [ &_46 <- _ret' ] 
-          [ &tl1 <- { tl1 with current = ( ^ _46) ; } ]
-          -{inv7 ( ^ _46)}- Borrow.borrow_final <Hashmap_List_Type.t_list (k, v)> { * _46} {Borrow.get_id _46}
-          (fun (_ret':borrowed (Hashmap_List_Type.t_list (k, v))) -> [ &_45 <- _ret' ] 
-            [ &_46 <- { _46 with current = ( ^ _45) ; } ]
-            -{inv7 ( ^ _45)}- {[@expl:type invariant] inv1 l}
-            -{resolve1 l}- [ &l <- _45 ] any 
-            [ any_ (_any:borrowed (Hashmap_List_Type.t_list (k, v)))-> 
-              [ &_45 <- _any ]
-              {[@expl:type invariant] inv1 _46}
-              -{resolve1 _46}- {[@expl:type invariant] inv6 tl1}
-              -{resolve6 tl1}- bb7 ]
-            ))
-      | bb11 = any [ br0 -> {_38 = false} (! bb13) | br1 -> {_38} (! bb12) ] 
-      | bb10 = Borrow.borrow_final <k> {let (a, _) = Hashmap_List_Type.cons_0 ( * l) in a}
-        {Borrow.inherit_id (Borrow.inherit_id (Borrow.get_id l) 1) 1} (fun (_ret':borrowed k) -> [ &k <- _ret' ] 
-          [ &l <- { l with current = (let Hashmap_List_Type.C_Cons x0 x1 =  * l in Hashmap_List_Type.C_Cons (let (x0, x1) = Hashmap_List_Type.cons_0 ( * l) in ( ^ k, x1)) x1) ; } ]
-          -{inv4 ( ^ k)}- Borrow.borrow_final <v> {let (_, a) = Hashmap_List_Type.cons_0 ( * l) in a}
-          {Borrow.inherit_id (Borrow.inherit_id (Borrow.get_id l) 1) 2} (fun (_ret':borrowed v) -> [ &v <- _ret' ] 
-            [ &l <- { l with current = (let Hashmap_List_Type.C_Cons x0 x1 =  * l in Hashmap_List_Type.C_Cons (let (x0, x1) = Hashmap_List_Type.cons_0 ( * l) in (x0,  ^ v)) x1) ; } ]
-            -{inv3 ( ^ v)}- Borrow.borrow_final <Hashmap_List_Type.t_list (k, v)> {Hashmap_List_Type.cons_1 ( * l)}
-            {Borrow.inherit_id (Borrow.get_id l) 2} (fun (_ret':borrowed (Hashmap_List_Type.t_list (k, v))) -> 
-              [ &tl <- _ret' ]
-              
-              [ &l <- { l with current = (let Hashmap_List_Type.C_Cons x0 x1 =  * l in Hashmap_List_Type.C_Cons x0 ( ^ tl)) ; } ]
-              -{inv8 ( ^ tl)}- [ &tl1 <- tl ] any 
-              [ any_ (_any:borrowed (Hashmap_List_Type.t_list (k, v)))-> [ &tl <- _any ] eq0 { * k} {key}
-                (fun (_ret':bool) -> [ &_38 <- _ret' ] bb11) ]
-              )))
-      | bb9 = bb10
-      | bb8 = any 
-        [ br0 (a:(k, v)) (b:Hashmap_List_Type.t_list (k, v))-> { * l = Hashmap_List_Type.C_Cons a b}
-          (! bb9)
-        | default -> (! bb14) ]
-         ]
-      
-    | bb6 = {[@expl:type invariant] inv10 old_l}
-      -{resolve8 old_l}- bb7 
+    [ bb0 = [ &old_self <- [#"../hashmap.rs" 108 23 108 41] Snapshot.new self ] bb1
+    | bb1 = {[@expl:type invariant] inv0 old_self}
+      -{resolve0 old_self}- Hashmap_MyHashMap_Type.my_hash_map <k> <v> { * self}
+      (fun (rf_buckets':Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) -> len0
+        {rf_buckets'} (fun (_ret':usize) -> [ &length <- _ret' ] bb2))
+    | bb2 = hash0 {key} (fun (_ret':uint64) -> [ &_13 <- _ret' ] bb3)
+    | bb3 = UIntSize.of_int {UInt64.to_int _13} (fun (_res:usize) -> [ &_12 <- _res ] (any 
+        [ any_ (_any:uint64)-> (! [ &_13 <- _any ] [ &_15 <- length ] UIntSize.eq {_15}
+          {[#"../hashmap.rs" 110 27 110 55] (0 : usize)} (fun (_ret':bool) -> 
+            [ &_16 <- _ret' ]
+            {[@expl:remainder by zero] [#"../hashmap.rs" 110 27 110 55] not _16}
+            bb4)) ]
+        ))
+    | bb4 = UIntSize.rem {_12} {_15} (fun (_ret':usize) -> [ &index <- _ret' ] (any 
+        [ any_ (_any:usize)-> (! [ &_12 <- _any ] (any 
+          [ any_ (_any:usize)-> (! [ &_15 <- _any ] Hashmap_MyHashMap_Type.my_hash_map <k> <v> { * self}
+            (fun (rf_buckets':Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) -> Borrow.borrow_final
+              <Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)>
+              {rf_buckets'} {Borrow.inherit_id (Borrow.get_id self) 1}
+              (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) -> 
+                [ &_20 <- _ret' ]
+                Hashmap_MyHashMap_Type.my_hash_map <k> <v> { * self}
+                (fun (f_buckets':Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) -> 
+                  [ &self <- { self with current = Hashmap_MyHashMap_Type.C_MyHashMap ( ^ _20) ; } ]
+                  -{inv1 ( ^ _20)}- index_mut0 {_20} {index} (fun (_ret':borrowed (Hashmap_List_Type.t_list (k, v))) -> 
+                    [ &_19 <- _ret' ]
+                    bb5))))) ]
+          )) ]
+        ))
     | bb5 = Borrow.borrow_final <Hashmap_List_Type.t_list (k, v)> { * _19} {Borrow.get_id _19}
       (fun (_ret':borrowed (Hashmap_List_Type.t_list (k, v))) -> [ &_18 <- _ret' ] 
         [ &_19 <- { _19 with current = ( ^ _18) ; } ]
-        -{inv7 ( ^ _18)}- Borrow.borrow_final <Hashmap_List_Type.t_list (k, v)> { * _18} {Borrow.get_id _18}
+        -{inv3 ( ^ _18)}- Borrow.borrow_final <Hashmap_List_Type.t_list (k, v)> { * _18} {Borrow.get_id _18}
         (fun (_ret':borrowed (Hashmap_List_Type.t_list (k, v))) -> [ &l <- _ret' ] 
           [ &_18 <- { _18 with current = ( ^ l) ; } ]
-          -{inv7 ( ^ l)}- {[@expl:type invariant] inv1 _18}
-          -{resolve1 _18}- [ &old_l <- [#"../hashmap.rs" 112 20 112 35] Snapshot.new l ] bb6)) 
-    | bb4 = UIntSize.rem {_12} {_15} (fun (_ret':usize) -> [ &index <- _ret' ] Borrow.borrow_final
-        <Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)>
-        {Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)} {Borrow.inherit_id (Borrow.get_id self) 1}
-        (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) -> 
-          [ &_20 <- _ret' ]
+          -{inv3 ( ^ l)}- {[@expl:type invariant] inv2 _18}
+          -{resolve1 _18}- [ &old_l <- [#"../hashmap.rs" 112 20 112 35] Snapshot.new l ] bb6))
+    | bb6 = {[@expl:type invariant] inv4 old_l}
+      -{resolve2 old_l}- bb7
+    | bb7 = bb7 
+      [ bb7 = {[#"../hashmap.rs" 114 8 114 54] (forall i : deep_model_ty0 . inv11 i
+         -> get0 ( * l) i = get0 ( ^ l) i \/ i = deep_model0 key) /\ no_double_binding0 ( ^ l)
+         -> no_double_binding0 ( ^ Snapshot.inner old_l)}
+        {[#"../hashmap.rs" 118 20 118 44] no_double_binding0 ( * l)}
+        {[#"../hashmap.rs" 114 8 114 54] forall i : deep_model_ty0 . inv11 i
+         -> get0 ( ^ l) i = get0 ( * l) i  -> get0 ( ^ Snapshot.inner old_l) i = get0 ( * Snapshot.inner old_l) i}
+        {[#"../hashmap.rs" 114 8 114 54] get0 ( ^ l) (deep_model0 key) = Core_Option_Option_Type.C_Some val'
+         -> get0 ( ^ Snapshot.inner old_l) (deep_model0 key) = Core_Option_Option_Type.C_Some val'}
+        {[#"../hashmap.rs" 114 8 114 54] good_bucket0 ( * Snapshot.inner old_self) ( ^ l) (UIntSize.to_int index)
+         -> good_bucket0 ( * Snapshot.inner old_self) ( ^ Snapshot.inner old_l) (UIntSize.to_int index)}
+        {[#"../hashmap.rs" 114 20 114 52] good_bucket0 ( * Snapshot.inner old_self) ( * l) (UIntSize.to_int index)}
+        (! bb8) 
+        [ bb8 = any 
+          [ br0 -> { * l = Hashmap_List_Type.C_Nil }
+            (! bb14)
+          | br1 (a:(k, v)) (b:Hashmap_List_Type.t_list (k, v))-> { * l = Hashmap_List_Type.C_Cons a b}
+            (! bb9) ]
           
-          [ &self <- { self with current = (let Hashmap_MyHashMap_Type.C_MyHashMap x0 =  * self in Hashmap_MyHashMap_Type.C_MyHashMap ( ^ _20)) ; } ]
-          -{inv11 ( ^ _20)}- index_mut0 {_20} {index} (fun (_ret':borrowed (Hashmap_List_Type.t_list (k, v))) -> 
-            [ &_19 <- _ret' ]
-            bb5))) 
-    | bb3 = [ &_12 <- UIntSize.of_int (UInt64.to_int _13) ] any 
-      [ any_ (_any:uint64)-> [ &_13 <- _any ] [ &_15 <- length ] UIntSize.eq {_15}
-        {[#"../hashmap.rs" 110 27 110 55] (0 : usize)} (fun (_ret':bool) -> 
-          [ &_16 <- _ret' ]
-          {[@expl:remainder by zero] [#"../hashmap.rs" 110 27 110 55] not _16}
-          bb4) ]
-       
-    | bb2 = hash0 {key} (fun (_ret':uint64) -> [ &_13 <- _ret' ] bb3) 
-    | bb1 = {[@expl:type invariant] inv12 old_self}
-      -{resolve9 old_self}- len0 {Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)} (fun (_ret':usize) -> 
-        [ &length <- _ret' ]
-        bb2) 
-    | bb0 = [ &old_self <- [#"../hashmap.rs" 108 23 108 41] Snapshot.new self ] bb1  ]
-    ) 
-    [ return' (result:())-> {[#"../hashmap.rs" 105 4 105 124] forall i : deep_model_ty0 . inv9 i
-       -> Map.get (shallow_model1 ( ^ self)) i = (if i = deep_model0 key then
-        Core_Option_Option_Type.C_Some val'
-      else
-        Map.get (shallow_model2 self) i
-      )}
-      {[#"../hashmap.rs" 104 14 104 35] hashmap_inv0 ( ^ self)}
-      (! return' {_0}) ]
-    
+        | bb9 = bb10
+        | bb10 = Hashmap_List_Type.cons <(k, v)> { * l}
+          (fun (rf_0':(k, v)) (rf_1':Hashmap_List_Type.t_list (k, v)) -> Borrow.borrow_final <k>
+            {let (l0', _) = rf_0' in l0'} {Borrow.inherit_id (Borrow.inherit_id (Borrow.get_id l) 1) 1}
+            (fun (_ret':borrowed k) -> [ &k <- _ret' ] Hashmap_List_Type.cons <(k, v)> { * l}
+              (fun (f_0':(k, v)) (f_1':Hashmap_List_Type.t_list (k, v)) -> 
+                [ &l <- { l with current = Hashmap_List_Type.C_Cons (let (_, r2') = f_0' in ( ^ k, r2')) f_1' ; } ]
+                -{inv7 ( ^ k)}- Hashmap_List_Type.cons <(k, v)> { * l}
+                (fun (rf_0':(k, v)) (rf_1':Hashmap_List_Type.t_list (k, v)) -> Borrow.borrow_final <v>
+                  {let (_, l0') = rf_0' in l0'} {Borrow.inherit_id (Borrow.inherit_id (Borrow.get_id l) 1) 2}
+                  (fun (_ret':borrowed v) -> [ &v <- _ret' ] Hashmap_List_Type.cons <(k, v)> { * l}
+                    (fun (f_0':(k, v)) (f_1':Hashmap_List_Type.t_list (k, v)) -> 
+                      [ &l <- { l with current = Hashmap_List_Type.C_Cons (let (r1', _) = f_0' in (r1',  ^ v)) f_1' ; } ]
+                      -{inv6 ( ^ v)}- Hashmap_List_Type.cons <(k, v)> { * l}
+                      (fun (rf_0':(k, v)) (rf_1':Hashmap_List_Type.t_list (k, v)) -> Borrow.borrow_final
+                        <Hashmap_List_Type.t_list (k, v)> {rf_1'} {Borrow.inherit_id (Borrow.get_id l) 2}
+                        (fun (_ret':borrowed (Hashmap_List_Type.t_list (k, v))) -> 
+                          [ &tl <- _ret' ]
+                          Hashmap_List_Type.cons <(k, v)> { * l}
+                          (fun (f_0':(k, v)) (f_1':Hashmap_List_Type.t_list (k, v)) -> 
+                            [ &l <- { l with current = Hashmap_List_Type.C_Cons f_0' ( ^ tl) ; } ]
+                            -{inv5 ( ^ tl)}- [ &tl1 <- tl ] (any 
+                            [ any_ (_any:borrowed (Hashmap_List_Type.t_list (k, v)))-> (! [ &tl <- _any ] eq0 { * k}
+                              {key} (fun (_ret':bool) -> [ &_38 <- _ret' ] bb11)) ]
+                            ))))))))))
+        | bb11 = any [ br0 -> {_38 = false} (! bb13) | br1 -> {_38} (! bb12) ] 
+        | bb13 = {[@expl:type invariant] inv10 v}
+          -{resolve5 v}- {[@expl:type invariant] inv9 k}
+          -{resolve4 k}- Borrow.borrow_mut <Hashmap_List_Type.t_list (k, v)> { * tl1}
+          (fun (_ret':borrowed (Hashmap_List_Type.t_list (k, v))) -> [ &tl1 <- { tl1 with current = ( ^ _46) ; } ] 
+            [ &_46 <- _ret' ]
+            -{inv3 ( ^ _46)}- Borrow.borrow_final <Hashmap_List_Type.t_list (k, v)> { * _46} {Borrow.get_id _46}
+            (fun (_ret':borrowed (Hashmap_List_Type.t_list (k, v))) -> [ &_45 <- _ret' ] 
+              [ &_46 <- { _46 with current = ( ^ _45) ; } ]
+              -{inv3 ( ^ _45)}- {[@expl:type invariant] inv2 l}
+              -{resolve1 l}- [ &l <- _45 ] (any 
+              [ any_ (_any:borrowed (Hashmap_List_Type.t_list (k, v)))-> (! 
+                [ &_45 <- _any ]
+                {[@expl:type invariant] inv2 _46}
+                -{resolve1 _46}- {[@expl:type invariant] inv8 tl1}
+                -{resolve3 tl1}- bb7) ]
+              ))) ]
+         ]
+      
+    | bb14 = {[@expl:type invariant] inv7 key}
+      -{resolve7 key}- {[@expl:type invariant] inv6 val'}
+      -{resolve6 val'}- [ &_51 <- (key, val') ] 
+      [ &_55 <- Hashmap_List_Type.C_Nil : Hashmap_List_Type.t_list (k, v) ]
+      bb15
+    | bb15 = [ &_50 <- Hashmap_List_Type.C_Cons _51 _55 : Hashmap_List_Type.t_list (k, v) ] (any 
+      [ any_ (_any:(k, v))-> (! [ &_51 <- _any ] (any 
+        [ any_ (_any:Hashmap_List_Type.t_list (k, v))-> (! [ &_55 <- _any ] bb16) ]
+        )) ]
+      )
+    | bb16 = bb17
+    | bb17 = [ &l <- { l with current = _50 ; } ] (any 
+      [ any_ (_any:Hashmap_List_Type.t_list (k, v))-> (! [ &_50 <- _any ] {[@expl:type invariant] inv3 ( * l)}
+        -{resolve8 ( * l)}- {[@expl:type invariant] inv2 l}
+        -{resolve1 l}- bb19) ]
+      )
+    | bb19 = {[@expl:type invariant] inv2 _19}
+      -{resolve1 _19}- {[@expl:type invariant] inv12 self}
+      -{resolve9 self}- {[@expl:assertion] [#"../hashmap.rs" 133 24 133 44] hashmap_inv0 ( * self)}
+      [ &_0 <- [#"../hashmap.rs" 106 42 134 5] () ] bb20
+    | bb12 = {[@expl:type invariant] inv8 tl1}
+      -{resolve3 tl1}- {[@expl:type invariant] inv9 k}
+      -{resolve4 k}- {[@expl:type invariant] inv7 key}
+      -{resolve7 key}- {[@expl:type invariant] inv6 val'}
+      -{resolve6 val'}- [ &v <- { v with current = val' ; } ] {[@expl:type invariant] inv6 ( * v)}
+      -{resolve6 ( * v)}- {[@expl:type invariant] inv10 v}
+      -{resolve5 v}- {[@expl:type invariant] inv2 _19}
+      -{resolve1 _19}- {[@expl:type invariant] inv2 l}
+      -{resolve1 l}- {[@expl:type invariant] inv12 self}
+      -{resolve9 self}- {[@expl:assertion] [#"../hashmap.rs" 125 32 125 52] hashmap_inv0 ( * self)}
+      [ &_0 <- [#"../hashmap.rs" 126 16 126 22] () ] bb20
+    | bb20 = return' {_0} ]
+    )
     [ & _0 : () = any_l () : ()
     | & self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v) = self
     | & key : k = key
@@ -857,6 +928,15 @@ module Hashmap_Impl5_Add
     | & _50 : Hashmap_List_Type.t_list (k, v) = any_l () : Hashmap_List_Type.t_list (k, v)
     | & _51 : (k, v) = any_l () : (k, v)
     | & _55 : Hashmap_List_Type.t_list (k, v) = any_l () : Hashmap_List_Type.t_list (k, v) ]
+     
+    [ return' (result:())-> {[#"../hashmap.rs" 105 4 105 124] forall i : deep_model_ty0 . inv11 i
+       -> Map.get (shallow_model1 ( ^ self)) i = (if i = deep_model0 key then
+        Core_Option_Option_Type.C_Some val'
+      else
+        Map.get (shallow_model2 self) i
+      )}
+      {[#"../hashmap.rs" 104 14 104 35] hashmap_inv0 ( ^ self)}
+      (! return' {result}) ]
     
 end
 module Hashmap_Impl5_Get
@@ -943,23 +1023,20 @@ module Hashmap_Impl5_Get
     [ return' (result:bool)-> {result = inv6 _x} (! return' {result}) ]
     
   axiom inv6 : forall x : Core_Option_Option_Type.t_option v . inv6 x = true
-  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
-  predicate invariant5 (self : Hashmap_MyHashMap_Type.t_myhashmap k v)
-  let rec invariant5 (self:Hashmap_MyHashMap_Type.t_myhashmap k v) (return'  (ret:bool))= any 
+  predicate invariant5 (self : k)
+  let rec invariant5 (self:k) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant5 self} (! return' {result}) ]
     
-  predicate inv5 (_x : Hashmap_MyHashMap_Type.t_myhashmap k v)
-  let rec inv5 (_x:Hashmap_MyHashMap_Type.t_myhashmap k v) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ]
-    
-  axiom inv5 : forall x : Hashmap_MyHashMap_Type.t_myhashmap k v . inv5 x = true
-  predicate invariant4 (self : k)
-  let rec invariant4 (self:k) (return'  (ret:bool))= any 
+  predicate inv5 (_x : k)
+  let rec inv5 (_x:k) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ] 
+  axiom inv5 : forall x : k . inv5 x = true
+  predicate invariant4 (self : v)
+  let rec invariant4 (self:v) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ]
     
-  predicate inv4 (_x : k)
-  let rec inv4 (_x:k) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ] 
-  axiom inv4 : forall x : k . inv4 x = true
+  predicate inv4 (_x : v)
+  let rec inv4 (_x:v) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ] 
+  axiom inv4 : forall x : v . inv4 x = true
   predicate invariant3 (self : Hashmap_List_Type.t_list (k, v))
   let rec invariant3 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
@@ -969,29 +1046,32 @@ module Hashmap_Impl5_Get
     [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
     
   axiom inv3 : forall x : Hashmap_List_Type.t_list (k, v) . inv3 x = true
-  predicate invariant2 (self : Hashmap_List_Type.t_list (k, v))
-  let rec invariant2 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
+  predicate invariant2 (self : k)
+  let rec invariant2 (self:k) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
     
-  predicate inv2 (_x : Hashmap_List_Type.t_list (k, v))
-  let rec inv2 (_x:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
-    
-  axiom inv2 : forall x : Hashmap_List_Type.t_list (k, v) . inv2 x = true
-  predicate invariant1 (self : k)
-  let rec invariant1 (self:k) (return'  (ret:bool))= any 
+  predicate inv2 (_x : k)
+  let rec inv2 (_x:k) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ] 
+  axiom inv2 : forall x : k . inv2 x = true
+  predicate invariant1 (self : Hashmap_List_Type.t_list (k, v))
+  let rec invariant1 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
     
-  predicate inv1 (_x : k)
-  let rec inv1 (_x:k) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ] 
-  axiom inv1 : forall x : k . inv1 x = true
-  predicate invariant0 (self : v)
-  let rec invariant0 (self:v) (return'  (ret:bool))= any 
+  predicate inv1 (_x : Hashmap_List_Type.t_list (k, v))
+  let rec inv1 (_x:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+    
+  axiom inv1 : forall x : Hashmap_List_Type.t_list (k, v) . inv1 x = true
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
+  predicate invariant0 (self : Hashmap_MyHashMap_Type.t_myhashmap k v)
+  let rec invariant0 (self:Hashmap_MyHashMap_Type.t_myhashmap k v) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
     
-  predicate inv0 (_x : v)
-  let rec inv0 (_x:v) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
-  axiom inv0 : forall x : v . inv0 x = true
+  predicate inv0 (_x : Hashmap_MyHashMap_Type.t_myhashmap k v)
+  let rec inv0 (_x:Hashmap_MyHashMap_Type.t_myhashmap k v) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
+    
+  axiom inv0 : forall x : Hashmap_MyHashMap_Type.t_myhashmap k v . inv0 x = true
   use map.Map
   use prelude.Mapping
   function deep_model0 (self : k) : deep_model_ty0
@@ -1078,34 +1158,40 @@ module Hashmap_Impl5_Get
     [ return' (result:bool)-> {result = hashmap_inv0 self} (! return' {result}) ]
     
   use prelude.Intrinsic
-  use prelude.UInt64
+  predicate resolve5 (self : k)
+  let rec resolve5 (self:k) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve5 self} (! return' {result}) ]
+    
+  predicate resolve4 (self : v)
+  let rec resolve4 (self:v) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve4 self} (! return' {result}) ]
+    
+  predicate resolve3 (self : Hashmap_List_Type.t_list (k, v))
+  let rec resolve3 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve3 self} (! return' {result}) ]
+    
+  predicate resolve2 (self : k)
+  let rec resolve2 (self:k) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
+    
   function deep_model1 (self : k) : deep_model_ty0 =
     [#"../../../../creusot-contracts/src/model.rs" 74 8 74 28] deep_model0 self
   let rec deep_model1 (self:k) (return'  (ret:deep_model_ty0))= any 
     [ return' (result:deep_model_ty0)-> {result = deep_model1 self} (! return' {result}) ]
     
-  use prelude.UInt64
-  let rec hash0 (self:k) (return'  (ret:uint64))= {[#"../hashmap.rs" 51 13 51 17] inv4 self}
+  let rec eq0 (self:k) (other:k) (return'  (ret:bool))= {inv2 other}
+    {inv2 self}
     any 
-    [ return' (result:uint64)-> {[#"../hashmap.rs" 50 14 50 58] UInt64.to_int result = hash_log0 (deep_model1 self)}
+    [ return' (result:bool)-> {[#"../../../../creusot-contracts/src/std/cmp.rs" 11 26 11 75] result = (deep_model1 self = deep_model1 other)}
       (! return' {result}) ]
     
-  function shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
+  predicate resolve1 (self : Hashmap_List_Type.t_list (k, v))
+  let rec resolve1 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
     
-   =
-    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model4 self
-  let rec shallow_model1 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq (Hashmap_List_Type.t_list (k, v))))= any
-    
-    [ return' (result:Seq.seq (Hashmap_List_Type.t_list (k, v)))-> {result = shallow_model1 self} (! return' {result}) ]
-    
-  let rec len0 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:usize))= {inv7 self}
-    any 
-    [ return' (result:usize)-> {[#"../../../../creusot-contracts/src/std/vec.rs" 75 26 75 48] UIntSize.to_int result = Seq.length (shallow_model1 self)}
-      (! return' {result}) ]
-    
-  predicate resolve5 (self : Hashmap_MyHashMap_Type.t_myhashmap k v)
-  let rec resolve5 (self:Hashmap_MyHashMap_Type.t_myhashmap k v) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve5 self} (! return' {result}) ]
+  predicate resolve0 (self : Hashmap_MyHashMap_Type.t_myhashmap k v)
+  let rec resolve0 (self:Hashmap_MyHashMap_Type.t_myhashmap k v) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
     
   use prelude.Slice
   predicate has_value0 [@inline:trivial] (self : usize) (seq : Seq.seq (Hashmap_List_Type.t_list (k, v))) (out : Hashmap_List_Type.t_list (k, v))
@@ -1119,94 +1205,93 @@ module Hashmap_Impl5_Get
   let rec in_bounds0 (self:usize) (seq:Seq.seq (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = in_bounds0 self seq} (! return' {result}) ]
     
+  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
+    
+   =
+    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model4 self
+  let rec shallow_model3 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq (Hashmap_List_Type.t_list (k, v))))= any
+    
+    [ return' (result:Seq.seq (Hashmap_List_Type.t_list (k, v)))-> {result = shallow_model3 self} (! return' {result}) ]
+    
   let rec index0 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (index:usize) (return'  (ret:Hashmap_List_Type.t_list (k, v)))= {inv8 index}
     {inv7 self}
-    {[#"../../../../creusot-contracts/src/std/vec.rs" 141 27 141 46] in_bounds0 index (shallow_model1 self)}
+    {[#"../../../../creusot-contracts/src/std/vec.rs" 141 27 141 46] in_bounds0 index (shallow_model3 self)}
     any 
-    [ return' (result:Hashmap_List_Type.t_list (k, v))-> {inv3 result}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 142 26 142 54] has_value0 index (shallow_model1 self) result}
+    [ return' (result:Hashmap_List_Type.t_list (k, v))-> {inv1 result}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 142 26 142 54] has_value0 index (shallow_model3 self) result}
       (! return' {result}) ]
     
-  predicate resolve4 (self : k)
-  let rec resolve4 (self:k) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve4 self} (! return' {result}) ]
-    
-  let rec eq0 (self:k) (other:k) (return'  (ret:bool))= {inv4 other}
-    {inv4 self}
+  let rec len0 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:usize))= {inv7 self}
     any 
-    [ return' (result:bool)-> {[#"../../../../creusot-contracts/src/std/cmp.rs" 11 26 11 75] result = (deep_model1 self = deep_model1 other)}
+    [ return' (result:usize)-> {[#"../../../../creusot-contracts/src/std/vec.rs" 75 26 75 48] UIntSize.to_int result = Seq.length (shallow_model3 self)}
       (! return' {result}) ]
     
-  predicate resolve3 (self : Hashmap_List_Type.t_list (k, v))
-  let rec resolve3 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve3 self} (! return' {result}) ]
+  use prelude.UInt64
+  use prelude.UInt64
+  let rec hash0 (self:k) (return'  (ret:uint64))= {[#"../hashmap.rs" 51 13 51 17] inv2 self}
+    any 
+    [ return' (result:uint64)-> {[#"../hashmap.rs" 50 14 50 58] UInt64.to_int result = hash_log0 (deep_model1 self)}
+      (! return' {result}) ]
     
-  predicate resolve2 (self : Hashmap_List_Type.t_list (k, v))
-  let rec resolve2 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
-    
-  predicate resolve1 (self : k)
-  let rec resolve1 (self:k) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
-    
-  predicate resolve0 (self : v)
-  let rec resolve0 (self:v) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
-  let rec get (self:Hashmap_MyHashMap_Type.t_myhashmap k v) (key:k) (return'  (ret:Core_Option_Option_Type.t_option v))= {[#"../hashmap.rs" 141 22 141 25] inv1 key}
-    {[#"../hashmap.rs" 141 16 141 20] inv5 self}
+  let rec get (self:Hashmap_MyHashMap_Type.t_myhashmap k v) (key:k) (return'  (ret:Core_Option_Option_Type.t_option v))= {[#"../hashmap.rs" 141 22 141 25] inv5 key}
+    {[#"../hashmap.rs" 141 16 141 20] inv0 self}
     {[#"../hashmap.rs" 136 15 136 33] hashmap_inv0 self}
     (! bb0 
-    [ bb13 = return' {_0} 
-    | bb10 = {[@expl:type invariant] inv2 tl}
-      -{resolve2 tl}- {[@expl:type invariant] inv1 key}
-      -{resolve1 key}- {[@expl:type invariant] inv0 v}
-      -{resolve0 v}- [ &_0 <- Core_Option_Option_Type.C_Some v ] bb13 
-    | bb12 = {[@expl:type invariant] inv3 l}
-      -{resolve3 l}- {[@expl:type invariant] inv1 key}
-      -{resolve1 key}- [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option v ] bb13 
-    | bb5 = {[#"../hashmap.rs" 145 20 145 101] get0 (bucket0 self (deep_model0 key)) (deep_model0 key) = get0 l (deep_model0 key)}
-      (! bb6) 
-      [ bb11 = {[@expl:type invariant] inv0 v}
-        -{resolve0 v}- [ &_31 <- tl ] {[@expl:type invariant] inv2 tl}
-        -{resolve2 tl}- {[@expl:type invariant] inv3 _31}
-        -{resolve3 _31}- [ &l <- _31 ] bb5
-      | bb9 = any [ br0 -> {_25 = false} (! bb11) | br1 -> {_25} (! bb10) ] 
-      | bb8 = [ &k <- let (a, _) = Hashmap_List_Type.cons_0 l in a ] 
-        [ &v <- let (_, a) = Hashmap_List_Type.cons_0 l in a ]
-        [ &tl <- Hashmap_List_Type.cons_1 l ] {[@expl:type invariant] inv3 l}
-        -{resolve3 l}- {[@expl:type invariant] inv4 k}
-        -{resolve4 k}- eq0 {k} {key} (fun (_ret':bool) -> [ &_25 <- _ret' ] bb9)
-      | bb7 = bb8
-      | bb6 = any 
-        [ br0 (a:(k, v)) (b:Hashmap_List_Type.t_list (k, v))-> {l = Hashmap_List_Type.C_Cons a b}
-          (! bb7)
-        | default -> (! bb12) ]
-         ]
-      
-    | bb4 = [ &l <- _14 ] {[@expl:type invariant] inv3 _14}
-      -{resolve3 _14}- bb5 
-    | bb3 = UIntSize.rem {_7} {_10} (fun (_ret':usize) -> [ &index <- _ret' ] {[@expl:type invariant] inv5 self}
-        -{resolve5 self}- index0 {Hashmap_MyHashMap_Type.myhashmap_buckets self} {index}
-        (fun (_ret':Hashmap_List_Type.t_list (k, v)) -> [ &_14 <- _ret' ] bb4)) 
+    [ bb0 = hash0 {key} (fun (_ret':uint64) -> [ &_8 <- _ret' ] bb1)
+    | bb1 = UIntSize.of_int {UInt64.to_int _8} (fun (_res:usize) -> [ &_7 <- _res ] (any 
+        [ any_ (_any:uint64)-> (! [ &_8 <- _any ] Hashmap_MyHashMap_Type.my_hash_map <k> <v> {self}
+          (fun (rf_buckets':Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) -> len0
+            {rf_buckets'} (fun (_ret':usize) -> [ &_10 <- _ret' ] bb2))) ]
+        ))
     | bb2 = UIntSize.eq {_10} {[#"../hashmap.rs" 142 27 142 67] (0 : usize)} (fun (_ret':bool) -> 
         [ &_12 <- _ret' ]
         {[@expl:remainder by zero] [#"../hashmap.rs" 142 27 142 67] not _12}
-        bb3) 
-    | bb1 = [ &_7 <- UIntSize.of_int (UInt64.to_int _8) ] any 
-      [ any_ (_any:uint64)-> [ &_8 <- _any ] len0 {Hashmap_MyHashMap_Type.myhashmap_buckets self} (fun (_ret':usize) -> 
-          [ &_10 <- _ret' ]
-          bb2) ]
-       
-    | bb0 = hash0 {key} (fun (_ret':uint64) -> [ &_8 <- _ret' ] bb1)  ]
-    ) 
-    [ return' (result:Core_Option_Option_Type.t_option v)-> {[#"../hashmap.rs" 141 33 141 43] inv6 result}
-      {[#"../hashmap.rs" 137 14 140 5] match result with
-        | Core_Option_Option_Type.C_Some v -> Map.get (shallow_model0 self) (deep_model0 key) = Core_Option_Option_Type.C_Some v
-        | Core_Option_Option_Type.C_None -> Map.get (shallow_model0 self) (deep_model0 key) = Core_Option_Option_Type.C_None
-        end}
-      (! return' {_0}) ]
-    
+        bb3)
+    | bb3 = UIntSize.rem {_7} {_10} (fun (_ret':usize) -> [ &index <- _ret' ] (any 
+        [ any_ (_any:usize)-> (! [ &_7 <- _any ] (any 
+          [ any_ (_any:usize)-> (! [ &_10 <- _any ] {[@expl:type invariant] inv0 self}
+            -{resolve0 self}- Hashmap_MyHashMap_Type.my_hash_map <k> <v> {self}
+            (fun (rf_buckets':Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) -> index0
+              {rf_buckets'} {index} (fun (_ret':Hashmap_List_Type.t_list (k, v)) -> [ &_14 <- _ret' ] bb4))) ]
+          )) ]
+        ))
+    | bb4 = [ &l <- _14 ] {[@expl:type invariant] inv1 _14}
+      -{resolve1 _14}- bb5
+    | bb5 = bb5 
+      [ bb5 = {[#"../hashmap.rs" 145 20 145 101] get0 (bucket0 self (deep_model0 key)) (deep_model0 key) = get0 l (deep_model0 key)}
+        (! bb6) 
+        [ bb6 = any 
+          [ br0 -> {l = Hashmap_List_Type.C_Nil }
+            (! bb12)
+          | br1 (a:(k, v)) (b:Hashmap_List_Type.t_list (k, v))-> {l = Hashmap_List_Type.C_Cons a b}
+            (! bb7) ]
+          
+        | bb7 = bb8
+        | bb8 = Hashmap_List_Type.cons <(k, v)> {l} (fun (rf_0':(k, v)) (rf_1':Hashmap_List_Type.t_list (k, v)) -> 
+            [ &k <- let (l0', _) = rf_0' in l0' ]
+            Hashmap_List_Type.cons <(k, v)> {l} (fun (rf_0':(k, v)) (rf_1':Hashmap_List_Type.t_list (k, v)) -> 
+              [ &v <- let (_, l0') = rf_0' in l0' ]
+              Hashmap_List_Type.cons <(k, v)> {l} (fun (rf_0':(k, v)) (rf_1':Hashmap_List_Type.t_list (k, v)) -> 
+                [ &tl <- rf_1' ]
+                {[@expl:type invariant] inv1 l}
+                -{resolve1 l}- {[@expl:type invariant] inv2 k}
+                -{resolve2 k}- eq0 {k} {key} (fun (_ret':bool) -> [ &_25 <- _ret' ] bb9))))
+        | bb9 = any [ br0 -> {_25 = false} (! bb11) | br1 -> {_25} (! bb10) ] 
+        | bb11 = {[@expl:type invariant] inv4 v}
+          -{resolve4 v}- [ &_31 <- tl ] {[@expl:type invariant] inv3 tl}
+          -{resolve3 tl}- {[@expl:type invariant] inv1 _31}
+          -{resolve1 _31}- [ &l <- _31 ] bb5 ]
+         ]
+      
+    | bb12 = {[@expl:type invariant] inv1 l}
+      -{resolve1 l}- {[@expl:type invariant] inv5 key}
+      -{resolve5 key}- [ &_0 <- Core_Option_Option_Type.C_None : Core_Option_Option_Type.t_option v ] bb13
+    | bb10 = {[@expl:type invariant] inv3 tl}
+      -{resolve3 tl}- {[@expl:type invariant] inv5 key}
+      -{resolve5 key}- {[@expl:type invariant] inv4 v}
+      -{resolve4 v}- [ &_0 <- Core_Option_Option_Type.C_Some v : Core_Option_Option_Type.t_option v ] bb13
+    | bb13 = return' {_0} ]
+    )
     [ & _0 : Core_Option_Option_Type.t_option v = any_l () : Core_Option_Option_Type.t_option v
     | & self : Hashmap_MyHashMap_Type.t_myhashmap k v = self
     | & key : k = key
@@ -1222,22 +1307,29 @@ module Hashmap_Impl5_Get
     | & tl : Hashmap_List_Type.t_list (k, v) = any_l () : Hashmap_List_Type.t_list (k, v)
     | & _25 : bool = any_l () : bool
     | & _31 : Hashmap_List_Type.t_list (k, v) = any_l () : Hashmap_List_Type.t_list (k, v) ]
+     
+    [ return' (result:Core_Option_Option_Type.t_option v)-> {[#"../hashmap.rs" 141 33 141 43] inv6 result}
+      {[#"../hashmap.rs" 137 14 140 5] match result with
+        | Core_Option_Option_Type.C_Some v -> Map.get (shallow_model0 self) (deep_model0 key) = Core_Option_Option_Type.C_Some v
+        | Core_Option_Option_Type.C_None -> Map.get (shallow_model0 self) (deep_model0 key) = Core_Option_Option_Type.C_None
+        end}
+      (! return' {result}) ]
     
 end
 module Hashmap_Impl5_Resize
   type k
   type v
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Hashmap_List_Type as Hashmap_List_Type
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  predicate invariant13 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
+  use seq.Seq
+  predicate invariant13 (self : Seq.seq (Hashmap_List_Type.t_list (k, v)))
+  let rec invariant13 (self:Seq.seq (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant13 self} (! return' {result}) ]
     
-  let rec invariant13 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant13 self} (! return' {result}) ] 
-  predicate inv13 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
-  let rec inv13 (_x:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv13 _x} (! return' {result}) ] 
-  axiom inv13 : forall x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . inv13 x = true
+  predicate inv13 (_x : Seq.seq (Hashmap_List_Type.t_list (k, v)))
+  let rec inv13 (_x:Seq.seq (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv13 _x} (! return' {result}) ]
+    
+  axiom inv13 : forall x : Seq.seq (Hashmap_List_Type.t_list (k, v)) . inv13 x = true
   use prelude.UIntSize
   predicate invariant12 (self : usize) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
@@ -1249,6 +1341,8 @@ module Hashmap_Impl5_Resize
     [ return' (result:bool)-> {result = inv12 _x} (! return' {result}) ]
     
   axiom inv12 : forall x : usize . inv12 x = true
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use prelude.Borrow
   predicate invariant11 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)))
     
@@ -1259,90 +1353,75 @@ module Hashmap_Impl5_Resize
   let rec inv11 (_x:borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = inv11 _x} (! return' {result}) ] 
   axiom inv11 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) . inv11 x = true
-  use seq.Seq
-  predicate invariant10 (self : Seq.seq (Hashmap_List_Type.t_list (k, v)))
-  let rec invariant10 (self:Seq.seq (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant10 self} (! return' {result}) ]
+  predicate invariant10 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
     
-  predicate inv10 (_x : Seq.seq (Hashmap_List_Type.t_list (k, v)))
-  let rec inv10 (_x:Seq.seq (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv10 _x} (! return' {result}) ]
-    
-  axiom inv10 : forall x : Seq.seq (Hashmap_List_Type.t_list (k, v)) . inv10 x = true
+  let rec invariant10 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant10 self} (! return' {result}) ] 
+  predicate inv10 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
+  let rec inv10 (_x:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv10 _x} (! return' {result}) ] 
+  axiom inv10 : forall x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . inv10 x = true
   use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
-  use prelude.Snapshot
-  predicate invariant9 (self : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)))
-  let rec invariant9 (self:Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant9 self} (! return' {result}) ] 
-  predicate inv9 (_x : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)))
-  let rec inv9 (_x:Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) (return'  (ret:bool))= any 
+  predicate invariant9 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
+  let rec invariant9 (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant9 self} (! return' {result}) ]
+    
+  predicate inv9 (_x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
+  let rec inv9 (_x:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv9 _x} (! return' {result}) ]
     
-  axiom inv9 : forall x : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) . inv9 x = true
-  use prelude.UIntSize
-  use prelude.Int
-  constant max0 : usize = (18446744073709551615 : usize)
-  use seq.Seq
-  predicate inv8 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
-  let rec inv8 (_x:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv8 _x} (! return' {result}) ] 
-  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
+  axiom inv9 : forall x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v) . inv9 x = true
+  type deep_model_ty0
+  predicate invariant8 (self : deep_model_ty0)
+  let rec invariant8 (self:deep_model_ty0) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant8 self} (! return' {result}) ]
     
-  let rec shallow_model3 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq (Hashmap_List_Type.t_list (k, v))))= {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv8 self}
-    any 
-    [ return' (result:Seq.seq (Hashmap_List_Type.t_list (k, v)))-> {result = shallow_model3 self} (! return' {result}) ]
+  predicate inv8 (_x : deep_model_ty0)
+  let rec inv8 (_x:deep_model_ty0) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv8 _x} (! return' {result}) ]
     
-  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv8 self)
-   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv10 (shallow_model3 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int (max0 : usize))
-  predicate invariant8 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
-    
-   =
-    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv10 (shallow_model3 self)
-  let rec invariant8 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant8 self} (! return' {result}) ] 
-  axiom inv8 : forall x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . inv8 x = true
-  predicate invariant7 (self : borrowed (Hashmap_List_Type.t_list (k, v)))
-  let rec invariant7 (self:borrowed (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
+  axiom inv8 : forall x : deep_model_ty0 . inv8 x = true
+  predicate invariant7 (self : Hashmap_List_Type.t_list (k, v))
+  let rec invariant7 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant7 self} (! return' {result}) ]
     
-  predicate inv7 (_x : borrowed (Hashmap_List_Type.t_list (k, v)))
-  let rec inv7 (_x:borrowed (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
+  predicate inv7 (_x : Hashmap_List_Type.t_list (k, v))
+  let rec inv7 (_x:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv7 _x} (! return' {result}) ]
     
-  axiom inv7 : forall x : borrowed (Hashmap_List_Type.t_list (k, v)) . inv7 x = true
-  type deep_model_ty0
-  predicate invariant6 (self : deep_model_ty0)
-  let rec invariant6 (self:deep_model_ty0) (return'  (ret:bool))= any 
+  axiom inv7 : forall x : Hashmap_List_Type.t_list (k, v) . inv7 x = true
+  predicate invariant6 (self : Hashmap_MyHashMap_Type.t_myhashmap k v)
+  let rec invariant6 (self:Hashmap_MyHashMap_Type.t_myhashmap k v) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant6 self} (! return' {result}) ]
     
-  predicate inv6 (_x : deep_model_ty0)
-  let rec inv6 (_x:deep_model_ty0) (return'  (ret:bool))= any 
+  predicate inv6 (_x : Hashmap_MyHashMap_Type.t_myhashmap k v)
+  let rec inv6 (_x:Hashmap_MyHashMap_Type.t_myhashmap k v) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv6 _x} (! return' {result}) ]
     
-  axiom inv6 : forall x : deep_model_ty0 . inv6 x = true
-  predicate invariant5 (self : Hashmap_List_Type.t_list (k, v))
-  let rec invariant5 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
+  axiom inv6 : forall x : Hashmap_MyHashMap_Type.t_myhashmap k v . inv6 x = true
+  predicate invariant5 (self : k)
+  let rec invariant5 (self:k) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant5 self} (! return' {result}) ]
     
-  predicate inv5 (_x : Hashmap_List_Type.t_list (k, v))
-  let rec inv5 (_x:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ]
-    
-  axiom inv5 : forall x : Hashmap_List_Type.t_list (k, v) . inv5 x = true
-  predicate invariant4 (self : k)
-  let rec invariant4 (self:k) (return'  (ret:bool))= any 
+  predicate inv5 (_x : k)
+  let rec inv5 (_x:k) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ] 
+  axiom inv5 : forall x : k . inv5 x = true
+  predicate invariant4 (self : v)
+  let rec invariant4 (self:v) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ]
     
-  predicate inv4 (_x : k)
-  let rec inv4 (_x:k) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ] 
-  axiom inv4 : forall x : k . inv4 x = true
-  predicate invariant3 (self : v)
-  let rec invariant3 (self:v) (return'  (ret:bool))= any 
+  predicate inv4 (_x : v)
+  let rec inv4 (_x:v) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ] 
+  axiom inv4 : forall x : v . inv4 x = true
+  predicate invariant3 (self : borrowed (Hashmap_List_Type.t_list (k, v)))
+  let rec invariant3 (self:borrowed (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
     
-  predicate inv3 (_x : v)
-  let rec inv3 (_x:v) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ] 
-  axiom inv3 : forall x : v . inv3 x = true
+  predicate inv3 (_x : borrowed (Hashmap_List_Type.t_list (k, v)))
+  let rec inv3 (_x:borrowed (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
+    
+  axiom inv3 : forall x : borrowed (Hashmap_List_Type.t_list (k, v)) . inv3 x = true
   predicate invariant2 (self : Hashmap_List_Type.t_list (k, v))
   let rec invariant2 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
@@ -1352,24 +1431,37 @@ module Hashmap_Impl5_Resize
     [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
     
   axiom inv2 : forall x : Hashmap_List_Type.t_list (k, v) . inv2 x = true
-  predicate invariant1 (self : Hashmap_MyHashMap_Type.t_myhashmap k v)
-  let rec invariant1 (self:Hashmap_MyHashMap_Type.t_myhashmap k v) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
+  use prelude.UIntSize
+  use prelude.Int
+  constant max0 : usize = (18446744073709551615 : usize)
+  use seq.Seq
+  predicate inv1 (_x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
+  let rec inv1 (_x:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ] 
+  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
     
-  predicate inv1 (_x : Hashmap_MyHashMap_Type.t_myhashmap k v)
-  let rec inv1 (_x:Hashmap_MyHashMap_Type.t_myhashmap k v) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
+  let rec shallow_model3 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq (Hashmap_List_Type.t_list (k, v))))= {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv1 self}
+    any 
+    [ return' (result:Seq.seq (Hashmap_List_Type.t_list (k, v)))-> {result = shallow_model3 self} (! return' {result}) ]
     
-  axiom inv1 : forall x : Hashmap_MyHashMap_Type.t_myhashmap k v . inv1 x = true
-  predicate invariant0 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
-  let rec invariant0 (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
+  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv1 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv13 (shallow_model3 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int (max0 : usize))
+  predicate invariant1 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))
     
-  predicate inv0 (_x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
-  let rec inv0 (_x:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (return'  (ret:bool))= any 
+   =
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv13 (shallow_model3 self)
+  let rec invariant1 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ] 
+  axiom inv1 : forall x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global) . inv1 x = true
+  use prelude.Snapshot
+  predicate invariant0 (self : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)))
+  let rec invariant0 (self:Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ] 
+  predicate inv0 (_x : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)))
+  let rec inv0 (_x:Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
     
-  axiom inv0 : forall x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v) . inv0 x = true
+  axiom inv0 : forall x : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) . inv0 x = true
   use prelude.Mapping
   function deep_model0 (self : k) : deep_model_ty0
   let rec deep_model0 (self:k) (return'  (ret:deep_model_ty0))= any 
@@ -1434,11 +1526,23 @@ module Hashmap_Impl5_Resize
       (! return' {result}) ]
     
   use prelude.Intrinsic
+  predicate resolve7 (self : Hashmap_MyHashMap_Type.t_myhashmap k v)
+  let rec resolve7 (self:Hashmap_MyHashMap_Type.t_myhashmap k v) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve7 self} (! return' {result}) ]
+    
+  predicate resolve6 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve6 (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve6 self} (! return' {result}) ]
+    
   use prelude.Snapshot
-  predicate resolve7 (self : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)))
-  let rec resolve7 (self:Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = resolve7 self} (! return' {result}) ] 
-  use map.Map
+  predicate good_bucket0 [#"../hashmap.rs" 200 4 200 57] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (l : Hashmap_List_Type.t_list (k, v)) (h : int)
+    
+   =
+    [#"../hashmap.rs" 201 8 203 9] forall v : v . forall k : deep_model_ty0 . inv4 v
+     -> inv8 k  -> get1 l k = Core_Option_Option_Type.C_Some v  -> bucket_ix0 self k = h
+  let rec good_bucket0 (self:Hashmap_MyHashMap_Type.t_myhashmap k v) (l:Hashmap_List_Type.t_list (k, v)) (h:int) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = good_bucket0 self l h} (! return' {result}) ] 
   predicate no_double_binding0 [#"../hashmap.rs" 38 4 38 38] (self : Hashmap_List_Type.t_list (k, v)) =
     [#"../hashmap.rs" 40 12 43 13] match self with
       | Hashmap_List_Type.C_Nil -> true
@@ -1447,39 +1551,74 @@ module Hashmap_Impl5_Resize
   let rec no_double_binding0 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = no_double_binding0 self} (! return' {result}) ]
     
-  predicate good_bucket0 [#"../hashmap.rs" 200 4 200 57] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (l : Hashmap_List_Type.t_list (k, v)) (h : int)
+  use map.Map
+  function shallow_model7 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) : Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v)
     
    =
-    [#"../hashmap.rs" 201 8 203 9] forall v : v . forall k : deep_model_ty0 . inv3 v
-     -> inv6 k  -> get1 l k = Core_Option_Option_Type.C_Some v  -> bucket_ix0 self k = h
-  let rec good_bucket0 (self:Hashmap_MyHashMap_Type.t_myhashmap k v) (l:Hashmap_List_Type.t_list (k, v)) (h:int) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = good_bucket0 self l h} (! return' {result}) ] 
+    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model4 self
+  let rec shallow_model7 (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (return'  (ret:Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v)))= any
+    
+    [ return' (result:Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v))-> {result = shallow_model7 self}
+      (! return' {result}) ]
+    
+  use prelude.Snapshot
+  function shallow_model1 (self : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) : Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v)
+    
+   =
+    [#"../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48] shallow_model7 (Snapshot.inner self)
+  let rec shallow_model1 (self:Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) (return'  (ret:Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v)))= any
+    
+    [ return' (result:Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v))-> {result = shallow_model1 self}
+      (! return' {result}) ]
+    
   predicate hashmap_inv0 [#"../hashmap.rs" 209 4 209 33] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) =
     [#"../hashmap.rs" 210 8 213 9] 0 < Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets self)) /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets self))
      -> good_bucket0 self (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i) i /\ no_double_binding0 (index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i))
   let rec hashmap_inv0 (self:Hashmap_MyHashMap_Type.t_myhashmap k v) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = hashmap_inv0 self} (! return' {result}) ]
     
-  let rec new0 (size:usize) (return'  (ret:Hashmap_MyHashMap_Type.t_myhashmap k v))= {[#"../hashmap.rs" 95 15 95 24] 0 < UIntSize.to_int size}
+  predicate resolve4 (self : Hashmap_List_Type.t_list (k, v))
+  let rec resolve4 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve4 self} (! return' {result}) ]
+    
+  predicate resolve5 (self : Hashmap_List_Type.t_list (k, v)) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 34 8 34 31] resolve4 self
+  let rec resolve5 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve5 self} (! return' {result}) ]
+    
+  predicate resolve3 (self : k)
+  let rec resolve3 (self:k) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve3 self} (! return' {result}) ]
+    
+  predicate resolve2 (self : v)
+  let rec resolve2 (self:v) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
+    
+  let rec add0 (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (key:k) (val':v) (return'  (ret:()))= {[#"../hashmap.rs" 106 34 106 37] inv4 val'}
+    {[#"../hashmap.rs" 106 26 106 29] inv5 key}
+    {[#"../hashmap.rs" 106 20 106 24] inv9 self}
+    {[#"../hashmap.rs" 103 15 103 36] hashmap_inv0 ( * self)}
     any 
-    [ return' (result:Hashmap_MyHashMap_Type.t_myhashmap k v)-> {[#"../hashmap.rs" 98 31 98 46] inv1 result}
-      {[#"../hashmap.rs" 97 4 97 64] forall i : deep_model_ty0 . inv6 i
-       -> Map.get (shallow_model2 result) i = Core_Option_Option_Type.C_None}
-      {[#"../hashmap.rs" 96 14 96 34] hashmap_inv0 result}
+    [ return' (result:())-> {[#"../hashmap.rs" 105 4 105 124] forall i : deep_model_ty0 . inv8 i
+       -> Map.get (shallow_model2 ( ^ self)) i = (if i = deep_model0 key then
+        Core_Option_Option_Type.C_Some val'
+      else
+        Map.get (shallow_model4 self) i
+      )}
+      {[#"../hashmap.rs" 104 14 104 35] hashmap_inv0 ( ^ self)}
       (! return' {result}) ]
     
-  use prelude.Snapshot
-  function shallow_model7 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
+  predicate resolve1 (self : borrowed (Hashmap_List_Type.t_list (k, v))) =
+    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
     
-   =
-    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model3 self
-  let rec shallow_model7 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq (Hashmap_List_Type.t_list (k, v))))= any
-    
-    [ return' (result:Seq.seq (Hashmap_List_Type.t_list (k, v)))-> {result = shallow_model7 self} (! return' {result}) ]
-    
-  let rec len1 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:usize))= {inv13 self}
+  let rec replace0 (dest:borrowed (Hashmap_List_Type.t_list (k, v))) (src:Hashmap_List_Type.t_list (k, v)) (return'  (ret:Hashmap_List_Type.t_list (k, v)))= {inv2 src}
+    {inv3 dest}
     any 
-    [ return' (result:usize)-> {[#"../../../../creusot-contracts/src/std/vec.rs" 75 26 75 48] UIntSize.to_int result = Seq.length (shallow_model7 self)}
+    [ return' (result:Hashmap_List_Type.t_list (k, v))-> {inv2 result}
+      {[#"../../../../creusot-contracts/src/std/mem.rs" 8 22 8 37] result =  * dest}
+      {[#"../../../../creusot-contracts/src/std/mem.rs" 7 22 7 34]  ^ dest = src}
       (! return' {result}) ]
     
   use prelude.Slice
@@ -1513,207 +1652,172 @@ module Hashmap_Impl5_Resize
     {inv11 self}
     {[#"../../../../creusot-contracts/src/std/vec.rs" 132 27 132 46] in_bounds0 index (shallow_model6 self)}
     any 
-    [ return' (result:borrowed (Hashmap_List_Type.t_list (k, v)))-> {inv7 result}
+    [ return' (result:borrowed (Hashmap_List_Type.t_list (k, v)))-> {inv3 result}
       {[#"../../../../creusot-contracts/src/std/vec.rs" 136 26 136 55] Seq.length (shallow_model3 ( ^ self)) = Seq.length (shallow_model6 self)}
       {[#"../../../../creusot-contracts/src/std/vec.rs" 135 26 135 62] resolve_elswhere0 index (shallow_model6 self) (shallow_model3 ( ^ self))}
       {[#"../../../../creusot-contracts/src/std/vec.rs" 134 26 134 57] has_value0 index (shallow_model3 ( ^ self)) ( ^ result)}
       {[#"../../../../creusot-contracts/src/std/vec.rs" 133 26 133 54] has_value0 index (shallow_model6 self) ( * result)}
       (! return' {result}) ]
     
-  let rec replace0 (dest:borrowed (Hashmap_List_Type.t_list (k, v))) (src:Hashmap_List_Type.t_list (k, v)) (return'  (ret:Hashmap_List_Type.t_list (k, v)))= {inv5 src}
-    {inv7 dest}
+  let rec new1 (size:usize) (return'  (ret:Hashmap_MyHashMap_Type.t_myhashmap k v))= {[#"../hashmap.rs" 95 15 95 24] 0 < UIntSize.to_int size}
     any 
-    [ return' (result:Hashmap_List_Type.t_list (k, v))-> {inv5 result}
-      {[#"../../../../creusot-contracts/src/std/mem.rs" 8 22 8 37] result =  * dest}
-      {[#"../../../../creusot-contracts/src/std/mem.rs" 7 22 7 34]  ^ dest = src}
+    [ return' (result:Hashmap_MyHashMap_Type.t_myhashmap k v)-> {[#"../hashmap.rs" 98 31 98 46] inv6 result}
+      {[#"../hashmap.rs" 97 4 97 64] forall i : deep_model_ty0 . inv8 i
+       -> Map.get (shallow_model2 result) i = Core_Option_Option_Type.C_None}
+      {[#"../hashmap.rs" 96 14 96 34] hashmap_inv0 result}
       (! return' {result}) ]
     
-  predicate resolve6 (self : borrowed (Hashmap_List_Type.t_list (k, v))) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve6 (self:borrowed (Hashmap_List_Type.t_list (k, v))) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve6 self} (! return' {result}) ]
-    
-  function shallow_model5 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) : Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v)
+  predicate resolve0 (self : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)))
+  let rec resolve0 (self:Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ] 
+  function shallow_model5 (self : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Hashmap_List_Type.t_list (k, v))
     
    =
-    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model4 self
-  let rec shallow_model5 (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (return'  (ret:Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v)))= any
+    [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model3 self
+  let rec shallow_model5 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq (Hashmap_List_Type.t_list (k, v))))= any
     
-    [ return' (result:Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v))-> {result = shallow_model5 self}
+    [ return' (result:Seq.seq (Hashmap_List_Type.t_list (k, v)))-> {result = shallow_model5 self} (! return' {result}) ]
+    
+  let rec len0 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:usize))= {inv10 self}
+    any 
+    [ return' (result:usize)-> {[#"../../../../creusot-contracts/src/std/vec.rs" 75 26 75 48] UIntSize.to_int result = Seq.length (shallow_model5 self)}
       (! return' {result}) ]
     
   use prelude.Snapshot
-  function shallow_model1 (self : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) : Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v)
-    
-   =
-    [#"../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48] shallow_model5 (Snapshot.inner self)
-  let rec shallow_model1 (self:Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))) (return'  (ret:Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v)))= any
-    
-    [ return' (result:Map.map deep_model_ty0 (Core_Option_Option_Type.t_option v))-> {result = shallow_model1 self}
-      (! return' {result}) ]
-    
-  predicate resolve5 (self : Hashmap_List_Type.t_list (k, v))
-  let rec resolve5 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve5 self} (! return' {result}) ]
-    
-  predicate resolve4 (self : k)
-  let rec resolve4 (self:k) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve4 self} (! return' {result}) ]
-    
-  predicate resolve3 (self : v)
-  let rec resolve3 (self:v) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve3 self} (! return' {result}) ]
-    
-  let rec add0 (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (key:k) (val':v) (return'  (ret:()))= {[#"../hashmap.rs" 106 34 106 37] inv3 val'}
-    {[#"../hashmap.rs" 106 26 106 29] inv4 key}
-    {[#"../hashmap.rs" 106 20 106 24] inv0 self}
-    {[#"../hashmap.rs" 103 15 103 36] hashmap_inv0 ( * self)}
-    any 
-    [ return' (result:())-> {[#"../hashmap.rs" 105 4 105 124] forall i : deep_model_ty0 . inv6 i
-       -> Map.get (shallow_model2 ( ^ self)) i = (if i = deep_model0 key then
-        Core_Option_Option_Type.C_Some val'
-      else
-        Map.get (shallow_model4 self) i
-      )}
-      {[#"../hashmap.rs" 104 14 104 35] hashmap_inv0 ( ^ self)}
-      (! return' {result}) ]
-    
-  predicate resolve2 (self : Hashmap_List_Type.t_list (k, v)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 34 8 34 31] resolve5 self
-  let rec resolve2 (self:Hashmap_List_Type.t_list (k, v)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve2 self} (! return' {result}) ]
-    
-  predicate resolve1 (self : Hashmap_MyHashMap_Type.t_myhashmap k v)
-  let rec resolve1 (self:Hashmap_MyHashMap_Type.t_myhashmap k v) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
-    
-  predicate resolve0 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve0 (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
-  let rec resize (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (return'  (ret:()))= {[#"../hashmap.rs" 161 19 161 23] inv0 self}
+  let rec resize (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (return'  (ret:()))= {[#"../hashmap.rs" 161 19 161 23] inv9 self}
     {[#"../hashmap.rs" 157 15 157 36] hashmap_inv0 ( * self)}
     {[#"../hashmap.rs" 156 15 156 41] Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self))) < 1000}
     (! bb0 
-    [ bb33 = return' {_0} 
-    | bb32 = [ &_0 <- [#"../hashmap.rs" 161 25 197 5] () ] bb33 
-    | bb30 = [ &self <- { self with current = new ; } ] any 
-      [ any_ (_any:Hashmap_MyHashMap_Type.t_myhashmap k v)-> [ &new <- _any ] {[@expl:type invariant] inv1 ( * self)}
-        -{resolve1 ( * self)}- {[@expl:type invariant] inv0 self}
-        -{resolve0 self}- bb32 ]
-       
-    | bb29 = bb30 
-    | bb6 = {[#"../hashmap.rs" 175 20 175 45] UIntSize.to_int i <= Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)))}
-      {[#"../hashmap.rs" 174 20 174 66] Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self))) = Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)))}
-      {[#"../hashmap.rs" 173 20 173 46]  ^ Snapshot.inner old_self =  ^ self}
-      {[#"../hashmap.rs" 172 20 172 37] hashmap_inv0 new}
-      {[#"../hashmap.rs" 166 8 166 111] forall j : int . UIntSize.to_int i <= j /\ j < Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self)))
-       -> index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)) j = index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self)) j}
-      {[#"../hashmap.rs" 166 8 166 111] forall k : deep_model_ty0 . inv6 k
-       -> UIntSize.to_int i <= bucket_ix0 ( * Snapshot.inner old_self) k /\ bucket_ix0 ( * Snapshot.inner old_self) k <= Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self)))
-       -> Map.get (shallow_model2 new) k = Core_Option_Option_Type.C_None}
-      {[#"../hashmap.rs" 166 8 166 111] forall k : deep_model_ty0 . inv6 k
-       -> bucket_ix0 ( * Snapshot.inner old_self) k < UIntSize.to_int i
-       -> Map.get (shallow_model1 old_self) k = Map.get (shallow_model2 new) k}
-      (! bb7) 
-      [ bb26 = bb17
-      | bb24 = [ &_21 <- [#"../hashmap.rs" 188 49 191 13] () ] bb26
-      | bb22 = [ &l <- tl ] any [ any_ (_any:Hashmap_List_Type.t_list (k, v))-> [ &tl <- _any ] bb24 ] 
-      | bb21 = {[@expl:type invariant] inv2 tl}
-        -{resolve2 tl}- bb22
-      | bb20 = [ &k <- let (a, _) = Hashmap_List_Type.cons_0 l in a ] 
-        [ &v <- let (_, a) = Hashmap_List_Type.cons_0 l in a ]
-        [ &tl <- Hashmap_List_Type.cons_1 l ] any 
-        [ any_ (_any:Hashmap_List_Type.t_list (k, v))-> 
-          [ &l <- let Hashmap_List_Type.C_Cons x0 x1 = l in Hashmap_List_Type.C_Cons x0 _any ]
-          {[@expl:type invariant] inv5 l}
-          -{resolve5 l}- Borrow.borrow_mut <Hashmap_MyHashMap_Type.t_myhashmap k v> {new}
-          (fun (_ret':borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) -> [ &_45 <- _ret' ] 
-            [ &new <-  ^ _45 ]
-            -{inv1 ( ^ _45)}- {[@expl:type invariant] inv4 k}
-            -{resolve4 k}- {[@expl:type invariant] inv3 v}
-            -{resolve3 v}- add0 {_45} {k} {v} (fun (_ret':()) -> [ &_44 <- _ret' ] bb21)) ]
-        
-      | bb19 = bb20
-      | bb28 = bb6
-      | bb27 = UIntSize.add {i} {[#"../hashmap.rs" 193 17 193 18] (1 : usize)} (fun (_ret':usize) -> [ &i <- _ret' ] 
-          [ &_21 <- [#"../hashmap.rs" 176 37 194 9] () ]
-          bb28)
-      | bb25 = {[@expl:type invariant] inv5 l}
-        -{resolve5 l}- {[@expl:assertion] [#"../hashmap.rs" 192 12 192 121] forall k : deep_model_ty0 . inv6 k
-         -> bucket_ix0 ( * Snapshot.inner old_self) k = UIntSize.to_int i
-         -> Map.get (shallow_model1 old_self) k = Map.get (shallow_model2 new) k}
-        bb27
-      | bb18 = any 
-        [ br0 (a:(k, v)) (b:Hashmap_List_Type.t_list (k, v))-> {l = Hashmap_List_Type.C_Cons a b}
-          (! bb19)
-        | default -> (! bb25) ]
-        
-      | bb17 = {[#"../hashmap.rs" 187 24 187 51] good_bucket0 ( * Snapshot.inner old_self) l (UIntSize.to_int i)}
-        {[#"../hashmap.rs" 186 24 186 45] no_double_binding0 l}
-        {[#"../hashmap.rs" 179 12 179 43] forall k : deep_model_ty0 . inv6 k
-         -> bucket_ix0 ( * Snapshot.inner old_self) k = UIntSize.to_int i
-         -> Map.get (shallow_model1 old_self) k = match get1 l k with
-          | Core_Option_Option_Type.C_None -> Map.get (shallow_model2 new) k
-          | Core_Option_Option_Type.C_Some v -> Core_Option_Option_Type.C_Some v
-          end}
-        {[#"../hashmap.rs" 179 12 179 43] forall k : deep_model_ty0 . inv6 k
-         -> UIntSize.to_int i < bucket_ix0 ( * Snapshot.inner old_self) k /\ bucket_ix0 ( * Snapshot.inner old_self) k <= Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self)))
-         -> Map.get (shallow_model2 new) k = Core_Option_Option_Type.C_None}
-        {[#"../hashmap.rs" 179 12 179 43] forall k : deep_model_ty0 . inv6 k
-         -> bucket_ix0 ( * Snapshot.inner old_self) k < UIntSize.to_int i
-         -> Map.get (shallow_model1 old_self) k = Map.get (shallow_model2 new) k}
-        {[#"../hashmap.rs" 179 24 179 41] hashmap_inv0 new}
-        (! bb18)
-      | bb16 = bb17
-      | bb15 = bb16
-      | bb14 = bb15
-      | bb13 = bb14
-      | bb12 = bb13
-      | bb11 = {[@expl:type invariant] inv7 _29}
-        -{resolve6 _29}- {[@expl:type invariant] inv7 _28}
-        -{resolve6 _28}- bb12
-      | bb10 = Borrow.borrow_final <Hashmap_List_Type.t_list (k, v)> { * _29} {Borrow.get_id _29}
-        (fun (_ret':borrowed (Hashmap_List_Type.t_list (k, v))) -> [ &_28 <- _ret' ] 
-          [ &_29 <- { _29 with current = ( ^ _28) ; } ]
-          -{inv5 ( ^ _28)}- Borrow.borrow_final <Hashmap_List_Type.t_list (k, v)> { * _28} {Borrow.get_id _28}
-          (fun (_ret':borrowed (Hashmap_List_Type.t_list (k, v))) -> [ &_27 <- _ret' ] 
-            [ &_28 <- { _28 with current = ( ^ _27) ; } ]
-            -{inv5 ( ^ _27)}- [ &_32 <- Hashmap_List_Type.C_Nil : Hashmap_List_Type.t_list (k, v) ] replace0 {_27} {_32}
-            (fun (_ret':Hashmap_List_Type.t_list (k, v)) -> [ &l <- _ret' ] bb11)))
-      | bb9 = Borrow.borrow_mut
-        <Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)>
-        {Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)}
-        (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) -> 
-          [ &_30 <- _ret' ]
-          
-          [ &self <- { self with current = (let Hashmap_MyHashMap_Type.C_MyHashMap x0 =  * self in Hashmap_MyHashMap_Type.C_MyHashMap ( ^ _30)) ; } ]
-          -{inv8 ( ^ _30)}- index_mut0 {_30} {i} (fun (_ret':borrowed (Hashmap_List_Type.t_list (k, v))) -> 
-            [ &_29 <- _ret' ]
-            bb10))
-      | bb8 = UIntSize.lt {i} {_24} (fun (_ret':bool) -> [ &_22 <- _ret' ] any 
-          [ br0 -> {_22 = false} (! bb29) | br1 -> {_22} (! bb9) ]
-          )
-      | bb7 = len1 {Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)} (fun (_ret':usize) -> [ &_24 <- _ret' ] bb8) ]
-      
-    | bb5 = bb6 
-    | bb4 = bb5 
-    | bb3 = [ &i <- [#"../hashmap.rs" 165 27 165 28] (0 : usize) ] bb4 
+    [ bb0 = [ &old_self <- [#"../hashmap.rs" 162 23 162 41] Snapshot.new self ] bb1
+    | bb1 = {[@expl:type invariant] inv0 old_self}
+      -{resolve0 old_self}- Hashmap_MyHashMap_Type.my_hash_map <k> <v> { * self}
+      (fun (rf_buckets':Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) -> len0
+        {rf_buckets'} (fun (_ret':usize) -> [ &_10 <- _ret' ] bb2))
     | bb2 = UIntSize.mul {_10} {[#"../hashmap.rs" 163 53 163 54] (2 : usize)} (fun (_ret':usize) -> 
         [ &_9 <- _ret' ]
-        new0 {_9} (fun (_ret':Hashmap_MyHashMap_Type.t_myhashmap k v) -> [ &new <- _ret' ] bb3)) 
-    | bb1 = {[@expl:type invariant] inv9 old_self}
-      -{resolve7 old_self}- len1 {Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)} (fun (_ret':usize) -> 
-        [ &_10 <- _ret' ]
-        bb2) 
-    | bb0 = [ &old_self <- [#"../hashmap.rs" 162 23 162 41] Snapshot.new self ] bb1  ]
-    ) 
-    [ return' (result:())-> {[#"../hashmap.rs" 159 4 159 74] forall k : deep_model_ty0 . inv6 k
-       -> Map.get (shallow_model2 ( ^ self)) k = Map.get (shallow_model4 self) k}
-      {[#"../hashmap.rs" 158 14 158 35] hashmap_inv0 ( ^ self)}
-      (! return' {_0}) ]
-    
+        (any 
+        [ any_ (_any:usize)-> (! [ &_10 <- _any ] new1 {_9} (fun (_ret':Hashmap_MyHashMap_Type.t_myhashmap k v) -> 
+            [ &new <- _ret' ]
+            bb3)) ]
+        ))
+    | bb3 = [ &i <- [#"../hashmap.rs" 165 27 165 28] (0 : usize) ] bb4
+    | bb4 = bb5
+    | bb5 = bb6
+    | bb6 = bb6 
+      [ bb6 = {[#"../hashmap.rs" 175 20 175 45] UIntSize.to_int i <= Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)))}
+        {[#"../hashmap.rs" 174 20 174 66] Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self))) = Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)))}
+        {[#"../hashmap.rs" 173 20 173 46]  ^ Snapshot.inner old_self =  ^ self}
+        {[#"../hashmap.rs" 172 20 172 37] hashmap_inv0 new}
+        {[#"../hashmap.rs" 166 8 166 111] forall j : int . UIntSize.to_int i <= j /\ j < Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self)))
+         -> index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)) j = index_logic0 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self)) j}
+        {[#"../hashmap.rs" 166 8 166 111] forall k : deep_model_ty0 . inv8 k
+         -> UIntSize.to_int i <= bucket_ix0 ( * Snapshot.inner old_self) k /\ bucket_ix0 ( * Snapshot.inner old_self) k <= Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self)))
+         -> Map.get (shallow_model2 new) k = Core_Option_Option_Type.C_None}
+        {[#"../hashmap.rs" 166 8 166 111] forall k : deep_model_ty0 . inv8 k
+         -> bucket_ix0 ( * Snapshot.inner old_self) k < UIntSize.to_int i
+         -> Map.get (shallow_model1 old_self) k = Map.get (shallow_model2 new) k}
+        (! bb7) 
+        [ bb7 = Hashmap_MyHashMap_Type.my_hash_map <k> <v> { * self}
+          (fun (rf_buckets':Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) -> len0
+            {rf_buckets'} (fun (_ret':usize) -> [ &_24 <- _ret' ] bb8))
+        | bb8 = UIntSize.lt {i} {_24} (fun (_ret':bool) -> [ &_22 <- _ret' ] (any 
+            [ any_ (_any:usize)-> (! [ &_24 <- _any ] (any [ br0 -> {_22 = false} (! bb29) | br1 -> {_22} (! bb9) ] )) ]
+            ))
+        | bb9 = Hashmap_MyHashMap_Type.my_hash_map <k> <v> { * self}
+          (fun (rf_buckets':Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) -> Borrow.borrow_mut
+            <Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)>
+            {rf_buckets'}
+            (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global))) -> Hashmap_MyHashMap_Type.my_hash_map
+              <k> <v> { * self}
+              (fun (f_buckets':Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global)) -> 
+                [ &self <- { self with current = Hashmap_MyHashMap_Type.C_MyHashMap ( ^ _30) ; } ]
+                [ &_30 <- _ret' ] -{inv1 ( ^ _30)}- index_mut0 {_30} {i}
+                (fun (_ret':borrowed (Hashmap_List_Type.t_list (k, v))) -> [ &_29 <- _ret' ] bb10))))
+        | bb10 = Borrow.borrow_final <Hashmap_List_Type.t_list (k, v)> { * _29} {Borrow.get_id _29}
+          (fun (_ret':borrowed (Hashmap_List_Type.t_list (k, v))) -> [ &_28 <- _ret' ] 
+            [ &_29 <- { _29 with current = ( ^ _28) ; } ]
+            -{inv2 ( ^ _28)}- Borrow.borrow_final <Hashmap_List_Type.t_list (k, v)> { * _28} {Borrow.get_id _28}
+            (fun (_ret':borrowed (Hashmap_List_Type.t_list (k, v))) -> [ &_27 <- _ret' ] 
+              [ &_28 <- { _28 with current = ( ^ _27) ; } ]
+              -{inv2 ( ^ _27)}- [ &_32 <- Hashmap_List_Type.C_Nil : Hashmap_List_Type.t_list (k, v) ] replace0 {_27}
+              {_32} (fun (_ret':Hashmap_List_Type.t_list (k, v)) -> [ &l <- _ret' ] bb11)))
+        | bb11 = {[@expl:type invariant] inv3 _29}
+          -{resolve1 _29}- {[@expl:type invariant] inv3 _28}
+          -{resolve1 _28}- bb12
+        | bb12 = bb13
+        | bb13 = bb14
+        | bb14 = bb15
+        | bb15 = bb16
+        | bb16 = bb17
+        | bb17 = bb17 
+          [ bb17 = {[#"../hashmap.rs" 187 24 187 51] good_bucket0 ( * Snapshot.inner old_self) l (UIntSize.to_int i)}
+            {[#"../hashmap.rs" 186 24 186 45] no_double_binding0 l}
+            {[#"../hashmap.rs" 179 12 179 43] forall k : deep_model_ty0 . inv8 k
+             -> bucket_ix0 ( * Snapshot.inner old_self) k = UIntSize.to_int i
+             -> Map.get (shallow_model1 old_self) k = match get1 l k with
+              | Core_Option_Option_Type.C_None -> Map.get (shallow_model2 new) k
+              | Core_Option_Option_Type.C_Some v -> Core_Option_Option_Type.C_Some v
+              end}
+            {[#"../hashmap.rs" 179 12 179 43] forall k : deep_model_ty0 . inv8 k
+             -> UIntSize.to_int i < bucket_ix0 ( * Snapshot.inner old_self) k /\ bucket_ix0 ( * Snapshot.inner old_self) k <= Seq.length (shallow_model3 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self)))
+             -> Map.get (shallow_model2 new) k = Core_Option_Option_Type.C_None}
+            {[#"../hashmap.rs" 179 12 179 43] forall k : deep_model_ty0 . inv8 k
+             -> bucket_ix0 ( * Snapshot.inner old_self) k < UIntSize.to_int i
+             -> Map.get (shallow_model1 old_self) k = Map.get (shallow_model2 new) k}
+            {[#"../hashmap.rs" 179 24 179 41] hashmap_inv0 new}
+            (! bb18) 
+            [ bb18 = any 
+              [ br0 -> {l = Hashmap_List_Type.C_Nil }
+                (! bb25)
+              | br1 (a:(k, v)) (b:Hashmap_List_Type.t_list (k, v))-> {l = Hashmap_List_Type.C_Cons a b}
+                (! bb19) ]
+              
+            | bb19 = bb20
+            | bb20 = Hashmap_List_Type.cons <(k, v)> {l} (fun (rf_0':(k, v)) (rf_1':Hashmap_List_Type.t_list (k, v)) -> 
+                [ &k <- let (l0', _) = rf_0' in l0' ]
+                Hashmap_List_Type.cons <(k, v)> {l} (fun (rf_0':(k, v)) (rf_1':Hashmap_List_Type.t_list (k, v)) -> 
+                  [ &v <- let (_, l0') = rf_0' in l0' ]
+                  Hashmap_List_Type.cons <(k, v)> {l} (fun (rf_0':(k, v)) (rf_1':Hashmap_List_Type.t_list (k, v)) -> 
+                    [ &tl <- rf_1' ]
+                    (any 
+                    [ any_ (_any:Hashmap_List_Type.t_list (k, v))-> (! Hashmap_List_Type.cons <(k, v)> {l}
+                      (fun (f_0':(k, v)) (f_1':Hashmap_List_Type.t_list (k, v)) -> 
+                        [ &l <- Hashmap_List_Type.C_Cons f_0' _any ]
+                        {[@expl:type invariant] inv2 l}
+                        -{resolve4 l}- Borrow.borrow_mut <Hashmap_MyHashMap_Type.t_myhashmap k v> {new}
+                        (fun (_ret':borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) -> [ &new <-  ^ _45 ] 
+                          [ &_45 <- _ret' ]
+                          -{inv6 ( ^ _45)}- {[@expl:type invariant] inv5 k}
+                          -{resolve3 k}- {[@expl:type invariant] inv4 v}
+                          -{resolve2 v}- add0 {_45} {k} {v} (fun (_ret':()) -> [ &_44 <- _ret' ] bb21)))) ]
+                    ))))
+            | bb21 = {[@expl:type invariant] inv7 tl}
+              -{resolve5 tl}- bb22
+            | bb22 = [ &l <- tl ] (any [ any_ (_any:Hashmap_List_Type.t_list (k, v))-> (! [ &tl <- _any ] bb24) ] )
+            | bb24 = [ &_21 <- [#"../hashmap.rs" 188 49 191 13] () ] bb26
+            | bb26 = bb17 ]
+             ]
+          
+        | bb25 = {[@expl:type invariant] inv2 l}
+          -{resolve4 l}- {[@expl:assertion] [#"../hashmap.rs" 192 12 192 121] forall k : deep_model_ty0 . inv8 k
+           -> bucket_ix0 ( * Snapshot.inner old_self) k = UIntSize.to_int i
+           -> Map.get (shallow_model1 old_self) k = Map.get (shallow_model2 new) k}
+          bb27
+        | bb27 = UIntSize.add {i} {[#"../hashmap.rs" 193 17 193 18] (1 : usize)} (fun (_ret':usize) -> [ &i <- _ret' ] 
+            [ &_21 <- [#"../hashmap.rs" 176 37 194 9] () ]
+            bb28)
+        | bb28 = bb6 ]
+         ]
+      
+    | bb29 = bb30
+    | bb30 = [ &self <- { self with current = new ; } ] (any 
+      [ any_ (_any:Hashmap_MyHashMap_Type.t_myhashmap k v)-> (! [ &new <- _any ] {[@expl:type invariant] inv6 ( * self)}
+        -{resolve7 ( * self)}- {[@expl:type invariant] inv9 self}
+        -{resolve6 self}- bb32) ]
+      )
+    | bb32 = [ &_0 <- [#"../hashmap.rs" 161 25 197 5] () ] bb33
+    | bb33 = return' {_0} ]
+    )
     [ & _0 : () = any_l () : ()
     | & self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v) = self
     | & old_self : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) = any_l () : Snapshot.snap_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
@@ -1735,6 +1839,11 @@ module Hashmap_Impl5_Resize
     | & tl : Hashmap_List_Type.t_list (k, v) = any_l () : Hashmap_List_Type.t_list (k, v)
     | & _44 : () = any_l () : ()
     | & _45 : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v) = any_l () : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v) ]
+     
+    [ return' (result:())-> {[#"../hashmap.rs" 159 4 159 74] forall k : deep_model_ty0 . inv8 k
+       -> Map.get (shallow_model2 ( ^ self)) k = Map.get (shallow_model4 self) k}
+      {[#"../hashmap.rs" 158 14 158 35] hashmap_inv0 ( ^ self)}
+      (! return' {result}) ]
     
 end
 module Hashmap_Main
@@ -1778,80 +1887,79 @@ module Hashmap_Main
   let rec invariant7 (self:Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (usize, isize)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = invariant7 self} (! return' {result}) ] 
   axiom inv7 : forall x : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (usize, isize)) (Alloc_Alloc_Global_Type.t_global) . inv7 x = true
-  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
-  predicate invariant6 (self : Hashmap_MyHashMap_Type.t_myhashmap usize isize) =
+  predicate invariant6 (self : isize) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant6 (self:Hashmap_MyHashMap_Type.t_myhashmap usize isize) (return'  (ret:bool))= any 
+  let rec invariant6 (self:isize) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant6 self} (! return' {result}) ]
     
-  predicate inv6 (_x : Hashmap_MyHashMap_Type.t_myhashmap usize isize)
-  let rec inv6 (_x:Hashmap_MyHashMap_Type.t_myhashmap usize isize) (return'  (ret:bool))= any 
+  predicate inv6 (_x : isize)
+  let rec inv6 (_x:isize) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv6 _x} (! return' {result}) ]
     
-  axiom inv6 : forall x : Hashmap_MyHashMap_Type.t_myhashmap usize isize . inv6 x = true
-  use prelude.Int
-  predicate invariant5 (self : int) =
+  axiom inv6 : forall x : isize . inv6 x = true
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
+  use prelude.Borrow
+  predicate invariant5 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant5 (self:int) (return'  (ret:bool))= any 
+  let rec invariant5 (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant5 self} (! return' {result}) ]
     
-  predicate inv5 (_x : int)
-  let rec inv5 (_x:int) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ] 
-  axiom inv5 : forall x : int . inv5 x = true
-  predicate invariant4 (self : isize) =
+  predicate inv5 (_x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize))
+  let rec inv5 (_x:borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ]
+    
+  axiom inv5 : forall x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize) . inv5 x = true
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant4 (self : Core_Option_Option_Type.t_option isize) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant4 (self:isize) (return'  (ret:bool))= any 
+  let rec invariant4 (self:Core_Option_Option_Type.t_option isize) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ]
     
-  predicate inv4 (_x : isize)
-  let rec inv4 (_x:isize) (return'  (ret:bool))= any 
+  predicate inv4 (_x : Core_Option_Option_Type.t_option isize)
+  let rec inv4 (_x:Core_Option_Option_Type.t_option isize) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ]
     
-  axiom inv4 : forall x : isize . inv4 x = true
-  use prelude.Borrow
-  predicate invariant3 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) =
+  axiom inv4 : forall x : Core_Option_Option_Type.t_option isize . inv4 x = true
+  predicate invariant3 (self : usize) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant3 (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) (return'  (ret:bool))= any 
+  let rec invariant3 (self:usize) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant3 self} (! return' {result}) ]
     
-  predicate inv3 (_x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize))
-  let rec inv3 (_x:borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) (return'  (ret:bool))= any 
+  predicate inv3 (_x : usize)
+  let rec inv3 (_x:usize) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv3 _x} (! return' {result}) ]
     
-  axiom inv3 : forall x : borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize) . inv3 x = true
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  predicate invariant2 (self : Core_Option_Option_Type.t_option isize) =
+  axiom inv3 : forall x : usize . inv3 x = true
+  predicate invariant2 (self : Hashmap_MyHashMap_Type.t_myhashmap usize isize) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant2 (self:Core_Option_Option_Type.t_option isize) (return'  (ret:bool))= any 
+  let rec invariant2 (self:Hashmap_MyHashMap_Type.t_myhashmap usize isize) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant2 self} (! return' {result}) ]
     
-  predicate inv2 (_x : Core_Option_Option_Type.t_option isize)
-  let rec inv2 (_x:Core_Option_Option_Type.t_option isize) (return'  (ret:bool))= any 
+  predicate inv2 (_x : Hashmap_MyHashMap_Type.t_myhashmap usize isize)
+  let rec inv2 (_x:Hashmap_MyHashMap_Type.t_myhashmap usize isize) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv2 _x} (! return' {result}) ]
     
-  axiom inv2 : forall x : Core_Option_Option_Type.t_option isize . inv2 x = true
-  predicate invariant1 (self : usize) =
+  axiom inv2 : forall x : Hashmap_MyHashMap_Type.t_myhashmap usize isize . inv2 x = true
+  predicate invariant1 (self : Hashmap_MyHashMap_Type.t_myhashmap usize isize) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant1 (self:usize) (return'  (ret:bool))= any 
+  let rec invariant1 (self:Hashmap_MyHashMap_Type.t_myhashmap usize isize) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant1 self} (! return' {result}) ]
     
-  predicate inv1 (_x : usize)
-  let rec inv1 (_x:usize) (return'  (ret:bool))= any 
+  predicate inv1 (_x : Hashmap_MyHashMap_Type.t_myhashmap usize isize)
+  let rec inv1 (_x:Hashmap_MyHashMap_Type.t_myhashmap usize isize) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv1 _x} (! return' {result}) ]
     
-  axiom inv1 : forall x : usize . inv1 x = true
-  predicate invariant0 (self : Hashmap_MyHashMap_Type.t_myhashmap usize isize) =
+  axiom inv1 : forall x : Hashmap_MyHashMap_Type.t_myhashmap usize isize . inv1 x = true
+  use prelude.Int
+  predicate invariant0 (self : int) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant0 (self:Hashmap_MyHashMap_Type.t_myhashmap usize isize) (return'  (ret:bool))= any 
+  let rec invariant0 (self:int) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant0 self} (! return' {result}) ]
     
-  predicate inv0 (_x : Hashmap_MyHashMap_Type.t_myhashmap usize isize)
-  let rec inv0 (_x:Hashmap_MyHashMap_Type.t_myhashmap usize isize) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ]
-    
-  axiom inv0 : forall x : Hashmap_MyHashMap_Type.t_myhashmap usize isize . inv0 x = true
+  predicate inv0 (_x : int)
+  let rec inv0 (_x:int) (return'  (ret:bool))= any [ return' (result:bool)-> {result = inv0 _x} (! return' {result}) ] 
+  axiom inv0 : forall x : int . inv0 x = true
   use prelude.Intrinsic
-  use map.Map
   use map.Map
   use prelude.Mapping
   function deep_model0 (self : usize) : int =
@@ -1907,6 +2015,16 @@ module Hashmap_Main
     [ return' (result:Map.map int (Core_Option_Option_Type.t_option isize))-> {result = shallow_model1 self}
       (! return' {result}) ]
     
+  function shallow_model3 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) : Map.map int (Core_Option_Option_Type.t_option isize)
+    
+   =
+    [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model1 ( * self)
+  let rec shallow_model3 (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) (return'  (ret:Map.map int (Core_Option_Option_Type.t_option isize)))= any
+    
+    [ return' (result:Map.map int (Core_Option_Option_Type.t_option isize))-> {result = shallow_model3 self}
+      (! return' {result}) ]
+    
+  use map.Map
   predicate no_double_binding0 [#"../hashmap.rs" 38 4 38 38] (self : Hashmap_List_Type.t_list (usize, isize)) =
     [#"../hashmap.rs" 40 12 43 13] match self with
       | Hashmap_List_Type.C_Nil -> true
@@ -1918,8 +2036,8 @@ module Hashmap_Main
   predicate good_bucket0 [#"../hashmap.rs" 200 4 200 57] (self : Hashmap_MyHashMap_Type.t_myhashmap usize isize) (l : Hashmap_List_Type.t_list (usize, isize)) (h : int)
     
    =
-    [#"../hashmap.rs" 201 8 203 9] forall v : isize . forall k : int . inv4 v
-     -> inv5 k  -> get2 l k = Core_Option_Option_Type.C_Some v  -> bucket_ix0 self k = h
+    [#"../hashmap.rs" 201 8 203 9] forall v : isize . forall k : int . inv6 v
+     -> inv0 k  -> get2 l k = Core_Option_Option_Type.C_Some v  -> bucket_ix0 self k = h
   let rec good_bucket0 (self:Hashmap_MyHashMap_Type.t_myhashmap usize isize) (l:Hashmap_List_Type.t_list (usize, isize)) (h:int) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = good_bucket0 self l h} (! return' {result}) ] 
   predicate hashmap_inv0 [#"../hashmap.rs" 209 4 209 33] (self : Hashmap_MyHashMap_Type.t_myhashmap usize isize) =
@@ -1928,130 +2046,121 @@ module Hashmap_Main
   let rec hashmap_inv0 (self:Hashmap_MyHashMap_Type.t_myhashmap usize isize) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = hashmap_inv0 self} (! return' {result}) ]
     
-  let rec new0 (size:usize) (return'  (ret:Hashmap_MyHashMap_Type.t_myhashmap usize isize))= {[#"../hashmap.rs" 95 15 95 24] 0 < UIntSize.to_int size}
-    any 
-    [ return' (result:Hashmap_MyHashMap_Type.t_myhashmap usize isize)-> {[#"../hashmap.rs" 98 31 98 46] inv6 result}
-      {[#"../hashmap.rs" 97 4 97 64] forall i : int . inv5 i
-       -> Map.get (shallow_model1 result) i = Core_Option_Option_Type.C_None}
-      {[#"../hashmap.rs" 96 14 96 34] hashmap_inv0 result}
-      (! return' {result}) ]
-    
-  function shallow_model2 (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) : Map.map int (Core_Option_Option_Type.t_option isize)
-    
-   =
-    [#"../../../../creusot-contracts/src/model.rs" 101 8 101 31] shallow_model1 ( * self)
-  let rec shallow_model2 (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) (return'  (ret:Map.map int (Core_Option_Option_Type.t_option isize)))= any
-    
-    [ return' (result:Map.map int (Core_Option_Option_Type.t_option isize))-> {result = shallow_model2 self}
-      (! return' {result}) ]
-    
-  let rec add0 (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) (key:usize) (val':isize) (return'  (ret:()))= {[#"../hashmap.rs" 106 34 106 37] inv4 val'}
-    {[#"../hashmap.rs" 106 26 106 29] inv1 key}
-    {[#"../hashmap.rs" 106 20 106 24] inv3 self}
+  let rec add0 (self:borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) (key:usize) (val':isize) (return'  (ret:()))= {[#"../hashmap.rs" 106 34 106 37] inv6 val'}
+    {[#"../hashmap.rs" 106 26 106 29] inv3 key}
+    {[#"../hashmap.rs" 106 20 106 24] inv5 self}
     {[#"../hashmap.rs" 103 15 103 36] hashmap_inv0 ( * self)}
     any 
-    [ return' (result:())-> {[#"../hashmap.rs" 105 4 105 124] forall i : int . inv5 i
+    [ return' (result:())-> {[#"../hashmap.rs" 105 4 105 124] forall i : int . inv0 i
        -> Map.get (shallow_model1 ( ^ self)) i = (if i = deep_model0 key then
         Core_Option_Option_Type.C_Some val'
       else
-        Map.get (shallow_model2 self) i
+        Map.get (shallow_model3 self) i
       )}
       {[#"../hashmap.rs" 104 14 104 35] hashmap_inv0 ( ^ self)}
       (! return' {result}) ]
     
-  function shallow_model0 (self : Hashmap_MyHashMap_Type.t_myhashmap usize isize) : Map.map int (Core_Option_Option_Type.t_option isize)
+  function shallow_model2 (self : Hashmap_MyHashMap_Type.t_myhashmap usize isize) : Map.map int (Core_Option_Option_Type.t_option isize)
     
    =
     [#"../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model1 self
-  let rec shallow_model0 (self:Hashmap_MyHashMap_Type.t_myhashmap usize isize) (return'  (ret:Map.map int (Core_Option_Option_Type.t_option isize)))= any
+  let rec shallow_model2 (self:Hashmap_MyHashMap_Type.t_myhashmap usize isize) (return'  (ret:Map.map int (Core_Option_Option_Type.t_option isize)))= any
     
-    [ return' (result:Map.map int (Core_Option_Option_Type.t_option isize))-> {result = shallow_model0 self}
+    [ return' (result:Map.map int (Core_Option_Option_Type.t_option isize))-> {result = shallow_model2 self}
       (! return' {result}) ]
     
-  let rec get0 (self:Hashmap_MyHashMap_Type.t_myhashmap usize isize) (key:usize) (return'  (ret:Core_Option_Option_Type.t_option isize))= {[#"../hashmap.rs" 141 22 141 25] inv1 key}
-    {[#"../hashmap.rs" 141 16 141 20] inv0 self}
+  let rec get0 (self:Hashmap_MyHashMap_Type.t_myhashmap usize isize) (key:usize) (return'  (ret:Core_Option_Option_Type.t_option isize))= {[#"../hashmap.rs" 141 22 141 25] inv3 key}
+    {[#"../hashmap.rs" 141 16 141 20] inv2 self}
     {[#"../hashmap.rs" 136 15 136 33] hashmap_inv0 self}
     any 
-    [ return' (result:Core_Option_Option_Type.t_option isize)-> {[#"../hashmap.rs" 141 33 141 43] inv2 result}
+    [ return' (result:Core_Option_Option_Type.t_option isize)-> {[#"../hashmap.rs" 141 33 141 43] inv4 result}
       {[#"../hashmap.rs" 137 14 140 5] match result with
-        | Core_Option_Option_Type.C_Some v -> Map.get (shallow_model0 self) (deep_model0 key) = Core_Option_Option_Type.C_Some v
-        | Core_Option_Option_Type.C_None -> Map.get (shallow_model0 self) (deep_model0 key) = Core_Option_Option_Type.C_None
+        | Core_Option_Option_Type.C_Some v -> Map.get (shallow_model2 self) (deep_model0 key) = Core_Option_Option_Type.C_Some v
+        | Core_Option_Option_Type.C_None -> Map.get (shallow_model2 self) (deep_model0 key) = Core_Option_Option_Type.C_None
         end}
       (! return' {result}) ]
     
+  let rec new0 (size:usize) (return'  (ret:Hashmap_MyHashMap_Type.t_myhashmap usize isize))= {[#"../hashmap.rs" 95 15 95 24] 0 < UIntSize.to_int size}
+    any 
+    [ return' (result:Hashmap_MyHashMap_Type.t_myhashmap usize isize)-> {[#"../hashmap.rs" 98 31 98 46] inv1 result}
+      {[#"../hashmap.rs" 97 4 97 64] forall i : int . inv0 i
+       -> Map.get (shallow_model1 result) i = Core_Option_Option_Type.C_None}
+      {[#"../hashmap.rs" 96 14 96 34] hashmap_inv0 result}
+      (! return' {result}) ]
+    
   let rec main (_1:()) (return'  (ret:()))= (! bb0 
-    [ bb18 = return' {_0} 
-    | bb17 = bb18 
-    | bb16 = [ &_t <- _29 ] any 
-      [ any_ (_any:Core_Option_Option_Type.t_option isize)-> [ &_29 <- _any ] 
-        [ &_0 <- [#"../hashmap.rs" 217 14 247 1] () ]
-        bb17 ]
-       
-    | bb15 = [ &_z <- _27 ] any 
-      [ any_ (_any:Core_Option_Option_Type.t_option isize)-> [ &_27 <- _any ] get0 {h2}
-        {[#"../hashmap.rs" 244 16 244 17] (2 : usize)} (fun (_ret':Core_Option_Option_Type.t_option isize) -> 
-          [ &_29 <- _ret' ]
-          bb16) ]
-       
-    | bb14 = [ &_y <- _25 ] any 
-      [ any_ (_any:Core_Option_Option_Type.t_option isize)-> [ &_25 <- _any ] get0 {h2}
-        {[#"../hashmap.rs" 243 16 243 17] (1 : usize)} (fun (_ret':Core_Option_Option_Type.t_option isize) -> 
-          [ &_27 <- _ret' ]
-          bb15) ]
-       
-    | bb13 = [ &_x <- _23 ] any 
-      [ any_ (_any:Core_Option_Option_Type.t_option isize)-> [ &_23 <- _any ] get0 {h1}
-        {[#"../hashmap.rs" 242 16 242 17] (2 : usize)} (fun (_ret':Core_Option_Option_Type.t_option isize) -> 
-          [ &_25 <- _ret' ]
-          bb14) ]
-       
-    | bb12 = get0 {h1} {[#"../hashmap.rs" 241 16 241 17] (1 : usize)}
-      (fun (_ret':Core_Option_Option_Type.t_option isize) -> [ &_23 <- _ret' ] bb13) 
-    | bb11 = [ &_t <- _19 ] any 
-      [ any_ (_any:Core_Option_Option_Type.t_option isize)-> [ &_19 <- _any ] Borrow.borrow_mut
-        <Hashmap_MyHashMap_Type.t_myhashmap usize isize> {h2}
-        (fun (_ret':borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) -> [ &_22 <- _ret' ] 
-          [ &h2 <-  ^ _22 ]
-          add0 {_22} {[#"../hashmap.rs" 240 11 240 12] (1 : usize)} {[#"../hashmap.rs" 240 14 240 16] (42 : isize)}
-          (fun (_ret':()) -> [ &_21 <- _ret' ] bb12)) ]
-       
-    | bb10 = [ &_z <- _17 ] any 
-      [ any_ (_any:Core_Option_Option_Type.t_option isize)-> [ &_17 <- _any ] get0 {h2}
-        {[#"../hashmap.rs" 237 16 237 17] (2 : usize)} (fun (_ret':Core_Option_Option_Type.t_option isize) -> 
-          [ &_19 <- _ret' ]
-          bb11) ]
-       
-    | bb9 = [ &_y <- _15 ] any 
-      [ any_ (_any:Core_Option_Option_Type.t_option isize)-> [ &_15 <- _any ] get0 {h2}
-        {[#"../hashmap.rs" 236 16 236 17] (1 : usize)} (fun (_ret':Core_Option_Option_Type.t_option isize) -> 
-          [ &_17 <- _ret' ]
-          bb10) ]
-       
-    | bb8 = [ &_x <- _13 ] any 
-      [ any_ (_any:Core_Option_Option_Type.t_option isize)-> [ &_13 <- _any ] get0 {h1}
+    [ bb0 = new0 {[#"../hashmap.rs" 224 57 224 59] (17 : usize)}
+      (fun (_ret':Hashmap_MyHashMap_Type.t_myhashmap usize isize) -> [ &h1 <- _ret' ] bb1)
+    | bb1 = new0 {[#"../hashmap.rs" 225 57 225 59] (42 : usize)}
+      (fun (_ret':Hashmap_MyHashMap_Type.t_myhashmap usize isize) -> [ &h2 <- _ret' ] bb2)
+    | bb2 = get0 {h1} {[#"../hashmap.rs" 226 24 226 25] (1 : usize)}
+      (fun (_ret':Core_Option_Option_Type.t_option isize) -> [ &_x <- _ret' ] bb3)
+    | bb3 = get0 {h1} {[#"../hashmap.rs" 227 24 227 25] (2 : usize)}
+      (fun (_ret':Core_Option_Option_Type.t_option isize) -> [ &_y <- _ret' ] bb4)
+    | bb4 = get0 {h2} {[#"../hashmap.rs" 228 24 228 25] (1 : usize)}
+      (fun (_ret':Core_Option_Option_Type.t_option isize) -> [ &_z <- _ret' ] bb5)
+    | bb5 = get0 {h2} {[#"../hashmap.rs" 229 24 229 25] (2 : usize)}
+      (fun (_ret':Core_Option_Option_Type.t_option isize) -> [ &_t <- _ret' ] bb6)
+    | bb6 = Borrow.borrow_mut <Hashmap_MyHashMap_Type.t_myhashmap usize isize> {h1}
+      (fun (_ret':borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) -> [ &h1 <-  ^ _12 ] [ &_12 <- _ret' ] add0
+        {_12} {[#"../hashmap.rs" 233 11 233 12] (1 : usize)} {[#"../hashmap.rs" 233 14 233 16] (17 : isize)}
+        (fun (_ret':()) -> [ &_11 <- _ret' ] bb7))
+    | bb7 = get0 {h1} {[#"../hashmap.rs" 234 16 234 17] (1 : usize)}
+      (fun (_ret':Core_Option_Option_Type.t_option isize) -> [ &_13 <- _ret' ] bb8)
+    | bb8 = [ &_x <- _13 ] (any 
+      [ any_ (_any:Core_Option_Option_Type.t_option isize)-> (! [ &_13 <- _any ] get0 {h1}
         {[#"../hashmap.rs" 235 16 235 17] (2 : usize)} (fun (_ret':Core_Option_Option_Type.t_option isize) -> 
           [ &_15 <- _ret' ]
-          bb9) ]
-       
-    | bb7 = get0 {h1} {[#"../hashmap.rs" 234 16 234 17] (1 : usize)}
-      (fun (_ret':Core_Option_Option_Type.t_option isize) -> [ &_13 <- _ret' ] bb8) 
-    | bb6 = Borrow.borrow_mut <Hashmap_MyHashMap_Type.t_myhashmap usize isize> {h1}
-      (fun (_ret':borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) -> [ &_12 <- _ret' ] [ &h1 <-  ^ _12 ] add0
-        {_12} {[#"../hashmap.rs" 233 11 233 12] (1 : usize)} {[#"../hashmap.rs" 233 14 233 16] (17 : isize)}
-        (fun (_ret':()) -> [ &_11 <- _ret' ] bb7)) 
-    | bb5 = get0 {h2} {[#"../hashmap.rs" 229 24 229 25] (2 : usize)}
-      (fun (_ret':Core_Option_Option_Type.t_option isize) -> [ &_t <- _ret' ] bb6) 
-    | bb4 = get0 {h2} {[#"../hashmap.rs" 228 24 228 25] (1 : usize)}
-      (fun (_ret':Core_Option_Option_Type.t_option isize) -> [ &_z <- _ret' ] bb5) 
-    | bb3 = get0 {h1} {[#"../hashmap.rs" 227 24 227 25] (2 : usize)}
-      (fun (_ret':Core_Option_Option_Type.t_option isize) -> [ &_y <- _ret' ] bb4) 
-    | bb2 = get0 {h1} {[#"../hashmap.rs" 226 24 226 25] (1 : usize)}
-      (fun (_ret':Core_Option_Option_Type.t_option isize) -> [ &_x <- _ret' ] bb3) 
-    | bb1 = new0 {[#"../hashmap.rs" 225 57 225 59] (42 : usize)}
-      (fun (_ret':Hashmap_MyHashMap_Type.t_myhashmap usize isize) -> [ &h2 <- _ret' ] bb2) 
-    | bb0 = new0 {[#"../hashmap.rs" 224 57 224 59] (17 : usize)}
-      (fun (_ret':Hashmap_MyHashMap_Type.t_myhashmap usize isize) -> [ &h1 <- _ret' ] bb1)  ]
-    ) [ return' (result:())-> (! return' {_0}) ] 
+          bb9)) ]
+      )
+    | bb9 = [ &_y <- _15 ] (any 
+      [ any_ (_any:Core_Option_Option_Type.t_option isize)-> (! [ &_15 <- _any ] get0 {h2}
+        {[#"../hashmap.rs" 236 16 236 17] (1 : usize)} (fun (_ret':Core_Option_Option_Type.t_option isize) -> 
+          [ &_17 <- _ret' ]
+          bb10)) ]
+      )
+    | bb10 = [ &_z <- _17 ] (any 
+      [ any_ (_any:Core_Option_Option_Type.t_option isize)-> (! [ &_17 <- _any ] get0 {h2}
+        {[#"../hashmap.rs" 237 16 237 17] (2 : usize)} (fun (_ret':Core_Option_Option_Type.t_option isize) -> 
+          [ &_19 <- _ret' ]
+          bb11)) ]
+      )
+    | bb11 = [ &_t <- _19 ] (any 
+      [ any_ (_any:Core_Option_Option_Type.t_option isize)-> (! [ &_19 <- _any ] Borrow.borrow_mut
+        <Hashmap_MyHashMap_Type.t_myhashmap usize isize> {h2}
+        (fun (_ret':borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize)) -> [ &h2 <-  ^ _22 ] 
+          [ &_22 <- _ret' ]
+          add0 {_22} {[#"../hashmap.rs" 240 11 240 12] (1 : usize)} {[#"../hashmap.rs" 240 14 240 16] (42 : isize)}
+          (fun (_ret':()) -> [ &_21 <- _ret' ] bb12))) ]
+      )
+    | bb12 = get0 {h1} {[#"../hashmap.rs" 241 16 241 17] (1 : usize)}
+      (fun (_ret':Core_Option_Option_Type.t_option isize) -> [ &_23 <- _ret' ] bb13)
+    | bb13 = [ &_x <- _23 ] (any 
+      [ any_ (_any:Core_Option_Option_Type.t_option isize)-> (! [ &_23 <- _any ] get0 {h1}
+        {[#"../hashmap.rs" 242 16 242 17] (2 : usize)} (fun (_ret':Core_Option_Option_Type.t_option isize) -> 
+          [ &_25 <- _ret' ]
+          bb14)) ]
+      )
+    | bb14 = [ &_y <- _25 ] (any 
+      [ any_ (_any:Core_Option_Option_Type.t_option isize)-> (! [ &_25 <- _any ] get0 {h2}
+        {[#"../hashmap.rs" 243 16 243 17] (1 : usize)} (fun (_ret':Core_Option_Option_Type.t_option isize) -> 
+          [ &_27 <- _ret' ]
+          bb15)) ]
+      )
+    | bb15 = [ &_z <- _27 ] (any 
+      [ any_ (_any:Core_Option_Option_Type.t_option isize)-> (! [ &_27 <- _any ] get0 {h2}
+        {[#"../hashmap.rs" 244 16 244 17] (2 : usize)} (fun (_ret':Core_Option_Option_Type.t_option isize) -> 
+          [ &_29 <- _ret' ]
+          bb16)) ]
+      )
+    | bb16 = [ &_t <- _29 ] (any 
+      [ any_ (_any:Core_Option_Option_Type.t_option isize)-> (! [ &_29 <- _any ] 
+        [ &_0 <- [#"../hashmap.rs" 217 14 247 1] () ]
+        bb17) ]
+      )
+    | bb17 = bb18
+    | bb18 = return' {_0} ]
+    )
     [ & _0 : () = any_l () : ()
     | & h1 : Hashmap_MyHashMap_Type.t_myhashmap usize isize = any_l () : Hashmap_MyHashMap_Type.t_myhashmap usize isize
     | & h2 : Hashmap_MyHashMap_Type.t_myhashmap usize isize = any_l () : Hashmap_MyHashMap_Type.t_myhashmap usize isize
@@ -2071,7 +2180,7 @@ module Hashmap_Main
     | & _25 : Core_Option_Option_Type.t_option isize = any_l () : Core_Option_Option_Type.t_option isize
     | & _27 : Core_Option_Option_Type.t_option isize = any_l () : Core_Option_Option_Type.t_option isize
     | & _29 : Core_Option_Option_Type.t_option isize = any_l () : Core_Option_Option_Type.t_option isize ]
-    
+     [ return' (result:())-> (! return' {result}) ] 
 end
 module Hashmap_Impl0
   type t

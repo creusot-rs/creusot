@@ -5,12 +5,22 @@ module Core_Ptr_NonNull_NonNull_Type
     | C_NonNull opaque_ptr
     
   function any_l (_ : 'b) : 'a
+  let rec non_null < 't > (input:t_nonnull 't) (ret  (field_0:opaque_ptr))= any 
+    [ good (field_0:opaque_ptr)-> {C_NonNull field_0 = input}
+      ret {field_0}
+    | bad (field_0:opaque_ptr)-> {C_NonNull field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Core_Marker_PhantomData_Type
   type t_phantomdata 't =
     | C_PhantomData
     
   function any_l (_ : 'b) : 'a
+  let rec phantom_data < 't > (input:t_phantomdata 't) (ret  )= any 
+    [ good -> {C_PhantomData  = input} ret | bad -> {C_PhantomData  <> input} {false} any ]
+    
 end
 module Core_Ptr_Unique_Unique_Type
   use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
@@ -19,6 +29,14 @@ module Core_Ptr_Unique_Unique_Type
     | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
   function any_l (_ : 'b) : 'a
+  let rec unique < 't > (input:t_unique 't) (ret  (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't))= any
+    
+    [ good (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (field_1:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique field_0 field_1 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_RawVec_Cap_Type
   use prelude.UIntSize
@@ -27,6 +45,13 @@ module Alloc_RawVec_Cap_Type
     | C_Cap usize
     
   function any_l (_ : 'b) : 'a
+  let rec cap (input:t_cap) (ret  (field_0:usize))= any 
+    [ good (field_0:usize)-> {C_Cap field_0 = input}
+      ret {field_0}
+    | bad (field_0:usize)-> {C_Cap field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_RawVec_RawVec_Type
   use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
@@ -35,6 +60,14 @@ module Alloc_RawVec_RawVec_Type
     | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
     
   function any_l (_ : 'b) : 'a
+  let rec raw_vec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (field_0:Core_Ptr_Unique_Unique_Type.t_unique 't) (field_1:Alloc_RawVec_Cap_Type.t_cap) (field_2:'a))= any
+    
+    [ good (field_0:Core_Ptr_Unique_Unique_Type.t_unique 't) (field_1:Alloc_RawVec_Cap_Type.t_cap) (field_2:'a)-> {C_RawVec field_0 field_1 field_2 = input}
+      ret {field_0} {field_1} {field_2}
+    | bad (field_0:Core_Ptr_Unique_Unique_Type.t_unique 't) (field_1:Alloc_RawVec_Cap_Type.t_cap) (field_2:'a)-> {C_RawVec field_0 field_1 field_2 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_Vec_Vec_Type
   use prelude.UIntSize
@@ -44,12 +77,37 @@ module Alloc_Vec_Vec_Type
     | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
   function any_l (_ : 'b) : 'a
+  let rec vec < 't > < 'a > (input:t_vec 't 'a) (ret  (field_0:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (field_1:usize))= any
+    
+    [ good (field_0:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (field_1:usize)-> {C_Vec field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (field_1:usize)-> {C_Vec field_0 field_1 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_Alloc_Global_Type
   type t_global  =
     | C_Global
     
   function any_l (_ : 'b) : 'a
+  let rec global (input:t_global) (ret  )= any 
+    [ good -> {C_Global  = input} ret | bad -> {C_Global  <> input} {false} any ]
+    
+end
+module Core_Ops_Range_RangeInclusive_Type
+  type t_rangeinclusive 'idx =
+    | C_RangeInclusive 'idx 'idx bool
+    
+  function any_l (_ : 'b) : 'a
+  let rec range_inclusive < 'idx > (input:t_rangeinclusive 'idx) (ret  (field_0:'idx) (field_1:'idx) (field_2:bool))= any
+    
+    [ good (field_0:'idx) (field_1:'idx) (field_2:bool)-> {C_RangeInclusive field_0 field_1 field_2 = input}
+      ret {field_0} {field_1} {field_2}
+    | bad (field_0:'idx) (field_1:'idx) (field_2:bool)-> {C_RangeInclusive field_0 field_1 field_2 <> input}
+      {false}
+      any ]
+    
 end
 module Core_Option_Option_Type
   type t_option 't =
@@ -57,17 +115,29 @@ module Core_Option_Option_Type
     | C_Some 't
     
   function any_l (_ : 'b) : 'a
-  function some_0 (self : t_option 't) : 't =
-    match self with
-      | C_None -> any_l self
-      | C_Some a -> a
-      end
+  let rec none < 't > (input:t_option 't) (ret  )= any 
+    [ good -> {C_None  = input} ret | bad -> {C_None  <> input} {false} any ]
+    
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_Some field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_Some field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Core_Ops_Range_Range_Type
   type t_range 'idx =
     | C_Range 'idx 'idx
     
   function any_l (_ : 'b) : 'a
+  let rec range < 'idx > (input:t_range 'idx) (ret  (field_0:'idx) (field_1:'idx))= any 
+    [ good (field_0:'idx) (field_1:'idx)-> {C_Range field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:'idx) (field_1:'idx)-> {C_Range field_0 field_1 <> input}
+      {false}
+      any ]
+    
   function range_end (self : t_range 'idx) : 'idx =
     match self with
       | C_Range _ a -> a
@@ -77,12 +147,6 @@ module Core_Ops_Range_Range_Type
       | C_Range a _ -> a
       end
 end
-module Core_Ops_Range_RangeInclusive_Type
-  type t_rangeinclusive 'idx =
-    | C_RangeInclusive 'idx 'idx bool
-    
-  function any_l (_ : 'b) : 'a
-end
 module Core_Cmp_Ordering_Type
   type t_ordering  =
     | C_Less
@@ -90,6 +154,15 @@ module Core_Cmp_Ordering_Type
     | C_Greater
     
   function any_l (_ : 'b) : 'a
+  let rec less (input:t_ordering) (ret  )= any 
+    [ good -> {C_Less  = input} ret | bad -> {C_Less  <> input} {false} any ]
+    
+  let rec equal (input:t_ordering) (ret  )= any 
+    [ good -> {C_Equal  = input} ret | bad -> {C_Equal  <> input} {false} any ]
+    
+  let rec greater (input:t_ordering) (ret  )= any 
+    [ good -> {C_Greater  = input} ret | bad -> {C_Greater  <> input} {false} any ]
+    
 end
 module C08Haystack_Search
   use prelude.UInt8
@@ -135,49 +208,49 @@ module C08Haystack_Search
     [ return' (result:bool)-> {result = inv8 _x} (! return' {result}) ]
     
   axiom inv8 : forall x : Seq.seq usize . inv8 x = true
-  use Core_Ops_Range_RangeInclusive_Type as Core_Ops_Range_RangeInclusive_Type
-  use prelude.Borrow
-  predicate invariant7 (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) =
+  predicate invariant7 (self : uint8) =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant7 (self:borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant7 self} (! return' {result}) ] 
-  predicate inv7 (_x : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize))
-  let rec inv7 (_x:borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) (return'  (ret:bool))= any 
+  let rec invariant7 (self:uint8) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = invariant7 self} (! return' {result}) ]
+    
+  predicate inv7 (_x : uint8)
+  let rec inv7 (_x:uint8) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv7 _x} (! return' {result}) ]
     
-  axiom inv7 : forall x : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) . inv7 x = true
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  predicate invariant6 (self : Core_Option_Option_Type.t_option usize) =
+  axiom inv7 : forall x : uint8 . inv7 x = true
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  use prelude.Borrow
+  predicate invariant6 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant6 (self:Core_Option_Option_Type.t_option usize) (return'  (ret:bool))= any 
+  let rec invariant6 (self:borrowed (Core_Ops_Range_Range_Type.t_range usize)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant6 self} (! return' {result}) ]
     
-  predicate inv6 (_x : Core_Option_Option_Type.t_option usize)
-  let rec inv6 (_x:Core_Option_Option_Type.t_option usize) (return'  (ret:bool))= any 
+  predicate inv6 (_x : borrowed (Core_Ops_Range_Range_Type.t_range usize))
+  let rec inv6 (_x:borrowed (Core_Ops_Range_Range_Type.t_range usize)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv6 _x} (! return' {result}) ]
     
-  axiom inv6 : forall x : Core_Option_Option_Type.t_option usize . inv6 x = true
-  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
-  predicate invariant5 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
+  axiom inv6 : forall x : borrowed (Core_Ops_Range_Range_Type.t_range usize) . inv6 x = true
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant5 (self : Core_Option_Option_Type.t_option usize) =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant5 (self:borrowed (Core_Ops_Range_Range_Type.t_range usize)) (return'  (ret:bool))= any 
+  let rec invariant5 (self:Core_Option_Option_Type.t_option usize) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = invariant5 self} (! return' {result}) ]
     
-  predicate inv5 (_x : borrowed (Core_Ops_Range_Range_Type.t_range usize))
-  let rec inv5 (_x:borrowed (Core_Ops_Range_Range_Type.t_range usize)) (return'  (ret:bool))= any 
+  predicate inv5 (_x : Core_Option_Option_Type.t_option usize)
+  let rec inv5 (_x:Core_Option_Option_Type.t_option usize) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv5 _x} (! return' {result}) ]
     
-  axiom inv5 : forall x : borrowed (Core_Ops_Range_Range_Type.t_range usize) . inv5 x = true
-  predicate invariant4 (self : uint8) =
+  axiom inv5 : forall x : Core_Option_Option_Type.t_option usize . inv5 x = true
+  use Core_Ops_Range_RangeInclusive_Type as Core_Ops_Range_RangeInclusive_Type
+  predicate invariant4 (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant4 (self:uint8) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ]
-    
-  predicate inv4 (_x : uint8)
-  let rec inv4 (_x:uint8) (return'  (ret:bool))= any 
+  let rec invariant4 (self:borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant4 self} (! return' {result}) ] 
+  predicate inv4 (_x : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize))
+  let rec inv4 (_x:borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) (return'  (ret:bool))= any 
     [ return' (result:bool)-> {result = inv4 _x} (! return' {result}) ]
     
-  axiom inv4 : forall x : uint8 . inv4 x = true
+  axiom inv4 : forall x : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) . inv4 x = true
   predicate invariant3 (self : usize) =
     [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
   let rec invariant3 (self:usize) (return'  (ret:bool))= any 
@@ -319,76 +392,10 @@ module C08Haystack_Search
   axiom inv0 : forall x : Core_Ops_Range_Range_Type.t_range usize . inv0 x = true
   use prelude.Snapshot
   use prelude.Intrinsic
-  let rec new3 (start:usize) (end':usize) (return'  (ret:Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize))= {inv3 end'}
-    {inv3 start}
-    any 
-    [ return' (result:Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)-> {inv1 result}
-      {[#"../../../../../creusot-contracts/src/std/ops.rs" 222 16 222 93] deep_model0 start <= deep_model0 end'
-       -> not is_empty_log0 result}
-      {[#"../../../../../creusot-contracts/src/std/ops.rs" 221 26 221 49] end_log0 result = end'}
-      {[#"../../../../../creusot-contracts/src/std/ops.rs" 220 26 220 53] start_log0 result = start}
-      (! return' {result}) ]
-    
-  predicate into_iter_post1 (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) (res : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)
-    
-   =
-    [#"../../../../../creusot-contracts/src/std/iter.rs" 80 8 80 19] self = res
-  let rec into_iter_post1 (self:Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) (res:Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = into_iter_post1 self res} (! return' {result}) ] 
-  predicate into_iter_pre1 (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) =
-    [#"../../../../../creusot-contracts/src/std/iter.rs" 74 20 74 24] true
-  let rec into_iter_pre1 (self:Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = into_iter_pre1 self} (! return' {result}) ]
-    
-  let rec into_iter1 (self:Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) (return'  (ret:Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize))= {inv1 self}
-    {[#"../../../../../creusot-contracts/src/std/iter.rs" 89 0 166 1] into_iter_pre1 self}
-    any 
-    [ return' (result:Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)-> {inv1 result}
-      {[#"../../../../../creusot-contracts/src/std/iter.rs" 89 0 166 1] into_iter_post1 self result}
-      (! return' {result}) ]
-    
-  use prelude.Snapshot
   function shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint8 =
     [#"../../../../../creusot-contracts/src/model.rs" 83 8 83 31] shallow_model2 self
   let rec shallow_model1 (self:Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq uint8))= any
     [ return' (result:Seq.seq uint8)-> {result = shallow_model1 self} (! return' {result}) ] 
-  use prelude.Snapshot
-  use seq.Seq
-  predicate completed1 (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 58 12 58 57] is_empty_log0 ( * self) /\ is_empty_log0 ( ^ self)
-  let rec completed1 (self:borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = completed1 self} (! return' {result}) ] 
-  let rec next1 (self:borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) (return'  (ret:Core_Option_Option_Type.t_option usize))= {inv7 self}
-    any 
-    [ return' (result:Core_Option_Option_Type.t_option usize)-> {inv6 result}
-      {[#"../../../../../creusot-contracts/src/std/iter.rs" 95 26 98 17] match result with
-        | Core_Option_Option_Type.C_None -> completed1 self
-        | Core_Option_Option_Type.C_Some v -> produces1 ( * self) (Seq.singleton v) ( ^ self)
-        end}
-      (! return' {result}) ]
-    
-  predicate resolve1 (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve1 (self:borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ] 
-  predicate into_iter_post0 (self : Core_Ops_Range_Range_Type.t_range usize) (res : Core_Ops_Range_Range_Type.t_range usize)
-    
-   =
-    [#"../../../../../creusot-contracts/src/std/iter.rs" 80 8 80 19] self = res
-  let rec into_iter_post0 (self:Core_Ops_Range_Range_Type.t_range usize) (res:Core_Ops_Range_Range_Type.t_range usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = into_iter_post0 self res} (! return' {result}) ] 
-  predicate into_iter_pre0 (self : Core_Ops_Range_Range_Type.t_range usize) =
-    [#"../../../../../creusot-contracts/src/std/iter.rs" 74 20 74 24] true
-  let rec into_iter_pre0 (self:Core_Ops_Range_Range_Type.t_range usize) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = into_iter_pre0 self} (! return' {result}) ]
-    
-  let rec into_iter0 (self:Core_Ops_Range_Range_Type.t_range usize) (return'  (ret:Core_Ops_Range_Range_Type.t_range usize))= {inv0 self}
-    {[#"../../../../../creusot-contracts/src/std/iter.rs" 89 0 166 1] into_iter_pre0 self}
-    any 
-    [ return' (result:Core_Ops_Range_Range_Type.t_range usize)-> {inv0 result}
-      {[#"../../../../../creusot-contracts/src/std/iter.rs" 89 0 166 1] into_iter_post0 self result}
-      (! return' {result}) ]
-    
   use prelude.Snapshot
   use seq.Seq
   function index_logic1 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (ix : int) : uint8
@@ -406,27 +413,6 @@ module C08Haystack_Search
     [ return' (result:bool)-> {result = match_at0 needle haystack pos len} (! return' {result}) ] 
   use prelude.Snapshot
   use prelude.Snapshot
-  predicate resolve0 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
-  let rec resolve0 (self:borrowed (Core_Ops_Range_Range_Type.t_range usize)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ]
-    
-  predicate completed0 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve0 self /\ deep_model0 (Core_Ops_Range_Range_Type.range_start ( * self)) >= deep_model0 (Core_Ops_Range_Range_Type.range_end ( * self))
-  let rec completed0 (self:borrowed (Core_Ops_Range_Range_Type.t_range usize)) (return'  (ret:bool))= any 
-    [ return' (result:bool)-> {result = completed0 self} (! return' {result}) ]
-    
-  let rec next0 (self:borrowed (Core_Ops_Range_Range_Type.t_range usize)) (return'  (ret:Core_Option_Option_Type.t_option usize))= {inv5 self}
-    any 
-    [ return' (result:Core_Option_Option_Type.t_option usize)-> {inv6 result}
-      {[#"../../../../../creusot-contracts/src/std/iter.rs" 95 26 98 17] match result with
-        | Core_Option_Option_Type.C_None -> completed0 self
-        | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
-        end}
-      (! return' {result}) ]
-    
-  use prelude.Snapshot
-  use prelude.Snapshot
   use prelude.Slice
   predicate has_value0 [@inline:trivial] (self : usize) (seq : Seq.seq uint8) (out : uint8) =
     [#"../../../../../creusot-contracts/src/std/slice.rs" 122 20 122 37] Seq.get seq (UIntSize.to_int self) = out
@@ -442,8 +428,95 @@ module C08Haystack_Search
     {inv2 self}
     {[#"../../../../../creusot-contracts/src/std/vec.rs" 141 27 141 46] in_bounds0 index (shallow_model1 self)}
     any 
-    [ return' (result:uint8)-> {inv4 result}
+    [ return' (result:uint8)-> {inv7 result}
       {[#"../../../../../creusot-contracts/src/std/vec.rs" 142 26 142 54] has_value0 index (shallow_model1 self) result}
+      (! return' {result}) ]
+    
+  predicate resolve1 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve1 (self:borrowed (Core_Ops_Range_Range_Type.t_range usize)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = resolve1 self} (! return' {result}) ]
+    
+  use seq.Seq
+  predicate completed1 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve1 self /\ deep_model0 (Core_Ops_Range_Range_Type.range_start ( * self)) >= deep_model0 (Core_Ops_Range_Range_Type.range_end ( * self))
+  let rec completed1 (self:borrowed (Core_Ops_Range_Range_Type.t_range usize)) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = completed1 self} (! return' {result}) ]
+    
+  let rec next1 (self:borrowed (Core_Ops_Range_Range_Type.t_range usize)) (return'  (ret:Core_Option_Option_Type.t_option usize))= {inv6 self}
+    any 
+    [ return' (result:Core_Option_Option_Type.t_option usize)-> {inv5 result}
+      {[#"../../../../../creusot-contracts/src/std/iter.rs" 95 26 98 17] match result with
+        | Core_Option_Option_Type.C_None -> completed1 self
+        | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
+        end}
+      (! return' {result}) ]
+    
+  use prelude.Snapshot
+  predicate into_iter_post1 (self : Core_Ops_Range_Range_Type.t_range usize) (res : Core_Ops_Range_Range_Type.t_range usize)
+    
+   =
+    [#"../../../../../creusot-contracts/src/std/iter.rs" 80 8 80 19] self = res
+  let rec into_iter_post1 (self:Core_Ops_Range_Range_Type.t_range usize) (res:Core_Ops_Range_Range_Type.t_range usize) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = into_iter_post1 self res} (! return' {result}) ] 
+  predicate into_iter_pre1 (self : Core_Ops_Range_Range_Type.t_range usize) =
+    [#"../../../../../creusot-contracts/src/std/iter.rs" 74 20 74 24] true
+  let rec into_iter_pre1 (self:Core_Ops_Range_Range_Type.t_range usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = into_iter_pre1 self} (! return' {result}) ]
+    
+  let rec into_iter1 (self:Core_Ops_Range_Range_Type.t_range usize) (return'  (ret:Core_Ops_Range_Range_Type.t_range usize))= {inv0 self}
+    {[#"../../../../../creusot-contracts/src/std/iter.rs" 89 0 166 1] into_iter_pre1 self}
+    any 
+    [ return' (result:Core_Ops_Range_Range_Type.t_range usize)-> {inv0 result}
+      {[#"../../../../../creusot-contracts/src/std/iter.rs" 89 0 166 1] into_iter_post1 self result}
+      (! return' {result}) ]
+    
+  use prelude.Snapshot
+  predicate resolve0 (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 25 20 25 34]  ^ self =  * self
+  let rec resolve0 (self:borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve0 self} (! return' {result}) ] 
+  predicate completed0 (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) =
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 58 12 58 57] is_empty_log0 ( * self) /\ is_empty_log0 ( ^ self)
+  let rec completed0 (self:borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = completed0 self} (! return' {result}) ] 
+  let rec next0 (self:borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) (return'  (ret:Core_Option_Option_Type.t_option usize))= {inv4 self}
+    any 
+    [ return' (result:Core_Option_Option_Type.t_option usize)-> {inv5 result}
+      {[#"../../../../../creusot-contracts/src/std/iter.rs" 95 26 98 17] match result with
+        | Core_Option_Option_Type.C_None -> completed0 self
+        | Core_Option_Option_Type.C_Some v -> produces1 ( * self) (Seq.singleton v) ( ^ self)
+        end}
+      (! return' {result}) ]
+    
+  use prelude.Snapshot
+  use prelude.Snapshot
+  predicate into_iter_post0 (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) (res : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)
+    
+   =
+    [#"../../../../../creusot-contracts/src/std/iter.rs" 80 8 80 19] self = res
+  let rec into_iter_post0 (self:Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) (res:Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = into_iter_post0 self res} (! return' {result}) ] 
+  predicate into_iter_pre0 (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) =
+    [#"../../../../../creusot-contracts/src/std/iter.rs" 74 20 74 24] true
+  let rec into_iter_pre0 (self:Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) (return'  (ret:bool))= any 
+    [ return' (result:bool)-> {result = into_iter_pre0 self} (! return' {result}) ]
+    
+  let rec into_iter0 (self:Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) (return'  (ret:Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize))= {inv1 self}
+    {[#"../../../../../creusot-contracts/src/std/iter.rs" 89 0 166 1] into_iter_pre0 self}
+    any 
+    [ return' (result:Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)-> {inv1 result}
+      {[#"../../../../../creusot-contracts/src/std/iter.rs" 89 0 166 1] into_iter_post0 self result}
+      (! return' {result}) ]
+    
+  let rec new0 (start:usize) (end':usize) (return'  (ret:Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize))= {inv3 end'}
+    {inv3 start}
+    any 
+    [ return' (result:Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)-> {inv1 result}
+      {[#"../../../../../creusot-contracts/src/std/ops.rs" 222 16 222 93] deep_model0 start <= deep_model0 end'
+       -> not is_empty_log0 result}
+      {[#"../../../../../creusot-contracts/src/std/ops.rs" 221 26 221 49] end_log0 result = end'}
+      {[#"../../../../../creusot-contracts/src/std/ops.rs" 220 26 220 53] start_log0 result = start}
       (! return' {result}) ]
     
   let rec len0 (self:Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:usize))= {inv2 self}
@@ -453,104 +526,107 @@ module C08Haystack_Search
     
   let rec search (needle:Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (haystack:Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:usize))= {[#"../08_haystack.rs" 15 11 15 65] Seq.length (shallow_model1 needle) >= 1 /\ Seq.length (shallow_model1 needle) <= Seq.length (shallow_model1 haystack)}
     (! bb0 
-    [ bb32 = return' {_0} 
-    | bb31 = bb32 
-    | bb10 = len0 {haystack} (fun (_ret':usize) -> [ &_0 <- _ret' ] bb31) 
-    | bb22 = [ &_0 <- i ] bb32 
-    | bb24 = {[#"../08_haystack.rs" 24 8 24 68] false}
-      any 
-    | bb12 = {[#"../08_haystack.rs" 22 4 22 112] false}
-      any 
-    | bb7 = {[#"../08_haystack.rs" 22 4 22 112] forall k : int . 0 <= k /\ k < Seq.length (Snapshot.inner produced)
-       -> not match_at0 needle haystack k (Seq.length (shallow_model1 needle))}
-      {[#"../08_haystack.rs" 22 4 22 112] produces1 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
-      {[#"../08_haystack.rs" 22 4 22 112] inv1 iter}
-      (! bb8) 
-      [ bb30 = bb19
-      | bb29 = bb7
-      | bb28 = UInt8.ne {_55} {_59} (fun (_ret':bool) -> [ &_53 <- _ret' ] any 
-          [ br0 -> {_53 = false} (! bb30) | br1 -> {_53} (! bb29) ]
-          )
-      | bb27 = UIntSize.add {i} {j} (fun (_ret':usize) -> [ &_61 <- _ret' ] index0 {haystack} {_61}
-          (fun (_ret':uint8) -> [ &_59 <- _ret' ] bb28))
-      | bb26 = [ &produced1 <- _50 ] any 
-        [ any_ (_any:Snapshot.snap_ty (Seq.seq usize))-> [ &_50 <- _any ] [ &j <- __creusot_proc_iter_elem1 ] index0
-          {needle} {j} (fun (_ret':uint8) -> [ &_55 <- _ret' ] bb27) ]
-        
-      | bb25 = [ &__creusot_proc_iter_elem1 <- Core_Option_Option_Type.some_0 _45 ] 
-        [ &_50 <- [#"../08_haystack.rs" 24 8 24 68] Snapshot.new (Seq.(++) (Snapshot.inner produced1) (Seq.singleton __creusot_proc_iter_elem1)) ]
-        bb26
-      | bb23 = bb25
-      | bb21 = -{resolve0 _47}- any 
-        [ br0 -> {_45 = Core_Option_Option_Type.C_None }
-          (! bb22)
-        | br1 (a:usize)-> {_45 = Core_Option_Option_Type.C_Some a}
-          (! bb23)
-        | default -> (! bb24) ]
-        
-      | bb20 = Borrow.borrow_mut <Core_Ops_Range_Range_Type.t_range usize> {iter1}
-        (fun (_ret':borrowed (Core_Ops_Range_Range_Type.t_range usize)) -> [ &_47 <- _ret' ] 
-          [ &iter1 <-  ^ _47 ]
-          Borrow.borrow_final <Core_Ops_Range_Range_Type.t_range usize> { * _47} {Borrow.get_id _47}
-          (fun (_ret':borrowed (Core_Ops_Range_Range_Type.t_range usize)) -> [ &_46 <- _ret' ] 
-            [ &_47 <- { _47 with current = ( ^ _46) ; } ]
-            next0 {_46} (fun (_ret':Core_Option_Option_Type.t_option usize) -> [ &_45 <- _ret' ] bb21)))
-      | bb19 = {[#"../08_haystack.rs" 24 20 24 66] match_at0 needle haystack (UIntSize.to_int i) (Seq.length (Snapshot.inner produced1))}
-        {[#"../08_haystack.rs" 24 8 24 68] produces0 (Snapshot.inner iter_old1) (Snapshot.inner produced1) iter1}
-        {[#"../08_haystack.rs" 24 8 24 68] inv0 iter1}
-        (! bb20)
-      | bb18 = bb19
-      | bb17 = [ &produced1 <- [#"../08_haystack.rs" 24 8 24 68] Snapshot.new (Seq.empty  : Seq.seq usize) ] bb18
-      | bb16 = [ &iter_old1 <- [#"../08_haystack.rs" 24 8 24 68] Snapshot.new iter1 ] bb17
-      | bb15 = [ &_35 <- Core_Ops_Range_Range_Type.C_Range ([#"../08_haystack.rs" 25 17 25 18] (0 : usize)) _36 ] any 
-        [ any_ (_any:usize)-> [ &_36 <- _any ] into_iter0 {_35} (fun (_ret':Core_Ops_Range_Range_Type.t_range usize) -> 
-            [ &iter1 <- _ret' ]
-            bb16) ]
-        
-      | bb14 = [ &produced <- _29 ] any 
-        [ any_ (_any:Snapshot.snap_ty (Seq.seq usize))-> [ &_29 <- _any ] [ &i <- __creusot_proc_iter_elem ] len0
-          {needle} (fun (_ret':usize) -> [ &_36 <- _ret' ] bb15) ]
-        
-      | bb13 = [ &__creusot_proc_iter_elem <- Core_Option_Option_Type.some_0 _24 ] 
-        [ &_29 <- [#"../08_haystack.rs" 22 4 22 112] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
-        bb14
-      | bb11 = bb13
-      | bb9 = -{resolve1 _26}- any 
-        [ br0 -> {_24 = Core_Option_Option_Type.C_None }
-          (! bb10)
-        | br1 (a:usize)-> {_24 = Core_Option_Option_Type.C_Some a}
-          (! bb11)
-        | default -> (! bb12) ]
-        
-      | bb8 = Borrow.borrow_mut <Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize> {iter}
-        (fun (_ret':borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) -> [ &_26 <- _ret' ] 
-          [ &iter <-  ^ _26 ]
-          Borrow.borrow_final <Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize> { * _26} {Borrow.get_id _26}
-          (fun (_ret':borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) -> [ &_25 <- _ret' ] 
-            [ &_26 <- { _26 with current = ( ^ _25) ; } ]
-            next1 {_25} (fun (_ret':Core_Option_Option_Type.t_option usize) -> [ &_24 <- _ret' ] bb9))) ]
-      
-    | bb6 = bb7 
-    | bb5 = [ &produced <- [#"../08_haystack.rs" 22 4 22 112] Snapshot.new (Seq.empty  : Seq.seq usize) ] bb6 
-    | bb4 = [ &iter_old <- [#"../08_haystack.rs" 22 4 22 112] Snapshot.new iter ] bb5 
-    | bb3 = into_iter1 {_10} (fun (_ret':Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) -> 
+    [ bb0 = len0 {haystack} (fun (_ret':usize) -> [ &_12 <- _ret' ] bb1)
+    | bb1 = len0 {needle} (fun (_ret':usize) -> [ &_14 <- _ret' ] bb2)
+    | bb2 = UIntSize.sub {_12} {_14} (fun (_ret':usize) -> [ &_11 <- _ret' ] (any 
+        [ any_ (_any:usize)-> (! [ &_12 <- _any ] (any 
+          [ any_ (_any:usize)-> (! [ &_14 <- _any ] new0 {[#"../08_haystack.rs" 23 17 23 18] (0 : usize)} {_11}
+            (fun (_ret':Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) -> [ &_10 <- _ret' ] bb3)) ]
+          )) ]
+        ))
+    | bb3 = into_iter0 {_10} (fun (_ret':Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) -> 
         [ &iter <- _ret' ]
-        bb4) 
-    | bb2 = UIntSize.sub {_12} {_14} (fun (_ret':usize) -> [ &_11 <- _ret' ] new3
-        {[#"../08_haystack.rs" 23 17 23 18] (0 : usize)} {_11}
-        (fun (_ret':Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) -> [ &_10 <- _ret' ] bb3)) 
-    | bb1 = len0 {needle} (fun (_ret':usize) -> [ &_14 <- _ret' ] bb2) 
-    | bb0 = len0 {haystack} (fun (_ret':usize) -> [ &_12 <- _ret' ] bb1)  ]
-    ) 
-    [ return' (result:usize)-> {[#"../08_haystack.rs" 20 0 20 139] UIntSize.to_int result = Seq.length (shallow_model1 haystack)
-       -> (forall i : int . 0 <= i /\ i < Seq.length (shallow_model1 haystack)
-       -> not match_at0 needle haystack i (Seq.length (shallow_model1 needle)))}
-      {[#"../08_haystack.rs" 17 0 19 108] UIntSize.to_int result < Seq.length (shallow_model1 haystack)
-       -> match_at0 needle haystack (UIntSize.to_int result) (Seq.length (shallow_model1 needle)) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int result
-       -> not match_at0 needle haystack i (Seq.length (shallow_model1 needle)))}
-      {[#"../08_haystack.rs" 16 10 16 85] UIntSize.to_int result = Seq.length (shallow_model1 haystack) \/ UIntSize.to_int result < Seq.length (shallow_model1 haystack) - Seq.length (shallow_model1 needle) + 1}
-      (! return' {_0}) ]
-    
+        bb4)
+    | bb4 = [ &iter_old <- [#"../08_haystack.rs" 22 4 22 112] Snapshot.new iter ] bb5
+    | bb5 = [ &produced <- [#"../08_haystack.rs" 22 4 22 112] Snapshot.new (Seq.empty  : Seq.seq usize) ] bb6
+    | bb6 = bb7
+    | bb7 = bb7 
+      [ bb7 = {[#"../08_haystack.rs" 22 4 22 112] forall k : int . 0 <= k /\ k < Seq.length (Snapshot.inner produced)
+         -> not match_at0 needle haystack k (Seq.length (shallow_model1 needle))}
+        {[#"../08_haystack.rs" 22 4 22 112] produces1 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
+        {[#"../08_haystack.rs" 22 4 22 112] inv1 iter}
+        (! bb8) 
+        [ bb8 = Borrow.borrow_mut <Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize> {iter}
+          (fun (_ret':borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) -> [ &iter <-  ^ _26 ] 
+            [ &_26 <- _ret' ]
+            Borrow.borrow_final <Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize> { * _26} {Borrow.get_id _26}
+            (fun (_ret':borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) -> [ &_25 <- _ret' ] 
+              [ &_26 <- { _26 with current = ( ^ _25) ; } ]
+              next0 {_25} (fun (_ret':Core_Option_Option_Type.t_option usize) -> [ &_24 <- _ret' ] bb9)))
+        | bb9 = -{resolve0 _26}- any 
+          [ br0 -> {_24 = Core_Option_Option_Type.C_None }
+            (! bb10)
+          | br1 (a:usize)-> {_24 = Core_Option_Option_Type.C_Some a}
+            (! bb11) ]
+          
+        | bb11 = bb13
+        | bb13 = Core_Option_Option_Type.some <usize> {_24} (fun (rf_0':usize) -> 
+            [ &__creusot_proc_iter_elem <- rf_0' ]
+            
+            [ &_29 <- [#"../08_haystack.rs" 22 4 22 112] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
+            bb14)
+        | bb14 = [ &produced <- _29 ] (any 
+          [ any_ (_any:Snapshot.snap_ty (Seq.seq usize))-> (! [ &_29 <- _any ] [ &i <- __creusot_proc_iter_elem ] len0
+            {needle} (fun (_ret':usize) -> [ &_36 <- _ret' ] bb15)) ]
+          )
+        | bb15 = 
+          [ &_35 <- Core_Ops_Range_Range_Type.C_Range ([#"../08_haystack.rs" 25 17 25 18] (0 : usize)) _36 : Core_Ops_Range_Range_Type.t_range usize ]
+          (any 
+          [ any_ (_any:usize)-> (! [ &_36 <- _any ] into_iter1 {_35}
+            (fun (_ret':Core_Ops_Range_Range_Type.t_range usize) -> [ &iter1 <- _ret' ] bb16)) ]
+          )
+        | bb16 = [ &iter_old1 <- [#"../08_haystack.rs" 24 8 24 68] Snapshot.new iter1 ] bb17
+        | bb17 = [ &produced1 <- [#"../08_haystack.rs" 24 8 24 68] Snapshot.new (Seq.empty  : Seq.seq usize) ] bb18
+        | bb18 = bb19
+        | bb19 = bb19 
+          [ bb19 = {[#"../08_haystack.rs" 24 20 24 66] match_at0 needle haystack (UIntSize.to_int i) (Seq.length (Snapshot.inner produced1))}
+            {[#"../08_haystack.rs" 24 8 24 68] produces0 (Snapshot.inner iter_old1) (Snapshot.inner produced1) iter1}
+            {[#"../08_haystack.rs" 24 8 24 68] inv0 iter1}
+            (! bb20) 
+            [ bb20 = Borrow.borrow_mut <Core_Ops_Range_Range_Type.t_range usize> {iter1}
+              (fun (_ret':borrowed (Core_Ops_Range_Range_Type.t_range usize)) -> [ &iter1 <-  ^ _47 ] 
+                [ &_47 <- _ret' ]
+                Borrow.borrow_final <Core_Ops_Range_Range_Type.t_range usize> { * _47} {Borrow.get_id _47}
+                (fun (_ret':borrowed (Core_Ops_Range_Range_Type.t_range usize)) -> [ &_46 <- _ret' ] 
+                  [ &_47 <- { _47 with current = ( ^ _46) ; } ]
+                  next1 {_46} (fun (_ret':Core_Option_Option_Type.t_option usize) -> [ &_45 <- _ret' ] bb21)))
+            | bb21 = -{resolve1 _47}- any 
+              [ br0 -> {_45 = Core_Option_Option_Type.C_None }
+                (! bb22)
+              | br1 (a:usize)-> {_45 = Core_Option_Option_Type.C_Some a}
+                (! bb23) ]
+              
+            | bb23 = bb25
+            | bb25 = Core_Option_Option_Type.some <usize> {_45} (fun (rf_0':usize) -> 
+                [ &__creusot_proc_iter_elem1 <- rf_0' ]
+                
+                [ &_50 <- [#"../08_haystack.rs" 24 8 24 68] Snapshot.new (Seq.(++) (Snapshot.inner produced1) (Seq.singleton __creusot_proc_iter_elem1)) ]
+                bb26)
+            | bb26 = [ &produced1 <- _50 ] (any 
+              [ any_ (_any:Snapshot.snap_ty (Seq.seq usize))-> (! [ &_50 <- _any ] 
+                [ &j <- __creusot_proc_iter_elem1 ]
+                index0 {needle} {j} (fun (_ret':uint8) -> [ &_55 <- _ret' ] bb27)) ]
+              )
+            | bb27 = UIntSize.add {i} {j} (fun (_ret':usize) -> [ &_61 <- _ret' ] index0 {haystack} {_61}
+                (fun (_ret':uint8) -> [ &_59 <- _ret' ] bb28))
+            | bb28 = UInt8.ne {_55} {_59} (fun (_ret':bool) -> [ &_53 <- _ret' ] (any 
+                [ br0 -> {_53 = false} (! bb30) | br1 -> {_53} (! bb29) ]
+                ))
+            | bb30 = bb19 ]
+             ]
+          
+        | bb29 = bb7 ]
+         ]
+      
+    | bb12 = {[#"../08_haystack.rs" 22 4 22 112] false}
+      any
+    | bb24 = {[#"../08_haystack.rs" 24 8 24 68] false}
+      any
+    | bb22 = [ &_0 <- i ] bb32
+    | bb10 = len0 {haystack} (fun (_ret':usize) -> [ &_0 <- _ret' ] bb31)
+    | bb31 = bb32
+    | bb32 = return' {_0} ]
+    )
     [ & _0 : usize = any_l () : usize
     | & needle : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global) = needle
     | & haystack : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global) = haystack
@@ -582,5 +658,14 @@ module C08Haystack_Search
     | & _55 : uint8 = any_l () : uint8
     | & _59 : uint8 = any_l () : uint8
     | & _61 : usize = any_l () : usize ]
+     
+    [ return' (result:usize)-> {[#"../08_haystack.rs" 20 0 20 139] UIntSize.to_int result = Seq.length (shallow_model1 haystack)
+       -> (forall i : int . 0 <= i /\ i < Seq.length (shallow_model1 haystack)
+       -> not match_at0 needle haystack i (Seq.length (shallow_model1 needle)))}
+      {[#"../08_haystack.rs" 17 0 19 108] UIntSize.to_int result < Seq.length (shallow_model1 haystack)
+       -> match_at0 needle haystack (UIntSize.to_int result) (Seq.length (shallow_model1 needle)) /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int result
+       -> not match_at0 needle haystack i (Seq.length (shallow_model1 needle)))}
+      {[#"../08_haystack.rs" 16 10 16 85] UIntSize.to_int result = Seq.length (shallow_model1 haystack) \/ UIntSize.to_int result < Seq.length (shallow_model1 haystack) - Seq.length (shallow_model1 needle) + 1}
+      (! return' {result}) ]
     
 end

@@ -4,12 +4,22 @@ module Model_Seven_Type
     | C_Seven
     
   function any_l (_ : 'b) : 'a
+  let rec seven (input:t_seven) (ret  )= any 
+    [ good -> {C_Seven  = input} ret | bad -> {C_Seven  <> input} {false} any ]
+    
 end
 module Model_Pair_Type
   type t_pair 't 'u =
     | C_Pair 't 'u
     
   function any_l (_ : 'b) : 'a
+  let rec pair < 't > < 'u > (input:t_pair 't 'u) (ret  (field_0:'t) (field_1:'u))= any 
+    [ good (field_0:'t) (field_1:'u)-> {C_Pair field_0 field_1 = input}
+      ret {field_0} {field_1}
+    | bad (field_0:'t) (field_1:'u)-> {C_Pair field_0 field_1 <> input}
+      {false}
+      any ]
+    
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
@@ -17,12 +27,26 @@ module Core_Ptr_NonNull_NonNull_Type
     | C_NonNull opaque_ptr
     
   function any_l (_ : 'b) : 'a
+  let rec non_null < 't > (input:t_nonnull 't) (ret  (field_0:opaque_ptr))= any 
+    [ good (field_0:opaque_ptr)-> {C_NonNull field_0 = input}
+      ret {field_0}
+    | bad (field_0:opaque_ptr)-> {C_NonNull field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Core_Cell_UnsafeCell_Type
   type t_unsafecell 't =
     | C_UnsafeCell 't
     
   function any_l (_ : 'b) : 'a
+  let rec unsafe_cell < 't > (input:t_unsafecell 't) (ret  (field_0:'t))= any 
+    [ good (field_0:'t)-> {C_UnsafeCell field_0 = input}
+      ret {field_0}
+    | bad (field_0:'t)-> {C_UnsafeCell field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Core_Sync_Atomic_AtomicUsize_Type
   use prelude.UIntSize
@@ -32,6 +56,13 @@ module Core_Sync_Atomic_AtomicUsize_Type
     | C_AtomicUsize (Core_Cell_UnsafeCell_Type.t_unsafecell usize)
     
   function any_l (_ : 'b) : 'a
+  let rec atomic_usize (input:t_atomicusize) (ret  (field_0:Core_Cell_UnsafeCell_Type.t_unsafecell usize))= any 
+    [ good (field_0:Core_Cell_UnsafeCell_Type.t_unsafecell usize)-> {C_AtomicUsize field_0 = input}
+      ret {field_0}
+    | bad (field_0:Core_Cell_UnsafeCell_Type.t_unsafecell usize)-> {C_AtomicUsize field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_Sync_ArcInner_Type
   use Core_Sync_Atomic_AtomicUsize_Type as Core_Sync_Atomic_AtomicUsize_Type
@@ -39,12 +70,23 @@ module Alloc_Sync_ArcInner_Type
     | C_ArcInner (Core_Sync_Atomic_AtomicUsize_Type.t_atomicusize) (Core_Sync_Atomic_AtomicUsize_Type.t_atomicusize) 't
     
   function any_l (_ : 'b) : 'a
+  let rec arc_inner < 't > (input:t_arcinner 't) (ret  (field_0:Core_Sync_Atomic_AtomicUsize_Type.t_atomicusize) (field_1:Core_Sync_Atomic_AtomicUsize_Type.t_atomicusize) (field_2:'t))= any
+    
+    [ good (field_0:Core_Sync_Atomic_AtomicUsize_Type.t_atomicusize) (field_1:Core_Sync_Atomic_AtomicUsize_Type.t_atomicusize) (field_2:'t)-> {C_ArcInner field_0 field_1 field_2 = input}
+      ret {field_0} {field_1} {field_2}
+    | bad (field_0:Core_Sync_Atomic_AtomicUsize_Type.t_atomicusize) (field_1:Core_Sync_Atomic_AtomicUsize_Type.t_atomicusize) (field_2:'t)-> {C_ArcInner field_0 field_1 field_2 <> input}
+      {false}
+      any ]
+    
 end
 module Core_Marker_PhantomData_Type
   type t_phantomdata 't =
     | C_PhantomData
     
   function any_l (_ : 'b) : 'a
+  let rec phantom_data < 't > (input:t_phantomdata 't) (ret  )= any 
+    [ good -> {C_PhantomData  = input} ret | bad -> {C_PhantomData  <> input} {false} any ]
+    
 end
 module Alloc_Sync_Arc_Type
   use Alloc_Sync_ArcInner_Type as Alloc_Sync_ArcInner_Type
@@ -54,12 +96,23 @@ module Alloc_Sync_Arc_Type
     | C_Arc (Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Sync_ArcInner_Type.t_arcinner 't)) (Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Sync_ArcInner_Type.t_arcinner 't)) 'a
     
   function any_l (_ : 'b) : 'a
+  let rec arc < 't > < 'a > (input:t_arc 't 'a) (ret  (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Sync_ArcInner_Type.t_arcinner 't)) (field_1:Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Sync_ArcInner_Type.t_arcinner 't)) (field_2:'a))= any
+    
+    [ good (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Sync_ArcInner_Type.t_arcinner 't)) (field_1:Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Sync_ArcInner_Type.t_arcinner 't)) (field_2:'a)-> {C_Arc field_0 field_1 field_2 = input}
+      ret {field_0} {field_1} {field_2}
+    | bad (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Sync_ArcInner_Type.t_arcinner 't)) (field_1:Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Sync_ArcInner_Type.t_arcinner 't)) (field_2:'a)-> {C_Arc field_0 field_1 field_2 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_Alloc_Global_Type
   type t_global  =
     | C_Global
     
   function any_l (_ : 'b) : 'a
+  let rec global (input:t_global) (ret  )= any 
+    [ good -> {C_Global  = input} ret | bad -> {C_Global  <> input} {false} any ]
+    
 end
 module Model_TestArc
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
@@ -72,9 +125,9 @@ module Model_TestArc
     [ return' (result:usize)-> {result = shallow_model0 self} (! return' {result}) ] 
   use prelude.Intrinsic
   let rec test_arc (a:Alloc_Sync_Arc_Type.t_arc usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:()))= {[#"../model.rs" 42 11 42 19] UIntSize.to_int (shallow_model0 a) = 0}
-    (! bb0 [ bb2 = return' {_0}  | bb1 = [ &_0 <- [#"../model.rs" 43 42 43 44] () ] bb2  | bb0 = bb1  ] ) 
-    [ return' (result:())-> (! return' {_0}) ]
-    [ & _0 : () = any_l () : () ] 
+    (! bb0 [ bb0 = bb1 | bb1 = [ &_0 <- [#"../model.rs" 43 42 43 44] () ] bb2 | bb2 = return' {_0} ] )
+    [ & _0 : () = any_l () : () ]
+     [ return' (result:())-> (! return' {result}) ] 
 end
 module Core_Cell_Cell_Type
   use Core_Cell_UnsafeCell_Type as Core_Cell_UnsafeCell_Type
@@ -82,6 +135,13 @@ module Core_Cell_Cell_Type
     | C_Cell (Core_Cell_UnsafeCell_Type.t_unsafecell 't)
     
   function any_l (_ : 'b) : 'a
+  let rec cell < 't > (input:t_cell 't) (ret  (field_0:Core_Cell_UnsafeCell_Type.t_unsafecell 't))= any 
+    [ good (field_0:Core_Cell_UnsafeCell_Type.t_unsafecell 't)-> {C_Cell field_0 = input}
+      ret {field_0}
+    | bad (field_0:Core_Cell_UnsafeCell_Type.t_unsafecell 't)-> {C_Cell field_0 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_Rc_RcBox_Type
   use prelude.UIntSize
@@ -91,6 +151,14 @@ module Alloc_Rc_RcBox_Type
     | C_RcBox (Core_Cell_Cell_Type.t_cell usize) (Core_Cell_Cell_Type.t_cell usize) 't
     
   function any_l (_ : 'b) : 'a
+  let rec rc_box < 't > (input:t_rcbox 't) (ret  (field_0:Core_Cell_Cell_Type.t_cell usize) (field_1:Core_Cell_Cell_Type.t_cell usize) (field_2:'t))= any
+    
+    [ good (field_0:Core_Cell_Cell_Type.t_cell usize) (field_1:Core_Cell_Cell_Type.t_cell usize) (field_2:'t)-> {C_RcBox field_0 field_1 field_2 = input}
+      ret {field_0} {field_1} {field_2}
+    | bad (field_0:Core_Cell_Cell_Type.t_cell usize) (field_1:Core_Cell_Cell_Type.t_cell usize) (field_2:'t)-> {C_RcBox field_0 field_1 field_2 <> input}
+      {false}
+      any ]
+    
 end
 module Alloc_Rc_Rc_Type
   use Alloc_Rc_RcBox_Type as Alloc_Rc_RcBox_Type
@@ -100,6 +168,14 @@ module Alloc_Rc_Rc_Type
     | C_Rc (Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Rc_RcBox_Type.t_rcbox 't)) (Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Rc_RcBox_Type.t_rcbox 't)) 'a
     
   function any_l (_ : 'b) : 'a
+  let rec rc < 't > < 'a > (input:t_rc 't 'a) (ret  (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Rc_RcBox_Type.t_rcbox 't)) (field_1:Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Rc_RcBox_Type.t_rcbox 't)) (field_2:'a))= any
+    
+    [ good (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Rc_RcBox_Type.t_rcbox 't)) (field_1:Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Rc_RcBox_Type.t_rcbox 't)) (field_2:'a)-> {C_Rc field_0 field_1 field_2 = input}
+      ret {field_0} {field_1} {field_2}
+    | bad (field_0:Core_Ptr_NonNull_NonNull_Type.t_nonnull (Alloc_Rc_RcBox_Type.t_rcbox 't)) (field_1:Core_Marker_PhantomData_Type.t_phantomdata (Alloc_Rc_RcBox_Type.t_rcbox 't)) (field_2:'a)-> {C_Rc field_0 field_1 field_2 <> input}
+      {false}
+      any ]
+    
 end
 module Model_TestRc
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
@@ -112,9 +188,9 @@ module Model_TestRc
     [ return' (result:usize)-> {result = shallow_model0 self} (! return' {result}) ] 
   use prelude.Intrinsic
   let rec test_rc (v:Alloc_Rc_Rc_Type.t_rc usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:()))= {[#"../model.rs" 45 11 45 19] UIntSize.to_int (shallow_model0 v) = 0}
-    (! bb0 [ bb2 = return' {_0}  | bb1 = [ &_0 <- [#"../model.rs" 46 38 46 40] () ] bb2  | bb0 = bb1  ] ) 
-    [ return' (result:())-> (! return' {_0}) ]
-    [ & _0 : () = any_l () : () ] 
+    (! bb0 [ bb0 = bb1 | bb1 = [ &_0 <- [#"../model.rs" 46 38 46 40] () ] bb2 | bb2 = return' {_0} ] )
+    [ & _0 : () = any_l () : () ]
+     [ return' (result:())-> (! return' {result}) ] 
 end
 module Model_Impl0
   
