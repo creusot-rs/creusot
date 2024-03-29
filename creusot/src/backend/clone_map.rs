@@ -234,7 +234,7 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
 
 // a clone node is expected to have a DefId
 type DepNode<'tcx> = Dependency<'tcx>;
-pub(super) type CloneSummary<'tcx> = IndexMap<DepNode<'tcx>, CloneInfo>;
+pub(super) type CloneSummary<'tcx> = IndexMap<DepNode<'tcx>, DepInfo>;
 
 #[derive(Clone)]
 pub struct Dependencies<'tcx> {
@@ -309,23 +309,23 @@ impl NameSupply {
 #[derive(Default)]
 struct DepGraph<'tcx> {
     graph: DiGraphMap<DepNode<'tcx>, CloneLevel>,
-    info: IndexMap<DepNode<'tcx>, CloneInfo>,
+    info: IndexMap<DepNode<'tcx>, DepInfo>,
     roots: IndexSet<DepNode<'tcx>>,
     builtins: IndexSet<PreludeModule>,
 }
 
 impl<'tcx> DepGraph<'tcx> {
-    fn info(&self, key: DepNode<'tcx>) -> &CloneInfo {
+    fn info(&self, key: DepNode<'tcx>) -> &DepInfo {
         self.info.get(&key).unwrap_or_else(|| panic!("Could not find key {key:?}"))
     }
 
-    fn info_mut(&mut self, key: DepNode<'tcx>) -> &mut CloneInfo {
+    fn info_mut(&mut self, key: DepNode<'tcx>) -> &mut DepInfo {
         &mut self.info[&key]
     }
 
     fn add_node(&mut self, key: DepNode<'tcx>, kind: Kind, level: CloneLevel) -> bool {
         let contained = self.info.contains_key(&key);
-        self.info.entry(key).and_modify(|info| info.join_level(level)).or_insert(CloneInfo {
+        self.info.entry(key).and_modify(|info| info.join_level(level)).or_insert(DepInfo {
             kind,
             level,
             opaque: CloneOpacity::Default,
@@ -394,7 +394,7 @@ enum CloneOpacity {
 
 /// Metadata about a specific clone including the name provided for that clone
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
-pub struct CloneInfo {
+pub struct DepInfo {
     /// The highest 'visibility' this clone is visible from
     level: CloneLevel,
     /// Whether this clone is opaque (hides the body of logical functions)
@@ -403,9 +403,13 @@ pub struct CloneInfo {
     kind: Kind,
 }
 
-impl<'tcx> CloneInfo {
+impl<'tcx> DepInfo {
     fn opaque(&mut self) {
         self.opaque = CloneOpacity::Opaque;
+    }
+
+    fn hidden(&self) -> bool {
+        matches!(self.kind, Kind::Hidden(_))
     }
 
     // fn qname_ident(&self, method: Ident) -> QName {
@@ -538,7 +542,7 @@ impl<'tcx> Dependencies<'tcx> {
                 continue;
             }
 
-            if matches!(clone_graph.info(node).kind, Kind::Hidden(_)) {
+            if clone_graph.info(node).hidden() {
                 continue;
             }
 
@@ -564,13 +568,8 @@ impl<'tcx> Dependencies<'tcx> {
         // Only return the roots (direct dependencies) of the graph as dependencies
         let summary: CloneSummary<'tcx> = roots
             .into_iter()
-            .filter_map(|r| {
-                if matches!(clone_graph.info(r).kind, Kind::Hidden(_)) {
-                    None
-                } else {
-                    Some((r, clone_graph.info(r).clone()))
-                }
-            })
+            .filter(|r| clone_graph.info(*r).hidden())
+            .map(|r| (r, clone_graph.info(r).clone()))
             .collect();
 
         let clones = decls;
