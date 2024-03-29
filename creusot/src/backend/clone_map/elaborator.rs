@@ -15,7 +15,7 @@ use why3::{
 
 use crate::{
     backend::{
-        dependency::HackedId,
+        dependency::ExtendedId,
         logic::{lower_logical_defn, lower_pure_defn, sigs, spec_axiom},
         signature::sig_to_why3,
         term::lower_pure,
@@ -240,19 +240,19 @@ fn sig<'tcx>(ctx: &mut Why3Generator<'tcx>, dep: DepNode<'tcx>) -> PreSignature<
         // In future change this
         TransId::TyInv(_) => unreachable!(),
         TransId::Hacked(h_id, id) => match h_id {
-            HackedId::PostconditionOnce => {
+            ExtendedId::PostconditionOnce => {
                 ctx.closure_contract(id).postcond_once.as_ref().unwrap().0.clone()
             }
-            HackedId::PostconditionMut => {
+            ExtendedId::PostconditionMut => {
                 ctx.closure_contract(id).postcond_mut.as_ref().unwrap().0.clone()
             }
-            HackedId::Postcondition => {
+            ExtendedId::Postcondition => {
                 ctx.closure_contract(id).postcond.as_ref().unwrap().0.clone()
             }
-            HackedId::Precondition => ctx.closure_contract(id).precond.0.clone(),
-            HackedId::Unnest => ctx.closure_contract(id).unnest.as_ref().unwrap().0.clone(),
-            HackedId::Resolve => ctx.closure_contract(id).resolve.0.clone(),
-            HackedId::Accessor(ix) => ctx.closure_contract(id).accessors[ix as usize].0.clone(),
+            ExtendedId::Precondition => ctx.closure_contract(id).precond.0.clone(),
+            ExtendedId::Unnest => ctx.closure_contract(id).unnest.as_ref().unwrap().0.clone(),
+            ExtendedId::Resolve => ctx.closure_contract(id).resolve.0.clone(),
+            ExtendedId::Accessor(ix) => ctx.closure_contract(id).accessors[ix as usize].0.clone(),
         },
     }
 }
@@ -334,7 +334,7 @@ impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
         let tcx = self.tcx;
         let node = match util::item_type(tcx, def_id) {
             ItemType::Closure => {
-                DepNode::Hacked(HackedId::Accessor(ix.as_u32() as u8), def_id, subst)
+                DepNode::Hacked(ExtendedId::Accessor(ix.as_u32() as u8), def_id, subst)
             }
             _ => DepNode::new(tcx, (def_id, subst)),
         };

@@ -26,7 +26,7 @@ use crate::{
 };
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 
-use super::{dependency::HackedId, ty_inv::TyInvKind, TransId, Why3Generator};
+use super::{dependency::ExtendedId, ty_inv::TyInvKind, TransId, Why3Generator};
 
 mod elaborator;
 mod expander;
@@ -183,7 +183,7 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
         let tcx = self.tcx;
         let node = match util::item_type(tcx, def_id) {
             ItemType::Closure => {
-                DepNode::Hacked(HackedId::Accessor(ix.as_u32() as u8), def_id, subst)
+                DepNode::Hacked(ExtendedId::Accessor(ix.as_u32() as u8), def_id, subst)
             }
             _ => DepNode::new(tcx, (def_id, subst)),
         };

@@ -20,7 +20,7 @@ pub(crate) use clone_map::*;
 use why3::Exp;
 
 use self::{
-    dependency::{Dependency, HackedId},
+    dependency::{Dependency, ExtendedId},
     ty_inv::TyInvKind,
 };
 
@@ -42,7 +42,7 @@ pub(crate) mod ty_inv;
 pub(crate) enum TransId {
     Item(DefId),
     TyInv(TyInvKind),
-    Hacked(HackedId, DefId),
+    Hacked(ExtendedId, DefId),
 }
 
 impl From<DefId> for TransId {
@@ -96,13 +96,13 @@ impl<'tcx> Why3Generator<'tcx> {
             TransId::Hacked(h, id) => {
                 let c = self.ctx.closure_contract(id);
                 match h {
-                    HackedId::PostconditionOnce => Some(&c.postcond_once.as_ref()?.1),
-                    HackedId::PostconditionMut => Some(&c.postcond_mut.as_ref()?.1),
-                    HackedId::Postcondition => Some(&c.postcond.as_ref()?.1),
-                    HackedId::Precondition => Some(&c.precond.1),
-                    HackedId::Unnest => Some(&c.unnest.as_ref()?.1),
-                    HackedId::Resolve => Some(&c.resolve.1),
-                    HackedId::Accessor(ix) => Some(&c.accessors[ix as usize].1),
+                    ExtendedId::PostconditionOnce => Some(&c.postcond_once.as_ref()?.1),
+                    ExtendedId::PostconditionMut => Some(&c.postcond_mut.as_ref()?.1),
+                    ExtendedId::Postcondition => Some(&c.postcond.as_ref()?.1),
+                    ExtendedId::Precondition => Some(&c.precond.1),
+                    ExtendedId::Unnest => Some(&c.unnest.as_ref()?.1),
+                    ExtendedId::Resolve => Some(&c.resolve.1),
+                    ExtendedId::Accessor(ix) => Some(&c.accessors[ix as usize].1),
                 }
             }
         }
@@ -345,7 +345,7 @@ impl<'tcx> Why3Generator<'tcx> {
 
     fn is_accessor(&self, item: TransId) -> bool {
         match item {
-            TransId::Hacked(HackedId::Accessor(_), _) => true,
+            TransId::Hacked(ExtendedId::Accessor(_), _) => true,
             TransId::Item(id) => self.def_kind(id) == DefKind::Field,
             _ => false,
         }
