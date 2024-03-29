@@ -168,7 +168,7 @@ fn detect_why3_version(why3: &Path) -> Option<String> {
     let version_full = String::from_utf8(output.stdout).ok()?;
     let version = version_full.strip_prefix("Why3 platform, version ");
     version.map(|ver| {
-        let parts: Vec<_> = ver.split(|c| c == '.' || c == '+').collect();
+        let parts: Vec<_> = ver.trim_end().split(|c| c == '.' || c == '+').collect();
         String::from(&parts[..3].join("."))
     })
 }
@@ -203,8 +203,8 @@ fn detect_altergo_version(altergo: &Path) -> Option<String> {
     let output = Command::new(&altergo).arg("--version").output().ok()?;
     let out_s = String::from_utf8(output.stdout).ok()?;
     // will be needed for more recent altergo versions
-    // out_s.trim_end_matches(char::is_whitespace).strip_prefix("v").map(String::from)
-    Some(out_s.trim_end_matches(char::is_whitespace).to_owned())
+    // out_s.trim_end().strip_prefix("v").map(String::from)
+    Some(out_s.trim_end().to_owned())
 }
 
 // helpers: Z3
