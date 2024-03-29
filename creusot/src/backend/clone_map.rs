@@ -388,15 +388,6 @@ impl Kind {
     }
 }
 
-impl Into<CloneKind> for Kind {
-    fn into(self) -> CloneKind {
-        match self {
-            Kind::Named(i) => CloneKind::Named(i.to_string().into()),
-            Kind::Hidden(_) => CloneKind::Bare,
-        }
-    }
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable)]
 enum CloneOpacity {
     Transparent,
@@ -566,7 +557,7 @@ impl<'tcx> Dependencies<'tcx> {
                 (CloneDepth::Shallow, _) => CloneLevel::Signature,
             };
 
-            let decl = elab.build_clone(ctx, &mut self, &clone_graph, node, level_of_item);
+            let decl = elab.build_clone(ctx, &mut self, node, level_of_item);
             decls.extend(decl);
         }
 

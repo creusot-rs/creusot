@@ -30,7 +30,7 @@ use crate::{
     util::{self, get_builtin, item_name, PreSignature},
 };
 
-use super::{CloneNames, DepGraph, DepNode, Kind, NameSupply};
+use super::{CloneNames, DepNode, Kind};
 
 /// The symbol elaborator expands required definitions as symbols and definitions, effectively performing the clones itself.
 pub(super) struct SymbolElaborator<'tcx> {
@@ -47,7 +47,6 @@ impl<'tcx> SymbolElaborator<'tcx> {
         &mut self,
         ctx: &mut Why3Generator<'tcx>,
         names: &mut Dependencies<'tcx>,
-        _: &DepGraph<'tcx>,
         item: DepNode<'tcx>,
         level_of_item: CloneLevel,
     ) -> Vec<Decl> {
