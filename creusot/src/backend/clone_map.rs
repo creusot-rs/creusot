@@ -1,6 +1,4 @@
 #![allow(deprecated)]
-
-use heck::ToSnakeCase;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
 use rustc_hir::{
@@ -128,10 +126,9 @@ pub(crate) trait Namer<'tcx> {
 impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
     fn value(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let node = DepNode::new(self.tcx, (def_id, subst));
-        match self.insert(node) {
-            Kind::Hidden(nm) => nm.as_str().to_snake_case().into(),
-            Kind::Named(nm) => nm.as_str().to_snake_case().into(),
-        }
+
+        // TODO(xavier): removing `to_snake_case` seemingly caused no issues... Investigate
+        self.insert(node).qname()
     }
 
     fn ty(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
@@ -141,16 +138,15 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
             node = DepNode::Type(Ty::new_closure(self.tcx, def_id, subst));
         }
 
-        let name = item_name(self.tcx, def_id, Namespace::TypeNS);
         match self.tcx.def_kind(def_id) {
-            DefKind::AssocTy => self.insert(node).ident().into(),
-            _ => self.insert(node).qname_ident(name),
+            DefKind::AssocTy => self.insert(node).qname(),
+            _ => self.insert(node).qname(),
         }
     }
 
     fn real_ty(&mut self, ty: Ty<'tcx>) -> QName {
         let node = DepNode::Type(ty);
-        self.insert(node).ident().into()
+        self.insert(node).qname()
     }
 
     fn constructor(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
@@ -181,27 +177,23 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
         ix: FieldIdx,
     ) -> QName {
         let tcx = self.tcx;
+        assert!(matches!(util::item_type(self.tcx, def_id), ItemType::Type | ItemType::Closure));
         let node = match util::item_type(tcx, def_id) {
             ItemType::Closure => {
                 DepNode::Hacked(ExtendedId::Accessor(ix.as_u32() as u8), def_id, subst)
             }
-            _ => DepNode::new(tcx, (def_id, subst)),
+            ItemType::Type => {
+                let adt = self.tcx.adt_def(def_id);
+                let field_did = adt.variants()[variant.into()].fields[ix].did;
+                DepNode::new(tcx, (field_did, subst))
+            }
+            _ => unreachable!(),
         };
 
         let clone = self.insert(node);
         match util::item_type(tcx, def_id) {
-            ItemType::Closure => clone.ident().into(),
-            ItemType::Type => {
-                let variant_def = &tcx.adt_def(def_id).variants()[variant.into()];
-                let variant = variant_def;
-                let name: Ident = format!(
-                    "{}_{}",
-                    variant.name.as_str().to_ascii_lowercase(),
-                    variant.fields[ix].name
-                )
-                .into();
-                clone.qname_ident(name.into())
-            }
+            ItemType::Closure => clone.qname(),
+            ItemType::Type => clone.qname(),
             _ => panic!("accessor: invalid item kind"),
         }
     }
@@ -280,29 +272,39 @@ impl<'tcx> CloneNames<'tcx> {
         CloneNames { tcx, counts: Default::default(), names: Default::default() }
     }
     fn insert(&mut self, key: DepNode<'tcx>) -> Kind {
-        *self.names.entry(key).or_insert_with(|| {
-            if let DepNode::Type(ty) = key
-                && !matches!(ty.kind(), TyKind::Alias(_, _))
-            {
+        *self.names.entry(key).or_insert_with(|| match key {
+            DepNode::Item(id, _) if util::item_type(self.tcx, id) == ItemType::Field => {
+                let mut ty = self.tcx.parent(id);
+                if util::item_type(self.tcx, ty) != ItemType::Type {
+                    ty = self.tcx.parent(id);
+                }
+                let modl = module_name(self.tcx, ty);
+
+                Kind::Used(modl, key.base_ident(self.tcx))
+            }
+            DepNode::Type(ty) if !matches!(ty.kind(), TyKind::Alias(_, _)) => {
                 let kind = if let Some((did, _)) = key.did() {
-                    let name = Symbol::intern(&*module_name(self.tcx, did));
-                    Kind::Named(name)
+                    let modl = module_name(self.tcx, did);
+                    let name = Symbol::intern(&*item_name(self.tcx, did, Namespace::TypeNS));
+
+                    Kind::Used(modl, name)
                 } else {
-                    Kind::Hidden(Symbol::intern("hidden_type_name"))
+                    Kind::Named(Symbol::intern("hidden_type_name"))
                 };
 
                 return kind;
             }
+            _ => {
+                let base = key.base_ident(self.tcx);
 
-            let base = key.base_ident(self.tcx);
-
-            Kind::Named(self.counts.insert(base))
+                Kind::Named(self.counts.freshen(base))
+            }
         })
     }
 }
 
 impl NameSupply {
-    fn insert(&mut self, sym: Symbol) -> Symbol {
+    fn freshen(&mut self, sym: Symbol) -> Symbol {
         let count: usize = *self.name_counts.entry(sym).and_modify(|c| *c += 1).or_insert(0);
         Symbol::intern(&format!("{sym}{count}"))
     }
@@ -364,26 +366,27 @@ impl<'tcx> DepGraph<'tcx> {
 // TODO: Get rid of the enum
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable, Hash)]
 enum Kind {
+    /// This symbol is locally defined
     Named(Symbol),
-    // Unclear why we need to keep `Hideen` around
-    Hidden(Symbol),
+    /// This symbol must be acompanied by a `Use` statement in Why3
+    Used(Symbol, Symbol),
 }
 
 impl Kind {
     fn ident(&self) -> Ident {
         match self {
             Kind::Named(nm) => nm.as_str().into(),
-            Kind::Hidden(nm) => nm.as_str().into(),
+            Kind::Used(_, _) => panic!("cannot get ident of used module"),
         }
     }
 
-    // TODO: Get rid
-    fn qname_ident(&self, method: Ident) -> QName {
-        let module = match &self {
-            Kind::Named(name) => vec![name.to_string().into()],
-            _ => Vec::new(),
-        };
-        QName { module, name: method }
+    fn qname(&self) -> QName {
+        match self {
+            Kind::Named(nm) => nm.as_str().into(),
+            Kind::Used(modl, id) => {
+                QName { module: vec![modl.as_str().into()], name: id.as_str().into() }
+            }
+        }
     }
 }
 
@@ -409,14 +412,6 @@ impl<'tcx> DepInfo {
     fn opaque(&mut self) {
         self.opaque = CloneOpacity::Opaque;
     }
-
-    fn hidden(&self) -> bool {
-        matches!(self.kind, Kind::Hidden(_))
-    }
-
-    // fn qname_ident(&self, method: Ident) -> QName {
-    //     self.kind.qname_ident(method)
-    // }
 
     /// Sets level to the minimum of the current level or the provided one
     fn join_level(&mut self, level: CloneLevel) {
@@ -456,25 +451,20 @@ impl<'tcx> Dependencies<'tcx> {
 
         for i in self_ids {
             let node = DepNode::from_trans_id(tcx, i);
-            deps.names.names.insert(node, Kind::Hidden(node.base_ident(tcx)));
+            deps.names.names.insert(node, Kind::Named(node.base_ident(tcx)));
             deps.levels.insert(node, CloneLevel::Body);
+            deps.hidden.insert(node);
         }
 
         deps
     }
 
-    /// Internal: only meant for mutually recursive type declaration
-    pub(crate) fn insert_hidden(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) {
-        let node = DepNode::new(self.tcx, (def_id, subst)).erase_regions(self.tcx);
-        self.names.names.insert(node, Kind::Hidden(node.base_ident(self.tcx)));
-        self.levels.insert(node, CloneLevel::Body);
-    }
-
     // Hack: for closure ty decls
     pub(crate) fn insert_hidden_type(&mut self, ty: Ty<'tcx>) {
         let node = DepNode::Type(ty);
-        self.names.names.insert(node, Kind::Hidden(node.base_ident(self.tcx)));
+        self.names.names.insert(node, Kind::Named(node.base_ident(self.tcx)));
         self.levels.insert(node, CloneLevel::Body);
+        self.hidden.insert(node);
     }
 
     fn insert(&mut self, key: DepNode<'tcx>) -> Kind {
@@ -559,7 +549,7 @@ impl<'tcx> Dependencies<'tcx> {
                 continue;
             }
 
-            if clone_graph.info(node).hidden() {
+            if self.hidden.contains(&node) {
                 continue;
             }
 
@@ -585,7 +575,7 @@ impl<'tcx> Dependencies<'tcx> {
         // Only return the roots (direct dependencies) of the graph as dependencies
         let summary: CloneSummary<'tcx> = roots
             .into_iter()
-            .filter(|r| !clone_graph.info(*r).hidden())
+            .filter(|r| !self.hidden.contains(r))
             .map(|r| (r, clone_graph.info(r).clone()))
             .collect();
 

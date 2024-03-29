@@ -8,7 +8,7 @@ use rustc_type_ir::{fold::TypeFoldable, visit::TypeVisitable, AliasKind, Interne
 use crate::{
     ctx::TranslationCtx,
     translation::traits,
-    util::{self, inv_module_name, ItemType},
+    util::{self, inv_module_name, item_symb, ItemType},
 };
 
 use super::{ty_inv::TyInvKind, PreludeModule, TransId};
@@ -173,9 +173,13 @@ impl<'tcx> Dependency<'tcx> {
         match self {
             Dependency::Type(ty) => {
                 let nm = match ty.kind() {
-                    TyKind::Adt(def, _) => tcx.item_name(def.did()),
+                    TyKind::Adt(def, _) => {
+                        item_symb(tcx, def.did(), rustc_hir::def::Namespace::TypeNS)
+                    }
                     TyKind::Alias(_, aty) => tcx.item_name(aty.def_id),
-                    TyKind::Closure(_, _) => Symbol::intern("debug_closure_type"),
+                    TyKind::Closure(def_id, _) => {
+                        item_symb(tcx, *def_id, rustc_hir::def::Namespace::TypeNS)
+                    }
                     _ => Symbol::intern("debug_ty_name"),
                 };
                 Symbol::intern(&nm.as_str().to_snake_case())
@@ -188,6 +192,15 @@ impl<'tcx> Dependency<'tcx> {
                         "closure{}",
                         tcx.def_path(did).data.last().unwrap().disambiguator
                     )),
+                    ItemType::Field => {
+                        let variant = tcx.parent(did);
+                        let name = format!(
+                            "{}_{}",
+                            tcx.item_name(variant).as_str().to_ascii_lowercase(),
+                            tcx.item_name(did),
+                        );
+                        Symbol::intern(&name)
+                    }
                     _ => tcx.item_name(did),
                 };
                 Symbol::intern(&base.as_str().to_snake_case())

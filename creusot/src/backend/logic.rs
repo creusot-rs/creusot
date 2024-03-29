@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use crate::{
     backend::all_generic_decls_for,
     ctx::*,
@@ -112,7 +110,7 @@ fn builtin_body<'tcx>(
 
     decls.push(Decl::ValDecl(ValDecl { ghost: false, val: true, kind: None, sig: val_sig }));
 
-    let name = module_name(ctx.tcx, def_id);
+    let name = Ident::build(&module_name(ctx.tcx, def_id).to_string());
 
     (Module { name, decls }, summary)
 }
@@ -448,5 +446,5 @@ fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
 }
 
 pub(crate) fn impl_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
-    format!("{}_Impl", Cow::from(&*module_name(ctx.tcx, def_id))).into()
+    format!("{}_Impl", module_name(ctx.tcx, def_id)).into()
 }

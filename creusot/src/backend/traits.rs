@@ -36,7 +36,7 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
     decls.extend(clones);
     decls.extend(refn_decls);
 
-    Module { name: module_name(ctx.tcx, def_id), decls }
+    Module { name: module_name(ctx.tcx, def_id).to_string().into(), decls }
 }
 
 impl<'tcx> Why3Generator<'tcx> {
@@ -57,7 +57,7 @@ impl<'tcx> Why3Generator<'tcx> {
         let (clones, summary) = names.provide_deps(self, GraphDepth::Shallow);
         decls.extend(clones);
 
-        (Module { name: module_name(self.tcx, def_id), decls }, summary)
+        (Module { name: module_name(self.tcx, def_id).to_string().into(), decls }, summary)
     }
 
     // Probably needs to take a pair of id and subst to handle cloning properly

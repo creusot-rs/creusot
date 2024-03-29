@@ -5,7 +5,7 @@ use crate::{
         pearlite::{self, Term, TermKind},
         specification::PreContract,
     },
-    util::{self, get_builtin, item_qname, module_name, PreSignature},
+    util::{self, get_builtin, item_name, module_name, PreSignature},
 };
 use indexmap::IndexSet;
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
@@ -321,8 +321,8 @@ impl<'tcx> Why3Generator<'tcx> {
     }
 }
 
-fn translate_ty_name(ctx: &Why3Generator<'_>, did: DefId) -> QName {
-    item_qname(ctx, did, Namespace::TypeNS)
+fn translate_ty_name(ctx: &Why3Generator<'_>, did: DefId) -> Ident {
+    item_name(ctx.tcx, did, Namespace::TypeNS)
 }
 
 pub(crate) fn translate_ty_param(p: Symbol) -> Ident {
@@ -349,7 +349,7 @@ pub(crate) fn translate_tydecl(
 
     let mut names = Dependencies::new(ctx.tcx, bg.iter().copied());
 
-    let name = module_name(ctx.tcx, repr);
+    let name = module_name(ctx.tcx, repr).to_string().into();
     let span = ctx.def_span(repr);
 
     // Trusted types (opaque)
@@ -357,7 +357,7 @@ pub(crate) fn translate_tydecl(
         if bg.len() > 1 {
             ctx.crash_and_error(span, "cannot mark mutually recursive types as trusted");
         }
-        let ty_name = translate_ty_name(ctx, repr).name;
+        let ty_name = translate_ty_name(ctx, repr);
 
         let ty_params: Vec<_> = ty_param_names(ctx.tcx, repr).collect();
         let modl = Module {
@@ -380,7 +380,7 @@ pub(crate) fn translate_tydecl(
     let mut modls = vec![Module { name: name.clone(), decls }];
 
     modls.extend(bg.iter().filter(|did| **did != repr).map(|did| Module {
-        name: module_name(ctx.tcx, *did),
+        name: module_name(ctx.tcx, *did).to_string().into(),
         decls: vec![Decl::UseDecl(Use { name: name.clone().into(), as_: None, export: true })],
     }));
 
@@ -393,9 +393,10 @@ fn build_ty_decl<'tcx>(
     did: DefId,
 ) -> AdtDecl {
     let adt = ctx.tcx.adt_def(did);
+    let substs = GenericArgs::identity_for_item(ctx.tcx, did);
 
     // HACK(xavier): Clean up
-    let ty_name = translate_ty_name(ctx, did).name;
+    let ty_name = names.ty(did, substs).name;
 
     // Collect type variables of declaration
     let ty_args: Vec<_> = ty_param_names(ctx.tcx, did)
@@ -409,7 +410,6 @@ fn build_ty_decl<'tcx>(
 
     let param_env = ctx.param_env(did);
     let kind = {
-        let substs = GenericArgs::identity_for_item(ctx.tcx, did);
         let mut ml_ty_def = Vec::new();
 
         for var_def in adt.variants().iter() {
