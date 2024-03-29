@@ -74,9 +74,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 // If there is a Signature level edge from a pre-existing root node, mark this one as root as well as it must be an associated type in
                 // a root signature
                 if self.clone_graph.graph.edges_directed(key, Direction::Incoming).any(
-                    |(src, _, (lvl, _))| {
-                        self.clone_graph.is_root(src) && *lvl == CloneLevel::Signature
-                    },
+                    |(src, _, lvl)| self.clone_graph.is_root(src) && *lvl == CloneLevel::Signature,
                 ) {
                     self.add_root(key, self.clone_graph.info(key).level)
                 } else {

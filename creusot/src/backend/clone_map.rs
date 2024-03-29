@@ -311,7 +311,7 @@ impl NameSupply {
 
 #[derive(Default)]
 struct DepGraph<'tcx> {
-    graph: DiGraphMap<DepNode<'tcx>, (CloneLevel, ())>,
+    graph: DiGraphMap<DepNode<'tcx>, CloneLevel>,
     info: IndexMap<DepNode<'tcx>, CloneInfo>,
     roots: IndexSet<DepNode<'tcx>>,
     builtins: IndexSet<PreludeModule>,
@@ -350,7 +350,7 @@ impl<'tcx> DepGraph<'tcx> {
         // trace!("edge {k1:?} = {:?} --> {k2:?} = {:?}", user, prov);
 
         if let None = self.graph.edge_weight_mut(user, prov) {
-            self.graph.add_edge(user, prov, (level, ()));
+            self.graph.add_edge(user, prov, level);
         };
     }
 
@@ -358,7 +358,7 @@ impl<'tcx> DepGraph<'tcx> {
         &self,
         node: DepNode<'tcx>,
     ) -> impl Iterator<Item = (CloneLevel, DepNode<'tcx>)> + '_ {
-        self.graph.edges_directed(node, Outgoing).map(|(_, n, (lvl, _))| (*lvl, n))
+        self.graph.edges_directed(node, Outgoing).map(|(_, n, lvl)| (*lvl, n))
     }
 }
 
