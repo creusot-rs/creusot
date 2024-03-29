@@ -29,7 +29,7 @@ impl<'tcx> Why3Generator<'tcx> {
         let mut names = Dependencies::new(self.tcx, def_id.into());
         let _ = lower_pure(self, &mut names, &res);
         let _ = signature_of(self, &mut names, def_id);
-        let (_, summary) = names.to_clones(self, GraphDepth::Shallow);
+        let (_, summary) = names.provide_deps(self, GraphDepth::Shallow);
 
         (TranslatedItem::Constant {}, summary)
     }

@@ -10,7 +10,7 @@ pub(crate) fn interface_for<'tcx>(
 ) -> CloneSummary<'tcx> {
     let mut names = Dependencies::new(ctx.tcx, def_id.into());
     let _ = signature_of(ctx, &mut names, def_id);
-    let (_, summary) = names.to_clones(ctx, GraphDepth::Shallow);
+    let (_, summary) = names.provide_deps(ctx, GraphDepth::Shallow);
 
     summary
 }

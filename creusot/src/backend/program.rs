@@ -45,7 +45,7 @@ fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
     names.insert_hidden_type(ctx.type_of(def_id).instantiate_identity());
     let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
 
-    let (clones, _) = names.to_clones(ctx, GraphDepth::Deep);
+    let (clones, _) = names.provide_deps(ctx, GraphDepth::Deep);
     decls.extend(
         // Definitely a hack but good enough for the moment
         clones.into_iter().filter(|d| matches!(d, Decl::UseDecl(_))),
@@ -64,7 +64,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
     sig_to_why3(ctx, &mut names, &contract.resolve.0, def_id);
     lower_pure(ctx, &mut names, &contract.resolve.1);
 
-    let (_, deps) = names.to_clones(ctx, GraphDepth::Shallow);
+    let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
     ctx.dependencies.insert(TransId::Hacked(HackedId::Resolve, def_id), deps);
 
     // HACK PRECOND
@@ -72,7 +72,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
     sig_to_why3(ctx, &mut names, &contract.precond.0, def_id);
     lower_pure(ctx, &mut names, &contract.precond.1);
 
-    let (_, deps) = names.to_clones(ctx, GraphDepth::Shallow);
+    let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
     ctx.dependencies.insert(TransId::Hacked(HackedId::Precondition, def_id), deps);
 
     // HACK POST ONCE
@@ -81,7 +81,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
         sig_to_why3(ctx, &mut names, &sig, def_id);
         lower_pure(ctx, &mut names, &term);
 
-        let (_, deps) = names.to_clones(ctx, GraphDepth::Shallow);
+        let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
         ctx.dependencies.insert(TransId::Hacked(HackedId::PostconditionOnce, def_id), deps);
     }
 
@@ -91,7 +91,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
         sig_to_why3(ctx, &mut names, &sig, def_id);
         lower_pure(ctx, &mut names, &term);
 
-        let (_, deps) = names.to_clones(ctx, GraphDepth::Shallow);
+        let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
         ctx.dependencies.insert(TransId::Hacked(HackedId::PostconditionMut, def_id), deps);
     }
     // HACK POST
@@ -100,7 +100,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
         sig_to_why3(ctx, &mut names, &sig, def_id);
         lower_pure(ctx, &mut names, &term);
 
-        let (_, deps) = names.to_clones(ctx, GraphDepth::Shallow);
+        let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
         ctx.dependencies.insert(TransId::Hacked(HackedId::Postcondition, def_id), deps);
     }
     // HACK UNNEst
@@ -109,7 +109,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
         sig_to_why3(ctx, &mut names, &sig, def_id);
         lower_pure(ctx, &mut names, &term);
 
-        let (_, deps) = names.to_clones(ctx, GraphDepth::Shallow);
+        let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
         ctx.dependencies.insert(TransId::Hacked(HackedId::Unnest, def_id), deps);
     } // END COMPLETE HACK
       // decls.extend(contract);
@@ -119,7 +119,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
         sig_to_why3(ctx, &mut names, &sig, def_id);
         lower_pure(ctx, &mut names, &term);
 
-        let (_, deps) = names.to_clones(ctx, GraphDepth::Shallow);
+        let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
         ctx.dependencies.insert(TransId::Hacked(HackedId::Accessor(ix as u8), def_id), deps);
     }
 }
@@ -141,7 +141,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     let mut names = Dependencies::new(tcx, def_id.into());
 
     let Some(body_ids) = collect_body_ids(ctx, def_id) else {
-        let (_, clones) = names.to_clones(ctx, GraphDepth::Deep);
+        let (_, clones) = names.provide_deps(ctx, GraphDepth::Deep);
         return (clones, None);
     };
     let body = to_why(ctx, &mut names, body_ids[0]);
@@ -155,7 +155,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
         .map(|body_id| lower_promoted(ctx, &mut names, *body_id))
         .collect::<Vec<_>>();
 
-    let (clones, summary) = names.to_clones(ctx, GraphDepth::Deep);
+    let (clones, summary) = names.provide_deps(ctx, GraphDepth::Deep);
 
     let decls = closure_generic_decls(ctx.tcx, def_id)
         .chain(clones)

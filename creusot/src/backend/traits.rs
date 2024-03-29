@@ -32,7 +32,7 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
         }));
     }
 
-    let (clones, _) = names.to_clones(ctx, GraphDepth::Deep);
+    let (clones, _) = names.provide_deps(ctx, GraphDepth::Deep);
     decls.extend(clones);
     decls.extend(refn_decls);
 
@@ -54,7 +54,7 @@ impl<'tcx> Why3Generator<'tcx> {
 
         decls.push(ty_decl);
 
-        let (clones, summary) = names.to_clones(self, GraphDepth::Shallow);
+        let (clones, summary) = names.provide_deps(self, GraphDepth::Shallow);
         decls.extend(clones);
 
         (Module { name: module_name(self.tcx, def_id), decls }, summary)

@@ -247,7 +247,7 @@ pub struct Dependencies<'tcx> {
     // TransId of the item which is cloning. Used for trait resolution
     self_id: TransId,
 
-    // Internal state to determine whether clones should be public or not
+    // Internal state to determine whether dependencies should be public or not
     dep_level: CloneLevel,
 }
 
@@ -491,12 +491,12 @@ impl<'tcx> Dependencies<'tcx> {
         }
     }
 
-    pub(crate) fn to_clones(
+    pub(crate) fn provide_deps(
         mut self,
         ctx: &mut Why3Generator<'tcx>,
         depth: GraphDepth,
     ) -> (Vec<Decl>, CloneSummary<'tcx>) {
-        trace!("emitting clones for {:?}", self.self_id);
+        trace!("emitting dependencies for {:?}", self.self_id);
         let mut decls = Vec::new();
 
         use petgraph::visit::Walker;
@@ -555,7 +555,7 @@ impl<'tcx> Dependencies<'tcx> {
                 (GraphDepth::Deep, CloneOpacity::Opaque) => CloneLevel::Contract,
                 // Otherwise, go deep and get the body
                 (GraphDepth::Deep, _) => CloneLevel::Body,
-                // If we are only doing shallow clones, stop at the signature (no contracts)
+                // If we are only doing shallow dependencies, stop at the signature (no contracts)
                 (GraphDepth::Shallow, _) => CloneLevel::Signature,
             };
 
@@ -568,12 +568,12 @@ impl<'tcx> Dependencies<'tcx> {
         // Only return the roots (direct dependencies) of the graph as dependencies
         let summary: CloneSummary<'tcx> = roots
             .into_iter()
-            .filter(|r| clone_graph.info(*r).hidden())
+            .filter(|r| !clone_graph.info(*r).hidden())
             .map(|r| (r, clone_graph.info(r).clone()))
             .collect();
 
-        let clones = decls;
-        (clones, summary)
+        let dependencies = decls;
+        (dependencies, summary)
     }
 }
 
@@ -586,7 +586,7 @@ pub(crate) enum CloneLevel {
     Contract,
     /// This clone occurs in the body of a program or logical function.
     Body,
-    /// This clone is an artificial edge internally injected to 'root' clones
+    /// This clone is an artificial edge internally injected to 'root' dependencies
     Root,
 }
 

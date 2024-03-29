@@ -428,7 +428,7 @@ pub(crate) fn build_inv_module<'tcx>(
             .map(|ty_name| Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: vec![] })),
     );
 
-    let (clones, summary) = names.to_clones(ctx, GraphDepth::Shallow);
+    let (clones, summary) = names.provide_deps(ctx, GraphDepth::Shallow);
     // eprintln!("summary of {inv_kind:?} -> {summary:#?}");
     decls.extend(clones);
 
