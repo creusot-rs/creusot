@@ -421,7 +421,7 @@ impl<'tcx> CloneInfo {
 /// Determines whether we clone only the names of symbols or if we want
 /// to clone the 'whole thing' (aka contracts and logical function bodies)
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
-pub enum CloneDepth {
+pub enum GraphDepth {
     /// Clone the minimal amount, providing only the names (and types) of symbols
     Shallow,
     /// 'The whole she-bang', clone the entire required graph, providing the complete definitions
@@ -490,7 +490,7 @@ impl<'tcx> Dependencies<'tcx> {
     pub(crate) fn to_clones(
         mut self,
         ctx: &mut Why3Generator<'tcx>,
-        depth: CloneDepth,
+        depth: GraphDepth,
     ) -> (Vec<Decl>, CloneSummary<'tcx>) {
         trace!("emitting clones for {:?}", self.self_id);
         let mut decls = Vec::new();
@@ -542,17 +542,17 @@ impl<'tcx> Dependencies<'tcx> {
                 continue;
             }
 
-            if !roots.contains(&node) && depth == CloneDepth::Shallow {
+            if !roots.contains(&node) && depth == GraphDepth::Shallow {
                 continue;
             }
 
             let level_of_item = match (depth, clone_graph.info(node).opaque) {
                 // We are requesting a deep clone of an opaque thing: stop at the contract
-                (CloneDepth::Deep, CloneOpacity::Opaque) => CloneLevel::Contract,
+                (GraphDepth::Deep, CloneOpacity::Opaque) => CloneLevel::Contract,
                 // Otherwise, go deep and get the body
-                (CloneDepth::Deep, _) => CloneLevel::Body,
+                (GraphDepth::Deep, _) => CloneLevel::Body,
                 // If we are only doing shallow clones, stop at the signature (no contracts)
-                (CloneDepth::Shallow, _) => CloneLevel::Signature,
+                (GraphDepth::Shallow, _) => CloneLevel::Signature,
             };
 
             let decl = elab.build_clone(ctx, &mut self, node, level_of_item);

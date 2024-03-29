@@ -7,7 +7,7 @@ use super::{
     clone_map::{Dependencies, CloneSummary},
     signature::signature_of,
     term::lower_pure,
-    CloneDepth, Why3Generator,
+    GraphDepth, Why3Generator,
 };
 
 impl<'tcx> Why3Generator<'tcx> {
@@ -29,7 +29,7 @@ impl<'tcx> Why3Generator<'tcx> {
         let mut names = Dependencies::new(self.tcx, def_id.into());
         let _ = lower_pure(self, &mut names, &res);
         let _ = signature_of(self, &mut names, def_id);
-        let (_, summary) = names.to_clones(self, CloneDepth::Shallow);
+        let (_, summary) = names.to_clones(self, GraphDepth::Shallow);
 
         (TranslatedItem::Constant {}, summary)
     }

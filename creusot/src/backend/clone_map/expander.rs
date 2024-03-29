@@ -59,13 +59,13 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     pub fn update_graph(
         mut self,
         ctx: &mut Why3Generator<'tcx>,
-        depth: CloneDepth,
+        depth: GraphDepth,
     ) -> DepGraph<'tcx> {
         let self_key = self.self_key;
 
         while let Some(key) = self.expansion_queue.pop_front() {
             trace!("update graph with {:?} (public={:?})", key, self.clone_graph.info(key).level);
-            if depth == CloneDepth::Shallow && !self.clone_graph.is_root(key) {
+            if depth == GraphDepth::Shallow && !self.clone_graph.is_root(key) {
                 // If there is a Signature level edge from a pre-existing root node, mark this one as root as well as it must be an associated type in
                 // a root signature
                 if self.clone_graph.graph.edges_directed(key, Direction::Incoming).any(
@@ -99,7 +99,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
                 ctx.translate(did);
 
-                if util::is_inv_internal(ctx.tcx, did) && depth == CloneDepth::Deep {
+                if util::is_inv_internal(ctx.tcx, did) && depth == GraphDepth::Deep {
                     let ty = subst.type_at(0);
                     let ty = ctx.try_normalize_erasing_regions(self.param_env, ty).unwrap_or(ty);
                     self.expand_ty_inv(ctx, self.param_env, ty);
@@ -222,12 +222,12 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         ctx: &mut TranslationCtx<'tcx>,
         key_did: DefId,
         key_subst: GenericArgsRef<'tcx>,
-        depth: CloneDepth,
+        depth: GraphDepth,
     ) {
         let Some(item) = ctx.tcx.opt_associated_item(key_did) else { return };
         let Some(self_did) = self.self_did() else { return };
 
-        if depth == CloneDepth::Shallow {
+        if depth == GraphDepth::Shallow {
             return;
         }
 

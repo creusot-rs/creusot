@@ -367,7 +367,7 @@ pub(crate) fn translate_tydecl(
                 ty_params: ty_params.clone(),
             })],
         };
-        let _ = names.to_clones(ctx, CloneDepth::Shallow);
+        let _ = names.to_clones(ctx, GraphDepth::Shallow);
         return Some(vec![modl]);
     }
 
@@ -392,7 +392,7 @@ pub(crate) fn translate_tydecl(
     let ty_decl =
         TyDecl::Adt { tys: bg.iter().map(|did| build_ty_decl(ctx, &mut names, *did)).collect() };
 
-    let (mut decls, _) = names.to_clones(ctx, CloneDepth::Shallow);
+    let (mut decls, _) = names.to_clones(ctx, GraphDepth::Shallow);
     decls.push(Decl::TyDecl(ty_decl));
 
     let mut modls = vec![Module { name: name.clone(), decls }];
@@ -556,7 +556,7 @@ pub(crate) fn translate_accessor(
         ctx.type_of(adt_did).instantiate_identity(),
     );
 
-    let _ = names.to_clones(ctx, CloneDepth::Shallow);
+    let _ = names.to_clones(ctx, GraphDepth::Shallow);
 
     build_accessor(
         this,

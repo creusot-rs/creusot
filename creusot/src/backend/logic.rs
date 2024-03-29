@@ -97,7 +97,7 @@ fn builtin_body<'tcx>(
     }
 
     let mut decls: Vec<_> = all_generic_decls_for(ctx.tcx, def_id).collect();
-    let (clones, summary) = names.to_clones(ctx, CloneDepth::Shallow);
+    let (clones, summary) = names.to_clones(ctx, GraphDepth::Shallow);
 
     decls.extend(clones);
     if !builtin.module.is_empty() {
@@ -270,7 +270,7 @@ fn body_deps<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> CloneSummary
 
     let _ = body_decls(ctx, &mut names, def_id);
 
-    let (_, summary) = names.to_clones(ctx, CloneDepth::Shallow);
+    let (_, summary) = names.to_clones(ctx, GraphDepth::Shallow);
 
     summary
 }
@@ -331,7 +331,7 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
     let mut sig = signature_of(ctx, &mut names, def_id);
 
     if sig.contract.is_empty() {
-        let _ = names.to_clones(ctx, CloneDepth::Deep);
+        let _ = names.to_clones(ctx, GraphDepth::Deep);
         return None;
     }
     let term = ctx.term(def_id).unwrap().clone();
@@ -378,7 +378,7 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
 
-    let (clones, _) = names.to_clones(ctx, CloneDepth::Deep);
+    let (clones, _) = names.to_clones(ctx, GraphDepth::Deep);
     decls.extend(clones);
     decls.extend(body_decls);
 
