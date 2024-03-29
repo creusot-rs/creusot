@@ -1,7 +1,7 @@
 use super::{
     term::lower_pure,
     ty::{translate_ty, ty_param_names},
-    Dependencies, CloneSummary, TransId, Why3Generator,
+    CloneSummary, Dependencies, TransId, Why3Generator,
 };
 use crate::{
     ctx::*,
@@ -404,7 +404,7 @@ pub(crate) fn build_inv_module<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     inv_kind: TyInvKind,
 ) -> CloneSummary<'tcx> {
-    let mut names = Dependencies::new(ctx.tcx, TransId::TyInv(inv_kind));
+    let mut names = Dependencies::new(ctx.tcx, [TransId::TyInv(inv_kind)]);
     let generics = inv_kind.generics(ctx.tcx);
     let inv_axiom =
         names.with_vis(CloneLevel::Contract, |names| build_inv_axiom(ctx, names, inv_kind));

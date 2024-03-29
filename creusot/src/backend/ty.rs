@@ -347,7 +347,7 @@ pub(crate) fn translate_tydecl(
         return None;
     }
 
-    let mut names = Dependencies::new(ctx.tcx, repr.into());
+    let mut names = Dependencies::new(ctx.tcx, bg.iter().copied());
 
     let name = module_name(ctx.tcx, repr);
     let span = ctx.def_span(repr);
@@ -369,24 +369,6 @@ pub(crate) fn translate_tydecl(
         };
         let _ = names.provide_deps(ctx, GraphDepth::Shallow);
         return Some(vec![modl]);
-    }
-
-    // UGLY hack to ensure that we don't explicitly use/clone the members of a binding group
-    for did in bg {
-        let substs = GenericArgs::identity_for_item(ctx.tcx, *did);
-        for field in ctx.adt_def(did).all_fields() {
-            for ty in field.ty(ctx.tcx, substs).walk() {
-                let k = match ty.unpack() {
-                    GenericArgKind::Type(ty) => ty,
-                    _ => continue,
-                };
-                if let Adt(def, sub) = k.kind() {
-                    if bg.contains(&def.did()) {
-                        names.insert_hidden(def.did(), sub);
-                    }
-                }
-            }
-        }
     }
 
     let ty_decl =
@@ -514,27 +496,7 @@ pub(crate) fn translate_accessor(
     let field = &variant.fields[ix.into()];
 
     let substs = GenericArgs::identity_for_item(ctx.tcx, adt_did);
-    let repr = ctx.representative_type(adt_did);
-    let mut names = Dependencies::new(ctx.tcx, repr.into());
-
-    // UGLY hack to ensure that we don't explicitly use/clone the members of a binding group
-    let bg = ctx.binding_group(repr).clone();
-    for did in &bg {
-        let substs = GenericArgs::identity_for_item(ctx.tcx, *did);
-        for field in ctx.adt_def(did).all_fields() {
-            for ty in field.ty(ctx.tcx, substs).walk() {
-                let k = match ty.unpack() {
-                    GenericArgKind::Type(ty) => ty,
-                    _ => continue,
-                };
-                if let Adt(def, sub) = k.kind() {
-                    if bg.contains(&def.did()) {
-                        names.insert_hidden(def.did(), sub);
-                    }
-                }
-            }
-        }
-    }
+    let mut names = Dependencies::new(ctx.tcx, ctx.binding_group(adt_did).iter().copied());
 
     let acc_name = format!("{}_{}", variant.name.as_str().to_ascii_lowercase(), field.name);
 

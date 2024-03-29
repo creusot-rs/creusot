@@ -244,6 +244,8 @@ pub struct Dependencies<'tcx> {
 
     levels: IndexMap<Dependency<'tcx>, CloneLevel>,
 
+    hidden: IndexSet<Dependency<'tcx>>,
+
     // TransId of the item which is cloning. Used for trait resolution
     self_id: TransId,
 
@@ -434,16 +436,31 @@ pub enum GraphDepth {
 }
 
 impl<'tcx> Dependencies<'tcx> {
-    pub(crate) fn new(tcx: TyCtxt<'tcx>, self_id: TransId) -> Self {
-        let mut names = CloneNames::new(tcx);
-        let mut dep_info = IndexMap::default();
+    pub(crate) fn new(
+        tcx: TyCtxt<'tcx>,
+        selfs: impl IntoIterator<Item = impl Into<TransId>>,
+    ) -> Self {
+        let names = CloneNames::new(tcx);
+        let dep_info = IndexMap::default();
+        let self_ids: Vec<_> = selfs.into_iter().map(|x| x.into()).collect();
+        let self_id = self_ids[0];
+        debug!("cloning self: {:?}", self_ids);
+        let mut deps = Dependencies {
+            tcx,
+            self_id,
+            names,
+            levels: dep_info,
+            hidden: Default::default(),
+            dep_level: CloneLevel::Body,
+        };
 
-        debug!("cloning self: {:?}", self_id);
-        let node = DepNode::from_trans_id(tcx, self_id);
-        names.names.insert(node, Kind::Hidden(node.base_ident(tcx)));
-        dep_info.insert(node, CloneLevel::Body);
+        for i in self_ids {
+            let node = DepNode::from_trans_id(tcx, i);
+            deps.names.names.insert(node, Kind::Hidden(node.base_ident(tcx)));
+            deps.levels.insert(node, CloneLevel::Body);
+        }
 
-        Dependencies { tcx, self_id, names, levels: dep_info, dep_level: CloneLevel::Body }
+        deps
     }
 
     /// Internal: only meant for mutually recursive type declaration
