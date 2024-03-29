@@ -14,10 +14,7 @@ use rustc_middle::ty::{
 use rustc_span::Symbol;
 use rustc_target::abi::FieldIdx;
 
-use why3::{
-    declaration::{CloneKind, Decl},
-    Ident, QName,
-};
+use why3::{declaration::Decl, Ident, QName};
 
 use crate::{
     backend::{
@@ -502,7 +499,8 @@ impl<'tcx> Dependencies<'tcx> {
         let mut roots: IndexSet<_> = self.names.names.keys().cloned().collect();
 
         let param_env = self.param_env(ctx);
-        let mut graph = Expander::new(&mut self.names, self.self_id, param_env);
+        let self_key = self.self_key();
+        let mut graph = Expander::new(&mut self.names, self_key, param_env);
 
         for r in &roots {
             graph.add_root(*r, self.levels[r])
