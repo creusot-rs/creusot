@@ -1,7 +1,7 @@
 use super::{
     term::lower_pure,
     ty::{translate_ty, ty_param_names},
-    CloneMap, CloneSummary, TransId, Why3Generator,
+    Dependencies, CloneSummary, TransId, Why3Generator,
 };
 use crate::{
     ctx::*,
@@ -404,7 +404,7 @@ pub(crate) fn build_inv_module<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     inv_kind: TyInvKind,
 ) -> CloneSummary<'tcx> {
-    let mut names = CloneMap::new(ctx.tcx, TransId::TyInv(inv_kind));
+    let mut names = Dependencies::new(ctx.tcx, TransId::TyInv(inv_kind));
     let generics = inv_kind.generics(ctx.tcx);
     let inv_axiom =
         names.with_vis(CloneLevel::Contract, |names| build_inv_axiom(ctx, names, inv_kind));
@@ -454,7 +454,7 @@ fn axiom_name(ctx: &Why3Generator<'_>, inv_kind: TyInvKind) -> Ident {
 
 fn build_inv_axiom<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Dependencies<'tcx>,
     inv_kind: TyInvKind,
 ) -> Axiom {
     let name = axiom_name(ctx, inv_kind);

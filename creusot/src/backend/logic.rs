@@ -66,7 +66,7 @@ fn builtin_body<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
 ) -> (Module, CloneSummary<'tcx>) {
-    let mut names = CloneMap::new(ctx.tcx, def_id.into());
+    let mut names = Dependencies::new(ctx.tcx, def_id.into());
     let mut sig = signature_of(ctx, &mut names, def_id);
     let (val_args, val_binders) = binders_to_args(ctx, sig.args);
     sig.args = val_binders;
@@ -266,7 +266,7 @@ pub fn sigs<'tcx>(ctx: &mut Why3Generator<'tcx>, mut sig: Signature) -> (Signatu
 }
 
 fn body_deps<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> CloneSummary<'tcx> {
-    let mut names = CloneMap::new(ctx.tcx, def_id.into());
+    let mut names = Dependencies::new(ctx.tcx, def_id.into());
 
     let _ = body_decls(ctx, &mut names, def_id);
 
@@ -326,7 +326,7 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
         return None;
     }
 
-    let mut names = CloneMap::new(ctx.tcx, def_id.into());
+    let mut names = Dependencies::new(ctx.tcx, def_id.into());
 
     let mut sig = signature_of(ctx, &mut names, def_id);
 

@@ -128,7 +128,7 @@ pub(crate) trait Namer<'tcx> {
         F: FnOnce(&mut Self) -> A;
 }
 
-impl<'tcx> Namer<'tcx> for CloneMap<'tcx> {
+impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
     fn value(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let node = DepNode::new(self.tcx, (def_id, subst));
         match self.insert(node) {
@@ -240,12 +240,12 @@ type DepNode<'tcx> = Dependency<'tcx>;
 pub(super) type CloneSummary<'tcx> = IndexMap<DepNode<'tcx>, CloneInfo>;
 
 #[derive(Clone)]
-pub struct CloneMap<'tcx> {
+pub struct Dependencies<'tcx> {
     tcx: TyCtxt<'tcx>,
 
     names: CloneNames<'tcx>,
 
-    dep_info: IndexMap<Dependency<'tcx>, CloneLevel>,
+    levels: IndexMap<Dependency<'tcx>, CloneLevel>,
 
     // TransId of the item which is cloning. Used for trait resolution
     self_id: TransId,
@@ -441,7 +441,7 @@ pub enum CloneDepth {
     Deep,
 }
 
-impl<'tcx> CloneMap<'tcx> {
+impl<'tcx> Dependencies<'tcx> {
     pub(crate) fn new(tcx: TyCtxt<'tcx>, self_id: TransId) -> Self {
         let mut names = CloneNames::new(tcx);
         let mut dep_info = IndexMap::default();
@@ -451,26 +451,26 @@ impl<'tcx> CloneMap<'tcx> {
         names.names.insert(node, Kind::Hidden(node.base_ident(tcx)));
         dep_info.insert(node, CloneLevel::Body);
 
-        CloneMap { tcx, self_id, names, dep_info, dep_level: CloneLevel::Body }
+        Dependencies { tcx, self_id, names, levels: dep_info, dep_level: CloneLevel::Body }
     }
 
     /// Internal: only meant for mutually recursive type declaration
     pub(crate) fn insert_hidden(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) {
         let node = DepNode::new(self.tcx, (def_id, subst)).erase_regions(self.tcx);
         self.names.names.insert(node, Kind::Hidden(node.base_ident(self.tcx)));
-        self.dep_info.insert(node, CloneLevel::Body);
+        self.levels.insert(node, CloneLevel::Body);
     }
 
     // Hack: for closure ty decls
     pub(crate) fn insert_hidden_type(&mut self, ty: Ty<'tcx>) {
         let node = DepNode::Type(ty);
         self.names.names.insert(node, Kind::Hidden(node.base_ident(self.tcx)));
-        self.dep_info.insert(node, CloneLevel::Body);
+        self.levels.insert(node, CloneLevel::Body);
     }
 
     fn insert(&mut self, key: DepNode<'tcx>) -> Kind {
         let key = key.erase_regions(self.tcx).closure_hack(self.tcx);
-        self.dep_info
+        self.levels
             .entry(key)
             .and_modify(|l| {
                 *l = (*l).min(self.dep_level);
@@ -514,7 +514,7 @@ impl<'tcx> CloneMap<'tcx> {
         let mut graph = Expander::new(&mut self.names, self.self_id, param_env);
 
         for r in &roots {
-            graph.add_root(*r, self.dep_info[r])
+            graph.add_root(*r, self.levels[r])
         }
 
         // Update the clone graph with any new entries.

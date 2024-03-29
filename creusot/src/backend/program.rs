@@ -8,7 +8,7 @@ use crate::{
         place::{self, translate_rplace},
         ty::{self, translate_closure_ty, translate_ty},
     },
-    ctx::{BodyId, CloneMap, TranslationCtx},
+    ctx::{BodyId, Dependencies, TranslationCtx},
     fmir::{BorrowKind, Operand},
     translation::{
         binop_to_binop,
@@ -36,7 +36,7 @@ use why3::{
 use super::signature::sig_to_why3;
 
 fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
-    let mut names = CloneMap::new(ctx.tcx, def_id.into());
+    let mut names = Dependencies::new(ctx.tcx, def_id.into());
     let mut decls = Vec::new();
 
     let TyKind::Closure(_, subst) = ctx.type_of(def_id).instantiate_identity().kind() else {
@@ -60,7 +60,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
     let contract = ctx.closure_contract(def_id).clone();
 
     // HACK RESOLVE
-    let mut names = CloneMap::new(ctx.tcx, def_id.into());
+    let mut names = Dependencies::new(ctx.tcx, def_id.into());
     sig_to_why3(ctx, &mut names, &contract.resolve.0, def_id);
     lower_pure(ctx, &mut names, &contract.resolve.1);
 
@@ -68,7 +68,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
     ctx.dependencies.insert(TransId::Hacked(HackedId::Resolve, def_id), deps);
 
     // HACK PRECOND
-    let mut names = CloneMap::new(ctx.tcx, def_id.into());
+    let mut names = Dependencies::new(ctx.tcx, def_id.into());
     sig_to_why3(ctx, &mut names, &contract.precond.0, def_id);
     lower_pure(ctx, &mut names, &contract.precond.1);
 
@@ -77,7 +77,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
 
     // HACK POST ONCE
     if let Some((sig, term)) = contract.postcond_once {
-        let mut names = CloneMap::new(ctx.tcx, def_id.into());
+        let mut names = Dependencies::new(ctx.tcx, def_id.into());
         sig_to_why3(ctx, &mut names, &sig, def_id);
         lower_pure(ctx, &mut names, &term);
 
@@ -87,7 +87,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
 
     // HACK POST MUT
     if let Some((sig, term)) = contract.postcond_mut {
-        let mut names = CloneMap::new(ctx.tcx, def_id.into());
+        let mut names = Dependencies::new(ctx.tcx, def_id.into());
         sig_to_why3(ctx, &mut names, &sig, def_id);
         lower_pure(ctx, &mut names, &term);
 
@@ -96,7 +96,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
     }
     // HACK POST
     if let Some((sig, term)) = contract.postcond {
-        let mut names = CloneMap::new(ctx.tcx, def_id.into());
+        let mut names = Dependencies::new(ctx.tcx, def_id.into());
         sig_to_why3(ctx, &mut names, &sig, def_id);
         lower_pure(ctx, &mut names, &term);
 
@@ -105,7 +105,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
     }
     // HACK UNNEst
     if let Some((sig, term)) = contract.unnest {
-        let mut names = CloneMap::new(ctx.tcx, def_id.into());
+        let mut names = Dependencies::new(ctx.tcx, def_id.into());
         sig_to_why3(ctx, &mut names, &sig, def_id);
         lower_pure(ctx, &mut names, &term);
 
@@ -115,7 +115,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
       // decls.extend(contract);
       // decls
     for (ix, (sig, term)) in contract.accessors.into_iter().enumerate() {
-        let mut names = CloneMap::new(ctx.tcx, def_id.into());
+        let mut names = Dependencies::new(ctx.tcx, def_id.into());
         sig_to_why3(ctx, &mut names, &sig, def_id);
         lower_pure(ctx, &mut names, &term);
 
@@ -138,7 +138,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     def_id: DefId,
 ) -> (CloneSummary<'tcx>, Option<Module>) {
     let tcx = ctx.tcx;
-    let mut names = CloneMap::new(tcx, def_id.into());
+    let mut names = Dependencies::new(tcx, def_id.into());
 
     let Some(body_ids) = collect_body_ids(ctx, def_id) else {
         let (_, clones) = names.to_clones(ctx, CloneDepth::Deep);
@@ -202,7 +202,7 @@ fn collect_body_ids<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Opti
 // We use a custom translation because if we use `any` inside a `constant` / `function` its body is marked as opaque, and `mlcfg` heavily uses `any`.
 fn lower_promoted<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Dependencies<'tcx>,
     body_id: BodyId,
 ) -> Decl {
     let promoted = promoted::translate_promoted(ctx, body_id);
@@ -248,7 +248,7 @@ fn lower_promoted<'tcx>(
 
 pub fn to_why<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Dependencies<'tcx>,
     body_id: BodyId,
 ) -> Decl {
     let mut body = ctx.fmir_body(body_id).unwrap().clone();
@@ -513,7 +513,7 @@ impl<'tcx> Terminator<'tcx> {
     pub(crate) fn to_why(
         self,
         ctx: &mut Why3Generator<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut Dependencies<'tcx>,
         locals: &LocalDecls<'tcx>,
         statements: &mut Vec<mlcfg::Statement>,
     ) -> why3::mlcfg::Terminator {
@@ -538,7 +538,7 @@ impl<'tcx> Branches<'tcx> {
     fn to_why(
         self,
         _ctx: &mut Why3Generator<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut Dependencies<'tcx>,
         discr: Exp,
     ) -> mlcfg::Terminator {
         use why3::mlcfg::Terminator::*;
@@ -596,7 +596,7 @@ impl<'tcx> Block<'tcx> {
     pub(crate) fn to_why(
         self,
         ctx: &mut Why3Generator<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut Dependencies<'tcx>,
         locals: &LocalDecls<'tcx>,
     ) -> why3::mlcfg::Block {
         let mut statements = Vec::new();
@@ -664,7 +664,7 @@ impl<'tcx> Statement<'tcx> {
     pub(crate) fn to_why(
         self,
         ctx: &mut Why3Generator<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut Dependencies<'tcx>,
         locals: &LocalDecls<'tcx>,
     ) -> Vec<mlcfg::Statement> {
         match self {
@@ -767,7 +767,7 @@ impl<'tcx> Statement<'tcx> {
 
 fn invalidate_places<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Dependencies<'tcx>,
     locals: &LocalDecls<'tcx>,
     span: Span,
     invalid: Vec<Place<'tcx>>,
@@ -782,7 +782,7 @@ fn invalidate_places<'tcx>(
 
 fn func_call_to_why3<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Dependencies<'tcx>,
     locals: &LocalDecls<'tcx>,
     id: DefId,
     subst: GenericArgsRef<'tcx>,

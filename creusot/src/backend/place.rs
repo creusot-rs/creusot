@@ -1,6 +1,6 @@
 use crate::{
     backend::Namer,
-    ctx::CloneMap,
+    ctx::Dependencies,
     translation::fmir::{self, LocalDecls},
 };
 use rustc_middle::{
@@ -35,7 +35,7 @@ use super::Why3Generator;
 /// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
 pub(crate) fn create_assign_inner<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Dependencies<'tcx>,
     locals: &LocalDecls<'tcx>,
     lhs: &fmir::Place<'tcx>,
     rhs: Exp,
@@ -57,7 +57,7 @@ pub(crate) fn create_assign_inner<'tcx>(
 
 fn create_assign_rec<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Dependencies<'tcx>,
     locals: &LocalDecls<'tcx>,
     place_ty: PlaceTy<'tcx>,
     base: Symbol,

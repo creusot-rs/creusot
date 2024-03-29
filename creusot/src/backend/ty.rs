@@ -1,4 +1,4 @@
-use super::{CloneMap, Why3Generator};
+use super::{Dependencies, Why3Generator};
 use crate::{
     ctx::*,
     translation::{
@@ -218,7 +218,7 @@ fn translate_projection_ty<'tcx, N: Namer<'tcx>>(
 
 pub(crate) fn translate_closure_ty<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Dependencies<'tcx>,
     did: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> TyDecl {
@@ -347,7 +347,7 @@ pub(crate) fn translate_tydecl(
         return None;
     }
 
-    let mut names = CloneMap::new(ctx.tcx, repr.into());
+    let mut names = Dependencies::new(ctx.tcx, repr.into());
 
     let name = module_name(ctx.tcx, repr);
     let span = ctx.def_span(repr);
@@ -407,7 +407,7 @@ pub(crate) fn translate_tydecl(
 
 fn build_ty_decl<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Dependencies<'tcx>,
     did: DefId,
 ) -> AdtDecl {
     let adt = ctx.tcx.adt_def(did);
@@ -471,7 +471,7 @@ pub(crate) fn ty_param_names(
 
 fn field_ty<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Dependencies<'tcx>,
     param_env: ParamEnv<'tcx>,
     did: DefId,
     field: &FieldDef,
@@ -515,7 +515,7 @@ pub(crate) fn translate_accessor(
 
     let substs = GenericArgs::identity_for_item(ctx.tcx, adt_did);
     let repr = ctx.representative_type(adt_did);
-    let mut names = CloneMap::new(ctx.tcx, repr.into());
+    let mut names = Dependencies::new(ctx.tcx, repr.into());
 
     // UGLY hack to ensure that we don't explicitly use/clone the members of a binding group
     let bg = ctx.binding_group(repr).clone();
