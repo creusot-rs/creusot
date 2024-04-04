@@ -23,6 +23,14 @@ struct CfgPaths {
     cache_dir: PathBuf,
 }
 
+impl fmt::Display for CfgPaths {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "config: {}", self.config_dir.display())?;
+        writeln!(f, "data:   {}", self.data_dir.display())?;
+        write!(f, "cache:  {}", self.cache_dir.display())
+    }
+}
+
 fn get_config_paths(custom_config_dir: &Option<PathBuf>) -> anyhow::Result<CfgPaths> {
     // arguments: qualifier, organization, application
     let dirs = ProjectDirs::from("", "creusot", "creusot")
@@ -126,7 +134,10 @@ pub fn status(custom_config_dir: &Option<PathBuf>) -> anyhow::Result<()> {
         }
         Ok(cfg) => {
             println!("Creusot installation found.");
+            println!("=== INSTALLATION");
             print!("{}", cfg.tools);
+            println!("=== PATHS");
+            println!("{}", paths);
             let issues = diagnostic_config(&cfg);
             if !issues.is_empty() {
                 let severity = match cfg.tools {
