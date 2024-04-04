@@ -37,29 +37,31 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
 
 # Installing Creusot as a user
 
-1. Set up **Rust**
-    - [Install `rustup`](https://www.rust-lang.org/tools/install), to get the suitable Rust toolchain
-2. Clone the [creusot](https://github.com/creusot-rs/creusot/) repo at any directory you like
-3. Set up **Why3** and **Alt-Ergo**
-   - [Get `opam`](https://opam.ocaml.org/doc/Install.html), the package manager for OCaml
-   - Enter the cloned Creusot directory and create a local `opam` switch with why3 and alt-ergo:
+1. [Install `rustup`](https://www.rust-lang.org/tools/install), to get the suitable Rust toolchain
+2. [Get `opam`](https://opam.ocaml.org/doc/Install.html), the package manager for OCaml
+3. Clone the [creusot](https://github.com/creusot-rs/creusot/) repository,
+   then *move into the `creusot` directory* for the rest of the setup.
+    ```
+    $ git clone https://github.com/creusot-rs/creusot
+    $ cd creusot
+    ```
+4. Set up **Why3** and **Alt-Ergo**. Create a local `opam` switch with why3 and alt-ergo:
    ```
    $ opam switch create -y . ocaml.4.14.1
    $ eval $(opam env)
    ```
    This will build why3, alt-ergo and their ocaml dependencies in a local `_opam` directory.
-4. Build **Creusot**
-    - In the cloned Creusot directory, run:
+5. Build **Creusot**:
     ```
     $ cargo install --path creusot-rustc
     $ cargo install --path cargo-creusot
     ```
     this will build the `cargo-creusot` and `creusot-rustc` executables and place them in `~/.cargo/bin`.
-5. Set up **Creusot**
+6. Set up **Creusot**:
    ```
    $ cargo creusot setup install
    ```
-   This will download additional solvers (Z3, CVC4, CVC5) and configure Why3 to use them.
+   this will download additional solvers (Z3, CVC4, CVC5) and configure Why3 to use them.
 
 # Upgrading Creusot 
 
