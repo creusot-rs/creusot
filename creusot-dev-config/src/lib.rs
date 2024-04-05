@@ -10,7 +10,7 @@ use std::{path::PathBuf, process::Command};
 /// - otherwise, in the global config repository used by creusot setup
 
 pub fn custom_config_dir() -> Option<PathBuf> {
-    let local_config = PathBuf::from("../.creusot-config");
+    let local_config = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.creusot-config");
     if local_config.is_dir() {
         Some(std::fs::canonicalize(local_config).unwrap())
     } else {

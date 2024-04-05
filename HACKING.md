@@ -5,9 +5,9 @@ working on the Creusot codebase.
 
 ## Setup
 
-On top of the usual Rust/Cargo workflow, the "Creusot developer setup" requires
-a working Why3 in order to run the testsuite and update tests proofs. You have
-two choices:
+The "Creusot developer setup" sometimes requires more flexibility in how it
+looks up why3 and related solvers, compared to the standard "user" workflow
+provided by `cargo creusot setup install`. You have two options:
 
 - **By default** the testsuite will use the global Creusot configuration managed
   by `cargo creusot setup`. You first need to have successfully run `cargo
@@ -61,16 +61,20 @@ If the proof of a test is broken (e.g.
 ./ide creusot/tests/should_succeed/cell/01
 ```
 
-## Calling why3
+## Calling why3 & why3_tools: shell environment setup
 
-To invoke why3 robustly (manually or in scripts), we provide a wrapper that will
-lookup the why3 path and config according to the logic described in **Setup**
-above.
+To invoke why3 (manually or in scripts) with the same binary/configuration as
+setup by `cargo creusot setup`, one needs to setup a shell environment with the
+correct PATH and environment variables.
 
-To invoke why3 this way, run:
+To do so, we provide the following command:
 ```
-cargo run --bin dev-why3 -- <arguments_to_why3...>
+eval $(cargo run --bin dev-env)
 ```
+
+After that, the `why3` binary in PATH will be the one configured by
+`cargo creusot setup`, using the adequate configuration file (through the
+`WHY3CONFIG` environment variable).
 
 ## Upgrading the revision of Why3 used by Creusot
 
