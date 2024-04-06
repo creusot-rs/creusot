@@ -14,6 +14,7 @@ pub mod ops;
 pub mod option;
 pub mod result;
 pub mod slice;
+pub mod string;
 pub mod time;
 mod tuples;
 pub mod vec;
