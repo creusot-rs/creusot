@@ -1,11 +1,11 @@
-use super::{CloneMap, Why3Generator};
+use super::{Dependencies, Why3Generator};
 use crate::{
     ctx::*,
     translation::{
         pearlite::{self, Term, TermKind},
         specification::PreContract,
     },
-    util::{self, get_builtin, item_qname, module_name, PreSignature},
+    util::{self, get_builtin, item_name, module_name, PreSignature},
 };
 use indexmap::IndexSet;
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
@@ -218,7 +218,7 @@ fn translate_projection_ty<'tcx, N: Namer<'tcx>>(
 
 pub(crate) fn translate_closure_ty<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Dependencies<'tcx>,
     did: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> TyDecl {
@@ -321,8 +321,8 @@ impl<'tcx> Why3Generator<'tcx> {
     }
 }
 
-fn translate_ty_name(ctx: &Why3Generator<'_>, did: DefId) -> QName {
-    item_qname(ctx, did, Namespace::TypeNS)
+fn translate_ty_name(ctx: &Why3Generator<'_>, did: DefId) -> Ident {
+    item_name(ctx.tcx, did, Namespace::TypeNS)
 }
 
 pub(crate) fn translate_ty_param(p: Symbol) -> Ident {
@@ -347,9 +347,9 @@ pub(crate) fn translate_tydecl(
         return None;
     }
 
-    let mut names = CloneMap::new(ctx.tcx, repr.into());
+    let mut names = Dependencies::new(ctx.tcx, bg.iter().copied());
 
-    let name = module_name(ctx.tcx, repr);
+    let name = module_name(ctx.tcx, repr).to_string().into();
     let span = ctx.def_span(repr);
 
     // Trusted types (opaque)
@@ -357,7 +357,7 @@ pub(crate) fn translate_tydecl(
         if bg.len() > 1 {
             ctx.crash_and_error(span, "cannot mark mutually recursive types as trusted");
         }
-        let ty_name = translate_ty_name(ctx, repr).name;
+        let ty_name = translate_ty_name(ctx, repr);
 
         let ty_params: Vec<_> = ty_param_names(ctx.tcx, repr).collect();
         let modl = Module {
@@ -367,38 +367,20 @@ pub(crate) fn translate_tydecl(
                 ty_params: ty_params.clone(),
             })],
         };
-        let _ = names.to_clones(ctx, CloneDepth::Shallow);
+        let _ = names.provide_deps(ctx, GraphDepth::Shallow);
         return Some(vec![modl]);
-    }
-
-    // UGLY hack to ensure that we don't explicitly use/clone the members of a binding group
-    for did in bg {
-        let substs = GenericArgs::identity_for_item(ctx.tcx, *did);
-        for field in ctx.adt_def(did).all_fields() {
-            for ty in field.ty(ctx.tcx, substs).walk() {
-                let k = match ty.unpack() {
-                    GenericArgKind::Type(ty) => ty,
-                    _ => continue,
-                };
-                if let Adt(def, sub) = k.kind() {
-                    if bg.contains(&def.did()) {
-                        names.insert_hidden(def.did(), sub);
-                    }
-                }
-            }
-        }
     }
 
     let ty_decl =
         TyDecl::Adt { tys: bg.iter().map(|did| build_ty_decl(ctx, &mut names, *did)).collect() };
 
-    let (mut decls, _) = names.to_clones(ctx, CloneDepth::Shallow);
+    let (mut decls, _) = names.provide_deps(ctx, GraphDepth::Shallow);
     decls.push(Decl::TyDecl(ty_decl));
 
     let mut modls = vec![Module { name: name.clone(), decls }];
 
     modls.extend(bg.iter().filter(|did| **did != repr).map(|did| Module {
-        name: module_name(ctx.tcx, *did),
+        name: module_name(ctx.tcx, *did).to_string().into(),
         decls: vec![Decl::UseDecl(Use { name: name.clone().into(), as_: None, export: true })],
     }));
 
@@ -407,13 +389,14 @@ pub(crate) fn translate_tydecl(
 
 fn build_ty_decl<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Dependencies<'tcx>,
     did: DefId,
 ) -> AdtDecl {
     let adt = ctx.tcx.adt_def(did);
+    let substs = GenericArgs::identity_for_item(ctx.tcx, did);
 
     // HACK(xavier): Clean up
-    let ty_name = translate_ty_name(ctx, did).name;
+    let ty_name = names.ty(did, substs).name;
 
     // Collect type variables of declaration
     let ty_args: Vec<_> = ty_param_names(ctx.tcx, did)
@@ -427,7 +410,6 @@ fn build_ty_decl<'tcx>(
 
     let param_env = ctx.param_env(did);
     let kind = {
-        let substs = GenericArgs::identity_for_item(ctx.tcx, did);
         let mut ml_ty_def = Vec::new();
 
         for var_def in adt.variants().iter() {
@@ -471,7 +453,7 @@ pub(crate) fn ty_param_names(
 
 fn field_ty<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Dependencies<'tcx>,
     param_env: ParamEnv<'tcx>,
     did: DefId,
     field: &FieldDef,
@@ -514,27 +496,7 @@ pub(crate) fn translate_accessor(
     let field = &variant.fields[ix.into()];
 
     let substs = GenericArgs::identity_for_item(ctx.tcx, adt_did);
-    let repr = ctx.representative_type(adt_did);
-    let mut names = CloneMap::new(ctx.tcx, repr.into());
-
-    // UGLY hack to ensure that we don't explicitly use/clone the members of a binding group
-    let bg = ctx.binding_group(repr).clone();
-    for did in &bg {
-        let substs = GenericArgs::identity_for_item(ctx.tcx, *did);
-        for field in ctx.adt_def(did).all_fields() {
-            for ty in field.ty(ctx.tcx, substs).walk() {
-                let k = match ty.unpack() {
-                    GenericArgKind::Type(ty) => ty,
-                    _ => continue,
-                };
-                if let Adt(def, sub) = k.kind() {
-                    if bg.contains(&def.did()) {
-                        names.insert_hidden(def.did(), sub);
-                    }
-                }
-            }
-        }
-    }
+    let mut names = Dependencies::new(ctx.tcx, ctx.binding_group(adt_did).iter().copied());
 
     let acc_name = format!("{}_{}", variant.name.as_str().to_ascii_lowercase(), field.name);
 
@@ -556,7 +518,7 @@ pub(crate) fn translate_accessor(
         ctx.type_of(adt_did).instantiate_identity(),
     );
 
-    let _ = names.to_clones(ctx, CloneDepth::Shallow);
+    let _ = names.provide_deps(ctx, GraphDepth::Shallow);
 
     build_accessor(
         this,

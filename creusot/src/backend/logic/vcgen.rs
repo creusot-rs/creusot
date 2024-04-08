@@ -19,7 +19,7 @@ use crate::{
     util::{self, get_builtin},
 };
 
-use super::{binders_to_args, CloneMap};
+use super::{binders_to_args, Dependencies};
 
 /// Verification conditions for lemma functions.
 ///
@@ -37,7 +37,7 @@ use super::{binders_to_args, CloneMap};
 
 struct VCGen<'a, 'tcx> {
     ctx: RefCell<&'a mut Why3Generator<'tcx>>,
-    names: RefCell<&'a mut CloneMap<'tcx>>,
+    names: RefCell<&'a mut Dependencies<'tcx>>,
     self_id: DefId,
     structurally_recursive: bool,
     param_env: ParamEnv<'tcx>,
@@ -45,7 +45,7 @@ struct VCGen<'a, 'tcx> {
 
 pub(super) fn vc<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Dependencies<'tcx>,
     self_id: DefId,
     t: Term<'tcx>,
     dest: Ident,
@@ -486,7 +486,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 // Push into `CloneMap::value`?
 pub(crate) fn get_func_name<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Dependencies<'tcx>,
     id: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> QName {

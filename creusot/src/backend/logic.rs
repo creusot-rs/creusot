@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use crate::{
     backend::all_generic_decls_for,
     ctx::*,
@@ -66,7 +64,7 @@ fn builtin_body<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
 ) -> (Module, CloneSummary<'tcx>) {
-    let mut names = CloneMap::new(ctx.tcx, def_id.into());
+    let mut names = Dependencies::new(ctx.tcx, [def_id]);
     let mut sig = signature_of(ctx, &mut names, def_id);
     let (val_args, val_binders) = binders_to_args(ctx, sig.args);
     sig.args = val_binders;
@@ -97,7 +95,7 @@ fn builtin_body<'tcx>(
     }
 
     let mut decls: Vec<_> = all_generic_decls_for(ctx.tcx, def_id).collect();
-    let (clones, summary) = names.to_clones(ctx, CloneDepth::Shallow);
+    let (clones, summary) = names.provide_deps(ctx, GraphDepth::Shallow);
 
     decls.extend(clones);
     if !builtin.module.is_empty() {
@@ -112,7 +110,7 @@ fn builtin_body<'tcx>(
 
     decls.push(Decl::ValDecl(ValDecl { ghost: false, val: true, kind: None, sig: val_sig }));
 
-    let name = module_name(ctx.tcx, def_id);
+    let name = Ident::build(&module_name(ctx.tcx, def_id).to_string());
 
     (Module { name, decls }, summary)
 }
@@ -266,11 +264,11 @@ pub fn sigs<'tcx>(ctx: &mut Why3Generator<'tcx>, mut sig: Signature) -> (Signatu
 }
 
 fn body_deps<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> CloneSummary<'tcx> {
-    let mut names = CloneMap::new(ctx.tcx, def_id.into());
+    let mut names = Dependencies::new(ctx.tcx, [def_id]);
 
     let _ = body_decls(ctx, &mut names, def_id);
 
-    let (_, summary) = names.to_clones(ctx, CloneDepth::Shallow);
+    let (_, summary) = names.provide_deps(ctx, GraphDepth::Shallow);
 
     summary
 }
@@ -326,12 +324,12 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
         return None;
     }
 
-    let mut names = CloneMap::new(ctx.tcx, def_id.into());
+    let mut names = Dependencies::new(ctx.tcx, [def_id]);
 
     let mut sig = signature_of(ctx, &mut names, def_id);
 
     if sig.contract.is_empty() {
-        let _ = names.to_clones(ctx, CloneDepth::Deep);
+        let _ = names.provide_deps(ctx, GraphDepth::Deep);
         return None;
     }
     let term = ctx.term(def_id).unwrap().clone();
@@ -378,7 +376,7 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
 
-    let (clones, _) = names.to_clones(ctx, CloneDepth::Deep);
+    let (clones, _) = names.provide_deps(ctx, GraphDepth::Deep);
     decls.extend(clones);
     decls.extend(body_decls);
 
@@ -448,5 +446,5 @@ fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
 }
 
 pub(crate) fn impl_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
-    format!("{}_Impl", Cow::from(&*module_name(ctx.tcx, def_id))).into()
+    format!("{}_Impl", module_name(ctx.tcx, def_id)).into()
 }

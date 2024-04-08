@@ -5,23 +5,26 @@ use why3::declaration::{Decl, Module};
 
 pub enum TranslatedItem {
     Logic {
-        // A module which contains the function body (and contract) but uses the actual bodies of all called functions
+        /// Proof obligations emerging from the contract of a logic function
         proof_modl: Option<Module>,
     },
     Closure {
+        /// The closure as a type
         ty_modl: Module,
+        /// The program of the closure
         modl: Option<Module>,
     },
     Program {
+        /// An ordinary Rust function
         modl: Option<Module>,
     },
     Trait {},
     Impl {
-        modl: Module, // Refinement of traits,
+        /// Trait refinement obligations
+        modl: Module,
     },
     AssocTy {},
     Constant {},
-    // Types can not have dependencies yet, as Why3 does not yet have applicative clones
     Type {
         modl: Vec<Module>,
         accessors: IndexMap<DefId, IndexMap<DefId, Decl>>,

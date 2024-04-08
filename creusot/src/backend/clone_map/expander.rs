@@ -22,7 +22,7 @@ use super::*;
 pub(super) struct Expander<'a, 'tcx> {
     pub clone_graph: DepGraph<'tcx>,
     pub namer: &'a mut CloneNames<'tcx>,
-    self_id: TransId,
+    self_key: Dependency<'tcx>,
     param_env: ParamEnv<'tcx>,
     expansion_queue: VecDeque<DepNode<'tcx>>,
 }
@@ -30,27 +30,28 @@ pub(super) struct Expander<'a, 'tcx> {
 impl<'a, 'tcx> Expander<'a, 'tcx> {
     pub fn new(
         namer: &'a mut CloneNames<'tcx>,
-        self_id: TransId,
+        self_key: Dependency<'tcx>,
         param_env: ParamEnv<'tcx>,
     ) -> Self {
         Self {
             clone_graph: Default::default(),
             namer,
-            self_id,
+            self_key,
             param_env,
             expansion_queue: Default::default(),
         }
     }
 
     fn self_did(&self) -> Option<DefId> {
-        match self.self_id {
-            TransId::Item(did) | TransId::TyInv(TyInvKind::Adt(did)) => Some(did),
+        match self.self_key.to_trans_id() {
+            Some(TransId::Item(did) | TransId::TyInv(TyInvKind::Adt(did))) => Some(did),
             _ => None,
         }
     }
 
     pub fn add_root(&mut self, key: DepNode<'tcx>, level: CloneLevel) {
         self.clone_graph.add_root(key, self.namer.insert(key), level);
+        self.clone_graph.add_graph_edge(self.self_key, key, CloneLevel::Root);
         self.expansion_queue.push_back(key);
     }
 
@@ -58,25 +59,17 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     pub fn update_graph(
         mut self,
         ctx: &mut Why3Generator<'tcx>,
-        depth: CloneDepth,
+        depth: GraphDepth,
     ) -> DepGraph<'tcx> {
-        let self_key = DepNode::from_trans_id(ctx.tcx, self.self_id);
-
-        for key in &self.expansion_queue {
-            if *key != self_key {
-                self.clone_graph.add_graph_edge(self_key, *key, CloneLevel::Root);
-            }
-        }
+        let self_key = self.self_key;
 
         while let Some(key) = self.expansion_queue.pop_front() {
             trace!("update graph with {:?} (public={:?})", key, self.clone_graph.info(key).level);
-            if depth == CloneDepth::Shallow && !self.clone_graph.is_root(key) {
+            if depth == GraphDepth::Shallow && !self.clone_graph.is_root(key) {
                 // If there is a Signature level edge from a pre-existing root node, mark this one as root as well as it must be an associated type in
                 // a root signature
                 if self.clone_graph.graph.edges_directed(key, Direction::Incoming).any(
-                    |(src, _, (lvl, _))| {
-                        self.clone_graph.is_root(src) && *lvl == CloneLevel::Signature
-                    },
+                    |(src, _, lvl)| self.clone_graph.is_root(src) && *lvl == CloneLevel::Signature,
                 ) {
                     self.add_root(key, self.clone_graph.info(key).level)
                 } else {
@@ -106,7 +99,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
                 ctx.translate(did);
 
-                if util::is_inv_internal(ctx.tcx, did) && depth == CloneDepth::Deep {
+                if util::is_inv_internal(ctx.tcx, did) && depth == GraphDepth::Deep {
                     let ty = subst.type_at(0);
                     let ty = ctx.try_normalize_erasing_regions(self.param_env, ty).unwrap_or(ty);
                     self.expand_ty_inv(ctx, self.param_env, ty);
@@ -214,7 +207,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             TyInvKind::from_ty(ctx.tcx, ty).unwrap_or(TyInvKind::Trivial)
         };
 
-        if let TransId::TyInv(self_kind) = self.self_id
+        if let Some(TransId::TyInv(self_kind)) = self.self_key.to_trans_id()
             && self_kind == inv_kind
         {
             return;
@@ -229,12 +222,12 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         ctx: &mut TranslationCtx<'tcx>,
         key_did: DefId,
         key_subst: GenericArgsRef<'tcx>,
-        depth: CloneDepth,
+        depth: GraphDepth,
     ) {
         let Some(item) = ctx.tcx.opt_associated_item(key_did) else { return };
         let Some(self_did) = self.self_did() else { return };
 
-        if depth == CloneDepth::Shallow {
+        if depth == GraphDepth::Shallow {
             return;
         }
 
@@ -254,7 +247,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
         let tcx = ctx.tcx;
         for law in ctx.laws(item.container_id(tcx)) {
-            trace!("adding law {:?} in {:?}", *law, self.self_id);
+            trace!("adding law {:?} in {:?}", *law, self.self_key);
             let dep = DepNode::new(tcx, (*law, key_subst));
             self.add_node(dep, CloneLevel::Body);
         }
