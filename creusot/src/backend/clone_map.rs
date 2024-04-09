@@ -93,8 +93,6 @@ pub(crate) trait Namer<'tcx> {
 
     fn ty(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName;
 
-    fn real_ty(&mut self, ty: Ty<'tcx>) -> QName;
-
     fn constructor(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName;
 
     fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName;
@@ -142,11 +140,6 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
             DefKind::AssocTy => self.insert(node).qname(),
             _ => self.insert(node).qname(),
         }
-    }
-
-    fn real_ty(&mut self, ty: Ty<'tcx>) -> QName {
-        let node = DepNode::Type(ty);
-        self.insert(node).qname()
     }
 
     fn constructor(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
@@ -284,8 +277,22 @@ impl<'tcx> CloneNames<'tcx> {
             }
             DepNode::Type(ty) if !matches!(ty.kind(), TyKind::Alias(_, _)) => {
                 let kind = if let Some((did, _)) = key.did() {
-                    let modl = module_name(self.tcx, did);
-                    let name = Symbol::intern(&*item_name(self.tcx, did, Namespace::TypeNS));
+                    let (modl, name) = if let Some(why3_modl) = util::get_builtin(self.tcx, did) {
+                        let qname = QName::from_string(why3_modl.as_str()).unwrap();
+                        let name = qname.name.clone();
+                        let modl = qname.module_ident().unwrap();
+                        (Symbol::intern(&modl), Symbol::intern(&*name))
+                    } else {
+                        let modl: Symbol = if util::item_type(self.tcx, did) == ItemType::Closure {
+                            Symbol::intern(&format!("{}_Type", module_name(self.tcx, did)))
+                        } else {
+                            module_name(self.tcx, did)
+                        };
+
+                        let name = Symbol::intern(&*item_name(self.tcx, did, Namespace::TypeNS));
+
+                        (modl, name)
+                    };
 
                     Kind::Used(modl, name)
                 } else {
@@ -295,6 +302,15 @@ impl<'tcx> CloneNames<'tcx> {
                 return kind;
             }
             _ => {
+                if let DepNode::Item(id, _) = key
+                    && let Some(why3_modl) = util::get_builtin(self.tcx, id)
+                {
+                    let qname = QName::from_string(why3_modl.as_str()).unwrap();
+                    let name = qname.name.clone();
+                    let modl = qname.module_qname().name;
+                    return Kind::Used(Symbol::intern(&*modl), Symbol::intern(&*name));
+                };
+
                 let base = key.base_ident(self.tcx);
 
                 Kind::Named(self.counts.freshen(base))
@@ -376,7 +392,7 @@ impl Kind {
     fn ident(&self) -> Ident {
         match self {
             Kind::Named(nm) => nm.as_str().into(),
-            Kind::Used(_, _) => panic!("cannot get ident of used module"),
+            Kind::Used(_, _) => panic!("cannot get ident of used module {self:?}"),
         }
     }
 

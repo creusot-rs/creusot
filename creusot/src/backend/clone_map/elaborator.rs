@@ -9,12 +9,12 @@ use rustc_target::abi::FieldIdx;
 
 use why3::{
     declaration::{Axiom, Decl, LetDecl, LetKind, Signature, Use, ValDecl},
-    Ident, QName,
+    QName,
 };
 
 use crate::{
     backend::{
-        dependency::ExtendedId,
+        dependency::{Dependency, ExtendedId},
         logic::{lower_logical_defn, lower_pure_defn, sigs, spec_axiom},
         signature::sig_to_why3,
         term::lower_pure,
@@ -33,7 +33,7 @@ use super::{CloneNames, DepNode, Kind};
 
 /// The symbol elaborator expands required definitions as symbols and definitions, effectively performing the clones itself.
 pub(super) struct SymbolElaborator<'tcx> {
-    used_types: IndexSet<DefId>,
+    used_types: IndexSet<Symbol>,
     _param_env: ParamEnv<'tcx>,
 }
 
@@ -77,10 +77,10 @@ impl<'tcx> SymbolElaborator<'tcx> {
         }
     }
 
-    fn elaborate_ty<N: Namer<'tcx>>(
+    fn elaborate_ty(
         &mut self,
         ctx: &mut Why3Generator<'tcx>,
-        names: &mut N,
+        names: &mut SymNamer<'tcx>,
         ty: Ty<'tcx>,
     ) -> Vec<Decl> {
         let Some((def_id, subst)) = DepNode::Type(ty).did() else { return Vec::new() };
@@ -88,29 +88,46 @@ impl<'tcx> SymbolElaborator<'tcx> {
         match ty.kind() {
             TyKind::Alias(_, _) => vec![ctx.assoc_ty_decl(names, def_id, subst)],
             _ => {
-                let use_decl = self.used_types.insert(def_id).then(|| {
-                    if let Some(builtin) = get_builtin(ctx.tcx, def_id) {
-                        let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
-                        Use { name, as_: None, export: false }
-                    } else {
-                        let name = names.ty(def_id, subst);
-                        let name = name.module_qname();
-                        let mod_name: Ident =
-                            if util::item_type(ctx.tcx, def_id) == ItemType::Closure {
-                                format!("{}_Type", module_name(ctx.tcx, def_id)).into()
-                            } else {
-                                module_name(ctx.tcx, def_id).to_string().into()
-                            };
-                        Use { name: mod_name.into(), as_: Some(name), export: false }
-                    }
-                });
-                use_decl.into_iter().map(Decl::UseDecl).collect()
+                if let Some(why3_modl) = util::get_builtin(ctx.tcx, def_id) {
+                    let qname = QName::from_string(why3_modl.as_str()).unwrap();
+                    let Kind::Used(modl, _) = names.insert(DepNode::Type(ty)) else {
+                        return vec![];
+                    };
+
+                    self.used_types
+                        .insert(*modl)
+                        .then(|| {
+                            let use_decl =
+                                Use { as_: None, name: qname.module_qname(), export: false };
+
+                            vec![Decl::UseDecl(use_decl)]
+                        })
+                        .unwrap_or_default()
+                } else {
+                    self.emit_use(names, DepNode::Type(ty))
+                }
             }
         }
     }
 
+    fn emit_use(&mut self, names: &mut SymNamer<'tcx>, dep: Dependency<'tcx>) -> Vec<Decl> {
+        if let k @ Kind::Used(modl, _) = names.insert(dep) {
+            self.used_types
+                .insert(*modl)
+                .then(|| {
+                    let qname = k.qname();
+                    let name = qname.module_qname();
+                    let use_decl = Use { as_: Some(name.clone()), name, export: false };
+                    vec![Decl::UseDecl(use_decl)]
+                })
+                .unwrap_or_default()
+        } else {
+            vec![]
+        }
+    }
+
     fn elaborate_item(
-        &self,
+        &mut self,
         ctx: &mut Why3Generator<'tcx>,
         names: &mut SymNamer<'tcx>,
         param_env: ParamEnv<'tcx>,
@@ -128,11 +145,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
         }
 
         if let Kind::Used(_, _) = names.get(item) {
-            let qname = names.get(item).qname();
-            let name = qname.module_qname();
-            let use_decl = Use { as_: Some(name.clone()), name, export: false };
-
-            return vec![Decl::UseDecl(use_decl)];
+            return self.emit_use(names, item);
         };
 
         let mut pre_sig = EarlyBinder::bind(sig(ctx, item)).instantiate(ctx.tcx, subst);
@@ -287,7 +300,7 @@ impl<'tcx> SymNamer<'tcx> {
 impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
     fn value(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let node = DepNode::new(self.tcx, (def_id, subst));
-        self.get(node).ident().into()
+        self.get(node).qname()
     }
 
     fn ty(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
@@ -301,11 +314,6 @@ impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
             DefKind::AssocTy => self.get(node).ident().into(),
             _ => self.insert(node).qname(),
         }
-    }
-
-    fn real_ty(&mut self, ty: Ty<'tcx>) -> QName {
-        let node = DepNode::Type(ty);
-        self.insert(node).ident().into()
     }
 
     fn constructor(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {

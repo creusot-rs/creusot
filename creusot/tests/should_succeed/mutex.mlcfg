@@ -120,7 +120,6 @@ module Mutex_Impl3_Call
     ensures { result = inv3 self x }
     
   use prelude.Snapshot
-  use Mutex_MutexGuard_Type as Mutex_MutexGuard_Type
   val set0 [#"../mutex.rs" 56 4 56 27] (self : borrowed (Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even))) (v : uint32) : ()
     requires {[#"../mutex.rs" 55 4 55 30] inv3 (Snapshot.inner (Mutex_MutexGuard_Type.mutexguard_1 ( * self))) v}
     requires {[#"../mutex.rs" 56 16 56 20] inv5 self}
@@ -131,13 +130,11 @@ module Mutex_Impl3_Call
     ensures { [#"../mutex.rs" 49 4 49 35] inv3 (Snapshot.inner (Mutex_MutexGuard_Type.mutexguard_1 self)) result }
     ensures { [#"../mutex.rs" 50 23 50 25] inv4 result }
     
-  use Mutex_Mutex_Type as Mutex_Mutex_Type
   val lock0 [#"../mutex.rs" 37 4 37 46] (self : Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even)) : Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even)
     requires {[#"../mutex.rs" 37 17 37 21] inv0 self}
     ensures { [#"../mutex.rs" 36 14 36 33] Mutex_Mutex_Type.mutex_1 self = Snapshot.inner (Mutex_MutexGuard_Type.mutexguard_1 result) }
     ensures { [#"../mutex.rs" 37 26 37 46] inv1 result }
     
-  use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
   let rec cfg call [#"../mutex.rs" 100 4 100 23] [@cfg:stackify] [@cfg:subregion_analysis] (self : Mutex_AddsTwo_Type.t_addstwo) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -359,7 +356,6 @@ module Mutex_Concurrent
   val postcondition0 [#"../mutex.rs" 96 4 96 41] (self : Mutex_AddsTwo_Type.t_addstwo) (_2 : ()) : bool
     ensures { result = postcondition0 self _2 }
     
-  use Mutex_SpawnPostCond_Type as Mutex_SpawnPostCond_Type
   predicate inv8 [#"../mutex.rs" 150 4 150 39] (self : Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo)) (v : ())
     
    =
@@ -368,7 +364,6 @@ module Mutex_Concurrent
     ensures { result = inv8 self v }
     
   use prelude.Snapshot
-  use Mutex_JoinHandle_Type as Mutex_JoinHandle_Type
   val join0 [#"../mutex.rs" 121 4 121 34] (self : Mutex_JoinHandle_Type.t_joinhandle () (Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo))) : Core_Result_Result_Type.t_result () ()
     requires {[#"../mutex.rs" 121 12 121 16] inv7 self}
     ensures { [#"../mutex.rs" 117 14 120 5] match result with
