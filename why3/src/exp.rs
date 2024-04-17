@@ -575,7 +575,7 @@ impl Exp {
                                 // Then swap the left child of with the left child of self moving `l` into
                                 // the left chid of `r` and moving `rr` to the left of self
                                 // Finally swap the two children of self which are now `r` and `rr`
-                                if let box Exp::BinaryOp(iop, rl, rr) = r {
+                                if let Exp::BinaryOp(iop, rl, rr) = &mut **r {
                                     if *iop == *op {
                                         std::mem::swap(rl, rr);
                                         std::mem::swap(rl, l);
@@ -586,7 +586,7 @@ impl Exp {
                             }
                             AssocDir::Right => {
                                 // ll -> l, r -> lr, lr -> ll, l -> r;
-                                if let box Exp::BinaryOp(iop, ll, lr) = l {
+                                if let Exp::BinaryOp(iop, ll, lr) = &mut **l {
                                     if *iop == *op {
                                         std::mem::swap(ll, lr);
                                         std::mem::swap(lr, r);
@@ -842,7 +842,7 @@ impl Exp {
                         let mut s = &subst;
                         s.visit_mut(body);
                     }
-                    Exp::Match(box scrut, brs) => {
+                    Exp::Match(scrut, brs) => {
                         self.visit_mut(scrut);
 
                         for (pat, br) in brs {
