@@ -586,7 +586,7 @@ impl Exp {
                             }
                             AssocDir::Right => {
                                 // ll -> l, r -> lr, lr -> ll, l -> r;
-                                if let Exp::BinaryOp(iop, ll, lr) = &mut**l {
+                                if let Exp::BinaryOp(iop, ll, lr) = &mut **l {
                                     if *iop == *op {
                                         std::mem::swap(ll, lr);
                                         std::mem::swap(lr, r);

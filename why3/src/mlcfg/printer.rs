@@ -582,9 +582,7 @@ impl Print for Exp {
             Exp::UnaryOp(UnOp::Not, op) => alloc.text("not ").append(parens!(alloc, self, op)),
 
             Exp::UnaryOp(UnOp::Neg, op) => alloc.text("- ").append(parens!(alloc, self, op)),
-            Exp::UnaryOp(UnOp::FloatNeg, op) => {
-                alloc.text(".- ").append(parens!(alloc, self, op))
-            }
+            Exp::UnaryOp(UnOp::FloatNeg, op) => alloc.text(".- ").append(parens!(alloc, self, op)),
             Exp::BinaryOp(op, l, r) => match self.associativity() {
                 Some(AssocDir::Left) => parens!(alloc, self, l),
                 Some(AssocDir::Right) | None => parens!(alloc, self.precedence().next(), l),
