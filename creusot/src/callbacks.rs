@@ -79,6 +79,7 @@ impl Callbacks for ToWhy {
             let _ = crate::translation::before_analysis(&mut ctx);
             let _ = tcx.analysis(());
 
+            crate::detect_recursion::detect_recursion(&mut ctx);
             let _ = crate::translation::after_analysis(ctx);
         });
 
