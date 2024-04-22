@@ -58,18 +58,25 @@ struct Function<'tcx> {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum ToVisit<'tcx> {
     /// The function is defined in the crate
-    Local { function_def_id: LocalDefId, generic_params: &'tcx GenericArgs<'tcx> },
+    Local { function_def_id: LocalDefId, generic_args: &'tcx GenericArgs<'tcx> },
     /// The function is defined in another crate.
     ///
     /// We keep the generic parameters it was instantiated with, so that trait
     /// parameters can be specialized to specific instances.
-    Extern { caller_def_id: DefId, function_def_id: DefId, generic_params: &'tcx GenericArgs<'tcx> },
+    Extern { caller_def_id: DefId, function_def_id: DefId, generic_args: &'tcx GenericArgs<'tcx> },
 }
 impl<'tcx> ToVisit<'tcx> {
     fn def_id(&self) -> DefId {
         match self {
             ToVisit::Local { function_def_id, .. } => function_def_id.to_def_id(),
             ToVisit::Extern { function_def_id, .. } => *function_def_id,
+        }
+    }
+    fn generic_args(&self) -> &'tcx GenericArgs<'tcx> {
+        match self {
+            ToVisit::Local { generic_args, .. } | ToVisit::Extern { generic_args, .. } => {
+                generic_args
+            }
         }
     }
 }
@@ -82,77 +89,77 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
         .body_owners()
         .map(|d| ToVisit::Local {
             function_def_id: d,
-            generic_params: GenericArgs::identity_for_item(ctx.tcx, d),
+            generic_args: GenericArgs::identity_for_item(ctx.tcx, d),
         })
         .collect();
     while let Some(&visited) = to_visit.iter().next() {
         if crate::util::is_trusted(ctx.tcx, visited.def_id()) {
             let def_id = visited.def_id();
+            let generic_args = visited.generic_args();
             // FIXME: does this work with trait functions marked `#[trusted]` ?
             call_graph.0.insert(
-                (def_id, GenericArgs::identity_for_item(ctx.tcx, def_id)),
+                (def_id, generic_args),
                 Function { can_be_recursive: false, calls: IndexMap::default() },
             );
         } else {
             match visited {
                 // Function defined in the current crate: visit its body
-                ToVisit::Local { function_def_id: local_id, generic_params } => {
+                ToVisit::Local { function_def_id: local_id, generic_args } => {
                     let def_id = local_id.to_def_id();
                     let body = ctx.body_with_facts(local_id).body.clone();
                     let param_env = ctx.tcx.param_env(def_id);
                     let mut visitor = FunctionCalls {
                         tcx: ctx.tcx,
-                        generic_params,
+                        generic_args,
                         param_env,
                         calls: IndexSet::new(),
                     };
                     visitor.visit_body(&body);
                     let mut calls = IndexMap::new();
                     for &(function_def_id, span, subst) in &visitor.calls {
+                        if !ctx.tcx.is_mir_available(function_def_id) {
+                            continue;
+                        }
                         if !call_graph.0.contains_key(&(function_def_id, subst)) {
                             if let Some(local) = function_def_id.as_local() {
                                 to_visit.insert(ToVisit::Local {
                                     function_def_id: local,
-                                    generic_params: subst,
+                                    generic_args: subst,
                                 });
                             } else {
                                 to_visit.insert(ToVisit::Extern {
                                     caller_def_id: def_id,
                                     function_def_id,
-                                    generic_params: subst,
+                                    generic_args: subst,
                                 });
                             }
                         }
                         calls.insert((function_def_id, subst), span);
                     }
                     call_graph.0.insert(
-                        (def_id, generic_params),
+                        (def_id, generic_args),
                         Function {
                             can_be_recursive: crate::util::has_variant_clause(ctx.tcx, def_id),
-                            calls: visitor
-                                .calls
-                                .into_iter()
-                                .map(|(d, span, args)| ((d, args), span))
-                                .collect(),
+                            calls,
                         },
                     );
                 }
                 // Function defined in another crate: assume all the functions corresponding to its trait bounds can be called.
-                ToVisit::Extern { caller_def_id, function_def_id, generic_params } => {
+                ToVisit::Extern { caller_def_id, function_def_id, generic_args } => {
                     let mut calls = IndexMap::new();
                     for bound in ctx.tcx.param_env(function_def_id).caller_bounds() {
                         let Some(clause) = bound.as_trait_clause() else { continue };
 
                         // Let's try to find if this specific invocation can be specialized to a known implementation
                         let actual_clause = EarlyBinder::bind(clause.skip_binder())
-                            .instantiate(ctx.tcx, generic_params);
+                            .instantiate(ctx.tcx, generic_args);
                         let obligation = TraitObligation::new(
                             ctx.tcx,
                             ObligationCause::dummy(),
                             ctx.tcx.param_env(caller_def_id),
                             actual_clause,
                         );
-                        let infer_ctx = ctx.infer_ctxt().intercrate(false).build();
+                        let infer_ctx = ctx.infer_ctxt().intercrate(true).build();
                         let mut selection_ctx = SelectionContext::new(&infer_ctx);
                         let impl_def_id = match selection_ctx.select(&obligation) {
                             Ok(Some(source)) => match source {
@@ -167,7 +174,7 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
                                 rustc_infer::traits::ImplSource::Builtin(_, _) => None,
                             },
                             Ok(None) => None,
-                            Err(e) => panic!("{e:?}"),
+                            Err(_) => None,
                         };
 
                         if let Some(impl_id) = impl_def_id {
@@ -175,10 +182,7 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
                             for &item in ctx.tcx.associated_item_def_ids(impl_id) {
                                 let item_kind = ctx.tcx.def_kind(item);
                                 if item_kind == DefKind::AssocFn {
-                                    let params = EarlyBinder::bind(GenericArgs::identity_for_item(
-                                        ctx.tcx, item,
-                                    ))
-                                    .instantiate(ctx.tcx, generic_params);
+                                    let params = GenericArgs::identity_for_item(ctx.tcx, item);
                                     calls.insert((item, params), ctx.tcx.def_span(function_def_id));
                                     call_graph
                                         .0
@@ -189,13 +193,13 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
                                     let visit = if let Some(local) = item.as_local() {
                                         ToVisit::Local {
                                             function_def_id: local,
-                                            generic_params: params, // TODO: are those the right ones ?
+                                            generic_args: params, // TODO: are those the right ones ?
                                         }
                                     } else {
                                         ToVisit::Extern {
                                             caller_def_id: function_def_id,
                                             function_def_id: item,
-                                            generic_params: params,
+                                            generic_args: params,
                                         }
                                     };
                                     to_visit.insert(visit);
@@ -208,7 +212,7 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
                     }
                     let default_params =
                         EarlyBinder::bind(GenericArgs::identity_for_item(ctx.tcx, function_def_id))
-                            .instantiate(ctx.tcx, generic_params);
+                            .instantiate(ctx.tcx, generic_args);
                     call_graph.0.insert(
                         (function_def_id, default_params),
                         Function {
@@ -313,7 +317,7 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
 /// Gather the functions calls that appear in a particular function.
 struct FunctionCalls<'tcx> {
     tcx: TyCtxt<'tcx>,
-    generic_params: &'tcx GenericArgs<'tcx>,
+    generic_args: &'tcx GenericArgs<'tcx>,
     param_env: ParamEnv<'tcx>,
     /// Contains:
     /// - The id of the called function
@@ -339,8 +343,8 @@ impl<'tcx> Visitor<'tcx> for FunctionCalls<'tcx> {
                 Operand::Constant(op) => match &op.const_ {
                     Const::Val(_, ty) => match ty.kind() {
                         TyKind::FnDef(def_id, subst) | TyKind::Closure(def_id, subst) => {
-                            let subst = EarlyBinder::bind(*subst)
-                                .instantiate(self.tcx, self.generic_params);
+                            let subst = EarlyBinder::bind(self.tcx.erase_regions(*subst))
+                                .instantiate(self.tcx, self.generic_args);
                             let (def_id, args) = match self
                                 .tcx
                                 .resolve_instance(self.param_env.and((*def_id, subst)))
