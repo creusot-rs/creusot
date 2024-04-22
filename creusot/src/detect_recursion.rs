@@ -1,24 +1,36 @@
 //! Detection of mutually recursive functions.
 //!
+//! This only triggers in `ghost` code, and is there to avoid unsoundness.
+//!
 //! Care is taken around the interaction with traits, like the following example:
-//! ```
-//! pub trait Foo {
+//! ```compile_fail
+//! trait Foo {
 //!     fn foo() {}
 //! }
 //!
 //! impl Foo for i32 {
 //!     fn foo() {
-//!         bar::<i32>();
+//!         ghost! {
+//!             bar::<std::iter::Once<i32>>(std::iter::once(1i32));
+//!         }
 //!     }
 //! }
 //!
-//! // `bar` is recursive if `T` is `i32`
-//! pub fn bar<T: Foo>() {
-//!     T::foo();
+//! fn bar<I>(i: I)
+//! where
+//!     I: Iterator,
+//!     I::Item: Foo,
+//! {
+//!     for _ in i {
+//!         I::Item::foo();
+//!     }
 //! }
 //! ```
 
-use crate::ctx::TranslationCtx;
+use crate::{
+    ctx::{BodyId, TranslationCtx},
+    util,
+};
 use indexmap::{IndexMap, IndexSet};
 use rustc_hir::{
     def::DefKind,
@@ -30,9 +42,9 @@ use rustc_infer::{
 };
 use rustc_middle::{
     mir::{visit::Visitor, Location, Terminator, TerminatorKind},
-    ty::{EarlyBinder, GenericArgs, ParamEnv, TyCtxt},
+    ty::{EarlyBinder, GenericArgKind, GenericArgs, ParamEnv, TyCtxt},
 };
-use rustc_span::Span;
+use rustc_span::{Span, Symbol};
 use rustc_trait_selection::traits::SelectionContext;
 
 type FunctionInstance<'tcx> = (DefId, &'tcx GenericArgs<'tcx>);
@@ -93,7 +105,7 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
         })
         .collect();
     while let Some(&visited) = to_visit.iter().next() {
-        if crate::util::is_trusted(ctx.tcx, visited.def_id()) {
+        if util::is_trusted(ctx.tcx, visited.def_id()) {
             let def_id = visited.def_id();
             let generic_args = visited.generic_args();
             // FIXME: does this work with trait functions marked `#[trusted]` ?
@@ -106,7 +118,7 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
                 // Function defined in the current crate: visit its body
                 ToVisit::Local { function_def_id: local_id, generic_args } => {
                     let def_id = local_id.to_def_id();
-                    let body = ctx.body_with_facts(local_id).body.clone();
+                    let body = ctx.body(BodyId { def_id: local_id, promoted: None }).clone();
                     let param_env = ctx.tcx.param_env(def_id);
                     let mut visitor = FunctionCalls {
                         tcx: ctx.tcx,
@@ -139,7 +151,7 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
                     call_graph.0.insert(
                         (def_id, generic_args),
                         Function {
-                            can_be_recursive: crate::util::has_variant_clause(ctx.tcx, def_id),
+                            can_be_recursive: util::has_variant_clause(ctx.tcx, def_id),
                             calls,
                         },
                     );
@@ -188,12 +200,11 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
                                         .0
                                         .entry((item, params))
                                         .or_default()
-                                        .can_be_recursive =
-                                        crate::util::has_variant_clause(ctx.tcx, item);
+                                        .can_be_recursive = util::has_variant_clause(ctx.tcx, item);
                                     let visit = if let Some(local) = item.as_local() {
                                         ToVisit::Local {
                                             function_def_id: local,
-                                            generic_args: params, // TODO: are those the right ones ?
+                                            generic_args: params,
                                         }
                                     } else {
                                         ToVisit::Extern {
@@ -253,18 +264,22 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
     for (fun_id, calls) in &mut call_graph.0 {
         if let Some(&call_span) = calls.calls.get(fun_id) {
             calls.calls.remove(fun_id);
-            if !calls.can_be_recursive && fun_id.0.is_local() {
+            if !calls.can_be_recursive
+                && fun_id.0.is_local()
+                && util::is_ghost_closure(ctx.tcx, fun_id.0)
+            {
                 let fun_span = ctx.tcx.def_span(fun_id.0);
                 let mut error =
-                    ctx.error(fun_span, "Recursive function without a `#[variant]` clause");
+                    ctx.error(fun_span, "Recursive ghost function without a `#[variant]` clause");
                 error.span_note(call_span, "Recursive call happens here");
                 error.emit();
             }
         }
     }
 
-    // detect mutual recursion
-    let cycles = find_cycles(&call_graph);
+    // detect mutual recursion in ghost code
+    let cycles = find_cycles_starting_in_ghost(&call_graph, ctx.tcx);
+    // TODO: further improve the error message
     for mut cycle in cycles {
         if cycle.iter().all(|id| !id.0.is_local()) {
             // The cycle needs to involve at least one function in the current crate.
@@ -308,10 +323,6 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
     }
 
     ctx.tcx.dcx().abort_if_errors();
-
-    // FIXME:
-    // - mark which functions are "terminating" or "ghost"
-    // - This will eventually need a proof: see TESTING/recursion_proof.typ.
 }
 
 /// Gather the functions calls that appear in a particular function.
@@ -343,14 +354,30 @@ impl<'tcx> Visitor<'tcx> for FunctionCalls<'tcx> {
                 Operand::Constant(op) => match &op.const_ {
                     Const::Val(_, ty) => match ty.kind() {
                         TyKind::FnDef(def_id, subst) | TyKind::Closure(def_id, subst) => {
+                            let def_id = if self
+                                .tcx
+                                .is_diagnostic_item(Symbol::intern("ghost_from_fn"), *def_id)
+                            {
+                                // we are in a ghost block, so we need to remove a layer of calls
+                                // That's because `ghost! { body }` desugars into
+                                // `ghost_from_fn(|| {body})`.
+                                let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack()
+                                else {
+                                    panic!()
+                                };
+                                let TyKind::Closure(def_id, _) = ty.kind() else { panic!() };
+                                *def_id
+                            } else {
+                                *def_id
+                            };
                             let subst = EarlyBinder::bind(self.tcx.erase_regions(*subst))
                                 .instantiate(self.tcx, self.generic_args);
                             let (def_id, args) = match self
                                 .tcx
-                                .resolve_instance(self.param_env.and((*def_id, subst)))
+                                .resolve_instance(self.param_env.and((def_id, subst)))
                             {
                                 Ok(Some(instance)) => (instance.def.def_id(), instance.args),
-                                _ => (*def_id, subst),
+                                _ => (def_id, subst),
                             };
                             self.calls.insert((def_id, *fn_span, args));
                         }
@@ -366,13 +393,19 @@ impl<'tcx> Visitor<'tcx> for FunctionCalls<'tcx> {
 }
 
 /// Finds all the cycles in the call graph.
-fn find_cycles<'tcx>(graph: &CallGraph<'tcx>) -> IndexSet<Vec<FunctionInstance<'tcx>>> {
+fn find_cycles_starting_in_ghost<'tcx>(
+    graph: &CallGraph<'tcx>,
+    tcx: TyCtxt<'tcx>,
+) -> IndexSet<Vec<FunctionInstance<'tcx>>> {
     let mut visited: IndexSet<FunctionInstance> = IndexSet::new();
     let mut detected_cycles = IndexSet::new();
     for &v in graph.0.keys() {
+        if !util::is_ghost_closure(tcx, v.0) {
+            continue;
+        }
         if visited.insert(v) {
             let mut stack = vec![v];
-            process_dfs_tree(graph, &mut stack, &mut visited, &mut detected_cycles);
+            process_dfs_tree(graph, tcx, &mut stack, &mut visited, &mut detected_cycles);
         }
     }
     detected_cycles
@@ -387,6 +420,7 @@ fn find_cycles<'tcx>(graph: &CallGraph<'tcx>) -> IndexSet<Vec<FunctionInstance<'
 //   Print all cycles in the current DFS Tree
 fn process_dfs_tree<'tcx>(
     graph: &CallGraph<'tcx>,
+    tcx: TyCtxt<'tcx>,
     stack: &mut Vec<FunctionInstance<'tcx>>,
     visited: &mut IndexSet<FunctionInstance<'tcx>>,
     detected_cycles: &mut IndexSet<Vec<FunctionInstance<'tcx>>>,
@@ -396,9 +430,9 @@ fn process_dfs_tree<'tcx>(
     for &v in top_calls.calls.keys() {
         if visited.insert(v) {
             stack.push(v);
-            process_dfs_tree(graph, stack, visited, detected_cycles);
+            process_dfs_tree(graph, tcx, stack, visited, detected_cycles);
         } else {
-            collect_cycle(stack, v, detected_cycles);
+            collect_cycle(tcx, stack, v, detected_cycles);
         }
     }
     visited.remove(&top);
@@ -406,6 +440,7 @@ fn process_dfs_tree<'tcx>(
 }
 
 fn collect_cycle<'tcx>(
+    tcx: TyCtxt<'tcx>,
     stack: &mut Vec<FunctionInstance<'tcx>>,
     v: FunctionInstance<'tcx>,
     detected_cycles: &mut IndexSet<Vec<FunctionInstance<'tcx>>>,
@@ -420,8 +455,16 @@ fn collect_cycle<'tcx>(
     }
 
     // Order the cycle, to avoid detecting the same cycle starting at different positions
-    let (min_idx, _) =
-        cycle.iter().enumerate().min_by(|(_, def1), (_, def2)| def1.cmp(def2)).unwrap();
+    let (min_idx, _) = cycle
+        .iter()
+        .enumerate()
+        .min_by(|(_, def1), (_, def2)| {
+            let g1 = util::is_ghost_closure(tcx, def1.0);
+            let g2 = util::is_ghost_closure(tcx, def2.0);
+            // Ensures the cycle with a ghost function
+            g1.cmp(&g2).reverse().then(def1.cmp(def2))
+        })
+        .unwrap();
     let mut result = Vec::new();
     let mut idx = (min_idx + 1) % cycle.len();
     while idx != min_idx {
