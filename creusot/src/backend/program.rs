@@ -176,8 +176,14 @@ pub(crate) fn translate_function<'tcx, 'sess>(
 fn collect_body_ids<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Option<Vec<BodyId>> {
     let mut ids = Vec::new();
 
-    if def_id.is_local() && util::has_body(ctx, def_id) && !util::is_trusted(ctx.tcx, def_id) {
-        ids.push(BodyId::new(def_id.expect_local(), None))
+    if def_id.is_local()
+        && util::has_body(ctx, def_id)
+        && !util::is_trusted(ctx.tcx, def_id)
+        && !util::is_ghost_closure(ctx.tcx, def_id)
+    {
+        if !util::is_ghost_closure(ctx.tcx, def_id) {
+            ids.push(BodyId::new(def_id.expect_local(), None))
+        }
     } else {
         return None;
     }

@@ -63,6 +63,8 @@ pub fn snapshot_from_fn<T: ?Sized, F: Fn() -> crate::Snapshot<T>>(_: F) -> crate
     panic!()
 }
 
+#[crate::pure]
+#[creusot::no_translate]
 #[rustc_diagnostic_item = "ghost_from_fn"]
 pub fn ghost_from_fn<T: crate::Ghost, F: FnOnce() -> T>(_: F) -> T {
     panic!()

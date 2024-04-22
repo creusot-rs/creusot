@@ -164,20 +164,17 @@ impl<'tcx> BodyTranslator<'_, 'tcx, '_> {
 
                         // Check that we do not dereference a ghost variable in normal code.
                         if self.tcx.is_diagnostic_item(Symbol::intern("deref_method"), fun_def_id) {
-                            if self.ghost_closure_arg.is_none() {
-                                let GenericArgKind::Type(ty) = subst.get(0).unwrap().unpack()
-                                else {
-                                    panic!()
-                                };
-                                let is_ghost = self.implements_ghost(ty, param_env);
-                                if is_ghost {
-                                    self.ctx
-                                        .error(
-                                            *fn_span,
-                                            "dereference of a ghost variable in program context",
-                                        )
-                                        .emit();
-                                }
+                            let GenericArgKind::Type(ty) = subst.get(0).unwrap().unpack() else {
+                                panic!()
+                            };
+                            let is_ghost = self.implements_ghost(ty, param_env);
+                            if is_ghost {
+                                self.ctx
+                                    .error(
+                                        *fn_span,
+                                        "dereference of a ghost variable in program context",
+                                    )
+                                    .emit();
                             }
                         } else {
                             // Check and reject instantiation of a <T: Deref> with a ghost parameter.

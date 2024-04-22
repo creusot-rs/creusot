@@ -44,6 +44,7 @@ impl<T: ?Sized> Deref for GhostBox<T> {
 
     #[trusted]
     #[logic]
+    #[pure]
     #[open(self)]
     fn deref(&self) -> &Self::Target {
         pearlite! { absurd }
@@ -52,6 +53,7 @@ impl<T: ?Sized> Deref for GhostBox<T> {
 impl<T: ?Sized> DerefMut for GhostBox<T> {
     #[trusted]
     #[logic]
+    #[pure]
     #[open(self)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         pearlite! { absurd }
@@ -72,12 +74,14 @@ impl<T: ShallowModel + ?Sized> ShallowModel for GhostBox<T> {
 
 impl<T> GhostBox<T> {
     #[trusted]
+    #[pure]
     #[ensures(*result == x)]
     pub fn new(x: T) -> Self {
         Self(PhantomData)
     }
-
+    
     #[trusted]
+    #[pure]
     #[requires(true)]
     #[ensures(true)]
     pub fn uninit() -> Self {
