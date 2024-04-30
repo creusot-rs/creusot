@@ -82,7 +82,7 @@ fn main() -> Result<()> {
                     b.args(args.clone());
                 }
 
-                let why3 = b.build();
+                let why3 = b.build()?;
                 let prelude_dir =
                     TempDir::new("creusot_why3_prelude").expect("could not create temp dir");
                 let mut command = why3.make(prelude_dir.path())?;

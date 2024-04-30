@@ -28,7 +28,7 @@ pub struct Why3Launcher {
     why3_path: Option<PathBuf>,
     config_file: Option<PathBuf>,
     args: Option<String>,
-    output_file: Option<PathBuf>,
+    output_file: PathBuf,
 }
 
 impl Why3Launcher {
@@ -37,15 +37,12 @@ impl Why3Launcher {
         why3_path: Option<PathBuf>,
         config_file: Option<PathBuf>,
         args: Option<String>,
-        output_file: Option<PathBuf>,
+        output_file: PathBuf,
     ) -> Self {
         Self { mode, why3_path, config_file, args, output_file }
     }
 
     pub fn make(&self, temp_dir: &Path) -> Result<Command> {
-        let Some(ref mlcfg_file) = self.output_file else {
-            return Err(anyhow!("can't launch why3, no mlcfg_file specify"));
-        };
         let mode = self.mode.to_string();
         PRELUDE.extract(temp_dir).expect("can't launch why3, could extract prelude into temp dir");
 
@@ -60,7 +57,7 @@ impl Why3Launcher {
                 "-L",
             ])
             .arg(temp_dir.as_os_str())
-            .arg(mlcfg_file);
+            .arg(&self.output_file);
         if let Some(cfg) = &self.config_file {
             command.arg("-C").arg(cfg);
         }
@@ -118,7 +115,11 @@ impl Why3LauncherBuilder {
         self
     }
 
-    pub fn build(self) -> Why3Launcher {
-        Why3Launcher::new(self.mode, self.why3_path, self.config_file, self.args, self.output_file)
+    pub fn build(self) -> Result<Why3Launcher> {
+        let Some(mlcfg_file) = self.output_file else {
+            return Err(anyhow!("can't launch why3, no mlcfg_file specify"));
+        };
+
+        Ok(Why3Launcher::new(self.mode, self.why3_path, self.config_file, self.args, mlcfg_file))
     }
 }
