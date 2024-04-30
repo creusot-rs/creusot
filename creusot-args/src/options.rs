@@ -121,7 +121,7 @@ pub enum SetupSubCommand {
 /// This corresponds to the default scenario where the user invokes "cargo creusot"
 /// which writes its output in target/debug/
 fn get_default_root_path_relative_from_output() -> PathBuf {
-    ["..", ".."].iter().collect()
+    [".."].iter().collect()
 }
 
 /// Parse a single key-value pair

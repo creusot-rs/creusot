@@ -32,6 +32,7 @@ fn main() -> Result<()> {
     } else {
         mlcfg_filename = make_mlcfg_filename(&cargo_md)?;
         cargs.options.output_file = Some(mlcfg_filename.to_string_lossy().into_owned());
+        cargs.options.span_mode = SpanMode::Absolute;
     }
     
     let subcommand = match cargs.subcommand {
