@@ -88,16 +88,16 @@ module ListIndexMut_IndexMut
     
   use prelude.UIntSize
   use prelude.Int
-  function shallow_model2 (self : usize) : int =
-    [#"../../../../creusot-contracts/src/model.rs" 79 8 79 31] UIntSize.to_int self
-  val shallow_model2 (self : usize) : int
-    ensures { result = shallow_model2 self }
+  function shallow_model1 (self : usize) : int =
+    [#"../../../../creusot-contracts/src/model.rs" 90 8 90 31] UIntSize.to_int self
+  val shallow_model1 (self : usize) : int
+    ensures { result = shallow_model1 self }
     
   use prelude.Snapshot
-  function shallow_model1 (self : Snapshot.snap_ty usize) : int =
-    [#"../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48] shallow_model2 (Snapshot.inner self)
-  val shallow_model1 (self : Snapshot.snap_ty usize) : int
-    ensures { result = shallow_model1 self }
+  function shallow_model0 (self : Snapshot.snap_ty usize) : int =
+    [#"../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48] shallow_model1 (Snapshot.inner self)
+  val shallow_model0 (self : Snapshot.snap_ty usize) : int
+    ensures { result = shallow_model0 self }
     
   use prelude.Snapshot
   use prelude.Int
@@ -162,13 +162,13 @@ module ListIndexMut_IndexMut
   }
   BB3 {
     invariant { [#"../list_index_mut.rs" 40 16 40 45] (0 : usize) <= ix /\ UIntSize.to_int ix < len0 ( * l) };
-    invariant { [#"../list_index_mut.rs" 41 16 41 52] get0 ( * l) (UIntSize.to_int ix) = get0 ( * Snapshot.inner old_l) (shallow_model1 old_ix) };
-    invariant { [#"../list_index_mut.rs" 42 16 42 55] get0 ( ^ l) (UIntSize.to_int ix) = get0 ( ^ Snapshot.inner old_l) (shallow_model1 old_ix) };
+    invariant { [#"../list_index_mut.rs" 41 16 41 52] get0 ( * l) (UIntSize.to_int ix) = get0 ( * Snapshot.inner old_l) (shallow_model0 old_ix) };
+    invariant { [#"../list_index_mut.rs" 42 16 42 55] get0 ( ^ l) (UIntSize.to_int ix) = get0 ( ^ Snapshot.inner old_l) (shallow_model0 old_ix) };
     invariant { [#"../list_index_mut.rs" 40 4 40 47] len0 ( ^ l) = len0 ( * l)
      -> len0 ( ^ Snapshot.inner old_l) = len0 ( * Snapshot.inner old_l) };
     invariant { [#"../list_index_mut.rs" 40 4 40 47] (forall i : int . 0 <= i /\ i < len0 ( * l) /\ i <> UIntSize.to_int ix
      -> get0 ( ^ l) i = get0 ( * l) i)
-     -> (forall i : int . 0 <= i /\ i < len0 ( * Snapshot.inner old_l) /\ i <> shallow_model1 old_ix
+     -> (forall i : int . 0 <= i /\ i < len0 ( * Snapshot.inner old_l) /\ i <> shallow_model0 old_ix
      -> get0 ( ^ Snapshot.inner old_l) i = get0 ( * Snapshot.inner old_l) i) };
     goto BB4
   }

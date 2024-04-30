@@ -43,6 +43,17 @@ impl<T> ShallowModel for Rc<T> {
     }
 }
 
+impl ShallowModel for str {
+    type ShallowModelTy = Seq<char>;
+
+    #[logic]
+    #[open]
+    #[trusted]
+    fn shallow_model(self) -> Self::ShallowModelTy {
+        pearlite! { absurd }
+    }
+}
+
 impl<T: DeepModel> DeepModel for Arc<T> {
     type DeepModelTy = T::DeepModelTy;
     #[logic]
@@ -105,5 +116,16 @@ impl DeepModel for bool {
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
         self
+    }
+}
+
+impl ShallowModel for String {
+    type ShallowModelTy = Seq<char>;
+
+    #[logic]
+    #[open(self)]
+    #[trusted]
+    fn shallow_model(self) -> Self::ShallowModelTy {
+        pearlite! { absurd }
     }
 }

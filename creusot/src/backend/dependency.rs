@@ -8,7 +8,7 @@ use rustc_type_ir::{fold::TypeFoldable, visit::TypeVisitable, AliasKind, Interne
 use crate::{
     ctx::TranslationCtx,
     translation::traits,
-    util::{self, inv_module_name, ItemType},
+    util::{self, inv_module_name, item_symb, ItemType},
 };
 
 use super::{ty_inv::TyInvKind, PreludeModule, TransId};
@@ -24,12 +24,14 @@ pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
     Item(DefId, GenericArgsRef<'tcx>),
     TyInv(Ty<'tcx>, TyInvKind),
-    Hacked(HackedId, DefId, GenericArgsRef<'tcx>),
+    Hacked(ExtendedId, DefId, GenericArgsRef<'tcx>),
     Builtin(PreludeModule),
 }
 
+/// Due to how rustc keeps closures hidden from us, some key symbols of creusot don't get their own def ids.
+/// Instead, we use this enumerator combined with the closure's defid to distinguish these symbols.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash, PartialOrd, Ord)]
-pub(crate) enum HackedId {
+pub(crate) enum ExtendedId {
     PostconditionOnce,
     PostconditionMut,
     Postcondition,
@@ -39,7 +41,7 @@ pub(crate) enum HackedId {
     Accessor(u8),
 }
 
-impl<'tcx, I: Interner> TypeVisitable<I> for HackedId {
+impl<'tcx, I: Interner> TypeVisitable<I> for ExtendedId {
     fn visit_with<V: rustc_type_ir::visit::TypeVisitor<I>>(
         &self,
         _: &mut V,
@@ -48,7 +50,7 @@ impl<'tcx, I: Interner> TypeVisitable<I> for HackedId {
     }
 }
 
-impl<'tcx, I: Interner> TypeFoldable<I> for HackedId {
+impl<'tcx, I: Interner> TypeFoldable<I> for ExtendedId {
     fn try_fold_with<F: rustc_type_ir::fold::FallibleTypeFolder<I>>(
         self,
         _: &mut F,
@@ -171,9 +173,13 @@ impl<'tcx> Dependency<'tcx> {
         match self {
             Dependency::Type(ty) => {
                 let nm = match ty.kind() {
-                    TyKind::Adt(def, _) => tcx.item_name(def.did()),
+                    TyKind::Adt(def, _) => {
+                        item_symb(tcx, def.did(), rustc_hir::def::Namespace::TypeNS)
+                    }
                     TyKind::Alias(_, aty) => tcx.item_name(aty.def_id),
-                    TyKind::Closure(_, _) => Symbol::intern("debug_closure_type"),
+                    TyKind::Closure(def_id, _) => {
+                        item_symb(tcx, *def_id, rustc_hir::def::Namespace::TypeNS)
+                    }
                     _ => Symbol::intern("debug_ty_name"),
                 };
                 Symbol::intern(&nm.as_str().to_snake_case())
@@ -186,19 +192,28 @@ impl<'tcx> Dependency<'tcx> {
                         "closure{}",
                         tcx.def_path(did).data.last().unwrap().disambiguator
                     )),
+                    ItemType::Field => {
+                        let variant = tcx.parent(did);
+                        let name = format!(
+                            "{}_{}",
+                            tcx.item_name(variant).as_str().to_ascii_lowercase(),
+                            tcx.item_name(did),
+                        );
+                        Symbol::intern(&name)
+                    }
                     _ => tcx.item_name(did),
                 };
                 Symbol::intern(&base.as_str().to_snake_case())
             }
             Dependency::TyInv(_, inv_kind) => Symbol::intern(&*inv_module_name(tcx, inv_kind)),
             Dependency::Hacked(hacked_id, _, _) => match hacked_id {
-                HackedId::PostconditionOnce => Symbol::intern("postcondition_once"),
-                HackedId::PostconditionMut => Symbol::intern("postcondition_mut"),
-                HackedId::Postcondition => Symbol::intern("postcondition"),
-                HackedId::Precondition => Symbol::intern("precondition"),
-                HackedId::Unnest => Symbol::intern("unnest"),
-                HackedId::Resolve => Symbol::intern("resolve"),
-                HackedId::Accessor(ix) => Symbol::intern(&format!("field_{ix}")),
+                ExtendedId::PostconditionOnce => Symbol::intern("postcondition_once"),
+                ExtendedId::PostconditionMut => Symbol::intern("postcondition_mut"),
+                ExtendedId::Postcondition => Symbol::intern("postcondition"),
+                ExtendedId::Precondition => Symbol::intern("precondition"),
+                ExtendedId::Unnest => Symbol::intern("unnest"),
+                ExtendedId::Resolve => Symbol::intern("resolve"),
+                ExtendedId::Accessor(ix) => Symbol::intern(&format!("field_{ix}")),
             },
             Dependency::Builtin(_) => Symbol::intern("builtin_should_not_appear"),
         }
@@ -231,19 +246,19 @@ pub(crate) fn closure_hack<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
-) -> (Option<HackedId>, DefId, GenericArgsRef<'tcx>) {
+) -> (Option<ExtendedId>, DefId, GenericArgsRef<'tcx>) {
     let hacked = if tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_precond"), def_id) {
-        Some(HackedId::Precondition)
+        Some(ExtendedId::Precondition)
     } else if tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_postcond"), def_id) {
-        Some(HackedId::PostconditionOnce)
+        Some(ExtendedId::PostconditionOnce)
     } else if tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_postcond"), def_id) {
-        Some(HackedId::PostconditionMut)
+        Some(ExtendedId::PostconditionMut)
     } else if tcx.is_diagnostic_item(Symbol::intern("fn_impl_postcond"), def_id) {
-        Some(HackedId::Postcondition)
+        Some(ExtendedId::Postcondition)
     } else if tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_unnest"), def_id) {
-        Some(HackedId::Unnest)
+        Some(ExtendedId::Unnest)
     } else if tcx.is_diagnostic_item(Symbol::intern("fn_impl_resolve"), def_id) {
-        Some(HackedId::Resolve)
+        Some(ExtendedId::Resolve)
     } else {
         None
     };
@@ -260,7 +275,7 @@ pub(crate) fn closure_hack<'tcx>(
     {
         let self_ty = subst.types().nth(0).unwrap();
         if let TyKind::Closure(id, csubst) = self_ty.kind() {
-            return (Some(HackedId::Resolve), *id, csubst);
+            return (Some(ExtendedId::Resolve), *id, csubst);
         }
     }
 
