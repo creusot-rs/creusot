@@ -4,39 +4,25 @@ use crate::{
 };
 use ::std::marker::PhantomData;
 
-// FIXME: better doc
-/// Any item that implements `Ghost` must **not** be able to break the ownership rules,
-/// be it in ghost or runtime code.
+/// A type that can be used in `ghost` context.
 ///
-/// Additionnaly, it should be zero-sized, so that it's not possible to extract
-/// information from a ghost bloc and use it in normal code.
-#[rustc_diagnostic_item = "ghost_trait"]
-#[trusted]
-pub trait Ghost {}
-
-macro_rules! impl_ghost_tuple {
-    ($($ty_param:ident),*) => {
-        impl_ghost_tuple!{ @inner $($ty_param,)* || []; }
-    };
-    (@inner $ty_param:ident, $($rest:ident,)* || $( [ $($done:ident,)* ] ;)*) => {
-        impl_ghost_tuple! {
-            @inner $($rest,)* ||
-            [] ; $( [ $ty_param, $($done,)* ] ;)*
-        }
-    };
-    (@inner || $( [ $($done:ident,)* ] ;)*) => {
-        $(
-            #[trusted]
-            impl<$($done : Ghost),*> Ghost for ($($done,)*) {}
-        )*
-    };
-}
-
-impl_ghost_tuple! { T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12 }
-
-#[trusted]
-impl<T> Ghost for Snapshot<T> {}
-
+/// This type may be used to make more complicated proofs possible. In particular, some
+/// proof may need a notion of non-duplicable token to carry around.
+///
+/// Conceptually, a `GhostBox<T>` is a pointer to an item of type `T` that resides in
+/// a special "ghost" heap. This heap is innacessible from normal code, and `GhostBox`
+/// values cannot be used to influence the behavior of normal code.
+///
+/// This box can be dereferenced in a `ghost` block:
+/// ```compile_fail
+/// let b: GhostBox<i32> = GhostBox::new(1);
+/// ghost! {
+///     let value: i32 = *b;
+///     // use value here
+/// }
+/// let value: i32 = *b; // compile error !
+/// ```
+#[rustc_diagnostic_item = "ghost_box"]
 pub struct GhostBox<T: ?Sized>(PhantomData<T>);
 
 impl<T: ?Sized> Deref for GhostBox<T> {
@@ -59,8 +45,6 @@ impl<T: ?Sized> DerefMut for GhostBox<T> {
         pearlite! { absurd }
     }
 }
-#[trusted]
-impl<T: ?Sized> Ghost for GhostBox<T> {}
 
 impl<T: ShallowModel + ?Sized> ShallowModel for GhostBox<T> {
     type ShallowModelTy = T::ShallowModelTy;

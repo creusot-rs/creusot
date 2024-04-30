@@ -70,8 +70,6 @@ mod macros {
     /// - `Deque::push_front`, `Deque::push_back`, `Deque::with_capacity`
     pub use base_macros::pure;
 
-    pub use base_macros::Ghost;
-
     /// A loop invariant
     /// The first argument should be a name for the invariant
     /// The second argument is the Pearlite expression for the loop invariant
@@ -176,7 +174,6 @@ pub mod snapshot;
 
 #[cfg(not(creusot))]
 pub mod ghost {
-    pub trait Ghost: std::ops::Deref {}
     pub struct GhostBox<T>(std::marker::PhantomData<T>)
     where
         T: ?Sized;
@@ -233,7 +230,7 @@ pub mod well_founded;
 // We add some common things at the root of the creusot-contracts library
 mod base_prelude {
     pub use crate::{
-        ghost::{Ghost, GhostBox},
+        ghost::GhostBox,
         logic::{IndexLogic as _, Int, OrdLogic, Seq},
         model::{DeepModel, ShallowModel},
         resolve::Resolve,

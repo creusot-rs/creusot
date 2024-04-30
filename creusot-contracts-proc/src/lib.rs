@@ -439,36 +439,6 @@ pub fn ghost(body: TS1) -> TS1 {
     })
 }
 
-#[proc_macro_derive(Ghost)]
-pub fn ghost_derive(input: TS1) -> TS1 {
-    let derive_input: DeriveInput = parse_macro_input!(input);
-    let span = derive_input.span();
-    let DeriveInput { ident, data, generics, .. } = derive_input;
-    match data {
-        Data::Struct(_) => {}
-        _ => {
-            return TS1::from(
-                quote_spanned!(span => compile_error!("deriving `Ghost` is only allowed for structs")),
-            )
-        }
-    }
-    let (bounds, generics) = if generics.params.is_empty() {
-        (quote!(), quote!())
-    } else {
-        let generics = generics.params;
-        let mut bounds = quote!();
-        for g in &generics {
-            bounds = quote!(#g : Ghost, #bounds)
-        }
-        (bounds, quote!(#generics))
-    };
-    let output = quote! {
-        #[trusted]
-        impl <#bounds> Ghost for #ident <#generics> {}
-    };
-    output.into()
-}
-
 struct LogicItem {
     vis: Visibility,
     defaultness: Option<Token![default]>,
