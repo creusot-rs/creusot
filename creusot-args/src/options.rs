@@ -2,7 +2,7 @@ use clap::*;
 use serde::{Deserialize, Serialize};
 use std::{error::Error, ffi::OsString, path::PathBuf};
 
-#[derive(Parser, Serialize, Deserialize)]
+#[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct CommonOptions {
     /// Determines how to format the spans in generated code to loading in Why3.
     /// [Relative] is better if the generated code is meant to be checked into VCS.
@@ -39,7 +39,7 @@ pub struct CommonOptions {
     pub simple_triggers: bool,
 }
 
-#[derive(Parser, Serialize, Deserialize)]
+#[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct CreusotArgs {
     #[clap(flatten)]
     pub options: CommonOptions,
@@ -55,7 +55,7 @@ pub struct CreusotArgs {
     pub rust_flags: Vec<String>,
 }
 
-#[derive(Subcommand, Serialize, Deserialize)]
+#[derive(Debug, Subcommand, Serialize, Deserialize, Clone)]
 pub enum CreusotSubCommand {
     Why3 {
         /// Why3 subcommand to run
@@ -69,7 +69,7 @@ pub enum CreusotSubCommand {
     },
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 pub struct CargoCreusotArgs {
     #[clap(flatten)]
     pub options: CommonOptions,
@@ -83,7 +83,7 @@ pub struct CargoCreusotArgs {
     pub rust_flags: Vec<String>,
 }
 
-#[derive(Subcommand)]
+#[derive(Debug, Subcommand)]
 pub enum CargoCreusotSubCommand {
     /// Setup and manage Creusot's installation
     #[command(arg_required_else_help(true))]
@@ -95,14 +95,14 @@ pub enum CargoCreusotSubCommand {
     Creusot(CreusotSubCommand),
 }
 
-#[derive(ValueEnum, Serialize, Deserialize, Clone)]
+#[derive(Debug, ValueEnum, Serialize, Deserialize, Clone)]
 pub enum Why3SubCommand {
     Prove,
     Ide,
     Replay,
 }
 
-#[derive(Parser, Clone)]
+#[derive(Debug, Parser, Clone)]
 pub enum SetupSubCommand {
     /// Show the current status of the Creusot installation
     Status,
@@ -121,7 +121,7 @@ pub enum SetupSubCommand {
 /// This corresponds to the default scenario where the user invokes "cargo creusot"
 /// which writes its output in target/debug/
 fn get_default_root_path_relative_from_output() -> PathBuf {
-    ["..", ".."].iter().collect()
+    [".."].iter().collect()
 }
 
 /// Parse a single key-value pair
@@ -174,7 +174,7 @@ impl CargoCreusotArgs {
     }
 }
 
-#[derive(clap::ValueEnum, Clone, Deserialize, Serialize)]
+#[derive(Debug, clap::ValueEnum, Clone, Deserialize, Serialize)]
 pub enum SpanMode {
     Relative,
     Absolute,
