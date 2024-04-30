@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use cargo_metadata::{self, Package};
 use anyhow::anyhow;
+use cargo_metadata::{self, Package};
 pub type Result<T> = anyhow::Result<T>;
 
 pub(crate) fn make_cargo_metadata() -> Result<cargo_metadata::Metadata> {
@@ -38,7 +38,7 @@ fn select_root_crate(m: &cargo_metadata::Metadata) -> Result<&Package> {
 
 pub(crate) fn make_mlcfg_filename(m: &cargo_metadata::Metadata) -> Result<PathBuf> {
     let root_crate = select_root_crate(m)?;
-    
+
     // to specify the crate kind in the file name: lib, bin
     if root_crate.targets.is_empty() || root_crate.targets[0].kind.is_empty() {
         return Err(anyhow!("can't create mlcfg file, default package without target"));

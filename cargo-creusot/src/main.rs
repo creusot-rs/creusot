@@ -25,7 +25,7 @@ fn main() -> Result<()> {
     let mlcfg_filename: PathBuf; //  mlcfg output file name container
 
     let mut cargs = CargoCreusotArgs::parse_from(std::env::args().skip(1));
-    
+
     // select mlcfg output file name
     if let Some(f) = &cargs.options.output_file {
         mlcfg_filename = f.into();
@@ -34,7 +34,7 @@ fn main() -> Result<()> {
         cargs.options.output_file = Some(mlcfg_filename.to_string_lossy().into_owned());
         cargs.options.span_mode = SpanMode::Absolute;
     }
-    
+
     let subcommand = match cargs.subcommand {
         None => Creusot(None),
         Some(CargoCreusotSubCommand::Creusot(cmd)) => Creusot(Some(cmd)),
@@ -46,7 +46,11 @@ fn main() -> Result<()> {
             // subcommand analysis:
             //   we want to launch Why3 Ide in cargo-creusot not by creusot-rustc.
             //   however we want to keep the current behavior for other commands: prove and replay
-            let (creusot_rustc_subcmd, launch_why3) = if let Some(CreusotSubCommand::Why3 { command: Why3SubCommand::Ide, .. }) = subcmd {
+            let (creusot_rustc_subcmd, launch_why3) = if let Some(CreusotSubCommand::Why3 {
+                command: Why3SubCommand::Ide,
+                ..
+            }) = subcmd
+            {
                 (None, true)
             } else {
                 (subcmd, false)
@@ -74,12 +78,13 @@ fn main() -> Result<()> {
                 // temporary: for the moment we only launch why3 via cargo-creusot in Ide mode
                 b.mode(Why3Mode::Ide);
                 if let Some(subcmd) = &creusot_rustc_subcmd {
-                    let CreusotSubCommand::Why3 { args, .. } = subcmd; 
+                    let CreusotSubCommand::Why3 { args, .. } = subcmd;
                     b.args(args.clone());
-                } 
+                }
 
                 let why3 = b.build();
-                let prelude_dir = TempDir::new("creusot_why3_prelude").expect("could not create temp dir");
+                let prelude_dir =
+                    TempDir::new("creusot_why3_prelude").expect("could not create temp dir");
                 let mut command = why3.make(prelude_dir.path())?;
 
                 command.status().expect("could not run why3");
@@ -112,7 +117,7 @@ fn invoke_cargo(args: &CreusotArgs) {
         .args(args.rust_flags.clone())
         .env("RUSTC_WRAPPER", creusot_rustc_path)
         .env("CARGO_CREUSOT", "1");
-    
+
     cmd.env("CREUSOT_ARGS", serde_json::to_string(&args).unwrap());
 
     let exit_status = cmd.status().expect("could not run cargo");
