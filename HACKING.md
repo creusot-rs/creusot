@@ -44,6 +44,8 @@ Then, to update an out-of-date reference file:
 cargo test --test ui -- "optional-string" --bless
 ```
 
+(NB: to bless all the tests, you need to pass the empty string `""`)
+
 - Replay proofs:
 ```
 cargo test --test why3

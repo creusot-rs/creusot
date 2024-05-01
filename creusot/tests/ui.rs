@@ -93,7 +93,8 @@ fn run_creusot(
         "--stdout",
         "--export-metadata=false",
         "--span-mode=relative",
-        "--root-path-relative-from-output=.",
+        // we will write the mlcfg output next to the .rs file
+        "--spans-relative-to=.",
     ]);
     cmd.args(&[
         "--creusot-extern",

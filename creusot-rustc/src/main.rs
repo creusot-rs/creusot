@@ -111,7 +111,10 @@ fn setup_plugin() {
         args.extend(["--cfg", "creusot"].into_iter().map(str::to_owned));
         debug!("creusot args={:?}", args);
 
-        let opts = CreusotArgs::to_options(creusot);
+        let opts = match CreusotArgs::to_options(creusot) {
+            Ok(opts) => opts,
+            Err(msg) => panic!("Error: {msg}"),
+        };
         let mut callbacks = ToWhy::new(opts);
 
         RunCompiler::new(&args, &mut callbacks).run().unwrap();

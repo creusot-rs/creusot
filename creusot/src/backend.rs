@@ -367,25 +367,33 @@ impl<'tcx> Why3Generator<'tcx> {
         // If we ask for relative paths and the paths comes from the standard library, then we prefer returning
         // None, since the relative path of the stdlib is not stable.
         let path = match (&self.opts.span_mode, path) {
-            (SpanMode::Relative, RealFileName::Remapped { .. }) => return None,
+            (SpanMode::Relative(_), RealFileName::Remapped { .. }) => return None,
             _ => path.local_path_if_available(),
         };
 
-        let mut buf;
-        let path = if path.is_relative() {
-            buf = std::env::current_dir().unwrap();
-            buf.push(path);
-            buf.as_path()
-        } else {
-            path
+        let to_absolute = |path: &std::path::Path| -> std::path::PathBuf {
+            if path.is_relative() {
+                let mut buf = std::env::current_dir().unwrap();
+                buf.push(path);
+                buf
+            } else {
+                path.to_owned()
+            }
         };
 
-        let filename = match self.opts.span_mode {
-            SpanMode::Absolute => path.to_string_lossy().into_owned(),
-            SpanMode::Relative => {
-                format!("{}", self.opts.relative_to_output(&path).to_string_lossy())
+        let filename = match &self.opts.span_mode {
+            SpanMode::Absolute => to_absolute(path).to_string_lossy().into_owned(),
+            SpanMode::Relative(base) => {
+                let path = to_absolute(path);
+                let base = to_absolute(base);
+                // Why3 treats the spans as relative to the session, not the source file,
+                // and the session is in a subdirectory next to the mlcfg file, so we need
+                // to add an extra ".."
+                let p = std::path::PathBuf::from("..");
+                let diff = pathdiff::diff_paths(&path, &base)?;
+                p.join(diff).to_string_lossy().into_owned()
             }
-            _ => return None,
+            SpanMode::Off => return None,
         };
 
         Some(why3::declaration::Attribute::Span(
