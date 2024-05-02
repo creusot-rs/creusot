@@ -45,10 +45,13 @@ struct CallGraph<'tcx>(IndexMap<FunctionInstance<'tcx>, Function<'tcx>>);
 
 #[derive(Default, Debug)]
 struct Function<'tcx> {
-    /// `true` if the function is allowed to be recursive, i.e. it has a `#[variant]` annotation.
+    /// `true` if the function has a `#[variant]` annotation.
     ///
-    /// For now, mutually recursive functions are never allowed.
-    can_be_recursive: bool,
+    /// For now, mutually recursive functions are never allowed, so this only matter for
+    /// the simple recursion check.
+    has_variant: bool,
+    /// `true` if the function is marked `#[terminates]`, or is logic/ghost.
+    must_terminate: bool,
     /// Indices of the functions called by this function.
     ///
     /// Also contains the span of the callsite, for error messages.
@@ -92,14 +95,19 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
             generic_args: GenericArgs::identity_for_item(ctx.tcx, d),
         })
         .collect();
+    // FIXME: we already know that we never call non-terminates functions from terminating ones, so only consider functions marked `terminates`.
     while let Some(&visited) = to_visit.iter().next() {
-        if crate::util::is_trusted(ctx.tcx, visited.def_id()) {
+        if util::is_trusted(ctx.tcx, visited.def_id()) {
             let def_id = visited.def_id();
             let generic_args = visited.generic_args();
-            // FIXME: does this work with trait functions marked `#[trusted]` ?
+            // FIXME: does this work with trait functions marked `#[terminates]`/`#[pure]` ?
             call_graph.0.insert(
                 (def_id, generic_args),
-                Function { can_be_recursive: false, calls: IndexMap::default() },
+                Function {
+                    has_variant: false,
+                    must_terminate: contract_of(ctx, def_id).terminates,
+                    calls: IndexMap::default(),
+                },
             );
         } else {
             match visited {
@@ -108,15 +116,13 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
                     let def_id = local_id.to_def_id();
                     let body = ctx.body_with_facts(local_id).body.clone();
                     let param_env = ctx.tcx.param_env(def_id);
-                    let mut visitor = FunctionCalls {
-                        tcx: ctx.tcx,
-                        generic_args,
-                        param_env,
-                        calls: IndexSet::new(),
-                    };
+                    let tcx = ctx.tcx;
+                    let mut visitor =
+                        FunctionCalls { tcx, generic_args, param_env, calls: IndexSet::new() };
                     visitor.visit_body(&body);
+
                     let mut calls = IndexMap::new();
-                    for &(function_def_id, span, subst) in &visitor.calls {
+                    for (function_def_id, span, subst) in visitor.calls {
                         if !ctx.tcx.is_mir_available(function_def_id) {
                             continue;
                         }
@@ -139,7 +145,8 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
                     call_graph.0.insert(
                         (def_id, generic_args),
                         Function {
-                            can_be_recursive: crate::util::has_variant_clause(ctx.tcx, def_id),
+                            has_variant: util::has_variant_clause(ctx.tcx, def_id),
+                            must_terminate: contract_of(ctx, def_id).terminates,
                             calls,
                         },
                     );
@@ -184,12 +191,8 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
                                 if item_kind == DefKind::AssocFn {
                                     let params = GenericArgs::identity_for_item(ctx.tcx, item);
                                     calls.insert((item, params), ctx.tcx.def_span(function_def_id));
-                                    call_graph
-                                        .0
-                                        .entry((item, params))
-                                        .or_default()
-                                        .can_be_recursive =
-                                        crate::util::has_variant_clause(ctx.tcx, item);
+                                    call_graph.0.entry((item, params)).or_default().has_variant =
+                                        util::has_variant_clause(ctx.tcx, item);
                                     let visit = if let Some(local) = item.as_local() {
                                         ToVisit::Local {
                                             function_def_id: local,
@@ -213,18 +216,20 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
                     let default_params =
                         EarlyBinder::bind(GenericArgs::identity_for_item(ctx.tcx, function_def_id))
                             .instantiate(ctx.tcx, generic_args);
+                    let (must_terminate, has_variant) = match ctx.extern_spec(function_def_id) {
+                        Some(extern_spec) => (extern_spec.contract.terminates, true),
+                        None => (false, true),
+                    };
                     call_graph.0.insert(
                         (function_def_id, default_params),
-                        Function {
-                            can_be_recursive: true, // External functions can always be simply recursive
-                            calls,
-                        },
+                        Function { must_terminate, has_variant, calls },
                     );
                 }
             }
         }
         to_visit.remove(&visited);
     }
+
     for (def_id, _) in call_graph.0.keys().copied().collect::<Vec<_>>() {
         // are we part of a `impl` block ?
         let Some(impl_id) = ctx.impl_of_method(def_id) else {
@@ -253,7 +258,7 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
     for (fun_id, calls) in &mut call_graph.0 {
         if let Some(&call_span) = calls.calls.get(fun_id) {
             calls.calls.remove(fun_id);
-            if !calls.can_be_recursive && fun_id.0.is_local() {
+            if calls.must_terminate && !calls.has_variant && fun_id.0.is_local() {
                 let fun_span = ctx.tcx.def_span(fun_id.0);
                 let mut error =
                     ctx.error(fun_span, "Recursive function without a `#[variant]` clause");
@@ -264,7 +269,7 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
     }
 
     // detect mutual recursion
-    let cycles = find_cycles(&call_graph);
+    let cycles = find_cycles(&call_graph, ctx);
     for mut cycle in cycles {
         if cycle.iter().all(|id| !id.0.is_local()) {
             // The cycle needs to involve at least one function in the current crate.
@@ -287,7 +292,7 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
             error.span_note(
                 span,
                 format!(
-                    "then {} calls {}...",
+                    "then '{}' calls '{}'...",
                     ctx.tcx.def_path_str(def_id.0),
                     ctx.tcx.def_path_str(next_def_id.0)
                 ),
@@ -299,7 +304,7 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
         error.span_note(
             span,
             format!(
-                "finally {} calls {}.",
+                "finally '{}' calls '{}'.",
                 ctx.tcx.def_path_str(def_id.0),
                 ctx.tcx.def_path_str(next_def_id.0)
             ),
@@ -308,10 +313,6 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
     }
 
     ctx.tcx.dcx().abort_if_errors();
-
-    // FIXME:
-    // - mark which functions are "terminating" or "ghost"
-    // - This will eventually need a proof: see TESTING/recursion_proof.typ.
 }
 
 /// Gather the functions calls that appear in a particular function.
@@ -366,13 +367,19 @@ impl<'tcx> Visitor<'tcx> for FunctionCalls<'tcx> {
 }
 
 /// Finds all the cycles in the call graph.
-fn find_cycles<'tcx>(graph: &CallGraph<'tcx>) -> IndexSet<Vec<FunctionInstance<'tcx>>> {
+fn find_cycles<'tcx>(
+    graph: &CallGraph<'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
+) -> IndexSet<Vec<FunctionInstance<'tcx>>> {
     let mut visited: IndexSet<FunctionInstance> = IndexSet::new();
     let mut detected_cycles = IndexSet::new();
     for &v in graph.0.keys() {
+        if !contract_of(ctx, v.0).terminates {
+            continue;
+        }
         if visited.insert(v) {
             let mut stack = vec![v];
-            process_dfs_tree(graph, &mut stack, &mut visited, &mut detected_cycles);
+            process_dfs_tree(graph, ctx, &mut stack, &mut visited, &mut detected_cycles);
         }
     }
     detected_cycles
@@ -387,6 +394,7 @@ fn find_cycles<'tcx>(graph: &CallGraph<'tcx>) -> IndexSet<Vec<FunctionInstance<'
 //   Print all cycles in the current DFS Tree
 fn process_dfs_tree<'tcx>(
     graph: &CallGraph<'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     stack: &mut Vec<FunctionInstance<'tcx>>,
     visited: &mut IndexSet<FunctionInstance<'tcx>>,
     detected_cycles: &mut IndexSet<Vec<FunctionInstance<'tcx>>>,
@@ -396,9 +404,9 @@ fn process_dfs_tree<'tcx>(
     for &v in top_calls.calls.keys() {
         if visited.insert(v) {
             stack.push(v);
-            process_dfs_tree(graph, stack, visited, detected_cycles);
+            process_dfs_tree(graph, ctx, stack, visited, detected_cycles);
         } else {
-            collect_cycle(stack, v, detected_cycles);
+            collect_cycle(ctx, stack, v, detected_cycles);
         }
     }
     visited.remove(&top);
@@ -406,6 +414,7 @@ fn process_dfs_tree<'tcx>(
 }
 
 fn collect_cycle<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
     stack: &mut Vec<FunctionInstance<'tcx>>,
     v: FunctionInstance<'tcx>,
     detected_cycles: &mut IndexSet<Vec<FunctionInstance<'tcx>>>,
@@ -420,8 +429,16 @@ fn collect_cycle<'tcx>(
     }
 
     // Order the cycle, to avoid detecting the same cycle starting at different positions
-    let (min_idx, _) =
-        cycle.iter().enumerate().min_by(|(_, def1), (_, def2)| def1.cmp(def2)).unwrap();
+    let (min_idx, _) = cycle
+        .iter()
+        .enumerate()
+        .min_by(|(_, def1), (_, def2)| {
+            let g1 = contract_of(ctx, def1.0).terminates;
+            let g2 = contract_of(ctx, def2.0).terminates;
+            // Ensures the cycle with a 'terminates' function
+            g1.cmp(&g2).reverse().then(def1.cmp(def2))
+        })
+        .unwrap();
     let mut result = Vec::new();
     let mut idx = (min_idx + 1) % cycle.len();
     while idx != min_idx {

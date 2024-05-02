@@ -1166,7 +1166,6 @@ pub trait TermVisitor<'tcx> {
     fn visit_term(&mut self, term: &Term<'tcx>);
 }
 
-#[allow(dead_code)]
 pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: &mut V) {
     match &term.kind {
         TermKind::Var(_) => {}

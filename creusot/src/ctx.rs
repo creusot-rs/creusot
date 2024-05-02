@@ -380,13 +380,15 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         }
 
         let def_id = def_id.to_def_id();
-        let purity = Purity::of_def_id(self.tcx, def_id);
-        if purity == Purity::Program && crate::util::is_no_translate(self.tcx, def_id) {
+        let purity = Purity::of_def_id(self, def_id);
+        if matches!(purity, Purity::Program { .. })
+            && crate::util::is_no_translate(self.tcx, def_id)
+        {
             return;
         }
 
         thir::visit::walk_expr(
-            &mut PurityVisitor { tcx: self.tcx, thir: &thir, context: purity },
+            &mut PurityVisitor { ctx: self, thir: &thir, context: purity },
             &thir[expr],
         );
     }

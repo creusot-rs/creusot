@@ -27,6 +27,14 @@ mod macros {
 
     pub use base_macros::snapshot;
 
+    /// Indicate that the function terminates: fullfilling the `requires` clauses
+    /// ensures that this function will not loop indefinitively.
+    pub use base_macros::terminates;
+
+    /// Indicate that the function is pure: fullfilling the `requires` clauses ensures
+    /// that this function will terminate, and will not panic.
+    pub use base_macros::pure;
+
     /// A loop invariant
     /// The first argument should be a name for the invariant
     /// The second argument is the Pearlite expression for the loop invariant

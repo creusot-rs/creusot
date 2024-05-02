@@ -410,6 +410,20 @@ pub fn snapshot(assertion: TS1) -> TS1 {
     })
 }
 
+#[proc_macro_attribute]
+pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
+    let mut result = TS1::from(quote! { #[creusot::clause::terminates] });
+    result.extend(tokens.into_iter());
+    result
+}
+
+#[proc_macro_attribute]
+pub fn pure(_: TS1, tokens: TS1) -> TS1 {
+    let mut result = TS1::from(quote! { #[creusot::clause::no_panic] #[creusot::clause::terminates] });
+    result.extend(tokens.into_iter());
+    result
+}
+
 struct LogicItem {
     vis: Visibility,
     defaultness: Option<Token![default]>,
@@ -478,6 +492,7 @@ fn logic_sig(sig: TraitItemSignature, prophetic: Option<TokenStream>) -> TS1 {
     let span = sig.span();
 
     TS1::from(quote_spanned! {span =>
+        #[::creusot_contracts::pure]
         #[creusot::decl::logic]
         #prophetic
         #sig
@@ -557,7 +572,8 @@ pub fn predicate(prophetic: TS1, tokens: TS1) -> TS1 {
 
 fn predicate_sig(sig: TraitItemSignature, prophetic: Option<TokenStream>) -> TS1 {
     let span = sig.span();
-    TS1::from(quote_spanned! {span=>
+    TS1::from(quote_spanned! {span =>
+        #[::creusot_contracts::pure]
         #[creusot::decl::predicate]
         #prophetic
         #sig
@@ -574,7 +590,7 @@ fn predicate_item(log: LogicItem, prophetic: Option<TokenStream>) -> TS1 {
 
     let req_body = pretyping::encode_block(&term.stmts).unwrap();
 
-    TS1::from(quote_spanned! {span=>
+    TS1::from(quote_spanned! {span =>
         #[creusot::decl::predicate]
         #prophetic
         #(#attrs)*
