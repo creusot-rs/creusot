@@ -413,14 +413,15 @@ pub fn snapshot(assertion: TS1) -> TS1 {
 #[proc_macro_attribute]
 pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
     let mut result = TS1::from(quote! { #[creusot::clause::terminates] });
-    result.extend(tokens.into_iter());
+    result.extend(tokens);
     result
 }
 
 #[proc_macro_attribute]
 pub fn pure(_: TS1, tokens: TS1) -> TS1 {
-    let mut result = TS1::from(quote! { #[creusot::clause::no_panic] #[creusot::clause::terminates] });
-    result.extend(tokens.into_iter());
+    let mut result =
+        TS1::from(quote! { #[creusot::clause::no_panic] #[creusot::clause::terminates] });
+    result.extend(tokens);
     result
 }
 
