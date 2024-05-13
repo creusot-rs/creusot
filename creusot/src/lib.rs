@@ -47,7 +47,7 @@ mod resolve;
 mod translation;
 pub(crate) mod util;
 use translation::*;
-mod detect_recursion;
+mod validate_terminates;
 mod error;
 pub(crate) mod lints;
 pub(crate) mod metadata;

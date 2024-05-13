@@ -1,18 +1,21 @@
-//! Detection of mutually recursive functions.
+//! Detection of loops and mutually recursive functions.
 //!
 //! Care is taken around the interaction with traits, like the following example:
 //! ```
+//! # use creusot_contracts::*;
 //! pub trait Foo {
+//!     #[terminates]
 //!     fn foo() {}
 //! }
 //!
 //! impl Foo for i32 {
+//!     #[terminates]
 //!     fn foo() {
-//!         bar::<i32>();
+//!         bar::<i32>(); // infinite recursion !
 //!     }
 //! }
 //!
-//! // `bar` is recursive if `T` is `i32`
+//! #[terminates]
 //! pub fn bar<T: Foo>() {
 //!     T::foo();
 //! }
@@ -90,13 +93,16 @@ impl<'tcx> ToVisit<'tcx> {
     }
 }
 
-/// Detect that `#[terminates]` functions do not enter a mutual recursive call,
-/// especially when traits are involved.
-pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
+/// Validate that a `#[terminates]` function cannot loop indefinitely. This includes:
+/// - forbidding program function from using loops of any kind (this should be relaxed
+/// later).
+/// - forbidding (mutual) recursive calls, especially when traits are involved.
+///
+/// Note that for logical functions, these are relaxed: we don't check loops, nor simple
+/// recursion, because why3 will handle it for us.
+pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
     ctx.tcx.dcx().abort_if_errors(); // There may have been errors before, if a `#[terminates]` calls a non-`#[terminates]`.
     let mut call_graph = CallGraph::default();
-
-    // FIXME: consider that a function 'calls' its contract, proof asserts, etc.
 
     let mut is_pearlite = IndexSet::<FunctionInstance>::new();
     let mut already_visited = IndexSet::<ToVisit>::new();

@@ -40,7 +40,7 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
             validate_opacity(ctx, def_id);
         }
     }
-    crate::detect_recursion::detect_recursion(ctx);
+    crate::validate_terminates::validate_terminates(ctx);
 
     // Check that all trait laws are well-formed
     validate_traits(ctx);
