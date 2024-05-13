@@ -378,9 +378,8 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tc
     }
 
     fn visit_expr(&mut self, expr: &'thir thir::Expr<'tcx>) {
-        use thir::ExprKind;
         match expr.kind {
-            ExprKind::Call { fun, fn_span, .. } => {
+            thir::ExprKind::Call { fun, fn_span, .. } => {
                 if let &FnDef(def_id, subst) = self.thir[fun].ty.kind() {
                     let subst = EarlyBinder::bind(self.tcx.erase_regions(subst))
                         .instantiate(self.tcx, self.generic_args);
@@ -392,8 +391,25 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tc
                     self.calls.insert((def_id, fn_span, args));
                 }
             }
-            // ExprKind::Closure(ref clos) => todo!(),
-            ExprKind::Loop { .. } => self.has_loops = Some(expr.span),
+            thir::ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
+                let (thir, expr) = self.tcx.thir_body(closure_id).unwrap_or_else(|_| {
+                    crate::error::Error::from(crate::error::InternalError("Cannot fetch THIR body"))
+                        .emit(self.tcx)
+                });
+                let thir = thir.borrow();
+
+                let mut closure_visitor = FunctionCalls {
+                    thir: &thir,
+                    tcx: self.tcx,
+                    generic_args: GenericArgs::identity_for_item(self.tcx, closure_id.to_def_id()),
+                    param_env: self.param_env,
+                    calls: std::mem::take(&mut self.calls),
+                    has_loops: None,
+                };
+                thir::visit::walk_expr(&mut closure_visitor, &thir[expr]);
+                self.calls = closure_visitor.calls;
+            }
+            thir::ExprKind::Loop { .. } => self.has_loops = Some(expr.span),
             _ => {}
         }
         thir::visit::walk_expr(self, expr);
