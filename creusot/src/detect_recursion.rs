@@ -54,6 +54,10 @@ struct Function<'tcx> {
     /// For now, mutually recursive functions are never allowed, so this only matter for
     /// the simple recursion check.
     has_variant: bool,
+    /// `Some` if the function contains a loop construct (contains the location of the loop).
+    ///
+    /// The body of external function are not visited, so this field will be `false`.
+    has_loops: Option<Span>,
     /// Indices of the functions called by this function.
     ///
     /// Also contains the span of the callsite, for error messages.
@@ -121,7 +125,7 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
             // FIXME: does this work with trait functions marked `#[terminates]`/`#[pure]` ?
             call_graph.0.insert(
                 FunctionInstance { def_id: caller_def_id, generic_args },
-                Function { has_variant: false, calls: IndexMap::default() },
+                Function { has_variant: false, has_loops: None, calls: IndexMap::default() },
             );
         } else {
             match visit {
@@ -138,10 +142,11 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
                         generic_args,
                         param_env,
                         calls: IndexSet::new(),
+                        has_loops: None,
                     };
                     <FunctionCalls as thir::visit::Visitor>::visit_expr(&mut visitor, &thir[expr]);
-                    let (visited_calls, pearlite_func) =
-                        (visitor.calls, util::is_pearlite(tcx, caller_def_id));
+                    let (visited_calls, pearlite_func, has_loops) =
+                        (visitor.calls, util::is_pearlite(tcx, caller_def_id), visitor.has_loops);
 
                     let mut calls = IndexMap::new();
                     for (function_def_id, span, subst) in visited_calls {
@@ -172,6 +177,7 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
                         Function {
                             has_variant: util::has_variant_clause(ctx.tcx, caller_def_id),
                             calls,
+                            has_loops,
                         },
                     );
                 }
@@ -247,7 +253,7 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
                             .instantiate(ctx.tcx, generic_args);
                     call_graph.0.insert(
                         FunctionInstance { def_id: function_def_id, generic_args: default_params },
-                        Function { has_variant: true, calls },
+                        Function { has_variant: true, has_loops: None, calls },
                     );
                 }
             }
@@ -279,7 +285,7 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
         }
     }
 
-    // Detect simple recursion
+    // Detect simple recursion, and loops
     for (fun_inst, calls) in &mut call_graph.0 {
         if is_pearlite.contains(fun_inst) {
             // No need for this: pearlite fonctions always generate a proof obligation for termination.
@@ -295,6 +301,12 @@ pub(crate) fn detect_recursion(ctx: &mut TranslationCtx) {
                 error.span_note(call_span, "Recursive call happens here");
                 error.emit();
             }
+        }
+        if let Some(loop_span) = calls.has_loops {
+            let fun_span = ctx.tcx.def_span(fun_inst.def_id);
+            let mut error = ctx.error(fun_span, "`#[terminates]` function must not contain loops.");
+            error.span_note(loop_span, "looping occurs here");
+            error.emit();
         }
     }
 
@@ -356,6 +368,8 @@ struct FunctionCalls<'thir, 'tcx> {
     /// - The span of the call (for error messages)
     /// - The generic arguments instantiating the call
     calls: IndexSet<(DefId, Span, &'tcx GenericArgs<'tcx>)>,
+    /// `true` if the function contains a loop construct.
+    has_loops: Option<Span>,
 }
 
 impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tcx> {
@@ -379,6 +393,7 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tc
                 }
             }
             // ExprKind::Closure(ref clos) => todo!(),
+            ExprKind::Loop { .. } => self.has_loops = Some(expr.span),
             _ => {}
         }
         thir::visit::walk_expr(self, expr);
