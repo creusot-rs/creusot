@@ -1,7 +1,7 @@
 use super::pearlite::{normalize, pearlite_stub, Literal, Stub, Term, TermKind};
 use crate::{
     ctx::*,
-    error::{CrErr, Error},
+    error::{Error, InternalError},
     util::{self, is_spec},
 };
 use rustc_ast::{
@@ -466,10 +466,9 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                     return;
                 }
 
-                let (thir, expr) = self
-                    .ctx
-                    .thir_body(closure_id)
-                    .unwrap_or_else(|_| Error::from(CrErr).emit(self.ctx.tcx));
+                let (thir, expr) = self.ctx.thir_body(closure_id).unwrap_or_else(|_| {
+                    Error::from(InternalError("Cannot fetch THIR body")).emit(self.ctx.tcx)
+                });
                 let thir = thir.borrow();
 
                 thir::visit::walk_expr(

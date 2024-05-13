@@ -1,6 +1,6 @@
 use crate::{
     ctx::*,
-    error::{CrErr, CreusotResult},
+    error::{CreusotResult, InternalError},
     translation::{pearlite::Term, specification::ContractClauses, traits},
 };
 use indexmap::IndexSet;
@@ -40,7 +40,8 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     def_id: LocalDefId,
 ) -> CreusotResult<(DefId, ExternSpec<'tcx>)> {
     // Handle error gracefully
-    let (thir, expr) = ctx.tcx.thir_body(def_id).map_err(|_| CrErr)?;
+    let (thir, expr) =
+        ctx.tcx.thir_body(def_id).map_err(|_| InternalError("Cannot fetch THIR body"))?;
     let thir = thir.borrow();
 
     let mut visit = ExtractExternItems::new(&thir);

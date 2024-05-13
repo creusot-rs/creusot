@@ -12,7 +12,7 @@ use std::{
 };
 
 use crate::{
-    error::{CrErr, CreusotResult, Error},
+    error::{CreusotResult, Error, InternalError},
     projection_vec::{visit_projections, visit_projections_mut, ProjectionVec},
     translation::TranslationCtx,
     util::{self, is_snap_ty},
@@ -256,7 +256,7 @@ pub(crate) fn pearlite<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
 ) -> CreusotResult<Term<'tcx>> {
-    let (thir, expr) = ctx.thir_body(id).map_err(|_| CrErr)?;
+    let (thir, expr) = ctx.thir_body(id).map_err(|_| InternalError("Cannot fetch THIR body"))?;
     let thir = thir.borrow();
     if thir.exprs.is_empty() {
         return Err(Error::new(ctx.def_span(id), "type checking failed"));
@@ -279,7 +279,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     fn body_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
         let body = self.expr_term(expr)?;
         let owner_id = util::param_def_id(self.ctx.tcx, self.item_id.into());
-        let (thir, _) = self.ctx.thir_body(owner_id).map_err(|_| CrErr)?;
+        let (thir, _) =
+            self.ctx.thir_body(owner_id).map_err(|_| InternalError("Cannot fetch THIR body"))?;
         let thir: &Thir = &thir.borrow();
         let res = thir
             .params

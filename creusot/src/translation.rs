@@ -10,9 +10,8 @@ pub(crate) mod traits;
 
 use crate::{
     backend::{TransId, Why3Generator},
-    ctx,
-    ctx::load_extern_specs,
-    error::CrErr,
+    ctx::{self, load_extern_specs},
+    error::InternalError,
     metadata,
     options::OutputFile,
     validate::{validate_impls, validate_opacity, validate_traits},
@@ -27,7 +26,7 @@ use why3::{declaration::Module, mlcfg, Print};
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
     ctx.load_metadata();
-    load_extern_specs(ctx).map_err(|_| Box::new(CrErr))?;
+    load_extern_specs(ctx).map_err(|_| Box::new(InternalError("Failed to load extern specs")))?;
 
     for def_id in ctx.tcx.hir().body_owners() {
         ctx.check_purity(def_id);
@@ -82,7 +81,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
     let start = Instant::now();
 
     if why3.dcx().has_errors().is_some() {
-        return Err(Box::new(CrErr));
+        return Err(Box::new(InternalError("Failed to generate correct why3")));
     }
 
     if why3.should_export() {
