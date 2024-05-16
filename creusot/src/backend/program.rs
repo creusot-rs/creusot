@@ -128,7 +128,7 @@ pub(crate) fn translate_closure<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
 ) -> (CloneSummary<'tcx>, Module, Option<Module>) {
-    assert!(ctx.is_closure_or_coroutine(def_id));
+    assert!(ctx.is_closure_like(def_id));
     let (summary, func) = translate_function(ctx, def_id);
     (summary, closure_ty(ctx, def_id), func)
 }
@@ -146,7 +146,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     };
     let body = to_why(ctx, &mut names, body_ids[0]);
 
-    if ctx.tcx.is_closure_or_coroutine(def_id) {
+    if ctx.tcx.is_closure_like(def_id) {
         closure_aux_defs(ctx, def_id)
     };
 
@@ -791,7 +791,7 @@ fn func_call_to_why3<'tcx>(
     let mut args: Vec<_> = args.into_iter().map(|a| a.to_why(ctx, names, locals)).collect();
     let fname = names.value(id, subst);
 
-    let exp = if ctx.is_closure_or_coroutine(id) {
+    let exp = if ctx.is_closure_like(id) {
         assert!(args.len() == 2, "closures should only have two arguments (env, args)");
 
         let real_sig = ctx.signature_unclosure(subst.as_closure().sig(), Unsafety::Normal);

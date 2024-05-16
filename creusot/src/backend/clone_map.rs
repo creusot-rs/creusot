@@ -132,7 +132,7 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
     fn ty(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let mut node = DepNode::new(self.tcx, (def_id, subst));
 
-        if self.tcx.is_closure_or_coroutine(def_id) {
+        if self.tcx.is_closure_like(def_id) {
             node = DepNode::Type(Ty::new_closure(self.tcx, def_id, subst));
         }
 
@@ -624,7 +624,7 @@ struct TyVisitor<'tcx, F: FnMut(Ty<'tcx>)> {
 }
 
 impl<'tcx, F: FnMut(Ty<'tcx>)> TypeVisitor<TyCtxt<'tcx>> for TyVisitor<'tcx, F> {
-    fn visit_ty(&mut self, t: Ty<'tcx>) -> std::ops::ControlFlow<Self::BreakTy> {
+    fn visit_ty(&mut self, t: Ty<'tcx>) {
         let t = match t.kind() {
             // Box<T, A> is treated as T, the A param is ignored
             TyKind::Adt(adt_def, adt_subst) if adt_def.is_box() => adt_subst.type_at(0),

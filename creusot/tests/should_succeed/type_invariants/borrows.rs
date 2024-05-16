@@ -71,7 +71,7 @@ pub fn frozen_dead<'a>(mut x: &'a mut NonZero, y: &'a mut NonZero) {
     // here we have to resolve x
     // assert x.inv() fails: depends on ^a which is unknown
     #[allow(unused_assignments)]
-    x = y;
+    (x = y);
     inc(_a); // assert old(x).inv()
 }
 

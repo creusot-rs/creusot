@@ -23,7 +23,7 @@ use why3::{
     Ident,
 };
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug, TypeVisitable, TypeFoldable)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, TypeVisitable, TypeFoldable)]
 pub(crate) enum TyInvKind {
     Trivial,
     Borrow(Mutability),

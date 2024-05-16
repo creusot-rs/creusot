@@ -8,7 +8,7 @@ use crate::{
     util::{self, get_builtin, item_name, module_name, PreSignature},
 };
 use indexmap::IndexSet;
-use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
+use petgraph::{algo::tarjan_scc, graph::DiGraph, graphmap::DiGraphMap};
 use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_middle::ty::{
     self, AliasKind, AliasTy, EarlyBinder, FieldDef, GenericArg, GenericArgKind, GenericArgs,
@@ -149,7 +149,7 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
         Str => MlT::TConstructor("string".into()),
         // Slice()
         Never => MlT::Tuple(vec![]),
-        RawPtr(_) => {
+        RawPtr(_, _) => {
             names.import_prelude_module(PreludeModule::Opaque);
             MlT::TConstructor(QName::from_string("opaque_ptr").unwrap())
         }
@@ -437,7 +437,7 @@ pub(crate) fn ty_param_names(
     mut def_id: DefId,
 ) -> impl Iterator<Item = Ident> + '_ {
     loop {
-        if tcx.is_closure_or_coroutine(def_id) {
+        if tcx.is_closure_like(def_id) {
             def_id = tcx.parent(def_id);
         } else {
             break;
@@ -718,6 +718,7 @@ pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(
     use rustc_middle::ty::FloatTy::*;
 
     match fty {
+        F16 => todo!(),
         F32 => {
             names.import_prelude_module(PreludeModule::Float32);
             single_ty()
@@ -726,6 +727,7 @@ pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(
             names.import_prelude_module(PreludeModule::Float64);
             double_ty()
         }
+        F128 => todo!(),
     }
 }
 

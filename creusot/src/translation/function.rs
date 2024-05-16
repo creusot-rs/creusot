@@ -489,7 +489,7 @@ pub(crate) fn closure_contract<'tcx>(
     let args: Vec<_> = pre_clos_sig.inputs.drain(1..).collect();
 
     if args.len() == 0 {
-        pre_clos_sig.inputs.push((Symbol::intern("_"), DUMMY_SP, Ty::new_unit(ctx.tcx)))
+        pre_clos_sig.inputs.push((Symbol::intern("_"), DUMMY_SP, ctx.types.unit))
     } else {
         let arg_tys: Vec<_> = args.iter().map(|(_, _, ty)| *ty).collect();
         let arg_ty = Ty::new_tup(ctx.tcx, &arg_tys);
@@ -571,7 +571,7 @@ pub(crate) fn closure_contract<'tcx>(
         accessors,
     };
 
-    if kind <= Fn {
+    if kind.extends(Fn) {
         let mut post_sig = post_sig.clone();
 
         post_sig.inputs[0].0 = Symbol::intern("self");
@@ -585,7 +585,7 @@ pub(crate) fn closure_contract<'tcx>(
         contracts.postcond = Some((post_sig, postcondition));
     }
 
-    if kind <= FnMut {
+    if kind.extends(FnMut) {
         let mut post_sig = post_sig.clone();
         // post_sig.name = Ident::build("postcondition_mut");
 
@@ -639,7 +639,7 @@ pub(crate) fn closure_contract<'tcx>(
         contracts.postcond_mut = Some((post_sig, postcondition));
     }
 
-    if kind <= FnOnce {
+    if kind.extends(FnOnce) {
         let mut post_sig = post_sig.clone();
         post_sig.inputs[0].0 = Symbol::intern("self");
         post_sig.inputs[0].2 = self_ty;

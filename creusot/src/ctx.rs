@@ -21,7 +21,7 @@ use crate::{
 };
 use indexmap::{IndexMap, IndexSet};
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
-use rustc_errors::{DiagnosticBuilder, FatalAbort};
+use rustc_errors::{Diag, FatalAbort};
 use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LocalDefId},
@@ -232,20 +232,16 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         self.tcx.dcx().span_fatal(span, msg.to_string())
     }
 
-    pub(crate) fn fatal_error(&self, span: Span, msg: &str) -> DiagnosticBuilder<'tcx, FatalAbort> {
+    pub(crate) fn fatal_error(&self, span: Span, msg: &str) -> Diag<'tcx, FatalAbort> {
         // TODO: try to add a code back in
         self.tcx.dcx().struct_span_fatal(span, msg.to_string())
     }
 
-    pub(crate) fn error(
-        &self,
-        span: Span,
-        msg: &str,
-    ) -> DiagnosticBuilder<'tcx, rustc_errors::ErrorGuaranteed> {
+    pub(crate) fn error(&self, span: Span, msg: &str) -> Diag<'tcx, rustc_errors::ErrorGuaranteed> {
         self.tcx.dcx().struct_span_err(span, msg.to_string())
     }
 
-    pub(crate) fn warn(&self, span: Span, msg: &str) -> DiagnosticBuilder<'tcx, ()> {
+    pub(crate) fn warn(&self, span: Span, msg: &str) -> Diag<'tcx, ()> {
         self.tcx.dcx().struct_span_warn(span, msg.to_string())
     }
 

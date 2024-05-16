@@ -145,7 +145,8 @@ fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
         let crate_name = ctx.tcx.crate_name(LOCAL_CRATE);
         let libname = format!("{}{}", crate_name.as_str(), ctx.tcx.sess.opts.cg.extra_filename);
 
-        outputs.out_directory.join(&format!("lib{}.cmeta", libname))
+        outputs.with_extension("cmeta")
+        // .join(&format!("lib{}.cmeta", libname))
     })
 }
 

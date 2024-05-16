@@ -86,7 +86,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
             },
             Rvalue::Ref(_, ss, pl) => match ss {
-                Shared | Fake => {
+                Shared | Fake(..) => {
                     if self.erased_locals.contains(pl.local) {
                         return;
                     }
@@ -185,8 +185,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Rvalue::Cast(
                 CastKind::PointerCoercion(_)
-                | CastKind::PointerExposeAddress
-                | CastKind::PointerFromExposedAddress
+                | CastKind::PointerExposeProvenance
+                | CastKind::PointerWithExposedProvenance
                 | CastKind::DynStar
                 | CastKind::IntToFloat
                 | CastKind::FloatToInt

@@ -19,7 +19,7 @@ use crate::{
 };
 use itertools::Itertools;
 use log::*;
-use rustc_ast::{LitIntType, LitKind};
+use rustc_ast::{visit::VisitorResult, LitIntType, LitKind};
 use rustc_hir::{
     def_id::{DefId, LocalDefId},
     HirId, OwnerId,
@@ -198,11 +198,8 @@ impl<'tcx, I: Interner> TypeFoldable<I> for Literal<'tcx> {
 }
 
 impl<'tcx, I: Interner> TypeVisitable<I> for Literal<'tcx> {
-    fn visit_with<V: rustc_middle::ty::TypeVisitor<I>>(
-        &self,
-        _: &mut V,
-    ) -> std::ops::ControlFlow<V::BreakTy> {
-        ::std::ops::ControlFlow::Continue(())
+    fn visit_with<V: rustc_middle::ty::TypeVisitor<I>>(&self, _: &mut V) -> V::Result {
+        V::Result::output()
     }
 }
 
@@ -357,6 +354,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     mir::BinOp::Ne => unreachable!(),
                     mir::BinOp::Eq => unreachable!(),
                     mir::BinOp::Offset => todo!(),
+                    mir::BinOp::Cmp => todo!(),
                 };
                 Ok(Term {
                     ty,
@@ -1651,7 +1649,7 @@ fn print_thir_expr<'tcx>(
         ExprKind::Borrow { borrow_kind, arg } => {
             match borrow_kind {
                 BorrowKind::Shared => write!(fmt, "& ")?,
-                BorrowKind::Fake => write!(fmt, "&fake ")?,
+                BorrowKind::Fake(..) => write!(fmt, "&fake ")?,
                 BorrowKind::Mut { .. } => write!(fmt, "&mut ")?,
             };
 

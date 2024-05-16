@@ -38,7 +38,7 @@ pub(crate) mod traits;
 pub(crate) mod ty;
 pub(crate) mod ty_inv;
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub(crate) enum TransId {
     Item(DefId),
     TyInv(TyInvKind),
@@ -422,7 +422,7 @@ pub(crate) fn closure_generic_decls(
     mut def_id: DefId,
 ) -> impl Iterator<Item = Decl> + '_ {
     loop {
-        if tcx.is_closure_or_coroutine(def_id) {
+        if tcx.is_closure_like(def_id) {
             def_id = tcx.parent(def_id);
         } else {
             break;
