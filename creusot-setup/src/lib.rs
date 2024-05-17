@@ -26,14 +26,11 @@ impl fmt::Display for CfgPaths {
     }
 }
 
-fn get_config_paths(custom_config_dir: &Option<PathBuf>) -> anyhow::Result<CfgPaths> {
+fn get_config_paths() -> anyhow::Result<CfgPaths> {
     // arguments: qualifier, organization, application
     let dirs = ProjectDirs::from("", "creusot", "creusot")
         .context("failed to compute configuration paths")?;
-    let config_dir = match custom_config_dir {
-        Some(dir) => dir,
-        None => dirs.config_dir(),
-    };
+    let config_dir = dirs.config_dir();
     Ok(CfgPaths {
         config_dir: PathBuf::from(config_dir),
         config_file: config_dir.join("Config.toml"),
@@ -109,8 +106,8 @@ fn diagnostic_config(paths: &CfgPaths, config: &Config, check_builtins: bool) ->
 }
 
 // display the status of the creusot installation to the user
-pub fn status(custom_config_dir: &Option<PathBuf>) -> anyhow::Result<()> {
-    let paths = get_config_paths(custom_config_dir)?;
+pub fn status() -> anyhow::Result<()> {
+    let paths = get_config_paths()?;
     match Config::read_from_file(&paths.config_file) {
         Err(err) => {
             println!("{err}");
@@ -150,14 +147,14 @@ pub fn status(custom_config_dir: &Option<PathBuf>) -> anyhow::Result<()> {
 
 pub struct CreusotFlags {
     pub why3_path: PathBuf,
-    pub why3_config: Option<PathBuf>,
+    pub why3_config: PathBuf,
 }
 
 /// compute the flags to pass to creusot-rustc.
 /// fail if the installation is not in an acceptable state, which means we will
 /// stop there and do not attempt launching creusot-rustc.
-pub fn status_for_creusot(custom_config_dir: &Option<PathBuf>) -> anyhow::Result<CreusotFlags> {
-    let paths = get_config_paths(custom_config_dir)?;
+pub fn status_for_creusot() -> anyhow::Result<CreusotFlags> {
+    let paths = get_config_paths()?;
     match Config::read_from_file(&paths.config_file) {
         Err(err) => bail!(
             "{err}\n\
@@ -177,7 +174,7 @@ pub fn status_for_creusot(custom_config_dir: &Option<PathBuf>) -> anyhow::Result
             }
             Ok(CreusotFlags {
                 why3_path: cfg.why3.path.to_path_buf(),
-                why3_config: Some(paths.why3_config_file),
+                why3_config: paths.why3_config_file,
             })
         }
     }
@@ -200,8 +197,8 @@ pub struct InstallFlags {
     pub cvc5: ManagedFlag,
 }
 
-pub fn install(custom_config_dir: &Option<PathBuf>, flags: InstallFlags) -> anyhow::Result<()> {
-    let paths = get_config_paths(custom_config_dir)?;
+pub fn install(flags: InstallFlags) -> anyhow::Result<()> {
+    let paths = get_config_paths()?;
 
     // helpers to generate the ExternalTool/ManagedTool config sections
 

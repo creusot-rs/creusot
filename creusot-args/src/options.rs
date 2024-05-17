@@ -47,7 +47,7 @@ pub struct CreusotArgs {
     pub why3_path: PathBuf,
     /// Specify an alternative location for Why3's configuration
     #[arg(long)]
-    pub why3_config_file: Option<PathBuf>,
+    pub why3_config_file: PathBuf,
     #[command(subcommand)]
     pub subcommand: Option<CreusotSubCommand>,
     #[clap(last = true)]
@@ -72,9 +72,6 @@ pub enum CreusotSubCommand {
 pub struct CargoCreusotArgs {
     #[clap(flatten)]
     pub options: CommonOptions,
-    /// Custom path for Creusot's config directory (managed by 'cargo creusot setup')
-    #[arg(long)]
-    pub config_dir: Option<PathBuf>,
     /// Subcommand: why3, setup
     #[command(subcommand)]
     pub subcommand: Option<CargoCreusotSubCommand>,

@@ -17,7 +17,7 @@ pub enum Why3Sub {
 #[derive(Clone)]
 pub struct Why3Command {
     pub path: PathBuf,
-    pub config_file: Option<PathBuf>,
+    pub config_file: PathBuf,
     pub sub: Why3Sub,
     pub args: String,
 }

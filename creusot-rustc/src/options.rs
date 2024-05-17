@@ -8,7 +8,7 @@ pub trait CreusotArgsExt {
 
 fn why3_command(
     path: PathBuf,
-    config_file: Option<PathBuf>,
+    config_file: PathBuf,
     cmd: CreusotSubCommand,
 ) -> options::Why3Command {
     let CreusotSubCommand::Why3 { command, args, .. } = cmd;
