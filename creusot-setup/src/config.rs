@@ -7,28 +7,33 @@ use std::{
 // identifies a version of the config file.
 // the goal is to avoid silently mis-interpreting a past or future version of
 // the config file whenever its format changes.
-pub const CURRENT_CONFIG_VERSION: i64 = 1;
+pub const CURRENT_CONFIG_VERSION: i64 = 2;
+
+// bump CURRENT_CONFIG_VERSION if you change this definition
+#[derive(Serialize, Deserialize)]
+pub struct ExternalTool {
+    pub path: PathBuf,
+    pub check_version: bool,
+}
 
 // bump CURRENT_CONFIG_VERSION if you change this definition
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "mode")]
-pub enum ToolsConfig {
-    #[serde(rename = "managed")]
-    Managed {
-        why3_path: PathBuf,
-        altergo_path: PathBuf,
-        z3: String,   // version
-        cvc4: String, // version
-        cvc5: String, // version
-    },
+pub enum ManagedTool {
+    #[serde(rename = "builtin")]
+    Builtin { check_version: bool },
     #[serde(rename = "external")]
-    External { why3_path: PathBuf, altergo_path: PathBuf },
+    External(ExternalTool),
 }
 
 // bump CURRENT_CONFIG_VERSION if you change this definition
 #[derive(Serialize, Deserialize)]
 pub struct Config {
-    pub tools: ToolsConfig,
+    pub why3: ExternalTool,
+    pub altergo: ExternalTool,
+    pub z3: ManagedTool,
+    pub cvc4: ManagedTool,
+    pub cvc5: ManagedTool,
 }
 
 pub enum Error {
@@ -76,21 +81,23 @@ impl Config {
     }
 }
 
-impl fmt::Display for ToolsConfig {
+impl fmt::Display for ExternalTool {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "- path: {}", self.path.display())?;
+        writeln!(f, "- check_version: {}", self.check_version)
+    }
+}
+
+impl fmt::Display for ManagedTool {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ToolsConfig::Managed { why3_path, altergo_path, z3, cvc4, cvc5 } => {
-                writeln!(f, "mode: managed")?;
-                writeln!(f, "Path to Why3: {}", why3_path.display())?;
-                writeln!(f, "Path to Alt-Ergo: {}", altergo_path.display())?;
-                writeln!(f, "Z3 version: {z3}")?;
-                writeln!(f, "CVC4 version: {cvc4}")?;
-                writeln!(f, "CVC5 version: {cvc5}")
+            ManagedTool::Builtin { check_version } => {
+                writeln!(f, "- mode: builtin")?;
+                writeln!(f, "- check_version: {check_version}")
             }
-            ToolsConfig::External { why3_path, altergo_path } => {
-                writeln!(f, "mode: external")?;
-                writeln!(f, "Path to Why3: {}", why3_path.display())?;
-                writeln!(f, "Path to Alt-Ergo: {}", altergo_path.display())
+            ManagedTool::External(exttool) => {
+                writeln!(f, "- mode: external")?;
+                write!(f, "{exttool}")
             }
         }
     }
@@ -104,7 +111,7 @@ impl fmt::Display for Error {
             Error::WrongVersion(v) => write!(
                 f,
                 "Existing Creusot configuration found, \
-                           but with a different version than expected ({v}, \
+                           but with a different version than expected (found {v}, \
                            expected {CURRENT_CONFIG_VERSION})."
             ),
         }

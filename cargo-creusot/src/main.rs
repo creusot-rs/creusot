@@ -92,11 +92,21 @@ fn main() -> Result<()> {
             Ok(())
         }
         Setup(SetupSubCommand::Status) => setup::status(&cargs.config_dir),
-        Setup(SetupSubCommand::Install) => {
-            setup::install(&cargs.config_dir, setup::InstallMode::Managed)
-        }
-        Setup(SetupSubCommand::InstallExternal { no_resolve_paths }) => {
-            setup::install(&cargs.config_dir, setup::InstallMode::External { no_resolve_paths })
+        Setup(SetupSubCommand::Install { external, no_check_version }) => {
+            let extflag =
+                |name| setup::ExternalFlag { check_version: !no_check_version.contains(&name) };
+            let managedflag = |name, mname| setup::ManagedFlag {
+                check_version: !no_check_version.contains(&name),
+                external: external.contains(&mname),
+            };
+            let flags = setup::InstallFlags {
+                why3: extflag(SetupTool::Why3),
+                altergo: extflag(SetupTool::AltErgo),
+                z3: managedflag(SetupTool::Z3, SetupManagedTool::Z3),
+                cvc4: managedflag(SetupTool::CVC4, SetupManagedTool::CVC4),
+                cvc5: managedflag(SetupTool::CVC5, SetupManagedTool::CVC5),
+            };
+            setup::install(&cargs.config_dir, flags)
         }
     }
 }
