@@ -163,10 +163,13 @@ pub fn status_for_creusot() -> anyhow::Result<CreusotFlags> {
         ),
         Ok(cfg) => {
             let issues = diagnostic_config(&paths, &cfg, true);
-            for issue in &issues {
-                println!("{issue}")
-            }
             if issues.iter().any(|issue| issue.error) {
+                // Avoid being too verbose, and only print issues (even
+                // warnings) if there's a hard error. Otherwise we're spamming
+                // testsuite logs, etc.
+                for issue in &issues {
+                    println!("{issue}")
+                }
                 bail!(
                     "Please run 'cargo creusot setup status' \
                      to diagnostic and fix the issue(s)"
