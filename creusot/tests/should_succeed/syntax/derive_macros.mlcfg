@@ -425,14 +425,20 @@ module DeriveMacros_Impl4_Clone
   }
   BB0 {
     switch (self)
-      | DeriveMacros_Sum_Type.C_A _ -> goto BB1
-      | DeriveMacros_Sum_Type.C_B _ -> goto BB2
+      | DeriveMacros_Sum_Type.C_A _ -> goto BB2
+      | DeriveMacros_Sum_Type.C_B _ -> goto BB3
       end
   }
   BB1 {
-    goto BB4
+    assert { [@expl:type invariant] inv0 self };
+    assume { resolve0 self };
+    assert { [#"../derive_macros.rs" 28 9 28 14] false };
+    absurd
   }
   BB2 {
+    goto BB4
+  }
+  BB3 {
     [#"../derive_macros.rs" 28 9 28 14] v0_11 <- DeriveMacros_Sum_Type.b_0 self;
     assert { [@expl:type invariant] inv0 self };
     assume { resolve0 self };
@@ -441,12 +447,6 @@ module DeriveMacros_Impl4_Clone
     assume { resolve3 _11 };
     [#"../derive_macros.rs" 28 9 28 14] _9 <- ([#"../derive_macros.rs" 28 9 28 14] clone1 _11);
     goto BB7
-  }
-  BB3 {
-    assert { [@expl:type invariant] inv0 self };
-    assume { resolve0 self };
-    assert { [#"../derive_macros.rs" 28 9 28 14] false };
-    absurd
   }
   BB4 {
     [#"../derive_macros.rs" 28 9 28 14] v0_1 <- DeriveMacros_Sum_Type.a_0 self;
@@ -617,29 +617,29 @@ module DeriveMacros_Impl5_Eq
     assume { resolve0 rhs };
     [#"../derive_macros.rs" 28 16 28 25] _4 <- (self, rhs);
     switch (let (a, _) = _4 in a)
-      | DeriveMacros_Sum_Type.C_A _ -> goto BB1
+      | DeriveMacros_Sum_Type.C_A _ -> goto BB2
       | DeriveMacros_Sum_Type.C_B _ -> goto BB4
       end
   }
   BB1 {
-    switch (let (_, a) = _4 in a)
-      | DeriveMacros_Sum_Type.C_A _ -> goto BB2
-      | _ -> goto BB3
-      end
-  }
-  BB2 {
-    goto BB6
-  }
-  BB3 {
     assert { [@expl:type invariant] inv1 _4 };
     assume { resolve1 _4 };
     [#"../derive_macros.rs" 28 16 28 25] _0 <- ([#"../derive_macros.rs" 28 16 28 25] false);
     goto BB16
   }
+  BB2 {
+    switch (let (_, a) = _4 in a)
+      | DeriveMacros_Sum_Type.C_A _ -> goto BB3
+      | _ -> goto BB1
+      end
+  }
+  BB3 {
+    goto BB6
+  }
   BB4 {
     switch (let (_, a) = _4 in a)
       | DeriveMacros_Sum_Type.C_B _ -> goto BB5
-      | _ -> goto BB3
+      | _ -> goto BB1
       end
   }
   BB5 {

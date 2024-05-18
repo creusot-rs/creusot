@@ -205,14 +205,22 @@ module C07Fuse_Impl0_Next
     [#"../07_fuse.rs" 40 14 40 28] self <- { self with current = (let C07Fuse_Fuse_Type.C_Fuse x0 =  * self in C07Fuse_Fuse_Type.C_Fuse ( ^ _3)) ; };
     assume { inv0 ( ^ _3) };
     switch ( * _3)
-      | Core_Option_Option_Type.C_None -> goto BB1
-      | Core_Option_Option_Type.C_Some _ -> goto BB2
+      | Core_Option_Option_Type.C_None -> goto BB2
+      | Core_Option_Option_Type.C_Some _ -> goto BB3
       end
   }
   BB1 {
-    goto BB4
+    assert { [@expl:type invariant] inv1 _3 };
+    assume { resolve0 _3 };
+    assert { [@expl:type invariant] inv2 self };
+    assume { resolve1 self };
+    assert { [#"../07_fuse.rs" 40 14 40 28] false };
+    absurd
   }
   BB2 {
+    goto BB4
+  }
+  BB3 {
     [#"../07_fuse.rs" 42 17 42 21] iter <- Borrow.borrow_final (Core_Option_Option_Type.some_0 ( * _3)) (Borrow.inherit_id (Borrow.get_id _3) 1);
     [#"../07_fuse.rs" 42 17 42 21] _3 <- { _3 with current = (let Core_Option_Option_Type.C_Some x0 =  * _3 in Core_Option_Option_Type.C_Some ( ^ iter)) ; };
     assume { inv3 ( ^ iter) };
@@ -222,14 +230,6 @@ module C07Fuse_Impl0_Next
     [#"../07_fuse.rs" 42 32 42 43] _6 <- ([#"../07_fuse.rs" 42 32 42 43] next0 _7);
     _7 <- any borrowed i;
     goto BB5
-  }
-  BB3 {
-    assert { [@expl:type invariant] inv1 _3 };
-    assume { resolve0 _3 };
-    assert { [@expl:type invariant] inv2 self };
-    assume { resolve1 self };
-    assert { [#"../07_fuse.rs" 40 14 40 28] false };
-    absurd
   }
   BB4 {
     assert { [@expl:type invariant] inv1 _3 };
@@ -245,14 +245,11 @@ module C07Fuse_Impl0_Next
     assert { [@expl:type invariant] inv1 _3 };
     assume { resolve0 _3 };
     switch (_6)
-      | Core_Option_Option_Type.C_None -> goto BB6
-      | _ -> goto BB7
+      | Core_Option_Option_Type.C_None -> goto BB7
+      | _ -> goto BB6
       end
   }
   BB6 {
-    goto BB8
-  }
-  BB7 {
     assert { [@expl:type invariant] inv2 self };
     assume { resolve1 self };
     [#"../07_fuse.rs" 47 16 47 17] x <- _6;
@@ -260,6 +257,9 @@ module C07Fuse_Impl0_Next
     [#"../07_fuse.rs" 47 21 47 22] _0 <- x;
     x <- any Core_Option_Option_Type.t_option item0;
     goto BB12
+  }
+  BB7 {
+    goto BB8
   }
   BB8 {
     assert { [@expl:type invariant] inv5 _6 };

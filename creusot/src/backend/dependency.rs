@@ -1,9 +1,10 @@
 use heck::ToSnakeCase;
+use rustc_ast_ir::visit::VisitorResult;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{EarlyBinder, GenericArgs, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::Symbol;
-use rustc_type_ir::{fold::TypeFoldable, visit::TypeVisitable, AliasKind, Interner};
+use rustc_type_ir::{fold::TypeFoldable, visit::TypeVisitable, AliasTyKind, Interner};
 
 use crate::{
     ctx::TranslationCtx,
@@ -19,7 +20,7 @@ use super::{ty_inv::TyInvKind, PreludeModule, TransId};
 /// These should be used both to power the cloning system and to order the overall translation of items in Creusot.
 ///
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash, PartialOrd, Ord, TypeVisitable, TypeFoldable)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash, TypeVisitable, TypeFoldable)]
 pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
     Item(DefId, GenericArgsRef<'tcx>),
@@ -42,11 +43,8 @@ pub(crate) enum ExtendedId {
 }
 
 impl<'tcx, I: Interner> TypeVisitable<I> for ExtendedId {
-    fn visit_with<V: rustc_type_ir::visit::TypeVisitor<I>>(
-        &self,
-        _: &mut V,
-    ) -> std::ops::ControlFlow<V::BreakTy> {
-        std::ops::ControlFlow::Continue(())
+    fn visit_with<V: rustc_type_ir::visit::TypeVisitor<I>>(&self, _: &mut V) -> V::Result {
+        V::Result::output()
     }
 }
 
@@ -123,7 +121,7 @@ impl<'tcx> Dependency<'tcx> {
             Dependency::Type(t) | Dependency::TyInv(t, _) => match t.kind() {
                 TyKind::Adt(def, substs) => Some((def.did(), substs)),
                 TyKind::Closure(id, substs) => Some((*id, substs)),
-                TyKind::Alias(AliasKind::Projection, aty) => Some((aty.def_id, aty.args)),
+                TyKind::Alias(AliasTyKind::Projection, aty) => Some((aty.def_id, aty.args)),
                 _ => None,
             },
             Dependency::Hacked(_, id, substs) => Some((id, substs)),

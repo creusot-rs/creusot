@@ -13,55 +13,26 @@ extern crate log;
 
 use creusot::callbacks::*;
 use options::CreusotArgs;
-use rustc_driver::{RunCompiler, DEFAULT_LOCALE_RESOURCES};
-use rustc_errors::emitter::HumanEmitter;
-use rustc_interface::interface::try_print_query_stack;
+use rustc_driver::RunCompiler;
 use rustc_session::{config::ErrorOutputType, EarlyDiagCtxt};
-use std::{env, panic, panic::PanicInfo, process::Command};
+use std::{env, panic, process::Command};
 
 const BUG_REPORT_URL: &'static str = &"https://github.com/creusot-rs/creusot/issues/new";
-
-lazy_static::lazy_static! {
-    static ref ICE_HOOK: Box<dyn Fn(&panic::PanicInfo<'_>) + Sync + Send + 'static> = {
-        let hook = panic::take_hook();
-        panic::set_hook(Box::new(|info| report_panic(info)));
-        hook
-    };
-}
-
-fn report_panic(info: &PanicInfo) {
-    (*ICE_HOOK)(info);
-
-    // Separate the output with an empty line
-    eprintln!();
-    let fallback_bundle =
-        rustc_errors::fallback_fluent_bundle(DEFAULT_LOCALE_RESOURCES.to_vec(), false);
-
-    let emitter = Box::new(HumanEmitter::stderr(rustc_errors::ColorConfig::Auto, fallback_bundle));
-    let handler = rustc_errors::DiagCtxt::with_emitter(emitter);
-
-    let mut diagnostic = handler.struct_note("Creusot has panic-ed!");
-    diagnostic.note("Oops, that shouldn't have happened, sorry about that.");
-    diagnostic.note(format!("Please report this bug over here: {}", BUG_REPORT_URL));
-
-    diagnostic.emit();
-
-    // If backtraces are enabled, also print the query stack
-    let backtrace = env::var_os("RUST_BACKTRACE").map_or(false, |x| &x != "0");
-
-    if backtrace {
-        try_print_query_stack(&handler, None, None);
-    }
-}
 
 struct DefaultCallbacks;
 impl rustc_driver::Callbacks for DefaultCallbacks {}
 
 fn main() {
     let handler = EarlyDiagCtxt::new(ErrorOutputType::default());
+
+    // Rust verification tools crash too much for the ice hook to report `full` by default
+    if std::env::var_os("RUST_BACKTRACE").is_none() {
+        std::env::set_var("RUST_BACKTRACE", "0");
+    }
+    rustc_driver::install_ice_hook(BUG_REPORT_URL, |_| ());
+
     rustc_driver::init_rustc_env_logger(&handler);
     env_logger::init();
-    lazy_static::initialize(&ICE_HOOK);
 
     setup_plugin();
 }
@@ -135,13 +106,4 @@ fn sysroot_path() -> String {
         .unwrap();
 
     String::from_utf8(output.stdout).unwrap().trim().to_owned()
-}
-
-fn _emit_warning(text: String) {
-    let fallback_bundle =
-        rustc_errors::fallback_fluent_bundle(DEFAULT_LOCALE_RESOURCES.to_vec(), false);
-
-    let emitter = Box::new(HumanEmitter::stderr(rustc_errors::ColorConfig::Auto, fallback_bundle));
-    let handler = rustc_errors::DiagCtxt::with_emitter(emitter);
-    handler.warn(text);
 }

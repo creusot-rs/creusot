@@ -509,14 +509,22 @@ module FinalBorrows_SelectField
     [#"../final_borrows.rs" 40 10 40 18] x <- { x with current = (let (x0, x1) =  * x in ( ^ _4, x1)) ; };
     assume { inv0 ( ^ _4) };
     switch ( * _4)
-      | Core_Option_Option_Type.C_None -> goto BB1
-      | Core_Option_Option_Type.C_Some _ -> goto BB2
+      | Core_Option_Option_Type.C_None -> goto BB2
+      | Core_Option_Option_Type.C_Some _ -> goto BB3
       end
   }
   BB1 {
-    goto BB4
+    assert { [@expl:type invariant] inv1 _4 };
+    assume { resolve0 _4 };
+    assert { [@expl:type invariant] inv4 x };
+    assume { resolve2 x };
+    assert { [#"../final_borrows.rs" 40 10 40 18] false };
+    absurd
   }
   BB2 {
+    goto BB4
+  }
+  BB3 {
     [#"../final_borrows.rs" 42 13 42 14] r <- Borrow.borrow_final (Core_Option_Option_Type.some_0 ( * _4)) (Borrow.inherit_id (Borrow.get_id _4) 1);
     [#"../final_borrows.rs" 42 13 42 14] _4 <- { _4 with current = (let Core_Option_Option_Type.C_Some x0 =  * _4 in Core_Option_Option_Type.C_Some ( ^ r)) ; };
     assume { inv2 ( ^ r) };
@@ -528,14 +536,6 @@ module FinalBorrows_SelectField
     assert { [@expl:type invariant] inv1 _4 };
     assume { resolve0 _4 };
     goto BB5
-  }
-  BB3 {
-    assert { [@expl:type invariant] inv1 _4 };
-    assume { resolve0 _4 };
-    assert { [@expl:type invariant] inv4 x };
-    assume { resolve2 x };
-    assert { [#"../final_borrows.rs" 40 10 40 18] false };
-    absurd
   }
   BB4 {
     assert { [@expl:type invariant] inv1 _4 };

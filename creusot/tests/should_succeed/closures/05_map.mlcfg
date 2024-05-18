@@ -266,14 +266,22 @@ module C05Map_Impl0_Next
   }
   BB1 {
     switch (_2)
-      | Core_Option_Option_Type.C_None -> goto BB2
-      | Core_Option_Option_Type.C_Some _ -> goto BB3
+      | Core_Option_Option_Type.C_None -> goto BB3
+      | Core_Option_Option_Type.C_Some _ -> goto BB4
       end
   }
   BB2 {
-    goto BB5
+    assert { [@expl:type invariant] inv2 self };
+    assume { resolve1 self };
+    assert { [@expl:type invariant] inv1 _2 };
+    assume { resolve0 _2 };
+    assert { [#"../05_map.rs" 18 14 18 30] false };
+    absurd
   }
   BB3 {
+    goto BB5
+  }
+  BB4 {
     [#"../05_map.rs" 20 17 20 18] e <- Core_Option_Option_Type.some_0 _2;
     _2 <- (let Core_Option_Option_Type.C_Some x0 = _2 in Core_Option_Option_Type.C_Some (any a));
     assert { [@expl:type invariant] inv1 _2 };
@@ -283,14 +291,6 @@ module C05Map_Impl0_Next
     [#"../05_map.rs" 20 28 20 42] _6 <- ([#"../05_map.rs" 20 28 20 42] call0 (C05Map_Map_Type.map_func ( * self)) _8);
     _8 <- any a;
     goto BB6
-  }
-  BB4 {
-    assert { [@expl:type invariant] inv2 self };
-    assume { resolve1 self };
-    assert { [@expl:type invariant] inv1 _2 };
-    assume { resolve0 _2 };
-    assert { [#"../05_map.rs" 18 14 18 30] false };
-    absurd
   }
   BB5 {
     assert { [@expl:type invariant] inv1 _2 };

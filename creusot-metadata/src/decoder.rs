@@ -38,7 +38,7 @@ impl<'a, 'tcx> MetadataDecoder<'a, 'tcx> {
                 let source_file_cnum =
                     self.tcx.stable_crate_id_to_crate_num(source_file_id.stable_crate_id);
 
-                self.tcx.cstore_untracked().import_source_files(self.tcx.sess, source_file_cnum);
+                self.tcx.import_source_files(source_file_cnum);
                 self.tcx
                     .sess
                     .source_map()
@@ -139,7 +139,7 @@ impl SpanDecoder for MetadataDecoder<'_, '_> {
     // sessions, to map the old `DefId` to the new one.
     fn decode_def_id(&mut self) -> DefId {
         let def_path_hash = DefPathHash::decode(self);
-        self.tcx.def_path_hash_to_def_id(def_path_hash, &mut || panic!("Cannot resolve crate."))
+        self.tcx.def_path_hash_to_def_id(def_path_hash, &"Cannot resolve crate.")
     }
 
     fn decode_attr_id(&mut self) -> AttrId {

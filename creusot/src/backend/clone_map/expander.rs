@@ -12,7 +12,7 @@ use petgraph::Direction;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::Mutability,
-    ty::{AliasKind, GenericArgsRef, ParamEnv, Ty, TyKind},
+    ty::{AliasTyKind, GenericArgsRef, ParamEnv, Ty, TyKind},
 };
 
 use super::*;
@@ -150,7 +150,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         // Check the substitution for node dependencies on closures
         walk_types(key_subst, |t| {
             let node = match t.kind() {
-                TyKind::Alias(AliasKind::Projection, pty) => {
+                TyKind::Alias(AliasTyKind::Projection, pty) => {
                     let node = DepNode::new(ctx.tcx, (pty.def_id, pty.args));
                     Some(self.resolve_dep(ctx, node))
                 }
@@ -159,7 +159,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 TyKind::Int(ity) => Some(DepNode::Builtin(int_to_prelude(*ity))),
                 TyKind::Uint(uty) => Some(DepNode::Builtin(uint_to_prelude(*uty))),
                 TyKind::Slice(_) => Some(DepNode::Builtin(PreludeModule::Slice)),
-                TyKind::RawPtr(_) => Some(DepNode::Builtin(PreludeModule::Opaque)),
+                TyKind::RawPtr(_, _) => Some(DepNode::Builtin(PreludeModule::Opaque)),
                 TyKind::Adt(_, _) => Some(DepNode::Type(t)),
                 _ => None,
             };

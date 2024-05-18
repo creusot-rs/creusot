@@ -86,7 +86,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
             },
             Rvalue::Ref(_, ss, pl) => match ss {
-                Shared | Fake => {
+                Shared | Fake(..) => {
                     if self.erased_locals.contains(pl.local) {
                         return;
                     }
@@ -174,7 +174,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
             Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize), op, ty) => {
                 if let Some(t) = ty.builtin_deref(true)
-                    && t.ty.is_slice()
+                    && t.is_slice()
                 {
                     // treat &[T; N] to &[T] casts as normal assignments
                     RValue::Operand(self.translate_operand(op))
@@ -185,8 +185,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Rvalue::Cast(
                 CastKind::PointerCoercion(_)
-                | CastKind::PointerExposeAddress
-                | CastKind::PointerFromExposedAddress
+                | CastKind::PointerExposeProvenance
+                | CastKind::PointerWithExposedProvenance
                 | CastKind::DynStar
                 | CastKind::IntToFloat
                 | CastKind::FloatToInt

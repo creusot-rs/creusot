@@ -309,20 +309,20 @@ module C01Range_SumRange
   }
   BB6 {
     switch (_17)
-      | Core_Option_Option_Type.C_None -> goto BB7
+      | Core_Option_Option_Type.C_None -> goto BB9
       | Core_Option_Option_Type.C_Some _ -> goto BB8
       end
   }
   BB7 {
-    [#"../01_range.rs" 94 4 94 5] _0 <- i;
-    return _0
+    assert { [#"../01_range.rs" 86 14 86 23] false };
+    absurd
   }
   BB8 {
     goto BB10
   }
   BB9 {
-    assert { [#"../01_range.rs" 86 14 86 23] false };
-    absurd
+    [#"../01_range.rs" 94 4 94 5] _0 <- i;
+    return _0
   }
   BB10 {
     [#"../01_range.rs" 87 17 87 18] x <- Core_Option_Option_Type.some_0 _17;
@@ -384,8 +384,6 @@ module C01Range_Impl0
     
   axiom inv0 : forall x : C01Range_Range_Type.t_range . inv0 x = true
   use seq.Seq
-  use seq.Seq
-  use seq.Seq
   use prelude.Int
   predicate resolve0 (self : borrowed (C01Range_Range_Type.t_range)) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
@@ -398,6 +396,7 @@ module C01Range_Impl0
   val completed0 [#"../01_range.rs" 23 4 23 35] (self : borrowed (C01Range_Range_Type.t_range)) : bool
     ensures { result = completed0 self }
     
+  use seq.Seq
   use seq.Seq
   use seq.Seq
   use prelude.IntSize
@@ -415,6 +414,9 @@ module C01Range_Impl0
   val produces0 [#"../01_range.rs" 31 4 31 64] (self : C01Range_Range_Type.t_range) (visited : Seq.seq isize) (o : C01Range_Range_Type.t_range) : bool
     ensures { result = produces0 self visited o }
     
+  use seq.Seq
+  goal produces_refl_refn : [#"../01_range.rs" 44 4 44 26] forall self : C01Range_Range_Type.t_range . inv0 self
+   -> (forall result : () . produces0 self (Seq.empty ) self  -> produces0 self (Seq.empty ) self)
   goal produces_trans_refn : [#"../01_range.rs" 51 4 51 90] forall a : C01Range_Range_Type.t_range . forall ab : Seq.seq isize . forall b : C01Range_Range_Type.t_range . forall bc : Seq.seq isize . forall c : C01Range_Range_Type.t_range . inv0 c
   /\ inv1 bc /\ inv0 b /\ inv1 ab /\ inv0 a /\ produces0 b bc c /\ produces0 a ab b
    -> produces0 b bc c
@@ -429,6 +431,4 @@ module C01Range_Impl0
     | Core_Option_Option_Type.C_None -> completed0 self
     | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
     end)
-  goal produces_refl_refn : [#"../01_range.rs" 44 4 44 26] forall self : C01Range_Range_Type.t_range . inv0 self
-   -> (forall result : () . produces0 self (Seq.empty ) self  -> produces0 self (Seq.empty ) self)
 end

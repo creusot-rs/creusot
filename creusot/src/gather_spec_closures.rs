@@ -5,7 +5,7 @@ use crate::{
     pearlite::Term,
     util::{self, snapshot_closure_id},
 };
-use rustc_data_structures::graph::WithSuccessors;
+use rustc_data_structures::graph::Successors;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{visit::Visitor, AggregateKind, BasicBlock, Body, Location, Operand, Rvalue},

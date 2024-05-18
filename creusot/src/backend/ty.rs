@@ -11,7 +11,7 @@ use indexmap::IndexSet;
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
 use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_middle::ty::{
-    self, AliasKind, AliasTy, EarlyBinder, FieldDef, GenericArg, GenericArgKind, GenericArgs,
+    self, AliasTy, AliasTyKind, EarlyBinder, FieldDef, GenericArg, GenericArgKind, GenericArgs,
     GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
@@ -121,7 +121,7 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
                 MlT::TConstructor(QName::from_string(&p.to_string().to_lowercase()).unwrap())
             }
         }
-        Alias(AliasKind::Projection, pty) => translate_projection_ty(trans, ctx, names, pty),
+        Alias(AliasTyKind::Projection, pty) => translate_projection_ty(trans, ctx, names, pty),
         Ref(_, ty, borkind) => {
             use rustc_ast::Mutability::*;
             names.import_prelude_module(PreludeModule::Borrow);
@@ -149,7 +149,7 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
         Str => MlT::TConstructor("string".into()),
         // Slice()
         Never => MlT::Tuple(vec![]),
-        RawPtr(_) => {
+        RawPtr(_, _) => {
             names.import_prelude_module(PreludeModule::Opaque);
             MlT::TConstructor(QName::from_string("opaque_ptr").unwrap())
         }
@@ -207,9 +207,9 @@ fn translate_projection_ty<'tcx, N: Namer<'tcx>>(
         let ix = ctx.projections_in_ty(id).iter().position(|t| t == pty).unwrap();
         return MlT::TVar(Ident::build(&format!("proj{ix}")));
     } else {
-        let ty = Ty::new_alias(ctx.tcx, AliasKind::Projection, *pty);
+        let ty = Ty::new_alias(ctx.tcx, AliasTyKind::Projection, *pty);
         let proj_ty = names.normalize(ctx, ty);
-        if let TyKind::Alias(AliasKind::Projection, aty) = proj_ty.kind() {
+        if let TyKind::Alias(AliasTyKind::Projection, aty) = proj_ty.kind() {
             return MlT::TConstructor(names.ty(aty.def_id, aty.args));
         };
         translate_ty(ctx, names, DUMMY_SP, proj_ty)
@@ -293,12 +293,12 @@ impl<'tcx> Why3Generator<'tcx> {
             let ty = f.ty(self.tcx, subst);
             let ty = self.try_normalize_erasing_regions(param_env, ty).unwrap_or(ty);
             match ty.kind() {
-                TyKind::Alias(AliasKind::Projection, aty) => v.push(*aty),
+                TyKind::Alias(AliasTyKind::Projection, aty) => v.push(*aty),
                 TyKind::Adt(adt, substs) => {
                     let tcx = self.tcx;
                     for proj in self.projections_in_ty(adt.did()) {
                         let proj = EarlyBinder::bind(proj.to_ty(tcx)).instantiate(tcx, substs);
-                        if let TyKind::Alias(AliasKind::Projection, aty) = proj.kind() {
+                        if let TyKind::Alias(AliasTyKind::Projection, aty) = proj.kind() {
                             v.push(*aty)
                         }
                     }
@@ -308,7 +308,7 @@ impl<'tcx> Why3Generator<'tcx> {
                         substs.iter().flat_map(GenericArg::walk).filter_map(GenericArg::as_type)
                     {
                         match a.kind() {
-                            TyKind::Alias(AliasKind::Projection, aty) => v.push(*aty),
+                            TyKind::Alias(AliasTyKind::Projection, aty) => v.push(*aty),
                             _ => {}
                         };
                     }
@@ -437,7 +437,7 @@ pub(crate) fn ty_param_names(
     mut def_id: DefId,
 ) -> impl Iterator<Item = Ident> + '_ {
     loop {
-        if tcx.is_closure_or_coroutine(def_id) {
+        if tcx.is_closure_like(def_id) {
             def_id = tcx.parent(def_id);
         } else {
             break;
@@ -718,6 +718,7 @@ pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(
     use rustc_middle::ty::FloatTy::*;
 
     match fty {
+        F16 => todo!(),
         F32 => {
             names.import_prelude_module(PreludeModule::Float32);
             single_ty()
@@ -726,6 +727,7 @@ pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(
             names.import_prelude_module(PreludeModule::Float64);
             double_ty()
         }
+        F128 => todo!(),
     }
 }
 

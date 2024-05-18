@@ -153,7 +153,7 @@ pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::A
 }
 
 pub(crate) fn param_def_id(tcx: TyCtxt, def_id: LocalDefId) -> LocalDefId {
-    if is_spec(tcx, def_id.to_def_id()) && tcx.is_closure_or_coroutine(def_id.to_def_id()) {
+    if is_spec(tcx, def_id.to_def_id()) && tcx.is_closure_like(def_id.to_def_id()) {
         tcx.parent(def_id.to_def_id()).expect_local()
     } else {
         def_id
@@ -166,7 +166,7 @@ pub(crate) fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
             return false;
         }
 
-        if tcx.is_closure_or_coroutine(def_id) {
+        if tcx.is_closure_like(def_id) {
             def_id = tcx.parent(def_id);
         } else {
             return true;
@@ -744,7 +744,7 @@ pub(crate) fn closure_capture_subst<'tcx>(
     self_name: Symbol,
 ) -> ClosureSubst<'tcx> {
     let mut fun_def_id = def_id;
-    while tcx.is_closure_or_coroutine(fun_def_id) {
+    while tcx.is_closure_like(fun_def_id) {
         fun_def_id = tcx.parent(fun_def_id);
     }
 

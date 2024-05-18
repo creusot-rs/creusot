@@ -210,7 +210,7 @@ fn fun<'a>(args: impl IntoIterator<Item = &'a str>, body: Expr) -> Expr {
                 .map(|x| rustc_ast::Param {
                     attrs: Default::default(),
                     ty: P(ty(TyKind::Infer)),
-                    pat: P(pat(PatKind::Ident(rustc_ast::BindingAnnotation::NONE, ident(x), None))),
+                    pat: P(pat(PatKind::Ident(rustc_ast::BindingMode::NONE, ident(x), None))),
                     id: DUMMY_NODE_ID,
                     span: DUMMY_SP,
                     is_placeholder: false,

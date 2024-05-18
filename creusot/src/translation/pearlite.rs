@@ -19,7 +19,7 @@ use crate::{
 };
 use itertools::Itertools;
 use log::*;
-use rustc_ast::{LitIntType, LitKind};
+use rustc_ast::{visit::VisitorResult, LitIntType, LitKind};
 use rustc_hir::{
     def_id::{DefId, LocalDefId},
     HirId, OwnerId,
@@ -198,11 +198,8 @@ impl<'tcx, I: Interner> TypeFoldable<I> for Literal<'tcx> {
 }
 
 impl<'tcx, I: Interner> TypeVisitable<I> for Literal<'tcx> {
-    fn visit_with<V: rustc_middle::ty::TypeVisitor<I>>(
-        &self,
-        _: &mut V,
-    ) -> std::ops::ControlFlow<V::BreakTy> {
-        ::std::ops::ControlFlow::Continue(())
+    fn visit_with<V: rustc_middle::ty::TypeVisitor<I>>(&self, _: &mut V) -> V::Result {
+        V::Result::output()
     }
 }
 
@@ -357,6 +354,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     mir::BinOp::Ne => unreachable!(),
                     mir::BinOp::Eq => unreachable!(),
                     mir::BinOp::Offset => todo!(),
+                    mir::BinOp::Cmp => todo!(),
                 };
                 Ok(Term {
                     ty,
@@ -583,7 +581,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Deref { arg } => {
                 let mut arg_trans = self.expr_term(arg)?;
                 if self.thir[arg].ty.is_box() || self.thir[arg].ty.ref_mutability() == Some(Not) {
-                    arg_trans.ty = arg_trans.ty.builtin_deref(false).expect("expected &T").ty;
+                    arg_trans.ty = arg_trans.ty.builtin_deref(false).expect("expected &T");
                     Ok(arg_trans)
                 } else {
                     Ok(Term { ty, span, kind: TermKind::Cur { term: Box::new(arg_trans) } })
@@ -1301,7 +1299,7 @@ impl<'tcx> Term<'tcx> {
         assert!(self.ty.is_ref() || self.ty.is_box(), "cannot dereference type {:?}", self.ty);
 
         Term {
-            ty: self.ty.builtin_deref(false).unwrap().ty,
+            ty: self.ty.builtin_deref(false).unwrap(),
             span: self.span,
             kind: TermKind::Cur { term: Box::new(self) },
         }
@@ -1311,7 +1309,7 @@ impl<'tcx> Term<'tcx> {
         assert!(self.ty.is_mutable_ptr() && self.ty.is_ref(), "cannot final type {:?}", self.ty);
 
         Term {
-            ty: self.ty.builtin_deref(false).unwrap().ty,
+            ty: self.ty.builtin_deref(false).unwrap(),
             span: self.span,
             kind: TermKind::Fin { term: Box::new(self) },
         }
@@ -1621,6 +1619,8 @@ impl<'tcx> Term<'tcx> {
     }
 }
 
+#[allow(dead_code)]
+/// A debug printer for Thir which allows you to see a thir expression as a tree
 struct PrintExpr<'a, 'tcx>(&'a Thir<'tcx>, ExprId);
 
 impl Display for PrintExpr<'_, '_> {
@@ -1629,6 +1629,7 @@ impl Display for PrintExpr<'_, '_> {
     }
 }
 
+#[allow(dead_code)]
 fn print_thir_expr<'tcx>(
     fmt: &mut Formatter,
     thir: &Thir<'tcx>,
@@ -1651,7 +1652,7 @@ fn print_thir_expr<'tcx>(
         ExprKind::Borrow { borrow_kind, arg } => {
             match borrow_kind {
                 BorrowKind::Shared => write!(fmt, "& ")?,
-                BorrowKind::Fake => write!(fmt, "&fake ")?,
+                BorrowKind::Fake(..) => write!(fmt, "&fake ")?,
                 BorrowKind::Mut { .. } => write!(fmt, "&mut ")?,
             };
 
@@ -1706,7 +1707,7 @@ fn strip_all_refs(ty: Ty) -> Ty {
     let mut ty = ty;
     loop {
         if ty.ref_mutability() == Some(Not) || ty.is_box() {
-            ty = ty.builtin_deref(true).unwrap().ty;
+            ty = ty.builtin_deref(true).unwrap();
         } else {
             return ty;
         }

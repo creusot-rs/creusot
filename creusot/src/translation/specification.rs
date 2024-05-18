@@ -193,6 +193,7 @@ pub(crate) fn inv_subst<'tcx>(
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum SpecAttrError {
     InvalidTokens { id: DefId },
     InvalidTerm { id: DefId },
