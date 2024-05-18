@@ -23,7 +23,6 @@ trait FilterAttrs<'a> {
     type Ret: Iterator<Item = &'a Attribute>;
 
     fn outer(self) -> Self::Ret;
-    fn inner(self) -> Self::Ret;
 }
 
 impl<'a> FilterAttrs<'a> for &'a [Attribute] {
@@ -37,16 +36,6 @@ impl<'a> FilterAttrs<'a> for &'a [Attribute] {
             }
         }
         self.iter().filter(is_outer)
-    }
-
-    fn inner(self) -> Self::Ret {
-        fn is_inner(attr: &&Attribute) -> bool {
-            match attr.style {
-                AttrStyle::Inner(_) => true,
-                AttrStyle::Outer => false,
-            }
-        }
-        self.iter().filter(is_inner)
     }
 }
 
