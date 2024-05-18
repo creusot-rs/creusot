@@ -369,46 +369,66 @@ end
 module C16Take_Impl0
   type i
   type item0
-  use seq.Seq
-  predicate invariant3 (self : Seq.seq item0)
-  val invariant3 (self : Seq.seq item0) : bool
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  predicate invariant3 (self : Core_Option_Option_Type.t_option item0)
+  val invariant3 (self : Core_Option_Option_Type.t_option item0) : bool
     ensures { result = invariant3 self }
     
-  predicate inv3 (_x : Seq.seq item0)
-  val inv3 (_x : Seq.seq item0) : bool
+  predicate inv3 (_x : Core_Option_Option_Type.t_option item0)
+  val inv3 (_x : Core_Option_Option_Type.t_option item0) : bool
     ensures { result = inv3 _x }
     
-  axiom inv3 : forall x : Seq.seq item0 . inv3 x = true
+  axiom inv3 : forall x : Core_Option_Option_Type.t_option item0 . inv3 x = true
   use C16Take_Take_Type as C16Take_Take_Type
-  predicate invariant2 (self : C16Take_Take_Type.t_take i)
-  val invariant2 (self : C16Take_Take_Type.t_take i) : bool
+  use prelude.Borrow
+  predicate invariant2 (self : borrowed (C16Take_Take_Type.t_take i))
+  val invariant2 (self : borrowed (C16Take_Take_Type.t_take i)) : bool
     ensures { result = invariant2 self }
     
-  predicate inv2 (_x : C16Take_Take_Type.t_take i)
-  val inv2 (_x : C16Take_Take_Type.t_take i) : bool
+  predicate inv2 (_x : borrowed (C16Take_Take_Type.t_take i))
+  val inv2 (_x : borrowed (C16Take_Take_Type.t_take i)) : bool
     ensures { result = inv2 _x }
     
-  axiom inv2 : forall x : C16Take_Take_Type.t_take i . inv2 x = true
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  predicate invariant1 (self : Core_Option_Option_Type.t_option item0)
-  val invariant1 (self : Core_Option_Option_Type.t_option item0) : bool
+  axiom inv2 : forall x : borrowed (C16Take_Take_Type.t_take i) . inv2 x = true
+  use seq.Seq
+  predicate invariant1 (self : Seq.seq item0)
+  val invariant1 (self : Seq.seq item0) : bool
     ensures { result = invariant1 self }
     
-  predicate inv1 (_x : Core_Option_Option_Type.t_option item0)
-  val inv1 (_x : Core_Option_Option_Type.t_option item0) : bool
+  predicate inv1 (_x : Seq.seq item0)
+  val inv1 (_x : Seq.seq item0) : bool
     ensures { result = inv1 _x }
     
-  axiom inv1 : forall x : Core_Option_Option_Type.t_option item0 . inv1 x = true
-  use prelude.Borrow
-  predicate invariant0 (self : borrowed (C16Take_Take_Type.t_take i))
-  val invariant0 (self : borrowed (C16Take_Take_Type.t_take i)) : bool
+  axiom inv1 : forall x : Seq.seq item0 . inv1 x = true
+  predicate invariant0 (self : C16Take_Take_Type.t_take i)
+  val invariant0 (self : C16Take_Take_Type.t_take i) : bool
     ensures { result = invariant0 self }
     
-  predicate inv0 (_x : borrowed (C16Take_Take_Type.t_take i))
-  val inv0 (_x : borrowed (C16Take_Take_Type.t_take i)) : bool
+  predicate inv0 (_x : C16Take_Take_Type.t_take i)
+  val inv0 (_x : C16Take_Take_Type.t_take i) : bool
     ensures { result = inv0 _x }
     
-  axiom inv0 : forall x : borrowed (C16Take_Take_Type.t_take i) . inv0 x = true
+  axiom inv0 : forall x : C16Take_Take_Type.t_take i . inv0 x = true
+  use seq.Seq
+  predicate completed1 [#"../common.rs" 11 4 11 36] (self : borrowed i)
+  val completed1 [#"../common.rs" 11 4 11 36] (self : borrowed i) : bool
+    ensures { result = completed1 self }
+    
+  use prelude.Int
+  predicate resolve0 (self : borrowed (C16Take_Take_Type.t_take i)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  val resolve0 (self : borrowed (C16Take_Take_Type.t_take i)) : bool
+    ensures { result = resolve0 self }
+    
+  use prelude.UIntSize
+  predicate completed0 [#"../16_take.rs" 22 4 22 35] (self : borrowed (C16Take_Take_Type.t_take i)) =
+    [#"../16_take.rs" 23 8 26 9] UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) = 0 /\ resolve0 self
+    \/ UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) > 0
+    /\ UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) = UIntSize.to_int (C16Take_Take_Type.take_n ( ^ self)) + 1
+    /\ completed1 (Borrow.borrow_logic (C16Take_Take_Type.take_iter ( * self)) (C16Take_Take_Type.take_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1))
+  val completed0 [#"../16_take.rs" 22 4 22 35] (self : borrowed (C16Take_Take_Type.t_take i)) : bool
+    ensures { result = completed0 self }
+    
   use seq.Seq
   use seq.Seq
   use seq.Seq
@@ -416,9 +436,7 @@ module C16Take_Impl0
   val produces1 [#"../common.rs" 8 4 8 65] (self : i) (visited : Seq.seq item0) (o : i) : bool
     ensures { result = produces1 self visited o }
     
-  use prelude.Int
   use seq.Seq
-  use prelude.UIntSize
   predicate produces0 [#"../16_take.rs" 31 4 31 64] (self : C16Take_Take_Type.t_take i) (visited : Seq.seq item0) (o : C16Take_Take_Type.t_take i)
     
    =
@@ -428,45 +446,27 @@ module C16Take_Impl0
   val produces0 [#"../16_take.rs" 31 4 31 64] (self : C16Take_Take_Type.t_take i) (visited : Seq.seq item0) (o : C16Take_Take_Type.t_take i) : bool
     ensures { result = produces0 self visited o }
     
-  use seq.Seq
-  predicate completed1 [#"../common.rs" 11 4 11 36] (self : borrowed i)
-  val completed1 [#"../common.rs" 11 4 11 36] (self : borrowed i) : bool
-    ensures { result = completed1 self }
-    
-  predicate resolve0 (self : borrowed (C16Take_Take_Type.t_take i)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
-  val resolve0 (self : borrowed (C16Take_Take_Type.t_take i)) : bool
-    ensures { result = resolve0 self }
-    
-  predicate completed0 [#"../16_take.rs" 22 4 22 35] (self : borrowed (C16Take_Take_Type.t_take i)) =
-    [#"../16_take.rs" 23 8 26 9] UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) = 0 /\ resolve0 self
-    \/ UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) > 0
-    /\ UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) = UIntSize.to_int (C16Take_Take_Type.take_n ( ^ self)) + 1
-    /\ completed1 (Borrow.borrow_logic (C16Take_Take_Type.take_iter ( * self)) (C16Take_Take_Type.take_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1))
-  val completed0 [#"../16_take.rs" 22 4 22 35] (self : borrowed (C16Take_Take_Type.t_take i)) : bool
-    ensures { result = completed0 self }
-    
-  goal next_refn : [#"../16_take.rs" 53 4 53 41] forall self : borrowed (C16Take_Take_Type.t_take i) . inv0 self
-   -> inv0 self
-  /\ (forall result : Core_Option_Option_Type.t_option item0 . inv1 result
+  goal produces_trans_refn : [#"../16_take.rs" 47 4 47 90] forall a : C16Take_Take_Type.t_take i . forall ab : Seq.seq item0 . forall b : C16Take_Take_Type.t_take i . forall bc : Seq.seq item0 . forall c : C16Take_Take_Type.t_take i . inv0 c
+  /\ inv1 bc /\ inv0 b /\ inv1 ab /\ inv0 a /\ produces0 b bc c /\ produces0 a ab b
+   -> inv0 c
+  /\ inv1 bc
+  /\ inv0 b
+  /\ inv1 ab
+  /\ inv0 a
+  /\ produces0 b bc c
+  /\ produces0 a ab b /\ (forall result : () . produces0 a (Seq.(++) ab bc) c  -> produces0 a (Seq.(++) ab bc) c)
+  goal produces_refl_refn : [#"../16_take.rs" 40 4 40 26] forall self : C16Take_Take_Type.t_take i . inv0 self
+   -> inv0 self /\ (forall result : () . produces0 self (Seq.empty ) self  -> produces0 self (Seq.empty ) self)
+  goal next_refn : [#"../16_take.rs" 53 4 53 41] forall self : borrowed (C16Take_Take_Type.t_take i) . inv2 self
+   -> inv2 self
+  /\ (forall result : Core_Option_Option_Type.t_option item0 . inv3 result
   /\ match result with
     | Core_Option_Option_Type.C_None -> completed0 self
     | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
     end
-   -> inv1 result
+   -> inv3 result
   /\ match result with
     | Core_Option_Option_Type.C_None -> completed0 self
     | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
     end)
-  goal produces_refl_refn : [#"../16_take.rs" 40 4 40 26] forall self : C16Take_Take_Type.t_take i . inv2 self
-   -> inv2 self /\ (forall result : () . produces0 self (Seq.empty ) self  -> produces0 self (Seq.empty ) self)
-  goal produces_trans_refn : [#"../16_take.rs" 47 4 47 90] forall a : C16Take_Take_Type.t_take i . forall ab : Seq.seq item0 . forall b : C16Take_Take_Type.t_take i . forall bc : Seq.seq item0 . forall c : C16Take_Take_Type.t_take i . inv2 c
-  /\ inv3 bc /\ inv2 b /\ inv3 ab /\ inv2 a /\ produces0 b bc c /\ produces0 a ab b
-   -> inv2 c
-  /\ inv3 bc
-  /\ inv2 b
-  /\ inv3 ab
-  /\ inv2 a
-  /\ produces0 b bc c
-  /\ produces0 a ab b /\ (forall result : () . produces0 a (Seq.(++) ab bc) c  -> produces0 a (Seq.(++) ab bc) c)
 end
