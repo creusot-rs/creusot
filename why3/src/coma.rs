@@ -4,7 +4,7 @@ use pretty::docs;
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
 
-type Term = crate::Exp;
+pub type Term = crate::Exp;
 
 /// The Coma Intermediate Verification Language
 ///
@@ -82,6 +82,16 @@ pub enum Param {
     Cont(Ident, Vec<Ident>, Vec<Param>),
 }
 
+impl Param {
+    pub fn as_term(&self) -> (&Ident, &Type) {
+        if let Param::Term(id, ty) = self {
+            (&id, &ty)
+        } else {
+            unreachable!()
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Arg {
@@ -118,6 +128,12 @@ pub enum Decl {
 #[derive(Clone, Debug)]
 pub struct Module(pub Vec<Decl>);
 
+impl Defn {
+    pub fn simple(name: impl Into<Ident>, body: Expr) -> Self {
+        Defn { name: name.into(), writes: vec![], params: vec![], body }
+    }
+}
+
 impl Expr {
     pub fn app(self, args: Vec<Arg>) -> Self {
         args.into_iter().fold(self, |acc, a| Expr::App(Box::new(acc), Box::new(a)))
@@ -125,11 +141,23 @@ impl Expr {
 
     pub fn assign(mut self, lhs: Ident, rhs: Term) -> Self {
         match &mut self {
-            Expr::Assign(_, asgns) => {
-                asgns.push((lhs, rhs));
-                self
-            }
+            // Expr::Assign(_, asgns) => {
+            //     asgns.push((lhs, rhs));
+            //     self
+            // }
             _ => Expr::Assign(Box::new(self), vec![(lhs, rhs)]),
+        }
+    }
+
+    /// Checks whether the expression is protected by a black box.
+    ///
+    /// It allows the box to be surrounded by assertions
+    pub fn is_guarded(&self) -> bool {
+        match self {
+            Expr::Assert(_, e) => e.is_guarded(),
+            Expr::Defn(e, _, _) => e.is_guarded(),
+            Expr::BlackBox(_) => true,
+            _ => false,
         }
     }
 }
@@ -143,7 +171,7 @@ impl Print for Param {
         A::Doc: Clone,
     {
         match self {
-            Param::Ty(ty) => ty.pretty(alloc),
+            Param::Ty(ty) => docs![alloc, "< ", ty.pretty(alloc), " >"],
             Param::Term(id, ty) => docs![alloc, id.pretty(alloc), ":", ty.pretty(alloc)].parens(),
             Param::Reference(id, ty) => docs![alloc, "&", id.pretty(alloc), ":", ty.pretty(alloc)],
             Param::Cont(id, writes, params) => docs![
@@ -207,6 +235,19 @@ impl Print for Expr {
         match self {
             Expr::Symbol(id) => id.pretty(alloc),
             Expr::App(e, arg) => {
+                let mut args = vec![arg];
+
+                let mut cur = e;
+                while let Expr::App(e, arg) = &**cur {
+                    cur = e;
+                    args.push(arg);
+                }
+                args.reverse();
+                let e = cur;
+
+                let ix = args.partition_point(|arg| !matches!(&***arg, Arg::Cont(_)));
+                let (ty_term, conts) = args.split_at(ix);
+
                 let needs_paren = !matches!(
                     &**e,
                     Expr::App(_, _) | Expr::Symbol(_) | Expr::Any | Expr::Lambda(_, _)
@@ -216,29 +257,40 @@ impl Print for Expr {
 
                 docs![
                     alloc,
-                    if needs_paren { doc.parens() } else { doc },
-                    alloc.softline(),
-                    arg.pretty(alloc)
+                    docs![
+                        alloc,
+                        if needs_paren { doc.parens() } else { doc },
+                        alloc.line(),
+                        alloc.intersperse(ty_term.iter().map(|a| a.pretty(alloc)), alloc.line())
+                    ]
+                    .group(),
+                    if !ty_term.is_empty() && !conts.is_empty() {
+                        alloc.line()
+                    } else {
+                        alloc.line_()
+                    },
+                    alloc.intersperse(conts.iter().map(|a| a.pretty(alloc)), alloc.line()),
                 ]
+                .group()
+                .nest(2)
             }
             Expr::Lambda(params, body) => {
                 let header = if params.is_empty() {
-                    alloc.text("-> ")
+                    alloc.text("->")
                 } else {
                     docs![
                         alloc,
                         "fun ",
                         alloc.intersperse(params.iter().map(|p| p.pretty(alloc)), alloc.text(" ")),
-                        alloc.text(" -> ")
+                        alloc.text(" ->")
                     ]
                 };
-
-                header.append(body.pretty(alloc).nest(2)).parens()
+                header.append(alloc.line()).append(body.pretty(alloc)).group().nest(2).parens()
             }
             Expr::Defn(cont, rec, handlers) => {
                 let handlers =
                     handlers.iter().map(|d| print_defn(d, if *rec { "=" } else { "->" }, alloc));
-                cont.pretty(alloc).append(alloc.softline()).append(bracket_list(
+                cont.pretty(alloc).append(bracket_list(
                     alloc,
                     handlers,
                     alloc.line().append(alloc.text("| ")),
@@ -253,28 +305,32 @@ impl Print for Expr {
                     alloc.line().append(alloc.text("| "))
                 )
             ],
-            Expr::Assign(cont, asgns) => docs![
-                alloc,
-                bracket_list(
+            Expr::Assign(cont, asgns) => {
+                let needs_parens = matches!(&**cont, Expr::Let(_, _) | Expr::Defn(_, _, _));
+                docs![
                     alloc,
-                    asgns.iter().map(|(id, t)| docs![
+                    bracket_list(
                         alloc,
-                        "&",
-                        id.pretty(alloc),
-                        alloc.space(),
-                        "<-",
-                        alloc.space(),
-                        t.pretty(alloc)
-                    ]),
-                    alloc.line().append(alloc.text("| "))
-                ),
-                cont.pretty(alloc)
-            ],
+                        asgns.iter().map(|(id, t)| docs![
+                            alloc,
+                            "&",
+                            id.pretty(alloc),
+                            alloc.space(),
+                            "<-",
+                            alloc.space(),
+                            t.pretty(alloc)
+                        ]),
+                        alloc.line().append(alloc.text("| "))
+                    ),
+                    if asgns.is_empty() { alloc.nil() } else { alloc.line_() },
+                    if needs_parens { cont.pretty(alloc).parens() } else { cont.pretty(alloc) }
+                ]
+            }
             Expr::Assert(t, e) => {
-                docs![alloc, t.pretty(alloc).braces(), alloc.space(), e.pretty(alloc)]
+                docs![alloc, t.pretty(alloc).braces().group(), alloc.line(), e.pretty(alloc)]
             }
             Expr::Assume(t, e) => {
-                docs![alloc, t.pretty(alloc).enclose("-{", "}-"), alloc.space(), e.pretty(alloc)]
+                docs![alloc, t.pretty(alloc).enclose("-{", "}-"), alloc.line(), e.pretty(alloc)]
             }
             Expr::BlackBox(e) => docs![alloc, "!", alloc.space(), e.pretty(alloc)].parens(),
             Expr::WhiteBox(e) => docs![alloc, "?", alloc.space(), e.pretty(alloc)].parens(),
@@ -311,9 +367,9 @@ where
 
     docs![
         alloc,
-        alloc.line_(),
+        alloc.line(),
         alloc.space().append(body).append(alloc.space()).brackets().nest(0),
-        alloc.line_()
+        alloc.line()
     ]
     .group()
 }
@@ -335,7 +391,7 @@ where
         alloc.intersperse(defn.params.iter().map(|a| a.pretty(alloc)), " "),
         arrow_kind,
         alloc.space(),
-        defn.body.pretty(alloc).nest(2),
+        defn.body.pretty(alloc).nest(2).group(),
     ]
 }
 
@@ -347,6 +403,6 @@ impl Print for Defn {
     where
         A::Doc: Clone,
     {
-        docs![alloc, "let ", print_defn(self, "=", alloc),]
+        docs![alloc, "let rec ", print_defn(self, "=", alloc),]
     }
 }

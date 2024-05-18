@@ -529,6 +529,10 @@ impl Exp {
         Exp::Ascribe(Box::new(self), ty)
     }
 
+    pub fn uint(value: u128) -> Self {
+        Exp::Const(Constant::Uint(value, None))
+    }
+
     pub fn is_pure(&self) -> bool {
         struct IsPure {
             pure: bool,

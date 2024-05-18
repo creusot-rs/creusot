@@ -3,8 +3,8 @@ use rustc_hir::def_id::DefId;
 use rustc_index::{Idx, IndexVec};
 use rustc_middle::{
     mir::{
-        dump_mir, visit::MutVisitor, AggregateKind, BasicBlock, BasicBlockData, Body, Local,
-        Location, Rvalue, SourceInfo, StatementKind, Terminator, TerminatorKind,
+        visit::MutVisitor, AggregateKind, BasicBlock, BasicBlockData, Body, Local, Location,
+        Rvalue, SourceInfo, StatementKind, Terminator, TerminatorKind,
     },
     ty::TyCtxt,
 };
@@ -24,7 +24,6 @@ pub(crate) fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body
         *body.basic_blocks_mut() = make_loop(tcx);
         body.var_debug_info = Vec::new();
     } else {
-        // dump_mir(tcx, false, "speccleanup", &"before", &body, |_, _| Ok(()));
         let mut cleanup = NoTranslateNoMoves { tcx, unused: IndexSet::new() };
         cleanup.visit_body(body);
 
@@ -34,7 +33,6 @@ pub(crate) fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body
         updater.visit_body(body);
 
         body.local_decls.shrink_to_fit();
-        dump_mir(tcx, false, "speccleanup", &"after", &body, |_, _| Ok(()));
     }
 }
 

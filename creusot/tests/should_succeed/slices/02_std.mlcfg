@@ -103,7 +103,10 @@ module C02Std_BinarySearch
     ensures { result = shallow_model1 self }
     
   axiom shallow_model1_spec : forall self : slice uint32 . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv4 self)
-   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv6 (shallow_model1 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model1 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max0)
+   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv6 (shallow_model1 self))
+  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model1 self = Slice.id self)
+  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model1 self)
+  <= UIntSize.to_int max0)
   function index_logic0 [@inline:trivial] (self : slice uint32) (ix : int) : uint32 =
     [#"../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (shallow_model1 self) ix
   val index_logic0 [@inline:trivial] (self : slice uint32) (ix : int) : uint32
@@ -116,9 +119,11 @@ module C02Std_BinarySearch
     ensures { result = shallow_model0 self }
     
   val unwrap0 (self : Core_Result_Result_Type.t_result usize usize) : usize
-    requires {[#"../../../../../creusot-contracts/src/std/result.rs" 46 16 46 55] exists t : usize . inv2 t /\ self = Core_Result_Result_Type.C_Ok t}
+    requires {[#"../../../../../creusot-contracts/src/std/result.rs" 46 16 46 55] exists t : usize . inv2 t
+    /\ self = Core_Result_Result_Type.C_Ok t}
     requires {inv3 self}
-    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 18 0 119 1] Core_Result_Result_Type.C_Ok result = self }
+    ensures { [#"../../../../../creusot-contracts/src/std/result.rs" 18 0 119 1] Core_Result_Result_Type.C_Ok result
+    = self }
     ensures { inv2 result }
     
   use int.Int
@@ -140,12 +145,15 @@ module C02Std_BinarySearch
     ensures { result = deep_model1 self }
     
   axiom deep_model1_spec : forall self : slice uint32 . ([#"../../../../../creusot-contracts/src/std/slice.rs" 32 18 32 22] inv4 self)
-   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 32 4 32 44] inv5 (deep_model1 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 31 4 31 98] forall i : int . 0 <= i /\ i < Seq.length (deep_model1 self)
-   -> Seq.get (deep_model1 self) i = deep_model3 (index_logic0 self i)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 30 14 30 44] Seq.length (shallow_model0 self) = Seq.length (deep_model1 self))
+   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 32 4 32 44] inv5 (deep_model1 self))
+  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 31 4 31 98] forall i : int . 0 <= i
+  /\ i < Seq.length (deep_model1 self)  -> Seq.get (deep_model1 self) i = deep_model3 (index_logic0 self i))
+  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 30 14 30 44] Seq.length (shallow_model0 self)
+  = Seq.length (deep_model1 self))
   use int.Int
   predicate sorted_range0 (self : Seq.seq int) (l : int) (u : int) =
-    [#"../../../../../creusot-contracts/src/logic/seq.rs" 138 8 140 9] forall j : int . forall i : int . l <= i /\ i <= j /\ j < u
-     -> Seq.get self i <= Seq.get self j
+    [#"../../../../../creusot-contracts/src/logic/seq.rs" 138 8 140 9] forall j : int . forall i : int . l <= i
+    /\ i <= j /\ j < u  -> Seq.get self i <= Seq.get self j
   val sorted_range0 (self : Seq.seq int) (l : int) (u : int) : bool
     ensures { result = sorted_range0 self l u }
     
@@ -163,14 +171,20 @@ module C02Std_BinarySearch
     requires {[#"../../../../../creusot-contracts/src/std/slice.rs" 238 0 334 1] sorted0 (deep_model0 self)}
     requires {inv0 self}
     requires {inv1 x}
-    ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 304 8 304 118] forall i : usize . result = Core_Result_Result_Type.C_Ok i
-     -> UIntSize.to_int i < Seq.length (shallow_model0 self) /\ Seq.get (deep_model1 self) (UIntSize.to_int i) = deep_model2 x }
-    ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 305 8 306 96] forall i : usize . result = Core_Result_Result_Type.C_Err i
-     -> UIntSize.to_int i <= Seq.length (shallow_model0 self) /\ (forall j : int . 0 <= j /\ j < Seq.length (shallow_model0 self)
+    ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 304 8 304 118] forall i : usize . result
+    = Core_Result_Result_Type.C_Ok i
+     -> UIntSize.to_int i < Seq.length (shallow_model0 self)
+    /\ Seq.get (deep_model1 self) (UIntSize.to_int i) = deep_model2 x }
+    ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 305 8 306 96] forall i : usize . result
+    = Core_Result_Result_Type.C_Err i
+     -> UIntSize.to_int i <= Seq.length (shallow_model0 self)
+    /\ (forall j : int . 0 <= j /\ j < Seq.length (shallow_model0 self)
      -> Seq.get (deep_model0 self) j <> deep_model2 x) }
-    ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 307 8 308 78] forall i : usize . result = Core_Result_Result_Type.C_Err i
+    ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 307 8 308 78] forall i : usize . result
+    = Core_Result_Result_Type.C_Err i
      -> (forall j : usize . j < i  -> Seq.get (deep_model0 self) (UIntSize.to_int j) < deep_model2 x) }
-    ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 309 8 310 99] forall i : usize . result = Core_Result_Result_Type.C_Err i
+    ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 309 8 310 99] forall i : usize . result
+    = Core_Result_Result_Type.C_Err i
      -> (forall j : usize . i <= j /\ UIntSize.to_int j < Seq.length (shallow_model0 self)
      -> deep_model2 x < Seq.get (deep_model0 self) (UIntSize.to_int j)) }
     

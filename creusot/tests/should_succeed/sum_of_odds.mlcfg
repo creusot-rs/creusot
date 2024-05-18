@@ -5,7 +5,8 @@ module SumOfOdds_SumOfOdd_Impl
   function sum_of_odd [#"../sum_of_odds.rs" 18 0 18 28] (x : int) : int
   goal vc_sum_of_odd : match x <= 0 with
     | True -> true
-    | False -> 0 <= ([#"../sum_of_odds.rs" 17 10 17 11] x) /\ ([#"../sum_of_odds.rs" 17 10 17 11] x - 1) < ([#"../sum_of_odds.rs" 17 10 17 11] x)
+    | False -> 0 <= ([#"../sum_of_odds.rs" 17 10 17 11] x)
+    /\ ([#"../sum_of_odds.rs" 17 10 17 11] x - 1) < ([#"../sum_of_odds.rs" 17 10 17 11] x)
     end
 end
 module SumOfOdds_SumOfOddIsSqr_Impl
@@ -16,11 +17,8 @@ module SumOfOdds_SumOfOddIsSqr_Impl
     ensures { result = sqr0 x }
     
   function sum_of_odd0 [#"../sum_of_odds.rs" 18 0 18 28] (x : int) : int
-  axiom sum_of_odd0_def : forall x : int . sum_of_odd0 x = ([#"../sum_of_odds.rs" 16 0 16 8] if x <= 0 then
-    0
-  else
-    sum_of_odd0 (x - 1) + 2 * x - 1
-  )
+  axiom sum_of_odd0_def : forall x : int . sum_of_odd0 x
+  = ([#"../sum_of_odds.rs" 16 0 16 8] if x <= 0 then 0 else sum_of_odd0 (x - 1) + 2 * x - 1)
   val sum_of_odd0 [#"../sum_of_odds.rs" 18 0 18 28] (x : int) : int
     ensures { result = sum_of_odd0 x }
     
@@ -28,7 +26,10 @@ module SumOfOdds_SumOfOddIsSqr_Impl
   function sum_of_odd_is_sqr [#"../sum_of_odds.rs" 30 0 30 28] (x : int) : ()
   goal vc_sum_of_odd_is_sqr : ([#"../sum_of_odds.rs" 27 11 27 17] x >= 0)
    -> match x > 0 with
-    | True -> (([#"../sum_of_odds.rs" 27 11 27 17] x - 1 >= 0) /\ 0 <= ([#"../sum_of_odds.rs" 29 10 29 11] x) /\ ([#"../sum_of_odds.rs" 29 10 29 11] x - 1) < ([#"../sum_of_odds.rs" 29 10 29 11] x)) /\ (([#"../sum_of_odds.rs" 28 10 28 33] sum_of_odd0 (x - 1) = sqr0 (x - 1))
+    | True -> (([#"../sum_of_odds.rs" 27 11 27 17] x - 1 >= 0)
+    /\ 0 <= ([#"../sum_of_odds.rs" 29 10 29 11] x)
+    /\ ([#"../sum_of_odds.rs" 29 10 29 11] x - 1) < ([#"../sum_of_odds.rs" 29 10 29 11] x))
+    /\ (([#"../sum_of_odds.rs" 28 10 28 33] sum_of_odd0 (x - 1) = sqr0 (x - 1))
      -> ([#"../sum_of_odds.rs" 28 10 28 33] sum_of_odd0 x = sqr0 x))
     | False -> [#"../sum_of_odds.rs" 28 10 28 33] sum_of_odd0 x = sqr0 x
     end
@@ -111,8 +112,14 @@ module SumOfOdds_ComputeSumOfOdd
   predicate produces0 (self : Core_Ops_Range_Range_Type.t_range uint32) (visited : Seq.seq uint32) (o : Core_Ops_Range_Range_Type.t_range uint32)
     
    =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0
-     -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self
+    = Core_Ops_Range_Range_Type.range_end o
+    /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o)
+    /\ (Seq.length visited > 0
+     -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o))
+    /\ Seq.length visited
+    = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self)
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model0 (Seq.get visited i) = deep_model0 (Core_Ops_Range_Range_Type.range_start self) + i)
   val produces0 (self : Core_Ops_Range_Range_Type.t_range uint32) (visited : Seq.seq uint32) (o : Core_Ops_Range_Range_Type.t_range uint32) : bool
     ensures { result = produces0 self visited o }
@@ -158,20 +165,14 @@ module SumOfOdds_ComputeSumOfOdd
     ensures { result = sqr0 x }
     
   function sum_of_odd0 [#"../sum_of_odds.rs" 18 0 18 28] (x : int) : int
-  axiom sum_of_odd0_def : forall x : int . sum_of_odd0 x = ([#"../sum_of_odds.rs" 16 0 16 8] if x <= 0 then
-    0
-  else
-    sum_of_odd0 (x - 1) + 2 * x - 1
-  )
+  axiom sum_of_odd0_def : forall x : int . sum_of_odd0 x
+  = ([#"../sum_of_odds.rs" 16 0 16 8] if x <= 0 then 0 else sum_of_odd0 (x - 1) + 2 * x - 1)
   val sum_of_odd0 [#"../sum_of_odds.rs" 18 0 18 28] (x : int) : int
     ensures { result = sum_of_odd0 x }
     
   function sum_of_odd_is_sqr0 [#"../sum_of_odds.rs" 30 0 30 28] (x : int) : ()
-  axiom sum_of_odd_is_sqr0_def : forall x : int . sum_of_odd_is_sqr0 x = ([#"../sum_of_odds.rs" 31 4 31 65] if x > 0 then
-    sum_of_odd_is_sqr0 (x - 1)
-  else
-    ()
-  )
+  axiom sum_of_odd_is_sqr0_def : forall x : int . sum_of_odd_is_sqr0 x
+  = ([#"../sum_of_odds.rs" 31 4 31 65] if x > 0 then sum_of_odd_is_sqr0 (x - 1) else ())
   val sum_of_odd_is_sqr0 [#"../sum_of_odds.rs" 30 0 30 28] (x : int) : ()
     requires {[#"../sum_of_odds.rs" 27 11 27 17] x >= 0}
     ensures { result = sum_of_odd_is_sqr0 x }
@@ -185,7 +186,9 @@ module SumOfOdds_ComputeSumOfOdd
     ensures { result = resolve0 self }
     
   predicate completed0 (self : borrowed (Core_Ops_Range_Range_Type.t_range uint32)) =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve0 self /\ deep_model0 (Core_Ops_Range_Range_Type.range_start ( * self)) >= deep_model0 (Core_Ops_Range_Range_Type.range_end ( * self))
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve0 self
+    /\ deep_model0 (Core_Ops_Range_Range_Type.range_start ( * self))
+    >= deep_model0 (Core_Ops_Range_Range_Type.range_end ( * self))
   val completed0 (self : borrowed (Core_Ops_Range_Range_Type.t_range uint32)) : bool
     ensures { result = completed0 self }
     
@@ -264,7 +267,8 @@ module SumOfOdds_ComputeSumOfOdd
   BB4 {
     invariant { [#"../sum_of_odds.rs" 38 4 38 50] inv0 iter };
     invariant { [#"../sum_of_odds.rs" 38 4 38 50] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter };
-    invariant { [#"../sum_of_odds.rs" 38 16 38 48] UInt32.to_int s = sum_of_odd0 (Seq.length (Snapshot.inner produced)) };
+    invariant { [#"../sum_of_odds.rs" 38 16 38 48] UInt32.to_int s
+    = sum_of_odd0 (Seq.length (Snapshot.inner produced)) };
     goto BB5
   }
   BB5 {
@@ -327,20 +331,14 @@ module SumOfOdds_Test
     ensures { result = is_square0 y }
     
   function sum_of_odd0 [#"../sum_of_odds.rs" 18 0 18 28] (x : int) : int
-  axiom sum_of_odd0_def : forall x : int . sum_of_odd0 x = ([#"../sum_of_odds.rs" 16 0 16 8] if x <= 0 then
-    0
-  else
-    sum_of_odd0 (x - 1) + 2 * x - 1
-  )
+  axiom sum_of_odd0_def : forall x : int . sum_of_odd0 x
+  = ([#"../sum_of_odds.rs" 16 0 16 8] if x <= 0 then 0 else sum_of_odd0 (x - 1) + 2 * x - 1)
   val sum_of_odd0 [#"../sum_of_odds.rs" 18 0 18 28] (x : int) : int
     ensures { result = sum_of_odd0 x }
     
   function sum_of_odd_is_sqr0 [#"../sum_of_odds.rs" 30 0 30 28] (x : int) : ()
-  axiom sum_of_odd_is_sqr0_def : forall x : int . sum_of_odd_is_sqr0 x = ([#"../sum_of_odds.rs" 31 4 31 65] if x > 0 then
-    sum_of_odd_is_sqr0 (x - 1)
-  else
-    ()
-  )
+  axiom sum_of_odd_is_sqr0_def : forall x : int . sum_of_odd_is_sqr0 x
+  = ([#"../sum_of_odds.rs" 31 4 31 65] if x > 0 then sum_of_odd_is_sqr0 (x - 1) else ())
   val sum_of_odd_is_sqr0 [#"../sum_of_odds.rs" 30 0 30 28] (x : int) : ()
     requires {[#"../sum_of_odds.rs" 27 11 27 17] x >= 0}
     ensures { result = sum_of_odd_is_sqr0 x }
