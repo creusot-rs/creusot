@@ -55,7 +55,7 @@ fn main() -> Result<()> {
                 (subcmd, false)
             };
 
-            let config_args = setup::status_for_creusot(&cargs.config_dir)?;
+            let config_args = setup::status_for_creusot()?;
             let creusot_args = CreusotArgs {
                 options: cargs.options,
                 why3_path: config_args.why3_path.clone(),
@@ -70,9 +70,7 @@ fn main() -> Result<()> {
                 // why3 configuration
                 let mut b = Why3LauncherBuilder::new();
                 b.why3_path(config_args.why3_path);
-                if let Some(p) = &config_args.why3_config {
-                    b.config_file(p.clone());
-                }
+                b.config_file(config_args.why3_config);
                 b.output_file(mlcfg_filename);
                 // temporary: for the moment we only launch why3 via cargo-creusot in Ide mode
                 b.mode(Why3Mode::Ide);
@@ -91,12 +89,22 @@ fn main() -> Result<()> {
 
             Ok(())
         }
-        Setup(SetupSubCommand::Status) => setup::status(&cargs.config_dir),
-        Setup(SetupSubCommand::Install) => {
-            setup::install(&cargs.config_dir, setup::InstallMode::Managed)
-        }
-        Setup(SetupSubCommand::InstallExternal { no_resolve_paths }) => {
-            setup::install(&cargs.config_dir, setup::InstallMode::External { no_resolve_paths })
+        Setup(SetupSubCommand::Status) => setup::status(),
+        Setup(SetupSubCommand::Install { external, no_check_version }) => {
+            let extflag =
+                |name| setup::ExternalFlag { check_version: !no_check_version.contains(&name) };
+            let managedflag = |name, mname| setup::ManagedFlag {
+                check_version: !no_check_version.contains(&name),
+                external: external.contains(&mname),
+            };
+            let flags = setup::InstallFlags {
+                why3: extflag(SetupTool::Why3),
+                altergo: extflag(SetupTool::AltErgo),
+                z3: managedflag(SetupTool::Z3, SetupManagedTool::Z3),
+                cvc4: managedflag(SetupTool::CVC4, SetupManagedTool::CVC4),
+                cvc5: managedflag(SetupTool::CVC5, SetupManagedTool::CVC5),
+            };
+            setup::install(flags)
         }
     }
 }

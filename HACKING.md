@@ -5,32 +5,20 @@ working on the Creusot codebase.
 
 ## Setup
 
-The "Creusot developer setup" sometimes requires more flexibility in how it
-looks up why3 and related solvers, compared to the standard "user" workflow
-provided by `cargo creusot setup install`. You have two options:
+The testsuite will use the global Creusot configuration managed by 
+`cargo creusot setup`. 
+You first need to have successfully run `cargo creusot setup install` as
+detailed in the README installation instructions.
 
-- **By default** the testsuite will use the global Creusot configuration managed
-  by `cargo creusot setup`. You first need to have successfully run `cargo
-  creusot setup install` (or `cargo creusot setup install-external`).
-- **Alternatively** you can set a custom "developer" Creusot configuration in
-  `.creusot-config/` at the root of the git repo. Start by running `cp -r
-  .creusot-config.sample .creusot-config`. This will tell the testsuite to use
-  whichever `why3` binary is in the PATH, but you can also tweak
-  `.creusot-config/Config.toml` to point to a specific binary.
+**To be able to use custom versions of Why3 or the solvers** (instead of the
+built-in ones expected by Creusot), one can pass extra flags to 
+`cargo creusot setup install` (see also `--help`):
+- `--external <TOOL>` to specify that a solver should be looked up from the path
+- `--no-check-version <TOOL>` to allow unexpected versions of a given tool
 
-The first option is recommended if you simply want a working setup to run the
-testsuite.
-
-The second option is useful if you need to try custom versions of Why3 or the
-solvers.
-
-Notes:
-- to avoid first installing the `cargo-creusot` binary before running `cargo
+To avoid first installing the `cargo-creusot` binary before running `cargo
   creusot setup`, one can directly call it from the git repository: `cargo run
   --bin cargo-creusot creusot setup`
-- the format of the `.creusot-config/` directory is simply the same as
-  `~/.config/creusot`, which is where `cargo creusot setup` writes its
-  configuration.
 
 ## Running the testsuite
 

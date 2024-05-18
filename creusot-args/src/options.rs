@@ -47,7 +47,7 @@ pub struct CreusotArgs {
     pub why3_path: PathBuf,
     /// Specify an alternative location for Why3's configuration
     #[arg(long)]
-    pub why3_config_file: Option<PathBuf>,
+    pub why3_config_file: PathBuf,
     #[command(subcommand)]
     pub subcommand: Option<CreusotSubCommand>,
     #[clap(last = true)]
@@ -72,9 +72,6 @@ pub enum CreusotSubCommand {
 pub struct CargoCreusotArgs {
     #[clap(flatten)]
     pub options: CommonOptions,
-    /// Custom path for Creusot's config directory (managed by 'cargo creusot setup')
-    #[arg(long)]
-    pub config_dir: Option<PathBuf>,
     /// Subcommand: why3, setup
     #[command(subcommand)]
     pub subcommand: Option<CargoCreusotSubCommand>,
@@ -101,18 +98,34 @@ pub enum Why3SubCommand {
     Replay,
 }
 
+#[derive(Debug, ValueEnum, Serialize, Deserialize, Clone, PartialEq)]
+pub enum SetupManagedTool {
+    Z3,
+    CVC4,
+    CVC5,
+}
+
+#[derive(Debug, ValueEnum, Serialize, Deserialize, Clone, PartialEq)]
+pub enum SetupTool {
+    Why3,
+    AltErgo,
+    Z3,
+    CVC4,
+    CVC5,
+}
+
 #[derive(Debug, Parser, Clone)]
 pub enum SetupSubCommand {
     /// Show the current status of the Creusot installation
     Status,
     /// Setup Creusot or update an existing installation
-    Install,
-    /// Setup Creusot but use external tools configured manually (not recommended, for experts)
-    InstallExternal {
-        /// Do not lookup and resolve paths to the external binaries (they will
-        /// instead be looked up in PATH at each Creusot invocation)
-        #[arg(long, default_value_t = false)]
-        no_resolve_paths: bool,
+    Install {
+        /// Look-up <TOOL> from PATH instead of using the built-in version
+        #[arg(long, value_name = "TOOL")]
+        external: Vec<SetupManagedTool>,
+        /// Do not error if <TOOL>'s version does not match the one expected by creusot
+        #[arg(long, value_name = "TOOL")]
+        no_check_version: Vec<SetupTool>,
     },
 }
 

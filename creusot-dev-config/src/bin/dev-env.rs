@@ -18,9 +18,7 @@ pub fn main() -> anyhow::Result<()> {
     };
     println!("PATH={:?}; export PATH;", &new_path);
 
-    if let Some(config) = &paths.why3_config {
-        eprintln!("Using Why3 config at: {}", config.display());
-        println!("WHY3CONFIG='{}'; export WHY3CONFIG;", &config.display());
-    }
+    eprintln!("Using Why3 config at: {}", &paths.why3_config.display());
+    println!("WHY3CONFIG='{}'; export WHY3CONFIG;", &paths.why3_config.display());
     Ok(())
 }
