@@ -82,6 +82,7 @@ impl Print for Decl {
             Decl::Goal(g) => g.pretty(alloc),
             Decl::Let(l) => l.pretty(alloc),
             Decl::ConstantDecl(c) => c.pretty(alloc),
+            Decl::Coma(d) => d.pretty(alloc),
         }
     }
 }
@@ -587,13 +588,14 @@ impl Print for Exp {
                 Some(AssocDir::Left) => parens!(alloc, self, l),
                 Some(AssocDir::Right) | None => parens!(alloc, self.precedence().next(), l),
             }
-            .append(alloc.space())
+            .append(alloc.line())
             .append(bin_op_to_string(op))
             .append(alloc.space())
             .append(match self.associativity() {
                 Some(AssocDir::Right) => parens!(alloc, self, r),
                 Some(AssocDir::Left) | None => parens!(alloc, self.precedence().next(), r),
-            }),
+            })
+            .group(),
             Exp::Call(fun, args) => {
                 parens!(alloc, self, fun).append(alloc.space()).append(alloc.intersperse(
                     args.iter().map(|a| parens!(alloc, Precedence::App.next(), a)),
