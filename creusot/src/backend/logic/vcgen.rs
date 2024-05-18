@@ -187,6 +187,7 @@ pub enum VCError<'tcx> {
     /// Same here...
     Closure(Span),
     /// Variants are currently restricted to `Int`
+    #[allow(dead_code)] // this lint is too agressive
     UnsupportedVariant(Ty<'tcx>, Span),
 }
 

@@ -4,7 +4,7 @@ use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{EarlyBinder, GenericArgs, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::Symbol;
-use rustc_type_ir::{fold::TypeFoldable, visit::TypeVisitable, AliasKind, Interner};
+use rustc_type_ir::{fold::TypeFoldable, visit::TypeVisitable, AliasTyKind, Interner};
 
 use crate::{
     ctx::TranslationCtx,
@@ -121,7 +121,7 @@ impl<'tcx> Dependency<'tcx> {
             Dependency::Type(t) | Dependency::TyInv(t, _) => match t.kind() {
                 TyKind::Adt(def, substs) => Some((def.did(), substs)),
                 TyKind::Closure(id, substs) => Some((*id, substs)),
-                TyKind::Alias(AliasKind::Projection, aty) => Some((aty.def_id, aty.args)),
+                TyKind::Alias(AliasTyKind::Projection, aty) => Some((aty.def_id, aty.args)),
                 _ => None,
             },
             Dependency::Hacked(_, id, substs) => Some((id, substs)),

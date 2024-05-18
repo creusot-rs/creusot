@@ -174,7 +174,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
             Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize), op, ty) => {
                 if let Some(t) = ty.builtin_deref(true)
-                    && t.ty.is_slice()
+                    && t.is_slice()
                 {
                     // treat &[T; N] to &[T] casts as normal assignments
                     RValue::Operand(self.translate_operand(op))

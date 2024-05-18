@@ -257,6 +257,102 @@ pub fn super_visit_mut_trigger<T: ExpMutVisitor>(f: &mut T, trigger: &mut Trigge
     }
 }
 
+impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
+    fn visit_mut(&mut self, exp: &mut Exp) {
+        match exp {
+            Exp::Var(v) => {
+                if let Some(e) = self.get(v) {
+                    *exp = e.clone()
+                }
+            }
+            Exp::Abs(binders, body) => {
+                let mut subst = self.clone();
+
+                for binder in binders {
+                    binder.fvs().into_iter().for_each(|id| {
+                        subst.remove(&id);
+                    });
+                }
+
+                let mut s = &subst;
+                s.visit_mut(body);
+            }
+
+            Exp::Let { pattern, arg, body } => {
+                self.visit_mut(arg);
+                let mut bound = pattern.binders();
+                let mut subst = self.clone();
+                bound.drain(..).for_each(|k| {
+                    subst.remove(&k);
+                });
+
+                let mut s = &subst;
+                s.visit_mut(body);
+            }
+            Exp::Match(scrut, brs) => {
+                self.visit_mut(scrut);
+
+                for (pat, br) in brs {
+                    let mut s = self.clone();
+                    pat.binders().drain(..).for_each(|b| {
+                        s.remove(&b);
+                    });
+
+                    let mut s = &s;
+                    s.visit_mut(br);
+                }
+            }
+            Exp::Forall(binders, trig, exp) => {
+                let mut subst = self.clone();
+                binders.iter().for_each(|k| {
+                    subst.remove(&k.0);
+                });
+                let bnds: IndexSet<_> = binders.iter().map(|b| &b.0).cloned().collect();
+                let mut extended = HashMap::new();
+                for (_, exp) in &mut subst {
+                    for id in &bnds & &exp.fvs() {
+                        extended.insert(id.clone(), Exp::var(format!("{}'", &*id)));
+                    }
+                }
+                binders.iter_mut().for_each(|(id, _)| {
+                    if extended.contains_key(id) {
+                        *id = format!("{}'", &**id).into();
+                    }
+                });
+                subst.extend(extended);
+
+                let mut s = &subst;
+                s.visit_mut(exp);
+                s.visit_trigger_mut(trig);
+            }
+            Exp::Exists(binders, trig, exp) => {
+                let mut subst = self.clone();
+                binders.iter().for_each(|k| {
+                    subst.remove(&k.0);
+                });
+                let bnds: IndexSet<_> = binders.iter().map(|b| &b.0).cloned().collect();
+                let mut extended = HashMap::new();
+                for (_, exp) in &mut subst {
+                    for id in &bnds & &exp.fvs() {
+                        extended.insert(id.clone(), Exp::var(format!("{}'", &*id)));
+                    }
+                }
+                binders.iter_mut().for_each(|(id, _)| {
+                    if extended.contains_key(id) {
+                        *id = format!("{}'", &**id).into();
+                    }
+                });
+                subst.extend(extended);
+
+                let mut s = &subst;
+                s.visit_mut(exp);
+                s.visit_trigger_mut(trig);
+            }
+            _ => super_visit_mut(self, exp),
+        }
+    }
+}
+
 pub trait ExpVisitor: Sized {
     fn visit(&mut self, exp: &Exp) {
         super_visit(self, exp)
@@ -814,101 +910,6 @@ impl Exp {
     }
 
     pub fn subst(&mut self, mut subst: &HashMap<Ident, Exp>) {
-        impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
-            fn visit_mut(&mut self, exp: &mut Exp) {
-                match exp {
-                    Exp::Var(v) => {
-                        if let Some(e) = self.get(v) {
-                            *exp = e.clone()
-                        }
-                    }
-                    Exp::Abs(binders, body) => {
-                        let mut subst = self.clone();
-
-                        for binder in binders {
-                            binder.fvs().into_iter().for_each(|id| {
-                                subst.remove(&id);
-                            });
-                        }
-
-                        let mut s = &subst;
-                        s.visit_mut(body);
-                    }
-
-                    Exp::Let { pattern, arg, body } => {
-                        self.visit_mut(arg);
-                        let mut bound = pattern.binders();
-                        let mut subst = self.clone();
-                        bound.drain(..).for_each(|k| {
-                            subst.remove(&k);
-                        });
-
-                        let mut s = &subst;
-                        s.visit_mut(body);
-                    }
-                    Exp::Match(scrut, brs) => {
-                        self.visit_mut(scrut);
-
-                        for (pat, br) in brs {
-                            let mut s = self.clone();
-                            pat.binders().drain(..).for_each(|b| {
-                                s.remove(&b);
-                            });
-
-                            let mut s = &s;
-                            s.visit_mut(br);
-                        }
-                    }
-                    Exp::Forall(binders, trig, exp) => {
-                        let mut subst = self.clone();
-                        binders.iter().for_each(|k| {
-                            subst.remove(&k.0);
-                        });
-                        let bnds: IndexSet<_> = binders.iter().map(|b| &b.0).cloned().collect();
-                        let mut extended = HashMap::new();
-                        for (_, exp) in &mut subst {
-                            for id in &bnds & &exp.fvs() {
-                                extended.insert(id.clone(), Exp::var(format!("{}'", &*id)));
-                            }
-                        }
-                        binders.iter_mut().for_each(|(id, _)| {
-                            if extended.contains_key(id) {
-                                *id = format!("{}'", &**id).into();
-                            }
-                        });
-                        subst.extend(extended);
-
-                        let mut s = &subst;
-                        s.visit_mut(exp);
-                        s.visit_trigger_mut(trig);
-                    }
-                    Exp::Exists(binders, trig, exp) => {
-                        let mut subst = self.clone();
-                        binders.iter().for_each(|k| {
-                            subst.remove(&k.0);
-                        });
-                        let bnds: IndexSet<_> = binders.iter().map(|b| &b.0).cloned().collect();
-                        let mut extended = HashMap::new();
-                        for (_, exp) in &mut subst {
-                            for id in &bnds & &exp.fvs() {
-                                extended.insert(id.clone(), Exp::var(format!("{}'", &*id)));
-                            }
-                        }
-                        binders.iter_mut().for_each(|(id, _)| {
-                            if extended.contains_key(id) {
-                                *id = format!("{}'", &**id).into();
-                            }
-                        });
-                        subst.extend(extended);
-
-                        let mut s = &subst;
-                        s.visit_mut(exp);
-                        s.visit_trigger_mut(trig);
-                    }
-                    _ => super_visit_mut(self, exp),
-                }
-            }
-        }
         subst.visit_mut(self);
     }
 }

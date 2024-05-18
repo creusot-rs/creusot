@@ -12,7 +12,7 @@ use petgraph::Direction;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::Mutability,
-    ty::{AliasKind, GenericArgsRef, ParamEnv, Ty, TyKind},
+    ty::{AliasTyKind, GenericArgsRef, ParamEnv, Ty, TyKind},
 };
 
 use super::*;
@@ -150,7 +150,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         // Check the substitution for node dependencies on closures
         walk_types(key_subst, |t| {
             let node = match t.kind() {
-                TyKind::Alias(AliasKind::Projection, pty) => {
+                TyKind::Alias(AliasTyKind::Projection, pty) => {
                     let node = DepNode::new(ctx.tcx, (pty.def_id, pty.args));
                     Some(self.resolve_dep(ctx, node))
                 }

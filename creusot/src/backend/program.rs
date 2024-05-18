@@ -744,9 +744,8 @@ impl<'tcx> Statement<'tcx> {
                 ))]
             }
             Statement::AssumeBorrowInv(pl) => {
-                let inv_fun = Exp::qvar(
-                    names.ty_inv(pl.ty(ctx.tcx, locals).builtin_deref(false).unwrap().ty),
-                );
+                let inv_fun =
+                    Exp::qvar(names.ty_inv(pl.ty(ctx.tcx, locals).builtin_deref(false).unwrap()));
                 let arg = Exp::Final(Box::new(pl.as_rplace(ctx, names, locals)));
 
                 vec![mlcfg::Statement::Assume(inv_fun.app_to(arg))]

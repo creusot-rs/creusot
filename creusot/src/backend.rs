@@ -440,7 +440,7 @@ pub(crate) fn all_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator
 
 pub(crate) fn own_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = Decl> + '_ {
     let generics = tcx.generics_of(def_id);
-    generic_decls(generics.params.iter())
+    generic_decls(generics.own_params.iter())
 }
 
 fn generic_decls<'tcx, I: Iterator<Item = &'tcx GenericParamDef> + 'tcx>(

@@ -86,7 +86,7 @@ pub(crate) fn validate_traits(ctx: &mut TranslationCtx) {
         let trait_item = ctx.hir().trait_item(trait_item_id);
 
         if is_law(ctx.tcx, trait_item.owner_id.def_id.to_def_id())
-            && !ctx.generics_of(trait_item.owner_id.def_id).params.is_empty()
+            && !ctx.generics_of(trait_item.owner_id.def_id).own_params.is_empty()
         {
             law_violations.push((trait_item.owner_id.def_id, trait_item.span))
         }
@@ -102,7 +102,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
         if !matches!(ctx.def_kind(*impl_id), DefKind::Impl { .. }) {
             continue;
         }
-
+        use rustc_middle::ty::print::PrintTraitRefExt;
         let trait_ref = ctx.impl_trait_ref(*impl_id).unwrap().skip_binder();
 
         if util::is_trusted(ctx.tcx, trait_ref.def_id)
@@ -111,13 +111,13 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
             let msg = if util::is_trusted(ctx.tcx, trait_ref.def_id) {
                 format!(
                     "Expected implementation of trait `{}` for `{}` to be marked as `#[trusted]`",
-                    trait_ref.print_only_trait_name(),
+                    trait_ref.print_only_trait_path(),
                     trait_ref.self_ty()
                 )
             } else {
                 format!(
                     "Cannot have trusted implementation of untrusted trait `{}`",
-                    trait_ref.print_only_trait_name()
+                    trait_ref.print_only_trait_path()
                 )
             };
             ctx.error(ctx.def_span(impl_id.to_def_id()), &msg).emit();
