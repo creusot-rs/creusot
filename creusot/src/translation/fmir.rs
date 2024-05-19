@@ -123,7 +123,7 @@ impl<'tcx> Operand<'tcx> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Terminator<'tcx> {
     Goto(BasicBlock),
     Switch(self::Operand<'tcx>, Branches<'tcx>),
@@ -155,7 +155,7 @@ impl<'tcx> Terminator<'tcx> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Branches<'tcx> {
     Int(Vec<(i128, BasicBlock)>, BasicBlock),
     Uint(Vec<(u128, BasicBlock)>, BasicBlock),
@@ -163,7 +163,7 @@ pub enum Branches<'tcx> {
     Bool(BasicBlock, BasicBlock),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Block<'tcx> {
     pub(crate) invariants: Vec<Term<'tcx>>,
     pub(crate) variant: Option<Term<'tcx>>,
@@ -213,7 +213,7 @@ pub struct LocalDecl<'tcx> {
     pub(crate) arg: bool,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Body<'tcx> {
     // TODO: Split into return local, args, and true locals?
     // TODO: Remove usage of `LocalIdent`.

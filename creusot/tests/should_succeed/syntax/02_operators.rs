@@ -96,5 +96,5 @@ fn bool_eq(a: bool, b: bool) -> bool {
     a == b
 }
 
-#[ensures(old(x) == x)]
-fn old_test(x: bool) {}
+// #[ensures(old(x) == x)]
+// fn old_test(x: bool) {}

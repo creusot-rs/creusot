@@ -45,6 +45,7 @@ where
     let old_v = snapshot! { v };
     let mut i = start;
 
+    #[invariant(^v == ^*old_v)]
     #[invariant(v@.permutation_of(old_v@))]
     #[invariant(start@ <= i@ && i@ < end@)]
     #[invariant(forall<j: Int> 0 <= j && j < start@ || end@ <= j && j < v@.len()
@@ -97,6 +98,8 @@ where
     let old_v = snapshot! { v };
 
     let mut start = v.len() / 2;
+    #[invariant(^*old_v == ^v)]
+    #[invariant(^v == ^*old_v)]
     #[invariant(v@.permutation_of(old_v@))]
     #[invariant(heap_frag(v.deep_model(), start@, v@.len()))]
     #[invariant(start@ <= v@.len()/2)]
@@ -106,6 +109,7 @@ where
     }
 
     let mut end = v.len();
+    #[invariant(^v == ^*old_v)]
     #[invariant(end@ <= v@.len())]
     #[invariant(v@.permutation_of(old_v@))]
     #[invariant(heap_frag(v.deep_model(), 0, end@))]

@@ -1,0 +1,66 @@
+
+module C682_AddSome
+  use prelude.UInt64
+  use prelude.Int
+  constant max'0 : uint64 = (18446744073709551615 : uint64)
+  use prelude.Borrow
+  use prelude.Intrinsic
+  predicate resolve'0 (self : borrowed uint64) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  let rec resolve'0 (self:borrowed uint64) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
+    
+  let rec add_some (a:borrowed uint64) (return'  (ret:()))= {[#"../682.rs" 4 11 4 32]  * a
+    <= div (max'0 : uint64) (2 : uint64)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = UInt64.add { * a} {[#"../682.rs" 7 10 7 11] (1 : uint64)}
+          (fun (_ret':uint64) ->  [ &a <- { a with current = _ret' ; } ] s1)
+      | s1 = -{resolve'0 a}- s2
+      | s2 =  [ &_0 <- [#"../682.rs" 6 25 8 1] () ] s3
+      | s3 = return' {_0} ]
+       ]
+    ) [ & _0 : () = any_l () : () | & a : borrowed uint64 = a ] 
+    [ return' (result:())-> {[@expl:postcondition] [#"../682.rs" 5 10 5 17]  ^ a >  * a} (! return' {result}) ]
+    
+end
+module C682_Foo
+  use prelude.UInt64
+  use prelude.Snapshot
+  use prelude.Intrinsic
+  use prelude.Snapshot
+  use prelude.Borrow
+  predicate resolve'0 (self : borrowed uint64) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  let rec resolve'0 (self:borrowed uint64) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
+    
+  use prelude.Int
+  constant max'0 : uint64 = (18446744073709551615 : uint64)
+  let rec add_some'0 (a:borrowed uint64) (return'  (ret:()))= {[@expl:precondition] [#"../682.rs" 4 11 4 32]  * a
+    <= div (max'0 : uint64) (2 : uint64)}
+    any [ return' (result:())-> {[#"../682.rs" 5 10 5 17]  ^ a >  * a} (! return' {result}) ] 
+  use prelude.Snapshot
+  let rec foo (a:borrowed uint64) (return'  (ret:()))= {[#"../682.rs" 10 11 10 21]  * a = (3 : uint64)}
+    (! bb0
+    [ bb0 = s0 [ s0 =  [ &a_p <- [#"../682.rs" 13 29 13 42] Snapshot.new ( * a) ] s1 | s1 = bb1 ] 
+    | bb1 = s0
+      [ s0 = Borrow.borrow_final <uint64> { * a} {Borrow.get_id a}
+          (fun (_ret':borrowed uint64) ->  [ &_7 <- _ret' ]  [ &a <- { a with current = ( ^ _7) ; } ] s1)
+      | s1 = add_some'0 {_7} (fun (_ret':()) ->  [ &_6 <- _ret' ] s2)
+      | s2 = bb2 ]
+      
+    | bb2 = s0
+      [ s0 = -{resolve'0 a}- s1
+      | s1 = {[@expl:assertion] [#"../682.rs" 15 18 15 27]  * a > Snapshot.inner a_p} s2
+      | s2 =  [ &_0 <- [#"../682.rs" 12 24 16 1] () ] s3
+      | s3 = return' {_0} ]
+       ]
+    )
+    [ & _0 : () = any_l () : ()
+    | & a : borrowed uint64 = a
+    | & a_p : Snapshot.snap_ty uint64 = any_l () : Snapshot.snap_ty uint64
+    | & _6 : () = any_l () : ()
+    | & _7 : borrowed uint64 = any_l () : borrowed uint64 ]
+     [ return' (result:())-> {[@expl:postcondition] [#"../682.rs" 11 10 11 17]  ^ a >  * a} (! return' {result}) ] 
+end

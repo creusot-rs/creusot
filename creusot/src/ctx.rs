@@ -64,7 +64,7 @@ macro_rules! queryish {
     };
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct BodyId {
     pub def_id: LocalDefId,
     pub promoted: Option<Promoted>,

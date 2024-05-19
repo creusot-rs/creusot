@@ -17,7 +17,7 @@ extern crate creusot_contracts;
 //   fn some<T>(self, t: T) {}
 // }
 
-trait T<B> {
+pub trait T<B> {
     fn x(self);
 }
 

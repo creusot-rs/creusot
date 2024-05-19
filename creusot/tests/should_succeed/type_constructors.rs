@@ -1,6 +1,7 @@
 extern crate creusot_contracts;
 
 mod a {
+    #[allow(dead_code)]
     pub struct Y(pub super::b::X);
 }
 

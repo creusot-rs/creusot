@@ -15,10 +15,7 @@ use crate::{
     },
     ctx::{BodyId, Dependencies, TranslationCtx},
     fmir::{Body, BorrowKind, Operand},
-    translation::{
-        fmir::{self, Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
-        function::promoted,
-    },
+    translation::fmir::{self, Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
     util::{self, module_name},
 };
 
@@ -33,7 +30,7 @@ use rustc_type_ir::{FloatTy, IntTy, UintTy};
 use why3::{
     coma::{self, Arg, Defn, Expr, Param, Term},
     declaration::{Attribute, Contract, Decl, Module, Signature},
-    exp::{Binder, Constant, Exp, Pattern},
+    exp::{Binder, Constant, Exp},
     ty::Type,
     Ident, QName,
 };
@@ -200,53 +197,6 @@ fn collect_body_ids<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Opti
     Some(ids)
 }
 
-// According to @oli-obk, promoted bodies are:
-// > it's completely linear, not even conditions or asserts inside. we should probably document all that with validation
-// On this supposition we can simplify the translation *dramatically* and produce why3 constants
-// instead of cfgs
-//
-// We use a custom translation because if we use `any` inside a `constant` / `function` its body is marked as opaque, and `mlcfg` heavily uses `any`.
-fn lower_promoted<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut Dependencies<'tcx>,
-    body_id: BodyId,
-) -> Decl {
-    let promoted = promoted::translate_promoted(ctx, body_id);
-    let (sig, fmir) = promoted.unwrap_or_else(|e| e.emit(ctx.tcx));
-
-    let mut sig = sig_to_why3(ctx, names, &sig, body_id.def_id());
-    sig.name = format!("promoted{:?}", body_id.promoted.unwrap().as_usize()).into();
-
-    let mut previous_block = None;
-
-    let mut lower =
-        LoweringState { ctx, names, locals: &fmir.locals, name_supply: Default::default() };
-    let mut exp = Expr::Symbol("ret".into()).app(vec![Arg::Term(Exp::var("_0"))]);
-    for (id, bbd) in fmir.blocks.into_iter().rev() {
-        // Safety check
-        match bbd.terminator {
-            fmir::Terminator::Goto(prev) => {
-                assert!(previous_block == Some(prev))
-            }
-            fmir::Terminator::Return => {
-                assert!(previous_block == None);
-            }
-            _ => {}
-        };
-
-        previous_block = Some(id);
-
-        // FIXME
-        let exps: Vec<_> = bbd.stmts.into_iter().map(|s| s.to_why(&mut lower)).flatten().collect();
-
-        exp = assemble_intermediates(exps.into_iter(), exp);
-    }
-
-    let ret_ty = lower.ty(fmir.locals[0].ty);
-    let ret = Param::Cont("ret".into(), vec![], vec![Param::Term("_0".into(), ret_ty)]);
-    Decl::Coma(Defn { name: sig.name, writes: Vec::new(), params: vec![ret], body: exp })
-}
-
 pub fn val<'tcx>(_: &mut Why3Generator<'tcx>, sig: Signature) -> Decl {
     let params = sig
         .args
@@ -319,7 +269,7 @@ pub fn to_why<'tcx>(
 
     let blocks: Vec<Defn> =
         wto.into_iter().map(|c| component_to_defn(&mut body, ctx, names, c)).collect();
-    let ret = body.locals[0].clone();
+    let ret = body.locals.first().map(|(_, decl)| decl.clone());
 
     let vars: Vec<_> = body
         .locals
@@ -340,6 +290,7 @@ pub fn to_why<'tcx>(
     let sig = if body_id.promoted.is_none() {
         signature_of(ctx, names, body_id.def_id())
     } else {
+        let ret = ret.unwrap();
         Signature {
             name: format!("promoted{}", body_id.promoted.unwrap().as_usize()).into(),
             trigger: None,

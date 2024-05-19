@@ -36,7 +36,6 @@ use rustc_span::{Span, Symbol, DUMMY_SP};
 use std::{collections::HashMap, iter, rc::Rc};
 // use why3::declaration::*;
 
-pub(crate) mod promoted;
 mod statement;
 pub(crate) mod terminator;
 
