@@ -37,6 +37,7 @@ pub(crate) mod term;
 pub(crate) mod traits;
 pub(crate) mod ty;
 pub(crate) mod ty_inv;
+mod wto;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub(crate) enum TransId {
@@ -179,7 +180,10 @@ impl<'tcx> Why3Generator<'tcx> {
                         .insert(repr, TranslatedItem::Type { modl, accessors: Default::default() });
                 }
             }
-            ItemType::Field => self.translate_accessor(def_id),
+            ItemType::Field => unreachable!(),
+            ItemType::Variant => {
+                self.translate(self.ctx.parent(def_id));
+            }
             ItemType::Unsupported(dk) => self.crash_and_error(
                 self.tcx.def_span(def_id),
                 &format!("unsupported definition kind {:?} {:?}", def_id, dk),

@@ -1,0 +1,176 @@
+module Float32
+  use int.Int
+  use bv.Pow2int
+  use real.Abs as Abs
+  use real.FromInt as FromInt
+  use real.Truncate as Truncate
+  use real.RealInfix
+  use export ieee_float.RoundingMode
+
+  type t = < float 8 24 >
+
+  (** {2 Part I - Public Interface}   *)
+
+  constant eb : int = t'eb
+  (** the number of bits in the exponent.  *)
+
+  constant sb : int = t'sb
+  (** the number of bits in the significand, including the hidden bit. *)
+
+  axiom eb_gt_1: 1 < eb
+  axiom sb_gt_1: 1 < sb
+
+  (** {3 Constructors and Constants} *)
+
+  constant zeroF     : t   (** +0.0 *)
+  (* exp_bias = 2^(eb - 1) - 1 *)
+  (* max_finite_exp = 2^sb - 2 - exp_bias = exp_bias *)
+  (* max_significand = (2^eb + 2^eb - 1) * 2^(1-eb) *)
+  (* max_value = (2^eb + 2^eb - 1) * 2^(1-eb) * 2 ^ max_finite_exp *)
+  (* [m;x] = ( 1 + m * 2^(1-eb) ) * 2^( x - exp_bias ) *)
+  (* max_value = [2^(eb-1); 2^sb - 2] *)
+
+  (** {3 Operators} *)
+  let addi (mode : mode) (a : t) (b : t) (ret (result : t)) = any
+  function addi mode t t : t
+  let subi (mode : mode) (a : t) (b : t) (ret (result : t)) = any
+  function subi mode t t : t
+  let muli (mode : mode) (a : t) (b : t) (ret (result : t)) = any
+  function muli mode t t : t
+  let divi (mode : mode) (a : t) (b : t) (ret (result : t)) = any
+  function divi mode t t : t
+    (** The four basic operations, rounded in the given mode *)
+
+
+  let abs (a : t) (ret (result : t)) = any
+  function abs         t   : t   (** Absolute value *)
+
+  let fma  (mode : mode) (a : t) (b : t) (c : t) (ret (result : t)) = any
+  function fma  mode t t t : t   (** Fused multiply-add: x * y + z *)
+  let sqrt (mode : mode) (a : t) (ret (result : t)) = any
+  function sqrt mode   t   : t   (** Square root *)
+
+  function neg (x : t) : t
+  let neg (x : t) (ret (result : t)) = ret {neg x}
+
+  function add (x : t) (y : t) : t = addi RNE x y
+  let add (a : t) (b : t) (ret (result : t)) = ret {add a b}
+
+  function sub (x : t) (y : t) : t = subi RNE x y
+  let sub (a : t) (b : t) (ret (result : t)) = ret {sub a b}
+
+  function mul (x : t) (y : t) : t = muli RNE x y
+  let mul (a : t) (b : t) (ret (result : t)) = ret {mul a b}
+
+  function div (x : t) (y : t) : t = divi RNE x y
+  let div (a : t) (b : t) (ret (result : t)) = ret {div a b}
+
+    (** Notations for operations in the default mode RNE *)
+
+  function roundToIntegral mode t : t
+  let roundToIntegral (mode : mode) (a : t) (ret (result : t) {result = roundToIntegral mode a}) = any
+    (** Rounding to an integer *)
+
+  function min       t t : t
+  function max       t t : t
+
+  predicate le t t
+  predicate lt t t
+  predicate eq t t
+  predicate ge (x:t) (y:t) = le y x
+  predicate gt (x:t) (y:t) = lt y x
+
+  let le (a : t) (b : t) (ret (result : bool) { result = le a b }) = any
+  let lt (a : t) (b : t) (ret (result : bool) { result = lt a b }) = any
+  let eq (a : t) (b : t) (ret (result : bool) { result = eq a b }) = any
+  let ge (a : t) (b : t) (ret (result : bool) { result = ge a b }) = any
+  let gt (a : t) (b : t) (ret (result : bool) { result = gt a b }) = any
+end
+module Float64
+  use int.Int
+  use bv.Pow2int
+  use real.Abs as Abs
+  use real.FromInt as FromInt
+  use real.Truncate as Truncate
+  use real.RealInfix
+  use export ieee_float.RoundingMode
+
+  type t = < float 11 53 >
+
+  (** {2 Part I - Public Interface}   *)
+
+  constant eb : int = t'eb
+  (** the number of bits in the exponent.  *)
+
+  constant sb : int = t'sb
+  (** the number of bits in the significand, including the hidden bit. *)
+
+  axiom eb_gt_1: 1 < eb
+  axiom sb_gt_1: 1 < sb
+
+  (** {3 Constructors and Constants} *)
+
+  constant zeroF     : t   (** +0.0 *)
+  (* exp_bias = 2^(eb - 1) - 1 *)
+  (* max_finite_exp = 2^sb - 2 - exp_bias = exp_bias *)
+  (* max_significand = (2^eb + 2^eb - 1) * 2^(1-eb) *)
+  (* max_value = (2^eb + 2^eb - 1) * 2^(1-eb) * 2 ^ max_finite_exp *)
+  (* [m;x] = ( 1 + m * 2^(1-eb) ) * 2^( x - exp_bias ) *)
+  (* max_value = [2^(eb-1); 2^sb - 2] *)
+
+  (** {3 Operators} *)
+  let addi (mode : mode) (a : t) (b : t) (ret (result : t)) = any
+  function addi mode t t : t
+  let subi (mode : mode) (a : t) (b : t) (ret (result : t)) = any
+  function subi mode t t : t
+  let muli (mode : mode) (a : t) (b : t) (ret (result : t)) = any
+  function muli mode t t : t
+  let divi (mode : mode) (a : t) (b : t) (ret (result : t)) = any
+  function divi mode t t : t
+    (** The four basic operations, rounded in the given mode *)
+
+
+  let abs (a : t) (ret (result : t)) = any
+  function abs         t   : t   (** Absolute value *)
+
+  let fma  (mode : mode) (a : t) (b : t) (c : t) (ret (result : t)) = any
+  function fma  mode t t t : t   (** Fused multiply-add: x * y + z *)
+  let sqrt (mode : mode) (a : t) (ret (result : t)) = any
+  function sqrt mode   t   : t   (** Square root *)
+
+  function neg (x : t) : t
+  let neg (x : t) (ret (result : t)) = ret {neg x}
+
+  function add (x : t) (y : t) : t = addi RNE x y
+  let add (a : t) (b : t) (ret (result : t)) = ret {add a b}
+
+  function sub (x : t) (y : t) : t = subi RNE x y
+  let sub (a : t) (b : t) (ret (result : t)) = ret {sub a b}
+
+  function mul (x : t) (y : t) : t = muli RNE x y
+  let mul (a : t) (b : t) (ret (result : t)) = ret {mul a b}
+
+  function div (x : t) (y : t) : t = divi RNE x y
+  let div (a : t) (b : t) (ret (result : t)) = ret {div a b}
+
+    (** Notations for operations in the default mode RNE *)
+
+  function roundToIntegral mode t : t
+  let roundToIntegral (mode : mode) (a : t) (ret (result : t) {result = roundToIntegral mode a}) = any
+    (** Rounding to an integer *)
+
+  function min       t t : t
+  function max       t t : t
+
+  predicate le t t
+  predicate lt t t
+  predicate eq t t
+  predicate ge (x:t) (y:t) = le y x
+  predicate gt (x:t) (y:t) = lt y x
+
+  let le (a : t) (b : t) (ret (result : bool) { result = le a b }) = any
+  let lt (a : t) (b : t) (ret (result : bool) { result = lt a b }) = any
+  let eq (a : t) (b : t) (ret (result : bool) { result = eq a b }) = any
+  let ge (a : t) (b : t) (ret (result : bool) { result = ge a b }) = any
+  let gt (a : t) (b : t) (ret (result : bool) { result = gt a b }) = any
+end

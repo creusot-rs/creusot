@@ -35,7 +35,7 @@ use rustc_middle::{
         Visibility,
     },
 };
-use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_span::{Span, Symbol};
 use rustc_trait_selection::traits::SelectionContext;
 pub(crate) use util::{module_name, ItemType};
 
