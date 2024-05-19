@@ -32,7 +32,7 @@ use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, UintTy};
 use why3::{
     coma::{self, Arg, Defn, Expr, Param, Term},
-    declaration::{Attribute, Decl, Module, Signature},
+    declaration::{Attribute, Contract, Decl, Module, Signature},
     exp::{Binder, Constant, Exp, Pattern},
     ty::Type,
     Ident, QName,
@@ -158,10 +158,8 @@ pub(crate) fn translate_function<'tcx, 'sess>(
         closure_aux_defs(ctx, def_id)
     };
 
-    let promoteds = body_ids[1..]
-        .iter()
-        .map(|body_id| lower_promoted(ctx, &mut names, *body_id))
-        .collect::<Vec<_>>();
+    let promoteds =
+        body_ids[1..].iter().map(|body_id| to_why(ctx, &mut names, *body_id)).collect::<Vec<_>>();
 
     let (clones, summary) = names.provide_deps(ctx, GraphDepth::Deep);
 
@@ -221,10 +219,10 @@ fn lower_promoted<'tcx>(
 
     let mut previous_block = None;
 
-    let mut exp = Exp::var("_0");
+    let mut lower =
+        LoweringState { ctx, names, locals: &fmir.locals, name_supply: Default::default() };
+    let mut exp = Expr::Symbol("ret".into()).app(vec![Arg::Term(Exp::var("_0"))]);
     for (id, bbd) in fmir.blocks.into_iter().rev() {
-        let mut lower =
-            LoweringState { ctx, names, locals: &fmir.locals, name_supply: Default::default() };
         // Safety check
         match bbd.terminator {
             fmir::Terminator::Goto(prev) => {
@@ -240,33 +238,13 @@ fn lower_promoted<'tcx>(
 
         // FIXME
         let exps: Vec<_> = bbd.stmts.into_iter().map(|s| s.to_why(&mut lower)).flatten().collect();
-        exp = exps.into_iter().rfold(exp, |acc, asgn| match asgn {
-            IntermediateStmt::Assign(ident, exp) => {
-                Exp::Let { pattern: Pattern::VarP(ident), arg: Box::new(exp), body: Box::new(acc) }
-            }
-            IntermediateStmt::Call(_, _, _) => todo!("promoted call"),
-            IntermediateStmt::Assume(_) => acc,
-            IntermediateStmt::Assert(_) => {
-                ctx.crash_and_error(ctx.def_span(body_id.def_id()), "unsupported promoted constant")
-            }
-            IntermediateStmt::Any(_, _) => todo!(),
-            // why3::mlcfg::Statement::Assign { lhs, rhs, attr: _ } => {
-            //     Exp::Let { pattern: Pattern::VarP(lhs), arg: Box::new(rhs), body: Box::new(acc) }
-            // }
-            // why3::mlcfg::Statement::Assume(_) => acc,
-            // why3::mlcfg::Statement::Invariant(_)
-            // | why3::mlcfg::Statement::Variant(_)
-            // | why3::mlcfg::Statement::Assert(_) => {
-            //     ctx.crash_and_error(ctx.def_span(body_id.def_id()), "unsupported promoted constant")
-            // }
-        });
+
+        exp = assemble_intermediates(exps.into_iter(), exp);
     }
 
-    Decl::ConstantDecl(why3::declaration::Constant {
-        name: sig.name,
-        type_: sig.retty.unwrap(),
-        body: exp,
-    })
+    let ret_ty = lower.ty(fmir.locals[0].ty);
+    let ret = Param::Cont("ret".into(), vec![], vec![Param::Term("_0".into(), ret_ty)]);
+    Decl::Coma(Defn { name: sig.name, writes: Vec::new(), params: vec![ret], body: exp })
 }
 
 pub fn val<'tcx>(_: &mut Why3Generator<'tcx>, sig: Signature) -> Decl {
@@ -341,6 +319,7 @@ pub fn to_why<'tcx>(
 
     let blocks: Vec<Defn> =
         wto.into_iter().map(|c| component_to_defn(&mut body, ctx, names, c)).collect();
+    let ret = body.locals[0].clone();
 
     let vars: Vec<_> = body
         .locals
@@ -358,19 +337,35 @@ pub fn to_why<'tcx>(
         })
         .collect();
 
-    let body = Expr::Defn(Box::new(Expr::Symbol("bb0".into())), true, blocks);
-    let sig = signature_of(ctx, names, body_id.def_id());
+    let sig = if body_id.promoted.is_none() {
+        signature_of(ctx, names, body_id.def_id())
+    } else {
+        Signature {
+            name: format!("promoted{}", body_id.promoted.unwrap().as_usize()).into(),
+            trigger: None,
+            attrs: vec![],
+            retty: Some(ty::translate_ty(ctx, names, ret.span, ret.ty)),
+            args: vec![],
+            contract: Contract::default(),
+        }
+    };
+    let mut body = Expr::Defn(Box::new(Expr::Symbol("bb0".into())), true, blocks);
 
     let mut postcond = Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("result"))]);
 
-    postcond = Expr::BlackBox(Box::new(postcond));
-    postcond = sig
-        .contract
-        .ensures
-        .into_iter()
-        .fold(postcond, |acc, ensures| Expr::Assert(Box::new(ensures), Box::new(acc)));
+    if body_id.promoted.is_none() {
+        postcond = Expr::BlackBox(Box::new(postcond));
+    }
+    postcond = sig.contract.ensures.into_iter().fold(postcond, |acc, ensures| {
+        Expr::Assert(
+            Box::new(Exp::Attr(Attribute::Attr("expl:postcondition".into()), Box::new(ensures))),
+            Box::new(acc),
+        )
+    });
 
-    let mut body = Expr::BlackBox(Box::new(body));
+    if body_id.promoted.is_none() {
+        body = Expr::BlackBox(Box::new(body))
+    };
 
     body = Expr::Let(Box::new(body), vars);
 
@@ -476,6 +471,15 @@ impl<'tcx> Operand<'tcx> {
             Operand::Move(pl) => pl.as_rplace(lower, istmts),
             Operand::Copy(pl) => pl.as_rplace(lower, istmts),
             Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
+            Operand::Promoted(pid, ty) => {
+                let promoted = Expr::Symbol(
+                    QName::from_string(&format!("promoted{}", pid.as_usize())).unwrap(),
+                );
+                let var: Ident = Ident::build(&format!("pr{}", pid.as_usize()));
+                istmts.push(IntermediateStmt::call(var.clone(), lower.ty(ty), promoted, vec![]));
+
+                Exp::var(var)
+            }
         }
     }
     fn invalidated_places(&self, places: &mut Vec<fmir::Place<'tcx>>) {
@@ -1166,10 +1170,11 @@ impl<'tcx> Statement<'tcx> {
                 ))]
             }
             Statement::AssumeBorrowInv(pl) => {
-                let inv_fun =
-                    Exp::qvar(lower.names.ty_inv(
-                        pl.ty(lower.ctx.tcx, lower.locals).builtin_deref(false).unwrap(),
-                    ));
+                let inv_fun = Exp::qvar(
+                    lower
+                        .names
+                        .ty_inv(pl.ty(lower.ctx.tcx, lower.locals).builtin_deref(false).unwrap()),
+                );
                 let mut istmts = Vec::new();
 
                 let arg = Exp::Final(Box::new(pl.as_rplace(lower, &mut istmts)));

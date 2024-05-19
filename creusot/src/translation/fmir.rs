@@ -2,7 +2,7 @@ use crate::{backend::place::projection_ty, pearlite::Term, util::ident_of};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{tcx::PlaceTy, BasicBlock, BinOp, Local, ProjectionElem, UnOp},
+    mir::{tcx::PlaceTy, BasicBlock, BinOp, Local, ProjectionElem, Promoted, UnOp},
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt},
 };
 use rustc_span::{Span, Symbol};
@@ -109,6 +109,7 @@ pub enum Operand<'tcx> {
     Move(Place<'tcx>),
     Copy(Place<'tcx>),
     Constant(Term<'tcx>),
+    Promoted(Promoted, Ty<'tcx>),
 }
 
 impl<'tcx> Operand<'tcx> {
@@ -117,6 +118,7 @@ impl<'tcx> Operand<'tcx> {
             Operand::Move(pl) => pl.ty(tcx, locals),
             Operand::Copy(pl) => pl.ty(tcx, locals),
             Operand::Constant(t) => t.ty,
+            Operand::Promoted(_, ty) => *ty,
         }
     }
 }

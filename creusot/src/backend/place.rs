@@ -95,8 +95,9 @@ pub(crate) fn lplace_to_expr<'tcx>(
                     let mut ty_projections = Vec::new();
                     for p in projections {
                         let n = lower.names.normalize(&lower.ctx, p);
-                        let ty = lower
-                            .ty(lower.ctx.mk_ty_from_kind(TyKind::Alias(AliasTyKind::Projection, n)));
+                        let ty = lower.ty(lower
+                            .ctx
+                            .mk_ty_from_kind(TyKind::Alias(AliasTyKind::Projection, n)));
                         ty_projections.push(ty);
                     }
 
@@ -292,8 +293,9 @@ pub(crate) fn rplace_to_expr<'tcx>(
                     let mut ty_projections = Vec::new();
                     for p in projections {
                         let n = lower.names.normalize(&lower.ctx, p);
-                        let ty = lower
-                            .ty(lower.ctx.mk_ty_from_kind(TyKind::Alias(AliasTyKind::Projection, n)));
+                        let ty = lower.ty(lower
+                            .ctx
+                            .mk_ty_from_kind(TyKind::Alias(AliasTyKind::Projection, n)));
                         ty_projections.push(ty);
                     }
 

@@ -11,8 +11,8 @@ use indexmap::IndexSet;
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
 use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_middle::ty::{
-    self, AdtDef, AliasTyKind, AliasTy, EarlyBinder, FieldDef, GenericArg, GenericArgKind,
-    GenericArgs, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
+    self, AliasTy, AliasTyKind, EarlyBinder, FieldDef, GenericArg, GenericArgKind, GenericArgs,
+    GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
@@ -509,6 +509,7 @@ pub(crate) fn destructor<'tcx>(
     let fields: Vec<_> = field_names_and_tys(ctx, base_ty, variant)
         .into_iter()
         .map(|(nm, ty)| {
+            let ty = names.normalize(ctx, ty);
             (Ident::build(nm.as_str()), translate_ty_inner(decl, ctx, names, DUMMY_SP, ty))
         })
         .collect();

@@ -6,8 +6,9 @@ use super::{
 use crate::{
     analysis::NotFinalPlaces,
     backend::ty::closure_accessors,
+    constant::from_mir_constant,
     ctx::*,
-    fmir::{self},
+    fmir,
     gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind, SpecClosures},
     resolve::EagerResolver,
     translation::{
@@ -349,14 +350,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     // Useful helper to translate an operand
     pub(crate) fn translate_operand(&mut self, operand: &Operand<'tcx>) -> fmir::Operand<'tcx> {
-        let kind =
-            match operand {
-                Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(*pl)),
-                Operand::Move(pl) => fmir::Operand::Move(self.translate_place(*pl)),
-                Operand::Constant(c) => fmir::Operand::Constant(
-                    crate::constant::from_mir_constant(self.param_env(), self.ctx, c),
-                ),
-            };
+        let kind = match operand {
+            Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(*pl)),
+            Operand::Move(pl) => fmir::Operand::Move(self.translate_place(*pl)),
+            Operand::Constant(c) => from_mir_constant(self.param_env(), self.ctx, c),
+        };
         kind
     }
 
