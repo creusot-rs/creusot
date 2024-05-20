@@ -25,6 +25,7 @@ fn insertion_sort(array: &mut [i32]) {
             if array[j - 1] > array[j] {
                 array.swap(j - 1, j);
             }
+            j -= 1;
         }
     }
 }
