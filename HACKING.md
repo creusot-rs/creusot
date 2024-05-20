@@ -51,7 +51,7 @@ If the proof of a test is broken (e.g.
 ./ide creusot/tests/should_succeed/cell/01
 ```
 
-## Calling why3 & why3_tools: shell environment setup
+## Calling why3 (and why3_tools, etc): shell environment setup
 
 To invoke why3 (manually or in scripts) with the same binary/configuration as
 setup by `cargo creusot setup`, one needs to setup a shell environment with the
@@ -66,7 +66,7 @@ After that, the `why3` binary in PATH will be the one configured by
 `cargo creusot setup`, using the adequate configuration file (through the
 `WHY3CONFIG` environment variable).
 
-## Upgrading the revision of Why3 used by Creusot
+## Upgrading Why3
 
 Edit `creusot-deps.opam` to use the hash of the git commit of the latest commit
 in Why3's master branch. (But first make sure that the Nightly CI job passes.)
@@ -74,3 +74,13 @@ in Why3's master branch. (But first make sure that the Nightly CI job passes.)
 There are several places to edit in the file: the `pin-depends` field at the end
 of the file (URLs and `git-XXXX` versions), and the `git-XXXX` versions in the
 `depends:` field.
+
+## Upgrading a prover to a newer version 
+
+- Install why3-tools: `opam pin git+https://github.com/xldenis/why3-tools`
+- Install the newer prover, make it available in `$PATH`
+- Setup Creusot to use it: `cargo creusot setup install --no-check-version <PROVER> --external <PROVER>`
+- Run `eval $(cargo run --bin dev-env)`
+- Use the `./testsuite_upgrade_prover` script to update why3 sessions in the testsuite.
+  Launch the script without arguments to have some usage instructions.
+- Once the testsuite is migrated, update `creusot-setup/src/{tools,tools_versions_urls}.rs` 
