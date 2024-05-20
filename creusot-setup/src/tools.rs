@@ -215,9 +215,7 @@ pub fn generate_why3_conf(
 fn detect_altergo_version(altergo: &Path) -> Option<String> {
     let output = Command::new(&altergo).arg("--version").output().ok()?;
     let out_s = String::from_utf8(output.stdout).ok()?;
-    // will be needed for more recent altergo versions
-    // out_s.trim_end().strip_prefix("v").map(String::from)
-    Some(out_s.trim_end().to_owned())
+    out_s.trim_end().strip_prefix("v").map(String::from)
 }
 
 // helpers: Z3
