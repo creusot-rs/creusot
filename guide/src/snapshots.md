@@ -12,22 +12,28 @@ A useful tool to have in proofs is the `Snapshot<T>` type (`creusot_contracts::S
 They can be useful if you need a way to remember a previous value, but only for the proof:
 
 ```rust
-#[ensures(permutation_of((*array)@, (^array)@))]
-#[ensures(is_sorted(^array))]
-fn insertion_sort(array: &mut [i32]) {
+#[ensures(array@.permutation_of((^array)@))]
+#[ensures(sorted((^array)@))]
+pub fn insertion_sort(array: &mut [i32]) {
     let original = snapshot!(*array); // remember the original value
     let n = array.len();
-    #[invariant(permutation_of(original@, (*array)@))]
+    #[invariant(original@.permutation_of(array@))]
+    #[invariant(...)]
     for i in 1..n {
         let mut j = i;
-        #[invariant(permutation_of(original@, (*array)@))]
+        #[invariant(original@.permutation_of(array@))]
+        #[invariant(...)]
         while j > 0 {
             if array[j - 1] > array[j] {
                 array.swap(j - 1, j);
+            } else {
+                break;
             }
             j -= 1;
         }
     }
+
+    proof_assert!(sorted_range(array@, 0, array@.len()));
 }
 
 #[logic]
