@@ -38,7 +38,7 @@ use rustc_middle::{
 use rustc_span::Span;
 use rustc_trait_selection::traits::SelectionContext;
 
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 struct FunctionInstance<'tcx> {
     def_id: DefId,
     generic_args: &'tcx GenericArgs<'tcx>,
@@ -367,10 +367,11 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
 struct FunctionCalls<'thir, 'tcx> {
     thir: &'thir thir::Thir<'tcx>,
     tcx: TyCtxt<'tcx>,
+    /// Generic arguments that the function was intantiated with.
     generic_args: &'tcx GenericArgs<'tcx>,
     param_env: ParamEnv<'tcx>,
     /// Contains:
-    /// - The id of the called function
+    /// - The id of the _called_ function
     /// - The span of the call (for error messages)
     /// - The generic arguments instantiating the call
     calls: IndexSet<(DefId, Span, &'tcx GenericArgs<'tcx>)>,
@@ -424,68 +425,83 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tc
 
 /// Finds all the cycles in the call graph.
 fn find_cycles<'tcx>(graph: &CallGraph<'tcx>) -> IndexSet<Vec<FunctionInstance<'tcx>>> {
-    let mut visited: IndexSet<FunctionInstance> = IndexSet::new();
-    let mut detected_cycles = IndexSet::new();
+    let mut find_cycles = FindCycles {
+        graph,
+        stack: Vec::new(),
+        visited: IndexSet::new(),
+        ordering: IndexMap::new(),
+        detected_cycles: IndexSet::new(),
+    };
     for &v in graph.0.keys() {
-        if visited.insert(v) {
-            let mut stack = vec![v];
-            process_dfs_tree(graph, &mut stack, &mut visited, &mut detected_cycles);
+        let idx = find_cycles.ordering.len();
+        find_cycles.ordering.entry(v).or_insert(idx);
+        if find_cycles.visited.insert(v) {
+            find_cycles.stack = vec![v];
+            find_cycles.process_dfs_tree();
         }
     }
-    detected_cycles
+    find_cycles.detected_cycles
 }
 
-// INPUT
-//   Graph = a graph
-//   Stack = current path
-//   visited = a visited set
-//   detectedCycles = a collection of already processed cycles
-// OUTPUT
-//   Print all cycles in the current DFS Tree
-fn process_dfs_tree<'tcx>(
-    graph: &CallGraph<'tcx>,
-    stack: &mut Vec<FunctionInstance<'tcx>>,
-    visited: &mut IndexSet<FunctionInstance<'tcx>>,
-    detected_cycles: &mut IndexSet<Vec<FunctionInstance<'tcx>>>,
-) {
-    let top = *stack.last().unwrap();
-    let top_calls = &graph.0[&top];
-    for &v in top_calls.calls.keys() {
-        if visited.insert(v) {
-            stack.push(v);
-            process_dfs_tree(graph, stack, visited, detected_cycles);
-        } else {
-            collect_cycle(stack, v, detected_cycles);
-        }
-    }
-    visited.remove(&top);
-    stack.pop();
+struct FindCycles<'graph, 'tcx> {
+    /// The call graph of functions. We will try to find cycles in that graph.
+    graph: &'graph CallGraph<'tcx>,
+    /// The current path of called function, e.g. `stack[i]` calls `stack[i + 1]`.
+    ///
+    /// All nodes in the stack must also be in `visited`.
+    stack: Vec<FunctionInstance<'tcx>>,
+    /// Nodes in the `graph` that were already visited.
+    visited: IndexSet<FunctionInstance<'tcx>>,
+    /// Contains an index to order `FunctionInstance`s. Used to avoid flagging the same
+    ///  cycle twice in different orders.
+    ordering: IndexMap<FunctionInstance<'tcx>, usize>,
+    /// The resulting set of cycles found.
+    detected_cycles: IndexSet<Vec<FunctionInstance<'tcx>>>,
 }
 
-fn collect_cycle<'tcx>(
-    stack: &mut Vec<FunctionInstance<'tcx>>,
-    v: FunctionInstance<'tcx>,
-    detected_cycles: &mut IndexSet<Vec<FunctionInstance<'tcx>>>,
-) {
-    let mut cycle = vec![stack.pop().unwrap()];
-    while let Some(v2) = stack.pop() {
-        cycle.push(v2);
-        if v2 == v {
-            stack.push(v);
-            break;
+impl<'tcx> FindCycles<'_, 'tcx> {
+    /// Process the call graph depth-first in order to find cycles.
+    fn process_dfs_tree(&mut self) {
+        let top = *self.stack.last().unwrap();
+        let top_calls = &self.graph.0[&top];
+        for &v in top_calls.calls.keys() {
+            let idx = self.ordering.len();
+            self.ordering.entry(v).or_insert(idx);
+            if self.visited.insert(v) {
+                self.stack.push(v);
+                self.process_dfs_tree();
+            } else {
+                self.collect_cycle(v);
+            }
         }
+        self.visited.remove(&top);
+        self.stack.pop();
     }
 
-    // Order the cycle, to avoid detecting the same cycle starting at different positions
-    let (min_idx, _) =
-        cycle.iter().enumerate().min_by(|(_, def1), (_, def2)| def1.cmp(def2)).unwrap();
-    let mut result = Vec::new();
-    let mut idx = (min_idx + 1) % cycle.len();
-    while idx != min_idx {
+    fn collect_cycle(&mut self, v: FunctionInstance<'tcx>) {
+        let mut cycle = vec![self.stack.pop().unwrap()];
+        while let Some(v2) = self.stack.pop() {
+            cycle.push(v2);
+            if v2 == v {
+                self.stack.push(v);
+                break;
+            }
+        }
+
+        // Order the cycle, to avoid detecting the same cycle starting at different positions
+        let (min_idx, _) = cycle
+            .iter()
+            .enumerate()
+            .min_by(|(_, def1), (_, def2)| self.ordering[*def1].cmp(&self.ordering[*def2]))
+            .unwrap();
+        let mut result = Vec::new();
+        let mut idx = (min_idx + 1) % cycle.len();
+        while idx != min_idx {
+            result.push(cycle[idx]);
+            idx = (idx + 1) % cycle.len();
+        }
         result.push(cycle[idx]);
-        idx = (idx + 1) % cycle.len();
-    }
-    result.push(cycle[idx]);
 
-    detected_cycles.insert(result);
+        self.detected_cycles.insert(result);
+    }
 }
