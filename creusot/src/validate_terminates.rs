@@ -328,7 +328,7 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
         let mut error = ctx.error(
             ctx.def_span(root.def_id),
             &format!(
-                "Mutually recursive functions: when calling {}...",
+                "Mutually recursive functions: when calling `{}`...",
                 ctx.tcx.def_path_str(root.def_id)
             ),
         );
@@ -340,7 +340,7 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
             error.span_note(
                 span,
                 format!(
-                    "then '{}' calls '{}'...",
+                    "then `{}` calls `{}`...",
                     ctx.tcx.def_path_str(instance.def_id),
                     ctx.tcx.def_path_str(next_instance.def_id)
                 ),
@@ -352,7 +352,7 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
         error.span_note(
             span,
             format!(
-                "finally '{}' calls '{}'.",
+                "finally `{}` calls `{}`.",
                 ctx.tcx.def_path_str(instance.def_id),
                 ctx.tcx.def_path_str(next_instance.def_id)
             ),

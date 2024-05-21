@@ -2,8 +2,9 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-fn recurses(b: bool) {
-    if b {
-        recurses(!b);
-    }
+#[terminates]
+fn i_terminate() {
+    i_dont();
 }
+
+fn i_dont() {}

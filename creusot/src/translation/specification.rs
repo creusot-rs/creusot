@@ -450,7 +450,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                             (Purity::Logic { .. }, Purity::Program { .. }) => ("logic", "program"),
                         };
                         let msg = format!(
-                            "called {callee} function '{}' in {caller} context",
+                            "called {callee} function `{}` in {caller} context",
                             self.ctx.def_path_str(func_did),
                         );
 

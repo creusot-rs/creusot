@@ -65,8 +65,27 @@ pub struct List<T> {
     pub tail: Option<Box<List<T>>>,
 }
 
-#[derive(DeepModel)]
 pub enum Expr<V> {
     Var(V),
     Add(Box<Expr<V>>, Box<Expr<V>>),
+}
+
+pub enum ExprDeepModel<V: DeepModel> {
+    Var(<V as DeepModel>::DeepModelTy),
+    Add(Box<ExprDeepModel<V>>, Box<ExprDeepModel<V>>),
+}
+
+impl<V: DeepModel> DeepModel for Expr<V> {
+    type DeepModelTy = ExprDeepModel<V>;
+
+    #[open]
+    #[logic]
+    fn deep_model(self) -> Self::DeepModelTy {
+        match self {
+            Expr::Var(v) => ExprDeepModel::Var(v.deep_model()),
+            Expr::Add(e1, e2) => {
+                ExprDeepModel::Add(Box::new((*e1).deep_model()), Box::new((*e2).deep_model()))
+            }
+        }
+    }
 }

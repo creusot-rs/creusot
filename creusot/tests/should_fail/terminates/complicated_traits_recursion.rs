@@ -3,21 +3,22 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 trait Foo {
+    #[terminates]
     fn foo() {}
 }
 
 impl Foo for i32 {
+    #[terminates]
     fn foo() {
         bar::<std::iter::Once<i32>>(std::iter::once(1i32));
     }
 }
 
-fn bar<I>(i: I)
+#[terminates]
+fn bar<I>(_: I)
 where
     I: Iterator,
     I::Item: Foo,
 {
-    for _ in i {
-        I::Item::foo();
-    }
+    I::Item::foo()
 }
