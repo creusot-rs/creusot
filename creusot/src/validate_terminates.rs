@@ -33,7 +33,7 @@ use rustc_infer::{
 };
 use rustc_middle::{
     thir,
-    ty::{EarlyBinder, FnDef, GenericArgs, ParamEnv, TyCtxt},
+    ty::{EarlyBinder, FnDef, GenericArgs, ParamEnv, TyCtxt, TypeVisitableExt},
 };
 use rustc_span::Span;
 use rustc_trait_selection::traits::SelectionContext;
@@ -196,28 +196,34 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
                         // Let's try to find if this specific invocation can be specialized to a known implementation
                         let actual_clause = EarlyBinder::bind(clause.skip_binder())
                             .instantiate(ctx.tcx, generic_args);
+                        let param_env = ctx.tcx.param_env(caller_def_id);
                         let obligation = TraitObligation::new(
                             ctx.tcx,
                             ObligationCause::dummy(),
-                            ctx.tcx.param_env(caller_def_id),
+                            param_env,
                             actual_clause,
                         );
                         let infer_ctx = ctx.infer_ctxt().intercrate(true).build();
                         let mut selection_ctx = SelectionContext::new(&infer_ctx);
-                        let impl_def_id = match selection_ctx.select(&obligation) {
-                            Ok(Some(source)) => match source {
-                                rustc_infer::traits::ImplSource::UserDefined(source) => {
-                                    Some(source.impl_def_id)
-                                }
-                                rustc_infer::traits::ImplSource::Param(_) => {
-                                    // FIXME: we take the conservative approach here, but what does this case actually mean ?
-                                    None
-                                }
-                                // Used for marker traits (no functions anyway) and trait object/unsized variables (we really don't know what they can call)
-                                rustc_infer::traits::ImplSource::Builtin(_, _) => None,
-                            },
-                            Ok(None) => None,
-                            Err(_) => None,
+                        let impl_def_id = if actual_clause.trait_ref.has_param() {
+                            // else this crashes the trait selection.
+                            None
+                        } else {
+                            match selection_ctx.select(&obligation) {
+                                Ok(Some(source)) => match source {
+                                    rustc_infer::traits::ImplSource::UserDefined(source) => {
+                                        Some(source.impl_def_id)
+                                    }
+                                    rustc_infer::traits::ImplSource::Param(_) => {
+                                        // FIXME: we take the conservative approach here, but what does this case actually mean ?
+                                        None
+                                    }
+                                    // Used for marker traits (no functions anyway) and trait object/unsized variables (we really don't know what they can call)
+                                    rustc_infer::traits::ImplSource::Builtin(_, _) => None,
+                                },
+                                Ok(None) => None,
+                                Err(_) => None,
+                            }
                         };
 
                         if let Some(impl_id) = impl_def_id {
