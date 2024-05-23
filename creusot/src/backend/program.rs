@@ -869,7 +869,7 @@ fn mk_switch_branches(discr: Exp, brch: Vec<(Exp, coma::Expr)>) -> Vec<coma::Def
 impl<'tcx> Block<'tcx> {
     pub(crate) fn to_why(self, lower: &mut LoweringState<'_, 'tcx>, id: BasicBlock) -> coma::Defn {
         // for v in self.variant.into_iter() {
-        //     statements.push(mlcfg::Statement::Variant(lower_pure(ctx, names, &v)));
+        //     statements.push(coma::Statement::Variant(lower_pure(ctx, names, &v)));
         // }
 
         let (istmts, terminator) = self.terminator.to_why(lower);

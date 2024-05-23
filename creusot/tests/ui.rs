@@ -90,7 +90,7 @@ fn run_creusot(
         "--stdout",
         "--export-metadata=false",
         "--span-mode=relative",
-        // we will write the mlcfg output next to the .rs file
+        // we will write the coma output next to the .rs file
         "--spans-relative-to=.",
     ]);
     cmd.args(&[

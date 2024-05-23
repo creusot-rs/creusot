@@ -391,7 +391,7 @@ impl<'tcx> Why3Generator<'tcx> {
                 let path = to_absolute(path);
                 let base = to_absolute(base);
                 // Why3 treats the spans as relative to the session, not the source file,
-                // and the session is in a subdirectory next to the mlcfg file, so we need
+                // and the session is in a subdirectory next to the coma file, so we need
                 // to add an extra ".."
                 let p = std::path::PathBuf::from("..");
                 let diff = pathdiff::diff_paths(&path, &base)?;

@@ -265,21 +265,21 @@ module InsertionSort_InsertionSort
         end}
       (! return' {result}) ]
     
+  use prelude.Snapshot
   use seq.Permut
   predicate permutation_of'0 (self : Seq.seq int32) (o : Seq.seq int32) =
     [#"../../../../creusot-contracts/src/logic/seq.rs" 107 8 107 37] Permut.permut self o 0 (Seq.length self)
   let rec permutation_of'0 (self:Seq.seq int32) (o:Seq.seq int32) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = permutation_of'0 self o} (! return' {result}) ]
     
-  function shallow_model'3 (self : slice int32) : Seq.seq int32 =
-    [#"../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model'2 self
-  let rec shallow_model'3 (self:slice int32) (return'  (ret:Seq.seq int32))= any
-    [ return' (result:Seq.seq int32)-> {result = shallow_model'3 self} (! return' {result}) ]
+  function shallow_model'4 (self : borrowed (slice int32)) : Seq.seq int32 =
+    [#"../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model'0 self
+  let rec shallow_model'4 (self:borrowed (slice int32)) (return'  (ret:Seq.seq int32))= any
+    [ return' (result:Seq.seq int32)-> {result = shallow_model'4 self} (! return' {result}) ]
     
-  use prelude.Snapshot
-  function shallow_model'1 (self : Snapshot.snap_ty (slice int32)) : Seq.seq int32 =
-    [#"../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48] shallow_model'3 (Snapshot.inner self)
-  let rec shallow_model'1 (self:Snapshot.snap_ty (slice int32)) (return'  (ret:Seq.seq int32))= any
+  function shallow_model'1 (self : Snapshot.snap_ty (borrowed (slice int32))) : Seq.seq int32 =
+    [#"../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48] shallow_model'4 (Snapshot.inner self)
+  let rec shallow_model'1 (self:Snapshot.snap_ty (borrowed (slice int32))) (return'  (ret:Seq.seq int32))= any
     [ return' (result:Seq.seq int32)-> {result = shallow_model'1 self} (! return' {result}) ]
     
   use prelude.Snapshot
@@ -306,6 +306,11 @@ module InsertionSort_InsertionSort
       {[#"../../../../creusot-contracts/src/std/iter.rs" 89 0 175 1] into_iter_post'0 self result}
       (! return' {result}) ]
     
+  function shallow_model'3 (self : slice int32) : Seq.seq int32 =
+    [#"../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model'2 self
+  let rec shallow_model'3 (self:slice int32) (return'  (ret:Seq.seq int32))= any
+    [ return' (result:Seq.seq int32)-> {result = shallow_model'3 self} (! return' {result}) ]
+    
   let rec len'0 (self:slice int32) (return'  (ret:usize))= {[@expl:precondition] inv'1 self}
     any
     [ return' (result:usize)-> {[#"../../../../creusot-contracts/src/std/slice.rs" 238 0 347 1] Seq.length (shallow_model'3 self)
@@ -314,11 +319,11 @@ module InsertionSort_InsertionSort
     
   use prelude.Snapshot
   let rec insertion_sort (array:borrowed (slice int32)) (return'  (ret:()))= (! bb0
-    [ bb0 = s0 [ s0 =  [ &original <- [#"../insertion_sort.rs" 22 19 22 36] Snapshot.new ( * array) ] s1 | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 =  [ &original <- [#"../insertion_sort.rs" 22 19 22 35] Snapshot.new array ] s1 | s1 = bb1 ] 
     | bb1 = s0 [ s0 = len'0 { * array} (fun (_ret':usize) ->  [ &n <- _ret' ] s1) | s1 = bb2 ] 
     | bb2 = s0
       [ s0 = 
-        [ &_10 <- Core_Ops_Range_Range_Type.C_Range ([#"../insertion_sort.rs" 27 13 27 14] (1 : usize)) n : Core_Ops_Range_Range_Type.t_range usize ]
+        [ &_10 <- Core_Ops_Range_Range_Type.C_Range ([#"../insertion_sort.rs" 28 13 28 14] (1 : usize)) n : Core_Ops_Range_Range_Type.t_range usize ]
         
         s1
       | s1 = into_iter'0 {_10} (fun (_ret':Core_Ops_Range_Range_Type.t_range usize) ->  [ &iter <- _ret' ] s2)
@@ -340,7 +345,8 @@ module InsertionSort_InsertionSort
       
     | bb5 = s0 [ s0 = bb6 ] 
     | bb6 = bb6
-      [ bb6 = {[@expl:loop invariant] [#"../insertion_sort.rs" 24 4 24 61] permutation_of'0 (shallow_model'1 original) (shallow_model'0 array)}
+      [ bb6 = {[@expl:loop invariant] [#"../insertion_sort.rs" 27 16 27 36]  ^ array =  ^ Snapshot.inner original}
+        {[@expl:loop invariant] [#"../insertion_sort.rs" 24 4 24 61] permutation_of'0 (shallow_model'1 original) (shallow_model'0 array)}
         {[@expl:loop invariant] [#"../insertion_sort.rs" 25 16 25 34] Seq.length (shallow_model'0 array)
         = UIntSize.to_int n}
         {[@expl:loop invariant] [#"../insertion_sort.rs" 24 16 24 59] sorted_range'0 (shallow_model'0 array) 0 (Seq.length (Snapshot.inner produced)
@@ -351,141 +357,141 @@ module InsertionSort_InsertionSort
         [ bb7 = s0
           [ s0 = Borrow.borrow_mut <Core_Ops_Range_Range_Type.t_range usize> {iter}
               (fun (_ret':borrowed (Core_Ops_Range_Range_Type.t_range usize)) ->
-                 [ &_24 <- _ret' ] 
-                 [ &iter <-  ^ _24 ] 
+                 [ &_25 <- _ret' ] 
+                 [ &iter <-  ^ _25 ] 
                 s1)
-          | s1 = Borrow.borrow_final <Core_Ops_Range_Range_Type.t_range usize> { * _24} {Borrow.get_id _24}
+          | s1 = Borrow.borrow_final <Core_Ops_Range_Range_Type.t_range usize> { * _25} {Borrow.get_id _25}
               (fun (_ret':borrowed (Core_Ops_Range_Range_Type.t_range usize)) ->
-                 [ &_23 <- _ret' ] 
-                 [ &_24 <- { _24 with current = ( ^ _23) ; } ] 
+                 [ &_24 <- _ret' ] 
+                 [ &_25 <- { _25 with current = ( ^ _24) ; } ] 
                 s2)
-          | s2 = next'0 {_23} (fun (_ret':Core_Option_Option_Type.t_option usize) ->  [ &_22 <- _ret' ] s3)
+          | s2 = next'0 {_24} (fun (_ret':Core_Option_Option_Type.t_option usize) ->  [ &_23 <- _ret' ] s3)
           | s3 = bb8 ]
           
         | bb8 = s0
-          [ s0 = -{resolve'0 _24}- s1
+          [ s0 = -{resolve'0 _25}- s1
           | s1 = any
-            [ br0 -> {_22 = Core_Option_Option_Type.C_None } (! bb11)
-            | br1 (a:usize)-> {_22 = Core_Option_Option_Type.C_Some a} (! bb10) ]
+            [ br0 -> {_23 = Core_Option_Option_Type.C_None } (! bb11)
+            | br1 (a:usize)-> {_23 = Core_Option_Option_Type.C_Some a} (! bb10) ]
              ]
           
         | bb10 = s0 [ s0 = bb12 ] 
         | bb12 = s0
-          [ s0 = Core_Option_Option_Type.some <usize> {_22}
+          [ s0 = Core_Option_Option_Type.some <usize> {_23}
               (fun (r0'0:usize) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
           | s1 = 
-            [ &_27 <- ([#"../insertion_sort.rs" 24 4 24 61] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem))) : Snapshot.snap_ty (Seq.seq usize) ]
+            [ &_28 <- ([#"../insertion_sort.rs" 24 4 24 61] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem))) : Snapshot.snap_ty (Seq.seq usize) ]
             
             s2
           | s2 = bb13 ]
           
         | bb13 = s0
-          [ s0 =  [ &produced <- _27 ] 
-            (any [ any_ (_any:Snapshot.snap_ty (Seq.seq usize))-> (!  [ &_27 <- _any ] s1) ] )
+          [ s0 =  [ &produced <- _28 ] 
+            (any [ any_ (_any:Snapshot.snap_ty (Seq.seq usize))-> (!  [ &_28 <- _any ] s1) ] )
           | s1 =  [ &i <- __creusot_proc_iter_elem ] s2
           | s2 =  [ &j <- i ] s3
           | s3 = bb14 ]
           
         | bb14 = bb14
-          [ bb14 = {[@expl:loop invariant] [#"../insertion_sort.rs" 29 8 29 28] forall a : int . UIntSize.to_int j + 1
-            <= a
+          [ bb14 = {[@expl:loop invariant] [#"../insertion_sort.rs" 35 20 35 40]  ^ array =  ^ Snapshot.inner original}
+            {[@expl:loop invariant] [#"../insertion_sort.rs" 30 8 30 28] forall a : int . UIntSize.to_int j + 1 <= a
             /\ a <= UIntSize.to_int i  -> index_logic'1 ( * array) j < index_logic'0 ( * array) a}
-            {[@expl:loop invariant] [#"../insertion_sort.rs" 29 8 29 28] forall b : int . forall a : int . 0 <= a
+            {[@expl:loop invariant] [#"../insertion_sort.rs" 30 8 30 28] forall b : int . forall a : int . 0 <= a
             /\ a <= b /\ b <= UIntSize.to_int i
              -> a <> UIntSize.to_int j
              -> b <> UIntSize.to_int j  -> index_logic'0 ( * array) a <= index_logic'0 ( * array) b}
-            {[@expl:loop invariant] [#"../insertion_sort.rs" 29 8 29 28] permutation_of'0 (shallow_model'1 original) (shallow_model'0 array)}
-            {[@expl:loop invariant] [#"../insertion_sort.rs" 30 20 30 38] Seq.length (shallow_model'0 array)
+            {[@expl:loop invariant] [#"../insertion_sort.rs" 30 8 30 28] permutation_of'0 (shallow_model'1 original) (shallow_model'0 array)}
+            {[@expl:loop invariant] [#"../insertion_sort.rs" 31 20 31 38] Seq.length (shallow_model'0 array)
             = UIntSize.to_int n}
-            {[@expl:loop invariant] [#"../insertion_sort.rs" 29 20 29 26] j <= i}
+            {[@expl:loop invariant] [#"../insertion_sort.rs" 30 20 30 26] j <= i}
             (! s0) [ s0 = bb15 ] 
             [ bb15 = s0
-              [ s0 = UIntSize.gt {j} {[#"../insertion_sort.rs" 34 18 34 19] (0 : usize)}
-                  (fun (_ret':bool) ->  [ &_36 <- _ret' ] s1)
-              | s1 = any [ br0 -> {_36 = false} (! bb22) | br1 -> {_36} (! bb16) ]  ]
+              [ s0 = UIntSize.gt {j} {[#"../insertion_sort.rs" 36 18 36 19] (0 : usize)}
+                  (fun (_ret':bool) ->  [ &_38 <- _ret' ] s1)
+              | s1 = any [ br0 -> {_38 = false} (! bb22) | br1 -> {_38} (! bb16) ]  ]
               
             | bb16 = s0
-              [ s0 = UIntSize.sub {j} {[#"../insertion_sort.rs" 35 25 35 26] (1 : usize)}
-                  (fun (_ret':usize) ->  [ &_41 <- _ret' ] s1)
-              | s1 =  [ &_43 <- Slice.length ( * array) ] s2
-              | s2 = UIntSize.lt {_41} {_43} (fun (_ret':bool) ->  [ &_44 <- _ret' ] s3)
-              | s3 = {[@expl:index in bounds] [#"../insertion_sort.rs" 35 15 35 27] _44} s4
+              [ s0 = UIntSize.sub {j} {[#"../insertion_sort.rs" 37 25 37 26] (1 : usize)}
+                  (fun (_ret':usize) ->  [ &_43 <- _ret' ] s1)
+              | s1 =  [ &_45 <- Slice.length ( * array) ] s2
+              | s2 = UIntSize.lt {_43} {_45} (fun (_ret':bool) ->  [ &_46 <- _ret' ] s3)
+              | s3 = {[@expl:index in bounds] [#"../insertion_sort.rs" 37 15 37 27] _46} s4
               | s4 = bb17 ]
               
             | bb17 = s0
-              [ s0 =  [ &_46 <- j ] s1
-              | s1 =  [ &_47 <- Slice.length ( * array) ] s2
-              | s2 = UIntSize.lt {_46} {_47} (fun (_ret':bool) ->  [ &_48 <- _ret' ] s3)
-              | s3 = {[@expl:index in bounds] [#"../insertion_sort.rs" 35 30 35 38] _48} s4
+              [ s0 =  [ &_48 <- j ] s1
+              | s1 =  [ &_49 <- Slice.length ( * array) ] s2
+              | s2 = UIntSize.lt {_48} {_49} (fun (_ret':bool) ->  [ &_50 <- _ret' ] s3)
+              | s3 = {[@expl:index in bounds] [#"../insertion_sort.rs" 37 30 37 38] _50} s4
               | s4 = bb18 ]
               
             | bb18 = s0
-              [ s0 = Slice.get <int32> { * array} {_41}
+              [ s0 = Slice.get <int32> { * array} {_43}
                   (fun (r'0:int32) ->
-                    Slice.get <int32> { * array} {_46}
-                      (fun (r'1:int32) -> Int32.gt {r'0} {r'1} (fun (_ret':bool) ->  [ &_39 <- _ret' ] s1)))
-              | s1 = any [ br0 -> {_39 = false} (! bb21) | br1 -> {_39} (! bb19) ]  ]
+                    Slice.get <int32> { * array} {_48}
+                      (fun (r'1:int32) -> Int32.gt {r'0} {r'1} (fun (_ret':bool) ->  [ &_41 <- _ret' ] s1)))
+              | s1 = any [ br0 -> {_41 = false} (! bb21) | br1 -> {_41} (! bb19) ]  ]
               
             | bb19 = s0
               [ s0 = Borrow.borrow_mut <slice int32> { * array}
                   (fun (_ret':borrowed (slice int32)) ->
-                     [ &_50 <- _ret' ] 
-                     [ &array <- { array with current = ( ^ _50) ; } ] 
+                     [ &_52 <- _ret' ] 
+                     [ &array <- { array with current = ( ^ _52) ; } ] 
                     s1)
-              | s1 = UIntSize.sub {j} {[#"../insertion_sort.rs" 36 31 36 32] (1 : usize)}
-                  (fun (_ret':usize) ->  [ &_51 <- _ret' ] s2)
-              | s2 = swap'0 {_50} {_51} {j} (fun (_ret':()) ->  [ &_49 <- _ret' ] s3)
+              | s1 = UIntSize.sub {j} {[#"../insertion_sort.rs" 38 31 38 32] (1 : usize)}
+                  (fun (_ret':usize) ->  [ &_53 <- _ret' ] s2)
+              | s2 = swap'0 {_52} {_53} {j} (fun (_ret':()) ->  [ &_51 <- _ret' ] s3)
               | s3 = bb20 ]
               
             | bb20 = s0
-              [ s0 = UIntSize.sub {j} {[#"../insertion_sort.rs" 40 17 40 18] (1 : usize)}
+              [ s0 = UIntSize.sub {j} {[#"../insertion_sort.rs" 42 17 42 18] (1 : usize)}
                   (fun (_ret':usize) ->  [ &j <- _ret' ] s1)
-              | s1 =  [ &_21 <- [#"../insertion_sort.rs" 34 20 41 9] () ] s2
+              | s1 =  [ &_22 <- [#"../insertion_sort.rs" 36 20 43 9] () ] s2
               | s2 = bb14 ]
                ]
              ]
           
-        | bb21 = s0 [ s0 =  [ &_21 <- [#"../insertion_sort.rs" 38 16 38 21] () ] s1 | s1 = bb23 ] 
-        | bb22 = s0 [ s0 =  [ &_21 <- [#"../insertion_sort.rs" 34 8 41 9] () ] s1 | s1 = bb23 ] 
+        | bb21 = s0 [ s0 =  [ &_22 <- [#"../insertion_sort.rs" 40 16 40 21] () ] s1 | s1 = bb23 ] 
+        | bb22 = s0 [ s0 =  [ &_22 <- [#"../insertion_sort.rs" 36 8 43 9] () ] s1 | s1 = bb23 ] 
         | bb23 = s0 [ s0 = bb6 ]  ]
          ]
       
     | bb9 = s0 [ s0 = -{resolve'1 array}- s1 | s1 = {[#"../insertion_sort.rs" 24 4 24 61] false} any ] 
     | bb11 = s0
       [ s0 = -{resolve'1 array}- s1
-      | s1 = {[@expl:assertion] [#"../insertion_sort.rs" 44 18 44 55] sorted_range'0 (shallow_model'0 array) 0 (Seq.length (shallow_model'0 array))}
+      | s1 = {[@expl:assertion] [#"../insertion_sort.rs" 46 18 46 55] sorted_range'0 (shallow_model'0 array) 0 (Seq.length (shallow_model'0 array))}
         s2
-      | s2 =  [ &_0 <- [#"../insertion_sort.rs" 21 41 45 1] () ] s3
+      | s2 =  [ &_0 <- [#"../insertion_sort.rs" 21 41 47 1] () ] s3
       | s3 = return' {_0} ]
        ]
     )
     [ & _0 : () = any_l () : ()
     | & array : borrowed (slice int32) = array
-    | & original : Snapshot.snap_ty (slice int32) = any_l () : Snapshot.snap_ty (slice int32)
+    | & original : Snapshot.snap_ty (borrowed (slice int32)) = any_l () : Snapshot.snap_ty (borrowed (slice int32))
     | & n : usize = any_l () : usize
     | & iter : Core_Ops_Range_Range_Type.t_range usize = any_l () : Core_Ops_Range_Range_Type.t_range usize
     | & _10 : Core_Ops_Range_Range_Type.t_range usize = any_l () : Core_Ops_Range_Range_Type.t_range usize
     | & iter_old : Snapshot.snap_ty (Core_Ops_Range_Range_Type.t_range usize) = any_l () : Snapshot.snap_ty (Core_Ops_Range_Range_Type.t_range usize)
     | & produced : Snapshot.snap_ty (Seq.seq usize) = any_l () : Snapshot.snap_ty (Seq.seq usize)
-    | & _21 : () = any_l () : ()
-    | & _22 : Core_Option_Option_Type.t_option usize = any_l () : Core_Option_Option_Type.t_option usize
-    | & _23 : borrowed (Core_Ops_Range_Range_Type.t_range usize) = any_l () : borrowed (Core_Ops_Range_Range_Type.t_range usize)
+    | & _22 : () = any_l () : ()
+    | & _23 : Core_Option_Option_Type.t_option usize = any_l () : Core_Option_Option_Type.t_option usize
     | & _24 : borrowed (Core_Ops_Range_Range_Type.t_range usize) = any_l () : borrowed (Core_Ops_Range_Range_Type.t_range usize)
+    | & _25 : borrowed (Core_Ops_Range_Range_Type.t_range usize) = any_l () : borrowed (Core_Ops_Range_Range_Type.t_range usize)
     | & __creusot_proc_iter_elem : usize = any_l () : usize
-    | & _27 : Snapshot.snap_ty (Seq.seq usize) = any_l () : Snapshot.snap_ty (Seq.seq usize)
+    | & _28 : Snapshot.snap_ty (Seq.seq usize) = any_l () : Snapshot.snap_ty (Seq.seq usize)
     | & i : usize = any_l () : usize
     | & j : usize = any_l () : usize
-    | & _36 : bool = any_l () : bool
-    | & _39 : bool = any_l () : bool
-    | & _41 : usize = any_l () : usize
+    | & _38 : bool = any_l () : bool
+    | & _41 : bool = any_l () : bool
     | & _43 : usize = any_l () : usize
-    | & _44 : bool = any_l () : bool
-    | & _46 : usize = any_l () : usize
-    | & _47 : usize = any_l () : usize
-    | & _48 : bool = any_l () : bool
-    | & _49 : () = any_l () : ()
-    | & _50 : borrowed (slice int32) = any_l () : borrowed (slice int32)
-    | & _51 : usize = any_l () : usize ]
+    | & _45 : usize = any_l () : usize
+    | & _46 : bool = any_l () : bool
+    | & _48 : usize = any_l () : usize
+    | & _49 : usize = any_l () : usize
+    | & _50 : bool = any_l () : bool
+    | & _51 : () = any_l () : ()
+    | & _52 : borrowed (slice int32) = any_l () : borrowed (slice int32)
+    | & _53 : usize = any_l () : usize ]
     
     [ return' (result:())-> {[@expl:postcondition] [#"../insertion_sort.rs" 20 10 20 27] sorted'0 (shallow_model'2 ( ^ array))}
       {[@expl:postcondition] [#"../insertion_sort.rs" 19 0 19 44] permutation_of'0 (shallow_model'0 array) (shallow_model'2 ( ^ array))}
