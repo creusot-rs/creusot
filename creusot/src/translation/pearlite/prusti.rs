@@ -116,7 +116,7 @@ pub(super) fn prusti_to_creusot<'tcx>(
         Some(attr) => attr,
     };
 
-    if tcx.is_closure_or_coroutine(owner_id) {
+    if tcx.is_closure_like(owner_id) {
         return Err(Error::new(term.span, "Prusti specs on closures aren't supported"));
     }
 

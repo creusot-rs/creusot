@@ -74,7 +74,7 @@ pub(super) fn constraints_of_fn<'tcx>(
     assert!(ocx.select_all_or_error().is_empty());
     let outlives = OutlivesEnvironment::new(param_env);
     let _ = infcx.process_registered_region_obligations(&outlives, |ty, _| {
-        Ok::<_, !>(ocx.normalize(&ObligationCause::dummy(), param_env, ty))
+        Ok(ocx.normalize(&ObligationCause::dummy(), param_env, ty))
     });
 
     let constraints = infcx.take_and_reset_region_constraints();

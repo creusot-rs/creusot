@@ -1,6 +1,6 @@
 use crate::prusti::{
     ctx::CtxRef,
-    flat_ty::{cf_to_result, into_ok, result_to_cf, CheckSupError},
+    flat_ty::{cf_to_result, result_to_cf, CheckSupError},
     region_set::StateSet,
     types::Ty,
     zombie::ZombieStatus,
@@ -14,11 +14,7 @@ use rustc_middle::{
 };
 use smallvec::SmallVec;
 use std::{
-    convert::Infallible,
-    ops::{
-        ControlFlow,
-        ControlFlow::{Break, Continue},
-    },
+    ops::ControlFlow::{self, Break},
     slice,
 };
 
@@ -73,15 +69,14 @@ struct RustTyFlatBuilder {
 }
 
 impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for RustTyFlatBuilder {
-    type BreakTy = Infallible;
-    fn visit_ty(&mut self, ty: ty::Ty<'tcx>) -> ControlFlow<Self::BreakTy> {
+    type Result = ();
+    fn visit_ty(&mut self, ty: ty::Ty<'tcx>) {
         match ty.kind() {
             TyKind::Infer(InferTy::FreshTy(var)) => {
                 let var = (*var).try_into().unwrap();
                 let dist = self.dist;
                 self.dist = 0;
                 self.flat.ty_vars.push(TyVarDist { var, dist });
-                Continue(())
             }
             _ => {
                 self.dist += 1;
@@ -90,21 +85,20 @@ impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for RustTyFlatBuilder {
         }
     }
 
-    fn visit_region(&mut self, r: Region<'tcx>) -> ControlFlow<Self::BreakTy> {
+    fn visit_region(&mut self, r: Region<'tcx>) {
         let r = match r.kind() {
             RegionKind::ReVar(vid) => RustReg::Var(vid),
             RegionKind::ReStatic => RustReg::Static,
             _ => bug!(),
         };
         self.flat.reg_vars.push(r.compress());
-        Continue(())
     }
 }
 
 pub(super) fn flatten_rust_ty<'tcx>(ty: ty::Ty<'tcx>) -> RustFlatTy {
     let flat = RustFlatTy { reg_vars: SmallVec::new(), ty_vars: SmallVec::new() };
     let mut v = RustTyFlatBuilder { dist: 0, flat };
-    into_ok(cf_to_result(ty.visit_with(&mut v)));
+    ty.visit_with(&mut v);
     v.flat
 }
 
@@ -122,12 +116,8 @@ where
     FS: FnMut(StateSet, RustReg) -> Result<(), CheckSupError>,
     FT: FnMut(Ty<'tcx>, u32) -> Result<(), CheckSupError>,
 {
-    type BreakTy = CheckSupError;
-    fn visit_region(&mut self, r: Region<'tcx>) -> ControlFlow<Self::BreakTy> {
-        result_to_cf((self.fs)(r.into(), RustReg::from_compressed(*self.reg_vars.next().unwrap())))
-    }
-
-    fn visit_ty(&mut self, ty: ty::Ty<'tcx>) -> ControlFlow<Self::BreakTy> {
+    type Result = ControlFlow<CheckSupError>;
+    fn visit_ty(&mut self, ty: ty::Ty<'tcx>) -> Self::Result {
         let ty = Ty { ty };
         match &mut self.next {
             Some(TyVarDist { var, dist }) => {
@@ -146,6 +136,10 @@ where
             return Break(CheckSupError::ZombieMismatch);
         }
         ty.super_visit_with(self)
+    }
+
+    fn visit_region(&mut self, r: Region<'tcx>) -> Self::Result {
+        result_to_cf((self.fs)(r.into(), RustReg::from_compressed(*self.reg_vars.next().unwrap())))
     }
 }
 

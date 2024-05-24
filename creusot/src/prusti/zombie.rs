@@ -86,8 +86,8 @@ struct HasZombieVisitor<'a, 'tcx> {
 }
 
 impl<'tcx, 'a> TypeVisitor<TyCtxt<'tcx>> for HasZombieVisitor<'a, 'tcx> {
-    type BreakTy = ();
-    fn visit_ty(&mut self, t: Ty<'tcx>) -> ControlFlow<Self::BreakTy> {
+    type Result = ControlFlow<()>;
+    fn visit_ty(&mut self, t: Ty<'tcx>) -> Self::Result {
         if self.def_ids.as_zombie(t).is_some() {
             ControlFlow::Break(())
         } else {

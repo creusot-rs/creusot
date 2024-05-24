@@ -26,10 +26,7 @@ use rustc_data_structures::sso::SsoHashMap;
 use rustc_hir::LangItem;
 use rustc_index::{bit_set::BitSet, IndexVec};
 use rustc_infer::{
-    infer::{
-        type_variable::{TypeVariableOrigin, TypeVariableOriginKind},
-        InferCtxt, TyCtxtInferExt,
-    },
+    infer::{InferCtxt, TyCtxtInferExt},
     traits::{Obligation, ObligationCause},
 };
 use rustc_middle::{
@@ -48,12 +45,7 @@ use rustc_trait_selection::{
     traits,
     traits::{query::evaluate_obligation::InferCtxtExt, NormalizeExt, ObligationCtxt},
 };
-use std::{
-    convert::Infallible,
-    fmt::Debug,
-    iter,
-    ops::{ControlFlow, ControlFlow::Continue},
-};
+use std::{fmt::Debug, iter, ops::ControlFlow};
 
 type SmallVec<T> = smallvec::SmallVec<[T; 4]>;
 
@@ -294,12 +286,11 @@ fn expand_error_gen<'tcx>(
 pub(super) struct TypeVarVisitor<'a>(pub &'a mut BitSet<u32>);
 
 impl<'a, 'tcx> TypeVisitor<TyCtxt<'tcx>> for TypeVarVisitor<'a> {
-    type BreakTy = Infallible;
-    fn visit_ty(&mut self, ty: ty::Ty<'tcx>) -> ControlFlow<Self::BreakTy> {
+    type Result = ();
+    fn visit_ty(&mut self, ty: ty::Ty<'tcx>) {
         match ty.kind() {
             TyKind::Param(p) => {
                 self.0.insert(p.index);
-                Continue(())
             }
             _ => ty.super_visit_with(self),
         }
@@ -309,8 +300,8 @@ impl<'a, 'tcx> TypeVisitor<TyCtxt<'tcx>> for TypeVarVisitor<'a> {
 struct AliasTyVarVisitor(BitSet<u32>);
 
 impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for AliasTyVarVisitor {
-    type BreakTy = Infallible;
-    fn visit_ty(&mut self, ty: ty::Ty<'tcx>) -> ControlFlow<Self::BreakTy> {
+    type Result = ();
+    fn visit_ty(&mut self, ty: ty::Ty<'tcx>) {
         match ty.kind() {
             TyKind::Alias(_, ty) => ty.args.visit_with(&mut TypeVarVisitor(&mut self.0)),
             _ => ty.super_visit_with(self),
@@ -572,9 +563,9 @@ struct AllRegionsOutliveCheck<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> TypeVisitor<TyCtxt<'tcx>> for AllRegionsOutliveCheck<'a, 'tcx> {
-    type BreakTy = Region<'tcx>;
+    type Result = ControlFlow<Region<'tcx>>;
 
-    fn visit_region(&mut self, r: Region<'tcx>) -> ControlFlow<Self::BreakTy> {
+    fn visit_region(&mut self, r: Region<'tcx>) -> Self::Result {
         if self.ctx.relation.outlives_state(r.into(), self.state) {
             ControlFlow::Continue(())
         } else {
@@ -752,7 +743,7 @@ pub(crate) fn check_signature_agreement<'tcx>(
     let impl_id_subst = GenericArgs::identity_for_item(tcx, impl_id);
     let impl_span: Span = tcx.def_span(impl_id);
     let ts = Lit::from_token_lit(
-        token::Lit { kind: token::Err, symbol: Symbol::intern("curr"), suffix: None },
+        token::Lit { kind: token::Str, symbol: Symbol::intern("curr"), suffix: None },
         impl_span,
     );
     let ts = ts.ok().unwrap();
@@ -798,14 +789,8 @@ pub(super) fn mk_zombie<'tcx>(ty: ty::Ty<'tcx>, ctx: CtxRef<'_, 'tcx>) -> (ty::T
                     if x.def_id() == copy_id && x.self_ty().is_ty_var() =>
                 {
                     // Mark that this variable needs to be copy by unifying it with ()
-                    ocx.eq_exp(
-                        &ObligationCause::dummy(),
-                        param_env,
-                        true,
-                        tcx.types.unit,
-                        x.self_ty(),
-                    )
-                    .unwrap();
+                    ocx.eq(&ObligationCause::dummy(), param_env, tcx.types.unit, x.self_ty())
+                        .unwrap();
                 }
                 PredicateKind::Clause(ClauseKind::Trait(x))
                     if x.def_id() == sized_id && x.self_ty().is_ty_var() =>
@@ -855,10 +840,7 @@ impl<'a, 'tcx> TypeFolder<TyCtxt<'tcx>> for ZombieGenFolder<'a, 'tcx> {
     }
 
     fn fold_ty(&mut self, _: ty::Ty<'tcx>) -> ty::Ty<'tcx> {
-        self.0.next_ty_var(TypeVariableOrigin {
-            kind: TypeVariableOriginKind::MiscVariable,
-            span: DUMMY_SP,
-        })
+        self.0.next_ty_var(DUMMY_SP)
     }
 
     fn fold_region(&mut self, _: Region<'tcx>) -> Region<'tcx> {

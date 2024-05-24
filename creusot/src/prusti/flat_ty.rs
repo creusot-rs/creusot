@@ -53,8 +53,8 @@ where
     FS: FnMut(StateSet) -> Result<(), E>,
     FZ: FnMut(Z, ZombieStatus) -> Result<Z, E>,
 {
-    type BreakTy = E;
-    fn visit_ty(&mut self, ty: ty::Ty<'tcx>) -> ControlFlow<Self::BreakTy> {
+    type Result = ControlFlow<E>;
+    fn visit_ty(&mut self, ty: ty::Ty<'tcx>) -> Self::Result {
         let (status, ty) = Ty { ty }.unpack(self.ctx);
         let in_zombie = result_to_cf((self.fz)(self.in_zombie, status))?;
         let mut visit =
@@ -62,7 +62,7 @@ where
         ty.super_visit_with(&mut visit)
     }
 
-    fn visit_region(&mut self, r: Region<'tcx>) -> ControlFlow<Self::BreakTy> {
+    fn visit_region(&mut self, r: Region<'tcx>) -> Self::Result {
         result_to_cf((self.fs)(r.into()))
     }
 }
