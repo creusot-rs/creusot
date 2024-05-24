@@ -23,6 +23,7 @@
 
 use crate::{ctx::TranslationCtx, specification::contract_of, util};
 use indexmap::{IndexMap, IndexSet};
+use petgraph::{graph, visit::EdgeRef as _};
 use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LocalDefId},
@@ -44,14 +45,16 @@ struct FunctionInstance<'tcx> {
     generic_args: &'tcx GenericArgs<'tcx>,
 }
 
-/// An approximation of the call graph: functions are _not_ monomorphized.
-///
-/// This is used to detect mutually recursive calls of functions not marked with `#[non_terminating]`.
-#[derive(Default, Debug)]
-struct CallGraph<'tcx>(IndexMap<FunctionInstance<'tcx>, Function<'tcx>>);
+#[derive(Default)]
+struct BuildFunctionsGraph<'tcx> {
+    graph: graph::DiGraph<FunctionInstance<'tcx>, Span>,
+    additional_data: IndexMap<graph::NodeIndex, AdditionalData>,
+    instance_to_index: IndexMap<FunctionInstance<'tcx>, graph::NodeIndex>,
+    to_visit: Vec<(ToVisit<'tcx>, graph::NodeIndex)>,
+}
 
-#[derive(Default, Debug)]
-struct Function<'tcx> {
+#[derive(Default)]
+struct AdditionalData {
     /// `true` if the function has a `#[variant]` annotation.
     ///
     /// For now, mutually recursive functions are never allowed, so this only matter for
@@ -61,10 +64,37 @@ struct Function<'tcx> {
     ///
     /// The body of external function are not visited, so this field will be `false`.
     has_loops: Option<Span>,
-    /// Indices of the functions called by this function.
+}
+
+impl<'tcx> BuildFunctionsGraph<'tcx> {
+    /// Insert a new instance function in the graph, or fetch the pre-existing instance.
     ///
-    /// Also contains the span of the callsite, for error messages.
-    calls: IndexMap<FunctionInstance<'tcx>, Span>,
+    /// If it wasn't already in the graph, push it onto the `to_visit` stack.
+    fn insert_instance(
+        &mut self,
+        caller_def_id: DefId,
+        instance: FunctionInstance<'tcx>,
+    ) -> graph::NodeIndex {
+        match self.instance_to_index.entry(instance) {
+            indexmap::map::Entry::Occupied(n) => *n.get(),
+            indexmap::map::Entry::Vacant(entry) => {
+                let next_visit = if let Some(local) = instance.def_id.as_local() {
+                    ToVisit::Local { function_def_id: local, generic_args: instance.generic_args }
+                } else {
+                    ToVisit::Extern {
+                        caller_def_id,
+                        function_def_id: instance.def_id,
+                        generic_args: instance.generic_args,
+                    }
+                };
+                let node = self.graph.add_node(instance);
+                self.additional_data.insert(node, AdditionalData::default());
+                self.to_visit.push((next_visit, node));
+                entry.insert(node);
+                node
+            }
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -84,13 +114,6 @@ impl<'tcx> ToVisit<'tcx> {
             ToVisit::Extern { function_def_id, .. } => *function_def_id,
         }
     }
-    fn generic_args(&self) -> &'tcx GenericArgs<'tcx> {
-        match self {
-            ToVisit::Local { generic_args, .. } | ToVisit::Extern { generic_args, .. } => {
-                generic_args
-            }
-        }
-    }
 }
 
 /// Validate that a `#[terminates]` function cannot loop indefinitely. This includes:
@@ -102,37 +125,27 @@ impl<'tcx> ToVisit<'tcx> {
 /// recursion, because why3 will handle it for us.
 pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
     ctx.tcx.dcx().abort_if_errors(); // There may have been errors before, if a `#[terminates]` calls a non-`#[terminates]`.
-    let mut call_graph = CallGraph::default();
+    let mut build_call_graph = BuildFunctionsGraph::default();
 
-    let mut is_pearlite = IndexSet::<FunctionInstance>::new();
-    let mut already_visited = IndexSet::<ToVisit>::new();
-    let mut to_visit: Vec<ToVisit> = ctx
-        .hir()
-        .body_owners()
-        .filter_map(|d| {
-            if !(util::is_pearlite(ctx.tcx, d.to_def_id())
-                || contract_of(ctx, d.to_def_id()).terminates)
-            {
-                // Only consider functions marked with `terminates`: we already ensured that a `terminates` functions only calls other `terminates` functions.
-                None
-            } else {
-                Some(ToVisit::Local {
-                    function_def_id: d,
-                    generic_args: GenericArgs::identity_for_item(ctx.tcx, d),
-                })
-            }
-        })
-        .collect();
+    let mut is_pearlite = IndexSet::<graph::NodeIndex>::new();
+    for d in ctx.hir().body_owners() {
+        if !(util::is_pearlite(ctx.tcx, d.to_def_id())
+            || contract_of(ctx, d.to_def_id()).terminates)
+        {
+            // Only consider functions marked with `terminates`: we already ensured that a `terminates` functions only calls other `terminates` functions.
+        } else {
+            let generic_args = GenericArgs::identity_for_item(ctx.tcx, d);
+            let def_id = d.to_def_id();
+            build_call_graph.insert_instance(def_id, FunctionInstance { def_id, generic_args });
+        }
+    }
 
-    while let Some(visit) = to_visit.pop() {
+    while let Some((visit, caller_node)) = build_call_graph.to_visit.pop() {
         let caller_def_id = visit.def_id();
         if util::is_trusted(ctx.tcx, caller_def_id) {
-            let generic_args = visit.generic_args();
             // FIXME: does this work with trait functions marked `#[terminates]`/`#[pure]` ?
-            call_graph.0.insert(
-                FunctionInstance { def_id: caller_def_id, generic_args },
-                Function { has_variant: false, has_loops: None, calls: IndexMap::default() },
-            );
+            build_call_graph.additional_data[&caller_node] =
+                AdditionalData { has_variant: false, has_loops: None };
         } else {
             match visit {
                 // Function defined in the current crate: visit its body
@@ -154,42 +167,27 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
                     let (visited_calls, pearlite_func, has_loops) =
                         (visitor.calls, util::is_pearlite(tcx, caller_def_id), visitor.has_loops);
 
-                    let mut calls = IndexMap::new();
                     for (function_def_id, span, subst) in visited_calls {
                         if !ctx.tcx.is_mir_available(function_def_id) {
                             continue;
                         }
 
-                        let next_visit = if let Some(local) = function_def_id.as_local() {
-                            ToVisit::Local { function_def_id: local, generic_args: subst }
-                        } else {
-                            ToVisit::Extern { caller_def_id, function_def_id, generic_args: subst }
-                        };
-                        if already_visited.insert(next_visit) {
-                            to_visit.push(next_visit);
-                        }
-
-                        calls.insert(
+                        let next_node = build_call_graph.insert_instance(
+                            caller_def_id,
                             FunctionInstance { def_id: function_def_id, generic_args: subst },
-                            span,
                         );
+
+                        build_call_graph.graph.add_edge(caller_node, next_node, span);
                     }
-                    let instance = FunctionInstance { def_id: caller_def_id, generic_args };
                     if pearlite_func {
-                        is_pearlite.insert(instance);
+                        is_pearlite.insert(caller_node);
                     }
-                    call_graph.0.insert(
-                        instance,
-                        Function {
-                            has_variant: util::has_variant_clause(ctx.tcx, caller_def_id),
-                            calls,
-                            has_loops,
-                        },
-                    );
+                    let additional_data = &mut build_call_graph.additional_data[&caller_node];
+                    additional_data.has_variant = util::has_variant_clause(ctx.tcx, caller_def_id);
+                    additional_data.has_loops = has_loops;
                 }
                 // Function defined in another crate: assume all the functions corresponding to its trait bounds can be called.
                 ToVisit::Extern { caller_def_id, function_def_id, generic_args } => {
-                    let mut calls = IndexMap::new();
                     for bound in ctx.tcx.param_env(function_def_id).caller_bounds() {
                         let Some(clause) = bound.as_trait_clause() else { continue };
 
@@ -233,26 +231,17 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
                                 if item_kind == DefKind::AssocFn {
                                     let params = GenericArgs::identity_for_item(ctx.tcx, item);
                                     let span = ctx.tcx.def_span(function_def_id);
-                                    let instance =
-                                        FunctionInstance { def_id: item, generic_args: params };
-                                    calls.insert(instance, span);
-                                    call_graph.0.entry(instance).or_default().has_variant =
-                                        util::has_variant_clause(ctx.tcx, item);
-                                    let next_visit = if let Some(local) = item.as_local() {
-                                        ToVisit::Local {
-                                            function_def_id: local,
-                                            generic_args: params, // TODO: are those the right ones ?
-                                        }
-                                    } else {
-                                        ToVisit::Extern {
-                                            caller_def_id: function_def_id,
-                                            function_def_id: item,
-                                            generic_args: params,
-                                        }
+                                    let instance = FunctionInstance {
+                                        def_id: item,
+                                        generic_args: params, // TODO: are those the right ones ?
                                     };
-                                    if already_visited.insert(next_visit) {
-                                        to_visit.push(next_visit);
-                                    }
+                                    let next_node =
+                                        build_call_graph.insert_instance(function_def_id, instance);
+
+                                    build_call_graph.graph.add_edge(caller_node, next_node, span);
+
+                                    build_call_graph.additional_data[&next_node].has_variant =
+                                        util::has_variant_clause(ctx.tcx, item);
                                 }
                             }
                         } else {
@@ -260,62 +249,37 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
                             // As such, we don't consider this to be an actual call: we cannot resolve it to any concrete function yet.
                         }
                     }
-                    let default_params =
-                        EarlyBinder::bind(GenericArgs::identity_for_item(ctx.tcx, function_def_id))
-                            .instantiate(ctx.tcx, generic_args);
-                    call_graph.0.insert(
-                        FunctionInstance { def_id: function_def_id, generic_args: default_params },
-                        Function { has_variant: true, has_loops: None, calls },
-                    );
+                    build_call_graph.additional_data[&caller_node] =
+                        AdditionalData { has_variant: true, has_loops: None };
                 }
             }
         }
     }
 
-    for f in call_graph.0.keys().copied().collect::<Vec<_>>() {
-        let def_id = f.def_id;
-        // are we part of a `impl` block ?
-        let Some(impl_id) = ctx.impl_of_method(def_id) else {
-            continue;
-        };
-        // Maps every item in the impl block to the item defined in the trait
-        let map = ctx.impl_item_implementor_ids(impl_id);
-        let item_id = std::cell::Cell::new(def_id);
-        // Find the corresponding trait
-        // Can't iterate directly on this structure, so we have to do this :(
-        map.items().all(|(trait_id, impl_id)| {
-            if *impl_id == def_id {
-                item_id.set(*trait_id);
-                return false;
-            }
-            true
-        });
-        let item_id = item_id.get();
-        if item_id == def_id {
-            // This is just an inherent impl, not a trait
-            continue;
-        }
-    }
+    let (mut call_graph, additional_data) =
+        (build_call_graph.graph, build_call_graph.additional_data);
 
     // Detect simple recursion, and loops
-    for (fun_inst, calls) in &mut call_graph.0 {
-        if is_pearlite.contains(fun_inst) {
-            // No need for this: pearlite fonctions always generate a proof obligation for termination.
-            calls.calls.remove(fun_inst);
-            continue;
-        }
-        if let Some(&call_span) = calls.calls.get(fun_inst) {
-            calls.calls.remove(fun_inst);
-            if !calls.has_variant && fun_inst.def_id.is_local() {
-                let fun_span = ctx.tcx.def_span(fun_inst.def_id);
+    for fun_index in call_graph.node_indices() {
+        let fun_inst = call_graph.node_weight(fun_index).unwrap();
+        let def_id = fun_inst.def_id;
+        if let Some(self_edge) = call_graph.edges_connecting(fun_index, fun_index).next() {
+            let (self_edge, span) = (self_edge.id(), *self_edge.weight());
+            if is_pearlite.contains(&fun_index) {
+                call_graph.remove_edge(self_edge);
+                continue;
+            }
+            call_graph.remove_edge(self_edge);
+            if !additional_data[&fun_index].has_variant && def_id.is_local() {
+                let fun_span = ctx.tcx.def_span(def_id);
                 let mut error =
                     ctx.error(fun_span, "Recursive function without a `#[variant]` clause");
-                error.span_note(call_span, "Recursive call happens here");
+                error.span_note(span, "Recursive call happens here");
                 error.emit();
             }
-        }
-        if let Some(loop_span) = calls.has_loops {
-            let fun_span = ctx.tcx.def_span(fun_inst.def_id);
+        };
+        if let Some(loop_span) = additional_data[&fun_index].has_loops {
+            let fun_span = ctx.tcx.def_span(def_id);
             let mut error = ctx.error(fun_span, "`#[terminates]` function must not contain loops.");
             error.span_note(loop_span, "looping occurs here");
             error.emit();
@@ -323,46 +287,85 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
     }
 
     // detect mutual recursion
-    let cycles = find_cycles(&call_graph);
+    let cycles = petgraph::algo::kosaraju_scc(&call_graph);
     for mut cycle in cycles {
-        if cycle.iter().all(|inst| !inst.def_id.is_local()) {
+        if cycle.iter().all(|n| !call_graph.node_weight(*n).unwrap().def_id.is_local()) {
             // The cycle needs to involve at least one function in the current crate.
             continue;
         }
-        let root = cycle.pop().unwrap();
+        let Some(root) = cycle.pop() else {
+            continue;
+        };
+        if cycle.is_empty() {
+            // Need more than 2 components.
+            continue;
+        }
+        let in_cycle: IndexSet<_> = cycle.into_iter().collect();
+        let mut cycle = Vec::new();
+        // Build the cycle in the right order.
+        petgraph::visit::depth_first_search(&call_graph, std::iter::once(root), |n| {
+            use petgraph::visit::Control;
+            match n {
+                petgraph::visit::DfsEvent::Discover(n, _) => {
+                    if in_cycle.contains(&n) {
+                        cycle.push(n);
+                        Control::Continue
+                    } else if n == root {
+                        Control::Continue
+                    } else {
+                        Control::Prune
+                    }
+                }
+                petgraph::visit::DfsEvent::BackEdge(_, n) if n == root => Control::Break(()),
+                _ => Control::Continue,
+            }
+        });
+
+        cycle.reverse();
+
+        let root_def_id = call_graph.node_weight(root).unwrap().def_id;
         let mut next_instance = root;
         let mut error = ctx.error(
-            ctx.def_span(root.def_id),
+            ctx.def_span(root_def_id),
             &format!(
                 "Mutually recursive functions: when calling `{}`...",
-                ctx.tcx.def_path_str(root.def_id)
+                ctx.tcx.def_path_str(root_def_id)
             ),
         );
         let mut instance;
         while let Some(id) = cycle.pop() {
             instance = next_instance;
             next_instance = id;
-            let span = call_graph.0[&instance].calls[&next_instance];
-            error.span_note(
-                span,
-                format!(
-                    "then `{}` calls `{}`...",
-                    ctx.tcx.def_path_str(instance.def_id),
-                    ctx.tcx.def_path_str(next_instance.def_id)
-                ),
-            );
+            if let Some(e) = call_graph.edges_connecting(instance, next_instance).next() {
+                let span = *e.weight();
+                let d1 = call_graph.node_weight(instance).unwrap().def_id;
+                let d2 = call_graph.node_weight(next_instance).unwrap().def_id;
+                error.span_note(
+                    span,
+                    format!(
+                        "then `{}` calls `{}`...",
+                        ctx.tcx.def_path_str(d1),
+                        ctx.tcx.def_path_str(d2)
+                    ),
+                );
+            }
         }
         instance = next_instance;
         next_instance = root;
-        let span = call_graph.0[&instance].calls[&next_instance];
-        error.span_note(
-            span,
-            format!(
-                "finally `{}` calls `{}`.",
-                ctx.tcx.def_path_str(instance.def_id),
-                ctx.tcx.def_path_str(next_instance.def_id)
-            ),
-        );
+        if let Some(e) = call_graph.edges_connecting(instance, next_instance).next() {
+            let span = *e.weight();
+            let d1 = call_graph.node_weight(instance).unwrap().def_id;
+            let d2 = call_graph.node_weight(next_instance).unwrap().def_id;
+            error.span_note(
+                span,
+                format!(
+                    "finally `{}` calls `{}`.",
+                    ctx.tcx.def_path_str(d1),
+                    ctx.tcx.def_path_str(d2)
+                ),
+            );
+        }
+
         error.emit();
     }
 
@@ -426,88 +429,5 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tc
             _ => {}
         }
         thir::visit::walk_expr(self, expr);
-    }
-}
-
-/// Finds all the cycles in the call graph.
-fn find_cycles<'tcx>(graph: &CallGraph<'tcx>) -> IndexSet<Vec<FunctionInstance<'tcx>>> {
-    let mut find_cycles = FindCycles {
-        graph,
-        stack: Vec::new(),
-        visited: IndexSet::new(),
-        ordering: IndexMap::new(),
-        detected_cycles: IndexSet::new(),
-    };
-    for &v in graph.0.keys() {
-        let idx = find_cycles.ordering.len();
-        find_cycles.ordering.entry(v).or_insert(idx);
-        if find_cycles.visited.insert(v) {
-            find_cycles.stack = vec![v];
-            find_cycles.process_dfs_tree();
-        }
-    }
-    find_cycles.detected_cycles
-}
-
-struct FindCycles<'graph, 'tcx> {
-    /// The call graph of functions. We will try to find cycles in that graph.
-    graph: &'graph CallGraph<'tcx>,
-    /// The current path of called function, e.g. `stack[i]` calls `stack[i + 1]`.
-    ///
-    /// All nodes in the stack must also be in `visited`.
-    stack: Vec<FunctionInstance<'tcx>>,
-    /// Nodes in the `graph` that were already visited.
-    visited: IndexSet<FunctionInstance<'tcx>>,
-    /// Contains an index to order `FunctionInstance`s. Used to avoid flagging the same
-    ///  cycle twice in different orders.
-    ordering: IndexMap<FunctionInstance<'tcx>, usize>,
-    /// The resulting set of cycles found.
-    detected_cycles: IndexSet<Vec<FunctionInstance<'tcx>>>,
-}
-
-impl<'tcx> FindCycles<'_, 'tcx> {
-    /// Process the call graph depth-first in order to find cycles.
-    fn process_dfs_tree(&mut self) {
-        let top = *self.stack.last().unwrap();
-        let top_calls = &self.graph.0[&top];
-        for &v in top_calls.calls.keys() {
-            let idx = self.ordering.len();
-            self.ordering.entry(v).or_insert(idx);
-            if self.visited.insert(v) {
-                self.stack.push(v);
-                self.process_dfs_tree();
-            } else {
-                self.collect_cycle(v);
-            }
-        }
-        self.visited.remove(&top);
-        self.stack.pop();
-    }
-
-    fn collect_cycle(&mut self, v: FunctionInstance<'tcx>) {
-        let mut cycle = vec![self.stack.pop().unwrap()];
-        while let Some(v2) = self.stack.pop() {
-            cycle.push(v2);
-            if v2 == v {
-                self.stack.push(v);
-                break;
-            }
-        }
-
-        // Order the cycle, to avoid detecting the same cycle starting at different positions
-        let (min_idx, _) = cycle
-            .iter()
-            .enumerate()
-            .min_by(|(_, def1), (_, def2)| self.ordering[*def1].cmp(&self.ordering[*def2]))
-            .unwrap();
-        let mut result = Vec::new();
-        let mut idx = (min_idx + 1) % cycle.len();
-        while idx != min_idx {
-            result.push(cycle[idx]);
-            idx = (idx + 1) % cycle.len();
-        }
-        result.push(cycle[idx]);
-
-        self.detected_cycles.insert(result);
     }
 }
