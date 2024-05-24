@@ -68,7 +68,9 @@ macro_rules! tuple_impl_all_plain {
 tuple_impl_all_plain! {A B C D E F G H I J K L}
 
 /// Data that would have been a valid `T` in an earlier state but may not be anymore.
-/// Inside Prusti a type will automatically be cast to a `Zombie` if it moved to a state where it is no longer valid
+/// Inside Prusti specifications a type will automatically be cast to a `Zombie`
+/// if it moved to a state where it is no longer valid
+#[allow(dead_code)]
 #[rustc_diagnostic_item = "prusti_zombie_internal"]
 struct Zombie<T>(core::marker::PhantomData<T>);
 

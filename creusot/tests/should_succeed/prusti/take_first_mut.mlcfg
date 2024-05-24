@@ -100,7 +100,10 @@ module TakeFirstMut_TakeFirstMut
     ensures { result = shallow_model0 self }
     
   axiom shallow_model0_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv1 self)
-   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv7 (shallow_model0 self)) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model0 self = Slice.id self) && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model0 self) <= UIntSize.to_int max0)
+   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv7 (shallow_model0 self))
+  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model0 self = Slice.id self)
+  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model0 self)
+  <= UIntSize.to_int max0)
   predicate resolve3 (self : borrowed t) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
   val resolve3 (self : borrowed t) : bool
@@ -117,19 +120,21 @@ module TakeFirstMut_TakeFirstMut
     ensures { result = resolve1 self }
     
   predicate resolve0 (self : (borrowed t, borrowed (slice t))) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60] resolve3 (let (a, _) = self in a) /\ resolve1 (let (_, a) = self in a)
+    [#"../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60] resolve3 (let (a, _) = self in a)
+    /\ resolve1 (let (_, a) = self in a)
   val resolve0 (self : (borrowed t, borrowed (slice t))) : bool
     ensures { result = resolve0 self }
     
   val unwrap0 (self : Core_Option_Option_Type.t_option (borrowed t, borrowed (slice t))) : (borrowed t, borrowed (slice t))
     requires {[#"../../../../../creusot-contracts/src/std/option.rs" 29 0 126 1] self <> Core_Option_Option_Type.C_None}
     requires {inv6 self}
-    ensures { [#"../../../../../creusot-contracts/src/std/option.rs" 29 0 126 1] Core_Option_Option_Type.C_Some result = self }
+    ensures { [#"../../../../../creusot-contracts/src/std/option.rs" 29 0 126 1] Core_Option_Option_Type.C_Some result
+    = self }
     ensures { inv2 result }
     
   use seq.Seq
   function shallow_model1 (self : borrowed (slice t)) : Seq.seq t =
-    [#"../../../../../creusot-contracts/src/model.rs" 97 8 97 31] shallow_model0 ( * self)
+    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model0 ( * self)
   val shallow_model1 (self : borrowed (slice t)) : Seq.seq t
     ensures { result = shallow_model1 self }
     
@@ -138,21 +143,28 @@ module TakeFirstMut_TakeFirstMut
   val tail0 (self : Seq.seq t) : Seq.seq t
     ensures { result = tail0 self }
     
-  function index_logic1 [@inline:trivial] (self : slice t) (ix : int) : t =
+  function index_logic0 [@inline:trivial] (self : slice t) (ix : int) : t =
     [#"../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (shallow_model0 self) ix
-  val index_logic1 [@inline:trivial] (self : slice t) (ix : int) : t
-    ensures { result = index_logic1 self ix }
+  val index_logic0 [@inline:trivial] (self : slice t) (ix : int) : t
+    ensures { result = index_logic0 self ix }
     
   val split_first_mut0 (self : borrowed (slice t)) : Core_Option_Option_Type.t_option (borrowed t, borrowed (slice t))
     requires {inv0 self}
     ensures { [#"../../../../../creusot-contracts/src/std/slice.rs" 267 18 275 9] match result with
-      | Core_Option_Option_Type.C_Some (first, tail) ->  * first = index_logic1 ( * self) 0 /\  ^ first = index_logic1 ( ^ self) 0 /\ Seq.length (shallow_model0 ( * self)) > 0 /\ Seq.length (shallow_model0 ( ^ self)) > 0 /\ shallow_model0 ( * tail) = tail0 (shallow_model0 ( * self)) /\ shallow_model0 ( ^ tail) = tail0 (shallow_model0 ( ^ self))
-      | Core_Option_Option_Type.C_None -> Seq.length (shallow_model1 self) = 0 /\  ^ self =  * self /\ shallow_model1 self = Seq.empty 
+      | Core_Option_Option_Type.C_Some (first, tail) ->  * first = index_logic0 ( * self) 0
+      /\  ^ first = index_logic0 ( ^ self) 0
+      /\ Seq.length (shallow_model0 ( * self)) > 0
+      /\ Seq.length (shallow_model0 ( ^ self)) > 0
+      /\ shallow_model0 ( * tail) = tail0 (shallow_model0 ( * self))
+      /\ shallow_model0 ( ^ tail) = tail0 (shallow_model0 ( ^ self))
+      | Core_Option_Option_Type.C_None -> Seq.length (shallow_model1 self) = 0
+      /\  ^ self =  * self /\ shallow_model1 self = Seq.empty 
       end }
     ensures { inv6 result }
     
   predicate is_default0 (self : borrowed (slice t)) =
-    [#"../../../../../creusot-contracts/src/std/slice.rs" 55 20 55 65] shallow_model1 self = Seq.empty  /\ shallow_model0 ( ^ self) = Seq.empty 
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 55 20 55 65] shallow_model1 self = Seq.empty 
+    /\ shallow_model0 ( ^ self) = Seq.empty 
   val is_default0 (self : borrowed (slice t)) : bool
     ensures { result = is_default0 self }
     
@@ -166,8 +178,10 @@ module TakeFirstMut_TakeFirstMut
     requires {[#"../take_first_mut.rs" 6 11 6 27] Seq.length (shallow_model0 ( *  * s)) > 0}
     requires {[#"../take_first_mut.rs" 10 33 10 34] inv3 s}
     ensures { [#"../take_first_mut.rs" 7 10 7 35]  * result = old(Seq.get (shallow_model0 ( *  * s)) 0) }
-    ensures { [#"../take_first_mut.rs" 8 10 8 60] shallow_model0 ( *  ^ s) = old(SeqExt.subsequence (shallow_model0 ( *  * s)) 1 (Seq.length (shallow_model0 ( *  * s)))) }
-    ensures { [#"../take_first_mut.rs" 9 19 9 81] shallow_model0 ( ^ (old( * s))) = Seq.(++) (Seq.singleton ( ^ result)) (shallow_model0 ( ^  ^ s)) }
+    ensures { [#"../take_first_mut.rs" 8 10 8 60] shallow_model0 ( *  ^ s)
+    = old(SeqExt.subsequence (shallow_model0 ( *  * s)) 1 (Seq.length (shallow_model0 ( *  * s)))) }
+    ensures { [#"../take_first_mut.rs" 9 19 9 81] shallow_model0 ( ^ (old( * s)))
+    = Seq.(++) (Seq.singleton ( ^ result)) (shallow_model0 ( ^  ^ s)) }
     ensures { [#"../take_first_mut.rs" 10 60 10 69] inv5 result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
