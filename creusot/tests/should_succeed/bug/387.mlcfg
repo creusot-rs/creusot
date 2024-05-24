@@ -70,6 +70,8 @@ module C387_Impl0_Height
     ensures { result = inv0 _x }
     
   axiom inv0 : forall x : uint64 . inv0 x = true
+  use C387_Node_Type as C387_Node_Type
+  use C387_Tree_Type as C387_Tree_Type
   use prelude.Borrow
   use prelude.Int
   use int.Int
@@ -94,9 +96,7 @@ module C387_Impl0_Height
      -> result = self }
     ensures { inv0 result }
     
-  use C387_Node_Type as C387_Node_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
-  use C387_Tree_Type as C387_Tree_Type
   let rec cfg height [#"../387.rs" 16 4 16 31] [@cfg:stackify] [@cfg:subregion_analysis] (self : C387_Tree_Type.t_tree) : uint64
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -111,21 +111,21 @@ module C387_Impl0_Height
   }
   BB0 {
     switch (C387_Tree_Type.tree_0 self)
-      | Core_Option_Option_Type.C_None -> goto BB1
-      | Core_Option_Option_Type.C_Some _ -> goto BB2
+      | Core_Option_Option_Type.C_None -> goto BB2
+      | Core_Option_Option_Type.C_Some _ -> goto BB3
       end
   }
   BB1 {
-    goto BB4
+    assert { [#"../387.rs" 17 14 17 18] false };
+    absurd
   }
   BB2 {
+    goto BB4
+  }
+  BB3 {
     [#"../387.rs" 19 22 19 23] n <- Core_Option_Option_Type.some_0 (C387_Tree_Type.tree_0 self);
     [#"../387.rs" 19 29 19 44] _5 <- ([#"../387.rs" 19 29 19 44] height (C387_Node_Type.node_left n));
     goto BB5
-  }
-  BB3 {
-    assert { [#"../387.rs" 17 14 17 18] false };
-    absurd
   }
   BB4 {
     [#"../387.rs" 18 26 18 27] _0 <- ([#"../387.rs" 18 26 18 27] (0 : uint64));

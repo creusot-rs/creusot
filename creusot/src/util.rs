@@ -31,7 +31,7 @@ use std::{
 use why3::{
     declaration,
     declaration::{LetKind, Signature, ValDecl},
-    Ident, QName,
+    Ident,
 };
 
 pub(crate) fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
@@ -153,7 +153,7 @@ pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::A
 }
 
 pub(crate) fn param_def_id(tcx: TyCtxt, def_id: LocalDefId) -> LocalDefId {
-    if is_spec(tcx, def_id.to_def_id()) && tcx.is_closure_or_coroutine(def_id.to_def_id()) {
+    if is_spec(tcx, def_id.to_def_id()) && tcx.is_closure_like(def_id.to_def_id()) {
         tcx.parent(def_id.to_def_id()).expect_local()
     } else {
         def_id
@@ -166,7 +166,7 @@ pub(crate) fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
             return false;
         }
 
-        if tcx.is_closure_or_coroutine(def_id) {
+        if tcx.is_closure_like(def_id) {
             def_id = tcx.parent(def_id);
         } else {
             return true;
@@ -194,33 +194,29 @@ pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     })
 }
 
-pub(crate) fn item_qname(ctx: &TranslationCtx, def_id: DefId, ns: Namespace) -> QName {
-    QName { module: vec![module_name(ctx.tcx, def_id)], name: item_name(ctx.tcx, def_id, ns) }
+pub(crate) fn item_name(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Ident {
+    item_symb(tcx, def_id, ns).to_string().into()
 }
 
-pub(crate) fn item_name(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Ident {
+pub(crate) fn item_symb(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Symbol {
     use rustc_hir::def::DefKind::*;
 
     match tcx.def_kind(def_id) {
-        AssocTy => ident_of_ty(tcx.item_name(def_id)),
-        Ctor(_, _) => format!("C_{}", tcx.item_name(def_id)).into(),
+        AssocTy => tcx.item_name(def_id),
+        Ctor(_, _) => Symbol::intern(&format!("C_{}", tcx.item_name(def_id))),
         Struct | Variant | Union if ns == Namespace::ValueNS => {
-            format!("C_{}", tcx.item_name(def_id)).into()
+            Symbol::intern(&format!("C_{}", tcx.item_name(def_id)))
         }
         Variant | Struct | Enum | Union => {
-            format!("t_{}", tcx.item_name(def_id).as_str().to_ascii_lowercase()).into()
+            Symbol::intern(&format!("t_{}", tcx.item_name(def_id).as_str().to_ascii_lowercase()))
         }
         Closure => {
-            let mut id = ident_path(tcx, def_id);
-            if ns == Namespace::TypeNS {
-                id = id.to_string().to_ascii_lowercase().into();
-            } else {
-                id.decapitalize();
-            }
-            id
+            let mut id = ident_path(tcx, def_id).to_string();
+            id = id.to_ascii_lowercase().into();
+            Symbol::intern(&id)
         }
 
-        _ => ident_of(tcx.item_name(def_id)),
+        _ => tcx.item_name(def_id),
     }
 }
 
@@ -237,26 +233,19 @@ pub(crate) fn ident_of(sym: Symbol) -> Ident {
     }
 }
 
-pub(crate) fn ident_of_ty(sym: Symbol) -> Ident {
-    let mut id = sym.to_string();
-
-    id[..1].make_ascii_lowercase();
-    Ident::build(&id)
-}
-
 pub(crate) fn inv_module_name(tcx: TyCtxt, kind: TyInvKind) -> Ident {
     match kind {
         TyInvKind::Trivial => "TyInv_Trivial".into(),
         TyInvKind::Borrow(Mutability::Not) => "TyInv_Borrow_Shared".into(),
         TyInvKind::Borrow(Mutability::Mut) => "TyInv_Borrow".into(),
         TyInvKind::Box => "TyInv_Box".into(),
-        TyInvKind::Adt(adt_did) => format!("{}_Inv", &*ident_path(tcx, adt_did)).into(),
+        TyInvKind::Adt(adt_did) => format!("{}_Inv", ident_path(tcx, adt_did)).into(),
         TyInvKind::Tuple(arity) => format!("TyInv_Tuple{arity}").into(),
         TyInvKind::Slice => format!("TyInv_Slice").into(),
     }
 }
 
-pub(crate) fn module_name(tcx: TyCtxt, def_id: DefId) -> Ident {
+pub(crate) fn module_name(tcx: TyCtxt, def_id: DefId) -> Symbol {
     let kind = tcx.def_kind(def_id);
     use rustc_hir::def::DefKind::*;
 
@@ -266,7 +255,7 @@ pub(crate) fn module_name(tcx: TyCtxt, def_id: DefId) -> Ident {
     }
 }
 
-fn ident_path(tcx: TyCtxt, def_id: DefId) -> Ident {
+pub fn ident_path(tcx: TyCtxt, def_id: DefId) -> Symbol {
     use heck::ToUpperCamelCase;
 
     let def_path = tcx.def_path(def_id);
@@ -290,7 +279,7 @@ fn ident_path(tcx: TyCtxt, def_id: DefId) -> Ident {
         segments.push("Type".into());
     }
 
-    segments.join("_").into()
+    Symbol::intern(&segments.join("_"))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -305,6 +294,7 @@ pub enum ItemType {
     AssocTy,
     Constant,
     Unsupported(DefKind),
+    Field,
 }
 
 impl ItemType {
@@ -350,6 +340,7 @@ impl ItemType {
             ItemType::Type => "type declaration",
             ItemType::AssocTy => "associated type",
             ItemType::Constant => "constant",
+            ItemType::Field => "field",
             ItemType::Unsupported(_) => "[OTHER]",
         }
     }
@@ -382,6 +373,7 @@ pub(crate) fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
         DefKind::Closure => ItemType::Closure,
         DefKind::Struct | DefKind::Enum | DefKind::Union => ItemType::Type,
         DefKind::AssocTy => ItemType::AssocTy,
+        DefKind::Field => ItemType::Field,
         DefKind::AnonConst => panic!(),
         dk => ItemType::Unsupported(dk),
     }
@@ -763,7 +755,7 @@ pub(crate) fn closure_capture_subst<'tcx>(
     self_name: Symbol,
 ) -> ClosureSubst<'tcx> {
     let mut fun_def_id = def_id;
-    while tcx.is_closure_or_coroutine(fun_def_id) {
+    while tcx.is_closure_like(fun_def_id) {
         fun_def_id = tcx.parent(fun_def_id);
     }
 

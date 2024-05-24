@@ -116,22 +116,6 @@ where
     }
 }
 
-struct YieldResumeEffect<'a, T>(&'a mut T);
-
-impl<'tcx, T> Visitor<'tcx> for YieldResumeEffect<'_, T>
-where
-    T: GenKill<Local>,
-{
-    fn visit_place(&mut self, place: &mir::Place<'tcx>, context: PlaceContext, location: Location) {
-        DefUse::apply(self.0, *place, context);
-        self.visit_projection(place.as_ref(), context, location);
-    }
-
-    fn visit_local(&mut self, local: Local, context: PlaceContext, _: Location) {
-        DefUse::apply(self.0, local.into(), context);
-    }
-}
-
 #[derive(Eq, PartialEq, Clone)]
 enum DefUse {
     Def,

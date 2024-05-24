@@ -3,7 +3,7 @@ use crate::{
 };
 use creusot_metadata::{decode_metadata, encode_metadata};
 use indexmap::IndexMap;
-use rustc_hir::def_id::{CrateNum, DefId, LOCAL_CRATE};
+use rustc_hir::def_id::{CrateNum, DefId};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
@@ -142,10 +142,10 @@ fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
     out.as_ref().map(|s| s.clone().into()).unwrap_or_else(|| {
         let outputs = ctx.tcx.output_filenames(());
 
-        let crate_name = ctx.tcx.crate_name(LOCAL_CRATE);
-        let libname = format!("{}{}", crate_name.as_str(), ctx.tcx.sess.opts.cg.extra_filename);
+        // let crate_name = ctx.tcx.crate_name(LOCAL_CRATE);
 
-        outputs.out_directory.join(&format!("lib{}.cmeta", libname))
+        outputs.with_extension("cmeta")
+        // .join(&format!("lib{}.cmeta", libname))
     })
 }
 

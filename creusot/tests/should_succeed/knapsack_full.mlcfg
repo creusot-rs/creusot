@@ -5,7 +5,8 @@ module KnapsackFull_Max
   use prelude.UIntSize
   use prelude.Int
   let rec cfg max [#"../knapsack_full.rs" 15 0 15 35] [@cfg:stackify] [@cfg:subregion_analysis] (a : usize) (b : usize) : usize
-    ensures { [#"../knapsack_full.rs" 14 10 14 31] UIntSize.to_int result = MinMax.max (UIntSize.to_int a) (UIntSize.to_int b) }
+    ensures { [#"../knapsack_full.rs" 14 10 14 31] UIntSize.to_int result
+    = MinMax.max (UIntSize.to_int a) (UIntSize.to_int b) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : usize;
@@ -77,8 +78,15 @@ module KnapsackFull_SumWeights_Impl
    -> ([#"../knapsack_full.rs" 25 11 25 33] 0 <= i /\ i <= Seq.length s)
    -> match i = Seq.length s with
     | True -> [#"../knapsack_full.rs" 26 10 26 21] 0 >= 0
-    | False -> ((([#"../knapsack_full.rs" 27 21 27 22] inv0 s) && ([#"../knapsack_full.rs" 25 11 25 33] 0 <= i + 1 /\ i + 1 <= Seq.length s)) /\ 0 <= ([#"../knapsack_full.rs" 24 10 24 19] Seq.length s - i) /\ ([#"../knapsack_full.rs" 24 10 24 19] Seq.length s - (i + 1)) < ([#"../knapsack_full.rs" 24 10 24 19] Seq.length s - i)) /\ (([#"../knapsack_full.rs" 26 10 26 21] sum_weights s (i + 1) >= 0)
-     -> ([#"../knapsack_full.rs" 26 10 26 21] UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get s i)) + sum_weights s (i + 1) >= 0))
+    | False -> ((([#"../knapsack_full.rs" 27 21 27 22] inv0 s)
+    && ([#"../knapsack_full.rs" 25 11 25 33] 0 <= i + 1 /\ i + 1 <= Seq.length s))
+    /\ 0 <= ([#"../knapsack_full.rs" 24 10 24 19] Seq.length s - i)
+    /\ ([#"../knapsack_full.rs" 24 10 24 19] Seq.length s - (i + 1))
+    < ([#"../knapsack_full.rs" 24 10 24 19] Seq.length s - i))
+    /\ (([#"../knapsack_full.rs" 26 10 26 21] sum_weights s (i + 1) >= 0)
+     -> ([#"../knapsack_full.rs" 26 10 26 21] UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get s i))
+    + sum_weights s (i + 1)
+    >= 0))
     end
 end
 module KnapsackFull_SumValues_Impl
@@ -98,7 +106,10 @@ module KnapsackFull_SumValues_Impl
   goal vc_sum_values : ([#"../knapsack_full.rs" 36 11 36 33] i >= 0 /\ i <= Seq.length s)
    -> match i = Seq.length s with
     | True -> true
-    | False -> ([#"../knapsack_full.rs" 36 11 36 33] i + 1 >= 0 /\ i + 1 <= Seq.length s) /\ 0 <= ([#"../knapsack_full.rs" 35 10 35 19] Seq.length s - i) /\ ([#"../knapsack_full.rs" 35 10 35 19] Seq.length s - (i + 1)) < ([#"../knapsack_full.rs" 35 10 35 19] Seq.length s - i)
+    | False -> ([#"../knapsack_full.rs" 36 11 36 33] i + 1 >= 0 /\ i + 1 <= Seq.length s)
+    /\ 0 <= ([#"../knapsack_full.rs" 35 10 35 19] Seq.length s - i)
+    /\ ([#"../knapsack_full.rs" 35 10 35 19] Seq.length s - (i + 1))
+    < ([#"../knapsack_full.rs" 35 10 35 19] Seq.length s - i)
     end
 end
 module KnapsackFull_SubseqRev_Impl
@@ -121,12 +132,25 @@ module KnapsackFull_SubseqRev_Impl
     | True -> true
     | False -> if i1 < Seq.length s1 then
       if Seq.get s1 i1 = Seq.get s2 (i2 - 1) then
-        ((([#"../knapsack_full.rs" 47 11 47 36] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2) && ([#"../knapsack_full.rs" 46 11 46 36] 0 <= i1 + 1 /\ i1 + 1 <= Seq.length s1)) /\ 0 <= ([#"../knapsack_full.rs" 45 10 45 12] i2) /\ ([#"../knapsack_full.rs" 45 10 45 12] i2 - 1) < ([#"../knapsack_full.rs" 45 10 45 12] i2)) /\ (([#"../knapsack_full.rs" 47 11 47 36] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2) && ([#"../knapsack_full.rs" 46 11 46 36] 0 <= i1 /\ i1 <= Seq.length s1)) /\ 0 <= ([#"../knapsack_full.rs" 45 10 45 12] i2) /\ ([#"../knapsack_full.rs" 45 10 45 12] i2 - 1) < ([#"../knapsack_full.rs" 45 10 45 12] i2)
+        ((([#"../knapsack_full.rs" 47 11 47 36] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2)
+        && ([#"../knapsack_full.rs" 46 11 46 36] 0 <= i1 + 1 /\ i1 + 1 <= Seq.length s1))
+        /\ 0 <= ([#"../knapsack_full.rs" 45 10 45 12] i2)
+        /\ ([#"../knapsack_full.rs" 45 10 45 12] i2 - 1) < ([#"../knapsack_full.rs" 45 10 45 12] i2))
+        /\ (([#"../knapsack_full.rs" 47 11 47 36] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2)
+        && ([#"../knapsack_full.rs" 46 11 46 36] 0 <= i1 /\ i1 <= Seq.length s1))
+        /\ 0 <= ([#"../knapsack_full.rs" 45 10 45 12] i2)
+        /\ ([#"../knapsack_full.rs" 45 10 45 12] i2 - 1) < ([#"../knapsack_full.rs" 45 10 45 12] i2)
       else
-        (([#"../knapsack_full.rs" 47 11 47 36] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2) && ([#"../knapsack_full.rs" 46 11 46 36] 0 <= i1 /\ i1 <= Seq.length s1)) /\ 0 <= ([#"../knapsack_full.rs" 45 10 45 12] i2) /\ ([#"../knapsack_full.rs" 45 10 45 12] i2 - 1) < ([#"../knapsack_full.rs" 45 10 45 12] i2)
+        (([#"../knapsack_full.rs" 47 11 47 36] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2)
+        && ([#"../knapsack_full.rs" 46 11 46 36] 0 <= i1 /\ i1 <= Seq.length s1))
+        /\ 0 <= ([#"../knapsack_full.rs" 45 10 45 12] i2)
+        /\ ([#"../knapsack_full.rs" 45 10 45 12] i2 - 1) < ([#"../knapsack_full.rs" 45 10 45 12] i2)
       
     else
-      (([#"../knapsack_full.rs" 47 11 47 36] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2) && ([#"../knapsack_full.rs" 46 11 46 36] 0 <= i1 /\ i1 <= Seq.length s1)) /\ 0 <= ([#"../knapsack_full.rs" 45 10 45 12] i2) /\ ([#"../knapsack_full.rs" 45 10 45 12] i2 - 1) < ([#"../knapsack_full.rs" 45 10 45 12] i2)
+      (([#"../knapsack_full.rs" 47 11 47 36] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2)
+      && ([#"../knapsack_full.rs" 46 11 46 36] 0 <= i1 /\ i1 <= Seq.length s1))
+      /\ 0 <= ([#"../knapsack_full.rs" 45 10 45 12] i2)
+      /\ ([#"../knapsack_full.rs" 45 10 45 12] i2 - 1) < ([#"../knapsack_full.rs" 45 10 45 12] i2)
     
     end
 end
@@ -162,7 +186,8 @@ module KnapsackFull_M_Impl
   use prelude.Int
   function sum_values0 [#"../knapsack_full.rs" 37 0 37 55] (s : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) : int
     
-  axiom sum_values0_def : forall s : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int . sum_values0 s i = ([#"../knapsack_full.rs" 38 4 41 5] if i = Seq.length s then
+  axiom sum_values0_def : forall s : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int . sum_values0 s i
+  = ([#"../knapsack_full.rs" 38 4 41 5] if i = Seq.length s then
     0
   else
     UIntSize.to_int (KnapsackFull_Item_Type.item_value (Seq.get s i)) + sum_values0 s (i + 1)
@@ -173,7 +198,8 @@ module KnapsackFull_M_Impl
     
   function sum_weights0 [#"../knapsack_full.rs" 27 0 27 56] (s : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) : int
     
-  axiom sum_weights0_def : forall s : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int . sum_weights0 s i = ([#"../knapsack_full.rs" 28 4 31 5] if i = Seq.length s then
+  axiom sum_weights0_def : forall s : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int . sum_weights0 s i
+  = ([#"../knapsack_full.rs" 28 4 31 5] if i = Seq.length s then
     0
   else
     UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get s i)) + sum_weights0 s (i + 1)
@@ -183,15 +209,19 @@ module KnapsackFull_M_Impl
     requires {[#"../knapsack_full.rs" 27 21 27 22] inv1 s}
     ensures { result = sum_weights0 s i }
     
-  axiom sum_weights0_spec : forall s : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int . ([#"../knapsack_full.rs" 25 11 25 33] 0 <= i /\ i <= Seq.length s)
+  axiom sum_weights0_spec : forall s : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int . ([#"../knapsack_full.rs" 25 11 25 33] 0
+  <= i
+  /\ i <= Seq.length s)
    -> ([#"../knapsack_full.rs" 27 21 27 22] inv1 s)  -> ([#"../knapsack_full.rs" 26 10 26 21] sum_weights0 s i >= 0)
   use seq.Seq
   predicate subseq_rev0 [#"../knapsack_full.rs" 48 0 48 67] (s1 : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i1 : int) (s2 : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i2 : int)
     
-  axiom subseq_rev0_def : forall s1 : Seq.seq (KnapsackFull_Item_Type.t_item name), i1 : int, s2 : Seq.seq (KnapsackFull_Item_Type.t_item name), i2 : int . subseq_rev0 s1 i1 s2 i2 = ([#"../knapsack_full.rs" 49 4 55 5] if i2 = 0 then
+  axiom subseq_rev0_def : forall s1 : Seq.seq (KnapsackFull_Item_Type.t_item name), i1 : int, s2 : Seq.seq (KnapsackFull_Item_Type.t_item name), i2 : int . subseq_rev0 s1 i1 s2 i2
+  = ([#"../knapsack_full.rs" 49 4 55 5] if i2 = 0 then
     i1 = Seq.length s1
   else
-    i1 < Seq.length s1 /\ Seq.get s1 i1 = Seq.get s2 (i2 - 1) /\ subseq_rev0 s1 (i1 + 1) s2 (i2 - 1) \/ subseq_rev0 s1 i1 s2 (i2 - 1)
+    i1 < Seq.length s1 /\ Seq.get s1 i1 = Seq.get s2 (i2 - 1) /\ subseq_rev0 s1 (i1 + 1) s2 (i2 - 1)
+    \/ subseq_rev0 s1 i1 s2 (i2 - 1)
   )
   val subseq_rev0 [#"../knapsack_full.rs" 48 0 48 67] (s1 : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i1 : int) (s2 : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i2 : int) : bool
     requires {[#"../knapsack_full.rs" 46 11 46 36] 0 <= i1 /\ i1 <= Seq.length s1}
@@ -208,24 +238,53 @@ module KnapsackFull_M_Impl
    -> ([#"../knapsack_full.rs" 60 11 60 37] 0 <= i /\ i <= Seq.length items)
    -> match i = 0 with
     | True -> let result = 0 in ([#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv1 s
-     -> 0 <= j /\ j <= Seq.length s /\ subseq_rev0 s j items i /\ sum_weights0 s j <= w
-     -> sum_values0 s j <= result) && ([#"../knapsack_full.rs" 62 10 62 21] result >= 0)
+     -> 0 <= j /\ j <= Seq.length s /\ subseq_rev0 s j items i /\ sum_weights0 s j <= w  -> sum_values0 s j <= result)
+    && ([#"../knapsack_full.rs" 62 10 62 21] result >= 0)
     | False -> match UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1))) > w with
-      | True -> ((([#"../knapsack_full.rs" 66 11 66 16] inv0 items) && ([#"../knapsack_full.rs" 61 11 61 17] 0 <= w) && ([#"../knapsack_full.rs" 60 11 60 37] 0 <= i - 1 /\ i - 1 <= Seq.length items)) /\ 0 <= ([#"../knapsack_full.rs" 59 10 59 11] i) /\ ([#"../knapsack_full.rs" 59 10 59 11] i - 1) < ([#"../knapsack_full.rs" 59 10 59 11] i)) /\ (([#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv1 s
+      | True -> ((([#"../knapsack_full.rs" 66 11 66 16] inv0 items)
+      && ([#"../knapsack_full.rs" 61 11 61 17] 0 <= w)
+      && ([#"../knapsack_full.rs" 60 11 60 37] 0 <= i - 1 /\ i - 1 <= Seq.length items))
+      /\ 0 <= ([#"../knapsack_full.rs" 59 10 59 11] i)
+      /\ ([#"../knapsack_full.rs" 59 10 59 11] i - 1) < ([#"../knapsack_full.rs" 59 10 59 11] i))
+      /\ (([#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv1 s
        -> 0 <= j /\ j <= Seq.length s /\ subseq_rev0 s j items (i - 1) /\ sum_weights0 s j <= w
-       -> sum_values0 s j <= m items (i - 1) w) && ([#"../knapsack_full.rs" 62 10 62 21] m items (i - 1) w >= 0)
-       -> (let result = m items (i - 1) w in ([#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv1 s
-       -> 0 <= j /\ j <= Seq.length s /\ subseq_rev0 s j items i /\ sum_weights0 s j <= w
-       -> sum_values0 s j <= result) && ([#"../knapsack_full.rs" 62 10 62 21] result >= 0)))
-      | False -> ((([#"../knapsack_full.rs" 66 11 66 16] inv0 items) && ([#"../knapsack_full.rs" 61 11 61 17] 0 <= w) && ([#"../knapsack_full.rs" 60 11 60 37] 0 <= i - 1 /\ i - 1 <= Seq.length items)) /\ 0 <= ([#"../knapsack_full.rs" 59 10 59 11] i) /\ ([#"../knapsack_full.rs" 59 10 59 11] i - 1) < ([#"../knapsack_full.rs" 59 10 59 11] i)) /\ (([#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv1 s
+       -> sum_values0 s j <= m items (i - 1) w)
+      && ([#"../knapsack_full.rs" 62 10 62 21] m items (i - 1) w >= 0)
+       -> (let result = m items (i
+      - 1) w in ([#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv1 s
+       -> 0 <= j /\ j <= Seq.length s /\ subseq_rev0 s j items i /\ sum_weights0 s j <= w  -> sum_values0 s j <= result)
+      && ([#"../knapsack_full.rs" 62 10 62 21] result >= 0)))
+      | False -> ((([#"../knapsack_full.rs" 66 11 66 16] inv0 items)
+      && ([#"../knapsack_full.rs" 61 11 61 17] 0 <= w)
+      && ([#"../knapsack_full.rs" 60 11 60 37] 0 <= i - 1 /\ i - 1 <= Seq.length items))
+      /\ 0 <= ([#"../knapsack_full.rs" 59 10 59 11] i)
+      /\ ([#"../knapsack_full.rs" 59 10 59 11] i - 1) < ([#"../knapsack_full.rs" 59 10 59 11] i))
+      /\ (([#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv1 s
        -> 0 <= j /\ j <= Seq.length s /\ subseq_rev0 s j items (i - 1) /\ sum_weights0 s j <= w
-       -> sum_values0 s j <= m items (i - 1) w) && ([#"../knapsack_full.rs" 62 10 62 21] m items (i - 1) w >= 0)
-       -> ((([#"../knapsack_full.rs" 66 11 66 16] inv0 items) && ([#"../knapsack_full.rs" 61 11 61 17] 0 <= w - UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1)))) && ([#"../knapsack_full.rs" 60 11 60 37] 0 <= i - 1 /\ i - 1 <= Seq.length items)) /\ 0 <= ([#"../knapsack_full.rs" 59 10 59 11] i) /\ ([#"../knapsack_full.rs" 59 10 59 11] i - 1) < ([#"../knapsack_full.rs" 59 10 59 11] i)) /\ (([#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv1 s
-       -> 0 <= j /\ j <= Seq.length s /\ subseq_rev0 s j items (i - 1) /\ sum_weights0 s j <= w - UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1)))
-       -> sum_values0 s j <= m items (i - 1) (w - UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1))))) && ([#"../knapsack_full.rs" 62 10 62 21] m items (i - 1) (w - UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1)))) >= 0)
-       -> (let result = MinMax.max (m items (i - 1) w) (m items (i - 1) (w - UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1)))) + UIntSize.to_int (KnapsackFull_Item_Type.item_value (Seq.get items (i - 1)))) in ([#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv1 s
-       -> 0 <= j /\ j <= Seq.length s /\ subseq_rev0 s j items i /\ sum_weights0 s j <= w
-       -> sum_values0 s j <= result) && ([#"../knapsack_full.rs" 62 10 62 21] result >= 0))))
+       -> sum_values0 s j <= m items (i - 1) w)
+      && ([#"../knapsack_full.rs" 62 10 62 21] m items (i - 1) w >= 0)
+       -> ((([#"../knapsack_full.rs" 66 11 66 16] inv0 items)
+      && ([#"../knapsack_full.rs" 61 11 61 17] 0
+      <= w - UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1))))
+      && ([#"../knapsack_full.rs" 60 11 60 37] 0 <= i - 1 /\ i - 1 <= Seq.length items))
+      /\ 0 <= ([#"../knapsack_full.rs" 59 10 59 11] i)
+      /\ ([#"../knapsack_full.rs" 59 10 59 11] i - 1) < ([#"../knapsack_full.rs" 59 10 59 11] i))
+      /\ (([#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv1 s
+       -> 0 <= j
+      /\ j <= Seq.length s
+      /\ subseq_rev0 s j items (i - 1)
+      /\ sum_weights0 s j <= w - UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1)))
+       -> sum_values0 s j
+      <= m items (i - 1) (w - UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1)))))
+      && ([#"../knapsack_full.rs" 62 10 62 21] m items (i - 1) (w
+      - UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1))))
+      >= 0)
+       -> (let result = MinMax.max (m items (i - 1) w) (m items (i - 1) (w
+      - UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1))))
+      + UIntSize.to_int (KnapsackFull_Item_Type.item_value (Seq.get items (i
+      - 1)))) in ([#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv1 s
+       -> 0 <= j /\ j <= Seq.length s /\ subseq_rev0 s j items i /\ sum_weights0 s j <= w  -> sum_values0 s j <= result)
+      && ([#"../knapsack_full.rs" 62 10 62 21] result >= 0))))
       end
     end
 end
@@ -331,22 +390,25 @@ module KnapsackFull_Knapsack01Dyn
   val inv22 (_x : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv22 _x }
     
-  function shallow_model5 (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (KnapsackFull_Item_Type.t_item name)
+  function shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (KnapsackFull_Item_Type.t_item name)
     
-  val shallow_model5 (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (KnapsackFull_Item_Type.t_item name)
+  val shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (KnapsackFull_Item_Type.t_item name)
     requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv22 self}
-    ensures { result = shallow_model5 self }
+    ensures { result = shallow_model4 self }
     
-  axiom shallow_model5_spec : forall self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv22 self)
-   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv11 (shallow_model5 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model5 self) <= UIntSize.to_int max1)
+  axiom shallow_model4_spec : forall self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv22 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv11 (shallow_model4 self))
+  && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model4 self)
+  <= UIntSize.to_int max1)
   predicate invariant22 (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global))
     
    =
-    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv11 (shallow_model5 self)
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv11 (shallow_model4 self)
   val invariant22 (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = invariant22 self }
     
-  axiom inv22 : forall x : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global) . inv22 x = true
+  axiom inv22 : forall x : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global) . inv22 x
+  = true
   use prelude.Borrow
   predicate invariant21 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)))
     
@@ -358,7 +420,8 @@ module KnapsackFull_Knapsack01Dyn
   val inv21 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global))) : bool
     ensures { result = inv21 _x }
     
-  axiom inv21 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) . inv21 x = true
+  axiom inv21 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) . inv21 x
+  = true
   predicate invariant20 (self : borrowed usize) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
   val invariant20 (self : borrowed usize) : bool
@@ -391,7 +454,8 @@ module KnapsackFull_Knapsack01Dyn
   val inv18 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global))) : bool
     ensures { result = inv18 _x }
     
-  axiom inv18 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global)) . inv18 x = true
+  axiom inv18 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global)) . inv18 x
+  = true
   predicate invariant17 (self : usize) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
   val invariant17 (self : usize) : bool
@@ -424,7 +488,8 @@ module KnapsackFull_Knapsack01Dyn
   val inv15 (_x : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv15 _x }
     
-  axiom inv15 : forall x : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global) . inv15 x = true
+  axiom inv15 : forall x : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global) . inv15 x
+  = true
   use Core_Ops_Range_RangeInclusive_Type as Core_Ops_Range_RangeInclusive_Type
   predicate invariant14 (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
@@ -496,7 +561,9 @@ module KnapsackFull_Knapsack01Dyn
     ensures { result = shallow_model1 self }
     
   axiom shallow_model1_spec : forall self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv8 self)
-   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv9 (shallow_model1 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model1 self) <= UIntSize.to_int max1)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv9 (shallow_model1 self))
+  && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model1 self)
+  <= UIntSize.to_int max1)
   predicate invariant8 (self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global))
     
    =
@@ -504,21 +571,24 @@ module KnapsackFull_Knapsack01Dyn
   val invariant8 (self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = invariant8 self }
     
-  axiom inv8 : forall x : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global) . inv8 x = true
+  axiom inv8 : forall x : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global) . inv8 x
+  = true
   use seq.Seq
   predicate inv7 (_x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
   val inv7 (_x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv7 _x }
     
-  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
-  val shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
+  function shallow_model2 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
+  val shallow_model2 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
     requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self}
-    ensures { result = shallow_model3 self }
+    ensures { result = shallow_model2 self }
     
-  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self)
-   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv10 (shallow_model3 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max1)
+  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv10 (shallow_model2 self))
+  && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self)
+  <= UIntSize.to_int max1)
   predicate invariant7 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv10 (shallow_model3 self)
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv10 (shallow_model2 self)
   val invariant7 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = invariant7 self }
     
@@ -542,22 +612,25 @@ module KnapsackFull_Knapsack01Dyn
   val inv5 (_x : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv5 _x }
     
-  function shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (KnapsackFull_Item_Type.t_item name)
+  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (KnapsackFull_Item_Type.t_item name)
     
-  val shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (KnapsackFull_Item_Type.t_item name)
+  val shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (KnapsackFull_Item_Type.t_item name)
     requires {[#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv5 self}
-    ensures { result = shallow_model4 self }
+    ensures { result = shallow_model3 self }
     
-  axiom shallow_model4_spec : forall self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv5 self)
-   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv4 (shallow_model4 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model4 self) <= UIntSize.to_int max1)
+  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv5 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv4 (shallow_model3 self))
+  && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self)
+  <= UIntSize.to_int max1)
   predicate invariant5 (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global))
     
    =
-    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv4 (shallow_model4 self)
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv4 (shallow_model3 self)
   val invariant5 (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = invariant5 self }
     
-  axiom inv5 : forall x : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global) . inv5 x = true
+  axiom inv5 : forall x : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global) . inv5 x
+  = true
   predicate invariant4 (self : Seq.seq (KnapsackFull_Item_Type.t_item name))
   val invariant4 (self : Seq.seq (KnapsackFull_Item_Type.t_item name)) : bool
     ensures { result = invariant4 self }
@@ -572,7 +645,8 @@ module KnapsackFull_Knapsack01Dyn
   val inv3 (_x : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv3 _x }
     
-  axiom inv3 : forall x : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global) . inv3 x = true
+  axiom inv3 : forall x : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global) . inv3 x
+  = true
   use seq.Seq
   predicate inv2 (_x : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)
   val inv2 (_x : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) : bool
@@ -613,12 +687,16 @@ module KnapsackFull_Knapsack01Dyn
     ensures { result = range_inclusive_len0 r }
     
   axiom range_inclusive_len0_spec : forall r : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 46 62 46 63] inv2 r)
-   -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 45 10 45 43] is_empty_log0 r = (range_inclusive_len0 r = 0))
+   -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 45 10 45 43] is_empty_log0 r
+  = (range_inclusive_len0 r = 0))
   predicate produces1 (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) (visited : Seq.seq usize) (o : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)
     
    =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 65 8 71 9] Seq.length visited = range_inclusive_len0 self - range_inclusive_len0 o /\ (is_empty_log0 self
-     -> is_empty_log0 o) /\ (is_empty_log0 o \/ end_log0 self = end_log0 o) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 65 8 71 9] Seq.length visited
+    = range_inclusive_len0 self - range_inclusive_len0 o
+    /\ (is_empty_log0 self  -> is_empty_log0 o)
+    /\ (is_empty_log0 o \/ end_log0 self = end_log0 o)
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model0 (Seq.get visited i) = deep_model0 (start_log0 self) + i)
   val produces1 (self : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) (visited : Seq.seq usize) (o : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize) : bool
     ensures { result = produces1 self visited o }
@@ -676,8 +754,14 @@ module KnapsackFull_Knapsack01Dyn
   predicate produces0 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize)
     
    =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0
-     -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self
+    = Core_Ops_Range_Range_Type.range_end o
+    /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o)
+    /\ (Seq.length visited > 0
+     -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o))
+    /\ Seq.length visited
+    = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self)
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model0 (Seq.get visited i) = deep_model0 (Core_Ops_Range_Range_Type.range_start self) + i)
   val produces0 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize) : bool
     ensures { result = produces0 self visited o }
@@ -716,34 +800,37 @@ module KnapsackFull_Knapsack01Dyn
     
   axiom inv0 : forall x : Core_Ops_Range_Range_Type.t_range usize . inv0 x = true
   use seq.Seq
-  function index_logic4 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (ix : int) : KnapsackFull_Item_Type.t_item name
+  function index_logic2 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (ix : int) : KnapsackFull_Item_Type.t_item name
     
    =
-    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model5 self) ix
-  val index_logic4 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (ix : int) : KnapsackFull_Item_Type.t_item name
-    ensures { result = index_logic4 self ix }
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model4 self) ix
+  val index_logic2 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (ix : int) : KnapsackFull_Item_Type.t_item name
+    ensures { result = index_logic2 self ix }
     
   use prelude.Snapshot
   use seq.Seq
-  function shallow_model10 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global))) : Seq.seq (KnapsackFull_Item_Type.t_item name)
+  function shallow_model9 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global))) : Seq.seq (KnapsackFull_Item_Type.t_item name)
     
    =
-    [#"../../../../creusot-contracts/src/model.rs" 97 8 97 31] shallow_model4 ( * self)
-  val shallow_model10 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global))) : Seq.seq (KnapsackFull_Item_Type.t_item name)
-    ensures { result = shallow_model10 self }
+    [#"../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model3 ( * self)
+  val shallow_model9 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global))) : Seq.seq (KnapsackFull_Item_Type.t_item name)
+    ensures { result = shallow_model9 self }
     
   val push0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global))) (value : KnapsackFull_Item_Type.t_item name) : ()
     requires {inv21 self}
     requires {inv1 value}
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 78 26 78 51] shallow_model4 ( ^ self) = Seq.snoc (shallow_model10 self) value }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 78 26 78 51] shallow_model3 ( ^ self)
+    = Seq.snoc (shallow_model9 self) value }
     
   use seq.Seq
   predicate subseq_rev0 [#"../knapsack_full.rs" 48 0 48 67] (s1 : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i1 : int) (s2 : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i2 : int)
     
-  axiom subseq_rev0_def : forall s1 : Seq.seq (KnapsackFull_Item_Type.t_item name), i1 : int, s2 : Seq.seq (KnapsackFull_Item_Type.t_item name), i2 : int . subseq_rev0 s1 i1 s2 i2 = ([#"../knapsack_full.rs" 49 4 55 5] if i2 = 0 then
+  axiom subseq_rev0_def : forall s1 : Seq.seq (KnapsackFull_Item_Type.t_item name), i1 : int, s2 : Seq.seq (KnapsackFull_Item_Type.t_item name), i2 : int . subseq_rev0 s1 i1 s2 i2
+  = ([#"../knapsack_full.rs" 49 4 55 5] if i2 = 0 then
     i1 = Seq.length s1
   else
-    i1 < Seq.length s1 /\ Seq.get s1 i1 = Seq.get s2 (i2 - 1) /\ subseq_rev0 s1 (i1 + 1) s2 (i2 - 1) \/ subseq_rev0 s1 i1 s2 (i2 - 1)
+    i1 < Seq.length s1 /\ Seq.get s1 i1 = Seq.get s2 (i2 - 1) /\ subseq_rev0 s1 (i1 + 1) s2 (i2 - 1)
+    \/ subseq_rev0 s1 i1 s2 (i2 - 1)
   )
   val subseq_rev0 [#"../knapsack_full.rs" 48 0 48 67] (s1 : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i1 : int) (s2 : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i2 : int) : bool
     requires {[#"../knapsack_full.rs" 46 11 46 36] 0 <= i1 /\ i1 <= Seq.length s1}
@@ -752,7 +839,8 @@ module KnapsackFull_Knapsack01Dyn
     
   function sum_values0 [#"../knapsack_full.rs" 37 0 37 55] (s : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) : int
     
-  axiom sum_values0_def : forall s : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int . sum_values0 s i = ([#"../knapsack_full.rs" 38 4 41 5] if i = Seq.length s then
+  axiom sum_values0_def : forall s : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int . sum_values0 s i
+  = ([#"../knapsack_full.rs" 38 4 41 5] if i = Seq.length s then
     0
   else
     UIntSize.to_int (KnapsackFull_Item_Type.item_value (Seq.get s i)) + sum_values0 s (i + 1)
@@ -763,7 +851,8 @@ module KnapsackFull_Knapsack01Dyn
     
   function sum_weights0 [#"../knapsack_full.rs" 27 0 27 56] (s : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) : int
     
-  axiom sum_weights0_def : forall s : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int . sum_weights0 s i = ([#"../knapsack_full.rs" 28 4 31 5] if i = Seq.length s then
+  axiom sum_weights0_def : forall s : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int . sum_weights0 s i
+  = ([#"../knapsack_full.rs" 28 4 31 5] if i = Seq.length s then
     0
   else
     UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get s i)) + sum_weights0 s (i + 1)
@@ -773,17 +862,19 @@ module KnapsackFull_Knapsack01Dyn
     requires {[#"../knapsack_full.rs" 27 21 27 22] inv4 s}
     ensures { result = sum_weights0 s i }
     
-  axiom sum_weights0_spec : forall s : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int . ([#"../knapsack_full.rs" 25 11 25 33] 0 <= i /\ i <= Seq.length s)
+  axiom sum_weights0_spec : forall s : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int . ([#"../knapsack_full.rs" 25 11 25 33] 0
+  <= i
+  /\ i <= Seq.length s)
    -> ([#"../knapsack_full.rs" 27 21 27 22] inv4 s)  -> ([#"../knapsack_full.rs" 26 10 26 21] sum_weights0 s i >= 0)
-  function index_logic2 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (ix : int) : KnapsackFull_Item_Type.t_item name
+  function index_logic1 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (ix : int) : KnapsackFull_Item_Type.t_item name
     
    =
-    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model4 self) ix
-  val index_logic2 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (ix : int) : KnapsackFull_Item_Type.t_item name
-    ensures { result = index_logic2 self ix }
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model3 self) ix
+  val index_logic1 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (ix : int) : KnapsackFull_Item_Type.t_item name
+    ensures { result = index_logic1 self ix }
     
   val with_capacity0 (capacity : usize) : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 71 26 71 44] Seq.length (shallow_model4 result) = 0 }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 71 26 71 44] Seq.length (shallow_model3 result) = 0 }
     ensures { inv5 result }
     
   predicate resolve6 (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global))
@@ -796,16 +887,16 @@ module KnapsackFull_Knapsack01Dyn
   val resolve8 (self : usize) : bool
     ensures { result = resolve8 self }
     
-  function index_logic5 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix : int) : usize
+  function index_logic3 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix : int) : usize
     
    =
-    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model3 self) ix
-  val index_logic5 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix : int) : usize
-    ensures { result = index_logic5 self ix }
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model2 self) ix
+  val index_logic3 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix : int) : usize
+    ensures { result = index_logic3 self ix }
     
   predicate resolve7 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model3 self)
-     -> resolve8 (index_logic5 self i)
+    [#"../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i
+    /\ i < Seq.length (shallow_model2 self)  -> resolve8 (index_logic3 self i)
   val resolve7 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve7 self }
     
@@ -820,8 +911,8 @@ module KnapsackFull_Knapsack01Dyn
   predicate resolve5 (self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global))
     
    =
-    [#"../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model1 self)
-     -> resolve7 (index_logic0 self i)
+    [#"../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i
+    /\ i < Seq.length (shallow_model1 self)  -> resolve7 (index_logic0 self i)
   val resolve5 (self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve5 self }
     
@@ -837,8 +928,8 @@ module KnapsackFull_Knapsack01Dyn
     
   use prelude.Slice
   predicate resolve_elswhere1 [@inline:trivial] (self : usize) (old' : Seq.seq usize) (fin : Seq.seq usize) =
-    [#"../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
-     -> Seq.get old' i = Seq.get fin i
+    [#"../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i
+    /\ i <> UIntSize.to_int self /\ i < Seq.length old'  -> Seq.get old' i = Seq.get fin i
   val resolve_elswhere1 [@inline:trivial] (self : usize) (old' : Seq.seq usize) (fin : Seq.seq usize) : bool
     ensures { result = resolve_elswhere1 self old' fin }
     
@@ -852,28 +943,29 @@ module KnapsackFull_Knapsack01Dyn
   val in_bounds2 [@inline:trivial] (self : usize) (seq : Seq.seq usize) : bool
     ensures { result = in_bounds2 self seq }
     
-  function shallow_model9 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : Seq.seq usize
+  function shallow_model8 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : Seq.seq usize
     
    =
-    [#"../../../../creusot-contracts/src/model.rs" 97 8 97 31] shallow_model3 ( * self)
-  val shallow_model9 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : Seq.seq usize
-    ensures { result = shallow_model9 self }
+    [#"../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model2 ( * self)
+  val shallow_model8 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : Seq.seq usize
+    ensures { result = shallow_model8 self }
     
   val index_mut1 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (index : usize) : borrowed usize
-    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 132 27 132 46] in_bounds2 index (shallow_model9 self)}
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 132 27 132 46] in_bounds2 index (shallow_model8 self)}
     requires {inv19 self}
     requires {inv6 index}
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 133 26 133 54] has_value2 index (shallow_model9 self) ( * result) }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 134 26 134 57] has_value2 index (shallow_model3 ( ^ self)) ( ^ result) }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 135 26 135 62] resolve_elswhere1 index (shallow_model9 self) (shallow_model3 ( ^ self)) }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 136 26 136 55] Seq.length (shallow_model3 ( ^ self)) = Seq.length (shallow_model9 self) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 133 26 133 54] has_value2 index (shallow_model8 self) ( * result) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 134 26 134 57] has_value2 index (shallow_model2 ( ^ self)) ( ^ result) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 135 26 135 62] resolve_elswhere1 index (shallow_model8 self) (shallow_model2 ( ^ self)) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 136 26 136 55] Seq.length (shallow_model2 ( ^ self))
+    = Seq.length (shallow_model8 self) }
     ensures { inv20 result }
     
   predicate resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (fin : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)))
     
    =
-    [#"../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
-     -> Seq.get old' i = Seq.get fin i
+    [#"../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i
+    /\ i <> UIntSize.to_int self /\ i < Seq.length old'  -> Seq.get old' i = Seq.get fin i
   val resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (fin : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : bool
     ensures { result = resolve_elswhere0 self old' fin }
     
@@ -891,51 +983,53 @@ module KnapsackFull_Knapsack01Dyn
   val in_bounds1 [@inline:trivial] (self : usize) (seq : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : bool
     ensures { result = in_bounds1 self seq }
     
-  function shallow_model8 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global))) : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
+  function shallow_model7 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global))) : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
     
    =
-    [#"../../../../creusot-contracts/src/model.rs" 97 8 97 31] shallow_model1 ( * self)
-  val shallow_model8 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global))) : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
-    ensures { result = shallow_model8 self }
+    [#"../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model1 ( * self)
+  val shallow_model7 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global))) : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
+    ensures { result = shallow_model7 self }
     
   val index_mut0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global))) (index : usize) : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
-    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 132 27 132 46] in_bounds1 index (shallow_model8 self)}
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 132 27 132 46] in_bounds1 index (shallow_model7 self)}
     requires {inv18 self}
     requires {inv6 index}
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 133 26 133 54] has_value1 index (shallow_model8 self) ( * result) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 133 26 133 54] has_value1 index (shallow_model7 self) ( * result) }
     ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 134 26 134 57] has_value1 index (shallow_model1 ( ^ self)) ( ^ result) }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 135 26 135 62] resolve_elswhere0 index (shallow_model8 self) (shallow_model1 ( ^ self)) }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 136 26 136 55] Seq.length (shallow_model1 ( ^ self)) = Seq.length (shallow_model8 self) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 135 26 135 62] resolve_elswhere0 index (shallow_model7 self) (shallow_model1 ( ^ self)) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 136 26 136 55] Seq.length (shallow_model1 ( ^ self))
+    = Seq.length (shallow_model7 self) }
     ensures { inv19 result }
     
   use int.MinMax
   val max0 [#"../knapsack_full.rs" 15 0 15 35] (a : usize) (b : usize) : usize
-    ensures { [#"../knapsack_full.rs" 14 10 14 31] UIntSize.to_int result = MinMax.max (UIntSize.to_int a) (UIntSize.to_int b) }
+    ensures { [#"../knapsack_full.rs" 14 10 14 31] UIntSize.to_int result
+    = MinMax.max (UIntSize.to_int a) (UIntSize.to_int b) }
     
-  function shallow_model7 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize =
-    [#"../../../../creusot-contracts/src/model.rs" 79 8 79 31] shallow_model3 self
-  val shallow_model7 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
-    ensures { result = shallow_model7 self }
-    
-  val index2 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (index : usize) : usize
-    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 141 27 141 46] in_bounds2 index (shallow_model7 self)}
-    requires {inv16 self}
-    requires {inv6 index}
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 142 26 142 54] has_value2 index (shallow_model7 self) result }
-    ensures { inv17 result }
-    
-  function shallow_model6 (self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
-    
-   =
-    [#"../../../../creusot-contracts/src/model.rs" 79 8 79 31] shallow_model1 self
-  val shallow_model6 (self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
+  function shallow_model6 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize =
+    [#"../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model2 self
+  val shallow_model6 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
     ensures { result = shallow_model6 self }
     
+  val index2 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (index : usize) : usize
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 141 27 141 46] in_bounds2 index (shallow_model6 self)}
+    requires {inv16 self}
+    requires {inv6 index}
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 142 26 142 54] has_value2 index (shallow_model6 self) result }
+    ensures { inv17 result }
+    
+  function shallow_model5 (self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
+    
+   =
+    [#"../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model1 self
+  val shallow_model5 (self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
+    ensures { result = shallow_model5 self }
+    
   val index1 (self : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global)) (index : usize) : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
-    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 141 27 141 46] in_bounds1 index (shallow_model6 self)}
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 141 27 141 46] in_bounds1 index (shallow_model5 self)}
     requires {inv15 self}
     requires {inv6 index}
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 142 26 142 54] has_value1 index (shallow_model6 self) result }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 142 26 142 54] has_value1 index (shallow_model5 self) result }
     ensures { inv16 result }
     
   predicate resolve2 (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) =
@@ -945,7 +1039,8 @@ module KnapsackFull_Knapsack01Dyn
     
   use seq.Seq
   predicate completed1 (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 58 12 58 57] is_empty_log0 ( * self) /\ is_empty_log0 ( ^ self)
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 58 12 58 57] is_empty_log0 ( * self)
+    /\ is_empty_log0 ( ^ self)
   val completed1 (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize)) : bool
     ensures { result = completed1 self }
     
@@ -977,7 +1072,7 @@ module KnapsackFull_Knapsack01Dyn
     ensures { [#"../../../../creusot-contracts/src/std/iter.rs" 89 0 166 1] into_iter_post1 self result }
     ensures { inv2 result }
     
-  val new2 (start : usize) (end' : usize) : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize
+  val new0 (start : usize) (end' : usize) : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive usize
     requires {inv6 start}
     requires {inv6 end'}
     ensures { [#"../../../../creusot-contracts/src/std/ops.rs" 220 26 220 53] start_log0 result = start }
@@ -1005,7 +1100,7 @@ module KnapsackFull_Knapsack01Dyn
   function shallow_model0 (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (KnapsackFull_Item_Type.t_item name)
     
    =
-    [#"../../../../creusot-contracts/src/model.rs" 79 8 79 31] shallow_model5 self
+    [#"../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model4 self
   val shallow_model0 (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (KnapsackFull_Item_Type.t_item name)
     ensures { result = shallow_model0 self }
     
@@ -1022,7 +1117,9 @@ module KnapsackFull_Knapsack01Dyn
     ensures { result = resolve0 self }
     
   predicate completed0 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve0 self /\ deep_model0 (Core_Ops_Range_Range_Type.range_start ( * self)) >= deep_model0 (Core_Ops_Range_Range_Type.range_end ( * self))
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve0 self
+    /\ deep_model0 (Core_Ops_Range_Range_Type.range_start ( * self))
+    >= deep_model0 (Core_Ops_Range_Range_Type.range_end ( * self))
   val completed0 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
     ensures { result = completed0 self }
     
@@ -1036,13 +1133,16 @@ module KnapsackFull_Knapsack01Dyn
     
   function m0 [#"../knapsack_full.rs" 66 0 66 57] (items : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) (w : int) : int
     
-  axiom m0_def : forall items : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int, w : int . m0 items i w = ([#"../knapsack_full.rs" 67 4 74 5] if i = 0 then
+  axiom m0_def : forall items : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int, w : int . m0 items i w
+  = ([#"../knapsack_full.rs" 67 4 74 5] if i = 0 then
     0
   else
     if UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1))) > w then
       m0 items (i - 1) w
     else
-      MinMax.max (m0 items (i - 1) w) (m0 items (i - 1) (w - UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1)))) + UIntSize.to_int (KnapsackFull_Item_Type.item_value (Seq.get items (i - 1))))
+      MinMax.max (m0 items (i - 1) w) (m0 items (i - 1) (w
+      - UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1))))
+      + UIntSize.to_int (KnapsackFull_Item_Type.item_value (Seq.get items (i - 1))))
     
   )
   val m0 [#"../knapsack_full.rs" 66 0 66 57] (items : Seq.seq (KnapsackFull_Item_Type.t_item name)) (i : int) (w : int) : int
@@ -1051,12 +1151,15 @@ module KnapsackFull_Knapsack01Dyn
     requires {[#"../knapsack_full.rs" 66 11 66 16] inv11 items}
     ensures { result = m0 items i w }
     
-  axiom m0_spec : forall items : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int, w : int . ([#"../knapsack_full.rs" 60 11 60 37] 0 <= i /\ i <= Seq.length items)
+  axiom m0_spec : forall items : Seq.seq (KnapsackFull_Item_Type.t_item name), i : int, w : int . ([#"../knapsack_full.rs" 60 11 60 37] 0
+  <= i
+  /\ i <= Seq.length items)
    -> ([#"../knapsack_full.rs" 61 11 61 17] 0 <= w)
    -> ([#"../knapsack_full.rs" 66 11 66 16] inv11 items)
    -> ([#"../knapsack_full.rs" 63 0 65 2] forall j : int . forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv4 s
    -> 0 <= j /\ j <= Seq.length s /\ subseq_rev0 s j items i /\ sum_weights0 s j <= w
-   -> sum_values0 s j <= m0 items i w) && ([#"../knapsack_full.rs" 62 10 62 21] m0 items i w >= 0)
+   -> sum_values0 s j <= m0 items i w)
+  && ([#"../knapsack_full.rs" 62 10 62 21] m0 items i w >= 0)
   use prelude.Snapshot
   use prelude.Snapshot
   use prelude.Snapshot
@@ -1082,33 +1185,38 @@ module KnapsackFull_Knapsack01Dyn
     
   val from_elem1 (elem : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (n : usize) : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global)
     requires {inv7 elem}
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 157 22 157 41] Seq.length (shallow_model1 result) = UIntSize.to_int n }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 158 12 158 78] forall i : int . 0 <= i /\ i < UIntSize.to_int n
-     -> index_logic0 result i = elem }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 157 22 157 41] Seq.length (shallow_model1 result)
+    = UIntSize.to_int n }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 158 12 158 78] forall i : int . 0 <= i
+    /\ i < UIntSize.to_int n  -> index_logic0 result i = elem }
     ensures { inv8 result }
     
   val len0 (self : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) : usize
     requires {inv3 self}
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 75 26 75 48] UIntSize.to_int result = Seq.length (shallow_model0 self) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 75 26 75 48] UIntSize.to_int result
+    = Seq.length (shallow_model0 self) }
     
   val from_elem0 (elem : usize) (n : usize) : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
     requires {inv6 elem}
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 157 22 157 41] Seq.length (shallow_model3 result) = UIntSize.to_int n }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 158 12 158 78] forall i : int . 0 <= i /\ i < UIntSize.to_int n
-     -> index_logic5 result i = elem }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 157 22 157 41] Seq.length (shallow_model2 result)
+    = UIntSize.to_int n }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 158 12 158 78] forall i : int . 0 <= i
+    /\ i < UIntSize.to_int n  -> index_logic3 result i = elem }
     ensures { inv7 result }
     
   let rec cfg knapsack01_dyn [#"../knapsack_full.rs" 85 0 85 91] [@cfg:stackify] [@cfg:subregion_analysis] (items : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (max_weight : usize) : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)
     requires {[#"../knapsack_full.rs" 77 11 77 34] Seq.length (shallow_model0 items) < 10000000}
     requires {[#"../knapsack_full.rs" 78 11 78 33] UIntSize.to_int max_weight < 10000000}
     requires {[#"../knapsack_full.rs" 79 0 79 86] forall i : int . 0 <= i /\ i < Seq.length (shallow_model0 items)
-     -> UIntSize.to_int (KnapsackFull_Item_Type.item_value (index_logic4 items i)) <= 10000000}
+     -> UIntSize.to_int (KnapsackFull_Item_Type.item_value (index_logic2 items i)) <= 10000000}
     requires {[#"../knapsack_full.rs" 85 28 85 33] inv3 items}
-    ensures { [#"../knapsack_full.rs" 80 10 80 60] sum_weights0 (shallow_model4 result) (Seq.length (shallow_model4 result)) <= UIntSize.to_int max_weight }
-    ensures { [#"../knapsack_full.rs" 81 10 81 54] subseq_rev0 (shallow_model4 result) 0 (shallow_model0 items) (Seq.length (shallow_model0 items)) }
+    ensures { [#"../knapsack_full.rs" 80 10 80 60] sum_weights0 (shallow_model3 result) (Seq.length (shallow_model3 result))
+    <= UIntSize.to_int max_weight }
+    ensures { [#"../knapsack_full.rs" 81 10 81 54] subseq_rev0 (shallow_model3 result) 0 (shallow_model0 items) (Seq.length (shallow_model0 items)) }
     ensures { [#"../knapsack_full.rs" 82 0 84 2] forall s : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv4 s
-     -> subseq_rev0 s 0 (shallow_model0 items) (Seq.length (shallow_model0 items)) /\ sum_weights0 s (Seq.length s) <= UIntSize.to_int max_weight
-     -> sum_values0 s (Seq.length s) <= sum_values0 (shallow_model4 result) (Seq.length (shallow_model4 result)) }
+     -> subseq_rev0 s 0 (shallow_model0 items) (Seq.length (shallow_model0 items))
+    /\ sum_weights0 s (Seq.length s) <= UIntSize.to_int max_weight
+     -> sum_values0 s (Seq.length s) <= sum_values0 (shallow_model3 result) (Seq.length (shallow_model3 result)) }
     ensures { [#"../knapsack_full.rs" 85 75 85 91] inv5 result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -1232,13 +1340,17 @@ module KnapsackFull_Knapsack01Dyn
   BB12 {
     invariant { [#"../knapsack_full.rs" 88 4 88 55] inv0 iter };
     invariant { [#"../knapsack_full.rs" 88 4 88 55] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter };
-    invariant { [#"../knapsack_full.rs" 88 16 88 53] Seq.length (shallow_model0 items) + 1 = Seq.length (shallow_model1 best_value) };
-    invariant { [#"../knapsack_full.rs" 88 4 88 55] forall i : int . 0 <= i /\ i < Seq.length (shallow_model1 best_value)
-     -> UIntSize.to_int max_weight + 1 = Seq.length (shallow_model3 (index_logic0 best_value i)) };
-    invariant { [#"../knapsack_full.rs" 88 4 88 55] forall ww : int . forall ii : int . 0 <= ii /\ ii <= Seq.length (Snapshot.inner produced) /\ 0 <= ww /\ ww <= UIntSize.to_int max_weight
-     -> UIntSize.to_int (Seq.get (shallow_model3 (index_logic0 best_value ii)) ww) = m0 (shallow_model0 items) ii ww };
-    invariant { [#"../knapsack_full.rs" 88 4 88 55] forall ww : int . forall ii : int . 0 <= ii /\ ii <= Seq.length (shallow_model0 items) /\ 0 <= ww /\ ww <= UIntSize.to_int max_weight
-     -> UIntSize.to_int (Seq.get (shallow_model3 (index_logic0 best_value ii)) ww) <= 10000000 * ii };
+    invariant { [#"../knapsack_full.rs" 88 16 88 53] Seq.length (shallow_model0 items) + 1
+    = Seq.length (shallow_model1 best_value) };
+    invariant { [#"../knapsack_full.rs" 88 4 88 55] forall i : int . 0 <= i
+    /\ i < Seq.length (shallow_model1 best_value)
+     -> UIntSize.to_int max_weight + 1 = Seq.length (shallow_model2 (index_logic0 best_value i)) };
+    invariant { [#"../knapsack_full.rs" 88 4 88 55] forall ww : int . forall ii : int . 0 <= ii
+    /\ ii <= Seq.length (Snapshot.inner produced) /\ 0 <= ww /\ ww <= UIntSize.to_int max_weight
+     -> UIntSize.to_int (Seq.get (shallow_model2 (index_logic0 best_value ii)) ww) = m0 (shallow_model0 items) ii ww };
+    invariant { [#"../knapsack_full.rs" 88 4 88 55] forall ww : int . forall ii : int . 0 <= ii
+    /\ ii <= Seq.length (shallow_model0 items) /\ 0 <= ww /\ ww <= UIntSize.to_int max_weight
+     -> UIntSize.to_int (Seq.get (shallow_model2 (index_logic0 best_value ii)) ww) <= 10000000 * ii };
     goto BB13
   }
   BB13 {
@@ -1253,33 +1365,33 @@ module KnapsackFull_Knapsack01Dyn
   BB14 {
     assume { resolve0 _34 };
     switch (_32)
-      | Core_Option_Option_Type.C_None -> goto BB15
+      | Core_Option_Option_Type.C_None -> goto BB17
       | Core_Option_Option_Type.C_Some _ -> goto BB16
       end
   }
   BB15 {
-    [#"../knapsack_full.rs" 119 49 119 60] _104 <- ([#"../knapsack_full.rs" 119 49 119 60] len0 items);
-    goto BB50
-  }
-  BB16 {
-    goto BB18
-  }
-  BB17 {
     assume { resolve5 best_value };
     assert { [@expl:type invariant] inv3 items };
     assume { resolve6 items };
     assert { [#"../knapsack_full.rs" 88 4 88 55] false };
     absurd
   }
+  BB16 {
+    goto BB18
+  }
+  BB17 {
+    [#"../knapsack_full.rs" 119 49 119 60] _104 <- ([#"../knapsack_full.rs" 119 49 119 60] len0 items);
+    goto BB50
+  }
   BB18 {
-    [#"../../../../creusot-contracts-proc/src/lib.rs" 664 0 664 51] __creusot_proc_iter_elem <- Core_Option_Option_Type.some_0 _32;
+    [#"../../../../creusot-contracts-proc/src/lib.rs" 643 0 643 51] __creusot_proc_iter_elem <- Core_Option_Option_Type.some_0 _32;
     [#"../knapsack_full.rs" 88 4 88 55] _37 <- ([#"../knapsack_full.rs" 88 4 88 55] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
     goto BB19
   }
   BB19 {
     [#"../knapsack_full.rs" 88 4 88 55] produced <- _37;
     _37 <- any Snapshot.snap_ty (Seq.seq usize);
-    [#"../../../../creusot-contracts-proc/src/lib.rs" 664 0 664 51] i <- __creusot_proc_iter_elem;
+    [#"../../../../creusot-contracts-proc/src/lib.rs" 643 0 643 51] i <- __creusot_proc_iter_elem;
     [#"../knapsack_full.rs" 96 23 96 26] _41 <- ([#"../knapsack_full.rs" 96 23 96 26] index0 items i);
     goto BB20
   }
@@ -1287,7 +1399,7 @@ module KnapsackFull_Knapsack01Dyn
     [#"../knapsack_full.rs" 96 17 96 26] it <- _41;
     assert { [@expl:type invariant] inv1 _41 };
     assume { resolve1 _41 };
-    [#"../knapsack_full.rs" 110 17 110 31] _45 <- ([#"../knapsack_full.rs" 110 17 110 31] new2 ([#"../knapsack_full.rs" 110 17 110 18] (0 : usize)) max_weight);
+    [#"../knapsack_full.rs" 110 17 110 31] _45 <- ([#"../knapsack_full.rs" 110 17 110 31] new0 ([#"../knapsack_full.rs" 110 17 110 18] (0 : usize)) max_weight);
     goto BB21
   }
   BB21 {
@@ -1324,15 +1436,21 @@ module KnapsackFull_Knapsack01Dyn
   BB30 {
     invariant { [#"../knapsack_full.rs" 98 8 98 59] inv2 iter1 };
     invariant { [#"../knapsack_full.rs" 98 8 98 59] produces1 (Snapshot.inner iter_old1) (Snapshot.inner produced1) iter1 };
-    invariant { [#"../knapsack_full.rs" 98 20 98 57] Seq.length (shallow_model0 items) + 1 = Seq.length (shallow_model1 best_value) };
-    invariant { [#"../knapsack_full.rs" 98 8 98 59] forall i : int . 0 <= i /\ i < Seq.length (shallow_model1 best_value)
-     -> UIntSize.to_int max_weight + 1 = Seq.length (shallow_model3 (index_logic0 best_value i)) };
-    invariant { [#"../knapsack_full.rs" 98 8 98 59] forall ww : int . forall ii : int . 0 <= ii /\ ii <= UIntSize.to_int i /\ 0 <= ww /\ ww <= UIntSize.to_int max_weight
-     -> UIntSize.to_int (Seq.get (shallow_model3 (index_logic0 best_value ii)) ww) = m0 (shallow_model0 items) ii ww };
-    invariant { [#"../knapsack_full.rs" 98 8 98 59] forall ww : int . 0 <= ww /\ ww <= Seq.length (Snapshot.inner produced1) - 1
-     -> UIntSize.to_int (Seq.get (shallow_model3 (index_logic0 best_value (UIntSize.to_int i + 1))) ww) = m0 (shallow_model0 items) (UIntSize.to_int i + 1) ww };
-    invariant { [#"../knapsack_full.rs" 98 8 98 59] forall ww : int . forall ii : int . 0 <= ii /\ ii <= Seq.length (shallow_model0 items) /\ 0 <= ww /\ ww <= UIntSize.to_int max_weight
-     -> UIntSize.to_int (Seq.get (shallow_model3 (index_logic0 best_value ii)) ww) <= 10000000 * ii };
+    invariant { [#"../knapsack_full.rs" 98 20 98 57] Seq.length (shallow_model0 items) + 1
+    = Seq.length (shallow_model1 best_value) };
+    invariant { [#"../knapsack_full.rs" 98 8 98 59] forall i : int . 0 <= i
+    /\ i < Seq.length (shallow_model1 best_value)
+     -> UIntSize.to_int max_weight + 1 = Seq.length (shallow_model2 (index_logic0 best_value i)) };
+    invariant { [#"../knapsack_full.rs" 98 8 98 59] forall ww : int . forall ii : int . 0 <= ii
+    /\ ii <= UIntSize.to_int i /\ 0 <= ww /\ ww <= UIntSize.to_int max_weight
+     -> UIntSize.to_int (Seq.get (shallow_model2 (index_logic0 best_value ii)) ww) = m0 (shallow_model0 items) ii ww };
+    invariant { [#"../knapsack_full.rs" 98 8 98 59] forall ww : int . 0 <= ww
+    /\ ww <= Seq.length (Snapshot.inner produced1) - 1
+     -> UIntSize.to_int (Seq.get (shallow_model2 (index_logic0 best_value (UIntSize.to_int i + 1))) ww)
+    = m0 (shallow_model0 items) (UIntSize.to_int i + 1) ww };
+    invariant { [#"../knapsack_full.rs" 98 8 98 59] forall ww : int . forall ii : int . 0 <= ii
+    /\ ii <= Seq.length (shallow_model0 items) /\ 0 <= ww /\ ww <= UIntSize.to_int max_weight
+     -> UIntSize.to_int (Seq.get (shallow_model2 (index_logic0 best_value ii)) ww) <= 10000000 * ii };
     goto BB31
   }
   BB31 {
@@ -1347,20 +1465,11 @@ module KnapsackFull_Knapsack01Dyn
   BB32 {
     assume { resolve2 _60 };
     switch (_58)
-      | Core_Option_Option_Type.C_None -> goto BB33
+      | Core_Option_Option_Type.C_None -> goto BB35
       | Core_Option_Option_Type.C_Some _ -> goto BB34
       end
   }
   BB33 {
-    assert { [@expl:type invariant] inv1 it };
-    assume { resolve1 it };
-    [#"../knapsack_full.rs" 98 8 98 59] _31 <- ([#"../knapsack_full.rs" 98 8 98 59] ());
-    goto BB12
-  }
-  BB34 {
-    goto BB36
-  }
-  BB35 {
     assert { [@expl:type invariant] inv1 it };
     assume { resolve1 it };
     assume { resolve5 best_value };
@@ -1369,15 +1478,24 @@ module KnapsackFull_Knapsack01Dyn
     assert { [#"../knapsack_full.rs" 98 8 98 59] false };
     absurd
   }
+  BB34 {
+    goto BB36
+  }
+  BB35 {
+    assert { [@expl:type invariant] inv1 it };
+    assume { resolve1 it };
+    [#"../knapsack_full.rs" 98 8 98 59] _31 <- ([#"../knapsack_full.rs" 98 8 98 59] ());
+    goto BB12
+  }
   BB36 {
-    [#"../../../../creusot-contracts-proc/src/lib.rs" 664 0 664 51] __creusot_proc_iter_elem1 <- Core_Option_Option_Type.some_0 _58;
+    [#"../../../../creusot-contracts-proc/src/lib.rs" 643 0 643 51] __creusot_proc_iter_elem1 <- Core_Option_Option_Type.some_0 _58;
     [#"../knapsack_full.rs" 98 8 98 59] _63 <- ([#"../knapsack_full.rs" 98 8 98 59] Snapshot.new (Seq.(++) (Snapshot.inner produced1) (Seq.singleton __creusot_proc_iter_elem1)));
     goto BB37
   }
   BB37 {
     [#"../knapsack_full.rs" 98 8 98 59] produced1 <- _63;
     _63 <- any Snapshot.snap_ty (Seq.seq usize);
-    [#"../../../../creusot-contracts-proc/src/lib.rs" 664 0 664 51] w <- __creusot_proc_iter_elem1;
+    [#"../../../../creusot-contracts-proc/src/lib.rs" 643 0 643 51] w <- __creusot_proc_iter_elem1;
     [#"../knapsack_full.rs" 111 38 111 51] _67 <- KnapsackFull_Item_Type.item_weight it > w;
     switch (_67)
       | False -> goto BB41
@@ -1473,16 +1591,20 @@ module KnapsackFull_Knapsack01Dyn
     invariant { [#"../knapsack_full.rs" 123 16 123 34] UIntSize.to_int j <= Seq.length (shallow_model0 items) };
     invariant { [#"../knapsack_full.rs" 124 16 124 43] UIntSize.to_int left_weight <= UIntSize.to_int max_weight };
     invariant { [#"../knapsack_full.rs" 123 4 123 36] forall r : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv4 r
-     -> Seq.length (shallow_model4 result) <= Seq.length r /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model4 result)
-     -> index_logic2 result i = Seq.get r i) /\ sum_weights0 r (Seq.length (shallow_model4 result)) <= UIntSize.to_int left_weight
+     -> Seq.length (shallow_model3 result) <= Seq.length r
+    /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model3 result)  -> index_logic1 result i = Seq.get r i)
+    /\ sum_weights0 r (Seq.length (shallow_model3 result)) <= UIntSize.to_int left_weight
      -> sum_weights0 r 0 <= UIntSize.to_int max_weight };
     invariant { [#"../knapsack_full.rs" 123 4 123 36] forall r : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv4 r
-     -> Seq.length (shallow_model4 result) <= Seq.length r /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model4 result)
-     -> index_logic2 result i = Seq.get r i) /\ sum_values0 r (Seq.length (shallow_model4 result)) = m0 (shallow_model0 items) (UIntSize.to_int j) (UIntSize.to_int left_weight)
+     -> Seq.length (shallow_model3 result) <= Seq.length r
+    /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model3 result)  -> index_logic1 result i = Seq.get r i)
+    /\ sum_values0 r (Seq.length (shallow_model3 result))
+    = m0 (shallow_model0 items) (UIntSize.to_int j) (UIntSize.to_int left_weight)
      -> sum_values0 r 0 = m0 (shallow_model0 items) (Seq.length (shallow_model0 items)) (UIntSize.to_int max_weight) };
     invariant { [#"../knapsack_full.rs" 123 4 123 36] forall r : Seq.seq (KnapsackFull_Item_Type.t_item name) . inv4 r
-     -> Seq.length (shallow_model4 result) <= Seq.length r /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model4 result)
-     -> index_logic2 result i = Seq.get r i) /\ subseq_rev0 r (Seq.length (shallow_model4 result)) (shallow_model0 items) (UIntSize.to_int j)
+     -> Seq.length (shallow_model3 result) <= Seq.length r
+    /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model3 result)  -> index_logic1 result i = Seq.get r i)
+    /\ subseq_rev0 r (Seq.length (shallow_model3 result)) (shallow_model0 items) (UIntSize.to_int j)
      -> subseq_rev0 r 0 (shallow_model0 items) (Seq.length (shallow_model0 items)) };
     goto BB57
   }

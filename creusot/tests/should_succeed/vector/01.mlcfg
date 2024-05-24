@@ -109,7 +109,9 @@ module C01_AllZero
     ensures { result = shallow_model2 self }
     
   axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv7 self)
-   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv8 (shallow_model2 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self) <= UIntSize.to_int max0)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv8 (shallow_model2 self))
+  && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self)
+  <= UIntSize.to_int max0)
   predicate invariant7 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv8 (shallow_model2 self)
   val invariant7 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : bool
@@ -195,8 +197,14 @@ module C01_AllZero
   predicate produces0 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize)
     
    =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0
-     -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self
+    = Core_Ops_Range_Range_Type.range_end o
+    /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o)
+    /\ (Seq.length visited > 0
+     -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o))
+    /\ Seq.length visited
+    = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self)
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model0 (Seq.get visited i) = deep_model0 (Core_Ops_Range_Range_Type.range_start self) + i)
   val produces0 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize) : bool
     ensures { result = produces0 self visited o }
@@ -249,8 +257,8 @@ module C01_AllZero
   use prelude.Slice
   use seq.Seq
   predicate resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq uint32) (fin : Seq.seq uint32) =
-    [#"../../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
-     -> Seq.get old' i = Seq.get fin i
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i
+    /\ i <> UIntSize.to_int self /\ i < Seq.length old'  -> Seq.get old' i = Seq.get fin i
   val resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq uint32) (fin : Seq.seq uint32) : bool
     ensures { result = resolve_elswhere0 self old' fin }
     
@@ -267,7 +275,7 @@ module C01_AllZero
   function shallow_model0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) : Seq.seq uint32
     
    =
-    [#"../../../../../creusot-contracts/src/model.rs" 97 8 97 31] shallow_model2 ( * self)
+    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model2 ( * self)
   val shallow_model0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) : Seq.seq uint32
     ensures { result = shallow_model0 self }
     
@@ -278,7 +286,8 @@ module C01_AllZero
     ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 133 26 133 54] has_value0 index (shallow_model0 self) ( * result) }
     ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 134 26 134 57] has_value0 index (shallow_model2 ( ^ self)) ( ^ result) }
     ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 135 26 135 62] resolve_elswhere0 index (shallow_model0 self) (shallow_model2 ( ^ self)) }
-    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 136 26 136 55] Seq.length (shallow_model2 ( ^ self)) = Seq.length (shallow_model0 self) }
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 136 26 136 55] Seq.length (shallow_model2 ( ^ self))
+    = Seq.length (shallow_model0 self) }
     ensures { inv6 result }
     
   use seq.Seq
@@ -288,7 +297,9 @@ module C01_AllZero
     ensures { result = resolve0 self }
     
   predicate completed0 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve0 self /\ deep_model0 (Core_Ops_Range_Range_Type.range_start ( * self)) >= deep_model0 (Core_Ops_Range_Range_Type.range_end ( * self))
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve0 self
+    /\ deep_model0 (Core_Ops_Range_Range_Type.range_start ( * self))
+    >= deep_model0 (Core_Ops_Range_Range_Type.range_end ( * self))
   val completed0 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
     ensures { result = completed0 self }
     
@@ -308,18 +319,18 @@ module C01_AllZero
     ensures { result = index_logic0 self ix }
     
   use prelude.Snapshot
-  function shallow_model5 (self : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) : Seq.seq uint32
+  function shallow_model4 (self : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) : Seq.seq uint32
     
    =
-    [#"../../../../../creusot-contracts/src/model.rs" 79 8 79 31] shallow_model0 self
-  val shallow_model5 (self : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) : Seq.seq uint32
-    ensures { result = shallow_model5 self }
+    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model0 self
+  val shallow_model4 (self : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) : Seq.seq uint32
+    ensures { result = shallow_model4 self }
     
   use prelude.Snapshot
   function shallow_model1 (self : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)))) : Seq.seq uint32
     
    =
-    [#"../../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48] shallow_model5 (Snapshot.inner self)
+    [#"../../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48] shallow_model4 (Snapshot.inner self)
   val shallow_model1 (self : Snapshot.snap_ty (borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)))) : Seq.seq uint32
     ensures { result = shallow_model1 self }
     
@@ -345,14 +356,15 @@ module C01_AllZero
     ensures { [#"../../../../../creusot-contracts/src/std/iter.rs" 89 0 166 1] into_iter_post0 self result }
     ensures { inv0 result }
     
-  function shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32 =
-    [#"../../../../../creusot-contracts/src/model.rs" 79 8 79 31] shallow_model2 self
-  val shallow_model4 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
-    ensures { result = shallow_model4 self }
+  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32 =
+    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model2 self
+  val shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
+    ensures { result = shallow_model3 self }
     
   val len0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : usize
     requires {inv1 self}
-    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 75 26 75 48] UIntSize.to_int result = Seq.length (shallow_model4 self) }
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 75 26 75 48] UIntSize.to_int result
+    = Seq.length (shallow_model3 self) }
     
   use prelude.Snapshot
   let rec cfg all_zero [#"../01.rs" 7 0 7 33] [@cfg:stackify] [@cfg:subregion_analysis] (v : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) : ()
@@ -426,32 +438,32 @@ module C01_AllZero
   BB8 {
     assume { resolve0 _21 };
     switch (_19)
-      | Core_Option_Option_Type.C_None -> goto BB9
+      | Core_Option_Option_Type.C_None -> goto BB11
       | Core_Option_Option_Type.C_Some _ -> goto BB10
       end
   }
   BB9 {
     assume { resolve2 v };
-    [#"../01.rs" 9 4 9 42] _0 <- ([#"../01.rs" 9 4 9 42] ());
-    return _0
+    assert { [#"../01.rs" 9 4 9 42] false };
+    absurd
   }
   BB10 {
     goto BB12
   }
   BB11 {
     assume { resolve2 v };
-    assert { [#"../01.rs" 9 4 9 42] false };
-    absurd
+    [#"../01.rs" 9 4 9 42] _0 <- ([#"../01.rs" 9 4 9 42] ());
+    return _0
   }
   BB12 {
-    [#"../../../../../creusot-contracts-proc/src/lib.rs" 664 0 664 51] __creusot_proc_iter_elem <- Core_Option_Option_Type.some_0 _19;
+    [#"../../../../../creusot-contracts-proc/src/lib.rs" 643 0 643 51] __creusot_proc_iter_elem <- Core_Option_Option_Type.some_0 _19;
     [#"../01.rs" 9 4 9 42] _24 <- ([#"../01.rs" 9 4 9 42] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
     goto BB13
   }
   BB13 {
     [#"../01.rs" 9 4 9 42] produced <- _24;
     _24 <- any Snapshot.snap_ty (Seq.seq usize);
-    [#"../../../../../creusot-contracts-proc/src/lib.rs" 664 0 664 51] i <- __creusot_proc_iter_elem;
+    [#"../../../../../creusot-contracts-proc/src/lib.rs" 643 0 643 51] i <- __creusot_proc_iter_elem;
     [#"../01.rs" 12 8 12 9] _28 <- Borrow.borrow_mut ( * v);
     [#"../01.rs" 12 8 12 9] v <- { v with current = ( ^ _28) ; };
     [#"../01.rs" 12 9 12 12] _27 <- ([#"../01.rs" 12 9 12 12] index_mut0 _28 i);

@@ -181,7 +181,9 @@ module C100doors_F
     ensures { result = shallow_model0 self }
     
   axiom shallow_model0_spec : forall self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv2 self)
-   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv3 (shallow_model0 self)) && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model0 self) <= UIntSize.to_int max0)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv3 (shallow_model0 self))
+  && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model0 self)
+  <= UIntSize.to_int max0)
   predicate invariant2 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv3 (shallow_model0 self)
   val invariant2 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) : bool
@@ -214,8 +216,14 @@ module C100doors_F
   predicate produces0 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize)
     
    =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0
-     -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self
+    = Core_Ops_Range_Range_Type.range_end o
+    /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o)
+    /\ (Seq.length visited > 0
+     -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o))
+    /\ Seq.length visited
+    = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self)
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model0 (Seq.get visited i) = deep_model0 (Core_Ops_Range_Range_Type.range_start self) + i)
   val produces0 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize) : bool
     ensures { result = produces0 self visited o }
@@ -269,8 +277,8 @@ module C100doors_F
     ensures { result = index_logic0 self ix }
     
   predicate resolve2 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (shallow_model0 self)
-     -> resolve3 (index_logic0 self i)
+    [#"../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i
+    /\ i < Seq.length (shallow_model0 self)  -> resolve3 (index_logic0 self i)
   val resolve2 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve2 self }
     
@@ -281,8 +289,8 @@ module C100doors_F
     
   use prelude.Slice
   predicate resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq bool) (fin : Seq.seq bool) =
-    [#"../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
-     -> Seq.get old' i = Seq.get fin i
+    [#"../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i
+    /\ i <> UIntSize.to_int self /\ i < Seq.length old'  -> Seq.get old' i = Seq.get fin i
   val resolve_elswhere0 [@inline:trivial] (self : usize) (old' : Seq.seq bool) (fin : Seq.seq bool) : bool
     ensures { result = resolve_elswhere0 self old' fin }
     
@@ -296,33 +304,34 @@ module C100doors_F
   val in_bounds0 [@inline:trivial] (self : usize) (seq : Seq.seq bool) : bool
     ensures { result = in_bounds0 self seq }
     
-  function shallow_model3 (self : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) : Seq.seq bool
+  function shallow_model2 (self : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) : Seq.seq bool
     
    =
-    [#"../../../../creusot-contracts/src/model.rs" 97 8 97 31] shallow_model0 ( * self)
-  val shallow_model3 (self : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) : Seq.seq bool
-    ensures { result = shallow_model3 self }
-    
-  val index_mut0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) (index : usize) : borrowed bool
-    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 132 27 132 46] in_bounds0 index (shallow_model3 self)}
-    requires {inv9 self}
-    requires {inv7 index}
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 133 26 133 54] has_value0 index (shallow_model3 self) ( * result) }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 134 26 134 57] has_value0 index (shallow_model0 ( ^ self)) ( ^ result) }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 135 26 135 62] resolve_elswhere0 index (shallow_model3 self) (shallow_model0 ( ^ self)) }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 136 26 136 55] Seq.length (shallow_model0 ( ^ self)) = Seq.length (shallow_model3 self) }
-    ensures { inv10 result }
-    
-  function shallow_model2 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) : Seq.seq bool =
-    [#"../../../../creusot-contracts/src/model.rs" 79 8 79 31] shallow_model0 self
-  val shallow_model2 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) : Seq.seq bool
+    [#"../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model0 ( * self)
+  val shallow_model2 (self : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) : Seq.seq bool
     ensures { result = shallow_model2 self }
     
+  val index_mut0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) (index : usize) : borrowed bool
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 132 27 132 46] in_bounds0 index (shallow_model2 self)}
+    requires {inv9 self}
+    requires {inv7 index}
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 133 26 133 54] has_value0 index (shallow_model2 self) ( * result) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 134 26 134 57] has_value0 index (shallow_model0 ( ^ self)) ( ^ result) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 135 26 135 62] resolve_elswhere0 index (shallow_model2 self) (shallow_model0 ( ^ self)) }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 136 26 136 55] Seq.length (shallow_model0 ( ^ self))
+    = Seq.length (shallow_model2 self) }
+    ensures { inv10 result }
+    
+  function shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) : Seq.seq bool =
+    [#"../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model0 self
+  val shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) : Seq.seq bool
+    ensures { result = shallow_model1 self }
+    
   val index0 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (index : usize) : bool
-    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 141 27 141 46] in_bounds0 index (shallow_model2 self)}
+    requires {[#"../../../../creusot-contracts/src/std/vec.rs" 141 27 141 46] in_bounds0 index (shallow_model1 self)}
     requires {inv6 self}
     requires {inv7 index}
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 142 26 142 54] has_value0 index (shallow_model2 self) result }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 142 26 142 54] has_value0 index (shallow_model1 self) result }
     ensures { inv8 result }
     
   use seq.Seq
@@ -332,7 +341,9 @@ module C100doors_F
     ensures { result = resolve0 self }
     
   predicate completed0 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve0 self /\ deep_model0 (Core_Ops_Range_Range_Type.range_start ( * self)) >= deep_model0 (Core_Ops_Range_Range_Type.range_end ( * self))
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve0 self
+    /\ deep_model0 (Core_Ops_Range_Range_Type.range_start ( * self))
+    >= deep_model0 (Core_Ops_Range_Range_Type.range_end ( * self))
   val completed0 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) : bool
     ensures { result = completed0 self }
     
@@ -368,9 +379,10 @@ module C100doors_F
     
   val from_elem0 (elem : bool) (n : usize) : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)
     requires {inv1 elem}
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 157 22 157 41] Seq.length (shallow_model0 result) = UIntSize.to_int n }
-    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 158 12 158 78] forall i : int . 0 <= i /\ i < UIntSize.to_int n
-     -> index_logic0 result i = elem }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 157 22 157 41] Seq.length (shallow_model0 result)
+    = UIntSize.to_int n }
+    ensures { [#"../../../../creusot-contracts/src/std/vec.rs" 158 12 158 78] forall i : int . 0 <= i
+    /\ i < UIntSize.to_int n  -> index_logic0 result i = elem }
     ensures { inv2 result }
     
   let rec cfg f [#"../100doors.rs" 18 0 18 10] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
@@ -440,32 +452,32 @@ module C100doors_F
   BB8 {
     assume { resolve0 _14 };
     switch (_12)
-      | Core_Option_Option_Type.C_None -> goto BB9
+      | Core_Option_Option_Type.C_None -> goto BB11
       | Core_Option_Option_Type.C_Some _ -> goto BB10
       end
   }
   BB9 {
     assume { resolve2 door_open };
-    [#"../100doors.rs" 20 4 20 41] _0 <- ([#"../100doors.rs" 20 4 20 41] ());
-    goto BB21
+    assert { [#"../100doors.rs" 20 4 20 41] false };
+    absurd
   }
   BB10 {
     goto BB12
   }
   BB11 {
     assume { resolve2 door_open };
-    assert { [#"../100doors.rs" 20 4 20 41] false };
-    absurd
+    [#"../100doors.rs" 20 4 20 41] _0 <- ([#"../100doors.rs" 20 4 20 41] ());
+    goto BB21
   }
   BB12 {
-    [#"../../../../creusot-contracts-proc/src/lib.rs" 664 0 664 51] __creusot_proc_iter_elem <- Core_Option_Option_Type.some_0 _12;
+    [#"../../../../creusot-contracts-proc/src/lib.rs" 643 0 643 51] __creusot_proc_iter_elem <- Core_Option_Option_Type.some_0 _12;
     [#"../100doors.rs" 20 4 20 41] _17 <- ([#"../100doors.rs" 20 4 20 41] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
     goto BB13
   }
   BB13 {
     [#"../100doors.rs" 20 4 20 41] produced <- _17;
     _17 <- any Snapshot.snap_ty (Seq.seq usize);
-    [#"../../../../creusot-contracts-proc/src/lib.rs" 664 0 664 51] pass <- __creusot_proc_iter_elem;
+    [#"../../../../creusot-contracts-proc/src/lib.rs" 643 0 643 51] pass <- __creusot_proc_iter_elem;
     [#"../100doors.rs" 22 30 22 34] door <- pass;
     goto BB14
   }
@@ -473,7 +485,8 @@ module C100doors_F
     goto BB15
   }
   BB15 {
-    invariant { [#"../100doors.rs" 23 20 23 54] 1 <= UIntSize.to_int door /\ UIntSize.to_int door <= 100 + UIntSize.to_int pass };
+    invariant { [#"../100doors.rs" 23 20 23 54] 1 <= UIntSize.to_int door
+    /\ UIntSize.to_int door <= 100 + UIntSize.to_int pass };
     invariant { [#"../100doors.rs" 24 20 24 43] Seq.length (shallow_model0 door_open) = 100 };
     goto BB16
   }

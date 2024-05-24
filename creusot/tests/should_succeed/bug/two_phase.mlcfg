@@ -68,15 +68,17 @@ module TwoPhase_Test
   val inv3 (_x : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = inv3 _x }
     
-  function shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
-  val shallow_model3 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
+  function shallow_model2 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
+  val shallow_model2 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
     requires {[#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self}
-    ensures { result = shallow_model3 self }
+    ensures { result = shallow_model2 self }
     
-  axiom shallow_model3_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self)
-   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv4 (shallow_model3 self)) && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model3 self) <= UIntSize.to_int max0)
+  axiom shallow_model2_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv3 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv4 (shallow_model2 self))
+  && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model2 self)
+  <= UIntSize.to_int max0)
   predicate invariant3 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv4 (shallow_model3 self)
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv4 (shallow_model2 self)
   val invariant3 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = invariant3 self }
     
@@ -116,14 +118,14 @@ module TwoPhase_Test
   function index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix : int) : usize
     
    =
-    [#"../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model3 self) ix
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model2 self) ix
   val index_logic0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix : int) : usize
     ensures { result = index_logic0 self ix }
     
   function shallow_model0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : Seq.seq usize
     
    =
-    [#"../../../../../creusot-contracts/src/model.rs" 97 8 97 31] shallow_model3 ( * self)
+    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model2 ( * self)
   val shallow_model0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : Seq.seq usize
     ensures { result = shallow_model0 self }
     
@@ -136,19 +138,22 @@ module TwoPhase_Test
   val push0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (value : usize) : ()
     requires {inv1 self}
     requires {inv2 value}
-    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 78 26 78 51] shallow_model3 ( ^ self) = Seq.snoc (shallow_model0 self) value }
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 78 26 78 51] shallow_model2 ( ^ self)
+    = Seq.snoc (shallow_model0 self) value }
     
-  function shallow_model2 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize =
-    [#"../../../../../creusot-contracts/src/model.rs" 79 8 79 31] shallow_model3 self
-  val shallow_model2 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
-    ensures { result = shallow_model2 self }
+  function shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize =
+    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model2 self
+  val shallow_model1 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
+    ensures { result = shallow_model1 self }
     
   val len0 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : usize
     requires {inv0 self}
-    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 75 26 75 48] UIntSize.to_int result = Seq.length (shallow_model2 self) }
+    ensures { [#"../../../../../creusot-contracts/src/std/vec.rs" 75 26 75 48] UIntSize.to_int result
+    = Seq.length (shallow_model1 self) }
     
   let rec cfg test [#"../two_phase.rs" 6 0 6 31] [@cfg:stackify] [@cfg:subregion_analysis] (v : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : ()
-    ensures { [#"../two_phase.rs" 5 10 5 37] UIntSize.to_int (index_logic0 ( ^ v) (Seq.length (shallow_model0 v))) = Seq.length (shallow_model0 v) }
+    ensures { [#"../two_phase.rs" 5 10 5 37] UIntSize.to_int (index_logic0 ( ^ v) (Seq.length (shallow_model0 v)))
+    = Seq.length (shallow_model0 v) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();

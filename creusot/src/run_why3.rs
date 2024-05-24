@@ -48,11 +48,10 @@ pub(super) fn run_why3<'tcx>(ctx: &Why3Generator<'tcx>, file: Option<PathBuf>) {
     let prelude_dir = TempDir::new("creusot_why3_prelude").expect("could not create temp dir");
     PRELUDE.extract(prelude_dir.path()).expect("could extract prelude into temp dir");
     let mut command = Command::new(&why3_cmd.path);
-    if let Some(cfg) = &why3_cmd.config_file {
-        command.arg("-C").arg(cfg);
-    }
     command
         .args([
+            "-C",
+            &why3_cmd.config_file.to_string_lossy(),
             "--warn-off=unused_variable",
             "--warn-off=clone_not_abstract",
             "--warn-off=axiom_abstract",
@@ -211,7 +210,7 @@ fn fun<'a>(args: impl IntoIterator<Item = &'a str>, body: Expr) -> Expr {
                 .map(|x| rustc_ast::Param {
                     attrs: Default::default(),
                     ty: P(ty(TyKind::Infer)),
-                    pat: P(pat(PatKind::Ident(rustc_ast::BindingAnnotation::NONE, ident(x), None))),
+                    pat: P(pat(PatKind::Ident(rustc_ast::BindingMode::NONE, ident(x), None))),
                     id: DUMMY_NODE_ID,
                     span: DUMMY_SP,
                     is_placeholder: false,

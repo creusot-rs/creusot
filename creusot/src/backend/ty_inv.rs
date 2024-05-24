@@ -1,7 +1,7 @@
 use super::{
     term::lower_pure,
     ty::{translate_ty, ty_param_names},
-    CloneMap, CloneSummary, TransId, Why3Generator,
+    CloneSummary, Dependencies, TransId, Why3Generator,
 };
 use crate::{
     ctx::*,
@@ -23,7 +23,7 @@ use why3::{
     Ident,
 };
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug, TypeVisitable, TypeFoldable)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, TypeVisitable, TypeFoldable)]
 pub(crate) enum TyInvKind {
     Trivial,
     Borrow(Mutability),
@@ -404,7 +404,7 @@ pub(crate) fn build_inv_module<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     inv_kind: TyInvKind,
 ) -> CloneSummary<'tcx> {
-    let mut names = CloneMap::new(ctx.tcx, TransId::TyInv(inv_kind));
+    let mut names = Dependencies::new(ctx.tcx, [TransId::TyInv(inv_kind)]);
     let generics = inv_kind.generics(ctx.tcx);
     let inv_axiom =
         names.with_vis(CloneLevel::Contract, |names| build_inv_axiom(ctx, names, inv_kind));
@@ -428,7 +428,7 @@ pub(crate) fn build_inv_module<'tcx>(
             .map(|ty_name| Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: vec![] })),
     );
 
-    let (clones, summary) = names.to_clones(ctx, CloneDepth::Shallow);
+    let (clones, summary) = names.provide_deps(ctx, GraphDepth::Shallow);
     // eprintln!("summary of {inv_kind:?} -> {summary:#?}");
     decls.extend(clones);
 
@@ -454,7 +454,7 @@ fn axiom_name(ctx: &Why3Generator<'_>, inv_kind: TyInvKind) -> Ident {
 
 fn build_inv_axiom<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Dependencies<'tcx>,
     inv_kind: TyInvKind,
 ) -> Axiom {
     let name = axiom_name(ctx, inv_kind);

@@ -139,8 +139,14 @@ module IncMaxRepeat_IncMaxRepeat
   predicate produces0 (self : Core_Ops_Range_Range_Type.t_range uint32) (visited : Seq.seq uint32) (o : Core_Ops_Range_Range_Type.t_range uint32)
     
    =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0
-     -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self
+    = Core_Ops_Range_Range_Type.range_end o
+    /\ deep_model0 (Core_Ops_Range_Range_Type.range_start self) <= deep_model0 (Core_Ops_Range_Range_Type.range_start o)
+    /\ (Seq.length visited > 0
+     -> deep_model0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model0 (Core_Ops_Range_Range_Type.range_end o))
+    /\ Seq.length visited
+    = deep_model0 (Core_Ops_Range_Range_Type.range_start o) - deep_model0 (Core_Ops_Range_Range_Type.range_start self)
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model0 (Seq.get visited i) = deep_model0 (Core_Ops_Range_Range_Type.range_start self) + i)
   val produces0 (self : Core_Ops_Range_Range_Type.t_range uint32) (visited : Seq.seq uint32) (o : Core_Ops_Range_Range_Type.t_range uint32) : bool
     ensures { result = produces0 self visited o }
@@ -199,7 +205,9 @@ module IncMaxRepeat_IncMaxRepeat
     ensures { result = resolve0 self }
     
   predicate completed0 (self : borrowed (Core_Ops_Range_Range_Type.t_range uint32)) =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve0 self /\ deep_model0 (Core_Ops_Range_Range_Type.range_start ( * self)) >= deep_model0 (Core_Ops_Range_Range_Type.range_end ( * self))
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve0 self
+    /\ deep_model0 (Core_Ops_Range_Range_Type.range_start ( * self))
+    >= deep_model0 (Core_Ops_Range_Range_Type.range_end ( * self))
   val completed0 (self : borrowed (Core_Ops_Range_Range_Type.t_range uint32)) : bool
     ensures { result = completed0 self }
     
@@ -235,7 +243,8 @@ module IncMaxRepeat_IncMaxRepeat
     ensures { inv0 result }
     
   let rec cfg inc_max_repeat [#"../inc_max_repeat.rs" 15 0 15 53] [@cfg:stackify] [@cfg:subregion_analysis] (a : uint32) (b : uint32) (n : uint32) : ()
-    requires {[#"../inc_max_repeat.rs" 14 11 14 70] a <= (1000000 : uint32) /\ b <= (1000000 : uint32) /\ n <= (1000000 : uint32)}
+    requires {[#"../inc_max_repeat.rs" 14 11 14 70] a <= (1000000 : uint32)
+    /\ b <= (1000000 : uint32) /\ n <= (1000000 : uint32)}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -283,8 +292,11 @@ module IncMaxRepeat_IncMaxRepeat
   BB4 {
     invariant { [#"../inc_max_repeat.rs" 16 4 16 86] inv0 iter };
     invariant { [#"../inc_max_repeat.rs" 16 4 16 86] produces0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter };
-    invariant { [#"../inc_max_repeat.rs" 16 16 16 84] UInt32.to_int a <= 1000000 + Seq.length (Snapshot.inner produced) /\ UInt32.to_int b <= 1000000 + Seq.length (Snapshot.inner produced) };
-    invariant { [#"../inc_max_repeat.rs" 17 16 17 70] UInt32.to_int a >= UInt32.to_int b + Seq.length (Snapshot.inner produced) \/ UInt32.to_int b >= UInt32.to_int a + Seq.length (Snapshot.inner produced) };
+    invariant { [#"../inc_max_repeat.rs" 16 16 16 84] UInt32.to_int a <= 1000000 + Seq.length (Snapshot.inner produced)
+    /\ UInt32.to_int b <= 1000000 + Seq.length (Snapshot.inner produced) };
+    invariant { [#"../inc_max_repeat.rs" 17 16 17 70] UInt32.to_int a
+    >= UInt32.to_int b + Seq.length (Snapshot.inner produced)
+    \/ UInt32.to_int b >= UInt32.to_int a + Seq.length (Snapshot.inner produced) };
     goto BB5
   }
   BB5 {
@@ -299,11 +311,18 @@ module IncMaxRepeat_IncMaxRepeat
   BB6 {
     assume { resolve0 _20 };
     switch (_18)
-      | Core_Option_Option_Type.C_None -> goto BB7
+      | Core_Option_Option_Type.C_None -> goto BB9
       | Core_Option_Option_Type.C_Some _ -> goto BB8
       end
   }
   BB7 {
+    assert { [#"../inc_max_repeat.rs" 16 4 16 86] false };
+    absurd
+  }
+  BB8 {
+    goto BB10
+  }
+  BB9 {
     [#"../inc_max_repeat.rs" 22 17 22 22] _34 <- b + n;
     [#"../inc_max_repeat.rs" 22 12 22 22] _32 <- a >= _34;
     _34 <- any uint32;
@@ -312,15 +331,8 @@ module IncMaxRepeat_IncMaxRepeat
       | True -> goto BB13
       end
   }
-  BB8 {
-    goto BB10
-  }
-  BB9 {
-    assert { [#"../inc_max_repeat.rs" 16 4 16 86] false };
-    absurd
-  }
   BB10 {
-    [#"../../../../../creusot-contracts-proc/src/lib.rs" 664 0 664 51] __creusot_proc_iter_elem <- Core_Option_Option_Type.some_0 _18;
+    [#"../../../../../creusot-contracts-proc/src/lib.rs" 643 0 643 51] __creusot_proc_iter_elem <- Core_Option_Option_Type.some_0 _18;
     [#"../inc_max_repeat.rs" 16 4 16 86] _23 <- ([#"../inc_max_repeat.rs" 16 4 16 86] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)));
     goto BB11
   }
@@ -343,12 +355,13 @@ module IncMaxRepeat_IncMaxRepeat
   BB12 {
     assume { resolve1 _29 };
     assume { resolve1 _27 };
-    [#"../inc_max_repeat.rs" 20 8 20 16] mc <- { mc with current = ( * mc + ([#"../inc_max_repeat.rs" 20 15 20 16] (1 : uint32))) ; };
+    [#"../inc_max_repeat.rs" 20 8 20 16] mc <- { mc with current = ( * mc
+    + ([#"../inc_max_repeat.rs" 20 15 20 16] (1 : uint32))) ; };
     assume { resolve1 mc };
     goto BB4
   }
   BB13 {
-    goto BB15
+    goto BB17
   }
   BB14 {
     [#"../inc_max_repeat.rs" 22 31 22 36] _39 <- a + n;
@@ -360,12 +373,15 @@ module IncMaxRepeat_IncMaxRepeat
       end
   }
   BB15 {
-    [#"../inc_max_repeat.rs" 15 54 23 1] _0 <- ([#"../inc_max_repeat.rs" 15 54 23 1] ());
-    return _0
+    goto BB17
   }
   BB16 {
     assert { [#"../inc_max_repeat.rs" 22 4 22 37] false };
     absurd
+  }
+  BB17 {
+    [#"../inc_max_repeat.rs" 15 54 23 1] _0 <- ([#"../inc_max_repeat.rs" 15 54 23 1] ());
+    return _0
   }
   
 end

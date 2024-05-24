@@ -34,15 +34,15 @@ module Core_Result_Result_Type
       end
 end
 module Projections_CopyOutOfSum
-  use prelude.Borrow
   use prelude.UInt32
+  use prelude.Borrow
+  use Core_Result_Result_Type as Core_Result_Result_Type
   predicate resolve0 (self : borrowed uint32) =
     [#"../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
   val resolve0 (self : borrowed uint32) : bool
     ensures { result = resolve0 self }
     
   use prelude.Int
-  use Core_Result_Result_Type as Core_Result_Result_Type
   let rec cfg copy_out_of_sum [#"../projections.rs" 9 0 9 60] [@cfg:stackify] [@cfg:subregion_analysis] (x : Core_Result_Result_Type.t_result (borrowed uint32) (borrowed uint32)) : uint32
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -55,23 +55,23 @@ module Projections_CopyOutOfSum
   }
   BB0 {
     switch (x)
-      | Core_Result_Result_Type.C_Ok _ -> goto BB1
-      | Core_Result_Result_Type.C_Err _ -> goto BB2
+      | Core_Result_Result_Type.C_Ok _ -> goto BB2
+      | Core_Result_Result_Type.C_Err _ -> goto BB3
       end
   }
   BB1 {
-    goto BB4
+    assert { [#"../projections.rs" 10 10 10 11] false };
+    absurd
   }
   BB2 {
+    goto BB4
+  }
+  BB3 {
     [#"../projections.rs" 12 12 12 13] y <- Core_Result_Result_Type.err_0 x;
     x <- (let Core_Result_Result_Type.C_Err x0 = x in Core_Result_Result_Type.C_Err (any borrowed uint32));
     [#"../projections.rs" 12 18 12 20] _0 <-  * y;
     assume { resolve0 y };
     goto BB5
-  }
-  BB3 {
-    assert { [#"../projections.rs" 10 10 10 11] false };
-    absurd
   }
   BB4 {
     [#"../projections.rs" 11 11 11 12] x1 <- Core_Result_Result_Type.ok_0 x;
@@ -122,22 +122,22 @@ module Projections_WriteIntoSum
   }
   BB0 {
     switch ( * x)
-      | Core_Option_Option_Type.C_None -> goto BB1
+      | Core_Option_Option_Type.C_None -> goto BB3
       | Core_Option_Option_Type.C_Some _ -> goto BB2
       end
   }
   BB1 {
     assume { resolve1 x };
-    [#"../projections.rs" 19 16 19 18] _0 <- ();
-    goto BB5
+    assert { [#"../projections.rs" 17 10 17 11] false };
+    absurd
   }
   BB2 {
     goto BB4
   }
   BB3 {
     assume { resolve1 x };
-    assert { [#"../projections.rs" 17 10 17 11] false };
-    absurd
+    [#"../projections.rs" 19 16 19 18] _0 <- ();
+    goto BB5
   }
   BB4 {
     [#"../projections.rs" 18 13 18 14] y <- Borrow.borrow_final (Core_Option_Option_Type.some_0 ( * x)) (Borrow.inherit_id (Borrow.get_id x) 1);
@@ -169,20 +169,20 @@ module Projections_F
   BB0 {
     [#"../projections.rs" 24 10 24 18] _2 <- Core_Option_Option_Type.C_Some ([#"../projections.rs" 24 15 24 17] (10 : int32));
     switch (_2)
-      | Core_Option_Option_Type.C_None -> goto BB1
+      | Core_Option_Option_Type.C_None -> goto BB3
       | Core_Option_Option_Type.C_Some _ -> goto BB2
       end
   }
   BB1 {
-    [#"../projections.rs" 26 16 26 21] _1 <- ([#"../projections.rs" 26 16 26 21] false);
-    goto BB5
+    assert { [#"../projections.rs" 24 10 24 18] false };
+    absurd
   }
   BB2 {
     goto BB4
   }
   BB3 {
-    assert { [#"../projections.rs" 24 10 24 18] false };
-    absurd
+    [#"../projections.rs" 26 16 26 21] _1 <- ([#"../projections.rs" 26 16 26 21] false);
+    goto BB5
   }
   BB4 {
     [#"../projections.rs" 25 13 25 14] x <- Core_Option_Option_Type.some_0 _2;

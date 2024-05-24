@@ -192,17 +192,11 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
                 use rustc_span::FileName;
                 match file.name {
                     FileName::Real(ref original_file_name) => {
-                        let adapted_file_name = if tcx.sess.should_prefer_remapped_for_codegen() {
+                        let adapted_file_name =
                             source_map.path_mapping().to_embeddable_absolute_path(
                                 original_file_name.clone(),
                                 working_directory,
-                            )
-                        } else {
-                            source_map.path_mapping().to_local_embeddable_absolute_path(
-                                original_file_name.clone(),
-                                working_directory,
-                            )
-                        };
+                            );
 
                         adapted_source_file.name = FileName::Real(adapted_file_name);
                     }

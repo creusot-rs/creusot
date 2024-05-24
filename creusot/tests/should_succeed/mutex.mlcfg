@@ -112,6 +112,7 @@ module Mutex_Impl3_Call
     ensures { result = inv0 _x }
     
   axiom inv0 : forall x : Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even) . inv0 x = true
+  use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
   use prelude.Int
   predicate inv3 [#"../mutex.rs" 66 4 66 33] (self : Mutex_Even_Type.t_even) (x : uint32) =
     [#"../mutex.rs" 67 8 67 24] mod x (2 : uint32) = (0 : uint32)
@@ -131,10 +132,10 @@ module Mutex_Impl3_Call
     
   val lock0 [#"../mutex.rs" 37 4 37 46] (self : Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even)) : Mutex_MutexGuard_Type.t_mutexguard uint32 (Mutex_Even_Type.t_even)
     requires {[#"../mutex.rs" 37 17 37 21] inv0 self}
-    ensures { [#"../mutex.rs" 36 14 36 33] Mutex_Mutex_Type.mutex_1 self = Snapshot.inner (Mutex_MutexGuard_Type.mutexguard_1 result) }
+    ensures { [#"../mutex.rs" 36 14 36 33] Mutex_Mutex_Type.mutex_1 self
+    = Snapshot.inner (Mutex_MutexGuard_Type.mutexguard_1 result) }
     ensures { [#"../mutex.rs" 37 26 37 46] inv1 result }
     
-  use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
   let rec cfg call [#"../mutex.rs" 100 4 100 23] [@cfg:stackify] [@cfg:subregion_analysis] (self : Mutex_AddsTwo_Type.t_addstwo) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -285,7 +286,8 @@ module Mutex_Concurrent
   val inv7 (_x : Mutex_JoinHandle_Type.t_joinhandle () (Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo))) : bool
     ensures { result = inv7 _x }
     
-  axiom inv7 : forall x : Mutex_JoinHandle_Type.t_joinhandle () (Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo)) . inv7 x = true
+  axiom inv7 : forall x : Mutex_JoinHandle_Type.t_joinhandle () (Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo)) . inv7 x
+  = true
   predicate invariant5 (self : Mutex_AddsTwo_Type.t_addstwo) =
     [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
   val invariant5 (self : Mutex_AddsTwo_Type.t_addstwo) : bool
@@ -512,6 +514,6 @@ module Mutex_Impl3
   val precondition0 [#"../mutex.rs" 91 4 91 33] (self : Mutex_AddsTwo_Type.t_addstwo) : bool
     ensures { result = precondition0 self }
     
-  goal call_refn : [#"../mutex.rs" 100 4 100 23] forall self : Mutex_AddsTwo_Type.t_addstwo . inv0 self /\ precondition0 self
-   -> (forall result : () . inv1 result /\ postcondition0 self result)
+  goal call_refn : [#"../mutex.rs" 100 4 100 23] forall self : Mutex_AddsTwo_Type.t_addstwo . inv0 self
+  /\ precondition0 self  -> (forall result : () . inv1 result /\ postcondition0 self result)
 end

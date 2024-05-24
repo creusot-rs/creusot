@@ -47,9 +47,6 @@ fn main() {
         temp_file.as_os_str(),
         "--output-file=/dev/null".as_ref(),
     ]);
-    if let Some(ref dir) = creusot_dev_config::custom_config_dir() {
-        metadata_file.arg("--config-dir").arg(&dir);
-    }
     metadata_file.args(&["--", "--package", "creusot-contracts"]).env("CREUSOT_CONTINUE", "true");
 
     if !metadata_file.status().expect("could not dump metadata for `creusot_contracts`").success() {
@@ -102,16 +99,15 @@ fn run_creusot(
         "--stdout",
         "--export-metadata=false",
         "--span-mode=relative",
-        "--root-path-relative-from-output=.",
+        // we will write the mlcfg output next to the .rs file
+        "--spans-relative-to=.",
     ]);
     cmd.args(&[
         "--creusot-extern",
         &format!("creusot_contracts={}", normalize_file_path(contracts)),
     ]);
     cmd.arg("--why3-path").arg(&config_paths.why3);
-    if let Some(why3_config) = &config_paths.why3_config {
-        cmd.arg("--why3-config-file").arg(why3_config);
-    }
+    cmd.arg("--why3-config-file").arg(&config_paths.why3_config);
 
     cmd.args(&["--", "-Zno-codegen", "--crate-type=lib"]);
     cmd.args(&["--extern", &format!("creusot_contracts={}", creusot_contract_path)]);

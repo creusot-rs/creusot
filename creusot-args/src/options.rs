@@ -2,7 +2,7 @@ use clap::*;
 use serde::{Deserialize, Serialize};
 use std::{error::Error, ffi::OsString, path::PathBuf};
 
-#[derive(Parser, Serialize, Deserialize)]
+#[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct CommonOptions {
     /// Determines how to format the spans in generated code to loading in Why3.
     /// [Relative] is better if the generated code is meant to be checked into VCS.
@@ -10,11 +10,10 @@ pub struct CommonOptions {
     /// [None] provides the clearest diffs.
     #[clap(long, value_enum, default_value_t=SpanMode::Relative)]
     pub span_mode: SpanMode,
-    #[clap(long, default_value_os_t = get_default_root_path_relative_from_output())]
-    /// Relative path of the root of the Rust project relative to the output files
-    /// of Creusot. This is used when producing [Relative] spans, to know the location
-    /// of Rust files corresponding to the generated Why3 files.
-    pub root_path_relative_from_output: PathBuf,
+    #[clap(long)]
+    /// Directory with respect to which (relative) spans should be relative to.
+    /// Necessary when using --stdout with relative spans, not needed otherwise.
+    pub spans_relative_to: Option<PathBuf>,
     #[clap(long)]
     /// Only generate proofs for items matching the provided string. The string is treated
     /// as a Rust qualified path.
@@ -39,7 +38,7 @@ pub struct CommonOptions {
     pub simple_triggers: bool,
 }
 
-#[derive(Parser, Serialize, Deserialize)]
+#[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct CreusotArgs {
     #[clap(flatten)]
     pub options: CommonOptions,
@@ -48,14 +47,14 @@ pub struct CreusotArgs {
     pub why3_path: PathBuf,
     /// Specify an alternative location for Why3's configuration
     #[arg(long)]
-    pub why3_config_file: Option<PathBuf>,
+    pub why3_config_file: PathBuf,
     #[command(subcommand)]
     pub subcommand: Option<CreusotSubCommand>,
     #[clap(last = true)]
     pub rust_flags: Vec<String>,
 }
 
-#[derive(Subcommand, Serialize, Deserialize)]
+#[derive(Debug, Subcommand, Serialize, Deserialize, Clone)]
 pub enum CreusotSubCommand {
     Why3 {
         /// Why3 subcommand to run
@@ -69,13 +68,10 @@ pub enum CreusotSubCommand {
     },
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 pub struct CargoCreusotArgs {
     #[clap(flatten)]
     pub options: CommonOptions,
-    /// Custom path for Creusot's config directory (managed by 'cargo creusot setup')
-    #[arg(long)]
-    pub config_dir: Option<PathBuf>,
     /// Subcommand: why3, setup
     #[command(subcommand)]
     pub subcommand: Option<CargoCreusotSubCommand>,
@@ -83,7 +79,7 @@ pub struct CargoCreusotArgs {
     pub rust_flags: Vec<String>,
 }
 
-#[derive(Subcommand)]
+#[derive(Debug, Subcommand)]
 pub enum CargoCreusotSubCommand {
     /// Setup and manage Creusot's installation
     #[command(arg_required_else_help(true))]
@@ -95,33 +91,42 @@ pub enum CargoCreusotSubCommand {
     Creusot(CreusotSubCommand),
 }
 
-#[derive(ValueEnum, Serialize, Deserialize, Clone)]
+#[derive(Debug, ValueEnum, Serialize, Deserialize, Clone)]
 pub enum Why3SubCommand {
     Prove,
     Ide,
     Replay,
 }
 
-#[derive(Parser, Clone)]
+#[derive(Debug, ValueEnum, Serialize, Deserialize, Clone, PartialEq)]
+pub enum SetupManagedTool {
+    Z3,
+    CVC4,
+    CVC5,
+}
+
+#[derive(Debug, ValueEnum, Serialize, Deserialize, Clone, PartialEq)]
+pub enum SetupTool {
+    Why3,
+    AltErgo,
+    Z3,
+    CVC4,
+    CVC5,
+}
+
+#[derive(Debug, Parser, Clone)]
 pub enum SetupSubCommand {
     /// Show the current status of the Creusot installation
     Status,
     /// Setup Creusot or update an existing installation
-    Install,
-    /// Setup Creusot but use external tools configured manually (not recommended, for experts)
-    InstallExternal {
-        /// Do not lookup and resolve paths to the external binaries (they will
-        /// instead be looked up in PATH at each Creusot invocation)
-        #[arg(long, default_value_t = false)]
-        no_resolve_paths: bool,
+    Install {
+        /// Look-up <TOOL> from PATH instead of using the built-in version
+        #[arg(long, value_name = "TOOL")]
+        external: Vec<SetupManagedTool>,
+        /// Do not error if <TOOL>'s version does not match the one expected by creusot
+        #[arg(long, value_name = "TOOL")]
+        no_check_version: Vec<SetupTool>,
     },
-}
-
-/// Default relative path of the root project wrt the output.
-/// This corresponds to the default scenario where the user invokes "cargo creusot"
-/// which writes its output in target/debug/
-fn get_default_root_path_relative_from_output() -> PathBuf {
-    ["..", ".."].iter().collect()
 }
 
 /// Parse a single key-value pair
@@ -174,7 +179,7 @@ impl CargoCreusotArgs {
     }
 }
 
-#[derive(clap::ValueEnum, Clone, Deserialize, Serialize)]
+#[derive(Debug, clap::ValueEnum, Clone, Deserialize, Serialize)]
 pub enum SpanMode {
     Relative,
     Absolute,

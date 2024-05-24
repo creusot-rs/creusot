@@ -20,7 +20,7 @@ pub(crate) use clone_map::*;
 use why3::Exp;
 
 use self::{
-    dependency::{Dependency, HackedId},
+    dependency::{Dependency, ExtendedId},
     ty_inv::TyInvKind,
 };
 
@@ -38,11 +38,11 @@ pub(crate) mod traits;
 pub(crate) mod ty;
 pub(crate) mod ty_inv;
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub(crate) enum TransId {
     Item(DefId),
     TyInv(TyInvKind),
-    Hacked(HackedId, DefId),
+    Hacked(ExtendedId, DefId),
 }
 
 impl From<DefId> for TransId {
@@ -96,13 +96,13 @@ impl<'tcx> Why3Generator<'tcx> {
             TransId::Hacked(h, id) => {
                 let c = self.ctx.closure_contract(id);
                 match h {
-                    HackedId::PostconditionOnce => Some(&c.postcond_once.as_ref()?.1),
-                    HackedId::PostconditionMut => Some(&c.postcond_mut.as_ref()?.1),
-                    HackedId::Postcondition => Some(&c.postcond.as_ref()?.1),
-                    HackedId::Precondition => Some(&c.precond.1),
-                    HackedId::Unnest => Some(&c.unnest.as_ref()?.1),
-                    HackedId::Resolve => Some(&c.resolve.1),
-                    HackedId::Accessor(ix) => Some(&c.accessors[ix as usize].1),
+                    ExtendedId::PostconditionOnce => Some(&c.postcond_once.as_ref()?.1),
+                    ExtendedId::PostconditionMut => Some(&c.postcond_mut.as_ref()?.1),
+                    ExtendedId::Postcondition => Some(&c.postcond.as_ref()?.1),
+                    ExtendedId::Precondition => Some(&c.precond.1),
+                    ExtendedId::Unnest => Some(&c.unnest.as_ref()?.1),
+                    ExtendedId::Resolve => Some(&c.resolve.1),
+                    ExtendedId::Accessor(ix) => Some(&c.accessors[ix as usize].1),
                 }
             }
         }
@@ -179,6 +179,7 @@ impl<'tcx> Why3Generator<'tcx> {
                         .insert(repr, TranslatedItem::Type { modl, accessors: Default::default() });
                 }
             }
+            ItemType::Field => self.translate_accessor(def_id),
             ItemType::Unsupported(dk) => self.crash_and_error(
                 self.tcx.def_span(def_id),
                 &format!("unsupported definition kind {:?} {:?}", def_id, dk),
@@ -345,7 +346,7 @@ impl<'tcx> Why3Generator<'tcx> {
 
     fn is_accessor(&self, item: TransId) -> bool {
         match item {
-            TransId::Hacked(HackedId::Accessor(_), _) => true,
+            TransId::Hacked(ExtendedId::Accessor(_), _) => true,
             TransId::Item(id) => self.def_kind(id) == DefKind::Field,
             _ => false,
         }
@@ -366,25 +367,33 @@ impl<'tcx> Why3Generator<'tcx> {
         // If we ask for relative paths and the paths comes from the standard library, then we prefer returning
         // None, since the relative path of the stdlib is not stable.
         let path = match (&self.opts.span_mode, path) {
-            (SpanMode::Relative, RealFileName::Remapped { .. }) => return None,
+            (SpanMode::Relative(_), RealFileName::Remapped { .. }) => return None,
             _ => path.local_path_if_available(),
         };
 
-        let mut buf;
-        let path = if path.is_relative() {
-            buf = std::env::current_dir().unwrap();
-            buf.push(path);
-            buf.as_path()
-        } else {
-            path
+        let to_absolute = |path: &std::path::Path| -> std::path::PathBuf {
+            if path.is_relative() {
+                let mut buf = std::env::current_dir().unwrap();
+                buf.push(path);
+                buf
+            } else {
+                path.to_owned()
+            }
         };
 
-        let filename = match self.opts.span_mode {
-            SpanMode::Absolute => path.to_string_lossy().into_owned(),
-            SpanMode::Relative => {
-                format!("{}", self.opts.relative_to_output(&path).to_string_lossy())
+        let filename = match &self.opts.span_mode {
+            SpanMode::Absolute => to_absolute(path).to_string_lossy().into_owned(),
+            SpanMode::Relative(base) => {
+                let path = to_absolute(path);
+                let base = to_absolute(base);
+                // Why3 treats the spans as relative to the session, not the source file,
+                // and the session is in a subdirectory next to the mlcfg file, so we need
+                // to add an extra ".."
+                let p = std::path::PathBuf::from("..");
+                let diff = pathdiff::diff_paths(&path, &base)?;
+                p.join(diff).to_string_lossy().into_owned()
             }
-            _ => return None,
+            SpanMode::Off => return None,
         };
 
         Some(why3::declaration::Attribute::Span(
@@ -413,7 +422,7 @@ pub(crate) fn closure_generic_decls(
     mut def_id: DefId,
 ) -> impl Iterator<Item = Decl> + '_ {
     loop {
-        if tcx.is_closure_or_coroutine(def_id) {
+        if tcx.is_closure_like(def_id) {
             def_id = tcx.parent(def_id);
         } else {
             break;
@@ -431,7 +440,7 @@ pub(crate) fn all_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator
 
 pub(crate) fn own_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = Decl> + '_ {
     let generics = tcx.generics_of(def_id);
-    generic_decls(generics.params.iter())
+    generic_decls(generics.own_params.iter())
 }
 
 fn generic_decls<'tcx, I: Iterator<Item = &'tcx GenericParamDef> + 'tcx>(

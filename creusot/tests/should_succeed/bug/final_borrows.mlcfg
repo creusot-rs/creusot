@@ -183,7 +183,8 @@ module FinalBorrows_ReborrowField
     
   let rec cfg reborrow_field [#"../final_borrows.rs" 19 0 19 50] [@cfg:stackify] [@cfg:subregion_analysis] (r : borrowed (t, t)) : borrowed t
     requires {[#"../final_borrows.rs" 19 25 19 26] inv2 r}
-    ensures { [#"../final_borrows.rs" 18 10 18 28] result = Borrow.borrow_logic (let (a, _) =  * r in a) (let (a, _) =  ^ r in a) (Borrow.inherit_id (Borrow.get_id r) 1) }
+    ensures { [#"../final_borrows.rs" 18 10 18 28] result
+    = Borrow.borrow_logic (let (a, _) =  * r in a) (let (a, _) =  ^ r in a) (Borrow.inherit_id (Borrow.get_id r) 1) }
     ensures { [#"../final_borrows.rs" 19 44 19 50] inv1 result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -279,7 +280,8 @@ module FinalBorrows_NestedFields
     
   let rec cfg nested_fields [#"../final_borrows.rs" 24 0 24 54] [@cfg:stackify] [@cfg:subregion_analysis] (r : borrowed ((t, t), t)) : borrowed t
     requires {[#"../final_borrows.rs" 24 24 24 25] inv4 r}
-    ensures { [#"../final_borrows.rs" 23 0 23 32] result = Borrow.borrow_logic (let (_, a) = let (a, _) =  * r in a in a) (let (_, a) = let (a, _) =  ^ r in a in a) (Borrow.inherit_id (Borrow.inherit_id (Borrow.get_id r) 1) 2) }
+    ensures { [#"../final_borrows.rs" 23 0 23 32] result
+    = Borrow.borrow_logic (let (_, a) = let (a, _) =  * r in a in a) (let (_, a) = let (a, _) =  ^ r in a in a) (Borrow.inherit_id (Borrow.inherit_id (Borrow.get_id r) 1) 2) }
     ensures { [#"../final_borrows.rs" 24 48 24 54] inv3 result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -356,7 +358,8 @@ module FinalBorrows_ReallyNestedFields
     ensures { result = resolve2 self }
     
   predicate resolve1 (self : (borrowed (t, t), t)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60] resolve2 (let (a, _) = self in a) /\ resolve3 (let (_, a) = self in a)
+    [#"../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60] resolve2 (let (a, _) = self in a)
+    /\ resolve3 (let (_, a) = self in a)
   val resolve1 (self : (borrowed (t, t), t)) : bool
     ensures { result = resolve1 self }
     
@@ -367,7 +370,8 @@ module FinalBorrows_ReallyNestedFields
     
   let rec cfg really_nested_fields [#"../final_borrows.rs" 30 0 30 61] [@cfg:stackify] [@cfg:subregion_analysis] (x : (borrowed (t, t), t)) : borrowed t
     requires {[#"../final_borrows.rs" 30 31 30 32] inv2 x}
-    ensures { [#"../final_borrows.rs" 29 10 29 33] result = Borrow.borrow_logic (let (_, a) =  * (let (a, _) = x in a) in a) (let (_, a) =  ^ (let (a, _) = x in a) in a) (Borrow.inherit_id (Borrow.get_id (let (a, _) = x in a)) 2) }
+    ensures { [#"../final_borrows.rs" 29 10 29 33] result
+    = Borrow.borrow_logic (let (_, a) =  * (let (a, _) = x in a) in a) (let (_, a) =  ^ (let (a, _) = x in a) in a) (Borrow.inherit_id (Borrow.get_id (let (a, _) = x in a)) 2) }
     ensures { [#"../final_borrows.rs" 30 55 30 61] inv1 result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -482,8 +486,12 @@ module FinalBorrows_SelectField
   let rec cfg select_field [#"../final_borrows.rs" 39 0 39 56] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed (Core_Option_Option_Type.t_option t, t)) : borrowed t
     requires {[#"../final_borrows.rs" 39 23 39 24] inv4 x}
     ensures { [#"../final_borrows.rs" 35 10 38 1] match let (a, _) =  * x in a with
-      | Core_Option_Option_Type.C_None -> result = Borrow.borrow_logic (let (_, a) =  * x in a) (let (_, a) =  ^ x in a) (Borrow.inherit_id (Borrow.get_id x) 2)
-      | Core_Option_Option_Type.C_Some _ -> exists r : borrowed t . inv3 r /\ result = r /\ (let (a, _) =  * x in a) = Core_Option_Option_Type.C_Some ( * r) /\ (let (a, _) =  ^ x in a) = Core_Option_Option_Type.C_Some ( ^ r)
+      | Core_Option_Option_Type.C_None -> result
+      = Borrow.borrow_logic (let (_, a) =  * x in a) (let (_, a) =  ^ x in a) (Borrow.inherit_id (Borrow.get_id x) 2)
+      | Core_Option_Option_Type.C_Some _ -> exists r : borrowed t . inv3 r
+      /\ result = r
+      /\ (let (a, _) =  * x in a) = Core_Option_Option_Type.C_Some ( * r)
+      /\ (let (a, _) =  ^ x in a) = Core_Option_Option_Type.C_Some ( ^ r)
       end }
     ensures { [#"../final_borrows.rs" 39 50 39 56] inv3 result }
     
@@ -501,14 +509,22 @@ module FinalBorrows_SelectField
     [#"../final_borrows.rs" 40 10 40 18] x <- { x with current = (let (x0, x1) =  * x in ( ^ _4, x1)) ; };
     assume { inv0 ( ^ _4) };
     switch ( * _4)
-      | Core_Option_Option_Type.C_None -> goto BB1
-      | Core_Option_Option_Type.C_Some _ -> goto BB2
+      | Core_Option_Option_Type.C_None -> goto BB2
+      | Core_Option_Option_Type.C_Some _ -> goto BB3
       end
   }
   BB1 {
-    goto BB4
+    assert { [@expl:type invariant] inv1 _4 };
+    assume { resolve0 _4 };
+    assert { [@expl:type invariant] inv4 x };
+    assume { resolve2 x };
+    assert { [#"../final_borrows.rs" 40 10 40 18] false };
+    absurd
   }
   BB2 {
+    goto BB4
+  }
+  BB3 {
     [#"../final_borrows.rs" 42 13 42 14] r <- Borrow.borrow_final (Core_Option_Option_Type.some_0 ( * _4)) (Borrow.inherit_id (Borrow.get_id _4) 1);
     [#"../final_borrows.rs" 42 13 42 14] _4 <- { _4 with current = (let Core_Option_Option_Type.C_Some x0 =  * _4 in Core_Option_Option_Type.C_Some ( ^ r)) ; };
     assume { inv2 ( ^ r) };
@@ -520,14 +536,6 @@ module FinalBorrows_SelectField
     assert { [@expl:type invariant] inv1 _4 };
     assume { resolve0 _4 };
     goto BB5
-  }
-  BB3 {
-    assert { [@expl:type invariant] inv1 _4 };
-    assume { resolve0 _4 };
-    assert { [@expl:type invariant] inv4 x };
-    assume { resolve2 x };
-    assert { [#"../final_borrows.rs" 40 10 40 18] false };
-    absurd
   }
   BB4 {
     assert { [@expl:type invariant] inv1 _4 };
@@ -1139,7 +1147,8 @@ module FinalBorrows_BorrowInBoxTuple1
     ensures { result = resolve3 self }
     
   predicate resolve2 (self : (int32, borrowed int32)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60] resolve3 (let (a, _) = self in a) /\ resolve0 (let (_, a) = self in a)
+    [#"../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60] resolve3 (let (a, _) = self in a)
+    /\ resolve0 (let (_, a) = self in a)
   val resolve2 (self : (int32, borrowed int32)) : bool
     ensures { result = resolve2 self }
     
@@ -1200,7 +1209,8 @@ module FinalBorrows_BorrowInBoxTuple2
     ensures { result = resolve2 self }
     
   predicate resolve1 (self : (int32, borrowed int32)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60] resolve2 (let (a, _) = self in a) /\ resolve3 (let (_, a) = self in a)
+    [#"../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60] resolve2 (let (a, _) = self in a)
+    /\ resolve3 (let (_, a) = self in a)
   val resolve1 (self : (int32, borrowed int32)) : bool
     ensures { result = resolve1 self }
     

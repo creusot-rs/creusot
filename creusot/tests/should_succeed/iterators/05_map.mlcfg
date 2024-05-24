@@ -154,7 +154,8 @@ module C05Map_Impl0_ProducesRefl_Impl
   axiom fn_mut_once0_spec : forall self : f, args : item0, res : b . ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 19 123 23] inv4 self)
    -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 25 123 29] inv6 args)
    -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] inv7 res)
-   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] postcondition_once0 self args res = (exists s : borrowed f . inv5 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve0 ( ^ s)))
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] postcondition_once0 self args res
+  = (exists s : borrowed f . inv5 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve0 ( ^ s)))
   predicate unnest0 (self : f) (_2 : f)
   val unnest0 (self : f) (_2 : f) : bool
     ensures { result = unnest0 self _2 }
@@ -219,6 +220,7 @@ module C05Map_Impl0_ProducesRefl_Impl
   val preservation0 [#"../05_map.rs" 81 4 81 45] (iter : i) (func : f) : bool
     ensures { result = preservation0 iter func }
     
+  use C05Map_Map_Type as C05Map_Map_Type
   predicate completed0 [#"../common.rs" 11 4 11 36] (self : borrowed i)
   val completed0 [#"../common.rs" 11 4 11 36] (self : borrowed i) : bool
     ensures { result = completed0 self }
@@ -229,9 +231,10 @@ module C05Map_Impl0_ProducesRefl_Impl
   val reinitialize0 [#"../05_map.rs" 93 4 93 29] (_1 : ()) : bool
     ensures { result = reinitialize0 _1 }
     
-  use C05Map_Map_Type as C05Map_Map_Type
   predicate invariant0 [#"../05_map.rs" 131 4 131 30] (self : C05Map_Map_Type.t_map i b f) =
-    [#"../05_map.rs" 133 12 135 57] reinitialize0 () /\ preservation0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self) /\ next_precondition0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
+    [#"../05_map.rs" 133 12 135 57] reinitialize0 ()
+    /\ preservation0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
+    /\ next_precondition0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
   val invariant0 [#"../05_map.rs" 131 4 131 30] (self : C05Map_Map_Type.t_map i b f) : bool
     ensures { result = invariant0 self }
     
@@ -239,7 +242,9 @@ module C05Map_Impl0_ProducesRefl_Impl
   val inv0 (_x : C05Map_Map_Type.t_map i b f) : bool
     ensures { result = inv0 _x }
     
-  axiom inv0 : forall x : C05Map_Map_Type.t_map i b f . inv0 x = (invariant0 x /\ match x with
+  axiom inv0 : forall x : C05Map_Map_Type.t_map i b f . inv0 x
+  = (invariant0 x
+  /\ match x with
     | C05Map_Map_Type.C_Map iter func -> true
     end)
   use seq.Seq
@@ -252,13 +257,23 @@ module C05Map_Impl0_ProducesRefl_Impl
   predicate produces0 [@inline:trivial] [#"../05_map.rs" 41 4 41 67] (self : C05Map_Map_Type.t_map i b f) (visited : Seq.seq b) (succ : C05Map_Map_Type.t_map i b f)
     
    =
-    [#"../05_map.rs" 42 8 53 9] unnest0 (C05Map_Map_Type.map_func self) (C05Map_Map_Type.map_func succ) /\ (exists s : Seq.seq item0 . inv1 s /\ Seq.length s = Seq.length visited /\ produces1 (C05Map_Map_Type.map_iter self) s (C05Map_Map_Type.map_iter succ) /\ (exists fs : Seq.seq (borrowed f) . inv2 fs /\ Seq.length fs = Seq.length visited /\ (forall i : int . 1 <= i /\ i < Seq.length fs
-     ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i) /\ (if Seq.length visited = 0 then
+    [#"../05_map.rs" 42 8 53 9] unnest0 (C05Map_Map_Type.map_func self) (C05Map_Map_Type.map_func succ)
+    /\ (exists s : Seq.seq item0 . inv1 s
+    /\ Seq.length s = Seq.length visited
+    /\ produces1 (C05Map_Map_Type.map_iter self) s (C05Map_Map_Type.map_iter succ)
+    /\ (exists fs : Seq.seq (borrowed f) . inv2 fs
+    /\ Seq.length fs = Seq.length visited
+    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i)
+    /\ (if Seq.length visited = 0 then
       C05Map_Map_Type.map_func self = C05Map_Map_Type.map_func succ
     else
-       * Seq.get fs 0 = C05Map_Map_Type.map_func self /\  ^ Seq.get fs (Seq.length visited - 1) = C05Map_Map_Type.map_func succ
-    ) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> unnest0 (C05Map_Map_Type.map_func self) ( * Seq.get fs i) /\ precondition0 ( * Seq.get fs i) (Seq.get s i) /\ postcondition_mut0 (Seq.get fs i) (Seq.get s i) (Seq.get visited i))))
+       * Seq.get fs 0 = C05Map_Map_Type.map_func self
+      /\  ^ Seq.get fs (Seq.length visited - 1) = C05Map_Map_Type.map_func succ
+    )
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> unnest0 (C05Map_Map_Type.map_func self) ( * Seq.get fs i)
+    /\ precondition0 ( * Seq.get fs i) (Seq.get s i)
+    /\ postcondition_mut0 (Seq.get fs i) (Seq.get s i) (Seq.get visited i))))
   val produces0 [@inline:trivial] [#"../05_map.rs" 41 4 41 67] (self : C05Map_Map_Type.t_map i b f) (visited : Seq.seq b) (succ : C05Map_Map_Type.t_map i b f) : bool
     ensures { result = produces0 self visited succ }
     
@@ -410,7 +425,8 @@ module C05Map_Impl0_ProducesTrans_Impl
   axiom fn_mut_once0_spec : forall self : f, args : item0, res : b . ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 19 123 23] inv5 self)
    -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 25 123 29] inv7 args)
    -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] inv8 res)
-   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] postcondition_once0 self args res = (exists s : borrowed f . inv6 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve0 ( ^ s)))
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] postcondition_once0 self args res
+  = (exists s : borrowed f . inv6 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve0 ( ^ s)))
   predicate unnest0 (self : f) (_2 : f)
   val unnest0 (self : f) (_2 : f) : bool
     ensures { result = unnest0 self _2 }
@@ -484,6 +500,7 @@ module C05Map_Impl0_ProducesTrans_Impl
   val preservation0 [#"../05_map.rs" 81 4 81 45] (iter : i) (func : f) : bool
     ensures { result = preservation0 iter func }
     
+  use C05Map_Map_Type as C05Map_Map_Type
   predicate completed0 [#"../common.rs" 11 4 11 36] (self : borrowed i)
   val completed0 [#"../common.rs" 11 4 11 36] (self : borrowed i) : bool
     ensures { result = completed0 self }
@@ -494,9 +511,10 @@ module C05Map_Impl0_ProducesTrans_Impl
   val reinitialize0 [#"../05_map.rs" 93 4 93 29] (_1 : ()) : bool
     ensures { result = reinitialize0 _1 }
     
-  use C05Map_Map_Type as C05Map_Map_Type
   predicate invariant0 [#"../05_map.rs" 131 4 131 30] (self : C05Map_Map_Type.t_map i b f) =
-    [#"../05_map.rs" 133 12 135 57] reinitialize0 () /\ preservation0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self) /\ next_precondition0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
+    [#"../05_map.rs" 133 12 135 57] reinitialize0 ()
+    /\ preservation0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
+    /\ next_precondition0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
   val invariant0 [#"../05_map.rs" 131 4 131 30] (self : C05Map_Map_Type.t_map i b f) : bool
     ensures { result = invariant0 self }
     
@@ -504,7 +522,9 @@ module C05Map_Impl0_ProducesTrans_Impl
   val inv0 (_x : C05Map_Map_Type.t_map i b f) : bool
     ensures { result = inv0 _x }
     
-  axiom inv0 : forall x : C05Map_Map_Type.t_map i b f . inv0 x = (invariant0 x /\ match x with
+  axiom inv0 : forall x : C05Map_Map_Type.t_map i b f . inv0 x
+  = (invariant0 x
+  /\ match x with
     | C05Map_Map_Type.C_Map iter func -> true
     end)
   use seq.Seq
@@ -518,13 +538,23 @@ module C05Map_Impl0_ProducesTrans_Impl
   predicate produces0 [@inline:trivial] [#"../05_map.rs" 41 4 41 67] (self : C05Map_Map_Type.t_map i b f) (visited : Seq.seq b) (succ : C05Map_Map_Type.t_map i b f)
     
    =
-    [#"../05_map.rs" 42 8 53 9] unnest0 (C05Map_Map_Type.map_func self) (C05Map_Map_Type.map_func succ) /\ (exists s : Seq.seq item0 . inv2 s /\ Seq.length s = Seq.length visited /\ produces1 (C05Map_Map_Type.map_iter self) s (C05Map_Map_Type.map_iter succ) /\ (exists fs : Seq.seq (borrowed f) . inv3 fs /\ Seq.length fs = Seq.length visited /\ (forall i : int . 1 <= i /\ i < Seq.length fs
-     ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i) /\ (if Seq.length visited = 0 then
+    [#"../05_map.rs" 42 8 53 9] unnest0 (C05Map_Map_Type.map_func self) (C05Map_Map_Type.map_func succ)
+    /\ (exists s : Seq.seq item0 . inv2 s
+    /\ Seq.length s = Seq.length visited
+    /\ produces1 (C05Map_Map_Type.map_iter self) s (C05Map_Map_Type.map_iter succ)
+    /\ (exists fs : Seq.seq (borrowed f) . inv3 fs
+    /\ Seq.length fs = Seq.length visited
+    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i)
+    /\ (if Seq.length visited = 0 then
       C05Map_Map_Type.map_func self = C05Map_Map_Type.map_func succ
     else
-       * Seq.get fs 0 = C05Map_Map_Type.map_func self /\  ^ Seq.get fs (Seq.length visited - 1) = C05Map_Map_Type.map_func succ
-    ) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> unnest0 (C05Map_Map_Type.map_func self) ( * Seq.get fs i) /\ precondition0 ( * Seq.get fs i) (Seq.get s i) /\ postcondition_mut0 (Seq.get fs i) (Seq.get s i) (Seq.get visited i))))
+       * Seq.get fs 0 = C05Map_Map_Type.map_func self
+      /\  ^ Seq.get fs (Seq.length visited - 1) = C05Map_Map_Type.map_func succ
+    )
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> unnest0 (C05Map_Map_Type.map_func self) ( * Seq.get fs i)
+    /\ precondition0 ( * Seq.get fs i) (Seq.get s i)
+    /\ postcondition_mut0 (Seq.get fs i) (Seq.get s i) (Seq.get visited i))))
   val produces0 [@inline:trivial] [#"../05_map.rs" 41 4 41 67] (self : C05Map_Map_Type.t_map i b f) (visited : Seq.seq b) (succ : C05Map_Map_Type.t_map i b f) : bool
     ensures { result = produces0 self visited succ }
     
@@ -655,7 +685,8 @@ module C05Map_Impl1_ProducesOne_Impl
   axiom fn_mut_once0_spec : forall self : f, args : item0, res : b . ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 19 123 23] inv7 self)
    -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 25 123 29] inv9 args)
    -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] inv1 res)
-   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] postcondition_once0 self args res = (exists s : borrowed f . inv2 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve0 ( ^ s)))
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] postcondition_once0 self args res
+  = (exists s : borrowed f . inv2 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve0 ( ^ s)))
   predicate unnest0 (self : f) (_2 : f)
   val unnest0 (self : f) (_2 : f) : bool
     ensures { result = unnest0 self _2 }
@@ -761,13 +792,23 @@ module C05Map_Impl1_ProducesOne_Impl
   predicate produces0 [@inline:trivial] [#"../05_map.rs" 41 4 41 67] (self : C05Map_Map_Type.t_map i b f) (visited : Seq.seq b) (succ : C05Map_Map_Type.t_map i b f)
     
    =
-    [#"../05_map.rs" 42 8 53 9] unnest0 (C05Map_Map_Type.map_func self) (C05Map_Map_Type.map_func succ) /\ (exists s : Seq.seq item0 . inv4 s /\ Seq.length s = Seq.length visited /\ produces1 (C05Map_Map_Type.map_iter self) s (C05Map_Map_Type.map_iter succ) /\ (exists fs : Seq.seq (borrowed f) . inv5 fs /\ Seq.length fs = Seq.length visited /\ (forall i : int . 1 <= i /\ i < Seq.length fs
-     ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i) /\ (if Seq.length visited = 0 then
+    [#"../05_map.rs" 42 8 53 9] unnest0 (C05Map_Map_Type.map_func self) (C05Map_Map_Type.map_func succ)
+    /\ (exists s : Seq.seq item0 . inv4 s
+    /\ Seq.length s = Seq.length visited
+    /\ produces1 (C05Map_Map_Type.map_iter self) s (C05Map_Map_Type.map_iter succ)
+    /\ (exists fs : Seq.seq (borrowed f) . inv5 fs
+    /\ Seq.length fs = Seq.length visited
+    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i)
+    /\ (if Seq.length visited = 0 then
       C05Map_Map_Type.map_func self = C05Map_Map_Type.map_func succ
     else
-       * Seq.get fs 0 = C05Map_Map_Type.map_func self /\  ^ Seq.get fs (Seq.length visited - 1) = C05Map_Map_Type.map_func succ
-    ) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> unnest0 (C05Map_Map_Type.map_func self) ( * Seq.get fs i) /\ precondition0 ( * Seq.get fs i) (Seq.get s i) /\ postcondition_mut0 (Seq.get fs i) (Seq.get s i) (Seq.get visited i))))
+       * Seq.get fs 0 = C05Map_Map_Type.map_func self
+      /\  ^ Seq.get fs (Seq.length visited - 1) = C05Map_Map_Type.map_func succ
+    )
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> unnest0 (C05Map_Map_Type.map_func self) ( * Seq.get fs i)
+    /\ precondition0 ( * Seq.get fs i) (Seq.get s i)
+    /\ postcondition_mut0 (Seq.get fs i) (Seq.get s i) (Seq.get visited i))))
   val produces0 [@inline:trivial] [#"../05_map.rs" 41 4 41 67] (self : C05Map_Map_Type.t_map i b f) (visited : Seq.seq b) (succ : C05Map_Map_Type.t_map i b f) : bool
     ensures { result = produces0 self visited succ }
     
@@ -838,11 +879,15 @@ module C05Map_Impl1_ProducesOne_Impl
     ensures { result = reinitialize0 _1 }
     
   predicate invariant0 [#"../05_map.rs" 131 4 131 30] (self : C05Map_Map_Type.t_map i b f) =
-    [#"../05_map.rs" 133 12 135 57] reinitialize0 () /\ preservation0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self) /\ next_precondition0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
+    [#"../05_map.rs" 133 12 135 57] reinitialize0 ()
+    /\ preservation0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
+    /\ next_precondition0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
   val invariant0 [#"../05_map.rs" 131 4 131 30] (self : C05Map_Map_Type.t_map i b f) : bool
     ensures { result = invariant0 self }
     
-  axiom inv0 : forall x : C05Map_Map_Type.t_map i b f . inv0 x = (invariant0 x /\ match x with
+  axiom inv0 : forall x : C05Map_Map_Type.t_map i b f . inv0 x
+  = (invariant0 x
+  /\ match x with
     | C05Map_Map_Type.C_Map iter func -> true
     end)
   use seq.Seq
@@ -854,7 +899,13 @@ module C05Map_Impl1_ProducesOne_Impl
   goal vc_produces_one : ([#"../05_map.rs" 117 38 117 42] inv0 succ)
    -> ([#"../05_map.rs" 117 26 117 33] inv1 visited)
    -> ([#"../05_map.rs" 117 20 117 24] inv0 self)
-   -> ([#"../05_map.rs" 116 14 116 68] ([#"../05_map.rs" 118 8 123 9] exists f : borrowed f . inv2 f /\  * f = C05Map_Map_Type.map_func self /\  ^ f = C05Map_Map_Type.map_func succ /\ (exists e : item0 . inv3 e /\ produces1 (C05Map_Map_Type.map_iter self) (Seq.singleton e) (C05Map_Map_Type.map_iter succ) /\ precondition0 ( * f) (e) /\ postcondition_mut0 f (e) visited)) = produces0 self (Seq.singleton visited) succ)
+   -> ([#"../05_map.rs" 116 14 116 68] ([#"../05_map.rs" 118 8 123 9] exists f : borrowed f . inv2 f
+  /\  * f = C05Map_Map_Type.map_func self
+  /\  ^ f = C05Map_Map_Type.map_func succ
+  /\ (exists e : item0 . inv3 e
+  /\ produces1 (C05Map_Map_Type.map_iter self) (Seq.singleton e) (C05Map_Map_Type.map_iter succ)
+  /\ precondition0 ( * f) (e) /\ postcondition_mut0 f (e) visited))
+  = produces0 self (Seq.singleton visited) succ)
 end
 module C05Map_Impl1_ProducesOneInvariant_Impl
   type i
@@ -972,6 +1023,7 @@ module C05Map_Impl1_ProducesOneInvariant_Impl
   val preservation0 [#"../05_map.rs" 81 4 81 45] (iter : i) (func : f) : bool
     ensures { result = preservation0 iter func }
     
+  use C05Map_Map_Type as C05Map_Map_Type
   predicate completed0 [#"../common.rs" 11 4 11 36] (self : borrowed i)
   val completed0 [#"../common.rs" 11 4 11 36] (self : borrowed i) : bool
     ensures { result = completed0 self }
@@ -982,9 +1034,10 @@ module C05Map_Impl1_ProducesOneInvariant_Impl
   val reinitialize0 [#"../05_map.rs" 93 4 93 29] (_1 : ()) : bool
     ensures { result = reinitialize0 _1 }
     
-  use C05Map_Map_Type as C05Map_Map_Type
   predicate invariant0 [#"../05_map.rs" 131 4 131 30] (self : C05Map_Map_Type.t_map i b f) =
-    [#"../05_map.rs" 133 12 135 57] reinitialize0 () /\ preservation0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self) /\ next_precondition0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
+    [#"../05_map.rs" 133 12 135 57] reinitialize0 ()
+    /\ preservation0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
+    /\ next_precondition0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
   val invariant0 [#"../05_map.rs" 131 4 131 30] (self : C05Map_Map_Type.t_map i b f) : bool
     ensures { result = invariant0 self }
     
@@ -992,7 +1045,9 @@ module C05Map_Impl1_ProducesOneInvariant_Impl
   val inv0 (_x : C05Map_Map_Type.t_map i b f) : bool
     ensures { result = inv0 _x }
     
-  axiom inv0 : forall x : C05Map_Map_Type.t_map i b f . inv0 x = (invariant0 x /\ match x with
+  axiom inv0 : forall x : C05Map_Map_Type.t_map i b f . inv0 x
+  = (invariant0 x
+  /\ match x with
     | C05Map_Map_Type.C_Map iter func -> true
     end)
   predicate resolve0 (self : f)
@@ -1013,7 +1068,8 @@ module C05Map_Impl1_ProducesOneInvariant_Impl
   axiom fn_mut_once0_spec : forall self : f, args : item0, res : b . ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 19 123 23] inv7 self)
    -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 25 123 29] inv6 args)
    -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] inv2 res)
-   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] postcondition_once0 self args res = (exists s : borrowed f . inv3 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve0 ( ^ s)))
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] postcondition_once0 self args res
+  = (exists s : borrowed f . inv3 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve0 ( ^ s)))
   function unnest_trans0 (self : f) (b : f) (c : f) : ()
   val unnest_trans0 (self : f) (b : f) (c : f) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 114 15 114 29] unnest0 self b}
@@ -1097,7 +1153,9 @@ module C05Map_Impl1_ProducesOneInvariant_Impl
    -> inv1 e1
    -> inv5 s
    -> produces0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-   -> produces0 (C05Map_Map_Type.map_iter self) (Seq.snoc (Seq.snoc (Seq.(++) (Seq.singleton e) s) e1) e2) i) && (let _ = () in ([#"../05_map.rs" 106 14 106 47] next_precondition0 iter ( ^ f)) && ([#"../05_map.rs" 105 14 105 42] preservation0 iter ( ^ f)))
+   -> produces0 (C05Map_Map_Type.map_iter self) (Seq.snoc (Seq.snoc (Seq.(++) (Seq.singleton e) s) e1) e2) i)
+  && (let _ = () in ([#"../05_map.rs" 106 14 106 47] next_precondition0 iter ( ^ f))
+  && ([#"../05_map.rs" 105 14 105 42] preservation0 iter ( ^ f)))
 end
 module C05Map_Impl0_Next
   type i
@@ -1205,6 +1263,7 @@ module C05Map_Impl0_Next
   val preservation0 [#"../05_map.rs" 81 4 81 45] (iter : i) (func : f) : bool
     ensures { result = preservation0 iter func }
     
+  use C05Map_Map_Type as C05Map_Map_Type
   predicate completed1 [#"../common.rs" 11 4 11 36] (self : borrowed i)
   val completed1 [#"../common.rs" 11 4 11 36] (self : borrowed i) : bool
     ensures { result = completed1 self }
@@ -1219,9 +1278,10 @@ module C05Map_Impl0_Next
   val reinitialize0 [#"../05_map.rs" 93 4 93 29] (_1 : ()) : bool
     ensures { result = reinitialize0 _1 }
     
-  use C05Map_Map_Type as C05Map_Map_Type
   predicate invariant6 [#"../05_map.rs" 131 4 131 30] (self : C05Map_Map_Type.t_map i b f) =
-    [#"../05_map.rs" 133 12 135 57] reinitialize0 () /\ preservation0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self) /\ next_precondition0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
+    [#"../05_map.rs" 133 12 135 57] reinitialize0 ()
+    /\ preservation0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
+    /\ next_precondition0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
   val invariant6 [#"../05_map.rs" 131 4 131 30] (self : C05Map_Map_Type.t_map i b f) : bool
     ensures { result = invariant6 self }
     
@@ -1229,7 +1289,9 @@ module C05Map_Impl0_Next
   val inv6 (_x : C05Map_Map_Type.t_map i b f) : bool
     ensures { result = inv6 _x }
     
-  axiom inv6 : forall x : C05Map_Map_Type.t_map i b f . inv6 x = (invariant6 x /\ match x with
+  axiom inv6 : forall x : C05Map_Map_Type.t_map i b f . inv6 x
+  = (invariant6 x
+  /\ match x with
     | C05Map_Map_Type.C_Map iter func -> true
     end)
   predicate resolve3 (self : f)
@@ -1250,7 +1312,8 @@ module C05Map_Impl0_Next
   axiom fn_mut_once0_spec : forall self : f, args : item0, res : b . ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 19 123 23] inv2 self)
    -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 25 123 29] inv11 args)
    -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] inv8 res)
-   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] postcondition_once0 self args res = (exists s : borrowed f . inv9 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve3 ( ^ s)))
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] postcondition_once0 self args res
+  = (exists s : borrowed f . inv9 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve3 ( ^ s)))
   function unnest_trans0 (self : f) (b : f) (c : f) : ()
   val unnest_trans0 (self : f) (b : f) (c : f) : ()
     requires {[#"../../../../../creusot-contracts/src/std/ops.rs" 114 15 114 29] unnest0 self b}
@@ -1367,13 +1430,23 @@ module C05Map_Impl0_Next
   predicate produces1 [@inline:trivial] [#"../05_map.rs" 41 4 41 67] (self : C05Map_Map_Type.t_map i b f) (visited : Seq.seq b) (succ : C05Map_Map_Type.t_map i b f)
     
    =
-    [#"../05_map.rs" 42 8 53 9] unnest0 (C05Map_Map_Type.map_func self) (C05Map_Map_Type.map_func succ) /\ (exists s : Seq.seq item0 . inv10 s /\ Seq.length s = Seq.length visited /\ produces0 (C05Map_Map_Type.map_iter self) s (C05Map_Map_Type.map_iter succ) /\ (exists fs : Seq.seq (borrowed f) . inv12 fs /\ Seq.length fs = Seq.length visited /\ (forall i : int . 1 <= i /\ i < Seq.length fs
-     ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i) /\ (if Seq.length visited = 0 then
+    [#"../05_map.rs" 42 8 53 9] unnest0 (C05Map_Map_Type.map_func self) (C05Map_Map_Type.map_func succ)
+    /\ (exists s : Seq.seq item0 . inv10 s
+    /\ Seq.length s = Seq.length visited
+    /\ produces0 (C05Map_Map_Type.map_iter self) s (C05Map_Map_Type.map_iter succ)
+    /\ (exists fs : Seq.seq (borrowed f) . inv12 fs
+    /\ Seq.length fs = Seq.length visited
+    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i)
+    /\ (if Seq.length visited = 0 then
       C05Map_Map_Type.map_func self = C05Map_Map_Type.map_func succ
     else
-       * Seq.get fs 0 = C05Map_Map_Type.map_func self /\  ^ Seq.get fs (Seq.length visited - 1) = C05Map_Map_Type.map_func succ
-    ) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> unnest0 (C05Map_Map_Type.map_func self) ( * Seq.get fs i) /\ precondition0 ( * Seq.get fs i) (Seq.get s i) /\ postcondition_mut0 (Seq.get fs i) (Seq.get s i) (Seq.get visited i))))
+       * Seq.get fs 0 = C05Map_Map_Type.map_func self
+      /\  ^ Seq.get fs (Seq.length visited - 1) = C05Map_Map_Type.map_func succ
+    )
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> unnest0 (C05Map_Map_Type.map_func self) ( * Seq.get fs i)
+    /\ precondition0 ( * Seq.get fs i) (Seq.get s i)
+    /\ postcondition_mut0 (Seq.get fs i) (Seq.get s i) (Seq.get visited i))))
   val produces1 [@inline:trivial] [#"../05_map.rs" 41 4 41 67] (self : C05Map_Map_Type.t_map i b f) (visited : Seq.seq b) (succ : C05Map_Map_Type.t_map i b f) : bool
     ensures { result = produces1 self visited succ }
     
@@ -1381,7 +1454,12 @@ module C05Map_Impl0_Next
   predicate produces_one0 [#"../05_map.rs" 117 4 117 57] (self : C05Map_Map_Type.t_map i b f) (visited : b) (succ : C05Map_Map_Type.t_map i b f)
     
    =
-    [#"../05_map.rs" 118 8 123 9] exists f : borrowed f . inv9 f /\  * f = C05Map_Map_Type.map_func self /\  ^ f = C05Map_Map_Type.map_func succ /\ (exists e : item0 . inv7 e /\ produces0 (C05Map_Map_Type.map_iter self) (Seq.singleton e) (C05Map_Map_Type.map_iter succ) /\ precondition0 ( * f) (e) /\ postcondition_mut0 f (e) visited)
+    [#"../05_map.rs" 118 8 123 9] exists f : borrowed f . inv9 f
+    /\  * f = C05Map_Map_Type.map_func self
+    /\  ^ f = C05Map_Map_Type.map_func succ
+    /\ (exists e : item0 . inv7 e
+    /\ produces0 (C05Map_Map_Type.map_iter self) (Seq.singleton e) (C05Map_Map_Type.map_iter succ)
+    /\ precondition0 ( * f) (e) /\ postcondition_mut0 f (e) visited)
   val produces_one0 [#"../05_map.rs" 117 4 117 57] (self : C05Map_Map_Type.t_map i b f) (visited : b) (succ : C05Map_Map_Type.t_map i b f) : bool
     requires {[#"../05_map.rs" 117 20 117 24] inv6 self}
     requires {[#"../05_map.rs" 117 26 117 33] inv8 visited}
@@ -1393,7 +1471,8 @@ module C05Map_Impl0_Next
    -> ([#"../05_map.rs" 117 38 117 42] inv6 succ)
    -> ([#"../05_map.rs" 116 14 116 68] produces_one0 self visited succ = produces1 self (Seq.singleton visited) succ)
   predicate completed0 [#"../05_map.rs" 22 4 22 35] (self : borrowed (C05Map_Map_Type.t_map i b f)) =
-    [#"../05_map.rs" 23 8 23 75] completed1 (Borrow.borrow_logic (C05Map_Map_Type.map_iter ( * self)) (C05Map_Map_Type.map_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1)) /\ C05Map_Map_Type.map_func ( * self) = C05Map_Map_Type.map_func ( ^ self)
+    [#"../05_map.rs" 23 8 23 75] completed1 (Borrow.borrow_logic (C05Map_Map_Type.map_iter ( * self)) (C05Map_Map_Type.map_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1))
+    /\ C05Map_Map_Type.map_func ( * self) = C05Map_Map_Type.map_func ( ^ self)
   val completed0 [#"../05_map.rs" 22 4 22 35] (self : borrowed (C05Map_Map_Type.t_map i b f)) : bool
     ensures { result = completed0 self }
     
@@ -1436,7 +1515,8 @@ module C05Map_Impl0_Next
    -> ([#"../05_map.rs" 107 48 107 49] inv8 r)
    -> ([#"../05_map.rs" 107 54 107 55] inv9 f)
    -> ([#"../05_map.rs" 107 65 107 69] inv0 iter)
-   -> ([#"../05_map.rs" 106 14 106 47] next_precondition0 iter ( ^ f)) && ([#"../05_map.rs" 105 14 105 42] preservation0 iter ( ^ f))
+   -> ([#"../05_map.rs" 106 14 106 47] next_precondition0 iter ( ^ f))
+  && ([#"../05_map.rs" 105 14 105 42] preservation0 iter ( ^ f))
   predicate resolve0 (self : Core_Option_Option_Type.t_option item0)
   val resolve0 (self : Core_Option_Option_Type.t_option item0) : bool
     ensures { result = resolve0 self }
@@ -1480,28 +1560,28 @@ module C05Map_Impl0_Next
   }
   BB1 {
     switch (_3)
-      | Core_Option_Option_Type.C_None -> goto BB2
+      | Core_Option_Option_Type.C_None -> goto BB4
       | Core_Option_Option_Type.C_Some _ -> goto BB3
       end
   }
   BB2 {
-    assert { [@expl:type invariant] inv1 _3 };
-    assume { resolve0 _3 };
-    assert { [@expl:type invariant] inv3 self };
-    assume { resolve2 self };
-    [#"../05_map.rs" 67 20 67 24] _0 <- Core_Option_Option_Type.C_None;
-    goto BB12
-  }
-  BB3 {
-    goto BB5
-  }
-  BB4 {
     assert { [@expl:type invariant] inv3 self };
     assume { resolve2 self };
     assert { [@expl:type invariant] inv1 _3 };
     assume { resolve0 _3 };
     assert { [#"../05_map.rs" 61 14 61 30] false };
     absurd
+  }
+  BB3 {
+    goto BB5
+  }
+  BB4 {
+    assert { [@expl:type invariant] inv1 _3 };
+    assume { resolve0 _3 };
+    assert { [@expl:type invariant] inv3 self };
+    assume { resolve2 self };
+    [#"../05_map.rs" 67 20 67 24] _0 <- Core_Option_Option_Type.C_None;
+    goto BB12
   }
   BB5 {
     [#"../05_map.rs" 62 17 62 18] v <- Core_Option_Option_Type.some_0 _3;
@@ -1600,7 +1680,8 @@ module C05Map_Map
   axiom fn_mut_once0_spec : forall self : f, args : item0, res : b . ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 19 123 23] inv2 self)
    -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 25 123 29] inv8 args)
    -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 123 37 123 40] inv5 res)
-   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] postcondition_once0 self args res = (exists s : borrowed f . inv6 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve0 ( ^ s)))
+   -> ([#"../../../../../creusot-contracts/src/std/ops.rs" 122 14 122 135] postcondition_once0 self args res
+  = (exists s : borrowed f . inv6 s /\  * s = self /\ postcondition_mut0 s args res /\ resolve0 ( ^ s)))
   predicate unnest0 (self : f) (_2 : f)
   val unnest0 (self : f) (_2 : f) : bool
     ensures { result = unnest0 self _2 }
@@ -1706,6 +1787,7 @@ module C05Map_Map
   val preservation0 [#"../05_map.rs" 81 4 81 45] (iter : i) (func : f) : bool
     ensures { result = preservation0 iter func }
     
+  use C05Map_Map_Type as C05Map_Map_Type
   predicate completed0 [#"../common.rs" 11 4 11 36] (self : borrowed i)
   val completed0 [#"../common.rs" 11 4 11 36] (self : borrowed i) : bool
     ensures { result = completed0 self }
@@ -1716,9 +1798,10 @@ module C05Map_Map
   val reinitialize0 [#"../05_map.rs" 93 4 93 29] (_1 : ()) : bool
     ensures { result = reinitialize0 _1 }
     
-  use C05Map_Map_Type as C05Map_Map_Type
   predicate invariant3 [#"../05_map.rs" 131 4 131 30] (self : C05Map_Map_Type.t_map i b f) =
-    [#"../05_map.rs" 133 12 135 57] reinitialize0 () /\ preservation0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self) /\ next_precondition0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
+    [#"../05_map.rs" 133 12 135 57] reinitialize0 ()
+    /\ preservation0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
+    /\ next_precondition0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
   val invariant3 [#"../05_map.rs" 131 4 131 30] (self : C05Map_Map_Type.t_map i b f) : bool
     ensures { result = invariant3 self }
     
@@ -1726,7 +1809,9 @@ module C05Map_Map
   val inv3 (_x : C05Map_Map_Type.t_map i b f) : bool
     ensures { result = inv3 _x }
     
-  axiom inv3 : forall x : C05Map_Map_Type.t_map i b f . inv3 x = (invariant3 x /\ match x with
+  axiom inv3 : forall x : C05Map_Map_Type.t_map i b f . inv3 x
+  = (invariant3 x
+  /\ match x with
     | C05Map_Map_Type.C_Map iter func -> true
     end)
   predicate invariant2 (self : f)
@@ -1943,6 +2028,7 @@ module C05Map_Impl0
   val preservation0 [#"../05_map.rs" 81 4 81 45] (iter : i) (func : f) : bool
     ensures { result = preservation0 iter func }
     
+  use C05Map_Map_Type as C05Map_Map_Type
   predicate completed1 [#"../common.rs" 11 4 11 36] (self : borrowed i)
   val completed1 [#"../common.rs" 11 4 11 36] (self : borrowed i) : bool
     ensures { result = completed1 self }
@@ -1953,9 +2039,10 @@ module C05Map_Impl0
   val reinitialize0 [#"../05_map.rs" 93 4 93 29] (_1 : ()) : bool
     ensures { result = reinitialize0 _1 }
     
-  use C05Map_Map_Type as C05Map_Map_Type
   predicate invariant2 [#"../05_map.rs" 131 4 131 30] (self : C05Map_Map_Type.t_map i b f) =
-    [#"../05_map.rs" 133 12 135 57] reinitialize0 () /\ preservation0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self) /\ next_precondition0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
+    [#"../05_map.rs" 133 12 135 57] reinitialize0 ()
+    /\ preservation0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
+    /\ next_precondition0 (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
   val invariant2 [#"../05_map.rs" 131 4 131 30] (self : C05Map_Map_Type.t_map i b f) : bool
     ensures { result = invariant2 self }
     
@@ -1963,7 +2050,9 @@ module C05Map_Impl0
   val inv2 (_x : C05Map_Map_Type.t_map i b f) : bool
     ensures { result = inv2 _x }
     
-  axiom inv2 : forall x : C05Map_Map_Type.t_map i b f . inv2 x = (invariant2 x /\ match x with
+  axiom inv2 : forall x : C05Map_Map_Type.t_map i b f . inv2 x
+  = (invariant2 x
+  /\ match x with
     | C05Map_Map_Type.C_Map iter func -> true
     end)
   use Core_Option_Option_Type as Core_Option_Option_Type
@@ -1998,13 +2087,23 @@ module C05Map_Impl0
   predicate produces0 [@inline:trivial] [#"../05_map.rs" 41 4 41 67] (self : C05Map_Map_Type.t_map i b f) (visited : Seq.seq b) (succ : C05Map_Map_Type.t_map i b f)
     
    =
-    [#"../05_map.rs" 42 8 53 9] unnest0 (C05Map_Map_Type.map_func self) (C05Map_Map_Type.map_func succ) /\ (exists s : Seq.seq item0 . inv7 s /\ Seq.length s = Seq.length visited /\ produces1 (C05Map_Map_Type.map_iter self) s (C05Map_Map_Type.map_iter succ) /\ (exists fs : Seq.seq (borrowed f) . inv8 fs /\ Seq.length fs = Seq.length visited /\ (forall i : int . 1 <= i /\ i < Seq.length fs
-     ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i) /\ (if Seq.length visited = 0 then
+    [#"../05_map.rs" 42 8 53 9] unnest0 (C05Map_Map_Type.map_func self) (C05Map_Map_Type.map_func succ)
+    /\ (exists s : Seq.seq item0 . inv7 s
+    /\ Seq.length s = Seq.length visited
+    /\ produces1 (C05Map_Map_Type.map_iter self) s (C05Map_Map_Type.map_iter succ)
+    /\ (exists fs : Seq.seq (borrowed f) . inv8 fs
+    /\ Seq.length fs = Seq.length visited
+    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i)
+    /\ (if Seq.length visited = 0 then
       C05Map_Map_Type.map_func self = C05Map_Map_Type.map_func succ
     else
-       * Seq.get fs 0 = C05Map_Map_Type.map_func self /\  ^ Seq.get fs (Seq.length visited - 1) = C05Map_Map_Type.map_func succ
-    ) /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> unnest0 (C05Map_Map_Type.map_func self) ( * Seq.get fs i) /\ precondition0 ( * Seq.get fs i) (Seq.get s i) /\ postcondition_mut0 (Seq.get fs i) (Seq.get s i) (Seq.get visited i))))
+       * Seq.get fs 0 = C05Map_Map_Type.map_func self
+      /\  ^ Seq.get fs (Seq.length visited - 1) = C05Map_Map_Type.map_func succ
+    )
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> unnest0 (C05Map_Map_Type.map_func self) ( * Seq.get fs i)
+    /\ precondition0 ( * Seq.get fs i) (Seq.get s i)
+    /\ postcondition_mut0 (Seq.get fs i) (Seq.get s i) (Seq.get visited i))))
   val produces0 [@inline:trivial] [#"../05_map.rs" 41 4 41 67] (self : C05Map_Map_Type.t_map i b f) (visited : Seq.seq b) (succ : C05Map_Map_Type.t_map i b f) : bool
     ensures { result = produces0 self visited succ }
     
@@ -2012,7 +2111,12 @@ module C05Map_Impl0
   predicate produces_one0 [#"../05_map.rs" 117 4 117 57] (self : C05Map_Map_Type.t_map i b f) (visited : b) (succ : C05Map_Map_Type.t_map i b f)
     
    =
-    [#"../05_map.rs" 118 8 123 9] exists f : borrowed f . inv5 f /\  * f = C05Map_Map_Type.map_func self /\  ^ f = C05Map_Map_Type.map_func succ /\ (exists e : item0 . inv6 e /\ produces1 (C05Map_Map_Type.map_iter self) (Seq.singleton e) (C05Map_Map_Type.map_iter succ) /\ precondition0 ( * f) (e) /\ postcondition_mut0 f (e) visited)
+    [#"../05_map.rs" 118 8 123 9] exists f : borrowed f . inv5 f
+    /\  * f = C05Map_Map_Type.map_func self
+    /\  ^ f = C05Map_Map_Type.map_func succ
+    /\ (exists e : item0 . inv6 e
+    /\ produces1 (C05Map_Map_Type.map_iter self) (Seq.singleton e) (C05Map_Map_Type.map_iter succ)
+    /\ precondition0 ( * f) (e) /\ postcondition_mut0 f (e) visited)
   val produces_one0 [#"../05_map.rs" 117 4 117 57] (self : C05Map_Map_Type.t_map i b f) (visited : b) (succ : C05Map_Map_Type.t_map i b f) : bool
     requires {[#"../05_map.rs" 117 20 117 24] inv2 self}
     requires {[#"../05_map.rs" 117 26 117 33] inv4 visited}
@@ -2024,22 +2128,32 @@ module C05Map_Impl0
    -> ([#"../05_map.rs" 117 38 117 42] inv2 succ)
    -> ([#"../05_map.rs" 116 14 116 68] produces_one0 self visited succ = produces0 self (Seq.singleton visited) succ)
   predicate completed0 [#"../05_map.rs" 22 4 22 35] (self : borrowed (C05Map_Map_Type.t_map i b f)) =
-    [#"../05_map.rs" 23 8 23 75] completed1 (Borrow.borrow_logic (C05Map_Map_Type.map_iter ( * self)) (C05Map_Map_Type.map_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1)) /\ C05Map_Map_Type.map_func ( * self) = C05Map_Map_Type.map_func ( ^ self)
+    [#"../05_map.rs" 23 8 23 75] completed1 (Borrow.borrow_logic (C05Map_Map_Type.map_iter ( * self)) (C05Map_Map_Type.map_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1))
+    /\ C05Map_Map_Type.map_func ( * self) = C05Map_Map_Type.map_func ( ^ self)
   val completed0 [#"../05_map.rs" 22 4 22 35] (self : borrowed (C05Map_Map_Type.t_map i b f)) : bool
     ensures { result = completed0 self }
     
   goal next_refn : [#"../05_map.rs" 60 4 60 44] forall self : borrowed (C05Map_Map_Type.t_map i b f) . inv0 self
-   -> inv0 self /\ (forall result : Core_Option_Option_Type.t_option b . inv1 result /\ match result with
+   -> inv0 self
+  /\ (forall result : Core_Option_Option_Type.t_option b . inv1 result
+  /\ match result with
     | Core_Option_Option_Type.C_None -> completed0 self
     | Core_Option_Option_Type.C_Some v -> produces_one0 ( * self) v ( ^ self)
     end
-   -> inv1 result /\ match result with
+   -> inv1 result
+  /\ match result with
     | Core_Option_Option_Type.C_None -> completed0 self
     | Core_Option_Option_Type.C_Some v -> produces0 ( * self) (Seq.singleton v) ( ^ self)
     end)
-  goal produces_trans_refn : [#"../05_map.rs" 36 4 36 90] forall a : C05Map_Map_Type.t_map i b f . forall ab : Seq.seq b . forall b : C05Map_Map_Type.t_map i b f . forall bc : Seq.seq b . forall c : C05Map_Map_Type.t_map i b f . inv2 c /\ inv3 bc /\ inv2 b /\ inv3 ab /\ inv2 a /\ produces0 b bc c /\ produces0 a ab b
-   -> inv2 c /\ inv3 bc /\ inv2 b /\ inv3 ab /\ inv2 a /\ produces0 b bc c /\ produces0 a ab b /\ (forall result : () . produces0 a (Seq.(++) ab bc) c
-   -> produces0 a (Seq.(++) ab bc) c)
+  goal produces_trans_refn : [#"../05_map.rs" 36 4 36 90] forall a : C05Map_Map_Type.t_map i b f . forall ab : Seq.seq b . forall b : C05Map_Map_Type.t_map i b f . forall bc : Seq.seq b . forall c : C05Map_Map_Type.t_map i b f . inv2 c
+  /\ inv3 bc /\ inv2 b /\ inv3 ab /\ inv2 a /\ produces0 b bc c /\ produces0 a ab b
+   -> inv2 c
+  /\ inv3 bc
+  /\ inv2 b
+  /\ inv3 ab
+  /\ inv2 a
+  /\ produces0 b bc c
+  /\ produces0 a ab b /\ (forall result : () . produces0 a (Seq.(++) ab bc) c  -> produces0 a (Seq.(++) ab bc) c)
   goal produces_refl_refn : [#"../05_map.rs" 29 4 29 26] forall self : C05Map_Map_Type.t_map i b f . inv2 self
    -> inv2 self /\ (forall result : () . produces0 self (Seq.empty ) self  -> produces0 self (Seq.empty ) self)
 end

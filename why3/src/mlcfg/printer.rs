@@ -82,6 +82,7 @@ impl Print for Decl {
             Decl::Goal(g) => g.pretty(alloc),
             Decl::Let(l) => l.pretty(alloc),
             Decl::ConstantDecl(c) => c.pretty(alloc),
+            Decl::Coma(d) => d.pretty(alloc),
         }
     }
 }
@@ -493,12 +494,12 @@ impl Print for Type {
             Bool => alloc.text("bool"),
             Char => alloc.text("char"),
             Integer => alloc.text("int"),
-            MutableBorrow(box t) => alloc.text("borrowed ").append(ty_parens!(alloc, t)),
+            MutableBorrow(t) => alloc.text("borrowed ").append(ty_parens!(alloc, t)),
             TVar(v) => alloc.text(format!("'{}", v.0)),
             TConstructor(ty) => ty.pretty(alloc),
 
-            TFun(box a, box b) => ty_parens!(alloc, a).append(" -> ").append(ty_parens!(alloc, b)),
-            TApp(box tyf, args) => {
+            TFun(a, b) => ty_parens!(alloc, a).append(" -> ").append(ty_parens!(alloc, b)),
+            TApp(tyf, args) => {
                 if args.is_empty() {
                     tyf.pretty(alloc)
                 } else {
@@ -535,10 +536,10 @@ impl Print for Exp {
     {
         match self {
             Exp::Any(ty) => alloc.text("any ").append(ty.pretty(alloc)),
-            Exp::Current(box e) => alloc.text(" * ").append(parens!(alloc, self, e)),
-            Exp::Final(box e) => alloc.text(" ^ ").append(parens!(alloc, self, e)),
+            Exp::Current(e) => alloc.text(" * ").append(parens!(alloc, self, e)),
+            Exp::Final(e) => alloc.text(" ^ ").append(parens!(alloc, self, e)),
             // TODO parenthesization
-            Exp::Let { pattern, box arg, box body } => alloc
+            Exp::Let { pattern, arg, body } => alloc
                 .text("let ")
                 .append(pattern.pretty(alloc))
                 .append(" = ")
@@ -547,7 +548,7 @@ impl Print for Exp {
                 .append(body.pretty(alloc)),
             Exp::Var(v) => v.pretty(alloc),
             Exp::QVar(v) => v.pretty(alloc),
-            Exp::RecUp { box record, updates } => {
+            Exp::RecUp { record, updates } => {
                 let mut res = alloc
                     .space()
                     .append(parens!(alloc, self.precedence().next(), record))
@@ -561,7 +562,7 @@ impl Print for Exp {
                 }
                 res.braces()
             }
-            Exp::RecField { box record, label } => record.pretty(alloc).append(".").append(label),
+            Exp::RecField { record, label } => record.pretty(alloc).append(".").append(label),
 
             Exp::Tuple(args) => alloc
                 .intersperse(args.iter().map(|a| parens!(alloc, Precedence::Cast, a)), ", ")
@@ -579,24 +580,23 @@ impl Print for Exp {
             }
             Exp::Const(c) => c.pretty(alloc),
 
-            Exp::UnaryOp(UnOp::Not, box op) => alloc.text("not ").append(parens!(alloc, self, op)),
+            Exp::UnaryOp(UnOp::Not, op) => alloc.text("not ").append(parens!(alloc, self, op)),
 
-            Exp::UnaryOp(UnOp::Neg, box op) => alloc.text("- ").append(parens!(alloc, self, op)),
-            Exp::UnaryOp(UnOp::FloatNeg, box op) => {
-                alloc.text(".- ").append(parens!(alloc, self, op))
-            }
-            Exp::BinaryOp(op, box l, box r) => match self.associativity() {
+            Exp::UnaryOp(UnOp::Neg, op) => alloc.text("- ").append(parens!(alloc, self, op)),
+            Exp::UnaryOp(UnOp::FloatNeg, op) => alloc.text(".- ").append(parens!(alloc, self, op)),
+            Exp::BinaryOp(op, l, r) => match self.associativity() {
                 Some(AssocDir::Left) => parens!(alloc, self, l),
                 Some(AssocDir::Right) | None => parens!(alloc, self.precedence().next(), l),
             }
-            .append(alloc.space())
+            .append(alloc.line())
             .append(bin_op_to_string(op))
             .append(alloc.space())
             .append(match self.associativity() {
                 Some(AssocDir::Right) => parens!(alloc, self, r),
                 Some(AssocDir::Left) | None => parens!(alloc, self.precedence().next(), r),
-            }),
-            Exp::Call(box fun, args) => {
+            })
+            .group(),
+            Exp::Call(fun, args) => {
                 parens!(alloc, self, fun).append(alloc.space()).append(alloc.intersperse(
                     args.iter().map(|a| parens!(alloc, Precedence::App.next(), a)),
                     alloc.space(),
@@ -605,13 +605,13 @@ impl Print for Exp {
 
             Exp::Verbatim(verb) => alloc.text(verb),
             Exp::Attr(attr, e) => attr.pretty(alloc).append(alloc.space()).append(e.pretty(alloc)),
-            Exp::Abs(binders, box body) => alloc
+            Exp::Abs(binders, body) => alloc
                 .text("fun ")
                 .append(alloc.intersperse(binders.iter().map(|b| b.pretty(alloc)), alloc.space()))
                 .append(" -> ")
                 .append(body.pretty(alloc)),
 
-            Exp::Match(box scrut, brs) => alloc
+            Exp::Match(scrut, brs) => alloc
                 .text("match ")
                 .append(scrut.pretty(alloc))
                 .append(" with")
@@ -639,7 +639,7 @@ impl Print for Exp {
                 .append("else")
                 .append(alloc.line().append(e.pretty(alloc)).nest(2).append(alloc.line_()))
                 .group(),
-            Exp::Forall(binders, trig, box exp) => alloc
+            Exp::Forall(binders, trig, exp) => alloc
                 .text("forall ")
                 .append(
                     alloc.intersperse(
@@ -652,7 +652,7 @@ impl Print for Exp {
                 .append(trig.pretty(alloc))
                 .append(" . ")
                 .append(exp.pretty(alloc)),
-            Exp::Exists(binders, trig, box exp) => alloc
+            Exp::Exists(binders, trig, exp) => alloc
                 .text("exists ")
                 .append(
                     alloc.intersperse(
@@ -665,7 +665,7 @@ impl Print for Exp {
                 .append(trig.pretty(alloc))
                 .append(" . ")
                 .append(exp.pretty(alloc)),
-            Exp::Impl(box hyp, box exp) => {
+            Exp::Impl(hyp, exp) => {
                 let hyp = parens!(alloc, self, hyp);
                 let impl_ = alloc
                     .line()

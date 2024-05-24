@@ -93,23 +93,8 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
         use crate::run_why3::run_why3;
         use std::fs::File;
         let file = match why3.opts.output_file {
-            Some(OutputFile::File(ref f)) => Some(f.clone().into()),
-            Some(OutputFile::Stdout) => None,
-            None => {
-                let outputs = why3.output_filenames(());
-                let crate_name = why3.crate_name(LOCAL_CRATE);
-
-                let libname = format!("{}-{}.mlcfg", crate_name.as_str(), why3.crate_types()[0]);
-
-                let directory = if why3.opts.in_cargo {
-                    let mut dir = outputs.out_directory.clone();
-                    dir.pop();
-                    dir
-                } else {
-                    outputs.out_directory.clone()
-                };
-                Some(directory.join(&libname))
-            }
+            OutputFile::File(ref f) => Some(f.clone().into()),
+            OutputFile::Stdout => None,
         };
         let mut out: Box<dyn Write> = match &file {
             Some(f) => Box::new(std::io::BufWriter::new(File::create(f)?)),
