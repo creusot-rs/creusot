@@ -59,10 +59,30 @@ pub enum Sum2<A, B> {
     Y { a: bool, x: B },
 }
 
-#[derive(DeepModel)]
 pub struct List<T> {
     pub elem: T,
     pub tail: Option<Box<List<T>>>,
+}
+
+pub struct ListDeepModel<T: DeepModel> {
+    pub elem: <T as DeepModel>::DeepModelTy,
+    pub tail: Option<Box<ListDeepModel<T>>>,
+}
+
+impl<T: DeepModel> DeepModel for List<T> {
+    type DeepModelTy = ListDeepModel<T>;
+
+    #[open]
+    #[logic]
+    fn deep_model(self) -> Self::DeepModelTy {
+        ListDeepModel {
+            elem: self.elem.deep_model(),
+            tail: match self.tail {
+                None => None,
+                Some(tail) => Some(Box::new((*tail).deep_model())),
+            },
+        }
+    }
 }
 
 pub enum Expr<V> {
