@@ -134,7 +134,8 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
 
     while let Some((visit, caller_node)) = build_call_graph.to_visit.pop() {
         let caller_def_id = visit.def_id();
-        if util::is_trusted(ctx.tcx, caller_def_id) {
+        if util::is_trusted(ctx.tcx, caller_def_id) || util::is_no_translate(ctx.tcx, caller_def_id)
+        {
             // FIXME: does this work with trait functions marked `#[terminates]`/`#[pure]` ?
             build_call_graph.additional_data[&caller_node] =
                 AdditionalData { has_variant: false, has_loops: None };
