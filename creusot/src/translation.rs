@@ -20,6 +20,7 @@ use ctx::TranslationCtx;
 use heck::ToUpperCamelCase;
 use rustc_hir::{def::DefKind, def_id::LOCAL_CRATE};
 use rustc_middle::ty::Ty;
+use rustc_span::Span;
 use std::{error::Error, io::Write};
 use why3::{declaration::Module, mlcfg, Print};
 
@@ -126,7 +127,12 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
 }
 use rustc_middle::mir;
 
-pub(crate) fn binop_to_binop(ctx: &mut TranslationCtx, ty: Ty, op: mir::BinOp) -> why3::exp::BinOp {
+pub(crate) fn binop_to_binop(
+    ctx: &mut TranslationCtx,
+    span: Span,
+    ty: Ty,
+    op: mir::BinOp,
+) -> why3::exp::BinOp {
     use why3::exp::BinOp;
     match op {
         mir::BinOp::Add => {
@@ -194,10 +200,7 @@ pub(crate) fn binop_to_binop(ctx: &mut TranslationCtx, ty: Ty, op: mir::BinOp) -
         }
         mir::BinOp::Ne => BinOp::Ne,
         mir::BinOp::Rem => BinOp::Mod,
-        _ => ctx.crash_and_error(
-            rustc_span::DUMMY_SP,
-            &format!("unsupported binary operation: {:?}", op),
-        ),
+        _ => ctx.crash_and_error(span, &format!("unsupported binary operation: {:?}", op)),
     }
 }
 

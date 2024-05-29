@@ -85,7 +85,7 @@ pub(crate) fn from_ty_const<'tcx>(
     return Term { kind: TermKind::Lit(try_to_bits(ctx, env, c.ty(), span, c)), ty: c.ty(), span };
 }
 
-fn try_to_bits<'tcx, C: ToBits<'tcx>>(
+fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
     ctx: &mut TranslationCtx<'tcx>,
     // names: &mut CloneMap<'tcx>,
     env: ParamEnv<'tcx>,
@@ -95,9 +95,11 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
 ) -> Literal<'tcx> {
     use rustc_middle::ty::{FloatTy, IntTy, UintTy};
     use rustc_type_ir::TyKind::{Bool, Float, FnDef, Int, Uint};
+    let Some(bits) = c.get_bits(ctx.tcx, env, ty) else {
+        ctx.fatal_error(span, &format!("Could determine value of constant. Creusot currently does not support generic associated constants.")).emit()
+    };
     match ty.kind() {
         Int(ity) => {
-            let bits = c.get_bits(ctx.tcx, env, ty).unwrap();
             let bits: i128 = match *ity {
                 IntTy::I128 => bits as i128,
                 IntTy::Isize => bits as i64 as i128,
@@ -109,7 +111,6 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
             Literal::MachSigned(bits, *ity)
         }
         Uint(uty) => {
-            let bits = c.get_bits(ctx.tcx, env, ty).unwrap();
             let bits: u128 = match *uty {
                 UintTy::U128 => bits as u128,
                 UintTy::Usize => bits as u64 as u128,
@@ -120,10 +121,9 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
             };
             Literal::MachUnsigned(bits, *uty)
         }
-        Bool => Literal::Bool(c.get_bits(ctx.tcx, env, ty) == Some(1)),
+        Bool => Literal::Bool(bits == 1),
         Float(FloatTy::F32) => {
-            let bits = c.get_bits(ctx.tcx, env, ty);
-            let float = f32::from_bits(bits.unwrap() as u32);
+            let float = f32::from_bits(bits as u32);
             if float.is_nan() {
                 ctx.crash_and_error(span, "NaN is not yet supported")
             } else {
@@ -131,8 +131,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
             }
         }
         Float(FloatTy::F64) => {
-            let bits = c.get_bits(ctx.tcx, env, ty);
-            let float = f64::from_bits(bits.unwrap() as u64);
+            let float = f64::from_bits(bits as u64);
             if float.is_nan() {
                 ctx.crash_and_error(span, "NaN is not yet supported")
             } else {
