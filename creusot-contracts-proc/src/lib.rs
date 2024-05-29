@@ -511,6 +511,7 @@ fn logic_item(log: LogicItem, prophetic: Option<TokenStream>) -> TS1 {
     let req_body = pretyping::encode_block(&term.stmts).unwrap();
 
     TS1::from(quote_spanned! {span =>
+        #[::creusot_contracts::pure]
         #[creusot::decl::logic]
         #prophetic
         #(#attrs)*
@@ -592,6 +593,7 @@ fn predicate_item(log: LogicItem, prophetic: Option<TokenStream>) -> TS1 {
     let req_body = pretyping::encode_block(&term.stmts).unwrap();
 
     TS1::from(quote_spanned! {span =>
+        #[::creusot_contracts::pure]
         #[creusot::decl::predicate]
         #prophetic
         #(#attrs)*
