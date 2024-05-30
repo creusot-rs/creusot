@@ -1,0 +1,67 @@
+
+module SnapEq_Test
+  use prelude.UInt32
+  use prelude.Int
+  function my_eq0 [#"../snap_eq.rs" 5 0 5 39] (x : uint32) (y : uint32) : bool =
+    [#"../snap_eq.rs" 6 4 6 10] x = y
+  val my_eq0 [#"../snap_eq.rs" 5 0 5 39] (x : uint32) (y : uint32) : bool
+    ensures { result = my_eq0 x y }
+    
+  let rec cfg test [#"../snap_eq.rs" 10 0 10 19] [@cfg:stackify] [@cfg:subregion_analysis] (x : uint32) : ()
+    ensures { [#"../snap_eq.rs" 9 10 9 21] my_eq0 x x }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../snap_eq.rs" 10 20 10 22] _0 <- ([#"../snap_eq.rs" 10 20 10 22] ());
+    return _0
+  }
+  
+end
+module SnapEq_Test2
+  type x
+  predicate invariant0 (self : x)
+  val invariant0 (self : x) : bool
+    ensures { result = invariant0 self }
+    
+  predicate inv0 (_x : x)
+  val inv0 (_x : x) : bool
+    ensures { result = inv0 _x }
+    
+  axiom inv0 : forall x : x . inv0 x = true
+  function my_eq0 [#"../snap_eq.rs" 5 0 5 39] (x : x) (y : x) : bool =
+    [#"../snap_eq.rs" 6 4 6 10] x = y
+  val my_eq0 [#"../snap_eq.rs" 5 0 5 39] (x : x) (y : x) : bool
+    ensures { result = my_eq0 x y }
+    
+  predicate resolve0 (self : x)
+  val resolve0 (self : x) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg test2 [#"../snap_eq.rs" 13 0 13 21] [@cfg:stackify] [@cfg:subregion_analysis] (x : x) : ()
+    requires {[#"../snap_eq.rs" 13 16 13 17] inv0 x}
+    ensures { [#"../snap_eq.rs" 12 10 12 26] old(my_eq0 x x) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var x : x = x;
+  {
+    goto BB0
+  }
+  BB0 {
+    assert { [@expl:type invariant] inv0 x };
+    assume { resolve0 x };
+    goto BB1
+  }
+  BB1 {
+    [#"../snap_eq.rs" 13 22 13 24] _0 <- ([#"../snap_eq.rs" 13 22 13 24] ());
+    goto BB2
+  }
+  BB2 {
+    return _0
+  }
+  
+end

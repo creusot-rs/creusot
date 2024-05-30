@@ -1,0 +1,121 @@
+
+module Deref_Deref5
+  use prelude.UInt32
+  use prelude.Int
+  use prelude.Borrow
+  let rec cfg deref5 [#"../deref.rs" 41 0 41 62] [@cfg:stackify] [@cfg:subregion_analysis] (x : uint32) (y : uint32) : uint32
+    ensures { [#"../deref.rs" 40 19 40 30] x = (0 : uint32) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : uint32;
+  var x : uint32 = x;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../deref.rs" 42 4 42 5] _0 <- x;
+    return _0
+  }
+  
+end
+module Deref_X_Type
+  use prelude.UInt32
+  use prelude.Int
+  type t_x  =
+    | C_X uint32 ()
+    
+  let function x_0 (self : t_x) : uint32 = [@vc:do_not_keep_trace] [@vc:sp]
+    match self with
+      | C_X a _ -> a
+      end
+end
+module Deref_ProjectRef
+  use prelude.Borrow
+  use prelude.UInt32
+  function mk_ref0 [#"../deref.rs" 27 4 27 29] (self : uint32) : uint32 =
+    [#"../deref.rs" 28 8 28 12] self
+  val mk_ref0 [#"../deref.rs" 27 4 27 29] (self : uint32) : uint32
+    ensures { result = mk_ref0 self }
+    
+  use Deref_X_Type as Deref_X_Type
+  use prelude.Int
+  let rec cfg project_ref [#"../deref.rs" 54 0 54 39] [@cfg:stackify] [@cfg:subregion_analysis] (x : Deref_X_Type.t_x) : uint32
+    ensures { [#"../deref.rs" 53 10 53 38] result = old(mk_ref0 (Deref_X_Type.x_0 x)) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : uint32;
+  var x : Deref_X_Type.t_x = x;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../deref.rs" 55 4 55 7] _0 <- Deref_X_Type.x_0 x;
+    return _0
+  }
+  
+end
+module Deref_ProjectTupleRef
+  use prelude.Borrow
+  use prelude.UInt32
+  function mk_ref0 [#"../deref.rs" 27 4 27 29] (self : uint32) : uint32 =
+    [#"../deref.rs" 28 8 28 12] self
+  val mk_ref0 [#"../deref.rs" 27 4 27 29] (self : uint32) : uint32
+    ensures { result = mk_ref0 self }
+    
+  use prelude.Int
+  let rec cfg project_tuple_ref [#"../deref.rs" 59 0 59 54] [@cfg:stackify] [@cfg:subregion_analysis] (x : (uint32, uint32)) : uint32
+    ensures { [#"../deref.rs" 58 10 58 38] result = old(mk_ref0 (let (a, _) = x in a)) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : uint32;
+  var x : (uint32, uint32) = x;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../deref.rs" 60 4 60 7] _0 <- (let (a, _) = x in a);
+    return _0
+  }
+  
+end
+module Deref_ProjectTupleBox
+  use prelude.UInt32
+  use prelude.Int
+  predicate resolve2 (self : uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12] true
+  val resolve2 (self : uint32) : bool
+    ensures { result = resolve2 self }
+    
+  predicate resolve1 (self : (uint32, uint32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60] resolve2 (let (a, _) = self in a)
+    /\ resolve2 (let (_, a) = self in a)
+  val resolve1 (self : (uint32, uint32)) : bool
+    ensures { result = resolve1 self }
+    
+  predicate resolve0 (self : (uint32, uint32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 35 8 35 31] resolve1 self
+  val resolve0 (self : (uint32, uint32)) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg project_tuple_box [#"../deref.rs" 64 0 64 55] [@cfg:stackify] [@cfg:subregion_analysis] (x : (uint32, uint32)) : uint32
+    ensures { [#"../deref.rs" 63 10 63 28] result = old(let (a, _) = x in a) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : uint32;
+  var x : (uint32, uint32) = x;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../deref.rs" 65 4 65 10] _0 <- (let (a, _) = x in a);
+    assume { resolve0 x };
+    goto BB1
+  }
+  BB1 {
+    return _0
+  }
+  
+end
+module Deref_Impl0
+  type t
+end

@@ -10,7 +10,7 @@ use indexmap::IndexMap;
 use itertools::izip;
 use rustc_ast::{
     ast::{AttrArgs, AttrArgsEq},
-    AttrItem, AttrKind, Attribute, Mutability,
+    AttrItem, AttrKind, Attribute, MetaItemLit, Mutability,
 };
 use rustc_hir::{
     def::{DefKind, Namespace},
@@ -574,6 +574,17 @@ pub(crate) fn get_attr<'a>(attrs: &'a [Attribute], path: &[&str]) -> Option<&'a 
         }
     }
     None
+}
+
+pub(crate) fn get_attr_lit<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    path: &[&str],
+) -> Option<&'tcx MetaItemLit> {
+    match &get_attr(tcx.get_attrs_unchecked(def_id), path)?.args {
+        AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l),
+        _ => unreachable!(),
+    }
 }
 
 pub(crate) fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {

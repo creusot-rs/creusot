@@ -1,0 +1,94 @@
+
+module Traits_Test
+  function model0 [#"../traits.rs" 19 4 19 26] (self : bool) : bool =
+    [#"../traits.rs" 20 8 20 12] self
+  val model0 [#"../traits.rs" 19 4 19 26] (self : bool) : bool
+    ensures { result = model0 self }
+    
+  use prelude.Borrow
+  function model1 [#"../traits.rs" 12 4 12 23] (self : borrowed bool) : bool =
+    [#"../traits.rs" 13 8 13 23] model0 ( * self)
+  val model1 [#"../traits.rs" 12 4 12 23] (self : borrowed bool) : bool
+    ensures { result = model1 self }
+    
+  predicate resolve0 (self : borrowed bool) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  val resolve0 (self : borrowed bool) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg test [#"../traits.rs" 25 0 25 33] [@cfg:stackify] [@cfg:subregion_analysis] (x : borrowed bool) : bool
+    ensures { [#"../traits.rs" 24 10 24 42] model0 result = old(model1 x) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : bool;
+  var x : borrowed bool = x;
+  var res : bool;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../traits.rs" 26 14 26 16] res <-  * x;
+    [#"../traits.rs" 27 4 27 13] x <- { x with current = (not res) ; };
+    assume { resolve0 x };
+    [#"../traits.rs" 28 4 28 7] _0 <- res;
+    return _0
+  }
+  
+end
+module Traits_Wrapper_Type
+  type t_wrapper 't =
+    | C_Wrapper 't
+    
+  let function wrapper_0 (self : t_wrapper 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+    match self with
+      | C_Wrapper a -> a
+      end
+end
+module Traits_Test2
+  use prelude.UInt32
+  use prelude.Borrow
+  use Traits_Wrapper_Type as Traits_Wrapper_Type
+  function model0 [#"../traits.rs" 35 4 35 23] (self : Traits_Wrapper_Type.t_wrapper (borrowed uint32)) : borrowed uint32
+    
+   =
+    [#"../traits.rs" 36 8 36 14] Traits_Wrapper_Type.wrapper_0 self
+  val model0 [#"../traits.rs" 35 4 35 23] (self : Traits_Wrapper_Type.t_wrapper (borrowed uint32)) : borrowed uint32
+    ensures { result = model0 self }
+    
+  use prelude.Int
+  predicate resolve0 (self : borrowed uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  val resolve0 (self : borrowed uint32) : bool
+    ensures { result = resolve0 self }
+    
+  let rec cfg test2 [#"../traits.rs" 42 0 42 46] [@cfg:stackify] [@cfg:subregion_analysis] (x : Traits_Wrapper_Type.t_wrapper (borrowed uint32)) : borrowed uint32
+    ensures { [#"../traits.rs" 40 10 40 36]  * result = old( * model0 x) }
+    ensures { [#"../traits.rs" 41 15 41 41]  ^ (old(model0 x)) =  ^ result }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : borrowed uint32;
+  var x : Traits_Wrapper_Type.t_wrapper (borrowed uint32) = x;
+  var _2 : borrowed uint32;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../traits.rs" 43 4 43 7] _2 <- Borrow.borrow_final ( * Traits_Wrapper_Type.wrapper_0 x) (Borrow.get_id (Traits_Wrapper_Type.wrapper_0 x));
+    [#"../traits.rs" 43 4 43 7] x <- (let Traits_Wrapper_Type.C_Wrapper x0 = x in Traits_Wrapper_Type.C_Wrapper ({ (Traits_Wrapper_Type.wrapper_0 x) with current = ( ^ _2) ; }));
+    [#"../traits.rs" 43 4 43 7] _0 <- Borrow.borrow_final ( * _2) (Borrow.get_id _2);
+    [#"../traits.rs" 43 4 43 7] _2 <- { _2 with current = ( ^ _0) ; };
+    assume { resolve0 _2 };
+    return _0
+  }
+  
+end
+module Traits_Impl0
+  type x
+  type y
+end
+module Traits_Impl1
+  
+end
+module Traits_Impl2
+  type t
+end

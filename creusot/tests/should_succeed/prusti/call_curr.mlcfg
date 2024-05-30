@@ -1,0 +1,83 @@
+
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+    
+end
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.Opaque
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+    
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+    
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
+    
+end
+module Alloc_Boxed_Box_Type
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_box 't 'a =
+    | C_Box (Core_Ptr_Unique_Unique_Type.t_unique 't) 'a
+    
+end
+module CallCurr_Test
+  use prelude.UInt32
+  predicate invariant1 (self : uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant1 (self : uint32) : bool
+    ensures { result = invariant1 self }
+    
+  predicate inv1 (_x : uint32)
+  val inv1 (_x : uint32) : bool
+    ensures { result = inv1 _x }
+    
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  axiom inv1 : forall x : uint32 . inv1 x = true
+  predicate invariant0 (self : uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  val invariant0 (self : uint32) : bool
+    ensures { result = invariant0 self }
+    
+  predicate inv0 (_x : uint32)
+  val inv0 (_x : uint32) : bool
+    ensures { result = inv0 _x }
+    
+  axiom inv0 : forall x : uint32 . inv0 x = true
+  use prelude.Borrow
+  function deref0 [#"../call_curr.rs" 7 0 7 34] (x : uint32) : uint32 =
+    [#"../call_curr.rs" 8 5 8 6] x
+  val deref0 [#"../call_curr.rs" 7 0 7 34] (x : uint32) : uint32
+    ensures { result = deref0 x }
+    
+  use prelude.Int
+  val clone0 (self : uint32) : uint32
+    requires {inv0 self}
+    ensures { [#"../../../../../creusot-contracts/src/std/clone.rs" 7 0 20 1] result = self }
+    ensures { inv1 result }
+    
+  let rec cfg test [#"../call_curr.rs" 12 0 12 44] [@cfg:stackify] [@cfg:subregion_analysis] (x : uint32) : uint32
+    ensures { [#"../call_curr.rs" 11 10 11 28] deref0 x = result }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : uint32;
+  var x : uint32 = x;
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../call_curr.rs" 13 4 13 13] _0 <- ([#"../call_curr.rs" 13 4 13 13] clone0 x);
+    goto BB1
+  }
+  BB1 {
+    return _0
+  }
+  
+end

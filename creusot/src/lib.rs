@@ -50,6 +50,7 @@ use translation::*;
 mod error;
 pub(crate) mod lints;
 pub(crate) mod metadata;
+mod prusti;
 mod run_why3;
 mod translated_item;
 mod validate;

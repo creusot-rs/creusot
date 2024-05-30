@@ -1,0 +1,50 @@
+
+module Forall_Test1
+  function check_bool0 [#"../forall.rs" 7 0 7 34] (_1 : bool) : bool =
+    [#"../forall.rs" 8 4 8 8] true
+  val check_bool0 [#"../forall.rs" 7 0 7 34] (_1 : bool) : bool
+    ensures { result = check_bool0 _1 }
+    
+  let rec cfg test1 [#"../forall.rs" 12 0 12 14] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
+    requires {[#"../forall.rs" 11 0 11 72] forall b2 : bool . forall b1 : bool . check_bool0 b1 /\ check_bool0 b2}
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../forall.rs" 12 15 12 17] _0 <- ([#"../forall.rs" 12 15 12 17] ());
+    return _0
+  }
+  
+end
+module Forall_Test2
+  type t
+  predicate invariant0 (self : t)
+  val invariant0 (self : t) : bool
+    ensures { result = invariant0 self }
+    
+  predicate inv0 (_x : t)
+  val inv0 (_x : t) : bool
+    ensures { result = inv0 _x }
+    
+  axiom inv0 : forall x : t . inv0 x = true
+  function check0 [#"../forall.rs" 16 4 16 27] (self : t) : bool
+  val check0 [#"../forall.rs" 16 4 16 27] (self : t) : bool
+    ensures { result = check0 self }
+    
+  let rec cfg test2 [#"../forall.rs" 20 0 20 24] [@cfg:stackify] [@cfg:subregion_analysis] (_1 : ()) : ()
+    requires {[#"../forall.rs" 19 0 19 35] forall t : t . inv0 t  -> check0 t}
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    [#"../forall.rs" 20 25 20 27] _0 <- ([#"../forall.rs" 20 25 20 27] ());
+    return _0
+  }
+  
+end

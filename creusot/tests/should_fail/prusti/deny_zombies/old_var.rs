@@ -1,0 +1,8 @@
+#![deny(creusot::prusti_zombie)]
+extern crate creusot_contracts;
+use creusot_contracts::prusti_prelude::*;
+
+#[ensures(old(x == old(result)))]
+pub fn zombie_old<T>(x: T) -> T {
+    x
+}
