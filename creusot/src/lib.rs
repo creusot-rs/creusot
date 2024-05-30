@@ -53,3 +53,4 @@ pub(crate) mod metadata;
 mod run_why3;
 mod translated_item;
 mod validate;
+mod validate_terminates;

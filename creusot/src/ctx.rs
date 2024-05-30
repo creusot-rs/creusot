@@ -5,7 +5,7 @@ use crate::{
     backend::{ty::ty_binding_group, ty_inv},
     callbacks,
     creusot_items::{self, CreusotItems},
-    error::{CrErr, CreusotResult, Error},
+    error::{CreusotResult, Error, InternalError},
     metadata::{BinaryMetadata, Metadata},
     options::Options,
     translation::{
@@ -372,21 +372,24 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn check_purity(&mut self, def_id: LocalDefId) {
-        let (thir, expr) =
-            self.tcx.thir_body(def_id).unwrap_or_else(|_| Error::from(CrErr).emit(self.tcx));
+        let (thir, expr) = self.tcx.thir_body(def_id).unwrap_or_else(|_| {
+            Error::from(InternalError("Cannot fetch THIR body")).emit(self.tcx)
+        });
         let thir = thir.borrow();
         if thir.exprs.is_empty() {
             Error::new(self.tcx.def_span(def_id), "type checking failed").emit(self.tcx);
         }
 
         let def_id = def_id.to_def_id();
-        let purity = Purity::of_def_id(self.tcx, def_id);
-        if purity == Purity::Program && crate::util::is_no_translate(self.tcx, def_id) {
+        let purity = Purity::of_def_id(self, def_id);
+        if matches!(purity, Purity::Program { .. })
+            && crate::util::is_no_translate(self.tcx, def_id)
+        {
             return;
         }
 
         thir::visit::walk_expr(
-            &mut PurityVisitor { tcx: self.tcx, thir: &thir, context: purity },
+            &mut PurityVisitor { ctx: self, thir: &thir, context: purity },
             &thir[expr],
         );
     }

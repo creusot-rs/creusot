@@ -97,7 +97,7 @@ pub(crate) fn validate_traits(ctx: &mut TranslationCtx) {
     }
 }
 
-pub(crate) fn validate_impls(ctx: &TranslationCtx) {
+pub(crate) fn validate_impls(ctx: &mut TranslationCtx) {
     for impl_id in ctx.all_local_trait_impls(()).values().flat_map(|i| i.iter()) {
         if !matches!(ctx.def_kind(*impl_id), DefKind::Impl { .. }) {
             continue;
@@ -144,6 +144,28 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                     ),
                 )
                 .emit();
+            } else {
+                let item_contract = crate::specification::contract_of(ctx, *impl_item);
+                let trait_contract = crate::specification::contract_of(ctx, *trait_item);
+                if trait_contract.no_panic && !item_contract.no_panic {
+                    ctx.error(
+                        ctx.def_span(impl_item),
+                        &format!(
+                            "Expected `{}` to be `#[pure]` as specified by the trait declaration",
+                            ctx.item_name(*impl_item),
+                        ),
+                    )
+                    .emit();
+                } else if trait_contract.terminates && !item_contract.terminates {
+                    ctx.error(
+                        ctx.def_span(impl_item),
+                        &format!(
+                            "Expected `{}` to be `#[terminates]` as specified by the trait declaration",
+                            ctx.item_name(*impl_item),
+                        ),
+                    )
+                    .emit();
+                }
             }
         }
     }

@@ -27,6 +27,39 @@ mod macros {
 
     pub use base_macros::snapshot;
 
+    /// Indicate that the function terminates: fullfilling the `requires` clauses
+    /// ensures that this function will not loop indefinitively.
+    pub use base_macros::terminates;
+
+    /// Indicate that the function is pure: fullfilling the `requires` clauses ensures
+    /// that this function will terminate, and will not panic.
+    ///
+    /// # No panics ?
+    ///
+    /// "But I though Creusot was supposed to check the absence of panics ?"
+    ///
+    /// That's true, but with a caveat: some functions of the standart library are
+    /// allowed to panic in specific cases. The main example is `Vec::push`: we want its
+    /// specification to be
+    /// ```ignore
+    /// #[ensures((^self)@ == self@.push(v))]
+    /// fn push(&mut self, v: T) { /* ... */ }
+    /// ```
+    ///
+    /// But the length of a vector [cannot overflow `isize::MAX`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.push). This is a very annoying condition to require, so we don't.
+    /// In exchange, this means `Vec::push` might panic in some cases, even though your
+    /// code passed Creusot's verification.
+    ///
+    /// # Non-pure std function
+    ///
+    /// Here are some examples of functions in `std` that are not marked as terminates
+    /// but not pure (this list might not be exhaustive):
+    /// - `Vec::push`, `Vec::insert`, `Vec::reserve`, `Vec::with_capacity`
+    /// - `str::to_string`
+    /// - `<&[T]>::into_vec`
+    /// - `Deque::push_front`, `Deque::push_back`, `Deque::with_capacity`
+    pub use base_macros::pure;
+
     /// A loop invariant
     /// The first argument should be a name for the invariant
     /// The second argument is the Pearlite expression for the loop invariant

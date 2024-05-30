@@ -38,6 +38,14 @@ pub(crate) fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
     is_no_translate(tcx, def_id) || is_predicate(tcx, def_id) || is_logic(tcx, def_id)
 }
 
+pub(crate) fn is_pearlite(tcx: TyCtxt, def_id: DefId) -> bool {
+    is_predicate(tcx, def_id)
+        || is_spec(tcx, def_id)
+        || is_logic(tcx, def_id)
+        || is_assertion(tcx, def_id)
+        || is_snapshot_closure(tcx, def_id)
+}
+
 pub(crate) fn is_no_translate(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "no_translate"]).is_some()
 }
@@ -115,6 +123,10 @@ pub(crate) fn is_extern_spec(tcx: TyCtxt, def_id: DefId) -> bool {
 
 pub(crate) fn is_structural_ty_inv(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "structural_inv"]).is_some()
+}
+
+pub(crate) fn has_variant_clause(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "clause", "variant"]).is_some()
 }
 
 pub(crate) fn is_user_tyinv(tcx: TyCtxt, def_id: DefId) -> bool {

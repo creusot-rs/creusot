@@ -1,10 +1,13 @@
 use super::pearlite::{normalize, pearlite_stub, Literal, Stub, Term, TermKind};
 use crate::{
     ctx::*,
-    error::{CrErr, Error},
+    error::{Error, InternalError},
     util::{self, is_spec},
 };
-use rustc_ast::ast::{AttrArgs, AttrArgsEq};
+use rustc_ast::{
+    ast::{AttrArgs, AttrArgsEq},
+    AttrItem,
+};
 use rustc_hir::def_id::DefId;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
@@ -20,6 +23,8 @@ pub struct PreContract<'tcx> {
     pub(crate) variant: Option<Term<'tcx>>,
     pub(crate) requires: Vec<Term<'tcx>>,
     pub(crate) ensures: Vec<Term<'tcx>>,
+    pub(crate) no_panic: bool,
+    pub(crate) terminates: bool,
 }
 
 impl<'tcx> PreContract<'tcx> {
@@ -77,11 +82,19 @@ pub struct ContractClauses {
     variant: Option<DefId>,
     requires: Vec<DefId>,
     ensures: Vec<DefId>,
+    pub(crate) no_panic: bool,
+    pub(crate) terminates: bool,
 }
 
 impl ContractClauses {
     pub(crate) fn new() -> Self {
-        Self { variant: None, requires: Vec::new(), ensures: Vec::new() }
+        Self {
+            variant: None,
+            requires: Vec::new(),
+            ensures: Vec::new(),
+            no_panic: false,
+            terminates: false,
+        }
     }
 
     fn get_pre<'tcx>(self, ctx: &mut TranslationCtx<'tcx>) -> EarlyBinder<PreContract<'tcx>> {
@@ -103,6 +116,10 @@ impl ContractClauses {
             let term = ctx.term(var_id).unwrap().clone();
             out.variant = Some(term);
         };
+        log::trace!("no_panic: {}", self.no_panic);
+        out.no_panic = self.no_panic;
+        log::trace!("terminates: {}", self.terminates);
+        out.terminates = self.terminates;
         EarlyBinder::bind(out)
     }
 
@@ -228,15 +245,33 @@ pub(crate) fn contract_clauses_of(
             ctx.creusot_item(predicate_name).ok_or(InvalidTerm { id: def_id })
         };
 
-        match attr.path.segments[2].ident.to_string().as_str() {
-            "requires" => contract.requires.push(get_creusot_item()?),
-            "ensures" => contract.ensures.push(get_creusot_item()?),
-            "variant" => contract.variant = Some(get_creusot_item()?),
-            _ => {}
+        if attributes_matches(attr, &["creusot", "clause", "requires"]) {
+            contract.requires.push(get_creusot_item()?)
+        } else if attributes_matches(attr, &["creusot", "clause", "ensures"]) {
+            contract.ensures.push(get_creusot_item()?);
+        } else if attributes_matches(attr, &["creusot", "clause", "variant"]) {
+            contract.variant = Some(get_creusot_item()?);
+        } else if attributes_matches(attr, &["creusot", "clause", "terminates"]) {
+            contract.terminates = true;
+        } else if attributes_matches(attr, &["creusot", "clause", "no_panic"]) {
+            contract.no_panic = true;
         }
     }
 
     Ok(contract)
+}
+
+fn attributes_matches(attr: &AttrItem, to_match: &[&str]) -> bool {
+    let segments = &attr.path.segments;
+    if segments.len() < to_match.len() {
+        return false;
+    }
+    for (segment, &to_match) in std::iter::zip(segments, to_match) {
+        if segment.ident.as_str() != to_match {
+            return false;
+        }
+    }
+    true
 }
 
 pub(crate) fn inherited_extern_spec<'tcx>(
@@ -308,66 +343,86 @@ pub(crate) fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Purity {
-    Program,
+    Program { terminates: bool, no_panic: bool },
     Logic { prophetic: bool },
 }
 
 impl Purity {
-    pub(crate) fn of_def_id<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Self {
-        let is_snapshot = util::is_snapshot_closure(tcx, def_id);
-        if (util::is_predicate(tcx, def_id) && util::is_prophetic(tcx, def_id))
-            || (util::is_logic(tcx, def_id) && util::is_prophetic(tcx, def_id))
-            || (util::is_spec(tcx, def_id) && !is_snapshot)
+    pub(crate) fn of_def_id<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Self {
+        let is_snapshot = util::is_snapshot_closure(ctx.tcx, def_id);
+        if (util::is_predicate(ctx.tcx, def_id) && util::is_prophetic(ctx.tcx, def_id))
+            || (util::is_logic(ctx.tcx, def_id) && util::is_prophetic(ctx.tcx, def_id))
+            || (util::is_spec(ctx.tcx, def_id) && !is_snapshot)
         {
             Purity::Logic { prophetic: true }
-        } else if util::is_predicate(tcx, def_id) || util::is_logic(tcx, def_id) || is_snapshot {
+        } else if util::is_predicate(ctx.tcx, def_id)
+            || util::is_logic(ctx.tcx, def_id)
+            || is_snapshot
+        {
             Purity::Logic { prophetic: false }
         } else {
-            Purity::Program
+            let contract = contract_of(ctx, def_id);
+            let terminates = contract.terminates;
+            let no_panic = contract.no_panic;
+            Purity::Program { terminates, no_panic }
         }
     }
 
     fn can_call(self, other: Purity) -> bool {
         match (self, other) {
             (Purity::Logic { prophetic: true }, Purity::Logic { prophetic: false }) => true,
+            (
+                Purity::Program { no_panic, terminates },
+                Purity::Program { no_panic: no_panic2, terminates: terminates2 },
+            ) => no_panic <= no_panic2 && terminates <= terminates2,
             (ctx, call) => ctx == call,
         }
     }
 }
 
-impl std::fmt::Display for Purity {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str(match self {
-            Purity::Program => "program",
+impl Purity {
+    fn as_str(&self) -> &'static str {
+        match self {
+            Purity::Program { terminates, no_panic } => match (*terminates, *no_panic) {
+                (true, true) => "program (pure)",
+                (true, false) => "program (terminates)",
+                (false, true) => "program (no panic)",
+                (false, false) => "program",
+            },
             Purity::Logic { prophetic: false } => "logic",
             Purity::Logic { prophetic: true } => "prophetic logic",
-        })
+        }
     }
 }
 
 pub(crate) struct PurityVisitor<'a, 'tcx> {
-    pub(crate) tcx: TyCtxt<'tcx>,
+    pub(crate) ctx: &'a mut TranslationCtx<'tcx>,
     pub(crate) thir: &'a Thir<'tcx>,
     pub(crate) context: Purity,
 }
 
 impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
-    fn purity(&self, fun: thir::ExprId, func_did: DefId) -> Purity {
-        let stub = pearlite_stub(self.tcx, self.thir[fun].ty);
+    fn purity(&mut self, fun: thir::ExprId, func_did: DefId) -> Purity {
+        let stub = pearlite_stub(self.ctx.tcx, self.thir[fun].ty);
 
         if matches!(stub, Some(Stub::Fin))
-            || (util::is_predicate(self.tcx, func_did) && util::is_prophetic(self.tcx, func_did))
-            || (util::is_logic(self.tcx, func_did) && util::is_prophetic(self.tcx, func_did))
+            || (util::is_predicate(self.ctx.tcx, func_did)
+                && util::is_prophetic(self.ctx.tcx, func_did))
+            || (util::is_logic(self.ctx.tcx, func_did)
+                && util::is_prophetic(self.ctx.tcx, func_did))
         {
             Purity::Logic { prophetic: true }
-        } else if util::is_predicate(self.tcx, func_did)
-            || util::is_logic(self.tcx, func_did)
-            || util::get_builtin(self.tcx, func_did).is_some()
+        } else if util::is_predicate(self.ctx.tcx, func_did)
+            || util::is_logic(self.ctx.tcx, func_did)
+            || util::get_builtin(self.ctx.tcx, func_did).is_some()
             || stub.is_some()
         {
             Purity::Logic { prophetic: false }
         } else {
-            Purity::Program
+            let contract = contract_of(self.ctx, func_did);
+            let terminates = contract.terminates;
+            let no_panic = contract.no_panic;
+            Purity::Program { terminates, no_panic }
         }
     }
 }
@@ -380,36 +435,44 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
     fn visit_expr(&mut self, expr: &'a thir::Expr<'tcx>) {
         match expr.kind {
             ExprKind::Call { fun, .. } => {
+                // FIXME: like in detect_recursion (MIR visitor), we would need to specialize the trait functions.
                 if let &ty::FnDef(func_did, _) = self.thir[fun].ty.kind() {
                     let fn_purity = self.purity(fun, func_did);
-                    if !self.context.can_call(fn_purity) && !is_overloaded_item(self.tcx, func_did)
+                    if !self.context.can_call(fn_purity)
+                        && !is_overloaded_item(self.ctx.tcx, func_did)
                     {
-                        let msg =
-                            format!("called {fn_purity:?} function in {:?} context", self.context);
-
-                        self.tcx.dcx().span_err(
-                            self.thir[fun].span,
-                            format!("{} {:?}", msg, self.tcx.def_path_str(func_did)),
+                        let (caller, callee) = match (self.context, fn_purity) {
+                            (Purity::Program { .. }, Purity::Program { .. })
+                            | (Purity::Logic { .. }, Purity::Logic { .. }) => {
+                                (self.context.as_str(), fn_purity.as_str())
+                            }
+                            (Purity::Program { .. }, Purity::Logic { .. }) => ("program", "logic"),
+                            (Purity::Logic { .. }, Purity::Program { .. }) => ("logic", "program"),
+                        };
+                        let msg = format!(
+                            "called {callee} function `{}` in {caller} context",
+                            self.ctx.def_path_str(func_did),
                         );
+
+                        self.ctx.dcx().span_err(self.thir[fun].span, msg);
                     }
-                } else if self.context != Purity::Program {
+                } else if !matches!(self.context, Purity::Program { .. }) {
                     // TODO Add a "code" back in
-                    self.tcx.dcx().span_fatal(expr.span, "non function call in logical context")
+                    self.ctx.dcx().span_fatal(expr.span, "non function call in logical context")
                 }
             }
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
-                if is_spec(self.tcx, closure_id.into()) {
+                if is_spec(self.ctx.tcx, closure_id.into()) {
                     return;
                 }
 
-                let (thir, expr) = self
-                    .tcx
-                    .thir_body(closure_id)
-                    .unwrap_or_else(|_| Error::from(CrErr).emit(self.tcx));
+                let (thir, expr) = self.ctx.thir_body(closure_id).unwrap_or_else(|_| {
+                    Error::from(InternalError("Cannot fetch THIR body")).emit(self.ctx.tcx)
+                });
                 let thir = thir.borrow();
 
                 thir::visit::walk_expr(
-                    &mut PurityVisitor { tcx: self.tcx, thir: &thir, context: self.context },
+                    &mut PurityVisitor { ctx: self.ctx, thir: &thir, context: self.context },
                     &thir[expr],
                 );
             }
