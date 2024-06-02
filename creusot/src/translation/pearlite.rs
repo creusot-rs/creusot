@@ -334,19 +334,34 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     mir::BinOp::Div => BinOp::Div,
                     mir::BinOp::Rem => BinOp::Rem,
                     mir::BinOp::BitXor => {
-                        return Err(Error::new(self.thir[expr].span, "unsupported operation"))
+                        return Err(Error::new(
+                            self.thir[expr].span,
+                            "bitwise-xors are currently unsupported",
+                        ))
                     }
                     mir::BinOp::BitAnd => {
-                        return Err(Error::new(self.thir[expr].span, "unsupported operation"))
+                        return Err(Error::new(
+                            self.thir[expr].span,
+                            "bitwise-ands are currently unsupported",
+                        ))
                     }
                     mir::BinOp::BitOr => {
-                        return Err(Error::new(self.thir[expr].span, "unsupported operation"))
+                        return Err(Error::new(
+                            self.thir[expr].span,
+                            "bitwise-ors are currently unsupported",
+                        ))
                     }
                     mir::BinOp::Shl | mir::BinOp::ShlUnchecked => {
-                        return Err(Error::new(self.thir[expr].span, "unsupported operation"))
+                        return Err(Error::new(
+                            self.thir[expr].span,
+                            "shifts are currently unsupported",
+                        ))
                     }
                     mir::BinOp::Shr | mir::BinOp::ShrUnchecked => {
-                        return Err(Error::new(self.thir[expr].span, "unsupported operation"))
+                        return Err(Error::new(
+                            self.thir[expr].span,
+                            "shifts are currently unsupported",
+                        ))
                     }
                     mir::BinOp::Lt => BinOp::Lt,
                     mir::BinOp::Le => BinOp::Le,

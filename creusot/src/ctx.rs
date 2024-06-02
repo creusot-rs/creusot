@@ -408,7 +408,10 @@ pub(crate) fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
             let c = es.contract.clone();
 
             if ctx.extern_spec(i).is_some() {
-                ctx.crash_and_error(DUMMY_SP, &format!("duplicate extern specification for {i:?}"));
+                ctx.crash_and_error(
+                    ctx.def_span(def_id),
+                    &format!("duplicate extern specification for {i:?}"),
+                );
             };
 
             let _ = ctx.extern_specs.insert(i, es);

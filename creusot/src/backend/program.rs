@@ -314,6 +314,7 @@ impl<'tcx> RValue<'tcx> {
         ctx: &mut Why3Generator<'tcx>,
         names: &mut N,
         locals: &LocalDecls<'tcx>,
+        span: Span,
         ty: Ty<'tcx>,
     ) -> Exp {
         let e = match self {
@@ -334,10 +335,10 @@ impl<'tcx> RValue<'tcx> {
             RValue::BinOp(op, l, r) => {
                 let ty = l.ty(ctx.tcx, locals);
                 // Hack
-                translate_ty(ctx, names, DUMMY_SP, ty);
+                translate_ty(ctx, names, span, ty);
 
                 Exp::BinaryOp(
-                    binop_to_binop(ctx, ty, op),
+                    binop_to_binop(ctx, span, ty, op),
                     Box::new(l.to_why(ctx, names, locals)),
                     Box::new(r.to_why(ctx, names, locals)),
                 )
@@ -369,8 +370,7 @@ impl<'tcx> RValue<'tcx> {
                         names.import_prelude_module(PreludeModule::Bool);
                         Exp::qvar(QName::from_string("Bool.to_int").unwrap())
                     }
-                    _ => ctx
-                        .crash_and_error(DUMMY_SP, "Non integral casts are currently unsupported"),
+                    _ => ctx.crash_and_error(span, "Non integral casts are currently unsupported"),
                 };
 
                 let from_int = match target.kind() {
@@ -380,8 +380,7 @@ impl<'tcx> RValue<'tcx> {
                         names.import_prelude_module(PreludeModule::Char);
                         Exp::qvar(QName::from_string("Char.chr").unwrap())
                     }
-                    _ => ctx
-                        .crash_and_error(DUMMY_SP, "Non integral casts are currently unsupported"),
+                    _ => ctx.crash_and_error(span, "Non integral casts are currently unsupported"),
                 };
 
                 from_int.app_to(to_int.app_to(e.to_why(ctx, names, locals)))
@@ -393,7 +392,7 @@ impl<'tcx> RValue<'tcx> {
             }
             RValue::Array(fields) => {
                 let id = Ident::build("__arr_temp");
-                let ty = translate_ty(ctx, names, DUMMY_SP, ty);
+                let ty = translate_ty(ctx, names, span, ty);
 
                 let len = fields.len();
 
@@ -706,7 +705,7 @@ impl<'tcx> Statement<'tcx> {
             Statement::Assignment(lhs, rhs, span) => {
                 let mut invalid = Vec::new();
                 rhs.invalidated_places(&mut invalid);
-                let rhs = rhs.to_why(ctx, names, locals, lhs.ty(ctx.tcx, locals));
+                let rhs = rhs.to_why(ctx, names, locals, span, lhs.ty(ctx.tcx, locals));
                 let mut exps =
                     vec![place::create_assign_inner(ctx, names, locals, &lhs, rhs, span)];
                 invalidate_places(ctx, names, locals, span, invalid, &mut exps);
