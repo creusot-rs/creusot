@@ -56,10 +56,11 @@ pub enum PreludeModule {
     Ref,
     Seq,
     Type,
+    Intrinsic,
 }
 
 impl PreludeModule {
-    fn qname(&self) -> QName {
+    pub fn qname(&self) -> QName {
         match self {
             PreludeModule::Float32 => QName::from_string("prelude.Float32").unwrap(),
             PreludeModule::Float64 => QName::from_string("prelude.Float64").unwrap(),
@@ -84,6 +85,7 @@ impl PreludeModule {
             PreludeModule::Bool => QName::from_string("prelude.Bool").unwrap(),
             PreludeModule::Borrow => QName::from_string("prelude.Borrow").unwrap(),
             PreludeModule::Slice => QName::from_string("prelude.Slice").unwrap(),
+            PreludeModule::Intrinsic => QName::from_string("prelude.Intrinsic").unwrap(),
         }
     }
 }
@@ -112,7 +114,13 @@ pub(crate) trait Namer<'tcx> {
         ix: FieldIdx,
     ) -> QName;
 
-    fn normalize(&self, ctx: &TranslationCtx<'tcx>, ty: Ty<'tcx>) -> Ty<'tcx>;
+    fn eliminator(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName;
+
+    fn normalize<T: TypeFoldable<TyCtxt<'tcx>> + Copy>(
+        &self,
+        ctx: &TranslationCtx<'tcx>,
+        ty: T,
+    ) -> T;
 
     fn import_prelude_module(&mut self, _: PreludeModule);
 
@@ -191,6 +199,31 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
         }
     }
 
+    fn eliminator(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
+        let tcx = self.tcx;
+
+        match tcx.def_kind(def_id) {
+            DefKind::Variant => {
+                let clone = self.insert(DepNode::new(tcx, (tcx.parent(def_id), subst)));
+
+                let mut qname = clone.qname();
+                // TODO(xavier): Remove this hack
+                qname.name = DepNode::new(tcx, (def_id, subst)).base_ident(tcx).to_string().into();
+                qname
+            }
+            DefKind::Closure | DefKind::Struct | DefKind::Union => {
+                let mut node = DepNode::new(self.tcx, (def_id, subst));
+
+                if self.tcx.is_closure_like(def_id) {
+                    node = DepNode::Type(Ty::new_closure(self.tcx, def_id, subst));
+                }
+
+                self.insert(node).qname()
+            }
+            _ => unreachable!(),
+        }
+    }
+
     fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName {
         let def_id =
             self.tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
@@ -198,7 +231,11 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
         self.value(def_id, subst)
     }
 
-    fn normalize(&self, ctx: &TranslationCtx<'tcx>, ty: Ty<'tcx>) -> Ty<'tcx> {
+    fn normalize<T: TypeFoldable<TyCtxt<'tcx>> + Copy>(
+        &self,
+        ctx: &TranslationCtx<'tcx>,
+        ty: T,
+    ) -> T {
         self.tcx.try_normalize_erasing_regions(self.param_env(ctx), ty).unwrap_or(ty)
     }
 
@@ -239,7 +276,7 @@ pub struct Dependencies<'tcx> {
 }
 
 #[derive(Default, Clone)]
-struct NameSupply {
+pub(crate) struct NameSupply {
     name_counts: IndexMap<Symbol, usize>,
 }
 
@@ -301,6 +338,12 @@ impl<'tcx> CloneNames<'tcx> {
 
                 return kind;
             }
+            DepNode::Item(id, _) if util::item_type(self.tcx, id) == ItemType::Variant => {
+                let ty = self.tcx.parent(id);
+                let modl = module_name(self.tcx, ty);
+
+                Kind::Used(modl, key.base_ident(self.tcx))
+            }
             _ => {
                 if let DepNode::Item(id, _) = key
                     && let Some(why3_modl) = util::get_builtin(self.tcx, id)
@@ -320,9 +363,9 @@ impl<'tcx> CloneNames<'tcx> {
 }
 
 impl NameSupply {
-    fn freshen(&mut self, sym: Symbol) -> Symbol {
+    pub(crate) fn freshen(&mut self, sym: Symbol) -> Symbol {
         let count: usize = *self.name_counts.entry(sym).and_modify(|c| *c += 1).or_insert(0);
-        Symbol::intern(&format!("{sym}{count}"))
+        Symbol::intern(&format!("{sym}'{count}"))
     }
 }
 
@@ -381,7 +424,7 @@ impl<'tcx> DepGraph<'tcx> {
 
 // TODO: Get rid of the enum
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable, Hash)]
-enum Kind {
+pub enum Kind {
     /// This symbol is locally defined
     Named(Symbol),
     /// This symbol must be acompanied by a `Use` statement in Why3

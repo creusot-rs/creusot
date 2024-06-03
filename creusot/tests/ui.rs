@@ -90,7 +90,7 @@ fn run_creusot(
         "--stdout",
         "--export-metadata=false",
         "--span-mode=relative",
-        // we will write the mlcfg output next to the .rs file
+        // we will write the coma output next to the .rs file
         "--spans-relative-to=.",
     ]);
     cmd.args(&[
@@ -150,7 +150,7 @@ where
         };
 
         let stderr = entry.with_extension("stderr");
-        let stdout = entry.with_extension("mlcfg");
+        let stdout = entry.with_extension("coma");
 
         write!(&mut out, "Testing {} ... ", entry.display()).unwrap();
 

@@ -84,7 +84,7 @@ The binaries are structured following the pattern laid out by [flowistry](https:
 
 ## Program functions
 
-Each function is translated as a standalone Why module containing a single MLCFG function.
+Each function is translated as a standalone Why module containing a single coma function.
 We translate program functions from the *MIR* of a program, as we need to ensure that borrow checking succeeds and also use dataflow analysis on the MIR body.
 
 ### Encoding contracts
@@ -118,7 +118,7 @@ The section on compiling specifications will cover how this works
 
 ### Translating functions
 
-The translation of program functions occurs statement-by-statement from the MIR to MLCFG.
+The translation of program functions occurs statement-by-statement from the MIR to coma.
 Most MIR statements have an obvious translation, but there are a few key technicalities.
 
 #### Translating Places

@@ -3,12 +3,14 @@ use rustc_hir::{
     def::{DefKind, Namespace},
     def_id::DefId,
 };
-use rustc_middle::ty::{self, Const, EarlyBinder, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{
+    self, Const, EarlyBinder, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable,
+};
 use rustc_span::Symbol;
 use rustc_target::abi::FieldIdx;
 
 use why3::{
-    declaration::{Axiom, Decl, LetDecl, LetKind, Signature, Use, ValDecl},
+    declaration::{Axiom, Constant, Decl, LetKind, Signature, Use, ValDecl},
     QName,
 };
 
@@ -16,6 +18,7 @@ use crate::{
     backend::{
         dependency::{Dependency, ExtendedId},
         logic::{lower_logical_defn, lower_pure_defn, sigs, spec_axiom},
+        program,
         signature::sig_to_why3,
         term::lower_pure,
         ty_inv::InvariantElaborator,
@@ -162,6 +165,8 @@ impl<'tcx> SymbolElaborator<'tcx> {
             util::item_type(ctx.tcx, def_id).let_kind()
         };
 
+        // eprintln!("{item:?} {kind:?}");
+
         if CloneLevel::Signature == level_of_item {
             pre_sig.contract = PreContract::default();
         }
@@ -203,13 +208,11 @@ impl<'tcx> SymbolElaborator<'tcx> {
 
             let span = ctx.def_span(def_id);
             let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, param_env, span);
-            let res = lower_pure(ctx, names, &res);
 
-            vec![Decl::Let(LetDecl {
-                kind: Some(LetKind::Constant),
-                sig: sig.clone(),
-                rec: false,
-                ghost: false,
+            let res = lower_pure(ctx, names, &res);
+            vec![Decl::ConstantDecl(Constant {
+                type_: sig.retty.unwrap(),
+                name: sig.name,
                 body: res,
             })]
         } else {
@@ -224,7 +227,6 @@ fn val<'tcx>(
     kind: Option<LetKind>,
 ) -> Vec<Decl> {
     sig.contract.variant = Vec::new();
-
     if let Some(k) = kind {
         let ax = if !sig.contract.is_empty() { Some(spec_axiom(&sig)) } else { None };
 
@@ -239,7 +241,7 @@ fn val<'tcx>(
 
         let mut d = vec![
             Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig }),
-            Decl::ValDecl(ValDecl { ghost: false, val: true, kind: None, sig: prog_sig }),
+            program::val(ctx, prog_sig),
         ];
 
         if let Some(ax) = ax {
@@ -247,7 +249,7 @@ fn val<'tcx>(
         }
         d
     } else {
-        vec![Decl::ValDecl(ValDecl { ghost: false, val: true, kind, sig })]
+        vec![program::val(ctx, sig)]
     }
 }
 
@@ -372,7 +374,11 @@ impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
         self.value(def_id, subst)
     }
 
-    fn normalize(&self, _: &TranslationCtx<'tcx>, ty: Ty<'tcx>) -> Ty<'tcx> {
+    fn normalize<T: TypeFoldable<TyCtxt<'tcx>> + Copy>(
+        &self,
+        _: &TranslationCtx<'tcx>,
+        ty: T,
+    ) -> T {
         self.tcx.try_normalize_erasing_regions(self.param_env, ty).unwrap_or(ty)
 
         // self.tcx.try_normalize_erasing_regions(self.param_env(ctx), ty).unwrap_or(ty)
@@ -390,5 +396,30 @@ impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
         let ret = f(self);
         // self.dep_level = public;
         ret
+    }
+
+    fn eliminator(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
+        let tcx = self.tcx;
+
+        match tcx.def_kind(def_id) {
+            DefKind::Variant => {
+                let clone = self.insert(DepNode::new(tcx, (tcx.parent(def_id), subst)));
+
+                let mut qname = clone.qname();
+                // TODO(xavier): Remove this hack
+                qname.name = DepNode::new(tcx, (def_id, subst)).base_ident(tcx).to_string().into();
+                qname
+            }
+            DefKind::Closure | DefKind::Struct | DefKind::Union => {
+                let mut node = DepNode::new(self.tcx, (def_id, subst));
+
+                if self.tcx.is_closure_like(def_id) {
+                    node = DepNode::Type(Ty::new_closure(self.tcx, def_id, subst));
+                }
+
+                self.insert(node).qname()
+            }
+            _ => unreachable!(),
+        }
     }
 }

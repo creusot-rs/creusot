@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-trait A {
+pub trait A {
     fn f(&self) -> Self;
 }
 
@@ -11,7 +11,7 @@ impl A for i32 {
     }
 }
 
-trait B: Sized {
+pub trait B: Sized {
     #[ensures(result == result)]
     fn g(&self) -> Self;
 }
@@ -22,7 +22,7 @@ impl B for u32 {
     }
 }
 
-trait C {
+pub trait C {
     fn h<T>(x: &T) -> &T;
 }
 

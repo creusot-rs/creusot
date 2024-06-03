@@ -1,4 +1,4 @@
 extern crate creusot_contracts;
 
 #[derive(Clone)]
-struct Lit {}
+pub struct Lit {}

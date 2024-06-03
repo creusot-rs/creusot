@@ -1,0 +1,494 @@
+
+module C12GhostCode_GhostArg
+  use prelude.UInt32
+  use prelude.Int
+  use prelude.Snapshot
+  use prelude.Intrinsic
+  use prelude.Snapshot
+  use prelude.Snapshot
+  let rec ghost_arg (g:Snapshot.snap_ty uint32) (return'  (ret:()))= (! bb0
+    [ bb0 = s0 [ s0 =  [ &_x <- [#"../12_ghost_code.rs" 5 28 5 44] Snapshot.new (Snapshot.inner g) ] s1 | s1 = bb1 ] 
+    | bb1 = s0 [ s0 =  [ &_0 <- [#"../12_ghost_code.rs" 4 35 6 1] () ] s1 | s1 = return' {_0} ]  ]
+    )
+    [ & _0 : () = any_l () : ()
+    | & g : Snapshot.snap_ty uint32 = g
+    | & _x : Snapshot.snap_ty uint32 = any_l () : Snapshot.snap_ty uint32 ]
+     [ return' (result:())-> (! return' {result}) ] 
+end
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.Opaque
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
+    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
+    | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
+    
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
+    [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
+    
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (_marker:Core_Marker_PhantomData_Type.t_phantomdata 't))= any
+    [ good (pointer:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (_marker:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique pointer _marker
+      = input}
+      (! ret {pointer} {_marker})
+    | bad (pointer:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (_marker:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique pointer _marker
+      <> input}
+      {false}
+      any ]
+    
+end
+module Alloc_RawVec_Cap_Type
+  use prelude.UIntSize
+  use prelude.Int
+  type t_cap  =
+    | C_Cap usize
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_cap (input:t_cap) (ret  (field_0:usize))= any
+    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
+    | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_rawvec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (ptr:Core_Ptr_Unique_Unique_Type.t_unique 't) (cap:Alloc_RawVec_Cap_Type.t_cap) (alloc:'a))= any
+    [ good (ptr:Core_Ptr_Unique_Unique_Type.t_unique 't) (cap:Alloc_RawVec_Cap_Type.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc
+      = input}
+      (! ret {ptr} {cap} {alloc})
+    | bad (ptr:Core_Ptr_Unique_Unique_Type.t_unique 't) (cap:Alloc_RawVec_Cap_Type.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc
+      <> input}
+      {false}
+      any ]
+    
+end
+module Alloc_Vec_Vec_Type
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_vec < 't > < 'a > (input:t_vec 't 'a) (ret  (buf:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (len:usize))= any
+    [ good (buf:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
+    | bad (buf:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+    
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_global (input:t_global) (ret  )= any
+    [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
+    
+end
+module C12GhostCode_GhostVec
+  use prelude.UInt32
+  use seq.Seq
+  predicate invariant'1 (self : Seq.seq uint32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant'1 (self:Seq.seq uint32) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant'1 self} (! return' {result}) ]
+    
+  predicate inv'1 (_x : Seq.seq uint32)
+  let rec inv'1 (_x:Seq.seq uint32) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv'1 _x} (! return' {result}) ]
+    
+  axiom inv'1 : forall x : Seq.seq uint32 . inv'1 x = true
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use prelude.UIntSize
+  use prelude.UIntSize
+  use prelude.Int
+  constant max'0 : usize = (18446744073709551615 : usize)
+  use seq.Seq
+  predicate inv'0 (_x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))
+  let rec inv'0 (_x:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv'0 _x} (! return' {result}) ]
+    
+  function shallow_model'0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
+  let rec shallow_model'0 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq uint32))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv'0 self}
+    any [ return' (result:Seq.seq uint32)-> {result = shallow_model'0 self} (! return' {result}) ] 
+  axiom shallow_model'0_spec : forall self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv'0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv'1 (shallow_model'0 self))
+  && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model'0 self)
+  <= UIntSize.to_int (max'0 : usize))
+  predicate invariant'0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv'1 (shallow_model'0 self)
+  let rec invariant'0 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant'0 self} (! return' {result}) ]
+    
+  axiom inv'0 : forall x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . inv'0 x = true
+  use prelude.Intrinsic
+  use prelude.Snapshot
+  use prelude.Snapshot
+  predicate resolve'1 (self : uint32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12] true
+  let rec resolve'1 (self:uint32) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'1 self} (! return' {result}) ]
+    
+  use seq.Seq
+  function index_logic'0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (ix : int) : uint32
+    
+   =
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model'0 self) ix
+  let rec index_logic'0 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:uint32))= any
+    [ return' (result:uint32)-> {result = index_logic'0 self ix} (! return' {result}) ]
+    
+  predicate resolve'0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i
+    /\ i < Seq.length (shallow_model'0 self)  -> resolve'1 (index_logic'0 self i)
+  let rec resolve'0 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
+    
+  let rec new'0 (_1:()) (return'  (ret:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)))= any
+    [ return' (result:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))-> {inv'0 result}
+      {[#"../../../../../creusot-contracts/src/std/vec.rs" 69 26 69 44] Seq.length (shallow_model'0 result) = 0}
+      (! return' {result}) ]
+    
+  let rec ghost_vec (_1:()) (return'  (ret:()))= (! bb0
+    [ bb0 = s0
+      [ s0 = new'0 {[#"../12_ghost_code.rs" 9 22 9 32] ()}
+          (fun (_ret':Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) ->  [ &x <- _ret' ] s1)
+      | s1 = bb1 ]
+      
+    | bb1 = s0
+      [ s0 = -{resolve'0 x}- s1
+      | s1 = 
+        [ &_s <- ([#"../12_ghost_code.rs" 10 35 10 50] Snapshot.new x) : Snapshot.snap_ty (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) ]
+        
+        s2
+      | s2 = bb2 ]
+      
+    | bb2 = s0 [ s0 =  [ &_0 <- [#"../12_ghost_code.rs" 8 19 11 1] () ] s1 | s1 = bb3 ] 
+    | bb3 = s0 [ s0 = return' {_0} ]  ]
+    )
+    [ & _0 : () = any_l () : ()
+    | & x : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) = any_l () : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)
+    | & _s : Snapshot.snap_ty (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) = any_l () : Snapshot.snap_ty (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) ]
+     [ return' (result:())-> (! return' {result}) ] 
+end
+module C12GhostCode_GhostCopy
+  use prelude.Intrinsic
+  use prelude.Snapshot
+  use prelude.Int32
+  use seq.Seq
+  use prelude.Snapshot
+  use prelude.Snapshot
+  use seq.Seq
+  use seq.Seq
+  use prelude.Int
+  let rec ghost_copy (_1:()) (return'  (ret:()))= (! bb0
+    [ bb0 = s0
+      [ s0 =  [ &a <- [#"../12_ghost_code.rs" 18 12 18 13] (0 : int32) ] s1
+      | s1 = 
+        [ &_s <- ([#"../12_ghost_code.rs" 19 17 19 52] Snapshot.new (Seq.snoc (Seq.empty  : Seq.seq int32) (0 : int32))) : Snapshot.snap_ty (Seq.seq int32) ]
+        
+        s2
+      | s2 = bb1 ]
+      
+    | bb1 = s0
+      [ s0 = 
+        [ &_4 <- ([#"../12_ghost_code.rs" 20 9 20 33] Snapshot.new (Seq.snoc (Snapshot.inner _s) a)) : Snapshot.snap_ty (Seq.seq int32) ]
+        
+        s1
+      | s1 = bb2 ]
+      
+    | bb2 = s0
+      [ s0 =  [ &_s <- _4 ] (any [ any_ (_any:Snapshot.snap_ty (Seq.seq int32))-> (!  [ &_4 <- _any ] s1) ] )
+      | s1 =  [ &_0 <- [#"../12_ghost_code.rs" 17 20 21 1] () ] s2
+      | s2 = return' {_0} ]
+       ]
+    )
+    [ & _0 : () = any_l () : ()
+    | & a : int32 = any_l () : int32
+    | & _s : Snapshot.snap_ty (Seq.seq int32) = any_l () : Snapshot.snap_ty (Seq.seq int32)
+    | & _4 : Snapshot.snap_ty (Seq.seq int32) = any_l () : Snapshot.snap_ty (Seq.seq int32) ]
+     [ return' (result:())-> (! return' {result}) ] 
+end
+module C12GhostCode_GhostIsCopy
+  use prelude.Int32
+  use prelude.Borrow
+  use prelude.Snapshot
+  use prelude.Intrinsic
+  use prelude.Snapshot
+  predicate resolve'0 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  let rec resolve'0 (self:borrowed int32) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
+    
+  use prelude.Int
+  let rec ghost_is_copy (_1:()) (return'  (ret:()))= (! bb0
+    [ bb0 = s0
+      [ s0 =  [ &x <- [#"../12_ghost_code.rs" 24 16 24 17] (0 : int32) ] s1
+      | s1 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &r <- _ret' ]  [ &x <-  ^ r ] s2)
+      | s2 = -{resolve'0 r}- s3
+      | s3 =  [ &g <- [#"../12_ghost_code.rs" 26 12 26 27] Snapshot.new r ] s4
+      | s4 = bb1 ]
+      
+    | bb1 = s0
+      [ s0 =  [ &g1 <- g ] s1
+      | s1 =  [ &g2 <- g ] s2
+      | s2 = {[@expl:assertion] [#"../12_ghost_code.rs" 29 18 29 26] g1 = g2} s3
+      | s3 =  [ &_0 <- [#"../12_ghost_code.rs" 23 23 30 1] () ] s4
+      | s4 = return' {_0} ]
+       ]
+    )
+    [ & _0 : () = any_l () : ()
+    | & x : int32 = any_l () : int32
+    | & r : borrowed int32 = any_l () : borrowed int32
+    | & g : Snapshot.snap_ty (borrowed int32) = any_l () : Snapshot.snap_ty (borrowed int32)
+    | & g1 : Snapshot.snap_ty (borrowed int32) = any_l () : Snapshot.snap_ty (borrowed int32)
+    | & g2 : Snapshot.snap_ty (borrowed int32) = any_l () : Snapshot.snap_ty (borrowed int32) ]
+     [ return' (result:())-> (! return' {result}) ] 
+end
+module C12GhostCode_GhostCheck
+  use prelude.Int32
+  use seq.Seq
+  predicate invariant'4 (self : Seq.seq int32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant'4 (self:Seq.seq int32) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant'4 self} (! return' {result}) ]
+    
+  predicate inv'4 (_x : Seq.seq int32)
+  let rec inv'4 (_x:Seq.seq int32) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv'4 _x} (! return' {result}) ]
+    
+  axiom inv'4 : forall x : Seq.seq int32 . inv'4 x = true
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate invariant'3 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant'3 (self:Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant'3 self} (! return' {result}) ]
+    
+  predicate inv'3 (_x : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global))
+  let rec inv'3 (_x:Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv'3 _x} (! return' {result}) ]
+    
+  axiom inv'3 : forall x : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global) . inv'3 x = true
+  predicate invariant'2 (self : int32) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant'2 (self:int32) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant'2 self} (! return' {result}) ]
+    
+  predicate inv'2 (_x : int32)
+  let rec inv'2 (_x:int32) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv'2 _x} (! return' {result}) ]
+    
+  axiom inv'2 : forall x : int32 . inv'2 x = true
+  use prelude.Borrow
+  predicate invariant'1 (self : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global))) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant'1 (self:borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant'1 self} (! return' {result}) ]
+    
+  predicate inv'1 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)))
+  let rec inv'1 (_x:borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv'1 _x} (! return' {result}) ]
+    
+  axiom inv'1 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) . inv'1 x = true
+  use prelude.UIntSize
+  use prelude.UIntSize
+  use prelude.Int
+  constant max'0 : usize = (18446744073709551615 : usize)
+  use seq.Seq
+  predicate inv'0 (_x : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global))
+  let rec inv'0 (_x:Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv'0 _x} (! return' {result}) ]
+    
+  function shallow_model'0 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq int32
+  let rec shallow_model'0 (self:Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq int32))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv'0 self}
+    any [ return' (result:Seq.seq int32)-> {result = shallow_model'0 self} (! return' {result}) ] 
+  axiom shallow_model'0_spec : forall self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv'0 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv'4 (shallow_model'0 self))
+  && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model'0 self)
+  <= UIntSize.to_int (max'0 : usize))
+  predicate invariant'0 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv'4 (shallow_model'0 self)
+  let rec invariant'0 (self:Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant'0 self} (! return' {result}) ]
+    
+  axiom inv'0 : forall x : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global) . inv'0 x = true
+  use prelude.Snapshot
+  use prelude.Intrinsic
+  predicate resolve'1 (self : int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12] true
+  let rec resolve'1 (self:int32) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'1 self} (! return' {result}) ]
+    
+  use seq.Seq
+  function index_logic'0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) (ix : int) : int32
+    
+   =
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model'0 self) ix
+  let rec index_logic'0 (self:Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:int32))= any
+    [ return' (result:int32)-> {result = index_logic'0 self ix} (! return' {result}) ]
+    
+  predicate resolve'0 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) =
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i
+    /\ i < Seq.length (shallow_model'0 self)  -> resolve'1 (index_logic'0 self i)
+  let rec resolve'0 (self:Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
+    
+  function shallow_model'2 (self : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq int32 =
+    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model'0 self
+  let rec shallow_model'2 (self:Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq int32))= any
+    [ return' (result:Seq.seq int32)-> {result = shallow_model'2 self} (! return' {result}) ]
+    
+  let rec len'0 (self:Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:usize))= {[@expl:precondition] inv'3 self}
+    any
+    [ return' (result:usize)-> {[#"../../../../../creusot-contracts/src/std/vec.rs" 78 26 78 48] UIntSize.to_int result
+      = Seq.length (shallow_model'2 self)}
+      (! return' {result}) ]
+    
+  use seq.Seq
+  function shallow_model'1 (self : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global))) : Seq.seq int32
+    
+   =
+    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model'0 ( * self)
+  let rec shallow_model'1 (self:borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq int32))= any
+    [ return' (result:Seq.seq int32)-> {result = shallow_model'1 self} (! return' {result}) ]
+    
+  let rec push'0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global))) (value:int32) (return'  (ret:()))= {[@expl:precondition] inv'2 value}
+    {[@expl:precondition] inv'1 self}
+    any
+    [ return' (result:())-> {[#"../../../../../creusot-contracts/src/std/vec.rs" 82 26 82 51] shallow_model'0 ( ^ self)
+      = Seq.snoc (shallow_model'1 self) value}
+      (! return' {result}) ]
+    
+  use prelude.Snapshot
+  function logi_drop'0 [#"../12_ghost_code.rs" 33 0 33 21] (_1 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) : ()
+    
+   =
+    [#"../12_ghost_code.rs" 32 0 32 8] ()
+  let rec logi_drop'0 (_1:Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:()))= any
+    [ return' (result:())-> {result = logi_drop'0 _1} (! return' {result}) ]
+    
+  let rec new'0 (_1:()) (return'  (ret:Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)))= any
+    [ return' (result:Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global))-> {inv'0 result}
+      {[#"../../../../../creusot-contracts/src/std/vec.rs" 69 26 69 44] Seq.length (shallow_model'0 result) = 0}
+      (! return' {result}) ]
+    
+  let rec ghost_check (_1:()) (return'  (ret:()))= (! bb0
+    [ bb0 = s0
+      [ s0 = new'0 {[#"../12_ghost_code.rs" 36 16 36 26] ()}
+          (fun (_ret':Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) ->  [ &x <- _ret' ] s1)
+      | s1 = bb1 ]
+      
+    | bb1 = s0
+      [ s0 =  [ &_2 <- [#"../12_ghost_code.rs" 39 4 39 31] Snapshot.new (let _ = logi_drop'0 x in ()) ] s1 | s1 = bb2 ]
+      
+    | bb2 = s0
+      [ s0 = Borrow.borrow_mut <Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)> {x}
+          (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global))) ->
+             [ &_5 <- _ret' ] 
+             [ &x <-  ^ _5 ] 
+            s1)
+      | s1 = push'0 {_5} {[#"../12_ghost_code.rs" 41 11 41 12] (0 : int32)} (fun (_ret':()) ->  [ &_4 <- _ret' ] s2)
+      | s2 = bb3 ]
+      
+    | bb3 = s0 [ s0 = len'0 {x} (fun (_ret':usize) ->  [ &_8 <- _ret' ] s1) | s1 = bb4 ] 
+    | bb4 = s0
+      [ s0 = -{resolve'0 x}- s1
+      | s1 = UIntSize.eq {_8} {[#"../12_ghost_code.rs" 43 23 43 24] (1 : usize)}
+          (fun (_ret':bool) ->  [ &_7 <- _ret' ] (any [ any_ (_any:usize)-> (!  [ &_8 <- _any ] s2) ] ))
+      | s2 = any [ br0 -> {_7 = false} (! bb6) | br1 -> {_7} (! bb5) ]  ]
+      
+    | bb5 = s0 [ s0 =  [ &_0 <- [#"../12_ghost_code.rs" 35 21 44 1] () ] s1 | s1 = bb7 ] 
+    | bb7 = s0 [ s0 = return' {_0} ] 
+    | bb6 = s0 [ s0 = {[#"../12_ghost_code.rs" 43 4 43 25] false} any ]  ]
+    )
+    [ & _0 : () = any_l () : ()
+    | & x : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global) = any_l () : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)
+    | & _2 : Snapshot.snap_ty () = any_l () : Snapshot.snap_ty ()
+    | & _4 : () = any_l () : ()
+    | & _5 : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)) = any_l () : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global))
+    | & _7 : bool = any_l () : bool
+    | & _8 : usize = any_l () : usize ]
+     [ return' (result:())-> (! return' {result}) ] 
+end
+module C12GhostCode_MyStruct_Type
+  use prelude.UInt32
+  use prelude.Snapshot
+  use prelude.Int
+  type t_mystruct  =
+    | C_MyStruct uint32 (Snapshot.snap_ty uint32)
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_mystruct (input:t_mystruct) (ret  (f:uint32) (g:Snapshot.snap_ty uint32))= any
+    [ good (f:uint32) (g:Snapshot.snap_ty uint32)-> {C_MyStruct f g = input} (! ret {f} {g})
+    | bad (f:uint32) (g:Snapshot.snap_ty uint32)-> {C_MyStruct f g <> input} {false} any ]
+    
+  function mystruct_f (self : t_mystruct) : uint32 =
+    match self with
+      | C_MyStruct a _ -> a
+      end
+  function mystruct_g (self : t_mystruct) : Snapshot.snap_ty uint32 =
+    match self with
+      | C_MyStruct _ a -> a
+      end
+end
+module C12GhostCode_TakesStruct
+  use prelude.Borrow
+  use prelude.UInt32
+  use prelude.Int
+  use prelude.UInt32
+  function shallow_model'1 (self : uint32) : int =
+    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 31] UInt32.to_int self
+  let rec shallow_model'1 (self:uint32) (return'  (ret:int))= any
+    [ return' (result:int)-> {result = shallow_model'1 self} (! return' {result}) ]
+    
+  use prelude.Snapshot
+  use prelude.Snapshot
+  function shallow_model'0 (self : Snapshot.snap_ty uint32) : int =
+    [#"../../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48] shallow_model'1 (Snapshot.inner self)
+  let rec shallow_model'0 (self:Snapshot.snap_ty uint32) (return'  (ret:int))= any
+    [ return' (result:int)-> {result = shallow_model'0 self} (! return' {result}) ]
+    
+  use C12GhostCode_MyStruct_Type as C12GhostCode_MyStruct_Type
+  use prelude.Intrinsic
+  use prelude.Int
+  use prelude.Snapshot
+  let rec takes_struct (x:C12GhostCode_MyStruct_Type.t_mystruct) (return'  (ret:()))= {[#"../12_ghost_code.rs" 51 11 51 20] shallow_model'0 (C12GhostCode_MyStruct_Type.mystruct_g x)
+    = 0}
+    (! bb0
+    [ bb0 = s0
+      [ s0 =  [ &_3 <- [#"../12_ghost_code.rs" 53 10 53 27] Snapshot.new (C12GhostCode_MyStruct_Type.mystruct_f x) ] s1
+      | s1 = bb1 ]
+      
+    | bb1 = s0
+      [ s0 = C12GhostCode_MyStruct_Type.t_mystruct {x}
+          (fun (l_f'0:uint32) (l_g'0:Snapshot.snap_ty uint32) ->
+             [ &x <- C12GhostCode_MyStruct_Type.C_MyStruct l_f'0 _3 : C12GhostCode_MyStruct_Type.t_mystruct ] 
+            (any [ any_ (_any:Snapshot.snap_ty uint32)-> (!  [ &_3 <- _any ] s1) ] ))
+      | s1 =  [ &_0 <- [#"../12_ghost_code.rs" 52 37 54 1] () ] s2
+      | s2 = return' {_0} ]
+       ]
+    )
+    [ & _0 : () = any_l () : ()
+    | & x : C12GhostCode_MyStruct_Type.t_mystruct = x
+    | & _3 : Snapshot.snap_ty uint32 = any_l () : Snapshot.snap_ty uint32 ]
+     [ return' (result:())-> (! return' {result}) ] 
+end

@@ -15,7 +15,7 @@ mod vcgen;
 
 use self::vcgen::vc;
 
-use super::{signature::signature_of, term::lower_pure, CloneSummary, Why3Generator};
+use super::{program, signature::signature_of, term::lower_pure, CloneSummary, Why3Generator};
 
 pub(crate) fn binders_to_args(
     ctx: &mut Why3Generator,
@@ -129,7 +129,7 @@ pub(crate) fn val_decl<'tcx, N: Namer<'tcx>>(
 
     sig.contract
         .ensures
-        // = vec!(Exp::pure_var("result".into()).eq(Exp::pure_var(sig.name.clone()).app(val_args)));
+        // = vec!(Exp::var("result".into()).eq(Exp::var(sig.name.clone()).app(val_args)));
         .push(Exp::var("result").eq(Exp::var(sig.name.clone()).app(val_args)));
     sig.args = val_binders;
     Decl::ValDecl(ValDecl { sig, ghost: false, val: true, kind: None })
@@ -184,7 +184,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
         body,
     );
 
-    decls.push(Decl::val(val_sig));
+    decls.push(program::val(ctx, val_sig));
 
     if has_axioms {
         if sig.uses_simple_triggers() {

@@ -8,7 +8,7 @@ use std::{
 
 #[derive(Parser, Debug)]
 struct Args {
-    /// Only check mlcfg files that differ from the provided source in the git history (useful for small PRs)
+    /// Only check coma files that differ from the provided source in the git history (useful for small PRs)
     #[clap(long = "diff-from")]
     diff_from: Option<String>,
     /// Only run tests which contain this string

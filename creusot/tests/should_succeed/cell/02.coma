@@ -1,0 +1,488 @@
+
+module Core_Cell_UnsafeCell_Type
+  type t_unsafecell 't =
+    | C_UnsafeCell 't
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_unsafecell < 't > (input:t_unsafecell 't) (ret  (value:'t))= any
+    [ good (value:'t)-> {C_UnsafeCell value = input} (! ret {value})
+    | bad (value:'t)-> {C_UnsafeCell value <> input} {false} any ]
+    
+end
+module Core_Cell_Cell_Type
+  use Core_Cell_UnsafeCell_Type as Core_Cell_UnsafeCell_Type
+  type t_cell 't =
+    | C_Cell (Core_Cell_UnsafeCell_Type.t_unsafecell 't)
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_cell < 't > (input:t_cell 't) (ret  (value:Core_Cell_UnsafeCell_Type.t_unsafecell 't))= any
+    [ good (value:Core_Cell_UnsafeCell_Type.t_unsafecell 't)-> {C_Cell value = input} (! ret {value})
+    | bad (value:Core_Cell_UnsafeCell_Type.t_unsafecell 't)-> {C_Cell value <> input} {false} any ]
+    
+end
+module C02_Cell_Type
+  use Core_Cell_Cell_Type as Core_Cell_Cell_Type
+  type t_cell 't 'i =
+    | C_Cell (Core_Cell_Cell_Type.t_cell 't) 'i
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_cell < 't > < 'i > (input:t_cell 't 'i) (ret  (inner:Core_Cell_Cell_Type.t_cell 't) (ghost_inv:'i))= any
+    [ good (inner:Core_Cell_Cell_Type.t_cell 't) (ghost_inv:'i)-> {C_Cell inner ghost_inv = input}
+      (! ret {inner} {ghost_inv})
+    | bad (inner:Core_Cell_Cell_Type.t_cell 't) (ghost_inv:'i)-> {C_Cell inner ghost_inv <> input} {false} any ]
+    
+  function cell_ghost_inv (self : t_cell 't 'i) : 'i =
+    match self with
+      | C_Cell _ a -> a
+      end
+end
+module C02_Fib_Impl
+  use prelude.Int
+  constant i  : int
+  function fib [#"../02.rs" 32 0 32 25] (i : int) : int
+  goal vc_fib : match i <= 0 with
+    | True -> true
+    | False -> match i = 1 with
+      | True -> true
+      | False -> (0 <= ([#"../02.rs" 31 10 31 11] i)
+      /\ ([#"../02.rs" 31 10 31 11] i - 1) < ([#"../02.rs" 31 10 31 11] i))
+      /\ 0 <= ([#"../02.rs" 31 10 31 11] i) /\ ([#"../02.rs" 31 10 31 11] i - 2) < ([#"../02.rs" 31 10 31 11] i)
+      end
+    end
+end
+module C02_LemmaFibBound_Impl
+  use int.Power
+  use prelude.Int
+  function fib'0 [#"../02.rs" 32 0 32 25] (i : int) : int
+  axiom fib'0_def : forall i : int . fib'0 i
+  = ([#"../02.rs" 29 0 29 8] if i <= 0 then 0 else if i = 1 then 1 else fib'0 (i - 1) + fib'0 (i - 2))
+  let rec fib'0 (i:int) (return'  (ret:int))= any [ return' (result:int)-> {result = fib'0 i} (! return' {result}) ] 
+  constant i  : int
+  function lemma_fib_bound [#"../02.rs" 47 0 47 30] (i : int) : ()
+  goal vc_lemma_fib_bound : ([#"../02.rs" 44 11 44 17] 0 <= i)
+   -> match i = 0 with
+    | True -> [#"../02.rs" 45 10 45 28] fib'0 i <= Power.power 2 i
+    | False -> match i = 1 with
+      | True -> [#"../02.rs" 45 10 45 28] fib'0 i <= Power.power 2 i
+      | False -> (([#"../02.rs" 44 11 44 17] 0 <= i - 2)
+      /\ 0 <= ([#"../02.rs" 46 10 46 11] i) /\ ([#"../02.rs" 46 10 46 11] i - 2) < ([#"../02.rs" 46 10 46 11] i))
+      /\ (([#"../02.rs" 45 10 45 28] fib'0 (i - 2) <= Power.power 2 (i - 2))
+       -> (let _ = lemma_fib_bound (i - 2) in (([#"../02.rs" 44 11 44 17] 0 <= i - 1)
+      /\ 0 <= ([#"../02.rs" 46 10 46 11] i) /\ ([#"../02.rs" 46 10 46 11] i - 1) < ([#"../02.rs" 46 10 46 11] i))
+      /\ (([#"../02.rs" 45 10 45 28] fib'0 (i - 1) <= Power.power 2 (i - 1))
+       -> ([#"../02.rs" 45 10 45 28] fib'0 i <= Power.power 2 i))))
+      end
+    end
+end
+module C02_Fib_Type
+  use prelude.UIntSize
+  use prelude.Int
+  type t_fib  =
+    | C_Fib usize
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_fib (input:t_fib) (ret  (ix:usize))= any
+    [ good (ix:usize)-> {C_Fib ix = input} (! ret {ix}) | bad (ix:usize)-> {C_Fib ix <> input} {false} any ]
+    
+  function fib_ix (self : t_fib) : usize =
+    match self with
+      | C_Fib a -> a
+      end
+end
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
+    
+  function any_l (_ : 'b) : 'a
+  let rec none < 't > (input:t_option 't) (ret  )= any
+    [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ]
+    
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any
+    [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
+    | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
+    
+end
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.Opaque
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
+    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
+    | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
+    
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
+    [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
+    
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (_marker:Core_Marker_PhantomData_Type.t_phantomdata 't))= any
+    [ good (pointer:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (_marker:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique pointer _marker
+      = input}
+      (! ret {pointer} {_marker})
+    | bad (pointer:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (_marker:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique pointer _marker
+      <> input}
+      {false}
+      any ]
+    
+end
+module Alloc_RawVec_Cap_Type
+  use prelude.UIntSize
+  use prelude.Int
+  type t_cap  =
+    | C_Cap usize
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_cap (input:t_cap) (ret  (field_0:usize))= any
+    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
+    | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_rawvec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (ptr:Core_Ptr_Unique_Unique_Type.t_unique 't) (cap:Alloc_RawVec_Cap_Type.t_cap) (alloc:'a))= any
+    [ good (ptr:Core_Ptr_Unique_Unique_Type.t_unique 't) (cap:Alloc_RawVec_Cap_Type.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc
+      = input}
+      (! ret {ptr} {cap} {alloc})
+    | bad (ptr:Core_Ptr_Unique_Unique_Type.t_unique 't) (cap:Alloc_RawVec_Cap_Type.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc
+      <> input}
+      {false}
+      any ]
+    
+end
+module Alloc_Vec_Vec_Type
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_vec < 't > < 'a > (input:t_vec 't 'a) (ret  (buf:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (len:usize))= any
+    [ good (buf:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
+    | bad (buf:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+    
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+    
+  function any_l (_ : 'b) : 'a
+  let rec t_global (input:t_global) (ret  )= any
+    [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
+    
+end
+module C02_FibMemo
+  use C02_Fib_Type as C02_Fib_Type
+  use prelude.UIntSize
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use C02_Cell_Type as C02_Cell_Type
+  use seq.Seq
+  predicate invariant'5 (self : Seq.seq (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)))
+    
+   =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant'5 (self:Seq.seq (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant'5 self} (! return' {result}) ]
+    
+  predicate inv'6 (_x : Seq.seq (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)))
+  let rec inv'6 (_x:Seq.seq (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv'6 _x} (! return' {result}) ]
+    
+  axiom inv'6 : forall x : Seq.seq (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) . inv'6 x
+  = true
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use prelude.UIntSize
+  use prelude.Int
+  constant max'0 : usize = (18446744073709551615 : usize)
+  use seq.Seq
+  predicate inv'5 (_x : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global))
+    
+  let rec inv'5 (_x:Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv'5 _x} (! return' {result}) ]
+    
+  function shallow_model'1 (self : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib))
+    
+  let rec shallow_model'1 (self:Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib))))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv'5 self}
+    any
+    [ return' (result:Seq.seq (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)))-> {result
+      = shallow_model'1 self}
+      (! return' {result}) ]
+    
+  axiom shallow_model'1_spec : forall self : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv'5 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv'6 (shallow_model'1 self))
+  && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model'1 self)
+  <= UIntSize.to_int (max'0 : usize))
+  predicate invariant'4 (self : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global))
+    
+   =
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv'6 (shallow_model'1 self)
+  let rec invariant'4 (self:Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant'4 self} (! return' {result}) ]
+    
+  axiom inv'5 : forall x : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global) . inv'5 x
+  = true
+  predicate invariant'3 (self : Core_Option_Option_Type.t_option usize) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant'3 (self:Core_Option_Option_Type.t_option usize) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant'3 self} (! return' {result}) ]
+    
+  predicate inv'4 (_x : Core_Option_Option_Type.t_option usize)
+  let rec inv'4 (_x:Core_Option_Option_Type.t_option usize) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv'4 _x} (! return' {result}) ]
+    
+  axiom inv'4 : forall x : Core_Option_Option_Type.t_option usize . inv'4 x = true
+  predicate invariant'2 (self : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant'2 (self:C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant'2 self} (! return' {result}) ]
+    
+  predicate inv'2 (_x : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib))
+  let rec inv'2 (_x:C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv'2 _x} (! return' {result}) ]
+    
+  axiom inv'2 : forall x : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib) . inv'2 x
+  = true
+  predicate invariant'1 (self : usize) =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant'1 (self:usize) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant'1 self} (! return' {result}) ]
+    
+  predicate inv'1 (_x : usize)
+  let rec inv'1 (_x:usize) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv'1 _x} (! return' {result}) ]
+    
+  axiom inv'1 : forall x : usize . inv'1 x = true
+  predicate invariant'0 (self : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global))
+    
+   =
+    [#"../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
+  let rec invariant'0 (self:Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = invariant'0 self} (! return' {result}) ]
+    
+  predicate inv'0 (_x : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global))
+    
+  let rec inv'0 (_x:Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv'0 _x} (! return' {result}) ]
+    
+  axiom inv'0 : forall x : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global) . inv'0 x
+  = true
+  use prelude.Borrow
+  function shallow_model'0 (self : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) : Seq.seq (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib))
+    
+   =
+    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model'1 self
+  let rec shallow_model'0 (self:Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib))))= any
+    [ return' (result:Seq.seq (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)))-> {result
+      = shallow_model'0 self}
+      (! return' {result}) ]
+    
+  use seq.Seq
+  function index_logic'0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) (ix : int) : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)
+    
+   =
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model'1 self) ix
+  let rec index_logic'0 (self:Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)))= any
+    [ return' (result:C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib))-> {result
+      = index_logic'0 self ix}
+      (! return' {result}) ]
+    
+  predicate fib_cell'0 [#"../02.rs" 84 0 84 32] (v : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global))
+    
+   =
+    [#"../02.rs" 85 4 87 5] forall i : int . UIntSize.to_int (C02_Fib_Type.fib_ix (C02_Cell_Type.cell_ghost_inv (index_logic'0 v i)))
+    = i
+  let rec fib_cell'0 (v:Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = fib_cell'0 v} (! return' {result}) ]
+    
+  use prelude.Snapshot
+  use prelude.Intrinsic
+  function fib'0 [#"../02.rs" 32 0 32 25] (i : int) : int
+  axiom fib'0_def : forall i : int . fib'0 i
+  = ([#"../02.rs" 29 0 29 8] if i <= 0 then 0 else if i = 1 then 1 else fib'0 (i - 1) + fib'0 (i - 2))
+  let rec fib'0 (i:int) (return'  (ret:int))= any [ return' (result:int)-> {result = fib'0 i} (! return' {result}) ] 
+  predicate inv'3 [#"../02.rs" 70 4 70 43] (self : C02_Fib_Type.t_fib) (v : Core_Option_Option_Type.t_option usize) =
+    [#"../02.rs" 72 12 75 13] match v with
+      | Core_Option_Option_Type.C_None -> true
+      | Core_Option_Option_Type.C_Some i -> UIntSize.to_int i = fib'0 (UIntSize.to_int (C02_Fib_Type.fib_ix self))
+      end
+  let rec inv'3 (self:C02_Fib_Type.t_fib) (v:Core_Option_Option_Type.t_option usize) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = inv'3 self v} (! return' {result}) ]
+    
+  let rec set'0 (self:C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (v:Core_Option_Option_Type.t_option usize) (return'  (ret:()))= {[@expl:precondition] [#"../02.rs" 24 22 24 23] inv'4 v}
+    {[@expl:precondition] [#"../02.rs" 24 16 24 20] inv'2 self}
+    {[@expl:precondition] [#"../02.rs" 23 4 23 38] inv'3 (C02_Cell_Type.cell_ghost_inv self) v}
+    any [ return' (result:())-> (! return' {result}) ] 
+  use prelude.Snapshot
+  use int.Power
+  function lemma_fib_bound'0 [#"../02.rs" 47 0 47 30] (i : int) : ()
+  axiom lemma_fib_bound'0_def : forall i : int . lemma_fib_bound'0 i
+  = ([#"../02.rs" 43 0 43 8] if i = 0 then
+    ()
+  else
+    if i = 1 then () else let _ = lemma_fib_bound'0 (i - 2) in lemma_fib_bound'0 (i - 1)
+  )
+  let rec lemma_fib_bound'0 (i:int) (return'  (ret:()))= {[@expl:precondition] [#"../02.rs" 44 11 44 17] 0 <= i}
+    any [ return' (result:())-> {result = lemma_fib_bound'0 i} (! return' {result}) ] 
+  axiom lemma_fib_bound'0_spec : forall i : int . ([#"../02.rs" 44 11 44 17] 0 <= i)
+   -> ([#"../02.rs" 45 10 45 28] fib'0 i <= Power.power 2 i)
+  use prelude.Snapshot
+  function lemma_max_int'0 [#"../02.rs" 62 0 62 22] (_1 : ()) : () =
+    [#"../02.rs" 60 0 60 8] ()
+  let rec lemma_max_int'0 (_1:()) (return'  (ret:()))= any
+    [ return' (result:())-> {result = lemma_max_int'0 _1} (! return' {result}) ]
+    
+  axiom lemma_max_int'0_spec : forall _1 : () . [#"../02.rs" 61 10 61 49] Power.power 2 63
+  < UIntSize.to_int (18446744073709551615 : usize)
+  let rec get'0 (self:C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (return'  (ret:Core_Option_Option_Type.t_option usize))= {[@expl:precondition] [#"../02.rs" 18 16 18 20] inv'2 self}
+    any
+    [ return' (result:Core_Option_Option_Type.t_option usize)-> {[#"../02.rs" 18 25 18 26] inv'4 result}
+      {[#"../02.rs" 17 4 17 42] inv'3 (C02_Cell_Type.cell_ghost_inv self) result}
+      (! return' {result}) ]
+    
+  use prelude.Slice
+  predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib))) (out : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib))
+    
+   =
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 122 20 122 37] Seq.get seq (UIntSize.to_int self) = out
+  let rec has_value'0 (self:usize) (seq:Seq.seq (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib))) (out:C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = has_value'0 self seq out} (! return' {result}) ]
+    
+  predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)))
+    
+   =
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 115 20 115 37] UIntSize.to_int self < Seq.length seq
+  let rec in_bounds'0 (self:usize) (seq:Seq.seq (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib))) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = in_bounds'0 self seq} (! return' {result}) ]
+    
+  let rec index'0 (self:Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) (index:usize) (return'  (ret:C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)))= {[@expl:precondition] inv'1 index}
+    {[@expl:precondition] inv'0 self}
+    {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/vec.rs" 156 27 156 46] in_bounds'0 index (shallow_model'0 self)}
+    any
+    [ return' (result:C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib))-> {inv'2 result}
+      {[#"../../../../../creusot-contracts/src/std/vec.rs" 157 26 157 54] has_value'0 index (shallow_model'0 self) result}
+      (! return' {result}) ]
+    
+  let rec fib_memo (mem:Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) (i:usize) (return'  (ret:usize))= {[#"../02.rs" 94 11 94 19] UIntSize.to_int i
+    <= 63}
+    {[#"../02.rs" 92 11 92 26] UIntSize.to_int i < Seq.length (shallow_model'0 mem)}
+    {[#"../02.rs" 91 11 91 25] fib_cell'0 mem}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = index'0 {mem} {i}
+          (fun (_ret':C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) ->
+             [ &_9 <- _ret' ] 
+            s1)
+      | s1 = bb1 ]
+      
+    | bb1 = s0
+      [ s0 = get'0 {_9} (fun (_ret':Core_Option_Option_Type.t_option usize) ->  [ &_7 <- _ret' ] s1) | s1 = bb2 ]
+      
+    | bb2 = s0
+      [ s0 = any
+        [ br0 -> {_7 = Core_Option_Option_Type.C_None } (! bb5)
+        | br1 (a:usize)-> {_7 = Core_Option_Option_Type.C_Some a} (! bb4) ]
+         ]
+      
+    | bb3 = s0 [ s0 = {[#"../02.rs" 96 10 96 22] false} any ] 
+    | bb4 = s0 [ s0 = bb6 ] 
+    | bb6 = s0
+      [ s0 = Core_Option_Option_Type.some <usize> {_7} (fun (r0'0:usize) ->  [ &v <- r0'0 ] s1)
+      | s1 =  [ &_0 <- v ] s2
+      | s2 = bb19 ]
+      
+    | bb5 = s0
+      [ s0 = UIntSize.eq {i} {[#"../02.rs" 99 32 99 33] (0 : usize)} (fun (_ret':bool) ->  [ &_15 <- _ret' ] s1)
+      | s1 = any [ br0 -> {_15 = false} (! bb8) | br1 -> {_15} (! bb7) ]  ]
+      
+    | bb7 = s0 [ s0 =  [ &fib_i <- [#"../02.rs" 100 16 100 17] (0 : usize) ] s1 | s1 = bb16 ] 
+    | bb8 = s0
+      [ s0 = UIntSize.eq {i} {[#"../02.rs" 101 27 101 28] (1 : usize)} (fun (_ret':bool) ->  [ &_17 <- _ret' ] s1)
+      | s1 = any [ br0 -> {_17 = false} (! bb10) | br1 -> {_17} (! bb9) ]  ]
+      
+    | bb9 = s0 [ s0 =  [ &fib_i <- [#"../02.rs" 102 16 102 17] (1 : usize) ] s1 | s1 = bb15 ] 
+    | bb10 = s0 [ s0 =  [ &_19 <- [#"../02.rs" 104 16 104 43] Snapshot.new () ] s1 | s1 = bb11 ] 
+    | bb11 = s0 [ s0 =  [ &_21 <- [#"../02.rs" 105 16 105 45] Snapshot.new () ] s1 | s1 = bb12 ] 
+    | bb12 = s0
+      [ s0 = UIntSize.sub {i} {[#"../02.rs" 106 34 106 35] (1 : usize)} (fun (_ret':usize) ->  [ &_25 <- _ret' ] s1)
+      | s1 = fib_memo {mem} {_25} (fun (_ret':usize) ->  [ &_23 <- _ret' ] s2)
+      | s2 = bb13 ]
+      
+    | bb13 = s0
+      [ s0 = UIntSize.sub {i} {[#"../02.rs" 106 57 106 58] (2 : usize)} (fun (_ret':usize) ->  [ &_29 <- _ret' ] s1)
+      | s1 = fib_memo {mem} {_29} (fun (_ret':usize) ->  [ &_27 <- _ret' ] s2)
+      | s2 = bb14 ]
+      
+    | bb14 = s0
+      [ s0 = UIntSize.add {_23} {_27}
+          (fun (_ret':usize) ->
+             [ &fib_i <- _ret' ] 
+            (any
+            [ any_ (_any:usize)-> (!  [ &_23 <- _any ] (any [ any_ (_any:usize)-> (!  [ &_27 <- _any ] s1) ] )) ]
+            ))
+      | s1 = bb15 ]
+      
+    | bb15 = s0 [ s0 = bb16 ] 
+    | bb16 = s0
+      [ s0 = {[@expl:assertion] [#"../02.rs" 108 28 108 45] UIntSize.to_int fib_i = fib'0 (UIntSize.to_int i)} s1
+      | s1 = index'0 {mem} {i}
+          (fun (_ret':C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) ->
+             [ &_35 <- _ret' ] 
+            s2)
+      | s2 = bb17 ]
+      
+    | bb17 = s0
+      [ s0 =  [ &_38 <- Core_Option_Option_Type.C_Some fib_i : Core_Option_Option_Type.t_option usize ] s1
+      | s1 = set'0 {_35} {_38} (fun (_ret':()) ->  [ &_33 <- _ret' ] s2)
+      | s2 = bb18 ]
+      
+    | bb18 = s0 [ s0 =  [ &_0 <- fib_i ] s1 | s1 = bb19 ] 
+    | bb19 = s0 [ s0 = return' {_0} ]  ]
+    )
+    [ & _0 : usize = any_l () : usize
+    | & mem : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global) = mem
+    | & i : usize = i
+    | & _7 : Core_Option_Option_Type.t_option usize = any_l () : Core_Option_Option_Type.t_option usize
+    | & _9 : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib) = any_l () : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)
+    | & v : usize = any_l () : usize
+    | & fib_i : usize = any_l () : usize
+    | & _15 : bool = any_l () : bool
+    | & _17 : bool = any_l () : bool
+    | & _19 : Snapshot.snap_ty () = any_l () : Snapshot.snap_ty ()
+    | & _21 : Snapshot.snap_ty () = any_l () : Snapshot.snap_ty ()
+    | & _23 : usize = any_l () : usize
+    | & _25 : usize = any_l () : usize
+    | & _27 : usize = any_l () : usize
+    | & _29 : usize = any_l () : usize
+    | & _33 : () = any_l () : ()
+    | & _35 : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib) = any_l () : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)
+    | & _38 : Core_Option_Option_Type.t_option usize = any_l () : Core_Option_Option_Type.t_option usize ]
+    
+    [ return' (result:usize)-> {[@expl:postcondition] [#"../02.rs" 93 10 93 28] UIntSize.to_int result
+      = fib'0 (UIntSize.to_int i)}
+      (! return' {result}) ]
+    
+end
+module C02_Impl1
+  
+end

@@ -1,5 +1,4 @@
 #![allow(unreachable_patterns)]
-#![feature(exclusive_range_pattern)]
 
 extern crate creusot_contracts;
 

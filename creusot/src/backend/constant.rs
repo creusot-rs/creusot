@@ -28,6 +28,7 @@ impl<'tcx> Why3Generator<'tcx> {
         let res = from_ty_const(&mut self.ctx, constant, param_env, span);
         let mut names = Dependencies::new(self.tcx, [def_id]);
         let _ = lower_pure(self, &mut names, &res);
+
         let _ = signature_of(self, &mut names, def_id);
         let (_, summary) = names.provide_deps(self, GraphDepth::Shallow);
 

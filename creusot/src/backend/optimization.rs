@@ -119,6 +119,7 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
                     // self.move_chain(p.local);
                 }
                 Operand::Constant(t) => self.visit_term(t),
+                Operand::Promoted(_, _) => {}
             },
             RValue::BinOp(_, l, r) => {
                 self.visit_operand(l);
@@ -144,6 +145,7 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
             Operand::Move(p) => self.read_place(p),
             Operand::Copy(p) => self.read_place(p),
             Operand::Constant(t) => self.visit_term(t),
+            Operand::Promoted(_, _) => {}
         }
     }
 
@@ -321,6 +323,7 @@ impl<'tcx> SimplePropagator<'tcx> {
                 }
             }
             Operand::Constant(_) => {}
+            Operand::Promoted(_, _) => {}
         }
     }
 

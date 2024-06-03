@@ -116,10 +116,10 @@ impl Why3LauncherBuilder {
     }
 
     pub fn build(self) -> Result<Why3Launcher> {
-        let Some(mlcfg_file) = self.output_file else {
-            return Err(anyhow!("can't launch why3, no mlcfg_file specify"));
+        let Some(coma_file) = self.output_file else {
+            return Err(anyhow!("can't launch why3, no coma_file specify"));
         };
 
-        Ok(Why3Launcher::new(self.mode, self.why3_path, self.config_file, self.args, mlcfg_file))
+        Ok(Why3Launcher::new(self.mode, self.why3_path, self.config_file, self.args, coma_file))
     }
 }

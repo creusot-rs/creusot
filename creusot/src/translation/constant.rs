@@ -1,12 +1,15 @@
 use crate::{
-    ctx::TranslationCtx, traits::resolve_assoc_item_opt, translation::pearlite::Literal,
+    ctx::TranslationCtx,
+    fmir::{self, Operand},
+    traits::resolve_assoc_item_opt,
+    translation::pearlite::Literal,
     util::get_builtin,
 };
 use rustc_middle::{
     mir::{self, interpret::AllocRange, ConstValue, UnevaluatedConst},
     ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt},
 };
-use rustc_span::{Span, Symbol};
+use rustc_span::Span;
 use rustc_target::abi::Size;
 
 use super::pearlite::{Term, TermKind};
@@ -15,22 +18,26 @@ pub(crate) fn from_mir_constant<'tcx>(
     env: ParamEnv<'tcx>,
     ctx: &mut TranslationCtx<'tcx>,
     c: &rustc_middle::mir::ConstOperand<'tcx>,
-) -> Term<'tcx> {
+) -> fmir::Operand<'tcx> {
     from_mir_constant_kind(ctx, c.const_, env, c.span)
 }
 
-pub(crate) fn from_mir_constant_kind<'tcx>(
+fn from_mir_constant_kind<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     ck: mir::Const<'tcx>,
     env: ParamEnv<'tcx>,
     span: Span,
-) -> Term<'tcx> {
+) -> fmir::Operand<'tcx> {
     if let mir::Const::Ty(c) = ck {
-        return from_ty_const(ctx, c, env, span);
+        return Operand::Constant(from_ty_const(ctx, c, env, span));
     }
 
     if ck.ty().is_unit() {
-        return Term { kind: TermKind::Tuple { fields: Vec::new() }, ty: ck.ty(), span };
+        return Operand::Constant(Term {
+            kind: TermKind::Tuple { fields: Vec::new() },
+            ty: ck.ty(),
+            span,
+        });
     }
     //
     // let ck = ck.normalize(ctx.tcx, env);
@@ -45,23 +52,23 @@ pub(crate) fn from_mir_constant_kind<'tcx>(
                 .unwrap();
             let string = std::str::from_utf8(bytes).unwrap();
 
-            return Term { kind: TermKind::Lit(Literal::String(string.into())), ty: ck.ty(), span };
+            return Operand::Constant(Term {
+                kind: TermKind::Lit(Literal::String(string.into())),
+                ty: ck.ty(),
+                span,
+            });
         }
     }
 
     if let mir::Const::Unevaluated(UnevaluatedConst { promoted: Some(p), .. }, _) = ck {
-        return Term {
-            kind: TermKind::Var(Symbol::intern(&format!("promoted{:?}", p.as_usize()))),
-            ty: ck.ty(),
-            span,
-        };
+        return Operand::Promoted(p, ck.ty());
     }
 
-    return Term {
+    Operand::Constant(Term {
         kind: TermKind::Lit(try_to_bits(ctx, env, ck.ty(), span, ck)),
         ty: ck.ty(),
         span,
-    };
+    })
 }
 
 pub(crate) fn from_ty_const<'tcx>(

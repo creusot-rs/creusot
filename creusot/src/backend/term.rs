@@ -6,7 +6,7 @@ use crate::{
     util,
     util::get_builtin,
 };
-use rustc_hir::def_id::DefId;
+use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat},
@@ -37,14 +37,23 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Item(id, subst) => {
                 let method = (*id, *subst);
                 debug!("resolved_method={:?}", method);
-                self.lookup_builtin(method, &Vec::new()).unwrap_or_else(|| {
+                let is_constant = matches!(self.ctx.def_kind(*id), DefKind::AssocConst);
+                let item = self.lookup_builtin(method, &Vec::new()).unwrap_or_else(|| {
                     // eprintln!("{id:?} {subst:?}");
                     let clone = self.names.value(*id, subst);
                     match self.ctx.type_of(id).instantiate_identity().kind() {
                         TyKind::FnDef(_, _) => Exp::Tuple(Vec::new()),
                         _ => Exp::qvar(clone),
                     }
-                })
+                });
+
+                // eprintln!("{id:?} {:?} {is_constant:?}", self.ctx.def_kind(*id));
+                if is_constant {
+                    let ty = translate_ty(self.ctx, self.names, term.span, term.ty);
+                    item.ascribe(ty)
+                } else {
+                    item
+                }
             }
             TermKind::Var(v) => Exp::var(util::ident_of(*v)),
             TermKind::Binary { op, box lhs, box rhs } => {

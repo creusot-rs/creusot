@@ -2,7 +2,7 @@ use crate::{backend::place::projection_ty, pearlite::Term, util::ident_of};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{tcx::PlaceTy, BasicBlock, BinOp, Local, ProjectionElem, UnOp},
+    mir::{tcx::PlaceTy, BasicBlock, BinOp, Local, ProjectionElem, Promoted, UnOp},
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt},
 };
 use rustc_span::{Span, Symbol};
@@ -109,6 +109,7 @@ pub enum Operand<'tcx> {
     Move(Place<'tcx>),
     Copy(Place<'tcx>),
     Constant(Term<'tcx>),
+    Promoted(Promoted, Ty<'tcx>),
 }
 
 impl<'tcx> Operand<'tcx> {
@@ -117,11 +118,12 @@ impl<'tcx> Operand<'tcx> {
             Operand::Move(pl) => pl.ty(tcx, locals),
             Operand::Copy(pl) => pl.ty(tcx, locals),
             Operand::Constant(t) => t.ty,
+            Operand::Promoted(_, ty) => *ty,
         }
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Terminator<'tcx> {
     Goto(BasicBlock),
     Switch(self::Operand<'tcx>, Branches<'tcx>),
@@ -153,7 +155,7 @@ impl<'tcx> Terminator<'tcx> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Branches<'tcx> {
     Int(Vec<(i128, BasicBlock)>, BasicBlock),
     Uint(Vec<(u128, BasicBlock)>, BasicBlock),
@@ -161,7 +163,7 @@ pub enum Branches<'tcx> {
     Bool(BasicBlock, BasicBlock),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Block<'tcx> {
     pub(crate) invariants: Vec<Term<'tcx>>,
     pub(crate) variant: Option<Term<'tcx>>,
@@ -211,7 +213,7 @@ pub struct LocalDecl<'tcx> {
     pub(crate) arg: bool,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Body<'tcx> {
     // TODO: Split into return local, args, and true locals?
     // TODO: Remove usage of `LocalIdent`.
