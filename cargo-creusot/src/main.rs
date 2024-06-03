@@ -90,7 +90,7 @@ fn main() -> Result<()> {
             Ok(())
         }
         Setup(SetupSubCommand::Status) => setup::status(),
-        Setup(SetupSubCommand::Install { external, no_check_version }) => {
+        Setup(SetupSubCommand::Install { provers_parallelism, external, no_check_version }) => {
             let extflag =
                 |name| setup::ExternalFlag { check_version: !no_check_version.contains(&name) };
             let managedflag = |name, mname| setup::ManagedFlag {
@@ -98,6 +98,7 @@ fn main() -> Result<()> {
                 external: external.contains(&mname),
             };
             let flags = setup::InstallFlags {
+                provers_parallelism,
                 why3: extflag(SetupTool::Why3),
                 altergo: extflag(SetupTool::AltErgo),
                 z3: managedflag(SetupTool::Z3, SetupManagedTool::Z3),

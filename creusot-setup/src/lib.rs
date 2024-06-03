@@ -193,6 +193,7 @@ pub struct ManagedFlag {
 }
 
 pub struct InstallFlags {
+    pub provers_parallelism: usize,
     pub why3: ExternalFlag,
     pub altergo: ExternalFlag,
     pub z3: ManagedFlag,
@@ -234,6 +235,7 @@ pub fn install(flags: InstallFlags) -> anyhow::Result<()> {
     // build the corresponding configuration
 
     let config = Config {
+        provers_parallelism: std::cmp::max(1, flags.provers_parallelism),
         why3: external_tool(WHY3, flags.why3)?,
         altergo: external_tool(ALTERGO, flags.altergo)?,
         z3: managed_tool(Z3.bin, flags.z3)?,
@@ -290,7 +292,12 @@ fn apply_config(paths: &CfgPaths, cfg: &Config) -> anyhow::Result<()> {
     }
 
     // generate the corresponding .why3.conf
-    generate_why3_conf(&cfg.why3.path, &paths.bin_subdir, &paths.why3_config_file)?;
+    generate_why3_conf(
+        cfg.provers_parallelism,
+        &cfg.why3.path,
+        &paths.bin_subdir,
+        &paths.why3_config_file,
+    )?;
 
     // write the config file to disk
     cfg.write_to_file(&paths.config_file)
