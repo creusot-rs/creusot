@@ -1,4 +1,3 @@
-#![allow(deprecated)]
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
 use rustc_hir::{
@@ -91,76 +90,42 @@ impl PreludeModule {
 }
 
 pub(crate) trait Namer<'tcx> {
-    fn value(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName;
-
-    fn ty(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName;
-
-    fn constructor(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName;
-
-    fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName;
-
-    /// Creates a name for a type or closure projection ie: x.field1
-    /// This also includes projections from `enum` types
-    ///
-    /// * `def_id` - The id of the type or closure being projected
-    /// * `subst` - Substitution that type is being accessed at
-    /// * `variant` - The constructor being used. For closures this is always 0
-    /// * `ix` - The field in that constructor being accessed.
-    fn accessor(
-        &mut self,
-        def_id: DefId,
-        subst: GenericArgsRef<'tcx>,
-        variant: usize,
-        ix: FieldIdx,
-    ) -> QName;
-
-    fn eliminator(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName;
-
-    fn normalize<T: TypeFoldable<TyCtxt<'tcx>> + Copy>(
-        &self,
-        ctx: &TranslationCtx<'tcx>,
-        ty: T,
-    ) -> T;
-
-    fn import_prelude_module(&mut self, _: PreludeModule);
-
-    fn with_vis<F, A>(&mut self, vis: CloneLevel, f: F) -> A
-    where
-        F: FnOnce(&mut Self) -> A;
-}
-
-impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
     fn value(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
-        let node = DepNode::new(self.tcx, (def_id, subst));
-
-        // TODO(xavier): removing `to_snake_case` seemingly caused no issues... Investigate
+        let node = DepNode::new(self.tcx(), (def_id, subst));
         self.insert(node).qname()
     }
 
     fn ty(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
-        let mut node = DepNode::new(self.tcx, (def_id, subst));
+        let mut node = DepNode::new(self.tcx(), (def_id, subst));
 
-        if self.tcx.is_closure_like(def_id) {
-            node = DepNode::Type(Ty::new_closure(self.tcx, def_id, subst));
+        if self.tcx().is_closure_like(def_id) {
+            node = DepNode::Type(Ty::new_closure(self.tcx(), def_id, subst));
         }
 
-        match self.tcx.def_kind(def_id) {
+        match self.tcx().def_kind(def_id) {
             DefKind::AssocTy => self.insert(node).qname(),
             _ => self.insert(node).qname(),
         }
     }
 
     fn constructor(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
-        let type_id = match self.tcx.def_kind(def_id) {
+        let type_id = match self.tcx().def_kind(def_id) {
             DefKind::Closure | DefKind::Struct | DefKind::Enum | DefKind::Union => def_id,
-            DefKind::Variant => self.tcx.parent(def_id),
+            DefKind::Variant => self.tcx().parent(def_id),
             _ => unreachable!("Not a type or constructor"),
         };
-        let mut name = item_name(self.tcx, def_id, Namespace::ValueNS);
+        let mut name = item_name(self.tcx(), def_id, Namespace::ValueNS);
         name.capitalize();
         let mut qname = self.ty(type_id, subst);
         qname.name = name.into();
         qname
+    }
+
+    fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName {
+        let def_id =
+            self.tcx().get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
+        let subst = self.tcx().mk_args(&[ty::GenericArg::from(ty)]);
+        self.value(def_id, subst)
     }
 
     /// Creates a name for a type or closure projection ie: x.field1
@@ -177,14 +142,13 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
         variant: usize,
         ix: FieldIdx,
     ) -> QName {
-        let tcx = self.tcx;
-        assert!(matches!(util::item_type(self.tcx, def_id), ItemType::Type | ItemType::Closure));
+        let tcx = self.tcx();
         let node = match util::item_type(tcx, def_id) {
             ItemType::Closure => {
                 DepNode::Hacked(ExtendedId::Accessor(ix.as_u32() as u8), def_id, subst)
             }
             ItemType::Type => {
-                let adt = self.tcx.adt_def(def_id);
+                let adt = tcx.adt_def(def_id);
                 let field_did = adt.variants()[variant.into()].fields[ix].did;
                 DepNode::new(tcx, (field_did, subst))
             }
@@ -200,7 +164,7 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
     }
 
     fn eliminator(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
-        let tcx = self.tcx;
+        let tcx = self.tcx();
 
         match tcx.def_kind(def_id) {
             DefKind::Variant => {
@@ -212,10 +176,10 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
                 qname
             }
             DefKind::Closure | DefKind::Struct | DefKind::Union => {
-                let mut node = DepNode::new(self.tcx, (def_id, subst));
+                let mut node = DepNode::new(tcx, (def_id, subst));
 
-                if self.tcx.is_closure_like(def_id) {
-                    node = DepNode::Type(Ty::new_closure(self.tcx, def_id, subst));
+                if tcx.is_closure_like(def_id) {
+                    node = DepNode::Type(Ty::new_closure(tcx, def_id, subst));
                 }
 
                 self.insert(node).qname()
@@ -223,24 +187,32 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
             _ => unreachable!(),
         }
     }
+    fn normalize<T: TypeFoldable<TyCtxt<'tcx>> + Copy>(
+        &self,
+        ctx: &TranslationCtx<'tcx>,
+        ty: T,
+    ) -> T;
 
-    fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName {
-        let def_id =
-            self.tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
-        let subst = self.tcx.mk_args(&[ty::GenericArg::from(ty)]);
-        self.value(def_id, subst)
+    fn import_prelude_module(&mut self, module: PreludeModule) {
+        self.insert(DepNode::Builtin(module));
     }
 
+    fn with_vis<F, A>(&mut self, vis: CloneLevel, f: F) -> A
+    where
+        F: FnOnce(&mut Self) -> A;
+
+    fn insert(&mut self, dep: DepNode<'tcx>) -> Kind;
+
+    fn tcx(&self) -> TyCtxt<'tcx>;
+}
+
+impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
     fn normalize<T: TypeFoldable<TyCtxt<'tcx>> + Copy>(
         &self,
         ctx: &TranslationCtx<'tcx>,
         ty: T,
     ) -> T {
-        self.tcx.try_normalize_erasing_regions(self.param_env(ctx), ty).unwrap_or(ty)
-    }
-
-    fn import_prelude_module(&mut self, module: PreludeModule) {
-        self.insert(DepNode::Builtin(module));
+        self.tcx().try_normalize_erasing_regions(self.param_env(ctx), ty).unwrap_or(ty)
     }
 
     fn with_vis<F, A>(&mut self, vis: CloneLevel, f: F) -> A
@@ -251,6 +223,22 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
         let ret = f(self);
         self.dep_level = public;
         ret
+    }
+
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.tcx
+    }
+
+    fn insert(&mut self, key: DepNode<'tcx>) -> Kind {
+        let key = key.erase_regions(self.tcx).closure_hack(self.tcx);
+        self.levels
+            .entry(key)
+            .and_modify(|l| {
+                *l = (*l).min(self.dep_level);
+            })
+            .or_insert(self.dep_level);
+
+        self.names.insert(key)
     }
 }
 
@@ -524,18 +512,6 @@ impl<'tcx> Dependencies<'tcx> {
         self.names.names.insert(node, Kind::Named(node.base_ident(self.tcx)));
         self.levels.insert(node, CloneLevel::Body);
         self.hidden.insert(node);
-    }
-
-    fn insert(&mut self, key: DepNode<'tcx>) -> Kind {
-        let key = key.erase_regions(self.tcx).closure_hack(self.tcx);
-        self.levels
-            .entry(key)
-            .and_modify(|l| {
-                *l = (*l).min(self.dep_level);
-            })
-            .or_insert(self.dep_level);
-
-        self.names.insert(key)
     }
 
     fn self_key(&self) -> DepNode<'tcx> {
