@@ -737,7 +737,10 @@ impl<'tcx> Terminator<'tcx> {
                 (istmts, Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("_0"))]))
             }
             Terminator::Abort(span) => {
-                let exp = lower.ctx.attach_span(span, Exp::mk_false());
+                let mut exp = Exp::mk_false();
+                if let Some(attr) = lower.names.span(span) {
+                    exp = exp.with_attr(attr);
+                };
                 (istmts, Expr::Assert(Box::new(exp), Box::new(Expr::Any)))
             }
         }

@@ -17,9 +17,9 @@ use crate::{
 };
 use indexmap::IndexSet;
 use rustc_middle::ty::{self, Const, EarlyBinder, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable};
-use rustc_span::Symbol;
+use rustc_span::{Span, Symbol};
 use why3::{
-    declaration::{Axiom, Constant, Decl, LetKind, Signature, Use, ValDecl},
+    declaration::{Attribute, Axiom, Constant, Decl, LetKind, Signature, Use, ValDecl},
     QName,
 };
 
@@ -43,15 +43,15 @@ impl<'tcx> SymbolElaborator<'tcx> {
         item: DepNode<'tcx>,
         level_of_item: CloneLevel,
     ) -> Vec<Decl> {
+        let param_env = names.param_env(ctx);
         let old_names = names;
         let mut names = SymNamer {
             tcx: ctx.tcx,
-            names: old_names.names.clone(),
-            param_env: old_names.param_env(ctx),
+            param_env,
+            names: &mut old_names.names,
         };
         let names = &mut names;
 
-        let param_env = old_names.param_env(ctx);
 
         match item {
             DepNode::Type(ty) => self.elaborate_ty(ctx, names, ty),
@@ -74,7 +74,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
     fn elaborate_ty(
         &mut self,
         ctx: &mut Why3Generator<'tcx>,
-        names: &mut SymNamer<'tcx>,
+        names: &mut SymNamer<'_, 'tcx>,
         ty: Ty<'tcx>,
     ) -> Vec<Decl> {
         let Some((def_id, subst)) = DepNode::Type(ty).did() else { return Vec::new() };
@@ -104,7 +104,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
         }
     }
 
-    fn emit_use(&mut self, names: &mut SymNamer<'tcx>, dep: Dependency<'tcx>) -> Vec<Decl> {
+    fn emit_use(&mut self, names: &mut SymNamer<'_, 'tcx>, dep: Dependency<'tcx>) -> Vec<Decl> {
         if let k @ Kind::Used(modl, _) = names.insert(dep) {
             self.used_types
                 .insert(modl)
@@ -123,7 +123,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
     fn elaborate_item(
         &mut self,
         ctx: &mut Why3Generator<'tcx>,
-        names: &mut SymNamer<'tcx>,
+        names: &mut SymNamer<'_, 'tcx>,
         param_env: ParamEnv<'tcx>,
         level_of_item: CloneLevel,
         item: DepNode<'tcx>,
@@ -271,13 +271,13 @@ fn sig<'tcx>(ctx: &mut Why3Generator<'tcx>, dep: DepNode<'tcx>) -> PreSignature<
     }
 }
 
-struct SymNamer<'tcx> {
+struct SymNamer<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
-    names: CloneNames<'tcx>,
+    names: &'a mut CloneNames<'tcx>,
     param_env: ParamEnv<'tcx>,
 }
 
-impl<'tcx> SymNamer<'tcx> {
+impl<'a, 'tcx> SymNamer<'a, 'tcx> {
     fn get(&self, ix: DepNode<'tcx>) -> &Kind {
         let n = ix.closure_hack(self.tcx);
         let n = self.tcx.try_normalize_erasing_regions(self.param_env, n).unwrap_or(n);
@@ -287,7 +287,7 @@ impl<'tcx> SymNamer<'tcx> {
     }
 }
 
-impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
+impl<'a, 'tcx> Namer<'tcx> for SymNamer<'a, 'tcx> {
     fn insert(&mut self, ix: DepNode<'tcx>) -> Kind {
         *self.get(ix)
     }
@@ -313,5 +313,12 @@ impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
 
     fn tcx(&self) -> TyCtxt<'tcx> {
         self.tcx
+    }
+
+    fn span(&mut self, span: Span) -> Option<Attribute> {
+        if span.is_dummy() { return None }
+        let cnt = self.names.spans.len();
+        let name = self.names.spans.entry(span).or_insert_with(|| Symbol::intern(&format!("span{cnt}")));
+        Some(Attribute::NamedSpan(name.to_string()))
     }
 }

@@ -8,10 +8,13 @@ use rustc_middle::ty::{
     self, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable,
     TypeVisitor,
 };
-use rustc_span::Symbol;
+use rustc_span::{Span, Symbol};
 use rustc_target::abi::FieldIdx;
 
-use why3::{declaration::Decl, Ident, QName};
+use why3::{
+    declaration::{Attribute, Decl},
+    Ident, QName,
+};
 
 use crate::{
     backend::{
@@ -204,6 +207,8 @@ pub(crate) trait Namer<'tcx> {
     fn insert(&mut self, dep: DepNode<'tcx>) -> Kind;
 
     fn tcx(&self) -> TyCtxt<'tcx>;
+
+    fn span(&mut self, span: Span) -> Option<why3::declaration::Attribute>;
 }
 
 impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
@@ -240,6 +245,14 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
 
         self.names.insert(key)
     }
+
+    fn span(&mut self, span: Span) -> Option<Attribute> {
+        if span.is_dummy() { return None }
+        let cnt = self.names.spans.len();
+        let name =
+            self.names.spans.entry(span).or_insert_with(|| Symbol::intern(&format!("span{cnt}")));
+        Some(Attribute::NamedSpan(name.to_string()))
+    }
 }
 
 // a clone node is expected to have a DefId
@@ -273,6 +286,7 @@ struct CloneNames<'tcx> {
     tcx: TyCtxt<'tcx>,
     counts: NameSupply,
     names: IndexMap<DepNode<'tcx>, Kind>,
+    spans: IndexMap<Span, Symbol>,
 }
 
 impl std::fmt::Debug for CloneNames<'_> {
@@ -287,8 +301,14 @@ impl std::fmt::Debug for CloneNames<'_> {
 
 impl<'tcx> CloneNames<'tcx> {
     fn new(tcx: TyCtxt<'tcx>) -> Self {
-        CloneNames { tcx, counts: Default::default(), names: Default::default() }
+        CloneNames {
+            tcx,
+            counts: Default::default(),
+            names: Default::default(),
+            spans: Default::default(),
+        }
     }
+
     fn insert(&mut self, key: DepNode<'tcx>) -> Kind {
         *self.names.entry(key).or_insert_with(|| match key {
             DepNode::Item(id, _) if util::item_type(self.tcx, id) == ItemType::Field => {
@@ -605,6 +625,22 @@ impl<'tcx> Dependencies<'tcx> {
             decls.extend(decl);
         }
 
+        let mut spans: Vec<_> = self
+            .names
+            .spans
+            .into_iter()
+            .map(|(sp, name)| {
+                let (nm, l1, c1, l2, c2) = if let Some(Attribute::Span(nm, l1, c1, l2, c2)) = ctx.span_attr(sp)
+                {
+                    (nm, l1, c1, l2, c2)
+                } else {
+                    ("".into(), 0, 0, 0, 0)
+                };
+
+                Decl::LetSpan(name.as_str().into(), nm, l1, c1, l2, c2)
+            })
+            .collect();
+
         // debug_assert!(topo.finished.len() >= self.names.len(), "missed a clone in {:?}", self.self_id);
 
         // Only return the roots (direct dependencies) of the graph as dependencies
@@ -614,7 +650,8 @@ impl<'tcx> Dependencies<'tcx> {
             .map(|r| (r, clone_graph.info(r).clone()))
             .collect();
 
-        let dependencies = decls;
+        spans.extend(decls);
+        let dependencies = spans;
         (dependencies, summary)
     }
 }

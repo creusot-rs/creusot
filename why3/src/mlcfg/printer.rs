@@ -83,6 +83,24 @@ impl Print for Decl {
             Decl::Let(l) => l.pretty(alloc),
             Decl::ConstantDecl(c) => c.pretty(alloc),
             Decl::Coma(d) => d.pretty(alloc),
+            Decl::LetSpan(nm, f, l1, c1, l2, c2) => docs![
+                alloc,
+                "let%span",
+                alloc.space(),
+                nm.pretty(alloc),
+                alloc.space(),
+                alloc.text("="),
+                alloc.space(),
+                alloc.text(f).double_quotes(),
+                alloc.space(),
+                alloc.as_string(l1),
+                alloc.space(),
+                alloc.as_string(c1),
+                alloc.space(),
+                alloc.as_string(l2),
+                alloc.space(),
+                alloc.as_string(c2),
+            ],
         }
     }
 }
@@ -213,6 +231,7 @@ impl Print for Attribute {
     {
         match &self {
             Attribute::Attr(s) => alloc.text("@").append(s),
+            Attribute::NamedSpan(s) => alloc.text("%#").append(s),
             Attribute::Span(f, ls, cs, le, ce) => alloc
                 .text("#")
                 .append(alloc.text(f).double_quotes())
