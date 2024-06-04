@@ -20,17 +20,17 @@ module Core_Marker_PhantomData_Type
     
 end
 module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
-  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  use Core_Marker_PhantomData_Type as PhantomData'0
+  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
   type t_unique 't =
-    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
+    | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
     
   function any_l (_ : 'b) : 'a
-  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (_marker:Core_Marker_PhantomData_Type.t_phantomdata 't))= any
-    [ good (pointer:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (_marker:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique pointer _marker
+  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
+    [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
       = input}
       (! ret {pointer} {_marker})
-    | bad (pointer:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (_marker:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique pointer _marker
+    | bad (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
       <> input}
       {false}
       any ]
@@ -49,33 +49,29 @@ module Alloc_RawVec_Cap_Type
     
 end
 module Alloc_RawVec_RawVec_Type
-  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
-  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  use Alloc_RawVec_Cap_Type as Cap'0
+  use Core_Ptr_Unique_Unique_Type as Unique'0
   type t_rawvec 't 'a =
-    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
+    | C_RawVec (Unique'0.t_unique 't) (Cap'0.t_cap) 'a
     
   function any_l (_ : 'b) : 'a
-  let rec t_rawvec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (ptr:Core_Ptr_Unique_Unique_Type.t_unique 't) (cap:Alloc_RawVec_Cap_Type.t_cap) (alloc:'a))= any
-    [ good (ptr:Core_Ptr_Unique_Unique_Type.t_unique 't) (cap:Alloc_RawVec_Cap_Type.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc
-      = input}
+  let rec t_rawvec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a))= any
+    [ good (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
       (! ret {ptr} {cap} {alloc})
-    | bad (ptr:Core_Ptr_Unique_Unique_Type.t_unique 't) (cap:Alloc_RawVec_Cap_Type.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc
-      <> input}
-      {false}
-      any ]
+    | bad (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
     
 end
 module Alloc_Vec_Vec_Type
   use prelude.UIntSize
   use prelude.Int
-  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_RawVec_Type as RawVec'0
   type t_vec 't 'a =
-    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
+    | C_Vec (RawVec'0.t_rawvec 't 'a) usize
     
   function any_l (_ : 'b) : 'a
-  let rec t_vec < 't > < 'a > (input:t_vec 't 'a) (ret  (buf:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (len:usize))= any
-    [ good (buf:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
-    | bad (buf:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+  let rec t_vec < 't > < 'a > (input:t_vec 't 'a) (ret  (buf:RawVec'0.t_rawvec 't 'a) (len:usize))= any
+    [ good (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
+    | bad (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
     
 end
 module Alloc_Alloc_Global_Type
@@ -133,17 +129,17 @@ module C07ReadWrite_ReadWrite
     [ return' (result:bool)-> {result = inv'7 _x} (! return' {result}) ]
     
   axiom inv'7 : forall x : Seq.seq t . inv'7 x = true
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  predicate invariant'6 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
-  let rec invariant'6 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+  use Alloc_Alloc_Global_Type as Global'0
+  use Alloc_Vec_Vec_Type as Vec'0
+  predicate invariant'6 (self : Vec'0.t_vec t (Global'0.t_global))
+  let rec invariant'6 (self:Vec'0.t_vec t (Global'0.t_global)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = invariant'6 self} (! return' {result}) ]
     
-  predicate inv'6 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
-  let rec inv'6 (_x:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+  predicate inv'6 (_x : Vec'0.t_vec t (Global'0.t_global))
+  let rec inv'6 (_x:Vec'0.t_vec t (Global'0.t_global)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = inv'6 _x} (! return' {result}) ]
     
-  axiom inv'6 : forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv'6 x = true
+  axiom inv'6 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'6 x = true
   use prelude.UIntSize
   predicate invariant'5 (self : usize) =
     [%#span5] true
@@ -156,15 +152,15 @@ module C07ReadWrite_ReadWrite
     
   axiom inv'5 : forall x : usize . inv'5 x = true
   use prelude.Borrow
-  predicate invariant'4 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
-  let rec invariant'4 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
+  predicate invariant'4 (self : borrowed (Vec'0.t_vec t (Global'0.t_global)))
+  let rec invariant'4 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = invariant'4 self} (! return' {result}) ]
     
-  predicate inv'4 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
-  let rec inv'4 (_x:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
+  predicate inv'4 (_x : borrowed (Vec'0.t_vec t (Global'0.t_global)))
+  let rec inv'4 (_x:borrowed (Vec'0.t_vec t (Global'0.t_global))) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = inv'4 _x} (! return' {result}) ]
     
-  axiom inv'4 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) . inv'4 x = true
+  axiom inv'4 : forall x : borrowed (Vec'0.t_vec t (Global'0.t_global)) . inv'4 x = true
   predicate invariant'3 (self : t)
   let rec invariant'3 (self:t) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = invariant'3 self} (! return' {result}) ]
@@ -192,32 +188,31 @@ module C07ReadWrite_ReadWrite
   use prelude.Int
   constant max'0 : usize = [%#span6] (18446744073709551615 : usize)
   use seq.Seq
-  predicate inv'0 (_x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
-  let rec inv'0 (_x:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+  predicate inv'0 (_x : Vec'0.t_vec t (Global'0.t_global))
+  let rec inv'0 (_x:Vec'0.t_vec t (Global'0.t_global)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = inv'0 _x} (! return' {result}) ]
     
-  function shallow_model'1 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
-  let rec shallow_model'1 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= {[@expl:precondition] [%#span7] inv'0 self}
+  function shallow_model'1 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t
+  let rec shallow_model'1 (self:Vec'0.t_vec t (Global'0.t_global)) (return'  (ret:Seq.seq t))= {[@expl:precondition] [%#span7] inv'0 self}
     any [ return' (result:Seq.seq t)-> {result = shallow_model'1 self} (! return' {result}) ] 
-  axiom shallow_model'1_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([%#span7] inv'0 self)
+  axiom shallow_model'1_spec : forall self : Vec'0.t_vec t (Global'0.t_global) . ([%#span7] inv'0 self)
    -> ([%#span9] inv'7 (shallow_model'1 self))
   && ([%#span8] Seq.length (shallow_model'1 self) <= UIntSize.to_int (max'0 : usize))
-  predicate invariant'0 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
+  predicate invariant'0 (self : Vec'0.t_vec t (Global'0.t_global)) =
     [%#span10] inv'7 (shallow_model'1 self)
-  let rec invariant'0 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
+  let rec invariant'0 (self:Vec'0.t_vec t (Global'0.t_global)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = invariant'0 self} (! return' {result}) ]
     
-  axiom inv'0 : forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv'0 x = true
-  function shallow_model'0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : Seq.seq t
-   =
+  axiom inv'0 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'0 x = true
+  function shallow_model'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq t =
     [%#span11] shallow_model'1 ( * self)
-  let rec shallow_model'0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq t))= any
+  let rec shallow_model'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (return'  (ret:Seq.seq t))= any
     [ return' (result:Seq.seq t)-> {result = shallow_model'0 self} (! return' {result}) ]
     
   use prelude.Intrinsic
-  predicate resolve'3 (self : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) =
+  predicate resolve'3 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
     [%#span12]  ^ self =  * self
-  let rec resolve'3 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
+  let rec resolve'3 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = resolve'3 self} (! return' {result}) ]
     
   type deep_model_ty'0
@@ -249,12 +244,12 @@ module C07ReadWrite_ReadWrite
   let rec in_bounds'0 (self:usize) (seq:Seq.seq t) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = in_bounds'0 self seq} (! return' {result}) ]
     
-  function shallow_model'2 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t =
+  function shallow_model'2 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t =
     [%#span19] shallow_model'1 self
-  let rec shallow_model'2 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= any
+  let rec shallow_model'2 (self:Vec'0.t_vec t (Global'0.t_global)) (return'  (ret:Seq.seq t))= any
     [ return' (result:Seq.seq t)-> {result = shallow_model'2 self} (! return' {result}) ]
     
-  let rec index'0 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (index:usize) (return'  (ret:t))= {[@expl:precondition] [%#span22] inv'5 index}
+  let rec index'0 (self:Vec'0.t_vec t (Global'0.t_global)) (index:usize) (return'  (ret:t))= {[@expl:precondition] [%#span22] inv'5 index}
     {[@expl:precondition] [%#span21] inv'6 self}
     {[@expl:precondition] [%#span20] in_bounds'0 index (shallow_model'2 self)}
     any
@@ -277,7 +272,7 @@ module C07ReadWrite_ReadWrite
   let rec resolve_elswhere'0 (self:usize) (old':Seq.seq t) (fin:Seq.seq t) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = resolve_elswhere'0 self old' fin} (! return' {result}) ]
     
-  let rec index_mut'0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (index:usize) (return'  (ret:borrowed t))= {[@expl:precondition] [%#span28] inv'5 index}
+  let rec index_mut'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (index:usize) (return'  (ret:borrowed t))= {[@expl:precondition] [%#span28] inv'5 index}
     {[@expl:precondition] [%#span27] inv'4 self}
     {[@expl:precondition] [%#span26] in_bounds'0 index (shallow_model'0 self)}
     any
@@ -288,16 +283,13 @@ module C07ReadWrite_ReadWrite
       {[%#span29] has_value'0 index (shallow_model'0 self) ( * result)}
       (! return' {result}) ]
     
-  let rec read_write (a:borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (i:usize) (x:t) (return'  (ret:()))= {[%#s07_read_write4] inv'1 x}
+  let rec read_write (a:borrowed (Vec'0.t_vec t (Global'0.t_global))) (i:usize) (x:t) (return'  (ret:()))= {[%#s07_read_write4] inv'1 x}
     {[%#s07_read_write3] inv'4 a}
     {[%#s07_read_write2] UIntSize.to_int i < Seq.length (shallow_model'0 a)}
     (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_final
-          <Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)>
-          { * a}
-          {Borrow.get_id a}
-          (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) ->
+      [ s0 = Borrow.borrow_final <Vec'0.t_vec t (Global'0.t_global)> { * a} {Borrow.get_id a}
+          (fun (_ret':borrowed (Vec'0.t_vec t (Global'0.t_global))) ->
              [ &_7 <- _ret' ] 
              [ &a <- { a with current = ( ^ _7) ; } ] 
             s1)
@@ -338,11 +330,11 @@ module C07ReadWrite_ReadWrite
        ]
     )
     [ & _0 : () = any_l () : ()
-    | & a : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) = a
+    | & a : borrowed (Vec'0.t_vec t (Global'0.t_global)) = a
     | & i : usize = i
     | & x : t = x
     | & _6 : borrowed t = any_l () : borrowed t
-    | & _7 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) = any_l () : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+    | & _7 : borrowed (Vec'0.t_vec t (Global'0.t_global)) = any_l () : borrowed (Vec'0.t_vec t (Global'0.t_global))
     | & _10 : bool = any_l () : bool
     | & _12 : t = any_l () : t ]
      [ return' (result:())-> (! return' {result}) ] 

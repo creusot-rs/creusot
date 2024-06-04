@@ -29,11 +29,12 @@ use super::{CloneNames, DepNode, Kind};
 pub(super) struct SymbolElaborator<'tcx> {
     used_types: IndexSet<Symbol>,
     _param_env: ParamEnv<'tcx>,
+    tcx: TyCtxt<'tcx>,
 }
 
 impl<'tcx> SymbolElaborator<'tcx> {
-    pub fn new(param_env: ParamEnv<'tcx>) -> Self {
-        Self { used_types: Default::default(), _param_env: param_env }
+    pub fn new(param_env: ParamEnv<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
+        Self { used_types: Default::default(), _param_env: param_env, tcx }
     }
 
     pub fn build_clone(
@@ -45,13 +46,8 @@ impl<'tcx> SymbolElaborator<'tcx> {
     ) -> Vec<Decl> {
         let param_env = names.param_env(ctx);
         let old_names = names;
-        let mut names = SymNamer {
-            tcx: ctx.tcx,
-            param_env,
-            names: &mut old_names.names,
-        };
+        let mut names = SymNamer { tcx: ctx.tcx, param_env, names: &mut old_names.names };
         let names = &mut names;
-
 
         match item {
             DepNode::Type(ty) => self.elaborate_ty(ctx, names, ty),
@@ -111,7 +107,19 @@ impl<'tcx> SymbolElaborator<'tcx> {
                 .then(|| {
                     let qname = k.qname();
                     let name = qname.module_qname();
-                    let use_decl = Use { as_: Some(name.clone()), name, export: false };
+                    let mut did = dep.did().unwrap().0;
+                    if util::item_type(self.tcx, did) == ItemType::Field {
+                        did = self.tcx.parent(did);
+                    };
+
+                    let modl = if util::item_type(self.tcx, did) == ItemType::Closure {
+                        Symbol::intern(&format!("{}_Type", module_name(self.tcx, did)))
+                    } else {
+                        module_name(self.tcx, did)
+                    };
+
+                    let use_decl =
+                        Use { as_: Some(name.clone()), name: modl.as_str().into(), export: false };
                     vec![Decl::UseDecl(use_decl)]
                 })
                 .unwrap_or_default()
@@ -316,9 +324,12 @@ impl<'a, 'tcx> Namer<'tcx> for SymNamer<'a, 'tcx> {
     }
 
     fn span(&mut self, span: Span) -> Option<Attribute> {
-        if span.is_dummy() { return None }
+        if span.is_dummy() {
+            return None;
+        }
         let cnt = self.names.spans.len();
-        let name = self.names.spans.entry(span).or_insert_with(|| Symbol::intern(&format!("span{cnt}")));
+        let name =
+            self.names.spans.entry(span).or_insert_with(|| Symbol::intern(&format!("span{cnt}")));
         Some(Attribute::NamedSpan(name.to_string()))
     }
 }

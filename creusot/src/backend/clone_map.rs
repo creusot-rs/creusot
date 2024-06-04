@@ -247,10 +247,21 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
     }
 
     fn span(&mut self, span: Span) -> Option<Attribute> {
-        if span.is_dummy() { return None }
+        if span.is_dummy() {
+            return None;
+        }
         let cnt = self.names.spans.len();
-        let name =
-            self.names.spans.entry(span).or_insert_with(|| Symbol::intern(&format!("span{cnt}")));
+        let name = self.names.spans.entry(span).or_insert_with(|| {
+            let lo = self.tcx.sess.source_map().lookup_char_pos(span.lo());
+            if let Some(local_path) = lo.file.name.clone().into_local_path() {
+                Symbol::intern(&format!(
+                    "s{}{cnt}",
+                    local_path.file_stem().unwrap().to_str().unwrap()
+                ))
+            } else {
+                Symbol::intern(&format!("span{cnt}"))
+            }
+        });
         Some(Attribute::NamedSpan(name.to_string()))
     }
 }
@@ -329,9 +340,10 @@ impl<'tcx> CloneNames<'tcx> {
                         (Symbol::intern(&modl), Symbol::intern(&*name))
                     } else {
                         let modl: Symbol = if util::item_type(self.tcx, did) == ItemType::Closure {
-                            Symbol::intern(&format!("{}_Type", module_name(self.tcx, did)))
+                            self.counts.freshen(Symbol::intern("Closure"))
                         } else {
-                            module_name(self.tcx, did)
+                            let name = self.tcx.item_name(did);
+                            self.counts.freshen(name)
                         };
 
                         let name = Symbol::intern(&*item_name(self.tcx, did, Namespace::TypeNS));
@@ -589,7 +601,7 @@ impl<'tcx> Dependencies<'tcx> {
             }
         }
 
-        let mut elab = SymbolElaborator::new(param_env);
+        let mut elab = SymbolElaborator::new(param_env, self.tcx);
         let mut cloned = IndexSet::new();
 
         for p in &clone_graph.builtins {
@@ -630,12 +642,12 @@ impl<'tcx> Dependencies<'tcx> {
             .spans
             .into_iter()
             .map(|(sp, name)| {
-                let (nm, l1, c1, l2, c2) = if let Some(Attribute::Span(nm, l1, c1, l2, c2)) = ctx.span_attr(sp)
-                {
-                    (nm, l1, c1, l2, c2)
-                } else {
-                    ("".into(), 0, 0, 0, 0)
-                };
+                let (nm, l1, c1, l2, c2) =
+                    if let Some(Attribute::Span(nm, l1, c1, l2, c2)) = ctx.span_attr(sp) {
+                        (nm, l1, c1, l2, c2)
+                    } else {
+                        ("".into(), 0, 0, 0, 0)
+                    };
 
                 Decl::LetSpan(name.as_str().into(), nm, l1, c1, l2, c2)
             })
