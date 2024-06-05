@@ -34,79 +34,28 @@ impl<'a, 'tcx> MetadataDecoder<'a, 'tcx> {
         self.file_index_to_file
             .entry(index)
             .or_insert_with(|| {
-                let stable_id = self.file_index_to_stable_id[&index].translate(self.tcx);
-                self.tcx.cstore_untracked().import_source_files(self.tcx.sess, stable_id.cnum);
+                let source_file_id = &self.file_index_to_stable_id[&index];
+                let source_file_cnum =
+                    self.tcx.stable_crate_id_to_crate_num(source_file_id.stable_crate_id);
+
+                self.tcx.import_source_files(source_file_cnum);
                 self.tcx
                     .sess
                     .source_map()
-                    .source_file_by_stable_id(stable_id)
+                    .source_file_by_stable_id(source_file_id.stable_source_file_id)
                     .expect("failed to lookup `SourceFile` in new context")
             })
             .clone()
     }
 }
 
-// Both the `CrateNum` and the `DefIndex` of a `DefId` can change in between two
-// compilation sessions. We use the `DefPathHash`, which is stable across
-// sessions, to map the old `DefId` to the new one.
-impl<'a, 'tcx> Decodable<MetadataDecoder<'a, 'tcx>> for DefId {
-    fn decode(d: &mut MetadataDecoder<'a, 'tcx>) -> Self {
-        let def_path_hash = DefPathHash::decode(d);
-        d.tcx.def_path_hash_to_def_id(def_path_hash, &mut || panic!("Cannot resolve crate."))
-    }
-}
+implement_ty_decoder!(MetadataDecoder<'a, 'tcx>);
 
-impl<'a, 'tcx> Decodable<MetadataDecoder<'a, 'tcx>> for CrateNum {
-    fn decode(d: &mut MetadataDecoder<'a, 'tcx>) -> CrateNum {
-        let stable_id = StableCrateId::decode(d);
-        d.tcx.stable_crate_id_to_crate_num(stable_id)
-    }
-}
-
-// This impl makes sure that we get a runtime error when we try decode a
-// `DefIndex` that is not contained in a `DefId`. Such a case would be problematic
-// because we would not know how to transform the `DefIndex` to the current
-// context.
-impl<'a, 'tcx> Decodable<MetadataDecoder<'a, 'tcx>> for DefIndex {
-    fn decode(_: &mut MetadataDecoder<'a, 'tcx>) -> DefIndex {
-        panic!("trying to decode `DefIndex` outside the context of a `DefId`")
-    }
-}
-
-impl<'a, 'tcx> Decodable<MetadataDecoder<'a, 'tcx>> for SyntaxContext {
-    fn decode(decoder: &mut MetadataDecoder<'a, 'tcx>) -> Self {
-        let syntax_contexts = decoder.syntax_contexts;
-        rustc_span::hygiene::decode_syntax_context(decoder, &decoder.hygiene_context, |this, id| {
-            // This closure is invoked if we haven't already decoded the data for the `SyntaxContext` we are deserializing.
-            // We look up the position of the associated `SyntaxData` and decode it.
-            let pos = syntax_contexts.get(&id).unwrap();
-            this.with_position(pos.to_usize(), |decoder| SyntaxContextData::decode(decoder))
-        })
-    }
-}
-
-impl<'a, 'tcx> Decodable<MetadataDecoder<'a, 'tcx>> for ExpnId {
-    fn decode(decoder: &mut MetadataDecoder<'a, 'tcx>) -> Self {
-        let stable_id = StableCrateId::decode(decoder);
-        let cnum = decoder.tcx.stable_crate_id_to_crate_num(stable_id);
-        let index = u32::decode(decoder);
-
-        let expn_id = rustc_span::hygiene::decode_expn_id(cnum, index, |_| {
-            let pos = decoder.expn_data.get(&(stable_id, index)).unwrap();
-            decoder.with_position(pos.to_usize(), |decoder| {
-                let data = ExpnData::decode(decoder);
-                let hash = ExpnHash::decode(decoder);
-                (data, hash)
-            })
-        });
-        expn_id
-    }
-}
-
-impl<'a, 'tcx> Decodable<MetadataDecoder<'a, 'tcx>> for Span {
-    fn decode(decoder: &mut MetadataDecoder<'a, 'tcx>) -> Self {
-        let ctxt = SyntaxContext::decode(decoder);
-        let tag: u8 = Decodable::decode(decoder);
+use rustc_span::{AttrId, SpanDecoder};
+impl SpanDecoder for MetadataDecoder<'_, '_> {
+    fn decode_span(&mut self) -> Span {
+        let ctxt = SyntaxContext::decode(self);
+        let tag: u8 = Decodable::decode(self);
 
         if tag == TAG_PARTIAL_SPAN {
             return DUMMY_SP.with_ctxt(ctxt);
@@ -114,49 +63,89 @@ impl<'a, 'tcx> Decodable<MetadataDecoder<'a, 'tcx>> for Span {
 
         debug_assert!(tag == TAG_FULL_SPAN);
 
-        let source_file_index = SourceFileIndex::decode(decoder);
-        let lo = BytePos::decode(decoder);
-        let len = BytePos::decode(decoder);
+        let source_file_index = SourceFileIndex::decode(self);
 
-        let file = decoder.file_index_to_file(source_file_index);
+        let lo = BytePos::decode(self);
+        let len = BytePos::decode(self);
+
+        let file = self.file_index_to_file(source_file_index);
         let lo = file.start_pos + lo;
         let hi = lo + len;
 
         Span::new(lo, hi, ctxt, None)
     }
-}
 
-// copy&paste impl from rustc_metadata
-impl<'a, 'tcx> Decodable<MetadataDecoder<'a, 'tcx>> for Symbol {
-    fn decode(d: &mut MetadataDecoder<'a, 'tcx>) -> Self {
-        let tag = d.read_u8();
+    fn decode_symbol(&mut self) -> Symbol {
+        let tag = self.read_u8();
 
         match tag {
             SYMBOL_STR => {
-                let s = d.read_str();
+                let s = self.read_str();
                 Symbol::intern(s)
             }
             SYMBOL_OFFSET => {
                 // read str offset
-                let pos = d.read_usize();
+                let pos = self.read_usize();
 
                 // move to str ofset and read
-                let sym = d.opaque.with_position(pos, |d| {
+                let sym = self.opaque.with_position(pos, |d| {
                     let s = d.read_str();
                     Symbol::intern(s)
                 });
                 sym
             }
             SYMBOL_PREINTERNED => {
-                let symbol_index = d.read_u32();
+                let symbol_index = self.read_u32();
                 Symbol::new_from_decoded(symbol_index)
             }
             _ => unreachable!(),
         }
     }
-}
 
-implement_ty_decoder!(MetadataDecoder<'a, 'tcx>);
+    fn decode_expn_id(&mut self) -> ExpnId {
+        let stable_id = StableCrateId::decode(self);
+        let cnum = self.tcx.stable_crate_id_to_crate_num(stable_id);
+        let index = u32::decode(self);
+
+        let expn_id = rustc_span::hygiene::decode_expn_id(cnum, index, |_| {
+            let pos = self.expn_data.get(&(stable_id, index)).unwrap();
+            self.with_position(pos.to_usize(), |decoder| {
+                let data = ExpnData::decode(decoder);
+                let hash = ExpnHash::decode(decoder);
+                (data, hash)
+            })
+        });
+        expn_id
+    }
+    fn decode_syntax_context(&mut self) -> SyntaxContext {
+        let syntax_contexts = self.syntax_contexts;
+        rustc_span::hygiene::decode_syntax_context(self, &self.hygiene_context, |this, id| {
+            // This closure is invoked if we haven't already decoded the data for the `SyntaxContext` we are deserializing.
+            // We look up the position of the associated `SyntaxData` and decode it.
+            let pos = syntax_contexts.get(&id).unwrap();
+            this.with_position(pos.to_usize(), |decoder| SyntaxContextData::decode(decoder))
+        })
+    }
+    fn decode_crate_num(&mut self) -> CrateNum {
+        let stable_id = StableCrateId::decode(self);
+        self.tcx.stable_crate_id_to_crate_num(stable_id)
+    }
+    fn decode_def_index(&mut self) -> DefIndex {
+        panic!("trying to decode `DefIndex` outside the context of a `DefId`")
+    }
+
+    // Both the `CrateNum` and the `DefIndex` of a `DefId` can change in between two
+    // compilation sessions. We use the `DefPathHash`, which is stable across
+    // sessions, to map the old `DefId` to the new one.
+    fn decode_def_id(&mut self) -> DefId {
+        let def_path_hash = DefPathHash::decode(self);
+        self.tcx.def_path_hash_to_def_id(def_path_hash, &"Cannot resolve crate.")
+    }
+
+    fn decode_attr_id(&mut self) -> AttrId {
+        todo!()
+    }
+}
 
 impl<'a, 'tcx> TyDecoder for MetadataDecoder<'a, 'tcx> {
     // Whether crate-local information can be cleared while encoding

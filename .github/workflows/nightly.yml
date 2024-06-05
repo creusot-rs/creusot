@@ -1,0 +1,39 @@
+name: Nightly
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+    - uses: actions/cache@v2
+      id: cache-creusot-setup
+      with:
+        path: |
+          ~/.config/creusot
+          ~/.local/share/creusot
+        key: ${{ runner.os }}-cargo-creusot-setup-${{ hashFiles('creusot-deps.opam', 'creusot-setup/src/tools_versions_urls.rs', 'creusot-setup/src/config.rs') }}
+    - name: Install OCaml
+      uses: ocaml/setup-ocaml@v2
+      with:
+        ocaml-compiler: 4.14.1
+        opam-local-packages: ci/creusot-deps-nightly.opam
+    - name: Build opam packages
+      run: |
+        opam install creusot-deps-nightly
+        echo $(opam var bin) >> $GITHUB_PATH
+    - name: run cargo creusot setup install
+      if: steps.cache-creusot-setup.outputs.cache-hit != 'true'
+      run: |
+        cargo run --bin cargo-creusot creusot setup install --no-check-version why3
+    - run: cargo test --test why3 "" -- --replay=none --diff-from=origin/master
+    - run: cargo test --test why3 "" -- --skip-unstable

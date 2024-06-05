@@ -11,7 +11,7 @@ impl<T> ShallowModel for [T] {
     type ShallowModelTy = Seq<T>;
 
     // We define this as trusted because builtins and ensures are incompatible
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     #[ensures(result.len() <= usize::MAX@)]
@@ -24,7 +24,7 @@ impl<T> ShallowModel for [T] {
 impl<T: DeepModel> DeepModel for [T] {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     #[ensures((&self)@.len() == result.len())]
@@ -34,14 +34,14 @@ impl<T: DeepModel> DeepModel for [T] {
     }
 }
 
-#[ghost]
+#[logic]
 #[trusted]
 #[creusot::builtins = "prelude.Slice.id"]
 fn slice_model<T>(_: &[T]) -> Seq<T> {
     pearlite! { absurd }
 }
 
-#[ghost]
+#[logic]
 #[open]
 #[rustc_diagnostic_item = "slice_len_logic"]
 pub fn slice_len<T>(x: [T]) -> Int {
@@ -50,7 +50,7 @@ pub fn slice_len<T>(x: [T]) -> Int {
 
 impl<T> Default for &mut [T] {
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn is_default(self) -> bool {
         pearlite! { self@ == Seq::EMPTY && (^self)@ == Seq::EMPTY }
     }
@@ -65,15 +65,15 @@ impl<T> Default for &[T] {
 }
 
 pub trait SliceExt<T> {
-    #[ghost]
+    #[logic]
     fn to_mut_seq(&mut self) -> Seq<&mut T>;
 
-    #[ghost]
+    #[logic]
     fn to_ref_seq(&self) -> Seq<&T>;
 }
 
 impl<T> SliceExt<T> for [T] {
-    #[ghost]
+    #[logic]
     #[trusted]
     #[open(self)]
     #[ensures(result.len() == self@.len())]
@@ -83,7 +83,7 @@ impl<T> SliceExt<T> for [T] {
         pearlite! { absurd }
     }
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     #[ensures(result.len() == self@.len())]
@@ -237,13 +237,16 @@ impl<T> SliceIndex<[T]> for RangeToInclusive<usize> {
 
 extern_spec! {
     impl<T> [T] {
+        #[pure]
         #[requires(self@.len() == src@.len())]
         #[ensures((^self)@ == src@)]
         fn copy_from_slice(&mut self, src: &[T]) where T : Copy;
 
+        #[pure]
         #[ensures(self@.len() == result@)]
         fn len(&self) -> usize;
 
+        #[pure]
         #[requires(i@ < self@.len())]
         #[requires(j@ < self@.len())]
         #[ensures((^self)@.exchange(self@, i@, j@))]
@@ -253,6 +256,7 @@ extern_spec! {
         #[ensures(ix.in_bounds(self@) || result == None)]
         fn get<I : SliceIndex<[T]>>(&self, ix: I) -> Option<&<I as ::std::slice::SliceIndex<[T]>>::Output>;
 
+        #[pure]
         #[requires(mid@ <= self@.len())]
         #[ensures({
             let (l,r) = result;  let sl = self@.len();
@@ -264,6 +268,7 @@ extern_spec! {
         })]
         fn split_at_mut(&mut self, mid: usize) -> (&mut [T], &mut [T]);
 
+        #[pure]
         #[ensures(match result {
             Some((first, tail)) => {
                 *first == self[0] && ^first == (^self)[0] &&
@@ -275,6 +280,7 @@ extern_spec! {
         })]
         fn split_first_mut(&mut self) -> Option<(&mut T, &mut [T])>;
 
+        #[pure]
         #[ensures(match result {
             Some(r) => {
                 *r == (**self)[0] && ^r == (^*self)[0] &&
@@ -285,16 +291,20 @@ extern_spec! {
         })]
         fn take_first_mut<'a>(self_: &mut &'a mut [T]) -> Option<&'a mut T>;
 
+        #[pure]
         #[ensures(result@ == self)]
         fn iter(&self) -> Iter<'_, T>;
 
+        #[pure]
         #[ensures(result@ == self)]
         fn iter_mut(&mut self) -> IterMut<'_, T>;
 
+        #[pure]
         #[ensures(result == None ==> self@.len() == 0)]
         #[ensures(forall<x : _> result == Some(x) ==> self[self@.len() - 1] == *x)]
         fn last(&self) -> Option<&T>;
 
+        #[pure]
         #[ensures(result == None ==> self@.len() == 0)]
         #[ensures(forall<x : _> result == Some(x) ==> self[0] == *x)]
         fn first(&self) -> Option<&T>;
@@ -311,12 +321,14 @@ extern_spec! {
         fn binary_search(&self, x : &T) -> Result<usize, usize>
             where T: Ord + DeepModel,  T::DeepModelTy: OrdLogic,;
 
+        #[terminates] // can OOM (?)
         #[ensures(result@ == self_@)]
         fn into_vec<A: Allocator>(self_: Box<Self, A>) -> Vec<T, A>;
     }
 
     impl<T, I> IndexMut<I> for [T]
         where I : SliceIndex<[T]> {
+        #[pure]
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]
         #[ensures(ix.has_value((^self)@, ^result))]
@@ -327,6 +339,7 @@ extern_spec! {
 
     impl<T, I> Index<I> for [T]
         where I : SliceIndex<[T]> {
+        #[pure]
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]
         fn index(&self, ix: I) -> &<[T] as Index<I>>::Output;
@@ -364,7 +377,7 @@ impl<T> IntoIterator for &mut [T] {
 impl<'a, T> ShallowModel for Iter<'a, T> {
     type ShallowModelTy = &'a [T];
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
@@ -373,7 +386,7 @@ impl<'a, T> ShallowModel for Iter<'a, T> {
 }
 
 impl<'a, T> Iterator for Iter<'a, T> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && (*self@)@ == Seq::EMPTY }
@@ -403,7 +416,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
 impl<'a, T> ShallowModel for IterMut<'a, T> {
     type ShallowModelTy = &'a mut [T];
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     #[ensures((^result)@.len() == (*result)@.len())]
@@ -414,7 +427,7 @@ impl<'a, T> ShallowModel for IterMut<'a, T> {
 
 #[trusted]
 impl<'a, T> Resolve for IterMut<'a, T> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn resolve(self) -> bool {
         pearlite! { *self@ == ^self@ }
@@ -422,7 +435,7 @@ impl<'a, T> Resolve for IterMut<'a, T> {
 }
 
 impl<'a, T> Iterator for IterMut<'a, T> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && (*self@)@ == Seq::EMPTY }

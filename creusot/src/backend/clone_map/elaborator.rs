@@ -1,22 +1,24 @@
-use heck::ToSnakeCase;
 use indexmap::IndexSet;
 use rustc_hir::{
     def::{DefKind, Namespace},
     def_id::DefId,
 };
-use rustc_middle::ty::{self, Const, EarlyBinder, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{
+    self, Const, EarlyBinder, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable,
+};
 use rustc_span::Symbol;
 use rustc_target::abi::FieldIdx;
 
 use why3::{
-    declaration::{Axiom, Decl, LetDecl, LetKind, Signature, Use, ValDecl},
-    Ident, QName,
+    declaration::{Axiom, Constant, Decl, LetKind, Signature, Use, ValDecl},
+    QName,
 };
 
 use crate::{
     backend::{
-        dependency::HackedId,
+        dependency::{Dependency, ExtendedId},
         logic::{lower_logical_defn, lower_pure_defn, sigs, spec_axiom},
+        program,
         signature::sig_to_why3,
         term::lower_pure,
         ty_inv::InvariantElaborator,
@@ -24,18 +26,17 @@ use crate::{
     },
     ctx::*,
     translation::{
-        fmir::LocalDecls,
         pearlite::{normalize, Term},
         specification::PreContract,
     },
     util::{self, get_builtin, item_name, PreSignature},
 };
 
-use super::{CloneNames, DepGraph, DepNode, Kind};
+use super::{CloneNames, DepNode, Kind};
 
 /// The symbol elaborator expands required definitions as symbols and definitions, effectively performing the clones itself.
 pub(super) struct SymbolElaborator<'tcx> {
-    used_types: IndexSet<DefId>,
+    used_types: IndexSet<Symbol>,
     _param_env: ParamEnv<'tcx>,
 }
 
@@ -47,8 +48,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
     pub fn build_clone(
         &mut self,
         ctx: &mut Why3Generator<'tcx>,
-        names: &mut CloneMap<'tcx>,
-        _: &DepGraph<'tcx>,
+        names: &mut Dependencies<'tcx>,
         item: DepNode<'tcx>,
         level_of_item: CloneLevel,
     ) -> Vec<Decl> {
@@ -63,27 +63,27 @@ impl<'tcx> SymbolElaborator<'tcx> {
         let param_env = old_names.param_env(ctx);
 
         match item {
-            DepNode::Type(ty) => return self.elaborate_ty(ctx, names, ty),
-            DepNode::Buitlin(b) => {
-                return vec![Decl::UseDecl(Use { name: b.qname(), as_: None, export: false })]
+            DepNode::Type(ty) => self.elaborate_ty(ctx, names, ty),
+            DepNode::Builtin(b) => {
+                vec![Decl::UseDecl(Use { name: b.qname(), as_: None, export: false })]
             }
             DepNode::TyInv(ty, kind) => {
                 let term =
                     InvariantElaborator::new(param_env, true).elaborate_inv(ctx, ty, Some(kind));
                 let exp = lower_pure(ctx, names, &term);
                 let axiom = Axiom { name: names.ty_inv(ty).name, rewrite: false, axiom: exp };
-                return vec![Decl::Axiom(axiom)];
+                vec![Decl::Axiom(axiom)]
             }
             DepNode::Item(_, _) | DepNode::Hacked(_, _, _) => {
-                return self.elaborate_item(ctx, names, param_env, level_of_item, item)
+                self.elaborate_item(ctx, names, param_env, level_of_item, item)
             }
-        };
+        }
     }
 
-    fn elaborate_ty<N: Namer<'tcx>>(
+    fn elaborate_ty(
         &mut self,
         ctx: &mut Why3Generator<'tcx>,
-        names: &mut N,
+        names: &mut SymNamer<'tcx>,
         ty: Ty<'tcx>,
     ) -> Vec<Decl> {
         let Some((def_id, subst)) = DepNode::Type(ty).did() else { return Vec::new() };
@@ -91,28 +91,46 @@ impl<'tcx> SymbolElaborator<'tcx> {
         match ty.kind() {
             TyKind::Alias(_, _) => vec![ctx.assoc_ty_decl(names, def_id, subst)],
             _ => {
-                let use_decl = self.used_types.insert(def_id).then(|| {
-                    if let Some(builtin) = get_builtin(ctx.tcx, def_id) {
-                        let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
-                        Use { name, as_: None, export: false }
-                    } else {
-                        let name = names.ty(def_id, subst);
-                        let name = name.module_qname();
-                        let mod_name = if util::item_type(ctx.tcx, def_id) == ItemType::Closure {
-                            format!("{}_Type", &*module_name(ctx.tcx, def_id)).into()
-                        } else {
-                            module_name(ctx.tcx, def_id)
-                        };
-                        Use { name: mod_name.into(), as_: Some(name), export: false }
-                    }
-                });
-                use_decl.into_iter().map(Decl::UseDecl).collect()
+                if let Some(why3_modl) = util::get_builtin(ctx.tcx, def_id) {
+                    let qname = QName::from_string(why3_modl.as_str()).unwrap();
+                    let Kind::Used(modl, _) = names.insert(DepNode::Type(ty)) else {
+                        return vec![];
+                    };
+
+                    self.used_types
+                        .insert(*modl)
+                        .then(|| {
+                            let use_decl =
+                                Use { as_: None, name: qname.module_qname(), export: false };
+
+                            vec![Decl::UseDecl(use_decl)]
+                        })
+                        .unwrap_or_default()
+                } else {
+                    self.emit_use(names, DepNode::Type(ty))
+                }
             }
         }
     }
 
+    fn emit_use(&mut self, names: &mut SymNamer<'tcx>, dep: Dependency<'tcx>) -> Vec<Decl> {
+        if let k @ Kind::Used(modl, _) = names.insert(dep) {
+            self.used_types
+                .insert(*modl)
+                .then(|| {
+                    let qname = k.qname();
+                    let name = qname.module_qname();
+                    let use_decl = Use { as_: Some(name.clone()), name, export: false };
+                    vec![Decl::UseDecl(use_decl)]
+                })
+                .unwrap_or_default()
+        } else {
+            vec![]
+        }
+    }
+
     fn elaborate_item(
-        &self,
+        &mut self,
         ctx: &mut Why3Generator<'tcx>,
         names: &mut SymNamer<'tcx>,
         param_env: ParamEnv<'tcx>,
@@ -129,6 +147,10 @@ impl<'tcx> SymbolElaborator<'tcx> {
             })];
         }
 
+        if let Kind::Used(_, _) = names.get(item) {
+            return self.emit_use(names, item);
+        };
+
         let mut pre_sig = EarlyBinder::bind(sig(ctx, item)).instantiate(ctx.tcx, subst);
         pre_sig = pre_sig.normalize(ctx.tcx, param_env);
 
@@ -142,6 +164,8 @@ impl<'tcx> SymbolElaborator<'tcx> {
         } else {
             util::item_type(ctx.tcx, def_id).let_kind()
         };
+
+        // eprintln!("{item:?} {kind:?}");
 
         if CloneLevel::Signature == level_of_item {
             pre_sig.contract = PreContract::default();
@@ -184,13 +208,11 @@ impl<'tcx> SymbolElaborator<'tcx> {
 
             let span = ctx.def_span(def_id);
             let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, param_env, span);
-            let res = res.to_why(ctx, names, &LocalDecls::new());
 
-            vec![Decl::Let(LetDecl {
-                kind: Some(LetKind::Constant),
-                sig: sig.clone(),
-                rec: false,
-                ghost: false,
+            let res = lower_pure(ctx, names, &res);
+            vec![Decl::ConstantDecl(Constant {
+                type_: sig.retty.unwrap(),
+                name: sig.name,
                 body: res,
             })]
         } else {
@@ -205,7 +227,6 @@ fn val<'tcx>(
     kind: Option<LetKind>,
 ) -> Vec<Decl> {
     sig.contract.variant = Vec::new();
-
     if let Some(k) = kind {
         let ax = if !sig.contract.is_empty() { Some(spec_axiom(&sig)) } else { None };
 
@@ -220,7 +241,7 @@ fn val<'tcx>(
 
         let mut d = vec![
             Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig }),
-            Decl::ValDecl(ValDecl { ghost: false, val: true, kind: None, sig: prog_sig }),
+            program::val(ctx, prog_sig),
         ];
 
         if let Some(ax) = ax {
@@ -228,7 +249,7 @@ fn val<'tcx>(
         }
         d
     } else {
-        vec![Decl::ValDecl(ValDecl { ghost: false, val: true, kind, sig })]
+        vec![program::val(ctx, sig)]
     }
 }
 
@@ -242,19 +263,19 @@ fn sig<'tcx>(ctx: &mut Why3Generator<'tcx>, dep: DepNode<'tcx>) -> PreSignature<
         // In future change this
         TransId::TyInv(_) => unreachable!(),
         TransId::Hacked(h_id, id) => match h_id {
-            HackedId::PostconditionOnce => {
+            ExtendedId::PostconditionOnce => {
                 ctx.closure_contract(id).postcond_once.as_ref().unwrap().0.clone()
             }
-            HackedId::PostconditionMut => {
+            ExtendedId::PostconditionMut => {
                 ctx.closure_contract(id).postcond_mut.as_ref().unwrap().0.clone()
             }
-            HackedId::Postcondition => {
+            ExtendedId::Postcondition => {
                 ctx.closure_contract(id).postcond.as_ref().unwrap().0.clone()
             }
-            HackedId::Precondition => ctx.closure_contract(id).precond.0.clone(),
-            HackedId::Unnest => ctx.closure_contract(id).unnest.as_ref().unwrap().0.clone(),
-            HackedId::Resolve => ctx.closure_contract(id).resolve.0.clone(),
-            HackedId::Accessor(ix) => ctx.closure_contract(id).accessors[ix as usize].0.clone(),
+            ExtendedId::Precondition => ctx.closure_contract(id).precond.0.clone(),
+            ExtendedId::Unnest => ctx.closure_contract(id).unnest.as_ref().unwrap().0.clone(),
+            ExtendedId::Resolve => ctx.closure_contract(id).resolve.0.clone(),
+            ExtendedId::Accessor(ix) => ctx.closure_contract(id).accessors[ix as usize].0.clone(),
         },
     }
 }
@@ -281,29 +302,20 @@ impl<'tcx> SymNamer<'tcx> {
 impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
     fn value(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let node = DepNode::new(self.tcx, (def_id, subst));
-        match self.get(node) {
-            Kind::Hidden(id) => id.as_str().into(),
-            Kind::Named(nm) => nm.as_str().to_snake_case().into(),
-        }
+        self.get(node).qname()
     }
 
     fn ty(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let mut node = DepNode::new(self.tcx, (def_id, subst));
 
-        if self.tcx.is_closure(def_id) {
+        if self.tcx.is_closure_like(def_id) {
             node = DepNode::Type(Ty::new_closure(self.tcx, def_id, subst));
         }
 
-        let name = item_name(self.tcx, def_id, Namespace::TypeNS);
         match self.tcx.def_kind(def_id) {
             DefKind::AssocTy => self.get(node).ident().into(),
-            _ => self.get(node).qname_ident(name),
+            _ => self.insert(node).qname(),
         }
-    }
-
-    fn real_ty(&mut self, ty: Ty<'tcx>) -> QName {
-        let node = DepNode::Type(ty);
-        self.insert(node).ident().into()
     }
 
     fn constructor(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
@@ -334,27 +346,23 @@ impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
         ix: FieldIdx,
     ) -> QName {
         let tcx = self.tcx;
+        assert!(matches!(util::item_type(self.tcx, def_id), ItemType::Type | ItemType::Closure));
         let node = match util::item_type(tcx, def_id) {
             ItemType::Closure => {
-                DepNode::Hacked(HackedId::Accessor(ix.as_u32() as u8), def_id, subst)
+                DepNode::Hacked(ExtendedId::Accessor(ix.as_u32() as u8), def_id, subst)
             }
-            _ => DepNode::new(tcx, (def_id, subst)),
+            ItemType::Type => {
+                let adt = self.tcx.adt_def(def_id);
+                let field_did = adt.variants()[variant.into()].fields[ix].did;
+                DepNode::new(tcx, (field_did, subst))
+            }
+            _ => unreachable!(),
         };
 
         let clone = self.get(node);
         match util::item_type(tcx, def_id) {
             ItemType::Closure => clone.ident().into(),
-            ItemType::Type => {
-                let variant_def = &tcx.adt_def(def_id).variants()[variant.into()];
-                let variant = variant_def;
-                let name: Ident = format!(
-                    "{}_{}",
-                    variant.name.as_str().to_ascii_lowercase(),
-                    variant.fields[ix].name
-                )
-                .into();
-                clone.qname_ident(name.into())
-            }
+            ItemType::Type => clone.qname(),
             _ => panic!("accessor: invalid item kind"),
         }
     }
@@ -366,7 +374,11 @@ impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
         self.value(def_id, subst)
     }
 
-    fn normalize(&self, _: &TranslationCtx<'tcx>, ty: Ty<'tcx>) -> Ty<'tcx> {
+    fn normalize<T: TypeFoldable<TyCtxt<'tcx>> + Copy>(
+        &self,
+        _: &TranslationCtx<'tcx>,
+        ty: T,
+    ) -> T {
         self.tcx.try_normalize_erasing_regions(self.param_env, ty).unwrap_or(ty)
 
         // self.tcx.try_normalize_erasing_regions(self.param_env(ctx), ty).unwrap_or(ty)
@@ -384,5 +396,30 @@ impl<'tcx> Namer<'tcx> for SymNamer<'tcx> {
         let ret = f(self);
         // self.dep_level = public;
         ret
+    }
+
+    fn eliminator(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
+        let tcx = self.tcx;
+
+        match tcx.def_kind(def_id) {
+            DefKind::Variant => {
+                let clone = self.insert(DepNode::new(tcx, (tcx.parent(def_id), subst)));
+
+                let mut qname = clone.qname();
+                // TODO(xavier): Remove this hack
+                qname.name = DepNode::new(tcx, (def_id, subst)).base_ident(tcx).to_string().into();
+                qname
+            }
+            DefKind::Closure | DefKind::Struct | DefKind::Union => {
+                let mut node = DepNode::new(self.tcx, (def_id, subst));
+
+                if self.tcx.is_closure_like(def_id) {
+                    node = DepNode::Type(Ty::new_closure(self.tcx, def_id, subst));
+                }
+
+                self.insert(node).qname()
+            }
+            _ => unreachable!(),
+        }
     }
 }

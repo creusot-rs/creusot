@@ -35,14 +35,14 @@ impl<T, I: Inv<T>> Mutex<T, I> {
     #[trusted]
     #[ensures(self.1 == *result.1)]
     pub fn lock(&self) -> MutexGuard<'_, T, I> {
-        MutexGuard(GuardInner(self.0 .0.lock().unwrap()), gh! { self.1 })
+        MutexGuard(GuardInner(self.0 .0.lock().unwrap()), snapshot! { self.1 })
     }
 }
 
 #[trusted]
 struct GuardInner<'a, T: ?Sized + 'a>(std::sync::MutexGuard<'a, T>);
 
-pub struct MutexGuard<'a, T: ?Sized + 'a, I>(GuardInner<'a, T>, Ghost<I>);
+pub struct MutexGuard<'a, T: ?Sized + 'a, I>(GuardInner<'a, T>, Snapshot<I>);
 
 impl<'a, T, I: Inv<T>> MutexGuard<'a, T, I> {
     #[trusted]
@@ -110,7 +110,7 @@ impl<'a> FakeFnOnce for AddsTwo<'a> {
 
 #[trusted]
 struct JoinHandleInner<T>(std::thread::JoinHandle<T>);
-struct JoinHandle<T, I>(JoinHandleInner<T>, Ghost<I>);
+struct JoinHandle<T, I>(JoinHandleInner<T>, Snapshot<I>);
 
 impl<T, I: Inv<T>> JoinHandle<T, I> {
     #[trusted]
@@ -136,7 +136,7 @@ fn spawn<T: Send + 'static, F: Send + 'static + FakeFnOnce<Return = T>>(
             #[creusot::no_translate]
             || f.call(),
         )),
-        gh! { SpawnPostCond { f } },
+        snapshot! { SpawnPostCond { f } },
     )
 }
 

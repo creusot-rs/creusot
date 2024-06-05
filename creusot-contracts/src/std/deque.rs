@@ -5,7 +5,7 @@ pub use ::std::collections::VecDeque;
 impl<T, A: Allocator> ShallowModel for VecDeque<T, A> {
     type ShallowModelTy = Seq<T>;
 
-    #[ghost]
+    #[logic]
     #[trusted]
     #[open(self)]
     #[ensures(result.len() <= usize::MAX@)]
@@ -17,7 +17,7 @@ impl<T, A: Allocator> ShallowModel for VecDeque<T, A> {
 impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
-    #[ghost]
+    #[logic]
     #[trusted]
     #[open(self)]
     #[ensures(self.shallow_model().len() == result.len())]
@@ -31,7 +31,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
 impl<T, A: Allocator> IndexLogic<Int> for VecDeque<T, A> {
     type Item = T;
 
-    #[ghost]
+    #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
@@ -42,7 +42,7 @@ impl<T, A: Allocator> IndexLogic<Int> for VecDeque<T, A> {
 impl<T, A: Allocator> IndexLogic<usize> for VecDeque<T, A> {
     type Item = T;
 
-    #[ghost]
+    #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
@@ -54,23 +54,29 @@ extern_spec! {
     mod std {
         mod collections {
             impl<T> VecDeque<T> {
+                #[pure]
                 #[ensures(result@.len() == 0)]
                 fn new() -> Self;
 
+                #[terminates] // can OOM
                 #[ensures(result@.len() == 0)]
                 fn with_capacity(capacity: usize) -> Self;
             }
 
             impl<T, A: Allocator> VecDeque<T, A> {
+                #[pure]
                 #[ensures(result@ == self@.len())]
                 fn len(&self) -> usize;
 
+                #[pure]
                 #[ensures(result == (self@.len() == 0))]
                 fn is_empty(&self) -> bool;
 
+                #[pure]
                 #[ensures((^self)@.len() == 0)]
                 fn clear(&mut self);
 
+                #[pure]
                 #[ensures(match result {
                     Some(t) =>
                         (^self)@ == self@.subsequence(1, self@.len()) &&
@@ -79,6 +85,7 @@ extern_spec! {
                 })]
                 fn pop_front(&mut self) -> Option<T>;
 
+                #[pure]
                 #[ensures(match result {
                     Some(t) =>
                         (^self)@ == self@.subsequence(0, self@.len() - 1) &&
@@ -87,10 +94,12 @@ extern_spec! {
                 })]
                 fn pop_back(&mut self) -> Option<T>;
 
+                #[terminates] // can OOM
                 #[ensures((^self)@.len() == self@.len() + 1)]
                 #[ensures((^self)@ == Seq::singleton(value).concat(self@))]
                 fn push_front(&mut self, value: T);
 
+                #[terminates] // can OOM
                 #[ensures((^self)@ == self@.push(value))]
                 fn push_back(&mut self, value: T);
             }
@@ -115,7 +124,7 @@ impl<T, A: Allocator> IntoIterator for &VecDeque<T, A> {
 impl<'a, T> ShallowModel for Iter<'a, T> {
     type ShallowModelTy = &'a [T];
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
@@ -126,7 +135,7 @@ impl<'a, T> ShallowModel for Iter<'a, T> {
 impl<'a, T> Invariant for Iter<'a, T> {}
 
 impl<'a, T> Iterator for Iter<'a, T> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && (*self@)@ == Seq::EMPTY }

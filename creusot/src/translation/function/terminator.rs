@@ -1,6 +1,7 @@
 use super::BodyTranslator;
 use crate::{
     ctx::TranslationCtx,
+    fmir,
     translation::{
         fmir::*,
         pearlite::{Term, TermKind, UnOp},
@@ -69,11 +70,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
 
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
-                if Some(fun_def_id) == self.tcx.get_diagnostic_item(Symbol::intern("ghost_from_fn"))
-                {
+                if self.tcx.is_diagnostic_item(Symbol::intern("snapshot_from_fn"), fun_def_id) {
                     let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() else { panic!() };
                     let TyKind::Closure(def_id, _) = ty.kind() else { panic!() };
-                    let mut assertion = self.assertions.remove(def_id).unwrap();
+                    let mut assertion = self.snapshots.remove(def_id).unwrap();
                     assertion.subst(&inv_subst(self.body, &self.locals, terminator.source_info));
                     self.check_ghost_term(&assertion, location);
                     self.emit_ghost_assign(*destination, assertion, span);
@@ -95,21 +95,23 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
 
                 let mut func_args: Vec<_> =
-                    args.iter().map(|arg| self.translate_operand(arg)).collect();
+                    args.iter().map(|arg| self.translate_operand(&arg.node)).collect();
 
                 if func_args.is_empty() {
                     // TODO: Remove this, push the 0-ary handling down to why3 backend
                     // We use tuple as a dummy argument for 0-ary functions
-                    func_args.push(Expr {
-                        span: DUMMY_SP,
-                        kind: ExprKind::Tuple(vec![]),
+                    func_args.push(fmir::Operand::Constant(Term {
+                        kind: TermKind::Tuple { fields: Vec::new() },
                         ty: self.ctx.types.unit,
-                    })
+                        span,
+                    }))
                 }
-                let call_exp = if self.is_box_new(fun_def_id) {
+                let (loc, bb) = (destination, target.unwrap());
+
+                if self.is_box_new(fun_def_id) {
                     assert_eq!(func_args.len(), 1);
 
-                    func_args.remove(0)
+                    self.emit_assignment(&loc, RValue::Operand(func_args.remove(0)), span);
                 } else {
                     let (fun_def_id, subst) =
                         resolve_function(self.ctx, self.param_env(), fun_def_id, subst, span);
@@ -118,16 +120,15 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         .try_normalize_erasing_regions(self.param_env(), subst)
                         .unwrap_or(subst);
 
-                    let exp = Expr {
-                        span: span.source_callsite(),
-                        kind: ExprKind::Call(fun_def_id, subst, func_args),
-                        ty: destination.ty(self.body, self.tcx).ty,
-                    };
-                    exp
+                    self.emit_statement(Statement::Call(
+                        self.translate_place(*loc),
+                        fun_def_id,
+                        subst,
+                        func_args,
+                        span.source_callsite(),
+                    ));
                 };
 
-                let (loc, bb) = (destination, target.unwrap());
-                self.emit_assignment(&loc, RValue::Expr(call_exp), span);
                 self.emit_terminator(Terminator::Goto(bb));
             }
             Assert { cond, expected, msg, target, unwind: _ } => {
@@ -166,7 +167,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             FalseUnwind { real_target, .. } => {
                 self.emit_terminator(mk_goto(*real_target));
             }
-            UnwindResume | Yield { .. } | GeneratorDrop | InlineAsm { .. } => {
+            CoroutineDrop | UnwindResume | Yield { .. } | InlineAsm { .. } => {
                 unreachable!("{:?}", terminator.kind)
             }
         }
@@ -201,7 +202,7 @@ pub(crate) fn resolve_function<'tcx>(
                 .expect("could not find instance");
 
             if !method.0.is_local() && ctx.sig(method.0).contract.is_false() {
-                ctx.warn(sp, "calling an external function with no contract will yield an impossible precondition");
+                ctx.warn(sp, "calling an external function with no contract will yield an impossible precondition").emit();
             }
 
             return method;
@@ -212,7 +213,8 @@ pub(crate) fn resolve_function<'tcx>(
         ctx.warn(
             sp,
             "calling an external function with no contract will yield an impossible precondition",
-        );
+        )
+        .emit();
     }
     // ctx.translate(def_id);
 
@@ -278,7 +280,7 @@ pub(crate) fn make_switch<'tcx>(
     si: SourceInfo,
     switch_ty: Ty<'tcx>,
     targets: &SwitchTargets,
-    discr: Expr<'tcx>,
+    discr: fmir::Operand<'tcx>,
 ) -> Terminator<'tcx> {
     match switch_ty.kind() {
         TyKind::Adt(def, substs) => {

@@ -16,7 +16,7 @@ impl IndexLogic<Ptr> for Memory {
     type Item = Ptr;
 
     #[open(self)]
-    #[ghost]
+    #[logic]
     fn index_logic(self, i: Ptr) -> Ptr {
         pearlite! { self.0[i] }
     }
@@ -96,17 +96,19 @@ impl Memory {
 
     #[requires(self.list(l, *s))]
     #[ensures((^self).list(result, s.reverse()))]
-    pub fn list_reversal_list(&mut self, mut l: Ptr, s: Ghost<Seq<Ptr>>) -> Ptr {
+    pub fn list_reversal_list(&mut self, mut l: Ptr, s: Snapshot<Seq<Ptr>>) -> Ptr {
+        let old_self = snapshot! { self };
         let mut r = NULL;
-        let mut n = gh! { 0 };
+        let mut n = snapshot! { 0 };
 
         #[invariant(0 <= *n && *n <= s.len())]
         #[invariant(self.list_seg(l, *s, NULL, *n, s.len()))]
         #[invariant(self.list_seg(r, s.reverse(), NULL, s.len()-*n, s.len()))]
         // #[variant(s.len() - *n)]
+        #[invariant(^*old_self == ^self)]
         while l != NULL {
             l = std::mem::replace(&mut self[l], std::mem::replace(&mut r, l));
-            n = gh! { *n + 1 }
+            n = snapshot! { *n + 1 }
         }
         return r;
     }
@@ -122,10 +124,12 @@ impl Memory {
     #[requires(s.len() > 0)]
     #[requires(self.loop_(l, *s))]
     #[ensures((^self).loop_(result, Seq::singleton(s[0]).concat(s.subsequence(1, s.len()).reverse())))]
-    pub fn list_reversal_loop(&mut self, mut l: Ptr, s: Ghost<Seq<Ptr>>) -> Ptr {
+    pub fn list_reversal_loop(&mut self, mut l: Ptr, s: Snapshot<Seq<Ptr>>) -> Ptr {
         let mut r = NULL;
-        let mut n = gh! { 0 };
+        let mut n = snapshot! { 0 };
+        let old_self = snapshot! { self };
 
+        #[invariant(^*old_self == ^self)]
         #[invariant(0 <= *n && *n <= s.len() + 1)]
         #[invariant(*n == s.len() + 1 ==>
             l == NULL && r == s[0] && self.nonnull_ptr(r) &&
@@ -137,7 +141,7 @@ impl Memory {
         while l != NULL {
             proof_assert! { *n == s.len() ==> l == s.reverse()[s.len() - 1] }
             l = std::mem::replace(&mut self[l], std::mem::replace(&mut r, l));
-            n = gh! { *n + 1 }
+            n = snapshot! { *n + 1 }
         }
 
         proof_assert! { forall<i:Int> 0 <= i && i < s.len() ==>
@@ -163,12 +167,14 @@ impl Memory {
     pub fn list_reversal_lasso(
         &mut self,
         mut l: Ptr,
-        s1: Ghost<Seq<Ptr>>,
-        s2: Ghost<Seq<Ptr>>,
+        s1: Snapshot<Seq<Ptr>>,
+        s2: Snapshot<Seq<Ptr>>,
     ) -> Ptr {
         let mut r = NULL;
-        let mut n = gh! { 0 };
+        let mut n = snapshot! { 0 };
+        let old_self = snapshot! { self };
 
+        #[invariant(^*old_self == ^self)]
         #[invariant(0 <= *n && *n <= 2*s1.len() + s2.len())]
         #[invariant({
             let mid = if s2.len() == 0 { s1[s1.len()-1] } else { s2[0] };
@@ -189,12 +195,12 @@ impl Memory {
         // #[variant(2*s1.len() + s2.len() - *n)]
         while l != NULL {
             l = std::mem::replace(&mut self[l], std::mem::replace(&mut r, l));
-            n = gh! { *n + 1 }
+            n = snapshot! { *n + 1 }
         }
         return r;
     }
 
-    #[ghost]
+    #[logic]
     #[requires(0 <= i && i <= s.len())]
     #[ensures(match result {
         None => forall<j: Int> i <= j && j < s.len() ==> s[j]@ != p,
@@ -209,7 +215,7 @@ impl Memory {
         }
     }
 
-    #[ghost]
+    #[logic]
     #[requires(0 <= n)]
     #[requires(forall<i: Int> 0 <= i && i < s.len() ==> s[i]@ < n)]
     #[requires(forall<i: Int, j: Int> 0 <= i && i < s.len() && 0 <= j && j < s.len() && i != j ==> s[i] != s[j])]
@@ -232,7 +238,7 @@ impl Memory {
         }
     }
 
-    #[ghost]
+    #[logic]
     #[requires(self.mem_is_well_formed())]
     #[requires(last == NULL || self.nonnull_ptr(last))]
     #[requires(self.list_seg(first, s, last, 0, s.len()))]
@@ -259,7 +265,7 @@ impl Memory {
         }
     }
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[requires(self.mem_is_well_formed())]
     #[requires(first == NULL || self.nonnull_ptr(first))]

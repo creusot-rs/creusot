@@ -4,7 +4,7 @@ pub use ::std::boxed::*;
 #[cfg(creusot)]
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
     type DeepModelTy = Box<T::DeepModelTy>;
-    #[ghost]
+    #[logic]
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
         Box::new((*self).deep_model())
@@ -14,7 +14,7 @@ impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
 #[cfg(creusot)]
 impl<T: ShallowModel + ?Sized, A: Allocator> ShallowModel for Box<T, A> {
     type ShallowModelTy = T::ShallowModelTy;
-    #[ghost]
+    #[logic]
     #[open]
     fn shallow_model(self) -> Self::ShallowModelTy {
         (*self).shallow_model()
@@ -25,15 +25,18 @@ extern_spec! {
     mod std {
         mod boxed {
             impl<T> Box<T> {
+                #[pure]
                 #[ensures(*result == val)]
                 fn new(val: T) -> Self;
             }
 
             impl<T, A: Allocator> Box<T, A> {
+                #[pure]
                 #[ensures(**self == *result)]
                 #[ensures(*^self == ^result)]
                 fn as_mut(&mut self) -> &mut T;
 
+                #[pure]
                 #[ensures(**self == *result)]
                 fn as_ref(&self) -> &T;
             }

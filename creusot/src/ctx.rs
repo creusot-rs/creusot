@@ -5,7 +5,7 @@ use crate::{
     backend::{ty::ty_binding_group, ty_inv},
     callbacks,
     creusot_items::{self, CreusotItems},
-    error::{CrErr, CreusotResult, Error},
+    error::{CreusotResult, Error, InternalError},
     metadata::{BinaryMetadata, Metadata},
     options::Options,
     translation::{
@@ -21,7 +21,7 @@ use crate::{
 };
 use indexmap::{IndexMap, IndexSet};
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
-use rustc_errors::{DiagnosticBuilder, DiagnosticId};
+use rustc_errors::{Diag, FatalAbort};
 use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LocalDefId},
@@ -35,7 +35,7 @@ use rustc_middle::{
         Visibility,
     },
 };
-use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_span::{Span, Symbol};
 use rustc_trait_selection::traits::SelectionContext;
 pub(crate) use util::{module_name, ItemType};
 
@@ -64,7 +64,7 @@ macro_rules! queryish {
     };
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct BodyId {
     pub def_id: LocalDefId,
     pub promoted: Option<Promoted>,
@@ -168,7 +168,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         if util::has_body(self, def_id) {
             if !self.terms.contains_key(&def_id) {
                 let mut term = pearlite::pearlite(self, def_id.expect_local())
-                    .unwrap_or_else(|e| e.emit(self.tcx.sess));
+                    .unwrap_or_else(|e| e.emit(self.tcx));
                 pearlite::normalize(self.tcx, self.param_env(def_id), &mut term);
 
                 self.terms.insert(def_id, term);
@@ -228,39 +228,21 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {
-        self.tcx.sess.span_fatal_with_code(
-            span,
-            msg.to_string(),
-            DiagnosticId::Error(String::from("creusot")),
-        )
+        // TODO: try to add a code back in
+        self.tcx.dcx().span_fatal(span, msg.to_string())
     }
 
-    pub(crate) fn fatal_error(&self, span: Span, msg: &str) -> DiagnosticBuilder<'tcx, !> {
-        self.tcx.sess.struct_span_fatal_with_code(
-            span,
-            msg.to_string(),
-            DiagnosticId::Error(String::from("creusot")),
-        )
+    pub(crate) fn fatal_error(&self, span: Span, msg: &str) -> Diag<'tcx, FatalAbort> {
+        // TODO: try to add a code back in
+        self.tcx.dcx().struct_span_fatal(span, msg.to_string())
     }
 
-    pub(crate) fn error(&self, span: Span, msg: &str) {
-        self.tcx.sess.span_err_with_code(
-            span,
-            msg.to_string(),
-            DiagnosticId::Error(String::from("creusot")),
-        )
+    pub(crate) fn error(&self, span: Span, msg: &str) -> Diag<'tcx, rustc_errors::ErrorGuaranteed> {
+        self.tcx.dcx().struct_span_err(span, msg.to_string())
     }
 
-    pub(crate) fn warn(&self, span: Span, msg: &str) {
-        self.tcx.sess.span_warn_with_code(
-            span,
-            msg.to_string(),
-            DiagnosticId::Lint {
-                name: String::from("creusot"),
-                has_future_breakage: false,
-                is_force_warn: false,
-            },
-        )
+    pub(crate) fn warn(&self, span: Span, msg: &str) -> Diag<'tcx, ()> {
+        self.tcx.dcx().struct_span_warn(span, msg.to_string())
     }
 
     fn add_binding_group(&mut self, def_ids: &IndexSet<DefId>) {
@@ -314,7 +296,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     fn mk_opacity(&self, item: DefId) -> Opacity {
         if !matches!(
             util::item_type(self.tcx, item),
-            ItemType::Predicate | ItemType::Logic | ItemType::Ghost
+            ItemType::Predicate { .. } | ItemType::Logic { .. }
         ) {
             return Opacity(Visibility::Public);
         };
@@ -390,21 +372,24 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn check_purity(&mut self, def_id: LocalDefId) {
-        let (thir, expr) =
-            self.tcx.thir_body(def_id).unwrap_or_else(|_| Error::from(CrErr).emit(self.tcx.sess));
+        let (thir, expr) = self.tcx.thir_body(def_id).unwrap_or_else(|_| {
+            Error::from(InternalError("Cannot fetch THIR body")).emit(self.tcx)
+        });
         let thir = thir.borrow();
         if thir.exprs.is_empty() {
-            Error::new(self.tcx.def_span(def_id), "type checking failed").emit(self.tcx.sess);
+            Error::new(self.tcx.def_span(def_id), "type checking failed").emit(self.tcx);
         }
 
         let def_id = def_id.to_def_id();
-        let purity = Purity::of_def_id(self.tcx, def_id);
-        if purity == Purity::Program && crate::util::is_no_translate(self.tcx, def_id) {
+        let purity = Purity::of_def_id(self, def_id);
+        if matches!(purity, Purity::Program { .. })
+            && crate::util::is_no_translate(self.tcx, def_id)
+        {
             return;
         }
 
         thir::visit::walk_expr(
-            &mut PurityVisitor { tcx: self.tcx, thir: &thir, context: purity },
+            &mut PurityVisitor { ctx: self, thir: &thir, context: purity },
             &thir[expr],
         );
     }
@@ -423,7 +408,10 @@ pub(crate) fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
             let c = es.contract.clone();
 
             if ctx.extern_spec(i).is_some() {
-                ctx.crash_and_error(DUMMY_SP, &format!("duplicate extern specification for {i:?}"));
+                ctx.crash_and_error(
+                    ctx.def_span(def_id),
+                    &format!("duplicate extern specification for {i:?}"),
+                );
             };
 
             let _ = ctx.extern_specs.insert(i, es);

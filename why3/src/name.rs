@@ -55,7 +55,7 @@ impl From<String> for Ident {
 
 impl From<QName> for Exp {
     fn from(q: QName) -> Self {
-        Exp::impure_qvar(q)
+        Exp::qvar(q)
     }
 }
 
@@ -94,6 +94,12 @@ impl QName {
     // ooof this is a bad function
     pub fn module_ident(&self) -> Option<&Ident> {
         self.module.last()
+    }
+
+    /// Given `Module.name` replaces `name` with `id`.
+    pub fn push_ident(&mut self, id: impl Into<Ident>) {
+        let old = std::mem::replace(&mut self.name, id.into());
+        self.module.push(old);
     }
 
     pub fn module_qname(mut self) -> QName {

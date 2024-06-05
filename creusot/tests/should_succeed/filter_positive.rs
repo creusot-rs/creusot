@@ -32,7 +32,7 @@ use creusot_contracts::{
 
 // number of positive elements of `t` between `i` (included) and `j`
 // (excluded)
-#[ghost]
+#[logic]
 #[variant(j-i)]
 fn num_of_pos(i: Int, j: Int, t: Seq<i32>) -> Int {
     pearlite! {
@@ -58,7 +58,7 @@ fn num_of_pos(i: Int, j: Int, t: Seq<i32>) -> Int {
 //
 
 // lemma: `num_of_pos` is increasing
-#[ghost]
+#[logic]
 #[requires(j <= k)]
 #[ensures(num_of_pos(i,j,t) <= num_of_pos(i,k,t))]
 #[variant(k-j)]
@@ -72,7 +72,7 @@ fn lemma_num_of_pos_increasing(i: Int, j: Int, k: Int, t: Seq<i32>) {
 
 // lemma: `num_of_pos` is strictly increasing when a positive element
 // is met
-#[ghost]
+#[logic]
 #[requires(0 <= i && i < t.len())]
 #[requires(t[i]@ > 0)]
 #[ensures(num_of_pos(0,i,t) < num_of_pos(0,i+1,t))]

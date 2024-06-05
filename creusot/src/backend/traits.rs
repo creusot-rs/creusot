@@ -1,7 +1,7 @@
 use super::{
-    clone_map::{CloneLevel, CloneMap, CloneSummary},
+    clone_map::{CloneLevel, CloneSummary, Dependencies},
     term::lower_pure,
-    CloneDepth, Why3Generator,
+    GraphDepth, Why3Generator,
 };
 use crate::{
     backend,
@@ -17,7 +17,7 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
     let tcx = ctx.tcx;
     let data = ctx.trait_impl(def_id).clone();
 
-    let mut names = CloneMap::new(ctx.tcx, def_id.into());
+    let mut names = Dependencies::new(ctx.tcx, [def_id]);
 
     let mut decls: Vec<_> = own_generic_decls_for(ctx.tcx, def_id).collect();
     let mut refn_decls = Vec::new();
@@ -32,18 +32,18 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
         }));
     }
 
-    let (clones, _) = names.to_clones(ctx, CloneDepth::Deep);
+    let (clones, _) = names.provide_deps(ctx, GraphDepth::Deep);
     decls.extend(clones);
     decls.extend(refn_decls);
 
-    Module { name: module_name(ctx.tcx, def_id), decls }
+    Module { name: module_name(ctx.tcx, def_id).to_string().into(), decls }
 }
 
 impl<'tcx> Why3Generator<'tcx> {
     pub(crate) fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
         assert_eq!(util::item_type(self.tcx, def_id), ItemType::AssocTy);
 
-        let mut names = CloneMap::new(self.tcx, def_id.into());
+        let mut names = Dependencies::new(self.tcx, [def_id]);
 
         let mut decls: Vec<_> = all_generic_decls_for(self.tcx, def_id).collect();
         let ty_decl = self.assoc_ty_decl(
@@ -54,10 +54,10 @@ impl<'tcx> Why3Generator<'tcx> {
 
         decls.push(ty_decl);
 
-        let (clones, summary) = names.to_clones(self, CloneDepth::Shallow);
+        let (clones, summary) = names.provide_deps(self, GraphDepth::Shallow);
         decls.extend(clones);
 
-        (Module { name: module_name(self.tcx, def_id), decls }, summary)
+        (Module { name: module_name(self.tcx, def_id).to_string().into(), decls }, summary)
     }
 
     // Probably needs to take a pair of id and subst to handle cloning properly

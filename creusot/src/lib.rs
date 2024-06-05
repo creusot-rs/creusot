@@ -5,6 +5,7 @@
 #[macro_use]
 extern crate log;
 extern crate rustc_ast;
+extern crate rustc_ast_ir;
 extern crate rustc_ast_pretty;
 extern crate rustc_borrowck;
 extern crate rustc_data_structures;
@@ -52,3 +53,4 @@ pub(crate) mod metadata;
 mod run_why3;
 mod translated_item;
 mod validate;
+mod validate_terminates;

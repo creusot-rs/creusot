@@ -89,7 +89,7 @@ pub enum UnOp {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub enum Purity {
+pub(crate) enum Purity {
     Logic,
     Program,
 }
@@ -123,8 +123,8 @@ pub enum Exp {
         arg: Box<Exp>,
         body: Box<Exp>,
     },
-    Var(Ident, Purity),
-    QVar(QName, Purity),
+    Var(Ident),
+    QVar(QName),
     Record {
         fields: Vec<(String, Exp)>,
     },
@@ -194,8 +194,8 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
             f.visit_mut(arg);
             f.visit_mut(body)
         }
-        Exp::Var(_, _) => {}
-        Exp::QVar(_, _) => {}
+        Exp::Var(_) => {}
+        Exp::QVar(_) => {}
         Exp::RecUp { record, updates } => {
             f.visit_mut(record);
             updates.iter_mut().for_each(|(_, val)| f.visit_mut(val));
@@ -257,6 +257,102 @@ pub fn super_visit_mut_trigger<T: ExpMutVisitor>(f: &mut T, trigger: &mut Trigge
     }
 }
 
+impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
+    fn visit_mut(&mut self, exp: &mut Exp) {
+        match exp {
+            Exp::Var(v) => {
+                if let Some(e) = self.get(v) {
+                    *exp = e.clone()
+                }
+            }
+            Exp::Abs(binders, body) => {
+                let mut subst = self.clone();
+
+                for binder in binders {
+                    binder.fvs().into_iter().for_each(|id| {
+                        subst.remove(&id);
+                    });
+                }
+
+                let mut s = &subst;
+                s.visit_mut(body);
+            }
+
+            Exp::Let { pattern, arg, body } => {
+                self.visit_mut(arg);
+                let mut bound = pattern.binders();
+                let mut subst = self.clone();
+                bound.drain(..).for_each(|k| {
+                    subst.remove(&k);
+                });
+
+                let mut s = &subst;
+                s.visit_mut(body);
+            }
+            Exp::Match(scrut, brs) => {
+                self.visit_mut(scrut);
+
+                for (pat, br) in brs {
+                    let mut s = self.clone();
+                    pat.binders().drain(..).for_each(|b| {
+                        s.remove(&b);
+                    });
+
+                    let mut s = &s;
+                    s.visit_mut(br);
+                }
+            }
+            Exp::Forall(binders, trig, exp) => {
+                let mut subst = self.clone();
+                binders.iter().for_each(|k| {
+                    subst.remove(&k.0);
+                });
+                let bnds: IndexSet<_> = binders.iter().map(|b| &b.0).cloned().collect();
+                let mut extended = HashMap::new();
+                for (_, exp) in &mut subst {
+                    for id in &bnds & &exp.fvs() {
+                        extended.insert(id.clone(), Exp::var(format!("{}'", &*id)));
+                    }
+                }
+                binders.iter_mut().for_each(|(id, _)| {
+                    if extended.contains_key(id) {
+                        *id = format!("{}'", &**id).into();
+                    }
+                });
+                subst.extend(extended);
+
+                let mut s = &subst;
+                s.visit_mut(exp);
+                s.visit_trigger_mut(trig);
+            }
+            Exp::Exists(binders, trig, exp) => {
+                let mut subst = self.clone();
+                binders.iter().for_each(|k| {
+                    subst.remove(&k.0);
+                });
+                let bnds: IndexSet<_> = binders.iter().map(|b| &b.0).cloned().collect();
+                let mut extended = HashMap::new();
+                for (_, exp) in &mut subst {
+                    for id in &bnds & &exp.fvs() {
+                        extended.insert(id.clone(), Exp::var(format!("{}'", &*id)));
+                    }
+                }
+                binders.iter_mut().for_each(|(id, _)| {
+                    if extended.contains_key(id) {
+                        *id = format!("{}'", &**id).into();
+                    }
+                });
+                subst.extend(extended);
+
+                let mut s = &subst;
+                s.visit_mut(exp);
+                s.visit_trigger_mut(trig);
+            }
+            _ => super_visit_mut(self, exp),
+        }
+    }
+}
+
 pub trait ExpVisitor: Sized {
     fn visit(&mut self, exp: &Exp) {
         super_visit(self, exp)
@@ -276,8 +372,8 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
             f.visit(arg);
             f.visit(body)
         }
-        Exp::Var(_, _) => {}
-        Exp::QVar(_, _) => {}
+        Exp::Var(_) => {}
+        Exp::QVar(_) => {}
         Exp::RecUp { record, updates } => {
             f.visit(record);
             updates.iter().for_each(|(_, val)| f.visit(val));
@@ -340,28 +436,30 @@ pub fn super_visit_trigger<T: ExpVisitor>(f: &mut T, trigger: &Trigger) {
 }
 
 impl Exp {
-    pub fn impure_qvar(q: QName) -> Self {
-        Exp::QVar(q, Purity::Program)
+    pub fn qvar(q: QName) -> Self {
+        Exp::QVar(q)
     }
 
-    pub fn impure_var(v: Ident) -> Self {
-        Exp::Var(v, Purity::Program)
-    }
-
-    pub fn pure_qvar(q: QName) -> Self {
-        Exp::QVar(q, Purity::Logic)
-    }
-
-    pub fn pure_var(v: Ident) -> Self {
-        Exp::Var(v, Purity::Logic)
+    pub fn var(v: impl Into<Ident>) -> Self {
+        Exp::Var(v.into())
     }
 
     pub fn lazy_conj(l: Exp, r: Exp) -> Self {
         l.lazy_and(r)
     }
 
+    pub fn not(self) -> Self {
+        Exp::UnaryOp(UnOp::Not, Box::new(self))
+    }
+
     pub fn eq(self, rhs: Self) -> Self {
-        Exp::BinaryOp(BinOp::Eq, Box::new(self), Box::new(rhs))
+        if self.is_true() {
+            rhs
+        } else if rhs.is_true() {
+            self
+        } else {
+            Exp::BinaryOp(BinOp::Eq, Box::new(self), Box::new(rhs))
+        }
     }
 
     pub fn neq(self, rhs: Self) -> Self {
@@ -394,9 +492,9 @@ impl Exp {
     }
 
     pub fn lazy_and(self, other: Self) -> Self {
-        if let Exp::Const(Constant::Bool(true)) = self {
+        if self.is_true() {
             other
-        } else if let Exp::Const(Constant::Bool(true)) = other {
+        } else if other.is_true() {
             self
         } else {
             Exp::BinaryOp(BinOp::LazyAnd, Box::new(self), Box::new(other))
@@ -404,15 +502,42 @@ impl Exp {
     }
 
     pub fn log_and(self, other: Self) -> Self {
-        if let Exp::Const(Constant::Bool(true)) = self {
+        if self.is_true() {
             other
-        } else if let Exp::Const(Constant::Bool(true)) = other {
+        } else if other.is_true() {
             self
         } else {
             Exp::BinaryOp(BinOp::LogAnd, Box::new(self), Box::new(other))
         }
     }
 
+    pub fn log_or(self, other: Self) -> Self {
+        if self.is_true() {
+            self
+        } else if other.is_true() {
+            other
+        } else {
+            Exp::BinaryOp(BinOp::LogOr, Box::new(self), Box::new(other))
+        }
+    }
+
+    pub fn if_(cond: Self, then: Self, else_: Self) -> Self {
+        if then.is_true() && else_.is_true() {
+            then
+        } else if cond.is_true() {
+            then
+        } else if cond.is_false() {
+            else_
+        } else {
+            Exp::IfThenElse(Box::new(cond), Box::new(then), Box::new(else_))
+        }
+    }
+
+    /// Build an implication
+    ///
+    /// Performs the following simplifications
+    /// - True -> A <-> A
+    /// - A -> True <-> True
     pub fn implies(self, other: Self) -> Self {
         if self.is_true() {
             other
@@ -423,10 +548,20 @@ impl Exp {
         }
     }
 
+    /// Builds a quantifier with explicit trigger
+    ///
+    /// Simplfies ∀ x, True into True
     pub fn forall_trig(bound: Vec<(Ident, Type)>, trigger: Trigger, body: Exp) -> Self {
-        Exp::Forall(bound, trigger, Box::new(body))
+        if body.is_true() {
+            body
+        } else {
+            Exp::Forall(bound, trigger, Box::new(body))
+        }
     }
 
+    /// Builds a quantifier
+    ///
+    /// Simplfies ∀ x, True into True
     pub fn forall(bound: Vec<(Ident, Type)>, body: Exp) -> Self {
         Exp::forall_trig(bound, Trigger::NONE, body)
     }
@@ -442,6 +577,18 @@ impl Exp {
     pub fn is_true(&self) -> bool {
         if let Exp::Const(Constant::Bool(true)) = self {
             true
+        } else if let Exp::Attr(_, e) = self {
+            e.is_true()
+        } else {
+            false
+        }
+    }
+
+    pub fn is_false(&self) -> bool {
+        if let Exp::Const(Constant::Bool(false)) = self {
+            true
+        } else if let Exp::Attr(_, e) = self {
+            e.is_false()
         } else {
             false
         }
@@ -455,6 +602,33 @@ impl Exp {
         Exp::Const(Constant::const_false())
     }
 
+    pub fn int(i: i128) -> Self {
+        Exp::Const(Constant::Int(i, None))
+    }
+
+    pub fn let_(id: impl Into<Ident>, arg: Exp, mut body: Exp) -> Exp {
+        let ident = id.into();
+        let occurences = body.occurences();
+
+        if !occurences.contains_key(&ident) {
+            body
+        // Remove this if performance is a concern
+        } else if occurences[&ident] == 1 {
+            body.subst(&[(ident, arg)].into_iter().collect());
+            body
+        } else {
+            Exp::Let { pattern: Pattern::VarP(ident), arg: Box::new(arg), body: Box::new(body) }
+        }
+    }
+
+    pub fn ascribe(self, ty: Type) -> Self {
+        Exp::Ascribe(Box::new(self), ty)
+    }
+
+    pub fn uint(value: u128) -> Self {
+        Exp::Const(Constant::Uint(value, None))
+    }
+
     pub fn is_pure(&self) -> bool {
         struct IsPure {
             pure: bool,
@@ -463,8 +637,6 @@ impl Exp {
         impl ExpVisitor for IsPure {
             fn visit(&mut self, exp: &Exp) {
                 match exp {
-                    Exp::Var(_, Purity::Program) => self.pure &= false,
-                    Exp::QVar(_, Purity::Program) => self.pure &= false,
                     Exp::Verbatim(_) => self.pure &= false,
                     Exp::Absurd => self.pure &= false,
                     // This is a bit absurd, but you can't put "pure {...}"
@@ -503,7 +675,7 @@ impl Exp {
                                 // Then swap the left child of with the left child of self moving `l` into
                                 // the left chid of `r` and moving `rr` to the left of self
                                 // Finally swap the two children of self which are now `r` and `rr`
-                                if let box Exp::BinaryOp(iop, rl, rr) = r {
+                                if let Exp::BinaryOp(iop, rl, rr) = &mut **r {
                                     if *iop == *op {
                                         std::mem::swap(rl, rr);
                                         std::mem::swap(rl, l);
@@ -514,7 +686,7 @@ impl Exp {
                             }
                             AssocDir::Right => {
                                 // ll -> l, r -> lr, lr -> ll, l -> r;
-                                if let box Exp::BinaryOp(iop, ll, lr) = l {
+                                if let Exp::BinaryOp(iop, ll, lr) = &mut **l {
                                     if *iop == *op {
                                         std::mem::swap(ll, lr);
                                         std::mem::swap(lr, r);
@@ -619,8 +791,8 @@ impl Exp {
             Exp::Final(_) => Prefix,
             Exp::Let { .. } => IfLet,
             Exp::Abs(_, _) => Abs,
-            Exp::Var(_, _) => Atom,
-            Exp::QVar(_, _) => Atom,
+            Exp::Var(_) => Atom,
+            Exp::QVar(_) => Atom,
             Exp::RecUp { .. } => App,
             Exp::RecField { .. } => Infix4,
             Exp::Tuple(_) => Atom,
@@ -655,50 +827,63 @@ impl Exp {
         }
     }
 
-    pub fn fvs(&self) -> IndexSet<Ident> {
-        struct Fvs {
-            fvs: IndexSet<Ident>,
+    pub fn occurs(&self, id: &Ident) -> bool {
+        let fvs = self.occurences();
+
+        fvs.contains_key(id)
+    }
+
+    pub fn occurences(&self) -> HashMap<Ident, u64> {
+        struct Occurs {
+            occurs: HashMap<Ident, u64>,
         }
 
-        impl ExpVisitor for Fvs {
+        impl ExpVisitor for Occurs {
             fn visit(&mut self, exp: &Exp) {
                 match exp {
-                    Exp::Var(v, _) => {
-                        self.fvs.insert(v.clone());
+                    Exp::Var(v) => {
+                        *self.occurs.entry(v.clone()).or_insert(0) += 1;
                     }
                     Exp::Let { pattern, arg, body } => {
-                        let fvs = std::mem::take(&mut self.fvs);
+                        let mut occurs = std::mem::take(&mut self.occurs);
                         self.visit(body);
-                        self.fvs = (&self.fvs) - &pattern.binders();
+                        pattern.binders().iter().for_each(|p| {
+                            self.occurs.remove(p);
+                        });
+
                         self.visit(arg);
-                        self.fvs.extend(fvs);
+                        occurs.drain().for_each(|(k, v)| *self.occurs.entry(k).or_insert(0) += v);
                     }
                     Exp::Forall(bnds, trig, exp) => {
-                        let fvs = std::mem::take(&mut self.fvs);
+                        let mut fvs = std::mem::take(&mut self.occurs);
                         self.visit(exp);
                         self.visit_trigger(trig);
                         bnds.iter().for_each(|(l, _)| {
-                            self.fvs.remove(l);
+                            self.occurs.remove(l);
                         });
-                        self.fvs.extend(fvs);
+                        fvs.drain().for_each(|(k, v)| *self.occurs.entry(k).or_insert(0) += v);
                     }
                     Exp::Exists(bnds, trig, exp) => {
-                        let fvs = std::mem::take(&mut self.fvs);
+                        let mut fvs = std::mem::take(&mut self.occurs);
                         self.visit(exp);
                         self.visit_trigger(trig);
                         bnds.iter().for_each(|(l, _)| {
-                            self.fvs.remove(l);
+                            self.occurs.remove(l);
                         });
-                        self.fvs.extend(fvs);
+                        fvs.drain().for_each(|(k, v)| *self.occurs.entry(k).or_insert(0) += v);
                     }
                     _ => super_visit(self, exp),
                 }
             }
         }
 
-        let mut fvs = Fvs { fvs: IndexSet::new() };
+        let mut fvs = Occurs { occurs: Default::default() };
         fvs.visit(self);
-        fvs.fvs
+        fvs.occurs
+    }
+
+    pub fn fvs(&self) -> IndexSet<Ident> {
+        self.occurences().into_keys().collect()
     }
 
     pub fn qfvs(&self) -> IndexSet<QName> {
@@ -709,7 +894,7 @@ impl Exp {
         impl ExpVisitor for QFvs {
             fn visit(&mut self, exp: &Exp) {
                 match exp {
-                    Exp::QVar(v, _) => {
+                    Exp::QVar(v) => {
                         self.qfvs.insert(v.clone());
                     }
                     _ => super_visit(self, exp),
@@ -725,73 +910,6 @@ impl Exp {
     }
 
     pub fn subst(&mut self, mut subst: &HashMap<Ident, Exp>) {
-        impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
-            fn visit_mut(&mut self, exp: &mut Exp) {
-                match exp {
-                    Exp::Var(v, _) => {
-                        if let Some(e) = self.get(v) {
-                            *exp = e.clone()
-                        }
-                    }
-                    Exp::Abs(binders, body) => {
-                        let mut subst = self.clone();
-
-                        for binder in binders {
-                            binder.fvs().into_iter().for_each(|id| {
-                                subst.remove(&id);
-                            });
-                        }
-
-                        let mut s = &subst;
-                        s.visit_mut(body);
-                    }
-
-                    Exp::Let { pattern, arg, body } => {
-                        self.visit_mut(arg);
-                        let mut bound = pattern.binders();
-                        let mut subst = self.clone();
-                        bound.drain(..).for_each(|k| {
-                            subst.remove(&k);
-                        });
-
-                        let mut s = &subst;
-                        s.visit_mut(body);
-                    }
-                    Exp::Match(box scrut, brs) => {
-                        self.visit_mut(scrut);
-
-                        for (pat, br) in brs {
-                            let mut s = self.clone();
-                            pat.binders().drain(..).for_each(|b| {
-                                s.remove(&b);
-                            });
-
-                            let mut s = &s;
-                            s.visit_mut(br);
-                        }
-                    }
-                    Exp::Forall(binders, trig, exp) => {
-                        let mut subst = self.clone();
-                        binders.iter().for_each(|k| {
-                            subst.remove(&k.0);
-                        });
-                        let mut s = &subst;
-                        s.visit_mut(exp);
-                        s.visit_trigger_mut(trig);
-                    }
-                    Exp::Exists(binders, trig, exp) => {
-                        let mut subst = self.clone();
-                        binders.iter().for_each(|k| {
-                            subst.remove(&k.0);
-                        });
-                        let mut s = &subst;
-                        s.visit_mut(exp);
-                        s.visit_trigger_mut(trig);
-                    }
-                    _ => super_visit_mut(self, exp),
-                }
-            }
-        }
         subst.visit_mut(self);
     }
 }

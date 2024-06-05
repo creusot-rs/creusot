@@ -2,7 +2,7 @@ use crate::{std::iter::Empty, *};
 
 impl<T> Iterator for Empty<T> {
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() }
     }
@@ -24,4 +24,16 @@ impl<T> Iterator for Empty<T> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
+
+extern_spec! {
+    mod std {
+        mod iter {
+            impl<T> Iterator for Empty<T> {
+                #[pure]
+                #[ensures(result == None && self.completed())]
+                fn next(&mut self) -> Option<T>;
+            }
+        }
+    }
 }

@@ -478,7 +478,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for NotFinalPlaces<'tcx> {
 
     fn call_return_effect(
         &mut self,
-        _trans: &mut impl GenKill<Self::Idx>,
+        _trans: &mut Self::Domain,
         _block: BasicBlock,
         _return_places: CallReturnPlaces<'_, 'tcx>,
     ) {
@@ -496,7 +496,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for NotFinalPlaces<'tcx> {
 
     fn before_terminator_effect(
         &mut self,
-        trans: &mut impl GenKill<Self::Idx>,
+        trans: &mut Self::Domain,
         terminator: &mir::Terminator<'tcx>,
         location: Location,
     ) {

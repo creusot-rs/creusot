@@ -13,137 +13,119 @@
 extern crate self as creusot_contracts;
 
 #[cfg(creusot)]
-mod macros {
-    /// A pre-condition of a function or trait item
-    pub use creusot_contracts_proc::requires;
-
-    /// A post-condition of a function or trait item
-    pub use creusot_contracts_proc::ensures;
-
-    pub use creusot_contracts_proc::gh;
-
-    /// A loop invariant
-    /// The first argument should be a name for the invariant
-    /// The second argument is the Pearlite expression for the loop invariant
-    pub use creusot_contracts_proc::invariant;
-
-    /// Declares a trait item as being a law which is autoloaded as soon another
-    /// trait item is used in a function
-    pub use creusot_contracts_proc::law;
-
-    /// Declare a function as being a logical function, this declaration must be pure and
-    /// total. It cannot be called from Rust programs as it is *ghost*, in exchange it can
-    /// use logical operations and syntax with the help of the [pearlite] macro.
-    pub use creusot_contracts_proc::logic;
-
-    /// Declare a function as being a ghost function, this declaration must be pure and
-    /// total. It cannot be called from Rust programs as it is *ghost*, in exchange it can
-    /// use logical operations and syntax with the help of the [pearlite] macro.
-    /// Unlike functions marked with the `[logic]` attribute, `[ghost]` functions cannot
-    /// use the final value operator (^), nor call other `[predicate]` or `[logic]` functions.
-    pub use creusot_contracts_proc::ghost;
-
-    /// Declare a function as being a logical function, this declaration must be pure and
-    /// total. It cannot be called from Rust programs as it is *ghost*, in exchange it can
-    /// use logical operations and syntax with the help of the [pearlite] macro.
-    pub use creusot_contracts_proc::predicate;
-
-    /// Inserts a *logical* assertion into the code. This assertion will not be checked at runtime
-    /// but only during proofs. However, it has access to the ghost context and can use logical operations
-    /// and syntax.
-    pub use creusot_contracts_proc::proof_assert;
-
-    /// Instructs Pearlite to ignore the body of a declaration, assuming any contract the declaration has is
-    /// valid.
-    pub use creusot_contracts_proc::trusted;
-
-    /// Declares a variant for a function, this is primarily used in combination with logical functions
-    /// The variant must be an expression which returns a type implementing [WellFounded]
-    pub use creusot_contracts_proc::variant;
-
-    /// Enables Pearlite syntax, granting access to Pearlite specific operators and syntax
-    pub use creusot_contracts_proc::pearlite;
-
-    /// Allows specifications to be attached to functions coming from external crates
-    /// TODO: Document syntax
-    pub use creusot_contracts_proc::extern_spec;
-
-    /// Allows specifying both a pre- and post-condition in a single statement.
-    /// Expects an expression in either the form of a method or function call
-    /// Arguments to the call can be prefixed with `mut` to indicate that they are mutable borrows.
-    ///
-    /// Generates a `requires` and `ensures` clause in the shape of the input expression, with
-    /// `mut` replaced by `*` in the `requires` and `^` in the ensures.
-    pub use creusot_contracts_proc::maintains;
-
-    /// Allows the body of a logical definition to be made visible to provers. An optional visibility modifier can be
-    /// provided to restrict the context in whcih the obdy is opened.
-    /// By default bodies are *opaque*: they are only visible to definitions in the same module (like `pub(self)` for visibility).
-    ///
-    /// A body can only be visible in contexts where all the symbols used in the body are also visible.
-    /// This means you cannot `#[open]` a body which refers to a `pub(crate)` symbol.
-    pub use creusot_contracts_proc::open;
-
-    pub use creusot_contracts_proc::DeepModel;
-
-    pub use creusot_contracts_proc::Resolve;
-}
+extern crate creusot_contracts_proc as base_macros;
 
 #[cfg(not(creusot))]
+extern crate creusot_contracts_dummy as base_macros;
+
 mod macros {
     /// A pre-condition of a function or trait item
-    pub use creusot_contracts_dummy::requires;
+    pub use base_macros::requires;
 
     /// A post-condition of a function or trait item
-    pub use creusot_contracts_dummy::ensures;
+    pub use base_macros::ensures;
 
-    pub use creusot_contracts_dummy::gh;
+    pub use base_macros::snapshot;
+
+    /// Indicate that the function terminates: fullfilling the `requires` clauses
+    /// ensures that this function will not loop indefinitively.
+    pub use base_macros::terminates;
+
+    /// Indicate that the function is pure: fullfilling the `requires` clauses ensures
+    /// that this function will terminate, and will not panic.
+    ///
+    /// # No panics ?
+    ///
+    /// "But I though Creusot was supposed to check the absence of panics ?"
+    ///
+    /// That's true, but with a caveat: some functions of the standart library are
+    /// allowed to panic in specific cases. The main example is `Vec::push`: we want its
+    /// specification to be
+    /// ```ignore
+    /// #[ensures((^self)@ == self@.push(v))]
+    /// fn push(&mut self, v: T) { /* ... */ }
+    /// ```
+    ///
+    /// But the length of a vector [cannot overflow `isize::MAX`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.push). This is a very annoying condition to require, so we don't.
+    /// In exchange, this means `Vec::push` might panic in some cases, even though your
+    /// code passed Creusot's verification.
+    ///
+    /// # Non-pure std function
+    ///
+    /// Here are some examples of functions in `std` that are not marked as terminates
+    /// but not pure (this list might not be exhaustive):
+    /// - `Vec::push`, `Vec::insert`, `Vec::reserve`, `Vec::with_capacity`
+    /// - `str::to_string`
+    /// - `<&[T]>::into_vec`
+    /// - `Deque::push_front`, `Deque::push_back`, `Deque::with_capacity`
+    pub use base_macros::pure;
 
     /// A loop invariant
     /// The first argument should be a name for the invariant
     /// The second argument is the Pearlite expression for the loop invariant
-    pub use creusot_contracts_dummy::invariant;
+    pub use base_macros::invariant;
 
     /// Declares a trait item as being a law which is autoloaded as soon another
     /// trait item is used in a function
-    pub use creusot_contracts_dummy::law;
+    pub use base_macros::law;
+
+    /// Declare a function as being a logical function, this declaration must be pure and
+    /// total. It cannot be called from Rust programs, but in exchange it can use logical
+    /// operations and syntax with the help of the [`pearlite!`] macro.
+    ///
+    /// # `prophetic`
+    ///
+    /// If you wish to use the `^` operator on mutable borrows to get the final value, you need to
+    /// specify that the function is _prophetic_, like so:
+    /// ```ignore
+    /// #[logic(prophetic)]
+    /// fn uses_prophecies(x: &mut Int) -> Int {
+    ///     pearlite! { if ^x == 0 { 0 } else { 1 } }
+    /// }
+    /// ```
+    /// Such a logic function cannot be used in [`snapshot!`] anymore, and cannot be
+    /// called from a regular [`logic`] or [`predicate`] function.
+    pub use base_macros::logic;
 
     /// Declare a function as being a logical function, this declaration must be pure and
     /// total. It cannot be called from Rust programs as it is *ghost*, in exchange it can
-    /// use logical operations and syntax with the help of the [pearlite] macro.
-    pub use creusot_contracts_dummy::logic;
-
-    /// Declare a function as being a ghost function, this declaration must be pure and
-    /// total. It cannot be called from Rust programs as it is *ghost*, in exchange it can
-    /// use logical operations and syntax with the help of the [pearlite] macro.
-    /// Unlike functions marked with the `[logic]` attribute, `[ghost]` functions cannot
-    /// use the final value operator (^), nor call other `[predicate]` or `[logic]` functions.
-    pub use creusot_contracts_dummy::ghost;
-
-    /// Declare a function as being a logical function, this declaration must be pure and
-    /// total. It cannot be called from Rust programs as it is *ghost*, in exchange it can
-    /// use logical operations and syntax with the help of the [pearlite] macro.
-    pub use creusot_contracts_dummy::predicate;
+    /// use logical operations and syntax with the help of the [`pearlite!`] macro.
+    ///
+    /// It **must** return a boolean.
+    ///
+    /// # `prophetic`
+    ///
+    /// If you wish to use the `^` operator on mutable borrows to get the final value, you need to
+    /// specify that the function is _prophetic_, like so:
+    /// ```ignore
+    /// #[predicate(prophetic)]
+    /// fn uses_prophecies(x: &mut Int) -> bool {
+    ///     pearlite! { ^x == 0 }
+    /// }
+    /// ```
+    /// Such a predicate function cannot be used in [`snapshot!`] anymore, and cannot be
+    /// called from a regular [`logic`] or [`predicate`] function.
+    pub use base_macros::predicate;
 
     /// Inserts a *logical* assertion into the code. This assertion will not be checked at runtime
     /// but only during proofs. However, it has access to the ghost context and can use logical operations
     /// and syntax.
-    pub use creusot_contracts_dummy::proof_assert;
+    pub use base_macros::proof_assert;
 
     /// Instructs Pearlite to ignore the body of a declaration, assuming any contract the declaration has is
     /// valid.
-    pub use creusot_contracts_dummy::trusted;
+    pub use base_macros::trusted;
 
     /// Declares a variant for a function, this is primarily used in combination with logical functions
     /// The variant must be an expression which returns a type implementing [WellFounded]
-    pub use creusot_contracts_dummy::variant;
+    pub use base_macros::variant;
 
     /// Enables Pearlite syntax, granting access to Pearlite specific operators and syntax
-    pub use creusot_contracts_dummy::pearlite;
+    pub use base_macros::pearlite;
 
     /// Allows specifications to be attached to functions coming from external crates
     /// TODO: Document syntax
-    pub use creusot_contracts_dummy::extern_spec;
+    pub use base_macros::extern_spec;
 
     /// Allows specifying both a pre- and post-condition in a single statement.
     /// Expects an expression in either the form of a method or function call
@@ -151,19 +133,15 @@ mod macros {
     ///
     /// Generates a `requires` and `ensures` clause in the shape of the input expression, with
     /// `mut` replaced by `*` in the `requires` and `^` in the ensures.
-    pub use creusot_contracts_dummy::maintains;
+    pub use base_macros::maintains;
 
     /// Allows the body of a logical definition to be made visible to provers. An optional visibility modifier can be
     /// provided to restrict the context in whcih the obdy is opened.
-    /// By default bodies are *opaque*: they are only visible to definitions in the same module (like `pub(self)` for visibility).
+    /// By default, bodies are *opaque*: they are only visible to definitions in the same module (like `pub(self)` for visibility).
     ///
     /// A body can only be visible in contexts where all the symbols used in the body are also visible.
     /// This means you cannot `#[open]` a body which refers to a `pub(crate)` symbol.
-    pub use creusot_contracts_dummy::open;
-
-    pub use creusot_contracts_proc::DeepModel;
-
-    pub use creusot_contracts_proc::Resolve;
+    pub use base_macros::open;
 }
 
 #[cfg(creusot)]
@@ -179,27 +157,27 @@ pub mod std;
 pub mod num_rational;
 
 #[cfg(creusot)]
-pub mod ghost;
+pub mod snapshot;
 
 #[cfg(not(creusot))]
-pub mod ghost {
-    pub struct Ghost<T>(std::marker::PhantomData<T>)
+pub mod snapshot {
+    pub struct Snapshot<T>(std::marker::PhantomData<T>)
     where
         T: ?Sized;
 
-    impl<T: ?Sized> Ghost<T> {
+    impl<T: ?Sized> Snapshot<T> {
         pub fn from_fn(_: fn() -> T) -> Self {
-            Ghost(std::marker::PhantomData)
+            Snapshot(std::marker::PhantomData)
         }
     }
 
-    impl<T: ?Sized> Clone for Ghost<T> {
+    impl<T: ?Sized> Clone for Snapshot<T> {
         fn clone(&self) -> Self {
-            Ghost(std::marker::PhantomData)
+            Snapshot(std::marker::PhantomData)
         }
     }
 
-    impl<T: ?Sized> Copy for Ghost<T> {}
+    impl<T: ?Sized> Copy for Snapshot<T> {}
 }
 
 pub mod ghost_ptr;
@@ -210,34 +188,40 @@ pub mod util;
 pub mod well_founded;
 
 // We add some common things at the root of the creusot-contracts library
-pub use crate::{
-    ghost::Ghost,
-    logic::{IndexLogic as _, Int, OrdLogic, Seq},
-    macros::*,
-    model::{DeepModel, ShallowModel},
-    resolve::Resolve,
-    std::{
-        // Shadow std::prelude by our version.
-        // For Clone and PartialEq, this is important for the derive macro.
-        // If the user write the glob pattern "use creusot_contracts::*", then
-        // rustc will either shadow the old identifier or complain about the
-        // ambiguïty (ex: for the derive macros Clone and PartialEq, a glob
-        // pattern is not enough to force rustc to use our version, but at least
-        // we get an error message).
-        clone::Clone,
-        cmp::PartialEq,
-        default::Default,
-        iter::{FromIterator, IntoIterator, Iterator},
-    },
-    well_founded::WellFounded,
-};
+mod base_prelude {
+    pub use crate::{
+        logic::{IndexLogic as _, Int, OrdLogic, Seq},
+        model::{DeepModel, ShallowModel},
+        resolve::Resolve,
+        snapshot::Snapshot,
+        std::{
+            // Shadow std::prelude by our version.
+            // For Clone and PartialEq, this is important for the derive macro.
+            // If the user write the glob pattern "use creusot_contracts::*", then
+            // rustc will either shadow the old identifier or complain about the
+            // ambiguïty (ex: for the derive macros Clone and PartialEq, a glob
+            // pattern is not enough to force rustc to use our version, but at least
+            // we get an error message).
+            clone::Clone,
+            cmp::PartialEq,
+            default::Default,
+            iter::{FromIterator, IntoIterator, Iterator},
+        },
+        well_founded::WellFounded,
+    };
 
-// Export extension traits anonymously
-pub use crate::std::{
-    iter::{SkipExt as _, TakeExt as _},
-    ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
-    slice::SliceExt as _,
-};
+    // Export extension traits anonymously
+    pub use crate::std::{
+        iter::{SkipExt as _, TakeExt as _},
+        ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
+        slice::SliceExt as _,
+    };
+}
+pub mod prelude {
+    pub use crate::{base_prelude::*, macros::*};
+}
+
+pub use prelude::*;
 
 // The std vec macro uses special magic to construct the array argument
 // to Box::new directly on the heap. Because the generated MIR is hard

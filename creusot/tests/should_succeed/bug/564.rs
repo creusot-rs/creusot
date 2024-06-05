@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-#[ghost]
+#[logic]
 #[open]
 #[requires(invariants())]
 pub fn emits_pure_eq() -> bool {
@@ -10,7 +10,7 @@ pub fn emits_pure_eq() -> bool {
     }
 }
 
-#[ghost]
+#[logic]
 #[open]
 #[requires(invariants())]
 pub fn emits_pure_implies() -> bool {
@@ -19,7 +19,7 @@ pub fn emits_pure_implies() -> bool {
     }
 }
 
-#[ghost]
+#[logic]
 fn invariants() -> bool {
     true
 }

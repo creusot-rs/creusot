@@ -5,7 +5,7 @@ use std::{
     fs::File,
     io::{BufRead, BufReader, Write},
     path::PathBuf,
-    process::{exit, Command},
+    process::exit,
 };
 use termcolor::*;
 
@@ -21,7 +21,7 @@ struct Args {
     /// Only check that a session merges and contains no obsolete goals
     #[clap(long = "replay", value_enum, default_value_t=ReplayLevel::All)]
     replay: ReplayLevel,
-    /// Only check mlcfg files that differ from the provided source in the git history (useful for small PRs)
+    /// Only check coma files that differ from the provided source in the git history (useful for small PRs)
     #[clap(long = "diff-from")]
     diff_from: Option<String>,
     /// Fail as soon as a single test fails
@@ -37,17 +37,16 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    let why3_path = std::env::var("WHY3_PATH").unwrap_or_else(|_| "why3".into());
-    let config_path = std::env::var("WHY3_CONFIG");
+
     let mut out = StandardStream::stdout(ColorChoice::Always);
     let orange = Color::Ansi256(214);
 
     let changed =
-        if let Some(diff) = args.diff_from { Some(changed_mlcfgs(&diff).unwrap()) } else { None };
+        if let Some(diff) = args.diff_from { Some(changed_comas(&diff).unwrap()) } else { None };
 
     let mut success = true;
     let mut obsolete = false;
-    for file in glob::glob("../creusot/tests/**/*.mlcfg").unwrap() {
+    for file in glob::glob("../creusot/tests/**/*.coma").unwrap() {
         // Check for early abort
         if args.fail_early && (!success || obsolete) {
             break;
@@ -93,19 +92,26 @@ fn main() {
         sessionfile.push("why3session.xml");
 
         let output;
-        let mut command = Command::new(why3_path.clone());
+        let mut command = creusot_dev_config::why3_command().unwrap();
         command.arg("--warn-off=unused_variable");
         command.arg("--warn-off=clone_not_abstract");
+        command.arg("--warn-off=axiom_abstract");
+        command.arg("--debug=coma_no_trivial");
 
         if sessionfile.is_file() {
-            let proved = BufReader::new(File::open(&sessionfile).unwrap())
-                .lines()
-                .find_map(|l| match l.unwrap().as_str() {
-                    "<file format=\"mlcfg\">" => Some(false),
-                    "<file format=\"mlcfg\" proved=\"true\">" => Some(true),
-                    _ => None,
+            let Some(proved) =
+                BufReader::new(File::open(&sessionfile).unwrap()).lines().find_map(|l| {
+                    match l.unwrap().as_str() {
+                        "<file format=\"coma\">" => Some(false),
+                        "<file format=\"coma\" proved=\"true\">" => Some(true),
+                        _ => None,
+                    }
                 })
-                .unwrap();
+            else {
+                writeln!(&mut out, "error").unwrap();
+                success = false;
+                continue;
+            };
 
             if !proved {
                 let color = if should_fail { Color::Green } else { orange };
@@ -139,11 +145,7 @@ fn main() {
                 ReplayLevel::All => {}
             };
 
-            if let Ok(ref config) = config_path {
-                command.args(&["-C", config]);
-                // command.arg(&format!("--extra-config={config}"));
-            }
-            command.arg(sessiondir);
+            command.arg(sessiondir.clone());
             output = command.ok();
             if output.is_ok() {
                 let outputstring = std::str::from_utf8(&output.as_ref().unwrap().stderr).unwrap();
@@ -169,7 +171,7 @@ fn main() {
         } else {
             // No session directory. Simply parse the file using "why3 prove".
             command.arg("prove");
-            command.args(&["-L", "../prelude", "-F", "mlcfg"]);
+            command.args(&["-L", "../prelude", "-F", "coma"]);
             command.arg(file);
             output = command.ok();
             if output.is_ok() {
@@ -220,7 +222,7 @@ fn main() {
     }
 }
 
-fn changed_mlcfgs(from: &str) -> Result<Vec<PathBuf>, git2::Error> {
+fn changed_comas(from: &str) -> Result<Vec<PathBuf>, git2::Error> {
     let repo = Repository::open("..")?;
     let rev = repo.revparse_single(from)?.id();
     let commit = repo.find_commit(rev)?;
@@ -229,7 +231,7 @@ fn changed_mlcfgs(from: &str) -> Result<Vec<PathBuf>, git2::Error> {
     let mut paths = Vec::new();
     for d in diff.deltas() {
         if let Some(path) = d.new_file().path() {
-            if path.extension().map(|e| e == "mlcfg").unwrap_or(false) {
+            if path.extension().map(|e| e == "coma").unwrap_or(false) {
                 paths.push(path.to_owned());
             }
         }

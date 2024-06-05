@@ -5,7 +5,7 @@ macro_rules! mach_int {
     ($t:ty, $ty_nm:literal, $zero:expr) => {
         impl ShallowModel for $t {
             type ShallowModelTy = Int;
-            #[ghost]
+            #[logic]
             #[open]
             #[trusted]
             #[creusot::builtins = $ty_nm]
@@ -16,7 +16,7 @@ macro_rules! mach_int {
 
         impl DeepModel for $t {
             type DeepModelTy = Int;
-            #[ghost]
+            #[logic]
             #[open]
             fn deep_model(self) -> Self::DeepModelTy {
                 pearlite! { self@ }
@@ -62,6 +62,7 @@ macro_rules! spec_type {
         extern_spec! {
             impl $type {
                 #[allow(dead_code)]
+                #[pure]
                 // Returns `None` iff the divisor is zero or the division overflows
                 #[ensures((result == None) == (rhs@ == 0 || (self@ == $type::MIN@ && rhs@ == -1)))]
                 // Else, returns the result of the division
@@ -69,6 +70,7 @@ macro_rules! spec_type {
                 fn checked_div(self, rhs: $type) -> Option<$type>;
 
                 #[allow(dead_code)]
+                #[pure]
                 // Panics if the divisor is zero
                 #[requires(rhs@ != 0)]
                 // Returns `self` if the division overflows
@@ -78,6 +80,7 @@ macro_rules! spec_type {
                 fn wrapping_div(self, rhs: $type) -> $type;
 
                 #[allow(dead_code)]
+                #[pure]
                 // Panics if the divisor is zero
                 #[requires(rhs@ != 0)]
                 // Returns `$type::MIN` if the division overflows
@@ -87,6 +90,7 @@ macro_rules! spec_type {
                 fn saturating_div(self, rhs: $type) -> $type;
 
                 #[allow(dead_code)]
+                #[pure]
                 // Panics if the divisor is zero
                 #[requires(rhs@ != 0)]
                 // Returns `self` if the division overflows
@@ -119,6 +123,7 @@ macro_rules! spec_op_common {
                 // `$type::MIN` and `$type::MAX`, or `None` if the result cannot be represented by
                 // `$type`
                 #[allow(dead_code)]
+                #[pure]
                 // Returns `None` iff the result is out of range
                 #[ensures(
                     (result == None)
@@ -130,6 +135,7 @@ macro_rules! spec_op_common {
 
                 // Wrapping: performs the operation on `Int` and converts back to `$type`
                 #[allow(dead_code)]
+                #[pure]
                 // Returns result converted to `$type`
                 #[ensures(
                     result@ == (self@ $op rhs@).rem_euclid(2.pow($type::BITS@)) + $type::MIN@
@@ -157,6 +163,7 @@ macro_rules! spec_op_common {
                 // Saturating: performs the operation on `Int` and clamps the result between
                 // `$type::MIN` and `$type::MAX`
                 #[allow(dead_code)]
+                #[pure]
                 // Returns the result if it is in range
                 #[ensures(
                     (self@ $op rhs@) >= $type::MIN@ && (self@ $op rhs@) <= $type::MAX@
@@ -170,6 +177,7 @@ macro_rules! spec_op_common {
                 // Overflowing: performs the operation on `Int` and converts back to `$type`, and
                 // indicates whether an overflow occurred
                 #[allow(dead_code)]
+                #[pure]
                 // Returns result converted to `$type`
                 #[ensures(
                     result.0@ == (self@ $op rhs@).rem_euclid(2.pow($type::BITS@)) + $type::MIN@
@@ -209,12 +217,14 @@ macro_rules! spec_abs_diff {
         extern_spec! {
             impl $unsigned {
                 #[allow(dead_code)]
+                #[pure]
                 #[ensures(result@ == self@.abs_diff(other@))]
                 fn abs_diff(self, other: $unsigned) -> $unsigned;
             }
 
             impl $signed {
                 #[allow(dead_code)]
+                #[pure]
                 #[ensures(result@ == self@.abs_diff(other@))]
                 fn abs_diff(self, other: $signed) -> $unsigned;
             }

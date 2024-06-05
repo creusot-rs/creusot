@@ -3,7 +3,7 @@ use crate::*;
 impl<T, const N: usize> ShallowModel for [T; N] {
     type ShallowModelTy = Seq<T>;
 
-    #[ghost]
+    #[logic]
     #[trusted]
     #[open]
     #[creusot::builtins = "prelude.Slice.id"]
@@ -18,7 +18,7 @@ impl<T, const N: usize> ShallowModel for [T; N] {
 impl<T: DeepModel, const N: usize> DeepModel for [T; N] {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
-    #[ghost]
+    #[logic]
     #[trusted]
     #[open(self)]
     // TODO

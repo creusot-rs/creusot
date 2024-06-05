@@ -1,0 +1,244 @@
+
+module C922_G
+  use prelude.Intrinsic
+  use prelude.Int32
+  predicate resolve'3 (self : int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12] true
+  let rec resolve'3 (self:int32) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'3 self} (! return' {result}) ]
+    
+  use prelude.Borrow
+  predicate resolve'0 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  let rec resolve'0 (self:borrowed int32) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
+    
+  predicate resolve'2 (self : (int32, borrowed int32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60] resolve'3 (let (a, _) = self in a)
+    /\ resolve'0 (let (_, a) = self in a)
+  let rec resolve'2 (self:(int32, borrowed int32)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'2 self} (! return' {result}) ]
+    
+  predicate resolve'1 (self : ((int32, borrowed int32), int32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60] resolve'2 (let (a, _) = self in a)
+    /\ resolve'3 (let (_, a) = self in a)
+  let rec resolve'1 (self:((int32, borrowed int32), int32)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'1 self} (! return' {result}) ]
+    
+  use prelude.Int
+  let rec g (x:((int32, borrowed int32), int32)) (return'  (ret:borrowed int32))= (! bb0
+    [ bb0 = s0
+      [ s0 = Borrow.borrow_final
+          <int32>
+          { * (let (_, r'3) = let (r'2, _) = x in r'2 in r'3)}
+          {Borrow.get_id (let (_, r'1) = let (r'0, _) = x in r'0 in r'1)}
+          (fun (_ret':borrowed int32) ->
+             [ &_4 <- _ret' ] 
+            
+            [ &x <- let (_, l'2) = x in ((let (l'4, _) = let (l'0, _) = x in l'0 in (l'4, { (let (_, l'3) = let (l'0, _) = x in l'0 in l'3) with current = ( ^ _4) ; })), l'2) ]
+            
+            s1)
+      | s1 = Borrow.borrow_final <int32> { * _4} {Borrow.get_id _4}
+          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_4 <- { _4 with current = ( ^ _2) ; } ] s2)
+      | s2 = Borrow.borrow_final <int32> { * _2} {Borrow.get_id _2}
+          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = ( ^ _0) ; } ] s3)
+      | s3 = -{resolve'0 _4}- s4
+      | s4 = -{resolve'0 _2}- s5
+      | s5 = -{resolve'1 x}- s6
+      | s6 = return' {_0} ]
+       ]
+    )
+    [ & _0 : borrowed int32 = any_l () : borrowed int32
+    | & x : ((int32, borrowed int32), int32) = x
+    | & _2 : borrowed int32 = any_l () : borrowed int32
+    | & _4 : borrowed int32 = any_l () : borrowed int32 ]
+    
+    [ return' (result:borrowed int32)-> {[@expl:postcondition] [#"../922.rs" 4 0 4 27] result
+      = (let (_, a) = let (a, _) = x in a in a)}
+      (! return' {result}) ]
+    
+end
+module C922_F1
+  use prelude.Intrinsic
+  use prelude.Borrow
+  use prelude.Int32
+  predicate resolve'1 (self : borrowed (int32, borrowed int32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  let rec resolve'1 (self:borrowed (int32, borrowed int32)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'1 self} (! return' {result}) ]
+    
+  predicate resolve'0 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  let rec resolve'0 (self:borrowed int32) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
+    
+  use prelude.Int
+  let rec f1 (b:borrowed (int32, borrowed int32)) (return'  (ret:borrowed int32))= (! bb0
+    [ bb0 = s0
+      [ s0 = Borrow.borrow_mut <int32> { * (let (_, r'0) =  * b in r'0)}
+          (fun (_ret':borrowed int32) ->
+             [ &_6 <- _ret' ] 
+            
+            [ &b <- { b with current = (let (l'1, _) =  * b in (l'1, { (let (_, l'0) =  * b in l'0) with current = ( ^ _6) ; })) ; } ]
+            
+            s1)
+      | s1 = Borrow.borrow_final <int32> { * _6} {Borrow.get_id _6}
+          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_6 <- { _6 with current = ( ^ _2) ; } ] s2)
+      | s2 = Borrow.borrow_final <int32> { * _2} {Borrow.get_id _2}
+          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = ( ^ _0) ; } ] s3)
+      | s3 = -{resolve'0 _6}- s4
+      | s4 = -{resolve'0 _2}- s5
+      | s5 = -{resolve'1 b}- s6
+      | s6 = return' {_0} ]
+       ]
+    )
+    [ & _0 : borrowed int32 = any_l () : borrowed int32
+    | & b : borrowed (int32, borrowed int32) = b
+    | & _2 : borrowed int32 = any_l () : borrowed int32
+    | & _6 : borrowed int32 = any_l () : borrowed int32 ]
+    
+    [ return' (result:borrowed int32)-> {[@expl:postcondition] [#"../922.rs" 11 10 11 28]  ^ (let (_, a) =  * b in a)
+      =  ^ (let (_, a) =  ^ b in a)}
+      {[@expl:postcondition] [#"../922.rs" 10 10 10 28]  ^ result =  * (let (_, a) =  ^ b in a)}
+      {[@expl:postcondition] [#"../922.rs" 9 10 9 28]  * result =  * (let (_, a) =  * b in a)}
+      (! return' {result}) ]
+    
+end
+module C922_F2
+  use prelude.Intrinsic
+  use prelude.Borrow
+  use prelude.Int32
+  predicate resolve'1 (self : borrowed (int32, borrowed int32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  let rec resolve'1 (self:borrowed (int32, borrowed int32)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'1 self} (! return' {result}) ]
+    
+  predicate resolve'0 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  let rec resolve'0 (self:borrowed int32) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
+    
+  use prelude.Int
+  let rec f2 (x0:borrowed (int32, borrowed int32)) (return'  (ret:borrowed int32))= (! bb0
+    [ bb0 = s0
+      [ s0 = Borrow.borrow_mut <int32> { * (let (_, r'0) =  * x0 in r'0)}
+          (fun (_ret':borrowed int32) ->
+             [ &_6 <- _ret' ] 
+            
+            [ &x0 <- { x0 with current = (let (l'1, _) =  * x0 in (l'1, { (let (_, l'0) =  * x0 in l'0) with current = ( ^ _6) ; })) ; } ]
+            
+            s1)
+      | s1 = Borrow.borrow_final <int32> { * _6} {Borrow.get_id _6}
+          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_6 <- { _6 with current = ( ^ _2) ; } ] s2)
+      | s2 = Borrow.borrow_final <int32> { * _2} {Borrow.get_id _2}
+          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = ( ^ _0) ; } ] s3)
+      | s3 = -{resolve'0 _6}- s4
+      | s4 = -{resolve'0 _2}- s5
+      | s5 = -{resolve'1 x0}- s6
+      | s6 = return' {_0} ]
+       ]
+    )
+    [ & _0 : borrowed int32 = any_l () : borrowed int32
+    | & x0 : borrowed (int32, borrowed int32) = x0
+    | & _2 : borrowed int32 = any_l () : borrowed int32
+    | & _6 : borrowed int32 = any_l () : borrowed int32 ]
+    
+    [ return' (result:borrowed int32)-> {[@expl:postcondition] [#"../922.rs" 18 10 18 30]  ^ (let (_, a) =  * x0 in a)
+      =  ^ (let (_, a) =  ^ x0 in a)}
+      {[@expl:postcondition] [#"../922.rs" 17 10 17 29]  ^ result =  * (let (_, a) =  ^ x0 in a)}
+      {[@expl:postcondition] [#"../922.rs" 16 10 16 29]  * result =  * (let (_, a) =  * x0 in a)}
+      (! return' {result}) ]
+    
+end
+module C922_F3
+  use prelude.Intrinsic
+  use prelude.Borrow
+  use prelude.Int32
+  predicate resolve'1 (self : borrowed (int32, borrowed int32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  let rec resolve'1 (self:borrowed (int32, borrowed int32)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'1 self} (! return' {result}) ]
+    
+  predicate resolve'0 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  let rec resolve'0 (self:borrowed int32) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
+    
+  use prelude.Int
+  let rec f3 (x1:borrowed (int32, borrowed int32)) (return'  (ret:borrowed int32))= (! bb0
+    [ bb0 = s0
+      [ s0 = Borrow.borrow_mut <int32> { * (let (_, r'0) =  * x1 in r'0)}
+          (fun (_ret':borrowed int32) ->
+             [ &_6 <- _ret' ] 
+            
+            [ &x1 <- { x1 with current = (let (l'1, _) =  * x1 in (l'1, { (let (_, l'0) =  * x1 in l'0) with current = ( ^ _6) ; })) ; } ]
+            
+            s1)
+      | s1 = Borrow.borrow_final <int32> { * _6} {Borrow.get_id _6}
+          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_6 <- { _6 with current = ( ^ _2) ; } ] s2)
+      | s2 = Borrow.borrow_final <int32> { * _2} {Borrow.get_id _2}
+          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = ( ^ _0) ; } ] s3)
+      | s3 = -{resolve'0 _6}- s4
+      | s4 = -{resolve'0 _2}- s5
+      | s5 = -{resolve'1 x1}- s6
+      | s6 = return' {_0} ]
+       ]
+    )
+    [ & _0 : borrowed int32 = any_l () : borrowed int32
+    | & x1 : borrowed (int32, borrowed int32) = x1
+    | & _2 : borrowed int32 = any_l () : borrowed int32
+    | & _6 : borrowed int32 = any_l () : borrowed int32 ]
+    
+    [ return' (result:borrowed int32)-> {[@expl:postcondition] [#"../922.rs" 25 10 25 30]  ^ (let (_, a) =  * x1 in a)
+      =  ^ (let (_, a) =  ^ x1 in a)}
+      {[@expl:postcondition] [#"../922.rs" 24 10 24 29]  ^ result =  * (let (_, a) =  ^ x1 in a)}
+      {[@expl:postcondition] [#"../922.rs" 23 10 23 29]  * result =  * (let (_, a) =  * x1 in a)}
+      (! return' {result}) ]
+    
+end
+module C922_F4
+  use prelude.Intrinsic
+  use prelude.Borrow
+  use prelude.Int32
+  predicate resolve'1 (self : borrowed (int32, borrowed int32)) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  let rec resolve'1 (self:borrowed (int32, borrowed int32)) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'1 self} (! return' {result}) ]
+    
+  predicate resolve'0 (self : borrowed int32) =
+    [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+  let rec resolve'0 (self:borrowed int32) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
+    
+  use prelude.Int
+  let rec f4 (x2:borrowed (int32, borrowed int32)) (return'  (ret:borrowed int32))= (! bb0
+    [ bb0 = s0
+      [ s0 = Borrow.borrow_mut <int32> { * (let (_, r'0) =  * x2 in r'0)}
+          (fun (_ret':borrowed int32) ->
+             [ &_6 <- _ret' ] 
+            
+            [ &x2 <- { x2 with current = (let (l'1, _) =  * x2 in (l'1, { (let (_, l'0) =  * x2 in l'0) with current = ( ^ _6) ; })) ; } ]
+            
+            s1)
+      | s1 = Borrow.borrow_final <int32> { * _6} {Borrow.get_id _6}
+          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_6 <- { _6 with current = ( ^ _2) ; } ] s2)
+      | s2 = Borrow.borrow_final <int32> { * _2} {Borrow.get_id _2}
+          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = ( ^ _0) ; } ] s3)
+      | s3 = -{resolve'0 _6}- s4
+      | s4 = -{resolve'0 _2}- s5
+      | s5 = -{resolve'1 x2}- s6
+      | s6 = return' {_0} ]
+       ]
+    )
+    [ & _0 : borrowed int32 = any_l () : borrowed int32
+    | & x2 : borrowed (int32, borrowed int32) = x2
+    | & _2 : borrowed int32 = any_l () : borrowed int32
+    | & _6 : borrowed int32 = any_l () : borrowed int32 ]
+    
+    [ return' (result:borrowed int32)-> {[@expl:postcondition] [#"../922.rs" 32 10 32 30]  ^ (let (_, a) =  * x2 in a)
+      =  ^ (let (_, a) =  ^ x2 in a)}
+      {[@expl:postcondition] [#"../922.rs" 31 10 31 29]  ^ result =  * (let (_, a) =  ^ x2 in a)}
+      {[@expl:postcondition] [#"../922.rs" 30 10 30 29]  * result =  * (let (_, a) =  * x2 in a)}
+      (! return' {result}) ]
+    
+end

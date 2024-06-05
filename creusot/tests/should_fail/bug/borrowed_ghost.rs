@@ -2,9 +2,9 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 pub fn use_borrowed() {
-    let mut x = gh! { true };
-    let r = &mut x; // x = ?, r = (gh true, x)
-    *r = gh! { !x.inner() }; // r = (gh (not (inner x)), x)
-                             // resolve r: x = gh (not (inner x))
+    let mut x = snapshot! { true };
+    let r = &mut x; // x = ?, r = (snapshot true, x)
+    *r = snapshot! { !x.inner() }; // r = (snapshot (not (inner x)), x)
+                                   // resolve r: x = snapshot (not (inner x))
     proof_assert! { x.inner() == !x.inner() } // UNSOUND!
 }

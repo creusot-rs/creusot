@@ -3,7 +3,7 @@ use creusot_contracts::{logic::Int, *};
 
 pub struct List(u32, Option<Box<List>>);
 impl List {
-    #[ghost]
+    #[logic]
     fn len(self: List) -> Int {
         {
             let List(_, ls) = self;
@@ -14,7 +14,7 @@ impl List {
         }
     }
 
-    #[ghost]
+    #[logic]
     fn get(self: List, ix: Int) -> Option<u32> {
         {
             let List(i, ls) = self;
@@ -35,8 +35,8 @@ impl List {
 #[ensures((^l).len() == (*l).len())]
 #[ensures(forall<i:Int> 0 <= i && i < l.len() && i != ix@ ==> l.get(i) == (^l).get(i))]
 pub fn index_mut(mut l: &mut List, mut ix: usize) -> &mut u32 {
-    let old_l = gh! { l };
-    let old_ix = gh! { ix };
+    let old_l = snapshot! { l };
+    let old_ix = snapshot! { ix };
     #[invariant(0usize <= ix && ix@ < l.len())]
     #[invariant(l.get(ix@) == (**old_l).get(old_ix@))]
     #[invariant((^l).get(ix@) == (^*old_l).get(old_ix@))]

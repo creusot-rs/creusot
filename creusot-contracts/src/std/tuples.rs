@@ -3,7 +3,7 @@ use crate::{Default, *};
 impl DeepModel for () {
     type DeepModelTy = ();
 
-    #[ghost]
+    #[logic]
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { () }
@@ -23,7 +23,7 @@ macro_rules! tuple_impls {
         impl<$($name: DeepModel),+> DeepModel for ($($name,)+) {
             type DeepModelTy = ($($name::DeepModelTy,)+);
 
-            #[ghost]
+            #[logic]
             #[open]
             fn deep_model(self) -> Self::DeepModelTy {
                 pearlite! { ($(self.$idx.deep_model(),)+) }
@@ -31,7 +31,7 @@ macro_rules! tuple_impls {
         }
 
         impl<$($name: Default),+> Default for ($($name,)+) {
-            #[predicate]
+            #[predicate(prophetic)]
             #[open]
             fn is_default(self) -> bool {
                 pearlite! { $(self.$idx.is_default())&&+ }

@@ -1,7 +1,7 @@
 use super::{
     term::lower_pure,
-    ty::{translate_ty, ty_param_names},
-    CloneMap, CloneSummary, TransId, Why3Generator,
+    ty::{translate_ty, ty_params},
+    CloneSummary, Dependencies, TransId, Why3Generator,
 };
 use crate::{
     ctx::*,
@@ -18,12 +18,12 @@ use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
 use why3::{
-    declaration::{Axiom, Decl, Module, TyDecl},
+    declaration::{Axiom, Decl, TyDecl},
     exp::{Exp, Trigger},
     Ident,
 };
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug, TypeVisitable, TypeFoldable)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, TypeVisitable, TypeFoldable)]
 pub(crate) enum TyInvKind {
     Trivial,
     Borrow(Mutability),
@@ -77,12 +77,12 @@ impl TyInvKind {
         }
     }
 
-    pub(crate) fn generics(self, tcx: TyCtxt) -> Vec<Ident> {
+    pub(crate) fn generics(self, ctx: &mut Why3Generator) -> Vec<Ident> {
         match self {
             TyInvKind::Trivial | TyInvKind::Borrow(_) | TyInvKind::Box | TyInvKind::Slice => {
                 vec!["t".into()]
             }
-            TyInvKind::Adt(def_id) => ty_param_names(tcx, def_id).collect(),
+            TyInvKind::Adt(def_id) => ty_params(ctx, def_id).collect(),
             TyInvKind::Tuple(arity) => (0..arity).map(|i| format!["t{i}"].into()).collect(),
         }
     }
@@ -403,9 +403,9 @@ impl<'tcx> InvariantElaborator<'tcx> {
 pub(crate) fn build_inv_module<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     inv_kind: TyInvKind,
-) -> (Module, CloneSummary<'tcx>) {
-    let mut names = CloneMap::new(ctx.tcx, TransId::TyInv(inv_kind));
-    let generics = inv_kind.generics(ctx.tcx);
+) -> CloneSummary<'tcx> {
+    let mut names = Dependencies::new(ctx.tcx, [TransId::TyInv(inv_kind)]);
+    let generics = inv_kind.generics(ctx);
     let inv_axiom =
         names.with_vis(CloneLevel::Contract, |names| build_inv_axiom(ctx, names, inv_kind));
 
@@ -428,13 +428,13 @@ pub(crate) fn build_inv_module<'tcx>(
             .map(|ty_name| Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: vec![] })),
     );
 
-    let (clones, summary) = names.to_clones(ctx, CloneDepth::Shallow);
+    let (clones, summary) = names.provide_deps(ctx, GraphDepth::Shallow);
     // eprintln!("summary of {inv_kind:?} -> {summary:#?}");
     decls.extend(clones);
 
     decls.push(Decl::Axiom(inv_axiom));
 
-    (Module { name: util::inv_module_name(ctx.tcx, inv_kind), decls }, summary)
+    summary
 }
 
 fn axiom_name(ctx: &Why3Generator<'_>, inv_kind: TyInvKind) -> Ident {
@@ -454,7 +454,7 @@ fn axiom_name(ctx: &Why3Generator<'_>, inv_kind: TyInvKind) -> Ident {
 
 fn build_inv_axiom<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Dependencies<'tcx>,
     inv_kind: TyInvKind,
 ) -> Axiom {
     let name = axiom_name(ctx, inv_kind);
@@ -465,7 +465,7 @@ fn build_inv_axiom<'tcx>(
     let ty = inv_kind.to_skeleton_ty(ctx.tcx);
     let kind = TyInvKind::from_ty(ctx.tcx, ty);
     // TODO : Refactor and push binding down
-    let lhs: Exp = Exp::impure_qvar(names.ty_inv(ty)).app_to(Exp::pure_var("x".into()));
+    let lhs: Exp = Exp::qvar(names.ty_inv(ty)).app_to(Exp::var("x"));
     let rhs = if TyInvKind::Trivial == inv_kind {
         Exp::mk_true()
     } else {
