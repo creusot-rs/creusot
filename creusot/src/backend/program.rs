@@ -24,7 +24,7 @@ use crate::{
 };
 use rustc_hir::{def_id::DefId, Unsafety};
 use rustc_middle::{
-    mir::{BasicBlock, BinOp, ProjectionElem},
+    mir::{BasicBlock, BinOp, ProjectionElem, UnOp},
     ty::TyKind,
 };
 use rustc_span::{Span, DUMMY_SP};
@@ -335,40 +335,57 @@ impl<'tcx> Expr<'tcx> {
                 Exp::impure_qvar(QName::from_string(fname).unwrap())
                     .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
             }
+            // shift left operator
+            ExprKind::BinOp(op, l, r)
+                if matches!(op, BinOp::Shl) // #TODO-LS: que faire de BinOp::ShlUnchecked ??
+                    && l.ty.is_integral() && r.ty.is_integral() => {
+                let fname = if l.ty.is_signed() {"s_lsl"} else {"u_lsl"};
+                Exp::impure_qvar(QName::from_string(fname).unwrap())
+                    .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
+            }
+            // shift right operator
+            ExprKind::BinOp(op, l, r)
+                if matches!(op, BinOp::Shr) // #TODO-LS: que faire de BinOp::ShrUnchecked ??
+                    && l.ty.is_integral() && r.ty.is_integral() => {
+                let fname = if l.ty.is_signed() {"s_asl"} else {"u_lsr"};
+                Exp::impure_qvar(QName::from_string(fname).unwrap())
+                    .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
+            }
+
+            // #TODO-LS: utiliser la surcharge d'operateur dans prelude et supprimer ce code ?
             // Arithmetic operation on two signed integer
-            ExprKind::BinOp(op, l, r)
-                if matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Div)
-                    && l.ty.is_signed()
-                    && r.ty.is_signed() =>
-            {
-                let fname = match op {
-                    BinOp::Add => "s_add",
-                    BinOp::Sub => "s_sub",
-                    BinOp::Mul => "s_mul",
-                    BinOp::Div => "s_div",
-                    _ => panic!("unknown arithmetic operation on two signed integer"),
-                };
-
-                Exp::impure_qvar(QName::from_string(fname).unwrap())
-                    .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
-            }
+            // ExprKind::BinOp(op, l, r)
+            //     if matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Div)
+            //         && l.ty.is_signed()
+            //         && r.ty.is_signed() =>
+            // {
+            //     let fname = match op {
+            //         BinOp::Add => "s_add",
+            //         BinOp::Sub => "s_sub",
+            //         BinOp::Mul => "s_mul",
+            //         BinOp::Div => "s_div",
+            //         _ => panic!("unknown arithmetic operation on two signed integer"),
+            //     };
+            //     Exp::impure_qvar(QName::from_string(fname).unwrap())
+            //         .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
+            // }
             // Artithmetic operation on two unsigned integer
-            ExprKind::BinOp(op, l, r)
-                if matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Div)
-                    && (l.ty.is_integral() && !l.ty.is_signed())
-                    && (r.ty.is_integral() && !r.ty.is_signed()) =>
-            {
-                let fname = match op {
-                    BinOp::Add => "u_add",
-                    BinOp::Sub => "u_sub",
-                    BinOp::Mul => "u_mul",
-                    BinOp::Div => "u_div",
-                    _ => panic!("unknown arithmetic operation on two unsigned integer"),
-                };
+            // ExprKind::BinOp(op, l, r)
+            //     if matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Div)
+            //         && (l.ty.is_integral() && !l.ty.is_signed())
+            //         && (r.ty.is_integral() && !r.ty.is_signed()) =>
+            // {
+            //     let fname = match op {
+            //         BinOp::Add => "u_add",
+            //         BinOp::Sub => "u_sub",
+            //         BinOp::Mul => "u_mul",
+            //         BinOp::Div => "u_div",
+            //         _ => panic!("unknown arithmetic operation on two unsigned integer"),
+            //     };
 
-                Exp::impure_qvar(QName::from_string(fname).unwrap())
-                    .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
-            }
+            //     Exp::impure_qvar(QName::from_string(fname).unwrap())
+            //         .app(vec![l.to_why(ctx, names, locals), r.to_why(ctx, names, locals)])
+            // }
             ExprKind::BinOp(op, l, r) => {
                 // Hack
                 translate_ty(ctx, names, DUMMY_SP, l.ty);
@@ -378,6 +395,11 @@ impl<'tcx> Expr<'tcx> {
                     Box::new(l.to_why(ctx, names, locals)),
                     Box::new(r.to_why(ctx, names, locals)),
                 )
+            }
+            ExprKind::UnaryOp(op, arg) if matches!(op, UnOp::Not) && arg.ty.is_integral() => {
+                let fname = "bw_not";
+                Exp::impure_qvar(QName::from_string(fname).unwrap())
+                        .app(vec![arg.to_why(ctx, names, locals)])
             }
             ExprKind::UnaryOp(op, arg) => {
                 Exp::UnaryOp(unop_to_unop(arg.ty, op), Box::new(arg.to_why(ctx, names, locals)))
