@@ -30,7 +30,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         use StatementKind::*;
         match statement.kind {
             Assign(box (ref pl, ref rv)) => {
-                self.translate_assign(not_final_borrows, statement.source_info, pl, rv, loc);
+                if !rv.ty(self.body, self.tcx).is_unit() {
+                    self.translate_assign(not_final_borrows, statement.source_info, pl, rv, loc);
+                };
 
                 // if the lhs local becomes resolved during the assignment,
                 // we cannot resolve it afterwards.
