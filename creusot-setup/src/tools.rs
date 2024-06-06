@@ -187,15 +187,18 @@ fn detect_why3_version(why3: &Path) -> Option<String> {
 }
 
 pub fn generate_why3_conf(
+    provers_parallelism: usize,
     why3_path: &Path,
     bin_dir: &Path,
     dest_file: &Path,
 ) -> anyhow::Result<()> {
     println!("Generating a fresh why3 configuration...");
-    // create or empty the destination file to avoid getting a warning from why3
-    // because it doesn't exist
     {
-        let _ = fs::File::create(&dest_file);
+        use std::io::Write;
+        let mut f = fs::File::create(&dest_file)?;
+        writeln!(&mut f, "[main]")?;
+        writeln!(&mut f, "magic = {WHY3_CONFIG_MAGIC_NUMBER}")?;
+        writeln!(&mut f, "running_provers_max = {provers_parallelism}")?;
     }
     let status = Command::new(why3_path)
         .arg("-C")

@@ -7,6 +7,7 @@
 
 // tools without binary releases
 pub const WHY3_VERSION: &'static str = "1.7.2";
+pub const WHY3_CONFIG_MAGIC_NUMBER: &'static str = "14";
 pub const ALTERGO_VERSION: &'static str = "2.5.3";
 // tools with binary releases
 pub const Z3_VERSION: &'static str = "4.12.4";

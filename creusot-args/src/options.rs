@@ -114,12 +114,22 @@ pub enum SetupTool {
     CVC5,
 }
 
+fn default_provers_parallelism() -> usize {
+    match std::thread::available_parallelism() {
+        Ok(n) => n.get(),
+        Err(_) => 1,
+    }
+}
+
 #[derive(Debug, Parser, Clone)]
 pub enum SetupSubCommand {
     /// Show the current status of the Creusot installation
     Status,
     /// Setup Creusot or update an existing installation
     Install {
+        /// Maximum number of provers to run in parallel
+        #[arg(long, default_value_t = default_provers_parallelism())]
+        provers_parallelism: usize,
         /// Look-up <TOOL> from PATH instead of using the built-in version
         #[arg(long, value_name = "TOOL")]
         external: Vec<SetupManagedTool>,
