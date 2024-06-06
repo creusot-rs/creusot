@@ -82,7 +82,7 @@ module FinalBorrows_Select
   let rec select (b:bool) (r1:borrowed t) (r2:borrowed t) (return'  (ret:borrowed t))= {[%#sfinal_borrows1] inv'0 r2}
     {[%#sfinal_borrows0] inv'0 r1}
     (! bb0
-    [ bb0 = s0 [ s0 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ]  ] 
+    [ bb0 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ] 
     | bb1 = s0
       [ s0 = {[@expl:type invariant] inv'0 r2} s1
       | s1 = -{resolve'0 r2}- s2
@@ -378,7 +378,7 @@ module FinalBorrows_ReallyNestedFields
     
   let rec really_nested_fields (x:(borrowed (t, t), t)) (return'  (ret:borrowed t))= {[%#sfinal_borrows0] inv'2 x}
     (! bb0
-    [ bb0 = s0 [ s0 = bb1 ] 
+    [ bb0 = bb1
     | bb1 = s0
       [ s0 = Borrow.borrow_final
           <t>
@@ -539,7 +539,7 @@ module FinalBorrows_SelectField
       | s7 = -{resolve'0 _4}- s8
       | s8 = bb5 ]
       
-    | bb2 = s0 [ s0 = bb4 ] 
+    | bb2 = bb4
     | bb4 = s0
       [ s0 = {[@expl:type invariant] inv'1 _4} s1
       | s1 = -{resolve'0 _4}- s2
@@ -881,14 +881,14 @@ module FinalBorrows_BoxDeref
     
   let rec box_deref (x:t) (return'  (ret:t))= {[%#sfinal_borrows0] inv'0 x}
     (! bb0
-    [ bb0 = s0 [ s0 = bb1 ] 
+    [ bb0 = bb1
     | bb1 = s0
       [ s0 =  [ &_0 <- x ] (any [ any_ (_any:t)-> (!  [ &x <- _any ] s1) ] )
       | s1 = {[@expl:type invariant] inv'0 x} s2
       | s2 = -{resolve'0 x}- s3
       | s3 = bb2 ]
       
-    | bb2 = s0 [ s0 = return' {_0} ]  ]
+    | bb2 = return' {_0} ]
     ) [ & _0 : t = any_l () | & x : t = x ] 
     [ return' (result:t)-> {[@expl:postcondition] [%#sfinal_borrows2] inv'1 result}
       {[@expl:postcondition] [%#sfinal_borrows1] result = x}
@@ -961,7 +961,7 @@ module FinalBorrows_BoxReborrowDirect
       | s11 = bb1 ]
       
     | bb1 = s0 [ s0 =  [ &_0 <- [%#sfinal_borrows1] () ] s1 | s1 = bb2 ] 
-    | bb2 = s0 [ s0 = return' {_0} ]  ]
+    | bb2 = return' {_0} ]
     ) [ & _0 : () = any_l () | & x : t = x | & borrow : borrowed t = any_l () | & _4 : borrowed t = any_l () ] 
     [ return' (result:())-> {[@expl:postcondition] [%#sfinal_borrows3] true} (! return' {result}) ]
     
@@ -1191,7 +1191,7 @@ module FinalBorrows_BorrowInBoxTuple1
   let rec borrow_in_box_tuple_1 (x:(int32, borrowed int32)) (return'  (ret:int32))= {[%#sfinal_borrows0] Int32.to_int ( * (let (_, a) = x in a))
     = 2}
     (! bb0
-    [ bb0 = s0 [ s0 = bb1 ] 
+    [ bb0 = bb1
     | bb1 = s0
       [ s0 = Borrow.borrow_final <int32> { * (let (_, r'1) = x in r'1)} {Borrow.get_id (let (_, r'0) = x in r'0)}
           (fun (_ret':borrowed int32) ->
@@ -1206,7 +1206,7 @@ module FinalBorrows_BorrowInBoxTuple1
       | s5 = -{resolve'1 x}- s6
       | s6 = bb2 ]
       
-    | bb2 = s0 [ s0 = return' {_0} ]  ]
+    | bb2 = return' {_0} ]
     )
     [ & _0 : int32 = any_l ()
     | & x : (int32, borrowed int32) = x
@@ -1252,7 +1252,7 @@ module FinalBorrows_BorrowInBoxTuple2
   let rec borrow_in_box_tuple_2 (x:(int32, borrowed int32)) (return'  (ret:int32))= {[%#sfinal_borrows0] Int32.to_int ( * (let (_, a) = x in a))
     = 2}
     (! bb0
-    [ bb0 = s0 [ s0 = bb1 ] 
+    [ bb0 = bb1
     | bb1 = s0
       [ s0 = Borrow.borrow_final <int32> { * (let (_, r'1) = x in r'1)} {Borrow.get_id (let (_, r'0) = x in r'0)}
           (fun (_ret':borrowed int32) ->
@@ -1267,7 +1267,7 @@ module FinalBorrows_BorrowInBoxTuple2
       | s5 = -{resolve'1 x}- s6
       | s6 = bb2 ]
       
-    | bb2 = s0 [ s0 = return' {_0} ]  ]
+    | bb2 = return' {_0} ]
     )
     [ & _0 : int32 = any_l ()
     | & x : (int32, borrowed int32) = x
@@ -1392,14 +1392,14 @@ module FinalBorrows_InspectNoGen
       | s6 = any [ br0 -> { * x = Option'0.C_None } (! bb1) | br1 (a:t)-> { * x = Option'0.C_Some a} (! bb2) ]  ]
       
     | bb1 = s0 [ s0 =  [ &_4 <- [%#smod0] false ] s1 | s1 = bb4 ] 
-    | bb2 = s0 [ s0 = bb3 ] 
+    | bb2 = bb3
     | bb3 = s0 [ s0 =  [ &_4 <- [%#smod1] true ] s1 | s1 = bb4 ] 
-    | bb4 = s0 [ s0 = any [ br0 -> {_4 = false} (! bb6) | br1 -> {_4} (! bb5) ]  ] 
+    | bb4 = any [ br0 -> {_4 = false} (! bb6) | br1 -> {_4} (! bb5) ] 
     | bb5 = s0 [ s0 =  [ &_0 <- [%#sfinal_borrows2] () ] s1 | s1 = bb7 ] 
     | bb6 = s0
       [ s0 = {[@expl:assertion] [%#sfinal_borrows3] r = x} s1 | s1 =  [ &_0 <- [%#sfinal_borrows4] () ] s2 | s2 = bb7 ]
       
-    | bb7 = s0 [ s0 = return' {_0} ]  ]
+    | bb7 = return' {_0} ]
     )
     [ & _0 : () = any_l ()
     | & x : borrowed (Option'0.t_option t) = x
@@ -1486,7 +1486,7 @@ module FinalBorrows_ShallowBorrowNoGen
       | s2 = any [ br0 -> { * x = Option'0.C_None } (! bb7) | br1 (a:int32)-> { * x = Option'0.C_Some a} (! bb2) ]  ]
       
     | bb7 = s0 [ s0 = -{resolve'0 x}- s1 | s1 = bb1 ] 
-    | bb2 = s0 [ s0 = bb3 ] 
+    | bb2 = bb3
     | bb3 = s0
       [ s0 = Option'0.some <int32> { * x} (fun (r0'0:int32) ->  [ &inner <- r0'0 ] s1)
       | s1 =  [ &inner1 <- inner ] s2
@@ -1501,7 +1501,7 @@ module FinalBorrows_ShallowBorrowNoGen
       
     | bb5 = s0 [ s0 = -{resolve'0 x}- s1 | s1 = bb1 ] 
     | bb1 = s0 [ s0 =  [ &_0 <- [%#sfinal_borrows3] () ] s1 | s1 = bb6 ] 
-    | bb6 = s0 [ s0 = return' {_0} ]  ]
+    | bb6 = return' {_0} ]
     )
     [ & _0 : () = any_l ()
     | & x : borrowed (Option'0.t_option int32) = x

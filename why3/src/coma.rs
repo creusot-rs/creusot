@@ -149,6 +149,24 @@ impl Expr {
         }
     }
 
+    /// Adds a set of mutually recursive where bindings around `self`
+    pub fn where_(self, mut defs: Vec<Defn>) -> Self {
+        // If we have `x [ x = z ]` replace this by `z`
+        if defs.len() == 1 && !defs[0].body.occurs_cont(&defs[0].name) && self.as_symbol().and_then(QName::as_ident) == Some(&defs[0].name) {
+            defs.remove(0).body
+        } else {
+            Expr::Defn(Box::new(self), true, defs)
+        }
+    }
+
+    pub fn as_symbol(&self) -> Option<&QName> {
+        if let Expr::Symbol(nm) = self {
+            Some(nm)
+        } else {
+            None
+        }
+    }
+
     /// Checks whether the expression is protected by a black box.
     ///
     /// It allows the box to be surrounded by assertions
@@ -158,6 +176,38 @@ impl Expr {
             Expr::Defn(e, _, _) => e.is_guarded(),
             Expr::BlackBox(_) => true,
             _ => false,
+        }
+    }
+
+    /// Checks whether a symbol of name `cont` occurs in `self`
+    pub fn occurs_cont(&self, cont: &Ident) -> bool {
+        match self {
+            Expr::Symbol(v) => v.as_ident() == Some(&cont),
+            Expr::App(e, arg) => {
+                let arg = if let Arg::Cont(e) = &**arg { e.occurs_cont(cont) } else { false };
+                arg || e.occurs_cont(cont)
+            }
+            Expr::Lambda(params, body) => {
+                let in_params = params
+                    .iter()
+                    .filter_map(|p| if let Param::Cont(n, _, _) = &*p { Some(n) } else { None })
+                    .any(|n| n == cont);
+                !in_params && body.occurs_cont(cont)
+            }
+            Expr::Defn(e, _, defs) => {
+                e.occurs_cont(cont) || defs.iter().any(|d| {
+                    let in_params = d.params
+                    .iter()
+                    .filter_map(|p| if let Param::Cont(n, _, _) = &*p { Some(n) } else { None })
+                    .any(|n| n == cont);       
+                !in_params && d.body.occurs_cont(cont)            
+            })
+            }
+            Expr::Assign(e, _) => e.occurs_cont(cont),
+            Expr::Let(e, _) => e.occurs_cont(cont),
+            Expr::Assert(_, e) | Expr::Assume(_, e) => e.occurs_cont(cont),
+            Expr::BlackBox(e) | Expr::WhiteBox(e) => e.occurs_cont(cont),
+            Expr::Any => false,
         }
     }
 }

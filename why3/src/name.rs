@@ -87,6 +87,13 @@ pub struct QName {
 }
 
 impl QName {
+    pub fn as_ident(&self) -> Option<&Ident> {
+        if self.module.is_empty() {
+            return Some(&self.name)
+        } else {
+            None
+        }
+    }
     pub fn name(&self) -> Ident {
         self.name.clone()
     }

@@ -895,7 +895,7 @@ impl<'tcx> Block<'tcx> {
             );
         }
 
-        body = Expr::Defn(Box::new(body), true, statements);
+        body = body.where_(statements);
 
         coma::Defn::simple(format!("bb{}", id.as_usize()), body)
     }
