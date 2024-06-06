@@ -8,7 +8,7 @@ use rustc_middle::ty::{
     self, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable,
     TypeVisitor,
 };
-use rustc_span::{Span, Symbol};
+use rustc_span::{FileName, Span, Symbol};
 use rustc_target::abi::FieldIdx;
 
 use why3::{
@@ -253,11 +253,13 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
         let cnt = self.names.spans.len();
         let name = self.names.spans.entry(span).or_insert_with(|| {
             let lo = self.tcx.sess.source_map().lookup_char_pos(span.lo());
-            if let Some(local_path) = lo.file.name.clone().into_local_path() {
-                Symbol::intern(&format!(
-                    "s{}{cnt}",
-                    local_path.file_stem().unwrap().to_str().unwrap()
-                ))
+            if span.is_dummy() {
+                return Symbol::intern(&format!("dummy{cnt}"));
+            }
+
+            if let FileName::Real(real_name) = &lo.file.name {
+                let path = real_name.local_path_if_available();
+                Symbol::intern(&format!("s{}{cnt}", path.file_stem().unwrap().to_str().unwrap()))
             } else {
                 Symbol::intern(&format!("span{cnt}"))
             }
@@ -295,8 +297,15 @@ pub(crate) struct NameSupply {
 #[derive(Clone)]
 struct CloneNames<'tcx> {
     tcx: TyCtxt<'tcx>,
+    /// Freshens a symbol by appending a number to the end
     counts: NameSupply,
+    /// Tracks the name given to each dependency
     names: IndexMap<DepNode<'tcx>, Kind>,
+    /// Identifies ADTs using only their name and not their substitutions
+    /// This is allowed because ADTs are still polymorphic: we have a single
+    /// module that we import even if we use multiple instantiations in Creusot.
+    adt_names: IndexMap<DefId, Symbol>,
+    /// Maps spans to a unique name
     spans: IndexMap<Span, Symbol>,
 }
 
@@ -316,6 +325,7 @@ impl<'tcx> CloneNames<'tcx> {
             tcx,
             counts: Default::default(),
             names: Default::default(),
+            adt_names: Default::default(),
             spans: Default::default(),
         }
     }
@@ -342,8 +352,15 @@ impl<'tcx> CloneNames<'tcx> {
                         let modl: Symbol = if util::item_type(self.tcx, did) == ItemType::Closure {
                             self.counts.freshen(Symbol::intern("Closure"))
                         } else {
-                            let name = self.tcx.item_name(did);
-                            self.counts.freshen(name)
+                            match self.adt_names.get(&did) {
+                                Some(nm) => *nm,
+                                None => {
+                                    let name = self.tcx.item_name(did);
+                                    let fresh = self.counts.freshen(name);
+                                    self.adt_names.insert(did, fresh);
+                                    fresh
+                                }
+                            }
                         };
 
                         let name = Symbol::intern(&*item_name(self.tcx, did, Namespace::TypeNS));

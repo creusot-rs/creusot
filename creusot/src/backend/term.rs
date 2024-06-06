@@ -24,7 +24,9 @@ pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
     term.reassociate();
     if let Some(attr) = names.span(span) {
         term.with_attr(attr)
-    } else { term }
+    } else {
+        term
+    }
 }
 
 pub(super) struct Lower<'a, 'tcx, N: Namer<'tcx>> {

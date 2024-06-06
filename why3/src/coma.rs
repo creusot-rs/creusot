@@ -152,7 +152,10 @@ impl Expr {
     /// Adds a set of mutually recursive where bindings around `self`
     pub fn where_(self, mut defs: Vec<Defn>) -> Self {
         // If we have `x [ x = z ]` replace this by `z`
-        if defs.len() == 1 && !defs[0].body.occurs_cont(&defs[0].name) && self.as_symbol().and_then(QName::as_ident) == Some(&defs[0].name) {
+        if defs.len() == 1
+            && !defs[0].body.occurs_cont(&defs[0].name)
+            && self.as_symbol().and_then(QName::as_ident) == Some(&defs[0].name)
+        {
             defs.remove(0).body
         } else {
             Expr::Defn(Box::new(self), true, defs)
@@ -195,13 +198,17 @@ impl Expr {
                 !in_params && body.occurs_cont(cont)
             }
             Expr::Defn(e, _, defs) => {
-                e.occurs_cont(cont) || defs.iter().any(|d| {
-                    let in_params = d.params
-                    .iter()
-                    .filter_map(|p| if let Param::Cont(n, _, _) = &*p { Some(n) } else { None })
-                    .any(|n| n == cont);       
-                !in_params && d.body.occurs_cont(cont)            
-            })
+                e.occurs_cont(cont)
+                    || defs.iter().any(|d| {
+                        let in_params = d
+                            .params
+                            .iter()
+                            .filter_map(
+                                |p| if let Param::Cont(n, _, _) = &*p { Some(n) } else { None },
+                            )
+                            .any(|n| n == cont);
+                        !in_params && d.body.occurs_cont(cont)
+                    })
             }
             Expr::Assign(e, _) => e.occurs_cont(cont),
             Expr::Let(e, _) => e.occurs_cont(cont),

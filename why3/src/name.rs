@@ -89,7 +89,7 @@ pub struct QName {
 impl QName {
     pub fn as_ident(&self) -> Option<&Ident> {
         if self.module.is_empty() {
-            return Some(&self.name)
+            return Some(&self.name);
         } else {
             None
         }
