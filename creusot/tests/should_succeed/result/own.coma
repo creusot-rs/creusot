@@ -57,7 +57,7 @@ module Own_Impl0_IsOk
     | bb2 = s0 [ s0 = bb3 ] 
     | bb3 = s0 [ s0 =  [ &_0 <- [%#smod1] true ] s1 | s1 = bb4 ] 
     | bb4 = s0 [ s0 = return' {_0} ]  ]
-    ) [ & _0 : bool = any_l () : bool | & self : OwnResult'0.t_ownresult t e = self ] 
+    ) [ & _0 : bool = any_l () | & self : OwnResult'0.t_ownresult t e = self ] 
     [ return' (result:bool)-> {[@expl:postcondition] [%#sown3] result
       = (exists t : t . inv'1 t /\ self = OwnResult'0.C_Ok t)}
       (! return' {result}) ]
@@ -114,7 +114,7 @@ module Own_Impl0_IsErr
       | s3 = bb1 ]
       
     | bb1 = s0 [ s0 =  [ &_0 <- not _3 ] (any [ any_ (_any:bool)-> (!  [ &_3 <- _any ] s1) ] ) | s1 = return' {_0} ]  ]
-    ) [ & _0 : bool = any_l () : bool | & self : OwnResult'0.t_ownresult t e = self | & _3 : bool = any_l () : bool ] 
+    ) [ & _0 : bool = any_l () | & self : OwnResult'0.t_ownresult t e = self | & _3 : bool = any_l () ] 
     [ return' (result:bool)-> {[@expl:postcondition] [%#sown1] result
       = (exists e : e . inv'1 e /\ self = OwnResult'0.C_Err e)}
       (! return' {result}) ]
@@ -218,7 +218,7 @@ module Own_Impl0_Ok
       | s2 = -{resolve'1 x1}- s3
       | s3 = {[@expl:type invariant] inv'0 self} s4
       | s4 = -{resolve'0 self}- s5
-      | s5 =  [ &_0 <- Option'0.C_None : Option'0.t_option t ] s6
+      | s5 =  [ &_0 <- Option'0.C_None ] s6
       | s6 = bb9 ]
       
     | bb9 = s0 [ s0 = bb10 ] 
@@ -233,7 +233,7 @@ module Own_Impl0_Ok
             ))
       | s1 = {[@expl:type invariant] inv'0 self} s2
       | s2 = -{resolve'0 self}- s3
-      | s3 =  [ &_0 <- Option'0.C_Some x : Option'0.t_option t ] (any [ any_ (_any:t)-> (!  [ &x <- _any ] s4) ] )
+      | s3 =  [ &_0 <- Option'0.C_Some x ] (any [ any_ (_any:t)-> (!  [ &x <- _any ] s4) ] )
       | s4 = bb7 ]
       
     | bb7 = s0 [ s0 = bb8 ] 
@@ -241,10 +241,10 @@ module Own_Impl0_Ok
     | bb10 = s0 [ s0 = bb11 ] 
     | bb11 = s0 [ s0 = return' {_0} ]  ]
     )
-    [ & _0 : Option'0.t_option t = any_l () : Option'0.t_option t
+    [ & _0 : Option'0.t_option t = any_l ()
     | & self : OwnResult'0.t_ownresult t e = self
-    | & x : t = any_l () : t
-    | & x1 : e = any_l () : e ]
+    | & x : t = any_l ()
+    | & x1 : e = any_l () ]
     
     [ return' (result:Option'0.t_option t)-> {[@expl:postcondition] [%#sown4] inv'3 result}
       {[@expl:postcondition] [%#sown3] (exists e : e . inv'1 e /\ self = OwnResult'0.C_Err e)
@@ -336,7 +336,7 @@ module Own_Impl0_Err
             ))
       | s1 = {[@expl:type invariant] inv'0 self} s2
       | s2 = -{resolve'0 self}- s3
-      | s3 =  [ &_0 <- Option'0.C_Some x1 : Option'0.t_option e ] (any [ any_ (_any:e)-> (!  [ &x1 <- _any ] s4) ] )
+      | s3 =  [ &_0 <- Option'0.C_Some x1 ] (any [ any_ (_any:e)-> (!  [ &x1 <- _any ] s4) ] )
       | s4 = bb8 ]
       
     | bb8 = s0 [ s0 = bb9 ] 
@@ -354,17 +354,17 @@ module Own_Impl0_Err
       | s2 = -{resolve'1 x}- s3
       | s3 = {[@expl:type invariant] inv'0 self} s4
       | s4 = -{resolve'0 self}- s5
-      | s5 =  [ &_0 <- Option'0.C_None : Option'0.t_option e ] s6
+      | s5 =  [ &_0 <- Option'0.C_None ] s6
       | s6 = bb7 ]
       
     | bb7 = s0 [ s0 = bb10 ] 
     | bb10 = s0 [ s0 = bb11 ] 
     | bb11 = s0 [ s0 = return' {_0} ]  ]
     )
-    [ & _0 : Option'0.t_option e = any_l () : Option'0.t_option e
+    [ & _0 : Option'0.t_option e = any_l ()
     | & self : OwnResult'0.t_ownresult t e = self
-    | & x : t = any_l () : t
-    | & x1 : e = any_l () : e ]
+    | & x : t = any_l ()
+    | & x1 : e = any_l () ]
     
     [ return' (result:Option'0.t_option e)-> {[@expl:postcondition] [%#sown4] inv'3 result}
       {[@expl:postcondition] [%#sown3] forall e : e . inv'2 e
@@ -417,11 +417,11 @@ module Own_Impl0_AsRef
     
   axiom inv'0 : forall x : OwnResult'0.t_ownresult t e . inv'0 x = true
   use prelude.Intrinsic
+  use prelude.Borrow
   predicate resolve'2 (self : t)
   let rec resolve'2 (self:t) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = resolve'2 self} (! return' {result}) ]
     
-  use prelude.Borrow
   predicate resolve'1 (self : e)
   let rec resolve'1 (self:e) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = resolve'1 self} (! return' {result}) ]
@@ -446,7 +446,7 @@ module Own_Impl0_AsRef
       | s2 = -{resolve'0 self}- s3
       | s3 = {[@expl:type invariant] inv'1 x1} s4
       | s4 = -{resolve'1 x1}- s5
-      | s5 =  [ &_0 <- OwnResult'1.C_Err x1 : OwnResult'1.t_ownresult t e ] s6
+      | s5 =  [ &_0 <- OwnResult'1.C_Err x1 ] s6
       | s6 = bb5 ]
       
     | bb2 = s0 [ s0 = bb4 ] 
@@ -456,15 +456,15 @@ module Own_Impl0_AsRef
       | s2 = -{resolve'0 self}- s3
       | s3 = {[@expl:type invariant] inv'2 x} s4
       | s4 = -{resolve'2 x}- s5
-      | s5 =  [ &_0 <- OwnResult'1.C_Ok x : OwnResult'1.t_ownresult t e ] s6
+      | s5 =  [ &_0 <- OwnResult'1.C_Ok x ] s6
       | s6 = bb5 ]
       
     | bb5 = s0 [ s0 = return' {_0} ]  ]
     )
-    [ & _0 : OwnResult'1.t_ownresult t e = any_l () : OwnResult'1.t_ownresult t e
+    [ & _0 : OwnResult'1.t_ownresult t e = any_l ()
     | & self : OwnResult'0.t_ownresult t e = self
-    | & x : t = any_l () : t
-    | & x1 : e = any_l () : e ]
+    | & x : t = any_l ()
+    | & x1 : e = any_l () ]
     
     [ return' (result:OwnResult'1.t_ownresult t e)-> {[@expl:postcondition] [%#sown4] inv'3 result}
       {[@expl:postcondition] [%#sown3] forall e : e . inv'1 e
@@ -575,8 +575,7 @@ module Own_Impl0_AsMut
       | s2 = Borrow.borrow_final <e> { * x1} {Borrow.get_id x1}
           (fun (_ret':borrowed e) ->  [ &_7 <- _ret' ]  [ &x1 <- { x1 with current = ( ^ _7) ; } ] s3)
       | s3 = -{inv'1 ( ^ _7)}- s4
-      | s4 =  [ &_0 <- OwnResult'1.C_Err _7 : OwnResult'1.t_ownresult (borrowed t) (borrowed e) ] 
-        (any [ any_ (_any:borrowed e)-> (!  [ &_7 <- _any ] s5) ] )
+      | s4 =  [ &_0 <- OwnResult'1.C_Err _7 ] (any [ any_ (_any:borrowed e)-> (!  [ &_7 <- _any ] s5) ] )
       | s5 = {[@expl:type invariant] inv'2 x1} s6
       | s6 = -{resolve'1 x1}- s7
       | s7 = bb5 ]
@@ -596,20 +595,19 @@ module Own_Impl0_AsMut
       | s2 = Borrow.borrow_final <t> { * x} {Borrow.get_id x}
           (fun (_ret':borrowed t) ->  [ &_5 <- _ret' ]  [ &x <- { x with current = ( ^ _5) ; } ] s3)
       | s3 = -{inv'3 ( ^ _5)}- s4
-      | s4 =  [ &_0 <- OwnResult'1.C_Ok _5 : OwnResult'1.t_ownresult (borrowed t) (borrowed e) ] 
-        (any [ any_ (_any:borrowed t)-> (!  [ &_5 <- _any ] s5) ] )
+      | s4 =  [ &_0 <- OwnResult'1.C_Ok _5 ] (any [ any_ (_any:borrowed t)-> (!  [ &_5 <- _any ] s5) ] )
       | s5 = {[@expl:type invariant] inv'4 x} s6
       | s6 = -{resolve'2 x}- s7
       | s7 = bb5 ]
       
     | bb5 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = return' {_0} ]  ]
     )
-    [ & _0 : OwnResult'1.t_ownresult (borrowed t) (borrowed e) = any_l () : OwnResult'1.t_ownresult (borrowed t) (borrowed e)
+    [ & _0 : OwnResult'1.t_ownresult (borrowed t) (borrowed e) = any_l ()
     | & self : borrowed (OwnResult'0.t_ownresult t e) = self
-    | & x : borrowed t = any_l () : borrowed t
-    | & _5 : borrowed t = any_l () : borrowed t
-    | & x1 : borrowed e = any_l () : borrowed e
-    | & _7 : borrowed e = any_l () : borrowed e ]
+    | & x : borrowed t = any_l ()
+    | & _5 : borrowed t = any_l ()
+    | & x1 : borrowed e = any_l ()
+    | & _7 : borrowed e = any_l () ]
     
     [ return' (result:OwnResult'1.t_ownresult (borrowed t) (borrowed e))-> {[@expl:postcondition] [%#sown3] inv'5 result}
       {[@expl:postcondition] [%#sown2] exists t : borrowed t . inv'4 t
@@ -713,12 +711,7 @@ module Own_Impl0_Unwrap
       
     | bb7 = s0 [ s0 = bb8 ] 
     | bb8 = s0 [ s0 = return' {_0} ]  ]
-    )
-    [ & _0 : t = any_l () : t
-    | & self : OwnResult'0.t_ownresult t e = self
-    | & t : t = any_l () : t
-    | & _e : e = any_l () : e ]
-    
+    ) [ & _0 : t = any_l () | & self : OwnResult'0.t_ownresult t e = self | & t : t = any_l () | & _e : e = any_l () ] 
     [ return' (result:t)-> {[@expl:postcondition] [%#sown5] inv'2 result}
       {[@expl:postcondition] [%#sown4] OwnResult'0.C_Ok result = self}
       (! return' {result}) ]
@@ -819,12 +812,7 @@ module Own_Impl0_Expect
       
     | bb7 = s0 [ s0 = bb8 ] 
     | bb8 = s0 [ s0 = return' {_0} ]  ]
-    )
-    [ & _0 : t = any_l () : t
-    | & self : OwnResult'0.t_ownresult t e = self
-    | & t : t = any_l () : t
-    | & _e : e = any_l () : e ]
-    
+    ) [ & _0 : t = any_l () | & self : OwnResult'0.t_ownresult t e = self | & t : t = any_l () | & _e : e = any_l () ] 
     [ return' (result:t)-> {[@expl:postcondition] [%#sown5] inv'2 result}
       {[@expl:postcondition] [%#sown4] OwnResult'0.C_Ok result = self}
       (! return' {result}) ]
@@ -924,12 +912,7 @@ module Own_Impl0_UnwrapErr
       | s4 = -{resolve'0 self}- s5
       | s5 = {[%#spanic1] false} any ]
        ]
-    )
-    [ & _0 : e = any_l () : e
-    | & self : OwnResult'0.t_ownresult t e = self
-    | & _t : t = any_l () : t
-    | & e : e = any_l () : e ]
-    
+    ) [ & _0 : e = any_l () | & self : OwnResult'0.t_ownresult t e = self | & _t : t = any_l () | & e : e = any_l () ] 
     [ return' (result:e)-> {[@expl:postcondition] [%#sown5] inv'2 result}
       {[@expl:postcondition] [%#sown4] OwnResult'0.C_Err result = self}
       (! return' {result}) ]
@@ -1040,11 +1023,11 @@ module Own_Impl0_UnwrapOr
     | bb10 = s0 [ s0 = bb11 ] 
     | bb11 = s0 [ s0 = return' {_0} ]  ]
     )
-    [ & _0 : t = any_l () : t
+    [ & _0 : t = any_l ()
     | & self : OwnResult'0.t_ownresult t e = self
     | & default : t = default
-    | & t : t = any_l () : t
-    | & e : e = any_l () : e ]
+    | & t : t = any_l ()
+    | & e : e = any_l () ]
     
     [ return' (result:t)-> {[@expl:postcondition] [%#sown5] inv'0 result}
       {[@expl:postcondition] [%#sown4] (exists e : e . inv'2 e /\ self = OwnResult'0.C_Err e)  -> result = default}
@@ -1147,7 +1130,7 @@ module Own_Impl0_UnwrapOrDefault
     | bb7 = s0 [ s0 = bb8 ] 
     | bb8 = s0 [ s0 = bb9 ] 
     | bb9 = s0 [ s0 = return' {_0} ]  ]
-    ) [ & _0 : t = any_l () : t | & self : OwnResult'0.t_ownresult t e = self | & x : t = any_l () : t ] 
+    ) [ & _0 : t = any_l () | & self : OwnResult'0.t_ownresult t e = self | & x : t = any_l () ] 
     [ return' (result:t)-> {[@expl:postcondition] [%#sown5] inv'1 result}
       {[@expl:postcondition] [%#sown4] (exists e : e . inv'2 e /\ self = OwnResult'0.C_Err e)  -> is_default'0 result}
       {[@expl:postcondition] [%#sown3] forall t : t . inv'1 t  -> self = OwnResult'0.C_Ok t  -> result = t}
@@ -1257,8 +1240,7 @@ module Own_Impl0_And
             ))
       | s3 = {[@expl:type invariant] inv'1 self} s4
       | s4 = -{resolve'1 self}- s5
-      | s5 =  [ &_0 <- OwnResult'1.C_Err e : OwnResult'1.t_ownresult u e ] 
-        (any [ any_ (_any:e)-> (!  [ &e <- _any ] s6) ] )
+      | s5 =  [ &_0 <- OwnResult'1.C_Err e ] (any [ any_ (_any:e)-> (!  [ &e <- _any ] s6) ] )
       | s6 = bb8 ]
       
     | bb8 = s0 [ s0 = bb9 ] 
@@ -1284,11 +1266,11 @@ module Own_Impl0_And
     | bb11 = s0 [ s0 = bb12 ] 
     | bb12 = s0 [ s0 = return' {_0} ]  ]
     )
-    [ & _0 : OwnResult'1.t_ownresult u e = any_l () : OwnResult'1.t_ownresult u e
+    [ & _0 : OwnResult'1.t_ownresult u e = any_l ()
     | & self : OwnResult'0.t_ownresult t e = self
     | & res : OwnResult'1.t_ownresult u e = res
-    | & x : t = any_l () : t
-    | & e : e = any_l () : e ]
+    | & x : t = any_l ()
+    | & e : e = any_l () ]
     
     [ return' (result:OwnResult'1.t_ownresult u e)-> {[@expl:postcondition] [%#sown5] inv'0 result}
       {[@expl:postcondition] [%#sown4] forall e : e . inv'3 e
@@ -1417,8 +1399,7 @@ module Own_Impl0_Or
             ))
       | s3 = {[@expl:type invariant] inv'1 self} s4
       | s4 = -{resolve'1 self}- s5
-      | s5 =  [ &_0 <- OwnResult'1.C_Ok v : OwnResult'1.t_ownresult t f ] 
-        (any [ any_ (_any:t)-> (!  [ &v <- _any ] s6) ] )
+      | s5 =  [ &_0 <- OwnResult'1.C_Ok v ] (any [ any_ (_any:t)-> (!  [ &v <- _any ] s6) ] )
       | s6 = bb7 ]
       
     | bb7 = s0 [ s0 = bb8 ] 
@@ -1427,11 +1408,11 @@ module Own_Impl0_Or
     | bb11 = s0 [ s0 = bb12 ] 
     | bb12 = s0 [ s0 = return' {_0} ]  ]
     )
-    [ & _0 : OwnResult'1.t_ownresult t f = any_l () : OwnResult'1.t_ownresult t f
+    [ & _0 : OwnResult'1.t_ownresult t f = any_l ()
     | & self : OwnResult'0.t_ownresult t e = self
     | & res : OwnResult'1.t_ownresult t f = res
-    | & v : t = any_l () : t
-    | & e : e = any_l () : e ]
+    | & v : t = any_l ()
+    | & e : e = any_l () ]
     
     [ return' (result:OwnResult'1.t_ownresult t f)-> {[@expl:postcondition] [%#sown5] inv'0 result}
       {[@expl:postcondition] [%#sown4] (exists e : e . inv'2 e /\ self = OwnResult'0.C_Err e)  -> result = res}
@@ -1523,8 +1504,7 @@ module Own_Impl1_Copied
             ))
       | s1 = {[@expl:type invariant] inv'0 self} s2
       | s2 = -{resolve'0 self}- s3
-      | s3 =  [ &_0 <- OwnResult'1.C_Err e : OwnResult'1.t_ownresult t e ] 
-        (any [ any_ (_any:e)-> (!  [ &e <- _any ] s4) ] )
+      | s3 =  [ &_0 <- OwnResult'1.C_Err e ] (any [ any_ (_any:e)-> (!  [ &e <- _any ] s4) ] )
       | s4 = bb7 ]
       
     | bb7 = s0 [ s0 = bb8 ] 
@@ -1536,16 +1516,16 @@ module Own_Impl1_Copied
       | s2 = -{resolve'0 self}- s3
       | s3 = {[@expl:type invariant] inv'1 t} s4
       | s4 = -{resolve'1 t}- s5
-      | s5 =  [ &_0 <- OwnResult'1.C_Ok t : OwnResult'1.t_ownresult t e ] s6
+      | s5 =  [ &_0 <- OwnResult'1.C_Ok t ] s6
       | s6 = bb9 ]
       
     | bb9 = s0 [ s0 = bb10 ] 
     | bb10 = s0 [ s0 = return' {_0} ]  ]
     )
-    [ & _0 : OwnResult'1.t_ownresult t e = any_l () : OwnResult'1.t_ownresult t e
+    [ & _0 : OwnResult'1.t_ownresult t e = any_l ()
     | & self : OwnResult'0.t_ownresult t e = self
-    | & t : t = any_l () : t
-    | & e : e = any_l () : e ]
+    | & t : t = any_l ()
+    | & e : e = any_l () ]
     
     [ return' (result:OwnResult'1.t_ownresult t e)-> {[@expl:postcondition] [%#sown4] inv'3 result}
       {[@expl:postcondition] [%#sown3] forall e : e . inv'2 e
@@ -1650,8 +1630,7 @@ module Own_Impl1_Cloned
             ))
       | s1 = {[@expl:type invariant] inv'0 self} s2
       | s2 = -{resolve'0 self}- s3
-      | s3 =  [ &_0 <- OwnResult'1.C_Err e : OwnResult'1.t_ownresult t e ] 
-        (any [ any_ (_any:e)-> (!  [ &e <- _any ] s4) ] )
+      | s3 =  [ &_0 <- OwnResult'1.C_Err e ] (any [ any_ (_any:e)-> (!  [ &e <- _any ] s4) ] )
       | s4 = bb9 ]
       
     | bb9 = s0 [ s0 = bb10 ] 
@@ -1666,20 +1645,16 @@ module Own_Impl1_Cloned
       | s5 = clone'0 {t} (fun (_ret':t) ->  [ &_6 <- _ret' ] s6)
       | s6 = bb7 ]
       
-    | bb7 = s0
-      [ s0 =  [ &_0 <- OwnResult'1.C_Ok _6 : OwnResult'1.t_ownresult t e ] 
-        (any [ any_ (_any:t)-> (!  [ &_6 <- _any ] s1) ] )
-      | s1 = bb8 ]
-      
+    | bb7 = s0 [ s0 =  [ &_0 <- OwnResult'1.C_Ok _6 ] (any [ any_ (_any:t)-> (!  [ &_6 <- _any ] s1) ] ) | s1 = bb8 ] 
     | bb8 = s0 [ s0 = bb11 ] 
     | bb11 = s0 [ s0 = bb12 ] 
     | bb12 = s0 [ s0 = return' {_0} ]  ]
     )
-    [ & _0 : OwnResult'1.t_ownresult t e = any_l () : OwnResult'1.t_ownresult t e
+    [ & _0 : OwnResult'1.t_ownresult t e = any_l ()
     | & self : OwnResult'0.t_ownresult t e = self
-    | & t : t = any_l () : t
-    | & _6 : t = any_l () : t
-    | & e : e = any_l () : e ]
+    | & t : t = any_l ()
+    | & _6 : t = any_l ()
+    | & e : e = any_l () ]
     
     [ return' (result:OwnResult'1.t_ownresult t e)-> {[@expl:postcondition] [%#sown4] inv'3 result}
       {[@expl:postcondition] [%#sown3] forall e : e . inv'2 e
@@ -1776,8 +1751,7 @@ module Own_Impl2_Copied
             ))
       | s1 = {[@expl:type invariant] inv'0 self} s2
       | s2 = -{resolve'0 self}- s3
-      | s3 =  [ &_0 <- OwnResult'1.C_Err e : OwnResult'1.t_ownresult t e ] 
-        (any [ any_ (_any:e)-> (!  [ &e <- _any ] s4) ] )
+      | s3 =  [ &_0 <- OwnResult'1.C_Err e ] (any [ any_ (_any:e)-> (!  [ &e <- _any ] s4) ] )
       | s4 = bb7 ]
       
     | bb7 = s0 [ s0 = bb8 ] 
@@ -1797,16 +1771,16 @@ module Own_Impl2_Copied
       | s2 = -{resolve'0 self}- s3
       | s3 = {[@expl:type invariant] inv'1 t} s4
       | s4 = -{resolve'1 t}- s5
-      | s5 =  [ &_0 <- OwnResult'1.C_Ok ( * t) : OwnResult'1.t_ownresult t e ] s6
+      | s5 =  [ &_0 <- OwnResult'1.C_Ok ( * t) ] s6
       | s6 = bb9 ]
       
     | bb9 = s0 [ s0 = bb10 ] 
     | bb10 = s0 [ s0 = return' {_0} ]  ]
     )
-    [ & _0 : OwnResult'1.t_ownresult t e = any_l () : OwnResult'1.t_ownresult t e
+    [ & _0 : OwnResult'1.t_ownresult t e = any_l ()
     | & self : OwnResult'0.t_ownresult (borrowed t) e = self
-    | & t : borrowed t = any_l () : borrowed t
-    | & e : e = any_l () : e ]
+    | & t : borrowed t = any_l ()
+    | & e : e = any_l () ]
     
     [ return' (result:OwnResult'1.t_ownresult t e)-> {[@expl:postcondition] [%#sown4] inv'3 result}
       {[@expl:postcondition] [%#sown3] forall e : e . inv'2 e
@@ -1922,8 +1896,7 @@ module Own_Impl2_Cloned
             ))
       | s1 = {[@expl:type invariant] inv'0 self} s2
       | s2 = -{resolve'0 self}- s3
-      | s3 =  [ &_0 <- OwnResult'1.C_Err e : OwnResult'1.t_ownresult t e ] 
-        (any [ any_ (_any:e)-> (!  [ &e <- _any ] s4) ] )
+      | s3 =  [ &_0 <- OwnResult'1.C_Err e ] (any [ any_ (_any:e)-> (!  [ &e <- _any ] s4) ] )
       | s4 = bb9 ]
       
     | bb9 = s0 [ s0 = bb10 ] 
@@ -1947,19 +1920,18 @@ module Own_Impl2_Cloned
     | bb7 = s0
       [ s0 = {[@expl:type invariant] inv'1 t} s1
       | s1 = -{resolve'1 t}- s2
-      | s2 =  [ &_0 <- OwnResult'1.C_Ok _6 : OwnResult'1.t_ownresult t e ] 
-        (any [ any_ (_any:t)-> (!  [ &_6 <- _any ] s3) ] )
+      | s2 =  [ &_0 <- OwnResult'1.C_Ok _6 ] (any [ any_ (_any:t)-> (!  [ &_6 <- _any ] s3) ] )
       | s3 = bb8 ]
       
     | bb8 = s0 [ s0 = bb11 ] 
     | bb11 = s0 [ s0 = bb12 ] 
     | bb12 = s0 [ s0 = return' {_0} ]  ]
     )
-    [ & _0 : OwnResult'1.t_ownresult t e = any_l () : OwnResult'1.t_ownresult t e
+    [ & _0 : OwnResult'1.t_ownresult t e = any_l ()
     | & self : OwnResult'0.t_ownresult (borrowed t) e = self
-    | & t : borrowed t = any_l () : borrowed t
-    | & _6 : t = any_l () : t
-    | & e : e = any_l () : e ]
+    | & t : borrowed t = any_l ()
+    | & _6 : t = any_l ()
+    | & e : e = any_l () ]
     
     [ return' (result:OwnResult'1.t_ownresult t e)-> {[@expl:postcondition] [%#sown4] inv'3 result}
       {[@expl:postcondition] [%#sown3] forall e : e . inv'2 e
@@ -2055,12 +2027,11 @@ module Own_Impl3_Transpose
             ))
       | s1 = {[@expl:type invariant] inv'0 self} s2
       | s2 = -{resolve'0 self}- s3
-      | s3 =  [ &_11 <- OwnResult'1.C_Err e : OwnResult'1.t_ownresult t e ] 
-        (any [ any_ (_any:e)-> (!  [ &e <- _any ] s4) ] )
+      | s3 =  [ &_11 <- OwnResult'1.C_Err e ] (any [ any_ (_any:e)-> (!  [ &e <- _any ] s4) ] )
       | s4 = bb14 ]
       
     | bb14 = s0
-      [ s0 =  [ &_0 <- Option'1.C_Some _11 : Option'1.t_option (OwnResult'1.t_ownresult t e) ] 
+      [ s0 =  [ &_0 <- Option'1.C_Some _11 ] 
         (any [ any_ (_any:OwnResult'1.t_ownresult t e)-> (!  [ &_11 <- _any ] s1) ] )
       | s1 = bb15 ]
       
@@ -2093,13 +2064,11 @@ module Own_Impl3_Transpose
                 )))
       | s1 = {[@expl:type invariant] inv'0 self} s2
       | s2 = -{resolve'0 self}- s3
-      | s3 =  [ &_8 <- OwnResult'1.C_Ok x : OwnResult'1.t_ownresult t e ] 
-        (any [ any_ (_any:t)-> (!  [ &x <- _any ] s4) ] )
+      | s3 =  [ &_8 <- OwnResult'1.C_Ok x ] (any [ any_ (_any:t)-> (!  [ &x <- _any ] s4) ] )
       | s4 = bb10 ]
       
     | bb10 = s0
-      [ s0 =  [ &_0 <- Option'1.C_Some _8 : Option'1.t_option (OwnResult'1.t_ownresult t e) ] 
-        (any [ any_ (_any:OwnResult'1.t_ownresult t e)-> (!  [ &_8 <- _any ] s1) ] )
+      [ s0 =  [ &_0 <- Option'1.C_Some _8 ] (any [ any_ (_any:OwnResult'1.t_ownresult t e)-> (!  [ &_8 <- _any ] s1) ] )
       | s1 = bb11 ]
       
     | bb11 = s0 [ s0 = bb12 ] 
@@ -2108,18 +2077,18 @@ module Own_Impl3_Transpose
     | bb13 = s0
       [ s0 = {[@expl:type invariant] inv'0 self} s1
       | s1 = -{resolve'0 self}- s2
-      | s2 =  [ &_0 <- Option'1.C_None : Option'1.t_option (OwnResult'1.t_ownresult t e) ] s3
+      | s2 =  [ &_0 <- Option'1.C_None ] s3
       | s3 = bb17 ]
       
     | bb17 = s0 [ s0 = bb18 ] 
     | bb18 = s0 [ s0 = return' {_0} ]  ]
     )
-    [ & _0 : Option'1.t_option (OwnResult'1.t_ownresult t e) = any_l () : Option'1.t_option (OwnResult'1.t_ownresult t e)
+    [ & _0 : Option'1.t_option (OwnResult'1.t_ownresult t e) = any_l ()
     | & self : OwnResult'0.t_ownresult (Option'0.t_option t) e = self
-    | & x : t = any_l () : t
-    | & _8 : OwnResult'1.t_ownresult t e = any_l () : OwnResult'1.t_ownresult t e
-    | & e : e = any_l () : e
-    | & _11 : OwnResult'1.t_ownresult t e = any_l () : OwnResult'1.t_ownresult t e ]
+    | & x : t = any_l ()
+    | & _8 : OwnResult'1.t_ownresult t e = any_l ()
+    | & e : e = any_l ()
+    | & _11 : OwnResult'1.t_ownresult t e = any_l () ]
     
     [ return' (result:Option'1.t_option (OwnResult'1.t_ownresult t e))-> {[@expl:postcondition] [%#sown5] inv'3 result}
       {[@expl:postcondition] [%#sown4] forall e : e . inv'2 e

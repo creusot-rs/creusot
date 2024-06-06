@@ -10,7 +10,7 @@ use super::{
 use crate::{
     backend::{
         closure_generic_decls, optimization, place,
-        ty::{self, generic_of_ty, has_generics, translate_closure_ty, translate_ty},
+        ty::{self, translate_closure_ty, translate_ty},
         wto::weak_topological_order,
     },
     ctx::{BodyId, Dependencies, TranslationCtx},
@@ -281,7 +281,7 @@ pub fn to_why<'tcx>(
                 Exp::var(Ident::build(id.as_str()))
             } else {
                 names.import_prelude_module(PreludeModule::Intrinsic);
-                Exp::var("any_l").app_to(Exp::Tuple(Vec::new())).ascribe(ty.clone())
+                Exp::var("any_l").app_to(Exp::Tuple(Vec::new()))
             };
             coma::Var(Ident::build(id.as_str()), ty.clone(), init, coma::IsRef::Ref)
         })
@@ -509,16 +509,10 @@ impl<'tcx> RValue<'tcx> {
                 Exp::var(id)
             }
             RValue::Constructor(id, subst, args) => {
-                let needs_ty = lower.ctx.generics_of(id).count() > 0;
                 let args = args.into_iter().map(|a| a.to_why(lower, istmts)).collect();
 
                 let ctor = lower.names.constructor(id, subst);
-                let cons = Exp::Constructor { ctor, args };
-                if needs_ty {
-                    cons.ascribe(lower.ty(ty))
-                } else {
-                    cons
-                }
+                Exp::Constructor { ctor, args }
             }
             RValue::Tuple(f) => {
                 Exp::Tuple(f.into_iter().map(|f| f.to_why(lower, istmts)).collect())
@@ -623,17 +617,7 @@ impl<'tcx> RValue<'tcx> {
 
                 Exp::var("_res")
             }
-            RValue::Ghost(t) => {
-                // `t` is of type `Snapshot<T>`, so peel off the `Snapshot`.
-                let inner_ty = generic_of_ty(t.ty);
-                let needs_ty = has_generics(inner_ty);
-                let term = lower_pure(lower.ctx, lower.names, &t);
-                if needs_ty {
-                    term.ascribe(lower.ty(t.ty))
-                } else {
-                    term
-                }
-            }
+            RValue::Ghost(t) => lower_pure(lower.ctx, lower.names, &t),
             RValue::Borrow(_, _) => todo!(),
         };
 

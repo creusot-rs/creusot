@@ -209,6 +209,7 @@ module Sum_SumFirstN
     [ return' (result:bool)-> {result = invariant'0 self} (! return' {result}) ]
     
   axiom inv'0 : forall x : RangeInclusive'0.t_rangeinclusive uint32 . inv'0 x = true
+  use prelude.Snapshot
   use prelude.Intrinsic
   use seq.Seq
   predicate resolve'0 (self : borrowed (RangeInclusive'0.t_rangeinclusive uint32)) =
@@ -230,7 +231,6 @@ module Sum_SumFirstN
         end}
       (! return' {result}) ]
     
-  use prelude.Snapshot
   use prelude.Snapshot
   use prelude.Snapshot
   use prelude.Snapshot
@@ -276,20 +276,8 @@ module Sum_SumFirstN
       [ s0 = into_iter'0 {_7} (fun (_ret':RangeInclusive'0.t_rangeinclusive uint32) ->  [ &iter <- _ret' ] s1)
       | s1 = bb2 ]
       
-    | bb2 = s0
-      [ s0 = 
-        [ &iter_old <- ([%#ssum2] Snapshot.new iter) : Snapshot.snap_ty (RangeInclusive'0.t_rangeinclusive uint32) ]
-        
-        s1
-      | s1 = bb3 ]
-      
-    | bb3 = s0
-      [ s0 = 
-        [ &produced <- ([%#ssum3] Snapshot.new (Seq.empty  : Seq.seq uint32)) : Snapshot.snap_ty (Seq.seq uint32) ]
-        
-        s1
-      | s1 = bb4 ]
-      
+    | bb2 = s0 [ s0 =  [ &iter_old <- [%#ssum2] Snapshot.new iter ] s1 | s1 = bb3 ] 
+    | bb3 = s0 [ s0 =  [ &produced <- [%#ssum3] Snapshot.new (Seq.empty  : Seq.seq uint32) ] s1 | s1 = bb4 ] 
     | bb4 = s0 [ s0 = bb5 ] 
     | bb5 = bb5
       [ bb5 = {[@expl:loop invariant] [%#ssum5] UInt32.to_int sum
@@ -321,7 +309,7 @@ module Sum_SumFirstN
         | bb11 = s0
           [ s0 = Option'0.some <uint32> {_17} (fun (r0'0:uint32) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
           | s1 = 
-            [ &_22 <- ([%#ssum6] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem))) : Snapshot.snap_ty (Seq.seq uint32) ]
+            [ &_22 <- [%#ssum6] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
             
             s2
           | s2 = bb12 ]
@@ -338,19 +326,19 @@ module Sum_SumFirstN
     | bb8 = s0 [ s0 = {[%#ssum4] false} any ] 
     | bb10 = s0 [ s0 =  [ &_0 <- sum ] s1 | s1 = return' {_0} ]  ]
     )
-    [ & _0 : uint32 = any_l () : uint32
+    [ & _0 : uint32 = any_l ()
     | & n : uint32 = n
-    | & sum : uint32 = any_l () : uint32
-    | & iter : RangeInclusive'0.t_rangeinclusive uint32 = any_l () : RangeInclusive'0.t_rangeinclusive uint32
-    | & _7 : RangeInclusive'0.t_rangeinclusive uint32 = any_l () : RangeInclusive'0.t_rangeinclusive uint32
-    | & iter_old : Snapshot.snap_ty (RangeInclusive'0.t_rangeinclusive uint32) = any_l () : Snapshot.snap_ty (RangeInclusive'0.t_rangeinclusive uint32)
-    | & produced : Snapshot.snap_ty (Seq.seq uint32) = any_l () : Snapshot.snap_ty (Seq.seq uint32)
-    | & _17 : Option'0.t_option uint32 = any_l () : Option'0.t_option uint32
-    | & _18 : borrowed (RangeInclusive'0.t_rangeinclusive uint32) = any_l () : borrowed (RangeInclusive'0.t_rangeinclusive uint32)
-    | & _19 : borrowed (RangeInclusive'0.t_rangeinclusive uint32) = any_l () : borrowed (RangeInclusive'0.t_rangeinclusive uint32)
-    | & __creusot_proc_iter_elem : uint32 = any_l () : uint32
-    | & _22 : Snapshot.snap_ty (Seq.seq uint32) = any_l () : Snapshot.snap_ty (Seq.seq uint32)
-    | & i : uint32 = any_l () : uint32 ]
+    | & sum : uint32 = any_l ()
+    | & iter : RangeInclusive'0.t_rangeinclusive uint32 = any_l ()
+    | & _7 : RangeInclusive'0.t_rangeinclusive uint32 = any_l ()
+    | & iter_old : Snapshot.snap_ty (RangeInclusive'0.t_rangeinclusive uint32) = any_l ()
+    | & produced : Snapshot.snap_ty (Seq.seq uint32) = any_l ()
+    | & _17 : Option'0.t_option uint32 = any_l ()
+    | & _18 : borrowed (RangeInclusive'0.t_rangeinclusive uint32) = any_l ()
+    | & _19 : borrowed (RangeInclusive'0.t_rangeinclusive uint32) = any_l ()
+    | & __creusot_proc_iter_elem : uint32 = any_l ()
+    | & _22 : Snapshot.snap_ty (Seq.seq uint32) = any_l ()
+    | & i : uint32 = any_l () ]
     
     [ return' (result:uint32)-> {[@expl:postcondition] [%#ssum8] UInt32.to_int result
       = div (UInt32.to_int n * (UInt32.to_int n + 1)) 2}

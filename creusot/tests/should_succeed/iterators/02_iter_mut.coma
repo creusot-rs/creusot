@@ -524,9 +524,9 @@ module C02IterMut_Impl1_Next
       
     | bb1 = s0 [ s0 = {[@expl:type invariant] inv'1 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = return' {_0} ]  ]
     )
-    [ & _0 : Option'0.t_option (borrowed t) = any_l () : Option'0.t_option (borrowed t)
+    [ & _0 : Option'0.t_option (borrowed t) = any_l ()
     | & self : borrowed (IterMut'0.t_itermut t) = self
-    | & _3 : borrowed (borrowed (slice t)) = any_l () : borrowed (borrowed (slice t)) ]
+    | & _3 : borrowed (borrowed (slice t)) = any_l () ]
     
     [ return' (result:Option'0.t_option (borrowed t))-> {[@expl:postcondition] [%#s02_iter_mut2] inv'2 result}
       {[@expl:postcondition] [%#s02_iter_mut1] match result with
@@ -614,7 +614,7 @@ module C02IterMut_Impl2_IntoIter
       [ s0 =  [ &_0 <- self ] (any [ any_ (_any:IterMut'0.t_itermut t)-> (!  [ &self <- _any ] s1) ] )
       | s1 = return' {_0} ]
        ]
-    ) [ & _0 : IterMut'0.t_itermut t = any_l () : IterMut'0.t_itermut t | & self : IterMut'0.t_itermut t = self ] 
+    ) [ & _0 : IterMut'0.t_itermut t = any_l () | & self : IterMut'0.t_itermut t = self ] 
     [ return' (result:IterMut'0.t_itermut t)-> {[@expl:postcondition] [%#s02_iter_mut2] inv'0 result}
       {[@expl:postcondition] [%#s02_iter_mut1] result = self}
       (! return' {result}) ]
@@ -909,8 +909,7 @@ module C02IterMut_IterMut
       | s2 = Borrow.borrow_final <slice t> { * _6} {Borrow.get_id _6}
           (fun (_ret':borrowed (slice t)) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = ( ^ _5) ; } ] s3)
       | s3 = -{inv'1 ( ^ _5)}- s4
-      | s4 =  [ &_0 <- IterMut'0.C_IterMut _5 : IterMut'0.t_itermut t ] 
-        (any [ any_ (_any:borrowed (slice t))-> (!  [ &_5 <- _any ] s5) ] )
+      | s4 =  [ &_0 <- IterMut'0.C_IterMut _5 ] (any [ any_ (_any:borrowed (slice t))-> (!  [ &_5 <- _any ] s5) ] )
       | s5 = {[@expl:type invariant] inv'2 _7} s6
       | s6 = -{resolve'0 _7}- s7
       | s7 = {[@expl:type invariant] inv'2 _6} s8
@@ -920,13 +919,13 @@ module C02IterMut_IterMut
       | s11 = return' {_0} ]
        ]
     )
-    [ & _0 : IterMut'0.t_itermut t = any_l () : IterMut'0.t_itermut t
+    [ & _0 : IterMut'0.t_itermut t = any_l ()
     | & v : borrowed (Vec'0.t_vec t (Global'0.t_global)) = v
-    | & _5 : borrowed (slice t) = any_l () : borrowed (slice t)
-    | & _6 : borrowed (slice t) = any_l () : borrowed (slice t)
-    | & _7 : borrowed (slice t) = any_l () : borrowed (slice t)
-    | & _8 : borrowed (Vec'0.t_vec t (Global'0.t_global)) = any_l () : borrowed (Vec'0.t_vec t (Global'0.t_global))
-    | & _9 : RangeFull'0.t_rangefull = any_l () : RangeFull'0.t_rangefull ]
+    | & _5 : borrowed (slice t) = any_l ()
+    | & _6 : borrowed (slice t) = any_l ()
+    | & _7 : borrowed (slice t) = any_l ()
+    | & _8 : borrowed (Vec'0.t_vec t (Global'0.t_global)) = any_l ()
+    | & _9 : RangeFull'0.t_rangefull = any_l () ]
     
     [ return' (result:IterMut'0.t_itermut t)-> {[@expl:postcondition] [%#s02_iter_mut4] inv'4 result}
       {[@expl:postcondition] [%#s02_iter_mut3] Seq.length (shallow_model'3 ( ^ v)) = Seq.length (shallow_model'1 v)}
@@ -1189,6 +1188,7 @@ module C02IterMut_AllZero
   let rec shallow_model'1 (self:borrowed (Vec'0.t_vec usize (Global'0.t_global))) (return'  (ret:Seq.seq usize))= any
     [ return' (result:Seq.seq usize)-> {result = shallow_model'1 self} (! return' {result}) ]
     
+  use prelude.Snapshot
   use prelude.Intrinsic
   predicate resolve'1 (self : borrowed (Vec'0.t_vec usize (Global'0.t_global))) =
     [%#span43]  ^ self =  * self
@@ -1223,7 +1223,6 @@ module C02IterMut_AllZero
         end}
       (! return' {result}) ]
     
-  use prelude.Snapshot
   use prelude.Snapshot
   function index_logic'0 [@inline:trivial] (self : Snapshot.snap_ty (Seq.seq (borrowed usize))) (ix : int) : borrowed usize
     
@@ -1261,16 +1260,9 @@ module C02IterMut_AllZero
       | s2 = bb1 ]
       
     | bb1 = s0 [ s0 = into_iter'0 {_5} (fun (_ret':IterMut'0.t_itermut usize) ->  [ &it <- _ret' ] s1) | s1 = bb2 ] 
-    | bb2 = s0
-      [ s0 =  [ &iter_old <- ([%#s02_iter_mut0] Snapshot.new it) : Snapshot.snap_ty (IterMut'0.t_itermut usize) ] s1
-      | s1 = bb3 ]
-      
+    | bb2 = s0 [ s0 =  [ &iter_old <- [%#s02_iter_mut0] Snapshot.new it ] s1 | s1 = bb3 ] 
     | bb3 = s0
-      [ s0 = 
-        [ &produced <- ([%#s02_iter_mut1] Snapshot.new (Seq.empty  : Seq.seq (borrowed usize))) : Snapshot.snap_ty (Seq.seq (borrowed usize)) ]
-        
-        s1
-      | s1 = bb4 ]
+      [ s0 =  [ &produced <- [%#s02_iter_mut1] Snapshot.new (Seq.empty  : Seq.seq (borrowed usize)) ] s1 | s1 = bb4 ]
       
     | bb4 = s0 [ s0 = bb5 ] 
     | bb5 = bb5
@@ -1302,10 +1294,7 @@ module C02IterMut_AllZero
                        [ &_15 <- Option'0.C_Some _any : Option'0.t_option (borrowed usize) ] 
                       s1)) ]
                 ))
-          | s1 = 
-            [ &_19 <- ([%#s02_iter_mut5] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton x))) : Snapshot.snap_ty (Seq.seq (borrowed usize)) ]
-            
-            s2
+          | s1 =  [ &_19 <- [%#s02_iter_mut5] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton x)) ] s2
           | s2 = bb12 ]
           
         | bb12 = s0
@@ -1320,17 +1309,17 @@ module C02IterMut_AllZero
     | bb8 = s0 [ s0 = -{resolve'1 v}- s1 | s1 = {[%#s02_iter_mut7] false} any ] 
     | bb10 = s0 [ s0 =  [ &_0 <- [%#s02_iter_mut8] () ] s1 | s1 = -{resolve'1 v}- s2 | s2 = return' {_0} ]  ]
     )
-    [ & _0 : () = any_l () : ()
+    [ & _0 : () = any_l ()
     | & v : borrowed (Vec'0.t_vec usize (Global'0.t_global)) = v
-    | & it : IterMut'0.t_itermut usize = any_l () : IterMut'0.t_itermut usize
-    | & _5 : IterMut'0.t_itermut usize = any_l () : IterMut'0.t_itermut usize
-    | & _6 : borrowed (Vec'0.t_vec usize (Global'0.t_global)) = any_l () : borrowed (Vec'0.t_vec usize (Global'0.t_global))
-    | & iter_old : Snapshot.snap_ty (IterMut'0.t_itermut usize) = any_l () : Snapshot.snap_ty (IterMut'0.t_itermut usize)
-    | & produced : Snapshot.snap_ty (Seq.seq (borrowed usize)) = any_l () : Snapshot.snap_ty (Seq.seq (borrowed usize))
-    | & _15 : Option'0.t_option (borrowed usize) = any_l () : Option'0.t_option (borrowed usize)
-    | & _16 : borrowed (IterMut'0.t_itermut usize) = any_l () : borrowed (IterMut'0.t_itermut usize)
-    | & x : borrowed usize = any_l () : borrowed usize
-    | & _19 : Snapshot.snap_ty (Seq.seq (borrowed usize)) = any_l () : Snapshot.snap_ty (Seq.seq (borrowed usize)) ]
+    | & it : IterMut'0.t_itermut usize = any_l ()
+    | & _5 : IterMut'0.t_itermut usize = any_l ()
+    | & _6 : borrowed (Vec'0.t_vec usize (Global'0.t_global)) = any_l ()
+    | & iter_old : Snapshot.snap_ty (IterMut'0.t_itermut usize) = any_l ()
+    | & produced : Snapshot.snap_ty (Seq.seq (borrowed usize)) = any_l ()
+    | & _15 : Option'0.t_option (borrowed usize) = any_l ()
+    | & _16 : borrowed (IterMut'0.t_itermut usize) = any_l ()
+    | & x : borrowed usize = any_l ()
+    | & _19 : Snapshot.snap_ty (Seq.seq (borrowed usize)) = any_l () ]
     
     [ return' (result:())-> {[@expl:postcondition] [%#s02_iter_mut10] forall i : int . 0 <= i
       /\ i < Seq.length (shallow_model'1 v)  -> UIntSize.to_int (index_logic'1 ( ^ v) i) = 0}

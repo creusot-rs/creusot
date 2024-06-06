@@ -14,7 +14,7 @@ module KnapsackFull_Max
     | bb1 = s0 [ s0 =  [ &_0 <- b ] s1 | s1 = bb3 ] 
     | bb2 = s0 [ s0 =  [ &_0 <- a ] s1 | s1 = bb3 ] 
     | bb3 = s0 [ s0 = return' {_0} ]  ]
-    ) [ & _0 : usize = any_l () : usize | & a : usize = a | & b : usize = b | & _4 : bool = any_l () : bool ] 
+    ) [ & _0 : usize = any_l () | & a : usize = a | & b : usize = b | & _4 : bool = any_l () ] 
     [ return' (result:usize)-> {[@expl:postcondition] [%#sknapsack_full0] UIntSize.to_int result
       = MinMax.max (UIntSize.to_int a) (UIntSize.to_int b)}
       (! return' {result}) ]
@@ -955,6 +955,7 @@ module KnapsackFull_Knapsack01Dyn
   let rec index_logic'2 (self:Vec'3.t_vec (Item'0.t_item name) (Global'0.t_global)) (ix:int) (return'  (ret:Item'0.t_item name))= any
     [ return' (result:Item'0.t_item name)-> {result = index_logic'2 self ix} (! return' {result}) ]
     
+  use prelude.Snapshot
   use prelude.Intrinsic
   use seq.Seq
   function shallow_model'9 (self : borrowed (Vec'2.t_vec (Item'0.t_item name) (Global'0.t_global))) : Seq.seq (Item'0.t_item name)
@@ -1190,7 +1191,6 @@ module KnapsackFull_Knapsack01Dyn
     
   use prelude.Snapshot
   use prelude.Snapshot
-  use prelude.Snapshot
   predicate into_iter_post'1 (self : RangeInclusive'0.t_rangeinclusive usize) (res : RangeInclusive'0.t_rangeinclusive usize)
     
    =
@@ -1359,22 +1359,13 @@ module KnapsackFull_Knapsack01Dyn
       
     | bb3 = s0 [ s0 = len'0 {items} (fun (_ret':usize) ->  [ &_19 <- _ret' ] s1) | s1 = bb4 ] 
     | bb4 = s0
-      [ s0 =  [ &_18 <- Range'0.C_Range ([%#sknapsack_full3] (0 : usize)) _19 : Range'0.t_range usize ] 
+      [ s0 =  [ &_18 <- Range'0.C_Range ([%#sknapsack_full3] (0 : usize)) _19 ] 
         (any [ any_ (_any:usize)-> (!  [ &_19 <- _any ] s1) ] )
       | s1 = into_iter'0 {_18} (fun (_ret':Range'0.t_range usize) ->  [ &iter <- _ret' ] s2)
       | s2 = bb5 ]
       
-    | bb5 = s0
-      [ s0 =  [ &iter_old <- ([%#sknapsack_full4] Snapshot.new iter) : Snapshot.snap_ty (Range'0.t_range usize) ] s1
-      | s1 = bb6 ]
-      
-    | bb6 = s0
-      [ s0 = 
-        [ &produced <- ([%#sknapsack_full5] Snapshot.new (Seq.empty  : Seq.seq usize)) : Snapshot.snap_ty (Seq.seq usize) ]
-        
-        s1
-      | s1 = bb7 ]
-      
+    | bb5 = s0 [ s0 =  [ &iter_old <- [%#sknapsack_full4] Snapshot.new iter ] s1 | s1 = bb6 ] 
+    | bb6 = s0 [ s0 =  [ &produced <- [%#sknapsack_full5] Snapshot.new (Seq.empty  : Seq.seq usize) ] s1 | s1 = bb7 ] 
     | bb7 = s0 [ s0 = bb8 ] 
     | bb8 = s0 [ s0 = bb9 ] 
     | bb9 = s0 [ s0 = bb10 ] 
@@ -1417,7 +1408,7 @@ module KnapsackFull_Knapsack01Dyn
         | bb18 = s0
           [ s0 = Option'0.some <usize> {_32} (fun (r0'0:usize) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
           | s1 = 
-            [ &_37 <- ([%#sknapsack_full8] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem))) : Snapshot.snap_ty (Seq.seq usize) ]
+            [ &_37 <- [%#sknapsack_full8] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
             
             s2
           | s2 = bb19 ]
@@ -1441,19 +1432,9 @@ module KnapsackFull_Knapsack01Dyn
           [ s0 = into_iter'1 {_45} (fun (_ret':RangeInclusive'0.t_rangeinclusive usize) ->  [ &iter1 <- _ret' ] s1)
           | s1 = bb22 ]
           
-        | bb22 = s0
-          [ s0 = 
-            [ &iter_old1 <- ([%#sknapsack_full10] Snapshot.new iter1) : Snapshot.snap_ty (RangeInclusive'0.t_rangeinclusive usize) ]
-            
-            s1
-          | s1 = bb23 ]
-          
+        | bb22 = s0 [ s0 =  [ &iter_old1 <- [%#sknapsack_full10] Snapshot.new iter1 ] s1 | s1 = bb23 ] 
         | bb23 = s0
-          [ s0 = 
-            [ &produced1 <- ([%#sknapsack_full11] Snapshot.new (Seq.empty  : Seq.seq usize)) : Snapshot.snap_ty (Seq.seq usize) ]
-            
-            s1
-          | s1 = bb24 ]
+          [ s0 =  [ &produced1 <- [%#sknapsack_full11] Snapshot.new (Seq.empty  : Seq.seq usize) ] s1 | s1 = bb24 ]
           
         | bb24 = s0 [ s0 = bb25 ] 
         | bb25 = s0 [ s0 = bb26 ] 
@@ -1505,7 +1486,7 @@ module KnapsackFull_Knapsack01Dyn
             | bb36 = s0
               [ s0 = Option'0.some <usize> {_58} (fun (r0'0:usize) ->  [ &__creusot_proc_iter_elem1 <- r0'0 ] s1)
               | s1 = 
-                [ &_63 <- ([%#sknapsack_full14] Snapshot.new (Seq.(++) (Snapshot.inner produced1) (Seq.singleton __creusot_proc_iter_elem1))) : Snapshot.snap_ty (Seq.seq usize) ]
+                [ &_63 <- [%#sknapsack_full14] Snapshot.new (Seq.(++) (Snapshot.inner produced1) (Seq.singleton __creusot_proc_iter_elem1)) ]
                 
                 s2
               | s2 = bb37 ]
@@ -1708,68 +1689,68 @@ module KnapsackFull_Knapsack01Dyn
     | bb69 = s0 [ s0 = bb70 ] 
     | bb70 = s0 [ s0 = return' {_0} ]  ]
     )
-    [ & _0 : Vec'2.t_vec (Item'0.t_item name) (Global'0.t_global) = any_l () : Vec'2.t_vec (Item'0.t_item name) (Global'0.t_global)
+    [ & _0 : Vec'2.t_vec (Item'0.t_item name) (Global'0.t_global) = any_l ()
     | & items : Vec'3.t_vec (Item'0.t_item name) (Global'0.t_global) = items
     | & max_weight : usize = max_weight
-    | & best_value : Vec'1.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global) = any_l () : Vec'1.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global)
-    | & _10 : Vec'0.t_vec usize (Global'0.t_global) = any_l () : Vec'0.t_vec usize (Global'0.t_global)
-    | & _11 : usize = any_l () : usize
-    | & _13 : usize = any_l () : usize
-    | & _14 : usize = any_l () : usize
-    | & iter : Range'0.t_range usize = any_l () : Range'0.t_range usize
-    | & _18 : Range'0.t_range usize = any_l () : Range'0.t_range usize
-    | & _19 : usize = any_l () : usize
-    | & iter_old : Snapshot.snap_ty (Range'0.t_range usize) = any_l () : Snapshot.snap_ty (Range'0.t_range usize)
-    | & produced : Snapshot.snap_ty (Seq.seq usize) = any_l () : Snapshot.snap_ty (Seq.seq usize)
-    | & _31 : () = any_l () : ()
-    | & _32 : Option'0.t_option usize = any_l () : Option'0.t_option usize
-    | & _33 : borrowed (Range'0.t_range usize) = any_l () : borrowed (Range'0.t_range usize)
-    | & _34 : borrowed (Range'0.t_range usize) = any_l () : borrowed (Range'0.t_range usize)
-    | & __creusot_proc_iter_elem : usize = any_l () : usize
-    | & _37 : Snapshot.snap_ty (Seq.seq usize) = any_l () : Snapshot.snap_ty (Seq.seq usize)
-    | & i : usize = any_l () : usize
-    | & it : Item'0.t_item name = any_l () : Item'0.t_item name
-    | & _41 : Item'0.t_item name = any_l () : Item'0.t_item name
-    | & iter1 : RangeInclusive'0.t_rangeinclusive usize = any_l () : RangeInclusive'0.t_rangeinclusive usize
-    | & _45 : RangeInclusive'0.t_rangeinclusive usize = any_l () : RangeInclusive'0.t_rangeinclusive usize
-    | & iter_old1 : Snapshot.snap_ty (RangeInclusive'0.t_rangeinclusive usize) = any_l () : Snapshot.snap_ty (RangeInclusive'0.t_rangeinclusive usize)
-    | & produced1 : Snapshot.snap_ty (Seq.seq usize) = any_l () : Snapshot.snap_ty (Seq.seq usize)
-    | & _58 : Option'0.t_option usize = any_l () : Option'0.t_option usize
-    | & _59 : borrowed (RangeInclusive'0.t_rangeinclusive usize) = any_l () : borrowed (RangeInclusive'0.t_rangeinclusive usize)
-    | & _60 : borrowed (RangeInclusive'0.t_rangeinclusive usize) = any_l () : borrowed (RangeInclusive'0.t_rangeinclusive usize)
-    | & __creusot_proc_iter_elem1 : usize = any_l () : usize
-    | & _63 : Snapshot.snap_ty (Seq.seq usize) = any_l () : Snapshot.snap_ty (Seq.seq usize)
-    | & w : usize = any_l () : usize
-    | & _66 : usize = any_l () : usize
-    | & _67 : bool = any_l () : bool
-    | & _70 : usize = any_l () : usize
-    | & _72 : Vec'0.t_vec usize (Global'0.t_global) = any_l () : Vec'0.t_vec usize (Global'0.t_global)
-    | & _77 : usize = any_l () : usize
-    | & _79 : Vec'0.t_vec usize (Global'0.t_global) = any_l () : Vec'0.t_vec usize (Global'0.t_global)
-    | & _83 : usize = any_l () : usize
-    | & _85 : usize = any_l () : usize
-    | & _87 : Vec'0.t_vec usize (Global'0.t_global) = any_l () : Vec'0.t_vec usize (Global'0.t_global)
-    | & _90 : usize = any_l () : usize
-    | & _94 : borrowed usize = any_l () : borrowed usize
-    | & _95 : borrowed (Vec'0.t_vec usize (Global'0.t_global)) = any_l () : borrowed (Vec'0.t_vec usize (Global'0.t_global))
-    | & _96 : borrowed (Vec'0.t_vec usize (Global'0.t_global)) = any_l () : borrowed (Vec'0.t_vec usize (Global'0.t_global))
-    | & _97 : borrowed (Vec'1.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global)) = any_l () : borrowed (Vec'1.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global))
-    | & _98 : usize = any_l () : usize
-    | & result : Vec'2.t_vec (Item'0.t_item name) (Global'0.t_global) = any_l () : Vec'2.t_vec (Item'0.t_item name) (Global'0.t_global)
-    | & _104 : usize = any_l () : usize
-    | & left_weight : usize = any_l () : usize
-    | & j : usize = any_l () : usize
-    | & _115 : bool = any_l () : bool
-    | & it1 : Item'0.t_item name = any_l () : Item'0.t_item name
-    | & _118 : Item'0.t_item name = any_l () : Item'0.t_item name
-    | & _121 : bool = any_l () : bool
-    | & _123 : usize = any_l () : usize
-    | & _125 : Vec'0.t_vec usize (Global'0.t_global) = any_l () : Vec'0.t_vec usize (Global'0.t_global)
-    | & _127 : usize = any_l () : usize
-    | & _131 : usize = any_l () : usize
-    | & _133 : Vec'0.t_vec usize (Global'0.t_global) = any_l () : Vec'0.t_vec usize (Global'0.t_global)
-    | & _137 : () = any_l () : ()
-    | & _138 : borrowed (Vec'2.t_vec (Item'0.t_item name) (Global'0.t_global)) = any_l () : borrowed (Vec'2.t_vec (Item'0.t_item name) (Global'0.t_global)) ]
+    | & best_value : Vec'1.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global) = any_l ()
+    | & _10 : Vec'0.t_vec usize (Global'0.t_global) = any_l ()
+    | & _11 : usize = any_l ()
+    | & _13 : usize = any_l ()
+    | & _14 : usize = any_l ()
+    | & iter : Range'0.t_range usize = any_l ()
+    | & _18 : Range'0.t_range usize = any_l ()
+    | & _19 : usize = any_l ()
+    | & iter_old : Snapshot.snap_ty (Range'0.t_range usize) = any_l ()
+    | & produced : Snapshot.snap_ty (Seq.seq usize) = any_l ()
+    | & _31 : () = any_l ()
+    | & _32 : Option'0.t_option usize = any_l ()
+    | & _33 : borrowed (Range'0.t_range usize) = any_l ()
+    | & _34 : borrowed (Range'0.t_range usize) = any_l ()
+    | & __creusot_proc_iter_elem : usize = any_l ()
+    | & _37 : Snapshot.snap_ty (Seq.seq usize) = any_l ()
+    | & i : usize = any_l ()
+    | & it : Item'0.t_item name = any_l ()
+    | & _41 : Item'0.t_item name = any_l ()
+    | & iter1 : RangeInclusive'0.t_rangeinclusive usize = any_l ()
+    | & _45 : RangeInclusive'0.t_rangeinclusive usize = any_l ()
+    | & iter_old1 : Snapshot.snap_ty (RangeInclusive'0.t_rangeinclusive usize) = any_l ()
+    | & produced1 : Snapshot.snap_ty (Seq.seq usize) = any_l ()
+    | & _58 : Option'0.t_option usize = any_l ()
+    | & _59 : borrowed (RangeInclusive'0.t_rangeinclusive usize) = any_l ()
+    | & _60 : borrowed (RangeInclusive'0.t_rangeinclusive usize) = any_l ()
+    | & __creusot_proc_iter_elem1 : usize = any_l ()
+    | & _63 : Snapshot.snap_ty (Seq.seq usize) = any_l ()
+    | & w : usize = any_l ()
+    | & _66 : usize = any_l ()
+    | & _67 : bool = any_l ()
+    | & _70 : usize = any_l ()
+    | & _72 : Vec'0.t_vec usize (Global'0.t_global) = any_l ()
+    | & _77 : usize = any_l ()
+    | & _79 : Vec'0.t_vec usize (Global'0.t_global) = any_l ()
+    | & _83 : usize = any_l ()
+    | & _85 : usize = any_l ()
+    | & _87 : Vec'0.t_vec usize (Global'0.t_global) = any_l ()
+    | & _90 : usize = any_l ()
+    | & _94 : borrowed usize = any_l ()
+    | & _95 : borrowed (Vec'0.t_vec usize (Global'0.t_global)) = any_l ()
+    | & _96 : borrowed (Vec'0.t_vec usize (Global'0.t_global)) = any_l ()
+    | & _97 : borrowed (Vec'1.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global)) = any_l ()
+    | & _98 : usize = any_l ()
+    | & result : Vec'2.t_vec (Item'0.t_item name) (Global'0.t_global) = any_l ()
+    | & _104 : usize = any_l ()
+    | & left_weight : usize = any_l ()
+    | & j : usize = any_l ()
+    | & _115 : bool = any_l ()
+    | & it1 : Item'0.t_item name = any_l ()
+    | & _118 : Item'0.t_item name = any_l ()
+    | & _121 : bool = any_l ()
+    | & _123 : usize = any_l ()
+    | & _125 : Vec'0.t_vec usize (Global'0.t_global) = any_l ()
+    | & _127 : usize = any_l ()
+    | & _131 : usize = any_l ()
+    | & _133 : Vec'0.t_vec usize (Global'0.t_global) = any_l ()
+    | & _137 : () = any_l ()
+    | & _138 : borrowed (Vec'2.t_vec (Item'0.t_item name) (Global'0.t_global)) = any_l () ]
     
     [ return' (result:Vec'2.t_vec (Item'0.t_item name) (Global'0.t_global))-> {[@expl:postcondition] [%#sknapsack_full32] inv'5 result}
       {[@expl:postcondition] [%#sknapsack_full31] forall s : Seq.seq (Item'0.t_item name) . inv'4 s

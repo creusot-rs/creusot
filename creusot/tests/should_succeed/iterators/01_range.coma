@@ -149,9 +149,7 @@ module C01Range_Impl0_Next
                 IntSize.ge {rstart'0} {rend'1} (fun (_ret':bool) ->  [ &_3 <- _ret' ] s1)))
       | s1 = any [ br0 -> {_3 = false} (! bb2) | br1 -> {_3} (! bb1) ]  ]
       
-    | bb1 = s0
-      [ s0 = -{resolve'0 self}- s1 | s1 =  [ &_0 <- Option'0.C_None : Option'0.t_option isize ] s2 | s2 = bb3 ]
-      
+    | bb1 = s0 [ s0 = -{resolve'0 self}- s1 | s1 =  [ &_0 <- Option'0.C_None ] s2 | s2 = bb3 ] 
     | bb2 = s0
       [ s0 = Range'0.t_range { * self} (fun (rstart'0:isize) (rend'0:isize) ->  [ &r <- rstart'0 ] s1)
       | s1 = Range'0.t_range { * self}
@@ -163,15 +161,15 @@ module C01Range_Impl0_Next
                      [ &self <- { self with current = (Range'0.C_Range _ret' l_end'0 : Range'0.t_range) ; } ] 
                     s2)))
       | s2 = -{resolve'0 self}- s3
-      | s3 =  [ &_0 <- Option'0.C_Some r : Option'0.t_option isize ] s4
+      | s3 =  [ &_0 <- Option'0.C_Some r ] s4
       | s4 = bb3 ]
       
     | bb3 = s0 [ s0 = return' {_0} ]  ]
     )
-    [ & _0 : Option'0.t_option isize = any_l () : Option'0.t_option isize
+    [ & _0 : Option'0.t_option isize = any_l ()
     | & self : borrowed (Range'0.t_range) = self
-    | & _3 : bool = any_l () : bool
-    | & r : isize = any_l () : isize ]
+    | & _3 : bool = any_l ()
+    | & r : isize = any_l () ]
     
     [ return' (result:Option'0.t_option isize)-> {[@expl:postcondition] [%#s01_range1] match result with
         | Option'0.C_None -> completed'0 self
@@ -188,7 +186,7 @@ module C01Range_Impl1_IntoIter
     [ bb0 = s0
       [ s0 =  [ &_0 <- self ] (any [ any_ (_any:Range'0.t_range)-> (!  [ &self <- _any ] s1) ] ) | s1 = return' {_0} ]
        ]
-    ) [ & _0 : Range'0.t_range = any_l () : Range'0.t_range | & self : Range'0.t_range = self ] 
+    ) [ & _0 : Range'0.t_range = any_l () | & self : Range'0.t_range = self ] 
     [ return' (result:Range'0.t_range)-> {[@expl:postcondition] [%#s01_range0] result = self} (! return' {result}) ]
     
 end
@@ -304,13 +302,7 @@ module C01Range_SumRange
       | s3 = bb1 ]
       
     | bb1 = s0 [ s0 =  [ &iter_old <- [%#s01_range2] Snapshot.new it ] s1 | s1 = bb2 ] 
-    | bb2 = s0
-      [ s0 = 
-        [ &produced <- ([%#s01_range3] Snapshot.new (Seq.empty  : Seq.seq isize)) : Snapshot.snap_ty (Seq.seq isize) ]
-        
-        s1
-      | s1 = bb3 ]
-      
+    | bb2 = s0 [ s0 =  [ &produced <- [%#s01_range3] Snapshot.new (Seq.empty  : Seq.seq isize) ] s1 | s1 = bb3 ] 
     | bb3 = s0 [ s0 = bb4 ] 
     | bb4 = bb4
       [ bb4 = {[@expl:loop invariant] [%#s01_range6] IntSize.to_int i = Seq.length (Snapshot.inner produced) /\ i <= n}
@@ -329,10 +321,7 @@ module C01Range_SumRange
         | bb8 = s0 [ s0 = bb10 ] 
         | bb10 = s0
           [ s0 = Option'0.some <isize> {_17} (fun (r0'0:isize) ->  [ &x <- r0'0 ] s1)
-          | s1 = 
-            [ &_21 <- ([%#s01_range7] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton x))) : Snapshot.snap_ty (Seq.seq isize) ]
-            
-            s2
+          | s1 =  [ &_21 <- [%#s01_range7] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton x)) ] s2
           | s2 = bb11 ]
           
         | bb11 = s0
@@ -346,17 +335,17 @@ module C01Range_SumRange
     | bb7 = s0 [ s0 = {[%#s01_range9] false} any ] 
     | bb9 = s0 [ s0 =  [ &_0 <- i ] s1 | s1 = return' {_0} ]  ]
     )
-    [ & _0 : isize = any_l () : isize
+    [ & _0 : isize = any_l ()
     | & n : isize = n
-    | & i : isize = any_l () : isize
-    | & it : Range'0.t_range = any_l () : Range'0.t_range
-    | & _6 : Range'0.t_range = any_l () : Range'0.t_range
-    | & iter_old : Snapshot.snap_ty (Range'0.t_range) = any_l () : Snapshot.snap_ty (Range'0.t_range)
-    | & produced : Snapshot.snap_ty (Seq.seq isize) = any_l () : Snapshot.snap_ty (Seq.seq isize)
-    | & _17 : Option'0.t_option isize = any_l () : Option'0.t_option isize
-    | & _18 : borrowed (Range'0.t_range) = any_l () : borrowed (Range'0.t_range)
-    | & x : isize = any_l () : isize
-    | & _21 : Snapshot.snap_ty (Seq.seq isize) = any_l () : Snapshot.snap_ty (Seq.seq isize) ]
+    | & i : isize = any_l ()
+    | & it : Range'0.t_range = any_l ()
+    | & _6 : Range'0.t_range = any_l ()
+    | & iter_old : Snapshot.snap_ty (Range'0.t_range) = any_l ()
+    | & produced : Snapshot.snap_ty (Seq.seq isize) = any_l ()
+    | & _17 : Option'0.t_option isize = any_l ()
+    | & _18 : borrowed (Range'0.t_range) = any_l ()
+    | & x : isize = any_l ()
+    | & _21 : Snapshot.snap_ty (Seq.seq isize) = any_l () ]
      [ return' (result:isize)-> {[@expl:postcondition] [%#s01_range11] result = n} (! return' {result}) ] 
 end
 module C01Range_Impl0
