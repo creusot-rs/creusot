@@ -1,7 +1,9 @@
 use creusot_args::{options::*, CREUSOT_RUSTC_ARGS};
 use creusot_setup as setup;
 use std::{
-    env, path::PathBuf, process::{exit, Command}
+    env,
+    path::PathBuf,
+    process::{exit, Command},
 };
 use tempdir::TempDir;
 
@@ -43,11 +45,14 @@ fn main() -> Result<()> {
             //   we want to launch Why3 Ide and replay in cargo-creusot not by creusot-rustc.
             //   however we want to keep the current behavior for other commands: prove
             let (creusot_rustc_subcmd, launch_why3) = match subcmd {
-                Some(CreusotSubCommand::Why3 {command: Why3SubCommand::Ide, args, ..}) => (None, Some(args)),
-                Some(CreusotSubCommand::Why3 {command: Why3SubCommand::Replay, args, ..}) => (None, Some(args)),
+                Some(CreusotSubCommand::Why3 { command: Why3SubCommand::Ide, args, .. }) => {
+                    (None, Some(args))
+                }
+                Some(CreusotSubCommand::Why3 { command: Why3SubCommand::Replay, args, .. }) => {
+                    (None, Some(args))
+                }
                 _ => (subcmd, None),
             };
-
 
             let config_args = setup::status_for_creusot()?;
             let creusot_args = CreusotArgs {

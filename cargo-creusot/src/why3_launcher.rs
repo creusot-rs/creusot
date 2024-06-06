@@ -74,7 +74,6 @@ impl Why3Launcher {
             .arg(temp_dir.as_os_str())
             .arg(&cmd_output_file);
 
-
         if let Some(cfg) = &self.config_file {
             command.arg("-C").arg(cfg);
         }
