@@ -1,9 +1,7 @@
 use creusot_args::{options::*, CREUSOT_RUSTC_ARGS};
 use creusot_setup as setup;
 use std::{
-    env,
-    path::PathBuf,
-    process::{exit, Command},
+    env, path::PathBuf, process::{exit, Command}
 };
 use tempdir::TempDir;
 
@@ -11,7 +9,6 @@ mod helpers;
 use helpers::*;
 mod why3_launcher;
 use why3_launcher::*;
-
 enum Subcommand {
     // subcommand to pass on to creusot-rustc
     Creusot(Option<CreusotSubCommand>),
@@ -43,17 +40,14 @@ fn main() -> Result<()> {
     match subcommand {
         Creusot(subcmd) => {
             // subcommand analysis:
-            //   we want to launch Why3 Ide in cargo-creusot not by creusot-rustc.
-            //   however we want to keep the current behavior for other commands: prove and replay
-            let (creusot_rustc_subcmd, launch_why3) =
-                if let Some(CreusotSubCommand::Why3 {
-                    command: Why3SubCommand::Ide, args, ..
-                }) = subcmd
-                {
-                    (None, Some(args))
-                } else {
-                    (subcmd, None)
-                };
+            //   we want to launch Why3 Ide and replay in cargo-creusot not by creusot-rustc.
+            //   however we want to keep the current behavior for other commands: prove
+            let (creusot_rustc_subcmd, launch_why3) = match subcmd {
+                Some(CreusotSubCommand::Why3 {command: Why3SubCommand::Ide, args, ..}) => (None, Some(args)),
+                Some(CreusotSubCommand::Why3 {command: Why3SubCommand::Replay, args, ..}) => (None, Some(args)),
+                _ => (subcmd, None),
+            };
+
 
             let config_args = setup::status_for_creusot()?;
             let creusot_args = CreusotArgs {
@@ -72,7 +66,7 @@ fn main() -> Result<()> {
                 b.why3_path(config_args.why3_path);
                 b.config_file(config_args.why3_config);
                 b.output_file(coma_filename);
-                // temporary: for the moment we only launch why3 via cargo-creusot in Ide mode
+                // temporary: for the moment we only launch why3 via cargo-creusot in Ide and Replay mode
                 b.mode(Why3Mode::Ide);
                 b.args(args);
 
