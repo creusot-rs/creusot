@@ -4,27 +4,27 @@ pub use ::std::{
     time::*,
 };
 
-impl ShallowModel for Duration {
-    type ShallowModelTy = Int;
+impl View for Duration {
+    type ViewTy = Int;
 
     #[logic]
     #[open(self)]
     #[trusted]
     #[ensures(result >= 0 && result <= secs_to_nanos(u64::MAX@) + 999_999_999)]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { absurd }
     }
 }
 
-impl DeepModel for Duration {
-    type DeepModelTy = Int;
+impl EqModel for Duration {
+    type EqModelTy = Int;
 
     #[logic]
     #[open(self)]
     #[trusted]
     #[ensures(result >= 0 && result <= secs_to_nanos(u64::MAX@) + 999_999_999)]
-    #[ensures(result == self.shallow_model())]
-    fn deep_model(self) -> Self::DeepModelTy {
+    #[ensures(result == self.view())]
+    fn eq_model(self) -> Self::EqModelTy {
         pearlite! { absurd }
     }
 }
@@ -48,27 +48,27 @@ fn secs_to_nanos(secs: Int) -> Int {
     secs * 1_000_000_000
 }
 
-impl ShallowModel for Instant {
-    type ShallowModelTy = Int;
+impl View for Instant {
+    type ViewTy = Int;
 
     #[logic]
     #[open(self)]
     #[trusted]
     #[ensures(result >= 0)]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { absurd }
     }
 }
 
-impl DeepModel for Instant {
-    type DeepModelTy = Int;
+impl EqModel for Instant {
+    type EqModelTy = Int;
 
     #[logic]
     #[open(self)]
     #[trusted]
     #[ensures(result >= 0)]
-    #[ensures(result == self.shallow_model())]
-    fn deep_model(self) -> Self::DeepModelTy {
+    #[ensures(result == self.view())]
+    fn eq_model(self) -> Self::EqModelTy {
         pearlite! { absurd }
     }
 }
@@ -137,22 +137,22 @@ extern_spec! {
 
                 #[pure]
                 #[ensures(nanos_to_secs(self@ + rhs@) > u64::MAX@ ==> result == None)]
-                #[ensures(nanos_to_secs(self@ + rhs@) <= u64::MAX@ ==> result.deep_model() == Some(self@ + rhs@))]
+                #[ensures(nanos_to_secs(self@ + rhs@) <= u64::MAX@ ==> result.eq_model() == Some(self@ + rhs@))]
                 fn checked_add(self, rhs: Duration) -> Option<Duration>;
 
                 #[pure]
                 #[ensures(self@ - rhs@ < 0 ==> result == None)]
-                #[ensures(self@ - rhs@ >= 0 ==> result.deep_model() == Some(self@ - rhs@))]
+                #[ensures(self@ - rhs@ >= 0 ==> result.eq_model() == Some(self@ - rhs@))]
                 fn checked_sub(self, rhs: Duration) -> Option<Duration>;
 
                 #[pure]
                 #[ensures(nanos_to_secs(self@ * rhs@) > u64::MAX@ ==> result == None)]
-                #[ensures(nanos_to_secs(self@ * rhs@) <= u64::MAX@ ==> result.deep_model() == Some(self@ * rhs@))]
+                #[ensures(nanos_to_secs(self@ * rhs@) <= u64::MAX@ ==> result.eq_model() == Some(self@ * rhs@))]
                 fn checked_mul(self, rhs: u32) -> Option<Duration>;
 
                 #[pure]
                 #[ensures(rhs == 0u32 ==> result == None)]
-                #[ensures(rhs != 0u32 ==> result.deep_model() == Some(self@ / rhs@))]
+                #[ensures(rhs != 0u32 ==> result.eq_model() == Some(self@ / rhs@))]
                 fn checked_div(self, rhs: u32) -> Option<Duration>;
             }
 
@@ -179,13 +179,13 @@ extern_spec! {
                 fn saturating_duration_since(&self, earlier: Instant) -> Duration;
 
                 #[pure]
-                #[ensures(duration@ == 0 ==> result.deep_model() == Some(self@))]
-                #[ensures(duration@ > 0 && result != None ==> Some(self@) < result.deep_model())]
+                #[ensures(duration@ == 0 ==> result.eq_model() == Some(self@))]
+                #[ensures(duration@ > 0 && result != None ==> Some(self@) < result.eq_model())]
                 fn checked_add(&self, duration: Duration) -> Option<Instant>;
 
                 #[pure]
-                #[ensures(duration@ == 0 ==> result.deep_model() == Some(self@))]
-                #[ensures(duration@ > 0 && result != None ==> Some(self@) > result.deep_model())]
+                #[ensures(duration@ == 0 ==> result.eq_model() == Some(self@))]
+                #[ensures(duration@ > 0 && result != None ==> Some(self@) > result.eq_model())]
                 fn checked_sub(&self, duration: Duration) -> Option<Instant>;
             }
         }

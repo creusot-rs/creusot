@@ -18,15 +18,15 @@ fn sorted<T: OrdLogic>(s: Seq<T>) -> bool {
 }
 
 #[requires(arr@.len() <= usize::MAX@)]
-#[requires(sorted(arr.deep_model()))]
-#[ensures(forall<x:usize> result == Ok(x) ==> arr.deep_model()[x@] == elem.deep_model())]
+#[requires(sorted(arr.eq_model()))]
+#[ensures(forall<x:usize> result == Ok(x) ==> arr.eq_model()[x@] == elem.eq_model())]
 #[ensures(forall<x:usize> result == Err(x) ==>
-    forall<i:usize>  i < x ==> arr.deep_model()[i@] <= elem.deep_model())]
+    forall<i:usize>  i < x ==> arr.eq_model()[i@] <= elem.eq_model())]
 #[ensures(forall<x:usize> result == Err(x) ==>
-    forall<i:usize> x <= i && i@ < arr@.len() ==> elem.deep_model() < arr.deep_model()[i@])]
-pub fn binary_search<T: Ord + DeepModel>(arr: &Vec<T>, elem: T) -> Result<usize, usize>
+    forall<i:usize> x <= i && i@ < arr@.len() ==> elem.eq_model() < arr.eq_model()[i@])]
+pub fn binary_search<T: Ord + EqModel>(arr: &Vec<T>, elem: T) -> Result<usize, usize>
 where
-    T::DeepModelTy: OrdLogic,
+    T::EqModelTy: OrdLogic,
 {
     if arr.len() == 0 {
         return Err(0);
@@ -35,8 +35,8 @@ where
     let mut base: usize = 0;
 
     #[invariant(0 < size@ && size@ + base@ <= arr@.len())]
-    #[invariant(forall<i : usize> i < base ==> arr.deep_model()[i@] <= elem.deep_model())]
-    #[invariant(forall<i : usize> base@ + size@ <= i@ && i@ < arr@.len() ==> elem.deep_model() < arr.deep_model()[i@])]
+    #[invariant(forall<i : usize> i < base ==> arr.eq_model()[i@] <= elem.eq_model())]
+    #[invariant(forall<i : usize> base@ + size@ <= i@ && i@ < arr@.len() ==> elem.eq_model() < arr.eq_model()[i@])]
     while size > 1 {
         let half = size / 2;
         let mid = base + half;

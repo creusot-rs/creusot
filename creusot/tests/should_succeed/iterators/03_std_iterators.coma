@@ -110,24 +110,24 @@ module C03StdIterators_SliceIter
   use prelude.Int
   constant max'0 : usize = (18446744073709551615 : usize)
   use seq.Seq
-  function shallow_model'2 (self : slice t) : Seq.seq t
-  let rec shallow_model'2 (self:slice t) (return'  (ret:Seq.seq t))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv'6 self}
-    any [ return' (result:Seq.seq t)-> {result = shallow_model'2 self} (! return' {result}) ] 
-  axiom shallow_model'2_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv'6 self)
-   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv'7 (shallow_model'2 self))
-  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model'2 self = Slice.id self)
-  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model'2 self)
+  function view'2 (self : slice t) : Seq.seq t
+  let rec view'2 (self:slice t) (return'  (ret:Seq.seq t))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/slice.rs" 19 12 19 16] inv'6 self}
+    any [ return' (result:Seq.seq t)-> {result = view'2 self} (! return' {result}) ] 
+  axiom view'2_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 12 19 16] inv'6 self)
+   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 33] inv'7 (view'2 self))
+  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] view'2 self = Slice.id self)
+  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (view'2 self)
   <= UIntSize.to_int (max'0 : usize))
   function index_logic'0 [@inline:trivial] (self : slice t) (ix : int) : t =
-    [#"../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (shallow_model'2 self) ix
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (view'2 self) ix
   let rec index_logic'0 (self:slice t) (ix:int) (return'  (ret:t))= any
     [ return' (result:t)-> {result = index_logic'0 self ix} (! return' {result}) ]
     
   use seq.Seq
-  function shallow_model'0 (self : slice t) : Seq.seq t =
-    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model'2 self
-  let rec shallow_model'0 (self:slice t) (return'  (ret:Seq.seq t))= any
-    [ return' (result:Seq.seq t)-> {result = shallow_model'0 self} (! return' {result}) ]
+  function view'0 (self : slice t) : Seq.seq t =
+    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 22] view'2 self
+  let rec view'0 (self:slice t) (return'  (ret:Seq.seq t))= any
+    [ return' (result:Seq.seq t)-> {result = view'0 self} (! return' {result}) ]
     
   use seq.Seq
   predicate inv'0 (_x : slice t)
@@ -142,16 +142,16 @@ module C03StdIterators_SliceIter
   && ([#"../../../../../creusot-contracts/src/std/slice.rs" 90 4 90 82] forall i : int . 0 <= i
   /\ i < Seq.length (to_ref_seq'0 self)  -> Seq.get (to_ref_seq'0 self) i = index_logic'0 self i)
   && ([#"../../../../../creusot-contracts/src/std/slice.rs" 89 14 89 41] Seq.length (to_ref_seq'0 self)
-  = Seq.length (shallow_model'0 self))
-  function shallow_model'1 (self : Core_Slice_Iter_Iter_Type.t_iter t) : slice t
-  let rec shallow_model'1 (self:Core_Slice_Iter_Iter_Type.t_iter t) (return'  (ret:slice t))= any
-    [ return' (result:slice t)-> {result = shallow_model'1 self} (! return' {result}) ]
+  = Seq.length (view'0 self))
+  function view'1 (self : Core_Slice_Iter_Iter_Type.t_iter t) : slice t
+  let rec view'1 (self:Core_Slice_Iter_Iter_Type.t_iter t) (return'  (ret:slice t))= any
+    [ return' (result:slice t)-> {result = view'1 self} (! return' {result}) ]
     
   predicate produces'0 (self : Core_Slice_Iter_Iter_Type.t_iter t) (visited : Seq.seq t) (tl : Core_Slice_Iter_Iter_Type.t_iter t)
     
    =
-    [#"../../../../../creusot-contracts/src/std/slice.rs" 399 12 399 66] to_ref_seq'0 (shallow_model'1 self)
-    = Seq.(++) visited (to_ref_seq'0 (shallow_model'1 tl))
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 399 12 399 66] to_ref_seq'0 (view'1 self)
+    = Seq.(++) visited (to_ref_seq'0 (view'1 tl))
   let rec produces'0 (self:Core_Slice_Iter_Iter_Type.t_iter t) (visited:Seq.seq t) (tl:Core_Slice_Iter_Iter_Type.t_iter t) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = produces'0 self visited tl} (! return' {result}) ]
     
@@ -220,14 +220,14 @@ module C03StdIterators_SliceIter
     [ return' (result:bool)-> {result = resolve'3 self} (! return' {result}) ]
     
   use seq.Seq
-  function shallow_model'3 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) : slice t =
-    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model'1 ( * self)
-  let rec shallow_model'3 (self:borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) (return'  (ret:slice t))= any
-    [ return' (result:slice t)-> {result = shallow_model'3 self} (! return' {result}) ]
+  function view'3 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) : slice t =
+    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 22] view'1 ( * self)
+  let rec view'3 (self:borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) (return'  (ret:slice t))= any
+    [ return' (result:slice t)-> {result = view'3 self} (! return' {result}) ]
     
   predicate completed'0 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) =
     [#"../../../../../creusot-contracts/src/std/slice.rs" 392 20 392 61] resolve'3 self
-    /\ shallow_model'2 (shallow_model'3 self) = (Seq.empty  : Seq.seq t)
+    /\ view'2 (view'3 self) = (Seq.empty  : Seq.seq t)
   let rec completed'0 (self:borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = completed'0 self} (! return' {result}) ]
     
@@ -271,7 +271,7 @@ module C03StdIterators_SliceIter
     
   let rec iter'0 (self:slice t) (return'  (ret:Core_Slice_Iter_Iter_Type.t_iter t))= {[@expl:precondition] inv'0 self}
     any
-    [ return' (result:Core_Slice_Iter_Iter_Type.t_iter t)-> {[#"../../../../../creusot-contracts/src/std/slice.rs" 238 0 347 1] shallow_model'1 result
+    [ return' (result:Core_Slice_Iter_Iter_Type.t_iter t)-> {[#"../../../../../creusot-contracts/src/std/slice.rs" 238 0 347 1] view'1 result
       = self}
       (! return' {result}) ]
     
@@ -280,7 +280,7 @@ module C03StdIterators_SliceIter
     [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
     
   let rec slice_iter (slice:slice t) (return'  (ret:usize))= {[#"../03_std_iterators.rs" 6 21 6 26] inv'0 slice}
-    {[#"../03_std_iterators.rs" 4 11 4 30] Seq.length (shallow_model'0 slice) < 1000}
+    {[#"../03_std_iterators.rs" 4 11 4 30] Seq.length (view'0 slice) < 1000}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &i <- [#"../03_std_iterators.rs" 7 16 7 17] (0 : usize) ] s1
@@ -383,7 +383,7 @@ module C03StdIterators_SliceIter
     | & _22 : Snapshot.snap_ty (Seq.seq t) = any_l () : Snapshot.snap_ty (Seq.seq t) ]
     
     [ return' (result:usize)-> {[@expl:postcondition] [#"../03_std_iterators.rs" 5 10 5 33] UIntSize.to_int result
-      = Seq.length (shallow_model'0 slice)}
+      = Seq.length (view'0 slice)}
       (! return' {result}) ]
     
 end
@@ -488,15 +488,15 @@ module C03StdIterators_VecIter
   let rec inv'7 (_x:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = inv'7 _x} (! return' {result}) ]
     
-  function shallow_model'2 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
-  let rec shallow_model'2 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv'7 self}
-    any [ return' (result:Seq.seq t)-> {result = shallow_model'2 self} (! return' {result}) ] 
-  axiom shallow_model'2_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv'7 self)
-   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv'8 (shallow_model'2 self))
-  && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model'2 self)
+  function view'2 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t
+  let rec view'2 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/vec.rs" 19 12 19 16] inv'7 self}
+    any [ return' (result:Seq.seq t)-> {result = view'2 self} (! return' {result}) ] 
+  axiom view'2_spec : forall self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 12 19 16] inv'7 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 27] inv'8 (view'2 self))
+  && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (view'2 self)
   <= UIntSize.to_int (max'0 : usize))
   predicate invariant'7 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv'8 (shallow_model'2 self)
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv'8 (view'2 self)
   let rec invariant'7 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = invariant'7 self} (! return' {result}) ]
     
@@ -541,24 +541,24 @@ module C03StdIterators_VecIter
   use seq.Seq
   use seq.Seq
   use prelude.Slice
-  function shallow_model'5 (self : slice t) : Seq.seq t
-  let rec shallow_model'5 (self:slice t) (return'  (ret:Seq.seq t))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv'9 self}
-    any [ return' (result:Seq.seq t)-> {result = shallow_model'5 self} (! return' {result}) ] 
-  axiom shallow_model'5_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv'9 self)
-   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv'8 (shallow_model'5 self))
-  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model'5 self = Slice.id self)
-  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model'5 self)
+  function view'5 (self : slice t) : Seq.seq t
+  let rec view'5 (self:slice t) (return'  (ret:Seq.seq t))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/slice.rs" 19 12 19 16] inv'9 self}
+    any [ return' (result:Seq.seq t)-> {result = view'5 self} (! return' {result}) ] 
+  axiom view'5_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 12 19 16] inv'9 self)
+   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 33] inv'8 (view'5 self))
+  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] view'5 self = Slice.id self)
+  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (view'5 self)
   <= UIntSize.to_int (max'0 : usize))
   function index_logic'0 [@inline:trivial] (self : slice t) (ix : int) : t =
-    [#"../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (shallow_model'5 self) ix
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (view'5 self) ix
   let rec index_logic'0 (self:slice t) (ix:int) (return'  (ret:t))= any
     [ return' (result:t)-> {result = index_logic'0 self ix} (! return' {result}) ]
     
   use seq.Seq
-  function shallow_model'3 (self : slice t) : Seq.seq t =
-    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model'5 self
-  let rec shallow_model'3 (self:slice t) (return'  (ret:Seq.seq t))= any
-    [ return' (result:Seq.seq t)-> {result = shallow_model'3 self} (! return' {result}) ]
+  function view'3 (self : slice t) : Seq.seq t =
+    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 22] view'5 self
+  let rec view'3 (self:slice t) (return'  (ret:Seq.seq t))= any
+    [ return' (result:Seq.seq t)-> {result = view'3 self} (! return' {result}) ]
     
   use seq.Seq
   function to_ref_seq'0 (self : slice t) : Seq.seq t
@@ -569,16 +569,16 @@ module C03StdIterators_VecIter
   && ([#"../../../../../creusot-contracts/src/std/slice.rs" 90 4 90 82] forall i : int . 0 <= i
   /\ i < Seq.length (to_ref_seq'0 self)  -> Seq.get (to_ref_seq'0 self) i = index_logic'0 self i)
   && ([#"../../../../../creusot-contracts/src/std/slice.rs" 89 14 89 41] Seq.length (to_ref_seq'0 self)
-  = Seq.length (shallow_model'3 self))
-  function shallow_model'1 (self : Core_Slice_Iter_Iter_Type.t_iter t) : slice t
-  let rec shallow_model'1 (self:Core_Slice_Iter_Iter_Type.t_iter t) (return'  (ret:slice t))= any
-    [ return' (result:slice t)-> {result = shallow_model'1 self} (! return' {result}) ]
+  = Seq.length (view'3 self))
+  function view'1 (self : Core_Slice_Iter_Iter_Type.t_iter t) : slice t
+  let rec view'1 (self:Core_Slice_Iter_Iter_Type.t_iter t) (return'  (ret:slice t))= any
+    [ return' (result:slice t)-> {result = view'1 self} (! return' {result}) ]
     
   predicate produces'0 (self : Core_Slice_Iter_Iter_Type.t_iter t) (visited : Seq.seq t) (tl : Core_Slice_Iter_Iter_Type.t_iter t)
     
    =
-    [#"../../../../../creusot-contracts/src/std/slice.rs" 399 12 399 66] to_ref_seq'0 (shallow_model'1 self)
-    = Seq.(++) visited (to_ref_seq'0 (shallow_model'1 tl))
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 399 12 399 66] to_ref_seq'0 (view'1 self)
+    = Seq.(++) visited (to_ref_seq'0 (view'1 tl))
   let rec produces'0 (self:Core_Slice_Iter_Iter_Type.t_iter t) (visited:Seq.seq t) (tl:Core_Slice_Iter_Iter_Type.t_iter t) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = produces'0 self visited tl} (! return' {result}) ]
     
@@ -631,10 +631,10 @@ module C03StdIterators_VecIter
     [ return' (result:bool)-> {result = inv'0 _x} (! return' {result}) ]
     
   axiom inv'0 : forall x : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global) . inv'0 x = true
-  function shallow_model'0 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t =
-    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model'2 self
-  let rec shallow_model'0 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= any
-    [ return' (result:Seq.seq t)-> {result = shallow_model'0 self} (! return' {result}) ]
+  function view'0 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : Seq.seq t =
+    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 22] view'2 self
+  let rec view'0 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq t))= any
+    [ return' (result:Seq.seq t)-> {result = view'0 self} (! return' {result}) ]
     
   use prelude.Intrinsic
   predicate resolve'6 (self : Core_Slice_Iter_Iter_Type.t_iter t)
@@ -656,14 +656,14 @@ module C03StdIterators_VecIter
     [ return' (result:bool)-> {result = resolve'3 self} (! return' {result}) ]
     
   use seq.Seq
-  function shallow_model'4 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) : slice t =
-    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model'1 ( * self)
-  let rec shallow_model'4 (self:borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) (return'  (ret:slice t))= any
-    [ return' (result:slice t)-> {result = shallow_model'4 self} (! return' {result}) ]
+  function view'4 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) : slice t =
+    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 22] view'1 ( * self)
+  let rec view'4 (self:borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) (return'  (ret:slice t))= any
+    [ return' (result:slice t)-> {result = view'4 self} (! return' {result}) ]
     
   predicate completed'0 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) =
     [#"../../../../../creusot-contracts/src/std/slice.rs" 392 20 392 61] resolve'3 self
-    /\ shallow_model'5 (shallow_model'4 self) = (Seq.empty  : Seq.seq t)
+    /\ view'5 (view'4 self) = (Seq.empty  : Seq.seq t)
   let rec completed'0 (self:borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = completed'0 self} (! return' {result}) ]
     
@@ -691,8 +691,7 @@ module C03StdIterators_VecIter
   predicate into_iter_post'0 (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (res : Core_Slice_Iter_Iter_Type.t_iter t)
     
    =
-    [#"../../../../../creusot-contracts/src/std/vec.rs" 205 20 205 34] shallow_model'0 self
-    = shallow_model'3 (shallow_model'1 res)
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 205 20 205 34] view'0 self = view'3 (view'1 res)
   let rec into_iter_post'0 (self:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (res:Core_Slice_Iter_Iter_Type.t_iter t) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = into_iter_post'0 self res} (! return' {result}) ]
     
@@ -712,7 +711,7 @@ module C03StdIterators_VecIter
     [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
     
   let rec vec_iter (vec:Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:usize))= {[#"../03_std_iterators.rs" 17 19 17 22] inv'0 vec}
-    {[#"../03_std_iterators.rs" 15 11 15 28] Seq.length (shallow_model'0 vec) < 1000}
+    {[#"../03_std_iterators.rs" 15 11 15 28] Seq.length (view'0 vec) < 1000}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &i <- [#"../03_std_iterators.rs" 18 16 18 17] (0 : usize) ] s1
@@ -811,7 +810,7 @@ module C03StdIterators_VecIter
     | & _21 : Snapshot.snap_ty (Seq.seq t) = any_l () : Snapshot.snap_ty (Seq.seq t) ]
     
     [ return' (result:usize)-> {[@expl:postcondition] [#"../03_std_iterators.rs" 16 10 16 31] UIntSize.to_int result
-      = Seq.length (shallow_model'0 vec)}
+      = Seq.length (view'0 vec)}
       (! return' {result}) ]
     
 end
@@ -879,15 +878,15 @@ module C03StdIterators_AllZero
   let rec inv'4 (_x:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = inv'4 _x} (! return' {result}) ]
     
-  function shallow_model'0 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
-  let rec shallow_model'0 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq usize))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv'4 self}
-    any [ return' (result:Seq.seq usize)-> {result = shallow_model'0 self} (! return' {result}) ] 
-  axiom shallow_model'0_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv'4 self)
-   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv'5 (shallow_model'0 self))
-  && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model'0 self)
+  function view'0 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
+  let rec view'0 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq usize))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/vec.rs" 19 12 19 16] inv'4 self}
+    any [ return' (result:Seq.seq usize)-> {result = view'0 self} (! return' {result}) ] 
+  axiom view'0_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 12 19 16] inv'4 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 27] inv'5 (view'0 self))
+  && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (view'0 self)
   <= UIntSize.to_int (max'0 : usize))
   predicate invariant'4 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv'5 (shallow_model'0 self)
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv'5 (view'0 self)
   let rec invariant'4 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = invariant'4 self} (! return' {result}) ]
     
@@ -927,24 +926,24 @@ module C03StdIterators_AllZero
   use seq.Seq
   use seq.Seq
   use prelude.Slice
-  function shallow_model'3 (self : slice usize) : Seq.seq usize
-  let rec shallow_model'3 (self:slice usize) (return'  (ret:Seq.seq usize))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv'6 self}
-    any [ return' (result:Seq.seq usize)-> {result = shallow_model'3 self} (! return' {result}) ] 
-  axiom shallow_model'3_spec : forall self : slice usize . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv'6 self)
-   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv'5 (shallow_model'3 self))
-  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model'3 self = Slice.id self)
-  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model'3 self)
+  function view'3 (self : slice usize) : Seq.seq usize
+  let rec view'3 (self:slice usize) (return'  (ret:Seq.seq usize))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/slice.rs" 19 12 19 16] inv'6 self}
+    any [ return' (result:Seq.seq usize)-> {result = view'3 self} (! return' {result}) ] 
+  axiom view'3_spec : forall self : slice usize . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 12 19 16] inv'6 self)
+   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 33] inv'5 (view'3 self))
+  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] view'3 self = Slice.id self)
+  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (view'3 self)
   <= UIntSize.to_int (max'0 : usize))
   function index_logic'2 [@inline:trivial] (self : slice usize) (ix : int) : usize =
-    [#"../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (shallow_model'3 self) ix
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (view'3 self) ix
   let rec index_logic'2 (self:slice usize) (ix:int) (return'  (ret:usize))= any
     [ return' (result:usize)-> {result = index_logic'2 self ix} (! return' {result}) ]
     
   use seq.Seq
-  function shallow_model'2 (self : borrowed (slice usize)) : Seq.seq usize =
-    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model'3 ( * self)
-  let rec shallow_model'2 (self:borrowed (slice usize)) (return'  (ret:Seq.seq usize))= any
-    [ return' (result:Seq.seq usize)-> {result = shallow_model'2 self} (! return' {result}) ]
+  function view'2 (self : borrowed (slice usize)) : Seq.seq usize =
+    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 22] view'3 ( * self)
+  let rec view'2 (self:borrowed (slice usize)) (return'  (ret:Seq.seq usize))= any
+    [ return' (result:Seq.seq usize)-> {result = view'2 self} (! return' {result}) ]
     
   use seq.Seq
   function to_mut_seq'0 (self : borrowed (slice usize)) : Seq.seq (borrowed usize)
@@ -957,19 +956,19 @@ module C03StdIterators_AllZero
   && ([#"../../../../../creusot-contracts/src/std/slice.rs" 80 4 80 82] forall i : int . 0 <= i
   /\ i < Seq.length (to_mut_seq'0 self)  ->  * Seq.get (to_mut_seq'0 self) i = index_logic'2 ( * self) i)
   && ([#"../../../../../creusot-contracts/src/std/slice.rs" 79 14 79 41] Seq.length (to_mut_seq'0 self)
-  = Seq.length (shallow_model'2 self))
-  function shallow_model'4 (self : Core_Slice_Iter_IterMut_Type.t_itermut usize) : borrowed (slice usize)
-  let rec shallow_model'4 (self:Core_Slice_Iter_IterMut_Type.t_itermut usize) (return'  (ret:borrowed (slice usize)))= any
-    [ return' (result:borrowed (slice usize))-> {result = shallow_model'4 self} (! return' {result}) ]
+  = Seq.length (view'2 self))
+  function view'4 (self : Core_Slice_Iter_IterMut_Type.t_itermut usize) : borrowed (slice usize)
+  let rec view'4 (self:Core_Slice_Iter_IterMut_Type.t_itermut usize) (return'  (ret:borrowed (slice usize)))= any
+    [ return' (result:borrowed (slice usize))-> {result = view'4 self} (! return' {result}) ]
     
-  axiom shallow_model'4_spec : forall self : Core_Slice_Iter_IterMut_Type.t_itermut usize . ([#"../../../../../creusot-contracts/src/std/slice.rs" 423 4 423 50] inv'2 (shallow_model'4 self))
-  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 422 14 422 50] Seq.length (shallow_model'3 ( ^ shallow_model'4 self))
-  = Seq.length (shallow_model'3 ( * shallow_model'4 self)))
+  axiom view'4_spec : forall self : Core_Slice_Iter_IterMut_Type.t_itermut usize . ([#"../../../../../creusot-contracts/src/std/slice.rs" 423 4 423 33] inv'2 (view'4 self))
+  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 422 14 422 50] Seq.length (view'3 ( ^ view'4 self))
+  = Seq.length (view'3 ( * view'4 self)))
   predicate produces'0 (self : Core_Slice_Iter_IterMut_Type.t_itermut usize) (visited : Seq.seq (borrowed usize)) (tl : Core_Slice_Iter_IterMut_Type.t_itermut usize)
     
    =
-    [#"../../../../../creusot-contracts/src/std/slice.rs" 448 12 448 66] to_mut_seq'0 (shallow_model'4 self)
-    = Seq.(++) visited (to_mut_seq'0 (shallow_model'4 tl))
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 448 12 448 66] to_mut_seq'0 (view'4 self)
+    = Seq.(++) visited (to_mut_seq'0 (view'4 tl))
   let rec produces'0 (self:Core_Slice_Iter_IterMut_Type.t_itermut usize) (visited:Seq.seq (borrowed usize)) (tl:Core_Slice_Iter_IterMut_Type.t_itermut usize) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = produces'0 self visited tl} (! return' {result}) ]
     
@@ -1007,16 +1006,15 @@ module C03StdIterators_AllZero
   function index_logic'1 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix : int) : usize
     
    =
-    [#"../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model'0 self) ix
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (view'0 self) ix
   let rec index_logic'1 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:usize))= any
     [ return' (result:usize)-> {result = index_logic'1 self ix} (! return' {result}) ]
     
-  function shallow_model'1 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : Seq.seq usize
-    
+  function view'1 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : Seq.seq usize
    =
-    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model'0 ( * self)
-  let rec shallow_model'1 (self:borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq usize))= any
-    [ return' (result:Seq.seq usize)-> {result = shallow_model'1 self} (! return' {result}) ]
+    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 22] view'0 ( * self)
+  let rec view'1 (self:borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq usize))= any
+    [ return' (result:Seq.seq usize)-> {result = view'1 self} (! return' {result}) ]
     
   use prelude.Intrinsic
   predicate resolve'4 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) =
@@ -1025,8 +1023,7 @@ module C03StdIterators_AllZero
     [ return' (result:bool)-> {result = resolve'4 self} (! return' {result}) ]
     
   predicate resolve'3 (self : Core_Slice_Iter_IterMut_Type.t_itermut usize) =
-    [#"../../../../../creusot-contracts/src/std/slice.rs" 433 20 433 36]  * shallow_model'4 self
-    =  ^ shallow_model'4 self
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 433 20 433 36]  * view'4 self =  ^ view'4 self
   let rec resolve'3 (self:Core_Slice_Iter_IterMut_Type.t_itermut usize) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = resolve'3 self} (! return' {result}) ]
     
@@ -1042,14 +1039,14 @@ module C03StdIterators_AllZero
     [ return' (result:bool)-> {result = resolve'1 self} (! return' {result}) ]
     
   use seq.Seq
-  function shallow_model'5 (self : borrowed (Core_Slice_Iter_IterMut_Type.t_itermut usize)) : borrowed (slice usize) =
-    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model'4 ( * self)
-  let rec shallow_model'5 (self:borrowed (Core_Slice_Iter_IterMut_Type.t_itermut usize)) (return'  (ret:borrowed (slice usize)))= any
-    [ return' (result:borrowed (slice usize))-> {result = shallow_model'5 self} (! return' {result}) ]
+  function view'5 (self : borrowed (Core_Slice_Iter_IterMut_Type.t_itermut usize)) : borrowed (slice usize) =
+    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 22] view'4 ( * self)
+  let rec view'5 (self:borrowed (Core_Slice_Iter_IterMut_Type.t_itermut usize)) (return'  (ret:borrowed (slice usize)))= any
+    [ return' (result:borrowed (slice usize))-> {result = view'5 self} (! return' {result}) ]
     
   predicate completed'0 (self : borrowed (Core_Slice_Iter_IterMut_Type.t_itermut usize)) =
     [#"../../../../../creusot-contracts/src/std/slice.rs" 441 20 441 61] resolve'1 self
-    /\ shallow_model'3 ( * shallow_model'5 self) = (Seq.empty  : Seq.seq usize)
+    /\ view'3 ( * view'5 self) = (Seq.empty  : Seq.seq usize)
   let rec completed'0 (self:borrowed (Core_Slice_Iter_IterMut_Type.t_itermut usize)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = completed'0 self} (! return' {result}) ]
     
@@ -1100,16 +1097,15 @@ module C03StdIterators_AllZero
     
   let rec iter_mut'0 (self:borrowed (slice usize)) (return'  (ret:Core_Slice_Iter_IterMut_Type.t_itermut usize))= {[@expl:precondition] inv'2 self}
     any
-    [ return' (result:Core_Slice_Iter_IterMut_Type.t_itermut usize)-> {[#"../../../../../creusot-contracts/src/std/slice.rs" 238 0 347 1] shallow_model'4 result
+    [ return' (result:Core_Slice_Iter_IterMut_Type.t_itermut usize)-> {[#"../../../../../creusot-contracts/src/std/slice.rs" 238 0 347 1] view'4 result
       = self}
       (! return' {result}) ]
     
   let rec deref_mut'0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:borrowed (slice usize)))= {[@expl:precondition] inv'1 self}
     any
     [ return' (result:borrowed (slice usize))-> {inv'2 result}
-      {[#"../../../../../creusot-contracts/src/std/vec.rs" 170 26 170 48] shallow_model'3 ( ^ result)
-      = shallow_model'0 ( ^ self)}
-      {[#"../../../../../creusot-contracts/src/std/vec.rs" 169 26 169 42] shallow_model'2 result = shallow_model'1 self}
+      {[#"../../../../../creusot-contracts/src/std/vec.rs" 170 26 170 48] view'3 ( ^ result) = view'0 ( ^ self)}
+      {[#"../../../../../creusot-contracts/src/std/vec.rs" 169 26 169 42] view'2 result = view'1 self}
       (! return' {result}) ]
     
   let rec all_zero (v:borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:()))= (! bb0
@@ -1235,9 +1231,8 @@ module C03StdIterators_AllZero
     | & x : borrowed usize = any_l () : borrowed usize ]
     
     [ return' (result:())-> {[@expl:postcondition] [#"../03_std_iterators.rs" 27 0 27 66] forall i : int . 0 <= i
-      /\ i < Seq.length (shallow_model'1 v)  -> UIntSize.to_int (index_logic'1 ( ^ v) i) = 0}
-      {[@expl:postcondition] [#"../03_std_iterators.rs" 26 10 26 33] Seq.length (shallow_model'0 ( ^ v))
-      = Seq.length (shallow_model'1 v)}
+      /\ i < Seq.length (view'1 v)  -> UIntSize.to_int (index_logic'1 ( ^ v) i) = 0}
+      {[@expl:postcondition] [#"../03_std_iterators.rs" 26 10 26 33] Seq.length (view'0 ( ^ v)) = Seq.length (view'1 v)}
       (! return' {result}) ]
     
 end
@@ -1808,15 +1803,15 @@ module C03StdIterators_Counter
   let rec inv'8 (_x:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = inv'8 _x} (! return' {result}) ]
     
-  function shallow_model'0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
-  let rec shallow_model'0 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq uint32))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv'8 self}
-    any [ return' (result:Seq.seq uint32)-> {result = shallow_model'0 self} (! return' {result}) ] 
-  axiom shallow_model'0_spec : forall self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv'8 self)
-   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv'6 (shallow_model'0 self))
-  && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model'0 self)
+  function view'0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
+  let rec view'0 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq uint32))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/vec.rs" 19 12 19 16] inv'8 self}
+    any [ return' (result:Seq.seq uint32)-> {result = view'0 self} (! return' {result}) ] 
+  axiom view'0_spec : forall self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 12 19 16] inv'8 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 27] inv'6 (view'0 self))
+  && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (view'0 self)
   <= UIntSize.to_int (max'0 : usize))
   predicate invariant'8 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv'6 (shallow_model'0 self)
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv'6 (view'0 self)
   let rec invariant'8 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = invariant'8 self} (! return' {result}) ]
     
@@ -1862,23 +1857,23 @@ module C03StdIterators_Counter
   use seq.Seq
   use prelude.Snapshot
   use prelude.Slice
-  function shallow_model'4 (self : slice uint32) : Seq.seq uint32
-  let rec shallow_model'4 (self:slice uint32) (return'  (ret:Seq.seq uint32))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv'14 self}
-    any [ return' (result:Seq.seq uint32)-> {result = shallow_model'4 self} (! return' {result}) ] 
-  axiom shallow_model'4_spec : forall self : slice uint32 . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv'14 self)
-   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv'6 (shallow_model'4 self))
-  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model'4 self = Slice.id self)
-  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model'4 self)
+  function view'4 (self : slice uint32) : Seq.seq uint32
+  let rec view'4 (self:slice uint32) (return'  (ret:Seq.seq uint32))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/slice.rs" 19 12 19 16] inv'14 self}
+    any [ return' (result:Seq.seq uint32)-> {result = view'4 self} (! return' {result}) ] 
+  axiom view'4_spec : forall self : slice uint32 . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 12 19 16] inv'14 self)
+   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 33] inv'6 (view'4 self))
+  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] view'4 self = Slice.id self)
+  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (view'4 self)
   <= UIntSize.to_int (max'0 : usize))
   function index_logic'1 [@inline:trivial] (self : slice uint32) (ix : int) : uint32 =
-    [#"../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (shallow_model'4 self) ix
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (view'4 self) ix
   let rec index_logic'1 (self:slice uint32) (ix:int) (return'  (ret:uint32))= any
     [ return' (result:uint32)-> {result = index_logic'1 self ix} (! return' {result}) ]
     
-  function shallow_model'1 (self : slice uint32) : Seq.seq uint32 =
-    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model'4 self
-  let rec shallow_model'1 (self:slice uint32) (return'  (ret:Seq.seq uint32))= any
-    [ return' (result:Seq.seq uint32)-> {result = shallow_model'1 self} (! return' {result}) ]
+  function view'1 (self : slice uint32) : Seq.seq uint32 =
+    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 22] view'4 self
+  let rec view'1 (self:slice uint32) (return'  (ret:Seq.seq uint32))= any
+    [ return' (result:Seq.seq uint32)-> {result = view'1 self} (! return' {result}) ]
     
   predicate inv'1 (_x : slice uint32)
   let rec inv'1 (_x:slice uint32) (return'  (ret:bool))= any
@@ -1892,16 +1887,16 @@ module C03StdIterators_Counter
   && ([#"../../../../../creusot-contracts/src/std/slice.rs" 90 4 90 82] forall i : int . 0 <= i
   /\ i < Seq.length (to_ref_seq'0 self)  -> Seq.get (to_ref_seq'0 self) i = index_logic'1 self i)
   && ([#"../../../../../creusot-contracts/src/std/slice.rs" 89 14 89 41] Seq.length (to_ref_seq'0 self)
-  = Seq.length (shallow_model'1 self))
-  function shallow_model'3 (self : Core_Slice_Iter_Iter_Type.t_iter uint32) : slice uint32
-  let rec shallow_model'3 (self:Core_Slice_Iter_Iter_Type.t_iter uint32) (return'  (ret:slice uint32))= any
-    [ return' (result:slice uint32)-> {result = shallow_model'3 self} (! return' {result}) ]
+  = Seq.length (view'1 self))
+  function view'3 (self : Core_Slice_Iter_Iter_Type.t_iter uint32) : slice uint32
+  let rec view'3 (self:Core_Slice_Iter_Iter_Type.t_iter uint32) (return'  (ret:slice uint32))= any
+    [ return' (result:slice uint32)-> {result = view'3 self} (! return' {result}) ]
     
   predicate produces'0 (self : Core_Slice_Iter_Iter_Type.t_iter uint32) (visited : Seq.seq uint32) (tl : Core_Slice_Iter_Iter_Type.t_iter uint32)
     
    =
-    [#"../../../../../creusot-contracts/src/std/slice.rs" 399 12 399 66] to_ref_seq'0 (shallow_model'3 self)
-    = Seq.(++) visited (to_ref_seq'0 (shallow_model'3 tl))
+    [#"../../../../../creusot-contracts/src/std/slice.rs" 399 12 399 66] to_ref_seq'0 (view'3 self)
+    = Seq.(++) visited (to_ref_seq'0 (view'3 tl))
   let rec produces'0 (self:Core_Slice_Iter_Iter_Type.t_iter uint32) (visited:Seq.seq uint32) (tl:Core_Slice_Iter_Iter_Type.t_iter uint32) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = produces'0 self visited tl} (! return' {result}) ]
     
@@ -2026,10 +2021,10 @@ module C03StdIterators_Counter
    -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 121 42 121 50] inv'9 produced)
    -> ([#"../../../../../creusot-contracts/src/std/iter/map_inv.rs" 120 4 120 83] produced
   = (Seq.empty  : Seq.seq uint32)  -> preservation_inv'0 iter func produced = preservation'0 iter func)
-  function shallow_model'5 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) : slice uint32 =
-    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model'3 ( * self)
-  let rec shallow_model'5 (self:borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) (return'  (ret:slice uint32))= any
-    [ return' (result:slice uint32)-> {result = shallow_model'5 self} (! return' {result}) ]
+  function view'5 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) : slice uint32 =
+    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 22] view'3 ( * self)
+  let rec view'5 (self:borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) (return'  (ret:slice uint32))= any
+    [ return' (result:slice uint32)-> {result = view'5 self} (! return' {result}) ]
     
   predicate resolve'5 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) =
     [#"../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
@@ -2038,7 +2033,7 @@ module C03StdIterators_Counter
     
   predicate completed'1 (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) =
     [#"../../../../../creusot-contracts/src/std/slice.rs" 392 20 392 61] resolve'5 self
-    /\ shallow_model'4 (shallow_model'5 self) = (Seq.empty  : Seq.seq uint32)
+    /\ view'4 (view'5 self) = (Seq.empty  : Seq.seq uint32)
   let rec completed'1 (self:borrowed (Core_Slice_Iter_Iter_Type.t_iter uint32)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = completed'1 self} (! return' {result}) ]
     
@@ -2147,20 +2142,20 @@ module C03StdIterators_Counter
   function index_logic'0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (ix : int) : uint32
     
    =
-    [#"../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model'0 self) ix
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (view'0 self) ix
   let rec index_logic'0 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:uint32))= any
     [ return' (result:uint32)-> {result = index_logic'0 self ix} (! return' {result}) ]
     
   predicate resolve'0 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) =
     [#"../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i
-    /\ i < Seq.length (shallow_model'0 self)  -> resolve'2 (index_logic'0 self i)
+    /\ i < Seq.length (view'0 self)  -> resolve'2 (index_logic'0 self i)
   let rec resolve'0 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
     
   predicate from_iter_post'0 (prod : Seq.seq uint32) (res : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))
     
    =
-    [#"../../../../../creusot-contracts/src/std/vec.rs" 275 20 275 32] prod = shallow_model'0 res
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 275 20 275 32] prod = view'0 res
   let rec from_iter_post'0 (prod:Seq.seq uint32) (res:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = from_iter_post'0 prod res} (! return' {result}) ]
     
@@ -2220,20 +2215,19 @@ module C03StdIterators_Counter
     
   let rec iter'0 (self:slice uint32) (return'  (ret:Core_Slice_Iter_Iter_Type.t_iter uint32))= {[@expl:precondition] inv'1 self}
     any
-    [ return' (result:Core_Slice_Iter_Iter_Type.t_iter uint32)-> {[#"../../../../../creusot-contracts/src/std/slice.rs" 238 0 347 1] shallow_model'3 result
+    [ return' (result:Core_Slice_Iter_Iter_Type.t_iter uint32)-> {[#"../../../../../creusot-contracts/src/std/slice.rs" 238 0 347 1] view'3 result
       = self}
       (! return' {result}) ]
     
-  function shallow_model'2 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32
-   =
-    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model'0 self
-  let rec shallow_model'2 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq uint32))= any
-    [ return' (result:Seq.seq uint32)-> {result = shallow_model'2 self} (! return' {result}) ]
+  function view'2 (self : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : Seq.seq uint32 =
+    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 22] view'0 self
+  let rec view'2 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq uint32))= any
+    [ return' (result:Seq.seq uint32)-> {result = view'2 self} (! return' {result}) ]
     
   let rec deref'0 (self:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:slice uint32))= {[@expl:precondition] inv'0 self}
     any
     [ return' (result:slice uint32)-> {inv'1 result}
-      {[#"../../../../../creusot-contracts/src/std/vec.rs" 163 26 163 42] shallow_model'1 result = shallow_model'2 self}
+      {[#"../../../../../creusot-contracts/src/std/vec.rs" 163 26 163 42] view'1 result = view'2 self}
       (! return' {result}) ]
     
   let rec counter (v:Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:()))= (! bb0
@@ -2265,20 +2259,15 @@ module C03StdIterators_Counter
     | bb4 = s0
       [ s0 = -{resolve'0 v}- s1
       | s1 = -{resolve'0 x}- s2
-      | s2 = {[@expl:assertion] [#"../03_std_iterators.rs" 56 20 56 40] Seq.length (shallow_model'0 x)
-        = Seq.length (shallow_model'0 v)}
+      | s2 = {[@expl:assertion] [#"../03_std_iterators.rs" 56 20 56 40] Seq.length (view'0 x) = Seq.length (view'0 v)}
         s3
       | s3 = bb5 ]
       
     | bb5 = s0
-      [ s0 = {[@expl:assertion] [#"../03_std_iterators.rs" 57 4 57 35] Seq.(==) (shallow_model'0 x) (shallow_model'0 v)}
-        s1
-      | s1 = bb6 ]
+      [ s0 = {[@expl:assertion] [#"../03_std_iterators.rs" 57 4 57 35] Seq.(==) (view'0 x) (view'0 v)} s1 | s1 = bb6 ]
       
     | bb6 = s0
-      [ s0 = {[@expl:assertion] [#"../03_std_iterators.rs" 58 20 58 36] UIntSize.to_int cnt
-        = Seq.length (shallow_model'0 x)}
-        s1
+      [ s0 = {[@expl:assertion] [#"../03_std_iterators.rs" 58 20 58 36] UIntSize.to_int cnt = Seq.length (view'0 x)} s1
       | s1 = bb7 ]
       
     | bb7 = s0 [ s0 =  [ &_0 <- [#"../03_std_iterators.rs" 41 28 59 1] () ] s1 | s1 = bb8 ] 
@@ -2360,24 +2349,23 @@ module C03StdIterators_SumRange
   use seq.Seq
   use prelude.Int
   use prelude.IntSize
-  function deep_model'0 (self : isize) : int =
+  function eq_model'0 (self : isize) : int =
     [#"../../../../../creusot-contracts/src/std/num.rs" 22 16 22 35] IntSize.to_int self
-  let rec deep_model'0 (self:isize) (return'  (ret:int))= any
-    [ return' (result:int)-> {result = deep_model'0 self} (! return' {result}) ]
+  let rec eq_model'0 (self:isize) (return'  (ret:int))= any
+    [ return' (result:int)-> {result = eq_model'0 self} (! return' {result}) ]
     
   predicate produces'0 (self : Core_Ops_Range_Range_Type.t_range isize) (visited : Seq.seq isize) (o : Core_Ops_Range_Range_Type.t_range isize)
     
    =
     [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self
     = Core_Ops_Range_Range_Type.range_end o
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
-    <= deep_model'0 (Core_Ops_Range_Range_Type.range_start o)
+    /\ eq_model'0 (Core_Ops_Range_Range_Type.range_start self) <= eq_model'0 (Core_Ops_Range_Range_Type.range_start o)
     /\ (Seq.length visited > 0
-     -> deep_model'0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model'0 (Core_Ops_Range_Range_Type.range_end o))
+     -> eq_model'0 (Core_Ops_Range_Range_Type.range_start o) <= eq_model'0 (Core_Ops_Range_Range_Type.range_end o))
     /\ Seq.length visited
-    = deep_model'0 (Core_Ops_Range_Range_Type.range_start o) - deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
+    = eq_model'0 (Core_Ops_Range_Range_Type.range_start o) - eq_model'0 (Core_Ops_Range_Range_Type.range_start self)
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> deep_model'0 (Seq.get visited i) = deep_model'0 (Core_Ops_Range_Range_Type.range_start self) + i)
+     -> eq_model'0 (Seq.get visited i) = eq_model'0 (Core_Ops_Range_Range_Type.range_start self) + i)
   let rec produces'0 (self:Core_Ops_Range_Range_Type.t_range isize) (visited:Seq.seq isize) (o:Core_Ops_Range_Range_Type.t_range isize) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = produces'0 self visited o} (! return' {result}) ]
     
@@ -2419,9 +2407,9 @@ module C03StdIterators_SumRange
     [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
     
   predicate completed'0 (self : borrowed (Core_Ops_Range_Range_Type.t_range isize)) =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve'0 self
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start ( * self))
-    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end ( * self))
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 74] resolve'0 self
+    /\ eq_model'0 (Core_Ops_Range_Range_Type.range_start ( * self))
+    >= eq_model'0 (Core_Ops_Range_Range_Type.range_end ( * self))
   let rec completed'0 (self:borrowed (Core_Ops_Range_Range_Type.t_range isize)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = completed'0 self} (! return' {result}) ]
     
@@ -2614,24 +2602,23 @@ module C03StdIterators_EnumerateRange
   use seq.Seq
   use prelude.Int
   use prelude.UIntSize
-  function deep_model'0 (self : usize) : int =
+  function eq_model'0 (self : usize) : int =
     [#"../../../../../creusot-contracts/src/std/num.rs" 22 16 22 35] UIntSize.to_int self
-  let rec deep_model'0 (self:usize) (return'  (ret:int))= any
-    [ return' (result:int)-> {result = deep_model'0 self} (! return' {result}) ]
+  let rec eq_model'0 (self:usize) (return'  (ret:int))= any
+    [ return' (result:int)-> {result = eq_model'0 self} (! return' {result}) ]
     
   predicate produces'1 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize)
     
    =
     [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self
     = Core_Ops_Range_Range_Type.range_end o
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
-    <= deep_model'0 (Core_Ops_Range_Range_Type.range_start o)
+    /\ eq_model'0 (Core_Ops_Range_Range_Type.range_start self) <= eq_model'0 (Core_Ops_Range_Range_Type.range_start o)
     /\ (Seq.length visited > 0
-     -> deep_model'0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model'0 (Core_Ops_Range_Range_Type.range_end o))
+     -> eq_model'0 (Core_Ops_Range_Range_Type.range_start o) <= eq_model'0 (Core_Ops_Range_Range_Type.range_end o))
     /\ Seq.length visited
-    = deep_model'0 (Core_Ops_Range_Range_Type.range_start o) - deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
+    = eq_model'0 (Core_Ops_Range_Range_Type.range_start o) - eq_model'0 (Core_Ops_Range_Range_Type.range_start self)
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> deep_model'0 (Seq.get visited i) = deep_model'0 (Core_Ops_Range_Range_Type.range_start self) + i)
+     -> eq_model'0 (Seq.get visited i) = eq_model'0 (Core_Ops_Range_Range_Type.range_start self) + i)
   let rec produces'1 (self:Core_Ops_Range_Range_Type.t_range usize) (visited:Seq.seq usize) (o:Core_Ops_Range_Range_Type.t_range usize) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = produces'1 self visited o} (! return' {result}) ]
     
@@ -2748,9 +2735,9 @@ module C03StdIterators_EnumerateRange
     [ return' (result:bool)-> {result = resolve'5 self} (! return' {result}) ]
     
   predicate completed'1 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve'5 self
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start ( * self))
-    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end ( * self))
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 74] resolve'5 self
+    /\ eq_model'0 (Core_Ops_Range_Range_Type.range_start ( * self))
+    >= eq_model'0 (Core_Ops_Range_Range_Type.range_end ( * self))
   let rec completed'1 (self:borrowed (Core_Ops_Range_Range_Type.t_range usize)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = completed'1 self} (! return' {result}) ]
     
@@ -3072,24 +3059,23 @@ module C03StdIterators_MyReverse
   use seq.Seq
   use prelude.Int
   use prelude.UIntSize
-  function deep_model'0 (self : usize) : int =
+  function eq_model'0 (self : usize) : int =
     [#"../../../../../creusot-contracts/src/std/num.rs" 22 16 22 35] UIntSize.to_int self
-  let rec deep_model'0 (self:usize) (return'  (ret:int))= any
-    [ return' (result:int)-> {result = deep_model'0 self} (! return' {result}) ]
+  let rec eq_model'0 (self:usize) (return'  (ret:int))= any
+    [ return' (result:int)-> {result = eq_model'0 self} (! return' {result}) ]
     
   predicate produces'1 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize)
     
    =
     [#"../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self
     = Core_Ops_Range_Range_Type.range_end o
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
-    <= deep_model'0 (Core_Ops_Range_Range_Type.range_start o)
+    /\ eq_model'0 (Core_Ops_Range_Range_Type.range_start self) <= eq_model'0 (Core_Ops_Range_Range_Type.range_start o)
     /\ (Seq.length visited > 0
-     -> deep_model'0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model'0 (Core_Ops_Range_Range_Type.range_end o))
+     -> eq_model'0 (Core_Ops_Range_Range_Type.range_start o) <= eq_model'0 (Core_Ops_Range_Range_Type.range_end o))
     /\ Seq.length visited
-    = deep_model'0 (Core_Ops_Range_Range_Type.range_start o) - deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
+    = eq_model'0 (Core_Ops_Range_Range_Type.range_start o) - eq_model'0 (Core_Ops_Range_Range_Type.range_start self)
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> deep_model'0 (Seq.get visited i) = deep_model'0 (Core_Ops_Range_Range_Type.range_start self) + i)
+     -> eq_model'0 (Seq.get visited i) = eq_model'0 (Core_Ops_Range_Range_Type.range_start self) + i)
   let rec produces'1 (self:Core_Ops_Range_Range_Type.t_range usize) (visited:Seq.seq usize) (o:Core_Ops_Range_Range_Type.t_range usize) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = produces'1 self visited o} (! return' {result}) ]
     
@@ -3236,13 +3222,13 @@ module C03StdIterators_MyReverse
   use prelude.Slice
   constant max'0 : usize = (18446744073709551615 : usize)
   use seq.Seq
-  function shallow_model'2 (self : slice t) : Seq.seq t
-  let rec shallow_model'2 (self:slice t) (return'  (ret:Seq.seq t))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv'2 self}
-    any [ return' (result:Seq.seq t)-> {result = shallow_model'2 self} (! return' {result}) ] 
-  axiom shallow_model'2_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv'2 self)
-   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv'9 (shallow_model'2 self))
-  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model'2 self = Slice.id self)
-  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model'2 self)
+  function view'2 (self : slice t) : Seq.seq t
+  let rec view'2 (self:slice t) (return'  (ret:Seq.seq t))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/slice.rs" 19 12 19 16] inv'2 self}
+    any [ return' (result:Seq.seq t)-> {result = view'2 self} (! return' {result}) ] 
+  axiom view'2_spec : forall self : slice t . ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 12 19 16] inv'2 self)
+   -> ([#"../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 33] inv'9 (view'2 self))
+  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] view'2 self = Slice.id self)
+  && ([#"../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (view'2 self)
   <= UIntSize.to_int (max'0 : usize))
   use prelude.Intrinsic
   predicate resolve'3 (self : borrowed (slice t)) =
@@ -3252,28 +3238,28 @@ module C03StdIterators_MyReverse
     
   use seq.Seq
   function index_logic'1 [@inline:trivial] (self : slice t) (ix : usize) : t =
-    [#"../../../../../creusot-contracts/src/logic/ops.rs" 54 8 54 32] Seq.get (shallow_model'2 self) (UIntSize.to_int ix)
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 54 8 54 32] Seq.get (view'2 self) (UIntSize.to_int ix)
   let rec index_logic'1 (self:slice t) (ix:usize) (return'  (ret:t))= any
     [ return' (result:t)-> {result = index_logic'1 self ix} (! return' {result}) ]
     
   function index_logic'0 [@inline:trivial] (self : slice t) (ix : int) : t =
-    [#"../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (shallow_model'2 self) ix
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (view'2 self) ix
   let rec index_logic'0 (self:slice t) (ix:int) (return'  (ret:t))= any
     [ return' (result:t)-> {result = index_logic'0 self ix} (! return' {result}) ]
     
   use seq.Permut
-  function shallow_model'0 (self : borrowed (slice t)) : Seq.seq t =
-    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model'2 ( * self)
-  let rec shallow_model'0 (self:borrowed (slice t)) (return'  (ret:Seq.seq t))= any
-    [ return' (result:Seq.seq t)-> {result = shallow_model'0 self} (! return' {result}) ]
+  function view'0 (self : borrowed (slice t)) : Seq.seq t =
+    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 22] view'2 ( * self)
+  let rec view'0 (self:borrowed (slice t)) (return'  (ret:Seq.seq t))= any
+    [ return' (result:Seq.seq t)-> {result = view'0 self} (! return' {result}) ]
     
   let rec swap'0 (self:borrowed (slice t)) (a:usize) (b:usize) (return'  (ret:()))= {[@expl:precondition] inv'3 self}
     {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/slice.rs" 251 19 251 35] UIntSize.to_int b
-    < Seq.length (shallow_model'0 self)}
+    < Seq.length (view'0 self)}
     {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/slice.rs" 250 19 250 35] UIntSize.to_int a
-    < Seq.length (shallow_model'0 self)}
+    < Seq.length (view'0 self)}
     any
-    [ return' (result:())-> {[#"../../../../../creusot-contracts/src/std/slice.rs" 252 8 252 52] Permut.exchange (shallow_model'2 ( ^ self)) (shallow_model'0 self) (UIntSize.to_int a) (UIntSize.to_int b)}
+    [ return' (result:())-> {[#"../../../../../creusot-contracts/src/std/slice.rs" 252 8 252 52] Permut.exchange (view'2 ( ^ self)) (view'0 self) (UIntSize.to_int a) (UIntSize.to_int b)}
       (! return' {result}) ]
     
   predicate resolve'4 (self : usize) =
@@ -3302,9 +3288,9 @@ module C03StdIterators_MyReverse
     [ return' (result:bool)-> {result = resolve'5 self} (! return' {result}) ]
     
   predicate completed'1 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
-    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve'5 self
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start ( * self))
-    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end ( * self))
+    [#"../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 74] resolve'5 self
+    /\ eq_model'0 (Core_Ops_Range_Range_Type.range_start ( * self))
+    >= eq_model'0 (Core_Ops_Range_Range_Type.range_end ( * self))
   let rec completed'1 (self:borrowed (Core_Ops_Range_Range_Type.t_range usize)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = completed'1 self} (! return' {result}) ]
     
@@ -3344,16 +3330,16 @@ module C03StdIterators_MyReverse
     [ return' (result:bool)-> {result = equiv_range'0 s1 s2 l u} (! return' {result}) ]
     
   use prelude.Snapshot
-  function shallow_model'4 (self : borrowed (slice t)) : Seq.seq t =
-    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model'0 self
-  let rec shallow_model'4 (self:borrowed (slice t)) (return'  (ret:Seq.seq t))= any
-    [ return' (result:Seq.seq t)-> {result = shallow_model'4 self} (! return' {result}) ]
+  function view'4 (self : borrowed (slice t)) : Seq.seq t =
+    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 22] view'0 self
+  let rec view'4 (self:borrowed (slice t)) (return'  (ret:Seq.seq t))= any
+    [ return' (result:Seq.seq t)-> {result = view'4 self} (! return' {result}) ]
     
   use prelude.Snapshot
-  function shallow_model'1 (self : Snapshot.snap_ty (borrowed (slice t))) : Seq.seq t =
-    [#"../../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48] shallow_model'4 (Snapshot.inner self)
-  let rec shallow_model'1 (self:Snapshot.snap_ty (borrowed (slice t))) (return'  (ret:Seq.seq t))= any
-    [ return' (result:Seq.seq t)-> {result = shallow_model'1 self} (! return' {result}) ]
+  function view'1 (self : Snapshot.snap_ty (borrowed (slice t))) : Seq.seq t =
+    [#"../../../../../creusot-contracts/src/snapshot.rs" 27 20 27 39] view'4 (Snapshot.inner self)
+  let rec view'1 (self:Snapshot.snap_ty (borrowed (slice t))) (return'  (ret:Seq.seq t))= any
+    [ return' (result:Seq.seq t)-> {result = view'1 self} (! return' {result}) ]
     
   use prelude.Snapshot
   use prelude.Snapshot
@@ -3406,14 +3392,14 @@ module C03StdIterators_MyReverse
     [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
     
   use prelude.Snapshot
-  function shallow_model'3 (self : slice t) : Seq.seq t =
-    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model'2 self
-  let rec shallow_model'3 (self:slice t) (return'  (ret:Seq.seq t))= any
-    [ return' (result:Seq.seq t)-> {result = shallow_model'3 self} (! return' {result}) ]
+  function view'3 (self : slice t) : Seq.seq t =
+    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 22] view'2 self
+  let rec view'3 (self:slice t) (return'  (ret:Seq.seq t))= any
+    [ return' (result:Seq.seq t)-> {result = view'3 self} (! return' {result}) ]
     
   let rec len'0 (self:slice t) (return'  (ret:usize))= {[@expl:precondition] inv'4 self}
     any
-    [ return' (result:usize)-> {[#"../../../../../creusot-contracts/src/std/slice.rs" 238 0 347 1] Seq.length (shallow_model'3 self)
+    [ return' (result:usize)-> {[#"../../../../../creusot-contracts/src/std/slice.rs" 238 0 347 1] Seq.length (view'3 self)
       = UIntSize.to_int result}
       (! return' {result}) ]
     
@@ -3481,14 +3467,13 @@ module C03StdIterators_MyReverse
       
     | bb8 = s0 [ s0 = bb9 ] 
     | bb9 = bb9
-      [ bb9 = {[@expl:loop invariant] [#"../03_std_iterators.rs" 101 16 101 80] equiv_reverse_range'0 (shallow_model'0 slice) (shallow_model'1 old_v) (UIntSize.to_int n
+      [ bb9 = {[@expl:loop invariant] [#"../03_std_iterators.rs" 101 16 101 80] equiv_reverse_range'0 (view'0 slice) (view'1 old_v) (UIntSize.to_int n
         - Seq.length (Snapshot.inner produced)) (UIntSize.to_int n) (UIntSize.to_int n - 1)}
-        {[@expl:loop invariant] [#"../03_std_iterators.rs" 100 16 100 76] equiv_reverse_range'0 (shallow_model'0 slice) (shallow_model'1 old_v) 0 (Seq.length (Snapshot.inner produced)) (UIntSize.to_int n
+        {[@expl:loop invariant] [#"../03_std_iterators.rs" 100 16 100 76] equiv_reverse_range'0 (view'0 slice) (view'1 old_v) 0 (Seq.length (Snapshot.inner produced)) (UIntSize.to_int n
         - 1)}
-        {[@expl:loop invariant] [#"../03_std_iterators.rs" 99 16 99 78] equiv_range'0 (shallow_model'0 slice) (shallow_model'1 old_v) (Seq.length (Snapshot.inner produced)) (UIntSize.to_int n
+        {[@expl:loop invariant] [#"../03_std_iterators.rs" 99 16 99 78] equiv_range'0 (view'0 slice) (view'1 old_v) (Seq.length (Snapshot.inner produced)) (UIntSize.to_int n
         - Seq.length (Snapshot.inner produced))}
-        {[@expl:loop invariant] [#"../03_std_iterators.rs" 98 16 98 34] UIntSize.to_int n
-        = Seq.length (shallow_model'0 slice)}
+        {[@expl:loop invariant] [#"../03_std_iterators.rs" 98 16 98 34] UIntSize.to_int n = Seq.length (view'0 slice)}
         {[@expl:loop invariant] [#"../03_std_iterators.rs" 97 16 97 33]  ^ Snapshot.inner old_v =  ^ slice}
         {[@expl:loop invariant] [#"../03_std_iterators.rs" 97 4 97 35] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
         {[@expl:loop invariant] [#"../03_std_iterators.rs" 97 4 97 35] inv'1 iter}
@@ -3595,7 +3580,7 @@ module C03StdIterators_MyReverse
     | & _41 : usize = any_l () : usize
     | & _42 : usize = any_l () : usize ]
     
-    [ return' (result:())-> {[@expl:postcondition] [#"../03_std_iterators.rs" 93 0 93 46] Seq.(==) (shallow_model'2 ( ^ slice)) (Reverse.reverse (shallow_model'0 slice))}
+    [ return' (result:())-> {[@expl:postcondition] [#"../03_std_iterators.rs" 93 0 93 46] Seq.(==) (view'2 ( ^ slice)) (Reverse.reverse (view'0 slice))}
       (! return' {result}) ]
     
 end

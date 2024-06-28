@@ -2,28 +2,28 @@ use crate::{invariant::Invariant, logic::IndexLogic, std::alloc::Allocator, *};
 use ::std::collections::vec_deque::Iter;
 pub use ::std::collections::VecDeque;
 
-impl<T, A: Allocator> ShallowModel for VecDeque<T, A> {
-    type ShallowModelTy = Seq<T>;
+impl<T, A: Allocator> View for VecDeque<T, A> {
+    type ViewTy = Seq<T>;
 
     #[logic]
     #[trusted]
     #[open(self)]
     #[ensures(result.len() <= usize::MAX@)]
-    fn shallow_model(self) -> Seq<T> {
+    fn view(self) -> Seq<T> {
         pearlite! { absurd }
     }
 }
 
-impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
-    type DeepModelTy = Seq<T::DeepModelTy>;
+impl<T: EqModel, A: Allocator> EqModel for VecDeque<T, A> {
+    type EqModelTy = Seq<T::EqModelTy>;
 
     #[logic]
     #[trusted]
     #[open(self)]
-    #[ensures(self.shallow_model().len() == result.len())]
-    #[ensures(forall<i: Int> 0 <= i && i < self.shallow_model().len()
-              ==> result[i] == self[i].deep_model())]
-    fn deep_model(self) -> Self::DeepModelTy {
+    #[ensures(self.view().len() == result.len())]
+    #[ensures(forall<i: Int> 0 <= i && i < self.view().len()
+              ==> result[i] == self[i].eq_model())]
+    fn eq_model(self) -> Self::EqModelTy {
         pearlite! { absurd }
     }
 }
@@ -121,13 +121,13 @@ impl<T, A: Allocator> IntoIterator for &VecDeque<T, A> {
     }
 }
 
-impl<'a, T> ShallowModel for Iter<'a, T> {
-    type ShallowModelTy = &'a [T];
+impl<'a, T> View for Iter<'a, T> {
+    type ViewTy = &'a [T];
 
     #[logic]
     #[open(self)]
     #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         absurd
     }
 }

@@ -23,9 +23,9 @@ fn head(v: &[i32]) -> i32 {
 }
 ```
 
-Note the **shallow model** (`@`) operator: it is needed to convert the Rust type `&[i32]` to a logical type `Seq<i32>`. Else, we could not call `[T]::len`, which is a program function (and not a logical one).
+Note the **view** (`@`) operator: it is needed to convert the Rust type `&[i32]` to a logical type `Seq<i32>`. Else, we could not call `[T]::len`, which is a program function (and not a logical one).
 
-To learn more, see the chapter on [Pearlite](../pearlite.md) and [ShallowModel](../shallow_model.md).
+To learn more, see the chapter on [Pearlite](../pearlite.md) and [View](../view.md).
 
 ## Postconditions with `ensures`
 

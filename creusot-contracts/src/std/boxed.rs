@@ -2,22 +2,22 @@ use crate::{std::alloc::Allocator, *};
 pub use ::std::boxed::*;
 
 #[cfg(creusot)]
-impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
-    type DeepModelTy = Box<T::DeepModelTy>;
+impl<T: EqModel + ?Sized, A: Allocator> EqModel for Box<T, A> {
+    type EqModelTy = Box<T::EqModelTy>;
     #[logic]
     #[open]
-    fn deep_model(self) -> Self::DeepModelTy {
-        Box::new((*self).deep_model())
+    fn eq_model(self) -> Self::EqModelTy {
+        Box::new((*self).eq_model())
     }
 }
 
 #[cfg(creusot)]
-impl<T: ShallowModel + ?Sized, A: Allocator> ShallowModel for Box<T, A> {
-    type ShallowModelTy = T::ShallowModelTy;
+impl<T: View + ?Sized, A: Allocator> View for Box<T, A> {
+    type ViewTy = T::ViewTy;
     #[logic]
     #[open]
-    fn shallow_model(self) -> Self::ShallowModelTy {
-        (*self).shallow_model()
+    fn view(self) -> Self::ViewTy {
+        (*self).view()
     }
 }
 

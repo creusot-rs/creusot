@@ -102,17 +102,17 @@ module TakeFirstMut_TakeFirstMut
   use prelude.UIntSize
   use prelude.UIntSize
   constant max'0 : usize = (18446744073709551615 : usize)
-  function shallow_model'0 (self : slice t) : Seq.seq t
-  let rec shallow_model'0 (self:slice t) (return'  (ret:Seq.seq t))= {[@expl:precondition] [#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv'1 self}
-    any [ return' (result:Seq.seq t)-> {result = shallow_model'0 self} (! return' {result}) ] 
-  axiom shallow_model'0_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25] inv'1 self)
-   -> ([#"../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50] inv'7 (shallow_model'0 self))
-  && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] shallow_model'0 self = Slice.id self)
-  && ([#"../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (shallow_model'0 self)
+  function view'0 (self : slice t) : Seq.seq t
+  let rec view'0 (self:slice t) (return'  (ret:Seq.seq t))= {[@expl:precondition] [#"../../../../creusot-contracts/src/std/slice.rs" 19 12 19 16] inv'1 self}
+    any [ return' (result:Seq.seq t)-> {result = view'0 self} (! return' {result}) ] 
+  axiom view'0_spec : forall self : slice t . ([#"../../../../creusot-contracts/src/std/slice.rs" 19 12 19 16] inv'1 self)
+   -> ([#"../../../../creusot-contracts/src/std/slice.rs" 19 4 19 33] inv'7 (view'0 self))
+  && ([#"../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42] view'0 self = Slice.id self)
+  && ([#"../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41] Seq.length (view'0 self)
   <= UIntSize.to_int (max'0 : usize))
   use seq.Seq
   function index_logic'0 [@inline:trivial] (self : slice t) (ix : int) : t =
-    [#"../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (shallow_model'0 self) ix
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31] Seq.get (view'0 self) ix
   let rec index_logic'0 (self:slice t) (ix:int) (return'  (ret:t))= any
     [ return' (result:t)-> {result = index_logic'0 self ix} (! return' {result}) ]
     
@@ -136,10 +136,10 @@ module TakeFirstMut_TakeFirstMut
   let rec resolve'0 (self:borrowed (borrowed (slice t))) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
     
-  function shallow_model'1 (self : borrowed (slice t)) : Seq.seq t =
-    [#"../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model'0 ( * self)
-  let rec shallow_model'1 (self:borrowed (slice t)) (return'  (ret:Seq.seq t))= any
-    [ return' (result:Seq.seq t)-> {result = shallow_model'1 self} (! return' {result}) ]
+  function view'1 (self : borrowed (slice t)) : Seq.seq t =
+    [#"../../../../creusot-contracts/src/model.rs" 108 8 108 22] view'0 ( * self)
+  let rec view'1 (self:borrowed (slice t)) (return'  (ret:Seq.seq t))= any
+    [ return' (result:Seq.seq t)-> {result = view'1 self} (! return' {result}) ]
     
   let rec split_first_mut'0 (self:borrowed (slice t)) (return'  (ret:Core_Option_Option_Type.t_option (borrowed t, borrowed (slice t))))= {[@expl:precondition] inv'0 self}
     any
@@ -147,18 +147,17 @@ module TakeFirstMut_TakeFirstMut
       {[#"../../../../creusot-contracts/src/std/slice.rs" 272 18 280 9] match result with
         | Core_Option_Option_Type.C_Some (first, tail) ->  * first = index_logic'0 ( * self) 0
         /\  ^ first = index_logic'0 ( ^ self) 0
-        /\ Seq.length (shallow_model'0 ( * self)) > 0
-        /\ Seq.length (shallow_model'0 ( ^ self)) > 0
-        /\ shallow_model'0 ( * tail) = tail'0 (shallow_model'0 ( * self))
-        /\ shallow_model'0 ( ^ tail) = tail'0 (shallow_model'0 ( ^ self))
-        | Core_Option_Option_Type.C_None -> Seq.length (shallow_model'1 self) = 0
-        /\  ^ self =  * self /\ shallow_model'1 self = (Seq.empty  : Seq.seq t)
+        /\ Seq.length (view'0 ( * self)) > 0
+        /\ Seq.length (view'0 ( ^ self)) > 0
+        /\ view'0 ( * tail) = tail'0 (view'0 ( * self)) /\ view'0 ( ^ tail) = tail'0 (view'0 ( ^ self))
+        | Core_Option_Option_Type.C_None -> Seq.length (view'1 self) = 0
+        /\  ^ self =  * self /\ view'1 self = (Seq.empty  : Seq.seq t)
         end}
       (! return' {result}) ]
     
   predicate is_default'0 (self : borrowed (slice t)) =
-    [#"../../../../creusot-contracts/src/std/slice.rs" 55 20 55 65] shallow_model'1 self = (Seq.empty  : Seq.seq t)
-    /\ shallow_model'0 ( ^ self) = (Seq.empty  : Seq.seq t)
+    [#"../../../../creusot-contracts/src/std/slice.rs" 55 20 55 65] view'1 self = (Seq.empty  : Seq.seq t)
+    /\ view'0 ( ^ self) = (Seq.empty  : Seq.seq t)
   let rec is_default'0 (self:borrowed (slice t)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = is_default'0 self} (! return' {result}) ]
     
@@ -279,14 +278,12 @@ module TakeFirstMut_TakeFirstMut
       {[@expl:postcondition] [#"../take_first_mut.rs" 6 10 13 1] match result with
         | Core_Option_Option_Type.C_Some r ->  * r = index_logic'0 ( *  * self_) 0
         /\  ^ r = index_logic'0 ( ^  * self_) 0
-        /\ Seq.length (shallow_model'0 ( *  * self_)) > 0
-        /\ Seq.length (shallow_model'0 ( ^  * self_)) > 0
-        /\ shallow_model'0 ( *  ^ self_) = tail'0 (shallow_model'0 ( *  * self_))
-        /\ shallow_model'0 ( ^  ^ self_) = tail'0 (shallow_model'0 ( ^  * self_))
-        | Core_Option_Option_Type.C_None -> shallow_model'0 ( *  ^ self_) = (Seq.empty  : Seq.seq t)
-        /\ shallow_model'0 ( ^  * self_) = (Seq.empty  : Seq.seq t)
-        /\ shallow_model'0 ( *  * self_) = (Seq.empty  : Seq.seq t)
-        /\ shallow_model'0 ( ^  ^ self_) = (Seq.empty  : Seq.seq t)
+        /\ Seq.length (view'0 ( *  * self_)) > 0
+        /\ Seq.length (view'0 ( ^  * self_)) > 0
+        /\ view'0 ( *  ^ self_) = tail'0 (view'0 ( *  * self_)) /\ view'0 ( ^  ^ self_) = tail'0 (view'0 ( ^  * self_))
+        | Core_Option_Option_Type.C_None -> view'0 ( *  ^ self_) = (Seq.empty  : Seq.seq t)
+        /\ view'0 ( ^  * self_) = (Seq.empty  : Seq.seq t)
+        /\ view'0 ( *  * self_) = (Seq.empty  : Seq.seq t) /\ view'0 ( ^  ^ self_) = (Seq.empty  : Seq.seq t)
         end}
       (! return' {result}) ]
     

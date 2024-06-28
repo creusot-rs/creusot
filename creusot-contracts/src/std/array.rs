@@ -1,7 +1,7 @@
 use crate::*;
 
-impl<T, const N: usize> ShallowModel for [T; N] {
-    type ShallowModelTy = Seq<T>;
+impl<T, const N: usize> View for [T; N] {
+    type ViewTy = Seq<T>;
 
     #[logic]
     #[trusted]
@@ -10,22 +10,22 @@ impl<T, const N: usize> ShallowModel for [T; N] {
     // TODO:
     // #[ensures(result.len() == N@)]
     // Warning: #[ensures] and #[trusted] are incompatible, so this might require
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { absurd }
     }
 }
 
-impl<T: DeepModel, const N: usize> DeepModel for [T; N] {
-    type DeepModelTy = Seq<T::DeepModelTy>;
+impl<T: EqModel, const N: usize> EqModel for [T; N] {
+    type EqModelTy = Seq<T::EqModelTy>;
 
     #[logic]
     #[trusted]
     #[open(self)]
     // TODO
     // #[ensures(result.len() == N@)]
-    #[ensures(self.shallow_model().len() == result.len())]
-    #[ensures(forall<i: _> 0 <= i && i < result.len() ==> result[i] == self[i].deep_model())]
-    fn deep_model(self) -> Self::DeepModelTy {
+    #[ensures(self.view().len() == result.len())]
+    #[ensures(forall<i: _> 0 <= i && i < result.len() ==> result[i] == self[i].eq_model())]
+    fn eq_model(self) -> Self::EqModelTy {
         pearlite! { absurd }
     }
 }

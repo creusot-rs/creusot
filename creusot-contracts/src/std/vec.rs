@@ -9,28 +9,28 @@ use crate::{
 };
 pub use ::std::vec::*;
 
-impl<T, A: Allocator> ShallowModel for Vec<T, A> {
-    type ShallowModelTy = Seq<T>;
+impl<T, A: Allocator> View for Vec<T, A> {
+    type ViewTy = Seq<T>;
 
     #[open(self)]
     #[logic]
     #[trusted]
     #[ensures(result.len() <= usize::MAX@)]
-    fn shallow_model(self) -> Seq<T> {
+    fn view(self) -> Seq<T> {
         pearlite! { absurd }
     }
 }
 
-impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
-    type DeepModelTy = Seq<T::DeepModelTy>;
+impl<T: EqModel, A: Allocator> EqModel for Vec<T, A> {
+    type EqModelTy = Seq<T::EqModelTy>;
 
     #[logic]
     #[open(self)]
     #[trusted]
-    #[ensures(self.shallow_model().len() == result.len())]
-    #[ensures(forall<i: Int> 0 <= i && i < self.shallow_model().len()
-              ==> result[i] == self[i].deep_model())]
-    fn deep_model(self) -> Self::DeepModelTy {
+    #[ensures(self.view().len() == result.len())]
+    #[ensures(forall<i: Int> 0 <= i && i < self.view().len()
+              ==> result[i] == self[i].eq_model())]
+    fn eq_model(self) -> Self::EqModelTy {
         pearlite! { absurd }
     }
 }
@@ -39,7 +39,7 @@ impl<T> Default for Vec<T> {
     #[predicate]
     #[open]
     fn is_default(self) -> bool {
-        pearlite! { self.shallow_model().len() == 0 }
+        pearlite! { self.view().len() == 0 }
     }
 }
 
@@ -220,13 +220,13 @@ impl<T, A: Allocator> IntoIterator for &mut Vec<T, A> {
     }
 }
 
-impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
-    type ShallowModelTy = Seq<T>;
+impl<T, A: Allocator> View for std::vec::IntoIter<T, A> {
+    type ViewTy = Seq<T>;
 
     #[open(self)]
     #[logic]
     #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         absurd
     }
 }

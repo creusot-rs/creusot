@@ -110,15 +110,15 @@ module TwoPhase_Test
   let rec inv'3 (_x:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = inv'3 _x} (! return' {result}) ]
     
-  function shallow_model'2 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
-  let rec shallow_model'2 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq usize))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv'3 self}
-    any [ return' (result:Seq.seq usize)-> {result = shallow_model'2 self} (! return' {result}) ] 
-  axiom shallow_model'2_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv'3 self)
-   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv'4 (shallow_model'2 self))
-  && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model'2 self)
+  function view'2 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize
+  let rec view'2 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq usize))= {[@expl:precondition] [#"../../../../../creusot-contracts/src/std/vec.rs" 19 12 19 16] inv'3 self}
+    any [ return' (result:Seq.seq usize)-> {result = view'2 self} (! return' {result}) ] 
+  axiom view'2_spec : forall self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 12 19 16] inv'3 self)
+   -> ([#"../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 27] inv'4 (view'2 self))
+  && ([#"../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (view'2 self)
   <= UIntSize.to_int (max'0 : usize))
   predicate invariant'3 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv'4 (shallow_model'2 self)
+    [#"../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv'4 (view'2 self)
   let rec invariant'3 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = invariant'3 self} (! return' {result}) ]
     
@@ -158,16 +158,15 @@ module TwoPhase_Test
   function index_logic'0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix : int) : usize
     
    =
-    [#"../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model'2 self) ix
+    [#"../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (view'2 self) ix
   let rec index_logic'0 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:usize))= any
     [ return' (result:usize)-> {result = index_logic'0 self ix} (! return' {result}) ]
     
-  function shallow_model'0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : Seq.seq usize
-    
+  function view'0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : Seq.seq usize
    =
-    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model'2 ( * self)
-  let rec shallow_model'0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq usize))= any
-    [ return' (result:Seq.seq usize)-> {result = shallow_model'0 self} (! return' {result}) ]
+    [#"../../../../../creusot-contracts/src/model.rs" 108 8 108 22] view'2 ( * self)
+  let rec view'0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq usize))= any
+    [ return' (result:Seq.seq usize)-> {result = view'0 self} (! return' {result}) ]
     
   use prelude.Intrinsic
   predicate resolve'0 (self : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) =
@@ -179,19 +178,19 @@ module TwoPhase_Test
   let rec push'0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (value:usize) (return'  (ret:()))= {[@expl:precondition] inv'2 value}
     {[@expl:precondition] inv'1 self}
     any
-    [ return' (result:())-> {[#"../../../../../creusot-contracts/src/std/vec.rs" 82 26 82 51] shallow_model'2 ( ^ self)
-      = Seq.snoc (shallow_model'0 self) value}
+    [ return' (result:())-> {[#"../../../../../creusot-contracts/src/std/vec.rs" 82 26 82 51] view'2 ( ^ self)
+      = Seq.snoc (view'0 self) value}
       (! return' {result}) ]
     
-  function shallow_model'1 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize =
-    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model'2 self
-  let rec shallow_model'1 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq usize))= any
-    [ return' (result:Seq.seq usize)-> {result = shallow_model'1 self} (! return' {result}) ]
+  function view'1 (self : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) : Seq.seq usize =
+    [#"../../../../../creusot-contracts/src/model.rs" 90 8 90 22] view'2 self
+  let rec view'1 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq usize))= any
+    [ return' (result:Seq.seq usize)-> {result = view'1 self} (! return' {result}) ]
     
   let rec len'0 (self:Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:usize))= {[@expl:precondition] inv'0 self}
     any
     [ return' (result:usize)-> {[#"../../../../../creusot-contracts/src/std/vec.rs" 78 26 78 48] UIntSize.to_int result
-      = Seq.length (shallow_model'1 self)}
+      = Seq.length (view'1 self)}
       (! return' {result}) ]
     
   let rec test (v:borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:()))= (! bb0
@@ -216,8 +215,8 @@ module TwoPhase_Test
     | & _4 : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) = any_l () : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))
     | & _5 : usize = any_l () : usize ]
     
-    [ return' (result:())-> {[@expl:postcondition] [#"../two_phase.rs" 5 10 5 37] UIntSize.to_int (index_logic'0 ( ^ v) (Seq.length (shallow_model'0 v)))
-      = Seq.length (shallow_model'0 v)}
+    [ return' (result:())-> {[@expl:postcondition] [#"../two_phase.rs" 5 10 5 37] UIntSize.to_int (index_logic'0 ( ^ v) (Seq.length (view'0 v)))
+      = Seq.length (view'0 v)}
       (! return' {result}) ]
     
 end

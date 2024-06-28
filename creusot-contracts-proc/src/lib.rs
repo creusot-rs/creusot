@@ -723,9 +723,9 @@ pub fn derive_clone(tokens: TS1) -> TS1 {
     derive::derive_clone(tokens)
 }
 
-#[proc_macro_derive(DeepModel, attributes(DeepModelTy))]
-pub fn derive_deep_model(tokens: TS1) -> TS1 {
-    derive::derive_deep_model(tokens)
+#[proc_macro_derive(EqModel, attributes(EqModelTy))]
+pub fn derive_eq_model(tokens: TS1) -> TS1 {
+    derive::derive_eq_model(tokens)
 }
 
 #[proc_macro_derive(Resolve)]

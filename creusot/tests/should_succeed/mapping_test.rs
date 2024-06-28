@@ -10,8 +10,8 @@ struct T {
     a: i32,
 }
 
-impl ShallowModel for T {
-    type ShallowModelTy = Mapping<Int, Int>;
+impl View for T {
+    type ViewTy = Mapping<Int, Int>;
 
     #[logic]
     #[open(self)]
@@ -19,7 +19,7 @@ impl ShallowModel for T {
     #[ensures(
         forall<i:Int>
             result.get(i) == (if 0 <= i && i < self.a@ { 1 } else { 0 }))]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         absurd
     }
 }

@@ -8,66 +8,66 @@ extern_spec! {
     mod std {
         mod cmp {
             trait PartialEq<Rhs> {
-                #[ensures(result == (self.deep_model() == rhs.deep_model()))]
+                #[ensures(result == (self.eq_model() == rhs.eq_model()))]
                 fn eq(&self, rhs: &Rhs) -> bool
                 where
-                    Self: DeepModel,
-                    Rhs: DeepModel<DeepModelTy = Self::DeepModelTy>;
+                    Self: EqModel,
+                    Rhs: EqModel<EqModelTy = Self::EqModelTy>;
 
-                #[ensures(result == (self.deep_model() != rhs.deep_model()))]
+                #[ensures(result == (self.eq_model() != rhs.eq_model()))]
                 fn ne(&self, rhs: &Rhs) -> bool
                 where
-                    Self: DeepModel,
-                    Rhs: DeepModel<DeepModelTy = Self::DeepModelTy>;
+                    Self: EqModel,
+                    Rhs: EqModel<EqModelTy = Self::EqModelTy>;
             }
 
             // TODO: for now, we only support total orders
             trait PartialOrd<Rhs>
-                where Self: DeepModel,
-                      Rhs: DeepModel<DeepModelTy = Self::DeepModelTy>,
-                      Self::DeepModelTy: OrdLogic
+                where Self: EqModel,
+                      Rhs: EqModel<EqModelTy = Self::EqModelTy>,
+                      Self::EqModelTy: OrdLogic
             {
-                #[ensures(result == Some((*self).deep_model().cmp_log((*rhs).deep_model())))]
+                #[ensures(result == Some((*self).eq_model().cmp_log((*rhs).eq_model())))]
                 fn partial_cmp(&self, rhs: &Rhs) -> Option<Ordering>;
 
-                #[ensures(result == (self.deep_model() < other.deep_model()))]
+                #[ensures(result == (self.eq_model() < other.eq_model()))]
                 fn lt(&self, other: &Rhs) -> bool;
 
-                #[ensures(result == (self.deep_model() <= other.deep_model()))]
+                #[ensures(result == (self.eq_model() <= other.eq_model()))]
                 fn le(&self, other: &Rhs) -> bool;
 
-                #[ensures(result == (self.deep_model() > other.deep_model()))]
+                #[ensures(result == (self.eq_model() > other.eq_model()))]
                 fn gt(&self, other: &Rhs) -> bool;
 
-                #[ensures(result == (self.deep_model() >= other.deep_model()))]
+                #[ensures(result == (self.eq_model() >= other.eq_model()))]
                 fn ge(&self, other: &Rhs) -> bool;
             }
 
             trait Ord
-                where Self: DeepModel,
-                      Self::DeepModelTy: OrdLogic
+                where Self: EqModel,
+                      Self::EqModelTy: OrdLogic
             {
-                #[ensures(result == (*self).deep_model().cmp_log((*rhs).deep_model()))]
+                #[ensures(result == (*self).eq_model().cmp_log((*rhs).eq_model()))]
                 fn cmp(&self, rhs: &Self) -> Ordering;
 
-                #[ensures(result.deep_model() >= self.deep_model())]
-                #[ensures(result.deep_model() >= o.deep_model())]
+                #[ensures(result.eq_model() >= self.eq_model())]
+                #[ensures(result.eq_model() >= o.eq_model())]
                 #[ensures(result == self || result == o)]
-                #[ensures(self.deep_model() <= o.deep_model() ==> result == o)]
-                #[ensures(o.deep_model() < self.deep_model() ==> result == self)]
+                #[ensures(self.eq_model() <= o.eq_model() ==> result == o)]
+                #[ensures(o.eq_model() < self.eq_model() ==> result == self)]
                 fn max(self, o: Self) -> Self;
             }
         }
     }
 }
 
-impl<T: DeepModel> DeepModel for Reverse<T> {
-    type DeepModelTy = Reverse<T::DeepModelTy>;
+impl<T: EqModel> EqModel for Reverse<T> {
+    type EqModelTy = Reverse<T::EqModelTy>;
 
     #[logic]
     #[open]
-    fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { Reverse(self.0.deep_model()) }
+    fn eq_model(self) -> Self::EqModelTy {
+        pearlite! { Reverse(self.0.eq_model()) }
     }
 }
 

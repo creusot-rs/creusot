@@ -2,7 +2,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::{
     std::{clone::Clone, cmp::PartialEq},
-    *,
+    EqModel, *,
 };
 
 #[derive(Clone, PartialEq)]
@@ -11,17 +11,17 @@ pub struct Product<A, B> {
     b: B,
 }
 
-impl<A, B> DeepModel for Product<A, B>
+impl<A, B> EqModel for Product<A, B>
 where
-    A: DeepModel,
-    B: DeepModel,
+    A: EqModel,
+    B: EqModel,
 {
-    type DeepModelTy = Product<A::DeepModelTy, B::DeepModelTy>;
+    type EqModelTy = Product<A::EqModelTy, B::EqModelTy>;
 
     #[open]
     #[logic]
-    fn deep_model(self) -> Self::DeepModelTy {
-        Product { a: self.a.deep_model(), b: self.b.deep_model() }
+    fn eq_model(self) -> Self::EqModelTy {
+        Product { a: self.a.eq_model(), b: self.b.eq_model() }
     }
 }
 
@@ -31,15 +31,15 @@ pub enum Sum<A, B> {
     B(B),
 }
 
-impl<A: DeepModel, B: DeepModel> DeepModel for Sum<A, B> {
-    type DeepModelTy = Sum<A::DeepModelTy, B::DeepModelTy>;
+impl<A: EqModel, B: EqModel> EqModel for Sum<A, B> {
+    type EqModelTy = Sum<A::EqModelTy, B::EqModelTy>;
 
     #[open]
     #[logic]
-    fn deep_model(self) -> Self::DeepModelTy {
+    fn eq_model(self) -> Self::EqModelTy {
         match self {
-            Sum::A(a) => Sum::A(a.deep_model()),
-            Sum::B(b) => Sum::B(b.deep_model()),
+            Sum::A(a) => Sum::A(a.eq_model()),
+            Sum::B(b) => Sum::B(b.eq_model()),
         }
     }
 }
@@ -64,22 +64,22 @@ pub struct List<T> {
     pub tail: Option<Box<List<T>>>,
 }
 
-pub struct ListDeepModel<T: DeepModel> {
-    pub elem: <T as DeepModel>::DeepModelTy,
-    pub tail: Option<Box<ListDeepModel<T>>>,
+pub struct ListEqModel<T: EqModel> {
+    pub elem: <T as EqModel>::EqModelTy,
+    pub tail: Option<Box<ListEqModel<T>>>,
 }
 
-impl<T: DeepModel> DeepModel for List<T> {
-    type DeepModelTy = ListDeepModel<T>;
+impl<T: EqModel> EqModel for List<T> {
+    type EqModelTy = ListEqModel<T>;
 
     #[open]
     #[logic]
-    fn deep_model(self) -> Self::DeepModelTy {
-        ListDeepModel {
-            elem: self.elem.deep_model(),
+    fn eq_model(self) -> Self::EqModelTy {
+        ListEqModel {
+            elem: self.elem.eq_model(),
             tail: match self.tail {
                 None => None,
-                Some(tail) => Some(Box::new((*tail).deep_model())),
+                Some(tail) => Some(Box::new((*tail).eq_model())),
             },
         }
     }
@@ -90,21 +90,21 @@ pub enum Expr<V> {
     Add(Box<Expr<V>>, Box<Expr<V>>),
 }
 
-pub enum ExprDeepModel<V: DeepModel> {
-    Var(<V as DeepModel>::DeepModelTy),
-    Add(Box<ExprDeepModel<V>>, Box<ExprDeepModel<V>>),
+pub enum ExprEqModel<V: EqModel> {
+    Var(<V as EqModel>::EqModelTy),
+    Add(Box<ExprEqModel<V>>, Box<ExprEqModel<V>>),
 }
 
-impl<V: DeepModel> DeepModel for Expr<V> {
-    type DeepModelTy = ExprDeepModel<V>;
+impl<V: EqModel> EqModel for Expr<V> {
+    type EqModelTy = ExprEqModel<V>;
 
     #[open]
     #[logic]
-    fn deep_model(self) -> Self::DeepModelTy {
+    fn eq_model(self) -> Self::EqModelTy {
         match self {
-            Expr::Var(v) => ExprDeepModel::Var(v.deep_model()),
+            Expr::Var(v) => ExprEqModel::Var(v.eq_model()),
             Expr::Add(e1, e2) => {
-                ExprDeepModel::Add(Box::new((*e1).deep_model()), Box::new((*e2).deep_model()))
+                ExprEqModel::Add(Box::new((*e1).eq_model()), Box::new((*e2).eq_model()))
             }
         }
     }

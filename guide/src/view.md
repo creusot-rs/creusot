@@ -1,19 +1,19 @@
 # Shallow model
 
 You can implement the `@` operator for your type.
-To do that, you just implement the `creusot_contracts::ShallowModel` trait specifying the associated type `ShallowModelTy`.
+To do that, you just implement the `creusot_contracts::View` trait specifying the associated type `ViewTy`.
 
 For example, the following gives a spooky data type `MyPair<T, U>` a nice pair model.
 
 ```rust
 struct MyPair<T, U>(T, U);
 
-impl<T, U> ShallowModel for MyPair<T, U> {
-    type ShallowModelTy = (T, U);
+impl<T, U> View for MyPair<T, U> {
+    type ViewTy = (T, U);
 
     #[logic]
     #[open]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn shallow_model(self) -> Self::ViewTy {
         (self.0, self.1)
     }
 }

@@ -3,13 +3,13 @@ use creusot_contracts::{logic::Int, *};
 
 pub struct Seven();
 
-impl ShallowModel for Seven {
-    type ShallowModelTy = Int;
+impl View for Seven {
+    type ViewTy = Int;
 
     #[logic]
     #[open]
     #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         absurd
     }
 }
@@ -22,13 +22,13 @@ pub fn seven() -> Seven {
 
 pub struct Pair<T, U>(T, U);
 
-impl<T, U> ShallowModel for Pair<T, U> {
-    type ShallowModelTy = (T, U);
+impl<T, U> View for Pair<T, U> {
+    type ViewTy = (T, U);
 
     #[logic]
     #[open]
     #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         absurd
     }
 }

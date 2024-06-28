@@ -1,14 +1,14 @@
 use crate::*;
 pub use ::std::option::*;
 
-impl<T: DeepModel> DeepModel for Option<T> {
-    type DeepModelTy = Option<T::DeepModelTy>;
+impl<T: EqModel> EqModel for Option<T> {
+    type EqModelTy = Option<T::EqModelTy>;
 
     #[logic]
     #[open]
-    fn deep_model(self) -> Self::DeepModelTy {
+    fn eq_model(self) -> Self::EqModelTy {
         match self {
-            Some(t) => Some(t.deep_model()),
+            Some(t) => Some(t.eq_model()),
             None => None,
         }
     }
@@ -17,9 +17,9 @@ impl<T: DeepModel> DeepModel for Option<T> {
 extern_spec! {
     mod std {
         mod option {
-            impl<T : PartialEq + DeepModel> PartialEq for Option<T> {
+            impl<T : PartialEq + EqModel> PartialEq for Option<T> {
                 #[allow(unstable_name_collisions)]
-                #[ensures(result == (self.deep_model() == rhs.deep_model()))]
+                #[ensures(result == (self.eq_model() == rhs.eq_model()))]
                 fn eq(&self, rhs: &Self) -> bool;
             }
         }
@@ -147,13 +147,13 @@ impl<T> Default for Option<T> {
     }
 }
 
-impl<T> ShallowModel for IntoIter<T> {
-    type ShallowModelTy = Option<T>;
+impl<T> View for IntoIter<T> {
+    type ViewTy = Option<T>;
 
     #[open(self)]
     #[logic]
     #[trusted]
-    fn shallow_model(self) -> Option<T> {
+    fn view(self) -> Option<T> {
         pearlite! { absurd }
     }
 }
@@ -201,13 +201,13 @@ impl<T> IntoIterator for Option<T> {
     }
 }
 
-impl<'a, T> ShallowModel for Iter<'a, T> {
-    type ShallowModelTy = Option<&'a T>;
+impl<'a, T> View for Iter<'a, T> {
+    type ViewTy = Option<&'a T>;
 
     #[open(self)]
     #[logic]
     #[trusted]
-    fn shallow_model(self) -> Option<&'a T> {
+    fn view(self) -> Option<&'a T> {
         pearlite! { absurd }
     }
 }
@@ -258,13 +258,13 @@ impl<'a, T> IntoIterator for &'a Option<T> {
     }
 }
 
-impl<'a, T> ShallowModel for IterMut<'a, T> {
-    type ShallowModelTy = Option<&'a mut T>;
+impl<'a, T> View for IterMut<'a, T> {
+    type ViewTy = Option<&'a mut T>;
 
     #[logic]
     #[open(self)]
     #[trusted]
-    fn shallow_model(self) -> Option<&'a mut T> {
+    fn view(self) -> Option<&'a mut T> {
         pearlite! { absurd }
     }
 }

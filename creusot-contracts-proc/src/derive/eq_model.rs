@@ -5,7 +5,7 @@ use syn::{
     Fields, GenericParam, Generics, Index, Lit, Meta, MetaNameValue, Path,
 };
 
-pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn derive_eq_model(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
     let name = input.ident;
@@ -14,9 +14,9 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     let vis = input.vis;
 
-    let (deep_model_ty_name, ty) =
-        if let Some(attr) = input.attrs.into_iter().find(|p| p.path().is_ident("DeepModelTy")) {
-            let parse = parse_deep_model_ty_attr(attr.meta);
+    let (eq_model_ty_name, ty) =
+        if let Some(attr) = input.attrs.into_iter().find(|p| p.path().is_ident("EqModelTy")) {
+            let parse = parse_eq_model_ty_attr(attr.meta);
             let name = match parse {
                 Err(e) => return e.to_compile_error().into(),
                 Ok(o) => o,
@@ -25,15 +25,15 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
             (name, None)
         } else {
             let ident = Ident::new(
-                &format!("{}DeepModel", name.to_string()),
+                &format!("{}EqModel", name.to_string()),
                 proc_macro::Span::def_site().into(),
             );
-            let deep_model_ty = deep_model_ty(&ident, &generics, &input.data);
+            let eq_model_ty = eq_model_ty(&ident, &generics, &input.data);
 
-            (ident.into(), Some(quote! { #vis #deep_model_ty}))
+            (ident.into(), Some(quote! { #vis #eq_model_ty}))
         };
 
-    let eq = deep_model(&name, &deep_model_ty_name, &input.data);
+    let eq = eq_model(&name, &eq_model_ty_name, &input.data);
 
     let open = match vis {
         syn::Visibility::Public(_) => quote! {#[open]},
@@ -44,12 +44,12 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     let expanded = quote! {
         #ty
 
-        impl #impl_generics ::creusot_contracts::DeepModel for #name #ty_generics #where_clause {
-            type DeepModelTy = #deep_model_ty_name #ty_generics;
+        impl #impl_generics ::creusot_contracts::EqModel for #name #ty_generics #where_clause {
+            type EqModelTy = #eq_model_ty_name #ty_generics;
 
             #[logic]
             #open
-            fn deep_model(self) -> Self::DeepModelTy {
+            fn eq_model(self) -> Self::EqModelTy {
                 #eq
             }
         }
@@ -59,7 +59,7 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     proc_macro::TokenStream::from(expanded)
 }
 
-fn parse_deep_model_ty_attr(m: Meta) -> syn::Result<Path> {
+fn parse_eq_model_ty_attr(m: Meta) -> syn::Result<Path> {
     match m {
         Meta::NameValue(MetaNameValue {
             value: Expr::Lit(ExprLit { lit: Lit::Str(l), .. }),
@@ -75,14 +75,14 @@ fn parse_deep_model_ty_attr(m: Meta) -> syn::Result<Path> {
 fn add_trait_bounds(mut generics: Generics) -> Generics {
     for param in &mut generics.params {
         if let GenericParam::Type(ref mut type_param) = *param {
-            type_param.bounds.push(parse_quote!(::creusot_contracts::DeepModel));
-            // type_param.bounds.push(parse_quote!(::creusot_contracts::model::DeepModel));
+            type_param.bounds.push(parse_quote!(::creusot_contracts::EqModel));
+            // type_param.bounds.push(parse_quote!(::creusot_contracts::model::EqModel));
         }
     }
     generics
 }
 
-fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
+fn eq_model_ty_fields(fields: &Fields) -> TokenStream {
     match fields {
         Fields::Named(ref fields) => {
             let recurse = fields.named.iter().map(|f| {
@@ -90,7 +90,7 @@ fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
                 let ty = &f.ty;
                 let vis = &f.vis;
                 quote_spanned! {f.span()=>
-                    #vis #name: < #ty as creusot_contracts::DeepModel> :: DeepModelTy
+                    #vis #name: < #ty as creusot_contracts::EqModel> :: EqModelTy
                 }
             });
             quote! {
@@ -102,7 +102,7 @@ fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
                 let ty = &f.ty;
                 let vis = &f.vis;
                 quote_spanned! {f.span()=>
-                   #vis < #ty as creusot_contracts::DeepModel> :: DeepModelTy
+                   #vis < #ty as creusot_contracts::EqModel> :: EqModelTy
                 }
             });
             quote! {
@@ -113,16 +113,16 @@ fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
     }
 }
 
-fn deep_model_ty(base_ident: &Ident, generics: &Generics, data: &Data) -> TokenStream {
+fn eq_model_ty(base_ident: &Ident, generics: &Generics, data: &Data) -> TokenStream {
     match data {
         Data::Struct(ref data) => {
-            let data = deep_model_ty_fields(&data.fields);
+            let data = eq_model_ty_fields(&data.fields);
             quote! { struct #base_ident #generics #data }
         }
         Data::Enum(ref data) => {
             let arms = data.variants.iter().map(|v| {
                 let ident = &v.ident;
-                let fields = deep_model_ty_fields(&v.fields);
+                let fields = eq_model_ty_fields(&v.fields);
 
                 quote! { #ident #fields }
             });
@@ -137,14 +137,14 @@ fn deep_model_ty(base_ident: &Ident, generics: &Generics, data: &Data) -> TokenS
     }
 }
 
-fn deep_model(src_ident: &Ident, tgt_ident: &Path, data: &Data) -> TokenStream {
+fn eq_model(src_ident: &Ident, tgt_ident: &Path, data: &Data) -> TokenStream {
     match *data {
         Data::Struct(ref data) => match data.fields {
             Fields::Named(ref fields) => {
                 let recurse = fields.named.iter().map(|f| {
                     let name = &f.ident;
                     quote_spanned! {f.span()=>
-                        #name: self.#name.deep_model()
+                        #name: self.#name.eq_model()
                     }
                 });
                 quote! {
@@ -155,7 +155,7 @@ fn deep_model(src_ident: &Ident, tgt_ident: &Path, data: &Data) -> TokenStream {
                 let recurse = fields.unnamed.iter().enumerate().map(|(i, f)| {
                     let index = Index::from(i);
                     quote_spanned! {f.span()=>
-                        self.#index.deep_model()
+                        self.#index.eq_model()
                     }
                 });
                 quote! {
@@ -212,7 +212,7 @@ fn gen_match_arm<'a, I: Iterator<Item = &'a syn::Field>>(fields: I) -> ArmAcc {
         };
         let name_1 = format_ident!("{}_1", name_base);
 
-        let call = quote!(#name_1.deep_model());
+        let call = quote!(#name_1.eq_model());
         if named {
             acc.fields.push(quote!(#name_base: #name_1));
             acc.body.push(quote!(#name_base: #call));

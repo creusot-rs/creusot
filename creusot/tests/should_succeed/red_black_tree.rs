@@ -26,14 +26,14 @@ pub struct Tree<K, V> {
 
 /*************  The model of a tree, and the set of its mappings  *************/
 
-impl<K: DeepModel, V> Tree<K, V> {
+impl<K: EqModel, V> Tree<K, V> {
     #[predicate]
-    fn has_mapping(self, k: K::DeepModelTy, v: V) -> bool {
+    fn has_mapping(self, k: K::EqModelTy, v: V) -> bool {
         pearlite! {
             match self {
                 Tree { node: None } => false,
                 Tree { node: Some(box Node { left, key, val, right, .. }) } =>
-                    left.has_mapping(k, v) || right.has_mapping(k, v) || k == key.deep_model() && v == val
+                    left.has_mapping(k, v) || right.has_mapping(k, v) || k == key.eq_model() && v == val
             }
         }
     }
@@ -41,21 +41,18 @@ impl<K: DeepModel, V> Tree<K, V> {
     #[predicate]
     fn same_mappings(self, o: Self) -> bool {
         pearlite! {
-            forall<k: K::DeepModelTy, v: V> self.has_mapping(k, v) == o.has_mapping(k, v)
+            forall<k: K::EqModelTy, v: V> self.has_mapping(k, v) == o.has_mapping(k, v)
         }
     }
 
     #[logic]
-    fn model_acc(
-        self,
-        accu: <Self as ShallowModel>::ShallowModelTy,
-    ) -> <Self as ShallowModel>::ShallowModelTy {
+    fn model_acc(self, accu: <Self as View>::ViewTy) -> <Self as View>::ViewTy {
         pearlite! {
             match self {
                 Tree { node: None } => accu,
                 Tree { node: Some(box Node { left, key, val, right, .. }) } => {
                     let accu1 = left.model_acc(accu);
-                    let accu2 = accu1.set(key.deep_model(), Some(val));
+                    let accu2 = accu1.set(key.eq_model(), Some(val));
                     right.model_acc(accu2)
                 }
             }
@@ -65,18 +62,14 @@ impl<K: DeepModel, V> Tree<K, V> {
     #[logic]
     #[ensures(self.model_acc(accu).get(k) == accu.get(k) ||
               exists<v: V> self.model_acc(accu).get(k) == Some(v) && self.has_mapping(k, v))]
-    fn model_acc_has_mapping(
-        self,
-        accu: <Self as ShallowModel>::ShallowModelTy,
-        k: K::DeepModelTy,
-    ) {
+    fn model_acc_has_mapping(self, accu: <Self as View>::ViewTy, k: K::EqModelTy) {
         pearlite! {
             match self {
                 Tree { node: None } => (),
                 Tree { node: Some(box Node { left, key, val, right, .. }) } => {
                     left.model_acc_has_mapping(accu, k);
                     let accu1 = left.model_acc(accu);
-                    let accu2 = accu1.set(key.deep_model(), Some(val));
+                    let accu2 = accu1.set(key.eq_model(), Some(val));
                     right.model_acc_has_mapping(accu2, k)
                 }
             }
@@ -86,9 +79,9 @@ impl<K: DeepModel, V> Tree<K, V> {
     #[logic]
     #[requires(self.bst_invariant())]
     #[ensures(forall<v: V> self.has_mapping(k, v) ==> self.model_acc(accu).get(k) == Some(v))]
-    fn has_mapping_model_acc(self, accu: <Self as ShallowModel>::ShallowModelTy, k: K::DeepModelTy)
+    fn has_mapping_model_acc(self, accu: <Self as View>::ViewTy, k: K::EqModelTy)
     where
-        K::DeepModelTy: OrdLogic,
+        K::EqModelTy: OrdLogic,
     {
         pearlite! {
             match self {
@@ -96,7 +89,7 @@ impl<K: DeepModel, V> Tree<K, V> {
                 Tree { node: Some(box Node { left, key, val, right, .. }) } => {
                     left.has_mapping_model_acc(accu, k);
                     let accu1 = left.model_acc(accu);
-                    let accu2 = accu1.set(key.deep_model(), Some(val));
+                    let accu2 = accu1.set(key.eq_model(), Some(val));
                     right.has_mapping_model_acc(accu2, k);
                     right.model_acc_has_mapping(accu2, k)
                 }
@@ -107,9 +100,9 @@ impl<K: DeepModel, V> Tree<K, V> {
     #[logic]
     #[requires(self.bst_invariant())]
     #[ensures(forall<v: V> self.has_mapping(k, v) == (self@.get(k) == Some(v)))]
-    fn has_mapping_model(self, k: K::DeepModelTy)
+    fn has_mapping_model(self, k: K::EqModelTy)
     where
-        K::DeepModelTy: OrdLogic,
+        K::EqModelTy: OrdLogic,
     {
         pearlite! { {
             self.model_acc_has_mapping(Mapping::cst(None), k);
@@ -122,9 +115,9 @@ impl<K: DeepModel, V> Tree<K, V> {
     #[requires(self.has_mapping(k, v1))]
     #[requires(self.has_mapping(k, v2))]
     #[ensures(v1 == v2)]
-    fn has_mapping_inj(self, k: K::DeepModelTy, v1: V, v2: V)
+    fn has_mapping_inj(self, k: K::EqModelTy, v1: V, v2: V)
     where
-        K::DeepModelTy: OrdLogic,
+        K::EqModelTy: OrdLogic,
     {
         pearlite! { {
             self.has_mapping_model(k);
@@ -133,58 +126,58 @@ impl<K: DeepModel, V> Tree<K, V> {
     }
 }
 
-impl<K: DeepModel, V> Node<K, V> {
+impl<K: EqModel, V> Node<K, V> {
     #[predicate]
     #[ensures(forall<node: Box<Node<K, V>>>
               self == *node ==> result == Tree{ node: Some(node) }.has_mapping(k, v))]
-    fn has_mapping(self, k: K::DeepModelTy, v: V) -> bool {
+    fn has_mapping(self, k: K::EqModelTy, v: V) -> bool {
         pearlite! {
             self.left.has_mapping(k, v) || self.right.has_mapping(k, v) ||
-                k == self.key.deep_model() && v == self.val
+                k == self.key.eq_model() && v == self.val
         }
     }
 
     #[predicate]
     fn same_mappings(self, o: Self) -> bool {
         pearlite! {
-            forall<k: K::DeepModelTy, v: V> self.has_mapping(k, v) == o.has_mapping(k, v)
+            forall<k: K::EqModelTy, v: V> self.has_mapping(k, v) == o.has_mapping(k, v)
         }
     }
 }
 
-impl<K: DeepModel, V> ShallowModel for Node<K, V> {
-    type ShallowModelTy = Mapping<K::DeepModelTy, Option<V>>;
+impl<K: EqModel, V> View for Node<K, V> {
+    type ViewTy = Mapping<K::EqModelTy, Option<V>>;
 
     #[logic]
     #[open(self)]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! {
-            self.right.model_acc(self.left.shallow_model().set(self.key.deep_model(), Some(self.val)))
+            self.right.model_acc(self.left.view().set(self.key.eq_model(), Some(self.val)))
         }
     }
 }
 
-impl<K: DeepModel, V> ShallowModel for Tree<K, V> {
-    type ShallowModelTy = Mapping<K::DeepModelTy, Option<V>>;
+impl<K: EqModel, V> View for Tree<K, V> {
+    type ViewTy = Mapping<K::EqModelTy, Option<V>>;
 
     #[logic]
     #[open(self)]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { self.model_acc(Mapping::cst(None)) }
     }
 }
 
 /*******************************  The BST invariant ***************************/
 
-impl<K: DeepModel, V> Node<K, V>
+impl<K: EqModel, V> Node<K, V>
 where
-    K::DeepModelTy: OrdLogic,
+    K::EqModelTy: OrdLogic,
 {
     #[predicate]
     fn bst_invariant_here(self) -> bool {
         pearlite! {
-            (forall<k: K::DeepModelTy, v: V> self.left.has_mapping(k, v) ==> k < self.key.deep_model()) &&
-            (forall<k: K::DeepModelTy, v: V> self.right.has_mapping(k, v) ==> self.key.deep_model() < k)
+            (forall<k: K::EqModelTy, v: V> self.left.has_mapping(k, v) ==> k < self.key.eq_model()) &&
+            (forall<k: K::EqModelTy, v: V> self.right.has_mapping(k, v) ==> self.key.eq_model() < k)
         }
     }
 
@@ -196,9 +189,9 @@ where
     }
 }
 
-impl<K: DeepModel, V> Tree<K, V>
+impl<K: EqModel, V> Tree<K, V>
 where
-    K::DeepModelTy: OrdLogic,
+    K::EqModelTy: OrdLogic,
 {
     #[predicate]
     fn bst_invariant(self) -> bool {
@@ -347,9 +340,9 @@ impl<K, V> Node<K, V> {
 
 /*************************  Conjunction of invariants  ************************/
 
-impl<K: DeepModel, V> Tree<K, V>
+impl<K: EqModel, V> Tree<K, V>
 where
-    K::DeepModelTy: OrdLogic,
+    K::EqModelTy: OrdLogic,
 {
     #[open(self)]
     #[predicate]
@@ -368,9 +361,9 @@ where
     }
 }
 
-impl<K: DeepModel, V> Node<K, V>
+impl<K: EqModel, V> Node<K, V>
 where
-    K::DeepModelTy: OrdLogic,
+    K::EqModelTy: OrdLogic,
 {
     #[open(self)]
     #[predicate]
@@ -383,7 +376,7 @@ where
 
 /*************************  Code of the data structure  ***********************/
 
-impl<K: DeepModel, V> Tree<K, V> {
+impl<K: EqModel, V> Tree<K, V> {
     #[ensures(result == (self.color() == Red))]
     fn is_red(&self) -> bool {
         match self.node {
@@ -393,16 +386,16 @@ impl<K: DeepModel, V> Tree<K, V> {
     }
 }
 
-impl<K: DeepModel, V> Node<K, V>
+impl<K: EqModel, V> Node<K, V>
 where
-    K::DeepModelTy: OrdLogic,
+    K::EqModelTy: OrdLogic,
 {
     #[requires((*self).internal_invariant())]
     #[requires((*self).left.color() == Red)]
     #[ensures((*self).same_mappings(^self))]
     #[ensures((^self).internal_invariant())]
     #[ensures((*self).height() == (^self).height())]
-    #[ensures((^self).key.deep_model() < (*self).key.deep_model())]
+    #[ensures((^self).key.eq_model() < (*self).key.eq_model())]
     #[ensures((^self).right.color() == Red)]
     #[ensures((^self).color == (*self).color)]
     #[ensures(exists<l: Box<Self>, r: Box<Self>>
@@ -438,7 +431,7 @@ where
         // a      x
         //       / \
         //      b   c
-        proof_assert! { old_self.left.has_mapping((*self).key.deep_model(), (*self).val) }
+        proof_assert! { old_self.left.has_mapping((*self).key.eq_model(), (*self).val) }
         self.right = Tree { node: Some(x) };
         //   self
         //  /    \
@@ -452,7 +445,7 @@ where
     #[ensures((*self).same_mappings(^self))]
     #[ensures((^self).internal_invariant())]
     #[ensures((*self).height() == (^self).height())]
-    #[ensures((*self).key.deep_model() < (^self).key.deep_model())]
+    #[ensures((*self).key.eq_model() < (^self).key.eq_model())]
     #[ensures((^self).left.color() == Red)]
     #[ensures((^self).color == (*self).color)]
     #[ensures(exists<l: Box<Self>, r: Box<Self>>
@@ -465,7 +458,7 @@ where
         std::mem::swap(&mut self.right, &mut x.left);
         std::mem::swap(self, &mut x);
         std::mem::swap(&mut self.color, &mut x.color);
-        proof_assert! { old_self.right.has_mapping((*self).key.deep_model(), (*self).val) }
+        proof_assert! { old_self.right.has_mapping((*self).key.eq_model(), (*self).val) }
         self.left = Tree { node: Some(x) };
     }
 
@@ -526,14 +519,14 @@ where
     #[requires(cpn(Red, cpn(Black, CPL(Black), CPL(Black)), CPL(Black)).match_n(*self))]
     #[ensures((*result).internal_invariant())]
     #[ensures((^result).internal_invariant() && (*result).height() == (^result).height()
-              && (forall<k: K::DeepModelTy, v: V> (^result).has_mapping(k, v) ==> (*result).has_mapping(k, v))
+              && (forall<k: K::EqModelTy, v: V> (^result).has_mapping(k, v) ==> (*result).has_mapping(k, v))
               ==> (^self).internal_invariant())]
     #[ensures((*result).height() == (^result).height() ==> (*self).height() == (^self).height())]
     #[ensures((*self).key == (*result).key)]
-    #[ensures(forall<k: K::DeepModelTy, v: V> (*result).has_mapping(k, v) ==> (*self).has_mapping(k, v))]
-    #[ensures(forall<k: K::DeepModelTy, v: V> (*self).has_mapping(k, v) && k <= (*self).key.deep_model()
+    #[ensures(forall<k: K::EqModelTy, v: V> (*result).has_mapping(k, v) ==> (*self).has_mapping(k, v))]
+    #[ensures(forall<k: K::EqModelTy, v: V> (*self).has_mapping(k, v) && k <= (*self).key.eq_model()
               ==> (*result).has_mapping(k, v))]
-    #[ensures(forall<k: K::DeepModelTy, v: V> (^self).has_mapping(k, v) ==
+    #[ensures(forall<k: K::EqModelTy, v: V> (^self).has_mapping(k, v) ==
               ((^result).has_mapping(k, v) || ((*self).has_mapping(k, v) && !(*result).has_mapping(k, v))))]
     #[ensures(cpn(Black, CPL(Red), CPL(Black)).match_n(*result) ||
               cpn(Black, CPL(Red), CPL(Red)).match_n(*result))]
@@ -555,14 +548,14 @@ where
     #[requires(cpn(Red, CPL(Black), cpn(Black, CPL(Black), CPL(Black))).match_n(*self))]
     #[ensures((*result).internal_invariant())]
     #[ensures((^result).internal_invariant() && (*result).height() == (^result).height()
-              && (forall<k: K::DeepModelTy, v: V> (^result).has_mapping(k, v) ==> (*result).has_mapping(k, v))
+              && (forall<k: K::EqModelTy, v: V> (^result).has_mapping(k, v) ==> (*result).has_mapping(k, v))
               ==> (^self).internal_invariant())]
     #[ensures((*result).height() == (^result).height() ==> (*self).height() == (^self).height())]
     #[ensures((*result).key == (*self).key)]
-    #[ensures(forall<k: K::DeepModelTy, v: V> (*result).has_mapping(k, v) ==> (*self).has_mapping(k, v))]
-    #[ensures(forall<k: K::DeepModelTy, v: V> (*self).has_mapping(k, v) && (*self).key.deep_model() <= k
+    #[ensures(forall<k: K::EqModelTy, v: V> (*result).has_mapping(k, v) ==> (*self).has_mapping(k, v))]
+    #[ensures(forall<k: K::EqModelTy, v: V> (*self).has_mapping(k, v) && (*self).key.eq_model() <= k
               ==> (*result).has_mapping(k, v))]
-    #[ensures(forall<k: K::DeepModelTy, v: V> (^self).has_mapping(k, v) ==
+    #[ensures(forall<k: K::EqModelTy, v: V> (^self).has_mapping(k, v) ==
               ((^result).has_mapping(k, v) || ((*self).has_mapping(k, v) && !(*result).has_mapping(k, v))))]
     #[ensures(cpn(Black, CPL(Black), CPL(Red)).match_n(*result) ||
               cpn(Black, CPL(Red), CPL(Red)).match_n(*result))]
@@ -579,9 +572,9 @@ where
     }
 }
 
-impl<K: DeepModel + Ord, V> Tree<K, V>
+impl<K: EqModel + Ord, V> Tree<K, V>
 where
-    K::DeepModelTy: OrdLogic,
+    K::EqModelTy: OrdLogic,
 {
     #[ensures(result@ == Mapping::cst(None))]
     #[ensures(result.invariant())]
@@ -595,8 +588,8 @@ where
     #[ensures((*self).height() == (^self).height())]
     #[ensures(cpn(Red, CPL(Red), CPL(Black)).match_t(^self) && (*self).color() == Red ||
               (^self).color_invariant())]
-    #[ensures((^self).has_mapping(key.deep_model(), val))]
-    #[ensures(forall<k: K::DeepModelTy, v: V> k == key.deep_model() || (*self).has_mapping(k, v) == (^self).has_mapping(k, v))]
+    #[ensures((^self).has_mapping(key.eq_model(), val))]
+    #[ensures(forall<k: K::EqModelTy, v: V> k == key.eq_model() || (*self).has_mapping(k, v) == (^self).has_mapping(k, v))]
     fn insert_rec(&mut self, key: K, val: V) {
         if let Some(node) = &mut self.node {
             match key.cmp(&node.key) {
@@ -622,7 +615,7 @@ where
 
     #[requires((*self).invariant())]
     #[ensures((^self).invariant())]
-    #[ensures((^self)@ == self@.set(key.deep_model(), Some(val)))]
+    #[ensures((^self)@ == self@.set(key.eq_model(), Some(val)))]
     pub fn insert(&mut self, key: K, val: V) {
         self.insert_rec(key, val);
         self.node.as_mut().unwrap().color = Black;
@@ -634,10 +627,10 @@ where
                cpn(Black, CPL(Red), CPL(Black)).match_t(*self))]
     #[ensures((^self).internal_invariant())]
     #[ensures((*self).height() == (^self).height())]
-    #[ensures((*self).has_mapping(result.0.deep_model(), result.1))]
-    #[ensures(forall<k: K::DeepModelTy, v: V> (*self).has_mapping(k, v) ==> k <= result.0.deep_model())]
-    #[ensures(forall<k: K::DeepModelTy, v: V> (^self).has_mapping(k, v) ==
-              (result.0.deep_model() != k && (*self).has_mapping(k, v)))]
+    #[ensures((*self).has_mapping(result.0.eq_model(), result.1))]
+    #[ensures(forall<k: K::EqModelTy, v: V> (*self).has_mapping(k, v) ==> k <= result.0.eq_model())]
+    #[ensures(forall<k: K::EqModelTy, v: V> (^self).has_mapping(k, v) ==
+              (result.0.eq_model() != k && (*self).has_mapping(k, v)))]
     #[ensures((^self).color_invariant())]
     #[ensures((*self).color() == Black ==> (^self).color() == Black)]
     fn delete_max_rec(&mut self) -> (K, V) {
@@ -660,9 +653,9 @@ where
     #[requires((*self).invariant())]
     #[ensures((^self).invariant())]
     #[ensures(match result {
-        Some((k, v)) => self@.get(k.deep_model()) == Some(v) &&
-            (forall<k2: K::DeepModelTy> self@.get(k2) == None || k2 <= k.deep_model()) &&
-            (^self)@ == self@.set(k.deep_model(), None),
+        Some((k, v)) => self@.get(k.eq_model()) == Some(v) &&
+            (forall<k2: K::EqModelTy> self@.get(k2) == None || k2 <= k.eq_model()) &&
+            (^self)@ == self@.set(k.eq_model(), None),
         None => (^self)@ == self@ && self@ == Mapping::cst(None)})]
     pub fn delete_max(&mut self) -> Option<(K, V)> {
         let old_self = snapshot! { self };
@@ -687,10 +680,10 @@ where
                cpn(Black, CPL(Red), CPL(Black)).match_t(*self))]
     #[ensures((^self).internal_invariant())]
     #[ensures((*self).height() == (^self).height())]
-    #[ensures((*self).has_mapping(result.0.deep_model(), result.1))]
-    #[ensures(forall<k: K::DeepModelTy, v: V> (*self).has_mapping(k, v) ==> result.0.deep_model() <= k)]
-    #[ensures(forall<k: K::DeepModelTy, v: V> (^self).has_mapping(k, v) ==
-              (result.0.deep_model() != k && (*self).has_mapping(k, v)))]
+    #[ensures((*self).has_mapping(result.0.eq_model(), result.1))]
+    #[ensures(forall<k: K::EqModelTy, v: V> (*self).has_mapping(k, v) ==> result.0.eq_model() <= k)]
+    #[ensures(forall<k: K::EqModelTy, v: V> (^self).has_mapping(k, v) ==
+              (result.0.eq_model() != k && (*self).has_mapping(k, v)))]
     #[ensures((^self).color_invariant())]
     #[ensures((*self).color() == Black ==> (^self).color() == Black)]
     fn delete_min_rec(&mut self) -> (K, V) {
@@ -711,9 +704,9 @@ where
     #[ensures((^self).invariant())]
     #[ensures(match result {
         Some((k, v)) =>
-            self@.get(k.deep_model()) == Some(v) &&
-            (forall<k2: K::DeepModelTy> self@.get(k2) == None || k.deep_model() <= k2) &&
-            (^self)@ == self@.set(k.deep_model(), None),
+            self@.get(k.eq_model()) == Some(v) &&
+            (forall<k2: K::EqModelTy> self@.get(k2) == None || k.eq_model() <= k2) &&
+            (^self)@ == self@.set(k.eq_model(), None),
         None => (^self)@ == self@ && self@ == Mapping::cst(None)
     })]
     pub fn delete_min(&mut self) -> Option<(K, V)> {
@@ -739,10 +732,10 @@ where
     #[ensures((^self).internal_invariant())]
     #[ensures((*self).height() == (^self).height())]
     #[ensures(match result {
-        None => forall<v: V> !(*self).has_mapping(key.deep_model(), v),
-        Some((k, v)) => key.deep_model() == k.deep_model() && (*self).has_mapping(k.deep_model(), v)
+        None => forall<v: V> !(*self).has_mapping(key.eq_model(), v),
+        Some((k, v)) => key.eq_model() == k.eq_model() && (*self).has_mapping(k.eq_model(), v)
     })]
-    #[ensures(forall<k: K::DeepModelTy, v: V> (^self).has_mapping(k, v) == (key.deep_model() != k && (*self).has_mapping(k, v)))]
+    #[ensures(forall<k: K::EqModelTy, v: V> (^self).has_mapping(k, v) == (key.eq_model() != k && (*self).has_mapping(k, v)))]
     #[ensures((^self).color_invariant())]
     #[ensures((*self).color() == Black ==> (^self).color() == Black)]
     fn delete_rec(&mut self, key: &K) -> Option<(K, V)> {
@@ -793,10 +786,10 @@ where
     #[ensures((^self).invariant())]
     #[ensures(match result {
         Some((k, v)) =>
-            k.deep_model() == key.deep_model() && self@.get(key.deep_model()) == Some(v),
-        None => self@.get(key.deep_model()) == None
+            k.eq_model() == key.eq_model() && self@.get(key.eq_model()) == Some(v),
+        None => self@.get(key.eq_model()) == None
     })]
-    #[ensures((^self)@ == self@.set(key.deep_model(), None))]
+    #[ensures((^self)@ == self@.set(key.eq_model(), None))]
     pub fn delete(&mut self, key: &K) -> Option<(K, V)> {
         snapshot! { Self::has_mapping_model };
 
@@ -816,15 +809,15 @@ where
 
     #[requires((*self).invariant())]
     #[ensures(match result {
-        Some(v) => self@.get(key.deep_model()) == Some(*v),
-        None => self@.get(key.deep_model()) == None
+        Some(v) => self@.get(key.eq_model()) == Some(*v),
+        None => self@.get(key.eq_model()) == None
     })]
     pub fn get(&self, key: &K) -> Option<&V> {
         snapshot! { Self::has_mapping_model };
 
         let mut tree = self;
         #[invariant((*tree).bst_invariant())]
-        #[invariant(forall<v: V> (*self).has_mapping(key.deep_model(), v) == (*tree).has_mapping(key.deep_model(), v))]
+        #[invariant(forall<v: V> (*self).has_mapping(key.eq_model(), v) == (*tree).has_mapping(key.eq_model(), v))]
         while let Some(node) = &tree.node {
             match key.cmp(&node.key) {
                 Less => tree = &node.left,
@@ -838,8 +831,8 @@ where
     #[requires((*self).invariant())]
     #[ensures((^self).invariant())]
     #[ensures(match result {
-        Some(v) => self@.get(key.deep_model()) == Some(*v) && (^self)@ == self@.set(key.deep_model(), Some(^v)),
-        None => self@.get(key.deep_model()) == None && (^self)@ == self@
+        Some(v) => self@.get(key.eq_model()) == Some(*v) && (^self)@ == self@.set(key.eq_model(), Some(^v)),
+        None => self@.get(key.eq_model()) == None && (^self)@ == self@
     })]
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
         snapshot! { Self::has_mapping_model };
@@ -850,14 +843,14 @@ where
         #[invariant((*tree).bst_invariant())]
         #[invariant((*tree).height_invariant())]
         #[invariant((*tree).color_invariant())]
-        #[invariant(forall<v: V> (^tree).has_mapping(key.deep_model(), v) == (^*old_self).has_mapping(key.deep_model(), v))]
-        #[invariant(forall<v: V> (*tree).has_mapping(key.deep_model(), v) == (**old_self).has_mapping(key.deep_model(), v))]
-        #[invariant((forall<k: K::DeepModelTy, v: V> k == key.deep_model() || (*tree).has_mapping(k, v) == (^tree).has_mapping(k, v))
+        #[invariant(forall<v: V> (^tree).has_mapping(key.eq_model(), v) == (^*old_self).has_mapping(key.eq_model(), v))]
+        #[invariant(forall<v: V> (*tree).has_mapping(key.eq_model(), v) == (**old_self).has_mapping(key.eq_model(), v))]
+        #[invariant((forall<k: K::EqModelTy, v: V> k == key.eq_model() || (*tree).has_mapping(k, v) == (^tree).has_mapping(k, v))
                     ==> (^tree).bst_invariant() ==> (^*old_self).bst_invariant())]
         #[invariant((*tree).height() == (^tree).height() && (^tree).height_invariant() ==>
                     (^*old_self).height_invariant())]
         #[invariant(CPL((*tree).color()).match_t(^tree) ==> CPL(Black).match_t(^*old_self))]
-        #[invariant(forall<k: K::DeepModelTy, v: V> (*tree).has_mapping(k, v) == (^tree).has_mapping(k, v) ==>
+        #[invariant(forall<k: K::EqModelTy, v: V> (*tree).has_mapping(k, v) == (^tree).has_mapping(k, v) ==>
                     (**old_self).has_mapping(k, v) == (^*old_self).has_mapping(k, v))]
         while let Some(node) = &mut tree.node {
             match key.cmp(&node.key) {

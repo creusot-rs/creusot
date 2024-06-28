@@ -181,8 +181,8 @@ pub trait RangeInclusiveExt<Idx> {
     #[logic]
     fn is_empty_log(self) -> bool
     where
-        Idx: DeepModel,
-        Idx::DeepModelTy: OrdLogic;
+        Idx: EqModel,
+        Idx::EqModelTy: OrdLogic;
 }
 
 impl<Idx> RangeInclusiveExt<Idx> for RangeInclusive<Idx> {
@@ -203,11 +203,11 @@ impl<Idx> RangeInclusiveExt<Idx> for RangeInclusive<Idx> {
     #[open(self)]
     #[logic]
     #[trusted]
-    #[ensures(!result ==> self.start_log().deep_model() <= self.end_log().deep_model())]
+    #[ensures(!result ==> self.start_log().eq_model() <= self.end_log().eq_model())]
     fn is_empty_log(self) -> bool
     where
-        Idx: DeepModel,
-        Idx::DeepModelTy: OrdLogic,
+        Idx: EqModel,
+        Idx::EqModelTy: OrdLogic,
     {
         pearlite! { absurd }
     }
@@ -219,9 +219,9 @@ extern_spec! {
             impl<Idx> RangeInclusive<Idx> {
                 #[ensures(result.start_log() == start)]
                 #[ensures(result.end_log() == end)]
-                #[ensures(start.deep_model() <= end.deep_model() ==> !result.is_empty_log())]
+                #[ensures(start.eq_model() <= end.eq_model() ==> !result.is_empty_log())]
                 fn new(start: Idx, end: Idx) -> Self
-                    where Idx: DeepModel, Idx::DeepModelTy: OrdLogic;
+                    where Idx: EqModel, Idx::EqModelTy: OrdLogic;
 
                 #[ensures(*result == self.start_log())]
                 fn start(&self) -> &Idx;
@@ -230,8 +230,8 @@ extern_spec! {
                 fn end(&self) -> &Idx;
             }
 
-            impl<Idx : PartialOrd<Idx> + DeepModel> RangeInclusive<Idx>
-            where Idx::DeepModelTy: OrdLogic
+            impl<Idx : PartialOrd<Idx> + EqModel> RangeInclusive<Idx>
+            where Idx::EqModelTy: OrdLogic
             {
                 #[ensures(result == self.is_empty_log())]
                 fn is_empty(&self) -> bool;

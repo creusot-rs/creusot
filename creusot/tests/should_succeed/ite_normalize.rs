@@ -7,15 +7,15 @@ use creusot_contracts::{std::clone::Clone, *};
 #[trusted]
 struct BTreeMap<K, V>(std::collections::BTreeMap<K, V>);
 
-impl<K: DeepModel, V> BTreeMap<K, V> {
+impl<K: EqModel, V> BTreeMap<K, V> {
     #[trusted]
     fn new() -> Self {
         Self(std::collections::BTreeMap::new())
     }
 
     #[trusted]
-    #[ensures(result == None ==> self@.get(key.deep_model()) == None)]
-    #[ensures(forall<v: &V> result == Some(v) ==> self@.get(key.deep_model()) == Some(*v))]
+    #[ensures(result == None ==> self@.get(key.eq_model()) == None)]
+    #[ensures(forall<v: &V> result == Some(v) ==> self@.get(key.eq_model()) == Some(*v))]
     fn get<'a>(&'a self, key: &'a K) -> Option<&'a V>
     where
         K: Ord,
@@ -24,7 +24,7 @@ impl<K: DeepModel, V> BTreeMap<K, V> {
     }
 
     #[trusted]
-    #[ensures(forall<i: K::DeepModelTy> (^self)@.get(i) == (if i == key.deep_model() { Some(value) } else { self@.get(i) }))]
+    #[ensures(forall<i: K::EqModelTy> (^self)@.get(i) == (if i == key.eq_model() { Some(value) } else { self@.get(i) }))]
     fn insert(&mut self, key: K, value: V) -> Option<V>
     where
         K: Ord,
@@ -41,13 +41,13 @@ impl<K: Clone, V: Clone> Clone for BTreeMap<K, V> {
     }
 }
 
-impl<K: DeepModel, V> ShallowModel for BTreeMap<K, V> {
-    type ShallowModelTy = creusot_contracts::logic::Mapping<K::DeepModelTy, Option<V>>;
+impl<K: EqModel, V> View for BTreeMap<K, V> {
+    type ViewTy = creusot_contracts::logic::Mapping<K::EqModelTy, Option<V>>;
 
     #[logic]
     #[open(self)]
     #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { absurd }
     }
 }
