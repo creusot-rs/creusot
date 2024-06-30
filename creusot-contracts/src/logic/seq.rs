@@ -33,7 +33,7 @@ impl<T> Seq<T> {
     #[trusted]
     #[logic]
     #[open(self)]
-    #[creusot::builtins = "seq_ext.SeqExt.subsequence"]
+    #[creusot::builtins = "prelude.seq_ext.SeqExt.subsequence"]
     pub fn subsequence(self, _: Int, _: Int) -> Self {
         absurd
     }
