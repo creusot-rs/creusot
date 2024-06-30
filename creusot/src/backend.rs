@@ -17,7 +17,6 @@ use std::{
 
 use crate::{options::SpanMode, run_why3::SpanMap};
 pub(crate) use clone_map::*;
-use why3::Exp;
 
 use self::{
     dependency::{Dependency, ExtendedId},
@@ -407,14 +406,6 @@ impl<'tcx> Why3Generator<'tcx> {
             hi.line,
             hi.col_display,
         ))
-    }
-
-    pub(crate) fn attach_span(&mut self, span: Span, exp: Exp) -> Exp {
-        if let Some(attr) = self.span_attr(span) {
-            Exp::Attr(attr, Box::new(exp))
-        } else {
-            exp
-        }
     }
 }
 

@@ -135,6 +135,7 @@ impl SpanMap {
         self.vec[s]
     }
 
+    // TODO(xavier): Refactor this so that we don't check the why3_cmd when translating spans!!
     pub(crate) fn encode_span(
         &mut self,
         opts: &Options,

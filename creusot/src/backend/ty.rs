@@ -322,27 +322,6 @@ impl<'tcx> Why3Generator<'tcx> {
     }
 }
 
-/// Get the generic paramer of a type.  Given `F<T>` return `T`.
-/// Panics if the type doesn't have 1 generic parameter.
-pub fn generic_of_ty<'tcx>(ty: Ty<'tcx>) -> Ty<'tcx> {
-    match ty.kind() {
-        Adt(_, args) if args.len() == 1 => args.type_at(0),
-        _ => panic!(
-            "`generic_of_ty` is called on type `{:?}` which doesn't have 1 generic parameter",
-            ty
-        ),
-    }
-}
-
-/// Get the generic paramer of a type.  Given `F<T>` return `T`.
-/// Panics if the type doesn't have 1 generic parameter.
-pub fn has_generics<'tcx>(ty: Ty<'tcx>) -> bool {
-    match ty.kind() {
-        Adt(_, args) => args.len() > 0,
-        _ => false,
-    }
-}
-
 fn translate_ty_name(ctx: &Why3Generator<'_>, did: DefId) -> Ident {
     item_name(ctx.tcx, did, Namespace::TypeNS)
 }

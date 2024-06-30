@@ -574,6 +574,10 @@ impl Exp {
         Exp::exists_trig(bound, Trigger::NONE, body)
     }
 
+    pub fn with_attr(self, attr: Attribute) -> Self {
+        Exp::Attr(attr, Box::new(self))
+    }
+
     pub fn is_true(&self) -> bool {
         if let Exp::Const(Constant::Bool(true)) = self {
             true

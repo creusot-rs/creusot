@@ -1,29 +1,29 @@
 
 module Loop_F
+  let%span sloop0 = "../loop.rs" 4 16 4 18
+  let%span sloop1 = "../loop.rs" 6 9 6 10
+  let%span sloop2 = "../loop.rs" 8 11 8 15
+  let%span span3 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   use prelude.Intrinsic
   use prelude.Borrow
   use prelude.Int32
   predicate resolve'0 (self : borrowed int32) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
+    [%#span3]  ^ self =  * self
   let rec resolve'0 (self:borrowed int32) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
     
   use prelude.Int
   let rec f (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
-      [ s0 =  [ &a <- [#"../loop.rs" 4 16 4 18] (10 : int32) ] s1
+      [ s0 =  [ &a <- [%#sloop0] (10 : int32) ] s1
       | s1 = Borrow.borrow_mut <int32> {a} (fun (_ret':borrowed int32) ->  [ &b <- _ret' ]  [ &a <-  ^ b ] s2)
-      | s2 =  [ &b <- { b with current = ([#"../loop.rs" 6 9 6 10] (5 : int32)) ; } ] s3
+      | s2 =  [ &b <- { b with current = ([%#sloop1] (5 : int32)) ; } ] s3
       | s3 = -{resolve'0 b}- s4
       | s4 = bb1 ]
       
-    | bb1 = bb1
-      [ bb1 = (! s0 [ s0 = bb2 ] )
-        [ bb2 = s0 [ s0 = any [ br0 -> {false} (! bb4) | br1 -> {true} (! bb3) ]  ]  | bb4 = s0 [ s0 = bb1 ]  ]
-         ]
-      
-    | bb3 = s0 [ s0 =  [ &_0 <- [#"../loop.rs" 3 11 13 1] () ] s1 | s1 = return' {_0} ]  ]
-    ) [ & _0 : () = any_l () : () | & a : int32 = any_l () : int32 | & b : borrowed int32 = any_l () : borrowed int32 ] 
+    | bb1 = bb1 [ bb1 = (! bb2) [ bb2 = any [ br0 -> {false} (! bb4) | br1 -> {true} (! bb3) ]  | bb4 = bb1 ]  ] 
+    | bb3 = return' {_0} ]
+    ) [ & _0 : () = any_l () | & a : int32 = any_l () | & b : borrowed int32 = any_l () ] 
     [ return' (result:())-> (! return' {result}) ]
     
 end
