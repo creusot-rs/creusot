@@ -2,17 +2,17 @@ extern crate creusot_contracts;
 use creusot_contracts::{logic::OrdLogic, *};
 
 #[ensures(result == true)]
-pub fn x<T: Ord + DeepModel>(x: &T) -> bool
+pub fn x<T: Ord + EqModel>(x: &T) -> bool
 where
-    T::DeepModelTy: OrdLogic,
+    T::EqModelTy: OrdLogic,
 {
     x <= x
 }
 
-#[ensures(result == ((*y).deep_model() <= (*x).deep_model()))]
-pub fn gt_or_le<T: Ord + DeepModel>(x: &T, y: &T) -> bool
+#[ensures(result == ((*y).eq_model() <= (*x).eq_model()))]
+pub fn gt_or_le<T: Ord + EqModel>(x: &T, y: &T) -> bool
 where
-    T::DeepModelTy: OrdLogic,
+    T::EqModelTy: OrdLogic,
 {
     x >= y
 }

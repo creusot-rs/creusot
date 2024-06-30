@@ -2,15 +2,15 @@ use crate::*;
 
 use ::std::fmt::Debug;
 
-impl<T: DeepModel, E: DeepModel> DeepModel for Result<T, E> {
-    type DeepModelTy = Result<T::DeepModelTy, E::DeepModelTy>;
+impl<T: EqModel, E: EqModel> EqModel for Result<T, E> {
+    type EqModelTy = Result<T::EqModelTy, E::EqModelTy>;
 
     #[logic]
     #[open]
-    fn deep_model(self) -> Self::DeepModelTy {
+    fn eq_model(self) -> Self::EqModelTy {
         match self {
-            Ok(t) => Ok(t.deep_model()),
-            Err(e) => Err(e.deep_model()),
+            Ok(t) => Ok(t.eq_model()),
+            Err(e) => Err(e.eq_model()),
         }
     }
 }

@@ -1,12 +1,12 @@
 use crate::{std::iter::Once, *};
 
-impl<T> ShallowModel for Once<T> {
-    type ShallowModelTy = Option<T>;
+impl<T> View for Once<T> {
+    type ViewTy = Option<T>;
 
     #[logic]
     #[trusted]
     #[open(self)]
-    fn shallow_model(self) -> Option<T> {
+    fn view(self) -> Option<T> {
         pearlite! { absurd }
     }
 }

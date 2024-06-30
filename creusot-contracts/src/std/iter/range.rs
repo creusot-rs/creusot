@@ -6,12 +6,12 @@ use crate::{
     *,
 };
 
-impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
+impl<Idx: EqModel<EqModelTy = Int> + Step> Iterator for Range<Idx> {
     #[predicate(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! {
-            self.resolve() && self.start.deep_model() >= self.end.deep_model()
+            self.resolve() && self.start.eq_model() >= self.end.eq_model()
         }
     }
 
@@ -19,11 +19,11 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
     #[open]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            self.end == o.end && self.start.deep_model() <= o.start.deep_model()
-            && (visited.len() > 0 ==> o.start.deep_model() <= o.end.deep_model())
-            && visited.len() == o.start.deep_model() - self.start.deep_model()
+            self.end == o.end && self.start.eq_model() <= o.start.eq_model()
+            && (visited.len() > 0 ==> o.start.eq_model() <= o.end.eq_model())
+            && visited.len() == o.start.eq_model() - self.start.eq_model()
             && forall<i : Int> 0 <= i && i < visited.len() ==>
-                visited[i].deep_model() == self.start.deep_model() + i
+                visited[i].eq_model() == self.start.eq_model() + i
         }
     }
 
@@ -43,14 +43,14 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
 #[logic]
 #[open]
 #[ensures(r.is_empty_log() == (result == 0))]
-pub fn range_inclusive_len<Idx: DeepModel<DeepModelTy = Int>>(r: RangeInclusive<Idx>) -> Int {
+pub fn range_inclusive_len<Idx: EqModel<EqModelTy = Int>>(r: RangeInclusive<Idx>) -> Int {
     pearlite! {
         if r.is_empty_log() { 0 }
-        else { r.end_log().deep_model() - r.start_log().deep_model() + 1 }
+        else { r.end_log().eq_model() - r.start_log().eq_model() + 1 }
     }
 }
 
-impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> {
+impl<Idx: EqModel<EqModelTy = Int> + Step> Iterator for RangeInclusive<Idx> {
     #[predicate(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
@@ -67,7 +67,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> 
             (self.is_empty_log() ==> o.is_empty_log()) &&
             (o.is_empty_log() || self.end_log() == o.end_log()) &&
             forall<i : Int> 0 <= i && i < visited.len() ==>
-                visited[i].deep_model() == self.start_log().deep_model() + i
+                visited[i].eq_model() == self.start_log().eq_model() + i
         }
     }
 

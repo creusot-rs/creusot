@@ -1,12 +1,12 @@
 use crate::{std::iter::Fuse, *};
 
-impl<I: Iterator> ShallowModel for Fuse<I> {
-    type ShallowModelTy = Option<I>;
+impl<I: Iterator> View for Fuse<I> {
+    type ViewTy = Option<I>;
 
     #[logic]
     #[open(self)]
     #[trusted]
-    fn shallow_model(self) -> Option<I> {
+    fn view(self) -> Option<I> {
         pearlite! { absurd }
     }
 }

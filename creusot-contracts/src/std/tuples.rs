@@ -1,11 +1,11 @@
 use crate::{Default, *};
 
-impl DeepModel for () {
-    type DeepModelTy = ();
+impl EqModel for () {
+    type EqModelTy = ();
 
     #[logic]
     #[open]
-    fn deep_model(self) -> Self::DeepModelTy {
+    fn eq_model(self) -> Self::EqModelTy {
         pearlite! { () }
     }
 }
@@ -20,13 +20,13 @@ impl Default for () {
 
 macro_rules! tuple_impls {
     ( $( ($name:ident, $idx:tt) )+ ) => {
-        impl<$($name: DeepModel),+> DeepModel for ($($name,)+) {
-            type DeepModelTy = ($($name::DeepModelTy,)+);
+        impl<$($name: EqModel),+> EqModel for ($($name,)+) {
+            type EqModelTy = ($($name::EqModelTy,)+);
 
             #[logic]
             #[open]
-            fn deep_model(self) -> Self::DeepModelTy {
-                pearlite! { ($(self.$idx.deep_model(),)+) }
+            fn eq_model(self) -> Self::EqModelTy {
+                pearlite! { ($(self.$idx.eq_model(),)+) }
             }
         }
 

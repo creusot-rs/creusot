@@ -26,38 +26,38 @@ mod bumpalo {
 mod hashmap {
     use creusot_contracts::{logic::Mapping, *};
 
-    pub trait Hash: DeepModel {
-        #[ensures(result@ == Self::hash_log(self.deep_model()))]
+    pub trait Hash: EqModel {
+        #[ensures(result@ == Self::hash_log(self.eq_model()))]
         fn hash(&self) -> u64;
 
         #[logic]
-        fn hash_log(_: Self::DeepModelTy) -> Int;
+        fn hash_log(_: Self::EqModelTy) -> Int;
     }
 
     #[trusted]
     pub struct MyHashMap<K, V>(std::marker::PhantomData<(K, V)>);
 
-    impl<K: Hash, V> ShallowModel for MyHashMap<K, V> {
-        type ShallowModelTy = Mapping<K::DeepModelTy, Option<V>>;
+    impl<K: Hash, V> View for MyHashMap<K, V> {
+        type ViewTy = Mapping<K::EqModelTy, Option<V>>;
 
         #[logic]
         #[open(self)]
         #[trusted]
-        fn shallow_model(self) -> Self::ShallowModelTy {
+        fn view(self) -> Self::ViewTy {
             absurd
         }
     }
 
-    impl<K: Hash + Eq + DeepModel, V> MyHashMap<K, V> {
-        #[ensures(forall<i: K::DeepModelTy> (^self)@.get(i) == (if i == key.deep_model() { Some(val) } else { self@.get(i) } ))]
+    impl<K: Hash + Eq + EqModel, V> MyHashMap<K, V> {
+        #[ensures(forall<i: K::EqModelTy> (^self)@.get(i) == (if i == key.eq_model() { Some(val) } else { self@.get(i) } ))]
         #[trusted]
         pub fn add(&mut self, key: K, val: V) {
             panic!()
         }
 
         #[ensures(match result {
-            Some(v) => self@.get(key.deep_model()) == Some(*v),
-            None => self@.get(key.deep_model()) == None,
+            Some(v) => self@.get(key.eq_model()) == Some(*v),
+            None => self@.get(key.eq_model()) == None,
         })]
         #[trusted]
         pub fn get<'a, 'b>(&'a self, key: &'b K) -> Option<&'a V> {
@@ -72,14 +72,14 @@ mod hashmap {
     }
 
     impl<U: Hash, V: Hash> Hash for (U, V) {
-        #[ensures(result@ == Self::hash_log(self.deep_model()))]
+        #[ensures(result@ == Self::hash_log(self.eq_model()))]
         fn hash(&self) -> u64 {
             self.0.hash().wrapping_add(self.1.hash().wrapping_mul(17))
         }
 
         #[open(self)]
         #[logic]
-        fn hash_log(x: Self::DeepModelTy) -> Int {
+        fn hash_log(x: Self::EqModelTy) -> Int {
             pearlite! { (U::hash_log(x.0) + V::hash_log(x.1) * 17) % (u64::MAX@ + 1) }
         }
     }
@@ -125,7 +125,7 @@ impl<'arena> hashmap::Hash for Node<'arena> {
 
     #[open(self)]
     #[logic]
-    fn hash_log(x: Self::DeepModelTy) -> Int {
+    fn hash_log(x: Self::EqModelTy) -> Int {
         pearlite! {
             match x {
                 NodeLog::False => 1,
@@ -145,17 +145,17 @@ impl<'arena> hashmap::Hash for Bdd<'arena> {
 
     #[open(self)]
     #[logic]
-    fn hash_log(x: Self::DeepModelTy) -> Int {
+    fn hash_log(x: Self::EqModelTy) -> Int {
         pearlite! { x@ }
     }
 }
 
-impl<'arena> DeepModel for Node<'arena> {
-    type DeepModelTy = NodeLog;
+impl<'arena> EqModel for Node<'arena> {
+    type EqModelTy = NodeLog;
 
     #[open(self)]
     #[logic]
-    fn deep_model(self) -> Self::DeepModelTy {
+    fn eq_model(self) -> Self::EqModelTy {
         pearlite! {
             match self {
                 False => NodeLog::False,
@@ -167,33 +167,33 @@ impl<'arena> DeepModel for Node<'arena> {
     }
 }
 
-impl<'arena> ShallowModel for Node<'arena> {
-    type ShallowModelTy = NodeLog;
+impl<'arena> View for Node<'arena> {
+    type ViewTy = NodeLog;
 
     #[open(self)]
     #[logic]
-    fn shallow_model(self) -> Self::ShallowModelTy {
-        pearlite! { self.deep_model() }
+    fn view(self) -> Self::ViewTy {
+        pearlite! { self.eq_model() }
     }
 }
 
-impl<'arena> DeepModel for Bdd<'arena> {
-    type DeepModelTy = u64;
+impl<'arena> EqModel for Bdd<'arena> {
+    type EqModelTy = u64;
 
     #[open(self)]
     #[logic]
-    fn deep_model(self) -> Self::DeepModelTy {
+    fn eq_model(self) -> Self::EqModelTy {
         pearlite! { self.1 }
     }
 }
 
-impl<'arena> ShallowModel for Bdd<'arena> {
-    type ShallowModelTy = u64;
+impl<'arena> View for Bdd<'arena> {
+    type ViewTy = u64;
 
     #[open(self)]
     #[logic]
-    fn shallow_model(self) -> Self::ShallowModelTy {
-        pearlite! { self.deep_model() }
+    fn view(self) -> Self::ViewTy {
+        pearlite! { self.eq_model() }
     }
 }
 

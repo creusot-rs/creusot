@@ -191,7 +191,7 @@ pub mod well_founded;
 mod base_prelude {
     pub use crate::{
         logic::{IndexLogic as _, Int, OrdLogic, Seq},
-        model::{DeepModel, ShallowModel},
+        model::{EqModel, View},
         resolve::Resolve,
         snapshot::Snapshot,
         std::{

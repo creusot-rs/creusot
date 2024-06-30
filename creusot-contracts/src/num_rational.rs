@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{logic, open, pearlite, trusted, DeepModel, Int, OrdLogic};
+use crate::{logic, open, pearlite, trusted, EqModel, Int, OrdLogic};
 use num_rational::BigRational;
 use std::cmp::Ordering;
 
@@ -9,13 +9,13 @@ use std::cmp::Ordering;
 pub struct Real(PhantomData<*mut ()>);
 
 #[cfg(creusot)]
-impl DeepModel for BigRational {
-    type DeepModelTy = Real;
+impl EqModel for BigRational {
+    type EqModelTy = Real;
 
     #[logic]
     #[open(self)]
     #[trusted]
-    fn deep_model(self) -> Self::DeepModelTy {
+    fn eq_model(self) -> Self::EqModelTy {
         absurd
     }
 }

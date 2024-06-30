@@ -17,15 +17,15 @@ fn sorted<T: OrdLogic>(s: Seq<T>) -> bool {
     sorted_range(s, 0, s.len())
 }
 
-#[ensures(sorted((^v).deep_model()))]
+#[ensures(sorted((^v).eq_model()))]
 #[ensures((^v)@.permutation_of(v@))]
-pub fn gnome_sort<T: Ord + DeepModel>(v: &mut Vec<T>)
+pub fn gnome_sort<T: Ord + EqModel>(v: &mut Vec<T>)
 where
-    T::DeepModelTy: OrdLogic,
+    T::EqModelTy: OrdLogic,
 {
     let old_v = snapshot! { v };
     let mut i = 0;
-    #[invariant(sorted_range(v.deep_model(), 0, i@))]
+    #[invariant(sorted_range(v.eq_model(), 0, i@))]
     #[invariant(v@.permutation_of(old_v@))]
     #[invariant(^v == ^*old_v)]
     while i < v.len() {

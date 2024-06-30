@@ -7,8 +7,8 @@ use crate::{
 };
 pub use ::std::slice::*;
 
-impl<T> ShallowModel for [T] {
-    type ShallowModelTy = Seq<T>;
+impl<T> View for [T] {
+    type ViewTy = Seq<T>;
 
     // We define this as trusted because builtins and ensures are incompatible
     #[logic]
@@ -16,20 +16,20 @@ impl<T> ShallowModel for [T] {
     #[trusted]
     #[ensures(result.len() <= usize::MAX@)]
     #[ensures(result == slice_model(&self))]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { absurd }
     }
 }
 
-impl<T: DeepModel> DeepModel for [T] {
-    type DeepModelTy = Seq<T::DeepModelTy>;
+impl<T: EqModel> EqModel for [T] {
+    type EqModelTy = Seq<T::EqModelTy>;
 
     #[logic]
     #[open(self)]
     #[trusted]
     #[ensures((&self)@.len() == result.len())]
-    #[ensures(forall<i: Int> 0 <= i && i < result.len() ==> result[i] == (&self)[i].deep_model())]
-    fn deep_model(self) -> Self::DeepModelTy {
+    #[ensures(forall<i: Int> 0 <= i && i < result.len() ==> result[i] == (&self)[i].eq_model())]
+    fn eq_model(self) -> Self::EqModelTy {
         pearlite! { absurd }
     }
 }
@@ -95,16 +95,16 @@ impl<T> SliceExt<T> for [T] {
 
 pub trait SliceIndex<T: ?Sized>: ::std::slice::SliceIndex<T>
 where
-    T: ShallowModel,
+    T: View,
 {
     #[predicate]
-    fn in_bounds(self, seq: T::ShallowModelTy) -> bool;
+    fn in_bounds(self, seq: T::ViewTy) -> bool;
 
     #[predicate]
-    fn has_value(self, seq: T::ShallowModelTy, out: Self::Output) -> bool;
+    fn has_value(self, seq: T::ViewTy, out: Self::Output) -> bool;
 
     #[predicate]
-    fn resolve_elswhere(self, old: T::ShallowModelTy, fin: T::ShallowModelTy) -> bool;
+    fn resolve_elswhere(self, old: T::ViewTy, fin: T::ViewTy) -> bool;
 }
 
 impl<T> SliceIndex<[T]> for usize {
@@ -310,16 +310,16 @@ extern_spec! {
         fn first(&self) -> Option<&T>;
 
 
-        #[requires(self.deep_model().sorted())]
-        #[ensures(forall<i:usize> result == Ok(i) ==> i@ < self@.len() && (*self).deep_model()[i@] == x.deep_model())]
+        #[requires(self.eq_model().sorted())]
+        #[ensures(forall<i:usize> result == Ok(i) ==> i@ < self@.len() && (*self).eq_model()[i@] == x.eq_model())]
         #[ensures(forall<i:usize> result == Err(i) ==> i@ <= self@.len() &&
-            forall<j : _> 0 <= j && j < self@.len() ==> self.deep_model()[j] != x.deep_model())]
+            forall<j : _> 0 <= j && j < self@.len() ==> self.eq_model()[j] != x.eq_model())]
         #[ensures(forall<i:usize> result == Err(i) ==>
-            forall<j:usize> j < i ==> self.deep_model()[j@] < x.deep_model())]
+            forall<j:usize> j < i ==> self.eq_model()[j@] < x.eq_model())]
         #[ensures(forall<i:usize> result == Err(i) ==>
-            forall<j:usize> i <= j && j@ < self@.len() ==> x.deep_model() < self.deep_model()[j@])]
+            forall<j:usize> i <= j && j@ < self@.len() ==> x.eq_model() < self.eq_model()[j@])]
         fn binary_search(&self, x : &T) -> Result<usize, usize>
-            where T: Ord + DeepModel,  T::DeepModelTy: OrdLogic,;
+            where T: Ord + EqModel,  T::EqModelTy: OrdLogic,;
 
         #[terminates] // can OOM (?)
         #[ensures(result@ == self_@)]
@@ -374,13 +374,13 @@ impl<T> IntoIterator for &mut [T] {
     }
 }
 
-impl<'a, T> ShallowModel for Iter<'a, T> {
-    type ShallowModelTy = &'a [T];
+impl<'a, T> View for Iter<'a, T> {
+    type ViewTy = &'a [T];
 
     #[logic]
     #[open(self)]
     #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         absurd
     }
 }
@@ -413,14 +413,14 @@ impl<'a, T> Iterator for Iter<'a, T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-impl<'a, T> ShallowModel for IterMut<'a, T> {
-    type ShallowModelTy = &'a mut [T];
+impl<'a, T> View for IterMut<'a, T> {
+    type ViewTy = &'a mut [T];
 
     #[logic]
     #[open(self)]
     #[trusted]
     #[ensures((^result)@.len() == (*result)@.len())]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         absurd
     }
 }

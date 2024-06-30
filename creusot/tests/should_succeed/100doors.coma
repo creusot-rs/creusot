@@ -225,15 +225,15 @@ module C100doors_F
   let rec inv'2 (_x:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = inv'2 _x} (! return' {result}) ]
     
-  function shallow_model'0 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) : Seq.seq bool
-  let rec shallow_model'0 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq bool))= {[@expl:precondition] [#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv'2 self}
-    any [ return' (result:Seq.seq bool)-> {result = shallow_model'0 self} (! return' {result}) ] 
-  axiom shallow_model'0_spec : forall self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv'2 self)
-   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv'3 (shallow_model'0 self))
-  && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model'0 self)
+  function view'0 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) : Seq.seq bool
+  let rec view'0 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq bool))= {[@expl:precondition] [#"../../../../creusot-contracts/src/std/vec.rs" 19 12 19 16] inv'2 self}
+    any [ return' (result:Seq.seq bool)-> {result = view'0 self} (! return' {result}) ] 
+  axiom view'0_spec : forall self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 12 19 16] inv'2 self)
+   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 27] inv'3 (view'0 self))
+  && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (view'0 self)
   <= UIntSize.to_int (max'0 : usize))
   predicate invariant'2 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv'3 (shallow_model'0 self)
+    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv'3 (view'0 self)
   let rec invariant'2 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = invariant'2 self} (! return' {result}) ]
     
@@ -256,24 +256,23 @@ module C100doors_F
   use prelude.Int
   use seq.Seq
   use seq.Seq
-  function deep_model'0 (self : usize) : int =
+  function eq_model'0 (self : usize) : int =
     [#"../../../../creusot-contracts/src/std/num.rs" 22 16 22 35] UIntSize.to_int self
-  let rec deep_model'0 (self:usize) (return'  (ret:int))= any
-    [ return' (result:int)-> {result = deep_model'0 self} (! return' {result}) ]
+  let rec eq_model'0 (self:usize) (return'  (ret:int))= any
+    [ return' (result:int)-> {result = eq_model'0 self} (! return' {result}) ]
     
   predicate produces'0 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize)
     
    =
     [#"../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self
     = Core_Ops_Range_Range_Type.range_end o
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
-    <= deep_model'0 (Core_Ops_Range_Range_Type.range_start o)
+    /\ eq_model'0 (Core_Ops_Range_Range_Type.range_start self) <= eq_model'0 (Core_Ops_Range_Range_Type.range_start o)
     /\ (Seq.length visited > 0
-     -> deep_model'0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model'0 (Core_Ops_Range_Range_Type.range_end o))
+     -> eq_model'0 (Core_Ops_Range_Range_Type.range_start o) <= eq_model'0 (Core_Ops_Range_Range_Type.range_end o))
     /\ Seq.length visited
-    = deep_model'0 (Core_Ops_Range_Range_Type.range_start o) - deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
+    = eq_model'0 (Core_Ops_Range_Range_Type.range_start o) - eq_model'0 (Core_Ops_Range_Range_Type.range_start self)
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> deep_model'0 (Seq.get visited i) = deep_model'0 (Core_Ops_Range_Range_Type.range_start self) + i)
+     -> eq_model'0 (Seq.get visited i) = eq_model'0 (Core_Ops_Range_Range_Type.range_start self) + i)
   let rec produces'0 (self:Core_Ops_Range_Range_Type.t_range usize) (visited:Seq.seq usize) (o:Core_Ops_Range_Range_Type.t_range usize) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = produces'0 self visited o} (! return' {result}) ]
     
@@ -317,13 +316,13 @@ module C100doors_F
   function index_logic'0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (ix : int) : bool
     
    =
-    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model'0 self) ix
+    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (view'0 self) ix
   let rec index_logic'0 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = index_logic'0 self ix} (! return' {result}) ]
     
   predicate resolve'2 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i
-    /\ i < Seq.length (shallow_model'0 self)  -> resolve'3 (index_logic'0 self i)
+    [#"../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i /\ i < Seq.length (view'0 self)
+     -> resolve'3 (index_logic'0 self i)
   let rec resolve'2 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = resolve'2 self} (! return' {result}) ]
     
@@ -349,36 +348,34 @@ module C100doors_F
   let rec in_bounds'0 (self:usize) (seq:Seq.seq bool) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = in_bounds'0 self seq} (! return' {result}) ]
     
-  function shallow_model'2 (self : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) : Seq.seq bool
-    
-   =
-    [#"../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model'0 ( * self)
-  let rec shallow_model'2 (self:borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq bool))= any
-    [ return' (result:Seq.seq bool)-> {result = shallow_model'2 self} (! return' {result}) ]
+  function view'2 (self : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) : Seq.seq bool =
+    [#"../../../../creusot-contracts/src/model.rs" 108 8 108 22] view'0 ( * self)
+  let rec view'2 (self:borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq bool))= any
+    [ return' (result:Seq.seq bool)-> {result = view'2 self} (! return' {result}) ]
     
   let rec index_mut'0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) (index:usize) (return'  (ret:borrowed bool))= {[@expl:precondition] inv'7 index}
     {[@expl:precondition] inv'9 self}
-    {[@expl:precondition] [#"../../../../creusot-contracts/src/std/vec.rs" 146 27 146 46] in_bounds'0 index (shallow_model'2 self)}
+    {[@expl:precondition] [#"../../../../creusot-contracts/src/std/vec.rs" 146 27 146 46] in_bounds'0 index (view'2 self)}
     any
     [ return' (result:borrowed bool)-> {inv'10 result}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 150 26 150 55] Seq.length (shallow_model'0 ( ^ self))
-      = Seq.length (shallow_model'2 self)}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 149 26 149 62] resolve_elswhere'0 index (shallow_model'2 self) (shallow_model'0 ( ^ self))}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 148 26 148 57] has_value'0 index (shallow_model'0 ( ^ self)) ( ^ result)}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 147 26 147 54] has_value'0 index (shallow_model'2 self) ( * result)}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 150 26 150 55] Seq.length (view'0 ( ^ self))
+      = Seq.length (view'2 self)}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 149 26 149 62] resolve_elswhere'0 index (view'2 self) (view'0 ( ^ self))}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 148 26 148 57] has_value'0 index (view'0 ( ^ self)) ( ^ result)}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 147 26 147 54] has_value'0 index (view'2 self) ( * result)}
       (! return' {result}) ]
     
-  function shallow_model'1 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) : Seq.seq bool =
-    [#"../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model'0 self
-  let rec shallow_model'1 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq bool))= any
-    [ return' (result:Seq.seq bool)-> {result = shallow_model'1 self} (! return' {result}) ]
+  function view'1 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) : Seq.seq bool =
+    [#"../../../../creusot-contracts/src/model.rs" 90 8 90 22] view'0 self
+  let rec view'1 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq bool))= any
+    [ return' (result:Seq.seq bool)-> {result = view'1 self} (! return' {result}) ]
     
   let rec index'0 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (index:usize) (return'  (ret:bool))= {[@expl:precondition] inv'7 index}
     {[@expl:precondition] inv'6 self}
-    {[@expl:precondition] [#"../../../../creusot-contracts/src/std/vec.rs" 156 27 156 46] in_bounds'0 index (shallow_model'1 self)}
+    {[@expl:precondition] [#"../../../../creusot-contracts/src/std/vec.rs" 156 27 156 46] in_bounds'0 index (view'1 self)}
     any
     [ return' (result:bool)-> {inv'8 result}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 157 26 157 54] has_value'0 index (shallow_model'1 self) result}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 157 26 157 54] has_value'0 index (view'1 self) result}
       (! return' {result}) ]
     
   use seq.Seq
@@ -388,9 +385,9 @@ module C100doors_F
     [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
     
   predicate completed'0 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve'0 self
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start ( * self))
-    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end ( * self))
+    [#"../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 74] resolve'0 self
+    /\ eq_model'0 (Core_Ops_Range_Range_Type.range_start ( * self))
+    >= eq_model'0 (Core_Ops_Range_Range_Type.range_end ( * self))
   let rec completed'0 (self:borrowed (Core_Ops_Range_Range_Type.t_range usize)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = completed'0 self} (! return' {result}) ]
     
@@ -432,8 +429,7 @@ module C100doors_F
     [ return' (result:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))-> {inv'2 result}
       {[#"../../../../creusot-contracts/src/std/vec.rs" 175 12 175 78] forall i : int . 0 <= i /\ i < UIntSize.to_int n
        -> index_logic'0 result i = elem}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 174 22 174 41] Seq.length (shallow_model'0 result)
-      = UIntSize.to_int n}
+      {[#"../../../../creusot-contracts/src/std/vec.rs" 174 22 174 41] Seq.length (view'0 result) = UIntSize.to_int n}
       (! return' {result}) ]
     
   let rec f (_1:()) (return'  (ret:()))= (! bb0
@@ -467,7 +463,7 @@ module C100doors_F
     | bb4 = s0 [ s0 = bb5 ] 
     | bb5 = s0 [ s0 = bb6 ] 
     | bb6 = bb6
-      [ bb6 = {[@expl:loop invariant] [#"../100doors.rs" 20 16 20 39] Seq.length (shallow_model'0 door_open) = 100}
+      [ bb6 = {[@expl:loop invariant] [#"../100doors.rs" 20 16 20 39] Seq.length (view'0 door_open) = 100}
         {[@expl:loop invariant] [#"../100doors.rs" 20 4 20 41] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
         {[@expl:loop invariant] [#"../100doors.rs" 20 4 20 41] inv'0 iter}
         (! s0) [ s0 = bb7 ] 
@@ -511,7 +507,7 @@ module C100doors_F
           
         | bb14 = s0 [ s0 = bb15 ] 
         | bb15 = bb15
-          [ bb15 = {[@expl:loop invariant] [#"../100doors.rs" 24 20 24 43] Seq.length (shallow_model'0 door_open) = 100}
+          [ bb15 = {[@expl:loop invariant] [#"../100doors.rs" 24 20 24 43] Seq.length (view'0 door_open) = 100}
             {[@expl:loop invariant] [#"../100doors.rs" 23 20 23 54] 1 <= UIntSize.to_int door
             /\ UIntSize.to_int door <= 100 + UIntSize.to_int pass}
             (! s0) [ s0 = bb16 ] 

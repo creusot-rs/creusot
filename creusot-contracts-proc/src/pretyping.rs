@@ -137,9 +137,9 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         RT::Let(_) => Err(EncodeError::Unsupported(term.span(), "Let".into())),
         RT::Lit(TermLit { ref lit }) => match lit {
             // FIXME: allow unbounded integers
-            Lit::Int(int) if int.suffix() == "" => Ok(
-                quote_spanned! {sp=> ::creusot_contracts::model::ShallowModel::shallow_model(#lit as i128) },
-            ),
+            Lit::Int(int) if int.suffix() == "" => {
+                Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) })
+            }
             _ => Ok(quote_spanned! {sp=> #lit }),
         },
         RT::Match(TermMatch { expr, arms, .. }) => {
@@ -223,7 +223,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             };
             let term = encode_term(term)?;
             Ok(quote! {
-                ::creusot_contracts::model::ShallowModel::shallow_model(#term)
+                ::creusot_contracts::model::View::view(#term)
             })
         }
         RT::Verbatim(_) => todo!(),

@@ -6,126 +6,126 @@ use crate::*;
 /// structure. This kind of model is mostly useful for notation purposes,
 /// because this trait is linked to the @ notation of pearlite.
 /// Models of inner types are typically not involved.
-pub trait ShallowModel {
-    type ShallowModelTy;
+pub trait View {
+    type ViewTy;
     #[logic]
-    fn shallow_model(self) -> Self::ShallowModelTy;
+    fn view(self) -> Self::ViewTy;
 }
 
-pub use crate::base_macros::DeepModel;
+pub use crate::base_macros::EqModel;
 
 /// The deep model corresponds to the model used for specifying
 /// operations such as equality, hash function or ordering, which are
 /// computed deeply in a data structure.
 /// Typically, such a model recursively calls deep models of inner types.
-pub trait DeepModel {
-    type DeepModelTy;
+pub trait EqModel {
+    type EqModelTy;
     #[logic]
-    fn deep_model(self) -> Self::DeepModelTy;
+    fn eq_model(self) -> Self::EqModelTy;
 }
 
-impl<T: DeepModel> DeepModel for Rc<T> {
-    type DeepModelTy = T::DeepModelTy;
+impl<T: EqModel> EqModel for Rc<T> {
+    type EqModelTy = T::EqModelTy;
     #[logic]
     #[open]
-    fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { self.shallow_model().deep_model() }
+    fn eq_model(self) -> Self::EqModelTy {
+        pearlite! { self.view().eq_model() }
     }
 }
 
-impl<T> ShallowModel for Rc<T> {
-    type ShallowModelTy = T;
+impl<T> View for Rc<T> {
+    type ViewTy = T;
     #[logic]
     #[open]
     #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { absurd }
     }
 }
 
-impl ShallowModel for str {
-    type ShallowModelTy = Seq<char>;
+impl View for str {
+    type ViewTy = Seq<char>;
 
     #[logic]
     #[open]
     #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { absurd }
     }
 }
 
-impl<T: DeepModel> DeepModel for Arc<T> {
-    type DeepModelTy = T::DeepModelTy;
+impl<T: EqModel> EqModel for Arc<T> {
+    type EqModelTy = T::EqModelTy;
     #[logic]
     #[open]
-    fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { self@.deep_model() }
+    fn eq_model(self) -> Self::EqModelTy {
+        pearlite! { self@.eq_model() }
     }
 }
 
-impl<T> ShallowModel for Arc<T> {
-    type ShallowModelTy = T;
+impl<T> View for Arc<T> {
+    type ViewTy = T;
     #[logic]
     #[open]
     #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { absurd }
     }
 }
 
-impl<T: DeepModel + ?Sized> DeepModel for &T {
-    type DeepModelTy = T::DeepModelTy;
+impl<T: EqModel + ?Sized> EqModel for &T {
+    type EqModelTy = T::EqModelTy;
     #[logic]
     #[open]
-    fn deep_model(self) -> Self::DeepModelTy {
-        (*self).deep_model()
+    fn eq_model(self) -> Self::EqModelTy {
+        (*self).eq_model()
     }
 }
 
-impl<T: ShallowModel + ?Sized> ShallowModel for &T {
-    type ShallowModelTy = T::ShallowModelTy;
+impl<T: View + ?Sized> View for &T {
+    type ViewTy = T::ViewTy;
     #[logic]
     #[open]
-    fn shallow_model(self) -> Self::ShallowModelTy {
-        (*self).shallow_model()
+    fn view(self) -> Self::ViewTy {
+        (*self).view()
     }
 }
 
-impl<T: DeepModel + ?Sized> DeepModel for &mut T {
-    type DeepModelTy = T::DeepModelTy;
+impl<T: EqModel + ?Sized> EqModel for &mut T {
+    type EqModelTy = T::EqModelTy;
     #[logic]
     #[open]
-    fn deep_model(self) -> Self::DeepModelTy {
-        (*self).deep_model()
+    fn eq_model(self) -> Self::EqModelTy {
+        (*self).eq_model()
     }
 }
 
-impl<T: ShallowModel + ?Sized> ShallowModel for &mut T {
-    type ShallowModelTy = T::ShallowModelTy;
+impl<T: View + ?Sized> View for &mut T {
+    type ViewTy = T::ViewTy;
     #[logic]
     #[open]
-    fn shallow_model(self) -> Self::ShallowModelTy {
-        (*self).shallow_model()
+    fn view(self) -> Self::ViewTy {
+        (*self).view()
     }
 }
 
-impl DeepModel for bool {
-    type DeepModelTy = bool;
+impl EqModel for bool {
+    type EqModelTy = bool;
 
     #[logic]
     #[open]
-    fn deep_model(self) -> Self::DeepModelTy {
+    fn eq_model(self) -> Self::EqModelTy {
         self
     }
 }
 
-impl ShallowModel for String {
-    type ShallowModelTy = Seq<char>;
+impl View for String {
+    type ViewTy = Seq<char>;
 
     #[logic]
     #[open(self)]
     #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { absurd }
     }
 }
