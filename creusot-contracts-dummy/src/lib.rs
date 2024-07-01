@@ -35,7 +35,12 @@ pub fn snapshot(_: TS1) -> TS1 {
 
 #[proc_macro]
 pub fn ghost(_: TS1) -> TS1 {
-    quote::quote! { creusot_contracts::ghost::Ghost::from_fn(|| std::process::abort()) }.into()
+    quote::quote! { () }.into()
+}
+
+#[proc_macro]
+pub fn gh(_: TS1) -> TS1 {
+    quote::quote! { creusot_contracts::ghost::GhostBox::from_fn(|| std::process::abort())}.into()
 }
 
 #[proc_macro_attribute]

@@ -34,7 +34,25 @@ mod macros {
     /// A post-condition of a function or trait item
     pub use base_macros::ensures;
 
-    pub use base_macros::{ghost, snapshot};
+    pub use base_macros::snapshot;
+
+    /// Opens a 'ghost block'.
+    ///
+    /// Ghost blocks are used to execute ghost code: code that will be erased in the
+    /// normal execution of the program, but could influence the proof.
+    ///
+    /// Note that ghost blocks are subject to some constraints, that ensure the behavior
+    /// of the code stays the same with and without ghost blocks:
+    /// - They may not contain code that crashes or runs indefinitely. In other words,
+    /// they can only call [`pure`] functions.
+    /// - All variables that enter the ghost blocks must either be [`Copy`], or a
+    ///  [`GhostBox`](crate::ghost::GhostBox).
+    /// - The variable returned by the ghost block must be of type `()` or
+    /// [`GhostBox`](crate::ghost::GhostBox).
+    pub use base_macros::ghost;
+
+    /// Shorthand for `ghost!{ GhostBox::new(...) }`.
+    pub use base_macros::gh;
 
     /// Indicate that the function terminates: fullfilling the `requires` clauses
     /// ensures that this function will not loop indefinitively.
