@@ -57,6 +57,7 @@ impl<T: ShallowModel + ?Sized> ShallowModel for GhostBox<T> {
 }
 
 impl<T> GhostBox<T> {
+    #[rustc_diagnostic_item = "ghost_box_new"]
     #[trusted]
     #[pure]
     #[ensures(*result == x)]

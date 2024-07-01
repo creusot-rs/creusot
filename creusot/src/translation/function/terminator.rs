@@ -186,7 +186,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx, '_> {
                         // current function around.
                         let func_param_env = self.tcx.param_env(fun_def_id);
 
-                        // Check that we do not dereference a ghost variable in normal code.
+                        // Check that we do not create/dereference a ghost variable in normal code.
                         if self.tcx.is_diagnostic_item(Symbol::intern("deref_method"), fun_def_id) {
                             let GenericArgKind::Type(ty) = subst.get(0).unwrap().unpack() else {
                                 unreachable!()
@@ -197,8 +197,44 @@ impl<'tcx> BodyTranslator<'_, 'tcx, '_> {
                                         *fn_span,
                                         "dereference of a ghost variable in program context",
                                     )
+                                    .with_span_suggestion(
+                                        *fn_span,
+                                        "try wrapping this expression in a ghost block",
+                                        format!(
+                                            "ghost!{{ {} }}",
+                                            self.ctx
+                                                .sess
+                                                .source_map()
+                                                .span_to_snippet(*fn_span)
+                                                .unwrap()
+                                        ),
+                                        rustc_errors::Applicability::MachineApplicable,
+                                    )
                                     .emit();
                             }
+                        } else if self
+                            .tcx
+                            .is_diagnostic_item(Symbol::intern("ghost_box_new"), fun_def_id)
+                        {
+                            self.ctx
+                                .error(
+                                    *fn_span,
+                                    "cannot create a ghost variable in program context",
+                                )
+                                .with_span_suggestion(
+                                    *fn_span,
+                                    "try wrapping this expression in a ghost block",
+                                    format!(
+                                        "ghost!{{ {} }}",
+                                        self.ctx
+                                            .sess
+                                            .source_map()
+                                            .span_to_snippet(*fn_span)
+                                            .unwrap()
+                                    ),
+                                    rustc_errors::Applicability::MachineApplicable,
+                                )
+                                .emit();
                         } else {
                             // Check and reject instantiation of a <T: Deref> with a ghost parameter.
                             let deref_trait_id =
