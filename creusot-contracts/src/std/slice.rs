@@ -36,7 +36,7 @@ impl<T: DeepModel> DeepModel for [T] {
 
 #[logic]
 #[trusted]
-#[creusot::builtins = "prelude.Slice.id"]
+#[creusot::builtins = "prelude.prelude.Slice.id"]
 fn slice_model<T>(_: &[T]) -> Seq<T> {
     pearlite! { absurd }
 }

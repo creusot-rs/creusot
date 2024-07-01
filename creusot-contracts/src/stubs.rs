@@ -64,7 +64,7 @@ pub fn snapshot_from_fn<T: ?Sized, F: Fn() -> crate::Snapshot<T>>(_: F) -> crate
 }
 
 #[creusot::no_translate]
-#[creusot::builtins = "prelude.Mapping.from_fn"]
+#[creusot::builtins = "prelude.prelude.Mapping.from_fn"]
 pub fn mapping_from_fn<A, B, F: FnOnce(A) -> B>(_: F) -> crate::logic::Mapping<A, B> {
     panic!()
 }

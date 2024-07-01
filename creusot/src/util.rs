@@ -88,7 +88,7 @@ pub(crate) fn is_snap_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     let r: Option<bool> = try {
         let adt = ty.ty_adt_def()?;
         let builtin = get_builtin(tcx, adt.did())?;
-        builtin.as_str() == "prelude.Snapshot.snap_ty"
+        builtin.as_str() == "prelude.prelude.Snapshot.snap_ty"
     };
     r.unwrap_or(false)
 }
