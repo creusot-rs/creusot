@@ -1,4 +1,4 @@
-use super::BodyTranslator;
+use super::{BodyId, BodyTranslator};
 use crate::{
     ctx::TranslationCtx,
     fmir,
@@ -18,12 +18,16 @@ use rustc_infer::{
 use rustc_middle::{
     mir::{
         self, AssertKind, BasicBlock, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo,
-        StatementKind, SwitchTargets, TerminatorKind, TerminatorKind::*,
+        StatementKind, SwitchTargets,
+        TerminatorKind::{self, *},
     },
     ty::{self, GenericArgKind, GenericArgsRef, ParamEnv, Predicate, Ty, TyKind},
 };
 use rustc_span::{Span, Symbol};
-use rustc_trait_selection::traits::{error_reporting::TypeErrCtxtExt, TraitEngineExt};
+use rustc_trait_selection::{
+    infer::InferCtxtExt,
+    traits::{error_reporting::TypeErrCtxtExt, TraitEngineExt},
+};
 use std::collections::HashMap;
 
 // Translate the terminator of a basic block.
@@ -32,7 +36,7 @@ use std::collections::HashMap;
 // rather than switching on discriminant since WhyML doesn't have integer
 // patterns in match expressions.
 
-impl<'tcx> BodyTranslator<'_, 'tcx> {
+impl<'tcx> BodyTranslator<'_, 'tcx, '_> {
     pub(crate) fn translate_terminator(
         &mut self,
         terminator: &mir::Terminator<'tcx>,
@@ -40,7 +44,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
     ) {
         let span = terminator.source_info.span;
         match &terminator.kind {
-            Goto { target } => self.emit_terminator(mk_goto(*target)),
+            Goto { target } => self.emit_goto(*target),
             SwitchInt { discr, targets, .. } => {
                 let real_discr = discriminator_for_switch(&self.body.basic_blocks[location.block])
                     .map(Operand::Move)
@@ -60,9 +64,23 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             UnwindTerminate(_) => {
                 self.emit_terminator(Terminator::Abort(terminator.source_info.span))
             }
-            Return => self.emit_terminator(Terminator::Return),
+            Return => {
+                if let Some((bb, dest_place)) = self.ghost_closure_return.clone() {
+                    let return_value =
+                        self.translate_operand(&Operand::Move(Place::return_place()));
+                    self.emit_statement(fmir::Statement::Assignment(
+                        dest_place,
+                        RValue::Operand(return_value),
+                        span,
+                    ));
+                    assert!(self.current_block.1.is_none());
+                    self.current_block.1 = Some(fmir::Terminator::Goto(bb))
+                } else {
+                    self.emit_terminator(Terminator::Return)
+                }
+            }
             Unreachable => self.emit_terminator(Terminator::Abort(terminator.source_info.span)),
-            Call { func, args, destination, target, .. } => {
+            Call { func, args, destination, target, fn_span, .. } => {
                 if target.is_none() {
                     // If we have no target block after the call, then we cannot move past it.
                     self.emit_terminator(Terminator::Abort(terminator.source_info.span));
@@ -71,14 +89,157 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
                 if self.tcx.is_diagnostic_item(Symbol::intern("snapshot_from_fn"), fun_def_id) {
-                    let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() else { panic!() };
-                    let TyKind::Closure(def_id, _) = ty.kind() else { panic!() };
+                    let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() else {
+                        unreachable!()
+                    };
+                    let TyKind::Closure(def_id, _) = ty.kind() else { unreachable!() };
                     let mut assertion = self.snapshots.remove(def_id).unwrap();
                     assertion.subst(&inv_subst(self.body, &self.locals, terminator.source_info));
                     self.check_ghost_term(&assertion, location);
                     self.emit_ghost_assign(*destination, assertion, span);
-                    self.emit_terminator(Terminator::Goto(target.unwrap()));
+                    self.emit_goto(target.unwrap());
                     return;
+                }
+
+                if self.tcx.is_diagnostic_item(Symbol::intern("ghost_from_fn"), fun_def_id) {
+                    let &[return_ty, ty] = subst.as_slice() else {
+                        unreachable!();
+                    };
+                    let GenericArgKind::Type(return_ty) = return_ty.unpack() else {
+                        unreachable!()
+                    };
+                    let GenericArgKind::Type(ty) = ty.unpack() else { unreachable!() };
+                    let TyKind::Closure(def_id, _) = ty.kind() else { unreachable!() };
+                    debug_assert!(self.ghosts.remove(def_id));
+
+                    // Check that all captures are `GhostBox`s
+                    let param_env = self.tcx.param_env(def_id);
+                    let captures = self.ctx.closure_captures(def_id.expect_local());
+                    for capture in captures.into_iter().rev() {
+                        let copy_allowed = match capture.info.capture_kind {
+                            ty::UpvarCapture::ByRef(
+                                ty::BorrowKind::MutBorrow | ty::BorrowKind::UniqueImmBorrow,
+                            ) => false,
+                            _ => true,
+                        };
+                        let place_ty = capture.place.ty();
+
+                        let is_ghost = self.is_ghost_box(place_ty);
+                        let is_copy =
+                            copy_allowed && place_ty.is_copy_modulo_regions(self.tcx, param_env);
+
+                        if !is_ghost && !is_copy {
+                            let mut error = self.ctx.error(
+                                capture.get_path_span(self.tcx),
+                                &format!("not a ghost variable: {}", capture.var_ident.as_str()),
+                            );
+                            error.span_note(
+                                capture.var_ident.span,
+                                String::from("variable defined here"),
+                            );
+                            error.emit();
+                        }
+                    }
+
+                    // Check that the return type is either `GhostBox` or unit
+                    let is_unit = match return_ty.kind() {
+                        rustc_type_ir::TyKind::Tuple(tys) => tys.is_empty(),
+                        _ => false,
+                    };
+                    if !self.is_ghost_box(return_ty) && !is_unit {
+                        let mut error = self.ctx.error(
+                            *fn_span,
+                            "the return type of a ghost! block should be either () or a GhostBox",
+                        );
+                        error.span_note(*fn_span, format!("return type is {}", return_ty));
+                        error.emit();
+                    }
+
+                    // Inlines the ghost closure's body
+
+                    // FIXME: wrap the return type in `GhostBox` automatically ?
+                    //        This is hard to do while keeping unit...
+
+                    let ghost_closure_expr = self.translate_operand(&args[0].node);
+                    let ghost_body_id = BodyId { def_id: def_id.expect_local(), promoted: None };
+                    let ghost_body = self.ctx.body(ghost_body_id).clone();
+                    let ghost_return = Some((target.unwrap(), self.translate_place(*destination)));
+
+                    let mut new_translator = BodyTranslator::build_context(
+                        self.ctx.tcx,
+                        self.ctx,
+                        &ghost_body,
+                        ghost_body_id,
+                        self.vars,
+                        self.fresh_id,
+                        self.past_blocks,
+                        ghost_return,
+                        *self.fresh_id,
+                    );
+                    let entry_point = BasicBlock::from_usize(*new_translator.fresh_id);
+                    *new_translator.fresh_id += ghost_body.basic_blocks.len();
+
+                    // TODO: Use the `destination` place variable rather than `_0`
+                    new_translator.translate_body();
+                    let ghost_closure_arg = new_translator.ghost_closure_arg.unwrap();
+                    // TODO: Use `ghost_closure_expr` directly in the closure's translation
+                    self.emit_statement(fmir::Statement::Assignment(
+                        fmir::Place { local: ghost_closure_arg, projection: Vec::new() },
+                        RValue::Operand(ghost_closure_expr),
+                        span,
+                    ));
+                    self.emit_goto(entry_point);
+
+                    return;
+                }
+
+                if self.ghost_closure_arg.is_none() {
+                    // We are indeed in program code.
+                    // TODO: this check is pretty bad, we should probably keep the purity of the
+                    // current function around.
+                    let func_param_env = self.tcx.param_env(fun_def_id);
+
+                    // Check that we do not dereference a ghost variable in normal code.
+                    if self.tcx.is_diagnostic_item(Symbol::intern("deref_method"), fun_def_id) {
+                        let GenericArgKind::Type(ty) = subst.get(0).unwrap().unpack() else {
+                            unreachable!()
+                        };
+                        if self.is_ghost_box(ty) {
+                            self.ctx
+                                .error(
+                                    *fn_span,
+                                    "dereference of a ghost variable in program context",
+                                )
+                                .emit();
+                        }
+                    } else {
+                        // Check and reject instantiation of a <T: Deref> with a ghost parameter.
+                        let deref_trait_id =
+                            self.tcx.get_diagnostic_item(Symbol::intern("Deref")).unwrap();
+                        let infer_ctx = self.tcx.infer_ctxt().build();
+                        for bound in func_param_env.caller_bounds() {
+                            let Some(trait_clause) = bound.as_trait_clause() else { continue };
+                            if trait_clause.def_id() != deref_trait_id {
+                                continue;
+                            }
+                            let ty = trait_clause.self_ty().skip_binder();
+                            let caller_ty = ty::EarlyBinder::bind(trait_clause.self_ty())
+                                .instantiate(self.tcx, subst)
+                                .skip_binder();
+                            let deref_in_callee = infer_ctx
+                                .type_implements_trait(
+                                    deref_trait_id,
+                                    std::iter::once(ty),
+                                    func_param_env,
+                                )
+                                .may_apply();
+                            let ghost_in_caller = self.is_ghost_box(caller_ty);
+                            let ghost_in_callee = self.is_ghost_box(ty);
+                            if deref_in_callee && ghost_in_caller && !ghost_in_callee {
+                                self.ctx.error(*fn_span, &format!("Cannot instantiate a generic type {ty} implementing `Deref` with the ghost type {caller_ty}")).emit();
+                            }
+                        }
+                    }
                 }
 
                 let predicates = self
@@ -129,7 +290,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     ));
                 };
 
-                self.emit_terminator(Terminator::Goto(bb));
+                self.emit_goto(bb);
             }
             Assert { cond, expected, msg, target, unwind: _ } => {
                 let msg = self.get_explanation(msg);
@@ -157,16 +318,14 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     };
                 }
                 self.emit_statement(Statement::Assertion { cond, msg });
-                self.emit_terminator(mk_goto(*target))
+                self.emit_goto(*target)
             }
 
-            FalseEdge { real_target, .. } => self.emit_terminator(mk_goto(*real_target)),
+            FalseEdge { real_target, .. } => self.emit_goto(*real_target),
 
             // TODO: Do we really need to do anything more?
-            Drop { target, .. } => self.emit_terminator(mk_goto(*target)),
-            FalseUnwind { real_target, .. } => {
-                self.emit_terminator(mk_goto(*real_target));
-            }
+            Drop { target, .. } => self.emit_goto(*target),
+            FalseUnwind { real_target, .. } => self.emit_goto(*real_target),
             CoroutineDrop | UnwindResume | Yield { .. } | InlineAsm { .. } => {
                 unreachable!("{:?}", terminator.kind)
             }
@@ -175,6 +334,15 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
     fn is_box_new(&self, def_id: DefId) -> bool {
         self.tcx.def_path_str(def_id) == "std::boxed::Box::<T>::new"
+    }
+
+    /// Determine if the given type `ty` is a `GhostBox`.
+    fn is_ghost_box(&self, ty: Ty<'tcx>) -> bool {
+        let ghost_box_id = self.tcx.get_diagnostic_item(Symbol::intern("ghost_box")).unwrap();
+        match ty.kind() {
+            rustc_type_ir::TyKind::Adt(containing_type, _) => containing_type.did() == ghost_box_id,
+            _ => false,
+        }
     }
 
     fn get_explanation(&mut self, msg: &mir::AssertKind<Operand<'tcx>>) -> String {
@@ -323,8 +491,4 @@ pub(crate) fn make_switch<'tcx>(
         }
         ty => unimplemented!("{ty:?}"),
     }
-}
-
-fn mk_goto<'tcx>(bb: BasicBlock) -> Terminator<'tcx> {
-    Terminator::Goto(bb)
 }
