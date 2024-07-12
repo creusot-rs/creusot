@@ -268,7 +268,7 @@ pub fn to_why<'tcx>(
     names: &mut Dependencies<'tcx>,
     body_id: BodyId,
 ) -> Decl {
-    let mut body = ctx.fmir_body(body_id).unwrap().clone();
+    let mut body = ctx.fmir_body(body_id).clone();
 
     let usage = optimization::gather_usage(&body);
     optimization::simplify_fmir(usage, &mut body);

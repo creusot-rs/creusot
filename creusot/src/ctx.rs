@@ -152,12 +152,12 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
     queryish!(closure_contract, &ClosureContract<'tcx>, build_closure_contract);
 
-    pub(crate) fn fmir_body(&mut self, body_id: BodyId) -> Option<&fmir::Body<'tcx>> {
+    pub(crate) fn fmir_body(&mut self, body_id: BodyId) -> &fmir::Body<'tcx> {
         if !self.fmir_body.contains_key(&body_id) {
             let fmir = translation::function::fmir(self, body_id);
             self.fmir_body.insert(body_id, fmir);
         }
-        self.fmir_body.get(&body_id)
+        self.fmir_body.get(&body_id).unwrap()
     }
 
     pub(crate) fn term(&mut self, def_id: DefId) -> Option<&Term<'tcx>> {
