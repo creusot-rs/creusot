@@ -187,7 +187,6 @@ impl<'a, T: ?Sized> GhostPtrTokenRef<'a, T> {
 impl<'a, T: ?Sized> Copy for GhostPtrTokenRef<'a, T> {}
 
 impl<'a, T: ?Sized> Clone for GhostPtrTokenRef<'a, T> {
-
     #[ensures(result == *self)]
     fn clone(&self) -> Self {
         *self
