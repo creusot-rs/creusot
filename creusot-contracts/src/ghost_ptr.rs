@@ -188,7 +188,7 @@ impl<'a, T: ?Sized> GhostPtrTokenMut<'a, T> {
     }
 
     #[trusted]
-    #[logic]
+    #[logic(prophetic)]
     #[open(self)]
     pub fn fin(self) -> FMap<GhostPtr<T>, T> {
         absurd
@@ -257,7 +257,7 @@ impl<'a, T> DerefMut for GhostPtrTokenMut<'a, T> {
 
 #[trusted]
 impl<'a, T> Resolve for GhostPtrTokenMut<'a, T> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn resolve(self) -> bool {
         self.cur() == self.fin()
