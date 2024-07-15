@@ -68,6 +68,7 @@ impl<T: ?Sized> GhostPtrToken<T> {
     // it couldn't have already been contained in `self`
     #[ensures((^self)@ == (*self)@.insert(result, *val))]
     pub fn ptr_from_box(&mut self, val: Box<T>) -> *const T {
+        assert!(core::mem::size_of_val::<T>(&*val) > 0, "GhostPtrToken doesn't support ZSTs");
         Box::into_raw(val)
     }
 
