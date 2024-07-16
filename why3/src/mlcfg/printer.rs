@@ -177,13 +177,17 @@ impl Print for declaration::Constant {
     where
         A::Doc: Clone,
     {
-        alloc
-            .text("constant ")
-            .append(self.name.pretty(alloc))
-            .append(" : ")
-            .append(self.type_.pretty(alloc))
-            .append(" = ")
-            .append(self.body.pretty(alloc))
+        docs![
+            alloc,
+            "constant ",
+            self.name.pretty(alloc),
+            " : ",
+            self.type_.pretty(alloc),
+            match &self.body {
+                Some(b) => alloc.text(" = ").append(b.pretty(alloc)),
+                None => alloc.nil(),
+            }
+        ]
     }
 }
 
