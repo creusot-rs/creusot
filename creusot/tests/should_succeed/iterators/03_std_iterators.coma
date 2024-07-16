@@ -3146,7 +3146,7 @@ module C03StdIterators_MyReverse
   let%span span64 = "../03_std_iterators.rs" 88 4 90 5
   let%span span65 = "../03_std_iterators.rs" 81 4 83 5
   let%span span66 = "../../../../../creusot-contracts/src/model.rs" 90 8 90 31
-  let%span span67 = "../../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48
+  let%span span67 = "../../../../../creusot-contracts/src/snapshot.rs" 28 20 28 48
   let%span span68 = "../../../../../creusot-contracts/src/std/iter.rs" 80 8 80 19
   let%span span69 = "../../../../../creusot-contracts/src/std/iter.rs" 74 20 74 24
   let%span span70 = "../../../../../creusot-contracts/src/std/iter.rs" 89 0 175 1
@@ -3595,9 +3595,10 @@ module C03StdIterators_MyReverse
     | bb7 = s0
       [ s0 =  [ &produced <- [%#s03_std_iterators8] Snapshot.new (Seq.empty  : Seq.seq (usize, usize)) ] s1 | s1 = bb8 ]
       
-    | bb8 = bb9
+    | bb8 = s0 [ s0 =  [ &old_9_0 <- Snapshot.new slice ] s1 | s1 = bb9 ] 
     | bb9 = bb9
-      [ bb9 = {[@expl:loop invariant] [%#s03_std_iterators14] equiv_reverse_range'0 (shallow_model'0 slice) (shallow_model'1 old_v) (UIntSize.to_int n
+      [ bb9 = {[@expl:loop invariant]  ^ Snapshot.inner old_9_0 =  ^ slice}
+        {[@expl:loop invariant] [%#s03_std_iterators14] equiv_reverse_range'0 (shallow_model'0 slice) (shallow_model'1 old_v) (UIntSize.to_int n
         - Seq.length (Snapshot.inner produced)) (UIntSize.to_int n) (UIntSize.to_int n - 1)}
         {[@expl:loop invariant] [%#s03_std_iterators13] equiv_reverse_range'0 (shallow_model'0 slice) (shallow_model'1 old_v) 0 (Seq.length (Snapshot.inner produced)) (UIntSize.to_int n
         - 1)}
@@ -3700,7 +3701,8 @@ module C03StdIterators_MyReverse
     | & _38 : () = any_l ()
     | & _39 : borrowed (slice t) = any_l ()
     | & _41 : usize = any_l ()
-    | & _42 : usize = any_l () ]
+    | & _42 : usize = any_l ()
+    | & old_9_0 : Snapshot.snap_ty (borrowed (slice t)) = any_l () ]
     
     [ return' (result:())-> {[@expl:postcondition] [%#s03_std_iterators19] Seq.(==) (shallow_model'2 ( ^ slice)) (Reverse.reverse (shallow_model'0 slice))}
       (! return' {result}) ]

@@ -111,7 +111,7 @@ module Hillel_RightPad
   let%span span23 = "" 0 0 0 0
   let%span span24 = "../../../../creusot-contracts/src/std/vec.rs" 78 26 78 48
   let%span span25 = "../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
-  let%span span26 = "../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48
+  let%span span26 = "../../../../creusot-contracts/src/snapshot.rs" 28 20 28 48
   use seq.Seq
   predicate invariant'5 (self : Seq.seq t)
   let rec invariant'5 (self:Seq.seq t) (return'  (ret:bool))= any
@@ -239,9 +239,15 @@ module Hillel_RightPad
     {[%#shillel4] inv'3 str}
     (! bb0
     [ bb0 = s0 [ s0 =  [ &old_str <- [%#shillel0] Snapshot.new str ] s1 | s1 = bb1 ] 
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'0 old_str} s1 | s1 = -{resolve'0 old_str}- s2 | s2 = bb2 ] 
+    | bb1 = s0
+      [ s0 = {[@expl:type invariant] inv'0 old_str} s1
+      | s1 = -{resolve'0 old_str}- s2
+      | s2 =  [ &old_2_0 <- Snapshot.new str ] s3
+      | s3 = bb2 ]
+      
     | bb2 = bb2
-      [ bb2 = {[@expl:loop invariant] [%#shillel3] forall i : int . Seq.length (shallow_model'0 old_str) <= i
+      [ bb2 = {[@expl:loop invariant]  ^ Snapshot.inner old_2_0 =  ^ str}
+        {[@expl:loop invariant] [%#shillel3] forall i : int . Seq.length (shallow_model'0 old_str) <= i
         /\ i < Seq.length (shallow_model'1 str)  -> index_logic'0 ( * str) i = pad}
         {[@expl:loop invariant] [%#shillel3] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'0 old_str)
          -> index_logic'0 ( * str) i = index_logic'0 ( * Snapshot.inner old_str) i}
@@ -287,7 +293,8 @@ module Hillel_RightPad
     | & _19 : bool = any_l ()
     | & _20 : usize = any_l ()
     | & _23 : () = any_l ()
-    | & _24 : borrowed (Vec'0.t_vec t (Global'0.t_global)) = any_l () ]
+    | & _24 : borrowed (Vec'0.t_vec t (Global'0.t_global)) = any_l ()
+    | & old_2_0 : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))) = any_l () ]
     
     [ return' (result:())-> {[@expl:postcondition] [%#shillel11] forall i : int . Seq.length (shallow_model'1 str) <= i
       /\ i < UIntSize.to_int len  -> index_logic'0 ( ^ str) i = pad}
@@ -337,7 +344,7 @@ module Hillel_LeftPad
   let%span span28 = "../../../../creusot-contracts/src/model.rs" 90 8 90 31
   let%span span29 = "" 0 0 0 0
   let%span span30 = "../../../../creusot-contracts/src/std/vec.rs" 78 26 78 48
-  let%span span31 = "../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48
+  let%span span31 = "../../../../creusot-contracts/src/snapshot.rs" 28 20 28 48
   use seq.Seq
   predicate invariant'5 (self : Seq.seq t)
   let rec invariant'5 (self:Seq.seq t) (return'  (ret:bool))= any
@@ -478,9 +485,10 @@ module Hillel_LeftPad
       | s2 =  [ &c <- [%#shillel1] Snapshot.new 0 ] s3
       | s3 = bb2 ]
       
-    | bb2 = bb3
+    | bb2 = s0 [ s0 =  [ &old_3_0 <- Snapshot.new str ] s1 | s1 = bb3 ] 
     | bb3 = bb3
-      [ bb3 = {[@expl:loop invariant] [%#shillel4] forall i : int . 0 <= i /\ i < Snapshot.inner c
+      [ bb3 = {[@expl:loop invariant]  ^ Snapshot.inner old_3_0 =  ^ str}
+        {[@expl:loop invariant] [%#shillel4] forall i : int . 0 <= i /\ i < Snapshot.inner c
          -> index_logic'0 ( * str) i = pad}
         {[@expl:loop invariant] [%#shillel4] forall i : int . Snapshot.inner c <= i
         /\ i < Seq.length (shallow_model'1 str)
@@ -534,7 +542,8 @@ module Hillel_LeftPad
     | & _21 : usize = any_l ()
     | & _24 : () = any_l ()
     | & _25 : borrowed (Vec'0.t_vec t (Global'0.t_global)) = any_l ()
-    | & _27 : Snapshot.snap_ty int = any_l () ]
+    | & _27 : Snapshot.snap_ty int = any_l ()
+    | & old_3_0 : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))) = any_l () ]
     
     [ return' (result:())-> {[@expl:postcondition] [%#shillel13] forall i : int . 0 <= i
       /\ i < Seq.length (shallow_model'1 str)

@@ -188,7 +188,7 @@ module C02Gnome_GnomeSort
   let%span span83 = "" 0 0 0 0
   let%span span84 = "../../../../../creusot-contracts/src/std/vec.rs" 78 26 78 48
   let%span span85 = "../../../../../creusot-contracts/src/logic/seq.rs" 107 8 107 37
-  let%span span86 = "../../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48
+  let%span span86 = "../../../../../creusot-contracts/src/snapshot.rs" 28 20 28 48
   let%span span87 = "../../../../../creusot-contracts/src/model.rs" 99 8 99 28
   type deep_model_ty'0
   predicate invariant'10 (self : deep_model_ty'0)
@@ -541,10 +541,12 @@ module C02Gnome_GnomeSort
       [ s0 = {[@expl:type invariant] inv'0 old_v} s1
       | s1 = -{resolve'0 old_v}- s2
       | s2 =  [ &i <- [%#s02_gnome1] (0 : usize) ] s3
-      | s3 = bb2 ]
+      | s3 =  [ &old_2_0 <- Snapshot.new v ] s4
+      | s4 = bb2 ]
       
     | bb2 = bb2
-      [ bb2 = {[@expl:loop invariant] [%#s02_gnome4]  ^ v =  ^ Snapshot.inner old_v}
+      [ bb2 = {[@expl:loop invariant]  ^ Snapshot.inner old_2_0 =  ^ v}
+        {[@expl:loop invariant] [%#s02_gnome4]  ^ v =  ^ Snapshot.inner old_v}
         {[@expl:loop invariant] [%#s02_gnome3] permutation_of'0 (shallow_model'0 v) (shallow_model'1 old_v)}
         {[@expl:loop invariant] [%#s02_gnome2] sorted_range'0 (deep_model'0 v) 0 (UIntSize.to_int i)}
         (! s0) [ s0 = bb3 ] 
@@ -629,7 +631,8 @@ module C02Gnome_GnomeSort
     | & _29 : borrowed (slice t) = any_l ()
     | & _30 : borrowed (slice t) = any_l ()
     | & _31 : borrowed (Vec'0.t_vec t (Global'0.t_global)) = any_l ()
-    | & _32 : usize = any_l () ]
+    | & _32 : usize = any_l ()
+    | & old_2_0 : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))) = any_l () ]
     
     [ return' (result:())-> {[@expl:postcondition] [%#s02_gnome12] permutation_of'0 (shallow_model'2 ( ^ v)) (shallow_model'0 v)}
       {[@expl:postcondition] [%#s02_gnome11] sorted'0 (deep_model'1 ( ^ v))}
