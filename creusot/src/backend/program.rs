@@ -148,18 +148,18 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     let tcx = ctx.tcx;
     let mut names = Dependencies::new(tcx, [def_id]);
 
-    let Some(body_ids) = collect_body_ids(ctx, def_id) else {
+    let Some((body_id, promoteds)) = collect_body_ids(ctx, def_id) else {
         let (_, clones) = names.provide_deps(ctx, GraphDepth::Deep);
         return (clones, None);
     };
-    let body = to_why(ctx, &mut names, body_ids[0]);
+    let body = to_why(ctx, &mut names, body_id);
 
     if ctx.tcx.is_closure_like(def_id) {
         closure_aux_defs(ctx, def_id)
     };
 
     let promoteds =
-        body_ids[1..].iter().map(|body_id| to_why(ctx, &mut names, *body_id)).collect::<Vec<_>>();
+        promoteds.iter().map(|body_id| to_why(ctx, &mut names, *body_id)).collect::<Vec<_>>();
 
     let (clones, summary) = names.provide_deps(ctx, GraphDepth::Deep);
 
@@ -173,37 +173,39 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     (summary, Some(Module { name, decls }))
 }
 
-fn collect_body_ids<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Option<Vec<BodyId>> {
-    let mut ids = Vec::new();
-
-    if def_id.is_local()
+/// If `def_id`'s body should be translated, returns:
+/// - The `BodyId` corresponding to `def_id`
+/// - The `BodyId`s of promoted items
+fn collect_body_ids<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    def_id: DefId,
+) -> Option<(BodyId, Vec<BodyId>)> {
+    let body_id = if def_id.is_local()
         && util::has_body(ctx, def_id)
         && !util::is_trusted(ctx.tcx, def_id)
         && !util::is_ghost_closure(ctx.tcx, def_id)
     {
-        if !util::is_ghost_closure(ctx.tcx, def_id) {
-            ids.push(BodyId::new(def_id.expect_local(), None))
-        }
+        BodyId::new(def_id.expect_local(), None)
     } else {
         return None;
-    }
+    };
 
+    let tcx = ctx.tcx;
     let promoted = ctx
         .body_with_facts(def_id.expect_local())
         .promoted
         .iter_enumerated()
         .map(|(p, p_body)| (p, p_body.return_ty()))
+        .filter_map(|(p, p_ty)| {
+            if util::snapshot_closure_id(tcx, p_ty).is_none() {
+                Some(BodyId::new(def_id.expect_local(), Some(p)))
+            } else {
+                None
+            }
+        })
         .collect::<Vec<_>>();
 
-    ids.extend(promoted.iter().filter_map(|(p, p_ty)| {
-        if util::snapshot_closure_id(ctx.tcx, *p_ty).is_none() {
-            Some(BodyId::new(def_id.expect_local(), Some(*p)))
-        } else {
-            None
-        }
-    }));
-
-    Some(ids)
+    Some((body_id, promoted))
 }
 
 pub fn val<'tcx>(_: &mut Why3Generator<'tcx>, sig: Signature) -> Decl {
