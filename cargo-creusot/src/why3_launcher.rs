@@ -44,7 +44,13 @@ impl Why3Launcher {
 
     pub fn make(&self, temp_dir: &Path) -> Result<Command> {
         let mode = self.mode.to_string();
-        PRELUDE.extract(temp_dir).expect("can't launch why3, could extract prelude into temp dir");
+        let mut prelude_dir: PathBuf = temp_dir.into();
+        prelude_dir.push("prelude");
+        std::fs::create_dir(&prelude_dir)?;
+
+        PRELUDE
+            .extract(prelude_dir)
+            .expect("can't launch why3, could extract prelude into temp dir");
 
         let mut command =
             if let Some(p) = &self.why3_path { Command::new(p) } else { Command::new("why3") };
