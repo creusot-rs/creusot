@@ -159,8 +159,8 @@ pub enum Exp {
     Old(Box<Exp>),
     Absurd,
     Impl(Box<Exp>, Box<Exp>),
-    Forall(Vec<(Ident, Type)>, Option<Trigger>, Box<Exp>),
-    Exists(Vec<(Ident, Type)>, Option<Trigger>, Box<Exp>),
+    Forall(Vec<(Ident, Type)>, Vec<Trigger>, Box<Exp>),
+    Exists(Vec<(Ident, Type)>, Vec<Trigger>, Box<Exp>),
     FnLit(Box<Exp>),
 }
 
@@ -543,7 +543,7 @@ impl Exp {
     /// Builds a quantifier with explicit trigger
     ///
     /// Simplfies ∀ x, True into True
-    pub fn forall_trig(bound: Vec<(Ident, Type)>, trigger: Option<Trigger>, body: Exp) -> Self {
+    pub fn forall_trig(bound: Vec<(Ident, Type)>, trigger: Vec<Trigger>, body: Exp) -> Self {
         if body.is_true() {
             body
         } else {
@@ -555,15 +555,15 @@ impl Exp {
     ///
     /// Simplfies ∀ x, True into True
     pub fn forall(bound: Vec<(Ident, Type)>, body: Exp) -> Self {
-        Exp::forall_trig(bound, None, body)
+        Exp::forall_trig(bound, Vec::new(), body)
     }
 
-    pub fn exists_trig(bound: Vec<(Ident, Type)>, trigger: Option<Trigger>, body: Exp) -> Self {
+    pub fn exists_trig(bound: Vec<(Ident, Type)>, trigger: Vec<Trigger>, body: Exp) -> Self {
         Exp::Exists(bound, trigger, Box::new(body))
     }
 
     pub fn exists(bound: Vec<(Ident, Type)>, body: Exp) -> Self {
-        Exp::exists_trig(bound, None, body)
+        Exp::exists_trig(bound, Vec::new(), body)
     }
 
     pub fn with_attr(self, attr: Attribute) -> Self {
