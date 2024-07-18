@@ -545,10 +545,7 @@ impl Print for Trigger {
     where
         A::Doc: Clone,
     {
-        match &self.0 {
-            None => alloc.nil(),
-            Some(exp) => exp.pretty(alloc).brackets(),
-        }
+        alloc.intersperse(self.0.iter().map(|t| t.pretty(alloc)), ", ")
     }
 }
 
@@ -672,7 +669,7 @@ impl Print for Exp {
                         ", ",
                     ),
                 )
-                .append(trig.pretty(alloc))
+                .append(alloc.intersperse(trig.iter().map(|t| t.pretty(alloc)), alloc.space()))
                 .append(" . ")
                 .append(exp.pretty(alloc)),
             Exp::Exists(binders, trig, exp) => alloc
@@ -685,7 +682,7 @@ impl Print for Exp {
                         ", ",
                     ),
                 )
-                .append(trig.pretty(alloc))
+                .append(alloc.intersperse(trig.iter().map(|t| t.pretty(alloc)), alloc.space()))
                 .append(" . ")
                 .append(exp.pretty(alloc)),
             Exp::Impl(hyp, exp) => {

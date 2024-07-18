@@ -228,7 +228,7 @@ pub struct Signature {
 
 impl Signature {
     pub fn uses_simple_triggers(&self) -> bool {
-        self.trigger.is_none()
+        self.trigger.is_some()
     }
 }
 

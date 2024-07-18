@@ -23,7 +23,7 @@ use why3::{
         AdtDecl, ConstructorDecl, Contract, Decl, Field, Logic, Module, Signature, TyDecl, Use,
         ValDecl,
     },
-    exp::{Binder, Exp, Pattern, Trigger},
+    exp::{Binder, Exp, Pattern},
     ty::Type as MlT,
     Ident, QName,
 };
@@ -697,16 +697,14 @@ pub(crate) fn build_accessor(
     variant_ix: usize,
     variant_arities: &[(QName, usize)],
     target_field: (usize, MlT, bool),
-    ctx: &TranslationCtx<'_>,
+    _: &TranslationCtx<'_>,
 ) -> Decl {
     let field_ty = target_field.1;
     let field_ix = target_field.0;
 
-    let trigger = if ctx.opts.simple_triggers { None } else { Some(Trigger::NONE) };
-
     let sig = Signature {
         name: acc_name.clone(),
-        trigger,
+        trigger: None,
         attrs: Vec::new(),
         args: vec![Binder::typed("self".into(), this.clone())],
         retty: Some(field_ty.clone()),
