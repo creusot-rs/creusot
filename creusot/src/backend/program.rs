@@ -1,8 +1,8 @@
 use super::{
     clone_map::PreludeModule,
-    dependency::ExtendedId,
+    dependency::{Dependency, ExtendedId},
     place::rplace_to_expr,
-    signature::signature_of,
+    signature::{sig_to_why3, signature_of},
     term::lower_pure,
     ty::{destructor, int_ty},
     CloneSummary, GraphDepth, NameSupply, Namer, TransId, Why3Generator,
@@ -30,6 +30,7 @@ use rustc_middle::{
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, UintTy};
+use std::collections::HashSet;
 use why3::{
     coma::{self, Arg, Defn, Expr, Param, Term},
     declaration::{Attribute, Contract, Decl, Module, Signature},
@@ -37,8 +38,6 @@ use why3::{
     ty::Type,
     Ident, QName,
 };
-
-use super::signature::sig_to_why3;
 
 fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
     let mut names = Dependencies::new(ctx.tcx, [def_id]);
@@ -163,11 +162,29 @@ pub(crate) fn translate_function<'tcx, 'sess>(
         .map(|body_id| Decl::Coma(to_why(ctx, &mut names, *body_id)))
         .collect::<Vec<_>>();
 
+    let tcx = ctx.tcx;
+    let ghost_closure_ids: HashSet<_> = names.find_ghost_closures(tcx).collect();
+    let ghost_closures = ghost_closure_ids
+        .into_iter()
+        .map(|(def_id, subst)| {
+            // Compile the closure normally
+            closure_aux_defs(ctx, def_id);
+            let mut coma_defn =
+                to_why(ctx, &mut names, BodyId { def_id: def_id.expect_local(), promoted: None });
+
+            names.insert_hidden_func(def_id, subst);
+            // get the right name for the generated function
+            coma_defn.name = names.insert(Dependency::new(tcx, (def_id, subst))).ident();
+            Decl::Coma(coma_defn)
+        })
+        .collect::<Vec<_>>();
+
     let (clones, summary) = names.provide_deps(ctx, GraphDepth::Deep);
 
     let decls = closure_generic_decls(ctx.tcx, def_id)
         .chain(clones)
         .chain(promoteds)
+        .chain(ghost_closures)
         .chain(std::iter::once(body))
         .collect();
 
@@ -317,7 +334,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
 
     let mut postcond = Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("result"))]);
 
-    if body_id.promoted.is_none() {
+    if body_id.promoted.is_none() && !util::is_ghost_closure(ctx.tcx, body_id.def_id()) {
         postcond = Expr::BlackBox(Box::new(postcond));
     }
     postcond = sig.contract.ensures.into_iter().fold(postcond, |acc, ensures| {
@@ -327,7 +344,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         )
     });
 
-    if body_id.promoted.is_none() {
+    if body_id.promoted.is_none() && !util::is_ghost_closure(ctx.tcx, body_id.def_id()) {
         body = Expr::BlackBox(Box::new(body))
     };
 

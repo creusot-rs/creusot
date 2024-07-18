@@ -209,6 +209,20 @@ impl<'tcx> SymbolElaborator<'tcx> {
                 name: sig.name,
                 body: Some(res),
             })]
+        } else if util::is_ghost_closure(ctx.tcx, def_id) {
+            // Inline the body of ghost closures
+            let mut coma = program::to_why(
+                ctx,
+                names,
+                BodyId { def_id: def_id.expect_local(), promoted: None },
+            );
+            coma.name = sig.name;
+            vec![Decl::Coma(coma)]
+
+            // TODO: this works for ghost closure, because we know they will not get passed
+            // to a function like `map`.
+            // If we want to inline arbitrary contract-less closure, we need to add `[@coma:extspec]`
+            // and to use the resulting pre and post.
         } else {
             val(ctx, sig, kind)
         }
