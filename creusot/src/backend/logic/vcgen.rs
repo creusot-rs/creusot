@@ -260,7 +260,11 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let variant =
                     if *id == self.self_id { self.build_variant(&args)? } else { Exp::mk_true() };
 
-                let call = Exp::qvar(fname).app(args);
+                let call = if args.is_empty() {
+                    Exp::qvar(fname).app_to(Exp::Tuple(Vec::new()))
+                } else {
+                    Exp::qvar(fname).app(args)
+                };
                 sig.contract.subst(&[("result".into(), call.clone())].into_iter().collect());
 
                 let inner = k(call)?;
