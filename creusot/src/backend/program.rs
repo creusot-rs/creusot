@@ -152,14 +152,16 @@ pub(crate) fn translate_function<'tcx, 'sess>(
         let (_, clones) = names.provide_deps(ctx, GraphDepth::Deep);
         return (clones, None);
     };
-    let body = to_why(ctx, &mut names, body_id);
+    let body = Decl::Coma(to_why(ctx, &mut names, body_id));
 
     if ctx.tcx.is_closure_like(def_id) {
         closure_aux_defs(ctx, def_id)
     };
 
-    let promoteds =
-        promoteds.iter().map(|body_id| to_why(ctx, &mut names, *body_id)).collect::<Vec<_>>();
+    let promoteds = promoteds
+        .iter()
+        .map(|body_id| Decl::Coma(to_why(ctx, &mut names, *body_id)))
+        .collect::<Vec<_>>();
 
     let (clones, summary) = names.provide_deps(ctx, GraphDepth::Deep);
 
@@ -265,11 +267,11 @@ pub(crate) fn node_graph(x: &Body) -> petgraph::graphmap::DiGraphMap<BasicBlock,
     graph
 }
 
-pub fn to_why<'tcx>(
+pub fn to_why<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut Dependencies<'tcx>,
+    names: &mut N,
     body_id: BodyId,
-) -> Decl {
+) -> coma::Defn {
     let mut body = ctx.fmir_body(body_id).clone();
 
     let usage = optimization::gather_usage(&body);
@@ -359,17 +361,15 @@ pub fn to_why<'tcx>(
             vec![Param::Term("ret".into(), sig.retty.unwrap())],
         )])
         .collect();
-    Decl::Coma(coma::Defn { name: sig.name, writes: Vec::new(), params, body })
-
-    // Decl::CfgDecl(CfgFunction { sig, rec: true, constant: false, entry, blocks, vars })
+    coma::Defn { name: sig.name, writes: Vec::new(), params, body }
 }
 
 use super::wto::Component;
 
-fn component_to_defn<'tcx>(
+fn component_to_defn<'tcx, N: Namer<'tcx>>(
     body: &mut Body<'tcx>,
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut Dependencies<'tcx>,
+    names: &mut N,
     c: Component<BasicBlock>,
 ) -> coma::Defn {
     let mut lower =
@@ -400,14 +400,14 @@ fn component_to_defn<'tcx>(
     block
 }
 
-pub(crate) struct LoweringState<'a, 'tcx> {
+pub(crate) struct LoweringState<'a, 'tcx, N: Namer<'tcx>> {
     pub(super) ctx: &'a mut Why3Generator<'tcx>,
-    pub(super) names: &'a mut Dependencies<'tcx>,
+    pub(super) names: &'a mut N,
     pub(super) locals: &'a LocalDecls<'tcx>,
     pub(super) name_supply: NameSupply,
 }
 
-impl<'a, 'tcx> LoweringState<'a, 'tcx> {
+impl<'a, 'tcx, N: Namer<'tcx>> LoweringState<'a, 'tcx, N> {
     pub(super) fn ty(&mut self, ty: Ty<'tcx>) -> Type {
         translate_ty(self.ctx, self.names, DUMMY_SP, ty)
     }
@@ -424,9 +424,9 @@ impl<'a, 'tcx> LoweringState<'a, 'tcx> {
 }
 
 impl<'tcx> Operand<'tcx> {
-    pub(crate) fn to_why(
+    pub(crate) fn to_why<N: Namer<'tcx>>(
         self,
-        lower: &mut LoweringState<'_, 'tcx>,
+        lower: &mut LoweringState<'_, 'tcx, N>,
         istmts: &mut Vec<IntermediateStmt>,
     ) -> Exp {
         match self {
@@ -452,9 +452,9 @@ impl<'tcx> Operand<'tcx> {
 }
 
 impl<'tcx> RValue<'tcx> {
-    pub(crate) fn to_why(
+    pub(crate) fn to_why<N: Namer<'tcx>>(
         self,
-        lower: &mut LoweringState<'_, 'tcx>,
+        lower: &mut LoweringState<'_, 'tcx, N>,
         ty: Ty<'tcx>,
         istmts: &mut Vec<IntermediateStmt>,
     ) -> Exp {
@@ -716,9 +716,9 @@ impl<'tcx> Terminator<'tcx> {
         }
     }
 
-    pub(crate) fn to_why(
+    pub(crate) fn to_why<N: Namer<'tcx>>(
         self,
-        lower: &mut LoweringState<'_, 'tcx>,
+        lower: &mut LoweringState<'_, 'tcx, N>,
     ) -> (Vec<IntermediateStmt>, coma::Expr) {
         use coma::*;
         let mut istmts = vec![];
@@ -743,10 +743,10 @@ impl<'tcx> Terminator<'tcx> {
 }
 
 impl<'tcx> Branches<'tcx> {
-    fn to_why(
+    fn to_why<N: Namer<'tcx>>(
         self,
         _ctx: &mut Why3Generator<'tcx>,
-        names: &mut Dependencies<'tcx>,
+        names: &mut N,
         discr: Exp,
     ) -> coma::Expr {
         match self {
@@ -797,9 +797,9 @@ fn mk_goto(bb: BasicBlock) -> coma::Expr {
     coma::Expr::Symbol(format!("bb{}", bb.as_u32()).into())
 }
 
-fn mk_adt_switch<'tcx>(
+fn mk_adt_switch<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
-    names: &mut Dependencies<'tcx>,
+    names: &mut N,
     adt: AdtDef<'tcx>,
     subst: GenericArgsRef<'tcx>,
     discr: Exp,
@@ -865,15 +865,12 @@ fn mk_switch_branches(discr: Exp, brch: Vec<(Exp, coma::Expr)>) -> Vec<coma::Def
 }
 
 impl<'tcx> Block<'tcx> {
-    pub(crate) fn to_why(self, lower: &mut LoweringState<'_, 'tcx>, id: BasicBlock) -> coma::Defn {
-        // for v in self.variant.into_iter() {
-        //     statements.push(coma::Statement::Variant(lower_pure(ctx, names, &v)));
-        // }
-
+    pub(crate) fn to_why<N: Namer<'tcx>>(
+        self,
+        lower: &mut LoweringState<'_, 'tcx, N>,
+        id: BasicBlock,
+    ) -> coma::Defn {
         let (istmts, terminator) = self.terminator.to_why(lower);
-        // let statements =
-        //     self.stmts.into_iter().flat_map(|s| s.to_why(ctx, names, locals)).chain(istmts);
-        use coma::*;
 
         let mut statements = vec![];
 
@@ -946,9 +943,9 @@ where
 }
 
 impl<'tcx> Place<'tcx> {
-    pub(crate) fn as_rplace(
+    pub(crate) fn as_rplace<N: Namer<'tcx>>(
         &self,
-        lower: &mut LoweringState<'_, 'tcx>,
+        lower: &mut LoweringState<'_, 'tcx, N>,
         istmts: &mut Vec<IntermediateStmt>,
     ) -> why3::Exp {
         let (e, t) = rplace_to_expr(lower, self.local, &self.projection);
@@ -1012,7 +1009,10 @@ impl IntermediateStmt {
 }
 
 impl<'tcx> Statement<'tcx> {
-    pub(crate) fn to_why(self, lower: &mut LoweringState<'_, 'tcx>) -> Vec<IntermediateStmt> {
+    pub(crate) fn to_why<N: Namer<'tcx>>(
+        self,
+        lower: &mut LoweringState<'_, 'tcx, N>,
+    ) -> Vec<IntermediateStmt> {
         match self {
             Statement::Assignment(lhs, RValue::Borrow(BorrowKind::Mut, rhs), _span) => {
                 let borrow_mut =
@@ -1148,8 +1148,8 @@ impl<'tcx> Statement<'tcx> {
     }
 }
 
-fn invalidate_places<'tcx>(
-    lower: &mut LoweringState<'_, 'tcx>,
+fn invalidate_places<'tcx, N: Namer<'tcx>>(
+    lower: &mut LoweringState<'_, 'tcx, N>,
     _span: Span,
     invalid: Vec<Place<'tcx>>,
     out: &mut Vec<IntermediateStmt>,
@@ -1158,7 +1158,6 @@ fn invalidate_places<'tcx>(
     for pl in invalid {
         let ty = pl.ty(lower.ctx.tcx, lower.locals);
         let ty = lower.ty(ty);
-        // translate_ty(ctx, names, DUMMY_SP.substitute_dummy(span), ty);
 
         let assign = lower.assignment(&pl, Exp::var("_any"));
         out.push(IntermediateStmt::Any("_any".into(), ty));
@@ -1166,8 +1165,8 @@ fn invalidate_places<'tcx>(
     }
 }
 
-fn func_call_to_why3<'tcx>(
-    lower: &mut LoweringState<'_, 'tcx>,
+fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
+    lower: &mut LoweringState<'_, 'tcx, N>,
     id: DefId,
     subst: GenericArgsRef<'tcx>,
     mut args: Vec<Operand<'tcx>>,

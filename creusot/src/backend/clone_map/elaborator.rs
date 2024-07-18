@@ -45,7 +45,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
     ) -> Vec<Decl> {
         let param_env = names.param_env(ctx);
         let old_names = names;
-        let mut names = SymNamer { tcx: ctx.tcx, param_env, names: &mut old_names.names };
+        let mut names = ImmutDeps { tcx: ctx.tcx, param_env, names: &mut old_names.names };
         let names = &mut names;
 
         match item {
@@ -69,7 +69,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
     fn elaborate_ty(
         &mut self,
         ctx: &mut Why3Generator<'tcx>,
-        names: &mut SymNamer<'_, 'tcx>,
+        names: &mut ImmutDeps<'_, 'tcx>,
         ty: Ty<'tcx>,
     ) -> Vec<Decl> {
         let Some((def_id, subst)) = DepNode::Type(ty).did() else { return Vec::new() };
@@ -99,7 +99,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
         }
     }
 
-    fn emit_use(&mut self, names: &mut SymNamer<'_, 'tcx>, dep: Dependency<'tcx>) -> Vec<Decl> {
+    fn emit_use(&mut self, names: &mut ImmutDeps<'_, 'tcx>, dep: Dependency<'tcx>) -> Vec<Decl> {
         if let k @ Kind::Used(modl, _) = names.insert(dep) {
             self.used_types
                 .insert(modl)
@@ -130,7 +130,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
     fn elaborate_item(
         &mut self,
         ctx: &mut Why3Generator<'tcx>,
-        names: &mut SymNamer<'_, 'tcx>,
+        names: &mut ImmutDeps<'_, 'tcx>,
         param_env: ParamEnv<'tcx>,
         level_of_item: CloneLevel,
         item: DepNode<'tcx>,
@@ -271,13 +271,16 @@ fn sig<'tcx>(ctx: &mut Why3Generator<'tcx>, dep: DepNode<'tcx>) -> PreSignature<
     }
 }
 
-struct SymNamer<'a, 'tcx> {
+/// ImmutDeps works like `clone_map::Dependencies` but is immutable: if you ask it to name
+/// something that isn't already in the graph, it will crash the whole compilation.
+/// At the time of elaboration, we expect the whole graph to have been calculated.
+struct ImmutDeps<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     names: &'a mut CloneNames<'tcx>,
     param_env: ParamEnv<'tcx>,
 }
 
-impl<'a, 'tcx> SymNamer<'a, 'tcx> {
+impl<'a, 'tcx> ImmutDeps<'a, 'tcx> {
     fn get(&self, ix: DepNode<'tcx>) -> &Kind {
         let n = ix.closure_hack(self.tcx);
         let n = self.tcx.try_normalize_erasing_regions(self.param_env, n).unwrap_or(n);
@@ -287,7 +290,7 @@ impl<'a, 'tcx> SymNamer<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> Namer<'tcx> for SymNamer<'a, 'tcx> {
+impl<'a, 'tcx> Namer<'tcx> for ImmutDeps<'a, 'tcx> {
     fn insert(&mut self, ix: DepNode<'tcx>) -> Kind {
         *self.get(ix)
     }
