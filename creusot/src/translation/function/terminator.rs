@@ -1,4 +1,4 @@
-use super::{BodyId, BodyTranslator};
+use super::BodyTranslator;
 use crate::{
     ctx::TranslationCtx,
     fmir,
@@ -37,7 +37,7 @@ use std::collections::{HashMap, HashSet};
 // rather than switching on discriminant since WhyML doesn't have integer
 // patterns in match expressions.
 
-impl<'tcx> BodyTranslator<'_, 'tcx, '_> {
+impl<'tcx> BodyTranslator<'_, 'tcx> {
     pub(crate) fn translate_terminator(
         &mut self,
         terminator: &mir::Terminator<'tcx>,
@@ -62,21 +62,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx, '_> {
 
                 self.emit_terminator(switch);
             }
-            Return => {
-                if let Some((bb, dest_place)) = self.ghost_closure_return.clone() {
-                    let return_value =
-                        self.translate_operand(&Operand::Move(Place::return_place()));
-                    self.emit_statement(fmir::Statement::Assignment(
-                        dest_place,
-                        RValue::Operand(return_value),
-                        span,
-                    ));
-                    assert!(self.current_block.1.is_none());
-                    self.current_block.1 = Some(fmir::Terminator::Goto(bb))
-                } else {
-                    self.emit_terminator(Terminator::Return)
-                }
-            }
+            Return => self.emit_terminator(Terminator::Return),
             Unreachable => self.emit_terminator(Terminator::Abort(terminator.source_info.span)),
             Call { func, args, destination, mut target, fn_span, .. } => {
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
@@ -90,100 +76,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx, '_> {
                     assertion.subst(&inv_subst(self.body, &self.locals, terminator.source_info));
                     self.check_ghost_term(&assertion, location);
                     self.emit_ghost_assign(*destination, assertion, span);
-                } else if self.tcx.is_diagnostic_item(Symbol::intern("ghost_from_fn"), fun_def_id) {
-                    let &[return_ty, ty] = subst.as_slice() else {
-                        unreachable!();
-                    };
-                    let GenericArgKind::Type(return_ty) = return_ty.unpack() else {
-                        unreachable!()
-                    };
-                    let GenericArgKind::Type(ty) = ty.unpack() else { unreachable!() };
-                    let TyKind::Closure(def_id, _) = ty.kind() else { unreachable!() };
-                    debug_assert!(self.ghosts.remove(def_id));
-
-                    // Check that all captures are `GhostBox`s
-                    let param_env = self.tcx.param_env(def_id);
-                    let captures = self.ctx.closure_captures(def_id.expect_local());
-                    for capture in captures.into_iter().rev() {
-                        let copy_allowed = match capture.info.capture_kind {
-                            ty::UpvarCapture::ByRef(
-                                ty::BorrowKind::MutBorrow | ty::BorrowKind::UniqueImmBorrow,
-                            ) => false,
-                            _ => true,
-                        };
-                        let place_ty = capture.place.ty();
-
-                        let is_ghost = self.is_ghost_box(place_ty);
-                        let is_copy =
-                            copy_allowed && place_ty.is_copy_modulo_regions(self.tcx, param_env);
-
-                        if !is_ghost && !is_copy {
-                            let mut error = self.ctx.error(
-                                capture.get_path_span(self.tcx),
-                                &format!("not a ghost variable: {}", capture.var_ident.as_str()),
-                            );
-                            error.span_note(
-                                capture.var_ident.span,
-                                String::from("variable defined here"),
-                            );
-                            error.emit();
-                        }
-                    }
-
-                    // Check that the return type is either `GhostBox` or unit
-                    let is_unit = match return_ty.kind() {
-                        rustc_type_ir::TyKind::Tuple(tys) => tys.is_empty(),
-                        _ => false,
-                    };
-                    if !self.is_ghost_box(return_ty) && !is_unit {
-                        let mut error = self.ctx.error(
-                            *fn_span,
-                            "the return type of a ghost! block should be either () or a GhostBox",
-                        );
-                        error.span_note(*fn_span, format!("return type is {}", return_ty));
-                        error.emit();
-                    }
-
-                    // Inlines the ghost closure's body
-
-                    // FIXME: wrap the return type in `GhostBox` automatically ?
-                    //        This is hard to do while keeping unit...
-
-                    let ghost_closure_expr = self.translate_operand(&args[0].node);
-                    let ghost_body_id = BodyId { def_id: def_id.expect_local(), promoted: None };
-                    let ghost_body = self.ctx.body(ghost_body_id).clone();
-                    let ghost_return = Some((target.unwrap(), self.translate_place(*destination)));
-
-                    let mut new_translator = BodyTranslator::build_context(
-                        self.ctx.tcx,
-                        self.ctx,
-                        &ghost_body,
-                        ghost_body_id,
-                        self.vars,
-                        self.fresh_id,
-                        self.past_blocks,
-                        ghost_return,
-                        *self.fresh_id,
-                    );
-                    let entry_point = BasicBlock::from_usize(*new_translator.fresh_id);
-                    *new_translator.fresh_id += ghost_body.basic_blocks.len();
-
-                    // TODO: Use the `destination` place variable rather than `_0`
-                    new_translator.translate_body();
-                    let ghost_closure_arg = new_translator.ghost_closure_arg.unwrap();
-                    // TODO: Use `ghost_closure_expr` directly in the closure's translation
-                    self.emit_statement(fmir::Statement::Assignment(
-                        fmir::Place { local: ghost_closure_arg, projection: Vec::new() },
-                        RValue::Operand(ghost_closure_expr),
-                        span,
-                    ));
-                    self.emit_goto(entry_point);
-                    return;
                 } else {
-                    if self.ghost_closure_arg.is_none() {
+                    let call_ghost = self.check_ghost_call(fun_def_id, subst, *fn_span);
+                    if !self.is_ghost_closure {
                         // We are indeed in program code.
-                        // TODO: this check is pretty bad, we should probably keep the purity of the
-                        // current function around.
                         let func_param_env = self.tcx.param_env(fun_def_id);
 
                         // Check that we do not create/dereference a ghost variable in normal code.
@@ -303,8 +199,23 @@ impl<'tcx> BodyTranslator<'_, 'tcx, '_> {
                             infcx.err_ctxt().report_fulfillment_errors(errs);
                         }
 
-                        let (fun_def_id, subst) =
-                            resolve_function(self.ctx, self.param_env(), fun_def_id, subst, span);
+                        let (fun_def_id, subst) = if let Some((ghost_def_id, ghost_args_ty)) =
+                            call_ghost
+                        {
+                            // Directly call the ghost closure
+
+                            assert_eq!(func_args.len(), 2);
+
+                            resolve_function(
+                                self.ctx,
+                                self.param_env(),
+                                ghost_def_id,
+                                ghost_args_ty,
+                                span,
+                            )
+                        } else {
+                            resolve_function(self.ctx, self.param_env(), fun_def_id, subst, span)
+                        };
 
                         if self.ctx.sig(fun_def_id).contract.is_requires_false() {
                             target = None
@@ -386,6 +297,71 @@ impl<'tcx> BodyTranslator<'_, 'tcx, '_> {
         match ty.kind() {
             rustc_type_ir::TyKind::Adt(containing_type, _) => containing_type.did() == ghost_box_id,
             _ => false,
+        }
+    }
+
+    /// If the function we are calling represents a `ghost!` block, we need to:
+    /// - Check that all the captures of the ghost closure are correct with respect to
+    /// the ghost restrictions.
+    /// - Call the ghost closure directly. Here we return the function to call and its
+    /// type parameters.
+    fn check_ghost_call(
+        &mut self,
+        fun_def_id: DefId,
+        subst: GenericArgsRef<'tcx>,
+        fn_span: Span,
+    ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
+        if self.tcx.is_diagnostic_item(Symbol::intern("ghost_from_fn"), fun_def_id) {
+            let &[return_ty, ty] = subst.as_slice() else {
+                unreachable!();
+            };
+            let GenericArgKind::Type(return_ty) = return_ty.unpack() else { unreachable!() };
+            let GenericArgKind::Type(ty) = ty.unpack() else { unreachable!() };
+            let TyKind::Closure(ghost_def_id, ghost_args_ty) = ty.kind() else { unreachable!() };
+            debug_assert!(self.ghosts.remove(ghost_def_id));
+
+            // Check that all captures are `GhostBox`s
+            let param_env = self.tcx.param_env(ghost_def_id);
+            let captures = self.ctx.closure_captures(ghost_def_id.expect_local());
+            for capture in captures.into_iter().rev() {
+                let copy_allowed = match capture.info.capture_kind {
+                    ty::UpvarCapture::ByRef(
+                        ty::BorrowKind::MutBorrow | ty::BorrowKind::UniqueImmBorrow,
+                    ) => false,
+                    _ => true,
+                };
+                let place_ty = capture.place.ty();
+
+                let is_ghost = self.is_ghost_box(place_ty);
+                let is_copy = copy_allowed && place_ty.is_copy_modulo_regions(self.tcx, param_env);
+
+                if !is_ghost && !is_copy {
+                    let mut error = self.ctx.error(
+                        capture.get_path_span(self.tcx),
+                        &format!("not a ghost variable: {}", capture.var_ident.as_str()),
+                    );
+                    error.span_note(capture.var_ident.span, String::from("variable defined here"));
+                    error.emit();
+                }
+            }
+
+            // Check that the return type is either `GhostBox` or unit
+            let is_unit = match return_ty.kind() {
+                rustc_type_ir::TyKind::Tuple(tys) => tys.is_empty(),
+                _ => false,
+            };
+            if !self.is_ghost_box(return_ty) && !is_unit {
+                let mut error = self.ctx.error(
+                    fn_span,
+                    "the return type of a ghost! block should be either () or a GhostBox",
+                );
+                error.span_note(fn_span, format!("return type is {}", return_ty));
+                error.emit();
+            }
+
+            Some((*ghost_def_id, ghost_args_ty))
+        } else {
+            None
         }
     }
 

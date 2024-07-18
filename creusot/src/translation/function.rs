@@ -47,7 +47,7 @@ pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, body_id: BodyId) -> fmi
 }
 
 // Split this into several sub-contexts: Core, Analysis, Results?
-pub struct BodyTranslator<'body, 'tcx, 'temp> {
+pub struct BodyTranslator<'body, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
 
     body_id: BodyId,
@@ -62,13 +62,13 @@ pub struct BodyTranslator<'body, 'tcx, 'temp> {
     /// Current block being generated
     current_block: (Vec<fmir::Statement<'tcx>>, Option<fmir::Terminator<'tcx>>),
 
-    past_blocks: &'temp mut IndexMap<BasicBlock, fmir::Block<'tcx>>,
+    past_blocks: IndexMap<BasicBlock, fmir::Block<'tcx>>,
 
     // Type translation context
     ctx: &'body mut TranslationCtx<'tcx>,
 
     // Fresh BlockId
-    fresh_id: &'temp mut usize,
+    fresh_id: usize,
 
     invariants: IndexMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>,
 
@@ -78,17 +78,8 @@ pub struct BodyTranslator<'body, 'tcx, 'temp> {
     snapshots: IndexMap<DefId, Term<'tcx>>,
     /// All of the `ghost!` blocks.
     ghosts: IndexSet<DefId>,
-    /// If the current function is a `ghost!` closure, it needs to be inlined.
-    ///
-    /// So we keep
-    /// - the return address at the call site, so that we can replace
-    /// `Terminator::Return` with this.
-    /// - the name (in the parent function) of the return place, so that we can assign
-    /// the return value to it.
-    ghost_closure_return: Option<(BasicBlock, fmir::Place<'tcx>)>,
-    /// If the current function is a `ghost!` closure, this is the (fmir) symbol
-    /// of its argument.
-    ghost_closure_arg: Option<Symbol>,
+    /// Indicate that the current function is a `ghost!` closure.
+    is_ghost_closure: bool,
     /// Offset to add to each use of a `BasicBlock`
     ///
     /// This exists to allow the inlining of ghost closures.
@@ -99,10 +90,10 @@ pub struct BodyTranslator<'body, 'tcx, 'temp> {
     // Translated locals
     locals: HashMap<Local, Symbol>,
 
-    vars: &'temp mut LocalDecls<'tcx>,
+    vars: LocalDecls<'tcx>,
 }
 
-impl<'body, 'tcx, 'vars> BodyTranslator<'body, 'tcx, 'vars> {
+impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     /// Translate a function body to fmir
     fn to_fmir(
         tcx: TyCtxt<'tcx>,
@@ -110,19 +101,19 @@ impl<'body, 'tcx, 'vars> BodyTranslator<'body, 'tcx, 'vars> {
         body: &'body Body<'tcx>,
         body_id: BodyId,
     ) -> fmir::Body<'tcx> {
-        let mut vars = LocalDecls::with_capacity(body.local_decls.len());
-        let ghost_closure_return = None;
-        let mut fresh_id = body.basic_blocks.len();
-        let mut past_blocks = IndexMap::new();
+        let vars = LocalDecls::with_capacity(body.local_decls.len());
+        let is_ghost_closure = util::is_ghost_closure(tcx, body_id.def_id());
+        let fresh_id = body.basic_blocks.len();
+        let past_blocks = IndexMap::new();
         let this = BodyTranslator::build_context(
             tcx,
             ctx,
             body,
             body_id,
-            &mut vars,
-            &mut fresh_id,
-            &mut past_blocks,
-            ghost_closure_return,
+            vars,
+            fresh_id,
+            past_blocks,
+            is_ghost_closure,
             0,
         );
         this.translate()
@@ -133,10 +124,10 @@ impl<'body, 'tcx, 'vars> BodyTranslator<'body, 'tcx, 'vars> {
         ctx: &'body mut TranslationCtx<'tcx>,
         body: &'body Body<'tcx>,
         body_id: BodyId,
-        vars: &'vars mut IndexMap<Symbol, LocalDecl<'tcx>>,
-        fresh_id: &'vars mut usize,
-        past_blocks: &'vars mut IndexMap<BasicBlock, fmir::Block<'tcx>>,
-        ghost_closure_return: Option<(BasicBlock, fmir::Place<'tcx>)>,
+        mut vars: IndexMap<Symbol, LocalDecl<'tcx>>,
+        fresh_id: usize,
+        past_blocks: IndexMap<BasicBlock, fmir::Block<'tcx>>,
+        is_ghost_closure: bool,
         basic_block_offset: usize,
     ) -> Self {
         let invariants = corrected_invariant_names_and_locations(ctx, &body);
@@ -167,8 +158,7 @@ impl<'body, 'tcx, 'vars> BodyTranslator<'body, 'tcx, 'vars> {
             Some(_) => (None, None),
         };
 
-        let (locals, ghost_closure_arg) =
-            translate_vars(&body, &erased_locals, vars, ghost_closure_return.is_some());
+        let locals = translate_vars(&body, &erased_locals, &mut vars);
 
         BodyTranslator {
             tcx,
@@ -186,8 +176,7 @@ impl<'body, 'tcx, 'vars> BodyTranslator<'body, 'tcx, 'vars> {
             assertions,
             snapshots,
             ghosts,
-            ghost_closure_return,
-            ghost_closure_arg,
+            is_ghost_closure,
             basic_block_offset,
             borrows,
         }
@@ -203,11 +192,7 @@ impl<'body, 'tcx, 'vars> BodyTranslator<'body, 'tcx, 'vars> {
         assert!(self.ghosts.is_empty(), "unused ghosts");
         assert!(self.invariants.is_empty(), "unused invariants");
 
-        fmir::Body {
-            locals: std::mem::take(self.vars),
-            arg_count,
-            blocks: std::mem::take(self.past_blocks),
-        }
+        fmir::Body { locals: self.vars, arg_count, blocks: self.past_blocks }
     }
 
     fn translate_body(&mut self) {
@@ -391,8 +376,8 @@ impl<'body, 'tcx, 'vars> BodyTranslator<'body, 'tcx, 'vars> {
     }
 
     fn fresh_block_id(&mut self) -> BasicBlock {
-        let id = BasicBlock::from_usize(*self.fresh_id);
-        *self.fresh_id += 1;
+        let id = BasicBlock::from_usize(self.fresh_id);
+        self.fresh_id += 1;
         id
     }
 
@@ -462,14 +447,12 @@ fn translate_vars<'tcx>(
     body: &Body<'tcx>,
     erased_locals: &BitSet<Local>,
     vars: &mut LocalDecls<'tcx>,
-    is_inlined: bool,
-) -> (HashMap<Local, Symbol>, Option<Symbol>) {
+) -> HashMap<Local, Symbol> {
     let mut locals = HashMap::new();
 
     use mir::VarDebugInfoContents::Place;
 
     let mut names = HashMap::new();
-    let mut inlined_arg = None;
     for (loc, d) in body.local_decls.iter_enumerated() {
         if erased_locals.contains(loc) {
             continue;
@@ -507,23 +490,17 @@ fn translate_vars<'tcx>(
         }
         locals.insert(loc, s);
         let is_arg = 0 < loc.index() && loc.index() <= body.arg_count;
-        if is_arg && is_inlined {
-            if inlined_arg.is_some() {
-                unreachable!()
-            }
-            inlined_arg = Some(s);
-        }
         vars.insert(
             s,
             LocalDecl {
                 span: d.source_info.span,
                 ty: d.ty,
                 temp: !d.is_user_variable(),
-                arg: !is_inlined && is_arg,
+                arg: is_arg,
             },
         );
     }
-    (locals, inlined_arg)
+    locals
 }
 
 #[derive(Clone)]

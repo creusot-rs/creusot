@@ -197,8 +197,13 @@ pub mod ghost {
         T: ?Sized;
 
     impl<T: ?Sized> GhostBox<T> {
+        #[doc(hidden)]
         pub fn from_fn(_: fn() -> T) -> Self {
             GhostBox(std::marker::PhantomData)
+        }
+
+        pub fn uninit() -> Self {
+            Self(std::marker::PhantomData)
         }
     }
 
@@ -209,12 +214,6 @@ pub mod ghost {
     }
 
     impl<T: ?Sized> Copy for GhostBox<T> {}
-
-    impl<T: ?Sized> GhostBox<T> {
-        pub fn uninit() -> Self {
-            Self(std::marker::PhantomData)
-        }
-    }
 }
 
 #[cfg(not(creusot))]

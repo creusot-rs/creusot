@@ -75,7 +75,7 @@ pub(crate) fn is_snapshot_closure(tcx: TyCtxt, def_id: DefId) -> bool {
 }
 
 pub(crate) fn is_ghost_closure(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "ghost"]).is_some()
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "ghost"]).is_some()
 }
 
 pub(crate) fn snapshot_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {

@@ -431,10 +431,11 @@ pub fn ghost(body: TS1) -> TS1 {
     TS1::from(quote! {
         {
             ::creusot_contracts::__stubs::ghost_from_fn({
-                #[creusot::spec::ghost]
+                #[creusot::ghost]
                 #[pure]
                 || { #body }
-            })
+            },
+            ())
         }
     })
 }
@@ -443,12 +444,7 @@ pub fn ghost(body: TS1) -> TS1 {
 pub fn gh(body: TS1) -> TS1 {
     let body = proc_macro2::TokenStream::from(body);
     TS1::from(quote! {
-        {
-            ::creusot_contracts::__stubs::ghost_from_fn({
-                #[creusot::spec::ghost]
-                || { ::creusot_contracts::ghost::GhostBox::new(#body) }
-            })
-        }
+        ::creusot_contracts::ghost!{ ::creusot_contracts::ghost::GhostBox::new(#body) }
     })
 }
 
