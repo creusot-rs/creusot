@@ -83,7 +83,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         let func_param_env = self.tcx.param_env(fun_def_id);
 
                         // Check that we do not create/dereference a ghost variable in normal code.
-                        if self.tcx.is_diagnostic_item(Symbol::intern("deref_method"), fun_def_id) {
+                        if self.tcx.is_diagnostic_item(Symbol::intern("deref_method"), fun_def_id)
+                            || self
+                                .tcx
+                                .is_diagnostic_item(Symbol::intern("deref_mut_method"), fun_def_id)
+                        {
                             let GenericArgKind::Type(ty) = subst.get(0).unwrap().unpack() else {
                                 unreachable!()
                             };
@@ -95,13 +99,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                     )
                                     .with_span_suggestion(
                                         *fn_span,
-                                        "try wrapping this expression in a ghost block",
+                                        "try wrapping this expression in `gh!` instead",
                                         format!(
-                                            "ghost!{{ {} }}",
+                                            "gh!{{ {} }}",
                                             self.ctx
                                                 .sess
                                                 .source_map()
-                                                .span_to_snippet(*fn_span)
+                                                .span_to_snippet(args[0].span)
                                                 .unwrap()
                                         ),
                                         rustc_errors::Applicability::MachineApplicable,

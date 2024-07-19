@@ -64,7 +64,7 @@ impl<T> GhostBox<T> {
     pub fn new(x: T) -> Self {
         Self(PhantomData)
     }
-    
+
     #[trusted]
     #[pure]
     #[requires(true)]
