@@ -191,7 +191,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
             let lim_name = Ident::from_string(format!("{}_lim", &*sig.name));
             let mut lim_sig = sig.clone();
             lim_sig.name = lim_name;
-            lim_sig.trigger = None;
+            lim_sig.trigger = Some(Trigger::single(function_call(&lim_sig)));
             lim_sig.attrs = vec![];
 
             let lim_spec = spec_axiom(&lim_sig);
@@ -305,7 +305,7 @@ fn limited_function_encode(
 ) {
     let lim_name = Ident::from_string(format!("{}_lim", &*sig.name));
     subst_qname(&mut body, &sig.name, &lim_name);
-    let lim_sig = Signature {
+    let mut lim_sig = Signature {
         name: lim_name,
         trigger: None,
         attrs: vec![],
@@ -314,6 +314,7 @@ fn limited_function_encode(
         contract: sig.contract.clone(),
     };
     let lim_call = function_call(&lim_sig);
+    lim_sig.trigger = Some(Trigger::single(lim_call.clone()));
     decls.push(Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig: sig.clone() }));
     decls.push(Decl::Axiom(definition_axiom(&sig, body, "def")));
     decls.push(Decl::Axiom(definition_axiom(&sig, lim_call, "def_lim")));
@@ -395,7 +396,7 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
     let mut condition = preconditions.rfold(postcondition, |acc, arg| arg.implies(acc));
 
     let func_call = function_call(sig);
-    let trigger = sig.trigger.clone().unwrap_or_else(|| Trigger::single(func_call.clone()));
+    let trigger = sig.trigger.clone().into_iter().collect();
     condition.subst(&[("result".into(), func_call.clone())].into_iter().collect());
     let args: Vec<(_, _)> = sig
         .args
@@ -411,7 +412,7 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
     Axiom { name: format!("{}_spec", &*sig.name).into(), rewrite: false, axiom }
 }
 
-fn function_call(sig: &Signature) -> Exp {
+pub fn function_call(sig: &Signature) -> Exp {
     let mut args: Vec<_> = sig
         .args
         .iter()
@@ -429,7 +430,7 @@ fn function_call(sig: &Signature) -> Exp {
 
 fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
     let call = function_call(sig);
-    let trigger = sig.trigger.clone().unwrap_or_else(|| Trigger::single(call.clone()));
+    let trigger = sig.trigger.clone().into_iter().collect();
 
     let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
 

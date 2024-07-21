@@ -212,7 +212,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
             vec![Decl::ConstantDecl(Constant {
                 type_: sig.retty.unwrap(),
                 name: sig.name,
-                body: res,
+                body: Some(res),
             })]
         } else {
             val(ctx, sig, kind)

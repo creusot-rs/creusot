@@ -177,13 +177,17 @@ impl Print for declaration::Constant {
     where
         A::Doc: Clone,
     {
-        alloc
-            .text("constant ")
-            .append(self.name.pretty(alloc))
-            .append(" : ")
-            .append(self.type_.pretty(alloc))
-            .append(" = ")
-            .append(self.body.pretty(alloc))
+        docs![
+            alloc,
+            "constant ",
+            self.name.pretty(alloc),
+            " : ",
+            self.type_.pretty(alloc),
+            match &self.body {
+                Some(b) => alloc.text(" = ").append(b.pretty(alloc)),
+                None => alloc.nil(),
+            }
+        ]
     }
 }
 
@@ -541,10 +545,7 @@ impl Print for Trigger {
     where
         A::Doc: Clone,
     {
-        match &self.0 {
-            None => alloc.nil(),
-            Some(exp) => exp.pretty(alloc).brackets(),
-        }
+        alloc.intersperse(self.0.iter().map(|t| t.pretty(alloc)), ", ")
     }
 }
 
@@ -668,7 +669,7 @@ impl Print for Exp {
                         ", ",
                     ),
                 )
-                .append(trig.pretty(alloc))
+                .append(alloc.intersperse(trig.iter().map(|t| t.pretty(alloc)), alloc.space()))
                 .append(" . ")
                 .append(exp.pretty(alloc)),
             Exp::Exists(binders, trig, exp) => alloc
@@ -681,7 +682,7 @@ impl Print for Exp {
                         ", ",
                     ),
                 )
-                .append(trig.pretty(alloc))
+                .append(alloc.intersperse(trig.iter().map(|t| t.pretty(alloc)), alloc.space()))
                 .append(" . ")
                 .append(exp.pretty(alloc)),
             Exp::Impl(hyp, exp) => {

@@ -475,7 +475,7 @@ fn build_inv_axiom<'tcx>(
     };
     let trivial = rhs.is_true();
     let trigger =
-        if ctx.opts.simple_triggers { Trigger::single(lhs.clone()) } else { Trigger::NONE };
+        if ctx.opts.simple_triggers { vec![Trigger::single(lhs.clone())] } else { Vec::new() };
 
     let axiom = Exp::forall_trig(
         vec![("x".into(), translate_ty(ctx, names, DUMMY_SP, ty))],

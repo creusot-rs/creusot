@@ -97,13 +97,11 @@ pub(crate) enum Purity {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 // TODO: multi-trigger/multiple triggers
-pub struct Trigger(pub Option<Box<Exp>>);
+pub struct Trigger(pub Vec<Exp>);
 
 impl Trigger {
-    pub const NONE: Trigger = Trigger(None);
-
     pub fn single(exp: Exp) -> Self {
-        Trigger(Some(Box::new(exp)))
+        Trigger(vec![exp])
     }
 }
 
@@ -161,8 +159,8 @@ pub enum Exp {
     Old(Box<Exp>),
     Absurd,
     Impl(Box<Exp>, Box<Exp>),
-    Forall(Vec<(Ident, Type)>, Trigger, Box<Exp>),
-    Exists(Vec<(Ident, Type)>, Trigger, Box<Exp>),
+    Forall(Vec<(Ident, Type)>, Vec<Trigger>, Box<Exp>),
+    Exists(Vec<(Ident, Type)>, Vec<Trigger>, Box<Exp>),
     FnLit(Box<Exp>),
 }
 
@@ -233,11 +231,11 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
             f.visit_mut(r)
         }
         Exp::Forall(_, t, e) => {
-            f.visit_trigger_mut(t);
+            t.iter_mut().for_each(|t| f.visit_trigger_mut(t));
             f.visit_mut(e)
         }
         Exp::Exists(_, t, e) => {
-            f.visit_trigger_mut(t);
+            t.iter_mut().for_each(|t| f.visit_trigger_mut(t));
             f.visit_mut(e)
         }
         Exp::Attr(_, e) => f.visit_mut(e),
@@ -251,10 +249,7 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
 }
 
 pub fn super_visit_mut_trigger<T: ExpMutVisitor>(f: &mut T, trigger: &mut Trigger) {
-    match &mut trigger.0 {
-        None => {}
-        Some(exp) => f.visit_mut(exp),
-    }
+    trigger.0.iter_mut().for_each(|t| f.visit_mut(t))
 }
 
 impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
@@ -323,7 +318,7 @@ impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
 
                 let mut s = &subst;
                 s.visit_mut(exp);
-                s.visit_trigger_mut(trig);
+                trig.iter_mut().for_each(|t| s.visit_trigger_mut(t));
             }
             Exp::Exists(binders, trig, exp) => {
                 let mut subst = self.clone();
@@ -346,7 +341,7 @@ impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
 
                 let mut s = &subst;
                 s.visit_mut(exp);
-                s.visit_trigger_mut(trig);
+                trig.iter_mut().for_each(|t| s.visit_trigger_mut(t));
             }
             _ => super_visit_mut(self, exp),
         }
@@ -411,11 +406,11 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
             f.visit(r)
         }
         Exp::Forall(_, t, e) => {
-            f.visit_trigger(t);
+            t.iter().for_each(|t| f.visit_trigger(t));
             f.visit(e)
         }
         Exp::Exists(_, t, e) => {
-            f.visit_trigger(t);
+            t.iter().for_each(|t| f.visit_trigger(t));
             f.visit(e)
         }
         Exp::Attr(_, e) => f.visit(e),
@@ -429,10 +424,7 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
 }
 
 pub fn super_visit_trigger<T: ExpVisitor>(f: &mut T, trigger: &Trigger) {
-    match &trigger.0 {
-        None => {}
-        Some(exp) => f.visit(exp),
-    }
+    trigger.0.iter().for_each(|t| f.visit(t))
 }
 
 impl Exp {
@@ -551,7 +543,7 @@ impl Exp {
     /// Builds a quantifier with explicit trigger
     ///
     /// Simplfies ∀ x, True into True
-    pub fn forall_trig(bound: Vec<(Ident, Type)>, trigger: Trigger, body: Exp) -> Self {
+    pub fn forall_trig(bound: Vec<(Ident, Type)>, trigger: Vec<Trigger>, body: Exp) -> Self {
         if body.is_true() {
             body
         } else {
@@ -563,15 +555,15 @@ impl Exp {
     ///
     /// Simplfies ∀ x, True into True
     pub fn forall(bound: Vec<(Ident, Type)>, body: Exp) -> Self {
-        Exp::forall_trig(bound, Trigger::NONE, body)
+        Exp::forall_trig(bound, Vec::new(), body)
     }
 
-    pub fn exists_trig(bound: Vec<(Ident, Type)>, trigger: Trigger, body: Exp) -> Self {
+    pub fn exists_trig(bound: Vec<(Ident, Type)>, trigger: Vec<Trigger>, body: Exp) -> Self {
         Exp::Exists(bound, trigger, Box::new(body))
     }
 
     pub fn exists(bound: Vec<(Ident, Type)>, body: Exp) -> Self {
-        Exp::exists_trig(bound, Trigger::NONE, body)
+        Exp::exists_trig(bound, Vec::new(), body)
     }
 
     pub fn with_attr(self, attr: Attribute) -> Self {
@@ -861,7 +853,7 @@ impl Exp {
                     Exp::Forall(bnds, trig, exp) => {
                         let mut fvs = std::mem::take(&mut self.occurs);
                         self.visit(exp);
-                        self.visit_trigger(trig);
+                        trig.iter().for_each(|t| self.visit_trigger(t));
                         bnds.iter().for_each(|(l, _)| {
                             self.occurs.remove(l);
                         });
@@ -870,7 +862,7 @@ impl Exp {
                     Exp::Exists(bnds, trig, exp) => {
                         let mut fvs = std::mem::take(&mut self.occurs);
                         self.visit(exp);
-                        self.visit_trigger(trig);
+                        trig.iter().for_each(|t| self.visit_trigger(t));
                         bnds.iter().for_each(|(l, _)| {
                             self.occurs.remove(l);
                         });
