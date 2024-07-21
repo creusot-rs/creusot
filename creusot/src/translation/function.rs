@@ -435,7 +435,6 @@ fn translate_vars<'tcx>(
         vars.insert(
             sym.symbol(),
             LocalDecl {
-                mir_local: loc,
                 span: d.source_info.span,
                 ty: d.ty,
                 temp: !d.is_user_variable(),

@@ -9,7 +9,9 @@ use super::{
 };
 use crate::{
     backend::{
-        closure_generic_decls, optimization, place,
+        closure_generic_decls, optimization,
+        optimization::infer_proph_invariants,
+        place,
         ty::{self, translate_closure_ty, translate_ty},
         wto::weak_topological_order,
     },
@@ -19,6 +21,7 @@ use crate::{
     util::{self, module_name},
 };
 
+use petgraph::graphmap::DiGraphMap;
 use rustc_hir::{def_id::DefId, Unsafety};
 use rustc_middle::{
     mir::{self, BasicBlock, BinOp, ProjectionElem, UnOp, START_BLOCK},
@@ -241,6 +244,19 @@ pub fn val<'tcx>(_: &mut Why3Generator<'tcx>, sig: Signature) -> Decl {
     why3::declaration::Decl::Coma(Defn { name: sig.name, writes: Vec::new(), params, body })
 }
 
+// TODO: move to a more "central" location
+pub(crate) fn node_graph(x: &Body) -> petgraph::graphmap::DiGraphMap<BasicBlock, ()> {
+    let mut graph = DiGraphMap::default();
+    for (bb, data) in &x.blocks {
+        graph.add_node(*bb);
+        for tgt in data.terminator.targets() {
+            graph.add_edge(*bb, tgt, ());
+        }
+    }
+
+    graph
+}
+
 pub fn to_why<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut Dependencies<'tcx>,
@@ -251,21 +267,8 @@ pub fn to_why<'tcx>(
     let usage = optimization::gather_usage(&body);
     optimization::simplify_fmir(usage, &mut body);
 
-    use petgraph::graphmap::DiGraphMap;
-
-    fn node_graph(x: &Body) -> petgraph::graphmap::DiGraphMap<BasicBlock, ()> {
-        let mut graph = DiGraphMap::default();
-        for (bb, data) in &x.blocks {
-            graph.add_node(*bb);
-            for tgt in data.terminator.targets() {
-                graph.add_edge(*bb, tgt, ());
-            }
-        }
-
-        graph
-    }
-
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
+    infer_proph_invariants(ctx, body_id.def_id(), &mut body);
 
     let blocks: Vec<Defn> =
         wto.into_iter().map(|c| component_to_defn(&mut body, ctx, names, c)).collect();

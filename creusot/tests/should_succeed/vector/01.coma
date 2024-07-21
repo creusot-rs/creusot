@@ -164,7 +164,7 @@ module C01_AllZero
   let%span span45 = "" 0 0 0 0
   let%span span46 = "../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
   let%span span47 = "../../../../../creusot-contracts/src/model.rs" 90 8 90 31
-  let%span span48 = "../../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48
+  let%span span48 = "../../../../../creusot-contracts/src/snapshot.rs" 28 20 28 48
   let%span span49 = "../../../../../creusot-contracts/src/std/iter.rs" 80 8 80 19
   let%span span50 = "../../../../../creusot-contracts/src/std/iter.rs" 74 20 74 24
   let%span span51 = "../../../../../creusot-contracts/src/std/iter.rs" 89 0 175 1
@@ -465,9 +465,10 @@ module C01_AllZero
       
     | bb3 = s0 [ s0 =  [ &iter_old <- [%#s012] Snapshot.new iter ] s1 | s1 = bb4 ] 
     | bb4 = s0 [ s0 =  [ &produced <- [%#s013] Snapshot.new (Seq.empty  : Seq.seq usize) ] s1 | s1 = bb5 ] 
-    | bb5 = bb6
+    | bb5 = s0 [ s0 =  [ &old_6_0 <- Snapshot.new v ] s1 | s1 = bb6 ] 
     | bb6 = bb6
-      [ bb6 = {[@expl:loop invariant] [%#s014] forall j : int . 0 <= j /\ j < Seq.length (Snapshot.inner produced)
+      [ bb6 = {[@expl:loop invariant]  ^ Snapshot.inner old_6_0 =  ^ v}
+        {[@expl:loop invariant] [%#s014] forall j : int . 0 <= j /\ j < Seq.length (Snapshot.inner produced)
          -> index_logic'0 ( * v) j = (0 : uint32)}
         {[@expl:loop invariant] [%#s016] Seq.length (shallow_model'0 v) = Seq.length (shallow_model'1 old_v)}
         {[@expl:loop invariant] [%#s015]  ^ Snapshot.inner old_v =  ^ v}
@@ -537,7 +538,8 @@ module C01_AllZero
     | & _25 : Snapshot.snap_ty (Seq.seq usize) = any_l ()
     | & i : usize = any_l ()
     | & _28 : borrowed uint32 = any_l ()
-    | & _29 : borrowed (Vec'0.t_vec uint32 (Global'0.t_global)) = any_l () ]
+    | & _29 : borrowed (Vec'0.t_vec uint32 (Global'0.t_global)) = any_l ()
+    | & old_6_0 : Snapshot.snap_ty (borrowed (Vec'0.t_vec uint32 (Global'0.t_global))) = any_l () ]
     
     [ return' (result:())-> {[@expl:postcondition] [%#s0110] Seq.length (shallow_model'0 v)
       = Seq.length (shallow_model'2 ( ^ v))}

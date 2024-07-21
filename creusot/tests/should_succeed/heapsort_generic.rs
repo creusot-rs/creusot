@@ -45,7 +45,6 @@ where
     let old_v = snapshot! { v };
     let mut i = start;
 
-    #[invariant(^v == ^*old_v)]
     #[invariant(v@.permutation_of(old_v@))]
     #[invariant(start@ <= i@ && i@ < end@)]
     #[invariant(forall<j: Int> 0 <= j && j < start@ || end@ <= j && j < v@.len()

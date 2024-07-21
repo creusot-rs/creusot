@@ -522,9 +522,15 @@ module C04Skip_Impl0_Next
       | s1 =  [ &skipped <- [%#s04_skip1] Snapshot.new (Seq.empty  : Seq.seq item'0) ] s2
       | s2 = bb3 ]
       
-    | bb3 = s0 [ s0 = {[@expl:type invariant] inv'1 skipped} s1 | s1 = -{resolve'2 skipped}- s2 | s2 = bb4 ] 
+    | bb3 = s0
+      [ s0 = {[@expl:type invariant] inv'1 skipped} s1
+      | s1 = -{resolve'2 skipped}- s2
+      | s2 =  [ &old_4_0 <- Snapshot.new self ] s3
+      | s3 = bb4 ]
+      
     | bb4 = bb4
-      [ bb4 = {[@expl:loop invariant] [%#s04_skip6]  ^ Snapshot.inner old_self =  ^ self}
+      [ bb4 = {[@expl:loop invariant]  ^ Snapshot.inner old_4_0 =  ^ self}
+        {[@expl:loop invariant] [%#s04_skip6]  ^ Snapshot.inner old_self =  ^ self}
         {[@expl:loop invariant] [%#s04_skip5] inv'2 self}
         {[@expl:loop invariant] [%#s04_skip4] UIntSize.to_int (C04Skip_Skip_Type.skip_n ( * self)) = 0}
         {[@expl:loop invariant] [%#s04_skip3] forall i : int . 0 <= i /\ i < Seq.length (Snapshot.inner skipped)
@@ -606,7 +612,8 @@ module C04Skip_Impl0_Next
     | & _19 : borrowed i = any_l ()
     | & _21 : bool = any_l ()
     | & x : item'0 = any_l ()
-    | & _26 : Snapshot.snap_ty (Seq.seq item'0) = any_l () ]
+    | & _26 : Snapshot.snap_ty (Seq.seq item'0) = any_l ()
+    | & old_4_0 : Snapshot.snap_ty (borrowed (Skip'0.t_skip i)) = any_l () ]
     
     [ return' (result:Option'0.t_option item'0)-> {[@expl:postcondition] [%#s04_skip12] inv'5 result}
       {[@expl:postcondition] [%#s04_skip11] match result with

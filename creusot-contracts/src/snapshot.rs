@@ -1,5 +1,6 @@
 use crate::{std::ops::Deref, *};
 
+#[rustc_diagnostic_item = "snapshot_ty"]
 #[cfg_attr(creusot, creusot::builtins = "prelude.prelude.Snapshot.snap_ty")]
 pub struct Snapshot<T>(pub(crate) std::marker::PhantomData<T>)
 where
@@ -41,6 +42,7 @@ impl<T: ?Sized> Snapshot<T> {
     #[logic]
     #[open(self)]
     #[creusot::builtins = "prelude.prelude.Snapshot.new"]
+    #[rustc_diagnostic_item = "snapshot_new"]
     pub fn new(_: T) -> Snapshot<T> {
         pearlite! { absurd }
     }

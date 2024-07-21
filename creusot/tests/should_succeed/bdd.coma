@@ -2340,12 +2340,15 @@ module Bdd_Impl11_Hashcons
   let rec grows'0 (self:borrowed (Context'0.t_context)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = grows'0 self} (! return' {result}) ]
     
+  use prelude.prelude.Snapshot
   use prelude.prelude.Intrinsic
   predicate resolve'1 (self : borrowed (Context'0.t_context)) =
     [%#span21]  ^ self =  * self
   let rec resolve'1 (self:borrowed (Context'0.t_context)) (return'  (ret:bool))= any
     [ return' (result:bool)-> {result = resolve'1 self} (! return' {result}) ]
     
+  use prelude.prelude.Snapshot
+  use prelude.prelude.Snapshot
   use prelude.prelude.Snapshot
   use map.Map
   function shallow_model'4 (self : borrowed (MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd))) : Map.map (NodeLog'0.t_nodelog) (Option'0.t_option (Bdd'0.t_bdd))
@@ -2398,7 +2401,6 @@ module Bdd_Impl11_Hashcons
         end}
       (! return' {result}) ]
     
-  use prelude.prelude.Snapshot
   let rec hashcons (self:borrowed (Context'0.t_context)) (n:Node'0.t_node) (return'  (ret:Bdd'0.t_bdd))= {[%#sbdd6] inv'0 self}
     {[%#sbdd5] is_valid_node'0 ( * self) n}
     (! bb0
@@ -2461,9 +2463,10 @@ module Bdd_Impl11_Hashcons
               (fun (_ret':bool) ->  [ &_30 <- _ret' ] (any [ any_ (_any:uint64)-> (!  [ &_32 <- _any ] s3) ] )))
       | s3 = any [ br0 -> {_30 = false} (! bb11) | br1 -> {_30} (! bb8) ]  ]
       
-    | bb8 = bb9
+    | bb8 = s0 [ s0 =  [ &old_9_0 <- Snapshot.new self ] s1 | s1 = bb9 ] 
     | bb9 = bb9
-      [ bb9 = (! bb10)
+      [ bb9 = {[@expl:loop invariant]  ^ Snapshot.inner old_9_0 =  ^ self}
+        (! s0) [ s0 = bb10 ] 
         [ bb10 = s0
           [ s0 = Context'0.t_context { * self}
               (fun (ralloc'0:Bump'0.t_bump) (rhashcons'0:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (rhashcons_ghost'0:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (rnot_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rand_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rcnt'0:uint64) ->
@@ -2516,7 +2519,8 @@ module Bdd_Impl11_Hashcons
     | & _24 : borrowed (MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) = any_l ()
     | & _27 : Snapshot.snap_ty (Map.map uint64 (Node'0.t_node)) = any_l ()
     | & _30 : bool = any_l ()
-    | & _32 : uint64 = any_l () ]
+    | & _32 : uint64 = any_l ()
+    | & old_9_0 : Snapshot.snap_ty (borrowed (Context'0.t_context)) = any_l () ]
     
     [ return' (result:Bdd'0.t_bdd)-> {[@expl:postcondition] [%#sbdd9] is_valid_bdd'0 ( ^ self) result}
       {[@expl:postcondition] [%#sbdd8] grows'0 self}

@@ -36,7 +36,7 @@ pub(crate) mod term;
 pub(crate) mod traits;
 pub(crate) mod ty;
 pub(crate) mod ty_inv;
-mod wto;
+pub(crate) mod wto;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub(crate) enum TransId {

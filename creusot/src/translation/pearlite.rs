@@ -573,7 +573,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                             Term {
                                 ty: variant.fields[missing_field.into()].ty(self.ctx.tcx, args),
                                 span: DUMMY_SP,
-                                kind: self.mk_projection(base.clone(), missing_field.into())?,
+                                kind: mk_projection(base.clone(), missing_field.into()),
                             },
                         ));
                     }
@@ -632,7 +632,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             }
             ExprKind::Field { lhs, name, .. } => {
                 let lhs = self.expr_term(lhs)?;
-                Ok(Term { ty, span, kind: self.mk_projection(lhs, name)? })
+                Ok(Term { ty, span, kind: mk_projection(lhs, name) })
             }
             ExprKind::Tuple { ref fields } => {
                 let fields: Vec<_> =
@@ -883,8 +883,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Field { lhs, variant_index: _, name } => {
                 let (cur, fin) = self.logical_reborrow_inner(*lhs)?;
                 Ok((
-                    Term { ty, span, kind: self.mk_projection(cur, *name)? },
-                    Term { ty, span, kind: self.mk_projection(fin, *name)? },
+                    Term { ty, span, kind: mk_projection(cur, *name) },
+                    Term { ty, span, kind: mk_projection(fin, *name) },
                 ))
             }
             ExprKind::Deref { arg } => {
@@ -1015,26 +1015,26 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
         sub[0].as_type().map(|ty| is_snap_ty(self.ctx.tcx, ty)).unwrap_or(false)
     }
+}
 
-    fn mk_projection(&self, lhs: Term<'tcx>, name: FieldIdx) -> Result<TermKind<'tcx>, Error> {
-        let pat = field_pattern(lhs.ty, name).expect("mk_projection: no term for field");
+pub(crate) fn mk_projection<'tcx>(lhs: Term<'tcx>, name: FieldIdx) -> TermKind<'tcx> {
+    let pat = field_pattern(lhs.ty, name).expect("mk_projection: no term for field");
 
-        match &lhs.ty.kind() {
-            TyKind::Adt(_def, _substs) => Ok(TermKind::Projection { lhs: Box::new(lhs), name }),
-            TyKind::Tuple(_) => {
-                Ok(TermKind::Let {
-                    pattern: pat,
-                    // this is the wrong type
-                    body: Box::new(Term {
-                        ty: lhs.ty,
-                        span: rustc_span::DUMMY_SP,
-                        kind: TermKind::Var(Symbol::intern("a")),
-                    }),
-                    arg: Box::new(lhs),
-                })
+    match &lhs.ty.kind() {
+        TyKind::Adt(_def, _substs) => TermKind::Projection { lhs: Box::new(lhs), name },
+        TyKind::Tuple(_) => {
+            TermKind::Let {
+                pattern: pat,
+                // this is the wrong type
+                body: Box::new(Term {
+                    ty: lhs.ty,
+                    span: rustc_span::DUMMY_SP,
+                    kind: TermKind::Var(Symbol::intern("a")),
+                }),
+                arg: Box::new(lhs),
             }
-            _ => unreachable!(),
         }
+        _ => unreachable!(),
     }
 }
 

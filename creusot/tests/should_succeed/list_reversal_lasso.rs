@@ -97,7 +97,6 @@ impl Memory {
     #[requires(self.list(l, *s))]
     #[ensures((^self).list(result, s.reverse()))]
     pub fn list_reversal_list(&mut self, mut l: Ptr, s: Snapshot<Seq<Ptr>>) -> Ptr {
-        let old_self = snapshot! { self };
         let mut r = NULL;
         let mut n = snapshot! { 0 };
 
@@ -105,7 +104,6 @@ impl Memory {
         #[invariant(self.list_seg(l, *s, NULL, *n, s.len()))]
         #[invariant(self.list_seg(r, s.reverse(), NULL, s.len()-*n, s.len()))]
         // #[variant(s.len() - *n)]
-        #[invariant(^*old_self == ^self)]
         while l != NULL {
             l = std::mem::replace(&mut self[l], std::mem::replace(&mut r, l));
             n = snapshot! { *n + 1 }
@@ -127,9 +125,7 @@ impl Memory {
     pub fn list_reversal_loop(&mut self, mut l: Ptr, s: Snapshot<Seq<Ptr>>) -> Ptr {
         let mut r = NULL;
         let mut n = snapshot! { 0 };
-        let old_self = snapshot! { self };
 
-        #[invariant(^*old_self == ^self)]
         #[invariant(0 <= *n && *n <= s.len() + 1)]
         #[invariant(*n == s.len() + 1 ==>
             l == NULL && r == s[0] && self.nonnull_ptr(r) &&
@@ -172,9 +168,7 @@ impl Memory {
     ) -> Ptr {
         let mut r = NULL;
         let mut n = snapshot! { 0 };
-        let old_self = snapshot! { self };
 
-        #[invariant(^*old_self == ^self)]
         #[invariant(0 <= *n && *n <= 2*s1.len() + s2.len())]
         #[invariant({
             let mid = if s2.len() == 0 { s1[s1.len()-1] } else { s2[0] };
