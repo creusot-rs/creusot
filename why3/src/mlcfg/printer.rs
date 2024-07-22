@@ -116,7 +116,10 @@ impl Print for Module {
             .append(alloc.hardline())
             .append(
                 alloc
-                    .intersperse(self.decls.iter().map(|decl| decl.pretty(alloc)), alloc.hardline())
+                    .intersperse(
+                        self.decls.iter().map(|decl| decl.pretty(alloc)),
+                        alloc.hardline().append(alloc.hardline()),
+                    )
                     .indent(2),
             )
             .append(alloc.hardline())
@@ -1056,11 +1059,14 @@ impl Print for TyDecl {
                             ),
                         );
 
-                    let mut inner_doc = alloc.nil();
-                    for cons in &ty_decl.constrs {
-                        let ty_cons = alloc.text("| ").append(cons.pretty(alloc));
-                        inner_doc = inner_doc.append(ty_cons.append(alloc.hardline()))
-                    }
+                    let inner_doc = alloc.intersperse(
+                        ty_decl
+                            .constrs
+                            .iter()
+                            .map(|cons| alloc.text("| ").append(cons.pretty(alloc))),
+                        alloc.hardline(),
+                    );
+
                     decl = decl
                         .append(alloc.text(" =").append(alloc.hardline()))
                         .append(inner_doc.indent(2))
@@ -1069,19 +1075,7 @@ impl Print for TyDecl {
             }
         };
 
-        // let mut ty_decl =
-        //     alloc.text("type ").append(self.ty_name.pretty(alloc)).append(" ").append(
-        //         alloc.intersperse(
-        //             self.ty_params.iter().map(|p| alloc.text("'").append(p.pretty(alloc))),
-        //             alloc.space(),
-        //         ),
-        //     );
-
-        // if !matches!(self, TyDecl::Opaque { .. }) {
-        //     ty_decl = ty_decl.append(alloc.text(" =").append(alloc.hardline()));
-        // }
         ty_decl
-        // ty_decl.append(self.kind.pretty(alloc).indent(2))
     }
 }
 
