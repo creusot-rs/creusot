@@ -21,6 +21,7 @@ use crate::{
     util::{self, module_name},
 };
 
+use indexmap::IndexSet;
 use petgraph::graphmap::DiGraphMap;
 use rustc_hir::{def_id::DefId, Safety};
 use rustc_middle::{
@@ -30,7 +31,6 @@ use rustc_middle::{
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, UintTy};
-use std::collections::HashSet;
 use why3::{
     coma::{self, Arg, Defn, Expr, Param, Term},
     declaration::{Attribute, Contract, Decl, Module, Signature},
@@ -163,7 +163,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
         .collect::<Vec<_>>();
 
     let tcx = ctx.tcx;
-    let ghost_closure_ids: HashSet<_> = names.find_ghost_closures(tcx).collect();
+    let ghost_closure_ids: IndexSet<_> = names.find_ghost_closures(tcx).collect();
     let ghost_closures = ghost_closure_ids
         .into_iter()
         .map(|(def_id, subst)| {
