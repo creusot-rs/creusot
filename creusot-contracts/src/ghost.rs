@@ -2,7 +2,6 @@ use crate::{
     std::ops::{Deref, DerefMut},
     *,
 };
-use ::std::marker::PhantomData;
 
 /// A type that can be used in `ghost` context.
 ///
@@ -23,46 +22,50 @@ use ::std::marker::PhantomData;
 /// let value: i32 = *b; // compile error !
 /// ```
 #[rustc_diagnostic_item = "ghost_box"]
-pub struct GhostBox<T: ?Sized>(PhantomData<T>);
+pub struct GhostBox<T: ?Sized>(Box<T>);
 
 impl<T: ?Sized> Deref for GhostBox<T> {
     type Target = T;
 
-    #[trusted]
-    #[logic]
     #[pure]
-    #[open(self)]
+    #[ensures(*(*self).0 == *result)]
     fn deref(&self) -> &Self::Target {
-        pearlite! { absurd }
+        &(*self.0)
     }
 }
 impl<T: ?Sized> DerefMut for GhostBox<T> {
-    #[trusted]
-    #[logic]
     #[pure]
-    #[open(self)]
+    #[ensures(*(^self).0 == ^result)]
+    #[ensures(*(*self).0 == *result)]
     fn deref_mut(&mut self) -> &mut Self::Target {
-        pearlite! { absurd }
+        &mut (*self.0)
     }
 }
 
 impl<T: ShallowModel + ?Sized> ShallowModel for GhostBox<T> {
     type ShallowModelTy = T::ShallowModelTy;
-
     #[logic]
     #[open]
     fn shallow_model(self) -> Self::ShallowModelTy {
-        pearlite! { self.deref().shallow_model() }
+        (*self.0).shallow_model()
+    }
+}
+
+#[trusted]
+impl<T: ?Sized> Resolve for GhostBox<T> {
+    #[predicate(prophetic)]
+    #[open]
+    fn resolve(self) -> bool {
+        Resolve::resolve(*self.0)
     }
 }
 
 impl<T> GhostBox<T> {
     #[rustc_diagnostic_item = "ghost_box_new"]
-    #[trusted]
     #[pure]
-    #[ensures(*result == x)]
+    #[ensures(*result.0 == x)]
     pub fn new(x: T) -> Self {
-        Self(PhantomData)
+        Self(Box::new(x))
     }
 
     #[trusted]
@@ -70,16 +73,14 @@ impl<T> GhostBox<T> {
     #[requires(true)]
     #[ensures(true)]
     pub fn uninit() -> Self {
-        Self(PhantomData)
+        loop {}
     }
 
     #[trusted]
     #[logic]
     #[open(self)]
-    pub fn inner(self) -> T
-    where
-        T: Sized, // TODO: don't require T: Sized here. Problem: return type is T.
-    {
-        pearlite! { absurd }
+    #[ensures(result == *self.0)]
+    pub fn inner(self) -> T {
+        *self.0
     }
 }
