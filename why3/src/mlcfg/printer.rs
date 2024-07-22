@@ -659,32 +659,44 @@ impl Print for Exp {
                 .append("else")
                 .append(alloc.line().append(e.pretty(alloc)).nest(2).append(alloc.line_()))
                 .group(),
-            Exp::Forall(binders, trig, exp) => alloc
-                .text("forall ")
-                .append(
+            Exp::Forall(binders, trig, exp) => {
+                let mut res = alloc.text("forall ").append(
                     alloc.intersperse(
                         binders
                             .iter()
                             .map(|(b, t)| b.pretty(alloc).append(" : ").append(t.pretty(alloc))),
                         ", ",
                     ),
-                )
-                .append(alloc.intersperse(trig.iter().map(|t| t.pretty(alloc)), alloc.space()))
-                .append(" . ")
-                .append(exp.pretty(alloc)),
-            Exp::Exists(binders, trig, exp) => alloc
-                .text("exists ")
-                .append(
+                );
+
+                if trig.iter().fold(false, |acc, t| acc || !t.0.is_empty()) {
+                    res = res
+                        .append(" [")
+                        .append(alloc.intersperse(trig.iter().map(|t| t.pretty(alloc)), " | "))
+                        .append("]");
+                }
+
+                res.append(" . ").append(exp.pretty(alloc))
+            }
+            Exp::Exists(binders, trig, exp) => {
+                let mut res = alloc.text("exists ").append(
                     alloc.intersperse(
                         binders
                             .iter()
                             .map(|(b, t)| b.pretty(alloc).append(" : ").append(t.pretty(alloc))),
                         ", ",
                     ),
-                )
-                .append(alloc.intersperse(trig.iter().map(|t| t.pretty(alloc)), alloc.space()))
-                .append(" . ")
-                .append(exp.pretty(alloc)),
+                );
+
+                if trig.iter().fold(false, |acc, t| acc || !t.0.is_empty()) {
+                    res = res
+                        .append(" [")
+                        .append(alloc.intersperse(trig.iter().map(|t| t.pretty(alloc)), " | "))
+                        .append("]");
+                }
+
+                res.append(" . ").append(exp.pretty(alloc))
+            }
             Exp::Impl(hyp, exp) => {
                 let hyp = parens!(alloc, self, hyp);
                 let impl_ = alloc
