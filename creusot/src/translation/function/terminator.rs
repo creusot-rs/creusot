@@ -23,7 +23,7 @@ use rustc_middle::{
     },
     ty::{self, AssocItem, GenericArgKind, GenericArgsRef, ParamEnv, Predicate, Ty, TyKind},
 };
-use rustc_span::{Span, Symbol};
+use rustc_span::{source_map::Spanned, Span, Symbol};
 use rustc_trait_selection::{
     error_reporting::InferCtxtErrorExt,
     infer::InferCtxtExt,
@@ -78,92 +78,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     self.emit_ghost_assign(*destination, assertion, span);
                 } else {
                     let call_ghost = self.check_ghost_call(fun_def_id, subst, *fn_span);
-                    if !self.is_ghost_closure {
-                        // We are indeed in program code.
-                        let func_param_env = self.tcx.param_env(fun_def_id);
-
-                        // Check that we do not create/dereference a ghost variable in normal code.
-                        if self.tcx.is_diagnostic_item(Symbol::intern("deref_method"), fun_def_id)
-                            || self
-                                .tcx
-                                .is_diagnostic_item(Symbol::intern("deref_mut_method"), fun_def_id)
-                        {
-                            let GenericArgKind::Type(ty) = subst.get(0).unwrap().unpack() else {
-                                unreachable!()
-                            };
-                            if self.is_ghost_box(ty) {
-                                self.ctx
-                                    .error(
-                                        *fn_span,
-                                        "dereference of a ghost variable in program context",
-                                    )
-                                    .with_span_suggestion(
-                                        *fn_span,
-                                        "try wrapping this expression in `gh!` instead",
-                                        format!(
-                                            "gh!{{ {} }}",
-                                            self.ctx
-                                                .sess
-                                                .source_map()
-                                                .span_to_snippet(args[0].span)
-                                                .unwrap()
-                                        ),
-                                        rustc_errors::Applicability::MachineApplicable,
-                                    )
-                                    .emit();
-                            }
-                        } else if self
-                            .tcx
-                            .is_diagnostic_item(Symbol::intern("ghost_box_new"), fun_def_id)
-                        {
-                            self.ctx
-                                .error(
-                                    *fn_span,
-                                    "cannot create a ghost variable in program context",
-                                )
-                                .with_span_suggestion(
-                                    *fn_span,
-                                    "try wrapping this expression in a ghost block",
-                                    format!(
-                                        "ghost!{{ {} }}",
-                                        self.ctx
-                                            .sess
-                                            .source_map()
-                                            .span_to_snippet(*fn_span)
-                                            .unwrap()
-                                    ),
-                                    rustc_errors::Applicability::MachineApplicable,
-                                )
-                                .emit();
-                        } else {
-                            // Check and reject instantiation of a <T: Deref> with a ghost parameter.
-                            let deref_trait_id =
-                                self.tcx.get_diagnostic_item(Symbol::intern("Deref")).unwrap();
-                            let infer_ctx = self.tcx.infer_ctxt().build();
-                            for bound in func_param_env.caller_bounds() {
-                                let Some(trait_clause) = bound.as_trait_clause() else { continue };
-                                if trait_clause.def_id() != deref_trait_id {
-                                    continue;
-                                }
-                                let ty = trait_clause.self_ty().skip_binder();
-                                let caller_ty = ty::EarlyBinder::bind(trait_clause.self_ty())
-                                    .instantiate(self.tcx, subst)
-                                    .skip_binder();
-                                let deref_in_callee = infer_ctx
-                                    .type_implements_trait(
-                                        deref_trait_id,
-                                        std::iter::once(ty),
-                                        func_param_env,
-                                    )
-                                    .may_apply();
-                                let ghost_in_caller = self.is_ghost_box(caller_ty);
-                                let ghost_in_callee = self.is_ghost_box(ty);
-                                if deref_in_callee && ghost_in_caller && !ghost_in_callee {
-                                    self.ctx.error(*fn_span, &format!("Cannot instantiate a generic type {ty} implementing `Deref` with the ghost type {caller_ty}")).emit();
-                                }
-                            }
-                        }
-                    }
+                    self.check_no_ghost_in_program(args, *fn_span, fun_def_id, subst);
 
                     let mut func_args: Vec<_> =
                         args.iter().map(|arg| self.translate_operand(&arg.node)).collect();
@@ -366,6 +281,80 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Some((*ghost_def_id, ghost_args_ty))
         } else {
             None
+        }
+    }
+
+    /// This function will raise errors if we are in program code, and the function we
+    /// are calling is ghost-only.
+    ///
+    /// Ghost-only functions are `GhostBox::new` and `GhostBox::deref`.
+    fn check_no_ghost_in_program(
+        &self,
+        args: &[Spanned<Operand>],
+        fn_span: Span,
+        fun_def_id: DefId,
+        subst: GenericArgsRef<'tcx>,
+    ) {
+        if self.is_ghost_closure {
+            return;
+        }
+        // We are indeed in program code.
+        let func_param_env = self.tcx.param_env(fun_def_id);
+
+        // Check that we do not create/dereference a ghost variable in normal code.
+        if self.tcx.is_diagnostic_item(Symbol::intern("deref_method"), fun_def_id)
+            || self.tcx.is_diagnostic_item(Symbol::intern("deref_mut_method"), fun_def_id)
+        {
+            let GenericArgKind::Type(ty) = subst.get(0).unwrap().unpack() else { unreachable!() };
+            if self.is_ghost_box(ty) {
+                self.ctx
+                    .error(fn_span, "dereference of a ghost variable in program context")
+                    .with_span_suggestion(
+                        fn_span,
+                        "try wrapping this expression in a ghost block",
+                        format!(
+                            "ghost!{{ {} }}",
+                            self.ctx.sess.source_map().span_to_snippet(fn_span).unwrap()
+                        ),
+                        rustc_errors::Applicability::MachineApplicable,
+                    )
+                    .emit();
+            }
+        } else if self.tcx.is_diagnostic_item(Symbol::intern("ghost_box_new"), fun_def_id) {
+            self.ctx
+                .error(fn_span, "cannot create a ghost variable in program context")
+                .with_span_suggestion(
+                    fn_span,
+                    "try wrapping this expression in `gh!` instead",
+                    format!(
+                        "gh!{{ {} }}",
+                        self.ctx.sess.source_map().span_to_snippet(args[0].span).unwrap()
+                    ),
+                    rustc_errors::Applicability::MachineApplicable,
+                )
+                .emit();
+        } else {
+            // Check and reject instantiation of a <T: Deref> with a ghost parameter.
+            let deref_trait_id = self.tcx.get_diagnostic_item(Symbol::intern("Deref")).unwrap();
+            let infer_ctx = self.tcx.infer_ctxt().build();
+            for bound in func_param_env.caller_bounds() {
+                let Some(trait_clause) = bound.as_trait_clause() else { continue };
+                if trait_clause.def_id() != deref_trait_id {
+                    continue;
+                }
+                let ty = trait_clause.self_ty().skip_binder();
+                let caller_ty = ty::EarlyBinder::bind(trait_clause.self_ty())
+                    .instantiate(self.tcx, subst)
+                    .skip_binder();
+                let deref_in_callee = infer_ctx
+                    .type_implements_trait(deref_trait_id, std::iter::once(ty), func_param_env)
+                    .may_apply();
+                let ghost_in_caller = self.is_ghost_box(caller_ty);
+                let ghost_in_callee = self.is_ghost_box(ty);
+                if deref_in_callee && ghost_in_caller && !ghost_in_callee {
+                    self.ctx.error(fn_span, &format!("Cannot instantiate a generic type {ty} implementing `Deref` with the ghost type {caller_ty}")).emit();
+                }
+            }
         }
     }
 
