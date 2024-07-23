@@ -77,7 +77,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     self.check_ghost_term(&assertion, location);
                     self.emit_ghost_assign(*destination, assertion, span);
                 } else {
-                    let call_ghost = self.check_ghost_call(fun_def_id, subst, *fn_span);
+                    let call_ghost = self.check_ghost_call(fun_def_id, subst);
                     self.check_no_ghost_in_program(args, *fn_span, fun_def_id, subst);
 
                     let mut func_args: Vec<_> =
@@ -228,13 +228,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         &mut self,
         fun_def_id: DefId,
         subst: GenericArgsRef<'tcx>,
-        fn_span: Span,
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
         if self.tcx.is_diagnostic_item(Symbol::intern("ghost_from_fn"), fun_def_id) {
-            let &[return_ty, ty] = subst.as_slice() else {
+            let &[_, ty] = subst.as_slice() else {
                 unreachable!();
             };
-            let GenericArgKind::Type(return_ty) = return_ty.unpack() else { unreachable!() };
             let GenericArgKind::Type(ty) = ty.unpack() else { unreachable!() };
             let TyKind::Closure(ghost_def_id, ghost_args_ty) = ty.kind() else { unreachable!() };
             debug_assert!(self.ghosts.remove(ghost_def_id));
@@ -262,20 +260,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     error.span_note(capture.var_ident.span, String::from("variable defined here"));
                     error.emit();
                 }
-            }
-
-            // Check that the return type is either `GhostBox` or unit
-            let is_unit = match return_ty.kind() {
-                rustc_type_ir::TyKind::Tuple(tys) => tys.is_empty(),
-                _ => false,
-            };
-            if !self.is_ghost_box(return_ty) && !is_unit {
-                let mut error = self.ctx.error(
-                    fn_span,
-                    "the return type of a ghost! block should be either () or a GhostBox",
-                );
-                error.span_note(fn_span, format!("return type is {}", return_ty));
-                error.emit();
             }
 
             Some((*ghost_def_id, ghost_args_ty))

@@ -22,7 +22,7 @@ In `ghost!` block, you may write any kind of Rust code, with the following restr
 - all functions called must have the `#[pure]` attribute
 - When reading an outer variable, the variable must be a `GhostBox<T>`, or implement `Copy`
 - When writing an outer variable, the variable must be a `GhostBox<T>`
-- The output of the `ghost!` block must be either a `GhostBox<T>`, or the unit type `()`
+- The output of the `ghost!` block will automatically be wrapped in `GhostBox::new`
 
 Those restriction exists to ensure that ghost code is **erasable**: its presence or absence does not affect the semantics of the actual running program, only the proofs.
 
@@ -32,29 +32,15 @@ The `GhostBox<T>` type is the type of "ghost data". In Creusot, it acts like a `
 
 The only restriction of `GhostBox<T>` is that it may not be dereferenced nor created in non-ghost code.
 
-> **The `gh!` macro**
->
-> To create a `GhostBox<T>`, you must write something like
->
-> ```rust
-> let g = ghost! { GhostBox::new(...) };
-> ```
->
-> Since it is a bit verbose, Creusot has a macro to do this concisely:
->
-> ```rust
-> let g = gh!(...);
-> ```
-
 ## Examples
 
 - Creating and modifying a ghost variable:
 
 ```rust
-let mut g = gh!(50);
+let mut g = ghost!(50);
 ghost! {
     *g *= 2;
-}
+};
 proof_assert!(g@ == 100);
 ```
 
@@ -68,10 +54,10 @@ fn add_one(g: &mut i32) {
     *g += 1;
 }
 
-let mut g = gh!(41);
+let mut g = ghost!(41);
 ghost! {
     add_one(&mut *g);
-}
+};
 proof_assert!(g@ == 42);
 ```
 

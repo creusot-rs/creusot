@@ -45,14 +45,13 @@ mod macros {
     /// of the code stays the same with and without ghost blocks:
     /// - They may not contain code that crashes or runs indefinitely. In other words,
     /// they can only call [`pure`] functions.
-    /// - All variables that enter the ghost blocks must either be [`Copy`], or a
+    /// - All variables that are read in the ghost block must either be [`Copy`], or a
     ///  [`GhostBox`](crate::ghost::GhostBox).
-    /// - The variable returned by the ghost block must be of type `()` or
+    /// - All variables that are modified in the ghost block must be
+    ///  [`GhostBox`](crate::ghost::GhostBox)s.
+    /// - The variable returned by the ghost block will automatically be wrapped in a
     /// [`GhostBox`](crate::ghost::GhostBox).
     pub use base_macros::ghost;
-
-    /// Shorthand for `ghost!{ GhostBox::new(...) }`.
-    pub use base_macros::gh;
 
     /// Indicate that the function terminates: fullfilling the `requires` clauses
     /// ensures that this function will not loop indefinitively.

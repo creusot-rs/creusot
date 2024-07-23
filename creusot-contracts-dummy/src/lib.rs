@@ -35,13 +35,7 @@ pub fn snapshot(_: TS1) -> TS1 {
 
 #[proc_macro]
 pub fn ghost(_: TS1) -> TS1 {
-    // FIXME: this does not accept returning the unit type...
     quote::quote! { GhostBox::from_fn(|| { loop {} }) }.into()
-}
-
-#[proc_macro]
-pub fn gh(_: TS1) -> TS1 {
-    quote::quote! { creusot_contracts::ghost::GhostBox::uninit() }.into()
 }
 
 #[proc_macro_attribute]
