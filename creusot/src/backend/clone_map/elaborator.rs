@@ -238,9 +238,7 @@ fn val<'tcx>(
             return vec![Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig })];
         }
 
-        let mut d = vec![
-            Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig }),
-        ];
+        let mut d = vec![Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig })];
 
         if let Some(ax) = ax {
             d.push(Decl::Axiom(ax))
