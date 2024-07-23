@@ -1,10 +1,12 @@
 
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.prelude.Opaque
+  
   type t_nonnull 't =
     | C_NonNull opaque_ptr
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
     [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
     | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
@@ -13,19 +15,23 @@ end
 module Core_Marker_PhantomData_Type
   type t_phantomdata 't =
     | C_PhantomData
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
     [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
     
 end
 module Core_Ptr_Unique_Unique_Type
   use Core_Marker_PhantomData_Type as PhantomData'0
+  
   use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  
   type t_unique 't =
     | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
     [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
       = input}
@@ -38,11 +44,14 @@ module Core_Ptr_Unique_Unique_Type
 end
 module Alloc_RawVec_Cap_Type
   use prelude.prelude.UIntSize
+  
   use prelude.prelude.Int
+  
   type t_cap  =
     | C_Cap usize
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec t_cap (input:t_cap) (ret  (field_0:usize))= any
     [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
     | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
@@ -50,11 +59,14 @@ module Alloc_RawVec_Cap_Type
 end
 module Alloc_RawVec_RawVec_Type
   use Alloc_RawVec_Cap_Type as Cap'0
+  
   use Core_Ptr_Unique_Unique_Type as Unique'0
+  
   type t_rawvec 't 'a =
     | C_RawVec (Unique'0.t_unique 't) (Cap'0.t_cap) 'a
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec t_rawvec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a))= any
     [ good (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
       (! ret {ptr} {cap} {alloc})
@@ -63,12 +75,16 @@ module Alloc_RawVec_RawVec_Type
 end
 module Alloc_Collections_VecDeque_VecDeque_Type
   use Alloc_RawVec_RawVec_Type as RawVec'0
+  
   use prelude.prelude.UIntSize
+  
   use prelude.prelude.Int
+  
   type t_vecdeque 't 'a =
     | C_VecDeque usize usize (RawVec'0.t_rawvec 't 'a)
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec t_vecdeque < 't > < 'a > (input:t_vecdeque 't 'a) (ret  (head:usize) (len:usize) (buf:RawVec'0.t_rawvec 't 'a))= any
     [ good (head:usize) (len:usize) (buf:RawVec'0.t_rawvec 't 'a)-> {C_VecDeque head len buf = input}
       (! ret {head} {len} {buf})
@@ -78,8 +94,9 @@ end
 module Alloc_Alloc_Global_Type
   type t_global  =
     | C_Global
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec t_global (input:t_global) (ret  )= any
     [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
     
@@ -88,11 +105,13 @@ module Core_Option_Option_Type
   type t_option 't =
     | C_None
     | C_Some 't
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec none < 't > (input:t_option 't) (ret  )= any
     [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ]
     
+  
   let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
     | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
@@ -100,161 +119,207 @@ module Core_Option_Option_Type
 end
 module Vecdeque_TestDeque
   let%span svecdeque0 = "../vecdeque.rs" 6 55 6 56
+  
   let%span svecdeque1 = "../vecdeque.rs" 9 27 9 28
+  
   let%span svecdeque2 = "../vecdeque.rs" 11 35 11 50
+  
   let%span svecdeque3 = "../vecdeque.rs" 14 27 14 28
+  
   let%span svecdeque4 = "../vecdeque.rs" 19 21 19 22
+  
   let%span svecdeque5 = "../vecdeque.rs" 20 21 20 22
+  
   let%span svecdeque6 = "../vecdeque.rs" 21 20 21 21
+  
   let%span svecdeque7 = "../vecdeque.rs" 26 4 26 29
+  
   let%span svecdeque8 = "../vecdeque.rs" 24 4 24 40
+  
   let%span svecdeque9 = "../vecdeque.rs" 23 4 23 41
+  
   let%span svecdeque10 = "../vecdeque.rs" 17 4 17 37
+  
   let%span svecdeque11 = "../vecdeque.rs" 16 4 16 38
+  
   let%span svecdeque12 = "../vecdeque.rs" 14 4 14 29
+  
   let%span svecdeque13 = "../vecdeque.rs" 13 4 13 29
+  
   let%span svecdeque14 = "../vecdeque.rs" 9 4 9 29
+  
   let%span svecdeque15 = "../vecdeque.rs" 8 4 8 29
+  
   let%span svecdeque16 = "../vecdeque.rs" 24 37 24 38
+  
   let%span svecdeque17 = "../vecdeque.rs" 23 38 23 39
+  
   let%span span18 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  
   let%span span19 = "" 0 0 0 0
+  
   let%span span20 = "../../../../creusot-contracts/src/std/deque.rs" 12 21 12 25
+  
   let%span span21 = "../../../../creusot-contracts/src/std/deque.rs" 11 14 11 41
+  
   let%span span22 = "../../../../creusot-contracts/src/std/deque.rs" 12 4 12 36
+  
   let%span span23 = "" 0 0 0 0
+  
   let%span span24 = "../../../../creusot-contracts/src/std/deque.rs" 76 26 76 45
+  
   let%span span25 = "../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  
   let%span span26 = "" 0 0 0 0
+  
   let%span span27 = "" 0 0 0 0
+  
   let%span span28 = "../../../../creusot-contracts/src/std/deque.rs" 103 26 103 55
+  
   let%span span29 = "" 0 0 0 0
+  
   let%span span30 = "" 0 0 0 0
+  
   let%span span31 = "../../../../creusot-contracts/src/std/deque.rs" 98 26 98 59
+  
   let%span span32 = "../../../../creusot-contracts/src/std/deque.rs" 99 26 99 73
+  
   let%span span33 = "" 0 0 0 0
+  
   let%span span34 = "../../../../creusot-contracts/src/std/deque.rs" 89 26 94 17
+  
   let%span span35 = "" 0 0 0 0
+  
   let%span span36 = "../../../../creusot-contracts/src/std/num.rs" 22 16 22 35
+  
   let%span span37 = "../../../../creusot-contracts/src/std/option.rs" 10 8 13 9
+  
   let%span span38 = "../../../../creusot-contracts/src/model.rs" 81 8 81 28
+  
   let%span span39 = "" 0 0 0 0
+  
   let%span span40 = "" 0 0 0 0
+  
   let%span span41 = "../../../../creusot-contracts/src/std/option.rs" 22 26 22 75
+  
   let%span span42 = "" 0 0 0 0
+  
   let%span span43 = "../../../../creusot-contracts/src/std/deque.rs" 80 26 85 17
+  
   let%span span44 = "" 0 0 0 0
+  
   let%span span45 = "../../../../creusot-contracts/src/std/deque.rs" 58 26 58 44
+  
   let%span span46 = "../../../../creusot-contracts/src/model.rs" 90 8 90 31
+  
   let%span span47 = "" 0 0 0 0
+  
   let%span span48 = "../../../../creusot-contracts/src/std/deque.rs" 68 26 68 48
+  
   let%span span49 = "" 0 0 0 0
+  
   let%span span50 = "../../../../creusot-contracts/src/std/deque.rs" 72 26 72 54
+  
   let%span span51 = "../../../../creusot-contracts/src/std/deque.rs" 62 26 62 44
+  
   use prelude.prelude.UInt32
+  
   use seq.Seq
+  
   predicate invariant'6 (self : Seq.seq uint32) =
     [%#span18] true
-  let rec invariant'6 (self:Seq.seq uint32) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'6 self} (! return' {result}) ]
-    
+  
   predicate inv'6 (_x : Seq.seq uint32)
-  let rec inv'6 (_x:Seq.seq uint32) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'6 _x} (! return' {result}) ]
-    
+  
   axiom inv'6 : forall x : Seq.seq uint32 . inv'6 x = true
+  
   use Alloc_Alloc_Global_Type as Global'0
+  
   use Alloc_Collections_VecDeque_VecDeque_Type as VecDeque'0
+  
   predicate invariant'5 (self : VecDeque'0.t_vecdeque uint32 (Global'0.t_global)) =
     [%#span18] true
-  let rec invariant'5 (self:VecDeque'0.t_vecdeque uint32 (Global'0.t_global)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'5 self} (! return' {result}) ]
-    
+  
   predicate inv'5 (_x : VecDeque'0.t_vecdeque uint32 (Global'0.t_global))
-  let rec inv'5 (_x:VecDeque'0.t_vecdeque uint32 (Global'0.t_global)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'5 _x} (! return' {result}) ]
-    
+  
   axiom inv'5 : forall x : VecDeque'0.t_vecdeque uint32 (Global'0.t_global) . inv'5 x = true
+  
   predicate invariant'4 (self : uint32) =
     [%#span18] true
-  let rec invariant'4 (self:uint32) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'4 self} (! return' {result}) ]
-    
+  
   predicate inv'4 (_x : uint32)
-  let rec inv'4 (_x:uint32) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'4 _x} (! return' {result}) ]
-    
+  
   axiom inv'4 : forall x : uint32 . inv'4 x = true
+  
   use Core_Option_Option_Type as Option'0
+  
   predicate invariant'3 (self : Option'0.t_option uint32) =
     [%#span18] true
-  let rec invariant'3 (self:Option'0.t_option uint32) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'3 self} (! return' {result}) ]
-    
+  
   predicate inv'3 (_x : Option'0.t_option uint32)
-  let rec inv'3 (_x:Option'0.t_option uint32) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'3 _x} (! return' {result}) ]
-    
+  
   axiom inv'3 : forall x : Option'0.t_option uint32 . inv'3 x = true
+  
   predicate invariant'2 (self : Option'0.t_option uint32) =
     [%#span18] true
-  let rec invariant'2 (self:Option'0.t_option uint32) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'2 self} (! return' {result}) ]
-    
+  
   predicate inv'2 (_x : Option'0.t_option uint32)
-  let rec inv'2 (_x:Option'0.t_option uint32) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'2 _x} (! return' {result}) ]
-    
+  
   axiom inv'2 : forall x : Option'0.t_option uint32 . inv'2 x = true
+  
   use prelude.prelude.Borrow
+  
   predicate invariant'1 (self : borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) =
     [%#span18] true
-  let rec invariant'1 (self:borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'1 self} (! return' {result}) ]
-    
+  
   predicate inv'1 (_x : borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global)))
-  let rec inv'1 (_x:borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'1 _x} (! return' {result}) ]
-    
+  
   axiom inv'1 : forall x : borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global)) . inv'1 x = true
+  
   predicate invariant'0 (self : VecDeque'0.t_vecdeque uint32 (Global'0.t_global)) =
     [%#span18] true
-  let rec invariant'0 (self:VecDeque'0.t_vecdeque uint32 (Global'0.t_global)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'0 self} (! return' {result}) ]
-    
+  
   predicate inv'0 (_x : VecDeque'0.t_vecdeque uint32 (Global'0.t_global))
-  let rec inv'0 (_x:VecDeque'0.t_vecdeque uint32 (Global'0.t_global)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'0 _x} (! return' {result}) ]
-    
+  
   axiom inv'0 : forall x : VecDeque'0.t_vecdeque uint32 (Global'0.t_global) . inv'0 x = true
+  
   use prelude.prelude.Intrinsic
+  
   use seq.Seq
+  
   use prelude.prelude.UIntSize
+  
   use prelude.prelude.UIntSize
+  
   use prelude.prelude.Int
+  
   constant max'0 : usize = [%#span19] (18446744073709551615 : usize)
+  
   function shallow_model'0 (self : VecDeque'0.t_vecdeque uint32 (Global'0.t_global)) : Seq.seq uint32
-  let rec shallow_model'0 (self:VecDeque'0.t_vecdeque uint32 (Global'0.t_global)) (return'  (ret:Seq.seq uint32))= {[@expl:precondition] [%#span20] inv'5 self}
-    any [ return' (result:Seq.seq uint32)-> {result = shallow_model'0 self} (! return' {result}) ] 
+  
   axiom shallow_model'0_spec : forall self : VecDeque'0.t_vecdeque uint32 (Global'0.t_global) . ([%#span20] inv'5 self)
    -> ([%#span22] inv'6 (shallow_model'0 self))
   && ([%#span21] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
+  
   let rec clear'0 (self:borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) (return'  (ret:()))= {[@expl:precondition] [%#span23] inv'1 self}
     any [ return' (result:())-> {[%#span24] Seq.length (shallow_model'0 ( ^ self)) = 0} (! return' {result}) ] 
+  
   use seq.Seq
+  
   function shallow_model'2 (self : borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) : Seq.seq uint32 =
     [%#span25] shallow_model'0 ( * self)
-  let rec shallow_model'2 (self:borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) (return'  (ret:Seq.seq uint32))= any
-    [ return' (result:Seq.seq uint32)-> {result = shallow_model'2 self} (! return' {result}) ]
-    
+  
   let rec push_back'0 (self:borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) (value:uint32) (return'  (ret:()))= {[@expl:precondition] [%#span27] inv'4 value}
     {[@expl:precondition] [%#span26] inv'1 self}
     any
     [ return' (result:())-> {[%#span28] shallow_model'0 ( ^ self) = Seq.snoc (shallow_model'2 self) value}
       (! return' {result}) ]
     
+  
   use seq.Seq
+  
   use seq.Seq
+  
   let rec push_front'0 (self:borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) (value:uint32) (return'  (ret:()))= {[@expl:precondition] [%#span30] inv'4 value}
     {[@expl:precondition] [%#span29] inv'1 self}
     any
@@ -263,7 +328,9 @@ module Vecdeque_TestDeque
       {[%#span31] Seq.length (shallow_model'0 ( ^ self)) = Seq.length (shallow_model'2 self) + 1}
       (! return' {result}) ]
     
+  
   use prelude.seq_ext.SeqExt
+  
   let rec pop_back'0 (self:borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) (return'  (ret:Option'0.t_option uint32))= {[@expl:precondition] [%#span33] inv'1 self}
     any
     [ return' (result:Option'0.t_option uint32)-> {[%#span35] inv'2 result}
@@ -275,29 +342,27 @@ module Vecdeque_TestDeque
         end}
       (! return' {result}) ]
     
+  
   use prelude.prelude.Int
+  
   use prelude.prelude.UInt32
+  
   function deep_model'2 (self : uint32) : int =
     [%#span36] UInt32.to_int self
-  let rec deep_model'2 (self:uint32) (return'  (ret:int))= any
-    [ return' (result:int)-> {result = deep_model'2 self} (! return' {result}) ]
-    
+  
   function deep_model'1 (self : Option'0.t_option uint32) : Option'0.t_option int =
     [%#span37] match self with
       | Option'0.C_Some t -> Option'0.C_Some (deep_model'2 t)
       | Option'0.C_None -> Option'0.C_None
       end
-  let rec deep_model'1 (self:Option'0.t_option uint32) (return'  (ret:Option'0.t_option int))= any
-    [ return' (result:Option'0.t_option int)-> {result = deep_model'1 self} (! return' {result}) ]
-    
+  
   function deep_model'0 (self : Option'0.t_option uint32) : Option'0.t_option int =
     [%#span38] deep_model'1 self
-  let rec deep_model'0 (self:Option'0.t_option uint32) (return'  (ret:Option'0.t_option int))= any
-    [ return' (result:Option'0.t_option int)-> {result = deep_model'0 self} (! return' {result}) ]
-    
+  
   let rec eq'0 (self:Option'0.t_option uint32) (other:Option'0.t_option uint32) (return'  (ret:bool))= {[@expl:precondition] [%#span40] inv'3 other}
     {[@expl:precondition] [%#span39] inv'3 self}
     any [ return' (result:bool)-> {[%#span41] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ] 
+  
   let rec pop_front'0 (self:borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) (return'  (ret:Option'0.t_option uint32))= {[@expl:precondition] [%#span42] inv'1 self}
     any
     [ return' (result:Option'0.t_option uint32)-> {[%#span44] inv'2 result}
@@ -309,28 +374,31 @@ module Vecdeque_TestDeque
         end}
       (! return' {result}) ]
     
+  
   let rec new'0 (_1:()) (return'  (ret:VecDeque'0.t_vecdeque uint32 (Global'0.t_global)))= any
     [ return' (result:VecDeque'0.t_vecdeque uint32 (Global'0.t_global))-> {[%#span45] Seq.length (shallow_model'0 result)
       = 0}
       (! return' {result}) ]
     
+  
   function shallow_model'1 (self : VecDeque'0.t_vecdeque uint32 (Global'0.t_global)) : Seq.seq uint32 =
     [%#span46] shallow_model'0 self
-  let rec shallow_model'1 (self:VecDeque'0.t_vecdeque uint32 (Global'0.t_global)) (return'  (ret:Seq.seq uint32))= any
-    [ return' (result:Seq.seq uint32)-> {result = shallow_model'1 self} (! return' {result}) ]
-    
+  
   let rec len'0 (self:VecDeque'0.t_vecdeque uint32 (Global'0.t_global)) (return'  (ret:usize))= {[@expl:precondition] [%#span47] inv'0 self}
     any
     [ return' (result:usize)-> {[%#span48] UIntSize.to_int result = Seq.length (shallow_model'1 self)}
       (! return' {result}) ]
     
+  
   let rec is_empty'0 (self:VecDeque'0.t_vecdeque uint32 (Global'0.t_global)) (return'  (ret:bool))= {[@expl:precondition] [%#span49] inv'0 self}
     any [ return' (result:bool)-> {[%#span50] result = (Seq.length (shallow_model'1 self) = 0)} (! return' {result}) ] 
+  
   let rec with_capacity'0 (capacity:usize) (return'  (ret:VecDeque'0.t_vecdeque uint32 (Global'0.t_global)))= any
     [ return' (result:VecDeque'0.t_vecdeque uint32 (Global'0.t_global))-> {[%#span51] Seq.length (shallow_model'0 result)
       = 0}
       (! return' {result}) ]
     
+  
   let rec promoted0 (return'  (ret:Option'0.t_option uint32))= bb0
     [ bb0 = s0
       [ s0 =  [ &_1 <- Option'0.C_Some ([%#svecdeque16] (3 : uint32)) ] s1
@@ -340,6 +408,7 @@ module Vecdeque_TestDeque
      [ & _0 : Option'0.t_option uint32 = any_l () | & _1 : Option'0.t_option uint32 = any_l () ] 
     [ return' (result:Option'0.t_option uint32)-> return' {result} ]
     
+  
   let rec promoted1 (return'  (ret:Option'0.t_option uint32))= bb0
     [ bb0 = s0
       [ s0 =  [ &_1 <- Option'0.C_Some ([%#svecdeque17] (2 : uint32)) ] s1
@@ -349,16 +418,19 @@ module Vecdeque_TestDeque
      [ & _0 : Option'0.t_option uint32 = any_l () | & _1 : Option'0.t_option uint32 = any_l () ] 
     [ return' (result:Option'0.t_option uint32)-> return' {result} ]
     
+  
   let rec promoted2 (return'  (ret:Option'0.t_option uint32))= bb0
     [ bb0 = s0 [ s0 =  [ &_1 <- Option'0.C_None ] s1 | s1 =  [ &_0 <- _1 ] s2 | s2 = return' {_0} ]  ]
      [ & _0 : Option'0.t_option uint32 = any_l () | & _1 : Option'0.t_option uint32 = any_l () ] 
     [ return' (result:Option'0.t_option uint32)-> return' {result} ]
     
+  
   let rec promoted3 (return'  (ret:Option'0.t_option uint32))= bb0
     [ bb0 = s0 [ s0 =  [ &_1 <- Option'0.C_None ] s1 | s1 =  [ &_0 <- _1 ] s2 | s2 = return' {_0} ]  ]
      [ & _0 : Option'0.t_option uint32 = any_l () | & _1 : Option'0.t_option uint32 = any_l () ] 
     [ return' (result:Option'0.t_option uint32)-> return' {result} ]
     
+  
   let rec test_deque (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 = with_capacity'0 {[%#svecdeque0] (5 : usize)}

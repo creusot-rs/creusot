@@ -116,7 +116,10 @@ impl Print for Module {
             .append(alloc.hardline())
             .append(
                 alloc
-                    .intersperse(self.decls.iter().map(|decl| decl.pretty(alloc)), alloc.hardline())
+                    .intersperse(
+                        self.decls.iter().map(|decl| decl.pretty(alloc)),
+                        alloc.hardline().append(alloc.hardline()),
+                    )
                     .indent(2),
             )
             .append(alloc.hardline())
@@ -1038,10 +1041,12 @@ impl Print for TyDecl {
             TyDecl::Adt { tys } => {
                 use std::iter::*;
                 let header = once("type").chain(repeat("with"));
-                let mut decl = alloc.nil();
+
+                let mut decls = Vec::new();
 
                 for (hdr, ty_decl) in header.zip(tys.iter()) {
-                    decl = decl
+                    let decl = alloc
+                        .nil()
                         .append(hdr)
                         .append(" ")
                         .append(ty_decl.ty_name.pretty(alloc))
@@ -1056,32 +1061,25 @@ impl Print for TyDecl {
                             ),
                         );
 
-                    let mut inner_doc = alloc.nil();
-                    for cons in &ty_decl.constrs {
-                        let ty_cons = alloc.text("| ").append(cons.pretty(alloc));
-                        inner_doc = inner_doc.append(ty_cons.append(alloc.hardline()))
-                    }
-                    decl = decl
+                    let inner_doc = alloc.intersperse(
+                        ty_decl
+                            .constrs
+                            .iter()
+                            .map(|cons| alloc.text("| ").append(cons.pretty(alloc))),
+                        alloc.hardline(),
+                    );
+
+                    let decl = decl
                         .append(alloc.text(" =").append(alloc.hardline()))
-                        .append(inner_doc.indent(2))
+                        .append(inner_doc.indent(2));
+                    decls.push(decl);
                 }
-                decl
+
+                alloc.intersperse(decls, alloc.hardline())
             }
         };
 
-        // let mut ty_decl =
-        //     alloc.text("type ").append(self.ty_name.pretty(alloc)).append(" ").append(
-        //         alloc.intersperse(
-        //             self.ty_params.iter().map(|p| alloc.text("'").append(p.pretty(alloc))),
-        //             alloc.space(),
-        //         ),
-        //     );
-
-        // if !matches!(self, TyDecl::Opaque { .. }) {
-        //     ty_decl = ty_decl.append(alloc.text(" =").append(alloc.hardline()));
-        // }
         ty_decl
-        // ty_decl.append(self.kind.pretty(alloc).indent(2))
     }
 }
 

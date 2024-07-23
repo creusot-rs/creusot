@@ -229,7 +229,7 @@ fn val<'tcx>(
     if let Some(k) = kind {
         let ax = if !sig.contract.is_empty() { Some(spec_axiom(&sig)) } else { None };
 
-        let (mut sig, prog_sig) = sigs(ctx, sig);
+        let (mut sig, _) = sigs(ctx, sig);
         if let LetKind::Predicate = k {
             sig.retty = None;
         };
@@ -238,10 +238,7 @@ fn val<'tcx>(
             return vec![Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig })];
         }
 
-        let mut d = vec![
-            Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig }),
-            program::val(ctx, prog_sig),
-        ];
+        let mut d = vec![Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig })];
 
         if let Some(ax) = ax {
             d.push(Decl::Axiom(ax))

@@ -15,7 +15,7 @@ mod vcgen;
 
 use self::vcgen::vc;
 
-use super::{program, signature::signature_of, term::lower_pure, CloneSummary, Why3Generator};
+use super::{signature::signature_of, term::lower_pure, CloneSummary, Why3Generator};
 
 pub(crate) fn binders_to_args(
     ctx: &mut Why3Generator,
@@ -170,7 +170,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
     let has_axioms = !sig.contract.ensures.is_empty();
 
     let sig_contract = sig.clone();
-    let (mut sig, val_sig) = sigs(ctx, sig);
+    let (mut sig, _) = sigs(ctx, sig);
     if let Some(LetKind::Predicate) = kind {
         sig.retty = None;
     }
@@ -183,8 +183,6 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
         !sig_contract.contract.variant.is_empty(),
         body,
     );
-
-    decls.push(program::val(ctx, val_sig));
 
     if has_axioms {
         if sig.uses_simple_triggers() {

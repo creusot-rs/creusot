@@ -6,11 +6,13 @@ module Core_Option_Option_Type
   type t_option 't =
     | C_None
     | C_Some 't
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec none < 't > (input:t_option 't) (ret  )= any
     [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ]
     
+  
   let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
     | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
@@ -18,24 +20,30 @@ module Core_Option_Option_Type
 end
 module IteNormalize_Expr_Type
   use prelude.prelude.UIntSize
+  
   use prelude.prelude.Int
+  
   type t_expr  =
     | C_IfThenElse (t_expr) (t_expr) (t_expr)
     | C_Var usize
     | C_True
     | C_False
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec if_then_else (input:t_expr) (ret  (c:t_expr) (t:t_expr) (e:t_expr))= any
     [ good (c:t_expr) (t:t_expr) (e:t_expr)-> {C_IfThenElse c t e = input} (! ret {c} {t} {e})
     | bad (c:t_expr) (t:t_expr) (e:t_expr)-> {C_IfThenElse c t e <> input} {false} any ]
     
+  
   let rec var' (input:t_expr) (ret  (v:usize))= any
     [ good (v:usize)-> {C_Var v = input} (! ret {v}) | bad (v:usize)-> {C_Var v <> input} {false} any ]
     
+  
   let rec true' (input:t_expr) (ret  )= any
     [ good -> {C_True  = input} (! ret) | bad -> {C_True  <> input} {false} any ]
     
+  
   let rec false' (input:t_expr) (ret  )= any
     [ good -> {C_False  = input} (! ret) | bad -> {C_False  <> input} {false} any ]
     
@@ -43,18 +51,21 @@ end
 module Alloc_Alloc_Global_Type
   type t_global  =
     | C_Global
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec t_global (input:t_global) (ret  )= any
     [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
     
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.prelude.Opaque
+  
   type t_nonnull 't =
     | C_NonNull opaque_ptr
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
     [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
     | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
@@ -63,19 +74,23 @@ end
 module Core_Marker_PhantomData_Type
   type t_phantomdata 't =
     | C_PhantomData
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
     [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
     
 end
 module Core_Ptr_Unique_Unique_Type
   use Core_Marker_PhantomData_Type as PhantomData'0
+  
   use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  
   type t_unique 't =
     | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
     [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
       = input}
@@ -88,49 +103,58 @@ module Core_Ptr_Unique_Unique_Type
 end
 module Alloc_Boxed_Box_Type
   use Core_Ptr_Unique_Unique_Type as Unique'0
+  
   type t_box 't 'a =
     | C_Box (Unique'0.t_unique 't) 'a
-    
+  
   function any_l (_ : 'b) : 'a
 end
 module IteNormalize_Impl6_Clone
   let%span site_normalize0 = "../ite_normalize.rs" 55 9 55 14
+  
   let%span span1 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  
   let%span span2 = "" 0 0 0 0
+  
   let%span span3 = "../ite_normalize.rs" 68 0 77 1
+  
   let%span span4 = "" 0 0 0 0
+  
   let%span span5 = "../../../../creusot-contracts/src/std/clone.rs" 7 0 20 1
+  
   use IteNormalize_Expr_Type as Expr'0
+  
   predicate invariant'1 (self : Expr'0.t_expr) =
     [%#span1] true
-  let rec invariant'1 (self:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'1 self} (! return' {result}) ]
-    
+  
   predicate inv'1 (_x : Expr'0.t_expr)
-  let rec inv'1 (_x:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'1 _x} (! return' {result}) ]
-    
+  
   axiom inv'1 : forall x : Expr'0.t_expr . inv'1 x = true
+  
   predicate invariant'0 (self : Expr'0.t_expr) =
     [%#span1] true
-  let rec invariant'0 (self:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'0 self} (! return' {result}) ]
-    
+  
   predicate inv'0 (_x : Expr'0.t_expr)
-  let rec inv'0 (_x:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'0 _x} (! return' {result}) ]
-    
+  
   axiom inv'0 : forall x : Expr'0.t_expr . inv'0 x = true
+  
   use prelude.prelude.Borrow
+  
   use prelude.prelude.Intrinsic
+  
   use Alloc_Alloc_Global_Type as Global'0
+  
   let rec clone'1 (self:Expr'0.t_expr) (return'  (ret:Expr'0.t_expr))= {[@expl:precondition] [%#span2] inv'0 self}
     any [ return' (result:Expr'0.t_expr)-> {[%#span4] inv'1 result} {[%#span3] result = self} (! return' {result}) ] 
+  
   use prelude.prelude.UIntSize
+  
   use prelude.prelude.Int
+  
   let rec clone'0 (self:usize) (return'  (ret:usize))= any
     [ return' (result:usize)-> {[%#span5] result = self} (! return' {result}) ]
     
+  
   let rec clone' (self:Expr'0.t_expr) (return'  (ret:Expr'0.t_expr))= (! bb0
     [ bb0 = any
       [ br0 (a:Expr'0.t_expr) (b:Expr'0.t_expr) (c:Expr'0.t_expr)-> {self = Expr'0.C_IfThenElse a b c} (! bb2)
@@ -206,21 +230,30 @@ module IteNormalize_Impl6_Clone
 end
 module IteNormalize_Impl5_Variable
   use prelude.prelude.UIntSize
+  
   use prelude.prelude.Int
+  
   use prelude.prelude.Intrinsic
+  
   use IteNormalize_Expr_Type as Expr'0
+  
   let rec variable (v:usize) (return'  (ret:Expr'0.t_expr))= (! bb0
     [ bb0 = s0 [ s0 =  [ &_0 <- Expr'0.C_Var v ] s1 | s1 = return' {_0} ]  ]
     ) [ & _0 : Expr'0.t_expr = any_l () | & v : usize = v ]  [ return' (result:Expr'0.t_expr)-> (! return' {result}) ] 
 end
 module IteNormalize_Impl3_From
   use prelude.prelude.UIntSize
+  
   use prelude.prelude.Int
+  
   use prelude.prelude.Intrinsic
+  
   use IteNormalize_Expr_Type as Expr'0
+  
   let rec variable'0 (v:usize) (return'  (ret:Expr'0.t_expr))= any
     [ return' (result:Expr'0.t_expr)-> (! return' {result}) ]
     
+  
   let rec from (a:usize) (return'  (ret:Expr'0.t_expr))= (! bb0
     [ bb0 = s0 [ s0 = variable'0 {a} (fun (_ret':Expr'0.t_expr) ->  [ &_0 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = return' {_0} ]
@@ -228,7 +261,9 @@ module IteNormalize_Impl3_From
 end
 module IteNormalize_Impl4_From
   use prelude.prelude.Intrinsic
+  
   use IteNormalize_Expr_Type as Expr'0
+  
   let rec from (b:bool) (return'  (ret:Expr'0.t_expr))= (! bb0
     [ bb0 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ] 
     | bb1 = s0 [ s0 =  [ &_0 <- Expr'0.C_True ] s1 | s1 = bb3 ] 
@@ -238,8 +273,11 @@ module IteNormalize_Impl4_From
 end
 module IteNormalize_Impl5_Ite
   let%span site_normalize0 = "../ite_normalize.rs" 96 14 96 91
+  
   use prelude.prelude.Intrinsic
+  
   use IteNormalize_Expr_Type as Expr'0
+  
   let rec ite (c:Expr'0.t_expr) (t:Expr'0.t_expr) (e:Expr'0.t_expr) (return'  (ret:Expr'0.t_expr))= (! bb0
     [ bb0 = bb1
     | bb1 = bb2
@@ -269,16 +307,27 @@ module IteNormalize_Impl5_Ite
 end
 module IteNormalize_Impl5_Transpose
   let%span site_normalize0 = "../ite_normalize.rs" 111 14 111 18
+  
   let%span site_normalize1 = "../ite_normalize.rs" 105 15 105 35
+  
   let%span site_normalize2 = "../ite_normalize.rs" 106 15 106 32
+  
   let%span site_normalize3 = "../ite_normalize.rs" 107 15 107 32
+  
   let%span site_normalize4 = "../ite_normalize.rs" 108 14 108 36
+  
   let%span site_normalize5 = "../ite_normalize.rs" 109 14 109 18
+  
   let%span span6 = "../ite_normalize.rs" 127 8 140 9
+  
   let%span span7 = "../ite_normalize.rs" 55 9 55 14
+  
   let%span span8 = "../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  
   let%span span9 = "../../../../creusot-contracts/src/resolve.rs" 35 8 35 31
+  
   use IteNormalize_Expr_Type as Expr'0
+  
   predicate is_normalized'0 [#"../ite_normalize.rs" 126 4 126 34] (self : Expr'0.t_expr) =
     [%#span6] match self with
       | Expr'0.C_IfThenElse c t e -> is_normalized'0 c
@@ -292,26 +341,25 @@ module IteNormalize_Impl5_Transpose
       | Expr'0.C_True -> true
       | Expr'0.C_False -> true
       end
-  let rec is_normalized'0 (self:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = is_normalized'0 self} (! return' {result}) ]
-    
+  
   use prelude.prelude.Intrinsic
+  
   use prelude.prelude.Borrow
+  
   let rec clone'0 (self:Expr'0.t_expr) (return'  (ret:Expr'0.t_expr))= any
     [ return' (result:Expr'0.t_expr)-> {[%#span7] result = self} (! return' {result}) ]
     
+  
   predicate resolve'1 (self : Expr'0.t_expr) =
     [%#span8] true
-  let rec resolve'1 (self:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = resolve'1 self} (! return' {result}) ]
-    
+  
   predicate resolve'0 (self : Expr'0.t_expr) =
     [%#span9] resolve'1 self
-  let rec resolve'0 (self:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
-    
+  
   use prelude.prelude.UIntSize
+  
   use prelude.prelude.Int
+  
   let rec transpose (self:Expr'0.t_expr) (a:Expr'0.t_expr) (b:Expr'0.t_expr) (return'  (ret:Expr'0.t_expr))= {[%#site_normalize3] is_normalized'0 b}
     {[%#site_normalize2] is_normalized'0 a}
     {[%#site_normalize1] is_normalized'0 self}
@@ -356,7 +404,7 @@ module IteNormalize_Impl5_Transpose
             (any
             [ any_ (_any:Expr'0.t_expr)-> (! Expr'0.if_then_else {self}
                 (fun (l_c'0:Expr'0.t_expr) (l_t'0:Expr'0.t_expr) (l_e'0:Expr'0.t_expr) ->
-                   [ &self <- Expr'0.C_IfThenElse _any l_t'0 l_e'0 : Expr'0.t_expr ] 
+                   [ &self <- Expr'0.C_IfThenElse _any l_t'0 l_e'0 ] 
                   s1)) ]
             ))
       | s1 = Expr'0.if_then_else {self}
@@ -365,7 +413,7 @@ module IteNormalize_Impl5_Transpose
             (any
             [ any_ (_any:Expr'0.t_expr)-> (! Expr'0.if_then_else {self}
                 (fun (l_c'1:Expr'0.t_expr) (l_t'1:Expr'0.t_expr) (l_e'1:Expr'0.t_expr) ->
-                   [ &self <- Expr'0.C_IfThenElse l_c'1 _any l_e'1 : Expr'0.t_expr ] 
+                   [ &self <- Expr'0.C_IfThenElse l_c'1 _any l_e'1 ] 
                   s2)) ]
             ))
       | s2 = Expr'0.if_then_else {self}
@@ -374,7 +422,7 @@ module IteNormalize_Impl5_Transpose
             (any
             [ any_ (_any:Expr'0.t_expr)-> (! Expr'0.if_then_else {self}
                 (fun (l_c'2:Expr'0.t_expr) (l_t'2:Expr'0.t_expr) (l_e'2:Expr'0.t_expr) ->
-                   [ &self <- Expr'0.C_IfThenElse l_c'2 l_t'2 _any : Expr'0.t_expr ] 
+                   [ &self <- Expr'0.C_IfThenElse l_c'2 l_t'2 _any ] 
                   s3)) ]
             ))
       | s3 = -{resolve'0 t}- s4
@@ -430,15 +478,25 @@ module IteNormalize_Impl5_Transpose
 end
 module IteNormalize_Impl5_Normalize
   let%span site_normalize0 = "../ite_normalize.rs" 143 14 143 36
+  
   let%span site_normalize1 = "../ite_normalize.rs" 144 14 144 18
+  
   let%span span2 = "../ite_normalize.rs" 127 8 140 9
+  
   let%span span3 = "../ite_normalize.rs" 105 15 105 35
+  
   let%span span4 = "../ite_normalize.rs" 106 15 106 32
+  
   let%span span5 = "../ite_normalize.rs" 107 15 107 32
+  
   let%span span6 = "../ite_normalize.rs" 108 14 108 36
+  
   let%span span7 = "../ite_normalize.rs" 109 14 109 18
+  
   let%span span8 = "../ite_normalize.rs" 55 9 55 14
+  
   use IteNormalize_Expr_Type as Expr'0
+  
   predicate is_normalized'0 [#"../ite_normalize.rs" 126 4 126 34] (self : Expr'0.t_expr) =
     [%#span2] match self with
       | Expr'0.C_IfThenElse c t e -> is_normalized'0 c
@@ -452,20 +510,24 @@ module IteNormalize_Impl5_Normalize
       | Expr'0.C_True -> true
       | Expr'0.C_False -> true
       end
-  let rec is_normalized'0 (self:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = is_normalized'0 self} (! return' {result}) ]
-    
+  
   use prelude.prelude.Borrow
+  
   use prelude.prelude.Intrinsic
+  
   let rec transpose'0 (self:Expr'0.t_expr) (a:Expr'0.t_expr) (b:Expr'0.t_expr) (return'  (ret:Expr'0.t_expr))= {[@expl:precondition] [%#span5] is_normalized'0 b}
     {[@expl:precondition] [%#span4] is_normalized'0 a}
     {[@expl:precondition] [%#span3] is_normalized'0 self}
     any [ return' (result:Expr'0.t_expr)-> {[%#span6] is_normalized'0 result} (! return' {result}) ] 
+  
   let rec clone'0 (self:Expr'0.t_expr) (return'  (ret:Expr'0.t_expr))= any
     [ return' (result:Expr'0.t_expr)-> {[%#span8] result = self} (! return' {result}) ]
     
+  
   use prelude.prelude.UIntSize
+  
   use prelude.prelude.Int
+  
   let rec normalize (self:Expr'0.t_expr) (return'  (ret:Expr'0.t_expr))= (! bb0
     [ bb0 = any
       [ br0 (a:Expr'0.t_expr) (b:Expr'0.t_expr) (c:Expr'0.t_expr)-> {self = Expr'0.C_IfThenElse a b c} (! bb2)
@@ -513,115 +575,123 @@ module IteNormalize_Impl5_Normalize
 end
 module IteNormalize_Impl5_SimplifyHelper
   let%span site_normalize0 = "../ite_normalize.rs" 203 46 203 50
+  
   let%span site_normalize1 = "../ite_normalize.rs" 208 46 208 51
+  
   let%span site_normalize2 = "../ite_normalize.rs" 185 15 185 35
+  
   let%span site_normalize3 = "../ite_normalize.rs" 186 4 186 107
+  
   let%span site_normalize4 = "../ite_normalize.rs" 187 14 187 36
+  
   let%span site_normalize5 = "../ite_normalize.rs" 188 14 188 18
+  
   let%span span6 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  
   let%span span7 = "../ite_normalize.rs" 170 8 176 9
+  
   let%span span8 = "../ite_normalize.rs" 159 8 165 9
+  
   let%span span9 = "../ite_normalize.rs" 51 20 51 26
+  
   let%span span10 = "../ite_normalize.rs" 127 8 140 9
+  
   let%span span11 = "../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  
   let%span span12 = "../../../../creusot-contracts/src/std/num.rs" 22 16 22 35
+  
   let%span span13 = "../ite_normalize.rs" 28 25 28 28
+  
   let%span span14 = "../ite_normalize.rs" 28 33 28 38
+  
   let%span span15 = "../ite_normalize.rs" 27 4 27 125
+  
   let%span span16 = "../ite_normalize.rs" 28 46 28 55
+  
   let%span span17 = "../ite_normalize.rs" 38 14 38 29
+  
   let%span span18 = "../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  
   let%span span19 = "../../../../creusot-contracts/src/resolve.rs" 35 8 35 31
+  
   let%span span20 = "../../../../creusot-contracts/src/model.rs" 81 8 81 28
+  
   let%span span21 = "../../../../creusot-contracts/src/model.rs" 90 8 90 31
+  
   let%span span22 = "../ite_normalize.rs" 19 25 19 28
+  
   let%span span23 = "../ite_normalize.rs" 17 4 17 70
+  
   let%span span24 = "../ite_normalize.rs" 18 4 18 91
+  
   let%span span25 = "../ite_normalize.rs" 19 40 19 53
+  
   use Core_Option_Option_Type as Option'0
+  
   predicate invariant'6 (self : Option'0.t_option bool) =
     [%#span6] true
-  let rec invariant'6 (self:Option'0.t_option bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'6 self} (! return' {result}) ]
-    
+  
   predicate inv'6 (_x : Option'0.t_option bool)
-  let rec inv'6 (_x:Option'0.t_option bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'6 _x} (! return' {result}) ]
-    
+  
   axiom inv'6 : forall x : Option'0.t_option bool . inv'6 x = true
+  
   use prelude.prelude.Int
+  
   predicate invariant'5 (self : int) =
     [%#span6] true
-  let rec invariant'5 (self:int) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'5 self} (! return' {result}) ]
-    
+  
   predicate inv'5 (_x : int)
-  let rec inv'5 (_x:int) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'5 _x} (! return' {result}) ]
-    
+  
   axiom inv'5 : forall x : int . inv'5 x = true
+  
   predicate invariant'4 (self : bool) =
     [%#span6] true
-  let rec invariant'4 (self:bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'4 self} (! return' {result}) ]
-    
+  
   predicate inv'4 (_x : bool)
-  let rec inv'4 (_x:bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'4 _x} (! return' {result}) ]
-    
+  
   axiom inv'4 : forall x : bool . inv'4 x = true
+  
   use prelude.prelude.UIntSize
+  
   predicate invariant'3 (self : usize) =
     [%#span6] true
-  let rec invariant'3 (self:usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'3 self} (! return' {result}) ]
-    
+  
   predicate inv'3 (_x : usize)
-  let rec inv'3 (_x:usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'3 _x} (! return' {result}) ]
-    
+  
   axiom inv'3 : forall x : usize . inv'3 x = true
+  
   predicate invariant'2 (self : Option'0.t_option bool) =
     [%#span6] true
-  let rec invariant'2 (self:Option'0.t_option bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'2 self} (! return' {result}) ]
-    
+  
   predicate inv'2 (_x : Option'0.t_option bool)
-  let rec inv'2 (_x:Option'0.t_option bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'2 _x} (! return' {result}) ]
-    
+  
   axiom inv'2 : forall x : Option'0.t_option bool . inv'2 x = true
+  
   predicate invariant'1 (self : bool) =
     [%#span6] true
-  let rec invariant'1 (self:bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'1 self} (! return' {result}) ]
-    
+  
   predicate inv'1 (_x : bool)
-  let rec inv'1 (_x:bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'1 _x} (! return' {result}) ]
-    
+  
   axiom inv'1 : forall x : bool . inv'1 x = true
+  
   predicate invariant'0 (self : usize) =
     [%#span6] true
-  let rec invariant'0 (self:usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'0 self} (! return' {result}) ]
-    
+  
   predicate inv'0 (_x : usize)
-  let rec inv'0 (_x:usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'0 _x} (! return' {result}) ]
-    
+  
   axiom inv'0 : forall x : usize . inv'0 x = true
+  
   use prelude.prelude.Int
+  
   use IteNormalize_Expr_Type as Expr'0
+  
   predicate does_not_contain'0 [#"../ite_normalize.rs" 169 4 169 48] (self : Expr'0.t_expr) (vp : usize) =
     [%#span7] match self with
       | Expr'0.C_IfThenElse c t e -> does_not_contain'0 c vp /\ does_not_contain'0 t vp /\ does_not_contain'0 e vp
       | Expr'0.C_Var v -> v <> vp
       | _ -> true
       end
-  let rec does_not_contain'0 (self:Expr'0.t_expr) (vp:usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = does_not_contain'0 self vp} (! return' {result}) ]
-    
+  
   predicate is_simplified'0 [#"../ite_normalize.rs" 158 4 158 34] (self : Expr'0.t_expr) =
     [%#span8] match self with
       | Expr'0.C_IfThenElse c t e -> match c with
@@ -630,18 +700,18 @@ module IteNormalize_Impl5_SimplifyHelper
         end
       | _ -> true
       end
-  let rec is_simplified'0 (self:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = is_simplified'0 self} (! return' {result}) ]
-    
+  
   use map.Map
+  
   use prelude.prelude.UIntSize
+  
   use map.Map
+  
   use IteNormalize_BTreeMap_Type as BTreeMap'0
+  
   function shallow_model'0 [#"../ite_normalize.rs" 50 4 50 50] (self : BTreeMap'0.t_btreemap usize bool) : Map.map int (Option'0.t_option bool)
     
-  let rec shallow_model'0 (self:BTreeMap'0.t_btreemap usize bool) (return'  (ret:Map.map int (Option'0.t_option bool)))= any
-    [ return' (result:Map.map int (Option'0.t_option bool))-> {result = shallow_model'0 self} (! return' {result}) ]
-    
+  
   predicate is_normalized'0 [#"../ite_normalize.rs" 126 4 126 34] (self : Expr'0.t_expr) =
     [%#span10] match self with
       | Expr'0.C_IfThenElse c t e -> is_normalized'0 c
@@ -655,21 +725,17 @@ module IteNormalize_Impl5_SimplifyHelper
       | Expr'0.C_True -> true
       | Expr'0.C_False -> true
       end
-  let rec is_normalized'0 (self:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = is_normalized'0 self} (! return' {result}) ]
-    
+  
   use prelude.prelude.Intrinsic
+  
   use prelude.prelude.Borrow
+  
   function shallow_model'2 (self : borrowed (BTreeMap'0.t_btreemap usize bool)) : Map.map int (Option'0.t_option bool) =
     [%#span11] shallow_model'0 ( * self)
-  let rec shallow_model'2 (self:borrowed (BTreeMap'0.t_btreemap usize bool)) (return'  (ret:Map.map int (Option'0.t_option bool)))= any
-    [ return' (result:Map.map int (Option'0.t_option bool))-> {result = shallow_model'2 self} (! return' {result}) ]
-    
+  
   function deep_model'1 (self : usize) : int =
     [%#span12] UIntSize.to_int self
-  let rec deep_model'1 (self:usize) (return'  (ret:int))= any
-    [ return' (result:int)-> {result = deep_model'1 self} (! return' {result}) ]
-    
+  
   let rec insert'0 (self:borrowed (BTreeMap'0.t_btreemap usize bool)) (key:usize) (value:bool) (return'  (ret:Option'0.t_option bool))= {[@expl:precondition] [%#span14] inv'4 value}
     {[@expl:precondition] [%#span13] inv'3 key}
     any
@@ -679,29 +745,23 @@ module IteNormalize_Impl5_SimplifyHelper
       = (if i = deep_model'1 key then Option'0.C_Some value else Map.get (shallow_model'2 self) i)}
       (! return' {result}) ]
     
+  
   let rec clone'0 (self:BTreeMap'0.t_btreemap usize bool) (return'  (ret:BTreeMap'0.t_btreemap usize bool))= any
     [ return' (result:BTreeMap'0.t_btreemap usize bool)-> {[%#span17] self = result} (! return' {result}) ]
     
+  
   predicate resolve'1 (self : Expr'0.t_expr) =
     [%#span18] true
-  let rec resolve'1 (self:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = resolve'1 self} (! return' {result}) ]
-    
+  
   predicate resolve'0 (self : Expr'0.t_expr) =
     [%#span19] resolve'1 self
-  let rec resolve'0 (self:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
-    
+  
   function deep_model'0 (self : usize) : int =
     [%#span20] deep_model'1 self
-  let rec deep_model'0 (self:usize) (return'  (ret:int))= any
-    [ return' (result:int)-> {result = deep_model'0 self} (! return' {result}) ]
-    
+  
   function shallow_model'1 (self : BTreeMap'0.t_btreemap usize bool) : Map.map int (Option'0.t_option bool) =
     [%#span21] shallow_model'0 self
-  let rec shallow_model'1 (self:BTreeMap'0.t_btreemap usize bool) (return'  (ret:Map.map int (Option'0.t_option bool)))= any
-    [ return' (result:Map.map int (Option'0.t_option bool))-> {result = shallow_model'1 self} (! return' {result}) ]
-    
+  
   let rec get'0 (self:BTreeMap'0.t_btreemap usize bool) (key:usize) (return'  (ret:Option'0.t_option bool))= {[@expl:precondition] [%#span22] inv'0 key}
     any
     [ return' (result:Option'0.t_option bool)-> {[%#span25] inv'2 result}
@@ -710,6 +770,7 @@ module IteNormalize_Impl5_SimplifyHelper
       {[%#span23] result = Option'0.C_None  -> Map.get (shallow_model'1 self) (deep_model'0 key) = Option'0.C_None}
       (! return' {result}) ]
     
+  
   let rec simplify_helper (self:Expr'0.t_expr) (state:BTreeMap'0.t_btreemap usize bool) (return'  (ret:Expr'0.t_expr))= {[%#site_normalize2] is_normalized'0 self}
     (! bb0
     [ bb0 = bb1
@@ -753,7 +814,7 @@ module IteNormalize_Impl5_SimplifyHelper
             (any
             [ any_ (_any:Expr'0.t_expr)-> (! Expr'0.if_then_else {self}
                 (fun (l_c'0:Expr'0.t_expr) (l_t'0:Expr'0.t_expr) (l_e'0:Expr'0.t_expr) ->
-                   [ &self <- Expr'0.C_IfThenElse _any l_t'0 l_e'0 : Expr'0.t_expr ] 
+                   [ &self <- Expr'0.C_IfThenElse _any l_t'0 l_e'0 ] 
                   s1)) ]
             ))
       | s1 = Expr'0.if_then_else {self}
@@ -762,7 +823,7 @@ module IteNormalize_Impl5_SimplifyHelper
             (any
             [ any_ (_any:Expr'0.t_expr)-> (! Expr'0.if_then_else {self}
                 (fun (l_c'1:Expr'0.t_expr) (l_t'1:Expr'0.t_expr) (l_e'1:Expr'0.t_expr) ->
-                   [ &self <- Expr'0.C_IfThenElse l_c'1 _any l_e'1 : Expr'0.t_expr ] 
+                   [ &self <- Expr'0.C_IfThenElse l_c'1 _any l_e'1 ] 
                   s2)) ]
             ))
       | s2 = Expr'0.if_then_else {self}
@@ -771,7 +832,7 @@ module IteNormalize_Impl5_SimplifyHelper
             (any
             [ any_ (_any:Expr'0.t_expr)-> (! Expr'0.if_then_else {self}
                 (fun (l_c'2:Expr'0.t_expr) (l_t'2:Expr'0.t_expr) (l_e'2:Expr'0.t_expr) ->
-                   [ &self <- Expr'0.C_IfThenElse l_c'2 l_t'2 _any : Expr'0.t_expr ] 
+                   [ &self <- Expr'0.C_IfThenElse l_c'2 l_t'2 _any ] 
                   s3)) ]
             ))
       | s3 = any
@@ -911,28 +972,40 @@ module IteNormalize_Impl5_SimplifyHelper
 end
 module IteNormalize_Impl5_Simplify
   let%span site_normalize0 = "../ite_normalize.rs" 182 29 182 44
+  
   let%span site_normalize1 = "../ite_normalize.rs" 179 15 179 35
+  
   let%span site_normalize2 = "../ite_normalize.rs" 180 14 180 36
+  
   let%span span3 = "../ite_normalize.rs" 170 8 176 9
+  
   let%span span4 = "../ite_normalize.rs" 159 8 165 9
+  
   let%span span5 = "../ite_normalize.rs" 127 8 140 9
+  
   let%span span6 = "../ite_normalize.rs" 51 20 51 26
+  
   let%span span7 = "../ite_normalize.rs" 185 15 185 35
+  
   let%span span8 = "../ite_normalize.rs" 186 4 186 107
+  
   let%span span9 = "../ite_normalize.rs" 187 14 187 36
+  
   let%span span10 = "../ite_normalize.rs" 188 14 188 18
+  
   use prelude.prelude.UIntSize
+  
   use prelude.prelude.Int
+  
   use IteNormalize_Expr_Type as Expr'0
+  
   predicate does_not_contain'0 [#"../ite_normalize.rs" 169 4 169 48] (self : Expr'0.t_expr) (vp : usize) =
     [%#span3] match self with
       | Expr'0.C_IfThenElse c t e -> does_not_contain'0 c vp /\ does_not_contain'0 t vp /\ does_not_contain'0 e vp
       | Expr'0.C_Var v -> v <> vp
       | _ -> true
       end
-  let rec does_not_contain'0 (self:Expr'0.t_expr) (vp:usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = does_not_contain'0 self vp} (! return' {result}) ]
-    
+  
   predicate is_simplified'0 [#"../ite_normalize.rs" 158 4 158 34] (self : Expr'0.t_expr) =
     [%#span4] match self with
       | Expr'0.C_IfThenElse c t e -> match c with
@@ -941,9 +1014,7 @@ module IteNormalize_Impl5_Simplify
         end
       | _ -> true
       end
-  let rec is_simplified'0 (self:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = is_simplified'0 self} (! return' {result}) ]
-    
+  
   predicate is_normalized'0 [#"../ite_normalize.rs" 126 4 126 34] (self : Expr'0.t_expr) =
     [%#span5] match self with
       | Expr'0.C_IfThenElse c t e -> is_normalized'0 c
@@ -957,21 +1028,24 @@ module IteNormalize_Impl5_Simplify
       | Expr'0.C_True -> true
       | Expr'0.C_False -> true
       end
-  let rec is_normalized'0 (self:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = is_normalized'0 self} (! return' {result}) ]
-    
+  
   use prelude.prelude.Intrinsic
+  
   use prelude.prelude.Int
+  
   use Core_Option_Option_Type as Option'0
+  
   use map.Map
+  
   use IteNormalize_BTreeMap_Type as BTreeMap'0
+  
   use map.Map
+  
   use prelude.prelude.UIntSize
+  
   function shallow_model'0 [#"../ite_normalize.rs" 50 4 50 50] (self : BTreeMap'0.t_btreemap usize bool) : Map.map int (Option'0.t_option bool)
     
-  let rec shallow_model'0 (self:BTreeMap'0.t_btreemap usize bool) (return'  (ret:Map.map int (Option'0.t_option bool)))= any
-    [ return' (result:Map.map int (Option'0.t_option bool))-> {result = shallow_model'0 self} (! return' {result}) ]
-    
+  
   let rec simplify_helper'0 (self:Expr'0.t_expr) (state:BTreeMap'0.t_btreemap usize bool) (return'  (ret:Expr'0.t_expr))= {[@expl:precondition] [%#span7] is_normalized'0 self}
     any
     [ return' (result:Expr'0.t_expr)-> {[%#span9] is_simplified'0 result}
@@ -979,9 +1053,11 @@ module IteNormalize_Impl5_Simplify
       = Option'0.C_Some v)  -> does_not_contain'0 result i}
       (! return' {result}) ]
     
+  
   let rec new'0 (_1:()) (return'  (ret:BTreeMap'0.t_btreemap usize bool))= any
     [ return' (result:BTreeMap'0.t_btreemap usize bool)-> (! return' {result}) ]
     
+  
   let rec simplify (self:Expr'0.t_expr) (return'  (ret:Expr'0.t_expr))= {[%#site_normalize1] is_normalized'0 self}
     (! bb0
     [ bb0 = bb1
@@ -1003,61 +1079,59 @@ module IteNormalize_Impl5_Simplify
 end
 module IteNormalize_Impl1
   type k
+  
   type v
+  
   let%span site_normalize0 = "../ite_normalize.rs" 39 4 39 27
+  
   use IteNormalize_BTreeMap_Type as BTreeMap'0
+  
   predicate invariant'1 (self : BTreeMap'0.t_btreemap k v)
-  let rec invariant'1 (self:BTreeMap'0.t_btreemap k v) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'1 self} (! return' {result}) ]
-    
+  
   predicate inv'1 (_x : BTreeMap'0.t_btreemap k v)
-  let rec inv'1 (_x:BTreeMap'0.t_btreemap k v) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'1 _x} (! return' {result}) ]
-    
+  
   axiom inv'1 : forall x : BTreeMap'0.t_btreemap k v . inv'1 x = true
+  
   predicate invariant'0 (self : BTreeMap'0.t_btreemap k v)
-  let rec invariant'0 (self:BTreeMap'0.t_btreemap k v) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'0 self} (! return' {result}) ]
-    
+  
   predicate inv'0 (_x : BTreeMap'0.t_btreemap k v)
-  let rec inv'0 (_x:BTreeMap'0.t_btreemap k v) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'0 _x} (! return' {result}) ]
-    
+  
   axiom inv'0 : forall x : BTreeMap'0.t_btreemap k v . inv'0 x = true
+  
   use prelude.prelude.Borrow
+  
   goal clone'_refn : [%#site_normalize0] forall self : BTreeMap'0.t_btreemap k v . inv'0 self
    -> (forall result : BTreeMap'0.t_btreemap k v . self = result  -> inv'1 result /\ result = self)
 end
 module IteNormalize_Impl6
   let%span site_normalize0 = "../ite_normalize.rs" 55 9 55 14
+  
   let%span span1 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  
   use IteNormalize_Expr_Type as Expr'0
+  
   predicate invariant'1 (self : Expr'0.t_expr) =
     [%#span1] true
-  let rec invariant'1 (self:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'1 self} (! return' {result}) ]
-    
+  
   predicate inv'1 (_x : Expr'0.t_expr)
-  let rec inv'1 (_x:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'1 _x} (! return' {result}) ]
-    
+  
   axiom inv'1 : forall x : Expr'0.t_expr . inv'1 x = true
+  
   predicate invariant'0 (self : Expr'0.t_expr) =
     [%#span1] true
-  let rec invariant'0 (self:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'0 self} (! return' {result}) ]
-    
+  
   predicate inv'0 (_x : Expr'0.t_expr)
-  let rec inv'0 (_x:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'0 _x} (! return' {result}) ]
-    
+  
   axiom inv'0 : forall x : Expr'0.t_expr . inv'0 x = true
+  
   use prelude.prelude.Borrow
+  
   goal clone'_refn : [%#site_normalize0] forall self : Expr'0.t_expr . inv'0 self
    -> (forall result : Expr'0.t_expr . result = self  -> inv'1 result /\ result = self)
 end
 module IteNormalize_Impl2
   type k
+  
   type v
 end
 module IteNormalize_Impl7
@@ -1065,57 +1139,53 @@ module IteNormalize_Impl7
 end
 module IteNormalize_Impl3
   let%span site_normalize0 = "../ite_normalize.rs" 80 4 80 29
+  
   let%span span1 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  
   use IteNormalize_Expr_Type as Expr'0
+  
   predicate invariant'1 (self : Expr'0.t_expr) =
     [%#span1] true
-  let rec invariant'1 (self:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'1 self} (! return' {result}) ]
-    
+  
   predicate inv'1 (_x : Expr'0.t_expr)
-  let rec inv'1 (_x:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'1 _x} (! return' {result}) ]
-    
+  
   axiom inv'1 : forall x : Expr'0.t_expr . inv'1 x = true
+  
   use prelude.prelude.UIntSize
+  
   predicate invariant'0 (self : usize) =
     [%#span1] true
-  let rec invariant'0 (self:usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'0 self} (! return' {result}) ]
-    
+  
   predicate inv'0 (_x : usize)
-  let rec inv'0 (_x:usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'0 _x} (! return' {result}) ]
-    
+  
   axiom inv'0 : forall x : usize . inv'0 x = true
+  
   use prelude.prelude.Int
+  
   goal from_refn : [%#site_normalize0] forall value : usize . inv'0 value
    -> (forall result : Expr'0.t_expr . inv'1 result)
 end
 module IteNormalize_Impl4
   let%span site_normalize0 = "../ite_normalize.rs" 86 4 86 28
+  
   let%span span1 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  
   use IteNormalize_Expr_Type as Expr'0
+  
   predicate invariant'1 (self : Expr'0.t_expr) =
     [%#span1] true
-  let rec invariant'1 (self:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'1 self} (! return' {result}) ]
-    
+  
   predicate inv'1 (_x : Expr'0.t_expr)
-  let rec inv'1 (_x:Expr'0.t_expr) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'1 _x} (! return' {result}) ]
-    
+  
   axiom inv'1 : forall x : Expr'0.t_expr . inv'1 x = true
+  
   predicate invariant'0 (self : bool) =
     [%#span1] true
-  let rec invariant'0 (self:bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'0 self} (! return' {result}) ]
-    
+  
   predicate inv'0 (_x : bool)
-  let rec inv'0 (_x:bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'0 _x} (! return' {result}) ]
-    
+  
   axiom inv'0 : forall x : bool . inv'0 x = true
+  
   goal from_refn : [%#site_normalize0] forall value : bool . inv'0 value
    -> (forall result : Expr'0.t_expr . inv'1 result)
 end

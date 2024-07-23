@@ -117,13 +117,12 @@ pub(crate) fn lplace_to_expr<'tcx>(
                         params,
                     ));
                     let constr = Exp::qvar(lower.names.constructor(variant.def_id, subst));
-                    let ty = lower.ty(place_ty.ty);
                     constructor = Box::new(|is, t| {
                         let mut fields: Vec<_> =
                             fields.into_iter().map(|f| Exp::var(f.as_term().0.clone())).collect();
                         fields[ix.as_usize()] = t;
                         // TODO: Only emit type if the constructor would otherwise be ambiguous
-                        constructor(is, constr.app(fields).ascribe(ty))
+                        constructor(is, constr.app(fields))
                     });
                     focus = new_focus;
                 }
@@ -180,13 +179,12 @@ pub(crate) fn lplace_to_expr<'tcx>(
                     istmts.push(IntermediateStmt::Call(fields, Expr::Symbol(acc_name), params));
 
                     let constr = Exp::qvar(lower.names.constructor(*id, subst));
-                    let ty = lower.ty(place_ty.ty);
                     constructor = Box::new(|is, t| {
                         let mut fields: Vec<_> =
                             field_names.into_iter().map(|f| Exp::var(f)).collect();
                         fields[ix.as_usize()] = t;
                         // TODO: Only emit type if the constructor would otherwise be ambiguous
-                        constructor(is, constr.app(fields).ascribe(ty))
+                        constructor(is, constr.app(fields))
                     });
                     focus = new_focus;
                 }

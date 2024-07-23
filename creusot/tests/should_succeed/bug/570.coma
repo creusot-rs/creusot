@@ -1,14 +1,18 @@
 
 module C570_S1_Type
   use prelude.prelude.Int32
+  
   use prelude.prelude.Int
+  
   type t_s1  =
     | C_S1 int32
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec t_s1 (input:t_s1) (ret  (f:int32))= any
     [ good (f:int32)-> {C_S1 f = input} (! ret {f}) | bad (f:int32)-> {C_S1 f <> input} {false} any ]
     
+  
   function s1_f (self : t_s1) : int32 =
     match self with
       | C_S1 a -> a
@@ -16,13 +20,16 @@ module C570_S1_Type
 end
 module C570_S2_Type
   use C570_S1_Type as S1'0
+  
   type t_s2  =
     | C_S2 (S1'0.t_s1)
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec t_s2 (input:t_s2) (ret  (s1:S1'0.t_s1))= any
     [ good (s1:S1'0.t_s1)-> {C_S2 s1 = input} (! ret {s1}) | bad (s1:S1'0.t_s1)-> {C_S2 s1 <> input} {false} any ]
     
+  
   function s2_s1 (self : t_s2) : S1'0.t_s1 =
     match self with
       | C_S2 a -> a
@@ -30,26 +37,31 @@ module C570_S2_Type
 end
 module C570_TestProgram
   use C570_S2_Type as S2'0
+  
   use prelude.prelude.Intrinsic
+  
   let rec test_program (s:S2'0.t_s2) (return'  (ret:()))= (! bb0 [ bb0 = return' {_0} ] )
     [ & _0 : () = any_l () | & s : S2'0.t_s2 = s ]
      [ return' (result:())-> (! return' {result}) ] 
 end
 module C570_TestAssign
   let%span s5700 = "../570.rs" 17 13 17 14
+  
   use prelude.prelude.Intrinsic
+  
   use C570_S1_Type as S1'0
+  
   use C570_S2_Type as S2'0
+  
   use prelude.prelude.Int32
+  
   use prelude.prelude.Int
+  
   let rec test_assign (s:S2'0.t_s2) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 = S2'0.t_s2 {s}
           (fun (l_s1'0:S1'0.t_s1) ->
-            S1'0.t_s1 {l_s1'0}
-              (fun (l_f'0:int32) ->
-                 [ &s <- S2'0.C_S2 (S1'0.C_S1 ([%#s5700] (2 : int32)) : S1'0.t_s1) : S2'0.t_s2 ] 
-                s1))
+            S1'0.t_s1 {l_s1'0} (fun (l_f'0:int32) ->  [ &s <- S2'0.C_S2 (S1'0.C_S1 ([%#s5700] (2 : int32))) ] s1))
       | s1 = return' {_0} ]
        ]
     ) [ & _0 : () = any_l () | & s : S2'0.t_s2 = s ]  [ return' (result:())-> (! return' {result}) ] 
