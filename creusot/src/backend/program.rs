@@ -1,6 +1,6 @@
 use super::{
     clone_map::PreludeModule,
-    dependency::{Dependency, ExtendedId},
+    dependency::ExtendedId,
     place::rplace_to_expr,
     signature::{sig_to_why3, signature_of},
     term::lower_pure,
@@ -21,7 +21,6 @@ use crate::{
     util::{self, module_name},
 };
 
-use indexmap::IndexSet;
 use petgraph::graphmap::DiGraphMap;
 use rustc_hir::{def_id::DefId, Safety};
 use rustc_middle::{
@@ -162,29 +161,11 @@ pub(crate) fn translate_function<'tcx, 'sess>(
         .map(|body_id| Decl::Coma(to_why(ctx, &mut names, *body_id)))
         .collect::<Vec<_>>();
 
-    let tcx = ctx.tcx;
-    let ghost_closure_ids: IndexSet<_> = names.find_ghost_closures(tcx).collect();
-    let ghost_closures = ghost_closure_ids
-        .into_iter()
-        .map(|(def_id, subst)| {
-            // Compile the closure normally
-            closure_aux_defs(ctx, def_id);
-            let mut coma_defn =
-                to_why(ctx, &mut names, BodyId { def_id: def_id.expect_local(), promoted: None });
-
-            names.insert_hidden_func(def_id, subst);
-            // get the right name for the generated function
-            coma_defn.name = names.insert(Dependency::new(tcx, (def_id, subst))).ident();
-            Decl::Coma(coma_defn)
-        })
-        .collect::<Vec<_>>();
-
     let (clones, summary) = names.provide_deps(ctx, GraphDepth::Deep);
 
     let decls = closure_generic_decls(ctx.tcx, def_id)
         .chain(clones)
         .chain(promoteds)
-        .chain(ghost_closures)
         .chain(std::iter::once(body))
         .collect();
 
@@ -199,15 +180,12 @@ fn collect_body_ids<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> Option<(BodyId, Vec<BodyId>)> {
-    let body_id = if def_id.is_local()
-        && util::has_body(ctx, def_id)
-        && !util::is_trusted(ctx.tcx, def_id)
-        && !util::is_ghost_closure(ctx.tcx, def_id)
-    {
-        BodyId::new(def_id.expect_local(), None)
-    } else {
-        return None;
-    };
+    let body_id =
+        if def_id.is_local() && util::has_body(ctx, def_id) && !util::is_trusted(ctx.tcx, def_id) {
+            BodyId::new(def_id.expect_local(), None)
+        } else {
+            return None;
+        };
 
     let tcx = ctx.tcx;
     let promoted = ctx

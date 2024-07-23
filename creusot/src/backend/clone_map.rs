@@ -469,7 +469,7 @@ pub enum Kind {
 }
 
 impl Kind {
-    pub(crate) fn ident(&self) -> Ident {
+    fn ident(&self) -> Ident {
         match self {
             Kind::Named(nm) => nm.as_str().into(),
             Kind::Used(_, _) => panic!("cannot get ident of used module {self:?}"),
@@ -555,33 +555,12 @@ impl<'tcx> Dependencies<'tcx> {
         deps
     }
 
-    /// Returns an iterator over the (`DefId`, subst)'s of ghost closures that appear in
-    /// the dependencies.
-    pub(crate) fn find_ghost_closures<'a>(
-        &'a self,
-        tcx: TyCtxt<'tcx>,
-    ) -> impl Iterator<Item = (DefId, GenericArgsRef<'tcx>)> + 'a {
-        self.levels.iter().filter_map(move |(d, _)| {
-            if let Some((id, subst)) = d.did() {
-                if util::is_ghost_closure(tcx, id) {
-                    return Some((id, subst));
-                }
-            }
-            None
-        })
-    }
-
     // Hack: for closure ty decls
     pub(crate) fn insert_hidden_type(&mut self, ty: Ty<'tcx>) {
         let node = DepNode::Type(ty);
         self.names.names.insert(node, Kind::Named(node.base_ident(self.tcx)));
         self.levels.insert(node, CloneLevel::Body);
         self.hidden.insert(node);
-    }
-
-    // hack: for closures with an inlined contract
-    pub(crate) fn insert_hidden_func(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) {
-        self.hidden.insert(DepNode::Item(def_id, subst));
     }
 
     fn self_key(&self) -> DepNode<'tcx> {
