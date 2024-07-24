@@ -7,8 +7,8 @@ use crate::{
 use rustc_hir::def_id::DefId;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::ty::{
-    AssocItem, AssocItemContainer, AssocItemContainer::*, EarlyBinder, GenericArgs, GenericArgsRef,
-    ParamEnv, TraitRef, TyCtxt, TypeVisitableExt,
+    AssocItem, AssocItemContainer, EarlyBinder, GenericArgs, GenericArgsRef, ParamEnv, TraitRef,
+    TyCtxt, TypeVisitableExt,
 };
 use rustc_span::Symbol;
 use rustc_trait_selection::{error_reporting::InferCtxtErrorExt, traits::ImplSource};
@@ -162,13 +162,14 @@ fn logic_refinement_term<'tcx>(
 
     // Goal { name: format!("{}_spec", &*name).into(), goal: refn }
 }
+
 pub(crate) fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = &AssocItem> {
     tcx.associated_items(def_id)
         .in_definition_order()
         .filter(move |item| !is_spec(tcx, item.def_id))
 }
 
-pub(crate) fn resolve_impl_source_opt<'tcx>(
+fn resolve_impl_source_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
@@ -176,63 +177,14 @@ pub(crate) fn resolve_impl_source_opt<'tcx>(
 ) -> Option<&'tcx ImplSource<'tcx, ()>> {
     trace!("resolve_impl_source_opt={def_id:?} {substs:?}");
     let substs = tcx.normalize_erasing_regions(param_env, substs);
-
-    let trait_ref = if let Some(assoc) = tcx.opt_associated_item(def_id) {
-        match assoc.container {
-            ImplContainer => tcx.impl_trait_ref(assoc.container_id(tcx))?.instantiate(tcx, substs),
-            TraitContainer => TraitRef::new(tcx, assoc.container_id(tcx), substs),
-        }
-    } else {
-        if tcx.is_trait(def_id) {
-            TraitRef::new(tcx, def_id, substs)
-        } else {
-            return None;
-        }
-    };
-
+    let trait_ref = TraitRef::new(tcx, def_id, substs);
     let source = tcx.codegen_select_candidate((param_env, trait_ref));
-
     match source {
         Ok(src) => Some(src),
         Err(_) => {
             trace!("resolve_impl_source_opt error");
-
             return None;
         }
-    }
-}
-
-pub(crate) fn resolve_opt<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    param_env: ParamEnv<'tcx>,
-    def_id: DefId,
-    substs: GenericArgsRef<'tcx>,
-) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-    trace!("resolve_opt={def_id:?} {substs:?}");
-    if tcx.is_trait(def_id) {
-        resolve_trait_opt(tcx, param_env, def_id, substs)
-    } else {
-        resolve_assoc_item_opt(tcx, param_env, def_id, substs)
-    }
-}
-
-pub(crate) fn resolve_trait_opt<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    param_env: ParamEnv<'tcx>,
-    def_id: DefId,
-    substs: GenericArgsRef<'tcx>,
-) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-    trace!("resolve_trait_opt={def_id:?} {substs:?}");
-    if tcx.is_trait(def_id) {
-        let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs);
-        debug!("impl_source={:?}", impl_source);
-        match resolve_impl_source_opt(tcx, param_env, def_id, substs)? {
-            ImplSource::UserDefined(impl_data) => Some((impl_data.impl_def_id, impl_data.args)),
-            ImplSource::Param(_) => Some((def_id, substs)),
-            _ => None,
-        }
-    } else {
-        None
     }
 }
 
@@ -255,13 +207,12 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
 
     let trait_ref = TraitRef::from_method(tcx, tcx.trait_of_item(def_id).unwrap(), substs);
 
-    let source = resolve_impl_source_opt(tcx, param_env, def_id, substs)?;
+    let source = resolve_impl_source_opt(tcx, param_env, trait_ref.def_id, substs)?;
     trace!("resolve_assoc_item_opt {source:?}",);
 
     match source {
         ImplSource::UserDefined(impl_data) => {
-            let trait_def_id = tcx.trait_id_of_impl(impl_data.impl_def_id).unwrap();
-            let trait_def = tcx.trait_def(trait_def_id);
+            let trait_def = tcx.trait_def(trait_ref.def_id);
             // Find the id of the actual associated method we will be running
             let leaf_def = trait_def
                 .ancestors(tcx, impl_data.impl_def_id)
@@ -280,7 +231,7 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
             let infcx = tcx.infer_ctxt().build();
 
             let param_env = param_env.with_reveal_all_normalized(tcx);
-            let substs = substs.rebase_onto(tcx, trait_def_id, impl_data.args);
+            let substs = substs.rebase_onto(tcx, trait_ref.def_id, impl_data.args);
             let substs = rustc_trait_selection::traits::translate_args(
                 &infcx,
                 param_env,
@@ -314,28 +265,19 @@ pub(crate) fn still_specializable<'tcx>(
     def_id: DefId,
     substs: GenericArgsRef<'tcx>,
 ) -> bool {
-    if let Some(trait_id) = tcx.trait_of_item(def_id) {
-        let is_final = if let Some(ImplSource::UserDefined(ud)) =
-            resolve_impl_source_opt(tcx, param_env, def_id, substs)
-        {
-            let trait_def = tcx.trait_def(trait_id);
-            let leaf =
-                trait_def.ancestors(tcx, ud.impl_def_id).unwrap().leaf_def(tcx, def_id).unwrap();
-
-            leaf.is_final()
-        } else {
-            false
-        };
-
-        let trait_generics = substs.truncate_to(tcx, tcx.generics_of(trait_id));
-        !is_final && trait_generics.still_further_specializable()
-    } else if let Some(impl_id) = tcx.impl_of_method(def_id)
-        && tcx.trait_id_of_impl(impl_id).is_some()
-    {
-        let is_final = tcx.defaultness(def_id).is_final();
-        let trait_ref = tcx.impl_trait_ref(impl_id).unwrap();
-        !is_final && trait_ref.instantiate(tcx, substs).still_further_specializable()
-    } else {
-        false
+    let trait_id = tcx.trait_of_item(def_id).unwrap();
+    let trait_generics = substs.truncate_to(tcx, tcx.generics_of(trait_id));
+    if !trait_generics.still_further_specializable() {
+        return false;
     }
+
+    if let Some(ImplSource::UserDefined(ud)) =
+        resolve_impl_source_opt(tcx, param_env, trait_id, substs)
+    {
+        let trait_def = tcx.trait_def(trait_id);
+        let leaf = trait_def.ancestors(tcx, ud.impl_def_id).unwrap().leaf_def(tcx, def_id).unwrap();
+        return !leaf.is_final();
+    } else {
+        return true;
+    };
 }

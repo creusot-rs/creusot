@@ -749,7 +749,7 @@ pub(crate) fn resolve_predicate_of<'tcx>(
     let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method"))?;
     let subst = ctx.mk_args(&[GenericArg::from(ty)]);
 
-    let resolve_impl = traits::resolve_opt(ctx.tcx, param_env, trait_meth_id, subst)?;
+    let resolve_impl = traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, subst)?;
     use rustc_middle::ty::TypeVisitableExt;
     if !ty.still_further_specializable()
         && ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), resolve_impl.0)
