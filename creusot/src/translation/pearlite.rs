@@ -1120,6 +1120,13 @@ fn not_spec_expr(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: ExprId) -> bool {
 use rustc_hir;
 
 impl<'tcx> Pattern<'tcx> {
+    pub(crate) fn get_bool(&self) -> Option<bool> {
+        match self {
+            Pattern::Boolean(b) => Some(*b),
+            _ => None,
+        }
+    }
+
     pub(crate) fn binds(&self, binders: &mut HashSet<Symbol>) {
         match self {
             Pattern::Constructor { fields, .. } => fields.iter().for_each(|f| f.binds(binders)),

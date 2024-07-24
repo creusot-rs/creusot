@@ -3,6 +3,7 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
+use itertools::Itertools;
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, ParamEnv, Ty, TyKind};
 use rustc_span::{Span, Symbol};
@@ -358,6 +359,25 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             TermKind::Impl { lhs, rhs } => self.build_vc(lhs, &|lhs| {
                 Ok(Exp::if_(lhs, self.build_vc(rhs, k)?, k(Exp::mk_true())?))
             }),
+            // VC(match A {P -> E}, Q) = VC(A, |a| match a {P -> VC(E, Q)})
+            TermKind::Match { scrutinee, arms }
+                if scrutinee.ty.is_bool()
+                    && arms.len() == 2
+                    && arms.iter().all(|a| a.0.get_bool().is_some()) =>
+            {
+                self.build_vc(&scrutinee, &|scrut| {
+                    let mut arms: Vec<_> = arms
+                        .iter()
+                        .map(&|arm: &(Pattern<'tcx>, Term<'tcx>)| {
+                            Ok((arm.0.get_bool().unwrap(), self.build_vc(&arm.1, k)?))
+                        })
+                        .collect::<Result<_, _>>()?;
+                    arms.sort_by(|a, b| b.0.cmp(&a.0));
+
+                    Ok(Exp::if_(scrut, arms.remove(0).1, arms.remove(0).1))
+                })
+            }
+
             // VC(match A {P -> E}, Q) = VC(A, |a| match a {P -> VC(E, Q)})
             TermKind::Match { scrutinee, arms } => self.build_vc(scrutinee, &|scrut| {
                 let arms: Vec<_> = arms
