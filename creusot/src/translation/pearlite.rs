@@ -1018,24 +1018,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 }
 
 pub(crate) fn mk_projection<'tcx>(lhs: Term<'tcx>, name: FieldIdx) -> TermKind<'tcx> {
-    let pat = field_pattern(lhs.ty, name).expect("mk_projection: no term for field");
-
-    match &lhs.ty.kind() {
-        TyKind::Adt(_def, _substs) => TermKind::Projection { lhs: Box::new(lhs), name },
-        TyKind::Tuple(_) => {
-            TermKind::Let {
-                pattern: pat,
-                // this is the wrong type
-                body: Box::new(Term {
-                    ty: lhs.ty,
-                    span: rustc_span::DUMMY_SP,
-                    kind: TermKind::Var(Symbol::intern("a")),
-                }),
-                arg: Box::new(lhs),
-            }
-        }
-        _ => unreachable!(),
-    }
+    TermKind::Projection { lhs: Box::new(lhs), name }
 }
 
 pub(crate) fn type_invariant_term<'tcx>(
@@ -1108,33 +1091,6 @@ pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stu
         None
     } else {
         None
-    }
-}
-
-fn field_pattern(ty: Ty, field: FieldIdx) -> Option<Pattern> {
-    match ty.kind() {
-        TyKind::Tuple(fields) => {
-            let mut fields: Vec<_> = (0..fields.len()).map(|_| Pattern::Wildcard).collect();
-            fields[field.as_usize()] = Pattern::Binder(Symbol::intern("a"));
-
-            Some(Pattern::Tuple(fields))
-        }
-        TyKind::Adt(ref adt, substs) => {
-            assert!(adt.is_struct(), "can only access fields of struct types");
-            assert_eq!(adt.variants().len(), 1, "expected a single variant");
-            let variant = &adt.variants()[0u32.into()];
-
-            let mut fields: Vec<_> = (0..variant.fields.len()).map(|_| Pattern::Wildcard).collect();
-            fields[field.as_usize()] = Pattern::Binder(Symbol::intern("a"));
-
-            Some(Pattern::Constructor {
-                adt: variant.def_id,
-                substs,
-                variant: 0usize.into(),
-                fields,
-            })
-        }
-        _ => unreachable!("field_pattern: {:?}", ty),
     }
 }
 

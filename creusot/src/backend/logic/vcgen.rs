@@ -1,5 +1,5 @@
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     collections::{HashMap, HashSet},
 };
 
@@ -41,6 +41,7 @@ struct VCGen<'a, 'tcx> {
     self_id: DefId,
     structurally_recursive: bool,
     param_env: ParamEnv<'tcx>,
+    fresh_name: Cell<usize>,
 }
 
 pub(super) fn vc<'tcx>(
@@ -58,6 +59,7 @@ pub(super) fn vc<'tcx>(
         names: RefCell::new(names),
         self_id,
         structurally_recursive,
+        fresh_name: Cell::new(0),
     }
     .build_vc(&t, &|exp| Ok(Exp::let_(dest.clone(), exp, post.clone())))
 }
@@ -211,6 +213,14 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
     fn lower_pure(&self, lit: &Term<'tcx>) -> Exp {
         lower_pure(*self.ctx.borrow_mut(), *self.names.borrow_mut(), lit)
+    }
+
+    fn name(&self, base: &str) -> Ident {
+        let ix = self.fresh_name.get();
+
+        self.fresh_name.set(ix + 1);
+
+        Ident::from_string(format!("{base}_{ix}"))
     }
 
     fn build_vc(&self, t: &Term<'tcx>, k: PostCont<'_, 'tcx, Exp>) -> Result<Exp, VCError<'tcx>> {
@@ -380,6 +390,18 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                             .borrow_mut()
                             .translate_accessor(def.variants()[0u32.into()].fields[*name].did);
                         self.names.borrow_mut().accessor(def.did(), substs, 0, *name)
+                    }
+                    TyKind::Tuple(f) => {
+                        let mut fields = vec![why3::exp::Pattern::Wildcard; f.len()];
+                        fields[name.as_usize()] = why3::exp::Pattern::VarP("a".into());
+
+                        return self.build_vc(lhs, &|lhs| {
+                            k(Exp::Let {
+                                pattern: why3::exp::Pattern::TupleP(fields.clone()),
+                                arg: Box::new(lhs),
+                                body: Box::new(Exp::var("a")),
+                            })
+                        });
                     }
                     k => unreachable!("Projection from {k:?}"),
                 };
