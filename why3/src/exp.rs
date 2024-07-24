@@ -610,7 +610,7 @@ impl Exp {
             body
         // Remove this if performance is a concern
         } else if occurences[&ident] == 1 {
-            body.subst(&[(ident, arg)].into_iter().collect());
+            body.subst(&mut [(ident, arg)].into_iter().collect());
             body
         } else {
             Exp::Let { pattern: Pattern::VarP(ident), arg: Box::new(arg), body: Box::new(body) }
@@ -905,8 +905,132 @@ impl Exp {
         qfvs.qfvs
     }
 
-    pub fn subst(&mut self, mut subst: &HashMap<Ident, Exp>) {
+    pub fn subst(&mut self, subst: &mut Environment) {
         subst.visit_mut(self);
+    }
+}
+
+#[derive(Default)]
+pub struct Environment {
+    substs: Vec<HashMap<Ident, Exp>>,
+}
+
+impl Environment {
+    pub fn add_subst(&mut self, substs: HashMap<Ident, Exp>) {
+        self.substs.push(substs);
+    }
+
+    pub fn pop_subst(&mut self) {
+        self.substs.pop();
+    }
+
+    pub fn get(&self, id: &Ident) -> Option<Exp> {
+        for sub in self.substs.iter().rev() {
+            if let Some(e) = sub.get(id) {
+                return Some(e.clone());
+            }
+        }
+        None
+    }
+
+    pub fn occ(&self, id: &Ident) -> usize {
+        let mut occ = 0;
+        for sub in self.substs.iter() {
+            if sub.get(id).is_some() {
+                occ += 1;
+            }
+        }
+
+        occ
+    }
+}
+
+impl FromIterator<(Ident, Exp)> for Environment {
+    fn from_iter<T: IntoIterator<Item = (Ident, Exp)>>(iter: T) -> Self {
+        Environment { substs: vec![iter.into_iter().collect()] }
+    }
+}
+
+impl ExpMutVisitor for Environment {
+    fn visit_mut(&mut self, exp: &mut Exp) {
+        match exp {
+            Exp::Var(v) => {
+                if let Some(e) = self.get(v) {
+                    *exp = e.clone()
+                }
+            }
+            Exp::Abs(binders, body) => {
+                let mut bound_here = HashMap::default();
+
+                for binder in binders {
+                    binder.fvs().into_iter().for_each(|id| {
+                        bound_here.insert(id.clone(), Exp::var(id));
+                    });
+                }
+
+                self.add_subst(bound_here);
+                self.visit_mut(body);
+                self.pop_subst();
+            }
+
+            Exp::Let { pattern, arg, body } => {
+                self.visit_mut(arg);
+
+                let mut bound = pattern.binders();
+
+                let mut bound_here = HashMap::default();
+                bound.drain(..).for_each(|k| {
+                    bound_here.insert(k.clone(), Exp::var(k));
+                });
+
+                self.add_subst(bound_here);
+                self.visit_mut(body);
+                self.pop_subst();
+            }
+            Exp::Match(scrut, brs) => {
+                self.visit_mut(scrut);
+
+                for (pat, br) in brs {
+                    let mut bound_here = HashMap::default();
+                    pat.binders().drain(..).for_each(|k| {
+                        bound_here.insert(k.clone(), Exp::var(k));
+                    });
+
+                    self.add_subst(bound_here);
+                    self.visit_mut(br);
+                    self.pop_subst();
+                }
+            }
+            Exp::Forall(binders, trig, exp) => {
+                let mut bound_here = HashMap::default();
+
+                binders.iter().for_each(|k| {
+                    bound_here.insert(k.0.clone(), Exp::var(k.0.clone()));
+                });
+
+                self.add_subst(bound_here);
+                self.visit_mut(exp);
+                trig.iter_mut().for_each(|t| self.visit_trigger_mut(t));
+                self.pop_subst();
+            }
+            Exp::Exists(binders, trig, exp) => {
+                let mut bound_here = HashMap::default();
+
+                binders.iter().for_each(|k| {
+                    bound_here.insert(k.0.clone(), Exp::var(k.0.clone()));
+                });
+
+                self.add_subst(bound_here);
+                self.visit_mut(exp);
+                trig.iter_mut().for_each(|t| self.visit_trigger_mut(t));
+                self.pop_subst();
+            }
+            _ => super_visit_mut(self, exp),
+        }
+    }
+
+    fn visit_trigger_mut(&mut self, trig: &mut Trigger) {
+        super_visit_mut_trigger(self, trig)
     }
 }
 

@@ -395,7 +395,7 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
 
     let func_call = function_call(sig);
     let trigger = sig.trigger.clone().into_iter().collect();
-    condition.subst(&[("result".into(), func_call.clone())].into_iter().collect());
+    condition.subst(&mut [("result".into(), func_call.clone())].into_iter().collect());
     let args: Vec<(_, _)> = sig
         .args
         .iter()
