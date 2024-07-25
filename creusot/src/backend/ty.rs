@@ -576,6 +576,7 @@ fn build_ty_decl<'tcx>(
     kind
 }
 use rustc_data_structures::captures::Captures;
+use why3::declaration::Attribute;
 
 pub(crate) fn ty_params<'tcx, 'a>(
     ctx: &'a mut Why3Generator<'tcx>,
@@ -705,7 +706,7 @@ pub(crate) fn build_accessor(
     let sig = Signature {
         name: acc_name.clone(),
         trigger: None,
-        attrs: Vec::new(),
+        attrs: vec![Attribute::Attr("inline:trivial".into())],
         args: vec![Binder::typed("self".into(), this.clone())],
         retty: Some(field_ty.clone()),
         contract: Contract::new(),
