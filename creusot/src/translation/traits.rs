@@ -230,7 +230,6 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
             // Translate the original substitution into one on the selected impl method
             let infcx = tcx.infer_ctxt().build();
 
-            let param_env = param_env.with_reveal_all_normalized(tcx);
             let substs = substs.rebase_onto(tcx, trait_ref.def_id, impl_data.args);
             let substs = rustc_trait_selection::traits::translate_args(
                 &infcx,
