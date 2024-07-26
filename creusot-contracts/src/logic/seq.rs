@@ -6,6 +6,7 @@ use crate::{
 #[cfg_attr(creusot, creusot::builtins = "seq.Seq.seq")]
 pub struct Seq<T: ?Sized>(std::marker::PhantomData<T>);
 
+#[allow(unused)]
 impl<T> Seq<T> {
     #[cfg(creusot)]
     #[trusted]

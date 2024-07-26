@@ -6,6 +6,7 @@ use creusot_contracts::logic::IndexLogic;
 pub struct Seq<T: ?Sized>(Seq1<T>);
 
 impl<T> Seq<T> {
+    #[allow(unused)]
     #[cfg(creusot)]
     #[creusot::no_translate]
     #[creusot::item = "empty_tag"]
