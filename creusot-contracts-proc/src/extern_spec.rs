@@ -30,6 +30,7 @@ pub struct ExternMod {
     ident: Ident,
     content: Vec<ExternSpec>,
 }
+#[allow(dead_code)]
 pub struct ExternTrait {
     pub unsafety: Option<Unsafe>,
     pub trait_token: Trait,
@@ -41,6 +42,7 @@ pub struct ExternTrait {
     pub items: Vec<ExternMethod>,
 }
 
+#[allow(dead_code)]
 pub struct ExternImpl {
     pub attrs: Vec<Attribute>,
     pub defaultness: Option<token::Default>,
@@ -52,6 +54,8 @@ pub struct ExternImpl {
     pub brace_token: Brace,
     pub items: Vec<ExternMethod>,
 }
+
+#[allow(dead_code)]
 pub struct ExternMethod {
     pub attrs: Vec<Attribute>,
     pub sig: Signature,

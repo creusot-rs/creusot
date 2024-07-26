@@ -19,7 +19,7 @@ impl Iterator for Range {
     type Item = isize;
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             self.resolve() && self.start >= self.end
@@ -40,8 +40,8 @@ impl Iterator for Range {
 
     #[law]
     #[open]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self) {}
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
 
     #[law]
     #[open]
@@ -77,15 +77,15 @@ impl Range {
 pub fn sum_range(n: isize) -> isize {
     let mut i = 0;
     let mut it = Range { start: 0, end: n }.into_iter();
-    let iter_old = gh! { it };
-    let mut produced = gh! { Seq::EMPTY };
+    let iter_old = snapshot! { it };
+    let mut produced = snapshot! { Seq::EMPTY };
     #[invariant(inv(it))]
     #[invariant(iter_old.produces(produced.inner(), it))]
     #[invariant(i@ == produced.len() && i <= n)]
     loop {
         match it.next() {
             Some(x) => {
-                produced = gh! { produced.concat(Seq::singleton(x)) };
+                produced = snapshot! { produced.concat(Seq::singleton(x)) };
                 i += 1
             }
             None => break,

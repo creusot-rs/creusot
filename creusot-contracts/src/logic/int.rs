@@ -3,12 +3,17 @@ use crate::{
     *,
 };
 
-#[cfg_attr(creusot, rustc_diagnostic_item = "creusot_int", creusot::builtins = "prelude.Int.int")]
+#[cfg_attr(
+    creusot,
+    rustc_diagnostic_item = "creusot_int",
+    creusot::builtins = "prelude.prelude.Int.int"
+)]
+#[allow(dead_code)]
 pub struct Int(*mut ());
 
 impl Int {
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[creusot::builtins = "int.Power.power"]
     pub fn pow(self, _: Int) -> Int {
@@ -16,7 +21,7 @@ impl Int {
     }
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[creusot::builtins = "int.MinMax.max"]
     pub fn max(self, _: Int) -> Int {
@@ -24,7 +29,7 @@ impl Int {
     }
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[creusot::builtins = "int.MinMax.min"]
     pub fn min(self, _: Int) -> Int {
@@ -32,7 +37,7 @@ impl Int {
     }
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[creusot::builtins = "int.EuclideanDivision.div"]
     pub fn div_euclid(self, _: Int) -> Int {
@@ -40,14 +45,14 @@ impl Int {
     }
 
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[creusot::builtins = "int.EuclideanDivision.mod"]
     pub fn rem_euclid(self, _: Int) -> Int {
         absurd
     }
 
-    #[ghost]
+    #[logic]
     #[open]
     pub fn abs_diff(self, other: Int) -> Int {
         if self < other {

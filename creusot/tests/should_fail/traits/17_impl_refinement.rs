@@ -17,14 +17,14 @@ impl Tr for () {
 }
 
 trait ReqFalse {
-    #[ghost]
+    #[logic]
     #[requires(x@ >= 10)]
     fn need_false(x: u64) -> ();
 }
 
 impl ReqFalse for () {
     // This should not prove
-    #[ghost]
+    #[logic]
     #[requires(y@ >= 15)]
     fn need_false(y: u64) {}
 }

@@ -3,7 +3,7 @@ use crate::{std::iter::Fuse, *};
 impl<I: Iterator> ShallowModel for Fuse<I> {
     type ShallowModelTy = Option<I>;
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     fn shallow_model(self) -> Option<I> {
@@ -13,7 +13,7 @@ impl<I: Iterator> ShallowModel for Fuse<I> {
 
 impl<I: Iterator> Iterator for Fuse<I> {
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             (self@ == None || exists<it:&mut I> it.completed() && self@ == Some(*it)) &&
@@ -22,7 +22,7 @@ impl<I: Iterator> Iterator for Fuse<I> {
     }
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn produces(self, prod: Seq<Self::Item>, other: Self) -> bool {
         pearlite! {
             match self@ {
@@ -37,8 +37,8 @@ impl<I: Iterator> Iterator for Fuse<I> {
 
     #[law]
     #[open]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self) {}
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
 
     #[law]
     #[open]

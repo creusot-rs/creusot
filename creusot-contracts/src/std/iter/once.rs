@@ -3,7 +3,7 @@ use crate::{std::iter::Once, *};
 impl<T> ShallowModel for Once<T> {
     type ShallowModelTy = Option<T>;
 
-    #[ghost]
+    #[logic]
     #[trusted]
     #[open(self)]
     fn shallow_model(self) -> Option<T> {
@@ -13,7 +13,7 @@ impl<T> ShallowModel for Once<T> {
 
 impl<T> Iterator for Once<T> {
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && self.resolve() }
     }
@@ -29,8 +29,8 @@ impl<T> Iterator for Once<T> {
 
     #[law]
     #[open(self)]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self) {}
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
 
     #[law]
     #[open(self)]
@@ -38,4 +38,19 @@ impl<T> Iterator for Once<T> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
+
+extern_spec! {
+    mod std {
+        mod iter {
+            impl<T> Iterator for Once<T> {
+                #[pure]
+                #[ensures(match result {
+                    None => self.completed(),
+                    Some(v) => (*self).produces(Seq::singleton(v), ^self)
+                })]
+                fn next(&mut self) -> Option<T>;
+            }
+        }
+    }
 }

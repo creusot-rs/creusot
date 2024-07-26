@@ -1,8 +1,9 @@
 use super::BodyTranslator;
 use crate::{
     ctx::TranslationCtx,
+    fmir,
     translation::{
-        fmir::{self, Branches, Expr, RValue, Terminator},
+        fmir::*,
         pearlite::{Term, TermKind, UnOp},
         specification::inv_subst,
         traits,
@@ -19,11 +20,7 @@ use rustc_middle::{
         self, AssertKind, BasicBlock, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo,
         StatementKind, SwitchTargets, TerminatorKind, TerminatorKind::*,
     },
-    ty::{
-        self,
-        subst::{GenericArgKind, SubstsRef},
-        ParamEnv, Predicate, Ty, TyKind,
-    },
+    ty::{self, GenericArgKind, GenericArgsRef, ParamEnv, Predicate, Ty, TyKind},
 };
 use rustc_span::{Span, Symbol};
 use rustc_trait_selection::traits::{error_reporting::TypeErrCtxtExt, TraitEngineExt};
@@ -60,25 +57,26 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
                 self.emit_terminator(switch);
             }
-            Terminate => self.emit_terminator(Terminator::Abort),
+            UnwindTerminate(_) => {
+                self.emit_terminator(Terminator::Abort(terminator.source_info.span))
+            }
             Return => self.emit_terminator(Terminator::Return),
-            Unreachable => self.emit_terminator(Terminator::Abort),
+            Unreachable => self.emit_terminator(Terminator::Abort(terminator.source_info.span)),
             Call { func, args, destination, target, .. } => {
                 if target.is_none() {
                     // If we have no target block after the call, then we cannot move past it.
-                    self.emit_terminator(Terminator::Abort);
+                    self.emit_terminator(Terminator::Abort(terminator.source_info.span));
                     return;
                 }
 
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
-                if Some(fun_def_id) == self.tcx.get_diagnostic_item(Symbol::intern("ghost_from_fn"))
-                {
+                if self.tcx.is_diagnostic_item(Symbol::intern("snapshot_from_fn"), fun_def_id) {
                     let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() else { panic!() };
                     let TyKind::Closure(def_id, _) = ty.kind() else { panic!() };
-                    let mut assertion = self.assertions.remove(def_id).unwrap();
+                    let mut assertion = self.snapshots.remove(def_id).unwrap();
                     assertion.subst(&inv_subst(self.body, &self.locals, terminator.source_info));
                     self.check_ghost_term(&assertion, location);
-                    self.emit_ghost_assign(*destination, assertion);
+                    self.emit_ghost_assign(*destination, assertion, span);
                     self.emit_terminator(Terminator::Goto(target.unwrap()));
                     return;
                 }
@@ -93,20 +91,27 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 let res =
                     evaluate_additional_predicates(&infcx, predicates, self.param_env(), span);
                 if let Err(errs) = res {
-                    infcx.err_ctxt().report_fulfillment_errors(&errs);
+                    infcx.err_ctxt().report_fulfillment_errors(errs);
                 }
 
                 let mut func_args: Vec<_> =
-                    args.iter().map(|arg| self.translate_operand(arg)).collect();
+                    args.iter().map(|arg| self.translate_operand(&arg.node)).collect();
 
                 if func_args.is_empty() {
+                    // TODO: Remove this, push the 0-ary handling down to why3 backend
                     // We use tuple as a dummy argument for 0-ary functions
-                    func_args.push(Expr::Tuple(vec![]))
+                    func_args.push(fmir::Operand::Constant(Term {
+                        kind: TermKind::Tuple { fields: Vec::new() },
+                        ty: self.ctx.types.unit,
+                        span,
+                    }))
                 }
-                let call_exp = if self.is_box_new(fun_def_id) {
+                let (loc, bb) = (destination, target.unwrap());
+
+                if self.is_box_new(fun_def_id) {
                     assert_eq!(func_args.len(), 1);
 
-                    func_args.remove(0)
+                    self.emit_assignment(&loc, RValue::Operand(func_args.remove(0)), span);
                 } else {
                     let (fun_def_id, subst) =
                         resolve_function(self.ctx, self.param_env(), fun_def_id, subst, span);
@@ -115,13 +120,15 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         .try_normalize_erasing_regions(self.param_env(), subst)
                         .unwrap_or(subst);
 
-                    let exp = Expr::Call(fun_def_id, subst, func_args);
-                    let span = span.source_callsite();
-                    Expr::Span(span, Box::new(exp))
+                    self.emit_statement(Statement::Call(
+                        self.translate_place(*loc),
+                        fun_def_id,
+                        subst,
+                        func_args,
+                        span.source_callsite(),
+                    ));
                 };
 
-                let (loc, bb) = (destination, target.unwrap());
-                self.emit_assignment(&loc, RValue::Expr(call_exp));
                 self.emit_terminator(Terminator::Goto(bb));
             }
             Assert { cond, expected, msg, target, unwind: _ } => {
@@ -149,7 +156,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         kind: TermKind::Unary { op: UnOp::Not, arg: Box::new(cond) },
                     };
                 }
-                self.emit_statement(fmir::Statement::Assertion { cond, msg });
+                self.emit_statement(Statement::Assertion { cond, msg });
                 self.emit_terminator(mk_goto(*target))
             }
 
@@ -160,7 +167,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             FalseUnwind { real_target, .. } => {
                 self.emit_terminator(mk_goto(*real_target));
             }
-            Yield { .. } | GeneratorDrop | InlineAsm { .. } | Resume => {
+            CoroutineDrop | UnwindResume | Yield { .. } | InlineAsm { .. } => {
                 unreachable!("{:?}", terminator.kind)
             }
         }
@@ -186,16 +193,16 @@ pub(crate) fn resolve_function<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
-    subst: SubstsRef<'tcx>,
+    subst: GenericArgsRef<'tcx>,
     sp: Span,
-) -> (DefId, SubstsRef<'tcx>) {
+) -> (DefId, GenericArgsRef<'tcx>) {
     if let Some(it) = ctx.opt_associated_item(def_id) {
         if let ty::TraitContainer = it.container {
             let method = traits::resolve_assoc_item_opt(ctx.tcx, param_env, def_id, subst)
                 .expect("could not find instance");
 
             if !method.0.is_local() && ctx.sig(method.0).contract.is_false() {
-                ctx.warn(sp, "calling an external function with no contract will yield an impossible precondition");
+                ctx.warn(sp, "calling an external function with no contract will yield an impossible precondition").emit();
             }
 
             return method;
@@ -206,7 +213,8 @@ pub(crate) fn resolve_function<'tcx>(
         ctx.warn(
             sp,
             "calling an external function with no contract will yield an impossible precondition",
-        );
+        )
+        .emit();
     }
     // ctx.translate(def_id);
 
@@ -214,8 +222,8 @@ pub(crate) fn resolve_function<'tcx>(
 }
 
 // Try to extract a function defid from an operand
-fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<(DefId, SubstsRef<'tcx>)> {
-    let fun_ty = op.constant().unwrap().literal.ty();
+fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<(DefId, GenericArgsRef<'tcx>)> {
+    let fun_ty = op.constant().unwrap().const_.ty();
     if let ty::TyKind::FnDef(def_id, subst) = fun_ty.kind() {
         Some((*def_id, subst))
     } else {
@@ -272,7 +280,7 @@ pub(crate) fn make_switch<'tcx>(
     si: SourceInfo,
     switch_ty: Ty<'tcx>,
     targets: &SwitchTargets,
-    discr: Expr<'tcx>,
+    discr: fmir::Operand<'tcx>,
 ) -> Terminator<'tcx> {
     match switch_ty.kind() {
         TyKind::Adt(def, substs) => {

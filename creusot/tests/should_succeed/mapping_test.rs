@@ -13,7 +13,7 @@ struct T {
 impl ShallowModel for T {
     type ShallowModelTy = Mapping<Int, Int>;
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     #[ensures(
@@ -28,7 +28,7 @@ impl ShallowModel for T {
 #[requires( (*t).a@ < 1000 )] // to prevent overflow
 #[ensures( (^t)@ == t@.set((*t).a@,1) )]
 fn incr(t: &mut T) {
-    let old_t = gh! { t };
+    let old_t = snapshot! { t };
     (*t).a += 1;
     // proving the post-consition via extensional equality of mappings
     // (notice `==` versus `==`)

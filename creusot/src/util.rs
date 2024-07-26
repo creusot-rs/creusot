@@ -19,8 +19,8 @@ use rustc_hir::{
 };
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
-    self, subst::SubstsRef, BorrowKind, ClosureKind, EarlyBinder, InternalSubsts, Ty, TyCtxt,
-    TyKind, UpvarCapture,
+    self, BorrowKind, ClosureKind, EarlyBinder, GenericArg, GenericArgs, GenericArgsRef, Ty,
+    TyCtxt, TyKind, UpvarCapture,
 };
 use rustc_span::{symbol, symbol::kw, Span, Symbol, DUMMY_SP};
 use std::{
@@ -31,14 +31,19 @@ use std::{
 use why3::{
     declaration,
     declaration::{LetKind, Signature, ValDecl},
-    Ident, QName,
+    Ident,
 };
 
 pub(crate) fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
-    crate::util::is_no_translate(tcx, def_id)
-        || crate::util::is_ghost(tcx, def_id)
-        || crate::util::is_predicate(tcx, def_id)
-        || crate::util::is_logic(tcx, def_id)
+    is_no_translate(tcx, def_id) || is_predicate(tcx, def_id) || is_logic(tcx, def_id)
+}
+
+pub(crate) fn is_pearlite(tcx: TyCtxt, def_id: DefId) -> bool {
+    is_predicate(tcx, def_id)
+        || is_spec(tcx, def_id)
+        || is_logic(tcx, def_id)
+        || is_assertion(tcx, def_id)
+        || is_snapshot_closure(tcx, def_id)
 }
 
 pub(crate) fn is_no_translate(tcx: TyCtxt, def_id: DefId) -> bool {
@@ -65,21 +70,25 @@ pub(crate) fn is_assertion(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "assert"]).is_some()
 }
 
-pub(crate) fn is_ghost_closure(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "ghost"]).is_some()
+pub(crate) fn is_snapshot_closure(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "snapshot"]).is_some()
 }
 
-pub(crate) fn ghost_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
-    if let TyKind::Closure(def_id, _) = ty.peel_refs().kind() && is_ghost_closure(tcx, *def_id)  {
+pub(crate) fn snapshot_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
+    if let TyKind::Closure(def_id, _) = ty.peel_refs().kind()
+        && is_snapshot_closure(tcx, *def_id)
+    {
         Some(*def_id)
-    } else { None }
+    } else {
+        None
+    }
 }
 
-pub(crate) fn is_ghost_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+pub(crate) fn is_snap_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     let r: Option<bool> = try {
         let adt = ty.ty_adt_def()?;
         let builtin = get_builtin(tcx, adt.did())?;
-        builtin.as_str() == "prelude.Ghost.ghost_ty"
+        builtin.as_str() == "prelude.prelude.Snapshot.snap_ty"
     };
     r.unwrap_or(false)
 }
@@ -88,12 +97,12 @@ pub(crate) fn is_logic(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "logic"]).is_some()
 }
 
-pub(crate) fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "predicate"]).is_some()
+pub(crate) fn is_prophetic(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "logic", "prophetic"]).is_some()
 }
 
-pub(crate) fn is_ghost(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "ghost"]).is_some()
+pub(crate) fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "predicate"]).is_some()
 }
 
 pub(crate) fn is_trusted(tcx: TyCtxt, def_id: DefId) -> bool {
@@ -116,12 +125,18 @@ pub(crate) fn is_structural_ty_inv(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "structural_inv"]).is_some()
 }
 
+pub(crate) fn has_variant_clause(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "clause", "variant"]).is_some()
+}
+
 pub(crate) fn is_user_tyinv(tcx: TyCtxt, def_id: DefId) -> bool {
     let Some(assoc_item) = tcx.opt_associated_item(def_id) else { return false };
     let Some(trait_item_did) = (match assoc_item.container {
         ty::AssocItemContainer::TraitContainer => Some(def_id),
         ty::AssocItemContainer::ImplContainer => assoc_item.trait_item_def_id,
-    }) else { return false };
+    }) else {
+        return false;
+    };
 
     tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user"))
         .is_some_and(|inv_did| inv_did == trait_item_did)
@@ -150,7 +165,7 @@ pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::A
 }
 
 pub(crate) fn param_def_id(tcx: TyCtxt, def_id: LocalDefId) -> LocalDefId {
-    if is_spec(tcx, def_id.to_def_id()) && tcx.is_closure(def_id.to_def_id()) {
+    if is_spec(tcx, def_id.to_def_id()) && tcx.is_closure_like(def_id.to_def_id()) {
         tcx.parent(def_id.to_def_id()).expect_local()
     } else {
         def_id
@@ -163,7 +178,7 @@ pub(crate) fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
             return false;
         }
 
-        if tcx.is_closure(def_id) {
+        if tcx.is_closure_like(def_id) {
             def_id = tcx.parent(def_id);
         } else {
             return true;
@@ -176,7 +191,7 @@ pub(crate) fn has_body(ctx: &mut TranslationCtx, def_id: DefId) -> bool {
         ctx.tcx.hir().maybe_body_owned_by(local_id).is_some()
     } else {
         match item_type(ctx.tcx, def_id) {
-            ItemType::Ghost | ItemType::Logic | ItemType::Predicate => ctx.term(def_id).is_some(),
+            ItemType::Logic { .. } | ItemType::Predicate { .. } => ctx.term(def_id).is_some(),
             _ => false,
         }
     }
@@ -191,33 +206,29 @@ pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     })
 }
 
-pub(crate) fn item_qname(ctx: &TranslationCtx, def_id: DefId, ns: Namespace) -> QName {
-    QName { module: vec![module_name(ctx.tcx, def_id)], name: item_name(ctx.tcx, def_id, ns) }
+pub(crate) fn item_name(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Ident {
+    item_symb(tcx, def_id, ns).to_string().into()
 }
 
-pub(crate) fn item_name(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Ident {
+pub(crate) fn item_symb(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Symbol {
     use rustc_hir::def::DefKind::*;
 
     match tcx.def_kind(def_id) {
-        AssocTy => ident_of_ty(tcx.item_name(def_id)),
-        Ctor(_, _) => format!("C_{}", tcx.item_name(def_id)).into(),
+        AssocTy => tcx.item_name(def_id),
+        Ctor(_, _) => Symbol::intern(&format!("C_{}", tcx.item_name(def_id))),
         Struct | Variant | Union if ns == Namespace::ValueNS => {
-            format!("C_{}", tcx.item_name(def_id)).into()
+            Symbol::intern(&format!("C_{}", tcx.item_name(def_id)))
         }
         Variant | Struct | Enum | Union => {
-            format!("t_{}", tcx.item_name(def_id).as_str().to_ascii_lowercase()).into()
+            Symbol::intern(&format!("t_{}", tcx.item_name(def_id).as_str().to_ascii_lowercase()))
         }
         Closure => {
-            let mut id = ident_path(tcx, def_id);
-            if ns == Namespace::TypeNS {
-                id = id.to_string().to_ascii_lowercase().into();
-            } else {
-                id.decapitalize();
-            }
-            id
+            let mut id = ident_path(tcx, def_id).to_string();
+            id = id.to_ascii_lowercase().into();
+            Symbol::intern(&id)
         }
 
-        _ => ident_of(tcx.item_name(def_id)),
+        _ => tcx.item_name(def_id),
     }
 }
 
@@ -234,26 +245,19 @@ pub(crate) fn ident_of(sym: Symbol) -> Ident {
     }
 }
 
-pub(crate) fn ident_of_ty(sym: Symbol) -> Ident {
-    let mut id = sym.to_string();
-
-    id[..1].make_ascii_lowercase();
-    Ident::build(&id)
-}
-
 pub(crate) fn inv_module_name(tcx: TyCtxt, kind: TyInvKind) -> Ident {
     match kind {
         TyInvKind::Trivial => "TyInv_Trivial".into(),
         TyInvKind::Borrow(Mutability::Not) => "TyInv_Borrow_Shared".into(),
         TyInvKind::Borrow(Mutability::Mut) => "TyInv_Borrow".into(),
         TyInvKind::Box => "TyInv_Box".into(),
-        TyInvKind::Adt(adt_did) => format!("{}_Inv", &*ident_path(tcx, adt_did)).into(),
+        TyInvKind::Adt(adt_did) => format!("{}_Inv", ident_path(tcx, adt_did)).into(),
         TyInvKind::Tuple(arity) => format!("TyInv_Tuple{arity}").into(),
         TyInvKind::Slice => format!("TyInv_Slice").into(),
     }
 }
 
-pub(crate) fn module_name(tcx: TyCtxt, def_id: DefId) -> Ident {
+pub(crate) fn module_name(tcx: TyCtxt, def_id: DefId) -> Symbol {
     let kind = tcx.def_kind(def_id);
     use rustc_hir::def::DefKind::*;
 
@@ -263,7 +267,7 @@ pub(crate) fn module_name(tcx: TyCtxt, def_id: DefId) -> Ident {
     }
 }
 
-fn ident_path(tcx: TyCtxt, def_id: DefId) -> Ident {
+pub fn ident_path(tcx: TyCtxt, def_id: DefId) -> Symbol {
     use heck::ToUpperCamelCase;
 
     let def_path = tcx.def_path(def_id);
@@ -287,14 +291,13 @@ fn ident_path(tcx: TyCtxt, def_id: DefId) -> Ident {
         segments.push("Type".into());
     }
 
-    segments.join("_").into()
+    Symbol::intern(&segments.join("_"))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ItemType {
-    Logic,
-    Predicate,
-    Ghost,
+    Logic { prophetic: bool },
+    Predicate { prophetic: bool },
     Program,
     Closure,
     Trait,
@@ -302,16 +305,29 @@ pub enum ItemType {
     Type,
     AssocTy,
     Constant,
+    Variant,
     Unsupported(DefKind),
+    Field,
 }
 
 impl ItemType {
-    pub(crate) fn val(&self, sig: Signature) -> ValDecl {
+    pub(crate) fn let_kind(&self) -> Option<LetKind> {
         match self {
-            ItemType::Logic | ItemType::Ghost => {
+            ItemType::Logic { .. } => Some(LetKind::Function),
+            ItemType::Predicate { .. } => Some(LetKind::Predicate),
+            ItemType::Program | ItemType::Closure => None,
+            ItemType::Constant => Some(LetKind::Constant),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn val(&self, mut sig: Signature) -> ValDecl {
+        match self {
+            ItemType::Logic { .. } => {
                 ValDecl { sig, ghost: false, val: false, kind: Some(LetKind::Function) }
             }
-            ItemType::Predicate => {
+            ItemType::Predicate { .. } => {
+                sig.retty = None;
                 ValDecl { sig, ghost: false, val: false, kind: Some(LetKind::Predicate) }
             }
             ItemType::Program | ItemType::Closure => {
@@ -326,9 +342,10 @@ impl ItemType {
 
     pub(crate) fn to_str(&self) -> &str {
         match self {
-            ItemType::Logic => "logic function",
-            ItemType::Predicate => "predicate",
-            ItemType::Ghost => "ghost function",
+            ItemType::Logic { prophetic: false } => "logic function",
+            ItemType::Logic { prophetic: true } => "prophetic logic function",
+            ItemType::Predicate { prophetic: false } => "predicate",
+            ItemType::Predicate { prophetic: true } => "prophetic predicate",
             ItemType::Program => "program function",
             ItemType::Closure => "closure",
             ItemType::Trait => "trait declaration",
@@ -336,7 +353,19 @@ impl ItemType {
             ItemType::Type => "type declaration",
             ItemType::AssocTy => "associated type",
             ItemType::Constant => "constant",
+            ItemType::Field => "field",
             ItemType::Unsupported(_) => "[OTHER]",
+            ItemType::Variant => "constructor",
+        }
+    }
+
+    pub(crate) fn can_implement(self, trait_type: Self) -> bool {
+        match (self, trait_type) {
+            (ItemType::Logic { prophetic: false }, ItemType::Logic { prophetic: true }) => true,
+            (ItemType::Predicate { prophetic: false }, ItemType::Predicate { prophetic: true }) => {
+                true
+            }
+            _ => self == trait_type,
         }
     }
 }
@@ -347,11 +376,9 @@ pub(crate) fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
         DefKind::Impl { .. } => ItemType::Impl,
         DefKind::Fn | DefKind::AssocFn => {
             if is_predicate(tcx, def_id) {
-                ItemType::Predicate
-            } else if is_ghost(tcx, def_id) {
-                ItemType::Ghost
+                ItemType::Predicate { prophetic: is_prophetic(tcx, def_id) }
             } else if is_logic(tcx, def_id) {
-                ItemType::Logic
+                ItemType::Logic { prophetic: is_prophetic(tcx, def_id) }
             } else {
                 ItemType::Program
             }
@@ -360,7 +387,9 @@ pub(crate) fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
         DefKind::Closure => ItemType::Closure,
         DefKind::Struct | DefKind::Enum | DefKind::Union => ItemType::Type,
         DefKind::AssocTy => ItemType::AssocTy,
+        DefKind::Field => ItemType::Field,
         DefKind::AnonConst => panic!(),
+        DefKind::Variant => ItemType::Variant,
         dk => ItemType::Unsupported(dk),
     }
 }
@@ -369,13 +398,12 @@ pub(crate) fn inputs_and_output<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
 ) -> (impl Iterator<Item = (symbol::Ident, Ty<'tcx>)>, Ty<'tcx>) {
-    let (inputs, output): (Box<dyn Iterator<Item = (rustc_span::symbol::Ident, _)>>, _) = match tcx
-        .type_of(def_id)
-        .subst_identity()
+    let ty = tcx.type_of(def_id).instantiate_identity();
+    let (inputs, output): (Box<dyn Iterator<Item = (rustc_span::symbol::Ident, _)>>, _) = match ty
         .kind()
     {
         TyKind::FnDef(..) => {
-            let gen_sig = tcx.fn_sig(def_id).subst_identity();
+            let gen_sig = tcx.fn_sig(def_id).instantiate_identity();
             let sig = tcx.normalize_erasing_late_bound_regions(tcx.param_env(def_id), gen_sig);
             let iter = tcx.fn_arg_names(def_id).iter().cloned().zip(sig.inputs().iter().cloned());
             (Box::new(iter), sig.output())
@@ -383,7 +411,7 @@ pub(crate) fn inputs_and_output<'tcx>(
         TyKind::Closure(_, subst) => {
             let sig = tcx.signature_unclosure(subst.as_closure().sig(), Unsafety::Normal);
             let sig = tcx.normalize_erasing_late_bound_regions(tcx.param_env(def_id), sig);
-            let env_ty = tcx.closure_env_ty(def_id, subst, tcx.lifetimes.re_erased).unwrap();
+            let env_ty = tcx.closure_env_ty(ty, subst.as_closure().kind(), tcx.lifetimes.re_erased);
 
             // I wish this could be called "self"
             let closure_env = (symbol::Ident::empty(), env_ty);
@@ -397,7 +425,7 @@ pub(crate) fn inputs_and_output<'tcx>(
                 sig.output(),
             )
         }
-        _ => (Box::new(iter::empty()), tcx.type_of(def_id).subst_identity()),
+        _ => (Box::new(iter::empty()), tcx.type_of(def_id).instantiate_identity()),
     };
     (inputs, output)
 }
@@ -434,12 +462,16 @@ pub(crate) fn pre_sig_of<'tcx>(
         });
     }
 
-    if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).subst_identity().kind() {
+    let fn_ty = ctx.tcx.type_of(def_id).instantiate_identity();
+
+    if let TyKind::Closure(_, subst) = fn_ty.kind() {
         let self_ = Symbol::intern("_1");
         let mut pre_subst = closure_capture_subst(ctx.tcx, def_id, subst, None, self_);
 
         let mut s = HashMap::new();
-        let env_ty = ctx.closure_env_ty(def_id, subst, ctx.lifetimes.re_erased).unwrap();
+        let kind = subst.as_closure().kind();
+
+        let env_ty = ctx.closure_env_ty(fn_ty, kind, ctx.lifetimes.re_erased);
         s.insert(
             self_,
             if env_ty.is_ref() { Term::var(self_, env_ty).cur() } else { Term::var(self_, env_ty) },
@@ -449,6 +481,21 @@ pub(crate) fn pre_sig_of<'tcx>(
 
             pre.subst(&s);
         }
+
+        if kind == ClosureKind::FnMut {
+            let args = subst.as_closure().sig().inputs().skip_binder()[0];
+            let unnest_subst =
+                ctx.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty.peel_refs())]);
+
+            let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
+
+            contract.ensures.push(Term::call(
+                ctx.tcx,
+                unnest_id,
+                unnest_subst,
+                vec![Term::var(self_, env_ty).cur(), Term::var(self_, env_ty).fin()],
+            ));
+        };
 
         let mut post_subst =
             closure_capture_subst(ctx.tcx, def_id, subst, Some(subst.as_closure().kind()), self_);
@@ -474,7 +521,7 @@ pub(crate) fn pre_sig_of<'tcx>(
             (name, ident.span, ty)
         })
         .collect();
-    if ctx.type_of(def_id).subst_identity().is_fn() && inputs.is_empty() {
+    if ctx.type_of(def_id).instantiate_identity().is_fn() && inputs.is_empty() {
         inputs.push((kw::Empty, DUMMY_SP, ctx.tcx.types.unit));
     };
 
@@ -490,17 +537,17 @@ fn elaborate_type_invariants<'tcx>(
 ) {
     if is_user_tyinv(ctx.tcx, def_id)
         || is_inv_internal(ctx.tcx, def_id)
-        || (is_predicate(ctx.tcx, def_id) || is_ghost(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
+        || (is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
             && pre_sig.contract.ensures.is_empty()
     {
         return;
     }
 
-    let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
+    let subst = GenericArgs::identity_for_item(ctx.tcx, def_id);
 
     for (name, span, ty) in pre_sig.inputs.iter() {
         if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
-            let term = EarlyBinder::bind(term).subst(ctx.tcx, subst);
+            let term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
             pre_sig.contract.requires.push(term);
         }
     }
@@ -513,7 +560,7 @@ fn elaborate_type_invariants<'tcx>(
         ret_ty_span.unwrap_or_else(|| ctx.tcx.def_span(def_id)),
         pre_sig.output,
     ) {
-        let term = EarlyBinder::bind(term).subst(ctx.tcx, subst);
+        let term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
         pre_sig.contract.ensures.push(term);
     }
 }
@@ -706,26 +753,30 @@ impl<'tcx> TermVisitorMut<'tcx> for ClosureSubst<'tcx> {
 pub(crate) fn closure_capture_subst<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
-    cs: SubstsRef<'tcx>,
+    cs: GenericArgsRef<'tcx>,
     // What kind of substitution we should generate. The same precondition can be used in several ways
     ck: Option<ty::ClosureKind>,
     self_name: Symbol,
 ) -> ClosureSubst<'tcx> {
     let mut fun_def_id = def_id;
-    while tcx.is_closure(fun_def_id) {
+    while tcx.is_closure_like(fun_def_id) {
         fun_def_id = tcx.parent(fun_def_id);
     }
 
     let captures = tcx.closure_captures(def_id.expect_local());
 
     let ty = match ck {
-        Some(ClosureKind::Fn) => {
-            tcx.mk_imm_ref(tcx.lifetimes.re_erased, tcx.type_of(def_id).subst_identity())
-        }
-        Some(ClosureKind::FnMut) => {
-            tcx.mk_mut_ref(tcx.lifetimes.re_erased, tcx.type_of(def_id).subst_identity())
-        }
-        Some(ClosureKind::FnOnce) | None => tcx.type_of(def_id).subst_identity(),
+        Some(ClosureKind::Fn) => Ty::new_imm_ref(
+            tcx,
+            tcx.lifetimes.re_erased,
+            tcx.type_of(def_id).instantiate_identity(),
+        ),
+        Some(ClosureKind::FnMut) => Ty::new_mut_ref(
+            tcx,
+            tcx.lifetimes.re_erased,
+            tcx.type_of(def_id).instantiate_identity(),
+        ),
+        Some(ClosureKind::FnOnce) | None => tcx.type_of(def_id).instantiate_identity(),
     };
 
     let self_ = Term::var(self_name, ty);

@@ -46,13 +46,13 @@ pub fn field1_is_true(x: B) -> bool {
 }
 
 pub fn ghost_closure() {
-    let _x = gh! { |a : u32| a };
+    let _x = snapshot! { |a : u32| a };
 }
 
-pub fn pearlite_closure(_x: Ghost<Mapping<u32, bool>>) {}
+pub fn pearlite_closure(_x: Snapshot<Mapping<u32, bool>>) {}
 
 pub fn caller() {
-    pearlite_closure(gh! { |_a| true });
+    pearlite_closure(snapshot! { |_a| true });
 }
 
 // Implicit logical reborrows
@@ -61,26 +61,64 @@ pub struct S {}
 
 impl S {
     #[open]
-    #[ghost]
+    #[logic]
     pub fn x(&mut self) -> bool {
         true
     }
 }
 
 #[open]
-#[ghost]
+#[logic]
 pub fn proj(x: &mut (S, S)) -> bool {
     x.0.x()
 }
 
 #[open]
-#[ghost]
+#[logic]
 pub fn proj2(x: &mut &mut (S, S)) -> bool {
     x.0.x()
 }
 
+// Unnesting through an index projection
+
+#[open(self)]
+#[logic]
+pub fn reborrow_index_projection<'a, 'b, T>(a: &'a mut &'b mut [T]) -> &'a mut T {
+    &mut a[0]
+}
+
+#[open(self)]
+#[logic]
+pub fn reborrow_index_projection2<'a, 'b, T>(a: &'a &'b [T]) -> &'a T {
+    &a[0]
+}
+
+#[open(self)]
+#[logic]
+pub fn test3<'a, T>(a: Snapshot<&'a mut Vec<T>>) -> &'a mut T {
+    &mut a[0]
+}
+
+#[open(self)]
+#[logic]
+pub fn test4<'a, T>(a: &'a mut Snapshot<Vec<T>>) -> &'a mut T {
+    &mut a[0]
+}
+
+#[open(self)]
+#[logic]
+pub fn test5<'a, T>(a: &'a mut &mut &mut Vec<T>) -> &'a mut T {
+    &mut a[0]
+}
+
+#[open(self)]
+#[logic]
+pub fn test6<'a>(a: &'a mut &&mut u32) -> &'a mut u32 {
+    &mut ***a
+}
+
 // Left out until I understand the semantics of `Deref` patterns.
-// #[ghost]
+// #[logic]
 // pub fn proj_opt(x : &mut Option<S>)  -> bool {
 //     match x {
 //         Some(a) => a.x(),

@@ -13,7 +13,7 @@ impl<T, A: Allocator> ShallowModel for Vec<T, A> {
     type ShallowModelTy = Seq<T>;
 
     #[open(self)]
-    #[ghost]
+    #[logic]
     #[trusted]
     #[ensures(result.len() <= usize::MAX@)]
     fn shallow_model(self) -> Seq<T> {
@@ -24,7 +24,7 @@ impl<T, A: Allocator> ShallowModel for Vec<T, A> {
 impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     #[ensures(self.shallow_model().len() == result.len())]
@@ -45,7 +45,7 @@ impl<T> Default for Vec<T> {
 
 #[trusted]
 impl<T> Resolve for Vec<T> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn resolve(self) -> bool {
         pearlite! { forall<i : Int> 0 <= i && i < self@.len() ==> self[i].resolve() }
@@ -65,19 +65,24 @@ extern_spec! {
     mod std {
         mod vec {
             impl<T> Vec<T> {
+                #[pure]
                 #[ensures(result@.len() == 0)]
                 fn new() -> Vec<T>;
 
+                #[terminates] // can OOM
                 #[ensures(result@.len() == 0)]
                 fn with_capacity(capacity: usize) -> Vec<T>;
             }
             impl<T, A : Allocator> Vec<T, A> {
+                #[pure]
                 #[ensures(result@ == self@.len())]
                 fn len(&self) -> usize;
 
+                #[terminates] // can OOM
                 #[ensures((^self)@ == self@.push(v))]
                 fn push(&mut self, v: T);
 
+                #[pure]
                 #[ensures(match result {
                     Some(t) =>
                         (^self)@ == self@.subsequence(0, self@.len() - 1) &&
@@ -86,42 +91,50 @@ extern_spec! {
                 })]
                 fn pop(&mut self) -> Option<T>;
 
+                #[pure]
                 #[requires(ix@ < self@.len())]
                 #[ensures(result == self[ix@])]
                 #[ensures((^self)@ == self@.subsequence(0, ix@).concat(self@.subsequence(ix@ + 1, self@.len())))]
                 #[ensures((^self)@.len() == self@.len() - 1)]
                 fn remove(&mut self, ix: usize) -> T;
 
+                #[terminates] // can OOM
                 #[ensures((^self)@.len() == self@.len() + 1)]
                 #[ensures(forall<i: Int> 0 <= i && i < index@ ==> (^self)[i] == self[i])]
                 #[ensures((^self)[index@] == element)]
                 #[ensures(forall<i: Int> index@ < i && i < (^self)@.len() ==> (^self)[i] == self[i - 1])]
                 fn insert(&mut self, index: usize, element: T);
 
+                #[pure]
                 #[ensures(result@ >= self@.len())]
                 fn capacity(&self) -> usize;
 
+                #[terminates] // can OOM
                 #[ensures((^self)@ == self@)]
                 fn reserve(&mut self, additional: usize);
 
+                #[terminates] // can OOM
                 #[ensures((^self)@ == self@)]
                 fn reserve_exact(&mut self, additional: usize);
 
+                #[pure]
                 #[ensures((^self)@ == self@)]
                 fn shrink_to_fit(&mut self);
 
+                #[pure]
                 #[ensures((^self)@ == self@)]
                 fn shrink_to(&mut self, min_capacity: usize);
 
+                #[pure]
                 #[ensures((^self)@.len() == 0)]
                 fn clear(&mut self);
             }
 
             impl<T, A : Allocator> Extend<T> for Vec<T, A> {
                 #[requires(iter.into_iter_pre())]
-                #[ensures(exists<start_ : I::IntoIter, done_ : &mut I::IntoIter, prod: Seq<T>>
+                #[ensures(exists<start_ : I::IntoIter, done : &mut I::IntoIter, prod: Seq<T>>
                     iter.into_iter_post(start_) &&
-                    done_.completed() && start_.produces(prod, *done_) && (^self)@ == self@.concat(prod)
+                    done.completed() && start_.produces(prod, *done) && (^self)@ == self@.concat(prod)
                 )]
                 fn extend<I>(&mut self, iter: I)
                 where
@@ -129,6 +142,7 @@ extern_spec! {
             }
 
             impl<T, I : SliceIndex<[T]>, A : Allocator> IndexMut<I> for Vec<T, A> {
+                #[pure]
                 #[requires(ix.in_bounds(self@))]
                 #[ensures(ix.has_value(self@, *result))]
                 #[ensures(ix.has_value((^self)@, ^result))]
@@ -138,17 +152,20 @@ extern_spec! {
             }
 
             impl<T, I : SliceIndex<[T]>, A : Allocator> Index<I> for Vec<T, A> {
+                #[pure]
                 #[requires(ix.in_bounds(self@))]
                 #[ensures(ix.has_value(self@, *result))]
                 fn index(&self, ix: I) -> & <Vec<T, A> as Index<I>>::Output;
             }
 
             impl<T, A : Allocator> Deref for Vec<T, A> {
+                #[pure]
                 #[ensures(result@ == self@)]
                 fn deref(&self) -> &[T];
             }
 
             impl<T, A : Allocator> DerefMut for Vec<T, A> {
+                #[pure]
                 #[ensures(result@ == self@)]
                 #[ensures((^result)@ == (^self)@)]
                 fn deref_mut(&mut self) -> &mut [T];
@@ -207,7 +224,7 @@ impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
     type ShallowModelTy = Seq<T>;
 
     #[open(self)]
-    #[ghost]
+    #[logic]
     #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
         absurd
@@ -216,7 +233,7 @@ impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
 
 #[trusted]
 impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn resolve(self) -> bool {
         pearlite! { forall<i: Int> 0 <= i && i < self@.len() ==> self@[i].resolve() }
@@ -224,7 +241,7 @@ impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
 }
 
 impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && self@ == Seq::EMPTY }
@@ -240,8 +257,8 @@ impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
 
     #[law]
     #[open]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self) {}
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
 
     #[law]
     #[open]

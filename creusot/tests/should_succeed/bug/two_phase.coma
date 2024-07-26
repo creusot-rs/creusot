@@ -1,0 +1,249 @@
+
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.prelude.Opaque
+  
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
+    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
+    | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
+    
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
+    [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
+    
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type as PhantomData'0
+  
+  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  
+  type t_unique 't =
+    | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
+    [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+      = input}
+      (! ret {pointer} {_marker})
+    | bad (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+      <> input}
+      {false}
+      any ]
+    
+end
+module Alloc_RawVec_Cap_Type
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  type t_cap  =
+    | C_Cap usize
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_cap (input:t_cap) (ret  (field_0:usize))= any
+    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
+    | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Cap'0
+  
+  use Core_Ptr_Unique_Unique_Type as Unique'0
+  
+  type t_rawvec 't 'a =
+    | C_RawVec (Unique'0.t_unique 't) (Cap'0.t_cap) 'a
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_rawvec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a))= any
+    [ good (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
+      (! ret {ptr} {cap} {alloc})
+    | bad (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
+    
+end
+module Alloc_Vec_Vec_Type
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  use Alloc_RawVec_RawVec_Type as RawVec'0
+  
+  type t_vec 't 'a =
+    | C_Vec (RawVec'0.t_rawvec 't 'a) usize
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_vec < 't > < 'a > (input:t_vec 't 'a) (ret  (buf:RawVec'0.t_rawvec 't 'a) (len:usize))= any
+    [ good (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
+    | bad (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+    
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_global (input:t_global) (ret  )= any
+    [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
+    
+end
+module TwoPhase_Test
+  let%span stwo_phase0 = "../two_phase.rs" 5 10 5 37
+  
+  let%span span1 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  
+  let%span span2 = "" 0 0 0 0
+  
+  let%span span3 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
+  
+  let%span span4 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  
+  let%span span5 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
+  
+  let%span span6 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
+  
+  let%span span7 = "../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
+  
+  let%span span8 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  
+  let%span span9 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  
+  let%span span10 = "" 0 0 0 0
+  
+  let%span span11 = "" 0 0 0 0
+  
+  let%span span12 = "../../../../../creusot-contracts/src/std/vec.rs" 82 26 82 51
+  
+  let%span span13 = "../../../../../creusot-contracts/src/model.rs" 90 8 90 31
+  
+  let%span span14 = "" 0 0 0 0
+  
+  let%span span15 = "../../../../../creusot-contracts/src/std/vec.rs" 78 26 78 48
+  
+  use prelude.prelude.UIntSize
+  
+  use seq.Seq
+  
+  predicate invariant'4 (self : Seq.seq usize) =
+    [%#span1] true
+  
+  predicate inv'4 (_x : Seq.seq usize)
+  
+  axiom inv'4 : forall x : Seq.seq usize . inv'4 x = true
+  
+  use Alloc_Alloc_Global_Type as Global'0
+  
+  use Alloc_Vec_Vec_Type as Vec'0
+  
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  constant max'0 : usize = [%#span2] (18446744073709551615 : usize)
+  
+  use seq.Seq
+  
+  predicate inv'3 (_x : Vec'0.t_vec usize (Global'0.t_global))
+  
+  function shallow_model'2 (self : Vec'0.t_vec usize (Global'0.t_global)) : Seq.seq usize
+  
+  axiom shallow_model'2_spec : forall self : Vec'0.t_vec usize (Global'0.t_global) . ([%#span3] inv'3 self)
+   -> ([%#span5] inv'4 (shallow_model'2 self))
+  && ([%#span4] Seq.length (shallow_model'2 self) <= UIntSize.to_int (max'0 : usize))
+  
+  predicate invariant'3 (self : Vec'0.t_vec usize (Global'0.t_global)) =
+    [%#span6] inv'4 (shallow_model'2 self)
+  
+  axiom inv'3 : forall x : Vec'0.t_vec usize (Global'0.t_global) . inv'3 x = true
+  
+  predicate invariant'2 (self : usize) =
+    [%#span1] true
+  
+  predicate inv'2 (_x : usize)
+  
+  axiom inv'2 : forall x : usize . inv'2 x = true
+  
+  use prelude.prelude.Borrow
+  
+  predicate invariant'1 (self : borrowed (Vec'0.t_vec usize (Global'0.t_global))) =
+    [%#span1] true
+  
+  predicate inv'1 (_x : borrowed (Vec'0.t_vec usize (Global'0.t_global)))
+  
+  axiom inv'1 : forall x : borrowed (Vec'0.t_vec usize (Global'0.t_global)) . inv'1 x = true
+  
+  predicate invariant'0 (self : Vec'0.t_vec usize (Global'0.t_global)) =
+    [%#span1] true
+  
+  predicate inv'0 (_x : Vec'0.t_vec usize (Global'0.t_global))
+  
+  axiom inv'0 : forall x : Vec'0.t_vec usize (Global'0.t_global) . inv'0 x = true
+  
+  use seq.Seq
+  
+  function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec usize (Global'0.t_global)) (ix : int) : usize =
+    [%#span7] Seq.get (shallow_model'2 self) ix
+  
+  function shallow_model'0 (self : borrowed (Vec'0.t_vec usize (Global'0.t_global))) : Seq.seq usize =
+    [%#span8] shallow_model'2 ( * self)
+  
+  use prelude.prelude.Intrinsic
+  
+  predicate resolve'0 (self : borrowed (Vec'0.t_vec usize (Global'0.t_global))) =
+    [%#span9]  ^ self =  * self
+  
+  use seq.Seq
+  
+  let rec push'0 (self:borrowed (Vec'0.t_vec usize (Global'0.t_global))) (value:usize) (return'  (ret:()))= {[@expl:precondition] [%#span11] inv'2 value}
+    {[@expl:precondition] [%#span10] inv'1 self}
+    any
+    [ return' (result:())-> {[%#span12] shallow_model'2 ( ^ self) = Seq.snoc (shallow_model'0 self) value}
+      (! return' {result}) ]
+    
+  
+  function shallow_model'1 (self : Vec'0.t_vec usize (Global'0.t_global)) : Seq.seq usize =
+    [%#span13] shallow_model'2 self
+  
+  let rec len'0 (self:Vec'0.t_vec usize (Global'0.t_global)) (return'  (ret:usize))= {[@expl:precondition] [%#span14] inv'0 self}
+    any
+    [ return' (result:usize)-> {[%#span15] UIntSize.to_int result = Seq.length (shallow_model'1 self)}
+      (! return' {result}) ]
+    
+  
+  let rec test (v:borrowed (Vec'0.t_vec usize (Global'0.t_global))) (return'  (ret:()))= (! bb0
+    [ bb0 = s0
+      [ s0 = Borrow.borrow_final <Vec'0.t_vec usize (Global'0.t_global)> { * v} {Borrow.get_id v}
+          (fun (_ret':borrowed (Vec'0.t_vec usize (Global'0.t_global))) ->
+             [ &_4 <- _ret' ] 
+             [ &v <- { v with current = ( ^ _4) ; } ] 
+            s1)
+      | s1 = len'0 { * _4} (fun (_ret':usize) ->  [ &_5 <- _ret' ] s2)
+      | s2 = bb1 ]
+      
+    | bb1 = s0 [ s0 = push'0 {_4} {_5} (fun (_ret':()) ->  [ &_3 <- _ret' ] s1) | s1 = bb2 ] 
+    | bb2 = s0 [ s0 = -{resolve'0 v}- s1 | s1 = return' {_0} ]  ]
+    )
+    [ & _0 : () = any_l ()
+    | & v : borrowed (Vec'0.t_vec usize (Global'0.t_global)) = v
+    | & _3 : () = any_l ()
+    | & _4 : borrowed (Vec'0.t_vec usize (Global'0.t_global)) = any_l ()
+    | & _5 : usize = any_l () ]
+    
+    [ return' (result:())-> {[@expl:postcondition] [%#stwo_phase0] UIntSize.to_int (index_logic'0 ( ^ v) (Seq.length (shallow_model'0 v)))
+      = Seq.length (shallow_model'0 v)}
+      (! return' {result}) ]
+    
+end

@@ -1,0 +1,41 @@
+
+module C01_UsesGeneric
+  type t
+  
+  let%span s010 = "../01.rs" 8 26 8 27
+  
+  let%span span1 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  
+  let%span span2 = "../01.rs" 5 17 5 18
+  
+  let%span span3 = "../01.rs" 5 29 5 30
+  
+  use prelude.prelude.UInt32
+  
+  predicate invariant'1 (self : uint32) =
+    [%#span1] true
+  
+  predicate inv'1 (_x : uint32)
+  
+  axiom inv'1 : forall x : uint32 . inv'1 x = true
+  
+  predicate invariant'0 (self : t)
+  
+  predicate inv'0 (_x : t)
+  
+  axiom inv'0 : forall x : t . inv'0 x = true
+  
+  use prelude.prelude.Intrinsic
+  
+  use prelude.prelude.Int
+  
+  let rec from_b'0 (x:t) (return'  (ret:uint32))= {[@expl:precondition] [%#span2] inv'0 x}
+    any [ return' (result:uint32)-> {[%#span3] inv'1 result} (! return' {result}) ] 
+  
+  let rec uses_generic (b:t) (return'  (ret:uint32))= {[%#s010] inv'0 b}
+    (! bb0
+    [ bb0 = s0 [ s0 = from_b'0 {b} (fun (_ret':uint32) ->  [ &_0 <- _ret' ] s1) | s1 = bb1 ] 
+    | bb1 = bb2
+    | bb2 = return' {_0} ]
+    ) [ & _0 : uint32 = any_l () | & b : t = b ]  [ return' (result:uint32)-> (! return' {result}) ] 
+end

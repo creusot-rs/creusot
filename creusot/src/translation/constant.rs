@@ -1,57 +1,57 @@
+use super::pearlite::{Term, TermKind};
 use crate::{
     ctx::TranslationCtx,
+    fmir::{self, Operand},
     traits::resolve_assoc_item_opt,
     translation::pearlite::Literal,
     util::{get_builtin, is_trusted},
 };
 use rustc_middle::{
-    mir::{
-        interpret::{AllocRange, ConstValue},
-        ConstantKind, UnevaluatedConst,
-    },
+    mir::{self, interpret::AllocRange, ConstValue, UnevaluatedConst},
     ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt},
 };
-use rustc_span::{Span, Symbol};
+use rustc_span::Span;
 use rustc_target::abi::Size;
-
-use super::{
-    fmir::Expr,
-    pearlite::{Term, TermKind},
-};
 
 pub(crate) fn from_mir_constant<'tcx>(
     env: ParamEnv<'tcx>,
     ctx: &mut TranslationCtx<'tcx>,
-    c: &rustc_middle::mir::Constant<'tcx>,
-) -> Expr<'tcx> {
-    from_mir_constant_kind(ctx, c.literal, env, c.span)
+    c: &rustc_middle::mir::ConstOperand<'tcx>,
+) -> fmir::Operand<'tcx> {
+    from_mir_constant_kind(ctx, c.const_, env, c.span)
 }
 
-pub(crate) fn from_mir_constant_kind<'tcx>(
+fn from_mir_constant_kind<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    ck: ConstantKind<'tcx>,
+    ck: mir::Const<'tcx>,
     env: ParamEnv<'tcx>,
     span: Span,
-) -> Expr<'tcx> {
-    if let ConstantKind::Ty(c) = ck {
-        return from_ty_const(ctx, c, env, span);
+) -> fmir::Operand<'tcx> {
+    if let mir::Const::Ty(c) = ck {
+        return Operand::Constant(from_ty_const(ctx, c, env, span));
     }
 
     if ck.ty().is_unit() {
-        return Expr::Tuple(Vec::new());
+        return Operand::Constant(Term {
+            kind: TermKind::Tuple { fields: Vec::new() },
+            ty: ck.ty(),
+            span,
+        });
     }
+    //
+    // let ck = ck.normalize(ctx.tcx, env);
 
     if ck.ty().peel_refs().is_str() {
-        if let Some(ConstValue::Slice { data, start, end }) = ck.try_to_value(ctx.tcx) {
-            let start = Size::from_bytes(start);
-            let size = Size::from_bytes(end);
+        if let mir::Const::Val(ConstValue::Slice { data, meta }, _) = ck {
+            let start = Size::from_bytes(0);
+            let size = Size::from_bytes(meta);
             let bytes = data
                 .inner()
                 .get_bytes_strip_provenance(&ctx.tcx, AllocRange { start, size })
                 .unwrap();
             let string = std::str::from_utf8(bytes).unwrap();
 
-            return Expr::Constant(Term {
+            return Operand::Constant(Term {
                 kind: TermKind::Lit(Literal::String(string.into())),
                 ty: ck.ty(),
                 span,
@@ -59,19 +59,15 @@ pub(crate) fn from_mir_constant_kind<'tcx>(
         }
     }
 
-    if let ConstantKind::Unevaluated(UnevaluatedConst { promoted: Some(p), .. }, _) = ck {
-        return Expr::Constant(Term {
-            kind: TermKind::Var(Symbol::intern(&format!("promoted{:?}", p.as_usize()))),
-            ty: ck.ty(),
-            span,
-        });
+    if let mir::Const::Unevaluated(UnevaluatedConst { promoted: Some(p), .. }, _) = ck {
+        return Operand::Promoted(p, ck.ty());
     }
 
-    return Expr::Constant(Term {
+    Operand::Constant(Term {
         kind: TermKind::Lit(try_to_bits(ctx, env, ck.ty(), span, ck)),
         ty: ck.ty(),
         span,
-    });
+    })
 }
 
 pub(crate) fn from_ty_const<'tcx>(
@@ -79,26 +75,23 @@ pub(crate) fn from_ty_const<'tcx>(
     c: Const<'tcx>,
     env: ParamEnv<'tcx>,
     span: Span,
-) -> Expr<'tcx> {
+) -> Term<'tcx> {
     // Check if a constant is builtin and thus should not be evaluated further
     // Builtin constants are given a body which panics
-    if let ConstKind::Unevaluated(u) = c.kind() &&
-        (get_builtin(ctx.tcx, u.def).is_some() || is_trusted(ctx.tcx, u.def)) {
-            return Expr::Constant(Term { kind: TermKind::Lit(Literal::Function(u.def, u.substs)), ty: c.ty(), span})
+    if let ConstKind::Unevaluated(u) = c.kind()
+        && (get_builtin(ctx.tcx, u.def).is_some() || is_trusted(ctx.tcx, u.def))
+    {
+        return Term { kind: TermKind::Lit(Literal::Function(u.def, u.args)), ty: c.ty(), span };
     };
 
     if let ConstKind::Param(_) = c.kind() {
         ctx.crash_and_error(span, "const generic parameters are not yet supported");
     }
 
-    return Expr::Constant(Term {
-        kind: TermKind::Lit(try_to_bits(ctx, env, c.ty(), span, c)),
-        ty: c.ty(),
-        span,
-    });
+    return Term { kind: TermKind::Lit(try_to_bits(ctx, env, c.ty(), span, c)), ty: c.ty(), span };
 }
 
-fn try_to_bits<'tcx, C: ToBits<'tcx>>(
+fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
     ctx: &mut TranslationCtx<'tcx>,
     // names: &mut CloneMap<'tcx>,
     env: ParamEnv<'tcx>,
@@ -107,10 +100,12 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
     c: C,
 ) -> Literal<'tcx> {
     use rustc_middle::ty::{FloatTy, IntTy, UintTy};
-    use rustc_type_ir::sty::TyKind::{Bool, Float, FnDef, Int, Uint};
+    use rustc_type_ir::TyKind::{Bool, Float, FnDef, Int, Uint};
+    let Some(bits) = c.get_bits(ctx.tcx, env, ty) else {
+        ctx.fatal_error(span, &format!("Could determine value of constant. Creusot currently does not support generic associated constants.")).emit()
+    };
     match ty.kind() {
         Int(ity) => {
-            let bits = c.get_bits(ctx.tcx, env, ty).unwrap();
             let bits: i128 = match *ity {
                 IntTy::I128 => bits as i128,
                 IntTy::Isize => bits as i64 as i128,
@@ -122,7 +117,6 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
             Literal::MachSigned(bits, *ity)
         }
         Uint(uty) => {
-            let bits = c.get_bits(ctx.tcx, env, ty).unwrap();
             let bits: u128 = match *uty {
                 UintTy::U128 => bits as u128,
                 UintTy::Usize => bits as u64 as u128,
@@ -133,10 +127,9 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
             };
             Literal::MachUnsigned(bits, *uty)
         }
-        Bool => Literal::Bool(c.get_bits(ctx.tcx, env, ty) == Some(1)),
+        Bool => Literal::Bool(bits == 1),
         Float(FloatTy::F32) => {
-            let bits = c.get_bits(ctx.tcx, env, ty);
-            let float = f32::from_bits(bits.unwrap() as u32);
+            let float = f32::from_bits(bits as u32);
             if float.is_nan() {
                 ctx.crash_and_error(span, "NaN is not yet supported")
             } else {
@@ -144,8 +137,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
             }
         }
         Float(FloatTy::F64) => {
-            let bits = c.get_bits(ctx.tcx, env, ty);
-            let float = f64::from_bits(bits.unwrap() as u64);
+            let float = f64::from_bits(bits as u64);
             if float.is_nan() {
                 ctx.crash_and_error(span, "NaN is not yet supported")
             } else {
@@ -169,12 +161,12 @@ trait ToBits<'tcx> {
 }
 
 impl<'tcx> ToBits<'tcx> for Const<'tcx> {
-    fn get_bits(&self, tcx: TyCtxt<'tcx>, env: ParamEnv<'tcx>, ty: Ty<'tcx>) -> Option<u128> {
-        self.try_eval_bits(tcx, env, ty)
+    fn get_bits(&self, tcx: TyCtxt<'tcx>, env: ParamEnv<'tcx>, _: Ty<'tcx>) -> Option<u128> {
+        self.try_eval_bits(tcx, env)
     }
 }
-impl<'tcx> ToBits<'tcx> for ConstantKind<'tcx> {
-    fn get_bits(&self, tcx: TyCtxt<'tcx>, env: ParamEnv<'tcx>, ty: Ty<'tcx>) -> Option<u128> {
-        self.try_eval_bits(tcx, env, ty)
+impl<'tcx> ToBits<'tcx> for mir::Const<'tcx> {
+    fn get_bits(&self, tcx: TyCtxt<'tcx>, env: ParamEnv<'tcx>, _: Ty<'tcx>) -> Option<u128> {
+        self.try_eval_bits(tcx, env)
     }
 }

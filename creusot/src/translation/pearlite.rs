@@ -1,20 +1,25 @@
 // A poorly named module.
 //
-// Entrypoint for translation of all Pearlite specifications and code: #[ghost] / #[logic], contracts, proof_assert!
+// Entrypoint for translation of all Pearlite specifications and code: #[logic], contracts, proof_assert!
 //
 // Transforms THIR into a Term which may be serialized in Creusot metadata files for usage by dependent crates
 // The `lower` module then transforms a `Term` into a WhyML expression.
 
-use std::collections::HashSet;
+use std::{
+    collections::HashSet,
+    fmt::{Display, Formatter},
+    unreachable,
+};
 
 use crate::{
-    error::{CrErr, CreusotResult, Error},
+    error::{CreusotResult, Error, InternalError},
+    projection_vec::{visit_projections, visit_projections_mut, ProjectionVec},
     translation::TranslationCtx,
-    util,
+    util::{self, is_snap_ty},
 };
 use itertools::Itertools;
 use log::*;
-use rustc_ast::{LitIntType, LitKind};
+use rustc_ast::{visit::VisitorResult, LitIntType, LitKind};
 use rustc_hir::{
     def_id::{DefId, LocalDefId},
     HirId, OwnerId,
@@ -22,13 +27,13 @@ use rustc_hir::{
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 pub(crate) use rustc_middle::thir;
 use rustc_middle::{
-    mir::{BorrowKind, Mutability::*},
+    mir::{BorrowKind, Mutability::*, ProjectionElem},
     thir::{
         AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
     },
     ty::{
-        int_ty, subst::SubstsRef, uint_ty, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitable,
-        UpvarSubsts,
+        int_ty, uint_ty, CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, Ty, TyCtxt,
+        TyKind, TypeFoldable, TypeVisitable, TypeVisitableExt, UpvarArgs, UserType,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
@@ -74,7 +79,7 @@ pub struct Term<'tcx> {
 pub enum TermKind<'tcx> {
     Var(Symbol),
     Lit(Literal<'tcx>),
-    Item(DefId, SubstsRef<'tcx>),
+    Item(DefId, GenericArgsRef<'tcx>),
     Assert {
         cond: Box<Term<'tcx>>,
     },
@@ -98,8 +103,7 @@ pub enum TermKind<'tcx> {
     // TODO: Get rid of (id, subst).
     Call {
         id: DefId,
-        subst: SubstsRef<'tcx>,
-        fun: Box<Term<'tcx>>,
+        subst: GenericArgsRef<'tcx>,
         args: Vec<Term<'tcx>>,
     },
     Constructor {
@@ -145,11 +149,45 @@ pub enum TermKind<'tcx> {
         body: Box<Term<'tcx>>,
     },
     Reborrow {
+        term: Box<Term<'tcx>>,
         cur: Box<Term<'tcx>>,
         fin: Box<Term<'tcx>>,
+        projection: ProjectionVec<Term<'tcx>, Ty<'tcx>>,
     },
     Absurd,
 }
+
+impl<'tcx> TermKind<'tcx> {
+    pub fn item(
+        def_id: DefId,
+        subst: GenericArgsRef<'tcx>,
+        user_ty: &Option<Box<CanonicalUserType<'tcx>>>,
+        tcx: TyCtxt<'tcx>,
+    ) -> Self {
+        let Some(user_ty) = user_ty else { return Self::Item(def_id, subst) };
+
+        match user_ty.value {
+            UserType::Ty(_) => Self::Item(def_id, subst),
+            UserType::TypeOf(def_id2, u_subst) => {
+                assert_eq!(def_id, def_id2);
+                if u_subst.args.len() != subst.len() {
+                    return Self::Item(def_id, subst);
+                }
+                let subst = GenericArgs::for_item(tcx, def_id, |x, _| {
+                    let s = subst[x.index as usize];
+                    let us = u_subst.args[x.index as usize];
+                    if us.has_escaping_bound_vars() {
+                        s
+                    } else {
+                        us
+                    }
+                });
+                Self::Item(def_id, subst)
+            }
+        }
+    }
+}
+
 impl<'tcx, I: Interner> TypeFoldable<I> for Literal<'tcx> {
     fn try_fold_with<F: rustc_middle::ty::FallibleTypeFolder<I>>(
         self,
@@ -160,11 +198,8 @@ impl<'tcx, I: Interner> TypeFoldable<I> for Literal<'tcx> {
 }
 
 impl<'tcx, I: Interner> TypeVisitable<I> for Literal<'tcx> {
-    fn visit_with<V: rustc_middle::ty::TypeVisitor<I>>(
-        &self,
-        _: &mut V,
-    ) -> std::ops::ControlFlow<V::BreakTy> {
-        ::std::ops::ControlFlow::Continue(())
+    fn visit_with<V: rustc_middle::ty::TypeVisitor<I>>(&self, _: &mut V) -> V::Result {
+        V::Result::output()
     }
 }
 
@@ -200,14 +235,14 @@ pub enum Literal<'tcx> {
     Float(Float, FloatTy),
     String(String),
     ZST,
-    Function(DefId, SubstsRef<'tcx>),
+    Function(DefId, GenericArgsRef<'tcx>),
 }
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum Pattern<'tcx> {
     Constructor {
         adt: DefId,
-        substs: SubstsRef<'tcx>,
+        substs: GenericArgsRef<'tcx>,
         variant: VariantIdx,
         fields: Vec<Pattern<'tcx>>,
     },
@@ -221,7 +256,7 @@ pub(crate) fn pearlite<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
 ) -> CreusotResult<Term<'tcx>> {
-    let (thir, expr) = ctx.thir_body(id).map_err(|_| CrErr)?;
+    let (thir, expr) = ctx.thir_body(id).map_err(|_| InternalError("Cannot fetch THIR body"))?;
     let thir = thir.borrow();
     if thir.exprs.is_empty() {
         return Err(Error::new(ctx.def_span(id), "type checking failed"));
@@ -244,7 +279,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     fn body_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
         let body = self.expr_term(expr)?;
         let owner_id = util::param_def_id(self.ctx.tcx, self.item_id.into());
-        let (thir, _) = self.ctx.thir_body(owner_id).map_err(|_| CrErr)?;
+        let (thir, _) =
+            self.ctx.thir_body(owner_id).map_err(|_| InternalError("Cannot fetch THIR body"))?;
         let thir: &Thir = &thir.borrow();
         let res = thir
             .params
@@ -271,7 +307,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         let ty = self.thir[expr].ty;
         let thir_term = &self.thir[expr];
         let span = self.thir[expr].span;
-        match thir_term.kind {
+        let res = match thir_term.kind {
             ExprKind::Scope { value, .. } => self.expr_term(value),
             ExprKind::Block { block } => {
                 let Block { ref stmts, expr, .. } = self.thir[block];
@@ -298,19 +334,34 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     mir::BinOp::Div => BinOp::Div,
                     mir::BinOp::Rem => BinOp::Rem,
                     mir::BinOp::BitXor => {
-                        return Err(Error::new(self.thir[expr].span, "unsupported operation"))
+                        return Err(Error::new(
+                            self.thir[expr].span,
+                            "bitwise-xors are currently unsupported",
+                        ))
                     }
                     mir::BinOp::BitAnd => {
-                        return Err(Error::new(self.thir[expr].span, "unsupported operation"))
+                        return Err(Error::new(
+                            self.thir[expr].span,
+                            "bitwise-ands are currently unsupported",
+                        ))
                     }
                     mir::BinOp::BitOr => {
-                        return Err(Error::new(self.thir[expr].span, "unsupported operation"))
+                        return Err(Error::new(
+                            self.thir[expr].span,
+                            "bitwise-ors are currently unsupported",
+                        ))
                     }
                     mir::BinOp::Shl | mir::BinOp::ShlUnchecked => {
-                        return Err(Error::new(self.thir[expr].span, "unsupported operation"))
+                        return Err(Error::new(
+                            self.thir[expr].span,
+                            "shifts are currently unsupported",
+                        ))
                     }
                     mir::BinOp::Shr | mir::BinOp::ShrUnchecked => {
-                        return Err(Error::new(self.thir[expr].span, "unsupported operation"))
+                        return Err(Error::new(
+                            self.thir[expr].span,
+                            "shifts are currently unsupported",
+                        ))
                     }
                     mir::BinOp::Lt => BinOp::Lt,
                     mir::BinOp::Le => BinOp::Le,
@@ -319,6 +370,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     mir::BinOp::Ne => unreachable!(),
                     mir::BinOp::Eq => unreachable!(),
                     mir::BinOp::Offset => todo!(),
+                    mir::BinOp::Cmp => todo!(),
                 };
                 Ok(Term {
                     ty,
@@ -362,26 +414,30 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Literal { lit, neg } => {
                 let lit = match lit.node {
                     LitKind::Bool(b) => Literal::Bool(b),
-                    LitKind::Int(u, lty) => match lty {
-                        LitIntType::Signed(ity) => {
-                            let val = if neg { (u as i128).wrapping_neg() } else { u as i128 };
-                            Literal::MachSigned(val, int_ty(ity))
-                        }
-                        LitIntType::Unsigned(uty) => Literal::MachUnsigned(u, uint_ty(uty)),
-                        LitIntType::Unsuffixed => match ty.kind() {
-                            TyKind::Int(ity) => {
+                    LitKind::Int(u, lty) => {
+                        let u = u.get();
+                        match lty {
+                            LitIntType::Signed(ity) => {
                                 let val = if neg { (u as i128).wrapping_neg() } else { u as i128 };
-                                Literal::MachSigned(val, *ity)
+                                Literal::MachSigned(val, int_ty(ity))
                             }
-                            TyKind::Uint(uty) => Literal::MachUnsigned(u, *uty),
-                            _ => unreachable!(),
-                        },
-                    },
+                            LitIntType::Unsigned(uty) => Literal::MachUnsigned(u, uint_ty(uty)),
+                            LitIntType::Unsuffixed => match ty.kind() {
+                                TyKind::Int(ity) => {
+                                    let val =
+                                        if neg { (u as i128).wrapping_neg() } else { u as i128 };
+                                    Literal::MachSigned(val, *ity)
+                                }
+                                TyKind::Uint(uty) => Literal::MachUnsigned(u, *uty),
+                                _ => unreachable!(),
+                            },
+                        }
+                    }
                     _ => unimplemented!("Unsupported literal"),
                 };
                 Ok(Term { ty, span, kind: TermKind::Lit(lit) })
             }
-            ExprKind::Call { ty: f_ty, fun, ref args, .. } => {
+            ExprKind::Call { ty: f_ty, ref args, fun, .. } => {
                 use Stub::*;
                 match pearlite_stub(self.ctx.tcx, f_ty) {
                     Some(Forall) => {
@@ -466,26 +522,26 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     }
                     Some(Absurd) => Ok(Term { ty, span, kind: TermKind::Absurd }),
                     None => {
-                        let fun = self.expr_term(fun)?;
                         let args = args
                             .iter()
                             .map(|arg| self.expr_term(*arg))
                             .collect::<Result<Vec<_>, _>>()?;
-                        let (id, subst) = if let TyKind::FnDef(id, subst) = f_ty.kind() {
-                            (*id, subst)
+                        let fun = self.expr_term(fun)?;
+                        let (id, subst) = if let TermKind::Item(id, subst) = fun.kind {
+                            (id, subst)
                         } else {
                             unreachable!("Call on non-function type");
                         };
 
-                        Ok(Term {
-                            ty,
-                            span,
-                            kind: TermKind::Call { id, subst, fun: Box::new(fun), args },
-                        })
+                        Ok(Term { ty, span, kind: TermKind::Call { id, subst, args } })
                     }
                 }
             }
-            ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } => self.expr_term(arg),
+            ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } => {
+                let mut e = self.expr_term(arg)?;
+                e.ty = ty;
+                Ok(e)
+            }
             ExprKind::Borrow { arg, .. } => {
                 let t = self.logical_reborrow(arg)?;
                 Ok(Term { ty, span, kind: t })
@@ -495,7 +551,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 variant_index,
                 ref fields,
                 ref base,
-                substs,
+                args,
                 ..
             }) => {
                 let mut fields: Vec<_> = fields
@@ -515,9 +571,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         fields.push((
                             missing_field.into(),
                             Term {
-                                ty: variant.fields[missing_field.into()].ty(self.ctx.tcx, substs),
+                                ty: variant.fields[missing_field.into()].ty(self.ctx.tcx, args),
                                 span: DUMMY_SP,
-                                kind: self.mk_projection(base.clone(), missing_field.into())?,
+                                kind: mk_projection(base.clone(), missing_field.into()),
                             },
                         ));
                     }
@@ -541,13 +597,13 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Deref { arg } => {
                 let mut arg_trans = self.expr_term(arg)?;
                 if self.thir[arg].ty.is_box() || self.thir[arg].ty.ref_mutability() == Some(Not) {
-                    arg_trans.ty = arg_trans.ty.builtin_deref(false).expect("expected &T").ty;
+                    arg_trans.ty = arg_trans.ty.builtin_deref(false).expect("expected &T");
                     Ok(arg_trans)
                 } else {
                     Ok(Term { ty, span, kind: TermKind::Cur { term: Box::new(arg_trans) } })
                 }
             }
-            ExprKind::Match { scrutinee, ref arms } => {
+            ExprKind::Match { scrutinee, ref arms, .. } => {
                 let scrutinee = self.expr_term(scrutinee)?;
                 let arms = arms.iter().map(|arm| self.arm_term(*arm)).collect::<Result<_, _>>()?;
 
@@ -576,7 +632,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             }
             ExprKind::Field { lhs, name, .. } => {
                 let lhs = self.expr_term(lhs)?;
-                Ok(Term { ty, span, kind: self.mk_projection(lhs, name)? })
+                Ok(Term { ty, span, kind: mk_projection(lhs, name) })
             }
             ExprKind::Tuple { ref fields } => {
                 let fields: Vec<_> =
@@ -588,19 +644,21 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::ValueTypeAscription { source, .. } => self.expr_term(source),
             ExprKind::Box { value } => self.expr_term(value),
             // ExprKind::Array { ref fields } => todo!("Array {:?}", fields),
-            ExprKind::NonHirLiteral { .. } => match ty.kind() {
+            ExprKind::NonHirLiteral { ref user_ty, .. } => match ty.kind() {
                 TyKind::FnDef(id, substs) => {
-                    Ok(Term { ty, span, kind: TermKind::Item(*id, substs) })
+                    Ok(Term { ty, span, kind: TermKind::item(*id, substs, user_ty, self.ctx.tcx) })
                 }
                 _ => Err(Error::new(thir_term.span, "unhandled literal expression")),
             },
-            ExprKind::NamedConst { def_id, substs, .. } => {
-                Ok(Term { ty, span, kind: TermKind::Item(def_id, substs) })
+            ExprKind::NamedConst { def_id, args, ref user_ty, .. } => {
+                Ok(Term { ty, span, kind: TermKind::item(def_id, args, user_ty, self.ctx.tcx) })
             }
-            ExprKind::ZstLiteral { .. } => match ty.kind() {
-                TyKind::FnDef(def_id, subst) => {
-                    Ok(Term { ty, span, kind: TermKind::Item(*def_id, subst) })
-                }
+            ExprKind::ZstLiteral { ref user_ty, .. } => match ty.kind() {
+                TyKind::FnDef(def_id, subst) => Ok(Term {
+                    ty,
+                    span,
+                    kind: TermKind::item(*def_id, subst, user_ty, self.ctx.tcx),
+                }),
                 _ => Ok(Term { ty, span, kind: TermKind::Lit(Literal::ZST) }),
             },
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
@@ -613,7 +671,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 }
             }
             ref ek => todo!("lower_expr: {:?}", ek),
-        }
+        };
+        Ok(Term { ty, ..res? })
     }
 
     fn arm_term(&self, arm: ArmId) -> CreusotResult<(Pattern<'tcx>, Term<'tcx>)> {
@@ -634,7 +693,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         match &pat.kind {
             PatKind::Wild => Ok(Pattern::Wildcard),
             PatKind::Binding { name, .. } => Ok(Pattern::Binder(*name)),
-            PatKind::Variant { subpatterns, adt_def, variant_index, substs, .. } => {
+            PatKind::Variant { subpatterns, adt_def, variant_index, args, .. } => {
                 let mut fields: Vec<_> = subpatterns
                     .iter()
                     .map(|pat| Ok((pat.field, self.pattern_term(&pat.pattern)?)))
@@ -651,7 +710,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
                 Ok(Pattern::Constructor {
                     adt: adt_def.variants()[*variant_index].def_id,
-                    substs,
+                    substs: args,
                     variant: *variant_index,
                     fields,
                 })
@@ -762,9 +821,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         trace!("{:?}", self.thir[body].kind);
         match self.thir[body].kind {
             ExprKind::Scope { value, .. } => self.quant_term(value),
-            ExprKind::Closure(box ClosureExpr { closure_id, substs, .. }) => {
-                let sig = match substs {
-                    UpvarSubsts::Closure(subst) => subst.as_closure().sig(),
+            ExprKind::Closure(box ClosureExpr { closure_id, args, .. }) => {
+                let sig = match args {
+                    UpvarArgs::Closure(subst) => subst.as_closure().sig(),
                     _ => unreachable!(),
                 };
 
@@ -798,10 +857,17 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         if let ExprKind::Deref { arg } = self.thir[rebor_id].kind {
             return Ok(self.expr_term(arg)?.kind);
         };
+        // eprintln!("{}", PrintExpr(self.thir, rebor_id));
         // Handle every other case.
         let (cur, fin) = self.logical_reborrow_inner(rebor_id)?;
+        let (term, projection) = self.logical_reborrow_inner_project(rebor_id)?;
 
-        Ok(TermKind::Reborrow { cur: Box::new(cur), fin: Box::new(fin) })
+        Ok(TermKind::Reborrow {
+            cur: Box::new(cur),
+            fin: Box::new(fin),
+            term: Box::new(term),
+            projection,
+        })
     }
 
     fn logical_reborrow_inner(&self, rebor_id: ExprId) -> Result<(Term<'tcx>, Term<'tcx>), Error> {
@@ -817,46 +883,158 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Field { lhs, variant_index: _, name } => {
                 let (cur, fin) = self.logical_reborrow_inner(*lhs)?;
                 Ok((
-                    Term { ty, span, kind: self.mk_projection(cur, *name)? },
-                    Term { ty, span, kind: self.mk_projection(fin, *name)? },
+                    Term { ty, span, kind: mk_projection(cur, *name) },
+                    Term { ty, span, kind: mk_projection(fin, *name) },
                 ))
             }
             ExprKind::Deref { arg } => {
-                let inner = self.expr_term(*arg)?;
-                if let TermKind::Var(_) = inner.kind {}
-                let ty = inner.ty.builtin_deref(false).expect("expected reference type").ty;
+                // Detect * snapshot_deref & and treat that as a single 'projection'
+                if self.is_snapshot_deref(*arg) {
+                    let ExprKind::Call { args, .. } = &self.thir[*arg].kind else { unreachable!() };
+                    let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } = self.thir[args[0]].kind else { unreachable!() };
 
-                Ok((
-                    Term { ty, span, kind: TermKind::Cur { term: Box::new(inner.clone()) } },
-                    Term { ty, span, kind: TermKind::Fin { term: Box::new(inner) } },
-                ))
+                    let (cur, fin) = self.logical_reborrow_inner(arg)?;
+                    let deref_method =
+                        self.ctx.get_diagnostic_item(Symbol::intern("snapshot_inner")).unwrap();
+                    // Extract the `T` from `Snapshot<T>`
+                    let TyKind::Adt(_, subst) = self.thir[arg].ty.peel_refs().kind() else { unreachable!() };
+                    return Ok((
+                        Term::call(self.ctx.tcx, deref_method, subst, vec![cur]),
+                        Term::call(self.ctx.tcx, deref_method, subst, vec![fin]),
+                    ));
+                };
+
+                let inner = self.expr_term(*arg)?;
+
+                Ok((inner.clone().cur().span(span), inner.fin().span(span)))
             }
-            _ => Err(Error::new(
+            ExprKind::Call { ty: fn_ty, args, .. } if fn_ty.is_fn() => {
+                let index_logic_method =
+                    self.ctx.get_diagnostic_item(Symbol::intern("index_logic_method")).unwrap();
+
+                let TyKind::FnDef(id,_) = fn_ty.kind() else { panic!("expected function type") };
+
+                let (cur, fin) = self.logical_reborrow_inner(args[0])?;
+
+                if id == &index_logic_method {
+                    let index = self.expr_term(args[1])?;
+
+                    let subst =
+                        self.ctx.mk_args(&[GenericArg::from(cur.ty), GenericArg::from(index.ty)]);
+
+                    Ok((
+                        Term::call(
+                            self.ctx.tcx,
+                            index_logic_method,
+                            subst,
+                            vec![cur, index.clone()],
+                        ),
+                        Term::call(
+                            self.ctx.tcx,
+                            index_logic_method,
+                            subst,
+                            vec![fin, index.clone()],
+                        ),
+                    ))
+                } else {
+                    return Err(Error::new(span, format!("unsupported projection {id:?}")));
+                }
+            }
+            e => Err(Error::new(
                 span,
-                "unsupported logical reborrow, only simple field projections are supproted, sorry",
+                format!("unsupported logical reborrow {e:?}, only simple field projections are supported"),
             )),
         }
     }
 
-    fn mk_projection(&self, lhs: Term<'tcx>, name: FieldIdx) -> Result<TermKind<'tcx>, Error> {
-        let pat = field_pattern(lhs.ty, name).expect("mk_projection: no term for field");
-
-        match &lhs.ty.kind() {
-            TyKind::Adt(_def, _substs) => Ok(TermKind::Projection { lhs: Box::new(lhs), name }),
-            TyKind::Tuple(_) => {
-                Ok(TermKind::Let {
-                    pattern: pat,
-                    // this is the wrong type
-                    body: Box::new(Term {
-                        ty: lhs.ty,
-                        span: rustc_span::DUMMY_SP,
-                        kind: TermKind::Var(Symbol::intern("a")),
-                    }),
-                    arg: Box::new(lhs),
-                })
+    fn logical_reborrow_inner_project(
+        &self,
+        rebor_id: ExprId,
+    ) -> Result<(Term<'tcx>, ProjectionVec<Term<'tcx>, Ty<'tcx>>), Error> {
+        let ty = self.thir[rebor_id].ty;
+        let span = self.thir[rebor_id].span;
+        match &self.thir[rebor_id].kind {
+            ExprKind::Scope { value, .. } => self.logical_reborrow_inner_project(*value),
+            ExprKind::Block { block } => {
+                let Block { stmts, expr, .. } = &self.thir[*block];
+                assert!(stmts.is_empty());
+                self.logical_reborrow_inner_project(expr.unwrap())
             }
-            _ => unreachable!(),
+            ExprKind::Field { lhs, variant_index: _, name } => {
+                let mut res = self.logical_reborrow_inner_project(*lhs)?;
+                res.1.push(ProjectionElem::Field(*name, ty));
+                Ok(res)
+            }
+            ExprKind::Deref { arg } => {
+                // Detect * snapshot_deref & and treat that as a single 'projection'
+                if self.is_snapshot_deref(*arg) {
+                    let ExprKind::Call { args, .. } = &self.thir[*arg].kind else { unreachable!() };
+                    let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } = self.thir[args[0]].kind else { unreachable!() };
+
+                    let (term, projections) = self.logical_reborrow_inner_project(arg)?;
+                    return Ok((
+                        term,
+                        projections,
+                    ));
+                };
+
+                let inner = self.expr_term(*arg)?;
+                Ok((inner, Vec::new()))
+            }
+            ExprKind::Call { ty: fn_ty, args, .. } if fn_ty.is_fn() => {
+                let index_logic_method = self.ctx.get_diagnostic_item(Symbol::intern("index_logic_method")).unwrap();
+
+                let TyKind::FnDef(id,_) = fn_ty.kind() else { panic!("expected function type") };
+
+                let (term, mut projections) = self.logical_reborrow_inner_project(args[0])?;
+
+                if id == &index_logic_method {
+                    let index = self.expr_term(args[1])?;
+
+                    projections.push(ProjectionElem::Index(index));
+                    Ok((term, projections))
+                } else {
+                    return Err(Error::new(span, format!("unsupported projection {id:?}")));
+                }
+            }
+            e => Err(Error::new(
+                span,
+                format!("unsupported logical reborrow {e:?}, only simple field projections are supported"),
+            )),
         }
+    }
+
+    pub(crate) fn is_snapshot_deref(&self, expr_id: ExprId) -> bool {
+        let ExprKind::Call { ty, .. } = &self.thir[expr_id].kind else { return false };
+
+        let TyKind::FnDef(id, sub) = ty.kind() else { panic!("expected function type") };
+
+        if Some(*id) != self.ctx.get_diagnostic_item(Symbol::intern("deref_method")) {
+            return false;
+        }
+
+        sub[0].as_type().map(|ty| is_snap_ty(self.ctx.tcx, ty)).unwrap_or(false)
+    }
+}
+
+pub(crate) fn mk_projection<'tcx>(lhs: Term<'tcx>, name: FieldIdx) -> TermKind<'tcx> {
+    let pat = field_pattern(lhs.ty, name).expect("mk_projection: no term for field");
+
+    match &lhs.ty.kind() {
+        TyKind::Adt(_def, _substs) => TermKind::Projection { lhs: Box::new(lhs), name },
+        TyKind::Tuple(_) => {
+            TermKind::Let {
+                pattern: pat,
+                // this is the wrong type
+                body: Box::new(Term {
+                    ty: lhs.ty,
+                    span: rustc_span::DUMMY_SP,
+                    kind: TermKind::Var(Symbol::intern("a")),
+                }),
+                arg: Box::new(lhs),
+            }
+        }
+        _ => unreachable!(),
     }
 }
 
@@ -871,19 +1049,13 @@ pub(crate) fn type_invariant_term<'tcx>(
     let arg = Term { ty, span, kind: TermKind::Var(name) };
 
     let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(env_did, ty)?;
-    let inv_fn_ty = ctx.type_of(inv_fn_did).subst(ctx.tcx, inv_fn_substs);
+    let inv_fn_ty = ctx.type_of(inv_fn_did).instantiate(ctx.tcx, inv_fn_substs);
     assert!(matches!(inv_fn_ty.kind(), TyKind::FnDef(id, _) if id == &inv_fn_did));
 
-    let fun = Term { ty: inv_fn_ty, span, kind: TermKind::Item(inv_fn_did, inv_fn_substs) };
     Some(Term {
         ty: ctx.fn_sig(inv_fn_did).skip_binder().output().skip_binder(),
         span,
-        kind: TermKind::Call {
-            id: inv_fn_did,
-            subst: inv_fn_substs,
-            fun: Box::new(fun),
-            args: vec![arg],
-        },
+        kind: TermKind::Call { id: inv_fn_did, subst: inv_fn_substs, args: vec![arg] },
     })
 }
 
@@ -1010,7 +1182,6 @@ pub trait TermVisitor<'tcx> {
     fn visit_term(&mut self, term: &Term<'tcx>);
 }
 
-#[allow(dead_code)]
 pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: &mut V) {
     match &term.kind {
         TermKind::Var(_) => {}
@@ -1023,8 +1194,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         TermKind::Unary { op: _, arg } => visitor.visit_term(&*arg),
         TermKind::Forall { binder: _, body } => visitor.visit_term(&*body),
         TermKind::Exists { binder: _, body } => visitor.visit_term(&*body),
-        TermKind::Call { id: _, subst: _, fun, args } => {
-            visitor.visit_term(&*fun);
+        TermKind::Call { id: _, subst: _, args } => {
             args.iter().for_each(|a| visitor.visit_term(&*a))
         }
         TermKind::Constructor { typ: _, variant: _, fields } => {
@@ -1049,9 +1219,11 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         TermKind::Old { term } => visitor.visit_term(&*term),
         TermKind::Closure { body } => visitor.visit_term(&*body),
         TermKind::Absurd => {}
-        TermKind::Reborrow { cur, fin } => {
+        TermKind::Reborrow { cur, fin, term, projection } => {
             visitor.visit_term(&*cur);
-            visitor.visit_term(&*fin)
+            visitor.visit_term(&*fin);
+            visitor.visit_term(&*term);
+            visit_projections(projection, |term| visitor.visit_term(term))
         }
         TermKind::Assert { cond } => visitor.visit_term(&*cond),
     }
@@ -1076,8 +1248,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         TermKind::Unary { op: _, arg } => visitor.visit_mut_term(&mut *arg),
         TermKind::Forall { binder: _, body } => visitor.visit_mut_term(&mut *body),
         TermKind::Exists { binder: _, body } => visitor.visit_mut_term(&mut *body),
-        TermKind::Call { id: _, subst: _, fun, args } => {
-            visitor.visit_mut_term(&mut *fun);
+        TermKind::Call { id: _, subst: _, args } => {
             args.iter_mut().for_each(|a| visitor.visit_mut_term(&mut *a))
         }
         TermKind::Constructor { typ: _, variant: _, fields } => {
@@ -1104,9 +1275,11 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         TermKind::Old { term } => visitor.visit_mut_term(&mut *term),
         TermKind::Closure { body } => visitor.visit_mut_term(&mut *body),
         TermKind::Absurd => {}
-        TermKind::Reborrow { cur, fin } => {
+        TermKind::Reborrow { cur, fin, term, projection } => {
             visitor.visit_mut_term(&mut *cur);
-            visitor.visit_mut_term(&mut *fin)
+            visitor.visit_mut_term(&mut *fin);
+            visitor.visit_mut_term(&mut *term);
+            visit_projections_mut(projection, |term| visitor.visit_mut_term(term))
         }
         TermKind::Assert { cond } => visitor.visit_mut_term(&mut *cond),
     }
@@ -1121,15 +1294,27 @@ impl<'tcx> Term<'tcx> {
         Term { ty: tcx.types.bool, kind: TermKind::Lit(Literal::Bool(false)), span: DUMMY_SP }
     }
 
+    pub(crate) fn call(
+        tcx: TyCtxt<'tcx>,
+        def_id: DefId,
+        subst: GenericArgsRef<'tcx>,
+        args: Vec<Term<'tcx>>,
+    ) -> Self {
+        let ty = tcx.type_of(def_id).instantiate(tcx, subst);
+        let result = ty.fn_sig(tcx).skip_binder().output();
+
+        Term { ty: result, span: DUMMY_SP, kind: TermKind::Call { id: def_id, subst, args } }
+    }
+
     pub(crate) fn var(sym: Symbol, ty: Ty<'tcx>) -> Self {
         Term { ty, kind: TermKind::Var(sym), span: DUMMY_SP }
     }
 
     pub(crate) fn cur(self) -> Self {
-        assert!(self.ty.is_ref(), "cannot dereference type {:?}", self.ty);
+        assert!(self.ty.is_ref() || self.ty.is_box(), "cannot dereference type {:?}", self.ty);
 
         Term {
-            ty: self.ty.builtin_deref(false).unwrap().ty,
+            ty: self.ty.builtin_deref(false).unwrap(),
             span: self.span,
             kind: TermKind::Cur { term: Box::new(self) },
         }
@@ -1139,7 +1324,7 @@ impl<'tcx> Term<'tcx> {
         assert!(self.ty.is_mutable_ptr() && self.ty.is_ref(), "cannot final type {:?}", self.ty);
 
         Term {
-            ty: self.ty.builtin_deref(false).unwrap().ty,
+            ty: self.ty.builtin_deref(false).unwrap(),
             span: self.span,
             kind: TermKind::Fin { term: Box::new(self) },
         }
@@ -1169,20 +1354,23 @@ impl<'tcx> Term<'tcx> {
         }
     }
 
-    pub(crate) fn item(tcx: TyCtxt<'tcx>, id: DefId, subst: SubstsRef<'tcx>) -> Self {
+    pub(crate) fn bin_op(self, tcx: TyCtxt<'tcx>, op: BinOp, rhs: Self) -> Self {
         Term {
-            ty: tcx.type_of(id).subst(tcx, subst),
-            kind: TermKind::Item(id, subst),
+            ty: tcx.types.bool,
+            kind: TermKind::Binary { op, lhs: Box::new(self), rhs: Box::new(rhs) },
             span: DUMMY_SP,
         }
     }
 
     pub(crate) fn eq(tcx: TyCtxt<'tcx>, lhs: Self, rhs: Self) -> Self {
-        Term {
-            ty: tcx.types.bool,
-            kind: TermKind::Binary { op: BinOp::Eq, lhs: Box::new(lhs), rhs: Box::new(rhs) },
-            span: DUMMY_SP,
-        }
+        lhs.bin_op(tcx, BinOp::Eq, rhs)
+    }
+
+    pub(crate) fn int(tcx: TyCtxt<'tcx>, val: i128) -> Self {
+        let ty = tcx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap();
+        let ty = tcx.type_of(ty).skip_binder();
+
+        Term { ty, kind: TermKind::Lit(Literal::Integer(val)), span: DUMMY_SP }
     }
 
     pub(crate) fn implies(self, rhs: Self) -> Self {
@@ -1311,8 +1499,7 @@ impl<'tcx> Term<'tcx> {
 
                 body.subst_with_inner(&bound, inv_subst);
             }
-            TermKind::Call { fun, args, .. } => {
-                fun.subst_with_inner(bound, inv_subst);
+            TermKind::Call { args, .. } => {
                 args.iter_mut().for_each(|f| f.subst_with_inner(bound, inv_subst))
             }
             TermKind::Constructor { fields, .. } => {
@@ -1348,9 +1535,11 @@ impl<'tcx> Term<'tcx> {
                 body.subst_with_inner(&bound, inv_subst);
             }
             TermKind::Absurd => {}
-            TermKind::Reborrow { cur, fin } => {
+            TermKind::Reborrow { cur, fin, term, projection } => {
                 cur.subst_with_inner(bound, inv_subst);
-                fin.subst_with_inner(bound, inv_subst)
+                fin.subst_with_inner(bound, inv_subst);
+                term.subst_with_inner(bound, inv_subst);
+                visit_projections_mut(projection, |term| term.subst_with_inner(bound, inv_subst))
             }
             TermKind::Assert { cond } => cond.subst_with_inner(bound, inv_subst),
         }
@@ -1388,8 +1577,7 @@ impl<'tcx> Term<'tcx> {
 
                 body.free_vars_inner(&bound, free);
             }
-            TermKind::Call { fun, args, .. } => {
-                fun.free_vars_inner(bound, free);
+            TermKind::Call { args, .. } => {
                 for arg in args {
                     arg.free_vars_inner(bound, free);
                 }
@@ -1431,11 +1619,112 @@ impl<'tcx> Term<'tcx> {
                 body.free_vars_inner(&bound, free);
             }
             TermKind::Absurd => {}
-            TermKind::Reborrow { cur, fin } => {
+            TermKind::Reborrow { cur, fin, term, projection } => {
                 cur.free_vars_inner(bound, free);
-                fin.free_vars_inner(bound, free)
+                fin.free_vars_inner(bound, free);
+                term.free_vars_inner(bound, free);
+                visit_projections(projection, |term| term.free_vars_inner(bound, free))
             }
             TermKind::Assert { cond } => cond.free_vars_inner(bound, free),
+        }
+    }
+
+    pub fn creusot_ty(&self) -> Ty<'tcx> {
+        strip_all_refs(self.ty)
+    }
+}
+
+#[allow(dead_code)]
+/// A debug printer for Thir which allows you to see a thir expression as a tree
+struct PrintExpr<'a, 'tcx>(&'a Thir<'tcx>, ExprId);
+
+impl Display for PrintExpr<'_, '_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        print_thir_expr(f, self.0, self.1)
+    }
+}
+
+#[allow(dead_code)]
+fn print_thir_expr<'tcx>(
+    fmt: &mut Formatter,
+    thir: &Thir<'tcx>,
+    expr_id: ExprId,
+) -> std::fmt::Result {
+    match &thir[expr_id].kind {
+        ExprKind::Call { fun, args, .. } => {
+            print_thir_expr(fmt, thir, *fun)?;
+            write!(fmt, "(")?;
+            for a in args.iter() {
+                print_thir_expr(fmt, thir, *a)?;
+                write!(fmt, ",")?;
+            }
+            write!(fmt, ")")?;
+        }
+        ExprKind::Deref { arg } => {
+            write!(fmt, "* ")?;
+            print_thir_expr(fmt, thir, *arg)?;
+        }
+        ExprKind::Borrow { borrow_kind, arg } => {
+            match borrow_kind {
+                BorrowKind::Shared => write!(fmt, "& ")?,
+                BorrowKind::Fake(..) => write!(fmt, "&fake ")?,
+                BorrowKind::Mut { .. } => write!(fmt, "&mut ")?,
+            };
+
+            print_thir_expr(fmt, thir, *arg)?;
+        }
+        ExprKind::Field { lhs, variant_index, name } => {
+            print_thir_expr(fmt, thir, *lhs)?;
+            let ty = thir[expr_id].ty;
+            let (var_name, field_name) = match ty.kind() {
+                TyKind::Adt(def, _) => {
+                    let var = &def.variants()[*variant_index];
+                    (var.name.to_string(), var.fields[*name].name.to_string())
+                }
+                TyKind::Tuple(_) => ("_".into(), format!("{name:?}")),
+                _ => unreachable!(),
+            };
+
+            write!(fmt, " as {var_name} . {field_name}")?;
+        }
+        ExprKind::Index { lhs, index } => {
+            print_thir_expr(fmt, thir, *lhs)?;
+            write!(fmt, "[")?;
+            print_thir_expr(fmt, thir, *index)?;
+            write!(fmt, "]")?;
+        }
+        ExprKind::ZstLiteral { .. } => match thir[expr_id].ty.kind() {
+            TyKind::FnDef(id, _) => write!(fmt, "{id:?}")?,
+            _ => write!(fmt, "zst")?,
+        },
+        ExprKind::Literal { lit, neg } => {
+            if *neg {
+                write!(fmt, "-")?;
+            }
+
+            write!(fmt, "{}", lit.node)?;
+        }
+        ExprKind::Use { source } => print_thir_expr(fmt, thir, *source)?,
+        ExprKind::VarRef { id } => {
+            write!(fmt, "{:?}", id.0)?;
+        }
+        ExprKind::Scope { value, .. } => {
+            print_thir_expr(fmt, thir, *value)?;
+        }
+        _ => {
+            write!(fmt, "{:?}", thir[expr_id])?;
+        }
+    }
+    Ok(())
+}
+
+fn strip_all_refs(ty: Ty) -> Ty {
+    let mut ty = ty;
+    loop {
+        if ty.ref_mutability() == Some(Not) || ty.is_box() {
+            ty = ty.builtin_deref(true).unwrap();
+        } else {
+            return ty;
         }
     }
 }

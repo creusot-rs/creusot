@@ -1,6 +1,5 @@
 use rustc_middle::mir::Location;
-use rustc_mir_dataflow::{self as dataflow, Analysis, AnalysisResults, Results, ResultsCursor};
-use std::borrow::Borrow;
+use rustc_mir_dataflow::{self as dataflow, Analysis, ResultsCursor};
 
 // Dataflow locations
 #[derive(Debug, Copy, Clone)]
@@ -35,12 +34,10 @@ impl ExtendedLocation {
         }
     }
 
-    pub(crate) fn seek_to<'tcx, A, R, D>(self, cursor: &mut ResultsCursor<'_, 'tcx, A, R>)
+    pub(crate) fn seek_to<'tcx, A, D>(self, cursor: &mut ResultsCursor<'_, 'tcx, A>)
     where
         A: Analysis<'tcx, Direction = D>,
         D: Dir,
-        R: AnalysisResults<'tcx, A>,
-        R: Borrow<Results<'tcx, A>>,
     {
         use ExtendedLocation::*;
         if D::is_forward() {

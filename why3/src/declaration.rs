@@ -40,12 +40,87 @@ pub enum Decl {
     UseDecl(Use),
     Axiom(Axiom),
     Goal(Goal),
-    // ConstantDecl(Constant),
+    ConstantDecl(Constant),
+    Coma(coma::Defn),
+    LetSpan(Ident, String, usize, usize, usize, usize),
 }
 
 impl Decl {
     pub fn module_like(&self) -> bool {
         matches!(self, Self::Scope(_) | Self::Module(_))
+    }
+
+    pub fn val(sig: Signature) -> Self {
+        Decl::ValDecl(ValDecl { ghost: false, val: true, kind: None, sig })
+    }
+
+    pub fn val_pred(mut sig: Signature) -> Self {
+        sig.retty = None;
+        Decl::ValDecl(ValDecl { ghost: false, val: true, kind: Some(LetKind::Predicate), sig })
+    }
+
+    pub fn val_fn(sig: Signature) -> Self {
+        Decl::ValDecl(ValDecl { ghost: false, val: true, kind: Some(LetKind::Function), sig })
+    }
+
+    pub fn function(sig: Signature, body: Option<Exp>) -> Self {
+        match body {
+            Some(body) => Decl::LogicDefn(Logic { sig, body }),
+            None => Decl::ValDecl(ValDecl {
+                ghost: false,
+                val: false,
+                kind: Some(LetKind::Function),
+                sig,
+            }),
+        }
+    }
+
+    pub fn val_function(sig: Signature, body: Option<Exp>) -> Self {
+        match body {
+            Some(body) => Decl::Let(LetDecl {
+                kind: Some(LetKind::Function),
+                sig,
+                rec: false,
+                ghost: false,
+                body,
+            }),
+            None => Decl::ValDecl(ValDecl {
+                ghost: false,
+                val: true,
+                kind: Some(LetKind::Function),
+                sig,
+            }),
+        }
+    }
+
+    pub fn val_predicate(sig: Signature, body: Option<Exp>) -> Self {
+        match body {
+            Some(body) => Decl::Let(LetDecl {
+                kind: Some(LetKind::Predicate),
+                sig,
+                rec: false,
+                ghost: false,
+                body,
+            }),
+            None => Decl::ValDecl(ValDecl {
+                ghost: false,
+                val: true,
+                kind: Some(LetKind::Function),
+                sig,
+            }),
+        }
+    }
+
+    pub fn predicate(sig: Signature, body: Option<Exp>) -> Self {
+        match body {
+            Some(body) => Decl::PredDecl(Predicate { sig, body }),
+            None => Decl::ValDecl(ValDecl {
+                ghost: false,
+                val: false,
+                kind: Some(LetKind::Predicate),
+                sig,
+            }),
+        }
     }
 }
 
@@ -136,6 +211,7 @@ impl Contract {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Attribute {
     Attr(String),
+    NamedSpan(String),
     Span(String, usize, usize, usize, usize), // file, start line, start col, end line, end col
 }
 
@@ -152,7 +228,7 @@ pub struct Signature {
 
 impl Signature {
     pub fn uses_simple_triggers(&self) -> bool {
-        self.trigger.is_none()
+        self.trigger.is_some()
     }
 }
 
@@ -317,10 +393,18 @@ pub struct LetDecl {
     pub body: Exp,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum LetKind {
     Function,
     Predicate,
     Constant,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct Constant {
+    pub name: Ident,
+    pub type_: Type,
+    pub body: Option<Exp>,
 }

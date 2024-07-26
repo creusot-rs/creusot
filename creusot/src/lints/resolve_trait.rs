@@ -21,11 +21,11 @@ fn resolve_trait_loaded(tcx: TyCtxt) -> bool {
 impl<'tcx> LateLintPass<'tcx> for ResolveTrait {
     fn check_crate(&mut self, cx: &LateContext<'tcx>) {
         if !resolve_trait_loaded(cx.tcx) {
-            cx.struct_span_lint(
+            cx.opt_span_lint(
                 RESOLVE_TRAIT,
-                DUMMY_SP,
+                Some(DUMMY_SP),
                 "the `creusot_contracts` crate is not loaded. You will not be able to verify any code using Creusot until you do so.",
-                |lint| lint,
+                |_lint| (),
             );
         }
     }

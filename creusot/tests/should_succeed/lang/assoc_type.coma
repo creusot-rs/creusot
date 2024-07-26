@@ -1,0 +1,54 @@
+
+module AssocType_Assoc_Type
+  type a'0
+  
+  type t_assoc 'u 'proj0 =
+    | C_Assoc 'proj0
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_assoc < 'u > < 'proj0 > (input:t_assoc 'u 'proj0) (ret  (item:'proj0))= any
+    [ good (item:'proj0)-> {C_Assoc item = input} (! ret {item})
+    | bad (item:'proj0)-> {C_Assoc item <> input} {false} any ]
+    
+end
+module AssocType_Nested_Type
+  type a'0
+  
+  use AssocType_Assoc_Type as Assoc'0
+  
+  type t_nested 't 'proj0 =
+    | C_Nested (Assoc'0.t_assoc 't 'proj0)
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_nested < 't > < 'proj0 > (input:t_nested 't 'proj0) (ret  (item:Assoc'0.t_assoc 't 'proj0))= any
+    [ good (item:Assoc'0.t_assoc 't 'proj0)-> {C_Nested item = input} (! ret {item})
+    | bad (item:Assoc'0.t_assoc 't 'proj0)-> {C_Nested item <> input} {false} any ]
+    
+end
+module AssocType_Uses3
+  type t
+  
+  type a'0
+  
+  use AssocType_Nested_Type as Nested'0
+  
+  predicate invariant'0 (self : Nested'0.t_nested t a'0)
+  
+  predicate inv'0 (_x : Nested'0.t_nested t a'0)
+  
+  type a'1
+  
+  axiom inv'0 : forall x : Nested'0.t_nested t a'0 . inv'0 x = true
+  
+  use prelude.prelude.Intrinsic
+  
+  predicate resolve'0 (self : Nested'0.t_nested t a'0)
+  
+  let rec uses3 (_1:Nested'0.t_nested t a'0) (return'  (ret:()))= {inv'0 _1}
+    (! bb0
+    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'0 _1} s1 | s1 = -{resolve'0 _1}- s2 | s2 = bb1 ] 
+    | bb1 = return' {_0} ]
+    ) [ & _0 : () = any_l () | & _1 : Nested'0.t_nested t a'0 = _1 ]  [ return' (result:())-> (! return' {result}) ] 
+end

@@ -13,6 +13,12 @@ extern_spec! {
                 where
                     Self: DeepModel,
                     Rhs: DeepModel<DeepModelTy = Self::DeepModelTy>;
+
+                #[ensures(result == (self.deep_model() != rhs.deep_model()))]
+                fn ne(&self, rhs: &Rhs) -> bool
+                where
+                    Self: DeepModel,
+                    Rhs: DeepModel<DeepModelTy = Self::DeepModelTy>;
             }
 
             // TODO: for now, we only support total orders
@@ -58,7 +64,7 @@ extern_spec! {
 impl<T: DeepModel> DeepModel for Reverse<T> {
     type DeepModelTy = Reverse<T::DeepModelTy>;
 
-    #[ghost]
+    #[logic]
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { Reverse(self.0.deep_model()) }
@@ -66,7 +72,7 @@ impl<T: DeepModel> DeepModel for Reverse<T> {
 }
 
 impl<T: OrdLogic> OrdLogic for Reverse<T> {
-    #[ghost]
+    #[logic]
     #[open]
     fn cmp_log(self, o: Self) -> Ordering {
         match self.0.cmp_log(o.0) {

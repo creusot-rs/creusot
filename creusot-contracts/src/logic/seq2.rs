@@ -6,26 +6,23 @@ use creusot_contracts::logic::IndexLogic;
 pub struct Seq<T: ?Sized>(Seq1<T>);
 
 impl<T> Seq<T> {
-
     #[cfg(creusot)]
     #[creusot::no_translate]
-    #[creusot::item="empty_tag"]
+    #[creusot::item = "empty_tag"]
     fn empty_tag() {}
 
     #[cfg(creusot)]
     #[trusted]
-    #[creusot::clause::open="empty_tag"]
+    #[creusot::clause::open = "empty_tag"]
     #[creusot::decl::ghost]
     pub const EMPTY: Self = { Seq(Seq1::EMPTY) };
-
 
     #[law]
     #[open]
     #[ensures(Self::EMPTY.len() == 0)]
     pub fn empty_len() {}
 
-
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[requires(len >= 0)]
     #[ensures(result.len() == len)]
@@ -34,7 +31,7 @@ impl<T> Seq<T> {
         Seq(Seq1::new(len, data))
     }
 
-    #[ghost]
+    #[logic]
     #[open]
     pub fn get(self, ix: Int) -> Option<T> {
         if 0 <= ix && ix < self.len() {
@@ -44,7 +41,7 @@ impl<T> Seq<T> {
         }
     }
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[requires(0 <= n && n <= m && m <= self.len())]
     #[ensures(result.len() == m - n)]
@@ -53,7 +50,7 @@ impl<T> Seq<T> {
         Seq(self.0.subsequence(n, m))
     }
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[ensures(result.len() == 1)]
     #[ensures(result[0] == v)]
@@ -61,21 +58,21 @@ impl<T> Seq<T> {
         Seq(Seq1::singleton(v))
     }
 
-    #[ghost]
+    #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
     pub fn tail(self) -> Self {
         self.subsequence(1, self.len())
     }
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[ensures(result >= 0)]
     pub fn len(self) -> Int {
         self.0.len()
     }
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[requires(0 <= j && j < self.len())]
     #[ensures(result.len() == self.len())]
@@ -94,14 +91,14 @@ impl<T> Seq<T> {
         self.0.ext_eq(oth.0)
     }
 
-    #[ghost]
+    #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
     pub fn push(self, v: T) -> Self {
         self.concat(Self::singleton(v))
     }
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[ensures(result.len() == self.len() + other.len())]
     #[ensures(forall<i : Int> 0 <= i && i < result.len() ==> result[i] ==
@@ -110,7 +107,7 @@ impl<T> Seq<T> {
         Seq(self.0.concat(other.0))
     }
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[ensures(result.len() == self.len())]
     #[ensures(forall<i : Int> 0 <= i && i < result.len() ==> result[i] == self[self.len() - 1 - i])]
@@ -173,15 +170,15 @@ impl<T> Seq<T> {
 impl<T> Seq<&T> {
     #[logic]
     #[open]
-    pub fn to_owned(self) -> Seq<T> {
-        Seq(self.0.to_owned())
+    pub fn to_owned_seq(self) -> Seq<T> {
+        Seq(self.0.to_owned_seq())
     }
 }
 
 impl<T> IndexLogic<Int> for Seq<T> {
     type Item = T;
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     fn index_logic(self, x: Int) -> Self::Item {
         self.0[x]

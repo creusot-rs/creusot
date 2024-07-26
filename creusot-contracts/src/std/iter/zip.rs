@@ -1,22 +1,22 @@
 use crate::{std::iter::Zip, *};
 
 pub trait ZipExt<A: Iterator, B: Iterator> {
-    #[ghost]
+    #[logic]
     fn itera(self) -> A;
 
-    #[ghost]
+    #[logic]
     fn iterb(self) -> B;
 }
 
 impl<A: Iterator, B: Iterator> ZipExt<A, B> for Zip<A, B> {
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     fn itera(self) -> A {
         pearlite! { absurd }
     }
 
-    #[ghost]
+    #[logic]
     #[open(self)]
     #[trusted]
     fn iterb(self) -> B {
@@ -26,7 +26,7 @@ impl<A: Iterator, B: Iterator> ZipExt<A, B> for Zip<A, B> {
 
 impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             exists<a: &mut A, b: &mut B>
@@ -39,7 +39,7 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
     }
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             // Using an `unzip` definition doesn't work well because of issues related to datatypes and `match`
@@ -52,8 +52,8 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
 
     #[law]
     #[open(self)]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self) {}
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
 
     #[law]
     #[open(self)]

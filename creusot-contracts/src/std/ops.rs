@@ -172,13 +172,13 @@ extern_spec! {
 }
 
 pub trait RangeInclusiveExt<Idx> {
-    #[ghost]
+    #[logic]
     fn start_log(self) -> Idx;
 
-    #[ghost]
+    #[logic]
     fn end_log(self) -> Idx;
 
-    #[ghost]
+    #[logic]
     fn is_empty_log(self) -> bool
     where
         Idx: DeepModel,
@@ -187,21 +187,21 @@ pub trait RangeInclusiveExt<Idx> {
 
 impl<Idx> RangeInclusiveExt<Idx> for RangeInclusive<Idx> {
     #[open(self)]
-    #[ghost]
+    #[logic]
     #[trusted]
     fn start_log(self) -> Idx {
         pearlite! { absurd }
     }
 
     #[open(self)]
-    #[ghost]
+    #[logic]
     #[trusted]
     fn end_log(self) -> Idx {
         pearlite! { absurd }
     }
 
     #[open(self)]
-    #[ghost]
+    #[logic]
     #[trusted]
     #[ensures(!result ==> self.start_log().deep_model() <= self.end_log().deep_model())]
     fn is_empty_log(self) -> bool
@@ -245,12 +245,12 @@ extern_spec! {
         mod ops {
             trait IndexMut<Idx>  where Idx : ?Sized, Self : ?Sized {
                 #[requires(false)]
-                fn index_mut(&mut self, _ix : Idx) -> &mut Self::Output;
+                fn index_mut(&mut self, ix : Idx) -> &mut Self::Output;
             }
 
             trait Index<Idx>  where Idx : ?Sized,  Self : ?Sized {
                 #[requires(false)]
-                fn index(&self, _ix : Idx) -> &Self::Output;
+                fn index(&self, ix : Idx) -> &Self::Output;
             }
         }
     }

@@ -4,14 +4,14 @@ pub(crate) mod external;
 pub(crate) mod fmir;
 pub(crate) mod function;
 pub(crate) mod pearlite;
+pub(crate) mod projection_vec;
 pub(crate) mod specification;
 pub(crate) mod traits;
 
 use crate::{
     backend::{TransId, Why3Generator},
-    ctx,
-    ctx::load_extern_specs,
-    error::CrErr,
+    ctx::{self, load_extern_specs},
+    error::InternalError,
     metadata,
     options::OutputFile,
     validate::{validate_impls, validate_opacity, validate_traits},
@@ -19,21 +19,19 @@ use crate::{
 use ctx::TranslationCtx;
 use heck::ToUpperCamelCase;
 use rustc_hir::{def::DefKind, def_id::LOCAL_CRATE};
-use rustc_middle::ty::Ty;
 use std::{error::Error, io::Write};
 use why3::{declaration::Module, mlcfg, Print};
 
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
     ctx.load_metadata();
-    load_extern_specs(ctx).map_err(|_| Box::new(CrErr))?;
+    load_extern_specs(ctx).map_err(|_| Box::new(InternalError("Failed to load extern specs")))?;
 
     for def_id in ctx.tcx.hir().body_owners() {
         ctx.check_purity(def_id);
 
         let def_id = def_id.to_def_id();
         if crate::util::is_spec(ctx.tcx, def_id)
-            || crate::util::is_ghost(ctx.tcx, def_id)
             || crate::util::is_predicate(ctx.tcx, def_id)
             || crate::util::is_logic(ctx.tcx, def_id)
         {
@@ -41,6 +39,7 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
             validate_opacity(ctx, def_id);
         }
     }
+    crate::validate_terminates::validate_terminates(ctx);
 
     // Check that all trait laws are well-formed
     validate_traits(ctx);
@@ -81,8 +80,8 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
     debug!("after_analysis_translate: {:?}", start.elapsed());
     let start = Instant::now();
 
-    if why3.sess.has_errors().is_some() {
-        return Err(Box::new(CrErr));
+    if why3.dcx().has_errors().is_some() {
+        return Err(Box::new(InternalError("Failed to generate correct why3")));
     }
 
     if why3.should_export() {
@@ -90,135 +89,39 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
     }
 
     if why3.should_compile() {
+        use crate::run_why3::run_why3;
         use std::fs::File;
-        let mut out: Box<dyn Write> = match why3.opts.output_file {
-            Some(OutputFile::File(ref f)) => Box::new(std::io::BufWriter::new(File::create(f)?)),
-            Some(OutputFile::Stdout) => Box::new(std::io::stdout()),
-            None => {
-                let outputs = why3.output_filenames(());
-                let crate_name = why3.crate_name(LOCAL_CRATE);
-
-                let libname =
-                    format!("{}-{}.mlcfg", crate_name.as_str(), why3.sess.crate_types()[0]);
-
-                let directory = if why3.opts.in_cargo {
-                    let mut dir = outputs.out_directory.clone();
-                    dir.pop();
-                    dir
-                } else {
-                    outputs.out_directory.clone()
-                };
-                let out_path = directory.join(&libname);
-                Box::new(std::io::BufWriter::new(File::create(out_path)?))
-            }
+        let file = match why3.opts.output_file {
+            OutputFile::File(ref f) => Some(f.clone().into()),
+            OutputFile::Stdout => None,
+        };
+        let mut out: Box<dyn Write> = match &file {
+            Some(f) => Box::new(std::io::BufWriter::new(File::create(f)?)),
+            None => Box::new(std::io::stdout()),
         };
 
         let matcher = why3.opts.match_str.clone();
         let matcher: &str = matcher.as_ref().map(|s| &s[..]).unwrap_or("");
         let tcx = why3.tcx;
-        let modules = why3.modules().flat_map(|(id, item)| {
-            if let TransId::Item(did) = id && tcx.def_path_str(did).contains(matcher) {
+        let modules = why3.modules();
+        let modules = modules.flat_map(|(id, item)| {
+            if let TransId::Item(did) = id
+                && tcx.def_path_str(did).contains(matcher)
+            {
                 item.modules()
             } else {
-                item.interface()
+                Box::new(std::iter::empty())
             }
         });
 
         let crate_name = tcx.crate_name(LOCAL_CRATE).to_string().to_upper_camel_case();
         print_crate(&mut out, crate_name, modules)?;
+        drop(out); //flush the buffer before running why3
+        run_why3(&why3, file);
     }
     debug!("after_analysis_dump: {:?}", start.elapsed());
 
     Ok(())
-}
-use rustc_middle::mir;
-
-pub(crate) fn binop_to_binop(ctx: &mut TranslationCtx, ty: Ty, op: mir::BinOp) -> why3::exp::BinOp {
-    use why3::exp::BinOp;
-    match op {
-        mir::BinOp::Add => {
-            if ty.is_floating_point() {
-                BinOp::FloatAdd
-            } else {
-                BinOp::Add
-            }
-        }
-        mir::BinOp::Sub => {
-            if ty.is_floating_point() {
-                BinOp::FloatSub
-            } else {
-                BinOp::Sub
-            }
-        }
-        mir::BinOp::Mul => {
-            if ty.is_floating_point() {
-                BinOp::FloatMul
-            } else {
-                BinOp::Mul
-            }
-        }
-        mir::BinOp::Div => {
-            if ty.is_floating_point() {
-                BinOp::FloatDiv
-            } else {
-                BinOp::Div
-            }
-        }
-        mir::BinOp::Eq => {
-            if ty.is_floating_point() {
-                BinOp::FloatEq
-            } else {
-                BinOp::Eq
-            }
-        }
-        mir::BinOp::Lt => {
-            if ty.is_floating_point() {
-                BinOp::FloatLt
-            } else {
-                BinOp::Lt
-            }
-        }
-        mir::BinOp::Le => {
-            if ty.is_floating_point() {
-                BinOp::FloatLe
-            } else {
-                BinOp::Le
-            }
-        }
-        mir::BinOp::Gt => {
-            if ty.is_floating_point() {
-                BinOp::FloatGt
-            } else {
-                BinOp::Gt
-            }
-        }
-        mir::BinOp::Ge => {
-            if ty.is_floating_point() {
-                BinOp::FloatGe
-            } else {
-                BinOp::Ge
-            }
-        }
-        mir::BinOp::Ne => BinOp::Ne,
-        mir::BinOp::Rem => BinOp::Mod,
-        _ => ctx.crash_and_error(
-            rustc_span::DUMMY_SP,
-            &format!("unsupported binary operation: {:?}", op),
-        ),
-    }
-}
-
-pub(crate) fn unop_to_unop(ty: Ty, op: rustc_middle::mir::UnOp) -> why3::exp::UnOp {
-    match op {
-        rustc_middle::mir::UnOp::Not => why3::exp::UnOp::Not,
-        rustc_middle::mir::UnOp::Neg => {
-            if ty.is_floating_point() {
-                why3::exp::UnOp::FloatNeg
-            } else {
-                why3::exp::UnOp::Neg
-            }
-        }
-    }
 }
 
 fn print_crate<W, I: Iterator<Item = Module>>(
@@ -229,12 +132,12 @@ fn print_crate<W, I: Iterator<Item = Module>>(
 where
     W: Write,
 {
-    let (alloc, mut pe) = mlcfg::printer::PrintEnv::new();
+    let alloc = mlcfg::printer::ALLOC;
 
     writeln!(out)?;
 
     for modl in functions {
-        modl.pretty(&alloc, &mut pe).1.render(120, out)?;
+        modl.pretty(&alloc).1.render(120, out)?;
         writeln!(out)?;
     }
 

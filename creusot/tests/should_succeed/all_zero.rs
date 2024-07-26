@@ -9,7 +9,7 @@ pub enum List {
 use List::*;
 
 impl List {
-    #[ghost]
+    #[logic]
     fn len(self) -> Int {
         match self {
             Cons(_, ls) => 1 + ls.len(),
@@ -17,7 +17,7 @@ impl List {
         }
     }
 
-    #[ghost]
+    #[logic]
     fn get(self, ix: Int) -> Option<u32> {
         match self {
             Cons(x, ls) => match pearlite! { ix == 0 } {
@@ -33,7 +33,7 @@ impl List {
 #[ensures((*l).len() == (^l).len())]
 pub fn all_zero(l: &mut List) {
     use List::*;
-    let old_l = gh! { l };
+    let old_l = snapshot! { l };
     let mut loop_l = l;
 
     #[invariant(

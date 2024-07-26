@@ -347,7 +347,6 @@ ast_struct! {
 
 ast_struct! {
     /// A referencing operation: `&a` or `&mut a`.
-    #[cfg_attr(doc_cfg, doc(cfg(feature = "full")))]
     pub struct TermReference #full {
         pub and_token: Token![&],
         pub mutability: Option<Token![mut]>,

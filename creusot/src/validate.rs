@@ -33,7 +33,7 @@ pub(crate) fn validate_opacity(ctx: &mut TranslationCtx, item: DefId) -> Option<
                     "Cannot make `{:?}` transparent in `{:?}` as it would call a less-visible item.",
                     self.ctx.def_path_str(id), self.ctx.def_path_str(self.source_item)
                 ),
-            )
+            ).emit();
         }
     }
 
@@ -69,7 +69,7 @@ pub(crate) fn validate_opacity(ctx: &mut TranslationCtx, item: DefId) -> Option<
     if ctx.visibility(item) != Visibility::Restricted(parent_module(ctx.tcx, item))
         && util::opacity_witness_name(ctx.tcx, item).is_none()
     {
-        ctx.error(ctx.def_span(item), "Non private definitions must have an explicit transparency. Please add #[open(..)] to your definition", );
+        ctx.error(ctx.def_span(item), "Non private definitions must have an explicit transparency. Please add #[open(..)] to your definition").emit();
     }
 
     let opacity = ctx.opacity(item).scope();
@@ -86,23 +86,23 @@ pub(crate) fn validate_traits(ctx: &mut TranslationCtx) {
         let trait_item = ctx.hir().trait_item(trait_item_id);
 
         if is_law(ctx.tcx, trait_item.owner_id.def_id.to_def_id())
-            && !ctx.generics_of(trait_item.owner_id.def_id).params.is_empty()
+            && !ctx.generics_of(trait_item.owner_id.def_id).own_params.is_empty()
         {
             law_violations.push((trait_item.owner_id.def_id, trait_item.span))
         }
     }
 
     for (_, sp) in law_violations {
-        ctx.error(sp, "Laws cannot have additional generic parameters");
+        ctx.error(sp, "Laws cannot have additional generic parameters").emit();
     }
 }
 
-pub(crate) fn validate_impls(ctx: &TranslationCtx) {
+pub(crate) fn validate_impls(ctx: &mut TranslationCtx) {
     for impl_id in ctx.all_local_trait_impls(()).values().flat_map(|i| i.iter()) {
         if !matches!(ctx.def_kind(*impl_id), DefKind::Impl { .. }) {
             continue;
         }
-
+        use rustc_middle::ty::print::PrintTraitRefExt;
         let trait_ref = ctx.impl_trait_ref(*impl_id).unwrap().skip_binder();
 
         if util::is_trusted(ctx.tcx, trait_ref.def_id)
@@ -111,16 +111,16 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
             let msg = if util::is_trusted(ctx.tcx, trait_ref.def_id) {
                 format!(
                     "Expected implementation of trait `{}` for `{}` to be marked as `#[trusted]`",
-                    trait_ref.print_only_trait_name(),
+                    trait_ref.print_only_trait_path(),
                     trait_ref.self_ty()
                 )
             } else {
                 format!(
                     "Cannot have trusted implementation of untrusted trait `{}`",
-                    trait_ref.print_only_trait_name()
+                    trait_ref.print_only_trait_path()
                 )
             };
-            ctx.error(ctx.def_span(impl_id.to_def_id()), &msg)
+            ctx.error(ctx.def_span(impl_id.to_def_id()), &msg).emit();
         }
 
         let implementors = ctx.impl_item_implementor_ids(impl_id.to_def_id());
@@ -132,20 +132,40 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                 continue;
             };
 
-            if util::item_type(ctx.tcx, *trait_item) != util::item_type(ctx.tcx, *impl_item) {
-                eprintln!(
-                    "{:?} != {:?}",
-                    util::item_type(ctx.tcx, *trait_item),
-                    util::item_type(ctx.tcx, *impl_item)
-                );
+            let item_type = util::item_type(ctx.tcx, *impl_item);
+            let trait_type = util::item_type(ctx.tcx, *trait_item);
+            if !item_type.can_implement(trait_type) {
                 ctx.error(
                     ctx.def_span(impl_item),
                     &format!(
                         "Expected `{}` to be a {} as specified by the trait declaration",
                         ctx.item_name(*impl_item),
-                        util::item_type(ctx.tcx, *impl_item).to_str()
+                        trait_type.to_str()
                     ),
-                );
+                )
+                .emit();
+            } else {
+                let item_contract = crate::specification::contract_of(ctx, *impl_item);
+                let trait_contract = crate::specification::contract_of(ctx, *trait_item);
+                if trait_contract.no_panic && !item_contract.no_panic {
+                    ctx.error(
+                        ctx.def_span(impl_item),
+                        &format!(
+                            "Expected `{}` to be `#[pure]` as specified by the trait declaration",
+                            ctx.item_name(*impl_item),
+                        ),
+                    )
+                    .emit();
+                } else if trait_contract.terminates && !item_contract.terminates {
+                    ctx.error(
+                        ctx.def_span(impl_item),
+                        &format!(
+                            "Expected `{}` to be `#[terminates]` as specified by the trait declaration",
+                            ctx.item_name(*impl_item),
+                        ),
+                    )
+                    .emit();
+                }
             }
         }
     }

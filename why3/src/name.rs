@@ -55,7 +55,7 @@ impl From<String> for Ident {
 
 impl From<QName> for Exp {
     fn from(q: QName) -> Self {
-        Exp::impure_qvar(q)
+        Exp::qvar(q)
     }
 }
 
@@ -87,6 +87,13 @@ pub struct QName {
 }
 
 impl QName {
+    pub fn as_ident(&self) -> Option<&Ident> {
+        if self.module.is_empty() {
+            return Some(&self.name);
+        } else {
+            None
+        }
+    }
     pub fn name(&self) -> Ident {
         self.name.clone()
     }
@@ -94,6 +101,12 @@ impl QName {
     // ooof this is a bad function
     pub fn module_ident(&self) -> Option<&Ident> {
         self.module.last()
+    }
+
+    /// Given `Module.name` replaces `name` with `id`.
+    pub fn push_ident(&mut self, id: impl Into<Ident>) {
+        let old = std::mem::replace(&mut self.name, id.into());
+        self.module.push(old);
     }
 
     pub fn module_qname(mut self) -> QName {
@@ -162,6 +175,7 @@ const RESERVED: &[&str] = &[
     "continue",
     "diverges",
     "do",
+    "done",
     "else",
     "end",
     "ensures",

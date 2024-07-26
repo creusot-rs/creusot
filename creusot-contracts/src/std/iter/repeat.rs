@@ -3,7 +3,7 @@ use crate::{std::iter::Repeat, *};
 impl<T> ShallowModel for Repeat<T> {
     type ShallowModelTy = T;
 
-    #[ghost]
+    #[logic]
     #[trusted]
     #[open(self)]
     fn shallow_model(self) -> T {
@@ -29,8 +29,8 @@ impl<T: Clone> Iterator for Repeat<T> {
 
     #[law]
     #[open(self)]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self) {}
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
 
     #[law]
     #[open(self)]

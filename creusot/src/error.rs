@@ -1,5 +1,4 @@
-use rustc_errors::DiagnosticId;
-use rustc_session::Session;
+use rustc_middle::ty::TyCtxt;
 use rustc_span::{Span, DUMMY_SP};
 
 pub type CreusotResult<T> = Result<T, Error>;
@@ -16,23 +15,24 @@ impl Error {
         Error { span, msg: msg.into() }
     }
 
-    pub(crate) fn emit(self, sess: &Session) -> ! {
-        sess.span_fatal_with_code(self.span, self.msg, DiagnosticId::Error(String::from("creusot")))
+    pub(crate) fn emit(self, tcx: TyCtxt) -> ! {
+        // TODO: try to add a code back in
+        tcx.dcx().span_fatal(self.span, self.msg)
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct CrErr;
+pub struct InternalError(pub &'static str);
 
-impl From<CrErr> for Error {
-    fn from(_: CrErr) -> Error {
-        Error::new(DUMMY_SP, "internal error")
+impl From<InternalError> for Error {
+    fn from(err: InternalError) -> Error {
+        Error::new(DUMMY_SP, format!("internal error: {}", err.0))
     }
 }
 
-impl std::fmt::Display for CrErr {
+impl std::fmt::Display for InternalError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "encountered errors during translation")
+        write!(f, "encountered errors during translation: '{}'", self.0)
     }
 }
-impl std::error::Error for CrErr {}
+impl std::error::Error for InternalError {}

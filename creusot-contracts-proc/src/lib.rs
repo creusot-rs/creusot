@@ -23,7 +23,6 @@ trait FilterAttrs<'a> {
     type Ret: Iterator<Item = &'a Attribute>;
 
     fn outer(self) -> Self::Ret;
-    fn inner(self) -> Self::Ret;
 }
 
 impl<'a> FilterAttrs<'a> for &'a [Attribute] {
@@ -37,16 +36,6 @@ impl<'a> FilterAttrs<'a> for &'a [Attribute] {
             }
         }
         self.iter().filter(is_outer)
-    }
-
-    fn inner(self) -> Self::Ret {
-        fn is_inner(attr: &&Attribute) -> bool {
-            match attr.style {
-                AttrStyle::Inner(_) => true,
-                AttrStyle::Outer => false,
-            }
-        }
-        self.iter().filter(is_inner)
     }
 }
 
@@ -405,20 +394,35 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
 }
 
 #[proc_macro]
-pub fn gh(assertion: TS1) -> TS1 {
+pub fn snapshot(assertion: TS1) -> TS1 {
     let assert = parse_macro_input!(assertion as Assertion);
     let assert_body = pretyping::encode_block(&assert.0).unwrap();
 
     TS1::from(quote! {
         {
-            ::creusot_contracts::__stubs::ghost_from_fn(
+            ::creusot_contracts::__stubs::snapshot_from_fn(
                 #[creusot::no_translate]
                 #[creusot::spec]
-                #[creusot::spec::ghost]
-                || { ::creusot_contracts::ghost::Ghost::new (#assert_body) }
+                #[creusot::spec::snapshot]
+                || { ::creusot_contracts::snapshot::Snapshot::new (#assert_body) }
             )
         }
     })
+}
+
+#[proc_macro_attribute]
+pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
+    let mut result = TS1::from(quote! { #[creusot::clause::terminates] });
+    result.extend(tokens);
+    result
+}
+
+#[proc_macro_attribute]
+pub fn pure(_: TS1, tokens: TS1) -> TS1 {
+    let mut result =
+        TS1::from(quote! { #[creusot::clause::no_panic] #[creusot::clause::terminates] });
+    result.extend(tokens);
+    result
 }
 
 struct LogicItem {
@@ -467,59 +471,36 @@ impl Parse for LogicInput {
 }
 
 #[proc_macro_attribute]
-pub fn ghost(_: TS1, tokens: TS1) -> TS1 {
-    let log = parse_macro_input!(tokens as LogicInput);
-    match log {
-        LogicInput::Item(log) => ghost_item(log),
-        LogicInput::Sig(sig) => ghost_sig(sig),
-    }
-}
-
-fn ghost_sig(sig: TraitItemSignature) -> TS1 {
-    let span = sig.span();
-    TS1::from(quote_spanned! {span=>
-        #[creusot::decl::ghost]
-        #sig
-    })
-}
-
-fn ghost_item(log: LogicItem) -> TS1 {
-    let span = log.sig.span();
-
-    let term = log.body;
-    let vis = log.vis;
-    let def = log.defaultness;
-    let sig = log.sig;
-    let attrs = log.attrs;
-    let req_body = pretyping::encode_block(&term.stmts).unwrap();
-
-    TS1::from(quote_spanned! {span=>
-        #[creusot::decl::ghost]
-        #(#attrs)*
-        #vis #def #sig {
-            #req_body
+pub fn logic(prophetic: TS1, tokens: TS1) -> TS1 {
+    let prophetic = if prophetic.is_empty() {
+        None
+    } else {
+        let t = parse_macro_input!(prophetic as Ident);
+        if t.to_string() == "prophetic" {
+            Some(quote!(#[creusot::decl::logic::prophetic]))
+        } else {
+            None
         }
-    })
-}
-
-#[proc_macro_attribute]
-pub fn logic(_: TS1, tokens: TS1) -> TS1 {
+    };
     let log = parse_macro_input!(tokens as LogicInput);
     match log {
-        LogicInput::Item(log) => logic_item(log),
-        LogicInput::Sig(sig) => logic_sig(sig),
+        LogicInput::Item(log) => logic_item(log, prophetic),
+        LogicInput::Sig(sig) => logic_sig(sig, prophetic),
     }
 }
 
-fn logic_sig(sig: TraitItemSignature) -> TS1 {
+fn logic_sig(sig: TraitItemSignature, prophetic: Option<TokenStream>) -> TS1 {
     let span = sig.span();
-    TS1::from(quote_spanned! {span=>
+
+    TS1::from(quote_spanned! {span =>
+        #[::creusot_contracts::pure]
         #[creusot::decl::logic]
+        #prophetic
         #sig
     })
 }
 
-fn logic_item(log: LogicItem) -> TS1 {
+fn logic_item(log: LogicItem, prophetic: Option<TokenStream>) -> TS1 {
     let span = log.sig.span();
 
     let term = log.body;
@@ -529,8 +510,10 @@ fn logic_item(log: LogicItem) -> TS1 {
     let attrs = log.attrs;
     let req_body = pretyping::encode_block(&term.stmts).unwrap();
 
-    TS1::from(quote_spanned! {span=>
+    TS1::from(quote_spanned! {span =>
+        #[::creusot_contracts::pure]
         #[creusot::decl::logic]
+        #prophetic
         #(#attrs)*
         #vis #def #sig {
             #req_body
@@ -550,7 +533,18 @@ pub fn law(_: TS1, tokens: TS1) -> TS1 {
 }
 
 #[proc_macro_attribute]
-pub fn predicate(_: TS1, tokens: TS1) -> TS1 {
+pub fn predicate(prophetic: TS1, tokens: TS1) -> TS1 {
+    let prophetic = if prophetic.is_empty() {
+        None
+    } else {
+        let t = parse_macro_input!(prophetic as Ident);
+        if t.to_string() == "prophetic" {
+            Some(quote!(#[creusot::decl::logic::prophetic]))
+        } else {
+            None
+        }
+    };
+
     let pred = parse_macro_input!(tokens as LogicInput);
 
     let sig = match &pred {
@@ -573,20 +567,22 @@ pub fn predicate(_: TS1, tokens: TS1) -> TS1 {
     };
 
     match pred {
-        LogicInput::Item(log) => predicate_item(log),
-        LogicInput::Sig(sig) => predicate_sig(sig),
+        LogicInput::Item(log) => predicate_item(log, prophetic),
+        LogicInput::Sig(sig) => predicate_sig(sig, prophetic),
     }
 }
 
-fn predicate_sig(sig: TraitItemSignature) -> TS1 {
+fn predicate_sig(sig: TraitItemSignature, prophetic: Option<TokenStream>) -> TS1 {
     let span = sig.span();
-    TS1::from(quote_spanned! {span=>
+    TS1::from(quote_spanned! {span =>
+        #[::creusot_contracts::pure]
         #[creusot::decl::predicate]
+        #prophetic
         #sig
     })
 }
 
-fn predicate_item(log: LogicItem) -> TS1 {
+fn predicate_item(log: LogicItem, prophetic: Option<TokenStream>) -> TS1 {
     let span = log.sig.span();
     let term = log.body;
     let vis = log.vis;
@@ -596,8 +592,10 @@ fn predicate_item(log: LogicItem) -> TS1 {
 
     let req_body = pretyping::encode_block(&term.stmts).unwrap();
 
-    TS1::from(quote_spanned! {span=>
+    TS1::from(quote_spanned! {span =>
+        #[::creusot_contracts::pure]
         #[creusot::decl::predicate]
+        #prophetic
         #(#attrs)*
         #vis #def #sig {
             #req_body

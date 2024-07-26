@@ -5,7 +5,7 @@ use creusot_contracts::{
 };
 
 #[open]
-#[ghost]
+#[logic]
 #[variant(seq.len())]
 pub fn sum(seq: Seq<Int>) -> Int {
     pearlite! {

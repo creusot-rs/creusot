@@ -20,11 +20,11 @@ The warnings and errors of each test are recorded in an accompanying `stderr` fi
 
 # 4. Verifying proofs
 
-Once you are satisfied with the MLCFG output, you can validate the proofs of Creusot by running `cargo test --test why3`. This will run each test in the UI suite, and if a Why3 session is found, execute the proofs within.
+Once you are satisfied with the coma output, you can validate the proofs of Creusot by running `cargo test --test why3`. This will run each test in the UI suite, and if a Why3 session is found, execute the proofs within.
 If you add a test that you believe should include a proof, you can add it using the `./ide` script provided in Creusot.
 Load your test case in the Why3 IDE, solve the proof and save the result, it will now be checked as part of CI.
 
-Because verifying the proofs can be tedious during development the `cargo test --test why3` command accepts two flags: `--diff-from=` which accepts a Git ref and only checks the MLCFG files that have changed since then, and `--replay=` which accepts one of three values: `none`, `obsolete`, `all` and guides which proofs should actually be run or only just typecheked.
+Because verifying the proofs can be tedious during development the `cargo test --test why3` command accepts two flags: `--diff-from=` which accepts a Git ref and only checks the coma files that have changed since then, and `--replay=` which accepts one of three values: `none`, `obsolete`, `all` and guides which proofs should actually be run or only just typecheked.
 
 Helpful cheatsheet:
 - `cargo test --test why3 -- --diff-from=master --replay=none`: only typecheck the test cases that have changed

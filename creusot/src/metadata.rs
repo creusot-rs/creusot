@@ -3,9 +3,10 @@ use crate::{
 };
 use creusot_metadata::{decode_metadata, encode_metadata};
 use indexmap::IndexMap;
-use rustc_hir::def_id::{CrateNum, DefId, LOCAL_CRATE};
+use rustc_hir::def_id::{CrateNum, DefId};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::ty::TyCtxt;
+use rustc_session::config::OutputType;
 use rustc_span::Symbol;
 use std::{
     collections::HashMap,
@@ -140,12 +141,11 @@ impl<'tcx> BinaryMetadata<'tcx> {
 
 fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
     out.as_ref().map(|s| s.clone().into()).unwrap_or_else(|| {
-        let outputs = ctx.tcx.output_filenames(());
-
-        let crate_name = ctx.tcx.crate_name(LOCAL_CRATE);
-        let libname = format!("{}{}", crate_name.as_str(), ctx.tcx.sess.opts.cg.extra_filename);
-
-        outputs.out_directory.join(&format!("lib{}.cmeta", libname))
+        let outputs = ctx.output_filenames(());
+        let out = outputs.path(OutputType::Metadata);
+        let path = out.as_path().to_owned();
+        let path = path.with_extension("cmeta");
+        path
     })
 }
 
@@ -154,7 +154,7 @@ pub(crate) fn dump_exports(ctx: &TranslationCtx, out: &Option<String>) {
     debug!("dump_exports={:?}", out_filename);
 
     dump_binary_metadata(ctx.tcx, &out_filename, ctx.metadata()).unwrap_or_else(|err| {
-        panic!("could not save metadata path=`{:?}` error={}", out_filename, err)
+        panic!("could not save metadata path=`{:?}` error={}", out_filename, err.1)
     });
 }
 
@@ -162,7 +162,7 @@ fn dump_binary_metadata<'tcx>(
     tcx: TyCtxt<'tcx>,
     path: &Path,
     dep_info: BinaryMetadata<'tcx>,
-) -> Result<(), std::io::Error> {
+) -> Result<(), (PathBuf, std::io::Error)> {
     encode_metadata(tcx, path, dep_info)
 }
 

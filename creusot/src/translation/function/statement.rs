@@ -1,33 +1,44 @@
+use super::BodyTranslator;
+use crate::{
+    analysis::NotFinalPlaces,
+    fmir::Operand,
+    translation::{
+        fmir::{self, RValue},
+        specification::inv_subst,
+    },
+    util::{self, snapshot_closure_id},
+};
 use rustc_borrowck::borrow_set::TwoPhaseActivation;
 use rustc_middle::{
     mir::{
         BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
         StatementKind,
     },
-    ty::adjustment::PointerCast,
+    ty::adjustment::PointerCoercion,
 };
-
-use super::BodyTranslator;
-use crate::{
-    translation::{
-        fmir::{self, Expr, RValue},
-        specification::inv_subst,
-    },
-    util::{self, ghost_closure_id},
-};
+use rustc_mir_dataflow::ResultsCursor;
 
 impl<'tcx> BodyTranslator<'_, 'tcx> {
-    pub(crate) fn translate_statement(&mut self, statement: &'_ Statement<'tcx>, loc: Location) {
+    pub(crate) fn translate_statement(
+        &mut self,
+        not_final_borrows: &mut ResultsCursor<'_, 'tcx, NotFinalPlaces<'tcx>>,
+        statement: &'_ Statement<'tcx>,
+        loc: Location,
+    ) {
         let mut resolved_during = self.resolver.as_mut().map(|r| r.resolved_locals_during(loc));
 
         use StatementKind::*;
         match statement.kind {
             Assign(box (ref pl, ref rv)) => {
-                self.translate_assign(statement.source_info, pl, rv, loc);
+                if !rv.ty(self.body, self.tcx).is_unit() {
+                    self.translate_assign(not_final_borrows, statement.source_info, pl, rv, loc);
+                };
 
                 // if the lhs local becomes resolved during the assignment,
                 // we cannot resolve it afterwards.
-                if let Some(resolved_during) = &mut resolved_during && !pl.is_indirect() {
+                if let Some(resolved_during) = &mut resolved_during
+                    && !pl.is_indirect()
+                {
                     resolved_during.remove(pl.local);
                 }
             }
@@ -45,11 +56,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Deinit(_) => unreachable!("Deinit unsupported"),
             PlaceMention(_) => {}
-            ConstEvalCounter => {}
-            // No assembly!
-            // LlvmInlineAsm(_) => self
-            //     .ctx
-            //     .crash_and_error(statement.source_info.span, "inline assembly is not supported"),
+            ConstEvalCounter => {} // No assembly!
+                                   // LlvmInlineAsm(_) => self
+                                   //     .ctx
+                                   //     .crash_and_error(statement.source_info.span, "inline assembly is not supported"),
         }
 
         if let Some(resolved_during) = resolved_during {
@@ -59,35 +69,40 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
     fn translate_assign(
         &mut self,
+        not_final_borrows: &mut ResultsCursor<'_, 'tcx, NotFinalPlaces<'tcx>>,
         si: SourceInfo,
         place: &'_ Place<'tcx>,
         rvalue: &'_ Rvalue<'tcx>,
         loc: Location,
     ) {
-        let rval: Expr<'tcx> = match rvalue {
+        let _ty = rvalue.ty(self.body, self.tcx);
+        let span = si.span;
+        let rval: RValue<'tcx> = match rvalue {
             Rvalue::Use(op) => match op {
-                Move(_pl) | Copy(_pl) => self.translate_operand(op),
+                Move(_pl) | Copy(_pl) => RValue::Operand(self.translate_operand(op)),
                 Constant(box c) => {
-                    if ghost_closure_id(self.tcx, c.literal.ty()).is_some() {
+                    if snapshot_closure_id(self.tcx, c.const_.ty()).is_some() {
                         return;
                     };
-                    crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
+                    RValue::Operand(self.translate_operand(op))
                 }
             },
             Rvalue::Ref(_, ss, pl) => match ss {
-                Shared | Shallow => {
+                Shared | Fake(..) => {
                     if self.erased_locals.contains(pl.local) {
                         return;
                     }
 
-                    Expr::Copy(self.translate_place(self.compute_ref_place(*pl, loc)))
+                    let op = Operand::Copy(self.translate_place(self.compute_ref_place(*pl, loc)));
+                    RValue::Operand(op)
                 }
                 Mut { .. } => {
                     if self.erased_locals.contains(pl.local) {
                         return;
                     }
 
-                    self.emit_borrow(place, pl);
+                    let is_final = NotFinalPlaces::is_final_at(not_final_borrows, pl, loc);
+                    self.emit_borrow(place, pl, is_final, span);
                     return;
                 }
             },
@@ -96,28 +111,20 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 self.ctx.crash_and_error(si.span, "bitwise operations are currently unsupported")
             }
             Rvalue::BinaryOp(op, box (l, r)) | Rvalue::CheckedBinaryOp(op, box (l, r)) => {
-                let exp = Expr::BinOp(
-                    *op,
-                    l.ty(self.body, self.tcx),
-                    Box::new(self.translate_operand(l)),
-                    Box::new(self.translate_operand(r)),
-                );
-                Expr::Span(si.span, Box::new(exp))
+                RValue::BinOp(*op, self.translate_operand(l), self.translate_operand(r))
             }
-            Rvalue::UnaryOp(op, v) => {
-                Expr::UnaryOp(*op, v.ty(self.body, self.tcx), Box::new(self.translate_operand(v)))
-            }
+            Rvalue::UnaryOp(op, v) => RValue::UnaryOp(*op, self.translate_operand(v)),
             Rvalue::Aggregate(box kind, ops) => {
                 use rustc_middle::mir::AggregateKind::*;
                 let fields = ops.iter().map(|op| self.translate_operand(op)).collect();
 
                 match kind {
-                    Tuple => Expr::Tuple(fields),
+                    Tuple => RValue::Tuple(fields),
                     Adt(adt, varix, subst, _, _) => {
                         // self.ctx.translate(*adt);
                         let variant = self.tcx.adt_def(*adt).variant(*varix).def_id;
 
-                        Expr::Constructor(variant, subst, fields)
+                        RValue::Constructor(variant, subst, fields)
                     }
                     Closure(def_id, subst) => {
                         if util::is_invariant(self.tcx, *def_id)
@@ -139,38 +146,49 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         } else if util::is_spec(self.tcx, *def_id) {
                             return;
                         } else {
-                            Expr::Constructor(*def_id, subst, fields)
+                            RValue::Constructor(*def_id, subst, fields)
                         }
                     }
-                    Array(_) => Expr::Array(fields),
+                    Array(_) => RValue::Array(fields),
                     _ => self.ctx.crash_and_error(
                         si.span,
                         &format!("the rvalue {:?} is not currently supported", kind),
                     ),
                 }
             }
-            Rvalue::Len(pl) => Expr::Len(Box::new(Expr::Copy(self.translate_place(*pl)))),
-            Rvalue::Cast(CastKind::IntToInt | CastKind::PtrToPtr, op, ty) => {
-                let op_ty = op.ty(self.body, self.tcx);
-                Expr::Cast(Box::new(self.translate_operand(op)), op_ty, *ty)
+            Rvalue::Len(pl) => {
+                let e = Operand::Copy(self.translate_place(*pl));
+                RValue::Len(e)
             }
-            Rvalue::Repeat(op, len) => Expr::Repeat(
-                Box::new(self.translate_operand(op)),
-                Box::new(crate::constant::from_ty_const(self.ctx, *len, self.param_env(), si.span)),
+            Rvalue::Cast(CastKind::IntToInt | CastKind::PtrToPtr, op, cast_ty) => {
+                let op_ty = op.ty(self.body, self.tcx);
+                RValue::Cast(self.translate_operand(op), op_ty, *cast_ty)
+            }
+            Rvalue::Repeat(op, len) => RValue::Repeat(
+                self.translate_operand(op),
+                Operand::Constant(crate::constant::from_ty_const(
+                    self.ctx,
+                    *len,
+                    self.param_env(),
+                    si.span,
+                )),
             ),
-            Rvalue::Cast(CastKind::Pointer(PointerCast::Unsize), op, ty) => {
-                if let Some(t) = ty.builtin_deref(true) && t.ty.is_slice() {
+
+            Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize), op, ty) => {
+                if let Some(t) = ty.builtin_deref(true)
+                    && t.is_slice()
+                {
                     // treat &[T; N] to &[T] casts as normal assignments
-                    self.translate_operand(op)
+                    RValue::Operand(self.translate_operand(op))
                 } else {
                     // TODO: Since we don't do anything with casts into `dyn` objects, just ignore them
                     return;
                 }
             }
             Rvalue::Cast(
-                CastKind::Pointer(_)
-                | CastKind::PointerExposeAddress
-                | CastKind::PointerFromExposedAddress
+                CastKind::PointerCoercion(_)
+                | CastKind::PointerExposeProvenance
+                | CastKind::PointerWithExposedProvenance
                 | CastKind::DynStar
                 | CastKind::IntToFloat
                 | CastKind::FloatToInt
@@ -201,7 +219,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 self.emit_resolve(*place);
             }
 
-            self.emit_assignment(place, RValue::Expr(rval));
+            self.emit_assignment(place, rval, span);
 
             // Check if the local is a zombie:
             // if lhs local is dead after the assignment, emit resolve
@@ -209,7 +227,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 self.emit_resolve(*place);
             }
         } else {
-            self.emit_assignment(place, RValue::Expr(rval));
+            self.emit_assignment(place, rval, span);
         }
     }
 

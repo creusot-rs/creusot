@@ -26,7 +26,7 @@ fn max(a: usize, b: usize) -> usize {
 /// *   $m[0,\,w]=0$
 /// *   $m[i,\,w]=m[i-1,\,w]$ if $w_i > w\,\!$ (the new item is more than the current weight limit)
 /// *   $m[i,\,w]=\max(m[i-1,\,w],\,m[i-1,w-w_i]+v_i)$ if $w_i \leqslant w$.
-#[ghost]
+#[logic]
 #[variant(i)]
 #[requires(0 <= i && i <= items.len())]
 #[requires(0 <= w)]

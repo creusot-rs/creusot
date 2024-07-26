@@ -3,7 +3,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::{logic::Int, *};
 
-#[ghost]
+#[logic]
 fn sqr(x: Int) -> Int {
     x * x
 }
@@ -13,7 +13,7 @@ fn is_square(y: Int) -> bool {
     pearlite! { exists<z: Int> y == sqr(z) }
 }
 
-#[ghost]
+#[logic]
 #[variant(x)]
 fn sum_of_odd(x: Int) -> Int {
     if x <= 0 {
@@ -23,7 +23,7 @@ fn sum_of_odd(x: Int) -> Int {
     }
 }
 
-#[ghost]
+#[logic]
 #[requires(x >= 0)]
 #[ensures(sum_of_odd(x) == sqr(x))]
 #[variant(x)]

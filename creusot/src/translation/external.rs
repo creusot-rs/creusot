@@ -1,6 +1,6 @@
 use crate::{
     ctx::*,
-    error::{CrErr, CreusotResult},
+    error::{CreusotResult, InternalError},
     translation::{pearlite::Term, specification::ContractClauses, traits},
 };
 use indexmap::IndexSet;
@@ -9,8 +9,7 @@ use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
     thir::{self, visit::Visitor, Expr, ExprKind, Thir},
     ty::{
-        subst::{GenericArgKind, InternalSubsts, SubstsRef},
-        Clause, EarlyBinder, Predicate, TyCtxt, TyKind,
+        Clause, EarlyBinder, GenericArgKind, GenericArgs, GenericArgsRef, Predicate, TyCtxt, TyKind,
     },
 };
 use rustc_span::Symbol;
@@ -19,7 +18,7 @@ use rustc_span::Symbol;
 pub(crate) struct ExternSpec<'tcx> {
     // The contract we are attaching
     pub contract: ContractClauses,
-    pub subst: SubstsRef<'tcx>,
+    pub subst: GenericArgsRef<'tcx>,
     pub arg_subst: Vec<(Symbol, Term<'tcx>)>,
     // Additional predicates we must verify to call this function
     pub additional_predicates: Vec<Predicate<'tcx>>,
@@ -29,9 +28,9 @@ impl<'tcx> ExternSpec<'tcx> {
     pub(crate) fn predicates_for(
         &self,
         tcx: TyCtxt<'tcx>,
-        sub: SubstsRef<'tcx>,
+        sub: GenericArgsRef<'tcx>,
     ) -> Vec<Predicate<'tcx>> {
-        EarlyBinder::bind(self.additional_predicates.clone()).subst(tcx, sub)
+        EarlyBinder::bind(self.additional_predicates.clone()).instantiate(tcx, sub)
     }
 }
 
@@ -41,7 +40,8 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     def_id: LocalDefId,
 ) -> CreusotResult<(DefId, ExternSpec<'tcx>)> {
     // Handle error gracefully
-    let (thir, expr) = ctx.tcx.thir_body(def_id).map_err(|_| CrErr)?;
+    let (thir, expr) =
+        ctx.tcx.thir_body(def_id).map_err(|_| InternalError("Cannot fetch THIR body"))?;
     let thir = thir.borrow();
 
     let mut visit = ExtractExternItems::new(&thir);
@@ -67,18 +67,29 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         (id, subst)
     };
 
-    let mut inner_subst = InternalSubsts::identity_for_item(ctx.tcx, id).to_vec();
-    let outer_subst = InternalSubsts::identity_for_item(ctx.tcx, def_id.to_def_id());
+    let mut inner_subst = GenericArgs::identity_for_item(ctx.tcx, id).to_vec();
+    let outer_subst = GenericArgs::identity_for_item(ctx.tcx, def_id.to_def_id());
 
+    // FIXME(xavier): Handle this better.
+    // "Host effects" are related to the wip effects feature of Rust. For the moment let's just ignore them.
+    let has_host_effect = ctx.generics_of(id).host_effect_index.is_some();
+    if has_host_effect {
+        inner_subst.pop();
+    }
+    // FIXME(xavier): I don't remember the original reason for introducing this...
     let extra_parameters = inner_subst.len() - outer_subst.len();
 
     // Move Self_ to the front of the list like rustc does for real trait impls (not expressible in surface rust).
     // This only matters when we also have lifetime parameters.
     let self_pos = outer_subst.iter().position(|e| {
-        if
-        let GenericArgKind::Type(t) = e.unpack() &&
-        let TyKind::Param(t) = t.kind() &&
-        t.name.as_str().starts_with("Self") { true } else { false }
+        if let GenericArgKind::Type(t) = e.unpack()
+            && let TyKind::Param(t) = t.kind()
+            && t.name.as_str().starts_with("Self")
+        {
+            true
+        } else {
+            false
+        }
     });
 
     if let Some(ix) = self_pos {
@@ -125,9 +136,9 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         }
     }
 
-    errors.into_iter().for_each(|mut e| e.emit());
+    errors.into_iter().for_each(|e| e.emit());
 
-    let subst = ctx.mk_substs(&subst);
+    let subst = ctx.mk_args(&subst);
 
     let contract = crate::specification::contract_clauses_of(ctx, def_id.to_def_id()).unwrap();
 
@@ -151,7 +162,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 // We shouldn't need a full visitor... or an index set, there should be a single item per extern spec method.
 struct ExtractExternItems<'a, 'tcx> {
     thir: &'a Thir<'tcx>,
-    pub items: IndexSet<(DefId, SubstsRef<'tcx>)>,
+    pub items: IndexSet<(DefId, GenericArgsRef<'tcx>)>,
 }
 
 impl<'a, 'tcx> ExtractExternItems<'a, 'tcx> {
@@ -165,7 +176,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItems<'a, 'tcx> {
         self.thir
     }
 
-    fn visit_expr(&mut self, expr: &Expr<'tcx>) {
+    fn visit_expr(&mut self, expr: &'a Expr<'tcx>) {
         if let ExprKind::Call { ty, .. } = expr.kind {
             if let TyKind::FnDef(id, subst) = ty.kind() {
                 self.items.insert((*id, subst));

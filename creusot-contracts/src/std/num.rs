@@ -5,7 +5,7 @@ macro_rules! mach_int {
     ($t:ty, $ty_nm:expr, $zero:expr) => {
         impl ShallowModel for $t {
             type ShallowModelTy = Int;
-            #[ghost]
+            #[logic]
             #[open]
             #[trusted]
             #[creusot::builtins = concat!($ty_nm, ".to_int")]
@@ -16,7 +16,7 @@ macro_rules! mach_int {
 
         impl DeepModel for $t {
             type DeepModelTy = Int;
-            #[ghost]
+            #[logic]
             #[open]
             fn deep_model(self) -> Self::DeepModelTy {
                 pearlite! { self@ }
@@ -33,19 +33,19 @@ macro_rules! mach_int {
     };
 }
 
-mach_int!(u8, "prelude.UInt8", 0u8);
-mach_int!(u16, "prelude.UInt16", 0u16);
-mach_int!(u32, "prelude.UInt32", 0u32);
-mach_int!(u64, "prelude.UInt64", 0u64);
-mach_int!(u128, "prelude.UInt128", 0u128);
-mach_int!(usize, "prelude.UIntSize", 0usize);
+mach_int!(u8, "prelude.prelude.UInt8", 0u8);
+mach_int!(u16, "prelude.prelude.UInt16", 0u16);
+mach_int!(u32, "prelude.prelude.UInt32", 0u32);
+mach_int!(u64, "prelude.prelude.UInt64", 0u64);
+mach_int!(u128, "prelude.prelude.UInt128", 0u128);
+mach_int!(usize, "prelude.prelude.UIntSize", 0usize);
 
-mach_int!(i8, "prelude.Int8", 0i8);
-mach_int!(i16, "prelude.Int16", 0i16);
-mach_int!(i32, "prelude.Int32", 0i32);
-mach_int!(i64, "prelude.Int64", 0i64);
-mach_int!(i128, "prelude.Int128", 0i128);
-mach_int!(isize, "prelude.IntSize", 9isize);
+mach_int!(i8, "prelude.prelude.Int8", 0i8);
+mach_int!(i16, "prelude.prelude.Int16", 0i16);
+mach_int!(i32, "prelude.prelude.Int32", 0i32);
+mach_int!(i64, "prelude.prelude.Int64", 0i64);
+mach_int!(i128, "prelude.prelude.Int128", 0i128);
+mach_int!(isize, "prelude.prelude.IntSize", 9isize);
 
 /// Adds specifications for checked, wrapping, saturating, and overflowing operations on the given
 /// integer type
@@ -62,6 +62,7 @@ macro_rules! spec_type {
         extern_spec! {
             impl $type {
                 #[allow(dead_code)]
+                #[pure]
                 // Returns `None` iff the divisor is zero or the division overflows
                 #[ensures((result == None) == (rhs@ == 0 || (self@ == $type::MIN@ && rhs@ == -1)))]
                 // Else, returns the result of the division
@@ -69,6 +70,7 @@ macro_rules! spec_type {
                 fn checked_div(self, rhs: $type) -> Option<$type>;
 
                 #[allow(dead_code)]
+                #[pure]
                 // Panics if the divisor is zero
                 #[requires(rhs@ != 0)]
                 // Returns `self` if the division overflows
@@ -78,6 +80,7 @@ macro_rules! spec_type {
                 fn wrapping_div(self, rhs: $type) -> $type;
 
                 #[allow(dead_code)]
+                #[pure]
                 // Panics if the divisor is zero
                 #[requires(rhs@ != 0)]
                 // Returns `$type::MIN` if the division overflows
@@ -87,6 +90,7 @@ macro_rules! spec_type {
                 fn saturating_div(self, rhs: $type) -> $type;
 
                 #[allow(dead_code)]
+                #[pure]
                 // Panics if the divisor is zero
                 #[requires(rhs@ != 0)]
                 // Returns `self` if the division overflows
@@ -119,6 +123,7 @@ macro_rules! spec_op_common {
                 // `$type::MIN` and `$type::MAX`, or `None` if the result cannot be represented by
                 // `$type`
                 #[allow(dead_code)]
+                #[pure]
                 // Returns `None` iff the result is out of range
                 #[ensures(
                     (result == None)
@@ -130,6 +135,7 @@ macro_rules! spec_op_common {
 
                 // Wrapping: performs the operation on `Int` and converts back to `$type`
                 #[allow(dead_code)]
+                #[pure]
                 // Returns result converted to `$type`
                 #[ensures(
                     result@ == (self@ $op rhs@).rem_euclid(2.pow($type::BITS@)) + $type::MIN@
@@ -157,6 +163,7 @@ macro_rules! spec_op_common {
                 // Saturating: performs the operation on `Int` and clamps the result between
                 // `$type::MIN` and `$type::MAX`
                 #[allow(dead_code)]
+                #[pure]
                 // Returns the result if it is in range
                 #[ensures(
                     (self@ $op rhs@) >= $type::MIN@ && (self@ $op rhs@) <= $type::MAX@
@@ -170,6 +177,7 @@ macro_rules! spec_op_common {
                 // Overflowing: performs the operation on `Int` and converts back to `$type`, and
                 // indicates whether an overflow occurred
                 #[allow(dead_code)]
+                #[pure]
                 // Returns result converted to `$type`
                 #[ensures(
                     result.0@ == (self@ $op rhs@).rem_euclid(2.pow($type::BITS@)) + $type::MIN@
@@ -209,12 +217,14 @@ macro_rules! spec_abs_diff {
         extern_spec! {
             impl $unsigned {
                 #[allow(dead_code)]
+                #[pure]
                 #[ensures(result@ == self@.abs_diff(other@))]
                 fn abs_diff(self, other: $unsigned) -> $unsigned;
             }
 
             impl $signed {
                 #[allow(dead_code)]
+                #[pure]
                 #[ensures(result@ == self@.abs_diff(other@))]
                 fn abs_diff(self, other: $signed) -> $unsigned;
             }

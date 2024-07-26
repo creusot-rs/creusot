@@ -3,23 +3,23 @@ use crate::*;
 pub type SizedW<T> = Box<T>;
 
 pub trait MakeSized {
-    #[ghost]
+    #[logic]
     #[why3::attr = "inline:trivial"]
-    fn make_sized(self) -> SizedW<Self>;
+    fn make_sized(&self) -> SizedW<Self>;
 }
 
 impl<T: ?Sized> MakeSized for T {
     #[trusted]
-    #[ghost]
+    #[logic]
     #[open(self)]
-    #[ensures(*result == self)]
-    fn make_sized(self) -> SizedW<Self> {
+    #[ensures(*result == *self)]
+    fn make_sized(&self) -> SizedW<Self> {
         absurd
     }
 }
 
 #[allow(unconditional_recursion)]
-#[ghost]
+#[logic]
 #[open(self)]
 #[requires(false)]
 #[ensures(false)]
@@ -28,7 +28,7 @@ pub fn unreachable<T>() -> T {
     unreachable()
 }
 
-#[ghost]
+#[logic]
 #[open(self)]
 #[requires(op != None)]
 #[ensures(Some(result) == op)]

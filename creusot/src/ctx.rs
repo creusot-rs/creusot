@@ -5,13 +5,14 @@ use crate::{
     backend::{ty::ty_binding_group, ty_inv},
     callbacks,
     creusot_items::{self, CreusotItems},
-    error::{CrErr, CreusotResult, Error},
+    error::{CreusotResult, Error, InternalError},
     metadata::{BinaryMetadata, Metadata},
-    options::{Options, SpanMode},
+    options::Options,
     translation::{
         self,
         external::{extract_extern_specs_from_item, ExternSpec},
         fmir,
+        function::ClosureContract,
         pearlite::{self, Term},
         specification::{ContractClauses, Purity, PurityVisitor},
         traits::TraitImpl,
@@ -20,7 +21,7 @@ use crate::{
 };
 use indexmap::{IndexMap, IndexSet};
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
-use rustc_errors::{DiagnosticBuilder, DiagnosticId};
+use rustc_errors::{Diag, FatalAbort};
 use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LocalDefId},
@@ -30,14 +31,13 @@ use rustc_middle::{
     mir::{Body, Promoted},
     thir,
     ty::{
-        subst::InternalSubsts, Clause, GenericArg, ParamEnv, Predicate, SubstsRef, Ty, TyCtxt,
+        Clause, GenericArg, GenericArgs, GenericArgsRef, ParamEnv, Predicate, Ty, TyCtxt,
         Visibility,
     },
 };
-use rustc_span::{RealFileName, Span, Symbol, DUMMY_SP};
+use rustc_span::{Span, Symbol};
 use rustc_trait_selection::traits::SelectionContext;
 pub(crate) use util::{module_name, ItemType};
-use why3::exp::Exp;
 
 pub(crate) use crate::translated_item::*;
 
@@ -64,7 +64,7 @@ macro_rules! queryish {
     };
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct BodyId {
     pub def_id: LocalDefId,
     pub promoted: Option<Promoted>,
@@ -97,6 +97,7 @@ pub struct TranslationCtx<'tcx> {
     sig: HashMap<DefId, PreSignature<'tcx>>,
     bodies: HashMap<LocalDefId, BodyWithBorrowckFacts<'tcx>>,
     opacity: HashMap<DefId, Opacity>,
+    closure_contract: HashMap<DefId, ClosureContract<'tcx>>,
 }
 
 #[derive(Copy, Clone)]
@@ -139,6 +140,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             sig: Default::default(),
             bodies: Default::default(),
             opacity: Default::default(),
+            closure_contract: Default::default(),
         }
     }
 
@@ -147,6 +149,8 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     queryish!(trait_impl, &TraitImpl<'tcx>, translate_impl);
+
+    queryish!(closure_contract, &ClosureContract<'tcx>, build_closure_contract);
 
     pub(crate) fn fmir_body(&mut self, body_id: BodyId) -> Option<&fmir::Body<'tcx>> {
         if !self.fmir_body.contains_key(&body_id) {
@@ -164,7 +168,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         if util::has_body(self, def_id) {
             if !self.terms.contains_key(&def_id) {
                 let mut term = pearlite::pearlite(self, def_id.expect_local())
-                    .unwrap_or_else(|e| e.emit(self.tcx.sess));
+                    .unwrap_or_else(|e| e.emit(self.tcx));
                 pearlite::normalize(self.tcx, self.param_env(def_id), &mut term);
 
                 self.terms.insert(def_id, term);
@@ -209,7 +213,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         &self,
         def_id: DefId,
         ty: Ty<'tcx>,
-    ) -> Option<(DefId, SubstsRef<'tcx>)> {
+    ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
         let param_env = self.param_env(def_id);
         let ty = self.try_normalize_erasing_regions(param_env, ty).ok()?;
 
@@ -218,45 +222,27 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         } else {
             debug!("resolving type invariant of {ty:?} in {def_id:?}");
             let inv_did = self.get_diagnostic_item(Symbol::intern("creusot_invariant_internal"))?;
-            let substs = self.mk_substs(&[GenericArg::from(ty)]);
+            let substs = self.mk_args(&[GenericArg::from(ty)]);
             Some((inv_did, substs))
         }
     }
 
     pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {
-        self.tcx.sess.span_fatal_with_code(
-            span,
-            msg.to_string(),
-            DiagnosticId::Error(String::from("creusot")),
-        )
+        // TODO: try to add a code back in
+        self.tcx.dcx().span_fatal(span, msg.to_string())
     }
 
-    pub(crate) fn fatal_error(&self, span: Span, msg: &str) -> DiagnosticBuilder<'tcx, !> {
-        self.tcx.sess.struct_span_fatal_with_code(
-            span,
-            msg.to_string(),
-            DiagnosticId::Error(String::from("creusot")),
-        )
+    pub(crate) fn fatal_error(&self, span: Span, msg: &str) -> Diag<'tcx, FatalAbort> {
+        // TODO: try to add a code back in
+        self.tcx.dcx().struct_span_fatal(span, msg.to_string())
     }
 
-    pub(crate) fn error(&self, span: Span, msg: &str) {
-        self.tcx.sess.span_err_with_code(
-            span,
-            msg.to_string(),
-            DiagnosticId::Error(String::from("creusot")),
-        )
+    pub(crate) fn error(&self, span: Span, msg: &str) -> Diag<'tcx, rustc_errors::ErrorGuaranteed> {
+        self.tcx.dcx().struct_span_err(span, msg.to_string())
     }
 
-    pub(crate) fn warn(&self, span: Span, msg: &str) {
-        self.tcx.sess.span_warn_with_code(
-            span,
-            msg.to_string(),
-            DiagnosticId::Lint {
-                name: String::from("creusot"),
-                has_future_breakage: false,
-                is_force_warn: false,
-            },
-        )
+    pub(crate) fn warn(&self, span: Span, msg: &str) -> Diag<'tcx, ()> {
+        self.tcx.dcx().struct_span_warn(span, msg.to_string())
     }
 
     fn add_binding_group(&mut self, def_ids: &IndexSet<DefId>) {
@@ -310,7 +296,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     fn mk_opacity(&self, item: DefId) -> Opacity {
         if !matches!(
             util::item_type(self.tcx, item),
-            ItemType::Predicate | ItemType::Logic | ItemType::Ghost
+            ItemType::Predicate { .. } | ItemType::Logic { .. }
         ) {
             return Opacity(Visibility::Public);
         };
@@ -342,7 +328,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
     pub(crate) fn param_env(&self, def_id: DefId) -> ParamEnv<'tcx> {
         let (id, subst) = crate::specification::inherited_extern_spec(self, def_id)
-            .unwrap_or_else(|| (def_id, InternalSubsts::identity_for_item(self.tcx, def_id)));
+            .unwrap_or_else(|| (def_id, GenericArgs::identity_for_item(self.tcx, def_id)));
         if let Some(es) = self.extern_spec(id) {
             let mut additional_predicates = Vec::new();
 
@@ -379,77 +365,31 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                         .as_slice()),
                 ),
                 rustc_infer::traits::Reveal::UserFacing,
-                rustc_hir::Constness::NotConst,
             )
         } else {
             self.tcx.param_env(def_id)
         }
     }
 
-    pub(crate) fn span_attr(&self, span: Span) -> Option<why3::declaration::Attribute> {
-        let lo = self.sess.source_map().lookup_char_pos(span.lo());
-        let hi = self.sess.source_map().lookup_char_pos(span.hi());
-
-        let rustc_span::FileName::Real(path) = &lo.file.name else { return None };
-
-        // If we ask for relative paths and the paths comes from the standard library, then we prefer returning
-        // None, since the relative path of the stdlib is not stable.
-        let path = match (&self.opts.span_mode, path) {
-            (SpanMode::Relative, RealFileName::Remapped { .. }) => return None,
-            _ => path.local_path_if_available(),
-        };
-
-        let mut buf;
-        let path = if path.is_relative() {
-            buf = std::env::current_dir().unwrap();
-            buf.push(path);
-            buf.as_path()
-        } else {
-            path
-        };
-
-        let filename = match self.opts.span_mode {
-            SpanMode::Absolute => path.to_string_lossy().into_owned(),
-            SpanMode::Relative => {
-                // Why3 treats the spans as relative to the session not the source file??
-                format!("{}", self.opts.relative_to_output(&path).to_string_lossy())
-            }
-            _ => return None,
-        };
-
-        Some(why3::declaration::Attribute::Span(
-            filename,
-            lo.line,
-            lo.col_display,
-            hi.line,
-            hi.col_display,
-        ))
-    }
-
-    pub(crate) fn attach_span(&self, span: Span, exp: Exp) -> Exp {
-        if let Some(attr) = self.span_attr(span) {
-            Exp::Attr(attr, Box::new(exp))
-        } else {
-            exp
-        }
-    }
-
     pub(crate) fn check_purity(&mut self, def_id: LocalDefId) {
-        let (thir, expr) =
-            self.tcx.thir_body(def_id).unwrap_or_else(|_| Error::from(CrErr).emit(self.tcx.sess));
+        let (thir, expr) = self.tcx.thir_body(def_id).unwrap_or_else(|_| {
+            Error::from(InternalError("Cannot fetch THIR body")).emit(self.tcx)
+        });
         let thir = thir.borrow();
         if thir.exprs.is_empty() {
-            Error::new(self.tcx.def_span(def_id), "type checking failed").emit(self.tcx.sess);
+            Error::new(self.tcx.def_span(def_id), "type checking failed").emit(self.tcx);
         }
 
         let def_id = def_id.to_def_id();
-        let purity = Purity::of_def_id(self.tcx, def_id);
-        if purity == Purity::Program && crate::util::is_no_translate(self.tcx, def_id) {
+        let purity = Purity::of_def_id(self, def_id);
+        if matches!(purity, Purity::Program { .. })
+            && crate::util::is_no_translate(self.tcx, def_id)
+        {
             return;
         }
 
         thir::visit::walk_expr(
-            &mut PurityVisitor { tcx: self.tcx, thir: &thir, context: purity },
+            &mut PurityVisitor { ctx: self, thir: &thir, context: purity },
             &thir[expr],
         );
     }
@@ -468,7 +408,10 @@ pub(crate) fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
             let c = es.contract.clone();
 
             if ctx.extern_spec(i).is_some() {
-                ctx.crash_and_error(DUMMY_SP, &format!("duplicate extern specification for {i:?}"));
+                ctx.crash_and_error(
+                    ctx.def_span(def_id),
+                    &format!("duplicate extern specification for {i:?}"),
+                );
             };
 
             let _ = ctx.extern_specs.insert(i, es);
@@ -502,7 +445,7 @@ pub(crate) fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
             def_id,
             ExternSpec {
                 contract: ContractClauses::new(),
-                subst: InternalSubsts::identity_for_item(ctx.tcx, def_id),
+                subst: GenericArgs::identity_for_item(ctx.tcx, def_id),
                 arg_subst: Vec::new(),
                 additional_predicates,
             },

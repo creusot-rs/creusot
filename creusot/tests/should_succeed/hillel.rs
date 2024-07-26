@@ -14,8 +14,9 @@ use creusot_contracts::{
 #[ensures(forall<i: Int> 0 <= i && i < str@.len() ==> (^str)[i] == str[i])]
 #[ensures(forall<i: Int> str@.len() <= i && i < len@ ==> (^str)[i] == pad)]
 fn right_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
-    let old_str = gh! { str };
+    let old_str = snapshot! { str };
 
+    #[invariant(^str == ^*old_str)]
     #[invariant(old_str@.len() <= str@.len())]
     #[invariant(old_str@.len() < len@ ==> str@.len() <= len@)]
     #[invariant(str@.len() > len@ ==> str@.len() == old_str@.len())]
@@ -31,18 +32,19 @@ fn right_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
 #[ensures(forall<i: Int> 0 <= i && i < ((^str)@.len() - str@.len()) ==> (^str)[i] == pad)]
 #[ensures(forall<i: Int> 0 <= i && i < str@.len() ==> (^str)[i + ((^str)@.len() - str@.len())] == str[i])]
 fn left_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
-    let old_str = gh! { str };
-    let mut c: Ghost<usize> = gh! { 0usize };
+    let old_str = snapshot! { str };
+    let mut c: Snapshot<Int> = snapshot! { 0 };
 
+    #[invariant(^str == ^*old_str)]
     #[invariant(old_str@.len() <= str@.len())]
     #[invariant(old_str@.len() < len@ ==> str@.len() <= len@)]
     #[invariant(str@.len() > len@ ==> str@.len() == old_str@.len())]
-    #[invariant(c@ == str@.len() - old_str@.len())]
-    #[invariant(forall<i: Int> c@ <= i && i < str@.len() ==> str[i] == old_str[i - c@])]
-    #[invariant(forall<i: Int> 0 <= i && i < c@ ==> str[i] == pad)]
+    #[invariant(*c == str@.len() - old_str@.len())]
+    #[invariant(forall<i: Int> *c <= i && i < str@.len() ==> str[i] == old_str[i - *c])]
+    #[invariant(forall<i: Int> 0 <= i && i < *c ==> str[i] == pad)]
     while str.len() < len {
         str.insert(0, pad);
-        c = gh! { 1usize + *c };
+        c = snapshot! { 1 + *c };
     }
 }
 
@@ -67,7 +69,7 @@ fn is_subset<T>(sub: Seq<T>, sup: Seq<T>) -> bool {
     }
 }
 
-#[ghost]
+#[logic]
 #[ensures(is_subset(s, s.push(elem)))]
 fn subset_push<T>(s: Seq<T>, elem: T) {}
 
@@ -77,9 +79,9 @@ fn subset_push<T>(s: Seq<T>, elem: T) {}
 #[ensures(is_subset((^vec).deep_model(), vec.deep_model().push(elem.deep_model())))]
 #[ensures(contains((^vec).deep_model(), elem.deep_model()))]
 fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
-    gh! { subset_push::<T::DeepModelTy> };
+    snapshot! { subset_push::<T::DeepModelTy> };
     proof_assert! { is_subset(vec.deep_model(), vec.deep_model().push(elem.deep_model())) };
-    let ghost_vec = gh! { *vec };
+    let ghost_vec = snapshot! { vec };
 
     #[invariant(forall<j: Int> 0 <= j && j < produced.len() ==> produced[j].deep_model() != elem.deep_model())]
     for e in vec.iter() {
@@ -90,6 +92,7 @@ fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
         }
     }
 
+    proof_assert!(^vec == ^*ghost_vec);
     proof_assert! { is_unique(vec.deep_model().push(elem.deep_model())) };
     vec.push(elem);
 }
@@ -99,7 +102,7 @@ fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
 #[ensures(is_subset(str.deep_model(), result.deep_model()))]
 fn unique<T: Eq + DeepModel + Copy>(str: &[T]) -> Vec<T> {
     let mut unique = Vec::new();
-    let mut sub_str: Ghost<Seq<T>> = gh! { Seq::EMPTY };
+    let mut sub_str: Snapshot<Seq<T>> = snapshot! { Seq::EMPTY };
 
     #[invariant(is_unique(unique.deep_model()))]
     #[invariant(is_subset(unique.deep_model(), str.deep_model()))]
@@ -107,7 +110,7 @@ fn unique<T: Eq + DeepModel + Copy>(str: &[T]) -> Vec<T> {
     for i in 0..str.len() {
         let elem: T = str[i];
         insert_unique(&mut unique, elem);
-        sub_str = gh! { sub_str.push(elem) };
+        sub_str = snapshot! { sub_str.push(elem) };
     }
 
     proof_assert! { is_subset(str.deep_model().subsequence(0, str@.len()), unique.deep_model()) }
@@ -115,7 +118,7 @@ fn unique<T: Eq + DeepModel + Copy>(str: &[T]) -> Vec<T> {
     unique
 }
 
-#[ghost]
+#[logic]
 #[variant(to - from)]
 #[requires(0 <= from && from <= to && to <= seq.len())]
 #[ensures(result >= 0)]
@@ -127,7 +130,7 @@ fn sum_range(seq: Seq<u32>, from: Int, to: Int) -> Int {
     }
 }
 
-#[ghost]
+#[logic]
 #[variant(i - from)]
 #[requires(0 <= from && from <= i && i <= to && to <= seq.len())]
 #[ensures(sum_range(seq, from, to) == sum_range(seq, from, i) + sum_range(seq, i, to))]
@@ -137,7 +140,7 @@ fn sum_range_split(seq: Seq<u32>, from: Int, to: Int, i: Int) {
     }
 }
 
-#[ghost]
+#[logic]
 #[requires(0 <= i && i <= seq.len())]
 #[ensures(0 <= result && result <= sum_range(seq, 0 , seq.len()))]
 #[ensures(0 == i || i == seq.len() ==> result == sum_range(seq, 0, seq.len()))]

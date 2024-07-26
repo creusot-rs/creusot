@@ -1,0 +1,42 @@
+
+module C02_Omg
+  type t
+  
+  let%span s020 = "../02.rs" 11 17 11 18
+  
+  let%span s021 = "../02.rs" 10 10 10 24
+  
+  let%span span2 = "../02.rs" 7 16 7 20
+  
+  let%span span3 = "../02.rs" 6 14 6 28
+  
+  predicate invariant'1 (self : t)
+  
+  predicate inv'1 (_x : t)
+  
+  axiom inv'1 : forall x : t . inv'1 x = true
+  
+  predicate invariant'0 (self : t)
+  
+  predicate inv'0 (_x : t)
+  
+  axiom inv'0 : forall x : t . inv'0 x = true
+  
+  use prelude.prelude.Intrinsic
+  
+  predicate resolve'0 (self : t)
+  
+  use prelude.prelude.Borrow
+  
+  let rec is_true'0 (self:t) (return'  (ret:bool))= {[@expl:precondition] [%#span2] inv'1 self}
+    any [ return' (result:bool)-> {[%#span3] result = true} (! return' {result}) ] 
+  
+  let rec omg (a:t) (return'  (ret:bool))= {[%#s020] inv'0 a}
+    (! bb0
+    [ bb0 = s0 [ s0 = is_true'0 {a} (fun (_ret':bool) ->  [ &_0 <- _ret' ] s1) | s1 = bb1 ] 
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'0 a} s1 | s1 = -{resolve'0 a}- s2 | s2 = bb2 ] 
+    | bb2 = return' {_0} ]
+    ) [ & _0 : bool = any_l () | & a : t = a ] 
+    [ return' (result:bool)-> {[@expl:postcondition] [%#s021] result = true} (! return' {result}) ]
+    
+end

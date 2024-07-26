@@ -44,6 +44,10 @@ jobs:
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     - name: Build
       run: cargo build
+    - name: dummy creusot setup
+      run: |
+        mkdir -p ~/.config/creusot
+        cp ci/creusot-config-dummy.toml ~/.config/creusot/Config.toml
     - name: Run tests
       run: cargo test
   why3:
@@ -55,47 +59,50 @@ jobs:
     - name: Fetch target branch
       if: github.base_ref
       run: git fetch --no-tags --prune --depth=1 origin +refs/heads/${{github.base_ref}}:refs/remotes/origin/${{github.base_ref}}
-    - name: Install CVC4
-      run: sudo apt-get install -y cvc4=1.8-2
-    - name: Install CVC5
-      run: |
-        wget https://github.com/cvc5/cvc5/releases/download/cvc5-1.0.5/cvc5-Linux
-        sudo cp cvc5-Linux /usr/local/bin/cvc5
-        sudo chmod +x /usr/local/bin/cvc5
-    - name: Install Z3
-      run: |
-        wget https://github.com/Z3Prover/z3/releases/download/z3-4.12.1/z3-4.12.1-x64-glibc-2.35.zip
-        unzip z3-4.12.1-x64-glibc-2.35.zip
-        sudo cp -rn z3-4.12.1-x64-glibc-2.35/bin /usr/local
-        sudo cp -rn z3-4.12.1-x64-glibc-2.35/include /usr/local
-        sudo chmod +x /usr/local/bin/z3
     - uses: actions/cache@v2
       with:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
           target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-    - uses: dawidd6/action-download-artifact@v2
+        key: ${{ runner.os }}-cargo-creusot-${{ hashFiles('**/Cargo.lock') }}
+    - uses: actions/cache@v2
+      id: cache-creusot-setup
       with:
-        workflow: why3.yml
-        name: why3
-        path: /home/runner/work/creusot/why3
-    - run: |
-        chmod -R +x ~/work/creusot/why3/bin
-        chmod -R +x ~/work/creusot/why3/lib/why3/why3server
-
-        mv ~/work/creusot/why3/alt-ergo /usr/local/bin/alt-ergo
-        chmod +x /usr/local/bin/alt-ergo
-        echo $(/usr/local/bin/alt-ergo --version)
-
-        ~/work/creusot/why3/bin/why3 config detect
-        cat ~/.why3.conf
+        path: |
+          ~/.config/creusot
+          ~/.local/share/creusot
+        key: ${{ runner.os }}-cargo-creusot-setup-${{ hashFiles('creusot-deps.opam', 'creusot-setup/src/tools_versions_urls.rs', 'creusot-setup/src/config.rs') }}
+    - uses: actions/cache@v2
+      id: cache-opam
+      with:
+        path: |
+          /home/runner/work/creusot/creusot/_opam
+        key: ${{ runner.os }}-opam-${{ hashFiles('creusot-deps.opam') }}
+    - uses: ocaml/setup-ocaml@v2
+      if: steps.cache-opam.outputs.cache-hit != 'true'
+      with:
+        ocaml-compiler: 4.14.1
+    - name: install opam dependencies
+      if: steps.cache-opam.outputs.cache-hit != 'true'
+      run: |
+        opam switch
+        opam --cli=2.1 var --global in-creusot-ci=true
+        opam install .
+        mkdir /tmp/to-delete
+        opam info --list-files alt-ergo why3 > keep
+        sed -i 's/^.*\/_opam\///' keep
+        rsync -a -r --remove-source-files --exclude-from=keep _opam/ /tmp/to-delete
+    - name: setup opam PATH
+      run: |
+        echo /home/runner/work/creusot/creusot/_opam/bin >> $GITHUB_PATH
+    - name: run cargo creusot setup install
+      if: steps.cache-creusot-setup.outputs.cache-hit != 'true'
+      run: |
+        cargo run --bin cargo-creusot creusot setup install
+        echo -e "\n>> ~/.config/creusot/Config.toml:\n"
+        cat ~/.config/creusot/Config.toml
+        echo -e "\n>> ~/.config/creusot/why3.conf:\n"
+        cat ~/.config/creusot/why3.conf
     - run: cargo test --test why3 "" -- --replay=none --diff-from=origin/master
-      env:
-        WHY3_CONFIG: ${{ github.workspace }}/ci/why.conf
-        WHY3_PATH: ${{ github.workspace }}/../why3/bin/why3
     - run: cargo test --test why3 "" -- --skip-unstable
-      env:
-        WHY3_CONFIG: ${{ github.workspace }}/ci/why.conf
-        WHY3_PATH: ${{ github.workspace }}/../why3/bin/why3

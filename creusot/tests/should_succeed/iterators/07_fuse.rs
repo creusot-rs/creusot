@@ -12,7 +12,7 @@ impl<I: Iterator> Iterator for Fuse<I> {
     type Item = I::Item;
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             (self.iter == None || exists<it:&mut I> it.completed() && self.iter == Some(*it)) &&
@@ -21,7 +21,7 @@ impl<I: Iterator> Iterator for Fuse<I> {
     }
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn produces(self, prod: Seq<Self::Item>, other: Self) -> bool {
         match self.iter {
             None => prod == Seq::EMPTY && other.iter == self.iter,
@@ -51,8 +51,8 @@ impl<I: Iterator> Iterator for Fuse<I> {
 
     #[law]
     #[open]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self) {}
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
 
     #[law]
     #[open]

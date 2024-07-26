@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 #[open]
-#[ghost]
+#[logic]
 pub fn test_logic((x, _): (u32, u32)) -> u32 {
     x
 }
@@ -21,7 +21,7 @@ pub fn test_closure() {
     let _b = (cl2)((0, 4));
 }
 
-pub struct T(u32);
+pub struct T(pub u32);
 
 // #[ensures(result == x)]
 // pub fn test_struct_pat(T(x): T) {
