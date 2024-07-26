@@ -14,55 +14,105 @@ module C01Range_Range_Type
     | bad (start:isize) (end':isize)-> {C_Range start end' <> input} {false} any ]
     
   
-  function range_start (self : t_range) : isize =
+  function range_start [@inline:trivial] (self : t_range) : isize =
     match self with
       | C_Range a _ -> a
       end
   
-  function range_end (self : t_range) : isize =
+  function range_end [@inline:trivial] (self : t_range) : isize =
     match self with
       | C_Range _ a -> a
+      end
+end
+module CreusotContracts_Logic_Seq2_Seq_Type
+  use seq.Seq
+  
+  type t_seq 't =
+    | C_Seq (Seq.seq 't)
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_seq < 't > (input:t_seq 't) (ret  (field_0:Seq.seq 't))= any
+    [ good (field_0:Seq.seq 't)-> {C_Seq field_0 = input} (! ret {field_0})
+    | bad (field_0:Seq.seq 't)-> {C_Seq field_0 <> input} {false} any ]
+    
+  
+  function seq_0 [@inline:trivial] (self : t_seq 't) : Seq.seq 't =
+    match self with
+      | C_Seq a -> a
       end
 end
 module C01Range_Impl0_ProducesRefl_Impl
   let%span s01_range0 = "../01_range.rs" 43 14 43 45
   
-  let%span span1 = "../01_range.rs" 32 8 38 9
+  let%span span1 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  use C01Range_Range_Type as Range'0
+  let%span span2 = "../../../../../creusot-contracts/src/logic/seq2.rs" 72 15 72 19
   
-  use seq.Seq
+  let%span span3 = "../../../../../creusot-contracts/src/logic/seq2.rs" 71 14 71 25
+  
+  let%span span4 = "../../../../../creusot-contracts/src/logic/seq2.rs" 19 4 19 25
+  
+  let%span span5 = "../../../../../creusot-contracts/src/logic/seq2.rs" 23 14 23 36
+  
+  let%span span6 = "../../../../../creusot-contracts/src/logic/seq2.rs" 21 4 21 10
+  
+  let%span span7 = "../01_range.rs" 32 8 38 9
   
   use prelude.prelude.IntSize
   
-  use seq.Seq
+  use CreusotContracts_Logic_Seq2_Seq_Type as Seq'0
   
-  use C01Range_Range_Type as C01Range_Range_Type
+  predicate invariant'0 (self : Seq'0.t_seq isize) =
+    [%#span1] true
   
-  use prelude.prelude.IntSize
+  predicate inv'0 (_x : Seq'0.t_seq isize)
+  
+  axiom inv'0 : forall x : Seq'0.t_seq isize . inv'0 x = true
   
   use prelude.prelude.Int
   
   use seq.Seq
   
-  predicate produces'0 [#"../01_range.rs" 31 4 31 64] (self : Range'0.t_range) (visited : Seq.seq isize) (o : Range'0.t_range)
-    
-   =
-    [%#span1] C01Range_Range_Type.range_end self = C01Range_Range_Type.range_end o
-    /\ C01Range_Range_Type.range_start self <= C01Range_Range_Type.range_start o
-    /\ (Seq.length visited > 0  -> C01Range_Range_Type.range_start o <= C01Range_Range_Type.range_end o)
-    /\ Seq.length visited
-    = IntSize.to_int (C01Range_Range_Type.range_start o) - IntSize.to_int (C01Range_Range_Type.range_start self)
-    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> IntSize.to_int (Seq.get visited i) = IntSize.to_int (C01Range_Range_Type.range_start self) + i)
+  use CreusotContracts_Logic_Seq2_Seq_Type as CreusotContracts_Logic_Seq2_Seq_Type
+  
+  function len'0 (self : Seq'0.t_seq isize) : int
+  
+  axiom len'0_spec : forall self : Seq'0.t_seq isize . ([%#span2] inv'0 self)  -> ([%#span3] len'0 self >= 0)
+  
+  constant empty'0 : Seq'0.t_seq isize = [%#span4] ()
+  
+  function empty_len'0 (_1 : ()) : () =
+    [%#span6] ()
+  
+  axiom empty_len'0_spec : forall _1 : () . [%#span5] len'0 (empty'0 : Seq'0.t_seq isize) = 0
+  
+  use C01Range_Range_Type as Range'0
   
   use seq.Seq
+  
+  function index_logic'0 (self : Seq'0.t_seq isize) (x : int) : isize
+  
+  use prelude.prelude.IntSize
+  
+  use C01Range_Range_Type as C01Range_Range_Type
+  
+  predicate produces'0 [#"../01_range.rs" 31 4 31 64] (self : Range'0.t_range) (visited : Seq'0.t_seq isize) (o : Range'0.t_range)
+    
+   =
+    [%#span7] C01Range_Range_Type.range_end self = C01Range_Range_Type.range_end o
+    /\ C01Range_Range_Type.range_start self <= C01Range_Range_Type.range_start o
+    /\ (len'0 visited > 0  -> C01Range_Range_Type.range_start o <= C01Range_Range_Type.range_end o)
+    /\ len'0 visited
+    = IntSize.to_int (C01Range_Range_Type.range_start o) - IntSize.to_int (C01Range_Range_Type.range_start self)
+    /\ (forall i : int . 0 <= i /\ i < len'0 visited
+     -> IntSize.to_int (index_logic'0 visited i) = IntSize.to_int (C01Range_Range_Type.range_start self) + i)
   
   constant self  : Range'0.t_range
   
   function produces_refl [#"../01_range.rs" 44 4 44 26] (self : Range'0.t_range) : ()
   
-  goal vc_produces_refl : [%#s01_range0] produces'0 self (Seq.empty  : Seq.seq isize) self
+  goal vc_produces_refl : [%#s01_range0] produces'0 self (empty'0 : Seq'0.t_seq isize) self
 end
 module C01Range_Impl0_ProducesTrans_Impl
   let%span s01_range0 = "../01_range.rs" 48 15 48 32
@@ -71,13 +121,57 @@ module C01Range_Impl0_ProducesTrans_Impl
   
   let%span s01_range2 = "../01_range.rs" 50 14 50 42
   
-  let%span span3 = "../01_range.rs" 32 8 38 9
+  let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  
+  let%span span4 = "../../../../../creusot-contracts/src/logic/seq2.rs" 72 15 72 19
+  
+  let%span span5 = "../../../../../creusot-contracts/src/logic/seq2.rs" 71 14 71 25
+  
+  let%span span6 = "../../../../../creusot-contracts/src/logic/seq2.rs" 19 4 19 25
+  
+  let%span span7 = "../../../../../creusot-contracts/src/logic/seq2.rs" 23 14 23 36
+  
+  let%span span8 = "../../../../../creusot-contracts/src/logic/seq2.rs" 21 4 21 10
+  
+  let%span span9 = "../../../../../creusot-contracts/src/logic/seq2.rs" 107 18 107 22
+  
+  let%span span10 = "../../../../../creusot-contracts/src/logic/seq2.rs" 107 24 107 29
+  
+  let%span span11 = "../../../../../creusot-contracts/src/logic/seq2.rs" 104 14 104 54
+  
+  let%span span12 = "../../../../../creusot-contracts/src/logic/seq2.rs" 105 4 106 62
+  
+  let%span span13 = "../../../../../creusot-contracts/src/logic/seq2.rs" 107 4 107 44
+  
+  let%span span14 = "../01_range.rs" 32 8 38 9
   
   use prelude.prelude.IntSize
+  
+  use CreusotContracts_Logic_Seq2_Seq_Type as Seq'0
+  
+  predicate invariant'0 (self : Seq'0.t_seq isize) =
+    [%#span3] true
+  
+  predicate inv'0 (_x : Seq'0.t_seq isize)
+  
+  axiom inv'0 : forall x : Seq'0.t_seq isize . inv'0 x = true
   
   use prelude.prelude.Int
   
   use seq.Seq
+  
+  use CreusotContracts_Logic_Seq2_Seq_Type as CreusotContracts_Logic_Seq2_Seq_Type
+  
+  function len'0 (self : Seq'0.t_seq isize) : int
+  
+  axiom len'0_spec : forall self : Seq'0.t_seq isize . ([%#span4] inv'0 self)  -> ([%#span5] len'0 self >= 0)
+  
+  constant empty'0 : Seq'0.t_seq isize = [%#span6] ()
+  
+  function empty_len'0 (_1 : ()) : () =
+    [%#span8] ()
+  
+  axiom empty_len'0_spec : forall _1 : () . [%#span7] len'0 (empty'0 : Seq'0.t_seq isize) = 0
   
   use C01Range_Range_Type as Range'0
   
@@ -85,38 +179,48 @@ module C01Range_Impl0_ProducesTrans_Impl
   
   use seq.Seq
   
-  use prelude.prelude.IntSize
+  function index_logic'0 (self : Seq'0.t_seq isize) (x : int) : isize
   
-  use seq.Seq
+  function concat'0 (self : Seq'0.t_seq isize) (other : Seq'0.t_seq isize) : Seq'0.t_seq isize
+  
+  axiom concat'0_spec : forall self : Seq'0.t_seq isize, other : Seq'0.t_seq isize . ([%#span9] inv'0 self)
+   -> ([%#span10] inv'0 other)
+   -> ([%#span13] inv'0 (concat'0 self other))
+  && ([%#span12] forall i : int . 0 <= i /\ i < len'0 (concat'0 self other)
+   -> index_logic'0 (concat'0 self other) i
+  = (if i < len'0 self then index_logic'0 self i else index_logic'0 other (i - len'0 self)))
+  && ([%#span11] len'0 (concat'0 self other) = len'0 self + len'0 other)
+  
+  use prelude.prelude.IntSize
   
   use C01Range_Range_Type as C01Range_Range_Type
   
-  predicate produces'0 [#"../01_range.rs" 31 4 31 64] (self : Range'0.t_range) (visited : Seq.seq isize) (o : Range'0.t_range)
+  predicate produces'0 [#"../01_range.rs" 31 4 31 64] (self : Range'0.t_range) (visited : Seq'0.t_seq isize) (o : Range'0.t_range)
     
    =
-    [%#span3] C01Range_Range_Type.range_end self = C01Range_Range_Type.range_end o
+    [%#span14] C01Range_Range_Type.range_end self = C01Range_Range_Type.range_end o
     /\ C01Range_Range_Type.range_start self <= C01Range_Range_Type.range_start o
-    /\ (Seq.length visited > 0  -> C01Range_Range_Type.range_start o <= C01Range_Range_Type.range_end o)
-    /\ Seq.length visited
+    /\ (len'0 visited > 0  -> C01Range_Range_Type.range_start o <= C01Range_Range_Type.range_end o)
+    /\ len'0 visited
     = IntSize.to_int (C01Range_Range_Type.range_start o) - IntSize.to_int (C01Range_Range_Type.range_start self)
-    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> IntSize.to_int (Seq.get visited i) = IntSize.to_int (C01Range_Range_Type.range_start self) + i)
+    /\ (forall i : int . 0 <= i /\ i < len'0 visited
+     -> IntSize.to_int (index_logic'0 visited i) = IntSize.to_int (C01Range_Range_Type.range_start self) + i)
   
   constant a  : Range'0.t_range
   
-  constant ab  : Seq.seq isize
+  constant ab  : Seq'0.t_seq isize
   
   constant b  : Range'0.t_range
   
-  constant bc  : Seq.seq isize
+  constant bc  : Seq'0.t_seq isize
   
   constant c  : Range'0.t_range
   
-  function produces_trans [#"../01_range.rs" 51 4 51 90] (a : Range'0.t_range) (ab : Seq.seq isize) (b : Range'0.t_range) (bc : Seq.seq isize) (c : Range'0.t_range) : ()
+  function produces_trans [#"../01_range.rs" 51 4 51 90] (a : Range'0.t_range) (ab : Seq'0.t_seq isize) (b : Range'0.t_range) (bc : Seq'0.t_seq isize) (c : Range'0.t_range) : ()
     
   
   goal vc_produces_trans : ([%#s01_range1] produces'0 b bc c)
-   -> ([%#s01_range0] produces'0 a ab b)  -> ([%#s01_range2] produces'0 a (Seq.(++) ab bc) c)
+   -> ([%#s01_range0] produces'0 a ab b)  -> ([%#s01_range2] produces'0 a (concat'0 ab bc) c)
 end
 module Core_Option_Option_Type
   type t_option 't =
@@ -139,48 +243,103 @@ module C01Range_Impl0_Next
   
   let%span s01_range1 = "../01_range.rs" 53 14 56 5
   
-  let%span span2 = "../01_range.rs" 32 8 38 9
+  let%span span2 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span3 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span3 = "../../../../../creusot-contracts/src/logic/seq2.rs" 72 15 72 19
   
-  let%span span4 = "../01_range.rs" 25 12 25 52
+  let%span span4 = "../../../../../creusot-contracts/src/logic/seq2.rs" 71 14 71 25
   
-  use seq.Seq
+  let%span span5 = "../../../../../creusot-contracts/src/logic/seq2.rs" 19 4 19 25
+  
+  let%span span6 = "../../../../../creusot-contracts/src/logic/seq2.rs" 23 14 23 36
+  
+  let%span span7 = "../../../../../creusot-contracts/src/logic/seq2.rs" 21 4 21 10
+  
+  let%span span8 = "../01_range.rs" 32 8 38 9
+  
+  let%span span9 = "../../../../../creusot-contracts/src/logic/seq2.rs" 58 21 58 22
+  
+  let%span span10 = "../../../../../creusot-contracts/src/logic/seq2.rs" 56 14 56 31
+  
+  let%span span11 = "../../../../../creusot-contracts/src/logic/seq2.rs" 57 14 57 28
+  
+  let%span span12 = "../../../../../creusot-contracts/src/logic/seq2.rs" 58 4 58 34
+  
+  let%span span13 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  
+  let%span span14 = "../01_range.rs" 25 12 25 52
   
   use prelude.prelude.IntSize
   
-  use seq.Seq
+  use CreusotContracts_Logic_Seq2_Seq_Type as Seq'0
   
-  use C01Range_Range_Type as C01Range_Range_Type
+  predicate invariant'1 (self : Seq'0.t_seq isize) =
+    [%#span2] true
   
-  use prelude.prelude.IntSize
+  predicate inv'1 (_x : Seq'0.t_seq isize)
+  
+  axiom inv'1 : forall x : Seq'0.t_seq isize . inv'1 x = true
+  
+  predicate invariant'0 (self : isize) =
+    [%#span2] true
+  
+  predicate inv'0 (_x : isize)
+  
+  axiom inv'0 : forall x : isize . inv'0 x = true
   
   use prelude.prelude.Int
   
   use seq.Seq
   
-  use C01Range_Range_Type as Range'0
+  use CreusotContracts_Logic_Seq2_Seq_Type as CreusotContracts_Logic_Seq2_Seq_Type
   
-  predicate produces'0 [#"../01_range.rs" 31 4 31 64] (self : Range'0.t_range) (visited : Seq.seq isize) (o : Range'0.t_range)
-    
-   =
-    [%#span2] C01Range_Range_Type.range_end self = C01Range_Range_Type.range_end o
-    /\ C01Range_Range_Type.range_start self <= C01Range_Range_Type.range_start o
-    /\ (Seq.length visited > 0  -> C01Range_Range_Type.range_start o <= C01Range_Range_Type.range_end o)
-    /\ Seq.length visited
-    = IntSize.to_int (C01Range_Range_Type.range_start o) - IntSize.to_int (C01Range_Range_Type.range_start self)
-    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> IntSize.to_int (Seq.get visited i) = IntSize.to_int (C01Range_Range_Type.range_start self) + i)
+  function len'0 (self : Seq'0.t_seq isize) : int
+  
+  axiom len'0_spec : forall self : Seq'0.t_seq isize . ([%#span3] inv'1 self)  -> ([%#span4] len'0 self >= 0)
+  
+  constant empty'0 : Seq'0.t_seq isize = [%#span5] ()
+  
+  function empty_len'0 (_1 : ()) : () =
+    [%#span7] ()
+  
+  axiom empty_len'0_spec : forall _1 : () . [%#span6] len'0 (empty'0 : Seq'0.t_seq isize) = 0
   
   use seq.Seq
+  
+  function index_logic'0 (self : Seq'0.t_seq isize) (x : int) : isize
+  
+  use prelude.prelude.IntSize
+  
+  use C01Range_Range_Type as C01Range_Range_Type
+  
+  use C01Range_Range_Type as Range'0
+  
+  predicate produces'0 [#"../01_range.rs" 31 4 31 64] (self : Range'0.t_range) (visited : Seq'0.t_seq isize) (o : Range'0.t_range)
+    
+   =
+    [%#span8] C01Range_Range_Type.range_end self = C01Range_Range_Type.range_end o
+    /\ C01Range_Range_Type.range_start self <= C01Range_Range_Type.range_start o
+    /\ (len'0 visited > 0  -> C01Range_Range_Type.range_start o <= C01Range_Range_Type.range_end o)
+    /\ len'0 visited
+    = IntSize.to_int (C01Range_Range_Type.range_start o) - IntSize.to_int (C01Range_Range_Type.range_start self)
+    /\ (forall i : int . 0 <= i /\ i < len'0 visited
+     -> IntSize.to_int (index_logic'0 visited i) = IntSize.to_int (C01Range_Range_Type.range_start self) + i)
+  
+  use seq.Seq
+  
+  function singleton'0 (v : isize) : Seq'0.t_seq isize
+  
+  axiom singleton'0_spec : forall v : isize . ([%#span9] inv'0 v)
+   -> ([%#span12] inv'1 (singleton'0 v))
+  && ([%#span11] index_logic'0 (singleton'0 v) 0 = v) && ([%#span10] len'0 (singleton'0 v) = 1)
   
   use prelude.prelude.Borrow
   
   predicate resolve'0 (self : borrowed (Range'0.t_range)) =
-    [%#span3]  ^ self =  * self
+    [%#span13]  ^ self =  * self
   
   predicate completed'0 [#"../01_range.rs" 23 4 23 35] (self : borrowed (Range'0.t_range)) =
-    [%#span4] resolve'0 self /\ C01Range_Range_Type.range_start ( * self) >= C01Range_Range_Type.range_end ( * self)
+    [%#span14] resolve'0 self /\ C01Range_Range_Type.range_start ( * self) >= C01Range_Range_Type.range_end ( * self)
   
   use prelude.prelude.Intrinsic
   
@@ -219,7 +378,7 @@ module C01Range_Impl0_Next
     
     [ return' (result:Option'0.t_option isize)-> {[@expl:postcondition] [%#s01_range1] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 ( * self) (singleton'0 v) ( ^ self)
         end}
       (! return' {result}) ]
     
@@ -238,6 +397,9 @@ module C01Range_Impl1_IntoIter
     ) [ & _0 : Range'0.t_range = any_l () | & self : Range'0.t_range = self ] 
     [ return' (result:Range'0.t_range)-> {[@expl:postcondition] [%#s01_range0] result = self} (! return' {result}) ]
     
+end
+module CreusotContracts_Snapshot_Snapshot_Type
+  type t_snapshot 't
 end
 module C01Range_SumRange
   let%span s01_range0 = "../01_range.rs" 78 16 78 17
@@ -264,117 +426,196 @@ module C01Range_SumRange
   
   let%span s01_range11 = "../01_range.rs" 76 10 76 21
   
-  let%span span12 = "../01_range.rs" 32 8 38 9
+  let%span span12 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span13 = "../01_range.rs" 48 15 48 32
+  let%span span13 = "../../../../../creusot-contracts/src/logic/seq2.rs" 72 15 72 19
   
-  let%span span14 = "../01_range.rs" 49 15 49 32
+  let%span span14 = "../../../../../creusot-contracts/src/logic/seq2.rs" 71 14 71 25
   
-  let%span span15 = "../01_range.rs" 50 14 50 42
+  let%span span15 = "../../../../../creusot-contracts/src/logic/seq2.rs" 107 18 107 22
   
-  let%span span16 = "../01_range.rs" 46 4 46 10
+  let%span span16 = "../../../../../creusot-contracts/src/logic/seq2.rs" 107 24 107 29
   
-  let%span span17 = "../01_range.rs" 43 14 43 45
+  let%span span17 = "../../../../../creusot-contracts/src/logic/seq2.rs" 104 14 104 54
   
-  let%span span18 = "../01_range.rs" 41 4 41 10
+  let%span span18 = "../../../../../creusot-contracts/src/logic/seq2.rs" 105 4 106 62
   
-  let%span span19 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span19 = "../../../../../creusot-contracts/src/logic/seq2.rs" 107 4 107 44
   
-  let%span span20 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span20 = "../01_range.rs" 32 8 38 9
   
-  let%span span21 = "../01_range.rs" 25 12 25 52
+  let%span span21 = "../01_range.rs" 48 15 48 32
   
-  let%span span22 = "../01_range.rs" 53 14 56 5
+  let%span span22 = "../01_range.rs" 49 15 49 32
   
-  let%span span23 = "../01_range.rs" 69 14 69 28
+  let%span span23 = "../01_range.rs" 50 14 50 42
+  
+  let%span span24 = "../01_range.rs" 46 4 46 10
+  
+  let%span span25 = "../../../../../creusot-contracts/src/logic/seq2.rs" 19 4 19 25
+  
+  let%span span26 = "../01_range.rs" 43 14 43 45
+  
+  let%span span27 = "../01_range.rs" 41 4 41 10
+  
+  let%span span28 = "../../../../../creusot-contracts/src/logic/seq2.rs" 23 14 23 36
+  
+  let%span span29 = "../../../../../creusot-contracts/src/logic/seq2.rs" 21 4 21 10
+  
+  let%span span30 = "../../../../../creusot-contracts/src/logic/seq2.rs" 58 21 58 22
+  
+  let%span span31 = "../../../../../creusot-contracts/src/logic/seq2.rs" 56 14 56 31
+  
+  let%span span32 = "../../../../../creusot-contracts/src/logic/seq2.rs" 57 14 57 28
+  
+  let%span span33 = "../../../../../creusot-contracts/src/logic/seq2.rs" 58 4 58 34
+  
+  let%span span34 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  
+  let%span span35 = "../01_range.rs" 25 12 25 52
+  
+  let%span span36 = "../01_range.rs" 53 14 56 5
+  
+  let%span span37 = "../../../../../creusot-contracts/src/snapshot.rs" 45 15 45 16
+  
+  let%span span38 = "../../../../../creusot-contracts/src/snapshot.rs" 43 14 43 28
+  
+  let%span span39 = "../01_range.rs" 69 14 69 28
   
   use prelude.prelude.IntSize
   
-  use prelude.prelude.Int
+  predicate invariant'2 (self : isize) =
+    [%#span12] true
   
-  use seq.Seq
+  predicate inv'2 (_x : isize)
+  
+  axiom inv'2 : forall x : isize . inv'2 x = true
+  
+  use CreusotContracts_Logic_Seq2_Seq_Type as Seq'0
+  
+  predicate invariant'1 (self : Seq'0.t_seq isize) =
+    [%#span12] true
+  
+  predicate inv'1 (_x : Seq'0.t_seq isize)
+  
+  axiom inv'1 : forall x : Seq'0.t_seq isize . inv'1 x = true
+  
+  use prelude.prelude.Int
   
   use C01Range_Range_Type as Range'0
   
   use seq.Seq
   
+  use CreusotContracts_Logic_Seq2_Seq_Type as CreusotContracts_Logic_Seq2_Seq_Type
+  
   use seq.Seq
+  
+  function index_logic'0 (self : Seq'0.t_seq isize) (x : int) : isize
+  
+  use seq.Seq
+  
+  function len'0 (self : Seq'0.t_seq isize) : int
+  
+  axiom len'0_spec : forall self : Seq'0.t_seq isize . ([%#span13] inv'1 self)  -> ([%#span14] len'0 self >= 0)
+  
+  function concat'0 (self : Seq'0.t_seq isize) (other : Seq'0.t_seq isize) : Seq'0.t_seq isize
+  
+  axiom concat'0_spec : forall self : Seq'0.t_seq isize, other : Seq'0.t_seq isize . ([%#span15] inv'1 self)
+   -> ([%#span16] inv'1 other)
+   -> ([%#span19] inv'1 (concat'0 self other))
+  && ([%#span18] forall i : int . 0 <= i /\ i < len'0 (concat'0 self other)
+   -> index_logic'0 (concat'0 self other) i
+  = (if i < len'0 self then index_logic'0 self i else index_logic'0 other (i - len'0 self)))
+  && ([%#span17] len'0 (concat'0 self other) = len'0 self + len'0 other)
   
   use prelude.prelude.IntSize
   
-  use seq.Seq
-  
   use C01Range_Range_Type as C01Range_Range_Type
   
-  predicate produces'0 [#"../01_range.rs" 31 4 31 64] (self : Range'0.t_range) (visited : Seq.seq isize) (o : Range'0.t_range)
+  predicate produces'0 [#"../01_range.rs" 31 4 31 64] (self : Range'0.t_range) (visited : Seq'0.t_seq isize) (o : Range'0.t_range)
     
    =
-    [%#span12] C01Range_Range_Type.range_end self = C01Range_Range_Type.range_end o
+    [%#span20] C01Range_Range_Type.range_end self = C01Range_Range_Type.range_end o
     /\ C01Range_Range_Type.range_start self <= C01Range_Range_Type.range_start o
-    /\ (Seq.length visited > 0  -> C01Range_Range_Type.range_start o <= C01Range_Range_Type.range_end o)
-    /\ Seq.length visited
+    /\ (len'0 visited > 0  -> C01Range_Range_Type.range_start o <= C01Range_Range_Type.range_end o)
+    /\ len'0 visited
     = IntSize.to_int (C01Range_Range_Type.range_start o) - IntSize.to_int (C01Range_Range_Type.range_start self)
-    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> IntSize.to_int (Seq.get visited i) = IntSize.to_int (C01Range_Range_Type.range_start self) + i)
+    /\ (forall i : int . 0 <= i /\ i < len'0 visited
+     -> IntSize.to_int (index_logic'0 visited i) = IntSize.to_int (C01Range_Range_Type.range_start self) + i)
   
-  function produces_trans'0 [#"../01_range.rs" 51 4 51 90] (a : Range'0.t_range) (ab : Seq.seq isize) (b : Range'0.t_range) (bc : Seq.seq isize) (c : Range'0.t_range) : ()
+  function produces_trans'0 [#"../01_range.rs" 51 4 51 90] (a : Range'0.t_range) (ab : Seq'0.t_seq isize) (b : Range'0.t_range) (bc : Seq'0.t_seq isize) (c : Range'0.t_range) : ()
     
    =
-    [%#span16] ()
+    [%#span24] ()
   
-  axiom produces_trans'0_spec : forall a : Range'0.t_range, ab : Seq.seq isize, b : Range'0.t_range, bc : Seq.seq isize, c : Range'0.t_range . ([%#span13] produces'0 a ab b)
-   -> ([%#span14] produces'0 b bc c)  -> ([%#span15] produces'0 a (Seq.(++) ab bc) c)
+  axiom produces_trans'0_spec : forall a : Range'0.t_range, ab : Seq'0.t_seq isize, b : Range'0.t_range, bc : Seq'0.t_seq isize, c : Range'0.t_range . ([%#span21] produces'0 a ab b)
+   -> ([%#span22] produces'0 b bc c)  -> ([%#span23] produces'0 a (concat'0 ab bc) c)
   
-  use seq.Seq
+  constant empty'0 : Seq'0.t_seq isize = [%#span25] ()
   
   function produces_refl'0 [#"../01_range.rs" 44 4 44 26] (self : Range'0.t_range) : () =
-    [%#span18] ()
+    [%#span27] ()
   
-  axiom produces_refl'0_spec : forall self : Range'0.t_range . [%#span17] produces'0 self (Seq.empty  : Seq.seq isize) self
+  axiom produces_refl'0_spec : forall self : Range'0.t_range . [%#span26] produces'0 self (empty'0 : Seq'0.t_seq isize) self
   
   predicate invariant'0 (self : Range'0.t_range) =
-    [%#span19] true
+    [%#span12] true
   
   predicate inv'0 (_x : Range'0.t_range)
   
   axiom inv'0 : forall x : Range'0.t_range . inv'0 x = true
   
-  use prelude.prelude.Snapshot
+  function empty_len'0 (_1 : ()) : () =
+    [%#span29] ()
+  
+  axiom empty_len'0_spec : forall _1 : () . [%#span28] len'0 (empty'0 : Seq'0.t_seq isize) = 0
+  
+  use CreusotContracts_Snapshot_Snapshot_Type as Snapshot'0
   
   use prelude.prelude.Intrinsic
   
   use seq.Seq
+  
+  function singleton'0 (v : isize) : Seq'0.t_seq isize
+  
+  axiom singleton'0_spec : forall v : isize . ([%#span30] inv'2 v)
+   -> ([%#span33] inv'1 (singleton'0 v))
+  && ([%#span32] index_logic'0 (singleton'0 v) 0 = v) && ([%#span31] len'0 (singleton'0 v) = 1)
   
   use Core_Option_Option_Type as Option'0
   
   use prelude.prelude.Borrow
   
   predicate resolve'0 (self : borrowed (Range'0.t_range)) =
-    [%#span20]  ^ self =  * self
+    [%#span34]  ^ self =  * self
   
   predicate completed'0 [#"../01_range.rs" 23 4 23 35] (self : borrowed (Range'0.t_range)) =
-    [%#span21] resolve'0 self /\ C01Range_Range_Type.range_start ( * self) >= C01Range_Range_Type.range_end ( * self)
+    [%#span35] resolve'0 self /\ C01Range_Range_Type.range_start ( * self) >= C01Range_Range_Type.range_end ( * self)
   
   let rec next'0 (self:borrowed (Range'0.t_range)) (return'  (ret:Option'0.t_option isize))= any
-    [ return' (result:Option'0.t_option isize)-> {[%#span22] match result with
+    [ return' (result:Option'0.t_option isize)-> {[%#span36] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 ( * self) (singleton'0 v) ( ^ self)
         end}
       (! return' {result}) ]
     
   
-  use prelude.prelude.Snapshot
+  function deref'1 (self : Snapshot'0.t_snapshot (Seq'0.t_seq isize)) : Seq'0.t_seq isize
   
-  use prelude.prelude.Snapshot
+  function inner'0 (self : Snapshot'0.t_snapshot (Seq'0.t_seq isize)) : Seq'0.t_seq isize
   
-  use prelude.prelude.Snapshot
+  function deref'0 (self : Snapshot'0.t_snapshot (Range'0.t_range)) : Range'0.t_range
   
-  use prelude.prelude.Snapshot
+  function new'1 (x : Seq'0.t_seq isize) : Snapshot'0.t_snapshot (Seq'0.t_seq isize)
   
-  use prelude.prelude.Snapshot
+  axiom new'1_spec : forall x : Seq'0.t_seq isize . ([%#span37] inv'1 x)  -> ([%#span38] deref'1 (new'1 x) = x)
+  
+  function new'0 (x : Range'0.t_range) : Snapshot'0.t_snapshot (Range'0.t_range)
+  
+  axiom new'0_spec : forall x : Range'0.t_range . ([%#span37] inv'0 x)  -> ([%#span38] deref'0 (new'0 x) = x)
   
   let rec into_iter'0 (self:Range'0.t_range) (return'  (ret:Range'0.t_range))= any
-    [ return' (result:Range'0.t_range)-> {[%#span23] result = self} (! return' {result}) ]
+    [ return' (result:Range'0.t_range)-> {[%#span39] result = self} (! return' {result}) ]
     
   
   let rec sum_range (n:isize) (return'  (ret:isize))= {[%#s01_range10] IntSize.to_int n >= 0}
@@ -385,12 +626,12 @@ module C01Range_SumRange
       | s2 = into_iter'0 {_6} (fun (_ret':Range'0.t_range) ->  [ &it <- _ret' ] s3)
       | s3 = bb1 ]
       
-    | bb1 = s0 [ s0 =  [ &iter_old <- [%#s01_range2] Snapshot.new it ] s1 | s1 = bb2 ] 
-    | bb2 = s0 [ s0 =  [ &produced <- [%#s01_range3] Snapshot.new (Seq.empty  : Seq.seq isize) ] s1 | s1 = bb3 ] 
+    | bb1 = s0 [ s0 =  [ &iter_old <- [%#s01_range2] new'0 it ] s1 | s1 = bb2 ] 
+    | bb2 = s0 [ s0 =  [ &produced <- [%#s01_range3] new'1 (empty'0 : Seq'0.t_seq isize) ] s1 | s1 = bb3 ] 
     | bb3 = bb4
     | bb4 = bb4
-      [ bb4 = {[@expl:loop invariant] [%#s01_range6] IntSize.to_int i = Seq.length (Snapshot.inner produced) /\ i <= n}
-        {[@expl:loop invariant] [%#s01_range5] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) it}
+      [ bb4 = {[@expl:loop invariant] [%#s01_range6] IntSize.to_int i = len'0 (deref'1 produced) /\ i <= n}
+        {[@expl:loop invariant] [%#s01_range5] produces'0 (deref'0 iter_old) (inner'0 produced) it}
         {[@expl:loop invariant] [%#s01_range4] inv'0 it}
         (! s0) [ s0 = bb5 ] 
         [ bb5 = s0
@@ -403,12 +644,12 @@ module C01Range_SumRange
         | bb8 = bb10
         | bb10 = s0
           [ s0 = Option'0.some <isize> {_17} (fun (r0'0:isize) ->  [ &x <- r0'0 ] s1)
-          | s1 =  [ &_21 <- [%#s01_range7] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton x)) ] s2
+          | s1 =  [ &_21 <- [%#s01_range7] new'1 (concat'0 (deref'1 produced) (singleton'0 x)) ] s2
           | s2 = bb11 ]
           
         | bb11 = s0
           [ s0 =  [ &produced <- _21 ] 
-            (any [ any_ (_any:Snapshot.snap_ty (Seq.seq isize))-> (!  [ &_21 <- _any ] s1) ] )
+            (any [ any_ (_any:Snapshot'0.t_snapshot (Seq'0.t_seq isize))-> (!  [ &_21 <- _any ] s1) ] )
           | s1 = IntSize.add {i} {[%#s01_range8] (1 : isize)} (fun (_ret':isize) ->  [ &i <- _ret' ] s2)
           | s2 = bb4 ]
            ]
@@ -422,12 +663,12 @@ module C01Range_SumRange
     | & i : isize = any_l ()
     | & it : Range'0.t_range = any_l ()
     | & _6 : Range'0.t_range = any_l ()
-    | & iter_old : Snapshot.snap_ty (Range'0.t_range) = any_l ()
-    | & produced : Snapshot.snap_ty (Seq.seq isize) = any_l ()
+    | & iter_old : Snapshot'0.t_snapshot (Range'0.t_range) = any_l ()
+    | & produced : Snapshot'0.t_snapshot (Seq'0.t_seq isize) = any_l ()
     | & _17 : Option'0.t_option isize = any_l ()
     | & _18 : borrowed (Range'0.t_range) = any_l ()
     | & x : isize = any_l ()
-    | & _21 : Snapshot.snap_ty (Seq.seq isize) = any_l () ]
+    | & _21 : Snapshot'0.t_snapshot (Seq'0.t_seq isize) = any_l () ]
      [ return' (result:isize)-> {[@expl:postcondition] [%#s01_range11] result = n} (! return' {result}) ] 
 end
 module C01Range_Impl0
@@ -439,13 +680,44 @@ module C01Range_Impl0
   
   let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span4 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span4 = "../../../../../creusot-contracts/src/logic/seq2.rs" 72 15 72 19
   
-  let%span span5 = "../01_range.rs" 25 12 25 52
+  let%span span5 = "../../../../../creusot-contracts/src/logic/seq2.rs" 71 14 71 25
   
-  let%span span6 = "../01_range.rs" 32 8 38 9
+  let%span span6 = "../../../../../creusot-contracts/src/logic/seq2.rs" 58 21 58 22
+  
+  let%span span7 = "../../../../../creusot-contracts/src/logic/seq2.rs" 56 14 56 31
+  
+  let%span span8 = "../../../../../creusot-contracts/src/logic/seq2.rs" 57 14 57 28
+  
+  let%span span9 = "../../../../../creusot-contracts/src/logic/seq2.rs" 58 4 58 34
+  
+  let%span span10 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  
+  let%span span11 = "../01_range.rs" 25 12 25 52
+  
+  let%span span12 = "../../../../../creusot-contracts/src/logic/seq2.rs" 107 18 107 22
+  
+  let%span span13 = "../../../../../creusot-contracts/src/logic/seq2.rs" 107 24 107 29
+  
+  let%span span14 = "../../../../../creusot-contracts/src/logic/seq2.rs" 104 14 104 54
+  
+  let%span span15 = "../../../../../creusot-contracts/src/logic/seq2.rs" 105 4 106 62
+  
+  let%span span16 = "../../../../../creusot-contracts/src/logic/seq2.rs" 107 4 107 44
+  
+  let%span span17 = "../../../../../creusot-contracts/src/logic/seq2.rs" 19 4 19 25
+  
+  let%span span18 = "../01_range.rs" 32 8 38 9
   
   use prelude.prelude.IntSize
+  
+  predicate invariant'4 (self : isize) =
+    [%#span3] true
+  
+  predicate inv'4 (_x : isize)
+  
+  axiom inv'4 : forall x : isize . inv'4 x = true
   
   use Core_Option_Option_Type as Option'0
   
@@ -467,14 +739,14 @@ module C01Range_Impl0
   
   axiom inv'2 : forall x : borrowed (Range'0.t_range) . inv'2 x = true
   
-  use seq.Seq
+  use CreusotContracts_Logic_Seq2_Seq_Type as Seq'0
   
-  predicate invariant'1 (self : Seq.seq isize) =
+  predicate invariant'1 (self : Seq'0.t_seq isize) =
     [%#span3] true
   
-  predicate inv'1 (_x : Seq.seq isize)
+  predicate inv'1 (_x : Seq'0.t_seq isize)
   
-  axiom inv'1 : forall x : Seq.seq isize . inv'1 x = true
+  axiom inv'1 : forall x : Seq'0.t_seq isize . inv'1 x = true
   
   predicate invariant'0 (self : Range'0.t_range) =
     [%#span3] true
@@ -483,58 +755,82 @@ module C01Range_Impl0
   
   axiom inv'0 : forall x : Range'0.t_range . inv'0 x = true
   
+  use prelude.prelude.Int
+  
   use seq.Seq
   
-  use prelude.prelude.Int
+  use seq.Seq
+  
+  use CreusotContracts_Logic_Seq2_Seq_Type as CreusotContracts_Logic_Seq2_Seq_Type
+  
+  function index_logic'0 (self : Seq'0.t_seq isize) (x : int) : isize
+  
+  use seq.Seq
+  
+  function len'0 (self : Seq'0.t_seq isize) : int
+  
+  axiom len'0_spec : forall self : Seq'0.t_seq isize . ([%#span4] inv'1 self)  -> ([%#span5] len'0 self >= 0)
+  
+  function singleton'0 (v : isize) : Seq'0.t_seq isize
+  
+  axiom singleton'0_spec : forall v : isize . ([%#span6] inv'4 v)
+   -> ([%#span9] inv'1 (singleton'0 v))
+  && ([%#span8] index_logic'0 (singleton'0 v) 0 = v) && ([%#span7] len'0 (singleton'0 v) = 1)
   
   use C01Range_Range_Type as C01Range_Range_Type
   
   predicate resolve'0 (self : borrowed (Range'0.t_range)) =
-    [%#span4]  ^ self =  * self
+    [%#span10]  ^ self =  * self
   
   predicate completed'0 [#"../01_range.rs" 23 4 23 35] (self : borrowed (Range'0.t_range)) =
-    [%#span5] resolve'0 self /\ C01Range_Range_Type.range_start ( * self) >= C01Range_Range_Type.range_end ( * self)
+    [%#span11] resolve'0 self /\ C01Range_Range_Type.range_start ( * self) >= C01Range_Range_Type.range_end ( * self)
   
   use seq.Seq
   
-  use seq.Seq
+  function concat'0 (self : Seq'0.t_seq isize) (other : Seq'0.t_seq isize) : Seq'0.t_seq isize
   
-  use seq.Seq
+  axiom concat'0_spec : forall self : Seq'0.t_seq isize, other : Seq'0.t_seq isize . ([%#span12] inv'1 self)
+   -> ([%#span13] inv'1 other)
+   -> ([%#span16] inv'1 (concat'0 self other))
+  && ([%#span15] forall i : int . 0 <= i /\ i < len'0 (concat'0 self other)
+   -> index_logic'0 (concat'0 self other) i
+  = (if i < len'0 self then index_logic'0 self i else index_logic'0 other (i - len'0 self)))
+  && ([%#span14] len'0 (concat'0 self other) = len'0 self + len'0 other)
+  
+  constant empty'0 : Seq'0.t_seq isize = [%#span17] ()
   
   use prelude.prelude.IntSize
   
-  use seq.Seq
-  
-  predicate produces'0 [#"../01_range.rs" 31 4 31 64] (self : Range'0.t_range) (visited : Seq.seq isize) (o : Range'0.t_range)
+  predicate produces'0 [#"../01_range.rs" 31 4 31 64] (self : Range'0.t_range) (visited : Seq'0.t_seq isize) (o : Range'0.t_range)
     
    =
-    [%#span6] C01Range_Range_Type.range_end self = C01Range_Range_Type.range_end o
+    [%#span18] C01Range_Range_Type.range_end self = C01Range_Range_Type.range_end o
     /\ C01Range_Range_Type.range_start self <= C01Range_Range_Type.range_start o
-    /\ (Seq.length visited > 0  -> C01Range_Range_Type.range_start o <= C01Range_Range_Type.range_end o)
-    /\ Seq.length visited
+    /\ (len'0 visited > 0  -> C01Range_Range_Type.range_start o <= C01Range_Range_Type.range_end o)
+    /\ len'0 visited
     = IntSize.to_int (C01Range_Range_Type.range_start o) - IntSize.to_int (C01Range_Range_Type.range_start self)
-    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> IntSize.to_int (Seq.get visited i) = IntSize.to_int (C01Range_Range_Type.range_start self) + i)
+    /\ (forall i : int . 0 <= i /\ i < len'0 visited
+     -> IntSize.to_int (index_logic'0 visited i) = IntSize.to_int (C01Range_Range_Type.range_start self) + i)
   
-  use seq.Seq
+  constant empty'0 : Seq'0.t_seq isize = [%#span17] ()
   
   goal produces_refl_refn : [%#s01_range0] forall self : Range'0.t_range . inv'0 self
-   -> (forall result : () . produces'0 self (Seq.empty  : Seq.seq isize) self
-   -> produces'0 self (Seq.empty  : Seq.seq isize) self)
+   -> (forall result : () . produces'0 self (empty'0 : Seq'0.t_seq isize) self
+   -> produces'0 self (empty'1 : Seq'0.t_seq isize) self)
   
-  goal produces_trans_refn : [%#s01_range1] forall a : Range'0.t_range . forall ab : Seq.seq isize . forall b : Range'0.t_range . forall bc : Seq.seq isize . forall c : Range'0.t_range . inv'0 c
+  goal produces_trans_refn : [%#s01_range1] forall a : Range'0.t_range . forall ab : Seq'0.t_seq isize . forall b : Range'0.t_range . forall bc : Seq'0.t_seq isize . forall c : Range'0.t_range . inv'0 c
   /\ inv'1 bc /\ inv'0 b /\ inv'1 ab /\ inv'0 a /\ produces'0 b bc c /\ produces'0 a ab b
    -> produces'0 b bc c
-  /\ produces'0 a ab b /\ (forall result : () . produces'0 a (Seq.(++) ab bc) c  -> produces'0 a (Seq.(++) ab bc) c)
+  /\ produces'0 a ab b /\ (forall result : () . produces'0 a (concat'0 ab bc) c  -> produces'0 a (concat'0 ab bc) c)
   
   goal next_refn : [%#s01_range2] forall self : borrowed (Range'0.t_range) . inv'2 self
    -> (forall result : Option'0.t_option isize . match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 ( * self) (singleton'0 v) ( ^ self)
     end
    -> inv'3 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 ( * self) (singleton'0 v) ( ^ self)
     end)
 end

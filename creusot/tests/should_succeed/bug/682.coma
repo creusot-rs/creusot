@@ -35,6 +35,9 @@ module C682_AddSome
     [ return' (result:())-> {[@expl:postcondition] [%#s6822]  ^ a >  * a} (! return' {result}) ]
     
 end
+module CreusotContracts_Snapshot_Snapshot_Type
+  type t_snapshot 't
+end
 module C682_Foo
   let%span s6820 = "../682.rs" 13 29 13 42
   
@@ -44,40 +47,55 @@ module C682_Foo
   
   let%span s6823 = "../682.rs" 11 10 11 17
   
-  let%span span4 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span5 = "" 0 0 0 0
+  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span6 = "../682.rs" 4 11 4 32
+  let%span span6 = "" 0 0 0 0
   
-  let%span span7 = "../682.rs" 5 10 5 17
+  let%span span7 = "../682.rs" 4 11 4 32
+  
+  let%span span8 = "../682.rs" 5 10 5 17
+  
+  let%span span9 = "../../../../../creusot-contracts/src/snapshot.rs" 45 15 45 16
+  
+  let%span span10 = "../../../../../creusot-contracts/src/snapshot.rs" 43 14 43 28
   
   use prelude.prelude.UInt64
   
-  use prelude.prelude.Snapshot
+  predicate invariant'0 (self : uint64) =
+    [%#span4] true
+  
+  predicate inv'0 (_x : uint64)
+  
+  axiom inv'0 : forall x : uint64 . inv'0 x = true
+  
+  use CreusotContracts_Snapshot_Snapshot_Type as Snapshot'0
   
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Snapshot
-  
   use prelude.prelude.Borrow
   
+  function deref'0 (self : Snapshot'0.t_snapshot uint64) : uint64
+  
   predicate resolve'0 (self : borrowed uint64) =
-    [%#span4]  ^ self =  * self
+    [%#span5]  ^ self =  * self
   
   use prelude.prelude.Int
   
-  constant max'0 : uint64 = [%#span5] (18446744073709551615 : uint64)
+  constant max'0 : uint64 = [%#span6] (18446744073709551615 : uint64)
   
-  let rec add_some'0 (a:borrowed uint64) (return'  (ret:()))= {[@expl:precondition] [%#span6]  * a
+  let rec add_some'0 (a:borrowed uint64) (return'  (ret:()))= {[@expl:precondition] [%#span7]  * a
     <= div (max'0 : uint64) (2 : uint64)}
-    any [ return' (result:())-> {[%#span7]  ^ a >  * a} (! return' {result}) ] 
+    any [ return' (result:())-> {[%#span8]  ^ a >  * a} (! return' {result}) ] 
   
-  use prelude.prelude.Snapshot
+  function new'0 (x : uint64) : Snapshot'0.t_snapshot uint64
+  
+  axiom new'0_spec : forall x : uint64 . ([%#span9] inv'0 x)  -> ([%#span10] deref'0 (new'0 x) = x)
   
   let rec foo (a:borrowed uint64) (return'  (ret:()))= {[%#s6822]  * a = (3 : uint64)}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &a_p <- [%#s6820] Snapshot.new ( * a) ] s1 | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 =  [ &a_p <- [%#s6820] new'0 ( * a) ] s1 | s1 = bb1 ] 
     | bb1 = s0
       [ s0 = Borrow.borrow_final <uint64> { * a} {Borrow.get_id a}
           (fun (_ret':borrowed uint64) ->  [ &_7 <- _ret' ]  [ &a <- { a with current = ( ^ _7) ; } ] s1)
@@ -85,12 +103,12 @@ module C682_Foo
       | s2 = bb2 ]
       
     | bb2 = s0
-      [ s0 = -{resolve'0 a}- s1 | s1 = {[@expl:assertion] [%#s6821]  * a > Snapshot.inner a_p} s2 | s2 = return' {_0} ]
+      [ s0 = -{resolve'0 a}- s1 | s1 = {[@expl:assertion] [%#s6821]  * a > deref'0 a_p} s2 | s2 = return' {_0} ]
        ]
     )
     [ & _0 : () = any_l ()
     | & a : borrowed uint64 = a
-    | & a_p : Snapshot.snap_ty uint64 = any_l ()
+    | & a_p : Snapshot'0.t_snapshot uint64 = any_l ()
     | & _6 : () = any_l ()
     | & _7 : borrowed uint64 = any_l () ]
      [ return' (result:())-> {[@expl:postcondition] [%#s6823]  ^ a >  * a} (! return' {result}) ] 

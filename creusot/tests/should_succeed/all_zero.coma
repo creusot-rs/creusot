@@ -33,6 +33,9 @@ module Core_Option_Option_Type
     | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
     
 end
+module CreusotContracts_Snapshot_Snapshot_Type
+  type t_snapshot 't
+end
 module AllZero_AllZero
   let%span sall_zero0 = "../all_zero.rs" 36 16 36 31
   
@@ -44,63 +47,78 @@ module AllZero_AllZero
   
   let%span sall_zero4 = "../all_zero.rs" 33 10 33 34
   
-  let%span span5 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span5 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span6 = "../all_zero.rs" 22 8 28 9
+  let%span span6 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span7 = "../all_zero.rs" 14 8 17 9
+  let%span span7 = "../all_zero.rs" 22 8 28 9
+  
+  let%span span8 = "../all_zero.rs" 14 8 17 9
+  
+  let%span span9 = "../../../../creusot-contracts/src/snapshot.rs" 45 15 45 16
+  
+  let%span span10 = "../../../../creusot-contracts/src/snapshot.rs" 43 14 43 28
   
   use AllZero_List_Type as List'0
   
   use prelude.prelude.Borrow
   
-  use prelude.prelude.Snapshot
+  predicate invariant'0 (self : borrowed (List'0.t_list)) =
+    [%#span5] true
+  
+  predicate inv'0 (_x : borrowed (List'0.t_list))
+  
+  axiom inv'0 : forall x : borrowed (List'0.t_list) . inv'0 x = true
+  
+  use CreusotContracts_Snapshot_Snapshot_Type as Snapshot'0
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'2 (self : borrowed (List'0.t_list)) =
-    [%#span5]  ^ self =  * self
+    [%#span6]  ^ self =  * self
   
   predicate resolve'1 (self : borrowed (List'0.t_list)) =
-    [%#span5]  ^ self =  * self
+    [%#span6]  ^ self =  * self
   
   use prelude.prelude.UInt32
   
   predicate resolve'0 (self : borrowed uint32) =
-    [%#span5]  ^ self =  * self
+    [%#span6]  ^ self =  * self
   
-  use prelude.prelude.Snapshot
+  function deref'0 (self : Snapshot'0.t_snapshot (borrowed (List'0.t_list))) : borrowed (List'0.t_list)
   
   use Core_Option_Option_Type as Option'0
   
   use prelude.prelude.Int
   
   function get'0 [#"../all_zero.rs" 21 4 21 40] (self : List'0.t_list) (ix : int) : Option'0.t_option uint32 =
-    [%#span6] match self with
+    [%#span7] match self with
       | List'0.C_Cons x ls -> if ix = 0 then Option'0.C_Some x else get'0 ls (ix - 1)
       | List'0.C_Nil -> Option'0.C_None
       end
   
   function len'0 [#"../all_zero.rs" 13 4 13 23] (self : List'0.t_list) : int =
-    [%#span7] match self with
+    [%#span8] match self with
       | List'0.C_Cons _ ls -> 1 + len'0 ls
       | List'0.C_Nil -> 0
       end
   
-  use prelude.prelude.Snapshot
+  function new'0 (x : borrowed (List'0.t_list)) : Snapshot'0.t_snapshot (borrowed (List'0.t_list))
+  
+  axiom new'0_spec : forall x : borrowed (List'0.t_list) . ([%#span9] inv'0 x)  -> ([%#span10] deref'0 (new'0 x) = x)
   
   let rec all_zero (l:borrowed (List'0.t_list)) (return'  (ret:()))= (! bb0
-    [ bb0 = s0 [ s0 =  [ &old_l <- [%#sall_zero0] Snapshot.new l ] s1 | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 =  [ &old_l <- [%#sall_zero0] new'0 l ] s1 | s1 = bb1 ] 
     | bb1 = s0
       [ s0 =  [ &loop_l <- l ] (any [ any_ (_any:borrowed (List'0.t_list))-> (!  [ &l <- _any ] s1) ] ) | s1 = bb2 ]
       
     | bb2 = bb2
       [ bb2 = {[@expl:loop invariant] [%#sall_zero1] len'0 ( ^ loop_l) = len'0 ( * loop_l)
-         -> len'0 ( ^ Snapshot.inner old_l) = len'0 ( * Snapshot.inner old_l)}
+         -> len'0 ( ^ deref'0 old_l) = len'0 ( * deref'0 old_l)}
         {[@expl:loop invariant] [%#sall_zero1] (forall i : int . 0 <= i /\ i < len'0 ( * loop_l)
          -> get'0 ( ^ loop_l) i = Option'0.C_Some (0 : uint32))
-         -> (forall i : int . 0 <= i /\ i < len'0 ( * Snapshot.inner old_l)
-         -> get'0 ( ^ Snapshot.inner old_l) i = Option'0.C_Some (0 : uint32))}
+         -> (forall i : int . 0 <= i /\ i < len'0 ( * deref'0 old_l)
+         -> get'0 ( ^ deref'0 old_l) i = Option'0.C_Some (0 : uint32))}
         (! s0) [ s0 = bb3 ] 
         [ bb3 = any
           [ br0 (a:uint32) (b:List'0.t_list)-> { * loop_l = List'0.C_Cons a b} (! bb4)
@@ -144,7 +162,7 @@ module AllZero_AllZero
     )
     [ & _0 : () = any_l ()
     | & l : borrowed (List'0.t_list) = l
-    | & old_l : Snapshot.snap_ty (borrowed (List'0.t_list)) = any_l ()
+    | & old_l : Snapshot'0.t_snapshot (borrowed (List'0.t_list)) = any_l ()
     | & loop_l : borrowed (List'0.t_list) = any_l ()
     | & value : borrowed uint32 = any_l ()
     | & next : borrowed (List'0.t_list) = any_l ()

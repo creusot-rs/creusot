@@ -107,6 +107,9 @@ module IncSomeList_Impl0_SumX
       (! return' {result}) ]
     
 end
+module CreusotContracts_Snapshot_Snapshot_Type
+  type t_snapshot 't
+end
 module IncSomeList_Impl0_TakeSome
   let%span sinc_some_list0 = "../inc_some_list.rs" 52 14 52 18
   
@@ -118,17 +121,30 @@ module IncSomeList_Impl0_TakeSome
   
   let%span sinc_some_list4 = "../inc_some_list.rs" 50 14 50 35
   
-  let%span span5 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span5 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span6 = "../inc_some_list.rs" 23 12 26 13
+  let%span span6 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
   
-  let%span span7 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span7 = "../inc_some_list.rs" 23 12 26 13
   
-  let%span span8 = "../inc_some_list.rs" 32 14 32 29
+  let%span span8 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span9 = "../inc_some_list.rs" 31 15 31 19
+  let%span span9 = "../../../../../creusot-contracts/src/snapshot.rs" 45 15 45 16
   
-  let%span span10 = "../inc_some_list.rs" 34 8 37 9
+  let%span span10 = "../../../../../creusot-contracts/src/snapshot.rs" 43 14 43 28
+  
+  let%span span11 = "../inc_some_list.rs" 32 14 32 29
+  
+  let%span span12 = "../inc_some_list.rs" 31 15 31 19
+  
+  let%span span13 = "../inc_some_list.rs" 34 8 37 9
+  
+  predicate invariant'0 (self : ()) =
+    [%#span5] true
+  
+  predicate inv'0 (_x : ())
+  
+  axiom inv'0 : forall x : () . inv'0 x = true
   
   use prelude.prelude.UInt32
   
@@ -139,44 +155,48 @@ module IncSomeList_Impl0_TakeSome
   use prelude.prelude.UInt32
   
   function shallow_model'0 (self : borrowed uint32) : int =
-    [%#span5] UInt32.to_int ( * self)
+    [%#span6] UInt32.to_int ( * self)
   
   use prelude.prelude.Int
   
   use IncSomeList_List_Type as List'0
   
   function sum'0 [#"../inc_some_list.rs" 21 4 21 23] (self : List'0.t_list) : int =
-    [%#span6] match self with
+    [%#span7] match self with
       | List'0.C_Cons a l -> UInt32.to_int a + sum'0 l
       | List'0.C_Nil -> 0
       end
   
-  use prelude.prelude.Snapshot
+  use CreusotContracts_Snapshot_Snapshot_Type as Snapshot'0
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'2 (self : borrowed uint32) =
-    [%#span7]  ^ self =  * self
+    [%#span8]  ^ self =  * self
   
   predicate resolve'1 (self : borrowed (List'0.t_list)) =
-    [%#span7]  ^ self =  * self
+    [%#span8]  ^ self =  * self
   
   let rec random'0 (_1:()) (return'  (ret:bool))= any [ return' (result:bool)-> (! return' {result}) ] 
   
-  use prelude.prelude.Snapshot
+  function deref'0 (self : Snapshot'0.t_snapshot ()) : ()
+  
+  function new'0 (x : ()) : Snapshot'0.t_snapshot ()
+  
+  axiom new'0_spec : forall x : () . ([%#span9] inv'0 x)  -> ([%#span10] deref'0 (new'0 x) = x)
   
   function lemma_sum_nonneg'0 [#"../inc_some_list.rs" 33 4 33 30] (self : List'0.t_list) : ()
   
   axiom lemma_sum_nonneg'0_def : forall self : List'0.t_list . lemma_sum_nonneg'0 self
-  = ([%#span10] match self with
+  = ([%#span13] match self with
     | List'0.C_Cons _ l -> lemma_sum_nonneg'0 l
     | List'0.C_Nil -> ()
     end)
   
-  axiom lemma_sum_nonneg'0_spec : forall self : List'0.t_list . [%#span8] sum'0 self >= 0
+  axiom lemma_sum_nonneg'0_spec : forall self : List'0.t_list . [%#span11] sum'0 self >= 0
   
   predicate resolve'0 (self : borrowed (List'0.t_list)) =
-    [%#span7]  ^ self =  * self
+    [%#span8]  ^ self =  * self
   
   let rec take_some (self:borrowed (List'0.t_list)) (return'  (ret:borrowed uint32))= (! bb0
     [ bb0 = any
@@ -206,7 +226,7 @@ module IncSomeList_Impl0_TakeSome
                   (fun (l_0'1:uint32) (l_1'1:List'0.t_list) ->
                      [ &self <- { self with current = List'0.C_Cons l_0'1 ( ^ ml) ; } ] 
                     s2)))
-      | s2 =  [ &_10 <- [%#sinc_some_list1] Snapshot.new (lemma_sum_nonneg'0 ( * ml)) ] s3
+      | s2 =  [ &_10 <- [%#sinc_some_list1] new'0 (lemma_sum_nonneg'0 ( * ml)) ] s3
       | s3 = bb5 ]
       
     | bb5 = s0 [ s0 = random'0 {[%#sinc_some_list2] ()} (fun (_ret':bool) ->  [ &_13 <- _ret' ] s1) | s1 = bb6 ] 
@@ -259,7 +279,7 @@ module IncSomeList_Impl0_TakeSome
     | & ma : borrowed uint32 = any_l ()
     | & ml : borrowed (List'0.t_list) = any_l ()
     | & _9 : borrowed uint32 = any_l ()
-    | & _10 : Snapshot.snap_ty () = any_l ()
+    | & _10 : Snapshot'0.t_snapshot () = any_l ()
     | & _12 : borrowed uint32 = any_l ()
     | & _13 : bool = any_l ()
     | & _14 : borrowed uint32 = any_l ()
