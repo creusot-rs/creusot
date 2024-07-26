@@ -730,15 +730,6 @@ module Char
   axiom chr_code: forall c. chr (code c) = c
 end
 
-module Snapshot
-  type snap_ty 't
-
-  function new (x : 't) : snap_ty 't
-  function inner (x : snap_ty 't) : 't
-
-  axiom new_spec: forall x: 't [new x]. inner (new x) = x
-  axiom inner_spec: forall x: snap_ty 't [inner x]. new (inner x) = x
-end
 
 module Slice
   use seq.Seq
@@ -748,50 +739,4 @@ module Slice
   type slice 'a =
     { elts : seq 'a }
     invariant { Seq.length elts <= UIntSize.max }
-  axiom slice_ext :
-    forall x y: slice 'a. x.elts = y.elts -> x = y
-
-  type array 'a = slice 'a
-
-  function length (s : slice 'a) : usize
-  axiom spec : forall s : slice 'a . (length s) = Seq.length s.elts
-  (*
-  : usize = of_int (Seq.length s.elts)
-  *)
-
-  let get < 'a > (s : slice 'a) (ix : usize) (ret (res : 'a)) =
-    { ix < Seq.length s.elts }
-    ret {Seq.get s.elts (to_int ix)}
-
-
-  let set < 'a > (s : slice 'a) (ix : usize) (v : 'a)
-    { 0 <= ix < Seq.length s.elts }
-    (ret (result : slice 'a)
-      { Seq.length result.elts = Seq.length s.elts }
-      { result.elts[ix] = v }
-      { forall j. 0 <= j < Seq.length s.elts /\ j <> ix -> result.elts[j] = s.elts[j] }
-    ) = any
-
-
-  let create < 'a > (len : usize) (f : int -> 'a)
-    { 0 <= len }
-  (ret (result : slice 'a )
-    { Seq.length result.elts = len }
-    { forall i . 0 <= i < len -> result.elts[i] = f i }
-  ) = any
-
-
-  (*
-  let function get < 'a > (s : slice 'a) (ix : usize) : 'a =
-    requires { ix < Seq.length s.elts }
-    Seq.get s.elts (to_int ix)
-
-  let set (s : slice 'a) (ix : usize) (v : 'a) : slice 'a =
-    requires { 0 <= ix < Seq.length s.elts }
-    ensures { Seq.length result.elts = Seq.length s.elts }
-    ensures { result.elts[ix] = v }
-    ensures { forall j. 0 <= j < Seq.length s.elts /\ j <> ix -> result.elts[j] = s.elts[j] }
-    { elts = Seq.set s.elts (to_int ix) v }
-  *)
-  function id (s : slice 'a) : seq 'a = s.elts
 end
