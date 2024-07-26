@@ -1,0 +1,88 @@
+
+module CreusotContracts_Snapshot_Snapshot_Type
+  type t_snapshot 't
+end
+module C4362_Bad_Type
+  use prelude.prelude.Borrow
+  
+  use CreusotContracts_Snapshot_Snapshot_Type as Snapshot'0
+  
+  type t_bad  =
+    | C_None
+    | C_Some (Snapshot'0.t_snapshot (borrowed (t_bad)))
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec none (input:t_bad) (ret  )= any [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ] 
+  
+  let rec some (input:t_bad) (ret  (field_0:Snapshot'0.t_snapshot (borrowed (t_bad))))= any
+    [ good (field_0:Snapshot'0.t_snapshot (borrowed (t_bad)))-> {C_Some field_0 = input} (! ret {field_0})
+    | bad (field_0:Snapshot'0.t_snapshot (borrowed (t_bad)))-> {C_Some field_0 <> input} {false} any ]
+    
+end
+module C4362_TestBad
+  let%span s436_20 = "../436_2.rs" 12 12 12 24
+  
+  let%span s436_21 = "../436_2.rs" 14 18 14 36
+  
+  let%span s436_22 = "../436_2.rs" 15 18 15 27
+  
+  let%span s436_23 = "../436_2.rs" 17 18 17 37
+  
+  let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  
+  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  
+  let%span span6 = "../../../../../creusot-contracts/src/snapshot.rs" 45 15 45 16
+  
+  let%span span7 = "../../../../../creusot-contracts/src/snapshot.rs" 43 14 43 28
+  
+  use C4362_Bad_Type as Bad'0
+  
+  use prelude.prelude.Borrow
+  
+  predicate invariant'0 (self : borrowed (Bad'0.t_bad)) =
+    [%#span4] true
+  
+  predicate inv'0 (_x : borrowed (Bad'0.t_bad))
+  
+  axiom inv'0 : forall x : borrowed (Bad'0.t_bad) . inv'0 x = true
+  
+  use CreusotContracts_Snapshot_Snapshot_Type as Snapshot'0
+  
+  use prelude.prelude.Intrinsic
+  
+  predicate resolve'0 (self : borrowed (Bad'0.t_bad)) =
+    [%#span5]  ^ self =  * self
+  
+  function deref'0 (self : Snapshot'0.t_snapshot (borrowed (Bad'0.t_bad))) : borrowed (Bad'0.t_bad)
+  
+  function new'0 (x : borrowed (Bad'0.t_bad)) : Snapshot'0.t_snapshot (borrowed (Bad'0.t_bad))
+  
+  axiom new'0_spec : forall x : borrowed (Bad'0.t_bad) . ([%#span6] inv'0 x)  -> ([%#span7] deref'0 (new'0 x) = x)
+  
+  let rec test_bad (_1:()) (return'  (ret:()))= (! bb0
+    [ bb0 = s0
+      [ s0 =  [ &x <- Bad'0.C_None ] s1
+      | s1 = Borrow.borrow_mut <Bad'0.t_bad> {x}
+          (fun (_ret':borrowed (Bad'0.t_bad)) ->  [ &m <- _ret' ]  [ &x <-  ^ m ] s2)
+      | s2 =  [ &g <- [%#s436_20] new'0 m ] s3
+      | s3 = bb1 ]
+      
+    | bb1 = s0
+      [ s0 =  [ &_5 <- Bad'0.C_Some g ] s1
+      | s1 =  [ &m <- { m with current = _5 ; } ] (any [ any_ (_any:Bad'0.t_bad)-> (!  [ &_5 <- _any ] s2) ] )
+      | s2 = {[@expl:assertion] [%#s436_21]  * m = Bad'0.C_Some g} s3
+      | s3 = {[@expl:assertion] [%#s436_22]  ^ deref'0 g =  ^ m} s4
+      | s4 = -{resolve'0 m}- s5
+      | s5 = {[@expl:assertion] [%#s436_23]  ^ deref'0 g = Bad'0.C_Some g} s6
+      | s6 = return' {_0} ]
+       ]
+    )
+    [ & _0 : () = any_l ()
+    | & x : Bad'0.t_bad = any_l ()
+    | & m : borrowed (Bad'0.t_bad) = any_l ()
+    | & g : Snapshot'0.t_snapshot (borrowed (Bad'0.t_bad)) = any_l ()
+    | & _5 : Bad'0.t_bad = any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end
