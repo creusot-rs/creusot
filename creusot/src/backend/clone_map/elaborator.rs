@@ -1,3 +1,4 @@
+use super::{CloneNames, DepNode, Kind};
 use crate::{
     backend::{
         dependency::{Dependency, ExtendedId},
@@ -13,7 +14,7 @@ use crate::{
         pearlite::{normalize, Term},
         specification::PreContract,
     },
-    util::{self, get_builtin, PreSignature},
+    util::{self, get_builtin, is_trusted, PreSignature},
 };
 use indexmap::IndexSet;
 use rustc_middle::ty::{self, Const, EarlyBinder, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable};
@@ -22,8 +23,6 @@ use why3::{
     declaration::{Attribute, Axiom, Constant, Decl, LetKind, Signature, Use, ValDecl},
     QName,
 };
-
-use super::{CloneNames, DepNode, Kind};
 
 /// The symbol elaborator expands required definitions as symbols and definitions, effectively performing the clones itself.
 pub(super) struct SymbolElaborator<'tcx> {
@@ -206,14 +205,13 @@ impl<'tcx> SymbolElaborator<'tcx> {
             );
 
             let span = ctx.def_span(def_id);
-            let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, param_env, span);
-
-            let res = lower_pure(ctx, names, &res);
-            vec![Decl::ConstantDecl(Constant {
-                type_: sig.retty.unwrap(),
-                name: sig.name,
-                body: Some(res),
-            })]
+            let body = if is_trusted(ctx.tcx, def_id) {
+                None
+            } else {
+                let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, param_env, span);
+                Some(lower_pure(ctx, names, &res))
+            };
+            vec![Decl::ConstantDecl(Constant { type_: sig.retty.unwrap(), name: sig.name, body })]
         } else {
             val(ctx, sig, kind)
         }

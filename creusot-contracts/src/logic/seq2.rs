@@ -1,35 +1,29 @@
-use crate::{
-    logic::{mapping::Mapping, seq::Seq as Seq1},
-    *,
-};
+use crate::{logic::mapping::Mapping, *};
+use ::std::marker::PhantomData;
 use creusot_contracts::logic::IndexLogic;
-pub struct Seq<T: ?Sized>(Seq1<T>);
+
+#[trusted]
+pub struct Seq<T: ?Sized>(PhantomData<T>);
 
 impl<T> Seq<T> {
-    #[allow(unused)]
-    #[cfg(creusot)]
-    #[creusot::no_translate]
-    #[creusot::item = "empty_tag"]
-    fn empty_tag() {}
-
     #[cfg(creusot)]
     #[trusted]
-    #[creusot::clause::open = "empty_tag"]
-    #[creusot::decl::ghost]
-    pub const EMPTY: Self = { Seq(Seq1::EMPTY) };
+    pub const EMPTY: Self = { Seq(PhantomData) };
 
     #[law]
-    #[open]
+    #[trusted]
+    #[open(self)]
     #[ensures(Self::EMPTY.len() == 0)]
     pub fn empty_len() {}
 
     #[logic]
+    #[trusted]
     #[open(self)]
     #[requires(len >= 0)]
     #[ensures(result.len() == len)]
     #[ensures(forall<i : Int> 0 <= i && i < result.len() ==> result[i] == data.get(i))]
     pub fn new(len: Int, data: Mapping<Int, T>) -> Self {
-        Seq(Seq1::new(len, data))
+        pearlite! {absurd}
     }
 
     #[logic]
@@ -43,20 +37,22 @@ impl<T> Seq<T> {
     }
 
     #[logic]
+    #[trusted]
     #[open(self)]
     #[requires(0 <= n && n <= m && m <= self.len())]
     #[ensures(result.len() == m - n)]
     #[ensures(forall<i : Int> 0 <= i && i < result.len() ==> result[i] == self[n + i])]
     pub fn subsequence(self, n: Int, m: Int) -> Self {
-        Seq(self.0.subsequence(n, m))
+        pearlite! {absurd}
     }
 
     #[logic]
+    #[trusted]
     #[open(self)]
     #[ensures(result.len() == 1)]
     #[ensures(result[0] == v)]
     pub fn singleton(v: T) -> Self {
-        Seq(Seq1::singleton(v))
+        pearlite! {absurd}
     }
 
     #[logic]
@@ -67,29 +63,32 @@ impl<T> Seq<T> {
     }
 
     #[logic]
+    #[trusted]
     #[open(self)]
     #[ensures(result >= 0)]
     pub fn len(self) -> Int {
-        self.0.len()
+        pearlite! {absurd}
     }
 
     #[logic]
+    #[trusted]
     #[open(self)]
     #[requires(0 <= j && j < self.len())]
     #[ensures(result.len() == self.len())]
     #[ensures(result[j] == v)]
     #[ensures(forall<i : Int> 0 <= i && i < result.len() && i != j ==> result[i] == self[i])]
     pub fn set(self, j: Int, v: T) -> Self {
-        Seq(self.0.set(j, v))
+        pearlite! {absurd}
     }
 
     #[predicate]
+    #[trusted]
     #[open(self)]
     #[ensures(result ==> self == oth)]
     #[ensures(self.len() == oth.len() &&
     (forall<i : Int> 0 <= i && i < self.len() ==> self[i] == oth[i]) ==> result)]
     pub fn ext_eq(self, oth: Self) -> bool {
-        self.0.ext_eq(oth.0)
+        pearlite! {absurd}
     }
 
     #[logic]
@@ -100,20 +99,22 @@ impl<T> Seq<T> {
     }
 
     #[logic]
+    #[trusted]
     #[open(self)]
     #[ensures(result.len() == self.len() + other.len())]
     #[ensures(forall<i : Int> 0 <= i && i < result.len() ==> result[i] ==
     if i < self.len() {self[i]} else {other[i - self.len()]})]
     pub fn concat(self, other: Self) -> Self {
-        Seq(self.0.concat(other.0))
+        pearlite! {absurd}
     }
 
     #[logic]
+    #[trusted]
     #[open(self)]
     #[ensures(result.len() == self.len())]
     #[ensures(forall<i : Int> 0 <= i && i < result.len() ==> result[i] == self[self.len() - 1 - i])]
     pub fn reverse(self) -> Self {
-        Seq(self.0.reverse())
+        pearlite! {absurd}
     }
 
     // #[predicate]
@@ -170,9 +171,11 @@ impl<T> Seq<T> {
 
 impl<T> Seq<&T> {
     #[logic]
-    #[open]
+    #[trusted]
+    #[open(self)]
+    #[creusot::builtins = "prelude.prelude.Cast.id"]
     pub fn to_owned_seq(self) -> Seq<T> {
-        Seq(self.0.to_owned_seq())
+        pearlite! {absurd}
     }
 }
 
@@ -180,8 +183,9 @@ impl<T> IndexLogic<Int> for Seq<T> {
     type Item = T;
 
     #[logic]
+    #[trusted]
     #[open(self)]
-    fn index_logic(self, x: Int) -> Self::Item {
-        self.0[x]
+    fn index_logic(self, _: Int) -> Self::Item {
+        pearlite! {absurd}
     }
 }

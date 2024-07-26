@@ -151,6 +151,7 @@ impl<T> Seq<T> {
     }
 }
 
+#[allow(unused)]
 impl<T> Seq<&T> {
     #[logic]
     #[open]
