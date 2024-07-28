@@ -190,14 +190,15 @@ module HeapsortGeneric_HeapFragMax_Impl
   goal vc_heap_frag_max : ([%#sheapsort_generic2] inv'0 s)
    -> ([%#sheapsort_generic1] 0 <= i /\ i < end')
    -> ([%#sheapsort_generic0] heap_frag'0 s 0 end')
-   -> match i > 0 with
-    | True -> ((([%#sheapsort_generic2] inv'0 s)
+   -> (if i > 0 then
+    ((([%#sheapsort_generic2] inv'0 s)
     && ([%#sheapsort_generic1] 0 <= parent'0 i /\ parent'0 i < end') && ([%#sheapsort_generic0] heap_frag'0 s 0 end'))
     /\ 0 <= ([%#sheapsort_generic4] i) /\ ([%#sheapsort_generic4] parent'0 i) < ([%#sheapsort_generic4] i))
     /\ (([%#sheapsort_generic3] le_log'0 (Seq.get s (parent'0 i)) (Seq.get s 0))
      -> ([%#sheapsort_generic3] le_log'0 (Seq.get s i) (Seq.get s 0)))
-    | False -> [%#sheapsort_generic3] le_log'0 (Seq.get s i) (Seq.get s 0)
-    end
+  else
+    [%#sheapsort_generic3] le_log'0 (Seq.get s i) (Seq.get s 0)
+  )
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.prelude.Opaque

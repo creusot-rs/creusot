@@ -1646,17 +1646,19 @@ module ListReversalLasso_Impl4_FindPtrInSeq_Impl
     
   
   goal vc_find_ptr_in_seq : ([%#slist_reversal_lasso0] 0 <= i /\ i <= Seq.length s)
-   -> match i = Seq.length s with
-    | True -> [%#slist_reversal_lasso1] match Option'0.C_None with
+   -> (if i = Seq.length s then
+    [%#slist_reversal_lasso1] match Option'0.C_None with
       | Option'0.C_None -> forall j : int . i <= j /\ j < Seq.length s  -> UIntSize.to_int (Seq.get s j) <> p
       | Option'0.C_Some j -> i <= j /\ j < Seq.length s /\ UIntSize.to_int (Seq.get s j) = p
       end
-    | False -> match UIntSize.to_int (Seq.get s i) = p with
-      | True -> [%#slist_reversal_lasso1] match Option'0.C_Some i with
+  else
+    if UIntSize.to_int (Seq.get s i) = p then
+      [%#slist_reversal_lasso1] match Option'0.C_Some i with
         | Option'0.C_None -> forall j : int . i <= j /\ j < Seq.length s  -> UIntSize.to_int (Seq.get s j) <> p
         | Option'0.C_Some j -> i <= j /\ j < Seq.length s /\ UIntSize.to_int (Seq.get s j) = p
         end
-      | False -> (([%#slist_reversal_lasso0] 0 <= i + 1 /\ i + 1 <= Seq.length s)
+    else
+      (([%#slist_reversal_lasso0] 0 <= i + 1 /\ i + 1 <= Seq.length s)
       /\ 0 <= ([%#slist_reversal_lasso2] Seq.length s - i)
       /\ ([%#slist_reversal_lasso2] Seq.length s - (i + 1)) < ([%#slist_reversal_lasso2] Seq.length s - i))
       /\ (([%#slist_reversal_lasso1] match find_ptr_in_seq s (i + 1) p with
@@ -1667,8 +1669,8 @@ module ListReversalLasso_Impl4_FindPtrInSeq_Impl
         | Option'0.C_None -> forall j : int . i <= j /\ j < Seq.length s  -> UIntSize.to_int (Seq.get s j) <> p
         | Option'0.C_Some j -> i <= j /\ j < Seq.length s /\ UIntSize.to_int (Seq.get s j) = p
         end))
-      end
-    end
+    
+  )
 end
 module ListReversalLasso_Impl4_Pigeon_Impl
   let%span slist_reversal_lasso0 = "../list_reversal_lasso.rs" 213 15 213 21
@@ -1738,9 +1740,10 @@ module ListReversalLasso_Impl4_Pigeon_Impl
   /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j  -> Seq.get s i <> Seq.get s j)
    -> ([%#slist_reversal_lasso1] forall i : int . 0 <= i /\ i < Seq.length s  -> UIntSize.to_int (Seq.get s i) < n)
    -> ([%#slist_reversal_lasso0] 0 <= n)
-   -> match n = 0 with
-    | True -> ([%#slist_reversal_lasso4] true) && ([%#slist_reversal_lasso3] Seq.length s <= n)
-    | False -> ([%#slist_reversal_lasso6] 0 <= 0 /\ 0 <= Seq.length s)
+   -> (if n = 0 then
+    ([%#slist_reversal_lasso4] true) && ([%#slist_reversal_lasso3] Seq.length s <= n)
+  else
+    ([%#slist_reversal_lasso6] 0 <= 0 /\ 0 <= Seq.length s)
     /\ (([%#slist_reversal_lasso7] match find_ptr_in_seq'0 s 0 (n - 1) with
       | Option'0.C_None -> forall j : int . 0 <= j /\ j < Seq.length s  -> UIntSize.to_int (Seq.get s j) <> n - 1
       | Option'0.C_Some j -> 0 <= j /\ j < Seq.length s /\ UIntSize.to_int (Seq.get s j) = n - 1
@@ -1784,7 +1787,7 @@ module ListReversalLasso_Impl4_Pigeon_Impl
         | Option'0.C_Some _ -> ([%#slist_reversal_lasso4] true) && ([%#slist_reversal_lasso3] Seq.length s <= n)
         end)
       end)
-    end
+  )
 end
 module ListReversalLasso_Impl4_FindLassoAux_Impl
   let%span slist_reversal_lasso0 = "../list_reversal_lasso.rs" 236 15 236 40
@@ -1992,12 +1995,13 @@ module ListReversalLasso_Impl4_FindLassoAux_Impl
   goal vc_find_lasso_aux : ([%#slist_reversal_lasso2] list_seg'0 self first s last 0 (Seq.length s))
    -> ([%#slist_reversal_lasso1] last = null'0 \/ nonnull_ptr'0 self last)
    -> ([%#slist_reversal_lasso0] mem_is_well_formed'0 self)
-   -> match last = null'0 with
-    | True -> [%#slist_reversal_lasso3] match (s, Option'0.C_None) with
+   -> (if last = null'0 then
+    [%#slist_reversal_lasso3] match (s, Option'0.C_None) with
       | (s, Option'0.C_None) -> list'0 self first s
       | (s1, Option'0.C_Some s2) -> lasso'0 self first s1 s2
       end
-    | False -> ([%#slist_reversal_lasso5] 0 <= 0 /\ 0 <= Seq.length s)
+  else
+    ([%#slist_reversal_lasso5] 0 <= 0 /\ 0 <= Seq.length s)
     /\ (([%#slist_reversal_lasso6] match find_ptr_in_seq'0 s 0 (UIntSize.to_int last) with
       | Option'0.C_None -> forall j : int . 0 <= j /\ j < Seq.length s
        -> UIntSize.to_int (Seq.get s j) <> UIntSize.to_int last
@@ -2016,8 +2020,8 @@ module ListReversalLasso_Impl4_FindLassoAux_Impl
       /\ (([%#slist_reversal_lasso15] pigeon'0 s (Seq.length (shallow_model'0 (ListReversalLasso_Memory_Type.memory_0 self))))
       && ([%#slist_reversal_lasso14] Seq.length s
       <= Seq.length (shallow_model'0 (ListReversalLasso_Memory_Type.memory_0 self)))
-       -> match pigeon'0 s (Seq.length (shallow_model'0 (ListReversalLasso_Memory_Type.memory_0 self))) with
-        | True -> ((([%#slist_reversal_lasso2] list_seg'0 self first (Seq.snoc s last) (index_logic'0 self last) 0 (Seq.length (Seq.snoc s last)))
+       -> (if pigeon'0 s (Seq.length (shallow_model'0 (ListReversalLasso_Memory_Type.memory_0 self))) then
+        ((([%#slist_reversal_lasso2] list_seg'0 self first (Seq.snoc s last) (index_logic'0 self last) 0 (Seq.length (Seq.snoc s last)))
         && ([%#slist_reversal_lasso1] index_logic'0 self last = null'0 \/ nonnull_ptr'0 self (index_logic'0 self last))
         && ([%#slist_reversal_lasso0] mem_is_well_formed'0 self))
         /\ 0
@@ -2035,18 +2039,19 @@ module ListReversalLasso_Impl4_FindLassoAux_Impl
           | (s, Option'0.C_None) -> list'0 self first s
           | (s1, Option'0.C_Some s2) -> lasso'0 self first s1 s2
           end))
-        | False -> [%#slist_reversal_lasso3] match (s, Option'0.C_None) with
+      else
+        [%#slist_reversal_lasso3] match (s, Option'0.C_None) with
           | (s, Option'0.C_None) -> list'0 self first s
           | (s1, Option'0.C_Some s2) -> lasso'0 self first s1 s2
           end
-        end))
+      )))
       | Option'0.C_Some i -> [%#slist_reversal_lasso3] match (SeqExt.subsequence s 0 (i
       + 1), Option'0.C_Some (SeqExt.subsequence s (i + 1) (Seq.length s))) with
         | (s, Option'0.C_None) -> list'0 self first s
         | (s1, Option'0.C_Some s2) -> lasso'0 self first s1 s2
         end
       end)
-    end
+  )
 end
 module ListReversalLasso_Impl4_FindLasso_Impl
   let%span slist_reversal_lasso0 = "../list_reversal_lasso.rs" 264 15 264 40
