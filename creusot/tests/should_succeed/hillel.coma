@@ -2022,13 +2022,14 @@ module Hillel_SumRange_Impl
   function sum_range [#"../hillel.rs" 125 0 125 54] (seq : Seq.seq uint32) (from : int) (to' : int) : int
   
   goal vc_sum_range : ([%#shillel0] 0 <= from /\ from <= to' /\ to' <= Seq.length seq)
-   -> match to' - from > 0 with
-    | True -> (([%#shillel0] 0 <= from + 1 /\ from + 1 <= to' /\ to' <= Seq.length seq)
+   -> (if to' - from > 0 then
+    (([%#shillel0] 0 <= from + 1 /\ from + 1 <= to' /\ to' <= Seq.length seq)
     /\ 0 <= ([%#shillel2] to' - from) /\ ([%#shillel2] to' - (from + 1)) < ([%#shillel2] to' - from))
     /\ (([%#shillel1] sum_range seq (from + 1) to' >= 0)
      -> ([%#shillel1] UInt32.to_int (Seq.get seq from) + sum_range seq (from + 1) to' >= 0))
-    | False -> [%#shillel1] 0 >= 0
-    end
+  else
+    [%#shillel1] 0 >= 0
+  )
 end
 module Hillel_SumRangeSplit_Impl
   let%span shillel0 = "../hillel.rs" 135 11 135 63
@@ -2076,14 +2077,15 @@ module Hillel_SumRangeSplit_Impl
   function sum_range_split [#"../hillel.rs" 137 0 137 61] (seq : Seq.seq uint32) (from : int) (to' : int) (i : int) : ()
   
   goal vc_sum_range_split : ([%#shillel0] 0 <= from /\ from <= i /\ i <= to' /\ to' <= Seq.length seq)
-   -> match i > from with
-    | True -> (([%#shillel0] 0 <= from + 1 /\ from + 1 <= i /\ i <= to' /\ to' <= Seq.length seq)
+   -> (if i > from then
+    (([%#shillel0] 0 <= from + 1 /\ from + 1 <= i /\ i <= to' /\ to' <= Seq.length seq)
     /\ 0 <= ([%#shillel2] i - from) /\ ([%#shillel2] i - (from + 1)) < ([%#shillel2] i - from))
     /\ (([%#shillel1] sum_range'0 seq (from + 1) to' = sum_range'0 seq (from + 1) i + sum_range'0 seq i to')
      -> (let _ = sum_range_split seq (from + 1) to' i in [%#shillel1] sum_range'0 seq from to'
     = sum_range'0 seq from i + sum_range'0 seq i to'))
-    | False -> [%#shillel1] sum_range'0 seq from to' = sum_range'0 seq from i + sum_range'0 seq i to'
-    end
+  else
+    [%#shillel1] sum_range'0 seq from to' = sum_range'0 seq from i + sum_range'0 seq i to'
+  )
 end
 module Hillel_Score_Impl
   let%span shillel0 = "../hillel.rs" 144 11 144 35

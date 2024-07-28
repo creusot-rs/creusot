@@ -50,14 +50,15 @@ module C02_Fib_Impl
   
   function fib [#"../02.rs" 32 0 32 25] (i : int) : int
   
-  goal vc_fib : match i <= 0 with
-    | True -> true
-    | False -> match i = 1 with
-      | True -> true
-      | False -> (0 <= ([%#s020] i) /\ ([%#s020] i - 1) < ([%#s020] i))
-      /\ 0 <= ([%#s020] i) /\ ([%#s020] i - 2) < ([%#s020] i)
-      end
-    end
+  goal vc_fib : if i <= 0 then
+    true
+  else
+    if i = 1 then
+      true
+    else
+      (0 <= ([%#s020] i) /\ ([%#s020] i - 1) < ([%#s020] i)) /\ 0 <= ([%#s020] i) /\ ([%#s020] i - 2) < ([%#s020] i)
+    
+  
 end
 module C02_LemmaFibBound_Impl
   let%span s020 = "../02.rs" 44 11 44 17
@@ -84,17 +85,19 @@ module C02_LemmaFibBound_Impl
   function lemma_fib_bound [#"../02.rs" 47 0 47 30] (i : int) : ()
   
   goal vc_lemma_fib_bound : ([%#s020] 0 <= i)
-   -> match i = 0 with
-    | True -> [%#s021] fib'0 i <= Power.power 2 i
-    | False -> match i = 1 with
-      | True -> [%#s021] fib'0 i <= Power.power 2 i
-      | False -> (([%#s020] 0 <= i - 2) /\ 0 <= ([%#s022] i) /\ ([%#s022] i - 2) < ([%#s022] i))
+   -> (if i = 0 then
+    [%#s021] fib'0 i <= Power.power 2 i
+  else
+    if i = 1 then
+      [%#s021] fib'0 i <= Power.power 2 i
+    else
+      (([%#s020] 0 <= i - 2) /\ 0 <= ([%#s022] i) /\ ([%#s022] i - 2) < ([%#s022] i))
       /\ (([%#s021] fib'0 (i - 2) <= Power.power 2 (i - 2))
        -> (let _ = lemma_fib_bound (i - 2) in (([%#s020] 0 <= i - 1)
       /\ 0 <= ([%#s022] i) /\ ([%#s022] i - 1) < ([%#s022] i))
       /\ (([%#s021] fib'0 (i - 1) <= Power.power 2 (i - 1))  -> ([%#s021] fib'0 i <= Power.power 2 i))))
-      end
-    end
+    
+  )
 end
 module C02_Fib_Type
   use prelude.prelude.UIntSize

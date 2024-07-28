@@ -176,6 +176,16 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                         self.ctx.translate_accessor(def.variants()[0u32.into()].fields[*name].did);
                         self.names.accessor(def.did(), substs, 0, *name)
                     }
+                    TyKind::Tuple(f) => {
+                        let mut fields = vec![Pat::Wildcard; f.len()];
+                        fields[name.as_usize()] = Pat::VarP("a".into());
+
+                        return Exp::Let {
+                            pattern: Pat::TupleP(fields),
+                            arg: Box::new(lhs),
+                            body: Box::new(Exp::var("a")),
+                        };
+                    }
                     k => unreachable!("Projection from {k:?}"),
                 };
 

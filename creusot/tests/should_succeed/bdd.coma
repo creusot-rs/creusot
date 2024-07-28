@@ -1709,50 +1709,54 @@ module Bdd_Impl10_DiscrValuation_Impl
    -> ([%#sbdd2] a <> b)
    -> ([%#sbdd1] is_valid_bdd'0 self b)
    -> ([%#sbdd0] is_valid_bdd'0 self a)
-   -> (let _ = set_irrelevent_var'0 in match leastvar'0 a < leastvar'0 b with
-    | True -> match a with
-      | Bdd'0.C_Bdd (Node'0.C_If v childt childf) _ -> match childf <> b with
-        | True -> ((([%#sbdd3] inv'0 self)
+   -> (let _ = set_irrelevent_var'0 in if leastvar'0 a < leastvar'0 b then
+    match a with
+      | Bdd'0.C_Bdd (Node'0.C_If v childt childf) _ -> if childf <> b then
+        ((([%#sbdd3] inv'0 self)
         && ([%#sbdd2] childf <> b) && ([%#sbdd1] is_valid_bdd'0 self b) && ([%#sbdd0] is_valid_bdd'0 self childf))
         /\ 0 <= ([%#sbdd5] size'0 a + size'0 b)
         /\ ([%#sbdd5] size'0 childf + size'0 b) < ([%#sbdd5] size'0 a + size'0 b))
         /\ (([%#sbdd4] interp'0 childf (discr_valuation self childf b) <> interp'0 b (discr_valuation self childf b))
          -> (let result = Map.set (discr_valuation self childf b) v false in [%#sbdd4] interp'0 a result
         <> interp'0 b result))
-        | False -> ((([%#sbdd3] inv'0 self)
+      else
+        ((([%#sbdd3] inv'0 self)
         && ([%#sbdd2] childt <> b) && ([%#sbdd1] is_valid_bdd'0 self b) && ([%#sbdd0] is_valid_bdd'0 self childt))
         /\ 0 <= ([%#sbdd5] size'0 a + size'0 b)
         /\ ([%#sbdd5] size'0 childt + size'0 b) < ([%#sbdd5] size'0 a + size'0 b))
         /\ (([%#sbdd4] interp'0 childt (discr_valuation self childt b) <> interp'0 b (discr_valuation self childt b))
          -> (let result = Map.set (discr_valuation self childt b) v true in [%#sbdd4] interp'0 a result
         <> interp'0 b result))
-        end
+      
       | _ -> let result = Const.const true in [%#sbdd4] interp'0 a result <> interp'0 b result
       end
-    | False -> match leastvar'0 a > leastvar'0 b with
-      | True -> match b with
-        | Bdd'0.C_Bdd (Node'0.C_If v childt childf) _ -> match childf <> a with
-          | True -> ((([%#sbdd3] inv'0 self)
+  else
+    if leastvar'0 a > leastvar'0 b then
+      match b with
+        | Bdd'0.C_Bdd (Node'0.C_If v childt childf) _ -> if childf <> a then
+          ((([%#sbdd3] inv'0 self)
           && ([%#sbdd2] a <> childf) && ([%#sbdd1] is_valid_bdd'0 self childf) && ([%#sbdd0] is_valid_bdd'0 self a))
           /\ 0 <= ([%#sbdd5] size'0 a + size'0 b)
           /\ ([%#sbdd5] size'0 a + size'0 childf) < ([%#sbdd5] size'0 a + size'0 b))
           /\ (([%#sbdd4] interp'0 a (discr_valuation self a childf) <> interp'0 childf (discr_valuation self a childf))
            -> (let result = Map.set (discr_valuation self a childf) v false in [%#sbdd4] interp'0 a result
           <> interp'0 b result))
-          | False -> ((([%#sbdd3] inv'0 self)
+        else
+          ((([%#sbdd3] inv'0 self)
           && ([%#sbdd2] a <> childt) && ([%#sbdd1] is_valid_bdd'0 self childt) && ([%#sbdd0] is_valid_bdd'0 self a))
           /\ 0 <= ([%#sbdd5] size'0 a + size'0 b)
           /\ ([%#sbdd5] size'0 a + size'0 childt) < ([%#sbdd5] size'0 a + size'0 b))
           /\ (([%#sbdd4] interp'0 a (discr_valuation self a childt) <> interp'0 childt (discr_valuation self a childt))
            -> (let result = Map.set (discr_valuation self a childt) v true in [%#sbdd4] interp'0 a result
           <> interp'0 b result))
-          end
+        
         | _ -> let result = Const.const true in [%#sbdd4] interp'0 a result <> interp'0 b result
         end
-      | False -> match a with
+    else
+      match a with
         | Bdd'0.C_Bdd (Node'0.C_If v childta childfa) _ -> match b with
-          | Bdd'0.C_Bdd (Node'0.C_If _ childtb childfb) _ -> match childfa <> childfb with
-            | True -> ((([%#sbdd3] inv'0 self)
+          | Bdd'0.C_Bdd (Node'0.C_If _ childtb childfb) _ -> if childfa <> childfb then
+            ((([%#sbdd3] inv'0 self)
             && ([%#sbdd2] childfa <> childfb)
             && ([%#sbdd1] is_valid_bdd'0 self childfb) && ([%#sbdd0] is_valid_bdd'0 self childfa))
             /\ 0 <= ([%#sbdd5] size'0 a + size'0 b)
@@ -1761,7 +1765,8 @@ module Bdd_Impl10_DiscrValuation_Impl
             <> interp'0 childfb (discr_valuation self childfa childfb))
              -> (let result = Map.set (discr_valuation self childfa childfb) v false in [%#sbdd4] interp'0 a result
             <> interp'0 b result))
-            | False -> ((([%#sbdd3] inv'0 self)
+          else
+            ((([%#sbdd3] inv'0 self)
             && ([%#sbdd2] childta <> childtb)
             && ([%#sbdd1] is_valid_bdd'0 self childtb) && ([%#sbdd0] is_valid_bdd'0 self childta))
             /\ 0 <= ([%#sbdd5] size'0 a + size'0 b)
@@ -1770,13 +1775,13 @@ module Bdd_Impl10_DiscrValuation_Impl
             <> interp'0 childtb (discr_valuation self childta childtb))
              -> (let result = Map.set (discr_valuation self childta childtb) v true in [%#sbdd4] interp'0 a result
             <> interp'0 b result))
-            end
+          
           | _ -> let result = Const.const true in [%#sbdd4] interp'0 a result <> interp'0 b result
           end
         | _ -> let result = Const.const true in [%#sbdd4] interp'0 a result <> interp'0 b result
         end
-      end
-    end)
+    
+  )
 end
 module Bdd_Impl10_BddCanonical_Impl
   let%span sbdd0 = "../bdd.rs" 413 15 413 35

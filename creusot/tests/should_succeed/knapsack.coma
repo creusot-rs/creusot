@@ -103,14 +103,16 @@ module Knapsack_M_Impl
   goal vc_m : ([%#sknapsack2] inv'0 items)
    -> ([%#sknapsack1] 0 <= w)
    -> ([%#sknapsack0] 0 <= i /\ i <= Seq.length items)
-   -> match i = 0 with
-    | True -> [%#sknapsack3] 0 >= 0
-    | False -> match UIntSize.to_int (Knapsack_Item_Type.item_weight (Seq.get items (i - 1))) > w with
-      | True -> ((([%#sknapsack2] inv'0 items)
+   -> (if i = 0 then
+    [%#sknapsack3] 0 >= 0
+  else
+    if UIntSize.to_int (Knapsack_Item_Type.item_weight (Seq.get items (i - 1))) > w then
+      ((([%#sknapsack2] inv'0 items)
       && ([%#sknapsack1] 0 <= w) && ([%#sknapsack0] 0 <= i - 1 /\ i - 1 <= Seq.length items))
       /\ 0 <= ([%#sknapsack4] i) /\ ([%#sknapsack4] i - 1) < ([%#sknapsack4] i))
       /\ (([%#sknapsack3] m items (i - 1) w >= 0)  -> ([%#sknapsack3] m items (i - 1) w >= 0))
-      | False -> ((([%#sknapsack2] inv'0 items)
+    else
+      ((([%#sknapsack2] inv'0 items)
       && ([%#sknapsack1] 0 <= w) && ([%#sknapsack0] 0 <= i - 1 /\ i - 1 <= Seq.length items))
       /\ 0 <= ([%#sknapsack4] i) /\ ([%#sknapsack4] i - 1) < ([%#sknapsack4] i))
       /\ (([%#sknapsack3] m items (i - 1) w >= 0)
@@ -124,8 +126,8 @@ module Knapsack_M_Impl
       - UIntSize.to_int (Knapsack_Item_Type.item_weight (Seq.get items (i - 1))))
       + UIntSize.to_int (Knapsack_Item_Type.item_value (Seq.get items (i - 1))))
       >= 0)))
-      end
-    end
+    
+  )
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.prelude.Opaque

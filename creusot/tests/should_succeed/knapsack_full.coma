@@ -95,15 +95,16 @@ module KnapsackFull_SumWeights_Impl
   
   goal vc_sum_weights : ([%#sknapsack_full1] inv'0 s)
    -> ([%#sknapsack_full0] 0 <= i /\ i <= Seq.length s)
-   -> match i = Seq.length s with
-    | True -> [%#sknapsack_full2] 0 >= 0
-    | False -> ((([%#sknapsack_full1] inv'0 s) && ([%#sknapsack_full0] 0 <= i + 1 /\ i + 1 <= Seq.length s))
+   -> (if i = Seq.length s then
+    [%#sknapsack_full2] 0 >= 0
+  else
+    ((([%#sknapsack_full1] inv'0 s) && ([%#sknapsack_full0] 0 <= i + 1 /\ i + 1 <= Seq.length s))
     /\ 0 <= ([%#sknapsack_full3] Seq.length s - i)
     /\ ([%#sknapsack_full3] Seq.length s - (i + 1)) < ([%#sknapsack_full3] Seq.length s - i))
     /\ (([%#sknapsack_full2] sum_weights s (i + 1) >= 0)
      -> ([%#sknapsack_full2] UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get s i)) + sum_weights s (i + 1)
     >= 0))
-    end
+  )
 end
 module KnapsackFull_SumValues_Impl
   type name
@@ -137,12 +138,13 @@ module KnapsackFull_SumValues_Impl
   function sum_values [#"../knapsack_full.rs" 37 0 37 55] (s : Seq.seq (Item'0.t_item name)) (i : int) : int
   
   goal vc_sum_values : ([%#sknapsack_full0] i >= 0 /\ i <= Seq.length s)
-   -> match i = Seq.length s with
-    | True -> true
-    | False -> ([%#sknapsack_full0] i + 1 >= 0 /\ i + 1 <= Seq.length s)
+   -> (if i = Seq.length s then
+    true
+  else
+    ([%#sknapsack_full0] i + 1 >= 0 /\ i + 1 <= Seq.length s)
     /\ 0 <= ([%#sknapsack_full1] Seq.length s - i)
     /\ ([%#sknapsack_full1] Seq.length s - (i + 1)) < ([%#sknapsack_full1] Seq.length s - i)
-    end
+  )
 end
 module KnapsackFull_SubseqRev_Impl
   type t
@@ -179,9 +181,10 @@ module KnapsackFull_SubseqRev_Impl
   
   goal vc_subseq_rev : ([%#sknapsack_full1] 0 <= i2 /\ i2 <= Seq.length s2)
    -> ([%#sknapsack_full0] 0 <= i1 /\ i1 <= Seq.length s1)
-   -> match i2 = 0 with
-    | True -> true
-    | False -> if i1 < Seq.length s1 then
+   -> (if i2 = 0 then
+    true
+  else
+    if i1 < Seq.length s1 then
       if Seq.get s1 i1 = Seq.get s2 (i2 - 1) then
         ((([%#sknapsack_full1] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2)
         && ([%#sknapsack_full0] 0 <= i1 + 1 /\ i1 + 1 <= Seq.length s1))
@@ -199,7 +202,7 @@ module KnapsackFull_SubseqRev_Impl
       && ([%#sknapsack_full0] 0 <= i1 /\ i1 <= Seq.length s1))
       /\ 0 <= ([%#sknapsack_full2] i2) /\ ([%#sknapsack_full2] i2 - 1) < ([%#sknapsack_full2] i2)
     
-    end
+  )
 end
 module KnapsackFull_M_Impl
   type name
@@ -319,13 +322,14 @@ module KnapsackFull_M_Impl
   goal vc_m : ([%#sknapsack_full2] inv'0 items)
    -> ([%#sknapsack_full1] 0 <= w)
    -> ([%#sknapsack_full0] 0 <= i /\ i <= Seq.length items)
-   -> match i = 0 with
-    | True -> let result = 0 in ([%#sknapsack_full4] forall j : int . forall s : Seq.seq (Item'0.t_item name) . inv'1 s
+   -> (if i = 0 then
+    let result = 0 in ([%#sknapsack_full4] forall j : int . forall s : Seq.seq (Item'0.t_item name) . inv'1 s
      -> 0 <= j /\ j <= Seq.length s /\ subseq_rev'0 s j items i /\ sum_weights'0 s j <= w
      -> sum_values'0 s j <= result)
     && ([%#sknapsack_full3] result >= 0)
-    | False -> match UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1))) > w with
-      | True -> ((([%#sknapsack_full2] inv'0 items)
+  else
+    if UIntSize.to_int (KnapsackFull_Item_Type.item_weight (Seq.get items (i - 1))) > w then
+      ((([%#sknapsack_full2] inv'0 items)
       && ([%#sknapsack_full1] 0 <= w) && ([%#sknapsack_full0] 0 <= i - 1 /\ i - 1 <= Seq.length items))
       /\ 0 <= ([%#sknapsack_full5] i) /\ ([%#sknapsack_full5] i - 1) < ([%#sknapsack_full5] i))
       /\ (([%#sknapsack_full4] forall j : int . forall s : Seq.seq (Item'0.t_item name) . inv'1 s
@@ -337,7 +341,8 @@ module KnapsackFull_M_Impl
        -> 0 <= j /\ j <= Seq.length s /\ subseq_rev'0 s j items i /\ sum_weights'0 s j <= w
        -> sum_values'0 s j <= result)
       && ([%#sknapsack_full3] result >= 0)))
-      | False -> ((([%#sknapsack_full2] inv'0 items)
+    else
+      ((([%#sknapsack_full2] inv'0 items)
       && ([%#sknapsack_full1] 0 <= w) && ([%#sknapsack_full0] 0 <= i - 1 /\ i - 1 <= Seq.length items))
       /\ 0 <= ([%#sknapsack_full5] i) /\ ([%#sknapsack_full5] i - 1) < ([%#sknapsack_full5] i))
       /\ (([%#sknapsack_full4] forall j : int . forall s : Seq.seq (Item'0.t_item name) . inv'1 s
@@ -365,8 +370,8 @@ module KnapsackFull_M_Impl
        -> 0 <= j /\ j <= Seq.length s /\ subseq_rev'0 s j items i /\ sum_weights'0 s j <= w
        -> sum_values'0 s j <= result)
       && ([%#sknapsack_full3] result >= 0))))
-      end
-    end
+    
+  )
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.prelude.Opaque

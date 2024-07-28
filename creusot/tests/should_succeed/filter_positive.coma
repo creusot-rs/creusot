@@ -20,13 +20,15 @@ module FilterPositive_NumOfPos_Impl
   
   function num_of_pos [#"../filter_positive.rs" 37 0 37 49] (i : int) (j : int) (t : Seq.seq int32) : int
   
-  goal vc_num_of_pos : match i >= j with
-    | True -> true
-    | False -> match Int32.to_int (Seq.get t (j - 1)) > 0 with
-      | True -> 0 <= ([%#sfilter_positive0] j - i) /\ ([%#sfilter_positive0] j - 1 - i) < ([%#sfilter_positive0] j - i)
-      | False -> 0 <= ([%#sfilter_positive0] j - i) /\ ([%#sfilter_positive0] j - 1 - i) < ([%#sfilter_positive0] j - i)
-      end
-    end
+  goal vc_num_of_pos : if i >= j then
+    true
+  else
+    if Int32.to_int (Seq.get t (j - 1)) > 0 then
+      0 <= ([%#sfilter_positive0] j - i) /\ ([%#sfilter_positive0] j - 1 - i) < ([%#sfilter_positive0] j - i)
+    else
+      0 <= ([%#sfilter_positive0] j - i) /\ ([%#sfilter_positive0] j - 1 - i) < ([%#sfilter_positive0] j - i)
+    
+  
 end
 module FilterPositive_LemmaNumOfPosIncreasing_Impl
   let%span sfilter_positive0 = "../filter_positive.rs" 62 11 62 17
@@ -70,13 +72,14 @@ module FilterPositive_LemmaNumOfPosIncreasing_Impl
     
   
   goal vc_lemma_num_of_pos_increasing : ([%#sfilter_positive0] j <= k)
-   -> match j < k with
-    | True -> (([%#sfilter_positive0] j + 1 <= k)
+   -> (if j < k then
+    (([%#sfilter_positive0] j + 1 <= k)
     /\ 0 <= ([%#sfilter_positive2] k - j) /\ ([%#sfilter_positive2] k - (j + 1)) < ([%#sfilter_positive2] k - j))
     /\ (([%#sfilter_positive1] num_of_pos'0 i (j + 1) t <= num_of_pos'0 i k t)
      -> ([%#sfilter_positive1] num_of_pos'0 i j t <= num_of_pos'0 i k t))
-    | False -> [%#sfilter_positive1] num_of_pos'0 i j t <= num_of_pos'0 i k t
-    end
+  else
+    [%#sfilter_positive1] num_of_pos'0 i j t <= num_of_pos'0 i k t
+  )
 end
 module FilterPositive_LemmaNumOfPosStrictlyIncreasing_Impl
   let%span sfilter_positive0 = "../filter_positive.rs" 76 11 76 32
