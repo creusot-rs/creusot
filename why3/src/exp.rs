@@ -87,13 +87,6 @@ pub enum UnOp {
     FloatNeg,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub(crate) enum Purity {
-    Logic,
-    Program,
-}
-
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 // TODO: multi-trigger/multiple triggers

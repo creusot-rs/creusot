@@ -1453,11 +1453,11 @@ end
 module C02IterMut_Impl1
   type t
   
-  let%span s02_iter_mut0 = "../02_iter_mut.rs" 50 4 50 26
+  let%span s02_iter_mut0 = "../02_iter_mut.rs" 57 4 57 90
   
-  let%span s02_iter_mut1 = "../02_iter_mut.rs" 63 4 63 44
+  let%span s02_iter_mut1 = "../02_iter_mut.rs" 50 4 50 26
   
-  let%span s02_iter_mut2 = "../02_iter_mut.rs" 57 4 57 90
+  let%span s02_iter_mut2 = "../02_iter_mut.rs" 63 4 63 44
   
   let%span span3 = "" 0 0 0 0
   
@@ -1515,29 +1515,29 @@ module C02IterMut_Impl1
   
   axiom inv'4 : forall x : borrowed (slice t) . inv'4 x = true
   
-  predicate invariant'3 (self : Seq.seq (borrowed t))
-  
-  predicate inv'3 (_x : Seq.seq (borrowed t))
-  
-  axiom inv'3 : forall x : Seq.seq (borrowed t) . inv'3 x = true
-  
   use Core_Option_Option_Type as Option'0
   
-  predicate invariant'2 (self : Option'0.t_option (borrowed t))
+  predicate invariant'3 (self : Option'0.t_option (borrowed t))
   
-  predicate inv'2 (_x : Option'0.t_option (borrowed t))
+  predicate inv'3 (_x : Option'0.t_option (borrowed t))
   
-  axiom inv'2 : forall x : Option'0.t_option (borrowed t) . inv'2 x = true
+  axiom inv'3 : forall x : Option'0.t_option (borrowed t) . inv'3 x = true
   
   use C02IterMut_IterMut_Type as IterMut'0
   
-  predicate invariant'1 (self : borrowed (IterMut'0.t_itermut t))
+  predicate invariant'2 (self : borrowed (IterMut'0.t_itermut t))
   
   predicate inv'0 (_x : IterMut'0.t_itermut t)
   
-  predicate inv'1 (_x : borrowed (IterMut'0.t_itermut t))
+  predicate inv'2 (_x : borrowed (IterMut'0.t_itermut t))
   
-  axiom inv'1 : forall x : borrowed (IterMut'0.t_itermut t) . inv'1 x = (inv'0 ( * x) /\ inv'0 ( ^ x))
+  axiom inv'2 : forall x : borrowed (IterMut'0.t_itermut t) . inv'2 x = (inv'0 ( * x) /\ inv'0 ( ^ x))
+  
+  predicate invariant'1 (self : Seq.seq (borrowed t))
+  
+  predicate inv'1 (_x : Seq.seq (borrowed t))
+  
+  axiom inv'1 : forall x : Seq.seq (borrowed t) . inv'1 x = true
   
   use seq.Seq
   
@@ -1576,8 +1576,6 @@ module C02IterMut_Impl1
   
   use seq.Seq
   
-  use seq.Seq
-  
   function shallow_model'0 (self : borrowed (slice t)) : Seq.seq t =
     [%#span9] shallow_model'1 ( * self)
   
@@ -1594,6 +1592,10 @@ module C02IterMut_Impl1
   
   use seq.Seq
   
+  use seq.Seq
+  
+  use seq.Seq
+  
   function index_logic'0 [@inline:trivial] (self : slice t) (ix : int) : t =
     [%#span12] Seq.get (shallow_model'1 self) ix
   
@@ -1602,7 +1604,7 @@ module C02IterMut_Impl1
   function to_mut_seq'0 (self : borrowed (slice t)) : Seq.seq (borrowed t)
   
   axiom to_mut_seq'0_spec : forall self : borrowed (slice t) . ([%#span13] inv'4 self)
-   -> ([%#span17] inv'3 (to_mut_seq'0 self))
+   -> ([%#span17] inv'1 (to_mut_seq'0 self))
   && ([%#span16] forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq'0 self)
    ->  ^ Seq.get (to_mut_seq'0 self) i = index_logic'0 ( ^ self) i)
   && ([%#span15] forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq'0 self)
@@ -1620,33 +1622,31 @@ module C02IterMut_Impl1
     /\  ^ Seq.get (to_mut_seq'0 (C02IterMut_IterMut_Type.itermut_inner self)) i
     =  ^ Seq.get (Seq.(++) visited (to_mut_seq'0 (C02IterMut_IterMut_Type.itermut_inner tl))) i)
   
-  use seq.Seq
+  goal produces_trans_refn : [%#s02_iter_mut0] forall a : IterMut'0.t_itermut t . forall ab : Seq.seq (borrowed t) . forall b : IterMut'0.t_itermut t . forall bc : Seq.seq (borrowed t) . forall c : IterMut'0.t_itermut t . inv'0 c
+  /\ inv'1 bc /\ inv'0 b /\ inv'1 ab /\ inv'0 a /\ produces'0 b bc c /\ produces'0 a ab b
+   -> inv'0 c
+  /\ inv'1 bc
+  /\ inv'0 b
+  /\ inv'1 ab
+  /\ inv'0 a
+  /\ produces'0 b bc c
+  /\ produces'0 a ab b /\ (forall result : () . produces'0 a (Seq.(++) ab bc) c  -> produces'0 a (Seq.(++) ab bc) c)
   
-  goal produces_refl_refn : [%#s02_iter_mut0] forall self : IterMut'0.t_itermut t . inv'0 self
+  goal produces_refl_refn : [%#s02_iter_mut1] forall self : IterMut'0.t_itermut t . inv'0 self
    -> inv'0 self
   /\ (forall result : () . produces'0 self (Seq.empty  : Seq.seq (borrowed t)) self
    -> produces'0 self (Seq.empty  : Seq.seq (borrowed t)) self)
   
-  goal next_refn : [%#s02_iter_mut1] forall self : borrowed (IterMut'0.t_itermut t) . inv'1 self
-   -> inv'1 self
-  /\ (forall result : Option'0.t_option (borrowed t) . inv'2 result
+  goal next_refn : [%#s02_iter_mut2] forall self : borrowed (IterMut'0.t_itermut t) . inv'2 self
+   -> inv'2 self
+  /\ (forall result : Option'0.t_option (borrowed t) . inv'3 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
     | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
     end
-   -> inv'2 result
+   -> inv'3 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
     | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
     end)
-  
-  goal produces_trans_refn : [%#s02_iter_mut2] forall a : IterMut'0.t_itermut t . forall ab : Seq.seq (borrowed t) . forall b : IterMut'0.t_itermut t . forall bc : Seq.seq (borrowed t) . forall c : IterMut'0.t_itermut t . inv'0 c
-  /\ inv'3 bc /\ inv'0 b /\ inv'3 ab /\ inv'0 a /\ produces'0 b bc c /\ produces'0 a ab b
-   -> inv'0 c
-  /\ inv'3 bc
-  /\ inv'0 b
-  /\ inv'3 ab
-  /\ inv'0 a
-  /\ produces'0 b bc c
-  /\ produces'0 a ab b /\ (forall result : () . produces'0 a (Seq.(++) ab bc) c  -> produces'0 a (Seq.(++) ab bc) c)
 end

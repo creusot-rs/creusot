@@ -22,7 +22,7 @@ use crate::{
 };
 
 use petgraph::graphmap::DiGraphMap;
-use rustc_hir::{def_id::DefId, Unsafety};
+use rustc_hir::{def_id::DefId, Safety};
 use rustc_middle::{
     mir::{self, BasicBlock, BinOp, ProjectionElem, UnOp, START_BLOCK},
     ty::{AdtDef, GenericArgsRef, Ty, TyKind},
@@ -621,7 +621,7 @@ impl<'tcx> RValue<'tcx> {
                 Exp::var("_res")
             }
             RValue::Ghost(t) => lower_pure(lower.ctx, lower.names, &t),
-            RValue::Borrow(_, _) => todo!(),
+            RValue::Borrow(_, _) | RValue::UnaryOp(UnOp::PtrMetadata, _) => todo!(),
         };
 
         e
@@ -1170,7 +1170,7 @@ fn func_call_to_why3<'tcx>(
     let args: Vec<_> = if lower.ctx.is_closure_like(id) {
         assert!(args.len() == 2, "closures should only have two arguments (env, args)");
 
-        let real_sig = lower.ctx.signature_unclosure(subst.as_closure().sig(), Unsafety::Normal);
+        let real_sig = lower.ctx.signature_unclosure(subst.as_closure().sig(), Safety::Safe);
 
         let Operand::Move(pl) = args.remove(1) else { panic!() };
         let mut args = vec![coma::Arg::Term(args.remove(0).to_why(lower, istmts))];
@@ -1202,30 +1202,31 @@ pub(crate) fn binop_to_binop<'tcx, N: Namer<'tcx>>(names: &mut N, ty: Ty, op: mi
     names.import_prelude_module(prelude);
     let mut module = prelude.qname();
 
+    use BinOp::*;
     match op {
-        BinOp::Add => module.push_ident("add"),
-        BinOp::AddUnchecked => module.push_ident("add"),
-        BinOp::Sub => module.push_ident("sub"),
-        BinOp::SubUnchecked => module.push_ident("sub"),
-        BinOp::Mul => module.push_ident("mul"),
-        BinOp::MulUnchecked => module.push_ident("mul"),
-        BinOp::Div => module.push_ident("div"),
-        BinOp::Rem => module.push_ident("rem"),
-        BinOp::BitXor => module.push_ident("bw_xor"),
-        BinOp::BitAnd => module.push_ident("bw_and"),
-        BinOp::BitOr => module.push_ident("bw_or"),
-        BinOp::Shl => module.push_ident("shl"),
-        BinOp::ShlUnchecked => module.push_ident("shl"),
-        BinOp::Shr => module.push_ident("shr"),
-        BinOp::ShrUnchecked => module.push_ident("shr"),
-        BinOp::Eq => module.push_ident("eq"),
-        BinOp::Lt => module.push_ident("lt"),
-        BinOp::Le => module.push_ident("le"),
-        BinOp::Ne => module.push_ident("ne"),
-        BinOp::Ge => module.push_ident("ge"),
-        BinOp::Gt => module.push_ident("gt"),
-        BinOp::Cmp => todo!(),
-        BinOp::Offset => unimplemented!("pointer offsets are unsupported"),
+        Add => module.push_ident("add"),
+        AddUnchecked => module.push_ident("add"),
+        Sub => module.push_ident("sub"),
+        SubUnchecked => module.push_ident("sub"),
+        Mul => module.push_ident("mul"),
+        MulUnchecked => module.push_ident("mul"),
+        Div => module.push_ident("div"),
+        Rem => module.push_ident("rem"),
+        BitXor => module.push_ident("bw_xor"),
+        BitAnd => module.push_ident("bw_and"),
+        BitOr => module.push_ident("bw_or"),
+        Shl => module.push_ident("shl"),
+        ShlUnchecked => module.push_ident("shl"),
+        Shr => module.push_ident("shr"),
+        ShrUnchecked => module.push_ident("shr"),
+        Eq => module.push_ident("eq"),
+        Lt => module.push_ident("lt"),
+        Le => module.push_ident("le"),
+        Ne => module.push_ident("ne"),
+        Ge => module.push_ident("ge"),
+        Gt => module.push_ident("gt"),
+        Cmp | AddWithOverflow | SubWithOverflow | MulWithOverflow => todo!(),
+        Offset => unimplemented!("pointer offsets are unsupported"),
     };
 
     module = module.without_search_path();

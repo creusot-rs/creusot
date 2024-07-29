@@ -139,7 +139,7 @@ impl SpanDecoder for MetadataDecoder<'_, '_> {
     // sessions, to map the old `DefId` to the new one.
     fn decode_def_id(&mut self) -> DefId {
         let def_path_hash = DefPathHash::decode(self);
-        self.tcx.def_path_hash_to_def_id(def_path_hash, &"Cannot resolve crate.")
+        self.tcx.def_path_hash_to_def_id(def_path_hash).expect("Cannot resolve crate.")
     }
 
     fn decode_attr_id(&mut self) -> AttrId {
@@ -174,7 +174,7 @@ impl<'a, 'tcx> TyDecoder for MetadataDecoder<'a, 'tcx> {
     where
         F: FnOnce(&mut Self) -> R,
     {
-        let new_decoder = MemDecoder::new(self.opaque.data(), pos);
+        let new_decoder = self.opaque.split_at(pos);
         let old_decoder = std::mem::replace(&mut self.opaque, new_decoder);
         let r = f(self);
         self.opaque = old_decoder;
@@ -191,16 +191,16 @@ pub fn decode_metadata<'tcx, T: for<'a> Decodable<MetadataDecoder<'a, 'tcx>>>(
     blob: &[u8],
 ) -> T {
     let footer = {
-        let mut decoder = MemDecoder::new(blob, 0);
+        let mut decoder = MemDecoder::new(blob, 0).unwrap();
         let footer_pos = decoder
-            .with_position(blob.len() - IntEncodedWithFixedSize::ENCODED_SIZE, |d| {
+            .with_position(decoder.len() - IntEncodedWithFixedSize::ENCODED_SIZE, |d| {
                 IntEncodedWithFixedSize::decode(d).0 as usize
             });
         decoder.with_position(footer_pos, |d| Footer::decode(d))
     };
 
     let mut decoder = MetadataDecoder {
-        opaque: MemDecoder::new(blob, 0),
+        opaque: MemDecoder::new(blob, 0).unwrap(),
         tcx,
         ty_rcache: Default::default(),
         file_index_to_stable_id: footer.file_index_to_stable_id,

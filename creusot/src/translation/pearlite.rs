@@ -326,51 +326,52 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let lhs = self.expr_term(lhs)?;
                 let rhs = self.expr_term(rhs)?;
 
-                use rustc_middle::mir;
+                use rustc_middle::mir::BinOp::*;
                 let op = match op {
-                    mir::BinOp::Add | mir::BinOp::AddUnchecked => BinOp::Add,
-                    mir::BinOp::Sub | mir::BinOp::SubUnchecked => BinOp::Sub,
-                    mir::BinOp::Mul | mir::BinOp::MulUnchecked => BinOp::Mul,
-                    mir::BinOp::Div => BinOp::Div,
-                    mir::BinOp::Rem => BinOp::Rem,
-                    mir::BinOp::BitXor => {
+                    Add | AddUnchecked => BinOp::Add,
+                    Sub | SubUnchecked => BinOp::Sub,
+                    Mul | MulUnchecked => BinOp::Mul,
+                    Div => BinOp::Div,
+                    Rem => BinOp::Rem,
+                    BitXor => {
                         return Err(Error::new(
                             self.thir[expr].span,
                             "bitwise-xors are currently unsupported",
                         ))
                     }
-                    mir::BinOp::BitAnd => {
+                    BitAnd => {
                         return Err(Error::new(
                             self.thir[expr].span,
                             "bitwise-ands are currently unsupported",
                         ))
                     }
-                    mir::BinOp::BitOr => {
+                    BitOr => {
                         return Err(Error::new(
                             self.thir[expr].span,
                             "bitwise-ors are currently unsupported",
                         ))
                     }
-                    mir::BinOp::Shl | mir::BinOp::ShlUnchecked => {
+                    Shl | ShlUnchecked => {
                         return Err(Error::new(
                             self.thir[expr].span,
                             "shifts are currently unsupported",
                         ))
                     }
-                    mir::BinOp::Shr | mir::BinOp::ShrUnchecked => {
+                    Shr | ShrUnchecked => {
                         return Err(Error::new(
                             self.thir[expr].span,
                             "shifts are currently unsupported",
                         ))
                     }
-                    mir::BinOp::Lt => BinOp::Lt,
-                    mir::BinOp::Le => BinOp::Le,
-                    mir::BinOp::Ge => BinOp::Ge,
-                    mir::BinOp::Gt => BinOp::Gt,
-                    mir::BinOp::Ne => unreachable!(),
-                    mir::BinOp::Eq => unreachable!(),
-                    mir::BinOp::Offset => todo!(),
-                    mir::BinOp::Cmp => todo!(),
+                    Lt => BinOp::Lt,
+                    Le => BinOp::Le,
+                    Ge => BinOp::Ge,
+                    Gt => BinOp::Gt,
+                    Ne => unreachable!(),
+                    Eq => unreachable!(),
+                    Offset => todo!(),
+                    Cmp => todo!(),
+                    AddWithOverflow | SubWithOverflow | MulWithOverflow => todo!(),
                 };
                 Ok(Term {
                     ty,
@@ -393,9 +394,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             }
             ExprKind::Unary { op, arg } => {
                 let arg = self.expr_term(arg)?;
+                use rustc_middle::mir::UnOp::*;
                 let op = match op {
-                    rustc_middle::mir::UnOp::Not => UnOp::Not,
-                    rustc_middle::mir::UnOp::Neg => UnOp::Neg,
+                    Not => UnOp::Not,
+                    Neg => UnOp::Neg,
+                    PtrMetadata => todo!(),
                 };
                 Ok(Term { ty, span, kind: TermKind::Unary { op, arg: Box::new(arg) } })
             }

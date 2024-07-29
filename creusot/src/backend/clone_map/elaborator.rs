@@ -199,14 +199,11 @@ impl<'tcx> SymbolElaborator<'tcx> {
             }
         } else if util::item_type(ctx.tcx, def_id) == ItemType::Constant {
             let uneval = ty::UnevaluatedConst::new(def_id, subst);
-            let constant = Const::new(
-                ctx.tcx,
-                ty::ConstKind::Unevaluated(uneval),
-                ctx.type_of(def_id).instantiate_identity(),
-            );
+            let constant = Const::new(ctx.tcx, ty::ConstKind::Unevaluated(uneval));
+            let ty = ctx.type_of(def_id).instantiate_identity();
 
             let span = ctx.def_span(def_id);
-            let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, param_env, span);
+            let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, ty, param_env, span);
 
             let res = lower_pure(ctx, names, &res);
             vec![Decl::ConstantDecl(Constant {

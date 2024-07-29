@@ -484,11 +484,11 @@ module C14Copied_Impl0
   
   type t
   
-  let%span s14_copied0 = "../14_copied.rs" 46 4 46 90
+  let%span s14_copied0 = "../14_copied.rs" 39 4 39 26
   
   let%span s14_copied1 = "../14_copied.rs" 52 4 52 35
   
-  let%span s14_copied2 = "../14_copied.rs" 39 4 39 26
+  let%span s14_copied2 = "../14_copied.rs" 46 4 46 90
   
   let%span span3 = "../14_copied.rs" 23 8 23 43
   
@@ -502,37 +502,35 @@ module C14Copied_Impl0
   
   axiom inv'4 : forall x : Seq.seq t . inv'4 x = true
   
+  predicate invariant'3 (self : Seq.seq t)
+  
+  predicate inv'3 (_x : Seq.seq t)
+  
+  axiom inv'3 : forall x : Seq.seq t . inv'3 x = true
+  
   use Core_Option_Option_Type as Option'0
   
-  predicate invariant'3 (self : Option'0.t_option t)
+  predicate invariant'2 (self : Option'0.t_option t)
   
-  predicate inv'3 (_x : Option'0.t_option t)
+  predicate inv'2 (_x : Option'0.t_option t)
   
-  axiom inv'3 : forall x : Option'0.t_option t . inv'3 x = true
+  axiom inv'2 : forall x : Option'0.t_option t . inv'2 x = true
   
   use C14Copied_Copied_Type as Copied'0
   
   use prelude.prelude.Borrow
   
-  predicate invariant'2 (self : borrowed (Copied'0.t_copied i))
+  predicate invariant'1 (self : borrowed (Copied'0.t_copied i))
   
-  predicate inv'2 (_x : borrowed (Copied'0.t_copied i))
+  predicate inv'1 (_x : borrowed (Copied'0.t_copied i))
   
-  axiom inv'2 : forall x : borrowed (Copied'0.t_copied i) . inv'2 x = true
-  
-  predicate invariant'1 (self : Seq.seq t)
-  
-  predicate inv'1 (_x : Seq.seq t)
-  
-  axiom inv'1 : forall x : Seq.seq t . inv'1 x = true
+  axiom inv'1 : forall x : borrowed (Copied'0.t_copied i) . inv'1 x = true
   
   predicate invariant'0 (self : Copied'0.t_copied i)
   
   predicate inv'0 (_x : Copied'0.t_copied i)
   
   axiom inv'0 : forall x : Copied'0.t_copied i . inv'0 x = true
-  
-  use seq.Seq
   
   use seq.Seq
   
@@ -567,31 +565,33 @@ module C14Copied_Impl0
     /\ Seq.length visited = Seq.length s
     /\ (forall i : int . 0 <= i /\ i < Seq.length s  -> Seq.get visited i = Seq.get s i)
   
-  goal produces_trans_refn : [%#s14_copied0] forall a : Copied'0.t_copied i . forall ab : Seq.seq t . forall b : Copied'0.t_copied i . forall bc : Seq.seq t . forall c : Copied'0.t_copied i . inv'0 c
-  /\ inv'1 bc /\ inv'0 b /\ inv'1 ab /\ inv'0 a /\ produces'0 b bc c /\ produces'0 a ab b
-   -> inv'0 c
-  /\ inv'1 bc
-  /\ inv'0 b
-  /\ inv'1 ab
-  /\ inv'0 a
-  /\ produces'0 b bc c
-  /\ produces'0 a ab b /\ (forall result : () . produces'0 a (Seq.(++) ab bc) c  -> produces'0 a (Seq.(++) ab bc) c)
+  use seq.Seq
   
-  goal next_refn : [%#s14_copied1] forall self : borrowed (Copied'0.t_copied i) . inv'2 self
-   -> inv'2 self
-  /\ (forall result : Option'0.t_option t . inv'3 result
+  goal produces_refl_refn : [%#s14_copied0] forall self : Copied'0.t_copied i . inv'0 self
+   -> inv'0 self
+  /\ (forall result : () . produces'0 self (Seq.empty  : Seq.seq t) self
+   -> produces'0 self (Seq.empty  : Seq.seq t) self)
+  
+  goal next_refn : [%#s14_copied1] forall self : borrowed (Copied'0.t_copied i) . inv'1 self
+   -> inv'1 self
+  /\ (forall result : Option'0.t_option t . inv'2 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
     | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
     end
-   -> inv'3 result
+   -> inv'2 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
     | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
     end)
   
-  goal produces_refl_refn : [%#s14_copied2] forall self : Copied'0.t_copied i . inv'0 self
-   -> inv'0 self
-  /\ (forall result : () . produces'0 self (Seq.empty  : Seq.seq t) self
-   -> produces'0 self (Seq.empty  : Seq.seq t) self)
+  goal produces_trans_refn : [%#s14_copied2] forall a : Copied'0.t_copied i . forall ab : Seq.seq t . forall b : Copied'0.t_copied i . forall bc : Seq.seq t . forall c : Copied'0.t_copied i . inv'0 c
+  /\ inv'3 bc /\ inv'0 b /\ inv'3 ab /\ inv'0 a /\ produces'0 b bc c /\ produces'0 a ab b
+   -> inv'0 c
+  /\ inv'3 bc
+  /\ inv'0 b
+  /\ inv'3 ab
+  /\ inv'0 a
+  /\ produces'0 b bc c
+  /\ produces'0 a ab b /\ (forall result : () . produces'0 a (Seq.(++) ab bc) c  -> produces'0 a (Seq.(++) ab bc) c)
 end
