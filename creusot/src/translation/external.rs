@@ -51,7 +51,8 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let (id, subst) = visit.items.pop().unwrap();
 
     let (id, _) = if ctx.trait_of_item(id).is_some() {
-        let resolved = traits::resolve_assoc_item_opt(ctx.tcx, ctx.param_env(def_id.to_def_id()), id, subst);
+        let resolved =
+            traits::resolve_assoc_item_opt(ctx.tcx, ctx.param_env(def_id.to_def_id()), id, subst);
 
         if let None = resolved {
             let mut err = ctx.fatal_error(
