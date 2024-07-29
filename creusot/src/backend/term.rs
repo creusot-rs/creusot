@@ -124,14 +124,14 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Cur { box term } => {
                 if term.creusot_ty().is_mutable_ptr() {
                     self.names.import_prelude_module(PreludeModule::Borrow);
-                    Exp::Current(Box::new(self.lower_term(term)))
+                    self.lower_term(term).field("current")
                 } else {
                     self.lower_term(term)
                 }
             }
             TermKind::Fin { box term } => {
                 self.names.import_prelude_module(PreludeModule::Borrow);
-                Exp::Final(Box::new(self.lower_term(term)))
+                self.lower_term(term).field("final")
             }
             TermKind::Impl { box lhs, box rhs } => {
                 self.lower_term(lhs).implies(self.lower_term(rhs))
