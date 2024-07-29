@@ -371,7 +371,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     Eq => unreachable!(),
                     Offset => todo!(),
                     Cmp => todo!(),
-                    AddWithOverflow | SubWithOverflow | MulWithOverflow => todo!()
+                    AddWithOverflow | SubWithOverflow | MulWithOverflow => todo!(),
                 };
                 Ok(Term {
                     ty,
@@ -398,7 +398,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let op = match op {
                     Not => UnOp::Not,
                     Neg => UnOp::Neg,
-                    PtrMetadata => todo!()
+                    PtrMetadata => todo!(),
                 };
                 Ok(Term { ty, span, kind: TermKind::Unary { op, arg: Box::new(arg) } })
             }
