@@ -11,7 +11,7 @@ use rustc_middle::ty::{
     ParamEnv, TraitRef, TyCtxt, TypeVisitableExt,
 };
 use rustc_span::Symbol;
-use rustc_trait_selection::traits::ImplSource;
+use rustc_trait_selection::{error_reporting::InferCtxtErrorExt, traits::ImplSource};
 use std::collections::HashMap;
 
 #[derive(Clone)]
@@ -92,7 +92,6 @@ impl<'tcx> TranslationCtx<'tcx> {
                 self.param_env(impl_item),
                 self.def_span(impl_item),
             );
-            use rustc_trait_selection::traits::error_reporting::TypeErrCtxtExt;
             if let Err(errs) = res {
                 infcx.err_ctxt().report_fulfillment_errors(errs);
                 self.crash_and_error(rustc_span::DUMMY_SP, "error above");

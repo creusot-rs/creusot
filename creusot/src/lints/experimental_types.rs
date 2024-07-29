@@ -43,8 +43,9 @@ impl<'tcx> LateLintPass<'tcx> for Experimental {
             cx.opt_span_lint(
                 EXPERIMENTAL,
                 Some(e.span),
-                "support for string types is limited and experimental",
-                |_lint| (),
+                |lint| {
+                    lint.primary_message("support for string types is limited and experimental");
+                },
             );
         }
 
@@ -52,8 +53,9 @@ impl<'tcx> LateLintPass<'tcx> for Experimental {
             cx.opt_span_lint(
                 EXPERIMENTAL,
                 Some(e.span),
-                "support for trait objects (dyn) is limited and experimental",
-                |_lint| (),
+                |lint| {
+                    lint.primary_message("support for trait objects (dyn) is limited and experimental");
+                },
             );
         }
     }

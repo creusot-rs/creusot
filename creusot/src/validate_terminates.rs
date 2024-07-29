@@ -200,7 +200,7 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
                                 .try_normalize_erasing_regions(param_env, subst)
                             {
                                 Ok(subst) => {
-                                    match tcx.resolve_instance(param_env.and((item_id, subst))) {
+                                    match tcx.resolve_instance_raw(param_env.and((item_id, subst))) {
                                         Ok(Some(instance)) => {
                                             (instance.def.def_id(), instance.args)
                                         }
@@ -379,7 +379,7 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tc
                     let (def_id, args) =
                         match self.tcx.try_normalize_erasing_regions(self.param_env, subst) {
                             Ok(subst) => {
-                                match self.tcx.resolve_instance(self.param_env.and((def_id, subst)))
+                                match self.tcx.resolve_instance_raw(self.param_env.and((def_id, subst)))
                                 {
                                     Ok(Some(instance)) => (instance.def.def_id(), instance.args),
                                     _ => (def_id, subst),

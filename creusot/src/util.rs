@@ -15,7 +15,7 @@ use rustc_ast::{
 use rustc_hir::{
     def::{DefKind, Namespace},
     def_id::DefId,
-    Unsafety,
+    Safety,
 };
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
@@ -409,7 +409,7 @@ pub(crate) fn inputs_and_output<'tcx>(
             (Box::new(iter), sig.output())
         }
         TyKind::Closure(_, subst) => {
-            let sig = tcx.signature_unclosure(subst.as_closure().sig(), Unsafety::Normal);
+            let sig = tcx.signature_unclosure(subst.as_closure().sig(), Safety::Safe);
             let sig = tcx.normalize_erasing_late_bound_regions(tcx.param_env(def_id), sig);
             let env_ty = tcx.closure_env_ty(ty, subst.as_closure().kind(), tcx.lifetimes.re_erased);
 

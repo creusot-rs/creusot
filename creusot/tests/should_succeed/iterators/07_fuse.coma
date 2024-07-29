@@ -702,11 +702,11 @@ end
 module C07Fuse_Impl0
   type i
   
-  let%span s07_fuse0 = "../07_fuse.rs" 62 4 62 90
+  let%span s07_fuse0 = "../07_fuse.rs" 55 4 55 26
   
-  let%span s07_fuse1 = "../07_fuse.rs" 39 4 39 44
+  let%span s07_fuse1 = "../07_fuse.rs" 62 4 62 90
   
-  let%span s07_fuse2 = "../07_fuse.rs" 55 4 55 26
+  let%span s07_fuse2 = "../07_fuse.rs" 39 4 39 44
   
   let%span span3 = "../07_fuse.rs" 18 12 19 32
   
@@ -754,10 +754,6 @@ module C07Fuse_Impl0
   
   use seq.Seq
   
-  use seq.Seq
-  
-  use seq.Seq
-  
   predicate completed'1 [#"../common.rs" 11 4 11 36] (self : borrowed i)
   
   use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
@@ -770,7 +766,11 @@ module C07Fuse_Impl0
   
   use seq.Seq
   
+  use seq.Seq
+  
   predicate produces'1 [#"../common.rs" 8 4 8 65] (self : i) (visited : Seq.seq item'0) (o : i)
+  
+  use seq.Seq
   
   predicate produces'0 [#"../07_fuse.rs" 25 4 25 65] (self : Fuse'0.t_fuse i) (prod : Seq.seq item'0) (other : Fuse'0.t_fuse i)
     
@@ -784,7 +784,12 @@ module C07Fuse_Impl0
         end
       end
   
-  goal produces_trans_refn : [%#s07_fuse0] forall a : Fuse'0.t_fuse i . forall ab : Seq.seq item'0 . forall b : Fuse'0.t_fuse i . forall bc : Seq.seq item'0 . forall c : Fuse'0.t_fuse i . inv'0 c
+  goal produces_refl_refn : [%#s07_fuse0] forall self : Fuse'0.t_fuse i . inv'0 self
+   -> inv'0 self
+  /\ (forall result : () . produces'0 self (Seq.empty  : Seq.seq item'0) self
+   -> produces'0 self (Seq.empty  : Seq.seq item'0) self)
+  
+  goal produces_trans_refn : [%#s07_fuse1] forall a : Fuse'0.t_fuse i . forall ab : Seq.seq item'0 . forall b : Fuse'0.t_fuse i . forall bc : Seq.seq item'0 . forall c : Fuse'0.t_fuse i . inv'0 c
   /\ inv'1 bc /\ inv'0 b /\ inv'1 ab /\ inv'0 a /\ produces'0 b bc c /\ produces'0 a ab b
    -> inv'0 c
   /\ inv'1 bc
@@ -794,7 +799,7 @@ module C07Fuse_Impl0
   /\ produces'0 b bc c
   /\ produces'0 a ab b /\ (forall result : () . produces'0 a (Seq.(++) ab bc) c  -> produces'0 a (Seq.(++) ab bc) c)
   
-  goal next_refn : [%#s07_fuse1] forall self : borrowed (Fuse'0.t_fuse i) . inv'2 self
+  goal next_refn : [%#s07_fuse2] forall self : borrowed (Fuse'0.t_fuse i) . inv'2 self
    -> inv'2 self
   /\ (forall result : Option'0.t_option item'0 . inv'3 result
   /\ match result with
@@ -806,11 +811,6 @@ module C07Fuse_Impl0
     | Option'0.C_None -> completed'0 self
     | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
     end)
-  
-  goal produces_refl_refn : [%#s07_fuse2] forall self : Fuse'0.t_fuse i . inv'0 self
-   -> inv'0 self
-  /\ (forall result : () . produces'0 self (Seq.empty  : Seq.seq item'0) self
-   -> produces'0 self (Seq.empty  : Seq.seq item'0) self)
 end
 module C07Fuse_Impl1
   type i

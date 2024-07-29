@@ -97,7 +97,7 @@ impl ContractClauses {
         }
     }
 
-    fn get_pre<'tcx>(self, ctx: &mut TranslationCtx<'tcx>) -> EarlyBinder<PreContract<'tcx>> {
+    fn get_pre<'tcx>(self, ctx: &mut TranslationCtx<'tcx>) -> EarlyBinder<'tcx, PreContract<'tcx>> {
         let mut out = PreContract::default();
         for req_id in self.requires {
             log::trace!("require clause {:?}", req_id);
