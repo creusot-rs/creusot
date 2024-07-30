@@ -1,6 +1,6 @@
 use crate::*;
-pub use ::std::option::*;
 use ::std::cmp::Ordering;
+pub use ::std::option::*;
 
 impl<T: DeepModel> DeepModel for Option<T> {
     type DeepModelTy = Option<T::DeepModelTy>;
