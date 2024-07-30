@@ -14,10 +14,9 @@ use rustc_middle::{
         BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
         StatementKind,
     },
-    ty::{adjustment::PointerCoercion, Ty},
+    ty::adjustment::PointerCoercion,
 };
 use rustc_mir_dataflow::ResultsCursor;
-use rustc_type_ir::inherent::Ty as _;
 
 impl<'tcx> BodyTranslator<'_, 'tcx> {
     pub(crate) fn translate_statement(

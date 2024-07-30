@@ -209,8 +209,12 @@ fn compare_str(buf: &mut Buffer, got: &str, expect: &str) -> bool {
     use similar::Algorithm;
     use std::time::Duration;
 
-    let got = normalize_newlines(got);
-    let expect = normalize_newlines(expect);
+    if got == expect {
+        return true;
+    }
+
+    let got = normalize_spans(&normalize_newlines(got));
+    let expect = normalize_spans(&normalize_newlines(expect));
 
     let result = TextDiff::configure()
         .newline_terminated(false)
@@ -220,7 +224,11 @@ fn compare_str(buf: &mut Buffer, got: &str, expect: &str) -> bool {
 
     // let result = TextDiff::from_lines(expect, got);
     if result.ratio() == 1.0 {
-        true
+        buf.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
+        write!(buf, "  <Differences in spans an line ending only.>").unwrap();
+        buf.reset().unwrap();
+        writeln!(buf).unwrap();
+        false
     } else {
         print_diff(buf, result);
         false
@@ -234,6 +242,16 @@ fn normalize_newlines(input: impl Into<String>) -> String {
     let input: String = input.into();
     let input = input.replace("\r", "");
     input
+}
+
+/// Replace numbered spans with "spanxxxx" for better diffs
+fn normalize_spans(s: &str) -> String {
+    use regex::Regex;
+    let re1 = Regex::new(r"\[%#span[0-9]*\]").unwrap();
+    let s = re1.replace_all(s, "[%#spanxxxx]");
+    let re2 = Regex::new(r"let%span.*").unwrap();
+    let s = re2.replace_all(&s, "let%span spanxxxx =");
+    s.into_owned()
 }
 
 /// Normalize file path between linux/windows for consistency
@@ -306,27 +324,19 @@ fn print_diff<'a, W: WriteColor>(mut buf: W, diff: TextDiff<'a, 'a, 'a, str>) {
                     for line in change.value().lines() {
                         writeln!(&mut buf, "{} {:>2} ┊ {}", sign, index, line).unwrap();
                     }
-                    buf.set_color(&ColorSpec::new()).unwrap();
+                    buf.reset().unwrap();
                 }
             }
         }
         multiple_diffs = true;
     }
-    buf.set_color(&ColorSpec::new()).unwrap();
+    buf.reset().unwrap();
 }
 
 fn chunk_color(chunk: ChangeTag) -> ColorSpec {
     match chunk {
-        ChangeTag::Equal => ColorSpec::new(),
-        ChangeTag::Delete => {
-            let mut c = ColorSpec::new();
-            c.set_fg(Some(Color::Red));
-            c
-        }
-        ChangeTag::Insert => {
-            let mut c = ColorSpec::new();
-            c.set_fg(Some(Color::Green));
-            c
-        }
+        ChangeTag::Equal => ColorSpec::new().set_fg(Some(Color::White)).clone(),
+        ChangeTag::Delete => ColorSpec::new().set_fg(Some(Color::Red)).clone(),
+        ChangeTag::Insert => ColorSpec::new().set_fg(Some(Color::Green)).clone(),
     }
 }
