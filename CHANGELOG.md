@@ -11,6 +11,8 @@ Creusot is currently best suited for the verification of code like data-structur
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate 
 
+## [0.1.1] - 30/07/2024
+
 ### Cargo Creusot
 
 Cargo creusot saw several minor improvements especially with regards to configurations.
@@ -377,6 +379,3 @@ I'd like to thank some of the contributors that have made Creusot possible, this
 - David Ewert (@dewert99)
 - Arnaud Golfouse (@arnaudgolfouse)
 - Armaël Guéneau (@armael)
-
-<!-- next-url -->
-[Unreleased]: https://github.com/assert-rs/predicates-rs/compare/v3.1.2...HEAD
