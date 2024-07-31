@@ -177,10 +177,11 @@ module C01Range_Impl0_Next
   use prelude.prelude.Borrow
   
   predicate resolve'0 (self : borrowed (Range'0.t_range)) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   predicate completed'0 [#"../01_range.rs" 23 4 23 35] (self : borrowed (Range'0.t_range)) =
-    [%#span4] resolve'0 self /\ C01Range_Range_Type.range_start ( * self) >= C01Range_Range_Type.range_end ( * self)
+    [%#span4] resolve'0 self
+    /\ C01Range_Range_Type.range_start self.current >= C01Range_Range_Type.range_end self.current
   
   use prelude.prelude.Intrinsic
   
@@ -188,21 +189,21 @@ module C01Range_Impl0_Next
   
   let rec next (self:borrowed (Range'0.t_range)) (return'  (ret:Option'0.t_option isize))= (! bb0
     [ bb0 = s0
-      [ s0 = Range'0.t_range { * self}
+      [ s0 = Range'0.t_range {self.current}
           (fun (rstart'0:isize) (rend'0:isize) ->
-            Range'0.t_range { * self}
+            Range'0.t_range {self.current}
               (fun (rstart'1:isize) (rend'1:isize) ->
                 IntSize.ge {rstart'0} {rend'1} (fun (_ret':bool) ->  [ &_3 <- _ret' ] s1)))
       | s1 = any [ br0 -> {_3 = false} (! bb2) | br1 -> {_3} (! bb1) ]  ]
       
     | bb1 = s0 [ s0 = -{resolve'0 self}- s1 | s1 =  [ &_0 <- Option'0.C_None ] s2 | s2 = bb3 ] 
     | bb2 = s0
-      [ s0 = Range'0.t_range { * self} (fun (rstart'0:isize) (rend'0:isize) ->  [ &r <- rstart'0 ] s1)
-      | s1 = Range'0.t_range { * self}
+      [ s0 = Range'0.t_range {self.current} (fun (rstart'0:isize) (rend'0:isize) ->  [ &r <- rstart'0 ] s1)
+      | s1 = Range'0.t_range {self.current}
           (fun (rstart'1:isize) (rend'1:isize) ->
             IntSize.add {rstart'1} {[%#s01_range0] (1 : isize)}
               (fun (_ret':isize) ->
-                Range'0.t_range { * self}
+                Range'0.t_range {self.current}
                   (fun (l_start'0:isize) (l_end'0:isize) ->
                      [ &self <- { self with current = Range'0.C_Range _ret' l_end'0 ; } ] 
                     s2)))
@@ -219,7 +220,7 @@ module C01Range_Impl0_Next
     
     [ return' (result:Option'0.t_option isize)-> {[@expl:postcondition] [%#s01_range1] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -350,15 +351,16 @@ module C01Range_SumRange
   use prelude.prelude.Borrow
   
   predicate resolve'0 (self : borrowed (Range'0.t_range)) =
-    [%#span20]  ^ self =  * self
+    [%#span20] self.final = self.current
   
   predicate completed'0 [#"../01_range.rs" 23 4 23 35] (self : borrowed (Range'0.t_range)) =
-    [%#span21] resolve'0 self /\ C01Range_Range_Type.range_start ( * self) >= C01Range_Range_Type.range_end ( * self)
+    [%#span21] resolve'0 self
+    /\ C01Range_Range_Type.range_start self.current >= C01Range_Range_Type.range_end self.current
   
   let rec next'0 (self:borrowed (Range'0.t_range)) (return'  (ret:Option'0.t_option isize))= any
     [ return' (result:Option'0.t_option isize)-> {[%#span22] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -395,7 +397,7 @@ module C01Range_SumRange
         (! s0) [ s0 = bb5 ] 
         [ bb5 = s0
           [ s0 = Borrow.borrow_mut <Range'0.t_range> {it}
-              (fun (_ret':borrowed (Range'0.t_range)) ->  [ &_18 <- _ret' ]  [ &it <-  ^ _18 ] s1)
+              (fun (_ret':borrowed (Range'0.t_range)) ->  [ &_18 <- _ret' ]  [ &it <- _18.final ] s1)
           | s1 = next'0 {_18} (fun (_ret':Option'0.t_option isize) ->  [ &_17 <- _ret' ] s2)
           | s2 = bb6 ]
           
@@ -490,10 +492,11 @@ module C01Range_Impl0
   use C01Range_Range_Type as C01Range_Range_Type
   
   predicate resolve'0 (self : borrowed (Range'0.t_range)) =
-    [%#span4]  ^ self =  * self
+    [%#span4] self.final = self.current
   
   predicate completed'0 [#"../01_range.rs" 23 4 23 35] (self : borrowed (Range'0.t_range)) =
-    [%#span5] resolve'0 self /\ C01Range_Range_Type.range_start ( * self) >= C01Range_Range_Type.range_end ( * self)
+    [%#span5] resolve'0 self
+    /\ C01Range_Range_Type.range_start self.current >= C01Range_Range_Type.range_end self.current
   
   use seq.Seq
   
@@ -530,11 +533,11 @@ module C01Range_Impl0
   goal next_refn : [%#s01_range2] forall self : borrowed (Range'0.t_range) . inv'2 self
    -> (forall result : Option'0.t_option isize . match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end
    -> inv'3 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end)
 end

@@ -441,7 +441,7 @@ module C100doors_F
     [%#span34] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'0 self)  -> resolve'3 (index_logic'0 self i)
   
   predicate resolve'1 (self : borrowed bool) =
-    [%#span35]  ^ self =  * self
+    [%#span35] self.final = self.current
   
   use prelude.prelude.Slice
   
@@ -456,17 +456,17 @@ module C100doors_F
     [%#span38] UIntSize.to_int self < Seq.length seq
   
   function shallow_model'2 (self : borrowed (Vec'0.t_vec bool (Global'0.t_global))) : Seq.seq bool =
-    [%#span39] shallow_model'0 ( * self)
+    [%#span39] shallow_model'0 self.current
   
   let rec index_mut'0 (self:borrowed (Vec'0.t_vec bool (Global'0.t_global))) (index:usize) (return'  (ret:borrowed bool))= {[@expl:precondition] [%#span42] inv'7 index}
     {[@expl:precondition] [%#span41] inv'9 self}
     {[@expl:precondition] [%#span40] in_bounds'0 index (shallow_model'2 self)}
     any
     [ return' (result:borrowed bool)-> {[%#span47] inv'10 result}
-      {[%#span46] Seq.length (shallow_model'0 ( ^ self)) = Seq.length (shallow_model'2 self)}
-      {[%#span45] resolve_elswhere'0 index (shallow_model'2 self) (shallow_model'0 ( ^ self))}
-      {[%#span44] has_value'0 index (shallow_model'0 ( ^ self)) ( ^ result)}
-      {[%#span43] has_value'0 index (shallow_model'2 self) ( * result)}
+      {[%#span46] Seq.length (shallow_model'0 self.final) = Seq.length (shallow_model'2 self)}
+      {[%#span45] resolve_elswhere'0 index (shallow_model'2 self) (shallow_model'0 self.final)}
+      {[%#span44] has_value'0 index (shallow_model'0 self.final) result.final}
+      {[%#span43] has_value'0 index (shallow_model'2 self) result.current}
       (! return' {result}) ]
     
   
@@ -485,19 +485,19 @@ module C100doors_F
   use seq.Seq
   
   predicate resolve'0 (self : borrowed (Range'0.t_range usize)) =
-    [%#span35]  ^ self =  * self
+    [%#span35] self.final = self.current
   
   predicate completed'0 (self : borrowed (Range'0.t_range usize)) =
     [%#span54] resolve'0 self
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start ( * self))
-    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end ( * self))
+    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self.current)
+    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end self.current)
   
   let rec next'0 (self:borrowed (Range'0.t_range usize)) (return'  (ret:Option'0.t_option usize))= {[@expl:precondition] [%#span55] inv'4 self}
     any
     [ return' (result:Option'0.t_option usize)-> {[%#span57] inv'5 result}
       {[%#span56] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -554,11 +554,11 @@ module C100doors_F
         (! s0) [ s0 = bb7 ] 
         [ bb7 = s0
           [ s0 = Borrow.borrow_mut <Range'0.t_range usize> {iter}
-              (fun (_ret':borrowed (Range'0.t_range usize)) ->  [ &_14 <- _ret' ]  [ &iter <-  ^ _14 ] s1)
-          | s1 = Borrow.borrow_final <Range'0.t_range usize> { * _14} {Borrow.get_id _14}
+              (fun (_ret':borrowed (Range'0.t_range usize)) ->  [ &_14 <- _ret' ]  [ &iter <- _14.final ] s1)
+          | s1 = Borrow.borrow_final <Range'0.t_range usize> {_14.current} {Borrow.get_id _14}
               (fun (_ret':borrowed (Range'0.t_range usize)) ->
                  [ &_13 <- _ret' ] 
-                 [ &_14 <- { _14 with current = ( ^ _13) ; } ] 
+                 [ &_14 <- { _14 with current = _13.final ; } ] 
                 s2)
           | s2 = next'0 {_13} (fun (_ret':Option'0.t_option usize) ->  [ &_12 <- _ret' ] s3)
           | s3 = bb8 ]
@@ -604,7 +604,7 @@ module C100doors_F
               [ s0 = Borrow.borrow_mut <Vec'0.t_vec bool (Global'0.t_global)> {door_open}
                   (fun (_ret':borrowed (Vec'0.t_vec bool (Global'0.t_global))) ->
                      [ &_31 <- _ret' ] 
-                     [ &door_open <-  ^ _31 ] 
+                     [ &door_open <- _31.final ] 
                     s1)
               | s1 = UIntSize.sub {door} {[%#s100doors13] (1 : usize)} (fun (_ret':usize) ->  [ &_32 <- _ret' ] s2)
               | s2 = index_mut'0 {_31} {_32} (fun (_ret':borrowed bool) ->  [ &_30 <- _ret' ] s3)

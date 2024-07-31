@@ -550,34 +550,35 @@ module Own_Impl0_AsMut
   use prelude.prelude.Intrinsic
   
   predicate resolve'2 (self : borrowed t) =
-    [%#span5]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   predicate resolve'1 (self : borrowed e) =
-    [%#span5]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   predicate resolve'0 (self : borrowed (OwnResult'0.t_ownresult t e)) =
-    [%#span5]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   let rec as_mut (self:borrowed (OwnResult'0.t_ownresult t e)) (return'  (ret:OwnResult'0.t_ownresult (borrowed t) (borrowed e)))= {[%#sown1] inv'0 self}
     (! bb0
     [ bb0 = any
-      [ br0 (a:t)-> { * self = OwnResult'0.C_Ok a} (! bb2) | br1 (a:e)-> { * self = OwnResult'0.C_Err a} (! bb3) ]
+      [ br0 (a:t)-> {self.current = OwnResult'0.C_Ok a} (! bb2)
+      | br1 (a:e)-> {self.current = OwnResult'0.C_Err a} (! bb3) ]
       
     | bb1 = s0
       [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = {[%#sown0] false} any ]
       
     | bb3 = s0
-      [ s0 = OwnResult'0.err <t> <e> { * self}
+      [ s0 = OwnResult'0.err <t> <e> {self.current}
           (fun (r0'0:e) ->
             Borrow.borrow_final <e> {r0'0} {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed e) ->
                  [ &x1 <- _ret' ] 
-                OwnResult'0.err <t> <e> { * self}
-                  (fun (l_0'0:e) ->  [ &self <- { self with current = OwnResult'0.C_Err ( ^ x1) ; } ] s1)))
-      | s1 = -{inv'1 ( ^ x1)}- s2
-      | s2 = Borrow.borrow_final <e> { * x1} {Borrow.get_id x1}
-          (fun (_ret':borrowed e) ->  [ &_7 <- _ret' ]  [ &x1 <- { x1 with current = ( ^ _7) ; } ] s3)
-      | s3 = -{inv'1 ( ^ _7)}- s4
+                OwnResult'0.err <t> <e> {self.current}
+                  (fun (l_0'0:e) ->  [ &self <- { self with current = OwnResult'0.C_Err x1.final ; } ] s1)))
+      | s1 = -{inv'1 x1.final}- s2
+      | s2 = Borrow.borrow_final <e> {x1.current} {Borrow.get_id x1}
+          (fun (_ret':borrowed e) ->  [ &_7 <- _ret' ]  [ &x1 <- { x1 with current = _7.final ; } ] s3)
+      | s3 = -{inv'1 _7.final}- s4
       | s4 =  [ &_0 <- OwnResult'0.C_Err _7 ] (any [ any_ (_any:borrowed e)-> (!  [ &_7 <- _any ] s5) ] )
       | s5 = {[@expl:type invariant] inv'2 x1} s6
       | s6 = -{resolve'1 x1}- s7
@@ -585,17 +586,17 @@ module Own_Impl0_AsMut
       
     | bb2 = bb4
     | bb4 = s0
-      [ s0 = OwnResult'0.ok <t> <e> { * self}
+      [ s0 = OwnResult'0.ok <t> <e> {self.current}
           (fun (r0'0:t) ->
             Borrow.borrow_final <t> {r0'0} {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed t) ->
                  [ &x <- _ret' ] 
-                OwnResult'0.ok <t> <e> { * self}
-                  (fun (l_0'0:t) ->  [ &self <- { self with current = OwnResult'0.C_Ok ( ^ x) ; } ] s1)))
-      | s1 = -{inv'3 ( ^ x)}- s2
-      | s2 = Borrow.borrow_final <t> { * x} {Borrow.get_id x}
-          (fun (_ret':borrowed t) ->  [ &_5 <- _ret' ]  [ &x <- { x with current = ( ^ _5) ; } ] s3)
-      | s3 = -{inv'3 ( ^ _5)}- s4
+                OwnResult'0.ok <t> <e> {self.current}
+                  (fun (l_0'0:t) ->  [ &self <- { self with current = OwnResult'0.C_Ok x.final ; } ] s1)))
+      | s1 = -{inv'3 x.final}- s2
+      | s2 = Borrow.borrow_final <t> {x.current} {Borrow.get_id x}
+          (fun (_ret':borrowed t) ->  [ &_5 <- _ret' ]  [ &x <- { x with current = _5.final ; } ] s3)
+      | s3 = -{inv'3 _5.final}- s4
       | s4 =  [ &_0 <- OwnResult'0.C_Ok _5 ] (any [ any_ (_any:borrowed t)-> (!  [ &_5 <- _any ] s5) ] )
       | s5 = {[@expl:type invariant] inv'4 x} s6
       | s6 = -{resolve'2 x}- s7
@@ -612,9 +613,11 @@ module Own_Impl0_AsMut
     
     [ return' (result:OwnResult'0.t_ownresult (borrowed t) (borrowed e))-> {[@expl:postcondition] [%#sown3] inv'5 result}
       {[@expl:postcondition] [%#sown2] exists t : borrowed t . inv'4 t
-      /\ ( * self = OwnResult'0.C_Ok ( * t) /\  ^ self = OwnResult'0.C_Ok ( ^ t) /\ result = OwnResult'0.C_Ok t
+      /\ (self.current = OwnResult'0.C_Ok (t.current)
+      /\ self.final = OwnResult'0.C_Ok (t.final) /\ result = OwnResult'0.C_Ok t
       \/ (exists e : borrowed e . inv'2 e
-      /\  * self = OwnResult'0.C_Err ( * e) /\  ^ self = OwnResult'0.C_Err ( ^ e) /\ result = OwnResult'0.C_Err e))}
+      /\ self.current = OwnResult'0.C_Err (e.current)
+      /\ self.final = OwnResult'0.C_Err (e.final) /\ result = OwnResult'0.C_Err e))}
       (! return' {result}) ]
     
 end
@@ -1697,7 +1700,7 @@ module Own_Impl2_Copied
   use prelude.prelude.Intrinsic
   
   predicate resolve'1 (self : borrowed t) =
-    [%#span6]  ^ self =  * self
+    [%#span6] self.final = self.current
   
   predicate resolve'2 (self : e)
   
@@ -1745,7 +1748,7 @@ module Own_Impl2_Copied
       | s2 = -{resolve'0 self}- s3
       | s3 = {[@expl:type invariant] inv'1 t} s4
       | s4 = -{resolve'1 t}- s5
-      | s5 =  [ &_0 <- OwnResult'0.C_Ok ( * t) ] s6
+      | s5 =  [ &_0 <- OwnResult'0.C_Ok (t.current) ] s6
       | s6 = bb9 ]
       
     | bb9 = bb10
@@ -1760,7 +1763,7 @@ module Own_Impl2_Copied
       {[@expl:postcondition] [%#sown3] forall e : e . inv'2 e
        -> self = OwnResult'0.C_Err e  -> result = OwnResult'0.C_Err e}
       {[@expl:postcondition] [%#sown2] forall t : borrowed t . inv'1 t
-       -> self = OwnResult'0.C_Ok t  -> result = OwnResult'0.C_Ok ( * t) /\ resolve'1 t}
+       -> self = OwnResult'0.C_Ok t  -> result = OwnResult'0.C_Ok (t.current) /\ resolve'1 t}
       (! return' {result}) ]
     
 end
@@ -1836,7 +1839,7 @@ module Own_Impl2_Cloned
   use prelude.prelude.Intrinsic
   
   predicate resolve'1 (self : borrowed t) =
-    [%#span6]  ^ self =  * self
+    [%#span6] self.final = self.current
   
   let rec clone'0 (self:t) (return'  (ret:t))= {[@expl:precondition] [%#span7] inv'4 self}
     any [ return' (result:t)-> {[%#span9] inv'5 result} {[%#span8] result = self} (! return' {result}) ] 
@@ -1885,7 +1888,7 @@ module Own_Impl2_Cloned
             ))
       | s1 = {[@expl:type invariant] inv'0 self} s2
       | s2 = -{resolve'0 self}- s3
-      | s3 = clone'0 { * t} (fun (_ret':t) ->  [ &_6 <- _ret' ] s4)
+      | s3 = clone'0 {t.current} (fun (_ret':t) ->  [ &_6 <- _ret' ] s4)
       | s4 = bb7 ]
       
     | bb7 = s0
@@ -1908,7 +1911,7 @@ module Own_Impl2_Cloned
       {[@expl:postcondition] [%#sown3] forall e : e . inv'2 e
        -> self = OwnResult'0.C_Err e  -> result = OwnResult'0.C_Err e}
       {[@expl:postcondition] [%#sown2] forall t : borrowed t . inv'1 t
-       -> self = OwnResult'0.C_Ok t  -> result = OwnResult'0.C_Ok ( * t) /\ resolve'1 t}
+       -> self = OwnResult'0.C_Ok t  -> result = OwnResult'0.C_Ok (t.current) /\ resolve'1 t}
       (! return' {result}) ]
     
 end

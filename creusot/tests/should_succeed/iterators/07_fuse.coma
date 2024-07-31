@@ -177,10 +177,10 @@ module C07Fuse_Impl0_Next
   predicate completed'1 [#"../common.rs" 11 4 11 36] (self : borrowed i)
   
   predicate completed'0 [#"../07_fuse.rs" 16 4 16 35] (self : borrowed (Fuse'0.t_fuse i)) =
-    [%#span16] (C07Fuse_Fuse_Type.fuse_iter ( * self) = Option'0.C_None
+    [%#span16] (C07Fuse_Fuse_Type.fuse_iter self.current = Option'0.C_None
     \/ (exists it : borrowed i . inv'4 it
-    /\ completed'1 it /\ C07Fuse_Fuse_Type.fuse_iter ( * self) = Option'0.C_Some ( * it)))
-    /\ C07Fuse_Fuse_Type.fuse_iter ( ^ self) = Option'0.C_None
+    /\ completed'1 it /\ C07Fuse_Fuse_Type.fuse_iter self.current = Option'0.C_Some (it.current)))
+    /\ C07Fuse_Fuse_Type.fuse_iter self.final = Option'0.C_None
   
   use prelude.prelude.Intrinsic
   
@@ -191,38 +191,40 @@ module C07Fuse_Impl0_Next
     [%#span17] true
   
   predicate resolve'2 (self : borrowed i) =
-    [%#span18]  ^ self =  * self
+    [%#span18] self.final = self.current
   
   let rec next'0 (self:borrowed i) (return'  (ret:Option'0.t_option item'0))= {[@expl:precondition] [%#span19] inv'4 self}
     any
     [ return' (result:Option'0.t_option item'0)-> {[%#span21] inv'5 result}
       {[%#span20] match result with
         | Option'0.C_None -> completed'1 self
-        | Option'0.C_Some v -> produces'1 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'1 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
   
   predicate resolve'1 (self : borrowed (Fuse'0.t_fuse i)) =
-    [%#span18]  ^ self =  * self
+    [%#span18] self.final = self.current
   
   predicate resolve'0 (self : borrowed (Option'0.t_option i)) =
-    [%#span18]  ^ self =  * self
+    [%#span18] self.final = self.current
   
   let rec next (self:borrowed (Fuse'0.t_fuse i)) (return'  (ret:Option'0.t_option item'0))= {[%#s07_fuse1] inv'2 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = Fuse'0.t_fuse <i> { * self}
+      [ s0 = Fuse'0.t_fuse <i> {self.current}
           (fun (riter'0:Option'0.t_option i) ->
             Borrow.borrow_final <Option'0.t_option i> {riter'0} {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed (Option'0.t_option i)) ->
                  [ &_3 <- _ret' ] 
-                Fuse'0.t_fuse <i> { * self}
+                Fuse'0.t_fuse <i> {self.current}
                   (fun (l_iter'0:Option'0.t_option i) ->
-                     [ &self <- { self with current = Fuse'0.C_Fuse ( ^ _3) ; } ] 
+                     [ &self <- { self with current = Fuse'0.C_Fuse _3.final ; } ] 
                     s1)))
-      | s1 = -{inv'0 ( ^ _3)}- s2
-      | s2 = any [ br0 -> { * _3 = Option'0.C_None } (! bb2) | br1 (a:i)-> { * _3 = Option'0.C_Some a} (! bb3) ]  ]
+      | s1 = -{inv'0 _3.final}- s2
+      | s2 = any
+        [ br0 -> {_3.current = Option'0.C_None } (! bb2) | br1 (a:i)-> {_3.current = Option'0.C_Some a} (! bb3) ]
+         ]
       
     | bb1 = s0
       [ s0 = {[@expl:type invariant] inv'1 _3} s1
@@ -232,17 +234,17 @@ module C07Fuse_Impl0_Next
       | s4 = {[%#s07_fuse0] false} any ]
       
     | bb3 = s0
-      [ s0 = Option'0.some <i> { * _3}
+      [ s0 = Option'0.some <i> {_3.current}
           (fun (r0'0:i) ->
             Borrow.borrow_final <i> {r0'0} {Borrow.inherit_id (Borrow.get_id _3) 1}
               (fun (_ret':borrowed i) ->
                  [ &iter <- _ret' ] 
-                Option'0.some <i> { * _3}
-                  (fun (l_0'0:i) ->  [ &_3 <- { _3 with current = Option'0.C_Some ( ^ iter) ; } ] s1)))
-      | s1 = -{inv'3 ( ^ iter)}- s2
-      | s2 = Borrow.borrow_final <i> { * iter} {Borrow.get_id iter}
-          (fun (_ret':borrowed i) ->  [ &_7 <- _ret' ]  [ &iter <- { iter with current = ( ^ _7) ; } ] s3)
-      | s3 = -{inv'3 ( ^ _7)}- s4
+                Option'0.some <i> {_3.current}
+                  (fun (l_0'0:i) ->  [ &_3 <- { _3 with current = Option'0.C_Some iter.final ; } ] s1)))
+      | s1 = -{inv'3 iter.final}- s2
+      | s2 = Borrow.borrow_final <i> {iter.current} {Borrow.get_id iter}
+          (fun (_ret':borrowed i) ->  [ &_7 <- _ret' ]  [ &iter <- { iter with current = _7.final ; } ] s3)
+      | s3 = -{inv'3 _7.final}- s4
       | s4 = next'0 {_7} (fun (_ret':Option'0.t_option item'0) ->  [ &_6 <- _ret' ] s5)
       | s5 = bb5 ]
       
@@ -269,13 +271,13 @@ module C07Fuse_Impl0_Next
       | s3 = bb9 ]
       
     | bb9 = s0
-      [ s0 = Fuse'0.t_fuse <i> { * self}
+      [ s0 = Fuse'0.t_fuse <i> {self.current}
           (fun (l_iter'0:Option'0.t_option i) ->
              [ &self <- { self with current = Fuse'0.C_Fuse _9 ; } ] 
             (any [ any_ (_any:Option'0.t_option i)-> (!  [ &_9 <- _any ] s1) ] ))
-      | s1 = Fuse'0.t_fuse <i> { * self}
+      | s1 = Fuse'0.t_fuse <i> {self.current}
           (fun (riter'0:Option'0.t_option i) -> {[@expl:type invariant] inv'0 riter'0} s2)
-      | s2 = Fuse'0.t_fuse <i> { * self} (fun (riter'1:Option'0.t_option i) -> -{resolve'4 riter'1}- s3)
+      | s2 = Fuse'0.t_fuse <i> {self.current} (fun (riter'1:Option'0.t_option i) -> -{resolve'4 riter'1}- s3)
       | s3 = {[@expl:type invariant] inv'2 self} s4
       | s4 = -{resolve'1 self}- s5
       | s5 = bb11 ]
@@ -306,7 +308,7 @@ module C07Fuse_Impl0_Next
     [ return' (result:Option'0.t_option item'0)-> {[@expl:postcondition] [%#s07_fuse3] inv'5 result}
       {[@expl:postcondition] [%#s07_fuse2] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -703,10 +705,10 @@ module C07Fuse_Impl1_IsFused_Impl
   predicate completed'1 [#"../common.rs" 11 4 11 36] (self : borrowed i)
   
   predicate completed'0 [#"../07_fuse.rs" 16 4 16 35] (self : borrowed (Fuse'0.t_fuse i)) =
-    [%#span30] (C07Fuse_Fuse_Type.fuse_iter ( * self) = Option'0.C_None
+    [%#span30] (C07Fuse_Fuse_Type.fuse_iter self.current = Option'0.C_None
     \/ (exists it : borrowed i . inv'3 it
-    /\ completed'1 it /\ C07Fuse_Fuse_Type.fuse_iter ( * self) = Option'0.C_Some ( * it)))
-    /\ C07Fuse_Fuse_Type.fuse_iter ( ^ self) = Option'0.C_None
+    /\ completed'1 it /\ C07Fuse_Fuse_Type.fuse_iter self.current = Option'0.C_Some (it.current)))
+    /\ C07Fuse_Fuse_Type.fuse_iter self.final = Option'0.C_None
   
   constant self  : borrowed (Fuse'0.t_fuse i)
   
@@ -720,8 +722,8 @@ module C07Fuse_Impl1_IsFused_Impl
   goal vc_is_fused : ([%#s07_fuse4] inv'2 next)
    -> ([%#s07_fuse3] inv'1 steps)
    -> ([%#s07_fuse2] inv'0 self)
-   -> ([%#s07_fuse1] produces'0 ( ^ self) steps next)
-   -> ([%#s07_fuse0] completed'0 self)  -> ([%#s07_fuse5] steps = (Seq.empty  : Seq.seq item'0) /\  ^ self = next)
+   -> ([%#s07_fuse1] produces'0 self.final steps next)
+   -> ([%#s07_fuse0] completed'0 self)  -> ([%#s07_fuse5] steps = (Seq.empty  : Seq.seq item'0) /\ self.final = next)
 end
 module C07Fuse_Impl0
   type i
@@ -789,10 +791,10 @@ module C07Fuse_Impl0
   use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
   
   predicate completed'0 [#"../07_fuse.rs" 16 4 16 35] (self : borrowed (Fuse'0.t_fuse i)) =
-    [%#span4] (C07Fuse_Fuse_Type.fuse_iter ( * self) = Option'0.C_None
+    [%#span4] (C07Fuse_Fuse_Type.fuse_iter self.current = Option'0.C_None
     \/ (exists it : borrowed i . inv'4 it
-    /\ completed'1 it /\ C07Fuse_Fuse_Type.fuse_iter ( * self) = Option'0.C_Some ( * it)))
-    /\ C07Fuse_Fuse_Type.fuse_iter ( ^ self) = Option'0.C_None
+    /\ completed'1 it /\ C07Fuse_Fuse_Type.fuse_iter self.current = Option'0.C_Some (it.current)))
+    /\ C07Fuse_Fuse_Type.fuse_iter self.final = Option'0.C_None
   
   use seq.Seq
   
@@ -834,12 +836,12 @@ module C07Fuse_Impl0
   /\ (forall result : Option'0.t_option item'0 . inv'3 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end
    -> inv'3 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end)
 end
 module C07Fuse_Impl1
@@ -899,10 +901,10 @@ module C07Fuse_Impl1
   use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
   
   predicate completed'0 [#"../07_fuse.rs" 16 4 16 35] (self : borrowed (Fuse'0.t_fuse i)) =
-    [%#span2] (C07Fuse_Fuse_Type.fuse_iter ( * self) = Option'0.C_None
+    [%#span2] (C07Fuse_Fuse_Type.fuse_iter self.current = Option'0.C_None
     \/ (exists it : borrowed i . inv'3 it
-    /\ completed'1 it /\ C07Fuse_Fuse_Type.fuse_iter ( * self) = Option'0.C_Some ( * it)))
-    /\ C07Fuse_Fuse_Type.fuse_iter ( ^ self) = Option'0.C_None
+    /\ completed'1 it /\ C07Fuse_Fuse_Type.fuse_iter self.current = Option'0.C_Some (it.current)))
+    /\ C07Fuse_Fuse_Type.fuse_iter self.final = Option'0.C_None
   
   predicate produces'1 [#"../common.rs" 8 4 8 65] (self : i) (visited : Seq.seq item'0) (o : i)
   
@@ -919,12 +921,12 @@ module C07Fuse_Impl1
       end
   
   goal is_fused_refn : [%#s07_fuse0] forall self : borrowed (Fuse'0.t_fuse i) . forall steps : Seq.seq item'0 . forall next : Fuse'0.t_fuse i . inv'0 next
-  /\ inv'1 steps /\ inv'2 self /\ produces'0 ( ^ self) steps next /\ completed'0 self
+  /\ inv'1 steps /\ inv'2 self /\ produces'0 self.final steps next /\ completed'0 self
    -> inv'0 next
   /\ inv'1 steps
   /\ inv'2 self
-  /\ produces'0 ( ^ self) steps next
+  /\ produces'0 self.final steps next
   /\ completed'0 self
-  /\ (forall result : () . steps = (Seq.empty  : Seq.seq item'0) /\  ^ self = next
-   -> steps = (Seq.empty  : Seq.seq item'0) /\  ^ self = next)
+  /\ (forall result : () . steps = (Seq.empty  : Seq.seq item'0) /\ self.final = next
+   -> steps = (Seq.empty  : Seq.seq item'0) /\ self.final = next)
 end

@@ -194,12 +194,12 @@ module C01ResolveUnsoundness_MakeVecOfSize
   use seq.Seq
   
   function shallow_model'1 (self : borrowed (Vec'0.t_vec bool (Global'0.t_global))) : Seq.seq bool =
-    [%#span12] shallow_model'0 ( * self)
+    [%#span12] shallow_model'0 self.current
   
   let rec push'0 (self:borrowed (Vec'0.t_vec bool (Global'0.t_global))) (value:bool) (return'  (ret:()))= {[@expl:precondition] [%#span14] inv'2 value}
     {[@expl:precondition] [%#span13] inv'1 self}
     any
-    [ return' (result:())-> {[%#span15] shallow_model'0 ( ^ self) = Seq.snoc (shallow_model'1 self) value}
+    [ return' (result:())-> {[%#span15] shallow_model'0 self.final = Seq.snoc (shallow_model'1 self) value}
       (! return' {result}) ]
     
   
@@ -225,7 +225,10 @@ module C01ResolveUnsoundness_MakeVecOfSize
           
         | bb4 = s0
           [ s0 = Borrow.borrow_mut <Vec'0.t_vec bool (Global'0.t_global)> {out}
-              (fun (_ret':borrowed (Vec'0.t_vec bool (Global'0.t_global))) ->  [ &_13 <- _ret' ]  [ &out <-  ^ _13 ] s1)
+              (fun (_ret':borrowed (Vec'0.t_vec bool (Global'0.t_global))) ->
+                 [ &_13 <- _ret' ] 
+                 [ &out <- _13.final ] 
+                s1)
           | s1 = push'0 {_13} {[%#s01_resolve_unsoundness3] false} (fun (_ret':()) ->  [ &_12 <- _ret' ] s2)
           | s2 = bb5 ]
           

@@ -15,30 +15,30 @@ module Unnest_Unnest
   use prelude.prelude.Borrow
   
   predicate resolve'1 (self : borrowed (borrowed uint32)) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   predicate resolve'0 (self : borrowed uint32) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   use prelude.prelude.Int
   
   let rec unnest (x:borrowed (borrowed uint32)) (return'  (ret:borrowed uint32))= (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_mut <uint32> { *  * x}
+      [ s0 = Borrow.borrow_mut <uint32> {(x.current).current}
           (fun (_ret':borrowed uint32) ->
              [ &_2 <- _ret' ] 
-             [ &x <- { x with current = { ( * x) with current = ( ^ _2) ; } ; } ] 
+             [ &x <- { x with current = { x.current with current = _2.final ; } ; } ] 
             s1)
-      | s1 = Borrow.borrow_final <uint32> { * _2} {Borrow.get_id _2}
-          (fun (_ret':borrowed uint32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = ( ^ _0) ; } ] s2)
+      | s1 = Borrow.borrow_final <uint32> {_2.current} {Borrow.get_id _2}
+          (fun (_ret':borrowed uint32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = _0.final ; } ] s2)
       | s2 = -{resolve'0 _2}- s3
       | s3 = -{resolve'1 x}- s4
       | s4 = return' {_0} ]
        ]
     ) [ & _0 : borrowed uint32 = any_l () | & x : borrowed (borrowed uint32) = x | & _2 : borrowed uint32 = any_l () ] 
-    [ return' (result:borrowed uint32)-> {[@expl:postcondition] [%#sunnest2]  ^  * x =  ^  ^ x}
-      {[@expl:postcondition] [%#sunnest1]  ^ result =  *  ^ x}
-      {[@expl:postcondition] [%#sunnest0]  * result =  *  * x}
+    [ return' (result:borrowed uint32)-> {[@expl:postcondition] [%#sunnest2] (x.current).final = (x.final).final}
+      {[@expl:postcondition] [%#sunnest1] result.final = (x.final).current}
+      {[@expl:postcondition] [%#sunnest0] result.current = (x.current).current}
       (! return' {result}) ]
     
 end

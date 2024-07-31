@@ -587,12 +587,12 @@ module C12Zip_Impl0_Next
   predicate completed'1 [#"../common.rs" 11 4 11 36] (self : borrowed a)
   
   predicate completed'0 [#"../12_zip.rs" 19 4 19 35] (self : borrowed (Zip'0.t_zip a b)) =
-    [%#span17] completed'1 (Borrow.borrow_logic (C12Zip_Zip_Type.zip_a ( * self)) (C12Zip_Zip_Type.zip_a ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1))
-    /\ C12Zip_Zip_Type.zip_b ( * self) = C12Zip_Zip_Type.zip_b ( ^ self)
+    [%#span17] completed'1 (Borrow.borrow_logic (C12Zip_Zip_Type.zip_a self.current) (C12Zip_Zip_Type.zip_a self.final) (Borrow.inherit_id (Borrow.get_id self) 1))
+    /\ C12Zip_Zip_Type.zip_b self.current = C12Zip_Zip_Type.zip_b self.final
     \/ (exists x : item'0 . inv'4 x
-    /\ produces'1 (C12Zip_Zip_Type.zip_a ( * self)) (Seq.singleton x) (C12Zip_Zip_Type.zip_a ( ^ self))
+    /\ produces'1 (C12Zip_Zip_Type.zip_a self.current) (Seq.singleton x) (C12Zip_Zip_Type.zip_a self.final)
     /\ resolve'2 x
-    /\ completed'2 (Borrow.borrow_logic (C12Zip_Zip_Type.zip_b ( * self)) (C12Zip_Zip_Type.zip_b ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 2)))
+    /\ completed'2 (Borrow.borrow_logic (C12Zip_Zip_Type.zip_b self.current) (C12Zip_Zip_Type.zip_b self.final) (Borrow.inherit_id (Borrow.get_id self) 2)))
   
   use prelude.prelude.Intrinsic
   
@@ -606,7 +606,7 @@ module C12Zip_Impl0_Next
     [ return' (result:Option'0.t_option item'1)-> {[%#span21] inv'5 result}
       {[%#span20] match result with
         | Option'0.C_None -> completed'2 self
-        | Option'0.C_Some v -> produces'2 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'2 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -615,14 +615,14 @@ module C12Zip_Impl0_Next
     [%#span18] true
   
   predicate resolve'0 (self : borrowed (Zip'0.t_zip a b)) =
-    [%#span22]  ^ self =  * self
+    [%#span22] self.final = self.current
   
   let rec next'0 (self:borrowed a) (return'  (ret:Option'0.t_option item'0))= {[@expl:precondition] [%#span19] inv'7 self}
     any
     [ return' (result:Option'0.t_option item'0)-> {[%#span21] inv'2 result}
       {[%#span20] match result with
         | Option'0.C_None -> completed'1 self
-        | Option'0.C_Some v -> produces'1 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'1 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -630,14 +630,14 @@ module C12Zip_Impl0_Next
   let rec next (self:borrowed (Zip'0.t_zip a b)) (return'  (ret:Option'0.t_option (item'0, item'1)))= {[%#s12_zip2] inv'1 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = Zip'0.t_zip <a> <b> { * self}
+      [ s0 = Zip'0.t_zip <a> <b> {self.current}
           (fun (ra'0:a) (rb'0:b) ->
             Borrow.borrow_final <a> {ra'0} {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed a) ->
                  [ &_5 <- _ret' ] 
-                Zip'0.t_zip <a> <b> { * self}
-                  (fun (l_a'0:a) (l_b'0:b) ->  [ &self <- { self with current = Zip'0.C_Zip ( ^ _5) l_b'0 ; } ] s1)))
-      | s1 = -{inv'0 ( ^ _5)}- s2
+                Zip'0.t_zip <a> <b> {self.current}
+                  (fun (l_a'0:a) (l_b'0:b) ->  [ &self <- { self with current = Zip'0.C_Zip _5.final l_b'0 ; } ] s1)))
+      | s1 = -{inv'0 _5.final}- s2
       | s2 = next'0 {_5} (fun (_ret':Option'0.t_option item'0) ->  [ &_4 <- _ret' ] s3)
       | s3 = bb1 ]
       
@@ -664,14 +664,14 @@ module C12Zip_Impl0_Next
       
     | bb6 = bb7
     | bb7 = s0
-      [ s0 = Zip'0.t_zip <a> <b> { * self}
+      [ s0 = Zip'0.t_zip <a> <b> {self.current}
           (fun (ra'0:a) (rb'0:b) ->
             Borrow.borrow_final <b> {rb'0} {Borrow.inherit_id (Borrow.get_id self) 2}
               (fun (_ret':borrowed b) ->
                  [ &_11 <- _ret' ] 
-                Zip'0.t_zip <a> <b> { * self}
-                  (fun (l_a'0:a) (l_b'0:b) ->  [ &self <- { self with current = Zip'0.C_Zip l_a'0 ( ^ _11) ; } ] s1)))
-      | s1 = -{inv'3 ( ^ _11)}- s2
+                Zip'0.t_zip <a> <b> {self.current}
+                  (fun (l_a'0:a) (l_b'0:b) ->  [ &self <- { self with current = Zip'0.C_Zip l_a'0 _11.final ; } ] s1)))
+      | s1 = -{inv'3 _11.final}- s2
       | s2 = next'1 {_11} (fun (_ret':Option'0.t_option item'1) ->  [ &_10 <- _ret' ] s3)
       | s3 = bb8 ]
       
@@ -752,7 +752,7 @@ module C12Zip_Impl0_Next
     [ return' (result:Option'0.t_option (item'0, item'1))-> {[@expl:postcondition] [%#s12_zip4] inv'6 result}
       {[@expl:postcondition] [%#s12_zip3] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -882,24 +882,24 @@ module C12Zip_Impl0
   predicate completed'1 [#"../common.rs" 11 4 11 36] (self : borrowed a)
   
   predicate completed'0 [#"../12_zip.rs" 19 4 19 35] (self : borrowed (Zip'0.t_zip a b)) =
-    [%#span5] completed'1 (Borrow.borrow_logic (C12Zip_Zip_Type.zip_a ( * self)) (C12Zip_Zip_Type.zip_a ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1))
-    /\ C12Zip_Zip_Type.zip_b ( * self) = C12Zip_Zip_Type.zip_b ( ^ self)
+    [%#span5] completed'1 (Borrow.borrow_logic (C12Zip_Zip_Type.zip_a self.current) (C12Zip_Zip_Type.zip_a self.final) (Borrow.inherit_id (Borrow.get_id self) 1))
+    /\ C12Zip_Zip_Type.zip_b self.current = C12Zip_Zip_Type.zip_b self.final
     \/ (exists x : item'0 . inv'4 x
-    /\ produces'1 (C12Zip_Zip_Type.zip_a ( * self)) (Seq.singleton x) (C12Zip_Zip_Type.zip_a ( ^ self))
+    /\ produces'1 (C12Zip_Zip_Type.zip_a self.current) (Seq.singleton x) (C12Zip_Zip_Type.zip_a self.final)
     /\ resolve'0 x
-    /\ completed'2 (Borrow.borrow_logic (C12Zip_Zip_Type.zip_b ( * self)) (C12Zip_Zip_Type.zip_b ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 2)))
+    /\ completed'2 (Borrow.borrow_logic (C12Zip_Zip_Type.zip_b self.current) (C12Zip_Zip_Type.zip_b self.final) (Borrow.inherit_id (Borrow.get_id self) 2)))
   
   goal next_refn : [%#s12_zip0] forall self : borrowed (Zip'0.t_zip a b) . inv'0 self
    -> inv'0 self
   /\ (forall result : Option'0.t_option (item'0, item'1) . inv'1 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end
    -> inv'1 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end)
   
   goal produces_refl_refn : [%#s12_zip1] forall self : Zip'0.t_zip a b . inv'2 self

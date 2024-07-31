@@ -15,7 +15,7 @@ module InferredInvarianrs_F
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed t) =
-    [%#span0]  ^ self =  * self
+    [%#span0] self.final = self.current
   
   let rec f (_1:borrowed t) (return'  (ret:()))= {inv'0 _1}
     (! bb0 [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'0 _1} s1 | s1 = -{resolve'0 _1}- s2 | s2 = return' {_0} ]  ] )
@@ -56,12 +56,12 @@ module InferredInvarianrs_Simple
     (! bb0
     [ bb0 = s0 [ s0 =  [ &old_1_0 <- Snapshot.new x ] s1 | s1 = bb1 ] 
     | bb1 = bb1
-      [ bb1 = {[@expl:loop invariant]  ^ Snapshot.inner old_1_0 =  ^ x}
+      [ bb1 = {[@expl:loop invariant] (Snapshot.inner old_1_0).final = x.final}
         (! s0) [ s0 = bb2 ] 
         [ bb2 = s0
-          [ s0 = Borrow.borrow_mut <t> { * x}
-              (fun (_ret':borrowed t) ->  [ &_4 <- _ret' ]  [ &x <- { x with current = ( ^ _4) ; } ] s1)
-          | s1 = -{inv'0 ( ^ _4)}- s2
+          [ s0 = Borrow.borrow_mut <t> {x.current}
+              (fun (_ret':borrowed t) ->  [ &_4 <- _ret' ]  [ &x <- { x with current = _4.final ; } ] s1)
+          | s1 = -{inv'0 _4.final}- s2
           | s2 = f'0 {_4} (fun (_ret':()) ->  [ &_3 <- _ret' ] s3)
           | s3 = bb3 ]
           
@@ -101,7 +101,7 @@ module InferredInvarianrs_Swapper
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed t) =
-    [%#span2]  ^ self =  * self
+    [%#span2] self.final = self.current
   
   let rec swapper (x:borrowed t) (y:borrowed t) (return'  (ret:()))= {[%#sinferred_invarianrs1] inv'1 y}
     {[%#sinferred_invarianrs0] inv'1 x}
@@ -111,13 +111,13 @@ module InferredInvarianrs_Swapper
       [ bb1 = (! bb2)
         [ bb2 = s0
           [ s0 =  [ &c <- x ] (any [ any_ (_any:borrowed t)-> (!  [ &x <- _any ] s1) ] )
-          | s1 = Borrow.borrow_final <t> { * y} {Borrow.get_id y}
-              (fun (_ret':borrowed t) ->  [ &_6 <- _ret' ]  [ &y <- { y with current = ( ^ _6) ; } ] s2)
-          | s2 = -{inv'0 ( ^ _6)}- s3
+          | s1 = Borrow.borrow_final <t> {y.current} {Borrow.get_id y}
+              (fun (_ret':borrowed t) ->  [ &_6 <- _ret' ]  [ &y <- { y with current = _6.final ; } ] s2)
+          | s2 = -{inv'0 _6.final}- s3
           | s3 =  [ &x <- _6 ] (any [ any_ (_any:borrowed t)-> (!  [ &_6 <- _any ] s4) ] )
-          | s4 = Borrow.borrow_final <t> { * c} {Borrow.get_id c}
-              (fun (_ret':borrowed t) ->  [ &_7 <- _ret' ]  [ &c <- { c with current = ( ^ _7) ; } ] s5)
-          | s5 = -{inv'0 ( ^ _7)}- s6
+          | s4 = Borrow.borrow_final <t> {c.current} {Borrow.get_id c}
+              (fun (_ret':borrowed t) ->  [ &_7 <- _ret' ]  [ &c <- { c with current = _7.final ; } ] s5)
+          | s5 = -{inv'0 _7.final}- s6
           | s6 = {[@expl:type invariant] inv'1 y} s7
           | s7 = -{resolve'0 y}- s8
           | s8 =  [ &y <- _7 ] (any [ any_ (_any:borrowed t)-> (!  [ &_7 <- _any ] s9) ] )
@@ -197,7 +197,7 @@ module InferredInvarianrs_TempMove
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed t) =
-    [%#span1]  ^ self =  * self
+    [%#span1] self.final = self.current
   
   let rec temp_move (x:borrowed t) (return'  (ret:()))= {[%#sinferred_invarianrs0] inv'1 x}
     (! bb0
@@ -206,9 +206,9 @@ module InferredInvarianrs_TempMove
       [ bb1 = (! bb2)
         [ bb2 = s0
           [ s0 =  [ &c <- x ] (any [ any_ (_any:borrowed t)-> (!  [ &x <- _any ] s1) ] )
-          | s1 = Borrow.borrow_final <t> { * c} {Borrow.get_id c}
-              (fun (_ret':borrowed t) ->  [ &_5 <- _ret' ]  [ &c <- { c with current = ( ^ _5) ; } ] s2)
-          | s2 = -{inv'0 ( ^ _5)}- s3
+          | s1 = Borrow.borrow_final <t> {c.current} {Borrow.get_id c}
+              (fun (_ret':borrowed t) ->  [ &_5 <- _ret' ]  [ &c <- { c with current = _5.final ; } ] s2)
+          | s2 = -{inv'0 _5.final}- s3
           | s3 =  [ &x <- _5 ] (any [ any_ (_any:borrowed t)-> (!  [ &_5 <- _any ] s4) ] )
           | s4 = {[@expl:type invariant] inv'1 c} s5
           | s5 = -{resolve'0 c}- s6
@@ -455,10 +455,10 @@ module InferredInvarianrs_Y
   use prelude.prelude.Intrinsic
   
   predicate resolve'1 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) =
-    [%#span13]  ^ self =  * self
+    [%#span13] self.final = self.current
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span13]  ^ self =  * self
+    [%#span13] self.final = self.current
   
   use prelude.prelude.Slice
   
@@ -475,17 +475,17 @@ module InferredInvarianrs_Y
     [%#span16] UIntSize.to_int self < Seq.length seq
   
   function shallow_model'1 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) : Seq.seq int32 =
-    [%#span17] shallow_model'3 ( * self)
+    [%#span17] shallow_model'3 self.current
   
   let rec index_mut'0 (self:borrowed (Vec'0.t_vec int32 (Global'0.t_global))) (index:usize) (return'  (ret:borrowed int32))= {[@expl:precondition] [%#span20] inv'2 index}
     {[@expl:precondition] [%#span19] inv'1 self}
     {[@expl:precondition] [%#span18] in_bounds'0 index (shallow_model'1 self)}
     any
     [ return' (result:borrowed int32)-> {[%#span25] inv'3 result}
-      {[%#span24] Seq.length (shallow_model'3 ( ^ self)) = Seq.length (shallow_model'1 self)}
-      {[%#span23] resolve_elswhere'0 index (shallow_model'1 self) (shallow_model'3 ( ^ self))}
-      {[%#span22] has_value'0 index (shallow_model'3 ( ^ self)) ( ^ result)}
-      {[%#span21] has_value'0 index (shallow_model'1 self) ( * result)}
+      {[%#span24] Seq.length (shallow_model'3 self.final) = Seq.length (shallow_model'1 self)}
+      {[%#span23] resolve_elswhere'0 index (shallow_model'1 self) (shallow_model'3 self.final)}
+      {[%#span22] has_value'0 index (shallow_model'3 self.final) result.final}
+      {[%#span21] has_value'0 index (shallow_model'1 self) result.current}
       (! return' {result}) ]
     
   
@@ -515,22 +515,22 @@ module InferredInvarianrs_Y
       [ s0 =  [ &i <- [%#sinferred_invarianrs1] (0 : usize) ] s1 | s1 =  [ &old_2_0 <- Snapshot.new v ] s2 | s2 = bb2 ]
       
     | bb2 = bb2
-      [ bb2 = {[@expl:loop invariant]  ^ Snapshot.inner old_2_0 =  ^ v}
+      [ bb2 = {[@expl:loop invariant] (Snapshot.inner old_2_0).final = v.final}
         {[@expl:loop invariant] [%#sinferred_invarianrs3] UIntSize.to_int i <= 10}
         {[@expl:loop invariant] [%#sinferred_invarianrs2] Seq.length (shallow_model'0 old_v)
         = Seq.length (shallow_model'1 v)}
         (! s0) [ s0 = bb3 ] 
-        [ bb3 = s0 [ s0 = len'0 { * v} (fun (_ret':usize) ->  [ &_11 <- _ret' ] s1) | s1 = bb4 ] 
+        [ bb3 = s0 [ s0 = len'0 {v.current} (fun (_ret':usize) ->  [ &_11 <- _ret' ] s1) | s1 = bb4 ] 
         | bb4 = s0
           [ s0 = UIntSize.lt {i} {_11}
               (fun (_ret':bool) ->  [ &_9 <- _ret' ] (any [ any_ (_any:usize)-> (!  [ &_11 <- _any ] s1) ] ))
           | s1 = any [ br0 -> {_9 = false} (! bb7) | br1 -> {_9} (! bb5) ]  ]
           
         | bb5 = s0
-          [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> { * v}
+          [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {v.current}
               (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->
                  [ &_14 <- _ret' ] 
-                 [ &v <- { v with current = ( ^ _14) ; } ] 
+                 [ &v <- { v with current = _14.final ; } ] 
                 s1)
           | s1 = index_mut'0 {_14} {i} (fun (_ret':borrowed int32) ->  [ &_13 <- _ret' ] s2)
           | s2 = bb6 ]

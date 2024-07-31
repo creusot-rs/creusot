@@ -431,7 +431,7 @@ module C14Copied_Impl0_Next
   predicate completed'1 [#"../common.rs" 11 4 11 36] (self : borrowed i)
   
   predicate completed'0 [#"../14_copied.rs" 22 4 22 35] (self : borrowed (Copied'0.t_copied i)) =
-    [%#span15] completed'1 (Borrow.borrow_logic (C14Copied_Copied_Type.copied_iter ( * self)) (C14Copied_Copied_Type.copied_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1))
+    [%#span15] completed'1 (Borrow.borrow_logic (C14Copied_Copied_Type.copied_iter self.current) (C14Copied_Copied_Type.copied_iter self.final) (Borrow.inherit_id (Borrow.get_id self) 1))
   
   use prelude.prelude.Intrinsic
   
@@ -445,7 +445,7 @@ module C14Copied_Impl0_Next
     
   
   predicate resolve'0 (self : borrowed (Copied'0.t_copied i)) =
-    [%#span20]  ^ self =  * self
+    [%#span20] self.final = self.current
   
   use seq.Seq
   
@@ -454,7 +454,7 @@ module C14Copied_Impl0_Next
     [ return' (result:Option'0.t_option t)-> {[%#span23] inv'4 result}
       {[%#span22] match result with
         | Option'0.C_None -> completed'1 self
-        | Option'0.C_Some v -> produces'1 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'1 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -462,14 +462,14 @@ module C14Copied_Impl0_Next
   let rec next (self:borrowed (Copied'0.t_copied i)) (return'  (ret:Option'0.t_option t))= {[%#s14_copied0] inv'1 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = Copied'0.t_copied <i> { * self}
+      [ s0 = Copied'0.t_copied <i> {self.current}
           (fun (riter'0:i) ->
             Borrow.borrow_final <i> {riter'0} {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed i) ->
                  [ &_4 <- _ret' ] 
-                Copied'0.t_copied <i> { * self}
-                  (fun (l_iter'0:i) ->  [ &self <- { self with current = Copied'0.C_Copied ( ^ _4) ; } ] s1)))
-      | s1 = -{inv'0 ( ^ _4)}- s2
+                Copied'0.t_copied <i> {self.current}
+                  (fun (l_iter'0:i) ->  [ &self <- { self with current = Copied'0.C_Copied _4.final ; } ] s1)))
+      | s1 = -{inv'0 _4.final}- s2
       | s2 = next'0 {_4} (fun (_ret':Option'0.t_option t) ->  [ &_3 <- _ret' ] s3)
       | s3 = bb1 ]
       
@@ -489,7 +489,7 @@ module C14Copied_Impl0_Next
     [ return' (result:Option'0.t_option t)-> {[@expl:postcondition] [%#s14_copied2] inv'2 result}
       {[@expl:postcondition] [%#s14_copied1] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -563,7 +563,7 @@ module C14Copied_Impl0
   use C14Copied_Copied_Type as C14Copied_Copied_Type
   
   predicate completed'0 [#"../14_copied.rs" 22 4 22 35] (self : borrowed (Copied'0.t_copied i)) =
-    [%#span4] completed'1 (Borrow.borrow_logic (C14Copied_Copied_Type.copied_iter ( * self)) (C14Copied_Copied_Type.copied_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1))
+    [%#span4] completed'1 (Borrow.borrow_logic (C14Copied_Copied_Type.copied_iter self.current) (C14Copied_Copied_Type.copied_iter self.final) (Borrow.inherit_id (Borrow.get_id self) 1))
   
   use seq.Seq
   
@@ -599,12 +599,12 @@ module C14Copied_Impl0
   /\ (forall result : Option'0.t_option t . inv'2 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end
    -> inv'2 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end)
   
   goal produces_trans_refn : [%#s14_copied2] forall a : Copied'0.t_copied i . forall ab : Seq.seq t . forall b : Copied'0.t_copied i . forall bc : Seq.seq t . forall c : Copied'0.t_copied i . inv'0 c

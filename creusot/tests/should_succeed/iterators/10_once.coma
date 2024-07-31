@@ -228,33 +228,33 @@ module C10Once_Impl0_Next
     /\ self = Once'0.C_Once (Option'0.C_Some e) /\ visited = Seq.singleton e /\ o = Once'0.C_Once (Option'0.C_None))
   
   predicate resolve'0 (self : borrowed (Once'0.t_once t)) =
-    [%#span5]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   predicate completed'0 [#"../10_once.rs" 15 4 15 35] (self : borrowed (Once'0.t_once t)) =
-    [%#span6]  * self = Once'0.C_Once (Option'0.C_None) /\ resolve'0 self
+    [%#span6] self.current = Once'0.C_Once (Option'0.C_None) /\ resolve'0 self
   
   use prelude.prelude.Intrinsic
   
   let rec take'0 (self:borrowed (Option'0.t_option t)) (return'  (ret:Option'0.t_option t))= {[@expl:precondition] [%#span7] inv'2 self}
     any
     [ return' (result:Option'0.t_option t)-> {[%#span9] inv'0 result}
-      {[%#span8] result =  * self /\  ^ self = Option'0.C_None}
+      {[%#span8] result = self.current /\ self.final = Option'0.C_None}
       (! return' {result}) ]
     
   
   let rec next (self:borrowed (Once'0.t_once t)) (return'  (ret:Option'0.t_option t))= {[%#s10_once0] inv'1 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = Once'0.t_once <t> { * self}
+      [ s0 = Once'0.t_once <t> {self.current}
           (fun (r0'0:Option'0.t_option t) ->
             Borrow.borrow_final <Option'0.t_option t> {r0'0} {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed (Option'0.t_option t)) ->
                  [ &_3 <- _ret' ] 
-                Once'0.t_once <t> { * self}
+                Once'0.t_once <t> {self.current}
                   (fun (l_0'0:Option'0.t_option t) ->
-                     [ &self <- { self with current = Once'0.C_Once ( ^ _3) ; } ] 
+                     [ &self <- { self with current = Once'0.C_Once _3.final ; } ] 
                     s1)))
-      | s1 = -{inv'0 ( ^ _3)}- s2
+      | s1 = -{inv'0 _3.final}- s2
       | s2 = take'0 {_3} (fun (_ret':Option'0.t_option t) ->  [ &_0 <- _ret' ] s3)
       | s3 = bb1 ]
       
@@ -267,7 +267,7 @@ module C10Once_Impl0_Next
     [ return' (result:Option'0.t_option t)-> {[@expl:postcondition] [%#s10_once2] inv'0 result}
       {[@expl:postcondition] [%#s10_once1] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -347,22 +347,22 @@ module C10Once_Impl0
     /\ self = Once'0.C_Once (Option'0.C_Some e) /\ visited = Seq.singleton e /\ o = Once'0.C_Once (Option'0.C_None))
   
   predicate resolve'0 (self : borrowed (Once'0.t_once t)) =
-    [%#span5]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   predicate completed'0 [#"../10_once.rs" 15 4 15 35] (self : borrowed (Once'0.t_once t)) =
-    [%#span6]  * self = Once'0.C_Once (Option'0.C_None) /\ resolve'0 self
+    [%#span6] self.current = Once'0.C_Once (Option'0.C_None) /\ resolve'0 self
   
   goal next_refn : [%#s10_once0] forall self : borrowed (Once'0.t_once t) . inv'0 self
    -> inv'0 self
   /\ (forall result : Option'0.t_option t . inv'1 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end
    -> inv'1 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end)
   
   goal produces_trans_refn : [%#s10_once1] forall a : Once'0.t_once t . forall ab : Seq.seq t . forall b : Once'0.t_once t . forall bc : Seq.seq t . forall c : Once'0.t_once t . inv'2 c

@@ -29,7 +29,7 @@ module BranchBorrow2_F
   use prelude.prelude.Int32
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span10]  ^ self =  * self
+    [%#span10] self.final = self.current
   
   use prelude.prelude.Int
   
@@ -38,9 +38,9 @@ module BranchBorrow2_F
       [ s0 =  [ &a <- [%#sbranch_borrow_21] (10 : int32) ] s1
       | s1 =  [ &b <- [%#sbranch_borrow_22] (10 : int32) ] s2
       | s2 =  [ &c <- [%#sbranch_borrow_23] (10 : int32) ] s3
-      | s3 = Borrow.borrow_mut <int32> {a} (fun (_ret':borrowed int32) ->  [ &x <- _ret' ]  [ &a <-  ^ x ] s4)
-      | s4 = Borrow.borrow_mut <int32> {b} (fun (_ret':borrowed int32) ->  [ &y <- _ret' ]  [ &b <-  ^ y ] s5)
-      | s5 = Borrow.borrow_mut <int32> {c} (fun (_ret':borrowed int32) ->  [ &z <- _ret' ]  [ &c <-  ^ z ] s6)
+      | s3 = Borrow.borrow_mut <int32> {a} (fun (_ret':borrowed int32) ->  [ &x <- _ret' ]  [ &a <- x.final ] s4)
+      | s4 = Borrow.borrow_mut <int32> {b} (fun (_ret':borrowed int32) ->  [ &y <- _ret' ]  [ &b <- y.final ] s5)
+      | s5 = Borrow.borrow_mut <int32> {c} (fun (_ret':borrowed int32) ->  [ &z <- _ret' ]  [ &c <- z.final ] s6)
       | s6 = any
         [ br0 -> {([%#sbranch_borrow_20] (3 : int32)) = 1} (! bb2)
         | br1 -> {([%#sbranch_borrow_20] (3 : int32)) = 2} (! bb3)
@@ -50,8 +50,8 @@ module BranchBorrow2_F
     | bb12 = s0 [ s0 = -{resolve'0 y}- s1 | s1 = -{resolve'0 x}- s2 | s2 = bb1 ] 
     | bb1 = s0
       [ s0 =  [ &z <- { z with current = ([%#sbranch_borrow_24] (8 : int32)) ; } ] s1
-      | s1 = Borrow.borrow_final <int32> { * z} {Borrow.get_id z}
-          (fun (_ret':borrowed int32) ->  [ &_12 <- _ret' ]  [ &z <- { z with current = ( ^ _12) ; } ] s2)
+      | s1 = Borrow.borrow_final <int32> {z.current} {Borrow.get_id z}
+          (fun (_ret':borrowed int32) ->  [ &_12 <- _ret' ]  [ &z <- { z with current = _12.final ; } ] s2)
       | s2 =  [ &w <- _12 ] (any [ any_ (_any:borrowed int32)-> (!  [ &_12 <- _any ] s3) ] )
       | s3 = bb6 ]
       
@@ -59,8 +59,8 @@ module BranchBorrow2_F
     | bb5 = s0
       [ s0 = -{resolve'0 z}- s1
       | s1 =  [ &y <- { y with current = ([%#sbranch_borrow_25] (7 : int32)) ; } ] s2
-      | s2 = Borrow.borrow_final <int32> { * y} {Borrow.get_id y}
-          (fun (_ret':borrowed int32) ->  [ &_11 <- _ret' ]  [ &y <- { y with current = ( ^ _11) ; } ] s3)
+      | s2 = Borrow.borrow_final <int32> {y.current} {Borrow.get_id y}
+          (fun (_ret':borrowed int32) ->  [ &_11 <- _ret' ]  [ &y <- { y with current = _11.final ; } ] s3)
       | s3 =  [ &w <- _11 ] (any [ any_ (_any:borrowed int32)-> (!  [ &_11 <- _any ] s4) ] )
       | s4 = bb6 ]
       
@@ -135,10 +135,10 @@ module BranchBorrow2_G
   use prelude.prelude.Borrow
   
   predicate resolve'1 (self : borrowed (MyInt'0.t_myint, MyInt'0.t_myint)) =
-    [%#span4]  ^ self =  * self
+    [%#span4] self.final = self.current
   
   predicate resolve'0 (self : borrowed (MyInt'0.t_myint)) =
-    [%#span4]  ^ self =  * self
+    [%#span4] self.final = self.current
   
   use prelude.prelude.UIntSize
   
@@ -154,16 +154,22 @@ module BranchBorrow2_G
           (any [ any_ (_any:MyInt'0.t_myint)-> (!  [ &_3 <- _any ] s3) ] )) ]
         )
       | s3 = Borrow.borrow_mut <(MyInt'0.t_myint, MyInt'0.t_myint)> {a}
-          (fun (_ret':borrowed (MyInt'0.t_myint, MyInt'0.t_myint)) ->  [ &b <- _ret' ]  [ &a <-  ^ b ] s4)
-      | s4 = Borrow.borrow_final <MyInt'0.t_myint> {let (_, r'0) =  * b in r'0} {Borrow.inherit_id (Borrow.get_id b) 2}
+          (fun (_ret':borrowed (MyInt'0.t_myint, MyInt'0.t_myint)) ->  [ &b <- _ret' ]  [ &a <- b.final ] s4)
+      | s4 = Borrow.borrow_final
+          <MyInt'0.t_myint>
+          {let (_, r'0) = b.current in r'0}
+          {Borrow.inherit_id (Borrow.get_id b) 2}
           (fun (_ret':borrowed (MyInt'0.t_myint)) ->
              [ &c <- _ret' ] 
-             [ &b <- { b with current = (let (l'1, _) =  * b in (l'1,  ^ c)) ; } ] 
+             [ &b <- { b with current = (let (l'1, _) = b.current in (l'1, c.final)) ; } ] 
             s5)
-      | s5 = Borrow.borrow_final <MyInt'0.t_myint> {let (r'1, _) =  * b in r'1} {Borrow.inherit_id (Borrow.get_id b) 1}
+      | s5 = Borrow.borrow_final
+          <MyInt'0.t_myint>
+          {let (r'1, _) = b.current in r'1}
+          {Borrow.inherit_id (Borrow.get_id b) 1}
           (fun (_ret':borrowed (MyInt'0.t_myint)) ->
              [ &d <- _ret' ] 
-             [ &b <- { b with current = (let (_, l'5) =  * b in ( ^ d, l'5)) ; } ] 
+             [ &b <- { b with current = (let (_, l'5) = b.current in (d.final, l'5)) ; } ] 
             s6)
       | s6 = -{resolve'0 c}- s7
       | s7 = -{resolve'0 d}- s8
@@ -201,7 +207,7 @@ module BranchBorrow2_H
   use prelude.prelude.Int32
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span5]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   use prelude.prelude.Int
   
@@ -209,8 +215,8 @@ module BranchBorrow2_H
     [ bb0 = s0
       [ s0 =  [ &a <- [%#sbranch_borrow_21] (10 : int32) ] s1
       | s1 =  [ &b <- [%#sbranch_borrow_22] (10 : int32) ] s2
-      | s2 = Borrow.borrow_mut <int32> {a} (fun (_ret':borrowed int32) ->  [ &x <- _ret' ]  [ &a <-  ^ x ] s3)
-      | s3 = Borrow.borrow_mut <int32> {b} (fun (_ret':borrowed int32) ->  [ &y <- _ret' ]  [ &b <-  ^ y ] s4)
+      | s2 = Borrow.borrow_mut <int32> {a} (fun (_ret':borrowed int32) ->  [ &x <- _ret' ]  [ &a <- x.final ] s3)
+      | s3 = Borrow.borrow_mut <int32> {b} (fun (_ret':borrowed int32) ->  [ &y <- _ret' ]  [ &b <- y.final ] s4)
       | s4 = any [ br0 -> {false} (! bb2) | br1 -> {true} (! bb1) ]  ]
       
     | bb1 = s0
@@ -222,8 +228,8 @@ module BranchBorrow2_H
     | bb2 = s0
       [ s0 = -{resolve'0 x}- s1
       | s1 =  [ &y <- { y with current = ([%#sbranch_borrow_24] (6 : int32)) ; } ] s2
-      | s2 = Borrow.borrow_final <int32> { * y} {Borrow.get_id y}
-          (fun (_ret':borrowed int32) ->  [ &_9 <- _ret' ]  [ &y <- { y with current = ( ^ _9) ; } ] s3)
+      | s2 = Borrow.borrow_final <int32> {y.current} {Borrow.get_id y}
+          (fun (_ret':borrowed int32) ->  [ &_9 <- _ret' ]  [ &y <- { y with current = _9.final ; } ] s3)
       | s3 =  [ &w <- _9 ] (any [ any_ (_any:borrowed int32)-> (!  [ &_9 <- _any ] s4) ] )
       | s4 = bb3 ]
       

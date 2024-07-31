@@ -431,7 +431,7 @@ module C13Cloned_Impl0_Next
   predicate completed'1 [#"../common.rs" 11 4 11 36] (self : borrowed i)
   
   predicate completed'0 [#"../13_cloned.rs" 22 4 22 35] (self : borrowed (Cloned'0.t_cloned i)) =
-    [%#span15] completed'1 (Borrow.borrow_logic (C13Cloned_Cloned_Type.cloned_iter ( * self)) (C13Cloned_Cloned_Type.cloned_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1))
+    [%#span15] completed'1 (Borrow.borrow_logic (C13Cloned_Cloned_Type.cloned_iter self.current) (C13Cloned_Cloned_Type.cloned_iter self.final) (Borrow.inherit_id (Borrow.get_id self) 1))
   
   use prelude.prelude.Intrinsic
   
@@ -445,7 +445,7 @@ module C13Cloned_Impl0_Next
     
   
   predicate resolve'0 (self : borrowed (Cloned'0.t_cloned i)) =
-    [%#span20]  ^ self =  * self
+    [%#span20] self.final = self.current
   
   use seq.Seq
   
@@ -454,7 +454,7 @@ module C13Cloned_Impl0_Next
     [ return' (result:Option'0.t_option t)-> {[%#span23] inv'4 result}
       {[%#span22] match result with
         | Option'0.C_None -> completed'1 self
-        | Option'0.C_Some v -> produces'1 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'1 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -462,14 +462,14 @@ module C13Cloned_Impl0_Next
   let rec next (self:borrowed (Cloned'0.t_cloned i)) (return'  (ret:Option'0.t_option t))= {[%#s13_cloned0] inv'1 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = Cloned'0.t_cloned <i> { * self}
+      [ s0 = Cloned'0.t_cloned <i> {self.current}
           (fun (riter'0:i) ->
             Borrow.borrow_final <i> {riter'0} {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed i) ->
                  [ &_4 <- _ret' ] 
-                Cloned'0.t_cloned <i> { * self}
-                  (fun (l_iter'0:i) ->  [ &self <- { self with current = Cloned'0.C_Cloned ( ^ _4) ; } ] s1)))
-      | s1 = -{inv'0 ( ^ _4)}- s2
+                Cloned'0.t_cloned <i> {self.current}
+                  (fun (l_iter'0:i) ->  [ &self <- { self with current = Cloned'0.C_Cloned _4.final ; } ] s1)))
+      | s1 = -{inv'0 _4.final}- s2
       | s2 = next'0 {_4} (fun (_ret':Option'0.t_option t) ->  [ &_3 <- _ret' ] s3)
       | s3 = bb1 ]
       
@@ -489,7 +489,7 @@ module C13Cloned_Impl0_Next
     [ return' (result:Option'0.t_option t)-> {[@expl:postcondition] [%#s13_cloned2] inv'2 result}
       {[@expl:postcondition] [%#s13_cloned1] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -563,7 +563,7 @@ module C13Cloned_Impl0
   use C13Cloned_Cloned_Type as C13Cloned_Cloned_Type
   
   predicate completed'0 [#"../13_cloned.rs" 22 4 22 35] (self : borrowed (Cloned'0.t_cloned i)) =
-    [%#span4] completed'1 (Borrow.borrow_logic (C13Cloned_Cloned_Type.cloned_iter ( * self)) (C13Cloned_Cloned_Type.cloned_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1))
+    [%#span4] completed'1 (Borrow.borrow_logic (C13Cloned_Cloned_Type.cloned_iter self.current) (C13Cloned_Cloned_Type.cloned_iter self.final) (Borrow.inherit_id (Borrow.get_id self) 1))
   
   use seq.Seq
   
@@ -599,12 +599,12 @@ module C13Cloned_Impl0
   /\ (forall result : Option'0.t_option t . inv'2 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end
    -> inv'2 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end)
   
   goal produces_trans_refn : [%#s13_cloned2] forall a : Cloned'0.t_cloned i . forall ab : Seq.seq t . forall b : Cloned'0.t_cloned i . forall bc : Seq.seq t . forall c : Cloned'0.t_cloned i . inv'0 c

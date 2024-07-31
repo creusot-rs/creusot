@@ -139,7 +139,7 @@ module IncSomeList_Impl0_TakeSome
   use prelude.prelude.UInt32
   
   function shallow_model'0 (self : borrowed uint32) : int =
-    [%#span5] UInt32.to_int ( * self)
+    [%#span5] UInt32.to_int self.current
   
   use prelude.prelude.Int
   
@@ -156,10 +156,10 @@ module IncSomeList_Impl0_TakeSome
   use prelude.prelude.Intrinsic
   
   predicate resolve'2 (self : borrowed uint32) =
-    [%#span7]  ^ self =  * self
+    [%#span7] self.final = self.current
   
   predicate resolve'1 (self : borrowed (List'0.t_list)) =
-    [%#span7]  ^ self =  * self
+    [%#span7] self.final = self.current
   
   let rec random'0 (_1:()) (return'  (ret:bool))= any [ return' (result:bool)-> (! return' {result}) ] 
   
@@ -176,76 +176,76 @@ module IncSomeList_Impl0_TakeSome
   axiom lemma_sum_nonneg'0_spec : forall self : List'0.t_list . [%#span8] sum'0 self >= 0
   
   predicate resolve'0 (self : borrowed (List'0.t_list)) =
-    [%#span7]  ^ self =  * self
+    [%#span7] self.final = self.current
   
   let rec take_some (self:borrowed (List'0.t_list)) (return'  (ret:borrowed uint32))= (! bb0
     [ bb0 = any
-      [ br0 (a:uint32) (b:List'0.t_list)-> { * self = List'0.C_Cons a b} (! bb2)
-      | br1 -> { * self = List'0.C_Nil } (! bb3) ]
+      [ br0 (a:uint32) (b:List'0.t_list)-> {self.current = List'0.C_Cons a b} (! bb2)
+      | br1 -> {self.current = List'0.C_Nil } (! bb3) ]
       
     | bb1 = s0 [ s0 = -{resolve'0 self}- s1 | s1 = {[%#sinc_some_list0] false} any ] 
     | bb3 = s0 [ s0 = -{resolve'0 self}- s1 | s1 = bb11 ] 
     | bb11 = bb11 [ bb11 = (! bb12) [ bb12 = bb11 ]  ] 
     | bb2 = bb4
     | bb4 = s0
-      [ s0 = List'0.cons { * self}
+      [ s0 = List'0.cons {self.current}
           (fun (r0'0:uint32) (r1'0:List'0.t_list) ->
             Borrow.borrow_final <uint32> {r0'0} {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed uint32) ->
                  [ &ma <- _ret' ] 
-                List'0.cons { * self}
+                List'0.cons {self.current}
                   (fun (l_0'0:uint32) (l_1'0:List'0.t_list) ->
-                     [ &self <- { self with current = List'0.C_Cons ( ^ ma) l_1'0 ; } ] 
+                     [ &self <- { self with current = List'0.C_Cons ma.final l_1'0 ; } ] 
                     s1)))
-      | s1 = List'0.cons { * self}
+      | s1 = List'0.cons {self.current}
           (fun (r0'1:uint32) (r1'1:List'0.t_list) ->
             Borrow.borrow_final <List'0.t_list> {r1'1} {Borrow.inherit_id (Borrow.get_id self) 2}
               (fun (_ret':borrowed (List'0.t_list)) ->
                  [ &ml <- _ret' ] 
-                List'0.cons { * self}
+                List'0.cons {self.current}
                   (fun (l_0'1:uint32) (l_1'1:List'0.t_list) ->
-                     [ &self <- { self with current = List'0.C_Cons l_0'1 ( ^ ml) ; } ] 
+                     [ &self <- { self with current = List'0.C_Cons l_0'1 ml.final ; } ] 
                     s2)))
-      | s2 =  [ &_10 <- [%#sinc_some_list1] Snapshot.new (lemma_sum_nonneg'0 ( * ml)) ] s3
+      | s2 =  [ &_10 <- [%#sinc_some_list1] Snapshot.new (lemma_sum_nonneg'0 ml.current) ] s3
       | s3 = bb5 ]
       
     | bb5 = s0 [ s0 = random'0 {[%#sinc_some_list2] ()} (fun (_ret':bool) ->  [ &_13 <- _ret' ] s1) | s1 = bb6 ] 
     | bb6 = any [ br0 -> {_13 = false} (! bb8) | br1 -> {_13} (! bb7) ] 
     | bb7 = s0
       [ s0 = -{resolve'1 ml}- s1
-      | s1 = Borrow.borrow_final <uint32> { * ma} {Borrow.get_id ma}
-          (fun (_ret':borrowed uint32) ->  [ &_14 <- _ret' ]  [ &ma <- { ma with current = ( ^ _14) ; } ] s2)
-      | s2 = Borrow.borrow_final <uint32> { * _14} {Borrow.get_id _14}
-          (fun (_ret':borrowed uint32) ->  [ &_12 <- _ret' ]  [ &_14 <- { _14 with current = ( ^ _12) ; } ] s3)
+      | s1 = Borrow.borrow_final <uint32> {ma.current} {Borrow.get_id ma}
+          (fun (_ret':borrowed uint32) ->  [ &_14 <- _ret' ]  [ &ma <- { ma with current = _14.final ; } ] s2)
+      | s2 = Borrow.borrow_final <uint32> {_14.current} {Borrow.get_id _14}
+          (fun (_ret':borrowed uint32) ->  [ &_12 <- _ret' ]  [ &_14 <- { _14 with current = _12.final ; } ] s3)
       | s3 = -{resolve'2 _14}- s4
       | s4 = bb10 ]
       
     | bb8 = s0
       [ s0 = -{resolve'2 ma}- s1
-      | s1 = Borrow.borrow_mut <List'0.t_list> { * ml}
-          (fun (_ret':borrowed (List'0.t_list)) ->  [ &_16 <- _ret' ]  [ &ml <- { ml with current = ( ^ _16) ; } ] s2)
+      | s1 = Borrow.borrow_mut <List'0.t_list> {ml.current}
+          (fun (_ret':borrowed (List'0.t_list)) ->  [ &_16 <- _ret' ]  [ &ml <- { ml with current = _16.final ; } ] s2)
       | s2 = take_some {_16} (fun (_ret':borrowed uint32) ->  [ &_15 <- _ret' ] s3)
       | s3 = bb9 ]
       
     | bb9 = s0
-      [ s0 = Borrow.borrow_final <uint32> { * _15} {Borrow.get_id _15}
-          (fun (_ret':borrowed uint32) ->  [ &_12 <- _ret' ]  [ &_15 <- { _15 with current = ( ^ _12) ; } ] s1)
+      [ s0 = Borrow.borrow_final <uint32> {_15.current} {Borrow.get_id _15}
+          (fun (_ret':borrowed uint32) ->  [ &_12 <- _ret' ]  [ &_15 <- { _15 with current = _12.final ; } ] s1)
       | s1 = -{resolve'2 _15}- s2
       | s2 = bb10 ]
       
     | bb10 = s0
-      [ s0 = Borrow.borrow_final <uint32> { * _12} {Borrow.get_id _12}
-          (fun (_ret':borrowed uint32) ->  [ &_9 <- _ret' ]  [ &_12 <- { _12 with current = ( ^ _9) ; } ] s1)
-      | s1 = Borrow.borrow_final <uint32> { * _9} {Borrow.get_id _9}
-          (fun (_ret':borrowed uint32) ->  [ &_5 <- _ret' ]  [ &_9 <- { _9 with current = ( ^ _5) ; } ] s2)
+      [ s0 = Borrow.borrow_final <uint32> {_12.current} {Borrow.get_id _12}
+          (fun (_ret':borrowed uint32) ->  [ &_9 <- _ret' ]  [ &_12 <- { _12 with current = _9.final ; } ] s1)
+      | s1 = Borrow.borrow_final <uint32> {_9.current} {Borrow.get_id _9}
+          (fun (_ret':borrowed uint32) ->  [ &_5 <- _ret' ]  [ &_9 <- { _9 with current = _5.final ; } ] s2)
       | s2 = -{resolve'2 _12}- s3
       | s3 = -{resolve'2 _9}- s4
       | s4 = -{resolve'1 ml}- s5
       | s5 = -{resolve'2 ma}- s6
-      | s6 = Borrow.borrow_final <uint32> { * _5} {Borrow.get_id _5}
-          (fun (_ret':borrowed uint32) ->  [ &_2 <- _ret' ]  [ &_5 <- { _5 with current = ( ^ _2) ; } ] s7)
-      | s7 = Borrow.borrow_final <uint32> { * _2} {Borrow.get_id _2}
-          (fun (_ret':borrowed uint32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = ( ^ _0) ; } ] s8)
+      | s6 = Borrow.borrow_final <uint32> {_5.current} {Borrow.get_id _5}
+          (fun (_ret':borrowed uint32) ->  [ &_2 <- _ret' ]  [ &_5 <- { _5 with current = _2.final ; } ] s7)
+      | s7 = Borrow.borrow_final <uint32> {_2.current} {Borrow.get_id _2}
+          (fun (_ret':borrowed uint32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = _0.final ; } ] s8)
       | s8 = -{resolve'2 _5}- s9
       | s9 = -{resolve'2 _2}- s10
       | s10 = -{resolve'0 self}- s11
@@ -267,9 +267,9 @@ module IncSomeList_Impl0_TakeSome
     | & _16 : borrowed (List'0.t_list) = any_l () ]
     
     [ return' (result:borrowed uint32)-> {[@expl:postcondition] [%#sinc_some_list4] shallow_model'0 result
-      <= sum'0 ( * self)}
-      {[@expl:postcondition] [%#sinc_some_list3] sum'0 ( ^ self) - sum'0 ( * self)
-      = UInt32.to_int ( ^ result) - shallow_model'0 result}
+      <= sum'0 self.current}
+      {[@expl:postcondition] [%#sinc_some_list3] sum'0 self.final - sum'0 self.current
+      = UInt32.to_int result.final - shallow_model'0 result}
       (! return' {result}) ]
     
 end
@@ -311,16 +311,16 @@ module IncSomeList_IncSomeList
   use prelude.prelude.UInt32
   
   predicate resolve'0 (self : borrowed uint32) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   use prelude.prelude.Int
   
   function shallow_model'0 (self : borrowed uint32) : int =
-    [%#span4] UInt32.to_int ( * self)
+    [%#span4] UInt32.to_int self.current
   
   let rec take_some'0 (self:borrowed (List'0.t_list)) (return'  (ret:borrowed uint32))= any
-    [ return' (result:borrowed uint32)-> {[%#span6] shallow_model'0 result <= sum'0 ( * self)}
-      {[%#span5] sum'0 ( ^ self) - sum'0 ( * self) = UInt32.to_int ( ^ result) - shallow_model'0 result}
+    [ return' (result:borrowed uint32)-> {[%#span6] shallow_model'0 result <= sum'0 self.current}
+      {[%#span5] sum'0 self.final - sum'0 self.current = UInt32.to_int result.final - shallow_model'0 result}
       (! return' {result}) ]
     
   
@@ -334,12 +334,12 @@ module IncSomeList_IncSomeList
     | bb1 = s0 [ s0 = sum_x'0 {l} (fun (_ret':uint32) ->  [ &sum0 <- _ret' ] s1) | s1 = bb2 ] 
     | bb2 = s0
       [ s0 = Borrow.borrow_mut <List'0.t_list> {l}
-          (fun (_ret':borrowed (List'0.t_list)) ->  [ &_7 <- _ret' ]  [ &l <-  ^ _7 ] s1)
+          (fun (_ret':borrowed (List'0.t_list)) ->  [ &_7 <- _ret' ]  [ &l <- _7.final ] s1)
       | s1 = take_some'0 {_7} (fun (_ret':borrowed uint32) ->  [ &ma <- _ret' ] s2)
       | s2 = bb3 ]
       
     | bb3 = s0
-      [ s0 = UInt32.add { * ma} {k} (fun (_ret':uint32) ->  [ &ma <- { ma with current = _ret' ; } ] s1)
+      [ s0 = UInt32.add {ma.current} {k} (fun (_ret':uint32) ->  [ &ma <- { ma with current = _ret' ; } ] s1)
       | s1 = -{resolve'0 ma}- s2
       | s2 = sum_x'0 {l} (fun (_ret':uint32) ->  [ &_11 <- _ret' ] s3)
       | s3 = bb4 ]

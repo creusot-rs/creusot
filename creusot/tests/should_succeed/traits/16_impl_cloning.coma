@@ -146,18 +146,18 @@ module C16ImplCloning_Test
   function shallow_model'1 [#"../16_impl_cloning.rs" 11 4 11 50] (self : Vec'0.t_vec t) : Seq.seq t
   
   function shallow_model'0 (self : borrowed (Vec'0.t_vec t)) : Seq.seq t =
-    [%#span4] shallow_model'1 ( * self)
+    [%#span4] shallow_model'1 self.current
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Vec'0.t_vec t)) =
-    [%#span5]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   let rec test (x:borrowed (Vec'0.t_vec t)) (return'  (ret:()))= {[%#s16_impl_cloning0] inv'0 x}
     (! bb0 [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'0 x} s1 | s1 = -{resolve'0 x}- s2 | s2 = return' {_0} ]  ] )
     [ & _0 : () = any_l () | & x : borrowed (Vec'0.t_vec t) = x ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#s16_impl_cloning1] shallow_model'0 x = shallow_model'1 ( * x)}
+    [ return' (result:())-> {[@expl:postcondition] [%#s16_impl_cloning1] shallow_model'0 x = shallow_model'1 x.current}
       (! return' {result}) ]
     
 end

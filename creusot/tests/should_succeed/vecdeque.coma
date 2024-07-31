@@ -302,17 +302,17 @@ module Vecdeque_TestDeque
   && ([%#span21] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
   
   let rec clear'0 (self:borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) (return'  (ret:()))= {[@expl:precondition] [%#span23] inv'1 self}
-    any [ return' (result:())-> {[%#span24] Seq.length (shallow_model'0 ( ^ self)) = 0} (! return' {result}) ] 
+    any [ return' (result:())-> {[%#span24] Seq.length (shallow_model'0 self.final) = 0} (! return' {result}) ] 
   
   use seq.Seq
   
   function shallow_model'2 (self : borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) : Seq.seq uint32 =
-    [%#span25] shallow_model'0 ( * self)
+    [%#span25] shallow_model'0 self.current
   
   let rec push_back'0 (self:borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) (value:uint32) (return'  (ret:()))= {[@expl:precondition] [%#span27] inv'4 value}
     {[@expl:precondition] [%#span26] inv'1 self}
     any
-    [ return' (result:())-> {[%#span28] shallow_model'0 ( ^ self) = Seq.snoc (shallow_model'2 self) value}
+    [ return' (result:())-> {[%#span28] shallow_model'0 self.final = Seq.snoc (shallow_model'2 self) value}
       (! return' {result}) ]
     
   
@@ -323,9 +323,9 @@ module Vecdeque_TestDeque
   let rec push_front'0 (self:borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) (value:uint32) (return'  (ret:()))= {[@expl:precondition] [%#span30] inv'4 value}
     {[@expl:precondition] [%#span29] inv'1 self}
     any
-    [ return' (result:())-> {[%#span32] shallow_model'0 ( ^ self)
+    [ return' (result:())-> {[%#span32] shallow_model'0 self.final
       = Seq.(++) (Seq.singleton value) (shallow_model'2 self)}
-      {[%#span31] Seq.length (shallow_model'0 ( ^ self)) = Seq.length (shallow_model'2 self) + 1}
+      {[%#span31] Seq.length (shallow_model'0 self.final) = Seq.length (shallow_model'2 self) + 1}
       (! return' {result}) ]
     
   
@@ -335,10 +335,10 @@ module Vecdeque_TestDeque
     any
     [ return' (result:Option'0.t_option uint32)-> {[%#span35] inv'2 result}
       {[%#span34] match result with
-        | Option'0.C_Some t -> shallow_model'0 ( ^ self)
+        | Option'0.C_Some t -> shallow_model'0 self.final
         = SeqExt.subsequence (shallow_model'2 self) 0 (Seq.length (shallow_model'2 self) - 1)
-        /\ shallow_model'2 self = Seq.snoc (shallow_model'0 ( ^ self)) t
-        | Option'0.C_None ->  * self =  ^ self /\ Seq.length (shallow_model'2 self) = 0
+        /\ shallow_model'2 self = Seq.snoc (shallow_model'0 self.final) t
+        | Option'0.C_None -> self.current = self.final /\ Seq.length (shallow_model'2 self) = 0
         end}
       (! return' {result}) ]
     
@@ -367,10 +367,10 @@ module Vecdeque_TestDeque
     any
     [ return' (result:Option'0.t_option uint32)-> {[%#span44] inv'2 result}
       {[%#span43] match result with
-        | Option'0.C_Some t -> shallow_model'0 ( ^ self)
+        | Option'0.C_Some t -> shallow_model'0 self.final
         = SeqExt.subsequence (shallow_model'2 self) 1 (Seq.length (shallow_model'2 self))
-        /\ shallow_model'2 self = Seq.(++) (Seq.singleton t) (shallow_model'0 ( ^ self))
-        | Option'0.C_None ->  * self =  ^ self /\ Seq.length (shallow_model'2 self) = 0
+        /\ shallow_model'2 self = Seq.(++) (Seq.singleton t) (shallow_model'0 self.final)
+        | Option'0.C_None -> self.current = self.final /\ Seq.length (shallow_model'2 self) = 0
         end}
       (! return' {result}) ]
     
@@ -462,7 +462,7 @@ module Vecdeque_TestDeque
       [ s0 = Borrow.borrow_mut <VecDeque'0.t_vecdeque uint32 (Global'0.t_global)> {deque1}
           (fun (_ret':borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) ->
              [ &_25 <- _ret' ] 
-             [ &deque1 <-  ^ _25 ] 
+             [ &deque1 <- _25.final ] 
             s1)
       | s1 = pop_front'0 {_25} (fun (_ret':Option'0.t_option uint32) ->  [ &_24 <- _ret' ] s2)
       | s2 = bb15 ]
@@ -477,7 +477,7 @@ module Vecdeque_TestDeque
       [ s0 = Borrow.borrow_mut <VecDeque'0.t_vecdeque uint32 (Global'0.t_global)> {deque1}
           (fun (_ret':borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) ->
              [ &_33 <- _ret' ] 
-             [ &deque1 <-  ^ _33 ] 
+             [ &deque1 <- _33.final ] 
             s1)
       | s1 = pop_back'0 {_33} (fun (_ret':Option'0.t_option uint32) ->  [ &_32 <- _ret' ] s2)
       | s2 = bb19 ]
@@ -492,7 +492,7 @@ module Vecdeque_TestDeque
       [ s0 = Borrow.borrow_mut <VecDeque'0.t_vecdeque uint32 (Global'0.t_global)> {deque1}
           (fun (_ret':borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) ->
              [ &_38 <- _ret' ] 
-             [ &deque1 <-  ^ _38 ] 
+             [ &deque1 <- _38.final ] 
             s1)
       | s1 = push_front'0 {_38} {[%#svecdeque4] (1 : uint32)} (fun (_ret':()) ->  [ &_37 <- _ret' ] s2)
       | s2 = bb23 ]
@@ -501,7 +501,7 @@ module Vecdeque_TestDeque
       [ s0 = Borrow.borrow_mut <VecDeque'0.t_vecdeque uint32 (Global'0.t_global)> {deque1}
           (fun (_ret':borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) ->
              [ &_40 <- _ret' ] 
-             [ &deque1 <-  ^ _40 ] 
+             [ &deque1 <- _40.final ] 
             s1)
       | s1 = push_front'0 {_40} {[%#svecdeque5] (2 : uint32)} (fun (_ret':()) ->  [ &_39 <- _ret' ] s2)
       | s2 = bb24 ]
@@ -510,7 +510,7 @@ module Vecdeque_TestDeque
       [ s0 = Borrow.borrow_mut <VecDeque'0.t_vecdeque uint32 (Global'0.t_global)> {deque1}
           (fun (_ret':borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) ->
              [ &_42 <- _ret' ] 
-             [ &deque1 <-  ^ _42 ] 
+             [ &deque1 <- _42.final ] 
             s1)
       | s1 = push_back'0 {_42} {[%#svecdeque6] (3 : uint32)} (fun (_ret':()) ->  [ &_41 <- _ret' ] s2)
       | s2 = bb25 ]
@@ -519,7 +519,7 @@ module Vecdeque_TestDeque
       [ s0 = Borrow.borrow_mut <VecDeque'0.t_vecdeque uint32 (Global'0.t_global)> {deque1}
           (fun (_ret':borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) ->
              [ &_47 <- _ret' ] 
-             [ &deque1 <-  ^ _47 ] 
+             [ &deque1 <- _47.final ] 
             s1)
       | s1 = pop_front'0 {_47} (fun (_ret':Option'0.t_option uint32) ->  [ &_46 <- _ret' ] s2)
       | s2 = bb26 ]
@@ -534,7 +534,7 @@ module Vecdeque_TestDeque
       [ s0 = Borrow.borrow_mut <VecDeque'0.t_vecdeque uint32 (Global'0.t_global)> {deque1}
           (fun (_ret':borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) ->
              [ &_55 <- _ret' ] 
-             [ &deque1 <-  ^ _55 ] 
+             [ &deque1 <- _55.final ] 
             s1)
       | s1 = pop_back'0 {_55} (fun (_ret':Option'0.t_option uint32) ->  [ &_54 <- _ret' ] s2)
       | s2 = bb30 ]
@@ -549,7 +549,7 @@ module Vecdeque_TestDeque
       [ s0 = Borrow.borrow_mut <VecDeque'0.t_vecdeque uint32 (Global'0.t_global)> {deque1}
           (fun (_ret':borrowed (VecDeque'0.t_vecdeque uint32 (Global'0.t_global))) ->
              [ &_60 <- _ret' ] 
-             [ &deque1 <-  ^ _60 ] 
+             [ &deque1 <- _60.final ] 
             s1)
       | s1 = clear'0 {_60} (fun (_ret':()) ->  [ &_59 <- _ret' ] s2)
       | s2 = bb34 ]

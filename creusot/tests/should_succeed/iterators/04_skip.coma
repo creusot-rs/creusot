@@ -487,18 +487,18 @@ module C04Skip_Impl0_Next
   predicate completed'1 [#"../common.rs" 11 4 11 36] (self : borrowed i)
   
   predicate completed'0 [#"../04_skip.rs" 22 4 22 35] (self : borrowed (Skip'0.t_skip i)) =
-    [%#span25] UIntSize.to_int (C04Skip_Skip_Type.skip_n ( ^ self)) = 0
+    [%#span25] UIntSize.to_int (C04Skip_Skip_Type.skip_n self.final) = 0
     /\ (exists i : borrowed i . exists s : Seq.seq item'0 . inv'8 i
     /\ inv'9 s
-    /\ Seq.length s <= UIntSize.to_int (C04Skip_Skip_Type.skip_n ( * self))
-    /\ produces'0 (C04Skip_Skip_Type.skip_iter ( * self)) s ( * i)
+    /\ Seq.length s <= UIntSize.to_int (C04Skip_Skip_Type.skip_n self.current)
+    /\ produces'0 (C04Skip_Skip_Type.skip_iter self.current) s i.current
     /\ (forall i : int . 0 <= i /\ i < Seq.length s  -> resolve'3 (Seq.get s i))
-    /\ completed'1 i /\  ^ i = C04Skip_Skip_Type.skip_iter ( ^ self))
+    /\ completed'1 i /\ i.final = C04Skip_Skip_Type.skip_iter self.final)
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'5 (self : borrowed (Skip'0.t_skip i)) =
-    [%#span26]  ^ self =  * self
+    [%#span26] self.final = self.current
   
   use seq.Seq
   
@@ -510,7 +510,7 @@ module C04Skip_Impl0_Next
     [ return' (result:Option'0.t_option item'0)-> {[%#span30] inv'5 result}
       {[%#span29] match result with
         | Option'0.C_None -> completed'1 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -530,7 +530,7 @@ module C04Skip_Impl0_Next
   use prelude.prelude.Snapshot
   
   predicate resolve'1 (self : borrowed usize) =
-    [%#span26]  ^ self =  * self
+    [%#span26] self.final = self.current
   
   predicate is_default'0 (self : usize) =
     [%#span32] self = (0 : usize)
@@ -538,8 +538,8 @@ module C04Skip_Impl0_Next
   let rec take'0 (dest:borrowed usize) (return'  (ret:usize))= {[@expl:precondition] [%#span33] inv'6 dest}
     any
     [ return' (result:usize)-> {[%#span36] inv'7 result}
-      {[%#span35] is_default'0 ( ^ dest)}
-      {[%#span34] result =  * dest}
+      {[%#span35] is_default'0 dest.final}
+      {[%#span34] result = dest.current}
       (! return' {result}) ]
     
   
@@ -554,17 +554,17 @@ module C04Skip_Impl0_Next
     | bb1 = s0
       [ s0 = {[@expl:type invariant] inv'0 old_self} s1
       | s1 = -{resolve'0 old_self}- s2
-      | s2 = Skip'0.t_skip <i> { * self}
+      | s2 = Skip'0.t_skip <i> {self.current}
           (fun (riter'0:i) (rn'0:usize) ->
             Borrow.borrow_final <usize> {rn'0} {Borrow.inherit_id (Borrow.get_id self) 2}
               (fun (_ret':borrowed usize) ->
                  [ &_7 <- _ret' ] 
-                Skip'0.t_skip <i> { * self}
+                Skip'0.t_skip <i> {self.current}
                   (fun (l_iter'0:i) (l_n'0:usize) ->
-                     [ &self <- { self with current = Skip'0.C_Skip l_iter'0 ( ^ _7) ; } ] 
+                     [ &self <- { self with current = Skip'0.C_Skip l_iter'0 _7.final ; } ] 
                     s3)))
-      | s3 = Borrow.borrow_final <usize> { * _7} {Borrow.get_id _7}
-          (fun (_ret':borrowed usize) ->  [ &_6 <- _ret' ]  [ &_7 <- { _7 with current = ( ^ _6) ; } ] s4)
+      | s3 = Borrow.borrow_final <usize> {_7.current} {Borrow.get_id _7}
+          (fun (_ret':borrowed usize) ->  [ &_6 <- _ret' ]  [ &_7 <- { _7 with current = _6.final ; } ] s4)
       | s4 = take'0 {_6} (fun (_ret':usize) ->  [ &n <- _ret' ] s5)
       | s5 = bb2 ]
       
@@ -580,27 +580,27 @@ module C04Skip_Impl0_Next
       | s3 = bb4 ]
       
     | bb4 = bb4
-      [ bb4 = {[@expl:loop invariant]  ^ Snapshot.inner old_4_0 =  ^ self}
-        {[@expl:loop invariant] [%#s04_skip6]  ^ Snapshot.inner old_self =  ^ self}
+      [ bb4 = {[@expl:loop invariant] (Snapshot.inner old_4_0).final = self.final}
+        {[@expl:loop invariant] [%#s04_skip6] (Snapshot.inner old_self).final = self.final}
         {[@expl:loop invariant] [%#s04_skip5] inv'2 self}
-        {[@expl:loop invariant] [%#s04_skip4] UIntSize.to_int (C04Skip_Skip_Type.skip_n ( * self)) = 0}
+        {[@expl:loop invariant] [%#s04_skip4] UIntSize.to_int (C04Skip_Skip_Type.skip_n self.current) = 0}
         {[@expl:loop invariant] [%#s04_skip3] forall i : int . 0 <= i /\ i < Seq.length (Snapshot.inner skipped)
          -> resolve'3 (index_logic'0 skipped i)}
-        {[@expl:loop invariant] [%#s04_skip3] produces'0 (C04Skip_Skip_Type.skip_iter ( * Snapshot.inner old_self)) (Snapshot.inner skipped) (C04Skip_Skip_Type.skip_iter ( * self))}
+        {[@expl:loop invariant] [%#s04_skip3] produces'0 (C04Skip_Skip_Type.skip_iter (Snapshot.inner old_self).current) (Snapshot.inner skipped) (C04Skip_Skip_Type.skip_iter self.current)}
         {[@expl:loop invariant] [%#s04_skip2] Seq.length (Snapshot.inner skipped) + UIntSize.to_int n
-        = UIntSize.to_int (C04Skip_Skip_Type.skip_n ( * Snapshot.inner old_self))}
+        = UIntSize.to_int (C04Skip_Skip_Type.skip_n (Snapshot.inner old_self).current)}
         (! s0) [ s0 = bb5 ] 
         [ bb5 = s0
-          [ s0 = Skip'0.t_skip <i> { * self}
+          [ s0 = Skip'0.t_skip <i> {self.current}
               (fun (riter'0:i) (rn'0:usize) ->
                 Borrow.borrow_mut <i> {riter'0}
                   (fun (_ret':borrowed i) ->
                      [ &_19 <- _ret' ] 
-                    Skip'0.t_skip <i> { * self}
+                    Skip'0.t_skip <i> {self.current}
                       (fun (l_iter'0:i) (l_n'0:usize) ->
-                         [ &self <- { self with current = Skip'0.C_Skip ( ^ _19) l_n'0 ; } ] 
+                         [ &self <- { self with current = Skip'0.C_Skip _19.final l_n'0 ; } ] 
                         s1)))
-          | s1 = -{inv'3 ( ^ _19)}- s2
+          | s1 = -{inv'3 _19.final}- s2
           | s2 = next'0 {_19} (fun (_ret':Option'0.t_option item'0) ->  [ &r <- _ret' ] s3)
           | s3 = bb6 ]
           
@@ -669,7 +669,7 @@ module C04Skip_Impl0_Next
     [ return' (result:Option'0.t_option item'0)-> {[@expl:postcondition] [%#s04_skip12] inv'5 result}
       {[@expl:postcondition] [%#s04_skip11] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'1 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'1 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -752,13 +752,13 @@ module C04Skip_Impl0
   use prelude.prelude.UIntSize
   
   predicate completed'0 [#"../04_skip.rs" 22 4 22 35] (self : borrowed (Skip'0.t_skip i)) =
-    [%#span4] UIntSize.to_int (C04Skip_Skip_Type.skip_n ( ^ self)) = 0
+    [%#span4] UIntSize.to_int (C04Skip_Skip_Type.skip_n self.final) = 0
     /\ (exists i : borrowed i . exists s : Seq.seq item'0 . inv'4 i
     /\ inv'1 s
-    /\ Seq.length s <= UIntSize.to_int (C04Skip_Skip_Type.skip_n ( * self))
-    /\ produces'1 (C04Skip_Skip_Type.skip_iter ( * self)) s ( * i)
+    /\ Seq.length s <= UIntSize.to_int (C04Skip_Skip_Type.skip_n self.current)
+    /\ produces'1 (C04Skip_Skip_Type.skip_iter self.current) s i.current
     /\ (forall i : int . 0 <= i /\ i < Seq.length s  -> resolve'0 (Seq.get s i))
-    /\ completed'1 i /\  ^ i = C04Skip_Skip_Type.skip_iter ( ^ self))
+    /\ completed'1 i /\ i.final = C04Skip_Skip_Type.skip_iter self.final)
   
   use seq.Seq
   
@@ -797,11 +797,11 @@ module C04Skip_Impl0
   /\ (forall result : Option'0.t_option item'0 . inv'3 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end
    -> inv'3 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end)
 end

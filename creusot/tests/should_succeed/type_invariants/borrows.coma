@@ -97,34 +97,34 @@ module Borrows_Impl1_InnerMut
   
   predicate inv'0 (_x : borrowed (NonZero'0.t_nonzero))
   
-  axiom inv'0 : forall x : borrowed (NonZero'0.t_nonzero) . inv'0 x = (inv'1 ( * x) /\ inv'1 ( ^ x))
+  axiom inv'0 : forall x : borrowed (NonZero'0.t_nonzero) . inv'0 x = (inv'1 x.current /\ inv'1 x.final)
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'1 (self : borrowed (NonZero'0.t_nonzero)) =
-    [%#span5]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   use prelude.prelude.Int32
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span5]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   use prelude.prelude.Int
   
   let rec inner_mut (self:borrowed (NonZero'0.t_nonzero)) (return'  (ret:borrowed int32))= {[%#sborrows0] inv'0 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = NonZero'0.t_nonzero { * self}
+      [ s0 = NonZero'0.t_nonzero {self.current}
           (fun (r0'0:int32) ->
             Borrow.borrow_final <int32> {r0'0} {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed int32) ->
                  [ &_5 <- _ret' ] 
-                NonZero'0.t_nonzero { * self}
-                  (fun (l_0'0:int32) ->  [ &self <- { self with current = NonZero'0.C_NonZero ( ^ _5) ; } ] s1)))
-      | s1 = Borrow.borrow_final <int32> { * _5} {Borrow.get_id _5}
-          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_5 <- { _5 with current = ( ^ _2) ; } ] s2)
-      | s2 = Borrow.borrow_final <int32> { * _2} {Borrow.get_id _2}
-          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = ( ^ _0) ; } ] s3)
+                NonZero'0.t_nonzero {self.current}
+                  (fun (l_0'0:int32) ->  [ &self <- { self with current = NonZero'0.C_NonZero _5.final ; } ] s1)))
+      | s1 = Borrow.borrow_final <int32> {_5.current} {Borrow.get_id _5}
+          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_5 <- { _5 with current = _2.final ; } ] s2)
+      | s2 = Borrow.borrow_final <int32> {_2.current} {Borrow.get_id _2}
+          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = _0.final ; } ] s3)
       | s3 = -{resolve'0 _5}- s4
       | s4 = -{resolve'0 _2}- s5
       | s5 = {[@expl:type invariant] inv'0 self} s6
@@ -137,10 +137,10 @@ module Borrows_Impl1_InnerMut
     | & _2 : borrowed int32 = any_l ()
     | & _5 : borrowed int32 = any_l () ]
     
-    [ return' (result:borrowed int32)-> {[@expl:postcondition] [%#sborrows2] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( ^ self))
-      = Int32.to_int ( ^ result)}
-      {[@expl:postcondition] [%#sborrows1] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * self))
-      = Int32.to_int ( * result)}
+    [ return' (result:borrowed int32)-> {[@expl:postcondition] [%#sborrows2] Int32.to_int (Borrows_NonZero_Type.nonzero_0 self.final)
+      = Int32.to_int result.final}
+      {[@expl:postcondition] [%#sborrows1] Int32.to_int (Borrows_NonZero_Type.nonzero_0 self.current)
+      = Int32.to_int result.current}
       (! return' {result}) ]
     
 end
@@ -170,23 +170,23 @@ module Borrows_Inc
   use prelude.prelude.Borrow
   
   function shallow_model'0 (self : borrowed int32) : int =
-    [%#span4] Int32.to_int ( * self)
+    [%#span4] Int32.to_int self.current
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span5]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   let rec inc (x:borrowed int32) (return'  (ret:()))= {[%#sborrows1] shallow_model'0 x < Int32.to_int (max'0 : int32)}
     (! bb0
     [ bb0 = s0
-      [ s0 = Int32.add { * x} {[%#sborrows0] (1 : int32)}
+      [ s0 = Int32.add {x.current} {[%#sborrows0] (1 : int32)}
           (fun (_ret':int32) ->  [ &x <- { x with current = _ret' ; } ] s1)
       | s1 = -{resolve'0 x}- s2
       | s2 = return' {_0} ]
        ]
     ) [ & _0 : () = any_l () | & x : borrowed int32 = x ] 
-    [ return' (result:())-> {[@expl:postcondition] [%#sborrows2] Int32.to_int ( ^ x) = shallow_model'0 x + 1}
+    [ return' (result:())-> {[@expl:postcondition] [%#sborrows2] Int32.to_int x.final = shallow_model'0 x + 1}
       (! return' {result}) ]
     
 end
@@ -235,7 +235,7 @@ module Borrows_Simple
   
   predicate inv'0 (_x : borrowed (NonZero'0.t_nonzero))
   
-  axiom inv'0 : forall x : borrowed (NonZero'0.t_nonzero) . inv'0 x = (inv'1 ( * x) /\ inv'1 ( ^ x))
+  axiom inv'0 : forall x : borrowed (NonZero'0.t_nonzero) . inv'0 x = (inv'1 x.current /\ inv'1 x.final)
   
   use prelude.prelude.Int32
   
@@ -246,34 +246,34 @@ module Borrows_Simple
   use prelude.prelude.Intrinsic
   
   predicate resolve'1 (self : borrowed (NonZero'0.t_nonzero)) =
-    [%#span6]  ^ self =  * self
+    [%#span6] self.final = self.current
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span6]  ^ self =  * self
+    [%#span6] self.final = self.current
   
   use prelude.prelude.Int
   
   function shallow_model'0 (self : borrowed int32) : int =
-    [%#span7] Int32.to_int ( * self)
+    [%#span7] Int32.to_int self.current
   
   let rec inc'0 (x:borrowed int32) (return'  (ret:()))= {[@expl:precondition] [%#span8] shallow_model'0 x
     < Int32.to_int (max'0 : int32)}
-    any [ return' (result:())-> {[%#span9] Int32.to_int ( ^ x) = shallow_model'0 x + 1} (! return' {result}) ] 
+    any [ return' (result:())-> {[%#span9] Int32.to_int x.final = shallow_model'0 x + 1} (! return' {result}) ] 
   
   let rec simple (x:borrowed (NonZero'0.t_nonzero)) (return'  (ret:()))= {[%#sborrows2] inv'0 x}
-    {[%#sborrows1] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) <> - 1}
-    {[%#sborrows0] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) < Int32.to_int (max'0 : int32)}
+    {[%#sborrows1] Int32.to_int (Borrows_NonZero_Type.nonzero_0 x.current) <> - 1}
+    {[%#sborrows0] Int32.to_int (Borrows_NonZero_Type.nonzero_0 x.current) < Int32.to_int (max'0 : int32)}
     (! bb0
     [ bb0 = s0
-      [ s0 = NonZero'0.t_nonzero { * x}
+      [ s0 = NonZero'0.t_nonzero {x.current}
           (fun (r0'0:int32) ->
             Borrow.borrow_final <int32> {r0'0} {Borrow.inherit_id (Borrow.get_id x) 1}
               (fun (_ret':borrowed int32) ->
                  [ &_6 <- _ret' ] 
-                NonZero'0.t_nonzero { * x}
-                  (fun (l_0'0:int32) ->  [ &x <- { x with current = NonZero'0.C_NonZero ( ^ _6) ; } ] s1)))
-      | s1 = Borrow.borrow_final <int32> { * _6} {Borrow.get_id _6}
-          (fun (_ret':borrowed int32) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = ( ^ _5) ; } ] s2)
+                NonZero'0.t_nonzero {x.current}
+                  (fun (l_0'0:int32) ->  [ &x <- { x with current = NonZero'0.C_NonZero _6.final ; } ] s1)))
+      | s1 = Borrow.borrow_final <int32> {_6.current} {Borrow.get_id _6}
+          (fun (_ret':borrowed int32) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _5.final ; } ] s2)
       | s2 = inc'0 {_5} (fun (_ret':()) ->  [ &_4 <- _ret' ] s3)
       | s3 = bb1 ]
       
@@ -329,7 +329,7 @@ module Borrows_Hard
   
   predicate inv'1 (_x : borrowed (NonZero'0.t_nonzero))
   
-  axiom inv'1 : forall x : borrowed (NonZero'0.t_nonzero) . inv'1 x = (inv'0 ( * x) /\ inv'0 ( ^ x))
+  axiom inv'1 : forall x : borrowed (NonZero'0.t_nonzero) . inv'1 x = (inv'0 x.current /\ inv'0 x.final)
   
   use prelude.prelude.Int32
   
@@ -353,42 +353,45 @@ module Borrows_Hard
   use prelude.prelude.Intrinsic
   
   predicate resolve'1 (self : borrowed (NonZero'0.t_nonzero)) =
-    [%#span6]  ^ self =  * self
+    [%#span6] self.final = self.current
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span6]  ^ self =  * self
+    [%#span6] self.final = self.current
   
   use prelude.prelude.Int
   
   function shallow_model'0 (self : borrowed int32) : int =
-    [%#span7] Int32.to_int ( * self)
+    [%#span7] Int32.to_int self.current
   
   let rec inc'0 (x:borrowed int32) (return'  (ret:()))= {[@expl:precondition] [%#span8] shallow_model'0 x
     < Int32.to_int (max'0 : int32)}
-    any [ return' (result:())-> {[%#span9] Int32.to_int ( ^ x) = shallow_model'0 x + 1} (! return' {result}) ] 
+    any [ return' (result:())-> {[%#span9] Int32.to_int x.final = shallow_model'0 x + 1} (! return' {result}) ] 
   
   let rec inner_mut'0 (self:borrowed (NonZero'0.t_nonzero)) (return'  (ret:borrowed int32))= {[@expl:precondition] [%#span10] inv'1 self}
     any
-    [ return' (result:borrowed int32)-> {[%#span12] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( ^ self))
-      = Int32.to_int ( ^ result)}
-      {[%#span11] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * self)) = Int32.to_int ( * result)}
+    [ return' (result:borrowed int32)-> {[%#span12] Int32.to_int (Borrows_NonZero_Type.nonzero_0 self.final)
+      = Int32.to_int result.final}
+      {[%#span11] Int32.to_int (Borrows_NonZero_Type.nonzero_0 self.current) = Int32.to_int result.current}
       (! return' {result}) ]
     
   
   let rec hard (x:borrowed (NonZero'0.t_nonzero)) (return'  (ret:()))= {[%#sborrows2] inv'1 x}
-    {[%#sborrows1] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) <> - 1}
-    {[%#sborrows0] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) < Int32.to_int (max'0 : int32)}
+    {[%#sborrows1] Int32.to_int (Borrows_NonZero_Type.nonzero_0 x.current) <> - 1}
+    {[%#sborrows0] Int32.to_int (Borrows_NonZero_Type.nonzero_0 x.current) < Int32.to_int (max'0 : int32)}
     (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_final <NonZero'0.t_nonzero> { * x} {Borrow.get_id x}
-          (fun (_ret':borrowed (NonZero'0.t_nonzero)) ->  [ &_7 <- _ret' ]  [ &x <- { x with current = ( ^ _7) ; } ] s1)
-      | s1 = -{inv'0 ( ^ _7)}- s2
+      [ s0 = Borrow.borrow_final <NonZero'0.t_nonzero> {x.current} {Borrow.get_id x}
+          (fun (_ret':borrowed (NonZero'0.t_nonzero)) ->
+             [ &_7 <- _ret' ] 
+             [ &x <- { x with current = _7.final ; } ] 
+            s1)
+      | s1 = -{inv'0 _7.final}- s2
       | s2 = inner_mut'0 {_7} (fun (_ret':borrowed int32) ->  [ &_6 <- _ret' ] s3)
       | s3 = bb1 ]
       
     | bb1 = s0
-      [ s0 = Borrow.borrow_final <int32> { * _6} {Borrow.get_id _6}
-          (fun (_ret':borrowed int32) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = ( ^ _5) ; } ] s1)
+      [ s0 = Borrow.borrow_final <int32> {_6.current} {Borrow.get_id _6}
+          (fun (_ret':borrowed int32) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _5.final ; } ] s1)
       | s1 = inc'0 {_5} (fun (_ret':()) ->  [ &_4 <- _ret' ] s2)
       | s2 = bb2 ]
       
@@ -445,7 +448,7 @@ module Borrows_Tuple
   
   predicate inv'2 (_x : borrowed (NonZero'0.t_nonzero))
   
-  axiom inv'2 : forall x : borrowed (NonZero'0.t_nonzero) . inv'2 x = (inv'1 ( * x) /\ inv'1 ( ^ x))
+  axiom inv'2 : forall x : borrowed (NonZero'0.t_nonzero) . inv'2 x = (inv'1 x.current /\ inv'1 x.final)
   
   use prelude.prelude.Int32
   
@@ -477,7 +480,7 @@ module Borrows_Tuple
   use prelude.prelude.Intrinsic
   
   predicate resolve'3 (self : borrowed (NonZero'0.t_nonzero)) =
-    [%#span7]  ^ self =  * self
+    [%#span7] self.final = self.current
   
   predicate resolve'2 (self : NonZero'0.t_nonzero) =
     [%#span8] true
@@ -486,20 +489,20 @@ module Borrows_Tuple
     [%#span9] resolve'2 (let (a, _) = self in a) /\ resolve'3 (let (_, a) = self in a)
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span7]  ^ self =  * self
+    [%#span7] self.final = self.current
   
   use prelude.prelude.Int
   
   function shallow_model'0 (self : borrowed int32) : int =
-    [%#span10] Int32.to_int ( * self)
+    [%#span10] Int32.to_int self.current
   
   let rec inc'0 (x:borrowed int32) (return'  (ret:()))= {[@expl:precondition] [%#span11] shallow_model'0 x
     < Int32.to_int (max'0 : int32)}
-    any [ return' (result:())-> {[%#span12] Int32.to_int ( ^ x) = shallow_model'0 x + 1} (! return' {result}) ] 
+    any [ return' (result:())-> {[%#span12] Int32.to_int x.final = shallow_model'0 x + 1} (! return' {result}) ] 
   
   let rec tuple (x:(NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero))) (return'  (ret:()))= {[%#sborrows3] inv'0 x}
-    {[%#sborrows2] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) <> - 1}
-    {[%#sborrows1] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a)))
+    {[%#sborrows2] Int32.to_int (Borrows_NonZero_Type.nonzero_0 (let (_, a) = x in a).current) <> - 1}
+    {[%#sborrows1] Int32.to_int (Borrows_NonZero_Type.nonzero_0 (let (_, a) = x in a).current)
     < Int32.to_int (max'0 : int32)}
     (! bb0
     [ bb0 = s0
@@ -507,19 +510,19 @@ module Borrows_Tuple
           (fun (l_0'0:int32) ->
              [ &x <- let (_, l'2) = x in (NonZero'0.C_NonZero ([%#sborrows0] (0 : int32)), l'2) ] 
             s1)
-      | s1 = NonZero'0.t_nonzero { * (let (_, r'1) = x in r'1)}
+      | s1 = NonZero'0.t_nonzero {(let (_, r'1) = x in r'1).current}
           (fun (r0'0:int32) ->
             Borrow.borrow_final <int32> {r0'0} {Borrow.inherit_id (Borrow.get_id (let (_, r'0) = x in r'0)) 1}
               (fun (_ret':borrowed int32) ->
                  [ &_6 <- _ret' ] 
-                NonZero'0.t_nonzero { * (let (_, l'3) = x in l'3)}
+                NonZero'0.t_nonzero {(let (_, l'3) = x in l'3).current}
                   (fun (l_0'1:int32) ->
                     
-                    [ &x <- let (l'4, _) = x in (l'4, { (let (_, l'3) = x in l'3) with current = NonZero'0.C_NonZero ( ^ _6) ; }) ]
+                    [ &x <- let (l'4, _) = x in (l'4, { (let (_, l'3) = x in l'3) with current = NonZero'0.C_NonZero _6.final ; }) ]
                     
                     s2)))
-      | s2 = Borrow.borrow_final <int32> { * _6} {Borrow.get_id _6}
-          (fun (_ret':borrowed int32) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = ( ^ _5) ; } ] s3)
+      | s2 = Borrow.borrow_final <int32> {_6.current} {Borrow.get_id _6}
+          (fun (_ret':borrowed int32) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _5.final ; } ] s3)
       | s3 = inc'0 {_5} (fun (_ret':()) ->  [ &_4 <- _ret' ] s4)
       | s4 = bb1 ]
       
@@ -575,7 +578,7 @@ module Borrows_PartialMove
   
   predicate inv'2 (_x : borrowed (NonZero'0.t_nonzero))
   
-  axiom inv'2 : forall x : borrowed (NonZero'0.t_nonzero) . inv'2 x = (inv'1 ( * x) /\ inv'1 ( ^ x))
+  axiom inv'2 : forall x : borrowed (NonZero'0.t_nonzero) . inv'2 x = (inv'1 x.current /\ inv'1 x.final)
   
   use prelude.prelude.Int32
   
@@ -607,7 +610,7 @@ module Borrows_PartialMove
   use prelude.prelude.Intrinsic
   
   predicate resolve'3 (self : borrowed (NonZero'0.t_nonzero)) =
-    [%#span7]  ^ self =  * self
+    [%#span7] self.final = self.current
   
   predicate resolve'2 (self : NonZero'0.t_nonzero) =
     [%#span8] true
@@ -616,38 +619,38 @@ module Borrows_PartialMove
     [%#span9] resolve'2 (let (a, _) = self in a) /\ resolve'3 (let (_, a) = self in a)
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span7]  ^ self =  * self
+    [%#span7] self.final = self.current
   
   use prelude.prelude.Int
   
   function shallow_model'0 (self : borrowed int32) : int =
-    [%#span10] Int32.to_int ( * self)
+    [%#span10] Int32.to_int self.current
   
   let rec inc'0 (x:borrowed int32) (return'  (ret:()))= {[@expl:precondition] [%#span11] shallow_model'0 x
     < Int32.to_int (max'0 : int32)}
-    any [ return' (result:())-> {[%#span12] Int32.to_int ( ^ x) = shallow_model'0 x + 1} (! return' {result}) ] 
+    any [ return' (result:())-> {[%#span12] Int32.to_int x.final = shallow_model'0 x + 1} (! return' {result}) ] 
   
   let rec partial_move (x:(NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero))) (return'  (ret:()))= {[%#sborrows3] inv'0 x}
-    {[%#sborrows2] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) <> - 1}
-    {[%#sborrows1] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a)))
+    {[%#sborrows2] Int32.to_int (Borrows_NonZero_Type.nonzero_0 (let (_, a) = x in a).current) <> - 1}
+    {[%#sborrows1] Int32.to_int (Borrows_NonZero_Type.nonzero_0 (let (_, a) = x in a).current)
     < Int32.to_int (max'0 : int32)}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &a <- let (r'0, _) = x in r'0 ] 
         (any [ any_ (_any:NonZero'0.t_nonzero)-> (!  [ &x <- let (_, l'2) = x in (_any, l'2) ] s1) ] )
-      | s1 = NonZero'0.t_nonzero { * (let (_, r'2) = x in r'2)}
+      | s1 = NonZero'0.t_nonzero {(let (_, r'2) = x in r'2).current}
           (fun (r0'0:int32) ->
             Borrow.borrow_final <int32> {r0'0} {Borrow.inherit_id (Borrow.get_id (let (_, r'1) = x in r'1)) 1}
               (fun (_ret':borrowed int32) ->
                  [ &_7 <- _ret' ] 
-                NonZero'0.t_nonzero { * (let (_, l'3) = x in l'3)}
+                NonZero'0.t_nonzero {(let (_, l'3) = x in l'3).current}
                   (fun (l_0'0:int32) ->
                     
-                    [ &x <- let (l'4, _) = x in (l'4, { (let (_, l'3) = x in l'3) with current = NonZero'0.C_NonZero ( ^ _7) ; }) ]
+                    [ &x <- let (l'4, _) = x in (l'4, { (let (_, l'3) = x in l'3) with current = NonZero'0.C_NonZero _7.final ; }) ]
                     
                     s2)))
-      | s2 = Borrow.borrow_final <int32> { * _7} {Borrow.get_id _7}
-          (fun (_ret':borrowed int32) ->  [ &_6 <- _ret' ]  [ &_7 <- { _7 with current = ( ^ _6) ; } ] s3)
+      | s2 = Borrow.borrow_final <int32> {_7.current} {Borrow.get_id _7}
+          (fun (_ret':borrowed int32) ->  [ &_6 <- _ret' ]  [ &_7 <- { _7 with current = _6.final ; } ] s3)
       | s3 = inc'0 {_6} (fun (_ret':()) ->  [ &_5 <- _ret' ] s4)
       | s4 = bb1 ]
       
@@ -719,7 +722,7 @@ module Borrows_Destruct
   
   predicate inv'1 (_x : borrowed (NonZero'0.t_nonzero))
   
-  axiom inv'1 : forall x : borrowed (NonZero'0.t_nonzero) . inv'1 x = (inv'2 ( * x) /\ inv'2 ( ^ x))
+  axiom inv'1 : forall x : borrowed (NonZero'0.t_nonzero) . inv'1 x = (inv'2 x.current /\ inv'2 x.final)
   
   predicate invariant'0 (self : (NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero))) =
     [%#span5] true
@@ -738,19 +741,19 @@ module Borrows_Destruct
   use prelude.prelude.Intrinsic
   
   predicate resolve'2 (self : borrowed (NonZero'0.t_nonzero)) =
-    [%#span7]  ^ self =  * self
+    [%#span7] self.final = self.current
   
   predicate resolve'1 (self : borrowed int32) =
-    [%#span7]  ^ self =  * self
+    [%#span7] self.final = self.current
   
   use prelude.prelude.Int
   
   function shallow_model'0 (self : borrowed int32) : int =
-    [%#span8] Int32.to_int ( * self)
+    [%#span8] Int32.to_int self.current
   
   let rec inc'0 (x:borrowed int32) (return'  (ret:()))= {[@expl:precondition] [%#span9] shallow_model'0 x
     < Int32.to_int (max'0 : int32)}
-    any [ return' (result:())-> {[%#span10] Int32.to_int ( ^ x) = shallow_model'0 x + 1} (! return' {result}) ] 
+    any [ return' (result:())-> {[%#span10] Int32.to_int x.final = shallow_model'0 x + 1} (! return' {result}) ] 
   
   predicate resolve'3 (self : NonZero'0.t_nonzero) =
     [%#span11] true
@@ -759,8 +762,8 @@ module Borrows_Destruct
     [%#span12] resolve'3 (let (a, _) = self in a) /\ resolve'2 (let (_, a) = self in a)
   
   let rec destruct (x:(NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero))) (return'  (ret:()))= {[%#sborrows3] inv'0 x}
-    {[%#sborrows2] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a))) <> - 1}
-    {[%#sborrows1] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * (let (_, a) = x in a)))
+    {[%#sborrows2] Int32.to_int (Borrows_NonZero_Type.nonzero_0 (let (_, a) = x in a).current) <> - 1}
+    {[%#sborrows1] Int32.to_int (Borrows_NonZero_Type.nonzero_0 (let (_, a) = x in a).current)
     < Int32.to_int (max'0 : int32)}
     (! bb0
     [ bb0 = s0
@@ -772,15 +775,15 @@ module Borrows_Destruct
       | s3 = -{resolve'0 x}- s4
       | s4 = NonZero'0.t_nonzero {a}
           (fun (l_0'0:int32) ->  [ &a <- NonZero'0.C_NonZero ([%#sborrows0] (0 : int32)) ] s5)
-      | s5 = NonZero'0.t_nonzero { * b}
+      | s5 = NonZero'0.t_nonzero {b.current}
           (fun (r0'0:int32) ->
             Borrow.borrow_final <int32> {r0'0} {Borrow.inherit_id (Borrow.get_id b) 1}
               (fun (_ret':borrowed int32) ->
                  [ &_8 <- _ret' ] 
-                NonZero'0.t_nonzero { * b}
-                  (fun (l_0'1:int32) ->  [ &b <- { b with current = NonZero'0.C_NonZero ( ^ _8) ; } ] s6)))
-      | s6 = Borrow.borrow_final <int32> { * _8} {Borrow.get_id _8}
-          (fun (_ret':borrowed int32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = ( ^ _7) ; } ] s7)
+                NonZero'0.t_nonzero {b.current}
+                  (fun (l_0'1:int32) ->  [ &b <- { b with current = NonZero'0.C_NonZero _8.final ; } ] s6)))
+      | s6 = Borrow.borrow_final <int32> {_8.current} {Borrow.get_id _8}
+          (fun (_ret':borrowed int32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _7.final ; } ] s7)
       | s7 = inc'0 {_7} (fun (_ret':()) ->  [ &_6 <- _ret' ] s8)
       | s8 = bb1 ]
       
@@ -834,7 +837,7 @@ module Borrows_FrozenDead
   
   predicate inv'1 (_x : borrowed (NonZero'0.t_nonzero))
   
-  axiom inv'1 : forall x : borrowed (NonZero'0.t_nonzero) . inv'1 x = (inv'0 ( * x) /\ inv'0 ( ^ x))
+  axiom inv'1 : forall x : borrowed (NonZero'0.t_nonzero) . inv'1 x = (inv'0 x.current /\ inv'0 x.final)
   
   use prelude.prelude.Int32
   
@@ -858,43 +861,46 @@ module Borrows_FrozenDead
   use prelude.prelude.Intrinsic
   
   predicate resolve'1 (self : borrowed int32) =
-    [%#span7]  ^ self =  * self
+    [%#span7] self.final = self.current
   
   use prelude.prelude.Int
   
   function shallow_model'0 (self : borrowed int32) : int =
-    [%#span8] Int32.to_int ( * self)
+    [%#span8] Int32.to_int self.current
   
   let rec inc'0 (x:borrowed int32) (return'  (ret:()))= {[@expl:precondition] [%#span9] shallow_model'0 x
     < Int32.to_int (max'0 : int32)}
-    any [ return' (result:())-> {[%#span10] Int32.to_int ( ^ x) = shallow_model'0 x + 1} (! return' {result}) ] 
+    any [ return' (result:())-> {[%#span10] Int32.to_int x.final = shallow_model'0 x + 1} (! return' {result}) ] 
   
   predicate resolve'0 (self : borrowed (NonZero'0.t_nonzero)) =
-    [%#span7]  ^ self =  * self
+    [%#span7] self.final = self.current
   
   let rec frozen_dead (x:borrowed (NonZero'0.t_nonzero)) (y:borrowed (NonZero'0.t_nonzero)) (return'  (ret:()))= {[%#sborrows3] inv'1 y}
     {[%#sborrows2] inv'1 x}
-    {[%#sborrows1] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) <> - 1}
-    {[%#sborrows0] Int32.to_int (Borrows_NonZero_Type.nonzero_0 ( * x)) < Int32.to_int (max'0 : int32)}
+    {[%#sborrows1] Int32.to_int (Borrows_NonZero_Type.nonzero_0 x.current) <> - 1}
+    {[%#sborrows0] Int32.to_int (Borrows_NonZero_Type.nonzero_0 x.current) < Int32.to_int (max'0 : int32)}
     (! bb0
     [ bb0 = s0
-      [ s0 = NonZero'0.t_nonzero { * x}
+      [ s0 = NonZero'0.t_nonzero {x.current}
           (fun (r0'0:int32) ->
             Borrow.borrow_final <int32> {r0'0} {Borrow.inherit_id (Borrow.get_id x) 1}
               (fun (_ret':borrowed int32) ->
                  [ &_a <- _ret' ] 
-                NonZero'0.t_nonzero { * x}
-                  (fun (l_0'0:int32) ->  [ &x <- { x with current = NonZero'0.C_NonZero ( ^ _a) ; } ] s1)))
-      | s1 = Borrow.borrow_final <NonZero'0.t_nonzero> { * y} {Borrow.get_id y}
-          (fun (_ret':borrowed (NonZero'0.t_nonzero)) ->  [ &_6 <- _ret' ]  [ &y <- { y with current = ( ^ _6) ; } ] s2)
-      | s2 = -{inv'0 ( ^ _6)}- s3
+                NonZero'0.t_nonzero {x.current}
+                  (fun (l_0'0:int32) ->  [ &x <- { x with current = NonZero'0.C_NonZero _a.final ; } ] s1)))
+      | s1 = Borrow.borrow_final <NonZero'0.t_nonzero> {y.current} {Borrow.get_id y}
+          (fun (_ret':borrowed (NonZero'0.t_nonzero)) ->
+             [ &_6 <- _ret' ] 
+             [ &y <- { y with current = _6.final ; } ] 
+            s2)
+      | s2 = -{inv'0 _6.final}- s3
       | s3 = {[@expl:type invariant] inv'1 x} s4
       | s4 = -{resolve'0 x}- s5
       | s5 =  [ &x <- _6 ] (any [ any_ (_any:borrowed (NonZero'0.t_nonzero))-> (!  [ &_6 <- _any ] s6) ] )
       | s6 = {[@expl:type invariant] inv'1 x} s7
       | s7 = -{resolve'0 x}- s8
-      | s8 = Borrow.borrow_final <int32> { * _a} {Borrow.get_id _a}
-          (fun (_ret':borrowed int32) ->  [ &_8 <- _ret' ]  [ &_a <- { _a with current = ( ^ _8) ; } ] s9)
+      | s8 = Borrow.borrow_final <int32> {_a.current} {Borrow.get_id _a}
+          (fun (_ret':borrowed int32) ->  [ &_8 <- _ret' ]  [ &_a <- { _a with current = _8.final ; } ] s9)
       | s9 = inc'0 {_8} (fun (_ret':()) ->  [ &_7 <- _ret' ] s10)
       | s10 = bb1 ]
       
@@ -965,23 +971,23 @@ module Borrows_Dec
   use prelude.prelude.Borrow
   
   function shallow_model'0 (self : borrowed int32) : int =
-    [%#span4] Int32.to_int ( * self)
+    [%#span4] Int32.to_int self.current
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span5]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   let rec dec (x:borrowed int32) (return'  (ret:()))= {[%#sborrows1] shallow_model'0 x > Int32.to_int (min'0 : int32)}
     (! bb0
     [ bb0 = s0
-      [ s0 = Int32.sub { * x} {[%#sborrows0] (1 : int32)}
+      [ s0 = Int32.sub {x.current} {[%#sborrows0] (1 : int32)}
           (fun (_ret':int32) ->  [ &x <- { x with current = _ret' ; } ] s1)
       | s1 = -{resolve'0 x}- s2
       | s2 = return' {_0} ]
        ]
     ) [ & _0 : () = any_l () | & x : borrowed int32 = x ] 
-    [ return' (result:())-> {[@expl:postcondition] [%#sborrows2] Int32.to_int ( ^ x) = shallow_model'0 x - 1}
+    [ return' (result:())-> {[@expl:postcondition] [%#sborrows2] Int32.to_int x.final = shallow_model'0 x - 1}
       (! return' {result}) ]
     
 end
@@ -1037,7 +1043,7 @@ module Borrows_Impl3_Foo
   
   predicate inv'0 (_x : borrowed (SumTo10'0.t_sumto10))
   
-  axiom inv'0 : forall x : borrowed (SumTo10'0.t_sumto10) . inv'0 x = (inv'1 ( * x) /\ inv'1 ( ^ x))
+  axiom inv'0 : forall x : borrowed (SumTo10'0.t_sumto10) . inv'0 x = (inv'1 x.current /\ inv'1 x.final)
   
   use prelude.prelude.Int32
   
@@ -1046,57 +1052,57 @@ module Borrows_Impl3_Foo
   use prelude.prelude.Intrinsic
   
   predicate resolve'1 (self : borrowed (SumTo10'0.t_sumto10)) =
-    [%#span5]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   use prelude.prelude.Int
   
   constant min'0 : int32 = [%#span6] (-2147483648 : int32)
   
   function shallow_model'0 (self : borrowed int32) : int =
-    [%#span7] Int32.to_int ( * self)
+    [%#span7] Int32.to_int self.current
   
   let rec dec'0 (x:borrowed int32) (return'  (ret:()))= {[@expl:precondition] [%#span8] shallow_model'0 x
     > Int32.to_int (min'0 : int32)}
-    any [ return' (result:())-> {[%#span9] Int32.to_int ( ^ x) = shallow_model'0 x - 1} (! return' {result}) ] 
+    any [ return' (result:())-> {[%#span9] Int32.to_int x.final = shallow_model'0 x - 1} (! return' {result}) ] 
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span5]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   let rec inc'0 (x:borrowed int32) (return'  (ret:()))= {[@expl:precondition] [%#span10] shallow_model'0 x
     < Int32.to_int (max'0 : int32)}
-    any [ return' (result:())-> {[%#span11] Int32.to_int ( ^ x) = shallow_model'0 x + 1} (! return' {result}) ] 
+    any [ return' (result:())-> {[%#span11] Int32.to_int x.final = shallow_model'0 x + 1} (! return' {result}) ] 
   
   let rec foo (self:borrowed (SumTo10'0.t_sumto10)) (return'  (ret:()))= {[%#sborrows1] inv'0 self}
-    {[%#sborrows0] Int32.to_int (Borrows_SumTo10_Type.sumto10_a ( * self)) < Int32.to_int (max'0 : int32)}
+    {[%#sborrows0] Int32.to_int (Borrows_SumTo10_Type.sumto10_a self.current) < Int32.to_int (max'0 : int32)}
     (! bb0
     [ bb0 = s0
-      [ s0 = SumTo10'0.t_sumto10 { * self}
+      [ s0 = SumTo10'0.t_sumto10 {self.current}
           (fun (ra'0:int32) (rb'0:int32) ->
             Borrow.borrow_final <int32> {ra'0} {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed int32) ->
                  [ &_5 <- _ret' ] 
-                SumTo10'0.t_sumto10 { * self}
+                SumTo10'0.t_sumto10 {self.current}
                   (fun (l_a'0:int32) (l_b'0:int32) ->
-                     [ &self <- { self with current = SumTo10'0.C_SumTo10 ( ^ _5) l_b'0 ; } ] 
+                     [ &self <- { self with current = SumTo10'0.C_SumTo10 _5.final l_b'0 ; } ] 
                     s1)))
-      | s1 = Borrow.borrow_final <int32> { * _5} {Borrow.get_id _5}
-          (fun (_ret':borrowed int32) ->  [ &_4 <- _ret' ]  [ &_5 <- { _5 with current = ( ^ _4) ; } ] s2)
+      | s1 = Borrow.borrow_final <int32> {_5.current} {Borrow.get_id _5}
+          (fun (_ret':borrowed int32) ->  [ &_4 <- _ret' ]  [ &_5 <- { _5 with current = _4.final ; } ] s2)
       | s2 = inc'0 {_4} (fun (_ret':()) ->  [ &_3 <- _ret' ] s3)
       | s3 = bb1 ]
       
     | bb1 = s0
       [ s0 = -{resolve'0 _5}- s1
-      | s1 = SumTo10'0.t_sumto10 { * self}
+      | s1 = SumTo10'0.t_sumto10 {self.current}
           (fun (ra'0:int32) (rb'0:int32) ->
             Borrow.borrow_final <int32> {rb'0} {Borrow.inherit_id (Borrow.get_id self) 2}
               (fun (_ret':borrowed int32) ->
                  [ &_8 <- _ret' ] 
-                SumTo10'0.t_sumto10 { * self}
+                SumTo10'0.t_sumto10 {self.current}
                   (fun (l_a'0:int32) (l_b'0:int32) ->
-                     [ &self <- { self with current = SumTo10'0.C_SumTo10 l_a'0 ( ^ _8) ; } ] 
+                     [ &self <- { self with current = SumTo10'0.C_SumTo10 l_a'0 _8.final ; } ] 
                     s2)))
-      | s2 = Borrow.borrow_final <int32> { * _8} {Borrow.get_id _8}
-          (fun (_ret':borrowed int32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = ( ^ _7) ; } ] s3)
+      | s2 = Borrow.borrow_final <int32> {_8.current} {Borrow.get_id _8}
+          (fun (_ret':borrowed int32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _7.final ; } ] s3)
       | s3 = dec'0 {_7} (fun (_ret':()) ->  [ &_6 <- _ret' ] s4)
       | s4 = bb2 ]
       

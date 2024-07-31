@@ -172,7 +172,7 @@ module Mutex_Impl3_Call
   
   let rec set'0 (self:borrowed (MutexGuard'0.t_mutexguard uint32 (Even'0.t_even))) (v:uint32) (return'  (ret:()))= {[@expl:precondition] [%#span7] inv'6 v}
     {[@expl:precondition] [%#span6] inv'5 self}
-    {[@expl:precondition] [%#span5] inv'3 (Snapshot.inner (Mutex_MutexGuard_Type.mutexguard_1 ( * self))) v}
+    {[@expl:precondition] [%#span5] inv'3 (Snapshot.inner (Mutex_MutexGuard_Type.mutexguard_1 self.current)) v}
     any [ return' (result:())-> (! return' {result}) ] 
   
   let rec deref'0 (self:MutexGuard'0.t_mutexguard uint32 (Even'0.t_even)) (return'  (ret:uint32))= {[@expl:precondition] [%#span8] inv'2 self}
@@ -210,7 +210,7 @@ module Mutex_Impl3_Call
       [ s0 = Borrow.borrow_mut <MutexGuard'0.t_mutexguard uint32 (Even'0.t_even)> {v}
           (fun (_ret':borrowed (MutexGuard'0.t_mutexguard uint32 (Even'0.t_even))) ->
              [ &_10 <- _ret' ] 
-             [ &v <-  ^ _10 ] 
+             [ &v <- _10.final ] 
             s1)
       | s1 = UInt32.add {val'} {[%#smutex1] (2 : uint32)} (fun (_ret':uint32) ->  [ &_11 <- _ret' ] s2)
       | s2 = set'0 {_10} {_11} (fun (_ret':()) ->  [ &_9 <- _ret' ] s3)
@@ -221,7 +221,7 @@ module Mutex_Impl3_Call
       [ s0 = Borrow.borrow_mut <MutexGuard'0.t_mutexguard uint32 (Even'0.t_even)> {v}
           (fun (_ret':borrowed (MutexGuard'0.t_mutexguard uint32 (Even'0.t_even))) ->
              [ &_14 <- _ret' ] 
-             [ &v <-  ^ _14 ] 
+             [ &v <- _14.final ] 
             s1)
       | s1 = set'0 {_14} {[%#smutex2] (0 : uint32)} (fun (_ret':()) ->  [ &_13 <- _ret' ] s2)
       | s2 = bb6 ]
@@ -504,12 +504,12 @@ module Mutex_Concurrent
     
   
   predicate resolve'0 (self : borrowed (Mutex'0.t_mutex uint32 (Even'0.t_even))) =
-    [%#span11]  ^ self =  * self
+    [%#span11] self.final = self.current
   
   let rec leak'0 (b:Mutex'0.t_mutex uint32 (Even'0.t_even)) (return'  (ret:borrowed (Mutex'0.t_mutex uint32 (Even'0.t_even))))= {[@expl:precondition] [%#span12] inv'4 b}
     any
     [ return' (result:borrowed (Mutex'0.t_mutex uint32 (Even'0.t_even)))-> {[%#span14] inv'5 result}
-      {[%#span13]  * result = b}
+      {[%#span13] result.current = b}
       (! return' {result}) ]
     
   
@@ -536,7 +536,7 @@ module Mutex_Concurrent
       | s1 = bb3 ]
       
     | bb3 = s0
-      [ s0 =  [ &m <-  * _2 ] s1
+      [ s0 =  [ &m <- _2.current ] s1
       | s1 = -{resolve'0 _2}- s2
       | s2 =  [ &_8 <- m ] s3
       | s3 =  [ &t1 <- AddsTwo'0.C_AddsTwo _8 ] s4
