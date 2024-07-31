@@ -177,7 +177,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     &self.locals,
                     *self.body.source_info(bb.start_location()),
                 ));
-                self.check_ghost_term(&body, bb.start_location());
+                self.check_frozen_in_logic(&body, bb.start_location());
                 match kind {
                     LoopSpecKind::Variant => {
                         if variant.is_some() {
@@ -384,7 +384,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         fmir::Place { local: self.locals[&pl.local], projection }
     }
 
-    fn check_ghost_term(&mut self, term: &Term<'tcx>, location: Location) {
+    fn check_frozen_in_logic(&mut self, term: &Term<'tcx>, location: Location) {
         if let Some(resolver) = &mut self.resolver {
             let frozen = resolver.frozen_locals_before(location);
             let free_vars = term.free_vars();

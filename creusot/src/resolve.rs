@@ -58,7 +58,7 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         let borrows_out_of_scope =
             calculate_borrows_out_of_scope_at_location(body, &regioncx, &borrow_set);
 
-        let borrows = Borrows::new(tcx, body, borrow_set.clone(), borrows_out_of_scope.clone())
+        let borrows = Borrows::new(tcx, body, borrow_set.clone(), borrows_out_of_scope)
             .into_engine(tcx, body)
             .iterate_to_fixpoint()
             .into_results_cursor(body);

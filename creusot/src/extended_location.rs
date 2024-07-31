@@ -27,11 +27,7 @@ impl Dir for dataflow::Backward {
 
 impl ExtendedLocation {
     pub(crate) fn is_entry_loc(self) -> bool {
-        if let Self::Start(loc) = self {
-            loc == Location::START
-        } else {
-            false
-        }
+        matches!(self, Self::Start(Location::START))
     }
 
     pub(crate) fn seek_to<'tcx, A, D>(self, cursor: &mut ResultsCursor<'_, 'tcx, A>)
