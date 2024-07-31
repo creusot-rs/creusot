@@ -108,7 +108,7 @@ impl<'tcx> dataflow::AnalysisDomain<'tcx> for Borrows<'_, 'tcx> {
 
     fn bottom_value(&self, _: &mir::Body<'tcx>) -> Self::Domain {
         // bottom = nothing is reserved or activated yet;
-        BitSet::new_empty(self.borrow_set.len() * 2)
+        BitSet::new_empty(self.borrow_set.len())
     }
 
     fn initialize_start_block(&self, _: &mir::Body<'tcx>, _: &mut Self::Domain) {
@@ -220,7 +220,7 @@ impl<'tcx> dataflow::GenKillAnalysis<'tcx> for Borrows<'_, 'tcx> {
     }
 
     fn domain_size(&self, _: &mir::Body<'tcx>) -> usize {
-        self.borrow_set.len() * 2
+        self.borrow_set.len()
     }
 }
 
