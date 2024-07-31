@@ -3,10 +3,7 @@ use std::rc::Rc;
 use crate::analysis::{
     Borrows, MaybeInitializedLocals, MaybeLiveExceptDrop, MaybeUninitializedLocals,
 };
-use rustc_borrowck::{
-    borrow_set::BorrowSet,
-    consumers::{calculate_borrows_out_of_scope_at_location, RegionInferenceContext},
-};
+use rustc_borrowck::{borrow_set::BorrowSet, consumers::RegionInferenceContext};
 use rustc_index::bit_set::BitSet;
 use rustc_middle::{
     mir::{traversal, BasicBlock, Body, Local, Location},
@@ -55,10 +52,7 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
             .iterate_to_fixpoint()
             .into_results_cursor(body);
 
-        let borrows_out_of_scope =
-            calculate_borrows_out_of_scope_at_location(body, &regioncx, &borrow_set);
-
-        let borrows = Borrows::new(tcx, body, borrow_set.clone(), borrows_out_of_scope)
+        let borrows = Borrows::new(tcx, body, &regioncx, borrow_set.clone())
             .into_engine(tcx, body)
             .iterate_to_fixpoint()
             .into_results_cursor(body);

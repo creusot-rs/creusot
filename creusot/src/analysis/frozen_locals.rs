@@ -3,7 +3,10 @@ use std::{fmt, rc::Rc};
 use dataflow::fmt::DebugWithContext;
 use rustc_borrowck::{
     borrow_set::BorrowSet,
-    consumers::{BorrowIndex, PlaceConflictBias, PlaceExt},
+    consumers::{
+        calculate_borrows_out_of_scope_at_location, BorrowIndex, PlaceConflictBias, PlaceExt,
+        RegionInferenceContext,
+    },
 };
 use rustc_data_structures::fx::FxIndexMap;
 // This Source Code Form is subject to the terms of the Mozilla Public
@@ -20,17 +23,31 @@ use rustc_mir_dataflow::{self as dataflow, GenKill};
 pub struct Borrows<'body, 'tcx> {
     tcx: TyCtxt<'tcx>,
     body: &'body Body<'tcx>,
+
     borrow_set: Rc<BorrowSet<'tcx>>,
     borrows_out_of_scope_at_location: FxIndexMap<Location, Vec<BorrowIndex>>,
 }
+
+// This analysis collects the active borrows at each program location.
+// It is mostly identical to rustc's rustc_borrowck::dataflow::Borrow, except
+// for two changes:
+//   - Rustc calls `kill_loans_out_of_scope_at_location` in the "before effects",
+//     while we do it at the start of the "primary effects". Our before effects
+//     are no-ops. This is important that before effect be no-ops, because we
+//     want to observe the evolution of the analysis state through instructions.
+//   - The borrow_set field is an Rc pointer, while rusct uses a borrow. This is
+//     mostly to make the use of this data structure easier in our code. Nothing
+//     really fundamental.
 
 impl<'body, 'tcx> Borrows<'body, 'tcx> {
     pub fn new(
         tcx: TyCtxt<'tcx>,
         body: &'body Body<'tcx>,
+        regioncx: &RegionInferenceContext<'tcx>,
         borrow_set: Rc<BorrowSet<'tcx>>,
-        borrows_out_of_scope_at_location: FxIndexMap<Location, Vec<BorrowIndex>>,
     ) -> Self {
+        let borrows_out_of_scope_at_location =
+            calculate_borrows_out_of_scope_at_location(body, regioncx, &*borrow_set);
         Borrows { tcx, body, borrow_set, borrows_out_of_scope_at_location }
     }
 
@@ -119,6 +136,10 @@ impl<'tcx> dataflow::AnalysisDomain<'tcx> for Borrows<'_, 'tcx> {
 
 impl<'tcx> dataflow::GenKillAnalysis<'tcx> for Borrows<'_, 'tcx> {
     type Idx = BorrowIndex;
+
+    fn domain_size(&self, _: &mir::Body<'tcx>) -> usize {
+        self.borrow_set.len()
+    }
 
     fn before_statement_effect(
         &mut self,
@@ -217,10 +238,6 @@ impl<'tcx> dataflow::GenKillAnalysis<'tcx> for Borrows<'_, 'tcx> {
         _block: mir::BasicBlock,
         _return_places: CallReturnPlaces<'_, 'tcx>,
     ) {
-    }
-
-    fn domain_size(&self, _: &mir::Body<'tcx>) -> usize {
-        self.borrow_set.len()
     }
 }
 
