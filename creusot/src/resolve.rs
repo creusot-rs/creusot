@@ -1,8 +1,6 @@
 use std::rc::Rc;
 
-use crate::analysis::{
-    Borrows, MaybeLiveExceptDrop, MaybeUninitializedLocals,
-};
+use crate::analysis::{FrozenPlaces, MaybeLiveExceptDrop, MaybeUninitializedLocals};
 use rustc_borrowck::{borrow_set::BorrowSet, consumers::RegionInferenceContext};
 use rustc_index::bit_set::BitSet;
 use rustc_middle::{
@@ -18,7 +16,7 @@ pub struct EagerResolver<'body, 'tcx> {
 
     local_uninit: ResultsCursor<'body, 'tcx, MaybeUninitializedLocals>,
 
-    borrows: ResultsCursor<'body, 'tcx, Borrows<'body, 'tcx>>,
+    frozen_places: ResultsCursor<'body, 'tcx, FrozenPlaces<'body, 'tcx>>,
 
     borrow_set: Rc<BorrowSet<'tcx>>,
 
@@ -44,18 +42,18 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
             .iterate_to_fixpoint()
             .into_results_cursor(body);
 
-        let borrows = Borrows::new(tcx, body, &regioncx, borrow_set.clone())
+        let frozen_places = FrozenPlaces::new(tcx, body, &regioncx, borrow_set.clone())
             .into_engine(tcx, body)
             .iterate_to_fixpoint()
             .into_results_cursor(body);
 
-        EagerResolver { local_live, local_uninit, borrows, borrow_set, body }
+        EagerResolver { local_live, local_uninit, frozen_places, borrow_set, body }
     }
 
     fn seek_to(&mut self, loc: ExtendedLocation) {
         loc.seek_to(&mut self.local_live);
         loc.seek_to(&mut self.local_uninit);
-        loc.seek_to(&mut self.borrows);
+        loc.seek_to(&mut self.frozen_places);
     }
 
     fn def_init_locals(&self) -> BitSet<Local> {
@@ -73,16 +71,9 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         live
     }
 
-    fn dead_locals(&self) -> BitSet<Local> {
-        let live = self.live_locals();
-        let mut dead: BitSet<_> = BitSet::new_filled(live.domain_size());
-        dead.subtract(&live);
-        dead
-    }
-
     fn frozen_locals(&self) -> BitSet<Local> {
         let mut frozen: BitSet<_> = BitSet::new_empty(self.body.local_decls.len());
-        for bi in self.borrows.get().iter() {
+        for bi in self.frozen_places.get().iter() {
             let l = self.borrow_set[bi].borrowed_place.local;
             frozen.insert(l);
         }
@@ -99,11 +90,11 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
     }
 
     /// Locals that have already been resolved
-    /// = dead ∩ not frozen ∩ initialized
+    /// = not live ∩ not frozen ∩ initialized
     fn resolved_locals(&self) -> BitSet<Local> {
-        let mut resolved = self.dead_locals();
+        let mut resolved = self.def_init_locals();
         resolved.subtract(&self.frozen_locals());
-        resolved.intersect(&self.def_init_locals());
+        resolved.subtract(&self.live_locals());
         resolved
     }
 
@@ -138,14 +129,14 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
     }
 
     /// Only valid if loc is not a terminator.
-    pub fn dead_locals_after(&mut self, loc: Location) -> BitSet<Local> {
+    pub fn live_locals_after(&mut self, loc: Location) -> BitSet<Local> {
         let next_loc = loc.successor_within_block();
         ExtendedLocation::Start(next_loc).seek_to(&mut self.local_live);
-        self.dead_locals()
+        self.live_locals()
     }
 
     pub fn frozen_locals_before(&mut self, loc: Location) -> BitSet<Local> {
-        ExtendedLocation::Start(loc).seek_to(&mut self.borrows);
+        ExtendedLocation::Start(loc).seek_to(&mut self.frozen_places);
         self.frozen_locals()
     }
 
@@ -157,21 +148,23 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         let term = self.body.terminator_loc(from);
         let start = to.start_location();
 
-        let mut resolved = self.resolved_locals_in_range(
-            ExtendedLocation::Start(term),
-            ExtendedLocation::Start(start),
-        );
+        // Some locals are resolved because of the terminator (e.g., a function call) itself.
+        // We would like a location which is at the end of the terminator but before branching,
+        // but this does not exist. We use the first location of the next block instead.
+        let mut resolved = self
+            .resolved_locals_in_range(ExtendedLocation::Start(term), ExtendedLocation::Start(start));
 
         // if some locals still need to be resolved at the end of the current block
         // but not at the start of the next block, we also need to resolve them now
         // see the init_join function in the resolve_uninit test
         self.seek_to(ExtendedLocation::Mid(term));
-        let need_resolve_at_end = self.need_resolve_locals();
+        let need_resolve_at_term = self.need_resolve_locals();
         self.seek_to(ExtendedLocation::Start(start));
         let need_resolve_at_start = self.need_resolve_locals();
 
-        let mut need_resolve = need_resolve_at_end;
+        let mut need_resolve = need_resolve_at_term;
         need_resolve.subtract(&need_resolve_at_start);
+
         resolved.union(&need_resolve);
 
         resolved

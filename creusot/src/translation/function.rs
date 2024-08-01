@@ -293,7 +293,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         self.emit_statement(fmir::Statement::Assignment(p, rhs, span));
     }
 
-    // Inserts resolves for locals which died over the course of a goto or switch
+    // Inserts resolves for locals which need resolution after a terminator, or
+    // died over the course of a goto or switch
     fn resolve_locals_between_blocks(&mut self, bb: BasicBlock) {
         let Some(resolver) = &mut self.resolver else {
             return;
@@ -306,7 +307,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         let resolved_between = pred_blocks
             .iter()
-            .map(|pred| resolver.resolved_locals_between_blocks(*pred, bb))
+            .map(|&pred| { resolver.resolved_locals_between_blocks(pred, bb) })
             .collect::<Vec<_>>();
 
         // If we have multiple predecessors (join point) but all of them agree on the deaths, then don't introduce a dedicated block.

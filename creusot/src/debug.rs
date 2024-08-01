@@ -8,7 +8,7 @@ use rustc_middle::{
 use crate::analysis::{MaybeLiveExceptDrop, MaybeUninitializedLocals};
 
 pub fn debug<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) {
-     let mut uninit = MaybeUninitializedLocals
+    let mut uninit = MaybeUninitializedLocals
         .into_engine(tcx, body)
         .iterate_to_fixpoint()
         .into_results_cursor(body);

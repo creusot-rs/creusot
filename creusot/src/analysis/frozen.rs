@@ -1,6 +1,5 @@
 use std::{fmt, rc::Rc};
 
-use dataflow::fmt::DebugWithContext;
 use rustc_borrowck::{
     borrow_set::BorrowSet,
     consumers::{
@@ -18,9 +17,9 @@ use rustc_middle::{
     mir::{self, Body, CallReturnPlaces, Location, Place, TerminatorEdges},
     ty::TyCtxt,
 };
-use rustc_mir_dataflow::{self as dataflow, GenKill};
+use rustc_mir_dataflow::{fmt::DebugWithContext, AnalysisDomain, GenKill, GenKillAnalysis};
 
-pub struct Borrows<'body, 'tcx> {
+pub struct FrozenPlaces<'body, 'tcx> {
     tcx: TyCtxt<'tcx>,
     body: &'body Body<'tcx>,
 
@@ -39,7 +38,7 @@ pub struct Borrows<'body, 'tcx> {
 //     mostly to make the use of this data structure easier in our code. Nothing
 //     really fundamental.
 
-impl<'body, 'tcx> Borrows<'body, 'tcx> {
+impl<'body, 'tcx> FrozenPlaces<'body, 'tcx> {
     pub fn new(
         tcx: TyCtxt<'tcx>,
         body: &'body Body<'tcx>,
@@ -48,7 +47,7 @@ impl<'body, 'tcx> Borrows<'body, 'tcx> {
     ) -> Self {
         let borrows_out_of_scope_at_location =
             calculate_borrows_out_of_scope_at_location(body, regioncx, &*borrow_set);
-        Borrows { tcx, body, borrow_set, borrows_out_of_scope_at_location }
+        FrozenPlaces { tcx, body, borrow_set, borrows_out_of_scope_at_location }
     }
 
     pub fn location(&self, idx: BorrowIndex) -> &Location {
@@ -118,7 +117,7 @@ impl<'body, 'tcx> Borrows<'body, 'tcx> {
     }
 }
 
-impl<'tcx> dataflow::AnalysisDomain<'tcx> for Borrows<'_, 'tcx> {
+impl<'tcx> AnalysisDomain<'tcx> for FrozenPlaces<'_, 'tcx> {
     type Domain = BitSet<BorrowIndex>;
 
     const NAME: &'static str = "borrows";
@@ -134,19 +133,11 @@ impl<'tcx> dataflow::AnalysisDomain<'tcx> for Borrows<'_, 'tcx> {
     }
 }
 
-impl<'tcx> dataflow::GenKillAnalysis<'tcx> for Borrows<'_, 'tcx> {
+impl<'tcx> GenKillAnalysis<'tcx> for FrozenPlaces<'_, 'tcx> {
     type Idx = BorrowIndex;
 
     fn domain_size(&self, _: &mir::Body<'tcx>) -> usize {
         self.borrow_set.len()
-    }
-
-    fn before_statement_effect(
-        &mut self,
-        _trans: &mut impl GenKill<Self::Idx>,
-        _statement: &mir::Statement<'tcx>,
-        _location: Location,
-    ) {
     }
 
     fn statement_effect(
@@ -204,14 +195,6 @@ impl<'tcx> dataflow::GenKillAnalysis<'tcx> for Borrows<'_, 'tcx> {
         }
     }
 
-    fn before_terminator_effect(
-        &mut self,
-        _trans: &mut Self::Domain,
-        _terminator: &mir::Terminator<'tcx>,
-        _location: Location,
-    ) {
-    }
-
     fn terminator_effect<'mir>(
         &mut self,
         trans: &mut Self::Domain,
@@ -241,8 +224,8 @@ impl<'tcx> dataflow::GenKillAnalysis<'tcx> for Borrows<'_, 'tcx> {
     }
 }
 
-impl DebugWithContext<Borrows<'_, '_>> for BorrowIndex {
-    fn fmt_with(&self, ctxt: &Borrows<'_, '_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl DebugWithContext<FrozenPlaces<'_, '_>> for BorrowIndex {
+    fn fmt_with(&self, ctxt: &FrozenPlaces<'_, '_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", ctxt.location(*self))
     }
 }

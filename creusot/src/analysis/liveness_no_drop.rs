@@ -1,15 +1,10 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at https://mozilla.org/MPL/2.0/.
-//
-use dataflow::Backward;
 use rustc_index::bit_set::ChunkedBitSet;
 use rustc_middle::mir::{
     self,
     visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor},
     CallReturnPlaces, Local, Location, Place, TerminatorEdges,
 };
-use rustc_mir_dataflow::{self as dataflow, AnalysisDomain, GenKill, GenKillAnalysis};
+use rustc_mir_dataflow::{AnalysisDomain, Backward, GenKill, GenKillAnalysis};
 
 /// A liveness analysis which ignores `drop`. This is meant to be used exclusively for `Resolve`.
 /// FIXME: Replace this if any unsoundness seems to occur with borrows.

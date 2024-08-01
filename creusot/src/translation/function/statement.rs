@@ -216,7 +216,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
         if let Some(resolver) = &mut self.resolver {
             let need_resolve_before = resolver.need_resolve_locals_before(loc);
-            let dead_after = resolver.dead_locals_after(loc);
+            let live_after = resolver.live_locals_after(loc);
 
             if !place.is_indirect() && need_resolve_before.contains(place.local) {
                 self.emit_resolve(*place);
@@ -226,7 +226,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
             // Check if the local is a zombie:
             // if lhs local is dead after the assignment, emit resolve
-            if dead_after.contains(place.local) {
+            if !live_after.contains(place.local) {
                 self.emit_resolve(*place);
             }
         } else {
