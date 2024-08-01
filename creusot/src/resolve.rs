@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use crate::analysis::{
-    Borrows, MaybeInitializedLocals, MaybeLiveExceptDrop, MaybeUninitializedLocals,
+    Borrows, MaybeLiveExceptDrop, MaybeUninitializedLocals,
 };
 use rustc_borrowck::{borrow_set::BorrowSet, consumers::RegionInferenceContext};
 use rustc_index::bit_set::BitSet;
@@ -15,9 +15,6 @@ use crate::extended_location::ExtendedLocation;
 
 pub struct EagerResolver<'body, 'tcx> {
     local_live: ResultsCursor<'body, 'tcx, MaybeLiveExceptDrop>,
-
-    // Whether a local is initialized or not at a location
-    local_init: ResultsCursor<'body, 'tcx, MaybeInitializedLocals>,
 
     local_uninit: ResultsCursor<'body, 'tcx, MaybeUninitializedLocals>,
 
@@ -35,11 +32,6 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         borrow_set: Rc<BorrowSet<'tcx>>,
         regioncx: Rc<RegionInferenceContext<'tcx>>,
     ) -> Self {
-        let local_init = MaybeInitializedLocals
-            .into_engine(tcx, body)
-            .iterate_to_fixpoint()
-            .into_results_cursor(body);
-
         let local_uninit = MaybeUninitializedLocals
             .into_engine(tcx, body)
             .iterate_to_fixpoint()
@@ -57,22 +49,20 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
             .iterate_to_fixpoint()
             .into_results_cursor(body);
 
-        EagerResolver { local_live, local_init, local_uninit, borrows, borrow_set, body }
+        EagerResolver { local_live, local_uninit, borrows, borrow_set, body }
     }
 
     fn seek_to(&mut self, loc: ExtendedLocation) {
         loc.seek_to(&mut self.local_live);
-        loc.seek_to(&mut self.local_init);
         loc.seek_to(&mut self.local_uninit);
         loc.seek_to(&mut self.borrows);
     }
 
     fn def_init_locals(&self) -> BitSet<Local> {
-        let init = self.local_init.get().clone();
         let mut uninit: BitSet<_> = BitSet::new_empty(self.body.local_decls.len());
         uninit.union(self.local_uninit.get());
 
-        let mut def_init = init;
+        let mut def_init = BitSet::new_filled(self.body.local_decls.len());
         def_init.subtract(&uninit);
         def_init
     }
@@ -204,21 +194,19 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
             for statement in &bbd.statements {
                 self.seek_to(ExtendedLocation::Start(loc));
                 let live1 = self.local_live.get().iter().collect::<Vec<_>>();
-                let init1 = self.local_init.get().clone();
                 let uninit1 = self.local_uninit.get().iter().collect::<Vec<_>>();
                 let frozen1 = self.frozen_locals();
                 let resolved1 = self.resolved_locals();
 
                 self.seek_to(ExtendedLocation::Mid(loc));
                 let live2 = self.local_live.get().iter().collect::<Vec<_>>();
-                let init2 = self.local_init.get().clone();
                 let uninit2 = self.local_uninit.get().iter().collect::<Vec<_>>();
                 let frozen2 = self.frozen_locals();
                 let resolved2 = self.resolved_locals();
 
                 eprintln!("  {statement:?} {resolved1:?} -> {resolved2:?}");
                 eprintln!(
-                    "    live={live1:?} -> {live2:?} frozen={frozen1:?} -> {frozen2:?} init={init1:?} -> {init2:?} uninit={uninit1:?} -> {uninit2:?}",
+                    "    live={live1:?} -> {live2:?} frozen={frozen1:?} -> {frozen2:?} uninit={uninit1:?} -> {uninit2:?}",
                 );
 
                 loc = loc.successor_within_block();
@@ -226,21 +214,19 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
 
             self.seek_to(ExtendedLocation::Start(loc));
             let live1 = self.local_live.get().iter().collect::<Vec<_>>();
-            let init1 = self.local_init.get().clone();
             let uninit1 = self.local_uninit.get().iter().collect::<Vec<_>>();
             let frozen1 = self.frozen_locals();
             let resolved1 = self.resolved_locals();
 
             self.seek_to(ExtendedLocation::Mid(loc));
             let live2 = self.local_live.get().iter().collect::<Vec<_>>();
-            let init2 = self.local_init.get().clone();
             let uninit2 = self.local_uninit.get().iter().collect::<Vec<_>>();
             let frozen2 = self.frozen_locals();
             let resolved2 = self.resolved_locals();
 
             eprintln!("  {:?} {resolved1:?} -> {resolved2:?}", bbd.terminator().kind);
             eprintln!(
-                "    live={live1:?} -> {live2:?} frozen={frozen1:?} -> {frozen2:?} init={init1:?} -> {init2:?} uninit={uninit1:?} -> {uninit2:?}",
+                "    live={live1:?} -> {live2:?} frozen={frozen1:?} -> {frozen2:?} uninit={uninit1:?} -> {uninit2:?}",
             );
         }
         eprintln!();
