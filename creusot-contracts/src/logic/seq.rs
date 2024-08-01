@@ -38,6 +38,15 @@ impl<T> Seq<T> {
         absurd
     }
 
+    /// Similar to [`Seq::subsequence`] but corresponds exactly to Z3's seq.extract
+    #[trusted]
+    #[logic]
+    #[open(self)]
+    #[creusot::builtins = "prelude.seq_ext.SeqExt.extract"]
+    pub fn extract(self, _: Int, _: Int) -> Self {
+        absurd
+    }
+
     #[trusted]
     #[logic]
     #[open(self)]
@@ -96,8 +105,24 @@ impl<T> Seq<T> {
     #[trusted]
     #[logic]
     #[open(self)]
-    #[creusot::builtins = "seq.Reverse.reverse"]
+    #[ensures(result.len() == self.len())]
     pub fn reverse(self) -> Self {
+        absurd
+    }
+
+    #[trusted]
+    #[law]
+    #[open(self)]
+    #[ensures(forall<s1: Self, s2: Self, i: Int>
+        0 <= i && i < s1.len() ==> s1.concat(s2)[i] == s1[i])]
+    #[ensures(forall<s1: Self, s2: Self, i: Int>
+        s1.len() <= i && i < s1.len() + s2.len() ==> s1.concat(s2)[i] == s2[i - s1.len()])]
+    #[ensures(forall<s: Self, offset: Int, len: Int, i: Int>
+        0 <= i && i < len && 0 <= len && 0 <= offset && (offset+len) <= s.len()
+            ==> s.extract(offset, len)[i] == s[offset+i])]
+    #[ensures(forall<s1: Self, i: Int>
+        0 <= i && i < s1.len() ==> s1.reverse()[i] == s1[s1.len() - i - 1])]
+    pub fn seq_lemmas() {
         absurd
     }
 
