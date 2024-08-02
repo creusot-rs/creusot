@@ -1,7 +1,7 @@
 use crate::{std::ops::Deref, *};
 
 #[rustc_diagnostic_item = "snapshot_ty"]
-#[cfg_attr(creusot, creusot::builtins = "prelude.prelude.Snapshot.snap_ty")]
+#[trusted]
 pub struct Snapshot<T>(pub(crate) std::marker::PhantomData<T>)
 where
     T: ?Sized;
@@ -13,7 +13,6 @@ impl<T: ?Sized> Deref for Snapshot<T> {
     #[logic]
     #[open(self)]
     #[rustc_diagnostic_item = "snapshot_deref"]
-    #[creusot::builtins = "prelude.prelude.Snapshot.inner"]
     fn deref(&self) -> &Self::Target {
         pearlite! { absurd }
     }
@@ -41,21 +40,19 @@ impl<T: ?Sized> Snapshot<T> {
     #[trusted]
     #[logic]
     #[open(self)]
-    #[creusot::builtins = "prelude.prelude.Snapshot.new"]
+    #[ensures(&*result == &x)]
     #[rustc_diagnostic_item = "snapshot_new"]
-    pub fn new(_: T) -> Snapshot<T> {
+    pub fn new(x: T) -> Snapshot<T> {
         pearlite! { absurd }
     }
 
-    #[trusted]
     #[logic]
-    #[open(self)]
+    #[open]
     #[rustc_diagnostic_item = "snapshot_inner"]
-    #[creusot::builtins = "prelude.prelude.Snapshot.inner"]
     pub fn inner(self) -> T
     where
         T: Sized, // TODO: don't require T: Sized here. Problem: return type is T.
     {
-        pearlite! { absurd }
+        *self
     }
 }
