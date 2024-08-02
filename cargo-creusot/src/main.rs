@@ -79,7 +79,7 @@ fn main() -> Result<()> {
                 let why3 = b.build()?;
                 let prelude_dir =
                     TempDir::new("creusot_why3_prelude").expect("could not create temp dir");
-                let mut command = dbg!(why3.make(prelude_dir.path())?);
+                let mut command = why3.make(prelude_dir.path())?;
                 command.status().expect("could not run why3");
             }
 
