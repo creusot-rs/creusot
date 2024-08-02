@@ -18,3 +18,4 @@ pub mod string;
 pub mod time;
 mod tuples;
 pub mod vec;
+pub mod panicking;

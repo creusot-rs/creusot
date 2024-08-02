@@ -16,14 +16,14 @@ use super::pearlite::{Term, TermKind};
 
 pub(crate) fn from_mir_constant<'tcx>(
     env: ParamEnv<'tcx>,
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     c: &rustc_middle::mir::ConstOperand<'tcx>,
 ) -> fmir::Operand<'tcx> {
     from_mir_constant_kind(ctx, c.const_, env, c.span)
 }
 
 fn from_mir_constant_kind<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     ck: mir::Const<'tcx>,
     env: ParamEnv<'tcx>,
     span: Span,
@@ -72,7 +72,7 @@ fn from_mir_constant_kind<'tcx>(
 }
 
 pub(crate) fn from_ty_const<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     c: Const<'tcx>,
     ty: Ty<'tcx>,
     env: ParamEnv<'tcx>,
@@ -94,7 +94,7 @@ pub(crate) fn from_ty_const<'tcx>(
 }
 
 fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     // names: &mut CloneMap<'tcx>,
     env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,

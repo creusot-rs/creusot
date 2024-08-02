@@ -348,7 +348,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     // Useful helper to translate an operand
-    pub(crate) fn translate_operand(&mut self, operand: &Operand<'tcx>) -> fmir::Operand<'tcx> {
+    pub(crate) fn translate_operand(&self, operand: &Operand<'tcx>) -> fmir::Operand<'tcx> {
         let kind = match operand {
             Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(*pl)),
             Operand::Move(pl) => fmir::Operand::Move(self.translate_place(*pl)),
@@ -357,8 +357,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         kind
     }
 
-    fn translate_place(&self, _pl: mir::Place<'tcx>) -> fmir::Place<'tcx> {
-        let projection = _pl
+    fn translate_place(&self, pl: mir::Place<'tcx>) -> fmir::Place<'tcx> {
+        let projection = pl
             .projection
             .into_iter()
             .map(|p| match p {
@@ -376,7 +376,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 mir::ProjectionElem::Subtype(ty) => mir::ProjectionElem::Subtype(ty),
             })
             .collect();
-        fmir::Place { local: self.locals[&_pl.local], projection }
+        fmir::Place { local: self.locals[&pl.local], projection }
     }
 
     fn check_ghost_term(&mut self, term: &Term<'tcx>, location: Location) {

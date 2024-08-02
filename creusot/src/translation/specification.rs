@@ -25,6 +25,7 @@ pub struct PreContract<'tcx> {
     pub(crate) ensures: Vec<Term<'tcx>>,
     pub(crate) no_panic: bool,
     pub(crate) terminates: bool,
+    pub(crate) extern_no_spec: bool,
 }
 
 impl<'tcx> PreContract<'tcx> {
@@ -41,10 +42,8 @@ impl<'tcx> PreContract<'tcx> {
         self
     }
 
-    // A bit of a hack used to see if an external function has no contract
-    pub(crate) fn is_false(&self) -> bool {
-        self.requires.len() == 1
-            && matches!(self.requires[0].kind, TermKind::Lit(Literal::Bool(false)))
+    pub(crate) fn is_requires_false(&self) -> bool {
+        self.requires.iter().any(|req| matches!(req.kind, TermKind::Lit(Literal::Bool(false))))
     }
 
     pub(crate) fn is_empty(&self) -> bool {
@@ -315,9 +314,11 @@ pub(crate) fn contract_of<'tcx>(
             contract_clauses_of(ctx, def_id).unwrap().get_pre(ctx).instantiate(ctx.tcx, subst);
 
         if contract.is_empty()
-            && ctx.externs.get(def_id.krate).is_some()
+            && !def_id.is_local()
+            && ctx.externs.get(def_id.krate).is_none()
             && util::item_type(ctx.tcx, def_id) == ItemType::Program
         {
+            contract.extern_no_spec = true;
             contract.requires.push(Term::mk_false(ctx.tcx));
         }
 
