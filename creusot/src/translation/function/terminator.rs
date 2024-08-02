@@ -27,7 +27,7 @@ use rustc_trait_selection::{
     error_reporting::InferCtxtErrorExt,
     traits::{FulfillmentError, TraitEngineExt},
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 // Translate the terminator of a basic block.
 // There isn't much that's special about this. The only subtlety is in how
@@ -292,10 +292,16 @@ pub(crate) fn make_switch<'tcx>(
             let branches: Vec<_> =
                 targets.iter().map(|(disc, tgt)| (d_to_var[&disc], (tgt))).collect();
 
-            Terminator::Switch(
-                discr,
-                Branches::Constructor(*def, substs, branches, targets.otherwise()),
-            )
+            let default;
+            if targets.iter().map(|(disc, _)| disc).collect::<HashSet<_>>().len()
+                == def.variants().len()
+            {
+                default = None
+            } else {
+                default = Some(targets.otherwise())
+            }
+
+            Terminator::Switch(discr, Branches::Constructor(*def, substs, branches, default))
         }
         TyKind::Bool => {
             let branches: (_, _) = targets

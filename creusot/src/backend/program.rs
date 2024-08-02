@@ -685,8 +685,8 @@ impl<'tcx> Terminator<'tcx> {
                     }
                 }
                 Branches::Constructor(_, _, brs, def) => {
-                    if *def == from {
-                        *def = to
+                    if *def == Some(from) {
+                        *def = Some(to)
                     };
                     for (_, bb) in brs {
                         if *bb == from {
@@ -768,7 +768,7 @@ impl<'tcx> Branches<'tcx> {
                     _substs,
                     discr,
                     vars.into_iter().map(|(var, bb)| (var, mk_goto(bb))).collect(),
-                    mk_goto(def),
+                    def.map(mk_goto),
                 );
 
                 Expr::Defn(Box::new(Expr::Any), false, brs)
@@ -796,7 +796,7 @@ fn mk_adt_switch<'tcx>(
     subst: GenericArgsRef<'tcx>,
     discr: Exp,
     mut brch: Vec<(VariantIdx, coma::Expr)>,
-    default: coma::Expr,
+    default: Option<coma::Expr>,
 ) -> Vec<coma::Defn> {
     let mut out = Vec::new();
 
@@ -807,7 +807,7 @@ fn mk_adt_switch<'tcx>(
         {
             branches.push(brch.remove(0));
         } else {
-            branches.push((VariantIdx::from(ix), default.clone()))
+            branches.push((VariantIdx::from(ix), default.clone().unwrap()))
         }
     }
 
