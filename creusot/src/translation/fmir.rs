@@ -135,7 +135,12 @@ pub enum Terminator<'tcx> {
 pub enum Branches<'tcx> {
     Int(Vec<(i128, BasicBlock)>, BasicBlock),
     Uint(Vec<(u128, BasicBlock)>, BasicBlock),
-    Constructor(AdtDef<'tcx>, GenericArgsRef<'tcx>, Vec<(VariantIdx, BasicBlock)>, Option<BasicBlock>),
+    Constructor(
+        AdtDef<'tcx>,
+        GenericArgsRef<'tcx>,
+        Vec<(VariantIdx, BasicBlock)>,
+        Option<BasicBlock>,
+    ),
     Bool(BasicBlock, BasicBlock),
 }
 
