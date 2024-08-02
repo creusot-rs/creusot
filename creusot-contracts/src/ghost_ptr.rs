@@ -250,7 +250,7 @@ impl<'a, T: ?Sized> GhostPtrTokenMut<'a, T> {
     }
 }
 
-impl<'a, T> Deref for GhostPtrTokenMut<'a, T> {
+impl<'a, T: ?Sized> Deref for GhostPtrTokenMut<'a, T> {
     type Target = GhostPtrToken<T>;
 
     #[trusted]
@@ -260,7 +260,7 @@ impl<'a, T> Deref for GhostPtrTokenMut<'a, T> {
     }
 }
 
-impl<'a, T> DerefMut for GhostPtrTokenMut<'a, T> {
+impl<'a, T: ?Sized> DerefMut for GhostPtrTokenMut<'a, T> {
     #[trusted]
     #[ensures((*result)@ == (*self).cur())]
     #[ensures((^self).cur() == (^result)@)]
